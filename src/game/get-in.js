@@ -85,8 +85,26 @@ export function dockHauntingStaging({ entryPortal = null, variant = null } = {})
     ? variant
     : dockVariantFor({ entryPortal });
   return selected === DOCK_HAUNTING_VARIANT.WEST_DESK
-    ? { variant: selected, x: 59, y: 5.6, yaw: Math.PI / 2, concealment: 'west signing desk and searchlight' }
-    : { variant: selected, x: 69, y: 5.55, yaw: Math.PI, concealment: 'north side of the chandelier cage' };
+    // Never put the body inside the prop that frames it. The previous points
+    // intersected the school desk/searchlight and the chandelier cage, so the
+    // depth-correct compositor quite properly hid the HUSH at COME CLOSER.
+    ? { variant: selected, x: 62.2, y: 7.4, yaw: Math.PI / 2, concealment: 'clear of the west signing desk' }
+    : { variant: selected, x: 67.2, y: 7.35, yaw: Math.PI, concealment: 'in front of the chandelier cage' };
+}
+
+export function dockHauntingBodyLook(snapshot = null) {
+  if (!snapshot || snapshot.resolved) return null;
+  const pressure = clamp01(snapshot.effectPressure ?? snapshot.pressure);
+  return {
+    // The room is being removed around a negative figure. A cold bounded rim,
+    // not brighter skin, keeps that figure readable through the final fade.
+    strength: .78,
+    radiusM: 4.4,
+    heightM: 2.08,
+    widthM: .74,
+    glow: 2.55 + pressure * .45,
+    mode: 'live',
+  };
 }
 
 export const DOCK_HAUNTING_GUIDANCE_ID = 'story:hush-compliance';
@@ -455,7 +473,7 @@ export function dockHauntingLights(snapshot = null, staging = null, baseLights =
   }));
   return [...absorbed, {
     id: 'dock-hush-readable-rim', x: staging.x, z: staging.y, y: 1.15,
-    color: [.18, .25, .3], intensity: .16 + p * .08, radius: 2.2 - p * .45,
+    color: [.18, .25, .3], intensity: .22 + p * .10, radius: 2.45 - p * .35,
   }];
 }
 

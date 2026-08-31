@@ -39,7 +39,7 @@
   "nodes": {
     "start": {
       "type": "battle",
-      "speaker": "THE HOUSE",
+      "speaker": "THE THREE",
       "art": {
         "id": "tuningFork",
         "mode": "boss",
@@ -49,7 +49,7 @@
       "lines": [
         {
           "who": "direction",
-          "text": "The hall takes your silence and returns it from the stage, the balconies, and somewhere behind you.",
+          "text": "The hall returns your silence from three occupied seats: Row F, the stalls, and a side box.",
           "id": "start.line.1"
         },
         {
@@ -59,7 +59,7 @@
         },
         {
           "who": "direction",
-          "text": "Then the return comes back with a shape in it, and the shape is seated.",
+          "text": "Three shapes remain seated. Each chair has grown through the body that loved the piece enough not to leave.",
           "id": "start.line.3"
         },
         {
@@ -89,13 +89,13 @@
         },
         {
           "who": "you",
-          "text": "There are people in the seats. There are people in the seats and none of them arrived.",
+          "text": "Three people are in the seats. The seats are in them too.",
           "channel": "on-listen",
           "id": "round-1.line.2"
         },
         {
           "who": "you",
-          "text": "Count them. Always count. Six, eight — the number will not hold still.",
+          "text": "Count them. Always count. Three. The number holds. The bodies do not.",
           "channel": "on-listen",
           "id": "round-1.line.3"
         },
@@ -152,7 +152,7 @@
         },
         {
           "who": "you",
-          "text": "Not a crowd. Sections. Upper balcony first, then the boxes.",
+          "text": "Not a crowd. Three people. Row F first, then the stalls, then the box.",
           "channel": "on-listen",
           "id": "round-2.line.3"
         },
@@ -164,7 +164,7 @@
         },
         {
           "who": "direction",
-          "text": "They wait. Whatever they came for, they are content to wait for it.",
+          "text": "They wait in strict order. Each one moves when the last one finishes.",
           "channel": "after",
           "id": "round-2.line.5"
         }
@@ -181,7 +181,7 @@
       "lines": [
         {
           "who": "direction",
-          "text": "Applause. Rows of it. And this time you can see the hands.",
+          "text": "Applause. Three sets of hands, each still attached to a chair.",
           "channel": "before",
           "id": "round-3.line.1"
         },
@@ -241,7 +241,7 @@
       "lines": [
         {
           "who": "you",
-          "text": "Whatever they are, they are not an audience. An audience is here for the thing on the stage.",
+          "text": "They were an audience once. They loved one piece so completely that leaving the seat stopped being possible.",
           "id": "win.line.1"
         },
         {
@@ -269,7 +269,7 @@
         },
         {
           "who": "direction",
-          "text": "The take dies with a full house listening.",
+          "text": "The take dies with three former listeners still in their seats.",
           "when": "battle.occasion == recording-2",
           "id": "lose.line.2.held"
         },
@@ -285,11 +285,11 @@
   },
   "metadata": {
     "id": "hall",
-    "enemy": "THE HOUSE",
+    "enemy": "THE THREE",
     "art": {
       "id": "tuningFork",
       "mode": "boss",
-      "caption": "Reference tone / house return",
+        "caption": "Three listeners / three fused seats",
       "status": "REFERENCE"
     },
     "combat": {
@@ -298,18 +298,18 @@
         "mode": "fixed",
         "lead": "lead-3"
       },
-      "house": {
-        "figures": null
+      "apparitions": {
+        "health": 30
       },
       "movements": [
         {
           "id": "seated",
-          "title": "THE HOUSE IS SEATED",
+          "title": "THREE REMAIN SEATED",
           "coherence": 6,
           "intents": [
             {
               "id": "hall:regard",
-              "label": "A FULL HOUSE REGARDS YOU",
+              "label": "APPARITION 01 REGARDS YOU FROM ROW F",
               "kind": "broadcast",
               "damage": 2,
               "recordable": true,
@@ -320,7 +320,7 @@
             },
             {
               "id": "hall:shift",
-              "label": "EVERY SEAT SHIFTS AT ONCE",
+              "label": "APPARITION 02 TEARS AGAINST THE CHAIR",
               "kind": "overload",
               "damage": 2,
               "recordable": false,
@@ -330,7 +330,7 @@
             },
             {
               "id": "hall:gap",
-              "label": "ONE SEAT EMPTIES WHEN YOU LOOK AT IT",
+              "label": "APPARITION 03 VANISHES BETWEEN BLINKS",
               "kind": "conceal",
               "damage": 2,
               "recordable": false,
@@ -341,7 +341,7 @@
           "severeIntents": [
             {
               "id": "hall:shift",
-              "label": "EVERY SEAT SHIFTS AT ONCE",
+              "label": "APPARITION 02 TEARS AGAINST THE CHAIR",
               "kind": "overload",
               "damage": 2,
               "recordable": false,
@@ -351,7 +351,7 @@
             },
             {
               "id": "hall:gap",
-              "label": "ONE SEAT EMPTIES WHEN YOU LOOK AT IT",
+              "label": "APPARITION 03 VANISHES BETWEEN BLINKS",
               "kind": "conceal",
               "damage": 2,
               "recordable": false,
@@ -360,7 +360,7 @@
             },
             {
               "id": "hall:regard",
-              "label": "A FULL HOUSE REGARDS YOU",
+              "label": "APPARITION 01 REGARDS YOU FROM ROW F",
               "kind": "broadcast",
               "damage": 2,
               "recordable": true,
@@ -373,7 +373,7 @@
           "deadAirIntents": [
             {
               "id": "hall:gap",
-              "label": "ONE SEAT EMPTIES WHEN YOU LOOK AT IT",
+              "label": "APPARITION 03 VANISHES BETWEEN BLINKS",
               "kind": "conceal",
               "damage": 2,
               "recordable": false,
@@ -382,7 +382,7 @@
             },
             {
               "id": "hall:shift",
-              "label": "EVERY SEAT SHIFTS AT ONCE",
+              "label": "APPARITION 02 TEARS AGAINST THE CHAIR",
               "kind": "overload",
               "damage": 2,
               "recordable": false,
@@ -392,7 +392,7 @@
             },
             {
               "id": "hall:regard",
-              "label": "A FULL HOUSE REGARDS YOU",
+              "label": "APPARITION 01 REGARDS YOU FROM ROW F",
               "kind": "broadcast",
               "damage": 2,
               "recordable": true,
@@ -405,12 +405,12 @@
         },
         {
           "id": "attention",
-          "title": "EVERY HEAD AT ONCE",
+          "title": "THEY LEARN THE ORDER",
           "coherence": 6,
           "intents": [
             {
               "id": "hall:turn",
-              "label": "THE HOUSE TURNS ON YOUR LEVEL",
+              "label": "APPARITION 01 TURNS ON YOUR LEVEL",
               "kind": "broadcast",
               "damage": 2,
               "recordable": true,
@@ -430,7 +430,7 @@
             },
             {
               "id": "hall:lean",
-              "label": "THE WHOLE TIER LEANS IN",
+              "label": "APPARITION 03 CUES THE NEXT BODY",
               "kind": "overload",
               "damage": 4,
               "recordable": false,
@@ -451,7 +451,7 @@
             },
             {
               "id": "hall:lean",
-              "label": "THE WHOLE TIER LEANS IN",
+              "label": "APPARITION 03 CUES THE NEXT BODY",
               "kind": "overload",
               "damage": 4,
               "recordable": false,
@@ -461,7 +461,7 @@
             },
             {
               "id": "hall:turn",
-              "label": "THE HOUSE TURNS ON YOUR LEVEL",
+              "label": "APPARITION 01 TURNS ON YOUR LEVEL",
               "kind": "broadcast",
               "damage": 2,
               "recordable": true,
@@ -474,7 +474,7 @@
           "deadAirIntents": [
             {
               "id": "hall:lean",
-              "label": "THE WHOLE TIER LEANS IN",
+              "label": "APPARITION 03 CUES THE NEXT BODY",
               "kind": "overload",
               "damage": 4,
               "recordable": false,
@@ -493,7 +493,7 @@
             },
             {
               "id": "hall:turn",
-              "label": "THE HOUSE TURNS ON YOUR LEVEL",
+              "label": "APPARITION 01 TURNS ON YOUR LEVEL",
               "kind": "broadcast",
               "damage": 2,
               "recordable": true,
@@ -506,12 +506,12 @@
         },
         {
           "id": "applause",
-          "title": "APPLAUSE WITH HANDS",
+          "title": "THREE SETS OF HANDS",
           "coherence": 6,
           "intents": [
             {
               "id": "hall:applause",
-              "label": "APPLAUSE, AND THEY MEAN IT",
+              "label": "APPARITION 01 APPLAUDS YOU",
               "kind": "broadcast",
               "damage": 3,
               "recordable": true,
@@ -522,7 +522,7 @@
             },
             {
               "id": "hall:standing",
-              "label": "THE ROW BEHIND YOU STANDS",
+              "label": "APPARITION 02 STANDS WITH THE CHAIR ATTACHED",
               "kind": "conceal",
               "damage": 2,
               "recordable": false,
@@ -531,7 +531,7 @@
             },
             {
               "id": "hall:stack",
-              "label": "THE WHOLE HOUSE COMES UP AT ONCE",
+              "label": "APPARITION 03 BRINGS ALL THREE WINDOWS UP",
               "kind": "overload",
               "damage": 4,
               "recordable": false,
@@ -543,7 +543,7 @@
           "severeIntents": [
             {
               "id": "hall:standing",
-              "label": "THE ROW BEHIND YOU STANDS",
+              "label": "APPARITION 02 STANDS WITH THE CHAIR ATTACHED",
               "kind": "conceal",
               "damage": 2,
               "recordable": false,
@@ -552,7 +552,7 @@
             },
             {
               "id": "hall:stack",
-              "label": "THE WHOLE HOUSE COMES UP AT ONCE",
+              "label": "APPARITION 03 BRINGS ALL THREE WINDOWS UP",
               "kind": "overload",
               "damage": 4,
               "recordable": false,
@@ -575,7 +575,7 @@
           "deadAirIntents": [
             {
               "id": "hall:stack",
-              "label": "THE WHOLE HOUSE COMES UP AT ONCE",
+              "label": "APPARITION 03 BRINGS ALL THREE WINDOWS UP",
               "kind": "overload",
               "damage": 4,
               "recordable": false,
@@ -585,7 +585,7 @@
             },
             {
               "id": "hall:standing",
-              "label": "THE ROW BEHIND YOU STANDS",
+              "label": "APPARITION 02 STANDS WITH THE CHAIR ATTACHED",
               "kind": "conceal",
               "damage": 2,
               "recordable": false,

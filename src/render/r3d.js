@@ -75,6 +75,8 @@ let whitePointScaleOverride=null;
 // the look profile decides, which is the ordinary case.
 let lightingScreenId=null;
 let screenOverrideId=null;
+let windowGeometryMotion=false;
+let windowGeometryResizePending=false;
 const HUSH_AMBIENT_COLOR=new Float32Array([.26,.76,.54]);
 
 export function r3dSetRenderScale(value = 1) {
@@ -2769,7 +2771,7 @@ void main(){
 
 // ── GL plumbing ──────────────────────────────────────────────────────────────
 let gl = null, canvas = null;
-let progRD, progWater, progMarch, progPost, progDepth, progPixelMesh, progDatamosh, progTextSpace, progCopy, progProjection;
+let progRD, progWater, progMarch, progPost, progDepth, progPixelMesh, progDatamosh, progSourceFault, progTextSpace, progCopy, progProjection;
 // How frightened he is, 0..1. main.js owns the number; the post pass spends it.
 let fearLevel = 0;
 let nightSeed=0.37;
@@ -2987,6 +2989,8 @@ let markTex=null;
 let meshTexA=null, meshTexB=null, meshFboA=null, meshFboB=null, meshFlip=false;
 let datamoshSourceTex=null,datamoshSourceFbo=null,datamoshTexA=null,datamoshTexB=null,datamoshFboA=null,datamoshFboB=null,datamoshFlip=false;
 let datamoshActive=false,datamoshProgress=0,datamoshReducedMotion=false,lastPostSourceFbo=null;
+let sourceFaultTexA=null,sourceFaultTexB=null,sourceFaultFboA=null,sourceFaultFboB=null,sourceFaultFlip=false,sourceFaultWarm=false;
+let sourceFaultState={active:false,nvme:0,ps2:0,transition:0,seed:0,slot:0,reduceMotion:false,flashMode:'full'};
 let surfAlbedoTex=null, surfNormalTex=null, surfMaterialTex=null, surfDreamTex=null, surfDreamStageTex=null, anisoExt=null, anisoMax=1;
 // The engraving, derived from each generated tile as it arrives (see
 // render/mark-field.js). It is a strict parallel of the dream arrays — same
@@ -3838,6 +3842,10 @@ let yaw = 0, yawTarget = 0, pitch = 0, pitchTarget = 0;
 // right answer to that; distorting the ring to hide it is not.
 let planYaw = 0, planYawTarget = 0;
 let camX = 0, camZ = 0, camY = EYE_METERS / CELL;
+// The peek. A lateral offset on the EYE, in cells, eased so the head moves like
+// a head. main.js clamps it against the geometry (game/cover.js) and hands the
+// clamped value down; nothing in here decides how far you may lean.
+let leanEase = 0;
 let lastT = 0;
 let fogOrigin = [0, 0];
 const marchUniformCache=new Map();
@@ -4008,7 +4016,8 @@ function drawTextSpace(texture,now,{torchPower=0,sourceTorchMode=0}={}) {
   gl.drawArrays(gl.TRIANGLES, 0, 3);
   gl.drawBuffers([gl.COLOR_ATTACHMENT0,gl.COLOR_ATTACHMENT1]);
   pixelMeshStatus.enabled = false;
-  const resolved=runDatamoshPass(sceneTex,now);
+  const faulted=runSourceFaultPass(sceneTex,now);
+  const resolved=runDatamoshPass(faulted,now);
   presentTexture(resolved);
   lastPostSourceFbo = sceneFbo;
 }
@@ -4085,6 +4094,82 @@ function runDatamoshPass(towerTex,now){
   gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,previous||datamoshSourceTex);gl.uniform1i(u('uPrevious'),2);
   gl.uniform2f(u('uResolution'),uniforms.sceneW,uniforms.sceneH);gl.uniform1f(u('uProgress'),datamoshProgress);gl.uniform1f(u('uTime'),now);gl.uniform1f(u('uReducedMotion'),datamoshReducedMotion?1:0);gl.uniform1f(u('uSourceEmergency'),sourceEmergencyStrength);gl.uniform1f(u('uSourceWhiteout'),sourceWhiteoutStrength);
   gl.drawArrays(gl.TRIANGLES,0,3);gl.bindFramebuffer(gl.FRAMEBUFFER,null);return dstTex;
+}
+
+const SOURCE_FAULT_FRAG=`#version 300 es
+precision highp float;
+uniform sampler2D uCurrent;
+uniform sampler2D uPrevious;
+uniform vec2 uResolution;
+uniform float uNvme;
+uniform float uPs2;
+uniform float uTransition;
+uniform float uSeed;
+uniform float uSlot;
+uniform float uReduceMotion;
+uniform int uFlashMode;
+out vec4 outColor;
+float hash21(vec2 p){p=fract(p*vec2(.1031,.1030));p+=dot(p,p.yx+33.33);return fract((p.x+p.y)*p.x);}
+void main(){
+  vec2 uv=gl_FragCoord.xy/uResolution;
+  vec2 centred=uv-.5;
+  float angle=atan(centred.y,centred.x);
+  float wedgeId=floor((angle+3.141593)*3.82);
+  float wedgeHash=hash21(vec2(wedgeId,uSlot+uSeed));
+  float wedgeGate=step(1.0-uPs2*.58,wedgeHash);
+  vec2 ps2uv=centred;
+  float stretch=1.0+(wedgeHash-.42)*uPs2*.52*wedgeGate;
+  ps2uv.x*=stretch;
+  ps2uv.y*=1.0-(wedgeHash-.5)*uPs2*.34*wedgeGate;
+  ps2uv.x+=(wedgeHash-.5)*uPs2*.095*wedgeGate*(1.0-uReduceMotion);
+  ps2uv=clamp(ps2uv+.5,vec2(0.001),vec2(.999));
+
+  vec2 sector=floor(gl_FragCoord.xy/vec2(116.0,48.0));
+  float cell=hash21(sector+vec2(uSlot*5.3,uSeed));
+  float band=hash21(vec2(floor(gl_FragCoord.y/13.0),uSlot+uSeed*.17));
+  float broken=step(1.0-uNvme*.55,cell);
+  vec2 nvmeUv=ps2uv;
+  nvmeUv.x+=(cell-.5)*uNvme*.18*broken;
+  nvmeUv.y+=(band-.5)*uNvme*.065*step(1.0-uNvme*.28,band);
+  nvmeUv=clamp(nvmeUv,vec2(.001),vec2(.999));
+  float held=max(broken,step(1.0-uNvme*.40,hash21(sector.yx+uSeed+8.7)));
+  vec3 current=texture(uCurrent,nvmeUv).rgb;
+  vec3 previous=texture(uPrevious,nvmeUv+vec2((cell-.5)*.025,0.0)).rgb;
+  vec3 color=mix(current,previous,held);
+
+  float flatField=step(1.0-uPs2*.16,hash21(vec2(wedgeId,uSlot*.31+uSeed+51.0)))*wedgeGate;
+  vec3 fieldColor=mix(vec3(.17,.15,.20),vec3(.46,.08,.37),step(.55,wedgeHash));
+  color=mix(color,fieldColor,flatField*(.42+.35*uTransition));
+  float dropout=step(1.0-uNvme*.075,hash21(sector+vec2(23.0,uSlot+uSeed)));
+  float hard=step(1.0-uNvme*.025,hash21(sector.yx+vec2(91.0,uSlot+uSeed)));
+  color=mix(color,vec3(.002,.003,.009),dropout);
+  if(hard>.5&&uFlashMode==0)color=vec3(.94,.96,1.0);
+  else if(hard>.5&&uFlashMode==1)color=vec3(.09,.10,.25);
+  else if(hard>.5&&uFlashMode==2)color=vec3(.002,.003,.009);
+  outColor=vec4(color,1.0);
+}`;
+
+export function r3dSetSourceFault(value=0){
+  if(!value||value.active===false){sourceFaultState={active:false,nvme:0,ps2:0,transition:0,seed:0,slot:0,reduceMotion:false,flashMode:'full'};sourceFaultWarm=false;return sourceFaultState;}
+  sourceFaultState={
+    active:true,nvme:Math.max(0,Math.min(1,Number(value.nvme)||0)),ps2:Math.max(0,Math.min(1,Number(value.ps2)||0)),
+    transition:Math.max(0,Math.min(1,Number(value.transition)||0)),seed:Number(value.seed)||0,slot:Math.max(0,Math.floor(Number(value.slot)||0)),
+    reduceMotion:!!value.reduceMotion,flashMode:['full','reduced','off'].includes(value.flashMode)?value.flashMode:'full',
+  };
+  return sourceFaultState;
+}
+export function r3dSourceFaultStatus(){return{...sourceFaultState,warm:sourceFaultWarm};}
+function runSourceFaultPass(inputTex,now){
+  if(!sourceFaultState.active||!progSourceFault||!sourceFaultTexA)return inputTex;
+  const dstFbo=sourceFaultFlip?sourceFaultFboA:sourceFaultFboB,dstTex=sourceFaultFlip?sourceFaultTexA:sourceFaultTexB;
+  const history=sourceFaultWarm?(sourceFaultFlip?sourceFaultTexB:sourceFaultTexA):inputTex;
+  sourceFaultFlip=!sourceFaultFlip;
+  gl.useProgram(progSourceFault);gl.bindFramebuffer(gl.FRAMEBUFFER,dstFbo);gl.viewport(0,0,uniforms.sceneW,uniforms.sceneH);
+  const u=(name)=>gl.getUniformLocation(progSourceFault,name);
+  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,inputTex);gl.uniform1i(u('uCurrent'),0);
+  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,history);gl.uniform1i(u('uPrevious'),1);
+  gl.uniform2f(u('uResolution'),uniforms.sceneW,uniforms.sceneH);gl.uniform1f(u('uNvme'),sourceFaultState.nvme);gl.uniform1f(u('uPs2'),sourceFaultState.ps2);gl.uniform1f(u('uTransition'),sourceFaultState.transition);gl.uniform1f(u('uSeed'),sourceFaultState.seed);gl.uniform1f(u('uSlot'),sourceFaultState.slot);gl.uniform1f(u('uReduceMotion'),sourceFaultState.reduceMotion?1:0);gl.uniform1i(u('uFlashMode'),sourceFaultState.flashMode==='off'?2:sourceFaultState.flashMode==='reduced'?1:0);
+  gl.drawArrays(gl.TRIANGLES,0,3);gl.bindFramebuffer(gl.FRAMEBUFFER,null);sourceFaultWarm=true;return dstTex;
 }
 
 // ── the possession burst ────────────────────────────────────────────────────
@@ -4378,6 +4463,8 @@ export function r3dInit(mapEl) {
   progPost = program(POST_FRAG);
   progDepth = program(DEPTH_FRAG);
   progDatamosh = program(DATAMOSH_FRAG);
+  progSourceFault = program(SOURCE_FAULT_FRAG);
+  canvas.dataset.sourceFaultShader='ready';
   progCopy = program(COPY_FRAG);
   progProjection = program(PROJECTION_FRAG);
   try { progBurst = program(BURST_FRAG); } catch (_) { progBurst = null; }
@@ -4471,6 +4558,7 @@ export function r3dInit(mapEl) {
 }
 
 function resize() {
+  if(windowGeometryMotion){windowGeometryResizePending=true;return;}
   const w = Math.max(1, canvas.parentElement.clientWidth);
   const h = Math.max(1, canvas.parentElement.clientHeight);
   canvas.width = Math.round(w * devicePixelRatio);
@@ -4484,6 +4572,7 @@ function resize() {
     gl.deleteFramebuffer(meshFboA); gl.deleteFramebuffer(meshFboB);
   }
   for(const item of [[datamoshSourceTex,datamoshSourceFbo],[datamoshTexA,datamoshFboA],[datamoshTexB,datamoshFboB]]){if(item[0])gl.deleteTexture(item[0]);if(item[1])gl.deleteFramebuffer(item[1]);}
+  for(const item of [[sourceFaultTexA,sourceFaultFboA],[sourceFaultTexB,sourceFaultFboB]]){if(item[0])gl.deleteTexture(item[0]);if(item[1])gl.deleteFramebuffer(item[1]);}
   if(burstOutTex){gl.deleteTexture(burstOutTex);gl.deleteFramebuffer(burstOutFbo);}
   burstOutTex=makeMeshTex(sw,sh);burstOutFbo=makeFbo(burstOutTex);
   // Preserve ray distance beyond eight alpha bits. The acquisition pass pins
@@ -4503,6 +4592,7 @@ function resize() {
   meshFboB = makeFbo(meshTexB);
   datamoshSourceTex=makeMeshTex(sw,sh);datamoshSourceFbo=makeFbo(datamoshSourceTex);
   datamoshTexA=makeMeshTex(sw,sh);datamoshTexB=makeMeshTex(sw,sh);datamoshFboA=makeFbo(datamoshTexA);datamoshFboB=makeFbo(datamoshTexB);
+  sourceFaultTexA=makeMeshTex(sw,sh);sourceFaultTexB=makeMeshTex(sw,sh);sourceFaultFboA=makeFbo(sourceFaultTexA);sourceFaultFboB=makeFbo(sourceFaultTexB);sourceFaultFlip=false;sourceFaultWarm=false;
   meshFlip = false;
   lastPixelMeshAt = 0;
   pixelMeshStatus.sceneWidth = sw;
@@ -4511,6 +4601,20 @@ function resize() {
   P3.props3dResize(sw, sh, { shadowMapSize: RENDER_SCALE < .75 ? 512 : 1024 });
   uniforms.sceneW = sw; uniforms.sceneH = sh;
   r3dResetVfdMemory();
+}
+
+// Native window choreography can deliver thirty resize events per second. A
+// normal resize rebuilds every scene/mesh/datamosh framebuffer, so doing that
+// for every interpolation tick stalls the render stack. Keep one logical image
+// during the tween (CSS presents it in the changing frame), then reconcile the
+// native size exactly once when the cue settles.
+export function r3dSetWindowGeometryMotion(active=false){
+  windowGeometryMotion=!!active;
+  if(!windowGeometryMotion&&windowGeometryResizePending){
+    windowGeometryResizePending=false;
+    resize();
+  }
+  return windowGeometryMotion;
 }
 
 // ── Facing / input hooks (main.js calls these in 3d mode) ────────────────────
@@ -4540,6 +4644,9 @@ export function r3dLook(yawDelta=0,pitchDelta=0) {
   return {yaw:yawTarget,pitch:pitchTarget,facing};
 }
 export function r3dLookAngles(){return{yaw:yawTarget,pitch:pitchTarget,facing};}
+// Where the eye actually ended up, for the pixel harness: the lean is eased, so
+// the camera lags the requested value and only this can say where it is.
+export function r3dEyePoint(){return{x:camX,y:camY,z:camZ,lean:leanEase};}
 // Project a physical world point (metres) through the same basis and 0.95 FOV
 // used by the raymarcher. UI attached to architecture can then follow the thing
 // itself while the player looks around instead of being painted at screen centre.
@@ -4861,7 +4968,18 @@ export function r3dFrame(state) {
   // Spend a slice of this frame on any engraving still owed. Doing it before
   // the scene keeps the cost inside the frame's own budget rather than landing
   // on top of an already-long one.
-  drainMarkQueue();
+  //
+  // NOT IN THE BRANCHES THAT NEVER DRAW THE BUILDING. main.js already drains
+  // once per frame outside the world guard, so banks keep streaming through the
+  // credits and the menu; this second drain exists to put the cost in the frame
+  // that spends it. But the horizon and the text space both return before the
+  // march below and neither ever samples surfMarkTex — so out there this was a
+  // whole second budget spent engraving something nobody is looking at.
+  //
+  // Two drains, two budgets, one frame, and the budget is checked AFTER a tile
+  // rather than before: a ~6ms tile does not trip an 8ms check, so each call can
+  // run to ~12ms and the pair to ~24ms. That is the frame, not a slice of it.
+  if (!state.textSpace && !horizonState.active) drainMarkQueue();
 
   // main.js supplies a frame-interpolated physical player position. The camera
   // is that position—never a follower with its own lag or acceleration state.
@@ -4878,6 +4996,25 @@ export function r3dFrame(state) {
   const planYawDelta = Math.atan2(Math.sin(planYawTarget - planYaw), Math.cos(planYawTarget - planYaw));
   planYaw += planYawDelta * (1 - Math.exp(-dt * 9));
   const worldYaw = yaw + planYaw;
+  // LEANING OUT OF COVER MOVES THE EYE AND NOTHING ELSE.
+  //
+  // It goes in here, after the camera has been placed from state.px/py and after
+  // the VFD travel above has been measured off the BODY. Doing it in main.js by
+  // shifting the rendered point instead would be quietly wrong: that same point
+  // keys the render-slice cache and the prop-group rebuild, and feeds the audio
+  // listener, so a man leaning his head would reload the world and walk his own
+  // ears across the room.
+  //
+  // The offset is along the camera's own right vector — the same `rgt` the march
+  // builds at vec3(cos yaw, 0, sin yaw) — so it propagates for free to the
+  // raymarch, the prop and shadow passes, pixel-mesh, and r3dProjectWorld, which
+  // is why world-anchored HUD tracks the lean without being told.
+  const leanGoal = Number(state.lean) || 0;
+  leanEase += (leanGoal - leanEase) * (1 - Math.exp(-dt * 11));
+  if (leanEase) {
+    camX += leanEase * Math.cos(worldYaw);
+    camZ += leanEase * Math.sin(worldYaw);
+  }
   pitch += (pitchTarget - pitch) * (1 - Math.exp(-dt * 14));
   // Eye height above whatever floor you are standing on. Eased, so a stair is
   // a climb rather than a series of teleports.
@@ -5172,7 +5309,8 @@ export function r3dFrame(state) {
   gl.drawArrays(gl.TRIANGLES, 0, 3);
 
   const pixelSourceTex = runPixelMeshPass(state, now);
-  const postSourceTex = runDatamoshPass(pixelSourceTex,now);
+  const faultedSourceTex = runSourceFaultPass(pixelSourceTex,now);
+  const postSourceTex = runDatamoshPass(faultedSourceTex,now);
 
   // post upscale to screen
   gl.useProgram(progPost);

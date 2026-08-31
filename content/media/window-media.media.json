@@ -1,0 +1,509 @@
+{
+  "schemaVersion": 1,
+  "id": "window-media",
+  "generatedBy": "scripts/build-window-media.mjs",
+  "networkAtRuntime": false,
+  "audioPolicy": "silent",
+  "assets": [
+    {
+      "id": "flowers-seb",
+      "kind": "video",
+      "path": "window-media/flowers-seb.webm",
+      "aspectRatio": 1.7777777777777777,
+      "width": 640,
+      "height": 360,
+      "fps": 15,
+      "trim": {
+        "startSeconds": 0,
+        "durationSeconds": 5,
+        "loopDissolveSeconds": 0.25
+      },
+      "sensitivity": "none",
+      "source": {
+        "file": "dmosh-bloom_flowers-seb.mov",
+        "sha256": "26816cc6c001b0c63c7c0d9a92d1e0650e659b11393c3f9daf419d16f955125f",
+        "title": "Datamoshed flower footage",
+        "creator": "Sebastian Suarez-Solis",
+        "license": "Project-owned",
+        "url": null
+      },
+      "derivatives": {
+        "webm": {
+          "path": "window-media/flowers-seb.webm",
+          "codec": "vp9",
+          "sha256": "b78bb55cff6b499f00d86997875796caf5ac9984dc69a05c4d41f43e63c2282f",
+          "bytes": 984226
+        },
+        "mp4": {
+          "path": "window-media/flowers-seb.mp4",
+          "codec": "h264",
+          "sha256": "ffb9a1d86c8be9279f90d3d4f6713fa1473f5586eb801c78ae1f0cac294147b6",
+          "bytes": 1166005
+        },
+        "poster": {
+          "path": "window-media/flowers-seb.png",
+          "codec": "png",
+          "sha256": "370454a400916939a1006cea539bc208dd400ad01498309656e05f5390481d03",
+          "bytes": 398192
+        }
+      },
+      "modifications": [
+        "trimmed",
+        "loop-dissolved",
+        "resized",
+        "silent transcode",
+        "color processed"
+      ]
+    },
+    {
+      "id": "sunflower-datamosh",
+      "kind": "video",
+      "path": "window-media/sunflower-datamosh.webm",
+      "aspectRatio": 1.7777777777777777,
+      "width": 640,
+      "height": 360,
+      "fps": 15,
+      "trim": {
+        "startSeconds": 18,
+        "durationSeconds": 12,
+        "loopDissolveSeconds": 0.25
+      },
+      "sensitivity": "none",
+      "source": {
+        "file": "dmosh-bloom-girasol.mp4",
+        "sha256": "5e13049ffd45dbb384d9595eaf14288895333dea864dcea5481eb402302491e7",
+        "title": "Polinización de un girasol",
+        "creator": "Oscar Gil Fernández",
+        "license": "CC BY 2.0",
+        "url": "https://commons.wikimedia.org/wiki/File:Polinizaci%C3%B3n_de_un_girasol.webm"
+      },
+      "derivatives": {
+        "webm": {
+          "path": "window-media/sunflower-datamosh.webm",
+          "codec": "vp9",
+          "sha256": "10cedf4337e6bf9d5bf4dda5160fd05f6165a2439779df592cc15c6d510d14a7",
+          "bytes": 1288929
+        },
+        "mp4": {
+          "path": "window-media/sunflower-datamosh.mp4",
+          "codec": "h264",
+          "sha256": "0865016d60279373c303b5b232ec7d819aa7669fcb9dd3526d5262b5540b0c6d",
+          "bytes": 1677211
+        },
+        "poster": {
+          "path": "window-media/sunflower-datamosh.png",
+          "codec": "png",
+          "sha256": "693208de6f654363c4f0f538ad8eba08bc88eb2869311ca49e8db73544e710da",
+          "bytes": 381414
+        }
+      },
+      "modifications": [
+        "datamoshed derivative",
+        "trimmed",
+        "loop-dissolved",
+        "resized",
+        "silent transcode",
+        "color processed"
+      ]
+    },
+    {
+      "id": "bellringers-datamosh",
+      "kind": "video",
+      "path": "window-media/bellringers-datamosh.webm",
+      "aspectRatio": 1.7777777777777777,
+      "width": 640,
+      "height": 360,
+      "fps": 15,
+      "trim": {
+        "startSeconds": 0,
+        "durationSeconds": 12,
+        "loopDissolveSeconds": 0.25
+      },
+      "sensitivity": "none",
+      "source": {
+        "file": "dmosh-bloom-doppio.mp4",
+        "sha256": "27602a5787cca75695589f075ed080bf5493a77853263b4bb1b9bba027b9bb5e",
+        "title": "Bolognese bellringing doppio a cappio",
+        "creator": "Renato Morselli",
+        "license": "CC BY 3.0",
+        "url": "https://commons.wikimedia.org/wiki/File:Bolognese_bellringing_doppio_a_cappio.ogg"
+      },
+      "derivatives": {
+        "webm": {
+          "path": "window-media/bellringers-datamosh.webm",
+          "codec": "vp9",
+          "sha256": "0355d0ccbec2e722a525360856181d6e0492b5787bba15e4a4232f534f32b576",
+          "bytes": 309166
+        },
+        "mp4": {
+          "path": "window-media/bellringers-datamosh.mp4",
+          "codec": "h264",
+          "sha256": "dded6b5582aad1b8a33ea266e4ee4d4615a85862c94f61581d96af4d5b1585cd",
+          "bytes": 381260
+        },
+        "poster": {
+          "path": "window-media/bellringers-datamosh.png",
+          "codec": "png",
+          "sha256": "586214c5abf68371b8be030fd9f543e9010566eecd1031d7f6841ee7fc0a8b78",
+          "bytes": 69683
+        }
+      },
+      "modifications": [
+        "datamoshed derivative",
+        "trimmed",
+        "loop-dissolved",
+        "resized",
+        "silent transcode",
+        "color processed"
+      ]
+    },
+    {
+      "id": "cathedral",
+      "kind": "video",
+      "path": "window-media/cathedral.webm",
+      "aspectRatio": 1.7777777777777777,
+      "width": 640,
+      "height": 360,
+      "fps": 15,
+      "trim": {
+        "startSeconds": 34,
+        "durationSeconds": 13,
+        "loopDissolveSeconds": 0.25
+      },
+      "sensitivity": "none",
+      "source": {
+        "file": "Bristol_Cathedral_interior_(4K,_60_FPS,_2023.08.12).webm",
+        "sha256": "95f17cde6b9e2dd5dddc71621c34043aee4c0ff395d4b51ab17e94d93baa4f61",
+        "title": "Bristol Cathedral interior (4K, 60 FPS, 2023.08.12)",
+        "creator": "George Si",
+        "license": "CC BY 3.0",
+        "url": "https://commons.wikimedia.org/wiki/File:Bristol_Cathedral_interior_%284K,_60_FPS,_2023.08.12%29.webm"
+      },
+      "derivatives": {
+        "webm": {
+          "path": "window-media/cathedral.webm",
+          "codec": "vp9",
+          "sha256": "76fad26b2a49899ddb0b97a32a11e239860352c9e79d030fbf53a9bc67d68f65",
+          "bytes": 1254290
+        },
+        "mp4": {
+          "path": "window-media/cathedral.mp4",
+          "codec": "h264",
+          "sha256": "ab8f3c20dfb1cf3f3493dc0185ee2fceb92ad8ce6cb96d307dd404172024b670",
+          "bytes": 1528333
+        },
+        "poster": {
+          "path": "window-media/cathedral.png",
+          "codec": "png",
+          "sha256": "dcc8ba336b118c03092a3cc58d3268658187f49e992364c58fe9fb9dc95e8ade",
+          "bytes": 354559
+        }
+      },
+      "modifications": [
+        "trimmed",
+        "loop-dissolved",
+        "resized",
+        "silent transcode",
+        "color processed"
+      ]
+    },
+    {
+      "id": "demolition",
+      "kind": "video",
+      "path": "window-media/demolition.webm",
+      "aspectRatio": 1.7777777777777777,
+      "width": 640,
+      "height": 360,
+      "fps": 15,
+      "trim": {
+        "startSeconds": 8,
+        "durationSeconds": 12,
+        "loopDissolveSeconds": 0.25
+      },
+      "sensitivity": "none",
+      "source": {
+        "file": "Urheilutalo_Oulu_20221216.webm",
+        "sha256": "b5187ee659ab82e7db905a154ec3b0de03a2ee686faa3cc527ddf41325666261",
+        "title": "Urheilutalo Oulu 20221216",
+        "creator": "Estormiz",
+        "license": "CC0-1.0",
+        "url": "https://commons.wikimedia.org/wiki/File:Urheilutalo_Oulu_20221216.webm"
+      },
+      "derivatives": {
+        "webm": {
+          "path": "window-media/demolition.webm",
+          "codec": "vp9",
+          "sha256": "03d86752cf28ed3fd6157a083440486320c69cddcf24592b39dcb023f7acb373",
+          "bytes": 1380864
+        },
+        "mp4": {
+          "path": "window-media/demolition.mp4",
+          "codec": "h264",
+          "sha256": "04bad0cbacb6151bd2de65b0e77efdcb9b984d8202526c6e559a7ed52ddb8de0",
+          "bytes": 1454581
+        },
+        "poster": {
+          "path": "window-media/demolition.png",
+          "codec": "png",
+          "sha256": "d705b32e0252ce436d17b9f5b6aba3f086bda9755469242a0b506e639499e81e",
+          "bytes": 314380
+        }
+      },
+      "modifications": [
+        "trimmed",
+        "loop-dissolved",
+        "resized",
+        "silent transcode",
+        "color processed"
+      ]
+    },
+    {
+      "id": "clouds",
+      "kind": "video",
+      "path": "window-media/clouds.webm",
+      "aspectRatio": 1.7777777777777777,
+      "width": 640,
+      "height": 360,
+      "fps": 15,
+      "trim": {
+        "startSeconds": 2,
+        "durationSeconds": 12,
+        "loopDissolveSeconds": 0.25
+      },
+      "sensitivity": "none",
+      "source": {
+        "file": "clouds.mp4",
+        "sha256": "f3ff533fa7a70aac988fdf1243b8fbd83e96ccb820db623d56616882b8db4823",
+        "title": "Clouds timelapse",
+        "creator": "John Fowler",
+        "license": "CC BY 2.0",
+        "url": "https://commons.wikimedia.org/wiki/File:Clouds_timelapse.ogv"
+      },
+      "derivatives": {
+        "webm": {
+          "path": "window-media/clouds.webm",
+          "codec": "vp9",
+          "sha256": "06a0c77a7ded8d2db0413c1db09512e455f4ad882d7a1e2bc6149b94bc13d02c",
+          "bytes": 358504
+        },
+        "mp4": {
+          "path": "window-media/clouds.mp4",
+          "codec": "h264",
+          "sha256": "a48e9054adc2fe8efc7e6ccf8318d2e82b3f4a1e8b261563ca1c7b20b7729c26",
+          "bytes": 572418
+        },
+        "poster": {
+          "path": "window-media/clouds.png",
+          "codec": "png",
+          "sha256": "37c92c730e42e73800e3b32a71e48cf29405cab02e4b763dca4904774cc29173",
+          "bytes": 150710
+        }
+      },
+      "modifications": [
+        "trimmed",
+        "loop-dissolved",
+        "resized",
+        "silent transcode",
+        "color processed"
+      ]
+    },
+    {
+      "id": "eclipse",
+      "kind": "video",
+      "path": "window-media/eclipse.webm",
+      "aspectRatio": 1.7777777777777777,
+      "width": 640,
+      "height": 360,
+      "fps": 15,
+      "trim": {
+        "startSeconds": 32,
+        "durationSeconds": 12,
+        "loopDissolveSeconds": 0.25
+      },
+      "sensitivity": "none",
+      "source": {
+        "file": "Partial_Eclipse,_UK_10-06-21.webm",
+        "sha256": "5977ed0e70247a763aa63908a151da5f915f09684a8d9cef5f30acbd113186cb",
+        "title": "Partial Eclipse, UK 10-06-21",
+        "creator": "Adrian Parsons",
+        "license": "CC BY 3.0",
+        "url": "https://commons.wikimedia.org/wiki/File:Partial_Eclipse,_UK_10-06-21.webm"
+      },
+      "derivatives": {
+        "webm": {
+          "path": "window-media/eclipse.webm",
+          "codec": "vp9",
+          "sha256": "ea8a2ecade69251ec0b194ab6d6283ae5c069ae7952fbfe1226d2ccd2979ef24",
+          "bytes": 88471
+        },
+        "mp4": {
+          "path": "window-media/eclipse.mp4",
+          "codec": "h264",
+          "sha256": "061b2225e78de800e73914beda6f1b75f651af07090b05dbe9e2faee6888cf47",
+          "bytes": 265729
+        },
+        "poster": {
+          "path": "window-media/eclipse.png",
+          "codec": "png",
+          "sha256": "06d5db2aad5b05e1873d6398e167c4be110d34ffab0d7c488a4a7188452b573d",
+          "bytes": 168190
+        }
+      },
+      "modifications": [
+        "trimmed",
+        "loop-dissolved",
+        "resized",
+        "silent transcode",
+        "color processed"
+      ]
+    },
+    {
+      "id": "pollination",
+      "kind": "video",
+      "path": "window-media/pollination.webm",
+      "aspectRatio": 1.7777777777777777,
+      "width": 640,
+      "height": 360,
+      "fps": 15,
+      "trim": {
+        "startSeconds": 2,
+        "durationSeconds": 12,
+        "loopDissolveSeconds": 0.25
+      },
+      "sensitivity": "none",
+      "source": {
+        "file": "Polinización_de_un_girasol.webm",
+        "sha256": "e65b9caa3d6d252b668db4b2feb5f7e947b6a354dfb60acd4317c5b3bdefa303",
+        "title": "Polinización de un girasol",
+        "creator": "Oscar Gil Fernández",
+        "license": "CC BY 2.0",
+        "url": "https://commons.wikimedia.org/wiki/File:Polinizaci%C3%B3n_de_un_girasol.webm"
+      },
+      "derivatives": {
+        "webm": {
+          "path": "window-media/pollination.webm",
+          "codec": "vp9",
+          "sha256": "51118899331e50534e4bf9c7eb67828d413c0295f004d41b424d5631177ebcc3",
+          "bytes": 751983
+        },
+        "mp4": {
+          "path": "window-media/pollination.mp4",
+          "codec": "h264",
+          "sha256": "c53922a056e78ef09e2dc785587536044301059345433695f6cdc9f145628a91",
+          "bytes": 957401
+        },
+        "poster": {
+          "path": "window-media/pollination.png",
+          "codec": "png",
+          "sha256": "a33298be6350c2544d7a2985e3f778e27884daecbc53ccb8f538ac576db963a1",
+          "bytes": 374882
+        }
+      },
+      "modifications": [
+        "trimmed",
+        "loop-dissolved",
+        "resized",
+        "silent transcode",
+        "color processed"
+      ]
+    },
+    {
+      "id": "eye-s3",
+      "kind": "video",
+      "path": "window-media/eye-s3.webm",
+      "aspectRatio": 1.3333333333333333,
+      "width": 320,
+      "height": 240,
+      "fps": 12,
+      "trim": {
+        "startSeconds": 8,
+        "durationSeconds": 10,
+        "loopDissolveSeconds": 0.25
+      },
+      "sensitivity": "clinical",
+      "source": {
+        "file": "Zoonotic-helminths-affecting-the-human-eye-1756-3305-4-41-S3.ogv",
+        "sha256": "48168e33e15787ec0f08e3fa58048775f3e7b8a3a9b964ccb2455ec246a2f3c4",
+        "title": "Zoonotic helminths affecting the human eye S3",
+        "creator": "Otranto and Eberhard",
+        "license": "CC BY 2.0",
+        "url": "https://commons.wikimedia.org/wiki/File:Zoonotic-helminths-affecting-the-human-eye-1756-3305-4-41-S3.ogv"
+      },
+      "derivatives": {
+        "webm": {
+          "path": "window-media/eye-s3.webm",
+          "codec": "vp9",
+          "sha256": "6293b73f9cd02bba0ddb0bfd8c888a19f38036dfdaabb1c077045c6e5e06af19",
+          "bytes": 115044
+        },
+        "mp4": {
+          "path": "window-media/eye-s3.mp4",
+          "codec": "h264",
+          "sha256": "f96b3480300fe8803891afa425010ecacf6f339ab91e8374a585d3a58ab37318",
+          "bytes": 180568
+        },
+        "poster": {
+          "path": "window-media/eye-s3.png",
+          "codec": "png",
+          "sha256": "d8c83310b7b0ac8d0d5fe5f7cf44fda625d7ca697fd144f10391bc34f25800b6",
+          "bytes": 6778
+        }
+      },
+      "modifications": [
+        "trimmed",
+        "loop-dissolved",
+        "silent transcode",
+        "color processed"
+      ]
+    },
+    {
+      "id": "eye-s5",
+      "kind": "video",
+      "path": "window-media/eye-s5.webm",
+      "aspectRatio": 1.3333333333333333,
+      "width": 320,
+      "height": 240,
+      "fps": 12,
+      "trim": {
+        "startSeconds": 3,
+        "durationSeconds": 12,
+        "loopDissolveSeconds": 0.25
+      },
+      "sensitivity": "clinical",
+      "source": {
+        "file": "Zoonotic-helminths-affecting-the-human-eye-1756-3305-4-41-S5.ogv",
+        "sha256": "64cad3e24ff22774e12d72958a0d3cb6e7b66d15427902c607226aa9dadc0405",
+        "title": "Zoonotic helminths affecting the human eye S5",
+        "creator": "Otranto and Eberhard; video courtesy Dr. W.E. Burr",
+        "license": "CC BY 2.0",
+        "url": "https://commons.wikimedia.org/wiki/File:Zoonotic-helminths-affecting-the-human-eye-1756-3305-4-41-S5.ogv"
+      },
+      "derivatives": {
+        "webm": {
+          "path": "window-media/eye-s5.webm",
+          "codec": "vp9",
+          "sha256": "3e327fbebcbe53143bbba1c00b7b960f0675c0c4ca128a7cf36e5cb90b699a28",
+          "bytes": 104533
+        },
+        "mp4": {
+          "path": "window-media/eye-s5.mp4",
+          "codec": "h264",
+          "sha256": "9f5f1da4d42619b56ce262a67ce14189b625b38ac6bfab2baafc813cfe3d1958",
+          "bytes": 197925
+        },
+        "poster": {
+          "path": "window-media/eye-s5.png",
+          "codec": "png",
+          "sha256": "cf03f78babf046d55d80ebb12c61d2ebbbe87c697f21e90c344c65ca4cbe0a86",
+          "bytes": 81676
+        }
+      },
+      "modifications": [
+        "trimmed",
+        "loop-dissolved",
+        "silent transcode",
+        "color processed"
+      ]
+    }
+  ]
+}

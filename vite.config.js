@@ -27,6 +27,7 @@ export default defineConfig({
       input: {
         main: resolve(import.meta.dirname, 'index.html'),
         fireballCast: resolve(import.meta.dirname, 'fireball-cast.html'),
+        windowMedia: resolve(import.meta.dirname, 'window-media.html'),
       },
     },
   }

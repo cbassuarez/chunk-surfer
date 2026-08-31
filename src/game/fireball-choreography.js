@@ -47,6 +47,9 @@ const STEEPNESS = 7.4;
 
 const clamp01 = (value) => Math.max(0, Math.min(1, Number(value) || 0));
 const whole = (value) => Math.max(0, Math.floor(Number(value) || 0));
+const GESTURES=Object.freeze({
+  natatorium:'rise-drift',hall:'seat-align',practice:'retake-loop',chapel:'orbit','source-final':'swarm-recombine',
+});
 
 export function fireballBattleOrdinal(battleId = '') {
   const index = FIREBALL_BATTLE_ORDER.indexOf(String(battleId || ''));
@@ -75,6 +78,7 @@ export function fireballChoreography({ battleId = '', battleOrdinal = null, turn
   const pressure = reducedMotion ? 0 : fireballPressure({ battleId, battleOrdinal, turn });
   return Object.freeze({
     pressure,
+    gesture:GESTURES[battleId]||'rise-drift',
     // How hard they break. 0 is a window that has never heard of you.
     evasion: pressure,
     // How far ahead of the cursor they aim. A still pointer predicts to itself,
@@ -85,8 +89,10 @@ export function fireballChoreography({ battleId = '', battleOrdinal = null, turn
     reach: .55 + pressure * 1.85,
     // Break, then hold. Both grow, but the settle grows faster: the harder the
     // break is to read, the longer you are owed to act on having read it.
-    breakMs: 240 + pressure * 460,
-    settleMs: 300 + pressure * 900,
+    // Exactly one feint, then an authored catch which is never shorter than
+    // 650 ms. The whole exchange fits the 1.15 s outside-flight contract.
+    breakMs: reducedMotion ? 0 : 180 + pressure * 300,
+    settleMs: reducedMotion ? 1150 : 970 - pressure * 300,
     // How much of the movement is the whole shoal moving as one body versus
     // each surface fanning on its own. High cohesion late: by the last fight
     // they are a formation, not four independent nuisances.
@@ -99,7 +105,7 @@ export function fireballChoreography({ battleId = '', battleOrdinal = null, turn
 // swimmers rather than four things that happen to be dodging.
 export function fireballCyclePhase(elapsedSeconds = 0, { breakMs = 240, settleMs = 300 } = {}) {
   const period = Math.max(1, Number(breakMs) || 0) + Math.max(1, Number(settleMs) || 0);
-  const at = (Math.max(0, Number(elapsedSeconds) || 0) * 1000) % period;
+  const at = Math.min(period,Math.max(0, Number(elapsedSeconds) || 0) * 1000);
   const breaking = at < breakMs;
   return Object.freeze({
     breaking,
@@ -108,6 +114,7 @@ export function fireballCyclePhase(elapsedSeconds = 0, { breakMs = 240, settleMs
     // out and coast back rather than snapping between two positions.
     travel: breaking ? Math.sin((at / Math.max(1, breakMs)) * Math.PI) : 0,
     // How long the player still has, for anything that wants to say so.
-    settleLeftMs: breaking ? 0 : period - at,
+    settleLeftMs: breaking ? 0 : Math.max(0,period - at),
+    formationProgress:Math.min(1,at/Math.max(1,Number(breakMs)||1)),
   });
 }

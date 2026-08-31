@@ -42,29 +42,30 @@ test('it is an S, not a ramp: the middle of the night is where it turns', () => 
 
 // The settle is not a mercy that shrinks. The harder the break is to read, the
 // longer the player is owed to act on having read it.
-test('everything gets worse except the chance to answer, which gets better', () => {
+test('difficulty grows in the feint while every committed catch keeps at least 650 ms', () => {
   const first = fireballChoreography({ battleId: 'natatorium', turn: 0 });
   const last = fireballChoreography({ battleId: 'source-final', turn: 12 });
   for (const key of ['evasion', 'senseMs', 'reach', 'breakMs', 'cohesion']) {
     assert.ok(last[key] > first[key], `${key} climbs`);
   }
-  assert.ok(last.settleMs > first.settleMs, 'and so does the window to click in');
-  assert.ok(
-    last.settleMs / last.breakMs > first.settleMs / first.breakMs,
-    'faster than the break does — the shoal gets harder to read, not harder to catch once read',
-  );
+  assert.ok(first.settleMs>=650&&last.settleMs>=650,'the stationary catch floor never shrinks');
+  assert.ok(first.breakMs+first.settleMs<=1150&&last.breakMs+last.settleMs<=1150,'one feint fits the outside flight');
+  assert.equal(first.gesture,'rise-drift');
+  assert.equal(last.gesture,'swarm-recombine');
 });
 
 test('reduced motion opts out of the whole dance', () => {
   const still = fireballChoreography({ battleId: 'source-final', turn: 12, reducedMotion: true });
   assert.equal(still.pressure, 0);
   assert.equal(still.evasion, 0, 'nothing darts');
+  assert.equal(still.breakMs,0);
+  assert.ok(still.settleMs>=650);
 });
 
 // One count for the whole cast: they break together and settle together, which
 // is the difference between a formation and four windows being annoying in
 // parallel.
-test('the cycle always ends in a settle the player can act in', () => {
+test('there is one feint and then a permanent settle the player can act in', () => {
   const dance = fireballChoreography({ battleId: 'source-final', turn: 12 });
   const period = (dance.breakMs + dance.settleMs) / 1000;
   let breaking = 0, settled = 0, peak = 0;
@@ -77,6 +78,10 @@ test('the cycle always ends in a settle the player can act in', () => {
   }
   assert.ok(settled > breaking, 'even at the ceiling there is more settle than break');
   assert.ok(peak > .98, 'and the break reaches full travel in the middle of itself');
+  const longAfter=fireballCyclePhase(period*20,dance);
+  assert.equal(longAfter.settled,true);
+  assert.equal(longAfter.travel,0,'it never loops back into another dodge');
+  assert.equal(longAfter.settleLeftMs,0);
 });
 
 test('the break eases in and out rather than snapping between two places', () => {

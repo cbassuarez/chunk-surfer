@@ -10,6 +10,8 @@ test('main wires recording hallucinations into the secondary HUSH body path', ()
   assert.match(source, /recordingFalseHushBody/);
   assert.match(source, /hushSecondary:renderedHushSecondary/);
   assert.match(source, /recordingHallucinationPropInstances/);
+  assert.match(source, /recordingHallucinationVisualFrame/,
+    'the body card and pose cluster share deterministic motion and glitch timing');
   assert.match(source, /meshForApparitionPose\(poseId\)/,
     'recording hallucinations reuse the authored semantic pose library');
   assert.match(source, /emissive:\[\.70,\.90,1,/,

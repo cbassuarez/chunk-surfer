@@ -9,6 +9,7 @@ import { applyFieldPresentationPolicy, computeHushField, effectiveTorchScale, in
 import { commitMischiefCue, freshMischiefState, normalizeMischiefState, selectMischiefCue } from './hush-mischief.js';
 import { hushAudioPolicyForDifficulty } from './hush-sensory-policy.js';
 import { MONITOR_BAND, monitorBandForDb } from '../audio/monitor.js';
+import { attenuateSourceHushAudioField } from './source-sensory.js';
 
 const nowDefault = () => (typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now());
 
@@ -128,6 +129,9 @@ export function createHushAudioRuntime({
     const hush = publicPresence();
     const operator = playerSpatial?.() || {};
     const ctx = context?.() || {};
+    const presentationGain = Number.isFinite(Number(ctx.presentationGain))
+      ? Math.max(0, Math.min(1, Number(ctx.presentationGain)))
+      : 1;
     const fieldOcclusion = hush.position && operator.position && typeof occlusionDb === 'function'
       ? Math.max(0, Math.min(1, occlusionDb(operator, hush) / 24))
       : 0;
@@ -145,7 +149,12 @@ export function createHushAudioRuntime({
       audition,
       field,
       cooldowns: { mischiefReady: clock() >= mischief.lastCueAt + Math.max(5000, 12000 / Math.max(.2, policy.mischiefFrequency)) },
-      narrative: { enabled: enabled && hush.active, allowMischief: ctx.allowMischief !== false },
+      narrative: {
+        enabled: enabled && hush.active,
+        allowMischief: ctx.allowMischief !== false,
+        // Behind cover it may still want the room. It may not want the man.
+        concealed: !!ctx.concealed,
+      },
       random,
     });
     presence?.setDirectorIntent?.(lastIntent);
@@ -154,7 +163,7 @@ export function createHushAudioRuntime({
     // presence. Re-offering the best hypothesis here every frame used to
     // refresh that coordinate forever, turning memory into omniscience. Intent
     // now shapes gait/hesitation only; a new sound is required to update place.
-    if (lastIntent.kind === 'PLAY') {
+    if (lastIntent.kind === 'PLAY' && presentationGain > .001) {
       const cue = selectMischiefCue({
         context: {
           interest: audition.interest,
@@ -172,7 +181,7 @@ export function createHushAudioRuntime({
       });
       if (cue) {
         const pan = Math.max(-.95, Math.min(.95, (lastIntent.target?.position?.x ?? hush.position?.x ?? 0) - (operator.position?.x ?? 0)) / 12);
-        if (effects?.playMischief?.(cue, { intensity: lastIntent.intensity, pan, random })) {
+        if (effects?.playMischief?.(cue, { intensity: lastIntent.intensity * presentationGain, pan, random })) {
           mischief = commitMischiefCue(mischief, cue, clock());
           onMischief?.({ cue, pan, intensity: lastIntent.intensity });
         }
@@ -180,11 +189,12 @@ export function createHushAudioRuntime({
     }
 
     const s = settings?.() || {};
-    effects?.applyField?.(field, s, {
+    const presentationField = attenuateSourceHushAudioField(field, presentationGain);
+    effects?.applyField?.(presentationField, s, {
       monitorGain: s.monitorGain ?? 1,
       monitorOpen: ctx.monitorOpen !== false,
     });
-    effects?.maybeResidue?.(field, { random });
+    if (presentationGain > .001) effects?.maybeResidue?.(presentationField, { random });
     onField?.({ field: structuredClone(field), torchScale: effectiveTorchScale(field), audition: structuredClone(audition) });
     onIntent?.(lastIntent);
     return field;

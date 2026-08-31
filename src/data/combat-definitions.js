@@ -91,46 +91,30 @@ const PROFILES = Object.freeze({
       ]),
     ],
   }),
-  // THE ONLY FIGHT WITH MORE THAN ONE THING IN IT.
-  //
-  // The hall's blows were all written for an empty house — A LISTENER IN THE
-  // EMPTY SEAT, APPLAUSE IN THE NOISE FLOOR, AUDIENCE REMOVED FROM VIEW — and
-  // the recordist's refusal was "nobody is sitting there". The seats are full
-  // now (see battle-house.js), so that refusal is off the table and the blows
-  // have to come from people rather than from architecture.
-  //
-  // `house` is what turns this profile into a group fight. Nothing else in the
-  // combat layer needs to know: every path behaves exactly as it did when the
-  // field is absent, which it is for all five other encounters.
+  // THE ONLY FOUR-COMBATANT FIGHT: the recordist and three former audience
+  // members. Their chairs have become part of their bodies, but the seats and
+  // auditorium are never combat targets.
   hall: Object.freeze({
     kind: 'regular',
-    signature: { id: 'feedback', label: 'HOUSE RETURN', description: 'The first Playback in Noise each phase recoils for 1 Composure.' },
+    signature: { id: 'feedback', label: 'APPARITION RETURN', description: 'The first Playback in Noise each phase recoils for 1 Composure.' },
     music: { mode: 'fixed', lead: 'lead-3' },
-    house: { figures: null },
-    // THE ARC IS THE FORMATION GROWING.
-    //
-    // The three movements were mechanically identical before — the same one row
-    // acting, three times, with different words over the top. The authored text
-    // already said the sections were learning to coordinate; this is that text
-    // becoming true. One lead teaches you what the roles do, two teaches you
-    // that they combine, three is the fight the third movement is named after.
+    apparitions: { health: 30 },
     movements: [
-      movement('seated', 'THE HOUSE IS SEATED', 30, [
-        B('hall:regard', 'A FULL HOUSE REGARDS YOU', 10, { takeLabel: 'THE REGARD', playbackDamage: 10 }),
-        O('hall:shift', 'EVERY SEAT SHIFTS AT ONCE', 10, { effect: 'ringing' }),
-        C('hall:gap', 'ONE SEAT EMPTIES WHEN YOU LOOK AT IT', 10),
-      ], { formation: { supports: 0, ovation: false } }),
-      movement('attention', 'EVERY HEAD AT ONCE', 30, [
-        B('hall:turn', 'THE HOUSE TURNS ON YOUR LEVEL', 10, { takeLabel: 'THE TURN', playbackDamage: 10 }),
-        L('hall:loop', 'OUTPUT PATCHED TO INPUT', 15),
-        O('hall:lean', 'THE WHOLE TIER LEANS IN', 20, { effect: 'ringing' }),
-      ], { formation: { supports: 1, ovation: false } }),
-      // The old title was APPLAUSE WITHOUT HANDS. There are hands.
-      movement('applause', 'APPLAUSE WITH HANDS', 30, [
-        B('hall:applause', 'APPLAUSE, AND THEY MEAN IT', 15, { takeLabel: 'THE OVATION', playbackDamage: 10 }),
-        C('hall:standing', 'THE ROW BEHIND YOU STANDS', 10),
-        O('hall:stack', 'THE WHOLE HOUSE COMES UP AT ONCE', 20, { effect: 'ringing' }),
-      ], { formation: { supports: 2, ovation: true } }),
+      movement('seated', 'THREE REMAIN SEATED', 30, [
+        B('hall:regard', 'APPARITION 01 REGARDS YOU FROM ROW F', 10, { takeLabel: 'THE REGARD', playbackDamage: 10 }),
+        O('hall:shift', 'APPARITION 02 TEARS AGAINST THE CHAIR', 10, { effect: 'ringing' }),
+        C('hall:gap', 'APPARITION 03 VANISHES BETWEEN BLINKS', 10),
+      ]),
+      movement('attention', 'THEY LEARN THE ORDER', 30, [
+        B('hall:turn', 'APPARITION 01 TURNS ON YOUR LEVEL', 10, { takeLabel: 'THE TURN', playbackDamage: 10 }),
+        L('hall:loop', 'APPARITION 02 PATCHES OUTPUT TO INPUT', 15),
+        O('hall:lean', 'APPARITION 03 CUES THE NEXT BODY', 20, { effect: 'ringing' }),
+      ]),
+      movement('applause', 'THREE SETS OF HANDS', 30, [
+        B('hall:applause', 'APPARITION 01 APPLAUDS YOU', 15, { takeLabel: 'THE OVATION', playbackDamage: 10 }),
+        C('hall:standing', 'APPARITION 02 STANDS WITH THE CHAIR ATTACHED', 10),
+        O('hall:stack', 'APPARITION 03 BRINGS ALL THREE WINDOWS UP', 20, { effect: 'ringing' }),
+      ]),
     ],
   }),
   // NOTHING IN THIS ROOM ATTACKS HIM.
@@ -190,31 +174,57 @@ const PROFILES = Object.freeze({
     signature: { id: 'contract', label: 'CHAIN OF PROOF', description: 'Perfect tool responses preserve evidence used by the final contract.' },
     music: { mode: 'movement', movementLeads: ['lead-1', 'lead-2', 'lead-3', 'lead-1', 'lead-3'] },
     movements: [
+      // THE FIFTH FIGHT OF FIVE HITS LIKE THE FIFTH FIGHT OF FIVE.
+      //
+      // The chapel used to top out at the same 20 the natatorium opens with: it
+      // was longer, not harder, and a stock bag walked it. A run that skipped
+      // every pin and every rung of the tree can still get here — it should
+      // just not get through here.
       movement('room', 'THE ROOM', 20, [
-        B('chapel:room-tone', 'ROOM TONE CLAIMS A BODY', 10, { takeLabel: 'ROOM CLAIM', playbackDamage: 10 }),
-        C('chapel:not-empty', 'NOT WRITTEN INTO EMPTY', 10),
+        B('chapel:room-tone', 'ROOM TONE CLAIMS A BODY', 15, { takeLabel: 'ROOM CLAIM', playbackDamage: 10 }),
+        C('chapel:not-empty', 'NOT WRITTEN INTO EMPTY', 15),
         O('chapel:walls', 'THE WALLS CLOSE THE CIRCUIT', 20, { effect: 'ringing' }),
       ]),
       movement('recordist', 'THE PREVIOUS RECORDIST', 20, [
-        B('chapel:body', 'BORROWED BODY ON THE MONITOR', 10, { takeLabel: 'BORROWED BODY', takeTag: 'body', playbackDamage: 10 }),
-        O('chapel:consent', 'CONSENT BURIED UNDER NOISE', 20, { effect: 'ringing' }),
-        C('chapel:previous', 'PREVIOUS RECORDIST HELD OFF-MIC', 10),
+        B('chapel:body', 'BORROWED BODY ON THE MONITOR', 15, { takeLabel: 'BORROWED BODY', takeTag: 'body', playbackDamage: 10 }),
+        O('chapel:consent', 'CONSENT BURIED UNDER NOISE', 20, {
+          effect: 'ringing',
+          followups: [O('chapel:consent-again', 'AND ASKS AGAIN', GRID)],
+        }),
+        C('chapel:previous', 'PREVIOUS RECORDIST HELD OFF-MIC', 15),
       ]),
       movement('surfer', 'THE SURFER', 20, [
-        B('chapel:surfer', 'SURFER PRINT ON THE TAPE', 10, { takeLabel: 'SURFER PRINT', playbackDamage: 10 }),
-        C('chapel:wearing', 'THE THING WEARING THE WORD', 10),
-        O('chapel:process', 'PROCESS WITHOUT AN OPERATOR', 20, { effect: 'ringing' }),
+        B('chapel:surfer', 'SURFER PRINT ON THE TAPE', 15, { takeLabel: 'SURFER PRINT', playbackDamage: 10 }),
+        C('chapel:wearing', 'THE THING WEARING THE WORD', 15),
+        O('chapel:process', 'PROCESS WITHOUT AN OPERATOR', 20, {
+          effect: 'ringing',
+          followups: [O('chapel:process-runs', 'AND THE PROCESS RUNS ON', GRID)],
+        }),
       ]),
+      // THE CONTRACT AND THE SOURCE ARE THE END OF THE NIGHT.
+      //
+      // These two movements used to be the softest in the fight — the last one
+      // averaged less per beat than the first, so the chapel was longer than the
+      // natatorium without ever being harder. It is the fifth fight of five and
+      // the one the run has been walking toward; it closes with chains rather
+      // than with single blows, which is also the first place in the game a
+      // player meets a followup outside the natatorium's deep end.
       movement('contract', 'THE CONTRACT', 20, [
-        B('chapel:terms', 'TERMS READ INTO THE RECORDER', 10, { takeLabel: 'CONTRACT TERMS', playbackDamage: 10 }),
+        B('chapel:terms', 'TERMS READ INTO THE RECORDER', 15, { takeLabel: 'CONTRACT TERMS', playbackDamage: 10 }),
         L('chapel:contract-loop', 'AGREEMENT FED BACK AS CONSENT', 15),
-        O('chapel:signature', 'SIGNATURE DRIVEN PAST ZERO', 20, { effect: 'ringing' }),
+        O('chapel:signature', 'SIGNATURE DRIVEN PAST ZERO', 20, {
+          effect: 'ringing',
+          followups: [O('chapel:countersign', 'AND A COUNTERSIGNATURE', GRID)],
+        }),
       ]),
       movement('source', 'THE SOURCE', 20, [
-        B('chapel:body-return', 'BODY BORROWED RETURN', 10, { takeLabel: 'BODY BORROWED RETURN', takeTag: 'body', playbackDamage: 10 }),
-        O('chapel:source-pressure', 'THE SOURCE PRESSES FOR AN ANSWER', 10, { effect: 'ringing' }),
-        B('chapel:release-take', 'RELEASE PRINT ON THE RETURN', 10, { takeLabel: 'SIGNAL RELEASE', playbackDamage: 10 }),
-        L('chapel:source-loop', 'SIGNAL PROCESS RELEASE', 15),
+        B('chapel:body-return', 'BODY BORROWED RETURN', 15, { takeLabel: 'BODY BORROWED RETURN', takeTag: 'body', playbackDamage: 10 }),
+        O('chapel:source-pressure', 'THE SOURCE PRESSES FOR AN ANSWER', 20, {
+          effect: 'ringing',
+          followups: [O('chapel:source-again', 'AND PRESSES AGAIN', GRID)],
+        }),
+        B('chapel:release-take', 'RELEASE PRINT ON THE RETURN', 15, { takeLabel: 'SIGNAL RELEASE', playbackDamage: 10 }),
+        L('chapel:source-loop', 'SIGNAL PROCESS RELEASE', 20),
       ]),
     ],
   }),
@@ -254,20 +264,33 @@ const PROFILES = Object.freeze({
     signature: { id: 'routing', label: 'THREE RETURNS', description: 'Every perfect response and phase break commits signal to the armed return channel.' },
     music: { mode: 'movement', movementLeads: ['lead-1', 'lead-2', 'lead-3'] },
     movements: [
+      // THE LAST THING IN THE NIGHT. It was the cheapest fight in the game —
+      // less than the natatorium the run opens with. The recursion is the point
+      // of this encounter, so the blows that recur are the ones that chain.
       movement('call-site', 'THE CALL SITE', 25, [
-        B('source:address', 'THE RECORDIST AT THIS ADDRESS', 10, { takeLabel: 'CALL SITE', playbackDamage: 10 }),
-        C('source:alias', 'AN ALIAS WEARING YOUR NAME', 10),
-        O('source:stack', 'THE STACK OPENS UNDERFOOT', 20, { effect: 'ringing' }),
+        B('source:address', 'THE RECORDIST AT THIS ADDRESS', 15, { takeLabel: 'CALL SITE', playbackDamage: 10 }),
+        C('source:alias', 'AN ALIAS WEARING YOUR NAME', 15),
+        O('source:stack', 'THE STACK OPENS UNDERFOOT', 20, {
+          effect: 'ringing',
+          followups: [O('source:stack-deeper', 'AND KEEPS OPENING', GRID)],
+        }),
       ]),
       movement('borrowed-body', 'THE BORROWED BODY', 25, [
-        B('source:body', 'BODY RETURN ON THE MONITOR', 10, { takeLabel: 'BORROWED BODY', takeTag: 'body', playbackDamage: 10 }),
-        L('source:recursion', 'RECORDIST CALLS RECORDIST', 15),
+        B('source:body', 'BODY RETURN ON THE MONITOR', 15, { takeLabel: 'BORROWED BODY', takeTag: 'body', playbackDamage: 10 }),
+        L('source:recursion', 'RECORDIST CALLS RECORDIST', 20, {
+          followups: [L('source:recursion-again', 'CALLS RECORDIST CALLS', GRID)],
+        }),
         O('source:wear', 'THE BODY TAKES THE SIGNAL', 20, { effect: 'ringing' }),
       ]),
+      // The last movement of the last fight. The silence that heals it is what
+      // makes this a race as well as a fight, so the blows around it have to be
+      // worth racing against.
       movement('final-clause', 'THE FINAL CLAUSE', 25, [
         B('source:return', 'RETURN VALUE STILL SPEAKING', 15, { takeLabel: 'RETURN VALUE', takeTag: 'body', playbackDamage: 15 }),
-        L('source:final-loop', 'SOURCE FED BACK INTO SURFER', 15),
-        C('source:redact', 'THE CLAUSE HIDES ITS SUBJECT', 10),
+        L('source:final-loop', 'SOURCE FED BACK INTO SURFER', 20, {
+          followups: [L('source:final-echo', 'AND THE CLAUSE RETURNS ITSELF', GRID)],
+        }),
+        C('source:redact', 'THE CLAUSE HIDES ITS SUBJECT', 15),
         S('source:silence', 'SILENCE CLAIMS THE OUTPUT', { effect: 'recover', recover: 5 }),
       ]),
     ],
@@ -337,9 +360,9 @@ export function attachCombatDefinition(battle, combat = null) {
       signature: authored.signature,
       music: authored.music,
       ...(authored.presentation ? { presentation:authored.presentation } : {}),
-      // Only the hall declares one. Absent everywhere else, which is what keeps
+      // Only the Hall declares a roster. Absent everywhere else, which keeps
       // every other encounter on the single-opponent path unchanged.
-      ...(authored.house ? { house: authored.house } : {}),
+      ...(authored.apparitions ? { apparitions: authored.apparitions } : {}),
       ...(authored.practice ? { practice: authored.practice } : {}),
       movements: authored.movements.map((movement, index) => ({
         ...movement,

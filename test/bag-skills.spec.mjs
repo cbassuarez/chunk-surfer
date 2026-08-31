@@ -69,7 +69,7 @@ assert.equal(skillState({ owned: false, enabled: false }), SKILL_STATE.LOCKED);
 const broke = treeFor(null);
 assert.equal(broke.pins.unspent, 0);
 assert.ok(flat(broke).every((entry) => entry.state === SKILL_STATE.LOCKED));
-assert.match(find(broke, TECHNIQUE.AFTERIMAGE).blockedBy, /NEEDS A PIN/);
+assert.match(find(broke, TECHNIQUE.AFTERIMAGE).blockedBy, /NO SPARE LEAD/);
 
 // With pins: tier 1 is affordable, tier 2 names the tier-1 technique it wants.
 const funded = treeFor(normalizeCombatBuild(null, PIN_SOURCES.encounters));
@@ -94,11 +94,15 @@ assert.equal(skillKindLabel(find(funded, TECHNIQUE.AFTERIMAGE)), 'PASSIVE EFFECT
 assert.equal(skillKindLabel(find(funded, TECHNIQUE.WHITEOUT)), 'SPECIAL · COSTS CHARGE');
 assert.equal(skillKindLabel(find(funded, TECHNIQUE.MASTER_TAKE)), 'SPECIAL · COSTS CHARGE');
 
-// ── only affordable nodes offer the buy ─────────────────────────────────────
+// ── every socket offers exactly one thing, or nothing ───────────────────────
+//
+// With nothing patched this only ever sees OPEN and NO REACH, which is why it
+// has to be run again below over a build that carries something — otherwise it
+// is green and blind to the state the pull feature added.
 for (const entry of flat(funded)) {
   const offers = !!entry.actions.primary;
   assert.equal(offers, entry.state === SKILL_STATE.AFFORDABLE,
-    `${entry.label} offers CHOOSE exactly when it is available`);
+    `${entry.label} offers PATCH exactly when it is open`);
 }
 
 // ── buying one moves the tree with it ───────────────────────────────────────
@@ -109,13 +113,69 @@ const after = treeFor(build, true, normalizeCombatBuild(null, PIN_SOURCES.encoun
 assert.equal(find(after, TECHNIQUE.AFTERIMAGE).state, SKILL_STATE.PENDING);
 assert.equal(find(after, TECHNIQUE.WHITEOUT).state, SKILL_STATE.AFFORDABLE, 'the chain opens up');
 assert.equal(after.pins.unspent, before - 1, 'and it cost a pin');
-assert.equal(find(after, TECHNIQUE.AFTERIMAGE).actions.primary.id, 'undo-skill', 'a chosen node can be undone but not re-bought');
+assert.equal(find(after, TECHNIQUE.AFTERIMAGE).actions.primary.id, 'pull-cable', 'a patched socket offers the lead back, never a second lead');
 assert.equal(after.pins.pending, 1, 'the case distinguishes this session from installed modifications');
 
+// ── a patched socket gives the lead back ────────────────────────────────────
+//
+// The same loop as above, over a build that actually carries something. A
+// socket either takes a lead or gives one back; NO REACH does neither.
+{
+  let run = normalizeCombatBuild(null, PIN_SOURCES.encounters,
+    { 'pin.academic': true, 'pin.tower': true, 'pin.gallery': true });
+  for (const id of [TECHNIQUE.AFTERIMAGE, TECHNIQUE.WHITEOUT]) {
+    run = learnCombatTechnique(run, id, { hasRig: true }).build;
+  }
+  const tree = treeFor(run);
+  for (const entry of flat(tree)) {
+    const primary = entry.actions.primary?.id || null;
+    const expected = entry.state === SKILL_STATE.LOCKED ? null
+      : entry.state === SKILL_STATE.AFFORDABLE ? 'patch-cable' : 'pull-cable';
+    assert.equal(primary, expected, `${entry.label} offers the right one thing`);
+  }
+
+  // The head of a run warns before it takes the run with it. A lone pull does
+  // not — pressing the same key again is the undo, and a modal in front of that
+  // would make re-rigging tedious.
+  const head = find(tree, TECHNIQUE.AFTERIMAGE);
+  const leaf = find(tree, TECHNIQUE.WHITEOUT);
+  const confirmOf = (entry) => entry.actionList.find((action) => action.id === 'pull-cable')?.confirm || null;
+  assert.ok(confirmOf(head), 'pulling the head of a run asks first');
+  assert.equal(confirmOf(leaf), null, 'pulling a leaf does not');
+  assert.match(confirmOf(head).body, /WHITEOUT/, 'and the warning names what it drops');
+  assert.ok(!/torch\./.test(confirmOf(head).body), 'by name, never by id');
+  assert.equal(head.actions.primary.destructive, false,
+    'the descriptor owns the confirm; destructive would route to the poorer one');
+}
+
+// ── the cable is drawn where the signal runs, not where the tiers are ───────
+//
+// Four sockets sit under another and are NOT fed by it — ROOM TONE, HEADROOM,
+// and the first two rungs of NERVE, which are patched direct. The old drawing
+// ran a line into all four.
+{
+  const tree = treeFor(normalizeCombatBuild(null, PIN_SOURCES.encounters));
+  const leadOf = (id) => find(tree, id).lead;
+  for (const id of [TECHNIQUE.ROOM_TONE, TECHNIQUE.HEADROOM, TECHNIQUE.BRACE, TECHNIQUE.STEADY_NERVE]) {
+    assert.equal(leadOf(id), null, `${find(tree, id).label} is patched direct and takes no cable`);
+  }
+  // ...and nerve is not chain-free either: its last two rungs are a real run.
+  assert.ok(leadOf(TECHNIQUE.RIPOSTE), 'RIPOSTE is fed by STEADY NERVE');
+  assert.ok(leadOf(TECHNIQUE.SECOND_WIND), 'SECOND WIND is fed by RIPOSTE');
+  assert.equal(leadOf(TECHNIQUE.WHITEOUT).fromTier, 1, 'the cable comes from the prerequisite, not from tier - 1');
+  assert.equal(leadOf(TECHNIQUE.WHITEOUT).live, false, 'and it is dark until the run carries');
+
+  let run = normalizeCombatBuild(null, PIN_SOURCES.encounters);
+  for (const id of [TECHNIQUE.AFTERIMAGE, TECHNIQUE.WHITEOUT]) {
+    run = learnCombatTechnique(run, id, { hasRig: true }).build;
+  }
+  assert.equal(find(treeFor(run), TECHNIQUE.WHITEOUT).lead.live, true, 'lit once both ends carry');
+}
+
 // ── the count on the tab is about the urgent thing ──────────────────────────
-assert.match(skillsOf(buildBagModel({ build: normalizeCombatBuild(null, PIN_SOURCES.encounters) })).countLabel, /PIN/,
-  'unspent pins are what the tab advertises');
-assert.match(skillsOf(buildBagModel({ build, settledBuild: normalizeCombatBuild(null, PIN_SOURCES.encounters) })).countLabel, /PIN|CHOSEN|INSTALLED/);
+assert.match(skillsOf(buildBagModel({ build: normalizeCombatBuild(null, PIN_SOURCES.encounters) })).countLabel, /LEAD/,
+  'spare leads are what the tab advertises');
+assert.match(skillsOf(buildBagModel({ build, settledBuild: normalizeCombatBuild(null, PIN_SOURCES.encounters) })).countLabel, /LEAD|NEW|PATCHED|PULLED/);
 
 // ── the geometry fits the panel it is given, and shrinks ────────────────────
 for (const region of [

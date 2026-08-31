@@ -15,3 +15,6 @@ src-tauri/steam_appid.txt
 *.log
 __pycache__/
 *.pyc
+
+# the narrative studio publishes its live URL + token here for tools/endings-audit
+tools/narrative-studio/.studio-session.json

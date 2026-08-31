@@ -1,7 +1,7 @@
 {
   "schemaVersion": 3,
   "id": "chunk-surf.source-atlas",
-  "corpusHash": 1947452203,
+  "corpusHash": 3060807397,
   "generatedFrom": [
     "src/game/chunk-surf-state.js",
     "src/game/presence.js",
@@ -7662,12 +7662,12 @@
           ]
         },
         {
-          "id": "src/game/playback.js:69:4161554600",
+          "id": "src/game/playback.js:125:4161554600",
           "file": "src/game/playback.js",
-          "line": 69,
+          "line": 125,
           "text": "}",
           "hash": 4161554600,
-          "referenceHash": 45343145,
+          "referenceHash": 915868744,
           "language": "javascript",
           "tokens": [
             {
@@ -7679,12 +7679,12 @@
           ]
         },
         {
-          "id": "src/game/playback.js:71:603931341",
+          "id": "src/game/playback.js:127:603931341",
           "file": "src/game/playback.js",
-          "line": 71,
+          "line": 127,
           "text": "export function noteDiscrete(roomId,event={}){",
           "hash": 603931341,
-          "referenceHash": 4006168917,
+          "referenceHash": 3130750019,
           "language": "javascript",
           "tokens": [
             {
@@ -7762,12 +7762,12 @@
           ]
         },
         {
-          "id": "src/game/playback.js:72:1553871417",
+          "id": "src/game/playback.js:128:1553871417",
           "file": "src/game/playback.js",
-          "line": 72,
+          "line": 128,
           "text": "  const take=state.takes.get(roomId);if(!take||take.sealed)return;",
           "hash": 1553871417,
-          "referenceHash": 2049132342,
+          "referenceHash": 19446248,
           "language": "javascript",
           "tokens": [
             {
@@ -7911,12 +7911,12 @@
           ]
         },
         {
-          "id": "src/game/playback.js:74:4161554600",
+          "id": "src/game/playback.js:130:4161554600",
           "file": "src/game/playback.js",
-          "line": 74,
+          "line": 130,
           "text": "}",
           "hash": 4161554600,
-          "referenceHash": 25535835,
+          "referenceHash": 2872210894,
           "language": "javascript",
           "tokens": [
             {
@@ -7928,12 +7928,12 @@
           ]
         },
         {
-          "id": "src/game/playback.js:76:141453123",
+          "id": "src/game/playback.js:132:141453123",
           "file": "src/game/playback.js",
-          "line": 76,
+          "line": 132,
           "text": "export function beginTake(roomId, cell) {",
           "hash": 141453123,
-          "referenceHash": 4239955886,
+          "referenceHash": 464903731,
           "language": "javascript",
           "tokens": [
             {
@@ -7993,12 +7993,12 @@
           ]
         },
         {
-          "id": "src/game/playback.js:77:3509963631",
+          "id": "src/game/playback.js:133:2206457085",
           "file": "src/game/playback.js",
-          "line": 77,
-          "text": "  state.takes.set(roomId, { roomId, cell: { ...cell }, levels: new Map(), discrete:[], sealed: false, at: 0 });",
-          "hash": 3509963631,
-          "referenceHash": 3237986937,
+          "line": 133,
+          "text": "  state.takes.set(roomId, {",
+          "hash": 2206457085,
+          "referenceHash": 2711002462,
           "language": "javascript",
           "tokens": [
             {
@@ -8054,219 +8054,403 @@
               "kind": "punctuation",
               "start": 26,
               "end": 27
-            },
+            }
+          ]
+        },
+        {
+          "id": "src/game/playback.js:134:2871208532",
+          "file": "src/game/playback.js",
+          "line": 134,
+          "text": "    roomId, cell: { ...cell }, levels: new Map(), discrete: [],",
+          "hash": 2871208532,
+          "referenceHash": 2621632158,
+          "language": "javascript",
+          "tokens": [
             {
               "text": "roomId",
               "kind": "identifier",
-              "start": 28,
-              "end": 34
+              "start": 4,
+              "end": 10
             },
             {
               "text": ",",
               "kind": "punctuation",
-              "start": 34,
-              "end": 35
+              "start": 10,
+              "end": 11
             },
             {
               "text": "cell",
               "kind": "identifier",
-              "start": 36,
-              "end": 40
+              "start": 12,
+              "end": 16
             },
             {
               "text": ":",
               "kind": "punctuation",
-              "start": 40,
-              "end": 41
+              "start": 16,
+              "end": 17
             },
             {
               "text": "{",
               "kind": "punctuation",
-              "start": 42,
-              "end": 43
+              "start": 18,
+              "end": 19
             },
             {
               "text": "...",
               "kind": "punctuation",
-              "start": 44,
-              "end": 47
+              "start": 20,
+              "end": 23
             },
             {
               "text": "cell",
               "kind": "identifier",
-              "start": 47,
-              "end": 51
+              "start": 23,
+              "end": 27
             },
             {
               "text": "}",
               "kind": "punctuation",
-              "start": 52,
-              "end": 53
+              "start": 28,
+              "end": 29
             },
             {
               "text": ",",
               "kind": "punctuation",
-              "start": 53,
-              "end": 54
+              "start": 29,
+              "end": 30
             },
             {
               "text": "levels",
               "kind": "identifier",
-              "start": 55,
-              "end": 61
+              "start": 31,
+              "end": 37
             },
             {
               "text": ":",
+              "kind": "punctuation",
+              "start": 37,
+              "end": 38
+            },
+            {
+              "text": "new",
+              "kind": "keyword",
+              "start": 39,
+              "end": 42
+            },
+            {
+              "text": "Map",
+              "kind": "identifier",
+              "start": 43,
+              "end": 46
+            },
+            {
+              "text": "(",
+              "kind": "punctuation",
+              "start": 46,
+              "end": 47
+            },
+            {
+              "text": ")",
+              "kind": "punctuation",
+              "start": 47,
+              "end": 48
+            },
+            {
+              "text": ",",
+              "kind": "punctuation",
+              "start": 48,
+              "end": 49
+            },
+            {
+              "text": "discrete",
+              "kind": "identifier",
+              "start": 50,
+              "end": 58
+            },
+            {
+              "text": ":",
+              "kind": "punctuation",
+              "start": 58,
+              "end": 59
+            },
+            {
+              "text": "[",
+              "kind": "punctuation",
+              "start": 60,
+              "end": 61
+            },
+            {
+              "text": "]",
               "kind": "punctuation",
               "start": 61,
               "end": 62
             },
             {
-              "text": "new",
-              "kind": "keyword",
-              "start": 63,
-              "end": 66
-            },
-            {
-              "text": "Map",
-              "kind": "identifier",
-              "start": 67,
-              "end": 70
-            },
-            {
-              "text": "(",
-              "kind": "punctuation",
-              "start": 70,
-              "end": 71
-            },
-            {
-              "text": ")",
-              "kind": "punctuation",
-              "start": 71,
-              "end": 72
-            },
-            {
               "text": ",",
               "kind": "punctuation",
-              "start": 72,
-              "end": 73
-            },
+              "start": 62,
+              "end": 63
+            }
+          ]
+        },
+        {
+          "id": "src/game/playback.js:135:2042443919",
+          "file": "src/game/playback.js",
+          "line": 135,
+          "text": "    presence: { peak: 0, atSec: 0 }, sealed: false, at: 0,",
+          "hash": 2042443919,
+          "referenceHash": 4046043048,
+          "language": "javascript",
+          "tokens": [
             {
-              "text": "discrete",
+              "text": "presence",
               "kind": "identifier",
-              "start": 74,
-              "end": 82
+              "start": 4,
+              "end": 12
             },
             {
               "text": ":",
               "kind": "punctuation",
-              "start": 82,
-              "end": 83
+              "start": 12,
+              "end": 13
             },
             {
-              "text": "[",
+              "text": "{",
               "kind": "punctuation",
-              "start": 83,
-              "end": 84
+              "start": 14,
+              "end": 15
             },
             {
-              "text": "]",
-              "kind": "punctuation",
-              "start": 84,
-              "end": 85
-            },
-            {
-              "text": ",",
-              "kind": "punctuation",
-              "start": 85,
-              "end": 86
-            },
-            {
-              "text": "sealed",
+              "text": "peak",
               "kind": "identifier",
-              "start": 87,
-              "end": 93
+              "start": 16,
+              "end": 20
             },
             {
               "text": ":",
               "kind": "punctuation",
-              "start": 93,
-              "end": 94
-            },
-            {
-              "text": "false",
-              "kind": "keyword",
-              "start": 95,
-              "end": 100
-            },
-            {
-              "text": ",",
-              "kind": "punctuation",
-              "start": 100,
-              "end": 101
-            },
-            {
-              "text": "at",
-              "kind": "identifier",
-              "start": 102,
-              "end": 104
-            },
-            {
-              "text": ":",
-              "kind": "punctuation",
-              "start": 104,
-              "end": 105
+              "start": 20,
+              "end": 21
             },
             {
               "text": "0",
               "kind": "number",
-              "start": 106,
-              "end": 107
+              "start": 22,
+              "end": 23
+            },
+            {
+              "text": ",",
+              "kind": "punctuation",
+              "start": 23,
+              "end": 24
+            },
+            {
+              "text": "atSec",
+              "kind": "identifier",
+              "start": 25,
+              "end": 30
+            },
+            {
+              "text": ":",
+              "kind": "punctuation",
+              "start": 30,
+              "end": 31
+            },
+            {
+              "text": "0",
+              "kind": "number",
+              "start": 32,
+              "end": 33
             },
             {
               "text": "}",
               "kind": "punctuation",
-              "start": 108,
-              "end": 109
+              "start": 34,
+              "end": 35
             },
             {
-              "text": ")",
+              "text": ",",
               "kind": "punctuation",
-              "start": 109,
-              "end": 110
+              "start": 35,
+              "end": 36
             },
             {
-              "text": ";",
+              "text": "sealed",
+              "kind": "identifier",
+              "start": 37,
+              "end": 43
+            },
+            {
+              "text": ":",
               "kind": "punctuation",
-              "start": 110,
-              "end": 111
+              "start": 43,
+              "end": 44
+            },
+            {
+              "text": "false",
+              "kind": "keyword",
+              "start": 45,
+              "end": 50
+            },
+            {
+              "text": ",",
+              "kind": "punctuation",
+              "start": 50,
+              "end": 51
+            },
+            {
+              "text": "at",
+              "kind": "identifier",
+              "start": 52,
+              "end": 54
+            },
+            {
+              "text": ":",
+              "kind": "punctuation",
+              "start": 54,
+              "end": 55
+            },
+            {
+              "text": "0",
+              "kind": "number",
+              "start": 56,
+              "end": 57
+            },
+            {
+              "text": ",",
+              "kind": "punctuation",
+              "start": 57,
+              "end": 58
             }
           ]
         },
         {
-          "id": "src/game/playback.js:78:4161554600",
+          "id": "src/game/playback.js:136:1581901516",
           "file": "src/game/playback.js",
-          "line": 78,
-          "text": "}",
-          "hash": 4161554600,
-          "referenceHash": 483200295,
+          "line": 136,
+          "text": "    // Was the room humming when this was rolled, and where in it did he stand.",
+          "hash": 1581901516,
+          "referenceHash": 3246181904,
           "language": "javascript",
           "tokens": [
             {
-              "text": "}",
-              "kind": "punctuation",
-              "start": 0,
-              "end": 1
+              "text": "// Was the room humming when this was rolled, and where in it did he stand.",
+              "kind": "comment",
+              "start": 4,
+              "end": 79
             }
           ]
         },
         {
-          "id": "src/game/playback.js:80:2949708577",
+          "id": "src/game/playback.js:137:3241114526",
           "file": "src/game/playback.js",
-          "line": 80,
-          "text": "export function abortTake(roomId) { state.takes.delete(roomId); }",
-          "hash": 2949708577,
-          "referenceHash": 350089545,
+          "line": 137,
+          "text": "    // Both used to live in their own arrays on the recordist, keyed by room, so",
+          "hash": 3241114526,
+          "referenceHash": 959436555,
+          "language": "javascript",
+          "tokens": [
+            {
+              "text": "// Both used to live in their own arrays on the recordist, keyed by room, so",
+              "kind": "comment",
+              "start": 4,
+              "end": 80
+            }
+          ]
+        },
+        {
+          "id": "src/game/playback.js:138:133253041",
+          "file": "src/game/playback.js",
+          "line": 138,
+          "text": "    // one take was three entries in three places that could each be edited",
+          "hash": 133253041,
+          "referenceHash": 2189369819,
+          "language": "javascript",
+          "tokens": [
+            {
+              "text": "// one take was three entries in three places that could each be edited",
+              "kind": "comment",
+              "start": 4,
+              "end": 75
+            }
+          ]
+        },
+        {
+          "id": "src/game/playback.js:139:3884777555",
+          "file": "src/game/playback.js",
+          "line": 139,
+          "text": "    // without the others.",
+          "hash": 3884777555,
+          "referenceHash": 2301278332,
+          "language": "javascript",
+          "tokens": [
+            {
+              "text": "// without the others.",
+              "kind": "comment",
+              "start": 4,
+              "end": 26
+            }
+          ]
+        },
+        {
+          "id": "src/game/playback.js:170:2731697891",
+          "file": "src/game/playback.js",
+          "line": 170,
+          "text": "//",
+          "hash": 2731697891,
+          "referenceHash": 897831241,
+          "language": "javascript",
+          "tokens": [
+            {
+              "text": "//",
+              "kind": "comment",
+              "start": 0,
+              "end": 2
+            }
+          ]
+        },
+        {
+          "id": "src/game/playback.js:171:256231350",
+          "file": "src/game/playback.js",
+          "line": 171,
+          "text": "// Peak-hold, like every other level on this tape: it is what a microphone does,",
+          "hash": 256231350,
+          "referenceHash": 520748821,
+          "language": "javascript",
+          "tokens": [
+            {
+              "text": "// Peak-hold, like every other level on this tape: it is what a microphone does,",
+              "kind": "comment",
+              "start": 0,
+              "end": 80
+            }
+          ]
+        },
+        {
+          "id": "src/game/playback.js:172:3582701097",
+          "file": "src/game/playback.js",
+          "line": 172,
+          "text": "// and it means a single close pass is on the recording forever.",
+          "hash": 3582701097,
+          "referenceHash": 1471050125,
+          "language": "javascript",
+          "tokens": [
+            {
+              "text": "// and it means a single close pass is on the recording forever.",
+              "kind": "comment",
+              "start": 0,
+              "end": 64
+            }
+          ]
+        },
+        {
+          "id": "src/game/playback.js:173:3713278231",
+          "file": "src/game/playback.js",
+          "line": 173,
+          "text": "export function notePresence(roomId, level, atSec = 0) {",
+          "hash": 3713278231,
+          "referenceHash": 1589833234,
           "language": "javascript",
           "tokens": [
             {
@@ -8282,215 +8466,9 @@
               "end": 15
             },
             {
-              "text": "abortTake",
+              "text": "notePresence",
               "kind": "identifier",
               "start": 16,
-              "end": 25
-            },
-            {
-              "text": "(",
-              "kind": "punctuation",
-              "start": 25,
-              "end": 26
-            },
-            {
-              "text": "roomId",
-              "kind": "identifier",
-              "start": 26,
-              "end": 32
-            },
-            {
-              "text": ")",
-              "kind": "punctuation",
-              "start": 32,
-              "end": 33
-            },
-            {
-              "text": "{",
-              "kind": "punctuation",
-              "start": 34,
-              "end": 35
-            },
-            {
-              "text": "state",
-              "kind": "identifier",
-              "start": 36,
-              "end": 41
-            },
-            {
-              "text": ".",
-              "kind": "punctuation",
-              "start": 41,
-              "end": 42
-            },
-            {
-              "text": "takes",
-              "kind": "identifier",
-              "start": 42,
-              "end": 47
-            },
-            {
-              "text": ".",
-              "kind": "punctuation",
-              "start": 47,
-              "end": 48
-            },
-            {
-              "text": "delete",
-              "kind": "keyword",
-              "start": 48,
-              "end": 54
-            },
-            {
-              "text": "(",
-              "kind": "punctuation",
-              "start": 54,
-              "end": 55
-            },
-            {
-              "text": "roomId",
-              "kind": "identifier",
-              "start": 55,
-              "end": 61
-            },
-            {
-              "text": ")",
-              "kind": "punctuation",
-              "start": 61,
-              "end": 62
-            },
-            {
-              "text": ";",
-              "kind": "punctuation",
-              "start": 62,
-              "end": 63
-            },
-            {
-              "text": "}",
-              "kind": "punctuation",
-              "start": 64,
-              "end": 65
-            }
-          ]
-        },
-        {
-          "id": "src/game/playback.js:82:3262896387",
-          "file": "src/game/playback.js",
-          "line": 82,
-          "text": "// A completed take is sealed: the guest is chosen once and never re-rolled, so",
-          "hash": 3262896387,
-          "referenceHash": 1111027381,
-          "language": "javascript",
-          "tokens": [
-            {
-              "text": "// A completed take is sealed: the guest is chosen once and never re-rolled, so",
-              "kind": "comment",
-              "start": 0,
-              "end": 79
-            }
-          ]
-        },
-        {
-          "id": "src/game/playback.js:83:1119687415",
-          "file": "src/game/playback.js",
-          "line": 83,
-          "text": "// playing the tape twice plays the same tape. A tape that changes is a dream.",
-          "hash": 1119687415,
-          "referenceHash": 372757352,
-          "language": "javascript",
-          "tokens": [
-            {
-              "text": "// playing the tape twice plays the same tape. A tape that changes is a dream.",
-              "kind": "comment",
-              "start": 0,
-              "end": 78
-            }
-          ]
-        },
-        {
-          "id": "src/progression/runtime.js:20:1631297339",
-          "file": "src/progression/runtime.js",
-          "line": 20,
-          "text": "  buildId = String(build || 'LOCAL');",
-          "hash": 1631297339,
-          "referenceHash": 4099733987,
-          "language": "javascript",
-          "tokens": [
-            {
-              "text": "buildId",
-              "kind": "identifier",
-              "start": 2,
-              "end": 9
-            },
-            {
-              "text": "=",
-              "kind": "punctuation",
-              "start": 10,
-              "end": 11
-            },
-            {
-              "text": "String",
-              "kind": "identifier",
-              "start": 12,
-              "end": 18
-            },
-            {
-              "text": "(",
-              "kind": "punctuation",
-              "start": 18,
-              "end": 19
-            },
-            {
-              "text": "build",
-              "kind": "identifier",
-              "start": 19,
-              "end": 24
-            },
-            {
-              "text": "||",
-              "kind": "punctuation",
-              "start": 25,
-              "end": 27
-            },
-            {
-              "text": "'LOCAL'",
-              "kind": "string",
-              "start": 28,
-              "end": 35
-            },
-            {
-              "text": ")",
-              "kind": "punctuation",
-              "start": 35,
-              "end": 36
-            },
-            {
-              "text": ";",
-              "kind": "punctuation",
-              "start": 36,
-              "end": 37
-            }
-          ]
-        },
-        {
-          "id": "src/progression/runtime.js:21:888881884",
-          "file": "src/progression/runtime.js",
-          "line": 21,
-          "text": "  return progressionSnapshot();",
-          "hash": 888881884,
-          "referenceHash": 1366357811,
-          "language": "javascript",
-          "tokens": [
-            {
-              "text": "return",
-              "kind": "keyword",
-              "start": 2,
-              "end": 8
-            },
-            {
-              "text": "progressionSnapshot",
-              "kind": "identifier",
-              "start": 9,
               "end": 28
             },
             {
@@ -8500,102 +8478,68 @@
               "end": 29
             },
             {
-              "text": ")",
-              "kind": "punctuation",
+              "text": "roomId",
+              "kind": "identifier",
               "start": 29,
-              "end": 30
-            },
-            {
-              "text": ";",
-              "kind": "punctuation",
-              "start": 30,
-              "end": 31
-            }
-          ]
-        },
-        {
-          "id": "src/progression/runtime.js:22:4161554600",
-          "file": "src/progression/runtime.js",
-          "line": 22,
-          "text": "}",
-          "hash": 4161554600,
-          "referenceHash": 1006852790,
-          "language": "javascript",
-          "tokens": [
-            {
-              "text": "}",
-              "kind": "punctuation",
-              "start": 0,
-              "end": 1
-            }
-          ]
-        },
-        {
-          "id": "src/progression/runtime.js:24:1497511585",
-          "file": "src/progression/runtime.js",
-          "line": 24,
-          "text": "function statPatchFor(event, meta) {",
-          "hash": 1497511585,
-          "referenceHash": 1073749237,
-          "language": "javascript",
-          "tokens": [
-            {
-              "text": "function",
-              "kind": "keyword",
-              "start": 0,
-              "end": 8
-            },
-            {
-              "text": "statPatchFor",
-              "kind": "identifier",
-              "start": 9,
-              "end": 21
-            },
-            {
-              "text": "(",
-              "kind": "punctuation",
-              "start": 21,
-              "end": 22
-            },
-            {
-              "text": "event",
-              "kind": "identifier",
-              "start": 22,
-              "end": 27
+              "end": 35
             },
             {
               "text": ",",
               "kind": "punctuation",
-              "start": 27,
-              "end": 28
+              "start": 35,
+              "end": 36
             },
             {
-              "text": "meta",
+              "text": "level",
               "kind": "identifier",
-              "start": 29,
-              "end": 33
+              "start": 37,
+              "end": 42
+            },
+            {
+              "text": ",",
+              "kind": "punctuation",
+              "start": 42,
+              "end": 43
+            },
+            {
+              "text": "atSec",
+              "kind": "identifier",
+              "start": 44,
+              "end": 49
+            },
+            {
+              "text": "=",
+              "kind": "punctuation",
+              "start": 50,
+              "end": 51
+            },
+            {
+              "text": "0",
+              "kind": "number",
+              "start": 52,
+              "end": 53
             },
             {
               "text": ")",
               "kind": "punctuation",
-              "start": 33,
-              "end": 34
+              "start": 53,
+              "end": 54
             },
             {
               "text": "{",
               "kind": "punctuation",
-              "start": 35,
-              "end": 36
+              "start": 55,
+              "end": 56
             }
           ]
         },
         {
-          "id": "src/progression/runtime.js:25:498465201",
-          "file": "src/progression/runtime.js",
-          "line": 25,
-          "text": "  const stats = { ...meta.stats };",
-          "hash": 498465201,
-          "referenceHash": 3488279436,
+          "id": "src/game/playback.js:174:3373171060",
+          "file": "src/game/playback.js",
+          "line": 174,
+          "text": "  const t = state.takes.get(roomId);",
+          "hash": 3373171060,
+          "referenceHash": 1688541462,
           "language": "javascript",
           "tokens": [
             {
@@ -8605,7 +8549,167 @@
               "end": 7
             },
             {
-              "text": "stats",
+              "text": "t",
+              "kind": "identifier",
+              "start": 8,
+              "end": 9
+            },
+            {
+              "text": "=",
+              "kind": "punctuation",
+              "start": 10,
+              "end": 11
+            },
+            {
+              "text": "state",
+              "kind": "identifier",
+              "start": 12,
+              "end": 17
+            },
+            {
+              "text": ".",
+              "kind": "punctuation",
+              "start": 17,
+              "end": 18
+            },
+            {
+              "text": "takes",
+              "kind": "identifier",
+              "start": 18,
+              "end": 23
+            },
+            {
+              "text": ".",
+              "kind": "punctuation",
+              "start": 23,
+              "end": 24
+            },
+            {
+              "text": "get",
+              "kind": "keyword",
+              "start": 24,
+              "end": 27
+            },
+            {
+              "text": "(",
+              "kind": "punctuation",
+              "start": 27,
+              "end": 28
+            },
+            {
+              "text": "roomId",
+              "kind": "identifier",
+              "start": 28,
+              "end": 34
+            },
+            {
+              "text": ")",
+              "kind": "punctuation",
+              "start": 34,
+              "end": 35
+            },
+            {
+              "text": ";",
+              "kind": "punctuation",
+              "start": 35,
+              "end": 36
+            }
+          ]
+        },
+        {
+          "id": "src/game/playback.js:175:652299643",
+          "file": "src/game/playback.js",
+          "line": 175,
+          "text": "  if (!t || t.sealed) return;",
+          "hash": 652299643,
+          "referenceHash": 219520958,
+          "language": "javascript",
+          "tokens": [
+            {
+              "text": "if",
+              "kind": "keyword",
+              "start": 2,
+              "end": 4
+            },
+            {
+              "text": "(",
+              "kind": "punctuation",
+              "start": 5,
+              "end": 6
+            },
+            {
+              "text": "!",
+              "kind": "punctuation",
+              "start": 6,
+              "end": 7
+            },
+            {
+              "text": "t",
+              "kind": "identifier",
+              "start": 7,
+              "end": 8
+            },
+            {
+              "text": "||",
+              "kind": "punctuation",
+              "start": 9,
+              "end": 11
+            },
+            {
+              "text": "t",
+              "kind": "identifier",
+              "start": 12,
+              "end": 13
+            },
+            {
+              "text": ".",
+              "kind": "punctuation",
+              "start": 13,
+              "end": 14
+            },
+            {
+              "text": "sealed",
+              "kind": "identifier",
+              "start": 14,
+              "end": 20
+            },
+            {
+              "text": ")",
+              "kind": "punctuation",
+              "start": 20,
+              "end": 21
+            },
+            {
+              "text": "return",
+              "kind": "keyword",
+              "start": 22,
+              "end": 28
+            },
+            {
+              "text": ";",
+              "kind": "punctuation",
+              "start": 28,
+              "end": 29
+            }
+          ]
+        },
+        {
+          "id": "src/game/playback.js:176:1315329276",
+          "file": "src/game/playback.js",
+          "line": 176,
+          "text": "  const value = Math.max(0, Math.min(1, Number(level) || 0));",
+          "hash": 1315329276,
+          "referenceHash": 1002800484,
+          "language": "javascript",
+          "tokens": [
+            {
+              "text": "const",
+              "kind": "keyword",
+              "start": 2,
+              "end": 7
+            },
+            {
+              "text": "value",
               "kind": "identifier",
               "start": 8,
               "end": 13
@@ -8617,318 +8721,130 @@
               "end": 15
             },
             {
-              "text": "{",
-              "kind": "punctuation",
-              "start": 16,
-              "end": 17
-            },
-            {
-              "text": "...",
-              "kind": "punctuation",
-              "start": 18,
-              "end": 21
-            },
-            {
-              "text": "meta",
+              "text": "Math",
               "kind": "identifier",
-              "start": 21,
-              "end": 25
+              "start": 16,
+              "end": 20
             },
             {
               "text": ".",
               "kind": "punctuation",
+              "start": 20,
+              "end": 21
+            },
+            {
+              "text": "max",
+              "kind": "identifier",
+              "start": 21,
+              "end": 24
+            },
+            {
+              "text": "(",
+              "kind": "punctuation",
+              "start": 24,
+              "end": 25
+            },
+            {
+              "text": "0",
+              "kind": "number",
               "start": 25,
               "end": 26
             },
             {
-              "text": "stats",
-              "kind": "identifier",
+              "text": ",",
+              "kind": "punctuation",
               "start": 26,
-              "end": 31
+              "end": 27
             },
             {
-              "text": "}",
+              "text": "Math",
+              "kind": "identifier",
+              "start": 28,
+              "end": 32
+            },
+            {
+              "text": ".",
               "kind": "punctuation",
               "start": 32,
               "end": 33
             },
             {
-              "text": ";",
-              "kind": "punctuation",
+              "text": "min",
+              "kind": "identifier",
               "start": 33,
-              "end": 34
-            }
-          ]
-        },
-        {
-          "id": "src/progression/runtime.js:26:1871325271",
-          "file": "src/progression/runtime.js",
-          "line": 26,
-          "text": "  switch (event.type) {",
-          "hash": 1871325271,
-          "referenceHash": 3750105365,
-          "language": "javascript",
-          "tokens": [
-            {
-              "text": "switch",
-              "kind": "keyword",
-              "start": 2,
-              "end": 8
+              "end": 36
             },
             {
               "text": "(",
               "kind": "punctuation",
-              "start": 9,
-              "end": 10
-            },
-            {
-              "text": "event",
-              "kind": "identifier",
-              "start": 10,
-              "end": 15
-            },
-            {
-              "text": ".",
-              "kind": "punctuation",
-              "start": 15,
-              "end": 16
-            },
-            {
-              "text": "type",
-              "kind": "keyword",
-              "start": 16,
-              "end": 20
-            },
-            {
-              "text": ")",
-              "kind": "punctuation",
-              "start": 20,
-              "end": 21
-            },
-            {
-              "text": "{",
-              "kind": "punctuation",
-              "start": 22,
-              "end": 23
-            }
-          ]
-        },
-        {
-          "id": "src/progression/runtime.js:27:1395931682",
-          "file": "src/progression/runtime.js",
-          "line": 27,
-          "text": "    case EVENT_TYPES.TAKE_COMPLETED: stats.takesCompleted += 1; break;",
-          "hash": 1395931682,
-          "referenceHash": 2924370369,
-          "language": "javascript",
-          "tokens": [
-            {
-              "text": "case",
-              "kind": "keyword",
-              "start": 4,
-              "end": 8
-            },
-            {
-              "text": "EVENT_TYPES",
-              "kind": "identifier",
-              "start": 9,
-              "end": 20
-            },
-            {
-              "text": ".",
-              "kind": "punctuation",
-              "start": 20,
-              "end": 21
-            },
-            {
-              "text": "TAKE_COMPLETED",
-              "kind": "identifier",
-              "start": 21,
-              "end": 35
-            },
-            {
-              "text": ":",
-              "kind": "punctuation",
-              "start": 35,
-              "end": 36
-            },
-            {
-              "text": "stats",
-              "kind": "identifier",
-              "start": 37,
-              "end": 42
-            },
-            {
-              "text": ".",
-              "kind": "punctuation",
-              "start": 42,
-              "end": 43
-            },
-            {
-              "text": "takesCompleted",
-              "kind": "identifier",
-              "start": 43,
-              "end": 57
-            },
-            {
-              "text": "+=",
-              "kind": "punctuation",
-              "start": 58,
-              "end": 60
+              "start": 36,
+              "end": 37
             },
             {
               "text": "1",
               "kind": "number",
-              "start": 61,
-              "end": 62
+              "start": 37,
+              "end": 38
             },
             {
-              "text": ";",
+              "text": ",",
               "kind": "punctuation",
-              "start": 62,
-              "end": 63
+              "start": 38,
+              "end": 39
             },
             {
-              "text": "break",
-              "kind": "keyword",
-              "start": 64,
-              "end": 69
-            },
-            {
-              "text": ";",
-              "kind": "punctuation",
-              "start": 69,
-              "end": 70
-            }
-          ]
-        },
-        {
-          "id": "src/progression/runtime.js:28:1167112790",
-          "file": "src/progression/runtime.js",
-          "line": 28,
-          "text": "    case EVENT_TYPES.TAKE_SPOILED: stats.takesSpoiled += 1; break;",
-          "hash": 1167112790,
-          "referenceHash": 3765194374,
-          "language": "javascript",
-          "tokens": [
-            {
-              "text": "case",
-              "kind": "keyword",
-              "start": 4,
-              "end": 8
-            },
-            {
-              "text": "EVENT_TYPES",
+              "text": "Number",
               "kind": "identifier",
-              "start": 9,
-              "end": 20
-            },
-            {
-              "text": ".",
-              "kind": "punctuation",
-              "start": 20,
-              "end": 21
-            },
-            {
-              "text": "TAKE_SPOILED",
-              "kind": "identifier",
-              "start": 21,
-              "end": 33
-            },
-            {
-              "text": ":",
-              "kind": "punctuation",
-              "start": 33,
-              "end": 34
-            },
-            {
-              "text": "stats",
-              "kind": "identifier",
-              "start": 35,
-              "end": 40
-            },
-            {
-              "text": ".",
-              "kind": "punctuation",
               "start": 40,
-              "end": 41
+              "end": 46
             },
             {
-              "text": "takesSpoiled",
+              "text": "(",
+              "kind": "punctuation",
+              "start": 46,
+              "end": 47
+            },
+            {
+              "text": "level",
               "kind": "identifier",
-              "start": 41,
+              "start": 47,
+              "end": 52
+            },
+            {
+              "text": ")",
+              "kind": "punctuation",
+              "start": 52,
               "end": 53
             },
             {
-              "text": "+=",
+              "text": "||",
               "kind": "punctuation",
               "start": 54,
               "end": 56
             },
             {
-              "text": "1",
+              "text": "0",
               "kind": "number",
               "start": 57,
               "end": 58
             },
             {
-              "text": ";",
+              "text": ")",
               "kind": "punctuation",
               "start": 58,
               "end": 59
             },
             {
-              "text": "break",
-              "kind": "keyword",
-              "start": 60,
-              "end": 65
+              "text": ")",
+              "kind": "punctuation",
+              "start": 59,
+              "end": 60
             },
             {
               "text": ";",
               "kind": "punctuation",
-              "start": 65,
-              "end": 66
-            }
-          ]
-        },
-        {
-          "id": "src/progression/runtime.js:29:1974492742",
-          "file": "src/progression/runtime.js",
-          "line": 29,
-          "text": "    case EVENT_TYPES.BATTLE_FINISHED:",
-          "hash": 1974492742,
-          "referenceHash": 444968449,
-          "language": "javascript",
-          "tokens": [
-            {
-              "text": "case",
-              "kind": "keyword",
-              "start": 4,
-              "end": 8
-            },
-            {
-              "text": "EVENT_TYPES",
-              "kind": "identifier",
-              "start": 9,
-              "end": 20
-            },
-            {
-              "text": ".",
-              "kind": "punctuation",
-              "start": 20,
-              "end": 21
-            },
-            {
-              "text": "BATTLE_FINISHED",
-              "kind": "identifier",
-              "start": 21,
-              "end": 36
-            },
-            {
-              "text": ":",
-              "kind": "punctuation",
-              "start": 36,
-              "end": 37
+              "start": 60,
+              "end": 61
             }
           ]
         }
@@ -93181,13 +93097,13 @@
         }
       ]
     },
-    "src/game/playback.js:69:4161554600": {
-      "id": "src/game/playback.js:69:4161554600",
+    "src/game/playback.js:125:4161554600": {
+      "id": "src/game/playback.js:125:4161554600",
       "file": "src/game/playback.js",
-      "line": 69,
+      "line": 125,
       "text": "}",
       "hash": 4161554600,
-      "referenceHash": 45343145,
+      "referenceHash": 915868744,
       "language": "javascript",
       "tokens": [
         {
@@ -93198,13 +93114,13 @@
         }
       ]
     },
-    "src/game/playback.js:71:603931341": {
-      "id": "src/game/playback.js:71:603931341",
+    "src/game/playback.js:127:603931341": {
+      "id": "src/game/playback.js:127:603931341",
       "file": "src/game/playback.js",
-      "line": 71,
+      "line": 127,
       "text": "export function noteDiscrete(roomId,event={}){",
       "hash": 603931341,
-      "referenceHash": 4006168917,
+      "referenceHash": 3130750019,
       "language": "javascript",
       "tokens": [
         {
@@ -93281,13 +93197,13 @@
         }
       ]
     },
-    "src/game/playback.js:72:1553871417": {
-      "id": "src/game/playback.js:72:1553871417",
+    "src/game/playback.js:128:1553871417": {
+      "id": "src/game/playback.js:128:1553871417",
       "file": "src/game/playback.js",
-      "line": 72,
+      "line": 128,
       "text": "  const take=state.takes.get(roomId);if(!take||take.sealed)return;",
       "hash": 1553871417,
-      "referenceHash": 2049132342,
+      "referenceHash": 19446248,
       "language": "javascript",
       "tokens": [
         {
@@ -93430,13 +93346,13 @@
         }
       ]
     },
-    "src/game/playback.js:74:4161554600": {
-      "id": "src/game/playback.js:74:4161554600",
+    "src/game/playback.js:130:4161554600": {
+      "id": "src/game/playback.js:130:4161554600",
       "file": "src/game/playback.js",
-      "line": 74,
+      "line": 130,
       "text": "}",
       "hash": 4161554600,
-      "referenceHash": 25535835,
+      "referenceHash": 2872210894,
       "language": "javascript",
       "tokens": [
         {
@@ -93447,13 +93363,13 @@
         }
       ]
     },
-    "src/game/playback.js:76:141453123": {
-      "id": "src/game/playback.js:76:141453123",
+    "src/game/playback.js:132:141453123": {
+      "id": "src/game/playback.js:132:141453123",
       "file": "src/game/playback.js",
-      "line": 76,
+      "line": 132,
       "text": "export function beginTake(roomId, cell) {",
       "hash": 141453123,
-      "referenceHash": 4239955886,
+      "referenceHash": 464903731,
       "language": "javascript",
       "tokens": [
         {
@@ -93512,13 +93428,13 @@
         }
       ]
     },
-    "src/game/playback.js:77:3509963631": {
-      "id": "src/game/playback.js:77:3509963631",
+    "src/game/playback.js:133:2206457085": {
+      "id": "src/game/playback.js:133:2206457085",
       "file": "src/game/playback.js",
-      "line": 77,
-      "text": "  state.takes.set(roomId, { roomId, cell: { ...cell }, levels: new Map(), discrete:[], sealed: false, at: 0 });",
-      "hash": 3509963631,
-      "referenceHash": 3237986937,
+      "line": 133,
+      "text": "  state.takes.set(roomId, {",
+      "hash": 2206457085,
+      "referenceHash": 2711002462,
       "language": "javascript",
       "tokens": [
         {
@@ -93574,219 +93490,403 @@
           "kind": "punctuation",
           "start": 26,
           "end": 27
-        },
+        }
+      ]
+    },
+    "src/game/playback.js:134:2871208532": {
+      "id": "src/game/playback.js:134:2871208532",
+      "file": "src/game/playback.js",
+      "line": 134,
+      "text": "    roomId, cell: { ...cell }, levels: new Map(), discrete: [],",
+      "hash": 2871208532,
+      "referenceHash": 2621632158,
+      "language": "javascript",
+      "tokens": [
         {
           "text": "roomId",
           "kind": "identifier",
-          "start": 28,
-          "end": 34
+          "start": 4,
+          "end": 10
         },
         {
           "text": ",",
           "kind": "punctuation",
-          "start": 34,
-          "end": 35
+          "start": 10,
+          "end": 11
         },
         {
           "text": "cell",
           "kind": "identifier",
-          "start": 36,
-          "end": 40
+          "start": 12,
+          "end": 16
         },
         {
           "text": ":",
           "kind": "punctuation",
-          "start": 40,
-          "end": 41
+          "start": 16,
+          "end": 17
         },
         {
           "text": "{",
           "kind": "punctuation",
-          "start": 42,
-          "end": 43
+          "start": 18,
+          "end": 19
         },
         {
           "text": "...",
           "kind": "punctuation",
-          "start": 44,
-          "end": 47
+          "start": 20,
+          "end": 23
         },
         {
           "text": "cell",
           "kind": "identifier",
-          "start": 47,
-          "end": 51
+          "start": 23,
+          "end": 27
         },
         {
           "text": "}",
           "kind": "punctuation",
-          "start": 52,
-          "end": 53
+          "start": 28,
+          "end": 29
         },
         {
           "text": ",",
           "kind": "punctuation",
-          "start": 53,
-          "end": 54
+          "start": 29,
+          "end": 30
         },
         {
           "text": "levels",
           "kind": "identifier",
-          "start": 55,
-          "end": 61
+          "start": 31,
+          "end": 37
         },
         {
           "text": ":",
+          "kind": "punctuation",
+          "start": 37,
+          "end": 38
+        },
+        {
+          "text": "new",
+          "kind": "keyword",
+          "start": 39,
+          "end": 42
+        },
+        {
+          "text": "Map",
+          "kind": "identifier",
+          "start": 43,
+          "end": 46
+        },
+        {
+          "text": "(",
+          "kind": "punctuation",
+          "start": 46,
+          "end": 47
+        },
+        {
+          "text": ")",
+          "kind": "punctuation",
+          "start": 47,
+          "end": 48
+        },
+        {
+          "text": ",",
+          "kind": "punctuation",
+          "start": 48,
+          "end": 49
+        },
+        {
+          "text": "discrete",
+          "kind": "identifier",
+          "start": 50,
+          "end": 58
+        },
+        {
+          "text": ":",
+          "kind": "punctuation",
+          "start": 58,
+          "end": 59
+        },
+        {
+          "text": "[",
+          "kind": "punctuation",
+          "start": 60,
+          "end": 61
+        },
+        {
+          "text": "]",
           "kind": "punctuation",
           "start": 61,
           "end": 62
         },
         {
-          "text": "new",
-          "kind": "keyword",
-          "start": 63,
-          "end": 66
-        },
-        {
-          "text": "Map",
-          "kind": "identifier",
-          "start": 67,
-          "end": 70
-        },
-        {
-          "text": "(",
-          "kind": "punctuation",
-          "start": 70,
-          "end": 71
-        },
-        {
-          "text": ")",
-          "kind": "punctuation",
-          "start": 71,
-          "end": 72
-        },
-        {
           "text": ",",
           "kind": "punctuation",
-          "start": 72,
-          "end": 73
-        },
+          "start": 62,
+          "end": 63
+        }
+      ]
+    },
+    "src/game/playback.js:135:2042443919": {
+      "id": "src/game/playback.js:135:2042443919",
+      "file": "src/game/playback.js",
+      "line": 135,
+      "text": "    presence: { peak: 0, atSec: 0 }, sealed: false, at: 0,",
+      "hash": 2042443919,
+      "referenceHash": 4046043048,
+      "language": "javascript",
+      "tokens": [
         {
-          "text": "discrete",
+          "text": "presence",
           "kind": "identifier",
-          "start": 74,
-          "end": 82
+          "start": 4,
+          "end": 12
         },
         {
           "text": ":",
           "kind": "punctuation",
-          "start": 82,
-          "end": 83
+          "start": 12,
+          "end": 13
         },
         {
-          "text": "[",
+          "text": "{",
           "kind": "punctuation",
-          "start": 83,
-          "end": 84
+          "start": 14,
+          "end": 15
         },
         {
-          "text": "]",
-          "kind": "punctuation",
-          "start": 84,
-          "end": 85
-        },
-        {
-          "text": ",",
-          "kind": "punctuation",
-          "start": 85,
-          "end": 86
-        },
-        {
-          "text": "sealed",
+          "text": "peak",
           "kind": "identifier",
-          "start": 87,
-          "end": 93
+          "start": 16,
+          "end": 20
         },
         {
           "text": ":",
           "kind": "punctuation",
-          "start": 93,
-          "end": 94
-        },
-        {
-          "text": "false",
-          "kind": "keyword",
-          "start": 95,
-          "end": 100
-        },
-        {
-          "text": ",",
-          "kind": "punctuation",
-          "start": 100,
-          "end": 101
-        },
-        {
-          "text": "at",
-          "kind": "identifier",
-          "start": 102,
-          "end": 104
-        },
-        {
-          "text": ":",
-          "kind": "punctuation",
-          "start": 104,
-          "end": 105
+          "start": 20,
+          "end": 21
         },
         {
           "text": "0",
           "kind": "number",
-          "start": 106,
-          "end": 107
+          "start": 22,
+          "end": 23
+        },
+        {
+          "text": ",",
+          "kind": "punctuation",
+          "start": 23,
+          "end": 24
+        },
+        {
+          "text": "atSec",
+          "kind": "identifier",
+          "start": 25,
+          "end": 30
+        },
+        {
+          "text": ":",
+          "kind": "punctuation",
+          "start": 30,
+          "end": 31
+        },
+        {
+          "text": "0",
+          "kind": "number",
+          "start": 32,
+          "end": 33
         },
         {
           "text": "}",
           "kind": "punctuation",
-          "start": 108,
-          "end": 109
+          "start": 34,
+          "end": 35
         },
         {
-          "text": ")",
+          "text": ",",
           "kind": "punctuation",
-          "start": 109,
-          "end": 110
+          "start": 35,
+          "end": 36
         },
         {
-          "text": ";",
+          "text": "sealed",
+          "kind": "identifier",
+          "start": 37,
+          "end": 43
+        },
+        {
+          "text": ":",
           "kind": "punctuation",
-          "start": 110,
-          "end": 111
+          "start": 43,
+          "end": 44
+        },
+        {
+          "text": "false",
+          "kind": "keyword",
+          "start": 45,
+          "end": 50
+        },
+        {
+          "text": ",",
+          "kind": "punctuation",
+          "start": 50,
+          "end": 51
+        },
+        {
+          "text": "at",
+          "kind": "identifier",
+          "start": 52,
+          "end": 54
+        },
+        {
+          "text": ":",
+          "kind": "punctuation",
+          "start": 54,
+          "end": 55
+        },
+        {
+          "text": "0",
+          "kind": "number",
+          "start": 56,
+          "end": 57
+        },
+        {
+          "text": ",",
+          "kind": "punctuation",
+          "start": 57,
+          "end": 58
         }
       ]
     },
-    "src/game/playback.js:78:4161554600": {
-      "id": "src/game/playback.js:78:4161554600",
+    "src/game/playback.js:136:1581901516": {
+      "id": "src/game/playback.js:136:1581901516",
       "file": "src/game/playback.js",
-      "line": 78,
-      "text": "}",
-      "hash": 4161554600,
-      "referenceHash": 483200295,
+      "line": 136,
+      "text": "    // Was the room humming when this was rolled, and where in it did he stand.",
+      "hash": 1581901516,
+      "referenceHash": 3246181904,
       "language": "javascript",
       "tokens": [
         {
-          "text": "}",
-          "kind": "punctuation",
-          "start": 0,
-          "end": 1
+          "text": "// Was the room humming when this was rolled, and where in it did he stand.",
+          "kind": "comment",
+          "start": 4,
+          "end": 79
         }
       ]
     },
-    "src/game/playback.js:80:2949708577": {
-      "id": "src/game/playback.js:80:2949708577",
+    "src/game/playback.js:137:3241114526": {
+      "id": "src/game/playback.js:137:3241114526",
       "file": "src/game/playback.js",
-      "line": 80,
-      "text": "export function abortTake(roomId) { state.takes.delete(roomId); }",
-      "hash": 2949708577,
-      "referenceHash": 350089545,
+      "line": 137,
+      "text": "    // Both used to live in their own arrays on the recordist, keyed by room, so",
+      "hash": 3241114526,
+      "referenceHash": 959436555,
+      "language": "javascript",
+      "tokens": [
+        {
+          "text": "// Both used to live in their own arrays on the recordist, keyed by room, so",
+          "kind": "comment",
+          "start": 4,
+          "end": 80
+        }
+      ]
+    },
+    "src/game/playback.js:138:133253041": {
+      "id": "src/game/playback.js:138:133253041",
+      "file": "src/game/playback.js",
+      "line": 138,
+      "text": "    // one take was three entries in three places that could each be edited",
+      "hash": 133253041,
+      "referenceHash": 2189369819,
+      "language": "javascript",
+      "tokens": [
+        {
+          "text": "// one take was three entries in three places that could each be edited",
+          "kind": "comment",
+          "start": 4,
+          "end": 75
+        }
+      ]
+    },
+    "src/game/playback.js:139:3884777555": {
+      "id": "src/game/playback.js:139:3884777555",
+      "file": "src/game/playback.js",
+      "line": 139,
+      "text": "    // without the others.",
+      "hash": 3884777555,
+      "referenceHash": 2301278332,
+      "language": "javascript",
+      "tokens": [
+        {
+          "text": "// without the others.",
+          "kind": "comment",
+          "start": 4,
+          "end": 26
+        }
+      ]
+    },
+    "src/game/playback.js:170:2731697891": {
+      "id": "src/game/playback.js:170:2731697891",
+      "file": "src/game/playback.js",
+      "line": 170,
+      "text": "//",
+      "hash": 2731697891,
+      "referenceHash": 897831241,
+      "language": "javascript",
+      "tokens": [
+        {
+          "text": "//",
+          "kind": "comment",
+          "start": 0,
+          "end": 2
+        }
+      ]
+    },
+    "src/game/playback.js:171:256231350": {
+      "id": "src/game/playback.js:171:256231350",
+      "file": "src/game/playback.js",
+      "line": 171,
+      "text": "// Peak-hold, like every other level on this tape: it is what a microphone does,",
+      "hash": 256231350,
+      "referenceHash": 520748821,
+      "language": "javascript",
+      "tokens": [
+        {
+          "text": "// Peak-hold, like every other level on this tape: it is what a microphone does,",
+          "kind": "comment",
+          "start": 0,
+          "end": 80
+        }
+      ]
+    },
+    "src/game/playback.js:172:3582701097": {
+      "id": "src/game/playback.js:172:3582701097",
+      "file": "src/game/playback.js",
+      "line": 172,
+      "text": "// and it means a single close pass is on the recording forever.",
+      "hash": 3582701097,
+      "referenceHash": 1471050125,
+      "language": "javascript",
+      "tokens": [
+        {
+          "text": "// and it means a single close pass is on the recording forever.",
+          "kind": "comment",
+          "start": 0,
+          "end": 64
+        }
+      ]
+    },
+    "src/game/playback.js:173:3713278231": {
+      "id": "src/game/playback.js:173:3713278231",
+      "file": "src/game/playback.js",
+      "line": 173,
+      "text": "export function notePresence(roomId, level, atSec = 0) {",
+      "hash": 3713278231,
+      "referenceHash": 1589833234,
       "language": "javascript",
       "tokens": [
         {
@@ -93802,128 +93902,385 @@
           "end": 15
         },
         {
-          "text": "abortTake",
+          "text": "notePresence",
           "kind": "identifier",
           "start": 16,
-          "end": 25
+          "end": 28
         },
         {
           "text": "(",
           "kind": "punctuation",
-          "start": 25,
-          "end": 26
+          "start": 28,
+          "end": 29
         },
         {
           "text": "roomId",
           "kind": "identifier",
-          "start": 26,
-          "end": 32
+          "start": 29,
+          "end": 35
+        },
+        {
+          "text": ",",
+          "kind": "punctuation",
+          "start": 35,
+          "end": 36
+        },
+        {
+          "text": "level",
+          "kind": "identifier",
+          "start": 37,
+          "end": 42
+        },
+        {
+          "text": ",",
+          "kind": "punctuation",
+          "start": 42,
+          "end": 43
+        },
+        {
+          "text": "atSec",
+          "kind": "identifier",
+          "start": 44,
+          "end": 49
+        },
+        {
+          "text": "=",
+          "kind": "punctuation",
+          "start": 50,
+          "end": 51
+        },
+        {
+          "text": "0",
+          "kind": "number",
+          "start": 52,
+          "end": 53
         },
         {
           "text": ")",
           "kind": "punctuation",
-          "start": 32,
-          "end": 33
+          "start": 53,
+          "end": 54
         },
         {
           "text": "{",
+          "kind": "punctuation",
+          "start": 55,
+          "end": 56
+        }
+      ]
+    },
+    "src/game/playback.js:174:3373171060": {
+      "id": "src/game/playback.js:174:3373171060",
+      "file": "src/game/playback.js",
+      "line": 174,
+      "text": "  const t = state.takes.get(roomId);",
+      "hash": 3373171060,
+      "referenceHash": 1688541462,
+      "language": "javascript",
+      "tokens": [
+        {
+          "text": "const",
+          "kind": "keyword",
+          "start": 2,
+          "end": 7
+        },
+        {
+          "text": "t",
+          "kind": "identifier",
+          "start": 8,
+          "end": 9
+        },
+        {
+          "text": "=",
+          "kind": "punctuation",
+          "start": 10,
+          "end": 11
+        },
+        {
+          "text": "state",
+          "kind": "identifier",
+          "start": 12,
+          "end": 17
+        },
+        {
+          "text": ".",
+          "kind": "punctuation",
+          "start": 17,
+          "end": 18
+        },
+        {
+          "text": "takes",
+          "kind": "identifier",
+          "start": 18,
+          "end": 23
+        },
+        {
+          "text": ".",
+          "kind": "punctuation",
+          "start": 23,
+          "end": 24
+        },
+        {
+          "text": "get",
+          "kind": "keyword",
+          "start": 24,
+          "end": 27
+        },
+        {
+          "text": "(",
+          "kind": "punctuation",
+          "start": 27,
+          "end": 28
+        },
+        {
+          "text": "roomId",
+          "kind": "identifier",
+          "start": 28,
+          "end": 34
+        },
+        {
+          "text": ")",
           "kind": "punctuation",
           "start": 34,
           "end": 35
         },
         {
-          "text": "state",
-          "kind": "identifier",
-          "start": 36,
-          "end": 41
-        },
-        {
-          "text": ".",
+          "text": ";",
           "kind": "punctuation",
-          "start": 41,
-          "end": 42
-        },
+          "start": 35,
+          "end": 36
+        }
+      ]
+    },
+    "src/game/playback.js:175:652299643": {
+      "id": "src/game/playback.js:175:652299643",
+      "file": "src/game/playback.js",
+      "line": 175,
+      "text": "  if (!t || t.sealed) return;",
+      "hash": 652299643,
+      "referenceHash": 219520958,
+      "language": "javascript",
+      "tokens": [
         {
-          "text": "takes",
-          "kind": "identifier",
-          "start": 42,
-          "end": 47
-        },
-        {
-          "text": ".",
-          "kind": "punctuation",
-          "start": 47,
-          "end": 48
-        },
-        {
-          "text": "delete",
+          "text": "if",
           "kind": "keyword",
-          "start": 48,
-          "end": 54
+          "start": 2,
+          "end": 4
         },
         {
           "text": "(",
           "kind": "punctuation",
-          "start": 54,
-          "end": 55
+          "start": 5,
+          "end": 6
         },
         {
-          "text": "roomId",
+          "text": "!",
+          "kind": "punctuation",
+          "start": 6,
+          "end": 7
+        },
+        {
+          "text": "t",
           "kind": "identifier",
-          "start": 55,
-          "end": 61
+          "start": 7,
+          "end": 8
+        },
+        {
+          "text": "||",
+          "kind": "punctuation",
+          "start": 9,
+          "end": 11
+        },
+        {
+          "text": "t",
+          "kind": "identifier",
+          "start": 12,
+          "end": 13
+        },
+        {
+          "text": ".",
+          "kind": "punctuation",
+          "start": 13,
+          "end": 14
+        },
+        {
+          "text": "sealed",
+          "kind": "identifier",
+          "start": 14,
+          "end": 20
         },
         {
           "text": ")",
           "kind": "punctuation",
-          "start": 61,
-          "end": 62
+          "start": 20,
+          "end": 21
+        },
+        {
+          "text": "return",
+          "kind": "keyword",
+          "start": 22,
+          "end": 28
         },
         {
           "text": ";",
           "kind": "punctuation",
-          "start": 62,
-          "end": 63
+          "start": 28,
+          "end": 29
+        }
+      ]
+    },
+    "src/game/playback.js:176:1315329276": {
+      "id": "src/game/playback.js:176:1315329276",
+      "file": "src/game/playback.js",
+      "line": 176,
+      "text": "  const value = Math.max(0, Math.min(1, Number(level) || 0));",
+      "hash": 1315329276,
+      "referenceHash": 1002800484,
+      "language": "javascript",
+      "tokens": [
+        {
+          "text": "const",
+          "kind": "keyword",
+          "start": 2,
+          "end": 7
         },
         {
-          "text": "}",
+          "text": "value",
+          "kind": "identifier",
+          "start": 8,
+          "end": 13
+        },
+        {
+          "text": "=",
           "kind": "punctuation",
-          "start": 64,
-          "end": 65
-        }
-      ]
-    },
-    "src/game/playback.js:82:3262896387": {
-      "id": "src/game/playback.js:82:3262896387",
-      "file": "src/game/playback.js",
-      "line": 82,
-      "text": "// A completed take is sealed: the guest is chosen once and never re-rolled, so",
-      "hash": 3262896387,
-      "referenceHash": 1111027381,
-      "language": "javascript",
-      "tokens": [
+          "start": 14,
+          "end": 15
+        },
         {
-          "text": "// A completed take is sealed: the guest is chosen once and never re-rolled, so",
-          "kind": "comment",
-          "start": 0,
-          "end": 79
-        }
-      ]
-    },
-    "src/game/playback.js:83:1119687415": {
-      "id": "src/game/playback.js:83:1119687415",
-      "file": "src/game/playback.js",
-      "line": 83,
-      "text": "// playing the tape twice plays the same tape. A tape that changes is a dream.",
-      "hash": 1119687415,
-      "referenceHash": 372757352,
-      "language": "javascript",
-      "tokens": [
+          "text": "Math",
+          "kind": "identifier",
+          "start": 16,
+          "end": 20
+        },
         {
-          "text": "// playing the tape twice plays the same tape. A tape that changes is a dream.",
-          "kind": "comment",
-          "start": 0,
-          "end": 78
+          "text": ".",
+          "kind": "punctuation",
+          "start": 20,
+          "end": 21
+        },
+        {
+          "text": "max",
+          "kind": "identifier",
+          "start": 21,
+          "end": 24
+        },
+        {
+          "text": "(",
+          "kind": "punctuation",
+          "start": 24,
+          "end": 25
+        },
+        {
+          "text": "0",
+          "kind": "number",
+          "start": 25,
+          "end": 26
+        },
+        {
+          "text": ",",
+          "kind": "punctuation",
+          "start": 26,
+          "end": 27
+        },
+        {
+          "text": "Math",
+          "kind": "identifier",
+          "start": 28,
+          "end": 32
+        },
+        {
+          "text": ".",
+          "kind": "punctuation",
+          "start": 32,
+          "end": 33
+        },
+        {
+          "text": "min",
+          "kind": "identifier",
+          "start": 33,
+          "end": 36
+        },
+        {
+          "text": "(",
+          "kind": "punctuation",
+          "start": 36,
+          "end": 37
+        },
+        {
+          "text": "1",
+          "kind": "number",
+          "start": 37,
+          "end": 38
+        },
+        {
+          "text": ",",
+          "kind": "punctuation",
+          "start": 38,
+          "end": 39
+        },
+        {
+          "text": "Number",
+          "kind": "identifier",
+          "start": 40,
+          "end": 46
+        },
+        {
+          "text": "(",
+          "kind": "punctuation",
+          "start": 46,
+          "end": 47
+        },
+        {
+          "text": "level",
+          "kind": "identifier",
+          "start": 47,
+          "end": 52
+        },
+        {
+          "text": ")",
+          "kind": "punctuation",
+          "start": 52,
+          "end": 53
+        },
+        {
+          "text": "||",
+          "kind": "punctuation",
+          "start": 54,
+          "end": 56
+        },
+        {
+          "text": "0",
+          "kind": "number",
+          "start": 57,
+          "end": 58
+        },
+        {
+          "text": ")",
+          "kind": "punctuation",
+          "start": 58,
+          "end": 59
+        },
+        {
+          "text": ")",
+          "kind": "punctuation",
+          "start": 59,
+          "end": 60
+        },
+        {
+          "text": ";",
+          "kind": "punctuation",
+          "start": 60,
+          "end": 61
         }
       ]
     },
@@ -107518,17 +107875,6 @@
         "hash": 921744400
       }
     },
-    "abortTake": {
-      "id": "abortTake",
-      "occurrence": {
-        "entryId": "src/game/playback.js:80:2949708577",
-        "file": "src/game/playback.js",
-        "line": 80,
-        "start": 16,
-        "end": 25,
-        "hash": 2949708577
-      }
-    },
     "ABSENT": {
       "id": "ABSENT",
       "occurrence": {
@@ -107631,12 +107977,23 @@
     "at": {
       "id": "at",
       "occurrence": {
-        "entryId": "src/game/playback.js:77:3509963631",
+        "entryId": "src/game/playback.js:135:2042443919",
         "file": "src/game/playback.js",
-        "line": 77,
-        "start": 102,
-        "end": 104,
-        "hash": 3509963631
+        "line": 135,
+        "start": 52,
+        "end": 54,
+        "hash": 2042443919
+      }
+    },
+    "atSec": {
+      "id": "atSec",
+      "occurrence": {
+        "entryId": "src/game/playback.js:135:2042443919",
+        "file": "src/game/playback.js",
+        "line": 135,
+        "start": 25,
+        "end": 30,
+        "hash": 2042443919
       }
     },
     "attempts": {
@@ -107719,9 +108076,9 @@
     "beginTake": {
       "id": "beginTake",
       "occurrence": {
-        "entryId": "src/game/playback.js:76:141453123",
+        "entryId": "src/game/playback.js:132:141453123",
         "file": "src/game/playback.js",
-        "line": 76,
+        "line": 132,
         "start": 16,
         "end": 25,
         "hash": 141453123
@@ -107884,9 +108241,9 @@
     "cell": {
       "id": "cell",
       "occurrence": {
-        "entryId": "src/game/playback.js:76:141453123",
+        "entryId": "src/game/playback.js:132:141453123",
         "file": "src/game/playback.js",
-        "line": 76,
+        "line": 132,
         "start": 34,
         "end": 38,
         "hash": 141453123
@@ -108280,12 +108637,12 @@
     "discrete": {
       "id": "discrete",
       "occurrence": {
-        "entryId": "src/game/playback.js:77:3509963631",
+        "entryId": "src/game/playback.js:134:2871208532",
         "file": "src/game/playback.js",
-        "line": 77,
-        "start": 74,
-        "end": 82,
-        "hash": 3509963631
+        "line": 134,
+        "start": 50,
+        "end": 58,
+        "hash": 2871208532
       }
     },
     "distance": {
@@ -109369,23 +109726,23 @@
     "level": {
       "id": "level",
       "occurrence": {
-        "entryId": "src/game/presence.js:277:2788648064",
-        "file": "src/game/presence.js",
-        "line": 277,
-        "start": 45,
-        "end": 50,
-        "hash": 2788648064
+        "entryId": "src/game/playback.js:173:3713278231",
+        "file": "src/game/playback.js",
+        "line": 173,
+        "start": 37,
+        "end": 42,
+        "hash": 3713278231
       }
     },
     "levels": {
       "id": "levels",
       "occurrence": {
-        "entryId": "src/game/playback.js:77:3509963631",
+        "entryId": "src/game/playback.js:134:2871208532",
         "file": "src/game/playback.js",
-        "line": 77,
-        "start": 55,
-        "end": 61,
-        "hash": 3509963631
+        "line": 134,
+        "start": 31,
+        "end": 37,
+        "hash": 2871208532
       }
     },
     "lightHumMaxIntervalMs": {
@@ -109490,12 +109847,12 @@
     "Map": {
       "id": "Map",
       "occurrence": {
-        "entryId": "src/game/playback.js:77:3509963631",
+        "entryId": "src/game/playback.js:134:2871208532",
         "file": "src/game/playback.js",
-        "line": 77,
-        "start": 67,
-        "end": 70,
-        "hash": 3509963631
+        "line": 134,
+        "start": 43,
+        "end": 46,
+        "hash": 2871208532
       }
     },
     "marbleEyes": {
@@ -109710,12 +110067,23 @@
     "noteDiscrete": {
       "id": "noteDiscrete",
       "occurrence": {
-        "entryId": "src/game/playback.js:71:603931341",
+        "entryId": "src/game/playback.js:127:603931341",
         "file": "src/game/playback.js",
-        "line": 71,
+        "line": 127,
         "start": 16,
         "end": 28,
         "hash": 603931341
+      }
+    },
+    "notePresence": {
+      "id": "notePresence",
+      "occurrence": {
+        "entryId": "src/game/playback.js:173:3713278231",
+        "file": "src/game/playback.js",
+        "line": 173,
+        "start": 16,
+        "end": 28,
+        "hash": 3713278231
       }
     },
     "notice": {
@@ -109916,6 +110284,17 @@
         "hash": 647384118
       }
     },
+    "peak": {
+      "id": "peak",
+      "occurrence": {
+        "entryId": "src/game/playback.js:135:2042443919",
+        "file": "src/game/playback.js",
+        "line": 135,
+        "start": 16,
+        "end": 20,
+        "hash": 2042443919
+      }
+    },
     "pendingContact": {
       "id": "pendingContact",
       "occurrence": {
@@ -110013,6 +110392,17 @@
         "start": 8,
         "end": 16,
         "hash": 3333038605
+      }
+    },
+    "presence": {
+      "id": "presence",
+      "occurrence": {
+        "entryId": "src/game/playback.js:135:2042443919",
+        "file": "src/game/playback.js",
+        "line": 135,
+        "start": 4,
+        "end": 12,
+        "hash": 2042443919
       }
     },
     "PRESENCE": {
@@ -110502,9 +110892,9 @@
     "sealed": {
       "id": "sealed",
       "occurrence": {
-        "entryId": "src/game/playback.js:72:1553871417",
+        "entryId": "src/game/playback.js:128:1553871417",
         "file": "src/game/playback.js",
-        "line": 72,
+        "line": 128,
         "start": 52,
         "end": 58,
         "hash": 1553871417
@@ -110898,12 +111288,12 @@
     "String": {
       "id": "String",
       "occurrence": {
-        "entryId": "src/progression/runtime.js:20:1631297339",
-        "file": "src/progression/runtime.js",
-        "line": 20,
-        "start": 12,
-        "end": 18,
-        "hash": 1631297339
+        "entryId": "src/data/battles.js:135:921744400",
+        "file": "src/data/battles.js",
+        "line": 135,
+        "start": 15,
+        "end": 21,
+        "hash": 921744400
       }
     },
     "stringId": {
@@ -110939,6 +111329,17 @@
         "hash": 1507228427
       }
     },
+    "t": {
+      "id": "t",
+      "occurrence": {
+        "entryId": "src/game/playback.js:174:3373171060",
+        "file": "src/game/playback.js",
+        "line": 174,
+        "start": 8,
+        "end": 9,
+        "hash": 3373171060
+      }
+    },
     "tableau": {
       "id": "tableau",
       "occurrence": {
@@ -110953,9 +111354,9 @@
     "take": {
       "id": "take",
       "occurrence": {
-        "entryId": "src/game/playback.js:72:1553871417",
+        "entryId": "src/game/playback.js:128:1553871417",
         "file": "src/game/playback.js",
-        "line": 72,
+        "line": 128,
         "start": 8,
         "end": 12,
         "hash": 1553871417
@@ -111008,9 +111409,9 @@
     "takes": {
       "id": "takes",
       "occurrence": {
-        "entryId": "src/game/playback.js:72:1553871417",
+        "entryId": "src/game/playback.js:128:1553871417",
         "file": "src/game/playback.js",
-        "line": 72,
+        "line": 128,
         "start": 19,
         "end": 24,
         "hash": 1553871417
@@ -113125,314 +113526,304 @@
       "hash": 2220420749
     },
     {
-      "id": "src/game/playback.js:71:603931341:noteDiscrete:roomId",
+      "id": "src/game/playback.js:127:603931341:noteDiscrete:roomId",
       "from": "noteDiscrete",
       "to": "roomId",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:71:603931341",
+      "entryId": "src/game/playback.js:127:603931341",
       "file": "src/game/playback.js",
-      "line": 71,
+      "line": 127,
       "hash": 603931341
     },
     {
-      "id": "src/game/playback.js:71:603931341:noteDiscrete:event",
+      "id": "src/game/playback.js:127:603931341:noteDiscrete:event",
       "from": "noteDiscrete",
       "to": "event",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:71:603931341",
+      "entryId": "src/game/playback.js:127:603931341",
       "file": "src/game/playback.js",
-      "line": 71,
+      "line": 127,
       "hash": 603931341
     },
     {
-      "id": "src/game/playback.js:72:1553871417:take:state",
+      "id": "src/game/playback.js:128:1553871417:take:state",
       "from": "take",
       "to": "state",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:72:1553871417",
+      "entryId": "src/game/playback.js:128:1553871417",
       "file": "src/game/playback.js",
-      "line": 72,
+      "line": 128,
       "hash": 1553871417
     },
     {
-      "id": "src/game/playback.js:72:1553871417:take:takes",
+      "id": "src/game/playback.js:128:1553871417:take:takes",
       "from": "take",
       "to": "takes",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:72:1553871417",
+      "entryId": "src/game/playback.js:128:1553871417",
       "file": "src/game/playback.js",
-      "line": 72,
+      "line": 128,
       "hash": 1553871417
     },
     {
-      "id": "src/game/playback.js:72:1553871417:take:roomId",
+      "id": "src/game/playback.js:128:1553871417:take:roomId",
       "from": "take",
       "to": "roomId",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:72:1553871417",
+      "entryId": "src/game/playback.js:128:1553871417",
       "file": "src/game/playback.js",
-      "line": 72,
+      "line": 128,
       "hash": 1553871417
     },
     {
-      "id": "src/game/playback.js:72:1553871417:take:sealed",
+      "id": "src/game/playback.js:128:1553871417:take:sealed",
       "from": "take",
       "to": "sealed",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:72:1553871417",
+      "entryId": "src/game/playback.js:128:1553871417",
       "file": "src/game/playback.js",
-      "line": 72,
+      "line": 128,
       "hash": 1553871417
     },
     {
-      "id": "src/game/playback.js:76:141453123:beginTake:roomId",
+      "id": "src/game/playback.js:132:141453123:beginTake:roomId",
       "from": "beginTake",
       "to": "roomId",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:76:141453123",
+      "entryId": "src/game/playback.js:132:141453123",
       "file": "src/game/playback.js",
-      "line": 76,
+      "line": 132,
       "hash": 141453123
     },
     {
-      "id": "src/game/playback.js:76:141453123:beginTake:cell",
+      "id": "src/game/playback.js:132:141453123:beginTake:cell",
       "from": "beginTake",
       "to": "cell",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:76:141453123",
+      "entryId": "src/game/playback.js:132:141453123",
       "file": "src/game/playback.js",
-      "line": 76,
+      "line": 132,
       "hash": 141453123
     },
     {
-      "id": "src/game/playback.js:77:3509963631:state:takes",
+      "id": "src/game/playback.js:133:2206457085:state:takes",
       "from": "state",
       "to": "takes",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:77:3509963631",
+      "entryId": "src/game/playback.js:133:2206457085",
       "file": "src/game/playback.js",
-      "line": 77,
-      "hash": 3509963631
+      "line": 133,
+      "hash": 2206457085
     },
     {
-      "id": "src/game/playback.js:77:3509963631:state:roomId",
+      "id": "src/game/playback.js:133:2206457085:state:roomId",
       "from": "state",
       "to": "roomId",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:77:3509963631",
+      "entryId": "src/game/playback.js:133:2206457085",
       "file": "src/game/playback.js",
-      "line": 77,
-      "hash": 3509963631
+      "line": 133,
+      "hash": 2206457085
     },
     {
-      "id": "src/game/playback.js:77:3509963631:state:cell",
-      "from": "state",
+      "id": "src/game/playback.js:134:2871208532:roomId:cell",
+      "from": "roomId",
       "to": "cell",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:77:3509963631",
+      "entryId": "src/game/playback.js:134:2871208532",
       "file": "src/game/playback.js",
-      "line": 77,
-      "hash": 3509963631
+      "line": 134,
+      "hash": 2871208532
     },
     {
-      "id": "src/game/playback.js:77:3509963631:state:levels",
-      "from": "state",
+      "id": "src/game/playback.js:134:2871208532:roomId:levels",
+      "from": "roomId",
       "to": "levels",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:77:3509963631",
+      "entryId": "src/game/playback.js:134:2871208532",
       "file": "src/game/playback.js",
-      "line": 77,
-      "hash": 3509963631
+      "line": 134,
+      "hash": 2871208532
     },
     {
-      "id": "src/game/playback.js:77:3509963631:state:Map",
-      "from": "state",
+      "id": "src/game/playback.js:134:2871208532:roomId:Map",
+      "from": "roomId",
       "to": "Map",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:77:3509963631",
+      "entryId": "src/game/playback.js:134:2871208532",
       "file": "src/game/playback.js",
-      "line": 77,
-      "hash": 3509963631
+      "line": 134,
+      "hash": 2871208532
     },
     {
-      "id": "src/game/playback.js:77:3509963631:state:discrete",
-      "from": "state",
+      "id": "src/game/playback.js:134:2871208532:roomId:discrete",
+      "from": "roomId",
       "to": "discrete",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:77:3509963631",
+      "entryId": "src/game/playback.js:134:2871208532",
       "file": "src/game/playback.js",
-      "line": 77,
-      "hash": 3509963631
+      "line": 134,
+      "hash": 2871208532
     },
     {
-      "id": "src/game/playback.js:77:3509963631:state:sealed",
-      "from": "state",
+      "id": "src/game/playback.js:135:2042443919:presence:peak",
+      "from": "presence",
+      "to": "peak",
+      "kind": "same-line-reference",
+      "entryId": "src/game/playback.js:135:2042443919",
+      "file": "src/game/playback.js",
+      "line": 135,
+      "hash": 2042443919
+    },
+    {
+      "id": "src/game/playback.js:135:2042443919:presence:atSec",
+      "from": "presence",
+      "to": "atSec",
+      "kind": "same-line-reference",
+      "entryId": "src/game/playback.js:135:2042443919",
+      "file": "src/game/playback.js",
+      "line": 135,
+      "hash": 2042443919
+    },
+    {
+      "id": "src/game/playback.js:135:2042443919:presence:sealed",
+      "from": "presence",
       "to": "sealed",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:77:3509963631",
+      "entryId": "src/game/playback.js:135:2042443919",
       "file": "src/game/playback.js",
-      "line": 77,
-      "hash": 3509963631
+      "line": 135,
+      "hash": 2042443919
     },
     {
-      "id": "src/game/playback.js:77:3509963631:state:at",
-      "from": "state",
+      "id": "src/game/playback.js:135:2042443919:presence:at",
+      "from": "presence",
       "to": "at",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:77:3509963631",
+      "entryId": "src/game/playback.js:135:2042443919",
       "file": "src/game/playback.js",
-      "line": 77,
-      "hash": 3509963631
+      "line": 135,
+      "hash": 2042443919
     },
     {
-      "id": "src/game/playback.js:80:2949708577:abortTake:roomId",
-      "from": "abortTake",
+      "id": "src/game/playback.js:173:3713278231:notePresence:roomId",
+      "from": "notePresence",
       "to": "roomId",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:80:2949708577",
+      "entryId": "src/game/playback.js:173:3713278231",
       "file": "src/game/playback.js",
-      "line": 80,
-      "hash": 2949708577
+      "line": 173,
+      "hash": 3713278231
     },
     {
-      "id": "src/game/playback.js:80:2949708577:abortTake:state",
-      "from": "abortTake",
+      "id": "src/game/playback.js:173:3713278231:notePresence:level",
+      "from": "notePresence",
+      "to": "level",
+      "kind": "same-line-reference",
+      "entryId": "src/game/playback.js:173:3713278231",
+      "file": "src/game/playback.js",
+      "line": 173,
+      "hash": 3713278231
+    },
+    {
+      "id": "src/game/playback.js:173:3713278231:notePresence:atSec",
+      "from": "notePresence",
+      "to": "atSec",
+      "kind": "same-line-reference",
+      "entryId": "src/game/playback.js:173:3713278231",
+      "file": "src/game/playback.js",
+      "line": 173,
+      "hash": 3713278231
+    },
+    {
+      "id": "src/game/playback.js:174:3373171060:t:state",
+      "from": "t",
       "to": "state",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:80:2949708577",
+      "entryId": "src/game/playback.js:174:3373171060",
       "file": "src/game/playback.js",
-      "line": 80,
-      "hash": 2949708577
+      "line": 174,
+      "hash": 3373171060
     },
     {
-      "id": "src/game/playback.js:80:2949708577:abortTake:takes",
-      "from": "abortTake",
+      "id": "src/game/playback.js:174:3373171060:t:takes",
+      "from": "t",
       "to": "takes",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:80:2949708577",
+      "entryId": "src/game/playback.js:174:3373171060",
       "file": "src/game/playback.js",
-      "line": 80,
-      "hash": 2949708577
+      "line": 174,
+      "hash": 3373171060
     },
     {
-      "id": "src/progression/runtime.js:20:1631297339:buildId:String",
-      "from": "buildId",
-      "to": "String",
+      "id": "src/game/playback.js:174:3373171060:t:roomId",
+      "from": "t",
+      "to": "roomId",
       "kind": "same-line-reference",
-      "entryId": "src/progression/runtime.js:20:1631297339",
-      "file": "src/progression/runtime.js",
-      "line": 20,
-      "hash": 1631297339
+      "entryId": "src/game/playback.js:174:3373171060",
+      "file": "src/game/playback.js",
+      "line": 174,
+      "hash": 3373171060
     },
     {
-      "id": "src/progression/runtime.js:20:1631297339:buildId:build",
-      "from": "buildId",
-      "to": "build",
+      "id": "src/game/playback.js:175:652299643:t:sealed",
+      "from": "t",
+      "to": "sealed",
       "kind": "same-line-reference",
-      "entryId": "src/progression/runtime.js:20:1631297339",
-      "file": "src/progression/runtime.js",
-      "line": 20,
-      "hash": 1631297339
+      "entryId": "src/game/playback.js:175:652299643",
+      "file": "src/game/playback.js",
+      "line": 175,
+      "hash": 652299643
     },
     {
-      "id": "src/progression/runtime.js:24:1497511585:statPatchFor:event",
-      "from": "statPatchFor",
-      "to": "event",
+      "id": "src/game/playback.js:176:1315329276:value:Math",
+      "from": "value",
+      "to": "Math",
       "kind": "same-line-reference",
-      "entryId": "src/progression/runtime.js:24:1497511585",
-      "file": "src/progression/runtime.js",
-      "line": 24,
-      "hash": 1497511585
+      "entryId": "src/game/playback.js:176:1315329276",
+      "file": "src/game/playback.js",
+      "line": 176,
+      "hash": 1315329276
     },
     {
-      "id": "src/progression/runtime.js:24:1497511585:statPatchFor:meta",
-      "from": "statPatchFor",
-      "to": "meta",
+      "id": "src/game/playback.js:176:1315329276:value:max",
+      "from": "value",
+      "to": "max",
       "kind": "same-line-reference",
-      "entryId": "src/progression/runtime.js:24:1497511585",
-      "file": "src/progression/runtime.js",
-      "line": 24,
-      "hash": 1497511585
+      "entryId": "src/game/playback.js:176:1315329276",
+      "file": "src/game/playback.js",
+      "line": 176,
+      "hash": 1315329276
     },
     {
-      "id": "src/progression/runtime.js:25:498465201:stats:meta",
-      "from": "stats",
-      "to": "meta",
+      "id": "src/game/playback.js:176:1315329276:value:min",
+      "from": "value",
+      "to": "min",
       "kind": "same-line-reference",
-      "entryId": "src/progression/runtime.js:25:498465201",
-      "file": "src/progression/runtime.js",
-      "line": 25,
-      "hash": 498465201
+      "entryId": "src/game/playback.js:176:1315329276",
+      "file": "src/game/playback.js",
+      "line": 176,
+      "hash": 1315329276
     },
     {
-      "id": "src/progression/runtime.js:27:1395931682:EVENT_TYPES:TAKE_COMPLETED",
-      "from": "EVENT_TYPES",
-      "to": "TAKE_COMPLETED",
+      "id": "src/game/playback.js:176:1315329276:value:Number",
+      "from": "value",
+      "to": "Number",
       "kind": "same-line-reference",
-      "entryId": "src/progression/runtime.js:27:1395931682",
-      "file": "src/progression/runtime.js",
-      "line": 27,
-      "hash": 1395931682
+      "entryId": "src/game/playback.js:176:1315329276",
+      "file": "src/game/playback.js",
+      "line": 176,
+      "hash": 1315329276
     },
     {
-      "id": "src/progression/runtime.js:27:1395931682:EVENT_TYPES:stats",
-      "from": "EVENT_TYPES",
-      "to": "stats",
+      "id": "src/game/playback.js:176:1315329276:value:level",
+      "from": "value",
+      "to": "level",
       "kind": "same-line-reference",
-      "entryId": "src/progression/runtime.js:27:1395931682",
-      "file": "src/progression/runtime.js",
-      "line": 27,
-      "hash": 1395931682
-    },
-    {
-      "id": "src/progression/runtime.js:27:1395931682:EVENT_TYPES:takesCompleted",
-      "from": "EVENT_TYPES",
-      "to": "takesCompleted",
-      "kind": "same-line-reference",
-      "entryId": "src/progression/runtime.js:27:1395931682",
-      "file": "src/progression/runtime.js",
-      "line": 27,
-      "hash": 1395931682
-    },
-    {
-      "id": "src/progression/runtime.js:28:1167112790:EVENT_TYPES:TAKE_SPOILED",
-      "from": "EVENT_TYPES",
-      "to": "TAKE_SPOILED",
-      "kind": "same-line-reference",
-      "entryId": "src/progression/runtime.js:28:1167112790",
-      "file": "src/progression/runtime.js",
-      "line": 28,
-      "hash": 1167112790
-    },
-    {
-      "id": "src/progression/runtime.js:28:1167112790:EVENT_TYPES:stats",
-      "from": "EVENT_TYPES",
-      "to": "stats",
-      "kind": "same-line-reference",
-      "entryId": "src/progression/runtime.js:28:1167112790",
-      "file": "src/progression/runtime.js",
-      "line": 28,
-      "hash": 1167112790
-    },
-    {
-      "id": "src/progression/runtime.js:28:1167112790:EVENT_TYPES:takesSpoiled",
-      "from": "EVENT_TYPES",
-      "to": "takesSpoiled",
-      "kind": "same-line-reference",
-      "entryId": "src/progression/runtime.js:28:1167112790",
-      "file": "src/progression/runtime.js",
-      "line": 28,
-      "hash": 1167112790
-    },
-    {
-      "id": "src/progression/runtime.js:29:1974492742:EVENT_TYPES:BATTLE_FINISHED",
-      "from": "EVENT_TYPES",
-      "to": "BATTLE_FINISHED",
-      "kind": "same-line-reference",
-      "entryId": "src/progression/runtime.js:29:1974492742",
-      "file": "src/progression/runtime.js",
-      "line": 29,
-      "hash": 1974492742
+      "entryId": "src/game/playback.js:176:1315329276",
+      "file": "src/game/playback.js",
+      "line": 176,
+      "hash": 1315329276
     },
     {
       "id": "src/game/chunk-surf-state.js:188:1097347068:checkpoint:id",
@@ -117775,6 +118166,126 @@
       "hash": 2467844514
     },
     {
+      "id": "src/progression/runtime.js:20:1631297339:buildId:String",
+      "from": "buildId",
+      "to": "String",
+      "kind": "same-line-reference",
+      "entryId": "src/progression/runtime.js:20:1631297339",
+      "file": "src/progression/runtime.js",
+      "line": 20,
+      "hash": 1631297339
+    },
+    {
+      "id": "src/progression/runtime.js:20:1631297339:buildId:build",
+      "from": "buildId",
+      "to": "build",
+      "kind": "same-line-reference",
+      "entryId": "src/progression/runtime.js:20:1631297339",
+      "file": "src/progression/runtime.js",
+      "line": 20,
+      "hash": 1631297339
+    },
+    {
+      "id": "src/progression/runtime.js:24:1497511585:statPatchFor:event",
+      "from": "statPatchFor",
+      "to": "event",
+      "kind": "same-line-reference",
+      "entryId": "src/progression/runtime.js:24:1497511585",
+      "file": "src/progression/runtime.js",
+      "line": 24,
+      "hash": 1497511585
+    },
+    {
+      "id": "src/progression/runtime.js:24:1497511585:statPatchFor:meta",
+      "from": "statPatchFor",
+      "to": "meta",
+      "kind": "same-line-reference",
+      "entryId": "src/progression/runtime.js:24:1497511585",
+      "file": "src/progression/runtime.js",
+      "line": 24,
+      "hash": 1497511585
+    },
+    {
+      "id": "src/progression/runtime.js:25:498465201:stats:meta",
+      "from": "stats",
+      "to": "meta",
+      "kind": "same-line-reference",
+      "entryId": "src/progression/runtime.js:25:498465201",
+      "file": "src/progression/runtime.js",
+      "line": 25,
+      "hash": 498465201
+    },
+    {
+      "id": "src/progression/runtime.js:27:1395931682:EVENT_TYPES:TAKE_COMPLETED",
+      "from": "EVENT_TYPES",
+      "to": "TAKE_COMPLETED",
+      "kind": "same-line-reference",
+      "entryId": "src/progression/runtime.js:27:1395931682",
+      "file": "src/progression/runtime.js",
+      "line": 27,
+      "hash": 1395931682
+    },
+    {
+      "id": "src/progression/runtime.js:27:1395931682:EVENT_TYPES:stats",
+      "from": "EVENT_TYPES",
+      "to": "stats",
+      "kind": "same-line-reference",
+      "entryId": "src/progression/runtime.js:27:1395931682",
+      "file": "src/progression/runtime.js",
+      "line": 27,
+      "hash": 1395931682
+    },
+    {
+      "id": "src/progression/runtime.js:27:1395931682:EVENT_TYPES:takesCompleted",
+      "from": "EVENT_TYPES",
+      "to": "takesCompleted",
+      "kind": "same-line-reference",
+      "entryId": "src/progression/runtime.js:27:1395931682",
+      "file": "src/progression/runtime.js",
+      "line": 27,
+      "hash": 1395931682
+    },
+    {
+      "id": "src/progression/runtime.js:28:1167112790:EVENT_TYPES:TAKE_SPOILED",
+      "from": "EVENT_TYPES",
+      "to": "TAKE_SPOILED",
+      "kind": "same-line-reference",
+      "entryId": "src/progression/runtime.js:28:1167112790",
+      "file": "src/progression/runtime.js",
+      "line": 28,
+      "hash": 1167112790
+    },
+    {
+      "id": "src/progression/runtime.js:28:1167112790:EVENT_TYPES:stats",
+      "from": "EVENT_TYPES",
+      "to": "stats",
+      "kind": "same-line-reference",
+      "entryId": "src/progression/runtime.js:28:1167112790",
+      "file": "src/progression/runtime.js",
+      "line": 28,
+      "hash": 1167112790
+    },
+    {
+      "id": "src/progression/runtime.js:28:1167112790:EVENT_TYPES:takesSpoiled",
+      "from": "EVENT_TYPES",
+      "to": "takesSpoiled",
+      "kind": "same-line-reference",
+      "entryId": "src/progression/runtime.js:28:1167112790",
+      "file": "src/progression/runtime.js",
+      "line": 28,
+      "hash": 1167112790
+    },
+    {
+      "id": "src/progression/runtime.js:29:1974492742:EVENT_TYPES:BATTLE_FINISHED",
+      "from": "EVENT_TYPES",
+      "to": "BATTLE_FINISHED",
+      "kind": "same-line-reference",
+      "entryId": "src/progression/runtime.js:29:1974492742",
+      "file": "src/progression/runtime.js",
+      "line": 29,
+      "hash": 1974492742
+    },
+    {
       "id": "src/progression/runtime.js:30:647384118:event:payload",
       "from": "event",
       "to": "payload",
@@ -120918,10 +121429,10 @@
   "stats": {
     "files": 15,
     "sectors": 8,
-    "sourceLines": 649,
-    "javascriptLines": 633,
+    "sourceLines": 658,
+    "javascriptLines": 642,
     "jsonLines": 16,
-    "symbols": 345,
-    "references": 961
+    "symbols": 349,
+    "references": 972
   }
 }

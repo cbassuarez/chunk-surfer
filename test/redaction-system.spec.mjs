@@ -12,6 +12,7 @@ import {
   createCombatState,
   currentCombatIntent,
   reduceCombat,
+  runCombatTurn,
   validateCombatDefinition,
 } from '../src/game/combat-state.js';
 import { runtimeBattle } from '../src/narrative/runtime-content.js';
@@ -86,33 +87,36 @@ test('Chapel action proof can unlock both return and inversion without route-nam
   };
   // Proof behavior itself is authored by movement identity and the physical
   // tool action, not a separate dialogue answer.
+  // Whole beats, player then opponent: a counter meets the blow now, so a walk
+  // built out of bare player steps would strand itself in the enemy phase.
+  const beat = (action) => { state = runCombatTurn(state, action); };
   enter(1);
   aimAt(state, 'chapel:body');
-  state = reduceCombat(state, { type: COMBAT_ACTION.MONITOR });
+  beat({ type: COMBAT_ACTION.MONITOR });
   assert.ok(state.proofs.includes('return.recordist'));
 
   // The contract's loop, inverted with a take in hand.
   enter(3);
   aimAt(state, 'chapel:terms');
-  state = reduceCombat(state, { type: COMBAT_ACTION.MONITOR });
+  beat({ type: COMBAT_ACTION.MONITOR });
   state = reduceCombat(state, { type: COMBAT_ACTION.END_TEMPO });
   aimAt(state, 'chapel:contract-loop');
   assert.equal(currentCombatIntent(state).kind, 'loop');
-  state = reduceCombat(state, { type: COMBAT_ACTION.INVERT });
+  beat({ type: COMBAT_ACTION.INVERT });
   assert.ok(state.proofs.includes('invert.contract'));
 
   // The source: a borrowed body played back, then the source loop turned.
   enter(4);
   aimAt(state, 'chapel:body-return');
-  state = reduceCombat(state, { type: COMBAT_ACTION.MONITOR });
+  beat({ type: COMBAT_ACTION.MONITOR });
   state = reduceCombat(state, { type: COMBAT_ACTION.PLAYBACK });
   assert.ok(state.proofs.includes('return.source'));
   state.tempo = false;
   aimAt(state, 'chapel:release-take');
-  state = reduceCombat(state, { type: COMBAT_ACTION.MONITOR, replaceTake: true });
+  beat({ type: COMBAT_ACTION.MONITOR, replaceTake: true });
   state.tempo = false;
   aimAt(state, 'chapel:source-loop');
-  state = reduceCombat(state, { type: COMBAT_ACTION.INVERT });
+  beat({ type: COMBAT_ACTION.INVERT });
   assert.ok(state.proofs.includes('invert.source'), 'the last proof is earned before the fight is closed out');
 
   // Close the encounter out. The proofs are what this test is about; how many

@@ -19,6 +19,7 @@ import {
   endingDocuments,
   projectDossierFlags,
 } from '../src/game/ending-runtime.js';
+import { ENDING_FAMILY, ENDING_GATES, endingGateErrors } from '../src/data/ending-gates.js';
 
 // ── the contract is complete ────────────────────────────────────────────────
 assert.deepEqual(endingContractErrors(), [], 'the ending manifest is internally consistent');
@@ -243,6 +244,67 @@ assert.ok(dossierFlagNames().includes('ending.takes.clean'));
   for (const entry of ENDING_AUDIO_TODO) {
     assert.ok(entry.id && entry.kind && entry.seconds && entry.note,
       `${entry.id} says what it is, how long, and what it is for`);
+  }
+}
+
+// ── EVERY CUTSCENE BEAT CITES A LINE THAT IS STILL THERE ────────────────────
+//
+// A beat names its dialogue as `document#line`. The document's existence was
+// already checked; the LINE was not, and a line id is the thing that moves when
+// an ending is rewritten — leaving a beat pointing at prose nobody says any
+// more, silently. tools/endings-audit reports this; here it fails.
+{
+  const lineIds = new Map();
+  const linesIn = (documentId) => {
+    if (!lineIds.has(documentId)) {
+      const path = `content/narrative/${documentId}.story.json`;
+      const document = existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : null;
+      lineIds.set(documentId, new Set(document
+        ? Object.values(document.nodes || {}).flatMap((node) => (node.lines || []).map((line) => line.id).filter(Boolean))
+        : []));
+    }
+    return lineIds.get(documentId);
+  };
+  for (const id of ENDING_IDS) {
+    for (const beat of endingManifest(id).cutscene?.beats || []) {
+      for (const source of beat.dialogue || []) {
+        const [documentId, lineId] = String(source).split('#');
+        assert.ok(linesIn(documentId).has(lineId),
+          `${id} cutscene beat ${beat.id} cites ${documentId}#${lineId}, and that line is still in the document`);
+      }
+    }
+  }
+}
+
+// ── THE GATE MAP AGREES WITH THE CODE ───────────────────────────────────────
+//
+// data/ending-gates.js is a map of what opens and shuts each ending, written for
+// tools/endings-audit. A map is only worth having while it is checked against
+// the territory: every terminal ending is described, every arrival it describes
+// is one the manifest declares, and — the part that actually rots — every
+// citation still resolves to a line in the file it names.
+{
+  assert.deepEqual(endingGateErrors(), [], 'the gate map is internally consistent');
+  const sources = new Map();
+  const resolves = (where) => {
+    if (!sources.has(where.file)) {
+      sources.set(where.file, existsSync(where.file) ? readFileSync(where.file, 'utf8') : null);
+    }
+    const source = sources.get(where.file);
+    assert.ok(source !== null, `${where.file} exists`);
+    return source.includes(where.symbol);
+  };
+  for (const family of Object.values(ENDING_FAMILY)) {
+    assert.ok(resolves(family.where), `the ${family.id} family cites ${family.where.symbol}, which is still in ${family.where.file}`);
+  }
+  for (const id of ENDING_IDS) {
+    const gate = ENDING_GATES[id];
+    for (const [arrival, entry] of Object.entries(gate.arrivals)) {
+      assert.ok(resolves(entry.where), `${id}/${arrival} cites ${entry.where.symbol}, which is still in ${entry.where.file}`);
+    }
+    for (const entry of [...gate.requires, ...gate.blocks]) {
+      assert.ok(resolves(entry.where), `${id} · ${entry.label} cites ${entry.where.symbol}, which is still in ${entry.where.file}`);
+    }
   }
 }
 

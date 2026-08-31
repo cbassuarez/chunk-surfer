@@ -20,11 +20,19 @@
 // and then walks off has genuinely not seen anything, and the building has not
 // told them anything either.
 //
-// It is the fourth pin in the game and the first that is not hidden inside a
-// piece of furniture (see PIN_SOURCES in game/combat-progression.js). It arrives
-// with no announcement at all: the next time the bag is opened there is an extra
-// unspent pin in the skills tree, and working out where it came from is the
-// player's problem.
+// It is the fourth spare lead in the game and the only one that is not hidden
+// inside a piece of furniture (see PIN_SOURCES in game/combat-progression.js —
+// the flag id is still `pin.yard` because it is in saved games).
+//
+// SOMEBODY LEAVES IT. The person at the microphone has already said "mind the
+// cable — the black one is mine; the orange one belongs to somebody who left
+// before dinner" (data/exterior-vigil.js). The orange one is still there, and a
+// man who has been standing still for forty-five seconds is the only man who
+// ever looks down and sees it.
+//
+// It arrives with no announcement at all: the next time the case is opened
+// there is one more lead on the back of the recorder than there was, and
+// working out where it came from is the player's problem.
 
 export const VIGIL = Object.freeze({
   // Long enough that it cannot be reached by pausing to read a prompt, short

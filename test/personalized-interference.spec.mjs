@@ -25,6 +25,7 @@ import {
   createPersonalizedWindowEffects,
   substantiallyOnscreenPosition,
 } from '../src/platform/personalized-window-effects.js';
+import { titleCompositionPlan, windowMediaContentId } from '../src/platform/window-composition.js';
 import { normalizeSettings } from '../src/progression/schema.js';
 
 assert.equal(sanitizeInterferenceName('Sebastian'), 'Sebastian');
@@ -166,10 +167,10 @@ assert.match(warningSource, /askProfile/, 'the durable omnibus is gated, not sho
 assert.match(warningSource, /onProfileOn/);
 assert.match(warningSource, /THIS GAME MEASURES YOU PSYCHOLOGICALLY/);
 assert.match(warningSource, /Steam display name only—never Steam ID, friends, or account enumeration/);
-assert.match(warningSource, /up to four fixed/);
-assert.match(warningSource, /never take focus or move/);
-assert.doesNotMatch(warningSource, /move, resize, and focus this game’s/);
-assert.doesNotMatch(warningSource, /temporary game-owned channel windows/);
+assert.match(warningSource, /four combat panes or up to eight silent media panes/);
+assert.match(warningSource, /move the main frame/);
+assert.match(warningSource, /Double-Escape or Settings restores/);
+assert.match(warningSource, /They never show personal data/);
 assert.match(warningSource, /PROFILE OFF requests nothing/);
 const mainSourceForConsent = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
 assert.match(mainSourceForConsent, /consentVersion!==PSYCH_PROFILE_CONSENT_VERSION/);
@@ -334,10 +335,52 @@ const sidecarSource = readFileSync(new URL('../src/fireball-cast.js', import.met
 assert.doesNotMatch(sidecarSource, /persona|hostname|micLabel|OPERATOR/,
   'fireball surfaces have no identity or generic operator-telemetry surface');
 const settingsSource = readFileSync(new URL('../src/game/settings.js', import.meta.url), 'utf8');
-assert.match(settingsSource, /ON · FIREBALL SURFACES/);
+assert.match(settingsSource, /AUTHORED FRAME MOTION · FOUR GAME-OWNED PANES/);
 assert.match(settingsSource, /PREVIEW FIREBALL CAST/);
 const nativeWindowSource = readFileSync(new URL('../src-tauri/src/window_choreography.rs', import.meta.url), 'utf8');
 assert.match(nativeWindowSource, /recover_stale_snapshot/);
-assert.doesNotMatch(nativeWindowSource, /set_focus|set_fullscreen|window-choreography-recovery/);
+assert.match(nativeWindowSource, /chunk_window_choreography_begin/);
+assert.match(nativeWindowSource, /restore_transaction/);
+assert.match(nativeWindowSource, /set_simple_fullscreen\(true\)/,
+  'a transaction restores the exact prior Game Mode choice');
+assert.match(nativeWindowSource, /pub fn chunk_fireball_cast_focus_main[\s\S]{0,180}main\.set_focus\(\)/,
+  'a clicked cast surface returns keyboard focus to the game and nothing else');
+assert.ok((nativeWindowSource.match(/\.set_focus\(\)/g)?.length||0)>=2,
+  'focus returns after both a pane click and a full transaction restore');
+
+const mediaListeners=new Map(),mediaWindows=new Map(),mediaAssignments=[];
+const fireMediaEvent=(name,payload)=>{for(const listener of mediaListeners.get(name)||[])listener({payload});};
+class FakeWebviewWindow{
+  constructor(label){this.label=label;this.visible=false;mediaWindows.set(label,this);}
+  static async getByLabel(label){return mediaWindows.get(label)||null;}
+  once(name,callback){if(name==='tauri://created')queueMicrotask(()=>callback({payload:null}));return Promise.resolve(()=>{});}
+  async hide(){this.visible=false;}async show(){this.visible=true;}async close(){mediaWindows.delete(this.label);}
+}
+const routedMediaApi={
+  WebviewWindow:FakeWebviewWindow,
+  listen:async(name,callback)=>{const entries=mediaListeners.get(name)||[];entries.push(callback);mediaListeners.set(name,entries);return()=>{};},
+  emitTo:async(label,event,payload)=>{
+    if(event==='window-media-probe')queueMicrotask(()=>fireMediaEvent('window-media-ready',{protocol:2,label}));
+    if(event==='window-media-score'){
+      mediaAssignments.push([label,payload]);
+      queueMicrotask(()=>fireMediaEvent('window-media-accepted',{
+        protocol:2,label,targetLabel:payload.targetLabel,sessionToken:payload.sessionToken,revision:payload.revision,
+        cueId:payload.cueId,paneId:payload.paneId,contentId:windowMediaContentId(payload.score.initial),
+      }));
+    }
+  },
+  invoke:async(command,{request}={})=>command==='chunk_window_media_place'
+    ?{shown:true,origin:{x:request.x*1000,y:request.y*700},center:{x:request.x*1000,y:request.y*700},width:request.width,height:request.height,monitor:'main'}
+    :true,
+};
+const routedEffects=createPersonalizedWindowEffects({runtimeApi:routedMediaApi,documentApi:null,tokenFactory:()=> 'media-session-test',wait:async()=>{}});
+const routedToken=routedEffects.begin({intensity:'standard'});
+const routedPlan=titleCompositionPlan({endingId:'contact-won',epochMs:1000});
+assert.equal(await routedEffects.showComposition(routedPlan,{token:routedToken}),true,'all acknowledged panes present natively as one composition');
+assert.deepEqual(mediaAssignments.map(([label])=>label),['window-media-1','window-media-2','window-media-3','window-media-4']);
+assert.equal(new Set(mediaAssignments.map(([,payload])=>windowMediaContentId(payload.score.initial))).size,4,
+  'targeted envelopes deliver four distinct initial tracks instead of retaining one shared payload');
+assert.ok(mediaAssignments.every(([label,payload])=>label===payload.targetLabel));
+await routedEffects.emergencyRestore({notify:false});
 
 console.log('personalized interference contracts passed');

@@ -14,6 +14,7 @@ import { drawBagIcon } from './bag-icons.js';
 import { bagEntry, bagSection } from '../game/bag-model.js';
 import { drawMapView } from './map-view.js';
 import { inputPrompt, inputPromptLabel } from '../game/bindings.js';
+import { fitText } from './fit-text.js';
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
@@ -25,12 +26,7 @@ function toneClass(tone, selected = false) {
   return selected ? 'ui-primary' : 'ui-secondary';
 }
 
-function clip(text, width) {
-  const s = String(text || '');
-  const w = Math.max(1, Math.floor(width || 1));
-  if (s.length <= w) return s;
-  return w <= 1 ? '…' : `${s.slice(0, w - 1)}…`;
-}
+const clip = (text, width) => fitText(text, Math.max(1, Math.floor(width || 1)));
 
 function rightText(x, y, width, text, cls = 'ui-secondary', alpha = 1) {
   const s = clip(text, width);

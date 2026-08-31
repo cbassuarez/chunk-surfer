@@ -97,6 +97,7 @@ function normalizedStage(stage){
 export function compileFireballCastPlan({
   battleId='',movementId='',movementIndex=0,movementTitle='',
   castSequence=0,reducedMotion=false,stage=null,
+  casterId=null,casterLabel='',casterIndex=1,coordinateIds=[],
 }={}){
   const canonical=canonicalFireballBattleId(battleId);
   if(!canonical)return null;
@@ -104,9 +105,13 @@ export function compileFireballCastPlan({
   const seed=parseInt(hashString(`${canonical}:${movementId}:${castSequence}`),16)>>>0;
   // Thrown from the middle of the stage, where the Surfer is, not from the top
   // of it. At .25 every comet crossed the band through the caption and the
-  // house list -- reading as an overlay on the text rather than as something
+  // target roster -- reading as an overlay on the text rather than as something
   // travelling through the room the fight is in.
-  const origin={x:.50+(((seed>>>4)%9)-4)*.008,y:.46+((seed>>>9)%5)*.018};
+  const hallCasterX=[.31,.50,.69][Math.max(0,Math.min(2,Math.trunc(Number(casterIndex)||0)))];
+  const origin={
+    x:(canonical==='hall'&&casterId?hallCasterX:.50)+(((seed>>>4)%9)-4)*.008,
+    y:.46+((seed>>>9)%5)*.018,
+  };
   const rays=[];
   for(let index=0;index<rayCount;index+=1){
     const side=index%2===0?1:-1;
@@ -120,6 +125,10 @@ export function compileFireballCastPlan({
     schema:2,kind:'fireball-cast',castId,battleId:canonical,
     movementId:String(movementId||''),movementIndex:Math.max(0,Math.floor(Number(movementIndex)||0)),
     movementTitle:String(movementTitle||'').slice(0,64),source:'ranged',
+    casterId:casterId?String(casterId):null,
+    casterLabel:String(casterLabel||'').slice(0,40),
+    casterIndex:Math.max(0,Math.min(2,Math.trunc(Number(casterIndex)||0))),
+    coordinateIds:Object.freeze([...new Set((coordinateIds||[]).map(String).filter(Boolean))].slice(0,3)),
     state:'outbound',rayCount,rays:Object.freeze(rays),
     // WHICH RECTANGLE THE RAY WAS MEASURED IN.
     //

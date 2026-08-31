@@ -9,12 +9,9 @@ import { mapCurrentAreaLabel, mapFloor, newestMapContact } from '../game/map-mod
 import { selectedMapSpace } from '../game/map-navigation.js';
 import { mapActionRail } from '../game/map-actions.js';
 import { hushStatus } from './minimap.js';
+import { fitText } from './fit-text.js';
 
-const clip = (value, width) => {
-  const text = String(value ?? '');
-  const w = Math.max(1, Math.floor(width));
-  return text.length <= w ? text : w <= 1 ? '…' : `${text.slice(0, w - 1)}…`;
-};
+const clip = (value, width) => fitText(value, Math.max(1, Math.floor(width)));
 
 function rightText(x, y, w, text, cls = 'ui-secondary', alpha = 1) {
   const value = clip(text, w);

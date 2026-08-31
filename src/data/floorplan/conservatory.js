@@ -31,6 +31,7 @@ import {
   districtLogicalAt,
   elleryMassingAt,
 } from '../exterior-district.js';
+import { mainStairFloorplanFlights, mainStairFloorplanLandings } from '../main-stair-geometry.js';
 
 // The engine holds no geometry — edit these maps freely. To find a building
 // that has quietly sealed itself:
@@ -218,6 +219,13 @@ function natatoriumProfile(_x,_y,cell){
   // The basin is deliberately a real height-field depression now. Its vertical
   // tile faces are the pool walls; the west access stair supplies the legal
   // walkable transition, so no invisible collision lid is needed.
+  //
+  // This was flattened to deck height once before, because a real depression
+  // rendered as a solid cube — physicalRenderPlanFor dropped the basin cells
+  // out of any slice built for the deck and a cell with no span comes back
+  // solid. The renderer keeps a room's own spans now whatever their height, so
+  // the depression is safe to author honestly. See sameRoom in
+  // world/floorplan.js, and the assertions in tests/floorplan.mjs.
   // The academic crown begins at 10m over this physical footprint. Stop the
   // pool hall below that slab; the old 11.2m envelope literally intersected
   // its walls and models, producing the nested room visible from the deck.
@@ -277,7 +285,7 @@ export const MAIN_STAIR_LAYOUT=Object.freeze({
   lowerStart:Object.freeze({x:134,y:50}),
   upperLanding:Object.freeze({x:154,y:74}),
   practiceMouth:Object.freeze({x:63,y:53}),
-  upperStart:Object.freeze({x:134,y:64}),
+  upperStart:Object.freeze({x:134,y:65}),
   academicLanding:Object.freeze({x:13,y:277}),
 });
 
@@ -816,30 +824,14 @@ const EUCLIDEAN_ADDITIONS=[
    origin:{x:134,y:20},physicalOrigin:{x:57,y:25},base:0,rows:groundStairHallRows(),profile:groundStairHallProfile},
 
   // Four genuinely curving half-coils make two complete revolutions around a
-  // 1.3m open well. The collision grid uses macro winders; `rises` and `going`
-  // retain the real 28/30-riser construction for the hero mesh and fractional
-  // camera height. No inaccessible square wedge fill is presented as the stair.
+  // 1.3m open well. Each visible tread now has one collision address, while its
+  // Euclidean position is sampled analytically from the same contract as the
+  // hero mesh. The surrounding halls remain separate, immutable level modules.
   {id:'main_open_well_stair',layer:'main_stair',space:'main_stair',renderGroup:'upper',
    origin:{x:134,y:48},physicalOrigin:{x:60,y:38},base:0,rows:[''],stairs:[{
     id:'main-open-well',zone:'stair',material:'serviceConcrete',head:3.4,physicalReplace:true,
-    flights:[
-      {id:'ground-to-half',from:{x:134,y:50},to:{x:134,y:54},
-       fromH:0,toH:2.4,width:2,rises:14,going:.28,ceil:4.55,renderMode:'hero-mesh',groupFrom:'ground',groupTo:'upper',
-       arc:{center:{x:63,z:36},rInner:.65,rOuter:3,rWalk:2.65,theta0:0,sweep:Math.PI,snapEndpoints:true,openWell:{floor:-4,ceil:14}}},
-      {id:'half-to-upper',from:{x:138,y:54},to:{x:138,y:50},
-       fromH:2.4,toH:4.8,width:2,rises:14,going:.28,ceil:7.15,renderMode:'hero-mesh',groupFrom:'ground',groupTo:'upper',
-       arc:{center:{x:63,z:36},rInner:.65,rOuter:3,rWalk:2.65,theta0:Math.PI,sweep:Math.PI,snapEndpoints:true}},
-      {id:'upper-to-half',from:{x:134,y:64},to:{x:134,y:60},
-       fromH:4.8,toH:7.4,width:2,rises:15,going:.28,ceil:9.75,renderMode:'hero-mesh',groupFrom:'upper',groupTo:'academic',
-       arc:{center:{x:63,z:36},rInner:.65,rOuter:3,rWalk:2.65,theta0:Math.PI*5/9,sweep:Math.PI,snapEndpoints:true}},
-      {id:'half-to-academic',from:{x:138,y:60},to:{x:138,y:64},
-       fromH:7.4,toH:10,width:2,rises:15,going:.28,ceil:13.8,renderMode:'hero-mesh',groupFrom:'upper',groupTo:'academic',
-       arc:{center:{x:63,z:36},rInner:.65,rOuter:3,rWalk:2.65,theta0:Math.PI*14/9,sweep:Math.PI,snapEndpoints:true}},
-    ],
-    landings:[
-      {id:'upper-floor-landing',at:{x:150,y:50},size:{x:6,y:4},physicalAt:{x:62.5,z:33},height:4.8,ceil:9.75,renderGroup:'upper'},
-      {id:'academic-floor-landing',at:{x:150,y:64},size:{x:6,y:4},physicalAt:{x:63.5,z:36.5},height:10,ceil:13.8,renderGroup:'academic'},
-    ],
+    flights:mainStairFloorplanFlights(),
+    landings:mainStairFloorplanLandings(),
   }]},
 
   // U1 is a landing room, not a feeder corridor. The six-metre central void is
@@ -948,28 +940,28 @@ export const conservatory = {
      to:{at:{x:138,y:20},along:{x:1,y:0},exit:{x:0,y:-1}}},
     {id:'ground-hall-to-lower-flight',width:2,
      from:{at:{x:139.5,y:30},along:{x:0,y:-1},exit:{x:1,y:0}},
-     to:{at:{x:134,y:50},along:{x:1,y:0},exit:{x:0,y:-1}}},
+     to:{at:{x:134,y:50},along:{x:1,y:0},exit:{x:0,y:-1}},tolerance:1.2},
     {id:'lower-half-flight-seam',width:2,
-     from:{at:{x:134,y:54},along:{x:1,y:0},exit:{x:0,y:1}},
-     to:{at:{x:138,y:54},along:{x:1,y:0},exit:{x:0,y:1}}},
+     from:{at:{x:134,y:56.5},along:{x:1,y:0},exit:{x:0,y:1}},
+     to:{at:{x:138,y:56.5},along:{x:1,y:0},exit:{x:0,y:1}},tolerance:1.2},
     {id:'lower-flight-to-upper-floor-landing',width:2,
      from:{at:{x:138,y:50},along:{x:1,y:0},exit:{x:0,y:-1}},
-     to:{at:{x:150,y:52},along:{x:0,y:-1},exit:{x:-1,y:0}}},
+     to:{at:{x:150,y:52},along:{x:0,y:-1},exit:{x:-1,y:0}},tolerance:1.2},
     {id:'upper-floor-landing-to-hall',width:4,
      from:{at:{x:155.5,y:50},along:{x:0,y:1},exit:{x:1,y:0}},
      to:{at:{x:154,y:70},along:{x:0,y:1},exit:{x:-1,y:0}}},
     {id:'upper-floor-landing-to-academic-flight',width:2,
      from:{at:{x:151,y:53.5},along:{x:1,y:0},exit:{x:0,y:1}},
-     to:{at:{x:134,y:64},along:{x:1,y:0},exit:{x:0,y:1}}},
+     to:{at:{x:134,y:65},along:{x:1,y:0},exit:{x:0,y:1}},tolerance:1.2},
     {id:'upper-landing-to-practice',width:6,
      from:{at:{x:146,y:78.5},along:{x:1,y:0},exit:{x:0,y:1}},
      to:{at:{x:60,y:52},along:{x:1,y:0},exit:{x:0,y:-1}}},
     {id:'upper-half-flight-seam',width:2,
-     from:{at:{x:134,y:60},along:{x:1,y:0},exit:{x:0,y:-1}},
-     to:{at:{x:138,y:60},along:{x:1,y:0},exit:{x:0,y:-1}}},
+     from:{at:{x:134,y:58},along:{x:1,y:0},exit:{x:0,y:-1}},
+     to:{at:{x:138,y:58},along:{x:1,y:0},exit:{x:0,y:-1}},tolerance:1.2},
     {id:'academic-flight-to-floor-landing',width:2,
-     from:{at:{x:138,y:64},along:{x:1,y:0},exit:{x:0,y:1}},
-     to:{at:{x:150,y:64},along:{x:1,y:0},exit:{x:0,y:-1}}},
+     from:{at:{x:138,y:65},along:{x:1,y:0},exit:{x:0,y:1}},
+     to:{at:{x:150,y:64},along:{x:1,y:0},exit:{x:0,y:-1}},tolerance:1.5},
     {id:'academic-floor-landing-to-loggia',width:2,
      from:{at:{x:150,y:64},along:{x:0,y:1},exit:{x:-1,y:0}},
      to:{at:{x:13.5,y:276.5},along:{x:0,y:1},exit:{x:1,y:0}}},

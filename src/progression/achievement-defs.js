@@ -78,6 +78,14 @@ export const ACHIEVEMENT_DEFS = Object.freeze([
   endingDef('inversion', 'The Other Door'),
   endingDef('drugged', 'Cold, Bitter, Gone'),
   endingDef('surfaced', 'The Other Recordist'),
+  // The four that arrived with Contact and the tower. They were missed when
+  // those endings landed: ACH_ALL_ENDINGS below has counted all nine since the
+  // day they were added, so the collective achievement was reachable while four
+  // of its parts were not. Found by tools/audits/progression.
+  endingDef('contact-won', 'Open Channel'),
+  endingDef('contact-lost', 'No Return'),
+  endingDef('tower-won', 'Exit Through the Gift Shop'),
+  endingDef('tower-lost', 'The Full Peal'),
   {
     id: 'ACH_ALL_ENDINGS', name: 'All Returns Filed',
     description: 'Complete every ending.', category: 'returns', hidden: true,

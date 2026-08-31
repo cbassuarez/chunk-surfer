@@ -1,5 +1,5 @@
 import { causalRecorder } from '../causal/recorder.js';
-import { CAUSAL_TOPOLOGY_HASH, tapeQualifies, validateCausalTape } from '../causal/tape.js';
+import { CAUSAL_REQUIREMENT, CAUSAL_TOPOLOGY_HASH, tapeQualifies, validateCausalTape } from '../causal/tape.js';
 import {
   loadLatestCausalTape,
   loadSealedCausalDraft,
@@ -52,7 +52,7 @@ function markReady(summary, tape) {
 export function finalizeCausalReturn(summary) {
   if (!summary || pending.has(summary.id)) return pending.get(summary?.id) || Promise.resolve({ ok: false, reason: 'NO_SUMMARY' });
   if (!tapeQualifies(summary.injuries)) {
-    patchSummary(summary.id, { causalTape: { status: 'not-qualified', requirement: '≤ 1 injury' } });
+    patchSummary(summary.id, { causalTape: { status: 'not-qualified', requirement: CAUSAL_REQUIREMENT } });
     return Promise.resolve({ ok: false, reason: 'NOT_QUALIFIED' });
   }
 

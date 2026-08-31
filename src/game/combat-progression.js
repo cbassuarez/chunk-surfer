@@ -1,46 +1,72 @@
 import { TECHNIQUE } from './combat-state.js';
 
-// A run can hold this many calibration pins and spend them on this many
-// techniques. Raised from a flat 2 so the deepened tree is actually reachable
-// across a run; the real ceiling is how many pin sources the world grants.
+// THE BACK OF THE RECORDER.
+//
+// What the SKILLS tab draws is a patchbay: the recorder's rear panel, six runs
+// of sockets on it. One end of every lead is captive in the machine; the player
+// carries a handful of free ends and patches them in. A socket that carries is
+// a technique the fight can use.
+//
+// So a tool column is a SERIES RUN — the signal leaves the recorder, passes
+// through the first socket, and only reaches the second if the first is
+// carrying. That is what `requires` has always meant, and it is why you cannot
+// start at the bottom: there is nothing at the shallow socket for the signal to
+// come back out of. Some sockets take a lead direct and chain to nothing (the
+// first three rungs of NERVE, ROOM TONE, HEADROOM); the drawing follows the
+// prerequisite, never the tier.
+//
+// AND A LEAD COMES BACK OUT. This is the whole reason it is a cable and not a
+// token: `pullCombatTechnique` un-patches a socket at any time, and everything
+// below it in the run comes back with it. The choice is not "did I guess right
+// an hour ago" but "am I rigged for what is through this door" — and the case
+// cannot be opened during a fight, so the rig is committed before the room.
+//
+// The identifiers below still say `pin`. They are in saved games and in the
+// audit's citations; nothing the player reads says pin.
+
+// A run can hold this many leads and patch them into this many sockets. Raised
+// from a flat 2 so the deepened tree is actually reachable across a run; the
+// real ceiling is how many the world hands out.
 export const MAX_PINS = 6;
 export const MAX_TECHNIQUES = 6;
 
-// Where pins come from. Beyond the two original calibration encounters, the
-// first clear of each regular battle and a collectible pin pickup (a set save
-// flag) each grant one — so acquisition is no longer two fixed fights.
+// Where leads come from. Beyond the two original calibration encounters, the
+// first clear of each regular battle and a collectible lead (a set save flag)
+// each grant one — so acquisition is no longer two fixed fights.
 export const CALIBRATION_ENCOUNTERS = Object.freeze(['recording-2', 'pre-recording-4']);
 export const PIN_SOURCES = Object.freeze({
   // Real encounter clear-ids (see openEncounterBattle): the two calibration
   // fights plus the chapel boss now each grant a pin.
   encounters: Object.freeze([...CALIBRATION_ENCOUNTERS, 'chapel']),
-  // Collectible calibration pins, found in optional corners of the building — the
-  // planter in the ruined atrium garden, the bell tower, and the gallery head that
-  // sits off-square on its plinth. Picking one up sets its flag, which grants a pin
-  // here; all three sit off the recording route, so exploration is its own reward.
+  // Collectible leads, found in optional corners of the building — the planter in
+  // the ruined atrium garden, the bell tower, and the gallery head that sits
+  // off-square on its plinth. Every one of them is somebody else's, left where
+  // they put it down. All three sit off the recording route, so exploration is
+  // its own reward.
   //
   // `pin.foyer` was retired when the gallery head got one: the foyer bust and the
-  // gallery bust were the same discovery twice — a marble head with a loose pin in
-  // the felt under its base. The foyer bust keeps its documented repair pin THROUGH
-  // the base, which was never collectible and still reads correctly. One pin per
-  // act now: atrium, gallery, tower.
+  // gallery bust were the same discovery twice. The foyer bust keeps its
+  // documented repair pin THROUGH the base — which was never collectible, and
+  // which now has the word "pin" to itself, since nothing the player reads about
+  // the patchbay uses it. One lead per act: atrium, gallery, tower.
   //
   // `pin.yard` is the fourth and the odd one out: it is not inside a piece of
   // furniture and it is not picked up. It is granted for standing still in the
   // yard long enough to watch the weather, and then noticing what was put behind
-  // you while you did (see game/yard-vigil.js). Nothing announces it. It is the
-  // only pin in the game a player can be handed without being told they have
-  // been handed anything.
+  // you while you did (see game/yard-vigil.js). Somebody at the microphone has
+  // already mentioned an orange cable belonging to a man who left before dinner.
+  // Nothing announces it. It is the only lead in the game a player can be handed
+  // without being told they have been handed anything.
   flags: Object.freeze(['pin.academic', 'pin.tower', 'pin.gallery', 'pin.yard']),
 });
 
-// Two kinds of pin, because there are two kinds of thing worth buying.
+// Two kinds of socket, because there are two kinds of thing worth patching.
 //
 // FLAT upgrades have no prerequisites and can be taken in any order. They make
 // the things you always have better: the regulars — which cost nothing and
 // never run out — and the body you bring to the fight. They are the answer to a
 // player who does not want to commit to a tool, and they are what makes an
-// early pin useful before any branch is deep enough to pay off.
+// early lead useful before any branch is deep enough to pay off.
 //
 // TOOL branches are where the SPECIALS live. A branch's first rung sharpens
 // that tool's regular, its second unlocks the special the tool is for, and the
@@ -82,7 +108,7 @@ export const TECHNIQUE_DEFS = Object.freeze([
   Object.freeze({ id: TECHNIQUE.TAPE_ECHO, track: 'tool', branch: 'rig', tier: 4, requires: TECHNIQUE.FEEDBACK_LOOP, requiresRig: true, label: 'TAPE ECHO', detail: 'A retained INVERT returns more still.' }),
 
   // NERVE — the body you bring. Every rung is flat: no tool, no prerequisite
-  // chain to commit to, useful the moment a pin is spent. This is the column a
+  // chain to commit to, useful the moment a lead is patched. This is the column a
   // player buys when they do not want to bet on a tool surviving the night.
   Object.freeze({ id: TECHNIQUE.DEEP_RESERVE, track: 'flat', branch: 'nerve', tier: 1, label: 'DEEP RESERVE', detail: 'More composure in every encounter.' }),
   Object.freeze({ id: TECHNIQUE.BRACE, track: 'flat', branch: 'nerve', tier: 2, label: 'BRACE', detail: 'HOLD prevents more, every time.' }),
@@ -147,15 +173,70 @@ export function normalizeCombatBuild(value = null, clearedEncounters = [], flags
   };
 }
 
+// WHAT A SOCKET WILL ACCEPT.
+//
+// `enabled` keeps its old meaning exactly: a spare lead may be patched here NOW.
+// It must never be true for a socket that already carries one, because
+// learnCombatTechnique gates on it and a second patch would spend a second lead
+// on something already owned.
+//
+// The structural checks come BEFORE the spare-lead check. They used to come
+// after, so a player holding nothing was told NO SPARE LEAD on a socket whose
+// real problem was that the bent rig is in the plant room — the wrong answer to
+// "why can I not do this", and the one the player cannot act on.
 export function techniqueAvailability(value, id, { hasRig = false } = {}) {
   const build = normalizeCombatBuild(value);
   const definition = TECHNIQUE_DEFS.find((entry) => entry.id === id);
-  if (!definition) return { enabled: false, reason: 'UNKNOWN TECHNIQUE' };
-  if (build.techniques.includes(id)) return { enabled: false, learned: true, reason: 'CALIBRATED' };
-  if (build.unspent <= 0) return { enabled: false, reason: 'NO PINS FREE' };
-  if (definition.requires && !build.techniques.includes(definition.requires)) return { enabled: false, reason: 'TIER I REQUIRED' };
-  if (definition.requiresRig && !hasRig) return { enabled: false, reason: 'BENT RIG REQUIRED' };
-  return { enabled: true, learned: false, reason: '' };
+  if (!definition) return { enabled: false, patched: false, pullable: false, pulls: [], reason: 'UNKNOWN TECHNIQUE' };
+  // A patched socket can always be pulled. `learned` is the old name for
+  // `patched`, kept because the API had it.
+  if (build.techniques.includes(id)) {
+    return {
+      enabled: false, learned: true, patched: true,
+      // NOT gated on hasRig. One end of every lead is captive in the recorder,
+      // so a player can always pull their own end — otherwise losing the rig
+      // would strand up to four leads with no way to get them back.
+      pullable: true, pulls: techniquePullPreview(build, id).pulls,
+      reason: 'PATCHED',
+    };
+  }
+  const shut = { enabled: false, learned: false, patched: false, pullable: false, pulls: [] };
+  if (definition.requires && !build.techniques.includes(definition.requires)) return { ...shut, reason: 'NO CONTINUITY' };
+  if (definition.requiresRig && !hasRig) return { ...shut, reason: 'BENT RIG REQUIRED' };
+  if (build.unspent <= 0) return { ...shut, reason: 'NO SPARE LEAD' };
+  return { enabled: true, learned: false, patched: false, pullable: false, pulls: [], reason: '' };
+}
+
+// PULL ONE LEAD.
+//
+// Everything below it in the run comes out with it, which is what happens when
+// you pull a lead out of a chain: the sockets past the break stop carrying.
+//
+// There is no cascade logic here and there must not be. normalizeCombatBuild
+// already drops any technique whose whole prerequisite chain is not also
+// selected, walking the chain — so removing ONE id and re-normalizing does the
+// whole job, and diffing the result is how we find out what came out with it.
+// An explicit transitive closure would be a second implementation of the same
+// rule, free to disagree with the first.
+export function pullCombatTechnique(value, id) {
+  const build = normalizeCombatBuild(value);
+  if (!build.techniques.includes(id)) {
+    return { changed: false, build, pulled: [], returned: 0, reason: 'NOT PATCHED' };
+  }
+  const next = normalizeCombatBuild({
+    ...build,
+    techniques: build.techniques.filter((technique) => technique !== id),
+  }, build.rewardedEncounters);
+  const pulled = build.techniques.filter((technique) => !next.techniques.includes(technique));
+  return { changed: true, build: next, pulled, returned: next.unspent - build.unspent, reason: '' };
+}
+
+// What a pull WOULD cost, without doing it — for the confirm dialogue and the
+// detail strip. Deliberately the same code path as the pull itself, so what the
+// player is warned about can never differ from what happens.
+export function techniquePullPreview(value, id) {
+  const result = pullCombatTechnique(value, id);
+  return { patched: result.changed, pulls: result.pulled, returns: result.returned };
 }
 
 export function learnCombatTechnique(value, id, options = {}) {

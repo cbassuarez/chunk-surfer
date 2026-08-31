@@ -89,13 +89,21 @@ const closeRuntime = createHushAudioRuntime({
   playerSpatial: () => ({ position: { x: 0, y: 0 }, roomId: 'a', floorId: 'g' }),
   difficulty: () => ({ values: { presencePressure: 'standard' } }),
   settings: () => ({}),
-  context: () => ({ allowMischief: false, monitorOpen: true }),
+  context: () => ({ allowMischief: false, monitorOpen: true, presentationGain: 0 }),
   effects,
   clock: () => now,
   random: () => 1,
 });
 closeRuntime.tick(.016);
 assert.equal(closeRuntime.snapshot().field.stage, 'contact');
+const rawCloseField=closeRuntime.currentField();
+const quietCloseField=applied.at(-1).field;
+assert.ok(rawCloseField.absorption.audio>0&&rawCloseField.absorption.monitor>0,
+  'the raw HUSH field must survive a presentation release');
+assert.equal(quietCloseField.absorption.audio,0);
+assert.equal(quietCloseField.absorption.monitor,0);
+assert.equal(quietCloseField.absorption.light,rawCloseField.absorption.light,
+  'silencing Source audio must not decide whether Pressure is optically present');
 now += 1400;
 closeRuntime.tick(1.4);
 assert.equal(closeRuntime.snapshot().field.stage, 'engulf');

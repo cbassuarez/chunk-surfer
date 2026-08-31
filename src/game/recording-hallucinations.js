@@ -54,6 +54,60 @@ function visualFor(seed, serial, kind) {
     // The cluster is wrong because each ordinary pose belongs to a different
     // arrangement, not because any body becomes a monster or giant.
     depthOffsets: poseIds.map((_, index) => randomRange(seed, serial, `depth:${index}`, -.18, .22)),
+    motion: {
+      phase: randomRange(seed, serial, 'motion-phase', 0, Math.PI * 2),
+      orbitMs: randomRange(seed, serial, 'motion-orbit', 1050, 1750),
+      driftCells: randomRange(seed, serial, 'motion-radius', .20, .46),
+      cutEveryMs: randomRange(seed, serial, 'motion-cut', 430, 720),
+      glitchWindowMs: randomRange(seed, serial, 'motion-glitch-window', 62, 118),
+      // Edits are authored as a deterministic little path rather than sampled
+      // during rendering. The same hallucination therefore moves the same way
+      // in a replay, a probe, and a frame-rate hitch.
+      cutOffsets: Array.from({ length: 6 }, (_, index) => ({
+        x: randomRange(seed, serial, `motion-cut-x:${index}`, -.34, .34),
+        y: randomRange(seed, serial, `motion-cut-y:${index}`, -.25, .25),
+      })),
+    },
+  };
+}
+
+export function recordingHallucinationVisualFrame(active, {
+  nowMs = 0,
+  index = 0,
+  reducedMotion = false,
+} = {}) {
+  if (!active?.visual) return null;
+  const ageMs = Math.max(0, Number(nowMs) - Number(active.startedAtMs || 0));
+  if (reducedMotion) return {
+    offsetX: 0, offsetY: 0, yawJitter: 0, scaleX: 1, scaleY: 1,
+    alpha: 1, mode: 'live', glitching: false, glitchBeat: 0,
+  };
+  const motion = active.visual.motion || {};
+  const orbitMs = Math.max(300, Number(motion.orbitMs) || 1400);
+  const cutEveryMs = Math.max(220, Number(motion.cutEveryMs) || 560);
+  const glitchWindowMs = Math.max(30, Number(motion.glitchWindowMs) || 90);
+  const phase = Number(motion.phase) || 0;
+  const figurePhase = phase + Number(index) * 1.73;
+  const orbit = ageMs / orbitMs * Math.PI * 2 + figurePhase;
+  const radius = Math.max(.08, Number(motion.driftCells) || .28) * (1 + Number(index) * .12);
+  const glitchBeat = Math.floor(ageMs / cutEveryMs);
+  const cuts = Array.isArray(motion.cutOffsets) && motion.cutOffsets.length
+    ? motion.cutOffsets
+    : [{ x: 0, y: 0 }];
+  const cut = cuts[glitchBeat % cuts.length];
+  const localCutMs = ageMs - glitchBeat * cutEveryMs;
+  const glitching = glitchBeat > 0 && localCutMs < glitchWindowMs;
+  const tear = glitching ? Math.sin((localCutMs / glitchWindowMs) * Math.PI) : 0;
+  return {
+    offsetX: Math.cos(orbit) * radius + Number(cut.x || 0),
+    offsetY: Math.sin(orbit * .82) * radius * .72 + Number(cut.y || 0),
+    yawJitter: Math.sin(orbit * 1.7) * .16 + tear * (glitchBeat % 2 ? -.34 : .34),
+    scaleX: 1 + tear * (glitchBeat % 2 ? -.18 : .26),
+    scaleY: 1 - tear * .12,
+    alpha: glitching && glitchBeat % 3 === 0 ? .16 : 1 - tear * .30,
+    mode: glitching ? (glitchBeat % 2 ? 'glow' : 'core') : 'live',
+    glitching,
+    glitchBeat,
   };
 }
 
@@ -67,6 +121,10 @@ function copyActive(active) {
       scaleX: [...active.visual.scaleX],
       scaleY: [...active.visual.scaleY],
       depthOffsets: [...active.visual.depthOffsets],
+      motion: active.visual.motion ? {
+        ...active.visual.motion,
+        cutOffsets: (active.visual.motion.cutOffsets || []).map((point) => ({ ...point })),
+      } : null,
     } : null,
   } : null;
 }

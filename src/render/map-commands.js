@@ -85,7 +85,8 @@ export function buildMapCommands({ model, nav, layout, now = 0 } = {}) {
     commands.push({ kind: 'player', point: inside ? raw : pinned, offPage: !inside, heading: model.player.heading || 0 });
   }
 
-  if(model.hush?.active&&model.hush.visible===true&&model.hush.floorId===floor.id&&model.hush.position){
+  if(model.hush?.active&&(model.hush.sensed===true||model.hush.visible===true)
+      &&model.hush.visible===true&&model.hush.floorId===floor.id&&model.hush.position){
     commands.push({kind:'hush-visible',point:transform.point(model.hush.position)});
   }
 
@@ -203,7 +204,8 @@ export function buildMinimapCommands({ model, viewport, radius = 18, now = 0, as
 
   const playerPoint=transform.point(model.player.position);
   const perception=model.hush?.perception;
-  if(model.hush?.active&&perception?.mode&&perception.mode!=='none'){
+  if(model.hush?.active&&(model.hush.sensed===true||model.hush.visible===true)
+      &&perception?.mode&&perception.mode!=='none'){
     commands.push({kind:'hush-awareness',point:playerPoint,mode:perception.mode,label:perception.label,detail:perception.detail});
   }
   commands.push({ kind: 'player', point: playerPoint, heading: model.player.heading || 0 });

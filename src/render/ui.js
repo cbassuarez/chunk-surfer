@@ -8,6 +8,7 @@
 
 import { UI_CELL_W as CELL_W, UI_CELL_H as CELL_H, UI_FONT_PX, MONO_STACK, atlasConfigure, atlasDpr, getTile } from './atlas.js';
 import { UI_COLOR, uiFlickerAlpha, uiRoleColor } from './palette.js';
+import { fitText } from './fit-text.js';
 
 let host = null, canvas = null, ctx = null;
 let cols = 0, rows = 0;
@@ -117,9 +118,21 @@ export function uiGlyph(cx, cy, ch, cls = 't-chunk', alpha = 1) {
   if (a !== 1) ctx.globalAlpha = 1;
 }
 
-export function uiText(cx, cy, str, cls = 't-chunk', alpha = 1) {
-  const s = String(str ?? '');
-  for (let i = 0; i < s.length; i++) uiGlyph(cx + i, cy, s[i], cls, alpha);
+// `max` is the width in cells this text is allowed to occupy. It is OPTIONAL
+// and defaults to the old behaviour, because several hundred call sites rely on
+// it — but a caller that knows its region should pass one.
+//
+// Without it, uiText draws a glyph per cell and keeps going: past the panel
+// bezel, past the region it was handed, past the edge of the canvas. That is
+// why every surface in this renderer grew its own `fit`/`clip` helper, and why
+// half of them amputated a word with no mark to say they had.
+//
+// The last cell is also clamped to the grid, so nothing can draw off-screen
+// even if a caller gets its arithmetic wrong.
+export function uiText(cx, cy, str, cls = 't-chunk', alpha = 1, max = null) {
+  const s = fitText(str, max);
+  const limit = Math.min(s.length, Math.max(0, Math.ceil(cols - cx)));
+  for (let i = 0; i < limit; i++) uiGlyph(cx + i, cy, s[i], cls, alpha);
 }
 
 // Direction/system copy is prose spoken by the machine, not another VFD
@@ -229,6 +242,9 @@ export function uiWrap(text, width) {
   return lines;
 }
 
-export function uiCenter(cy, str, cls, alpha) {
-  uiText(Math.max(0, Math.floor((cols - String(str).length) / 2)), cy, str, cls, alpha);
+// Centred, and never wider than the screen it is centred on. It used to clamp
+// the x to zero and leave an over-long line running off the right edge.
+export function uiCenter(cy, str, cls, alpha, max = null) {
+  const s = fitText(str, Math.min(cols, max == null ? cols : max));
+  uiText(Math.max(0, Math.floor((cols - s.length) / 2)), cy, s, cls, alpha);
 }

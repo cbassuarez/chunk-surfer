@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   createRecordingHallucinationDirector,
   recordingHallucinationEligibility,
+  recordingHallucinationVisualFrame,
 } from '../src/game/recording-hallucinations.js';
 import { APPARITION_POSE_IDS } from '../src/game/apparition-director.js';
 
@@ -86,6 +87,24 @@ test('forced review variants are deterministic bounded apparition arrangements',
     assert.equal(first.visual.figureCount, expectedCount);
     assert.equal(new Set(first.visual.poseIds).size, expectedCount);
   }
+});
+
+test('hallucinations follow a deterministic moving edit path and glitch in place', () => {
+  const director=createRecordingHallucinationDirector({seed:'moving-review'});
+  const event=director.force('hard',{nowMs:1000,intensity:.9});
+  const samples=[1100,1350,1700,2200,2800].map((nowMs)=>recordingHallucinationVisualFrame(event,{nowMs}));
+  assert.ok(new Set(samples.map((frame)=>`${frame.offsetX.toFixed(3)}:${frame.offsetY.toFixed(3)}`)).size>3,
+    'the figure travels instead of pulsing at one coordinate');
+  const editAt=event.startedAtMs+event.visual.motion.cutEveryMs+1;
+  const glitch=recordingHallucinationVisualFrame(event,{nowMs:editAt});
+  assert.equal(glitch.glitching,true);
+  assert.notEqual(glitch.mode,'live');
+  const same=recordingHallucinationVisualFrame(event,{nowMs:editAt});
+  assert.deepEqual(glitch,same,'movement and cuts are replay-stable');
+  const reduced=recordingHallucinationVisualFrame(event,{nowMs:editAt,reducedMotion:true});
+  assert.deepEqual(reduced,{
+    offsetX:0,offsetY:0,yawJitter:0,scaleX:1,scaleY:1,alpha:1,mode:'live',glitching:false,glitchBeat:0,
+  });
 });
 
 test('light or accessibility suppression removes an active hallucination immediately', () => {

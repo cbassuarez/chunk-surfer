@@ -10,9 +10,10 @@
 // strip, silkscreen header/footer legends, and the lit data on the glass.
 
 import { uiDraw, uiFill, uiText } from './ui.js';
-import { activeTheme, setActiveSurface, uiBrightness, themeRoleColor, themeRoleDim, uiFlickerAlpha } from './palette.js';
+import { THEMES, activeTheme, setActiveSurface, uiBrightness, themeRoleColor, themeRoleDim, uiFlickerAlpha, uiRoleColor } from './palette.js';
 import { drawVfdGlyph } from './vfd-font.js';
 import { drawPromptParts } from './prompt-glyphs.js';
+import { fitText } from './fit-text.js';
 import { MONITOR_DANGER_THRESHOLDS, MONITOR_THRESHOLDS, monitorSnapshot } from '../audio/monitor.js';
 
 export const PANEL = Object.freeze({ padX: 2, headerRows: 2, footerRows: 2 });
@@ -358,23 +359,46 @@ export function drawVfdCounter(x, y, value, { scale = 1, theme = null, color = n
 }
 
 // Big dot-matrix text (the title, a speaker name) at an arbitrary scale.
-export function drawVfdText(x, y, text, { scale = 2, theme = null, role = 'ui-primary', alpha = 1 } = {}) {
-  if (theme) setActiveSurface(theme);
+//
+// FOUR THINGS THIS USED TO GET WRONG, all of them silently:
+//
+//   · `color` and `max` were accepted and dropped on the floor. Ten call sites
+//     passed them expecting a colour override and a width, and got a full-length
+//     string in plain phosphor that could run off the end of its panel.
+//   · `theme:'danger'` and `theme:'red'` are not themes. setActiveSurface falls
+//     back to amber, so five call sites asking for red have been drawing amber.
+//     A colour is what they wanted; `color` now does it, and a bad theme name
+//     no longer silently repaints the whole surface.
+//   · every `role` except 'ui-counter' collapsed to phosphor, so 'ui-danger'
+//     and 'ui-primary' were the same word in the same colour. The palette
+//     already has the map (uiRoleColor); use it.
+//   · the glyph box was `cellW * 1.42 * scale` tall while the row advanced by
+//     `cellH`, so anything above scale ~1.4 overflowed the row below it.
+//
+// The DORMANT GRID is deliberately always the panel's own dim phosphor, whatever
+// colour the lit dots are: the unlit matrix belongs to the glass, not to what is
+// written on it.
+export function drawVfdText(x, y, text, {
+  scale = 2, theme = null, role = 'ui-primary', alpha = 1, color = null, max = null,
+} = {}) {
+  if (theme && THEMES[theme]) setActiveSurface(theme);
+  const tint = color || (theme && !THEMES[theme] ? theme : null);
 
-  const value = String(text).toUpperCase();
-  const colorRole = role === 'ui-counter' ? 'counter' : 'phosphor';
+  const value = fitText(String(text).toUpperCase(), max == null ? null : Math.floor(max / Math.max(0.25, scale)));
 
   uiDraw(({ ctx, dpr, cellW, cellH, cols }) => {
     const cw = cellW * scale * dpr;
-    const ch = cellW * 1.42 * scale * dpr;
+    // Height follows the ROW the text sits on, so a scaled word occupies the
+    // rows it claims and nothing underneath it.
+    const ch = Math.min(cellW * 1.42, cellH) * scale * dpr;
     const oy = y * cellH * dpr;
 
     for (let i = 0; i < value.length; i++) {
       const cellX = x + i * scale;
-      const duty = litDuty(cellX, y, colorRole, alpha);
+      const duty = litDuty(cellX, y, 'phosphor', alpha);
       drawVfdGlyph(ctx, value[i], (x * cellW * dpr) + i * cw, oy, cw, ch, {
-        color: themeRoleColor(colorRole, cellX, cols),
-        dim: themeRoleDim(colorRole, cellX, cols),
+        color: tint || uiRoleColor(role, cellX, cols),
+        dim: themeRoleDim('phosphor', cellX, cols),
         blur: 4.25,
         dpr,
         alpha: duty,

@@ -10,6 +10,7 @@ import {
   dockEndingBeat,
   dockExitAttemptShouldSpeak,
   dockHauntingLights,
+  dockHauntingBodyLook,
   dockHauntingMilestonesCrossed,
   dockHauntingMoveScale,
   dockHauntingPressure,
@@ -39,9 +40,11 @@ assert.equal(eligible({ transitionKind: 'load' }).eligible, false);
 assert.equal(eligible({ transitionKind: 'warp' }).eligible, false);
 assert.equal(eligible({ spent: true }).eligible, false);
 assert.deepEqual(dockHauntingStaging({entryPortal:DOCK_PORTAL.FOYER}),{
-  variant:DOCK_HAUNTING_VARIANT.WEST_DESK,x:59,y:5.6,yaw:Math.PI/2,concealment:'west signing desk and searchlight',
+  variant:DOCK_HAUNTING_VARIANT.WEST_DESK,x:62.2,y:7.4,yaw:Math.PI/2,concealment:'clear of the west signing desk',
 });
-assert.equal(dockHauntingStaging({entryPortal:DOCK_PORTAL.SERVICE}).x,69);
+assert.deepEqual(dockHauntingStaging({entryPortal:DOCK_PORTAL.SERVICE}),{
+  variant:DOCK_HAUNTING_VARIANT.NORTH_CAGE,x:67.2,y:7.35,yaw:Math.PI,concealment:'in front of the chandelier cage',
+});
 assert.equal(dockExitAttemptShouldSpeak({ forwardIntent:.95, hasDoor:true }), true);
 assert.equal(dockExitAttemptShouldSpeak({ forwardIntent:.1, hasDoor:true }), false);
 assert.equal(dockExitAttemptShouldSpeak({ forwardIntent:.95, hasDoor:false }), false);
@@ -111,6 +114,9 @@ const normalLights=[{id:'ordinary',intensity:1,radius:8}];
 const peakLights=dockHauntingLights({pressure:1,effectPressure:1},dockHauntingStaging({entryPortal:DOCK_PORTAL.FOYER}),normalLights);
 assert.ok(peakLights.find((light)=>light.id==='ordinary').intensity<.1,'architectural light is absorbed');
 assert.ok(peakLights.find((light)=>light.id==='dock-hush-readable-rim').intensity>0,'the body keeps a stable rim');
+const bodyLook=dockHauntingBodyLook({pressure:1,effectPressure:1,resolved:false});
+assert.ok(bodyLook.glow>=3&&bodyLook.widthM>.7,'the final COME CLOSER fade retains a broad cold body edge');
+assert.equal(dockHauntingBodyLook({pressure:1,resolved:true}),null);
 
 const snapshot={
   active:true,x:4,y:5,targetX:9,targetY:10,hasTarget:true,targetReason:'PLAYER_NOISE_PINPOINT',

@@ -72,6 +72,7 @@ export function hitTestFireballCast(active, { x = -1, y = -1, aspect = 1, radius
 export function createFireballExchange({
   battleId = '',
   reducedMotion = false,
+  manual = false,
   returnThreshold = FIREBALL_RETURN_THRESHOLD,
   returnDamage = FIREBALL_RETURN_DAMAGE,
   beginCast = null,
@@ -113,7 +114,8 @@ export function createFireballExchange({
     return beginCast?.(request) || compileFireballCastPlan({ battleId, ...request });
   }
 
-  function spawn() {
+  function spawn(context = {}) {
+    if (active) return active.plan;
     const request = {
       movementId:movement.id,
       movementIndex:movement.index,
@@ -121,6 +123,10 @@ export function createFireballExchange({
       castSequence:sequence++,
       reducedMotion:!!reducedMotion,
       stage:getStage?.() || null,
+      casterId:context.casterId || null,
+      casterLabel:context.casterLabel || '',
+      casterIndex:context.casterIndex,
+      coordinateIds:context.coordinateIds || [],
     };
     const plan = planFor(request);
     if (!plan) {
@@ -253,6 +259,8 @@ export function createFireballExchange({
         settled:cycle.settled,
         settleLeftMs:cycle.settleLeftMs,
         pressure:dance.pressure,
+        gesture:dance.gesture,
+        formationProgress:cycle.formationProgress,
       },
     });
   }
@@ -265,6 +273,7 @@ export function createFireballExchange({
     if (!enabled && (!active || liveRays().length)) return snapshot();
     const seconds = Math.max(0, Number(dt) || 0);
     if (!active) {
+      if (manual) return snapshot();
       spawnIn -= seconds;
       if (spawnIn <= 0) spawn();
       return snapshot();
@@ -294,13 +303,13 @@ export function createFireballExchange({
         if (ray.outside < outside) continue;
         finish(ray, 'impact', landing || null);
         last = { type:'missed', castId:active.plan.castId, rayId:ray.id, damage:landing };
-        if (landing > 0) onImpact({ castId:active.plan.castId, rayId:ray.id, damage:landing });
+        if (landing > 0) onImpact({ castId:active.plan.castId, rayId:ray.id, damage:landing, casterId:active.plan.casterId || null });
         continue;
       }
       ray.dwell -= seconds;
       if (ray.dwell > 0) continue;
       if (ray.state === 'reversed') {
-        onReturn({ castId:active.plan.castId, rayId:ray.id, damage:rangedDamage });
+        onReturn({ castId:active.plan.castId, rayId:ray.id, damage:rangedDamage, casterId:active.plan.casterId || null });
         last = { type:'returned', castId:active.plan.castId, rayId:ray.id, damage:rangedDamage };
       }
       ray.state = 'gone';
@@ -349,5 +358,10 @@ export function createFireballExchange({
     return snapshot();
   }
 
-  return { setMovement, update, click, strike, cancel, snapshot, stop };
+  function castNow(context = {}) {
+    if (stopped) return null;
+    return spawn(context);
+  }
+
+  return { setMovement, update, click, strike, castNow, cancel, snapshot, stop };
 }

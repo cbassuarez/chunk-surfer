@@ -73,7 +73,8 @@
     "audio/audio-project.audio.json"
   ],
   "media": [
-    "media/story-art.media.json"
+    "media/story-art.media.json",
+    "media/window-media.media.json"
   ],
   "runtimeEntrypoints": [
     "conservatory.cold_open_dialogue",

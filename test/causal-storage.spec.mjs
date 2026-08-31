@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { CAUSAL_SPINE_IDS, sealCausalTape } from '../src/causal/tape.js';
+import { CAUSAL_INJURY_CEILING, CAUSAL_SPINE_IDS, sealCausalTape } from '../src/causal/tape.js';
 import { BrowserStorage } from '../src/platform/storage/browserStorage.js';
 import { DesktopStorage, MemoryFileAdapter } from '../src/platform/storage/desktopStorage.js';
 import { CausalRecorder } from '../src/causal/recorder.js';
@@ -49,7 +49,7 @@ assert.equal(await browser.loadLatestCausalTape(),null);
 assert.equal(await browser.loadHushRunSession(),null);
 
 await initGameStorage({kind:'browser',gameVersion:'TEST'});
-for(const injuries of [0,1]){
+for(const injuries of Array.from({length:CAUSAL_INJURY_CEILING+1},(_,index)=>index)){
   const recorder=new CausalRecorder();
   recorder.begin({runId:`qualified-${injuries}`,difficulty:'contract'});
   recorder.tick(.1,{x:1,y:1,roomId:'main_b3',renderGroup:'basement'});
@@ -62,9 +62,9 @@ const retained=(await loadLatestCausalTape()).contentHash;
 const discarded=new CausalRecorder();
 discarded.begin({runId:'discarded',difficulty:'contract'});
 discarded.tick(.1,{x:1,y:1});
-discarded.noteInjuries(2);
-assert.equal((await discarded.finalize({summary:{id:'return:discarded'},endingId:'sacrifice',injuries:2})).reason,'NOT_QUALIFIED');
-assert.equal((await loadLatestCausalTape()).contentHash,retained,'a second injury discards only the draft and preserves the prior finalized tape');
+discarded.noteInjuries(CAUSAL_INJURY_CEILING+1);
+assert.equal((await discarded.finalize({summary:{id:'return:discarded'},endingId:'sacrifice',injuries:CAUSAL_INJURY_CEILING+1})).reason,'NOT_QUALIFIED');
+assert.equal((await loadLatestCausalTape()).contentHash,retained,'an injury beyond the ceiling discards only the draft and preserves the prior finalized tape');
 
 const write=globalThis.localStorage.setItem;
 globalThis.localStorage.setItem=()=>{throw new Error('quota')};

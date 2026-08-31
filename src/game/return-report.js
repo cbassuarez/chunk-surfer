@@ -2,11 +2,13 @@ import * as scenes from './scenes.js';
 import { uiCenter, uiFill, uiLine, uiSize, uiText, uiWrap } from '../render/ui.js';
 import { drawMachinePanel, drawVfdText } from '../render/presentation.js';
 import { UI_COLOR } from '../render/palette.js';
+import { tapeQualifies } from '../causal/tape.js';
 import { achievementDefinition } from '../progression/achievements.js';
 import { consumeReturnReport } from '../progression/runtime.js';
 import { formatDuration, returnDefinition } from '../progression/report.js';
 import * as AUDIO from '../audio/story-audio.js';
 import { promptLine } from './bindings.js';
+import { getMeta } from './save.js';
 import { roomLabel } from '../audio/manifest-map.js';
 import {
   FEATURE_COPY,
@@ -15,7 +17,7 @@ import {
   POST_RUN_STAGE_COPY,
   dispatchPostRunAction,
   endingHintForEnding,
-  hushAvailabilityCopy,
+  transferRoomCopy,
 } from './post-run-copy.js';
 
 const chunk = (values, size) => {
@@ -48,10 +50,10 @@ function reportRows(summary) {
 export function makeReturnReportScene({
   summary,
   onReopen = () => {},
-  onHush = () => {},
+  onTransferRoom = () => {},
   onArchive = () => {},
   onTitle = () => {},
-  getCausalStatus = () => summary.causalTape || { status: summary.injuries <= 1 ? 'filing' : 'not-qualified' },
+  getCausalStatus = () => summary.causalTape || { status: tapeQualifies(summary.injuries) ? 'filing' : 'not-qualified' },
 } = {}) {
   const buildStages=()=>{
     const achievementIds=[...(summary.unlockedAchievements||[])];
@@ -68,8 +70,10 @@ export function makeReturnReportScene({
   };
   let stages=getCausalStatus()?.status==='filing'?[{id:'filing'}]:buildStages();
   let stage = 0;
-  const hushActionIndex = POST_RUN_ACTIONS.findIndex((item) => item.id === 'hush');
-  let action = getCausalStatus()?.status === 'ready' ? Math.max(0, hushActionIndex) : 0;
+  // The file is always open, so this row no longer waits on anything being
+  // prepared; PLAY AGAIN stays the default because that is still the likelier
+  // thing to want off the back of an ending.
+  let action = 0;
   let consumed = false;
   // The summary arrives out of the black the closing quote left behind, with the
   // hiss bed already up under it (see presentCredits onBlack). It fades in rather
@@ -81,7 +85,7 @@ export function makeReturnReportScene({
   function finish(actionId) {
     if (!consumed) { consumeReturnReport(summary.id); consumed = true; }
     scenes.pop();
-    dispatchPostRunAction(actionId, { onReopen, onHush, onArchive, onTitle });
+    dispatchPostRunAction(actionId, { onReopen, onTransferRoom, onArchive, onTitle });
   }
 
   return {
@@ -105,7 +109,6 @@ export function makeReturnReportScene({
         if (e.key === 'ArrowRight' || k === 'd') { action = action === 0 ? 1 : action === 2 ? 3 : action; AUDIO.menuMove(); return true; }
         if (e.key === 'Enter' || e.key === ' ' || k === 'z') {
           const selectedAction = POST_RUN_ACTIONS[action];
-          if (selectedAction?.id === 'hush' && getCausalStatus()?.status !== 'ready') { AUDIO.menuMove(); return true; }
           AUDIO.menuConfirm(); finish(selectedAction?.id || 'title'); return true;
         }
         return true;
@@ -223,7 +226,8 @@ export function makeReturnReportScene({
 
       drawVfdText(body.x, body.y, stageCopy.title, { color: UI_COLOR.amber, max: body.w });
       const causal = getCausalStatus() || {};
-      const hushCopy = hushAvailabilityCopy(causal);
+      const filed = Object.keys(getMeta()?.knowledge?.documents || {}).length;
+      const hushCopy = transferRoomCopy({ filed });
       const gap = 3;
       const panelW = Math.max(20, Math.floor((body.w - gap) / 2));
       const panelY = body.y + 4;

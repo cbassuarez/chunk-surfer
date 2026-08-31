@@ -96,6 +96,7 @@ const state = {
   worldNoise: 0,        // remote sources the presence hears but this mic does not
   lastNoiseAt: { x: 0, y: 0, t: 0 },   // where the presence goes looking
   slow: false,          // Shift held
+  hidden: false,        // pressed into cover: see game/cover.js
   takes: [],            // completed room ids
   places: {},           // roomId -> where in that room it was rolled
   contaminated: [],     // accepted rooms whose most recent take carried mains hum
@@ -109,7 +110,13 @@ export function isMonitoring() { return state.phase !== 'idle'; }
 export function lightOn() { return state.light; }
 
 // Noise floor rises with injury and never falls back. You get worse.
-export function noiseFloor() { return state.injuries * NOISE.perInjury; }
+//
+// Except in cover, and this is the one mercy the hide verb grants. A limp is
+// loud BECAUSE YOU WALK ON IT — the floor exists to make a wounded man's
+// footfalls carry, and a wounded man stood still against a wall is not putting
+// weight on anything. Without this the injured player is the one player cover
+// cannot help, which is exactly backwards: he is the one who needs it.
+export function noiseFloor() { return state.hidden ? 0 : state.injuries * NOISE.perInjury; }
 export function currentNoise() { return state.noise; }
 export function currentWorldNoise() { return Math.max(state.noise, state.worldNoise); }
 
@@ -333,21 +340,54 @@ export function injure() {
 }
 
 export function setSlow(on) { state.slow = !!on; }
+
+// Pressed into cover. The recordist only records the fact — main.js owns the
+// geometry (game/cover.js) and the HUSH owns what it makes of it. Nothing in
+// here knows there is anything to hide FROM.
+export function setHidden(on) { state.hidden = !!on; }
+export function isHidden() { return state.hidden; }
 // WHERE IN THE ROOM IT WAS ROLLED.
 //
 // Only the concert hall has anywhere else to stand — the orchestra floor, the
 // stage, and two balconies, all one zone and all `amplifications`. Everywhere
 // else the room IS the position, so the place is simply null and nothing
 // downstream has to special-case a room with one floor in it.
+// ONE TAKE IS ONE RECORD, AND IT LIVES ON THE TAPE.
+//
+// `takes`, `contaminated` and `places` were three arrays keyed by room, next to
+// a fourth store in game/playback.js holding the recording itself — four places
+// to describe one thing, and only three of them ever reached the disk. The tape
+// store is the truth now (playback.js) and these three are a projection of it,
+// kept because a dozen callers read them every frame and a Map lookup per read
+// is not worth the churn.
+//
+// `takeSink` is how the projection is filled without this module importing the
+// tape store: main.js owns the wiring, the way it owns the acoustic emitter.
+let takeSink = null;
+export function setTakeSink(sink = null) { takeSink = sink; }
+
+function projectTakes() {
+  if (!takeSink) return;
+  state.takes = takeSink.roomIds();
+  state.contaminated = takeSink.contaminated();
+  state.places = takeSink.places();
+}
+
 export function addTake(roomId, { contaminated = false, place = null } = {}) {
+  takeSink?.mark?.(roomId, { contaminated, place });
+  if (takeSink) { projectTakes(); return; }
+  // No sink wired (headless tests, the bag lab): keep the old behaviour so the
+  // module still stands up on its own.
   if (!state.takes.includes(roomId)) state.takes.push(roomId);
   const dirty = new Set(state.contaminated);
   if (contaminated) dirty.add(roomId); else dirty.delete(roomId);
   state.contaminated = [...dirty];
-  // First clean take of a room owns its place. A tape does not re-roll, and
-  // sealTake has already chosen the guest by the time this is called.
   if (place && !state.places[roomId]) state.places[roomId] = place;
 }
+
+// Called by main.js after anything writes to the tape store behind our back —
+// a load, a migration, a debug setter.
+export function syncTakes() { projectTakes(); }
 export function takePlace(roomId) { return state.places[roomId] || null; }
 export function takePlaces() { return { ...state.places }; }
 export function hasTake(roomId) { return state.takes.includes(roomId); }
@@ -357,26 +397,61 @@ export function setTake(roomId, present = true) {
   if (!roomId) return false;
   if (present) addTake(roomId);
   else {
+    takeSink?.forget?.(roomId);
     state.takes = state.takes.filter((id) => id !== roomId);
     state.contaminated = state.contaminated.filter((id) => id !== roomId);
     delete state.places[roomId];
+    projectTakes();
   }
   return hasTake(roomId) === !!present;
 }
 
+// THE SAVE CARRIES TAPES, NOT THREE LISTS.
+//
+// `takes` / `contaminated` / `places` are still ACCEPTED, because every save
+// written before this change has them and nothing else. They are read once, on
+// load, handed to the tape store to adopt, and never written again — so an old
+// save migrates on its first open and a new save has one place a take lives.
 export function loadRecState(saved = {}) {
-  Object.assign(state, {
-    injuries: saved.injuries || 0,
-    takes: saved.takes || [],
-    contaminated: [...new Set((saved.contaminated || []).filter((id) => (saved.takes || []).includes(id)))],
+  const tapes = Array.isArray(saved.tapes) ? saved.tapes : null;
+  // A save written since the stores were merged carries tapes and nothing else;
+  // anything older carries the three lists. Read whichever is there.
+  const rooms = tapes ? tapes.map((t) => t?.roomId).filter(Boolean) : (saved.takes || []);
+  const dirty = tapes
+    ? tapes.filter((t) => t?.contaminated).map((t) => t.roomId)
+    : (saved.contaminated || []).filter((id) => rooms.includes(id));
+  const places = tapes
+    ? Object.fromEntries(tapes.filter((t) => t?.place).map((t) => [t.roomId, t.place]))
     // Same hygiene as contaminated: a place for a take that is not in the list
     // is a stale save, not a fact about tonight.
-    places: Object.fromEntries(Object.entries(saved.places || {}).filter(([id]) => (saved.takes || []).includes(id))),
+    : Object.fromEntries(Object.entries(saved.places || {}).filter(([id]) => rooms.includes(id)));
+  Object.assign(state, {
+    injuries: saved.injuries || 0,
+    takes: [...rooms],
+    contaminated: [...new Set(dirty)],
+    places,
     assistPause: 0,
     battery: saved.battery == null ? 1 : saved.battery,
     worldNoise: 0,
   });
+  return { tapes, legacy: { roomIds: state.takes, contaminated: state.contaminated, places: state.places } };
 }
-export function saveRecState() {
-  return { injuries: state.injuries, takes: state.takes, contaminated: state.contaminated, places: { ...state.places }, battery: state.battery };
+
+// Tapes, always. With the store wired they are the real recordings; without it
+// (a headless test, the bag lab) they are the bare facts this module knows, in
+// the same shape — so the module still round-trips on its own and there is
+// still only one list of takes in the file.
+export function saveRecState(tapes = null) {
+  const fromStore = Array.isArray(tapes) ? tapes : takeSink?.serialize?.();
+  return {
+    injuries: state.injuries,
+    battery: state.battery,
+    tapes: fromStore || state.takes.map((roomId) => ({
+      roomId,
+      contaminated: state.contaminated.includes(roomId),
+      place: state.places[roomId] || null,
+      audible: [], guest: null, discrete: [], presence: { peak: 0, atSec: 0 },
+      cell: null, at: 0, migrated: true,
+    })),
+  };
 }

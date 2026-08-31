@@ -6,6 +6,7 @@ import {
   availableCombatActions,
   createCombatState,
   reduceCombat,
+  resolveCombatResult,
   runCombatTurn,
 } from '../src/game/combat-state.js';
 import { authoredCombatProfile, trainingCombatBattle } from '../src/data/combat-definitions.js';
@@ -61,12 +62,22 @@ test('the drill advances one lesson per scripted turn against the training profi
   assert.equal(play(COMBAT_ACTION.WAIT), false, 'one missed attempt does not advance');
   assert.equal(director.step().id, 'parry');
   assert.equal(play(COMBAT_ACTION.WAIT), true, 'the second one gives up on the player, not the reverse');
-  // The last lesson is free play: it never auto-advances, and every step so
-  // far has a prompt and (until now) a spotlight region.
+  // The final state is a result handoff, not an endless free-play lesson. The
+  // combat scene consumes this through the same result path as a normal win.
   assert.equal(director.step().id, 'free');
-  assert.equal(play(COMBAT_ACTION.HOLD), false);
+  assert.equal(director.completeBattle(), true);
   assert.equal(director.active(), true);
   assert.ok(director.prompt().length > 0);
+  state=resolveCombatResult(state,'win');
+  assert.equal(state.result.result,'win');
+  assert.equal(state.phase,'done');
+});
+
+test('skipping the lesson gate permits practice without falsely completing the battle', () => {
+  const director=createCombatTutorialDirector();
+  director.skip();
+  assert.equal(director.active(),false);
+  assert.equal(director.completeBattle(),false);
 });
 
 test('every scripted lesson only allows moves the training state can actually take that turn', () => {

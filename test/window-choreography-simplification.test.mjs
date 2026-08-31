@@ -20,10 +20,10 @@ test('the settings screen offers one switch and no intensity dial', () => {
 
 test('nothing in the effects layer declines a cast for how the game is displayed', () => {
   const source = readFileSync('src/platform/personalized-window-effects.js', 'utf8');
-  const showNative = source.slice(source.indexOf('function showNative'), source.indexOf('function scheduleHide'));
-  assert.doesNotMatch(showNative, /session\.fullscreen/);
-  assert.doesNotMatch(showNative, /intensity==='low'/);
-  assert.match(showNative, /if\(current!==session\|\|!session\.surfacesReady\)return false;/);
+  const sync = source.slice(source.indexOf('function syncFireballCast'), source.indexOf('function beginFireballCast'));
+  assert.doesNotMatch(sync, /session\.fullscreen/);
+  assert.doesNotMatch(sync, /intensity==='low'/);
+  assert.match(sync, /if\(!session\.surfacesReady\)return false;/);
 });
 
 // macOS native fullscreen moves the window into its own Space and NOTHING can
@@ -45,7 +45,7 @@ test('game mode is simple fullscreen, and every exit from it clears that', () =>
 
 test('the surviving refusal is the platform floor, and it is reported', () => {
   const rust = readFileSync('src-tauri/src/window_choreography.rs', 'utf8');
-  assert.match(rust, /if main\.is_fullscreen\(\)\.unwrap_or\(false\)\{return Ok\(false\);\}/,
+  assert.match(rust, /if main\.is_fullscreen\(\)\.unwrap_or\(false\)\s*\{\s*return Ok\(None\);/,
     'a window genuinely inside a macOS Space still cannot be overlaid');
   const main = readFileSync('src/main.js', 'utf8');
   assert.match(main, /onSurfaceReport:/, 'every prewarm outcome is reported');

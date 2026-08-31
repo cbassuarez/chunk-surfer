@@ -305,8 +305,8 @@ console.log('fireball surface tests passed');
   spy.syncFireballCast(plan(2), outside(2, .5), { token: spyToken, choreography: dance });
   await settle();
   const sent = held.at(-1);
-  assert.deepEqual(Object.keys(sent).sort(), ['cohesion', 'dodge', 'reach', 'senseMs'],
-    'and a breaking one sends exactly the four numbers the geometry needs');
+  assert.deepEqual(Object.keys(sent).sort(), ['cohesion', 'dodge', 'formationProgress', 'gesture', 'reach', 'senseMs'],
+    'and a breaking one sends only bounded geometry plus its authored formation');
   assert.ok(sent.dodge > 0 && sent.dodge <= 1);
   assert.ok(sent.senseMs <= 600, 'the prediction lead is bounded on this side, not trusted from it');
   await spy.emergencyRestore({ notify: false });

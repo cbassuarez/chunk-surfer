@@ -27,6 +27,8 @@ import {
   sourceBellsRoomResolve,
   sourceTierAt,
   sourceTierHeightAt,
+  BELL_SWING,
+  bellSwingAt,
 } from '../src/data/source-level.js';
 import { PROP_BOUNDS } from '../src/data/generated/prop-geometry.js';
 import {
@@ -120,6 +122,95 @@ import { createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
   assert.ok(bells.every((part) => part.scale === 1), 'at true scale, which is the point of arriving');
   assert.ok(SOURCE_BELLS_ROOM.some((part) => part.mesh === 'tower_frame'), 'in a real frame');
   assert.ok(SOURCE_BELLS_ROOM.some((part) => part.mesh === 'tower_catwalk'), 'on a real deck');
+}
+
+// ── EVERYTHING OUT THERE CAN ACTUALLY BE REACHED ───────────────────────────
+//
+// The contract this file was missing, and it cost the whole third act.
+//
+// Crossing the room's threshold completes the chapter, and past it `inBells`
+// clamps the world to the room's own width. So a piece authored beyond the
+// threshold is not "further along the walk" — it is scenery nobody will ever
+// stand next to. The room used to sit at depth 274 of a passage declared 432
+// long, which put all six true-scale bells, their frame, and the entire
+// resolution act behind the door. Every other assertion in this file passed
+// while that was true.
+{
+  const depth = (entry) => SOURCE_BELLS.from - entry.y;
+  const thresholdDepth = SOURCE_BELLS.from - SOURCE_BELLS.room.threshold;
+
+  for (const entry of SOURCE_BELL_PASSAGE) {
+    assert.ok(entry.y > SOURCE_BELLS.room.threshold,
+      `${entry.id} stands at depth ${depth(entry).toFixed(0)}, past the threshold at ${thresholdDepth.toFixed(0)} — nobody can reach it`);
+  }
+
+  // And the walk uses the length it declares, rather than stopping two thirds
+  // of the way down it.
+  assert.ok(thresholdDepth > SOURCE_BELLS.length * 0.9,
+    `the door is at depth ${thresholdDepth.toFixed(0)} of an authored ${SOURCE_BELLS.length}`);
+
+  // THE LAST HUNDRED AND FORTY METRES IS THE RING. The prose above the act says
+  // so, and 432 - 140 = 292, which is where it starts.
+  const ring = SOURCE_BELL_PASSAGE.filter((entry) => /^bells-ring-\d/.test(entry.id));
+  assert.equal(ring.length, 6);
+  const first = depth(ring[0]), last = depth(ring[ring.length - 1]);
+  assert.ok(first >= 280 && first <= 300, `the ring starts at ${first.toFixed(0)}, not ~292`);
+  assert.ok(last > thresholdDepth - 20, 'and it runs up to the door rather than stopping short');
+  assert.ok(last - first >= 100, 'spread across the act, not bunched into forty metres of it');
+}
+
+// ── MOTION FOLLOWS THE THREE ACTS ──────────────────────────────────────────
+{
+  const byId = (id) => SOURCE_BELL_PASSAGE.find((entry) => entry.id === id);
+  const act = (prefix) => SOURCE_BELL_PASSAGE.filter((entry) => entry.id.startsWith(prefix));
+
+  // ARCHITECTURE: nothing moves. Too big, half sunk, indifferent to you.
+  for (const entry of act('bells-arch')) {
+    assert.equal(entry.swing, undefined, `${entry.id} moves, and act one does not`);
+    assert.equal(bellSwingAt(entry, 7.3), 0);
+  }
+
+  // NULL: it moves, and it is wrong.
+  assert.equal(byId('bells-null-wheel').swing.kind, 'turn', 'a wheel with nothing in it, turning');
+  assert.equal(byId('bells-null-inverted').swing.kind, 'rock', 'upside down, and rocking about it');
+  assert.ok(act('bells-null-coin').every((entry) => entry.swing?.kind === 'shiver'),
+    'and the coins shiver');
+  // Rates unlinked from size is the whole idea: the smallest things move fastest.
+  const coin = byId('bells-null-coin-1'), canopy = byId('bells-null-canopy');
+  assert.ok(coin.swing.period < canopy.swing.period / 10,
+    'a coin moves an order of magnitude faster than the thing the size of a house');
+
+  // RESOLUTION: six bells, full circle, in order.
+  const ring = SOURCE_BELL_PASSAGE.filter((entry) => /^bells-ring-\d/.test(entry.id));
+  assert.equal(ring.length, 6);
+  assert.ok(ring.every((entry) => entry.swing?.kind === 'ring'));
+  assert.ok(ring.every((entry) => entry.swing.amp === BELL_SWING.FULL), 'all the way over');
+  assert.ok(BELL_SWING.FULL > Math.PI * 0.9 && BELL_SWING.FULL < Math.PI,
+    'a full-circle bell goes up past the balance, and not through it');
+  const phases = ring.map((entry) => entry.swing.phase);
+  assert.equal(new Set(phases).size, 6, 'in order — no two of them strike together');
+
+  // NOTHING MAY EVER TOUCH THE PLAYER.
+  //
+  // Collision is the static footprint, so a piece that blocks must not swing far
+  // enough to sweep ground it does not own. Large amplitudes live on pieces you
+  // can walk through; a wheel is exempt because turning on its own axis covers
+  // exactly the same ground at every angle.
+  for (const entry of SOURCE_BELL_PASSAGE) {
+    if (!entry.swing || !entry.blocks) continue;
+    assert.ok(entry.swing.kind === 'turn' || Math.abs(entry.swing.amp || 0) <= 0.12,
+      `${entry.id} blocks and swings ${entry.swing.amp} — it would sweep through the player`);
+  }
+
+  // The swing is a pure function of the piece and the clock, and it is bounded.
+  for (const entry of SOURCE_BELL_PASSAGE) {
+    assert.equal(bellSwingAt(entry, 4.2), bellSwingAt(entry, 4.2), 'deterministic');
+    for (let t = 0; t < 40; t += 0.37) {
+      assert.ok(Number.isFinite(bellSwingAt(entry, t)), `${entry.id} produced a non-finite roll`);
+    }
+  }
+  assert.equal(bellSwingAt({}, 3), 0, 'a piece with no swing does not move');
+  assert.equal(bellSwingAt(null, 3), 0);
 }
 
 // ── the passage is made of the building ─────────────────────────────────────

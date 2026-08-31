@@ -1,3 +1,4 @@
+use tauri::Manager;
 use tauri_plugin_log::{Target, TargetKind};
 
 mod desktop_menu;
@@ -21,8 +22,10 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .on_window_event(|window, event| {
+            if window.label() == "main" {
+                window_choreography::note_main_window_event(window.app_handle(), event);
+            }
             if window.label() == "main" && matches!(event, tauri::WindowEvent::Destroyed) {
-                use tauri::Manager;
                 window.state::<lens_service::LensServiceState>().stop();
             }
         })
@@ -40,6 +43,14 @@ pub fn run() {
             window_choreography::chunk_fireball_cast_hide_all,
             window_choreography::chunk_fireball_cast_step,
             window_choreography::chunk_fireball_cast_focus_main,
+            window_choreography::chunk_window_choreography_begin,
+            window_choreography::chunk_window_choreography_execute,
+            window_choreography::chunk_window_choreography_restore,
+            window_choreography::chunk_window_surface_place,
+            window_choreography::chunk_window_media_place,
+            window_choreography::chunk_window_media_position,
+            window_choreography::chunk_window_media_hide_all,
+            window_choreography::chunk_window_media_hide_if_unfocused,
             lens_service::chunk_lens_bootstrap,
             lens_service::chunk_lens_retry,
             lens_service::chunk_lens_stop,

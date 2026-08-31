@@ -8,6 +8,20 @@ import type { AudioProject, DocumentEnvelope, MediaProject, NarrativeDocument, P
 import { reachableNodeIds, validateAudioProject, validateMediaProject, validateNarrativeDocument, validateProjectManifest } from '../../../src/narrative/contracts.js';
 
 const RECOVERY_KEY = 'chunk-surfer.narrative-studio.recovery.v1';
+
+// DEEP LINK. `?doc=<documentId>&node=<nodeId>&line=<lineId>` opens the studio
+// straight onto an authored document rather than the timeline — which is how
+// tools/endings-audit links every ending's dialog back to the place it is
+// written. Read once, at module load, because it seeds initial state; the query
+// is then irrelevant and the studio behaves normally.
+const deepLink = (() => {
+  const params = new URLSearchParams(location.search);
+  return {
+    doc: params.get('doc') || '',
+    node: params.get('node') || '',
+    line: params.get('line') || '',
+  };
+})();
 const StoryGraph = lazy(() => import('./StoryGraph').then((module) => ({ default: module.StoryGraph })));
 const AudioWorkspace = lazy(() => import('./AudioWorkspace').then((module) => ({ default: module.AudioWorkspace })));
 const TimelineWorkspace = lazy(() => import('./TimelineWorkspace').then((module) => ({ default: module.TimelineWorkspace })));
@@ -35,9 +49,9 @@ class WorkspaceErrorBoundary extends Component<{ children: ReactNode; onReset: (
 
 export function App() {
   const [snapshot, setSnapshot] = useState<ProjectSnapshot | null>(null);
-  const [tab, setTab] = useState<Tab>('timeline');
-  const [selectedDocumentId, setSelectedDocumentId] = useState('');
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>(deepLink.doc ? 'story' : 'timeline');
+  const [selectedDocumentId, setSelectedDocumentId] = useState(deepLink.doc);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(deepLink.node || null);
   const [selectedCueId, setSelectedCueId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [dirtyStories, setDirtyStories] = useState(new Set<string>());
@@ -63,7 +77,10 @@ export function App() {
       setDirtyStories(new Set()); setDirtyAudio(false); setDirtyMedia(false); setDirtyProject(false); setExternalChanges(new Set());
       setHistory({}); setAudioHistory({ past: [], future: [] });
       setRecoveryAvailable(!!localStorage.getItem(RECOVERY_KEY));
-      setStatus(`${loaded.documents.length} story documents · ${loaded.audio.document.assets.length} audio assets`);
+      const summary = `${loaded.documents.length} story documents · ${loaded.audio.document.assets.length} audio assets`;
+      // A deep link asks for one line; the studio selects per node, so say which
+      // line was wanted rather than silently landing on its node.
+      setStatus(deepLink.line ? `${summary} · opened at ${deepLink.doc}#${deepLink.line}` : summary);
     } catch (error) { setStatus(error instanceof Error ? error.message : String(error)); }
   }, []);
 

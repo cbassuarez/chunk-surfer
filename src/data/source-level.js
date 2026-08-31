@@ -46,6 +46,30 @@ export const SOURCE_APPROACH_BASE_CELLS = 120;
 export const SOURCE_APPROACH_SHIFT = SOURCE_APPROACH_CELLS - SOURCE_APPROACH_BASE_CELLS;
 const shiftedApproachY = (value) => Number(value) - SOURCE_APPROACH_SHIFT;
 
+// ── OUT PAST THE FIELD, BEFORE THE TAPE ─────────────────────────────────────
+//
+// The field used to end and the recording used to start, in the same step. That
+// made the horizon somewhere you were PUT rather than somewhere you walked to,
+// and it gave the tape nothing to arrive out of.
+//
+// Two stretches now stand between them, and they are the decompression:
+//
+//   OUTSKIRTS   the field's own structures, thinning. Same ground, fewer and
+//               fewer things standing on it, until there is one and then none.
+//   NOTHING     no structures at all. Open, flat, lit by nothing, going nowhere
+//               that you can see. This is what the source runs out INTO.
+//
+// THE AUDIO CONTRACT ALREADY COVERS THIS AND NEEDED NO CHANGE. The horizon's
+// playhead is `sourceHorizonDepth`, which clamps to zero for anybody standing
+// short of the seam — so both stretches play at second zero, which is silence,
+// and the piece begins on the step that crosses into the tape.
+export const SOURCE_OUTSKIRTS_LENGTH = 160;
+export const SOURCE_NOTHING_LENGTH = 200;
+export const SOURCE_PRE_TAPE_LENGTH = SOURCE_OUTSKIRTS_LENGTH + SOURCE_NOTHING_LENGTH;
+// Everything from the horizon outward moves out by the two new stretches. Same
+// device as shiftedApproachY, which is how the red approach was inserted.
+const preTapeY = (value) => shiftedApproachY(value) - SOURCE_PRE_TAPE_LENGTH;
+
 export const SOURCE_TIERS = Object.freeze([
   // id        from    to      height   what is on it
   // Boundaries follow where the landmarks actually stand, not the other way
@@ -67,7 +91,13 @@ export const SOURCE_TIERS = Object.freeze([
   // and no lift between them, because arriving here is not a climb and not a
   // fall. You walk out through the perimeter — the one wall the field has — and
   // the ground simply keeps going, and some way out there it stops being ground.
-  Object.freeze({ id: 'horizon',  from: shiftedApproachY(-460), to: shiftedApproachY(-972), height: 15.2, field: false }),
+  // The two stretches between the field and the tape. Not field tiers: there is
+  // no climb out here and no boundary that costs you a lift. Same height as the
+  // return tier and as the horizon, because none of this is a step — the ground
+  // simply keeps going after the field has stopped having anything on it.
+  Object.freeze({ id: 'outskirts', from: shiftedApproachY(-460), to: shiftedApproachY(-460) - SOURCE_OUTSKIRTS_LENGTH, height: 15.2, field: false }),
+  Object.freeze({ id: 'nothing',   from: shiftedApproachY(-460) - SOURCE_OUTSKIRTS_LENGTH, to: preTapeY(-460), height: 15.2, field: false }),
+  Object.freeze({ id: 'horizon',  from: preTapeY(-460), to: preTapeY(-972), height: 15.2, field: false }),
   // THE BELLS. Where the tower road goes, and it is not a cut.
   //
   // Taking the bust's detour used to hand the player eight and a half seconds of
@@ -79,7 +109,7 @@ export const SOURCE_TIERS = Object.freeze([
   // Same height as the horizon for the same reason the horizon shares the return
   // tier's: nothing between them is a climb. You walk out of the recording and
   // the ground keeps going.
-  Object.freeze({ id: 'bells',    from: shiftedApproachY(-972), to: shiftedApproachY(-1404), height: 15.2, field: false }),
+  Object.freeze({ id: 'bells',    from: preTapeY(-972), to: preTapeY(-1404), height: 15.2, field: false }),
 ]);
 
 // The tiered landscape proper. Altitude is the currency here and every boundary
@@ -96,9 +126,36 @@ export const SOURCE_FIELD_TIERS = Object.freeze(SOURCE_TIERS.filter((t) => t.fie
 // 512 metres against 259 seconds puts the whole piece at a walk. Two metres a
 // slice is the spacing that keeps a wall reading as a wall at eye height
 // without paying for frames nobody can resolve.
-export const SOURCE_HORIZON = Object.freeze({
+// THE WALK OUT, as one span with two halves. The tiers carry the extents; this
+// carries how wide it is and where he is put when the field lets him go.
+export const SOURCE_PRE_TAPE = Object.freeze({
+  // Same arithmetic the tiers are built from — SOURCE_TIER_BY_ID is not
+  // assembled until further down the file, and a lookup that runs before its
+  // table exists is a worse dependency than repeating two additions.
   from: shiftedApproachY(-460),
-  to: shiftedApproachY(-972),
+  outskirtsTo: shiftedApproachY(-460) - SOURCE_OUTSKIRTS_LENGTH,
+  to: preTapeY(-460),
+  length: SOURCE_PRE_TAPE_LENGTH,
+  // Wider than the tape's walking band and wider than the field. Out here there
+  // is no route: the only reason to go one way rather than another is that the
+  // ground is going that way too.
+  halfWidth: 72,
+  // Put over the seam rather than walked across it, on the same rule the horizon
+  // and the bell passage use — what is behind him has finished with him.
+  entryStandoff: 6,
+});
+
+// 0 at the field's edge, 1 at the head of the tape. The structures thin on this
+// and the last of them is gone before the nothing starts.
+export function sourcePreTapeProgress(y) {
+  const span = SOURCE_PRE_TAPE.from - SOURCE_PRE_TAPE.to;
+  if (!(span > 0)) return 0;
+  return Math.max(0, Math.min(1, (SOURCE_PRE_TAPE.from - (Number(y) || 0)) / span));
+}
+
+export const SOURCE_HORIZON = Object.freeze({
+  from: preTapeY(-460),
+  to: preTapeY(-972),
   length: 512,
   tapeSeconds: 259.375,
   sliceMetres: 2,
@@ -146,8 +203,8 @@ export const SOURCE_BELLS = Object.freeze({
   // Moved out with its tier when the red approach was inserted. This manifest and
   // the `bells` entry in SOURCE_TIERS have to agree exactly — a gap between them
   // is undrawn ground.
-  from: shiftedApproachY(-972),
-  to: shiftedApproachY(-1404),
+  from: preTapeY(-972),
+  to: preTapeY(-1404),
   length: 432,
   // Where the body is put when the bust's detour is taken. Past the seam, the
   // same standoff the horizon uses, so he does not arrive with his back inside
@@ -159,7 +216,16 @@ export const SOURCE_BELLS = Object.freeze({
   // THE ROOM. Three walls of St Brendan's belfry standing in the field, with the
   // way in where the fourth wall is not. Crossing this depth is the commit.
   room: Object.freeze({
-    at: shiftedApproachY(-1252),
+    // AT THE END OF THE 432, NOT TWO THIRDS OF THE WAY DOWN IT.
+    //
+    // It used to stand at depth 274 of a passage declared 432 long, and since
+    // crossing the threshold is what completes the chapter, everything authored
+    // past it was unreachable — the whole of act three, the six bells at true
+    // scale, the thing the walk exists to arrive at. Nobody had ever seen it.
+    // The comment below still says "the last hundred and forty metres is the
+    // passage remembering what a ring is": 432 - 140 = 292, which is where the
+    // ring starts. The ring was always meant to lead INTO this room.
+    at: preTapeY(-1396),
     // Authored in metres about the room's own centre; the belfry chamber is
     // thirteen by nine inside its frame.
     halfX: 6.5,
@@ -167,12 +233,12 @@ export const SOURCE_BELLS = Object.freeze({
     height: 11.0,
     // Where the passage hands over. The player is standing at the threshold and
     // walking forward; this is the last metre of source space.
-    threshold: shiftedApproachY(-1246),
+    threshold: preTapeY(-1390),
   }),
   // How far out the room begins to resolve, and where it is unmistakable. The
   // whole third act of the walk is a shape getting closer.
-  resolveFrom: shiftedApproachY(-1010),
-  resolveTo: shiftedApproachY(-1210),
+  resolveFrom: preTapeY(-1152),
+  resolveTo: preTapeY(-1368),
 });
 
 export function sourceBellsDepth(y) {
@@ -214,58 +280,115 @@ export function sourceBellsRoomResolve(y) {
 //
 // Nothing here is a puzzle and nothing here is timed. `blocks` is for the few
 // that are large enough that walking through them would be the thing you noticed.
+// ── AND WHAT IS MOVING ──────────────────────────────────────────────────────
+//
+// Motion follows the same three acts scale does, because it is the same idea:
+// it loses its mind in the middle and gets it back at the end.
+//
+//   ARCHITECTURE  nothing moves. They are too big and half sunk and they do not
+//                 care that you are here.
+//   NULL          movement that is wrong. A wheel turning with nothing hung in
+//                 it, one inverted and rocking, the coins shivering underfoot.
+//                 Rates are deliberately unrelated to size, so nothing out
+//                 there has the weight it should.
+//   RESOLUTION    six bells swinging full circle, in order, which is a ring.
+//
+// THE PIVOT IS FREE. The mesh hangs from its headstock — crown at +0.14, mouth
+// at -1.02 — and `elevation` is authored as where the headstock is, so a bell
+// rotated about its own origin swings on the correct axis with no new geometry.
+//
+// NOTHING MAY EVER TOUCH THE PLAYER. Collision stays on the static footprint
+// (bellPassageBlockedAt), so a piece that blocks must not swing far enough to
+// sweep through ground it does not own. That is why every large amplitude here
+// is on a `blocks: false` piece, and it is asserted.
+export const BELL_SWING = Object.freeze({
+  // A full-circle bell goes up past the balance on one side, down through the
+  // bottom and up the other: a bit under half a turn either way from the mouth.
+  FULL: Math.PI * 0.94,
+});
+
+export function bellSwingAt(entry, timeSec = 0) {
+  const swing = entry?.swing;
+  if (!swing) return 0;
+  const t = Number(timeSec) || 0;
+  const period = Math.max(0.05, Number(swing.period) || 1);
+  const phase = Number(swing.phase) || 0;
+  const amp = Number(swing.amp) || 0;
+  const w = (Math.PI * 2) / period;
+  switch (swing.kind) {
+    // Round and round, on its own rim, with nothing hung in it.
+    case 'turn': return (w * t + phase) % (Math.PI * 2);
+    // A slow lean, going nowhere.
+    case 'rock': return amp * Math.sin(w * t + phase);
+    // Too small and too fast to be a bell doing anything.
+    case 'shiver': return amp * Math.sin(w * t + phase) * Math.sin(w * t * 2.37 + phase * 1.7);
+    // The real thing: it dwells at the top of each stroke the way a bell does,
+    // because the velocity of a sine is zero at its extremes.
+    case 'ring': return amp * Math.sin(w * t + phase);
+    default: return 0;
+  }
+}
+
 const bell = (id, mesh, x, y, scale, extra = {}) => Object.freeze({
   id, mesh, x, y, scale, yaw: 0, elevation: 1.02 * scale, ...extra,
 });
 
 export const SOURCE_BELL_PASSAGE = Object.freeze([
   // ── act one: architecture ────────────────────────────────────────────────
-  bell('bells-arch-west', 'tower_bell_04', -34, shiftedApproachY(-1000), 26, { yaw: 0.22, sink: 9.5, blocks: true }),
-  bell('bells-arch-east', 'tower_bell_01', 31, shiftedApproachY(-1018), 22, { yaw: -0.34, sink: 7.0, blocks: true }),
-  bell('bells-arch-far', 'tower_bell_06', -8, shiftedApproachY(-1066), 34, { yaw: 0.08, sink: 16.0, blocks: true }),
+  bell('bells-arch-west', 'tower_bell_04', -34, preTapeY(-1000), 26, { yaw: 0.22, sink: 9.5, blocks: true }),
+  bell('bells-arch-east', 'tower_bell_01', 31, preTapeY(-1018), 22, { yaw: -0.34, sink: 7.0, blocks: true }),
+  bell('bells-arch-far', 'tower_bell_06', -8, preTapeY(-1066), 34, { yaw: 0.08, sink: 16.0, blocks: true }),
   Object.freeze({
-    id: 'bells-arch-frame', mesh: 'tower_frame', x: 26, y: shiftedApproachY(-1082), scale: 9,
+    id: 'bells-arch-frame', mesh: 'tower_frame', x: 26, y: preTapeY(-1082), scale: 9,
     yaw: -0.5, elevation: 0, blocks: true,
   }),
-  bell('bells-arch-lean', 'tower_bell_01', -40, shiftedApproachY(-1122), 18, { yaw: 1.1, roll: 0.42, sink: 3.2, blocks: true }),
+  bell('bells-arch-lean', 'tower_bell_01', -40, preTapeY(-1122), 18, { yaw: 1.1, roll: 0.42, sink: 3.2, blocks: true }),
 
   // ── act two: the place where time is null ────────────────────────────────
   // One you walk under. The mouth clears a standing body by a metre and a half.
-  bell('bells-null-canopy', 'tower_bell_06', 2, shiftedApproachY(-1156), 30, { yaw: 0.15, elevation: 33.9, blocks: false }),
+  bell('bells-null-canopy', 'tower_bell_06', 2, preTapeY(-1156), 30, { yaw: 0.15, elevation: 33.9, blocks: false, swing: { kind: 'rock', amp: 0.045, period: 19 } }),
   // A wheel with no bell in it, standing on its rim.
   Object.freeze({
-    id: 'bells-null-wheel', mesh: 'tower_wheel_01', x: -22, y: shiftedApproachY(-1164), scale: 11,
+    id: 'bells-null-wheel', mesh: 'tower_wheel_01', x: -22, y: preTapeY(-1164), scale: 11,
     yaw: 1.35, elevation: 11.6, blocks: true,
+    // Turning on its own rim. It blocks, but a wheel rotating about its own
+    // axis sweeps no ground it did not already own.
+    swing: { kind: 'turn', period: 26 },
   }),
   // Inverted, and filling with nothing.
-  bell('bells-null-inverted', 'tower_bell_04', 24, shiftedApproachY(-1178), 14, { yaw: -0.2, roll: Math.PI, elevation: 0.4, blocks: true }),
+  bell('bells-null-inverted', 'tower_bell_04', 24, preTapeY(-1178), 14, { yaw: -0.2, roll: Math.PI, elevation: 0.4, blocks: true, swing: { kind: 'rock', amp: 0.08, period: 31 } }),
   // A clapper on its own, the size of a tree.
   Object.freeze({
-    id: 'bells-null-clapper', mesh: 'tower_clapper_01', x: -13, y: shiftedApproachY(-1192), scale: 16,
+    id: 'bells-null-clapper', mesh: 'tower_clapper_01', x: -13, y: preTapeY(-1192), scale: 16,
     yaw: 0.6, elevation: 20.6, blocks: false,
   }),
   // And the coins: the same six bells at the size of the things people throw
   // into a fountain, scattered where you have to walk over them.
   ...[
-    [-6.4, shiftedApproachY(-1198), 0.34], [-2.1, shiftedApproachY(-1202), 0.28], [1.8, shiftedApproachY(-1200), 0.41], [4.6, shiftedApproachY(-1206), 0.31],
-    [-4.9, shiftedApproachY(-1210), 0.36], [0.7, shiftedApproachY(-1214), 0.26], [3.2, shiftedApproachY(-1218), 0.44], [-2.8, shiftedApproachY(-1222), 0.30],
-    [6.1, shiftedApproachY(-1212), 0.35], [-7.7, shiftedApproachY(-1216), 0.24],
+    [-6.4, preTapeY(-1198), 0.34], [-2.1, preTapeY(-1202), 0.28], [1.8, preTapeY(-1200), 0.41], [4.6, preTapeY(-1206), 0.31],
+    [-4.9, preTapeY(-1210), 0.36], [0.7, preTapeY(-1214), 0.26], [3.2, preTapeY(-1218), 0.44], [-2.8, preTapeY(-1222), 0.30],
+    [6.1, preTapeY(-1212), 0.35], [-7.7, preTapeY(-1216), 0.24],
   ].map(([x, y, scale], index) => bell(
     `bells-null-coin-${index + 1}`, `tower_bell_0${(index % 6) + 1}`, x, y, scale,
-    { yaw: index * 0.9, blocks: false },
+    // Shivering, and much too fast for their own size, which is the point.
+    { yaw: index * 0.9, blocks: false, swing: { kind: 'shiver', amp: 0.55, period: 1.1 + index * 0.07, phase: index * 1.3 } },
   )),
-  bell('bells-null-sunk', 'tower_bell_02', -30, shiftedApproachY(-1228), 20, { yaw: 0.9, sink: 18.4, blocks: true }),
+  bell('bells-null-sunk', 'tower_bell_02', -30, preTapeY(-1228), 20, { yaw: 0.9, sink: 18.4, blocks: true }),
 
   // ── act three: resolution ────────────────────────────────────────────────
   // Six bells, in order, at true scale, hung as they are hung. The last hundred
   // and forty metres is the passage remembering what a ring is.
   ...[1, 2, 3, 4, 5, 6].map((n, index) => bell(
     `bells-ring-${n}`, `tower_bell_0${n}`,
-    (index - 2.5) * 3.4, shiftedApproachY(-1270 - index * 9), 1 + index * 0.06,
-    { yaw: index * 0.14 - 0.35, elevation: 3.6, blocks: false },
+    (index - 2.5) * 3.4, preTapeY(-1264 - index * 23.2), 1 + index * 0.06,
+    {
+      yaw: index * 0.14 - 0.35, elevation: 3.6, blocks: false,
+      // In order: a whole pull apart, so it rings down the six as you walk it.
+      swing: { kind: 'ring', amp: BELL_SWING.FULL, period: 2.2, phase: -index * (Math.PI * 2 / 6) },
+    },
   )),
   Object.freeze({
-    id: 'bells-ring-frame', mesh: 'tower_frame', x: 0, y: shiftedApproachY(-1316), scale: 1.35,
+    id: 'bells-ring-frame', mesh: 'tower_frame', x: 0, y: preTapeY(-1386), scale: 1.35,
     yaw: 0, elevation: 0, blocks: false,
   }),
 ]);

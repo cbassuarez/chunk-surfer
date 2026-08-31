@@ -258,6 +258,61 @@
         0 0 16px rgba(214,228,255,0.58),
         0 0 38px rgba(130,156,205,0.42);
     }
+
+    /* Complete in-canvas rendering of authored desktop choreography. Native
+       panes and this composition are fed by the same plan; browser, disabled,
+       reduced-motion and native-failure paths therefore keep the same beat. */
+    .window-choreography-sim{
+      position:absolute;inset:0;z-index:82;overflow:hidden;pointer-events:none;
+      opacity:0;transition:opacity 90ms linear;
+    }
+    .window-choreography-sim.active{opacity:1;}
+    .window-choreography-sim-pane{
+      position:absolute;transform:translate(-50%,-50%);display:grid;place-items:center;
+      box-sizing:border-box;border:2px solid rgba(225,235,242,.72);background:#000;color:#f4f5ef;
+      padding:12px;text-align:center;font:700 11px/1.25 ui-monospace,SFMono-Regular,Menlo,monospace;
+      image-rendering:pixelated;box-shadow:0 0 0 1px #000,0 12px 34px rgba(0,0,0,.62);
+    }
+    .window-choreography-sim-pane.palette-white{background:#f7f6ef;color:#080808;border-color:#111;}
+    .window-choreography-sim-pane.palette-red{background:#360000;color:#fff;border-color:#aa1818;}
+    .window-choreography-sim.composition{overflow:hidden;background:rgba(0,0,0,.18);}
+    .window-composition-pane{
+      padding:0;overflow:hidden;pointer-events:auto;cursor:grab;border-color:rgba(166,192,234,.68);
+      background:#010207;transition:left 120ms cubic-bezier(.2,.8,.2,1),top 120ms cubic-bezier(.2,.8,.2,1),box-shadow 120ms linear;
+    }
+    .window-composition-pane:active{cursor:grabbing;transition:none;}
+    .window-composition-pane.transition-dissolve>*{animation:window-media-dissolve 220ms steps(4,end) both;}
+    .window-composition-pane.transition-dip-black>*{animation:window-media-dip 180ms steps(4,end) both;}
+    @keyframes window-media-dissolve{from{opacity:.08}to{opacity:1}}
+    @keyframes window-media-dip{0%{opacity:1}45%{opacity:0}55%{opacity:0}100%{opacity:1}}
+    .window-composition-pane.coherent{box-shadow:0 0 0 1px #000,0 0 22px rgba(124,154,255,.55);}
+    .window-composition-pane>video,.window-composition-pane>img{
+      display:block;width:100%;height:100%;object-fit:cover;image-rendering:pixelated;
+      filter:contrast(1.24) saturate(.66) sepia(.12) hue-rotate(176deg) brightness(.83);
+    }
+    .window-composition-pane::after{
+      content:"";position:absolute;inset:0;pointer-events:none;opacity:.34;mix-blend-mode:screen;
+      background-image:linear-gradient(45deg,transparent 46%,rgba(174,196,255,.18) 48% 52%,transparent 54%);
+      background-size:4px 4px;
+    }
+    .window-composition-pane[data-shader="nvme-sector"]::after{
+      opacity:calc(.18 + var(--fault-intensity,0) * .52);mix-blend-mode:normal;
+      background:
+        linear-gradient(90deg,transparent 0 13%,rgba(1,4,14,.96) 13% 29%,transparent 29% 100%) 0 18%/100% 17% no-repeat,
+        linear-gradient(90deg,rgba(86,94,190,.42) 0 46%,transparent 46% 100%) 0 61%/100% 11% no-repeat,
+        repeating-linear-gradient(0deg,transparent 0 12px,rgba(130,120,224,.16) 12px 15px,transparent 15px 28px),
+        repeating-linear-gradient(90deg,transparent 0 42px,rgba(0,3,12,.30) 42px 78px,transparent 78px 124px);
+      transform:translateX(calc((var(--fault-intensity,0) * 13px) - 3px));
+    }
+    .window-composition-pane[data-shader="nvme-sector"].coherent::after{opacity:.12;transform:none;}
+    .window-composition-pane[data-shader="nvme-sector"].flash-reduced::after{filter:brightness(.62);}
+    .window-composition-pane[data-shader="nvme-sector"].flash-off::after{filter:brightness(.32);}
+    .window-composition-procedural{width:100%;height:100%;background:#010207;position:relative;}
+    .window-composition-procedural.preset-iris-abstraction::before{
+      content:"";position:absolute;inset:12% 7%;border-radius:50%;background:radial-gradient(circle,#010207 0 11%,#9fbdf0 12% 16%,#352a7a 17% 42%,#121936 43% 58%,transparent 59%);
+    }
+    .window-composition-procedural.preset-distant-dot::before{content:"";position:absolute;width:5px;height:5px;background:#cbdcff;left:50%;top:50%;box-shadow:0 0 12px #6e86d8;}
+    .window-composition-procedural.preset-empty-field{background:#02030a;}
     .t-hush-edge{
       color:rgba(210,218,232,0.82);
       text-shadow:

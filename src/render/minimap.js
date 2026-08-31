@@ -12,17 +12,14 @@ import { buildMinimapCommands } from './map-commands.js';
 import { drawAnomalyMarker, drawEquipmentMarker, drawHushAwareness, drawHushMarker, drawPlayerMarker, drawTargetLozenge, drawWaypointMarker } from './map-icons.js';
 import { mapCurrentAreaLabel, mapFloor, newestMapContact } from '../game/map-model.js';
 import { shakeMode, visualEffectsEnabled } from '../game/access.js';
+import { fitText } from './fit-text.js';
 
 let lastHushStatusKey = '';
 let hushStatusPulseUntil = 0;
 let lastTargetStatusKey = '';
 let targetStatusPulseUntil = 0;
 
-const clip = (value, width) => {
-  const text = String(value ?? '');
-  const w = Math.max(1, Math.floor(width || 1));
-  return text.length <= w ? text : w <= 1 ? '…' : `${text.slice(0, w - 1)}…`;
-};
+const clip = (value, width) => fitText(value, Math.max(1, Math.floor(width || 1)));
 
 function roomLabel(model, roomId, fallback = 'UNKNOWN') {
   return (model?.spaces || []).find((space) => space.roomId === roomId)?.label || fallback;
@@ -62,7 +59,7 @@ export function minimapTargetReadout(model){
 }
 
 export function hushStatus(model, now = 0) {
-  if(model?.hush?.active){
+  if(model?.hush?.active&&(model.hush.sensed===true||model.hush.visible===true)){
     const perception=model.hush.perception;
     if(perception?.mode&&perception.mode!=='none'){
       return{

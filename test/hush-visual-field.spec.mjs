@@ -8,6 +8,8 @@ import {
   computeHushField,
   effectiveTorchScale,
   hushAbsenceLook,
+  hushPhysicallySensed,
+  inactiveHushField,
 } from '../src/game/hush-field.js';
 import { hushMixTargets } from '../src/audio/hush-mix.js';
 
@@ -30,6 +32,17 @@ test('the sensory trace precedes contact and strengthens monotonically', () => {
   assert.ok(near.absorption.light < engulf.absorption.light);
   assert.ok(far.absorption.audio < near.absorption.audio);
   assert.ok(near.absorption.audio < engulf.absorption.audio);
+});
+
+test('minimap sensing begins at embodied pressure, not at simulation spawn', () => {
+  const subliminal=at(50);
+  const felt=at(40);
+  assert.equal(subliminal.stage,'trace');
+  assert.equal(hushPhysicallySensed({field:subliminal}),false);
+  assert.equal(hushPhysicallySensed({field:felt}),true);
+  assert.equal(hushPhysicallySensed({visible:true,field:inactiveHushField()}),true);
+  assert.equal(hushPhysicallySensed({field:inactiveHushField(),authoredPressure:.08}),true,
+    'an authored physical tableau can become sensible without borrowing the generic HUSH field');
 });
 
 test('geometry suppresses remote torch interference without deleting the local absence', () => {

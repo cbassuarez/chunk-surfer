@@ -64,6 +64,7 @@ export function createBattleInterferenceDirector({
   loadKey = loadOrCreateInterferenceKey,
   maskSnapshot = maskIdentitySnapshot,
   effects = null,
+  choreography = null,
   writeArtifact = writeInterferenceArtifact,
   getSettings = () => ({}),
   getProfile = null,
@@ -186,8 +187,12 @@ export function createBattleInterferenceDirector({
   }
 
   async function enter(session) {
-    if (!enabled() || !session.stage) return false;
     const context = getContext(session.encounterId, session.battleId) || {};
+    choreography?.prepareBattle?.({
+      battleId:session.channelBattle||session.battleId,encounterId:session.encounterId,
+      reducedMotion:!!context.reducedMotion,
+    });
+    if (!enabled() || !session.stage) return !!session.channelBattle;
     session.variant = deterministicVariant([
       session.encounterId,
       session.battleId,
@@ -206,6 +211,10 @@ export function createBattleInterferenceDirector({
         reducedMotion: context.reducedMotion,
         fullscreen: !!context.fullscreen,
       });
+      // Death tableaux reuse a separate media pool. Build it beside the four
+      // projectile surfaces on arrival so losing never constructs a window on
+      // the result beat or extends retry timing.
+      void Promise.resolve(effects?.prepareMedia?.({count:4})).catch(()=>null);
     }
     if (session.stage !== 'foreshadow') await ensureRecord(context);
     const run = context.run || {};
@@ -244,10 +253,15 @@ export function createBattleInterferenceDirector({
       castSequence:session.castSequence++,
       reducedMotion:!!context.reducedMotion,
       stage:event.stage||null,
+      casterId:event.casterId||null,
+      casterLabel:event.casterLabel||'',
+      casterIndex:event.casterIndex,
+      coordinateIds:event.coordinateIds||[],
     });
     if (!scene) return null;
     session.fireballCasts.set(scene.castId,scene);
     session.windowEvents.push(`fireball:${scene.movementId}:${scene.rayCount}`);
+    void Promise.resolve(choreography?.fireballCast?.({battleId:session.channelBattle,castId:scene.castId})).catch(()=>null);
     if(windowEnabled())void Promise.resolve(effects?.beginFireballCast?.(scene,{token:session.effectToken})).catch(()=>null);
     return scene;
   }
@@ -274,6 +288,10 @@ export function createBattleInterferenceDirector({
   }
 
   async function impact(session, event = {}) {
+    void Promise.resolve(choreography?.damage?.({
+      battleId:session.channelBattle||session.battleId,received:event.received,
+      origin:event.origin||null,windowLock:!!event.windowLock,
+    })).catch(()=>null);
     if (!enabled() || !session.stage || session.stage === 'foreshadow' || session.stage === 'recognition') return null;
     const kind = WINDOW_KIND[event.kind] || null;
     if (!kind) return null;
@@ -298,6 +316,9 @@ export function createBattleInterferenceDirector({
   }
 
   async function phaseBreak(session) {
+    void Promise.resolve(choreography?.damage?.({
+      battleId:session.channelBattle||session.battleId,phase:true,windowLock:!!session.windowLock,
+    })).catch(()=>null);
     if (!enabled() || !session.stage) return null;
     if (session.stage !== 'foreshadow') await ensureRecord(getContext(session.encounterId, session.battleId) || {});
     session.phaseBreaks += 1;
@@ -382,6 +403,7 @@ export function createBattleInterferenceDirector({
       }
     } finally {
       liveLine = null;
+      await choreography?.finishBattle?.({battleId:session.channelBattle||session.battleId,result});
       await effects?.end?.(session.effectToken);
       sessions.delete(session.key);
     }
@@ -411,6 +433,8 @@ export function createBattleInterferenceDirector({
       resolveFireballCast: (event) => resolveFireballCast(session,event),
       impact: (event) => impact(session, event),
       phaseBreak: () => phaseBreak(session),
+      result: (result) => choreography?.result?.({battleId:session.channelBattle||session.battleId,result}),
+      windowLock: (locked) => { session.windowLock=!!locked; },
       action: (id) => { if (id) session.actionIds.push(String(id).slice(0, 64)); },
       finish: (result, metrics) => finish(session, result, metrics),
       influence: () => session.profileInfluence || profileInfluence(getProfileState(), { enabled: false }),
@@ -432,13 +456,17 @@ export function createBattleInterferenceDirector({
   async function settingsChanged() {
     identityCache.clear(); identity = null; liveLine = null;
     if (settings().enabled) disabledForSession = false;
-    if (!windowEnabled()) await effects?.emergencyRestore?.({ notify: false });
+    if (!windowEnabled()){
+      await effects?.emergencyRestore?.({ notify: false });
+      await choreography?.emergencyRestore?.();
+    }
   }
 
   async function emergencyDisable() {
     disabledForSession = true;
     identityCache.clear(); identity = null; liveLine = null;
     await effects?.emergencyRestore?.({ notify: false });
+    await choreography?.emergencyRestore?.();
     onEmergency();
   }
 

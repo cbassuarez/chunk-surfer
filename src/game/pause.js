@@ -5,6 +5,7 @@ import { drawMachinePanel } from '../render/presentation.js';
 import { createHitRegions } from '../render/hit-regions.js';
 import { promptLine } from './bindings.js';
 import * as AUDIO from '../audio/story-audio.js';
+import { fitText } from '../render/fit-text.js';
 
 const LOCAL_ESCAPE_SCENES = new Set(['pause', 'settings', 'god-menu', 'bag', 'combat-calibration']);
 
@@ -14,10 +15,7 @@ export function shouldOpenPauseForEvent({ storyMode = false, key = '', code = ''
   return !LOCAL_ESCAPE_SCENES.has(topSceneId);
 }
 
-function clip(text, width) {
-  const s = String(text || '');
-  return s.length > width ? `${s.slice(0, Math.max(0, width - 1))}…` : s;
-}
+const clip = (text, width) => fitText(text, width);
 
 export function makePauseScene({
   onResume,

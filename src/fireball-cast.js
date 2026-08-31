@@ -5,13 +5,22 @@ const canvas=document.getElementById('cast');
 const ctx=canvas.getContext('2d',{alpha:false});
 const sprite=new Image();
 sprite.src='./assets/fireball-sheet.svg';
-let cast=null,startedAt=performance.now(),raf=0;
+let cast=null,pane=null,startedAt=performance.now(),raf=0;
 
 function strike(){
+  if(pane)return false;
   const result=strikeFireballSurface(cast,(payload)=>emit('fireball-cast-hit',payload));
   if(!result.hit)return false;
   cast=result.cast;
   startedAt=performance.now();
+  return true;
+}
+
+function enterPane(){
+  if(!pane?.interactive)return false;
+  void emit('window-choreography-pane-action',{
+    cueId:String(pane.cueId||''),paneId:String(pane.paneId||''),action:'enter',
+  });
   return true;
 }
 
@@ -46,8 +55,53 @@ function hash(seed,index){
   return (h>>>0)/4294967296;
 }
 
+function drawPane(w,h,at){
+  const palette=pane?.palette||'black';
+  ctx.fillStyle=palette==='white'?'#f7f6ef':palette==='red'?'#360000':'#000';
+  ctx.fillRect(0,0,w,h);
+  const unit=Math.max(2,Math.round(Math.min(w,h)/64));
+  const elapsed=Math.max(0,(at-startedAt)/1000);
+  if(pane.mode==='shatter'){
+    for(let index=0;index<42;index+=1){
+      const x=hash(91,index)*w,y=hash(211,index)*h+elapsed*30*(.3+hash(412,index));
+      const side=unit*(1+Math.floor(hash(732,index)*5));
+      ctx.fillStyle=index%4===0?'#d7dbe0':'#303238';ctx.fillRect(x,y%h,side,side);
+    }
+  }else{
+    const red=palette==='red';
+    const white=palette==='white';
+    for(let row=0;row<h;row+=unit){
+      for(let col=0;col<w;col+=unit){
+        const wave=.5+.5*Math.sin(col*.028+row*.019+elapsed*(pane.mode==='boss'?1.8:.3));
+        if(!dithered(Math.round(col/unit),Math.round(row/unit),.05+wave*.08))continue;
+        ctx.fillStyle=red?'#a31313':white?'#d8d7d0':'#1e2730';ctx.fillRect(col,row,unit,unit);
+      }
+    }
+    if(pane.mode==='boss'){
+      ctx.fillStyle=red?'#e52b1a':white?'#111':'#d4d8df';
+      const cx=w*.5,cy=h*.52,body=Math.min(w,h)*.38;
+      ctx.fillRect(cx-body*.12,cy-body*.48,body*.24,body*.96);
+      ctx.fillRect(cx-body*.38,cy-body*.15,body*.76,body*.24);
+    }
+  }
+  const text=String(pane.text||pane.title||'').trim();
+  if(text){
+    ctx.fillStyle=palette==='white'?'#080808':'#f2f2ed';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.font=`${Math.max(9,Math.floor(Math.min(w,h)*.075))}px ui-monospace,monospace`;
+    const words=text.split(/\s+/u),lines=[];let line='';
+    for(const word of words){const next=line?`${line} ${word}`:word;if(ctx.measureText(next).width>w*.82&&line){lines.push(line);line=word;}else line=next;}
+    if(line)lines.push(line);
+    lines.slice(0,5).forEach((value,index)=>ctx.fillText(value,w*.5,h*.5+(index-(Math.min(5,lines.length)-1)*.5)*Math.min(w,h)*.10));
+  }
+  if(pane.interactive){
+    ctx.strokeStyle=palette==='white'?'#111':'#fff';ctx.lineWidth=unit;
+    ctx.strokeRect(unit*2,unit*2,w-unit*4,h-unit*4);
+  }
+}
+
 function draw(at){
   const {w,h,dpr}=size();ctx.fillStyle='#000';ctx.fillRect(0,0,w,h);
+  if(pane){drawPane(w,h,at);raf=requestAnimationFrame(draw);return;}
   if(!cast){raf=requestAnimationFrame(draw);return;}
   const ray=cast.rays?.[Math.max(0,Math.min(cast.rayCount-1,Number(cast.surfaceIndex)||0))];
   if(!ray){raf=requestAnimationFrame(draw);return;}
@@ -149,12 +203,13 @@ function draw(at){
 }
 
 async function boot(){
-  addEventListener('pointerdown',(event)=>{event.preventDefault();event.stopPropagation();strike();},{capture:true});
+  addEventListener('pointerdown',(event)=>{event.preventDefault();event.stopPropagation();if(!enterPane())strike();},{capture:true});
   // On macOS the first click may be consumed activating this non-main webview.
   // Focus is therefore a fallback for that same physical click; `strike()` is
   // single-fire, so a subsequent pointerdown cannot double-charge RETURN.
-  addEventListener('focus',()=>strike());
-  await listen('fireball-cast',({payload})=>{cast=payload||null;startedAt=performance.now();});
+  addEventListener('focus',()=>{if(!pane)strike();});
+  await listen('fireball-cast',({payload})=>{pane=null;cast=payload||null;startedAt=performance.now();});
+  await listen('window-choreography-pane',({payload})=>{cast=null;pane=payload||null;startedAt=performance.now();});
   raf=requestAnimationFrame(draw);
 }
 void boot();

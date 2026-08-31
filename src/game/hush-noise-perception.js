@@ -58,12 +58,25 @@ export function hushNoiseMapConfirmation(state, now = 0) {
 
 // Pure reducer for the player-noise/HUSH loop. It never spawns or despawns HUSH.
 // Main applies clue/pinpoint targeting and commits the one-shot contact action.
+//
+// `concealed` is the player behind cover. IT IS NOT A FACT ABOUT THE HUSH, and
+// it must never become one: the law at presence.js:5-9 is that the HUSH never
+// knows the player transform, only a belief about where a sound was. So being
+// behind something does not hide a noise — the noise still happened and it is
+// still heard. What concealment does is WITHHOLD THE UPGRADE. A loud sound from
+// a man it cannot see stays a `clue`, which is a room; it never sharpens into a
+// `pinpoint`, which is a point, or a `contact`, which is a hand on you.
+//
+// This is also why nothing new has to be drawn. hushNoiseMapConfirmation already
+// reads out HEARD/LAST POSITION against PINPOINT/YOU, so the player watches the
+// fix fail to sharpen and that IS the feedback.
 export function updateHushNoisePerception(value, {
   now = 0,
   dt = 0,
   db = -96,
   active = false,
   enabled = true,
+  concealed = false,
 } = {}) {
   const state = normalizeHushNoisePerception(value);
   const at = Math.max(0, Number(now) || 0);
@@ -78,7 +91,12 @@ export function updateHushNoisePerception(value, {
   }
 
   state.band = band;
-  if (band === MONITOR_BAND.HOT) {
+  // Sustained hot noise banks toward a contact because the thing can walk up to
+  // an obvious, continuous source. It cannot do that to a source it has not
+  // localised, so behind cover the clock does not run. Holding the bank instead
+  // of clearing it would mean stepping out of cover after a loud minute gets you
+  // grabbed instantly, for a reason the player cannot see.
+  if (band === MONITOR_BAND.HOT && !concealed) {
     state.hotHeldMs += elapsedMs;
     state.hotGapMs = 0;
   } else {
@@ -90,12 +108,16 @@ export function updateHushNoisePerception(value, {
   }
   let action = null;
 
-  if (band === MONITOR_BAND.MID_HOT && at >= state.nextSignalAt) {
+  // Concealed, a HOT reading is heard as loudly as ever and localised no better
+  // than a MID_HOT one: it falls back to the clue rung rather than going silent.
+  const heardBand = concealed && band === MONITOR_BAND.HOT ? MONITOR_BAND.MID_HOT : band;
+
+  if (heardBand === MONITOR_BAND.MID_HOT && at >= state.nextSignalAt) {
     action = { kind: 'clue', priority: .68, expiresAt: at + HUSH_NOISE_PERCEPTION.clueMemoryMs };
     state.nextSignalAt = at + HUSH_NOISE_PERCEPTION.clueCadenceMs;
     state.perceptionMode = 'clue';
     state.perceptionUntil = action.expiresAt;
-  } else if (band === MONITOR_BAND.HOT && at >= state.nextSignalAt) {
+  } else if (heardBand === MONITOR_BAND.HOT && at >= state.nextSignalAt) {
     action = { kind: 'pinpoint', priority: .96, expiresAt: at + HUSH_NOISE_PERCEPTION.pinpointMemoryMs };
     state.nextSignalAt = at + HUSH_NOISE_PERCEPTION.pinpointCadenceMs;
     state.perceptionMode = 'pinpoint';
@@ -103,6 +125,7 @@ export function updateHushNoisePerception(value, {
   }
 
   if (band === MONITOR_BAND.HOT
+      && !concealed
       && state.hotHeldMs >= HUSH_NOISE_PERCEPTION.sustainedHotMs
       && !state.contactEscalated) {
     state.directContactUntil = at + HUSH_NOISE_PERCEPTION.directContactMemoryMs;

@@ -350,19 +350,19 @@ export function practiceBattle(named = false) {
 
 export function hallBattle(named = false) {
   return {
-    id:'hall',enemy:'THE HOUSE RETURN',art:{ id:'circuitBentInterface', mode:'boss', caption:'House return / monitor path', status:'SIGNAL' },composure:1,health:2,challenges:hallChallenges(),
+    id:'hall',enemy:'THE THREE',art:{ id:'circuitBentInterface', mode:'boss', caption:'Three listeners / three fused seats', status:'SIGNAL' },composure:1,health:2,challenges:hallChallenges(),
     intro:[
-      {who:'direction',text:'The hall takes your silence and returns it from the stage, the balconies, and the empty seats.'},
+      {who:'direction',text:'The hall returns your silence from three occupied seats. The chairs have grown through the listeners.'},
       {who:'you',text:'That is a return. That is architecture. Keep it architecture.'},
       named?{who:'sarah',text:'You always did like a room that answered for me.'}:{who:'direction',text:'A voice uses the return without entering the room.'},
     ],
     win:[
-      {who:'you',text:'Empty hall. Empty stage. A long return and nothing inside it.'},
-      {who:'direction',text:'The last reflection decays below the machine noise.'},
+      {who:'you',text:'Three bodies. Three seats. None of them was the room.'},
+      {who:'direction',text:'The last apparition releases its chair and the reflection decays below the machine noise.'},
     ],
     lose:[
       {who:'direction',text:'You answer the return. The hall keeps the answer.'},
-      {who:'direction',text:'The take dies with a full house listening.'},
+      {who:'direction',text:'The take dies with three former listeners still in their seats.'},
     ],
   };
 }

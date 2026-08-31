@@ -133,7 +133,7 @@ export class CausalRecorder {
 
   noteInjuries(injuries) {
     this.injuries = Math.max(0, Math.floor(finite(injuries)));
-    if (this.active && this.injuries >= 2) {
+    if (this.active && !tapeQualifies(this.injuries)) {
       const runId = this.runId;
       this.active = false;
       this.discarded = true;

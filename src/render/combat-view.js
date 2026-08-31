@@ -1044,8 +1044,8 @@ function beingPoints(figure, { tick, layers, seed }) {
     }
     pushCore(points, tick, seed);
   } else if (figure === 'return') {
-    // Hall — the house's own monitor return worn as a shell: a standing wave that
-    // rises then folds back on itself, the core knotted at the fold.
+    // Hall — a monitor return worn as a shell: a standing wave that rises then
+    // folds back on itself, the core knotted at the fold.
     for (let i = 0; i <= 30; i++) {
       const t = i / 30;
       const v = -.44 + t * .88;
@@ -1790,91 +1790,69 @@ export function drawFirstPersonHands(toolId, {
   });
 }
 
-// ── THE HOUSE ───────────────────────────────────────────────────────────────
+// ── THE THREE HALL APPARITIONS ─────────────────────────────────────────────
 //
-// The concert hall is the one encounter with more than one thing in it, so it
-// is the one that cannot be drawn as a single figure on the void stage. This
-// draws the seating instead: rows front to back, a silhouette per figure, a
-// hollow seat where somebody used to be.
-//
-// These are NOT the emergency-light apparitions. Those are world objects under
-// a director that never receives player coordinates and cannot reason about the
-// player at all — a boundary worth keeping. This is a picture inside the battle
-// panel, and it is allowed to look back, which is what `watch` is for.
-
-// Four columns wide, three tall. Small enough that a row of five fits a narrow
-// panel, legible enough that a filled seat and an empty one are never confused.
-const HOUSE_FIGURE = Object.freeze({
-  seated: ['.##.', '####', '####'],
-  // Leaning in — drawn for the row that is about to move, so the telegraph is
-  // in the picture and not only in the text.
-  leaning: ['.##.', '####', '.###'],
-  // Nobody. The seat back is still there; that is the whole point of it.
-  empty: ['....', '....', '.##.'],
+// Three bodies, three fused chairs, three targetable health pools. The room is
+// backdrop only. These sprites deliberately echo the world apparition poses
+// without importing the emergency-light director or weakening its boundary.
+const HALL_APPARITION_SPRITES = Object.freeze({
+  'head-turn': ['..##...', '.####..', '..###..', '.#####.', '.##.##.', '###.###', '#.....#'],
+  stoop:       ['...##..', '..####.', '.#####.', '####...', '.##.##.', '###.###', '#.....#'],
+  'arm-out':   ['..##...', '.####..', '#######', '..###..', '.##.##.', '###.###', '#.....#'],
 });
 
-const FIGURE_COLS = 4;
-const FIGURE_ROWS = 3;
-
-export function houseSeatLayout(rows = [], { w = 40, perRowGap = 1 } = {}) {
-  return rows.map((row, index) => {
-    const seats = Math.max(1, row.seats || 0);
-    const span = seats * (FIGURE_COLS + perRowGap) - perRowGap;
-    return { ...row, index, span, offset: Math.max(0, (w - span) / 2) };
-  });
+export function hallApparitionLayout(members = [], { x = 0, w = 40 } = {}) {
+  const gap = 2;
+  const slotW = Math.max(8, (w - gap * Math.max(0, members.length - 1)) / Math.max(1, members.length));
+  return members.map((member, index) => ({ ...member, index, x: x + index * (slotW + gap), w: slotW }));
 }
 
-export function drawHouse(house, {
-  x, y, w, h, now = 0, reducedMotion = false, watch = 0, dim = 1,
+export function drawHallApparitions(roster, {
+  x, y, w, h, now = 0, reducedMotion = false, dim = 1,
 } = {}) {
-  if (!house?.rows?.length || !(w > 0) || !(h > 0)) return;
-  const rows = houseSeatLayout(house.rows, { w });
-  const rowH = Math.max(1, h / rows.length);
+  if (!roster?.members?.length || !(w > 0) || !(h > 0)) return;
+  const members = hallApparitionLayout(roster.members, { x, w });
   uiDraw(({ ctx, dpr, cellW, cellH }) => {
     ctx.save();
-    const px = Math.max(1, Math.round((cellH * dpr * 0.9) / FIGURE_ROWS));
-    for (const row of rows) {
-      // Back rows sit higher and darker: the rake, cheaply. It also keeps the
-      // near rows dominant, which is where the fight mostly happens.
-      const depth = row.index / Math.max(1, rows.length - 1);
-      const baseAlpha = dim * (0.5 + 0.5 * (1 - depth));
-      const originY = Math.round((y + (rows.length - 1 - row.index) * rowH) * cellH * dpr);
-      for (let seat = 0; seat < row.seats; seat += 1) {
-        const present = seat < row.figures;
-        const sprite = present
-          ? (row.acting ? HOUSE_FIGURE.leaning : HOUSE_FIGURE.seated)
-          : HOUSE_FIGURE.empty;
-        // Watching you: every head carries the same lean, a beat apart, the way
-        // a room of people follows somebody who walked in during a performance.
-        const lag = reducedMotion ? 0 : Math.sin(now * 1.3 - (row.index * 0.5 + seat * 0.22)) * 0.35;
-        const headShift = present ? Math.round((watch * 1.6 + lag) * (px * 0.5)) : 0;
-        const originX = Math.round((x + row.offset + seat * (FIGURE_COLS + 1)) * cellW * dpr);
-        ctx.globalAlpha = baseAlpha * (present ? 1 : 0.32);
-        ctx.fillStyle = present
-          ? (row.acting ? UI_COLOR.danger : UI_COLOR.primary)
-          : UI_COLOR.frame;
-        for (let r = 0; r < sprite.length; r += 1) {
-          const line = sprite[r];
-          // Only the head row takes the lean, so the bodies stay a steady rank
-          // and the turn reads as heads turning rather than the room sliding.
-          const shift = r === 0 ? headShift : 0;
-          for (let c = 0; c < line.length; c += 1) {
-            if (line[c] !== '#') continue;
-            ctx.fillRect(originX + c * px + shift, originY + r * px, px, px);
-          }
+    const px = Math.max(1, Math.round(Math.min(cellW, cellH) * dpr * .72));
+    for (const member of members) {
+      const sprite = HALL_APPARITION_SPRITES[member.pose] || HALL_APPARITION_SPRITES['head-turn'];
+      const spriteW = sprite[0].length * px;
+      const spriteH = sprite.length * px;
+      const sway = reducedMotion || member.defeated ? 0 : Math.sin(now * 1.4 + member.index * 1.7) * px * .55;
+      const originX = Math.round((member.x + member.w / 2) * cellW * dpr - spriteW / 2 + sway);
+      const originY = Math.round((y + Math.max(.3, (h - 3) * .08)) * cellH * dpr + (member.defeated ? spriteH * .48 : 0));
+      ctx.globalAlpha = dim * (member.defeated ? .2 : member.acting ? 1 : .74);
+      ctx.fillStyle = member.acting ? UI_COLOR.danger
+        : member.parryReady ? UI_COLOR.blue
+          : member.targeted ? UI_COLOR.amber : UI_COLOR.primary;
+      for (let row = 0; row < sprite.length; row += 1) {
+        for (let col = 0; col < sprite[row].length; col += 1) {
+          if (sprite[row][col] !== '#') continue;
+          ctx.fillRect(originX + col * px, originY + row * px, px, px);
         }
       }
     }
     ctx.restore();
   });
 
-  // The labels, the count, and the cursor. Drawn as text so they read at any
-  // panel width — the picture can compress, the target cannot become ambiguous.
-  rows.forEach((row) => {
-    const ty = y + (rows.length - 1 - row.index) * rowH;
-    const role = row.cleared ? 'ui-secondary' : row.acting ? 'ui-danger' : 'ui-primary';
-    if (row.targeted) uiText(x, ty, '▸', 'ui-counter', 1);
-    uiText(x + 1.4, ty, row.label.slice(0, 14), role, row.cleared ? 0.45 : 0.8);
-    if (!row.cleared) uiText(x + w - 2, ty, String(row.figures), role, 0.7);
-  });
+  for (const member of members) {
+    const role = member.defeated ? 'ui-secondary'
+      : member.acting ? 'ui-danger'
+        : member.parryReady ? 'ui-blue'
+          : member.targeted ? 'ui-amber' : 'ui-primary';
+    const labelY = y + Math.max(2.8, h - 2.4);
+    const width = Math.max(1, Math.floor(member.w - .8));
+    const number = String(member.label || '').match(/\d+$/)?.[0] || String(member.index + 1).padStart(2, '0');
+    const identity = `${member.primary ? '▸ ' : ''}${number} ${member.seat}`;
+    const condition = member.defeated ? 'RELEASED'
+      : member.parryReady ? 'PARRY READY'
+        : member.acting ? 'ACTING'
+          : `${member.health}/${member.maxHealth}`;
+    // The stage box is intentionally narrow. Full APPARITION labels belong to
+    // the target cards below; these compact identifiers must never run into the
+    // adjacent body and make three entities read as one word.
+    uiText(member.x + .4, labelY, identity.slice(0, width), role, member.defeated ? .35 : .78);
+    uiText(member.x + .4, labelY + .82, condition.slice(0, width), role, member.defeated ? .3 : .58);
+  }
 }

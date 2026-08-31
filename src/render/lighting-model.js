@@ -9,7 +9,18 @@ export const TORCH_BAND = Object.freeze({
 
 // Deterministic, continuous visual state. Both renderers receive this object;
 // the battery can no longer brown out walls while leaving props in a clean beam.
-export function resolveTorchLook({ on = true, battery = 1, timeSec = 0, reducedEffects = false } = {}) {
+// THE LAMP IS FINE. THE EYE IS NOT.
+//
+// `perception` is 1 for a recordist who is himself, and falls as oxygen does.
+// It scales the reach and the throw and touches NOTHING else — not `health`,
+// not `band`, not the battery the HUD is drawing from. That separation is the
+// entire point of the parameter: the light in the world is unchanged, the meter
+// still reads what it read, and the room has got darker anyway.
+//
+// It is the most unsettling effect available here precisely because the player's
+// first instinct is to check the battery, and the battery will tell them
+// everything is fine.
+export function resolveTorchLook({ on = true, battery = 1, timeSec = 0, reducedEffects = false, perception = 1 } = {}) {
   const health = clamp(battery, 0, 1);
   if (!on || health <= 0) return {
     band: TORCH_BAND.OFF, health, power: 0, reach: .5,
@@ -35,9 +46,16 @@ export function resolveTorchLook({ on = true, battery = 1, timeSec = 0, reducedE
     const dropout = Math.sin(timeSec * 2.17 + 1.7) > .92 ? .28 : 1;
     flicker = clamp((.78 + .22 * wobble) * dropout, .18, 1);
   }
+  // Applied last, so it composes over whatever the battery already decided
+  // rather than pretending to be a battery state of its own.
+  const seen = clamp(perception, 0, 1);
   return {
-    band, health, power: flicker,
-    reach, color, coneInner, coneOuter, spill,
+    band, health, power: flicker * (.35 + seen * .65),
+    reach: reach * (.55 + seen * .45),
+    color, coneInner, coneOuter, spill: spill * (.4 + seen * .6),
+    // For anything that wants to know the difference between the lamp and the
+    // man. Never rendered as a quantity.
+    perception: seen,
   };
 }
 

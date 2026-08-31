@@ -273,12 +273,14 @@ export const GLYPHS = {
   // thing you see over. canStep refuses the rise (0.80m against a 0.45m limit),
   // so it bounds the bay without being an invisible wall.
   //
-  // 0.80 IS A CEILING, NOT A TASTE. physicalRenderPlanFor keeps only spans
-  // within SPAN_WINDOW (1.0m) of the height the slice is built for, so a floor
-  // more than a metre above the apron is dropped from the slice entirely and the
-  // cell comes back solid — which draws the full-height black cliff this glyph
-  // exists to avoid. Anything you want to see OVER has to stay inside that
-  // window.
+  // 0.80 WAS A CEILING RATHER THAN A TASTE, AND IS NOT ANY MORE.
+  // physicalRenderPlanFor used to keep only spans within SPAN_WINDOW (1.0m) of
+  // the height a slice was built for, so a floor more than a metre above the
+  // apron dropped out of the slice, the cell came back solid, and you got the
+  // full-height black cliff this glyph exists to avoid. It now also keeps every
+  // span in the room you are standing in, so a kerb in your own room can be any
+  // height. The 0.80 is kept because it is the right height for a kerb, not
+  // because the renderer insists on it.
   'w': { floor: 0.8, ceil: 24.0, sky: true, walled: true, zone: 'dock', material: 'wetTarmac' },
   // The civic block. `e` is carriageway, `p` is a proper raised pavement and
   // `s` is the band of old granite setts at the gutter. All three are open to

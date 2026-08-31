@@ -15,6 +15,7 @@ const DEFAULT_BINDINGS = Object.freeze({
   select: 'UP / DOWN',
   set: 'LEFT / RIGHT',
   quiet: 'SHIFT',
+  hide: 'C',
   light: 'F',
   bag: 'B',
   recorder: 'R',
@@ -69,16 +70,19 @@ const ID_TO_LEGACY_BUTTON = Object.freeze(
 export const CONTROLLER_FAMILIES = Object.freeze(['auto', 'xbox', 'playstation', 'nintendo', 'generic']);
 
 export const CONTROLLER_BINDING_ACTIONS = Object.freeze([
-  'quiet', 'light', 'bag', 'recorder', 'interact', 'playback', 'mark', 'menu',
+  'quiet', 'hide', 'light', 'bag', 'recorder', 'interact', 'playback', 'mark', 'menu',
   'confirm', 'back', 'tabPrev', 'tabNext',
 ]);
 
-const WORLD_GROUP = Object.freeze(['quiet', 'light', 'bag', 'recorder', 'interact', 'playback', 'mark', 'menu']);
+const WORLD_GROUP = Object.freeze(['quiet', 'hide', 'light', 'bag', 'recorder', 'interact', 'playback', 'mark', 'menu']);
 const UI_GROUP = Object.freeze(['confirm', 'back', 'menu', 'tabPrev', 'tabNext']);
 const PAD_GROUPS = Object.freeze([WORLD_GROUP, UI_GROUP]);
 
 export const DEFAULT_CONTROLLER_BINDINGS = Object.freeze({
   quiet: { kind: 'button', id: 'leftShoulder' },
+  // The trigger opposite the recorder's. One hand rolls tape, the other goes to
+  // ground: the two things this job asks you to do while holding still.
+  hide: { kind: 'button', id: 'leftTrigger' },
   light: { kind: 'button', id: 'north' },
   bag: { kind: 'button', id: 'west' },
   recorder: { kind: 'button', id: 'rightTrigger' },
@@ -108,6 +112,7 @@ export const DEFAULT_CONTROLLER_SETTINGS = Object.freeze({
 
 const ACTION_LABELS = Object.freeze({
   quiet: 'QUIET',
+  hide: 'HIDE',
   light: 'LIGHT',
   bag: 'BAG',
   recorder: 'RECORDER',

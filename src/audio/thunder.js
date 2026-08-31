@@ -41,7 +41,10 @@ export function thunderShape(distance = 1200, energy = 0.7) {
     // Instant, then increasingly smeared.
     attack: 0.004 + far * 0.30,
     // The inverse square, floored so a distant storm is still THERE.
-    gain: clamp(0.34 * energy * (1 - far * 0.72), 0.02, 0.4),
+    // The old 0.34 front was mastering-level, not weather-level: a close crack
+    // arrived beside UI and dialogue at nearly half scale before the SFX bus.
+    // Preserve distance and tail character at roughly eight decibels less.
+    gain: clamp(0.14 * energy * (1 - far * 0.72), 0.016, 0.17),
     // Only a near strike has a crack on the front of it.
     crack: clamp(1 - far * 2.4, 0, 1),
   };
@@ -112,7 +115,7 @@ export function createThunderVoice({ context, destination } = {}) {
       band.type = 'highpass';
       band.frequency.value = 900 + shape.crack * 1600;
       const crackGain = context.createGain();
-      const peak = shape.gain * shape.crack * 1.35;
+      const peak = shape.gain * shape.crack * 1.08;
       crackGain.gain.setValueAtTime(Math.max(0.0002, peak), now);
       crackGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.10 + shape.crack * 0.22);
       crackSrc.connect(band); band.connect(crackGain); crackGain.connect(panner);

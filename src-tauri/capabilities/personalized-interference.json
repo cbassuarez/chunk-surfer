@@ -1,13 +1,21 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "personalized-interference",
-  "description": "Restricts opted-in choreography to four fixed, game-owned fireball surfaces that report their clicks back to the main window.",
+  "description": "Restricts opted-in choreography to four fixed fireball surfaces and eight fixed game-owned media surfaces; no external applications, arbitrary web content, or player files are permitted.",
   "windows": [
     "main",
     "fireball-cast-1",
     "fireball-cast-2",
     "fireball-cast-3",
     "fireball-cast-4"
+    ,"window-media-1"
+    ,"window-media-2"
+    ,"window-media-3"
+    ,"window-media-4"
+    ,"window-media-5"
+    ,"window-media-6"
+    ,"window-media-7"
+    ,"window-media-8"
   ],
   "permissions": [
     "core:event:allow-emit",
@@ -20,5 +28,6 @@
     "core:window:allow-close",
     "core:window:allow-set-ignore-cursor-events",
     "core:window:allow-set-focus"
+    ,"core:window:allow-start-dragging"
   ]
 }

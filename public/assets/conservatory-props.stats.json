@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-25T01:37:29.876Z",
-  "bytes": 25159260,
-  "totalTriangles": 345330,
+  "generatedAt": "2026-08-31T07:52:12.075Z",
+  "bytes": 25291628,
+  "totalTriangles": 346986,
   "meshes": {
     "school_desk": {
       "triangles": 176,
@@ -1180,8 +1180,16 @@
       "vertices": 6050
     },
     "yard_van": {
-      "triangles": 1368,
-      "vertices": 2390
+      "triangles": 1188,
+      "vertices": 2030
+    },
+    "yard_van_door_l": {
+      "triangles": 132,
+      "vertices": 264
+    },
+    "yard_van_door_r": {
+      "triangles": 120,
+      "vertices": 240
     },
     "yard_van_lamp": {
       "triangles": 24,
@@ -1244,8 +1252,8 @@
       "vertices": 1168
     },
     "baseboard_ground": {
-      "triangles": 6264,
-      "vertices": 12528
+      "triangles": 6696,
+      "vertices": 13392
     },
     "baseboard_hall": {
       "triangles": 2400,
@@ -1256,12 +1264,12 @@
       "vertices": 4272
     },
     "baseboard_upper": {
-      "triangles": 2700,
-      "vertices": 5400
+      "triangles": 3420,
+      "vertices": 6840
     },
     "baseboard_academic": {
-      "triangles": 1944,
-      "vertices": 3888
+      "triangles": 2376,
+      "vertices": 4752
     },
     "baseboard_tower": {
       "triangles": 4644,
@@ -4803,14 +4811,38 @@
     },
     "yard_van": {
       "min": [
-        -1.539,
+        -1.37,
         0.23,
         -3.538
       ],
       "max": [
-        1.539,
+        1.37,
         2.57,
-        3.05
+        2.55
+      ]
+    },
+    "yard_van_door_l": {
+      "min": [
+        0,
+        0,
+        -0.062
+      ],
+      "max": [
+        0.9,
+        1.86,
+        0.101
+      ]
+    },
+    "yard_van_door_r": {
+      "min": [
+        0,
+        0,
+        -0.101
+      ],
+      "max": [
+        0.9,
+        1.86,
+        0.062
       ]
     },
     "yard_van_lamp": {
@@ -5001,7 +5033,7 @@
       ],
       "max": [
         114,
-        3.415,
+        3.544,
         120
       ]
     },
@@ -5031,26 +5063,26 @@
     },
     "baseboard_upper": {
       "min": [
-        -11,
-        -3.6,
-        -2
+        -10.8,
+        -3.429,
+        -2.123
       ],
       "max": [
-        37,
-        3.69,
-        48.5
+        37.2,
+        3.926,
+        48.377
       ]
     },
     "baseboard_academic": {
       "min": [
-        -11,
-        -1.3,
-        -34.5
+        -11.101,
+        -1.213,
+        -35.031
       ],
       "max": [
-        35,
-        2.715,
-        5
+        34.899,
+        2.888,
+        4.469
       ]
     },
     "baseboard_tower": {
@@ -5079,7 +5111,7 @@
     }
   },
   "baseboards": {
-    "planHash": "e0b3372bcfa83301c9503eeb293aa61cc8d027b9af80e0fa1f619f022c670fe9",
+    "planHash": "89fba4cb9b197419e57067d4ca5c78c44da2a115e50b16da8cb9492d4f974bd1",
     "groups": {
       "ground": {
         "mesh": "baseboard_ground",
@@ -5113,7 +5145,7 @@
         "mesh": "baseboard_academic",
         "anchor": {
           "x": 268,
-          "y": 120
+          "y": 116
         }
       },
       "tower": {
@@ -5364,6 +5396,8 @@
     "yard_hedge_run": 0.06,
     "city_frontage": 0.03,
     "yard_van": 2.57,
+    "yard_van_door_l": 1.86,
+    "yard_van_door_r": 1.86,
     "yard_van_lamp": 0.1,
     "yard_look_bench": 0.61,
     "city_bus_shelter": 2.63,
@@ -5373,8 +5407,8 @@
     "baseboard_ground": 0.12,
     "baseboard_hall": 9.11,
     "baseboard_basement": 0.12,
-    "baseboard_upper": 0.12,
-    "baseboard_academic": 2.71,
+    "baseboard_upper": 0.29,
+    "baseboard_academic": 2.89,
     "baseboard_tower": 3.92,
     "baseboard_cathedral": 0.12
   }

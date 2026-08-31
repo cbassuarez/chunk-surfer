@@ -193,6 +193,28 @@ export function propCanOccupy(toX,toY,{ignoreId=null}={}){
     return p.blocks&&pointInProp(mx,mz,p);
   });
 }
+// IS THERE SOMETHING HERE TALL ENOUGH TO GET BEHIND?
+//
+// Cover asks the plan for walls, and the plan does not know about furniture. A
+// flight case is as good a thing to be behind as a wall is, and a bench is not:
+// the height test is the whole distinction, so it is a parameter rather than a
+// constant in here (game/cover.js owns the number).
+//
+// Footprint rather than rx/ry, because a long prop covers cells its authored
+// origin is not in — the same reason propCanOccupy tests the rect.
+export function tallBlockingPropAt(cx,cy,minHeight=0.95){
+  const mx=meters(cx+.5),mz=meters(cy+.5);
+  const floor=floorplan?.floorAt?.(cx,cy)??0;
+  if(colliders.some((c)=>floor>=c.minElevation-.05&&floor<=c.maxElevation+.05
+      &&(c.maxElevation-floor)>=minHeight
+      &&pointInProp(mx,mz,{...c,w:c.width,d:c.depth},0)))return true;
+  return instances.some((p)=>{
+    if(!p.blocks)return false;
+    if(((p.h||0)*(p.scale||1)+(p.elevation||0))<minHeight)return false;
+    return pointInProp(mx,mz,p,0);
+  });
+}
+
 export function structuralColliders(){return colliders.map(c=>({...c}));}
 
 function clearLine(ax,ay,bx,by){

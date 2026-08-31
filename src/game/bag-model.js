@@ -483,6 +483,14 @@ function buildSkillsSection({ build, settledBuild = null, hasRig }) {
         const availability = techniqueAvailability(current, entry.id, { hasRig });
         const owned = current.techniques.includes(entry.id);
         const pending = owned && !settled.techniques.includes(entry.id);
+        // A socket emptied THIS session. Not a fifth state — it draws as OPEN —
+        // but the detail strip should say the lead came from here.
+        const emptied = !owned && settled.techniques.includes(entry.id);
+        // What comes out with this one, BY NAME — the view prints these and an
+        // id would leak to the player. Head first, then down the run. A lone
+        // pull needs no warning; one that takes the run below it does.
+        const pulls = (availability.pulls || []).map(nameOf);
+        const requiredBy = entry.requires ? TECHNIQUE_DEFS.find((other) => other.id === entry.requires) : null;
         return {
           id: `skill:${entry.id}`,
           techniqueId: entry.id,
@@ -501,22 +509,44 @@ function buildSkillsSection({ build, settledBuild = null, hasRig }) {
           blockedBy: owned ? ''
             : availability.enabled ? ''
               : entry.requires && !current.techniques.includes(entry.requires)
-                ? `LOCKED · FIT ${nameOf(entry.requires)} FIRST`
+                ? `NO CONTINUITY · PATCH ${nameOf(entry.requires)} ABOVE IT`
                 : entry.requiresRig && !hasRig
-                  ? 'LOCKED · NEEDS THE BENT RIG FROM THE PLANT ROOM'
-                  : current.unspent <= 0 ? 'NEEDS A PIN · NONE SPARE'
-                    : String(availability.reason || 'LOCKED'),
+                  ? 'THIS SOCKET IS ON THE BENT RIG · IT IS IN THE PLANT ROOM'
+                  : current.unspent <= 0 ? 'NO SPARE LEAD · PULL ONE'
+                    : String(availability.reason || 'NO REACH'),
           buyPrompt: 'TAKES EFFECT WHEN THE CASE CLOSES',
-          actionList: pending
-            ? [actionDescriptor('undo-skill','undo','UNDO CHOICE')]
-            : (!owned && availability.enabled)
-              ? [actionDescriptor('fit-skill','choose','CHOOSE')]
+          emptied,
+          pulls: [...pulls],
+          // THE CABLE INTO THIS SOCKET, if there is one.
+          //
+          // Driven by the prerequisite, never by `tier - 1`. Four sockets sit
+          // below another and are not fed by it — ROOM TONE, HEADROOM and the
+          // first two rungs of NERVE are patched direct — and the old drawing
+          // ran a line into all four anyway.
+          lead: requiredBy ? {
+            fromTier: requiredBy.tier,
+            live: owned && current.techniques.includes(entry.requires),
+            fresh: owned && current.techniques.includes(entry.requires)
+              && (pending || !settled.techniques.includes(entry.requires)),
+          } : null,
+          actionList: owned
+            ? [actionDescriptor('pull-cable','pull','PULL LEAD',{
+                // Only the cascading pull is worth stopping for. A lone pull is
+                // undone by pressing the same key again, and a modal in front of
+                // that would make re-rigging tedious.
+                confirm: pulls.length > 1 ? {
+                  title: `PULL ${entry.label}?`,
+                  body: `THE RUN BELOW IT LOSES CONTINUITY. ${pulls.length} LEADS COME BACK: ${pulls.join(', ')}.`,
+                } : null,
+              })]
+            : availability.enabled
+              ? [actionDescriptor('patch-cable','patch','PATCH')]
               : [],
           actions: {
-            primary: pending
-              ? { id:'undo-skill',label:'UNDO CHOICE',destructive:false }
-              : (!owned && availability.enabled)
-              ? { id: 'fit-skill', label: 'CHOOSE', destructive: false }
+            primary: owned
+              ? { id:'pull-cable',label:'PULL LEAD',destructive:false }
+              : availability.enabled
+              ? { id: 'patch-cable', label: 'PATCH', destructive: false }
               : null,
           },
         };
@@ -526,11 +556,17 @@ function buildSkillsSection({ build, settledBuild = null, hasRig }) {
   return {
     id: 'skills',
     label: 'SKILLS',
-    countLabel: current.unspent
-      ? `${current.unspent} PIN${current.unspent === 1 ? '' : 'S'}${current.techniques.length - settled.techniques.length ? ` · ${current.techniques.length - settled.techniques.length} CHOSEN` : ''}`
-      : current.techniques.length - settled.techniques.length
-        ? `${current.techniques.length - settled.techniques.length} CHOSEN`
-        : `${current.techniques.length} INSTALLED`,
+    // The delta is SIGNED now, because a session can end with fewer patches than
+    // it started with. It used to be interpolated raw, so a pull printed
+    // `· -2 CHOSEN` on the tab.
+    countLabel: (() => {
+      const spare = current.unspent;
+      const moved = current.techniques.length - settled.techniques.length;
+      const change = moved > 0 ? ` · ${moved} NEW` : moved < 0 ? ` · ${-moved} PULLED` : '';
+      if (spare) return `${spare} LEAD${spare === 1 ? '' : 'S'}${change}`;
+      if (change) return change.slice(3);
+      return `${current.techniques.length} PATCHED`;
+    })(),
     entries: branches.flatMap((branch) => branch.entries),
     tree: {
       branches,
@@ -540,6 +576,9 @@ function buildSkillsSection({ build, settledBuild = null, hasRig }) {
         spent: current.pinsSpent,
         unspent: current.unspent,
         pending: Math.max(0, current.techniques.length - settled.techniques.length),
+        // A session can now end smaller than it began. Clamped the other way so
+        // the headline can say what happened either direction.
+        pulled: Math.max(0, settled.techniques.length - current.techniques.length),
       },
     },
   };

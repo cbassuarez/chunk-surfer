@@ -310,6 +310,10 @@ export function sourceFocusActionLabel(focus) {
   if (focus.kind === 'haystack-page') return 'TAKE THE STILL PAGE';
   if (focus.kind === 'normal-exit') return 'LEAVE SOURCE SPACE';
   if (focus.kind === 'boss-fault') return focus.available === false ? 'RETURN PATH EXPOSED / NO INTERFACE' : 'CONNECT THE RIG';
+  // IT DOES NOT GET A NAME EITHER. Same contract as the landing door: the
+  // player can see perfectly well what is standing there, and the prompt is not
+  // going to be the thing that tells him what it is. A verb and no object.
+  if (focus.kind === 'hush') return 'SPEAK';
   // Without this the prompt fell through to main.js's raw fallback and printed
   // the internal id: INSPECT HORIZON-BUST.
   if (focus.kind === 'horizon-bust') return 'LISTEN TO THE BUST';

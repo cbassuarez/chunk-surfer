@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {
   CAUSAL_TOPOLOGY_HASH,
   CAUSAL_SPINE_IDS,
+  CAUSAL_INJURY_CEILING,
   causalContentHash,
   packShadowFrames,
   sealCausalTape,
@@ -37,8 +38,8 @@ assert.deepEqual(tape.anchors[0].payload,resolved,'resolved presentation values 
 assert.equal(validateCausalTape(tape).ok,true);
 assert.equal(shadowFrameAt(tape,5000).x,5);
 assert.equal(tapeQualifies(0),true);
-assert.equal(tapeQualifies(1),true);
-assert.equal(tapeQualifies(2),false);
+assert.equal(tapeQualifies(CAUSAL_INJURY_CEILING),true);
+assert.equal(tapeQualifies(CAUSAL_INJURY_CEILING+1),false);
 
 const wrongTopology={...tape,topologyHash:'other'};
 wrongTopology.contentHash=causalContentHash(wrongTopology);

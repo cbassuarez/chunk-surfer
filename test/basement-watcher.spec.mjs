@@ -145,8 +145,10 @@ assert.match(mainSource,/roomLossDb:basementWatcherAcousticFirewallDb/,
   'the semantic HUSH audio runtime installs the hard room firewall');
 assert.match(mainSource,/suppressContact:hushSensationMode===HUSH_SENSATION_MODE\.BRUSH\|\|!basementWatcherSignalAllowedAt\(\)/,
   'contact cannot cross the room threshold');
-assert.match(mainSource,/currentMapContact\(source\)[\s\S]*?if\(!source\|\|!hushActiveForPlayer\(\)\)/,
-  'map telemetry exposes no basement HUSH signal outside its room');
+assert.match(mainSource,/currentMapContact\(source\)[\s\S]*?if\(!source\|\|!hush\)\{[\s\S]*?HUSH_MAP_TELEMETRY\.clear\(\)/,
+  'map telemetry is cleared whenever the player has no physically sensed HUSH');
+assert.match(mainSource,/function currentMapHushMarker\(\)[\s\S]*?hushPhysicallySensed\([\s\S]*?if\(!sensed\)return null/,
+  'simulation presence alone cannot expose the basement HUSH on the map');
 assert.match(mainSource,/function chooseHushReleaseTarget\(seed=1\)[\s\S]*?const confinement=basementWatcherConfinement\(\)[\s\S]*?contained:true/,
   'a brush release redirects within the selected studio instead of emitting a remote note');
 assert.match(mainSource,/takenEligible:dialogueEligible&&!basementWatcherConfinement\(\)/,

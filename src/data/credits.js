@@ -32,6 +32,21 @@ export const CREDITS = Object.freeze([
     ]),
   }),
   Object.freeze({
+    heading: 'Window Collage Footage',
+    lines: Object.freeze([
+      'Bolognese bellringers — Renato Morselli (CC BY 3.0)',
+      'Bristol Cathedral — George Si (CC BY 3.0)',
+      'Oulu demolition — Estormiz (CC0)',
+      'Clouds timelapse — John Fowler (CC BY 2.0)',
+      'UK partial eclipse — Adrian Parsons (CC BY 3.0)',
+      'Sunflower pollination — Oscar Gil Fernández (CC BY 2.0)',
+      'Clinical eye footage — Otranto and Eberhard (CC BY 2.0)',
+      'S5 video courtesy Dr. W.E. Burr',
+      'Project flower footage — Sebastian Suarez-Solis',
+      'Commons derivatives edited, looped, color-processed and datamoshed',
+    ]),
+  }),
+  Object.freeze({
     heading: 'Website',
     lines: Object.freeze([
       'cbassuarez.com',

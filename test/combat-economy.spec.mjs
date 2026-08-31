@@ -84,12 +84,20 @@ const competent = (state) => pick(state, [
   COMBAT_ACTION.PLAYBACK, COMBAT_ACTION.EXPOSE, COMBAT_ACTION.MONITOR, COMBAT_ACTION.HOLD,
 ]);
 
+const settleEnemySequence = (input) => {
+  let state = input;
+  for (let guard = 0; state.phase === 'enemy' && !state.result && guard < 4; guard += 1) {
+    state = advanceEnemy(state);
+  }
+  return state;
+};
+
 function playOut(definition, options, policy = competent) {
   let state = createCombatState(definition, { tools: FULL_BAG, ...options });
   let guard = 0;
   while (!state.result && guard++ < 300) {
     state = reduceCombat(state, { type: policy(state), replaceTake: true });
-    if (state.phase === 'enemy') state = advanceEnemy(state);
+    state = settleEnemySequence(state);
   }
   return state;
 }
@@ -130,7 +138,7 @@ test('every regular that deals damage keeps dealing it all fight', () => {
       const open = availableCombatActions(state).filter((move) => move.enabled);
       assert.ok(open.some((move) => (move.damage || 0) > 0), `${name} reached a beat with no way to deal damage`);
       state = reduceCombat(state, { type: competent(state), replaceTake: true });
-      if (state.phase === 'enemy') state = advanceEnemy(state);
+      state = settleEnemySequence(state);
     }
   }
 });
@@ -181,7 +189,7 @@ test('a special can be fired more than once in an encounter, if it is earned', (
     const open = availableCombatActions(state).filter((move) => move.enabled).map((move) => move.id);
     if (open.includes(COMBAT_ACTION.WHITEOUT)) { fired += 1; state = reduceCombat(state, { type: COMBAT_ACTION.WHITEOUT }); }
     else state = reduceCombat(state, { type: competent(state), replaceTake: true });
-    if (state.phase === 'enemy') state = advanceEnemy(state);
+    state = settleEnemySequence(state);
     state.charge = state.maxCharge;   // stand in for a fight's worth of good reads
   }
   assert.ok(fired >= 2, `a special fired ${fired} times — it is a rhythm, not a one-shot`);
@@ -244,8 +252,17 @@ test('difficulty costs a competent recordist something, and more of it as it cli
   const guided = cost(COMBAT_RULES.guided);
   const standard = cost(COMBAT_RULES.standard);
   const deadAir = cost(COMBAT_RULES['dead-air']);
-  assert.equal(guided, 0, 'guided is the safe read, and stays safe');
-  assert.ok(standard > 0, `standard costs a competent player something (${(standard * 100).toFixed(0)}%)`);
+  // FORGIVING, NOT FREE.
+  //
+  // This used to assert `guided === 0` — and it was exactly, literally zero, on
+  // every battle in the game. That was not a property of the gentle preset; it
+  // was a property of the whole fight, because a perfect counter deleted the
+  // opponent's turn outright and a competent recordist could not be hit on any
+  // difficulty. With the blow landing as a chip, the gentlest preset costs a
+  // competent player a little and the rest cost more.
+  assert.ok(guided > 0, `even the safe read costs something now (${(guided * 100).toFixed(0)}%)`);
+  assert.ok(standard > guided,
+    `standard costs more than guided (${(standard * 100).toFixed(0)}% vs ${(guided * 100).toFixed(0)}%)`);
   assert.ok(deadAir > standard, `and dead air costs more (${(deadAir * 100).toFixed(0)}% vs ${(standard * 100).toFixed(0)}%)`);
 });
 
@@ -290,7 +307,7 @@ test('the draw is deterministic: the same night replays the same damage', () => 
     for (const action of [COMBAT_ACTION.MONITOR, COMBAT_ACTION.PLAYBACK, COMBAT_ACTION.EXPOSE, COMBAT_ACTION.MONITOR]) {
       state = reduceCombat(state, { type: action, replaceTake: true });
       log.push([state.last.dealt ?? 0, state.last.quality ?? null, state.movementCoherence]);
-      if (state.phase === 'enemy') state = advanceEnemy(state);
+      state = settleEnemySequence(state);
     }
     return log;
   };

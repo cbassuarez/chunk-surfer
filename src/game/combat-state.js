@@ -15,8 +15,8 @@ export const COMBAT_ACTION = Object.freeze({
   TUNE: 'tune',
   CHANNEL: 'channel',
   END_TEMPO: 'end-tempo',
-  // Point at a section of the house. Not a move: it costs no beat and the
-  // opponent does not answer it, the same way arming a source channel does not.
+  // Point at one Hall apparition. Not a move: it costs no beat and the opponent
+  // does not answer it, the same way arming a source channel does not.
   TARGET: 'target',
   // THE PRACTICE WING'S TWO VERBS.
   //
@@ -249,23 +249,23 @@ import {
   resetReadForMovement,
 } from './enemy-mind.js';
 import {
-  actingRow,
-  applyHouseAction,
-  commitHouseBeat,
-  commitHouseFormation,
-  createHouse,
-  houseCombatSnapshot,
-  rememberHouseTool,
-  houseCleared,
-  houseView,
-  houseStrikeFor,
-  isGroupSpecial,
-  moveHouseTarget,
-  selectHouseTarget,
-  strikeHouse,
-  strikeHouseAll,
-  targetRow,
-} from './battle-house.js';
+  activeHallApparition,
+  advanceHallEnemyTurn,
+  applyHallApparitionAction,
+  armNextHallParry,
+  beginHallEnemyTurns,
+  commitHallApparitionRound,
+  createHallApparitions,
+  hallApparitionSnapshot,
+  hallApparitionView,
+  hallApparitionsDefeated,
+  hallIntentId,
+  hallTargetIds,
+  liveHallApparitions,
+  moveHallTarget,
+  selectHallTarget,
+  targetedHallApparition,
+} from './hall-apparitions.js';
 import {
   createPracticeSession,
   listenPracticeBar,
@@ -290,6 +290,14 @@ function intentsFor(movement, variant) {
 export function currentCombatIntent(state) {
   const intents = intentsFor(currentMovement(state), state.difficulty.variant);
   if (!intents.length) return null;
+  // The Hall has three opponents and therefore three committed intents. During
+  // selection the card shows the first living apparition due after the player;
+  // during the enemy sequence it shows the body whose turn is actually active.
+  if (state.apparitions) {
+    const id = hallIntentId(state.apparitions);
+    const owned = intents.find((intent) => intent.id === id);
+    if (owned) return owned;
+  }
   // The written commitment is authoritative — but only while it still describes
   // this beat. A caller that moves intentIndex by hand invalidates the note and
   // falls through to the authored cycle, which is what a hand-built state means.
@@ -326,16 +334,7 @@ function commitNextIntent(state) {
   if (!chosen) return;
   state.committed = { id: chosen.id, index: state.intentIndex };
   maybeMisread(state, movement, intents, chosen, missedLast);
-  // Against a group, the blow and the FORMATION throwing it are one decision,
-  // committed once and never recomputed. The lead, its supporters and every
-  // modifier they contribute are fixed here so the preview, the reaction track
-  // and the resolver all read the same packet — see battle-house.js.
-  if (state.house) {
-    commitHouseFormation(state.house, state.cycleIndex, {
-      ...(movement?.formation || {}),
-      difficulty: state.difficulty?.variant || 'standard',
-    });
-  }
+  if (state.apparitions) commitHallApparitionRound(state.apparitions, state.cycleIndex, intents);
 }
 
 // Whether the recordist reads this one wrong.
@@ -568,6 +567,7 @@ function combatDifficulty(raw = {}) {
     // See COMBAT_GUIDANCE in progression/difficulty-defs.js.
     guidance: ['full', 'trace', 'tile', 'none'].includes(raw.guidance) ? raw.guidance : 'trace',
     holdPrevention: Math.max(0, integer(raw.holdPrevention, 2 * GRID)),
+    incomingScale: Math.max(0.1, Math.min(3, finite(raw.incomingScale, 1))),
     intentLookahead: Math.max(1, integer(raw.intentLookahead, 1)),
     recoveryHolds: Math.max(0, integer(raw.recoveryHolds, 1)),
     // How much of an outgoing band the assist hands you for free, how often the
@@ -683,7 +683,16 @@ export function createCombatState(definition, {
   const rules = combatDifficulty(difficulty);
   const reserve = unique(techniques).includes(TECHNIQUE.DEEP_RESERVE) ? 2 * GRID : 0;
   const baseComposure = Math.max(1, integer(definition.baseComposure, 8 * GRID) + rules.composureBonus + reserve);
-  const maxComposure = Math.max(4 * GRID, baseComposure - Math.max(0, integer(injuries, 0)));
+  // AN INJURY IS WORTH A GRID SQUARE, AND ALWAYS WAS.
+  //
+  // This subtracted a raw integer from a pool that had been multiplied by five
+  // and never rescaled with it, so an entire night's injuries cost six points
+  // of forty — a rounding error where the design intended a running total. A
+  // night that goes badly is supposed to arrive at the chapel smaller than one
+  // that does not, and losing a fight now marks you (see openEncounterBattle).
+  // The 4*GRID floor is what stops that becoming a spiral: four injuries is
+  // half your composure and no further.
+  const maxComposure = Math.max(4 * GRID, baseComposure - Math.max(0, integer(injuries, 0)) * GRID);
   const normalizedTechniques = unique(techniques).filter((id) => Object.values(TECHNIQUE).includes(id));
   const roomTone = normalizedTechniques.includes(TECHNIQUE.ROOM_TONE)
     ? { id: 'room-tone', label: 'ROOM TONE', damage: 2 * GRID, tag: 'room' }
@@ -790,15 +799,14 @@ export function createCombatState(definition, {
     // again. Both are consumed by advanceEnemy, which is where the enemy turn is.
     skipEnemyBeat: false,
     recommitted: false,
-    // THE HOUSE. Null for every fight but the hall, and every code path above
-    // behaves exactly as it did when it is null. See battle-house.js — and note
-    // this is the battle UI's audience, not the world's apparitions, whose
-    // director keeps its no-player-coordinates boundary.
-    house: definition.house
-      ? createHouse({ seed: `${definition.id || 'house'}:${integer(seed, 0)}`, ...definition.house })
+    // Three individual Hall opponents. These are combat entities rendered
+    // inside the battle scene; the emergency-light apparition director remains
+    // presentation-only and still never receives player coordinates.
+    apparitions: definition.apparitions
+      ? createHallApparitions({ seed: `${definition.id || 'hall'}:${integer(seed, 0)}`, ...definition.apparitions })
       : null,
-    // The practice wing. Like `house`, absent for every other encounter, and
-    // every path behaves exactly as it did when it is null. Unlike `house` it
+    // The practice wing. Like `apparitions`, absent for every other encounter,
+    // and every path behaves exactly as it did when it is null. Unlike the Hall
     // describes no adversary — there is nobody in that room. See practice-room.js.
     practice: definition.practice
       ? createPracticeSession({ seed: `${definition.id || 'practice'}:${integer(seed, 0)}`, ...definition.practice })
@@ -979,10 +987,38 @@ function finishCombat(state, result) {
   };
 }
 
+// Scene-authored fights occasionally have an end condition outside coherence
+// damage (the bench drill finishes when its lesson sequence is complete). Keep
+// those exits on the same immutable result contract as an ordinary knockout so
+// dialogue, cleanup, metrics and callbacks cannot diverge.
+export function resolveCombatResult(input, result = 'win') {
+  const state = clone(input);
+  if (state.result || state.phase === 'done') return state;
+  finishCombat(state, result === 'lose' ? 'lose' : 'win');
+  return state;
+}
+
 function completeMovement(state) {
   const finishedIndex = state.movementIndex;
   if (state.source) addSourcePoint(state, 1);
   if (finishedIndex >= state.definition.movements.length - 1) {
+    // The final Hall movement is not a surrogate enemy health bar. If any of
+    // the three bodies remains, the last movement repeats until the targeted
+    // entities themselves have been defeated.
+    if (state.apparitions && !hallApparitionsDefeated(state.apparitions)) {
+      state.movementCoherence = integer(currentMovement(state)?.coherence, 1);
+      state.movementMaxCoherence = state.movementCoherence;
+      state.intentIndex = 0;
+      state.cycleIndex += 1;
+      state.turns += 1;
+      state.turnsInMovement = 0;
+      state.movementDamage = 0;
+      state.misread = null;
+      commitNextIntent(state);
+      state.last.transition = { from: finishedIndex, to: finishedIndex };
+      state.last.notice += ' · THE THREE REMAIN';
+      return;
+    }
     // THE WING DOES NOT END. HE DOES.
     //
     // Everywhere else the last movement is the last thing and finishing it wins.
@@ -1041,14 +1077,6 @@ function completeMovement(state) {
   state.last.transition = { from: finishedIndex, to: state.movementIndex };
 }
 
-// One choke point for everything the player lands, which is why the house can
-// hang off it without every action needing to know a crowd exists.
-//
-// Coherence still runs the movement — the pacing, the transitions, the proof
-// walk all key on it and none of that changes. What the house adds is WHERE the
-// blow went: against a group, damage is also a count of people who stop being
-// there. A loud special reaches every occupied row; anything else lands on the
-// section the cursor is pointing at, and a parry goes back at whoever threw it.
 // Composure, and the one rule that ever stands between the player and zero.
 // Returns whether the relay was what saved them, because the caller owns the
 // wording of the line that says so.
@@ -1066,35 +1094,50 @@ function applyDamageToPlayer(state, damage) {
   return false;
 }
 
+export function hallSpecialTargetCap(state, actionId) {
+  if (!state?.apparitions) return 1;
+  if (actionId === COMBAT_ACTION.WHITEOUT) return hasTechnique(state, TECHNIQUE.OVEREXPOSE) ? 3 : 2;
+  if (actionId === COMBAT_ACTION.MASTER_TAKE) return hasTechnique(state, TECHNIQUE.MULTITRACK) ? 3 : 2;
+  if (actionId === COMBAT_ACTION.RUNAWAY_FEEDBACK) return hasTechnique(state, TECHNIQUE.FEEDBACK_LOOP) ? 3 : 2;
+  if (actionId === COMBAT_ACTION.RADIO_DECOY) {
+    if (hasTechnique(state, TECHNIQUE.DEAD_AIR)) return 3;
+    if (hasTechnique(state, TECHNIQUE.MISDIRECTION)) return 2;
+  }
+  return 1;
+}
+
+export function combatApparitionTargetIds(state, actionId = null) {
+  return state?.apparitions ? hallTargetIds(state.apparitions, hallSpecialTargetCap(state, actionId)) : [];
+}
+
+// One choke point for outgoing damage. In the Hall the same resolved band is
+// applied to every member in the selected scope, and only damage that reaches a
+// body reduces the movement gauge. A telegraphed parry can therefore stop the
+// blow or, rarely and deterministically, redirect it into another apparition.
 function applyDamageToEnemy(state, amount, actionId = null) {
   const damage = Math.max(0, integer(amount, 0));
-  state.movementCoherence = Math.max(0, state.movementCoherence - damage);
-  if (state.house && damage > 0) {
-    // EVERY DAMAGING ACTION HAS A VISIBLE HOUSE CONSEQUENCE.
-    //
-    // It used to be that only a perfect read or a loud special touched anybody,
-    // so four fifths of the bag was irrelevant to the only fight the bag exists
-    // for. applyHouseAction gives an ordinary blow somewhere to land — it
-    // unsettles a section, and the second one empties a seat — while a clean
-    // read still does it in one. The shape of the action decides where the
-    // force goes: aimed, spilling into a neighbour, damping a supporter out of
-    // the formation, or back at whoever actually threw the blow.
-    const result = applyHouseAction(state.house, {
+  if (state.apparitions && damage > 0) {
+    const result = applyHallApparitionAction(state.apparitions, {
       actionId,
-      perfect: !!state.last?.perfect,
-      targetId: targetRow(state.house)?.id || null,
+      targetIds: combatApparitionTargetIds(state, actionId),
+      damage,
     });
+    state.movementCoherence = Math.max(0, state.movementCoherence - result.dealt);
+    const prior = state.last?.apparitions || null;
     state.last = {
       ...(state.last || {}),
-      house: {
-        unsettled: result.unsettled,
-        broken: result.broken,
-        cleared: result.cleared,
-        suppressed: result.suppressed,
-      },
+      apparitions: prior ? {
+        targets: [...new Set([...(prior.targets || []), ...result.targets])],
+        damaged: [...(prior.damaged || []), ...result.damaged],
+        defeated: [...new Set([...(prior.defeated || []), ...result.defeated])],
+        parried: [...new Set([...(prior.parried || []), ...result.parried])],
+        redirects: [...(prior.redirects || []), ...result.redirects],
+        dealt: (prior.dealt || 0) + result.dealt,
+      } : result,
     };
+    return result.dealt;
   }
-  if (state.house) rememberHouseTool(state.house, actionId);
+  state.movementCoherence = Math.max(0, state.movementCoherence - damage);
   return damage;
 }
 
@@ -1232,20 +1275,30 @@ function parryReflect(state) {
 // ordinary kit, changing stance or advancing the enemy clock. Nonlethal hits
 // deliberately preserve `last`, because an ordinary beat may be resolving at
 // the same time and still owns its impact bookkeeping.
-export function applyFireballReturn(input,{damage=2*GRID,castId=''}={}){
+export function applyFireballReturn(input,{damage=2*GRID,castId='',casterId=null}={}){
   const state=clone(input);
   if(state.result||state.phase==='done')return state;
   const priorLast=clone(state.last||{});
   const coherenceFrom=state.movementCoherence;
   state.last={...priorLast,perfect:true,transition:null};
+  const priorTarget=state.apparitions?.target;
+  if(state.apparitions&&casterId)selectHallTarget(state.apparitions,casterId);
   const dealt=applyDamageToEnemy(state,Math.max(1,integer(damage,2*GRID)),COMBAT_ACTION.FIREBALL_RETURN);
-  const event={castId:String(castId||''),dealt,coherenceFrom,coherenceTo:state.movementCoherence};
+  if(state.apparitions&&Number.isInteger(priorTarget)){
+    state.apparitions.target=priorTarget;
+    if(targetedHallApparition(state.apparitions)?.health<=0)moveHallTarget(state.apparitions,1);
+  }
+  const event={castId:String(castId||''),casterId:casterId?String(casterId):null,dealt,coherenceFrom,coherenceTo:state.movementCoherence};
   state.fireballReturn=event;
   state.actionLog.push({
     turn:state.turns,movement:currentMovement(state)?.id||null,
     action:COMBAT_ACTION.FIREBALL_RETURN,perfect:true,bonus:true,dealt,received:0,
   });
-  if(state.movementCoherence<=0){
+  if(state.apparitions&&hallApparitionsDefeated(state.apparitions)){
+    state.last={...state.last,notice:`RETURN · ${dealt} RANGED · ALL THREE APPARITIONS RELEASED`,action:COMBAT_ACTION.FIREBALL_RETURN,dealt,received:0};
+    finishCombat(state,'win');
+    state.last.fireballReturn=event;
+  }else if(state.movementCoherence<=0){
     state.last={...state.last,notice:`RETURN · ${dealt} RANGED`,action:COMBAT_ACTION.FIREBALL_RETURN,dealt,received:0};
     completeMovement(state);
     state.last.fireballReturn=event;
@@ -1407,7 +1460,15 @@ function runPracticeBeat(state) {
   return wound.retakes;
 }
 
-function applyEnemyIntent(state, intent, prevention) {
+// WHAT A BLOW YOU SAW COMING IS STILL WORTH.
+//
+// Read blows land at this share of what they would otherwise have done, floored
+// at a single chip so no beat in the fight is ever completely free. The number
+// is small on purpose: a misread costs the FULL blow, four to twenty times as
+// much, and that ratio is the entire incentive to read.
+export const PERFECT_COUNTER_SHARE = 0.25;
+
+function applyEnemyIntent(state, intent, prevention, share = 1, first = true) {
   // THE PRACTICE WING TAKES ITS DAMAGE FROM NOWHERE ELSE.
   //
   // Nothing in that room is coming for him, so an intent there does not strike:
@@ -1433,20 +1494,41 @@ function applyEnemyIntent(state, intent, prevention) {
   // an hour in a practice room. Time in that room costs him whatever he presses;
   // the only thing he controls is how much of it he spends.
   const guard = state.practice && !state.practice.stopped ? 0 : Math.max(0, integer(prevention, 0));
+  // How hard the night hits, by preset. Applied to the authored blow before
+  // your guard meets it, so bracing is worth the same absolute amount
+  // everywhere and what changes is how much there is to brace against. The
+  // practice wing is exempt: its intents are the cost of a repetition, tuned
+  // against a room that cannot be guarded at all.
+  const scale = state.practice ? 1 : Math.max(.1, Number(state.difficulty?.incomingScale) || 1);
+  const raw = Math.round(integer(intent?.damage, 0) * scale);
   const damage = Math.max(0,
-    integer(intent?.damage, 0) + echo + ensemble + fragileSignal - guard,
+    raw + echo + ensemble + fragileSignal - guard,
   );
-  if (damage > 0) {
-    if (applyDamageToPlayer(state, damage)) state.last.notice += ' · SAFETY RELAY REMAINS AT 1';
-    state.movementDamage = integer(state.movementDamage, 0) + damage;
+  // Chipped here rather than at the source, so prevention, the signature
+  // pressure and the fragile-signal penalty all still apply in the ordinary way
+  // and the reduction is the last word on the beat.
+  const landed = share >= 1 ? damage
+    : (damage > 0 ? Math.max(1, Math.round(damage * share)) : 0);
+  if (landed > 0) {
+    if (applyDamageToPlayer(state, landed)) state.last.notice += ' · SAFETY RELAY REMAINS AT 1';
+    state.movementDamage = integer(state.movementDamage, 0) + landed;
   }
-  if (intent?.effect === 'ringing') state.ringing = true;
-  if (intent?.effect === 'corrupt-take') state.take = null;
+  // A BLOW YOU READ COSTS A CHIP AND NOTHING ELSE.
+  //
+  // The riders — the ring in your ears, a corrupted take — are what the blow
+  // does to the rest of your beat, and seeing it coming is precisely what
+  // spares you them. Without this, HOLD clears the ringing and the overload it
+  // was braced against immediately puts it back, which makes the one move whose
+  // job is clearing it unable to do that job.
+  if (share >= 1) {
+    if (intent?.effect === 'ringing') state.ringing = true;
+    if (intent?.effect === 'corrupt-take') state.take = null;
+  }
   if (intent?.effect === 'recover') {
     state.movementCoherence = Math.min(state.movementMaxCoherence, state.movementCoherence + Math.max(GRID, integer(intent.recover, GRID)));
   }
   if (signature === 'echo') state.signaturePressure = GRID;
-  return damage;
+  return landed;
 }
 
 function actionAvailability(state, actionId) {
@@ -1817,9 +1899,15 @@ export function reduceCombat(input, action = {}) {
     const room = Math.max(0, state.maxComposure - state.composure);
     const restored = Math.min(room, Math.round(took * grade.restore));
     state.composure = Math.min(state.maxComposure, state.composure + restored);
+    const priorTarget = state.apparitions?.target;
+    if (state.apparitions && state.last?.enemyActor?.id) selectHallTarget(state.apparitions, state.last.enemyActor.id);
     const reflected = blows.length && grade.reflect > 0
       ? applyDamageToEnemy(state, Math.round(parryReflect(state) * grade.reflect), COMBAT_ACTION.PARRY)
       : 0;
+    if (state.apparitions && Number.isInteger(priorTarget)) {
+      state.apparitions.target = priorTarget;
+      if (targetedHallApparition(state.apparitions)?.health <= 0) moveHallTarget(state.apparitions, 1);
+    }
     // Meeting the blow on the beat pays the same as reading it. The parry is the
     // only timed input in the fight and it was the only skill in it that bought
     // the player nothing.
@@ -1836,20 +1924,24 @@ export function reduceCombat(input, action = {}) {
       dealt: integer(state.last?.dealt, 0) + reflected,
       received: Math.max(0, integer(state.last?.received, 0) - restored),
     };
+    if (state.apparitions && hallApparitionsDefeated(state.apparitions)) {
+      state.last.notice += ' · ALL THREE APPARITIONS RELEASED';
+      finishCombat(state, 'win');
+    }
     return state;
   }
 
   if (state.phase !== 'select' || state.result) return state;
 
   if (actionId === COMBAT_ACTION.TARGET) {
-    if (state.house) {
-      // Two ways in, one destination. Q/E and the shoulders step through the
-      // occupied sections; a pointer or a finger names one outright, which is
-      // what makes the five sections directly selectable rather than reachable
-      // only by cycling past the ones you did not want.
-      if (action.rowId) selectHouseTarget(state.house, action.rowId);
-      else moveHouseTarget(state.house, action.delta);
-      state.last = { ...(state.last || {}), notice: `TARGET · ${targetRow(state.house)?.label || ''}`, action: actionId };
+    if (state.apparitions) {
+      if (action.targetId || action.rowId) selectHallTarget(state.apparitions, action.targetId || action.rowId);
+      else moveHallTarget(state.apparitions, action.delta);
+      state.last = {
+        ...(state.last || {}),
+        notice: `TARGET · ${targetedHallApparition(state.apparitions)?.label || ''}`,
+        action: actionId,
+      };
     }
     return state;
   }
@@ -1972,8 +2064,8 @@ export function reduceCombat(input, action = {}) {
     // after: the chip was applied, then the function returned to wait for a
     // confirmation, and the beat never happened — so every press of MONITOR
     // against a full slot dealt free damage and cost nothing. Cheap against a
-    // coherence bar and unmissable against the house, where each press quietly
-    // removed a person and the prompt just came back.
+    // coherence bar and especially misleading in a multi-target encounter,
+    // where a body could take the hit before the prompt simply came back.
     if (intent?.recordable && state.take && !action.replaceTake) {
       state.last = { notice: 'TAKE SLOT OCCUPIED · CONFIRM REPLACEMENT', transition: null, action: actionId, perfect: false, needsTakeConfirmation: true };
       return state;
@@ -2028,9 +2120,9 @@ export function reduceCombat(input, action = {}) {
     spendCharge(state, actionId);
     state.take = null;
     // RUNAWAY FEEDBACK'S VERB: IT BUYS YOU A TURN.
-    // The loop eats itself and the room with it — every occupied row of the house
-    // at once (see houseStrikeFor), and the opponent loses its next beat because
-    // it is inside the noise too. Three charge is expensive; what it buys is not
+    // The loop eats itself and reaches the selected apparition group, and the
+    // opponents lose their next phrase because they are inside the noise too.
+    // Three charge is expensive; what it buys is not
     // a bigger number but a beat of your own, which is the only thing in the
     // fight that cannot be bought any other way.
     dealt = strike(state, ACTION_BAND[actionId], actionId, { perfect });
@@ -2154,7 +2246,7 @@ export function reduceCombat(input, action = {}) {
     state.composure = Math.max(0, state.composure - GRID);
     state.damageTaken += GRID;
     enemyDamage += GRID;
-    notice += ` · HOUSE RETURN -${GRID} COMPOSURE`;
+    notice += ` · APPARITION RETURN -${GRID} COMPOSURE`;
   }
 
   // The surfer slips it. If it set to guard on its last beat (see advanceEnemy)
@@ -2183,6 +2275,13 @@ export function reduceCombat(input, action = {}) {
     state.enemyGuard = null;
   }
 
+  const apparitionResult = state.last?.apparitions || null;
+  if (apparitionResult?.parried?.length) notice += ` · PARRIED BY ${apparitionResult.parried.join(' / ').toUpperCase()}`;
+  for (const redirect of (apparitionResult?.redirects || [])) {
+    notice += ` · DEFLECTED INTO ${String(redirect.to).toUpperCase()} · ${redirect.damage}`;
+  }
+  if (apparitionResult?.defeated?.length) notice += ` · ${apparitionResult.defeated.length} APPARITION${apparitionResult.defeated.length === 1 ? '' : 'S'} DOWN`;
+
   // What the opponent learns from this beat. Recorded before the beat advances,
   // so the choice made in advanceIntent is made knowing it.
   state.read = observePlayerBeat(state.read || emptyEnemyRead(), {
@@ -2207,21 +2306,43 @@ export function reduceCombat(input, action = {}) {
     state.last.notice = `${notice} · COMPOSURE LOST`;
     advanceIntent(state);
     finishCombat(state, 'lose');
-  } else if (state.house && houseCleared(state.house)) {
-    // An empty house is the end of the fight, whatever movement it happens in.
-    // There is nothing left to answer, and running the remaining rounds against
-    // nobody would be the game insisting on a script the player has finished.
-    state.last.notice = `${notice} · THE HOUSE IS EMPTY`;
+  } else if (state.apparitions && hallApparitionsDefeated(state.apparitions)) {
+    state.last.notice = `${notice} · ALL THREE APPARITIONS RELEASED`;
     finishCombat(state, 'win');
   } else if (state.movementCoherence <= 0) {
     state.last.notice = notice;
     completeMovement(state);
   } else if (bonusAction) {
+    // TEMPO is a free action inside the opponent's cycle, not a second cycle.
+    // It used to call advanceIntent because back then the perfect counter that
+    // opened it did not — the enemy's committed blow was consumed without ever
+    // being thrown. The enemy takes its beat now and commits the next one
+    // itself, so advancing here would burn a second intent and walk the fight
+    // out of step with what the player was shown.
     state.last.notice = notice;
-    advanceIntent(state);
+    state.tempo = false;
   } else if (perfect) {
-    state.tempo = true;
-    state.last.notice = `${notice} · TEMPO OPEN`;
+    // READING THE BEAT IS NOT THE SAME AS THE BEAT NOT HAPPENING.
+    //
+    // A perfect counter used to skip the opponent's turn outright — and then
+    // hand over a bonus beat which skipped it again. Two player actions, zero
+    // enemy actions, and the committed blow consumed without ever being thrown.
+    // Measured against the real reducer, a competent recordist finished four of
+    // the five battles having taken literally nothing: the fight was not easy
+    // because its numbers were small, it was easy because a player who read
+    // correctly could not be hit at all, and no number anywhere else in the
+    // system could reach them.
+    //
+    // The blow lands now. What the read buys is the brace you meet it with —
+    // which is the move's own prevention, so the counter triangle stops being
+    // one binary and becomes a choice between answers that defend differently —
+    // plus the charge, plus TEMPO on the other side of it. Still much the best
+    // thing that can happen in a beat. No longer immunity.
+    enemyDamage = 0;
+    state.pendingEnemy = { prevention, playerDealt: dealt, playerNotice: notice, tempoAfter: true };
+    if (state.apparitions) beginHallEnemyTurns(state.apparitions);
+    state.phase = 'enemy';
+    state.last.notice = `${notice} · READ HELD`;
   } else {
     // The player's beat is done; the opponent's turn is now pending. It is
     // resolved by advanceEnemy, not here — this is the one place the enemy used
@@ -2232,6 +2353,7 @@ export function reduceCombat(input, action = {}) {
     // old inline path overwrote enemyDamage before reporting it.
     enemyDamage = 0;
     state.pendingEnemy = { prevention, playerDealt: dealt, playerNotice: notice };
+    if (state.apparitions) beginHallEnemyTurns(state.apparitions);
     state.phase = 'enemy';
     state.last.notice = `${notice} · ENEMY INCOMING`;
   }
@@ -2285,6 +2407,15 @@ function reactionMatches(state, reaction) {
 export function selectEnemyIntents(state) {
   const primary = currentCombatIntent(state);
   if (!primary) return [];
+  if (state.apparitions) {
+    const actor = activeHallApparition(state.apparitions) || liveHallApparitions(state.apparitions)[0] || null;
+    return [{
+      ...primary,
+      actorId: actor?.id || null,
+      actorLabel: actor?.label || 'APPARITION',
+      actorSeat: actor?.seat || '',
+    }];
+  }
   const followups = Array.isArray(primary.followups) ? primary.followups : [];
   return [primary, ...followups];
 }
@@ -2293,10 +2424,103 @@ export function selectEnemyIntents(state) {
 // blunts the first hit (you braced for one blow, not a barrage). A KO ends the
 // combat; otherwise the intent cursor advances and control returns to the
 // player. Off-phase calls are a no-op so the scene can call it freely.
+function advanceHallApparition(state, pending) {
+  const actor = activeHallApparition(state.apparitions) || beginHallEnemyTurns(state.apparitions);
+  if (!actor) {
+    state.pendingEnemy = null;
+    state.phase = 'select';
+    return state;
+  }
+
+  let hits = [];
+  if (state.skipEnemyBeat) {
+    state.skipEnemyBeat = false;
+  } else {
+    // THROW VOICE changes this person's committed action without changing who
+    // owns the initiative slot or rebuilding the rest of the round.
+    if (state.recommitted) {
+      state.recommitted = false;
+      const authored = intentsFor(currentMovement(state), state.difficulty.variant);
+      const at = authored.findIndex((intent) => intent.id === actor.intentId);
+      if (authored.length) actor.intentId = authored[(at + 1 + authored.length) % authored.length].id;
+    }
+    const intents = selectEnemyIntents(state);
+    let prevention = Math.max(0, integer(pending.prevention, 0));
+    // A successful read applies to the whole coordinated phrase, not only the
+    // first body in initiative. Splitting the old aggregate attack into three
+    // actors must not silently triple the portion that escapes a perfect read.
+    const readShare = pending.tempoAfter ? PERFECT_COUNTER_SHARE : 1;
+    for (const intent of intents) {
+      // Three individual attacks replace one aggregate crowd attack. Keeping a
+      // fixed third-share preserves the encounter's authored damage budget even
+      // after one member is defeated; losing an enemy never makes a survivor's
+      // identical gesture mysteriously stronger.
+      // Every body takes its own turn, so even a coordinated perfect read can
+      // only blunt each strike to its minimum chip; it cannot erase two actors.
+      const received = applyEnemyIntent(state, intent, prevention, readShare / 3, hits.length === 0);
+      hits.push({ intentId: intent.id, kind: intent.kind, received, actorId: actor.id, actorLabel: actor.label });
+      prevention = 0;
+      if (state.composure <= 0) break;
+    }
+  }
+
+  const totalReceived = hits.reduce((sum, hit) => sum + hit.received, 0);
+  const skipped = hits.length === 0;
+  const baseNotice = pending.firstEnemyResolved ? '' : (pending.playerNotice || state.last?.notice || '');
+  state.actionLog.push({
+    turn: state.turns,
+    movement: currentMovement(state)?.id,
+    action: 'enemy',
+    actorId: actor.id,
+    intent: hits[0]?.intentId || null,
+    perfect: false,
+    bonus: false,
+    dealt: 0,
+    received: totalReceived,
+    enemyHits: hits,
+  });
+  Object.assign(state.last, {
+    received: totalReceived,
+    enemyHits: hits,
+    enemyActor: { id: actor.id, label: actor.label, seat: actor.seat },
+    composureTo: state.composure,
+    notice: `${baseNotice}${baseNotice ? ' · ' : ''}${actor.label}${skipped ? ' MISSES ITS TURN' : totalReceived ? ` · ${totalReceived} COMPOSURE LOST` : ' · INTENT HELD'}`,
+  });
+  state.read = observeEnemyBeat(state.read || emptyEnemyRead(), { intentId: hits[0]?.intentId || null });
+  state.stance = { ...(state.stance || openingStance()), dwell: integer(state.stance?.dwell, 0) + 1 };
+
+  if (state.composure <= 0) {
+    state.pendingEnemy = null;
+    advanceIntent(state);
+    finishCombat(state, 'lose');
+    return state;
+  }
+
+  const next = advanceHallEnemyTurn(state.apparitions);
+  if (next) {
+    state.pendingEnemy = {
+      ...pending,
+      prevention: 0,
+      playerNotice: '',
+      firstEnemyResolved: true,
+    };
+    state.phase = 'enemy';
+    return state;
+  }
+
+  armNextHallParry(state.apparitions);
+  state.pendingEnemy = null;
+  advanceIntent(state);
+  state.phase = 'select';
+  if (pending.tempoAfter) state.tempo = true;
+  return state;
+}
+
 export function advanceEnemy(input) {
   const state = clone(input);
   if (state.phase !== 'enemy' || state.result) return state;
   const pending = state.pendingEnemy || { prevention: 0, playerNotice: '' };
+  if (state.apparitions) return advanceHallApparition(state, pending);
 
   // RUNAWAY FEEDBACK deafened the room. The opponent's committed blow is not
   // cancelled — it is still written down, and it is still what lands next beat —
@@ -2314,6 +2538,7 @@ export function advanceEnemy(input) {
     state.read = observeEnemyBeat(state.read || emptyEnemyRead(), { intentId: null });
     state.stance = { ...(state.stance || openingStance()), dwell: integer(state.stance?.dwell, 0) + 1 };
     state.phase = 'select';
+    if (pending.tempoAfter) state.tempo = true;
     return state;
   }
 
@@ -2329,10 +2554,16 @@ export function advanceEnemy(input) {
   const intents = selectEnemyIntents(state);
   const hits = [];
   let prevention = Math.max(0, integer(pending.prevention, 0));
+  // A blow that was read still lands, but only as a chip. See the note in
+  // reduceCombat's `perfect` branch: what a read buys is that the beat is
+  // survivable, not that it did not happen.
+  const share = pending.tempoAfter ? PERFECT_COUNTER_SHARE : 1;
+  let first = true;
   for (const intent of intents) {
-    const received = applyEnemyIntent(state, intent, prevention);
+    const received = applyEnemyIntent(state, intent, prevention, share, first);
     hits.push({ intentId: intent.id, kind: intent.kind, received });
     prevention = 0;
+    first = false;
     if (state.composure <= 0) break;
   }
   const totalReceived = hits.reduce((sum, hit) => sum + hit.received, 0);
@@ -2397,6 +2628,9 @@ export function advanceEnemy(input) {
     state.stance = { ...(state.stance || openingStance()), dwell: integer(state.stance?.dwell, 0) + 1 };
     advanceIntent(state);
     state.phase = 'select';
+    // The reward for the read, collected on the far side of the blow it read.
+    // After advanceIntent, which clears tempo.
+    if (pending.tempoAfter) state.tempo = true;
   }
   return state;
 }
@@ -2406,24 +2640,28 @@ export function advanceEnemy(input) {
 // player's `dealt` through and sets `received`, the result's `last` has the
 // same shape the atomic reducer used to return.
 export function runCombatTurn(state, action) {
-  const afterPlayer = reduceCombat(state, action);
-  return afterPlayer.phase === 'enemy' ? advanceEnemy(afterPlayer) : afterPlayer;
+  let next = reduceCombat(state, action);
+  // Headless callers ask for one complete round. The interactive scene still
+  // calls advanceEnemy once per visible apparition turn.
+  for (let guard = 0; next.phase === 'enemy' && !next.result && guard < 4; guard += 1) next = advanceEnemy(next);
+  return next;
 }
 
-// What the battle UI draws and the thought trace talks about. Null for every
-// fight that is one thing in one room.
-// The one snapshot every consumer reads. `combatHouse` stays as the narrow
-// figures-only view for callers that never needed the formation.
-export function combatHouseSnapshot(state) {
-  return houseCombatSnapshot(state?.house || null);
+// What the battle UI draws and the thought trace talks about. Null outside the
+// Hall's three-entity encounter.
+export function combatApparitionsSnapshot(state, actionId = null) {
+  if (!state?.apparitions) return null;
+  return hallApparitionSnapshot(state.apparitions, {
+    targetIds: combatApparitionTargetIds(state, actionId),
+  });
 }
 
 export function combatPractice(state) {
   return practiceSnapshot(state?.practice || null);
 }
 
-export function combatHouse(state) {
-  return houseView(state?.house || null);
+export function combatApparitions(state) {
+  return hallApparitionView(state?.apparitions || null);
 }
 
 export function combatResult(state) {

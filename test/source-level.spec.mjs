@@ -24,15 +24,27 @@ import { SOURCE_LANDMARK_OFFSETS, sourceLandscapeFloorAt } from '../src/game/sou
     const rise = SOURCE_FIELD_TIERS[i].height - SOURCE_FIELD_TIERS[i - 1].height;
     assert.ok(rise > 0.45 * 3, `${SOURCE_FIELD_TIERS[i].id} is only ${rise}m above the tier below — walkable`);
   }
-  // TWO non-field tiers now, and both for the same reason: the horizon is the
-  // recording past the perimeter, and the bell passage is what the tower road
-  // is instead of a datamosh cut. Neither is in the altitude economy, and
-  // neither may be a climb or a fall from what it adjoins.
+  // FOUR non-field tiers now, and all of them for the same reason: past the
+  // perimeter there is no altitude economy left. The outskirts and the nothing
+  // are the walk OUT of the field, the horizon is the recording, and the bell
+  // passage is what the tower road is instead of a datamosh cut. None of them
+  // may be a climb or a fall from what it adjoins.
   assert.deepEqual(
     SOURCE_TIERS.filter((tier) => !tier.field).map((tier) => tier.id),
-    ['horizon', 'bells'],
-    'only the horizon and the bell passage stand outside the field',
+    ['outskirts', 'nothing', 'horizon', 'bells'],
+    'the field ends at the perimeter and everything past it is walked, not climbed',
   );
+  // AND THEY ARE IN THAT ORDER, ADJOINING, WITH NO GAP AND NO STEP. A gap is
+  // undrawn ground and a step out here would be a cliff nothing can climb.
+  const beyond = SOURCE_TIERS.filter((tier) => !tier.field);
+  for (let i = 1; i < beyond.length; i += 1) {
+    assert.equal(beyond[i].from, beyond[i - 1].to,
+      `${beyond[i].id} does not start where ${beyond[i - 1].id} stops`);
+    assert.equal(beyond[i].height, beyond[i - 1].height,
+      `${beyond[i].id} stands at a different height from ${beyond[i - 1].id}`);
+  }
+  assert.equal(beyond[0].from, SOURCE_TIERS.filter((tier) => tier.field).at(-1).to,
+    'the walk out does not begin where the field ends');
   // Probe each tier at its own midpoint rather than at hard-coded depths. The
   // approach extension (SOURCE_APPROACH_CELLS) moved every boundary below the
   // arrival by 120 cells, and literals here silently pointed at the wrong tier.

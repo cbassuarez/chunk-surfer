@@ -3,7 +3,7 @@ import { normalizeAcousticEvent } from '../src/audio/acoustic-events.js';
 import { propagateNoise } from '../src/audio/acoustic-propagation.js';
 import { freshHushAudition, ingestHeardNoise, tickHushAudition } from '../src/game/hush-audition.js';
 import { chooseHushIntent } from '../src/game/hush-director.js';
-import { applyFieldPresentationPolicy, computeHushField, effectiveTorchScale, inactiveHushField } from '../src/game/hush-field.js';
+import { applyFieldPresentationPolicy, computeHushField, effectiveTorchScale, hushAbsenceLook, inactiveHushField } from '../src/game/hush-field.js';
 import { commitMischiefCue, freshMischiefState, selectMischiefCue } from '../src/game/hush-mischief.js';
 import { HUSH_MISCHIEF_CUES } from '../src/data/hush-cues.js';
 import { ZONE } from '../src/data/floorplan/legend.js';
@@ -100,6 +100,60 @@ assert.equal(immediate, null);
   for (const bad of [0, -3, NaN, null, undefined, 'loud']) {
     assert.equal(REC.emitStepNoise(0, 0, bad), plain, `a ${String(bad)} surface falls back to an ordinary floor`);
   }
+}
+
+
+// ── cover changes what it can want ──────────────────────────────────────────
+// Concealment never tells it anything. It withholds the two intents that are
+// about a person rather than a place.
+{
+  const sure = { certainty: .9, interest: .9, playfulness: 0, lastHeard: { bearing: 1 },
+    hypotheses: [{ x: 4, y: 4, weight: 1, zone: 1 }] };
+  const near = { absorption: { monitor: .8 } };
+  const narrative = { enabled: true, allowMischief: false };
+
+  const exposed = chooseHushIntent({ audition: sure, field: near, narrative, random: () => .2 });
+  assert.equal(exposed.kind, 'ENGULF', 'certain and close, it arrives on you');
+
+  const hidden = chooseHushIntent({
+    audition: sure, field: near, narrative: { ...narrative, concealed: true }, random: () => .2,
+  });
+  assert.notEqual(hidden.kind, 'ENGULF', 'it cannot arrive on a man it has not localised');
+  assert.notEqual(hidden.kind, 'STALK', 'and it cannot follow him either');
+  assert.equal(hidden.kind, 'INVESTIGATE', 'it comes to the room instead');
+  assert.ok(hidden.target, 'and it still has somewhere to come to');
+
+  // Without the field on top, certainty alone is a stalk — and cover takes that too.
+  const stalking = chooseHushIntent({ audition: sure, field: null, narrative, random: () => .2 });
+  assert.equal(stalking.kind, 'STALK');
+  const notStalking = chooseHushIntent({
+    audition: sure, field: null, narrative: { ...narrative, concealed: true }, random: () => .2,
+  });
+  assert.equal(notStalking.kind, 'INVESTIGATE', 'a stalk degrades to a search of the room');
+}
+
+
+// ── the peek has to show you something ──────────────────────────────────────
+{
+  const close = { proximity: .95, absorption: { light: .95, monitor: .9, audio: .9 } };
+
+  const buried = hushAbsenceLook({ active: true, field: close, dread: .9 });
+  const leaning = hushAbsenceLook({ active: true, field: close, dread: .9, peek: 1 });
+
+  assert.ok(buried.strength > leaning.strength,
+    'a peek holds the absence off the surfaces the body has to read against');
+  assert.ok(leaning.radiusM < buried.radiusM, 'and pulls its reach in');
+  assert.ok(leaning.strength > .5,
+    'but it is still an absence — leaning does not light the HUSH up');
+
+  // Half a lean is half the relief: nothing here snaps.
+  const half = hushAbsenceLook({ active: true, field: close, dread: .9, peek: .5 });
+  assert.ok(half.strength < buried.strength && half.strength > leaning.strength,
+    'the relief follows how far he actually committed');
+
+  // Not leaning must be exactly what it was before any of this existed.
+  assert.deepEqual(hushAbsenceLook({ active: true, field: close, dread: .9, peek: 0 }), buried,
+    'standing behind cover changes nothing on its own');
 }
 
 console.log('hush audio pure tests ok');

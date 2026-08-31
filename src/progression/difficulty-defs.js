@@ -192,10 +192,21 @@ export const COMBAT_RULES = Object.freeze({
   // This matters less than it used to: SHOUT is always in the bag, so a dry kit
   // is slow rather than stranded and SECOND BREATH is a reward for a deliberate
   // brace instead of a rescue from a soft-lock.
-  guided: Object.freeze({ guidance: COMBAT_GUIDANCE.FULL, id: 'guided', composureBonus: 10, holdPrevention: 15, intentLookahead: 2, recoveryHolds: 0, recommended: true, safetyRelay: true, variant: 'standard', bandFloorBonus: 0.35, enemyGuardCooldown: null, parryWindowScale: 1.6 }),
-  standard: Object.freeze({ guidance: COMBAT_GUIDANCE.TRACE, id: 'standard', composureBonus: 0, holdPrevention: 10, intentLookahead: 1, recoveryHolds: 1, recommended: true, safetyRelay: false, variant: 'standard', bandFloorBonus: 0.12, enemyGuardCooldown: 4, parryWindowScale: 1 }),
-  severe: Object.freeze({ guidance: COMBAT_GUIDANCE.TILE, id: 'severe', composureBonus: -5, holdPrevention: 10, intentLookahead: 1, recoveryHolds: 2, recommended: false, safetyRelay: false, variant: 'severe', bandFloorBonus: 0.04, enemyGuardCooldown: 2, parryWindowScale: 0.85 }),
-  'dead-air': Object.freeze({ guidance: COMBAT_GUIDANCE.NONE, id: 'dead-air', composureBonus: -10, holdPrevention: 10, intentLookahead: 1, recoveryHolds: 3, recommended: false, safetyRelay: false, variant: 'dead-air', bandFloorBonus: 0, enemyGuardCooldown: 1, parryWindowScale: 0.7 }),
+  // TWO KNOBS THAT DECIDE HOW HARD A BLOW IS, AND WHY THEY ARE NEW.
+  //
+  // `incomingScale` is the only term in the game that scales what the opponent
+  // does. Until now nothing did: every preset took the identical authored
+  // damage and the ladder was made entirely of how much health you started with
+  // and how much the card told you. That is a ladder of readouts, not of fights.
+  //
+  // `holdPrevention` was 15/10/10/10 — three presets braced identically — so
+  // the one defensive move in every bag played the same on CONTRACT as on DEAD
+  // AIR. It steps now, which is what makes the meaner presets meaner in the
+  // hand rather than only on the health bar.
+  guided: Object.freeze({ guidance: COMBAT_GUIDANCE.FULL, id: 'guided', composureBonus: 10, holdPrevention: 15, incomingScale: 0.8, intentLookahead: 2, recoveryHolds: 0, recommended: true, safetyRelay: true, variant: 'standard', bandFloorBonus: 0.35, enemyGuardCooldown: null, parryWindowScale: 1.6 }),
+  standard: Object.freeze({ guidance: COMBAT_GUIDANCE.TRACE, id: 'standard', composureBonus: 0, holdPrevention: 10, incomingScale: 1, intentLookahead: 1, recoveryHolds: 1, recommended: true, safetyRelay: false, variant: 'standard', bandFloorBonus: 0.12, enemyGuardCooldown: 4, parryWindowScale: 1 }),
+  severe: Object.freeze({ guidance: COMBAT_GUIDANCE.TILE, id: 'severe', composureBonus: -5, holdPrevention: 8, incomingScale: 1.25, intentLookahead: 1, recoveryHolds: 2, recommended: false, safetyRelay: false, variant: 'severe', bandFloorBonus: 0.04, enemyGuardCooldown: 2, parryWindowScale: 0.85 }),
+  'dead-air': Object.freeze({ guidance: COMBAT_GUIDANCE.NONE, id: 'dead-air', composureBonus: -10, holdPrevention: 6, incomingScale: 1.5, intentLookahead: 1, recoveryHolds: 3, recommended: false, safetyRelay: false, variant: 'dead-air', bandFloorBonus: 0, enemyGuardCooldown: 1, parryWindowScale: 0.7 }),
 });
 
 // Serialized saves migrate to combatAssistance, but this export keeps older

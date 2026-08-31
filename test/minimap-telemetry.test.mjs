@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import { hushStatus, minimapTargetReadout, minimapTelemetryCrumbs } from '../src/render/minimap.js';
 import { buildMinimapCommands } from '../src/render/map-commands.js';
 
-test('minimap confirms what HUSH knows about the player without drawing a noise layer', () => {
+test('minimap confirms what HUSH knows only after the player physically senses it', () => {
   const active = hushStatus({
     player: { floorId: 'g' },
     floors: [{ id: 'g', label: 'GROUND' }],
-    hush: { active: true, floorId: 'g' },
+    hush: { active: true, sensed: true, floorId: 'g' },
     contacts: [],
   }, 4000);
   assert.deepEqual(active, { label: 'ACTIVE', cls: 'ui-secondary', detail: 'NO FIX', floorDelta: 0 });
@@ -15,7 +15,7 @@ test('minimap confirms what HUSH knows about the player without drawing a noise 
   const heard = hushStatus({
     player: { floorId: 'g' },
     floors: [{ id: 'g', label: 'GROUND' }],
-    hush: { active: true, floorId: 'g', perception: { mode: 'clue', label: 'HEARD', detail: 'LAST POSITION', cls: 'ui-amber' } },
+    hush: { active: true, sensed: true, floorId: 'g', perception: { mode: 'clue', label: 'HEARD', detail: 'LAST POSITION', cls: 'ui-amber' } },
     contacts: [],
   }, 4000);
   assert.deepEqual(heard, { label: 'HEARD', cls: 'ui-amber', detail: 'LAST POSITION', floorDelta: 0 });
@@ -23,10 +23,16 @@ test('minimap confirms what HUSH knows about the player without drawing a noise 
   const locked = hushStatus({
     player: { floorId: 'g' },
     floors: [{ id: 'g', label: 'GROUND' }],
-    hush: { active: true, floorId: 'g', perception: { mode: 'locked', label: 'LOCKED', detail: 'YOU', cls: 'ui-danger' } },
+    hush: { active: true, sensed: true, floorId: 'g', perception: { mode: 'locked', label: 'LOCKED', detail: 'YOU', cls: 'ui-danger' } },
     contacts: [],
   }, 4000);
   assert.equal(locked.detail, 'YOU');
+
+  const unsensed=hushStatus({
+    player:{floorId:'g'},floors:[{id:'g',label:'GROUND'}],
+    hush:{active:true,sensed:false,floorId:'g',perception:{mode:'locked',label:'LOCKED',detail:'YOU'}},contacts:[],
+  },4000);
+  assert.deepEqual(unsensed,{label:'NONE',cls:'ui-secondary',detail:'NO CONTACT',floorDelta:0});
 
   const tracing = hushStatus({
     player: { floorId: 'g' },
@@ -65,7 +71,7 @@ test('minimap reveals the HUSH body only during direct visual confirmation', () 
       floors: [{ id: 'g', open: [] }],
       policy: { minimapMode: 'compass' },
       contacts: [],
-      hush: { active: true, floorId: 'g', position: { x: 2, y: 3 } },
+      hush: { active: true, sensed: false, floorId: 'g', position: { x: 2, y: 3 } },
     },
     viewport: { x: 0, y: 0, w: 20, h: 10 },
   });
@@ -77,7 +83,7 @@ test('minimap reveals the HUSH body only during direct visual confirmation', () 
       floors: [{ id: 'g', open: [] }],
       policy: { minimapMode: 'compass' },
       contacts: [],
-      hush: { active: true, visible: true, floorId: 'g', position: { x: 2, y: 3 } },
+      hush: { active: true, sensed: true, visible: true, floorId: 'g', position: { x: 2, y: 3 } },
     },
     viewport: { x: 0, y: 0, w: 20, h: 10 },
   });
@@ -89,7 +95,7 @@ test('minimap reveals the HUSH body only during direct visual confirmation', () 
       floors: [{ id: 'g', open: [] }],
       policy: { minimapMode: 'compass' },
       contacts: [],
-      hush: { active: true, visible: true, floorId: 'g', position: { x: 200, y: 3 } },
+      hush: { active: true, sensed: true, visible: true, floorId: 'g', position: { x: 200, y: 3 } },
     },
     viewport: { x: 0, y: 0, w: 20, h: 10 },
   });
@@ -121,7 +127,7 @@ test('minimap carries local route, thresholds, connectors and sanitized HUSH awa
       doors:[{id:'door',floorId:'g',position:{x:0,y:-1},state:'closed'}],
       connectors:[{id:'stairs',a:{floorId:'g',position:{x:1,y:0}},b:{floorId:'u1',position:{x:1,y:0}}}],
       contacts:[],
-      hush:{active:true,visible:false,floorId:'g',position:{x:9,y:9},perception:{mode:'clue',label:'HEARD',detail:'YOU'}},
+      hush:{active:true,sensed:true,visible:false,floorId:'g',position:{x:9,y:9},perception:{mode:'clue',label:'HEARD',detail:'YOU'}},
     },
     viewport:{x:0,y:0,w:24,h:12},
   });

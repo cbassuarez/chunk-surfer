@@ -132,7 +132,23 @@ for(const prop of [...loreProps,lookBench]){
 }
 
 const propStats=JSON.parse(readFileSync(new URL('../public/assets/conservatory-props.stats.json',import.meta.url),'utf8'));
-assert.ok(propStats.meshes.yard_van.triangles>=1200,'the van front has regressed to a block proxy');
+// THE VEHICLE IS THREE MESHES NOW: the body and the two rear leaves, which are
+// separate so the player can shut them (see vanDoorInstances in main.js). The
+// bar is on the three together, because it was always measuring "is there a real
+// van here" and splitting the doors out is not a regression.
+const vanTriangles=propStats.meshes.yard_van.triangles
+  +propStats.meshes.yard_van_door_l.triangles
+  +propStats.meshes.yard_van_door_r.triangles;
+assert.ok(vanTriangles>=1400,'the van has regressed to a block proxy');
+// The leaves hang off a hinge, so their geometry has to START at the hinge: an
+// author who re-centres them will get a door that pivots about its middle and
+// swings a metre into the load bay.
+for(const side of['l','r']){
+  const bounds=propStats.bounds[`yard_van_door_${side}`];
+  assert.ok(bounds,`yard_van_door_${side} is missing — the doors have been baked back into the body`);
+  assert.ok(Math.abs(bounds.min[0])<.01&&bounds.max[0]>.8,`yard_van_door_${side} does not run from its hinge at the origin`);
+  assert.ok(Math.abs(bounds.min[1])<.01,`yard_van_door_${side} does not stand on its own base`);
+}
 assert.ok(propStats.meshes.yard_look_bench.triangles>=180,'the sit/look bench needs a readable authored silhouette');
 assert.ok(propStats.bounds.yard_van.min[2]>=-3.6&&propStats.bounds.yard_van.max[2]<=3.1,'front detail escaped the established van footprint');
 assert.ok(propStats.meshes.city_moving_car.triangles>=500,'moving traffic regressed to a sliding low-detail car proxy');

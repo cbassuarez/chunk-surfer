@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { POST_RUN_ACTIONS, POST_RUN_STAGE_COPY, hushAvailabilityCopy } from '../src/game/post-run-copy.js';
+import { POST_RUN_ACTIONS, POST_RUN_STAGE_COPY, hushAvailabilityCopy, transferRoomCopy } from '../src/game/post-run-copy.js';
 import { normalizeMeta } from '../src/progression/schema.js';
 import { returnIndexEntries } from '../src/progression/report.js';
 import { lastReturnRecord } from '../src/progression/return-history.js';
@@ -39,12 +39,15 @@ const archive=readFileSync('src/game/archive.js','utf8');
 const main=readFileSync('src/main.js','utf8');
 const renderer=readFileSync('src/render/r3d.js','utf8');
 assert.doesNotMatch(title,/just-surf|onJustSurf/i);
-assert.match(title,/replay \? \[\{ id: 'hush-run'/);
-// The HUSH row's help line moved into post-run-copy so the title, the return
-// report and the archive all say the same thing about the same state. The
-// contract is that the title ASKS, and that the copy still distinguishes a
-// session you can resume from a first run, and a refusal from a readiness.
-assert.match(title,/hushAvailabilityCopy\(hushAvailability/);
+assert.match(title,/transferRoomOpen \? \[\{ id: 'transfer-room'/);
+// The row's help line lives in post-run-copy so the title, the return report and
+// the archive all say the same thing about the same state. The contract is that
+// the title ASKS rather than authoring its own words for it; that outlived the
+// mode it was written for.
+assert.match(title,/transferRoomCopy\(/);
+assert.match(transferRoomCopy({filed:0}).short,/NOTHING FILED/);
+assert.ok(!transferRoomCopy({filed:0}).enabled&&transferRoomCopy({filed:2}).enabled,
+  'an empty file and a full one are distinguishable states, the way a resumable session and a first run were');
 const postRun=readFileSync('src/game/post-run-copy.js','utf8');
 assert.match(postRun,/resume: Object\.freeze\(\{[\s\S]*?CONTINUE OR RESTART/);
 assert.match(postRun,/hasSession \? HUSH_COPY\.resume : HUSH_COPY\.ready/);
@@ -54,9 +57,9 @@ assert.match(postRun,/incompatible: Object\.freeze/);
 // ways. Assert the four facts still exist and that the report reads them.
 assert.match(report,/POST_RUN_ACTIONS/);
 assert.match(report,/POST_RUN_STAGE_COPY/);
-assert.match(report,/hushAvailabilityCopy/);
+assert.match(report,/transferRoomCopy/);
 assert.ok(POST_RUN_ACTIONS.some((action)=>action.id==='replay'),'a way back into the story');
-assert.ok(POST_RUN_ACTIONS.some((action)=>action.id==='hush'),'and a way into THE HUSH');
+assert.ok(POST_RUN_ACTIONS.some((action)=>action.id==='transfer-room'),'and a way into the transfer room');
 assert.match(POST_RUN_STAGE_COPY.filing.panel,/PREPARING THE HUSH/);
 assert.match(hushAvailabilityCopy({status:'not-qualified'}).short,/1 INJURY/);
 assert.match(hushAvailabilityCopy({status:'ready'}).body,/cause the events your past self experienced/);
@@ -64,7 +67,7 @@ assert.match(hushAvailabilityCopy({status:'ready'}).body,/cause the events your 
 // plain register as the rest of the post-run copy.
 assert.match(archive,/RUN HISTORY/);
 assert.match(main,/progressionEvents\.on\('\*',/,'causal capture subscribes through the progression event bus contract');
-assert.match(main,/async function enterHushRun\(\)[\s\S]*scenes\.remove\('title'\)/,'the report fork cannot leave the title rendering underneath THE HUSH');
+assert.match(main,/function openTransferRoom\(\)\{[\s\S]{0,200}?scenes\.remove\('title'\)/,'the report fork cannot leave the title rendering underneath the transfer room');
 assert.match(main,/sensoryProfile:worldView\?\.sensoryProfile\|\|'story'/,'camera rigs pass their explicit sensory profile into the renderer');
 assert.match(renderer,/const hushSense=sensoryProfile==='hush-prowl'\?1/,'Prowl has a dedicated renderer sensory treatment');
 assert.match(renderer,/uHushSense/,'the HUSH room-read remains separate from story lighting');

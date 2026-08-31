@@ -211,8 +211,20 @@ export function validateCausalTape(tape, { topologyHash = CAUSAL_TOPOLOGY_HASH }
   return { ok: true, tape };
 }
 
+// WHAT A CLEAN RETURN COSTS, NOW THAT LOSING A FIGHT COSTS SOMETHING.
+//
+// This was one injury, set when nothing in the night could injure you except
+// the Presence catching you in a corridor. A lost battle marks you now, and the
+// chapel is authored to beat a bag that skipped the tree — so at one, a single
+// bad fight silently closed the hush run for the rest of the night, with no
+// line anywhere saying so. Three is still demanding: it is a night that went
+// wrong twice, not a night that went wrong. The number lives here and nowhere
+// else, so the requirement string and the report cannot drift from the gate.
+export const CAUSAL_INJURY_CEILING = 3;
+export const CAUSAL_REQUIREMENT = `≤ ${CAUSAL_INJURY_CEILING} injuries`;
+
 export function tapeQualifies(injuries) {
-  return Math.max(0, Math.floor(finite(injuries))) <= 1;
+  return Math.max(0, Math.floor(finite(injuries))) <= CAUSAL_INJURY_CEILING;
 }
 
 export function shadowFrameAt(tape, at) {

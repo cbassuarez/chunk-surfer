@@ -10,6 +10,8 @@ import {
   parseSystemMapArgs,
   startSystemMapServer,
 } from '../tools/system-map/server.mjs';
+import { readFileSync } from 'node:fs';
+import { auditRegistryErrors } from '../tools/audits/registry.mjs';
 
 function reservePort() {
   return new Promise((resolve, reject) => {
@@ -26,9 +28,9 @@ assert.deepEqual(topologyContractErrors(), [], 'system-map topology is structura
 
 const snapshot = await buildSystemMapSnapshot();
 assert.equal(snapshot.schema, 1);
-assert.equal(snapshot.nodes.length, 20, 'the full lifecycle is represented by twenty subsystem buildings');
-assert.equal(snapshot.edges.length, 35, 'semantic routes stay curated instead of becoming a raw import graph');
-assert.equal(snapshot.traces.length, 7);
+assert.equal(snapshot.nodes.length, 21, 'the full lifecycle is represented by twenty-one subsystem buildings');
+assert.equal(snapshot.edges.length, 38, 'semantic routes stay curated instead of becoming a raw import graph');
+assert.equal(snapshot.traces.length, 8);
 assert.ok(snapshot.traces.some((trace) => trace.id === snapshot.defaultTraceId));
 for (const node of snapshot.nodes) {
   assert.ok(node.summary && node.responsibilities.length, `${node.id} has an explainer contract`);
@@ -40,6 +42,29 @@ for (const node of snapshot.nodes) {
 for (const edge of snapshot.edges) {
   assert.ok(edge.payload && edge.evidence.length, `${edge.id} names its payload and evidence`);
   assert.ok(edge.evidence.every((citation) => citation.line > 0 && citation.excerpt.length), `${edge.id} evidence resolves`);
+}
+
+// ── THE AUDITS ARE ON THE MAP ────────────────────────────────────────────────
+//
+// A map says where a system is; an audit says what is inside it. The map offers
+// the audit from the systems it covers, so the two have to agree about which
+// systems those are — and no audit may sit on the map's own port.
+assert.deepEqual(auditRegistryErrors(), [], 'the audit registry is internally consistent');
+assert.ok(snapshot.audits.length >= 2, 'the snapshot carries the audits');
+{
+  const nodeIds = new Set(snapshot.nodes.map((node) => node.id));
+  for (const audit of snapshot.audits) {
+    assert.ok(audit.port !== 4318, `${audit.id} would fight the system map for its port`);
+    for (const system of audit.systems) {
+      assert.ok(nodeIds.has(system), `the ${audit.id} audit claims to cover "${system}", which is not on the map`);
+    }
+  }
+  assert.ok(snapshot.nodes.some((node) => node.id === 'audits'), 'the audits are themselves a system on the map');
+  const npmScripts = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).scripts;
+  for (const audit of snapshot.audits) {
+    assert.ok(npmScripts[audit.npm], `the ${audit.id} audit names npm script "${audit.npm}", which does not exist`);
+    assert.ok(npmScripts[audit.npm].includes(audit.entry), `npm run ${audit.npm} does not run ${audit.entry}`);
+  }
 }
 
 assert.deepEqual(parseSystemMapArgs([]), { host: '127.0.0.1', port: 4318, open: true });

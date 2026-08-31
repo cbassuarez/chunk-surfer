@@ -35,14 +35,24 @@ for (const runSeed of seeds) {
   }
 }
 
-// Every glyph it can emit must actually exist in the VFD ROM. `▒`, `▌` and `▐`
-// draw nothing at all and fail silently (render/vfd-font.js), which is exactly
+// Every glyph it can emit must actually exist in the VFD ROM. A glyph the ROM
+// does not have used to draw nothing at all and fail silently, which is exactly
 // how a masked name could become an invisible one.
 for (const glyph of [...OBSCURED_GLYPHS, ...OBSCURED_RAMP]) {
   assert.ok(vfdGlyph(glyph), `${glyph} is not in the VFD ROM and would draw nothing`);
 }
-for (const missing of ['▒', '▌', '▐']) {
-  assert.equal(vfdGlyph(missing), null, `${missing} is now in the ROM — it may be worth using`);
+// `▒`, `▌` and `▐` were the three this module wanted and could not have, and
+// the assertion here used to be that they were ABSENT — a tripwire to say when
+// the ROM had gained them. It has: they went in with the other fifty-odd
+// characters the interface was drawing into holes
+// (see test/vfd-glyph-coverage.spec.mjs). The tripwire flips rather than goes,
+// so a future edit cannot quietly take them out again.
+//
+// Whether the shading ramp should now USE them is a separate question and a
+// doctrinal one — docs/story-doctrine.md governs how the unresolved name may
+// appear — so this only records that they are available.
+for (const available of ['▒', '▌', '▐']) {
+  assert.ok(vfdGlyph(available), `${available} has left the ROM; the masked name's ramp options are shrinking again`);
 }
 
 // Stable within a run, different between runs. The booth and the pre-roll

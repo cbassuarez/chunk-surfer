@@ -287,16 +287,17 @@ test('putting it down is the only win, and it says her name', () => {
   assert.match(state.last.notice, /YOU DO NOT WIND IT BACK/);
 });
 
-test('the transport claims a rail slot, and the wing never draws a house', () => {
+test('the transport claims a rail slot, and the wing never draws an apparition roster', () => {
   const panel = { x: 2, y: 2, w: 96, h: 30 };
   const bare = combatHudLayout({ panel, mode: 'command' });
-  const wing = combatHudLayout({ panel, mode: 'command', houseActive: true });
+  const wing = combatHudLayout({ panel, mode: 'command', rosterActive: true });
   assert.equal(bare.channels.h, 0, 'an ordinary encounter has no rail');
-  assert.ok(wing.channels.h > 0, 'the wing gets the slot the House rail would have had');
+  assert.ok(wing.channels.h > 0, 'the wing gets the roster channel slot');
   assert.ok(wing.detail.y >= wing.channels.y + wing.channels.h, 'the detail line still clears it');
-  // Nothing in the wing is a group, so the state must never carry a house.
+  // Nothing in the wing is a group, so the state must never carry Hall actors.
   const state = wingState();
-  assert.equal(state.house, null, 'there is nobody in that room to draw');
+  assert.equal(state.house, undefined, 'the removed room-target system is absent');
+  assert.equal(state.apparitions, null, 'there is nobody in that room to draw');
   assert.ok(combatPractice(state), 'and the transport is what takes the slot instead');
 });
 

@@ -21,7 +21,7 @@ import { resolveMapAction } from './map-actions.js';
 import { bagLayout, bagPanelBounds } from '../render/bag-layout.js';
 import { bagGuideRows, bagInventoryGeometry, bagListCapacity, drawBagView } from '../render/bag-view.js';
 import { drawSkillsSection, skillsTreeLayout } from '../render/bag-skills.js';
-import { learnCombatTechnique, normalizeCombatBuild, TECHNIQUE_DEFS } from './combat-progression.js';
+import { learnCombatTechnique, normalizeCombatBuild, pullCombatTechnique, TECHNIQUE_DEFS } from './combat-progression.js';
 import { createHitRegions } from '../render/hit-regions.js';
 import { makeEmbeddedDocumentReader } from './document.js';
 import { sheetDialogueFor, sheetInsightComplete } from './bag-sheets.js';
@@ -92,8 +92,21 @@ export function makeBagScene({
 
   const settledBuild = normalizeCombatBuild(buildSource());
   let workingBuild = settledBuild;
+  // What this session did. `chosenTechniqueIds` is patches; pulls are counted
+  // separately because a session can now do only the second, and a session that
+  // only pulls still changed the rig.
   let chosenTechniqueIds = [];
+  let pulledTechniqueIds = [];
   let skillsApplied = false;
+  // The build is DIRTY when it differs from what is on disk — not when
+  // something was chosen. That distinction is the whole of the pull feature:
+  // the old test was `chosenTechniqueIds.length`, so a session that only pulled
+  // a lead committed nothing and the pull silently came back on close.
+  const buildIsDirty = () => {
+    const before = new Set(settledBuild.techniques);
+    const after = new Set(workingBuild.techniques);
+    return before.size !== after.size || [...after].some((id) => !before.has(id));
+  };
   let model = buildBagModel({
     equipment: equipmentSource(), job: jobSource(), map: mapSource(), loadout: loadoutSource(),
     build: workingBuild, settledBuild, hasRig: rigSource(), sheetInsights:sheetInsightSource(),
@@ -300,8 +313,14 @@ export function makeBagScene({
   function applyChosenSkills() {
     if (skillsApplied) return;
     skillsApplied = true;
-    if (!chosenTechniqueIds.length || typeof onApplySkills !== 'function') return;
-    onApplySkills(workingBuild, { techniqueIds: [...chosenTechniqueIds] });
+    if (!buildIsDirty() || typeof onApplySkills !== 'function') return;
+    // `techniqueIds` is kept as the patched list so existing callers read the
+    // same thing they always did; `patched` and `pulled` are the honest pair.
+    onApplySkills(workingBuild, {
+      techniqueIds: [...chosenTechniqueIds],
+      patched: [...chosenTechniqueIds],
+      pulled: [...pulledTechniqueIds],
+    });
   }
 
   function setSection(sectionId) {
@@ -460,21 +479,28 @@ export function makeBagScene({
     }
   }
 
-  function removePendingTechnique(id){
-    if(!chosenTechniqueIds.includes(id))return false;
-    const remove=new Set([id]);
-    let changed=true;
-    while(changed){
-      changed=false;
-      for(const definition of TECHNIQUE_DEFS){
-        if(definition.requires&&remove.has(definition.requires)&&chosenTechniqueIds.includes(definition.id)&&!remove.has(definition.id)){
-          remove.add(definition.id);changed=true;
-        }
-      }
+  // PULL A LEAD. Any lead, not only one patched in this session — which is the
+  // one-line difference that makes the rig re-riggable at all.
+  //
+  // The cascade is not computed here. pullCombatTechnique removes one id and
+  // re-normalizes, and normalizeCombatBuild already drops anything whose chain
+  // is broken; the old transitive walk over TECHNIQUE_DEFS was a second copy of
+  // that rule, free to disagree with it.
+  function pullCable(id){
+    const result=pullCombatTechnique(workingBuild,id);
+    if(!result.changed)return false;
+    workingBuild=result.build;
+    const pulled=new Set(result.pulled);
+    // A lead patched this session and pulled again in the same session is a
+    // no-op, not a pull: it never reached the disk.
+    for(const technique of result.pulled){
+      if(chosenTechniqueIds.includes(technique))continue;
+      if(!pulledTechniqueIds.includes(technique))pulledTechniqueIds.push(technique);
     }
-    workingBuild=normalizeCombatBuild({...workingBuild,techniques:workingBuild.techniques.filter((technique)=>!remove.has(technique))});
-    chosenTechniqueIds=chosenTechniqueIds.filter((technique)=>!remove.has(technique));
-    notice=`${entryLabelForTechnique(id)} UNDONE`;
+    chosenTechniqueIds=chosenTechniqueIds.filter((technique)=>!pulled.has(technique));
+    notice=result.pulled.length>1
+      ?`${entryLabelForTechnique(id)} PULLED · ${result.returned} LEADS BACK`
+      :`${entryLabelForTechnique(id)} PULLED`;
     noticeUntil=t+2.2;
     return true;
   }
@@ -522,21 +548,22 @@ export function makeBagScene({
       ok=openItemInspection(entry);
     } else if (entry.kind === 'gear' && actionId === 'move-top') {
       pushRoute({type:'slot-picker',entryId:entry.id,index:0});ok=true;
-    } else if (entry.kind === 'skill' && actionId === 'fit-skill') {
+    } else if (entry.kind === 'skill' && actionId === 'patch-cable') {
       const result = learnCombatTechnique(workingBuild, entry.techniqueId, { hasRig: rigSource() });
       ok = !!result.changed;
       if (ok) {
         workingBuild = result.build;
         chosenTechniqueIds = [...chosenTechniqueIds, entry.techniqueId];
-        notice = `${entry.label} CHOSEN · TAKES EFFECT WHEN THE CASE CLOSES`;
+        pulledTechniqueIds = pulledTechniqueIds.filter((technique) => technique !== entry.techniqueId);
+        notice = `${entry.label} PATCHED · TAKES EFFECT WHEN THE CASE CLOSES`;
         noticeUntil = t + 3.2;
       } else {
         notice = entry.blockedBy || 'NOT AVAILABLE';
         noticeUntil = t + 2.6;
         AUDIO.menuMove?.();
       }
-    } else if(entry.kind==='skill'&&actionId==='undo-skill'){
-      ok=removePendingTechnique(entry.techniqueId);
+    } else if(entry.kind==='skill'&&actionId==='pull-cable'){
+      ok=pullCable(entry.techniqueId);
     } else if (entry.kind === 'gear' && actionId === 'reorder-up') {
       const result = typeof reorderEquipment === 'function' ? reorderEquipment(entry.sourceId, 'up') : { changed: false, reason: 'unavailable' };
       ok = !!result?.changed;
@@ -1012,7 +1039,7 @@ export function makeBagScene({
       const liveHint = guided ? '' : (notice || (nav.sectionId === 'kit'
         ? 'ONE INVENTORY · NUMBERED QUICK SLOTS FOR FIGHTS · SELECT AN ITEM FOR SET / USE / DROP / INSPECT'
         : skills
-          ? 'CHOOSE RECORDER MODIFICATIONS · THEY TAKE EFFECT WHEN THE CASE CLOSES'
+          ? 'PATCH THE BACK OF THE RECORDER · PULL A LEAD TO MOVE IT · TAKES EFFECT WHEN THE CASE CLOSES'
           : hintSource()));
       drawBagView({ model, nav, mapNav, layout, hint: liveHint, guide: guided, guideNudge, motion, now: t,
         // The tree owns the content area for its own section; the tabs, task line

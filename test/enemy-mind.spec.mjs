@@ -69,7 +69,21 @@ function play(definition, difficulty, recordist = ordinary, options = {}) {
   let state = createCombatState(definition, { difficulty, tools: FULL_BAG, battery: 1, ...options });
   const beats = [];
   let guard = 0;
+  // ONE ENTRY PER COMMITTED BLOW, NOT PER BUTTON PRESS.
+  //
+  // A perfect counter used to skip the opponent's turn and leave its commitment
+  // standing, so every player action was a fresh card to read. It meets the
+  // blow now and the opponent commits its next one — but TEMPO, the free action
+  // it buys, sits inside that same cycle and reads the same card. Recording
+  // per press therefore logs one misread twice and reports a cadence violation
+  // the reducer never committed (`missedLast`, combat-state.js:317).
+  let logged = null;
   while (!state.result && guard++ < 240) {
+    const committedKey = state.committed
+      ? `${state.movementIndex}:${state.committed.index}:${state.committed.id}`
+      : null;
+    const fresh = committedKey !== logged;
+    logged = committedKey;
     const misread = state.misread ? { ...state.misread } : null;
     const believed = predictedCombatIntent(state)?.id ?? null;
     const truth = currentCombatIntent(state)?.id ?? null;
@@ -86,11 +100,8 @@ function play(definition, difficulty, recordist = ordinary, options = {}) {
       state = advanceEnemy(state);
       return true;
     })();
-    // Every beat the opponent COMMITTED, whether or not it got to swing. A
-    // perfect counter skips its turn but the player still read a card, so a
-    // refused beat is a clean beat between two misreads, not a gap in the
-    // record.
-    beats.push({ misread, believed, truth, composure, tuned, opening, swung, stance: state.stance?.id });
+    // Every beat the opponent COMMITTED, whether or not it got to swing.
+    if (fresh) beats.push({ misread, believed, truth, composure, tuned, opening, swung, stance: state.stance?.id });
   }
   return { beats, state };
 }

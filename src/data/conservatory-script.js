@@ -757,14 +757,14 @@ export const BUST_ANSWER = {
 };
 
 // The one with something in it. A head sitting off-square on its plinth, felt
-// under the base, and a calibration pin lost in the felt.
+// under the base, and a patch lead lost in the felt.
 export const BUST_PIN = {
   start: {
     speaker: 'THE GALLERY',
     lines: [
       { who: 'direction', text: 'This one sits off-square on its plinth. There is old felt under the base, packed down.' },
       { who: 'you', text: 'Somebody had you off and put you back in a hurry.' },
-      { who: 'direction', text: 'Brass in the felt, on its side, where it rolled when a hand let go of it.' },
+      { who: 'direction', text: 'A coil in the felt, half unwound, where it dropped when a hand let go of it.' },
     ],
   },
 };
@@ -874,7 +874,7 @@ export const BENT_RIG = {
 // It used to sit at authored (66,65): flat on the floor of the east coat-and-bag
 // room, four metres past a door, six metres from the mark, in the dark. The
 // comment here claimed it was one cell off the mark and unmissable. It was not,
-// and nobody ever found it — the same failure the calibration pins had before
+// and nobody ever found it — the same failure the spare leads had before
 // they were moved inside furniture (see PIN_HOSTS in main.js).
 //
 // It now rests on the desk of the music stand in the service room, at chest

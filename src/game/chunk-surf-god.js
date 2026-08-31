@@ -1,5 +1,5 @@
 import { CELL } from '../data/floorplan/legend.js';
-import { SOURCE_APPROACH_CELLS, SOURCE_CHUTES, SOURCE_HORIZON, SOURCE_TIER_BY_ID } from '../data/source-level.js';
+import { SOURCE_APPROACH_CELLS, SOURCE_BELLS, SOURCE_CHUTES, SOURCE_HORIZON, SOURCE_TIER_BY_ID } from '../data/source-level.js';
 import {
   CHUNK_SURF_PHASE,
   SOURCE_PURSUIT_BEAT,
@@ -175,6 +175,36 @@ export function buildHorizonGodPreset(depth = 0, options = {}) {
     },
   };
 }
+
+// THE BELL PASSAGE, addressed by depth like the tape it hangs off.
+//
+// Getting here in play is horizon -> recognise the bust -> accept it -> take the
+// tower. Three reducer steps, and without them there is no way to review four
+// hundred metres of walk without playing an hour to reach it.
+export function buildBellsGodPreset(depth = 0, options = {}) {
+  const horizon = buildHorizonGodPreset(168, options);
+  let state = reduceChunkSurf(horizon.state, { type: 'HORIZON_BUST_RECOGNIZED', eligible: true });
+  state = reduceChunkSurf(state, { type: 'HORIZON_BUST_DECIDED', decision: 'accepted' });
+  state = reduceChunkSurf(state, { type: 'HORIZON_EXIT_CHOSEN', exit: 'tower' });
+  const along = Math.max(0, Math.min(SOURCE_BELLS.length, Number(depth) || 0));
+  return {
+    state,
+    position: {
+      x: LANDSCAPE_ORIGIN.x,
+      y: LANDSCAPE_ORIGIN.y + SOURCE_BELLS.from - Math.max(SOURCE_BELLS.entryStandoff, along),
+      facing: 0,
+    },
+  };
+}
+
+// The three acts, by the depths they actually occupy.
+export const BELLS_GOD_STOPS = Object.freeze([
+  { id: 'bells-head', label: 'BELLS — HEAD OF THE PASSAGE', depth: SOURCE_BELLS.entryStandoff },
+  { id: 'bells-architecture', label: 'BELLS — ARCHITECTURE', depth: 90 },
+  { id: 'bells-null', label: 'BELLS — WHERE TIME IS NULL', depth: 200 },
+  { id: 'bells-ring', label: 'BELLS — THE RING', depth: 330 },
+  { id: 'bells-door', label: 'BELLS — THE MISSING WALL', depth: 410 },
+]);
 
 export const HORIZON_GOD_STOPS = Object.freeze([
   { id: 'horizon-head', label: 'HORIZON — HEAD OF TAPE', depth: SOURCE_HORIZON.entryStandoff },

@@ -19,8 +19,9 @@ export const POST_RUN_ACTIONS = Object.freeze([
     body: 'Start a new playthrough with replay options and new difficulty settings.',
   }),
   Object.freeze({
-    id: 'hush',
-    label: 'THE HUSH',
+    id: 'transfer-room',
+    label: 'THE TRANSFER ROOM',
+    body: 'File what you carried out and read what the company already had.',
   }),
   Object.freeze({
     id: 'archive',
@@ -116,6 +117,22 @@ export const HUSH_COPY = Object.freeze({
   }),
 });
 
+export const TRANSFER_ROOM_COPY = Object.freeze({
+  open: Object.freeze({
+    short: 'THE FILE IS OPEN.',
+    body: 'Read what you carried out, beside what the company already had on it.',
+  }),
+  empty: Object.freeze({
+    short: 'NOTHING FILED YET.',
+    body: 'The file holds what comes back in the bag. The building keeps the rest.',
+  }),
+});
+
+export function transferRoomCopy({ filed = 0 } = {}) {
+  const entry = filed > 0 ? TRANSFER_ROOM_COPY.open : TRANSFER_ROOM_COPY.empty;
+  return { ...entry, enabled: filed > 0 };
+}
+
 export function endingHintForEnding(endingId) {
   return NEXT_ENDING_HINTS[endingId] || '';
 }
@@ -137,7 +154,7 @@ export function hushAvailabilityCopy({ status, hasSession = false } = {}) {
 export function dispatchPostRunAction(actionId, handlers = {}) {
   const handler = {
     replay: handlers.onReopen,
-    hush: handlers.onHush,
+    'transfer-room': handlers.onTransferRoom,
     archive: handlers.onArchive,
     title: handlers.onTitle,
   }[actionId];

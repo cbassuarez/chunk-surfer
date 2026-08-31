@@ -50,8 +50,11 @@ export const WHISPER_TIDE = {
   // answer: the game's room tone is brown noise lowpassed at 180 Hz and the bed
   // lives at 180 Hz-2.2 kHz, so there is no masker in this band and the level
   // has to be set by ear in a quiet room. See __probe.whisperTune.
-  floor: 0.020,
-  ceiling: 0.085,
+  // The late bed can carry five overlapping takes plus grains. These values
+  // are per voice, so the former .085 ceiling accumulated into foreground
+  // dialogue. Keep the same tide and escalation at about six decibels less.
+  floor: 0.011,
+  ceiling: 0.044,
 
   // Three periods with no small common multiple, so the sum does not repeat
   // inside any session anybody will play. 47 x 113 x 269 seconds is just under

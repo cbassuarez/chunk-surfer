@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const title = fs.readFileSync('src/game/title.js', 'utf8');
-for (const id of ['continue', 'new-run', 'archive', 'return-index', 'hush-run', 'settings']) {
+for (const id of ['continue', 'new-run', 'archive', 'return-index', 'transfer-room', 'settings']) {
 assert.match(title, new RegExp(`id: '${id}'`), `title keeps stable ${id} slot`);
 }
 assert.doesNotMatch(title,/just-surf|onJustSurf/,'production title removes the sample-field route');
@@ -17,6 +17,11 @@ assert.match(title, /rowsPerColumn = \(\) => Math\.ceil\(items\.length \/ column
 const archive = fs.readFileSync('src/game/archive.js', 'utf8');
 assert.match(archive, /NO ENTRIES IN THIS CATEGORY/, 'archive has an empty category state');
 assert.match(archive, /body\.h - 13/, 'archive caps description rows to body height');
+
+const transferRoom = fs.readFileSync('src/game/transfer-room.js', 'utf8');
+assert.match(transferRoom, /let scroll = 0/, 'transfer room scrolls its register');
+assert.match(transferRoom, /Nothing filed/, 'transfer room has empty-file copy rather than a blank pane');
+assert.match(transferRoom, /drawMachinePanel/, 'transfer room uses the established case panel');
 
 const returnIndex = fs.readFileSync('src/game/return-index.js', 'utf8');
 assert.match(returnIndex, /let scroll = 0/, 'return index scrolls entries');

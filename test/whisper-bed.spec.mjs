@@ -22,6 +22,7 @@ import {
 import { createWhisperBed, WHISPER_FILES } from '../src/audio/whisper-bed.js';
 
 const T = WHISPER_TIDE;
+assert.ok(T.ceiling<=.045&&T.floor<=.012,'each whisper voice stays beneath foreground dialogue before overlap');
 const HOUR_STEPS = 360_000;          // one hour at 10 ms
 const at = (i) => i * 10;
 

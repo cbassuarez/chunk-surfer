@@ -4297,44 +4297,14 @@ const addBoothGuard=(m,{x=0,z=-.15,lean=0,arm='rest'}={})=>{
   }
   addBeam(m,[-.70,2.09,-3.09],[.70,2.09,-3.09],.045,MAT.steel);
   addBeam(m,[-.78,1.21,-3.405],[.78,1.21,-3.405],.025,MAT.black);
-  // THE BACK DOORS, standing open. Each swung out about a hundred degrees, which
-  // is what makes the silhouette read as "somebody is unloading" from the gate.
-  const doorYaw=1.75, doorHalf=.04;
-  for(const s of[-1,1]){
-    addBox(m,[s*(bodyW/2+.42),1.57,2.62],[.86,1.86,.08],MAT.agedWhite,s*doorYaw);
-    addBox(m,[s*(bodyW/2+.10),1.57,2.34],[.10,.30,.10],MAT.steel);   // hinge
-  }
-  // A POINT ON A DOOR LEAF, which is the whole fix here.
+  // THE BACK DOORS ARE NOT PART OF THE VAN, because they have to shut.
   //
-  // The plate, the chevrons and the tail lamps used to be authored on the rear
-  // plane at z≈2.57, spanning x=-0.82..+0.82 — the geometry of a van with its
-  // doors SHUT. The doors are open, so all of it hung in the middle of the two
-  // metre aperture attached to nothing, in front of the load space, which is why
-  // the back of the van could not be read at all.
-  //
-  // addBox rotates local +x to (cos a, 0, sin a) and local +z to (-sin a, 0, cos a),
-  // so the leaf's OUTER face is local -z. u runs along the leaf, v is height.
-  // face: 1 is the leaf's outer skin, -1 the inner.
-  const leaf=(s,u,v,face=1)=>{
-    const a=s*doorYaw, c=Math.cos(a), sn=Math.sin(a), out=(doorHalf+.012)*face;
-    return [s*(bodyW/2+.42)+c*u+sn*out, 1.57+v, 2.62+sn*u-c*out];
-  };
-  // The reflective chevrons every site van has, on the outside of both leaves —
-  // which is also what makes the open doors read as a van from the gate rather
-  // than as two white panels.
-  // Chevrons on BOTH faces. Outside is where a real van carries them and what
-  // makes the shut doors read from the gate; inside is what the player actually
-  // walks up to, and a blank leaf tells them nothing about what they are looking
-  // at. Vans carry reflective strips inboard for exactly the same reason.
-  for(const s of[-1,1]){
-    for(const face of[1,-1]){
-      for(let i=-1;i<=1;i++){
-        addBox(m,leaf(s,i*.26,0,face),[.13,1.24,.02],i?MAT.safetyRed:MAT.ivory,s*doorYaw);
-      }
-    }
-    // The plate goes on one leaf, low, the way a real pair of doors carries it.
-    if(s<0) addBox(m,leaf(s,0,-.62,1),[.50,.11,.02],MAT.ivory,s*doorYaw);
-  }
+  // They were baked into this mesh at a fixed hundred-degree swing. That is the
+  // pose the opening wants and the wrong thing to own: the player is asked to
+  // close the van before walking away from it, and a door baked into the body
+  // cannot close. Only the hinges stay here. See VAN_DOOR_LEAVES below and
+  // vanDoorInstances() in main.js.
+  for(const s of[-1,1]) addBox(m,[s*(bodyW/2+.10),1.57,2.34],[.10,.30,.10],MAT.steel);
   // Rear corner posts, so the aperture has an edge and the lamps have something
   // to be mounted ON. The body's sides sit at x=±1.0 and end at z=2.45; the lamps
   // stand PROUD of the posts at 2.52 — inset even slightly and they read as two
@@ -4362,6 +4332,38 @@ const addBoothGuard=(m,{x=0,z=-.15,lean=0,arm='rest'}={})=>{
   addBox(m,[-.54,floorTop+.21,.72],[.50,.42,.44],MAT.wood);          // a crate
   addBox(m,[-.56,floorTop+.13,1.62],[.42,.26,.30],MAT.steel);        // toolbox
   addBox(m,[.44,floorTop+.05,1.20],[.56,.10,.30],MAT.cloth);         // a coiled strap
+}
+{
+  // THE TWO REAR LEAVES, hung so they can be turned.
+  //
+  // Authored in HINGE-LOCAL space: the hinge is the origin, the leaf runs along
+  // local +x, and the base sits at y=0. That is what lets main.js hang each leaf
+  // off the van's hinge point and rotate it — see VAN_DOOR there for the two
+  // angles and the swing between them.
+  //
+  // The left leaf's outer skin is local +z and the right leaf's is local -z,
+  // because the right one is shut by turning it through half a circle to point
+  // back at the middle. Everything that lives on the skin follows `outer`.
+  const leafLen=.90, leafH=1.86, leafT=.08;
+  for(const [side,outer] of[['l',1],['r',-1]]){
+    const d=mesh(`yard_van_door_${side}`);
+    addBox(d,[leafLen/2,leafH/2,0],[leafLen,leafH,leafT],MAT.agedWhite);
+    // Chevrons on BOTH faces. Outside is where a van carries them and what makes
+    // the shut doors read from the gate; inside is what the player walks up to
+    // while the bag is still in there, and a blank leaf tells them nothing about
+    // what they are looking at. Vans carry reflective strips inboard for exactly
+    // the same reason.
+    for(const face of[1,-1]){
+      for(let i=-1;i<=1;i++){
+        addBox(d,[leafLen/2+i*.26,.93,face*(leafT/2+.012)],[.13,1.24,.02],i?MAT.safetyRed:MAT.ivory);
+      }
+    }
+    // The plate goes on one leaf, low, the way a real pair of doors carries it.
+    if(side==='l') addBox(d,[leafLen/2,.31,outer*(leafT/2+.012)],[.50,.11,.02],MAT.ivory);
+    // A handle on the free edge, which is the thing the player is about to pull.
+    addBeam(d,[leafLen-.13,.86,outer*(leafT/2+.05)],[leafLen-.13,1.16,outer*(leafT/2+.05)],.022,MAT.steel);
+    for(const y of[.86,1.16]) addBeam(d,[leafLen-.13,y,outer*(leafT/2+.05)],[leafLen-.13,y,outer*(leafT/2+.01)],.018,MAT.steel);
+  }
 }
 {
   // The dome lamp in the back of it. Its own prop so it can be emissive and so

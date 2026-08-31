@@ -33,8 +33,10 @@ test('victory finishes its 1.35 second surface before result dialogue while defe
   const combat=readFileSync(new URL('../src/game/combat.js',import.meta.url),'utf8');
   assert.match(combat,/resultSurfacePending && submersionSnapshot\.settled[\s\S]{0,180}deliverResult\(\)/,
     'win dialogue is gated behind the controller endpoint');
-  assert.match(combat,/if \(result === 'win'[\s\S]{0,180}phase = 'submersion'[\s\S]{0,180}finishMusic\(\);[\s\S]{0,80}deliverResult\(\)/,
-    'only victory waits; defeat delivers while the full snapshot is active');
+  assert.match(combat,/if \(result === 'win'[\s\S]{0,180}phase = 'submersion'[\s\S]{0,180}finishMusic\(\);/,
+    'victory still waits for the water controller endpoint');
+  assert.match(combat,/result==='lose'[\s\S]{0,180}interference\?\.result\?\.\(result\)[\s\S]{0,120}finally\(deliverResult\)/,
+    'defeat stays fully submerged while its window shatter completes before loss dialogue');
 });
 
 test('water Foley fires once per phase edge and tears down on silent exits',()=>{

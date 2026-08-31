@@ -92,6 +92,7 @@ test('distance is the whole character of thunder, not a volume knob', () => {
   assert.ok(far.attack > near.attack * 10);
   // Quieter, but never absent — a distant storm is still there.
   assert.ok(far.gain < near.gain && far.gain > 0.015);
+  assert.ok(near.gain<=.17,'a close strike stays under the dialogue/SFX mastering ceiling');
 });
 
 test('the flash is one term driving both renderer dials, and accessibility scales it', () => {

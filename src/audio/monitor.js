@@ -182,8 +182,15 @@ export function monitorSnapshot(nowMs = performance.now()) {
   try { auxiliary = normalizeMeasurement(auxiliaryInput?.()); } catch (_) {}
   // The room microphone never connects to this AudioNode or to the speakers.
   // It is nevertheless HUSH evidence whenever permission has made it active.
-  const rms = Math.min(1, Math.hypot(programRms, auxiliary.rms));
-  const instantPeak = Math.max(injectedMeasurement?.peak || programRms, auxiliary.peak);
+  // What the recorder hears of the OPERATOR. This is the honest figure and it is
+  // what the HUSH's perception is fed.
+  const heardRms = Math.min(1, Math.hypot(programRms, auxiliary.rms));
+  let presenceRms = 0;
+  try { presenceRms = Math.max(0, Math.min(1, Number(presenceInput?.()) || 0)); } catch (_) {}
+  // What the NEEDLE shows. The two are the same number all night except when
+  // something is standing close enough to put its own level on the input.
+  const rms = Math.min(1, Math.hypot(heardRms, presenceRms));
+  const instantPeak = Math.max(injectedMeasurement?.peak || programRms, auxiliary.peak, presenceRms);
   const clipping = !!injectedMeasurement?.clipped || auxiliary.clipped || instantPeak >= CLIP_PEAK;
 
   if (instantPeak >= peak || nowMs >= peakUntil) {
@@ -193,6 +200,7 @@ export function monitorSnapshot(nowMs = performance.now()) {
   if (clipping) clipUntil = nowMs + CLIP_HOLD_SEC * 1000;
 
   const db = dbFor(rms);
+  const heardDb = dbFor(heardRms);
   const clipHeld = nowMs < clipUntil;
   const peakDb = clipHeld ? 0 : dbFor(peak);
   const band = monitorBandForDb(db);
@@ -204,9 +212,12 @@ export function monitorSnapshot(nowMs = performance.now()) {
     peakDb,
     clipped: clipHeld,
     band,
-    hushRms: rms,
-    hushDb: db,
-    hushBand: band,
+    // Drawn vs. heard. Identical unless something is close, and the gap between
+    // them is the whole device — see monitorSetPresenceInput.
+    presenceRms,
+    hushRms: heardRms,
+    hushDb: heardDb,
+    hushBand: monitorBandForDb(heardDb),
     inputKind: auxiliary.rms > 0 ? 'room-mic' : lastPlayerInput?.until > nowMs ? lastPlayerInput.kind : null,
     inputPosition: auxiliary.rms <= 0 && lastPlayerInput?.audibleToHush && lastPlayerInput?.until > nowMs && lastPlayerInput.position
       ? { ...lastPlayerInput.position }
@@ -216,7 +227,26 @@ export function monitorSnapshot(nowMs = performance.now()) {
 
 // Test-only injection. `null` reconnects the readout to semantic events + mic.
 export function monitorInject(level = null) { injected = level == null ? null : level; }
+let presenceInput = null;
 export function monitorSetAuxInput(provider = null) { auxiliaryInput = typeof provider === 'function' ? provider : null; }
+
+// THE NEEDLE READS A SOUND THAT IS NOT IN THE ROOM.
+//
+// This is the one thing in the game allowed to put level on the meter that the
+// ears will never account for. Everything the HUSH does to the mix SUBTRACTS —
+// worldGain to .10, monitorDry to .035 — so as it closes the room goes quiet;
+// this channel simultaneously drives the meter up. Silence in the cans, forty on
+// the meter, and the instrument is not broken.
+//
+// It reaches `db`/`rms`/`segments`/`band` — what is DRAWN — and never `hushDb`,
+// which is what the thing hears of YOU. Wiring it into both would mean the
+// monitor screaming as it approached and that scream escalating to a contact:
+// the thing's own proximity would arrest you for making noise.
+//
+// The provider must be a pure function of distance. A player testing whether the
+// game is broken repeats the approach; a bug reads differently each time and a
+// lie reads the same, so the repeatability IS the tell that this is diegetic.
+export function monitorSetPresenceInput(provider = null) { presenceInput = typeof provider === 'function' ? provider : null; }
 
 export function monitorReset() {
   ctx = analyser = null;

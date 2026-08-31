@@ -129,7 +129,7 @@ export const PROP_MESH = Object.freeze({
   // floorplan remains the collision authority; this is the construction layer
   // whose 58 real treads, slab edges and open-well rails must never be reduced
   // to the half-metre navigation raster.
-  main_open_well_stair:{w:12.6,d:7.6,h:14.9,blocks:false},
+  main_open_well_stair:{w:6.5,d:6.2,h:14.9,blocks:false},
   ticket_counter:{w:2.8,d:.75,blocks:true}, key_cabinet:{w:.9,d:.24,blocks:true},
   rekey_ledger:{w:1.22,d:.12,blocks:false}, chapel_key_cabinet:{w:1,d:.36,h:1.24,blocks:false},
   chapel_key_ring_ch04:{w:.18,d:.37,h:.28,blocks:false},
@@ -1077,10 +1077,10 @@ export const CONSERVATORY_PROPS = [
     lightMaintained:true,lightColor:[1,.018,.008],
   })),
   // The one piece of the ruined garden you may put a hand in. Everything else
-  // here is deliberately mute; this planter is where a calibration pin has been
-  // sitting in the soil since somebody serviced a head out here (see PIN_HOSTS).
+  // here is deliberately mute; this planter is where a patch lead has been
+  // sitting in the soil since somebody worked on a head out here (see PIN_HOSTS).
   P('academic-garden-planter-west','academic_planter',80.5,11.0,.08,{renderGroups:['ground','academic'],
-    inspect:inspect('Dry soil in a stone planter, packed hard and full of old leaf. Something brass is half down in it.','The soil keeps the shape your hand left in it.')}),
+    inspect:inspect('Dry soil in a stone planter, packed hard and full of old leaf. Something black is coiled half down in it.','The soil keeps the shape your hand left in it.')}),
   P('academic-garden-planter-east','academic_planter',86.7,17.6,-.08,{renderGroups:['ground','academic'],interactive:false}),
   P('academic-garden-basin','academic_dry_basin',83.6,14.6,0,{renderGroups:['ground','academic'],interactive:false}),
   P('academic-garden-tree-west','academic_dead_tree',80.4,11.0,-.18,{renderGroups:['ground','academic'],interactive:false,elevation:.66}),

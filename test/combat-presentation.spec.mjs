@@ -120,7 +120,7 @@ test('the enemy takes its own beat: player and enemy resolutions are sequenced',
   // The player beat hands off to the enemy beat only when a turn is pending.
   assert.match(combatSceneSource, /resolution\.side === 'player' && state\.phase === 'enemy'/);
   // The enemy turn is visibly announced.
-  assert.match(combatSceneSource, /ENEMY TURN/);
+  assert.match(combatSceneSource, /\$\{actorLabel\} TURN/);
   // The turn is read as one span for the director/music, from the commit point.
   assert.match(combatSceneSource, /director\?\.advance\?\.\(turnStart/);
 });

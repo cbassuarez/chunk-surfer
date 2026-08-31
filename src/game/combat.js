@@ -21,7 +21,7 @@ import {
   drawCombatToolTile,
   drawEnemyVoidStage,
   drawFirstPersonHands,
-  drawHouse,
+  drawHallApparitions,
   drawAttackNotes,
   drawFireballEngulf,
   drawOpponentCombatArt,
@@ -43,8 +43,8 @@ import {
   availableCombatTools,
   combatIntentLookahead,
   combatMoveSubtext,
-  combatHouse,
-  combatHouseSnapshot,
+  combatApparitions,
+  combatApparitionsSnapshot,
   combatPractice,
   combatMovesForTool,
   combatPrediction,
@@ -55,6 +55,7 @@ import {
   predictedCombatIntent,
   reduceCombat,
   rivalCombatIntent,
+  resolveCombatResult,
   advanceEnemy,
   applyFireballImpact,
   applyFireballReturn,
@@ -194,6 +195,9 @@ export function makeCombatScene({
   audio,
   getAudio,
   difficulty = null,
+  // Keyed per run so the fight is deterministic within a night and different
+  // between them. See the note at the call site in main.js.
+  seed = 0,
   loadout = {},
   resources = {},
   source = null,
@@ -223,6 +227,7 @@ export function makeCombatScene({
   const waterAudio = createBattleWaterAudio({ enabled:submersionSnapshot.enabled, getAudio });
   let state = createCombatState(battle.combat, {
     difficulty,
+    seed,
     injuries: loadout.injuries,
     battery: resources.battery ?? loadout.battery,
     torchDrainScale: loadout.torchDrainScale,
@@ -356,7 +361,7 @@ export function makeCombatScene({
   let toolRows = [];
   let moveRows = [];
   let channelRows = [];
-  let houseRows = [];
+  let apparitionRows = [];
   let reactionRect = null;
   let fireballRect = null;
   let onSurfaceHit = null;
@@ -376,6 +381,7 @@ export function makeCombatScene({
   let regionRects = {};
   let introElapsed = 0;
   let resultSurfacePending = false;
+  let resultChoreographyPending = false;
   let hitstop = 0;
   let popups = [];
   let popupSeq = 0;
@@ -394,12 +400,13 @@ export function makeCombatScene({
   const fireballExchange=createFireballExchange({
     battleId:battle.combat.id,
     reducedMotion:shakeMode()!=='full',
+    manual:false,
     returnDamage:FIREBALL_RETURN_DAMAGE,
     beginCast:(event)=>interference?.beginFireballCast?.(event)||null,
     resolveCast:(event)=>interference?.resolveFireballCast?.(event),
-    onReturn:({castId,damage})=>{
+    onReturn:({castId,damage,casterId})=>{
       fireballVoice.returned();
-      return commitFireballReturn({castId,damage});
+      return commitFireballReturn({castId,damage,casterId});
     },
     onImpact:({castId,rayId,damage})=>{
       const ray=fireballExchange.snapshot().active?.plan?.rays?.[rayIndexOf(rayId)];
@@ -637,6 +644,12 @@ export function makeCombatScene({
       return;
     }
     finishMusic();
+    if(result==='lose'&&!resultChoreographyPending){
+      resultChoreographyPending=true;
+      phase='result-choreography';
+      Promise.resolve(interference?.result?.(result)).catch(()=>null).finally(deliverResult);
+      return;
+    }
     deliverResult();
   }
 
@@ -776,16 +789,29 @@ export function makeCombatScene({
         parried: !!last.parried,
         received: Math.max(0, Number(last.received) || 0),
         transition: last.transition || null,
+        windowLock:fireballCatchLocked(),
       })).catch(() => null);
     }
+  }
+
+  function fireballCatchLocked(){
+    const snapshot=fireballExchange.snapshot();
+    return !!snapshot.choreography?.settled&&!!snapshot.active?.rays?.some((ray)=>ray.state==='approach');
   }
 
   function finishResolution() {
     if (!resolution) return;
     // A player beat that deferred the enemy turn hands off to the enemy beat;
-    // everything else (perfect, tempo, movement break, KO, or the finished
-    // enemy beat) settles the whole turn.
+    // everything else (tempo, movement break, KO, or the finished enemy beat)
+    // settles the whole turn.
     if (resolution.side === 'player' && state.phase === 'enemy' && !state.result) {
+      resolution = null;
+      beginEnemyBeat();
+      return;
+    }
+    // Hall initiative is YOU → 01 → 02 → 03. Fireballs keep their own clock;
+    // advancing an apparition neither creates nor cancels one.
+    if (resolution.side === 'enemy' && state.apparitions && state.phase === 'enemy' && !state.result) {
       resolution = null;
       beginEnemyBeat();
       return;
@@ -808,6 +834,7 @@ export function makeCombatScene({
       const closing=old?.after||[];
       clearBark();
       resources.playImpact?.({transition:true});
+      interference?.windowLock?.(fireballCatchLocked());
       void Promise.resolve(interference?.phaseBreak?.({
         from:state.last.transition.from,
         to:state.last.transition.to,
@@ -837,11 +864,11 @@ export function makeCombatScene({
     fx?.flash?.(55,result.returned?'rgba(120,220,255,0.30)':'rgba(255,188,52,0.20)');
   }
 
-  function commitFireballReturn({castId='',damage=FIREBALL_RETURN_DAMAGE}={}){
+  function commitFireballReturn({castId='',damage=FIREBALL_RETURN_DAMAGE,casterId=null}={}){
     if(state.result)return false;
     const before=state;
     const coherenceFrom=state.movementCoherence;
-    state=applyFireballReturn(state,{castId,damage});
+    state=applyFireballReturn(state,{castId,damage,casterId});
     const dealt=Math.max(0,coherenceFrom-state.movementCoherence);
     if(dealt<=0)return false;
     notice=`RETURN · ${dealt} RANGED`;
@@ -899,7 +926,10 @@ export function makeCombatScene({
     fx?.stopCues?.();
     // The director and music read the turn as one span: from where the player
     // committed (turnStart) to the settled end-state.
-    director?.advance?.(turnStart || resolved.before, state);
+    const tutorialAdvanced=director?.advance?.(turnStart || resolved.before, state);
+    if(tutorialAdvanced&&director?.completeBattle?.()&&!state.result){
+      state=resolveCombatResult(state,'win');
+    }
     turnStart = null;
     const last=state.last||{};
     const correct=last.perfect===true||last.parried===true||((Number(last.dealt)||0)>0&&(Number(last.received)||0)===0);
@@ -967,9 +997,10 @@ export function makeCombatScene({
     repairSelection();
   }
 
-  // The opponent's own beat. It only runs when the player step deferred the
-  // enemy turn (phase 'enemy'); a perfect counter, a tempo action, a completed
-  // movement, or a KO settle straight from the player beat with no enemy turn.
+  // The opponent's own beat. It runs when the player step deferred the enemy
+  // turn (phase 'enemy'). A tempo action, completed movement, or KO can settle
+  // directly; a perfect counter still hands over initiative because it blunts
+  // the committed blow instead of deleting it.
   function beginEnemyBeat() {
     const before = state;
     const intents = selectEnemyIntents(state);
@@ -1015,20 +1046,20 @@ export function makeCombatScene({
         );
         fx?.cue?.(cueId,shape);
       }
-      strike = { ...enemyAttackVoice(primary.kind, cueId), label: primary.label, kind: primary.kind };
+      strike = { ...enemyAttackVoice(primary.kind, cueId), label: `${primary.actorLabel ? `${primary.actorLabel} · ` : ''}${primary.label}`, kind: primary.kind };
     } else strike = null;
     resolution = {
       before,
       after: next,
-      action: { id: 'enemy', tool: COMBAT_TOOL.SELF, label: primary?.label || 'INTENT', kind: primary?.kind || null },
+      action: { id: 'enemy', tool: COMBAT_TOOL.SELF, label: `${primary?.actorLabel ? `${primary.actorLabel} · ` : ''}${primary?.label || 'INTENT'}`, kind: primary?.kind || null },
       intent:primary,
       side: 'enemy',
       elapsed: 0,
       // Struck blows receive a four-beat reaction phrase. Other enemy actions
       // keep the ordinary duration; the score conductor itself is untouched.
       duration: isParryableEnemyAction(primary?.kind)
-        ? PARRY_REACTION_SECONDS
-        : ORDINARY_TURN_SECONDS * Math.max(1, next.last?.enemyHits?.length || 1),
+          ? PARRY_REACTION_SECONDS
+          : ORDINARY_TURN_SECONDS * Math.max(1, next.last?.enemyHits?.length || 1),
       impactFired: false,
       parryBuffered: false,
       parryTried: false,
@@ -1041,9 +1072,9 @@ export function makeCombatScene({
   function cycleChannel(delta) {
     if (!['tool', 'move'].includes(phase)) return;
     // Q/E is "pick the thing on the left of the stage", and no encounter has
-    // both: the source battle arms a channel, the hall picks a section of the
-    // house. Sharing the binding keeps the deck's shape identical everywhere.
-    if (state.house) {
+    // both: the source battle arms a channel, the Hall picks one apparition.
+    // Sharing the binding keeps the deck's shape identical everywhere.
+    if (state.apparitions) {
       state = reduceCombat(state, { type: COMBAT_ACTION.TARGET, delta });
       notice = state.last.notice;
       audio?.menuMove?.();
@@ -1190,7 +1221,7 @@ export function makeCombatScene({
           counters: counterMovesForIntent(state, predictedCombatIntent(state)),
           wrong: readMissed,
           fidelity: readFidelity(state),
-          house: combatHouse(state),
+          apparitions: combatApparitions(state),
         }),
         tools: availableCombatTools(state),
         moves: moves(),
@@ -1232,11 +1263,8 @@ export function makeCombatScene({
       waterAudio.setPhase(submersionSnapshot);
       musicSession?.setSubmersion?.(submersionSnapshot);
       voice.setEnvironment?.(submersionSnapshot);
-      // The ranged exchange advances beside both sides' ordinary beats. It is
-      // paused only while authored dialogue/arrival/result presentation owns
-      // the whole screen, never because a move or parry is resolving.
       fireballExchange.update(dt,{
-        enabled:['tool','move','resolve'].includes(phase)&&!state.result,
+        enabled:!state.result && ['tool','move','resolve'].includes(phase),
       });
       // Only while the deck is his and nothing else owns the screen. A bark, a
       // checkpoint or an authored line is not time the player was given.
@@ -1449,9 +1477,9 @@ export function makeCombatScene({
         skipDrill();
         return true;
       }
-      const section = houseRows.find((row) => y >= row.y && y < row.y + (row.h || 1) && x >= row.x && x < row.x + row.w);
+      const section = apparitionRows.find((row) => y >= row.y && y < row.y + (row.h || 1) && x >= row.x && x < row.x + row.w);
       if (section) {
-        state = reduceCombat(state, { type: COMBAT_ACTION.TARGET, rowId: section.id });
+        state = reduceCombat(state, { type: COMBAT_ACTION.TARGET, targetId: section.id });
         notice = state.last.notice;
         audio?.menuMove?.();
         return true;
@@ -1544,7 +1572,7 @@ export function makeCombatScene({
       const hudMode = reaction ? 'reaction'
         : phase === 'talk' ? 'dialogue'
           : phase === 'arrival' ? 'arrival' : 'command';
-      const layout = combatHudLayout({ panel, mode: hudMode, sourceActive: !!state.source, houseActive: !!state.house || !!state.practice });
+      const layout = combatHudLayout({ panel, mode: hudMode, sourceActive: !!state.source, rosterActive: !!state.apparitions || !!state.practice });
       const compact = layout.compact;
       reactionRect = null;
       const visual = visualState();
@@ -1626,7 +1654,8 @@ export function makeCombatScene({
       if (resolution?.side === 'enemy') {
         const hits = resolution.after?.last?.enemyHits?.length || 1;
         const chained = hits > 1;
-        const banner = chained ? 'ENEMY TURN · CHAIN' : 'ENEMY TURN';
+        const actorLabel = resolution.intent?.actorLabel || resolution.after?.last?.enemyActor?.label || 'ENEMY';
+        const banner = chained ? `${actorLabel} TURN · CHAIN` : `${actorLabel} TURN`;
         uiText(ex + Math.floor((ew - banner.length) / 2), stageY, banner, 'ui-danger', .95);
         // What they are playing, made visible: notes come off the figure and keep
         // dancing for as long as the attack lasts. A chain throws more of them.
@@ -1654,12 +1683,11 @@ export function makeCombatScene({
         ? (resolution.intent||{ kind: resolution.action?.kind || currentCombatIntent(intentState)?.kind || null })
         : predictedCombatIntent(intentState);
       // THE HALL. One encounter has more than one thing in it, and a single
-      // figure on the void stage cannot say so. The house takes the same box the
-      // being would have had, so the stage, the banner and the attack notes all
-      // still land where they always did.
-      const house = combatHouse(intentState);
-      if (house) {
-        drawHouse(house, {
+      // figure on the void stage cannot say so. The three bodies share the box
+      // the being would have had, so the banner and attack notes still land.
+      const apparitions = combatApparitions(intentState);
+      if (apparitions) {
+        drawHallApparitions(apparitions, {
           x: ex, y: stageY + 1, w: ew, h: Math.max(3, eh - 1),
           now, reducedMotion,
           // They watch you. The lean follows the selected tool across the deck,
@@ -1833,7 +1861,7 @@ export function makeCombatScene({
             // blow slips a guard that would otherwise have covered it.
             chained: (selectEnemyIntents(intentState).length || 1) > 1,
             chargeReady: availableCombatActions(intentState).some((move) => move.special && move.enabled),
-            house,
+            apparitions,
           });
           let intentRow = 1;
           for (const line of thought) {
@@ -2019,7 +2047,7 @@ export function makeCombatScene({
         toolRows = [];
         moveRows = [];
         channelRows = [];
-        houseRows = [];
+        apparitionRows = [];
         uiFill(box.x, box.y, box.w, box.h, 'rgba(7,10,13,.94)');
         uiStrokeRect(box.x, box.y, box.w, box.h, reaction.armed ? UI_COLOR.amber : UI_COLOR.frame, reaction.armed ? .88 : .42, reaction.armed ? 1.6 : 1);
         const contentY = box.y + Math.max(.25, (box.h - 6.4) / 2);
@@ -2077,19 +2105,19 @@ export function makeCombatScene({
       // ── icon-forward command deck ─────────────────────────────────────────
       let listY = layout.channels.h ? layout.channels.y : layout.tools.y;
       channelRows = [];
-      houseRows = [];
-      // ── the House target rail ─────────────────────────────────────────────
+      apparitionRows = [];
+      // ── the Hall apparition target rail ───────────────────────────────────
       //
-      // The channel row is Source-only, and no encounter has both — so the hall
-      // borrows the slot for five cards, one per section. This is the whole
-      // answer to "the stage cannot explain why one section matters": each card
-      // carries the section's name, the job it does, and what it is doing right
+      // The channel row is Source-only, and no encounter has both — so the Hall
+      // borrows the slot for three cards, one per body. Each card carries the
+      // apparition's seat, role, health, and current defence, so the decision
+      // of which person to target is made from what is on screen
       // now, so the decision of where to point is made from what is on screen
-      // rather than from memory. It is also the only way a pointer or a finger
-      // can select a section at all; before this, targeting was Q/E or nothing.
+      // rather than from memory. Pointer and touch use the same body targets as
+      // Q/E and controller shoulders.
       // ── the transport ─────────────────────────────────────────────────────
       //
-      // The practice wing borrows the same slot the House rail and the Source
+      // The practice wing borrows the same slot the Hall roster and the Source
       // channels use. It draws the only three numbers in that room: where the
       // playhead is in the fragment, how many times he has taken it from the
       // top, and what he has managed to hear. There is no opponent gauge because
@@ -2165,53 +2193,40 @@ export function makeCombatScene({
         wing.heard.length ? 'ui-blue' : 'ui-label', wing.heard.length ? .75 : .45);
         listY = layout.tools.y;
       }
-      if (state.house) {
-        const snapshot = combatHouseSnapshot(state);
+      if (state.apparitions) {
+        const selectedAction = phase === 'move' ? moves()[selectedMove]?.id : null;
+        const snapshot = combatApparitionsSnapshot(state, selectedAction);
         const gap = .8;
         const cardH = Math.max(2.1, layout.channels.h - .55);
-        const cards = snapshot?.sections || [];
+        const cards = snapshot?.members || [];
         const cardW = (panel.w - gap * Math.max(0, cards.length - 1)) / Math.max(1, cards.length);
         cards.forEach((card, index) => {
           const x = panel.x + index * (cardW + gap);
           const width = Math.max(1, Math.floor(cardW - 1));
-          // Four states, four readings: where you are pointing, who is throwing
-          // this beat, who is helping them, and who has stopped mattering.
-          const tint = card.cleared ? 'rgba(255,255,255,.012)'
+          const tint = card.defeated ? 'rgba(255,255,255,.012)'
             : card.targeted ? 'rgba(242,168,30,.07)'
-              : card.lead ? 'rgba(214,64,48,.06)'
-                : card.supporting ? 'rgba(120,150,214,.05)' : 'rgba(255,255,255,.018)';
-          const edge = card.cleared ? UI_COLOR.frame
+              : card.acting ? 'rgba(214,64,48,.06)'
+                : card.parryReady ? 'rgba(120,150,214,.05)' : 'rgba(255,255,255,.018)';
+          const edge = card.defeated ? UI_COLOR.frame
             : card.targeted ? UI_COLOR.amber
-              : card.lead ? UI_COLOR.danger
-                : card.supporting ? UI_COLOR.blue : UI_COLOR.frame;
+              : card.acting ? UI_COLOR.danger
+                : card.parryReady ? UI_COLOR.blue : UI_COLOR.frame;
           uiFill(x, listY, cardW, cardH, tint);
-          uiStrokeRect(x, listY, cardW, cardH, edge, card.targeted ? .72 : card.lead || card.supporting ? .5 : .2, card.targeted ? 1.35 : 1);
-          const nameStyle = card.cleared ? 'ui-label' : card.targeted ? 'ui-amber' : card.lead ? 'ui-danger' : 'ui-primary';
-          uiText(x + .55, listY + .3, card.label.slice(0, width), nameStyle, card.cleared ? .35 : card.targeted ? .95 : .78);
-          uiText(x + .55, listY + 1.05, card.roleLabel.slice(0, width), card.cleared ? 'ui-label' : 'ui-secondary', card.cleared ? .3 : .6);
-          const statusStyle = card.cleared ? 'ui-label'
-            : card.suppressed ? 'ui-blue'
-              : card.lead ? 'ui-danger'
-                : card.settled ? 'ui-label' : 'ui-amber';
-          uiText(x + .55, listY + 1.72, card.status.slice(0, width), statusStyle, card.cleared ? .3 : .7);
-          // A cleared section keeps its card so the rail never reflows under the
-          // player's hand, but it is not a place the cursor may land.
-          if (!card.cleared) houseRows.push({ id: card.id, x, y: listY, w: cardW, h: cardH });
+          uiStrokeRect(x, listY, cardW, cardH, edge, card.targeted ? .72 : card.acting || card.parryReady ? .5 : .2, card.primary ? 1.35 : 1);
+          const nameStyle = card.defeated ? 'ui-label' : card.primary ? 'ui-amber' : card.acting ? 'ui-danger' : 'ui-primary';
+          uiText(x + .55, listY + .3, card.label.slice(0, width), nameStyle, card.defeated ? .35 : card.primary ? .95 : .78);
+          uiText(x + .55, listY + 1.05, `${card.seat} · ${card.roleLabel}`.slice(0, width), card.defeated ? 'ui-label' : 'ui-secondary', card.defeated ? .3 : .6);
+          const statusStyle = card.defeated ? 'ui-label'
+            : card.parryReady ? 'ui-blue'
+              : card.acting ? 'ui-danger'
+                : card.targeted ? 'ui-amber' : 'ui-label';
+          uiText(x + .55, listY + 1.72, card.status.slice(0, width), statusStyle, card.defeated ? .3 : .7);
+          if (!card.defeated) apparitionRows.push({ id: card.id, x, y: listY, w: cardW, h: cardH });
         });
-        // The committed attack, spelled out under the rail: who leads, what they
-        // brought, and what it adds up to. Suppressed contributors are struck
-        // from the sum here rather than silently dropped at resolution.
-        const packet = snapshot?.packet || null;
-        if (packet) {
-          const parts = [`LEAD ${packet.leadLabel}`];
-          for (const entry of packet.contributions) {
-            if (entry.suppressed) { parts.push(`${entry.label} CANCELLED`); continue; }
-            if (entry.effect === 'follow-up') parts.push(`${entry.label} FOLLOW-UP ${entry.amount}`);
-            else if (entry.amount > 0) parts.push(`${entry.label} +${entry.amount}`);
-          }
-          if (packet.cue) parts.push(`CUE ${packet.cue.toUpperCase()}`);
-          uiText(panel.x, listY + cardH + .2, parts.join(' · ').slice(0, panel.w), 'ui-blue', .6);
-        }
+        const initiative = (snapshot?.initiative || [])
+          .map((entry) => entry.defeated ? `× ${entry.label}` : entry.active ? `▶ ${entry.label}` : entry.label)
+          .join('  →  ');
+        uiText(panel.x, listY + cardH + .2, initiative.slice(0, panel.w), 'ui-blue', .6);
         listY = layout.tools.y;
       }
       if (state.source) {

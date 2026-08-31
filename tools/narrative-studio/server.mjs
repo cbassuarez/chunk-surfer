@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { createReadStream } from 'node:fs';
-import { access, mkdir, readFile, readdir, rename, stat, writeFile } from 'node:fs/promises';
+import { createReadStream, rmSync } from 'node:fs';
+import { access, mkdir, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { extname, relative, resolve, sep } from 'node:path';
 import { spawn } from 'node:child_process';
 import { createServer as createViteServer } from 'vite';
@@ -186,6 +186,16 @@ watcher.on('all', (event, path) => {
 });
 
 const url = `http://${HOST}:${PORT}/?token=${TOKEN}`;
+
+// THE SESSION FILE. The token is minted per launch, so anything outside this
+// process that wants to deep-link into the studio (tools/endings-audit, for one)
+// has no way to construct a working URL. It publishes the live one here instead,
+// beside the pid, so a reader can tell a running studio from a hard-killed one.
+const SESSION_FILE = resolve(STUDIO_ROOT, '.studio-session.json');
+await writeFile(SESSION_FILE, `${JSON.stringify({ url, token: TOKEN, host: HOST, port: PORT, pid: process.pid, startedAt: new Date().toISOString() }, null, 2)}\n`, 'utf8');
+const clearSession = async () => { try { await rm(SESSION_FILE, { force: true }); } catch (_) {} };
+process.on('exit', () => { try { rmSync(SESSION_FILE, { force: true }); } catch (_) {} });
+
 server.printUrls();
 console.log(`Narrative Studio: ${url}`);
 if (!process.env.STUDIO_NO_OPEN) {
@@ -195,5 +205,5 @@ if (!process.env.STUDIO_NO_OPEN) {
 }
 
 for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, async () => {
-  await watcher.close(); wss.close(); await server.close(); process.exit(0);
+  await clearSession(); await watcher.close(); wss.close(); await server.close(); process.exit(0);
 });

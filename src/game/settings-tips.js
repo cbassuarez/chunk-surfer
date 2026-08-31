@@ -16,6 +16,7 @@
 
 import { getSave } from './save.js';
 import { formatBindingTip } from './bindings.js';
+import { fitText } from '../render/fit-text.js';
 
 const TIP_MS = 9000;
 
@@ -63,10 +64,10 @@ const SETTING_HELP = Object.freeze({
     profileMicLabel: 'MICROPHONE LABEL uses the selected device label only after ordinary microphone permission exists.',
     profileMeasure: 'MEASUREMENT stores four bounded fictional dimensions, confidence, and sample count—not an event history.',
     profileAdaptive: 'ADAPTIVE DIFFICULTY may move one bounded band at safe checkpoints. Authored assistance and accessibility remain authoritative.',
-    profileWindow: 'WINDOW CHOREOGRAPHY adds only fixed, click-through fireball surfaces. It never owns combat input or moves the main frame.',
+    profileWindow: 'WINDOW CHOREOGRAPHY may temporarily leave Game Mode, move the main frame, and use up to four game-owned panes. Turning it off keeps every beat in a simulated desktop inside the game.',
     profileFiles: 'INTERFERENCE FILES are stored locally and contain limited session summaries and architectural history, not raw behavioral logs.',
     profileRetryMic: 'RETRY MICROPHONE launches the operating-system permission request again.',
-    profileRestore: 'CLOSE FIREBALL SURFACES hides the four game-owned cast windows. The main frame is never moved.',
+    profileRestore: 'RESTORE GAME WINDOW closes all game-owned panes and restores the last player-selected frame and Windowed/Game Mode choice.',
     profileOpenReturns: 'OPEN INTERFERENCE FOLDER reveals the local folder that contains Chunk Surfer’s interference files.',
     profileResetInference: 'RESET INFERRED PROFILE returns the four fictional response dimensions to neutral.',
     profileErase: 'ERASE ALL PROFILE DATA disables every module and deletes the profile, identity cache, masking key, and interference files.',
@@ -242,5 +243,5 @@ export function settingsFooterTips({ tabId, rowId, inGame = false, nowMs = 0 } =
 export function clipTip(text, width) {
   const s = String(text || '').replace(/\s+/g, ' ').trim();
   const n = Math.max(8, Math.floor(width || 40));
-  return s.length <= n ? s : `${s.slice(0, Math.max(1, n - 1))}…`;
+  return fitText(s, n);
 }

@@ -24,6 +24,7 @@ import { uiFill, uiLine, uiStrokeRect, uiText, uiWrap } from './ui.js';
 import { UI_COLOR } from './palette.js';
 import { drawBagIcon } from './bag-icons.js';
 import { drawVfdText } from './presentation.js';
+import { fitText } from './fit-text.js';
 
 // Which existing kit icon stands for each branch. Five were already drawn for
 // the KIT tab; `nerve` is the one addition (see bag-icons.js).
@@ -125,22 +126,27 @@ const STATE_ROLE = Object.freeze({
 });
 const STATE_MARK = Object.freeze({
   [SKILL_STATE.OWNED]: '◆',
-  [SKILL_STATE.PENDING]: '◈',
+  // A PLAIN ASCII MARK, ON PURPOSE.
+  //
+  // This was '◈' and rendered as nothing at all: uiGlyph fails SILENTLY on a
+  // codepoint the atlas cannot rasterise — right cell, right colour, no pixels —
+  // which is the same trap map-icons.js documents and dodges by drawing its
+  // lozenge as real geometry. So PATCHED and NEW, two of the four states this
+  // screen promises are unmistakable, were a filled diamond and a blank.
+  // '◉' turned out to be missing too. '+' is in every face there is, and a new
+  // connection is what it looks like.
+  [SKILL_STATE.PENDING]: '+',
   [SKILL_STATE.AFFORDABLE]: '◇',
   [SKILL_STATE.LOCKED]: '·',
 });
 const STATE_LABEL = Object.freeze({
-  [SKILL_STATE.OWNED]: 'INSTALLED',
-  [SKILL_STATE.PENDING]: 'CHOSEN',
-  [SKILL_STATE.AFFORDABLE]: 'AVAILABLE',
-  [SKILL_STATE.LOCKED]: 'LOCKED',
+  [SKILL_STATE.OWNED]: 'PATCHED',
+  [SKILL_STATE.PENDING]: 'PATCHED · NEW',
+  [SKILL_STATE.AFFORDABLE]: 'OPEN',
+  [SKILL_STATE.LOCKED]: 'NO REACH',
 });
 
-function fit(text, width) {
-  const s = String(text ?? '');
-  const w = Math.max(1, Math.floor(width));
-  return s.length <= w ? s : `${s.slice(0, Math.max(1, w - 1))}…`;
-}
+const fit = (text, width) => fitText(text, Math.max(1, Math.floor(width)));
 
 // One tile. State first (colour + mark + fill), then the name, then nothing else
 // — a tile that tries to be a paragraph is the thing this screen is replacing.
@@ -189,10 +195,11 @@ export function drawSkillsSection({ model, layout, selectedId, now = 0 }) {
   // ── the pins, loudest thing here ──────────────────────────────────────────
   // An unspent pin is the only urgent thing on this screen, so it is the only
   // thing drawn as VFD text.
+  const moved = pins.pending ? ` · ${pins.pending} NEW` : pins.pulled ? ` · ${pins.pulled} PULLED` : '';
   const headline = pins.unspent
-    ? `${pins.unspent} PIN${pins.unspent === 1 ? '' : 'S'} OPEN${pins.pending ? ` · ${pins.pending} CHOSEN` : ''}`
-    : pins.pending ? `${pins.pending} CHOSEN · TAKES EFFECT WHEN THE CASE CLOSES`
-      : pins.earned ? 'ALL PINS INSTALLED' : 'NO PINS YET';
+    ? `${pins.unspent} LEAD${pins.unspent === 1 ? '' : 'S'} SPARE${moved}`
+    : pins.pending ? `${pins.pending} NEW · TAKES EFFECT WHEN THE CASE CLOSES`
+      : pins.earned ? 'EVERY LEAD PATCHED' : 'NO LEADS YET';
   const headlinePrint = fit(headline, tree.w);
   drawVfdText(tree.headline.x, tree.headline.y, headlinePrint, { scale: 1, theme: 'amber', alpha: pins.unspent || pins.pending ? 1 : .55 });
   if (!pins.earned) {
@@ -219,13 +226,20 @@ export function drawSkillsSection({ model, layout, selectedId, now = 0 }) {
     branch.entries.forEach((entry) => {
       const y = tree.tileY(entry.tier);
       const box = { x: cx + .5, y, w: tree.tileW, h: Math.max(1, tree.tileH - .35) };
-      // The chain, drawn. A player should see how deep a path goes without
-      // reading a word of it.
-      if (entry.tier > 1) {
-        const prevBottom = tree.tileY(entry.tier - 1) + Math.max(1, tree.tileH - .35);
-        uiLine(box.x + 1.2, prevBottom, box.x + 1.2, y, UI_COLOR.frame,
-          entry.state === SKILL_STATE.LOCKED ? .20 : entry.state === SKILL_STATE.PENDING ? .9 : .55,
-          entry.state === SKILL_STATE.PENDING ? 1.4 : 1);
+      // THE CABLE.
+      //
+      // It runs where the signal runs, which is where a prerequisite is — never
+      // simply between one tier and the next. Four sockets sit under another
+      // and are not fed by it (ROOM TONE, HEADROOM, and the first two rungs of
+      // NERVE, which are patched direct), and this used to draw a line into all
+      // four. Green when the run carries, amber while it is new this session,
+      // and a dark frame line when the socket is open.
+      if (entry.lead) {
+        const from = tree.tileY(entry.lead.fromTier) + Math.max(1, tree.tileH - .35);
+        uiLine(box.x + 1.2, from, box.x + 1.2, y,
+          entry.lead.fresh ? UI_COLOR.amber : entry.lead.live ? UI_COLOR.green : UI_COLOR.frame,
+          entry.lead.fresh ? .95 : entry.lead.live ? .58 : .18,
+          entry.lead.fresh ? 1.4 : 1);
       }
       drawTile(entry, box, { selected: entry.id === selectedId });
     });
@@ -241,13 +255,19 @@ export function drawSkillsSection({ model, layout, selectedId, now = 0 }) {
   uiWrap(selected.detail,Math.max(8,Math.floor(d.w))).slice(0,descriptionRows)
     .forEach((line,index)=>uiText(d.x,d.y+1+index,fit(line,d.w),'ui-primary',.9));
   // What to do about it, in the imperative, including WHY not.
-  const call = selected.state === SKILL_STATE.OWNED ? 'INSTALLED'
-    : selected.state === SKILL_STATE.PENDING ? `[ENTER] UNDO CHOICE · ${selected.buyPrompt}`
-      : selected.state === SKILL_STATE.AFFORDABLE ? `[ENTER] CHOOSE · COST 1 PIN · ${pins.unspent} REMAIN · ${selected.buyPrompt}`
-        : selected.blockedBy;
+  // A pull says what it costs BEFORE the confirm does, because most pulls never
+  // reach a confirm: only one that takes the run below it does.
+  const pulls = selected.pulls?.length || 0;
+  const call = selected.state === SKILL_STATE.OWNED || selected.state === SKILL_STATE.PENDING
+    ? (pulls > 1
+        ? `[ENTER] PULL LEAD · ${pulls} BACK · DROPS ${selected.pulls.slice(1).join(', ')}`
+        : `[ENTER] PULL LEAD · 1 BACK`)
+    : selected.state === SKILL_STATE.AFFORDABLE
+      ? `[ENTER] PATCH · 1 LEAD · ${pins.unspent} SPARE · ${selected.buyPrompt}`
+      : selected.blockedBy;
   uiText(d.x, d.y + d.h - 2, fit(call, d.w),
     selected.state === SKILL_STATE.OWNED ? 'ui-green'
       : selected.state === SKILL_STATE.PENDING || selected.state === SKILL_STATE.AFFORDABLE ? 'ui-amber' : 'ui-danger', .9);
-  uiText(d.x,d.y+d.h-1,fit('◆ INSTALLED   ◈ CHOSEN   ◇ AVAILABLE   · LOCKED',d.w),'ui-label',.62);
+  uiText(d.x,d.y+d.h-1,fit('◆ PATCHED   + NEW   ◇ OPEN   · NO REACH',d.w),'ui-label',.62);
   void now;
 }

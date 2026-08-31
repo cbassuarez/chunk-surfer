@@ -492,7 +492,7 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
             adjust: () => setPsychModule('windowChoreography', !psychProfile().modules.windowChoreography) },
           { id: 'profileWindowNote', label: '', selectable: false,
             value: () => (psychProfile().modules.windowChoreography
-              ? 'FIXED CAST SURFACES NEVER TAKE FOCUS'
+              ? 'AUTHORED FRAME MOTION · FOUR GAME-OWNED PANES'
               : ''),
           },
           { id: 'profileFiles', label: 'INTERFERENCE FILES',
@@ -505,7 +505,7 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
           section('Controls'),
           { id: 'profileRetryMic', label: 'RETRY MICROPHONE', value: () => inputPrompt('confirm'), activate: () => hooks.enableMic?.() },
           { id: 'profilePreviewWindows', label: 'PREVIEW FIREBALL CAST', value: () => inputPrompt('confirm'), activate: () => hooks.previewProfileWindows?.() },
-          { id: 'profileRestore', label: 'CLOSE FIREBALL SURFACES', value: () => inputPrompt('confirm'), activate: () => hooks.restoreProfileWindows?.() },
+          { id: 'profileRestore', label: 'RESTORE GAME WINDOW', value: () => inputPrompt('confirm'), activate: () => hooks.restoreProfileWindows?.() },
           { id: 'profileOpenReturns', label: 'OPEN INTERFERENCE FOLDER', value: () => inputPrompt('confirm'), activate: () => hooks.openReturnFolder?.() },
           { id: 'profileResetInference', label: 'RESET INFERRED PROFILE',
             value: () => armedValue('profileResetInference'),

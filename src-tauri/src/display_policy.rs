@@ -183,9 +183,7 @@ pub fn set_game_mode(app: &AppHandle, enabled: bool) -> Result<(), String> {
             .map_err(|err| err.to_string())
     } else {
         let _ = window.set_simple_fullscreen(false);
-        window
-            .set_fullscreen(false)
-            .map_err(|err| err.to_string())
+        window.set_fullscreen(false).map_err(|err| err.to_string())
     }
 }
 

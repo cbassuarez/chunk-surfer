@@ -31,7 +31,7 @@
 // has, and it is precisely what he never did for her: "You never played me back.
 // Not once." Same faculty, pointed at a person instead of a product.
 //
-// Pure and seeded, like battle-house.js: it takes a session and returns a
+// Pure and seeded, like hall-apparitions.js: it takes a session and returns a
 // session, so combat-state can own one without an import cycle.
 
 // What is on the bar, in the order he gets to it. Three passes, because the

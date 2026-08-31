@@ -23,17 +23,19 @@ test('title screen keeps canonical menu items and keyboard activation paths', ()
     'new-run',
     'archive',
     'return-index',
-    'hush-run',
+    'transfer-room',
     'beta-notice',
     'settings',
   ]) {
     assert.match(source, new RegExp(`id: '${id}'`));
   }
-  assert.match(source, /replay \? \[\{ id: 'hush-run'/);
-  // The HUSH row's help line is authored in post-run-copy now, so the title,
-  // the return report and the archive cannot describe one state three ways.
-  assert.match(source, /hushAvailabilityCopy\(hushAvailability/);
-  assert.match(source, /function hushLabel/);
+  assert.match(source, /transferRoomOpen \? \[\{ id: 'transfer-room'/);
+  // The row's help line is still authored in post-run-copy, so the title, the
+  // return report and the archive cannot describe one state three ways. That
+  // rule outlived the mode it was written for.
+  assert.match(source, /transferRoomCopy\(/);
+  assert.doesNotMatch(source, /function hushLabel/,
+    'a filing room does not corrupt its own signage — that effect belonged to the thing it was named after');
   assert.doesNotMatch(source, /just-surf|onJustSurf/);
   for (const key of ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 'Space']) {
     assert.match(source, new RegExp(key));

@@ -161,11 +161,33 @@ export function readFidelity(state) {
   return clamp(fidelity, .35, 1);
 }
 
-export function readConfidence(state, fidelity = 1) {
+// CERTAINTY IS A SEPARATE FACULTY FROM ACCURACY, AND IT FAILS SEPARATELY.
+//
+// The honest model is calibrated: a poor read is hedged, and the hedging is how
+// the player knows to be careful. It is the single most trusted thing on the
+// screen, which is exactly why it is worth breaking.
+//
+// `calibration` comes from game/hypoxia.js and is 1 when he is himself. Above 1
+// his stated certainty runs ahead of his actual read — the loss of
+// self-criticism that aviation medicine describes as the FIRST effect, before
+// anything he could notice. It arrives in two stages, because going straight to
+// conviction is unbelievable:
+//
+//   the floor      the hedging stops arriving. He is not overclaiming; the part
+//                  that adds `I think` has simply gone. Nothing looks wrong.
+//   the conviction outright certainty in an error. The last stage only, and
+//                  rarely — a narrator confidently wrong all the time is just a
+//                  narrator nobody believes.
+export function readConfidence(state, fidelity = 1, calibration = 1) {
   const composure = Math.max(0, Number(state?.composure) || 0);
   const max = Math.max(1, Number(state?.maxComposure) || 1);
-  if (fidelity >= .92) return CONFIDENCE.SURE;
-  if (fidelity >= .68 && composure / max > .35) return CONFIDENCE.LIKELY;
+  const trust = Math.max(0, Number(calibration) || 1);
+  // Inflated: what he WOULD say. The honest fidelity is untouched and still
+  // decides whether he is right — only the hedging moves.
+  const stated = Math.min(1, Math.max(0, fidelity) * trust);
+  if (trust >= 1.55 && fidelity < .55) return CONFIDENCE.SURE;
+  if (stated >= .92) return CONFIDENCE.SURE;
+  if (stated >= .68 && (composure / max > .35 || trust > 1.2)) return CONFIDENCE.LIKELY;
   return CONFIDENCE.UNSURE;
 }
 
@@ -191,12 +213,14 @@ export function thoughtTrace(state, {
   // less gets the read and the plan; the caller decides whether to draw it at
   // all. See COMBAT_GUIDANCE.
   guidance = 'trace',
+  // 1 while he is himself. See readConfidence — this is the only input that can
+  // make the trace surer than it has any right to be.
+  calibration = 1,
   stance = null,
   chained = false,
   chargeReady = false,
-  // The hall. `acting` is the section about to move, `targeted` is where the
-  // cursor is pointing, and `left` is how many are still in it. Null for every
-  // other fight, where there is only ever one thing to be pointing at.
+  // The Hall roster. `house` remains a compatibility input for old callers.
+  apparitions = null,
   house = null,
 } = {}) {
   const lines = [];
@@ -211,7 +235,7 @@ export function thoughtTrace(state, {
     return { lines, confidence: CONFIDENCE.SURE };
   }
 
-  const confidence = readConfidence(state, fidelity);
+  const confidence = readConfidence(state, fidelity, calibration);
   const named = quiet(intent.label || intent.kind);
   const hedge = phrase(HEDGE[confidence], beat, 'hedge');
 
@@ -234,25 +258,20 @@ export function thoughtTrace(state, {
     : phrase(NO_ANSWER, beat, 'plan');
   lines.push({ text: fray(plan, pressure, `${beat}:plan`), tone: 'plan' });
 
-  // WHICH ONE. Against a crowd the read is only half the question — the other
-  // half is where to spend the answer, and the deck cannot say that because the
-  // deck does not know where he is looking. So the thinking does.
-  if (house?.actingId) {
-    const acting = house.rows.find((row) => row.id === house.actingId);
-    const aimed = house.rows.find((row) => row.targeted);
-    // Kept short on purpose: this is the bottom line of a narrow card, and the
-    // first draft ran past the panel and lost the half that named the section
-    // he was actually pointing at — which was the entire content of the line.
+  // WHICH ONE. Each body is a real target, and the thought names a mismatch
+  // between the next actor and the selected primary without calling either one
+  // a row, section, or piece of architecture.
+  const roster = apparitions || house;
+  if (roster?.members?.length) {
+    const acting = roster.members.find((member) => member.id === roster.activeActorId)
+      || roster.members.find((member) => !member.defeated);
+    const aimed = roster.members.find((member) => member.primary)
+      || roster.members.find((member) => member.targeted);
     if (acting && aimed && acting.id !== aimed.id) {
-      // The mistake worth naming out loud: he is answering the wrong section.
-      // Two thoughts rather than one, because one does not fit the card — and
-      // because two short ones is the register the trace is written in anyway.
       lines.push({ text: fray(`${quiet(acting.label)} moves.`, pressure, `${beat}:aim`), tone: 'warn' });
       lines.push({ text: fray(`i'm aimed at ${quiet(aimed.label)}.`, pressure, `${beat}:aim2`), tone: 'warn' });
     } else if (aimed) {
-      lines.push({ text: fray(aimed.figures <= 1
-        ? `${quiet(aimed.label)} — last one.`
-        : `${quiet(aimed.label)}. ${aimed.figures} left.`, pressure, `${beat}:aim`), tone: 'read' });
+      lines.push({ text: fray(`${quiet(aimed.label)}. ${aimed.health} left.`, pressure, `${beat}:aim`), tone: 'read' });
     }
   }
 

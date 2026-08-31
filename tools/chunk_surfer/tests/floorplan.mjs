@@ -183,9 +183,8 @@ const hallView=FP.physicalRenderPlanFor(...Object.values(rc(102,15)));
 const atriumPhysical=FP.logicalToPhysical(...Object.values(rc(96,24)));
 ck('the atrium opening is visible from the hall render slice',!hallView.solid[viewIndex(hallView,atriumPhysical)]);
 
-// Four curving half-coils make two complete revolutions. The navigation raster
-// uses macro winders, while construction and fractional camera height retain
-// all 58 physical risers.
+// Four curving half-coils make two complete revolutions. Every visible tread is
+// now a real navigation address whose physical point is sampled on the helix.
 const mainRuns=cp.stairRuns.filter((run)=>run.owner==='main-open-well');
 ck('the main stair is four curving half-coils',
   mainRuns.length===4&&mainRuns.every((run)=>run.arcId>0)
@@ -274,14 +273,14 @@ for(const run of mainRuns){
     if(!FP.canStep(...a,...b,{keys:KEYRING}).ok||!FP.canStep(...b,...a,{keys:KEYRING}).ok)climbFailures.push(`${run.flight}:${s}`);
   }
 }
-ck('all four coils have continuous bidirectional climbable macro-risers',!climbFailures.length,climbFailures.join(' '));
+ck('all four coils have continuous bidirectional climbable risers',!climbFailures.length,climbFailures.join(' '));
 const profileFailures=[];
-for(const run of mainRuns)for(let riser=0;riser<=run.rises;riser++){
-  const t=riser/run.rises,lx=run.logical0[0]+(run.logical1[0]-run.logical0[0])*t,ly=run.logical0[1]+(run.logical1[1]-run.logical0[1])*t,p=FP.logicalToPhysical(lx,ly);
-  const got=FP.renderedFloorAt(lx,ly,p.x,p.z),want=run.fromH+(run.toH-run.fromH)*t;
-  if(Math.abs(got-want)>.001)profileFailures.push(`${run.flight}:${riser}`);
+for(const run of mainRuns)for(let tread=0;tread<run.rises;tread++){
+  const lx=run.logical0[0]+run.logicalDx*tread,ly=run.logical0[1]+run.logicalDy*tread,p=FP.logicalToPhysical(lx,ly);
+  const got=FP.renderedFloorAt(lx,ly,p.x,p.z),want=run.fromH+(run.toH-run.fromH)*(tread/run.rises);
+  if(Math.abs(got-want)>.001)profileFailures.push(`${run.flight}:${tread}`);
 }
-ck('fractional camera height follows every one of the 58 physical risers',!profileFailures.length,profileFailures.slice(0,8).join(' '));
+ck('camera and collision agree on all 58 physical treads',!profileFailures.length,profileFailures.slice(0,8).join(' '));
 
 const embeddedWithoutDrift=(points)=>points.every(([x,y])=>{
   const p=FP.logicalToPhysical(x+.25,y+.25);
@@ -333,7 +332,7 @@ const lv = (n, pnt, want) => {
 lv('the sub-basement', probePoint('studio'), -4.0);
 lv('the ground', probePoint('foyer'), 0);
 lv('the upper', probePoint('chapel'), 4.8);
-lv('the walkable pool surface', probePoint('pool'), 0);
+lv('the pool floor, two metres down', probePoint('pool'), -2.0);
 
 let tallAtrium=0;const heights=new Set();
 for(let y=0;y<cp.h;y++)for(let x=0;x<cp.w;x++){
@@ -376,12 +375,39 @@ for (const k of walked) {
 ck('no riser anywhere in the building is a ladder', worstRiser <= FP.STEP_UP + 1e-6,
    `worst = ${worstRiser.toFixed(3)}m (max ${FP.STEP_UP})  at ${worstPair}`);
 
-// The pool is a visual/material plane in the room, never a recessed inner
-// collision room. All four sides are ordinary walkable transitions.
-ck('you can walk into the pool from the west deck',FP.canStep(...Object.values(rc(77,40)),...Object.values(rc(78,40)),{keys:KEYRING}).ok);
-ck('you can walk into the pool from the east deck',FP.canStep(...Object.values(rc(90,40)),...Object.values(rc(89,40)),{keys:KEYRING}).ok);
-ck('you can walk into the pool from the lead deck',FP.canStep(...Object.values(rc(84,32)),...Object.values(rc(84,33)),{keys:KEYRING}).ok);
-ck('you can walk out at the far end',FP.canStep(...Object.values(rc(84,48)),...Object.values(rc(84,49)),{keys:KEYRING}).ok);
+// THE POOL IS A REAL TWO-METRE BASIN, AND IT MUST STILL BE A HOLE.
+//
+// It was a flat plane with a wet-tile material for a while, because a real
+// depression rendered as a solid cube — the height window in
+// physicalRenderPlanFor dropped every basin cell out of a slice built for the
+// deck, and a cell with no span comes back solid. The basin was restored
+// without that being fixed, so the pool went back to being a tiled block from
+// floor to ceiling. Both halves are asserted here: the rim is a drop you
+// cannot step off, the stair is the way in, and the slice you actually see
+// from the deck has a hole in it.
+ck('the pool rim is a drop, not a step',
+   !FP.canStep(...Object.values(rc(77,40)),...Object.values(rc(78,40)),{keys:KEYRING}).ok
+   && !FP.canStep(...Object.values(rc(90,40)),...Object.values(rc(89,40)),{keys:KEYRING}).ok);
+ck('the west stair is the way down into the basin',
+   FP.canStep(...Object.values(rc(78,33)),...Object.values(rc(78,34)),{keys:KEYRING}).ok);
+{
+  // Standing on the dry lead-in, looking south at the water.
+  const deck=rc(75,30),basin=rc(84,40);
+  const slice=FP.physicalRenderPlanFor(deck.x,deck.y);
+  const ph=FP.logicalToPhysical(basin.x,basin.y);
+  const i=(Math.floor(ph.z??basin.y)-slice.originY)*slice.w+(Math.floor(ph.x??basin.x)-slice.originX);
+  ck('the basin is a hole in the slice you see from the deck',
+     !slice.solid[i] && slice.floor[i] < -1.5,
+     slice.solid[i]?'SOLID — the pool is a cube again':`floor=${slice.floor[i].toFixed(2)}`);
+  // And the deck survives the slice built for the basin, which is the same
+  // failure seen from the other side.
+  const inside=FP.physicalRenderPlanFor(basin.x,basin.y);
+  const dph=FP.logicalToPhysical(deck.x,deck.y);
+  const di=(Math.floor(dph.z??deck.y)-inside.originY)*inside.w+(Math.floor(dph.x??deck.x)-inside.originX);
+  ck('the deck is still there when you are standing in the basin',
+     !inside.solid[di] && Math.abs(inside.floor[di]) < 0.01,
+     inside.solid[di]?'SOLID — the deck walled itself off':`floor=${inside.floor[di].toFixed(2)}`);
+}
 
 let lowRoom = 0;
 for (const k of walked) {

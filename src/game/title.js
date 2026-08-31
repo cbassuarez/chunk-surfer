@@ -16,7 +16,7 @@ import { getMeta, hasActiveRun } from './save.js';
 import * as AUDIO from '../audio/story-audio.js';
 import { promptLine } from './bindings.js';
 import { bootWeather, bootWeatherAudio, bootWeatherSettled, endBootWeather, renderBootWeather, stepBootWeather } from './boot-weather.js';
-import { hushAvailabilityCopy } from './post-run-copy.js';
+import { transferRoomCopy } from './post-run-copy.js';
 
 const TITLE_CONFIRM_PROMPT = 'START NEW RUN? PRESS ENTER AGAIN';
 const TITLE_MENU_TWO_COLUMN_MIN_W = 64;
@@ -76,16 +76,18 @@ export function makeTitleScene({
   buildLabel = '',
   onNewGame,
   onContinue,
-  onHush,
-  hushAvailability = null,
+  onTransferRoom = () => {},
   onSettings,
   onArchive = () => {},
   onReturnIndex = () => {},
   onBetaNotice = () => {},
   onAudioGate = () => {},
+  onSelectionChange = () => {},
 } = {}) {
   const meta = getMeta();
   const replay = (meta.endingsSeen?.length || 0) > 0;
+  const filed = Object.keys(meta.knowledge?.documents || {}).length;
+  const transferRoomOpen = replay || filed > 0;
   const activeRun = hasActiveRun();
 
   const items = [
@@ -93,7 +95,10 @@ export function makeTitleScene({
     { id: 'new-run', label: 'new run', run: onNewGame, confirms: true, stay: true },
     { id: 'archive', label: 'achievements', stay: true, run: onArchive },
     { id: 'return-index', label: 'endings', stay: true, run: onReturnIndex },
-    ...(replay ? [{ id: 'hush-run', label: 'THE HUSH', run: onHush, stay: !hushAvailability?.ready, locked: !hushAvailability?.ready }] : []),
+    // THE OFFICE YOU COME BACK TO. It appears the moment there is any reason to
+    // go there — the first sheet you read, or the first night you finish — and
+    // never before, because an empty file is a worse introduction than no row.
+    ...(transferRoomOpen ? [{ id: 'transfer-room', label: 'the transfer room', stay: true, run: onTransferRoom }] : []),
     { id: 'beta-notice', label: 'beta notice', stay: true, run: onBetaNotice },
     { id: 'settings', label: 'settings', stay: true, run: onSettings },
   ];
@@ -109,20 +114,6 @@ export function makeTitleScene({
 
   const columns = () => menuColumns;
   const rowsPerColumn = () => Math.ceil(items.length / columns());
-
-  function hushLabel() {
-    const label = 'THE HUSH';
-    const beat = Math.floor(t * 1.37);
-    // Keep the title readable, but let the substitution occupy roughly half of
-    // its display beats instead of only flashing occasionally. Never spend a
-    // corruption beat replacing the space between THE and HUSH.
-    if ((beat % 2) === 1 || (beat % 7) === 3) {
-      const corruptible = [0, 1, 2, 4, 5, 6, 7];
-      const index = corruptible[(beat * 7 + 3) % corruptible.length];
-      return `${label.slice(0, index)}?${label.slice(index + 1)}`;
-    }
-    return label;
-  }
 
   function primeAudio() {
     if (audioPrimed) return;
@@ -144,6 +135,7 @@ export function makeTitleScene({
     sel = index;
     disarm();
     if (sound) AUDIO.menuMove();
+    onSelectionChange(items[sel]?.id||'',sel);
     return true;
   }
 
@@ -153,6 +145,7 @@ export function makeTitleScene({
       previousSel = sel;
       previousSelUntil = nowMs() + 90;
       sel = next;
+      onSelectionChange(items[sel]?.id||'',sel);
     }
     disarm();
     AUDIO.menuMove();
@@ -211,6 +204,7 @@ export function makeTitleScene({
       primeAudio();
       const map = document.querySelector('.map') || document.querySelector('#map');
       try { map?.setAttribute('tabindex', '0'); map?.focus({ preventScroll: true }); } catch (_) {}
+      onSelectionChange(items[sel]?.id||'',sel);
     },
 
     exit() {
@@ -348,9 +342,9 @@ export function makeTitleScene({
         uiCenter(body.y + 10, 'AUDIOCORP LOCAL MONITOR READY', 'ui-secondary', 0.28);
       }
 
-      if (items[sel]?.id === 'hush-run') {
-        const hushHelp = hushAvailabilityCopy(hushAvailability || {});
-        uiCenter(body.y + 9, hushHelp.short, hushHelp.enabled ? 'ui-danger' : 'ui-secondary');
+      if (items[sel]?.id === 'transfer-room') {
+        const help = transferRoomCopy({ filed });
+        uiCenter(body.y + 9, help.short, help.enabled ? 'ui-amber' : 'ui-secondary');
       }
       else if (meta.hushMet) uiCenter(body.y + 9, 'THE HUSH HAS YOUR SIGNAL.', 'ui-danger');
       else if (meta.leftMidRun) uiCenter(body.y + 9, 'UNFINISHED RUN SAVED.', 'ui-danger');
@@ -366,7 +360,7 @@ export function makeTitleScene({
       items.forEach((item, i) => {
         const on = i === sel;
         const armed = item.confirms && confirmNewRun;
-        const labelText = armed ? TITLE_CONFIRM_PROMPT : item.id === 'hush-run' ? hushLabel() : item.label.toUpperCase();
+        const labelText = armed ? TITLE_CONFIRM_PROMPT : item.label.toUpperCase();
         const col = Math.floor(i / rowCount);
         const row = i % rowCount;
         const itemX = layout.colX[col] ?? layout.colX[0];

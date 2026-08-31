@@ -54,6 +54,7 @@ import {
   SOURCE_BELL_PASSAGE,
   inSourceBellsRoom,
   sourceBellsDepth,
+  bellSwingAt,
   sourceBellsRoomResolve,
 } from '../data/source-level.js';
 import {
@@ -84,6 +85,7 @@ import {
   HORIZON_BUST_REFUSAL,
   horizonBustAudience,
 } from './horizon-bust.js';
+import { sourceSensoryMix } from './source-sensory.js';
 
 // The anchored plan contains the complete 620-cell-deep Source field plus the
 // 720-cell-wide white sea. One retained upload is still cheaper than rebuilding
@@ -724,6 +726,10 @@ export function createSourceSpaceRuntime({
   });
   let player = { x: SOURCE_ENTRY.x, y: SOURCE_ENTRY.y, facing: SOURCE_ENTRY.facing };
   let transformElapsed = 0;
+  // A restored TRANSFORMING save has no still-page scene to cover it, so it
+  // resumes already quiet. A live Haystack transition starts loud and drains
+  // beneath the page until the page is lowered.
+  let sourceSensorySettled = state.phase === CHUNK_SURF_PHASE.TRANSFORMING;
   let lastPlan = null;
   let lastFocus = null;
   const readSheets = new Set();
@@ -983,6 +989,37 @@ export function createSourceSpaceRuntime({
     return Math.abs(lx - band.centre) <= band.reach;
   }
 
+  // ── THE WALK OUT OF THE FIELD ─────────────────────────────────────────────
+  //
+  // The field used to stop and the recording used to start in the same step, so
+  // the tape was somewhere he was PUT rather than somewhere he got to, and it
+  // had nothing to arrive out of. Two stretches stand between them now: the
+  // outskirts, where the field's own structures thin out and stop, and the
+  // nothing, which is what the source runs out into.
+  //
+  // Same phase as the horizon on purpose. The tape's playhead is
+  // sourceHorizonDepth, which clamps to zero for anybody standing short of the
+  // seam — so all three hundred and sixty metres of this play at second zero,
+  // which is silence, and the piece starts on the step that crosses in. The
+  // audio contract needed no change at all.
+  function inPreTape(x, y) {
+    if (state.phase !== CHUNK_SURF_PHASE.HORIZON) return false;
+    const o = landscapeOrigin(), lx = x - o.x, ly = y - o.y;
+    if (ly > SOURCE_PRE_TAPE.from || ly < SOURCE_PRE_TAPE.to) return false;
+    return Math.abs(lx) <= SOURCE_PRE_TAPE.halfWidth;
+  }
+
+  function preTapeCell(x, y) {
+    if (!inPreTape(x, y)) return null;
+    // Flat, open, and lit by nothing, which is the whole of it.
+    return {
+      floor: SOURCE_TIER_BY_ID.outskirts?.height ?? 15.2,
+      ceil: null,
+      solid: false,
+      zone: ZONE.sourceSpace,
+    };
+  }
+
   function horizonCell(x, y) {
     if (!inHorizon(x, y)) return null;
     // Flat, open, and unlit by anything the building owns. No ceiling: what is
@@ -1140,6 +1177,8 @@ export function createSourceSpaceRuntime({
   function resolveSourceCell(x, y, hallCell) {
     const bells = bellsCell(x, y);
     if (bells) return bells;
+    const preTape = preTapeCell(x, y);
+    if (preTape) return preTape;
     const horizon = horizonCell(x, y);
     if (horizon) return horizon;
     const landscape = landscapeCell(x, y);
@@ -1632,6 +1671,23 @@ export function createSourceSpaceRuntime({
     };
   }
 
+  function sourceSensoryFrame() {
+    const transitionProgress = state.phase === CHUNK_SURF_PHASE.TRANSFORMING
+      ? clamp01(transformElapsed / SOURCE_TRANSFORM_SECONDS)
+      : state.phase === CHUNK_SURF_PHASE.HALL || state.phase === CHUNK_SURF_PHASE.HAYSTACK ? 0 : 1;
+    return Object.freeze({
+      phase: state.phase,
+      transitionProgress,
+      settled: sourceSensorySettled,
+      mix: sourceSensoryMix({ phase: state.phase, transitionProgress, settled: sourceSensorySettled }),
+    });
+  }
+
+  function settleSourceSensory() {
+    sourceSensorySettled = true;
+    return sourceSensoryFrame();
+  }
+
   function hushMode() {
     const hallSearch = state.phase === CHUNK_SURF_PHASE.HALL
       && state.hallMaxDistance >= SOURCE_SEARCH_START_METRES;
@@ -1918,7 +1974,14 @@ export function createSourceSpaceRuntime({
   // would be walking back into a chapter that has already closed.
   function enteredHorizon() {
     if (state.phase !== CHUNK_SURF_PHASE.HORIZON) return { handled: false, state };
-    const entry = checkpointPosition('landing-horizon');
+    // AT THE FIELD'S EDGE, NOT AT THE HEAD OF THE TAPE. The walk out is his to
+    // make; the tape begins three hundred and sixty metres later, on its own.
+    const o = landscapeOrigin();
+    const entry = {
+      x: o.x,
+      y: o.y + SOURCE_PRE_TAPE.from - SOURCE_PRE_TAPE.entryStandoff,
+      facing: 0,
+    };
     setPlayerPosition({ x: entry.x, y: entry.y, facing: entry.facing || 0 });
     protectMoment(30);
     protectionRemaining = Math.max(protectionRemaining, 30);
@@ -2149,10 +2212,13 @@ export function createSourceSpaceRuntime({
       ? .92 - redProgress * .62
       : thresholdWhiteout * .92;
     return Object.freeze({
+      phase: state.phase,
+      sourcePhase,
       active: sourcePhase && !state.sourceApproachComplete,
       sceneDock,
       approach,
       complete: !!state.sourceApproachComplete,
+      proper: sourcePhase && !!state.sourceApproachComplete,
       localY,
       distance,
       targetDistance: SOURCE_APPROACH_TRAVEL_CELLS,
@@ -2175,6 +2241,29 @@ export function createSourceSpaceRuntime({
   // therefore owns a hard semantic boundary: on or behind the FOH threshold is
   // the neutral physical room, beyond it is Source's emergency circuit. Local
   // lamps, the post wash and the torch all consume this same answer.
+  // THE ONE TIER WITH NOTHING LIT IN IT.
+  //
+  // Source is a void lit entirely by its own lamps, so its ambient is 0.012 —
+  // near enough to nothing, which is correct everywhere it has lamps. The bell
+  // passage has none: every source-side emitter is filtered out here because
+  // `sourceEmergencyLightingFrame` is inactive outside the tape. Measured in the
+  // harness, that left forty-seven submitted bell meshes at litPct 0 — the whole
+  // passage was rendering black on black, and the ground truth was the same
+  // frame in the building reading litPct 92.
+  //
+  // NOTHINGNESS IS NOT DARKNESS. The place is meant to have no world in it, not
+  // no light: bronze standing in nothing, with nothing behind it. So the tier
+  // carries a flat ambient of its own and no lamps at all — no falloff to read
+  // distance by, no cast shadows, nothing to tell you where the light is coming
+  // from, because there is nowhere for it to come from. Cool, so the bells read
+  // warm against it.
+  const BELLS_AMBIENT = Object.freeze({ color: Object.freeze([0.52, 0.56, 0.64]), intensity: 0.11 });
+  const SOURCE_AMBIENT = Object.freeze({ color: Object.freeze([0.12, 0.13, 0.12]), intensity: 0.012 });
+
+  function sourceAmbient() {
+    return state.phase === CHUNK_SURF_PHASE.BELLS ? BELLS_AMBIENT : SOURCE_AMBIENT;
+  }
+
   function sourceEmergencyLightingFrame({
     time = phaseElapsed,
     reducedMotion = false,
@@ -2183,7 +2272,26 @@ export function createSourceSpaceRuntime({
     const sourcePhase = sourcePhaseActive();
     const voidFrame = sourceVoidFrame();
     const localY = voidFrame.localY;
-    const active = sourcePhase && !voidFrame.sceneDock && (state.sourceApproachComplete
+    // THE RED IS THE APPROACH, AND THE APPROACH ENDS AT THE FIRST LIFT.
+    //
+    // `sourceApproachComplete` used to be enough on its own, which latched the
+    // wash on for the whole rest of Source — the fork, the trace, the return,
+    // the HUSH beats and the final page all played under a permanent red
+    // contactor pulse, because nothing ever turned it off again.
+    //
+    // The lamps themselves always knew where to stop: sourceApproachSpan clamps
+    // the emitter run to the foot of the chute-fork stair, and there is a spec
+    // pinning that none burn past it. It was only the full-frame compositor wash
+    // that ran on. So this costs no authored light at all — past the stair there
+    // was never a lamp to lose.
+    //
+    // Bounded by the MILESTONE rather than a coordinate, so it reads the same
+    // way the objective does: the red stops on the step that finishes the climb.
+    // What the player carries onward is the torch's own red, which is the
+    // authored intent (see source-landing.js, "the only red the player carries
+    // onward is the torch's") and is why sourceFlashlightFrame is left alone.
+    const approachRed = state.sourceApproachComplete && !state.firstLiftCompleted;
+    const active = sourcePhase && !voidFrame.sceneDock && (approachRed
       || (voidFrame.approach && voidFrame.elapsedSeconds >= SOURCE_APPROACH_RED_ONSET_SECONDS));
     const emergency = sourceEmergencyFrame(time, {
       reducedEffects: reducedMotion || flashMode !== 'full',
@@ -2197,7 +2305,7 @@ export function createSourceSpaceRuntime({
       cycle: emergency.cycle,
       lightScale: emergency.lightScale,
       strength: active
-        ? emergency.wash * (state.sourceApproachComplete ? 1 : Math.max(.28, voidFrame.redProgress))
+        ? emergency.wash * (approachRed ? 1 : Math.max(.28, voidFrame.redProgress))
         : 0,
     });
   }
@@ -2430,7 +2538,7 @@ export function createSourceSpaceRuntime({
     return out;
   }
 
-  function focusAt(px, py, facing) {
+  function focusAt(px, py, facing, presence = null) {
     const candidates = [];
     if ([CHUNK_SURF_PHASE.TRANSFORMING, CHUNK_SURF_PHASE.LANDSCAPE].includes(state.phase)
         && !state.firstLiftCompleted && !landingPortalFrame().complete) {
@@ -2459,6 +2567,25 @@ export function createSourceSpaceRuntime({
         if (state.phase === CHUNK_SURF_PHASE.FINAL && id === 'final-page') continue;
         const point = landmarkPoint(id);
         if (point) candidates.push({ kind: 'landmark', available: available(id), ...point });
+      }
+      // THE BODY IS A THING YOU CAN WALK UP TO.
+      //
+      // beginHushContact has always existed and always guarded itself on
+      // hushMode().colliding — but the only caller was a physical catch, and
+      // out here a catch cannot happen: the body prowls at a fifth of the
+      // player's speed, Source never gives it a sound to chase, and contact
+      // wants three quarters of a cell. The two of them were never going to
+      // meet by accident.
+      //
+      // So the meeting is the player's move. It is focusable like every other
+      // thing in Source, it costs him a tier the same as being caught does, and
+      // walking away from it costs nothing at all.
+      if (hushMode().colliding && presence?.active
+          && Number.isFinite(presence.x) && Number.isFinite(presence.y)) {
+        candidates.push({
+          kind: 'hush', id: 'source-hush', x: presence.x, y: presence.y,
+          focusPriority: 11, focusRadius: 7,
+        });
       }
       if (state.phase === CHUNK_SURF_PHASE.FINAL) {
         const final = landmarkPoint('final-page');
@@ -2664,6 +2791,7 @@ export function createSourceSpaceRuntime({
         landscapeOrigin: sourceLandscapeOriginAfterHaystack(),
       }, { immediate: true });
       transformElapsed = 0;
+      sourceSensorySettled = false;
       // NO LINE HERE. This used to answer with 'One sheet does not move…', which
       // the caller spoke — so the hardest walk in the game ended on a caption.
       // The caller cuts to black on this event instead: a door, and then the
@@ -2692,6 +2820,11 @@ export function createSourceSpaceRuntime({
         beat: talk.beat,
         text: '',
       };
+    }
+    if (focus.kind === 'hush') {
+      // Main owns the scene, the flash and the relocation — the same path a
+      // catch takes. This only says the player asked for it.
+      return { handled: true, event: 'hush-contact', text: '' };
     }
     if (focus.kind === 'normal-exit') {
       // The two authored pads are one decision, not a secret safe exit beside a
@@ -3686,7 +3819,7 @@ export function createSourceSpaceRuntime({
   // The room fades UP rather than appearing: `resolve` is a function of depth
   // (sourceBellsRoomResolve), and a room that switched on at a threshold would
   // be the cut this whole passage exists to stop being.
-  function bellPassageInstances(px, py) {
+  function bellPassageInstances(px, py, { time = phaseElapsed } = {}) {
     if (state.phase !== CHUNK_SURF_PHASE.BELLS) return [];
     const o = landscapeOrigin();
     const local = player.y - o.y;
@@ -3707,7 +3840,10 @@ export function createSourceSpaceRuntime({
           scaleX: scale * fade, scaleY: scale * fade, scaleZ: scale * fade,
           yaw: entry.yaw || 0,
           pitch: entry.pitch || 0,
-          roll: entry.roll || 0,
+          // ADDED to the authored roll, never replacing it: the inverted bell is
+          // authored at roll PI and has to rock about being upside down rather
+          // than snap upright on the first frame.
+          roll: (entry.roll || 0) + bellSwingAt(entry, time),
         }),
         zone: ZONE.sourceSpace,
         structural: true,
@@ -3870,6 +4006,39 @@ export function createSourceSpaceRuntime({
 
   const navigation = {
     canOccupy: (x, y) => !!cellAt(x, y),
+    // WHERE THE BODY IS ALLOWED TO BE STANDING WHEN YOU FIND IT.
+    //
+    // Source had no sampler at all, so the one spawn it got was spawnBehind's
+    // compatibility stub: twenty-two cells at +y, unchecked against any cell,
+    // which out here is back DOWN the slope the player has just climbed. The
+    // body was behind him, below him, on a tier he had finished with, and since
+    // it prowls at a fifth of his speed and Source never gives it a target, it
+    // stayed there for the rest of the chapter.
+    //
+    // AHEAD, and on his own floor. It cannot catch him — nothing out here is
+    // meant to — so the only way the encounter happens is if he walks into it,
+    // and that means it has to be somewhere he is going. Same floor because a
+    // tier boundary is a climb, and a body across one is a body behind glass.
+    sampleSpawn({ player, forward, minDistance = 30, maxDistance = 48, random = Math.random } = {}) {
+      if (!player) return null;
+      const here = cellAt(player.x, player.y);
+      if (!here) return null;
+      const bearing = Math.atan2(Number(forward?.y) || -1, Number(forward?.x) || 0);
+      const span = Math.max(0.001, maxDistance - minDistance);
+      for (let attempt = 0; attempt < 64; attempt += 1) {
+        // A wide arc in front of him rather than a point: he must be able to
+        // come upon it, not be issued with it.
+        const angle = bearing + (random() - 0.5) * Math.PI * 1.15;
+        const reach = minDistance + random() * span;
+        const x = player.x + Math.cos(angle) * reach;
+        const y = player.y + Math.sin(angle) * reach;
+        const cell = cellAt(x, y);
+        if (!cell) continue;
+        if (Math.abs((cell.floor ?? 0) - (here.floor ?? 0)) > 0.05) continue;
+        return { x, y };
+      }
+      return null;
+    },
     resolveMove(from, target, maxDistance) {
       if (lineOfSight(geometry.canStep, from, target)) {
         const dx = target.x - from.x, dy = target.y - from.y, d = Math.hypot(dx, dy);
@@ -4100,11 +4269,14 @@ export function createSourceSpaceRuntime({
     textSpaceActive,
     localLights,
     sourceVoidFrame,
+    sourceAmbient,
     sourceEmergencyLightingFrame,
     sourceFlashlightFrame,
     landingPortalFrame,
     landingContract: sourceLandingContract,
     sourceLandingHushFrame,
+    sourceSensoryFrame,
+    settleSourceSensory,
     traversalFrame,
     beginTraversal,
     tickTraversal,
@@ -4159,6 +4331,7 @@ export function createSourceSpaceRuntime({
       focus: lastFocus ? { kind: lastFocus.kind, id: lastFocus.id, source: lastFocus.sourceAnchor || null } : null,
       objective: sourceObjective(),
       hush: hushMode(),
+      sensory: sourceSensoryFrame(),
       traversal: traversalFrame(),
       horizonFrame: horizonFrame(),
       landing: {

@@ -40,6 +40,24 @@ export function hushFieldStage(value) {
   return 'none';
 }
 
+// The minimap is an instrument the player is carrying, not a debug view of the
+// Presence simulation. It may acknowledge HUSH only after the player has an
+// embodied fact: direct sight, or enough local absorption to feel/hear/see the
+// room changing. A trace below the pressure rung stays beneath perception and
+// cannot advertise an adversary merely because the simulation spawned one.
+export function hushPhysicallySensed({ visible = false, field = null, authoredPressure = 0 } = {}) {
+  if (visible) return true;
+  const pressure = clamp01(authoredPressure);
+  if (pressure >= .08) return true;
+  if (!field?.active) return false;
+  const sensation = Math.max(
+    clamp01(field.presentation?.audio ?? field.absorption?.audio),
+    clamp01(field.presentation?.monitor ?? field.absorption?.monitor),
+    clamp01(field.presentation?.light ?? field.absorption?.light),
+  );
+  return ['pressure', 'near', 'engulf', 'contact'].includes(field.stage) || sensation >= .20;
+}
+
 export function computeHushField({
   hush,
   operator,
@@ -159,16 +177,33 @@ export function applyHushTorchInterference(torch = {}, field = null) {
 // graph. It therefore remains present when the operator is too far away for
 // bodily interference, and accessibility settings remove motion without ever
 // turning the shadow back into an ordinarily lit object.
-export function hushAbsenceLook({ active = false, field = null, dread = 0 } = {}) {
+// LEANING OUT HAS TO SHOW YOU SOMETHING.
+//
+// The absence is a volume in which light stops arriving, and at full strength it
+// takes the surfaces around the body with it — which is precisely how a figure
+// becomes invisible rather than terrifying. The emergency apparitions learned
+// this the hard way: a black silhouette is unreadable when the thing making the
+// dark is the only thing in the room, because an absence of the only light is
+// indistinguishable from the wall behind it.
+//
+// A peek is bought with a noise and with the torch you did not dare use, so it
+// must pay. Holding the absence back off the surroundings leaves the body
+// something to read AGAINST. It does not brighten the HUSH; nothing does.
+const HUSH_PEEK_LEGIBILITY = Object.freeze({ strength: .74, radiusScale: .62 });
+
+export function hushAbsenceLook({ active = false, field = null, dread = 0, peek = 0 } = {}) {
   if (!active) return { active: false, strength: 0, radiusM: 0 };
   const proximity = clamp01(field?.proximity);
   const pressure = Math.max(
     clamp01(field?.presentation?.light ?? field?.absorption?.light),
     clamp01(dread),
   );
+  const look = clamp01(peek);
+  const strength = lerp(.88, .99, Math.max(proximity, pressure));
+  const radiusM = lerp(5.6, 8.2, Math.max(proximity * .72, pressure));
   return {
     active: true,
-    strength: lerp(.88, .99, Math.max(proximity, pressure)),
-    radiusM: lerp(5.6, 8.2, Math.max(proximity * .72, pressure)),
+    strength: lerp(strength, Math.min(strength, HUSH_PEEK_LEGIBILITY.strength), look),
+    radiusM: lerp(radiusM, radiusM * HUSH_PEEK_LEGIBILITY.radiusScale, look),
   };
 }

@@ -38,6 +38,10 @@ function shell() {
         <label for="node-select">Subsystem</label>
         <select id="node-select"></select>
       </div>
+      <div class="audit-links" aria-label="Detail audits">
+        <strong>Audits</strong>
+        ${(state.snapshot.audits || []).map((audit) => `<a href="http://127.0.0.1:${audit.port}/" target="_blank" rel="noreferrer" title="${escapeHtml(audit.blurb)} — npm run ${escapeHtml(audit.npm)}">${escapeHtml(audit.title)}</a>`).join('')}
+      </div>
     </header>
     <section class="map-workspace">
       <div class="map-column">
@@ -309,6 +313,20 @@ function renderMap() {
   document.getElementById('map-counts').textContent = `${visibleNodes.length}/${state.snapshot.nodes.length} systems · ${state.snapshot.edges.filter((edge) => state.flows.has(edge.kind) && allNodes.has(edge.from) && allNodes.has(edge.to)).length} routes`;
 }
 
+// A map says where a system is; an audit says what is inside it. Where one
+// exists for the selected system, offer it — the audit may not be running, and
+// the page it lands on says how to start it.
+function auditMarkup(nodeId) {
+  const audits = (state.snapshot.audits || []).filter((audit) => audit.systems.includes(nodeId));
+  if (!audits.length) return '';
+  return `<h3>Audit this system</h3>${audits.map((audit) => `
+    <a class="audit-card" href="http://127.0.0.1:${audit.port}/" target="_blank" rel="noreferrer">
+      <span>${escapeHtml(audit.title)}</span>
+      <small>${escapeHtml(audit.blurb)}</small>
+      <code>npm run ${escapeHtml(audit.npm)}</code>
+    </a>`).join('')}`;
+}
+
 function citationMarkup(evidence) {
   return evidence.map((citation) => `
     <details class="citation">
@@ -346,6 +364,7 @@ function renderExplainer() {
         <section><h3>Inbound · ${inbound.length}</h3>${inbound.map((edge) => edgeButton(edge)).join('') || '<p class="empty">None</p>'}</section>
         <section><h3>Outbound · ${outbound.length}</h3>${outbound.map((edge) => edgeButton(edge)).join('') || '<p class="empty">None</p>'}</section>
       </div>
+      ${auditMarkup(node.id)}
       <h3>Source evidence</h3>${citationMarkup(node.evidence)}`;
   } else if (selected.type === 'edge') {
     const edge = edges.get(selected.id);

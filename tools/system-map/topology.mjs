@@ -23,7 +23,9 @@ export const SYSTEM_NODES = Object.freeze([
     summary: 'Boots the game, owns the requestAnimationFrame loop, and coordinates the major runtime systems.',
     responsibilities: ['Load storage and authored building state', 'Own the frame loop and global runtime wiring', 'Route scene, world, audio, render, and platform state'],
     evidence: [
-      cite('index.html', '<script type="module" src="./src/main.js?v=20260803focus1"></script>', 'Browser entrypoint'),
+      // Anchored on the path, not the cache-busting query: the `?v=` moves with
+      // every release and took the whole system map down with it each time.
+      cite('index.html', '<script type="module" src="./src/main.js?v=', 'Browser entrypoint'),
       cite('src/main.js', 'async function bootScenes(){', 'Boot orchestration'),
       cite('src/main.js', 'function loop(){', 'Frame loop'),
     ],
@@ -215,12 +217,26 @@ export const SYSTEM_NODES = Object.freeze([
     ],
   },
   {
+    id: 'audits', label: 'Audits', district: 'content', archetype: 'reading-room',
+    grid: { x: 2, z: 43, w: 6, d: 5, h: 5 },
+    summary: 'Read-only pages that assemble one part of the game out of its own declarations and report what is missing.',
+    responsibilities: ['Read declared game data and the authored documents beside it', 'Report drift between a description and the code it describes', 'Link every authored line back to the Narrative Studio'],
+    evidence: [
+      cite('tools/audits/registry.mjs', 'export const AUDITS = Object.freeze([', 'The list of audits and their ports'),
+      cite('tools/audits/shared.mjs', 'export function serveAudit({ audit, build, render }) {', 'Shared audit server'),
+      cite('tools/audits/shared.mjs', 'export function citationReader() {', 'Description-to-source checking'),
+    ],
+  },
+  {
     id: 'vite-package', label: 'Vite web bundle', district: 'delivery', archetype: 'dispatch',
     grid: { x: 42, z: 33, w: 6, d: 5, h: 6 },
     summary: 'Validates content, builds atlases, and emits the browser bundle used directly or embedded in Tauri.',
     responsibilities: ['Run authoring and paper validation before bundling', 'Bundle game and interference-monitor entrypoints', 'Define the shipped application version and asset base'],
     evidence: [
-      cite('package.json', '"build": "npm run studio:validate && npm run paper:validate && npm run chunk-surf:atlas && vite build",', 'Production build pipeline'),
+      // Anchored on the head of the script, not the whole chain. The full string
+      // was pinned here and every step added to `build` took the system map down
+      // with it — the same brittleness as the index.html cache-buster below.
+      cite('package.json', '"build": "npm run studio:validate', 'Production build pipeline'),
       cite('vite.config.js', 'export default defineConfig({', 'Game Vite configuration'),
     ],
   },
@@ -267,6 +283,9 @@ export const SYSTEM_EDGES = Object.freeze([
   { id: 'generators-to-assets', from: 'asset-generators', to: 'public-assets', kind: 'generation', label: 'Generated runtime assets', payload: 'GLB packs, surface arrays, atlases, stems, stats and credits', evidence: [cite('package.json', '"assets:opening-street": "node tools/chunk_surfer/build-opening-street.mjs",', 'Generated asset command')] },
   { id: 'assets-to-render', from: 'public-assets', to: 'render-stack', kind: 'data', label: 'Visual asset fetch', payload: 'GLB buffers, textures, atlases, HUSH body and surface arrays', evidence: [cite('src/render/r3d.js', "loadTextureArray(assetUrl('assets/surfaces/surface-albedo.jpg'),{srgb:true}),", 'Surface asset load')] },
   { id: 'assets-to-audio', from: 'public-assets', to: 'audio-acoustics', kind: 'data', label: 'Audio asset fetch', payload: 'Manifest URLs, authored audio assets, cue layers and bell stems', evidence: [cite('src/audio/authored-cues.js', 'export function authoredCueUrls({ excludeCuePrefixes = [] } = {}) {', 'Authored audio URLs')] },
+  { id: 'content-to-audits', from: 'canonical-content', to: 'audits', kind: 'data', label: 'Authored documents under audit', payload: 'Story graphs, line ids and the project manifest, read to count what each ending says and to find dead references', evidence: [cite('tools/audits/endings/audit.mjs', 'async function loadDocument(documentId) {', 'Authored document reader')] },
+  { id: 'progression-to-audits', from: 'save-progression', to: 'audits', kind: 'data', label: 'Declared progression tables', payload: 'Achievements, calibration pins, the technique tree, ending ids and replay unlocks', evidence: [cite('tools/audits/progression/audit.mjs', 'export async function buildAudit() {', 'Progression audit assembly')] },
+  { id: 'audits-to-studio', from: 'audits', to: 'narrative-studio', kind: 'control', label: 'Open this line for editing', payload: 'Document id, node and line, resolved against the running studio session at the moment the link is followed', evidence: [cite('tools/audits/shared.mjs', "if (url.pathname.startsWith('/open/')) {", 'Studio deep-link redirect')] },
   { id: 'registry-to-vite', from: 'registry-validation', to: 'vite-package', kind: 'generation', label: 'Generated JavaScript content', payload: 'Static JSON imports and lookup maps consumed by the production bundle', evidence: [cite('scripts/generate-content-registry.mjs', "lines.push('', 'export const authoringProject = project;');", 'Generated module exports')] },
   { id: 'content-to-vite', from: 'canonical-content', to: 'vite-package', kind: 'data', label: 'Validated content contract', payload: 'Project, narrative, audio, media and paper validation success', evidence: [cite('package.json', '"studio:validate": "npm run studio:registry && node scripts/validate-authoring.mjs",', 'Build validation gate')] },
   { id: 'vite-to-shell', from: 'vite-package', to: 'app-shell', kind: 'generation', label: 'Browser application bundle', payload: 'ES modules, styles, public assets and interference-monitor entrypoint', evidence: [cite('vite.config.js', "main: resolve(import.meta.dirname, 'index.html'),", 'Vite entrypoint')] },
@@ -282,6 +301,7 @@ export const SYSTEM_TRACES = Object.freeze([
   { id: 'acoustic-event', label: 'Acoustic event → game response', summary: 'Gameplay sound facts are broadcast independently of the audible mix and return to orchestration as perception state.', edgeIds: ['scenes-to-audio', 'audio-to-scenes'] },
   { id: 'autosave', label: 'Autosave → browser or desktop', summary: 'A gameplay patch is normalized, serialized, and written through the selected storage backend.', edgeIds: ['scenes-to-save', 'save-to-storage', 'tauri-to-storage', 'storage-to-save'] },
   { id: 'lens-bank', label: 'Material request → GPU texture bank', summary: 'Rendered demand starts an authenticated native sidecar, sends local generation work, and commits returned images.', edgeIds: ['render-to-lens', 'lens-to-tauri', 'tauri-to-sidecar', 'lens-to-sidecar', 'sidecar-to-lens', 'lens-to-render'] },
+  { id: 'audit-fix', label: 'Audit → studio → content', summary: 'An audit reads the authored content and the tables beside it, names what is missing, and hands the exact line back to the studio to fix.', edgeIds: ['content-to-audits', 'progression-to-audits', 'audits-to-studio', 'studio-to-content'] },
   { id: 'authoring-release', label: 'Narrative Studio → desktop package', summary: 'Revisioned content is validated, generated, bundled for the browser, and embedded with native and Lens payloads.', edgeIds: ['studio-to-content', 'studio-to-registry', 'content-to-registry', 'registry-to-vite', 'content-to-vite', 'vite-to-release', 'tauri-to-release', 'sidecar-to-release'] },
 ]);
 

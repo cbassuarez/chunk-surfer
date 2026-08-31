@@ -137,6 +137,8 @@ export function compile(levels, { width, height, widenCorridors = false, connect
   // A helical flight's cells: which arc they belong to, and the arcs themselves.
   // Empty for every straight stair, which is all of them until a spiral exists.
   plan.arcId = new Uint16Array(w * h);
+  plan.arcTread = new Uint16Array(w * h);
+  plan.arcLane = new Uint8Array(w * h);
   plan.arcs = [];
   // Straight compound flights can stack in one physical well just as helical
   // coils do. Flight identity lets the renderer and the fractional foot-height
@@ -424,12 +426,14 @@ function writeStairCell(x,y,{
   // A selector, not a value — the rotation itself is derived analytically from
   // the arc record, because a stored per-cell angle would step a whole wedge
   // every tread with nothing to interpolate against.
-  arcId=0,
+  arcId=0,arcTread=0,arcLane=0,
   flightId=0,
 }){
   if(!inside(x,y))return;
   const i=idx(x,y);
   plan.arcId[i]=arcId;
+  plan.arcTread[i]=arcTread;
+  plan.arcLane[i]=arcLane;
   plan.flightId[i]=flightId;
   plan.solid[i]=0;
   plan.floor[i]=floor;
@@ -531,6 +535,12 @@ function arcFlight(id,flight,a,b,ctx){
   const steps=Math.max(Math.abs(b.x-a.x),Math.abs(b.y-a.y));
   if(!steps)throw new Error(`${id}/${flight.id||'flight'} has no run`);
   const treads=steps+1;
+  const rises=Math.max(1,Math.round(flight.rises??treads));
+  const analytic=flight.navigationMode==='analytic-helix';
+  if(analytic&&treads!==rises)throw new Error(
+    `${id}/${flight.id||'flight'} analytic helix requires one logical cell per visible tread `
+    +`(${treads} cells for ${rises} rises)`,
+  );
   const dx=Math.sign(b.x-a.x),dy=Math.sign(b.y-a.y);
   const runWidth=Math.max(1,Math.round((flight.width??1.5)*PLAN_SCALE));
   const logicalPx=Math.abs(dy),logicalPy=Math.abs(dx);
@@ -542,27 +552,30 @@ function arcFlight(id,flight,a,b,ctx){
     theta0:arc.theta0||0,sweep:arc.sweep??TAU,
     bounds:arc.bounds||null,newelBox:arc.newelBox||null,
   };
-  const {wedges,inner}=rasteriseAnnulus(geom,treads);
+  const visualTreads=analytic?rises:treads;
+  const {wedges,inner}=rasteriseAnnulus(geom,visualTreads);
   // The walking band runs from the newel out to the largest circle that fits the
   // well, so a lane never has to reach into a corner to find its cell.
   const innerR=geom.ri;
   const walkOuter=(arc.rWalk!=null?arc.rWalk:arc.rOuter)*PLAN_SCALE;
-  const thin=wedges.findIndex((w)=>w.length<runWidth);
+  const thin=analytic?-1:wedges.findIndex((w)=>w.length<runWidth);
   if(thin>=0)throw new Error(
     `${id}/${flight.id||'flight'} wedge ${thin} rasterises to ${wedges[thin].length} cells `
     +`but the run is ${runWidth} wide — widen the annulus or use fewer treads`);
 
   // The arc record the camera rotates against. Stored in runtime cells because
   // that is the frame logicalToPhysical answers in.
+  const logicalYaw=Math.atan2(dx,-dy);
+  const physicalTangentYaw=geom.theta0+Math.sign(geom.sweep||1)*Math.PI/2;
+  const yawBase=physicalTangentYaw-logicalYaw;
   plan.arcs.push({id:`${id}:${flight.id||plan.arcs.length+1}`,...geom,
-    sign:arc.sign===-1?-1:1});
+    sign:arc.sign===-1?-1:1,yawBase,walkOuter,runWidth,navigationMode:flight.navigationMode||'raster'});
   const arcId=plan.arcs.length;
 
   // Navigation is still sampled on the half-metre grid, while a hero spiral can
   // carry more physical risers than there are macro cells around the curve.
   // Retain both facts: collision reaches the landing over `steps`, and camera /
   // construction sampling follows the declared physical riser count.
-  const rises=Math.max(1,Math.round(flight.rises??treads));
   const span=flight.toH-flight.fromH;
   const run={
     id:`${id}:${flight.id||plan.stairRuns.length+1}`,
@@ -573,12 +586,18 @@ function arcFlight(id,flight,a,b,ctx){
     going:Number(flight.going)||.28,
     renderMode:flight.renderMode||'raster',
     group0:flight.groupFrom||ctx.renderGroup,group1:flight.groupTo||ctx.renderGroup,
-    arcId,
+    arcId,analyticHelix:analytic,
+    logicalDx:dx,logicalDy:dy,logicalPx,logicalPy,
+    treadCount:treads,innerR,walkOuter,
+    theta0:geom.theta0,sweep:geom.sweep,cx,cz,
   };
   plan.stairRuns.push(run);
   const flightId=plan.stairRuns.length;
   for(let s=0;s<treads;s++){
-    const t=Math.min(1,s/steps);
+    // An analytic helix owns one collision cell per visible tread. Its final
+    // riser is the step onto the following flight or floor landing, so the last
+    // flight cell deliberately sits one rise below `toH`.
+    const t=analytic?Math.min(rises-1,s)/rises:Math.min(1,s/steps);
     const floor=flight.fromH+span*t;
     const ceil=flight.ceil!=null?flight.ceil
       :flight.ceilFrom!=null?flight.ceilFrom+((flight.ceilTo??flight.ceilFrom)-flight.ceilFrom)*t
@@ -602,7 +621,34 @@ function arcFlight(id,flight,a,b,ctx){
     // before this: steps of 1.0 to 3.0 cells. Picking the cell nearest a fixed
     // target radius instead keeps a lane at one distance from the newel the
     // whole way round, so the physical step matches the logical one.
-    const wedge=wedges[s];
+    const wedge=wedges[Math.min(wedges.length-1,s)];
+    if(analytic){
+      const band=(walkOuter-innerR)/runWidth;
+      const angle=geom.theta0+geom.sweep*(s/rises);
+      for(let k=0;k<runWidth;k++){
+        const radius=innerR+(k+.5)*band;
+        writeStairCell(
+          a.x+dx*s+logicalPx*k,
+          a.y+dy*s+logicalPy*k,
+          {...cellOf,
+            physicalX:geom.cx+Math.sin(angle)*radius,
+            physicalY:geom.cz-Math.cos(angle)*radius,
+            arcTread:s,arcLane:k,
+          },
+        );
+      }
+      // The ray-marched floor remains a complete annular tread, but none of its
+      // square raster centres dictate player motion. The dedicated GLB draws the
+      // real curved polygons over this conservative structural support.
+      for(const c of wedge)plan.stairFill.push({
+        px:c.px,pz:c.pz,floor,ceil,flags:F.STAIR,arcId,
+        zone:cellOf.zone?ZONE[cellOf.zone]:ZONE.stair,
+        material:cellOf.material?MATERIAL[cellOf.material]:MATERIAL.serviceConcrete,
+        layer:cellOf.layer,spaceId:cellOf.space,renderGroup:stepGroup,owner:id,flightId,
+        physicalReplace:ctx.physicalReplace,physicalStack:ctx.physicalStack,
+      });
+      continue;
+    }
     const taken=new Set();
     const band=(walkOuter-innerR)/runWidth;
     for(let k=0;k<runWidth;k++){
@@ -674,7 +720,7 @@ function arcFlight(id,flight,a,b,ctx){
     group0:flight.groupFrom||ctx.renderGroup,group1:flight.groupTo||ctx.renderGroup,
     floor0:flight.fromH,floor1:flight.toH,radius:Math.max(6,Math.ceil(geom.ro*2)),
     rises,riseHeight:Math.abs(span)/rises,
-    arc:{...geom,treads,arcId},
+    arc:{...geom,treads:visualTreads,arcId},
     physicalFrom:{x:arc.center.x,z:arc.center.z??arc.center.y},
     physicalTo:{x:arc.center.x,z:arc.center.z??arc.center.y},
     going:run.going,renderMode:run.renderMode,
@@ -946,7 +992,7 @@ export function edgePortalState(){
 // cells. Walking along either landing is therefore ordinary movement, while an
 // immediate reversal crosses the same lane back instead of trapping the player
 // on a hidden logical island.
-function registerEdgePortal({id='edge-portal',from,to,width=1,bidirectional=true}){
+function registerEdgePortal({id='edge-portal',from,to,width=1,bidirectional=true,tolerance=1.01}){
   const unit=(v)=>({x:Math.sign(Number(v?.x)||0),y:Math.sign(Number(v?.y)||0)});
   const side=(entry,label)=>{
     const at=toRuntimePoint(entry?.at||{}, {center:false});
@@ -973,7 +1019,8 @@ function registerEdgePortal({id='edge-portal',from,to,width=1,bidirectional=true
     if(!ca||!cb)throw new Error(`floorplan: ${id} lane ${lane} ends in rock`);
     const pa=logicalToPhysical(ac.x,ac.y),pb=logicalToPhysical(bc.x,bc.y);
     const planar=Math.hypot(pa.x-pb.x,pa.z-pb.z),vertical=Math.abs(ca.floor-cb.floor);
-    if(planar>1.01||vertical>STEP_UP+1e-6)throw new Error(
+    const planarLimit=Math.max(1.01,Number(tolerance)||1.01);
+    if(planar>planarLimit||vertical>STEP_UP+1e-6)throw new Error(
       `floorplan: ${id} lane ${lane} is discontinuous (${planar.toFixed(2)} cells, ${vertical.toFixed(2)}m)`,
     );
     const forward={id,lane,redirect:{...bc},turn:forwardTurn};
@@ -985,7 +1032,7 @@ function registerEdgePortal({id='edge-portal',from,to,width=1,bidirectional=true
     if(bidirectional)edgePortalMap.set(bk,reverse);
     pairs.push({from:ac,to:bc});
   }
-  plan.edgePortals.push({id,width,lanes,bidirectional,from:{...a},to:{...b},pairs});
+  plan.edgePortals.push({id,width,lanes,bidirectional,tolerance:Math.max(1.01,Number(tolerance)||1.01),from:{...a},to:{...b},pairs});
 }
 // A SEAM IS AN EDGE, NOT A KEYHOLE.
 //
@@ -1060,6 +1107,12 @@ function buildPhysicalSpans(){
     // meant to prevent. Navigation rejects them in canStep; rendering must keep
     // their full room volume so only the dedicated stair mesh is visible.
     const i=idx(x,y);if(plan.solid[i]||plan.physicalX[i]===PHYSICAL_VOID)continue;
+    // Analytic hero stairs use their logical cells for body collision only. The
+    // complete annular structural raster is carried by stairFill below; folding
+    // the rounded navigation anchors in as well would stack several tread
+    // heights into one square and recreate the polygon/collision disagreement.
+    const stairRun=plan.flightId[i]?plan.stairRuns[plan.flightId[i]-1]:null;
+    if(stairRun?.analyticHelix)continue;
     const px=plan.physicalX[i],py=plan.physicalY[i],key=`${px},${py}`;
     minX=Math.min(minX,px);minY=Math.min(minY,py);maxX=Math.max(maxX,px);maxY=Math.max(maxY,py);
     if(!cells.has(key))cells.set(key,[]);
@@ -1165,8 +1218,10 @@ function buildPhysicalSpans(){
 // RENDERED physical position instead, it is continuous for free, because it is
 // a function of the same smoothed point the camera is already at.
 //
-// theta0 is by construction the bearing at which the arc meets its unrotated
-// neighbours, so the offset is 0 at both thresholds and every seam is blend-free.
+// `yawBase` aligns the straight logical ribbon's along-axis with the helix's
+// physical tangent. Without that quarter-turn correction the camera looked down
+// the radial line while the body travelled around the ring — the apparent
+// recentering and off-angle termination reported on the main stair.
 // Only ever consumed through cos/sin, so it never needs unwrapping.
 export function arcYawOffset(logicalX,logicalY,physX,physZ){
   const cx=Math.floor(logicalX),cy=Math.floor(logicalY);
@@ -1174,7 +1229,7 @@ export function arcYawOffset(logicalX,logicalY,physX,physZ){
   const id=plan.arcId?.[idx(cx,cy)];
   if(!id)return 0;
   const a=plan.arcs[id-1];
-  return a.sign*(Math.atan2(physX-a.cx,-(physZ-a.cz))-a.theta0);
+  return a.yawBase+a.sign*(Math.atan2(physX-a.cx,-(physZ-a.cz))-a.theta0);
 }
 
 export function logicalToPhysical(x,y){
@@ -1182,6 +1237,21 @@ export function logicalToPhysical(x,y){
   const i=idx(cx,cy),ox=x-cx,oy=y-cy;
   const px=plan.physicalX[i],pz=plan.physicalY[i];
   const id=plan.arcId[i];
+  const runId=plan.flightId[i],run=runId?plan.stairRuns[runId-1]:null;
+  if(id&&run?.analyticHelix){
+    const lx=x-run.logical0[0],ly=y-run.logical0[1];
+    const along=Math.max(0,Math.min(run.rises-1,lx*run.logicalDx+ly*run.logicalDy));
+    const lane=Math.max(0,Math.min(run.width-1,lx*run.logicalPx+ly*run.logicalPy));
+    const band=(run.walkOuter-run.innerR)/run.width;
+    const radius=run.innerR+(lane+.5)*band;
+    const angle=run.theta0+run.sweep*(along/run.rises);
+    return{
+      x:run.cx+Math.sin(angle)*radius,
+      z:run.cz-Math.cos(angle)*radius,
+      y:plan.floor[i],arcId:id,flightId:runId,owner:plan.owner[i],
+      layer:plan.layer[i],spaceId:plan.space[i],renderGroup:plan.renderGroup[i],
+    };
+  }
   // On an arc, intra-cell motion must run along the tangent, not along the
   // logical axis, or every tread carries a half-metre sideways wobble. Rotating
   // about the cell ORIGIN rather than its centre keeps logicalToPhysical(int,int)
@@ -1206,6 +1276,12 @@ export function renderedFloorAt(logicalX,logicalY,physicalX,physicalZ){
   if(!runId)return plan.floor[i];
   const run=plan.stairRuns[runId-1];
   if(!run)return plan.floor[i];
+  if(run.analyticHelix){
+    const lx=logicalX-run.logical0[0],ly=logicalY-run.logical0[1];
+    const along=Math.max(0,Math.min(run.rises-1,lx*run.logicalDx+ly*run.logicalDy));
+    const riser=Math.floor(along+1e-6);
+    return run.fromH+(run.toH-run.fromH)*(riser/run.rises);
+  }
   const useLogical=run.arcId&&run.logical0&&run.logical1;
   const start=useLogical?run.logical0:run.p0,end=useLogical?run.logical1:run.p1;
   const point=useLogical?[logicalX,logicalY]:[physicalX,physicalZ];
@@ -1391,7 +1467,15 @@ export function physicalRenderPlanFor(x,y){
   // choice used the raw height, so two positions inside one band could want
   // different slices and whichever asked second silently got the first's.
   const hy=band*HEIGHT_BAND;
-  const cacheKey=`${group}:${here.layer}:${band}:${exteriorObserver?'exterior':'enclosed'}`;
+  // THE ROOM IS PART OF THE KEY, because the slice depends on it.
+  //
+  // Retaining your own room's spans (see sameRoom below) makes two observers in
+  // the same group, layer and height band want DIFFERENT slices — the foyer and
+  // the natatorium are both ground:ground:0, and the one that asked first used
+  // to hand its slice to the other. That is how the pool came back solid even
+  // after the retention rule was right: the cached foyer slice had no basin in
+  // it. Same shape of bug as the rounded band the note above describes.
+  const cacheKey=`${group}:${here.layer}:${here.spaceId||''}:${band}:${exteriorObserver?'exterior':'enclosed'}`;
   if(plan.physical.renderCache.has(cacheKey))return plan.physical.renderCache.get(cacheKey);
   const w=plan.physical.width,h=plan.physical.height,originX=plan.physical.originX||0,originY=plan.physical.originY||0,solid=new Uint8Array(w*h).fill(1),floor=new Float32Array(w*h),ceil=new Float32Array(w*h),flags=new Uint8Array(w*h),zone=new Uint8Array(w*h),material=new Uint8Array(w*h),rgba=new Uint8Array(w*h*4);
   // Cells where a church contributes its ground to an outdoor slice. Their
@@ -1442,7 +1526,24 @@ export function physicalRenderPlanFor(x,y){
       if(group===p.group1&&s.renderGroup===p.group0)return Math.hypot(px-p.p0[0],py-p.p0[1])<=p.radius;
       return false;
     });
-    let list=hallEnvelope?sceneSpans.filter((s)=>s.spaceId==='hall'||s.spaceId==='front_atrium'):sceneSpans.filter((s)=>(s.flags&F.STAIR)||Math.abs(s.floor-hy)<=SPAN_WINDOW||landingVisible(s)||(here.spaceId==='hall'&&s.spaceId==='front_atrium')||academicAtriumVoid);
+    // ONE ROOM IS ONE VOLUME, WHATEVER ITS FLOOR DOES.
+    //
+    // The height window is right for telling one storey from the next and wrong
+    // for a room with a step in it. The natatorium's basin is two metres below
+    // its own deck, so a slice built for the deck dropped every basin cell and
+    // the pool came back solid — a tiled cube from floor to ceiling where the
+    // water should be — and a slice built for the basin did the same to the
+    // deck. The loading bay's kerb is the same problem one metre smaller, which
+    // is why that kerb is pinned at 0.80m instead of an honest height.
+    //
+    // So a span in the room you are standing in is always kept, however far
+    // below or above your feet its floor is. This is the rule the hall already
+    // had to itself; it belongs to every room. It can only ever ADD geometry
+    // to a cell that was empty: anything it retains is more than SPAN_WINDOW
+    // from the eye, so it can never become the nearest span and never changes
+    // what an already-drawn cell draws.
+    const sameRoom=here.spaceId?(s)=>s.spaceId===here.spaceId:()=>false;
+    let list=hallEnvelope?sceneSpans.filter((s)=>s.spaceId==='hall'||s.spaceId==='front_atrium'):sceneSpans.filter((s)=>(s.flags&F.STAIR)||Math.abs(s.floor-hy)<=SPAN_WINDOW||sameRoom(s)||landingVisible(s)||(here.spaceId==='hall'&&s.spaceId==='front_atrium')||academicAtriumVoid);
     if(!list.length)continue;const localX=px-originX,localY=py-originY;if(localX<0||localY<0||localX>=w||localY>=h)continue;const i=localY*w+localX;solid[i]=0;
     // Hall decks are structural meshes. The sector envelope remains the full
     // air volume so orchestra and both balconies retain reciprocal sightlines.

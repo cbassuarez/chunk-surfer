@@ -1,4 +1,11 @@
 import { isTauriRuntime } from './detect.js';
+import {
+  MAX_MEDIA_SURFACES,
+  WINDOW_MEDIA_PROTOCOL,
+  WINDOW_MEDIA_SURFACE_LABELS,
+  createPaneScoreEnvelope,
+  windowMediaContentId,
+} from './window-composition.js';
 
 export const FIREBALL_SURFACE_LABELS=Object.freeze([
   'fireball-cast-1','fireball-cast-2','fireball-cast-3','fireball-cast-4',
@@ -18,6 +25,8 @@ function nativeChoreography(dance){
     reach:Math.max(0,Math.min(4,Number(dance.reach)||0)),
     senseMs:Math.max(0,Math.min(600,Number(dance.senseMs)||0)),
     cohesion:Math.max(0,Math.min(1,Number(dance.cohesion)||0)),
+    gesture:String(dance.gesture||'rise-drift'),
+    formationProgress:Math.max(0,Math.min(1,Number(dance.formationProgress)||0)),
   };
 }
 const TITLE='Chunk Surfer';
@@ -54,7 +63,7 @@ function surfaceCastPayload(plan,index,flight=null){
     state:['outbound','deflected','reversed','impact'].includes(state)?state:'outbound',
     reducedMotion:!!plan.reducedMotion,
     // Not the stage crossing -- that is over. This is how long the comet takes
-    // to cross one 160-pixel surface at the speed it left the frame, which is
+    // to cross one 128-logical-pixel surface at the speed it left the frame, which is
     // also how long the surface stays up.
     travelSeconds:plan.reducedMotion?.26:.62,
     damage:Number.isInteger(flight?.damage)?Math.max(0,flight.damage)
@@ -88,14 +97,39 @@ export function createPersonalizedWindowEffects({
   let api=runtimeApi;
   let current=null;
   const surfaces=new Map();
+  const mediaSurfaces=new Map();
+  const snapshots=new Map();
   const hideTimers=new Map();
+  const mediaReadyLabels=new Set();
+  const mediaReadyWaiters=new Map();
+  const mediaAcceptedWaiters=new Map();
+  let mediaRevisionCounter=0;
   let hitsBound=false;
+  let paneActionsBound=false;
+  let mediaEventsBound=false;
 
   const target=()=>documentApi?.defaultView||globalThis.window||null;
   function dispatch(event,detail){
     const CustomEventCtor=target()?.CustomEvent||globalThis.CustomEvent;
     if(CustomEventCtor)target()?.dispatchEvent?.(new CustomEventCtor(event,{detail}));
   }
+
+  function resolveWaiters(waiters,key,payload){
+    const pending=waiters.get(key);if(!pending)return;
+    waiters.delete(key);for(const resolve of pending)resolve(payload);
+  }
+  function waitForMediaSignal(waiters,key,timeoutMs){
+    return new Promise((resolve)=>{
+      const timer=setTimeout(()=>{const pending=waiters.get(key);pending?.delete(done);if(!pending?.size)waiters.delete(key);resolve(null);},timeoutMs);
+      const done=(payload)=>{clearTimeout(timer);resolve(payload);};
+      const pending=waiters.get(key)||new Set();pending.add(done);waiters.set(key,pending);
+    });
+  }
+  function waitForMediaReady(label,timeoutMs=1200){
+    if(mediaReadyLabels.has(label))return Promise.resolve({label,protocol:WINDOW_MEDIA_PROTOCOL});
+    return waitForMediaSignal(mediaReadyWaiters,label,timeoutMs);
+  }
+  const acceptanceKey=(sessionToken,revision,label)=>`${sessionToken}:${revision}:${label}`;
 
   // A struck surface reports back, and the keyboard goes home with the report.
   // The payload is matched against the live plan here rather than trusted: the
@@ -108,7 +142,7 @@ export function createPersonalizedWindowEffects({
       // The keyboard goes home first and unconditionally. Whether the click
       // caught a comet is a separate question from where typing should land,
       // and getting that order wrong strands the player in a window that is
-      // 160 pixels of fireball and nothing else.
+      // 128 logical pixels of fireball and nothing else.
       if(api?.invoke)void safe(()=>api.invoke('chunk_fireball_cast_focus_main'));
       const session=current,plan=session?.activePlan;
       if(!session||!plan)return;
@@ -117,6 +151,82 @@ export function createPersonalizedWindowEffects({
       if(String(payload?.castId||'')!==opaqueCastId(plan.castId))return;
       const ray=plan.rays[index];
       dispatch('chunk-surfer:fireball-hit',{castId:plan.castId,rayId:ray?.id||null});
+    }));
+  }
+
+  async function listenForPaneActions(){
+    if(paneActionsBound||!api?.listen)return;
+    paneActionsBound=true;
+    await safe(()=>api.listen('window-choreography-pane-action',({payload})=>{
+      const session=current;
+      if(!session||String(payload?.cueId||'')!==String(session.activePaneCue||''))return;
+      if(api?.invoke)void safe(()=>api.invoke('chunk_fireball_cast_focus_main'));
+      dispatch('chunk-surfer:window-pane-action',{
+        cueId:String(payload?.cueId||''),paneId:String(payload?.paneId||''),action:String(payload?.action||'enter'),
+      });
+    }));
+  }
+
+  async function listenForMediaEvents(){
+    if(mediaEventsBound||!api?.listen)return;
+    mediaEventsBound=true;
+    await safe(()=>api.listen('window-media-ready',({payload})=>{
+      const label=String(payload?.label||'');
+      if(Number(payload?.protocol)!==WINDOW_MEDIA_PROTOCOL||!WINDOW_MEDIA_SURFACE_LABELS.includes(label))return;
+      mediaReadyLabels.add(label);resolveWaiters(mediaReadyWaiters,label,payload);
+    }));
+    await safe(()=>api.listen('window-media-accepted',({payload})=>{
+      const label=String(payload?.label||''),targetLabel=String(payload?.targetLabel||'');
+      if(Number(payload?.protocol)!==WINDOW_MEDIA_PROTOCOL||label!==targetLabel||!WINDOW_MEDIA_SURFACE_LABELS.includes(label))return;
+      resolveWaiters(mediaAcceptedWaiters,acceptanceKey(String(payload?.sessionToken||''),Number(payload?.revision),label),payload);
+    }));
+    await safe(()=>api.listen('window-media-drag-ended',async({payload})=>{
+      const session=current,composition=session?.activeComposition;
+      if(!session||!composition||String(payload?.cueId||'')!==String(composition.cueId||''))return;
+      const surface=composition.surfaces.find((entry)=>entry.id===String(payload?.paneId||''));
+      const label=String(payload?.label||'');
+      if(!surface||WINDOW_MEDIA_SURFACE_LABELS[surface.index]!==label)return;
+      session.manualMediaPanes.add(surface.id);
+      const placement=await safe(()=>api.invoke('chunk_window_media_position',{label}));
+      if(!placement)return;
+      await safe(()=>api.emitTo(label,'window-media-origin',{cueId:composition.cueId,desktopOrigin:placement.origin||{x:0,y:0}}));
+      dispatch('chunk-surfer:window-media-moved',{cueId:composition.cueId,paneId:surface.id,label,placement});
+      void safe(()=>api.invoke('chunk_fireball_cast_focus_main'));
+    }));
+    await safe(()=>api.listen('window-media-pane-action',({payload})=>{
+      const composition=current?.activeComposition;
+      if(!composition||String(payload?.cueId||'')!==String(composition.cueId||''))return;
+      if(api?.invoke)void safe(()=>api.invoke('chunk_fireball_cast_focus_main'));
+      dispatch('chunk-surfer:window-media-action',{cueId:composition.cueId,paneId:String(payload?.paneId||''),action:String(payload?.action||'')});
+    }));
+    await safe(()=>api.listen('window-media-focus-left',()=>{
+      // The main window's blur catches main -> pane. This catches pane -> some
+      // unrelated application, when the main window is already blurred and
+      // therefore cannot emit another event of its own.
+      setTimeout(()=>{if(api?.invoke)void safe(()=>api.invoke('chunk_window_media_hide_if_unfocused'));},90);
+    }));
+    await safe(()=>api.listen('window-media-score-action',async({payload})=>{
+      const session=current,composition=session?.activeComposition,label=String(payload?.targetLabel||'');
+      if(!session||!composition||Number(payload?.protocol)!==WINDOW_MEDIA_PROTOCOL)return;
+      const surface=composition.surfaces.find((entry)=>entry.id===String(payload?.paneId||''));
+      if(!surface||WINDOW_MEDIA_SURFACE_LABELS[surface.index]!==label)return;
+      if(String(payload?.sessionToken||'')!==session.token||String(payload?.cueId||'')!==composition.cueId)return;
+      if(Number(payload?.revision)!==Number(session.mediaRevisions.get(label)))return;
+      const action=payload?.action||{},window=mediaSurfaces.get(label);
+      if(action.type==='visible'){
+        if(action.visible)await safe(()=>window?.show?.());else await safe(()=>window?.hide?.());
+        return;
+      }
+      if(action.type!=='geometry'||(session.manualMediaPanes.has(surface.id)&&!action.geometry?.force))return;
+      const placement=await safe(()=>api.invoke('chunk_window_media_place',{request:{
+        label,index:surface.index,x:Number(action.geometry?.anchorX),y:Number(action.geometry?.anchorY),
+        offsetX:Number(action.geometry?.offsetX)||0,offsetY:Number(action.geometry?.offsetY)||0,
+        width:surface.width,height:surface.height,recoverable:24,durationMs:Math.max(0,Math.min(300,Number(action.durationMs)||0)),
+      }}));
+      if(placement?.shown){
+        await safe(()=>api.emitTo(label,'window-media-origin',{cueId:composition.cueId,desktopOrigin:placement.origin||{x:0,y:0}}));
+        dispatch('chunk-surfer:window-media-moved',{cueId:composition.cueId,paneId:surface.id,label,placement});
+      }
     }));
   }
 
@@ -151,7 +261,7 @@ export function createPersonalizedWindowEffects({
     if(!api?.WebviewWindow||current!==session)return null;
     let surface=await api.WebviewWindow.getByLabel(label);
     if(!surface){
-      const size=160+index*24;
+      const size=128;
       // No max size: the comet grows a little as it closes. `focusable` has to
       // be TRUE -- a window macOS will not make key does not reliably get a
       // mouseDown either, and a fireball you cannot click is the one thing this
@@ -177,6 +287,27 @@ export function createPersonalizedWindowEffects({
     return surface;
   }
 
+  async function prewarmMediaSurface(label,index,session){
+    if(!api?.WebviewWindow||current!==session)return null;
+    let surface=await api.WebviewWindow.getByLabel(label);
+    if(!surface){
+      surface=new api.WebviewWindow(label,{
+        url:'window-media.html',title:TITLE,width:240,height:160,minWidth:160,minHeight:96,maxWidth:320,maxHeight:320,
+        resizable:false,decorations:false,transparent:false,visible:false,focus:false,focusable:true,
+        alwaysOnTop:true,skipTaskbar:true,shadow:false,
+      });
+      const failure=await ready(surface);
+      surface=await api.WebviewWindow.getByLabel(label);
+      if(!surface){session.mediaPrewarmReasons.push(`${label}:${failure||'not-registered'}`);return null;}
+    }
+    if(current!==session){await safe(()=>surface.close());return null;}
+    mediaSurfaces.set(label,surface);await safe(()=>surface.hide());
+    await safe(()=>api.emitTo(label,'window-media-probe',{protocol:WINDOW_MEDIA_PROTOCOL,targetLabel:label}));
+    const readySignal=await waitForMediaReady(label);
+    if(!readySignal){session.mediaPrewarmReasons.push(`${label}:script-not-ready`);mediaSurfaces.delete(label);return null;}
+    return surface;
+  }
+
   // ONE SURFACE FAILING USED TO TAKE THE WHOLE FEATURE DOWN, IN SILENCE.
   //
   // Every step in here can reject on a desktop build — a denied ACL call, a
@@ -197,6 +328,7 @@ export function createPersonalizedWindowEffects({
       return false;
     }
     await listenForHits();
+    await listenForPaneActions();
     const made=await Promise.all(FIREBALL_SURFACE_LABELS.map((label,index)=>(
       Promise.resolve()
         .then(()=>prewarmSurface(label,index,session))
@@ -228,6 +360,8 @@ export function createPersonalizedWindowEffects({
       // What each surface was last told it was drawing, so the payload is only
       // re-sent when a comet's own state changes rather than every frame.
       rayStates:new Map(),
+      mediaPrewarm:null,mediaReady:0,mediaPrewarmReasons:[],activeComposition:null,
+      mediaRevisions:new Map(),manualMediaPanes:new Set(),
     };
     current=session;
     // Arrival starts construction, but no combat beat ever awaits it or creates a
@@ -236,7 +370,171 @@ export function createPersonalizedWindowEffects({
     return session.token;
   }
 
+  function ensure(options={}){return current?.token||begin(options);}
+
   function prepareFireballs(){return current?.prewarm||Promise.resolve(false);}
+
+  async function prepareMedia({count=MAX_MEDIA_SURFACES}={}){
+    const session=current||begin({intensity:'standard'});
+    if(session.mediaReady>=Math.min(MAX_MEDIA_SURFACES,count))return true;
+    if(session.mediaPrewarm)return session.mediaPrewarm;
+    session.mediaPrewarm=(async()=>{
+      if(!await loadApi()||current!==session)return false;
+      await listenForMediaEvents();
+      const wanted=Math.max(1,Math.min(MAX_MEDIA_SURFACES,Math.floor(Number(count)||MAX_MEDIA_SURFACES)));
+      const made=await Promise.all(WINDOW_MEDIA_SURFACE_LABELS.slice(0,wanted).map((label,index)=>prewarmMediaSurface(label,index,session).catch((error)=>{
+        session.mediaPrewarmReasons.push(`${label}:${String(error?.message||error)}`);return null;
+      })));
+      if(current!==session)return false;
+      session.mediaReady=Math.max(session.mediaReady,made.filter(Boolean).length);
+      return session.mediaReady>=wanted;
+    })().finally(()=>{if(current===session)session.mediaPrewarm=null;});
+    return session.mediaPrewarm;
+  }
+
+  function captureSnapshot(){
+    const source=documentApi?.querySelector?.('#map')||documentApi?.querySelector?.('canvas');
+    if(!source?.toDataURL)return null;
+    try{
+      const out=documentApi.createElement('canvas'),aspect=(Number(source.width)||16)/(Number(source.height)||9);
+      out.width=480;out.height=Math.max(180,Math.round(out.width/aspect));
+      out.getContext('2d',{alpha:false})?.drawImage(source,0,0,out.width,out.height);
+      const id=`snapshot-${Date.now()}-${Math.random().toString(36).slice(2,10)}`;
+      snapshots.set(id,out.toDataURL('image/webp',.74));
+      while(snapshots.size>4)snapshots.delete(snapshots.keys().next().value);
+      return id;
+    }catch(_){return null;}
+  }
+  function snapshotData(id){return snapshots.get(String(id||''))||null;}
+
+  async function assignMediaScore(session,plan,pane,label){
+    const revision=++mediaRevisionCounter;
+    session.mediaRevisions.set(label,revision);
+    const snapshotToken=pane.content.kind==='snapshot'?pane.content.token:null;
+    const envelope={...createPaneScoreEnvelope(plan,pane.id,{
+      targetLabel:label,sessionToken:session.token,revision,
+      snapshotData:snapshotToken?snapshots.get(snapshotToken)||null:null,
+    }),desktopOrigin:{x:0,y:0}};
+    const key=acceptanceKey(session.token,revision,label),accepted=waitForMediaSignal(mediaAcceptedWaiters,key,320);
+    await safe(()=>api.emitTo(label,'window-media-score',envelope));
+    const acknowledgement=await accepted;
+    const expectedContent=windowMediaContentId(envelope.score.initial);
+    if(!acknowledgement||acknowledgement.contentId!==expectedContent||acknowledgement.paneId!==pane.id){
+      session.mediaPrewarmReasons.push(`${label}:assignment-not-acknowledged`);return false;
+    }
+    return true;
+  }
+
+  async function showComposition(plan,{token:expected=null}={}){
+    const session=current||begin({intensity:'standard'});
+    if(expected&&expected!==session.token)return false;
+    if(!await prepareMedia({count:plan?.surfaces?.length||1})||current!==session)return false;
+    session.activeComposition=plan;
+    session.compositionCoherent=false;
+    session.manualMediaPanes.clear();
+    const generation=(session.compositionGeneration||0)+1;
+    session.compositionGeneration=generation;
+    const ordered=[...plan.surfaces].sort((a,b)=>a.z-b.z||a.index-b.index);
+    for(let index=plan.surfaces.length;index<MAX_MEDIA_SURFACES;index+=1){
+      const window=mediaSurfaces.get(WINDOW_MEDIA_SURFACE_LABELS[index]);
+      if(window)await safe(()=>window.hide());
+    }
+    const assigned=await Promise.all(ordered.map((pane)=>{
+      const label=WINDOW_MEDIA_SURFACE_LABELS[pane.index];
+      return mediaSurfaces.get(label)?assignMediaScore(session,plan,pane,label):Promise.resolve(false);
+    }));
+    if(assigned.some((value)=>!value)||current!==session||session.compositionGeneration!==generation){
+      if(current===session&&session.compositionGeneration===generation)await hideComposition({releaseSnapshots:false});
+      return false;
+    }
+    const placed=await Promise.all(ordered.map(async(pane)=>{
+      const label=WINDOW_MEDIA_SURFACE_LABELS[pane.index];
+      const placement=await safe(()=>api.invoke('chunk_window_media_place',{request:{
+        label,index:pane.index,x:Number(pane.entry.x),y:Number(pane.entry.y),offsetX:0,offsetY:0,
+        width:Number(pane.width),height:Number(pane.height),recoverable:24,durationMs:0,
+      }}));
+      if(!placement?.shown)return false;
+      await safe(()=>api.emitTo(label,'window-media-origin',{cueId:plan.cueId,desktopOrigin:placement.origin||{x:0,y:0}}));
+      dispatch('chunk-surfer:window-media-moved',{cueId:plan.cueId,paneId:pane.id,label,placement});return true;
+    }));
+    if(placed.some((value)=>!value)){
+      if(current===session&&session.compositionGeneration===generation)await hideComposition({releaseSnapshots:false});
+      return false;
+    }
+    const formation=plan.formation||{};
+    if(formation.delayMs)await wait(formation.delayMs);
+    await Promise.all(ordered.map(async(pane,order)=>{
+      if(formation.staggerMs)await wait(order*formation.staggerMs);
+      if(current!==session||session.compositionGeneration!==generation||session.activeComposition?.cueId!==plan.cueId)return;
+      const label=WINDOW_MEDIA_SURFACE_LABELS[pane.index];
+      const placement=await safe(()=>api.invoke('chunk_window_media_place',{request:{
+        label,index:pane.index,x:Number(pane.initial.x),y:Number(pane.initial.y),offsetX:0,offsetY:0,
+        width:Number(pane.width),height:Number(pane.height),recoverable:24,durationMs:Number(formation.durationMs)||0,
+      }}));
+      if(!placement?.shown)return;
+      await safe(()=>api.emitTo(label,'window-media-origin',{cueId:plan.cueId,desktopOrigin:placement.origin||{x:0,y:0}}));
+      dispatch('chunk-surfer:window-media-moved',{cueId:plan.cueId,paneId:pane.id,label,placement});
+    }));
+    return current===session&&session.compositionGeneration===generation;
+  }
+
+  async function snapComposition(plan,{freeze=false,coherent=false,durationMs=120}={}){
+    const session=current;if(!session||session.activeComposition?.cueId!==plan?.cueId)return false;
+    await Promise.all(plan.surfaces.map(async(pane)=>{
+      if(!pane.target)return;const label=WINDOW_MEDIA_SURFACE_LABELS[pane.index];
+      const placement=await safe(()=>api.invoke('chunk_window_media_place',{request:{
+        label,index:pane.index,x:pane.target.anchorX,y:pane.target.anchorY,
+        offsetX:pane.target.offsetX,offsetY:pane.target.offsetY,width:pane.width,height:pane.height,
+        recoverable:24,durationMs:Math.max(0,Math.min(600,Math.round(Number(durationMs)||0))),
+      }}));
+      if(placement?.shown){
+        await safe(()=>api.emitTo(label,'window-media-origin',{cueId:plan.cueId,desktopOrigin:placement.origin||{x:0,y:0}}));
+        dispatch('chunk-surfer:window-media-moved',{cueId:plan.cueId,paneId:pane.id,label,placement});
+      }
+    }));
+    if(coherent)await setCompositionCoherence(plan,true);
+    if(freeze)await freezeComposition(plan.cueId,true);
+    return true;
+  }
+
+  async function freezeComposition(cueId,frozen=true){
+    await Promise.all(WINDOW_MEDIA_SURFACE_LABELS.map((label)=>safe(()=>api?.emitTo?.(label,'window-media-freeze',{cueId,frozen:!!frozen}))));return true;
+  }
+
+  async function setCompositionCoherence(plan,coherent=true){
+    const session=current;if(!session||session.activeComposition?.cueId!==plan?.cueId)return false;
+    session.compositionCoherent=!!coherent;
+    for(const pane of plan.surfaces){
+      const label=WINDOW_MEDIA_SURFACE_LABELS[pane.index];
+      await safe(()=>api?.emitTo?.(label,'window-media-coherence',{cueId:plan.cueId,coherent:!!coherent}));
+    }
+    return true;
+  }
+
+  async function triggerComposition(plan,eventName,{effectiveAtMs=Date.now()+64}={}){
+    const session=current;
+    if(!session||session.activeComposition?.cueId!==plan?.cueId)return false;
+    const event=String(eventName||'').replace(/[^a-z0-9:_-]/giu,'-').slice(0,96);
+    if(!event||!plan.score?.cues?.some((cue)=>cue.event===event))return false;
+    const results=await Promise.all(plan.surfaces.map((pane)=>{
+      const label=WINDOW_MEDIA_SURFACE_LABELS[pane.index],revision=session.mediaRevisions.get(label);
+      if(!revision)return Promise.resolve(null);
+      return safe(()=>api.emitTo(label,'window-media-trigger',{
+        protocol:WINDOW_MEDIA_PROTOCOL,targetLabel:label,sessionToken:session.token,revision,
+        cueId:plan.cueId,paneId:pane.id,event,effectiveAtMs:Math.max(Date.now(),Number(effectiveAtMs)||Date.now()),
+      }));
+    }));
+    return results.length===plan.surfaces.length;
+  }
+
+  async function hideComposition({releaseSnapshots=true}={}){
+    const session=current;if(session){session.activeComposition=null;session.compositionGeneration=(session.compositionGeneration||0)+1;session.mediaRevisions.clear();session.manualMediaPanes.clear();}
+    await Promise.all([...mediaSurfaces.values()].map((surface)=>safe(()=>surface.hide())));
+    if(api?.invoke)await safe(()=>api.invoke('chunk_window_media_hide_all'));
+    if(api?.invoke)await safe(()=>api.invoke('chunk_fireball_cast_focus_main'));
+    if(releaseSnapshots)snapshots.clear();
+    return true;
+  }
 
   // ONE FRAME OF THE VOLLEY, AS IT ACTUALLY IS.
   //
@@ -314,6 +612,40 @@ export function createPersonalizedWindowEffects({
     return true;
   }
 
+  async function showPanes(panes,{token:expected=null,cueId=''}={}){
+    const session=current;
+    if(!session||(expected&&expected!==session.token)||!session.surfacesReady)return false;
+    const authored=Array.isArray(panes)?panes.slice(0,FIREBALL_SURFACE_LABELS.length):[];
+    if(authored.length>session.readySurfaces)return false;
+    session.activePaneCue=String(cueId||'');
+    session.activePlan=null;
+    session.rayStates.clear();
+    let shown=0;
+    for(let index=0;index<FIREBALL_SURFACE_LABELS.length;index+=1){
+      const label=FIREBALL_SURFACE_LABELS[index],surface=surfaces.get(label),pane=authored[index];
+      if(!surface)continue;
+      if(!pane){await safe(()=>surface.hide());continue;}
+      await safe(()=>api.emitTo(label,'window-choreography-pane',{
+        cueId:session.activePaneCue,paneId:String(pane.id||''),mode:String(pane.mode||'fragment'),
+        title:String(pane.title||''),text:String(pane.text||''),palette:String(pane.palette||'black'),
+        interactive:!!pane.interactive,
+      }));
+      const placed=await safe(()=>api.invoke('chunk_window_surface_place',{request:{
+        label,index,x:Number(pane.x)||.5,y:Number(pane.y)||.5,size:Number(pane.size)||128,interactive:!!pane.interactive,
+      }}));
+      if(placed)shown+=1;
+    }
+    return shown===authored.length;
+  }
+
+  async function hidePanes(){
+    const session=current;
+    if(session)session.activePaneCue='';
+    await Promise.all([...surfaces.values()].map((surface)=>safe(()=>surface.hide())));
+    if(api?.invoke)await safe(()=>api.invoke('chunk_fireball_cast_hide_all'));
+    return true;
+  }
+
   // Narrative interference remains in the main HUD. These calls intentionally
   // create no captioned sidecar, overlay, focus change or geometry animation.
   function apply(kind,payload={}){dispatch('chunk-surfer:interference-line',{kind,...payload});return true;}
@@ -329,6 +661,9 @@ export function createPersonalizedWindowEffects({
     clearTimers();
     const open=[...surfaces.values()];surfaces.clear();
     await Promise.all(open.map((surface)=>safe(()=>surface.close())));
+    const media=[...mediaSurfaces.values()];mediaSurfaces.clear();
+    await Promise.all(media.map((surface)=>safe(()=>surface.close())));
+    mediaReadyLabels.clear();mediaReadyWaiters.clear();mediaAcceptedWaiters.clear();snapshots.clear();
   }
 
   // A PAUSED FIGHT HAS A COMET FROZEN IN MID-AIR. IT MAY NOT BE FROZEN ON TOP
@@ -375,6 +710,7 @@ export function createPersonalizedWindowEffects({
     current=null;
     await closeSurfaces();
     if(api?.invoke)await safe(()=>api.invoke('chunk_fireball_cast_hide_all'));
+    if(api?.invoke)await safe(()=>api.invoke('chunk_window_media_hide_all'));
     if(notify)onEmergency();
     return true;
   }
@@ -400,15 +736,25 @@ export function createPersonalizedWindowEffects({
     finally{await end(sessionToken);}
   }
 
+  target()?.addEventListener?.('blur',()=>{
+    setTimeout(()=>{if(api?.invoke)void safe(()=>api.invoke('chunk_window_media_hide_if_unfocused'));},90);
+  });
+  target()?.addEventListener?.('focus',()=>{
+    const count=current?.activeComposition?.surfaces?.length||0;
+    for(const label of WINDOW_MEDIA_SURFACE_LABELS.slice(0,count))void safe(()=>mediaSurfaces.get(label)?.show?.());
+  });
+
   return{
-    begin,apply,reject,prepareFireballs,arrangeMovement,beginFireballCast,syncFireballCast,suspendSurfaces,
+    begin,ensure,apply,reject,prepareFireballs,prepareMedia,arrangeMovement,beginFireballCast,syncFireballCast,showPanes,hidePanes,
+    captureSnapshot,snapshotData,showComposition,snapComposition,freezeComposition,setCompositionCoherence,triggerComposition,hideComposition,suspendSurfaces,
     // Compatibility preview name; there is no channel interaction behind it.
     previewChannel,end,emergencyRestore,
     active:()=>!!current,sessionToken:()=>current?.token||null,statusLine:()=>'',
     debug:()=>current?{
       active:true,surfacesReady:current.surfacesReady,readySurfaces:current.readySurfaces,prewarmState:current.prewarmState,
-      surfaceCount:surfaces.size,placementAttempts:current.placementAttempts,placementFailures:current.placementFailures,
-      fullscreen:current.fullscreen,intensity:current.intensity,reasons:[...current.prewarmReasons],
+      surfaceCount:surfaces.size,mediaSurfaceCount:mediaSurfaces.size,mediaReady:current.mediaReady,placementAttempts:current.placementAttempts,placementFailures:current.placementFailures,
+      mediaScriptReady:mediaReadyLabels.size,mediaRevisions:Object.fromEntries(current.mediaRevisions||[]),
+      fullscreen:current.fullscreen,intensity:current.intensity,reasons:[...current.prewarmReasons,...current.mediaPrewarmReasons],
     }:{active:false,surfacesReady:false,readySurfaces:0,prewarmState:'idle',surfaceCount:0,placementAttempts:0,placementFailures:0,reasons:[]},
   };
 }

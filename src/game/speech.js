@@ -247,6 +247,16 @@ export function clearSpeech() {
   dwell = 0;
 }
 export function isSpeaking() { return !!cur || q.length > 0; }
+
+// How many rows at the foot of the screen the monitor band is holding. Anything
+// that wants to sit above it — the recorder, chiefly — has to ask, because the
+// band grows with the length of the line being spoken.
+export function speechPanelRows() {
+  if (!cur) return 0;
+  const { cols } = uiSize();
+  const w = Math.max(24, Math.min(96, cols - 10));
+  return uiWrap(String(cur.text || ''), Math.max(12, w - 8)).length + 7 + 2;
+}
 export function speaking() { return cur; }
 
 // Escape belongs to the visible small shell before it belongs to the run-level

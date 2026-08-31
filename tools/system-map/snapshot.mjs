@@ -9,6 +9,7 @@ import {
   SYSTEM_NODES,
   SYSTEM_TRACES,
 } from './topology.mjs';
+import { AUDITS } from '../audits/registry.mjs';
 
 export const REPO_ROOT = resolve(import.meta.dirname, '../..');
 
@@ -164,6 +165,10 @@ export async function buildSystemMapSnapshot({ root = REPO_ROOT } = {}) {
     nodes: nodes.hydrated,
     edges: edges.hydrated,
     traces: SYSTEM_TRACES,
+    // The detail views. Each audit reads one part of the game out of its own
+    // declarations; the map says where a system is, and the audit says what is
+    // in it. `systems` is how a node knows which audit to offer.
+    audits: AUDITS,
   };
 }
 

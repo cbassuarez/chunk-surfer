@@ -241,6 +241,9 @@ export function freshMeta() {
     version: META_VERSION,
     endingsSeen: [],
     hushMet: false,
+    // The first actual Natatorium fireball introduces authored desktop space.
+    // First-launch title remains sealed until this durable mark exists.
+    windowChoreographyIntroduced: false,
     leftMidRun: false,
     // The EULA version this installation accepted. The bundled model licences
     // are OpenRAIL-M: their use restrictions have to reach the person running
@@ -506,6 +509,7 @@ export function normalizeMeta(value) {
     version: META_VERSION,
     endingsSeen,
     hushMet: !!source.hushMet,
+    windowChoreographyIntroduced: !!source.windowChoreographyIntroduced,
     leftMidRun: !!source.leftMidRun,
     eulaAccepted: typeof source.eulaAccepted === 'string' ? source.eulaAccepted.slice(0, 40) : '',
     eulaAcceptedAt: Math.max(0, Math.floor(finiteOr(source.eulaAcceptedAt, 0))),

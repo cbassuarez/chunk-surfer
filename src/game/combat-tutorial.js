@@ -68,7 +68,12 @@ export const COMBAT_TUTORIAL_STEPS = Object.freeze([
     id: 'free',
     allow: null,
     spotlight: null,
-    say: 'DRILL · CALIBRATION READS TRUE. FINISH THE BENCH SIGNAL YOUR WAY.',
+    say: 'DRILL · CALIBRATION READS TRUE.',
+    // This is a result handoff, not another lesson. The old director stayed on
+    // this step forever and asked the player to grind through the remaining
+    // two-movement combat definition after the tutorial had already said it
+    // was complete. Combat consumes this flag through its ordinary win path.
+    completeBattle: true,
     until: () => false,
   }),
 ]);
@@ -82,6 +87,7 @@ export function createCombatTutorialDirector(steps = COMBAT_TUTORIAL_STEPS) {
   const current = () => (skipped || index >= steps.length ? null : steps[index]);
   return {
     active: () => !!current(),
+    completeBattle: () => current()?.completeBattle === true,
     step: () => current(),
     prompt: () => current()?.say || '',
     spotlight: () => current()?.spotlight || null,
