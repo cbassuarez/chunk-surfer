@@ -83,8 +83,38 @@ const rendererSource=await readFile(resolve('src/render/r3d.js'),'utf8');
 assert.match(mainSource,/tickHushAudio\(dt\);\s*tickChunkSurfOffer\(\);\s*tickSourceSpace\(dt\);/,'chapel Source offer is evaluated in the live world loop');
 assert.match(mainSource,/function tickChunkSurfOffer\(\)\{[\s\S]*?return false;[\s\S]*?\}/,'proximity polling cannot auto-enter Source Space');
 assert.match(mainSource,/ENTER SOURCE/,'the chapel threshold exposes an explicit Source interaction');
-assert.match(mainSource,/if\(usingSourceSpace\(\)\)\{drawSourceHud\(cols,rows\);return;\}/,'Source uses its own HUD before any building map, battery, or takes UI');
-assert.match(mainSource,/const pressureRemainsLive=topSourceScene\?\.sourcePressureLive===true;/,'Source scenes can explicitly keep chapter pressure live');
+{
+  const drawStoryHudStart=mainSource.indexOf('function drawStoryHud(){');
+  assert.ok(drawStoryHudStart>=0,'drawStoryHud is present');
+
+  const drawStoryHudEnd=mainSource.indexOf(
+    '\nfunction ',
+    drawStoryHudStart+'function drawStoryHud(){'.length,
+  );
+  assert.ok(
+    drawStoryHudEnd>drawStoryHudStart,
+    'drawStoryHud has a bounded top-level function body',
+  );
+
+  const drawStoryHudSource=mainSource.slice(drawStoryHudStart,drawStoryHudEnd);
+  const sourceBranch=drawStoryHudSource.indexOf('if(usingSourceSpace()){');
+  const sourceHud=drawStoryHudSource.indexOf('drawSourceHud(cols,rows);',sourceBranch);
+  const sourceReturn=drawStoryHudSource.indexOf('return;',sourceHud);
+
+  assert.ok(sourceBranch>=0,'Source owns a dedicated drawStoryHud branch');
+  assert.ok(sourceHud>sourceBranch,'Source draws its dedicated HUD inside that branch');
+  assert.ok(sourceReturn>sourceHud,'Source exits drawStoryHud after its dedicated HUD');
+
+  for(const [surface,needle] of [
+    ['recording overlay','if(REC.isRecording())'],
+    ['battery UI','const b=REC.batteryLevel();'],
+    ['building navigator','const guidance=currentStoryGuidanceFrame();'],
+    ['takes UI','drawTakeRail('],
+  ]){
+    const index=drawStoryHudSource.indexOf(needle);
+    assert.ok(index<0||sourceReturn<index,`Source returns before the ${surface}`);
+  }
+}assert.match(mainSource,/const pressureRemainsLive=topSourceScene\?\.sourcePressureLive===true;/,'Source scenes can explicitly keep chapter pressure live');
 assert.match(mainSource,/if\(SPEECH\.isSpeaking\(\)\|\|\(scenes\.blocksInput\(\)&&!pressureRemainsLive\)\)chunkSurfRuntime\.protectMoment/,'dialogue and ordinary blocking handoffs suspend Source pursuit without turning a Source page into safety');
 assert.doesNotMatch(mainSource,/tuneSourceFocused|\.tuneFocused\(|\.recordFocused\(|source-tune/,
   'Source has no tuning or landmark-recording runtime verb');
@@ -112,8 +142,77 @@ const towerHandover=mainSource.slice(
 assert.ok(towerHandover.length>200,'the tower handover is where it is expected to be');
 assert.doesNotMatch(towerHandover,/Datamosh/,'the tower crossing is a place, not an encoder effect');
 assert.match(mainSource,/function beginSourceTowerTransition\(\)\{[\s\S]*?GOD_LOCATION_HOOKS\['cathedral-belfry'\]/,'and it hands over into the real bell chamber');
-assert.match(rendererSource,/if \(textSpaceActive\) \{[\s\S]*drawTextSpace\(P3\.propTargets\(\)\.color,now\);[\s\S]*return;/,'Source Space exits before the normal material and pixel-mesh stack');
-assert.match(rendererSource,/function drawTextSpace[\s\S]*runDatamoshPass\(sceneTex,now\)/,'the Text Space target is resolved through the shared datamosh pipeline');
+{
+  const r3dFrameStart=rendererSource.indexOf('export function r3dFrame(state) {');
+  assert.ok(r3dFrameStart>=0,'r3dFrame is present');
+
+  const r3dFrameEnd=rendererSource.indexOf(
+    '\nexport function r3dCanvas()',
+    r3dFrameStart,
+  );
+  assert.ok(
+    r3dFrameEnd>r3dFrameStart,
+    'r3dFrame has a bounded top-level function body',
+  );
+
+  const r3dFrameSource=rendererSource.slice(r3dFrameStart,r3dFrameEnd);
+  const textSpaceBranch=r3dFrameSource.indexOf('if (textSpaceActive) {');
+  const textSpaceDraw=r3dFrameSource.indexOf('drawTextSpace(',textSpaceBranch);
+  const textSpaceReturn=r3dFrameSource.indexOf('return;',textSpaceDraw);
+  const reactionDiffusion=r3dFrameSource.indexOf(
+    '// reaction-diffusion: 2 steps/frame',
+    textSpaceReturn,
+  );
+  const pixelMesh=r3dFrameSource.indexOf(
+    'runPixelMeshPass(',
+    textSpaceReturn,
+  );
+
+  assert.ok(
+    textSpaceBranch>=0,
+    'Text Space owns a dedicated r3dFrame branch',
+  );
+  assert.ok(
+    textSpaceDraw>textSpaceBranch,
+    'Text Space resolves through drawTextSpace',
+  );
+  assert.ok(
+    textSpaceReturn>textSpaceDraw,
+    'Text Space returns after its compositor',
+  );
+  assert.ok(
+    reactionDiffusion>textSpaceReturn,
+    'Source Space exits before the normal material stack',
+  );
+  assert.ok(
+    pixelMesh>textSpaceReturn,
+    'Source Space exits before the normal pixel-mesh pass',
+  );
+}
+{
+  const drawTextSpaceStart=rendererSource.indexOf('function drawTextSpace(');
+  assert.ok(drawTextSpaceStart>=0,'drawTextSpace is present');
+
+  const drawTextSpaceEnd=rendererSource.indexOf(
+    '\nconst DATAMOSH_FRAG=',
+    drawTextSpaceStart,
+  );
+  assert.ok(
+    drawTextSpaceEnd>drawTextSpaceStart,
+    'drawTextSpace has a bounded function body',
+  );
+
+  const drawTextSpaceSource=rendererSource.slice(
+    drawTextSpaceStart,
+    drawTextSpaceEnd,
+  );
+
+  assert.match(
+    drawTextSpaceSource,
+    /const\s+([A-Za-z_$][\w$]*)\s*=\s*runSourceFaultPass\(sceneTex,\s*now\);\s*const\s+([A-Za-z_$][\w$]*)\s*=\s*runDatamoshPass\(\1,\s*now\);\s*presentTexture\(\2\);/,
+    'the Text Space target is faulted, datamoshed, and presented in order',
+  );
+}
 assert.match(rendererSource,/uHushScreen[\s\S]*uRain[\s\S]*moon/,'Text Space owns literal HUSH and weather composition');
 assert.match(rendererSource,/uSunrise/,'the text-space shader owns the deterministic sunrise look');
 assert.match(mainSource,/r3dSetSourceScene\(scene\)/,'Source rendering is submitted as one keyed static and dynamic payload');

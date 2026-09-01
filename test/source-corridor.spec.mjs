@@ -87,10 +87,17 @@ import { CHUNK_SURF_PHASE, pageStageForDistance } from '../src/game/chunk-surf-s
   assert.match(runtime, /event: 'page-found'/);
   const main = fs.readFileSync('src/main.js', 'utf8');
   const branch = main.slice(main.indexOf("if(result.event==='page-found')"), main.indexOf("if(result.event==='horizon')"));
-  assert.match(branch, /scenes\.push\(makeSourceStillPageScene\(\)\)/,
-    'the real sheet is not presented as the transition cover');
-  assert.ok(branch.indexOf('makeSourceStillPageScene') < branch.indexOf('enterSourceLandscape()'),
-    'the world swaps before the sheet covers it');
+    const stillPagePush=branch.indexOf('scenes.push(makeSourceStillPageScene(');
+    const landscapeEnter=branch.indexOf('enterSourceLandscape()',stillPagePush);
+
+    assert.ok(
+      stillPagePush>=0,
+      'the real sheet is presented as the transition cover',
+    );
+    assert.ok(
+      landscapeEnter>stillPagePush,
+      'the world swaps before the sheet covers it',
+    );
 
   const still = makeSourceStillPageScene();
   assert.equal(still.blocksInput, true);
