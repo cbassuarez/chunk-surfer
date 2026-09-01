@@ -1,0 +1,277 @@
+diff --git a/src/game/horizon-bust.js b/src/game/horizon-bust.js
+index b1c4492..93158e4 100644
+--- a/src/game/horizon-bust.js
++++ b/src/game/horizon-bust.js
+@@ -1,7 +1,7 @@
+-// The Horizon portrait is an audience, not a shopkeeper. Recognition earns the
+-// right to hear the old institution describe itself; only after identity,
+-// history, route, and consequence have been established does the seal offer a
+-// choice.
++// The Horizon portrait is an audience, not a shopkeeper. The eyes earn the
++// right to hear the old institution describe itself. The route choice stays
++// behind a second conversation layer where identity, history, route, and
++// consequence can be interrogated before the seal is touched.
+ 
+ const freezeLines = (lines) => Object.freeze(lines.map((line) => Object.freeze(line)));
+ 
+@@ -12,6 +12,10 @@ const SHARED_AUDIENCE = freezeLines([
+   { who: 'bust', text: "You have had many choices tonight. But I'm afraid your possibilities are ending. Beyond me lies the end." },
+   { who: 'you', text: 'Of?' },
+   { who: 'bust', text: 'Of it all? Of nothing? Of this game? Take your pick... though, there is another way.' },
++  { who: 'you', text: "What's the other way?" },
++  { who: 'bust', text: 'The bells. Six of them. A longer way around, and something like respite, if you still want such a thing.' },
++  { who: 'you', text: 'Safer?' },
++  { who: 'bust', text: 'I said respite.' },
+ ]);
+ 
+ export const HORIZON_BUST_AUDIENCE = Object.freeze({
+@@ -22,38 +26,163 @@ export const HORIZON_BUST_AUDIENCE = Object.freeze({
+   ]),
+   returned: freezeLines([
+     { who: 'direction', text: "The portrait’s pupils slip into the bust's sockets and roll into place. They instantly take the Horizon’s wet colour." },
+-    { who: 'bust', text: "There we are. My. Your eyes- they'e seen quite the folly. I have respite for them, a safer path, if you'd like." },
++    { who: 'bust', text: "There we are. My. Your eyes—they've seen quite the folly. I have respite for them, a safer path, if you'd like." },
+     ...SHARED_AUDIENCE,
+   ]),
+ });
+ 
++// The first two refusal beats still happen in the world. The next interaction
++// opens the response tree below, so the player gets posture without turning a
++// failed audience into a route choice.
+ export const HORIZON_BUST_REFUSAL = freezeLines([
+   { who: 'direction', text: 'The bust stays immobile.' },
+   { who: 'bust', text: "Do you have eyes for me?" },
+-  { who: 'you', text: "Like, do I like you?" },
+-// offer 'you' options no / yes / something else
+-  { who: 'bust', text: "No, I mean, do you have eyeballs for me with which to see?" },
+-  { who: 'you', text: "That... makes more sense, oddly. And no. I don't." },
+ ]);
+ 
+-//this needs work, we don't need to connect these two at all
+-export const HORIZON_BUST_RECOGNITION = Object.freeze({
+-  who: 'you',
+-  text: 'The same measured line from Malcolm’s map is cut into the rim of the seal, with six notches along it.',
+-});
++export function horizonBustRefusalTree() {
++  return {
++    start: {
++      speaker: 'THE PORTRAIT',
++      lines: [],
++      choices: [
++        { text: 'Like, do I like you?', goto: 'like' },
++        { text: 'No.', goto: 'no' },
++        { text: 'Yes.', goto: 'yes' },
++        { text: 'What kind of eyes?', goto: 'kind' },
++        { text: 'Is that a metaphor?', goto: 'metaphor' },
++      ],
++    },
++    like: {
++      speaker: 'THE PORTRAIT',
++      lines: [
++        { who: 'you', text: "Like, do I like you?" },
++        { who: 'bust', text: "No, I mean, do you have eyeballs for me with which to see?" },
++        { who: 'you', text: "That... makes more sense, oddly. And no. I don't." },
++      ],
++      goto: 'refused',
++    },
++    no: {
++      speaker: 'THE PORTRAIT',
++      lines: [
++        { who: 'you', text: 'No.' },
++        { who: 'bust', text: "No, I mean, do you have eyeballs for me with which to see?" },
++        { who: 'you', text: "That... makes more sense, oddly. And no. I don't." },
++      ],
++      goto: 'refused',
++    },
++    yes: {
++      speaker: 'THE PORTRAIT',
++      lines: [
++        { who: 'you', text: 'Yes.' },
++        { who: 'bust', text: 'Wonderful. Put them in.' },
++        { who: 'you', text: 'My eyes?' },
++        { who: 'bust', text: 'Your spare ones.' },
++        { who: 'you', text: 'Right. No.' },
++      ],
++      goto: 'refused',
++    },
++    kind: {
++      speaker: 'THE PORTRAIT',
++      lines: [
++        { who: 'you', text: 'What kind of eyes?' },
++        { who: 'bust', text: 'Eyeballs. Marble. A pair. Mine, ideally.' },
++        { who: 'you', text: "That... makes more sense, oddly. And no. I don't." },
++      ],
++      goto: 'refused',
++    },
++    metaphor: {
++      speaker: 'THE PORTRAIT',
++      lines: [
++        { who: 'you', text: 'Is that a metaphor?' },
++        { who: 'bust', text: 'No. I mean eyeballs with almost offensive literalness.' },
++        { who: 'you', text: 'Right. No.' },
++      ],
++      goto: 'refused',
++    },
++    refused: {
++      speaker: 'THE PORTRAIT',
++      lines: [
++        { who: 'bust', text: "Pity. Then I can't show you the other way." },
++        { who: 'you', text: "Because you can't see me?" },
++        { who: 'bust', text: "Because I can't see it. The distinction becomes administrative very quickly." },
++        { who: 'direction', text: 'The bust returns to being stone.' },
++      ],
++      goto: 'done',
++    },
++    done: { speaker: 'THE PORTRAIT', lines: [] },
++  };
++}
+ 
+ export function horizonBustAudience(mode = 'untouched') {
+   return HORIZON_BUST_AUDIENCE[mode] || HORIZON_BUST_REFUSAL;
+ }
+ 
+-export function horizonBustProposition(lastLine = null, recognition = null) {
++export function horizonBustProposition(lastLine = null) {
+   return {
+     start: {
+       speaker: 'THE PORTRAIT',
+       lines: [
+         ...(lastLine ? [lastLine] : []),
+-        ...(recognition ? [recognition] : []),
+         { who: 'direction', text: 'A palm-shaped bevel shines on the pedestal. The skull above it has lost its name; the crossed bones below have been worn nearly flat by other hands.' },
++        { who: 'bust', text: 'There. That is the other way.' },
++      ],
++      goto: 'questions',
++    },
++    questions: {
++      speaker: 'THE PORTRAIT',
++      lines: [],
++      choices: [
++        { text: 'Who are you?', goto: 'identity', hideWhenAsked: true },
++        { text: 'What are the Second Minutes?', goto: 'history', hideWhenAsked: true },
++        { text: 'Where does this go?', goto: 'route', hideWhenAsked: true },
++        { text: "What's the catch?", goto: 'consequence', hideWhenAsked: true },
++        { text: 'Enough. Show me the choice.', goto: 'decision' },
++      ],
++    },
++    identity: {
++      speaker: 'THE PORTRAIT',
++      lines: [
++        { who: 'you', text: 'Who are you?' },
++        { who: 'bust', text: 'A portrait. These days.' },
++        { who: 'you', text: 'Of who?' },
++        { who: 'bust', text: 'That used to be a much easier question.' },
++      ],
++      goto: 'questions',
++    },
++    history: {
++      speaker: 'THE PORTRAIT',
++      lines: [
++        { who: 'you', text: 'What are the Second Minutes?' },
++        { who: 'bust', text: 'The minutes after the meeting ended. The things nobody wanted in the first set.' },
++        { who: 'you', text: "That's an organization?" },
++        { who: 'bust', text: 'Eventually.' },
++      ],
++      goto: 'questions',
++    },
++    route: {
++      speaker: 'THE PORTRAIT',
++      lines: [
++        { who: 'you', text: 'Where does this go?' },
++        { who: 'bust', text: 'Up. Through six bells, then the tower. It takes longer.' },
++        { who: 'you', text: 'How much longer?' },
++        { who: 'bust', text: 'Twenty minutes, if everyone is on their best behaviour.' },
++      ],
++      goto: 'questions',
++    },
++    consequence: {
++      speaker: 'THE PORTRAIT',
++      lines: [
++        { who: 'you', text: "What's the catch?" },
++        { who: 'bust', text: 'You put your hand in the bevel. I put your name in the Second Minutes.' },
++        { who: 'you', text: 'And then?' },
++        { who: 'bust', text: "Then the bells know you're coming." },
++      ],
++      goto: 'questions',
++    },
++    decision: {
++      speaker: 'THE PORTRAIT',
++      lines: [
++        { who: 'bust', text: 'So. Keep going, or let me introduce you.' },
+       ],
+       choices: [
+         { text: "Set your hand in the bevel. Take the Bust's path.", goto: 'accepted', sourceFinaleChoice: 'tower' },
+@@ -66,6 +195,7 @@ export function horizonBustProposition(lastLine = null, recognition = null) {
+         { who: 'you', text: 'If I put my hand there, what happens?' },
+         { who: 'bust', text: "To be honest, it's more fun to press something to make it happen. You've already agreed, the button is just symbolic. Call it user experience." },
+         { who: 'direction', text: 'The stone is colder than the rain. Six narrow fractures open behind the pedestal, each holding a small imprint of a bell-like sigil.' },
++        { who: 'bust', text: "There. Now they know you're coming." },
+         { who: 'you', text: 'fun.' },
+       ],
+       goto: 'done',
+diff --git a/src/game/source-space-runtime.js b/src/game/source-space-runtime.js
+index 73018f3..208f876 100644
+--- a/src/game/source-space-runtime.js
++++ b/src/game/source-space-runtime.js
+@@ -83,7 +83,6 @@ import {
+   sourceBossExposed,
+ } from './source-contact.js';
+ import {
+-  HORIZON_BUST_RECOGNITION,
+   HORIZON_BUST_REFUSAL,
+   horizonBustAudience,
+ } from './horizon-bust.js';
+@@ -2039,7 +2038,7 @@ export function createSourceSpaceRuntime({
+   }
+ 
+   // How much of the audience has been heard. The offer is deliberately held
+-  // until recognition, history, route, and consequence have each had a beat;
++  // until identity, history, route, and consequence have each had a beat;
+   // a secret door should feel conferred, not sold from an interaction prompt.
+   //
+   // Deliberately not persisted: a reload restarts the audience, while the route
+@@ -2120,7 +2119,6 @@ export function createSourceSpaceRuntime({
+       evidence,
+       beat: horizonBustBeat,
+       line: lines[horizonBustBeat - 1],
+-      recognition: last ? HORIZON_BUST_RECOGNITION : null,
+       offers: last && !state.finale?.bust?.decision,
+       offersRefusal: false,
+     };
+@@ -2858,10 +2856,6 @@ export function createSourceSpaceRuntime({
+             ? 'horizon-bust-refusal-offer'
+             : 'horizon-bust',
+         line: talk.line,
+-        // The seal observation is carried beside the bust's own sentence rather
+-        // than merged into it, so the presenter can put it in the player's
+-        // mouth where it belongs.
+-        recognition: talk.recognition || null,
+         eligible: talk.eligible,
+         evidence: talk.evidence,
+         beat: talk.beat,
+diff --git a/src/main.js b/src/main.js
+index 2346759..e009914 100644
+--- a/src/main.js
++++ b/src/main.js
+@@ -11514,7 +11514,7 @@ function interact(){
+         return;
+       }
+       if(result.event==='horizon-bust-offer'){
+-        openHorizonBustChoice(result.line,result.recognition);
++        openHorizonBustChoice(result.line);
+         return;
+       }
+       if(result.event==='hush-contact'){ openSourceHushContact(); return; }
+@@ -13565,10 +13565,10 @@ function openHorizonBustRefusal(){
+   return true;
+ }
+ 
+-function openHorizonBustChoice(lastLine=null,recognition=null){
++function openHorizonBustChoice(lastLine=null){
+   if(!chunkSurfRuntime)return false;
+   let accepted=false,chosen=false;
+-  presentFinale(horizonBustProposition(lastLine,recognition),{
++  presentFinale(horizonBustProposition(lastLine),{
+     slate:'THE SECOND MINUTES',replayId:'source-horizon-bust',
+     onChoice:(choice)=>{
+       if(chosen||!choice?.sourceFinaleChoice)return;

@@ -83,7 +83,6 @@ import {
   sourceBossExposed,
 } from './source-contact.js';
 import {
-  HORIZON_BUST_RECOGNITION,
   HORIZON_BUST_REFUSAL,
   horizonBustAudience,
 } from './horizon-bust.js';
@@ -711,15 +710,6 @@ export function createSourceSpaceRuntime({
   onState = () => {},
   onComplete = () => {},
   onScare = () => {},
-  // WHAT THE MAN OUTSIDE TOLD HIM, MONTHS BEFORE THE BUST SAYS IT.
-  //
-  // Malcolm Vey, in the rain, with a laminated map: the chapel in there and the
-  // cathedral out here are one signal path. He has no basis for it and he is
-  // right (data/exterior-vigil.js). This flag is RECOGNITION AND NOT ACCESS —
-  // the bust's offer, the exit it opens and everything past it are identical
-  // either way. All it buys is that the player already knows where the longer
-  // road goes when it is offered, instead of finding out afterwards.
-  linkedChapels = false,
 } = {}) {
   let state = normalizeChunkSurfState(initialState);
   let sourceDialogue = normalizeSourceDialogueState(state.haystackDialogue, {
@@ -2048,12 +2038,13 @@ export function createSourceSpaceRuntime({
   }
 
   // How much of the audience has been heard. The offer is deliberately held
-  // until recognition, history, route, and consequence have each had a beat;
+  // until identity, history, route, and consequence have each had a beat;
   // a secret door should feel conferred, not sold from an interaction prompt.
   //
   // Deliberately not persisted: a reload restarts the audience, while the route
   // decision itself remains durable and cannot be offered twice.
   let horizonBustBeat = 0;
+  let horizonBustRefusalOffered = false;
   // WHERE THE RECORDING CHANGES.
   //
   // Read off the tape rather than chosen: the macroblock damage begins around
@@ -2085,17 +2076,37 @@ export function createSourceSpaceRuntime({
     if (state.phase !== CHUNK_SURF_PHASE.HORIZON) return { handled: false, state };
     const evidence = horizonBustEyeEvidence(state.profile?.marbleEyes);
     if (!evidence.eligible) {
-      horizonBustBeat = Math.min(HORIZON_BUST_REFUSAL.length, horizonBustBeat + 1);
-      // Preserve the route decision on first contact for old saves and callers;
-      // the remaining refusal beats are presentation, not a temporary opening.
+      // Preserve the durable route decision on first contact for old saves and
+      // callers. The refusal tree below is presentation only: it gives the
+      // player posture, never another route.
       dispatch({ type: 'HORIZON_BUST_DECIDED', decision: 'declined' }, { immediate: true });
+      if (horizonBustBeat < HORIZON_BUST_REFUSAL.length) {
+        horizonBustBeat += 1;
+        return {
+          handled: true,
+          eligible: false,
+          evidence,
+          beat: horizonBustBeat,
+          line: HORIZON_BUST_REFUSAL[horizonBustBeat - 1],
+          offers: false,
+          offersRefusal: false,
+        };
+      }
+      if (!horizonBustRefusalOffered) {
+        horizonBustRefusalOffered = true;
+        return {
+          handled: true,
+          eligible: false,
+          evidence,
+          beat: horizonBustBeat,
+          line: null,
+          offers: false,
+          offersRefusal: true,
+        };
+      }
       return {
-        handled: true,
-        eligible: false,
-        evidence,
-        beat: horizonBustBeat,
-        line: HORIZON_BUST_REFUSAL[horizonBustBeat - 1],
-        offers: false,
+        handled: true, eligible: false, evidence, beat: horizonBustBeat,
+        line: null, offers: false, offersRefusal: false,
       };
     }
     dispatch({ type: 'HORIZON_BUST_RECOGNIZED', eligible: true }, { immediate: true });
@@ -2108,9 +2119,8 @@ export function createSourceSpaceRuntime({
       evidence,
       beat: horizonBustBeat,
       line: lines[horizonBustBeat - 1],
-      recognition: last && linkedChapels ? HORIZON_BUST_RECOGNITION : null,
-      linkedChapels: !!linkedChapels,
       offers: last && !state.finale?.bust?.decision,
+      offersRefusal: false,
     };
   }
 
@@ -2840,12 +2850,12 @@ export function createSourceSpaceRuntime({
       const talk = talkToHorizonBust();
       return {
         handled: true,
-        event: talk.offers ? 'horizon-bust-offer' : 'horizon-bust',
+        event: talk.offers
+          ? 'horizon-bust-offer'
+          : talk.offersRefusal
+            ? 'horizon-bust-refusal-offer'
+            : 'horizon-bust',
         line: talk.line,
-        // The recognition line, when the man outside already said this. Carried
-        // beside the bust's own sentence rather than merged into it, so the
-        // presenter can put it in the player's mouth where it belongs.
-        recognition: talk.recognition || null,
         eligible: talk.eligible,
         evidence: talk.evidence,
         beat: talk.beat,

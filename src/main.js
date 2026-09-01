@@ -303,7 +303,7 @@ import {
 } from './game/chunk-surf-state.js';
 import { applyRigAdvantage } from './game/source-rig-bridge.js';
 import { createSourceSpaceRuntime, sourceMatrix, SOURCE_ENTRY } from './game/source-space-runtime.js';
-import { horizonBustProposition } from './game/horizon-bust.js';
+import { horizonBustProposition, horizonBustRefusalTree } from './game/horizon-bust.js';
 import {
   STAIR_ANOMALY_DARK_ESCAPE_MS,
   STAIR_ANOMALY_STATUS,
@@ -7444,9 +7444,6 @@ function activateSourceSpace(state,{position=null,resume=false}={}){
   PRES.despawn();
   chunkSurfRuntime=createSourceSpaceRuntime({
     initialState:normalized,
-    // Read once, at the moment the field is built, because the vigil happened
-    // hours ago and cannot change while the player is inside the tape.
-    linkedChapels:flagTest(VIGIL_LINKED_CHAPELS_FLAG),
     onState:(next,{immediate=false}={})=>{
       causalRecorder.recordEvent({
         actor:'playerShadow',type:'space.source-state',
@@ -11512,8 +11509,12 @@ function interact(){
       // warning you and you get the bells — which is ten minutes, exactly as
       // advertised, and worth it.
       if(result.event==='horizon-bust'){ if(result.line)SPEECH.say(result.line); return; }
+      if(result.event==='horizon-bust-refusal-offer'){
+        openHorizonBustRefusal();
+        return;
+      }
       if(result.event==='horizon-bust-offer'){
-        openHorizonBustChoice(result.line,result.recognition);
+        openHorizonBustChoice(result.line);
         return;
       }
       if(result.event==='hush-contact'){ openSourceHushContact(); return; }
@@ -13555,10 +13556,19 @@ function placeHorizonBust(){
   if(at) R3.r3dSetHorizonBust?.(at);
 }
 
-function openHorizonBustChoice(lastLine=null,recognition=null){
+function openHorizonBustRefusal(){
+  if(!chunkSurfRuntime)return false;
+  presentFinale(horizonBustRefusalTree(),{
+    slate:'THE PORTRAIT',
+    replayId:'source-horizon-bust-refusal',
+  });
+  return true;
+}
+
+function openHorizonBustChoice(lastLine=null){
   if(!chunkSurfRuntime)return false;
   let accepted=false,chosen=false;
-  presentFinale(horizonBustProposition(lastLine,recognition),{
+  presentFinale(horizonBustProposition(lastLine),{
     slate:'THE SECOND MINUTES',replayId:'source-horizon-bust',
     onChoice:(choice)=>{
       if(chosen||!choice?.sourceFinaleChoice)return;

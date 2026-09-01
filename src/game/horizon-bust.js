@@ -1,77 +1,209 @@
-// The Horizon portrait is an audience, not a shopkeeper. Recognition earns the
-// right to hear the old institution describe itself; only after identity,
-// history, route, and consequence have been established does the seal offer a
-// choice.
+// The Horizon portrait is an audience, not a shopkeeper. The eyes earn the
+// right to hear the old institution describe itself. The route choice stays
+// behind a second conversation layer where identity, history, route, and
+// consequence can be interrogated before the seal is touched.
 
 const freezeLines = (lines) => Object.freeze(lines.map((line) => Object.freeze(line)));
 
 const SHARED_AUDIENCE = freezeLines([
-  { who: 'you', text: 'What order?' },
-  { who: 'bust', text: 'The one respectable men denied at dinner and obeyed after midnight. Six bells, two chapels, one black ledger. We kept the college’s second set of minutes.' },
-  { who: 'you', text: 'And the bells?' },
-  { who: 'bust', text: 'A door disguised as a peal. The tape ahead will carry you to the chapel and call the account closed. The older road goes by all six and ends beneath the tower, where accounts are opened.' },
-  { who: 'you', text: 'What does it want from me?' },
-  { who: 'bust', text: 'Nothing so vulgar as payment. An answer, properly witnessed. Lay your hand on the seal and the Order will enter you as a guest; leave it cold and the straight road remains yours.' },
+    { who: 'you', text: 'Hello?' },
+    { who: 'bust', text: 'Bold choice. You made it this far, but have left so much behind. I have been expecting you, however.' },
+    { who: 'you', text: 'What choice do I have?' },
+    { who: 'bust', text: "You have had many choices tonight. But I'm afraid your possibilities are ending. Beyond me lies the end." },
+    { who: 'you', text: 'Of?' },
+    { who: 'bust', text: 'Of it all? Of nothing? Of this game? Take your pick... though, there is another way.' },
 ]);
 
 export const HORIZON_BUST_AUDIENCE = Object.freeze({
   carried: freezeLines([
-    { who: 'direction', text: 'Inside the equipment case, the loose marble eyes knock once against the brass. The pedestal answers from somewhere under its base.' },
-    { who: 'bust', text: 'There you are. I had begun to think the house had sent me another man with excellent ears and no appetite for seeing.' },
+    { who: 'direction', text: 'Inside your bag, the loose marble eyes knock once against your torch and other belongings; not so nice for a pair of eyes. The bust is blind, but it has ears, and he chimes:' },
+    { who: 'bust', text: 'Ah, a man of true regard.' },
     ...SHARED_AUDIENCE,
   ]),
   returned: freezeLines([
-    { who: 'direction', text: 'The portrait’s pupils take the Horizon’s wet colour. They are the eyes you returned to the gallery, looking through another face.' },
-    { who: 'bust', text: 'There you are. Restitution is the oldest password in the house. It has always preferred a penitent to an innocent.' },
+    { who: 'direction', text: "The portrait’s pupils slip into the bust's sockets and roll into place. They instantly take the Horizon’s wet colour." },
+    { who: 'bust', text: "There we are. My. Your eyes—they've seen quite the folly. I have respite for them, a safer path, if you'd like." },
     ...SHARED_AUDIENCE,
   ]),
 });
 
+// The first two refusal beats still happen in the world. The next interaction
+// opens the response tree below, so the player gets posture without turning a
+// failed audience into a route choice.
 export const HORIZON_BUST_REFUSAL = freezeLines([
-  { who: 'direction', text: 'The bronze seal stays black. Whatever attention inhabits the marble does not quite arrive.' },
-  { who: 'bust', text: 'You came to the door without the thing that knocks. That is not a crime. Most members managed it for years.' },
-  { who: 'bust', text: 'The chapel is still receiving callers. Keep to the lit part of the tape, and do not answer any bell that knows your name.' },
+  { who: 'direction', text: 'The bust stays immobile.' },
+  { who: 'bust', text: "Do you have eyes for me?" },
 ]);
 
-export const HORIZON_BUST_RECOGNITION = Object.freeze({
-  who: 'you',
-  text: 'The same measured line from Malcolm’s map is cut into the rim of the seal, with six notches along it.',
-});
+export function horizonBustRefusalTree() {
+  return {
+    start: {
+      speaker: 'THE PORTRAIT',
+      lines: [],
+      choices: [
+        { text: 'Like, do I like you?', goto: 'like' },
+        { text: 'No.', goto: 'no' },
+        { text: 'Yes.', goto: 'yes' },
+        { text: 'What kind of eyes?', goto: 'kind' },
+        { text: 'Is that a metaphor?', goto: 'metaphor' },
+      ],
+    },
+    like: {
+      speaker: 'THE PORTRAIT',
+      lines: [
+        { who: 'you', text: "Like, do I like you?" },
+        { who: 'bust', text: "I'm flattered. Nobody really visits anymore. But no, I mean, do you have eyeballs for me with which to see?" },
+        { who: 'you', text: "That... makes more sense, oddly. And no. I don't." },
+      ],
+      goto: 'refused',
+    },
+    no: {
+      speaker: 'THE PORTRAIT',
+      lines: [
+        { who: 'you', text: 'No.' },
+        { who: 'bust', text: "That's a shame, I would have made it worth your while." },
+        { who: 'you', text: "In what way?" },
+        { who: 'bust', text: "Can't say now." },
+      ],
+      goto: 'refused',
+    },
+    yes: {
+      speaker: 'THE PORTRAIT',
+      lines: [
+        { who: 'you', text: 'Yes.' },
+        { who: 'bust', text: 'Wonderful. Put them in.' },
+        { who: 'you', text: 'My eyes?' },
+        { who: 'bust', text: 'Your spare ones.' },
+        { who: 'you', text: 'Right. No yeah, of course.' },
+      ],
+      goto: 'refused',
+    },
+    kind: {
+      speaker: 'THE PORTRAIT',
+      lines: [
+        { who: 'you', text: 'What kind of eyes?' },
+        { who: 'bust', text: 'Eyeballs. Marble. A pair. Mine, ideally.' },
+        { who: 'you', text: "That... makes more sense, oddly. And no. I don't." },
+      ],
+      goto: 'refused',
+    },
+    metaphor: {
+      speaker: 'THE PORTRAIT',
+      lines: [
+        { who: 'you', text: 'Is that a metaphor?' },
+        { who: 'bust', text: 'No. I mean eyeballs with almost offensive literalness.' },
+        { who: 'you', text: "Right. No, I don't." },
+      ],
+      goto: 'refused',
+    },
+    refused: {
+      speaker: 'THE PORTRAIT',
+      lines: [
+        { who: 'bust', text: "Pity. Then I can't show you the other way." },
+        { who: 'you', text: "Because you can't see me?" },
+        { who: 'bust', text: "Because that's how deals work lad." },
+        { who: 'direction', text: 'The bust returns to stone with a dazzling immediacy. Even immobile objects know how to end conversations faster than you.' },
+      ],
+      goto: 'done',
+    },
+    done: { speaker: 'THE PORTRAIT', lines: [] },
+  };
+}
 
 export function horizonBustAudience(mode = 'untouched') {
   return HORIZON_BUST_AUDIENCE[mode] || HORIZON_BUST_REFUSAL;
 }
 
-export function horizonBustProposition(lastLine = null, recognition = null) {
+export function horizonBustProposition(lastLine = null) {
   return {
     start: {
       speaker: 'THE PORTRAIT',
       lines: [
         ...(lastLine ? [lastLine] : []),
-        ...(recognition ? [recognition] : []),
-        { who: 'direction', text: 'A palm-shaped hollow shines on the pedestal. The skull above it has lost its name; the crossed bones below have been worn nearly flat by other hands.' },
+        { who: 'direction', text: 'A palm-shaped bevel shines on the pedestal. The skull above it has lost its name; the crossed bones below have been worn nearly flat by other hands.' },
+        { who: 'bust', text: 'There. That is the other way.' },
+      ],
+      goto: 'questions',
+    },
+    questions: {
+      speaker: 'THE PORTRAIT',
+      lines: [],
+      choices: [
+        { text: 'Who are you?', goto: 'identity', hideWhenAsked: true },
+        { text: 'What are the Second Minutes?', goto: 'history', hideWhenAsked: true },
+        { text: 'Where does this go?', goto: 'route', hideWhenAsked: true },
+        { text: "What's the catch?", goto: 'consequence', hideWhenAsked: true },
+        { text: 'Enough. Show me the choice.', goto: 'decision' },
+      ],
+    },
+    identity: {
+      speaker: 'THE PORTRAIT',
+      lines: [
+        { who: 'you', text: 'Who are you?' },
+        { who: 'bust', text: 'A bust. These days.' },
+        { who: 'you', text: 'Of who?' },
+        { who: 'bust', text: "Does a bust know who they're made in image of? At least I don't. Who knows. I've gone through many names in my eternal boredom, Maximilian de la Visconty de Routledge, Saint-Fernandique-du-Tabernaque, Jacobo 'Ojos Piedras' Baxoreicoacha, maybe my true identity lies somewhere in between the many names I've given myself." },
+      ],
+      goto: 'questions',
+    },
+    history: {
+      speaker: 'THE PORTRAIT',
+      lines: [
+        { who: 'you', text: 'What are the Second Minutes?' },
+        { who: 'bust', text: 'The minutes after the meeting ended. The things nobody wanted in the first set.' },
+        { who: 'you', text: "That's an organization?" },
+        { who: 'bust', text: 'Eventually.' },
+      ],
+      goto: 'questions',
+    },
+    route: {
+      speaker: 'THE PORTRAIT',
+      lines: [
+        { who: 'you', text: 'Where does this go?' },
+        { who: 'bust', text: "A detour. Some would call it a French exit." },
+        { who: 'you', text: 'How much longer?' },
+        { who: 'bust', text: "How should I know? I'm marble and metal, and this place is empty and timeless. Regardless, probably about another 20 minutes if all goes well." },
+      ],
+      goto: 'questions',
+    },
+    consequence: {
+      speaker: 'THE PORTRAIT',
+      lines: [
+        { who: 'you', text: "What's the catch?" },
+        { who: 'bust', text: 'It's easier as long as you don't lose.' },
+        { who: 'you', text: 'And if I lose?' },
+        { who: 'bust', text: "Then I'll see you here again, but you'll have no choice but to continue." },
+        // todo ^ wire
+      ],
+      goto: 'questions',
+    },
+    decision: {
+      speaker: 'THE PORTRAIT',
+      lines: [
+        { who: 'bust', text: 'So. Keep going, or let me introduce you.' },
       ],
       choices: [
-        { text: 'Set your hand in the worn place. Enter by the bells.', goto: 'accepted', sourceFinaleChoice: 'tower' },
-        { text: 'Leave the seal cold. Follow the tape to the chapel.', goto: 'declined', sourceFinaleChoice: 'chapel' },
+        { text: "Set your hand in the bevel. Take the Bust's path.", goto: 'accepted', sourceFinaleChoice: 'tower' },
+        { text: "Leave the way you were going.", goto: 'declined', sourceFinaleChoice: 'chapel' },
       ],
     },
     accepted: {
       speaker: 'THE PORTRAIT',
       lines: [
-        { who: 'you', text: 'If I put my hand there, whose name goes in the ledger?' },
-        { who: 'bust', text: 'Yours, if you return to answer for it. Mine, if you do not.' },
-        { who: 'direction', text: 'The stone is colder than the rain. Six narrow fractures open behind the pedestal, each holding the afterimage of a bell.' },
-        { who: 'bust', text: 'Go carefully. The sixth has always rung for late initiates.' },
+        { who: 'you', text: 'If I put my hand there, what happens?' },
+        { who: 'bust', text: "To be honest, it's more fun to press something to make it happen. You've already agreed, the button is just symbolic. Call it user experience." },
+        { who: 'direction', text: 'The stone is colder than the rain. Six narrow fractures open behind the pedestal, each holding a small imprint of a bell-like sigil.' },
+        { who: 'bust', text: "There. Now they know you're coming." },
+        { who: 'you', text: 'Fun.' },
       ],
       goto: 'done',
     },
     declined: {
       speaker: 'THE PORTRAIT',
       lines: [
-        { who: 'you', text: 'Keep your ledger.' },
-        { who: 'bust', text: 'My dear man, it has been keeping us.' },
-        { who: 'direction', text: 'The seal dulls. No side road closes; you simply notice that one never opened. The tape ahead continues toward the chapel.' },
+        { who: 'you', text: "I'm alright for now." },
+        { who: 'bust', text: "Don't say I didn't warn you." },
+        { who: 'direction', text: "Something tells you that you narrowly missed a twenty minute detour." },
       ],
       goto: 'done',
     },
