@@ -16,7 +16,8 @@ import { drawPromptParts } from './prompt-glyphs.js';
 import { fitText } from './fit-text.js';
 import { MONITOR_DANGER_THRESHOLDS, MONITOR_THRESHOLDS, monitorSnapshot } from '../audio/monitor.js';
 import {
-  METER_MIN_DB, meterGeometry, meterMarkBoxes, meterMarks, meterScaleFits, meterSegmentAt,
+  METER_MIN_DB, locationMarks, locationScaleFits, locationTicks,
+  meterGeometry, meterMarkBoxes, meterMarks, meterScaleFits, meterSegmentAt,
   meterSegmentCount, meterState, meterTicks, unitToDb,
 } from './meter.js';
 
@@ -350,7 +351,9 @@ export function drawVfdWarningTriangle(x, y, snapshot = monitorSnapshot(), { now
 
 // The DA-1000 LOCATION INDICATOR: a row of vertical bars with a red position
 // marker, used for take progress. `p` is 0..1.
-export function drawLocationIndicator(x, y, width, p, { theme = 'green' } = {}) {
+export function drawLocationIndicator(x, y, width, p, {
+  theme = 'green', seconds = 45, marks = null, rows = 1, label = '',
+} = {}) {
   // Guarded, like drawVfdText. Only amber and green are themes; setActiveSurface
   // is global and sticky, so a bad name repainted this amber AND left the
   // surface amber for everything drawn after it. combat.js asks for 'red' on
@@ -359,45 +362,89 @@ export function drawLocationIndicator(x, y, width, p, { theme = 'green' } = {}) 
   const t = activeTheme();
   const b = uiBrightness();
 
+  const w = Math.max(4, Math.floor(width));
+  const placed = locationMarks(marks, w);
+  const scaleRow = rows >= 2 && locationScaleFits(w);
+  const ticks = scaleRow ? locationTicks(w, { seconds }) : [];
+
   uiDraw(({ ctx, dpr, cellW, cellH, cols }) => {
-    const n = Math.max(4, Math.floor(width));
+    const n = w;
     const gap = Math.max(1, Math.round(1.6 * dpr));
     const totalW = n * cellW * dpr;
     const segW = Math.max(2 * dpr, (totalW - gap * (n - 1)) / n);
     const base = (y + 0.9) * cellH * dpr;
-    const mark = Math.round(p * (n - 1));
+    const mark = Math.round(clamp01(p) * (n - 1));
+    // FLAT, NOT SWELLED. The bars used to grow toward the middle on a sine,
+    // which made both ends read as less important — backwards, because the
+    // right-hand end is where the take completes. A graduated scale earns its
+    // shape from its marks, not from a curve.
+    const bh = 0.62 * cellH * dpr;
 
     for (let i = 0; i < n; i++) {
       const px = x * cellW * dpr + i * (segW + gap);
       const phosphor = themeRoleColor('phosphor', x + i, cols);
       const on = i <= mark;
-
-      // Bars grow toward the middle then shrink, like the real graduated scale.
-      const climb = 0.35 + 0.65 * Math.sin((i / (n - 1)) * Math.PI);
-      const bh = climb * cellH * 0.7 * dpr;
-
       ctx.save();
       ctx.fillStyle = phosphor;
       ctx.globalAlpha = on ? Math.min(1, b * uiFlickerAlpha(x + i, y, 'phosphor')) : 0.12;
-      if (on) {
-        ctx.shadowColor = phosphor;
-        ctx.shadowBlur = 3 * dpr;
-      }
+      if (on) { ctx.shadowColor = phosphor; ctx.shadowBlur = 3 * dpr; }
       ctx.fillRect(px, base - bh, segW, bh);
       ctx.restore();
     }
 
-    // the red marker
+    // Graduation notches, standing in the dormant run so the strip reads as a
+    // scale even before anything has been recorded on it.
+    for (const tick of ticks) {
+      const tx = (x + tick.x) * cellW * dpr;
+      ctx.save();
+      ctx.fillStyle = themeRoleColor('silkscreen', x + tick.x, cols);
+      ctx.globalAlpha = tick.major ? .85 : .5;
+      ctx.fillRect(tx, base - bh - (tick.major ? .16 : .09) * cellH * dpr,
+        Math.max(1, dpr), (tick.major ? .18 : .11) * cellH * dpr + bh * (tick.major ? .34 : .2));
+      ctx.restore();
+    }
+
+    // WHAT HAPPENED, AND WHEN. Everything here was already being recorded and
+    // had nowhere to be seen: after a spoiled take you knew THAT it went wrong
+    // and never when. Drawn through the whole strip so a mark reads against the
+    // lit run rather than beside it.
+    for (const entry of placed) {
+      const mx = (x + entry.x) * cellW * dpr;
+      // Three kinds, three weights. The one that ended the take is the marker
+      // red — the same colour as the playhead, because both are answers to
+      // "where": one is where you are, the other is where it went wrong.
+      const role = entry.kind === 'spoil' ? 'marker'
+        : entry.kind === 'presence' ? 'counter'
+          : 'warning';
+      ctx.save();
+      ctx.fillStyle = themeRoleColor(role, x + entry.x, cols);
+      ctx.globalAlpha = entry.kind === 'near' ? .62 : .95;
+      ctx.shadowColor = ctx.fillStyle;
+      ctx.shadowBlur = 4 * dpr;
+      ctx.fillRect(mx, base - bh - .12 * cellH * dpr, Math.max(1, dpr), bh + .24 * cellH * dpr);
+      ctx.restore();
+    }
+
+    // THE PLAYHEAD, through the strip rather than floating above it. It used to
+    // be a block in its own row at y+0.05, which read as a separate object
+    // sitting near the bar instead of a position on it.
     const mx = x * cellW * dpr + mark * (segW + gap);
     ctx.save();
     ctx.globalAlpha = litDuty(x + mark, y, 'marker', 1);
     ctx.fillStyle = t.marker;
     ctx.shadowColor = t.marker;
     ctx.shadowBlur = 5 * dpr;
-    ctx.fillRect(mx, (y + 0.05) * cellH * dpr, segW, 0.28 * cellH * dpr);
+    ctx.fillRect(mx, base - bh - .22 * cellH * dpr, Math.max(segW, 1.5 * dpr), bh + .34 * cellH * dpr);
     ctx.restore();
   });
+
+  if (scaleRow) {
+    for (const tick of ticks) uiText(x + Math.round(tick.left), y + 1, tick.label, 'ui-label', .68);
+    if (label) uiText(x, y + 1, String(label).toUpperCase(), 'ui-label', .6);
+  }
+  return { rows: scaleRow ? 2 : 1, scale: scaleRow };
 }
+
 
 // ── the numeric counter (7-segment, pale-cyan on the DA-1000) ────────────────
 const DIGIT = {

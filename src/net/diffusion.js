@@ -785,6 +785,14 @@ export function surfaceDiffusionStart({
   function connect() {
     if (stopped || fatal) return;
     const mine = ++sequence;
+    let queueReady = false;
+    let protocolReady = false;
+    let initialSendStarted = false;
+    const startQueueWhenReady = async () => {
+      if (mine !== sequence || initialSendStarted || !queueReady || !protocolReady) return;
+      initialSendStarted = true;
+      await sendNext();
+    };
     const socketUrl = new URL(endpoint);
     if (launchToken) socketUrl.searchParams.set('token', launchToken);
     socket = new WebSocket(socketUrl); socket.binaryType = 'arraybuffer';
@@ -796,7 +804,8 @@ export function surfaceDiffusionStart({
         await buildQueue();
         stats.completed = 0; stats.banksReady = 0; stats.resident = false;
         stats.criticalCompleted = 0; stats.criticalReady = false; banks.clear();
-        await sendNext();
+        queueReady = true;
+        await startQueueWhenReady();
       } catch (error) { fail(error); }
     };
     socket.onmessage = async (event) => {
@@ -812,6 +821,18 @@ export function surfaceDiffusionStart({
           if (message.type === 'status') {
             stats.server = message;
             if (message.device === 'cpu' || message.supported === false) { fail('accelerated GPU required'); return; }
+            if (!protocolReady) {
+              if (Number(message.cacheSchema) !== CACHE_SCHEMA) {
+                fail(`bundled lens cache schema mismatch (service ${message.cacheSchema ?? 'missing'}, game ${CACHE_SCHEMA})`);
+                return;
+              }
+              if (message.modelId !== MODEL_ID) {
+                fail(`bundled lens model mismatch (service ${message.modelId ?? 'missing'}, game ${MODEL_ID})`);
+                return;
+              }
+              protocolReady = true;
+              await startQueueWhenReady();
+            }
           } else if (message.type === 'result' && (message.kind === 'frame' || active?.type === 'frame')) {
             if (burstPending && message.requestId === burstPending.requestId) pendingResult = message;
           } else if (message.type === 'result') {

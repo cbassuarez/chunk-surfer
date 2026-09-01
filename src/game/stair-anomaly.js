@@ -42,7 +42,7 @@ export function stairAnomalyHash(value) {
 }
 
 export const DEFAULT_STAIR_ANOMALY_ENVIRONMENT = Object.freeze({
-  stairId: 'upper',
+  stairId: 'basement',
   travel: 'up',
   visualSlope: 'up',
   variant: STAIR_ANOMALY_VARIANT.BASELINE,
@@ -65,38 +65,38 @@ export const LEGACY_STAIR_ANOMALY_LEDGER = Object.freeze({
 
 export function decideStairAnomalyEnvironment({ routeTrunk = 'baseline', runId = '', now = 0 } = {}) {
   const seed = stairAnomalyHash(`${runId}:${now}:stair-anomaly`) || 4417;
-  // NEVER on the way DOWN to the basement. That descent is the route to studio B3
-  // — the first room on the order, walked before the player has done anything —
-  // and an impossible stair there reads as the game being broken rather than the
-  // building being wrong. The seal variant therefore happens on the climb OUT;
-  // its atmosphere stays wrong, but its geometry honours the ascent you chose.
-  if (routeTrunk === 'flooded-seal') {
-    return { stairId: 'basement', travel: 'up', visualSlope: 'up', variant: STAIR_ANOMALY_VARIANT.SEAL, seed };
-  }
-  if (routeTrunk === 'flooded-surface') {
-    return { stairId: 'basement', travel: 'up', visualSlope: 'up', variant: STAIR_ANOMALY_VARIANT.SURFACE, seed };
-  }
-  if (routeTrunk === 'dry-inversion') {
-    return { stairId: 'upper', travel: 'up', visualSlope: 'up', variant: STAIR_ANOMALY_VARIANT.INVERSION, seed };
-  }
-  if (routeTrunk === 'uncertain') {
-    const basement = (seed & 1) === 1;
-    return {
-      stairId: basement ? 'basement' : 'upper',
-      // Always an ascent. See the seal note above: the descent to B3 is sacred.
-      travel: 'up',
-      visualSlope: 'up',
-      variant: STAIR_ANOMALY_VARIANT.UNCERTAIN,
-      seed,
-    };
-  }
+  // ALWAYS THE WEST STAIR, ALWAYS THE CLIMB OUT OF THE BASEMENT.
+  //
+  // Two rules, and the variant only chooses the atmosphere between them.
+  //
+  //   NOT THE SPIRAL. The main open-well stair is a helix — every flight sweeps
+  //   180 degrees around the well (see MAIN_STAIR_GEOMETRY). A helix that goes
+  //   on too long reads as a camera stuck in a turn, not as a building that has
+  //   grown; you lose your bearings on the second revolution and after that the
+  //   length means nothing. A straight flight can be impossibly long and STILL
+  //   be legible as a straight flight, which is the whole effect.
+  //
+  //   NOT THE DESCENT. The way down to the basement is the route to studio B3 —
+  //   the first room on the order, walked before the player has done anything —
+  //   and an impossible stair there reads as the game being broken rather than
+  //   the building being wrong. So the seal variant's atmosphere stays wrong on
+  //   the way out; only its geometry honours the ascent you chose.
+  const on = (variant) => ({ stairId: 'basement', travel: 'up', visualSlope: 'up', variant, seed });
+  if (routeTrunk === 'flooded-seal') return on(STAIR_ANOMALY_VARIANT.SEAL);
+  if (routeTrunk === 'flooded-surface') return on(STAIR_ANOMALY_VARIANT.SURFACE);
+  if (routeTrunk === 'dry-inversion') return on(STAIR_ANOMALY_VARIANT.INVERSION);
+  if (routeTrunk === 'uncertain') return on(STAIR_ANOMALY_VARIANT.UNCERTAIN);
   return { ...DEFAULT_STAIR_ANOMALY_ENVIRONMENT, seed };
 }
 
 export function normalizeStairAnomalyEnvironment(value, fallback = DEFAULT_STAIR_ANOMALY_ENVIRONMENT) {
   const source = objectOr(value);
   const base = objectOr(fallback, DEFAULT_STAIR_ANOMALY_ENVIRONMENT);
-  const stairId = VALID_STAIRS.has(source.stairId) ? source.stairId : base.stairId;
+  // 'upper' — the spiral — is still accepted as a stored value so an old save
+  // parses, but it is migrated rather than honoured: see the note in
+  // decideStairAnomalyEnvironment for why the helix cannot carry this.
+  const stored = VALID_STAIRS.has(source.stairId) ? source.stairId : base.stairId;
+  const stairId = stored === 'upper' ? 'basement' : stored;
   const travel = VALID_TRAVEL.has(source.travel) ? source.travel : base.travel;
   // The anomaly can make a flight impossibly long; it cannot contradict the
   // direction the player chose at its threshold. This also repairs old saves

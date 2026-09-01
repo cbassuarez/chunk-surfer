@@ -590,7 +590,7 @@ function cometFrame(ray, state, progress, box) {
   };
 }
 
-export function drawFireballCast({x,y,w,h,cast=null,flights=null,progress=0,now=0,reducedMotion=false}={}){
+export function drawFireballCast({x,y,w,h,cast=null,flights=null,progress=0,now=0,reducedMotion=false,externalPresented=false}={}){
   if(!cast?.rays?.length)return;
   const record=loadStoryArtImage(FIREBALL_SHEET);
   const drawn=Array.isArray(flights)&&flights.length
@@ -603,9 +603,13 @@ export function drawFireballCast({x,y,w,h,cast=null,flights=null,progress=0,now=
     for(const flight of drawn){
       const index=Math.max(0,Math.min(cast.rays.length-1,Number(flight.index)||0));
       const ray=cast.rays[index];
-      const state=String(flight.state||'outbound');
+      const rawState=String(flight.state||'outbound');
+      if(externalPresented&&['approach','rebound'].includes(rawState))continue;
+      const state=rawState==='rebound'?'outbound':rawState;
       if(state==='waiting'||state==='gone')continue;
-      const p=clamp(flight.progress,0,1);
+      const p=clamp(['approach','rebound'].includes(rawState)
+        ? flight.canvasProgress??.86
+        : flight.progress,0,1);
       const answered=state==='deflected'||state==='reversed';
       const ramp=answered?RETURN_RAMP:EMBER_RAMP;
       const at=cometFrame(ray,state,p,box);

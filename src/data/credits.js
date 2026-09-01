@@ -1,4 +1,20 @@
+import { SHEET_MUSIC } from './sheet-music.js';
+
 export const CREDIT_RECORD_TITLE = 'RELEASE RECORD';
+
+// THE SHEET-MUSIC CREDITS ARE GENERATED, NOT TYPED.
+//
+// Two of the five recordings are CC BY and legally require attribution. A
+// hand-written list is a list that drifts the first time a sheet is added or a
+// source is swapped, and the failure mode is shipping an uncredited recording
+// without noticing. So the section is built from the same data the game plays
+// (data/sheet-music.js), and composure-pool.spec.mjs fails if a CC-BY entry has
+// no credit line to build from. The full licence table, and what was rejected,
+// is in third_party/licenses/SHEET-MUSIC-AUDIO.md.
+const sheetMusicCredits = () => SHEET_MUSIC.map((sheet) => {
+  const who = sheet.performer ? ` — ${sheet.performer}` : '';
+  return `${sheet.composer}, ${sheet.title}${who} (${sheet.licence})`;
+});
 
 export const CREDITS = Object.freeze([
   Object.freeze({
@@ -44,6 +60,13 @@ export const CREDITS = Object.freeze([
       'S5 video courtesy Dr. W.E. Burr',
       'Project flower footage — Sebastian Suarez-Solis',
       'Commons derivatives edited, looped, color-processed and datamoshed',
+    ]),
+  }),
+  Object.freeze({
+    heading: 'Sheet Music Recordings',
+    lines: Object.freeze([
+      ...sheetMusicCredits(),
+      'Excerpted, downmixed and filtered for distance',
     ]),
   }),
   Object.freeze({

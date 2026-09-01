@@ -202,6 +202,33 @@ export function sealTake(roomId) {
 
 export function hasTake(roomId) { return !!state.takes.get(roomId)?.sealed; }
 export function takeFor(roomId) { return state.takes.get(roomId) || null; }
+
+// WHERE IN THE MINUTE THINGS HAPPENED.
+//
+// The location indicator used to draw one number — how far through you are —
+// across the widest element on the panel. Everything below was already being
+// recorded and had nowhere to be seen: after a spoiled take you knew THAT it
+// went wrong and never when.
+//
+// Positions are 0..1 across the take's own length, so the strip and the time
+// counter cannot disagree. Works on a take still rolling as well as a sealed
+// one, because both are the same record.
+export function takeMarks(roomId, { seconds = PLAYBACK.sourceSeconds } = {}) {
+  const t = state.takes.get(roomId);
+  if (!t) return [];
+  const span = Math.max(1, Number(seconds) || 1);
+  const at = (sec) => clamp01(Math.max(0, Number(sec) || 0) / span);
+  const marks = [];
+  for (const event of t.discrete || []) {
+    marks.push({ at: at(event?.atSec), kind: 'event', id: String(event?.cueId || 'event') });
+  }
+  // The closest the presence came, and when. One mark, not a trail: it is a
+  // peak-hold, so a single close pass is on the tape forever.
+  if (t.presence?.peak > PLAYBACK.presenceFloor) {
+    marks.push({ at: at(t.presence.atSec), kind: 'presence', id: 'presence' });
+  }
+  return marks.sort((a, b) => a.at - b.at);
+}
 export function isPlaying() { return !!state.playing; }
 
 // ── the store, read ──────────────────────────────────────────────────────────

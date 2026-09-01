@@ -36,6 +36,13 @@ if (await top() === 'eula') { await page.keyboard.press('Enter'); await wait(() 
 await wait(() => window.__scenes?.top?.()?.id === 'opening-credits');
 await page.evaluate(() => window.__scenes.top().update(30));
 await wait(() => window.__scenes?.top?.()?.id === 'title', 60000);
+// The title screen carries the same location strip as the recorder — it used to
+// have a row of sweeping shade glyphs above it that read as noise on top of the
+// instrument. Photographed here because it is the one place that strip is the
+// whole composition rather than a row on a panel.
+await sleep(900);
+await page.screenshot({ path: 'artifacts/recorder-title.png' });
+console.log('title     artifacts/recorder-title.png');
 await page.keyboard.press('Enter'); await page.keyboard.press('Enter');
 await wait(() => window.__scenes?.top?.()?.id === 'difficulty-select', 60000);
 await page.keyboard.press('Enter');

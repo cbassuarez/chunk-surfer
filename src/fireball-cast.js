@@ -175,6 +175,24 @@ function draw(at){
   }
   ctx.globalAlpha=1;
 
+  // COMMITTED. Movement has ended and these four brackets remain fixed for
+  // the whole catch interval. No caption, no instruction: just a visual change
+  // from authored tease to a safe click target.
+  if(cast.catchReady){
+    const radius=Math.min(w,h)*.43;
+    const arm=Math.max(unit*3,Math.round(radius*.22));
+    ctx.globalAlpha=cast.reducedMotion?1:.78+.22*Math.sin(elapsed*5.2);
+    ctx.strokeStyle=RETURN_RAMP[1];
+    ctx.lineWidth=Math.max(unit,Math.round(unit*1.5));
+    ctx.beginPath();
+    for(const sx of [-1,1])for(const sy of [-1,1]){
+      const x=cx+sx*radius,y=cy+sy*radius;
+      ctx.moveTo(x-sx*arm,y);ctx.lineTo(x,y);ctx.lineTo(x,y-sy*arm);
+    }
+    ctx.stroke();
+    ctx.globalAlpha=1;
+  }
+
   // ── and what it is made of ────────────────────────────────────────────
   const shed=cast.reducedMotion?1:3;
   for(let note=0;note<shed;note+=1){

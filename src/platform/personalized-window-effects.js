@@ -19,11 +19,9 @@ const STEP_INTERVAL_MS=33;
 function nativeChoreography(dance){
   if(!dance)return null;
   const dodge=Math.max(0,Math.min(1,Number(dance.dodge)||0));
-  if(dodge<=.001)return null;
   return{
     dodge,
     reach:Math.max(0,Math.min(4,Number(dance.reach)||0)),
-    senseMs:Math.max(0,Math.min(600,Number(dance.senseMs)||0)),
     cohesion:Math.max(0,Math.min(1,Number(dance.cohesion)||0)),
     gesture:String(dance.gesture||'rise-drift'),
     formationProgress:Math.max(0,Math.min(1,Number(dance.formationProgress)||0)),
@@ -66,6 +64,8 @@ function surfaceCastPayload(plan,index,flight=null){
     // to cross one 128-logical-pixel surface at the speed it left the frame, which is
     // also how long the surface stays up.
     travelSeconds:plan.reducedMotion?.26:.62,
+    catchReady:!!flight?.catchReady,
+    offer:Math.max(1,Math.floor(Number(flight?.offer)||1)),
     damage:Number.isInteger(flight?.damage)?Math.max(0,flight.damage)
       :Number.isInteger(plan.damage)?Math.max(0,plan.damage):null,
     // The surface draws rays[0]; the index rides along only so a click coming
@@ -222,6 +222,7 @@ export function createPersonalizedWindowEffects({
         label,index:surface.index,x:Number(action.geometry?.anchorX),y:Number(action.geometry?.anchorY),
         offsetX:Number(action.geometry?.offsetX)||0,offsetY:Number(action.geometry?.offsetY)||0,
         width:surface.width,height:surface.height,recoverable:24,durationMs:Math.max(0,Math.min(300,Number(action.durationMs)||0)),
+        interactive:!!surface.draggable,
       }}));
       if(placement?.shown){
         await safe(()=>api.emitTo(label,'window-media-origin',{cueId:composition.cueId,desktopOrigin:placement.origin||{x:0,y:0}}));
@@ -290,10 +291,11 @@ export function createPersonalizedWindowEffects({
   async function prewarmMediaSurface(label,index,session){
     if(!api?.WebviewWindow||current!==session)return null;
     let surface=await api.WebviewWindow.getByLabel(label);
+    const mainWasFocused=!surface&&await safe(()=>api.getCurrentWindow?.()?.isFocused?.())===true;
     if(!surface){
       surface=new api.WebviewWindow(label,{
         url:'window-media.html',title:TITLE,width:240,height:160,minWidth:160,minHeight:96,maxWidth:320,maxHeight:320,
-        resizable:false,decorations:false,transparent:false,visible:false,focus:false,focusable:true,
+        resizable:false,decorations:false,transparent:false,visible:false,focus:false,focusable:false,
         alwaysOnTop:true,skipTaskbar:true,shadow:false,
       });
       const failure=await ready(surface);
@@ -302,6 +304,10 @@ export function createPersonalizedWindowEffects({
     }
     if(current!==session){await safe(()=>surface.close());return null;}
     mediaSurfaces.set(label,surface);await safe(()=>surface.hide());
+    // Creation already asks for a passive window, but macOS can briefly make a
+    // fresh webview key. Restore only when the game owned focus beforehand;
+    // never activate it over another application just because we prewarmed.
+    if(mainWasFocused)await safe(()=>api.invoke?.('chunk_fireball_cast_focus_main'));
     await safe(()=>api.emitTo(label,'window-media-probe',{protocol:WINDOW_MEDIA_PROTOCOL,targetLabel:label}));
     const readySignal=await waitForMediaReady(label);
     if(!readySignal){session.mediaPrewarmReasons.push(`${label}:script-not-ready`);mediaSurfaces.delete(label);return null;}
@@ -393,7 +399,20 @@ export function createPersonalizedWindowEffects({
   }
 
   function captureSnapshot(){
-    const source=documentApi?.querySelector?.('#map')||documentApi?.querySelector?.('canvas');
+    // #map IS A DIV, AND HAS BEEN THE WHOLE TIME.
+    //
+    // This asked for '#map' first and fell back to 'canvas' only when #map was
+    // absent — but #map is the container the renderer inserts its canvas INTO
+    // (r3d.js mounts into mapEl), so the selector always matched the div, the
+    // `toDataURL` guard below always failed, and this always returned null.
+    // Every death composition since has been handed 'snapshot-unavailable' and
+    // shown four panes of nothing where the player's last frame should be.
+    //
+    // Ask for a canvas, and ask #map for ITS canvas rather than for itself.
+    // The r3d context is created with preserveDrawingBuffer:true, so reading it
+    // outside the frame that drew it is sound.
+    const source=documentApi?.querySelector?.('#map canvas')
+      ||documentApi?.querySelector?.('canvas');
     if(!source?.toDataURL)return null;
     try{
       const out=documentApi.createElement('canvas'),aspect=(Number(source.width)||16)/(Number(source.height)||9);
@@ -451,7 +470,7 @@ export function createPersonalizedWindowEffects({
       const label=WINDOW_MEDIA_SURFACE_LABELS[pane.index];
       const placement=await safe(()=>api.invoke('chunk_window_media_place',{request:{
         label,index:pane.index,x:Number(pane.entry.x),y:Number(pane.entry.y),offsetX:0,offsetY:0,
-        width:Number(pane.width),height:Number(pane.height),recoverable:24,durationMs:0,
+        width:Number(pane.width),height:Number(pane.height),recoverable:24,durationMs:0,interactive:!!pane.draggable,
       }}));
       if(!placement?.shown)return false;
       await safe(()=>api.emitTo(label,'window-media-origin',{cueId:plan.cueId,desktopOrigin:placement.origin||{x:0,y:0}}));
@@ -470,6 +489,7 @@ export function createPersonalizedWindowEffects({
       const placement=await safe(()=>api.invoke('chunk_window_media_place',{request:{
         label,index:pane.index,x:Number(pane.initial.x),y:Number(pane.initial.y),offsetX:0,offsetY:0,
         width:Number(pane.width),height:Number(pane.height),recoverable:24,durationMs:Number(formation.durationMs)||0,
+        interactive:!!pane.draggable,
       }}));
       if(!placement?.shown)return;
       await safe(()=>api.emitTo(label,'window-media-origin',{cueId:plan.cueId,desktopOrigin:placement.origin||{x:0,y:0}}));
@@ -485,7 +505,7 @@ export function createPersonalizedWindowEffects({
       const placement=await safe(()=>api.invoke('chunk_window_media_place',{request:{
         label,index:pane.index,x:pane.target.anchorX,y:pane.target.anchorY,
         offsetX:pane.target.offsetX,offsetY:pane.target.offsetY,width:pane.width,height:pane.height,
-        recoverable:24,durationMs:Math.max(0,Math.min(600,Math.round(Number(durationMs)||0))),
+        recoverable:24,durationMs:Math.max(0,Math.min(600,Math.round(Number(durationMs)||0))),interactive:!!pane.draggable,
       }}));
       if(placement?.shown){
         await safe(()=>api.emitTo(label,'window-media-origin',{cueId:plan.cueId,desktopOrigin:placement.origin||{x:0,y:0}}));
@@ -572,8 +592,9 @@ export function createPersonalizedWindowEffects({
           });
           // The drawing payload only changes when the comet's own state does.
           // Position is the frequent thing and it goes through the batched step.
-          if(session.rayStates.get(label)!==payload.state){
-            session.rayStates.set(label,payload.state);
+          const payloadKey=`${payload.state}:${payload.catchReady?1:0}:${payload.offer}`;
+          if(session.rayStates.get(label)!==payloadKey){
+            session.rayStates.set(label,payloadKey);
             void safe(()=>api.emitTo(label,'fireball-cast',payload));
           }
         }
@@ -599,7 +620,7 @@ export function createPersonalizedWindowEffects({
       const surface=surfaces.get(label);
       if(surface)void safe(()=>surface.hide());
     }
-    return true;
+    return !live.length||shown.size===live.length;
   }
 
   function beginFireballCast(plan,{token:expected=null}={}){
@@ -750,10 +771,17 @@ export function createPersonalizedWindowEffects({
     // Compatibility preview name; there is no channel interaction behind it.
     previewChannel,end,emergencyRestore,
     active:()=>!!current,sessionToken:()=>current?.token||null,statusLine:()=>'',
+    // Borrowing focus for one of our own projectile windows is not an
+    // unexpected pointer unlock and must never open the pause menu.
+    ownsPointerTransfer:()=>!!current&&(
+      (!!current.activePlan&&current.rayStates.size>0)
+      ||!!current.activeComposition?.surfaces?.some((surface)=>surface.draggable)
+    ),
     debug:()=>current?{
       active:true,surfacesReady:current.surfacesReady,readySurfaces:current.readySurfaces,prewarmState:current.prewarmState,
       surfaceCount:surfaces.size,mediaSurfaceCount:mediaSurfaces.size,mediaReady:current.mediaReady,placementAttempts:current.placementAttempts,placementFailures:current.placementFailures,
       mediaScriptReady:mediaReadyLabels.size,mediaRevisions:Object.fromEntries(current.mediaRevisions||[]),
+      fireballActive:!!current.activePlan&&current.rayStates.size>0,
       fullscreen:current.fullscreen,intensity:current.intensity,reasons:[...current.prewarmReasons,...current.mediaPrewarmReasons],
     }:{active:false,surfacesReady:false,readySurfaces:0,prewarmState:'idle',surfaceCount:0,placementAttempts:0,placementFailures:0,reasons:[]},
   };

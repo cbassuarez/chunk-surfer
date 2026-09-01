@@ -139,6 +139,8 @@ test('return-title media selection is non-clinical and keyed by the last return'
   assert.equal(plan.fault.profile,'nvme-sector');
   assert.ok(plan.fault.intensity>0);
   assert.equal(plan.formation.mode,'memory-unfold');
+  assert.ok(plan.surfaces.every((surface)=>surface.draggable===false),
+    'title fragments are authored playback and cannot take walking focus');
   assert.ok(plan.surfaces.some((surface)=>surface.entry.x!==surface.initial.x||surface.entry.y!==surface.initial.y));
 });
 
@@ -148,6 +150,8 @@ test('reduceDread replaces clinical death imagery without changing geometry or t
   assert.deepEqual(reduced.surfaces.map(({width,height})=>[width,height]),ordinary.surfaces.map(({width,height})=>[width,height]));
   assert.ok(ordinary.surfaces.some((surface)=>surface.sensitivity==='clinical'));
   assert.ok(reduced.surfaces.every((surface)=>surface.sensitivity!=='clinical'));
+  assert.ok(ordinary.surfaces.every((surface)=>surface.draggable===false),
+    'death fragments never borrow focus from retry input');
 });
 
 test('The Aperture requires the exact eye-and-path topology for 650ms',()=>{
@@ -156,6 +160,8 @@ test('The Aperture requires the exact eye-and-path topology for 650ms',()=>{
   assert.equal(plan.fault.profile,'nvme-sector');
   assert.ok(plan.fault.intensity>.8,'Aperture owns the strongest window fault');
   assert.equal(plan.formation.mode,'aperture-breach');
+  assert.ok(plan.surfaces.every((surface)=>surface.draggable===true),
+    'only the authored aperture puzzle opts into desktop pointer interaction');
   assert.deepEqual(plan.constraints.map((constraint)=>constraint.tolerance),[12,12,16,24,16,24]);
   const state={
     'aperture:left':{x:800,y:500,width:240,height:180},
@@ -180,6 +186,7 @@ test('every ending has authored media and credits restore owns cleanup',()=>{
     assert.equal(plan.purpose,'ending',id);
     assert.ok(plan.surfaces.length>=2,id);
     assert.ok(plan.surfaces.every((surface)=>surface.target),`${id} owns a resolved movement target`);
+    assert.ok(plan.surfaces.every((surface)=>surface.draggable===false),`${id} never steals cutscene focus`);
   }
   const choreography=readFileSync(new URL('../src/platform/window-choreography.js',import.meta.url),'utf8');
   assert.match(choreography,/async function credits\(\)\{const result=await restore\('credits'/);

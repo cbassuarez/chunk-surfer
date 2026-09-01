@@ -11,6 +11,8 @@ const lensTauri = JSON.parse(fs.readFileSync('src-tauri/tauri.lens.conf.json', '
 const windowsTauri = JSON.parse(fs.readFileSync('src-tauri/tauri.windows.conf.json', 'utf8'));
 
 assert.match(pkg.scripts['tauri:build'], /tauri build --config src-tauri\/tauri\.lens\.conf\.json/, 'tauri builds always merge the offline lens bundle config');
+assert.match(pkg.scripts['tauri:build'], /npm run lens:verify/, 'tauri builds reject a stale or mismatched lens sidecar before packaging');
+assert.match(pkg.scripts['lens:verify'], /validate-lens-bundle-contract\.mjs/, 'the local lens bundle contract has a dedicated verifier');
 assert.match(pkg.scripts['beta:build:mac'], /npm run tauri:build -- --target aarch64-apple-darwin --bundles dmg/, 'local mac beta build uses the mandatory bundled Tauri build');
 assert.match(pkg.scripts['itch:stage'], /scripts\/itch-release\.mjs stage/, 'itch staging script exists for public beta uploads');
 assert.match(pkg.scripts['itch:preview'], /scripts\/itch-release\.mjs preview/, 'itch preview script exists for Butler channel diffs');
@@ -88,6 +90,7 @@ assert.doesNotMatch(lensRequirements, /^torch(vision)?(\s|>|=|<|$)/m, 'requireme
 assert.match(lensRequirements, /^compel==2\.0\.3$/m, 'Compel is pinned as a mandatory long-prompt runtime dependency');
 assert.match(buildBundle, /cuda_build is None[\s\S]*CPU-only torch wheel/, 'the bundler refuses to freeze a CPU-only wheel for a CUDA target');
 assert.match(buildBundle, /import compel[\s\S]*"--collect-all",\s+"compel"/, 'the bundler validates and freezes Compel into the one-file sidecar');
+assert.match(buildBundle, /runtimeSourceSha256[\s\S]*binarySha256/, 'the bundler stamps the exact runtime source and sidecar bytes');
 assert.match(yml, /Install GPU-correct PyTorch[\s\S]*install_torch\.py/, 'release installs GPU-correct torch before the requirements');
 assert.match(yml, /lens-bundle-v2-cu128/, 'the lens bundle cache key is bumped so the CPU-only build is not reused');
 assert.match(gpuSmoke, /install_torch\.py[\s\S]*requirements-local\.txt/, 'the GPU smoke also installs torch from the correct index first');

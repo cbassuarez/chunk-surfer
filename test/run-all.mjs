@@ -185,6 +185,7 @@ const tests = [
   'test/plant-isolation.spec.mjs',
   'test/battle-music.spec.mjs',
   'test/combat-state.spec.mjs',
+  'test/composure-pool.spec.mjs',
   'test/enemy-intent.spec.mjs',
   'test/thought-trace.spec.mjs',
   'test/enemy-mind.spec.mjs',

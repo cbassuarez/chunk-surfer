@@ -8,6 +8,7 @@ const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
 export const FX_MODE = Object.freeze(['off', 'reduced', 'full']);
 export const HINT_MODE = Object.freeze(['off', 'reduced', 'full']);
+export const CONTROL_HUD_MODE = Object.freeze(['smart', 'persistent']);
 
 export function gameSettings() {
   return getSave().settings || {};
@@ -42,6 +43,10 @@ export function shakeMode() {
 
 export function objectiveHintsMode() {
   return modeValue(gameSettings().objectiveHints, HINT_MODE, 'full');
+}
+
+export function controlHudMode() {
+  return modeValue(gameSettings().controlHud, CONTROL_HUD_MODE, 'smart');
 }
 
 export function tutorialPromptsEnabled() {

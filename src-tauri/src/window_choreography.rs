@@ -118,6 +118,8 @@ pub struct MediaPlaceRequest {
     recoverable: f64,
     #[serde(default)]
     duration_ms: u64,
+    #[serde(default)]
+    interactive: bool,
 }
 
 fn default_recoverable() -> f64 {
@@ -190,6 +192,71 @@ fn current_bounds(window: &WebviewWindow) -> Result<MainBounds, String> {
     })
 }
 
+fn bounds_match(a: &MainBounds, b: &MainBounds, tolerance: u32) -> bool {
+    (a.position.x - b.position.x).unsigned_abs() <= tolerance
+        && (a.position.y - b.position.y).unsigned_abs() <= tolerance
+        && a.size.width.abs_diff(b.size.width) <= tolerance
+        && a.size.height.abs_diff(b.size.height) <= tolerance
+}
+
+fn bounds_fill_rect(bounds: &MainBounds, rect: &PhysicalRect<i32, u32>) -> bool {
+    let expected = MainBounds {
+        position: rect.position,
+        size: rect.size,
+    };
+    bounds_match(bounds, &expected, 8)
+}
+
+// Leaving simple fullscreen is dispatched onto the native event loop. Sampling
+// the frame in the same command used to capture the fullscreen rectangle as the
+// transaction's "stable" bounds. The later OS resize then looked like a player
+// move to note_main_window_event and cancelled the authored cue before its first
+// keyframe. Wait off the event loop until the restored window frame has arrived
+// and remained still for two samples.
+fn wait_for_windowed_bounds(
+    window: &WebviewWindow,
+    before: MainBounds,
+    monitor_rect: Option<PhysicalRect<i32, u32>>,
+) -> Result<MainBounds, String> {
+    let looked_fullscreen = window.is_fullscreen().unwrap_or(false)
+        || monitor_rect
+            .as_ref()
+            .is_some_and(|rect| bounds_fill_rect(&before, rect));
+    if !looked_fullscreen {
+        return Ok(before);
+    }
+
+    let deadline = Instant::now() + Duration::from_millis(1500);
+    let mut previous: Option<MainBounds> = None;
+    let mut stable_samples = 0_u8;
+    loop {
+        let current = current_bounds(window)?;
+        let left_fullscreen =
+            !window.is_fullscreen().unwrap_or(false) && !bounds_match(&current, &before, 3);
+        if left_fullscreen {
+            if previous
+                .as_ref()
+                .is_some_and(|value| bounds_match(value, &current, 2))
+            {
+                stable_samples = stable_samples.saturating_add(1);
+                if stable_samples >= 2 {
+                    return Ok(current);
+                }
+            } else {
+                stable_samples = 0;
+            }
+            previous = Some(current);
+        } else {
+            previous = None;
+            stable_samples = 0;
+        }
+        if Instant::now() >= deadline {
+            return Err("fullscreen exit did not settle".to_string());
+        }
+        std::thread::sleep(Duration::from_millis(16));
+    }
+}
+
 fn eased(t: f64, easing: &str) -> f64 {
     let t = t.clamp(0.0, 1.0);
     match easing {
@@ -213,11 +280,7 @@ fn lerp_u32(a: u32, b: u32, t: f64) -> u32 {
     (a as f64 + (b as f64 - a as f64) * t).round().max(1.0) as u32
 }
 
-#[tauri::command]
-pub fn chunk_window_choreography_begin(
-    app: AppHandle,
-    request: ChoreographyBeginRequest,
-) -> Result<bool, String> {
+fn begin_transaction(app: &AppHandle, request: ChoreographyBeginRequest) -> Result<bool, String> {
     if !valid_token(&request.token) || request.scene_id.is_empty() {
         return Ok(false);
     }
@@ -230,15 +293,25 @@ pub fn chunk_window_choreography_begin(
     {
         let _ = restore_transaction(&app, None);
     }
-    let main = main_window(&app)?;
+    let main = main_window(app)?;
+    let before = current_bounds(&main)?;
+    let monitor = main.current_monitor().ok().flatten();
+    let monitor_rect = monitor.as_ref().map(|value| PhysicalRect {
+        position: *value.position(),
+        size: *value.size(),
+    });
     if request.restore_game_mode {
         let _ = main.set_simple_fullscreen(false);
         let _ = main.set_fullscreen(false);
     }
-    let stable = current_bounds(&main)?;
+    let stable = if request.restore_game_mode {
+        wait_for_windowed_bounds(&main, before, monitor_rect)?
+    } else {
+        before
+    };
     let decorated = main.is_decorated().unwrap_or(true);
     let was_focused = main.is_focused().unwrap_or(true);
-    let monitor = main.current_monitor().ok().flatten();
+    let monitor = main.current_monitor().ok().flatten().or(monitor);
     let scale_factor = monitor
         .as_ref()
         .map(|value| value.scale_factor())
@@ -263,6 +336,16 @@ pub fn chunk_window_choreography_begin(
         expected_size: None,
     });
     Ok(true)
+}
+
+#[tauri::command]
+pub async fn chunk_window_choreography_begin(
+    app: AppHandle,
+    request: ChoreographyBeginRequest,
+) -> Result<bool, String> {
+    tauri::async_runtime::spawn_blocking(move || begin_transaction(&app, request))
+        .await
+        .map_err(|error| error.to_string())?
 }
 
 fn apply_frame(
@@ -502,6 +585,7 @@ pub fn chunk_window_surface_place(
         .get_webview_window(&request.label)
         .ok_or_else(|| "choreography surface not found".to_string())?;
     let main = main_window(&app)?;
+    let main_was_focused = main.is_focused().unwrap_or(false);
     let monitor = main
         .current_monitor()
         .map_err(|error| error.to_string())?
@@ -521,13 +605,31 @@ pub fn chunk_window_surface_place(
         .set_position(clamped_square(centre, size, work, scale))
         .map_err(|error| error.to_string())?;
     let _ = surface.set_always_on_top(true);
+    let _ = surface.set_focusable(request.interactive);
     let _ = surface.set_ignore_cursor_events(!request.interactive);
     let _ = surface.show();
+    if !request.interactive {
+        restore_main_after_passive_surface(&main, &surface, main_was_focused);
+    }
     Ok(true)
 }
 
 fn valid_media_label(label: &str, index: u8) -> bool {
     MEDIA_LABELS.get(index as usize) == Some(&label)
+}
+
+fn restore_main_after_passive_surface(
+    main: &tauri::WebviewWindow,
+    surface: &tauri::WebviewWindow,
+    main_was_focused: bool,
+) {
+    // macOS cannot unfocus a window after set_focusable(false) if it became
+    // key during creation/show. In that narrow race the passive pane already
+    // stole focus, so hand it straight back. If the user switched to another
+    // app, neither game window is focused and we leave them alone.
+    if main_was_focused || surface.is_focused().unwrap_or(false) {
+        let _ = main.set_focus();
+    }
 }
 
 fn media_placement(app: &AppHandle, label: &str) -> Result<Option<MediaPlacement>, String> {
@@ -604,6 +706,7 @@ fn place_media(
         .get_webview_window(&request.label)
         .ok_or_else(|| "media surface not found".to_string())?;
     let main = main_window(app)?;
+    let main_was_focused = main.is_focused().unwrap_or(false);
     let monitor = main
         .current_monitor()
         .map_err(|error| error.to_string())?
@@ -657,8 +760,12 @@ fn place_media(
         }
     }
     let _ = surface.set_always_on_top(true);
-    let _ = surface.set_ignore_cursor_events(false);
+    let _ = surface.set_focusable(request.interactive);
+    let _ = surface.set_ignore_cursor_events(!request.interactive);
     let _ = surface.show();
+    if !request.interactive {
+        restore_main_after_passive_surface(&main, &surface, main_was_focused);
+    }
     let mut placement = media_placement(app, &request.label)?;
     if let Some(value) = placement.as_mut() {
         value.shown = true;
@@ -695,6 +802,8 @@ pub fn chunk_window_media_hide_all(app: AppHandle) -> bool {
 fn hide_media(app: &AppHandle) -> bool {
     for label in MEDIA_LABELS {
         if let Some(window) = app.get_webview_window(label) {
+            let _ = window.set_ignore_cursor_events(true);
+            let _ = window.set_focusable(false);
             let _ = window.hide();
         }
     }
@@ -769,8 +878,8 @@ pub struct CastStep {
 //
 // Every number is decided on the game side -- see fireball-choreography.js --
 // because the escalation belongs to the fight, not to the compositor. What
-// happens in here is only the geometry the game cannot do: where the cursor
-// actually is on the desk, and where four windows have to be to not be there.
+// happens in here is only the geometry the game cannot do: where the authored
+// formation belongs on the desktop. The cursor is deliberately not sampled.
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct Choreography {
     // Break strength this frame, already eased and already zero during a
@@ -780,9 +889,6 @@ pub struct Choreography {
     // How far they will go, as a multiple of a surface's own width.
     #[serde(default)]
     reach: f64,
-    // How far ahead of the pointer they aim, in milliseconds of its own travel.
-    #[serde(default)]
-    sense_ms: f64,
     // 1 is one body moving; 0 is four windows each looking after itself.
     #[serde(default)]
     cohesion: f64,
@@ -790,57 +896,6 @@ pub struct Choreography {
     gesture: String,
     #[serde(default)]
     formation_progress: f64,
-}
-
-#[derive(Clone, Copy)]
-struct CursorSample {
-    x: f64,
-    y: f64,
-    at: std::time::Instant,
-}
-
-static CURSOR: std::sync::OnceLock<std::sync::Mutex<Option<CursorSample>>> =
-    std::sync::OnceLock::new();
-
-// NOTHING IS CAPTURED. `AppHandle::cursor_position` is `NSEvent.mouseLocation`
-// on macOS and the equivalent plain query elsewhere: two coordinates, read on
-// demand, in the same process. It is not a screen recording, not a screenshot,
-// not an event tap, and it asks for no permission -- there is no capture crate
-// in this binary and this feature must never introduce one. The shoal needs to
-// know where a pointer is; it has no business knowing what is under it.
-//
-// WHERE THE POINTER IS GOING, NOT WHERE IT IS.
-//
-// A shoal that runs from the cursor's current position cannot be caught by
-// moving quickly and cannot be missed by moving slowly -- neither of which is a
-// decision. Running from its PREDICTED position can be beaten by aiming at
-// where the windows will be, which is the same read the rest of the fight asks
-// for. Velocity is measured between frames and heavily damped, so a flick does
-// not throw the prediction across the desk.
-fn predicted_cursor(app: &AppHandle, sense_ms: f64) -> Option<(f64, f64)> {
-    let now = app.cursor_position().ok()?;
-    let at = std::time::Instant::now();
-    let cell = CURSOR.get_or_init(|| std::sync::Mutex::new(None));
-    let mut slot = cell.lock().ok()?;
-    let previous = *slot;
-    *slot = Some(CursorSample {
-        x: now.x,
-        y: now.y,
-        at,
-    });
-    let Some(last) = previous else {
-        return Some((now.x, now.y));
-    };
-    let dt = at.duration_since(last.at).as_secs_f64();
-    if !(dt > 0.001 && dt < 0.25) {
-        return Some((now.x, now.y));
-    }
-    let lead = (sense_ms.max(0.0) / 1000.0).min(0.5);
-    // Capped: a fast flick predicts a long way, and a shoal that reacts to a
-    // metre of imagined travel is reacting to nothing.
-    let vx = ((now.x - last.x) / dt).clamp(-4000.0, 4000.0);
-    let vy = ((now.y - last.y) / dt).clamp(-4000.0, 4000.0);
-    Some((now.x + vx * lead, now.y + vy * lead))
 }
 
 // ONE CALL PER FRAME FOR THE WHOLE CAST, NOT ONE PER SURFACE.
@@ -899,26 +954,27 @@ pub fn chunk_fireball_cast_step(
     let mut shared = (0.0_f64, 0.0_f64);
     let mut fan = (0.0_f64, 0.0_f64);
     if dodge > 0.001 {
-        if let Some(aim) = predicted_cursor(&app, dance.sense_ms) {
-            let (dx, dy) = (centre.0 - aim.0, centre.1 - aim.1);
-            let distance = dx.hypot(dy);
-            // They only run from something that is actually coming for them.
-            // Beyond about three surface-widths the pointer is not a threat and
-            // the formation holds, which is what makes the break legible.
-            let threat = (1.0 - (distance / (span * 3.2)).min(1.0)).powf(1.4);
-            if threat > 0.001 && distance > 0.5 {
-                let reach = dance.reach.max(0.0) * span * dodge * threat;
-                shared = (dx / distance * reach, dy / distance * reach);
-                // Perpendicular, so the ones on the outside of the turn swing
-                // wider. Scaled by the INVERSE of cohesion: late in the night
-                // they hold formation and move as one.
-                let loose = 1.0 - dance.cohesion.clamp(0.0, 1.0);
-                fan = (
-                    -dy / distance * reach * loose * 0.9,
-                    dx / distance * reach * loose * 0.9,
-                );
-            }
-        }
+        // An authored tease, not a reaction to the player's hand. Each
+        // encounter has a stable bearing, the dodge envelope carries it out
+        // and back, and settled input is exactly zero.
+        let direction: (f64, f64) = match dance.gesture.as_str() {
+            "rise-drift" => (0.58, -0.82),
+            "seat-align" => (0.98, 0.18),
+            "retake-loop" => (-1.0, 0.0),
+            "orbit" => (0.68, 0.73),
+            "swarm-recombine" => (-0.72, 0.69),
+            _ => (0.8, -0.6),
+        };
+        let length = direction.0.hypot(direction.1).max(0.001_f64);
+        let reach = dance.reach.max(0.0) * span * dodge;
+        shared = (direction.0 / length * reach, direction.1 / length * reach);
+        // Perpendicular, so the outer panes fan without ever responding to the
+        // cursor. Higher-pressure formations hold together more tightly.
+        let loose = 1.0 - dance.cohesion.clamp(0.0, 1.0);
+        fan = (
+            -direction.1 / length * reach * loose * 0.55,
+            direction.0 / length * reach * loose * 0.55,
+        );
     }
 
     let mut moved = 0u8;
@@ -1124,6 +1180,7 @@ fn apply_placement(
     // Click-through was why a fireball outside the frame could not be returned
     // and why clicking one landed on the desktop behind it -- the game's own
     // projectile handing the player's click to the Finder.
+    let _ = surface.set_focusable(true);
     let _ = surface.set_ignore_cursor_events(false);
     let _ = surface.show();
     Ok(true)
@@ -1287,48 +1344,34 @@ mod tests {
         );
     }
 
-    // THEY MOVE AS ONE BODY, AND ONLY FROM SOMETHING ACTUALLY COMING FOR THEM.
+    // THEY MOVE AS ONE AUTHORED BODY, NEVER AS A REACTION TO THE HAND.
     //
-    // The offset is computed once from the formation's centre and applied to
-    // all of it; the per-surface fan is scaled by the INVERSE of cohesion, so
-    // late in the night they hold formation instead of scattering. And beyond
-    // about three surface-widths the pointer is not a threat, which is what
-    // makes the break legible rather than constant twitching.
+    // The bearing belongs to the encounter and the same inputs always produce
+    // the same offset. The per-surface fan is scaled by the INVERSE of
+    // cohesion, so late in the night they hold formation instead of scattering.
     #[test]
-    fn the_shoal_breaks_together_away_from_the_pointer() {
+    fn the_shoal_breaks_together_on_an_authored_bearing() {
         let span = 200.0_f64;
-        let centre = (900.0_f64, 500.0_f64);
-        let shove = |aim: (f64, f64), dodge: f64, reach: f64| {
-            let (dx, dy) = (centre.0 - aim.0, centre.1 - aim.1);
-            let distance = dx.hypot(dy);
-            let threat = (1.0 - (distance / (span * 3.2)).min(1.0)).powf(1.4);
-            if !(threat > 0.001 && distance > 0.5) {
-                return (0.0, 0.0);
-            }
-            let out = reach * span * dodge * threat;
-            (dx / distance * out, dy / distance * out)
+        let shove = |direction: (f64, f64), dodge: f64, reach: f64| {
+            let length = direction.0.hypot(direction.1).max(0.001_f64);
+            let out = reach * span * dodge;
+            (direction.0 / length * out, direction.1 / length * out)
         };
 
-        // A pointer bearing down from the left pushes the whole shoal right.
-        let near = shove((700.0, 500.0), 1.0, 2.4);
+        let rise = shove((0.58, -0.82), 1.0, 0.9);
         assert!(
-            near.0 > 0.0 && near.1.abs() < 1e-6,
-            "straight away from it, not sideways"
+            rise.0 > 0.0 && rise.1 < 0.0,
+            "Natatorium rises on its fixed diagonal"
         );
-
-        // The same pointer far off does nothing at all.
-        let far = shove((-400.0, 500.0), 1.0, 2.4);
+        assert_eq!(rise, shove((0.58, -0.82), 1.0, 0.9), "it is deterministic");
         assert_eq!(
-            far,
-            (0.0, 0.0),
-            "a pointer that is not coming for them is not a threat"
-        );
-
-        // And a settled shoal does not move however close the pointer gets.
-        assert_eq!(
-            shove((880.0, 500.0), 0.0, 2.4),
+            shove((0.58, -0.82), 0.0, 0.9),
             (0.0, 0.0),
             "a settle is perfectly still"
+        );
+        assert!(
+            rise.0.hypot(rise.1) <= span,
+            "the tease stays within one pane width"
         );
 
         // Cohesion decides how much of the movement is the formation and how

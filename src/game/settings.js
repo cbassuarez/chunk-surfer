@@ -37,6 +37,8 @@ const FX_MODES = ['off', 'reduced', 'full'];
 const FX_LABEL = { off: 'OFF', reduced: 'REDUCED', full: 'FULL' };
 const HINT_MODES = ['off', 'reduced', 'full'];
 const HINT_LABEL = { off: 'OFF', reduced: 'SPARSE', full: 'FULL' };
+const CONTROL_HUD_MODES = ['smart', 'persistent'];
+const CONTROL_HUD_LABEL = { smart: 'SMART', persistent: 'PERSISTENT' };
 const SEEN_TEXT_MODES = ['normal', 'fast', 'instant'];
 const SEEN_TEXT_LABEL = { normal: 'NORMAL', fast: 'FAST WHEN HELD', instant: 'INSTANT WHEN HELD' };
 const HUSH_AUDIO_MODES = ['reduced', 'full'];
@@ -588,6 +590,9 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
           { id: 'objectiveHints', label: 'OBJECTIVE HINTS',
             value: () => HINT_LABEL[setting('objectiveHints', 'full')] || 'FULL',
             adjust: (d) => cycleSetting('objectiveHints', HINT_MODES, d, 'full') },
+          { id: 'controlHud', label: 'CONTROL HUD',
+            value: () => CONTROL_HUD_LABEL[setting('controlHud', 'smart')] || 'SMART',
+            adjust: (d) => cycleSetting('controlHud', CONTROL_HUD_MODES, d, 'smart') },
           { id: 'pauseOnBlur', label: 'PAUSE WHEN BLUR',
             value: () => setting('pauseOnBlur', true) ? 'ON' : 'OFF',
             adjust: () => set('pauseOnBlur', !setting('pauseOnBlur', true)) },

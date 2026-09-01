@@ -1,4 +1,5 @@
 import { CELL, EYE, F, MATERIAL, ZONE } from '../data/floorplan/legend.js';
+import { MOVE_MS } from '../config.js';
 import { encodeH } from '../world/floorplan.js';
 import {
   STAIR_ANOMALY_STAGE,
@@ -10,15 +11,32 @@ import {
 } from './stair-anomaly.js';
 
 export const STAIR_ANOMALY_ENTRY = Object.freeze({ x: 0, y: 0, facing: 0 });
-export const STAIR_ANOMALY_MODULE_CELLS = 160;
-// One continuous, impossible flight — ~a minute of climbing at the ORDINARY walk
-// cadence (you travel exactly as you do on a real stair, no throttle), far taller
-// than any real floor-to-floor stair. No modules, no landings, no loop.
-export const STAIR_ANOMALY_TOTAL_CELLS = 640;
-// Nominal per-tread time, matching the ordinary move interval (config MOVE_MS) —
-// used only to reason about pacing in tests; the live climb uses the normal
-// movement clock, so the stair feels no different to walk than any other.
-export const STAIR_ANOMALY_STEP_INTERVAL_MS = 90;
+export const STAIR_ANOMALY_MODULE_CELLS = 100;
+// One continuous, impossible flight at the ORDINARY walk cadence — you travel
+// exactly as you do on a real stair, with no throttle — and no modules, no
+// landings, no loop.
+//
+// HOW LONG IS LONG ENOUGH. This was 640 treads — 29 seconds of unbroken
+// climbing, which is past the point where the stair stops making an argument
+// and starts merely continuing. The effect is "this flight is longer than the
+// building": it lands the moment the player passes the rise a real
+// floor-to-floor stair would have taken, and everything after that is the same
+// sentence said again.
+//
+// 400 treads is 18 seconds and still nearly thirty times a real fourteen-rise
+// flight, which leaves each of the four beats about four and a half seconds —
+// enough to read one and notice the next.
+export const STAIR_ANOMALY_TOTAL_CELLS = 400;
+// Per-tread time, used only to reason about pacing in tests; the live climb
+// uses the normal movement clock, so the stair feels no different to walk than
+// any other.
+//
+// DERIVED, NOT COPIED. This was the literal 90, described as "matching the
+// ordinary move interval (config MOVE_MS)" — but MOVE_MS is `ms(90)`, and `ms`
+// scales by 1/CELL_SCALE, so the real interval is 45. Every duration reasoned
+// from this constant was therefore exactly double the truth, which is how a
+// 29-second stair came to be discussed as a minute long.
+export const STAIR_ANOMALY_STEP_INTERVAL_MS = MOVE_MS;
 
 const PLAN_SIZE = 192;
 const PLAN_SNAP = 16;
@@ -28,7 +46,7 @@ const PLAN_SNAP = 16;
 const HEIGHT_ENCODING_STEP = 32 / 255;
 // Steady tread rise per cell — a real stair's pitch, kept continuous over the
 // whole flight, so the staircase just climbs, and climbs, without ever resetting
-// to a landing. Over 640 treads that is ~140m of rise: texture bytes use a local
+// to a landing. Over 320 treads that is ~70m of rise: texture bytes use a local
 // height origin and the renderer restores that origin as a world-space offset,
 // keeping the climb continuous without overflowing the ordinary height encoding.
 const RISE_PER_CELL = 4.8 / 22;
@@ -36,7 +54,7 @@ const WIDTH_MIN = -3;
 const WIDTH_MAX = 2;
 // Atmosphere/checkpoint thresholds only — the FLOOR is one continuous ramp; these
 // just pace the light stages and the resume checkpoints across the long climb.
-const STAGE_DEPTHS = [0, 160, 320, 480, 640];
+const STAGE_DEPTHS = [0, 100, 200, 300, 400];
 
 const clamp = (value, lo, hi) => Math.max(lo, Math.min(hi, Number(value) || 0));
 
@@ -138,7 +156,9 @@ export function createStairAnomalyRuntime({
     zoneAt: () => ZONE.stair,
     materialAt: () => MATERIAL.serviceConcrete,
     worldAt: () => 'main_b3',
-    areaLabelAt: () => selected.stairId === 'upper' ? 'the practice stair' : 'the west stair',
+    // Always the west stair now; the spiral cannot carry this. See
+    // decideStairAnomalyEnvironment.
+    areaLabelAt: () => 'the west stair',
     logicalToPhysical: (x, y) => ({ x, z: y, y: stairAnomalyFloorAt(y, selected), layer: 'stair-anomaly', spaceId: 'stair-anomaly', renderGroup: 'stair-anomaly' }),
     renderPlanFor(x, y) {
       const originX = Math.floor((x - PLAN_SIZE / 2) / PLAN_SNAP) * PLAN_SNAP;

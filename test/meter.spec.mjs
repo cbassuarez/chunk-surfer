@@ -6,6 +6,7 @@ import {
   meterSegmentCount, meterSegmentAt,
   meterTicks, meterScaleFits, meterMarks, meterMarkBoxes,
   meterBallistics, meterState, meterStateReset,
+  locationTicks, locationScaleFits, locationMarks,
   combatGaugeGeometry, combatGaugeSegments,
 } from '../src/render/meter.js';
 
@@ -142,6 +143,53 @@ import {
   assert.ok(avoiding.includes('0'), 'and 0 still survives');
   assert.deepEqual(meterMarkBoxes([{ db: -14.9, kind: 'spoil' }], 44), [],
     'a mark with no legend reserves nothing');
+}
+
+// ── THE LOCATION STRIP ───────────────────────────────────────────────────────
+//
+// Sixty identical blocks carrying one number. During a take this strip IS the
+// clock, and you could not tell twenty seconds from forty — so the widest thing
+// on the panel was redundant with the counter above it.
+{
+  // Ticks are placed on TIME, so the strip and the counter cannot drift apart.
+  const ticks = locationTicks(44, { seconds: 45, everySec: 10 });
+  assert.deepEqual(ticks.map((t) => t.sec), [10, 20, 30, 40], 'every ten seconds of the minute');
+  for (const tick of ticks) {
+    assert.ok(Math.abs(tick.x - (tick.sec / 45) * 44) < 1e-9, `${tick.sec}s sits where ${tick.sec}s is`);
+    assert.ok(tick.left >= 0 && tick.right <= 44, `${tick.sec}s stays inside the strip`);
+  }
+  assert.ok(ticks.some((t) => t.major), 'some graduations are heavier than others');
+
+  // Narrow strips thin out rather than crowd.
+  for (const w of [10, 14, 20, 30, 44, 60]) {
+    const placed = locationTicks(w, { seconds: 45 });
+    const order = [...placed].sort((a, b) => a.left - b.left);
+    for (let i = 1; i < order.length; i++) {
+      assert.ok(order[i].left >= order[i - 1].right,
+        `at width ${w}, "${order[i - 1].label}" and "${order[i].label}" do not overlap`);
+    }
+  }
+  assert.equal(locationScaleFits(2), false, 'a strip too narrow to graduate says so');
+
+  // A different take length regraduates rather than mislabelling.
+  assert.deepEqual(locationTicks(44, { seconds: 20, everySec: 10 }).map((t) => t.sec), [10],
+    'a twenty-second tape does not print a 30 and a 40 it does not have');
+}
+
+// The marks are the events already on the tape: where the room made noise, and
+// the closest the presence came. Both were recorded and neither was drawn.
+{
+  const marks = locationMarks([
+    { at: 0.8, kind: 'presence', id: 'presence' },
+    { at: 0.2, kind: 'event', id: 'a' },
+    { at: 1.4, kind: 'event', id: 'past the end' },
+    { at: null }, null,
+  ], 40);
+  assert.deepEqual(marks.map((m) => m.id), ['a', 'presence', 'past the end'],
+    'in take order, and a mark with no reading is dropped');
+  assert.equal(marks[2].at, 1, 'a mark past the end pins to the end rather than drawing off the strip');
+  assert.ok(marks[1].x > marks[0].x, 'position follows time');
+  assert.deepEqual(locationMarks(null, 40), [], 'no marks is not a crash');
 }
 
 // ── BALLISTICS ───────────────────────────────────────────────────────────────

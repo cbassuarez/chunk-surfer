@@ -42,14 +42,15 @@ test('it is an S, not a ramp: the middle of the night is where it turns', () => 
 
 // The settle is not a mercy that shrinks. The harder the break is to read, the
 // longer the player is owed to act on having read it.
-test('difficulty grows in the feint while every committed catch keeps at least 650 ms', () => {
+test('difficulty grows in an authored feint while every committed catch keeps at least 1.57 seconds', () => {
   const first = fireballChoreography({ battleId: 'natatorium', turn: 0 });
   const last = fireballChoreography({ battleId: 'source-final', turn: 12 });
-  for (const key of ['evasion', 'senseMs', 'reach', 'breakMs', 'cohesion']) {
+  for (const key of ['evasion', 'reach', 'breakMs', 'cohesion']) {
     assert.ok(last[key] > first[key], `${key} climbs`);
   }
-  assert.ok(first.settleMs>=650&&last.settleMs>=650,'the stationary catch floor never shrinks');
-  assert.ok(first.breakMs+first.settleMs<=1150&&last.breakMs+last.settleMs<=1150,'one feint fits the outside flight');
+  assert.equal('senseMs' in first,false,'cursor prediction is not part of the choreography contract');
+  assert.ok(first.settleMs>=1570&&last.settleMs>=1570,'the stationary catch floor never shrinks');
+  assert.ok(first.breakMs+first.settleMs<=2050&&last.breakMs+last.settleMs<=2050,'one feint fits the outside flight');
   assert.equal(first.gesture,'rise-drift');
   assert.equal(last.gesture,'swarm-recombine');
 });
@@ -59,7 +60,7 @@ test('reduced motion opts out of the whole dance', () => {
   assert.equal(still.pressure, 0);
   assert.equal(still.evasion, 0, 'nothing darts');
   assert.equal(still.breakMs,0);
-  assert.ok(still.settleMs>=650);
+  assert.ok(still.settleMs>=2050);
 });
 
 // One count for the whole cast: they break together and settle together, which

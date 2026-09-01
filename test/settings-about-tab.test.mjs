@@ -50,6 +50,12 @@ test('display and input own their reset actions', () => {
   assert.match(settings, /LOOK SENSITIVITY/);
 });
 
+test('game settings separate ambient control lifetime from objective guidance', () => {
+  assert.match(settings, /label:\s*'CONTROL HUD'/);
+  assert.match(settings, /CONTROL_HUD_MODES\s*=\s*\['smart',\s*'persistent'\]/);
+  assert.match(settings, /label:\s*'OBJECTIVE HINTS'/);
+});
+
 test('settings renderer supports non-selectable section rows', () => {
   assert.match(settings, /kind:\s*'section'/);
   assert.match(settings, /selectable:\s*false/);

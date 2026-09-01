@@ -56,12 +56,23 @@ for (const [name, w, h] of [['wide', 1280, 760], ['narrow', 960, 600]]) {
   // take. Until the meter printed a scale there was no way to see how much room
   // was left — the bar was a fraction of the spoil threshold with no threshold
   // drawn on it. `emitNoise` is the game's own verb, so this is a real reading.
-  await page.evaluate(() => window.__probe.noise(0.14));
-  await sleep(260);
+  // Noise, plotted on the location strip where it happened.
+  //
+  // Only a few seconds of it: a forced take cannot be held open long here. At
+  // the dock the recorder refuses ("not a room on the order") and the take
+  // aborts; in studio B3 it is legal but recording there fires the scripted
+  // encounter. Both are the game behaving correctly, so the marks in this shot
+  // cluster near the head of the strip rather than spreading over the minute.
+  await sleep(1200);
+  await page.evaluate(() => window.__probe.noise(0.08));
+  await sleep(2200);
+  await page.evaluate(() => window.__probe.noise(0.12));
+  await sleep(300);
   await page.screenshot({ path: `artifacts/${TAG}-${name}-hot.png` });
   const hot = await page.evaluate(() => ({
     noise: +window.__probe.rec().noise?.toFixed?.(3) || null,
-    marks: window.__probe.noiseMarks?.() || null,
+    events: window.__probe.takeEvents?.(),
+    rec: (({recording,listening,phase,stalled,spoiled,takeElapsed})=>({recording,listening,phase,stalled,spoiled,takeElapsed:+(takeElapsed||0).toFixed(1)}))(window.__probe.rec()),
   }));
   console.log(`${name.padEnd(7)} hot     ${JSON.stringify(hot)}  artifacts/${TAG}-${name}-hot.png`);
   const rec = await page.evaluate(() => window.__probe.rec());

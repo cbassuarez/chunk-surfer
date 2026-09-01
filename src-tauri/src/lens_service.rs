@@ -24,6 +24,8 @@ const HEALTH_HARD_TIMEOUT: Duration = Duration::from_secs(15 * 60);
 const HEALTH_POLL_INTERVAL: Duration = Duration::from_millis(150);
 const HEALTH_CONNECT_TIMEOUT: Duration = Duration::from_millis(300);
 const HEALTH_READ_TIMEOUT: Duration = Duration::from_millis(600);
+const EXPECTED_CACHE_SCHEMA: u32 = 3;
+const EXPECTED_SERVICE_REVISION: &str = "r16-seamless-banks";
 
 #[derive(Clone, Default)]
 pub struct LensServiceState(Arc<Mutex<ServiceInner>>);
@@ -118,6 +120,9 @@ struct HealthPayload {
     supported: Option<bool>,
     ready: Option<bool>,
     error: Option<String>,
+    #[serde(rename = "cacheSchema")]
+    cache_schema: Option<u32>,
+    rev: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -125,6 +130,10 @@ struct LensManifest {
     schema: u32,
     #[serde(rename = "serviceSchema")]
     service_schema: u32,
+    #[serde(rename = "cacheSchema")]
+    cache_schema: u32,
+    #[serde(rename = "serviceRevision")]
+    service_revision: String,
     #[serde(rename = "modelId")]
     model_id: String,
     files: BTreeMap<String, String>,
@@ -352,6 +361,8 @@ fn validate_required_payload(target: &LaunchTarget, resource_dir: &Path) -> Resu
         .map_err(|_| payload_error("lens/manifest.json is malformed"))?;
     if manifest.schema != 1
         || manifest.service_schema != 2
+        || manifest.cache_schema != EXPECTED_CACHE_SCHEMA
+        || manifest.service_revision != EXPECTED_SERVICE_REVISION
         || manifest.model_id != "sd15-hyper4"
         || manifest.files.is_empty()
     {
@@ -398,6 +409,23 @@ fn parse_health_response(response: &str) -> HealthState {
             return HealthState::InvalidResponse(format!("health JSON is malformed: {error}"));
         }
     };
+    if payload.ok == Some(true) && payload.supported == Some(true) {
+        if payload.cache_schema != Some(EXPECTED_CACHE_SCHEMA) {
+            return HealthState::InvalidResponse(format!(
+                "bundled lens cache schema mismatch (service {}, game {EXPECTED_CACHE_SCHEMA})",
+                payload
+                    .cache_schema
+                    .map(|value| value.to_string())
+                    .unwrap_or_else(|| "missing".into())
+            ));
+        }
+        if payload.rev.as_deref() != Some(EXPECTED_SERVICE_REVISION) {
+            return HealthState::InvalidResponse(format!(
+                "bundled lens revision mismatch (service {}, game {EXPECTED_SERVICE_REVISION})",
+                payload.rev.as_deref().unwrap_or("missing")
+            ));
+        }
+    }
     match (payload.ok, payload.supported, payload.ready) {
         (Some(false), _, _) => HealthState::Fatal(
             payload
@@ -1160,7 +1188,9 @@ mod tests {
     }
 
     fn healthy_body(ready: bool) -> String {
-        format!(r#"{{"ok":true,"supported":true,"ready":{ready},"error":null}}"#)
+        format!(
+            r#"{{"ok":true,"supported":true,"ready":{ready},"error":null,"cacheSchema":{EXPECTED_CACHE_SCHEMA},"rev":"{EXPECTED_SERVICE_REVISION}"}}"#
+        )
     }
 
     fn unique_root(label: &str) -> PathBuf {
@@ -1180,7 +1210,7 @@ mod tests {
         fs::write(
             resource_dir.join("manifest.json"),
             format!(
-                "{{\"schema\":1,\"serviceSchema\":2,\"modelId\":\"sd15-hyper4\",\"files\":{{\"models/fixture.bin\":\"{}\"}}}}",
+                "{{\"schema\":1,\"serviceSchema\":2,\"cacheSchema\":{EXPECTED_CACHE_SCHEMA},\"serviceRevision\":\"{EXPECTED_SERVICE_REVISION}\",\"modelId\":\"sd15-hyper4\",\"files\":{{\"models/fixture.bin\":\"{}\"}}}}",
                 "0".repeat(64)
             ),
         )
@@ -1305,6 +1335,14 @@ mod tests {
             parse_health_response("HTTP/1.1 200 OK\r\n\r\nnot-json"),
             HealthState::InvalidResponse(_)
         ));
+        assert_eq!(
+            parse_health_response(&http_response(
+                r#"{"ok":true,"supported":true,"ready":false,"cacheSchema":2,"rev":"r15-old"}"#
+            )),
+            HealthState::InvalidResponse(
+                "bundled lens cache schema mismatch (service 2, game 3)".into()
+            )
+        );
     }
 
     #[test]

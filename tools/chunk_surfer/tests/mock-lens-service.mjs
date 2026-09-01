@@ -23,7 +23,7 @@ server.on('connection',(socket)=>{
   let request=null;
   socket.send(JSON.stringify({
     type:'status',ok:true,supported:true,device:'mps',model:'sd15-hyper4',modelId:'sd15-hyper4',
-    size:512,cacheSchema:2,weightsSha256:'mock',depth:false,
+    size:512,cacheSchema:3,weightsSha256:'mock',depth:false,
   }));
   socket.on('message',(data,isBinary)=>{
     if(!isBinary){request=JSON.parse(data.toString());return;}

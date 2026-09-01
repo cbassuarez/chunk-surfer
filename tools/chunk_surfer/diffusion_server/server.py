@@ -34,12 +34,11 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
 import pipeline
 from cache_contract import material_cache_key
+from protocol import CACHE_SCHEMA, SERVER_REV
 
 JPEG_QUALITY = 72
 # r16: banks are generated with circular convolution padding so they tile. Every
 # cached bank from r15 has a hard seam at its wrap and must be regenerated.
-SERVER_REV = "r16-seamless-banks"
-CACHE_SCHEMA = 3
 LENS_TOKEN = os.environ.get("LENS_TOKEN", "")
 CACHE_DIR = Path(os.environ.get("LENS_CACHE_DIR", Path.home() / ".cache" / "chunk-surfer" / "lens-v2"))
 

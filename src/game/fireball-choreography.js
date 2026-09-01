@@ -1,24 +1,25 @@
 // SYNCHRONISED SWIMMERS.
 //
-// A cast surface that sits still is a click test. Four of them that sense the
-// cursor coming, break together, and reform is a thing you have to read -- and
-// reading it is the same skill the rest of the fight is asking for, so the
-// ranged exchange stops being a side minigame with a mouse in it.
+// A cast surface that only sits still is a click test. Four of them that break
+// together, show you a formation, and reform are a thing you have to read --
+// but they never read the cursor back. The player's hand is not an input to the
+// feint. Once a target commits, it is a target rather than a practical joke.
 //
 // TWO RULES MAKE IT FAIR RATHER THAN CRUEL.
 //
-// The first is that they only run from where the cursor is GOING, not from
-// where it is. A shoal that repels from the pointer's current position is
-// unloseable at low speed and unwinnable at high speed; one that repels from
-// the pointer's predicted position can be beaten by aiming at where it will be,
-// which is a decision instead of a race.
+// The first is that the break is authored. Cursor prediction made a target
+// instinctively dodge the exact hand trying to catch it, which made speed and
+// desktop focus determine the outcome instead of the encounter's readable
+// movement. The formation now performs the same move no matter where the
+// pointer is.
 //
 // The second is that the dodge always ends. Every cycle is a break followed by
 // a settle, and during the settle they hold perfectly still and can simply be
 // clicked. The settle is not a mercy that shrinks as things get harder -- it
 // GROWS with the difficulty, because the harder the break is to read the longer
 // you are owed to act on having read it. What gets worse is the darting, not
-// the chance.
+// the chance. Missing that first commitment is also not damage: the exchange
+// controller bounces the comet back to the bezel and offers it once more.
 //
 // THE CURVE IS A STAIRCASE OF S-CURVES.
 //
@@ -81,18 +82,15 @@ export function fireballChoreography({ battleId = '', battleOrdinal = null, turn
     gesture:GESTURES[battleId]||'rise-drift',
     // How hard they break. 0 is a window that has never heard of you.
     evasion: pressure,
-    // How far ahead of the cursor they aim. A still pointer predicts to itself,
-    // so this only bites once you commit to a direction.
-    senseMs: 70 + pressure * 210,
-    // How far they will travel to get out of the way, as a multiple of their
-    // own width -- so the shoal never teleports across the desk.
-    reach: .55 + pressure * 1.85,
-    // Break, then hold. Both grow, but the settle grows faster: the harder the
-    // break is to read, the longer you are owed to act on having read it.
-    // Exactly one feint, then an authored catch which is never shorter than
-    // 650 ms. The whole exchange fits the 1.15 s outside-flight contract.
-    breakMs: reducedMotion ? 0 : 180 + pressure * 300,
-    settleMs: reducedMotion ? 1150 : 970 - pressure * 300,
+    // How far the authored feint travels, as a multiple of the surface's own
+    // width. Kept under one width even at Source: the encounter can make a
+    // complicated formation without turning a click into a chase.
+    reach: .35 + pressure * .65,
+    // One short move, then a long commitment. Difficulty changes the movement,
+    // never the time owed after it: every target holds for at least 1.57 s.
+    // Together these fill the exchange's 2.05 s outside-flight contract.
+    breakMs: reducedMotion ? 0 : 260 + pressure * 220,
+    settleMs: reducedMotion ? 2050 : 1790 - pressure * 220,
     // How much of the movement is the whole shoal moving as one body versus
     // each surface fanning on its own. High cohesion late: by the last fight
     // they are a formation, not four independent nuisances.

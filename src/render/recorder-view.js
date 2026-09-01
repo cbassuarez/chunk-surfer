@@ -345,12 +345,25 @@ export function drawRecorderFace(view = {}) {
     drawChannelMeter(meterX, by + 2.5, meterW, view.levels.right, 'R');
   }
 
-  // LOCATION INDICATOR — the minute, or the tape, as a bargraph with a red
-  // position marker. The DA-1000's signature, and the reason the theme has a
-  // marker colour at all.
+  // LOCATION INDICATOR — the minute, or the tape, with a red position marker.
+  // The DA-1000's signature, and the reason the theme has a marker colour.
+  //
+  // The graduation NOTCHES cost no rows — they stand inside the bar — so the
+  // strip always reads as a scale. The printed numbers cost a row and are only
+  // taken when one is going spare, which is when there is no LEVEL meter below
+  // wanting its own scale. During a take the notches plus the TIME COUNTER
+  // directly above are enough to place yourself in the minute; before this the
+  // strip carried a single number across the widest element on the panel and
+  // you could not tell twenty seconds from forty.
   const locY = by + (compact ? 4.4 : 5.2);
   uiText(bx, locY, 'LOCATION INDICATOR', 'ui-label', 1, body.w);
-  drawLocationIndicator(bx, locY + 1, Math.max(8, body.w), clamp01(view.progress), { theme: 'green' });
+  drawLocationIndicator(bx, locY + 1, Math.max(8, body.w), clamp01(view.progress), {
+    theme: 'green',
+    seconds: view.locationSeconds || 45,
+    // What happened, and when. Already recorded, never shown.
+    marks: view.locationMarks || null,
+    rows: view.meter ? 1 : 2,
+  });
 
   // LEVEL, and the room mic under it — ONE SCALE, TWO NEEDLES.
   //

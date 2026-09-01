@@ -35,8 +35,12 @@ test('victory finishes its 1.35 second surface before result dialogue while defe
     'win dialogue is gated behind the controller endpoint');
   assert.match(combat,/if \(result === 'win'[\s\S]{0,180}phase = 'submersion'[\s\S]{0,180}finishMusic\(\);/,
     'victory still waits for the water controller endpoint');
-  assert.match(combat,/result==='lose'[\s\S]{0,180}interference\?\.result\?\.\(result\)[\s\S]{0,120}finally\(deliverResult\)/,
-    'defeat stays fully submerged while its window shatter completes before loss dialogue');
+  // Defeat holds the water and now holds BOTH halves of the death composition:
+  // the desktop panes (interference.result) and the in-canvas screen
+  // (onDefeatScreen) are one piece, launched together, and the loss dialogue
+  // waits for whichever is still running. See game/death-scene.js.
+  assert.match(combat,/result==='lose'[\s\S]{0,900}interference\?\.result\?\.\(result\)[\s\S]{0,200}onDefeatScreen\?\.\([\s\S]{0,200}finally\(deliverResult\)/,
+    'defeat stays fully submerged while both halves of the death composition complete before loss dialogue');
 });
 
 test('water Foley fires once per phase edge and tears down on silent exits',()=>{

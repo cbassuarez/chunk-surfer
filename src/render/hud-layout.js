@@ -36,3 +36,34 @@ export function hudReminderVisible({now=0,lastKeyAt=0,lastPointerAt=0,delayMs=90
   const last=Math.max(0,Number(lastKeyAt)||0,Number(lastPointerAt)||0);
   return last<=0||Math.max(0,Number(now)||0)-last>=Math.max(0,Number(delayMs)||0);
 }
+
+// Ambient tools do not have a thing in the world to focus. A door can teach
+// [E] when the player reaches it; the torch cannot, so its control needs a
+// separate lifetime from objective hints and reticle prompts.
+export const CONTROL_HUD_DISCOVERY_MS=18000;
+export const CONTROL_HUD_IDLE_MS=9000;
+
+export function controlHudPresentation({
+  mode='smart',
+  now=0,
+  introducedAt=0,
+  lastKeyAt=0,
+  lastPointerAt=0,
+  contextual=false,
+  discoveryMs=CONTROL_HUD_DISCOVERY_MS,
+  idleMs=CONTROL_HUD_IDLE_MS,
+}={}){
+  const normalized=mode==='persistent'?'persistent':'smart';
+  const introduced=Math.max(0,Number(introducedAt)||0);
+  if(introduced<=0)return Object.freeze({visible:false,compact:false,reason:'not-introduced'});
+  if(normalized==='persistent'){
+    return Object.freeze({visible:true,compact:!!contextual,reason:contextual?'persistent-compact':'persistent'});
+  }
+  const elapsed=Math.max(0,(Number(now)||0)-introduced);
+  if(elapsed<Math.max(0,Number(discoveryMs)||0)){
+    return Object.freeze({visible:true,compact:!!contextual,reason:contextual?'discovery-compact':'discovery'});
+  }
+  if(contextual)return Object.freeze({visible:false,compact:false,reason:'context'});
+  const visible=hudReminderVisible({now,lastKeyAt,lastPointerAt,delayMs:idleMs});
+  return Object.freeze({visible,compact:false,reason:visible?'idle':'active'});
+}

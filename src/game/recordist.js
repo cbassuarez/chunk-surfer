@@ -91,9 +91,32 @@ export function noiseMarks() {
 
 export { spoilThreshold };
 
+// ── WHEN IT WENT WRONG ───────────────────────────────────────────────────────
+//
+// The take clock knew the second a noise landed and threw it away, so a spoiled
+// take could only ever say THAT it failed. These are the marks the location
+// strip draws: a near miss you got away with, and the one that ended it.
+//
+// Live only, and cleared at the top of every take. A spoiled take is never
+// sealed, so there is nothing to persist and nothing to migrate.
+const TAKE_EVENT_LIMIT = 24;
+
+export function takeEvents() {
+  return state.takeEvents.map((event) => ({ ...event }));
+}
+
+function noteTakeEvent(kind, level) {
+  if (state.takeEvents.length >= TAKE_EVENT_LIMIT) return;
+  state.takeEvents.push({ atSec: Math.max(0, state.takeElapsed), kind, level: Number(level) || 0 });
+}
+
 function handleRecordingNoise(level, reason, meta = {}) {
   if (state.phase !== 'recording' || state.stalled) return;
   const threshold = spoilThreshold();
+  // A quarter of the way to spoiling is already worth marking: it is the
+  // difference between "the room was silent" and "you kept getting away with
+  // it", and only one of those is a lesson.
+  if (level > threshold * .25) noteTakeEvent(level > threshold ? 'spoil' : 'near', level);
   if (level <= threshold) return;
   if (difficultyRules.minorNoise === 'pause' && level <= threshold * 1.35) {
     state.assistPause = Math.max(state.assistPause, Number(difficultyRules.pauseSeconds) || 0.7);
@@ -108,6 +131,7 @@ const state = {
   battery: 1,           // 0..1. Drains only while it is actually burning.
   phase: 'idle',        // 'idle' | 'listening' | 'recording'
   takeElapsed: 0,       // seconds of unbroken quiet
+  takeEvents: [],       // when noise landed in this take — see noteTakeEvent
   stalled: false,       // an instrument woke: the take is paused, not running,
                         // and you may move to go and silence it.
   spoiled: false,
@@ -123,7 +147,14 @@ const state = {
   // until the first read, so a save written before this loads at its ceiling
   // rather than at zero.
   composure: null,
-  sheets: 0,            // sheet music carried; read one to compose yourself
+  // WHICH PAGES HE HAS, NOT HOW MANY.
+  //
+  // Five different pieces by five different composers, each with its own sound
+  // and its own line — a count would throw all of that away the moment he
+  // picked up the second one. `sheets` is what is in the case now; taken is
+  // what has ever been lifted, so a read sheet never respawns on the floor.
+  sheets: [],
+  sheetsTaken: [],      // which of the five have ever been lifted off the floor
   noise: 0,             // current, decaying
   worldNoise: 0,        // remote sources the presence hears but this mic does not
   lastNoiseAt: { x: 0, y: 0, t: 0 },   // where the presence goes looking
@@ -184,18 +215,35 @@ export function restoreComposure(amount = 0) {
   state.composure = Math.min(composureCeiling(), composure() + gain);
   return state.composure;
 }
-export function sheetsCarried() { return Math.max(0, state.sheets); }
-export function addSheet(count = 1) {
-  state.sheets = Math.max(0, state.sheets + Math.max(0, Math.round(Number(count) || 0)));
-  return state.sheets;
+export function sheetsCarried() { return state.sheets.length; }
+export function carriedSheets() { return [...state.sheets]; }
+// The one he would read next, which is the one the case shows him and the one
+// he hears when he looks. Oldest first: he works through them in the order he
+// found them.
+export function nextSheet() { return state.sheets[0] || null; }
+export function sheetTaken(id) { return state.sheetsTaken.includes(String(id)); }
+// Lifting one off the floor. Idempotent by id, so a prop that somehow survives
+// a resync cannot be picked up twice.
+export function takeSheet(id) {
+  const key = String(id || '');
+  if (!key || state.sheetsTaken.includes(key)) return false;
+  state.sheetsTaken.push(key);
+  state.sheets.push(key);
+  return true;
+}
+// Debug only (the god menu). Real acquisition goes through takeSheet.
+export function addSheet(id = 'sheet-goldberg-aria') {
+  state.sheets.push(String(id));
+  return state.sheets.length;
 }
 // Spending one is the whole transaction: it fails if there is none, and it
 // fails if it would do nothing, so a full recordist cannot burn a sheet.
 export function readSheet(amount = 3 * COMPOSURE_GRID) {
-  if (state.sheets <= 0) return { spent: false, composure: composure(), sheets: 0, reason: 'NO SHEET' };
-  if (composure() >= composureCeiling()) return { spent: false, composure: composure(), sheets: state.sheets, reason: 'ALREADY COMPOSED' };
-  state.sheets -= 1;
-  return { spent: true, composure: restoreComposure(amount), sheets: state.sheets, reason: '' };
+  const id = nextSheet();
+  if (!id) return { spent: false, id: null, composure: composure(), sheets: 0, reason: 'NO SHEET' };
+  if (composure() >= composureCeiling()) return { spent: false, id, composure: composure(), sheets: state.sheets.length, reason: 'ALREADY COMPOSED' };
+  state.sheets.shift();
+  return { spent: true, id, composure: restoreComposure(amount), sheets: state.sheets.length, reason: '' };
 }
 
 // Reaching for the light mid-take is allowed, and it ruins the take. Every
@@ -344,6 +392,7 @@ export function startRecording() {
   state.phase = 'recording';
   state.light = false;
   state.takeElapsed = 0;
+  state.takeEvents = [];
   state.stalled = false;
   state.assistPause = 0;
   state.spoiled = false;
@@ -511,7 +560,11 @@ export function loadRecState(saved = {}) {
     // A save written before composure carried has no field. Null means "start
     // at the ceiling", which is what every one of those nights actually did.
     composure: saved.composure == null ? null : Number(saved.composure),
-    sheets: Math.max(0, Number(saved.sheets) || 0),
+    // A save from before the pieces were distinct carried a count. Nothing
+    // shipped in that state, so it is read as "none" rather than migrated into
+    // five arbitrary pieces he never found.
+    sheets: Array.isArray(saved.sheets) ? saved.sheets.map(String) : [],
+    sheetsTaken: Array.isArray(saved.sheetsTaken) ? saved.sheetsTaken.map(String) : [],
     takes: [...rooms],
     contaminated: [...new Set(dirty)],
     places,
@@ -531,7 +584,8 @@ export function saveRecState(tapes = null) {
   return {
     injuries: state.injuries,
     composure: composure(),
-    sheets: state.sheets,
+    sheets: [...state.sheets],
+    sheetsTaken: [...state.sheetsTaken],
     battery: state.battery,
     tapes: fromStore || state.takes.map((roomId) => ({
       roomId,

@@ -137,6 +137,19 @@ test('damage geometry is suppressed during a committed fireball catch',async()=>
   assert.ok(calls.includes('chunk_window_choreography_execute'));
 });
 
+test('emergency restoration forgives a live fireball before closing its surfaces',async()=>{
+  const target=new EventTarget();
+  target.CustomEvent=CustomEvent;
+  const reasons=[];
+  target.addEventListener('chunk-surfer:fireball-forgive',(event)=>reasons.push(event.detail?.reason));
+  const director=createWindowChoreographyDirector({
+    runtimeApi:{invoke:async()=>true},documentApi:{defaultView:target},
+    effects:{hideComposition:async()=>true,hidePanes:async()=>true,emergencyRestore:async()=>true},
+  });
+  await director.emergencyRestore({preservePuzzle:false});
+  assert.deepEqual(reasons,['emergency-restore']);
+});
+
 test('near Source proper opens the required Aperture instead of the old enter pane',async()=>{
   let shown=null;
   const director=createWindowChoreographyDirector({

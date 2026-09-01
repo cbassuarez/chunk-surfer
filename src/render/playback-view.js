@@ -44,6 +44,12 @@ export function drawPlaybackOverlay({ snapshot, cols, rows, roomTitle, takeNumbe
     spin: view.progress,
     drift: view.tapeDrift,
     markers: view.markers,
+    // The same events, on the location strip as well as the bay trace: the bay
+    // says the print is moving, the strip says WHERE in the take each one sits.
+    locationSeconds: view.durationSec || 45,
+    locationMarks: (view.markers || []).map((marker) => ({
+      at: marker.position, kind: 'event', id: marker.id,
+    })),
     counter: view.elapsedLabel,
     counterLabel: 'TIME COUNTER',
     counterTotal: view.remainingLabel,

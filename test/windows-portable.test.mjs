@@ -26,6 +26,8 @@ function makeFixture() {
   writeFileSync(path.join(appDir, 'lens', 'manifest.json'), JSON.stringify({
     schema: 1,
     serviceSchema: 2,
+    cacheSchema: 3,
+    serviceRevision: 'r16-seamless-banks',
     modelId: 'sd15-hyper4',
     files,
     weightsSha256,
@@ -52,6 +54,8 @@ test('portable validator rejects missing, empty, corrupt, and unsafe payloads', 
     ({ appDir }) => writeFileSync(path.join(appDir, 'lens', 'manifest.json'), JSON.stringify({
       schema: 1,
       serviceSchema: 2,
+      cacheSchema: 3,
+      serviceRevision: 'r16-seamless-banks',
       modelId: 'sd15-hyper4',
       files: { '../escape.bin': '0'.repeat(64) },
       weightsSha256: '0'.repeat(64),

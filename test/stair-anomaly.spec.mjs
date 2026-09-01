@@ -26,30 +26,64 @@ import {
   stairAnomalyFloorAt,
 } from '../src/game/stair-anomaly-runtime.js';
 import { MATERIAL } from '../src/data/floorplan/legend.js';
+import { MOVE_MS } from '../src/config.js';
 import { decodeH } from '../src/world/floorplan.js';
 
 const route = (routeTrunk, runId = 'run-stair') => decideStairAnomalyEnvironment({ routeTrunk, runId, now: 100 });
-assert.deepEqual({ ...route('baseline'), seed: 0 }, { stairId: 'upper', travel: 'up', visualSlope: 'up', variant: 'baseline', seed: 0 });
-// NEVER a descent. The way down to studio B3 is the first walk of the night and
+// ── ALWAYS THE WEST STAIR, ALWAYS THE CLIMB ──────────────────────────────────
+//
+// NOT THE SPIRAL. The main open-well stair is a helix — every flight sweeps 180
+// degrees around the well — and a helix that goes on too long reads as a camera
+// stuck in a turn rather than a building that has grown: you lose your bearings
+// on the second revolution and the length stops meaning anything. A straight
+// flight can be impossibly long and still be legible as a straight flight.
+//
+// NOT THE DESCENT. The way down to studio B3 is the first walk of the night and
 // an impossible stair there reads as a broken game, not a wrong building.
-assert.deepEqual({ ...route('flooded-seal'), seed: 0 }, { stairId: 'basement', travel: 'up', visualSlope: 'up', variant: 'flooded-seal', seed: 0 });
 for (const trunk of ['baseline', 'flooded-seal', 'flooded-surface', 'dry-inversion', 'uncertain']) {
   for (const runId of ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']) {
-    assert.equal(decideStairAnomalyEnvironment({ routeTrunk: trunk, runId, now: 1 }).travel, 'up',
-      `${trunk} never puts the impossible stair on a descent`);
+    const selected = decideStairAnomalyEnvironment({ routeTrunk: trunk, runId, now: 1 });
+    assert.equal(selected.travel, 'up', `${trunk} never puts the impossible stair on a descent`);
+    assert.equal(selected.stairId, 'basement', `${trunk} never puts it on the spiral`);
+    assert.equal(selected.visualSlope, selected.travel, `${trunk} looks like the direction the player chose`);
   }
 }
+assert.deepEqual({ ...route('baseline'), seed: 0 }, { stairId: 'basement', travel: 'up', visualSlope: 'up', variant: 'baseline', seed: 0 });
+assert.deepEqual({ ...route('flooded-seal'), seed: 0 }, { stairId: 'basement', travel: 'up', visualSlope: 'up', variant: 'flooded-seal', seed: 0 });
 assert.deepEqual({ ...route('flooded-surface'), seed: 0 }, { stairId: 'basement', travel: 'up', visualSlope: 'up', variant: 'flooded-surface', seed: 0 });
-assert.deepEqual({ ...route('dry-inversion'), seed: 0 }, { stairId: 'upper', travel: 'up', visualSlope: 'up', variant: 'dry-inversion', seed: 0 });
+assert.deepEqual({ ...route('dry-inversion'), seed: 0 }, { stairId: 'basement', travel: 'up', visualSlope: 'up', variant: 'dry-inversion', seed: 0 });
 assert.deepEqual(route('uncertain'), route('uncertain'));
 assert.notEqual(route('uncertain').variant, 'baseline');
-for (const trunk of ['baseline', 'flooded-seal', 'flooded-surface', 'dry-inversion', 'uncertain']) {
-  const selected = route(trunk);
-  assert.equal(selected.visualSlope, selected.travel, `${trunk} looks like the direction the player chose`);
-}
+
+// A save written while the spiral was still a candidate is migrated, not
+// honoured — otherwise an in-flight run keeps the stair this change removed.
+assert.equal(normalizeStairAnomalyEnvironment({
+  stairId: 'upper', travel: 'up', visualSlope: 'up', variant: 'dry-inversion', seed: 7,
+}).stairId, 'basement', 'a stored spiral selection is migrated to the west stair');
 assert.equal(normalizeStairAnomalyEnvironment({
   stairId: 'upper', travel: 'down', visualSlope: 'up', variant: 'dry-inversion', seed: 7,
 }).visualSlope, 'down', 'legacy or future descents render downward rather than contradicting travel');
+
+// ── LONG ENOUGH TO MEAN SOMETHING, NOT LONGER ────────────────────────────────
+//
+// This was 640 treads — about a minute of unbroken climbing, which is past the
+// point where the stair stops making an argument and starts merely continuing.
+// The effect lands when the player passes the rise a real flight would have
+// taken; everything after that is the same sentence repeated.
+assert.equal(STAIR_ANOMALY_TOTAL_CELLS, 400, 'the climb is well under what it was');
+// The interval is DERIVED from MOVE_MS, not copied. It used to be the literal
+// 90 while calling itself "matching config MOVE_MS" — but MOVE_MS is `ms(90)`
+// and `ms` scales by 1/CELL_SCALE, so the real figure is 45. Every duration
+// reasoned from the old constant was exactly double the truth.
+assert.equal(STAIR_ANOMALY_STEP_INTERVAL_MS, MOVE_MS,
+  'the pacing constant is the movement clock, not a copy of it that can drift');
+assert.ok(STAIR_ANOMALY_TOTAL_CELLS >= 14 * 20,
+  'while still being many times a real fourteen-rise flight');
+assert.equal(STAIR_ANOMALY_TOTAL_CELLS % STAIR_ANOMALY_MODULE_CELLS, 0,
+  'the four beats divide the climb evenly');
+assert.equal(STAIR_ANOMALY_TOTAL_CELLS / STAIR_ANOMALY_MODULE_CELLS, 4,
+  'and there are still four of them');
+
 assert.equal(STAIR_ANOMALY_DARK_ESCAPE_MS, 20_000, 'twenty seconds in darkness resolves the stair');
 
 assert.equal(SAVE_VERSION, 4, 'reference exposure migration bumps the outer save contract');
@@ -105,7 +139,10 @@ assert.deepEqual(stages, [1, 2, 3]);
 assert.equal(completed, 1);
 assert.deepEqual(runtime.state(), LEGACY_STAIR_ANOMALY_LEDGER);
 assert.deepEqual(saved.map((entry) => entry.checkpoint), [1, 2, 3, 4]);
-assert.ok(clock / 1000 >= 50 && clock / 1000 <= 62, `normal traversal is ${clock / 1000}s — about a minute of continuous stairs`);
+// Walked end to end, at the ordinary cadence. This was 28.8s, which is past the
+// point where the stair stops making an argument and merely continues.
+assert.ok(clock / 1000 >= 15 && clock / 1000 <= 21,
+  `normal traversal is ${clock / 1000}s — long enough to mean something, not long enough to outstay it`);
 runtime.onStep({ x: 0, y }, { x: 0, y: y - 1, facing: 0 });
 assert.equal(completed, 1, 'completion callback is exactly once');
 

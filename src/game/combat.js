@@ -218,6 +218,10 @@ export function makeCombatScene({
   onWin = () => {},
   onLose = () => {},
   onAbort = () => {},
+  // The in-canvas half of the death composition. Returns a promise that settles
+  // when the screen is done; main.js owns the snapshot and the scene, because
+  // this module cannot see the renderer that took the picture.
+  onDefeatScreen = null,
 } = {}) {
   if (!battle?.combat) throw new Error(`missing signal combat definition: ${battle?.id || 'unknown'}`);
   const voice = createSamDialogVoice({ volume: 0.26, getAudio });
@@ -366,6 +370,7 @@ export function makeCombatScene({
   let reactionRect = null;
   let fireballRect = null;
   let onSurfaceHit = null;
+  let onSurfaceForgive = null;
   // Where and when a comet last landed on the frame. The engulf is drawn over
   // the whole panel from the bearing it came in on -- see drawFireballEngulf.
   let fireballEngulf = null;
@@ -418,7 +423,7 @@ export function makeCombatScene({
     onLaunch:({index,volley})=>fireballVoice.cast(index,{volley}),
     // Everything drawn outside the game window comes from this, once a frame,
     // for the whole volley. Nothing else opens, moves or closes a surface.
-    onSync:(frame)=>{void Promise.resolve(interference?.syncFireballCast?.(frame)).catch(()=>null);},
+    onSync:(frame)=>interference?.syncFireballCast?.(frame)===true,
     // Where in the night this cast is. Sampled once per cast so the shoal's
     // behaviour is a staircase across turns rather than something that changes
     // under the player's hand mid-flight.
@@ -648,7 +653,18 @@ export function makeCombatScene({
     if(result==='lose'&&!resultChoreographyPending){
       resultChoreographyPending=true;
       phase='result-choreography';
-      Promise.resolve(interference?.result?.(result)).catch(()=>null).finally(deliverResult);
+      // BOTH HALVES START ON THE SAME FRAME.
+      //
+      // interference.result() throws the desktop panes; onDefeatScreen draws
+      // the same edit inside the window. They are one composition, so they are
+      // launched together and the result dialogue waits for whichever of them
+      // is still going. The desktop half is deliberately non-blocking on its
+      // own side (see window-choreography.js result()) — if it never opens a
+      // surface, the canvas screen alone still holds the beat.
+      Promise.all([
+        Promise.resolve(interference?.result?.(result)).catch(()=>null),
+        Promise.resolve(onDefeatScreen?.(combatResult(state) || {})).catch(()=>null),
+      ]).catch(()=>null).finally(deliverResult);
       return;
     }
     deliverResult();
@@ -797,7 +813,7 @@ export function makeCombatScene({
 
   function fireballCatchLocked(){
     const snapshot=fireballExchange.snapshot();
-    return !!snapshot.choreography?.settled&&!!snapshot.active?.rays?.some((ray)=>ray.state==='approach');
+    return !!snapshot.active?.rays?.some((ray)=>ray.state==='approach'&&ray.catchReady);
   }
 
   function finishResolution() {
@@ -1165,6 +1181,11 @@ export function makeCombatScene({
           if (result.hit) announceFireballHit(result);
         };
         window.addEventListener('chunk-surfer:fireball-hit', onSurfaceHit);
+        onSurfaceForgive = (event) => {
+          if(!sceneEntered)return;
+          fireballExchange.cancel(event?.detail?.reason||'emergency-restore');
+        };
+        window.addEventListener('chunk-surfer:fireball-forgive',onSurfaceForgive);
       }
       phase = musicSession ? 'arrival' : 'talk';
       if (!musicSession) { beginOpening(); return; }
@@ -1185,6 +1206,10 @@ export function makeCombatScene({
       if (onSurfaceHit && typeof window !== 'undefined') {
         window.removeEventListener('chunk-surfer:fireball-hit', onSurfaceHit);
         onSurfaceHit = null;
+      }
+      if(onSurfaceForgive&&typeof window!=='undefined'){
+        window.removeEventListener('chunk-surfer:fireball-forgive',onSurfaceForgive);
+        onSurfaceForgive=null;
       }
       stopVoice();
       audio?.stopTyping?.();
@@ -1735,7 +1760,7 @@ export function makeCombatScene({
         x:panel.x,y:stageY,w:panel.w,h:stageH,
         cast:fireball.active?.plan||null,
         flights:fireball.active?.rays||null,
-        now,reducedMotion,
+        now,reducedMotion,externalPresented:!!fireball.active?.externalPresented,
       });
 
       const submerged=submergedBattleFrame({

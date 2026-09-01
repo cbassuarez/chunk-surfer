@@ -60,7 +60,8 @@ export function validateWindowsPortable(appDirectory) {
   } catch (error) {
     fail(`lens/manifest.json is malformed (${error.message})`);
   }
-  if (manifest.schema !== 1 || manifest.serviceSchema !== 2 || manifest.modelId !== 'sd15-hyper4') {
+  if (manifest.schema !== 1 || manifest.serviceSchema !== 2 || manifest.cacheSchema !== 3 ||
+      manifest.serviceRevision !== 'r16-seamless-banks' || manifest.modelId !== 'sd15-hyper4') {
     fail('lens/manifest.json describes an incompatible runtime');
   }
   const entries = Object.entries(manifest.files || {});

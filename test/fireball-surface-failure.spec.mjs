@@ -105,10 +105,14 @@ const outside = (rayCount, progress = 0, state = 'outbound') => Array.from({ len
   await effects.prepareFireballs();
   calls.length = 0;
 
+  effects.beginFireballCast(plan(1),{token});
   effects.syncFireballCast(plan(1), outside(1, .5), { token });
   await settle();
   const step = calls.find(([command]) => command === 'chunk_fireball_cast_step');
   assert.ok(step, 'a comet outside the frame is placed');
+  assert.equal(effects.ownsPointerTransfer(),true,'a visible game-owned target owns the transient focus handoff');
+  effects.suspendSurfaces();
+  assert.equal(effects.ownsPointerTransfer(),false,'pause hiding the targets ends that focus handoff');
   await effects.emergencyRestore({ notify: false });
 }
 
@@ -218,7 +222,7 @@ const outside = (rayCount, progress = 0, state = 'outbound') => Array.from({ len
   exchange.setMovement({ id: 'attention', index: 1 });
 
   let sawStage = false;
-  for (let tick = 0; tick < 90; tick += 1) {
+  for (let tick = 0; tick < 180; tick += 1) {
     const frame = exchange.update(0.05, { enabled: true });
     await new Promise((resolve) => setTimeout(resolve, 1));
     const flying = frame.active?.rays.filter((ray) => ray.state === 'inflight') || [];
@@ -230,7 +234,9 @@ const outside = (rayCount, progress = 0, state = 'outbound') => Array.from({ len
   }
   assert.ok(sawStage, 'the stage crossing happened');
   const steps = calls.filter(([command]) => command === 'chunk_fireball_cast_step').map(([, at]) => at);
-  assert.ok(steps.length > 6, `the surfaces travel rather than sitting still (${steps.length})`);
+  assert.ok(steps.length >= 2, `the surface is stepped into its authored catch mark (${steps.length})`);
+  assert.ok(new Set(steps.flatMap((step)=>String(step).split(',')).map((entry)=>entry.split('@')[1])).size>=2,
+    'the approach moves before it commits');
   assert.ok(landed > 0, 'a comet nobody touched lands on the player');
   assert.ok(calls.some(([command]) => command === 'hide'), 'and then it is gone');
   await effects.emergencyRestore({ notify: false });
@@ -260,25 +266,22 @@ console.log('fireball surface tests passed');
 
 // ── THE SHOAL ─────────────────────────────────────────────────────────────
 //
-// The native side is handed four numbers and nothing else: how hard to break,
-// how far, how far ahead of the pointer to aim, and how tightly to hold
-// formation. The escalation, the break/settle cycle and every reason behind
-// them stay on this side of the boundary — the compositor's job is the geometry
-// the game cannot do, which is where a pointer actually is on the desk.
+// The native side is handed authored movement only: how hard to break, how far,
+// and how tightly to hold formation. It never receives or samples the pointer.
 {
   const { effects, calls } = harness();
   const token = effects.begin({ intensity: 'hostile' });
   await effects.prepareFireballs();
 
-  const dance = { dodge: .8, reach: 2.1, senseMs: 240, cohesion: .9, settled: false, settleLeftMs: 0, pressure: .93 };
+  const dance = { dodge: .8, reach: .9, cohesion: .9, settled: false, settleLeftMs: 0, pressure: .93 };
   calls.length = 0;
   effects.syncFireballCast(plan(2), outside(2, .4), { token, choreography: dance });
   await settle();
   const stepped = calls.find(([command]) => command === 'chunk_fireball_cast_step');
   assert.ok(stepped, 'a breaking shoal is stepped');
 
-  // A settle sends no choreography at all, so a still shoal costs the native
-  // side nothing and cannot be nudged by a stale number.
+  // A settle still sends the authored formation at zero dodge. Otherwise the
+  // panes snap back to their unformed positions on the first catch frame.
   const held = [];
   const spy = createPersonalizedWindowEffects({
     runtimeApi: {
@@ -300,15 +303,14 @@ console.log('fireball surface tests passed');
 
   spy.syncFireballCast(plan(2), outside(2, .4), { token: spyToken, choreography: { ...dance, dodge: 0, settled: true } });
   await settle();
-  assert.equal(held.at(-1), null, 'a settled shoal sends no dance');
+  assert.equal(held.at(-1).dodge,0,'a settled shoal explicitly holds zero movement');
 
   spy.syncFireballCast(plan(2), outside(2, .5), { token: spyToken, choreography: dance });
   await settle();
   const sent = held.at(-1);
-  assert.deepEqual(Object.keys(sent).sort(), ['cohesion', 'dodge', 'formationProgress', 'gesture', 'reach', 'senseMs'],
+  assert.deepEqual(Object.keys(sent).sort(), ['cohesion', 'dodge', 'formationProgress', 'gesture', 'reach'],
     'and a breaking one sends only bounded geometry plus its authored formation');
   assert.ok(sent.dodge > 0 && sent.dodge <= 1);
-  assert.ok(sent.senseMs <= 600, 'the prediction lead is bounded on this side, not trusted from it');
   await spy.emergencyRestore({ notify: false });
   await effects.emergencyRestore({ notify: false });
 }

@@ -319,21 +319,20 @@ export function makeTitleScene({
         scale: titleScale,
         alpha: Math.max(0.18, pwm) * scanPhase * blank,
       });
-      const sweep = (Math.floor(t * 8) % (display.length + 8)) - 4;
-      for (let i = 0; i < display.length; i++) {
-        const d = Math.abs(i - sweep);
-        const ch = d === 0 ? '▓' : d === 1 ? '▒' : '░';
-        uiText(Math.round(titleX + i * titleScale), body.y + 4, ch, 'ui-amber', d < 2 ? 0.82 : 0.20);
-      }
+      // The strip, sweeping. There used to be a row of ░▒▓ shade glyphs above
+      // it, chasing left to right — at 0.20 alpha it read as noise sitting on
+      // top of the instrument rather than as part of it. The indicator's own
+      // graduations occupy that row now, so the title screen shows the same
+      // machine the recorder does instead of a decorated cousin of it.
       const phase = (t * 0.32) % 1;
       const tri = phase < 0.5 ? phase * 2 : (1 - phase) * 2;
       const stepped = Math.floor(tri * 16) / 16;
       drawLocationIndicator(
         Math.max(body.x + 8, Math.floor((cols - 28) / 2)),
-        body.y + 5,
+        body.y + 4,
         28,
         stepped,
-        { theme: 'amber' },
+        { theme: 'amber', rows: 2 },
       );
       uiCenter(body.y + 7, 'FIVE ROOM TONES. ONE BUILDING LISTENING.', 'ui-primary');
 

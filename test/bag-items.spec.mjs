@@ -42,7 +42,7 @@ test('every collected-object family has exactly one audited destination', () => 
 test('the action resolver exposes the full semantic descriptor contract', () => {
   assert.deepEqual(Object.keys(BAG_ITEM_REGISTRY).sort(), [
     'coffee', 'interface', 'keyring', 'light', 'map', 'marble-eyes',
-    'plant-spanner', 'radio', 'recorder', 'tuning-fork',
+    'plant-spanner', 'radio', 'recorder', 'sheet-music', 'tuning-fork',
   ]);
   const cases = [
     ['light', {}, 'light-toggle', 'TURN ON', BAG_ACTION_MODE.COMMAND],
@@ -58,6 +58,7 @@ test('the action resolver exposes the full semantic descriptor contract', () => 
     ['plant-spanner', {}, 'inspect-plant-spanner', 'INSPECT', BAG_ACTION_MODE.DIALOG],
     ['marble-eyes', {}, 'inspect-marble-eyes', 'INSPECT', BAG_ACTION_MODE.DIALOG],
     ['keyring', {}, 'inspect-keyring', 'CHECK KEYS', BAG_ACTION_MODE.DIALOG],
+    ['sheet-music', {}, 'sheet-read', 'READ IT', BAG_ACTION_MODE.CONSUME],
   ];
 
   for (const [id, context, actionId, label, mode] of cases) {

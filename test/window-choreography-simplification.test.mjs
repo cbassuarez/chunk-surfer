@@ -26,6 +26,15 @@ test('nothing in the effects layer declines a cast for how the game is displayed
   assert.match(sync, /if\(!session\.surfacesReady\)return false;/);
 });
 
+test('reduced motion lowers choreography without becoming a hidden off switch', () => {
+  const source = readFileSync('src/platform/window-choreography.js', 'utf8');
+  const nativePolicy = source.slice(source.indexOf('const nativeDesired'), source.indexOf('async function loadApi'));
+  assert.doesNotMatch(nativePolicy, /reduced/,
+    'the dedicated choreography toggle, not the camera-shake setting, owns native pane availability');
+  assert.doesNotMatch(source, /forceSimulate:reduced\(\)/,
+    'reduced plans already compile out travel and retain their desktop presentation');
+});
+
 // macOS native fullscreen moves the window into its own Space and NOTHING can
 // be composited over a Space — not an always-on-top window, not a click-through
 // one. Game mode has to be the pre-Lion kind of fullscreen or the surfaces this

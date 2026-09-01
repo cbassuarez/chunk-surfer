@@ -103,7 +103,7 @@ function normalizeSurface(surface,index,compositionId){
       anchorX:clamp(surface.target.anchorX??surface.target.x??.5),anchorY:clamp(surface.target.anchorY??surface.target.y??.5),
       offsetX:Number(surface.target.offsetX)||0,offsetY:Number(surface.target.offsetY)||0,
     }):null,
-    width,height,draggable:surface.draggable!==false,
+    width,height,draggable:surface.draggable===true,
     description:String(surface.description||'').slice(0,180),
     sensitivity:['none','clinical'].includes(surface.sensitivity)?surface.sensitivity:'none',
     faultScale:clamp(surface.faultScale??1,.1,1.5),
@@ -386,11 +386,11 @@ export function validatePaneScoreEnvelope(payload,{targetLabel,currentSession=''
 }
 
 const video=(id,options={})=>({content:{kind:'video',assetId:id,playback:options.playback},width:options.width||240,height:options.height||160,
-  entry:options.entry||options.initial||{x:.5,y:.5},initial:options.initial||{x:.5,y:.5},target:options.target||null,crop:options.crop||{x:0,y:0,w:1,h:1},draggable:options.draggable!==false,
+  entry:options.entry||options.initial||{x:.5,y:.5},initial:options.initial||{x:.5,y:.5},target:options.target||null,crop:options.crop||{x:0,y:0,w:1,h:1},draggable:options.draggable===true,
   shader:options.shader||'nvme-sector',faultScale:options.faultScale??1,
   description:options.description||id,sensitivity:options.sensitivity||windowMediaAsset(id)?.sensitivity||'none',phaseOffsetMs:options.phaseOffsetMs||0,z:options.z||0});
 const procedural=(preset,options={})=>({content:{kind:'procedural',preset},width:options.width||240,height:options.height||160,
-  entry:options.entry||options.initial||{x:.5,y:.5},initial:options.initial||{x:.5,y:.5},target:options.target||null,crop:options.crop||{x:0,y:0,w:1,h:1},draggable:options.draggable!==false,
+  entry:options.entry||options.initial||{x:.5,y:.5},initial:options.initial||{x:.5,y:.5},target:options.target||null,crop:options.crop||{x:0,y:0,w:1,h:1},draggable:options.draggable===true,
   shader:options.shader||'nvme-sector',faultScale:options.faultScale??1,description:options.description||preset,sensitivity:'none',phaseOffsetMs:options.phaseOffsetMs||0,z:options.z||0});
 const rawAssignment=(surface)=>({content:surface.content,crop:surface.crop||{x:0,y:0,w:1,h:1},phaseOffsetMs:surface.phaseOffsetMs||0});
 const assignmentMap=(surfaces)=>Object.fromEntries(surfaces.map((surface)=>[surface.id,rawAssignment(surface)]));
@@ -518,13 +518,13 @@ export function deathCompositionPlan({battleId='',snapshotToken='',reduceDread=f
 
 export function apertureCompositionPlan({reduceDread=false,epochMs=Date.now(),reducedMotion=false,flashMode='full'}={}){
   const eye=(id,initial,target,side)=>reduceDread
-    ?procedural('iris-abstraction',{entry:{x:.5,y:.5},initial,target,width:240,height:180,description:`Abstract ${side} iris`,faultScale:1.15})
-    :video(id,{entry:{x:.5,y:.5},initial,target,width:240,height:180,crop:side==='left'?{x:.06,y:.08,w:.82,h:.82}:{x:.12,y:.08,w:.82,h:.82},sensitivity:'clinical',description:`Clinical ${side} iris`,faultScale:1.15});
+    ?procedural('iris-abstraction',{entry:{x:.5,y:.5},initial,target,width:240,height:180,description:`Abstract ${side} iris`,faultScale:1.15,draggable:true})
+    :video(id,{entry:{x:.5,y:.5},initial,target,width:240,height:180,crop:side==='left'?{x:.06,y:.08,w:.82,h:.82}:{x:.12,y:.08,w:.82,h:.82},sensitivity:'clinical',description:`Clinical ${side} iris`,faultScale:1.15,draggable:true});
   const surfaces=[
     {id:'aperture:left',...eye('eye-s3',{x:.12,y:.70},{anchorX:.5,anchorY:.5,offsetX:-120},'left')},
     {id:'aperture:right',...eye('eye-s5',{x:.84,y:.23},{anchorX:.5,anchorY:.5,offsetX:120},'right')},
-    {id:'aperture:eclipse',...video('eclipse',{entry:{x:.5,y:.5},initial:{x:.72,y:.77},target:{anchorX:.5,anchorY:.5,offsetY:-180},width:240,height:180,description:'Eclipse lid'})},
-    {id:'aperture:nave',...video('cathedral',{entry:{x:.5,y:.5},initial:{x:.27,y:.18},target:{anchorX:.5,anchorY:.5,offsetY:180},width:240,height:180,crop:{x:.22,y:0,w:.56,h:1},description:'Cathedral path'})},
+    {id:'aperture:eclipse',...video('eclipse',{entry:{x:.5,y:.5},initial:{x:.72,y:.77},target:{anchorX:.5,anchorY:.5,offsetY:-180},width:240,height:180,description:'Eclipse lid',draggable:true})},
+    {id:'aperture:nave',...video('cathedral',{entry:{x:.5,y:.5},initial:{x:.27,y:.18},target:{anchorX:.5,anchorY:.5,offsetY:180},width:240,height:180,crop:{x:.22,y:0,w:.56,h:1},description:'Cathedral path',draggable:true})},
   ];
   const targets=surfaces.map((surface)=>surface.id);
   const constraints=[

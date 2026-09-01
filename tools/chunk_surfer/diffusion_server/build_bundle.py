@@ -20,6 +20,7 @@ import sys
 from urllib.request import urlopen
 
 from huggingface_hub import snapshot_download
+from protocol import CACHE_SCHEMA, MODEL_ID, SERVER_REV, SERVICE_SCHEMA
 
 REVISIONS = {
     "sd15": ("stable-diffusion-v1-5/stable-diffusion-v1-5", "451f4fe16113bff5a5d2269ed5ad43b0592e9a14"),
@@ -45,6 +46,14 @@ TARGETS = {
 }
 SD15_LICENSE_URL = "https://raw.githubusercontent.com/CompVis/stable-diffusion/21f890f9da3cfbeaba8e2ac3c425ee9e998d5229/LICENSE"
 SD15_LICENSE_SHA256 = "be351ebe7ac01bcdbb018639aadcfd38f136b7dc3f2a3d4d3a24db51d1b210ef"
+RUNTIME_SOURCE_FILES = (
+    "cache_contract.py",
+    "dream.py",
+    "pipeline.py",
+    "protocol.py",
+    "requirements-local.txt",
+    "server.py",
+)
 
 
 def sha256(path: Path) -> str:
@@ -53,6 +62,13 @@ def sha256(path: Path) -> str:
         for block in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(block)
     return digest.hexdigest()
+
+
+def source_aggregate(server_dir: Path) -> str:
+    files = {name: sha256(server_dir / name) for name in RUNTIME_SOURCE_FILES}
+    return hashlib.sha256(
+        json.dumps(files, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
 
 
 def main() -> None:
@@ -99,8 +115,10 @@ def main() -> None:
     ).hexdigest()
     manifest = {
         "schema": 1,
-        "serviceSchema": 2,
-        "modelId": "sd15-hyper4",
+        "serviceSchema": SERVICE_SCHEMA,
+        "cacheSchema": CACHE_SCHEMA,
+        "serviceRevision": SERVER_REV,
+        "modelId": MODEL_ID,
         "resolution": 512,
         "repositories": resolved,
         "files": files,
@@ -172,7 +190,26 @@ def main() -> None:
     target = binaries / f"chunk-lens-{args.target}{suffix}"
     shutil.copy2(built, target)
     target.chmod(target.stat().st_mode | 0o111)
-    print(json.dumps({"binary": str(target), "resources": str(resource_root), "weightsSha256": aggregate}))
+    contract = {
+        "schema": 1,
+        "target": args.target,
+        "serviceSchema": SERVICE_SCHEMA,
+        "cacheSchema": CACHE_SCHEMA,
+        "serviceRevision": SERVER_REV,
+        "modelId": MODEL_ID,
+        "runtimeSourceSha256": source_aggregate(server_dir),
+        "binarySha256": sha256(target),
+    }
+    contract_path = target.with_name(f"{target.name}.contract.json")
+    contract_path.write_text(
+        json.dumps(contract, indent=2, sort_keys=True) + "\n", "utf-8"
+    )
+    print(json.dumps({
+        "binary": str(target),
+        "contract": str(contract_path),
+        "resources": str(resource_root),
+        "weightsSha256": aggregate,
+    }))
 
 
 if __name__ == "__main__":

@@ -107,6 +107,7 @@ test('protocol binds result bytes to request, bank, slot, model, and checksum id
 test('material tiles carry authored depth and a temporal boil set', () => {
   const client = read('src/net/diffusion.js');
   const server = read('tools/chunk_surfer/diffusion_server/server.py');
+  const protocol = read('tools/chunk_surfer/diffusion_server/protocol.py');
   const r3d = read('src/render/r3d.js');
   const main = read('src/main.js');
   // Frame and depth are welded into one message so newest-wins can never pair
@@ -118,9 +119,25 @@ test('material tiles carry authored depth and a temporal boil set', () => {
   // K temporal frames per surface, cached and addressed independently.
   assert.match(client, /frame \* 131/);
   assert.match(server, /def manifest_entry_key/);
-  assert.match(server, /CACHE_SCHEMA = 3/);
+  assert.match(server, /from protocol import CACHE_SCHEMA, SERVER_REV/);
+  assert.match(protocol, /CACHE_SCHEMA = 3/);
   assert.match(r3d, /slot\*k\+f/);
   assert.match(r3d, /uBoilHz/);
+});
+
+test('client waits for and validates the bundled lens protocol before sending work', () => {
+  const client = read('src/net/diffusion.js');
+  const native = read('src-tauri/src/lens_service.rs');
+  const builder = read('tools/chunk_surfer/diffusion_server/build_bundle.py');
+  const validator = read('scripts/validate-lens-bundle-contract.mjs');
+  assert.match(client, /queueReady = true;[\s\S]*startQueueWhenReady/);
+  assert.match(client, /bundled lens cache schema mismatch/);
+  assert.match(native, /EXPECTED_CACHE_SCHEMA: u32 = 3/);
+  assert.match(native, /bundled lens revision mismatch/);
+  assert.match(builder, /runtimeSourceSha256/);
+  assert.match(builder, /binarySha256/);
+  assert.match(validator, /Lens binary was built from different runtime source/);
+  assert.match(validator, /Lens binary checksum does not match its build contract/);
 });
 
 test('the compositor lets generated structure and colour reach the screen', () => {

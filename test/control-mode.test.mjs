@@ -17,6 +17,13 @@ test('there is exactly one control scheme, and old saved modes collapse into it'
   }
 });
 
+test('control HUD defaults to smart and accepts only the two authored lifetimes', () => {
+  assert.equal(DEFAULT_SETTINGS.controlHud, 'smart');
+  assert.equal(normalizeSettings({}).controlHud, 'smart');
+  assert.equal(normalizeSettings({ controlHud: 'persistent' }).controlHud, 'persistent');
+  assert.equal(normalizeSettings({ controlHud: 'off' }).controlHud, 'smart');
+});
+
 test('both key sets walk, and A/D strafe instead of turning', () => {
   const held = (...codes) => new Set(codes);
   assert.deepEqual(keyboardMotionAxes(held('KeyW')), { moveX: 0, moveY: 1 });

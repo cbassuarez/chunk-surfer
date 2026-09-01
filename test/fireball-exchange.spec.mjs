@@ -2,6 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   createFireballExchange,
+  FIREBALL_CATCH_PROGRESS,
+  FIREBALL_OFFERS,
+  FIREBALL_OUTSIDE_SECONDS,
+  FIREBALL_REBOUND_SECONDS,
   FIREBALL_RETURN_DAMAGE,
   FIREBALL_RETURN_THRESHOLD,
   hitTestFireballCast,
@@ -155,8 +159,69 @@ test('an uncontested comet lands on the player for its own damage',()=>{
   const landed=[];
   const exchange=createFireballExchange({battleId:'hall',onImpact:(event)=>landed.push(event)});
   exchange.setMovement({id:'seated',index:0});
-  for(let step=0;step<120;step+=1)exchange.update(.05);
+  for(let step=0;step<190;step+=1)exchange.update(.05);
   assert.ok(landed.length>=1,'it is not free to ignore one');
   assert.ok(landed.every((event)=>event.damage>0));
   assert.ok(landed.every((event)=>typeof event.rayId==='string'),'and each comet lands on its own account');
+});
+
+test('the first missed commitment rebounds on the same ray and causes no damage',()=>{
+  const landed=[],frames=[];
+  const exchange=createFireballExchange({
+    battleId:'hall',manual:true,onImpact:(event)=>landed.push(event),onSync:(frame)=>{frames.push(frame);return true;},
+  });
+  exchange.setMovement({id:'seated',index:0});
+  exchange.castNow();
+  // Cross the stage, then consume exactly one complete outside offer.
+  exchange.update(2.21);
+  exchange.update(FIREBALL_OUTSIDE_SECONDS+.01);
+  let ray=exchange.snapshot().active.rays[0];
+  assert.equal(ray.state,'rebound');
+  assert.equal(ray.offers,1);
+  assert.deepEqual(landed,[],'the first miss is information, not damage');
+  const retreat=exchange.snapshot().active.outsideFrame[0];
+  assert.equal(retreat.offer,2);
+  assert.ok(retreat.progress<=FIREBALL_CATCH_PROGRESS);
+  exchange.update(FIREBALL_REBOUND_SECONDS+.01);
+  ray=exchange.snapshot().active.rays[0];
+  assert.equal(ray.state,'approach','the same ray is offered again');
+  assert.equal(ray.offers,FIREBALL_OFFERS-1);
+  assert.ok(frames.length>0);
+});
+
+test('the target stops for a long catch interval before either offer can expire',()=>{
+  const exchange=createFireballExchange({battleId:'source-final',manual:true});
+  exchange.setMovement({id:'final',index:2});
+  exchange.castNow();
+  exchange.update(2.21);
+  // Let the authored feint end, then sample more than 1.4 seconds of the hold.
+  exchange.update(.5);
+  const first=exchange.snapshot().active.outsideFrame[0];
+  assert.equal(exchange.snapshot().active.rays[0].catchReady,true);
+  exchange.update(1.4);
+  const held=exchange.snapshot().active.outsideFrame[0];
+  assert.equal(held.progress,first.progress,'the native target does not keep approaching during commitment');
+  assert.equal(held.progress,FIREBALL_CATCH_PROGRESS);
+  assert.equal(exchange.snapshot().active.rays[0].state,'approach');
+});
+
+test('pause, movement completion, and emergency cancellation can never become impact damage',()=>{
+  const landed=[];
+  const exchange=createFireballExchange({battleId:'hall',manual:true,onImpact:(event)=>landed.push(event)});
+  exchange.setMovement({id:'seated',index:0});
+  exchange.castNow();
+  exchange.update(2.21);
+  const before=exchange.snapshot().active.rays[0].outside;
+  exchange.update(20,{enabled:false});
+  assert.equal(exchange.snapshot().active.rays[0].outside,before,'pause freezes the damaging clock');
+  exchange.setMovement({id:'attention',index:1});
+  assert.equal(exchange.snapshot().active,null);
+  assert.equal(exchange.snapshot().last.type,'forgiven');
+  assert.equal(exchange.snapshot().last.reason,'movement-change');
+  assert.deepEqual(landed,[]);
+  exchange.castNow();
+  exchange.update(20,{enabled:false});
+  exchange.cancel('double-escape');
+  assert.equal(exchange.snapshot().last.reason,'double-escape');
+  assert.deepEqual(landed,[]);
 });

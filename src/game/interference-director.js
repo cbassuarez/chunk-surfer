@@ -270,11 +270,12 @@ export function createBattleInterferenceDirector({
   // right now and where each of them is. Opening, moving and closing a surface
   // are all the same statement, so they are all this.
   function syncFireballCast(session,{castId='',rays=[],choreography=null}={}){
-    if(!windowEnabled())return null;
+    if(!windowEnabled())return false;
     const active=session.fireballCasts.get(String(castId||''));
-    if(!active&&rays.length)return null;
-    void Promise.resolve(effects?.syncFireballCast?.(active||null,rays,{token:session.effectToken,choreography})).catch(()=>null);
-    return active||null;
+    if(!active&&rays.length)return false;
+    // The native router either accepts every live ray or the complete volley
+    // stays in the in-canvas fallback. Presentation is never a combat fence.
+    return effects?.syncFireballCast?.(active||null,rays,{token:session.effectToken,choreography})===true;
   }
 
   // Bookkeeping only. A ray resolving no longer touches the surfaces -- the

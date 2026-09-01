@@ -91,9 +91,10 @@ const swinging = (state) => {
 
 const POLICIES = { reading, investing, swinging };
 
-function play(definition, { difficulty, tools, techniques, policy }) {
-  let state = createCombatState(definition, { difficulty, tools, techniques, battery: 1 });
+function play(definition, { difficulty, tools, techniques, policy, composure = null, injuries = 0 }) {
+  let state = createCombatState(definition, { difficulty, tools, techniques, battery: 1, composure, injuries });
   const opened = state.maxComposure;
+  const startedAt = state.composure;
   let guard = 0;
   while (!state.result && guard++ < 400) {
     state = reduceCombat(state, { type: policy(state), replaceTake: true });
@@ -105,6 +106,9 @@ function play(definition, { difficulty, tools, techniques, policy }) {
     turns: state.turns,
     taken: result?.damageTaken ?? state.damageTaken,
     max: opened,
+    // What he actually walked in with, which since composure carries is no
+    // longer the same question as what the ceiling was.
+    startedAt: startedAt,
     left: state.composure,
     perfect: state.perfectCounters ?? 0,
     missed: state.missedCounters ?? 0,
@@ -139,6 +143,84 @@ for (const presetId of presets) {
           + `${String(out.taken).padStart(3)}/${String(out.max).padEnd(3)} ${pct(out.taken, out.max).padStart(5)}${flag}`,
         );
       }
+    }
+  }
+}
+
+// ══ THE NIGHT ═══════════════════════════════════════════════════════════════
+//
+// The table above plays every fight at full composure, which is what the game
+// used to do. Composure carries now, so the question that decides whether the
+// game is tuned is no longer "can he win this fight" but "can he still be
+// standing at the chapel". This runs the five in order on one pool, spending
+// the recovery he could plausibly have earned by then.
+//
+// The recovery model is deliberately pessimistic: one clean take (+5) between
+// fights and nothing else. Sheets are the player's answer to a bad run and are
+// left out on purpose — if the night is survivable WITHOUT them, the five in
+// the building are headroom rather than a requirement.
+const COMPOSURE_GRID = 5;
+const COMPOSURE_BASE = 8 * COMPOSURE_GRID;
+const COMPOSURE_FLOOR = 4 * COMPOSURE_GRID;
+const ceiling = (injuries) => Math.max(COMPOSURE_FLOOR, COMPOSURE_BASE - injuries * COMPOSURE_GRID);
+const ORDER = ['natatorium', 'hall', 'practice', 'chapel', 'source-final'];
+const SHEETS_IN_THE_BUILDING = 5;
+
+console.log(`\n══ THE NIGHT ${'═'.repeat(58)}`);
+console.log('  one carried pool, +1 clean take between fights; with and without the five sheets\n');
+console.log('  preset      bag        line       before nosheet w/sheet  spent  verdict');
+for (const presetId of presets) {
+  const difficulty = COMBAT_RULES[presetId];
+  for (const [bagId, bag] of Object.entries(BAGS)) {
+    for (const [lineId, policy] of Object.entries(POLICIES)) {
+      if (bagId === 'stock' && lineId === 'investing') continue;
+      if (bagId === 'full' && lineId !== 'reading') continue;
+      if (bagId === 'invested' && lineId === 'swinging') continue;
+      const night = (sheets) => {
+        let pool = COMPOSURE_BASE;
+        let injuries = 0;
+        let lost = 0;
+        let spent = 0;
+        const legs = [];
+        for (const battleId of ORDER) {
+          // SPEND THEM LATE, WHICH IS HOW A PERSON PLAYS.
+          //
+          // A greedy top-up at every door burns the whole stack on the first
+          // two fights and arrives at the chapel with nothing, which is the one
+          // way to play this badly. A player reads the room: he walks in on a
+          // healthy pool, and reaches into the case only when he is under half.
+          while (sheets > 0 && pool < ceiling(injuries) * .6) {
+            sheets -= 1; spent += 1;
+            pool = Math.min(ceiling(injuries), pool + 3 * COMPOSURE_GRID);
+          }
+          const out = play(BATTLES[battleId], { difficulty, ...bag, policy, composure: pool, injuries });
+          legs.push(`${battleId.slice(0, 4)}:${out.left}`);
+          if (out.result === 'lose') {
+            lost += 1; injuries += 1;
+            pool = Math.min(ceiling(injuries), COMPOSURE_FLOOR);
+          } else {
+            pool = Math.min(ceiling(injuries), out.left + COMPOSURE_GRID);
+          }
+        }
+        return { lost, pool, spent, legs };
+      };
+      // The old behaviour, for comparison: every fight opens at the ceiling and
+      // nothing carries. Any loss in this column was already in the game before
+      // composure carried, and is not something the pool did.
+      let wasLosing = 0;
+      let wasInjuries = 0;
+      for (const battleId of ORDER) {
+        const out = play(BATTLES[battleId], { difficulty, ...bag, policy, composure: null, injuries: wasInjuries });
+        if (out.result === 'lose') { wasLosing += 1; wasInjuries += 1; }
+      }
+      const bare = night(0);
+      const armed = night(SHEETS_IN_THE_BUILDING);
+      const verdict = armed.lost === 0 ? 'clean' : armed.lost >= 3 ? 'SPIRAL' : `${armed.lost} lost`;
+      console.log(
+        `  ${presetId.padEnd(11)} ${bagId.padEnd(10)} ${lineId.padEnd(10)} `
+        + `${String(wasLosing).padStart(6)} ${String(bare.lost).padStart(6)} ${String(armed.lost).padStart(7)}  `
+        + `${String(armed.spent).padStart(6)}  ${verdict.padEnd(8)} ${armed.legs.join(' ')}`,
+      );
     }
   }
 }

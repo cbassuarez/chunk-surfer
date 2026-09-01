@@ -245,6 +245,46 @@ export function meterMarks(marks, w) {
   return out.sort((a, b) => a.db - b.db);
 }
 
+// ── THE LOCATION STRIP ───────────────────────────────────────────────────────
+//
+// Graduations for the position indicator. The strip used to be sixty identical
+// blocks carrying a single number, which meant that during a take — when this
+// bar IS the clock — you could not tell twenty seconds from forty and had to
+// read the counter instead, leaving the widest element on the panel redundant.
+//
+// Ticks are placed on real time, not on segment count, so the marks and the
+// counter cannot drift apart.
+export function locationTicks(w, { seconds = 45, everySec = 10, minGap = 3 } = {}) {
+  const width = Math.max(0, Number(w) || 0);
+  const span = Math.max(1, Number(seconds) || 1);
+  const step = Math.max(1, Number(everySec) || 10);
+  const out = [];
+  for (let sec = step; sec < span; sec += step) {
+    const label = String(sec);
+    const x = (sec / span) * width;
+    const left = Math.max(0, Math.min(width - label.length, x - label.length / 2));
+    const cell = { sec, x, label, left, right: left + label.length, major: sec % (step * 3) === 0 };
+    if (out.every((other) => cell.left >= other.right + minGap || cell.right + minGap <= other.left)) out.push(cell);
+  }
+  return out;
+}
+
+export function locationScaleFits(w) { return locationTicks(w).length >= 2; }
+
+// A mark is a moment in the take, placed on the same axis as the ticks.
+export function locationMarks(marks, w) {
+  const width = Math.max(0, Number(w) || 0);
+  return (marks || [])
+    .filter((mark) => mark && mark.at != null && Number.isFinite(Number(mark.at)))
+    .map((mark) => ({
+      at: clamp01(mark.at),
+      kind: mark.kind || 'event',
+      id: String(mark.id || ''),
+      x: clamp01(mark.at) * width,
+    }))
+    .sort((a, b) => a.at - b.at);
+}
+
 // ── BALLISTICS ───────────────────────────────────────────────────────────────
 //
 // These live in the WIDGET, not in the data model, and that is deliberate:

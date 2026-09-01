@@ -25,6 +25,10 @@ export const BAG_ITEM_REGISTRY = Object.freeze({
   interface: Object.freeze({ role: 'combat-gear', automaticUse: null }),
   'tuning-fork': Object.freeze({ role: 'combat-gear', automaticUse: null }),
   coffee: Object.freeze({ role: 'consumable', automaticUse: null }),
+  // Sheet music. The only thing in the case there is more than one of, and the
+  // only one you spend on yourself. Reading a bar of somebody's handwriting is
+  // the one thing in this building that reliably settles him.
+  'sheet-music': Object.freeze({ role: 'consumable', automaticUse: null }),
   'plant-spanner': Object.freeze({ role: 'puzzle-tool', automaticUse: BAG_AUTOMATIC_USE['plant-spanner'] }),
   'marble-eyes': Object.freeze({ role: 'puzzle-piece', automaticUse: BAG_AUTOMATIC_USE['marble-eyes'] }),
   keyring: Object.freeze({ role: 'access', automaticUse: BAG_AUTOMATIC_USE.keyring }),
@@ -42,6 +46,7 @@ export const COLLECTED_ITEM_AUDIT = Object.freeze([
   { id: 'interface', acquired: 'has.interface', destination: 'kit' },
   { id: 'tuning-fork', acquired: 'has.fork', destination: 'kit' },
   { id: 'coffee', acquired: 'has.coffee', destination: 'kit' },
+  { id: 'sheet-music', acquired: 'pickup', destination: 'kit' },
   { id: 'plant-spanner', acquired: 'plant.spannerOwned', destination: 'kit' },
   { id: 'marble-eyes', acquired: 'marbleHead.carrying', destination: 'kit' },
   { id: 'chapel-key', acquired: 'chapel_key', destination: 'keyring' },
@@ -65,6 +70,9 @@ export function resolveBagOwnership(context = {}) {
   if (context.spannerOwned) kit.push('plant-spanner');
   if (context.marbleCarried) kit.push('marble-eyes');
   if (context.coffeeOwned && !context.coffeeConsumed) kit.push('coffee');
+  // The only stacked item in the case. It leaves the kit when the last one is
+  // read, the way the cup does when it is empty.
+  if (Number(context.sheetsCarried) > 0) kit.push('sheet-music');
 
   const keyring = {
     master: !!context.masterKey,
@@ -128,6 +136,28 @@ export function resolveBagItemAction(itemId, context = {}) {
         closeBefore: true,
         confirm: { title: 'DRINK THE COFFEE?', body: 'THIS CANNOT BE UNDONE.' },
       });
+    case 'sheet-music':
+      // NOT IN A FIGHT. The pool is what the fight is fought with; letting him
+      // reach into the case mid-exchange would make every battle a question of
+      // how many sheets he happens to have rather than how well he reads.
+      if (context.inCombat) {
+        return action('sheet-read', 'READ IT', BAG_ACTION_MODE.CONSUME, {
+          enabled: false,
+          reason: 'NOT WHILE IT IS LOOKING AT YOU',
+        });
+      }
+      // Nothing to gain is not the same as nothing to spend. A composed
+      // recordist keeps his sheets.
+      if (context.composed) {
+        return action('sheet-read', 'READ IT', BAG_ACTION_MODE.CONSUME, {
+          enabled: false,
+          reason: 'ALREADY COMPOSED',
+        });
+      }
+      return action('sheet-read', 'READ IT', BAG_ACTION_MODE.CONSUME, {
+        closeBefore: true,
+        confirm: { title: 'READ THE SHEET?', body: 'THERE ARE NOT MANY.' },
+      });
     case 'plant-spanner':
       return action('inspect-plant-spanner', 'INSPECT', BAG_ACTION_MODE.DIALOG);
     case 'marble-eyes':
@@ -169,6 +199,19 @@ export function bagInspectionDialogue(itemId, context = {}) {
     'marble-eyes': [
       { who: 'direction', text: 'Two marble eyes, joined by the clean bridge of a nose. The break remembers another clean break.' },
       { who: 'you', text: 'I do not need to guess from here. I need to put them against the blind bust.' },
+    ],
+    // The sheets are the one entry that changes with what he is carrying, and
+    // the one that MAKES A SOUND — main.js plays the top sheet's figure as this
+    // opens (audio/sheet-voice.js). The direction line is the page; the second
+    // line is him hearing it, which is the point of looking at all.
+    'sheet-music': context.sheet ? [
+      { who: 'direction', text: `${context.sheet.composer}. ${context.sheet.title}. ${context.sheet.detail}` },
+      { who: 'you', text: context.sheet.line },
+      ...(context.sheetsCarried > 1
+        ? [{ who: 'you', text: `${context.sheetsCarried} of them in the case now. This is the one on top.` }]
+        : []),
+    ] : [
+      { who: 'you', text: 'Nothing in that pocket.' },
     ],
     keyring: [
       { who: 'direction', text: 'The ring turns once in your palm.' },

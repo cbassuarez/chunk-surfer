@@ -22,7 +22,13 @@ export const FIREBALL_IMPACT_DAMAGE = 3;
 // The flight does not end at the bezel. It leaves the stage, crosses the rest
 // of the screen, and only then lands — and it is clickable for every second of
 // that, which is the entire reason there is a window out there at all.
-export const FIREBALL_OUTSIDE_SECONDS = 1.15;
+export const FIREBALL_OUTSIDE_SECONDS = 2.05;
+// The first missed commitment is information, not damage. It retreats to the
+// bezel and comes back once, visibly on the same ray. Only the second complete
+// offer may land.
+export const FIREBALL_REBOUND_SECONDS = .48;
+export const FIREBALL_CATCH_PROGRESS = .72;
+export const FIREBALL_OFFERS = 2;
 // SIBLINGS DO NOT ARRIVE TOGETHER.
 //
 // Four comets leaving on the same frame is one event with four sprites in it --
@@ -33,7 +39,7 @@ export const FIREBALL_OUTSIDE_SECONDS = 1.15;
 // that is supposed to be overwhelming.
 export const FIREBALL_STAGGER_SECONDS = 0.26;
 // In the air and answerable.
-const LIVE_RAY_STATES = Object.freeze(['inflight', 'approach']);
+const LIVE_RAY_STATES = Object.freeze(['inflight', 'approach', 'rebound']);
 // How long a finished comet stays on screen saying what happened to it.
 const RAY_DWELL = Object.freeze({ deflected:0.34, reversed:0.70, impact:0.26 });
 
@@ -56,7 +62,12 @@ export function hitTestFireballCast(active, { x = -1, y = -1, aspect = 1, radius
     if (!LIVE_RAY_STATES.includes(flight.state)) continue;
     const ray = active.plan.rays[flight.index];
     if (!ray) continue;
-    const point = fireballRayPoint(ray, { state:'outbound', progress:flight.progress });
+    const point = fireballRayPoint(ray, {
+      state:'outbound',
+      progress:['approach','rebound'].includes(flight.state)
+        ? clamp(flight.canvasProgress ?? .86, 0, 1)
+        : flight.progress,
+    });
     const dx = (px - point.x) * Math.max(.1, Number(aspect) || 1);
     const dy = py - point.y;
     const distance = Math.hypot(dx, dy);
@@ -154,6 +165,10 @@ export function createFireballExchange({
         elapsed:0,
         progress:0,
         outside:0,
+        rebound:0,
+        offers:0,
+        catchReady:false,
+        canvasProgress:.86,
         dwell:0,
         damage:null,
       })),
@@ -204,10 +219,7 @@ export function createFireballExchange({
     const next = { id:String(id || ''), index:Math.max(0, Math.floor(Number(index) || 0)), title:String(title || '') };
     const changed = next.id !== movement.id || next.index !== movement.index;
     movement = next;
-    if (changed && active) {
-      for (const ray of liveRays()) finish(ray, 'deflected');
-      clearActive();
-    }
+    if (changed && active) cancel('movement-change');
     if (changed) spawnIn = FIREBALL_FIRST_CAST_SECONDS;
     return snapshot();
   }
@@ -229,13 +241,20 @@ export function createFireballExchange({
   // out there is drawn from this and nothing else.
   function outsideFrame() {
     if (!active) return [];
+    const breakSeconds=Math.max(0,Number(active.dance?.breakMs)||0)/1000;
     return active.rays
       .filter((ray) => ray.state !== 'waiting' && ray.state !== 'inflight' && ray.state !== 'gone')
       .map((ray) => ({
         index:ray.index,
         rayId:ray.id,
-        state:ray.state === 'approach' ? 'outbound' : ray.state,
-        progress:clamp(ray.outside / outside, 0, 1),
+        state:['approach','rebound'].includes(ray.state) ? 'outbound' : ray.state,
+        // The target reaches its catch mark during the authored feint and then
+        // stays there. A rebound visibly retraces the same segment to the edge.
+        progress:ray.state==='rebound'
+          ? FIREBALL_CATCH_PROGRESS*(1-clamp(ray.rebound/FIREBALL_REBOUND_SECONDS,0,1))
+          : FIREBALL_CATCH_PROGRESS*clamp(ray.outside/Math.max(.001,breakSeconds),0,1),
+        catchReady:!!ray.catchReady,
+        offer:Math.min(FIREBALL_OFFERS,ray.offers+1),
         damage:ray.damage,
       }));
   }
@@ -245,7 +264,7 @@ export function createFireballExchange({
     if (!active || !rays.length) { onSync({ castId:active?.plan?.castId || '', rays:[], choreography:null }); return; }
     const dance = active.dance;
     const cycle = fireballCyclePhase(active.shoalSeconds, dance);
-    onSync({
+    const presented=onSync({
       castId:active.plan.castId,
       rays,
       // One dance for the whole cast: they break on the same count and settle
@@ -254,7 +273,6 @@ export function createFireballExchange({
       choreography:{
         dodge:dance.evasion * cycle.travel,
         reach:dance.reach,
-        senseMs:dance.senseMs,
         cohesion:dance.cohesion,
         settled:cycle.settled,
         settleLeftMs:cycle.settleLeftMs,
@@ -263,6 +281,7 @@ export function createFireballExchange({
         formationProgress:cycle.formationProgress,
       },
     });
+    active.externalPresented=presented===true;
   }
 
   function update(dt, { enabled = true } = {}) {
@@ -300,10 +319,32 @@ export function createFireballExchange({
       }
       if (ray.state === 'approach') {
         ray.outside += seconds;
+        const cycle=fireballCyclePhase(ray.outside,active.dance);
+        ray.catchReady=cycle.settled;
+        ray.canvasProgress=.86-cycle.travel*.08;
         if (ray.outside < outside) continue;
+        ray.offers += 1;
+        if(ray.offers<FIREBALL_OFFERS){
+          ray.state='rebound';
+          ray.rebound=0;
+          ray.catchReady=false;
+          last={type:'reoffered',castId:active.plan.castId,rayId:ray.id,offer:ray.offers+1};
+          continue;
+        }
         finish(ray, 'impact', landing || null);
         last = { type:'missed', castId:active.plan.castId, rayId:ray.id, damage:landing };
         if (landing > 0) onImpact({ castId:active.plan.castId, rayId:ray.id, damage:landing, casterId:active.plan.casterId || null });
+        continue;
+      }
+      if(ray.state==='rebound'){
+        ray.rebound+=seconds;
+        ray.catchReady=false;
+        ray.canvasProgress=.86+.12*clamp(ray.rebound/FIREBALL_REBOUND_SECONDS,0,1);
+        if(ray.rebound<FIREBALL_REBOUND_SECONDS)continue;
+        ray.state='approach';
+        ray.outside=0;
+        ray.rebound=0;
+        ray.canvasProgress=.86;
         continue;
       }
       ray.dwell -= seconds;
@@ -333,6 +374,7 @@ export function createFireballExchange({
       active:active ? {
         plan:active.plan,
         duration:active.duration,
+        externalPresented:!!active.externalPresented,
         rays:active.rays.map((ray) => ({ ...ray })),
         // The leader, for anything that still wants one number: the furthest
         // comet of the volley.
@@ -350,8 +392,8 @@ export function createFireballExchange({
     sync();
   }
 
-  function cancel() {
-    if (active) for (const ray of liveRays()) finish(ray, 'deflected');
+  function cancel(reason='interrupted') {
+    if(active)last={type:'forgiven',castId:active.plan.castId,reason:String(reason||'interrupted')};
     active = null;
     spawnIn = FIREBALL_FIRST_CAST_SECONDS;
     sync();

@@ -348,7 +348,7 @@ assert.match(nativeWindowSource, /pub fn chunk_fireball_cast_focus_main[\s\S]{0,
 assert.ok((nativeWindowSource.match(/\.set_focus\(\)/g)?.length||0)>=2,
   'focus returns after both a pane click and a full transaction restore');
 
-const mediaListeners=new Map(),mediaWindows=new Map(),mediaAssignments=[];
+const mediaListeners=new Map(),mediaWindows=new Map(),mediaAssignments=[],mediaPlacements=[];
 const fireMediaEvent=(name,payload)=>{for(const listener of mediaListeners.get(name)||[])listener({payload});};
 class FakeWebviewWindow{
   constructor(label){this.label=label;this.visible=false;mediaWindows.set(label,this);}
@@ -370,7 +370,7 @@ const routedMediaApi={
     }
   },
   invoke:async(command,{request}={})=>command==='chunk_window_media_place'
-    ?{shown:true,origin:{x:request.x*1000,y:request.y*700},center:{x:request.x*1000,y:request.y*700},width:request.width,height:request.height,monitor:'main'}
+    ?(mediaPlacements.push(request),{shown:true,origin:{x:request.x*1000,y:request.y*700},center:{x:request.x*1000,y:request.y*700},width:request.width,height:request.height,monitor:'main'})
     :true,
 };
 const routedEffects=createPersonalizedWindowEffects({runtimeApi:routedMediaApi,documentApi:null,tokenFactory:()=> 'media-session-test',wait:async()=>{}});
@@ -381,6 +381,8 @@ assert.deepEqual(mediaAssignments.map(([label])=>label),['window-media-1','windo
 assert.equal(new Set(mediaAssignments.map(([,payload])=>windowMediaContentId(payload.score.initial))).size,4,
   'targeted envelopes deliver four distinct initial tracks instead of retaining one shared payload');
 assert.ok(mediaAssignments.every(([label,payload])=>label===payload.targetLabel));
+assert.ok(mediaPlacements.every((request)=>request.interactive===false),
+  'passive title panes remain non-focusable throughout entry and authored movement');
 await routedEffects.emergencyRestore({notify:false});
 
 console.log('personalized interference contracts passed');

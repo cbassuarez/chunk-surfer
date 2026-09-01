@@ -426,7 +426,11 @@ export function createWindowChoreographyDirector({
     const context=getCompositionContext()||{};
     return{...context,flashMode:['full','reduced','off'].includes(context.flashMode)?context.flashMode:'full'};
   };
-  const nativeDesired=()=>!!getEnabled()&&!reduced()&&isTauriRuntime();
+  // WINDOW CHOREOGRAPHY is the authority for whether desktop windows exist.
+  // Reduced motion removes travel and dissolves in the compiled plans; it must
+  // not silently replace the feature with an in-frame simulation after the
+  // player explicitly left choreography enabled.
+  const nativeDesired=()=>!!getEnabled()&&isTauriRuntime();
   async function loadApi(){
     if(api)return api;
     if(!nativeDesired())return null;
@@ -576,7 +580,7 @@ export function createWindowChoreographyDirector({
     const plan=deathCompositionPlan({battleId:profile.battleId,snapshotToken,reduceDread:!!context.reduceDread,reducedMotion:reduced(),flashMode:context.flashMode,epochMs:Date.now()});
     const active={plan,purpose:'death',state:{},completed:false,presented:false,pendingEvents:new Set()};
     composition=active;
-    void runPlan(plan,{forceSimulate:reduced()}).then(()=>markCompositionPresented(active)).catch(()=>null);
+    void runPlan(plan).then(()=>markCompositionPresented(active)).catch(()=>null);
     // The result dialogue owns retry timing. A native decoder or surface that
     // is late is allowed to fall back, never to hold this promise open.
     return{plan,scheduled:true};
@@ -664,7 +668,7 @@ export function createWindowChoreographyDirector({
     composition=active;
     onPuzzleState(true);onState({type:'puzzle-start',plan});
     armPuzzleHint(composition);
-    const result=await runPlan(plan,{forceSimulate:forceSimulate||reduced()});markCompositionPresented(active);return result;
+    const result=await runPlan(plan,{forceSimulate});markCompositionPresented(active);return result;
   }
   async function puzzleInteract(){
     if(!composition||composition.purpose!=='puzzle'||composition.completed)return false;
@@ -716,7 +720,7 @@ export function createWindowChoreographyDirector({
     const active={plan,purpose:'ending',state:{},startedAt:Date.now(),completed:false,presented:false,pendingEvents:new Set()};
     composition=active;
     const result=await runPlan(endingPlan(profile,sequence++,reduced()));
-    await runPlan(plan,{forceSimulate:reduced()});
+    await runPlan(plan);
     markCompositionPresented(active);
     await waitFn(reduced()?80:620);
     if(composition===active){
@@ -740,7 +744,7 @@ export function createWindowChoreographyDirector({
     if(owner!==titleGeneration)return null;
     const active={plan,purpose:'title',state:{},startedAt:Date.now(),completed:false,presented:false,pendingEvents:new Set()};
     composition=active;
-    const result=await runPlan(plan,{forceSimulate:reduced()});markCompositionPresented(active);return result;
+    const result=await runPlan(plan);markCompositionPresented(active);return result;
   }
   async function finishTitle(){
     titleGeneration+=1;
@@ -756,6 +760,11 @@ export function createWindowChoreographyDirector({
 
   async function credits(){const result=await restore('credits',{closePool:true});await safe(()=>effects?.end?.());return result;}
   async function emergencyRestore({preservePuzzle=true}={}){
+    // Emergency cleanup is an escape hatch, not a combat choice. Forgive the
+    // live projectile before its surfaces disappear; otherwise an invisible
+    // exchange can keep counting and damage the player after the reset.
+    const EventCtor=documentApi?.defaultView?.CustomEvent||globalThis.CustomEvent;
+    if(EventCtor)keyTarget?.dispatchEvent?.(new EventCtor('chunk-surfer:fireball-forgive',{detail:{reason:'emergency-restore'}}));
     const puzzle=preservePuzzle&&composition?.purpose==='puzzle'&&!composition.completed
       ?{plan:composition.plan,startedAt:composition.startedAt}:null;
     await restore('emergency',{closePool:true});
