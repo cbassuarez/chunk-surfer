@@ -88,7 +88,7 @@ import { CHUNK_SURF_PHASE, pageStageForDistance } from '../src/game/chunk-surf-s
   const main = fs.readFileSync('src/main.js', 'utf8');
   const branch = main.slice(main.indexOf("if(result.event==='page-found')"), main.indexOf("if(result.event==='horizon')"));
     const stillPagePush=branch.indexOf('scenes.push(makeSourceStillPageScene(');
-    const landscapeEnter=branch.indexOf('enterSourceLandscape()',stillPagePush);
+    const landscapeEnter=branch.indexOf('enterSourceLandscape(',stillPagePush);
 
     assert.ok(
       stillPagePush>=0,

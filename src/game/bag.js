@@ -268,7 +268,10 @@ export function makeBagScene({
     const route=routes.pop();
     route.reader?.exit?.();
     syncActionPresentation();
-    AUDIO.menuMove?.();
+    // Backing out is its own verb. This was menuMove — the same sound as
+    // travelling down a list — so leaving a panel and stepping through one were
+    // indistinguishable with your eyes shut.
+    AUDIO.menuBack?.();
     return true;
   }
 
@@ -560,14 +563,13 @@ export function makeBagScene({
       } else {
         notice = entry.blockedBy || 'NOT AVAILABLE';
         noticeUntil = t + 2.6;
-        AUDIO.menuMove?.();
       }
     } else if(entry.kind==='skill'&&actionId==='pull-cable'){
       ok=pullCable(entry.techniqueId);
     } else if (entry.kind === 'gear' && actionId === 'reorder-up') {
       const result = typeof reorderEquipment === 'function' ? reorderEquipment(entry.sourceId, 'up') : { changed: false, reason: 'unavailable' };
       ok = !!result?.changed;
-      if (!ok) { notice = 'TRAY ORDER UNCHANGED'; noticeUntil = t + 2.0; AUDIO.menuMove?.(); }
+      if (!ok) { notice = 'TRAY ORDER UNCHANGED'; noticeUntil = t + 2.0; }
     } else if (entry.kind === 'gear' && (descriptor||entry.actions?.primary)) {
       const action=descriptor||entry.actions.primary;
       if(action.exitPolicy==='close'||action.closeBefore)close();
@@ -580,6 +582,15 @@ export function makeBagScene({
       motion.actionAt = t;
       AUDIO.menuConfirm();
       if(descriptor?.exitPolicy!=='close')refresh();
+    } else {
+      // EVERY REFUSAL IN THE CASE SOUNDS THE SAME, AND IT IS NOT A MOVE.
+      //
+      // The blocked branches used to play menuMove — the sound of the selection
+      // travelling — which said "something happened" when nothing had. They set
+      // their notice and fall through to here now, so one denial sound covers
+      // NOT AVAILABLE, TRAY ORDER UNCHANGED, a refused item action and a skill
+      // that will not pull.
+      AUDIO.menuDenied?.();
     }
     return ok;
   }

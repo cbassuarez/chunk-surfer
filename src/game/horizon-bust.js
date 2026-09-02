@@ -114,16 +114,30 @@ export function horizonBustAudience(mode = 'untouched') {
   return HORIZON_BUST_AUDIENCE[mode] || HORIZON_BUST_REFUSAL;
 }
 
-export function horizonBustProposition(lastLine = null) {
+// `defeats` is how many times the cathedral fight has already been lost — the
+// promise in `consequence` made good. At zero this is the first meeting and
+// nothing below changes. Above zero the bust has already been proved right, so
+// it says so, and the choice it offers is no longer a choice: the option to
+// leave the way you were going is BUILT OUT of the array rather than greyed,
+// which is how this game has always removed a thing (see endingChoice).
+export function horizonBustProposition(lastLine = null, { defeats = 0 } = {}) {
+  const again = Math.max(0, Math.floor(Number(defeats) || 0));
+  const returning = again > 0;
   return {
     start: {
       speaker: 'THE PORTRAIT',
-      lines: [
+      lines: returning ? [
+        ...(lastLine ? [lastLine] : []),
+        { who: 'direction', text: 'The bevel is warm. Your own hand did that, and not long ago.' },
+        again === 1
+          ? { who: 'bust', text: 'There you are. I did say.' }
+          : { who: 'bust', text: 'Again. I am starting to feel responsible for you, which is new, and I do not care for it.' },
+      ] : [
         ...(lastLine ? [lastLine] : []),
         { who: 'direction', text: 'A palm-shaped bevel shines on the pedestal. The skull above it has lost its name; the crossed bones below have been worn nearly flat by other hands.' },
         { who: 'bust', text: 'There. That is the other way.' },
       ],
-      goto: 'questions',
+      goto: returning ? 'decision' : 'questions',
     },
     questions: {
       speaker: 'THE PORTRAIT',
@@ -170,26 +184,40 @@ export function horizonBustProposition(lastLine = null) {
       speaker: 'THE PORTRAIT',
       lines: [
         { who: 'you', text: "What's the catch?" },
-        { who: 'bust', text: 'It's easier as long as you don't lose.' },
+        { who: 'bust', text: "It's easier as long as you don't lose." },
         { who: 'you', text: 'And if I lose?' },
         { who: 'bust', text: "Then I'll see you here again, but you'll have no choice but to continue." },
-        // todo ^ wire
       ],
       goto: 'questions',
     },
     decision: {
       speaker: 'THE PORTRAIT',
-      lines: [
+      lines: returning ? [
+        { who: 'you', text: 'Can I go back? Take the other way?' },
+        again === 1
+          ? { who: 'bust', text: 'No. I told you that part before you agreed, which is more than most get.' }
+          : { who: 'bust', text: 'You know the answer. Ask me something you do not know.' },
+        { who: 'direction', text: 'There is one bevel, and it is the one your hand already knows.' },
+      ] : [
         { who: 'bust', text: 'So. Keep going, or let me introduce you.' },
       ],
-      choices: [
+      // The chapel is simply not here on a return. "No choice but to continue"
+      // is one row, not two rows with one of them dimmed.
+      choices: returning ? [
+        { text: 'Set your hand in the bevel. Again.', goto: 'accepted', sourceFinaleChoice: 'tower' },
+      ] : [
         { text: "Set your hand in the bevel. Take the Bust's path.", goto: 'accepted', sourceFinaleChoice: 'tower' },
         { text: "Leave the way you were going.", goto: 'declined', sourceFinaleChoice: 'chapel' },
       ],
     },
     accepted: {
       speaker: 'THE PORTRAIT',
-      lines: [
+      lines: returning ? [
+        { who: 'direction', text: 'The fractures are already open. They never closed.' },
+        again === 1
+          ? { who: 'bust', text: 'They still know you are coming. That was never the hard part.' }
+          : { who: 'bust', text: 'Last time I will watch you do this. One way or the other.' },
+      ] : [
         { who: 'you', text: 'If I put my hand there, what happens?' },
         { who: 'bust', text: "To be honest, it's more fun to press something to make it happen. You've already agreed, the button is just symbolic. Call it user experience." },
         { who: 'direction', text: 'The stone is colder than the rain. Six narrow fractures open behind the pedestal, each holding a small imprint of a bell-like sigil.' },

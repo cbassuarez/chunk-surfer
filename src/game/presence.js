@@ -31,6 +31,11 @@ export const PRESENCE = {
   // It never sprints while it is only circling: this is the weather, and you
   // can always walk out from under it.
   stalkSpeedRatio: 0.20,
+  // Source Contact is different from the building's sound-belief hunt. Once a
+  // pursuit beat is armed the body follows at a fixed fraction of locomotion:
+  // fast enough to remain behind you, slow enough that simply walking still
+  // opens the distance. Contact itself remains an interact, not a collision.
+  sourceContactSpeedRatio: 0.75,
   // A pinpoint sound can produce a short pursuit burst, broken by moments in
   // which it stops to listen. Sustained hot noise keeps renewing the burst.
   huntSpeedRatio: 0.56,
@@ -558,7 +563,8 @@ function resolveTargetToFloor(navigation) {
 // the legacy immediate count callback.
 export function updatePresence(dt, px, py, onContactAttempt, {
   navigation = null, catchMode = 'normal', dreadLevel = 0, lightSound = null,
-  deferContact = false, suppressContact = false,
+  deferContact = false, suppressContact = false, sourceContactTarget = null,
+  sourceContactSpeedRatio = PRESENCE.sourceContactSpeedRatio,
 } = {}) {
   if (!state.active || tableau) return;
   const now = performance.now();
@@ -591,8 +597,22 @@ export function updatePresence(dt, px, py, onContactAttempt, {
   // behavior. The building path below is the blind sound-belief director.
   let tx = state.targetX, ty = state.targetY;
   let speed = stalkSpeed() * difficultyRules.baseSpeedScale;
+  const sourceContactPursuit = sourceMode
+    && Number.isFinite(Number(sourceContactTarget?.x))
+    && Number.isFinite(Number(sourceContactTarget?.y))
+    && Number(sourceContactSpeedRatio) > 0;
   if (sourceMode) {
-    if (state.hasTarget) {
+    if (sourceContactPursuit) {
+      // This is authored pursuit geometry, not acoustic knowledge. Do not set
+      // hasTarget or rewrite the monitor belief: the body can follow the player
+      // here without teaching the building-wide HUSH where the player is.
+      tx = Number(sourceContactTarget.x);
+      ty = Number(sourceContactTarget.y);
+      speed = Math.min(.95, Math.max(.05, Number(sourceContactSpeedRatio))) * PLAYER_CELLS_PER_SEC;
+      state.behaviorMode = 'chase';
+      state.dwellUntil = 0;
+      state.hasProwl = false;
+    } else if (state.hasTarget) {
       speed = sinceTarget < 1.5
         ? huntSpeed() * difficultyRules.huntSpeedScale
         : stalkSpeed() * difficultyRules.baseSpeedScale;
@@ -677,7 +697,10 @@ export function updatePresence(dt, px, py, onContactAttempt, {
   }
   // Awareness makes it faster forever, but not fast. It learns you, and still
   // remains something you can get away from.
-  speed *= 1 + state.awareness * 0.12;
+  // The Source Contact ratio is literal. Awareness may sharpen ordinary HUSH
+  // pursuit, but it must never turn the authored 75% tail into something that
+  // catches a player who is walking cleanly.
+  if (!sourceContactPursuit) speed *= 1 + state.awareness * 0.12;
 
   const dx = tx - state.x, dy = ty - state.y;
   const d = Math.hypot(dx, dy);
@@ -696,7 +719,9 @@ export function updatePresence(dt, px, py, onContactAttempt, {
   state.velocityX=(state.x-beforeX)/frameDt;state.velocityY=(state.y-beforeY)/frameDt;
   state.speed=Math.hypot(state.velocityX,state.velocityY);
   if (sourceMode) {
-    state.motionMode = !state.hasTarget ? 'stalk' : state.speed < .02 ? 'idle' : sinceTarget < 1.5 ? 'run' : 'walk';
+    state.motionMode = sourceContactPursuit
+      ? state.speed < .02 ? 'idle' : 'walk'
+      : !state.hasTarget ? 'stalk' : state.speed < .02 ? 'idle' : sinceTarget < 1.5 ? 'run' : 'walk';
   } else {
     state.motionMode = state.speed < .02
       ? (state.behaviorMode === 'listen' ? 'listen' : 'stand')

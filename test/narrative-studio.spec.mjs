@@ -188,9 +188,18 @@ assert.doesNotMatch(radioAdapterSource,/4417-C|because it is not yours|stays cli
 const conservatoryScriptSource=await readFile('src/data/conservatory-script.js','utf8');
 assert.doesNotMatch(conservatoryScriptSource,/export const (RADIO_DEAD|TRANSMISSIONS|RADIO_DEAD_LINE)/,'conservatory script no longer carries parallel radio dialogue');
 const radioDocuments=await Promise.all([
-  'radio.initial_checkin','radio.post_second_take_warning','radio.pre_third_room_breakdown','conservatory.radio_dead',
+  'radio.initial_checkin','radio.guidance','radio.post_second_take_warning','radio.hush_help_rupture','radio.pre_third_room_breakdown','conservatory.radio_dead',
 ].map((id)=>readFile(`content/narrative/${id}.story.json`,'utf8')));
 assert.doesNotMatch(radioDocuments.join('\n'),/because it is not yours|stays clipped to my belt|room to take the channel|It says it with your mouth/,'law-like ownership and authorial cause text is retired');
+const radioTimeline=authoringProject.timeline.find((group)=>group.id==='radio');
+assert.equal(radioTimeline.title,'Radio guidance and failures');
+assert.equal(radioTimeline.kind,'sequence');
+assert.deepEqual(radioTimeline.documents,[
+  'radio.initial_checkin','radio.guidance','radio.post_second_take_warning','radio.hush_help_rupture','radio.pre_third_room_breakdown','conservatory.radio_dead',
+]);
+for(const id of radioTimeline.documents)assert.ok(authoringProject.runtimeEntrypoints.includes(id),`${id} is an explicit runtime entrypoint`);
+assert.match(JSON.stringify(runtimeTree('radio.guidance',{TARGET:'STUDIO B3',ROUTEFIRST:'Studio B3 first.',ROUTEREPEAT:'Take the main basement stair.'})),/main basement stair/i);
+assert.ok(runtimeTree('radio.hush_help_rupture').start.lines.length>=5,'the alternate rupture rehydrates independently');
 const roomRuntime = runtimeTree('room-listen.main_b3', { label: 'The Concert Hall' });
 assert.match(JSON.stringify(roomRuntime), /The Concert Hall/);
 

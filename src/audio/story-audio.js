@@ -5,6 +5,7 @@ import {
   OPENING_BED_LOOP_SECONDS,
   nextOpeningBedDownbeatAt,
 } from './opening-bed-transport.js';
+import { UI_CUE, uiCue } from './ui-cues.js';
 
 // Story-only beds.
 //
@@ -790,8 +791,25 @@ export function stopMenuHiss(){
   if(!menuHiss)return;const m=menuHiss;menuHiss=null;setGain(m.g,0,.12);
   globalThis.setTimeout?.(()=>{try{m.src.stop();}catch(_){}for(const n of [m.src,m.hp,m.lp,m.g])try{n.disconnect();}catch(_){}},180);
 }
-export function menuMove(){click({freq:640,gain:.04,dur:.022,destination:'menu'});click({freq:1120,gain:.018,dur:.011,destination:'menu'});}
-export function menuConfirm(){click({freq:380,gain:.055,dur:.045,destination:'menu'});globalThis.setTimeout?.(()=>click({freq:760,gain:.025,dur:.025,destination:'menu'}),32);}
+// THE FOUR THINGS A HAND ON THE MACHINE CAN DO.
+//
+// These were two hand-built pairs of square-wave clicks. They are cuelume's
+// mechanical cues now (audio/ui-cues.js) — the same register, better made, and
+// two verbs the interface was missing. The hiss above still runs underneath on
+// the game's own bus; only the clicks moved.
+//
+// Every caller keeps working untouched: the 88 menuMove and 25 menuConfirm call
+// sites reach these same exports, and combat is handed this module wholesale as
+// `audio: STORY`. That is why the swap is four function bodies and no churn.
+export function menuMove(){ uiCue(UI_CUE.MOVE); }
+export function menuConfirm(){ uiCue(UI_CUE.CONFIRM); }
+// Leaving, closing, cancelling — the counterpart to CONFIRM, which the
+// interface has never had and has been spelling with silence or a second
+// confirm.
+export function menuBack(){ uiCue(UI_CUE.BACK); }
+// The thing you cannot do. Wire it where a refusal already prints its reason —
+// a locked door, a bag row that says why it is shut, a room not on the order.
+export function menuDenied(){ uiCue(UI_CUE.DENIED); }
 
 export function stopAll() {
   stopTyping({ fade: 0.04 });

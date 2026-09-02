@@ -33,9 +33,6 @@ const LOCAL_ENGLISH_TEXT_POLISH = new Map([
   ['conservatory.cold_open_dialogue:guard.revisit.line.1', 'Still the door, the keyring, and the book. Ask away.'],
   ['conservatory.cold_open_dialogue:guard.revisit.line.2', 'Ask what you like. Yard is my patch. In there is not.'],
   ['conservatory.cold_open_dialogue:guard.shift.bell.line.1', 'And nothing. Gate code is on your sheet. It is a demolition site, mate, not a bank.'],
-  ['conservatory.cold_open_dialogue:guard.radio.line.2', 'Channel two. Give us a shout on the hour if you remember. If it hisses, stop talking and let it settle.'],
-  ['conservatory.cold_open_dialogue:guard.radio.line.3', 'If somebody answers and it is not me — do not get chatting.'],
-  ['conservatory.cold_open_dialogue:guard.radio.revisit.line.1', 'Channel two. On the hour. Do not give it a shake.'],
   ['conservatory.cold_open_dialogue:guard.radio.choice.1', 'what if I give it a shake?'],
 ]);
 

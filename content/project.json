@@ -60,7 +60,9 @@
     "narrative/playback.practiceplayback.named.story.json",
     "narrative/playback.practiceplayback.unnamed.story.json",
     "narrative/radio.initial_checkin.story.json",
+    "narrative/radio.guidance.story.json",
     "narrative/radio.post_second_take_warning.story.json",
+    "narrative/radio.hush_help_rupture.story.json",
     "narrative/radio.pre_third_room_breakdown.story.json",
     "narrative/room-listen.amplifications.story.json",
     "narrative/room-listen.lux_nova.story.json",
@@ -96,6 +98,10 @@
     "source-space.contact",
     "room-listen.main_b3",
     "radio.initial_checkin",
+    "radio.guidance",
+    "radio.post_second_take_warning",
+    "radio.hush_help_rupture",
+    "radio.pre_third_room_breakdown",
     "ending.choice.base"
   ],
   "timeline": [
@@ -118,7 +124,6 @@
         "conservatory.bent_rig",
         "conservatory.talisman",
         "conservatory.hush",
-        "conservatory.radio_dead",
         "conservatory.chapel_key_check",
         "conservatory.bust_talk",
         "conservatory.bust_turn",
@@ -146,12 +151,15 @@
     },
     {
       "id": "radio",
-      "title": "Radio calls",
-      "kind": "branch",
+      "title": "Radio guidance and failures",
+      "kind": "sequence",
       "documents": [
         "radio.initial_checkin",
+        "radio.guidance",
         "radio.post_second_take_warning",
-        "radio.pre_third_room_breakdown"
+        "radio.hush_help_rupture",
+        "radio.pre_third_room_breakdown",
+        "conservatory.radio_dead"
       ]
     },
     {

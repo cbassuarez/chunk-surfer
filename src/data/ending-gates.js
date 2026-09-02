@@ -462,9 +462,9 @@ export const ENDING_GATES = Object.freeze({
         where: at('src/game/chunk-surf-state.js', 'export const HORIZON_EXIT'),
       }),
       Object.freeze({
-        label: 'Losing either half of the fight',
+        label: 'Losing the fight three times',
         kind: GATE_KIND.INSTEAD,
-        detail: 'Both halves lose the same way.',
+        detail: 'Both halves lose the same way, and the first two losses are not the end: the bust sends you back in with the chapel closed. The third resolves.',
         to: 'tower-lost',
         where: at('src/main.js', 'function resolveCathedralLoss()'),
       }),
@@ -484,7 +484,7 @@ export const ENDING_GATES = Object.freeze({
     summary: 'Take the detour and lose it. Six bells finish the job on both bodies, one faculty at a time.',
     arrivals: Object.freeze({
       [ENDING_ARRIVAL.DEFEATED]: Object.freeze({
-        how: 'Lose either half of the cathedral fight.',
+        how: 'Lose either half of the cathedral fight TOWER_DEFEAT_CEILING times. The first two send you back to the bust with only its own path left.',
         where: at('src/main.js', 'function resolveCathedralLoss()'),
       }),
     }),
@@ -496,7 +496,7 @@ export const ENDING_GATES = Object.freeze({
         where: at('src/game/chunk-surf-state.js', 'export const HORIZON_EXIT'),
       }),
       Object.freeze({
-        label: 'Lose either half of the bell fight',
+        label: 'Lose either half of the bell fight, to the ceiling',
         kind: GATE_KIND.FIGHT,
         detail: 'Damage carries from the first half into the second, so the second is usually the one that gets you.',
         where: at('src/main.js', 'function openCathedralSecondPhase('),

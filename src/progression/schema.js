@@ -245,6 +245,9 @@ export function freshMeta() {
     // The first actual Natatorium fireball introduces authored desktop space.
     // First-launch title remains sealed until this durable mark exists.
     windowChoreographyIntroduced: false,
+    // The authored opening is mandatory once per local installation/profile.
+    // Subsequent launches may expose the in-scene transport control.
+    openingCreditsCompleted: false,
     leftMidRun: false,
     // The EULA version this installation accepted. The bundled model licences
     // are OpenRAIL-M: their use restrictions have to reach the person running
@@ -505,6 +508,15 @@ export function normalizeMeta(value) {
   const hushRun = objectOr(source.hushRun);
   const legacyTerminal = objectOr(source.legacyTerminal);
   const endingsSeen = uniqueStrings(source.endingsSeen).filter((id) => ENDING_IDS.includes(id));
+  // Profiles written before openingCreditsCompleted existed can still prove that
+  // they crossed the opening: a started run was only reachable from the title.
+  // Only use that proof when the field is absent. Explicit false is meaningful
+  // local state and must survive portable-profile merges that bring run stats.
+  const legacyOpeningCompleted = Math.max(
+    0,
+    finiteOr(stats.runsStarted, 0),
+    finiteOr(source.runs, 0),
+  ) > 0;
 
   return {
     ...base,
@@ -512,6 +524,8 @@ export function normalizeMeta(value) {
     endingsSeen,
     hushMet: !!source.hushMet,
     windowChoreographyIntroduced: !!source.windowChoreographyIntroduced,
+    openingCreditsCompleted: source.openingCreditsCompleted === true
+      || (source.openingCreditsCompleted == null && legacyOpeningCompleted),
     leftMidRun: !!source.leftMidRun,
     eulaAccepted: typeof source.eulaAccepted === 'string' ? source.eulaAccepted.slice(0, 40) : '',
     eulaAcceptedAt: Math.max(0, Math.floor(finiteOr(source.eulaAcceptedAt, 0))),

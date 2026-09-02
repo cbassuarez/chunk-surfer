@@ -89,9 +89,11 @@ export function uiCellMetrics() {
 
 // Low-level drawing hook for code-native instruments. The callback receives
 // device-pixel metrics; authored modules still express all geometry in cells.
+let uiAlphaScope=1;
+export function uiWithAlpha(alpha,draw){const prev=uiAlphaScope;uiAlphaScope=prev*Math.max(0,Math.min(1,Number(alpha)||0));try{return typeof draw==='function'?draw():undefined;}finally{uiAlphaScope=prev;}}
 export function uiDraw(draw) {
   if (!ctx || typeof draw !== 'function') return;
-  draw({ ctx, dpr: atlasDpr(), cellW: scaledCellW, cellH: scaledCellH, cols, rows });
+  ctx.save();ctx.globalAlpha*=uiAlphaScope;try{draw({ ctx, dpr: atlasDpr(), cellW: scaledCellW, cellH: scaledCellH, cols, rows });}finally{ctx.restore();}
 }
 
 // Dim the world behind a scene without hiding it — dread survives, text reads.
@@ -105,7 +107,7 @@ export function uiGlyph(cx, cy, ch, cls = 't-chunk', alpha = 1) {
   if (!ctx || ch == null || ch === ' ') return;
   const tile = getTile(ch, cls, 'ui', cx, cols);
   const dpr = atlasDpr();
-  const a = alpha * uiFlickerAlpha(cx, cy, cls);
+  const a = alpha * uiAlphaScope * uiFlickerAlpha(cx, cy, cls);
 
   if (a !== 1) ctx.globalAlpha = a;
   ctx.drawImage(
@@ -147,7 +149,7 @@ export function uiItalicText(cx, cy, str, cls = 'ui-secondary', alpha = 1) {
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = uiRoleColor(cls, cx, cols);
-  ctx.globalAlpha = alpha;
+  ctx.globalAlpha = alpha * uiAlphaScope;
   ctx.shadowColor = uiRoleColor(cls, cx, cols);
   ctx.shadowBlur = 2.2 * dpr;
   for (let i = 0; i < s.length; i++) {
@@ -178,7 +180,7 @@ export function uiInk(cx, cy, str, { color = '#20180F', alpha = 1, weight = '' }
     const jA = 0.90 + ((h & 255) / 255) * 0.10;
     const jx = (((h >> 8) & 7) - 3.5) * 0.014;
     const jy = (((h >> 12) & 7) - 3.5) * 0.016;
-    ctx.globalAlpha = alpha * jA;
+    ctx.globalAlpha = alpha * uiAlphaScope * jA;
     ctx.fillText(ch, ((cx + i) + jx) * scaledCellW * dpr, (cy + 0.5 + jy) * scaledCellH * dpr);
   }
   ctx.restore();
@@ -187,6 +189,7 @@ export function uiInk(cx, cy, str, { color = '#20180F', alpha = 1, weight = '' }
 export function uiFill(cx, cy, w, h, color = 'rgba(6,7,9,0.92)') {
   if (!ctx) return;
   const dpr = atlasDpr();
+  ctx.save();ctx.globalAlpha*=uiAlphaScope;
   ctx.fillStyle = color;
   const x0 = cx * scaledCellW * dpr;
   const y0 = cy * scaledCellH * dpr;
@@ -197,7 +200,7 @@ export function uiFill(cx, cy, w, h, color = 'rgba(6,7,9,0.92)') {
   // so the background covers that strip.
   const x1 = (cx + w >= cols) ? canvas.width : x0 + w * scaledCellW * dpr;
   const y1 = (cy + h >= rows) ? canvas.height : y0 + h * scaledCellH * dpr;
-  ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+  ctx.fillRect(x0, y0, x1 - x0, y1 - y0);ctx.restore();
 }
 
 export function uiStrokeRect(cx, cy, w, h, color = UI_COLOR.frame, alpha = 1, lineWidth = 1) {

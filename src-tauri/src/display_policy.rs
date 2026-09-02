@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{AppHandle, Manager, WebviewWindow};
 
 const DESIGN_WIDTH: f64 = 1280.0;
@@ -10,12 +11,35 @@ const CONFIG_MIN_HEIGHT: f64 = 600.0;
 const MONITOR_MARGIN_X: f64 = 48.0;
 const MONITOR_MARGIN_Y: f64 = 112.0;
 
+// WHAT THE WINDOW IS ACTUALLY DOING.
+//
+// `fullscreen` used to be the only field, and it was a lie: it reports
+// `Window::is_fullscreen()`, which on macOS reflects NATIVE fullscreen only.
+// Simple fullscreen — the mode this game actually uses for game mode, see
+// set_game_mode below — lives in a separate tao field and does not show up
+// there at all. So the one API that could have told the frontend the truth
+// returned `false` during game mode, and nothing called it anyway.
+//
+// The three states are genuinely different and the caller needs to tell them
+// apart: a native Space cannot be composited over (window choreography is
+// impossible in it and must leave first), simple fullscreen can, and a windowed
+// frame needs nothing done to it.
+//
+// `fullscreen` is retained as native-or-simple so an older caller reading it
+// gets a more useful answer than it used to, not a different-shaped one.
 #[derive(Debug, Clone, Serialize)]
 pub struct WindowMetrics {
     pub logical_width: f64,
     pub logical_height: f64,
     pub scale_factor: f64,
     pub fullscreen: bool,
+    pub native_fullscreen: bool,
+    pub simple_fullscreen: bool,
+    // Measured, not remembered: the frame covers the monitor it is on. This is
+    // the backstop for a fullscreen the app never asked for — the green
+    // traffic-light button, or Cmd+Ctrl+F — which no amount of internal
+    // bookkeeping would know about.
+    pub fills_screen: bool,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -24,6 +48,49 @@ pub struct WindowSizeRequest {
     pub height: f64,
     #[serde(default)]
     pub center: bool,
+}
+
+// SIMPLE FULLSCREEN IS NOT READABLE BACK OUT OF THE WINDOW, SO WE KEEP IT.
+//
+// tao stores it in `shared_state.is_simple_fullscreen` and exposes no getter;
+// `Window::fullscreen()` only ever reflects the native kind. set_game_mode is
+// the sole entry point, so tracking it here is exact for everything the app
+// does deliberately. Anything the OS does behind our back is caught by the
+// measured `fills_screen` instead — the two together cover both cases.
+static SIMPLE_FULLSCREEN: AtomicBool = AtomicBool::new(false);
+
+pub fn simple_fullscreen_active() -> bool {
+    SIMPLE_FULLSCREEN.load(Ordering::Relaxed)
+}
+
+pub fn note_simple_fullscreen(active: bool) {
+    SIMPLE_FULLSCREEN.store(active, Ordering::Relaxed);
+}
+
+// Does the frame cover the monitor it is on? Deliberately measured rather than
+// remembered, with a small tolerance for the shadow/rounding a frame picks up.
+fn window_fills_monitor(window: &WebviewWindow) -> bool {
+    let Ok(position) = window.outer_position() else {
+        return false;
+    };
+    let Ok(size) = window.outer_size() else {
+        return false;
+    };
+    let Some(monitor) = window
+        .current_monitor()
+        .ok()
+        .flatten()
+        .or_else(|| window.primary_monitor().ok().flatten())
+    else {
+        return false;
+    };
+    let m_pos = monitor.position();
+    let m_size = monitor.size();
+    let slack = 8i32;
+    (position.x - m_pos.x).abs() <= slack
+        && (position.y - m_pos.y).abs() <= slack
+        && (size.width as i64 - m_size.width as i64).abs() <= slack as i64
+        && (size.height as i64 - m_size.height as i64).abs() <= slack as i64
 }
 
 fn main_window(app: &AppHandle) -> Result<WebviewWindow, String> {
@@ -144,6 +211,7 @@ pub fn reset_main_window(app: &AppHandle) -> Result<(), String> {
     let window = main_window(app)?;
     let _ = window.set_simple_fullscreen(false);
     let _ = window.set_fullscreen(false);
+    note_simple_fullscreen(false);
     let (width, height) = effective_default_size(&window);
     let (min_w, min_h) = effective_min_size(&window);
 
@@ -178,11 +246,14 @@ pub fn set_game_mode(app: &AppHandle, enabled: bool) -> Result<(), String> {
         // active, so leaving it is part of entering game mode -- including for
         // anyone already parked in a Space from a previous build.
         let _ = window.set_fullscreen(false);
-        window
+        let result = window
             .set_simple_fullscreen(true)
-            .map_err(|err| err.to_string())
+            .map_err(|err| err.to_string());
+        note_simple_fullscreen(result.is_ok());
+        result
     } else {
         let _ = window.set_simple_fullscreen(false);
+        note_simple_fullscreen(false);
         window.set_fullscreen(false).map_err(|err| err.to_string())
     }
 }
@@ -193,11 +264,18 @@ pub fn chunk_window_metrics(app: AppHandle) -> Result<WindowMetrics, String> {
     let size = window.inner_size().map_err(|err| err.to_string())?;
     let scale = window.scale_factor().unwrap_or(1.0);
 
+    let native_fullscreen = window.is_fullscreen().unwrap_or(false);
+    let simple_fullscreen = simple_fullscreen_active();
+    let fills_screen = window_fills_monitor(&window);
+
     Ok(WindowMetrics {
         logical_width: size.width as f64 / scale,
         logical_height: size.height as f64 / scale,
         scale_factor: scale,
-        fullscreen: window.is_fullscreen().unwrap_or(false),
+        fullscreen: native_fullscreen || simple_fullscreen,
+        native_fullscreen,
+        simple_fullscreen,
+        fills_screen,
     })
 }
 
@@ -209,6 +287,7 @@ pub fn chunk_set_window_size(app: AppHandle, request: WindowSizeRequest) -> Resu
 
     let _ = window.set_simple_fullscreen(false);
     let _ = window.set_fullscreen(false);
+    note_simple_fullscreen(false);
     let _ = window.set_min_size(Some(tauri::Size::Logical(tauri::LogicalSize {
         width: min_w,
         height: min_h,

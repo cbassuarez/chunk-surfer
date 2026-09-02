@@ -103,6 +103,13 @@ export function has(id) { return stack.some((s) => s.id === id); }
 
 export function blocksInput() { return stack.some((s) => s.blocksInput); }
 export function blocksWorld() { return stack.some((s) => s.blocksWorld); }
+export function worldPresentation() {
+  for (let i=stack.length-1;i>=0;i--) {
+    const policy=stack[i]?.worldPresentation;
+    if (policy==='visible'||policy==='hidden') return policy;
+  }
+  return 'visible';
+}
 export function suppressesHud() { return stack.some((s) => s.suppressesHud); }
 export function tracksMotion() { return !!top()?.tracksMotion; }
 // A tableau may hold the body while leaving the head alone. This is narrower

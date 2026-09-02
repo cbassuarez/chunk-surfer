@@ -21,7 +21,7 @@ export const BAG_ITEM_REGISTRY = Object.freeze({
   light: Object.freeze({ role: 'exploration-command', automaticUse: null }),
   recorder: Object.freeze({ role: 'exploration-command', automaticUse: null }),
   map: Object.freeze({ role: 'navigation', automaticUse: null }),
-  radio: Object.freeze({ role: 'deployable', automaticUse: null }),
+  radio: Object.freeze({ role: 'communications', automaticUse: null }),
   interface: Object.freeze({ role: 'combat-gear', automaticUse: null }),
   'tuning-fork': Object.freeze({ role: 'combat-gear', automaticUse: null }),
   coffee: Object.freeze({ role: 'consumable', automaticUse: null }),
@@ -125,8 +125,26 @@ export function resolveBagItemAction(itemId, context = {}) {
       return action('recorder-command', context.listening ? 'ROLL' : 'MONITOR', BAG_ACTION_MODE.COMMAND, { closeBefore: true });
     case 'map':
       return action('map-open', 'OPEN MAP', BAG_ACTION_MODE.OPEN);
-    case 'radio':
-      return action('radio-deploy', 'DEPLOY RADIO', BAG_ACTION_MODE.COMMAND, { closeBefore: true });
+    case 'radio': {
+      const unavailable = context.radioDead
+        ? 'NO CARRIER'
+        : context.radioUnavailableReason
+          ? String(context.radioUnavailableReason)
+        : context.recording
+          ? 'NOT WHILE RECORDING'
+          : context.listening
+            ? 'RECORDER CHANNEL OPEN'
+            : context.inCombat
+              ? 'NOT WHILE IT IS LOOKING AT YOU'
+              : context.radioChannelOccupied
+                ? 'CHANNEL OCCUPIED'
+                : '';
+      return action('radio-call', 'CALL FRONT DESK', BAG_ACTION_MODE.DIALOG, {
+        enabled: !unavailable,
+        reason: unavailable,
+        closeBefore: true,
+      });
+    }
     case 'interface':
       return action('inspect-interface', 'INSPECT', BAG_ACTION_MODE.DIALOG);
     case 'tuning-fork':

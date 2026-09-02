@@ -181,6 +181,7 @@ const tests = [
   'test/marimba-layout.spec.mjs',
   'test/natatorium-water.test.mjs',
   'test/radio-progression.spec.mjs',
+  'test/radio-guidance.spec.mjs',
   'test/plant-incident.spec.mjs',
   'test/plant-isolation.spec.mjs',
   'test/battle-music.spec.mjs',

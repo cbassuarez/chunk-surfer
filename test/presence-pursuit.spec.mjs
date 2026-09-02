@@ -94,6 +94,43 @@ assert.equal(forcedContact.count, caughtBefore + 1);
 assert.equal(actor.hasTarget, false);
 assert.equal(actor.behaviorMode, 'stand');
 
+// Source Contact is the exception to sound-belief pursuit: the authored body
+// tails the player at exactly three quarters walking speed so forward walking
+// opens the gap, then waits for the player to turn and interact. Proximity alone
+// cannot spend that contact.
+PRES.spawnAtCell(0, 0, { sector: 'source-rear' });
+actor = PRES.presenceState();
+actor.awareness = 1; // awareness must not inflate the literal Source ratio
+actor.spawnedAt = -1e9;
+let sourceCollision = 0;
+PRES.updatePresence(.6, 100, 0, () => { sourceCollision += 1; }, {
+  catchMode: 'source-checkpoint',
+  sourceContactTarget: { x: 100, y: 0 },
+  sourceContactSpeedRatio: PRES.PRESENCE.sourceContactSpeedRatio,
+  suppressContact: true,
+});
+assert.ok(Math.abs(actor.x - 10) < 1e-6, 'Source Contact does not move at 75% of player locomotion');
+assert.equal(actor.motionMode, 'walk');
+const gapBefore = 10;
+actor.x = 0;
+const playerAfterOneSecond = 1000 / 45 + gapBefore;
+PRES.updatePresence(1, playerAfterOneSecond, 0, () => { sourceCollision += 1; }, {
+  catchMode: 'source-checkpoint',
+  sourceContactTarget: { x: playerAfterOneSecond, y: 0 },
+  sourceContactSpeedRatio: PRES.PRESENCE.sourceContactSpeedRatio,
+  suppressContact: true,
+});
+assert.ok(playerAfterOneSecond - actor.x > gapBefore, 'walking cleanly does not outpace Source Contact');
+actor.x = playerAfterOneSecond;
+actor.y = 0;
+PRES.updatePresence(.1, playerAfterOneSecond, 0, () => { sourceCollision += 1; }, {
+  catchMode: 'source-checkpoint',
+  sourceContactTarget: { x: playerAfterOneSecond, y: 0 },
+  sourceContactSpeedRatio: PRES.PRESENCE.sourceContactSpeedRatio,
+  suppressContact: true,
+});
+assert.equal(sourceCollision, 0, 'Source proximity resolves contact without the player interacting');
+
 PRES.despawn();
 restore();
 console.log('presence sound-belief pursuit specs passed');

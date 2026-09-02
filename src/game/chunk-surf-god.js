@@ -66,7 +66,17 @@ export function buildChunkSurfGodPreset(id, options = {}) {
     { type: 'HAYSTACK_REACHED', origin: HAYSTACK_ORIGIN },
   );
   if (id === CHUNK_SURF_GOD_PRESET.HAYSTACK) {
-    position = { x: 0, y: HAYSTACK_ORIGIN.y + 6, facing: 0 };
+    // Face the run's actual still sheet. The old fixed centre-line drop could
+    // put the seeded sheet behind the camera (and inside a cloud of lower-
+    // priority readable pages), so the hook labelled HAYSTACK / SEARCH opened
+    // an incidental page instead of the transition the reviewer came to test.
+    const slot = state.interactivePageSlot ?? (state.seed >>> 0) % 12;
+    const row = Math.floor(slot / 4), col = slot % 4;
+    const page = {
+      x: -4.5 + col * 3,
+      y: HAYSTACK_ORIGIN.y + [8, 16, 24][row],
+    };
+    position = { x: page.x, y: page.y + 6, facing: 0 };
     return { state, position };
   }
 
@@ -99,7 +109,12 @@ export function buildChunkSurfGodPreset(id, options = {}) {
     { type: 'SOURCE_LIFT_COMPLETED', id: 'lift-fork', checkpointId: 'landing-fork' },
   );
   if (id === CHUNK_SURF_GOD_PRESET.FIRST_CONTACT) {
-    position = localPosition(0, SOURCE_TIER_BY_ID.fork.from - 8);
+    // Put the review body in genuinely open ground. Eight cells past the tier
+    // seam is only six cells from fork-room, inside the landmark protection
+    // radius, so the hook labelled TRAILING PURSUIT rendered HUSH / SUSPENDED
+    // forever. Twenty-four cells clears both the arrival grace and the authored
+    // landmark hold while leaving a long, straight sightline for turning back.
+    position = localPosition(0, SOURCE_TIER_BY_ID.fork.from - 24);
     return { state, position };
   }
 

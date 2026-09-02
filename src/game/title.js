@@ -7,15 +7,16 @@
 // filed yet instead of changing the top-level menu shape.
 
 import * as scenes from './scenes.js';
-import { uiSize, uiCenter, uiFill, uiText } from '../render/ui.js';
+import { uiSize, uiCenter, uiFill, uiText, uiWithAlpha } from '../render/ui.js';
 import { drawLocationIndicator, drawMachinePanel, drawVfdText } from '../render/presentation.js';
 import { createHitRegions } from '../render/hit-regions.js';
 import { drawVfdRow, vfdRowStyle } from '../render/vfd-select.js';
 import { UI_COLOR, activeTheme } from '../render/palette.js';
 import { getMeta, hasActiveRun } from './save.js';
 import * as AUDIO from '../audio/story-audio.js';
+import { monitorProgramMeasurement, monitorSnapshotForRms } from '../audio/monitor.js';
 import { promptLine } from './bindings.js';
-import { bootWeather, bootWeatherAudio, bootWeatherSettled, endBootWeather, renderBootWeather, stepBootWeather } from './boot-weather.js';
+import { bootWeather, bootWeatherAudio, drainBootThunder, renderBootWeather, stepBootWeatherTitleTail } from './boot-weather.js';
 import { transferRoomCopy } from './post-run-copy.js';
 
 const TITLE_CONFIRM_PROMPT = 'START NEW RUN? PRESS ENTER AGAIN';
@@ -72,6 +73,62 @@ function titleMenuLayout(body, itemCount) {
   };
 }
 
+// The strip is a 0..1 position, and the levels out here are tiny — the menu
+// hiss sits at 0.018 linear and the rain bed at 0.011, which is about -35 to
+// -39 dBFS. Mapped linearly, the whole menu would live in the first segment.
+// This is the window the instrument is scaled to: quiet-but-present at the
+// bottom, a thunder crack near the top.
+const STRIP_FLOOR_DB = -62;
+const STRIP_CEIL_DB = -14;
+
+export function envelopeToStrip(rms) {
+  const value = Number(rms) || 0;
+  if (!(value > 0)) return 0;
+  const db = 20 * Math.log10(value);
+  const t = (db - STRIP_FLOOR_DB) / (STRIP_CEIL_DB - STRIP_FLOOR_DB);
+  return Math.max(0, Math.min(1, t));
+}
+
+// WHAT THIS PROFILE IS. Facts about the save, in the order they are actionable:
+// a run you can resume outranks a count of runs you have finished.
+//
+// THE HUSH LINE IS GONE. `meta.hushMet` is set once by once('hush-met') and is
+// never cleared, so "THE HUSH HAS YOUR SIGNAL." appeared on every title screen
+// for the rest of that profile's life — a sentence written as a personal threat,
+// worn down into wallpaper by being permanent. It also outranked the unfinished
+// run, which is a fact that expires and that the player can act on. The flag
+// itself stays; terror.js still reads it. Nothing draws it any more.
+export function titleStateLine(meta = {}, { activeRun = false, filed = 0 } = {}) {
+  if (activeRun || meta?.leftMidRun) return { text: 'UNFINISHED RUN SAVED.', role: 'ui-amber' };
+  const returns = meta?.endingsSeen?.length || 0;
+  if (!returns) return { text: 'THE CASE FILE IS EMPTY.', role: 'ui-secondary' };
+  // A count, not an advert. The archive and the endings are rows on this screen;
+  // telling the player they are available while they are looking at them was the
+  // line doing nothing at all.
+  const parts = [`${returns} RETURN${returns === 1 ? '' : 'S'} FILED`];
+  if (filed > 0) parts.push(`${filed} SHEET${filed === 1 ? '' : 'S'}`);
+  return { text: parts.join('  \u00b7  '), role: 'ui-secondary' };
+}
+
+// WHAT THE ROW UNDER THE CURSOR DOES. One line each, in the register the rest of
+// the panel uses. The transfer room defers to post-run-copy so its two states
+// are still authored in one place.
+const TITLE_ROW_HELP = Object.freeze({
+  'continue': 'RESUME THE NIGHT YOU LEFT.',
+  'new-run': 'START A NEW NIGHT.',
+  'archive': 'ACHIEVEMENTS, RUN HISTORY AND ARCHIVED DOCUMENTS.',
+  'return-index': 'THE ENDINGS YOU HAVE REACHED, AND THE ONES YOU HAVE NOT.',
+  'beta-notice': 'WHAT THIS BUILD IS, AND WHAT IT IS NOT YET.',
+  'settings': 'AUDIO, DISPLAY, CONTROLS AND ACCESSIBILITY.',
+});
+
+export function titleRowHelp(item, { filed = 0 } = {}) {
+  if (!item) return '';
+  if (item.id === 'transfer-room') return transferRoomCopy({ filed }).short;
+  if (item.id === 'continue' && item.disabled) return 'NO RUN IN PROGRESS.';
+  return TITLE_ROW_HELP[item.id] || '';
+}
+
 export function makeTitleScene({
   buildLabel = '',
   onNewGame,
@@ -83,6 +140,7 @@ export function makeTitleScene({
   onBetaNotice = () => {},
   onAudioGate = () => {},
   onSelectionChange = () => {},
+  presentationState = () => null,
 } = {}) {
   const meta = getMeta();
   const replay = (meta.endingsSeen?.length || 0) > 0;
@@ -91,7 +149,7 @@ export function makeTitleScene({
   const activeRun = hasActiveRun();
 
   const items = [
-    { id: 'continue', label: 'continue', run: onContinue, disabled: !activeRun },
+    { id: 'continue', label: 'continue', run: onContinue, disabled: !activeRun, stay: true },
     { id: 'new-run', label: 'new run', run: onNewGame, confirms: true, stay: true },
     { id: 'archive', label: 'achievements', stay: true, run: onArchive },
     { id: 'return-index', label: 'endings', stay: true, run: onReturnIndex },
@@ -107,10 +165,25 @@ export function makeTitleScene({
   let previousSel = sel;
   let previousSelUntil = 0;
   let audioPrimed = false;
+  // What the instrument is actually hearing, and a slow envelope of it. See the
+  // block where they are drawn.
+  let programRms = 0;
+  let programEnvelope = 0;
+  let programPeak = 0;
+  let programClipped = false;
   let confirmNewRun = false;
   let t = 0;
   let menuColumns = 1;
   const hits = createHitRegions();
+  let a11yStatus=null;
+  function ensureA11y(){
+    const map=document.querySelector('.map')||document.querySelector('#map');
+    if(map){map.setAttribute('role','application');map.setAttribute('aria-label','Chunk Surfer case select. Use arrow keys to move and Enter or Space to confirm.');}
+    let node=document.getElementById('title-a11y-status');
+    if(!node){node=document.createElement('div');node.id='title-a11y-status';node.setAttribute('role','status');node.setAttribute('aria-live','polite');Object.assign(node.style,{position:'fixed',width:'1px',height:'1px',overflow:'hidden',clip:'rect(0 0 0 0)',clipPath:'inset(50%)',whiteSpace:'nowrap'});document.body.appendChild(node);}
+    a11yStatus=node;
+  }
+  function announceSelection(){if(!a11yStatus)return;const item=items[sel];a11yStatus.textContent=`${item?.label||'Menu item'}.${item?.disabled?' Unavailable.':''} ${titleRowHelp(item,{filed})}`;}
 
   const columns = () => menuColumns;
   const rowsPerColumn = () => Math.ceil(items.length / columns());
@@ -136,6 +209,7 @@ export function makeTitleScene({
     disarm();
     if (sound) AUDIO.menuMove();
     onSelectionChange(items[sel]?.id||'',sel);
+    announceSelection();
     return true;
   }
 
@@ -146,6 +220,7 @@ export function makeTitleScene({
       previousSelUntil = nowMs() + 90;
       sel = next;
       onSelectionChange(items[sel]?.id||'',sel);
+      announceSelection();
     }
     disarm();
     AUDIO.menuMove();
@@ -197,6 +272,7 @@ export function makeTitleScene({
     id: 'title',
     blocksInput: true,
     blocksWorld: true,
+    worldPresentation: 'visible',
     lensPreset: 'calm',
 
     enter() {
@@ -204,11 +280,14 @@ export function makeTitleScene({
       primeAudio();
       const map = document.querySelector('.map') || document.querySelector('#map');
       try { map?.setAttribute('tabindex', '0'); map?.focus({ preventScroll: true }); } catch (_) {}
+      ensureA11y();
       onSelectionChange(items[sel]?.id||'',sel);
+      announceSelection();
     },
 
     exit() {
       document.body.classList.remove('title-screen');
+      const map=document.querySelector('.map')||document.querySelector('#map');map?.removeAttribute('role');map?.removeAttribute('aria-label');a11yStatus?.remove?.();a11yStatus=null;
       AUDIO.stopMenuHiss();
     },
 
@@ -263,30 +342,59 @@ export function makeTitleScene({
 
     update(dt) {
       t += dt;
-      // THE LAST OF THE WEATHER LANDS HERE. The credits scene is removed and
-      // this one pushed inside a single scenes.update, so whatever was still in
-      // frame at 23.5s crosses the cut mid-flight. Calm brings it to rest
-      // rather than switching it off in mid-air, and then it is done for the
-      // session — backing out of a run to this menu must not start it again.
-      const weather = bootWeather();
-      if (!weather) return;
-      stepBootWeather(weather, dt, { presence: 0, settling: true, calm: true });
-      // The bed rides the same fade the last particles do, so the weather stops
-      // being audible at the moment it stops being visible — under the menu
-      // hiss, which primeAudio has already brought up. endBootWeather stops it.
-      bootWeatherAudio()?.update?.({ presence: weather.fade * 0.55, wind: weather.wind });
-      if (bootWeatherSettled(weather)) endBootWeather();
+      // ── THE INSTRUMENT READS THE ROOM IT IS STANDING IN ────────────────────
+      //
+      // Both meters on this panel were lying, in opposite directions. The header
+      // bargraph asked monitorSnapshot(), which measures SEMANTIC player noise
+      // and is flat zero outside a story run, so it never moved. The location
+      // strip below ran a 0.32Hz triangle off the scene clock, so it moved and
+      // meant nothing.
+      //
+      // There is real audio here — the menu hiss and the boot weather's rain —
+      // and there has been an AnalyserNode inline on the output bus the whole
+      // time: outputMonitor, between outGain and the destination, read by
+      // monitorProgramMeasurement(). It was being computed every frame for the
+      // self-audio mask and shown to nobody.
+      //
+      // monitorSnapshot is deliberately NOT program audio (see the header of
+      // audio/monitor.js — the exposure meter must never read the game's own
+      // output), so this does not repoint it. It hands the panel a different
+      // reading for a different question: not "how exposed are you", which is
+      // meaningless in a menu, but "what is on the input".
+      const program = monitorProgramMeasurement?.();
+      programRms = program?.active ? (Number(program.rms) || 0) : 0;
+      // Fast up, slow down — an envelope follower, so a thunder crack reads as a
+      // hit that decays rather than a spike gone by the next frame. dt-scaled so
+      // it is the same shape whatever the frame rate.
+      const attack = 1 - Math.exp(-dt * 14);
+      const release = 1 - Math.exp(-dt * 1.6);
+      programEnvelope += (programRms - programEnvelope)
+        * (programRms > programEnvelope ? attack : release);
+      programPeak = Math.max(programRms, Number(program?.peak) || 0);
+      programClipped = !!program?.clipped;
+
+      // Weather is a launch bridge now, not a credits-only decoration. Keep
+      // the same storm transport alive under CASE SELECT and hand it to the
+      // world acoustics when play begins.
+      const weather=bootWeather();
+      if(!weather)return;
+      // CASE SELECT owns no emitter. The exact particles that survived the
+      // credits keep their normal trajectories while one shared presentation
+      // envelope eases their visibility away.
+      stepBootWeatherTitleTail(weather,dt,{stormActive:true});
+      bootWeatherAudio()?.update?.({presence:.78,wind:weather.wind});
+      for(const thunder of drainBootThunder(weather))bootWeatherAudio()?.strike?.(thunder);
     },
 
     render() {
+      const presentationAlpha=Math.max(0,Math.min(1,Number(presentationState?.()?.menuAlpha??1)));
+      return uiWithAlpha(presentationAlpha,()=>{
       hits.reset();
 
-      const { cols, rows } = uiSize();
-      uiFill(0, 0, cols, rows, UI_COLOR.glass);
-      // On the ground, under the panel: the menu comes up over the end of the
-      // weather, not the other way round.
-      renderBootWeather(bootWeather());
+      const weather=bootWeather();
+      if(weather)renderBootWeather(weather,{alpha:weather.presentationAlpha});
 
+      const { cols, rows } = uiSize();
       const w = Math.min(78, cols - 4);
       const estimatedBodyW = Math.max(1, w - 6);
       const estimatedColumns = titleMenuColumnCount(estimatedBodyW, items.length);
@@ -300,6 +408,13 @@ export function makeTitleScene({
         source: '4417-C',
         footerParts: [{ action: 'select', label: 'SELECT' }, { action: 'confirm', label: 'CONFIRM' }],
         meter: true,
+        // Real level, through the same dB mapping, ballistics and peak hold the
+        // recorder's meter uses (render/meter.js) — so the title shows the same
+        // machine behaving the same way, which is what it was always claiming.
+        meterSnapshot: monitorSnapshotForRms(programRms, {
+          peak: programPeak,
+          clipped: programClipped,
+        }),
       });
 
       const display = 'CHUNK SURFER';
@@ -317,38 +432,55 @@ export function makeTitleScene({
       }
       drawVfdText(titleX, body.y + 1, display, {
         scale: titleScale,
-        alpha: Math.max(0.18, pwm) * scanPhase * blank,
+        alpha: Math.max(0.82, Math.max(0.18, pwm) * scanPhase * blank),
       });
-      // The strip, sweeping. There used to be a row of ░▒▓ shade glyphs above
-      // it, chasing left to right — at 0.20 alpha it read as noise sitting on
-      // top of the instrument rather than as part of it. The indicator's own
-      // graduations occupy that row now, so the title screen shows the same
-      // machine the recorder does instead of a decorated cousin of it.
-      const phase = (t * 0.32) % 1;
-      const tri = phase < 0.5 ? phase * 2 : (1 - phase) * 2;
-      const stepped = Math.floor(tri * 16) / 16;
+      // The strip. There used to be a row of ░▒▓ shade glyphs above it, chasing
+      // left to right — at 0.20 alpha it read as noise sitting on top of the
+      // instrument rather than as part of it. The indicator's own graduations
+      // occupy that row now, so the title screen shows the same machine the
+      // recorder does instead of a decorated cousin of it.
+      //
+      // AND IT IS NO LONGER SWEEPING ON A TIMER. drawLocationIndicator has no dB
+      // mapping and no ballistics of its own — it lights everything left of a
+      // mark — so it is handed the ENVELOPE rather than the raw level, and the
+      // envelope is what keeps a noise floor from reading as jitter across two
+      // segments. Weather moves it; silence lets it fall back.
+      //
+      // Quantised, because the widget is a row of graduations and a mark that
+      // slides continuously between two of them reads as a rendering fault.
+      const level = envelopeToStrip(programEnvelope);
       drawLocationIndicator(
         Math.max(body.x + 8, Math.floor((cols - 28) / 2)),
         body.y + 4,
         28,
-        stepped,
+        Math.floor(level * 16) / 16,
         { theme: 'amber', rows: 2 },
       );
       uiCenter(body.y + 7, 'FIVE ROOM TONES. ONE BUILDING LISTENING.', 'ui-primary');
 
+      // ── TWO LINES, TWO JOBS ────────────────────────────────────────────────
+      //
+      // This used to be ONE row resolving five unrelated things by if/else
+      // order: help for the hovered row, a HUSH warning, a save fact, an advert
+      // for two menu rows that were already on screen, and an empty state. They
+      // suppressed each other. Hovering the transfer room hid the warning;
+      // meeting the HUSH hid the fact that you had a run in progress.
+      //
+      // So: the upper line is WHAT THIS PROFILE IS, the lower is WHAT THE ROW
+      // UNDER THE CURSOR DOES, and every row has one now rather than the
+      // transfer room being the only one that answered.
+      //
+      // The warm-up occupies the same two rows rather than its own, so the band
+      // does not change shape at 0.85s. The machine says what it is, and then it
+      // says where you are.
       if (t < 0.85) {
-        uiCenter(body.y + 8, 'STANDBY / CASE FILE / SOURCE 4417-C', 'ui-label', 0.34);
-        uiCenter(body.y + 10, 'AUDIOCORP LOCAL MONITOR READY', 'ui-secondary', 0.28);
+        uiCenter(body.y + 9, 'STANDBY / CASE FILE / SOURCE 4417-C', 'ui-label', 0.78);
+        uiCenter(body.y + 10, 'AUDIOCORP LOCAL MONITOR READY', 'ui-secondary', 0.78);
+      } else {
+        const state = titleStateLine(meta, { activeRun, filed });
+        uiCenter(body.y + 9, state.text, state.role);
+        uiCenter(body.y + 10, titleRowHelp(items[sel], { filed }), 'ui-secondary');
       }
-
-      if (items[sel]?.id === 'transfer-room') {
-        const help = transferRoomCopy({ filed });
-        uiCenter(body.y + 9, help.short, help.enabled ? 'ui-amber' : 'ui-secondary');
-      }
-      else if (meta.hushMet) uiCenter(body.y + 9, 'THE HUSH HAS YOUR SIGNAL.', 'ui-danger');
-      else if (meta.leftMidRun) uiCenter(body.y + 9, 'UNFINISHED RUN SAVED.', 'ui-danger');
-      else if (replay) uiCenter(body.y + 9, 'ENDINGS AND ACHIEVEMENTS ARE AVAILABLE.', 'ui-amber');
-      else uiCenter(body.y + 9, 'THE CASE FILE IS EMPTY.', 'ui-secondary');
 
       const menuY = body.y + 12;
       const layout = titleMenuLayout(body, items.length);
@@ -420,6 +552,7 @@ export function makeTitleScene({
         const buildY = Math.max(body.y + 1, y + h - 5);
         drawRightText(buildXRight, buildY, buildText, 'ui-label', 0.62);
       }
+      });
     },
   };
 }

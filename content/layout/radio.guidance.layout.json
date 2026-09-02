@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "documentId": "radio.guidance",
+  "positions": {
+    "opening": {"x":80,"y":60},
+    "route-first": {"x":440,"y":60},
+    "route-repeat": {"x":800,"y":60},
+    "route-unresolved": {"x":1160,"y":60},
+    "hush-near": {"x":440,"y":300},
+    "post-contact": {"x":800,"y":300}
+  },
+  "regions": {}
+}

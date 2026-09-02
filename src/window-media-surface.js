@@ -14,7 +14,7 @@ const grip=document.getElementById('grip');
 const assetById=new Map((mediaManifest.assets||[]).map((asset)=>[asset.id,asset]));
 let envelope=null,assignment=null,source=null,video=null,poster=null;
 let gl=null,program=null,texture=null,staleTexture=null,outgoingTexture=null,raf=0;
-let frozen=false,lastSeekAt=0,lastStaleAt=0,staleReady=false,assignmentSerial=0;
+let frozen=false,scoreSuspended=false,lastSeekAt=0,lastStaleAt=0,staleReady=false,assignmentSerial=0;
 let transition={mode:'cut',startedAt:0,endsAt:0},scoreCycle=-1,executedTimed=new Set(),currentRevision=0,currentSession='';
 const eventTimers=new Set();
 
@@ -131,6 +131,7 @@ function resetScoreCycle(cycle){
   loadAssignment(envelope.score.initial,{transition:'cut',durationMs:0});
 }
 function advanceScore(){
+  if(scoreSuspended)return;
   const score=envelope?.score;if(!score)return;
   const raw=Math.max(0,Date.now()-Number(score.epochMs||0)),duration=Math.max(1,Number(score.durationMs)||1);
   const cycle=score.loop?Math.floor(raw/duration):0;
@@ -170,14 +171,28 @@ async function announceReady(){try{await emit('window-media-ready',{protocol:WIN
 async function acceptEnvelope(payload){
   const label=currentLabel(),validation=validatePaneScoreEnvelope(payload,{targetLabel:label,currentSession,currentRevision});
   if(!validation.ok)return false;
-  clearEventTimers();envelope={...payload,desktopOrigin:payload.desktopOrigin||{x:0,y:0}};currentRevision=Number(payload.revision);currentSession=String(payload.sessionToken);
+  clearEventTimers();scoreSuspended=false;envelope={...payload,desktopOrigin:payload.desktopOrigin||{x:0,y:0}};currentRevision=Number(payload.revision);currentSession=String(payload.sessionToken);
   scoreCycle=-1;executedTimed.clear();document.documentElement.dataset.windowLabel=label;document.documentElement.dataset.revision=String(currentRevision);document.body.setAttribute('aria-label',String(payload.description||'Game-owned media fragment'));
-  resetScoreCycle(0);
+  resetScoreCycle(0);document.documentElement.dataset.scoreHeld='false';
   try{await emit('window-media-accepted',{protocol:WINDOW_MEDIA_PROTOCOL,label,targetLabel:payload.targetLabel,sessionToken:payload.sessionToken,revision:payload.revision,cueId:payload.cueId,paneId:payload.paneId,contentId:windowMediaContentId(payload.score.initial)});}catch(_){}
   return true;
 }
+function matchesActiveScore(payload){
+  return !!envelope
+    && Number(payload?.protocol)===WINDOW_MEDIA_PROTOCOL
+    && String(payload?.targetLabel||'')===currentLabel()
+    && String(payload?.sessionToken||'')===currentSession
+    && Number(payload?.revision)===currentRevision
+    && String(payload?.cueId||'')===String(envelope.cueId||'')
+    && String(payload?.paneId||'')===String(envelope.paneId||'');
+}
+function holdScore(payload){
+  if(!matchesActiveScore(payload))return false;
+  scoreSuspended=true;clearEventTimers();document.documentElement.dataset.scoreHeld='true';
+  return true;
+}
 function triggerEvent(payload){
-  if(!envelope||String(payload?.targetLabel)!==currentLabel()||String(payload?.sessionToken)!==currentSession||Number(payload?.revision)!==currentRevision||String(payload?.cueId)!==String(envelope.cueId))return false;
+  if(!matchesActiveScore(payload))return false;
   const event=String(payload.event||''),lead=Math.max(0,Number(payload.effectiveAtMs)||Date.now())-Date.now();
   for(const cue of envelope.score?.cues||[]){
     if(cue.event!==event)continue;
@@ -198,6 +213,7 @@ async function boot(){
   catch(error){canvas.dataset.renderer='shader-error';fallback.style.display='block';console.error('window media shader unavailable',error);}
   try{await listen('window-media-score',({payload})=>{void acceptEnvelope(payload);});}catch(_){}
   try{await listen('window-media-trigger',({payload})=>triggerEvent(payload));}catch(_){}
+  try{await listen('window-media-score-hold',({payload})=>holdScore(payload));}catch(_){}
   try{await listen('window-media-probe',()=>{void announceReady();});}catch(_){}
   try{await listen('window-media-freeze',({payload})=>{if(!envelope||payload?.cueId!==envelope.cueId)return;executeAction({type:'frozen',frozen:!!payload.frozen},'external-freeze');});}catch(_){}
   try{await listen('window-media-origin',({payload})=>{if(!envelope||payload?.cueId!==envelope.cueId)return;envelope={...envelope,desktopOrigin:payload.desktopOrigin||envelope.desktopOrigin};});}catch(_){}

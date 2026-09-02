@@ -36,18 +36,18 @@
       "lines": [
         {
           "who": "radio",
-          "text": "4417-C? You in yet?",
+          "text": "4417-C? Just checkin' in. You in yet?",
           "id": "start.line.1"
         }
       ],
       "choices": [
         {
-          "text": "Yeah. I'm in.",
+          "text": "Yeah, that's me. I'm inside, no problems. Basement first.",
           "goto": "identify",
           "id": "start.choice.1"
         },
         {
-          "text": "Can you confirm the room list?",
+          "text": "Just checking: five room tones, one minute apiece?",
           "goto": "work",
           "id": "start.choice.2"
         },
@@ -70,17 +70,17 @@
       "lines": [
         {
           "who": "me",
-          "text": "Yeah. 4417-C. I'm in. Basement first.",
+          "text": "Yeah, that's me. I'm inside, no problems. Basement first.",
           "id": "identify.line.1"
         },
         {
           "who": "radio",
-          "text": "Got you. Call again around the hour—if I'm still on this desk.",
+          "text": "Got you. Do your level check in the Get In, then take the main basement stair to Studio B3. Call again around the hour—or if the plan stops making sense.",
           "id": "identify.line.2"
         },
         {
           "who": "direction",
-          "text": "Paper slides across a desk. A laugh in the room is cut off when the carrier closes.",
+          "text": "Paper slides across a desk. A laugh in the room is cut off when the radio transmission ends.",
           "hold": 2.2,
           "id": "identify.line.3"
         }
@@ -103,12 +103,12 @@
         },
         {
           "who": "radio",
-          "text": "That's it. Hands off the case, torch off while you're rolling.",
+          "text": "That's it. Hands off the case, torch off while you're rolling. Studio B3 first. Call if you lose the route.",
           "id": "work.line.2"
         },
         {
           "who": "direction",
-          "text": "A telephone rings once behind the voice. The carrier clicks shut.",
+          "text": "A telephone rings once behind the voice. The radio hushes shut.",
           "hold": 1.8,
           "id": "work.line.3"
         }
@@ -131,7 +131,7 @@
         },
         {
           "who": "radio",
-          "text": "Martin. Front desk relay. For the next twenty minutes, anyway.",
+          "text": "Martin. Front desk relay. I've got the old floor plan, so call if you get turned around.",
           "id": "channel.line.2"
         },
         {

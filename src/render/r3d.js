@@ -14,6 +14,7 @@
 // module only owns facing (N/E/S/W) and the camera.
 
 import { assetUrl } from '../platform/paths.js';
+import { FRONT_END_PLATE_PRESETS, normalizeFrontEndPlate } from './front-end-plate.js';
 import { AMBIENT_PLACE_SCALE, CELL, EYE as EYE_METERS, MATERIAL, PLAN_SCALE } from '../data/floorplan/legend.js';
 import * as P3 from './props3d.js';
 import * as HZ from './horizon3d.js';
@@ -2422,6 +2423,12 @@ uniform float uSourceEmergency;
 uniform float uSourceWhiteout;
 uniform float uSourceTorchMode;
 uniform float uSourceTorchPower;
+uniform float uFrontEndAmount;
+uniform float uFrontEndDetailRetention;
+uniform float uFrontEndChromaRetention;
+uniform float uFrontEndExposureStops;
+uniform float uFrontEndShoulder;
+uniform float uFrontEndToe;
 out vec4 o;
 void main(){
   vec2 uv = gl_FragCoord.xy / uRes;
@@ -2506,6 +2513,35 @@ void main(){
   float eWash=clamp(uSourceEmergency*ePulse*eMask,0.0,.94);
   vec3 emergencyRed=vec3(max(.82,c.r*1.18+.18),c.g*.025,c.b*.012);
   c=mix(c,emergencyRed,eWash);
+
+  // FRONT-END DENSITY PLATE. This is deliberately content-driven: no radial
+  // vignette and no UI-position glow. At amount zero it is a strict identity.
+  float fe=clamp(uFrontEndAmount,0.0,1.0);
+  if(fe>0.0001){
+    float centerLum=dot(c,vec3(.2126,.7152,.0722));
+    vec2 texel=1.0/uRes;
+    float neighborLum=(
+      dot(texture(uSrc,uv+vec2(texel.x,0.0)).rgb,vec3(.2126,.7152,.0722))+
+      dot(texture(uSrc,uv-vec2(texel.x,0.0)).rgb,vec3(.2126,.7152,.0722))+
+      dot(texture(uSrc,uv+vec2(0.0,texel.y)).rgb,vec3(.2126,.7152,.0722))+
+      dot(texture(uSrc,uv-vec2(0.0,texel.y)).rgb,vec3(.2126,.7152,.0722))
+    )*.25;
+    float low=mix(centerLum,neighborLum,.45);
+    float detail=centerLum-low;
+    float targetLum=low+detail*mix(1.0,clamp(uFrontEndDetailRetention,0.0,1.0),fe);
+    c*=targetLum/max(centerLum,.0001);
+    c*=exp2(uFrontEndExposureStops*fe);
+    c=c/(vec3(1.0)+c*max(0.0,uFrontEndShoulder)*fe);
+    float y=dot(c,vec3(.2126,.7152,.0722));
+    float shadowZone=smoothstep(.015,.13,y)*(1.0-smoothstep(.13,.34,y));
+    c+=vec3(shadowZone*max(0.0,uFrontEndToe)*fe);
+    float y2=dot(c,vec3(.2126,.7152,.0722));
+    vec3 grey=vec3(y2);
+    float chroma=length(c-grey);
+    float practicalProtect=smoothstep(.16,.42,chroma)*.18;
+    float retention=clamp(mix(1.0,uFrontEndChromaRetention,fe)+practicalProtect*fe,0.0,1.0);
+    c=mix(grey,c,retention);
+  }
   o=vec4(c,1.0);
 }`;
 
@@ -3948,6 +3984,10 @@ function pixelMeshU(name) {
   return pixelMeshUniformCache.get(name);
 }
 
+let frontEndPlate = normalizeFrontEndPlate(FRONT_END_PLATE_PRESETS.gameplay);
+export function r3dSetFrontEndPlate(value='gameplay'){ frontEndPlate=normalizeFrontEndPlate(value); return {...frontEndPlate}; }
+export function r3dFrontEndPlate(){ return {...frontEndPlate}; }
+
 function postU(name) {
   if (!postUniformCache.has(name)) postUniformCache.set(name, gl.getUniformLocation(progPost, name));
   return postUniformCache.get(name);
@@ -5371,6 +5411,12 @@ export function r3dFrame(state) {
   gl.uniform1f(postU('uSourceWhiteout'),sourceWhiteoutStrength);
   gl.uniform1f(postU('uSourceTorchMode'),sourceTorchMode);
   gl.uniform1f(postU('uSourceTorchPower'),torchPower);
+  gl.uniform1f(postU('uFrontEndAmount'),frontEndPlate.amount);
+  gl.uniform1f(postU('uFrontEndDetailRetention'),frontEndPlate.detailRetention);
+  gl.uniform1f(postU('uFrontEndChromaRetention'),frontEndPlate.chromaRetention);
+  gl.uniform1f(postU('uFrontEndExposureStops'),frontEndPlate.exposureStops);
+  gl.uniform1f(postU('uFrontEndShoulder'),frontEndPlate.shoulder);
+  gl.uniform1f(postU('uFrontEndToe'),frontEndPlate.toe);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
 }
 

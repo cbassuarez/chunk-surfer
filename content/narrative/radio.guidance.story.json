@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "id": "radio.guidance",
+  "title": "Radio · manual guidance",
+  "status": "active",
+  "entry": "opening",
+  "entries": [
+    "opening",
+    "route-first",
+    "route-repeat",
+    "route-unresolved",
+    "hush-near",
+    "post-contact"
+  ],
+  "tags": ["radio", "guidance", "repeatable"],
+  "notes": "Repeatable manual-call material. Runtime routing and interpolation are authoritative; this document never owns one-shot milestones.",
+  "regions": [
+    {
+      "id": "radio.guidance.routes",
+      "title": "Dependable guidance",
+      "kind": "sequence",
+      "color": "#2f6f64",
+      "nodeIds": ["opening", "route-first", "route-repeat", "route-unresolved"]
+    },
+    {
+      "id": "radio.guidance.danger",
+      "title": "Martin cannot explain it",
+      "kind": "branch",
+      "color": "#70494d",
+      "nodeIds": ["hush-near", "post-contact"]
+    }
+  ],
+  "nodes": {
+    "opening": {
+      "id": "opening",
+      "type": "dialogue",
+      "art": {"id":"walkie","mode":"hero","caption":"Field radio / front desk relay","status":"LIVE"},
+      "lines": [
+        {"id":"opening.line.1","who":"me","text":"Martin, route check. Where am I going?"},
+        {"id":"opening.line.2","who":"radio","text":"{ROUTEFIRST}"},
+        {"id":"opening.line.3","who":"radio","text":"Call me again if the signs stop matching. I've got the old floor plan open here."}
+      ]
+    },
+    "route-first": {
+      "id": "route-first",
+      "type": "dialogue",
+      "art": {"id":"walkie","mode":"hero","caption":"Field radio / route desk","status":"LIVE"},
+      "lines": [
+        {"id":"route-first.line.1","who":"me","text":"Martin. Give me the next room."},
+        {"id":"route-first.line.2","who":"radio","text":"{TARGET}. {FLOOR}. Use {LANDMARK}."},
+        {"id":"route-first.line.3","who":"radio","text":"Call again when you've moved. I can narrow it from there."}
+      ]
+    },
+    "route-repeat": {
+      "id": "route-repeat",
+      "type": "dialogue",
+      "art": {"id":"walkie","mode":"hero","caption":"Field radio / route desk","status":"LIVE"},
+      "lines": [
+        {"id":"route-repeat.line.1","who":"me","text":"Route check. Still heading for {TARGET}."},
+        {"id":"route-repeat.line.2","who":"radio","text":"{ROUTEREPEAT}"}
+      ]
+    },
+    "route-unresolved": {
+      "id": "route-unresolved",
+      "type": "dialogue",
+      "art": {"id":"walkie","mode":"hero","caption":"Field radio / paper plan","status":"UNRESOLVED"},
+      "lines": [
+        {"id":"route-unresolved.line.1","who":"me","text":"Martin, I need a route."},
+        {"id":"route-unresolved.line.2","who":"radio","text":"The plan I've got does not match where you are now. Find a signed landing and call me from there. I won't guess."}
+      ]
+    },
+    "hush-near": {
+      "id": "hush-near",
+      "type": "dialogue",
+      "art": {"id":"walkie","mode":"hero","caption":"Field radio / carrier under strain","status":"LIVE"},
+      "lines": [
+        {"id":"hush-near.line.1","who":"me","text":"Martin. There's something in this room. I can feel it moving."},
+        {"id":"hush-near.line.2","who":"radio","text":"Something like what? No, don't keep transmitting. Leave the room you are in and find a signed landing."},
+        {"id":"hush-near.line.3","who":"radio","text":"Call me from there. I can place a landing. I cannot place whatever you mean."}
+      ]
+    },
+    "post-contact": {
+      "id": "post-contact",
+      "type": "dialogue",
+      "art": {"id":"walkie","mode":"hero","caption":"Field radio / clipped signal","status":"LIVE"},
+      "lines": [
+        {"id":"post-contact.line.1","who":"me","text":"Martin. Something just made contact. I did not see it properly."},
+        {"id":"post-contact.line.2","who":"radio","text":"Did you fall? Are you bleeding? Listen—get out of that room and stop transmitting while you move."},
+        {"id":"post-contact.line.3","who":"radio","text":"Find a landing you can name. Call once from there. That's all I can do from this desk."}
+      ]
+    }
+  }
+}

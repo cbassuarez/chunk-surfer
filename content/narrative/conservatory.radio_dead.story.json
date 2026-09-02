@@ -30,7 +30,10 @@
         {
           "who": "direction",
           "text": "The carrier lamp stays dark. Pressing transmit gives one dry switch click at your thumb.",
-          "id": "start.line.1"
+          "id": "start.line.1",
+          "cues": [
+            "radio-dead-click"
+          ]
         },
         {
           "who": "you",

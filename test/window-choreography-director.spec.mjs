@@ -12,6 +12,8 @@ import {
   windowChoreographyPolicy,
 } from '../src/platform/window-choreography.js';
 
+const mainSource=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
+
 test('the director exposes the complete authored primitive vocabulary',()=>{
   assert.deepEqual(WINDOW_CHOREOGRAPHY_PRIMITIVES,[
     'Frame','Glide','Cinch','Bloom','Dock','Breach','Restore','Split','Cast',
@@ -71,14 +73,65 @@ test('prewarming a battle does not breach; its first actual fireball does',async
   director.prepareBattle({battleId:'natatorium'});
   assert.equal(calls.length,0,'arrival and prewarm leave the real frame untouched');
   await director.fireballCast({battleId:'natatorium'});
+  // The metrics probe comes FIRST and is the whole point: whether to leave
+  // fullscreen is measured from the window, never read out of the settings file.
   assert.deepEqual(calls.map(([command])=>command),[
-    'chunk_window_choreography_begin','chunk_window_choreography_execute',
+    'chunk_window_metrics','chunk_window_choreography_begin','chunk_window_choreography_execute',
   ]);
   await director.fireballCast({battleId:'natatorium'});
-  assert.equal(calls.length,2,'the battle breaches once, not once per cast');
+  assert.equal(calls.length,3,'the battle breaches once, not once per cast');
   assert.deepEqual(introductions.map((event)=>event.battleId),['natatorium'],'the durable title unlock is written by the first real Natatorium cast only');
   await director.finishBattle({result:'win'});
   assert.equal(calls.at(-1)[0],'chunk_window_choreography_restore');
+});
+
+// LEAVING FULLSCREEN IS DECIDED BY MEASUREMENT, NOT BY THE SETTINGS FILE.
+//
+// This was the bug: restoreGameMode came from a persisted display-mode string,
+// so a fullscreen the app did not itself perform — the macOS green button, or
+// Cmd+Ctrl+F — was invisible to it. The exit was skipped, base_center then
+// refused every surface because nothing composites over a Space, and the whole
+// authored cue silently did nothing until the window was restored by hand.
+//
+// display_policy.rs reports the three states separately now. Any of them means
+// "leave first".
+test('the fullscreen exit is driven by measured window state, not the saved setting',async()=>{
+  const run=async(metrics,displayMode)=>{
+    let begun=null;
+    const runtimeApi={invoke:async(command,payload)=>{
+      if(command==='chunk_window_metrics')return metrics;
+      if(command==='chunk_window_choreography_begin'){begun=payload.request;return true;}
+      return true;
+    }};
+    const director=createWindowChoreographyDirector({
+      runtimeApi,documentApi:null,waitFn:async()=>{},
+      tokenFactory:()=>'t',getDisplayMode:()=>displayMode,
+      effects:{sessionToken:()=>'s',showPanes:async()=>true,hidePanes:async()=>true},
+    });
+    await director.fireballCast({battleId:'natatorium'});
+    return begun;
+  };
+
+  // The reported case: settings say windowed, the player is in a macOS Space.
+  assert.equal((await run({native_fullscreen:true,simple_fullscreen:false,fills_screen:true},'windowed'))
+    .restoreGameMode,true,'a native Space is left even though the setting says windowed');
+
+  // Game mode, which the old code did get right.
+  assert.equal((await run({native_fullscreen:false,simple_fullscreen:true,fills_screen:true},'game-mode'))
+    .restoreGameMode,true,'simple fullscreen is still left');
+
+  // A frame dragged out to cover the screen: no mode was ever set, but a cue
+  // still cannot move a window that has nowhere to move to.
+  assert.equal((await run({native_fullscreen:false,simple_fullscreen:false,fills_screen:true},'windowed'))
+    .restoreGameMode,true,'a frame that fills the monitor counts');
+
+  // Genuinely windowed: nothing to leave.
+  assert.equal((await run({native_fullscreen:false,simple_fullscreen:false,fills_screen:false},'windowed'))
+    .restoreGameMode,false,'a real window is left alone');
+
+  // The stale setting is the fallback ONLY when the probe itself fails.
+  assert.equal((await run(null,'game-mode')).restoreGameMode,true,'falls back to the setting when metrics fail');
+  assert.equal((await run(null,'windowed')).restoreGameMode,false);
 });
 
 test('first-launch title stays sealed and a pending return-title reveal is stale-token safe',async()=>{
@@ -160,6 +213,22 @@ test('near Source proper opens the required Aperture instead of the old enter pa
   assert.equal(shown?.compositionId,'source:aperture');
   assert.equal(shown?.completion?.holdMs,650);
   assert.equal(director.interactSource(),false,'the retired enter pane cannot bypass the arrangement');
+});
+
+test('the Aperture explains itself and God hooks distinguish puzzle from first lift',()=>{
+  const hud=mainSource.slice(mainSource.indexOf('function drawSourceApertureHud'),mainSource.indexOf('function drawSourceHud'));
+  for(const instruction of[
+    'DRAG THE FOUR LOOSE WINDOWS INTO ONE APERTURE.',
+    'THE TWO IRISES TOUCH SIDE BY SIDE.',
+    'THE ECLIPSE TOUCHES ABOVE THEIR SEAM.',
+    'THE CATHEDRAL TOUCHES BELOW IT.',
+    'HOLD THE FINISHED SHAPE STILL.',
+  ])assert.match(hud,new RegExp(instruction.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+  assert.match(hud,/ASSIST AVAILABLE IN/);
+  assert.match(hud,/AUTO-ASSEMBLE/);
+  assert.match(mainSource,/SOURCE \/ APERTURE PUZZLE[\s\S]*?apertureComplete:false/);
+  assert.match(mainSource,/SOURCE \/ FIRST LIFT[\s\S]*?apertureComplete:true/);
+  assert.match(mainSource,/FINAL \/ CONTACT FIGHT[\s\S]*?commitContact:true/);
 });
 
 test('leaving Source cancels its transaction and restores the desktop before Horizon',async()=>{

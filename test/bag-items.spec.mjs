@@ -50,7 +50,7 @@ test('the action resolver exposes the full semantic descriptor contract', () => 
     ['recorder', {}, 'recorder-command', 'MONITOR', BAG_ACTION_MODE.COMMAND],
     ['recorder', { listening: true }, 'recorder-command', 'ROLL', BAG_ACTION_MODE.COMMAND],
     ['map', {}, 'map-open', 'OPEN MAP', BAG_ACTION_MODE.OPEN],
-    ['radio', {}, 'radio-deploy', 'DEPLOY RADIO', BAG_ACTION_MODE.COMMAND],
+    ['radio', {}, 'radio-call', 'CALL FRONT DESK', BAG_ACTION_MODE.DIALOG],
     ['radio', { present: false, dropped: true }, 'radio-show-map', 'SHOW ON MAP', BAG_ACTION_MODE.OPEN],
     ['interface', {}, 'inspect-interface', 'INSPECT', BAG_ACTION_MODE.DIALOG],
     ['tuning-fork', {}, 'inspect-tuning-fork', 'INSPECT', BAG_ACTION_MODE.DIALOG],
@@ -80,6 +80,19 @@ test('the action resolver exposes the full semantic descriptor contract', () => 
   const missing = resolveBagItemAction('radio', { present: false, missing: true });
   assert.equal(missing.enabled, false);
   assert.equal(missing.reason, 'ITEM NOT CARRIED');
+  for (const [context, reason] of [
+    [{radioDead:true}, 'NO CARRIER'],
+    [{radioUnavailableReason:'NO FRONT DESK SIGNAL HERE'}, 'NO FRONT DESK SIGNAL HERE'],
+    [{recording:true}, 'NOT WHILE RECORDING'],
+    [{listening:true}, 'RECORDER CHANNEL OPEN'],
+    [{inCombat:true}, 'NOT WHILE IT IS LOOKING AT YOU'],
+    [{radioChannelOccupied:true}, 'CHANNEL OCCUPIED'],
+  ]) {
+    const disabled = resolveBagItemAction('radio', context);
+    assert.equal(disabled.id, 'radio-call');
+    assert.equal(disabled.enabled, false);
+    assert.equal(disabled.reason, reason);
+  }
   assert.equal(resolveBagItemAction('tuning-fork',{sourceTargetFocused:true}).id,'inspect-tuning-fork',
     'Source focus cannot turn the combat fork into an exploration command');
 });

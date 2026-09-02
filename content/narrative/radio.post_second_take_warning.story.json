@@ -127,7 +127,10 @@
           },
           "text": "A dry relay click comes through first. Then a chair scrapes beside his microphone.",
           "hold": 2,
-          "id": "interference.line.3"
+          "id": "interference.line.3",
+          "cues": [
+            "radio-dry-click"
+          ]
         },
         {
           "who": "radio",

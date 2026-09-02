@@ -164,9 +164,9 @@ test('radio keeps one pending cue instead of overwriting it', () => {
   assert.equal(pendingRadioCue().reason, 'first');
 });
 
-test('radio dialogue trees have choices, terminals, and walkie art', () => {
+test('radio dialogue trees preserve authored branches and the alternate rupture is terminal', () => {
   assert.ok(STORY_ART.walkie);
-  for (const cue of Object.values(RADIO_CUES)) {
+  for (const cue of [RADIO_CUES.INITIAL,RADIO_CUES.POST_SECOND,RADIO_CUES.PRE_THIRD]) {
     const nodes = radioDialogue(cue, { roomLabel: 'The Natatorium' });
     assert.ok(nodes.start?.choices?.length >= 2, cue);
     assert.equal(nodes.start.art.id, 'walkie', cue);
@@ -176,9 +176,51 @@ test('radio dialogue trees have choices, terminals, and walkie art', () => {
       assert.equal(nodes[choice.goto].choices, undefined, `${cue}:${choice.goto} should terminate`);
     }
   }
+  const rupture=radioDialogue(RADIO_CUES.HUSH_RUPTURE,{roomLabel:'The Natatorium'});
+  assert.equal(rupture.start.art.id,'walkie');
+  assert.equal(rupture.start.choices,undefined);
+  assert.ok(rupture.start.lines.length>=5);
+  assert.equal(rupture.start.lines.at(-1).cue,'radio-rupture');
+});
+
+test('radio breakdown documents never trigger the generic scream cue',()=>{
+  const registry=readFileSync(new URL('../content/audio/audio-project.audio.json',import.meta.url),'utf8');
+  const project=JSON.parse(registry);
+  const radioTriggers=project.triggers.filter((trigger)=>trigger.event.includes('radio.pre_third_room_breakdown')||trigger.event.includes('radio.hush_help_rupture'));
+  assert.ok(radioTriggers.length>=8);
+  assert.equal(radioTriggers.some((trigger)=>trigger.cueId==='scream'),false);
+  for(const id of ['radio-carrier-open','radio-dry-click','radio-speaker-pop-dead','radio-clipped-return','radio-dead-click','radio-rupture']){
+    const cue=project.cues.find((candidate)=>candidate.id===id);
+    assert.ok(cue,`${id} exists`);
+    assert.ok(cue.layers.every((layer)=>layer.assetId==='asset.game.recorder'||layer.assetId==='asset.game.slides_keys_and_radio'),`${id} uses the equipment bank`);
+    assert.notEqual(cue.acoustic?.emitsWorldNoise,true,`${id} cannot alert HUSH before the modal closes`);
+  }
 });
 
 test('a deployed dead radio cannot open its inspection prose globally',()=>{
   const main=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
   assert.match(main,/RADIO\.isDead\(\) && !RADIO\.isDropped\(\).*thoughtHad\('radio-dead'\)/);
+});
+
+test('manual radio calls freeze pursuit and release one real acoustic event only on exit',()=>{
+  const main=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
+  const manual=main.slice(main.indexOf('function openRadioCallFromBag'),main.indexOf('function radioCueBlocked'));
+  assert.match(manual,/blocksWorld:true/);
+  assert.match(manual,/onDone:finish[\s\S]*onCancel:finish/);
+  assert.match(manual,/if\(!scene\)finish\(\)/);
+  const acoustic=main.slice(main.indexOf('function emitManualRadioCallNoise'),main.indexOf('function openRadioCallFromBag'));
+  assert.match(acoustic,/REC\.emitNoise\(\.34,px,py/);
+  assert.match(acoustic,/kind:'radio_call'/);
+  assert.match(acoustic,/playerGenerated:true[\s\S]*audibleToHush:true/);
+  assert.doesNotMatch(manual.slice(0,manual.indexOf('const finish=')),/emitManualRadioCallNoise/,
+    'no semantic tracking noise exists before the modal exit gate is created');
+});
+
+test('runtime arms the original breakdown, preserves a 12-second fallback, and keeps chapel out of Martin choices',()=>{
+  const main=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
+  assert.match(main,/TARGETS\.filter\(\(room\)=>room!==['"]lux_nova['"]&&!REC\.hasTake\(room\)\)/);
+  assert.match(main,/RADIO\.armOriginalBreakdown\(\{roomId:target\.roomId\}\)/);
+  assert.match(main,/RADIO\.originalBreakdownFallbackReady\(\)/);
+  assert.match(main,/reason:'approaching-third-room-fallback',entry:'inbound'/);
+  assert.match(main,/RADIO\.noteRadioDangerIncident\(\{kind:decision\.kind\}\)/);
 });

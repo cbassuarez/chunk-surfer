@@ -252,9 +252,30 @@ function bandColorFor(t, x, cols, fallback) {
   return index >= 0 ? t.bands[index].color : fallback;
 }
 
+function parseColor(value) {
+  const src=String(value||'').trim();
+  const hex=/^#([0-9a-f]{6})$/i.exec(src);
+  if(hex){const n=parseInt(hex[1],16);return[(n>>16)&255,(n>>8)&255,n&255,1];}
+  const rgba=/^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)$/i.exec(src);
+  if(rgba)return[+rgba[1],+rgba[2],+rgba[3],rgba[4]==null?1:+rgba[4]];
+  return null;
+}
+function relLum(rgb){return[0,1,2].map((i)=>{const v=Math.max(0,Math.min(255,rgb[i]))/255;return v<=.04045?v/12.92:Math.pow((v+.055)/1.055,2.4);}).reduce((a,v,i)=>a+v*[.2126,.7152,.0722][i],0);}
+function contrastRatio(a,b){const la=relLum(a),lb=relLum(b),hi=Math.max(la,lb),lo=Math.min(la,lb);return(hi+.05)/(lo+.05);}
+function composite(fg,bg){const a=Math.max(0,Math.min(1,fg[3]??1));return[fg[0]*a+bg[0]*(1-a),fg[1]*a+bg[1]*(1-a),fg[2]*a+bg[2]*(1-a),1];}
+function rgbHex(rgb){return`#${rgb.slice(0,3).map((v)=>Math.round(Math.max(0,Math.min(255,v))).toString(16).padStart(2,'0')).join('')}`;}
+function accessibleSilkscreen(theme){
+  const bg=parseColor(theme.glass)||[5,5,5,1];
+  const authored=parseColor(theme.silkscreen);
+  if(authored&&contrastRatio(composite(authored,bg),bg)>=4.5)return theme.silkscreen;
+  const lit=parseColor(theme.phosphor)||[242,168,30,1];
+  for(let t=.35;t<=1.001;t+=.025){const candidate=[bg[0]+(lit[0]-bg[0])*t,bg[1]+(lit[1]-bg[1])*t,bg[2]+(lit[2]-bg[2])*t,1];if(contrastRatio(candidate,bg)>=4.6)return rgbHex(candidate);}
+  return theme.phosphor;
+}
+
 export function themeRoleColor(role = 'phosphor', x = null, cols = null) {
   const t = activeTheme();
-  const base = role === 'warning' ? (t.warning || '#F2A81E') : (t[role] || t.phosphor);
+  const base = role === 'warning' ? (t.warning || '#F2A81E') : role === 'silkscreen' ? accessibleSilkscreen(t) : (t[role] || t.phosphor);
 
   return t.bands && BANDED_ROLES.has(role)
     ? bandColorFor(t, x, cols, base)

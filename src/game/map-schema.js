@@ -100,6 +100,7 @@ export function validateMapSource(source) {
   }
 
   for (const connector of source.connectors || []) {
+    if (!String(connector.label || '').trim()) errors.push(`${connector.id}: connector has no spoken label`);
     if (!floorIds.has(connector.a?.floorId) || !floorIds.has(connector.b?.floorId)) {
       errors.push(`${connector.id}: connector references an unknown floor`);
     }

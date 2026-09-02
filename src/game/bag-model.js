@@ -617,7 +617,7 @@ export function buildBagModel({ equipment = [], job = EMPTY_JOB, map = null, loa
     const unavailableUseReason = ({
       interface: 'SET IT IN A QUICK SLOT',
       'tuning-fork': 'SET IT IN A QUICK SLOT',
-      radio: 'CHOOSE DROP TO PLACE THE RADIO',
+      radio: 'CHANNEL UNAVAILABLE',
       'plant-spanner': 'USE AT THE HEATING HEADER',
       'marble-eyes': 'USE AT THE BLIND BUST',
       keyring: 'USED AUTOMATICALLY AT LOCKED DOORS',
@@ -626,12 +626,12 @@ export function buildBagModel({ equipment = [], job = EMPTY_JOB, map = null, loa
       ? actionDescriptor(primary.id,'use',primary.label,{enabled:primary.enabled!==false,reason:primary.reason,confirm:primary.confirm,exitPolicy:primary.closeBefore?'close':'stay'})
       : actionDescriptor('use-unavailable','use','USE',{enabled:false,reason:entry.present?unavailableUseReason:'ITEM NOT CARRIED'});
     const dropAction=entry.sourceId==='radio'
-      ? primaryIsDrop
-        ? actionDescriptor(primary.id,'drop','DROP / DEPLOY HERE',{
-            enabled:entry.present,reason:entry.present?'':'ALREADY DEPLOYED',exitPolicy:'close',
-            confirm:{title:'DROP RADIO HERE?',body:'THE RADIO WILL REMAIN HERE UNTIL YOU RECOVER IT.'},
-          })
-        : actionDescriptor('radio-deploy','drop','DROP / DEPLOY HERE',{enabled:false,reason:entry.source?.deployed?'ALREADY DEPLOYED':'ITEM NOT CARRIED'})
+      ? actionDescriptor('radio-deploy','drop','DROP / DEPLOY HERE',{
+          enabled:entry.present,
+          reason:entry.present?'':entry.source?.deployed?'ALREADY DEPLOYED':'ITEM NOT CARRIED',
+          exitPolicy:'close',
+          confirm:entry.present?{title:'DROP RADIO HERE?',body:'THE RADIO WILL REMAIN HERE UNTIL YOU RECOVER IT.'}:null,
+        })
       : actionDescriptor('drop-unavailable','drop','DROP',{enabled:false,reason:entry.present?"CAN'T LEAVE THIS ITEM BEHIND":'ITEM NOT CARRIED'});
     const actionList=[
       setAction,useAction,dropAction,

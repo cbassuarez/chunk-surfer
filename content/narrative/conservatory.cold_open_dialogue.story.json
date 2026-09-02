@@ -1650,19 +1650,19 @@
         },
         {
           "who": "guard",
-          "text": "Channel two. On the hour if you remember. If it hisses, stop talking and wait for it to settle.",
+          "text": "Channel two. Martin's on the front desk relay with the old floor plan. If you lose the route, call him. Give us a shout on the hour if you remember.",
           "id": "guard.radio.line.2"
         },
         {
           "who": "guard",
-          "text": "If somebody answers who is not me — do not make a conversation out of it.",
+          "text": "If it hisses, stop talking and wait for it to settle. If somebody answers who is not Martin — do not make a conversation out of it.",
           "id": "guard.radio.line.3"
         }
       ],
       "revisitLines": [
         {
           "who": "guard",
-          "text": "Channel two. On the hour. Do not shake it.",
+          "text": "Channel two. Martin for directions. On the hour otherwise. Do not shake it.",
           "id": "guard.radio.revisit.line.1"
         }
       ],

@@ -68,6 +68,16 @@ export const SOURCE_FINALE_STAGE = Object.freeze({
   RESOLVED: 'resolved',
 });
 
+// HOW MANY TIMES THE BUST WILL SEE YOU AGAIN.
+//
+// "It's easier as long as you don't lose." / "And if I lose?" / "Then I'll see
+// you here again, but you'll have no choice but to continue." The bust is
+// telling the truth: losing the cathedral fight sends you back to it, with the
+// chapel no longer on offer. Three is where that stops being a bargain and
+// becomes a treadmill — the same number the causal gate uses for injuries — and
+// the third defeat plays `tower-lost` as it always did.
+export const TOWER_DEFEAT_CEILING = 3;
+
 export const SOURCE_FINALE_RESULT = Object.freeze({
   WON: 'won',
   LOST: 'lost',
@@ -222,7 +232,7 @@ function freshFinale() {
     route: null,
     stage: SOURCE_FINALE_STAGE.UNCOMMITTED,
     result: null,
-    bust: { recognized: false, decision: null },
+    bust: { recognized: false, decision: null, defeats: 0 },
     compatibility: {},
   };
 }
@@ -393,6 +403,8 @@ export function normalizeChunkSurfState(value = null, fallback = {}) {
       bust: {
         recognized: !!rawFinale.bust?.recognized,
         decision: ['accepted', 'declined'].includes(rawFinale.bust?.decision) ? rawFinale.bust.decision : null,
+        // Absent on every save written before the bust kept its word.
+        defeats: Math.max(0, Math.floor(Number(rawFinale.bust?.defeats) || 0)),
       },
       compatibility: {
         ...(rawFinale.compatibility && typeof rawFinale.compatibility === 'object' && !Array.isArray(rawFinale.compatibility)
@@ -786,9 +798,28 @@ export function reduceChunkSurf(value, event = {}) {
       if (state.finale.route !== SOURCE_FINALE_ROUTE.TOWER || state.finale.stage !== SOURCE_FINALE_STAGE.CATHEDRAL_FIGHT) return state;
       return { ...state, finale: { ...state.finale, stage: SOURCE_FINALE_STAGE.TOWER_ESCAPE, result: SOURCE_FINALE_RESULT.WON } };
 
-    case 'CATHEDRAL_FIGHT_LOST':
+    // LOSING THE CATHEDRAL IS NOT THE END UNTIL THE THIRD TIME.
+    //
+    // This went straight to RESOLVED/LOST, which made the bust a liar: it
+    // promised to see you again and the run was over. It counts now. Below the
+    // ceiling the stage falls back to CATHEDRAL — the fight can be re-entered,
+    // the route stays TOWER so the chapel is gone for good, and the bust gets
+    // its second conversation. At the ceiling it resolves exactly as before, so
+    // `tower-lost` and everything downstream of it is untouched.
+    //
+    // Note this is the opposite of the CHAPEL, and deliberately: losing there
+    // is still terminal (endSacrifice). That asymmetry is what the bust is
+    // selling — its way is easier and survivable, and taking it costs you the
+    // other way out.
+    case 'CATHEDRAL_FIGHT_LOST': {
       if (state.finale.route !== SOURCE_FINALE_ROUTE.TOWER || state.finale.stage !== SOURCE_FINALE_STAGE.CATHEDRAL_FIGHT) return state;
-      return { ...state, finale: { ...state.finale, stage: SOURCE_FINALE_STAGE.RESOLVED, result: SOURCE_FINALE_RESULT.LOST } };
+      const defeats = Math.max(0, Math.floor(Number(state.finale.bust?.defeats) || 0)) + 1;
+      const bust = { ...state.finale.bust, defeats };
+      if (defeats >= TOWER_DEFEAT_CEILING) {
+        return { ...state, finale: { ...state.finale, bust, stage: SOURCE_FINALE_STAGE.RESOLVED, result: SOURCE_FINALE_RESULT.LOST } };
+      }
+      return { ...state, finale: { ...state.finale, bust, stage: SOURCE_FINALE_STAGE.CATHEDRAL, result: null } };
+    }
 
     case 'TOWER_ESCAPE_COMPLETED':
       if (state.finale.route !== SOURCE_FINALE_ROUTE.TOWER || state.finale.stage !== SOURCE_FINALE_STAGE.TOWER_ESCAPE) return state;

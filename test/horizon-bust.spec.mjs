@@ -7,9 +7,9 @@ import { buildChunkSurfGodPreset, CHUNK_SURF_GOD_PRESET } from '../src/game/chun
 import {
   HORIZON_BUST_AUDIENCE,
   HORIZON_BUST_REFUSAL,
-  HORIZON_BUST_RECOGNITION,
   horizonBustProposition,
 } from '../src/game/horizon-bust.js';
+import { TOWER_DEFEAT_CEILING } from '../src/game/chunk-surf-state.js';
 import { createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
 
 const asset = fs.readFileSync(new URL('../public/assets/horizon-bust.glb', import.meta.url));
@@ -54,24 +54,54 @@ assert.match(renderer, /gl\.drawElements\(gl\.TRIANGLES/, 'the portrait is drawn
 assert.match(renderer, /gl\.enable\(gl\.DEPTH_TEST\)/, 'the model self-occludes');
 assert.doesNotMatch(renderer, /markerRecords|markerBuffer/, 'the old splat-built figure is gone');
 
+// Both eligible modes get their own opening pair and then the same six shared
+// beats; only the way the bust notices you differs.
 for (const mode of ['carried', 'returned']) {
   const lines = HORIZON_BUST_AUDIENCE[mode];
   assert.equal(lines.length, 8, `${mode} receives the full staged audience`);
   assert.deepEqual(lines.slice(2).map((line) => line.text), HORIZON_BUST_AUDIENCE.carried.slice(2).map((line) => line.text));
   const words = lines.reduce((sum, line) => sum + line.text.trim().split(/\s+/).length, 0);
-  assert.ok(words >= 125 && words <= 210, `${mode} audience has substance without becoming a monologue (${words} words)`);
-  assert.ok(lines.some((line) => /black ledger/i.test(line.text)));
-  assert.ok(lines.some((line) => /second set of minutes/i.test(line.text)));
-  assert.ok(lines.some((line) => /answer, properly witnessed/i.test(line.text)));
+  assert.ok(words >= 80 && words <= 210, `${mode} audience has substance without becoming a monologue (${words} words)`);
+  assert.ok(lines.some((line) => /another way/i.test(line.text)), `${mode} arrives at the offer`);
 }
-assert.equal(HORIZON_BUST_REFUSAL.length, 3);
-assert.match(HORIZON_BUST_RECOGNITION.text, /six notches/);
-const proposition = horizonBustProposition(HORIZON_BUST_AUDIENCE.carried.at(-1), HORIZON_BUST_RECOGNITION);
-assert.match(proposition.start.lines.at(-1).text, /skull/i);
-assert.match(proposition.start.lines.at(-1).text, /crossed bones/i);
-assert.deepEqual(proposition.start.choices.map((choice) => choice.sourceFinaleChoice), ['tower', 'chapel']);
-assert.match(proposition.accepted.lines.map((line) => line.text).join(' '), /ledger|initiates/i);
-assert.match(proposition.declined.lines.map((line) => line.text).join(' '), /keeping us/i);
+assert.equal(HORIZON_BUST_REFUSAL.length, 2);
+
+// ── the first meeting ───────────────────────────────────────────────────────
+const proposition = horizonBustProposition(HORIZON_BUST_AUDIENCE.carried.at(-1));
+assert.match(proposition.start.lines.at(-1).text, /other way/i);
+assert.match(proposition.start.lines.at(1).text, /skull/i);
+assert.match(proposition.start.lines.at(1).text, /crossed bones/i);
+assert.equal(proposition.start.goto, 'questions', 'a first meeting can be interrogated');
+// The four interrogable questions, then the commit. The catch is one of them,
+// and what it promises is tested below.
+assert.deepEqual(proposition.questions.choices.map((choice) => choice.goto),
+  ['identity', 'history', 'route', 'consequence', 'decision']);
+assert.deepEqual(proposition.decision.choices.map((choice) => choice.sourceFinaleChoice), ['tower', 'chapel']);
+assert.match(proposition.consequence.lines.map((line) => line.text).join(' '),
+  /no choice but to continue/i, 'the bust makes the promise this whole mechanism exists to keep');
+
+// ── and the promise, kept ───────────────────────────────────────────────────
+//
+// "Then I'll see you here again, but you'll have no choice but to continue."
+// A return offers exactly one row: its own path. The chapel is BUILT OUT, not
+// disabled — an option you can see and cannot take is a menu, not a
+// consequence.
+for (const defeats of [1, TOWER_DEFEAT_CEILING - 1]) {
+  const again = horizonBustProposition(null, { defeats });
+  assert.deepEqual(again.decision.choices.map((choice) => choice.sourceFinaleChoice), ['tower'],
+    `defeat ${defeats} leaves only the bust's path`);
+  assert.equal(again.decision.choices.length, 1);
+  assert.equal(again.start.goto, 'decision', 'a return does not re-open the questions');
+  assert.match(again.decision.lines.map((line) => line.text).join(' '), /other way|answer/i,
+    'he asks to go back and is told');
+}
+// It notices how many times. The second and third returns do not read the same.
+assert.notEqual(
+  horizonBustProposition(null, { defeats: 1 }).start.lines.at(-1).text,
+  horizonBustProposition(null, { defeats: 2 }).start.lines.at(-1).text,
+);
+assert.match(proposition.accepted.lines.map((line) => line.text).join(' '), /sigil|bell-like/i);
+assert.match(proposition.declined.lines.map((line) => line.text).join(' '), /warn|detour/i);
 
 function onTape(marbleEyes) {
   const built = buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.NORMAL_EXIT, { seed: 4417 });

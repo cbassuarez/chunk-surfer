@@ -68,6 +68,7 @@ export function makeWarningScene({
     id: 'warning',
     blocksInput: true,
     blocksWorld: true,
+    worldPresentation: 'hidden',
     lensPreset: 'calm',
 
     key(e) {

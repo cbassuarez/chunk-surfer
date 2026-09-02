@@ -65,7 +65,7 @@
       "lines": [
         {
           "who": "direction",
-          "text": "The same model as yours, eleven years older. The lid is off and it has been off for a while.",
+          "text": "The same model as yours, oddly enough, only eleven years older. The lid is off and it has been off for a while.",
           "id": "look.line.1"
         },
         {
@@ -75,11 +75,11 @@
         },
         {
           "who": "you",
-          "text": "He was bending it.",
+          "text": "He was circuit bending it.",
           "id": "look.line.3"
         },
         {
-          "who": "you",
+          "who": "direction",
           "text": "You solder across the parts that decide things, and you feed the output back in before it has finished being an output.",
           "id": "look.line.4"
         },
@@ -252,12 +252,12 @@
       "lines": [
         {
           "who": "you",
-          "text": "Not mine. And I have four rooms to do.",
+          "text": "Not mine. And I have more rooms to do.",
           "id": "leave.line.1"
         },
         {
           "who": "direction",
-          "text": "You leave it exactly where he left it, which is a thing you are good at.",
+          "text": "You leave it exactly where he left it.",
           "id": "leave.line.2"
         }
       ],

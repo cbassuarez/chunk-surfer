@@ -303,9 +303,25 @@ fn begin_transaction(app: &AppHandle, request: ChoreographyBeginRequest) -> Resu
     if request.restore_game_mode {
         let _ = main.set_simple_fullscreen(false);
         let _ = main.set_fullscreen(false);
+        crate::display_policy::note_simple_fullscreen(false);
     }
     let stable = if request.restore_game_mode {
-        wait_for_windowed_bounds(&main, before, monitor_rect)?
+        // A FAILED EXIT MUST NOT BE LEFT HALF-APPLIED.
+        //
+        // The window has already been taken out of fullscreen above, but the
+        // transaction slot is not populated until after this `?`. So a timeout
+        // here used to leave the game windowed with no record that it had ever
+        // been fullscreen, and nothing later would put it back — the player got
+        // dropped out of game mode by a cue that then did not play. Restore it
+        // on the way out and report the failure honestly.
+        match wait_for_windowed_bounds(&main, before, monitor_rect) {
+            Ok(bounds) => bounds,
+            Err(error) => {
+                let _ = main.set_simple_fullscreen(true);
+                crate::display_policy::note_simple_fullscreen(true);
+                return Err(error);
+            }
+        }
     } else {
         before
     };
@@ -513,6 +529,7 @@ fn restore_transaction(app: &AppHandle, required: Option<&str>) -> Result<bool, 
     let main = main_window(app)?;
     let _ = main.set_simple_fullscreen(false);
     let _ = main.set_fullscreen(false);
+    crate::display_policy::note_simple_fullscreen(false);
     let _ = main.set_decorations(active.decorated);
     main.set_position(active.stable.position)
         .map_err(|error| error.to_string())?;
@@ -520,6 +537,7 @@ fn restore_transaction(app: &AppHandle, required: Option<&str>) -> Result<bool, 
         .map_err(|error| error.to_string())?;
     if active.restore_game_mode {
         let _ = main.set_simple_fullscreen(true);
+        crate::display_policy::note_simple_fullscreen(true);
     }
     if active.was_focused {
         let _ = main.set_focus();

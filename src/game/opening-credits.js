@@ -1,9 +1,17 @@
 import * as scenes from './scenes.js';
-import { uiSize, uiText, uiWrap } from '../render/ui.js';
-import { creditAtmosphereFrame, renderCreditAtmosphere } from './credit-visual.js';
-import { attachBootWeatherAudio, bootWeather, bootWeatherAudio, renderBootWeather, stepBootWeather } from './boot-weather.js';
+import { uiFill, uiSize, uiText, uiWrap } from '../render/ui.js';
+import { createHitRegions } from '../render/hit-regions.js';
+import { creditAtmosphereFrame } from './credit-visual.js';
+import { attachBootWeatherAudio, bootWeather, bootWeatherAudio, bootWeatherOpeningEnvelope, drainBootThunder, renderBootWeather, stepBootWeather } from './boot-weather.js';
 
 export const OPENING_CREDITS_DURATION = 23.5;
+export const OPENING_CREDITS_SKIP_CONFIRM_SECONDS = 0.45;
+export const OPENING_CREDITS_SKIP_GUARD_SECONDS = 0.12;
+
+const SKIP_IDLE_LABEL = 'SKIP  ▶▶';
+const SKIP_ARMED_LABEL = 'CLICK AGAIN  ▶▶';
+const SKIP_COMMITTED_LABEL = '▶▶';
+const SKIP_HINT_LABEL = 'DOUBLE CLICK';
 
 const AUTHORED_DURATION = 23.5;
 const QUOTE_LINES = Object.freeze([
@@ -44,9 +52,9 @@ function clamp(value, min, max) {
 //
 // It comes up on the same ramp as the optical frame, stays sparse under the two
 // credit slates so they read as slates, and thickens as the quote arrives — the
-// quote is the thing it exists to be read through. At 20.40 the emitter stops
-// and what is left is pushed out (see boot-weather.js), so the field is nearly
-// empty by the time the quote finishes going at 23.30.
+// quote is the thing it exists to be read through. At 20.40 the shared weather
+// handoff begins tapering replenishment. Existing particles keep exactly the
+// same motion and cross into CASE SELECT under their own momentum.
 export const WEATHER_CLEAR_AT = 20.40;
 
 // SPARSE IS NOT EMPTY. This band was 0.32 and the credits read as a still frame
@@ -166,6 +174,35 @@ export function openingCreditLayout({ cols = 80, rows = 30, frame = openingCredi
   };
 }
 
+export function openingCreditSkipLayout({ cols = 80, rows = 30, label = SKIP_IDLE_LABEL } = {}) {
+  const c = Math.max(20, Math.floor(Number(cols) || 0));
+  const r = Math.max(8, Math.floor(Number(rows) || 0));
+  const text = fitLine(label, Math.max(1, c - 2));
+  // Leave two cells of visual breathing room from the window edge, but make the
+  // entire lower-right transport region clickable. The target never changes
+  // size when the label changes from SKIP to CLICK AGAIN.
+  const right = Math.max(0, c - 3);
+  const y = Math.max(1, r - 2);
+  const x = clamp(right - text.length + 1, 0, Math.max(0, c - text.length));
+  const hitW = Math.min(c, 18);
+  const hitH = Math.min(r, 3);
+  return {
+    cols: c,
+    rows: r,
+    text,
+    x,
+    y,
+    right,
+    hintY: Math.max(0, y - 1),
+    hit: {
+      x: c - hitW,
+      y: r - hitH,
+      w: hitW,
+      h: hitH,
+    },
+  };
+}
+
 // This is part of app boot, not an optional credits page. It deliberately owns
 // every key and ends only on its authored clock before the title menu is made.
 export function makeOpeningCreditsScene({
@@ -179,12 +216,46 @@ export function makeOpeningCreditsScene({
   // seconds and then let go — silence is the honest fallback, not a bed that
   // slams in late.
   openAudio = null,
+  skipUnlocked = false,
 } = {}) {
   let time = 0;
   let done = false;
   let scene = null;
   let lastWallAt = Number(now()) || 0;
   let bedTries = 0;
+  const hits = createHitRegions();
+  let skipArmedAt = null;
+  let skipCommittedAt = null;
+
+  function wallNow() {
+    const at = Number(now());
+    return Number.isFinite(at) ? at : lastWallAt;
+  }
+
+  function skipIsArmed(at = wallNow()) {
+    if (!skipUnlocked || skipArmedAt == null || skipCommittedAt != null) return false;
+    const elapsed = Math.max(0, Number(at) - skipArmedAt);
+    return elapsed <= OPENING_CREDITS_SKIP_CONFIRM_SECONDS;
+  }
+
+  function clearSkipArm() {
+    skipArmedAt = null;
+  }
+
+  function pressSkip() {
+    if (!skipUnlocked || done || skipCommittedAt != null) return;
+    const at = wallNow();
+    if (!skipIsArmed(at)) {
+      skipArmedAt = at;
+      return;
+    }
+    skipArmedAt = null;
+    // Reset the wall-clock integration point at the gesture itself. Otherwise
+    // the next update could count pre-click throttling time toward the guard and
+    // remove the scene before a trailing third click has been swallowed.
+    lastWallAt = at;
+    skipCommittedAt = time;
+  }
 
   function tryOpenAudio() {
     if (bootWeatherAudio() || typeof openAudio !== 'function' || bedTries > 8) return;
@@ -192,11 +263,11 @@ export function makeOpeningCreditsScene({
     try { attachBootWeatherAudio(openAudio() || null); } catch (_) { attachBootWeatherAudio(null); }
   }
 
-  function finish() {
+  function finish(reason = 'completed') {
     if (done) return;
     done = true;
     scenes.remove(scene);
-    onDone?.();
+    onDone?.({ reason, elapsed: time });
   }
 
   scene = {
@@ -227,9 +298,14 @@ export function makeOpeningCreditsScene({
       const weather = bootWeather();
       if (weather) {
         const frame = openingCreditFrame(time, duration);
-        stepBootWeather(weather, advance, {
+        const envelope = bootWeatherOpeningEnvelope(weather, frame.authoredTime, {
           presence: frame.weather.presence,
-          settling: frame.weather.clearing,
+        });
+        weather.presentationAlpha = envelope.alpha;
+        weather.phase = envelope.phase;
+        stepBootWeather(weather, advance, {
+          targetCount: envelope.targetCount,
+          stormActive: true,
         });
         // Resuming a suspended context is asynchronous, so the first attempt in
         // enter() can legitimately come back empty. Keep asking for a couple of
@@ -238,26 +314,93 @@ export function makeOpeningCreditsScene({
         // The gust the bed rides is the gust the field is riding. Two
         // oscillators would put the sound a beat off the leaves.
         bootWeatherAudio()?.update?.({ presence: frame.weather.audio, wind: weather.wind });
+        // AND THE STRIKES THAT FELL THIS STEP. Drained whether or not there is a
+        // bed to play them on, because the queue is state and an undrained one
+        // carries a stale clap into the next screen — which is the exact thing
+        // drainBootThunder's own comment says it exists to prevent.
+        const strikes = drainBootThunder(weather);
+        const bed = bootWeatherAudio();
+        if (bed) for (const event of strikes) bed.strike(event);
       }
-      if (time >= duration) finish();
+      if (skipCommittedAt != null) {
+        if (time - skipCommittedAt >= OPENING_CREDITS_SKIP_GUARD_SECONDS) finish('skipped');
+        return;
+      }
+      if (time >= duration) finish('completed');
     },
     key() { return true; },
-    view() { return { ...openingCreditFrame(time, duration), skippable: false }; },
+    pointer(e) {
+      if (!skipUnlocked || done) return true;
+      if (e?.type === 'pointermove') {
+        hits.handle(e, { click: false });
+        return true;
+      }
+      if (e?.type === 'pointerdown') {
+        const result = hits.handle(e);
+        if (!result.hit && skipCommittedAt == null) clearSkipArm();
+        return true;
+      }
+      return true;
+    },
+    view() {
+      return {
+        ...openingCreditFrame(time, duration),
+        skippable: !!skipUnlocked,
+        skip: {
+          unlocked: !!skipUnlocked,
+          armed: skipIsArmed(),
+          committed: skipCommittedAt != null,
+        },
+      };
+    },
 
     render() {
       const { cols, rows } = uiSize();
       const frame = openingCreditFrame(time, duration);
-      renderCreditAtmosphere(frame.atmosphere);
-      // Behind the type, in front of the ground. The weather is the room the
-      // credits are in, not a layer over them.
-      renderBootWeather(bootWeather(), { alpha: frame.atmosphere.alpha });
       const layout = openingCreditLayout({ cols, rows, frame });
+      const weather = bootWeather();
+      if (weather) renderBootWeather(weather, { alpha: weather.presentationAlpha });
       for (const entry of layout.entries) {
         if (entry.alpha <= 0.01 || !entry.text) continue;
         let cls = entry.cls;
         if (entry.key === 'creator' && entry.text.includes('SEBASTIAN')) cls = 'ui-primary';
         if (entry.key === 'sound' && entry.text !== 'SOUND DESIGN') cls = 'ui-primary';
         uiText(entry.x, entry.y, entry.text, cls, entry.alpha);
+      }
+
+      hits.reset();
+      if (skipUnlocked) {
+        const armed = skipIsArmed();
+        const committed = skipCommittedAt != null;
+        const hovered = hits.isHovered('opening-credits:skip');
+        const label = committed
+          ? SKIP_COMMITTED_LABEL
+          : armed
+            ? SKIP_ARMED_LABEL
+            : SKIP_IDLE_LABEL;
+        const skip = openingCreditSkipLayout({ cols, rows, label });
+
+        hits.add({
+          id: 'opening-credits:skip',
+          kind: 'opening-credit-skip',
+          ...skip.hit,
+          label: 'skip opening credits',
+          onClick: pressSkip,
+        });
+
+        if (!committed && hovered && !armed) {
+          const hintX = clamp(
+            skip.right - SKIP_HINT_LABEL.length + 1,
+            0,
+            Math.max(0, skip.cols - SKIP_HINT_LABEL.length),
+          );
+          uiFill(Math.max(0,hintX-1),Math.max(0,skip.hintY-.25),SKIP_HINT_LABEL.length+2,1.5,'rgba(3,4,6,.90)');
+          uiText(hintX, skip.hintY, SKIP_HINT_LABEL, 'ui-primary', 1);
+        }
+
+        uiFill(Math.max(0,skip.x-1),Math.max(0,skip.y-.25),skip.text.length+2,1.5,'rgba(3,4,6,.92)');
+        const cls=armed||committed?'ui-amber':'ui-primary';
+        uiText(skip.x,skip.y,skip.text,cls,1);
       }
     },
   };

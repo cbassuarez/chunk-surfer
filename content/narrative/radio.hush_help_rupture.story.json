@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "radio.hush_help_rupture",
+  "title": "Radio · second danger call rupture",
+  "status": "active",
+  "entry": "start",
+  "entries": ["start"],
+  "tags": ["radio", "hush", "rupture", "one-shot"],
+  "notes": "Player-caused permanent failure. Separate from the original third-room hijack.",
+  "regions": [
+    {
+      "id": "radio.hush_help_rupture.region",
+      "title": "The nearby room answers",
+      "kind": "scene",
+      "color": "#7a3038",
+      "nodeIds": ["start"]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "id": "start",
+      "type": "dialogue",
+      "art": {"id":"walkie","mode":"hero","caption":"Field radio / return folded through the room","status":"WRONG RETURN"},
+      "lines": [
+        {"id":"start.line.1","who":"me","text":"Martin. It's here again. Tell me which way out."},
+        {"id":"start.line.2","who":"radio","text":"Which way out—"},
+        {"id":"start.line.3","who":"direction","text":"His last four words return from the room before they return from the speaker. The walls give them back in your cadence.","hold":2.4},
+        {"id":"start.line.4","who":"radio","text":"Find a signed landing. Call me from— from—"},
+        {"id":"start.line.5","who":"direction","text":"A clipped return strikes the grille. The carrier folds shut, the speaker pops, and the transmit switch answers with one dead click.","shake":1.1,"shakeMs":480,"hold":3,"cues":["radio-rupture"]}
+      ]
+    }
+  }
+}

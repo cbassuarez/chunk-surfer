@@ -11,7 +11,7 @@
 
 import { uiDraw, uiFill, uiText } from './ui.js';
 import { THEMES, activeTheme, setActiveSurface, uiBrightness, themeRoleColor, themeRoleDim, uiFlickerAlpha, uiRoleColor } from './palette.js';
-import { drawVfdGlyph } from './vfd-font.js';
+import { drawVfdGlyph, vfdGlowBleed } from './vfd-font.js';
 import { drawPromptParts } from './prompt-glyphs.js';
 import { fitText } from './fit-text.js';
 import { MONITOR_DANGER_THRESHOLDS, MONITOR_THRESHOLDS, monitorSnapshot } from '../audio/monitor.js';
@@ -109,6 +109,11 @@ function drawPanelHardware(ctx, { px, py, pw, ph, gx, gy, gw, gh, dpr }) {
 // ── the faceplate ─────────────────────────────────────────────────────────────
 export function drawMachinePanel(x, y, w, h, {
   label = 'MONITOR', source = '', footer = '', meter = true, scrim = false,
+  // What the needle reads. Defaults to the HUSH exposure snapshot, which is what
+  // every in-run surface wants — but that measures SEMANTIC player noise, so it
+  // is flat zero anywhere outside a story run and the title's header meter has
+  // always been dead. A caller with a better signal supplies it here.
+  meterSnapshot = null,
   theme = 'amber', wordmark = 'AUDIOCORP', model = '', buttons = null,
   // Prompt parts, drawn as button glyphs on a pad and as bracketed text on a
   // keyboard. Takes precedence over `footer` when both are given, so a caller
@@ -153,7 +158,7 @@ export function drawMachinePanel(x, y, w, h, {
     uiText(x + 2, y + 1, leftHeader.slice(0, maxLeft), 'ui-label');
   }
   if (meter) {
-    const snapshot = monitorSnapshot();
+    const snapshot = meterSnapshot || monitorSnapshot();
     drawVfdMeter(meterX, y + 1, 12, snapshot, { theme, bandThresholds: MONITOR_DANGER_THRESHOLDS });
     drawVfdWarningTriangle(x + w - 3, y + 1, snapshot);
   }
@@ -535,6 +540,52 @@ export function drawVfdCounter(x, y, value, { scale = 1, theme = null, color = n
 // The DORMANT GRID is deliberately always the panel's own dim phosphor, whatever
 // colour the lit dots are: the unlit matrix belongs to the glass, not to what is
 // written on it.
+// THE BIG-TEXT PATH IS CACHED TOO, AND IT HAS TO BE.
+//
+// uiText goes through the atlas, so its glow is baked once per glyph and blitted
+// thereafter. drawVfdText did not: it re-ran the whole dot loop every frame, for
+// every character, at 50 call sites across combat, dialogue, titles, credits and
+// the recorder. A 20-character title at scale 2 was several hundred shadowed
+// fills a frame. Making the glow better without caching this would have made the
+// worst path worse.
+//
+// BRIGHTNESS IS NOT PART OF THE KEY. It is the blit.
+//
+// The two time-varying terms — litDuty (16 pwm steps) and scanDuty (three
+// values) — are both pure amplitude multipliers, so folding them into the cache
+// key would have meant baking 48 variants of every character and re-baking as
+// the multiplex artifact cycled. Measured, the two-lobe bake is ~0.15ms a glyph
+// against ~0.02ms for the shadowBlur it replaced, so 48 variants of a title is
+// a real hitch rather than a rounding error.
+//
+// So the tile is baked ONCE at full duty and dimmed with globalAlpha when it is
+// blitted. The key collapses to (glyph, colour, size) and the whole display
+// dims together, which is what a display does. It is also exactly what the
+// atlas has always done for uiText — bake at brightness, blit at alpha.
+const vfdTextTiles = new Map();
+const VFD_TEXT_TILE_LIMIT = 1400;
+
+function vfdTextTile(glyph, { color, dim, cw, ch, dpr, blur, halation }) {
+  const key = `${glyph}|${color}|${dim}|${Math.round(cw)}|${Math.round(ch)}|${dpr}`;
+  const hit = vfdTextTiles.get(key);
+  if (hit) return hit;
+  if (typeof document === 'undefined' || typeof document.createElement !== 'function') return null;
+  const bleed = vfdGlowBleed(cw, ch);
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.ceil(cw + bleed * 2);
+  canvas.height = Math.ceil(ch + bleed * 2);
+  const tileCtx = canvas.getContext('2d');
+  if (!tileCtx) return null;
+  drawVfdGlyph(tileCtx, glyph, bleed, bleed, cw, ch, { color, dim, blur, dpr, alpha: 1, scan: 1, halation });
+  // A flat cap rather than an LRU: the key space is bounded by construction, so
+  // this only trips if a caller invents sizes every frame — and if that happens,
+  // dropping the lot is cheaper than pretending to be clever about it.
+  if (vfdTextTiles.size > VFD_TEXT_TILE_LIMIT) vfdTextTiles.clear();
+  const tile = { canvas, bleed };
+  vfdTextTiles.set(key, tile);
+  return tile;
+}
+
 export function drawVfdText(x, y, text, {
   scale = 2, theme = null, role = 'ui-primary', alpha = 1, color = null, max = null,
 } = {}) {
@@ -553,15 +604,24 @@ export function drawVfdText(x, y, text, {
     for (let i = 0; i < value.length; i++) {
       const cellX = x + i * scale;
       const duty = litDuty(cellX, y, 'phosphor', alpha);
-      drawVfdGlyph(ctx, value[i], (x * cellW * dpr) + i * cw, oy, cw, ch, {
-        color: tint || uiRoleColor(role, cellX, cols),
-        dim: themeRoleDim('phosphor', cellX, cols),
-        blur: 4.25,
-        dpr,
-        alpha: duty,
-        scan: scanDuty(cellX, y),
-        halation: 0.18,
+      const px = (x * cellW * dpr) + i * cw;
+      const glyphColor = tint || uiRoleColor(role, cellX, cols);
+      const glyphDim = themeRoleDim('phosphor', cellX, cols);
+      const scan = scanDuty(cellX, y);
+      const tile = vfdTextTile(value[i], {
+        color: glyphColor, dim: glyphDim, cw, ch, dpr, blur: 4.25, halation: 0.18,
       });
+      if (tile) {
+        const level = Math.max(0, Math.min(1, duty * scan));
+        if (level <= 0) continue;
+        if (level !== 1) ctx.globalAlpha = level;
+        ctx.drawImage(tile.canvas, px - tile.bleed, oy - tile.bleed);
+        if (level !== 1) ctx.globalAlpha = 1;
+      } else {
+        drawVfdGlyph(ctx, value[i], px, oy, cw, ch, {
+          color: glyphColor, dim: glyphDim, blur: 4.25, dpr, alpha: duty, scan, halation: 0.18,
+        });
+      }
     }
   });
 

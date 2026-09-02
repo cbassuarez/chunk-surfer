@@ -194,21 +194,26 @@ export const CONSERVATORY_DOORS = Object.freeze([
   D('bell-chamber-entry', DOOR_ARCHETYPE.TOWER_SERVICE_SINGLE, null, { at:{x:69,y:158},key:'tower-live',hinge:'left',swing:'vestibule-in',widthAxis:'y' }),
   D('organ-loft-service', DOOR_ARCHETYPE.TOWER_SERVICE_SINGLE, null, { at:{x:69,y:163},key:'tower-cleared',hinge:'right',swing:'landing-out',widthAxis:'y' }),
   D('organ-loft-nave', DOOR_ARCHETYPE.TOWER_SERVICE_SINGLE, null, { at:{x:100,y:157},key:'tower-cleared',hinge:'left',swing:'landing-out',widthAxis:'x' }),
+  // ── the vocal floor ───────────────────────────────────────────────────────
+  // Four studios west, a theory room and a store east. Six leaves, all wired
+  // glass on a key the player never receives — you see every one of these rooms
+  // and stand in none of them. The south-east room has no leaf at all: it is
+  // entered through the breach in its own back wall, and a locked door on the
+  // front of it was the floor's plainest piece of nonsense.
   ...[
-    ['academic-classroom-west-1',9,244,'right'],
-    ['academic-classroom-west-2',9,251,'right'],['academic-classroom-east-2',13,251,'left'],
-    ['academic-classroom-west-3',9,258,'right'],['academic-classroom-east-3',13,258,'left'],
-    ['academic-classroom-west-4',9,264,'right'],['academic-classroom-east-4',13,264,'left'],
+    ['academic-studio-1',7,251,'right'],
+    ['academic-studio-2',7,256,'right'],
+    ['academic-studio-3',7,261,'right'],
+    ['academic-studio-4',7,265,'right'],
+    ['academic-theory',11,253,'left'],
+    ['academic-store',11,260,'left'],
   ].map(([id,x,y,hinge])=>D(id,DOOR_ARCHETYPE.ACADEMIC_WIRED_GLASS,null,{at:{x,y},key:'academic-core',hinge,swing:'classroom-in',widthAxis:'y'})),
-  // The lobby's corridor door: same leaf as the classrooms, no lock. It is the
-  // other half of the way through.
-  D('academic-lobby-core',DOOR_ARCHETYPE.ACADEMIC_WIRED_GLASS,null,{at:{x:13,y:244},open:true,hinge:'left',swing:'room-in',widthAxis:'y'}),
   // ── the third floor, made walkable ────────────────────────────────────────
-  // The north-east room is the LOBBY: one room given over to circulation so the
-  // core corridor becomes a circuit instead of a spine with a dead end at both
-  // ends. Its two doors are the only unlocked openings on this floor — the pair
-  // that lets you through, and nothing that lets you into a classroom.
-  D('academic-gallery-lobby',DOOR_ARCHETYPE.ACADEMIC_WIRED_GLASS,'45,489',{open:true,hinge:'left',swing:'gallery-in',widthAxis:'y'}),
+  // The corridor's head is the CHAMBER ROOM, which you walk into — there is no
+  // leaf between the climb and its destination. These two are the way through
+  // it to the gallery, and they are the only unlocked openings up here.
+  D('academic-chamber-vestibule',DOOR_ARCHETYPE.ACADEMIC_WIRED_GLASS,null,{at:{x:17,y:244},open:true,hinge:'left',swing:'room-in',widthAxis:'y'}),
+  D('academic-gallery-lobby',DOOR_ARCHETYPE.ACADEMIC_WIRED_GLASS,null,{at:{x:22,y:244},open:true,hinge:'left',swing:'gallery-in',widthAxis:'y'}),
   D('academic-office-locked-1',DOOR_ARCHETYPE.ACADEMIC_WIRED_GLASS,null,{at:{x:3,y:269},key:'academic-core',hinge:'left',swing:'office-in',widthAxis:'x'}),
   D('academic-office-locked-2',DOOR_ARCHETYPE.ACADEMIC_WIRED_GLASS,null,{at:{x:9,y:269},key:'academic-core',hinge:'right',swing:'office-in',widthAxis:'x'}),
   // ── st brendan's cathedral ────────────────────────────────────────────────

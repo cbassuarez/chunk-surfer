@@ -4,7 +4,7 @@
 // cells the way DOM text-shadow does; blur radii are capped to the pad.
 
 import { resolveStyle } from './styles-map.js';
-import { drawVfdGlyph, vfdGlyph } from './vfd-font.js';
+import { drawVfdGlyph, vfdGlowBleed } from './vfd-font.js';
 import { uiRoleColor, uiRoleDim, uiBrightness, paletteKey, uiBandKey } from './palette.js';
 
 export const CELL_W = 7.84;          // matches computeViewDims cw
@@ -43,8 +43,19 @@ function fontString(bold, fontPx) {
 // comes from the active theme (amber for menus, green for the recorder).
 function renderUiTile(glyph, cls, x = 0, cols = 80) {
   const { cellW, cellH } = metricsFor('ui');
-  const padX = Math.ceil(cellW * PAD_CELLS * dpr);
-  const padY = Math.ceil(cellH * PAD_CELLS * dpr);
+  // THE PAD COMES FROM THE GLOW, NOT FROM A CELL COUNT.
+  //
+  // PAD_CELLS = 2 gave 34 device px each side horizontally at DPR 2 and 80
+  // vertically, because a UI cell is 8.45 wide and 20 tall. The wide bloom
+  // wanted more than 34, so it was cut off in a straight vertical line on both
+  // sides of every glyph, while 80px of vertical pad went to waste. Asking
+  // vfd-font.js how far its light actually reaches fixes the clipping AND makes
+  // the tiles smaller — the cache is unbounded and only ever cleared on a DPR
+  // change (atlasConfigure), so smaller tiles matter.
+  const boxW = cellW * dpr;
+  const boxH = Math.min(cellH * dpr, cellW * 1.42 * dpr);
+  const bleed = vfdGlowBleed(boxW, boxH);
+  const padX = bleed, padY = bleed;
   const w = Math.ceil(cellW * dpr) + padX * 2;
   const h = Math.ceil(cellH * dpr) + padY * 2;
   const c = document.createElement('canvas');
@@ -58,19 +69,22 @@ function renderUiTile(glyph, cls, x = 0, cols = 80) {
 
   // A 5×7 character keeps a real aspect (~5:7); the tall UI cell is generous
   // line spacing, so the glyph lives in a box the width of the cell, centred.
-  const boxW = cellW * dpr;
-  const boxH = Math.min(cellH * dpr, cellW * 1.42 * dpr);
+  // boxW/boxH are computed above, because the pad is derived from them.
   const ox = padX, oy = padY + (cellH * dpr - boxH) / 2;
 
+  // ONE CALL, TWO LOBES.
+  //
+  // There used to be a second, wider pass here for the brightest classes,
+  // wrapped in ctx.globalAlpha = 0.30 to keep it low. That did nothing:
+  // drawVfdGlyph assigned globalAlpha per dot rather than multiplying by what
+  // it was handed, so the "low" bloom ran at full strength and every primary
+  // glyph was double-exposed — which is where most of the old glow came from,
+  // and why it read as a flat wash instead of light. The wide veil is one of
+  // the two lobes inside drawVfdGlyph now, at an amplitude that is actually
+  // honoured, so brightness reaches it through `alpha` alone.
   drawVfdGlyph(ctx, glyph, ox, oy, boxW, boxH, {
     color, dim, blur: 3.2, dpr, alpha: Math.min(1, b),
   });
-  // A second, wider, low bloom on the brightest text sells the phosphor.
-  if (isVfd && (cls === 'ui-primary' || cls === 'ui-counter' || cls === 'ui-green') && b > 0.6 && vfdGlyph(glyph)) {
-    ctx.globalAlpha = 0.30;
-    drawVfdGlyph(ctx, glyph, ox, oy, boxW, boxH, { color, dim: null, blur: 8, dpr, alpha: 1 });
-    ctx.globalAlpha = 1;
-  }
   return { canvas: c, ox: padX, oy: padY, pulse: false };
 }
 

@@ -18,6 +18,7 @@ import {
   HORIZON_REASON,
   SOURCE_FINALE_RESULT,
   SOURCE_FINALE_ROUTE,
+  TOWER_DEFEAT_CEILING,
   SOURCE_FINALE_STAGE,
   SOURCE_FINAL_OUTCOME,
   chunkSurfCompletion,
@@ -122,12 +123,37 @@ const finalState=()=>buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.EXPOSED_BATTL
   assert.equal(state.finale.stage,SOURCE_FINALE_STAGE.CATHEDRAL);
   state=dispatch(state,'CATHEDRAL_FIGHT_STARTED');
   const fight=state;
-  assert.equal(dispatch(fight,'CATHEDRAL_FIGHT_LOST').finale.result,SOURCE_FINALE_RESULT.LOST);
   const won=dispatch(fight,'CATHEDRAL_FIGHT_WON');
   assert.equal(won.finale.stage,SOURCE_FINALE_STAGE.TOWER_ESCAPE);
   const escaped=dispatch(won,'TOWER_ESCAPE_COMPLETED');
   assert.equal(chunkSurfCompletion(escaped).endingId,'tower-won');
-  assert.equal(chunkSurfCompletion(dispatch(fight,'CATHEDRAL_FIGHT_LOST')).endingId,'tower-lost');
+
+  // THE BUST PROMISED TO SEE YOU AGAIN, AND IT DOES.
+  //
+  // Losing the cathedral used to resolve on the first defeat, which made
+  // "I'll see you here again, but you'll have no choice but to continue" a
+  // lie. The first TOWER_DEFEAT_CEILING-1 losses drop back to CATHEDRAL so the
+  // fight can be re-entered, and the route stays on TOWER so the chapel is gone
+  // for good — that is the "no choice" half. The last one resolves as before.
+  let attempt=fight;
+  for(let n=1;n<TOWER_DEFEAT_CEILING;n+=1){
+    attempt=dispatch(attempt,'CATHEDRAL_FIGHT_LOST');
+    assert.equal(attempt.finale.bust.defeats,n,'the bust counts');
+    assert.equal(attempt.finale.stage,SOURCE_FINALE_STAGE.CATHEDRAL,'the fight can be taken again');
+    assert.equal(attempt.finale.result,null,'nothing is resolved yet');
+    assert.equal(attempt.finale.route,SOURCE_FINALE_ROUTE.TOWER,'and the chapel stays closed');
+    assert.equal(chunkSurfCompletion(attempt).endingId,null,'no ending is owed mid-loop');
+    attempt=dispatch(attempt,'CATHEDRAL_FIGHT_STARTED');
+  }
+  const final=dispatch(attempt,'CATHEDRAL_FIGHT_LOST');
+  assert.equal(final.finale.bust.defeats,TOWER_DEFEAT_CEILING);
+  assert.equal(final.finale.stage,SOURCE_FINALE_STAGE.RESOLVED);
+  assert.equal(final.finale.result,SOURCE_FINALE_RESULT.LOST);
+  assert.equal(chunkSurfCompletion(final).endingId,'tower-lost');
+
+  // A save written before the bust kept its word has no counter and must still
+  // load, at zero.
+  assert.equal(normalizeChunkSurfState(JSON.parse(JSON.stringify(fight))).finale.bust.defeats,0);
 }
 
 // Old Horizon losses are readable but no new reducer path produces one. Old

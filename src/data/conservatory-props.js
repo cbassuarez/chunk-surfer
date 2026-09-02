@@ -1123,24 +1123,79 @@ export const CONSERVATORY_PROPS = [
     P(`academic-frieze-south-${i+1}`,'academic_frieze',x,267.0,Math.PI,{renderGroups:['ground','academic'],interactive:false,elevation:3.05}),
   ]),
 
-  // Eight classrooms are visually distinct only through mundane arrangements:
-  // desk orientation, an inactive piano or a cabinet. Nothing here can be
-  // auditioned, read, acquired or promoted into a work-order target.
+  // ── THE VOCAL FLOOR ───────────────────────────────────────────────────────
+  //
+  // This was one flatMap over eight identical rooms: seven desks in a 3x2 grid,
+  // a board 1.3m off a wall, and `room%2` deciding piano or cabinet. The
+  // comment above it admitted the problem — "visually distinct only through
+  // mundane arrangements" — and through wired glass, at torchlight, they were
+  // not distinct at all.
+  //
+  // Now each room is dressed as the thing it is. The four uprights were always
+  // here; they are studio pianos and they get studios.
+
+  // FOUR VOCAL STUDIOS, west side. A studio is a piano, a bench, and room for
+  // two people to stand. Nothing is arranged for an audience because there
+  // isn't one.
   ...[
-    [1,241,0],[14,241,Math.PI],[1,248,0],[14,248,Math.PI],
-    [1,255,0],[14,255,Math.PI],[1,262,0],[14,262,Math.PI],
-  ].flatMap(([x0,y0,yaw],room)=>{
-    const east=x0>10;
-    const desks=[0,1,2].flatMap((row)=>[0,1].map((col)=>P(`academic-class-${room+1}-desk-${row*2+col+1}`,'school_desk',x0+2.2+col*2.1,y0+1.7+row*1.35,yaw,{interactive:false})));
-    const fixtures=[
-      // A blackboard is on the wall by definition; it was measured 1.3m off one.
-      P(`academic-class-${room+1}-board`,'academic_blackboard',east?20.7:1.3,y0+2.7,east?-Math.PI/2:Math.PI/2,{interactive:false,mount:'wall',elevation:1.0}),
-      P(`academic-class-${room+1}-teacher-table`,'school_desk',x0+(east?4.8:6.1),y0+4.0,yaw,{interactive:false,scale:1.15}),
-    ];
-    if(room%2===0)fixtures.push(P(`academic-class-${room+1}-piano`,'upright_piano',x0+(east?5.7:1.2),y0+4.0,yaw,{interactive:false}));
-    else fixtures.push(P(`academic-class-${room+1}-cabinet`,'academic_filing_bank',x0+(east?5.8:1.2),y0+4.0,yaw,{interactive:false}));
-    return[...desks,...fixtures];
+    ['1',250.5],['2',255.5],['3',260.5],['4',264.5],
+  ].flatMap(([n,y],i)=>[
+    P(`academic-studio-${n}-piano`,'upright_piano',1.9,y+.6,Math.PI/2,{interactive:false}),
+    P(`academic-studio-${n}-bench`,'piano_bench',3.1,y+.6,Math.PI/2,{interactive:false}),
+    // The singer stands; the chair is for whoever is listening. One of the four
+    // has two, because somebody brought a second one in and left it.
+    P(`academic-studio-${n}-chair-1`,'chair',4.6,y+1.4,-Math.PI/2+.12*(i-1),{interactive:false}),
+    ...(i===2?[P(`academic-studio-${n}-chair-2`,'chair',3.4,y+1.0,-Math.PI/2+.4,{interactive:false})]:[]),
+  ]),
+
+  // THE THEORY ROOM. Every desk on the floor is in here, in rows, facing one
+  // board — which is what a theory room is and what eight rooms of seven desks
+  // never was. It bends around the service chase, so no two of its walls are
+  // the same length.
+  ...[0,1,2,3].flatMap((row)=>[0,1,2,3].map((col)=>
+    P(`academic-theory-desk-${row*4+col+1}`,'school_desk',14.4+col*2.0,253.6+row*1.1,Math.PI,{interactive:false}))),
+  P('academic-theory-board','academic_blackboard',20.7,255.0,-Math.PI/2,{interactive:false,mount:'wall',elevation:1.0}),
+  P('academic-theory-table','school_desk',20.2,252.4,Math.PI,{interactive:false,scale:1.15}),
+  P('academic-theory-piano','upright_piano',15.2,250.9,-Math.PI/2,{interactive:false}),
+
+  // THE STORE. Three metres deep and full — the filing that used to be spread
+  // one cabinet per classroom, which is where filing actually lives.
+  ...[0,1,2,3].map((i)=>
+    P(`academic-store-files-${i+1}`,'academic_filing_bank',13.2+i*2.4,259.7,0,{interactive:false})),
+  P('academic-store-desk-1','school_desk',19.4,260.9,.28,{interactive:false}),
+  P('academic-store-desk-2','school_desk',19.7,260.6,-.19,{interactive:false,scale:.98}),
+
+  // THE ROOM THE BREACH OPENS INTO. You can walk in here, and what is in it is
+  // the furniture that came out of everywhere else — stacked against a wall by
+  // somebody who was clearing the floor and stopped.
+  ...[0,1,2,3,4].map((i)=>
+    P(`academic-cleared-desk-${i+1}`,'school_desk',13.4+i*1.9,264.4,Math.PI/2+.06*(i%3-1),{interactive:false})),
+  P('academic-cleared-chair-1','chair',19.6,265.4,-.6,{interactive:false}),
+  P('academic-cleared-files','academic_filing_bank',20.4,263.9,Math.PI/2,{interactive:false}),
+
+  // THE CHAMBER ROOM. The corridor's head, and the one room up here you stand
+  // in. Chairs in a shallow curve toward the piano, the way a room is left after
+  // a chamber recital and before anybody comes to stack them.
+  P('academic-chamber-piano','upright_piano',3.0,244.4,Math.PI/2,{interactive:false}),
+  P('academic-chamber-bench','piano_bench',4.3,244.4,Math.PI/2,{interactive:false}),
+  ...[0,1,2,3,4,5,6,7].map((i)=>{
+    const arc=(i-3.5)*.34;
+    // The room is eight metres deep, so the curve has to stay inside it — a
+    // wider arc puts the end chairs through the north and south walls.
+    return P(`academic-chamber-chair-${i+1}`,'chair',8.2+Math.abs(arc)*1.7,244.4+arc*1.8,-Math.PI/2+arc*.5,
+      {interactive:false});
   }),
+  // FRESCOS. The gallery's frieze panels, at vault height, in the only other
+  // room with the height to carry them — see academicProfile.
+  ...[4.5,9.7,14.9].map((x,i)=>
+    P(`academic-chamber-fresco-north-${i+1}`,'academic_frieze',x,241.2,0,{interactive:false,mount:'wall',elevation:3.4})),
+  // The south wall carries two, not three: the corridor's mouth is three metres
+  // of missing wall in the middle of it, so the panels flank the opening rather
+  // than spanning a hole. The run being interrupted is the point — it is where
+  // you came in.
+  ...[4.0,14.5].map((x,i)=>
+    P(`academic-chamber-fresco-south-${i+1}`,'academic_frieze',x,248.0,Math.PI,{interactive:false,mount:'wall',elevation:3.4})),
+
   P('academic-reception-files','academic_filing_bank',12.0,273.0,Math.PI/2,{interactive:false}),
   P('academic-stripped-office-desk','school_desk',16.0,273.0,Math.PI/2,{interactive:false,scale:1.2}),
   P('academic-stripped-office-cabinet','academic_filing_bank',18.2,276.0,0,{interactive:false}),

@@ -1,5 +1,5 @@
 import * as scenes from './scenes.js';
-import { uiCenter, uiFill, uiLine, uiSize, uiText, uiWrap } from '../render/ui.js';
+import { uiCenter, uiLine, uiScrim, uiSize, uiText, uiWrap } from '../render/ui.js';
 import { drawLocationIndicator, drawMachinePanel, drawVfdText } from '../render/presentation.js';
 import { createHitRegions } from '../render/hit-regions.js';
 import { UI_COLOR } from '../render/palette.js';
@@ -109,6 +109,7 @@ export function makeDifficultySelectScene({
     id: 'difficulty-select',
     blocksInput: true,
     blocksWorld: true,
+    worldPresentation: 'visible',
     lensPreset: 'calm',
 
     enter() { AUDIO.startMenuHiss(); },
@@ -183,7 +184,7 @@ export function makeDifficultySelectScene({
     render() {
       hits.reset();
       const { cols, rows } = uiSize();
-      uiFill(0, 0, cols, rows, UI_COLOR.glass);
+      uiScrim(0.28);
       const w = Math.min(96, cols - 4);
       const detailRowsNeeded = 11 + RULE_ORDER.length * 2 + 3;
       const h = Math.min(Math.max(36, detailRowsNeeded + 7), rows - 4);

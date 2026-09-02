@@ -20,16 +20,22 @@ FP.setSpawn(conservatory.spawn.x,conservatory.spawn.y);
 PROPS.propsInit(FP);
 
 const academicDoors=FP.doorState().filter((door)=>door.id.startsWith('academic-'));
-const classroomDoors=academicDoors.filter((door)=>door.id.startsWith('academic-classroom-'));
-// SEVEN locked classrooms now. The north-east room became the lobby — one room
-// given over to circulation so the core corridor is a circuit rather than a spine
-// with a dead end at each end. Its two doors are the only unlocked openings up
-// here, and neither of them opens a classroom.
-assert.equal(classroomDoors.length,7);
-assert.equal(ACADEMIC_CLASSROOM_DOORS.length,7);
-assert.equal(academicDoors.length,11,'seven locked classrooms, two locked offices, and the lobby pair');
-const lobbyDoors=academicDoors.filter((door)=>door.id==='academic-lobby-core'||door.id==='academic-gallery-lobby');
-assert.equal(lobbyDoors.length,2,'the lobby has a way in and a way through');
+// THE VOCAL FLOOR. Four studios and two teaching rooms, all locked behind wired
+// glass — you see every one of these rooms and stand in none of them.
+//
+// The corridor's head is the CHAMBER ROOM, which has no leaf at all: you walk
+// into it, and it is the way through to the gallery. That is what makes the
+// climb arrive somewhere instead of at masonry.
+//
+// The south-east room has no leaf either. It is entered through the breach in
+// its own back wall, and a locked door on the front of a room you can walk into
+// the back of was the floor's plainest piece of nonsense.
+const classroomDoors=academicDoors.filter((door)=>/^academic-(studio|theory|store)/.test(door.id));
+assert.equal(classroomDoors.length,6);
+assert.equal(ACADEMIC_CLASSROOM_DOORS.length,6);
+assert.equal(academicDoors.length,10,'four studios, two teaching rooms, two offices, and the vestibule pair');
+const lobbyDoors=academicDoors.filter((door)=>door.id==='academic-chamber-vestibule'||door.id==='academic-gallery-lobby');
+assert.equal(lobbyDoors.length,2,'the chamber room has a way through to the gallery');
 assert.ok(lobbyDoors.every((door)=>!door.keyId),'and neither of them is locked');
 assert.ok(academicDoors.filter((door)=>!lobbyDoors.includes(door))
   .every((door)=>door.keyId==='academic-core'),'everything else up here stays locked');
@@ -41,7 +47,7 @@ const ordinaryKeys=new Set(['master','chapel']);
 // round the floor, so they answer to no key at all. Everything else up here holds
 // against the standard and chapel rings.
 const lockedAcademicDoors=academicDoors.filter((door)=>door.keyId==='academic-core');
-assert.equal(lockedAcademicDoors.length,9);
+assert.equal(lockedAcademicDoors.length,8);
 for(const door of lockedAcademicDoors){
   FP.setDoorOpen(door.id,false);
   const from=door.widthAxis==='x'?{x:door.cx,y:door.cy-3}:{x:door.cx-3,y:door.cy};
@@ -183,7 +189,7 @@ console.log('academic gallery contracts passed');
   const keys = new Set(['master', 'chapel']);
   for (const door of FP.doorState()) if (!door.keyId || keys.has(door.keyId)) FP.setDoorOpen(door.id, true);
   const at = (x, y) => FP.toRuntimePoint({ x, y: 240 + y });
-  const rooms = { lobby: [14, 21, 1, 6] };
+  const rooms = { vestibule: [18, 21, 1, 8] };
   for (const [name, [x0, x1, y0, y1]] of Object.entries(rooms)) {
     let exits = 0;
     for (let y = y0; y <= y1; y += 1) {
@@ -216,15 +222,20 @@ console.log('academic gallery contracts passed');
     }
     return false;
   };
-  // The circuit: from the gallery, through the lobby, down the core, along the
-  // south corridor and back into the gallery — without a key and without
-  // reversing through a dead end.
-  assert.ok(reach([25, 5], [18, 3]), 'the gallery reaches the lobby');
-  assert.ok(reach([18, 3], [11, 14]), 'the lobby reaches the core');
-  assert.ok(reach([11, 14], [12, 28]), 'the core reaches the south corridor');
+  // The circuit: from the gallery, through the vestibule and the chamber room,
+  // down the corridor, along the south corridor and back into the gallery —
+  // without a key and without reversing through a dead end.
+  assert.ok(reach([25, 5], [20, 3]), 'the gallery reaches the vestibule');
+  assert.ok(reach([20, 3], [8, 4]), 'the vestibule reaches the chamber room');
+  assert.ok(reach([8, 4], [9, 15]), 'the chamber room is the head of the corridor');
+  assert.ok(reach([9, 15], [12, 28]), 'the corridor reaches the south corridor');
   assert.ok(reach([12, 28], [40, 15]), 'and the south corridor comes back into the gallery');
-  // The locked rooms stay locked: the point of this floor is intact.
-  assert.ok(!reach([25, 5], [4, 10]), 'a classroom is still not somewhere you can walk into');
+  // The breach still lets you into the south-east room, which is why that room
+  // has no leaf on its front any more.
+  assert.ok(reach([12, 28], [16, 25]), 'the breach is still the way into the south-east room');
+  // The studios stay shut: the point of this floor is intact.
+  assert.ok(!reach([25, 5], [4, 11]), 'a vocal studio is still not somewhere you can walk into');
+  assert.ok(!reach([25, 5], [16, 15]), 'and neither is the theory room');
   // The busts' own aisles stay exactly as authored: no door, no threshold.
   for (const y of [10, 14, 18]) {
     const cell = at(27, y);

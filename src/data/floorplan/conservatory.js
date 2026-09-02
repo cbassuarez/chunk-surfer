@@ -244,7 +244,25 @@ function frontAtriumRows(){
     // point immediately in front of the concert-hall portal. The public counter
     // faces west; staff enter through the master-key leaf on the south wall.
     if(x>=17&&y>=3&&y<=10)c=(x===17||x===w-1||y===3||y===10)?'#':'F';
-    if(x===17&&(y===6||y===7))c='F';    // ticket window behind the fitted counter
+    // THE TICKET WINDOW IS SHUT, AND THE WALL HAS TO SAY SO.
+    //
+    // These two cells used to be open 'F', on the reasoning that the fitted
+    // counter standing in front of them was the barrier. It is not: ticket_counter
+    // is 2.8 x 0.75 at scale 0.75, so it covers runtime x180-181 across y16-20 and
+    // leaves runtime row 21 clear — a two-metre walk-in from the atrium, past the
+    // queue stanchions, straight through where the grille is meant to be. A prop
+    // is dressing; the plan is the collision, and the plan said this was a way in.
+    //
+    // The counter's own text has always described the opposite: "built to keep a
+    // queue outside and cash inside. The grille is still locked down." So the
+    // frontage is wall now and the counter reads as a shuttered hatch in front of
+    // it. Staff still get in the way the sheets say they do — the master-key leaf
+    // on the south wall (foh-office) — which is what makes that hint worth
+    // printing.
+    //
+    // Verified: with these sealed, the key cabinet, the rekey ledger and the desk
+    // all remain reachable from the atrium. test/box-office.spec.mjs holds both
+    // halves of that, because a sealed room is as broken as an open frontage.
     if(y===10&&x===20)c='+';
     // Acoustic lobby into the hall's rear cross aisle.
     if(x>=16&&y>=21&&y<=23)c='F';
@@ -269,11 +287,15 @@ export const ACADEMIC_BASE=10;
 // stable; only the obsolete fifteen-metre stair feeder disappears.
 const UPPER_WING_Z_SHIFT=-9.5;
 const upperWingZ=(z)=>z+UPPER_WING_Z_SHIFT;
-// The LOCKED ones. (13,244) is not here any more: that leaf is the lobby's
-// corridor door, and the lobby is how you get round this floor.
+// The LOCKED ones: four vocal studios and two teaching rooms. The chamber room
+// has no leaf (you walk into it), the vestibule pair is unlocked, and the
+// south-east room is entered through the breach in its back wall.
+//
+// This list and the schedule in data/conservatory-doors.js declare the same
+// leaves twice. They must move together, and so must the '+' glyphs.
 export const ACADEMIC_CLASSROOM_DOORS=Object.freeze([
-  {x:9,y:244},{x:9,y:251},{x:13,y:251},
-  {x:9,y:258},{x:13,y:258},{x:9,y:264},{x:13,y:264},
+  {x:7,y:251},{x:7,y:256},{x:7,y:261},{x:7,y:265},
+  {x:11,y:253},{x:11,y:260},
 ]);
 export const ACADEMIC_ENTRY=Object.freeze({x:13,y:277});
 export const ACADEMIC_BREACH=Object.freeze({x:17,y:267});
@@ -303,29 +325,70 @@ function academicFloorRows(){
       const edge=[[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>!inside(x+dx,y+dy));
       let c=edge?'#':'Q';
 
-      // Seven locked classrooms and a lobby, either side of the academic core.
+      // A VOCAL FLOOR, NOT A LATTICE OF CELLS.
       //
-      // The floor used to be a corridor that dead-ended at the north wall with
-      // eight locked doors off it and no way round — you walked up, you walked
-      // back. Now it is a circuit:
+      // This was eight identical 8x6 rooms in a perfect 2x4 grid off a 3-metre
+      // corridor that ran twenty-seven metres to a blank north wall. Two
+      // constant wall columns, one constant list of cross-walls, one constant
+      // list of door rows — and the dressing matched, seven desks and a board
+      // in every room with `room%2` deciding piano or cabinet. It read as a
+      // table because it was one.
       //
-      //   gallery → lobby → core → south corridor → gallery
+      // What a conservatory's upper floor actually is: vocal studies, a small
+      // chamber room, vaults and frescos. The four upright pianos were already
+      // up here, one per pair of rooms; they are studio uprights and nobody had
+      // said so.
       //
-      // The gallery itself is untouched. The only cut into it is one door in its
-      // outer west wall, five metres from the nearest plinth.
-      if(y>=1&&y<=27&&(x===9||x===13))c='#';
-      if([7,14,21,27].includes(y)&&((x>=1&&x<=8)||(x>=14&&x<=21)))c='#';
-      if([4,11,18,24].includes(y)&&(x===9||x===13))c='+';
+      //   THE CORRIDOR ARRIVES SOMEWHERE. Its head is the chamber room now, so
+      //   the walk from the stair ends in the best room on the floor instead of
+      //   at masonry. The gallery is reached THROUGH it, by way of a vestibule,
+      //   which makes the chamber the hinge of the circuit rather than leaving
+      //   the old lobby as a room that was only ever a landing.
+      //
+      //   THE TWO SIDES STOP MATCHING. Six metres of studio west, ten metres of
+      //   teaching east — the same asymmetry the practice wing uses, and for the
+      //   same reason: a double-loaded corridor with equal banks is a drawing
+      //   convention, not a building.
+      //
+      // Everything but the chamber room and its vestibule stays locked behind
+      // wired glass. That was always the point of this floor; the complaint was
+      // that the walk delivered nothing, not that the rooms were shut.
+
+      // The chamber room (x1-16) and the gallery vestibule (x18-21) fill the
+      // north band. The corridor opens into the chamber, so there is no leaf
+      // between the walk and its destination.
+      if(y>=1&&y<=8&&x===17)c='#';
+      if(y===4&&x===17)c='+';
+      if(y===9&&x>=1&&x<=21)c='#';
+      if(y===9&&x>=8&&x<=10)c='Q';
+
+      // The corridor, three metres, x8-10.
+      if(y>=10&&y<=27&&(x===7||x===11))c='#';
+
+      // WEST: four vocal studios, 6m deep, of unequal depth — 4, 4, 3, 3. A
+      // studio is a piano, a stand and two people; it does not want to be the
+      // same room as a theory class.
+      if([14,19,23].includes(y)&&x>=1&&x<=6)c='#';
+      if([11,16,21,25].includes(y)&&x===7)c='+';
+      if(y===27&&x>=1&&x<=6)c='#';
+
+      // EAST: ten metres deep. One large theory room bent around a service
+      // chase, a shallow store, and the room the breach opens into.
+      if([18,22].includes(y)&&x>=12&&x<=21)c='#';
+      if([13,20].includes(y)&&x===11)c='+';
+      // The chase. No door and nothing behind it — its whole job is to stop the
+      // theory room being another rectangle.
+      if(x>=12&&x<=13&&y>=10&&y<=12)c='#';
+
       if(x===22&&y>=1&&y<=26)c='#';
-      if(y===27&&x>=14&&x<=21)c=(x===17||x===18)?'Q':'#';
-      // ...and the north-east room is not a classroom any more. It is the LOBBY:
-      // one room given over to circulation, with a door straight through into the
-      // gallery's west aisle. That single opening is what turns the core corridor
-      // from a spine with a dead end at each end into a circuit. Everything else
-      // up here stays locked, because locked instruction rooms are the point of
-      // this floor — the complaint was that you could not get ANYWHERE, not that
-      // you could not get in.
+      // The one cut into the gallery, five metres from the nearest plinth. It
+      // is the vestibule's door now rather than the old lobby's.
       if(x===22&&y===4)c='+';
+      // THE BREACH. The south-east room opens to the south corridor through two
+      // metres of missing wall. Its corridor door is gone: a locked leaf on the
+      // front of a room you can walk into the back of was the floor's plainest
+      // piece of nonsense.
+      if(y===27&&x>=12&&x<=21)c=(x===17||x===18)?'Q':'#';
 
       // Two locked faculty rooms sit beside an open reception and a stripped
       // office. The open suite is the ordinary route to the breach.
@@ -334,6 +397,8 @@ function academicFloorRows(){
       if(x===6&&y>=30&&y<=38)c='#';
       if(x===19&&y>=30&&y<=38)c=y===33?'Q':'#';
       if(x===8&&y>=35&&y<=37)c='Q';
+      // Stair clearance, not a mistake: academic_stair_loggia replaces this
+      // footprint and carves the hero flight's cylinder out of it.
       if(x>=5&&x<=7&&y>=35&&y<=38)c=' ';
 
       // No authored cell occupies the centre. Collision sees an edge; the
@@ -345,10 +410,45 @@ function academicFloorRows(){
   }
   return rows;
 }
+// VAULTS, IN BAYS, ON THE RIB LINES.
+//
+// This returned two flat numbers for a whole floor. The gallery got seven
+// metres and everything else four and a half, which is why the corridor and the
+// rooms read as one undifferentiated slab of air.
+//
+// A stepped ceiling is the honest way to author a vault here. The natatorium
+// note above warns that per-cell ceiling steps show as visible headers in the
+// DDA renderer — and that is exactly right, which is why the steps land on the
+// BAY DIVISIONS, where a transverse rib belongs. The renderer's one limitation
+// and the architecture agree: a groin-vaulted corridor IS a row of bays with a
+// rib between each pair.
+const ACADEMIC_BAY_RIBS=Object.freeze([14,19,23]);   // the studio cross-walls
+function academicVault(y,ribs,crown,springing){
+  // A rib row, or the cell either side of one, sits at the springing; the
+  // middle of a bay carries the crown.
+  return ribs.some((rib)=>Math.abs(y-rib)<=1)?springing:crown;
+}
 function academicProfile(x,y,cell){
   if(cell.solid||(cell.flags&(F.DOOR|F.BRICKED)))return null;
   const crown=x>=23&&x<=47&&y>=2&&y<=28;
-  return{ceil:crown?17:14.5};
+  if(crown)return{ceil:17};
+  // THE CHAMBER ROOM. Seven metres, vaulted across its width in three bays, so
+  // it stands with the gallery rather than with the studios it is reached
+  // through. It is the only room up here with the height to carry a fresco.
+  if(x>=1&&x<=16&&y>=1&&y<=8){
+    return{ceil:academicVault(x,[6,11],17,15.6)};
+  }
+  // The vestibule is deliberately low, so the chamber reads as a volume you
+  // leave and the gallery as one you enter.
+  if(x>=18&&x<=21&&y>=1&&y<=8)return{ceil:14.2};
+  // The corridor, vaulted on the studios' own rhythm. Low — you are under the
+  // building's services here, and the dark is the point.
+  if(x>=8&&x<=10&&y>=9&&y<=27){
+    return{ceil:academicVault(y,ACADEMIC_BAY_RIBS,14.6,13.6)};
+  }
+  // Studios and teaching rooms keep a flat ceiling. Small rooms have flat
+  // ceilings; pretending otherwise would make the vault meaningless.
+  return{ceil:14.5};
 }
 function practiceWingRows(){
   // THE SPINE IS ON THE STAIR'S AXIS. The wing sits five metres further west than

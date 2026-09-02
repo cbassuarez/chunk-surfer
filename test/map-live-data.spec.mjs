@@ -34,6 +34,9 @@ assert.equal(floors.lux_nova, 'u1');
 assert.ok(source.connectors.some((connector) => [connector.a.floorId, connector.b.floorId].includes('b1')));
 assert.ok(source.connectors.some((connector) => [connector.a.floorId, connector.b.floorId].includes('u1')));
 assert.ok(source.connectors.some((connector) => [connector.a.floorId, connector.b.floorId].includes('academic')));
+assert.ok(source.connectors.every((connector) => connector.sourceId && connector.label),
+  'live connectors retain stable floorplan ownership and authored spoken labels');
+assert.ok(source.connectors.some((connector) => connector.label === 'MAIN BASEMENT STAIR'));
 assert.equal(source.spaces.length, BUILDING_MAP.spaces.length, 'every authored facility space resolves into the live map');
 assert.equal(source.spaces.some((space) => !space.floorId), false, 'no named facility space is left without a structural floor');
 assert.equal(source.spaces.find((space) => space.id === 'space:ensemble-room')?.floorId, 'u1');

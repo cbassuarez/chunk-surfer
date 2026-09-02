@@ -16,11 +16,11 @@
 //    is. It costs one multiply and it is the whole difference between weather
 //    and confetti.
 //
-// 2. THE EXIT IS A PUSH, NOT A FADE. A fade reads as the effect being switched
-//    off. A push reads as the weather passing. So when the quote begins to go,
-//    the emitter stops and everything still in frame is shoved toward the
-//    nearest edge — and the last few are deliberately left alone, so they are
-//    still settling behind the title menu when it comes up.
+// 2. THE EXIT CHANGES EMISSION AND VISIBILITY, NEVER MOTION. Once a particle
+//    exists, the front-end handoff is not allowed to touch its velocity, spin,
+//    flutter phase, wind response, or trajectory. The opening simply stops
+//    replenishing the field and CASE SELECT fades the remaining population while
+//    those same particles keep travelling under the same equations.
 //
 // The simulation is pure and coordinate-free (everything is 0..1 of the frame),
 // so it can be stepped and asserted in node without a canvas. Only
@@ -34,10 +34,14 @@ import { freshStorm, stepStorm, stormFlash } from './storm.js';
 
 export const BOOT_WEATHER = Object.freeze(['rain', 'leaves', 'sheets']);
 
-// How many are allowed to outlive the credits. They are not a fade tail — they
-// are the last of the weather, still moving when the menu arrives, and they
-// stop there.
-const SURVIVORS = 4;
+
+export const BOOT_WEATHER_HANDOFF = Object.freeze({
+  clearAt: 20.40,
+  alphaFadeAt: 22.85,
+  creditEnd: 23.50,
+  titleTailSeconds: 1.20,
+  targetTailParticles: 4,
+});
 
 // Where the credits' bloom is (credit-visual.js draws its radial gradient at
 // 0.5 / 0.45–0.48). Particles are lit by the same lamp as everything else.
@@ -129,12 +133,11 @@ export function freshBootWeatherState(kind = 'rain', { seed = 1, reducedMotion =
     pace: reducedMotion ? 0.5 : 1,
     rng: (Math.floor(Number(seed) || 1) >>> 0) || 1,
     time: 0,
-    settleTime: 0,
     wind: 0,
-    fade: 1,
-    settling: false,
-    calm: false,
-    reserved: false,
+    presentationAlpha: 1,
+    phase: 'opening',
+    targetParticles: 0,
+    titleTail: null,
     // RAIN CARRIES ITS STORM. The credits' rain is the same weather as the
     // yard's, so it gets the same strikes — and a flash on the boot screen is
     // the one place in this game where lightning can light the QUOTE.
@@ -179,78 +182,86 @@ function offFrame(particle) {
   return particle.y > 1.18 || particle.y < -0.42 || particle.x > 1.22 || particle.x < -0.30;
 }
 
-export function stepBootWeather(state, dt, { presence = 0, settling = false, calm = false } = {}) {
+export function bootWeatherOpeningEnvelope(state, authoredTime, { presence = 0 } = {}) {
+  const config = KINDS[state?.kind] || KINDS.rain;
+  const fullTarget = Math.max(0, Math.round(config.count * (Number(state?.density) || 0) * clamp01(presence)));
+  const tailTarget = Math.min(fullTarget, BOOT_WEATHER_HANDOFF.targetTailParticles);
+  const clearT = smooth((Number(authoredTime) - BOOT_WEATHER_HANDOFF.clearAt)
+    / Math.max(0.001, BOOT_WEATHER_HANDOFF.creditEnd - BOOT_WEATHER_HANDOFF.clearAt));
+  const alphaT = smooth((Number(authoredTime) - BOOT_WEATHER_HANDOFF.alphaFadeAt)
+    / Math.max(0.001, BOOT_WEATHER_HANDOFF.creditEnd - BOOT_WEATHER_HANDOFF.alphaFadeAt));
+  return Object.freeze({
+    targetCount: Math.max(0, Math.round(fullTarget + (tailTarget - fullTarget) * clearT)),
+    alpha: 1 - alphaT * 0.22,
+    phase: clearT > 0 ? 'opening-tail' : 'opening',
+  });
+}
+
+export function beginBootWeatherTitleTail(state) {
+  if (!state?.enabled) return state;
+  state.phase = 'title-tail';
+  state.titleTail = {
+    elapsed: 0,
+    startAlpha: clamp01(state.presentationAlpha ?? 1),
+  };
+  state.presentationAlpha = state.titleTail.startAlpha;
+  state.targetParticles = 0;
+  return state;
+}
+
+export function stepBootWeatherTitleTail(state, dt, { stormActive = true } = {}) {
+  if (!state?.enabled) return state;
+  const step = Math.max(0, Math.min(0.1, Number(dt) || 0));
+  if (!state.titleTail) beginBootWeatherTitleTail(state);
+  stepBootWeather(state, step, { targetCount: 0, stormActive });
+  state.titleTail.elapsed += step;
+  const t = smooth(state.titleTail.elapsed / Math.max(0.001, BOOT_WEATHER_HANDOFF.titleTailSeconds));
+  state.presentationAlpha = state.titleTail.startAlpha * (1 - t);
+  if (state.presentationAlpha <= 0.0001) {
+    state.presentationAlpha = 0;
+    state.phase = 'visual-ended';
+  }
+  return state;
+}
+
+export function stepBootWeather(state, dt, { presence = 0, targetCount = null, stormActive = true } = {}) {
   if (!state?.enabled) return state;
   const step = Math.max(0, Math.min(0.1, Number(dt) || 0));
   const config = KINDS[state.kind] || KINDS.rain;
   state.time += step;
-  state.settling = !!settling || !!calm;
-  state.calm = !!calm;
 
   // THE SAME GUST THE YARD AND SOURCE ARE READING. A gust arrives across the
   // whole night or it is not a gust — see world/wind.js.
   state.wind = windAt(state.time, { depth: config.gust });
   if (state.storm) {
-    // Stops striking once the weather is clearing, so the menu never arrives on
-    // a thunderclap.
-    const { thunder } = stepStorm(state.storm, step, { active: !state.settling });
+    const { thunder } = stepStorm(state.storm, step, { active: !!stormActive });
     for (const event of thunder) state.thunder.push(event);
   }
 
-  const wanted = state.settling
-    ? 0
-    : Math.round(config.count * state.density * clamp01(presence));
-  // The first population is scattered through frame; everything after enters.
+  const maximum = Math.max(0, Math.round(config.count * state.density));
+  const hasTargetCount = targetCount !== null && targetCount !== undefined && Number.isFinite(Number(targetCount));
+  const wanted = hasTargetCount
+    ? Math.max(0, Math.min(maximum, Math.round(Number(targetCount))))
+    : Math.round(maximum * clamp01(presence));
+  state.targetParticles = wanted;
+
+  // Lowering the target never deletes anything already in flight. It only
+  // stops replacing particles as they naturally leave the frame. This is the
+  // entire credits -> title exit: population and opacity change, kinematics do
+  // not.
   const seeded = state.particles.length === 0 && wanted > 0 && state.time < 2.4;
   while (state.particles.length < wanted) state.particles.push(spawn(state, config, { seeded }));
 
-  // WHICH ONES ARE THE LAST OF IT IS DECIDED WHEN THE WIND TURNS, not left to
-  // whichever happen to survive. Rain falls fast: by the time attrition gets the
-  // field down to four, those four are all a hand's width from the bottom edge
-  // and gone inside a frame, so nothing reaches the menu at all. Reserve the few
-  // with the furthest still to travel at the moment settling starts, exempt them
-  // from the push and brake them, and every weather hands the same few over.
-  if (state.settling && !state.calm && !state.reserved) {
-    state.reserved = true;
-    const toExit = (particle) => (config.exit === 'down' ? 1.18 - particle.y : 1.22 - particle.x);
-    [...state.particles]
-      .sort((a, b) => toExit(b) - toExit(a))
-      .slice(0, SURVIVORS)
-      .forEach((particle) => { particle.keep = true; });
-  }
-
-  // Settling stops the emitter and shoves what is left at the nearest way out.
-  //
-  // The ramp is measured from when settling BEGAN, not from the scene clock:
-  // the credits advance on wall time and can hand this a delta that was clipped
-  // to 0.1s, so `state.time` legitimately drifts behind the authored second the
-  // clear-out is keyed to. Timing the push off its own trigger makes it agree
-  // with the picture whatever the frame rate did.
-  if (state.settling && !state.calm) state.settleTime += step;
-  const pushing = state.settling && !state.calm;
-  // The clear-out window is fixed by the quote (20.40 to 23.30), so a field
-  // twice the size has to leave twice as fast or the menu comes up on a crowd.
-  const push = pushing ? 1 + smooth(state.settleTime / 2.10) * 3.4 : 1;
-  // Calm is the title screen: the last of it comes to rest rather than being
-  // switched off mid-air. A reserved particle is already slowing before then —
-  // a shower peters out, it does not stop at full speed.
-  const calmDrag = Math.exp(-step * 1.5);
-  const keepDrag = Math.exp(-step * 1.15);
-  if (state.calm) state.fade = Math.max(0, state.fade - step / 1.8);
-
   const next = [];
   for (const particle of state.particles) {
-    const drag = state.calm ? calmDrag : (particle.keep && state.settling ? keepDrag : 1);
-    const shove = particle.keep ? 1 : push;
-    particle.vx *= drag;
-    particle.vy *= drag;
-    particle.x += particle.vx * state.wind * state.pace * shove * step;
-    particle.y += particle.vy * state.pace * shove * step;
+    particle.x += particle.vx * state.wind * state.pace * step;
+    particle.y += particle.vy * state.pace * step;
     particle.spin += particle.spinRate * state.pace * step;
     particle.phase += step * config.flutter;
     if (config.flutter) {
       // A leaf stalls and darts; it does not travel at a constant rate. This is
-      // the difference between blowing and sliding.
+      // ordinary species motion and is intentionally identical on both sides of
+      // the scene boundary.
       particle.x += Math.sin(particle.phase) * 0.030 * config.flutter * state.pace * step;
       particle.y += Math.cos(particle.phase * 0.73) * 0.022 * config.flutter * state.pace * step;
     }
@@ -275,7 +286,7 @@ export function bootWeatherFlash(state) {
 
 export function bootWeatherSettled(state) {
   if (!state?.enabled) return true;
-  return state.particles.length === 0 || state.fade <= 0;
+  return state.particles.length === 0 || state.presentationAlpha <= 0;
 }
 
 // The lamp every particle is lit by. Mid-frame catches it; the corners do not.
@@ -405,7 +416,7 @@ function renderSheets(ctx, state, width, height, alpha) {
 
 export function renderBootWeather(state, { alpha = 1 } = {}) {
   if (!state?.enabled || !state.particles.length) return;
-  const visible = clamp01(alpha) * clamp01(state.fade);
+  const visible = clamp01(alpha);
   if (visible <= 0.004) return;
   uiDraw(({ ctx }) => {
     const width = ctx.canvas.width;
@@ -448,8 +459,8 @@ export function attachBootWeatherAudio(runtime) { bed = runtime || null; }
 
 export function bootWeatherAudio() { return bed; }
 
-export function endBootWeather() {
-  bed?.stop?.({ fade: 0.5 });
+export function endBootWeather({ fade = 0.9 } = {}) {
+  bed?.stop?.({ fade, thunderTail: 5.5 });
   bed = null;
   live = null;
 }
@@ -462,8 +473,11 @@ export function bootWeatherDebug() {
     enabled: live.enabled,
     particles: live.particles.length,
     time: +live.time.toFixed(2),
-    fade: +live.fade.toFixed(3),
-    phase: live.calm ? 'calm' : live.settling ? 'clearing' : 'weather',
+    presentationAlpha: +clamp01(live.presentationAlpha ?? 1).toFixed(3),
+    phase: live.phase || 'opening',
+    targetParticles: Math.max(0, Math.round(Number(live.targetParticles) || 0)),
     density: live.density,
+    pace: live.pace,
+    wind: +Number(live.wind || 0).toFixed(3),
   };
 }

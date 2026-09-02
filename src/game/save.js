@@ -68,6 +68,9 @@ export const freshSave = ({ settings = DEFAULT_SETTINGS, run = null } = {}) => (
   px: 0,
   py: 0,
   facing: 0,
+  view: null,
+  cameraRevision: 0,
+  checkpointRevision: 0,
   takes: [],
   items: [],
   props: { inspected: [], auditioned: [], cycles: {}, hushSeed: 0x43535552, hushCount: 0 },
@@ -261,6 +264,9 @@ function normalizeSaveV4(data, meta = null) {
     version: SAVE_VERSION,
     layoutRevision:Math.max(0,Math.floor(finiteNumber(source.layoutRevision,0))),
     facing:((Math.round(finiteNumber(source.facing,0))%4)+4)%4,
+    view:Number.isFinite(Number(source?.view?.yaw))&&Number.isFinite(Number(source?.view?.pitch))?{yaw:Number(source.view.yaw),pitch:Number(source.view.pitch)}:null,
+    cameraRevision:Math.max(0,Math.floor(finiteNumber(source.cameraRevision,0))),
+    checkpointRevision:Math.max(0,Math.floor(finiteNumber(source.checkpointRevision,0))),
     flags: source.flags && typeof source.flags === 'object' ? source.flags : {},
     takes: Array.isArray(source.takes) ? source.takes : [],
     items: Array.isArray(source.items) ? source.items : [],
@@ -328,6 +334,7 @@ function migrateMetaToV2(data) {
     ...freshMeta(),
     ...data,
     version: META_VERSION,
+    openingCreditsCompleted: Number(data.runs) > 0,
     achievements: {},
     knowledge: {},
     challengeCompletions: { deadAir: false },
@@ -348,6 +355,31 @@ function write(key, data) {
 
 let save = freshSave();
 let meta = freshMeta();
+const transientStateStack = [];
+
+function transientState() {
+  return transientStateStack[transientStateStack.length - 1] || null;
+}
+
+export async function withTransientGameState(
+  { save: scopedSave, meta: scopedMeta = meta } = {},
+  fn = async () => {},
+) {
+  const cleanMeta = sanitizeMeta(structuredClone(scopedMeta || freshMeta()));
+  const scope = {
+    save: normalizeSaveV4(structuredClone(scopedSave || freshSave()), cleanMeta),
+    meta: cleanMeta,
+    writes: [],
+  };
+  transientStateStack.push(scope);
+  try {
+    return await fn(scope);
+  } finally {
+    const popped = transientStateStack.pop();
+    if (popped !== scope) transientStateStack.length = 0;
+  }
+}
+
 
 export function saveLoad() {
   const metaStored = firstStored([META_KEY, ...LEGACY_META_KEYS]);
@@ -396,8 +428,8 @@ export async function saveLoadAsync({ gameVersion = 'LOCAL', kind = null, adapte
   }
 }
 
-export function getSave() { return save; }
-export function getMeta() { return meta; }
+export function getSave() { return transientState()?.save || save; }
+export function getMeta() { return transientState()?.meta || meta; }
 
 export function hasSave() {
   return !!firstStored([SAVE_KEY, ...LEGACY_SAVE_KEYS]);
@@ -406,10 +438,17 @@ export function hasSave() {
 export function hasActiveRun() {
   // The in-memory run remains authoritative when storage is unavailable (for
   // example private browsing with a blocked localStorage write).
-  return save?.run?.status === 'active';
+  return getSave()?.run?.status === 'active';
 }
 
 export function saveCommit(patch = {}) {
+  const scope = transientState();
+  if (scope) {
+    Object.assign(scope.save, patch);
+    scope.save = normalizeSaveV4(scope.save, scope.meta);
+    scope.writes.push({ type: 'save', patch: structuredClone(patch) });
+    return scope.save;
+  }
   Object.assign(save, patch);
   save = normalizeSaveV4(save, meta);
   write(SAVE_KEY, save);
@@ -419,6 +458,13 @@ export function saveCommit(patch = {}) {
 }
 
 export function metaCommit(patch = {}) {
+  const scope = transientState();
+  if (scope) {
+    Object.assign(scope.meta, patch);
+    scope.meta = sanitizeMeta(scope.meta);
+    scope.writes.push({ type: 'meta', patch: structuredClone(patch) });
+    return scope.meta;
+  }
   Object.assign(meta, patch);
   meta = sanitizeMeta(meta);
   write(META_KEY, meta);
@@ -426,8 +472,14 @@ export function metaCommit(patch = {}) {
   return meta;
 }
 
-export function newGame({ preset = null, values = null, now = Date.now() } = {}) {
+export function newGame({ preset = null, values = null, now = Date.now(), launchPlan = null } = {}) {
   const settings = normalizeSettings(save?.settings);
+  const plannedNow = Number.isFinite(Number(launchPlan?.startedAt))
+    ? Number(launchPlan.startedAt)
+    : now;
+  const plannedId = typeof launchPlan?.runId === 'string' && launchPlan.runId
+    ? launchPlan.runId
+    : null;
   const selectedPreset = preset || settings.lastDifficulty || 'contract';
   settings.lastDifficulty = selectedPreset;
   if (selectedPreset === 'custom') settings.customShiftRules = normalizeRuleValues(values || settings.customShiftRules || {});
@@ -439,9 +491,28 @@ export function newGame({ preset = null, values = null, now = Date.now() } = {})
       values: values || undefined,
       meta,
       settings,
-      now,
+      now: plannedNow,
+      id: plannedId,
     }),
   });
+  if (
+    launchPlan?.initialPosition
+    && Number.isFinite(Number(launchPlan.initialPosition.x))
+    && Number.isFinite(Number(launchPlan.initialPosition.y))
+  ) {
+    save.px = Number(launchPlan.initialPosition.x);
+    save.py = Number(launchPlan.initialPosition.y);
+    save.area = String(launchPlan.initialArea || 'prologue');
+  }
+  if (launchPlan?.initialView && Number.isFinite(Number(launchPlan.initialView.yaw))) {
+    save.view = {
+      yaw: Number(launchPlan.initialView.yaw),
+      pitch: Number.isFinite(Number(launchPlan.initialView.pitch))
+        ? Number(launchPlan.initialView.pitch)
+        : 0,
+    };
+    save.cameraRevision = 1;
+  }
 
   write(SAVE_KEY, save);
   saveSettingsQueued(save.settings);

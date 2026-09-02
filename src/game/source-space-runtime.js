@@ -2611,21 +2611,15 @@ export function createSourceSpaceRuntime({
       }
       // THE BODY IS A THING YOU CAN WALK UP TO.
       //
-      // beginHushContact has always existed and always guarded itself on
-      // hushMode().colliding — but the only caller was a physical catch, and
-      // out here a catch cannot happen: the body prowls at a fifth of the
-      // player's speed, Source never gives it a sound to chase, and contact
-      // wants three quarters of a cell. The two of them were never going to
-      // meet by accident.
-      //
-      // So the meeting is the player's move. It is focusable like every other
-      // thing in Source, it costs him a tier the same as being caught does, and
-      // walking away from it costs nothing at all.
+      // Contact follows behind at three quarters of the player's walking speed.
+      // It never resolves by collision: the meeting is the player's move. Turn,
+      // acquire the body, and interact. A wider focus radius keeps that readable
+      // while clean forward walking is slowly opening the gap.
       if (hushMode().colliding && presence?.active
           && Number.isFinite(presence.x) && Number.isFinite(presence.y)) {
         candidates.push({
           kind: 'hush', id: 'source-hush', x: presence.x, y: presence.y,
-          focusPriority: 11, focusRadius: 7,
+          focusPriority: 11, focusRadius: 12,
         });
       }
       if (state.phase === CHUNK_SURF_PHASE.FINAL) {
@@ -2792,8 +2786,11 @@ export function createSourceSpaceRuntime({
     }
   }
 
-  function inspectFocused(px, py, facing) {
-    const focus = focusAt(px, py, facing);
+  function inspectFocused(px, py, facing, presence = null) {
+    // Use the same candidate set the HUD just drew. Source Contact is carried
+    // by the live Presence body, not by static world geometry; dropping this
+    // fourth argument produced a visible SPEAK prompt whose key did nothing.
+    const focus = focusAt(px, py, facing, presence);
     if (!focus) return { handled: false };
     if (focus.kind === 'source-landing-door') {
       if (state.landingDoorSealed) {
@@ -2837,7 +2834,11 @@ export function createSourceSpaceRuntime({
       // the caller spoke — so the hardest walk in the game ended on a caption.
       // The caller cuts to black on this event instead: a door, and then the
       // field. Anything said here would be said over the top of that.
-      return { handled: true, text: '', event: 'page-found' };
+      // The Source field has one authored axis: north through the Scene Dock.
+      // A player may approach the still sheet from either side, so tell the
+      // presenter which bearing the opaque page must hand back. Otherwise a
+      // south-facing read faithfully builds the room north — behind the camera.
+      return { handled: true, text: '', event: 'page-found', revealFacing: 0 };
     }
     if (focus.kind === 'landmark') {
       if (!focus.available) return { handled: true, text: 'The source is present, but its call site has not been reached.' };
@@ -4111,10 +4112,10 @@ export function createSourceSpaceRuntime({
     // it prowls at a fifth of his speed and Source never gives it a target, it
     // stayed there for the rest of the chapter.
     //
-    // AHEAD, and on his own floor. It cannot catch him — nothing out here is
-    // meant to — so the only way the encounter happens is if he walks into it,
-    // and that means it has to be somewhere he is going. Same floor because a
-    // tier boundary is a climb, and a body across one is a body behind glass.
+    // The caller supplies the authored bearing. Source Contact supplies the
+    // player's REAR bearing so the body enters as a pursuit, while other callers
+    // may still use the sampler's forward arc. Same floor because a tier boundary
+    // is a climb, and a body across one is a body behind glass.
     sampleSpawn({ player, forward, minDistance = 30, maxDistance = 48, random = Math.random } = {}) {
       if (!player) return null;
       const here = cellAt(player.x, player.y);

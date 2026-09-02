@@ -11,6 +11,14 @@ const runtimeSource=await readFile(new URL('../src/game/source-space-runtime.js'
 const mainSource=await readFile(new URL('../src/main.js',import.meta.url),'utf8');
 assert.doesNotMatch(runtimeSource,/emitNoise|MONITOR\./,'Source weather, contacts and traversal never enter the player-noise path');
 
+{
+  const built = buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.HAYSTACK, { seed: 4417 });
+  const runtime = createSourceSpaceRuntime({ initialState: built.state });
+  runtime.setPlayerPosition(built.position);
+  assert.equal(runtime.focusAt(built.position.x,built.position.y,built.position.facing)?.kind,'haystack-page',
+    'the HAYSTACK / SEARCH God hook does not face the still sheet');
+}
+
 // THE FIRST TIER IS CLIMBED, NOT RIDDEN.
 //
 // This used to assert a committed lift ride out of the arrival: canStep handing
@@ -124,6 +132,8 @@ assert.doesNotMatch(runtimeSource,/emitNoise|MONITOR\./,'Source weather, contact
   assert.match(sourceTick,/traversal\?\.completed[\s\S]*armHeldMovement\(performance\.now\(\)\)/,
     'a completed Source traversal does not re-arm held movement');
   assert.doesNotMatch(sourceTick,/resetMotionInput/,'traversal completion clears the player\'s held key');
+  assert.match(mainSource,/inspectFocused\(px,py,R3\.r3dFacing\(\),PRES\.publicSnapshot\(\)\)/,
+    'the live Contact interact path drops the Presence candidate drawn by the HUD');
 }
 
 // NOTHING IN THE FIELD IS RIDDEN, AND THE SPINE IS WALKABLE END TO END.
@@ -155,10 +165,20 @@ assert.doesNotMatch(runtimeSource,/emitNoise|MONITOR\./,'Source weather, contact
 {
   const built = buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.FIRST_CONTACT, { seed: 4417 });
   const runtime = createSourceSpaceRuntime({ initialState: built.state });
+  runtime.setPlayerPosition(built.position);
+  runtime.tick(6, { px: built.position.x, py: built.position.y, facing: built.position.facing });
+  assert.equal(runtime.hushMode().colliding, true,
+    'the CONTACT / TRAILING PURSUIT God hook lands inside a protected landmark hold');
   // Stand on the return tier, wherever the field currently puts it.
   const returnTier = SOURCE_TIERS.find((tier) => tier.id === 'return');
   const traceTier = SOURCE_TIERS.find((tier) => tier.id === 'trace');
-  runtime.setPlayerPosition({ x: ORIGIN.x + 30, y: ORIGIN.y + returnTier.from - 20, facing: 0 });
+  const contactAt={ x: ORIGIN.x + 30, y: ORIGIN.y + returnTier.from - 20, facing: 2 };
+  runtime.setPlayerPosition(contactAt);
+  const trailingPresence={active:true,x:contactAt.x,y:contactAt.y+5};
+  assert.equal(runtime.focusAt(contactAt.x,contactAt.y,contactAt.facing,trailingPresence)?.kind,'hush',
+    'turning around does not acquire the trailing Source Presence');
+  assert.equal(runtime.inspectFocused(contactAt.x,contactAt.y,contactAt.facing,trailingPresence)?.event,'hush-contact',
+    'the visible SPEAK prompt is not wired to the Contact interaction');
   const encounter = runtime.beginHushContact();
   assert.ok(encounter);
   const aligned = encounter.choices.find((choice) => choice.aligns);

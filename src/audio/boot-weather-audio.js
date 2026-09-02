@@ -1,3 +1,4 @@
+import { createThunderVoice } from './thunder.js';
 // THE WEATHER YOU HEAR THE CREDITS THROUGH.
 //
 // The opening credits were silent — not by design so much as by nobody having
@@ -65,7 +66,20 @@ export function bootWeatherVoice(kind) {
 
 export function createBootWeatherAudio({ context, destination, kind = 'rain' } = {}) {
   const voice = bootWeatherVoice(kind);
-  if (!context || !destination || !voice) return { update() {}, stop() {}, active: () => false };
+  if (!context || !destination || !voice) {
+    return { update() {}, strike() { return false; }, stop() {}, active: () => false };
+  }
+
+  // THE STORM HAS BEEN STRIKING INTO A QUEUE NOBODY DRAINED. stepBootWeather has
+  // always ticked a storm and pushed its events onto state.thunder, and
+  // drainBootThunder has always existed to take them — and nothing anywhere
+  // called it, so the opening credits have had lightning weather with no thunder
+  // in it. The voice was written and only ever wired in-game.
+  //
+  // It hangs off the same destination as the bed, so it is one weather on one
+  // bus, and it goes through the output analyser like everything else — which is
+  // what lets the title's meter jump on a crack rather than only breathe on rain.
+  const thunder = createThunderVoice({ context, destination });
 
   // Two seconds of noise, looped — long enough that the seam is not a rhythm,
   // short enough not to be worth streaming.
@@ -111,6 +125,17 @@ export function createBootWeatherAudio({ context, destination, kind = 'rain' } =
 
   return {
     active: () => !stopped,
+    // One drained storm event. Bearing, distance and energy are the same three
+    // numbers that drive the picture (see game/storm.js), so the flash and the
+    // clap cannot disagree about where it was.
+    strike(event = {}) {
+      if (stopped) return false;
+      return thunder.strike({
+        distance: Number(event.distance) || 1200,
+        energy: Number(event.energy) || 0.7,
+        bearing: Number(event.bearing) || 0,
+      });
+    },
     // `wind` is the simulation's own gust term, ~1 ± its kind's depth. Presence
     // is the same curve the particle count rides, so the bed thickens with the
     // field and empties with it.
@@ -121,7 +146,7 @@ export function createBootWeatherAudio({ context, destination, kind = 'rain' } =
       out.gain.cancelScheduledValues(now);
       out.gain.linearRampToValueAtTime(clamp(target, 0, 1), now + 0.18);
     },
-    stop({ fade = 0.6 } = {}) {
+    stop({ fade = 0.6, thunderTail = 5.5 } = {}) {
       if (stopped) return;
       stopped = true;
       const now = context.currentTime;
@@ -130,6 +155,9 @@ export function createBootWeatherAudio({ context, destination, kind = 'rain' } =
       const at = now + Math.max(0.05, fade) + 0.12;
       try { noise.stop(at); } catch (_) {}
       try { wobble.stop(at); } catch (_) {}
+      const tailMs=Math.max(0,Number(thunderTail)||0)*1000;
+      if(tailMs>0)globalThis.setTimeout?.(()=>{try{thunder.stop();}catch(_){}},tailMs);
+      else try { thunder.stop(); } catch (_) {}
     },
   };
 }

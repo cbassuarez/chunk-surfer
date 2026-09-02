@@ -104,6 +104,24 @@ function haystackRuntime(slot=0){
     assert.equal(variant.geometry.canStep(at.x,at.y,at.x,at.y+1).ok,false,`slot ${slot} leaves the rear corridor open`);
     assert.equal(variant.geometry.canStep(at.x,at.y,at.x,at.y-1).ok,true,`slot ${slot} blocks the Scene Dock`);
   }
+
+  // The still page is reachable from its far side too. That used to preserve a
+  // south-facing camera while Source's fixed north axis built the dock behind
+  // it, forcing a manual half-turn on the first uncovered frame. The page owns
+  // that hidden recenter now.
+  const reverse=haystackRuntime(0);
+  const reversePage=reverse.sourceObjective().target;
+  const reverseAt={x:reversePage.x,y:reversePage.y-3,facing:2};
+  reverse.setPlayerPosition(reverseAt);
+  const reverseResult=reverse.inspectFocused(reverseAt.x,reverseAt.y,reverseAt.facing);
+  assert.equal(reverseResult.event,'page-found');
+  assert.equal(reverseResult.revealFacing,0,'the opaque sheet does not hand the camera back toward the Scene Dock');
+  assert.ok(reverse.geometry.cellAt(reverseAt.x,reverseAt.y-2)?.sourceLanding,
+    'the recentered forward view does not contain the Scene Dock');
+  assert.match(main,/enterSourceLandscape\(result\.revealFacing\)/,
+    'the live page event ignores the runtime reveal bearing');
+  assert.match(main,/R3\.r3dSetFacing\(facing\);[\s\S]*?chunkSurfRuntime\.setPlayerPosition\(\{x:px,y:py,facing\}\)/,
+    'the covered swap does not synchronize camera and Source body facing');
 }
 
 // FIRST LIFT RETAINS THE SAME PLAN TOO. Its topology change is the narrow fake

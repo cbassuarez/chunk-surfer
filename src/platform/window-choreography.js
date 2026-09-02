@@ -1,4 +1,5 @@
 import { isTauriRuntime } from './detect.js';
+import { logWarn } from './diagnostics/diagnostics.js';
 import {
   apertureCompositionPlan,
   compilePaneScore,
@@ -419,6 +420,8 @@ export function createWindowChoreographyDirector({
   let planTail=Promise.resolve();
   let lastEscapeAt=-Infinity;
   let titleGeneration=0;
+  let frontEndLease=null;
+  let frontEndReady=Promise.resolve(null);
   const simulation=createSimulation(documentApi,effects);
 
   const reduced=()=>!!getReducedMotion();
@@ -437,28 +440,75 @@ export function createWindowChoreographyDirector({
     try{api=await import('@tauri-apps/api/core');}catch(_){api=null;}
     return api;
   }
+  // Is the window covering the screen by ANY route — game mode, a macOS Space,
+  // or a frame someone dragged out to the edges? Any of the three has to be
+  // left before an authored cue can move the window or open a surface beside
+  // it, and only the first of them is anything the app knows it did.
+  async function measuredFullscreen(nativeApi){
+    if(nativeApi?.invoke){
+      const metrics=await safe(()=>nativeApi.invoke('chunk_window_metrics'));
+      if(metrics&&typeof metrics==='object'){
+        return !!(metrics.native_fullscreen||metrics.simple_fullscreen||metrics.fills_screen);
+      }
+    }
+    return getDisplayMode()==='game-mode';
+  }
+
   async function beginTransaction(sceneId,{forceSimulate=false}={}){
     if(transaction)return transaction;
     const token=stableId(tokenFactory());
     if(forceSimulate){transaction={token,sceneId,native:false,restoreGameMode:false,cancelled:false};onState({type:'begin',...transaction});return transaction;}
     const nativeApi=await loadApi();
-    const restoreGameMode=getDisplayMode()==='game-mode';
+    // ASK THE WINDOW, DO NOT ASK THE SETTINGS FILE.
+    //
+    // This was `getDisplayMode()==='game-mode'` — a persisted settings string.
+    // It never asked the OS, so every fullscreen the app did not itself put the
+    // player into was invisible to it. The common one is macOS NATIVE
+    // fullscreen: the window is decorated and resizable, so the green
+    // traffic-light button and Cmd+Ctrl+F are live and produce a real Space.
+    // The setting still read 'windowed', restore_game_mode:false went to Rust,
+    // the exit was skipped — and then base_center refused to place any surface
+    // at all, because nothing can be composited over a Space. From the outside:
+    // authored window motion simply never happened, and windowing the app by
+    // hand fixed it.
+    //
+    // The metrics call is the truth now (display_policy.rs reports native,
+    // simple and measured fills-screen separately). The setting is only the
+    // fallback for when the probe itself fails.
+    const restoreGameMode=await measuredFullscreen(nativeApi);
     let native=false;
     if(nativeApi?.invoke){
       const result=await safe(()=>nativeApi.invoke('chunk_window_choreography_begin',{request:{token,sceneId,restoreGameMode}}));
       native=!!result;
+      // A begin that fails leaves the cue as an in-frame simulation, which is a
+      // legitimate fallback and used to be a completely silent one — the only
+      // realistic error is "fullscreen exit did not settle" and nobody ever saw
+      // it. Say so.
+      if(!native)void logWarn('window choreography transaction refused',`scene ${sceneId} played in frame; leaving fullscreen was ${restoreGameMode?'required':'not required'}`);
     }
-    transaction={token,sceneId,native,restoreGameMode,cancelled:false};
+    // THE AUTHORED POLICY, WHICH WAS WRITTEN DOWN AND NEVER CONSULTED.
+    //
+    // windowChoreographyPolicy() is the per-scene display opinion — battle-only,
+    // source-leakage, ending-resolution, credits-restoration, stable — and until
+    // now its only consumer was a test. It is the closest thing this codebase has
+    // to authored framing, and it was decorative. Carrying it on the transaction
+    // means a scene's declared policy travels with the cue and is reported to
+    // onState, so anything downstream can act on it and a reader can tell it is
+    // in effect.
+    const policy=windowChoreographyPolicy(sceneId);
+    transaction={token,sceneId,native,restoreGameMode,policy,cancelled:false};
     onState({type:'begin',...transaction});
     return transaction;
   }
 
-  async function performPlan(plan,{forceSimulate=false}={}){
+  async function performPlan(plan,{forceSimulate=false,compositionMode='cold',handoffDurationMs=260}={}){
     const active=await beginTransaction(plan.sceneId,{forceSimulate});
     const useNative=active.native&&!forceSimulate;
     let nativeMoved=false,nativePanes=false;
     if(plan.kind==='composition'){
-      if(useNative)nativePanes=!!await safe(()=>effects?.showComposition?.(plan,{token:effects?.sessionToken?.()}));
+      if(useNative)nativePanes=!!await safe(()=>effects?.showComposition?.(plan,{
+        token:effects?.sessionToken?.(),mode:compositionMode,handoffDurationMs,
+      }));
       const simulated=forceSimulate||!useNative||!nativePanes;
       if(simulated)simulation.show(plan);else simulation.hide();
       onState({type:'composition',plan,native:useNative&&!simulated,simulated});
@@ -519,13 +569,13 @@ export function createWindowChoreographyDirector({
     titleGeneration+=1;
     const active=transaction;
     const puzzleWasActive=composition?.purpose==='puzzle'&&!composition.completed;
-    transaction=null;battle=null;ending=null;source={stage:'sealed',sequence:0,bucket:-1};
+    transaction=null;battle=null;ending=null;source={stage:'sealed',sequence:0,bucket:-1};frontEndLease=null;frontEndReady=Promise.resolve(null);
     if(!preserveComposition){clearCompositionTimers();simulation.hide();await safe(()=>effects?.hideComposition?.());if(puzzleWasActive)onPuzzleState(false);}
     onGeometryMotion(false);
     await safe(()=>effects?.hidePanes?.());
     if(active?.native&&api?.invoke)await safe(()=>api.invoke('chunk_window_choreography_restore',{token:active.token}));
     if(closePool)await safe(()=>effects?.emergencyRestore?.({notify:false}));
-    onState({type:'restore',reason,token:active?.token||null});
+    onState({type:'restore',reason,token:active?.token||null,policy:active?.policy||null});
     return true;
   }
 
@@ -730,31 +780,95 @@ export function createWindowChoreographyDirector({
     return result;
   }
 
-  async function beginTitle(){
+  function beginOpening(){
+    const generation=(frontEndLease?.generation||0)+1;
+    frontEndLease={active:true,owner:'opening',generation,token:null,effectsToken:effects?.sessionToken?.()||null,quiesced:false};
+    onState({type:'front-end-window-owner',owner:'opening',generation,token:null});
+    frontEndReady=(async()=>{
+      const active=await beginTransaction('opening-credits');
+      let effectsToken=effects?.sessionToken?.()||null;
+      if(nativeDesired()){
+        effectsToken=effects?.ensure?.({intensity:'standard',fullscreen:false,reducedMotion:reduced()})||effectsToken;
+      }
+      if(frontEndLease?.active&&frontEndLease.generation===generation){
+        frontEndLease.token=active?.token||null;
+        frontEndLease.effectsToken=effectsToken||effects?.sessionToken?.()||null;
+      }
+      return active;
+    })().catch(()=>null);
+    return frontEndReady;
+  }
+
+
+  async function beginTitle({handoff=false}={}){
     const context=compositionContext();
     if(!context.introduced)return null;
     const owner=++titleGeneration;
+    const canHandoff=!!handoff&&frontEndLease?.active&&frontEndLease.owner==='opening';
+    let leaseGeneration=null;
+    if(canHandoff){
+      frontEndLease.owner='title';
+      frontEndLease.generation+=1;
+      const handoffGeneration=frontEndLease.generation;
+      await frontEndReady;
+      if(!frontEndLease?.active||frontEndLease.owner!=='title'||frontEndLease.generation!==handoffGeneration)return null;
+      frontEndLease.token=transaction?.token||frontEndLease.token||null;
+      frontEndLease.effectsToken=effects?.sessionToken?.()||frontEndLease.effectsToken||null;
+      frontEndLease.quiesced=!!await safe(()=>effects?.quiesceComposition?.());
+      frontEndLease.effectsToken=effects?.sessionToken?.()||frontEndLease.effectsToken||null;
+      leaseGeneration=frontEndLease.generation;
+      onState({type:'front-end-window-owner',owner:'title',generation:leaseGeneration,token:frontEndLease.token,handoff:true});
+    }
     const plan=titleCompositionPlan({endingId:context.lastEndingId||'',epochMs:Date.now(),reducedMotion:reduced(),flashMode:context.flashMode});
     if(nativeDesired()){
-      effects?.ensure?.({intensity:'standard',fullscreen:false,reducedMotion:reduced()});
+      if(!canHandoff)effects?.ensure?.({intensity:'standard',fullscreen:false,reducedMotion:reduced()});
       await safe(()=>effects?.prepareMedia?.({count:plan.surfaces.length}));
     }
     if(owner!==titleGeneration)return null;
     await waitFn(420);
     if(owner!==titleGeneration)return null;
+    if(canHandoff&&(!frontEndLease?.active||frontEndLease.owner!=='title'||frontEndLease.generation!==leaseGeneration))return null;
     const active={plan,purpose:'title',state:{},startedAt:Date.now(),completed:false,presented:false,pendingEvents:new Set()};
     composition=active;
-    const result=await runPlan(plan);markCompositionPresented(active);return result;
+    const result=await runPlan(plan,{compositionMode:canHandoff?'handoff':'cold',handoffDurationMs:reduced()?0:260});
+    if(result)markCompositionPresented(active);
+    return result;
   }
-  async function finishTitle(){
+
+  async function finishTitle({windowPolicy='none',nextPlan=null}={}){
     titleGeneration+=1;
-    if(composition?.purpose!=='title')return false;
-    const active=composition;
-    simulation.snap(active.plan);
-    await safe(()=>effects?.snapComposition?.(active.plan,{durationMs:360}));
-    await waitFn(380);
-    if(composition!==active)return true;
-    await safe(()=>effects?.hideComposition?.());simulation.hide();composition=null;
+    if(frontEndLease?.active)frontEndLease.generation+=1;
+    const active=composition?.purpose==='title'?composition:null;
+
+    if(windowPolicy==='preserve'){
+      if(active){
+        await safe(()=>effects?.quiesceComposition?.());
+        frontEndLease=frontEndLease||{active:true,token:transaction?.token||null,effectsToken:effects?.sessionToken?.()||null,generation:1};
+        frontEndLease.owner='game';frontEndLease.active=true;frontEndLease.quiesced=true;
+        onState({type:'front-end-window-owner',owner:'game',generation:frontEndLease.generation,token:frontEndLease.token,windowPolicy});
+      }
+      return !!active;
+    }
+
+    if(windowPolicy==='replace'&&nextPlan){
+      if(active)await safe(()=>effects?.quiesceComposition?.());
+      frontEndLease=frontEndLease||{active:true,token:transaction?.token||null,effectsToken:effects?.sessionToken?.()||null,generation:1};
+      frontEndLease.owner='game';frontEndLease.active=true;frontEndLease.quiesced=false;
+      const next={plan:nextPlan,purpose:'game',state:{},startedAt:Date.now(),completed:false,presented:false,pendingEvents:new Set()};
+      composition=next;
+      const result=await runPlan(nextPlan,{compositionMode:'handoff',handoffDurationMs:reduced()?0:260});
+      if(result)markCompositionPresented(next);
+      return !!result;
+    }
+
+    // Ordinary gameplay currently owns no secondary windows. This is the first
+    // front-end boundary allowed to retire visible panes; the native pool stays
+    // warm because restore() hides rather than closes it.
+    if(active){
+      simulation.snap(active.plan);
+      await safe(()=>effects?.snapComposition?.(active.plan,{durationMs:360}));
+      await waitFn(380);
+    }
     return restore('title-exit');
   }
 
@@ -794,9 +908,9 @@ export function createWindowChoreographyDirector({
   keyTarget?.addEventListener?.('chunk-surfer:window-media-action',(event)=>{if(event.detail?.action==='escape')void emergencyRestore();});
 
   return{
-    prepareBattle,fireballCast,damage,result,finishBattle,sourceFrame,leaveSource,beginEnding,beginTitle,finishTitle,credits,
+    prepareBattle,fireballCast,damage,result,finishBattle,sourceFrame,leaveSource,beginEnding,beginOpening,beginTitle,finishTitle,credits,
     emergencyRestore,suspend,runPlan,compositionEvent,interactSource,puzzleInteract,noteCompositionMove,
     active:()=>!!transaction,
-    debug:()=>({transaction:transaction?{...transaction}:null,battle:battle?{battleId:battle.battleId,breached:battle.breached}:null,source:{...source},ending,composition:composition?{purpose:composition.purpose,cueId:composition.plan.cueId,completed:composition.completed}:null}),
+    debug:()=>({transaction:transaction?{...transaction}:null,battle:battle?{battleId:battle.battleId,breached:battle.breached}:null,source:{...source},ending,composition:composition?{purpose:composition.purpose,cueId:composition.plan.cueId,completed:composition.completed}:null,frontEnd:frontEndLease?{...frontEndLease,effectsToken:effects?.sessionToken?.()||frontEndLease.effectsToken||null}:null}),
   };
 }

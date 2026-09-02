@@ -39,8 +39,8 @@ export function fixtureMapSource() {
       { id: 'target:lux_nova', roomId: 'lux_nova', sequence: 5, label: 'THE CHAPEL', shortLabel: 'CHAP', floorId: 'u1', position: { x: 35, y: 16 }, selectable: true, waypointable: true,doorIds:['fixture-chapel'] },
     ],
     connectors: [
-      { id: 'connector:b1-g', kind: 'stairs', a: { floorId: 'b1', position: { x: 39, y: 22 } }, b: { floorId: 'g', position: { x: 5, y: 22 } } },
-      { id: 'connector:g-u1', kind: 'stairs', a: { floorId: 'g', position: { x: 39, y: 4 } }, b: { floorId: 'u1', position: { x: 5, y: 4 } } },
+      { id: 'connector:b1-g', sourceId:'main-basement-stair', label:'MAIN BASEMENT STAIR', kind: 'stairs', a: { floorId: 'b1', position: { x: 39, y: 22 } }, b: { floorId: 'g', position: { x: 5, y: 22 } } },
+      { id: 'connector:g-u1', sourceId:'main-open-well', label:'MAIN STAIR', kind: 'stairs', a: { floorId: 'g', position: { x: 39, y: 4 } }, b: { floorId: 'u1', position: { x: 5, y: 4 } } },
     ],
   };
 }

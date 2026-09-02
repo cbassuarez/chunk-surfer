@@ -1,233 +1,96 @@
 {
   "schemaVersion": 1,
   "id": "radio.pre_third_room_breakdown",
-  "title": "Radio · pre_third_room_breakdown",
+  "title": "Radio · original third-room hijack",
   "status": "active",
-  "entry": "start",
-  "entries": [
-    "start"
-  ],
-  "tags": [
-    "radio"
-  ],
-  "notes": "",
+  "entry": "inbound",
+  "entries": ["manual", "inbound"],
+  "tags": ["radio", "rupture", "one-shot"],
+  "notes": "Manual and inbound entrances converge on the existing three response styles.",
   "regions": [
     {
-      "id": "radio.pre_third_room_breakdown.region",
-      "title": "Radio · pre_third_room_breakdown",
+      "id": "radio.pre_third_room_breakdown.entrances",
+      "title": "Two entrances",
+      "kind": "branch",
+      "color": "#6a3943",
+      "nodeIds": ["manual", "inbound"]
+    },
+    {
+      "id": "radio.pre_third_room_breakdown.responses",
+      "title": "The room has the channel",
       "kind": "scene",
       "color": "#245c62",
-      "nodeIds": [
-        "start",
-        "normal",
-        "room",
-        "listen"
-      ]
+      "nodeIds": ["start", "normal", "room", "listen"]
     }
   ],
   "nodes": {
-    "start": {
-      "art": {
-        "id": "walkie",
-        "mode": "hero",
-        "caption": "Field radio / carrier open",
-        "status": "CARRIER"
-      },
+    "manual": {
+      "id": "manual",
+      "type": "dialogue",
+      "art": {"id":"walkie","mode":"hero","caption":"Field radio / outgoing call","status":"CALLING"},
       "lines": [
-        {
-          "who": "radio",
-          "text": "4417-C? ...you there?",
-          "id": "start.line.1"
-        },
-        {
-          "who": "direction",
-          "text": "The carrier lamp comes on. From the grille, the empty reverberation matches {ROOMLABEL} ahead.",
-          "hold": 1.8,
-          "id": "start.line.2"
-        }
+        {"id":"manual.line.1","who":"me","text":"Martin, route check. I'm near {ROOMLABEL}."},
+        {"id":"manual.line.2","who":"direction","text":"The carrier opens immediately. No ringback, no desk, only the empty reverberation of {ROOMLABEL} ahead.","hold":1.8,"cues":["radio-carrier-open"]}
+      ],
+      "goto": "start"
+    },
+    "inbound": {
+      "id": "inbound",
+      "type": "dialogue",
+      "art": {"id":"walkie","mode":"hero","caption":"Field radio / inbound carrier","status":"CALLING"},
+      "lines": [
+        {"id":"inbound.line.1","who":"radio","text":"4417-C? ...you there?"},
+        {"id":"inbound.line.2","who":"direction","text":"The carrier lamp comes on. From the grille, the empty reverberation matches {ROOMLABEL} ahead.","hold":1.8,"cues":["radio-carrier-open"]}
+      ],
+      "goto": "start"
+    },
+    "start": {
+      "id": "start",
+      "type": "choice",
+      "art": {"id":"walkie","mode":"hero","caption":"Field radio / carrier open","status":"CARRIER"},
+      "lines": [
+        {"id":"start.line.1","who":"direction","text":"The open carrier waits. The room ahead holds the same acoustic tail."}
       ],
       "choices": [
-        {
-          "text": "Yeah. Receiving.",
-          "goto": "normal",
-          "id": "start.choice.1"
-        },
-        {
-          "text": "Which room are you in?",
-          "goto": "room",
-          "id": "start.choice.2"
-        },
-        {
-          "text": "Keep your thumb off transmit.",
-          "goto": "listen",
-          "id": "start.choice.3"
-        }
-      ],
-      "id": "start",
-      "type": "choice"
+        {"id":"start.choice.1","text":"Yeah. Receiving.","goto":"normal"},
+        {"id":"start.choice.2","text":"Which room are you in?","goto":"room"},
+        {"id":"start.choice.3","text":"Keep your thumb off transmit.","goto":"listen"}
+      ]
     },
     "normal": {
-      "art": {
-        "id": "walkie",
-        "mode": "hero",
-        "caption": "Field radio / carrier unstable",
-        "status": "LIVE"
-      },
-      "lines": [
-        {
-          "who": "me",
-          "text": "Yeah. Receiving.",
-          "id": "normal.line.1"
-        },
-        {
-          "who": "radio",
-          "text": "Receiving— receiving—",
-          "id": "normal.line.2"
-        },
-        {
-          "who": "direction",
-          "art": {
-            "id": "walkie",
-            "mode": "hero",
-            "caption": "Field radio / carrier open",
-            "status": "LOOP"
-          },
-          "text": "Your last word returns twice. The second repeat is lower, with a close tiled reflection around it.",
-          "hold": 2.6,
-          "id": "normal.line.3"
-        },
-        {
-          "who": "radio",
-          "text": "Go ahead.",
-          "id": "normal.line.4"
-        },
-        {
-          "who": "direction",
-          "art": {
-            "id": "walkie",
-            "mode": "hero",
-            "caption": "Field radio / carrier open",
-            "status": "DEAD"
-          },
-          "text": "The speaker pops once. The carrier drops into a dead click.",
-          "shake": 1.2,
-          "shakeMs": 520,
-          "hold": 3,
-          "id": "normal.line.5",
-          "cues": [
-            "scream"
-          ]
-        }
-      ],
       "id": "normal",
-      "type": "dialogue"
+      "type": "dialogue",
+      "art": {"id":"walkie","mode":"hero","caption":"Field radio / carrier unstable","status":"LIVE"},
+      "lines": [
+        {"id":"normal.line.1","who":"me","text":"Yeah. Receiving."},
+        {"id":"normal.line.2","who":"radio","text":"Receiving— receiving—"},
+        {"id":"normal.line.3","who":"direction","text":"Your last word returns twice. The second repeat is lower, with a close tiled reflection around it.","hold":2.6,"cues":["radio-clipped-return"]},
+        {"id":"normal.line.4","who":"radio","text":"Go ahead."},
+        {"id":"normal.line.5","who":"direction","text":"The speaker pops once. The carrier drops into a dead click.","shake":1.2,"shakeMs":520,"hold":3,"cues":["radio-speaker-pop-dead"]}
+      ]
     },
     "room": {
-      "art": {
-        "id": "walkie",
-        "mode": "hero",
-        "caption": "Field radio / carrier unstable",
-        "status": "LIVE"
-      },
-      "lines": [
-        {
-          "who": "me",
-          "text": "Which room are you in?",
-          "id": "room.line.1"
-        },
-        {
-          "who": "radio",
-          "text": "{ROOMLABEL}. {ROOMLABEL}. {ROOMLABEL}.",
-          "id": "room.line.2"
-        },
-        {
-          "who": "direction",
-          "art": {
-            "id": "walkie",
-            "mode": "hero",
-            "caption": "Field radio / carrier open",
-            "status": "WRONG ROOM"
-          },
-          "text": "Each repetition carries the close reflection of the room ahead. On the third, the consonants use your cadence.",
-          "hold": 2.8,
-          "id": "room.line.3"
-        },
-        {
-          "who": "radio",
-          "text": "Go ahead.",
-          "id": "room.line.4"
-        },
-        {
-          "who": "direction",
-          "art": {
-            "id": "walkie",
-            "mode": "hero",
-            "caption": "Field radio / carrier open",
-            "status": "DEAD"
-          },
-          "text": "One clipped syllable breaks at the speaker. The carrier lamp goes dark.",
-          "shake": 1.2,
-          "shakeMs": 520,
-          "hold": 3,
-          "id": "room.line.5",
-          "cues": [
-            "scream"
-          ]
-        }
-      ],
       "id": "room",
-      "type": "dialogue"
+      "type": "dialogue",
+      "art": {"id":"walkie","mode":"hero","caption":"Field radio / carrier unstable","status":"LIVE"},
+      "lines": [
+        {"id":"room.line.1","who":"me","text":"Which room are you in?"},
+        {"id":"room.line.2","who":"radio","text":"{ROOMLABEL}. {ROOMLABEL}. {ROOMLABEL}."},
+        {"id":"room.line.3","who":"direction","text":"Each repetition carries the close reflection of the room ahead. On the third, the consonants use your cadence.","hold":2.8,"cues":["radio-clipped-return"]},
+        {"id":"room.line.4","who":"radio","text":"Go ahead."},
+        {"id":"room.line.5","who":"direction","text":"One clipped syllable breaks at the speaker. The carrier lamp goes dark.","shake":1.2,"shakeMs":520,"hold":3,"cues":["radio-speaker-pop-dead"]}
+      ]
     },
     "listen": {
-      "art": {
-        "id": "walkie",
-        "mode": "hero",
-        "caption": "Field radio / carrier unstable",
-        "status": "LIVE"
-      },
-      "lines": [
-        {
-          "who": "direction",
-          "art": {
-            "id": "walkie",
-            "mode": "hero",
-            "caption": "Field radio / carrier open",
-            "status": "OPEN"
-          },
-          "text": "Your thumb stays off transmit. The carrier lamp remains lit.",
-          "hold": 2.4,
-          "id": "listen.line.1"
-        },
-        {
-          "who": "radio",
-          "text": "Go ahead.",
-          "id": "listen.line.2"
-        },
-        {
-          "who": "radio",
-          "text": "Go ahead.",
-          "id": "listen.line.3"
-        },
-        {
-          "who": "direction",
-          "art": {
-            "id": "walkie",
-            "mode": "hero",
-            "caption": "Field radio / carrier open",
-            "status": "DEAD"
-          },
-          "text": "The second call arrives lower than the first. A plastic click follows it, and the carrier lamp goes dark.",
-          "shake": 1.2,
-          "shakeMs": 520,
-          "hold": 3,
-          "id": "listen.line.4",
-          "cues": [
-            "scream"
-          ]
-        }
-      ],
       "id": "listen",
-      "type": "dialogue"
+      "type": "dialogue",
+      "art": {"id":"walkie","mode":"hero","caption":"Field radio / carrier unstable","status":"LIVE"},
+      "lines": [
+        {"id":"listen.line.1","who":"direction","text":"Your thumb stays off transmit. The carrier lamp remains lit.","hold":2.4},
+        {"id":"listen.line.2","who":"radio","text":"Go ahead."},
+        {"id":"listen.line.3","who":"radio","text":"Go ahead."},
+        {"id":"listen.line.4","who":"direction","text":"The second call arrives lower than the first. A plastic click follows it, and the carrier lamp goes dark.","shake":1.2,"shakeMs":520,"hold":3,"cues":["radio-dead-click"]}
+      ]
     }
   }
 }

@@ -93,7 +93,7 @@ test('inventory actions stay explicit and only the radio can be dropped safely',
   const model=buildBagModel({
     equipment:[
       {id:'light',present:true,battleCapable:true},
-      {id:'radio',present:true,battleCapable:true,primaryAction:{id:'radio-deploy',label:'DEPLOY RADIO',enabled:true}},
+      {id:'radio',present:true,battleCapable:true,primaryAction:{id:'radio-call',label:'CALL FRONT DESK',enabled:true}},
       {id:'plant-spanner',present:true},
     ],
     loadout:{top:['light','radio']},job:job(),
@@ -105,6 +105,8 @@ test('inventory actions stay explicit and only the radio can be dropped safely',
   }
   const radioDrop=bagEntry(model,'kit','gear:radio').actionList.find((action)=>action.verb==='drop');
   assert.equal(radioDrop.enabled,true);assert.ok(radioDrop.confirm);assert.equal(radioDrop.exitPolicy,'close');
+  const radioUse=bagEntry(model,'kit','gear:radio').actionList.find((action)=>action.verb==='use');
+  assert.equal(radioUse.id,'radio-call');assert.equal(radioUse.enabled,true);
   const lightDrop=bagEntry(model,'kit','gear:light').actionList.find((action)=>action.verb==='drop');
   assert.equal(lightDrop.enabled,false);assert.equal(lightDrop.reason,"CAN'T LEAVE THIS ITEM BEHIND");
   const spannerSet=bagEntry(model,'kit','gear:plant-spanner').actionList.find((action)=>action.verb==='set');

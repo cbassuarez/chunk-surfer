@@ -225,6 +225,166 @@ export function vfdGlyphMissing(ch) {
   return ch != null && ch !== ' ' && !vfdGlyph(ch);
 }
 
+// THE GLOW STAGE.
+//
+// What a lit dot on a character VFD looks like is three things at once, and the
+// old stage collapsed them into one blob:
+//
+//   · a near-clipped white centre, because the dot is driven hard enough that
+//     the middle of it is off the top of the eye's range,
+//   · a tight saturated phosphor halo immediately around it,
+//   · a very wide, very faint veil across the whole front glass.
+//
+// It is spatial HALATION — light scattering inside the glass — and never a
+// temporal trail. A VFD dot stops emitting the instant it stops being
+// addressed; there is no persistence and there must never be one here.
+//
+// FOUR THINGS WERE WRONG, and all four are fixed below.
+//
+// 1. THERE WAS NO CORE. The old code built the core arc at radius `r`, then the
+//    halation block called ctx.beginPath() inside a save()/restore(). save and
+//    restore preserve drawing STATE, never the current path — so the core path
+//    was destroyed and the final fill() landed on the HALO's path. Every lit dot
+//    was drawn once, 18% oversized, with nothing bright in the middle. At UI
+//    size that fused the dots into solid bars and the 5×7 matrix — the entire
+//    point of this font — disappeared off the screen.
+//
+// 2. LIGHT DID NOT SUM. Halos composited source-over, so dense strokes never
+//    pooled, and because the loop ran halo→core per dot in scan order, each halo
+//    painted over the cores already drawn and greyed them. Everything emissive
+//    here is composited 'lighter' now, which is both the correct optics and
+//    makes draw order stop mattering.
+//
+// 3. THE SECOND BLOOM RAN AT FULL STRENGTH. atlas.js dimmed its wide pass with
+//    ctx.globalAlpha = 0.30, but this function ASSIGNED globalAlpha per dot
+//    instead of multiplying by what it was handed, so the dimming did nothing
+//    and bright glyphs were double-exposed. `alpha` is the only amplitude
+//    control now and it is honoured, so that second call is gone from atlas.js.
+//
+// 4. THE WIDE PASS WAS CLIPPED BY ITS OWN TILE. It asked for more blur than the
+//    atlas tile had padding for, so the glow ended in a straight vertical cut on
+//    both sides of every glyph. The bleed is declared here now and atlas.js
+//    sizes its tiles from vfdGlowBleed(), so the two cannot disagree again.
+//
+// HOW THE LOBES ARE BUILT. Not with shadowBlur — the slowest primitive in
+// canvas2d, and it was being asked for twice per lit dot. The lit dots are drawn
+// once into a scratch canvas, and each lobe is that mask downscaled and drawn
+// back up with smoothing on. A downsample/upsample IS a cheap wide gaussian, it
+// costs a fraction of a real blur, and because both lobes come off the one mask
+// the light inside a glyph sums correctly for free.
+export const VFD_GLOW = Object.freeze({
+  // The tight saturated halo, in halvings: one step down and back is a small
+  // radius. This is the lobe that makes a stroke read as lit rather than drawn.
+  coreHalvings: 1,
+  coreAmount: 0.74,
+  // The wide veil in the glass. Three halvings is soft and broad; the amount is
+  // low on purpose, because this one is spread over a large area and it is what
+  // lifts the black if it is too strong.
+  veilHalvings: 3,
+  veilAmount: 0.26,
+  // The near-white middle, which is what makes the dot read as clipped rather
+  // than as a disc of paint. White composited 'lighter' over the phosphor gets
+  // there without this needing to know the phosphor's colour.
+  //
+  // It only runs when the dot is big enough to HAVE a middle. At UI size a lit
+  // dot is under two device px across, so a hot centre inside it is sub-pixel
+  // and does not read as a core — it just desaturates the dot to straw. Below
+  // the threshold the dot stays fully saturated, which is the better of the two.
+  hotAmount: 0.42,
+  hotRadius: 0.44,
+  hotMinRadiusPx: 2.1,
+  // How far light may reach past the glyph box, as a fraction of its longest
+  // side. atlas.js reads this through vfdGlowBleed() to size its tile padding.
+  bleedCells: 0.85,
+});
+
+// How much room the glow needs around a glyph box, in device px. The atlas asks
+// rather than guessing, which is what stopped the veil being cut off square.
+export function vfdGlowBleed(boxW = 0, boxH = 0) {
+  return Math.ceil(Math.max(Number(boxW) || 0, Number(boxH) || 0) * VFD_GLOW.bleedCells);
+}
+
+// One reusable set of scratch canvases. Allocating per glyph would undo the
+// point of not using shadowBlur; these grow to the largest glyph asked for and
+// stay. Null in any environment without a DOM — the unit tests draw through a
+// stub context, and a glyph must still put its dots down there.
+let maskCanvas = null, maskCtx = null;
+const pong = [];
+function surface(store, index, w, h) {
+  let entry = store[index];
+  if (!entry) {
+    const canvas = document.createElement('canvas');
+    const context = canvas?.getContext?.('2d');
+    if (!context) return null;
+    entry = store[index] = { canvas, ctx: context };
+  }
+  if (entry.canvas.width < w || entry.canvas.height < h) {
+    entry.canvas.width = Math.max(entry.canvas.width, w);
+    entry.canvas.height = Math.max(entry.canvas.height, h);
+  }
+  // Clear only what is about to be written. These canvases grow to the largest
+  // glyph ever asked for and never shrink, so clearing the whole surface for a
+  // 4×5 mip level means wiping the biggest tile in the game, every level, twice
+  // per glyph.
+  entry.ctx.clearRect(0, 0, w, h);
+  entry.ctx.imageSmoothingEnabled = true;
+  return entry;
+}
+function scratch(w, h) {
+  if (typeof document === 'undefined' || typeof document.createElement !== 'function') return null;
+  const width = Math.max(1, Math.ceil(w)), height = Math.max(1, Math.ceil(h));
+  if (!maskCanvas) {
+    maskCanvas = document.createElement('canvas');
+    maskCtx = maskCanvas?.getContext?.('2d') || null;
+  }
+  if (!maskCtx) return null;
+  if (maskCanvas.width < width || maskCanvas.height < height) {
+    maskCanvas.width = Math.max(maskCanvas.width, width);
+    maskCanvas.height = Math.max(maskCanvas.height, height);
+  }
+  maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
+  if (!surface(pong, 0, 1, 1) || !surface(pong, 1, 1, 1)) return null;
+  return { maskCanvas, maskCtx };
+}
+
+// Draw the mask back onto `ctx` blurred, additively.
+//
+// HALVE, DON'T LEAP. A single big downscale-and-stretch is not a blur: taking a
+// glyph box down to a couple of pixels and bilinearly stretching it back gives a
+// blocky RECTANGLE, which is exactly what the first attempt at this looked like
+// on screen. Successive halvings are a real box-filter chain and the walk back
+// up in ≤2× steps keeps the interpolator inside the range it is good at. Half a
+// dozen drawImage calls on tiny canvases, once per tile — still a fraction of
+// what one shadowBlur cost, and it comes out smooth and round.
+function lobe(ctx, pad, dx, dy, w, h, halvings, amount) {
+  if (!(amount > 0)) return;
+  const steps = Math.max(1, Math.round(halvings));
+  let src = pad.maskCanvas, sw = w, sh = h, slot = 0;
+  for (let i = 0; i < steps; i++) {
+    const nw = Math.max(1, Math.round(sw / 2)), nh = Math.max(1, Math.round(sh / 2));
+    if (nw === sw && nh === sh) break;
+    const level = surface(pong, slot, nw, nh);
+    if (!level) return;
+    level.ctx.drawImage(src, 0, 0, sw, sh, 0, 0, nw, nh);
+    src = level.canvas; sw = nw; sh = nh; slot = 1 - slot;
+  }
+  // Back up to roughly half size in doubling steps, so the final stretch onto
+  // the target is never more than 2× and never shows the ladder.
+  while (sw * 2 <= w && sh * 2 <= h) {
+    const nw = sw * 2, nh = sh * 2;
+    const level = surface(pong, slot, nw, nh);
+    if (!level) return;
+    level.ctx.drawImage(src, 0, 0, sw, sh, 0, 0, nw, nh);
+    src = level.canvas; sw = nw; sh = nh; slot = 1 - slot;
+  }
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.globalAlpha = amount;
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(src, 0, 0, sw, sh, dx, dy, w, h);
+  ctx.restore();
+}
+
 // Draw one 5×7 glyph into `ctx`, in device pixels, at (px, py), filling a cell
 // of (cellW × cellH) device px. Lit dots are round and glow; dormant dots are a
 // faint constant, which is the single detail that separates a VFD from glowing
@@ -266,6 +426,11 @@ export function drawVfdGlyph(ctx, ch, px, py, cellW, cellH, {
     }
     ctx.restore();
   }
+  // Where every dot sits, and which of them are emitting. Collected once so the
+  // glow can be built from the whole lit set at once rather than dot by dot —
+  // that is what lets light inside a glyph pool instead of stacking.
+  const lit = [];
+  const dark = [];
   for (let ry = 0; ry < VFD_ROWS; ry++) {
     const bits = rows[ry] | 0;
     for (let cx = 0; cx < VFD_COLS; cx++) {
@@ -273,32 +438,85 @@ export function drawVfdGlyph(ctx, ch, px, py, cellW, cellH, {
       if (!on && !dim) continue;
       const dx = px + padX + stepX * (cx + 0.5);
       const dy = py + padY + stepY * (ry + 0.5);
+      (on ? lit : dark).push([dx, dy]);
+    }
+  }
+
+  // The dots that are not emitting go down first and stay source-over: an unlit
+  // dot is not a light, it is a thing the light is not coming out of.
+  if (dim && dark.length) {
+    ctx.fillStyle = dim;
+    ctx.globalAlpha = alpha * dimAlpha;
+    ctx.shadowBlur = 0;
+    for (const [dx, dy] of dark) {
       ctx.beginPath();
       ctx.arc(dx, dy, r, 0, Math.PI * 2);
-      if (on) {
-        if (halation > 0) {
-          // Optical halation in the front glass: spatial bloom only, never a
-          // temporal trail. A VFD dot stops emitting when it is not addressed.
-          ctx.save();
-          ctx.fillStyle = color;
-          ctx.globalAlpha = Math.max(0, Math.min(0.28, alpha * halation * scan));
-          ctx.shadowColor = color;
-          ctx.shadowBlur = blur * 2.7 * dpr;
-          ctx.beginPath();
-          ctx.arc(dx, dy, r * 1.18, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.restore();
-        }
-        ctx.fillStyle = color;
-        ctx.globalAlpha = alpha * scan;
-        ctx.shadowColor = color;
-        ctx.shadowBlur = blur * dpr;
-      } else {
-        ctx.fillStyle = dim;
-        ctx.globalAlpha = alpha * dimAlpha;
-        ctx.shadowBlur = 0;
-      }
       ctx.fill();
+    }
+  }
+
+  const duty = Math.max(0, Math.min(1, alpha * scan));
+  if (lit.length && duty > 0) {
+    // THE TWO LOBES, off one mask of the lit dots.
+    //
+    // Amplitude tracks duty rather than sitting at a fixed ceiling. The old
+    // stage clamped the halo to 0.28 no matter what, so a dim readout and a
+    // bright one glowed identically and the brightness setting barely read.
+    //
+    // `blur` is still the caller's dial for how far the light carries — the
+    // atlas asks for 3.2, drawVfdText for 4.25, the pad diagram for 0 — so it
+    // scales the lobes rather than being ignored now that shadowBlur is gone.
+    // 3.2 is the reference, being what the bulk of the game's text uses.
+    const spread = Math.max(0.6, Math.min(2.2, (Number(blur) || 0) / 3.2));
+    const boxW = cellW, boxH = cellH;
+    const bleed = halation > 0 ? Math.ceil(vfdGlowBleed(boxW, boxH) * spread) : 0;
+    const pad = bleed > 0 ? scratch(boxW + bleed * 2, boxH + bleed * 2) : null;
+    if (pad) {
+      const mw = Math.ceil(boxW + bleed * 2), mh = Math.ceil(boxH + bleed * 2);
+      // The mask is the lit dots alone, flat, at full strength: no shadow, no
+      // alpha, nothing to undo later. Its origin is the glyph box less the
+      // bleed, so the lobes land back exactly where the dots are.
+      const ox = px - bleed, oy = py - bleed;
+      pad.maskCtx.fillStyle = color;
+      pad.maskCtx.globalAlpha = 1;
+      for (const [dx, dy] of lit) {
+        pad.maskCtx.beginPath();
+        pad.maskCtx.arc(dx - ox, dy - oy, r, 0, Math.PI * 2);
+        pad.maskCtx.fill();
+      }
+      // Widest and faintest first, then the tight halo on top of it.
+      const gain = duty * Math.max(0, halation) / 0.14;
+      const veil = Math.max(1, Math.min(5, Math.round(VFD_GLOW.veilHalvings * spread)));
+      lobe(ctx, pad, ox, oy, mw, mh, veil, VFD_GLOW.veilAmount * gain);
+      lobe(ctx, pad, ox, oy, mw, mh, VFD_GLOW.coreHalvings, VFD_GLOW.coreAmount * gain);
+    }
+
+    // THE DOTS THEMSELVES, crisp, at radius r — this is the bug fix. They are
+    // opaque and they are what makes the 5×7 matrix readable, so they go down
+    // source-over on top of their own glow rather than adding into it.
+    ctx.fillStyle = color;
+    ctx.globalAlpha = duty;
+    ctx.shadowBlur = 0;
+    for (const [dx, dy] of lit) {
+      ctx.beginPath();
+      ctx.arc(dx, dy, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // The hot middle. White added over the phosphor takes the centre of the dot
+    // toward clipping, which is what a hard-driven VFD does on camera and what
+    // stops the dot reading as a flat disc of paint.
+    if (VFD_GLOW.hotAmount > 0 && halation > 0 && r >= VFD_GLOW.hotMinRadiusPx) {
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.fillStyle = '#FFFFFF';
+      ctx.globalAlpha = VFD_GLOW.hotAmount * duty;
+      for (const [dx, dy] of lit) {
+        ctx.beginPath();
+        ctx.arc(dx, dy, r * VFD_GLOW.hotRadius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
     }
   }
   ctx.restore();

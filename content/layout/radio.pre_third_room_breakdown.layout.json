@@ -2,21 +2,29 @@
   "schemaVersion": 1,
   "documentId": "radio.pre_third_room_breakdown",
   "positions": {
-    "start": {
+    "manual": {
       "x": 80,
-      "y": 100
+      "y": 40
+    },
+    "inbound": {
+      "x": 80,
+      "y": 220
+    },
+    "start": {
+      "x": 440,
+      "y": 130
     },
     "normal": {
-      "x": 440,
-      "y": 100
+      "x": 800,
+      "y": 40
     },
     "room": {
       "x": 800,
-      "y": 100
+      "y": 220
     },
     "listen": {
-      "x": 1160,
-      "y": 100
+      "x": 800,
+      "y": 400
     }
   },
   "regions": {}

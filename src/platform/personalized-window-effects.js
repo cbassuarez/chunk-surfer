@@ -366,7 +366,7 @@ export function createPersonalizedWindowEffects({
       // What each surface was last told it was drawing, so the payload is only
       // re-sent when a comet's own state changes rather than every frame.
       rayStates:new Map(),
-      mediaPrewarm:null,mediaReady:0,mediaPrewarmReasons:[],activeComposition:null,
+      mediaPrewarm:null,mediaReady:0,mediaPrewarmReasons:[],activeComposition:null,compositionQuiesced:false,
       mediaRevisions:new Map(),manualMediaPanes:new Set(),
     };
     current=session;
@@ -444,57 +444,133 @@ export function createPersonalizedWindowEffects({
     return true;
   }
 
-  async function showComposition(plan,{token:expected=null}={}){
+  async function quiesceComposition() {
+    const session=current,plan=session?.activeComposition;
+    if(!session||!plan)return false;
+    session.compositionGeneration=(session.compositionGeneration||0)+1;
+    session.compositionQuiesced=true;
+    const results=await Promise.all(plan.surfaces.map((pane)=>{
+      const label=WINDOW_MEDIA_SURFACE_LABELS[pane.index],revision=session.mediaRevisions.get(label);
+      if(!revision)return Promise.resolve(null);
+      return safe(()=>api?.emitTo?.(label,'window-media-score-hold',{
+        protocol:WINDOW_MEDIA_PROTOCOL,targetLabel:label,sessionToken:session.token,revision,
+        cueId:plan.cueId,paneId:pane.id,
+      }));
+    }));
+    return results.length===plan.surfaces.length;
+  }
+
+  async function showComposition(plan,{token:expected=null,mode='cold',handoffDurationMs=260}={}){
     const session=current||begin({intensity:'standard'});
     if(expected&&expected!==session.token)return false;
     if(!await prepareMedia({count:plan?.surfaces?.length||1})||current!==session)return false;
-    session.activeComposition=plan;
-    session.compositionCoherent=false;
-    session.manualMediaPanes.clear();
+
+    const handoff=mode==='handoff'&&!!session.activeComposition;
+    const previous=handoff?session.activeComposition:null;
+    const previousByIndex=new Map((previous?.surfaces||[]).map((pane)=>[pane.index,pane]));
+    const previousLabels=new Set((previous?.surfaces||[]).map((pane)=>WINDOW_MEDIA_SURFACE_LABELS[pane.index]));
     const generation=(session.compositionGeneration||0)+1;
     session.compositionGeneration=generation;
+    session.compositionCoherent=false;
+    session.manualMediaPanes.clear();
     const ordered=[...plan.surfaces].sort((a,b)=>a.z-b.z||a.index-b.index);
-    for(let index=plan.surfaces.length;index<MAX_MEDIA_SURFACES;index+=1){
-      const window=mediaSurfaces.get(WINDOW_MEDIA_SURFACE_LABELS[index]);
-      if(window)await safe(()=>window.hide());
+
+    if(!handoff){
+      session.activeComposition=plan;
+      session.compositionQuiesced=false;
+      for(let index=plan.surfaces.length;index<MAX_MEDIA_SURFACES;index+=1){
+        const window=mediaSurfaces.get(WINDOW_MEDIA_SURFACE_LABELS[index]);
+        if(window)await safe(()=>window.hide());
+      }
     }
+
     const assigned=await Promise.all(ordered.map((pane)=>{
       const label=WINDOW_MEDIA_SURFACE_LABELS[pane.index];
       return mediaSurfaces.get(label)?assignMediaScore(session,plan,pane,label):Promise.resolve(false);
     }));
     if(assigned.some((value)=>!value)||current!==session||session.compositionGeneration!==generation){
-      if(current===session&&session.compositionGeneration===generation)await hideComposition({releaseSnapshots:false});
+      if(handoff&&current===session&&session.compositionGeneration===generation){
+        // Best-effort rollback: restore the old score to every physical label
+        // that had one. Newly introduced labels are hidden individually. A
+        // title takeover failure must never flush the entire desktop.
+        await Promise.all(ordered.map(async(pane,index)=>{
+          if(!assigned[index])return;
+          const label=WINDOW_MEDIA_SURFACE_LABELS[pane.index],oldPane=previousByIndex.get(pane.index);
+          if(oldPane)await assignMediaScore(session,previous,oldPane,label);
+          else await safe(()=>mediaSurfaces.get(label)?.hide?.());
+        }));
+        session.activeComposition=previous;
+        session.compositionQuiesced=!!previous;
+        if(previous)await quiesceComposition();
+      }else if(current===session&&session.compositionGeneration===generation){
+        await hideComposition({releaseSnapshots:false});
+      }
       return false;
     }
-    const placed=await Promise.all(ordered.map(async(pane)=>{
-      const label=WINDOW_MEDIA_SURFACE_LABELS[pane.index];
-      const placement=await safe(()=>api.invoke('chunk_window_media_place',{request:{
-        label,index:pane.index,x:Number(pane.entry.x),y:Number(pane.entry.y),offsetX:0,offsetY:0,
-        width:Number(pane.width),height:Number(pane.height),recoverable:24,durationMs:0,interactive:!!pane.draggable,
-      }}));
-      if(!placement?.shown)return false;
-      await safe(()=>api.emitTo(label,'window-media-origin',{cueId:plan.cueId,desktopOrigin:placement.origin||{x:0,y:0}}));
-      dispatch('chunk-surfer:window-media-moved',{cueId:plan.cueId,paneId:pane.id,label,placement});return true;
-    }));
-    if(placed.some((value)=>!value)){
-      if(current===session&&session.compositionGeneration===generation)await hideComposition({releaseSnapshots:false});
-      return false;
+
+    // A cold composition enters at its authored entry point. A handoff leaves
+    // surviving native windows where the OS already has them and moves them
+    // directly to the title geometry; there is no teleport-to-entry frame.
+    if(!handoff){
+      const placed=await Promise.all(ordered.map(async(pane)=>{
+        const label=WINDOW_MEDIA_SURFACE_LABELS[pane.index];
+        const placement=await safe(()=>api.invoke('chunk_window_media_place',{request:{
+          label,index:pane.index,x:Number(pane.entry.x),y:Number(pane.entry.y),offsetX:0,offsetY:0,
+          width:Number(pane.width),height:Number(pane.height),recoverable:24,durationMs:0,interactive:!!pane.draggable,
+        }}));
+        if(!placement?.shown)return false;
+        await safe(()=>api.emitTo(label,'window-media-origin',{cueId:plan.cueId,desktopOrigin:placement.origin||{x:0,y:0}}));
+        dispatch('chunk-surfer:window-media-moved',{cueId:plan.cueId,paneId:pane.id,label,placement});return true;
+      }));
+      if(placed.some((value)=>!value)){
+        if(current===session&&session.compositionGeneration===generation)await hideComposition({releaseSnapshots:false});
+        return false;
+      }
+    }else{
+      // Newly introduced labels still need an entry point. Existing labels are
+      // deliberately untouched until the formation move below.
+      const newcomers=ordered.filter((pane)=>!previousLabels.has(WINDOW_MEDIA_SURFACE_LABELS[pane.index]));
+      const placed=await Promise.all(newcomers.map(async(pane)=>{
+        const label=WINDOW_MEDIA_SURFACE_LABELS[pane.index];
+        const placement=await safe(()=>api.invoke('chunk_window_media_place',{request:{
+          label,index:pane.index,x:Number(pane.entry.x),y:Number(pane.entry.y),offsetX:0,offsetY:0,
+          width:Number(pane.width),height:Number(pane.height),recoverable:24,durationMs:0,interactive:!!pane.draggable,
+        }}));
+        if(!placement?.shown)return false;
+        await safe(()=>api.emitTo(label,'window-media-origin',{cueId:plan.cueId,desktopOrigin:placement.origin||{x:0,y:0}}));
+        dispatch('chunk-surfer:window-media-moved',{cueId:plan.cueId,paneId:pane.id,label,placement});return true;
+      }));
+      if(placed.some((value)=>!value))return false;
     }
+
+    session.activeComposition=plan;
+    session.compositionQuiesced=false;
     const formation=plan.formation||{};
-    if(formation.delayMs)await wait(formation.delayMs);
+    if(!handoff&&formation.delayMs)await wait(formation.delayMs);
     await Promise.all(ordered.map(async(pane,order)=>{
-      if(formation.staggerMs)await wait(order*formation.staggerMs);
+      if(!handoff&&formation.staggerMs)await wait(order*formation.staggerMs);
       if(current!==session||session.compositionGeneration!==generation||session.activeComposition?.cueId!==plan.cueId)return;
       const label=WINDOW_MEDIA_SURFACE_LABELS[pane.index];
+      const duration=handoff
+        ?Math.max(0,Math.min(600,Math.round(Number(handoffDurationMs)||0)))
+        :Number(formation.durationMs)||0;
       const placement=await safe(()=>api.invoke('chunk_window_media_place',{request:{
         label,index:pane.index,x:Number(pane.initial.x),y:Number(pane.initial.y),offsetX:0,offsetY:0,
-        width:Number(pane.width),height:Number(pane.height),recoverable:24,durationMs:Number(formation.durationMs)||0,
+        width:Number(pane.width),height:Number(pane.height),recoverable:24,durationMs:duration,
         interactive:!!pane.draggable,
       }}));
       if(!placement?.shown)return;
       await safe(()=>api.emitTo(label,'window-media-origin',{cueId:plan.cueId,desktopOrigin:placement.origin||{x:0,y:0}}));
       dispatch('chunk-surfer:window-media-moved',{cueId:plan.cueId,paneId:pane.id,label,placement});
     }));
+
+    if(handoff&&current===session&&session.compositionGeneration===generation){
+      const nextLabels=new Set(plan.surfaces.map((pane)=>WINDOW_MEDIA_SURFACE_LABELS[pane.index]));
+      for(const label of previousLabels){
+        if(nextLabels.has(label))continue;
+        await safe(()=>mediaSurfaces.get(label)?.hide?.());
+      }
+    }
     return current===session&&session.compositionGeneration===generation;
   }
 
@@ -548,7 +624,7 @@ export function createPersonalizedWindowEffects({
   }
 
   async function hideComposition({releaseSnapshots=true}={}){
-    const session=current;if(session){session.activeComposition=null;session.compositionGeneration=(session.compositionGeneration||0)+1;session.mediaRevisions.clear();session.manualMediaPanes.clear();}
+    const session=current;if(session){session.activeComposition=null;session.compositionQuiesced=false;session.compositionGeneration=(session.compositionGeneration||0)+1;session.mediaRevisions.clear();session.manualMediaPanes.clear();}
     await Promise.all([...mediaSurfaces.values()].map((surface)=>safe(()=>surface.hide())));
     if(api?.invoke)await safe(()=>api.invoke('chunk_window_media_hide_all'));
     if(api?.invoke)await safe(()=>api.invoke('chunk_fireball_cast_focus_main'));
@@ -767,7 +843,7 @@ export function createPersonalizedWindowEffects({
 
   return{
     begin,ensure,apply,reject,prepareFireballs,prepareMedia,arrangeMovement,beginFireballCast,syncFireballCast,showPanes,hidePanes,
-    captureSnapshot,snapshotData,showComposition,snapComposition,freezeComposition,setCompositionCoherence,triggerComposition,hideComposition,suspendSurfaces,
+    captureSnapshot,snapshotData,showComposition,quiesceComposition,snapComposition,freezeComposition,setCompositionCoherence,triggerComposition,hideComposition,suspendSurfaces,
     // Compatibility preview name; there is no channel interaction behind it.
     previewChannel,end,emergencyRestore,
     active:()=>!!current,sessionToken:()=>current?.token||null,statusLine:()=>'',
@@ -780,7 +856,7 @@ export function createPersonalizedWindowEffects({
     debug:()=>current?{
       active:true,surfacesReady:current.surfacesReady,readySurfaces:current.readySurfaces,prewarmState:current.prewarmState,
       surfaceCount:surfaces.size,mediaSurfaceCount:mediaSurfaces.size,mediaReady:current.mediaReady,placementAttempts:current.placementAttempts,placementFailures:current.placementFailures,
-      mediaScriptReady:mediaReadyLabels.size,mediaRevisions:Object.fromEntries(current.mediaRevisions||[]),
+      mediaScriptReady:mediaReadyLabels.size,mediaRevisions:Object.fromEntries(current.mediaRevisions||[]),compositionQuiesced:!!current.compositionQuiesced,activeCompositionCue:current.activeComposition?.cueId||null,
       fireballActive:!!current.activePlan&&current.rayStates.size>0,
       fullscreen:current.fullscreen,intensity:current.intensity,reasons:[...current.prewarmReasons,...current.mediaPrewarmReasons],
     }:{active:false,surfacesReady:false,readySurfaces:0,prewarmState:'idle',surfaceCount:0,placementAttempts:0,placementFailures:0,reasons:[]},

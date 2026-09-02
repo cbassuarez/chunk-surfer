@@ -53,6 +53,18 @@ function roomEntry(job, roomId) {
   return (job?.rooms || []).find((room) => room.roomId === roomId) || null;
 }
 
+export function spokenConnectorLabel(sourceId, floorA = null, floorB = null) {
+  const id = String(sourceId || '').toLowerCase();
+  if (id.includes('main-basement-stair')) return 'MAIN BASEMENT STAIR';
+  if (id.includes('main-open-well') || id.includes('grand-ground-stair') || id.includes('grand-upper-stair')) return 'MAIN STAIR';
+  if (id.includes('galleria')) return 'CONCERT HALL STAIR';
+  if (id.includes('academic')) return 'UPPER LANDING';
+  if (id.includes('tower')) return 'TOWER STAIR';
+  const from = String(floorA?.shortLabel || floorA?.label || '').trim();
+  const to = String(floorB?.shortLabel || floorB?.label || '').trim();
+  return from && to ? `${from} TO ${to} STAIR` : 'NEAREST STAIR';
+}
+
 function normalizeContact(contact, stride) {
   if (!contact || contact.state === 'none') return null;
   const observation = contact.observation || {};
@@ -151,6 +163,8 @@ export function captureFloorplanMapSource({
     if (!floorA || !floorB || floorA.id === floorB.id) continue;
     connectors.push({
       id: `connector:${index}:${floorA.id}-${floorB.id}`,
+      sourceId: portal.id || null,
+      label: spokenConnectorLabel(portal.id, floorA, floorB),
       kind: 'stairs',
       a: {
         floorId: floorA.id,

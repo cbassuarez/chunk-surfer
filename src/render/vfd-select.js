@@ -97,12 +97,30 @@ export function drawVfdRow(ui, {
     uiFill(x - 1, y - 0.1, w + 2, 1.15, ui.inverseColor || ui.theme?.().phosphor || '#F2A81E');
   }
   if (s.gutter && s.gutter !== ' ') uiText(x, y, s.gutter, s.inverse ? invertRole : role, s.tier);
-  // The knock-out is the disabled state: a binary panel cannot render grey, so
-  // half the dots simply are not addressed this frame.
-  const text = s.knockout > 0
-    ? String(label).split('').map((c, i) => (i % 2 ? ' ' : c)).join('')
-    : label;
-  uiText(x + gutterWidth, y, text, s.inverse ? invertRole : role, s.tier);
+  uiText(x + gutterWidth, y, label, s.inverse ? invertRole : role, s.tier);
+
+  // THE KNOCK-OUT IS A DOT PATTERN, NOT A DROPPED LETTER.
+  //
+  // The intent was always "half the dots simply are not addressed this frame" —
+  // a binary panel cannot render grey, so it renders coarse. The implementation
+  // blanked every other CHARACTER, which is not a dimmed word, it is a
+  // different one: the disabled CONTINUE row rendered as `C N I U`, and the
+  // player could not read what it was they could not do.
+  //
+  // So the label is drawn whole and an unlit comb is laid over it. Every letter
+  // keeps its own shape and half the dots still go dark, which is what an
+  // under-driven VFD actually looks like.
+  if (s.knockout > 0) {
+    const glass = ui.theme?.().glass;
+    // No glass to knock out with is not a reason to mangle the word; the tier
+    // has already dimmed it, and a legible dim row beats an illegible one.
+    if (glass) {
+      const bands = 3;
+      for (let i = 0; i < bands; i += 1) {
+        uiFill(x + gutterWidth, y + 0.1 + i * 0.3, w - gutterWidth, 0.12 * s.knockout * 2, glass);
+      }
+    }
+  }
 }
 
 export function vfdRowStyle({
