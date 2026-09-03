@@ -26,6 +26,7 @@ import {
   normalizeChunkSurfState,
   reduceChunkSurf,
 } from '../src/game/chunk-surf-state.js';
+import { HORIZON_TRANSPORT_DIALS, horizonTransportTruth } from '../src/game/horizon-transport.js';
 import { createSourceSpaceRuntime, horizonBustEyeEvidence } from '../src/game/source-space-runtime.js';
 import { ENDING_IDS } from '../src/progression/schema.js';
 import { RETURN_DEFS } from '../src/progression/report.js';
@@ -36,11 +37,40 @@ const finalState=()=>buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.EXPOSED_BATTL
 // Contact is explicit, durable, terminal in either direction, and cannot be
 // converted into Horizon by an old normal-exit call after commitment.
 {
-  const ready=finalState();
+  const faultPreset=buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.EXPOSED_BATTLE,{seed:4417,hasRig:false});
+  const ready=faultPreset.state;
+  const faultRuntime=createSourceSpaceRuntime({initialState:ready});
+  faultRuntime.setPlayerPosition(faultPreset.position);
+  const faultDecision=faultRuntime.inspectFocused(faultPreset.position.x,faultPreset.position.y,faultPreset.position.facing);
+  assert.equal(faultDecision.event,'boss-warning','the exposed fault reaches the no-return decision');
+
   const normalExitPreset=buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.NORMAL_EXIT,{seed:4417,hasRig:false});
-  const warningRuntime=createSourceSpaceRuntime({initialState:normalExitPreset.state});
-  warningRuntime.setPlayerPosition(normalExitPreset.position);
-  assert.equal(warningRuntime.inspectFocused(normalExitPreset.position.x,normalExitPreset.position.y,normalExitPreset.position.facing).event,'boss-warning','both fault approaches share the no-return decision');
+  const normalExitRuntime=createSourceSpaceRuntime({initialState:normalExitPreset.state});
+  normalExitRuntime.setPlayerPosition(normalExitPreset.position);
+  assert.equal(
+    normalExitRuntime.inspectFocused(normalExitPreset.position.x,normalExitPreset.position.y,normalExitPreset.position.facing).event,
+    'horizon-transport',
+    'the transport gates the normal exit before the no-return decision',
+  );
+  assert.equal(normalExitRuntime.state().finale.route,null,'the transport gate does not choose a finale route');
+  assert.equal(normalExitRuntime.state().finale.stage,SOURCE_FINALE_STAGE.UNCOMMITTED,'the transport gate leaves the finale uncommitted');
+
+  const transportTruth=horizonTransportTruth();
+  for(const dial of HORIZON_TRANSPORT_DIALS){
+    normalExitRuntime.setHorizonTransportDial(dial,transportTruth[dial]);
+  }
+  const threaded=normalExitRuntime.runHorizonTransport();
+  assert.equal(threaded.ran,true,'the correctly threaded transport opens the normal exit');
+  assert.equal(threaded.state.threaded,true,'threaded is derived from the three correct settings');
+  assert.equal(normalExitRuntime.state().finale.stage,SOURCE_FINALE_STAGE.UNCOMMITTED,'threading the transport does not commit a route');
+
+  const normalExitDecision=normalExitRuntime.inspectFocused(
+    normalExitPreset.position.x,
+    normalExitPreset.position.y,
+    normalExitPreset.position.facing,
+  );
+  assert.equal(normalExitDecision.event,faultDecision.event,'after threading, both fault approaches share the no-return decision');
+  assert.equal(normalExitRuntime.state().finale.stage,SOURCE_FINALE_STAGE.UNCOMMITTED,'the warning is still a decision, not a commitment');
   const committed=dispatch(ready,'CONTACT_COMMITTED');
   assert.equal(committed.finale.route,SOURCE_FINALE_ROUTE.CONTACT);
   assert.equal(committed.finale.stage,SOURCE_FINALE_STAGE.CONTACT_COMMITTED);

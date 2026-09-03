@@ -12,6 +12,9 @@ const windowsTauri = JSON.parse(fs.readFileSync('src-tauri/tauri.windows.conf.js
 
 assert.match(pkg.scripts['tauri:build'], /tauri build --config src-tauri\/tauri\.lens\.conf\.json/, 'tauri builds always merge the offline lens bundle config');
 assert.match(pkg.scripts['tauri:build'], /npm run lens:verify/, 'tauri builds reject a stale or mismatched lens sidecar before packaging');
+assert.doesNotMatch(pkg.scripts['tauri:build'], /steamworks:verify/, 'generic desktop builds do not require Steamworks redistributables');
+assert.match(pkg.scripts['tauri:build:steam'], /npm run steamworks:verify/, 'Steam builds explicitly verify the Steamworks redistributable');
+assert.match(pkg.scripts['tauri:build:steam'], /npm run tauri:build --/, 'Steam builds reuse the mandatory generic Tauri build contract');
 assert.match(pkg.scripts['lens:verify'], /validate-lens-bundle-contract\.mjs/, 'the local lens bundle contract has a dedicated verifier');
 assert.match(pkg.scripts['beta:build:mac'], /npm run tauri:build -- --target aarch64-apple-darwin --bundles dmg/, 'local mac beta build uses the mandatory bundled Tauri build');
 assert.match(pkg.scripts['itch:stage'], /scripts\/itch-release\.mjs stage/, 'itch staging script exists for public beta uploads');

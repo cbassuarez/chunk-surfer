@@ -42,8 +42,18 @@ const walk = (dir, out = []) => {
 
 // Comments are full of box-drawing dividers that are never drawn.
 const stripComments = (source) => source
+  .replace(/\r\n?/g, '\n')
   .replace(/\/\*[\s\S]*?\*\//g, '')
   .split('\n').map((line) => line.replace(/^\s*\/\/.*$/, '')).join('\n');
+
+assert.ok(
+  !stripComments("// comment-only '♪'\r\n").includes('♪'),
+  'CRLF whole-line comments are stripped before glyph scanning',
+);
+assert.ok(
+  !stripComments("// comment-only 'ˆ'\r\n").includes('ˆ'),
+  'CRLF comment literals never become VFD glyph requirements',
+);
 
 const LITERAL = /'([^'\\\n]*)'|"([^"\\\n]*)"|`([^`\\]*)`/g;
 

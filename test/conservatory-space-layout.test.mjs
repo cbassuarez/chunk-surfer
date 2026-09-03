@@ -157,7 +157,11 @@ assert.equal(PROPS.pickProp(dispatchAim.x, dispatchAim.y, 0, 2.5, { yaw:aimAt('d
 
 const boxOfficeProps = placed.filter((prop) => prop.id.startsWith('box-office-'));
 assert.ok(boxOfficeProps.length >= 10, 'box office should read as a stocked ticket office');
-assert.equal(byId['box-office-key-cabinet']?.interactive,false,'key cabinet shell cannot steal focus');
+assert.equal(
+  byId['box-office-key-cabinet']?.action,
+  'key-cabinet-board',
+  'key cabinet shell keeps the authored comparison action',
+);
 const cabinetRings=['box-office-key-ring-ch04','box-office-key-ring-c17','box-office-key-ring-fohm'].map((id)=>byId[id]);
 assert.deepEqual(cabinetRings.map((prop)=>prop?.keyTag),['CH-04','C-17','FOH-M'],'three separate ring props own the authored tags');
 assert.ok(cabinetRings.every((prop)=>prop?.action==='chapel-key-ring'),'every ring uses literal in-world selection');

@@ -248,7 +248,8 @@ export const SYSTEM_NODES = Object.freeze([
     evidence: [
       cite('src-tauri/tauri.lens.conf.json', '"bundle": {', 'Desktop bundle resources'),
       cite('.github/workflows/release.yml', 'name: Release Desktop Builds', 'Cross-platform release workflow'),
-      cite('package.json', '"tauri:build": "npm run steamworks:verify && npm run lens:verify && tauri build --config src-tauri/tauri.lens.conf.json",', 'Desktop build command'),
+      cite('package.json', '"tauri:build": "npm run lens:verify && tauri build --config src-tauri/tauri.lens.conf.json",', 'Desktop build command'),
+      cite('package.json', '"tauri:build:steam": "npm run steamworks:verify && npm run tauri:build --",', 'Steam desktop build command'),
     ],
   },
 ]);

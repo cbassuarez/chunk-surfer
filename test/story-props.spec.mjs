@@ -25,7 +25,11 @@ assert.ok(Math.abs(framed.yaw-origin.yaw)<=Math.PI,'framing takes the shortest y
 
 assert.equal(byId('box-office-ledger').mesh,'rekey_ledger');
 assert.equal(byId('box-office-key-cabinet').mesh,'chapel_key_cabinet');
-assert.equal(byId('box-office-key-cabinet').interactive,false,'cabinet shell never steals ring focus');
+assert.equal(
+  byId('box-office-key-cabinet').action,
+  'key-cabinet-board',
+  'cabinet shell keeps the authored comparison action',
+);
 assert.deepEqual(['CH-04','C-17','FOH-M'].map((tag)=>byId(`box-office-key-ring-${tag.toLowerCase().replaceAll('-','')}`)?.keyTag),['CH-04','C-17','FOH-M']);
 for(const mesh of['chapel_key_ring_ch04','chapel_key_ring_c17','chapel_key_ring_fohm'])assert.ok(PROP_MESH[mesh],`${mesh} is independently renderable`);
 assert.equal(byId('yard-look-bench').action,'yard-vigil-bench');
