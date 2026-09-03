@@ -14,6 +14,10 @@ export const ACOUSTIC_CATALOGUE = Object.freeze({
   bag_rummage: D({ levelDb: -25, durationMs: 620, spectrum: S(.18, .76, .48), impulsiveness: .42, family: 'equipment', canBeMimicked: true }),
   recorder_transport: D({ levelDb: -38, durationMs: 120, spectrum: S(.12, .58, .74), impulsiveness: .84, family: 'equipment', canBeMimicked: true }),
   radio_squelch: D({ levelDb: -12, durationMs: 920, spectrum: S(.22, .84, .92), impulsiveness: .72, family: 'radio', canBeMimicked: true }),
+  // A deliberate player call is speech through the handheld, not the carrier
+  // burst above. Keep it near the existing .34 gameplay emission (~-30.24 dB),
+  // speech-band and sustained, and do not let the HUSH learn the player's call.
+  radio_call: D({ levelDb: -30, durationMs: 480, spectrum: S(.18, .84, .52), impulsiveness: .14, family: 'radio', canBeMimicked: false }),
   radio_drop: D({ levelDb: -8, durationMs: 680, spectrum: S(.88, .74, .52), impulsiveness: .96, family: 'impact', canBeMimicked: true }),
   door_open: D({ levelDb: -24, durationMs: 420, spectrum: S(.58, .62, .38), impulsiveness: .62, family: 'architecture', canBeMimicked: true }),
   door_close: D({ levelDb: -18, durationMs: 480, spectrum: S(.76, .66, .34), impulsiveness: .78, family: 'architecture', canBeMimicked: true }),
