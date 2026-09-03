@@ -103,14 +103,87 @@ test('a slow frame still books a continuous stream of grains', async () => {
   // interval, so below about nineteen frames a second the stream under-ran into
   // audible gaps. The scheduler books a short window ahead of the audio clock
   // instead, so a dropped frame costs nothing.
+  //
+  // The body walks at about 3.7 tape-seconds per second out there, so the long
+  // frame advances the tape by that much: this test is about the FRAME being
+  // slow, not the body, and holding the position still would now be measuring
+  // the stillness gate below instead of the scheduler.
   const { state, score } = harness();
   await score.load();
   score.tick(10, 16, 1, {});
   const before = state.sources;
   state.t += 0.2;
-  score.tick(10.2, 200, 1, {});
+  score.tick(10 + 3.7 * 0.2, 200, 1, {});
   assert.ok(state.sources - before >= 3,
     `one long frame books a window, not a grain (${state.sources - before})`);
+});
+
+// Walk a body at the nominal pace for a second, then hold it still for a second,
+// and count what each books and at what level.
+// `settle` seconds are ticked but not counted, so the counts describe the
+// steady state rather than the ramp between the two — the gate is smoothed on
+// purpose, so a step-to-step gap on the grid is not heard as stopping.
+function walkThenStand({ state, score }, { seconds = 1, settle = 0, dtMs = 16, rate } = {}) {
+  const dt = dtMs / 1000;
+  let tape = 10;
+  let booked = 0;
+  let last = null;
+  for (let elapsed = 0; elapsed < seconds + settle; elapsed += dt) {
+    const before = state.sources;
+    tape += rate * dt;
+    state.t += dt;
+    last = score.tick(tape, dtMs, 1, {});
+    if (elapsed >= settle) booked += state.sources - before;
+  }
+  return { booked, last };
+}
+
+test('standing still thins the stream to a held tone instead of holding it at full level', async () => {
+  // THE COMPLAINT THIS ANSWERS. The playhead was always a real scrub, but the
+  // grain scheduler ran off ctx.currentTime and booked ~19 grains a second
+  // forever at an unchanged level, so a stopped body got the same 150ms window
+  // held indefinitely — the most sustained version of the piece, not the
+  // quietest. Stopping has to sound like stopping.
+  const { state, score } = harness();
+  await score.load();
+  const walking = walkThenStand({ state, score }, { rate: 3.7, settle: 1 });
+  const standing = walkThenStand({ state, score }, { rate: 0, settle: 2 });
+
+  assert.ok(standing.booked < walking.booked * 0.55,
+    `standing thins the stream (${standing.booked} vs ${walking.booked})`);
+  assert.ok(standing.booked > 0, 'and does not stop it: this is a held tone, not silence');
+  assert.ok(standing.last.carried < walking.last.carried * 0.4,
+    `standing drops the level (${standing.last.carried} vs ${walking.last.carried})`);
+  assert.ok(standing.last.carried > 0.05, 'but something is still playing');
+
+  // And walking again restores both, so the player controls it with their legs.
+  const again = walkThenStand({ state, score }, { rate: 3.7, settle: 1 });
+  assert.ok(again.last.carried > standing.last.carried * 2.5, 'walking on opens it back up');
+});
+
+test('the pitch bend is a gesture at walking pace, not a switch pinned to its clamp', async () => {
+  // velocity used to be the glide's own residual over dt — about 11x the true
+  // tape rate and frame-rate dependent — so `clamp(velocity * 90, -220, 220)`
+  // saturated the instant a key went down and sat at 0 whenever it did not.
+  const { state, score } = harness();
+  await score.load();
+  const walking = walkThenStand({ state, score }, { rate: 3.7 });
+  assert.ok(Math.abs(walking.last.velocity - 3.7) < 0.6,
+    `velocity reports the real tape rate (${walking.last.velocity})`);
+  const bend = walking.last.velocity * 32;
+  assert.ok(Math.abs(bend) < 220, `the bend has headroom at a walk (${bend} cents)`);
+  assert.ok(Math.abs(bend) > 60, 'and is still an audible gesture');
+});
+
+test('pace is measured the same at 30fps and at 120fps', async () => {
+  // The old derivation divided the glide residual by dt, so the identical walk
+  // reported a different pace at a different frame rate.
+  const slow = harness(); await slow.score.load();
+  const fast = harness(); await fast.score.load();
+  const a = walkThenStand(slow, { rate: 3.7, dtMs: 33 });
+  const b = walkThenStand(fast, { rate: 3.7, dtMs: 8 });
+  assert.ok(Math.abs(a.last.velocity - b.last.velocity) < 0.35,
+    `same walk, same pace (${a.last.velocity} vs ${b.last.velocity})`);
 });
 
 test('a failed low-memory decode falls back instead of going silent', async () => {

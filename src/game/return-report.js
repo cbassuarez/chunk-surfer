@@ -1,8 +1,23 @@
 import * as scenes from './scenes.js';
 import { uiCenter, uiFill, uiLine, uiSize, uiText, uiWrap } from '../render/ui.js';
-import { drawMachinePanel, drawVfdText } from '../render/presentation.js';
+import {
+  drawFormRow, drawFormRule, drawFormStamp, drawMachinePanel, drawPaperPanel, drawVfdText,
+} from '../render/presentation.js';
+import { fitText } from '../render/fit-text.js';
+import { PAPER_ISSUER } from '../data/paper-system.js';
+
+// The company whose form this is. Authored data, not a string we invented here.
+const RETURN_ISSUER = PAPER_ISSUER.ELLERY_WORKS;
+// A works order number, not a slice of a UUID. Digits only, five of them, so
+// the sheet carries something a filing clerk could actually read back.
+const formNumber = (runId = '') => {
+  let n = 0;
+  for (const ch of String(runId)) n = (n * 31 + ch.charCodeAt(0)) >>> 0;
+  return String(n % 100000).padStart(5, '0');
+};
+const filedCount = () => Object.keys(getMeta()?.knowledge?.documents || {}).length;
 import { UI_COLOR } from '../render/palette.js';
-import { tapeQualifies } from '../causal/tape.js';
+import { CAUSAL_REQUIREMENT, tapeQualifies } from '../causal/tape.js';
 import { achievementDefinition } from '../progression/achievements.js';
 import { consumeReturnReport } from '../progression/runtime.js';
 import { formatDuration, returnDefinition } from '../progression/report.js';
@@ -26,25 +41,81 @@ const chunk = (values, size) => {
   return out;
 };
 
-function reportRows(summary) {
+// THE RETURN, AS W. ELLERY RECEIVES IT.
+//
+// This was eleven label/value pairs. buildRunSummary hands over far more than
+// that and the form threw nearly all of it away: the entire signal-combat record
+// (battles started/won/lost), WHICH rooms were taken rather than how many, the
+// documents read, what came back from the equipment issue and what did not.
+// A works order that came back with kit missing says so on the form; that is
+// what the form is for.
+//
+// Grouped into sections, because a form has sections. Each entry is
+// [label, value] and a bare string is a section heading.
+function reportSections(summary) {
   const ret = returnDefinition(summary.endingId);
   const contaminated = summary.takes?.contaminated || [];
-  return [
-    ['ENDING', ret?.title || summary.endingId.toUpperCase()],
-    ...(summary.interference?.caseId ? [[
-      'INTERFERENCE',
-      `${summary.interference.caseId} / ${summary.interference.classification || 'UNRESOLVED'}`,
-    ]] : []),
-    ['DIFFICULTY', String(summary.rules?.startedPreset || 'contract').replaceAll('-', ' ').toUpperCase()],
-    ['TAKES', `${summary.takes.completed} / 5`],
-    ['SPOILED', String(summary.takes.spoiled)],
-    ['CONTAMINATED', String(contaminated.length)],
-    ...(contaminated.length ? [['AFFECTED ROOMS', contaminated.map((id) => roomLabel(id).toUpperCase()).join(' · ')]] : []),
-    ['INJURIES', String(summary.injuries)],
-    ['DISCOVERIES', `${summary.disclosures.found} / ??`],
-    ['EQUIPMENT RETURNED', `${summary.equipment.returned} / ${summary.equipment.issued}`],
-    ['DURATION', formatDuration(summary.durationSeconds)],
+  const rooms = summary.takes?.rooms || [];
+  const battles = summary.battles || {};
+  const equipment = summary.equipment || {};
+  const missing = equipment.missing || [];
+
+  const engagements = Number(battles.started) || 0;
+  const sections = [
+    ['THE JOB', [
+      ['DISPOSITION', ret?.title || String(summary.endingId || '').toUpperCase()],
+      ['CLASSIFICATION', ret?.classification || 'UNCLASSIFIED'],
+      ['TERMS', String(summary.rules?.startedPreset || 'contract').replaceAll('-', ' ').toUpperCase()],
+      ['TIME ON SITE', formatDuration(summary.durationSeconds)],
+      ...(summary.interference?.caseId ? [['CASE', `${summary.interference.caseId} / ${summary.interference.classification || 'UNRESOLVED'}`]] : []),
+    ]],
+    ['TAKES', [
+      ['ACCEPTED', `${summary.takes.completed} OF 5`],
+      ['SPOILED', String(summary.takes.spoiled)],
+      ['CONTAMINATED', String(contaminated.length)],
+      // WHICH rooms, not how many. The count was all the form ever printed and
+      // the room list has been in the summary the whole time.
+      ...(rooms.length ? [['ROOMS FILED', rooms.map((id) => roomLabel(id).toUpperCase()).join(', ')]] : []),
+      ...(contaminated.length ? [['AFFECTED', contaminated.map((id) => roomLabel(id).toUpperCase()).join(', ')]] : []),
+    ]],
   ];
+
+  // The night's fighting was completely invisible on this form. It is only
+  // printed when there was any — a quiet return should not carry an empty
+  // section about violence.
+  if (engagements > 0) {
+    sections.push(['ENGAGEMENTS', [
+      ['ENCOUNTERED', String(engagements)],
+      ['RESOLVED', String(Number(battles.won) || 0)],
+      ['LOST', String(Number(battles.lost) || 0)],
+      ...(Number(battles.firstPassWon) ? [['CLEAN AT FIRST PASS', String(battles.firstPassWon)]] : []),
+    ]]);
+  }
+
+  sections.push(['THE RECORDIST', [
+    ['INJURIES CARRIED', String(summary.injuries)],
+    ['DISCLOSURES FOUND', String(summary.disclosures.found)],
+    ...(Number(summary.documents?.read) ? [['DOCUMENTS READ', String(summary.documents.read)]] : []),
+  ]]);
+
+  sections.push(['EQUIPMENT', [
+    ['RETURNED', `${equipment.returned} OF ${equipment.issued}`],
+    // A works order does not shrug about missing kit. Name it.
+    ...(missing.length ? [['NOT RETURNED', missing.map((id) => String(id).toUpperCase()).join(', ')]] : []),
+    ...(Number(equipment.recovered) ? [['RECOVERED ON SITE', String(equipment.recovered)]] : []),
+  ]]);
+
+  return sections;
+}
+
+// The stamp the office puts on the bottom of the sheet.
+function reportStamp(summary) {
+  if (summary.rules?.startedPreset === 'dead-air') {
+    return summary.integrity?.deadAir?.eligible ? 'DEAD AIR' : 'NOT MET';
+  }
+  if (Number(summary.injuries) > 0) return 'FILED';
+  if (Number(summary.takes?.completed) >= 5) return 'COMPLETE';
+  return 'FILED';
 }
 
 export function makeReturnReportScene({
@@ -55,6 +126,7 @@ export function makeReturnReportScene({
   onTitle = () => {},
   getCausalStatus = () => summary.causalTape || { status: tapeQualifies(summary.injuries) ? 'filing' : 'not-qualified' },
 } = {}) {
+  const RETURN_REF = `${RETURN_ISSUER.formPrefix}${formNumber(summary.runId || summary.id || '4417')}`;
   const buildStages=()=>{
     const achievementIds=[...(summary.unlockedAchievements||[])];
     if(getCausalStatus()?.status==='ready'&&!achievementIds.includes('ACH_SECOND_TRACK'))achievementIds.push('ACH_SECOND_TRACK');
@@ -129,6 +201,120 @@ export function makeReturnReportScene({
       }
     },
 
+    // The sheet itself. One column of ruled sections, a stamp at the foot.
+    drawReturnSheet(x, y, w, h) {
+      // A SHEET IS AS LONG AS WHAT IS TYPED ON IT.
+      //
+      // Holding the full panel height left a hand's width of blank stock above
+      // the RECEIVED rule, which is the thing that made the old screens read as
+      // a content card floating in a page. Measure the sections, cut the paper
+      // to them, and centre what is left.
+      // +14: drawPaperPanel keeps 4 rows of margin for itself, and the sheet
+      // spends 10 more on the letterhead, the two rules and the received line.
+      // Getting this wrong by exactly the panel's own padding is what pushed the
+      // last section onto an imaginary continuation sheet.
+      const needed = reportSections(summary).reduce((sum, [, entries]) => sum + entries.length + 2, 0) + 14;
+      const fitted = Math.max(16, Math.min(h, needed));
+      const top = y + Math.floor((h - fitted) / 2);
+      const sheet = drawPaperPanel(x, top, w, fitted);
+      const left = sheet.x + 1;
+      const width = sheet.w - 2;
+
+      // Letterhead. The issuer is real authored data — W. ELLERY / WORKS, with
+      // a Brighouse address and a form prefix — so the form says who it belongs
+      // to in the company's own words rather than in ours.
+      uiText(left, sheet.y, RETURN_ISSUER.mark, 'paper-ink');
+      uiText(left, sheet.y + 1, RETURN_ISSUER.descriptor, 'paper-ink', 0.62);
+      uiText(left + width - RETURN_REF.length, sheet.y, RETURN_REF, 'paper-ink', 0.86);
+      uiText(left + width - 15, sheet.y + 1, 'RETURN OF WORKS', 'paper-ink', 0.62);
+      drawFormRule(left, sheet.y + 2, width, { alpha: 0.42, weight: 2 });
+
+      // The body, section by section, until the sheet runs out. A form that
+      // overflows its page is a form with a second page, not a form with a
+      // scrollbar — so it stops, and the count of what did not fit is honest.
+      let ry = sheet.y + 4;
+      const foot = sheet.y + sheet.h - 4;
+      let dropped = 0;
+      for (const [heading, entries] of reportSections(summary)) {
+        if (ry + 2 + entries.length > foot) { dropped += entries.length; continue; }
+        uiText(left, ry, heading, 'paper-ink', 0.55);
+        drawFormRule(left, ry, width, { alpha: 0.18 });
+        ry += 1;
+        for (const [label, value] of entries) {
+          ry = drawFormRow(left + 1, ry, width - 1, label, fitText(String(value), width - label.length - 4));
+        }
+        ry += 1;
+      }
+      if (dropped) uiText(left + 1, foot - 1, `${dropped} FURTHER ENTR${dropped === 1 ? 'Y' : 'IES'} ON CONTINUATION SHEET`, 'paper-ink', 0.42);
+
+      drawFormRule(left, foot, width, { alpha: 0.42, weight: 2 });
+      uiText(left, foot + 1, 'RECEIVED', 'paper-ink', 0.55);
+      uiText(left + 10, foot + 1, RETURN_ISSUER.address[1] || '', 'paper-ink', 0.42);
+      drawFormStamp(left + width - 14, foot + 1, reportStamp(summary), { alpha: 0.9 });
+
+      const prompt = promptLine([{ action: 'continue', label: 'CONTINUE' }]);
+      uiText(left, sheet.y + sheet.h - 1, prompt, 'paper-ink', 0.5);
+    },
+
+    // THE DISPOSITION BLOCK, WHICH IS NOT TWO CALLS TO ACTION.
+    //
+    // This was a pair of equal-width cards side by side, each with a bold
+    // heading, four wrapped lines of body copy and a small label, over two text
+    // links in the footer. That is a landing page, and it was the most
+    // web-shaped thing in the build.
+    //
+    // A form ends by asking what is to be done with it. Four ruled rows, one
+    // tick box each, the selected one stamped — the same four POST_RUN_ACTIONS
+    // and the same keys, on the same sheet as everything above it.
+    drawDisposition(x, y, w, h, { causal = {}, hushCopy = {} } = {}) {
+      // Four rows and a foot. Same reason as the sheet above.
+      const fitted = Math.max(16, Math.min(h, POST_RUN_ACTIONS.length * 2 + 12));
+      const top = y + Math.floor((h - fitted) / 2);
+      const sheet = drawPaperPanel(x, top, w, fitted);
+      const left = sheet.x + 1;
+      const width = sheet.w - 2;
+
+      uiText(left, sheet.y, RETURN_ISSUER.mark, 'paper-ink');
+      uiText(left + width - RETURN_REF.length, sheet.y, RETURN_REF, 'paper-ink', 0.86);
+      uiText(left, sheet.y + 1, 'DISPOSITION OF THIS RETURN', 'paper-ink', 0.62);
+      drawFormRule(left, sheet.y + 2, width, { alpha: 0.42, weight: 2 });
+
+      // One line each. The description that used to be a paragraph of body copy
+      // is the form's own note column, which is where a form puts it.
+      const notes = {
+        replay: 'NEW WORKS ORDER · TERMS TO BE SET',
+        'transfer-room': hushCopy.enabled ? (hushCopy.note || 'FILE AND COLLECT') : 'NOT AVAILABLE ON THIS RETURN',
+        archive: `${filedCount()} DOCUMENT${filedCount() === 1 ? '' : 'S'} ON FILE`,
+        title: 'CLOSE THE FILE',
+      };
+      let ry = sheet.y + 4;
+      POST_RUN_ACTIONS.forEach((entry, index) => {
+        const picked = index === action;
+        const available = entry.id !== 'transfer-room' || hushCopy.enabled !== false;
+        const box = picked ? '[X]' : '[ ]';
+        const alpha = available ? 1 : 0.45;
+        uiText(left, ry, box, 'paper-ink', alpha);
+        uiText(left + 4, ry, String(entry.label || '').toUpperCase(), 'paper-ink', alpha);
+        const note = fitText(String(notes[entry.id] || ''), Math.max(4, width - 30));
+        if (note) uiText(left + width - note.length, ry, note, 'paper-ink', alpha * 0.5);
+        drawFormRule(left, ry, width, { alpha: picked ? 0.34 : 0.12 });
+        ry += 2;
+      });
+
+      const foot = sheet.y + sheet.h - 4;
+      drawFormRule(left, foot, width, { alpha: 0.42, weight: 2 });
+      // The causal tape's own line, which the report only ever showed as a
+      // spinner on the filing stage.
+      const tape = causal.status === 'ready' ? 'SECOND TRACK SEALED'
+        : causal.status === 'not-qualified' ? `SECOND TRACK REFUSED · ${CAUSAL_REQUIREMENT}`
+          : '';
+      if (tape) uiText(left, foot + 1, tape, 'paper-ink', 0.5);
+      drawFormStamp(left + width - 14, foot + 1, POST_RUN_ACTIONS[action]?.id === 'title' ? 'CLOSED' : 'PENDING', { alpha: 0.85 });
+
+      const prompt = promptLine([{ action: 'select', label: 'SELECT' }, { action: 'confirm', label: 'CONFIRM' }]);
+      uiText(left, sheet.y + sheet.h - 1, prompt, 'paper-ink', 0.5);
+    },
+
     drawReport() {
       const { cols, rows } = uiSize();
       uiFill(0, 0, cols, rows, UI_COLOR.glass);
@@ -138,6 +324,28 @@ export function makeReturnReportScene({
       const current = currentStage.id;
       const pageSource = currentStage.pages > 1 ? `${currentStage.page}/${currentStage.pages}` : '4417-C';
       const stageCopy = POST_RUN_STAGE_COPY[current] || POST_RUN_STAGE_COPY.actions;
+
+      // THE RETURN IS PAPERWORK, AND PAPERWORK IS NOT ON THE GLASS.
+      //
+      // The night is over and the building is behind him. Everything up to this
+      // point is lit — phosphor behind glass, in the dark. This is the first
+      // surface in the game that is a physical object under an office lamp, and
+      // that tonal break IS the ending: you are out, and now somebody files you.
+      //
+      // It is drawn rather than rasterised because a return form carries
+      // TONIGHT's numbers. The offline paper pipeline (game/paper-assets.js)
+      // owns the 211 authored documents and its own rule is that "strings were
+      // fixed before this program runs" — which is exactly what a form filled in
+      // from a live run cannot be. Printed stationery, typed entries: the
+      // stationery is the sheet, the entries are drawn onto it now.
+      if (current === 'report') { this.drawReturnSheet(x, y, w, h); return; }
+      if (current === 'actions') {
+        const causal = getCausalStatus() || {};
+        const hushCopy = transferRoomCopy({ filed: filedCount() });
+        this.drawDisposition(x, y, w, h, { causal, hushCopy });
+        return;
+      }
+
       const body = drawMachinePanel(x, y, w, h, {
         label: stageCopy.panel,
         source: pageSource,
@@ -155,19 +363,7 @@ export function makeReturnReportScene({
       }
 
       if (current === 'report') {
-        drawVfdText(body.x, body.y, stageCopy.title, { color: UI_COLOR.amber, max: body.w });
-        let ry = body.y + 4;
-        const labelW = Math.min(20, Math.max(12, Math.floor(body.w * 0.28)));
-        const valueX = body.x + labelW + 1;
-        for (const [label, value] of reportRows(summary).slice(0, Math.max(1, Math.floor((body.h - 5) / 2)))) {
-          uiText(body.x, ry, label.slice(0, labelW).padEnd(labelW), 'ui-secondary');
-          uiText(valueX, ry, value.slice(0, Math.max(1, body.x + body.w - valueX)), label === 'ENDING' ? 'ui-amber' : 'ui-primary');
-          ry += 2;
-        }
-        const result = summary.rules?.startedPreset === 'dead-air'
-          ? summary.integrity?.deadAir?.eligible ? 'DEAD AIR ACHIEVEMENT EARNED' : 'DEAD AIR REQUIREMENTS NOT MET'
-          : 'RUN COMPLETE';
-        uiCenter(body.y + body.h - 1, result, result.includes('NOT MET') ? 'ui-danger' : 'ui-green');
+        // Drawn on the sheet, not on the glass — see drawReport's paper branch.
         return;
       }
 
@@ -224,38 +420,6 @@ export function makeReturnReportScene({
         return;
       }
 
-      drawVfdText(body.x, body.y, stageCopy.title, { color: UI_COLOR.amber, max: body.w });
-      const causal = getCausalStatus() || {};
-      const filed = Object.keys(getMeta()?.knowledge?.documents || {}).length;
-      const hushCopy = transferRoomCopy({ filed });
-      const gap = 3;
-      const panelW = Math.max(20, Math.floor((body.w - gap) / 2));
-      const panelY = body.y + 4;
-      const panelH = Math.min(12, body.h - 10);
-      const leftX = body.x;
-      const rightX = body.x + panelW + gap;
-      [[leftX, 0], [rightX, 1]].forEach(([px, index]) => {
-        uiFill(px, panelY, panelW, panelH, index === action ? 'rgba(186,116,31,.13)' : 'rgba(8,10,10,.42)');
-        uiLine(px, panelY, px + panelW - 1, panelY, index === action ? UI_COLOR.amber : UI_COLOR.frame, 0.85);
-        uiLine(px, panelY + panelH - 1, px + panelW - 1, panelY + panelH - 1, index === action ? UI_COLOR.amber : UI_COLOR.frame, 0.55);
-      });
-      const replayAction = POST_RUN_ACTIONS[0];
-      const hushAction = POST_RUN_ACTIONS[1];
-      uiText(leftX + 2, panelY + 2, `${action === 0 ? '▸ ' : ''}${replayAction.label}`, action === 0 ? 'ui-amber' : 'ui-primary');
-      uiWrap(replayAction.body, panelW - 4).slice(0, 4)
-        .forEach((line, i) => uiText(leftX + 2, panelY + 5 + i, line, 'ui-secondary'));
-      uiText(leftX + 2, panelY + panelH - 2, 'CHOOSE DIFFICULTY', 'ui-label');
-
-      uiText(rightX + 2, panelY + 2, `${action === 1 ? '▸ ' : ''}${hushAction.label}`, action === 1 ? 'ui-danger' : hushCopy.enabled ? 'ui-amber' : 'ui-secondary');
-      uiWrap(hushCopy.body, panelW - 4).slice(0, 4)
-        .forEach((line, i) => uiText(rightX + 2, panelY + 5 + i, line, hushCopy.enabled ? 'ui-primary' : 'ui-secondary'));
-
-      const footerY = body.y + body.h - 4;
-      const archiveAction = POST_RUN_ACTIONS[2];
-      const titleAction = POST_RUN_ACTIONS[3];
-      uiText(body.x + 2, footerY, `${action === 2 ? '▸ ' : ''}${archiveAction.label}`, action === 2 ? 'ui-amber' : 'ui-secondary');
-      const titleLabel = `${action === 3 ? '▸ ' : ''}${titleAction.label}`;
-      uiText(body.x + Math.max(0, body.w - titleLabel.length), footerY, titleLabel, action === 3 ? 'ui-amber' : 'ui-secondary');
     },
   };
 }

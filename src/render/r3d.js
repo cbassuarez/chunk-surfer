@@ -3242,6 +3242,15 @@ function horizonBandInTape(band) {
   return {
     centre: (Number(band.centre) || 0) * HORIZON_LATERAL_SCALE,
     reach: Math.max(2, (Number(band.reach) || 24) * HORIZON_LATERAL_SCALE),
+    // THE OTHER TWO CHANNELS OF THE BAND, WHICH USED TO DIE HERE.
+    // horizonBand() has always measured the recording's own brightness and its
+    // macroblock damage off the bake and returned them every frame. This
+    // function copied the two geometric channels and dropped the two expressive
+    // ones on the floor, so the tape rendered at one flat exposure with one
+    // flat crawl from the first metre to the last. They are what gives the
+    // crossing its three acts.
+    lum: Math.max(0, Math.min(1, Number(band.lum ?? 0.5))),
+    mosh: Math.max(0, Math.min(1, Number(band.mosh ?? 0))),
   };
 }
 
@@ -3313,10 +3322,33 @@ const HORIZON_EYE_AT = 0.115;
 // Live tuning surface for the horizon's feel, so the values can be found by
 // looking rather than by rebuilding. See __probe.horizonTune().
 const horizonTune = {
-  nearFade: 9, reach: 44, eyeAt: HORIZON_EYE_AT,
+  // NEARFADE IS THE AURORA DIAL. Every slice inside this distance is drawn
+  // translucent, so a pixel is the sum of that many veils rather than one splat
+  // on a wall — which is the difference between walking through hanging light
+  // and walking between two painted surfaces. Nine gave a dozen; the crossing
+  // wants curtains it can see through, so it gets twice that.
+  //
+  // `reach` is how far down the tube is drawn, and it is what the far end is
+  // made of: more slices converging is more wormhole. It costs draws, so it is
+  // raised rather than opened.
+  nearFade: 18, reach: 56, eyeAt: HORIZON_EYE_AT,
+  // How much taller the flat fields are drawn than they were measured, how far
+  // they drift, and how opaque they are allowed to get. See uCurtain, uShimmer
+  // and uVeil in horizon3d.js. Veil under 1 is the whole aurora idea: the
+  // picture arrives by a dozen translucent depths summing rather than by the
+  // nearest slice covering everything behind it.
+  curtain: 2.1, shimmer: 0.85, veil: 0.9,
   // How much of the tape the corridor takes out of its own volume, and how tall
   // that corridor is. See the bore note in horizon3d.js.
-  bore: 0.96, boreHeight: 34,
+  //
+  // 0.96 EMPTIED THE CORRIDOR IT WAS SUPPOSED TO CLEAR. At that amount every
+  // splat inside the tube is multiplied to 4%, so the run down the middle ended
+  // in a black point and the far end — "the whole point of the crossing and the
+  // one thing you could not see" — was still the one thing you could not see,
+  // because the carve had deleted it. Thinned rather than emptied, the picture
+  // stays visible down the length of the corridor and the crossing has
+  // somewhere to be going.
+  bore: 0.72, boreHeight: 34,
 };
 // The projection's own look. Not a `glass` block and not a `vfd` block: those
 // describe an instrument, and this describes a lamp and a strip of film.
@@ -3461,7 +3493,7 @@ function drawHorizon(now) {
       far: horizonTune.reach * sliceMetres,
       near: 4,
     });
-    const band = horizonState.band || { centre: 0, reach: 24 };
+    const band = horizonState.band || { centre: 0, reach: 24, lum: 0.5, mosh: 0 };
     const bandAhead = horizonState.bandAhead || band;
     HZ.horizonRender({
       // The tape is cut off at the ground. Without this the buried bottom of
@@ -3476,6 +3508,11 @@ function drawHorizon(now) {
         z: tapeCamZ, aheadZ: horizonState.bandLookahead,
         axisY: tapeCamY, height: horizonTune.boreHeight, amount: horizonTune.bore,
       },
+      // How hard the damage crawls here. See uMosh in horizon3d.js.
+      mosh: band.mosh,
+      curtain: horizonTune.curtain,
+      shimmer: horizonTune.shimmer,
+      veil: horizonTune.veil,
       view, projection,
       slice: horizonState.slice,
       collapse: horizonState.collapse,

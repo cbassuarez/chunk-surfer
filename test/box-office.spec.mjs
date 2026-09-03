@@ -3,7 +3,12 @@ import assert from 'node:assert/strict';
 import * as FP from '../src/world/floorplan.js';
 import { conservatory } from '../src/data/floorplan/conservatory.js';
 import { CONSERVATORY_PROPS } from '../src/data/conservatory-props.js';
+import * as PROPS from '../src/game/props.js';
 import { KEY_CABINET_RING, keyCabinetSelection, keyCabinetKeyIdentified } from '../src/game/key-cabinet.js';
+import {
+  BOX_OFFICE_SCENE_ID, compileBoxOfficeKeyTagPlan, validateWindowChoreographyPlan,
+  windowChoreographyPolicy,
+} from '../src/platform/window-choreography.js';
 
 FP.compile(conservatory.levels, {
   width: conservatory.width,
@@ -101,6 +106,67 @@ const cellOf = (id) => {
 
   assert.equal(keyCabinetKeyIdentified({ ledger: true }), true, 'reading the ledger is enough');
   assert.equal(keyCabinetKeyIdentified({}), false, 'and knowing nothing is not');
+}
+
+// ── THE CLUE SURFACES SHOW, AND DO NOTHING ELSE ─────────────────────────────
+//
+// This is the only ordinary room in the game allowed to reach outside the
+// window, so the contract it is held to is narrower than any rupture's. Every
+// assertion here is a thing it must never start doing.
+{
+  const tags = Object.keys(KEY_CABINET_RING).map((tag) => ({ tag, text: `${tag} tag` }));
+  const plan = compileBoxOfficeKeyTagPlan({ tags });
+
+  assert.equal(validateWindowChoreographyPlan(plan).ok, true, 'the cue does not compile');
+  assert.equal(plan.sceneId, BOX_OFFICE_SCENE_ID);
+  assert.equal(windowChoreographyPolicy(BOX_OFFICE_SCENE_ID), 'box-office');
+
+  assert.equal(plan.surfaces.length, 3, 'one surface per tag');
+  assert.deepEqual(plan.mainFrame, [], 'the game window must never move for a clue');
+  assert.equal(plan.focus, 'main', 'the cue must never take focus');
+  assert.equal(plan.input, 'none', 'the surfaces must never take input');
+  assert.equal(plan.restore, 'transaction', 'the cue must be restorable');
+  assert.ok(plan.surfaces.every((s) => s.interactive === false),
+    'a clue surface is a picture of a tag, not a tag');
+  assert.ok(plan.primitives.every((p) => p === 'Frame' || p === 'Restore'),
+    'the box office places and restores; it does not breach, swarm or cast');
+
+  // Every tag gets its own surface and they are laid out to be READ TOGETHER,
+  // which is the one thing the room itself cannot do.
+  assert.equal(new Set(plan.surfaces.map((s) => s.x)).size, 3, 'the tags overlap');
+  assert.equal(new Set(plan.surfaces.map((s) => s.y)).size, 1, 'the tags are not on one line');
+  assert.deepEqual(plan.surfaces.map((s) => s.title), Object.keys(KEY_CABINET_RING));
+
+  // The four-surface ceiling is not a place to lose a tag silently.
+  const overflow = compileBoxOfficeKeyTagPlan({
+    tags: [...tags, { tag: 'X-99', text: 'x' }, { tag: 'X-98', text: 'x' }],
+  });
+  assert.equal(overflow.surfaces.length, 3, 'the cue caps itself at the three rings');
+}
+
+// ── NOTHING IN THE FRONTAGE IS SILENTLY DROPPED ─────────────────────────────
+//
+// propsInit filters `!isSolid(rx,ry)`, so a prop authored inside blockwork does
+// not render and does not complain — which is exactly what happened to the
+// poster and the price list on the way in. A wall-mounted prop belongs on the
+// open cell BESIDE its wall; wallContactAt snaps it to the face.
+{
+  PROPS.propsInit(FP);
+  const placed = new Set(PROPS.allProps().map((p) => p.id));
+  const frontage = CONSERVATORY_PROPS.filter((p) => /^(box-office|foh)-/.test(p.id));
+  assert.ok(frontage.length >= 24, `front of house has thinned out (${frontage.length} props)`);
+  for (const p of frontage) {
+    assert.ok(placed.has(p.id), `${p.id} is authored inside a wall and never reaches the room`);
+  }
+
+  // And every one of them says something. A prop with no inspect is set
+  // dressing; the frontage is meant to be readable.
+  for (const p of frontage) {
+    if (/queue-|casing|services-panel/.test(p.id)) continue;   // fixtures, not documents
+    assert.ok(p.inspect?.first, `${p.id} has nothing to say`);
+    assert.ok(p.inspect?.again, `${p.id} has nothing to add on a second look`);
+    assert.notEqual(p.inspect.again, p.inspect.first, `${p.id} repeats itself`);
+  }
 }
 
 console.log('box-office.spec.mjs ok');

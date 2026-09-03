@@ -49,6 +49,45 @@ const MAX_PER_TICK = 6;
 const GLIDE_SECONDS = 0.20;
 const SNAP_SECONDS = 4;
 
+// HOW FAST THE TAPE GOES BY AT A WALK, in tape-seconds per real second.
+// 259.375s of recording over the ~70s the crossing takes at HORIZON_PACE 3.
+// Everything expressive is measured against this, so "moving" means moving the
+// way a body actually moves out there rather than a raw number.
+const NOMINAL_RATE = 3.7;
+
+// STOPPING HAS TO SOUND LIKE STOPPING.
+//
+// The playhead was always a real scrub, but the grain scheduler was a second,
+// free-running clock: it advanced off ctx.currentTime and booked ~19 grains a
+// second forever, at a level that never moved. So standing still did not stop
+// the piece, it converted it into the most sustained, most fatiguing version of
+// itself — the same 150ms window held indefinitely at full level. That is the
+// "too much when not moving" complaint exactly, and it is why the module's own
+// note about a stopped body getting "a held drone rather than a stall" was
+// describing a fault as a feature.
+//
+// Standing now thins the stream and drops the level to a held tone: one
+// sustained voice instead of the full stream. Not silence — the recording is
+// still under the feet — but a texture the player changes with their legs.
+const STILL_LEVEL = 0.18;
+const STILL_INTERVAL_MULT = 3.4;
+// How quickly stillness is believed. Slow enough that a step-to-step gap on the
+// grid is not heard as stopping, fast enough that stopping is heard as stopping.
+const MOTION_LERP = 2.2;
+
+// OVERLAP-ADD COMPENSATION. Hann grains at GRAIN_MS/INTERVAL_MS overlap about
+// three deep, which sums to roughly 1.5x the source amplitude — so the score
+// played back LOUDER than the file it reads, and nothing anywhere subtracted it.
+// The caller's trim was doing duty as both mix level and this, and was undersized
+// for it. Two jobs, two numbers: this one is the engine's, the caller's is the mix.
+const DENSITY_TRIM = 1 / (0.5 * OVERLAP);
+
+// Cents of detune per tape-second-per-second of pace. At a walk this lands
+// around +118 and the +-220 clamp is a limit again rather than the normal case:
+// the bend used to saturate the instant a key went down, which made the one
+// expressive parameter in the module a switch.
+const BEND_CENTS_PER_RATE = 32;
+
 export function createHorizonScore(ctx, {
   destination = null,
   url = '',
@@ -73,6 +112,14 @@ export function createHorizonScore(ctx, {
   // Where the body is, in seconds of tape, and how fast it is getting there.
   let position = 0;
   let velocity = 0;
+  // The last position the CALLER handed in, so pace can be measured from the
+  // body rather than from the glide's own residual (see tick).
+  let lastNext = null;
+  // 0 standing, 1 walking. Smoothed, and the only thing that decides how much
+  // of the piece is playing. Starts at 1: the body arrives on the tape walking,
+  // and a score that swells up from a held tone over the first second would be
+  // announcing itself. Stopping is the event, not starting.
+  let motion = 1;
   // Where it is standing across the corridor (-1..1) and which way it is
   // looking, so the score knows the same two things the picture does. Both are
   // smoothed: a grid step is a jump, and a jump in the pan is a click.
@@ -148,7 +195,7 @@ export function createHorizonScore(ctx, {
     // free to be purely expressive — and on a theremin piece, proximity
     // controlling pitch is not an artefact, it is the instrument. Walking on
     // lifts it; backing up drops it under.
-    const bend = clamp(velocity * 90, -220, 220);
+    const bend = clamp(velocity * BEND_CENTS_PER_RATE, -220, 220);
     if (source.detune) source.detune.value = bend;
     else source.playbackRate.value = 2 ** (bend / 1200);
 
@@ -174,7 +221,7 @@ export function createHorizonScore(ctx, {
     }
 
     const now = Math.max(ctx.currentTime, at || 0);
-    const peak = Math.max(0.00001, level * (0.8 + random() * 0.2));
+    const peak = Math.max(0.00001, level * DENSITY_TRIM * (0.8 + random() * 0.2));
     const curve = new Float32Array(ENVELOPE_POINTS);
     for (let i = 0; i < ENVELOPE_POINTS; i += 1) curve[i] = HANN[i] * peak;
     try {
@@ -217,11 +264,29 @@ export function createHorizonScore(ctx, {
       if (Math.abs(next - position) > SNAP_SECONDS) position = next;
       else position += (next - position) * Math.min(1, dt / GLIDE_SECONDS);
 
+      // PACE IS MEASURED FROM THE BODY, NOT FROM THE GLIDE'S OWN LAG.
+      //
+      // This used to be `(next - position) / dt` — the residual left after the
+      // glide above had already moved `position` toward `next`. At steady state
+      // that residual is about `rate * GLIDE_SECONDS`, so the figure came out
+      // around eleven times the true tape rate AND scaled with the frame time:
+      // the same walk reported a different pace at 30fps and 120fps. Since the
+      // only consumer clamps at +-220 cents, the bend sat pinned at its limit
+      // whenever a key was down and at zero whenever it was not, which is a
+      // switch rather than the gesture it is documented to be.
+      //
+      // Frame-to-frame delta of what the caller actually handed in is the pace.
+      const instant = lastNext === null ? 0 : (next - lastNext) / dt;
+      lastNext = next;
       // Smoothed, because a per-frame position delta is noisy enough to make the
       // pitch bend chatter. This is the only state the module keeps that is not
       // simply "where he is".
-      const instant = (next - position) / dt;
       velocity += (instant - velocity) * Math.min(1, dt * 6);
+
+      // And how much of a walk that is, 0..1. Everything expressive hangs off
+      // this: the level, the density, and how much of the piece is playing.
+      const moving = clamp(Math.abs(velocity) / NOMINAL_RATE, 0, 1);
+      motion += (moving - motion) * Math.min(1, dt * MOTION_LERP);
 
       // WHERE HE IS STANDING, AND WHICH WAY HE IS LOOKING.
       //
@@ -242,6 +307,12 @@ export function createHorizonScore(ctx, {
       if (level <= 0.0001) { output.gain.value = 0; return { active: false, live: live.size }; }
       if (!buffer) { load(); output.gain.value = 0; return { active: false, live: live.size, loading: !failed }; }
 
+      // THE HELD TONE. Level and density both follow the legs: at a walk this is
+      // the full stream at the caller's level, and stopped it is STILL_LEVEL of
+      // it through a stream thinned by STILL_INTERVAL_MULT — one voice, held.
+      const carried = level * (STILL_LEVEL + (1 - STILL_LEVEL) * motion);
+      const interval = INTERVAL_MS * (1 + (STILL_INTERVAL_MULT - 1) * (1 - motion));
+
       output.gain.value = 1;
       // SCHEDULE AHEAD OF THE GRAPH, NOT WITH IT.
       //
@@ -255,11 +326,14 @@ export function createHorizonScore(ctx, {
       if (nextAt < now) nextAt = now;
       let scheduled = 0;
       while (nextAt < now + LOOKAHEAD_S && scheduled < MAX_PER_TICK) {
-        scatter(level, nextAt);
-        nextAt += (INTERVAL_MS / 1000) * (0.85 + random() * 0.3);
+        scatter(carried, nextAt);
+        nextAt += (interval / 1000) * (0.85 + random() * 0.3);
         scheduled += 1;
       }
-      return { active: true, live: live.size, position, velocity, pan, tone: tone.frequency.value };
+      return {
+        active: true, live: live.size, position, velocity, pan,
+        motion, carried, interval, tone: tone.frequency.value,
+      };
     },
     output,
     destroy() {

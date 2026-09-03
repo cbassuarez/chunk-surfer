@@ -334,7 +334,11 @@ function commitNextIntent(state) {
   if (!chosen) return;
   state.committed = { id: chosen.id, index: state.intentIndex };
   maybeMisread(state, movement, intents, chosen, missedLast);
-  if (state.apparitions) commitHallApparitionRound(state.apparitions, state.cycleIndex, intents);
+  // The roster is handed the SAME commitment the card is drawn from, so the
+  // body that swings first throws the blow the player was shown.
+  if (state.apparitions) {
+    commitHallApparitionRound(state.apparitions, state.cycleIndex, intents, { committedId: chosen.id });
+  }
 }
 
 // Whether the recordist reads this one wrong.

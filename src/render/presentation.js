@@ -10,7 +10,7 @@
 // strip, silkscreen header/footer legends, and the lit data on the glass.
 
 import { uiDraw, uiFill, uiText } from './ui.js';
-import { THEMES, activeTheme, setActiveSurface, uiBrightness, themeRoleColor, themeRoleDim, uiFlickerAlpha, uiRoleColor } from './palette.js';
+import { THEMES, UI_COLOR, activeTheme, setActiveSurface, uiBrightness, themeRoleColor, themeRoleDim, uiFlickerAlpha, uiRoleColor } from './palette.js';
 import { drawVfdGlyph, vfdGlowBleed } from './vfd-font.js';
 import { drawPromptParts } from './prompt-glyphs.js';
 import { fitText } from './fit-text.js';
@@ -690,4 +690,77 @@ export function drawPaperPanel(x, y, w, h) {
     ctx.strokeRect(px + 0.5 * dpr, py + 0.5 * dpr, pw - dpr, ph - dpr); ctx.restore();
   });
   return { x: x + 3, y: y + 2, w: Math.max(1, w - 6), h: Math.max(1, h - 4) };
+}
+
+// ── the paperwork ─────────────────────────────────────────────────────────────
+//
+// THE FORM IS FILLED IN AT RUNTIME, WHICH IS WHY IT IS DRAWN AND NOT BUILT.
+//
+// The offline paper pipeline (scripts/build-paper-assets.mjs, game/paper-assets.js)
+// owns every AUTHORED document: 211 of them, rasterised to immutable 2048x2896
+// sheets with real impact-printer morphology and photocopy generations. Its own
+// rule is that "meaning never changes here: strings were fixed before this
+// program runs" — and a return form carrying tonight's take count is precisely
+// a document whose strings cannot be fixed in advance. It is stationery that is
+// being typed on now, in front of the player, so it is drawn now.
+//
+// The glyphs are the UI dot matrix in paper ink, which is not a compromise: a
+// 1980s works office filled these in on a nine-pin impact printer, and a dot
+// matrix on cream stock is what that looks like.
+
+// A ruled line across the sheet, in ink rather than phosphor.
+export function drawFormRule(x, y, w, { alpha = 0.30, weight = 1 } = {}) {
+  uiDraw(({ ctx, dpr, cellW, cellH }) => {
+    const px = x * cellW * dpr, py = (y + 0.62) * cellH * dpr, pw = w * cellW * dpr;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = UI_COLOR.paperInk;
+    ctx.fillRect(px, py, pw, Math.max(1, weight * dpr));
+    ctx.restore();
+  });
+}
+
+// LABEL . . . . . . . . . . . VALUE
+//
+// Leader dots, because that is how a form guides an eye across a wide sheet and
+// it is the detail that separates stationery from a table. A row with no value
+// is a blank waiting to be filled, and prints its leaders anyway.
+export function drawFormRow(x, y, w, label, value = '', {
+  labelRole = 'paper-ink', valueRole = 'paper-ink', alpha = 1, leader = '.',
+} = {}) {
+  const name = String(label || '').toUpperCase();
+  const entry = String(value ?? '');
+  const room = Math.max(0, w - name.length - entry.length - 2);
+  uiText(x, y, name, labelRole, alpha);
+  if (room > 0) {
+    // Spaced leaders: a solid run of dots reads as a rule, not as guidance.
+    let dots = '';
+    for (let i = 0; i < room; i += 1) dots += (i % 2 ? ' ' : leader);
+    uiText(x + name.length + 1, y, dots, labelRole, alpha * 0.42);
+  }
+  if (entry) uiText(x + w - entry.length, y, entry, valueRole, alpha);
+  return y + 1;
+}
+
+// The rubber stamp. Boxed, slightly off-square, and deliberately the only thing
+// on the sheet that is not aligned to the grid — a stamp is put on by a hand.
+export function drawFormStamp(x, y, text, { alpha = 1, tilt = -0.035 } = {}) {
+  const mark = String(text || '').toUpperCase();
+  if (!mark) return;
+  uiDraw(({ ctx, dpr, cellW, cellH }) => {
+    const px = x * cellW * dpr, py = y * cellH * dpr;
+    const pw = (mark.length + 4) * cellW * dpr, ph = 2.6 * cellH * dpr;
+    ctx.save();
+    ctx.translate(px + pw / 2, py + ph / 2);
+    ctx.rotate(tilt);
+    ctx.translate(-(px + pw / 2), -(py + ph / 2));
+    ctx.globalAlpha = alpha * 0.72;
+    ctx.strokeStyle = UI_COLOR.paperInk;
+    ctx.lineWidth = Math.max(1.4, 1.8 * dpr);
+    ctx.strokeRect(px, py, pw, ph);
+    ctx.lineWidth = Math.max(1, 0.9 * dpr);
+    ctx.strokeRect(px + 2 * dpr, py + 2 * dpr, pw - 4 * dpr, ph - 4 * dpr);
+    ctx.restore();
+  });
+  uiText(x + 2, y + 1, mark, 'paper-ink', alpha * 0.86);
 }

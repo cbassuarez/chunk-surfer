@@ -906,21 +906,85 @@ export const CONSERVATORY_PROPS = [
   P('box-office-cash-terminal','cash_terminal',90.55,9.72,Math.PI/2,{on:'box-office-counter',inspect:inspect('A dead card terminal beside a cash drawer. The receipt paper is still threaded.','No signal. No float.')}),
   P('box-office-ledger','rekey_ledger',92.25,12.25,Math.PI,{mount:'wall',elevation:1.1,interaction:'action',action:'rekey-ledger',inspect:inspect('A rekey ledger: REPLACEMENT LOCK — CHAPEL — CABINET C-17.','CHAPEL. REPLACEMENT LOCK. C-17.')}),
   P('box-office-key-cabinet','chapel_key_cabinet',96.25,9.45,Math.PI/2,{
-    mount:'wall',elevation:1.0,blocks:false,interactive:false,structural:true,
+    mount:'wall',elevation:1.0,blocks:false,structural:true,
+    interaction:'action',action:'key-cabinet-board',label:'key cabinet',
+    // The cabinet frames the question and does not answer it. Three rings, three
+    // tags, and the fact that the board has more hooks than keys — which is the
+    // part that says this was a working building with a system, and the system
+    // outlived the people who kept it.
+    inspect:inspect(
+      'A key cabinet with the door off. Three rings left on a board cut for a dozen, each with a tag on it.',
+      'The empty hooks are labelled too. Whoever kept this expected the keys back.',
+    ),
   }),
   P('box-office-key-ring-ch04','chapel_key_ring_ch04',96.25,9.45,Math.PI/2,{
     mount:'wall',renderOffsetZ:-.24,elevation:1.62,blocks:false,interaction:'action',action:'chapel-key-ring',keyTag:'CH-04',label:'CH-04 key ring',
+    // THE THREE TAGS ARE THE PUZZLE. Without them the cabinet is a one-in-three
+    // guess with the answer printed on a ledger two metres away, and there is
+    // nothing for the clue surfaces to be a second view OF.
+    //
+    // CH-04 is the trap and it is a fair one: it says CHAPEL, in a stamp, and a
+    // player who reads one word takes it. The ledger says the chapel lock was
+    // REPLACED — so the key that says CHAPEL is the one that no longer opens it.
+    inspect:{
+      first:'Tag: CH-04. CHAPEL — MAIN, stamped into the brass. The stamp is older than the ring.',
+      again:'CH-04. The chapel door this was cut for is still there. The lock in it is not.',
+    },
   }),
   P('box-office-key-ring-c17','chapel_key_ring_c17',96.25,9.45,Math.PI/2,{
     mount:'wall',renderOffsetZ:.24,elevation:1.62,blocks:false,interaction:'action',action:'chapel-key-ring',keyTag:'C-17',label:'C-17 key ring',
+    // The answer, and it does not announce itself: a cabinet number in biro over
+    // a scratched-out one. It matches the ledger's REPLACEMENT LOCK line, and it
+    // is the only tag on the board that is newer than the ring it hangs on.
+    inspect:{
+      first:'Tag: C-17. A cabinet number in biro, written over a scratched-out one.',
+      again:'C-17. Newer than the ring it is on, and nobody has stamped it yet.',
+    },
   }),
   P('box-office-key-ring-fohm','chapel_key_ring_fohm',96.25,9.45,Math.PI/2,{
     mount:'wall',renderOffsetZ:-.24,elevation:1.15,blocks:false,interaction:'action',action:'chapel-key-ring',keyTag:'FOH-M',label:'FOH-M key ring',
+    // Honest about its own limits, which is what makes it the easy one to rule
+    // out — and the one the recordist is already carrying the equivalent of.
+    inspect:{
+      first:'Tag: FOH-M. FRONT OF HOUSE — MASTER. Worn smooth on both faces.',
+      again:'FOH-M. It opens everything on this side of the doors and nothing past them.',
+    },
   }),
   P('box-office-shelf','equipment_rack',95.1,11.3,0,{scale:.82,inspect:inspect('Programmes, float envelopes, and ticket stock boxed by week.','The labels are more orderly than the room.')}),
   P('box-office-notice-board','notice_board',96.2,7.65,Math.PI/2,{mount:'wall',elevation:1.15,inspect:inspect('A notice board with staffing rotas, emergency contacts, and one hand-written refund policy.','The refund policy is underlined twice.')}),
   ...[[88.9,8.25],[88.9,10.45],[89.9,8.25],[89.9,10.45]].map(([x,y],i)=>
     P(`box-office-queue-${i+1}`,'queue_stanchion',x,y,0,{inspect:inspect('A brass queue post with its rope still clipped in.','The rope sags towards the ticket window.')})),
+
+  // ── FRONT OF HOUSE EPHEMERA ────────────────────────────────────────────────
+  //
+  // A box office is made of paper, in a building whose whole archive is paper,
+  // and this one had furniture and no documents. Everything below reuses a mesh
+  // already in the pack, so none of it needs a prop-pack rebuild: PROP_BOUNDS is
+  // keyed by mesh, not by instance.
+  //
+  // Every one carries inspect text. A prop with none is set dressing; a prop
+  // with two lines is world-building, and the notice board above already set the
+  // register — the second line notices something, it does not repeat the first.
+
+  // The public side, read from outside a shuttered hatch.
+  //
+  // A wall-mounted prop stands on the OPEN cell beside its wall and is snapped
+  // to the face by wallContactAt — it is not authored inside the blockwork.
+  // propsInit filters `!isSolid(rx,ry)` and drops anything that is, silently, so
+  // a poster hung half a metre west of here does not render and says nothing
+  // about why. box-office.spec.mjs counts them for that reason.
+  P('foh-poster-last-night','portrait_frame',90.6,7.1,Math.PI/2,{mount:'wall',elevation:1.72,inspect:inspect('A poster still in its frame: the last thing that was on. A Sunday, and nothing after it.','Nobody took it down. There was no Monday to take it down on.')}),
+  P('foh-price-list','notice_board',90.6,11.4,Math.PI/2,{mount:'wall',elevation:1.44,scale:.82,inspect:inspect('A price list under glass. Stalls, circle, restricted view, and a concessions line with three conditions on it.','Restricted view is the cheapest seat and the only one that says what it is.')}),
+  P('foh-bin','district_bin_cluster',88.6,12.6,0,{inspect:inspect('A bin by the doors, lined and never used. Someone put the bag in and that was the last of it.','Clean, which out of everything in here is the strange part.')}),
+
+  // On the counter, behind the grille.
+  P('box-office-unsold-roll','loose_pages',90.55,9.9,Math.PI/2,{on:'box-office-counter',inspect:inspect('A roll of unsold tickets, still joined, still numbered. It stops in the middle of a Sunday.','The tear is clean. Nobody hurried at the end of it.')}),
+
+  // The office side: what the staff left on the desk.
+  P('box-office-seating-plan','notice_board',94.2,6.85,0,{mount:'wall',elevation:1.52,inspect:inspect('The seating plan, drawn by hand and photocopied until the back rows went to grey.','Two seats in the circle are inked out. No note as to why, and the ink is older than the copy.')}),
+  P('box-office-rota','loose_note',93.4,9.25,0,{on:'box-office-desk',inspect:inspect('A staffing rota for a fortnight that did not happen. Four names, one of them written in twice.','The doubled name is down for both halves of the last night.')}),
+  P('box-office-till-slip','loose_note',93.7,9.5,.42,{on:'box-office-desk',inspect:inspect('A till reconciliation, unsigned. It balances.','Somebody counted it, agreed with it, and did not put their name to it.')}),
+  P('box-office-returns-tray','open_score',92.9,8.85,.18,{on:'box-office-desk',inspect:inspect('A tray stencilled RETURNS, with nothing in it. The word came with the tray.','RETURNED is the column the work order will not close without. Different building, same word.')}),
 
   // Public-room fabric stays on the perimeter. It gives the atrium a civic use
   // and a closing-day history without filling the ruined garden or narrowing
@@ -1421,6 +1485,33 @@ export const CONSERVATORY_PROPS = [
     P(`chapel-pew-l-${i}`,'pew',89.0,y,0,{inspect:inspect('A short pew, polished at the aisle end by hands.','The aisle end is darker.')}),
     P(`chapel-pew-r-${i}`,'pew',96.0,y,0,{inspect:inspect('A matching pew, one kneeler missing.','The empty brackets remain.')}),
   ]),
+  // ── THE WAY UP, SIGNED ─────────────────────────────────────────────────────
+  //
+  // The stair to the ringing room, the bell chamber and the organ loft leaves
+  // the chapel through the east wall — and a level seam has no door leaf and no
+  // arch, so until now there was nothing at all to see. The seams are three
+  // cells wide instead of one now (see the connector chain in
+  // floorplan/conservatory.js), which gives the body room; these give the eye
+  // something to aim at.
+  //
+  // NOT BLOCKING, and it matters: the redirect fires as the player steps into
+  // the last open cell of the nave, so anything solid parked on that wall would
+  // seal the stair the widening just opened. public_exit_sign is blocks:false.
+  P('chapel-stair-sign-nave','public_exit_sign',98.5,62.6,-Math.PI/2,{
+    mount:'wall',elevation:2.15,
+    inspect:inspect(
+      'A painted sign over a gap in the east wall: TOWER — RINGING CHAMBER — NO ADMITTANCE TO THE PUBLIC.',
+      'Somebody has added BELLS UP underneath it, in a different hand and a different decade.',
+    ),
+  }),
+  P('chapel-stair-sign-chancel','public_exit_sign',98.5,82.6,-Math.PI/2,{
+    mount:'wall',elevation:2.15,
+    inspect:inspect(
+      'The same sign at the chancel end, pointing back the way the stair comes down.',
+      'The arrow was repainted at some point. It used to point the other way.',
+    ),
+  }),
+
   P('chapel-organ-console','organ_console',92.5,90.0,Math.PI,{...play(CHAPEL,'The chapel console. Every stop is in and the blower supply is isolated.','No wind. No power.')}),
   P('chapel-organ-pipes','organ_pipes',92.5,91.5,0,{...play(CHAPEL,'A rank of display pipes. The sounding pipes are somewhere behind the wall.','These may never have sounded.')}),
   ...[0,1,2,3].map((i)=>P(`chapel-speaker-${i}`,'speaker_cabinet',97.0,60.0+i*.95,Math.PI/2,{...play(CHAPEL,'A flown-system cabinet brought down onto the floor.','Four cabinets, no amplifier.')})),

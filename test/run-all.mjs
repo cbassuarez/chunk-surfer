@@ -56,6 +56,8 @@ const tests = [
   'test/recording-contact.spec.mjs',
   'test/baseboard-freshness.spec.mjs',
   'test/prop-contact.spec.mjs',
+  'test/box-office.spec.mjs',
+  'test/chapel-reachability.spec.mjs',
   'test/ending-contract.spec.mjs',
   'test/ending-cutscene.spec.mjs',
   'test/ending-archive.spec.mjs',

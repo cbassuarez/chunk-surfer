@@ -101,18 +101,21 @@ function play(definition, difficulty, recordist, { seedTake = false } = {}) {
     const shown = currentCombatIntent(state)?.id ?? null;
     const committed = state.committed?.id ?? null;
     state = reduceCombat(state, { type: recordist(state), replaceTake: true });
-    if (state.phase !== 'enemy') {
-      // A REFUSED beat is still a beat the opponent offered. A perfect counter
-      // skips the enemy turn, so the blow never lands — but against a broadcast
-      // the counter IS the capture, and a record that only sees blows that
-      // landed cannot tell a starved recordist from a well-fed one. Recorded
-      // with `thrown` set to what it committed to, because that is what the
-      // player answered.
-      if (state.last?.perfect && committed) {
-        beats.push({ movementIndex, intentIndex, cycle, shown, committed, thrown: committed, refused: true });
-      }
-      continue;
-    }
+    // THERE ARE NO REFUSED BEATS ANY MORE.
+    //
+    // This used to record an extra beat whenever a perfect counter left the
+    // phase in 'select', on the premise that "a perfect counter skips the enemy
+    // turn, so the blow never lands". That premise is gone: a counter meets the
+    // blow now and the opponent takes its (chipped) turn, so every committed
+    // blow lands and is recorded once below. Keeping the branch double-counted
+    // the same commitment — once here, once through advanceEnemy — which
+    // inflated the capture-drought gap past its own invariant without any
+    // opponent ever having starved anybody.
+    //
+    // What remains in 'select' is TEMPO: a free action inside the same cycle,
+    // against the same card, which is not a new offer and must not be recorded
+    // as one.
+    if (state.phase !== 'enemy') continue;
     state = advanceEnemy(state);
     beats.push({ movementIndex, intentIndex, cycle, shown, committed, thrown: state.last.enemyHits?.[0]?.intentId ?? null, refused: false });
   }

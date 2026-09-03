@@ -24,6 +24,12 @@ import { fitText, fitLines, fits, fitReport } from '../src/render/fit-text.js';
 // character in one. It over-reads a little — a literal is not always drawn —
 // but the cost of a false positive is one ROM entry, and the cost of a false
 // negative is invisible UI nobody can report.
+//
+// THE SCAN CANNOT COVER ASCII, and that is where it leaked. Widening it to all
+// printable ASCII floods on JS syntax — every `${}` in the codebase reports '$'
+// as a missing glyph. So ASCII is asserted directly against the ROM instead,
+// below, which is what caught '&' printing as a tofu box in
+// "ACHIEVEMENTS & RUN HISTORY" on the post-run screen.
 
 const walk = (dir, out = []) => {
   for (const entry of readdirSync(dir)) {
@@ -107,3 +113,15 @@ assert.deepEqual(
   'the report names what does not fit and by how much');
 
 console.log('vfd glyph coverage and text fitting ok');
+
+// ── THE PRINTABLE ASCII THE INTERFACE IS ALLOWED TO USE ──────────────────────
+//
+// Asserted against the ROM rather than discovered by scanning, because the scan
+// above is structurally blind to ASCII. If a label needs a character that is not
+// on this line, the character gets a glyph and the line grows — the one thing
+// that must not happen is a label shipping a hollow box.
+{
+  const REQUIRED = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,:;-_=/+?!'\"()[]#%&*<>";
+  const missing = [...REQUIRED].filter((ch) => vfdGlyphMissing(ch));
+  assert.deepEqual(missing, [], `the ROM is missing printable ASCII the UI uses: ${missing.join(' ')}`);
+}

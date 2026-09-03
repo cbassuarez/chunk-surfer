@@ -70,6 +70,21 @@ export function windowChoreographyPolicy(sceneId=''){
   if(id==='source:white-crossing'||id==='source:proper'||id==='source-final')return 'source-leakage';
   if(id.startsWith('ending:')||ENDING_PROFILES[id])return 'ending-resolution';
   if(id==='credits')return 'credits-restoration';
+  // THE ONE PUZZLE THAT REACHES OUTSIDE THE WINDOW, AND IT ONLY EVER SHOWS.
+  //
+  // Everything above earned the compositor by being a rupture: a battle, the
+  // Source leak, an ending, the credits. This is an ordinary room, so it gets a
+  // policy of its own rather than being folded into one of those — and what it
+  // is allowed to do is narrower than any of them. The box office surfaces are
+  // CLUE DISPLAY: three key tags laid beside the window so they can be read
+  // together, which is the one thing an in-game inspect prompt cannot do.
+  //
+  // They never take input, they never move the main window, and nothing is
+  // gated on them: the tags are readable in the room and the ledger names the
+  // key, so a browser build, withheld consent, disabled effects or reduced
+  // motion cost atmosphere and never the answer. See test/box-office.spec.mjs,
+  // which asserts the puzzle is solvable with the policy forced to 'stable'.
+  if(id==='box-office:key-cabinet')return 'box-office';
   return 'stable';
 }
 
@@ -399,6 +414,104 @@ function createSimulation(documentApi,effects){
   }
   function hide(){if(root){root.classList.remove('active');clear();}}
   return{show,snap,coherence,freeze,trigger,hide,active:()=>!!root?.classList?.contains('active')};
+}
+
+// ── THE BOX OFFICE KEY TAGS ─────────────────────────────────────────────────
+//
+// Three tags laid beside the game so they can be read TOGETHER. That is the
+// whole reason this cue exists: the rings hang in one cabinet and the game can
+// only ever inspect one at a time, so the comparison the puzzle is made of —
+// CH-04 says CHAPEL, C-17 is a replacement number in biro, FOH-M admits it stops
+// at the doors — is the one thing the room cannot show you.
+//
+// Everything about it is narrower than a rupture:
+//   · `mainFrame: []`  the game window never moves. Nothing is taken away.
+//   · `interactive:false`, `input:'none'`  they are pictures of tags, not tags.
+//   · `focus:'main'`  the player keeps their cursor and their keyboard.
+//   · `Frame` only  no Breach, no Swarm, no Cast. It places and it restores.
+//
+// And it is never the route to the answer. The tags are readable on the rings
+// and the ledger names C-17, so this is corroboration for somebody already
+// standing in the room. test/box-office.spec.mjs holds that.
+export const BOX_OFFICE_CUE_ID='box-office:key-tags';
+export const BOX_OFFICE_SCENE_ID='box-office:key-cabinet';
+
+export function compileBoxOfficeKeyTagPlan({tags=[],reducedMotion=false}={}){
+  // Across the top, evenly, in tag order. Three fits inside the four-surface
+  // ceiling with one spare, which is deliberate: a fourth tag would mean the
+  // cabinet had grown and the plan should be re-read rather than silently
+  // truncated by the compiler.
+  const wanted=tags.slice(0,3);
+  const columns=[0.18,0.5,0.82];
+  return compileWindowChoreographyPlan({
+    cueId:BOX_OFFICE_CUE_ID,
+    sceneId:BOX_OFFICE_SCENE_ID,
+    primitives:['Frame','Restore'],
+    mainFrame:[],
+    surfaces:wanted.map((entry,index)=>({
+      id:`${BOX_OFFICE_CUE_ID}:${String(entry.tag||index).toLowerCase()}`,
+      x:columns[index]??0.5,
+      y:0.14,
+      size:196,
+      mode:'card',
+      title:String(entry.tag||''),
+      text:String(entry.text||''),
+      palette:'brass',
+      interactive:false,
+    })),
+    content:'game-authored',
+    focus:'main',
+    input:'none',
+    reducedMotion:!!reducedMotion,
+    restore:'transaction',
+    scope:'box-office',
+    narrativeBlocking:false,
+    nonblocking:true,
+  });
+}
+
+export const HORIZON_SLATE_CUE_ID='horizon:transport-readings';
+export const HORIZON_SLATE_SCENE_ID='source:proper';
+
+// THE THREE READINGS, SIDE BY SIDE.
+//
+// The machine at the edge of the field has a reel, a gate and a log, and each
+// can be read on its own in the room. What no in-game inspect prompt can do is
+// show all three AT ONCE, and comparing them is the whole point: the run length
+// against the walk, the picture's offset against the way the corridor drifts,
+// the damaged span against where on the tape it falls.
+//
+// Same contract as the box office: display only, no input, nothing gated on it.
+// Source already owns a policy ('source-leakage'), so this opens no new door in
+// the firewall — see windowChoreographyPolicy above.
+export function compileHorizonSlatePlan({readings=[],reducedMotion=false}={}){
+  const wanted=readings.slice(0,3);
+  const columns=[0.16,0.5,0.84];
+  return compileWindowChoreographyPlan({
+    cueId:HORIZON_SLATE_CUE_ID,
+    sceneId:HORIZON_SLATE_SCENE_ID,
+    primitives:['Frame','Restore'],
+    mainFrame:[],
+    surfaces:wanted.map((entry,index)=>({
+      id:`${HORIZON_SLATE_CUE_ID}:${String(entry.dial||index).toLowerCase()}`,
+      x:columns[index]??0.5,
+      y:0.16,
+      size:208,
+      mode:'card',
+      title:`${String(entry.part||'')} — ${String(entry.title||'')}`,
+      text:`${String(entry.reading||'')}\n\n${String(entry.note||'')}`,
+      palette:'brass',
+      interactive:false,
+    })),
+    content:'game-authored',
+    focus:'main',
+    input:'none',
+    reducedMotion:!!reducedMotion,
+    restore:'transaction',
+    scope:'horizon',
+    narrativeBlocking:false,
+    nonblocking:true,
+  });
 }
 
 export function createWindowChoreographyDirector({
@@ -910,6 +1023,11 @@ export function createWindowChoreographyDirector({
   return{
     prepareBattle,fireballCast,damage,result,finishBattle,sourceFrame,leaveSource,beginEnding,beginOpening,beginTitle,finishTitle,credits,
     emergencyRestore,suspend,runPlan,compositionEvent,interactSource,puzzleInteract,noteCompositionMove,
+    // TEARDOWN FOR A CUE A CALLER RAN ITSELF. runPlan was public and this was
+    // not, so anything that showed clue surfaces had no supported way to take
+    // them down again — which is most of why the box office cue was compiled,
+    // spec-pinned, and never fired by anything in the game.
+    restore,
     active:()=>!!transaction,
     debug:()=>({transaction:transaction?{...transaction}:null,battle:battle?{battleId:battle.battleId,breached:battle.breached}:null,source:{...source},ending,composition:composition?{purpose:composition.purpose,cueId:composition.plan.cueId,completed:composition.completed}:null,frontEnd:frontEndLease?{...frontEndLease,effectsToken:effects?.sessionToken?.()||frontEndLease.effectsToken||null}:null}),
   };

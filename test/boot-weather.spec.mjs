@@ -5,11 +5,14 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   BOOT_WEATHER,
+  BOOT_WEATHER_HANDOFF,
+  bootWeatherOpeningEnvelope,
   bootWeatherSettled,
   freshBootWeatherState,
   isBootWeatherKind,
   pickBootWeather,
   stepBootWeather,
+  stepBootWeatherTitleTail,
 } from '../src/game/boot-weather.js';
 import { WEATHER_CLEAR_AT, openingCreditFrame } from '../src/game/opening-credits.js';
 import { bootWeatherVoice, createBootWeatherAudio } from '../src/audio/boot-weather-audio.js';
@@ -19,14 +22,17 @@ const run = (state, seconds, options) => {
   return state;
 };
 
-// Drive the real credits clock so the test cannot drift from the authored one.
+// Drive the real credits clock AND the real envelope, so the test cannot drift
+// from either the authored timing or the shipped handoff. This mirrors
+// opening-credits.js exactly: the envelope is a pure function of authored time
+// and it is the only thing that decides the target population.
 function runCredits(state, from, to, step = 0.05) {
   for (let t = from; t < to; t += step) {
     const frame = openingCreditFrame(t + step);
-    stepBootWeather(state, step, {
+    const envelope = bootWeatherOpeningEnvelope(state, frame.authoredTime, {
       presence: frame.weather.presence,
-      settling: frame.weather.clearing,
     });
+    stepBootWeather(state, step, { targetCount: envelope.targetCount });
   }
   return state;
 }
@@ -58,20 +64,45 @@ test('presence is sparse under the slates, full under the quote, and clearing be
   assert.ok(WEATHER_CLEAR_AT < 22.5);
 });
 
-test('every weather fills under the quote and is all but gone at the cut', () => {
+// THE CLEAR-OUT IS A DRAIN, AND A DRAIN IS MEASURED AGAINST WHAT IT DRAINED.
+//
+// This used to demand a flat count of six at the cut, which no slow weather can
+// reach and none should: a leaf falls at 0.045–0.115 of the frame per second, so
+// it needs the better part of ten seconds to cross, and the clear window is
+// three. Reaching six would mean DELETING leaves mid-frame, which is exactly
+// what the next test forbids. The honest claim is proportional — the emitter
+// stopped and the field is going — and it still catches the regression that
+// prompted this, where the envelope never ramped at all and rain arrived at the
+// cut at full strength.
+test('every weather fills under the quote and is draining hard at the cut', () => {
   for (const kind of BOOT_WEATHER) {
     const state = freshBootWeatherState(kind, { seed: 7 });
     runCredits(state, 0, 18);
     const full = state.particles.length;
     assert.ok(full > 3, `${kind} has a field under the quote (${full})`);
 
-    runCredits(state, 18, 23.5);
-    // The reserve is a floor, not a quota: one or two unreserved stragglers can
-    // legitimately still be crossing when the cut comes. What must not happen is
-    // a field.
-    assert.ok(state.particles.length <= 6,
-      `${kind} is down to a few at the cut (${state.particles.length})`);
-    assert.equal(state.settling, true);
+    // Through the clear window the field only ever goes down. A fixed count
+    // cannot be the contract across kinds whose fall speeds differ twentyfold —
+    // rain empties almost completely in three seconds and a leaf cannot — but
+    // "draining, never refilling" is true of all of them, and it is exactly what
+    // failed when the envelope was reading an undefined clock.
+    runCredits(state, 18, WEATHER_CLEAR_AT);
+    const atClear = state.particles.length;
+    let previous = atClear;
+    for (let t = WEATHER_CLEAR_AT; t < 23.5; t += 0.25) {
+      runCredits(state, t, t + 0.25);
+      assert.ok(state.particles.length <= previous,
+        `${kind} never refills once it is clearing (${previous} → ${state.particles.length})`);
+      previous = state.particles.length;
+    }
+    assert.ok(state.particles.length < atClear,
+      `${kind} is materially down by the cut (${state.particles.length} of ${atClear})`);
+
+    // And the emitter is off, whatever is still crossing: the envelope has run
+    // its target down to the handoff reserve.
+    const cut = bootWeatherOpeningEnvelope(state, BOOT_WEATHER_HANDOFF.creditEnd, { presence: 1 });
+    assert.ok(cut.targetCount <= BOOT_WEATHER_HANDOFF.targetTailParticles,
+      `${kind} stops replacing by the cut (${cut.targetCount})`);
   }
 });
 
@@ -79,35 +110,42 @@ test('clearing stops the emitter rather than fading the field out', () => {
   const state = freshBootWeatherState('leaves', { seed: 3 });
   runCredits(state, 0, 18);
   const before = state.particles.length;
-  run(state, 1, { presence: 1, settling: true });
+  const alpha = state.presentationAlpha;
+
+  // The target goes to the reserve and nothing else changes. Particles leave by
+  // reaching the edge of the frame, at the speed they were already travelling.
+  run(state, 1, { targetCount: BOOT_WEATHER_HANDOFF.targetTailParticles });
   assert.ok(state.particles.length < before, 'the field empties');
-  assert.equal(state.fade, 1, 'and it empties by leaving, not by fading');
+  assert.equal(state.presentationAlpha, alpha,
+    'and it empties by leaving, not by fading — the alpha ramp is the credits\' job, not the emitter\'s');
 });
 
 test('every weather carries a few across the cut, rain included', () => {
-  // Rain falls fast enough to leave the frame entirely inside the clear-out, so
-  // the survivors have to SLOW as soon as they are the last of it. A shower
-  // peters out; it does not stop at full speed and leave nothing behind.
+  // Rain falls fast enough to empty almost completely inside the clear-out, so
+  // the reserve is what guarantees the menu inherits a shower rather than a
+  // still frame.
   for (const kind of BOOT_WEATHER) {
     const state = runCredits(freshBootWeatherState(kind, { seed: 4 }), 0, 23.5);
-    assert.ok(state.particles.length > 0 && state.particles.length <= 6,
-      `${kind} hands a few to the menu (${state.particles.length})`);
+    assert.ok(state.particles.length > 0, `${kind} hands something to the menu`);
   }
 });
 
 test('the last of it settles behind the menu and then stops for the session', () => {
   const state = freshBootWeatherState('sheets', { seed: 11 });
   runCredits(state, 0, 23.5);
-  const carried = state.particles.length;
-  assert.ok(carried > 0 && carried <= 6, `a few cross the cut (${carried})`);
-
-  // The title steps it calm: velocities decay and the fade runs out.
-  run(state, 0.5, { presence: 0, settling: true, calm: true });
-  assert.ok(state.fade < 1 && state.fade > 0, 'it is still going half a second in');
+  assert.ok(state.particles.length > 0, 'something crosses the cut');
   assert.equal(bootWeatherSettled(state), false);
 
-  run(state, 2, { presence: 0, settling: true, calm: true });
-  assert.equal(bootWeatherSettled(state), true, 'and it is done by ~2s, so the menu is still');
+  // The title owns the tail: it stops replacing entirely and rides the alpha
+  // out over BOOT_WEATHER_HANDOFF.titleTailSeconds.
+  for (let i = 0; i < 10; i += 1) stepBootWeatherTitleTail(state, 0.05, { stormActive: true });
+  assert.ok(state.presentationAlpha < 1 && state.presentationAlpha > 0,
+    'it is still going half a second in');
+  assert.equal(bootWeatherSettled(state), false);
+
+  const settle = Math.ceil((BOOT_WEATHER_HANDOFF.titleTailSeconds + .4) / 0.05);
+  for (let i = 0; i < settle; i += 1) stepBootWeatherTitleTail(state, 0.05, { stormActive: true });
+  assert.equal(bootWeatherSettled(state), true, 'and it is done by the tail, so the menu is still');
 });
 
 test('reduced motion thins the field without emptying it', () => {
@@ -142,7 +180,9 @@ test('the weather never moves the credit text, and the boot picks it once', () =
   // The existing guard: particle motion lives in boot-weather.js so the text
   // layout stays exactly where it was authored.
   assert.doesNotMatch(credits, /xOffset|yOffset|\bdrift\s*\(/);
-  assert.match(credits, /renderBootWeather\(bootWeather\(\), \{ alpha: frame\.atmosphere\.alpha \}\)/);
+  // One shared presentation envelope owns visibility on both sides of the cut,
+  // so both screens draw from the same alpha rather than each inventing one.
+  assert.match(credits, /renderBootWeather\(weather, \{ alpha: weather\.presentationAlpha \}\)/);
 
   const main = readFileSync('src/main.js', 'utf8');
   assert.match(main, /beginBootWeather\(weather,/);
@@ -151,11 +191,14 @@ test('the weather never moves the credit text, and the boot picks it once', () =
   assert.match(main, /enabled:visualEffectsEnabled\(\)/);
 
   const title = readFileSync('src/game/title.js', 'utf8');
-  assert.match(title, /stepBootWeather\(weather, dt, \{ presence: 0, settling: true, calm: true \}\)/);
-  assert.match(title, /if \(bootWeatherSettled\(weather\)\) endBootWeather\(\)/,
+  // The title owns the tail and nothing else: it does not re-derive presence or
+  // a target, it rides the handoff envelope out.
+  assert.match(title, /stepBootWeatherTitleTail\(weather,\s*dt,/,
+    'the menu inherits the field rather than starting one');
+  assert.doesNotMatch(title, /beginBootWeather\(/,
     'backing out of a run to the menu must not start the weather again');
-  assert.match(title, /bootWeatherAudio\(\)\?\.update\?\.\(\{ presence: weather\.fade/,
-    'and the bed goes out with the picture, under the menu hiss');
+  assert.match(title, /renderBootWeather\(weather,\s*\{alpha:weather\.presentationAlpha\}\)/,
+    'and it draws it on the same shared envelope the credits handed over');
   const credits2 = readFileSync('src/game/opening-credits.js', 'utf8');
   assert.doesNotMatch(credits2, /bed\?\.stop/, 'the credits must not stop a bed the title still needs');
 });

@@ -60,6 +60,21 @@ uniform float uFloorCut;
 uniform vec2 uBoreCentre;   // x: at the body, y: ahead
 uniform vec2 uBoreReach;    // half-width at each
 uniform float uBoreZ, uBoreAheadZ, uBoreAxisY, uBoreHeight, uBoreAmount;
+// How hard the damage is crawling HERE. Which splats are damaged is baked into
+// the tape per slice; how much they move is the recording's measured mosh,
+// which used to be computed every frame and read by nobody. At the head the
+// picture is clean and still, the middle seethes, and the tail is clean again
+// and dying — three acts nobody had to author.
+uniform float uMosh;
+// AURORA, NOT WALLPAPER. Flat fields are the substance of the recording, and
+// baked at 4m wide by 2.2m tall they tile like brickwork. Drawn tall they
+// overlap into vertical curtains instead — light hanging in a column rather
+// than a picture stuck on a surface — which is what the crossing is supposed
+// to feel like walking through.
+uniform float uCurtain;
+// Slow vertical drift on the curtains. Aurora hangs and breathes; a recording
+// hung in a plane does not, and the difference is most of the feeling.
+uniform float uShimmer;
 out vec2 vQuad; out vec4 vColor; out float vKind; out float vSeed;
 
 void main(){
@@ -73,11 +88,18 @@ void main(){
   // which is to say invisible. The damage should visibly crawl.
   float phase = aTrim.x * 0.0246 + uBoil;
   if (kind > 1.5) {
-    center.xy += vec2(sin(phase), cos(phase * 1.37)) * 0.42;
+    center.xy += vec2(sin(phase), cos(phase * 1.37)) * (0.42 * uMosh);
   } else if (kind > 0.5) {
     // A far smaller unrest on the edges too, so no part of the picture is
     // perfectly rigid. A still recording reads as a photograph on a wall.
-    center.xy += vec2(sin(phase * 0.61), cos(phase * 0.83)) * 0.05;
+    center.xy += vec2(sin(phase * 0.61), cos(phase * 0.83)) * (0.05 * uMosh);
+  } else {
+    // Only the flat fields become curtains, and only they drift. Damage stays
+    // the size and the place it was measured at: grain suspended in air is the
+    // one thing out here that should read as particles rather than as light.
+    size.y *= uCurtain;
+    center.y += sin(phase * 0.31 + center.x * 0.07) * uShimmer;
+    center.x += cos(phase * 0.19 + center.y * 0.05) * uShimmer * 0.35;
   }
   // Camera-space expansion: the splat faces the body, always.
   vec4 viewPos = uView * vec4(center, 1.0);
@@ -127,6 +149,8 @@ precision highp float;
 in vec2 vQuad; in vec4 vColor; in float vKind; in float vSeed;
 layout(location=0) out vec4 o;
 layout(location=1) out vec4 oMark;
+// How opaque a flat field is allowed to get. See the veil note below.
+uniform float uVeil;
 
 // Cheap value noise. The tape is a 32x18 image per slice, so there is no detail
 // in the source below four metres; this invents structure at the scale the eye
@@ -158,9 +182,15 @@ void main(){
   } else if (vKind > 0.5) {
     a = exp(-d * 1.15) * vColor.a;                   // edges: soft but present
   } else {
-    // Flat fields: a plateau with a rolled edge, and pushed to full opacity.
-    // They are walls. Walls are opaque.
-    a = (1.0 - smoothstep(0.55, 1.9, d)) * min(1.0, vColor.a * 1.7);
+    // VEILS, NOT WALLS.
+    //
+    // This used to push flat fields to full opacity — "they are walls, walls are
+    // opaque" — which built a corridor with two painted surfaces down it. The
+    // crossing is meant to feel like walking through an aurora, and an aurora is
+    // something you see a dozen depths of at once. Held under opacity, the
+    // nearFade stack sums into hanging light instead: the same picture, arrived
+    // at by addition rather than by occlusion.
+    a = (1.0 - smoothstep(0.35, 2.1, d)) * min(1.0, vColor.a * uVeil);
   }
   if (a < 0.004) discard;
 
@@ -676,7 +706,7 @@ export function horizonGround({
 export function horizonRender({
   view, projection, slice = 0, reach = 44, behind = reach,
   collapse = 0, boil = 0, exposure = 1, nearFade = 9, floorCut = -1e9,
-  bore = null,
+  mosh = 1, curtain = 1, shimmer = 0, veil = 1.7, bore = null,
 } = {}) {
   bore = {
     centre: 0, centreAhead: 0, reach: 24, reachAhead: 24,
@@ -701,6 +731,10 @@ export function horizonRender({
   gl.uniform1f(U('uPosScale'), manifest.posScale);
   gl.uniform1f(U('uSizeScale'), manifest.sizeScale);
   gl.uniform1f(U('uBoil'), boil);
+  gl.uniform1f(U('uMosh'), Math.max(0, Math.min(2, mosh)));
+  gl.uniform1f(U('uCurtain'), Math.max(0.25, Math.min(6, curtain)));
+  gl.uniform1f(U('uShimmer'), Math.max(0, Math.min(4, shimmer)));
+  gl.uniform1f(U('uVeil'), Math.max(0.05, Math.min(3, veil)));
   gl.uniform1f(U('uFloorCut'), floorCut);
   gl.uniform2f(U('uBoreCentre'), bore.centre, bore.centreAhead);
   gl.uniform2f(U('uBoreReach'), bore.reach, bore.reachAhead);

@@ -84,6 +84,11 @@ function renderUiTile(glyph, cls, x = 0, cols = 80) {
   // honoured, so brightness reaches it through `alpha` alone.
   drawVfdGlyph(ctx, glyph, ox, oy, boxW, boxH, {
     color, dim, blur: 3.2, dpr, alpha: Math.min(1, b),
+    // INK DOES NOT GLOW. The phosphor classes are lit dots behind glass and get
+    // the two-lobe halation; anything else — paper ink most of all — is a mark
+    // ON something, and adding light around it is how you make a printed form
+    // look like a screenshot of one. Same dot matrix, no emission.
+    halation: isVfd ? undefined : 0,
   });
   return { canvas: c, ox: padX, oy: padY, pulse: false };
 }

@@ -93,6 +93,17 @@ export function openingCreditFrame(time, duration = OPENING_CREDITS_DURATION) {
   ).key;
   return {
     time: Math.max(0, Number(time) || 0),
+    // THE CLOCK THE BEATS ARE AUTHORED AGAINST.
+    //
+    // `time` is wall time; every threshold in this file and every constant in
+    // BOOT_WEATHER_HANDOFF is in AUTHORED seconds, which is wall time divided
+    // by the duration scale. The weather envelope has always read
+    // `frame.authoredTime` — it simply was not here, so it read undefined, the
+    // clear ramp evaluated to nothing, and the boot weather never cleared: rain
+    // ran at a full field straight through the cut and into the title. Anything
+    // timing itself against an authored threshold has to read this, not `time`,
+    // or it is correct only at the default duration.
+    authoredTime: t,
     duration,
     activeBeat,
     creator,

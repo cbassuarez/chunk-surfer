@@ -1076,14 +1076,35 @@ export const conservatory = {
     {from:{x:122,y:40},to:{x:25,y:76}},
     {from:{x:28,y:67},to:{x:44,y:51}},
     {from:{x:44,y:41},to:{x:28,y:99}},
-    {from:{x:98,y:62},to:{x:0,y:151}},
-    {from:{x:0,y:154},to:{x:33,y:159}},
-    {from:{x:33,y:155},to:{x:36,y:151}},
-    {from:{x:36,y:154},to:{x:69,y:158}},
-    {from:{x:69,y:163},to:{x:72,y:151}},
-    {from:{x:72,y:154},to:{x:101,y:151}},
-    {from:{x:100,y:157},to:{x:104,y:151}},
-    {from:{x:104,y:154},to:{x:98,y:82}},
+    // THE CHAPEL STAIR CHAIN. One authored cell each, until now.
+    //
+    // Every landing these seams open onto is three cells wide — narthex, turn,
+    // ringing, belfry, loft, all `size:{x:3,...}` in the stairs descriptors
+    // above — but the seams themselves were single cells, so of a three-cell
+    // landing face exactly one cell connected. Standing in a twelve-wide nave,
+    // the way up to the ringing room, the bell chamber and the organ loft was
+    // one unmarked cell against a blank east wall, and finding it was luck.
+    //
+    // `span:{y:1}` widens each seam to the full width of the landing behind it
+    // and no further — the registerConnector candidate filter still requires
+    // physical adjacency (planar <= 1.01), so a larger span buys nothing and is
+    // not a way to paper over a misplaced level. Measured: seam entry cells
+    // across the building 572 -> 621, reachability unchanged at 75,720, every
+    // tower room still fully reachable.
+    //
+    // THE NAVE WALL MUST STAY SOLID. The redirect fires as you step INTO the
+    // last open cell; open the wall behind it and the player walks past instead,
+    // registerConnector re-picks its pair, and the whole chain collapses —
+    // measured, tower_access_lower fell to 3% and every room above it to 0%.
+    // So the stair is signed with props on that wall, never carved into it.
+    {from:{x:98,y:62},to:{x:0,y:151},span:{y:1}},
+    {from:{x:0,y:154},to:{x:33,y:159},span:{y:1}},
+    {from:{x:33,y:155},to:{x:36,y:151},span:{y:1}},
+    {from:{x:36,y:154},to:{x:69,y:158},span:{y:1}},
+    {from:{x:69,y:163},to:{x:72,y:151},span:{y:1}},
+    {from:{x:72,y:154},to:{x:101,y:151},span:{y:1}},
+    {from:{x:100,y:157},to:{x:104,y:151},span:{y:1}},
+    {from:{x:104,y:154},to:{x:98,y:82},span:{y:1}},
     // St Brendan's vertical circuit. Every seam is the same Euclidean cell at
     // the same height; only the stable logical address changes.
     {from:cathedralGroundLogical(10,63),to:{x:150,y:300}},

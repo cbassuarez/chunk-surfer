@@ -68,6 +68,10 @@ const G = {
   '<': [0b00010, 0b00100, 0b01000, 0b10000, 0b01000, 0b00100, 0b00010],
   '>': [0b01000, 0b00100, 0b00010, 0b00001, 0b00010, 0b00100, 0b01000],
   '#': [0b01010, 0b01010, 0b11111, 0b01010, 0b11111, 0b01010, 0b01010],
+  // Missing until the return form printed "ACHIEVEMENTS & RUN HISTORY" as a
+  // tofu box on a screen the player actually reads. It slipped through
+  // vfd-glyph-coverage because that spec only scans NON-ASCII literals.
+  '&': [0b01100, 0b10010, 0b10100, 0b01000, 0b10101, 0b10010, 0b01101],
   '%': [0b11000, 0b11001, 0b00010, 0b00100, 0b01000, 0b10011, 0b00011],
   '*': [0, 0b00100, 0b10101, 0b01110, 0b10101, 0b00100, 0],
   '·': [0, 0, 0, 0b01100, 0b01100, 0, 0],

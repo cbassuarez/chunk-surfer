@@ -5,6 +5,13 @@ import { SCENE_DOCK_LABEL } from '../data/space-labels.js';
 import { encodeH } from '../world/floorplan.js';
 import { HORIZON_PROFILE } from '../data/generated/horizon-profile.js';
 import {
+  freshHorizonTransport,
+  horizonTransportReadings,
+  horizonTransportThreaded,
+  threadHorizonTransport,
+  HORIZON_TRANSPORT_OPTIONS,
+} from './horizon-transport.js';
+import {
   CHUNK_SURF_HUSH_STAGE,
   CHUNK_SURF_PHASE,
   HORIZON_EXIT,
@@ -717,6 +724,10 @@ export function createSourceSpaceRuntime({
     facts: state.profile?.sourceMemoryFacts || {},
   });
   let player = { x: SOURCE_ENTRY.x, y: SOURCE_ENTRY.y, facing: SOURCE_ENTRY.facing };
+  // The three dials on the machine at the edge of the field. Runtime-local
+  // rather than reducer state: it is set and spent inside one visit to the pad,
+  // and nothing after the crossing has any use for how it was threaded.
+  let horizonTransport = freshHorizonTransport();
   let transformElapsed = 0;
   // A restored TRANSFORMING save has no still-page scene to cover it, so it
   // resumes already quiet. A live Haystack transition starts loud and drains
@@ -2151,6 +2162,16 @@ export function createSourceSpaceRuntime({
   const HORIZON_MAX_HALF_WIDTH = 32;
   // How many cells of approach the edge is felt over.
   const HORIZON_EDGE_FADE = 18;
+  // HOW THE RECORDING'S OWN BRIGHTNESS BECOMES THE TAPE'S EXPOSURE.
+  //
+  // `lum` is measured off the bake and runs about 0.83 at the head to 0.25 at
+  // the tail, with the recording's own texture in between. Floor plus gain maps
+  // that onto roughly 1.24 down to 0.69 — a picture that halves over the
+  // crossing, which reads as a tape wearing out, without ever going so dark
+  // that the middle act cannot be walked. The floor is what stops a dim slice
+  // becoming an unlit room; the gain is how much of the decline you feel.
+  const HORIZON_EXPOSURE_FLOOR = 0.45;
+  const HORIZON_EXPOSURE_GAIN = 0.95;
   // How much slower than an ordinary walk the tape is. One number, because the
   // right value is a matter of feel. Measured against the real base step of
   // ~46ms a cell over 506 cells:
@@ -2169,6 +2190,12 @@ export function createSourceSpaceRuntime({
   // long. Three is about seventy seconds at a walk: most of the piece, a tape
   // that plays at roughly double speed, and a crossing whose middle act you are
   // still in rather than waiting out.
+  //
+  // The "roughly double speed" above is the number this wanted, not the number
+  // it produces: 259.375s of tape over ~70s of walking is 3.75x, so a little
+  // over a quarter of the piece is heard. Left at three deliberately — the
+  // crossing's length is set by feel, and the rest the piece was missing is now
+  // authored by the engine (see horizon-score.js) rather than waited for.
   const HORIZON_PACE = 3;
 
   // THE APPROACH IS AN AUTHORED WALK, SO IT OWNS ITS LEGS.
@@ -2365,6 +2392,7 @@ export function createSourceSpaceRuntime({
     const local = player.y - o.y;
     const slice = sourceHorizonSlice(local);
     const depth = sourceHorizonDepth(local);
+    const bandHere = horizonBand(local);
     return {
       // `active` still means PAST THE PERIMETER, which is what everything
       // outside the renderer asks it (horizonUnderfoot, the presence despawn).
@@ -2400,7 +2428,7 @@ export function createSourceSpaceRuntime({
       // place the recording stops having anything, and the approach to it
       // should darken and thin before the step is refused.
       edge: horizonEdge(player.x, player.y),
-      band: horizonBand(local),
+      band: bandHere,
       // THE SAME BAND, A HUNDRED METRES ON. The floor draws the corridor
       // (horizon3d.js, horizonGround) and a corridor drawn only at the body's
       // own depth is a straight lane that snaps sideways as you walk. Two
@@ -2411,7 +2439,15 @@ export function createSourceSpaceRuntime({
         : Math.max(0, Math.min(1, (progress01(depth) - HORIZON_COLLAPSE_FROM) / (1 - HORIZON_COLLAPSE_FROM))),
       // Declared rather than left to the renderer's `?? 1` default, so the one
       // place that decides how bright the tape is, is this one.
-      exposure: 1,
+      //
+      // AND IT IS THE RECORDING THAT DECIDES, NOT A CONSTANT. `lum` is measured
+      // off the bake slice by slice and runs 0.83 at the head down to 0.25 at
+      // the tail — a recording that visibly wears out. Pinned at 1 it rendered
+      // flat, so the collapse at 0.88 arrived as a cliff out of a picture that
+      // had not changed since the first metre. Mapped, the tail is the end of a
+      // long decline instead of a surprise, and the last act is dark because
+      // the tape is nearly gone rather than because a ramp switched on.
+      exposure: HORIZON_EXPOSURE_FLOOR + HORIZON_EXPOSURE_GAIN * bandHere.lum,
     };
   }
 
@@ -2869,6 +2905,16 @@ export function createSourceSpaceRuntime({
       return { handled: true, event: 'hush-contact', text: '' };
     }
     if (focus.kind === 'normal-exit') {
+      // THE MACHINE COMES FIRST, AND IT IS THE SAME MACHINE ON BOTH ROADS.
+      //
+      // This used to be a bare press: with Contact available it opened the
+      // warning, and without it — which is most runs — it dropped the body
+      // straight into a two-minute walk with no text on it anywhere. The
+      // transport is the door now. Threading it is what makes the tape exist
+      // out past the field, and only then does the road fork.
+      if (!horizonTransport.threaded) {
+        return { handled: true, event: 'horizon-transport', text: '' };
+      }
       // The two authored pads are one decision, not a secret safe exit beside a
       // dangerous one. When Contact is available, either approach opens the
       // same explicit warning; Horizon is entered only by choosing WALK AWAY.
@@ -4447,6 +4493,21 @@ export function createSourceSpaceRuntime({
     requestBossBattle,
     commitContact,
     completeNormalExit,
+    // THE MACHINE. Main owns the slate and the window cue; this owns the dials.
+    horizonTransport: () => ({ ...horizonTransport }),
+    horizonTransportOptions: () => HORIZON_TRANSPORT_OPTIONS,
+    horizonTransportReadings: () => horizonTransportReadings(),
+    horizonTransportStatus: () => horizonTransportThreaded(horizonTransport),
+    setHorizonTransportDial: (dial, value) => {
+      if (!HORIZON_TRANSPORT_OPTIONS[dial]?.includes(value)) return { ...horizonTransport };
+      horizonTransport = { ...horizonTransport, [dial]: value };
+      return { ...horizonTransport };
+    },
+    runHorizonTransport: () => {
+      const result = threadHorizonTransport(horizonTransport);
+      horizonTransport = result.state;
+      return { ...result, state: { ...result.state } };
+    },
     resolveFinalEncounter,
     failFinalEncounter,
     horizonFrame,

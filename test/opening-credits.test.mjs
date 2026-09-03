@@ -102,7 +102,14 @@ test('normal app boot always places credits before the title menu', () => {
   // The push takes an options object now (the weather bed comes in through it),
   // so anchor on the call and its callback rather than on one exact line.
   const credits = source.indexOf('scenes.push(makeOpeningCreditsScene({');
-  assert.ok(source.includes('onDone:afterCredits'), 'the credits still hand off to the title');
+  // Anchored on the HANDOFF, not on one spelling of it. `onDone:afterCredits`
+  // became a wrapper the moment the credits started recording their own first
+  // completion, and asserting the literal made a legitimate change look like a
+  // regression. What must stay true is that the credits scene is what calls
+  // afterCredits — not how the callback is spelled.
+  const creditsBlock = source.slice(credits, source.indexOf('\n  }', credits));
+  assert.match(creditsBlock, /onDone\s*:/, 'the credits scene still takes a completion callback');
+  assert.match(creditsBlock, /afterCredits\(/, 'and that callback still hands off to the title');
   const title = source.indexOf('makeTitle({wantFullscreen})');
   assert.ok(calibration >= 0 && credits >= 0 && title >= 0);
   assert.ok(calibration > credits, 'calibration push is authored after the deferred credit callback declaration');

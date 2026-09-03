@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-09-01T21:40:57.092Z",
-  "bytes": 25294364,
-  "totalTriangles": 347022,
+  "generatedAt": "2026-09-02T19:22:24.940Z",
+  "bytes": 25290716,
+  "totalTriangles": 346974,
   "meshes": {
     "school_desk": {
       "triangles": 176,
@@ -1252,8 +1252,8 @@
       "vertices": 1168
     },
     "baseboard_ground": {
-      "triangles": 6696,
-      "vertices": 13392
+      "triangles": 6648,
+      "vertices": 13296
     },
     "baseboard_hall": {
       "triangles": 2400,
@@ -5111,7 +5111,7 @@
     }
   },
   "baseboards": {
-    "planHash": "7b4917e9b89431cb074fbe164000787bdd7321a86ffe9a5b16d1ea585f6137b1",
+    "planHash": "7b97706ccebdac1ee524d1fcf0f368e9f9a60aed1f3f590e8d1e7b2d0418cf00",
     "groups": {
       "ground": {
         "mesh": "baseboard_ground",

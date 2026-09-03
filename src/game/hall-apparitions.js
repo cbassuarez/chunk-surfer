@@ -130,16 +130,36 @@ export function hallTargetIds(roster, cap = 1) {
 // Commit the three authored intents to three bodies once per round. The first
 // living member is the next actor after the player; each later member owns its
 // own intent and its own enemy turn.
-export function commitHallApparitionRound(roster, round, intents = []) {
+// THE ONE THAT SPEAKS FIRST SAYS WHAT THE CARD SAID.
+//
+// This rotated authored intents onto the three bodies with its own counter,
+// entirely independently of the commitment the opponent-mind had just written
+// and the card had just been drawn from. So the first apparition to act could —
+// and regularly did — throw a different blow than the player was shown. That is
+// the banner lying, which is the one thing the whole committed-intent design
+// exists to make impossible.
+//
+// `committedId` is that commitment. It goes to whichever body will actually
+// swing first (the same first-live-member rule beginHallEnemyTurns uses), and
+// the rest of the roster rotates around it as before — so the formation still
+// reads as three different things preparing three different blows, and the one
+// that lands is the one that was promised.
+export function commitHallApparitionRound(roster, round, intents = [], { committedId = null } = {}) {
   if (!roster) return roster;
   roster.round = Math.max(0, Math.trunc(Number(round) || 0));
   roster.activeActorId = 'player';
   roster.activeIndex = -1;
   for (const member of roster.members) member.acting = false;
   const authored = Array.isArray(intents) ? intents.filter((intent) => intent?.id) : [];
+  // Whoever swings first this round. Matches beginHallEnemyTurns exactly; if
+  // that rule ever changes, this has to change with it or the card lies again.
+  const speaks = roster.members.findIndex((member) => member.health > 0);
   roster.members.forEach((member, index) => {
     member.intentId = authored.length ? authored[(index + roster.round) % authored.length].id : null;
   });
+  if (committedId && speaks >= 0 && authored.some((intent) => intent.id === committedId)) {
+    roster.members[speaks].intentId = committedId;
+  }
   settleHallTarget(roster);
   return roster;
 }

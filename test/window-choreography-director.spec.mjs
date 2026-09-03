@@ -59,6 +59,17 @@ test('top-level scene policy keeps all pre-Source exploration stable',()=>{
   assert.equal(windowChoreographyPolicy('source:white-crossing'),'source-leakage');
   assert.equal(windowChoreographyPolicy('ending:surfaced'),'ending-resolution');
   assert.equal(windowChoreographyPolicy('credits'),'credits-restoration');
+  // THE ONE EXPLORATION EXCEPTION, AND IT IS ADDRESSED BY ITS OWN SCENE ID.
+  //
+  // The box office key cabinet may place clue surfaces. It gets a policy of its
+  // own rather than borrowing 'battle-only', so the compositor can hold it to a
+  // narrower contract than a rupture — display only, no input, no main-window
+  // move. Crucially it does NOT loosen anything above: every scene in the stable
+  // list is still stable, including source:foh-door, which is the same threshold
+  // this room sits on.
+  assert.equal(windowChoreographyPolicy('box-office:key-cabinet'),'box-office');
+  assert.equal(windowChoreographyPolicy('box-office'),'stable',
+    'the room is not the cue: only the cabinet scene reaches outside the window');
 });
 
 test('prewarming a battle does not breach; its first actual fireball does',async()=>{

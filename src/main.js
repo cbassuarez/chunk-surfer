@@ -41,7 +41,9 @@ import { F as CELL_FLAGS, ZONE, CELL, MATERIAL } from './data/floorplan/legend.j
 import * as MUT from './world/mutate.js';
 import * as scenes from './game/scenes.js';
 import { uiInit, uiSetScale, uiClear, uiText, uiSize, uiFill, uiCenter, uiDraw, uiPointFromClient, uiWrap, uiAttenuate, uiWithAlpha } from './render/ui.js';
-import { drawVfdCounter, drawVfdMeter, drawVfdWarningTriangle, drawMachinePanel, drawLocationIndicator, drawVfdText } from './render/presentation.js';
+import { fitText } from './render/fit-text.js';
+import { returnDefinition } from './progression/report.js';
+import { drawVfdCounter, drawVfdMeter, drawVfdWarningTriangle, drawMachinePanel, drawLocationIndicator, drawVfdText, drawPaperPanel, drawFormRule } from './render/presentation.js';
 import { UI_COLOR, applyVfdSettings, vfdSettings } from './render/palette.js';
 import { saveLoadAsync, saveCommit, getSave, newGame, metaCommit, getMeta, freshSave, hasActiveRun, withTransientGameState } from './game/save.js';
 import { currentStorage, discardCausalDraft, exportAllData, exportDiagnosticsForSupport, loadHushRunSession, loadLatestCausalTape, promoteCausalDraft, sealCausalDraft } from './platform/storage/storageService.js';
@@ -256,7 +258,11 @@ import { createSamDialogVoice } from './audio/sam-voice.js';
 import { createBattleInterferenceDirector } from './game/interference-director.js';
 import { compileFireballCastPlan } from './game/window-channel.js';
 import { createPersonalizedWindowEffects } from './platform/personalized-window-effects.js';
-import { createWindowChoreographyDirector } from './platform/window-choreography.js';
+import {
+  createWindowChoreographyDirector,
+  compileBoxOfficeKeyTagPlan,
+  compileHorizonSlatePlan,
+} from './platform/window-choreography.js';
 import { apertureCompositionPlan, deathCompositionPlan, endingCompositionPlan, titleCompositionPlan } from './platform/window-composition.js';
 import { buildWindowChoreographyLabCases, choreographyLabSummary } from './platform/window-choreography-lab.js';
 import {
@@ -635,6 +641,40 @@ const personalWindowEffects=createPersonalizedWindowEffects({
     void logWarn('fireball surfaces unavailable',detail);
   },
 });
+// CLUE WINDOWS: SURFACES THAT SHOW, AND THEN GO AWAY ON THEIR OWN.
+//
+// Two puzzles in the game want the same thing — a few readings laid beside the
+// game window so they can be compared, which is the one thing a one-at-a-time
+// inspect prompt cannot do. Both were compiled and validated and neither was
+// ever fired, because runPlan was public and its teardown was not.
+//
+// The contract, and it is the whole reason these are allowed outside the
+// firewall: they are DISPLAY ONLY. They take no input, they move no window, and
+// nothing is gated on them — every reading they show is readable in the room
+// one at a time, so a browser build, withheld consent, disabled effects or
+// reduced motion costs convenience and never the answer.
+//
+// They close themselves when the body walks away from the thing they belong to,
+// which means no caller has to remember to tidy up and no surface can outlive
+// the room it explains.
+let clueWindowCue=null;
+function openClueWindows(plan,{x=px,y=py,radius=7}={}){
+  if(!plan)return false;
+  clueWindowCue={x:Number(x)||0,y:Number(y)||0,radius:Math.max(2,Number(radius)||7)};
+  void windowChoreography?.runPlan?.(plan);
+  return true;
+}
+function closeClueWindows(reason='clue-windows'){
+  if(!clueWindowCue)return false;
+  clueWindowCue=null;
+  void windowChoreography?.restore?.(reason);
+  return true;
+}
+function tickClueWindows(){
+  if(!clueWindowCue)return;
+  if(Math.hypot(px-clueWindowCue.x,py-clueWindowCue.y)>clueWindowCue.radius)closeClueWindows('clue-windows:left');
+}
+
 windowChoreography=createWindowChoreographyDirector({
   effects:personalWindowEffects,
   getEnabled:()=>currentPsychProfileSettings().modules.windowChoreography,
@@ -3941,7 +3981,10 @@ function updateAudio(){
   if(storyMode && !REC.isListening()){
     curPlayerCtx = { onTerrain:false, biomeId:null, worldId:currentWorld(), worldMembership:{} };
     silenceSampleField({ roomTone:true });
-    RT.bedOn();
+    // The bed is a BUILDING's noise floor, and out past the perimeter there is
+    // no building — only the recording. It was left running across the whole
+    // crossing because this branch never asked where the body was.
+    if(horizonUnderfoot()) RT.bedOff(); else RT.bedOn();
     return;
   }
   if(isOnboardingActive()){
@@ -5764,6 +5807,7 @@ function loop(){
         tickStabs(dt);
         tickStorm(performance.now()/1000);
         tickWindHowl(performance.now()/1000);
+        tickClueWindows();
         tickPages();
         tickRadio(dt);
         tickVanDoors();
@@ -6323,7 +6367,17 @@ function tickStorm(timeSec){
   const dt=Math.max(0,Math.min(0.5,timeSec-stormAt));
   stormAt=timeSec;
   const {thunder}=stepStorm(storm,dt,{active:storyMode});
+  // A ROOM WITH NO SKY GETS NO THUNDER.
+  //
+  // Every other weather layer is gated on usingSpecialSpace() — the wind howl
+  // three functions up, the flash strength in stormFlashStrength() — and this
+  // one was not, so strikes carried on landing out on the tape and down in the
+  // Source, which are not places with weather over them. The storm itself keeps
+  // stepping so that coming back indoors does not arrive in the middle of a
+  // burst it never heard the start of; only the voice is withheld.
+  const sky=!usingSpecialSpace();
   for(const event of thunder){
+    if(!sky)continue;
     if(!thunderVoice&&actx&&sfxGain)thunderVoice=createThunderVoice({context:actx,destination:sfxGain});
     thunderVoice?.strike?.(event);
   }
@@ -11592,6 +11646,10 @@ function interact(){
         openSourceContactWarning();
         return;
       }
+      if(result.event==='horizon-transport'){
+        openHorizonTransport();
+        return;
+      }
       if(result.text)SPEECH.say({who:result.event==='completed'?'direction':'you',text:result.text});
       syncSourceRender({force:result.event==='completed'});
     }
@@ -11790,6 +11848,22 @@ function interact(){
       flagApply(['chapel.clue.ledger']);
       saveCommit({flags:getSave().flags,props:PROPS.savePropState()});
       if(line)SPEECH.say({who:'you',text:line});
+      return;
+    }
+    if(hit.action==='key-cabinet-board'){
+      // THE THREE TAGS, TOGETHER. Reading them is a per-ring inspect and always
+      // was; what the board adds is the comparison, which is the thing the room
+      // cannot do and the surfaces can. The tags themselves stay readable one at
+      // a time, so nothing here is load-bearing.
+      const line=inspectPropTracked(hit.id);
+      if(line)SPEECH.say({who:'you',text:line});
+      const tags=[['CH-04','box-office-key-ring-ch04'],['C-17','box-office-key-ring-c17'],['FOH-M','box-office-key-ring-fohm']]
+        .map(([tag,id])=>({tag,text:String(PROPS.propById(id)?.inspect?.first||'')}))
+        .filter((entry)=>entry.text);
+      openClueWindows(compileBoxOfficeKeyTagPlan({
+        tags,
+        reducedMotion:(getSave().settings?.shake||'full')!=='full',
+      }),{x:hit.rx??px,y:hit.ry??py,radius:6});
       return;
     }
     if(hit.action==='chapel-key-ring'){
@@ -13838,6 +13912,83 @@ function openHorizonBustChoice(lastLine=null){
   return true;
 }
 
+// THREADING THE TRANSPORT. The three dials, as a slate you can come back to.
+//
+// Each opening rebuilds the tree from the current settings, so the choices read
+// out what is already on the machine — a menu, in the register of the rest of
+// the source. The readings are on the machine itself, one part at a time, and
+// the clue windows put all three beside each other.
+function openHorizonTransport(){
+  const rt=chunkSurfRuntime;
+  if(!rt?.horizonTransport)return false;
+  const dials=rt.horizonTransport();
+  const options=rt.horizonTransportOptions();
+  const readings=rt.horizonTransportReadings();
+  const status=rt.horizonTransportStatus();
+  const shown=(dial)=>dials[dial]||'— unset —';
+
+  const nodes={
+    start:{
+      speaker:'THE TRANSPORT',
+      lines:[
+        {who:'direction',text:'A transport, at the edge of the field, with the tape already on it and nothing threaded. The reels are still. Past it the dark does not resolve into anything.'},
+        {who:'you',text:'It wants to be told what it is holding before it will run it.'},
+      ],
+      choices:[
+        {text:`[RUN LENGTH — ${shown('length')}]`,goto:'length'},
+        {text:`[PICTURE CENTRE — ${shown('centre')}]`,goto:'centre'},
+        {text:`[WHERE IT BREAKS UP — ${shown('damage')}]`,goto:'damage'},
+        {text:'[READ THE MACHINE]',goto:'read'},
+        ...(status.ready?[{text:'[THREAD IT]',goto:'run',transportRun:true}]:[]),
+        {text:'[STEP BACK]',goto:'leave'},
+      ],
+    },
+    read:{
+      speaker:'THE TRANSPORT',
+      lines:readings.map((entry)=>({who:'you',text:`${entry.part}. ${entry.title}: ${entry.reading}. ${entry.note}`})),
+      choices:[{text:'[BACK]',goto:'leave'}],
+    },
+    leave:{speaker:'THE TRANSPORT',lines:[]},
+    run:{speaker:'THE TRANSPORT',lines:[]},
+  };
+  for(const dial of ['length','centre','damage']){
+    nodes[dial]={
+      speaker:'THE TRANSPORT',
+      lines:[{who:'direction',text:'The dial has three stops on it and no detent between them.'}],
+      choices:options[dial].map((value)=>({text:`[${value}]`,goto:'leave',transportDial:dial,transportValue:value})),
+    };
+  }
+
+  let ran=null;
+  let reopen=true;
+  presentFinale(nodes,{
+    slate:'THE TRANSPORT',replayId:'horizon-transport',
+    onChoice:(choice)=>{
+      if(choice?.transportDial)rt.setHorizonTransportDial(choice.transportDial,choice.transportValue);
+      if(choice?.transportRun){ran=rt.runHorizonTransport();reopen=!ran.ran;}
+    },
+    onDone:()=>{
+      closeClueWindows('horizon-transport');
+      if(ran?.text)SPEECH.say({who:ran.ran?'direction':'you',text:ran.text});
+      if(ran?.ran){
+        // Threaded. From here the road forks exactly as it always did — the
+        // machine sits in front of BOTH roads, not beside one of them.
+        const request=chunkSurfRuntime?.requestBossBattle?.();
+        if(request?.available){openSourceContactWarning();return;}
+        const completed=chunkSurfRuntime?.completeNormalExit?.();
+        if(completed?.handled)enterHorizon(completed.reason);
+        return;
+      }
+      if(reopen)setTimeout(()=>openHorizonTransport(),0);
+    },
+  });
+  openClueWindows(compileHorizonSlatePlan({
+    readings,
+    reducedMotion:(getSave().settings?.shake||'full')!=='full',
+  }),{radius:9});
+  return true;
+}
+
 function openSourceContactWarning(){
   if(!chunkSurfRuntime||chunkSurfRuntime.state()?.finale?.route)return false;
   let chosen=null;
@@ -13884,17 +14035,21 @@ function openSourceContactWarning(){
 
 // THE CROSSING HAS THREE ACTS, BECAUSE THE RECORDING DOES.
 //
-// PLACEHOLDER TEXT, and deliberately obvious about it — each line describes the
-// beat it is standing in for rather than playing it. The shape is the point:
-// the tape's macroblock damage begins around depth 42 and clears again around
+// The tape's macroblock damage begins around depth 42 and clears again around
 // 358, which gives the walk a clean opening, a ruined middle with the bust
 // inside it, and a clean stretch before the collapse. Those transitions are
-// measured off the bake (see build-horizon-profile.mjs), not chosen.
+// measured off the bake (see build-horizon-profile.mjs), not chosen — and the
+// same `mosh` channel now drives how hard the picture crawls at each of them,
+// so the words and the image are marking the same event.
 //
-// Replace the words. Keep the placements.
+// He is a location recordist. He knows exactly what a codec failing looks like,
+// so the first line is a professional noticing damage rather than a man being
+// frightened by it. The second is worse than the first on purpose: nothing out
+// here repaired anything, so the picture holding together again is a decision
+// somebody made, not a recovery.
 const HORIZON_MARKER_LINES = Object.freeze({
-  'damage-begins': { who:'you', text:'[PLACEHOLDER] A line marking the moment the picture starts coming apart — written, when it is written, as the recordist noticing damage rather than being frightened by it, because he is a man who knows what a codec failing looks like.' },
-  'damage-ends': { who:'you', text:'[PLACEHOLDER] And a line for the moment it stops: the tape holding together again, which should read as worse rather than better, since nothing out here has been repaired and something has evidently decided to be legible.' },
+  'damage-begins': { who:'you', text:'There it goes. Blocks holding past their own frame — the encoder ran out of anything to predict. I have watched tape do this on a bench. Never from inside it.' },
+  'damage-ends': { who:'you', text:'Clean again. Nothing repaired that. Nothing out here repairs anything, so it has decided to be legible, and I would rather it had not.' },
 });
 
 function speakHorizonMarker(){
@@ -13922,11 +14077,34 @@ function tickHorizonScore(frame,dt){
   // The tail of the piece is where the picture collapses, and the score goes
   // with it rather than playing on over a dark room. `frame.collapse` is the
   // same ramp the renderer dims by, so the two cannot drift apart.
-  const level=Math.max(0,1-frame.collapse);
+  const tail=Math.max(0,1-frame.collapse);
+  // THE RECORDING'S OWN BRIGHTNESS, AS LEVEL. `band.lum` is measured off the
+  // bake and runs 0.83 down to 0.25; the picture is exposed by it (see
+  // horizonFrame) and the score is carried by it, so the tape wearing out is
+  // one gesture in both senses rather than a dimmer picture over an unchanged
+  // drone. This is most of what made the crossing "too much at all times":
+  // level was a flat 0.85 for 451 of 512 metres and the only event in it was
+  // the collapse at 88%.
+  const band=frame.band||{centre:0,reach:24,lum:0.5};
+  const shape=0.62+0.38*Math.max(0,Math.min(1,(Number(band.lum)||0.5)/0.83));
+  // STEERING IS THE INSTRUMENT. The walkable ground follows the bright mass of
+  // the recording, and hugging it now pays: dead centre the piece is open and
+  // full, and drifting toward the edge thins and sours it. Nothing is damaged
+  // and nothing fails — out here the only stake is the music, which is the
+  // right stake for a sequence with no checkpoint.
+  const off=Math.abs((Number(frame.lateral)||0)-(Number(band.centre)||0))
+    /Math.max(1,Number(band.reach)||24);
+  const onPath=1-Math.max(0,Math.min(1,off));
+  const steer=0.58+0.42*onPath;
+  const level=tail*shape*steer;
   // AND THE SCORE IS TOLD WHERE IT IS, which it never used to be. The picture
   // has always known the body's offset across the corridor and which way the
   // head is turned; the audio was a mono bed that sounded identical whichever
   // way you faced, in a hundred-and-twenty-eight-metre-wide room.
+  //
+  // The 0.85 is the MIX TRIM and nothing else now. It used to be standing in
+  // for the granular engine's overlap-add gain as well, and was undersized for
+  // it — see DENSITY_TRIM in horizon-score.js, which is that job's own number.
   horizonScore?.tick(frame.seconds,dt*1000,level*0.85,{
     // frame.lateral is in cells; the corridor is 96 either side. Normalised to
     // -1..1 so the score does not have to know the geometry.
@@ -16887,11 +17065,33 @@ function presentEndingFinalHold(manifest,onDone){
     update(dt){elapsed+=Math.max(0,Number(dt)||0)*1000;if(elapsed>=duration)finish();},
     key(event){if(['Enter',' ','e','E'].includes(event.key)){finish();return true;}return true;},
     pointer(){finish();return true;},
+    // THE COVER SLIP.
+    //
+    // This was two uiText calls — a centred title at row 2 and a centred slug at
+    // rows-3 — and nothing else in the game was that bare. But it holds ON the
+    // ending's last view (blocksWorld:false, worldView above), so a full sheet
+    // would cover the very image it exists to hold. It gets the label instead:
+    // a small slip laid in the corner of the picture, the way a file's cover
+    // card sits on the photograph it refers to.
+    //
+    // The classification is authored per ending in RETURN_DEFS and has never
+    // once been printed anywhere the player could see it.
     render(){
-      const{cols,rows}=uiSize(),title=String(manifest?.title||'').toUpperCase();
-      uiText(Math.max(2,Math.floor((cols-title.length)/2)),2,title,'ui-amber');
-      const image=String(manifest?.cutscene?.finalHold?.image||manifest?.image||'').toUpperCase();
-      uiText(Math.max(2,Math.floor((cols-Math.min(cols-4,image.length))/2)),rows-3,image.slice(0,cols-4),'ui-secondary',.72);
+      const{cols,rows}=uiSize();
+      const title=String(manifest?.title||'').toUpperCase();
+      const classification=String(returnDefinition(manifest?.id)?.classification||'UNCLASSIFIED').toUpperCase();
+      const image=String(manifest?.cutscene?.finalHold?.image||manifest?.image||'');
+      const w=Math.min(46,Math.max(24,cols-8));
+      const h=7;
+      const x=3,y=rows-h-2;
+      const slip=drawPaperPanel(x,y,w,h);
+      uiText(slip.x,slip.y,fitText(title,slip.w),'paper-ink');
+      drawFormRule(slip.x,slip.y,slip.w,{alpha:.34});
+      uiText(slip.x,slip.y+2,classification,'paper-ink',.6);
+      const ref=`W.E./${String(getSave()?.run?.id||'4417').slice(-4)}`;
+      uiText(slip.x+slip.w-ref.length,slip.y+2,ref,'paper-ink',.6);
+      // The image slug is the caption, wrapped rather than cut mid-word.
+      uiWrap(image,slip.w).slice(0,2).forEach((line,i)=>uiText(slip.x,slip.y+4+i,line,'paper-ink',.52));
     },
   };
   scenes.push(scene);
