@@ -1,4 +1,12 @@
 // Pure cell-space geometry for the field-case MAP.
+//
+// THE MAP IS THE PAGE, NOT A PANE ON IT.
+//
+// This used to hand 72% of the width to a plan and the rest to a room list and a
+// detail block, which is why finding somewhere meant reading a list rather than
+// looking at a building. The plan now fills the frame and everything else is a
+// single rail: one line of floors at the top, one line of controls at the
+// bottom, and the selected room named on the map itself.
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
@@ -9,30 +17,31 @@ export function mapLayoutFromBag(layout) {
   const bottom = Math.max(layout.list.y + layout.list.h, layout.detail.y + layout.detail.h);
   const w = Math.max(12, right - left);
   const h = Math.max(8, bottom - top);
+  const compact = layout.mode === 'compact' || w < 66 || h < 17;
 
-  if (layout.mode === 'compact' || w < 66 || h < 17) {
-    const headerH = 1;
-    const detailH = clamp(Math.floor(h * 0.22), 2, 4);
-    const progressH = 1;
-    return {
-      mode: 'compact',
-      floorRail: { x: left, y: top, w, h: headerH },
-      mapViewport: { x: left, y: top + headerH + 1, w, h: Math.max(5, h - headerH - detailH - progressH - 2) },
-      detail: { x: left, y: bottom - detailH - progressH, w, h: detailH },
-      progressRail: { x: left, y: bottom - progressH, w, h: progressH },
-      dividerX: null,
-    };
-  }
-
+  // floorRail  one line: the stacked floors, and the take count.
+  // mapViewport everything else: the plan, full bleed.
+  // detail      a two-line caption INSIDE the map's bottom edge, not beside it.
+  // progressRail one line: the task, and the controls.
+  // Explicit, non-overlapping bands. Everything that is not the plan is one row
+  // tall, and each row knows where the one above it ended — the first pass at
+  // this let the caption and the legend land on the same line.
   const floorH = 1;
-  const mapW = clamp(Math.floor(w * 0.72), 42, w - 24);
+  const captionH = 1;
+  const legendH = 1;
+  const progressH = 1;
+  const chrome = floorH + 1 + captionH + legendH + progressH;
+  const mapH = Math.max(5, h - chrome);
+  const mapY = top + floorH + 1;
+  const captionY = mapY + mapH;
   return {
-    mode: 'wide',
+    mode: compact ? 'compact' : 'wide',
     floorRail: { x: left, y: top, w, h: floorH },
-    mapViewport: { x: left, y: top + floorH + 1, w: mapW, h: Math.max(6, h - floorH - 2) },
-    dividerX: left + mapW + 1,
-    detail: { x: left + mapW + 2, y: top + floorH + 1, w: Math.max(20, w - mapW - 2), h: Math.max(6, h - floorH - 2) },
-    progressRail: { x: left, y: bottom - 1, w, h: 1 },
+    mapViewport: { x: left, y: mapY, w, h: mapH },
+    detail: { x: left, y: captionY, w, h: captionH },
+    legendRail: { x: left, y: captionY + captionH, w, h: legendH },
+    progressRail: { x: left, y: captionY + captionH + legendH, w, h: progressH },
+    dividerX: null,
   };
 }
 

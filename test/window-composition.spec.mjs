@@ -15,6 +15,7 @@ import {
   paneScoreStateAt,
   proceduralMediaScore,
   scoreTimeAt,
+  returnCompositionPlan,
   titleCompositionPlan,
   titleMemoryAsset,
   validatePaneScoreEnvelope,
@@ -189,7 +190,21 @@ test('every ending has authored media and credits restore owns cleanup',()=>{
     assert.ok(plan.surfaces.every((surface)=>surface.draggable===false),`${id} never steals cutscene focus`);
   }
   const choreography=readFileSync(new URL('../src/platform/window-choreography.js',import.meta.url),'utf8');
-  assert.match(choreography,/async function credits\(\)\{const result=await restore\('credits'/);
+  // THE CREDITS RESTORE, AND DELIBERATELY DO NOT CLOSE THE POOL.
+  //
+  // This used to be `restore('credits',{closePool:true})` plus effects.end(),
+  // which tore every desktop surface down at the exact moment before the return
+  // report — so the last screen of the game was the one screen guaranteed to
+  // have no surfaces. The lease now runs ending -> credits -> return -> title,
+  // and is destroyed exactly once, by returnToTitle's emergencyRestore, which
+  // is the only path that is supposed to destroy it (rebuilding under the same
+  // labels is a race Tauri loses both ways).
+  assert.match(choreography,/async function credits\(\)\{return restore\('credits'\);\}/,
+    'the credits restore the frame');
+  assert.doesNotMatch(choreography,/restore\('credits',\s*\{\s*closePool/,
+    'the credits must not close the pool the return is about to use');
+  assert.match(choreography,/async function beginReturn\(/,
+    'the return has its own composition entry point');
 });
 
 test('every event-driven ending cue names a stable authored cutscene beat',()=>{
@@ -211,4 +226,31 @@ test('window faults respect flash accessibility without removing their sector gr
     assert.equal(plan.fault.flashMode,flashMode);
     assert.ok(plan.surfaces.every((surface)=>surface.shader==='nvme-sector'));
   }
+});
+
+// ── THE RETURN, ON THE SURFACES ──────────────────────────────────────────────
+test('the return composition files the account across the panes as images',()=>{
+  const tokens=['snapshot-a','snapshot-b','snapshot-c','snapshot-d'];
+  const plan=returnCompositionPlan({sections:['THE JOB','TAKES','THE RECORDIST','EQUIPMENT'],snapshotTokens:tokens});
+  assert.equal(plan.purpose,'return');
+  assert.equal(plan.surfaces.length,4);
+
+  // SNAPSHOTS, NOT TEXT. window-media-surface.js is a WebGL shader with an image
+  // sampler and a few procedural forms and NO glyph path, so a `text` pane
+  // renders in the in-canvas simulation and comes up black on the desktop —
+  // backwards for a feature that exists for the desktop. Every pane here must
+  // carry an image the caller rasterised.
+  assert.ok(plan.surfaces.every((surface)=>surface.content.kind==='snapshot'),
+    'a return pane is a rasterised section, never a text pane');
+  assert.ok(plan.surfaces.every((surface)=>surface.target),'each section files to a resolved place');
+
+  // Two is the floor: a one-pane return is the transport on its own and does not
+  // need the desktop at all.
+  assert.equal(returnCompositionPlan({snapshotTokens:['snapshot-a']}).surfaces.length,2,
+    'a single token still composes a legal plan');
+
+  // Reduced motion keeps the beats and removes the travel, like every other plan.
+  const reduced=returnCompositionPlan({snapshotTokens:tokens,reducedMotion:true});
+  assert.equal(reduced.reducedMotion,true);
+  assert.ok(reduced.score.cues.length===plan.score.cues.length,'the same beats survive reduced motion');
 });

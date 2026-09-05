@@ -4,10 +4,10 @@
     "author": "Chunk Surfer project",
     "source": "tools/chunk_surfer/build-props.mjs",
     "license": "project source (mixed: see meshes)",
-    "sha256": "cb54724d5c4d3eb8a0f94c551689dbb7c7332a26dc22da2b061d1ca37e9806d4",
-    "modifications": "Metres, Y-up, ground-centred. Procedural fallback geometry plus user-supplied source meshes (unverified provenance) baked, re-axised, height-scaled, and vertex-cluster decimated under budget.",
-    "triangles": 346974,
-    "bytes": 25290716
+    "sha256": "841243bd4fbb9e9b0fc410a36af91970e9be23d91117c621754d371080917d6a",
+    "modifications": "Metres, Y-up, ground-centred. Procedural fallback geometry, project-authored Blender meshes, and user-supplied source meshes (unverified provenance) baked, re-axised, height-scaled, and vertex-cluster decimated under budget. Per-mesh provenance below says which is which.",
+    "triangles": 350798,
+    "bytes": 25419784
   },
   "meshes": [
     {
@@ -1526,21 +1526,23 @@
       "name": "plant_header_manifold",
       "bounds": {
         "min": [
-          -2.25,
+          -1.329,
           0,
-          -0.317
+          -0.34
         ],
         "max": [
-          2.25,
-          2.18,
-          0.26
+          1.329,
+          0.46,
+          0.34
         ]
       },
-      "triangles": 372,
+      "triangles": 4196,
       "provenance": {
-        "source": "tools/chunk_surfer/build-props.mjs",
-        "origin": "project-native procedural geometry",
-        "license": "project source"
+        "source": "tools/chunk_surfer/build-plant-header.py",
+        "origin": "project-native, modelled in Blender",
+        "license": "project source",
+        "sourceTriangles": 4196,
+        "modifications": "Re-axised to Y-up, floor-centred, height-scaled, vertex-cluster decimated, normals recomputed."
       }
     },
     {

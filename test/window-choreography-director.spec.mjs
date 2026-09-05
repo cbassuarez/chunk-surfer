@@ -68,6 +68,12 @@ test('top-level scene policy keeps all pre-Source exploration stable',()=>{
   // list is still stable, including source:foh-door, which is the same threshold
   // this room sits on.
   assert.equal(windowChoreographyPolicy('box-office:key-cabinet'),'box-office');
+  // AND THE SECOND, ON THE SAME TERMS. The plant header may place a service
+  // card and two gauges while the wrench is on the tree. Its own scene id, its
+  // own policy, the same narrow contract — and, again, nothing above it moves:
+  // the plant room itself is not addressable here, only this one microgame.
+  assert.equal(windowChoreographyPolicy('plant-header'),'stable','the room is not the exception; the header is');
+  assert.equal(windowChoreographyPolicy('plant:header'),'plant-header');
   assert.equal(windowChoreographyPolicy('box-office'),'stable',
     'the room is not the cue: only the cabinet scene reaches outside the window');
 });
@@ -297,7 +303,16 @@ test('named composition events queue until the scored panes are presented',async
   assert.equal(director.compositionEvent('ending:beat:not-authored'),false,'events cannot inject unauthored actions');
 });
 
-test('credits close the native surface pool after restoring the exact transaction',async()=>{
+// THE CREDITS RESTORE THE FRAME AND LEAVE THE POOL STANDING.
+//
+// They used to close it, which meant the surfaces were destroyed at the exact
+// moment before the return report — the last screen of the game was the one
+// screen guaranteed to have none. The lease runs ending -> credits -> return ->
+// title now, and only returnToTitle's emergencyRestore destroys it. Rebuilding
+// the pool under the same labels is a race Tauri loses both ways, so closing it
+// early is not merely wasteful, it is the thing that used to kill the effect
+// after a return to the title.
+test('credits restore the exact transaction and leave the pool for the return',async()=>{
   const calls=[];
   const director=createWindowChoreographyDirector({
     runtimeApi:{invoke:async(command)=>{calls.push(command);return true;}},documentApi:null,
@@ -305,8 +320,32 @@ test('credits close the native surface pool after restoring the exact transactio
   });
   await director.runPlan(compileWindowChoreographyPlan({cueId:'credits-test',sceneId:'ending:surfaced',primitives:['Bloom']}));
   await director.credits();
-  assert.ok(calls.includes('chunk_window_choreography_restore'));
-  assert.ok(calls.includes('pool-close'));
+  assert.ok(calls.includes('chunk_window_choreography_restore'),'the main frame is put back');
+  assert.ok(!calls.includes('pool-close'),'the surfaces survive into the return');
+});
+
+test('the return files its sections onto the surfaces as registered images',async()=>{
+  const registered=[];
+  const calls=[];
+  const director=createWindowChoreographyDirector({
+    runtimeApi:{invoke:async(command)=>{calls.push(command);return true;}},documentApi:null,
+    effects:{
+      sessionToken:()=>'return-session',
+      prepareMedia:async()=>true,showComposition:async()=>true,hideComposition:async()=>true,hidePanes:async()=>true,
+      registerSnapshot:(url)=>{registered.push(url);return `snapshot-${registered.length}`;},
+    },
+  });
+  const page=(label)=>({label,image:'data:image/webp;base64,AAAA'});
+  const result=await director.beginReturn([page('THE JOB'),page('TAKES'),page('EQUIPMENT')]);
+  assert.equal(registered.length,3,'every section is registered before it is shown');
+  assert.equal(result?.plan?.purpose,'return');
+  assert.ok(result.plan.surfaces.every((surface)=>surface.content.kind==='snapshot'));
+
+  // A section that failed to rasterise is not a pane. Below two there is no
+  // composition at all — the transport reads the return on its own.
+  const thin=await director.beginReturn([page('ONLY ONE')]);
+  assert.equal(thin,null,'one section is not a composition');
+  assert.equal(await director.beginReturn([{label:'BROKEN',image:null}]),null);
 });
 
 test('every authored ending has a distinct resolution primitive',()=>{

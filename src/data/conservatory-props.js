@@ -123,7 +123,24 @@ export const PROP_MESH = Object.freeze({
   atrium_entry_closure:{w:2.35,d:1.10,h:1.72,blocks:false},
   atrium_formal_banner:{w:2.05,d:.14,h:3.95,blocks:false,mount:'wall'},
   atrium_suspended_lantern:{w:1.55,d:1.55,h:16.75,blocks:false,mount:'floor'},
-  atrium_waiting_rug:{w:3.80,d:4.50,h:.04,blocks:false,mount:'floor'},
+  // FLOOR TEXTILES, AND THE ONE FIELD THAT MAKES THEM MATTER.
+  //
+  // `softFloor` is 0..1 and is read by props.js's softFloorPropAt, which main.js
+  // folds into sprungFloorAt — so it reaches emitStepNoise's surface multiplier
+  // and from there the take, the meter, markHeard and the footstep you hear. It
+  // lives on the MESH rather than the placement because a rug is soft by nature
+  // and a placement should not have to remember.
+  //
+  // Drugget is thin and nailed over boards, so it gives back less than wool laid
+  // on concrete does. See NOISE.carpet in config.js for the ladder.
+  atrium_waiting_rug:{w:3.80,d:4.50,h:.04,blocks:false,mount:'floor',softFloor:1},
+  textile_drugget_run:{w:1.30,d:6.40,h:.03,blocks:false,mount:'floor',softFloor:.7},
+  textile_drugget_stage:{w:3.60,d:2.40,h:.06,blocks:false,mount:'floor',softFloor:.7},
+  textile_stair_runner:{w:.95,d:4.20,h:.03,blocks:false,mount:'floor',softFloor:.9},
+  textile_corridor_runner:{w:1.15,d:5.60,h:.08,blocks:false,mount:'floor',softFloor:1},
+  textile_chapel_runner:{w:1.40,d:7.20,h:.04,blocks:false,mount:'floor',softFloor:1},
+  // Rolled and on end: stock, not floor. Nothing to walk on, so no softFloor.
+  textile_rolled:{w:.44,d:.44,h:2.42,blocks:false,mount:'floor'},
   chapel_vault:{w:12.5,d:34.5,blocks:false},
   // One project-native mesh owns all four flights and both half-landings. The
   // floorplan remains the collision authority; this is the construction layer
@@ -1018,6 +1035,81 @@ export const CONSERVATORY_PROPS = [
   }),
   P('atrium-waiting-rug','atrium_waiting_rug',77.2,19.0,0,{
     interactive:false,blocks:false,structural:true,
+    inspect:inspect(
+      'A wool rug under the waiting suite, and the reason it is still here is written across the middle of it in a stain nobody could lift.',
+      'Ellery cleared this building to the walls. This stayed because it was worth less than the labour of rolling it.',
+    ),
+  }),
+
+  // ── WHAT IS STILL ON THE FLOOR ───────────────────────────────────────────
+  //
+  // Ellery stripped the conservatoire before the demolition, so a furnished
+  // building is the wrong picture and rugs everywhere would be a lie. What is
+  // left is only ever one of two things, and each placement has to be one of
+  // them:
+  //
+  //   WHAT THE STRIP-OUT LAID DOWN — protection over the floors worth lifting,
+  //     put there by the people taking the building apart. Coarse hessian
+  //     drugget, nailed at the ends, laid to be walked on and not looked at.
+  //
+  //   WHAT WAS NOT WORTH TAKING — fixed down, stained, or awkward enough that
+  //     the clearance crew walked past it.
+  //
+  // They are the only soft ground in the building, which is a mechanical fact
+  // and not a decorative one: see softFloor in PROP_MESH above.
+
+  // The dance wing's maple is the single most salvageable floor in the
+  // building, so it is the one under sheeting — and that hands the loudest room
+  // in the game (NOISE.sprung) a path through it that is merely ordinary. The
+  // drugget is not mercy; it is somebody protecting an asset.
+  P('b2-drugget-run','textile_drugget_run',31,10.5,0,{
+    interactive:false,blocks:false,structural:true,
+    inspect:inspect(
+      'Hessian drugget, tacked down the length of the room over the sprung maple. Somebody means to lift these boards before the machines come.',
+      'Under it the floor is still a drum. Over it, walking is only walking.',
+    ),
+  }),
+  // Boards protected while the get-out came through. One run, upstage.
+  P('hall-stage-drugget','textile_drugget_stage',102,10,0,{
+    interactive:false,blocks:false,structural:true,
+    inspect:inspect(
+      'A square of drugget upstage, rucked where something heavy was dragged across it and never straightened.',
+      'The stage boards under it are unmarked. Everything either side of it is not.',
+    ),
+  }),
+  // Rodded to the treads. Worthless off them, so it is still on them.
+  P('main-stair-runner','textile_stair_runner',139,29,0,{
+    interactive:false,blocks:false,structural:true,
+    inspect:inspect(
+      'A worsted stair runner, still on its rods. The brass is gone from three of them and the runner is not.',
+      'Worn through to the backing in a strip up the middle, which is where a century of the same feet went.',
+    ),
+  }),
+  // The academic corridor, between the office doors nobody has unlocked.
+  P('academic-corridor-runner','textile_corridor_runner',9.25,260.5,0,{
+    interactive:false,blocks:false,structural:true,
+    inspect:inspect(
+      'A corridor runner, rucked halfway along where a door has been dragged over it for years.',
+      'It stops short of both ends. Whoever laid it measured once.',
+    ),
+  }),
+  // Ecclesiastical textiles are the last thing a clearance contractor wants to
+  // be photographed carrying out of a building.
+  P('chapel-nave-runner','textile_chapel_runner',92.5,73,0,{
+    interactive:false,blocks:false,structural:true,
+    inspect:inspect(
+      'A runner up the centre of the nave, woven in quatrefoils to match the tracery it lies under.',
+      'Everything else portable has gone from this room. Nobody has touched this.',
+    ),
+  }),
+  // Stock rather than furnishing, which is exactly why it survived intact: it
+  // was never on a floor to be walked on or sold with the fittings.
+  P('store-rolled-rug','textile_rolled',4,18,-.22,{
+    interactive:false,blocks:false,structural:true,
+    inspect:inspect(
+      'A rug rolled and stood on end against the wall, tied twice and tagged at the top.',
+      'The tag is a props number, not an inventory line. It came in for a production and never went out.',
+    ),
   }),
 
   // The formal waiting-room order survives as a coherent set. Its stamped
@@ -1832,6 +1924,20 @@ export const CONSERVATORY_PROPS = [
   // needs to know about it.
   P('plant-heating-header','plant_header_manifold',33.0,38.35,Math.PI,{mount:'wall',action:'plant-header-valve',label:'the hissing pipe',interactionPriority:3,inspectAt:{x:33,y:37.45},
     inspect:inspect('A heating pipe running the length of the wall, and one isolation valve on it shivering under the load. Steam is getting out somewhere behind the wheel, in a thin continuous note.','Still hissing. The gauge needle is hard against its stop.')}),
+  // THE CARD ON THE WALL, AND WHY IT IS A PROP AND NOT ONLY A SURFACE.
+  //
+  // The header microgame may put a service card beside the game window (see
+  // compilePlantHeaderPlan). That is a convenience and it is never the route:
+  // everything on it is written here too, on a board a metre from the valve, so
+  // a browser build or a player who has refused window effects loses the
+  // comparison and never loses the repair. If this prop moves or goes, the
+  // surfaces stop being allowed.
+  P('plant-header-card','notice_board',34.9,38.35,Math.PI,{mount:'wall',elevation:1.42,blocks:false,
+    action:'plant-header-card',label:'header service card',interactionPriority:2,
+    inspect:{
+      first:'HEADER 3 — ISOLATION. Back nut, then gland, then handwheel, in that order, all three home before the line is dead. Clockwise to close, and the card is emphatic about it.',
+      again:'The last line is in a different hand: the bypass cock feeds the return and is NOT part of this header. Somebody learned that the hard way.',
+    }}),
   // Optional quiet buff in the open van; guaranteed noisy fallback in the
   // Get-In. Runtime replaces/removes these same ids as they are collected.
   // ON THE SHELF, AND NOT ITS OWN INTERACTION. You can see it from outside the

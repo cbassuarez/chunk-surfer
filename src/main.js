@@ -40,10 +40,10 @@ import * as FP from './world/floorplan.js';
 import { F as CELL_FLAGS, ZONE, CELL, MATERIAL } from './data/floorplan/legend.js';
 import * as MUT from './world/mutate.js';
 import * as scenes from './game/scenes.js';
-import { uiInit, uiSetScale, uiClear, uiText, uiSize, uiFill, uiCenter, uiDraw, uiPointFromClient, uiWrap, uiAttenuate, uiWithAlpha } from './render/ui.js';
+import { uiInit, uiSetScale, uiClear, uiText, uiSize, uiFill, uiCenter, uiDraw, uiLine, uiPointFromClient, uiWrap, uiAttenuate, uiWithAlpha } from './render/ui.js';
 import { fitText } from './render/fit-text.js';
 import { returnDefinition } from './progression/report.js';
-import { drawVfdCounter, drawVfdMeter, drawVfdWarningTriangle, drawMachinePanel, drawLocationIndicator, drawVfdText, drawPaperPanel, drawFormRule } from './render/presentation.js';
+import { drawVfdCounter, drawVfdMeter, drawVfdWarningTriangle, drawMachinePanel, drawLocationIndicator, drawVfdText } from './render/presentation.js';
 import { UI_COLOR, applyVfdSettings, vfdSettings } from './render/palette.js';
 import { saveLoadAsync, saveCommit, getSave, newGame, metaCommit, getMeta, freshSave, hasActiveRun, withTransientGameState } from './game/save.js';
 import { currentStorage, discardCausalDraft, exportAllData, exportDiagnosticsForSupport, loadHushRunSession, loadLatestCausalTape, promoteCausalDraft, sealCausalDraft } from './platform/storage/storageService.js';
@@ -142,6 +142,18 @@ import { drawPlaybackOverlay, formatPlaybackTime } from './render/playback-view.
 import { RECORDER_SCENE_ID, makeRecorderScene } from './game/recorder-scene.js';
 import { TRANSPORT, drawRecorderFace, recorderPanelRect } from './render/recorder-view.js';
 import { makeCombatScene } from './game/combat.js';
+import { makeSourceRepriseScene } from './game/source-reprise-scene.js';
+import {
+  beginSourceReplayTake,
+  buildSourceReprisePlan,
+  checkpointSourceReprise,
+  completeSourceReplayTake,
+  normalizeSourceReplayManifest,
+  noteSourceReplayBattle,
+  noteSourceReplayContact,
+  noteSourceReplayEntry,
+  sourceReplayFallback,
+} from './game/source-replay-manifest.js';
 import { makeEncounterStartScene } from './game/encounter-start.js';
 import { makeSourcePageScene, makeSourceStillPageScene } from './game/source-page-scene.js';
 import { makeSourceContactScene } from './game/source-contact-scene.js';
@@ -262,6 +274,7 @@ import {
   createWindowChoreographyDirector,
   compileBoxOfficeKeyTagPlan,
   compileHorizonSlatePlan,
+  compilePlantHeaderPlan,
 } from './platform/window-choreography.js';
 import { apertureCompositionPlan, deathCompositionPlan, endingCompositionPlan, titleCompositionPlan } from './platform/window-composition.js';
 import { buildWindowChoreographyLabCases, choreographyLabSummary } from './platform/window-choreography-lab.js';
@@ -297,7 +310,7 @@ import { makeHushAudioLabScene } from './game/hush-audio-lab.js';
 import { makeDifficultySelectScene } from './game/difficulty-select.js';
 import { makeArchiveScene } from './game/archive.js';
 import { makeReturnIndexScene } from './game/return-index.js';
-import { makeReturnReportScene } from './game/return-report.js';
+import { makeReturnReportScene, returnSectionImages } from './game/return-report.js';
 import { makeHushRunScene } from './game/hush-run.js';
 import { makeTransferRoomScene } from './game/transfer-room.js';
 import { makeAchievementNoticeScene } from './game/achievement-notice.js';
@@ -368,11 +381,21 @@ import { createElectricalHumRuntime, electricalHumAt } from './audio/electrical-
 import { createFountainWaterRuntime, fountainMaskingDb, fountainWaterAt } from './audio/fountain-water.js';
 import { createPlantPipeRuntime, plantPipeAt } from './audio/plant-pipe.js';
 import {
-  applyPlantValveRotation,
-  applyPlantValveStroke,
-  createPlantValveTurn,
+  PLANT_FITTINGS,
+  PLANT_FITTING_IDS,
+  PLANT_TRAP,
+  advancePlantApparition,
+  applyPlantRotation,
+  applyPlantStroke,
+  createPlantTree,
+  plantApparitionDistance,
+  plantFitting,
   plantLookBackProgress,
+  plantSeatedCount,
+  plantTreeComplete,
   plantValveAudioFrame,
+  selectPlantFitting,
+  settlePlantTree,
 } from './game/plant-isolation.js';
 import { resolveTorchLook } from './render/lighting-model.js';
 import { BELLS_GOD_STOPS, buildBellsGodPreset, buildPreTapeGodPreset, PRE_TAPE_GOD_STOPS, buildChunkSurfGodPreset, buildHorizonGodPreset, CHUNK_SURF_GOD_PRESET, HORIZON_GOD_STOPS } from './game/chunk-surf-god.js';
@@ -4175,7 +4198,7 @@ function step(dx,dy){
     // body is standing on a recording. Boards there put a corridor under a
     // place that does not have one.
     const wetStep=natatoriumPlayerInWater(),soaked=natatoriumSoaked();
-    RT.footstep(level, { muffle: horizonUnderfoot() ? 0.85 : wetStep ? .82 : soaked ? .48 : 0 });
+    RT.footstep(level, { muffle: horizonUnderfoot() ? 0.85 : wetStep ? .82 : soaked ? .48 : softFloorMuffle(px,py) });
     if(wetStep)RT.waterFootstep?.(Math.min(.34,level*.72));
     if(usingStairAnomaly())scheduleStairStepEcho(level);
     // Sound pins the building. Where you were loud, it stays honest.
@@ -5658,6 +5681,39 @@ function causalPoseAt(x=px,y=py,{roomId=currentWorld()}={}){
   };
 }
 
+function currentSourceReplayManifest({withFallback=true}={}){
+  const runId=getSave()?.run?.id||'';
+  const normalized=normalizeSourceReplayManifest(getSave()?.sourceReplay,{runId});
+  if(!withFallback||normalized.takes.length||!REC.recState().takes.length)return normalized;
+  // Saves from before the replay manifest still know exactly which tapes were
+  // completed and where their slates were made. They do not know the approach
+  // frames, so the reprise uses a canonical walk inside those visited rooms —
+  // never a room or event the player did not reach.
+  const stored=PB.serializeTakes?.()||[];
+  const byRoom=new Map(stored.map((take)=>[take.roomId,take]));
+  return sourceReplayFallback({
+    runId,
+    takes:REC.recState().takes.map((roomId)=>{
+      const storedTake=byRoom.get(roomId)||{};
+      const authored=ROOM_CELLS[roomId];
+      return{
+        ...storedTake,roomId,
+        mark:storedTake.mark||(authored?FP.toRuntimePoint(authored):null),
+        place:storedTake.place||PB.takePlace?.(roomId)||'',
+      };
+    }),
+  });
+}
+
+function sourceReplayPoseWindow(seconds=18,{spaceId='conservatory'}={}){
+  const end=causalRecorder.elapsedMs;
+  return causalRecorder.poseWindow({fromMs:Math.max(0,end-seconds*1000),toMs:end,maxFrames:96,spaceId});
+}
+
+function commitSourceReplayManifest(manifest){
+  return saveCommit({sourceReplay:normalizeSourceReplayManifest(manifest,{runId:getSave()?.run?.id||''})}).sourceReplay;
+}
+
 function recordStorySpine(id,{verb='haunt',x=px,y=py,roomId=currentWorld(),radius=6,payload={},weight=1}={}){
   if(!CAUSAL_SPINE_IDS.includes(id))throw new Error(`unknown causal spine anchor: ${id}`);
   return causalRecorder.recordAnchor({
@@ -5679,6 +5735,10 @@ function ensureCausalCapture(){
 }
 
 function tickCausalCapture(dt){
+  // Source reprises render an old Conservatory pose while the live body stays
+  // frozen in Source space. Recording that borrowed camera as a new causal pose
+  // would let the recreation contaminate the night it is recreating.
+  if((scenes.top()?.id||'').startsWith('source-reprise:'))return;
   ensureCausalCapture();
   if(!causalRecorder.active||paused)return;
   const topId=scenes.top()?.id||'';
@@ -5754,6 +5814,7 @@ function loop(){
     const modalControllerActions = (() => {
       const id = modal?.id || '';
       if (id.startsWith('battle:')) return ['recorder'];
+      if (id.startsWith('source-reprise:')) return ['recorder'];
       if (id === 'chunk-surf') return ['light', 'recorder', 'interact'];
       if (id === 'hush-run') return ['quiet', 'light', 'bag', 'recorder', 'interact', 'playback', 'mark'];
       if (id === 'tower-tenor-performance') return ['mark', 'interact'];
@@ -6523,8 +6584,16 @@ function syncDoorDynamicProps({logicalX=px,logicalY=py,timeSec=performance.now()
   }
   if(PLANT.plantHissing()&&FP.zoneAt(px,py)===ZONE.plant){
     const valve=FP.toRuntimePoint({x:33,y:38.35}),at=FP.logicalToPhysical(valve.x,valve.y);
+    // THE NEEDLE SETTLES AS THE TREE SHUTS. It shivers hard against the stop
+    // with the header wide open and calms with every fitting that seats, so the
+    // gauge on the wall is telling the same truth as the surfaces beside the
+    // window — and telling it to a player who has no surfaces at all.
+    const openFraction=plantIsolationPresentation
+      ?1-plantSeatedCount(plantIsolationPresentation.tree)/PLANT_FITTING_IDS.length
+      :1;
+    const shiver=Math.max(.6,5*openFraction);
     doorDynamicCombined[count++]={
-      id:'plant-live-gauge-needle',mesh:`plant_gauge_needle_${Math.floor(timeSec*5)%3}`,
+      id:'plant-live-gauge-needle',mesh:`plant_gauge_needle_${Math.floor(timeSec*shiver)%3}`,
       x:at.x*CELL,y:at.y,z:at.z*CELL,yaw:Math.PI,noShadow:true,structural:false,
     };
   }
@@ -6594,6 +6663,8 @@ function syncArchitecturalLocalLights(group,{logicalX=px,logicalY=py}={}){
   const presentedLights=group==='ground'&&dockHauntingFrame&&dockHauntingLightPoint
     ?dockHauntingLights(dockHauntingFrame,dockHauntingLightPoint,ordinaryWithIncident)
     :ordinaryWithIncident;
+  // The plant header stages its own figure (see worldView().plantRear), so the
+  // emergency-light shadows stay out of the room rather than adding a second one.
   const apparitionsEnabled=!dockHauntingFrame&&!plantIsolationPresentation&&!settings.reduceDread&&effectsMode!=='off';
   if(!apparitionsEnabled)apparitionDirector.suspend();
   const apparitionStageKey=[
@@ -10318,6 +10389,7 @@ function openListen(room,{beginGuide=null}={}){
 // you to rolling. After that the game trusts you to listen and leave freely.
 let committedListen=false;
 let activeTakeOrdinal=0;
+let activeSourceReplayTake=null;
 
 // Leaving a room without rolling. You heard it; you decided not to keep it —
 // unless the game has decided for you that this one you finish.
@@ -10360,6 +10432,14 @@ function roll(){
     ? {...armedTakeContamination,circuits:[...armedTakeContamination.circuits]}
     : null;
   armedTakeContamination=null;
+  activeSourceReplayTake=beginSourceReplayTake(currentSourceReplayManifest({withFallback:false}),{
+    ordinal:takeSlot,
+    roomId:takeRoom||currentWorld(),
+    mark:{x:px,y:py},
+    place:takePlace||takePlaceAt(px,py),
+    startedAt:causalRecorder.elapsedMs,
+    approach:sourceReplayPoseWindow(18),
+  });
   emitProgress(EVENT_TYPES.TAKE_STARTED, { roomId:currentWorld() }, 'main.roll');
   committedListen=false;
   screamedThisTake=false;
@@ -10441,6 +10521,14 @@ function stopTake(){
       contaminated:!!contamination,
       circuits:contamination?.circuits||[],
     }, 'main.stopTake');
+    if(activeSourceReplayTake){
+      commitSourceReplayManifest(completeSourceReplayTake(
+        currentSourceReplayManifest({withFallback:false}),
+        activeSourceReplayTake,
+        {completedAt:causalRecorder.elapsedMs,contaminated:!!contamination},
+      ));
+    }
+    activeSourceReplayTake=null;
     PB.sealTake(room);              // choose the guest once. a tape does not re-roll.
     // A CLEAN MINUTE COMPOSES YOU, NOMINALLY.
     //
@@ -10459,6 +10547,7 @@ function stopTake(){
       : framedLine('recDone', LINES.recDone));
     himBeat();                      // he held a clean minute here too, and then he did not
   } else {
+    activeSourceReplayTake=null;
     PB.abortTake(room);
     // The tutorial level check is stopped deliberately at six seconds by the setup
     // sequence, not aborted by the player — the daydream owns the narration from
@@ -10718,6 +10807,16 @@ function resolveHardHushContact({attempt=null,reason='presence-contact',speak=tr
   {const actor=PRES.presenceState();causalRecorder.recordAnchor({verb:'contact',locus:{x:actor.x,y:actor.y,roomId:currentWorld(),radius:4},payload:{contactType:reason,position:{x:actor.x,y:actor.y}}});}
   const injuries=REC.injure();
   causalRecorder.noteInjuries(injuries);
+  commitSourceReplayManifest(noteSourceReplayContact(
+    currentSourceReplayManifest({withFallback:false}),
+    {
+      reason,
+      at:causalRecorder.elapsedMs,
+      injuryCount:injuries,
+      locus:{x:px,y:py},
+      frames:sourceReplayPoseWindow(12),
+    },
+  ));
   emitProgress(EVENT_TYPES.PLAYER_INJURED, { count:injuries }, 'main.onPresenceCatch');
   const hitRolling=REC.isRecording();
   if(hitRolling)playRecordingHushImpact();
@@ -11850,6 +11949,16 @@ function interact(){
       if(line)SPEECH.say({who:'you',text:line});
       return;
     }
+    if(hit.action==='plant-header-card'){
+      const line=inspectPropTracked(hit.id);
+      if(line)SPEECH.say({who:'you',text:line});
+      openClueWindows(compilePlantHeaderPlan({
+        order:PLANT_FITTINGS,trap:PLANT_TRAP.label,
+        seated:0,total:PLANT_FITTING_IDS.length,
+        reducedMotion:(getSave().settings?.shake||'full')!=='full',
+      }),{x:hit.rx??px,y:hit.ry??py,radius:7});
+      return;
+    }
     if(hit.action==='key-cabinet-board'){
       // THE THREE TAGS, TOGETHER. Reading them is a per-ring inspect and always
       // was; what the board adds is the comparison, which is the thing the room
@@ -12671,41 +12780,94 @@ function dropPlantHeavyWrench(){
 function makePlantIsolationScene(tool){
   const header=FP.toRuntimePoint({x:33,y:38.35},{center:false});
   const valveYaw=Math.atan2(header.x-px,-(header.y-py));
-  let turn=createPlantValveTurn(tool),stage='turning',dragging=false,lastPointerAngle=null;
-  let emptyElapsed=0,finished=false,wheelHit=null;
-  let closureSoundPlayed=false;
+  const resumed=PLANT.plantValveResume();
+  let tree=createPlantTree(tool);
+  if(resumed){
+    // Coming back to a repair you walked away from. The travel is restored
+    // through the module's own accessor so the seating rule stays in one place.
+    for(const id of PLANT_FITTING_IDS){
+      const at=Number(resumed.radians?.[id])||0;
+      if(at>0){tree=selectPlantFitting(tree,id).tree;tree=applyPlantRotation(tree,at);}
+    }
+    tree={...tree,vents:resumed.vents||0,inHand:PLANT_FITTING_IDS[0]};
+  }
+  // WHAT IS IN HAND, AND WHAT HAPPENS WHEN YOU LOOK AWAY FROM IT.
+  //
+  // Turning round is the whole beat of this scene, and it has to cost something
+  // or it is a free peek. So looking away takes the wrench off the tree: with
+  // nothing in hand every fitting backslides, including the seated ones. You
+  // want to look, and looking is paid for in the repair.
+  let held=tree.inHand;
+  let looking=false,seenRung=0,rearBody=null,lookLatched=false;
+  let stage='turning',finished=false,dragging=false,lastPointerAngle=null;
+  let wheelHit=null,sealedElapsed=0,ventFlash=0,shownSeated=-1;
+  // The card and the gauges, recompiled whenever a fitting seats so the needles
+  // actually fall. Display only, and nothing here is load-bearing: the card is a
+  // prop on the wall and the gauges are on the header.
+  const syncWindows=()=>{
+    const seated=plantSeatedCount(tree);
+    if(seated===shownSeated)return;
+    shownSeated=seated;
+    openClueWindows(compilePlantHeaderPlan({
+      order:PLANT_FITTINGS,trap:PLANT_TRAP.label,seated,total:PLANT_FITTING_IDS.length,
+      reducedMotion:(getSave().settings?.shake||'full')!=='full',
+    }),{x:px,y:py,radius:9});
+  };
   const publish=()=>{
-    plantIsolationPresentation={stage,turn:{...turn}};
+    plantIsolationPresentation={stage,tree,rung:seenRung,rearBody};
     updateAudio();
   };
+  const rearPoint=()=>{
+    const metres=plantApparitionDistance(seenRung);
+    const back={x:-Math.sin(valveYaw),y:Math.cos(valveYaw)};
+    return{x:px+back.x*D(metres),y:py+back.y*D(metres)};
+  };
+  const stepCloser=(steps=1)=>{
+    seenRung=advancePlantApparition(seenRung,steps);
+    rearBody=rearPoint();
+  };
+  const loudHeave=()=>{
+    // The Stillson is the loud repair, and the noise is the cost: every heave is
+    // a real event on the meter, and it is what brings the thing behind you on.
+    if(tool!==PLANT.PLANT_TOOL.STILLSON)return;
+    REC.emitNoise(.38,px,py,'the Stillson bites and the iron complains',{spoils:true,kind:'metal_impact',
+      sourceKind:'player',sourceId:'getin-heavy-stillson',playerGenerated:true,deliberate:true,audibleToHush:false});
+    stepCloser(1);
+  };
+  const vent=()=>{
+    const result=selectPlantFitting(tree,PLANT_TRAP.id);
+    tree=result.tree;ventFlash=1.4;
+    REC.emitNoise(.74,px,py,'the bypass lets go and the header dumps into the room',{spoils:true,kind:'steam_vent',
+      sourceKind:'player',sourceId:'plant-bypass',playerGenerated:true,deliberate:false,audibleToHush:false});
+    void CONTROLLER.pulseControllerHaptics?.({duration:210,strongMagnitude:.9,weakMagnitude:.5,mode:getSave().settings?.haptics||'full'});
+    stepCloser(1);
+    SPEECH.say({who:'you',text:'Wrong one. That is the bypass — the whole header is in the room now.'});
+    syncWindows();publish();
+  };
+  const pick=(id)=>{
+    if(finished||looking)return false;
+    if(id===PLANT_TRAP.id){vent();return true;}
+    const result=selectPlantFitting(tree,id);
+    tree=result.tree;held=tree.inHand;publish();return true;
+  };
   const addRotation=(radians)=>{
-    if(stage!=='turning'||finished)return false;
-    const next=applyPlantValveRotation(turn,radians);
-    if(next.radians===turn.radians)return false;
-    turn=next;publish();
-    if(turn.complete){
-      stage='turn-around';dragging=false;lastPointerAngle=null;
-      if(!closureSoundPlayed){
-        closureSoundPlayed=true;
-        if(tool===PLANT.PLANT_TOOL.SPANNER){
-          REC.emitNoise(.11,px,py,'the adjustable spanner clicks once',{spoils:false,kind:'tool_click',sourceKind:'player',sourceId:'plant-spanner',playerGenerated:true,deliberate:true,audibleToHush:false});
-        }else{
-          REC.emitNoise(.62,px,py,'the Stillson closes the heating header with a final clank',{spoils:false,kind:'metal_impact',sourceKind:'player',sourceId:'getin-heavy-stillson',playerGenerated:true,deliberate:true,audibleToHush:false});
-        }
-        void CONTROLLER.pulseControllerHaptics?.({duration:120,strongMagnitude:.72,weakMagnitude:.32,mode:getSave().settings?.haptics||'full'});
-      }
-      // A hauled Stillson may have staged a real Presence behind the player.
-      // Restore that tableau now, then suppress actor rendering until the empty
-      // rear view has landed.  The hiss itself never creates a replacement.
-      restorePlantHaulTableau();
-      publish();
+    if(finished||looking)return false;
+    const next=applyPlantRotation(tree,radians);
+    if(next===tree)return false;
+    const before=plantSeatedCount(tree);
+    tree=next;
+    if(plantSeatedCount(tree)>before){
+      fireCue('keys');
+      void CONTROLLER.pulseControllerHaptics?.({duration:90,strongMagnitude:.5,weakMagnitude:.28,mode:getSave().settings?.haptics||'full'});
     }
-    return true;
+    if(plantTreeComplete(tree)&&stage==='turning'){stage='sealed';sealedElapsed=0;rearBody=null;}
+    syncWindows();publish();return true;
   };
   const addStroke=()=>{
-    if(stage!=='turning'||finished)return false;
-    const next=applyPlantValveStroke(turn);
-    return addRotation(next.radians-turn.radians);
+    if(finished||looking)return false;
+    const moved=addRotation(Math.PI*(plantFitting(tree.inHand)?.stroke??.42));
+    if(moved)loudHeave();
+    return moved;
   };
   const finish=()=>{
     if(finished)return;finished=true;
@@ -12713,94 +12875,196 @@ function makePlantIsolationScene(tool){
     syncPlantIncidentProps();savePlantIncident();restorePlantHaulTableau();scenes.remove(scene);updateAudio();
     SPEECH.sayAll([
       {who:'direction',text:'The needle has fallen. The pipe is quiet.'},
-      {who:'direction',text:'He turns. Grating, pump, wet concrete. Nothing in the space behind him.'},
+      {who:'direction',text:'He turns. Grating, pump, wet concrete. The space behind him is empty, and it was not empty a moment ago.'},
       {who:'you',text:'That was not the pipe.'},
     ]);
   };
+  const leave=()=>{
+    if(finished)return;finished=true;
+    PLANT.suspendPlantIsolation(tree);savePlantIncident();
+    plantIsolationPresentation=null;scenes.remove(scene);updateAudio();
+    SPEECH.say({who:'you',text:'It can hiss a while longer. I am not standing here with my back to that.'});
+  };
   const scene={
     id:'plant-header-isolation',blocksInput:true,blocksWorld:true,suppressesHud:true,lookProfile:'explore',
-    get allowsLook(){return stage!=='turning';},
+    // LOOKING IS ALWAYS ALLOWED. It used to be refused until the valve was shut,
+    // which made the turn-around a cutscene. It is the player's move now, and it
+    // costs them grip on the tree while they make it.
+    allowsLook:true,
     enter(){
       resetMotionInput('plant-header-isolation',{stopRenderMove:true});
       R3.r3dSetLookAngles?.({yaw:valveYaw,pitch:-.03,immediate:true});
+      syncWindows();
       publish();
     },
     exit(){
       if(plantIsolationPresentation)plantIsolationPresentation=null;
+      closeClueWindows('plant-header');
       dragging=false;lastPointerAngle=null;updateAudio();
     },
     update(dt){
       if(finished)return;
-      if(stage==='turn-around'){
-        const yaw=R3.r3dLookAngles?.().yaw??valveYaw;
-        if(plantLookBackProgress(valveYaw,yaw)>=.72){stage='empty';emptyElapsed=0;publish();}
-      }else if(stage==='empty'){
-        emptyElapsed+=Math.max(0,Number(dt)||0);
-        if(emptyElapsed>=1.15)finish();
+      const elapsed=Math.max(0,Number(dt)||0);
+      ventFlash=Math.max(0,ventFlash-elapsed);
+      const yaw=R3.r3dLookAngles?.().yaw??valveYaw;
+      const away=plantLookBackProgress(valveYaw,yaw);
+      const wasLooking=looking;
+      looking=away>=.5;
+      if(looking&&!wasLooking){
+        dragging=false;lastPointerAngle=null;
+        tree={...tree,inHand:null};
+      }else if(!looking&&wasLooking){
+        tree={...tree,inHand:held};lookLatched=false;
       }
+      // THE RISING EDGE OF A REAL LOOK-BACK. It is there, and it is nearer than
+      // the last time, because you turned round again.
+      if(looking&&!lookLatched&&away>=.72){
+        lookLatched=true;
+        if(stage!=='sealed'){stepCloser(1);fireCue('deny');}
+      }
+      if(stage==='sealed'){
+        // Closed. It goes with the hiss — there is nothing behind you now.
+        rearBody=null;
+        sealedElapsed+=elapsed;
+        if(away>=.72&&sealedElapsed>=.55)finish();
+        else if(sealedElapsed>=6)finish();
+        publish();return;
+      }
+      const settled=settlePlantTree(tree,elapsed);
+      if(settled!==tree){tree=settled;syncWindows();publish();}
     },
     worldView(){
-      if(stage==='turning')return{x:px,y:py,yaw:valveYaw,pitch:-.03,floorH:floorHere(),suppressActors:false};
-      return{x:px,y:py,floorH:floorHere(),suppressActors:true};
+      // The body behind him is a rendering event and nothing else: no Presence,
+      // no belief, no contact. See plant-isolation.js's header.
+      return{x:px,y:py,floorH:floorHere(),suppressActors:false,
+        plantRear:rearBody?{...rearBody,rung:seenRung}:null};
     },
-    view(){return{stage,turn:{...turn},lookBack:plantLookBackProgress(valveYaw,R3.r3dLookAngles?.().yaw??valveYaw)};},
+    view(){return{stage,tree,rung:seenRung,looking};},
     key(e){
       const bare=!e.metaKey&&!e.ctrlKey&&!e.altKey;
+      // A SCENE THAT BLOCKS INPUT HAS TO BE LEAVEABLE. This used to return true
+      // for every key including Escape, so the only exit was finishing it.
+      if(bare&&(e.code==='Escape'||e.key==='Escape'||e.controllerAction==='cancel')){leave();return true;}
+      if(finished||stage==='sealed')return true;
       const action=e.code==='KeyE'||String(e.key||'').toLowerCase()==='e'||e.code==='Space'||e.key===' '
         ||e.code==='Enter'||e.key==='Enter'||e.controllerAction==='interact'||e.controllerAction==='confirm';
-      if(stage==='turning'&&bare&&action&&!e.repeat){
+      const digit=['Digit1','Digit2','Digit3','Digit4'].indexOf(e.code);
+      if(bare&&digit>=0){
+        const ids=[...PLANT_FITTING_IDS,PLANT_TRAP.id];
+        pick(ids[digit]);return true;
+      }
+      if(bare&&(e.code==='Tab'||e.controllerAction==='next')){
+        const at=PLANT_FITTING_IDS.indexOf(tree.inHand??held);
+        pick(PLANT_FITTING_IDS[(at+1)%PLANT_FITTING_IDS.length]);return true;
+      }
+      if(bare&&action&&!e.repeat){
         addStroke();
         if(e.controller)void CONTROLLER.pulseControllerHaptics?.({duration:46,strongMagnitude:.18,weakMagnitude:.3,mode:getSave().settings?.haptics||'full'});
       }
       return true;
     },
     pointer(e){
-      if(stage!=='turning')return false;
-      const inside=wheelHit&&Math.hypot((Number(e.cellX)-wheelHit.x)/wheelHit.rx,(Number(e.cellY)-wheelHit.y)/wheelHit.ry)<=1.25;
-      if(e.type==='pointerdown'&&inside){
-        dragging=true;
-        lastPointerAngle=Math.atan2((Number(e.cellY)-wheelHit.y)/wheelHit.ry,(Number(e.cellX)-wheelHit.x)/wheelHit.rx);
-        try{e.originalEvent?.target?.setPointerCapture?.(e.pointerId);}catch(_){ }
+      if(finished||looking||stage==='sealed')return false;
+      if(!wheelHit)return false;
+      const hit=(entry)=>Math.hypot((Number(e.cellX)-entry.x)/entry.rx,(Number(e.cellY)-entry.y)/entry.ry)<=1.15;
+      if(e.type==='pointerdown'){
+        const target=wheelHit.rows.find(hit);
+        if(target){
+          if(target.id===PLANT_TRAP.id){vent();return true;}
+          pick(target.id);
+          dragging=true;
+          lastPointerAngle=Math.atan2((Number(e.cellY)-target.y)/target.ry,(Number(e.cellX)-target.x)/target.rx);
+          try{e.originalEvent?.target?.setPointerCapture?.(e.pointerId);}catch(_){ }
+        }
         return true;
       }
       if(e.type==='pointermove'&&dragging){
-        const angle=Math.atan2((Number(e.cellY)-wheelHit.y)/wheelHit.ry,(Number(e.cellX)-wheelHit.x)/wheelHit.rx);
+        const target=wheelHit.rows.find((entry)=>entry.id===tree.inHand);
+        if(!target)return true;
+        const angle=Math.atan2((Number(e.cellY)-target.y)/target.ry,(Number(e.cellX)-target.x)/target.rx);
         const delta=Math.atan2(Math.sin(angle-lastPointerAngle),Math.cos(angle-lastPointerAngle));
         lastPointerAngle=angle;addRotation(delta);return true;
       }
-      if(e.type==='pointerup'){
-        if(dragging&&!turn.complete)addStroke();
-        dragging=false;lastPointerAngle=null;return true;
-      }
+      if(e.type==='pointerup'){dragging=false;lastPointerAngle=null;return true;}
       return true;
     },
     render(){
       const{cols,rows}=uiSize();
-      if(stage==='turn-around'){
-        const instruction='TURN AROUND';
-        drawVfdText(Math.max(2,Math.floor((cols-instruction.length)/2)),rows-3,instruction,{theme:'danger',scale:1.05,alpha:.96});
+      if(looking){
+        const line=stage==='sealed'?'':'YOU ARE NOT HOLDING THE TREE';
+        if(line)drawVfdText(Math.max(2,Math.floor((cols-line.length)/2)),rows-3,line,{theme:'danger',scale:1.05,alpha:.9});
+        wheelHit=null;
         return;
       }
-      if(stage==='empty')return;
-      const centerX=cols/2,centerY=Math.max(8,rows*.47),rx=Math.min(9,cols*.13),ry=Math.min(5.2,rows*.16);
-      wheelHit={x:centerX,y:centerY,rx,ry};
-      uiDraw(({ctx,dpr,cellW,cellH})=>{
-        const cx=centerX*cellW*dpr,cy=centerY*cellH*dpr;
-        const radius=Math.min(rx*cellW,ry*cellH)*dpr;
-        ctx.save();ctx.translate(cx,cy);ctx.rotate(turn.radians);
-        ctx.strokeStyle='rgba(188,49,39,.92)';ctx.lineCap='round';ctx.lineWidth=Math.max(3,7*dpr);
-        ctx.shadowColor='rgba(255,71,43,.55)';ctx.shadowBlur=8*dpr;
-        ctx.beginPath();ctx.arc(0,0,radius,0,Math.PI*2);ctx.stroke();
-        for(let arm=0;arm<5;arm++){
-          const a=arm*Math.PI*2/5;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(a)*radius*.91,Math.sin(a)*radius*.91);ctx.stroke();
-        }
-        ctx.fillStyle='rgba(28,24,20,.98)';ctx.beginPath();ctx.arc(0,0,radius*.16,0,Math.PI*2);ctx.fill();ctx.stroke();
-        ctx.restore();
-      });
       const title=tool===PLANT.PLANT_TOOL.STILLSON?'HEATING HEADER · STILLSON':'HEATING HEADER · ADJUSTABLE SPANNER';
-      uiText(Math.max(2,Math.floor((cols-title.length)/2)),3,title,'ui-amber');
-      drawLocationIndicator(Math.max(2,Math.floor(cols*.25)),rows-6,Math.max(12,Math.floor(cols*.5)),turn.progress,{theme:'amber'});
-      const prompt='DRAG CLOCKWISE · E / CONFIRM TO HEAVE';
+      // BELOW WHERE THE CLUE SURFACES SIT. In a native build they are outside
+      // the window entirely, but the in-frame simulation draws them across the
+      // top third — and the first time this was run headless the middle card
+      // was sitting on the back nut. The tree starts under them either way.
+      const headRow=Math.max(3,Math.floor(rows*.28));
+      uiText(Math.max(2,Math.floor((cols-title.length)/2)),headRow,title,'ui-amber');
+      if(stage==='sealed'){
+        const shut='HEADER SHUT · TURN AROUND';
+        drawVfdText(Math.max(2,Math.floor((cols-shut.length)/2)),rows-3,shut,{theme:'danger',scale:1.05,alpha:.96});
+        wheelHit=null;
+        return;
+      }
+      // THE TREE, TOP DOWN, THE WAY IT STANDS ON THE PIPE. Four fittings, and
+      // the fourth is on it because it is on the real one.
+      const entries=[...PLANT_FITTINGS,PLANT_TRAP];
+      const top=headRow+Math.max(3,Math.floor(rows*.08));
+      const gap=Math.max(3,Math.floor(rows*.115));
+      const cx=cols/2,rx=Math.min(6.5,cols*.085),ry=Math.min(2.6,rows*.075);
+      wheelHit={rows:entries.map((entry,i)=>({id:entry.id,x:cx,y:top+i*gap,rx,ry}))};
+      uiDraw(({ctx,dpr,cellW,cellH})=>{
+        // The stack itself, so the four read as one fitting on top of another.
+        ctx.save();
+        ctx.strokeStyle='rgba(120,104,84,.55)';ctx.lineWidth=Math.max(2,5*dpr);
+        ctx.beginPath();ctx.moveTo(cx*cellW*dpr,(top-1.4)*cellH*dpr);
+        ctx.lineTo(cx*cellW*dpr,(top+(entries.length-1)*gap+1.4)*cellH*dpr);ctx.stroke();
+        ctx.restore();
+        entries.forEach((entry,i)=>{
+          const seat=tree.fittings[entry.id];
+          const trap=entry.id===PLANT_TRAP.id;
+          const inHand=entry.id===tree.inHand;
+          const radius=Math.min(rx*cellW,ry*cellH)*dpr*(trap?.72:1);
+          const cxp=cx*cellW*dpr,cyp=(top+i*gap)*cellH*dpr;
+          ctx.save();ctx.translate(cxp,cyp);ctx.rotate(seat?.radians||0);
+          const shut=!!seat?.seated;
+          ctx.strokeStyle=trap?'rgba(96,86,74,.62)':shut?'rgba(126,196,122,.95)':inHand?'rgba(232,132,54,.96)':'rgba(150,96,58,.62)';
+          ctx.lineWidth=Math.max(2,(inHand?6.5:4.5)*dpr);ctx.lineCap='round';
+          if(inHand||shut){ctx.shadowColor=shut?'rgba(126,196,122,.5)':'rgba(255,140,60,.5)';ctx.shadowBlur=7*dpr;}
+          ctx.beginPath();ctx.arc(0,0,radius,0,Math.PI*2);ctx.stroke();
+          const arms=trap?2:entry.id==='handwheel'?5:6;
+          for(let arm=0;arm<arms;arm++){
+            const a=arm*Math.PI*2/arms;
+            ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(a)*radius*.9,Math.sin(a)*radius*.9);ctx.stroke();
+          }
+          ctx.restore();
+          // Travel, as an arc on the rim rather than a bar off to one side.
+          if(!trap&&seat){
+            ctx.save();ctx.translate(cxp,cyp);
+            ctx.strokeStyle=shut?'rgba(160,240,150,.95)':'rgba(240,190,90,.85)';
+            ctx.lineWidth=Math.max(2,3*dpr);
+            ctx.beginPath();ctx.arc(0,0,radius*1.32,-Math.PI/2,-Math.PI/2+Math.PI*2*Math.min(1,seat.progress));ctx.stroke();
+            ctx.restore();
+          }
+        });
+        if(ventFlash>0){
+          ctx.save();ctx.fillStyle=`rgba(210,70,42,${Math.min(.32,ventFlash*.22)})`;
+          ctx.fillRect(0,0,cols*cellW*dpr,rows*cellH*dpr);ctx.restore();
+        }
+      });
+      entries.forEach((entry,i)=>{
+        const seat=tree.fittings[entry.id];
+        const label=`${i+1} ${entry.label}`;
+        const cls=entry.id===PLANT_TRAP.id?'ui-secondary'
+          :seat?.seated?'ui-good':entry.id===tree.inHand?'ui-amber':'ui-primary';
+        uiText(Math.max(2,Math.floor(cx-rx-2-label.length)),top+i*gap,label,cls);
+      });
+      const seated=plantSeatedCount(tree);
+      uiText(Math.max(2,Math.floor(cols*.5)+8),top,`${seated}/${PLANT_FITTING_IDS.length} SHUT`,seated?'ui-good':'ui-secondary');
+      const prompt='1-4 SELECT · DRAG OR E TO HEAVE · LOOK BEHIND YOU AT YOUR COST';
       uiText(Math.max(2,Math.floor((cols-prompt.length)/2)),rows-3,prompt,'ui-primary');
     },
   };
@@ -13666,7 +13930,20 @@ function beginChunkSurf({ forced=false } = {}){
     payload:{kind:'space-transition',fromSpaceId:'conservatory',toSpaceId:'source-space',sourceState:state,entry:{...SOURCE_ENTRY}},
   });
   causalRecorder.recordEvent({actor:'hush',type:'space.enter',payload:{spaceId:'source-space',entry:{...SOURCE_ENTRY},sourceState:state}});
-  saveCommit({flags:getSave().flags,obj:OBJ.saveObjState(),chunkSurf:state,px:SOURCE_ENTRY.x,py:SOURCE_ENTRY.y,area:'source-space'});
+  const sourceReplay=noteSourceReplayEntry(currentSourceReplayManifest(),{
+    at:causalRecorder.elapsedMs,
+    locus:{x:SOURCE_ENTRY.x,y:SOURCE_ENTRY.y},
+    frames:sourceReplayPoseWindow(12),
+  });
+  saveCommit({
+    flags:getSave().flags,
+    obj:OBJ.saveObjState(),
+    chunkSurf:state,
+    sourceReplay,
+    px:SOURCE_ENTRY.x,
+    py:SOURCE_ENTRY.y,
+    area:'source-space',
+  });
   activateSourceSpace(state,{position:SOURCE_ENTRY});
   return true;
 }
@@ -13921,6 +14198,10 @@ function openHorizonBustChoice(lastLine=null){
 function openHorizonTransport(){
   const rt=chunkSurfRuntime;
   if(!rt?.horizonTransport)return false;
+  // A machine that is already running is not a machine you thread again. The
+  // pad guards this too; this is the second door, for any path that reaches
+  // here another way.
+  if(rt.horizonTransport().threaded)return false;
   const dials=rt.horizonTransport();
   const options=rt.horizonTransportOptions();
   const readings=rt.horizonTransportReadings();
@@ -13979,7 +14260,7 @@ function openHorizonTransport(){
         if(completed?.handled)enterHorizon(completed.reason);
         return;
       }
-      if(reopen)setTimeout(()=>openHorizonTransport(),0);
+      if(reopen&&!rt.horizonTransport().threaded)setTimeout(()=>openHorizonTransport(),0);
     },
   });
   openClueWindows(compileHorizonSlatePlan({
@@ -14120,6 +14401,51 @@ function endHorizonScore(){
   horizonScore=null;
 }
 
+function sourceReplayMovementInterlude({id,index,checkpoint,scheduleReturn,resume}={}){
+  const manifest=currentSourceReplayManifest();
+  if(manifest.encounter.completed.includes(id))return false;
+  const plan=buildSourceReprisePlan(manifest)[id];
+  if(!plan)return false;
+
+  // Save the combat body before Source opens the old room. A quit during the
+  // walk restarts this reprise from its first seam; it cannot reset health,
+  // resources, channel commitments, or earlier movements.
+  commitSourceReplayManifest(checkpointSourceReprise(manifest,{
+    id,movementIndex:index,continuation:checkpoint,completed:false,
+  }));
+
+  let reprise=null;
+  reprise=makeSourceRepriseScene({
+    plan,
+    roomLabel,
+    onDryClick:()=>CUES.playCue(CUES.CUE.recorder,{gain:.08,rate:.42}),
+    onSeam:({index})=>{
+      // It does not cut cleanly between remembered places. Source has only a
+      // sparse pose block and recompiles the next room in public: the sound
+      // catches, the raster loses lock, then the bad copy carries on.
+      CUES.playCue(CUES.CUE.rewind,{gain:.10,rate:.62-Math.min(.18,index*.04),lowpassHz:720});
+      CR.fx.glitch(.18,110);
+    },
+    onCommit:()=>{
+      const latest=currentSourceReplayManifest();
+      // This write is the boundary. The scare is presentation after the fact;
+      // reload must skip it and put the player on the movement it opened.
+      commitSourceReplayManifest(checkpointSourceReprise(latest,{
+        id,movementIndex:index,continuation:checkpoint,completed:true,
+      }));
+      scheduleReturn?.();
+      CUES.playCue(CUES.CUE.rewind,{gain:.24,rate:.38,lowpassHz:880});
+      CR.fx.glitch(.42,240);
+    },
+    onDone:()=>{
+      scenes.remove(reprise.id);
+      resume?.();
+    },
+  });
+  scenes.push(reprise);
+  return true;
+}
+
 function tickSourceSpace(dt){
   if(!usingSourceSpace()){
     chuteRide=null;
@@ -14251,8 +14577,20 @@ function tickSourceSpace(dt){
     if(request?.adapter==='combat-v1'){
       sourceFinalCombatOpen=true;
       PRES.despawn();
-      openBattle(applyRigAdvantage(sourceCombatBattle({bodyReturn:request.bodyReturnAssist}),{hasRig:request.rigAvailable}),{
-        source:{rescueEligible:request.rescueEligible},
+      const replayManifest=currentSourceReplayManifest();
+      const replayCheckpoint=replayManifest.encounter;
+      const resumeSource=replayCheckpoint.continuation?.source||null;
+      const battle=applyRigAdvantage(sourceCombatBattle({bodyReturn:request.bodyReturnAssist}),{hasRig:request.rigAvailable});
+      const battleOptions={
+        source:{
+          rescueEligible:request.rescueEligible,
+          ...(resumeSource?{armed:resumeSource.armed,channels:resumeSource.channels}:{}),
+        },
+        continuation:replayCheckpoint.continuation,
+        startingMovementIndex:replayCheckpoint.movementIndex,
+        onMovementInterlude:sourceReplayMovementInterlude,
+        skipOpening:!!replayCheckpoint.continuation,
+        skipEncounterStart:!!replayCheckpoint.continuation,
         onWin:(metrics={})=>{
           sourceFinalCombatOpen=false;
           const resolved=chunkSurfRuntime?.resolveFinalEncounter({
@@ -14274,7 +14612,9 @@ function tickSourceSpace(dt){
           PRES.despawn();
         },
         onAbort:()=>{sourceFinalCombatOpen=false;sourceFinalCombatRetryAt=performance.now()+1000;},
-      });
+      };
+      if(battleOptions.skipEncounterStart)pushCombat(battle,battleOptions);
+      else openBattle(battle,battleOptions);
     }
   }
   syncSourceRender();
@@ -16299,7 +16639,7 @@ function playCombatImpact({dealt=0,received=0,perfect=false,transition=false}={}
 }
 
 function openBattle(battle, opts={}){
-  const { bench=false }=opts;
+  const { bench=false,skipEncounterStart=false }=opts;
   // EVERY FIGHT OPENS WITH THE TRANSITION.
   //
   // This used to run once and then never again, gated on `loadout.introShown`,
@@ -16310,7 +16650,7 @@ function openBattle(battle, opts={}){
   //
   // The bench drill stays exempt: it runs on fixed house gear, so there is no
   // loadout to pick and no ambush to announce.
-  if(!bench){
+  if(!bench&&!skipEncounterStart){
     ensureCtx();
     const teach=!flagTest('loadout.introShown');
     return scenes.push(makeEncounterStartScene({
@@ -16428,7 +16768,11 @@ function carryComposureHome(metrics,bench=false){
   return true;
 }
 
-function pushCombat(battle, { onWin, onLose, onAbort, source=null, director=null, continuation=null, bench=false, encounterId=null, defeatScreen=false }={}){
+function pushCombat(battle, {
+  onWin,onLose,onAbort,source=null,director=null,continuation=null,
+  startingMovementIndex=0,onMovementInterlude=null,skipOpening=false,
+  bench=false,encounterId=null,defeatScreen=false,
+}={}){
   ensureCtx();
   // Read the room NOW. By the time the screen plays he has been moved, and the
   // whole point of the line is that it names where he actually was.
@@ -16505,6 +16849,9 @@ function pushCombat(battle, { onWin, onLose, onAbort, source=null, director=null
     replay: createReplayService(`battle:${battle.id}`),
     carriedRead: carriedEnemyRead,
     continuation,
+    startingMovementIndex,
+    onMovementInterlude,
+    skipOpening,
     loadout: {
       // The bench drill runs on house gear: torch and recorder patched in,
       // full battery, no injuries — the real bag stays untouched.
@@ -16623,6 +16970,16 @@ function applyNatatoriumBattleDefeat(){
 function openEncounterBattle(id,battle,{onWin,onLose}={}){
   if(activeBattleId||ENCOUNTERS.encounterCleared(id))return false;
   activeBattleId=id;
+  const replayBattleStart={
+    id,
+    at:causalRecorder.elapsedMs,
+    locus:{x:px,y:py},
+    frames:sourceReplayPoseWindow(12),
+  };
+  const rememberReplayBattle=(result)=>commitSourceReplayManifest(noteSourceReplayBattle(
+    currentSourceReplayManifest({withFallback:false}),
+    {...replayBattleStart,result,at:causalRecorder.elapsedMs},
+  ));
   // Where he is standing when the fight opens, kept for the line he says when
   // he comes to somewhere else.
   const defeatRoom=currentWorld();
@@ -16632,6 +16989,7 @@ function openEncounterBattle(id,battle,{onWin,onLose}={}){
     // five that get a death screen. The terminal fights end the night instead.
     defeatScreen:true,
     onWin:(metrics={})=>{
+      rememberReplayBattle('win');
       emitProgress(EVENT_TYPES.BATTLE_FINISHED, {
         id, result:'win', attempts:Math.max(1,Number(metrics.attempts)||1), firstPass:Number(metrics.missedCounters??0)===0,
         turns:Number(metrics.turns)||0,damageTaken:Number(metrics.damageTaken)||0,perfectCounters:Number(metrics.perfectCounters)||0,
@@ -16645,6 +17003,7 @@ function openEncounterBattle(id,battle,{onWin,onLose}={}){
       if((committed.combatBuild?.unspent||0)>unspentBefore)openCombatCalibration();
     },
     onLose:(metrics={})=>{
+      rememberReplayBattle('lose');
       // A LOST FIGHT MARKS YOU, ONCE.
       //
       // Losing used to cost nothing at all: the encounter simply stayed
@@ -16683,6 +17042,7 @@ function openEncounterBattle(id,battle,{onWin,onLose}={}){
       onLose?.(metrics);
     },
     onAbort:()=>{
+      rememberReplayBattle('abort');
       emitProgress(EVENT_TYPES.BATTLE_FINISHED, { id, result:'abort', attempts:1, firstPass:false }, 'main.openEncounterBattle');
       activeBattleId=null;
     },
@@ -17071,8 +17431,12 @@ function presentEndingFinalHold(manifest,onDone){
     // rows-3 — and nothing else in the game was that bare. But it holds ON the
     // ending's last view (blocksWorld:false, worldView above), so a full sheet
     // would cover the very image it exists to hold. It gets the label instead:
-    // a small slip laid in the corner of the picture, the way a file's cover
-    // card sits on the photograph it refers to.
+    // a lit plate laid in the corner of the picture, the way a slate sits in
+    // the frame it belongs to.
+    //
+    // A first pass drew this on cream stock and it was too fake — the game owns
+    // real rasterised paper and a drawn imitation cannot stand beside it. This
+    // is glass, like everything else the player has looked through all night.
     //
     // The classification is authored per ending in RETURN_DEFS and has never
     // once been printed anywhere the player could see it.
@@ -17084,14 +17448,16 @@ function presentEndingFinalHold(manifest,onDone){
       const w=Math.min(46,Math.max(24,cols-8));
       const h=7;
       const x=3,y=rows-h-2;
-      const slip=drawPaperPanel(x,y,w,h);
-      uiText(slip.x,slip.y,fitText(title,slip.w),'paper-ink');
-      drawFormRule(slip.x,slip.y,slip.w,{alpha:.34});
-      uiText(slip.x,slip.y+2,classification,'paper-ink',.6);
-      const ref=`W.E./${String(getSave()?.run?.id||'4417').slice(-4)}`;
-      uiText(slip.x+slip.w-ref.length,slip.y+2,ref,'paper-ink',.6);
-      // The image slug is the caption, wrapped rather than cut mid-word.
-      uiWrap(image,slip.w).slice(0,2).forEach((line,i)=>uiText(slip.x,slip.y+4+i,line,'paper-ink',.52));
+      // Held over the ending's own last view, so the plate is a scrim rather
+      // than a panel: it must not take the picture it exists to hold.
+      uiFill(x,y,w,h,'rgba(4,5,6,.78)');
+      uiLine(x,y,x+w-1,y,UI_COLOR.amber,.62);
+      uiLine(x,y+h-1,x+w-1,y+h-1,UI_COLOR.frame,.34);
+      drawVfdText(x+1,y+1,fitText(title,w-2),{color:UI_COLOR.amber,max:w-2});
+      uiText(x+1,y+4,classification,'ui-label',.72);
+      const ref=String(returnDefinition(manifest?.id)?.family||'').toUpperCase();
+      if(ref)uiText(x+w-1-ref.length,y+4,ref,'ui-label',.55);
+      uiWrap(image,w-2).slice(0,1).forEach((line,i)=>uiText(x+1,y+5+i,line,'ui-secondary',.62));
     },
   };
   scenes.push(scene);
@@ -17676,7 +18042,23 @@ function recordableRoomAt(x,y){ return usingSpecialSpace()?null:usingPlan() ? (Z
 const SPRUNG_ZONES=new Set([ZONE.danceStudio, ZONE.studio]);
 function sprungFloorAt(x,y){
   if(!usingPlan()||usingSpecialSpace()) return 1;
-  return SPRUNG_ZONES.has(FP.zoneAt(x,y)) ? NOISE.sprung : 1;
+  const sprung=SPRUNG_ZONES.has(FP.zoneAt(x,y)) ? NOISE.sprung : 1;
+  // AND WHATEVER IS LAID OVER IT. Multiplying rather than overriding is the
+  // whole point of the drugget in the dance wing: the maple is the one floor
+  // worth lifting, so it is the one the clearance crew sheeted, and the worst
+  // room in the building ends up merely ORDINARY under it (1.55 -> 1.06) rather
+  // than amnestied. `softFloor` is 0..1 and returns 0 where there is nothing, so
+  // a bare cell costs nothing to test. The full ladder is in config.js.
+  const soft=PROPS.softFloorPropAt(x,y);
+  return soft>0 ? sprung*(1-soft*(1-NOISE.carpet)) : sprung;
+}
+
+// The same fact, for the ear rather than the simulation: what YOU hear standing
+// on cloth. footstep() has taken a muffle since the horizon needed one; this is
+// the first surface in the building that asks for it.
+function softFloorMuffle(x,y){
+  if(!usingPlan()||usingSpecialSpace()) return 0;
+  return Math.min(.7, PROPS.softFloorPropAt(x,y)*.7);
 }
 
 // WHERE IN THE ROOM. Four of the five takes are rooms with one floor in them, so
@@ -17851,6 +18233,12 @@ progressionEvents.on(EVENT_TYPES.TAKE_COMPLETED,()=>{
 progressionEvents.on(EVENT_TYPES.TAKE_SPOILED,()=>{
   commitPsychObservation({kind:'take',signals:{vigilance:.74,exposure:.7,composure:.38},weight:.55});
   applyCurrentRunDifficulty();
+  // A TAKE THAT DID NOT SURVIVE IS A READ THAT FAILED.
+  //
+  // Not a screen of its own — one pane of whatever composition is already up
+  // drops out of its footage and into the bad-sector readout. Silent when
+  // nothing is showing, which is most of the time.
+  void Promise.resolve(windowChoreography?.intrudeSector?.()).catch(()=>null);
 });
 progressionEvents.on(EVENT_TYPES.BATTLE_FINISHED,(event)=>{
   const won=event.payload?.result==='win';
@@ -17935,8 +18323,10 @@ function currentPlantPipeFrame(){
   const physical=FP.logicalToPhysical(px,py);
   const base=plantPipeAt({x:physical.x*CELL,z:physical.z*CELL});
   if(!plantIsolationPresentation)return base;
-  return plantValveAudioFrame(base,plantIsolationPresentation.turn,{
-    rearActive:plantIsolationPresentation.stage!=='empty',
+  return plantValveAudioFrame(base,plantIsolationPresentation.tree,{
+    // The false source stops with the pipe: when the header is shut there is
+    // nothing behind him and nothing left to hear.
+    rearActive:plantIsolationPresentation.stage!=='sealed',
   });
 }
 
@@ -19627,6 +20017,12 @@ function godTabs(){
       // canvas screen, then the wake and the line that names where he was.
       // Plays with window choreography in whatever state the settings have it,
       // which is the point — the canvas half has to read on its own.
+      {id:'sector-screen',label:"CAN'T READ SECTOR",value:'[FIRE]',closeMenu:true,activate:()=>{
+        void Promise.resolve(windowChoreography?.beginSectorError?.()).catch(()=>null);
+      }},
+      {id:'sector-intrude',label:'SECTOR INTRUSION',value:'[FIRE]',activate:()=>{
+        void Promise.resolve(windowChoreography?.intrudeSector?.()).catch(()=>null);
+      }},
       {id:'death-screen',label:'DEATH SCREEN',value:'[FIRE]',closeMenu:true,activate:()=>{
         const fellIn=currentWorld();
         void playDefeatScreen(fellIn).then(()=>wakeAfterDefeat(fellIn));
@@ -20208,7 +20604,20 @@ function returnToTitle(){
 function showReturnReport(summary){
   if(!summary){ returnToTitle(); return; }
   const filedSummary=getMeta().returns?.records?.[summary.id]||summary;
+  // THE ACCOUNT GOES OUT ONTO THE SURFACES WHILE THE TRANSPORT READS IT BACK.
+  //
+  // Each section is rasterised here (returnSectionImages) because the panes have
+  // no glyph path — see the note on that function. With choreography off this is
+  // not a dead end: createSimulation renders the SAME plan as panes inside the
+  // game window, by explicit design, so the return still assembles either way.
+  let returnPanes=false;
+  void Promise.resolve(windowChoreography?.beginReturn?.(returnSectionImages(filedSummary)))
+    .then((result)=>{ returnPanes=!!result?.plan; })
+    .catch(()=>{ returnPanes=false; });
   scenes.push(makeReturnReportScene({
+    // The window prints the sections only when the surfaces did not take them.
+    sectionsOnPanes:()=>returnPanes,
+    onAccountRead:()=>{ returnPanes=false; void Promise.resolve(windowChoreography?.finishReturn?.()).catch(()=>null); },
     summary:filedSummary,
     onReopen:()=>{ returnToTitle(); beginNewGameFlow(); },
     onTransferRoom:openTransferRoom,
@@ -21126,6 +21535,8 @@ function installProbe(){
       const sheet=sheetMusicById(id||REC.nextSheet()||SHEET_MUSIC[0].id);
       return {id:sheet?.id||null,seconds:playSheetMusic(sheet,{level:1})};
     },
+    sectorScreen:()=>windowChoreography?.beginSectorError?.(),
+    sectorIntrude:()=>windowChoreography?.intrudeSector?.(),
     deathScreen:()=>{ const fellIn=currentWorld(); return playDefeatScreen(fellIn).then(()=>({fellIn})); },
     wakeAfterDefeat:()=>{ const fellIn=currentWorld(); wakeAfterDefeat(fellIn); return fellIn; },
     world:()=>currentWorld(),
@@ -21202,6 +21613,64 @@ function installProbe(){
       exitSnapshot:sourceExitSnapshot,
     }),
     sourceHaystack:()=>chunkSurfRuntime?.probe?.().haystack||null,
+    // A SHEET, OPEN, from the outside. The reading view is the thing the paper
+    // work is judged on and it is four keypresses deep through the bag.
+    readSheet:(id='work-order')=>{
+      const doc=id==='work-order'?WORK_ORDER:(PAGES?.find?.((d)=>d.id===id)||{id});
+      DOC.readDocument(doc);
+      return scenes.top()?.id||null;
+    },
+    sheetView:()=>scenes.top()?.view?.()||null,
+    // THE HEATING HEADER, from the outside. Driving the tree by keystroke is a
+    // test of the overlay; this is a test of the repair.
+    plantHeader:()=>({
+      incident:PLANT.plantIncidentState(),
+      hissing:PLANT.plantHissing(),
+      scene:plantIsolationPresentation?{
+        stage:plantIsolationPresentation.stage,
+        rung:plantIsolationPresentation.rung,
+        rear:!!plantIsolationPresentation.rearBody,
+        seated:plantSeatedCount(plantIsolationPresentation.tree),
+        inHand:plantIsolationPresentation.tree?.inHand??null,
+        fittings:Object.fromEntries(PLANT_FITTING_IDS.map((id)=>[id,
+          Number((plantIsolationPresentation.tree.fittings[id].progress||0).toFixed(3))])),
+      }:null,
+      clueWindows:!!clueWindowCue,
+    }),
+    plantArm:(tool='spanner')=>{
+      // Put the incident where the microgame starts: hissing, with a tool.
+      PLANT.loadPlantIncident({phase:'hissing',triggerTakeOrdinal:2,spannerOwned:tool==='spanner',
+        heavyMode:tool==='stillson'?'dragging':'rack',heavyPosition:tool==='stillson'?{x:66,y:75}:null});
+      savePlantIncident();syncPlantIncidentProps();updateAudio();
+      return PLANT.plantIncidentState();
+    },
+    plantOpen:(tool='spanner')=>{
+      if(!PLANT.beginPlantIsolation(tool,performance.now()))return null;
+      savePlantIncident();scenes.push(makePlantIsolationScene(tool));
+      return window.__probe.plantHeader();
+    },
+    plantPick:(id)=>{const s=scenes.top();s?.key?.({code:{'back-nut':'Digit1',gland:'Digit2',handwheel:'Digit3','bypass-cock':'Digit4'}[id]||'Digit1',preventDefault(){}});return window.__probe.plantHeader();},
+    plantHeave:()=>{const s=scenes.top();s?.key?.({code:'KeyE',preventDefault(){}});return window.__probe.plantHeader();},
+    plantTick:(dt=0.35)=>{const s=scenes.top();s?.update?.(dt);return window.__probe.plantHeader();},
+    // Turn round, which is the beat the whole scene is built on and the one
+    // thing a headless walk cannot do with a mouse.
+    plantTurn:(delta=Math.PI)=>{
+      const yaw=(R3.r3dLookAngles?.().yaw??0)+Number(delta||0);
+      R3.r3dSetLookAngles?.({yaw,immediate:true});
+      const s=scenes.top();s?.update?.(0.2);
+      return window.__probe.plant();
+    },
+    // THE MACHINE AT THE EDGE OF THE FIELD, from the outside. Driving the slate
+    // by keystroke is not a test of the puzzle, it is a test of the dialogue
+    // widget; this is the puzzle.
+    horizonTransport:()=>({
+      dials:chunkSurfRuntime?.horizonTransport?.()||null,
+      status:chunkSurfRuntime?.horizonTransportStatus?.()||null,
+      readings:chunkSurfRuntime?.horizonTransportReadings?.()||null,
+      clueWindows:!!clueWindowCue,
+    }),
+    horizonTransportSet:(dial,value)=>chunkSurfRuntime?.setHorizonTransportDial?.(dial,value)||null,
+    horizonTransportRun:()=>chunkSurfRuntime?.runHorizonTransport?.()||null,
     chunkSurfStart:()=>beginChunkSurf({forced:true}),
     sourcePreset:(preset=CHUNK_SURF_GOD_PRESET.HALL_ENTRY)=>{ godEnterSourcePreset(preset); return window.__probe.chunkSurf(); },
     // A warp that STAYS in Source. warpRuntime deliberately exits it — a
@@ -22580,9 +23049,22 @@ function render3d(){
       glow:recordingFalseHush.glow,mode:recordingFalseHushVisual?.mode||recordingFalseHush.mode,
       hallucination:true,kind:recordingFalseHush.kind}
     : null;
+  // THE THING BEHIND HIM AT THE HEADER.
+  //
+  // A rendering event and nothing else — the same standing as the recording
+  // hallucination below it, and for the same reason: plant-isolation.js is
+  // forbidden to create a Presence, a belief or a contact, so the figure the
+  // player turns round and finds is drawn, never simulated. It cannot move on
+  // its own, it cannot reach him, and it goes out with the hiss.
+  const plantRear=worldView?.plantRear;
+  const plantRearBody=plantRear&&!worldView?.suppressActors&&!usingSpecialSpace()&&storyMode
+    ? {...mapPoint({x:plantRear.x,y:plantRear.y}),
+      strength:.72+Math.min(1,(Number(plantRear.rung)||0)/4)*.28,
+      radiusM:5.6,hallucination:true,kind:'plant-header'}
+    : null;
   const renderedHushSecondary=!worldView?.suppressActors&&sourceBracketBody?.front?.visible
     ? {...mapPoint({x:sourceBracketBody.front.x,y:sourceBracketBody.front.y}),strength:sourceBracketBody.front.strength,radiusM:5.2}
-    : recordingFalseHushBody;
+    : (plantRearBody||recordingFalseHushBody);
   const hushSensory=String(worldView?.sensoryProfile||'').startsWith('hush') || worldView?.sensoryProfile==='borrow';
   const baseTorchLook=resolveTorchLook({
     on:hushSensory?false:storyMode?REC.lightOn():true,

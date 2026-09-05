@@ -10,7 +10,7 @@
 
 import * as scenes from './scenes.js';
 import { uiSize, uiFill, uiText } from '../render/ui.js';
-import { drawMachinePanel, drawVfdText } from '../render/presentation.js';
+import { PANEL, drawMachinePanel, drawVfdText } from '../render/presentation.js';
 import {
   drawTranscript,
   drawTranscriptChoices,
@@ -110,11 +110,30 @@ export function makeColdOpenScene({
         // header + fixed art/text band + bottom pad. Sizing to that removes the
         // dead space that used to sit under the image/text group when the panel
         // was stretched to a share of the screen instead.
+        // THE PANEL IS THE HEIGHT OF WHAT IS IN IT, WITH OR WITHOUT A PLATE.
+        //
+        // The art branch was already sized to its content — see the note above —
+        // and the branch without one was still taking a share of the SCREEN:
+        // 64% of the rows whether it held eight lines or two. That is what left
+        // the coda as three lines of transcript at the top of a tall pane of
+        // empty glass, and it is the single reason those screens read as a
+        // content card floating in whitespace.
+        //
+        // Measured the same way the drawing measures it: contentW is derived
+        // from the panel width, which is already fixed, so the transcript can be
+        // laid out before the bezel is committed to a height.
+        const measureW = Math.max(8, w - PANEL.padX * 2 - 4);
+        const measured = layoutTranscript(v, { width: measureW, maxRows: rows });
+        const measuredChoices = layoutTranscriptChoices(v, measureW);
+        const contentRows = measured.height
+          + (measuredChoices.height ? measuredChoices.height + 1 : 0);
         const panelH = art
           ? Math.min(rows - 4, fixedArtPanelH)
           : Math.min(
               rows - 4,
-              Math.max(18, Math.min(30, Math.floor(rows * 0.64))),
+              // Header, the content, and the bezel's own furniture. Floored so a
+              // single line still gets a panel rather than a slot.
+              Math.max(12, contentRows + PANEL.headerRows + PANEL.footerRows + 5),
             );
 
         const top = Math.max(

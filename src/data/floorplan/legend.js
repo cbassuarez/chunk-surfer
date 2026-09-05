@@ -229,8 +229,24 @@ export function materialForZone(zone) {
 export const GLYPHS = {
   ' ': null,                                                   // outside the building
   '#': { solid: true },                                        // wall / rock
-  '.': { floor: 0.0, ceil: 4.5, mutable: true, material: 'serviceConcrete' }, // corridor (may change)
-  ',': { floor: 0.0, ceil: 4.5, material: 'serviceConcrete' },                // corridor, fixed
+  // CORRIDORS WERE TALLER THAN THE ROOMS THEY SERVE.
+  //
+  // At 4.5m these were canyons: the ground spine is 3m wide, so the section ran
+  // 1.5:1 in favour of height, and the eye reads that as a tube rather than as a
+  // route. Worse, the door glyph is 3.4m, so every opening was a hole with 1.1m
+  // of blank wall above it — which is the bare band that made these spaces feel
+  // unfinished no matter what was hung on them.
+  //
+  // 3.5 puts the ceiling just clear of the door head. Doors now nearly fill the
+  // wall, the blank band goes, and the rooms either side become the tall spaces,
+  // which is the whole job of a corridor. The basement's ';' stays at 2.45 and
+  // the stair at 3.0: the point is a hierarchy, not one flat number.
+  //
+  // Ceilings are per-cell and raymarched from the material texture's G channel,
+  // so this changes no wall run and no baked skirting — wallRunsDigest carries
+  // floor, never ceil.
+  '.': { floor: 0.0, ceil: 3.5, mutable: true, material: 'serviceConcrete' }, // corridor (may change)
+  ',': { floor: 0.0, ceil: 3.5, material: 'serviceConcrete' },                // corridor, fixed
   '+': { floor: 0.0, ceil: 3.4, door: true, material: 'doorGlassDuct' },       // door centre; compiler widens aperture
   'x': { floor: 0.0, ceil: 3.4, door: true, bricked: true, material: 'doorGlassDuct' },
   '=': { floor: 0.0, ceil: 2.2, material: 'doorGlassDuct' },                  // low duct

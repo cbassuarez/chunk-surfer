@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   HORIZON_TRANSPORT_DIALS,
+  HORIZON_TRANSPORT_LABELS,
   HORIZON_TRANSPORT_OPTIONS,
   freshHorizonTransport,
   horizonTransportReadings,
@@ -91,12 +92,15 @@ test('a wrong setting refuses, says how many, and never says which', () => {
   assert.equal(wrongOne.wrongCount, 1);
   assert.equal(wrongOne.state.threaded, false);
   assert.equal(wrongOne.state.attempts, 1, 'a refusal is still an attempt');
+  // The leak to guard against is naming a DIAL or a STOP. "The reels turn a
+  // quarter and stop" is the machine turning over and is not a hint.
   for (const dial of HORIZON_TRANSPORT_DIALS) {
-    assert.equal(wrongOne.text.includes(HORIZON_TRANSPORT_OPTIONS[dial][0]), false,
-      'the refusal never names a stop');
+    for (const option of HORIZON_TRANSPORT_OPTIONS[dial]) {
+      assert.equal(wrongOne.text.includes(option), false, `the refusal never names the stop "${option}"`);
+    }
+    assert.equal(wrongOne.text.toLowerCase().includes(HORIZON_TRANSPORT_LABELS[dial].toLowerCase()), false,
+      `nor the dial "${HORIZON_TRANSPORT_LABELS[dial]}" — that would be the solution with extra steps`);
   }
-  assert.equal(/length|centre|damage|reel|gate|log/i.test(wrongOne.text), false,
-    'nor which dial is wrong — that would be the solution with extra steps');
 
   const wrongTwo = threadHorizonTransport({ ...right, length: '6:47', centre: 'CENTRED' });
   assert.equal(wrongTwo.wrongCount, 2);

@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "note": "Vendored so every machine bakes identical sheets. Resolved by PATH in both scripts/build-paper-assets.mjs and scripts/paper/rasterize_svg.py; fc-match is never consulted, because it always returns SOMETHING and a substituted face hashes as a perfectly valid fingerprint.",
+  "license": "AGPL-3.0 with the font embedding exception (see LICENSE.urw-base35.txt, COPYING.urw-base35.txt)",
+  "source": "https://github.com/ArtifexSoftware/urw-base35-fonts",
+  "families": {
+    "serif": {
+      "name": "Nimbus Roman",
+      "faces": {
+        "regular": {
+          "file": "NimbusRoman-Regular.otf",
+          "sha256": "fd41669443616a7ae890c42e53a58f47fa24a940fd1e367acaff665cf5b6e9d8"
+        },
+        "bold": {
+          "file": "NimbusRoman-Bold.otf",
+          "sha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e"
+        },
+        "italic": {
+          "file": "NimbusRoman-Italic.otf",
+          "sha256": "b7c424e6cb79baddfcdcd9a9d87f9fc4fdd06f0e5160066e2b2e47bcd647c7b9"
+        },
+        "boldItalic": {
+          "file": "NimbusRoman-BoldItalic.otf",
+          "sha256": "c84bcb17ab4ee54f16dadad6a3b0b2df37a24f9fc812897c4a59eeca785a5dec"
+        }
+      }
+    },
+    "mono": {
+      "name": "Nimbus Mono PS",
+      "faces": {
+        "regular": {
+          "file": "NimbusMonoPS-Regular.otf",
+          "sha256": "4f225ca8e13acb16f733ce741693105e527d5f7a5443901b9ecc190fca4e149b"
+        },
+        "bold": {
+          "file": "NimbusMonoPS-Bold.otf",
+          "sha256": "f036d05d2168c7f71cb11d31e81d11133f3d09711e24ebde19d08a24842384d5"
+        },
+        "italic": {
+          "file": "NimbusMonoPS-Italic.otf",
+          "sha256": "7f1f85498027e07befadd3c7592518909b9e8c7f96ee5615e0b21be0c399c4b4"
+        },
+        "boldItalic": {
+          "file": "NimbusMonoPS-BoldItalic.otf",
+          "sha256": "a67ed9e364c933c79fc3ce88e17a0265334697c184b065407e754d43cbbf6d0a"
+        }
+      }
+    },
+    "sans": {
+      "name": "Nimbus Sans",
+      "faces": {
+        "regular": {
+          "file": "NimbusSans-Regular.otf",
+          "sha256": "7c25be4d78155523080ab85b10277150657ff7dabbcad7037bdd536c9b6d0d08"
+        },
+        "bold": {
+          "file": "NimbusSans-Bold.otf",
+          "sha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67"
+        },
+        "italic": {
+          "file": "NimbusSans-Italic.otf",
+          "sha256": "7b0bef5686aa58c0fd0f0d01beeae56664208490e30ca6a25431281c9a0c6402"
+        },
+        "boldItalic": {
+          "file": "NimbusSans-BoldItalic.otf",
+          "sha256": "3f47fb34fcb7de09f8cbc9f305191340ddebf7a068419f4bb5f49287dea59b87"
+        }
+      }
+    }
+  }
+}

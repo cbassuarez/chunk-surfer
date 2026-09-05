@@ -5,7 +5,7 @@ export const WINDOW_MEDIA_PROTOCOL=2;
 export const WINDOW_MEDIA_SURFACE_LABELS=Object.freeze(
   Array.from({length:MAX_MEDIA_SURFACES},(_,index)=>`window-media-${index+1}`),
 );
-export const WINDOW_COMPOSITION_PURPOSES=Object.freeze(['title','death','ending','puzzle']);
+export const WINDOW_COMPOSITION_PURPOSES=Object.freeze(['title','death','ending','puzzle','return','sector']);
 export const WINDOW_MEDIA_CONTENT_KINDS=Object.freeze(['video','image','snapshot','text','procedural']);
 export const WINDOW_MEDIA_PROCEDURAL_PRESETS=Object.freeze(['iris-abstraction','distant-dot','empty-field','game-fragment']);
 export const WINDOW_MEDIA_SHADER_PROFILES=Object.freeze(['violet-dither','nvme-sector']);
@@ -516,6 +516,149 @@ export function deathCompositionPlan({battleId='',snapshotToken='',reduceDread=f
     fault:{profile:'nvme-sector',intensity:.68,seed:41,cadenceMs:260},formation:{mode:'impact-scatter',durationMs:360,staggerMs:35}});
 }
 
+// THE RETURN, SPREAD ACROSS THE SURFACES.
+//
+// The night's account does not fit on one pane and should not: each part of it
+// is its own surface, thrown out and settling into a row while the transport
+// reads the whole thing back in the main window.
+//
+// WHY SNAPSHOTS AND NOT TEXT PANES. `content.kind:'text'` is legal and
+// normalizeWindowMediaContent accepts it — but window-media-surface.js is a
+// WebGL shader whose mediaAt() only samples an image texture or a procedural
+// form. There is NO text path. The in-canvas simulation does render text (a
+// <span>, see mediaChild), so a text pane would work in-frame and come up black
+// on the desktop, which is exactly backwards.
+//
+// So the caller rasterises each section to a data URL and registers it, and the
+// panes take snapshot tokens. That reuses the whole pipeline untouched on both
+// sides — and it means the report inherits the composition's own nvme-sector
+// fault, so the phosphor degrades along with everything else in the shot.
+export function returnCompositionPlan({
+  sections=[], snapshotTokens=[], epochMs=Date.now(), reducedMotion=false, flashMode='full',
+}={}){
+  // Two to eight, because that is what a composition is; a single-pane return
+  // is the transport on its own and does not need the desktop at all.
+  const count=Math.max(2,Math.min(MAX_MEDIA_SURFACES,snapshotTokens.length));
+  const tokens=Array.from({length:count},(_,index)=>snapshotTokens[index]||snapshotTokens[snapshotTokens.length-1]);
+  // Thrown wide, then filed into a row across the middle: the gesture is a
+  // stack of papers being squared up, not an explosion.
+  const scatter=[{x:.13,y:.20},{x:.84,y:.24},{x:.20,y:.78},{x:.78,y:.74},
+    {x:.50,y:.14},{x:.50,y:.86},{x:.08,y:.52},{x:.90,y:.50}];
+  const filed=(index)=>({anchorX:(index+0.5)/count,anchorY:.5,offsetY:(index%2?1:-1)*8});
+  const surfaces=tokens.map((token,index)=>({
+    id:`return:${index}`,
+    content:{kind:'snapshot',token},
+    width:260,height:170,
+    entry:scatter[index%scatter.length],
+    initial:scatter[index%scatter.length],
+    target:filed(index),
+    shader:'nvme-sector',
+    faultScale:.72+(index%3)*.10,
+    description:`Return section: ${String(sections[index]||index)}`,
+  }));
+  const targets=surfaces.map((surface)=>surface.id);
+  const score={durationMs:9000,loop:false,cues:[
+    // They arrive in order, left to right, the way a list is read.
+    ripple('return-file',targets,{type:'shader',coherent:true},
+      {atMs:200,order:'left-to-right',intervalMs:reducedMotion?40:150}),
+    // One settle, and then they hold. A return is filed once.
+    {id:'return-settle',atMs:reducedMotion?600:2600,operations:[
+      {type:'geometry',targets,transition:'dissolve',durationMs:reducedMotion?0:420},
+      {type:'shader',targets,coherent:true},
+    ]},
+    {id:'return-hold',atMs:reducedMotion?900:4200,operations:[{type:'freeze',targets}]},
+  ]};
+  return compileWindowCompositionPlan({
+    compositionId:'return:account',sceneId:'return',purpose:'return',epochMs,reducedMotion,flashMode,
+    surfaces,score,completion:{mode:'nonblocking'},
+    // Quieter than the death composition and much quieter than the aperture:
+    // this is the calmest thing the surfaces ever do, because the night is over.
+    fault:{profile:'nvme-sector',intensity:.22,seed:53,cadenceMs:720},
+    formation:{mode:'memory-unfold',durationMs:520,staggerMs:60},
+  });
+}
+
+// ONE PANE FALLING OFF THE DISK, INSIDE SOMEBODY ELSE'S COMPOSITION.
+//
+// Baked as an EVENT cue rather than applied at runtime, because that is the only
+// road there is: the simulation exposes show/snap/coherence/freeze/trigger/hide
+// and the native effects layer exposes triggerComposition — neither has a public
+// "assign this pane now". Both DO fire named event cues, which is what
+// compositionEvent() already rides.
+//
+// So the token has to exist when the plan is compiled. The director registers
+// the scroll phases once at first use and hands one in here, and from then on
+// any composition carrying this cue can drop a pane into the failure without
+// rasterising anything.
+export const SECTOR_INTRUSION_EVENT='sector:intrude';
+export function sectorIntrusionCue(targets=[],token=''){
+  const panes=(Array.isArray(targets)?targets:[]).filter(Boolean);
+  if(!panes.length||!String(token||'').startsWith('snapshot-'))return [];
+  return panes.map((paneId,index)=>({
+    id:`sector-intrusion-${index}`,
+    event:SECTOR_INTRUSION_EVENT,
+    operations:[{
+      type:'assign',
+      assignments:{[paneId]:{content:{kind:'snapshot',token}}},
+      transition:'cut',durationMs:0,
+    }],
+  }));
+}
+
+// THE DISK, FAILING, ON ITS OWN SCREEN.
+//
+// An ntfsclone run that cannot read the volume. `phases` are pre-baked scroll
+// frames as data URLs (render/sector-error.js) registered as snapshots, because
+// a pane has no glyph path and a `text` pane comes up black on the desktop.
+// Motion is a CUT between stills, which is also what a terminal does — it does
+// not tween, it redraws.
+export function sectorErrorCompositionPlan({
+  phaseTokens=[], epochMs=Date.now(), reducedMotion=false, flashMode='full',
+}={}){
+  const tokens=(Array.isArray(phaseTokens)?phaseTokens:[]).filter(Boolean);
+  if(tokens.length<1)return null;
+  // Four panes reading the same failing disk at different points in the scroll,
+  // which is what a machine with several terminals open on one job looks like.
+  const seats=[{x:.20,y:.24},{x:.78,y:.22},{x:.24,y:.76},{x:.80,y:.74}];
+  const surfaces=seats.map((initial,index)=>({
+    id:`sector:${index}`,
+    content:{kind:'snapshot',token:tokens[index%tokens.length]},
+    width:300,height:200,
+    entry:initial,initial,
+    target:{anchorX:.5,anchorY:.5,offsetX:(index%2?1:-1)*150,offsetY:(index<2?-1:1)*96},
+    shader:'nvme-sector',
+    faultScale:1.15+(index%3)*.12,
+    description:'Bad sector readout',
+  }));
+  const targets=surfaces.map((surface)=>surface.id);
+  // The scroll. One cut per phase, staggered per pane so the four terminals are
+  // not in lockstep, looping for as long as the screen is up.
+  const stepMs=reducedMotion?420:140;
+  const cues=[];
+  tokens.forEach((token,phase)=>{
+    surfaces.forEach((surface,index)=>{
+      cues.push({
+        id:`sector-scroll-${phase}-${index}`,
+        atMs:phase*stepMs+index*Math.round(stepMs/4),
+        operations:[{
+          type:'assign',
+          assignments:{[surface.id]:{content:{kind:'snapshot',token:tokens[(phase+index)%tokens.length]}}},
+          transition:'cut',durationMs:0,
+        }],
+      });
+    });
+  });
+  return compileWindowCompositionPlan({
+    compositionId:'sector:unreadable',sceneId:'sector',purpose:'sector',epochMs,reducedMotion,flashMode,
+    surfaces,score:{durationMs:Math.max(1000,tokens.length*stepMs),loop:true,cues},
+    completion:{mode:'nonblocking'},
+    // The hardest fault in the game: this IS the bad sector, not a surface with
+    // one under it.
+    fault:{profile:'nvme-sector',intensity:.92,seed:29,cadenceMs:150},
+    formation:{mode:'impact-scatter',durationMs:280,staggerMs:30},
+  });
+}
+
 export function apertureCompositionPlan({reduceDread=false,epochMs=Date.now(),reducedMotion=false,flashMode='full'}={}){
   const eye=(id,initial,target,side)=>reduceDread
     ?procedural('iris-abstraction',{entry:{x:.5,y:.5},initial,target,width:240,height:180,description:`Abstract ${side} iris`,faultScale:1.15,draggable:true})
@@ -604,7 +747,7 @@ function endingScore(id,surfaces){
   return{durationMs:12000,loop:false,cues:[]};
 }
 
-export function endingCompositionPlan(endingId,{epochMs=Date.now(),reduceDread=false,reducedMotion=false,flashMode='full'}={}){
+export function endingCompositionPlan(endingId,{epochMs=Date.now(),reduceDread=false,reducedMotion=false,flashMode='full',intrusionToken=''}={}){
   const id=String(endingId||'');
   const eye=(asset,initial,index)=>reduceDread?{id:`ending:${id}:${index}`,...procedural('iris-abstraction',{initial})}:endingSurface(id,asset,initial,index,{sensitivity:'clinical'});
   const ring=[{x:.15,y:.25},{x:.39,y:.16},{x:.66,y:.18},{x:.86,y:.34},{x:.75,y:.75},{x:.49,y:.84},{x:.20,y:.72},{x:.08,y:.50}];
@@ -629,7 +772,10 @@ export function endingCompositionPlan(endingId,{epochMs=Date.now(),reduceDread=f
   else if(id==='tower-lost')targets=surfaces.map((_,index)=>({anchorX:[.30,.50,.70][index%3],anchorY:index<3?.34:.66}));
   surfaces=surfaces.map((surface,index)=>({...surface,entry:targets[index]||inward[index],target:targets[index]||inward[index],faultScale:.75+(index%3)*.14}));
   const loss=id.endsWith('lost')||id==='drugged'||id==='sacrifice';
-  return compileWindowCompositionPlan({compositionId:`ending:${stableId(id)}`,sceneId:`ending:${stableId(id)}`,purpose:'ending',epochMs,reducedMotion,surfaces,score:endingScore(id,surfaces),
+  const endingCues=endingScore(id,surfaces);
+  const intrusion=sectorIntrusionCue(surfaces.map((surface)=>surface.id),intrusionToken);
+  return compileWindowCompositionPlan({compositionId:`ending:${stableId(id)}`,sceneId:`ending:${stableId(id)}`,purpose:'ending',epochMs,reducedMotion,surfaces,
+    score:{...endingCues,cues:[...endingCues.cues,...intrusion]},
     completion:{mode:'ending-owned'},flashMode,
     fault:{profile:'nvme-sector',intensity:loss?.72:.42,seed:101+id.length,cadenceMs:loss?220:440},
     formation:{mode:loss?'failed-resolution':'resolved-bloom',durationMs:560,staggerMs:48}});

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { access, readFile } from 'node:fs/promises';
 import {
+  BATTLE_BEAT_SECONDS,
   BATTLE_BAR_SECONDS,
   BATTLE_LOOP_SECONDS,
   BATTLE_SOLO_BARS,
@@ -199,6 +200,22 @@ movementAudio.context.currentTime = movement.snapshot().windowStartAt + BATTLE_B
 movement.onCombatEvent({ transition: { from: 0, to: 1 }, perfect: false });
 assert.equal(movement.snapshot().targetLead, 'lead-2');
 assert.equal(movement.snapshot().pendingLead, 'lead-2', 'boss movements replace the pending voice without cutting the active one');
+
+const tornAt = movementAudio.context.currentTime;
+assert.equal(movement.beginReplayInterlude(), true);
+assert.equal(movement.snapshot().phase, 'interlude');
+assert.ok(movementAudio.stops.some((entry) => entry.when === tornAt + .13), 'the torn phrase stops under the cast');
+movementAudio.context.currentTime += 3;
+assert.equal(movement.update().phase, 'interlude', 'a player-paced reprise cannot time out against the score');
+const returnGrid = movement.resumeReplayInterlude({ beats:4 });
+assert.equal(returnGrid.delaySeconds, 4 * BATTLE_BEAT_SECONDS);
+assert.equal(returnGrid.downbeatAt, movementAudio.context.currentTime + 4 * BATTLE_BEAT_SECONDS);
+const resumedBed = movementAudio.starts.filter((entry) => entry.source.loop).at(-1);
+assert.equal(resumedBed.when, returnGrid.downbeatAt, 'the bed is restarted on the new downbeat, not unmuted mid-loop');
+movementAudio.context.currentTime = returnGrid.downbeatAt - .001;
+assert.equal(movement.update().phase, 'interlude');
+movementAudio.context.currentTime = returnGrid.downbeatAt;
+assert.equal(movement.update().phase, 'running');
 
 const fallbackAudio = fakeContext();
 const fallback = createBattleMusicSession({

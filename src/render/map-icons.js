@@ -113,7 +113,19 @@ export function drawObjectiveMarker(command, alpha = 1) {
   // Rooms and targets are lozenges, drawn (see drawTargetLozenge) rather than
   // typed: the two diamond codepoints this used to ask for are not in every
   // fallback face, and every unnamed room on the page was coming out blank.
+  // A ROOM YOU ARE MEANT TO RECORD IN LOOKS DIFFERENT FROM A ROOM.
+  //
+  // Every un-recorded space used to draw the same hollow lozenge, so the five
+  // rooms the whole job is about were indistinguishable from the forty that are
+  // simply rooms — and "where am I supposed to be recording?" is the question
+  // this page is most often opened to answer. A take room is FILLED and in the
+  // accent role, and carries its number.
+  const recordable = Number.isFinite(command.sequence) && !command.recorded;
   if (command.recorded || command.current) uiGlyph(x, y, command.recorded ? '■' : '●', cls, alpha);
+  // Filled against hollow is the whole distinction, and it is enough. The take
+  // NUMBER was printed beside it too and collided with the room label two cells
+  // over; the caption already names the take for whatever is selected.
+  else if (recordable) drawTargetLozenge(x, y, alpha, { hollow: false, role: 'accent' });
   else drawTargetLozenge(x, y, alpha, { hollow: !command.waypoint, role: command.waypoint ? 'accent' : 'phosphor' });
   if (command.selected) {
     uiGlyph(x - 1, y, '▸', 'ui-amber', 0.65 + alpha * 0.35);

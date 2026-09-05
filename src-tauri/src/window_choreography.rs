@@ -828,8 +828,13 @@ fn hide_media(app: &AppHandle) -> bool {
     true
 }
 
+// Keep every auxiliary surface owned by the live composition across an app
+// switch. Hiding them here destroys the only native record of which panes were
+// visible, and a later DOM focus event is not a reliable reconstruction signal
+// on macOS. Lowering their stacking level while Chunk Surfer is inactive keeps
+// them out of the user's next application without changing visibility.
 #[tauri::command]
-pub fn chunk_window_media_hide_if_unfocused(app: AppHandle) -> bool {
+pub fn chunk_window_surfaces_sync_app_activation(app: AppHandle) -> bool {
     let focused = std::iter::once("main")
         .chain(FIREBALL_LABELS)
         .chain(MEDIA_LABELS)
@@ -837,10 +842,14 @@ pub fn chunk_window_media_hide_if_unfocused(app: AppHandle) -> bool {
             app.get_webview_window(label)
                 .is_some_and(|window| window.is_focused().unwrap_or(false))
         });
-    if !focused {
-        hide_media(&app);
+    for label in FIREBALL_LABELS.iter().chain(MEDIA_LABELS.iter()) {
+        if let Some(window) = app.get_webview_window(label) {
+            if window.is_visible().unwrap_or(false) {
+                let _ = window.set_always_on_top(focused);
+            }
+        }
     }
-    !focused
+    focused
 }
 
 fn allowed(label: &str, index: u8, count: u8) -> bool {

@@ -54,6 +54,7 @@ import { freshPracticeHauntState, normalizePracticeHauntState } from './practice
 import { freshBasementWatcherState, normalizeBasementWatcherState } from './basement-watcher.js';
 import { freshBagSheetState, normalizeBagSheetState } from './bag-sheets.js';
 import { freshBagMapState, normalizeBagMapState } from './bag-map-state.js';
+import { freshSourceReplayManifest, normalizeSourceReplayManifest } from './source-replay-manifest.js';
 
 const SAVE_KEY = 'chunk-surfer:save:v4';
 const LEGACY_SAVE_KEYS = STORAGE_LEGACY_SAVE_KEYS.filter((key) => key !== SAVE_KEY);
@@ -90,6 +91,7 @@ export const freshSave = ({ settings = DEFAULT_SETTINGS, run = null } = {}) => (
   dockHaunting: freshDockHauntingState(),
   practiceHaunts: freshPracticeHauntState(),
   basementWatcher: freshBasementWatcherState(),
+  sourceReplay: freshSourceReplayManifest({ runId: run?.id || '' }),
   // A terminal route has already paid its physical cost, but its embodied
   // ending has not committed the return yet. Reload starts this cutscene over;
   // it never tries to restore a half-read line or half-fired effect.
@@ -284,6 +286,9 @@ function normalizeSaveV4(data, meta = null) {
     dockHaunting: normalizeDockHauntingState(source.dockHaunting),
     practiceHaunts: normalizePracticeHauntState(source.practiceHaunts),
     basementWatcher: normalizeBasementWatcherState(source.basementWatcher),
+    sourceReplay: normalizeSourceReplayManifest(source.sourceReplay, {
+      runId: source.run?.id || '',
+    }),
     endingCutscene: normalizeEndingCutsceneCheckpoint(source.endingCutscene),
     settings,
     run: sanitizeRun(normalizeRun(source.run, {

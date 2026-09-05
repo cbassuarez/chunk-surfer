@@ -78,7 +78,11 @@ const roomHash=(owner)=>{
 };
 assert.equal(roomHash('grand_ground_stair_hall'),'cb9be74e64b1f226acb3782d4e83d6b321dc3b1c6b9312b8ac759be1f7d9a258');
 assert.equal(roomHash('grand_upper_stair_hall'),'59f5833a906073cc9c18963dea91ba75a1e12a6af0c8bb394f7512b782439fbf');
-assert.equal(roomHash('practice_wing'),'c9bdfe0e13069c1e0f7dd065ccb4b322b39bd2976691b0a20b9ababdf88582e9');
+// The practice wing's hash moved once, deliberately: the corridor glyphs went
+// from 4.5m to 3.5m (see the note beside '.' and ',' in floorplan/legend.js).
+// The two stair halls carry their own profile ceilings and did not move, which
+// is the check working — a stair edit still cannot resize a landing in silence.
+assert.equal(roomHash('practice_wing'),'092c33fcc013d2743595c0c56988c366a110ec700b18ebc9393204da7cc5fd76');
 
 const hallLogical=FP.toRuntimePoint(MAIN_STAIR_LAYOUT.groundHall);
 const hallPhysical=FP.logicalToPhysical(hallLogical.x,hallLogical.y);

@@ -12,8 +12,9 @@ const canvas=document.getElementById('media');
 const fallback=document.getElementById('fallback');
 const grip=document.getElementById('grip');
 const assetById=new Map((mediaManifest.assets||[]).map((asset)=>[asset.id,asset]));
+const BLUE_NOISE_SIZE=64;
 let envelope=null,assignment=null,source=null,video=null,poster=null;
-let gl=null,program=null,texture=null,staleTexture=null,outgoingTexture=null,raf=0;
+let gl=null,program=null,texture=null,staleTexture=null,outgoingTexture=null,blueNoiseTexture=null,raf=0;
 let frozen=false,scoreSuspended=false,lastSeekAt=0,lastStaleAt=0,staleReady=false,assignmentSerial=0;
 let transition={mode:'cut',startedAt:0,endsAt:0},scoreCycle=-1,executedTimed=new Set(),currentRevision=0,currentSession='';
 const eventTimers=new Set();
@@ -21,13 +22,13 @@ const eventTimers=new Set();
 const vertex=`#version 300 es
 in vec2 p;out vec2 uv;void main(){uv=p*.5+.5;gl_Position=vec4(p,0.,1.);}`;
 const fragment=`#version 300 es
-precision highp float;in vec2 uv;out vec4 outColor;uniform sampler2D image;uniform sampler2D staleImage;uniform sampler2D outgoingImage;uniform vec4 crop;uniform vec2 desktopOrigin;uniform int procedural;uniform float coherence;uniform float faultIntensity;uniform float faultTick;uniform float faultSeed;uniform int flashMode;uniform int nvme;uniform int transitionMode;uniform float transitionProgress;
-float bayer(vec2 at){ivec2 p=ivec2(mod(floor(at),4.));int i=p.x+p.y*4;float v[16]=float[16](0.,8.,2.,10.,12.,4.,14.,6.,3.,11.,1.,9.,15.,7.,13.,5.);return(v[i]+.5)/16.;}
+precision highp float;in vec2 uv;out vec4 outColor;uniform sampler2D image;uniform sampler2D staleImage;uniform sampler2D outgoingImage;uniform sampler2D blueNoise;uniform vec4 crop;uniform vec2 desktopOrigin;uniform vec2 framebufferSize;uniform vec2 blueNoiseSize;uniform int procedural;uniform float coherence;uniform float faultIntensity;uniform float faultTick;uniform float faultSeed;uniform int flashMode;uniform int nvme;uniform int transitionMode;uniform float transitionProgress;
+float blueNoiseRank(vec2 at){vec2 cell=mod(floor(at),blueNoiseSize);return texture(blueNoise,(cell+.5)/blueNoiseSize).r;}
 float hash21(vec2 p){p=fract(p*vec2(.1031,.1030));p+=dot(p,p.yx+33.33);return fract((p.x+p.y)*p.x);}
 float form(vec2 q){vec2 c=q*2.-1.;if(procedural==1){float iris=1.-smoothstep(.20,.72,length(vec2(c.x,c.y*1.35)));float pupil=1.-smoothstep(.08,.20,length(c));return max(iris*.62,pupil);}if(procedural==2)return 1.-smoothstep(.012,.028,length(c));if(procedural==3)return .025;return .10+.08*sin((q.x+q.y)*30.);}
 vec3 mediaAt(vec2 q,bool stale){if(procedural>0)return vec3(form(q));return stale?texture(staleImage,q).rgb:texture(image,q).rgb;}
 void main(){
-  vec2 globalPx=gl_FragCoord.xy+desktopOrigin;
+  vec2 globalPx=vec2(gl_FragCoord.x+desktopOrigin.x,framebufferSize.y-gl_FragCoord.y+desktopOrigin.y);
   vec2 q=crop.xy+uv*crop.zw;
   float fault=nvme==1?faultIntensity*mix(1.,.14,coherence):0.;
   vec2 sector=floor(globalPx/vec2(112.,46.));
@@ -47,10 +48,17 @@ void main(){
   else if(hard>.5&&flashMode==2)rgb=vec3(.002,.004,.012);
   if(transitionMode==1)rgb=mix(texture(outgoingImage,uv).rgb,rgb,smoothstep(0.,1.,transitionProgress));
   else if(transitionMode==2){float side=step(.5,transitionProgress);vec3 halfImage=mix(texture(outgoingImage,uv).rgb,rgb,side);rgb=halfImage*(abs(transitionProgress-.5)*2.);}
-  float y=dot(rgb,vec3(.2126,.7152,.0722));y=clamp((y-.47)*1.18+.48,0.,1.);float levels=4.;float low=floor(y*levels)/levels;float high=min(1.,low+1./levels);float mixv=fract(y*levels);float threshold=mix(bayer(globalPx),.5,coherence);float value=mixv>threshold?high:low;vec3 palette[5]=vec3[5](vec3(.004,.008,.018),vec3(.018,.045,.105),vec3(.115,.105,.35),vec3(.38,.20,.56),vec3(.73,.88,1.));int index=int(clamp(floor(value*4.5),0.,4.));outColor=vec4(palette[index],1.);
+  float y=dot(rgb,vec3(.2126,.7152,.0722));y=clamp((y-.47)*1.18+.48,0.,1.);float levels=4.;float low=floor(y*levels)/levels;float high=min(1.,low+1./levels);float mixv=fract(y*levels);float threshold=mix(blueNoiseRank(globalPx),.5,coherence);float value=mixv>threshold?high:low;vec3 palette[5]=vec3[5](vec3(.004,.008,.018),vec3(.018,.045,.105),vec3(.115,.105,.35),vec3(.38,.20,.56),vec3(.73,.88,1.));int index=int(clamp(floor(value*4.5),0.,4.));outColor=vec4(palette[index],1.);
 }`;
 
 function compile(type,code){const shader=gl.createShader(type);gl.shaderSource(shader,code);gl.compileShader(shader);if(!gl.getShaderParameter(shader,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(shader)||'shader');return shader;}
+function makeMediaTexture(){
+  const value=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,value);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([0,0,0,255]));return value;
+}
+function makeBlueNoiseTexture(){
+  const value=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,value);gl.texImage2D(gl.TEXTURE_2D,0,gl.R8,1,1,0,gl.RED,gl.UNSIGNED_BYTE,new Uint8Array([128]));gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.REPEAT);
+  const image=new Image();image.onload=()=>{gl.bindTexture(gl.TEXTURE_2D,value);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);gl.texImage2D(gl.TEXTURE_2D,0,gl.R8,gl.RED,gl.UNSIGNED_BYTE,image);};image.onerror=()=>{};image.src=assetUrl('assets/blue-noise-64.png');return value;
+}
 function initGl(){
   gl=canvas.getContext('webgl2',{alpha:false,antialias:false,preserveDrawingBuffer:true});
   if(!gl)return false;
@@ -58,8 +66,7 @@ function initGl(){
   if(!gl.getProgramParameter(program,gl.LINK_STATUS))return false;
   const buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);
   gl.useProgram(program);const p=gl.getAttribLocation(program,'p');gl.enableVertexAttribArray(p);gl.vertexAttribPointer(p,2,gl.FLOAT,false,0,0);
-  const makeTexture=()=>{const value=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,value);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([0,0,0,255]));return value;};
-  texture=makeTexture();staleTexture=makeTexture();outgoingTexture=makeTexture();return true;
+  texture=makeMediaTexture();staleTexture=makeMediaTexture();outgoingTexture=makeMediaTexture();blueNoiseTexture=makeBlueNoiseTexture();return true;
 }
 function assetUrl(path){return new URL(`./${String(path||'').replace(/^\/+/, '')}`,location.href).href;}
 function clearEventTimers(){for(const timer of eventTimers)clearTimeout(timer);eventTimers.clear();}
@@ -159,8 +166,8 @@ function draw(at){
   if(gl&&program){
     uploadTo(texture);const cadence=Math.max(90,Number(envelope?.fault?.cadenceMs)||420);if(!staleReady||at-lastStaleAt>=cadence){staleReady=uploadTo(staleTexture);lastStaleAt=at;}
     const transitionState=transitionUniform(at);
-    gl.useProgram(program);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,texture);gl.uniform1i(gl.getUniformLocation(program,'image'),0);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,staleTexture);gl.uniform1i(gl.getUniformLocation(program,'staleImage'),1);gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,outgoingTexture);gl.uniform1i(gl.getUniformLocation(program,'outgoingImage'),2);
-    gl.uniform4f(gl.getUniformLocation(program,'crop'),Number(assignment?.crop?.x)||0,Number(assignment?.crop?.y)||0,Number(assignment?.crop?.w)||1,Number(assignment?.crop?.h)||1);gl.uniform2f(gl.getUniformLocation(program,'desktopOrigin'),Number(envelope?.desktopOrigin?.x)||0,Number(envelope?.desktopOrigin?.y)||0);
+    gl.useProgram(program);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,texture);gl.uniform1i(gl.getUniformLocation(program,'image'),0);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,staleTexture);gl.uniform1i(gl.getUniformLocation(program,'staleImage'),1);gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,outgoingTexture);gl.uniform1i(gl.getUniformLocation(program,'outgoingImage'),2);gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D,blueNoiseTexture);gl.uniform1i(gl.getUniformLocation(program,'blueNoise'),3);
+    gl.uniform4f(gl.getUniformLocation(program,'crop'),Number(assignment?.crop?.x)||0,Number(assignment?.crop?.y)||0,Number(assignment?.crop?.w)||1,Number(assignment?.crop?.h)||1);gl.uniform2f(gl.getUniformLocation(program,'desktopOrigin'),Number(envelope?.desktopOrigin?.x)||0,Number(envelope?.desktopOrigin?.y)||0);gl.uniform2f(gl.getUniformLocation(program,'framebufferSize'),w,h);gl.uniform2f(gl.getUniformLocation(program,'blueNoiseSize'),BLUE_NOISE_SIZE,BLUE_NOISE_SIZE);
     const preset=assignment?.content?.preset,mode=envelope?.fault?.flashMode;gl.uniform1i(gl.getUniformLocation(program,'procedural'),preset==='iris-abstraction'?1:preset==='distant-dot'?2:preset==='empty-field'?3:assignment?.content?.kind==='procedural'?4:0);gl.uniform1f(gl.getUniformLocation(program,'coherence'),envelope?.coherent?1:0);gl.uniform1f(gl.getUniformLocation(program,'faultIntensity'),Math.max(0,Math.min(1,Number(envelope?.fault?.intensity)||0)));gl.uniform1f(gl.getUniformLocation(program,'faultTick'),Math.floor(Date.now()/cadence));gl.uniform1f(gl.getUniformLocation(program,'faultSeed'),Number(envelope?.fault?.seed)||0);gl.uniform1i(gl.getUniformLocation(program,'flashMode'),mode==='off'?2:mode==='reduced'?1:0);gl.uniform1i(gl.getUniformLocation(program,'nvme'),envelope?.shader==='nvme-sector'?1:0);gl.uniform1i(gl.getUniformLocation(program,'transitionMode'),transitionState.mode);gl.uniform1f(gl.getUniformLocation(program,'transitionProgress'),transitionState.progress);gl.drawArrays(gl.TRIANGLES,0,6);
   }else if(source?.src){fallback.style.display='block';fallback.src=source.src;}
   raf=requestAnimationFrame(draw);

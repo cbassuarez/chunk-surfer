@@ -102,6 +102,37 @@ export function horizonBustRefusalTree() {
         { who: 'bust', text: "Pity. Then I can't show you the other way." },
         { who: 'you', text: "Because you can't see me?" },
         { who: 'bust', text: "Because that's how deals work lad." },
+      ],
+      // A LOCKED DOOR WITH A JOKE ON IT IS NOT A BEAT.
+      //
+      // This used to go straight to stone, which meant a player who never found
+      // the fountain got two lines and a punchline and then four hundred more
+      // metres of nobody. He cannot give them the road — that is what the eyes
+      // buy, and the trade has to stay real — but he is the only thing out here
+      // that has stood in this recording and can talk about it, and telling them
+      // where they are costs him nothing he was selling.
+      choices: [
+        { text: 'Then what CAN you do?', goto: 'told' },
+        { text: 'Leave him to it.', goto: 'stone' },
+      ],
+    },
+    told: {
+      speaker: 'THE PORTRAIT',
+      lines: [
+        { who: 'you', text: 'Then what can you do?' },
+        { who: 'bust', text: "Talk. I'm very good at it and there's no queue." },
+        { who: 'bust', text: "You're inside a recording of somewhere, walking up its length. That's not a figure of speech — the far end of this is later, and the way you've come is earlier, and it's all still standing because nothing here knows how to throw a picture away." },
+        { who: 'you', text: 'I noticed the middle of it is ruined.' },
+        { who: 'bust', text: "It is. It comes apart around where I'm standing and it puts itself back together a good way on, and nobody repaired anything in between. Whatever decided it should be legible again did that on its own." },
+        { who: 'bust', text: "Keep to the bright of it. The picture wanders and the walkable part wanders with it, and the dark at the sides is where the recording simply stops having anything. You won't fall. You'll just stop being anywhere." },
+        { who: 'you', text: 'And the end?' },
+        { who: 'bust', text: "Goes out. Not dramatically — it's a tape, it runs out of tape. Then you're in the nave, and the nave is a different problem, and I'd tell you about that one too if you'd brought my eyes." },
+      ],
+      goto: 'stone',
+    },
+    stone: {
+      speaker: 'THE PORTRAIT',
+      lines: [
         { who: 'direction', text: 'The bust returns to stone with a dazzling immediacy. Even immobile objects know how to end conversations faster than you.' },
       ],
       goto: 'done',

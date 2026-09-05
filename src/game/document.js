@@ -32,6 +32,25 @@ function inspectRect(surface){
   let h=maxH,w=h*A4_ASPECT;if(w>maxW){w=maxW;h=w/A4_ASPECT;}
   return {x:(viewportW-w)/2+cellW*dpr*.35,y:(viewportH-h)/2-cellH*dpr*.42,w,h,dpr};
 }
+// READING IT, AS OPPOSED TO LOOKING AT IT.
+//
+// inspectRect deliberately keeps the sheet at 63% x 79% so it reads as an object
+// on a desk rather than a PDF viewer, and that framing is right. It is also
+// unreadable: against A4 it puts 12pt body type at about 4px of x-height on a
+// 1280x760 screen, where comfortable reading wants eight.
+//
+// So the object view stays as the establishing look and this is laid over it.
+// FIT-WIDTH rather than 1:1, because a reader wants whole lines: the sheet fills
+// the viewport's width, only ever vertical panning, and never upscaled past the
+// raster's own resolution (the inspect tier is 2048px across, wider than most
+// screens, so this is always a downscale and stays sharp).
+function readRect(surface,image){
+  const {dpr,cellW,cellH,cols,rows}=surface;
+  const viewportW=cols*cellW*dpr,viewportH=rows*cellH*dpr;
+  const sourceW=image?.naturalWidth||image?.width||2048;
+  const w=Math.min(viewportW*.94,sourceW);
+  return {w,h:w/A4_ASPECT,viewportW,viewportH,dpr};
+}
 function poseFor(doc,page){
   const key=`${doc?.id||'paper'}:${page}`;
   return {
@@ -119,7 +138,10 @@ function drawTurn(ctx,doc,turn,rect){
 
 export function readDocument(doc){if(!doc)return null;return scenes.push(makeDocumentScene(doc));}
 export function makeDocumentScene(doc,{id=`doc:${doc?.id||'document'}`,onSceneClose=null,onSceneTurn=null,lookProfile='calm',sourcePressureLive=false,embedded=false,initialPage=0}={}){
-  let page=clamp(Math.floor(Number(initialPage)||0),0,Math.max(0,paperPageCount(doc)-1)),turn=null;const total=paperPageCount(doc),closeCallback=typeof onSceneClose==='function'?onSceneClose:onClose,turnCallback=typeof onSceneTurn==='function'?onSceneTurn:onTurn,resolved=paperAssetProbe(doc);
+  let page=clamp(Math.floor(Number(initialPage)||0),0,Math.max(0,paperPageCount(doc)-1)),turn=null;
+  // The push-in, and how far down the sheet it is. Never persisted: a document
+  // always opens as an object first, and the reading is something you ask for.
+  let reading=false,scroll=0;const total=paperPageCount(doc),closeCallback=typeof onSceneClose==='function'?onSceneClose:onClose,turnCallback=typeof onSceneTurn==='function'?onSceneTurn:onTurn,resolved=paperAssetProbe(doc);
   function close(){if(!embedded)scenes.pop();closeCallback(doc,{page,total});}
   function turnTo(next){const target=clamp(Math.floor(Number(next)||0),0,total-1);if(target===page||turn)return;const prev=page;void paperImageState(doc,target);turn={from:prev,to:target,t:0};page=target;turnCallback({doc,page:target,prev,total,dir:Math.sign(target-prev)||1});}
   function next(){if(page<total-1)turnTo(page+1);else if(!embedded)close();}
@@ -127,18 +149,74 @@ export function makeDocumentScene(doc,{id=`doc:${doc?.id||'document'}`,onSceneCl
     id,blocksInput:true,blocksWorld:!!embedded,lookProfile,lensPreset:lookProfile,sourcePressureLive:!!sourcePressureLive,
     enter(){void preloadPaperDocument(doc);},
     update(dt){if(turn){turn.t+=Math.max(0,Number(dt)||0);if(turn.t>=TURN_SECONDS)turn=null;}},
-    view:()=>({id,page,total,documentId:doc?.id||null,paper:resolved,paper3d:paper3dProbe(),turning:!!turn}),
+    view:()=>({id,page,total,documentId:doc?.id||null,paper:resolved,paper3d:paper3dProbe(),turning:!!turn,reading,scroll}),
     render(){
-      uiScrim(.84);
-      uiDraw((surface)=>{const {ctx}=surface,rect=inspectRect(surface);paperStage(ctx,rect);if(turn)drawTurn(ctx,doc,turn,rect);else drawPhysicalPage(ctx,doc,page,rect);});
+      uiScrim(reading?.93:.84);
+      uiDraw((surface)=>{
+        const {ctx}=surface;
+        if(reading){
+          const state=paperImageState(doc,page);
+          if(state.ready&&state.image){
+            const rect=readRect(surface,state.image);
+            // Flat, and no turn animation. The bow and the pose are what make
+            // small type swim, and a page you are actually reading is a page
+            // somebody is holding still.
+            // The HUD's page counter and prompt live on the last rows, and a
+            // sheet drawn the full height of the viewport puts body text under
+            // them. Reserve those rows and clip to what is left, so scrolling
+            // reveals the page rather than sliding it behind the furniture.
+            const gutter=surface.cellH*rect.dpr*3;
+            const top=surface.cellH*rect.dpr*.6;
+            const visible=rect.viewportH-gutter-top;
+            const maxScroll=Math.max(0,rect.h-visible);
+            scroll=clamp(scroll,0,maxScroll);
+            const x=(rect.viewportW-rect.w)/2,y=top-scroll;
+            ctx.save();
+            ctx.beginPath();ctx.rect(0,0,rect.viewportW,top+visible);ctx.clip();
+            ctx.shadowColor='rgba(0,0,0,.55)';ctx.shadowBlur=18*rect.dpr;ctx.shadowOffsetY=6*rect.dpr;
+            ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+            ctx.drawImage(state.image,x,y,rect.w,rect.h);
+            ctx.restore();
+            return;
+          }
+        }
+        const rect=inspectRect(surface);paperStage(ctx,rect);
+        if(turn)drawTurn(ctx,doc,turn,rect);else drawPhysicalPage(ctx,doc,page,rect);
+      });
       const {cols,rows}=uiSize(),left=total>1?`${page+1} / ${total}`:'A4';
-      const nav=embedded
-        ? `${page>0?'[←] PREVIOUS   ':''}${page<total-1?'[→ / ENTER] NEXT   ':''}[ESC] BACK   [B] CLOSE BAG`
-        : total<=1?promptLine([{action:'back',label:'CLOSE'}]):page===0?promptLine([{action:'confirm',label:'NEXT'},{action:'back',label:'CLOSE'}]):page===total-1?promptLine([{action:'select',label:'BACK'},{action:'back',label:'CLOSE'}]):promptLine([{action:'select',label:'PAGE'},{action:'back',label:'CLOSE'}]);
+      const nav=reading
+        ? `[↑↓] SCROLL   ${total>1?'[← →] PAGE   ':''}[Z] BACK OUT   [ESC] BACK`
+        : embedded
+          ? `[Z] READ   ${page>0?'[←] PREVIOUS   ':''}${page<total-1?'[→ / ENTER] NEXT   ':''}[ESC] BACK   [B] CLOSE BAG`
+          : `[Z] READ   ${total<=1?promptLine([{action:'back',label:'CLOSE'}]):page===0?promptLine([{action:'confirm',label:'NEXT'},{action:'back',label:'CLOSE'}]):page===total-1?promptLine([{action:'select',label:'BACK'},{action:'back',label:'CLOSE'}]):promptLine([{action:'select',label:'PAGE'},{action:'back',label:'CLOSE'}])}`;
       if(embedded)uiText(3,1,`SHEETS / ${String(doc?.title||doc?.id||'DOCUMENT').toUpperCase()}`,'ui-label',.72);
       uiText(3,rows-2,left,'t-dim',.70);uiText(Math.max(3,cols-nav.length-3),rows-2,nav,'t-dim',.78);if(!resolved.resolved)uiText(3,embedded?2:1,'PAPER ASSET NOT BUILT','t-dim',.55);
     },
-    key(e){const raw=e.key||'',k=raw.toLowerCase(),code=e.code||'';if(raw==='ArrowRight'||raw==='PageDown'||raw===' '||raw==='Enter'||k==='d'||k==='j'||code==='Space'){next();return true;}if(raw==='ArrowLeft'||raw==='PageUp'||k==='a'||k==='h'){turnTo(page-1);return true;}if(raw==='ArrowDown'){next();return true;}if(raw==='ArrowUp'){turnTo(page-1);return true;}if(raw==='Escape'||k==='e'||e.controllerAction==='back'){close();return true;}return true;},
+    key(e){
+      const raw=e.key||'',k=raw.toLowerCase(),code=e.code||'';
+      // Z pushes in and out. Escape backs out of the reading before it closes
+      // the document, so the key never skips a step the player can see.
+      if(k==='z'||code==='KeyZ'||e.controllerAction==='zoom'){reading=!reading;scroll=0;return true;}
+      if(reading){
+        if(raw==='Escape'||e.controllerAction==='back'){reading=false;scroll=0;return true;}
+        // Arrows scroll the sheet; page turns need the explicit keys, so a
+        // reader never loses their place by holding Down.
+        const STEP=90;
+        if(raw==='ArrowDown'||k==='j'){scroll+=STEP;return true;}
+        if(raw==='ArrowUp'||k==='k'){scroll=Math.max(0,scroll-STEP);return true;}
+        if(raw==='PageDown'){scroll+=STEP*6;return true;}
+        if(raw==='PageUp'){scroll=Math.max(0,scroll-STEP*6);return true;}
+        if(raw==='ArrowRight'||raw==='Enter'||raw===' '||code==='Space'){next();scroll=0;return true;}
+        if(raw==='ArrowLeft'){turnTo(page-1);scroll=0;return true;}
+        return true;
+      }
+      if(raw==='ArrowRight'||raw==='PageDown'||raw===' '||raw==='Enter'||k==='d'||k==='j'||code==='Space'){next();return true;}
+      if(raw==='ArrowLeft'||raw==='PageUp'||k==='a'||k==='h'){turnTo(page-1);return true;}
+      if(raw==='ArrowDown'){next();return true;}
+      if(raw==='ArrowUp'){turnTo(page-1);return true;}
+      if(raw==='Escape'||k==='e'||e.controllerAction==='back'){close();return true;}
+      return true;
+    },
   };
 }
 

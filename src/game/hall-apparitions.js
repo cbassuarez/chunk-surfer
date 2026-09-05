@@ -20,6 +20,24 @@ export const HALL_APPARITION_COUNT = 3;
 export const HALL_APPARITION_HEALTH = 30;
 export const HALL_REDIRECT_PERCENT = 8;
 
+// WHAT THE THIRD ROLE ACTUALLY DOES.
+//
+// The three bodies split one authored blow into thirds, which kept the Hall's
+// damage budget honest but also made three opponents mechanically identical to
+// one — the arc the room is captioned with ("one lead teaches you the roles,
+// two teaches you they combine, three is the fight") was a caption over three
+// identical movements, and `role` was authored on every member and read by
+// nothing.
+//
+// The CUE gives the downbeat. It sits in the SIDE BOX and is last in
+// initiative, so it cannot amplify the round it acts in — it sets up the NEXT
+// one, which is the better version anyway: you watch it raise its arm, and you
+// have a full turn to answer before the phrase lands. The answer is to shoot
+// the box. Kill the CUE and the formation never arms again; kill the other two
+// and the cue has nobody left to cue, because the bonus scales with how many
+// are still standing to take it.
+export const HALL_CUE_BONUS = 1;
+
 export const HALL_APPARITION_ROLE = Object.freeze({
   WITNESS: 'witness',
   RETURN: 'return',
@@ -51,6 +69,10 @@ export function createHallApparitions({ seed = 'hall', health = HALL_APPARITION_
     activeActorId: 'player',
     activeIndex: -1,
     lastPlayerTargets: [],
+    // Set when the CUE takes a turn, spent by the next commit. Nothing is armed
+    // on the first round: the room opens honest.
+    cued: false,
+    formation: 0,
     members: members.slice(0, HALL_APPARITION_COUNT).map((member, index) => ({
       id: String(member.id || `apparition-${index + 1}`),
       label: String(member.label || `APPARITION ${String(index + 1).padStart(2, '0')}`),
@@ -149,6 +171,10 @@ export function commitHallApparitionRound(roster, round, intents = [], { committ
   roster.round = Math.max(0, Math.trunc(Number(round) || 0));
   roster.activeActorId = 'player';
   roster.activeIndex = -1;
+  // The downbeat the CUE gave last round is cashed here and cleared, so a round
+  // is either cued or it is not — the bonus can never compound across rounds.
+  roster.formation = roster.cued ? hallFormationBonus(roster) : 0;
+  roster.cued = false;
   for (const member of roster.members) member.acting = false;
   const authored = Array.isArray(intents) ? intents.filter((intent) => intent?.id) : [];
   // Whoever swings first this round. Matches beginHallEnemyTurns exactly; if
@@ -164,6 +190,25 @@ export function commitHallApparitionRound(roster, round, intents = [], { committ
   return roster;
 }
 
+// How much the cued round is worth: the full bonus with all three standing,
+// nothing once the CUE is the only one left, because a cue with nobody to cue
+// is a gesture at an empty house.
+export function hallFormationBonus(roster) {
+  const standing = liveHallApparitions(roster).length;
+  return HALL_CUE_BONUS * Math.max(0, standing - 1) / Math.max(1, HALL_APPARITION_COUNT - 1);
+}
+
+// The multiplier on one body's share of the authored blow. 1 is its plain
+// third; a cued round strikes above it.
+export function hallFormationShare(roster) {
+  return 1 + Math.max(0, Number(roster?.formation) || 0);
+}
+
+const markCue = (member, roster) => {
+  if (member?.role === HALL_APPARITION_ROLE.CUE) roster.cued = true;
+  return member;
+};
+
 export function beginHallEnemyTurns(roster) {
   if (!roster) return null;
   const index = roster.members.findIndex((member) => member.health > 0);
@@ -172,7 +217,7 @@ export function beginHallEnemyTurns(roster) {
   roster.activeIndex = index;
   roster.activeActorId = roster.members[index].id;
   roster.members[index].acting = true;
-  return roster.members[index];
+  return markCue(roster.members[index], roster);
 }
 
 // Returns the next living enemy, or null after the third slot hands initiative
@@ -186,7 +231,7 @@ export function advanceHallEnemyTurn(roster) {
     roster.activeIndex = index;
     roster.activeActorId = member.id;
     member.acting = true;
-    return member;
+    return markCue(member, roster);
   }
   roster.activeIndex = -1;
   roster.activeActorId = 'player';

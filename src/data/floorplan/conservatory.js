@@ -1330,3 +1330,43 @@ export const conservatory = {
     ...EUCLIDEAN_ADDITIONS,
   ],
 };
+
+// EVERY STAIR LANDING IN THE BUILDING, FLATTENED.
+//
+// The landing records already carry everything a placement needs — an id, a
+// rectangle in the LOGICAL frame (`at`, the one the plan is written in, not
+// `physicalAt`, which is the render frame and resolves into solid rock if you
+// confuse the two) and a height. They were reachable only by walking
+// levels[].stairs[].landings[], so nothing outside the compiler ever used them.
+//
+// Keyed `stairId/landingId`, which is how world/corridor-dressing.js names the
+// four it dresses.
+export const CONSERVATORY_LANDINGS = Object.freeze(
+  conservatory.levels.flatMap((level) => (level.stairs || []).flatMap((stair) =>
+    (stair.landings || []).map((landing) => Object.freeze({
+      key: `${stair.id}/${landing.id}`,
+      stairId: stair.id,
+      id: landing.id,
+      at: landing.at,
+      size: landing.size || { x: 1, y: 1 },
+      height: landing.height,
+      renderGroup: landing.renderGroup || stair.renderGroup || '',
+    })))));
+
+// Every straight flight, flattened, for the same reason the landings are.
+// `from`/`to` are AUTHORED metres and `width` extends to one side of `from` —
+// which side is not consistent between stairs, so consumers measure it off the
+// compiled stair cells rather than trusting a sign here.
+export const CONSERVATORY_FLIGHTS = Object.freeze(
+  conservatory.levels.flatMap((level) => (level.stairs || []).flatMap((stair) =>
+    (stair.flights || []).map((flight) => Object.freeze({
+      key: `${stair.id}/${flight.id || 'flight'}`,
+      stairId: stair.id,
+      id: flight.id || 'flight',
+      from: flight.from,
+      to: flight.to,
+      fromH: flight.fromH,
+      toH: flight.toH,
+      width: flight.width,
+      rises: flight.rises,
+    })))));

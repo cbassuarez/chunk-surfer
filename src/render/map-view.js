@@ -13,6 +13,12 @@ import { fitText } from './fit-text.js';
 
 const clip = (value, width) => fitText(value, Math.max(1, Math.floor(width)));
 
+// How far each storey is offset from the one under it, in cells, and how much
+// dimmer it gets per storey away from the one being read.
+const STACK_DX = 1.7;
+const STACK_DY = 0.85;
+const STACK_FADE = 0.46;
+
 function rightText(x, y, w, text, cls = 'ui-secondary', alpha = 1) {
   const value = clip(text, w);
   uiText(x + Math.max(0, w - value.length), y, value, cls, alpha);
@@ -42,7 +48,7 @@ function routeLabel(model) {
   return { text: 'ROUTE UNKNOWN', cls: 'ui-secondary' };
 }
 
-function drawTopology(command, viewport) {
+function drawTopology(command, viewport, alpha = 1) {
   const open = command.open;
   const runs = Array.isArray(command.runs) ? command.runs : null;
   const transform = command.transform;
@@ -53,7 +59,7 @@ function drawTopology(command, viewport) {
     ctx.rect(viewport.x * cellW * dpr, viewport.y * cellH * dpr, viewport.w * cellW * dpr, viewport.h * cellH * dpr);
     ctx.clip();
     ctx.fillStyle = themeRoleColor('silkscreen');
-    ctx.globalAlpha = 0.18;
+    ctx.globalAlpha = 0.18 * alpha;
     const cell = Math.max(0.7, transform.length(1));
     if (runs) {
       for (const run of runs) {
@@ -96,13 +102,17 @@ function drawRoute(command) {
   });
 }
 
-function drawMapCommands(commands, viewport, now) {
+// `ghost` draws a floor that is NOT the one you are reading: its shape and its
+// doors, dim, and nothing else. A stacked floor should read as a storey of the
+// building, not as forty labels behind the one you are looking at.
+function drawMapCommands(commands, viewport, now, { ghost = false, alpha = 1 } = {}) {
   // The tower is one page now, and its rooms are stacked — the ringing room and
   // the bell chamber share a footprint — so two callouts can want the same row.
   // Nudge the later one down rather than printing them on top of each other.
   const labelRows = new Set();
   for (const command of commands) {
-    if (command.kind === 'topology') drawTopology(command, viewport);
+    if (command.kind === 'topology') drawTopology(command, viewport, alpha);
+    else if (ghost) continue;
     else if (command.kind === 'route') drawRoute(command);
     else if (command.kind === 'door') {
       const glyph=command.state==='locked'?'╫':command.state==='sealed'||command.state==='blocked'?'▓':command.state==='unknown'?'?':command.state==='closed'?'┼':'·';
@@ -151,80 +161,72 @@ function ageText(contact, now) {
 function drawSystemStatus(model, rect, now) {
   const route = routeLabel(model);
   const hush = hushStatus(model, now);
+  // MEASURE THE RIGHT SIDE BEFORE CLIPPING THE LEFT.
+  //
+  // The left string was clipped to a hardcoded `rect.w - 22` while the right one
+  // was drawn right-aligned at its full length — and "HUSH NONE · ROUTE OK ·
+  // SAME FLOOR" is thirty-three characters, so eleven of them landed on top of
+  // the target name. On screen that read as one garbled word.
+  const right=`HUSH ${hush.label} · ${route.text}`;
   const you=clip(currentRoomLabel(model),Math.max(8,Math.floor(rect.w*.28)));
   const target=clip(targetRoomLabel(model),Math.max(8,Math.floor(rect.w*.25)));
-  uiText(rect.x,rect.y,clip(`YOU ${you} · MARK ${target}`,Math.max(1,rect.w-22)),'ui-primary',.78);
-  rightText(rect.x,rect.y,rect.w,`HUSH ${hush.label} · ${route.text}`,hush.cls==='ui-danger'?hush.cls:route.cls,.72);
-}
-
-function drawLegend(rect) {
-  const items = [
-    ['●', 'YOU', 'ui-green'],
-    ['◆', 'TARGET', 'ui-blue'],
-    ['■', 'DONE', 'ui-green'],
-    ['◇', 'ROOM', 'ui-primary'],
-    ['╫', 'LOCKED', 'ui-danger'],
-    ['⌜⌟', 'HUSH', 'ui-danger'],
-  ];
-  let x = rect.x;
-  let y = rect.y;
-  for (const [glyph, label, cls] of items) {
-    const text = `${glyph} ${label}`;
-    if (x + text.length > rect.x + rect.w) { x = rect.x; y++; }
-    if (y >= rect.y + rect.h) break;
-    uiText(x, y, text, cls, .70);
-    x += text.length + 2;
-  }
+  uiText(rect.x,rect.y,clip(`YOU ${you} · MARK ${target}`,Math.max(1,rect.w-right.length-2)),'ui-primary',.78);
+  rightText(rect.x,rect.y,rect.w,right,hush.cls==='ui-danger'?hush.cls:route.cls,.72);
 }
 
 function spaceState(space){
+  // The symbol, the word and the colour for one room's state — shared by the
+  // caption and the legend so a glyph on the plan and a word under it can never
+  // disagree. RECORDABLE ranks above VISITED: "somewhere I am supposed to
+  // record" is the question the map is most often asked.
   if(space.current)return['●','CURRENT','ui-green'];
-  if(space.waypoint)return['◆','WAYPOINT','ui-blue'];
+  if(space.waypoint)return['◆','TARGET','ui-blue'];
   if(space.objective?.recorded)return['■','RECORDED','ui-green'];
+  if(space.objective)return['◈','RECORDABLE','ui-blue'];
   if(space.unknown)return['?','UNKNOWN','ui-secondary'];
   if(space.visited)return['◇','VISITED','ui-primary'];
   return['·','NOT VISITED','ui-secondary'];
 }
 
-function entranceState(entrance){
-  const state=String(entrance?.state||'unknown').toLowerCase();
-  if(state==='blocked'||state==='sealed')return['SEALED / BLOCKED','ui-danger'];
-  if(state==='locked')return['LOCKED','ui-danger'];
-  if(state==='closed')return['CLOSED','ui-amber'];
-  if(state==='open')return['OPEN','ui-green'];
-  return['UNKNOWN','ui-secondary'];
+function drawLegend(rect) {
+  // RECORDABLE FIRST, because it is the one symbol that answers a question the
+  // player actually has — "where am I supposed to be recording?" — and it was
+  // previously indistinguishable from any other room.
+  const items = [
+    ['◈', 'RECORDABLE', 'ui-blue'],
+    ['■', 'DONE', 'ui-green'],
+    ['●', 'YOU', 'ui-green'],
+    ['◆', 'TARGET', 'ui-blue'],
+    ['◇', 'ROOM', 'ui-primary'],
+    ['╫', 'LOCKED', 'ui-danger'],
+  ];
+  let x = rect.x;
+  for (const [glyph, label, cls] of items) {
+    const width = 2 + label.length + 2;
+    if (x + width > rect.x + rect.w) break;
+    uiGlyph(x, rect.y, glyph, cls, .8);
+    uiText(x + 2, rect.y, label, 'ui-secondary', .55);
+    x += width;
+  }
 }
 
 function drawDetail(model, nav, rect) {
   const selected = selectedMapSpace(nav, model);
-  const spaces=(model.spaces||[]).filter((space)=>space.floorId===nav.floorId&&space.selectable!==false);
-  const listRows=Math.max(1,Math.min(spaces.length,Math.floor(rect.h*.44)));
-  const selectedAt=Math.max(0,spaces.findIndex((space)=>space.id===selected?.id));
-  const start=Math.max(0,Math.min(selectedAt-Math.floor(listRows/2),spaces.length-listRows));
-  uiText(rect.x,rect.y,`ROOMS · ${mapFloor(model,nav.floorId)?.label||'UNKNOWN'}`,'ui-label',.68);
-  spaces.slice(start,start+listRows).forEach((space,index)=>{
-    const on=space.id===selected?.id,[mark,,cls]=spaceState(space),row=rect.y+1+index;
-    uiText(rect.x,row,on?'▸':' ',on?'ui-amber':'ui-secondary',on?1:.4);
-    uiText(rect.x+2,row,mark,cls,on?1:.64);
-    uiText(rect.x+4,row,clip(space.label,Math.max(1,rect.w-4)),on?'ui-amber':cls,on?1:.68);
-  });
-  const sy=rect.y+listRows+2;
-  if(sy>=rect.y+rect.h||!selected)return;
-  uiLine(rect.x,sy-1,rect.x+rect.w,sy-1,undefined,.26);
-  const [,stateLabel,stateCls]=spaceState(selected);
-  uiText(rect.x,sy,clip(selected.label,rect.w),selected.waypoint?'ui-blue':selected.current?'ui-green':'ui-amber',.94);
-  uiText(rect.x,sy+1,clip(`${stateLabel} · ${mapFloor(model,selected.floorId)?.label||'UNKNOWN'}`,rect.w),stateCls,.75);
-  let row=sy+3;
-  if(selected.objective&&row<rect.y+rect.h){
-    uiText(rect.x,row,clip(`WORK ORDER ${String(selected.objective.sequence).padStart(2,'0')} · ${selected.objective.fileCount||0} SHEET${selected.objective.fileCount===1?'':'S'}`,rect.w),'ui-blue',.7);row+=2;
+  if (!selected) {
+    uiText(rect.x, rect.y, clip('NO ROOM SELECTED · [WASD] TO CHOOSE ONE', rect.w), 'ui-secondary', .6);
+    return;
   }
-  const entrances=selected.entrances||[];
-  if(row<rect.y+rect.h)uiText(rect.x,row++,entrances.length?'ENTRANCES':'ENTRANCES · NONE LISTED','ui-label',.62);
-  entrances.forEach((entrance,index)=>{
-    if(row>=rect.y+rect.h)return;
-    const [label,cls]=entranceState(entrance);
-    uiText(rect.x,row,clip(`${index+1} ${entrance.id} · ${label}`,rect.w),cls,.76);row++;
-  });
+  const [, stateLabel, stateCls] = spaceState(selected);
+  const verb = selected.waypoint ? '[ENTER] CLEAR TARGET'
+    : selected.waypointable === false ? '' : '[ENTER] SET TARGET';
+  const cls = selected.waypoint ? 'ui-blue' : selected.current ? 'ui-green' : 'ui-amber';
+  const floorLabel = mapFloor(model, selected.floorId)?.label || 'UNKNOWN';
+  const takes = selected.objective
+    ? ` · TAKE ${String(selected.objective.sequence).padStart(2, '0')}${selected.objective.recorded ? ' DONE' : ''}`
+    : '';
+  const left = `${selected.waypoint ? '◆' : '▸'} ${selected.label} · ${floorLabel} · ${stateLabel}${takes}`;
+  uiText(rect.x, rect.y, clip(left, Math.max(1, rect.w - verb.length - 2)), cls, .96);
+  if (verb) rightText(rect.x, rect.y, rect.w, verb, selected.waypoint ? 'ui-danger' : 'ui-blue', .88);
 }
 
 export function drawMapView({ model, nav, bagLayout, now = 0 }) {
@@ -244,14 +246,47 @@ export function drawMapView({ model, nav, bagLayout, now = 0 }) {
   drawSystemStatus(model,{x:layout.mapViewport.x,y:layout.mapViewport.y,w:layout.mapViewport.w,h:1},clockMs);
   const viewport={...layout.mapViewport,y:layout.mapViewport.y+2,h:Math.max(4,layout.mapViewport.h-4)};
   uiLine(viewport.x, viewport.y - .45, viewport.x + viewport.w, viewport.y - .45, undefined, .24);
+  // THE BUILDING AS A STACK, NOT AS FIVE SEPARATE DRAWINGS.
+  //
+  // The floors used to be a row of [B1] [G] [U1] tabs and one plan at a time,
+  // which makes a five-storey building read as five unrelated pictures and
+  // gives no sense of what is above or below you. They are drawn stacked in
+  // perspective now: each storey offset from the one under it, the one you are
+  // reading sharp and the rest ghosted to their outline. Storeys BELOW the
+  // selected one sit down-left, storeys above sit up-right, so the stack reads
+  // the way a section drawing does.
+  const floors = model.floors || [];
+  const here = Math.max(0, floors.findIndex((candidate) => candidate.id === floor?.id));
+  const offsetFor = (delta) => ({
+    ...viewport,
+    x: viewport.x + delta * STACK_DX,
+    y: viewport.y - delta * STACK_DY,
+    // Storeys further from the eye are drawn slightly smaller, which is what
+    // makes the offset read as perspective rather than as a printing error.
+    w: viewport.w - Math.abs(delta) * STACK_DX * 2,
+    h: viewport.h - Math.abs(delta) * STACK_DY * 2,
+  });
+  // Furthest first, so nearer storeys paint over them.
+  const stack = floors.map((candidate, index) => ({ candidate, delta: index - here }))
+    .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+  for (const { candidate, delta } of stack) {
+    if (delta === 0) continue;
+    const ghostViewport = offsetFor(delta);
+    if (ghostViewport.w < 8 || ghostViewport.h < 4) continue;
+    const ghostCommands = buildMapCommands({
+      model, nav: { ...nav, floorId: candidate.id },
+      layout: { ...layout, mapViewport: ghostViewport }, now: clockMs,
+    });
+    drawMapCommands(ghostCommands, ghostViewport, now, { ghost: true, alpha: STACK_FADE ** Math.abs(delta) });
+  }
   const commands = buildMapCommands({ model, nav, layout: { ...layout, mapViewport: viewport }, now: clockMs });
   drawMapCommands(commands, viewport, now);
 
-  drawLegend({ x: layout.mapViewport.x, y: layout.mapViewport.y + layout.mapViewport.h - 1, w: layout.mapViewport.w, h: 2 });
-
-  if (layout.dividerX != null) uiLine(layout.dividerX, layout.mapViewport.y - 1, layout.dividerX, layout.mapViewport.y + layout.mapViewport.h, undefined, .34);
-  drawDetail(model,nav,layout.detail);
-  uiText(layout.progressRail.x, layout.progressRail.y, progressText(model, layout.progressRail.w), 'ui-blue', .68);
-  rightText(layout.progressRail.x, layout.progressRail.y, layout.progressRail.w, route.text, route.cls, .68);
+  drawDetail(model, nav, layout.detail);
+  drawLegend(layout.legendRail);
+  // Nothing on the progress rail: the bag already draws the task line and the
+  // controls under it, and the five takes are on the plan as RECORDABLE rooms.
+  // A row of unexplained initials (SB / TN / TCH / TPW / TC), truncated, was
+  // saying the same thing worse.
   return { layout, commands, selected: selectedMapSpace(nav, model), actions: mapActionRail(selectedMapSpace(nav, model), { floorCount: model.floors?.length || 1 }) };
 }

@@ -45,23 +45,47 @@ def family_name(raw):
     return (raw or 'Nimbus Roman').split(',')[0].strip().strip('"')
 
 
+# VENDORED FACES, RESOLVED BY PATH.
+#
+# This used to ask fc-match for a family name and fall back to a hardcoded
+# /usr/share/fonts/truetype/dejavu path that does not exist outside Linux. Both
+# halves were wrong on a Mac: fc-match answers "Nimbus Roman" with Times, and
+# the macOS system faces are .ttc COLLECTIONS, where ImageFont.truetype takes
+# index 0 regardless of the style asked for — so a bold request could silently
+# come back regular.
+#
+# assets/fonts/manifest.json is the same file the SVG compiler reads, so the
+# glyphs measured at compile time are the glyphs drawn here.
+FONT_ROOT = Path(__file__).resolve().parents[2] / 'assets' / 'fonts'
+
+
+@lru_cache(maxsize=1)
+def font_manifest():
+    with open(FONT_ROOT / 'manifest.json', encoding='utf8') as handle:
+        return json.load(handle)
+
+
+@lru_cache(maxsize=1)
+def family_index():
+    """Family NAME (as it appears in the SVG) -> the family's face table."""
+    return {entry['name']: entry['faces'] for entry in font_manifest()['families'].values()}
+
+
 @lru_cache(maxsize=128)
 def font_file(family, weight, italic):
-    styles=[]
-    if weight>=650 and italic: styles=['Bold Italic','Bold Oblique','Bold']
-    elif weight>=650: styles=['Bold','Demi Bold','Semibold']
-    elif italic: styles=['Italic','Oblique','Regular']
-    else: styles=['Regular','Book','Roman']
-    for style in styles:
-        try:
-            out=subprocess.check_output(['fc-match','-f','%{file}',f'{family}:style={style}'],text=True).strip()
-            if out and Path(out).exists(): return out
-        except Exception: pass
-    try:
-        out=subprocess.check_output(['fc-match','-f','%{file}',family],text=True).strip()
-        if out and Path(out).exists(): return out
-    except Exception: pass
-    return '/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf'
+    faces = family_index().get(family)
+    if faces is None:
+        raise SystemExit(
+            f"paper: '{family}' is not a vendored family. "
+            f"Known: {', '.join(sorted(family_index()))}. "
+            "Fonts are never resolved through fontconfig here — see assets/fonts/manifest.json."
+        )
+    key = ('boldItalic' if italic else 'bold') if weight >= 650 else ('italic' if italic else 'regular')
+    entry = faces.get(key) or faces['regular']
+    path = FONT_ROOT / entry['file']
+    if not path.is_file():
+        raise SystemExit(f"paper: vendored face missing: {path}")
+    return str(path)
 
 
 @lru_cache(maxsize=512)

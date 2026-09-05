@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto';
 import { spawn, spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import sharp from 'sharp';
 import { WORK_ORDER, PAGES } from '../src/data/conservatory-script.js';
 import { SOURCE_PAGES, sourcePageDocument } from '../src/data/source-pages.js';
 import {
@@ -27,24 +28,72 @@ const COMPILER_VERSION='paper-v1.5.0-paper3d-print-history';
 const RASTERIZER_VERSION='paper-raster-v1.4-impact-readable';
 const PT_MM=25.4/72;
 
-// These defaults are deliberately boring office faces. They are only build-time
-// inputs: the raster shipped to the game contains the final glyphs, and the
-// fingerprint below makes a font substitution invalidate every affected page.
-const FONT={
-  sans:process.env.PAPER_FONT_SANS||'Nimbus Sans',
-  condensed:process.env.PAPER_FONT_CONDENSED||'TeXGyreHerosCondensed',
-  mono:process.env.PAPER_FONT_MONO||'Nimbus Mono PS',
-  serif:process.env.PAPER_FONT_SERIF||'Nimbus Roman',
-};
+// VENDORED, NOT LOOKED UP.
+//
+// These were four family NAMES resolved through fc-match at build time, and the
+// fingerprint below was supposed to make a substitution invalidate every
+// affected page. It could not: fc-match ALWAYS returns something, so a machine
+// without Nimbus Roman silently baked Times and hashed it as a perfectly valid
+// fingerprint. Two builds of the same sheet on two machines differed and the
+// catalog called both of them fine.
+//
+// So the faces are committed under assets/fonts and resolved by PATH. The
+// fingerprint is now the hash of the file that will actually be drawn with, and
+// a missing face fails the build instead of quietly becoming Helvetica.
+//
+// `condensed` is gone rather than vendored: TeXGyreHerosCondensed has no call
+// sites at all, and an unused font entry is a substitution waiting to be blamed
+// for something it did not do. `sans` stays — six forms set their machine-entry
+// fields in it (`valueKind:'sans'`), and retiring it would have silently
+// restyled six documents to make a font table tidier.
+const FONT_DIR=path.join(ROOT,'assets/fonts');
+const FONT_MANIFEST=JSON.parse(readFileSync(path.join(FONT_DIR,'manifest.json'),'utf8'));
+const FONT=Object.freeze(Object.fromEntries(
+  Object.entries(FONT_MANIFEST.families).map(([kind,entry])=>[kind,entry.name])));
 
 function sha(value){return createHash('sha256').update(value instanceof Uint8Array?value:String(value)).digest('hex');}
-function fontFingerprint(family){
-  const r=spawnSync('fc-match',['-f','%{file}',family],{encoding:'utf8'});
-  const file=String(r.stdout||'').trim();
-  if(!file||!existsSync(file))return sha(`unresolved:${family}`);
-  try{return sha(readFileSync(file));}catch{return sha(`unreadable:${family}`);}
+export function fontFacePath(kind,{weight=400,italic=false}={}){
+  const family=FONT_MANIFEST.families[kind];
+  if(!family)throw new Error(`paper: no vendored family for "${kind}"`);
+  const face=weight>=650?(italic?'boldItalic':'bold'):(italic?'italic':'regular');
+  const entry=family.faces[face]||family.faces.regular;
+  const file=path.join(FONT_DIR,entry.file);
+  if(!existsSync(file))throw new Error(`paper: vendored face missing: ${entry.file} (run git lfs / re-fetch assets/fonts)`);
+  return file;
 }
-const FONT_FINGERPRINT=Object.freeze(Object.fromEntries(Object.entries(FONT).map(([k,v])=>[k,fontFingerprint(v)])));
+function fontFingerprint(kind){
+  const family=FONT_MANIFEST.families[kind];
+  // Every face of the family, so italicising a document also invalidates it.
+  return sha(Object.values(family.faces).map((f)=>{
+    const file=path.join(FONT_DIR,f.file);
+    if(!existsSync(file))throw new Error(`paper: vendored face missing: ${f.file}`);
+    const actual=sha(readFileSync(file));
+    if(actual!==f.sha256)throw new Error(`paper: ${f.file} does not match assets/fonts/manifest.json`);
+    return `${f.file}:${actual}`;
+  }).join('|'));
+}
+const FONT_FINGERPRINT=Object.freeze(Object.fromEntries(Object.keys(FONT_MANIFEST.families).map((k)=>[k,fontFingerprint(k)])));
+// THE TYPE SCALE, AND THE GRID THAT FOLLOWS FROM IT.
+//
+// Body and heading are the two sizes anybody actually chooses; everything else
+// is a fixed relationship to the body so a form's internal hierarchy survives a
+// resize instead of being re-typed by hand nine times.
+//
+// RULE PITCH IS DERIVED, NOT DECLARED. It used to be a `spacing` typed into
+// ruledArea and a `leading` typed into renderParagraphs, two numbers that had to
+// agree and nothing made them: eight of the nine templates disagreed, and the
+// works order ran rules at 6.00mm against text at 5.35mm — a full line out after
+// ten. There is now one number, computed here, and no way to type a second.
+const TYPE=Object.freeze({
+  body:12,
+  heading:16,
+  get label(){return this.body*0.87;},     // small caps under the body
+  get fieldValue(){return this.body*1.01;}, // machine entry, a hair above it
+  get areaLabel(){return this.body*0.84;},
+  // Ruled stationery is set about one and a half ems apart.
+  get pitch(){return this.body*PT_MM*1.5;},
+});
+
 function slug(id){return `${String(id).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,64)}-${sha(id).slice(0,8)}`;}
 function esc(s=''){return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');}
 function seeded(seed){let s=parseInt(sha(seed).slice(0,8),16)>>>0;return()=>{s+=0x6d2b79f5;let t=s;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;};}
@@ -52,21 +101,23 @@ function clamp(v,lo,hi){return Math.max(lo,Math.min(hi,v));}
 function issuerById(id){return Object.values(PAPER_ISSUER).find((x)=>x.id===id)||PAPER_ISSUER.UNBRANDED;}
 function reproById(id){return Object.values(PAPER_REPRODUCTION).find((x)=>x.id===id)||PAPER_REPRODUCTION.ORIGINAL_CLEAN;}
 function stockById(id){return Object.values(PAPER_STOCK).find((x)=>x.id===id)||PAPER_STOCK.OFFICE_WHITE;}
-function fontFamily(kind='sans'){
-  const family=FONT[kind]||FONT.sans;
-  const fallback=kind==='mono'?'Liberation Mono,monospace':kind==='serif'?'Liberation Serif,serif':'Liberation Sans,sans-serif';
-  return `'${family.replaceAll("'",'')}',${fallback}`;
+function fontFamily(kind='serif'){
+  const family=FONT[kind];
+  if(!family)throw new Error(`paper: unknown font kind "${kind}" — the vendored families are ${Object.keys(FONT).join(', ')}`);
+  // The generic keeps the SVG valid for any other viewer; the rasteriser never
+  // reaches it, because it resolves the family name straight to a vendored file.
+  return `'${family.replaceAll("'",'')}',${kind==='mono'?'monospace':'serif'}`;
 }
 function processAttr(process){return process?` data-process="${esc(process)}"`:'';}
-function text(x,y,value,{size=10.6,weight=400,color='#252525',tracking=0,kind='serif',opacity=1,anchor='start',italic=false,rotate=0,process=null}={}){
+function text(x,y,value,{size=TYPE.body,weight=400,color='#252525',tracking=0,kind='serif',opacity=1,anchor='start',italic=false,rotate=0,process=null}={}){
   const tx=Number(x).toFixed(3),ty=Number(y).toFixed(3),transform=rotate?` transform="rotate(${Number(rotate).toFixed(3)} ${tx} ${ty})"`:'';
   return `<text x="${tx}" y="${ty}"${transform}${processAttr(process)} font-family="${fontFamily(kind)}" font-size="${(size*PT_MM).toFixed(4)}" font-weight="${weight}"${italic?' font-style="italic"':''} letter-spacing="${(tracking*PT_MM).toFixed(4)}" fill="${color}" fill-opacity="${opacity.toFixed(3)}" text-anchor="${anchor}">${esc(value)}</text>`;
 }
 function line(x1,y1,x2,y2,{color='#494846',opacity=.42,width=.24,dash='',process='preprinted-stationery'}={}){return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"${processAttr(process)} stroke="${color}" stroke-opacity="${opacity}" stroke-width="${width}"${dash?` stroke-dasharray="${dash}"`:''}/>`;}
 function box(x,y,w,h,{stroke='#454441',opacity=.5,width=.28,fill='none',fillOpacity=1,rx=0,process='preprinted-stationery'}={}){return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}"${processAttr(process)} fill="${fill}" fill-opacity="${fillOpacity}" stroke="${stroke}" stroke-opacity="${opacity}" stroke-width="${width}"/>`;}
-function label(x,y,value,{color='#403E39',size=9.2,anchor='start'}={}){return text(x,y,String(value).toUpperCase(),{size,weight:600,color,tracking:.08,anchor,kind:'serif',process:'preprinted-stationery'});}
-function fieldValue(x,y,value,{kind='mono',size=10.7,color='#232321',anchor='start',weight=400,process=null}={}){return text(x,y,value,{size,kind,color,anchor,weight,process});}
-function heading(x,y,value,{size=12.8,anchor='start',color='#2C2A26'}={}){return text(x,y,value,{size,weight:700,kind:'serif',tracking:.025,anchor,color,process:'preprinted-stationery'});}
+function label(x,y,value,{color='#403E39',size=TYPE.label,anchor='start'}={}){return text(x,y,String(value).toUpperCase(),{size,weight:600,color,tracking:.08,anchor,kind:'serif',process:'preprinted-stationery'});}
+function fieldValue(x,y,value,{kind='mono',size=TYPE.fieldValue,color='#232321',anchor='start',weight=400,process=null}={}){return text(x,y,value,{size,kind,color,anchor,weight,process});}
+function heading(x,y,value,{size=TYPE.heading,anchor='start',color='#2C2A26'}={}){return text(x,y,value,{size,weight:700,kind:'serif',tracking:.025,anchor,color,process:'preprinted-stationery'});}
 
 function approxChars(widthMm,sizePt,kind='sans'){
   const em=kind==='mono'?.60:kind==='serif'?.50:.52;
@@ -268,30 +319,47 @@ function documentFooter(issuer,pageIndex,total,{ref='',copy=false,repro=null}={}
   else if(issuer.department)left=`ELLERY CONSERVATOIRE OF MUSIC · ${issuer.department}`;
   return `${line(17,282.0,193,282.0,{color,opacity:.24-faded*.2,width:.18})}${text(17,286.4,left,{size:6.7,kind:'serif',color,opacity:.54-faded,process:'preprinted-stationery'})}${text(193,286.4,`SHEET ${pageIndex+1} OF ${total}`,{size:6.7,kind:'serif',color,opacity:.54-faded,anchor:'end',process:'preprinted-stationery'})}`;
 }
-function renderParagraphs(entries,{x=20,y=58,width=170,bottom=270,size=10.6,kind='serif',leading=5.25,color='#242321',blank=3.2,indent=0}={}){
-  let out='',cy=y;
+function renderParagraphs(entries,{x=20,width=170,size=TYPE.body,kind='serif',color='#242321',indent=0,
+  grid=null,y=58,bottom=270,blankLines=1}={}){
+  // ON THE RULES, OR ON NOTHING.
+  //
+  // When a `grid` is handed in — which is every ruled template — the first line
+  // sits on the first rule and EVERY vertical advance is a whole number of
+  // pitches. That last part matters as much as the pitch itself: a paragraph gap
+  // of 2.7mm on a 6.35mm grid puts the rest of the page permanently between the
+  // lines, which is most of what made these sheets look wrong even where the
+  // leading happened to match.
+  const pitch=grid?grid.pitch:5.25;
+  const stop=grid?grid.bottom:bottom;
+  let out='',cy=grid?grid.first:y;
+  const step=(n=1)=>{cy+=pitch*n;};
   for(const entry of entries){
-    if(cy>bottom)break;
-    if(entry.kind==='blank'){cy+=blank;continue;}
-    if(entry.kind==='rule'){out+=line(x,cy,width+x,cy,{opacity:.28,width:.20});cy+=3.4;continue;}
+    if(cy>stop)break;
+    if(entry.kind==='blank'){step(blankLines);continue;}
+    if(entry.kind==='rule'){out+=line(x,cy,width+x,cy,{opacity:.28,width:.20});step();continue;}
     if(entry.kind==='field'){
-      out+=label(x,cy,entry.label);out+=fieldValue(x+37,cy,entry.value,{size:size-.1});cy+=leading;continue;
+      out+=label(x,cy,entry.label);out+=fieldValue(x+37,cy,entry.value,{size:TYPE.fieldValue});step();continue;
     }
     const raw=entry.text??entry.raw??'';
     const lines=wrapWords(raw,width-indent,size,kind);
-    for(const row of lines){if(cy>bottom)break;out+=text(x+indent,cy,row,{size,kind,color,opacity:.94});cy+=leading;}
-    cy+=entry.kind==='paragraph'?1.4:.4;
+    for(const row of lines){if(cy>stop)break;out+=text(x+indent,cy,row,{size,kind,color,opacity:.94});step();}
+    if(entry.kind==='paragraph')step();
   }
   return {svg:out,y:cy};
 }
-function ruledArea(x,y,w,h,{spacing=6.2,labelText='',leftGutter=0}={}){
+function ruledArea(x,y,w,h,{labelText='',leftGutter=0}={}){
   // Traditional ruled stationery: open field, no shaded HTML-table header and
   // no enclosing UI rectangle. The form printer supplies only hairlines and a
   // modest small-cap legend.
+  //
+  // Returns its GRID as well as its ink, because the body that goes into this
+  // area has to sit on these rules and the only way to guarantee that is to
+  // hand it the same numbers rather than let it invent its own.
+  const spacing=TYPE.pitch;
   let out='';
   let start=y;
   if(labelText){
-    out+=label(x,y+4.8,labelText,{size:8.9});
+    out+=label(x,y+4.8,labelText,{size:TYPE.areaLabel});
     out+=line(x,y+7.0,x+w,y+7.0,{color:'#4F4B44',opacity:.42,width:.24});
     out+=line(x,y+7.72,x+w,y+7.72,{color:'#6B665D',opacity:.17,width:.14});
     start=y+7.72+spacing;
@@ -299,19 +367,20 @@ function ruledArea(x,y,w,h,{spacing=6.2,labelText='',leftGutter=0}={}){
     out+=line(x,y,x+w,y,{color:'#5B574F',opacity:.30,width:.18});
     start=y+spacing;
   }
-  for(let yy=start;yy<y+h-1;yy+=spacing)out+=line(x+(leftGutter||0),yy,x+w,yy,{color:'#716C63',opacity:.18,width:.15});
+  const bottom=y+h-1;
+  for(let yy=start;yy<bottom;yy+=spacing)out+=line(x+(leftGutter||0),yy,x+w,yy,{color:'#716C63',opacity:.18,width:.15});
   if(leftGutter)out+=line(x+leftGutter,y+(labelText?7.72:0),x+leftGutter,y+h,{color:'#716C63',opacity:.20,width:.16});
-  return out;
+  return {svg:out,grid:{first:start,pitch:spacing,bottom}};
 }
 function fieldRow(x,y,w,labelText,value,{labelW=32,h=8,valueKind='mono',shade=true}={}){
   // Preprinted office forms usually leave machine-entry space rather than
   // turning each datum into a spreadsheet cell. Labels and baselines are
   // stationery; the value inherits the later office-printer process.
   const baseline=y+Math.min(h-2.0,5.9),valueX=x+labelW;
-  let out=label(x,baseline,labelText,{size:9.1});
+  let out=label(x,baseline,labelText,{size:TYPE.label});
   out+=line(valueX,baseline+1.35,x+w,baseline+1.35,{color:'#5E5A52',opacity:.31,width:.17});
   const lines=wrapWords(value,w-labelW-2.2,11.2,valueKind).slice(0,Math.max(1,Math.floor(h/4.2)));
-  lines.forEach((row,i)=>{out+=fieldValue(valueX+1.4,baseline+i*4.35,row,{size:11.15,kind:valueKind});});
+  lines.forEach((row,i)=>{out+=fieldValue(valueX+1.4,baseline+i*4.35,row,{size:TYPE.fieldValue,kind:valueKind});});
   return out;
 }
 function templateWorkOrder(doc,entries,ctx){
@@ -327,8 +396,11 @@ function templateWorkOrder(doc,entries,ctx){
     y+=4;
   }else y=43;
   const boxY=y,boxH=274-y;
-  out+=ruledArea(17,boxY,176,boxH,{spacing:6.0,labelText:pageIndex===0?'SCOPE / INSTRUCTIONS':'CONTINUED INSTRUCTIONS'});
-  const body=renderParagraphs(rest,{x:21,y:boxY+14,width:168,bottom:boxY+boxH-6,size:10.6,kind:'serif',leading:5.35,blank:2.7});out+=body.svg;
+  const area=ruledArea(17,boxY,176,boxH,{labelText:pageIndex===0?'SCOPE / INSTRUCTIONS':'CONTINUED INSTRUCTIONS'});out+=area.svg;
+  // TYPED, NOT TYPESET. The instructions came off the same machine as the field
+  // values above them; a works order is not a book. Six of the other forms
+  // already set their body in mono and this one was the odd one out.
+  const body=renderParagraphs(rest,{x:21,width:168,kind:'mono',grid:area.grid});out+=body.svg;
   out+=documentFooter(issuer,pageIndex,totalPages,{ref,copy,repro});return out;
 }
 function templateFieldLog(doc,entries,ctx){
@@ -346,8 +418,8 @@ function templateFieldLog(doc,entries,ctx){
   const {map,rest}=takeFields(entries,['RIG','REF']);let y=60;
   if(map.has('RIG')){out+=fieldRow(17,y,176,'RIG',map.get('RIG'),{labelW:22,h:9});y+=10;}
   if(map.has('REF')){out+=fieldRow(17,y,176,'REF',map.get('REF'),{labelW:22,h:9});y+=10;}
-  y+=3;const h=271-y;out+=ruledArea(17,y,176,h,{spacing:6.7,labelText:'FIELD NOTES',leftGutter:17});
-  const body=renderParagraphs(rest,{x:38,y:y+15.4,width:151,bottom:y+h-8,size:11.5,kind:'mono',leading:6.7,blank:1.6});out+=body.svg;
+  y+=3;const h=271-y;const area=ruledArea(17,y,176,h,{labelText:'FIELD NOTES',leftGutter:17});out+=area.svg;
+  const body=renderParagraphs(rest,{x:38,width:151,kind:'mono',grid:area.grid});out+=body.svg;
   out+=text(17,278,'Continued over  YES / NO',{size:7.5,kind:'serif',opacity:.64,process:'preprinted-stationery'});
   out+=documentFooter(issuer,pageIndex,totalPages,{ref,copy,repro});return out;
 }
@@ -359,32 +431,32 @@ function templateTakeSheet(doc,entries,ctx){
   const start=firstValue(map,'START')||'',end=firstValue(map,'END')||'',take=firstValue(map,'TAKE')||'',status=firstValue(map,'RETAKE','STATUS')||'';
   out+=fieldRow(17,47,43,'TAKE',take,{labelW:18,h:9});out+=fieldRow(60,47,44,'START',start,{labelW:19,h:9});out+=fieldRow(104,47,44,'END',end,{labelW:17,h:9});out+=fieldRow(148,47,45,'RETAKE',status,{labelW:22,h:9});
   const noise=firstValue(map,'NOISE','NOISE FLOOR','SOURCE')||'';out+=fieldRow(17,56,176,'NOISE / CONDITION',noise,{labelW:38,h:12,valueKind:'sans'});
-  out+=ruledArea(17,72,176,192,{spacing:6.2,labelText:'REMARKS / CONTAMINATION'});
+  const area=ruledArea(17,72,176,192,{labelText:'REMARKS / CONTAMINATION'});out+=area.svg;
   const remaining=[...rest];for(const [k,v] of map){if(!['ROOM','SITE','START','END','TAKE','RETAKE','STATUS','NOISE','NOISE FLOOR','SOURCE'].includes(k))remaining.unshift({kind:'field',label:k,value:v});}
-  out+=renderParagraphs(remaining,{x:21,y:86,width:168,bottom:257,size:10.7,kind:'mono',leading:6.15,blank:2}).svg;
+  out+=renderParagraphs(remaining,{x:21,width:168,kind:'mono',grid:area.grid}).svg;
   out+=label(19,272,'ENGINEER');out+=line(45,272,91,272,{opacity:.38});out+=label(108,272,'INITIALS');out+=line(135,272,164,272,{opacity:.38});
   out+=documentFooter(issuer,pageIndex,totalPages,{ref,copy,repro});return out;
 }
 function templateContamination(doc,entries,ctx){
   const {issuer,pageIndex,totalPages,copy,repro}=ctx,{map,rest}=takeFields(entries);let out=headerSvg(issuer,{copy,repro});out+=heading(17,32.4,'RECORDING CONTAMINATION LOG',{size:11.8});
   let y=38;for(const k of ['SOURCE','LEVEL','CAUSE','ACTION','STATUS']){if(map.has(k)){out+=fieldRow(17,y,176,k,map.get(k),{labelW:31,h:k==='CAUSE'||k==='ACTION'?12:9,valueKind:'sans'});y+=k==='CAUSE'||k==='ACTION'?12:9;}}
-  y+=4;out+=ruledArea(17,y,176,266-y,{spacing:6.3,labelText:'OBSERVATIONS'});out+=renderParagraphs(rest,{x:21,y:y+14,width:168,bottom:258,size:10.6,kind:'mono',leading:6.15}).svg;out+=documentFooter(issuer,pageIndex,totalPages,{copy,repro});return out;
+  y+=4;const area=ruledArea(17,y,176,266-y,{labelText:'OBSERVATIONS'});out+=area.svg;out+=renderParagraphs(rest,{x:21,width:168,kind:'mono',grid:area.grid}).svg;out+=documentFooter(issuer,pageIndex,totalPages,{copy,repro});return out;
 }
 function templateFault(doc,entries,ctx){
   const {issuer,pageIndex,totalPages,copy,repro}=ctx,{map,rest}=takeFields(entries);let out=headerSvg(issuer,{copy,repro});out+=heading(17,32.4,'FAULT / REMEDIAL WORKS REPORT',{size:11.8});let y=39;
   for(const k of ['FAULT','CAUSE','ACTION','RESULT','STATUS']){const v=map.get(k)||'';out+=fieldRow(17,y,176,k,v,{labelW:29,h:k==='FAULT'||k==='ACTION'||k==='RESULT'?17:11,valueKind:'sans'});y+=k==='FAULT'||k==='ACTION'||k==='RESULT'?17:11;}
-  y+=5;out+=ruledArea(17,y,176,265-y,{spacing:6.2,labelText:'ADDITIONAL NOTES'});out+=renderParagraphs(rest,{x:21,y:y+14,width:168,bottom:257,size:10.6,kind:'mono',leading:6.15}).svg;out+=documentFooter(issuer,pageIndex,totalPages,{copy,repro});return out;
+  y+=5;const area=ruledArea(17,y,176,265-y,{labelText:'ADDITIONAL NOTES'});out+=area.svg;out+=renderParagraphs(rest,{x:21,width:168,kind:'mono',grid:area.grid}).svg;out+=documentFooter(issuer,pageIndex,totalPages,{copy,repro});return out;
 }
 function templateAccess(doc,entries,ctx){
   const {issuer,pageIndex,totalPages,copy,repro}=ctx,{map,rest}=takeFields(entries);let out=headerSvg(issuer,{copy,repro});out+=heading(17,32.4,'SITE ACCESS / MOVEMENT SHEET',{size:11.8});
   let y=39;for(const k of ['ENTRY','EXIT','RETURN','TIME','DATE','DISTANCE','STATUS','FROM','TO']){if(map.has(k)){out+=fieldRow(17,y,176,k,map.get(k),{labelW:28,h:9,valueKind:'sans'});y+=9;}}
-  y+=5;out+=ruledArea(17,y,176,266-y,{spacing:6.3,labelText:'ROUTE / ACCESS NOTES'});out+=renderParagraphs(rest,{x:21,y:y+14,width:168,bottom:258,size:10.6,kind:'mono',leading:6.15}).svg;out+=documentFooter(issuer,pageIndex,totalPages,{copy,repro});return out;
+  y+=5;const area=ruledArea(17,y,176,266-y,{labelText:'ROUTE / ACCESS NOTES'});out+=area.svg;out+=renderParagraphs(rest,{x:21,width:168,kind:'mono',grid:area.grid}).svg;out+=documentFooter(issuer,pageIndex,totalPages,{copy,repro});return out;
 }
 function templateTime(doc,entries,ctx){
   const {issuer,pageIndex,totalPages,copy,repro}=ctx,{map,rest}=takeFields(entries);let out=headerSvg(issuer,{copy,repro});out+=heading(17,32.4,'SITE ATTENDANCE / TIME SHEET',{size:11.8});
   out+=fieldRow(17,38,58,'START',firstValue(map,'START','OUT'),{labelW:22,h:10});out+=fieldRow(75,38,58,'END',firstValue(map,'END','EXPECTED END','RETURN'),{labelW:22,h:10});out+=fieldRow(133,38,60,'HOURS',firstValue(map,'HOURS'),{labelW:24,h:10});
   let y=53;for(const k of ['ON SITE','MILEAGE','DELAY','ADDITIONAL LABOUR','RECEIPTS','NOTE','STATUS'])if(map.has(k)){out+=fieldRow(17,y,176,k,map.get(k),{labelW:38,h:10,valueKind:'sans'});y+=10;}
-  y+=5;out+=ruledArea(17,y,176,265-y,{spacing:6.3,labelText:'NOTES / ADDITIONAL WORKS'});out+=renderParagraphs(rest,{x:21,y:y+14,width:168,bottom:258,size:10.6,kind:'mono',leading:6.15}).svg;out+=documentFooter(issuer,pageIndex,totalPages,{copy,repro});return out;
+  y+=5;const area=ruledArea(17,y,176,265-y,{labelText:'NOTES / ADDITIONAL WORKS'});out+=area.svg;out+=renderParagraphs(rest,{x:21,width:168,kind:'mono',grid:area.grid}).svg;out+=documentFooter(issuer,pageIndex,totalPages,{copy,repro});return out;
 }
 function templateEquipment(doc,entries,ctx,{inventory=false}={}){
   const {issuer,pageIndex,totalPages,copy,repro}=ctx;let out=headerSvg(issuer,{copy,repro});out+=heading(17,32.4,inventory?'MOVEMENT / INVENTORY SHEET':'EQUIPMENT ISSUE / RETURN',{size:11.8});
@@ -404,7 +476,7 @@ function templateEquipment(doc,entries,ctx,{inventory=false}={}){
     else{out+=label(19,y+5.8,row.label,{size:5.8});out+=text(49,y+5.8,row.value,{size:7.6,kind:'mono'});}
     y+=9;
   }
-  y+=5;out+=ruledArea(17,y,176,265-y,{spacing:6.3,labelText:'NOTES / RETURN'});out+=renderParagraphs(rest,{x:21,y:y+14,width:168,bottom:258,size:10.6,kind:'serif',leading:5.8}).svg;out+=documentFooter(issuer,pageIndex,totalPages,{copy,repro});return out;
+  y+=5;const area=ruledArea(17,y,176,265-y,{labelText:'NOTES / RETURN'});out+=area.svg;out+=renderParagraphs(rest,{x:21,width:168,kind:'serif',grid:area.grid}).svg;out+=documentFooter(issuer,pageIndex,totalPages,{copy,repro});return out;
 }
 function templateMemo(doc,entries,ctx,{notice=false,technical=false,monitoring=false}={}){
   const {issuer,pageIndex,totalPages,copy,repro}=ctx;let out=headerSvg(issuer,{copy,repro,showAddress:false});
@@ -421,15 +493,15 @@ function templateMemo(doc,entries,ctx,{notice=false,technical=false,monitoring=f
   const {map,rest}=takeFields(entries);
   if(technical||monitoring){for(const [k,v] of map){out+=fieldRow(17,y,176,k,v,{labelW:34,h:9,valueKind:'mono'});y+=9;}}
   const other=technical||monitoring?rest:entries;
-  out+=ruledArea(17,y,176,266-y,{spacing:6.4,labelText:notice?'NOTICE':'NOTES'});
-  out+=renderParagraphs(other,{x:21,y:y+14,width:168,bottom:258,size:10.8,kind:'serif',leading:5.8,blank:2.3}).svg;
+  const area=ruledArea(17,y,176,266-y,{labelText:notice?'NOTICE':'NOTES'});out+=area.svg;
+  out+=renderParagraphs(other,{x:21,width:168,kind:'mono',grid:area.grid}).svg;
   out+=documentFooter(issuer,pageIndex,totalPages,{copy,repro});return out;
 }
 function templateFreeform(doc,entries,ctx){
   const {issuer,pageIndex,totalPages,copy,repro}=ctx;let out=headerSvg(issuer,{compact:true,copy,repro});
   out+=heading(17,27.6,'FIELD NOTE',{size:10.8});out+=text(193,25.5,String(doc.id||'').replace(/^source-page:/,'').toUpperCase(),{size:5.6,kind:'mono',anchor:'end',opacity:.46});
-  out+=ruledArea(17,31,176,239,{spacing:7.2,leftGutter:12});
-  out+=renderParagraphs(entries,{x:33,y:41,width:155,bottom:262,size:10.8,kind:'mono',leading:7.2,blank:1.0}).svg;
+  const area=ruledArea(17,31,176,239,{leftGutter:12});out+=area.svg;
+  out+=renderParagraphs(entries,{x:33,width:155,kind:'mono',grid:area.grid}).svg;
   out+=documentFooter(issuer,pageIndex,totalPages,{copy,repro});return out;
 }
 function renderTemplate(doc,physical,entries,ctx){
@@ -473,7 +545,12 @@ function collectDocuments(){
   return docs;
 }
 function commandExists(cmd){return spawnSync('bash',['-lc',`command -v ${cmd}`],{stdio:'ignore'}).status===0;}
-function pythonPaperRasterAvailable(){return spawnSync('python3',['-c','import PIL'],{stdio:'ignore'}).status===0&&existsSync(path.join(ROOT,'scripts/paper/rasterize_svg.py'));}
+// The interpreter that has Pillow. A repo-local .paper-venv is preferred over
+// the system python so building paper never installs into anybody's global
+// environment and `rm -rf .paper-venv` undoes the whole dependency.
+const PAPER_PYTHON=process.env.PAPER_PYTHON
+  ||(existsSync(path.join(ROOT,'.paper-venv/bin/python'))?path.join(ROOT,'.paper-venv/bin/python'):'python3');
+function pythonPaperRasterAvailable(){return spawnSync(PAPER_PYTHON,['-c','import PIL'],{stdio:'ignore'}).status===0&&existsSync(path.join(ROOT,'scripts/paper/rasterize_svg.py'));}
 function rasterCommand(){if(process.env.PAPER_RASTERIZER)return process.env.PAPER_RASTERIZER;if(commandExists('magick'))return 'magick';if(commandExists('convert'))return 'convert';throw new Error('Paper rasterization requires ImageMagick (`magick` or `convert`). Runtime assets are committed, so normal game builds do not need it.');}
 function runProcess(cmd,args,{maxOutput=1024*1024*8}={}){
   return new Promise((resolve,reject)=>{const child=spawn(cmd,args,{stdio:['ignore','pipe','pipe']});let stdout='',stderr='';
@@ -484,7 +561,7 @@ function runProcess(cmd,args,{maxOutput=1024*1024*8}={}){
 async function runPool(items,limit,worker){let cursor=0;const count=Math.max(1,Math.min(limit,items.length||1));await Promise.all(Array.from({length:count},async()=>{while(true){const index=cursor++;if(index>=items.length)return;await worker(items[index],index);}}));}
 async function runRaster(cmd,svgPath,outPath){
   if(pythonPaperRasterAvailable()){
-    await runProcess('python3',[path.join(ROOT,'scripts/paper/rasterize_svg.py'),svgPath,outPath,String(INSPECT_W),String(INSPECT_H)]);return;
+    await runProcess(PAPER_PYTHON,[path.join(ROOT,'scripts/paper/rasterize_svg.py'),svgPath,outPath,String(INSPECT_W),String(INSPECT_H)]);return;
   }
   if(commandExists('inkscape')){
     const tmp=`${outPath}.tmp-${process.pid}.png`;
@@ -495,19 +572,37 @@ async function runRaster(cmd,svgPath,outPath){
   const args=cmd==='magick'||cmd.endsWith('magick')?['convert',svgPath,'-background','white','-alpha','remove','-colorspace','sRGB','-quality','90','-strip',outPath]:[svgPath,'-background','white','-alpha','remove','-colorspace','sRGB','-quality','90','-strip',outPath];
   await runProcess(cmd,args);
 }
-async function runTile(cmd,input,output){
-  const args=cmd==='magick'||cmd.endsWith('magick')?['convert',input,'-filter','Lanczos','-resize',`${WORLD_TILE_W}x${WORLD_TILE_H}!`,'-quality','90','-strip',output]:[input,'-filter','Lanczos','-resize',`${WORLD_TILE_W}x${WORLD_TILE_H}!`,'-quality','90','-strip',output];
-  await runProcess(cmd,args);
+// TILES AND ATLAS THROUGH SHARP.
+//
+// These were the last two ImageMagick calls in the pipeline, and they were
+// enough to make `magick` a hard requirement for a build whose pages Pillow had
+// already rendered — so a machine with the good rasteriser still could not
+// finish. sharp is already a dependency of this repo, does Lanczos resampling
+// and compositing natively, and removes the system dependency entirely.
+async function runTile(_cmd,input,output){
+  await sharp(input).resize(WORLD_TILE_W,WORLD_TILE_H,{fit:'fill',kernel:'lanczos3'})
+    .webp({quality:90}).toFile(output);
 }
-async function runAtlas(cmd,files,atlasPath,rows){
-  const atlasCmd=cmd==='magick'||cmd.endsWith('magick')?cmd:(commandExists('montage')?'montage':cmd),args=cmd==='magick'||cmd.endsWith('magick')?['montage',...files]:[...files];
-  args.push('-thumbnail',`${WORLD_TILE_W}x${WORLD_TILE_H}!`,'-tile',`${ATLAS_COLS}x${rows}`,'-geometry',`${WORLD_TILE_W}x${WORLD_TILE_H}+0+0`,'-background','#ECEBE6','-quality','90','-strip',atlasPath);await runProcess(atlasCmd,args,{maxOutput:1024*1024*16});
+async function runAtlas(_cmd,files,atlasPath,rows){
+  const composites=await Promise.all(files.map(async(file,index)=>({
+    input:await sharp(file).resize(WORLD_TILE_W,WORLD_TILE_H,{fit:'fill',kernel:'lanczos3'}).png().toBuffer(),
+    left:(index%ATLAS_COLS)*WORLD_TILE_W,
+    top:Math.floor(index/ATLAS_COLS)*WORLD_TILE_H,
+  })));
+  await sharp({create:{
+    width:ATLAS_COLS*WORLD_TILE_W,height:Math.max(1,rows)*WORLD_TILE_H,
+    channels:3,background:'#ECEBE6',
+  }}).composite(composites).webp({quality:90}).toFile(atlasPath);
 }
 
 await mkdir(INSPECT,{recursive:true});await mkdir(MATERIAL,{recursive:true});await mkdir(TMP,{recursive:true});await mkdir(TILES,{recursive:true});await mkdir(HASHES,{recursive:true});await mkdir(path.dirname(GENERATED),{recursive:true});
 let previousCatalog=null;
 try{previousCatalog=JSON.parse(await readFile(path.join(OUT,'catalog.json'),'utf8'));}catch{}
-const vectorOnly=process.env.PAPER_VECTOR_ONLY==='1',skipAtlas=process.env.PAPER_SKIP_ATLAS==='1',raster=vectorOnly?null:rasterCommand(),documents={},atlasDocs=[],rasterJobs=[];let pageTotal=0;
+const vectorOnly=process.env.PAPER_VECTOR_ONLY==='1',skipAtlas=process.env.PAPER_SKIP_ATLAS==='1',
+  // Only the fallback path needs an external rasteriser now; Pillow renders both
+  // tiers itself and sharp does the tiles, so asking for ImageMagick up front
+  // failed builds that had everything they actually needed.
+  raster=(vectorOnly||pythonPaperRasterAvailable())?null:rasterCommand(),documents={},atlasDocs=[],rasterJobs=[];let pageTotal=0;
 if(!vectorOnly&&!pythonPaperRasterAvailable())console.warn('[paper] Pillow rasterizer unavailable: existing committed material maps may be used, but changed sheets require python3 + Pillow.');
 for(const sourceDoc of collectDocuments()){
   const physical=normalizePhysicalDocument(sourceDoc),validation=validateBritishPaperDocument(sourceDoc);
@@ -543,7 +638,7 @@ if(rasterJobs.length){
     }
     let completedBatches=0;
     await runPool(batches,2,async({chunk,manifestPath})=>{
-      await runProcess('python3',[path.join(ROOT,'scripts/paper/rasterize_svg.py'),'--batch',manifestPath],{maxOutput:1024*1024*2});
+      await runProcess(PAPER_PYTHON,[path.join(ROOT,'scripts/paper/rasterize_svg.py'),'--batch',manifestPath],{maxOutput:1024*1024*2});
       for(const job of chunk)await writeFile(job.hashPath,`${job.vectorHash}\n`,'utf8');
       completedBatches++;console.log(`[paper] raster batch ${completedBatches}/${batches.length} (${Math.min(completedBatches*chunkSize,rasterJobs.length)}/${rasterJobs.length} sheets)`);
     });
@@ -565,7 +660,7 @@ if(atlasNeedsRebuild){
   if(pythonPaperRasterAvailable()&&existsSync(path.join(ROOT,'scripts/paper/build_atlas.py'))){
     const manifestPath=path.join(TMP,'atlas-manifest.json');
     await writeFile(manifestPath,JSON.stringify({columns:ATLAS_COLS,rows:atlasRows,tile:[WORLD_TILE_W,WORLD_TILE_H],files:atlasEntries.map((entry)=>path.join(ROOT,entry.page.path)),output:atlasPath}));
-    await runProcess('python3',[path.join(ROOT,'scripts/paper/build_atlas.py'),manifestPath]);
+    await runProcess(PAPER_PYTHON,[path.join(ROOT,'scripts/paper/build_atlas.py'),manifestPath]);
   }else{
     await runPool(atlasEntries,Math.min(8,jobs*2),async(entry)=>{await runTile(raster,path.join(ROOT,entry.page.path),entry.tile);});
     await runAtlas(raster,atlasEntries.map((entry)=>entry.tile),atlasPath,atlasRows);
@@ -574,5 +669,11 @@ if(atlasNeedsRebuild){
 atlasEntries.forEach((entry,index)=>{documents[entry.id].pages[entry.pageIndex].atlasIndex=index;});for(const record of Object.values(documents))record.atlasIndex=record.pages[0]?.atlasIndex??-1;
 const ambient=atlasDocs.filter((id)=>id.startsWith('source-page:')).slice(0,128);
 const atlasHandling=atlasEntries.map((entry)=>documents[entry.id]?.handlingVector||[-1,0,0,0]);
-const catalog=`// GENERATED by scripts/build-paper-assets.mjs. Do not hand edit.\nexport const PAPER_COMPILER_VERSION=${JSON.stringify(COMPILER_VERSION)};\nexport const PAPER_FONT_FINGERPRINT=Object.freeze(${JSON.stringify(FONT_FINGERPRINT,null,2)});\nexport const PAPER_ATLAS=Object.freeze(${JSON.stringify({path:'assets/paper/world-atlas.webp',columns:ATLAS_COLS,rows:atlasRows,tile:[WORLD_TILE_W,WORLD_TILE_H],count:atlasEntries.length},null,2)});\nexport const PAPER_DOCUMENTS=Object.freeze(${JSON.stringify(documents,null,2)});\nexport const PAPER_ATLAS_HANDLING=Object.freeze(${JSON.stringify(atlasHandling)});\nexport const PAPER_AMBIENT_IDS=Object.freeze(${JSON.stringify(ambient,null,2)});\n`;
-await writeFile(GENERATED,catalog,'utf8');await writeFile(path.join(OUT,'catalog.json'),JSON.stringify({compiler:COMPILER_VERSION,fontFingerprint:FONT_FINGERPRINT,atlas:{columns:ATLAS_COLS,rows:atlasRows,count:atlasEntries.length},documents},null,2));console.log(`[paper] ${Object.keys(documents).length} documents / ${pageTotal} sheets / atlas ${ATLAS_COLS}x${atlasRows}`);
+// The type scale and the ONE grid pitch, published so a spec can assert them
+// rather than re-derive them from the templates it is meant to be checking.
+const TYPOGRAPHY=Object.freeze({
+  bodyPt:TYPE.body,headingPt:TYPE.heading,labelPt:TYPE.label,fieldValuePt:TYPE.fieldValue,
+  rulePitchMm:TYPE.pitch,families:Object.fromEntries(Object.entries(FONT).map(([k,v])=>[k,v])),
+});
+const catalog=`// GENERATED by scripts/build-paper-assets.mjs. Do not hand edit.\nexport const PAPER_COMPILER_VERSION=${JSON.stringify(COMPILER_VERSION)};\nexport const PAPER_TYPOGRAPHY=Object.freeze(${JSON.stringify(TYPOGRAPHY,null,2)});\nexport const PAPER_FONT_FINGERPRINT=Object.freeze(${JSON.stringify(FONT_FINGERPRINT,null,2)});\nexport const PAPER_ATLAS=Object.freeze(${JSON.stringify({path:'assets/paper/world-atlas.webp',columns:ATLAS_COLS,rows:atlasRows,tile:[WORLD_TILE_W,WORLD_TILE_H],count:atlasEntries.length},null,2)});\nexport const PAPER_DOCUMENTS=Object.freeze(${JSON.stringify(documents,null,2)});\nexport const PAPER_ATLAS_HANDLING=Object.freeze(${JSON.stringify(atlasHandling)});\nexport const PAPER_AMBIENT_IDS=Object.freeze(${JSON.stringify(ambient,null,2)});\n`;
+await writeFile(GENERATED,catalog,'utf8');await writeFile(path.join(OUT,'catalog.json'),JSON.stringify({compiler:COMPILER_VERSION,typography:TYPOGRAPHY,fontFingerprint:FONT_FINGERPRINT,atlas:{columns:ATLAS_COLS,rows:atlasRows,count:atlasEntries.length},documents},null,2));console.log(`[paper] ${Object.keys(documents).length} documents / ${pageTotal} sheets / atlas ${ATLAS_COLS}x${atlasRows}`);

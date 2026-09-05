@@ -1,10 +1,14 @@
 import { isTauriRuntime } from './detect.js';
 import { logWarn } from './diagnostics/diagnostics.js';
+import { sectorErrorPhases } from '../render/sector-error.js';
 import {
   apertureCompositionPlan,
   compilePaneScore,
   deathCompositionPlan,
   endingCompositionPlan,
+  returnCompositionPlan,
+  sectorErrorCompositionPlan,
+  SECTOR_INTRUSION_EVENT,
   evaluateCompositionConstraints,
   titleCompositionPlan,
   windowMediaAsset,
@@ -85,6 +89,20 @@ export function windowChoreographyPolicy(sceneId=''){
   // motion cost atmosphere and never the answer. See test/box-office.spec.mjs,
   // which asserts the puzzle is solvable with the policy forced to 'stable'.
   if(id==='box-office:key-cabinet')return 'box-office';
+  // THE SECOND ORDINARY ROOM, AND THE SAME NARROW PERMISSION.
+  //
+  // The plant header is a microgame, not a comparison, so what its surfaces do
+  // is slightly different from the box office's and just as limited: the
+  // service card says which fitting closes in which order, and the gauges show
+  // the header actually falling. That is REASSURANCE and INSTRUCTION, for a
+  // player who cannot tell whether the thing they are doing is working.
+  //
+  // Nothing is gated on them. The card is a prop on the plant-room wall and the
+  // gauges are on the header itself, so a browser build, withheld consent,
+  // disabled effects or reduced motion costs comfort and never the repair. See
+  // test/plant-isolation.spec.mjs, which shuts the header with the policy
+  // forced to 'stable'.
+  if(id==='plant:header')return 'plant-header';
   return 'stable';
 }
 
@@ -514,6 +532,53 @@ export function compileHorizonSlatePlan({readings=[],reducedMotion=false}={}){
   });
 }
 
+export const PLANT_HEADER_CUE_ID='plant:header-card';
+export const PLANT_HEADER_SCENE_ID='plant:header';
+
+// The service card and two gauges, beside the window while the wrench is on the
+// tree. Recompiled as fittings seat, so the needles actually fall — a player who
+// cannot tell whether they are making progress can watch the header let go.
+export function compilePlantHeaderPlan({order=[],trap='',seated=0,total=3,reducedMotion=false}={}){
+  const shut=Math.max(0,Math.min(total,Number(seated)||0));
+  const openFraction=total?1-shut/total:1;
+  const bar=(4.1*openFraction).toFixed(1);
+  const flow=['SHUT','TRICKLE','PART','FULL'][Math.max(0,Math.min(3,total-shut))];
+  const columns=[0.16,0.5,0.84];
+  const cards=[
+    {
+      id:'card',title:'HEADER 3 · SERVICE CARD',
+      text:`${order.map((entry,i)=>`${i+1}. ${entry.label} — ${entry.note}`).join('\n')}\n\nNOT THIS HEADER: ${trap}`,
+    },
+    {id:'pressure',title:'HEADER PRESSURE',text:`${bar} bar\n\n${shut} of ${total} fittings shut.\nIt falls as they seat and rises when they let go.`},
+    {id:'flow',title:'FLOW',text:`${flow}\n\nThe gauge follows the pipe, not the wrench.`},
+  ];
+  return compileWindowChoreographyPlan({
+    cueId:PLANT_HEADER_CUE_ID,
+    sceneId:PLANT_HEADER_SCENE_ID,
+    primitives:['Frame','Restore'],
+    mainFrame:[],
+    surfaces:cards.map((entry,index)=>({
+      id:`${PLANT_HEADER_CUE_ID}:${entry.id}`,
+      x:columns[index]??0.5,
+      y:0.15,
+      size:206,
+      mode:'card',
+      title:entry.title,
+      text:entry.text,
+      palette:'brass',
+      interactive:false,
+    })),
+    content:'game-authored',
+    focus:'main',
+    input:'none',
+    reducedMotion:!!reducedMotion,
+    restore:'transaction',
+    scope:'plant-header',
+    narrativeBlocking:false,
+    nonblocking:true,
+  });
+}
+
 export function createWindowChoreographyDirector({
   effects=null,runtimeApi=null,documentApi=globalThis.document,
   getEnabled=()=>true,getDisplayMode=()=> 'windowed',getReducedMotion=()=>false,
@@ -878,7 +943,7 @@ export function createWindowChoreographyDirector({
     ending=profile;
     if(nativeDesired())effects?.ensure?.({intensity:'hostile',fullscreen:getDisplayMode()==='game-mode',reducedMotion:reduced()});
     const context=compositionContext();
-    const plan=endingCompositionPlan(endingId,{epochMs:Date.now(),reduceDread:!!context.reduceDread,reducedMotion:reduced(),flashMode:context.flashMode});
+    const plan=endingCompositionPlan(endingId,{epochMs:Date.now(),reduceDread:!!context.reduceDread,reducedMotion:reduced(),flashMode:context.flashMode,intrusionToken:sectorTokens?.[0]||''});
     if(nativeDesired())await safe(()=>effects?.prepareMedia?.({count:plan.surfaces.length}));
     const active={plan,purpose:'ending',state:{},startedAt:Date.now(),completed:false,presented:false,pendingEvents:new Set()};
     composition=active;
@@ -893,7 +958,105 @@ export function createWindowChoreographyDirector({
     return result;
   }
 
+  // THE RETURN, ON THE SURFACES.
+  //
+  // `sections` are already-rasterised data URLs, one per part of the account —
+  // rendered by the caller because a text pane has no shader path and would come
+  // up black out here. They are registered as snapshots and handed to the panes,
+  // which is the same road the death composition's quartered frame travels.
+  async function beginReturn(sections=[]){
+    const pages=(Array.isArray(sections)?sections:[]).filter((entry)=>String(entry?.image||'').startsWith('data:'));
+    if(pages.length<2)return null;
+    if(nativeDesired())effects?.ensure?.({intensity:'hostile',fullscreen:getDisplayMode()==='game-mode',reducedMotion:reduced()});
+    const tokens=[];
+    for(const page of pages){
+      const token=await safe(()=>effects?.registerSnapshot?.(page.image));
+      if(token)tokens.push(token);
+    }
+    if(tokens.length<2)return null;
+    const context=compositionContext();
+    const plan=returnCompositionPlan({
+      sections:pages.map((page)=>page.label||''),
+      snapshotTokens:tokens,
+      epochMs:Date.now(),reducedMotion:reduced(),flashMode:context.flashMode,
+    });
+    if(nativeDesired())await safe(()=>effects?.prepareMedia?.({count:plan.surfaces.length}));
+    const active={plan,purpose:'return',state:{},startedAt:Date.now(),completed:false,presented:false,pendingEvents:new Set()};
+    composition=active;
+    await runPlan(plan);
+    markCompositionPresented(active);
+    return {plan,scheduled:true};
+  }
+
+  // THE PHASES ARE BAKED ONCE AND KEPT.
+  //
+  // Registering the scroll frames at first use rather than per cue is what makes
+  // the intrusion cheap: once these tokens exist, ANY composition can reference
+  // them, so a pane in the middle of an ending can drop into the failing disk
+  // without rasterising anything first.
+  // Primed eagerly and read SYNCHRONOUSLY by the plan builders. Awaiting this
+  // inside beginEnding put a microtask in front of `composition=active`, which
+  // silently broke event queueing: compositionEvent called in the same tick as
+  // beginEnding found no composition to queue against. Nothing on the hot path
+  // may await ahead of that assignment.
+  let sectorTokens=null;
+  async function ensureSectorPhases(){
+    if(sectorTokens)return sectorTokens;
+    const phases=sectorErrorPhases({count:10,width:512,height:340,seed:4417});
+    if(!phases.length)return null;
+    const tokens=[];
+    for(const phase of phases){
+      const token=await safe(()=>effects?.registerSnapshot?.(phase));
+      if(token)tokens.push(token);
+    }
+    sectorTokens=tokens.length?tokens:null;
+    return sectorTokens;
+  }
+
+  // The disk failing, as a screen of its own.
+  async function beginSectorError(){
+    if(nativeDesired())effects?.ensure?.({intensity:'hostile',fullscreen:getDisplayMode()==='game-mode',reducedMotion:reduced()});
+    const tokens=await ensureSectorPhases();
+    if(!tokens)return null;
+    const context=compositionContext();
+    const plan=sectorErrorCompositionPlan({phaseTokens:tokens,epochMs:Date.now(),reducedMotion:reduced(),flashMode:context.flashMode});
+    if(!plan)return null;
+    if(nativeDesired())await safe(()=>effects?.prepareMedia?.({count:plan.surfaces.length}));
+    const active={plan,purpose:'sector',state:{},startedAt:Date.now(),completed:false,presented:false,pendingEvents:new Set()};
+    composition=active;
+    await runPlan(plan);
+    markCompositionPresented(active);
+    return {plan,scheduled:true};
+  }
+
+  // ONE PANE FALLS OFF THE DISK, UNDERNEATH WHATEVER ELSE IS SHOWING.
+  //
+  // Not a screen — an interruption. The composition already up keeps playing and
+  // a single surface stops being its footage and starts being the failure.
+  //
+  // It goes through compositionEvent because that is the ONLY road: the
+  // simulation exposes show/snap/coherence/freeze/trigger/hide and the effects
+  // layer exposes triggerComposition, and neither has a public "assign this pane
+  // now". Both fire named event cues, so the cue is baked into the plan when it
+  // is compiled (sectorIntrusionCue) and fired by name here.
+  async function intrudeSector(){
+    if(!composition?.plan||composition.purpose==='sector')return false;
+    return compositionEvent(SECTOR_INTRUSION_EVENT);
+  }
+
+  // The account has been read. The surfaces settle and go — they must not sit
+  // over the stages that follow the report, which is what a composition with no
+  // end does.
+  async function finishReturn(){
+    if(composition?.purpose!=='return')return false;
+    await restore('return-complete');
+    return true;
+  }
+
   function beginOpening(){
+    // Bake the scroll phases now so an intrusion later costs nothing and the
+    // plan builders can read the token without awaiting.
+    void ensureSectorPhases();
     const generation=(frontEndLease?.generation||0)+1;
     frontEndLease={active:true,owner:'opening',generation,token:null,effectsToken:effects?.sessionToken?.()||null,quiesced:false};
     onState({type:'front-end-window-owner',owner:'opening',generation,token:null});
@@ -985,7 +1148,20 @@ export function createWindowChoreographyDirector({
     return restore('title-exit');
   }
 
-  async function credits(){const result=await restore('credits',{closePool:true});await safe(()=>effects?.end?.());return result;}
+  // THE POOL SURVIVES THE CREDITS NOW.
+  //
+  // This closed it (`closePool:true` + `effects.end()`), which tore every
+  // desktop surface down at the exact moment before the return report — so the
+  // last screen of the game was the one screen the window system was guaranteed
+  // to have abandoned. The credits still restore the main window and clear the
+  // composition; the surfaces stay leased so beginReturn can use them without
+  // rebuilding, which is a race Tauri loses (see the lifetime note in
+  // personalized-window-effects).
+  async function credits(){return restore('credits');}
+  // Nothing calls a pool-close here on purpose: returnToTitle already runs
+  // emergencyRestore({preservePuzzle:false}), which is the one path that destroys
+  // the surfaces. The lease therefore runs ending -> credits -> return -> title,
+  // and is torn down exactly once, at the end.
   async function emergencyRestore({preservePuzzle=true}={}){
     // Emergency cleanup is an escape hatch, not a combat choice. Forgive the
     // live projectile before its surfaces disappear; otherwise an invisible
@@ -1021,7 +1197,7 @@ export function createWindowChoreographyDirector({
   keyTarget?.addEventListener?.('chunk-surfer:window-media-action',(event)=>{if(event.detail?.action==='escape')void emergencyRestore();});
 
   return{
-    prepareBattle,fireballCast,damage,result,finishBattle,sourceFrame,leaveSource,beginEnding,beginOpening,beginTitle,finishTitle,credits,
+    prepareBattle,fireballCast,damage,result,finishBattle,beginReturn,finishReturn,beginSectorError,intrudeSector,sourceFrame,leaveSource,beginEnding,beginOpening,beginTitle,finishTitle,credits,
     emergencyRestore,suspend,runPlan,compositionEvent,interactSource,puzzleInteract,noteCompositionMove,
     // TEARDOWN FOR A CUE A CALLER RAN ITSELF. runPlan was public and this was
     // not, so anything that showed clue surfaces had no supported way to take

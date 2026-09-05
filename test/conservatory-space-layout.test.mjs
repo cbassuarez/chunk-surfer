@@ -5,6 +5,7 @@ import { CONSERVATORY_PROPS, PROP_MESH } from '../src/data/conservatory-props.js
 import { MATERIAL, PLAN_SCALE, ZONE } from '../src/data/floorplan/legend.js';
 import * as FP from '../src/world/floorplan.js';
 import * as PROPS from '../src/game/props.js';
+
 import { DOCK_ACOUSTIC_PROP_IDS, DOCK_HERO_PROP_IDS, DOCK_PORTAL, dockHauntingStaging } from '../src/game/get-in.js';
 
 const rt = (x, y) => FP.toRuntimePoint({ x, y });
@@ -99,7 +100,14 @@ for (const name of [
   assert.ok(PROP_MESH[name], `missing prop mesh contract for ${name}`);
 }
 
-assert.equal(placed.length, CONSERVATORY_PROPS.length, 'every dressed prop center remains in open floorplan space');
+// The authored array plus the circulation dressing propsInit derives from the
+// compiled plan (world/corridor-dressing.js). Counting both keeps what this
+// assertion is actually for: propsInit drops any placement whose centre lands in
+// solid, so a mismatch means something was authored — or generated — inside a
+// wall.
+const DRESSING = PROPS.derivedDressing(FP);
+assert.equal(placed.length, CONSERVATORY_PROPS.length + DRESSING.length,
+  'every dressed prop center remains in open floorplan space');
 
 assert.equal(DOCK_HERO_PROP_IDS.length, 10, 'the get-in has ten authored hero inspections');
 for (const id of DOCK_HERO_PROP_IDS) {

@@ -37,16 +37,23 @@ export function mapActionRail(selected, { floorCount = 1 } = {}) {
     ? 'CLEAR TARGET'
     : selected && selected.waypointable !== false ? 'SET TARGET' : null;
   if (activeInputPromptDevice() === 'controller') {
-    const actions = [[inputPromptLabel('select'), 'SELECT ROOM']];
+    const actions = [[inputPromptLabel('select'), 'ROOM']];
     if (targetAction) actions.push([inputPromptLabel('confirm'), targetAction]);
     if (selected?.objective?.notes?.length || selected?.attached) actions.push([inputPromptLabel('interact'), 'OPEN FILE']);
     actions.push([inputPromptLabel('back'), 'CLOSE BAG']);
     return actions;
   }
-  const actions = [[inputPromptLabel('move'), 'SELECT ROOM']];
-  if (floorCount > 1) actions.push(['[ / ]', 'CHANGE FLOOR']);
-  actions.push(['C', 'CENTER ON YOU']);
-  if (targetAction) actions.push([inputPromptLabel('confirm'), targetAction]);
+  // TWO CONTROLS, AND THEY FIT.
+  //
+  // This listed six, which overran the footer and truncated it mid-word — and
+  // the word it cut was "[ENTER / SPACE] SET…", the one verb a player most
+  // needs. The target verb now lives on the selected room itself, where the
+  // thing it acts on is, so the footer is left with the two things you steer:
+  // the floor and the room. C still centres; it is simply no longer shouted
+  // over the verb that matters.
+  const actions = [[inputPromptLabel('move'), 'ROOM']];
+  if (floorCount > 1) actions.push(['[ / ]', 'FLOOR']);
+  actions.push(['C', 'CENTER']);
   if (selected?.objective?.notes?.length || selected?.attached) actions.push(['R', 'OPEN FILE']);
   actions.push([inputPromptLabel('bag'), 'CLOSE BAG']);
   return actions;

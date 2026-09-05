@@ -257,6 +257,8 @@ export function createBattleMusicSession({
   let dialogueActive = false;
   let finishing = false;
   let stopped = false;
+  let replayInterlude = false;
+  let replayResumeAt = null;
   let intrusion = 0;
   let submersionSnapshot = profile.submersion ? {
     enabled:true,phase:'dry',targetPhase:'dry',progress:1,settled:true,
@@ -349,6 +351,51 @@ export function createBattleMusicSession({
     }
     return true;
   }
+  function beginReplayInterlude(){
+    if(finishing||stopped||replayInterlude)return false;
+    replayInterlude=true;
+    replayResumeAt=null;
+    status='interlude';
+    const at=now();
+    if(master){
+      cancelParam(master.gain,at);
+      paramValueAt(master.gain,master.gain.value,at);
+      rampParam(master.gain,0,at+.12);
+    }
+    // The return is re-anchored, not merely unmuted over an arbitrary point in
+    // the old loop. Stop the live phrase under the tear; resumeReplayInterlude
+    // schedules a fresh bed on the declared downbeat.
+    for(const source of activeSources){try{source.stop(at+.13);}catch(_){}}
+    leadHandles.clear();
+    activeLead=null;
+    pendingLead=null;
+    windowStartAt=null;
+    windowEndAt=null;
+    restUntil=null;
+    fallbackAt=null;
+    return true;
+  }
+  function resumeReplayInterlude({beats=4}={}){
+    if(finishing||stopped)return{delaySeconds:0,downbeatAt};
+    const delaySeconds=Math.max(1,Math.floor(Number(beats)||4))*BATTLE_BEAT_SECONDS;
+    replayResumeAt=now()+delaySeconds;
+    downbeatAt=replayResumeAt;
+    if(master){
+      const at=now();
+      cancelParam(master.gain,at);
+      paramValueAt(master.gain,0,at);
+      paramValueAt(master.gain,0,replayResumeAt);
+      rampParam(master.gain,masterTarget(),replayResumeAt+.04);
+      connectSource('bed',bankBuffer(bank,'bed'),replayResumeAt,{loop:true});
+    }
+    fallbackAt=replayResumeAt+BATTLE_MAX_REST_BARS*BATTLE_BAR_SECONDS;
+    return{delaySeconds,downbeatAt:replayResumeAt};
+  }
+  function cancelReplayInterlude(){
+    if(!replayInterlude)return false;
+    resumeReplayInterlude({beats:1});
+    return true;
+  }
   function ensureLead(id, when) {
     const selected = availableLead(id);
     if (!selected) return null;
@@ -417,6 +464,12 @@ export function createBattleMusicSession({
   function update() {
     if (stopped || finishing || downbeatAt == null) return snapshot();
     const at = now();
+    if(replayInterlude){
+      if(replayResumeAt==null||at<replayResumeAt)return snapshot();
+      replayInterlude=false;
+      replayResumeAt=null;
+      status='running';
+    }
     if (status === 'arrival' && at >= downbeatAt) status = 'running';
     if (activeLead && windowEndAt != null && at >= windowEndAt) activeLead = null;
     if (!activeLead && pendingLead && restUntil != null && at + SCHEDULE_LOOKAHEAD_SECONDS >= restUntil) {
@@ -540,6 +593,8 @@ export function createBattleMusicSession({
       windowEndAt,
       restUntil,
       fallbackAt,
+      replayInterlude,
+      replayResumeAt,
       dialogueActive,
       intrusion,
       roomLeakGain:roomLeakTarget(),
@@ -547,5 +602,9 @@ export function createBattleMusicSession({
       sourceCount: activeSources.size,
     };
   }
-  return { start, update, onCombatEvent, setDialogueActive, setIntrusion, setSubmersion, finish, abort, snapshot };
+  return {
+    start, update, onCombatEvent, setDialogueActive, setIntrusion, setSubmersion,
+    beginReplayInterlude, resumeReplayInterlude, cancelReplayInterlude,
+    finish, abort, snapshot,
+  };
 }

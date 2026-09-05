@@ -1,3 +1,5 @@
+import { PLANT_FITTING_IDS } from './plant-isolation.js';
+
 export const PLANT_INCIDENT_PHASE = Object.freeze({
   DORMANT:'dormant', HISSING:'hissing', TOOL_REQUIRED:'tool-required',
   ISOLATING:'isolating', SEALED:'sealed',
@@ -9,6 +11,13 @@ const fresh = () => ({
   schema:1,phase:PLANT_INCIDENT_PHASE.DORMANT,triggerTakeOrdinal:0,
   spannerOwned:false,heavyMode:'rack',heavyPosition:null,
   activeTool:null,isolationStartedAt:0,haulScrapeMetres:0,
+  // WHERE THE FITTINGS WERE WHEN YOU WALKED OFF.
+  //
+  // The scene can be left now, and a player who has done most of a repair and
+  // hits Escape should not be starting again. Travel per fitting, in radians,
+  // and how many times the bypass has been opened. Everything else about the
+  // tree is derived from the tool, so this is the whole of it.
+  valveRadians:null,valveVents:0,
 });
 
 let state=fresh();
@@ -25,7 +34,20 @@ export function normalizePlantIncident(saved={}){
     spannerOwned:!!saved.spannerOwned,heavyMode:phase===PLANT_INCIDENT_PHASE.SEALED&&heavyMode==='dragging'?'used':heavyMode,
     heavyPosition:point(saved.heavyPosition),activeTool:Object.values(PLANT_TOOL).includes(saved.activeTool)?saved.activeTool:null,
     isolationStartedAt:0,haulScrapeMetres:Math.max(0,Number(saved.haulScrapeMetres)||0),
+    valveRadians:radians(saved.valveRadians),valveVents:Math.max(0,Math.floor(Number(saved.valveVents)||0)),
   };
+}
+
+// Only finite, non-negative numbers, and only for fittings that exist. A saved
+// game from before the tree, or a hand-edited one, simply starts the repair.
+function radians(value){
+  if(!value||typeof value!=='object')return null;
+  const out={};
+  for(const id of PLANT_FITTING_IDS){
+    const at=Number(value[id]);
+    if(Number.isFinite(at)&&at>0)out[id]=at;
+  }
+  return Object.keys(out).length?out:null;
 }
 
 export function loadPlantIncident(saved={}){state=normalizePlantIncident(saved);return plantIncidentState();}
@@ -82,7 +104,32 @@ export function beginPlantIsolation(tool,now=0){
 export function completePlantIsolation(){
   if(state.phase!==PLANT_INCIDENT_PHASE.ISOLATING)return false;
   if(state.activeTool===PLANT_TOOL.STILLSON)state.heavyMode='used';
-  state.phase=PLANT_INCIDENT_PHASE.SEALED;state.isolationStartedAt=0;return true;
+  state.phase=PLANT_INCIDENT_PHASE.SEALED;state.isolationStartedAt=0;
+  state.valveRadians=null;state.valveVents=0;return true;
+}
+
+// LEAVING IS ALLOWED, AND IT COSTS THE HOLD RATHER THAN THE RUN.
+//
+// The phase stays ISOLATING so the header is still the thing to go back to. The
+// fittings keep the travel they had, less a lump for having been left with
+// nobody on them — which is the same rule as the backslide inside the scene,
+// charged once for the walk away.
+export function suspendPlantIsolation(tree=null,{slack=0.35}={}){
+  if(state.phase!==PLANT_INCIDENT_PHASE.ISOLATING)return false;
+  const fittings=tree?.fittings;
+  if(!fittings){state.valveRadians=null;return true;}
+  const kept={};
+  for(const id of PLANT_FITTING_IDS){
+    const at=Math.max(0,Number(fittings[id]?.radians)||0)*(1-Math.max(0,Math.min(1,slack)));
+    if(at>0)kept[id]=at;
+  }
+  state.valveRadians=Object.keys(kept).length?kept:null;
+  state.valveVents=Math.max(0,Math.floor(Number(tree?.vents)||0));
+  return true;
+}
+
+export function plantValveResume(){
+  return state.valveRadians?{radians:{...state.valveRadians},vents:state.valveVents}:null;
 }
 
 export function haulHushPose({trail=[],player,minMetres=8,maxMetres=14,cellsPerMetre=2}={}){

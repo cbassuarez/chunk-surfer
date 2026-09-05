@@ -209,7 +209,13 @@ export function makeCombatScene({
   // earlier in the night. Null for the bench drill, which remembers nothing.
   carriedRead = null,
   continuation = null,
+  startingMovementIndex = 0,
   musicSession = null,
+  // Source may replace a movement entrance with a playable piece of the night.
+  // The hook receives a frozen combat checkpoint and an explicit resume verb;
+  // returning true holds this scene in `interlude` until that verb is called.
+  onMovementInterlude = null,
+  skipOpening = false,
   director = null,
   interference = null,
   environmentLighting = null,
@@ -240,6 +246,7 @@ export function makeCombatScene({
     techniques: loadout.techniques,
     carriedRead,
     continuation,
+    startingMovementIndex,
     source,
   });
   let phase = 'arrival';
@@ -601,7 +608,37 @@ export function makeCombatScene({
     else if (text) audio?.startTyping?.({ gain: TYPE_GAIN * (TYPE_LEVEL[who === 'direction' ? 'direction' : 'thought'] || 1) });
   }
 
-  function enterMovement(index = state.movementIndex) {
+  function combatCheckpoint() {
+    return JSON.parse(JSON.stringify({
+      composure: state.composure,
+      charge: state.charge,
+      battery: state.battery,
+      take: state.take,
+      snr: state.snr,
+      ringing: state.ringing,
+      turns: state.turns,
+      perfectCounters: state.perfectCounters,
+      missedCounters: state.missedCounters,
+      damageTaken: state.damageTaken,
+      torchSpent: state.torchSpent,
+      toolsUsed: state.toolsUsed,
+      proofs: state.proofs,
+      actionLog: state.actionLog,
+      coffeeUsed: state.coffeeUsed,
+      safetyRelayUsed: state.safetyRelayUsed,
+      feedbackLoopUsed: state.feedbackLoopUsed,
+      feedbackMovements: state.feedbackMovements,
+      punchInMovements: state.punchInMovements,
+      overdubMovements: state.overdubMovements,
+      composeMovements: state.composeMovements,
+      recoveryHolds: state.recoveryHolds,
+      recoveryUnlocked: state.recoveryUnlocked,
+      signaturePressure: state.signaturePressure,
+      source: state.source ? { armed:state.source.armed, channels:{...state.source.channels} } : null,
+    }));
+  }
+
+  function beginMovement(index = state.movementIndex) {
     const next = movement(index);
     fireballExchange.setMovement({
       id:next?.id||'',index,
@@ -623,9 +660,39 @@ export function makeCombatScene({
     else { beginToolSelection(); musicSession?.setDialogueActive?.(false); }
   }
 
+  function enterMovement(index = state.movementIndex) {
+    const next = movement(index);
+    if (next && onMovementInterlude) {
+      phase = 'interlude';
+      disarmTurnClock();
+      clearBark();
+      fireballExchange.cancel();
+      let resumed = false;
+      const resume = () => {
+        if (resumed || !sceneEntered) return false;
+        resumed = true;
+        beginMovement(index);
+        return true;
+      };
+      const handled = onMovementInterlude({
+        id: next.id || '',
+        index,
+        checkpoint: combatCheckpoint(),
+        scheduleReturn: () => musicSession?.resumeReplayInterlude?.({ beats:4 }),
+        resume,
+      });
+      if (handled) {
+        musicSession?.beginReplayInterlude?.();
+        return;
+      }
+    }
+    beginMovement(index);
+  }
+
   function beginOpening() {
     if (!sceneEntered || openingStarted) return;
     openingStarted = true;
+    if (skipOpening) { enterMovement(state.movementIndex); return; }
     const opening = battle.intro || [];
     if (opening.length) speak(opening, () => enterMovement(0));
     else enterMovement(0);
@@ -1272,6 +1339,7 @@ export function makeCombatScene({
         } : null,
         statePhase: state.phase,
         tutorial: director?.snapshot?.() || null,
+        interlude: phase === 'interlude',
       };
     },
 
@@ -1311,6 +1379,10 @@ export function makeCombatScene({
       }
       now += dt;
       const music = musicSession?.update?.() || null;
+      // The child reprise still updates because scene stacks are composited
+      // bottom-up. Nothing in the parent fight advances while it owns the
+      // transport: no fireball, turn clock, dialogue, or resolution clock.
+      if (phase === 'interlude') return;
       if (phase === 'arrival') {
         arrivalElapsed += dt;
         if ((musicBootResolved && music?.phase !== 'arrival') || arrivalElapsed >= 1.2) beginOpening();
@@ -1551,8 +1623,10 @@ export function makeCombatScene({
       const parryPrompt = activeInputPromptDevice() === 'controller'
         ? promptLine([{ action: 'confirm', label: 'PARRY' }])
         : '[SPACE] PARRY';
-      const footer = phase === 'arrival'
-        ? '168 BPM · LOCKING DOWNBEAT'
+      const footer = phase === 'interlude'
+        ? 'SOURCE HAS THE TRANSPORT'
+        : phase === 'arrival'
+          ? '168 BPM · LOCKING DOWNBEAT'
         : phase === 'tool'
           ? activeInputPromptDevice() === 'controller'
             ? '[STICK / D-PAD ←→] TOOL · [↓] ACTIONS'

@@ -181,6 +181,17 @@ export const COMBAT_GUIDANCE = Object.freeze({
 //                      is something a player can learn and bait.
 //   parryWindowScale   how wide the reactive-parry window is. STORY gives you
 //                      most of the beat; DEAD AIR gives you the end of it.
+//   formationBite      how far a CUED Hall round reaches past a perfect read.
+//                      Ordinarily one read covers a whole coordinated phrase —
+//                      reading the phrase IS the skill, and three bodies must
+//                      not silently triple what escapes it. On the challenge
+//                      presets a cued round is the exception: the read stops at
+//                      the body it was made against and the rest of the
+//                      formation comes through. 0 leaves the room as it was, so
+//                      the two recommended presets never meet this at all. It
+//                      is telegraphed a full round ahead and answered by
+//                      shooting the SIDE BOX, which is why it is allowed to be
+//                      this sharp.
 //
 // Composure and guard are in GRID units (combat-damage.js) like every other
 // combat number: a point used to be a fifth of a phase and is now a twenty-fifth.
@@ -203,10 +214,10 @@ export const COMBAT_RULES = Object.freeze({
   // the one defensive move in every bag played the same on CONTRACT as on DEAD
   // AIR. It steps now, which is what makes the meaner presets meaner in the
   // hand rather than only on the health bar.
-  guided: Object.freeze({ guidance: COMBAT_GUIDANCE.FULL, id: 'guided', composureBonus: 10, holdPrevention: 15, incomingScale: 0.8, intentLookahead: 2, recoveryHolds: 0, recommended: true, safetyRelay: true, variant: 'standard', bandFloorBonus: 0.35, enemyGuardCooldown: null, parryWindowScale: 1.6 }),
-  standard: Object.freeze({ guidance: COMBAT_GUIDANCE.TRACE, id: 'standard', composureBonus: 0, holdPrevention: 10, incomingScale: 1, intentLookahead: 1, recoveryHolds: 1, recommended: true, safetyRelay: false, variant: 'standard', bandFloorBonus: 0.12, enemyGuardCooldown: 4, parryWindowScale: 1 }),
-  severe: Object.freeze({ guidance: COMBAT_GUIDANCE.TILE, id: 'severe', composureBonus: -5, holdPrevention: 8, incomingScale: 1.25, intentLookahead: 1, recoveryHolds: 2, recommended: false, safetyRelay: false, variant: 'severe', bandFloorBonus: 0.04, enemyGuardCooldown: 2, parryWindowScale: 0.85 }),
-  'dead-air': Object.freeze({ guidance: COMBAT_GUIDANCE.NONE, id: 'dead-air', composureBonus: -10, holdPrevention: 6, incomingScale: 1.5, intentLookahead: 1, recoveryHolds: 3, recommended: false, safetyRelay: false, variant: 'dead-air', bandFloorBonus: 0, enemyGuardCooldown: 1, parryWindowScale: 0.7 }),
+  guided: Object.freeze({ guidance: COMBAT_GUIDANCE.FULL, id: 'guided', composureBonus: 10, holdPrevention: 15, incomingScale: 0.8, intentLookahead: 2, recoveryHolds: 0, recommended: true, safetyRelay: true, variant: 'standard', bandFloorBonus: 0.35, enemyGuardCooldown: null, parryWindowScale: 1.6, formationBite: 0 }),
+  standard: Object.freeze({ guidance: COMBAT_GUIDANCE.TRACE, id: 'standard', composureBonus: 0, holdPrevention: 10, incomingScale: 1, intentLookahead: 1, recoveryHolds: 1, recommended: true, safetyRelay: false, variant: 'standard', bandFloorBonus: 0.12, enemyGuardCooldown: 4, parryWindowScale: 1, formationBite: 0 }),
+  severe: Object.freeze({ guidance: COMBAT_GUIDANCE.TILE, id: 'severe', composureBonus: -5, holdPrevention: 8, incomingScale: 1.25, intentLookahead: 1, recoveryHolds: 2, recommended: false, safetyRelay: false, variant: 'severe', bandFloorBonus: 0.04, enemyGuardCooldown: 2, parryWindowScale: 0.85, formationBite: 0.55 }),
+  'dead-air': Object.freeze({ guidance: COMBAT_GUIDANCE.NONE, id: 'dead-air', composureBonus: -10, holdPrevention: 6, incomingScale: 1.5, intentLookahead: 1, recoveryHolds: 3, recommended: false, safetyRelay: false, variant: 'dead-air', bandFloorBonus: 0, enemyGuardCooldown: 1, parryWindowScale: 0.7, formationBite: 1 }),
 });
 
 // Serialized saves migrate to combatAssistance, but this export keeps older

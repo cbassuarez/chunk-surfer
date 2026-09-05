@@ -1,0 +1,10 @@
+{
+  "objects": [
+    "plant_header_manifold",
+    "plant_header_fittings",
+    "plant_header_bypass"
+  ],
+  "triangles": 4196,
+  "threadPitch": 0.011,
+  "out": "plant_header_manifold.glb"
+}

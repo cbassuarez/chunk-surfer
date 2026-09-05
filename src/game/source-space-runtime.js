@@ -94,6 +94,7 @@ import {
   horizonBustAudience,
 } from './horizon-bust.js';
 import { sourceSensoryMix } from './source-sensory.js';
+import { sectorErrorLines } from '../render/sector-error.js';
 
 // The anchored plan contains the complete 620-cell-deep Source field plus the
 // 720-cell-wide white sea. One retained upload is still cheaper than rebuilding
@@ -165,6 +166,9 @@ const ROUTE_SEGMENTS = Object.freeze([
 ]);
 const LANDMARK_PAD_RADIUS = 10;
 const SOURCE_LAYER_BY_SECTOR=Object.freeze({hall:1,fork:2,recordist:3,student:4,workOrder:5,body:6,final:7,hush:8});
+// The band the fault material reads from — see sourceLayerAtWorld, which sends
+// MATERIAL.sourceFault here, and sourceSyntaxTint, which paints it red.
+const SOURCE_FAULT_LAYER = SOURCE_LAYER_BY_SECTOR.hush;
 
 const clamp = (value, lo, hi) => Math.max(lo, Math.min(hi, Number(value) || 0));
 const clamp01 = (value) => clamp(value, 0, 1);
@@ -4254,13 +4258,42 @@ export function createSourceSpaceRuntime({
     return resolveHushContactChoice(fallback?.id).checkpoint;
   }
 
+  // THE DISK CANNOT READ THE BUILDING'S OWN SOURCE.
+  //
+  // Seven of the eight bands are the repository, exactly as written. The eighth
+  // is where MATERIAL.sourceFault cells land (sourceLayerAtWorld routes them to
+  // hush) and MAT_SOURCE_FAULT already tints red — so fault ground and fault
+  // objects are the one surface in Source space that is allowed to stop being
+  // the source and start being the failure to read it.
+  //
+  // The warnings are INTERLEAVED rather than replacing the band outright: rows
+  // of real source with rows of ntfsclone failure between them is the picture
+  // the reference actually shows, and it keeps the hush sector legible on the
+  // cells that are not faulted. r3dSetSourceSurface lays 11 rows per band, so
+  // the ratio here is what the floor reads.
+  //
+  // Nothing animates this: the surface canvas is uploaded once on entering
+  // Source, and SOURCE_FAULT_FRAG — which is already a bad-sector simulation,
+  // holds and dropouts and all — runs afterwards and does the tearing.
   function sourceSurfaceLines(limit = 96) {
     const out = [];
     const sectors=Object.entries(SOURCE_ATLAS.sectors||{});
     const perSector=Math.max(1,Math.floor(limit/Math.max(1,sectors.length)));
     for (const [id,sector] of sectors) {
-      for (const line of (sector.sourceLines || []).slice(0,perSector)) {
-        out.push({...line,sourceLayer:SOURCE_LAYER_BY_SECTOR[id]||1});
+      const layer=SOURCE_LAYER_BY_SECTOR[id]||1;
+      const lines=(sector.sourceLines || []).slice(0,perSector);
+      if(layer!==SOURCE_FAULT_LAYER){
+        for(const line of lines)out.push({...line,sourceLayer:layer});
+        continue;
+      }
+      // The fault band, one row of source to two of failure — seeded off the
+      // run so a night reads the same disk every time it is entered.
+      const warnings=sectorErrorLines({count:Math.max(6,lines.length*2),seed:(state.seed||4417)+SOURCE_FAULT_LAYER});
+      let taken=0;
+      for(let row=0;row<lines.length+warnings.length;row+=1){
+        if(row%3===0&&taken<lines.length){out.push({...lines[taken],sourceLayer:layer});taken+=1;continue;}
+        const warning=warnings[row%warnings.length];
+        if(warning)out.push({text:warning,sourceLayer:layer});
       }
     }
     return out.slice(0,limit);

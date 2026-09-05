@@ -100,6 +100,35 @@ export class CausalRecorder {
     return event;
   }
 
+  // A bounded, read-only pose window for same-run Source reprises. This is not
+  // a causal tape and cannot expose raw audio: only the already-normalized
+  // player pose fields are copied out. Uniform downsampling keeps save size
+  // independent of how long the player loitered before pressing record.
+  poseWindow({ fromMs = 0, toMs = this.elapsedMs, maxFrames = 96, spaceId = null } = {}) {
+    const start = Math.max(0, finite(fromMs));
+    const end = Math.max(start, finite(toMs, this.elapsedMs));
+    const limit = Math.max(2, Math.min(256, Math.floor(finite(maxFrames, 96))));
+    const frames = this.frames.filter((frame) => (
+      finite(frame.t, -1) >= start
+      && finite(frame.t, -1) <= end
+      && (!spaceId || frame.spaceId === spaceId)
+    ));
+    const selected = frames.length <= limit
+      ? frames
+      : Array.from({ length: limit }, (_, index) => frames[Math.round(index * (frames.length - 1) / (limit - 1))]);
+    return selected.map((frame) => ({
+      t: Math.max(0, Math.round(finite(frame.t))),
+      x: finite(frame.x),
+      y: finite(frame.y),
+      yaw: finite(frame.yaw),
+      pitch: finite(frame.pitch),
+      floorH: finite(frame.floorH),
+      roomId: typeof frame.roomId === 'string' ? frame.roomId : '',
+      renderGroup: typeof frame.renderGroup === 'string' ? frame.renderGroup : '',
+      spaceId: typeof frame.spaceId === 'string' ? frame.spaceId : '',
+    }));
+  }
+
   recordAnchor({ id = null, verb, locus, payload = {}, weight = null, required = false, class: anchorClass = null, at = this.elapsedMs } = {}) {
     if (!this.active || this.discarded || !verb || !locus) return null;
     if (id && this.anchors.some((anchor) => anchor.id === id)) return this.anchors.find((anchor) => anchor.id === id);

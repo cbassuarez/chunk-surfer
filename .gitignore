@@ -18,3 +18,12 @@ __pycache__/
 
 # the narrative studio publishes its live URL + token here for tools/endings-audit
 tools/narrative-studio/.studio-session.json
+
+# Poly Haven source maps for the textile pack. Downloaded on demand and
+# verified against the sha256 in tools/chunk_surfer/textile-sources.json, so the
+# pack is reproducible without committing 12MB of somebody else's JPEGs.
+tools/chunk_surfer/textile-cache/
+
+# Pillow for the paper rasteriser. Repo-local so building paper never installs
+# into a system python; `rm -rf .paper-venv` undoes the whole dependency.
+.paper-venv/

@@ -1,0 +1,103 @@
+{
+  "pack": {
+    "filename": "conservatory-textiles.glb",
+    "author": "Chunk Surfer project (geometry) + Poly Haven (surfaces)",
+    "source": "tools/chunk_surfer/build-textiles.mjs",
+    "license": "project source (geometry); CC0-1.0 (surfaces)",
+    "sha256": "23905b320fb35ddcc6b43bde01a111fd83f6ce2e9ceb581205517c7a3a435da0",
+    "modifications": "Handrolled slab, chamfer, fringe and roll geometry in metres, Y-up, floor-anchored. Poly Haven surfaces resized to 512px and re-encoded as JPEG; arm maps used as both metallicRoughness and occlusion.",
+    "triangles": 774,
+    "bytes": 540520
+  },
+  "surfaces": [
+    {
+      "id": "drugget",
+      "asset": "hessian_380",
+      "title": "Hessian 380",
+      "url": "https://polyhaven.com/a/hessian_380",
+      "license": "CC0-1.0",
+      "note": "Coarse burlap. What a clearance contractor lays over a floor it means to lift.",
+      "maps": {
+        "diff": "5727302df3a9c845e6320ff186ac13fc7d0f1ffcd6fda71667e808e09379fe6f",
+        "nor": "3994fd74148cb413892edd08155976497b3e7e15a403a182f07325a6b1e7be1a",
+        "arm": "745b3c59fac3fd795da6a685cc1dae889ac8795e156c31d58d734739ff7fcbd7"
+      }
+    },
+    {
+      "id": "worn_carpet",
+      "asset": "dirty_carpet",
+      "title": "Dirty Carpet",
+      "url": "https://polyhaven.com/a/dirty_carpet",
+      "license": "CC0-1.0",
+      "note": "Discoloured and faded. The one nobody would buy.",
+      "maps": {
+        "diff": "b0ef2b248cb7dfa1d33f1b2215fb3b83e815527d4091a2c3a423bdcd63bef60a",
+        "nor": "ba96f6f098ac64456f4cc310469200ff702596a9070d2553f990da8f7b86d29f",
+        "arm": "c7d89d591dcc3691d28cec7eddb3a75126a1e0a49e9808b521c7c33450f9e50e"
+      }
+    },
+    {
+      "id": "chapel_weave",
+      "asset": "quatrefoil_jacquard_fabric",
+      "title": "Quatrefoil Jacquard",
+      "url": "https://polyhaven.com/a/quatrefoil_jacquard_fabric",
+      "license": "CC0-1.0",
+      "note": "A Gothic quatrefoil, which is the chapel's own motif in cloth.",
+      "maps": {
+        "diff": "674e9d4c2c116099b79ab364eb04e2101031745f2eb27e4a9e198a81e31c8cd7",
+        "nor": "9320e4ce8f986d26d30711dbb654e8d88371dc1ea28337f7bb373b243ea30286",
+        "arm": "fcd0915319a2792104d16c5a9ef049abe408319666fe505ab11c034f26001732"
+      }
+    },
+    {
+      "id": "stair_wool",
+      "asset": "poly_wool_herringbone",
+      "title": "Poly Wool Herringbone",
+      "url": "https://polyhaven.com/a/poly_wool_herringbone",
+      "license": "CC0-1.0",
+      "note": "Grey worsted herringbone. Stair runners are made of exactly this and wear in exactly this way.",
+      "maps": {
+        "diff": "fd889a46f617efd331e522e36b8ad2548e16e1cb018c001872f17537d7666af5",
+        "nor": "314ac7c1b7c101a48106e05199bfdb24e33671e58a6ccb334249b441d8e8ac98",
+        "arm": "f565985fe68d42b6638080c52628f13312b178001d758ef89fe76adb773fb227"
+      }
+    }
+  ],
+  "meshes": [
+    {
+      "name": "textile_drugget_run",
+      "surface": "drugget",
+      "triangles": 10
+    },
+    {
+      "name": "textile_drugget_stage",
+      "surface": "drugget",
+      "triangles": 56
+    },
+    {
+      "name": "textile_stair_runner",
+      "surface": "stair_wool",
+      "triangles": 10
+    },
+    {
+      "name": "textile_corridor_runner",
+      "surface": "worn_carpet",
+      "triangles": 192
+    },
+    {
+      "name": "atrium_waiting_rug",
+      "surface": "worn_carpet",
+      "triangles": 272
+    },
+    {
+      "name": "textile_chapel_runner",
+      "surface": "chapel_weave",
+      "triangles": 162
+    },
+    {
+      "name": "textile_rolled",
+      "surface": "worn_carpet",
+      "triangles": 72
+    }
+  ]
+}

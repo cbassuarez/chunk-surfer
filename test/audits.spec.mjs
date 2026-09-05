@@ -6,6 +6,8 @@ import { buildAudit as buildEndings } from '../tools/audits/endings/audit.mjs';
 import { renderAudit as renderEndings } from '../tools/audits/endings/render.mjs';
 import { buildAudit as buildProgression } from '../tools/audits/progression/audit.mjs';
 import { renderAudit as renderProgression } from '../tools/audits/progression/render.mjs';
+import { buildAudit as buildPuzzles } from '../tools/audits/puzzles/audit.mjs';
+import { renderAudit as renderPuzzles } from '../tools/audits/puzzles/render.mjs';
 
 // ── the registry ─────────────────────────────────────────────────────────────
 assert.deepEqual(auditRegistryErrors(), [], 'the audit registry is internally consistent');
@@ -77,7 +79,37 @@ assert.ok(progression.weapons.length >= 6);
   }
 }
 
+// ── the puzzles ──────────────────────────────────────────────────────────────
+//
+// The audit's own rule is the interesting assertion here: a puzzle that gates
+// something and offers no way through is reported as broken, so this passing is
+// a statement about the GAME — every locked thing can be got past — and not only
+// about the tool.
+const puzzles = await buildPuzzles();
+assert.deepEqual(puzzles.global.broken, [], 'nothing in the puzzles audit disagrees with the code');
+assert.ok(puzzles.counts.all >= 14);
+assert.ok(puzzles.counts.puzzles >= 6 && puzzles.counts.microgames >= 5, 'both kinds are represented');
+assert.ok(puzzles.counts.gating >= 8, 'most of them open something');
+for (const entry of puzzles.puzzles) {
+  assert.ok(entry.where?.resolved, `${entry.id} points at ${entry.cite.symbol} in ${entry.cite.file}, which is not there`);
+  assert.ok(entry.covered, `${entry.id} names ${entry.spec}, which is not there`);
+  assert.ok(!entry.liveError, `${entry.id} could not be read out of the game: ${entry.liveError}`);
+  assert.ok(entry.live.length, `${entry.id} reads nothing out of the game and is only a description`);
+  for (const field of ['room', 'asks', 'solved', 'fails', 'gates']) {
+    assert.ok(String(entry[field] || '').trim(), `${entry.id} does not say its ${field}`);
+  }
+  if (entry.opens) assert.ok(entry.assist, `${entry.id} opens something with no way through`);
+}
+{
+  const html = renderPuzzles(puzzles);
+  assert.ok(html.startsWith('<!doctype html>'));
+  assert.ok(!html.includes('undefined'), 'the puzzles page renders no undefined values');
+  assert.ok(!html.includes('no longer there'), 'every puzzle citation still resolves');
+  for (const entry of puzzles.puzzles) assert.ok(html.includes(`id="${entry.id}"`), `the page has a card for ${entry.id}`);
+}
+
 console.log(`audit tools ok — ${AUDITS.length} audits, ${endings.endings.length} endings, `
   + `${progression.achievements.length} achievements, ${progression.pins.length} pin sources, `
   + `${progression.skills.reduce((n, b) => n + b.rungs.length, 0)} skills, `
-  + `${progression.weapons.reduce((n, t) => n + t.moves.length, 0)} moves`);
+  + `${progression.weapons.reduce((n, t) => n + t.moves.length, 0)} moves, `
+  + `${puzzles.counts.all} puzzles and microgames`);

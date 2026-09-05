@@ -202,8 +202,10 @@ export function createPersonalizedWindowEffects({
     await safe(()=>api.listen('window-media-focus-left',()=>{
       // The main window's blur catches main -> pane. This catches pane -> some
       // unrelated application, when the main window is already blurred and
-      // therefore cannot emit another event of its own.
-      setTimeout(()=>{if(api?.invoke)void safe(()=>api.invoke('chunk_window_media_hide_if_unfocused'));},90);
+      // therefore cannot emit another event of its own. Activation changes
+      // stacking only: the authored surfaces stay alive and visible so a task
+      // switch cannot erase the composition.
+      setTimeout(()=>{if(api?.invoke)void safe(()=>api.invoke('chunk_window_surfaces_sync_app_activation'));},90);
     }));
     await safe(()=>api.listen('window-media-score-action',async({payload})=>{
       const session=current,composition=session?.activeComposition,label=String(payload?.targetLabel||'');
@@ -271,6 +273,7 @@ export function createPersonalizedWindowEffects({
       // borrowed focus rather than a projectile that ignores the pointer.
       surface=new api.WebviewWindow(label,{
         url:'fireball-cast.html',title:TITLE,
+        parent:'main',
         width:size,height:size,minWidth:64,minHeight:64,
         resizable:false,decorations:false,transparent:false,visible:false,focus:false,focusable:true,
         alwaysOnTop:true,skipTaskbar:true,shadow:false,
@@ -295,6 +298,7 @@ export function createPersonalizedWindowEffects({
     if(!surface){
       surface=new api.WebviewWindow(label,{
         url:'window-media.html',title:TITLE,width:240,height:160,minWidth:160,minHeight:96,maxWidth:320,maxHeight:320,
+        parent:'main',
         resizable:false,decorations:false,transparent:false,visible:false,focus:false,focusable:false,
         alwaysOnTop:true,skipTaskbar:true,shadow:false,
       });
@@ -423,6 +427,21 @@ export function createPersonalizedWindowEffects({
       while(snapshots.size>4)snapshots.delete(snapshots.keys().next().value);
       return id;
     }catch(_){return null;}
+  }
+  // REGISTER A PICTURE THE GAME DREW, not one it captured.
+  //
+  // captureSnapshot photographs the live frame. The return composition needs the
+  // opposite: sections rendered deliberately, offscreen, and handed to panes as
+  // images — because a `text` pane has no shader path and comes up black on the
+  // desktop. This is the door for that. The cap is higher than captureSnapshot's
+  // four because a return is up to eight sections at once, all live together.
+  function registerSnapshot(dataUrl){
+    const url=String(dataUrl||'');
+    if(!url.startsWith('data:'))return null;
+    const id=`snapshot-${Date.now()}-${Math.random().toString(36).slice(2,10)}`;
+    snapshots.set(id,url);
+    while(snapshots.size>MAX_MEDIA_SURFACES+4)snapshots.delete(snapshots.keys().next().value);
+    return id;
   }
   function snapshotData(id){return snapshots.get(String(id||''))||null;}
 
@@ -834,16 +853,18 @@ export function createPersonalizedWindowEffects({
   }
 
   target()?.addEventListener?.('blur',()=>{
-    setTimeout(()=>{if(api?.invoke)void safe(()=>api.invoke('chunk_window_media_hide_if_unfocused'));},90);
+    setTimeout(()=>{if(api?.invoke)void safe(()=>api.invoke('chunk_window_surfaces_sync_app_activation'));},90);
   });
   target()?.addEventListener?.('focus',()=>{
-    const count=current?.activeComposition?.surfaces?.length||0;
-    for(const label of WINDOW_MEDIA_SURFACE_LABELS.slice(0,count))void safe(()=>mediaSurfaces.get(label)?.show?.());
+    // The OS already preserved every child window's visibility. Reassert only
+    // the game's active stacking level; calling show() here races a delayed
+    // blur handler and used to make Alt-Tab permanently lose the tiny windows.
+    if(api?.invoke)void safe(()=>api.invoke('chunk_window_surfaces_sync_app_activation'));
   });
 
   return{
     begin,ensure,apply,reject,prepareFireballs,prepareMedia,arrangeMovement,beginFireballCast,syncFireballCast,showPanes,hidePanes,
-    captureSnapshot,snapshotData,showComposition,quiesceComposition,snapComposition,freezeComposition,setCompositionCoherence,triggerComposition,hideComposition,suspendSurfaces,
+    captureSnapshot,registerSnapshot,snapshotData,showComposition,quiesceComposition,snapComposition,freezeComposition,setCompositionCoherence,triggerComposition,hideComposition,suspendSurfaces,
     // Compatibility preview name; there is no channel interaction behind it.
     previewChannel,end,emergencyRestore,
     active:()=>!!current,sessionToken:()=>current?.token||null,statusLine:()=>'',

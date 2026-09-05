@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-09-02T19:22:24.940Z",
-  "bytes": 25290716,
-  "totalTriangles": 346974,
+  "generatedAt": "2026-09-03T21:53:56.407Z",
+  "bytes": 25419784,
+  "totalTriangles": 350798,
   "meshes": {
     "school_desk": {
       "triangles": 176,
@@ -292,8 +292,8 @@
       "vertices": 1368
     },
     "plant_header_manifold": {
-      "triangles": 372,
-      "vertices": 678
+      "triangles": 4196,
+      "vertices": 3328
     },
     "plant_gauge_needle_0": {
       "triangles": 52,
@@ -2147,14 +2147,14 @@
     },
     "plant_header_manifold": {
       "min": [
-        -2.25,
+        -1.329,
         0,
-        -0.317
+        -0.34
       ],
       "max": [
-        2.25,
-        2.18,
-        0.26
+        1.329,
+        0.46,
+        0.34
       ]
     },
     "plant_gauge_needle_0": {
@@ -5223,7 +5223,7 @@
     "plant_pump_skid": 0.16,
     "plant_mcc_bank": 2.16,
     "plant_idf_frame": 1.78,
-    "plant_header_manifold": 1.66,
+    "plant_header_manifold": 0.37,
     "plant_overhead_header": 2.85,
     "plant_grated_steps": 0.4,
     "stillson_wrench": 0.02,

@@ -1,20 +1,13 @@
 import * as scenes from './scenes.js';
 import { uiCenter, uiFill, uiLine, uiSize, uiText, uiWrap } from '../render/ui.js';
 import {
-  drawFormRow, drawFormRule, drawFormStamp, drawMachinePanel, drawPaperPanel, drawVfdText,
+  drawLocationIndicator, drawMachinePanel, drawVfdCounter, drawVfdText,
 } from '../render/presentation.js';
+import { drawTakeRail } from '../render/field-deck.js';
+import { drawVfdGlyph } from '../render/vfd-font.js';
+import { monitorSnapshotForRms } from '../audio/monitor.js';
 import { fitText } from '../render/fit-text.js';
-import { PAPER_ISSUER } from '../data/paper-system.js';
 
-// The company whose form this is. Authored data, not a string we invented here.
-const RETURN_ISSUER = PAPER_ISSUER.ELLERY_WORKS;
-// A works order number, not a slice of a UUID. Digits only, five of them, so
-// the sheet carries something a filing clerk could actually read back.
-const formNumber = (runId = '') => {
-  let n = 0;
-  for (const ch of String(runId)) n = (n * 31 + ch.charCodeAt(0)) >>> 0;
-  return String(n % 100000).padStart(5, '0');
-};
 const filedCount = () => Object.keys(getMeta()?.knowledge?.documents || {}).length;
 import { UI_COLOR } from '../render/palette.js';
 import { CAUSAL_REQUIREMENT, tapeQualifies } from '../causal/tape.js';
@@ -109,6 +102,84 @@ function reportSections(summary) {
 }
 
 // The stamp the office puts on the bottom of the sheet.
+// WHAT THE HEADER METER READS ONCE THE NIGHT IS OVER.
+//
+// drawMachinePanel defaults to the live HUSH exposure snapshot, which measures
+// SEMANTIC PLAYER NOISE and is therefore flat zero the moment the run ends — the
+// needle on this screen has always been dead. It reads the RETURN instead: how
+// much of the job came back, so a full five-take night pins it and an empty one
+// barely moves. It is the only honest thing left for it to measure.
+function returnMeterSnapshot(summary) {
+  const done = Math.max(0, Math.min(5, Number(summary?.takes?.completed) || 0));
+  const spoiled = Math.max(0, Number(summary?.takes?.spoiled) || 0);
+  // Spoiled takes are signal that went to tape and came back unusable, so they
+  // register as peak without registering as level.
+  return monitorSnapshotForRms(done / 5, {
+    peak: Math.min(1, (done + spoiled) / 5),
+    clipped: spoiled > 0 && done === 0,
+  });
+}
+
+// ONE SECTION OF THE ACCOUNT, RASTERISED FOR A PANE.
+//
+// The window panes cannot draw text — window-media-surface.js is a WebGL shader
+// with an image sampler and a handful of procedural forms, and no glyph path at
+// all. A `text` pane therefore renders in the in-canvas simulation and comes up
+// BLACK on the desktop, which is the wrong way round for a feature whose whole
+// point is the desktop.
+//
+// So each section is drawn here, offscreen, in the same 5x7 ROM the rest of the
+// interface uses, and handed over as an image. The composition's own
+// nvme-sector fault then chews on it exactly as it chews on the footage — the
+// account degrades along with everything else in the shot, which is a better
+// result than clean text would have been.
+function renderSectionImage(heading, entries, { width = 320, height = 210 } = {}) {
+  if (typeof document === 'undefined' || typeof document.createElement !== 'function') return null;
+  const canvas = document.createElement('canvas');
+  canvas.width = width; canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+
+  // Flat black glass, like every other panel in the game.
+  ctx.fillStyle = '#05070A';
+  ctx.fillRect(0, 0, width, height);
+
+  const cellW = 11, cellH = 15, pad = 12;
+  const put = (text, col, row, color, alpha = 1) => {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    [...String(text)].forEach((ch, i) => {
+      drawVfdGlyph(ctx, ch, pad + (col + i) * cellW, pad + row * cellH, cellW, cellH,
+        { color, dim: null, blur: 3.2, dpr: 1, alpha: 1 });
+    });
+    ctx.restore();
+  };
+  const cols = Math.floor((width - pad * 2) / cellW);
+
+  put(String(heading).toUpperCase().slice(0, cols), 0, 0, UI_COLOR.amber);
+  ctx.save();
+  ctx.globalAlpha = 0.34; ctx.fillStyle = UI_COLOR.amber;
+  ctx.fillRect(pad, pad + cellH + 2, width - pad * 2, 1);
+  ctx.restore();
+
+  entries.slice(0, Math.floor((height - pad * 2) / cellH) - 2).forEach(([label, value], index) => {
+    const row = index + 2;
+    const name = String(label).toUpperCase();
+    const shown = fitText(String(value), Math.max(3, cols - name.length - 1));
+    put(name.slice(0, cols), 0, row, UI_COLOR.secondary || '#9A7B3F', 0.8);
+    put(shown, Math.max(0, cols - shown.length), row, UI_COLOR.primary || '#F2A81E');
+  });
+
+  try { return canvas.toDataURL('image/webp', 0.82); } catch (_) { return null; }
+}
+
+// The whole account, one image per section, for the surfaces.
+export function returnSectionImages(summary) {
+  return reportSections(summary)
+    .map(([heading, entries]) => ({ label: heading, image: renderSectionImage(heading, entries) }))
+    .filter((page) => !!page.image);
+}
+
 function reportStamp(summary) {
   if (summary.rules?.startedPreset === 'dead-air') {
     return summary.integrity?.deadAir?.eligible ? 'DEAD AIR' : 'NOT MET';
@@ -125,8 +196,12 @@ export function makeReturnReportScene({
   onArchive = () => {},
   onTitle = () => {},
   getCausalStatus = () => summary.causalTape || { status: tapeQualifies(summary.injuries) ? 'filing' : 'not-qualified' },
+  // True once the return composition has actually taken the sections. main.js
+  // owns that answer because it owns the director.
+  sectionsOnPanes = () => false,
+  // Called once when the reader advances past the account.
+  onAccountRead = () => {},
 } = {}) {
-  const RETURN_REF = `${RETURN_ISSUER.formPrefix}${formNumber(summary.runId || summary.id || '4417')}`;
   const buildStages=()=>{
     const achievementIds=[...(summary.unlockedAchievements||[])];
     if(getCausalStatus()?.status==='ready'&&!achievementIds.includes('ACH_SECOND_TRACK'))achievementIds.push('ACH_SECOND_TRACK');
@@ -186,7 +261,12 @@ export function makeReturnReportScene({
         return true;
       }
       if (e.key === 'Enter' || e.key === ' ' || k === 'z' || e.key === 'ArrowRight') {
-        stage = Math.min(stages.length - 1, stage + 1); AUDIO.menuConfirm(); return true;
+        const wasReport = stages[stage]?.id === 'report';
+        stage = Math.min(stages.length - 1, stage + 1);
+        // The account has been read; the surfaces let it go rather than sitting
+        // over every screen that follows.
+        if (wasReport && stages[stage]?.id !== 'report') onAccountRead();
+        AUDIO.menuConfirm(); return true;
       }
       if (e.key === 'ArrowLeft' && stage > 0) { stage--; AUDIO.menuMove(); return true; }
       return true;
@@ -201,150 +281,149 @@ export function makeReturnReportScene({
       }
     },
 
-    // The sheet itself. One column of ruled sections, a stamp at the foot.
-    drawReturnSheet(x, y, w, h) {
-      // A SHEET IS AS LONG AS WHAT IS TYPED ON IT.
+    // The transport, reading the return. Everything on it is an instrument
+    // showing a real figure, not a label with a number typed beside it.
+    drawTransport(x, y, w, h, pageSource) {
+      // The header is wordmark + model + label + SOURCE + meter on one row, and
+      // at the narrow width it ran out of room and truncated mid-word. The
+      // brand is the first thing a faceplate can afford to lose.
+      const narrow = w < 70;
+      const body = drawMachinePanel(x, y, w, h, {
+        label: 'RETURN',
+        source: pageSource,
+        wordmark: narrow ? '' : 'AUDIOCORP',
+        model: 'DA-1000',
+        footer: promptLine([{ action: 'continue', label: 'CONTINUE' }]),
+        // The header meter is fed the run rather than the live HUSH exposure,
+        // which is flat zero once the run is over and has always read dead here.
+        meterSnapshot: returnMeterSnapshot(summary),
+        meter: true,
+      });
+
+      const left = body.x;
+      const width = body.w;
+      const ret = returnDefinition(summary.endingId);
+
+      // WHAT CAME BACK, on the top line, in the machine's own large type.
+      drawVfdText(left, body.y, ret?.title || String(summary.endingId || '').toUpperCase(), {
+        color: UI_COLOR.amber, max: width,
+      });
+      uiText(left, body.y + 3, ret?.classification || 'UNCLASSIFIED', 'ui-label', 0.72);
+
+      // TIME ON SITE — the segment counter, which is what a transport shows.
+      uiText(left, body.y + 5, 'TIME ON SITE', 'ui-label', 0.68);
+      drawVfdCounter(left, body.y + 6, formatDuration(summary.durationSeconds), { theme: 'amber' });
+
+      // TAKES and what they cost, on the rail built for exactly this pair and
+      // never once called from this screen.
+      drawTakeRail({
+        x: left, y: body.y + 9,
+        done: Number(summary.takes?.completed) || 0,
+        total: 5,
+        injuries: Number(summary.injuries) || 0,
+      });
+
+      // THE ROOMS HE ACTUALLY WALKED. The old report printed the COUNT and threw
+      // the room list away; takes.rooms has been in the summary all along.
+      const rooms = summary.takes?.rooms || [];
+      // The bar reads how much of the job came back. It was pinned at 1 — a full
+      // amber rail on a night with no takes at all, which is the opposite of the
+      // truth.
+      const filedShare = Math.max(0, Math.min(1, (Number(summary.takes?.completed) || 0) / 5));
+      drawLocationIndicator(left, body.y + 11, width, filedShare, {
+        theme: 'amber',
+        label: 'ROOMS FILED',
+        rows: 1,
+        marks: rooms.map((id, index) => ({
+          at: rooms.length > 1 ? index / (rooms.length - 1) : 0,
+          label: roomLabel(id).toUpperCase().slice(0, 10),
+        })),
+      });
+
+      // THE SECTIONS BELONG TO THE PANES, NOT TO BOTH.
       //
-      // Holding the full panel height left a hand's width of blank stock above
-      // the RECEIVED rule, which is the thing that made the old screens read as
-      // a content card floating in a page. Measure the sections, cut the paper
-      // to them, and centre what is left.
-      // +14: drawPaperPanel keeps 4 rows of margin for itself, and the sheet
-      // spends 10 more on the letterhead, the two rules and the received line.
-      // Getting this wrong by exactly the panel's own padding is what pushed the
-      // last section onto an imaginary continuation sheet.
-      const needed = reportSections(summary).reduce((sum, [, entries]) => sum + entries.length + 2, 0) + 14;
-      const fitted = Math.max(16, Math.min(h, needed));
-      const top = y + Math.floor((h - fitted) / 2);
-      const sheet = drawPaperPanel(x, top, w, fitted);
-      const left = sheet.x + 1;
-      const width = sheet.w - 2;
-
-      // Letterhead. The issuer is real authored data — W. ELLERY / WORKS, with
-      // a Brighouse address and a form prefix — so the form says who it belongs
-      // to in the company's own words rather than in ours.
-      uiText(left, sheet.y, RETURN_ISSUER.mark, 'paper-ink');
-      uiText(left, sheet.y + 1, RETURN_ISSUER.descriptor, 'paper-ink', 0.62);
-      uiText(left + width - RETURN_REF.length, sheet.y, RETURN_REF, 'paper-ink', 0.86);
-      uiText(left + width - 15, sheet.y + 1, 'RETURN OF WORKS', 'paper-ink', 0.62);
-      drawFormRule(left, sheet.y + 2, width, { alpha: 0.42, weight: 2 });
-
-      // The body, section by section, until the sheet runs out. A form that
-      // overflows its page is a form with a second page, not a form with a
-      // scrollbar — so it stops, and the count of what did not fit is honest.
-      let ry = sheet.y + 4;
-      const foot = sheet.y + sheet.h - 4;
-      let dropped = 0;
-      for (const [heading, entries] of reportSections(summary)) {
-        if (ry + 2 + entries.length > foot) { dropped += entries.length; continue; }
-        uiText(left, ry, heading, 'paper-ink', 0.55);
-        drawFormRule(left, ry, width, { alpha: 0.18 });
+      // When the composition took, every section is already out on the surfaces
+      // (or on the in-canvas panes, which is the same plan) and repeating them
+      // here is just clutter over the instruments. They are printed in the
+      // window ONLY as the fallback — no DOM to rasterise into, fewer than two
+      // sections, a refused pool — so the account is never lost, and never shown
+      // twice.
+      if (sectionsOnPanes()) {
+        // With the account out on the surfaces the column has room for what a
+        // transport shows when it is not reading: what came back, and whether
+        // the second track took.
+        const causal = getCausalStatus() || {};
+        const foot = body.y + body.h - 5;
+        uiLine(left, foot - 1, left + width - 1, foot - 1, UI_COLOR.frame, 0.28);
+        uiText(left, foot, 'STATUS', 'ui-label', 0.62);
+        uiText(left + width - reportStamp(summary).length, foot, reportStamp(summary), 'ui-amber');
+        const tape = causal.status === 'ready' ? 'SECOND TRACK SEALED'
+          : causal.status === 'not-qualified' ? 'SECOND TRACK REFUSED'
+            : 'SECOND TRACK FILING';
+        uiText(left, foot + 2, 'SECOND TRACK', 'ui-label', 0.62);
+        const tail = tape.replace('SECOND TRACK ', '');
+        uiText(left + width - tail.length, foot + 2, tail,
+          causal.status === 'ready' ? 'ui-green' : causal.status === 'not-qualified' ? 'ui-danger' : 'ui-secondary');
+        return;
+      }
+      const sections = reportSections(summary);
+      let ry = body.y + 15;
+      const colW = Math.floor((width - 2) / 2);
+      let col = 0;
+      for (const [heading, entries] of sections) {
+        if (ry + entries.length + 2 > body.y + body.h - 1) {
+          if (col === 1) break;
+          col = 1; ry = body.y + 15;
+        }
+        const cx = left + col * (colW + 2);
+        uiText(cx, ry, heading, 'ui-label', 0.62);
         ry += 1;
         for (const [label, value] of entries) {
-          ry = drawFormRow(left + 1, ry, width - 1, label, fitText(String(value), width - label.length - 4));
+          const shown = fitText(String(value), Math.max(4, colW - label.length - 2));
+          uiText(cx, ry, label, 'ui-secondary', 0.78);
+          uiText(cx + colW - shown.length, ry, shown, 'ui-primary');
+          ry += 1;
         }
         ry += 1;
       }
-      if (dropped) uiText(left + 1, foot - 1, `${dropped} FURTHER ENTR${dropped === 1 ? 'Y' : 'IES'} ON CONTINUATION SHEET`, 'paper-ink', 0.42);
-
-      drawFormRule(left, foot, width, { alpha: 0.42, weight: 2 });
-      uiText(left, foot + 1, 'RECEIVED', 'paper-ink', 0.55);
-      uiText(left + 10, foot + 1, RETURN_ISSUER.address[1] || '', 'paper-ink', 0.42);
-      drawFormStamp(left + width - 14, foot + 1, reportStamp(summary), { alpha: 0.9 });
-
-      const prompt = promptLine([{ action: 'continue', label: 'CONTINUE' }]);
-      uiText(left, sheet.y + sheet.h - 1, prompt, 'paper-ink', 0.5);
-    },
-
-    // THE DISPOSITION BLOCK, WHICH IS NOT TWO CALLS TO ACTION.
-    //
-    // This was a pair of equal-width cards side by side, each with a bold
-    // heading, four wrapped lines of body copy and a small label, over two text
-    // links in the footer. That is a landing page, and it was the most
-    // web-shaped thing in the build.
-    //
-    // A form ends by asking what is to be done with it. Four ruled rows, one
-    // tick box each, the selected one stamped — the same four POST_RUN_ACTIONS
-    // and the same keys, on the same sheet as everything above it.
-    drawDisposition(x, y, w, h, { causal = {}, hushCopy = {} } = {}) {
-      // Four rows and a foot. Same reason as the sheet above.
-      const fitted = Math.max(16, Math.min(h, POST_RUN_ACTIONS.length * 2 + 12));
-      const top = y + Math.floor((h - fitted) / 2);
-      const sheet = drawPaperPanel(x, top, w, fitted);
-      const left = sheet.x + 1;
-      const width = sheet.w - 2;
-
-      uiText(left, sheet.y, RETURN_ISSUER.mark, 'paper-ink');
-      uiText(left + width - RETURN_REF.length, sheet.y, RETURN_REF, 'paper-ink', 0.86);
-      uiText(left, sheet.y + 1, 'DISPOSITION OF THIS RETURN', 'paper-ink', 0.62);
-      drawFormRule(left, sheet.y + 2, width, { alpha: 0.42, weight: 2 });
-
-      // One line each. The description that used to be a paragraph of body copy
-      // is the form's own note column, which is where a form puts it.
-      const notes = {
-        replay: 'NEW WORKS ORDER · TERMS TO BE SET',
-        'transfer-room': hushCopy.enabled ? (hushCopy.note || 'FILE AND COLLECT') : 'NOT AVAILABLE ON THIS RETURN',
-        archive: `${filedCount()} DOCUMENT${filedCount() === 1 ? '' : 'S'} ON FILE`,
-        title: 'CLOSE THE FILE',
-      };
-      let ry = sheet.y + 4;
-      POST_RUN_ACTIONS.forEach((entry, index) => {
-        const picked = index === action;
-        const available = entry.id !== 'transfer-room' || hushCopy.enabled !== false;
-        const box = picked ? '[X]' : '[ ]';
-        const alpha = available ? 1 : 0.45;
-        uiText(left, ry, box, 'paper-ink', alpha);
-        uiText(left + 4, ry, String(entry.label || '').toUpperCase(), 'paper-ink', alpha);
-        const note = fitText(String(notes[entry.id] || ''), Math.max(4, width - 30));
-        if (note) uiText(left + width - note.length, ry, note, 'paper-ink', alpha * 0.5);
-        drawFormRule(left, ry, width, { alpha: picked ? 0.34 : 0.12 });
-        ry += 2;
-      });
-
-      const foot = sheet.y + sheet.h - 4;
-      drawFormRule(left, foot, width, { alpha: 0.42, weight: 2 });
-      // The causal tape's own line, which the report only ever showed as a
-      // spinner on the filing stage.
-      const tape = causal.status === 'ready' ? 'SECOND TRACK SEALED'
-        : causal.status === 'not-qualified' ? `SECOND TRACK REFUSED · ${CAUSAL_REQUIREMENT}`
-          : '';
-      if (tape) uiText(left, foot + 1, tape, 'paper-ink', 0.5);
-      drawFormStamp(left + width - 14, foot + 1, POST_RUN_ACTIONS[action]?.id === 'title' ? 'CLOSED' : 'PENDING', { alpha: 0.85 });
-
-      const prompt = promptLine([{ action: 'select', label: 'SELECT' }, { action: 'confirm', label: 'CONFIRM' }]);
-      uiText(left, sheet.y + sheet.h - 1, prompt, 'paper-ink', 0.5);
     },
 
     drawReport() {
       const { cols, rows } = uiSize();
       uiFill(0, 0, cols, rows, UI_COLOR.glass);
-      const w = Math.min(88, cols - 4), h = Math.min(Math.max(30, rows - 8), rows - 4);
-      const x = Math.floor((cols - w) / 2), y = Math.floor((rows - h) / 2);
+      // WHEN THE SECTIONS ARE OUT ON THE SURFACES, THE TRANSPORT MAKES ROOM.
+      //
+      // At full width the panes have nowhere to go and land on top of the panel,
+      // clipping its own header. Narrowing the centre column turns that into the
+      // arrangement it should be: the machine in the middle, the account around
+      // it. Native panes sit outside the frame entirely, so this only matters for
+      // the in-canvas path — which is every browser run and every session with
+      // choreography off, so it matters.
       const currentStage = stages[stage];
+      const spread = currentStage.id === 'report' && sectionsOnPanes();
+      const w = Math.min(spread ? 56 : 88, cols - 4);
+      const h = Math.min(Math.max(30, rows - 8), rows - 4);
+      const x = Math.floor((cols - w) / 2), y = Math.floor((rows - h) / 2);
       const current = currentStage.id;
       const pageSource = currentStage.pages > 1 ? `${currentStage.page}/${currentStage.pages}` : '4417-C';
       const stageCopy = POST_RUN_STAGE_COPY[current] || POST_RUN_STAGE_COPY.actions;
 
-      // THE RETURN IS PAPERWORK, AND PAPERWORK IS NOT ON THE GLASS.
+      // THE MACHINE READS THE NIGHT BACK.
       //
-      // The night is over and the building is behind him. Everything up to this
-      // point is lit — phosphor behind glass, in the dark. This is the first
-      // surface in the game that is a physical object under an office lamp, and
-      // that tonal break IS the ending: you are out, and now somebody files you.
+      // A first pass drew this as a cream form on stock. It was too fake, and it
+      // was never going to be otherwise: the game owns REAL paper — 211
+      // documents rasterised offline at 2048x2896 with impact-printer
+      // morphology, in assets/paper — and a beige rectangle with a noise wash
+      // cannot stand next to that. So it stops imitating a material this game
+      // already does properly and goes back to the one it is actually made of.
       //
-      // It is drawn rather than rasterised because a return form carries
-      // TONIGHT's numbers. The offline paper pipeline (game/paper-assets.js)
-      // owns the 211 authored documents and its own rule is that "strings were
-      // fixed before this program runs" — which is exactly what a form filled in
-      // from a live run cannot be. Printed stationery, typed entries: the
-      // stationery is the sheet, the entries are drawn onto it now.
-      if (current === 'report') { this.drawReturnSheet(x, y, w, h); return; }
-      if (current === 'actions') {
-        const causal = getCausalStatus() || {};
-        const hushCopy = transferRoomCopy({ filed: filedCount() });
-        this.drawDisposition(x, y, w, h, { causal, hushCopy });
-        return;
-      }
+      // The DA-1000 is the frame for it. The night was a recording job; the
+      // return is that tape played back. The counter runs the time on site, the
+      // location indicator walks the rooms actually taken, the take rail shows
+      // the takes and what they cost. Those instruments are all built and
+      // tested and were unused by this screen while it printed the same numbers
+      // as ASCII strings.
+      if (current === 'report') { this.drawTransport(x, y, w, h, pageSource); return; }
 
       const body = drawMachinePanel(x, y, w, h, {
         label: stageCopy.panel,
@@ -353,19 +432,19 @@ export function makeReturnReportScene({
           ? promptLine([{ action: 'select', label: 'SELECT' }, { action: 'confirm', label: 'CONFIRM' }])
           : promptLine([{ action: 'continue', label: 'CONTINUE' }]),
         meter: current !== 'actions',
+        meterSnapshot: returnMeterSnapshot(summary),
       });
 
-      if(current==='filing'){
+      if (current === 'filing') {
         drawVfdText(body.x, body.y, stageCopy.title, { color: UI_COLOR.danger, max: body.w });
-        uiCenter(body.y + Math.floor(body.h / 2), POST_RUN_STAGE_COPY.filing.primary, 'ui-amber');
-        uiCenter(body.y + Math.floor(body.h / 2) + 3, POST_RUN_STAGE_COPY.filing.secondary, 'ui-secondary');
+        uiText(body.x, body.y + 4, POST_RUN_STAGE_COPY.filing.primary, 'ui-amber');
+        uiWrap(POST_RUN_STAGE_COPY.filing.secondary, body.w).slice(0, 2)
+          .forEach((line, i) => uiText(body.x, body.y + 6 + i, line, 'ui-secondary'));
+        // The status the machine will print once it settles. Held, not blank.
+        uiText(body.x, body.y + body.h - 2, `STATUS  ${reportStamp(summary)}`, 'ui-label', 0.6);
         return;
       }
 
-      if (current === 'report') {
-        // Drawn on the sheet, not on the glass — see drawReport's paper branch.
-        return;
-      }
 
       if (current === 'achievements') {
         drawVfdText(body.x, body.y, 'ACHIEVEMENTS UNLOCKED', { color: UI_COLOR.amber, max: body.w });
@@ -420,6 +499,43 @@ export function makeReturnReportScene({
         return;
       }
 
+      if (current === 'actions') {
+        // WHAT IS TO BE DONE WITH THE RETURN.
+        //
+        // This was two equal cards side by side, each with a bold heading, four
+        // wrapped lines of body copy and a small label, over two text links —
+        // structurally a two-column CTA landing page, and the most web-shaped
+        // thing in the build. It is a selection list on an instrument now: one
+        // row each, a caret on the live one, the reason in the right column.
+        const hushCopy = transferRoomCopy({ filed: filedCount() });
+        const causal = getCausalStatus() || {};
+        drawVfdText(body.x, body.y, stageCopy.title, { color: UI_COLOR.amber, max: body.w });
+        const notes = {
+          replay: 'NEW WORKS ORDER · TERMS TO BE SET',
+          'transfer-room': hushCopy.enabled ? (hushCopy.note || 'FILE AND COLLECT') : 'NOT AVAILABLE ON THIS RETURN',
+          archive: `${filedCount()} DOCUMENT${filedCount() === 1 ? '' : 'S'} ON FILE`,
+          title: 'CLOSE THE FILE',
+        };
+        let ry = body.y + 5;
+        POST_RUN_ACTIONS.forEach((entry, index) => {
+          const picked = index === action;
+          const available = entry.id !== 'transfer-room' || hushCopy.enabled !== false;
+          const label = String(entry.label || '').toUpperCase();
+          uiText(body.x, ry, picked ? '▸' : ' ', 'ui-amber');
+          uiText(body.x + 2, ry, label, picked ? 'ui-amber' : available ? 'ui-primary' : 'ui-secondary', available ? 1 : 0.5);
+          const note = fitText(String(notes[entry.id] || ''), Math.max(6, body.w - label.length - 6));
+          if (note) uiText(body.x + body.w - note.length, ry, note, 'ui-secondary', available ? 0.72 : 0.4);
+          uiLine(body.x, ry + 1, body.x + body.w - 1, ry + 1, picked ? UI_COLOR.amber : UI_COLOR.frame, picked ? 0.5 : 0.16);
+          ry += 3;
+        });
+        // The causal tape's own line, which only ever appeared as a spinner.
+        const tape = causal.status === 'ready' ? 'SECOND TRACK SEALED'
+          : causal.status === 'not-qualified' ? `SECOND TRACK REFUSED · ${CAUSAL_REQUIREMENT}`
+            : '';
+        if (tape) uiText(body.x, body.y + body.h - 2, tape, 'ui-label', 0.6);
+        uiText(body.x + body.w - 12, body.y + body.h - 2, `STATUS ${reportStamp(summary)}`, 'ui-label', 0.6);
+        return;
+      }
     },
   };
 }

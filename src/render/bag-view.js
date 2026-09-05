@@ -423,11 +423,22 @@ function drawInventoryActions(entry,rect,nav,motion,now){
   drawDescription(entry.description||'',rect.x+1,rect.y+2,rect.w-2,descriptionRows,'ui-secondary');
   const start=rect.y+2+descriptionRows+1;
   const actions=entry.actionList||[];
-  uiText(rect.x+1,start-1,focused?'ACTIONS · SELECT ONE':'ACTIONS · [ENTER / →] FOCUS','ui-label',focused ? .8 : .58);
+  // SAY WHAT THE STAGE IS, IN WORDS.
+  //
+  // This is a two-stage control — pick an item, then step into its actions — and
+  // it read as a passive list because the header said "FOCUS", which is a word
+  // about the UI rather than about what you are doing. Each stage now names its
+  // own keys, and the first available action carries a dim caret even before you
+  // step in, so the list looks like the menu it is.
+  uiText(rect.x+1,start-1,
+    focused?'ACTIONS · [↑↓] PICK · [ENTER] DO IT · [←] BACK':'ACTIONS · [ENTER] TO CHOOSE ONE',
+    'ui-label',focused ? .82 : .62);
   const visible=Math.max(1,rect.y+rect.h-start);
+  const firstEnabled=actions.findIndex((action)=>action.enabled);
   actions.slice(0,visible).forEach((action,i)=>{
     const on=focused&&i===index;
-    uiText(rect.x+1,start+i,on?'▸':' ',on?'ui-amber':'ui-secondary',on?1:.45);
+    const hint=!focused&&i===firstEnabled;
+    uiText(rect.x+1,start+i,on||hint?'▸':' ',on?'ui-amber':'ui-secondary',on?1:hint?.42:.45);
     const verb=action.verb==='special'?action.label:`${action.verb.toUpperCase()}${action.label!==action.verb.toUpperCase()?` · ${action.label}`:''}`;
     const reason=!action.enabled?` — ${action.reason}`:action.exitPolicy==='close'?' — CLOSES BAG':'';
     uiText(rect.x+3,start+i,clip(`${verb}${reason}`,rect.w-4),!action.enabled?'ui-secondary':on?'ui-amber':'ui-primary',!action.enabled ? .42 : on ? 1 : .72);

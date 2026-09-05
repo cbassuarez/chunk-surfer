@@ -4637,6 +4637,10 @@ export function r3dInit(mapEl) {
   resize();
   P3.loadPropPack(assetUrl('assets/conservatory-props.glb'))
     .then(()=>P3.addPropPack(assetUrl('assets/conservatory-acquisitions.glb')))
+    // Floor textiles, after the procedural pack so atrium_waiting_rug's
+    // flat-shaded version is overridden by the textured one of the same name.
+    // Optional, like vegetation: a missing pack leaves the bands in place.
+    .then(()=>P3.addPropPack(assetUrl('assets/conservatory-textiles.glb')).catch((err)=>console.warn('textile pack unavailable; retaining procedural rug',err)))
     .then(()=>P3.addPropPack(assetUrl('assets/opening-street.glb')))
     // Hero vegetation deliberately overrides the conservative tree, hedge and
     // ruined-garden meshes. A missing optional pack falls back to those names

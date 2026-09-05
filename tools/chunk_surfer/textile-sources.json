@@ -1,0 +1,109 @@
+{
+  "version": 1,
+  "output": "public/assets/conservatory-textiles.glb",
+  "cacheDirectory": "tools/chunk_surfer/textile-cache",
+  "textureSize": 512,
+  "limits": {
+    "bytes": 6291456,
+    "triangles": 20000,
+    "textureDimension": 512
+  },
+  "surfaces": {
+    "drugget": {
+      "asset": "hessian_380",
+      "title": "Hessian 380",
+      "note": "Coarse burlap. What a clearance contractor lays over a floor it means to lift.",
+      "url": "https://polyhaven.com/a/hessian_380",
+      "license": "CC0-1.0",
+      "maps": {
+        "diff": {
+          "file": "hessian_380_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/hessian_380/hessian_380_diff_1k.jpg",
+          "sha256": "5727302df3a9c845e6320ff186ac13fc7d0f1ffcd6fda71667e808e09379fe6f"
+        },
+        "nor": {
+          "file": "hessian_380_nor_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/hessian_380/hessian_380_nor_gl_1k.jpg",
+          "sha256": "3994fd74148cb413892edd08155976497b3e7e15a403a182f07325a6b1e7be1a"
+        },
+        "arm": {
+          "file": "hessian_380_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/hessian_380/hessian_380_arm_1k.jpg",
+          "sha256": "745b3c59fac3fd795da6a685cc1dae889ac8795e156c31d58d734739ff7fcbd7"
+        }
+      }
+    },
+    "worn_carpet": {
+      "asset": "dirty_carpet",
+      "title": "Dirty Carpet",
+      "note": "Discoloured and faded. The one nobody would buy.",
+      "url": "https://polyhaven.com/a/dirty_carpet",
+      "license": "CC0-1.0",
+      "maps": {
+        "diff": {
+          "file": "dirty_carpet_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/dirty_carpet/dirty_carpet_diff_1k.jpg",
+          "sha256": "b0ef2b248cb7dfa1d33f1b2215fb3b83e815527d4091a2c3a423bdcd63bef60a"
+        },
+        "nor": {
+          "file": "dirty_carpet_nor_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/dirty_carpet/dirty_carpet_nor_gl_1k.jpg",
+          "sha256": "ba96f6f098ac64456f4cc310469200ff702596a9070d2553f990da8f7b86d29f"
+        },
+        "arm": {
+          "file": "dirty_carpet_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/dirty_carpet/dirty_carpet_arm_1k.jpg",
+          "sha256": "c7d89d591dcc3691d28cec7eddb3a75126a1e0a49e9808b521c7c33450f9e50e"
+        }
+      }
+    },
+    "chapel_weave": {
+      "asset": "quatrefoil_jacquard_fabric",
+      "title": "Quatrefoil Jacquard",
+      "note": "A Gothic quatrefoil, which is the chapel's own motif in cloth.",
+      "url": "https://polyhaven.com/a/quatrefoil_jacquard_fabric",
+      "license": "CC0-1.0",
+      "maps": {
+        "diff": {
+          "file": "quatrefoil_jacquard_fabric_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/quatrefoil_jacquard_fabric/quatrefoil_jacquard_fabric_diff_1k.jpg",
+          "sha256": "674e9d4c2c116099b79ab364eb04e2101031745f2eb27e4a9e198a81e31c8cd7"
+        },
+        "nor": {
+          "file": "quatrefoil_jacquard_fabric_nor_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/quatrefoil_jacquard_fabric/quatrefoil_jacquard_fabric_nor_gl_1k.jpg",
+          "sha256": "9320e4ce8f986d26d30711dbb654e8d88371dc1ea28337f7bb373b243ea30286"
+        },
+        "arm": {
+          "file": "quatrefoil_jacquard_fabric_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/quatrefoil_jacquard_fabric/quatrefoil_jacquard_fabric_arm_1k.jpg",
+          "sha256": "fcd0915319a2792104d16c5a9ef049abe408319666fe505ab11c034f26001732"
+        }
+      }
+    },
+    "stair_wool": {
+      "asset": "poly_wool_herringbone",
+      "title": "Poly Wool Herringbone",
+      "note": "Grey worsted herringbone. Stair runners are made of exactly this and wear in exactly this way.",
+      "url": "https://polyhaven.com/a/poly_wool_herringbone",
+      "license": "CC0-1.0",
+      "maps": {
+        "diff": {
+          "file": "poly_wool_herringbone_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/poly_wool_herringbone/poly_wool_herringbone_diff_1k.jpg",
+          "sha256": "fd889a46f617efd331e522e36b8ad2548e16e1cb018c001872f17537d7666af5"
+        },
+        "nor": {
+          "file": "poly_wool_herringbone_nor_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/poly_wool_herringbone/poly_wool_herringbone_nor_gl_1k.jpg",
+          "sha256": "314ac7c1b7c101a48106e05199bfdb24e33671e58a6ccb334249b441d8e8ac98"
+        },
+        "arm": {
+          "file": "poly_wool_herringbone_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/poly_wool_herringbone/poly_wool_herringbone_arm_1k.jpg",
+          "sha256": "f565985fe68d42b6638080c52628f13312b178001d758ef89fe76adb773fb227"
+        }
+      }
+    }
+  }
+}

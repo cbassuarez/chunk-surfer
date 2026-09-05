@@ -351,7 +351,7 @@ assert.ok((nativeWindowSource.match(/\.set_focus\(\)/g)?.length||0)>=2,
 const mediaListeners=new Map(),mediaWindows=new Map(),mediaAssignments=[],mediaPlacements=[];
 const fireMediaEvent=(name,payload)=>{for(const listener of mediaListeners.get(name)||[])listener({payload});};
 class FakeWebviewWindow{
-  constructor(label){this.label=label;this.visible=false;mediaWindows.set(label,this);}
+  constructor(label,options={}){this.label=label;this.options=options;this.visible=false;mediaWindows.set(label,this);}
   static async getByLabel(label){return mediaWindows.get(label)||null;}
   once(name,callback){if(name==='tauri://created')queueMicrotask(()=>callback({payload:null}));return Promise.resolve(()=>{});}
   async hide(){this.visible=false;}async show(){this.visible=true;}async close(){mediaWindows.delete(this.label);}
@@ -378,6 +378,8 @@ const routedToken=routedEffects.begin({intensity:'standard'});
 const routedPlan=titleCompositionPlan({endingId:'contact-won',epochMs:1000});
 assert.equal(await routedEffects.showComposition(routedPlan,{token:routedToken}),true,'all acknowledged panes present natively as one composition');
 assert.deepEqual(mediaAssignments.map(([label])=>label),['window-media-1','window-media-2','window-media-3','window-media-4']);
+assert.ok([...mediaWindows.values()].every((surface)=>surface.options.parent==='main'),
+  'native media surfaces are owned by the game window rather than an unrelated browser/application group');
 assert.equal(new Set(mediaAssignments.map(([,payload])=>windowMediaContentId(payload.score.initial))).size,4,
   'targeted envelopes deliver four distinct initial tracks instead of retaining one shared payload');
 assert.ok(mediaAssignments.every(([label,payload])=>label===payload.targetLabel));

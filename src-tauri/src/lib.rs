@@ -50,7 +50,7 @@ pub fn run() {
             window_choreography::chunk_window_media_place,
             window_choreography::chunk_window_media_position,
             window_choreography::chunk_window_media_hide_all,
-            window_choreography::chunk_window_media_hide_if_unfocused,
+            window_choreography::chunk_window_surfaces_sync_app_activation,
             lens_service::chunk_lens_bootstrap,
             lens_service::chunk_lens_retry,
             lens_service::chunk_lens_stop,

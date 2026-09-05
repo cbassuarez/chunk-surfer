@@ -6,6 +6,8 @@ import { CELL, F, PLAN_SCALE } from '../data/floorplan/legend.js';
 import { CONSERVATORY_PROPS, PROP_MESH, STRUCTURAL_COLLIDERS } from '../data/conservatory-props.js';
 import { MESH_SURFACE, PROP_BOUNDS } from '../data/generated/prop-geometry.js';
 import { WALL_CONTACT, snapToWall, wallContactAt } from '../world/wall-contact.js';
+import { CONSERVATORY_FLIGHTS, CONSERVATORY_LANDINGS } from '../data/floorplan/conservatory.js';
+import { corridorDressing } from '../world/corridor-dressing.js';
 
 let floorplan=null;
 let instances=[];
@@ -16,8 +18,31 @@ const rt=(m)=>Math.round(m*PLAN_SCALE);
 const meters=(cell)=>cell*CELL;
 const wrapAngle=(a)=>{while(a>Math.PI)a-=Math.PI*2;while(a<-Math.PI)a+=Math.PI*2;return a;};
 
+// The dressing propsInit will add, for anything that needs to agree with it.
+//
+// Exported because it was being reconstructed by hand in two test files and a
+// lint, and every one of them drifted the moment the argument list grew: adding
+// landings broke all three counts at once. One call, one answer.
+export function derivedDressing(fp){
+  return corridorDressing(fp,{doors:fp.doorState?.()||[],landings:CONSERVATORY_LANDINGS,flights:CONSERVATORY_FLIGHTS});
+}
+
+// THE CORRIDORS ARE DRESSED FROM THE PLAN, NOT FROM THE ARRAY.
+//
+// CONSERVATORY_PROPS is typed coordinates; the circulation dressing is a
+// function of the compiled floorplan, the way the skirting is (see
+// world/corridor-dressing.js for why, and for why nothing it places can stand in
+// the route). It is added here rather than in the data module because that is
+// where the plan exists — a data file is evaluated long before compile() runs.
+//
+// Only the real building gets it. A caller that hands in its own placements
+// wants exactly those and nothing else: every test harness in the suite relies
+// on that to isolate one prop from the production dressing.
 export function propsInit(fp, placements=CONSERVATORY_PROPS){
   floorplan=fp;
+  if(placements===CONSERVATORY_PROPS){
+    placements=[...placements,...derivedDressing(fp)];
+  }
   instances=placements.map((p)=>{
     const mesh=PROP_MESH[p.mesh]||{};
     const rx=rt(p.x),ry=rt(p.y);
@@ -78,7 +103,15 @@ function resolveContacts(fp){
   if(typeof plan.size!=='function')return;
   for(const p of instances){
     if(p.mount==='wall'){
-      const contact=wallContactAt(plan,p.rx+.5,p.ry+.5);
+      // A PROP MAY NAME THE WALL IT BELONGS TO.
+      //
+      // wallContactAt otherwise takes the nearest face, and in a three-metre
+      // corridor the nearest face to a cell centre can be the wall OPPOSITE the
+      // one a fixture was derived from — which snapped generated dressing to the
+      // far side, facing backwards. Anything computed from the plan knows its own
+      // normal, so it says so and the search is filtered to that face. Authored
+      // props pass nothing and keep the nearest-wall behaviour they have always had.
+      const contact=wallContactAt(plan,p.rx+.5,p.ry+.5,p.mountNormal?{prefer:p.mountNormal}:undefined);
       // No wall within reach means the authoring is wrong about something. Leave
       // it exactly where it was rather than dragging it across the room; the
       // contact report lists it.
@@ -213,6 +246,28 @@ export function tallBlockingPropAt(cx,cy,minHeight=0.95){
     if(((p.h||0)*(p.scale||1)+(p.elevation||0))<minHeight)return false;
     return pointInProp(mx,mz,p,0);
   });
+}
+
+// IS THE FLOOR HERE SOFT, AND HOW SOFT?
+//
+// Sibling of tallBlockingPropAt, and footprint-based for the same reason it is:
+// a runner is seven metres of prop authored at one cell, and the six cells it
+// also covers are exactly the ones a player walks. Testing rx/ry would make a
+// stair runner soft on one tread.
+//
+// Returns 0 where there is nothing soft, so callers can multiply without
+// branching. Props opt in with a `softFloor` number, because a drugget nailed
+// over boards and a deep wool rug are not the same underfoot.
+export function softFloorPropAt(cx,cy){
+  const mx=meters(cx+.5),mz=meters(cy+.5);
+  let softest=0;
+  for(const p of instances){
+    const soft=Number(p.softFloor)||0;
+    if(soft<=0)continue;
+    if(!pointInProp(mx,mz,p,0))continue;
+    if(soft>softest)softest=soft;
+  }
+  return softest;
 }
 
 export function structuralColliders(){return colliders.map(c=>({...c}));}

@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 
 import { ZONE } from '../src/data/floorplan/legend.js';
 import { CONSERVATORY_PROPS } from '../src/data/conservatory-props.js';
+import { conservatory } from '../src/data/floorplan/conservatory.js';
+import * as FP from '../src/world/floorplan.js';
+import * as PROPS from '../src/game/props.js';
 import {
   LIGHT_BANDS,
   LIGHT_KIND,
@@ -325,3 +328,24 @@ assert.ok(towerLit.some((light)=>light.id==='nave-exit'));
 assert.ok(!towerLit.some((light)=>light.id==='louvre-spill'));
 
 console.log('lighting rig contracts passed');
+
+// AN ANCHOR THAT NAMES NOTHING IS A LIGHT THAT SILENTLY DOES NOT MOVE.
+//
+// anchorPropId resolves from the prop every frame, falling back to the authored
+// coordinates when the prop is missing — so a typo does not throw, it just
+// quietly pins the light to a stale position. Only the id STRING was asserted
+// here, which cannot catch that. Resolved against the placed set, which includes
+// the generated circulation dressing, because four landing lights anchor to it.
+FP.compile(conservatory.levels, {
+  width: conservatory.width, height: conservatory.height,
+  widenCorridors: conservatory.widenCorridors,
+  connectors: conservatory.connectors || [], edgePortals: conservatory.edgePortals || [],
+  doors: conservatory.doors || [],
+});
+PROPS.loadPropState({});
+const placedIds = new Set(PROPS.propsInit(FP).map((p) => p.id));
+for (const light of lights) {
+  if (!light.anchorPropId) continue;
+  assert.ok(placedIds.has(light.anchorPropId),
+    `light ${light.id} anchors to ${light.anchorPropId}, which is not a placed prop`);
+}

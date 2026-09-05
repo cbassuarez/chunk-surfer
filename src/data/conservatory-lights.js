@@ -440,6 +440,32 @@ export const CONSERVATORY_LIGHTS = Object.freeze([
     { groups:['upper','academic'], zones:[ZONE.stair,ZONE.academic] }),
   L('main-stair-loggia-maintained', LIGHT_KIND.EMERGENCY, 66.5, 36.5, 11.8, [1, .62, .32], .42, 7.2,
     { groups:['academic'], zones:[ZONE.academic], circuit:'sp05' }),
+  // THE LANDINGS THAT HAD NOTHING.
+  //
+  // Anchored to the four landing fittings world/corridor-dressing.js places, so
+  // moving a fitting moves its light. Small radius on purpose: this lights the
+  // plate and the arrival, not the flight. The torch stays the thing that reads
+  // the treads, which is the whole reason the stairs are otherwise bare.
+  //
+  // The comment above the dance wing block says the corridors deliberately have
+  // no light, and that still holds — these are stair ARRIVALS, and the galleria
+  // feet are the standing precedent for lighting one as level design: a stair
+  // nobody can see is not a stair.
+  //
+  // There is a second effect worth knowing about. APPARITION_COMPOSITIONS resolve
+  // against a named light, so with no anchored light anywhere in circulation, no
+  // composition could ever stage a figure on a stair. These make ZONE.stair
+  // stageable for the first time.
+  L('landing-ground-bulkhead', LIGHT_KIND.FITTING, 58.5, 24.5, 2.2, [1, .84, .62], .74, 5.5,
+    { groups:['ground'], zones:[ZONE.stair], circuit:'sp01', anchorPropId:'landing-ground-landing', anchorOffset:[0,.16,0] }),
+  L('landing-b3-bulkhead', LIGHT_KIND.FITTING, 46.5, 24.5, -1.8, [1, .82, .58], .72, 5.5,
+    { groups:['basement'], zones:[ZONE.stair], circuit:'sp01', anchorPropId:'landing-b3-landing', anchorOffset:[0,.16,0],
+      flutter:{ amount:.09, steady:.72 } }),
+  L('landing-upper-sconces', LIGHT_KIND.FITTING, 153.0, 53.5, 7.0, [1, .78, .51], .76, 6.5,
+    { groups:['upper'], zones:[ZONE.stair], anchorPropId:'landing-upper-floor-landing', anchorOffset:[0,.16,0] }),
+  L('landing-academic-sconces', LIGHT_KIND.FITTING, 153.0, 67.5, 12.2, [1, .80, .55], .74, 6.5,
+    { groups:['academic'], zones:[ZONE.stair,ZONE.academic], anchorPropId:'landing-academic-floor-landing', anchorOffset:[0,.16,0] }),
+
   L('chapel-cold-shaft', LIGHT_KIND.SKY, 93.5, 73.0, 13.8, [.70, .82, 1], 1.18, 17,
     { groups:['upper'], zones:[ZONE.chapel] }),
 

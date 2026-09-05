@@ -1048,7 +1048,10 @@ export function makeBagScene({
       const sectionLabel=model.sections.find((section)=>section.id===nav.sectionId)?.label||nav.sectionId;
       const breadcrumb=`FIELD CASE / ${sectionLabel}${route.type==='item-actions'&&selected?` / ${selected.title} / ACTIONS`:''}`;
       const liveHint = guided ? '' : (notice || (nav.sectionId === 'kit'
-        ? 'ONE INVENTORY · NUMBERED QUICK SLOTS FOR FIGHTS · SELECT AN ITEM FOR SET / USE / DROP / INSPECT'
+        // Short enough to survive the hint row. The long version ran to 97
+        // characters and was cut at "INSPE…", which hid the very verbs it was
+        // trying to advertise. What each verb does is on the item itself.
+        ? 'PICK AN ITEM · [ENTER] FOR ITS ACTIONS'
         : skills
           ? 'PATCH THE BACK OF THE RECORDER · PULL A LEAD TO MOVE IT · TAKES EFFECT WHEN THE CASE CLOSES'
           : hintSource()));

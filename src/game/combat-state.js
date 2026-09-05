@@ -243,7 +243,6 @@ import {
   nextStance,
   observeEnemyBeat,
   observePlayerBeat,
-  observeRefusal,
   openingStance,
   readFromCarried,
   resetReadForMovement,
@@ -265,6 +264,7 @@ import {
   moveHallTarget,
   selectHallTarget,
   targetedHallApparition,
+  hallFormationShare,
 } from './hall-apparitions.js';
 import {
   createPracticeSession,
@@ -585,6 +585,9 @@ function combatDifficulty(raw = {}) {
       ? Math.max(1, integer(raw.enemyGuardCooldown, 4))
       : null,
     parryWindowScale: Math.max(0.1, finite(raw.parryWindowScale, 1)),
+    // 0 on both recommended presets, so the Hall's cued round is something the
+    // challenge modes buy and nothing else ever meets. See difficulty-defs.js.
+    formationBite: Math.max(0, Math.min(1, finite(raw.formationBite, 0))),
     recommended: raw.recommended !== false,
     safetyRelay: !!raw.safetyRelay,
     variant: ['standard', 'severe', 'dead-air'].includes(raw.variant) ? raw.variant : 'standard',
@@ -684,6 +687,7 @@ export function createCombatState(definition, {
   source = null,
   carriedRead = null,
   continuation = null,
+  startingMovementIndex = 0,
   seed = 0,
 } = {}) {
   const errors = validateCombatDefinition(definition);
@@ -705,7 +709,8 @@ export function createCombatState(definition, {
   const roomTone = normalizedTechniques.includes(TECHNIQUE.ROOM_TONE)
     ? { id: 'room-tone', label: 'ROOM TONE', damage: 2 * GRID, tag: 'room' }
     : null;
-  const first = definition.movements[0];
+  const firstIndex = clamp(integer(startingMovementIndex, 0), 0, definition.movements.length - 1);
+  const first = definition.movements[firstIndex];
   const sourceEnabled = definition.kind === 'source' || !!source;
   const state = {
     schema: COMBAT_SCHEMA,
@@ -718,7 +723,7 @@ export function createCombatState(definition, {
     // back as one result even though it resolves in two steps.
     pendingEnemy: null,
     result: null,
-    movementIndex: 0,
+    movementIndex: firstIndex,
     movementCoherence: integer(first.coherence, 1),
     movementMaxCoherence: integer(first.coherence, 1),
     // Two jobs that used to be one. intentIndex names the beat the opponent has
@@ -2305,9 +2310,21 @@ export function reduceCombat(input, action = {}) {
     kind: intent?.kind || null,
     takeHeld: !!state.take,
   });
-  // A refused blow was still a blow it offered. advanceEnemy never runs on a
-  // perfect counter, so this is the only place the opponent can notice.
-  if (perfect && intent?.id) state.read = observeRefusal(state.read, intent.id);
+  // NO SECOND ENTRY FOR THE COUNTERED BLOW.
+  //
+  // This used to record the intent here as a "refusal", on the premise — true
+  // when it was written — that advanceEnemy never ran on a perfect counter, so
+  // this was the only place the opponent could notice the blow it had offered.
+  // A perfect counter no longer grants immunity: the beat resolves at reduced
+  // damage and records itself on the far side, so recording it here as well put
+  // the SAME intent into read.recent twice.
+  //
+  // That is not a cosmetic duplicate. `isParched` reads a three-deep window, so
+  // one doubled entry cost the capture-drought guarantee a third of its memory
+  // — the window filled with two copies of a beat instead of two offers, the
+  // guarantee mistimed, and a recordist who countered well could be walked past
+  // four consecutive uncapturable blows. Countering well is the last thing that
+  // should starve the tape.
 
   // ONE BEAT, ONE BAR — and the beat is HIS.
   //
@@ -2461,10 +2478,29 @@ function advanceHallApparition(state, pending) {
     }
     const intents = selectEnemyIntents(state);
     let prevention = Math.max(0, integer(pending.prevention, 0));
-    // A successful read applies to the whole coordinated phrase, not only the
-    // first body in initiative. Splitting the old aggregate attack into three
-    // actors must not silently triple the portion that escapes a perfect read.
-    const readShare = pending.tempoAfter ? PERFECT_COUNTER_SHARE : 1;
+    // WHAT ONE READ IS WORTH AGAINST THREE BODIES.
+    //
+    // A read covers the whole coordinated phrase, not only the first body in
+    // initiative — splitting the old aggregate attack into three actors must
+    // not silently triple the portion that escapes a perfect read, and against
+    // an uncued Hall that is still exactly what happens.
+    //
+    // A CUED round is the exception, and it is the only thing in the room that
+    // makes three opponents mean more than one. The card promises ONE blow from
+    // the body that speaks first (see commitHallApparitionRound); the other two
+    // were never the blow you read. Ordinarily they are carried along by the
+    // read anyway, because reading the phrase is the skill. When the CUE has
+    // given the downbeat they are not: the read stops at the body it was made
+    // against, and the rest of the formation comes through it.
+    //
+    // You are told a round in advance and the answer is on the card: the SIDE
+    // BOX is a target like any other, and a dead CUE never arms this again.
+    const bite = Math.max(0, Math.min(1, Number(state.difficulty?.formationBite) || 0))
+      * Math.max(0, Math.min(1, hallFormationShare(state.apparitions) - 1));
+    const readShare = !pending.tempoAfter ? 1
+      : pending.firstEnemyResolved
+        ? PERFECT_COUNTER_SHARE + (1 - PERFECT_COUNTER_SHARE) * bite
+        : PERFECT_COUNTER_SHARE;
     for (const intent of intents) {
       // Three individual attacks replace one aggregate crowd attack. Keeping a
       // fixed third-share preserves the encounter's authored damage budget even
@@ -2472,7 +2508,11 @@ function advanceHallApparition(state, pending) {
       // identical gesture mysteriously stronger.
       // Every body takes its own turn, so even a coordinated perfect read can
       // only blunt each strike to its minimum chip; it cannot erase two actors.
-      const received = applyEnemyIntent(state, intent, prevention, readShare / 3, hits.length === 0);
+      // ...and the cued round strikes above that third. The CUE's downbeat was
+      // given last round, in the open, by a body you were free to target
+      // instead. See hallFormationShare.
+      const received = applyEnemyIntent(state, intent, prevention,
+        readShare / 3 * hallFormationShare(state.apparitions), hits.length === 0);
       hits.push({ intentId: intent.id, kind: intent.kind, received, actorId: actor.id, actorLabel: actor.label });
       prevention = 0;
       if (state.composure <= 0) break;
@@ -2501,8 +2541,27 @@ function advanceHallApparition(state, pending) {
     composureTo: state.composure,
     notice: `${baseNotice}${baseNotice ? ' · ' : ''}${actor.label}${skipped ? ' MISSES ITS TURN' : totalReceived ? ` · ${totalReceived} COMPOSURE LOST` : ' · INTENT HELD'}`,
   });
-  state.read = observeEnemyBeat(state.read || emptyEnemyRead(), { intentId: hits[0]?.intentId || null });
-  state.stance = { ...(state.stance || openingStance()), dwell: integer(state.stance?.dwell, 0) + 1 };
+  // ONE ENTRY PER OFFER, NOT PER BODY.
+  //
+  // A Hall round resolves three apparitions through this function, returning
+  // early between them — so this ran three times for one blow the player was
+  // shown and one commitment the mind made. Both of the things it writes are
+  // per-OFFER quantities and neither survives being written three times:
+  //
+  //   read.recent  is what the capture-drought guarantee reads. Three entries
+  //                per offer meant `isParched` was looking at one round where
+  //                it thought it was looking at three, so the guarantee fired
+  //                once every third offer and the recorder starved.
+  //   stance.dwell is the mood's minimum residency. Ageing it per body ran the
+  //                opponent through postures it never got to express.
+  //
+  // The first apparition of a round carries the committed intent (see
+  // commitHallApparitionRound), so recording there records exactly the blow the
+  // card showed — which is the whole definition of the player-facing boundary.
+  if (!pending.firstEnemyResolved) {
+    state.read = observeEnemyBeat(state.read || emptyEnemyRead(), { intentId: hits[0]?.intentId || null });
+    state.stance = { ...(state.stance || openingStance()), dwell: integer(state.stance?.dwell, 0) + 1 };
+  }
 
   if (state.composure <= 0) {
     state.pendingEnemy = null;

@@ -110,6 +110,16 @@ const SOURCES = {
   cello:      { enabled:false, file:'cello.glb',       up:'y', yaw:0,         crop:null,                      h:1.25, maxW:0.75, maxD:0.60, tri:3600, reject:'Offline preview collapses to disconnected strings and hardware; native silhouette is materially better.' },
   violin:     { enabled:false, file:'violin.glb',      up:'z', yaw:0,         crop:null,                      h:0.60, maxW:0.42, maxD:0.30, tri:3000, reject:'Offline preview collapses to disconnected body fragments; native silhouette is materially better.' },
   hall_seating:{enabled:true,file:'hall_seating.glb',  up:'y', yaw:0,         crop:null,                      h:5.00, maxW:26.0, maxD:19.0, tri:14500 },
+  // Built here rather than sourced: `npm run assets:plant-header` models it in
+  // Blender (build-plant-header.py) with a real swept thread on the riser and
+  // the gland, because the microgame on it is about counting travel. A missing
+  // file keeps the procedural manifold, exactly like every other row.
+  // AUTHORED HERE, NOT SUPPLIED. Every other row in this table is somebody
+  // else's mesh of unverified provenance; this one is built from a script in
+  // this repository, so it credits as project source rather than inheriting the
+  // "user-supplied, unverified" label the import path assumes.
+  plant_header_manifold:{enabled:true,file:'plant_header_manifold.glb', up:'y', yaw:0, crop:null, h:2.35, maxW:4.70, maxD:0.68, tri:4400,
+    authored:{ source:'tools/chunk_surfer/build-plant-header.py', origin:'project-native, modelled in Blender', license:'project source' } },
 };
 
 const meshes = new Map();
@@ -4967,7 +4977,7 @@ const credits={
     filename:'conservatory-props.glb', author:'Chunk Surfer project',
     source:'tools/chunk_surfer/build-props.mjs', license:'project source (mixed: see meshes)',
     sha256:packSha,
-    modifications:'Metres, Y-up, ground-centred. Procedural fallback geometry plus user-supplied source meshes (unverified provenance) baked, re-axised, height-scaled, and vertex-cluster decimated under budget.',
+    modifications:'Metres, Y-up, ground-centred. Procedural fallback geometry, project-authored Blender meshes, and user-supplied source meshes (unverified provenance) baked, re-axised, height-scaled, and vertex-cluster decimated under budget. Per-mesh provenance below says which is which.',
     triangles:stats.totalTriangles, bytes:total,
   },
   meshes:[...meshes.values()].map((m)=>{
@@ -4975,7 +4985,9 @@ const credits={
     return {
       name:m.name, bounds:{min:b.min,max:b.max}, triangles:b.triangles,
       provenance: src
-        ? { source:src.file, origin:'user-supplied (FabConvert/SketchUp conversion)', license:'unverified', sourceTriangles:src.sourceTriangles, modifications:'Re-axised to Y-up, floor-centred, height-scaled, vertex-cluster decimated, normals recomputed.' }
+        ? (SOURCES[m.name]?.authored
+          ? { ...SOURCES[m.name].authored, sourceTriangles:src.sourceTriangles, modifications:'Re-axised to Y-up, floor-centred, height-scaled, vertex-cluster decimated, normals recomputed.' }
+          : { source:src.file, origin:'user-supplied (FabConvert/SketchUp conversion)', license:'unverified', sourceTriangles:src.sourceTriangles, modifications:'Re-axised to Y-up, floor-centred, height-scaled, vertex-cluster decimated, normals recomputed.' })
         : { source:'tools/chunk_surfer/build-props.mjs', origin:'project-native procedural geometry', license:'project source' },
     };
   }),

@@ -146,6 +146,26 @@ export const NOISE = {
   // whole room. This is the only surface in the building that makes you louder,
   // and it is why the wing is the worst place to be found in.
   sprung: 1.55,
+  // AND A CARPET IS THE OTHER WAY. These two are the only surfaces in the game
+  // that change what your feet cost, and they are deliberately a pair: maple on
+  // battens hands a footfall to the whole room, and wool over it gives the room
+  // back nothing.
+  //
+  // It MULTIPLIES rather than replaces, and a textile's own `softFloor` (0..1,
+  // in PROP_MESH) says how much of the way it goes — so the ladder the building
+  // actually walks on is:
+  //
+  //     sprung maple, bare          1.550
+  //     bare floor                  1.000
+  //     sprung maple + drugget      1.062   the dance wing, sheeted
+  //     boards + drugget            0.685
+  //     stair runner                0.595
+  //     wool rug                    0.550
+  //
+  // The third line is the point of the whole thing. Drugget over the dance
+  // wing's floor makes the worst room in the building merely ORDINARY — not
+  // quiet, not safe, and never silent. A path through it, not an amnesty.
+  carpet: 0.55,
 };
 
 export const WORLD_LAYER = {
