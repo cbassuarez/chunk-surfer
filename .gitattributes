@@ -1,0 +1,41 @@
+# LINE ENDINGS ARE PART OF THE BUILD.
+#
+# Windows checks out CRLF by default. Twelve spec files assert against the
+# SOURCE TEXT of modules with regexes containing a literal \n -- for example
+# /const measurement=MIC\.micEffectiveMeasurement\(\);\n\s*const m=.../ -- and
+# every one of those fails on a CRLF working copy while passing everywhere
+# else. That is what failed the Windows leg of v0.2.0, and it fails
+# deterministically: no amount of re-running gets past it.
+#
+# Normalising the checkout is the fix rather than loosening the regexes,
+# because the regexes are pinning real formatting and there are twelve of them.
+* text=auto eol=lf
+
+# text=auto detects binaries by content, but being explicit costs nothing and
+# means a new asset type cannot be mangled by a bad detection.
+*.glb binary
+*.bin binary
+*.safetensors binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ico binary
+*.icns binary
+*.opus binary
+*.wav binary
+*.mp3 binary
+*.mp4 binary
+*.webm binary
+*.mov binary
+*.ogv binary
+*.zip binary
+*.pdf binary
+*.psd binary
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+
+# Shipped as-is to a shell that cares.
+*.sh text eol=lf

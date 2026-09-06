@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { closeSync, existsSync, openSync, readFileSync, readSync, statSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 
 const ROOT = resolve(import.meta.dirname, '..');
@@ -19,8 +19,26 @@ function sha256Bytes(value) {
   return createHash('sha256').update(value).digest('hex');
 }
 
+// Hashed in chunks, not read whole. The lens binary passed two gigabytes when
+// the offline payload grew -- the v0.2.0 Linux build reported 4,023,938,128
+// bytes -- and readFileSync cannot return a Buffer that large, so the contract
+// check died with ERR_FS_FILE_TOO_LARGE before it could compare anything. The
+// digest is identical either way; only the peak memory changes.
+const HASH_CHUNK_BYTES = 4 * 1024 * 1024;
+
 function sha256File(path) {
-  return sha256Bytes(readFileSync(path));
+  const hash = createHash('sha256');
+  const fd = openSync(path, 'r');
+  try {
+    const buffer = Buffer.allocUnsafe(HASH_CHUNK_BYTES);
+    let read = 0;
+    while ((read = readSync(fd, buffer, 0, buffer.length, null)) > 0) {
+      hash.update(read === buffer.length ? buffer : buffer.subarray(0, read));
+    }
+  } finally {
+    closeSync(fd);
+  }
+  return hash.digest('hex');
 }
 
 function sourceAggregate() {

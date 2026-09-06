@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { createHash } from 'node:crypto';
-import { existsSync, lstatSync, readFileSync } from 'node:fs';
+import { closeSync, existsSync, lstatSync, openSync, readFileSync, readSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -17,8 +17,26 @@ function requiredFile(file, label) {
   return stat.size;
 }
 
+// Chunked for the same reason as scripts/validate-lens-bundle-contract.mjs: the
+// manifest covers the offline lens payload, and readFileSync cannot return a
+// Buffer over two gigabytes. Latent here rather than observed -- the v0.2.0
+// Windows job failed at the test step before it ever reached this -- but it is
+// the same payload that broke Linux at 4,023,938,128 bytes.
+const HASH_CHUNK_BYTES = 4 * 1024 * 1024;
+
 function sha256(file) {
-  return createHash('sha256').update(readFileSync(file)).digest('hex');
+  const hash = createHash('sha256');
+  const fd = openSync(file, 'r');
+  try {
+    const buffer = Buffer.allocUnsafe(HASH_CHUNK_BYTES);
+    let read = 0;
+    while ((read = readSync(fd, buffer, 0, buffer.length, null)) > 0) {
+      hash.update(read === buffer.length ? buffer : buffer.subarray(0, read));
+    }
+  } finally {
+    closeSync(fd);
+  }
+  return hash.digest('hex');
 }
 
 function manifestFile(root, relative) {

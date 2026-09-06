@@ -17,9 +17,11 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+import time
 from urllib.request import urlopen
 
 from huggingface_hub import snapshot_download
+from huggingface_hub.errors import HfHubHTTPError, LocalEntryNotFoundError
 from protocol import CACHE_SCHEMA, MODEL_ID, SERVER_REV, SERVICE_SCHEMA
 
 REVISIONS = {
@@ -71,6 +73,49 @@ def source_aggregate(server_dir: Path) -> str:
     ).hexdigest()
 
 
+# THE HUB RATE-LIMITS, AND IT DOES IT LATE.
+#
+# Every release fans out to three runners at once, each pulling four
+# unauthenticated snapshots. On the v0.2.0 tag the macOS job downloaded the
+# 14-file SD1.5 snapshot, then a 3-file one, and only THEN took a 429
+# ("maximum queue size reached") on taesd -- throwing away five and a half
+# minutes of good work and failing the platform.
+#
+# The 429 does not surface as an HTTP error either: snapshot_download catches
+# it, fails to find the files locally, and re-raises LocalEntryNotFoundError
+# with a message about the internet connection. Both have to be caught or the
+# retry never fires on the case it exists for.
+#
+# Bounded and backed off rather than infinite: a genuinely wrong revision or a
+# withdrawn repo should still fail the build, and reasonably quickly.
+HUB_ATTEMPTS = 5
+HUB_BACKOFF_SECONDS = (15, 30, 60, 120)
+
+
+def snapshot_with_retry(folder, repo_id, revision, allow_patterns):
+    for attempt in range(1, HUB_ATTEMPTS + 1):
+        try:
+            return Path(snapshot_download(
+                repo_id=repo_id,
+                revision=revision,
+                allow_patterns=allow_patterns,
+            ))
+        except (HfHubHTTPError, LocalEntryNotFoundError) as error:
+            status = getattr(getattr(error, "response", None), "status_code", None)
+            transient = status is None or status == 429 or status >= 500
+            if attempt == HUB_ATTEMPTS or not transient:
+                raise
+            delay = HUB_BACKOFF_SECONDS[min(attempt - 1, len(HUB_BACKOFF_SECONDS) - 1)]
+            print(
+                f"{folder}: hub fetch failed ({status or type(error).__name__}); "
+                f"retrying in {delay}s [{attempt}/{HUB_ATTEMPTS - 1}]",
+                file=sys.stderr,
+                flush=True,
+            )
+            time.sleep(delay)
+    raise SystemExit(f"unreachable: {folder} retry loop fell through")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--target", required=True, choices=sorted(TARGETS))
@@ -87,11 +132,7 @@ def main() -> None:
     resolved = {}
     for folder, (repo_id, revision) in REVISIONS.items():
         destination = models / folder
-        snapshot = Path(snapshot_download(
-            repo_id=repo_id,
-            revision=revision,
-            allow_patterns=ALLOW_PATTERNS[folder],
-        ))
+        snapshot = snapshot_with_retry(folder, repo_id, revision, ALLOW_PATTERNS[folder])
         if destination.exists():
             shutil.rmtree(destination)
         shutil.copytree(snapshot, destination, symlinks=False)
