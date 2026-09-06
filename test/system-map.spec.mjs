@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { createServer } from 'node:net';
 import { readFile } from 'node:fs/promises';
-import { basename } from 'node:path';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import {
   buildSystemMapSnapshot,
@@ -93,9 +94,14 @@ try {
   assert.equal(response.headers.get('cache-control'), 'no-store');
   const live = await response.json();
   assert.equal(live.nodes.length, snapshot.nodes.length);
-  // basename, not endsWith('/chunk-surfer'): on Windows the repo root is
-  // D:\\a\\chunk-surfer\\chunk-surfer and a forward slash never matches.
-  assert.equal(basename(live.repo.root), 'chunk-surfer');
+  // The server has to report the root it is actually serving. This used to read
+  // endsWith('/chunk-surfer'), which fails on Windows because the root there is
+  // D:\\a\\chunk-surfer\\chunk-surfer and a forward slash never matches -- and
+  // any check on the FOLDER NAME, basename included, is asserting the checkout
+  // directory rather than the code. It only holds because CI happens to clone
+  // into a directory named after the repo. Compare against this file's own
+  // repository instead, which is true wherever it is cloned to.
+  assert.equal(resolve(live.repo.root), resolve(fileURLToPath(new URL('..', import.meta.url))));
 
   const denied = await fetch(`${running.url}api/source?path=package.json`);
   assert.equal(denied.status, 404, 'the server exposes no arbitrary source-file endpoint');
