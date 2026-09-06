@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { createServer } from 'node:net';
 import { readFile } from 'node:fs/promises';
+import { basename } from 'node:path';
 
 import {
   buildSystemMapSnapshot,
@@ -92,7 +93,9 @@ try {
   assert.equal(response.headers.get('cache-control'), 'no-store');
   const live = await response.json();
   assert.equal(live.nodes.length, snapshot.nodes.length);
-  assert.equal(live.repo.root.endsWith('/chunk-surfer'), true);
+  // basename, not endsWith('/chunk-surfer'): on Windows the repo root is
+  // D:\\a\\chunk-surfer\\chunk-surfer and a forward slash never matches.
+  assert.equal(basename(live.repo.root), 'chunk-surfer');
 
   const denied = await fetch(`${running.url}api/source?path=package.json`);
   assert.equal(denied.status, 404, 'the server exposes no arbitrary source-file endpoint');

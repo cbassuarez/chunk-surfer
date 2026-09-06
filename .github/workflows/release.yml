@@ -72,7 +72,31 @@ jobs:
         if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf xdg-utils libssl-dev
+          sudo apt-get install -y ffmpeg libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf xdg-utils libssl-dev
+
+      # ffprobe is a BUILD dependency, not a test one: `npm run build` runs
+      # media:validate, and tauri runs `npm run build` as its beforeBuildCommand.
+      # ci.yml has installed ffmpeg since the window media landed; this workflow
+      # never did, so every release runner failed inside the Tauri bundle step
+      # with one "<asset>:<kind>:probe" line per asset and no other explanation.
+      # Verified here so a missing binary fails at setup rather than twenty-five
+      # minutes later, in the middle of a build, looking like an asset fault.
+      - name: Install ffmpeg
+        if: matrix.platform != 'ubuntu-22.04'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if command -v ffprobe >/dev/null 2>&1; then
+            echo "ffprobe already present"
+          elif [ "$RUNNER_OS" = "macOS" ]; then
+            brew install ffmpeg
+          else
+            choco install ffmpeg -y --no-progress
+          fi
+
+      - name: Verify ffprobe
+        shell: bash
+        run: ffprobe -version
 
       - uses: actions/setup-node@v4
         with:

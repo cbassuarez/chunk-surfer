@@ -19,7 +19,15 @@ for(const asset of manifest.assets||[]){
     if(record.sha256!==sha256(path)||record.bytes!==statSync(path).size)errors.push(`${asset.id}:${kind}:hash`);
     if(kind==='poster')continue;
     const probe=spawnSync('ffprobe',['-v','error','-show_entries','stream=codec_type,width,height','-of','json',path],{encoding:'utf8'});
-    if(probe.status!==0){errors.push(`${asset.id}:${kind}:probe`);continue;}
+    // Say WHY. This printed one bare "<id>:<kind>:probe" per asset when ffprobe
+    // was simply not installed, which reads as twenty corrupt media files
+    // rather than one missing binary -- and it did exactly that on all three
+    // release runners.
+    if(probe.error?.code==='ENOENT'){
+      console.error('ffprobe is not installed or not on PATH; install ffmpeg to validate window media.');
+      process.exit(1);
+    }
+    if(probe.status!==0){errors.push(`${asset.id}:${kind}:probe ${String(probe.stderr||'').trim().split('\n')[0]||'ffprobe failed'}`);continue;}
     const streams=JSON.parse(probe.stdout||'{}').streams||[];
     if(streams.some((stream)=>stream.codec_type==='audio'))errors.push(`${asset.id}:${kind}:audio`);
     const video=streams.find((stream)=>stream.codec_type==='video');
