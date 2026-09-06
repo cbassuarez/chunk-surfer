@@ -54,14 +54,23 @@ fn os_username() -> Option<String> {
 
 #[cfg(windows)]
 fn computer_name() -> Option<String> {
-    use windows_sys::Win32::System::SystemInformation::GetComputerNameW;
+    // GetComputerNameW lives in Win32::System::WindowsProgramming, which this
+    // crate does not enable; only Win32_System_SystemInformation is on, and the
+    // import failed to resolve there. GetComputerNameExW is the same call in the
+    // module we already have -- and the one Microsoft points at, the plain form
+    // being the legacy shim over it -- so it needs no new feature.
+    use windows_sys::Win32::System::SystemInformation::{ComputerNameNetBIOS, GetComputerNameExW};
     let mut buffer = [0_u16; 256];
     let mut length = buffer.len() as u32;
-    let ok = unsafe { GetComputerNameW(buffer.as_mut_ptr(), &mut length) };
+    let ok = unsafe { GetComputerNameExW(ComputerNameNetBIOS, buffer.as_mut_ptr(), &mut length) };
     if ok == 0 {
         return None;
     }
-    sanitize_candidate(String::from_utf16(&buffer[..length as usize]).ok(), 96)
+    // `length` comes back as the count written, excluding the terminator. Clamp
+    // it anyway: it indexes a fixed buffer, and trusting a returned length is
+    // how that kind of slice panics.
+    let end = (length as usize).min(buffer.len());
+    sanitize_candidate(String::from_utf16(&buffer[..end]).ok(), 96)
 }
 
 #[cfg(not(windows))]
