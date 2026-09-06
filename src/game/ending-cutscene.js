@@ -39,6 +39,7 @@ export function createEndingCutsceneState(spec, {
     elapsedMs: clampElapsed(elapsedMs),
     cursor: 0,
     fired: Object.freeze([]),
+    interactions: Object.freeze([]),
     paused: false,
     skipped: false,
     complete: false,
@@ -52,7 +53,7 @@ export function restartEndingCutscene(state, spec) {
   return createEndingCutsceneState(spec, { reducedMotion: !!state?.reducedMotion });
 }
 
-function beatReady(beat, input, elapsedMs, consumedInteraction) {
+function beatReady(beat, input, elapsedMs, consumedInteraction, rememberedInteractions = new Set()) {
   const trigger = beat?.trigger;
   if (trigger === CUTSCENE_TRIGGER.TIME) return elapsedMs >= clampElapsed(beat.atMs);
   if (trigger === CUTSCENE_TRIGGER.POSITION) {
@@ -63,7 +64,7 @@ function beatReady(beat, input, elapsedMs, consumedInteraction) {
   }
   if (trigger === CUTSCENE_TRIGGER.INTERACTION) {
     if (consumedInteraction) return false;
-    return String(input?.interaction || '') === String(beat.action || '');
+    return rememberedInteractions.has(String(beat.action || ''));
   }
   if (trigger === CUTSCENE_TRIGGER.DIALOGUE) {
     return stringSet(input?.dialogueComplete).has(String(beat.dialogueId || ''));
@@ -87,6 +88,10 @@ export function advanceEndingCutscene(state, spec, input = {}) {
   const beats = Array.isArray(spec?.beats) ? spec.beats : [];
   let cursor = previous.cursor;
   const fired = [...previous.fired];
+  const interactions = [...(previous.interactions || [])];
+  const incomingInteraction = String(input?.interaction || '');
+  if (incomingInteraction && !interactions.includes(incomingInteraction)) interactions.push(incomingInteraction);
+  const rememberedInteractions = new Set(interactions);
   const events = [];
   let consumedInteraction = false;
   const skip = !!input.skip;
@@ -94,7 +99,21 @@ export function advanceEndingCutscene(state, spec, input = {}) {
   if (!paused) {
     while (cursor < beats.length) {
       const beat = beats[cursor];
-      if (!skip && !beatReady(beat, input, elapsedMs, consumedInteraction)) break;
+      if (!skip && !beatReady(beat, input, elapsedMs, consumedInteraction, rememberedInteractions)) {
+        // Evidence inspection in the van is a hub, not a compulsory menu order.
+        // Remember every semantic interaction and let a later required action
+        // close over optional earlier inspections without making the player
+        // reopen a choice they already visited.
+        const laterRemembered = beat?.optional && beats.slice(cursor + 1).some((candidate) =>
+          candidate?.trigger === CUTSCENE_TRIGGER.INTERACTION
+          && rememberedInteractions.has(String(candidate.action || '')),
+        );
+        if (!laterRemembered) break;
+        fired.push(beat.id);
+        events.push(Object.freeze({ type: 'beat', beat, skipped: true, optional: true }));
+        cursor += 1;
+        continue;
+      }
       fired.push(beat.id);
       events.push(Object.freeze({ type: 'beat', beat, skipped: skip }));
       if (beat.trigger === CUTSCENE_TRIGGER.INTERACTION) consumedInteraction = true;
@@ -111,6 +130,7 @@ export function advanceEndingCutscene(state, spec, input = {}) {
     elapsedMs,
     cursor,
     fired: Object.freeze(fired),
+    interactions: Object.freeze(interactions),
     paused,
     skipped: previous.skipped || skip,
     complete,

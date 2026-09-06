@@ -32,6 +32,7 @@
 
 import { ENDING_IDS, POWER_CIRCUIT_IDS } from '../progression/schema.js';
 import { endingCutsceneErrors } from '../game/ending-cutscene.js';
+import { ENDING_FINAL_ACTION_MODE, endingEmbodimentErrors } from '../game/ending-embodiment.js';
 import { VIGIL_ENDING_ACTIONS, VIGIL_ENDING_INSERTS, VIGIL_ENDING_OMISSIONS } from './exterior-vigil.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -142,7 +143,7 @@ function withVigil(steps, endingId) {
 
 const dialogueSource = (documentId, lineId) => `${documentId}#${lineId}`;
 const cutsceneBeat = (id, trigger, fields = {}) => Object.freeze({ id, trigger, ...fields });
-const cutscene = ({ endingId, worldAnchors, interactionMode, beats, actors, camera, finalHold, reducedMotion }) => Object.freeze({
+const cutscene = ({ endingId, worldAnchors, interactionMode, beats, actors, camera, finalAction, finalHold, reducedMotion }) => Object.freeze({
   schema: 1,
   endingId,
   worldAnchors: Object.freeze(worldAnchors),
@@ -150,6 +151,7 @@ const cutscene = ({ endingId, worldAnchors, interactionMode, beats, actors, came
   beats: Object.freeze(beats),
   actors: Object.freeze(actors),
   camera: Object.freeze(camera),
+  finalAction: Object.freeze(finalAction),
   finalHold: Object.freeze(finalHold),
   reducedMotion: Object.freeze(reducedMotion),
 });
@@ -163,6 +165,7 @@ export const ENDING_CUTSCENES = Object.freeze({
     worldAnchors: { screen: Object.freeze({ kind: 'prop', id: 'chapel-inner-screen' }), nave: Object.freeze({ kind: 'zone', id: 'chapel' }) },
     actors: { player: 'braced-at-screen', hush: 'staged-beyond-screen', building: 'progressive-collapse' },
     camera: { treatment: 'first-person-impact-chain', allowsLook: true, pullback: false },
+    finalAction: { id: 'touch-inner-screen', label: 'KEEP YOUR HAND ON THE INNER SCREEN', mode: ENDING_FINAL_ACTION_MODE.WORLD },
     reducedMotion: { treatment: 'stepped-debris-and-black-dissolves' },
     finalHold: { image: 'the screen, and no light on it', ms: 2800 },
     beats: [
@@ -178,6 +181,7 @@ export const ENDING_CUTSCENES = Object.freeze({
     worldAnchors: { screen: Object.freeze({ kind: 'prop', id: 'chapel-inner-screen' }), booth: Object.freeze({ kind: 'prop', id: 'yard-booth-window' }) },
     actors: { player: 'trapped-at-screen', guard: 'remembered-coffee-handoff', building: 'progressive-collapse' },
     camera: { treatment: 'first-person-present-flashback-intercut', allowsLook: true, pullback: false },
+    finalAction: { id: 'hold-remembered-cup', label: 'HOLD ON TO THE CUP', mode: ENDING_FINAL_ACTION_MODE.HOLD, input: 'interact', holdMs: 900 },
     reducedMotion: { treatment: 'warm-still-frames-between-impact-dissolves' },
     finalHold: { image: 'a hot drink, hours cold', ms: 2600 },
     beats: [
@@ -193,10 +197,11 @@ export const ENDING_CUTSCENES = Object.freeze({
     worldAnchors: { frontDoors: Object.freeze({ kind: 'door', id: 'front-main' }), forecourt: Object.freeze({ kind: 'zone', id: 'front-atrium-exterior' }) },
     actors: { player: 'walking-into-morning', staff: 'arriving-behind-heras', bus: 'first-service' },
     camera: { treatment: 'first-person-door-to-forecourt', allowsLook: true, pullback: false },
+    finalAction: { id: 'cross-into-morning', label: 'STEP THROUGH THE OTHER DOOR', mode: ENDING_FINAL_ACTION_MODE.WORLD },
     reducedMotion: { treatment: 'continuous-player-look-with-stepped-ambient-traffic' },
     finalHold: { image: 'wet municipal dawn beyond the conservatoire doors', ms: 2600 },
     beats: [
-      cutsceneBeat('cross-front-doors', 'position', { anchor: 'frontDoors', radius: 3, worldLook: 'dawn-0600', dialogue: [dialogueSource('ending.inversion', 'start.line.1')] }),
+      cutsceneBeat('cross-front-doors', 'position', { anchor: 'frontDoors', radius: 3, worldLook: 'dawn-0600', effect: 'wrong-door-reveal', dialogue: [dialogueSource('ending.inversion', 'start.line.1')] }),
       cutsceneBeat('sodium-off', 'time', { atMs: 1200, cue: 'ending.dawn.sodium-off', effect: 'sodium-shutdown' }),
       cutsceneBeat('birds-and-bus', 'time', { atMs: 3100, cue: 'ending.dawn.first-bus', effect: 'birds-bus-arrival' }),
       cutsceneBeat('demolition-shift-arrives', 'time', { atMs: 5600, effect: 'staff-behind-heras', dialogue: [dialogueSource('ending.inversion', 'out.line.6')] }),
@@ -208,13 +213,14 @@ export const ENDING_CUTSCENES = Object.freeze({
     worldAnchors: { driverSeat: Object.freeze({ kind: 'prop', id: 'ending-van-driver-seat' }), cup: Object.freeze({ kind: 'prop', id: 'ending-van-cup' }), headphones: Object.freeze({ kind: 'prop', id: 'ending-van-headphones' }) },
     actors: { player: 'waking-in-driver-seat', guard: 'absent', building: 'visible-through-rain' },
     camera: { treatment: 'first-person-seated-inspection', allowsLook: true, pullback: false },
+    finalAction: { id: 'lower-headphones', label: 'LOWER THE HEADPHONES', mode: ENDING_FINAL_ACTION_MODE.DIALOGUE },
     reducedMotion: { treatment: 'fixed-seat-look-and-instant-hand-poses' },
     finalHold: { image: 'headphones lowered in a rain-streaked van at 05:00', ms: 2400 },
     beats: [
       cutsceneBeat('wake-in-van', 'time', { atMs: 0, worldLook: 'van-rain-0500', cue: 'ending.van.rain', dialogue: [dialogueSource('ending.drugged', 'start.line.1')] }),
-      cutsceneBeat('inspect-kit', 'interaction', { action: 'inspect-kit', dialogue: [dialogueSource('ending.drugged', 'tape.kit.line.1')] }),
-      cutsceneBeat('inspect-cup', 'interaction', { action: 'inspect-cup', dialogue: [dialogueSource('ending.drugged', 'tape.cup.line.1')] }),
-      cutsceneBeat('inspect-recorder', 'interaction', { action: 'inspect-recorder', dialogue: [dialogueSource('ending.drugged', 'tape.takes.line.1')] }),
+      cutsceneBeat('inspect-kit', 'interaction', { action: 'inspect-kit', optional: true, dialogue: [dialogueSource('ending.drugged', 'tape.kit.line.1')] }),
+      cutsceneBeat('inspect-cup', 'interaction', { action: 'inspect-cup', optional: true, dialogue: [dialogueSource('ending.drugged', 'tape.cup.line.1')] }),
+      cutsceneBeat('inspect-recorder', 'interaction', { action: 'inspect-recorder', optional: true, dialogue: [dialogueSource('ending.drugged', 'tape.takes.line.1')] }),
       cutsceneBeat('remove-headphones', 'interaction', { action: 'remove-headphones', cue: 'ending.van.headphones-off', dialogue: [dialogueSource('ending.drugged', 'out.line.8')] }),
     ],
   }),
@@ -223,10 +229,11 @@ export const ENDING_CUTSCENES = Object.freeze({
     worldAnchors: { publicDoors: Object.freeze({ kind: 'door', id: 'front-main' }), serviceRoad: Object.freeze({ kind: 'zone', id: 'service-road' }), gateLedger: Object.freeze({ kind: 'prop', id: 'yard-booth-guard-ledger' }) },
     actors: { player: 'carrying-alan', alan: 'carried-speaking', guard: 'opens-returned-ledger' },
     camera: { treatment: 'first-person-carry-to-ledger', allowsLook: true, pullback: false },
+    finalAction: { id: 'write-alan-returned', label: 'WRITE ALAN IN RETURNED', mode: ENDING_FINAL_ACTION_MODE.WORLD },
     reducedMotion: { treatment: 'stable-head-bob-and-stepped-writing-hand' },
     finalHold: { image: 'both names drying in the RETURNED column', ms: 3000 },
     beats: [
-      cutsceneBeat('through-public-doors', 'position', { anchor: 'publicDoors', radius: 3, dialogue: [dialogueSource('ending.surfaced', 'start.line.1')] }),
+      cutsceneBeat('through-public-doors', 'position', { anchor: 'publicDoors', radius: 3, effect: 'public-doors-open', dialogue: [dialogueSource('ending.surfaced', 'start.line.1')] }),
       cutsceneBeat('service-road', 'position', { anchor: 'serviceRoad', radius: 5, optionalAction: 'ask-alan', dialogue: [dialogueSource('ending.surfaced', 'start.line.8')] }),
       cutsceneBeat('gate-ledger', 'position', { anchor: 'gateLedger', radius: 2.5, dialogue: [dialogueSource('ending.surfaced', 'out.line.1')] }),
       cutsceneBeat('write-player-name', 'interaction', { action: 'sign-returned-player', dialogue: [dialogueSource('ending.surfaced', 'out.line.5')] }),
@@ -238,6 +245,7 @@ export const ENDING_CUTSCENES = Object.freeze({
     worldAnchors: { sourceFault: Object.freeze({ kind: 'source', id: 'final-carrier' }), returnWall: Object.freeze({ kind: 'position', id: 'source-return-wall' }), recorder: Object.freeze({ kind: 'equipment', id: 'recorder' }) },
     actors: { player: 'seated-folded-dying', source: 'collapsing-hallucination', recorder: 'open-channel' },
     camera: { treatment: 'first-person-return-and-bodily-failure', allowsLook: true, pullback: false },
+    finalAction: { id: 'hold-open-channel', label: 'HOLD THE CHANNEL OPEN', mode: ENDING_FINAL_ACTION_MODE.HOLD, input: 'recorder', holdMs: 1200 },
     reducedMotion: { treatment: 'source-dissolve-to-fixed-body-failure-poses' },
     finalHold: { image: 'a dead hand beside a recorder on OPEN CHANNEL', ms: 4100 },
     beats: [
@@ -253,6 +261,7 @@ export const ENDING_CUTSCENES = Object.freeze({
     worldAnchors: { player: Object.freeze({ kind: 'source', id: 'defeated-player' }), farField: Object.freeze({ kind: 'source', id: 'endless-architecture' }) },
     actors: { player: 'defeated-static', source: 'persistent', camera: 'detached' },
     camera: { treatment: 'third-person-continuous-source-pullback', allowsLook: false, pullback: true },
+    finalAction: { id: 'walk-back-to-body', label: 'WALK BACK TO YOUR BODY', mode: ENDING_FINAL_ACTION_MODE.HOLD, input: 'forward', holdMs: 1400, futile: true },
     reducedMotion: { treatment: 'eight-fixed-pullback-plates-with-dissolves' },
     finalHold: { image: 'a tiny lost figure inside an endless surviving Source', ms: 3600 },
     beats: [
@@ -268,13 +277,14 @@ export const ENDING_CUTSCENES = Object.freeze({
     worldAnchors: { collapsedSurfer: Object.freeze({ kind: 'actor', id: 'ellery-student-surfer' }), nave: Object.freeze({ kind: 'room', id: 'nave' }), westDoors: Object.freeze({ kind: 'door', id: 'brendan-west-door' }) },
     actors: { player: 'dragging-regrippable', surfer: 'collapsed-real-collision', bells: 'severed' },
     camera: { treatment: 'first-person-weighted-extraction', allowsLook: true, pullback: false },
+    finalAction: { id: 'open-west-doors', label: 'PUSH THE WEST DOORS CLEAR', mode: ENDING_FINAL_ACTION_MODE.WORLD },
     reducedMotion: { treatment: 'stable-camera-with-discrete-body-follow-poses' },
     finalHold: { image: 'two bodies outside the ceremonial west doors at dawn', ms: 3000 },
     beats: [
       cutsceneBeat('grip-surfer', 'interaction', { action: 'grip-surfer', dialogue: [dialogueSource('ending.tower-won', 'start.line.1')] }),
       cutsceneBeat('drag-through-nave', 'position', { anchor: 'nave', radius: 6, cue: 'ending.body.cloth-drag', dialogue: [dialogueSource('ending.tower-won', 'start.line.4')] }),
       cutsceneBeat('west-threshold', 'position', { anchor: 'westDoors', radius: 3, cue: 'ending.body.threshold', effect: 'threshold-regrip' }),
-      cutsceneBeat('open-west-doors', 'interaction', { action: 'open-west-doors', worldLook: 'cathedral-dawn', dialogue: [dialogueSource('ending.tower-won', 'start.line.8')] }),
+      cutsceneBeat('open-west-doors', 'interaction', { action: 'open-west-doors', worldLook: 'cathedral-dawn', effect: 'west-doors-open', dialogue: [dialogueSource('ending.tower-won', 'start.line.8')] }),
       cutsceneBeat('ordinary-weight', 'time', { atMs: 4200, dialogue: [dialogueSource('ending.tower-won', 'start.line.10')] }),
     ],
   }),
@@ -283,6 +293,7 @@ export const ENDING_CUTSCENES = Object.freeze({
     worldAnchors: { crossing: Object.freeze({ kind: 'zone', id: 'crossing' }), surfer: Object.freeze({ kind: 'actor', id: 'ellery-student-surfer' }) },
     actors: { player: 'progressively-synchronized', surfer: 'progressively-synchronized', bells: 'six-strike-possession' },
     camera: { treatment: 'first-person-loss-then-final-third-person-wide', allowsLook: false, pullback: true },
+    finalAction: { id: 'resist-sixth-strike', label: 'RESIST THE SIXTH STRIKE', mode: ENDING_FINAL_ACTION_MODE.HOLD, input: 'interact', holdMs: 1100, futile: true },
     reducedMotion: { treatment: 'six-held-body-poses-and-final-dissolve-wide' },
     finalHold: { image: 'two bodies standing in the same impossible rhythm beneath six bells', ms: 3600 },
     beats: [
@@ -651,5 +662,6 @@ export function endingContractErrors() {
     const decided = !!VIGIL_ENDING_INSERTS[id] || VIGIL_ENDING_OMISSIONS.includes(id);
     if (!decided) errors.push(`${id} says nothing about the vigil and is not on the omission list`);
   }
+  errors.push(...endingEmbodimentErrors(ENDING_CUTSCENES));
   return errors;
 }

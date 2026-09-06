@@ -207,12 +207,14 @@ test('every ending has authored media and credits restore owns cleanup',()=>{
     'the return has its own composition entry point');
 });
 
-test('every event-driven ending cue names a stable authored cutscene beat',()=>{
+test('every event-driven ending cue names a stable authored cutscene beat or the shared final hold',()=>{
   for(const id of ['sacrifice','helped','inversion','drugged','surfaced','contact-won','contact-lost','tower-won','tower-lost']){
     const beats=new Set((endingManifest(id)?.cutscene?.beats||[]).map((beat)=>beat.id));
     const events=endingCompositionPlan(id).score.cues.map((cue)=>cue.event).filter(Boolean);
     assert.ok(events.length>0,id);
+    assert.ok(events.includes('ending:final-hold'),`${id}: media residue must clear the route-specific final image`);
     for(const event of events){
+      if(event==='ending:final-hold')continue;
       assert.ok(event.startsWith('ending:beat:'),`${id}: ${event}`);
       assert.ok(beats.has(event.slice('ending:beat:'.length)),`${id}: ${event}`);
     }

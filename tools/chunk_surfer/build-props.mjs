@@ -2122,6 +2122,49 @@ addMainStairDressing('academic_stair_dressing',{rise:5.2,run:10,steps:26,runner:
   addCylinder(m,[0,.19,0],.078,.018,MAT.dark,14);
 }
 {
+  // Ending evidence is world geometry, not a caption that says HEADPHONES.
+  // The open band, asymmetric cable and two padded cups stay legible on the
+  // van shelf at the same distance as the paper cup.
+  const m=mesh('ending_headphones');
+  addRingBeam(m,[0,.16,0],.22,.028,MAT.dark,18,Math.PI);
+  addBox(m,[-.22,.06,0],[.10,.16,.13],MAT.dark,0,.08);
+  addBox(m,[ .22,.06,0],[.10,.16,.13],MAT.dark,0,-.08);
+  addBeam(m,[.25,.02,.02],[.43,-.02,.18],.014,MAT.black);
+}
+{
+  // The recorder at OPEN CHANNEL: a compact field body, raised transport,
+  // green meter and a cable that exits frame. It belongs to the floor beside
+  // the hand in Contact-won and to the evidence shelf in the van.
+  const m=mesh('ending_recorder_open');
+  addBox(m,[0,.07,0],[.48,.14,.34],MAT.dark);
+  addBox(m,[0,.145,-.03],[.38,.025,.20],MAT.steel);
+  addBox(m,[-.07,.163,-.07],[.16,.012,.07],MAT.vfd);
+  for(let i=0;i<5;i++)addBox(m,[-.13+i*.065,.164,-.07],[.035,.014,.025],i<4?MAT.brass:MAT.safetyRed);
+  for(const x of[-.15,.15])addCylinder(m,[x,.16,.10],.035,.04,MAT.steel,10);
+  addBeam(m,[.23,.06,.10],[.48,.035,.28],.012,MAT.black);
+}
+{
+  // The final Contact image is specific: not a whole generic body, one hand
+  // that has stopped beside the still-running recorder.
+  const m=mesh('ending_dead_hand');
+  addBox(m,[0,.045,0],[.25,.075,.18],MAT.skinWarm,0,-.10);
+  for(let i=0;i<4;i++)addBeam(m,[-.09+i*.06,.045,-.04],[-.12+i*.065,.028,-.23-i*.012],.022,MAT.skinWarm);
+  addBeam(m,[.11,.045,.02],[.23,.025,-.08],.026,MAT.skinWarm);
+  addBox(m,[0,.04,.16],[.22,.07,.22],MAT.dark,0,-.08);
+}
+{
+  // A living, ordinary standing body for extraction holds. Separate from the
+  // HUSH silhouette so a successful ending cannot accidentally read as an
+  // apparition just because it needs a second person in frame.
+  const m=mesh('ending_body_standing');
+  addCylinder(m,[0,1.58,0],.15,.29,MAT.dark,10);
+  addBox(m,[0,1.03,0],[.50,.82,.28],MAT.cloth);
+  addBeam(m,[-.13,.66,0],[-.18,.03,.04],.13,MAT.denim);
+  addBeam(m,[.13,.66,0],[.18,.03,-.04],.13,MAT.denim);
+  addBeam(m,[-.26,1.30,0],[-.31,.67,.04],.11,MAT.cloth);
+  addBeam(m,[.26,1.30,0],[.31,.67,-.04],.11,MAT.cloth);
+}
+{
   const m=mesh('ending_collapse_debris');
   addBox(m,[-.42,.18,.05],[.74,.32,.48],MAT.stone,.18,.12);
   addBox(m,[.30,.11,-.22],[.52,.20,.36],MAT.stone,-.30,-.08);

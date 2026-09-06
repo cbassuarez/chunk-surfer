@@ -14,6 +14,12 @@ import {
   restartEndingCutscene,
 } from '../src/game/ending-cutscene.js';
 import {
+  ENDING_FINAL_ACTION_MODE,
+  createEndingEmbodimentState,
+  endingEmbodimentErrors,
+  reduceEndingEmbodiment,
+} from '../src/game/ending-embodiment.js';
+import {
   createDraggedPayloadState,
   draggedPayloadFollower,
   draggedPayloadStep,
@@ -27,6 +33,7 @@ for (const id of ENDING_IDS) {
   assert.equal(spec, ENDING_MANIFEST[id].cutscene, `${id} manifest owns the canonical cutscene`);
   assert.deepEqual(endingCutsceneErrors(spec), [], `${id} cutscene validates`);
   assert.equal(spec.finalHold.image, ENDING_MANIFEST[id].image, `${id} final image is truthful`);
+  assert.ok(spec.finalAction?.id, `${id} has a unique final player action`);
   for (const beat of spec.beats) {
     for (const source of beat.dialogue || []) {
       const [documentId, lineId] = source.split('#');
@@ -36,6 +43,11 @@ for (const id of ENDING_IDS) {
     }
   }
 }
+assert.deepEqual(endingEmbodimentErrors(ENDING_CUTSCENES), [], 'every declared ending effect reaches physical runtime state');
+assert.equal(new Set(ENDING_IDS.map((id) => ENDING_CUTSCENES[id].finalAction.id)).size, ENDING_IDS.length,
+  'no two endings resolve through the same final player action');
+assert.ok(Object.values(ENDING_CUTSCENES).some((spec) => spec.finalAction.mode === ENDING_FINAL_ACTION_MODE.HOLD),
+  'terminal routes include physical held input rather than transcript advancement alone');
 
 assert.equal(new Set(ENDING_IDS.map((id) => ENDING_MANIFEST[id].image)).size, ENDING_IDS.length,
   'all nine endings hold on a unique embodied image');
@@ -46,6 +58,10 @@ for (const mesh of [
   'ending_van_cabin',
   'ending_van_cup',
   'ending_collapse_debris',
+  'ending_headphones',
+  'ending_recorder_open',
+  'ending_dead_hand',
+  'ending_body_standing',
 ]) assert.ok(PROP_BOUNDS[mesh], `${mesh} exists in the generated prop pack`);
 
 {
@@ -56,6 +72,20 @@ for (const mesh of [
     'ending world looks have a scoped runtime setter');
   assert.match(renderer, /export function r3dSetMunicipalLightPower/,
     'the 06:00 sodium shutdown reaches the authored local-light rig');
+}
+
+// The physical reducer turns the authored vocabulary into route-specific world
+// state. In particular, workers and the six-stage peal cannot regress to prose.
+{
+  let morning = createEndingEmbodimentState('inversion');
+  for (const effect of ['sodium-shutdown', 'birds-bus-arrival', 'staff-behind-heras']) {
+    morning = reduceEndingEmbodiment(morning, { type: 'beat', beat: { id: effect, effect } });
+  }
+  assert.equal(morning.morningStage, 3, 'inversion reaches bus and demolition staff staging');
+
+  let peal = createEndingEmbodimentState('tower-lost');
+  for (const beat of ENDING_CUTSCENES['tower-lost'].beats) peal = reduceEndingEmbodiment(peal, { type: 'beat', beat });
+  assert.equal(peal.syncStage, 6, 'all six strikes progressively take the two bodies');
 }
 
 assert.deepEqual(
@@ -128,6 +158,31 @@ assert.equal(normalizeEndingCutsceneCheckpoint({ endingId: 'unknown', arrival: '
   state = result.state;
   result = advanceEndingCutscene(state, spec, { interaction: 'inspect-kit' });
   assert.equal(result.events.length, 0, 'held or repeated action cannot satisfy the next semantic interaction');
+}
+
+// The van is an evidence hub. Visiting CUP before KIT must not deadlock the
+// physical score when the player later lowers the headphones and leaves.
+{
+  const spec = ENDING_CUTSCENES.drugged;
+  let state = advanceEndingCutscene(createEndingCutsceneState(spec), spec, { elapsedMs: 0 }).state;
+  state = advanceEndingCutscene(state, spec, { interaction: 'inspect-cup' }).state;
+  state = advanceEndingCutscene(state, spec, { interaction: 'remove-headphones' }).state;
+  assert.equal(state.complete, true, 'out-of-order optional evidence still reaches the final physical action');
+  assert.ok(state.interactions.includes('inspect-cup'));
+  assert.ok(state.interactions.includes('remove-headphones'));
+}
+
+{
+  const runtime = readFileSync('src/main.js', 'utf8');
+  const presenter = readFileSync('src/game/coldopen.js', 'utf8');
+  assert.match(runtime, /presentEndingCutsceneResolution\(manifest/,
+    'reading quickly waits for the physical score before the final hold');
+  assert.match(runtime, /clearSourceRuntime\(\{preserveWindows:true\}\)/,
+    'Contact victory shows Source collapse before returning to the real wall');
+  assert.match(presenter, /presentation === 'cinematic'/,
+    'embodied endings use the world-visible cinematic transcript');
+  assert.doesNotMatch(presenter, /presentation === 'cinematic'[\s\S]{0,2200}drawMachinePanel/,
+    'the cinematic branch does not put a monitor panel over the climax');
 }
 
 // A dragged body follows the trail instead of being glued to the camera, and a

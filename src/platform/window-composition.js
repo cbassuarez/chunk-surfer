@@ -773,9 +773,18 @@ export function endingCompositionPlan(endingId,{epochMs=Date.now(),reduceDread=f
   surfaces=surfaces.map((surface,index)=>({...surface,entry:targets[index]||inward[index],target:targets[index]||inward[index],faultScale:.75+(index%3)*.14}));
   const loss=id.endsWith('lost')||id==='drugged'||id==='sacrifice';
   const endingCues=endingScore(id,surfaces);
+  // The last image belongs to the world. Native panes are already outside the
+  // game frame, but the complete Simulate path shares its canvas; unfold the
+  // residue to the authored perimeter before the physical final hold so media
+  // can frame the booth/body/door without replacing it.
+  const finalHold={id:'ending-final-hold',event:'ending:final-hold',operations:surfaces.map((surface)=>({
+    type:'geometry',targets:[surface.id],
+    geometry:{anchorX:surface.initial.x,anchorY:surface.initial.y,force:true},
+    durationMs:reducedMotion?0:300,
+  }))};
   const intrusion=sectorIntrusionCue(surfaces.map((surface)=>surface.id),intrusionToken);
   return compileWindowCompositionPlan({compositionId:`ending:${stableId(id)}`,sceneId:`ending:${stableId(id)}`,purpose:'ending',epochMs,reducedMotion,surfaces,
-    score:{...endingCues,cues:[...endingCues.cues,...intrusion]},
+    score:{...endingCues,cues:[...endingCues.cues,finalHold,...intrusion]},
     completion:{mode:'ending-owned'},flashMode,
     fault:{profile:'nvme-sector',intensity:loss?.72:.42,seed:101+id.length,cadenceMs:loss?220:440},
     formation:{mode:loss?'failed-resolution':'resolved-bloom',durationMs:560,staggerMs:48}});

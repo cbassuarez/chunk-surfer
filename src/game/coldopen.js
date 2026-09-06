@@ -9,7 +9,7 @@
 // building forty times today.)
 
 import * as scenes from './scenes.js';
-import { uiSize, uiFill, uiText } from '../render/ui.js';
+import { uiSize, uiFill, uiText, uiLine } from '../render/ui.js';
 import { PANEL, drawMachinePanel, drawVfdText } from '../render/presentation.js';
 import {
   drawTranscript,
@@ -55,7 +55,7 @@ export function makeColdOpenScene({
   beats = [], opening = null, startAt = 'start', slate = '', ambient = true, lensPreset = 'booth',
   onDone, onChoice, onLine, cue, fx, audio, getAudio, replay = null,
   blocksWorld = true, allowsLook = false, suppressesHud = false,
-  worldUnderlay = false, worldView = null,
+  worldUnderlay = false, worldView = null, presentation = worldUnderlay ? 'cinematic' : 'monitor',
 } = {}) {
   const convo = createConversation({
     nodes: opening, beats, startAt, sceneId: id, replay, onChoice, onLine, cue, fx, audio, getAudio,
@@ -77,7 +77,7 @@ export function makeColdOpenScene({
     },
     exit() { convo.stop(); audio?.stopTyping?.(); },
     update(dt) { convo.update(dt); },
-    view() { return convo.view(); },        // for the headless suites
+    view() { return { ...convo.view(), presentation }; }, // for the headless suites
     keyup(e) { return convo.keyup?.(e) || false; },
     key(e) {
       if (e.key === 'Escape') return true;   // no way out of a conversation
@@ -92,6 +92,46 @@ export function makeColdOpenScene({
         // over the physical image, not a cut to the old full-screen black
         // monitor. Other conversations retain the opaque cold-open surface.
         if (!worldUnderlay) uiFill(0, 0, cols, rows, UI_COLOR.glass);
+
+        // A terminal ending is a shot with words in it, not a web page laid over
+        // a shot. Keep only the live exchange and its choices in a low glass
+        // subtitle strip. There is deliberately no MONITOR bezel, meter, source
+        // lane, modal card or centered column here: the transformed room is the
+        // primary image and remains legible while the player reads.
+        if (presentation === 'cinematic') {
+          const width = Math.min(76, Math.max(26, cols - 12));
+          const x = Math.max(3, Math.floor((cols - width) / 2));
+          const choices = layoutTranscriptChoices(v, width - 4);
+          const choiceRows = choices.height ? choices.height + 1 : 0;
+          const maxTranscriptRows = Math.max(2, Math.min(choices.height ? 7 : 4, rows - choiceRows - 7));
+          const transcript = layoutTranscript(v, {
+            width: width - 4,
+            maxRows: maxTranscriptRows,
+            keep: choices.height ? 4 : 2,
+          });
+          const h = Math.min(rows - 3, Math.max(4, transcript.height + choiceRows + 2));
+          const y = Math.max(2, rows - h - 1);
+          uiFill(x, y, width, h, 'rgba(2,4,5,.58)');
+          const transcriptY = y + 1;
+          drawTranscript(transcript, {
+            x: x + 2,
+            y: transcriptY,
+            width: width - 4,
+            maxRows: maxTranscriptRows,
+          });
+          if (choices.height) {
+            drawTranscriptChoices(choices, {
+              x: x + 2,
+              y: y + h - choices.height - 1,
+              width: width - 4,
+              maxRows: choices.height,
+            });
+          } else {
+            const prompt = promptLine([{ action: 'continue', label: 'CONTINUE' }]);
+            uiText(x + width - Math.min(width - 3, prompt.length) - 2, y + h - 1, prompt.slice(0, width - 3), 'ui-secondary', .62);
+          }
+          return;
+        }
 
         // A two-channel monitor needs enough width for two distinct lanes. It
         // remains centered and capped, but no longer crushes the transcript into

@@ -1,7 +1,7 @@
 {
   "name": "chunk-surfer",
   "private": true,
-  "version": "0.1.2-beta.3",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "assets:acquisitions": "node tools/chunk_surfer/build-acquisitions.mjs",
@@ -49,7 +49,7 @@
     "lens:bundle:mac": "tools/chunk_surfer/diffusion_server/.venv-local/bin/python tools/chunk_surfer/diffusion_server/build_bundle.py --target aarch64-apple-darwin",
     "lens:verify": "node scripts/validate-lens-bundle-contract.mjs",
     "beta:build:mac": "npm run lens:bundle:mac && npm run tauri:build -- --target aarch64-apple-darwin --bundles dmg",
-    "beta:preflight": "node scripts/release-preflight.mjs v0.1.2-beta.3",
+    "beta:preflight": "node scripts/release-preflight.mjs v0.2.0",
     "itch:stage": "node scripts/itch-release.mjs stage",
     "itch:preview": "node scripts/itch-release.mjs preview",
     "itch:push": "node scripts/itch-release.mjs push",

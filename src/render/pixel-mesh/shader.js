@@ -11,6 +11,26 @@ uniform vec2 uNoiseSize;
 uniform float uBlackPoint;
 uniform float uWhitePoint;
 uniform float uToneGamma;
+// THE PLATE GRADE, APPLIED BEFORE THE DITHER.
+//   x  invert    0 = the scene as lit, 1 = a negative
+//   y  gamma     curve applied after the invert
+//   z  gain      white point of the graded plate
+//   w  soften    radius, in cells, of a small pre-grade blur
+// Neutral is (0, 1, 1, 0) and every profile but the front end uses it. This is
+// the front-end composite's look: the camera really is behind the menu, printed
+// as a negative rather than lit as a room.
+uniform vec4 uGrade;
+// THE PLATE'S OWN BLACK AND WHITE POINT, applied before the invert above.
+// The reference curve was fitted to test bars, which use the whole scale. A
+// night exterior does not: measured off the title, the composite occupies about
+// 0..0.5 and is over half black. Inverting THAT with a curve meant for a
+// full-range signal put the entire frame into the top eighth of the scale --
+// 126 levels of tone field collapsed to 15, and the building went the same
+// white as the sky behind it. Normalising onto the range the curve expects is
+// the same move a colourist makes before applying a look, and it is what puts
+// the picture back. It sits inside the invert branch, so a neutral profile
+// never reaches it; (0, 1) is the identity if it ever needs one.
+uniform vec2 uGradePlate;
 uniform float uLineAmount;
 uniform float uToneAmount;
 // The engraving, written beside the scene by the raymarch (see oMark in r3d.js).
@@ -399,6 +419,32 @@ void main(){
   vec4 srcCell = texture(uSrc, cellUv);
   vec3 c = srcFull.rgb;
   float y = luma(srcCell.rgb);
+
+  // A SMALL SOFTENING, THEN THE NEGATIVE, THEN THE CURVE — and only then the
+  // tone below. The reference stack put a lens blur under the plate and a
+  // colour halftone over it; the halftone is this shader's own dither, so the
+  // blur has to happen here, before the picture is screened, or it would blur
+  // the dots instead of the image.
+  if(uGrade.w > 0.0){
+    vec2 rad = (1.0 / uRes) * cell * uGrade.w;
+    vec3 blurC = texture(uSrc, fullUv + vec2( rad.x, 0.0)).rgb
+               + texture(uSrc, fullUv + vec2(-rad.x, 0.0)).rgb
+               + texture(uSrc, fullUv + vec2(0.0,  rad.y)).rgb
+               + texture(uSrc, fullUv + vec2(0.0, -rad.y)).rgb;
+    c = (c + blurC) * 0.2;
+    y = luma(c);
+  }
+  if(uGrade.x > 0.0){
+    // Measured off the reference: greys stay neutral through the whole stack,
+    // so one curve serves every channel and the luma the dither reads.
+    float span = max(uGradePlate.y - uGradePlate.x, 1e-4);
+    c = clamp((c - vec3(uGradePlate.x)) / span, 0.0, 1.0);
+    y = clamp((y - uGradePlate.x) / span, 0.0, 1.0);
+    vec3 inv = mix(c, vec3(1.0) - c, uGrade.x);
+    c = pow(max(inv, vec3(0.0)), vec3(uGrade.y)) * uGrade.z;
+    float yi = mix(y, 1.0 - y, uGrade.x);
+    y = pow(max(yi, 0.0), uGrade.y) * uGrade.z;
+  }
   // TONE FIRST, and it has to be first: the picture is the leveled luminance and
   // everything downstream — material excitation, the halftone, the ink pair — is
   // a modulation of it rather than a replacement for it.

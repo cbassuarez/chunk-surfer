@@ -21,7 +21,8 @@ test('same-run manifest preserves completed take order and bounded pose provenan
     const pending = beginSourceReplayTake(manifest, {
       ordinal,
       roomId: `room-${ordinal}`,
-      place: { x: ordinal, y: ordinal + 1 },
+      mark: { x: ordinal, y: ordinal + 1 },
+      place: ordinal === 3 ? 'upper' : '',
       startedAt: ordinal * 100,
       approach: Array.from({ length: 150 }, (_, t) => ({
         t, x: t / 10, y: ordinal, roomId: `room-${ordinal}`, spaceId: 'conservatory', secret: 'drop-me',
@@ -32,10 +33,14 @@ test('same-run manifest preserves completed take order and bounded pose provenan
   assert.deepEqual(manifest.takes.map((take) => take.roomId), ['room-1', 'room-2', 'room-3', 'room-4']);
   assert.equal(manifest.takes[0].approach.length, 96);
   assert.equal('secret' in manifest.takes[0].approach[0], false);
+  assert.deepEqual(manifest.takes[0].mark, { x:1, y:2 });
+  assert.equal(manifest.takes[2].place, 'upper');
 
   manifest = noteSourceReplayEntry(manifest, { at: 9000, locus: { x: 8, y: 9 } });
   const plan = buildSourceReprisePlan(manifest);
-  assert.deepEqual(plan['call-site'].segments.map((segment) => segment.roomId), ['room-1', 'room-2']);
+  assert.deepEqual(plan['call-site'].segments.map((segment) => segment.roomId), ['room-1']);
+  assert.deepEqual(plan['call-site'].segments[0].mark, { x:1, y:2 });
+  assert.equal(plan['call-site'].segments[0].takeOrdinal, 1);
   assert.deepEqual(plan['final-clause'].segments.map((segment) => segment.kind), [
     'recording-room', 'recording-room', 'recording-room', 'recording-room', 'source-threshold',
   ]);
@@ -64,6 +69,16 @@ test('a stale manifest is emptied instead of leaking a prior night into replay',
 test('a fresh pre-run manifest adopts the active night id on first write', () => {
   const normalized = normalizeSourceReplayManifest(freshSourceReplayManifest(), { runId: 'active-night' });
   assert.equal(normalized.runId, 'active-night');
+});
+
+test('schema-one coordinate-shaped place migrates to mark without inventing a deck label', () => {
+  const normalized = normalizeSourceReplayManifest({
+    schema:1,runId:'night-legacy',
+    takes:[{ ordinal:1,roomId:'amplifications',place:{x:12,y:7},approach:[] }],
+  }, { runId:'night-legacy' });
+  assert.equal(normalized.schema, 2);
+  assert.deepEqual(normalized.takes[0].mark, { x:12, y:7 });
+  assert.equal(normalized.takes[0].place, '');
 });
 
 test('R checkpoint is durable only after the reprise is completed', () => {

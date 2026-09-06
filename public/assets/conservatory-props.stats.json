@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-09-03T21:53:56.407Z",
-  "bytes": 25419784,
-  "totalTriangles": 350798,
+  "generatedAt": "2026-09-05T16:33:13.473Z",
+  "bytes": 25463652,
+  "totalTriangles": 351278,
   "meshes": {
     "school_desk": {
       "triangles": 176,
@@ -774,6 +774,22 @@
     "ending_van_cup": {
       "triangles": 112,
       "vertices": 124
+    },
+    "ending_headphones": {
+      "triangles": 108,
+      "vertices": 216
+    },
+    "ending_recorder_open": {
+      "triangles": 188,
+      "vertices": 308
+    },
+    "ending_dead_hand": {
+      "triangles": 84,
+      "vertices": 168
+    },
+    "ending_body_standing": {
+      "triangles": 100,
+      "vertices": 166
     },
     "ending_collapse_debris": {
       "triangles": 36,
@@ -3597,6 +3613,54 @@
         0.076
       ]
     },
+    "ending_headphones": {
+      "min": [
+        -0.27,
+        -0.074,
+        -0.071
+      ],
+      "max": [
+        0.436,
+        0.161,
+        0.186
+      ]
+    },
+    "ending_recorder_open": {
+      "min": [
+        -0.24,
+        0,
+        -0.17
+      ],
+      "max": [
+        0.484,
+        0.18,
+        0.285
+      ]
+    },
+    "ending_dead_hand": {
+      "min": [
+        -0.131,
+        -0.004,
+        -0.268
+      ],
+      "max": [
+        0.24,
+        0.091,
+        0.272
+      ]
+    },
+    "ending_body_standing": {
+      "min": [
+        -0.365,
+        0.021,
+        -0.143
+      ],
+      "max": [
+        0.365,
+        1.725,
+        0.143
+      ]
+    },
     "ending_collapse_debris": {
       "min": [
         -0.83,
@@ -5299,6 +5363,8 @@
     "ending_body_prone": 0.11,
     "ending_body_seated": 0.96,
     "ending_van_cabin": 0.92,
+    "ending_recorder_open": 0.14,
+    "ending_body_standing": 1.44,
     "ending_collapse_debris": 0.31,
     "apparition_pose_head_turn": 1.44,
     "apparition_pose_arm_out": 1.44,

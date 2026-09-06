@@ -129,6 +129,7 @@ const tests = [
   'test/conservatoire-copy.spec.mjs',
   'test/map-bag-integration.spec.mjs',
   'test/map-layout.spec.mjs',
+  'test/movement-input-order.spec.mjs',
   'test/map-information-firewall.spec.mjs',
   'test/progression-pure.spec.mjs',
   'test/progression-profile.spec.mjs',

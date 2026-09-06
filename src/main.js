@@ -377,6 +377,11 @@ import {
   claimEndingCutsceneCompletion,
   createEndingCutsceneState,
 } from './game/ending-cutscene.js';
+import {
+  ENDING_FINAL_ACTION_MODE,
+  createEndingEmbodimentState,
+  reduceEndingEmbodiment,
+} from './game/ending-embodiment.js';
 import { createElectricalHumRuntime, electricalHumAt } from './audio/electrical-hum.js';
 import { createFountainWaterRuntime, fountainMaskingDb, fountainWaterAt } from './audio/fountain-water.js';
 import { createPlantPipeRuntime, plantPipeAt } from './audio/plant-pipe.js';
@@ -5663,6 +5668,7 @@ function settleAfterAway(gapMs){
 
 let causalPresentationId=null;
 let sourcePlayerShadowFrame=null;
+let sourceRepriseShadowStage=null;
 function currentCausalSpaceId(){
   if(usingSourceSpace())return'source-space';
   if(usingStairAnomaly())return'stair-anomaly';
@@ -5936,13 +5942,24 @@ function loop(){
     scenes.update(dt);
     if(frontEndSession){
       frontEndSession.update(dt);
-      R3.r3dSetFrontEndPlate?.(frontEndSession.snapshot().plate);
+      // The session owns the plate; __probe.frontEndGrade can pin it so a
+      // graded and an ungraded frame of the SAME scene can be shot side by
+      // side. Null in every ordinary frame.
+      R3.r3dSetFrontEndPlate?.(frontEndPlateOverride ?? frontEndSession.snapshot().plate);
+      // The loose windows wear the same plate. The desktop behind them is the
+      // negative while the opening and menu are up, so the four title fragments
+      // are graded to it rather than staying violet on paper. setFrontEndPlate
+      // is a no-op until the value actually changes.
+      void personalWindowEffects?.setFrontEndPlate?.(R3.r3dFrontEndPlate?.().negative||0);
       if(frontEndSession.state===FRONT_END_STATE.LIVE&&frontEndPromotionPending){
         frontEndPromotionPending=false;
         scenes.remove('title');
         endBootWeather?.();
       }
-    }else R3.r3dSetFrontEndPlate?.('gameplay');
+    }else{
+      R3.r3dSetFrontEndPlate?.(frontEndPlateOverride ?? 'gameplay');
+      void personalWindowEffects?.setFrontEndPlate?.(R3.r3dFrontEndPlate?.().negative||0);
+    }
     uiClear();
     if(!inRogue && RENDERER==='3d') drawBootText();
     uiWithAlpha(frontEndSession?.state===FRONT_END_STATE.LIFTING?frontEndSession.snapshot().hudAlpha:1,()=>drawStoryHud());
@@ -6005,6 +6022,10 @@ function r3dNearChunks(){
 let hypoxia=freshHypoxia(0);
 let storyMode=false;
 let frontEndSession=null;
+// Test-only: pins the front-end plate so a graded and an ungraded frame of the
+// same scene can be shot side by side (__probe.frontEndGrade). Null otherwise,
+// and the session is the authority.
+let frontEndPlateOverride=null;
 let frontEndPromotionPending=false;
 let frontEndMismatchPending=false;
 let hushRunActive=false;
@@ -6519,31 +6540,7 @@ function syncDoorDynamicProps({logicalX=px,logicalY=py,timeSec=performance.now()
   if(storyMode&&planName==='conservatory'&&(zone===ZONE.dock||zone===ZONE.street||zone===ZONE.civicCourt)){
     for(const leaf of vanDoorInstances()||[])doorDynamicCombined[count++]=leaf;
   }
-  const endingId=activeEndingCutscene?.spec?.endingId;
-  if(endingId==='drugged'){
-    const at=FP.logicalToPhysical(activeEndingCutscene.origin.x,activeEndingCutscene.origin.y),yaw=activeEndingCutscene.origin.yaw;
-    doorDynamicCombined[count++]={id:'ending-van-cabin',mesh:'ending_van_cabin',x:at.x*CELL,y:at.y,z:at.z*CELL,yaw,structural:false};
-    doorDynamicCombined[count++]={id:'ending-van-cup',mesh:'ending_van_cup',x:at.x*CELL+.62,y:at.y+.78,z:at.z*CELL-.45,yaw,structural:false};
-  }
-  if(['sacrifice','helped'].includes(endingId)){
-    const elapsed=Math.max(0,performance.now()-activeEndingCutscene.startedMs),pieces=Math.min(10,Math.floor(elapsed/850));
-    const at=FP.logicalToPhysical(activeEndingCutscene.origin.x,activeEndingCutscene.origin.y);
-    for(let index=0;index<pieces;index++){
-      const angle=index*2.399963,ring=.8+(index%4)*.52;
-      doorDynamicCombined[count++]={
-        id:`ending-collapse-${index}`,mesh:'ending_collapse_debris',
-        x:at.x*CELL+Math.cos(angle)*ring,y:at.y+.03+(index%3)*.04,z:at.z*CELL+Math.sin(angle)*ring,
-        yaw:angle,scale:.55+(index%3)*.18,structural:false,noShadow:false,
-      };
-    }
-  }
-  if(endingId==='tower-lost'){
-    const at=FP.logicalToPhysical(activeEndingCutscene.origin.x,activeEndingCutscene.origin.y),yaw=activeEndingCutscene.origin.yaw;
-    doorDynamicCombined[count++]={id:'tower-lost-surfer',mesh:'apparition_pose_symmetric',x:at.x*CELL+.72,y:at.y,z:at.z*CELL+.18,yaw,structural:false};
-    if(performance.now()-activeEndingCutscene.startedMs>=7000){
-      doorDynamicCombined[count++]={id:'tower-lost-player',mesh:'apparition_pose_symmetric',x:at.x*CELL-.36,y:at.y,z:at.z*CELL-.16,yaw,structural:false};
-    }
-  }
+  for(const instance of endingWorldPropInstances(timeSec))doorDynamicCombined[count++]=instance;
   // The authored road network is visible from the arrival yard as well as from
   // the optional district loop. Traffic should already be alive when the fade
   // comes up, not switch on at the first street-zone seam.
@@ -6795,7 +6792,10 @@ function worldRenderInstances(group=null){
       time:performance.now()/1000,reducedMotion:shakeMode()!=='full',flashMode:flashMode(),
     })||[]);
     R3.r3dSetEmergencyShadows?.([]);
-    return chunkSurfRuntime.propInstances(px,py,{time:performance.now()/1000,reducedMotion:(getSave().settings?.shake||'full')!=='full'});
+    return[
+      ...chunkSurfRuntime.propInstances(px,py,{time:performance.now()/1000,reducedMotion:(getSave().settings?.shake||'full')!=='full'}),
+      ...endingSourcePropInstances(),
+    ];
   }
   if(usingStairAnomaly()){
     const settings=getSave().settings||{};
@@ -6815,6 +6815,7 @@ function worldRenderInstances(group=null){
     if(hideStaticTowerRope(instance,{live:liveRopes,tenorRopeTaken:tower.tenorRopeTaken}))return false;
     if(instance.id.startsWith('yard-booth-guard-')&&instance.id!==`yard-booth-guard-${boothPresentationPose}`)return false;
     if(instance.id==='yard-booth-handoff'&&boothPresentationPose!=='handoff')return false;
+    if(activeEndingCutscene?.spec?.endingId==='drugged'&&instance.id==='yard-van')return false;
     if(instance.id==='dock-chandelier-spent')return false;
     if(hiddenCrossEnvelopeProp(instance))return false;
     return true;
@@ -6841,9 +6842,9 @@ function usingSourceSpace(){ return !!chunkSurfRuntime; }
 //
 // Two exits knew to clear it by hand and the god warp did not, which is exactly
 // the shape of bug that comes back. Nulling the runtime goes through here now.
-function clearSourceRuntime(){
+function clearSourceRuntime({preserveWindows=false}={}){
   if(!chunkSurfRuntime) return false;
-  void windowChoreography?.leaveSource?.('source-runtime-exit');
+  if(!preserveWindows)void windowChoreography?.leaveSource?.('source-runtime-exit');
   chunkSurfRuntime=null;
   endHorizonScore();
   R3.r3dSetHorizon?.(null);
@@ -7572,17 +7573,11 @@ function beginContactEnding(completion,finalState){
     return;
   }
   // Victory destroys the force and returns the viewpoint to the exact real
-  // threshold captured on entry. No rescue transition is invented: the player
-  // is folded against the wall with the recorder, alive only for the final call.
+  // threshold captured on entry. Keep Source alive for the first cutscene beat:
+  // its collapse has to be seen before the real wall replaces it. The authored
+  // restore-return-point effect performs the handoff 1.8 seconds later.
   const returned=finalState.returnPoint||CHAPEL_OUTER_CHECKPOINT;
-  R3.r3dSetIndoorRain?.(0);
-  chuteRide=null;
-  clearSourceRuntime();
-  PRES.despawn();
-  R3.r3dSetSourceScene({key:'source:contact-ended',corpus:[],staticInstances:[],dynamicInstances:[],look:{sunrise:0,chroma:1,paper:0}});
-  px=returned.x;py=returned.y;R3.r3dSetFacing(returned.facing||0);renderMove=null;motionRig=null;trail=[];
-  r3dCache.physicalKey=null;r3dCache.physicalGroup=null;
-  saveCommit({chunkSurf:finalState,px,py,area:'conservatory'});
+  pendingContactEndingReturn={finalState,returned};
   playEnding(endingId,ENDING_ARRIVAL.AGREED);
 }
 
@@ -14401,11 +14396,105 @@ function endHorizonScore(){
   horizonScore=null;
 }
 
+function sourceRepriseFrame(value,{roomId=''}={}){
+  const x=Number(value?.x),y=Number(value?.y);
+  if(!Number.isFinite(x)||!Number.isFinite(y)||!FP.isLoaded())return null;
+  const physical=FP.logicalToPhysical(x,y);
+  return{
+    x,y,
+    floorH:Number(physical?.y)||0,
+    roomId:value?.roomId||roomId||FP.worldAt(x,y),
+    renderGroup:physical?.renderGroup||value?.renderGroup||'',
+    spaceId:'conservatory',
+    yaw:Number(value?.yaw)||0,
+  };
+}
+
+function sourceRepriseFallbackFrames(mark,{roomId=''}={}){
+  const target=sourceRepriseFrame(mark,{roomId});
+  if(!target)return[];
+  const directions=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,1],[1,-1],[-1,-1]];
+  let best=[target];
+  for(const [dx,dy]of directions){
+    const route=[target];
+    let from=target;
+    for(let distance=.5;distance<=6;distance+=.5){
+      const next=sourceRepriseFrame({x:target.x-dx*distance,y:target.y-dy*distance,yaw:Math.atan2(dx,-dy)},{roomId});
+      if(!next||!FP.canStep(from.x,from.y,next.x,next.y,{keys:playerKeys}).ok||!PROPS.propCanOccupy(next.x,next.y,{ignoreId:'hush-player-shadow'}))break;
+      route.push(next);from=next;
+    }
+    if(route.length>best.length)best=route;
+  }
+  return best.reverse();
+}
+
+function sourceRepriseWorldPlan(plan){
+  let previousMark=null;
+  return{
+    ...plan,
+    segments:(plan?.segments||[]).map((segment)=>{
+      const recorded=(segment.frames||[])
+        .filter((frame)=>frame?.spaceId!=='source-space')
+        .map((frame)=>sourceRepriseFrame(frame,{roomId:segment.roomId}))
+        .filter(Boolean);
+      const canonical=segment.roomId&&ROOM_CELLS[segment.roomId]
+        ?FP.toRuntimePoint(ROOM_CELLS[segment.roomId])
+        :null;
+      // sourceEntry.locus belongs to Source coordinates. Its approach window is
+      // the Conservatory threshold the player actually crossed, so that last
+      // sample — not the numerically-similar point in another geometry — is the
+      // only honest recording mark for that segment.
+      const rawMark=segment.kind==='source-threshold'
+        ?recorded.at(-1)||previousMark
+        :segment.mark||segment.locus||recorded.at(-1)||canonical||previousMark;
+      const mark=sourceRepriseFrame(rawMark,{roomId:segment.roomId||recorded.at(-1)?.roomId||''});
+      const frames=recorded.length?recorded:sourceRepriseFallbackFrames(mark,{roomId:segment.roomId});
+      previousMark=mark||frames.at(-1)||previousMark;
+      return{...segment,mark:mark||previousMark,frames,fallback:!!segment.fallback||recorded.length===0};
+    }),
+  };
+}
+
+let sourceRepriseWorldLease=null;
+function beginSourceRepriseWorldLease(){
+  if(sourceRepriseWorldLease||!usingSourceSpace()||!FP.isLoaded()||RENDERER!=='3d')return null;
+  const runtime=chunkSurfRuntime;
+  const lease={runtime,released:false,release(){
+    if(this.released)return false;
+    this.released=true;
+    if(chunkSurfRuntime===null)chunkSurfRuntime=runtime;
+    sourceRepriseWorldLease=null;
+    PROPS.setLooseProp('hush-player-shadow',null);
+    r3dCache.physicalKey=null;r3dCache.physicalGroup=null;r3dCache.fogSize=-1;
+    if(chunkSurfRuntime===runtime){
+      R3.r3dSetSourceSurface(runtime.sourceSurfaceLines());
+      syncSourceRender({force:true});
+    }
+    return true;
+  }};
+  sourceRepriseWorldLease=lease;
+  // Keep the live Source runtime intact but temporarily remove its geometry
+  // authority. render3d can now draw the ordinary Conservatory at scene.worldView
+  // while combat and the Source body remain frozen at their real coordinates.
+  chunkSurfRuntime=null;
+  R3.r3dSetHorizon?.(null);
+  R3.r3dSetSourceEmergency?.(0);
+  R3.r3dSetSourceWhiteout?.(0);
+  R3.r3dSetSourceFault?.(0);
+  R3.r3dSetLocalLights?.([]);
+  R3.r3dSetEmergencyShadows?.([]);
+  R3.r3dSetSourceScene({key:'source:reprise-building',corpus:[],staticInstances:[],dynamicInstances:[],look:{sunrise:0,chroma:1,paper:0}});
+  R3.r3dSetSourceSurface([]);
+  r3dCache.physicalKey=null;r3dCache.physicalGroup=null;r3dCache.fogSize=-1;
+  return lease;
+}
+
 function sourceReplayMovementInterlude({id,index,checkpoint,scheduleReturn,resume}={}){
   const manifest=currentSourceReplayManifest();
   if(manifest.encounter.completed.includes(id))return false;
-  const plan=buildSourceReprisePlan(manifest)[id];
-  if(!plan)return false;
+  const authoredPlan=buildSourceReprisePlan(manifest)[id];
+  if(!authoredPlan)return false;
+  const plan=sourceRepriseWorldPlan(authoredPlan);
 
   // Save the combat body before Source opens the old room. A quit during the
   // walk restarts this reprise from its first seam; it cannot reset health,
@@ -14414,10 +14503,24 @@ function sourceReplayMovementInterlude({id,index,checkpoint,scheduleReturn,resum
     id,movementIndex:index,continuation:checkpoint,completed:false,
   }));
 
+  const worldLease=plan.segments.length?beginSourceRepriseWorldLease():null;
   let reprise=null;
   reprise=makeSourceRepriseScene({
     plan,
     roomLabel,
+    worldBacked:!!worldLease,
+    reducedMotion:shakeMode()!=='full',
+    reducedFlash:flashMode()!=='full',
+    onShadowFrame:syncPlayerShadowFigure,
+    onPhase:({phase,corruption})=>{
+      // One transport, played in the wrong order: rewind is the throw, the
+      // recorder body is the room opening, and its arm click arrives only
+      // after the copied player turns around at the genuine mark.
+      if(phase==='cast')CUES.playCue(CUES.CUE.rewind,{gain:.14,rate:.31,lowpassHz:680});
+      else if(phase==='unfold')CUES.playCue(CUES.CUE.recorder,{gain:.10,rate:.72-Math.min(.2,corruption*.2),lowpassHz:1100});
+      else if(phase==='recognition')CUES.playCue(CUES.CUE.recorder,{gain:.065,rate:.34,lowpassHz:540});
+      else if(phase==='armed')CUES.playCue(CUES.CUE.recorder,{gain:.13,rate:.58,lowpassHz:920});
+    },
     onDryClick:()=>CUES.playCue(CUES.CUE.recorder,{gain:.08,rate:.42}),
     onSeam:({index})=>{
       // It does not cut cleanly between remembered places. Source has only a
@@ -14441,6 +14544,7 @@ function sourceReplayMovementInterlude({id,index,checkpoint,scheduleReturn,resum
       scenes.remove(reprise.id);
       resume?.();
     },
+    onExit:()=>worldLease?.release(),
   });
   scenes.push(reprise);
   return true;
@@ -17306,6 +17410,7 @@ let endingArrival=ENDING_ARRIVAL.AGREED;
 let endingDossier=null;
 let endingTimeline=null;
 let activeEndingCutscene=null;
+let pendingContactEndingReturn=null;
 
 function endingCutsceneAnchors(spec){
   const anchors={};
@@ -17339,52 +17444,328 @@ function startActiveEndingCutscene(spec,{restart=false}={}){
   activeEndingCutscene={
     spec,
     state:createEndingCutsceneState(spec,{reducedMotion:(getSave().settings?.shake||'full')!=='full'}),
+    embodiment:createEndingEmbodimentState(spec.endingId),
     startedMs:performance.now(),
-    origin:{x:px,y:py,yaw:R3.r3dFacing(),forward:(RENDERER==='3d'?R3.r3dDelta(1):[0,-1])},
+    origin:{x:px,y:py,yaw:R3.r3dLookAngles?.().yaw??0,forward:(RENDERER==='3d'?R3.r3dDelta(1):[0,-1])},
   };
   if(spec.endingId==='contact-lost'&&usingSourceSpace())syncSourceRender({force:true});
   return activeEndingCutscene;
+}
+
+function endingLogicalOffset(active,forwardMetres=0,sideMetres=0,base=null){
+  const origin=base||active?.origin||{x:px,y:py};
+  const raw=Number.isFinite(base?.yaw)?[-Math.sin(base.yaw),Math.cos(base.yaw)]:(active?.origin?.forward||[0,-1]);
+  const length=Math.hypot(raw[0],raw[1])||1;
+  const fx=raw[0]/length,fy=raw[1]/length;
+  const rx=-fy,ry=fx;
+  return{x:origin.x+fx*D(forwardMetres)+rx*D(sideMetres),y:origin.y+fy*D(forwardMetres)+ry*D(sideMetres)};
+}
+
+function endingPropInstance(id,mesh,logical,{yaw=0,elevation=0,scale=1,noShadow=false,emissive=null}={}){
+  if(!logical||!FP.isLoaded())return null;
+  const at=FP.logicalToPhysical(logical.x,logical.y);
+  return{
+    id,mesh,x:at.x*CELL,y:at.y+elevation,z:at.z*CELL,yaw,scale,
+    structural:false,noShadow,...(emissive?{emissive}:{}),
+  };
+}
+
+function endingViewToward(camera,target,{pitch=-.08,suppressActors=false}={}){
+  if(!camera||!target)return null;
+  const dx=target.x-camera.x,dy=target.y-camera.y;
+  return{x:camera.x,y:camera.y,yaw:Math.atan2(dx,-dy),pitch,suppressActors};
+}
+
+function endingSourcePropInstances(){
+  const active=activeEndingCutscene;
+  if(!active||active.spec.endingId!=='contact-lost'||!usingSourceSpace())return[];
+  const geometry=activeGeometry(),at=geometry?.logicalToPhysical?.(active.origin.x,active.origin.y);
+  if(!at)return[];
+  return[{
+    id:'ending-contact-lost-body',mesh:'ending_body_seated',
+    x:at.x*CELL,y:(at.y||0)+.02,z:at.z*CELL,
+    yaw:active.origin.yaw||0,scale:.96,structural:false,noShadow:false,
+  }];
+}
+
+function endingVanAnchor(active=activeEndingCutscene){
+  const van=PROPS.propById('yard-van');
+  return van?{x:van.rx,y:van.ry,yaw:Number(van.yaw)||Math.PI/2}:{...active?.origin};
+}
+
+function endingWorldPropInstances(timeSec=performance.now()/1000){
+  const active=activeEndingCutscene;
+  if(!active||!FP.isLoaded()||usingSourceSpace())return[];
+  const id=active.spec.endingId,embodied=active.embodiment||createEndingEmbodimentState(id);
+  const elapsed=Math.max(0,performance.now()-active.startedMs);
+  const out=[];
+  const add=(instance)=>{if(instance)out.push(instance);};
+  const origin=active.origin,yaw=origin.yaw||0;
+
+  if(id==='sacrifice'||id==='helped'){
+    // The collapse advances from the route behind the player into the chapel,
+    // instead of sprinkling ten decorative rocks around the camera. Each stage
+    // closes another cross-section of the way back.
+    const pieces=Math.min(24,Math.max(embodied.collapseStage*5,Math.floor(elapsed/620)));
+    for(let index=0;index<pieces;index++){
+      const rank=Math.floor(index/4),side=(index%4-1.5)*.56;
+      const logical=endingLogicalOffset(active,-(.8+rank*.72),side);
+      add(endingPropInstance(`ending-collapse-${index}`,'ending_collapse_debris',logical,{
+        yaw:yaw+(index%2?.24:-.31),elevation:.02+(index%3)*.045,scale:.62+(index%4)*.14,
+      }));
+    }
+    if(id==='sacrifice'&&(embodied.collapseStage>=2||embodied.finalHold)){
+      add(endingPropInstance('ending-sacrifice-player','ending_body_standing',endingLogicalOffset(active,.22,0),{
+        yaw:yaw,scale:.98,
+      }));
+    }
+  }
+  if(id==='helped'&&(embodied.memoryStage>0||embodied.finalHold)){
+    const booth=PROPS.propById('yard-booth-guard-handoff')||PROPS.propById('yard-booth-guard-ledger');
+    const cup=booth?{x:booth.rx-D(.45),y:booth.ry-D(.18)}:endingLogicalOffset(active,1,.25);
+    add(endingPropInstance('ending-helped-cup','ending_van_cup',cup,{yaw:Math.PI/2,elevation:.92,scale:1.22}));
+  }
+  if(id==='inversion'){
+    if(embodied.morningStage>=2){
+      const progress=active.state.reducedMotion?1:Math.min(1,Math.max(0,(elapsed-3100)/2700));
+      const bus=endingLogicalOffset(active,7.2-progress*2.1,4.8);
+      add(endingPropInstance('ending-first-service','ambient_late_bus',bus,{yaw:yaw+Math.PI/2,scale:.82}));
+    }
+    if(embodied.morningStage>=3||embodied.finalHold){
+      const fence=endingLogicalOffset(active,4.7,0);
+      add(endingPropInstance('ending-morning-heras','demolition_heras_fence',fence,{yaw:yaw+Math.PI/2,scale:1.15}));
+      for(let index=0;index<3;index++){
+        const step=active.state.reducedMotion?0:Math.sin(timeSec*2.1+index*1.7)*.08;
+        const worker=endingLogicalOffset(active,5.45+step,(index-1)*1.05);
+        add(endingPropInstance(`ending-demolition-worker-${index}`,'exterior_pub_driver',worker,{
+          yaw:yaw+Math.PI+(index-1)*.18,scale:.96+index*.025,
+        }));
+      }
+      const crossing=Math.min(1,Math.max(0,(elapsed-4800)/2400));
+      add(endingPropInstance('ending-inversion-player','ending_body_standing',endingLogicalOffset(active,1.1+crossing*2.0,-1.55),{
+        yaw,scale:.96,
+      }));
+    }
+  }
+  if(id==='drugged'){
+    const van=endingVanAnchor(active);
+    add(endingPropInstance('ending-van-cabin','ending_van_cabin',van,{yaw:van.yaw}));
+    add(endingPropInstance('ending-van-cup','ending_van_cup',endingLogicalOffset(active,.60,.52,van),{yaw:van.yaw,elevation:.76}));
+    add(endingPropInstance('ending-van-headphones','ending_headphones',endingLogicalOffset(active,.48,-.36,van),{yaw:van.yaw,elevation:.80}));
+    add(endingPropInstance('ending-van-recorder','ending_recorder_open',endingLogicalOffset(active,.72,.02,van),{yaw:van.yaw,elevation:.72}));
+  }
+  if(id==='surfaced'&&embodied.finalHold){
+    const ledger=PROPS.propById('yard-booth-guard-ledger');
+    const body=ledger?{x:ledger.rx+D(1.15),y:ledger.ry+D(.45)}:endingLogicalOffset(active,-1.2,.5);
+    add(endingPropInstance('ending-surfaced-alan','ending_body_prone',body,{yaw:yaw+.15,scale:.96}));
+    const witness=ledger?{x:ledger.rx-D(.72),y:ledger.ry+D(.72)}:endingLogicalOffset(active,-.8,-.5);
+    add(endingPropInstance('ending-surfaced-player','ending_body_standing',witness,{yaw:yaw+Math.PI,scale:.97}));
+  }
+  if(id==='contact-won'&&embodied.sourceStage>=2){
+    add(endingPropInstance('ending-open-channel-recorder','ending_recorder_open',endingLogicalOffset(active,.72,.18),{yaw:yaw,elevation:.06,emissive:[.10,1,.34,.45]}));
+    add(endingPropInstance('ending-open-channel-hand','ending_dead_hand',endingLogicalOffset(active,.70,-.18),{yaw:yaw,elevation:.055,scale:1.08}));
+  }
+  if(id==='tower-won'&&embodied.finalHold){
+    add(endingPropInstance('ending-tower-won-surfer','ending_body_prone',endingLogicalOffset(active,1.15,.42),{yaw:yaw+.10,scale:.97}));
+    add(endingPropInstance('ending-tower-won-player','ending_body_standing',endingLogicalOffset(active,1.05,-.56),{yaw:yaw+Math.PI,scale:.98}));
+  }
+  if(id==='tower-lost'){
+    const poses=['apparition_pose_neutral','apparition_pose_neutral','apparition_pose_arm_out','apparition_pose_stoop','apparition_pose_head_turn','apparition_pose_weight_shift','apparition_pose_symmetric'];
+    const pose=poses[Math.max(0,Math.min(6,embodied.syncStage))];
+    add(endingPropInstance('tower-lost-surfer',pose,endingLogicalOffset(active,1.1,.52),{yaw}));
+    add(endingPropInstance('tower-lost-player',pose,endingLogicalOffset(active,1.1,-.52),{yaw}));
+    for(let index=0;index<6;index++){
+      const live=index<embodied.syncStage;
+      const bell=endingLogicalOffset(active,2.5+Math.floor(index/3)*1.35,(index%3-1)*1.55);
+      add(endingPropInstance(`ending-peal-bell-${index+1}`,`tower_bell_0${index+1}`,bell,{
+        yaw:yaw+(index%2?.12:-.12),elevation:4.9+(live&&!active.state.reducedMotion?Math.sin(timeSec*5+index)*.05:0),
+        scale:.68,emissive:live?[.82,.68,.38,.13]:null,
+      }));
+    }
+  }
+  return out;
 }
 
 function endingCutsceneWorldView(){
   const active=activeEndingCutscene;
   if(!active)return null;
   const elapsed=Math.max(0,performance.now()-active.startedMs);
+  const embodied=active.embodiment||createEndingEmbodimentState(active.spec.endingId);
+  if(active.spec.endingId==='sacrifice'&&(embodied.collapseStage>=2||embodied.finalHold)){
+    const camera=endingLogicalOffset(active,embodied.finalHold?-4.2:-3.2,1.65);
+    return endingViewToward(camera,endingLogicalOffset(active,.25,0),{pitch:-.03});
+  }
   if(active.spec.endingId==='helped'){
-    const remembering=(elapsed>=1900&&elapsed<3900)||(elapsed>=5700&&elapsed<7900);
-    if(!remembering)return null;
+    const remembering=embodied.finalHold||(elapsed>=1900&&elapsed<3900)||(elapsed>=5700&&elapsed<7900);
+    if(!remembering){
+      if(embodied.collapseStage<1)return null;
+      return endingViewToward(endingLogicalOffset(active,-3.0,1.5),endingLogicalOffset(active,.2,0),{pitch:-.04});
+    }
     const booth=PROPS.propById('yard-booth-guard-handoff')||PROPS.propById('yard-booth-guard-ledger');
-    return booth?{x:booth.rx-D(2.2),y:booth.ry,yaw:Math.PI/2,pitch:-.04}:null;
+    if(!booth)return null;
+    const cup={x:booth.rx-D(.45),y:booth.ry-D(.18)};
+    return endingViewToward({x:booth.rx-D(2.25),y:booth.ry-D(.65)},cup,{pitch:-.13});
+  }
+  if(active.spec.endingId==='inversion'&&(embodied.morningStage>=3||embodied.finalHold)){
+    return endingViewToward(endingLogicalOffset(active,.65,-3.05),endingLogicalOffset(active,5.1,0),{pitch:-.04});
+  }
+  if(active.spec.endingId==='drugged'){
+    const van=endingVanAnchor(active);
+    const seen=new Set(embodied.beatIds||[]);
+    let target=endingLogicalOffset(active,.92,0,van),camera=endingLogicalOffset(active,-.22,0,van),pitch=-.08;
+    if(seen.has('inspect-recorder')){target=endingLogicalOffset(active,.72,.02,van);camera=endingLogicalOffset(active,-.02,-.42,van);pitch=-.34;}
+    else if(seen.has('inspect-cup')){target=endingLogicalOffset(active,.60,.52,van);camera=endingLogicalOffset(active,-.04,-.18,van);pitch=-.30;}
+    else if(seen.has('inspect-kit')){target=endingLogicalOffset(active,.58,-.34,van);camera=endingLogicalOffset(active,-.08,.30,van);pitch=-.28;}
+    if(seen.has('remove-headphones')||embodied.finalHold){target=endingLogicalOffset(active,.48,-.36,van);camera=endingLogicalOffset(active,-.24,.22,van);pitch=-.25;}
+    return endingViewToward(camera,target,{pitch});
+  }
+  if(active.spec.endingId==='surfaced'&&embodied.finalHold){
+    const ledger=PROPS.propById('yard-booth-guard-ledger');
+    return ledger?endingViewToward(
+      {x:ledger.rx-D(2.8),y:ledger.ry-D(2.0)},
+      {x:ledger.rx+D(.35),y:ledger.ry+D(.30)},
+      {pitch:-.16},
+    ):null;
+  }
+  if(active.spec.endingId==='contact-won'&&embodied.sourceStage>=2){
+    const close=embodied.bodyStage>=2||embodied.finalHold;
+    return endingViewToward(
+      endingLogicalOffset(active,close?-.48:-.9,.42),
+      endingLogicalOffset(active,.70,0),
+      {pitch:close?-.48:-.22},
+    );
+  }
+  if(active.spec.endingId==='tower-won'&&embodied.finalHold){
+    return endingViewToward(endingLogicalOffset(active,-3.8,2.35),endingLogicalOffset(active,1.05,0),{pitch:-.06});
   }
   const towerWide=active.spec.endingId==='tower-lost';
   if(!towerWide&&active.spec.endingId!=='contact-lost')return null;
-  if(towerWide&&elapsed<6500)return null;
+  if(towerWide&&embodied.syncStage<5){
+    if(embodied.syncStage<1)return null;
+    const side=embodied.syncStage%2?1.75:-1.75;
+    return endingViewToward(endingLogicalOffset(active,-3.1,side),endingLogicalOffset(active,1.55,0),{pitch:.04});
+  }
   const reduced=active.state.reducedMotion;
-  const raw=Math.min(1,towerWide?(elapsed-6500)/1400:elapsed/8800);
+  const raw=Math.min(1,towerWide?Math.max(0,(elapsed-5800)/2850):elapsed/8800);
   const progress=reduced?Math.floor(raw*8)/8:raw*raw*(3-2*raw);
   const distance=towerWide?D(2+5*progress):D(1.5)+D(34)*progress;
   const [fx,fy]=active.origin.forward;
+  if(towerWide){
+    return endingViewToward(
+      {x:active.origin.x-fx*distance,y:active.origin.y-fy*distance},
+      endingLogicalOffset(active,2.0,0),
+      {pitch:.035},
+    );
+  }
   return{
     x:active.origin.x-fx*distance,
     y:active.origin.y-fy*distance,
     yaw:active.origin.yaw,
-    pitch:towerWide?-.03:-.06+progress*.16,
+    pitch:-.06+progress*.16,
   };
+}
+
+// Review evidence for the physical ending layer. This intentionally reports
+// renderer inputs rather than rephrasing the manifest: a capture harness needs
+// to know which meshes and camera were actually submitted for the current beat.
+function endingCutsceneSnapshot(){
+  const active=activeEndingCutscene;
+  if(!active)return null;
+  return{
+    id:active.spec.endingId,
+    elapsedMs:Math.max(0,performance.now()-active.startedMs),
+    state:{...active.state},
+    embodiment:{...active.embodiment},
+    worldView:endingCutsceneWorldView(),
+    props:endingWorldPropInstances().map((instance)=>({
+      id:instance.id,mesh:instance.mesh,x:instance.x,y:instance.y,z:instance.z,
+      yaw:instance.yaw||0,scale:instance.scale||1,
+    })),
+  };
+}
+
+function restoreContactEndingWorld(){
+  if(!usingSourceSpace())return false;
+  const finalState=pendingContactEndingReturn?.finalState||chunkSurfRuntime?.state?.()||normalizeChunkSurfState(getSave().chunkSurf);
+  const returned=pendingContactEndingReturn?.returned||finalState.returnPoint||CHAPEL_OUTER_CHECKPOINT;
+  R3.r3dSetIndoorRain?.(0);
+  chuteRide=null;
+  clearSourceRuntime({preserveWindows:true});
+  PRES.despawn();
+  R3.r3dSetSourceScene({key:'source:contact-ended',corpus:[],staticInstances:[],dynamicInstances:[],look:{sunrise:0,chroma:1,paper:0}});
+  px=returned.x;py=returned.y;R3.r3dSetFacing(returned.facing||0);renderMove=null;motionRig=null;trail=[];
+  r3dCache.physicalKey=null;r3dCache.physicalGroup=null;
+  saveCommit({chunkSurf:finalState,px,py,area:'conservatory'});
+  if(activeEndingCutscene){
+    activeEndingCutscene.origin={x:px,y:py,yaw:R3.r3dLookAngles?.().yaw??0,forward:R3.r3dDelta(1)};
+  }
+  pendingContactEndingReturn=null;
+  godSyncBuildingRender();syncDoorDynamicProps();
+  return true;
+}
+
+function extinguishEndingFacility(){
+  let power=getSave().power,changed=false;
+  for(const circuit of POWER_CIRCUIT_IDS){
+    const transition=setPowerCircuit(power,circuit,false,{at:Date.now()});
+    power=transition.state;changed=changed||transition.changed;
+  }
+  if(changed){saveCommit({power});updateElectricalHum();refreshWorldProps();}
+  REC.killTorch();
+}
+
+function openEndingDoor(id){
+  if(!FP.isLoaded())return false;
+  const door=FP.doorState().find((entry)=>entry.id===id);
+  if(!door)return false;
+  FP.setDoorOpen(id,true);
+  saveCommit({doors:FP.saveDoorState()});
+  facilityMapCache={key:null,model:null};
+  if(RENDERER==='3d'&&!usingSpecialSpace()){
+    R3.r3dSetProps(worldRenderInstances(FP.logicalToPhysical(px,py).renderGroup));
+    syncDoorDynamicProps();
+  }
+  return true;
 }
 
 function applyEndingCutsceneBeat(beat){
   windowChoreography?.compositionEvent?.(`ending:beat:${String(beat?.id||'')}`);
+  if(activeEndingCutscene)activeEndingCutscene.embodiment=reduceEndingEmbodiment(activeEndingCutscene.embodiment,{type:'beat',beat});
   if(beat.cue)fireCue(beat.cue,{gainScale:.72});
   if(beat.worldLook)R3.r3dSetEndingWorldLook?.(beat.worldLook);
   if(beat.effect==='remote-impact')CR.fx.shake(1.2,850);
+  else if(beat.effect==='wrong-door-reveal'||beat.effect==='public-doors-open')openEndingDoor('front-main');
+  else if(beat.effect==='west-doors-open')openEndingDoor(CHURCH_TOWER_ENDING_EXIT_DOOR_ID);
   else if(beat.effect==='sodium-shutdown')R3.r3dSetMunicipalLightPower?.(0);
   else if(beat.effect==='flashback-booth-pour')setBoothPresentationPose('ledger');
   else if(beat.effect==='flashback-handoff')setBoothPresentationPose('handoff');
   else if(['deterministic-debris','circuits-fail-toward-chapel'].includes(beat.effect))CR.fx.shake(2.2,1250);
-  else if(beat.effect==='blackout'||beat.effect==='flashback-cut-to-black')CR.fx.flash(900,'rgba(0,0,0,0.96)');
-  else if(beat.effect==='source-collapse')possess('rupture',5);
+  else if(beat.effect==='blackout'||beat.effect==='flashback-cut-to-black'){
+    CR.fx.flash(900,'rgba(0,0,0,0.96)');
+    if(activeEndingCutscene?.spec?.endingId==='sacrifice')extinguishEndingFacility();
+  }
+  else if(beat.effect==='birds-bus-arrival')CR.fx.flash(90,'rgba(185,207,222,0.12)');
+  else if(beat.effect==='staff-behind-heras')CR.fx.shake(.16,420);
+  else if(beat.effect==='source-collapse'){
+    sourceFaultTransitionStartedAt=performance.now();
+    possess('rupture',5);
+    syncSourceRender({force:true});
+  }
+  else if(beat.effect==='restore-return-point')restoreContactEndingWorld();
   else if(beat.effect==='body-control-failure')CR.fx.shake(.38,1200);
+  else if(beat.effect==='body-still'){
+    resetMotionInput('ending-body-still',{stopRenderMove:true});
+    REC.killTorch();
+  }
+  else if(beat.effect==='camera-detach')resetMotionInput('ending-camera-detach',{stopRenderMove:true});
+  else if(beat.effect==='threshold-regrip')CR.fx.shake(.72,640);
+  else if(['sync-breath','sync-hands','sync-posture','take-look','take-movement'].includes(beat.effect)){
+    const stage=activeEndingCutscene?.embodiment?.syncStage||1;
+    CR.fx.shake(.12+stage*.11,380+stage*90);
+    if(beat.effect==='take-look')R3.r3dSetLookAngles?.({yaw:(activeEndingCutscene?.origin?.yaw||0)+Math.PI/8,pitch:-.04,immediate:false});
+  }
   else if(beat.effect==='final-wide')CR.fx.flash(180,'rgba(225,238,240,0.72)');
+  if(RENDERER==='3d'&&!usingSourceSpace())syncDoorDynamicProps();
 }
 
 function advanceActiveEndingCutscene(input={}){
@@ -17396,14 +17777,25 @@ function advanceActiveEndingCutscene(input={}){
     ...input,
   });
   activeEndingCutscene.state=result.state;
-  for(const event of result.events)if(event.type==='beat'&&!event.skipped)applyEndingCutsceneBeat(event.beat);
+  applyEndingCutsceneEvents(result.events);
   return result.events;
+}
+
+function applyEndingCutsceneEvents(events,{includeSkipped=false}={}){
+  for(const event of events||[]){
+    if(event.type!=='beat')continue;
+    if(event.skipped&&(!includeSkipped||event.optional))continue;
+    applyEndingCutsceneBeat(event.beat);
+  }
 }
 
 function noteEndingCutsceneLine(documentId,line){
   const source=`${documentId}#${line?.id||''}`;
   advanceActiveEndingCutscene({dialogueComplete:[source]});
-  if(documentId==='ending.contact-won'&&line?.id==='start.line.7')advanceActiveEndingCutscene({interaction:'final-radio-transmission'});
+  if(documentId==='ending.contact-won'&&line?.id==='start.line.7'){
+    const manifest=endingManifest('contact-won');
+    presentEndingFinalAction(manifest,()=>advanceActiveEndingCutscene({interaction:'final-radio-transmission'}));
+  }
   if(documentId==='ending.drugged'){
     if(line?.id==='tape.kit.line.1')advanceActiveEndingCutscene({interaction:'inspect-kit'});
     else if(line?.id==='tape.cup.line.1')advanceActiveEndingCutscene({interaction:'inspect-cup'});
@@ -17412,9 +17804,77 @@ function noteEndingCutsceneLine(documentId,line){
   }
 }
 
+function endingActionKeyMatches(input,event={}){
+  const key=String(event.key||'').toLowerCase(),code=String(event.code||'');
+  if(input==='recorder')return key==='r'||code==='KeyR';
+  if(input==='forward')return key==='w'||key==='arrowup'||code==='KeyW';
+  return key==='e'||key==='enter'||key===' '||code==='KeyE'||code==='Space';
+}
+
+function presentEndingFinalAction(manifest,onDone){
+  const action=manifest?.cutscene?.finalAction;
+  if(activeEndingCutscene?.embodiment?.finalActionId===action?.id){onDone?.();return;}
+  if(!action||action.mode!==ENDING_FINAL_ACTION_MODE.HOLD){
+    if(activeEndingCutscene&&action)activeEndingCutscene.embodiment=reduceEndingEmbodiment(activeEndingCutscene.embodiment,{type:'final-action',id:action.id});
+    onDone?.();return;
+  }
+  let held=false,progress=0,finished=false;
+  const duration=Math.max(500,Number(action.holdMs)||900);
+  const finish=()=>{
+    if(finished)return;finished=true;
+    if(activeEndingCutscene)activeEndingCutscene.embodiment=reduceEndingEmbodiment(activeEndingCutscene.embodiment,{type:'final-action',id:action.id});
+    if(action.futile)CR.fx.shake(.7,700);
+    scenes.remove(scene);onDone?.();
+  };
+  const scene={
+    id:`ending-action:${manifest.id}`,blocksInput:true,blocksWorld:false,
+    allowsLook:manifest.cutscene.camera?.allowsLook!==false,suppressesHud:true,
+    lookProfile:'calm',worldView:endingCutsceneWorldView,
+    update(dt){
+      if(held)progress=Math.min(duration,progress+Math.max(0,Number(dt)||0)*1000);
+      else progress=Math.max(0,progress-Math.max(0,Number(dt)||0)*420);
+      if(progress>=duration)finish();
+    },
+    key(event){if(endingActionKeyMatches(action.input,event)){held=true;return true;}return true;},
+    keyup(event){if(endingActionKeyMatches(action.input,event)){held=false;return true;}return true;},
+    pointer(event){held=event.type!=='pointerup'&&event.type!=='pointercancel';return true;},
+    render(){
+      const{cols,rows}=uiSize(),label=String(action.label||'HOLD').toUpperCase();
+      const prompt=action.input==='recorder'?BINDINGS.inputPrompt('recorder'):action.input==='forward'?BINDINGS.inputPrompt('move'):BINDINGS.inputPrompt('interact');
+      const w=Math.min(Math.max(34,label.length+8),cols-8),x=Math.floor((cols-w)/2),y=rows-5;
+      uiFill(x,y,w,3,'rgba(2,4,5,.76)');
+      uiText(x+2,y,`${prompt} ${label}`.slice(0,w-4),'ui-amber',.92);
+      uiLine(x+2,y+2,x+w-3,y+2,UI_COLOR.frame,.42);
+      const fill=Math.floor((w-5)*(progress/duration));
+      if(fill>0)uiLine(x+2,y+2,x+2+fill,y+2,action.futile?UI_COLOR.danger:UI_COLOR.amber,.95);
+    },
+  };
+  scenes.push(scene);
+}
+
+function presentEndingCutsceneResolution(manifest,onDone){
+  const finish=()=>presentEndingFinalAction(manifest,onDone);
+  if(!activeEndingCutscene||activeEndingCutscene.state.complete){finish();return;}
+  let finished=false;
+  const scene={
+    id:`ending-resolution:${manifest.id}`,blocksInput:true,blocksWorld:false,
+    allowsLook:manifest.cutscene.camera?.allowsLook!==false,suppressesHud:true,
+    lookProfile:'calm',worldView:endingCutsceneWorldView,
+    update(){
+      advanceActiveEndingCutscene();
+      if(!activeEndingCutscene?.state?.complete||finished)return;
+      finished=true;scenes.remove(scene);finish();
+    },
+    key(){return true;},pointer(){return true;},
+  };
+  scenes.push(scene);
+}
+
 function presentEndingFinalHold(manifest,onDone){
   const duration=Math.max(0,Number(manifest?.cutscene?.finalHold?.ms)||0);
   let elapsed=0,finished=false;
+  windowChoreography?.compositionEvent?.('ending:final-hold');
+  if(activeEndingCutscene)activeEndingCutscene.embodiment=reduceEndingEmbodiment(activeEndingCutscene.embodiment,{type:'final-hold',active:true});
   const finish=()=>{
     if(finished)return;finished=true;scenes.remove(scene);onDone?.();
   };
@@ -17425,40 +17885,10 @@ function presentEndingFinalHold(manifest,onDone){
     update(dt){elapsed+=Math.max(0,Number(dt)||0)*1000;if(elapsed>=duration)finish();},
     key(event){if(['Enter',' ','e','E'].includes(event.key)){finish();return true;}return true;},
     pointer(){finish();return true;},
-    // THE COVER SLIP.
-    //
-    // This was two uiText calls — a centred title at row 2 and a centred slug at
-    // rows-3 — and nothing else in the game was that bare. But it holds ON the
-    // ending's last view (blocksWorld:false, worldView above), so a full sheet
-    // would cover the very image it exists to hold. It gets the label instead:
-    // a lit plate laid in the corner of the picture, the way a slate sits in
-    // the frame it belongs to.
-    //
-    // A first pass drew this on cream stock and it was too fake — the game owns
-    // real rasterised paper and a drawn imitation cannot stand beside it. This
-    // is glass, like everything else the player has looked through all night.
-    //
-    // The classification is authored per ending in RETURN_DEFS and has never
-    // once been printed anywhere the player could see it.
-    render(){
-      const{cols,rows}=uiSize();
-      const title=String(manifest?.title||'').toUpperCase();
-      const classification=String(returnDefinition(manifest?.id)?.classification||'UNCLASSIFIED').toUpperCase();
-      const image=String(manifest?.cutscene?.finalHold?.image||manifest?.image||'');
-      const w=Math.min(46,Math.max(24,cols-8));
-      const h=7;
-      const x=3,y=rows-h-2;
-      // Held over the ending's own last view, so the plate is a scrim rather
-      // than a panel: it must not take the picture it exists to hold.
-      uiFill(x,y,w,h,'rgba(4,5,6,.78)');
-      uiLine(x,y,x+w-1,y,UI_COLOR.amber,.62);
-      uiLine(x,y+h-1,x+w-1,y+h-1,UI_COLOR.frame,.34);
-      drawVfdText(x+1,y+1,fitText(title,w-2),{color:UI_COLOR.amber,max:w-2});
-      uiText(x+1,y+4,classification,'ui-label',.72);
-      const ref=String(returnDefinition(manifest?.id)?.family||'').toUpperCase();
-      if(ref)uiText(x+w-1-ref.length,y+4,ref,'ui-label',.55);
-      uiWrap(image,w-2).slice(0,1).forEach((line,i)=>uiText(x+1,y+5+i,line,'ui-secondary',.62));
-    },
+    // No ending title, classification, summary or explanatory card. The held
+    // physical image has to identify the route by itself; postgame material can
+    // name and file it after this shot has had time to exist.
+    render(){},
   };
   scenes.push(scene);
 }
@@ -17588,7 +18018,11 @@ function playEnding(endingId,arrival){
     }),
   ];
   const queue=endingDocuments(endingId,arrival,dossier);
-  const holdThenFinish=()=>presentEndingFinalHold(manifest,()=>finishEnding(endingId));
+  // Reading speed cannot skip the ending. Once the transcript is finished, the
+  // physical score is allowed to reach its final beat, the route's last player
+  // action resolves, and only then do we hold the unique last image.
+  const holdThenFinish=()=>presentEndingCutsceneResolution(manifest,
+    ()=>presentEndingFinalHold(manifest,()=>finishEnding(endingId)));
   const step=(i)=>{
     if(i>=queue.length){
       if(tail.length){presentFinale(tail,{slate:'',replayId:`ending-tail:${endingId}`,embodied:true,cutscene:manifest?.cutscene,onDone:holdThenFinish});return;}
@@ -17868,6 +18302,7 @@ function finishEnding(id){
     if(!activeEndingCutscene.state.complete){
       const skipped=advanceEndingCutscene(activeEndingCutscene.state,activeEndingCutscene.spec,{skip:true});
       activeEndingCutscene.state=skipped.state;
+      applyEndingCutsceneEvents(skipped.events,{includeSkipped:true});
     }
     const completion=claimEndingCutsceneCompletion(activeEndingCutscene.state,activeEndingCutscene.state.completionId);
     activeEndingCutscene.state=completion.state;
@@ -17891,6 +18326,8 @@ function finishEnding(id){
   // data/endings.js). It was a five-branch ternary here that no ending could see.
   const variant = endingCodaVariant(id, endingDossier);
   endingTimeline=null;
+  activeEndingCutscene=null;
+  pendingContactEndingReturn=null;
   R3.r3dSetEndingWorldLook?.(null);
   R3.r3dSetMunicipalLightPower?.(1);
   setBoothPresentationPose('idle');
@@ -19732,7 +20169,67 @@ function godEnterHorizon(depth,label){
   pushEvent(`// god: ${label}.`);
 }
 
-function godEnterSourcePreset(preset,{apertureComplete=null,commitContact=false}={}){
+function godSeedSourceReplayEvidence(replayMovement=0){
+  const runId=getSave()?.run?.id||'god-source-replay';
+  const roomMark=(roomId)=>FP.toRuntimePoint(ROOM_CELLS[roomId]);
+  const recordedApproach=(mark,roomId)=>{
+    const route=sourceRepriseFallbackFrames(mark,{roomId});
+    if(route.length<2)return route;
+    return Array.from({length:80},(_,index)=>{
+      const scaled=index/79*(route.length-1),lo=Math.floor(scaled),hi=Math.min(route.length-1,Math.ceil(scaled)),mix=scaled-lo;
+      const a=route[lo],b=route[hi];
+      return{...a,t:index*90,x:a.x+(b.x-a.x)*mix,y:a.y+(b.y-a.y)*mix,
+        floorH:a.floorH+(b.floorH-a.floorH)*mix,yaw:a.yaw+(b.yaw-a.yaw)*mix,
+        roomId:b.roomId||a.roomId,renderGroup:b.renderGroup||a.renderGroup};
+    });
+  };
+  let manifest=normalizeSourceReplayManifest({
+    runId,
+    takes:TARGETS.map((roomId,index)=>{
+      const mark=roomMark(roomId);
+      return{ordinal:index+1,roomId,mark,place:`GOD REC MARK ${String(index+1).padStart(2,'0')}`,
+        startedAt:index*24_000,completedAt:index*24_000+18_000,
+        approach:recordedApproach(mark,roomId),fallback:false};
+    }),
+  },{runId});
+  const battleMark=roomMark('the_tub');
+  manifest=noteSourceReplayBattle(manifest,{
+    id:'natatorium',result:'win',at:42_000,locus:battleMark,
+    frames:recordedApproach(battleMark,'the_tub'),
+  });
+  const contactMark=roomMark('soundnoisemusic');
+  manifest=noteSourceReplayContact(manifest,{
+    reason:'first-contact',at:88_000,injuryCount:1,locus:contactMark,
+    frames:recordedApproach(contactMark,'soundnoisemusic'),
+  });
+  const thresholdMark=roomMark('lux_nova');
+  manifest=noteSourceReplayEntry(manifest,{
+    at:132_000,locus:{...SOURCE_ENTRY},
+    frames:recordedApproach(thresholdMark,'lux_nova'),
+  });
+  const movementIndex=clamp(Math.floor(Number(replayMovement)||0),0,2);
+  const repriseIds=['call-site','borrowed-body','final-clause'];
+  manifest=normalizeSourceReplayManifest({
+    ...manifest,
+    encounter:{
+      completed:repriseIds.slice(0,movementIndex),
+      active:null,
+      movementIndex,
+      // A God stop is a review continuation, not a fresh fight. Supplying the
+      // same JSON-safe shape the real checkpoint writes gets directly to the
+      // requested throw while preserving ordinary combat initialization.
+      continuation:{
+        composure:40,charge:0,battery:1,take:null,snr:'signal',ringing:false,turns:movementIndex,
+        perfectCounters:0,missedCounters:0,damageTaken:0,torchSpent:0,toolsUsed:{},proofs:[],actionLog:[],
+        source:{armed:'rescue',channels:{rescue:movementIndex,contain:0,submit:0}},
+      },
+    },
+  },{runId});
+  commitSourceReplayManifest(manifest);
+  return manifest;
+}
+
+function godEnterSourcePreset(preset,{apertureComplete=null,commitContact=false,seedReplay=false,replayMovement=null}={}){
   godEnsureTestRun();
   // A Source warp is a new review transaction. In particular, jumping out of
   // an active Aperture must synchronously release its locomotion lock before
@@ -19741,6 +20238,8 @@ function godEnterSourcePreset(preset,{apertureComplete=null,commitContact=false}
   void windowChoreography?.leaveSource?.('god-source-preset');
   if(apertureComplete===true)flagApply(['window.aperture.complete']);
   else if(apertureComplete===false)flagApply([],['window.aperture.complete']);
+  const seededMovement=replayMovement===null?(seedReplay?0:null):replayMovement;
+  if(seededMovement!==null)godSeedSourceReplayEvidence(seededMovement);
   const returnPoint={x:CHAPEL_OUTER_CHECKPOINT.x,y:CHAPEL_OUTER_CHECKPOINT.y,facing:CHAPEL_OUTER_CHECKPOINT.facing};
   const built=buildChunkSurfGodPreset(preset,{
     drankCoffee:flagTest('drank.coffee'),
@@ -19756,7 +20255,7 @@ function godEnterSourcePreset(preset,{apertureComplete=null,commitContact=false}
   }
   saveCommit({chunkSurf:chunkSurfRuntime?.state?.()||built.state,flags:getSave().flags,px:built.position.x,py:built.position.y,area:'source-space'});
   if(!REC.lightOn())REC.toggleLight();
-  pushEvent(`// god: source-space ${preset}${commitContact?' / contact committed':''}.`);
+  pushEvent(`// god: source-space ${preset}${commitContact?' / contact committed':''}${seededMovement!==null?` / replay ${Number(seededMovement)+1} seeded`:''}.`);
 }
 
 function godEnterTowerPreset(preset){
@@ -19867,6 +20366,54 @@ function godEndingCutsceneBeat(id,arrival,beatIndex){
   return true;
 }
 
+function godEndingReview(id,arrival=ENDING_ARRIVAL.AGREED){
+  // A God-menu ending is a review setup, not a counterfeit playthrough. Put
+  // the camera in the place the real route has already earned, then run the
+  // exact same ending presenter and cutscene score used by ordinary play.
+  godEnsureTestRun();
+  escape=null;endingTimeline=null;activeEndingCutscene=null;pendingContactEndingReturn=null;
+  R3.r3dSetEndingWorldLook?.(null);setBoothPresentationPose('idle');
+  if(id==='helped'||id==='drugged')flagApply(['drank.coffee']);
+  else if(id==='sacrifice'||id==='inversion')flagApply([],['drank.coffee']);
+
+  if(id==='sacrifice'||id==='helped'){
+    godWarpToHook('chapel');
+    const screen=PROPS.propById('chapel-inner-screen');
+    if(screen){px=screen.rx;py=screen.ry+D(1.15);R3.r3dSetFacing(0);godSyncBuildingRender();}
+  }
+  else if(id==='inversion'){
+    godWarpToHook('front-atrium');
+    const door=FP.doorState().find((entry)=>entry.id==='front-main');
+    if(door){px=door.cx;py=door.cy+D(1.15);R3.r3dSetFacing(0);godSyncBuildingRender();}
+  }
+  else if(id==='drugged')godWarpToHook('loading-bay');
+  else if(id==='surfaced'){
+    godWarpToHook('loading-bay');
+    const ledger=PROPS.propById('yard-booth-guard-ledger');
+    if(ledger){px=ledger.rx-D(1.6);py=ledger.ry-D(.45);R3.r3dSetFacing(1);godSyncBuildingRender();}
+  }
+  else if(id==='contact-won'||id==='contact-lost'){
+    godEnterSourcePreset(CHUNK_SURF_GOD_PRESET.FINAL,{apertureComplete:true,commitContact:true});
+  }
+  else if(id==='tower-won')godWarpToHook('cathedral-exterior');
+  else if(id==='tower-lost')godWarpToHook('cathedral-crossing');
+
+  finaleActive=true;
+  playEnding(id,arrival);
+
+  // Surfaced and Tower-won enter their transcripts only after the whole
+  // carrying/dragging objective has completed. A direct review starts at that
+  // boundary, so seed those already-performed spatial actions. Natural play
+  // reaches the same state one action at a time in interact()/tickFinale().
+  if(['surfaced','tower-won'].includes(id)&&activeEndingCutscene){
+    const seeded=advanceEndingCutscene(activeEndingCutscene.state,activeEndingCutscene.spec,{skip:true});
+    activeEndingCutscene.state=seeded.state;
+    applyEndingCutsceneEvents(seeded.events,{includeSkipped:true});
+  }
+  syncDoorDynamicProps();
+  return endingCutsceneSnapshot();
+}
+
 function godRefreshDoors(){
   saveCommit({doors:FP.saveDoorState()});facilityMapCache={key:null,model:null};
   const group=FP.logicalToPhysical(px,py).renderGroup;R3.r3dSetProps(worldRenderInstances(group));syncDoorDynamicProps();
@@ -19956,6 +20503,9 @@ function godTabs(){
       {id:'source-final-run',label:'BODY / FINAL RUN',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterSourcePreset(CHUNK_SURF_GOD_PRESET.FINAL_RUN,{apertureComplete:true})},
       {id:'source-exposed-battle',label:'FINAL / CONTACT WARNING',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterSourcePreset(CHUNK_SURF_GOD_PRESET.EXPOSED_BATTLE,{apertureComplete:true})},
       {id:'source-contact-fight',label:'FINAL / CONTACT FIGHT',value:'[OPEN]',closeMenu:true,activate:()=>godEnterSourcePreset(CHUNK_SURF_GOD_PRESET.EXPOSED_BATTLE,{apertureComplete:true,commitContact:true})},
+      {id:'source-replay-call-site',label:'FINAL / REPLAY I · CALL SITE',value:'[OPEN]',closeMenu:true,activate:()=>godEnterSourcePreset(CHUNK_SURF_GOD_PRESET.EXPOSED_BATTLE,{apertureComplete:true,commitContact:true,replayMovement:0})},
+      {id:'source-replay-borrowed-body',label:'FINAL / REPLAY II · BORROWED BODY',value:'[OPEN]',closeMenu:true,activate:()=>godEnterSourcePreset(CHUNK_SURF_GOD_PRESET.EXPOSED_BATTLE,{apertureComplete:true,commitContact:true,replayMovement:1})},
+      {id:'source-replay-final-clause',label:'FINAL / REPLAY III · FINAL CLAUSE',value:'[OPEN]',closeMenu:true,activate:()=>godEnterSourcePreset(CHUNK_SURF_GOD_PRESET.EXPOSED_BATTLE,{apertureComplete:true,commitContact:true,replayMovement:2})},
       {id:'source-normal-exit',label:'FINAL / NORMAL EXIT',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterSourcePreset(CHUNK_SURF_GOD_PRESET.NORMAL_EXIT,{apertureComplete:true})},
       section('The horizon'),
       ...PRE_TAPE_GOD_STOPS.map((stop)=>({
@@ -20131,7 +20681,7 @@ function godTabs(){
         // opening title theme, and this is the row you look at while judging one.
         value:()=>endingManifest(id)?.audio?.placeholder?'[PLAY · TEMP BED]':'[PLAY]',
         closeMenu:true,
-        activate:()=>{ finaleActive=true; playEnding(id,arrival); },
+        activate:()=>godEndingReview(id,arrival),
       })),
       section('Ending cutscene beats'),
       ...[
@@ -20398,16 +20948,39 @@ function applyHushTapePayload(event={},propRestores=null){
 
 function syncPlayerShadowFigure(frame){
   sourcePlayerShadowFrame=frame?.spaceId==='source-space'?{...frame}:null;
-  if(!frame){PROPS.setLooseProp('hush-player-shadow',null);return;}
+  if(!frame){sourceRepriseShadowStage=null;PROPS.setLooseProp('hush-player-shadow',null);return;}
   if(frame.spaceId==='source-space'){
+    sourceRepriseShadowStage=null;
     PROPS.setLooseProp('hush-player-shadow',null);
     const view=scenes.top()?.worldView?.()||frame;
     if(RENDERER==='3d'&&usingSourceSpace())syncSourceRender({x:view.x??frame.x,y:view.y??frame.y});
     return;
   }
-  PROPS.setLooseProp('hush-player-shadow',{mesh:'player_shadow_figure',rx:frame.x,ry:frame.y,yaw:frame.yaw||0,elevation:0,interactive:false});
+  let presented=frame;
+  if(frame.stageFromMark){
+    const resolve=clamp(Number(frame.sourceResolve)||0,0,1);
+    const originalYaw=(Number(frame.yaw)||0)-Math.PI*resolve;
+    const stageKey=`${frame.roomId||''}:${Number(frame.x).toFixed(3)}:${Number(frame.y).toFixed(3)}:${originalYaw.toFixed(3)}`;
+    if(sourceRepriseShadowStage?.key!==stageKey){
+      const distance=Math.max(1.35,Number(frame.stageDistance)||1.8);
+      const turns=[0,-.48,.48,-1.05,1.05,Math.PI];
+      const candidates=turns.flatMap((turn)=>[distance,distance*.76].map((reach)=>({
+        x:frame.x+Math.sin(originalYaw+turn)*reach,
+        y:frame.y-Math.cos(originalYaw+turn)*reach,
+      })));
+      const point=candidates.find((candidate)=>!FP.isSolid(candidate.x,candidate.y)
+        &&PROPS.propCanOccupy(candidate.x,candidate.y,{ignoreId:'hush-player-shadow'})
+        &&FP.canStep(frame.x,frame.y,candidate.x,candidate.y,{keys:playerKeys}).ok)
+        ||{x:frame.x+Math.sin(originalYaw)*.72,y:frame.y-Math.cos(originalYaw)*.72};
+      sourceRepriseShadowStage={key:stageKey,...point};
+    }
+    const targetYaw=Math.atan2(frame.x-sourceRepriseShadowStage.x,-(frame.y-sourceRepriseShadowStage.y));
+    const turn=Math.atan2(Math.sin(targetYaw-originalYaw),Math.cos(targetYaw-originalYaw));
+    presented={...frame,x:sourceRepriseShadowStage.x,y:sourceRepriseShadowStage.y,yaw:originalYaw+turn*resolve};
+  }else sourceRepriseShadowStage=null;
+  PROPS.setLooseProp('hush-player-shadow',{mesh:'player_shadow_figure',rx:presented.x,ry:presented.y,yaw:presented.yaw||0,elevation:0,interactive:false});
   const geometry=frame.spaceId==='source-space'&&sourceGeometry()?sourceGeometry():FP;
-  const group=geometry.logicalToPhysical(frame.x,frame.y).renderGroup;
+  const group=geometry.logicalToPhysical(presented.x,presented.y).renderGroup;
   if(RENDERER==='3d')R3.r3dSetProps(worldRenderInstances(group));
 }
 
@@ -20678,9 +21251,17 @@ function beginNewGameFlow({mismatch=false}={}){
     initialCustomValues:getSave().settings?.customShiftRules,
     onCancel:()=>{if(mismatch){scenes.remove('front-end-black');frontEndSession?.enterTitle?.();scenes.push(makeIrisScene({direction:'open',reducedMotion:shakeMode()!=='full'}));}},
       onConfirm:({preset,values})=>{
-        stopBellTowerRuntime();
-        bellTowerImpactActive=false;
-        bellTowerCollisionEnabled=true;
+        // EVERY SPECIAL WORLD GOES, NOT THREE OF THEM.
+        //
+        // This hand-rolled the bell-tower third of godClearSpecialWorlds and
+        // left the Source runtime and the stair anomaly standing, so starting a
+        // new run from inside Source dropped you back into Source — the new
+        // save said `conservatory` and `usingSourceSpace()` still said yes,
+        // because that predicate is `!!chunkSurfRuntime` and nothing had nulled
+        // it. clearSourceRuntime's own note calls this "exactly the shape of bug
+        // that comes back"; it came back here. One call now, the same one the
+        // god menu uses — which is why the god reset was the workaround.
+        godClearSpecialWorlds();
 
         // The title remains beneath the selector until authorization is complete.
       // Only now is the previous run replaced.
@@ -21496,6 +22077,15 @@ function drawTakeOverlay(cols, rows){
 function installProbe(){
   window.__probe={
     voices:()=>voices.size,
+    // The front-end plate, from outside. Reading it reports whether the
+    // composite is being printed as a negative; forcing it shoots a graded and
+    // an ungraded frame of the SAME scene. The per-frame session snapshot puts
+    // it back, so a forced value lasts one frame unless the session is idle.
+    frontEndGrade:(on)=>{
+      if(on===undefined)return R3.r3dFrontEndPlate().negative>0;
+      frontEndPlateOverride=(on===null?null:(on?'title':'gameplay'));
+      return frontEndPlateOverride;
+    },
     pos:()=>({x:px,y:py}),
     keys:()=>[...playerKeys],
     rec:()=>({...REC.recState(), recording:REC.isRecording(), listening:REC.isListening()}),
@@ -21820,6 +22410,8 @@ function installProbe(){
     // arrival passage, the timeline and the coda.
     playEnding:(id,arrival=ENDING_ARRIVAL.AGREED)=>{ finaleActive=true; playEnding(id,arrival); return {id,arrival}; },
     endingDossier:()=>endingDossier,
+    reviewEnding:(id,arrival=ENDING_ARRIVAL.AGREED)=>godEndingReview(id,arrival),
+    endingCutscene:()=>endingCutsceneSnapshot(),
     // Read and seed the profile. The archive is the only place an ending's
     // residue is ever read, and reaching it honestly costs five complete runs.
     meta:()=>getMeta(),
@@ -22021,7 +22613,7 @@ function installProbe(){
     itemLost:(id)=>itemLost(id),
     warpToLost:()=>{ if(!lostAt) return false; px=lostAt.x; py=lostAt.y; trail=[]; revealAround(px,py); return true; },
     escapeWarp:()=>{ if(!escape) return false; const wp=escape.stage==='door'?escape.doorCell:escape.rescueCell; px=wp.x; py=wp.y; trail=[]; revealAround(px,py); return escape.stage; },
-    setFlags:(arr)=>flagApply(arr||[]),
+    setFlags:(arr,clear=[])=>flagApply(arr||[],clear||[]),
     flag:(k)=>flagTest(k),
     // The van's rear doors, for the harness: the swing is the only thing in the
     // opening that has to be watched rather than asserted.
@@ -23066,9 +23658,13 @@ function render3d(){
     ? {...mapPoint({x:sourceBracketBody.front.x,y:sourceBracketBody.front.y}),strength:sourceBracketBody.front.strength,radiusM:5.2}
     : (plantRearBody||recordingFalseHushBody);
   const hushSensory=String(worldView?.sensoryProfile||'').startsWith('hush') || worldView?.sensoryProfile==='borrow';
+  const sourceRepriseSensory=worldView?.sensoryProfile==='source-reprise';
   const baseTorchLook=resolveTorchLook({
-    on:hushSensory?false:storyMode?REC.lightOn():true,
-    battery:hushSensory?0:storyMode?REC.batteryLevel():1,
+    // Source recompiles exposure along with geometry. The old room remains
+    // readable even if the real torch was off or empty when the fight began;
+    // this synthetic beam is another proof that the place is not exact.
+    on:hushSensory?false:sourceRepriseSensory?true:storyMode?REC.lightOn():true,
+    battery:hushSensory?0:sourceRepriseSensory?1:storyMode?REC.batteryLevel():1,
     timeSec:performance.now()/1000,
     reducedEffects:(getSave().settings?.flash||'full')!=='full',
     // The lamp is fine. The eye is not — and the battery readout in the HUD is
@@ -23108,7 +23704,7 @@ function render3d(){
     // other impossible/special spaces.
     hushBodyAllowed:!worldView?.suppressActors&&hushBodySpaceAllowed,
     audio:waterAudio,
-    light:hushSensory?false:storyMode?REC.lightOn():true,
+    light:hushSensory?false:sourceRepriseSensory?true:storyMode?REC.lightOn():true,
     torchLook,
     sensoryProfile:worldView?.sensoryProfile||'story',
     plan: usingPlan(),
@@ -23526,10 +24122,13 @@ function onKey(e){
   if(RENDERER==='3d' && controlRole==='turn'){
     // First-person: left/right are quarter turns. They are still stateful: a
     // held key repeats on our frame clock, never on the browser's repeat clock.
-    e.preventDefault();
-    if(isOnboardingActive()) return;
+    if(isOnboardingActive()){ e.preventDefault(); return; }
     const alreadyHeld=worldCanTrackMotion ? motionAlreadyHeld : motionInput.isHeld(moveKey);
+    // RECORD THE KEY BEFORE WE PREVENT ITS DEFAULT. See the note in the movement
+    // branch below: the input manager refuses defaultPrevented events, so this
+    // fallback was dead the moment preventDefault ran above it.
     if(!worldCanTrackMotion) motionInput.keyDown(e);
+    e.preventDefault();
     if(!e.repeat&&!alreadyHeld){
       const dir=(moveKey==='ArrowRight'||moveKey==='KeyD') ? 1 : -1;
       performQuarterTurn(dir, performance.now());
@@ -23541,13 +24140,23 @@ function onKey(e){
     return;
   }
   if(moveKey){
-    e.preventDefault();
     if(onboardingBlocksMove){
+      e.preventDefault();
       motionInput.keyUp({code:moveKey,target:e.target});
       return;
     }
     const alreadyHeld=worldCanTrackMotion ? motionAlreadyHeld : motionInput.isHeld(moveKey);
+    // RECORD THE KEY BEFORE WE PREVENT ITS DEFAULT.
+    //
+    // InputManager.shouldIgnoreKeyEvent starts `if (e.defaultPrevented) return
+    // true` — a sensible rule for keys some other handler has claimed, and fatal
+    // here, because the handler that claimed it is US, one line earlier. So
+    // whenever worldCanTrackMotion was false this fallback recorded nothing and
+    // the key was never held: you pressed forward and did not move. The fast
+    // path at the top of onKey always worked, which is why this only bit in the
+    // states that take the fallback.
     if(!worldCanTrackMotion) motionInput.keyDown(e);
+    e.preventDefault();
     // Native key-repeat is OS/browser timed and must never become a second
     // movement clock. A new press gets one immediate, responsive step; the RAF
     // cadence owns every held step after it.

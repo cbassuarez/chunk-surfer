@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag to publish, for example v0.1.2-beta.3'
+        description: 'Release tag to publish, for example v0.2.0 or v0.2.1-beta.1'
         required: true
         type: string
       publish:
@@ -382,8 +382,23 @@ jobs:
         run: |
           set -euo pipefail
           notes_file="release-notes.md"
-          cat > "$notes_file" <<'EOF'
-          Unsigned beta desktop builds for end-to-end download testing.
+          # The notes are the tag's own CHANGELOG section; release-preflight
+          # refuses to pass a tag that has not got one, so this cannot silently
+          # publish an empty release. The asset boilerplate below is the same
+          # for every build and stays here rather than in the changelog.
+          version="${TAG#v}"
+          awk -v v="$version" '
+            $0 ~ "^## " v "( |$)" { found = 1; next }
+            found && /^## / { exit }
+            found { print }
+          ' CHANGELOG.md > "$notes_file"
+          if ! grep -q '[^[:space:]]' "$notes_file"; then
+            echo "CHANGELOG.md has no section for $version" >&2
+            exit 1
+          fi
+          cat >> "$notes_file" <<'EOF'
+
+          ---
 
           Public beta downloads are staged on itch.io first. Use these GitHub
           assets as a developer mirror when testing CI output or recovering a
@@ -398,7 +413,6 @@ jobs:
           .part-00, .part-01, ... files with a matching .sha256 manifest. These
           split files are not the recommended player download path.
 
-          Signing, notarization, and Steam automation remain TODOs in STORE_PREP.md.
           EOF
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --title "Chunk Surfer $TAG" --notes-file "$notes_file" --prerelease

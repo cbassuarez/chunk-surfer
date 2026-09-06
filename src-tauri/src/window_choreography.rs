@@ -164,7 +164,17 @@ struct MainTransaction {
     was_focused: bool,
     scale_factor: f64,
     monitor_work_area: Option<PhysicalRect<i32, u32>>,
+    // Superseded by the two below, which say WHICH mode was left. Retained so a
+    // reader can see the request that produced them.
+    #[allow(dead_code)]
     restore_game_mode: bool,
+    // WHICH fullscreen was left, not merely that one was. restore_transaction
+    // used to put every case back as SIMPLE fullscreen, so a native Space came
+    // back as the wrong mode and a merely screen-filling WINDOW came back
+    // fullscreen with no title bar at all — which is what happened the moment a
+    // run started, because starting one runs a transaction.
+    left_native_fullscreen: bool,
+    left_simple_fullscreen: bool,
     cancelled: bool,
     generation: u64,
     applying_until: Option<Instant>,
@@ -300,6 +310,13 @@ fn begin_transaction(app: &AppHandle, request: ChoreographyBeginRequest) -> Resu
         position: *value.position(),
         size: *value.size(),
     });
+    // Read the two real modes BEFORE leaving them; afterwards both report false.
+    // `restore_game_mode` can also be true for a window that merely fills the
+    // monitor, in which case neither of these is set and there is nothing to
+    // re-enter — restoring its position and size is the whole job.
+    let left_native_fullscreen = request.restore_game_mode && main.is_fullscreen().unwrap_or(false);
+    let left_simple_fullscreen =
+        request.restore_game_mode && crate::display_policy::simple_fullscreen_active();
     if request.restore_game_mode {
         let _ = main.set_simple_fullscreen(false);
         let _ = main.set_fullscreen(false);
@@ -317,8 +334,15 @@ fn begin_transaction(app: &AppHandle, request: ChoreographyBeginRequest) -> Resu
         match wait_for_windowed_bounds(&main, before, monitor_rect) {
             Ok(bounds) => bounds,
             Err(error) => {
-                let _ = main.set_simple_fullscreen(true);
-                crate::display_policy::note_simple_fullscreen(true);
+                // Roll back into the mode we actually left, for the same reason
+                // restore_transaction does: this used to hand a windowed player
+                // a fullscreen window after a cue that never played.
+                if left_simple_fullscreen {
+                    let _ = main.set_simple_fullscreen(true);
+                    crate::display_policy::note_simple_fullscreen(true);
+                } else if left_native_fullscreen {
+                    let _ = main.set_fullscreen(true);
+                }
                 return Err(error);
             }
         }
@@ -345,6 +369,8 @@ fn begin_transaction(app: &AppHandle, request: ChoreographyBeginRequest) -> Resu
         scale_factor,
         monitor_work_area,
         restore_game_mode: request.restore_game_mode,
+        left_native_fullscreen,
+        left_simple_fullscreen,
         cancelled: false,
         generation: 0,
         applying_until: None,
@@ -535,9 +561,15 @@ fn restore_transaction(app: &AppHandle, required: Option<&str>) -> Result<bool, 
         .map_err(|error| error.to_string())?;
     main.set_size(active.stable.size)
         .map_err(|error| error.to_string())?;
-    if active.restore_game_mode {
+    // Put back the mode that was actually left. A window that only happened to
+    // fill the monitor gets its geometry back and nothing else — imposing simple
+    // fullscreen on it is what stripped the title bar from ordinary windowed
+    // play, every time a scene transition ran a transaction.
+    if active.left_simple_fullscreen {
         let _ = main.set_simple_fullscreen(true);
         crate::display_policy::note_simple_fullscreen(true);
+    } else if active.left_native_fullscreen {
+        let _ = main.set_fullscreen(true);
     }
     if active.was_focused {
         let _ = main.set_focus();

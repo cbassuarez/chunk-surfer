@@ -622,6 +622,11 @@ export function createWindowChoreographyDirector({
   // or a frame someone dragged out to the edges? Any of the three has to be
   // left before an authored cue can move the window or open a surface beside
   // it, and only the first of them is anything the app knows it did.
+  // Whether a transaction has to LEAVE a fullscreen state before it can move
+  // the window — a cue cannot reposition a frame that has nowhere to move to.
+  // It is not "was the app in game mode": see restore_transaction in
+  // window_choreography.rs, which records which state it left and puts that one
+  // back rather than imposing simple fullscreen on all three.
   async function measuredFullscreen(nativeApi){
     if(nativeApi?.invoke){
       const metrics=await safe(()=>nativeApi.invoke('chunk_window_metrics'));

@@ -501,7 +501,25 @@ export function createPointerModeController({
     }
 
     if (lockedToTarget()) {
-      if (native.active || native.pending) void stopNativeCapture(`${reason}:true-lock`);
+      // DOM POINTER LOCK IS NOT CONFINEMENT IN A WKWEBVIEW.
+      //
+      // In a browser, a true lock hides the cursor and pins it: movementX/Y keep
+      // arriving forever and the pointer cannot reach an edge. In the Tauri
+      // shell on macOS the lock is granted — `pointerLockElement` is set, and
+      // movementX/Y flow, so look feels perfect — while the OS cursor is never
+      // actually captured. It keeps physically travelling, reaches the edge of
+      // the window, and is handed back to the desktop mid-turn.
+      //
+      // So under Tauri the two backends do different jobs and BOTH run: DOM lock
+      // supplies the deltas, and the native grab supplies the thing it cannot —
+      // hiding and recentring the real cursor so there is no edge to reach.
+      // Stopping the native capture here, which is what this did, switched off
+      // the only confinement the shell had.
+      if (tauriRuntime()) {
+        if (!native.active && !native.pending) void startNativeCapture(`${reason}:tauri-confine`, captureGeneration);
+      } else if (native.active || native.pending) {
+        void stopNativeCapture(`${reason}:true-lock`);
+      }
       lastMode = 'captured';
       setBodyClasses('captured');
       setInputLocked(true, reason);
@@ -662,7 +680,7 @@ export function createPointerModeController({
     if (wantsCapture()) fallbackToNativeOrRetry(`${backend.lastRequestReason || 'pointerlockerror'}:native-fallback`, generation);
   }
 
-  function handleNativePointerMove(e = {}) {
+  function handleNativePointerMove(e = {}, { confineOnly = false } = {}) {
     if (!nativeCaptured() || !wantsCapture()) return false;
     native.moves += 1;
     const now = timeNow();
@@ -754,7 +772,9 @@ export function createPointerModeController({
     dy = clampDelta(dy);
     native.lastAppliedDelta = { dx, dy };
 
-    if (dx || dy) {
+    // confineOnly: DOM pointer lock is already feeding movementX/Y through
+    // mousemove, so counting these too would run look at double speed.
+    if ((dx || dy) && !confineOnly) {
       if (input?.addPointerDelta?.(dx, dy, native.lastDeltaReason)) native.addedDeltas += 1;
     }
 
@@ -780,7 +800,16 @@ export function createPointerModeController({
   }
 
   function handlePointerMove(e = {}) {
-    if (nativeCaptured()) return handleNativePointerMove(e);
+    // ONE SOURCE OF DELTAS, BUT THE CONFINEMENT STILL HAS TO RUN.
+    //
+    // When both backends are live — the Tauri case in sync() above — the DOM
+    // lock owns look and the native grab owns confinement. Returning early here
+    // was wrong twice over: it stopped the double-counting, and it also skipped
+    // the edge recentre at the bottom of handleNativePointerMove, which is the
+    // ONLY thing actually holding the cursor inside the window. setCursorGrab
+    // does not confine on macOS; warping the pointer back off the edge does. So
+    // the native handler still runs, and only its delta feed is suppressed.
+    if (nativeCaptured()) return handleNativePointerMove(e, { confineOnly: lockedToTarget() });
     return false;
   }
 

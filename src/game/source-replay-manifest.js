@@ -239,8 +239,10 @@ export function buildSourceReprisePlan(manifest) {
   return {
     'call-site': {
       id: 'call-site',
-      segments: takes.slice(0, 2),
-      finalMark: takes[Math.min(1, takes.length - 1)]?.id || null,
+      // Recognition first: one real take, almost clean. Recombination begins in
+      // Borrowed Body, after the player has learned what Source is executing.
+      segments: takes.slice(0, 1),
+      finalMark: takes[0]?.id || null,
     },
     'borrowed-body': {
       id: 'borrowed-body',

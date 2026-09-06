@@ -186,6 +186,12 @@ pub fn enforce_window_floor(app: &AppHandle) {
         return;
     };
 
+    // BOOT WITH A TITLE BAR. The frontend re-enters game mode a moment later if
+    // that is the saved display mode, so starting decorated costs a windowed
+    // launch nothing and is the only thing that recovers a window left
+    // undecorated by a previous run.
+    let _ = window.set_decorations(true);
+
     let (min_w, min_h) = effective_min_size(&window);
     let min = tauri::Size::Logical(tauri::LogicalSize {
         width: min_w,
@@ -211,6 +217,7 @@ pub fn reset_main_window(app: &AppHandle) -> Result<(), String> {
     let window = main_window(app)?;
     let _ = window.set_simple_fullscreen(false);
     let _ = window.set_fullscreen(false);
+    let _ = window.set_decorations(true);
     note_simple_fullscreen(false);
     let (width, height) = effective_default_size(&window);
     let (min_w, min_h) = effective_min_size(&window);
@@ -254,6 +261,15 @@ pub fn set_game_mode(app: &AppHandle, enabled: bool) -> Result<(), String> {
     } else {
         let _ = window.set_simple_fullscreen(false);
         note_simple_fullscreen(false);
+        // AND GIVE THE TITLE BAR BACK, EXPLICITLY.
+        //
+        // Simple fullscreen works by rewriting the window's style mask, and
+        // coming out of it does not reliably put the titled bit back on macOS —
+        // so once a player had used game mode even once, the window stayed
+        // undecorated for good and there was no way to get the bar back short
+        // of deleting the window state. Asking for it by name costs nothing
+        // when the window is already decorated.
+        let _ = window.set_decorations(true);
         window.set_fullscreen(false).map_err(|err| err.to_string())
     }
 }

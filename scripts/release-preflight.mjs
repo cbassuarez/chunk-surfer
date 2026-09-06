@@ -3,10 +3,14 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 
-const expectedTag = process.argv[2] || 'v0.1.2-beta.3';
-if (!/^v\d+\.\d+\.\d+-beta\.\d+$/.test(expectedTag)) {
-  throw new Error(`Expected a beta SemVer tag, received ${expectedTag}`);
+const expectedTag = process.argv[2] || 'v0.2.0';
+// Every release up to 0.1.2 was a beta, and the guard only knew that shape.
+// A plain vX.Y.Z is now a valid tag too; the beta suffix stays legal so a
+// v0.2.1-beta.1 can still go out between releases.
+if (!/^v\d+\.\d+\.\d+(?:-beta\.\d+)?$/.test(expectedTag)) {
+  throw new Error(`Expected a SemVer release tag (vX.Y.Z or vX.Y.Z-beta.N), received ${expectedTag}`);
 }
+export const IS_PRERELEASE = /-beta\./.test(expectedTag);
 const expectedVersion = expectedTag.slice(1);
 const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
 const tauri = JSON.parse(readFileSync('src-tauri/tauri.conf.json', 'utf8'));
@@ -143,6 +147,27 @@ if (/Poliigon_|StoneBricksSplitface001|TilesSquarePoolMixed001|TilesTravertine00
   throw new Error('surface manifest still references replaced Poliigon or SketchUp Texture Club sources');
 }
 
+// THE TAG HAS TO SAY WHAT IT IS.
+//
+// The release job builds its GitHub notes by reading the section for this
+// version out of CHANGELOG.md. Checking it here rather than there means a tag
+// with no notes fails before anything is built, instead of after four
+// platforms have compiled and the itch channels have already been pushed.
+const changelog = readFileSync('CHANGELOG.md', 'utf8');
+// Split rather than match: a lookahead for "the next heading OR the end" needs
+// the `m` flag for the heading and NOT for the end, and `$` under `m` matches
+// the first line break, which silently returns an empty section for a file that
+// has one.
+const notes = changelog.split(/^## /m)
+  .find((block) => new RegExp(`^${expectedVersion}(?:\\s|$)`).test(block))
+  ?.split('\n').slice(1).join('\n').trim() || '';
+if (!notes) {
+  throw new Error(`CHANGELOG.md has no "## ${expectedVersion}" section; the release notes are read from it`);
+}
+if (notes.length < 120) {
+  throw new Error(`the CHANGELOG.md section for ${expectedVersion} is too short to be release notes`);
+}
+
 if (process.env.CI !== 'true') {
   const dirty = execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8' }).trim();
   if (dirty) {
@@ -150,4 +175,4 @@ if (process.env.CI !== 'true') {
   }
 }
 
-console.log(`Beta release preflight passed for ${expectedTag}.`);
+console.log(`Release preflight passed for ${expectedTag} (${notes.split('\n').length} lines of notes).`);

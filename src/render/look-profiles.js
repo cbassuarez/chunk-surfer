@@ -37,6 +37,14 @@ const NO_TIDY = 'clean, tidy, bright, cartoon, poster, text, watermark';
 //                     lands; at 0 it crushes them to nothing. True black is
 //                     unaffected at any value, so this reveals light that is
 //                     there rather than lifting the whole image off the floor.
+// grade — the plate the front-end composite is printed as. Neutral everywhere
+// but `frontEnd`, which is the camera behind the title and the opening: a
+// negative, curved, then screened by this renderer's own dither. Measured off
+// smpte_cs_opening.psd (invert -> two Color Burn fills -> Color Halftone ->
+// lens blur); the halftone is deliberately NOT reproduced, because the dither
+// downstream already is one.
+export const NEUTRAL_GRADE = Object.freeze({ invert: 0, gamma: 1, gain: 1, soften: 0 });
+
 const PROFILE_DATA = {
   calm: {
     bankId: 'calm', transitionMs: 600,
@@ -142,6 +150,41 @@ function freezeProfile(id, value) {
     glass: Object.freeze({ ...value.glass }),
   });
 }
+
+// THE FRONT END GRADE.
+//
+// Not a look profile: the front end runs the same instrument as the room behind
+// it (calm), and only the PLATE differs — so this is an overlay r3d applies on
+// top of whichever profile is live, rather than a seventh profile that would
+// need a diffusion bank of its own.
+//
+// The three numbers are measured, not chosen. Sampling the reference pair, a
+// 75% bar (191) lands on 43, a 40% bar (102) on 125, and full black on 249 —
+// which one curve of gamma 1.343 at gain 0.973 reproduces to about a level.
+// Greys stay neutral all the way through, so a single per-channel curve is the
+// whole grade; the reference's two Color Burn fills leave no tint behind.
+// `plateBlack`/`plateWhite` are the composite's OWN range, and they are why the
+// curve above lands where the reference lands.
+//
+// The reference was fitted to test bars, which use the whole scale. A night
+// exterior does not. Sampled off the title over fourteen frames with the grade
+// off, the tone field either side of the menu is remarkably steady and very
+// low: median 7 of 255, p90 53, p95 63, p99 95, peak 146. Half the frame is
+// effectively black and nothing reaches 0.58.
+//
+// Feeding THAT into a curve meant for a full-range signal put the whole picture
+// into the top eighth of the scale -- a 126-level tone field collapsed to 15,
+// and the building printed the same white as the sky behind it. Normalising
+// onto the range the curve expects is the move a colourist makes before
+// applying a look, and it is what puts the picture back: the sky prints as
+// paper, the road as a mid grey, the rain as ink.
+//
+// plateWhite is the measured ceiling rather than a chosen contrast. It sits a
+// hair UNDER the 0.573 peak on purpose, so the brightest lightning clips to
+// solid ink instead of stopping just short of it.
+export const FRONT_END_GRADE = Object.freeze({
+  invert: 1, gamma: 1.343, gain: 0.973, soften: 0.85, plateBlack: 0, plateWhite: 0.55,
+});
 
 export const LOOK_PROFILES = Object.freeze(Object.fromEntries(
   Object.entries(PROFILE_DATA).map(([id, profile]) => [id, freezeProfile(id, profile)]),

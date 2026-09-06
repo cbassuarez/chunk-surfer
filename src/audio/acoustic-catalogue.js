@@ -51,6 +51,22 @@ export const ACOUSTIC_CATALOGUE = Object.freeze({
   // near, which is the fact this entry exists to state.
   fountain_water: D({ levelDb: -32, durationMs: 1000, spectrum: S(.22, .68, .74), impulsiveness: .06, family: 'water', canBeMimicked: false }),
 
+  // THE BYPASS LETTING GO. The other continuous source, and the loudest thing
+  // the player can do to this building on purpose.
+  //
+  // Emitted from the plant-header puzzle when the wrong fitting is chosen: the
+  // header dumps into the room and the take is spoiled. -8 puts it with the
+  // things that end a take outright (radio_drop, metal_stair_strike) rather
+  // than with the things you can talk over. Steam is a broadband hiss with a
+  // body behind it, so the spectrum leans high without going thin, and the
+  // impulsiveness is low but not a fountain's: there IS a moment it lets go,
+  // and then it is just a roar.
+  //
+  // Not mimickable, and for a reason the call site already states rather than a
+  // judgement about the HUSH: the emission carries audibleToHush:false, so the
+  // HUSH never hears this and cannot learn what it has not heard.
+  steam_vent: D({ levelDb: -8, durationMs: 2600, spectrum: S(.34, .72, .92), impulsiveness: .22, family: 'architecture', canBeMimicked: false }),
+
   // ── THE PLANT, AND THE TOOLS THAT SHUT IT ────────────────────────────────
   //
   // These four were being EMITTED without ever being DEFINED. emitNoise passes

@@ -22,7 +22,7 @@ import { normalizePixelMeshSettings } from './pixel-mesh/settings.js';
 import { PIXEL_MESH_FRAG } from './pixel-mesh/shader.js';
 import { isScreen, screenUniforms } from './pixel-mesh/screens.js';
 import { MARK_FIELD_SIZE, MARK_FIELD_SOURCE, deriveMarkField } from './mark-field.js';
-import { getLookProfile } from './look-profiles.js';
+import { FRONT_END_GRADE, NEUTRAL_GRADE, getLookProfile } from './look-profiles.js';
 import { LIGHT_KIND } from '../data/conservatory-lights.js';
 import { visualEffectsEnabled } from '../game/access.js';
 import { PAPER_ATLAS } from '../generated/paper-catalog.js';
@@ -79,6 +79,10 @@ let screenOverrideId=null;
 let windowGeometryMotion=false;
 let windowGeometryResizePending=false;
 const HUSH_AMBIENT_COLOR=new Float32Array([.26,.76,.54]);
+// A recovered room must be identifiable without looking healthy. This neutral,
+// low exposure is Source's reconstruction light: enough architectural value to
+// read the room and its props, never enough to resemble the live night's grade.
+const SOURCE_REPRISE_AMBIENT_COLOR=new Float32Array([.60,.67,.65]);
 
 export function r3dSetRenderScale(value = 1) {
   const next = Math.max(0.5, Math.min(1, Number(value) || 1));
@@ -3353,6 +3357,7 @@ const horizonTune = {
 // The projection's own look. Not a `glass` block and not a `vfd` block: those
 // describe an instrument, and this describes a lamp and a strip of film.
 const HORIZON_PROJECTION = { halation: 0.34, weave: 0.9, grain: 0.055, burn: 0.30 };
+
 // Where the bust stands, in TAPE metres. Mirrors HORIZON_BUST_DEPTH / _LATERAL
 // in source-space-runtime.js, converted from cells; r3dSetHorizonBust lets the
 // runtime correct it rather than leaving two constants to drift.
@@ -4462,6 +4467,19 @@ function runPixelMeshPass(state, now) {
   gl.uniform1f(pixelMeshU('uWhitePoint'),
     Math.max(black + 0.002, blend(authoredWhite, authoredWhite * scale)));
   gl.uniform1f(pixelMeshU('uToneGamma'), look.vfd.toneGamma ?? 1.0);
+  // THE FRONT-END PLATE. Neutral in the room; a negative behind the menu. See
+  // FRONT_END_GRADE in look-profiles.js for where the numbers come from.
+  {
+    // The front-end plate decides this, so every boundary main.js already
+    // switches at -- credits, title, gameplay, and the per-frame session
+    // snapshot -- carries the grade with it and there is no second switch to
+    // keep in step. `negative` also crossfades, so a plate interpolated between
+    // two scenes grades partway rather than snapping.
+    const n = frontEndPlate.negative;
+    const g = n > 0 ? FRONT_END_GRADE : NEUTRAL_GRADE;
+    gl.uniform4f(pixelMeshU('uGrade'), g.invert * n, g.gamma, g.gain, g.soften * n);
+    gl.uniform2f(pixelMeshU('uGradePlate'), g.plateBlack ?? 0, g.plateWhite ?? 1);
+  }
   gl.uniform1f(pixelMeshU('uLineAmount'), look.vfd.lineAmount ?? 0.0);
   gl.uniform1f(pixelMeshU('uToneAmount'), look.vfd.toneAmount ?? 0.0);
 
@@ -5152,8 +5170,11 @@ export function r3dFrame(state) {
   const opticalEffects=visualEffectsEnabled()?1:0;
   const sensoryProfile=String(state.sensoryProfile||'story');
   const hushSense=sensoryProfile==='hush-prowl'?1:sensoryProfile==='hush-listen'?.75:0;
-  const frameAmbientColor=hushSense>0?HUSH_AMBIENT_COLOR:lightingAmbientColor;
-  const baseAmbientIntensity=hushSense>0?Math.max(lightingAmbientIntensity,.24):lightingAmbientIntensity;
+  const sourceRepriseSense=sensoryProfile==='source-reprise';
+  const frameAmbientColor=hushSense>0?HUSH_AMBIENT_COLOR:sourceRepriseSense?SOURCE_REPRISE_AMBIENT_COLOR:lightingAmbientColor;
+  const baseAmbientIntensity=hushSense>0
+    ?Math.max(lightingAmbientIntensity,.24)
+    :sourceRepriseSense?Math.max(lightingAmbientIntensity,.11):lightingAmbientIntensity;
   // Twelve times ambient at full strike. Interiors run .014-.043 and the bay
   // runs .155, so this is the difference between a room you are feeling your
   // way around and one you can read a work order in — for eighty milliseconds.

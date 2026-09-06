@@ -4,10 +4,10 @@
     "author": "Chunk Surfer project",
     "source": "tools/chunk_surfer/build-props.mjs",
     "license": "project source (mixed: see meshes)",
-    "sha256": "841243bd4fbb9e9b0fc410a36af91970e9be23d91117c621754d371080917d6a",
+    "sha256": "dce174a0e410350a0db7140853d084347b8b8f7db862efd33182be93c7a9d732",
     "modifications": "Metres, Y-up, ground-centred. Procedural fallback geometry, project-authored Blender meshes, and user-supplied source meshes (unverified provenance) baked, re-axised, height-scaled, and vertex-cluster decimated under budget. Per-mesh provenance below says which is which.",
-    "triangles": 350798,
-    "bytes": 25419784
+    "triangles": 351278,
+    "bytes": 25463652
   },
   "meshes": [
     {
@@ -4059,6 +4059,90 @@
         ]
       },
       "triangles": 112,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "ending_headphones",
+      "bounds": {
+        "min": [
+          -0.27,
+          -0.074,
+          -0.071
+        ],
+        "max": [
+          0.436,
+          0.161,
+          0.186
+        ]
+      },
+      "triangles": 108,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "ending_recorder_open",
+      "bounds": {
+        "min": [
+          -0.24,
+          0,
+          -0.17
+        ],
+        "max": [
+          0.484,
+          0.18,
+          0.285
+        ]
+      },
+      "triangles": 188,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "ending_dead_hand",
+      "bounds": {
+        "min": [
+          -0.131,
+          -0.004,
+          -0.268
+        ],
+        "max": [
+          0.24,
+          0.091,
+          0.272
+        ]
+      },
+      "triangles": 84,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "ending_body_standing",
+      "bounds": {
+        "min": [
+          -0.365,
+          0.021,
+          -0.143
+        ],
+        "max": [
+          0.365,
+          1.725,
+          0.143
+        ]
+      },
+      "triangles": 100,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",

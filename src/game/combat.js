@@ -402,6 +402,10 @@ export function makeCombatScene({
   let barGhost = { composure: null, coherence: null };
   let performanceIntrusion = Math.max(0,Math.min(.32,Number(initialPerformanceIntrusion)||0));
   let performanceStage = performanceIntrusionStage(performanceIntrusion);
+  // A reprise returns as material, not as an absent loading screen. For one
+  // short phrase the newly-written take remains visibly caught in the Surfer.
+  let repriseReturnPulse = 0;
+  let repriseReturnId = '';
   // The comets are pitched. See fireball-voice.js: a cast is an arpeggio, a
   // volley is that chord struck at once, a deflection answers a fifth up, and
   // the third one -- the one that arms the RETURN -- is the only resolved sound
@@ -671,6 +675,10 @@ export function makeCombatScene({
       const resume = () => {
         if (resumed || !sceneEntered) return false;
         resumed = true;
+        repriseReturnPulse = .84;
+        repriseReturnId = next.id || '';
+        notice = 'TAKE ACCEPTED · SOURCE WRITE';
+        fx?.glitch?.(.22, 150);
         beginMovement(index);
         return true;
       };
@@ -1340,11 +1348,13 @@ export function makeCombatScene({
         statePhase: state.phase,
         tutorial: director?.snapshot?.() || null,
         interlude: phase === 'interlude',
+        repriseReturn:repriseReturnPulse>0?{id:repriseReturnId,left:repriseReturnPulse}:null,
       };
     },
 
     update(dt) {
       introElapsed += dt;
+      repriseReturnPulse=Math.max(0,repriseReturnPulse-dt);
       if (practiceClick) {
         const wing = combatPractice(state);
         practiceClick.setRetakes(wing?.retakes || 0);
@@ -1615,6 +1625,10 @@ export function makeCombatScene({
     },
 
     render() {
+      // The reprise is a real handoff to the room renderer. Leaving this panel
+      // composited underneath the child scene makes the old fight read as the
+      // replayed space and hides the very evidence Source is weaponising.
+      if (phase === 'interlude') return;
       const { cols, rows } = uiSize();
       uiFill(0, 0, cols, rows, 'rgba(2,2,3,0.97)');
       const w = Math.min(118, cols - 4);
@@ -1821,6 +1835,18 @@ export function makeCombatScene({
           hitFlash: dealtFlash,
           knock: dealtFlash * 1.4,
         });
+      }
+
+      if(repriseReturnPulse>0){
+        const strength=clamp(repriseReturnPulse/.84,0,1);
+        const bands=reducedMotion?2:4;
+        for(let band=0;band<bands;band+=1){
+          const gy=stageY+1+((band*5+Math.floor(now*22))%Math.max(1,eh-1));
+          const gw=Math.max(5,Math.floor(ew*(.28+strength*.42)));
+          uiFill(ex+(band%2?Math.max(0,ew-gw):0),gy,gw,1,`rgba(255,58,42,${(.08+strength*.18).toFixed(3)})`);
+        }
+        const write='TAKE ACCEPTED // SOURCE WRITE';
+        uiText(ex+Math.floor((ew-write.length)/2),Math.min(stageY+stageH-1,stageY+eh-1),write,'ui-danger',.62+strength*.38);
       }
 
       const fireball=fireballExchange.snapshot();

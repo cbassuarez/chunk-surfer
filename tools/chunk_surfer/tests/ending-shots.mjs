@@ -17,15 +17,19 @@ const tag = process.argv[2] || 'now';
 const output = path.resolve(process.env.OUT || `artifacts/ending-shots/${tag}`);
 fs.mkdirSync(output, { recursive: true });
 
-// ending id, arrival, and the run history the ending is being asked to read.
+// One representative arrival for every distinct ending. Arrival variants are
+// narrative branches inside Sacrifice; the physical contract belongs to the
+// nine route IDs below.
 const RUNS = [
   { id: 'sacrifice', arrival: 'agreed', note: 'chose to stay, named her' },
-  { id: 'sacrifice', arrival: 'defeated', note: 'beaten into staying' },
-  { id: 'sacrifice', arrival: 'timed-out', note: 'ran and was short' },
   { id: 'helped', arrival: 'agreed', note: 'the coffee' },
   { id: 'inversion', arrival: 'escaped', note: 'out through the other door' },
   { id: 'drugged', arrival: 'escaped', note: 'out, and it was nothing' },
   { id: 'surfaced', arrival: 'carried', note: 'carried him out' },
+  { id: 'contact-won', arrival: 'agreed', note: 'held the open channel' },
+  { id: 'contact-lost', arrival: 'defeated', note: 'became the distant dot' },
+  { id: 'tower-won', arrival: 'carried', note: 'dragged him through the west doors' },
+  { id: 'tower-lost', arrival: 'defeated', note: 'the completed peal' },
 ];
 
 const browser = await puppeteer.launch({
@@ -70,8 +74,11 @@ await page.evaluate(() => window.__probe.setFlags([
   'door.grey.searched=tried', 'dock.haunting.spent',
 ]));
 
+const evidence = [];
 for (const run of RUNS) {
-  const started = await page.evaluate(([id, arrival]) => window.__probe.playEnding(id, arrival), [run.id, run.arrival]);
+  // reviewEnding changes only the starting camera/location. From this point on
+  // it is playEnding(), the real conversations, clocks, actions and final hold.
+  const started = await page.evaluate(([id, arrival]) => window.__probe.reviewEnding(id, arrival), [run.id, run.arrival]);
   await new Promise((r) => setTimeout(r, 900));
   const dossier = await page.evaluate(() => {
     const d = window.__probe.endingDossier();
@@ -80,26 +87,65 @@ for (const run of RUNS) {
   const stem = `${run.id}--${run.arrival}`;
   await page.screenshot({ path: path.join(output, `${stem}-01.png`) });
 
-  // Page through it. Every press advances one beat; the ending ends when the
-  // scene stack empties or the credits take over.
+  // Page through authored prose, but do not fake the physical resolution. Time
+  // beats run on their actual clock and held actions use their actual key.
   let frame = 1;
-  for (let i = 0; i < 60; i += 1) {
+  let resolutionFrames = 0;
+  for (let i = 0; i < 180; i += 1) {
     const top = await page.evaluate(() => window.__scenes?.top?.()?.id || null);
     if (!top || top === 'credits' || top === 'return-report') break;
+    if (top.startsWith('ending-action:')) {
+      const key = run.id === 'contact-won' ? 'r' : run.id === 'contact-lost' ? 'w' : 'e';
+      await page.keyboard.down(key);
+      await new Promise((r) => setTimeout(r, 1650));
+      await page.screenshot({ path: path.join(output, `${stem}-action.png`) });
+      await page.keyboard.up(key);
+      await new Promise((r) => setTimeout(r, 180));
+      continue;
+    }
+    if (top.startsWith('ending-resolution:')) {
+      resolutionFrames += 1;
+      await new Promise((r) => setTimeout(r, 720));
+      if (resolutionFrames % 2 === 1) {
+        frame += 1;
+        await page.screenshot({ path: path.join(output, `${stem}-${String(frame).padStart(2, '0')}.png`) });
+      }
+      continue;
+    }
+    if (top.startsWith('ending-hold:')) {
+      frame += 1;
+      await page.screenshot({ path: path.join(output, `${stem}-final.png`) });
+      break;
+    }
+    if (run.id === 'drugged' && top === 'finale') {
+      const options = await page.evaluate(() => window.__scenes?.top?.()?.view?.()?.pending?.options?.length || 0);
+      if (options) {
+        // The evidence tape is deliberately a hub. For this all-endings pass,
+        // select its authored exit instead of repeatedly replaying option one.
+        for (let option = 1; option < options; option += 1) await page.keyboard.press('ArrowDown');
+        await page.keyboard.press('Enter');
+        await new Promise((r) => setTimeout(r, 150));
+        continue;
+      }
+    }
     await page.keyboard.press('Enter');
-    await new Promise((r) => setTimeout(r, 190));
-    if (i % 6 === 5) {
+    await new Promise((r) => setTimeout(r, 150));
+    if (i % 8 === 7) {
       frame += 1;
       await page.screenshot({ path: path.join(output, `${stem}-${String(frame).padStart(2, '0')}.png`) });
     }
   }
-  console.log(stem.padEnd(28), run.note.padEnd(28), JSON.stringify(dossier), 'frames', frame);
+  const physical = await page.evaluate(() => window.__probe?.endingCutscene?.() || null);
+  evidence.push({run,dossier,started,physical});
+  console.log(stem.padEnd(28), run.note.padEnd(34), JSON.stringify(dossier),
+    'beat', physical?.state?.cursor, 'stage', JSON.stringify(physical?.embodiment), 'frames', frame);
   // Back to a clean world for the next one.
   while (await page.evaluate(() => !!window.__scenes?.top?.())) {
     await page.evaluate(() => window.__scenes.pop());
   }
   await new Promise((r) => setTimeout(r, 400));
 }
+fs.writeFileSync(path.join(output, 'ending-evidence.json'), JSON.stringify(evidence, null, 2));
 
 // ── the playable legs ───────────────────────────────────────────────────────
 // The three objectives are the part of an ending the player is IN, and until now

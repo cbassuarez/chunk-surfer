@@ -612,6 +612,24 @@ export function createPersonalizedWindowEffects({
     return true;
   }
 
+  // THE FRONT-END PLATE, BROADCAST.
+  //
+  // Not addressed to a composition: it describes the screen BEHIND the
+  // surfaces, which is the camera printed as a negative for as long as the
+  // opening and the menu are up. The value is the same `negative` the game
+  // grades its own background with, so the windows and the desktop turn
+  // together and crossfade together. Last value wins; a surface that starts
+  // late is told on its next arrival rather than staying violet on paper.
+  let frontEndNegative=0;
+  async function setFrontEndPlate(negative=0){
+    const value=Math.max(0,Math.min(1,Number(negative)||0));
+    if(value===frontEndNegative)return false;
+    frontEndNegative=value;
+    await Promise.all(WINDOW_MEDIA_SURFACE_LABELS.map((label)=>
+      safe(()=>api?.emitTo?.(label,'window-media-plate',{negative:value}))));
+    return true;
+  }
+
   async function freezeComposition(cueId,frozen=true){
     await Promise.all(WINDOW_MEDIA_SURFACE_LABELS.map((label)=>safe(()=>api?.emitTo?.(label,'window-media-freeze',{cueId,frozen:!!frozen}))));return true;
   }
@@ -864,7 +882,7 @@ export function createPersonalizedWindowEffects({
 
   return{
     begin,ensure,apply,reject,prepareFireballs,prepareMedia,arrangeMovement,beginFireballCast,syncFireballCast,showPanes,hidePanes,
-    captureSnapshot,registerSnapshot,snapshotData,showComposition,quiesceComposition,snapComposition,freezeComposition,setCompositionCoherence,triggerComposition,hideComposition,suspendSurfaces,
+    captureSnapshot,registerSnapshot,snapshotData,showComposition,quiesceComposition,snapComposition,freezeComposition,setCompositionCoherence,setFrontEndPlate,triggerComposition,hideComposition,suspendSurfaces,
     // Compatibility preview name; there is no channel interaction behind it.
     previewChannel,end,emergencyRestore,
     active:()=>!!current,sessionToken:()=>current?.token||null,statusLine:()=>'',

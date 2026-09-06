@@ -49,9 +49,15 @@ assert.match(sync,/sourceEmergencyLightingFrame/,
   'main bypasses the runtime boundary and writes an unconditional Source wash');
 assert.match(sync,/r3dSetSourceEmergency\?\.\(sourceEmergency\?\.active[\s\S]*?: 0\)/,
   'the full-frame red compositor cannot be disabled inside the Scene Dock');
-assert.match(main,/function clearSourceRuntime\(\)[\s\S]*?r3dSetSourceEmergency\?\.\(0\)/,
+assert.match(main,/function clearSourceRuntime\([^)]*\)[\s\S]*?r3dSetSourceEmergency\?\.\(0\)/,
   'leaving Source cannot leak the red wash into the conservatoire');
-assert.match(main,/function clearSourceRuntime\(\)[\s\S]*?r3dSetSourceWhiteout\?\.\(0\)/,
+// The option added to this function guards the window-choreography exit and
+// NOTHING else: it is a single unbraced statement, so no compositor reset can
+// be moved inside it without this failing. Giving it a block would let the red
+// wash survive a Source exit that kept its windows.
+assert.match(main,/if\(!preserveWindows\)void windowChoreography\?\.leaveSource\?\.\([^)]*\);\n/,
+  'preserveWindows guards the window exit alone, on one unbraced line');
+assert.match(main,/function clearSourceRuntime\([^)]*\)[\s\S]*?r3dSetSourceWhiteout\?\.\(0\)/,
   'leaving Source cannot leak the blinding aperture into the conservatoire');
 
 // The hard boundary is player-facing, not a claim about lamp occlusion. Inside

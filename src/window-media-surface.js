@@ -1,6 +1,7 @@
 import { emit, listen } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import mediaManifest from '../content/media/window-media.media.json' with { type: 'json' };
+import { WINDOW_SURFACE_LOOK_GLSL } from './render/window-surface-look.js';
 import {
   WINDOW_MEDIA_PROTOCOL,
   scoreTimeAt,
@@ -15,6 +16,7 @@ const assetById=new Map((mediaManifest.assets||[]).map((asset)=>[asset.id,asset]
 const BLUE_NOISE_SIZE=64;
 let envelope=null,assignment=null,source=null,video=null,poster=null;
 let gl=null,program=null,texture=null,staleTexture=null,outgoingTexture=null,blueNoiseTexture=null,raf=0;
+let frontEndNegative=0;
 let frozen=false,scoreSuspended=false,lastSeekAt=0,lastStaleAt=0,staleReady=false,assignmentSerial=0;
 let transition={mode:'cut',startedAt:0,endsAt:0},scoreCycle=-1,executedTimed=new Set(),currentRevision=0,currentSession='';
 const eventTimers=new Set();
@@ -22,18 +24,32 @@ const eventTimers=new Set();
 const vertex=`#version 300 es
 in vec2 p;out vec2 uv;void main(){uv=p*.5+.5;gl_Position=vec4(p,0.,1.);}`;
 const fragment=`#version 300 es
-precision highp float;in vec2 uv;out vec4 outColor;uniform sampler2D image;uniform sampler2D staleImage;uniform sampler2D outgoingImage;uniform sampler2D blueNoise;uniform vec4 crop;uniform vec2 desktopOrigin;uniform vec2 framebufferSize;uniform vec2 blueNoiseSize;uniform int procedural;uniform float coherence;uniform float faultIntensity;uniform float faultTick;uniform float faultSeed;uniform int flashMode;uniform int nvme;uniform int transitionMode;uniform float transitionProgress;
+precision highp float;in vec2 uv;out vec4 outColor;uniform sampler2D image;uniform sampler2D staleImage;uniform sampler2D outgoingImage;uniform sampler2D blueNoise;uniform vec4 crop;uniform vec2 desktopOrigin;uniform vec2 framebufferSize;uniform vec2 blueNoiseSize;uniform float dpr;uniform int procedural;uniform float coherence;uniform float faultIntensity;uniform float faultTick;uniform float faultSeed;uniform int flashMode;uniform int nvme;uniform int transitionMode;uniform float transitionProgress;uniform float negative;
 float blueNoiseRank(vec2 at){vec2 cell=mod(floor(at),blueNoiseSize);return texture(blueNoise,(cell+.5)/blueNoiseSize).r;}
 float hash21(vec2 p){p=fract(p*vec2(.1031,.1030));p+=dot(p,p.yx+33.33);return fract((p.x+p.y)*p.x);}
 float form(vec2 q){vec2 c=q*2.-1.;if(procedural==1){float iris=1.-smoothstep(.20,.72,length(vec2(c.x,c.y*1.35)));float pupil=1.-smoothstep(.08,.20,length(c));return max(iris*.62,pupil);}if(procedural==2)return 1.-smoothstep(.012,.028,length(c));if(procedural==3)return .025;return .10+.08*sin((q.x+q.y)*30.);}
 vec3 mediaAt(vec2 q,bool stale){if(procedural>0)return vec3(form(q));return stale?texture(staleImage,q).rgb:texture(image,q).rgb;}
+${WINDOW_SURFACE_LOOK_GLSL}
 void main(){
-  vec2 globalPx=vec2(gl_FragCoord.x+desktopOrigin.x,framebufferSize.y-gl_FragCoord.y+desktopOrigin.y);
-  vec2 q=crop.xy+uv*crop.zw;
+  // THE ONE SPACE EVERY SURFACE AGREES ON: desktop LOGICAL points. gl_FragCoord
+  // is device pixels and desktopOrigin arrives from a DOM rect in points, so
+  // adding them -- which is what this did -- put every retina window half a
+  // lattice out from every other one. Divide first, then place.
+  float scale=max(1.,dpr);
+  vec2 globalPt=vec2(gl_FragCoord.x,framebufferSize.y-gl_FragCoord.y)/scale+desktopOrigin;
+
+  // THE SHARED LATTICE. Sample the media once per cell, at the cell's centre,
+  // so the pixels are pixels rather than a per-fragment shimmer -- and so two
+  // windows overlapping the same desktop cell agree about what is in it.
+  vec2 cellId=floor(globalPt/CELL_PT);
+  vec2 localPx=((cellId+.5)*CELL_PT-desktopOrigin)*scale;
+  vec2 cuv=clamp(vec2(localPx.x,framebufferSize.y-localPx.y)/framebufferSize,0.,1.);
+
+  vec2 q=crop.xy+cuv*crop.zw;
   float fault=nvme==1?faultIntensity*mix(1.,.14,coherence):0.;
-  vec2 sector=floor(globalPx/vec2(112.,46.));
+  vec2 sector=floor(globalPt/SECTOR_PT);
   float cell=hash21(sector+vec2(faultTick*7.1,faultSeed));
-  float band=hash21(vec2(floor(globalPx.y/14.),faultTick+faultSeed*.31));
+  float band=hash21(vec2(floor(globalPt.y/7.),faultTick+faultSeed*.31));
   bool broken=cell>1.-fault*.58;
   bool held=hash21(sector.yx+faultSeed+3.7)>1.-fault*.48;
   if(broken)q.x+=((cell>.5?1.:-1.)*(.025+.14*band))*fault;
@@ -46,9 +62,15 @@ void main(){
   if(hard>.5&&flashMode==0)rgb=vec3(.94,.97,1.);
   else if(hard>.5&&flashMode==1)rgb=vec3(.08,.12,.28);
   else if(hard>.5&&flashMode==2)rgb=vec3(.002,.004,.012);
-  if(transitionMode==1)rgb=mix(texture(outgoingImage,uv).rgb,rgb,smoothstep(0.,1.,transitionProgress));
-  else if(transitionMode==2){float side=step(.5,transitionProgress);vec3 halfImage=mix(texture(outgoingImage,uv).rgb,rgb,side);rgb=halfImage*(abs(transitionProgress-.5)*2.);}
-  float y=dot(rgb,vec3(.2126,.7152,.0722));y=clamp((y-.47)*1.18+.48,0.,1.);float levels=4.;float low=floor(y*levels)/levels;float high=min(1.,low+1./levels);float mixv=fract(y*levels);float threshold=mix(blueNoiseRank(globalPx),.5,coherence);float value=mixv>threshold?high:low;vec3 palette[5]=vec3[5](vec3(.004,.008,.018),vec3(.018,.045,.105),vec3(.115,.105,.35),vec3(.38,.20,.56),vec3(.73,.88,1.));int index=int(clamp(floor(value*4.5),0.,4.));outColor=vec4(palette[index],1.);
+  if(transitionMode==1)rgb=mix(texture(outgoingImage,cuv).rgb,rgb,smoothstep(0.,1.,transitionProgress));
+  else if(transitionMode==2){float side=step(.5,transitionProgress);vec3 halfImage=mix(texture(outgoingImage,cuv).rgb,rgb,side);rgb=halfImage*(abs(transitionProgress-.5)*2.);}
+
+  // Both masks are keyed to the SHARED cell, not to this window's fragment, so
+  // the screen runs continuously across the bezels instead of restarting in
+  // each frame. The second is offset so the two dithers do not correlate.
+  float rank=blueNoiseRank(cellId);
+  float quantRank=blueNoiseRank(cellId+vec2(23.,47.));
+  outColor=vec4(windowSurfaceLook(rgb,rank,quantRank,coherence,negative),1.);
 }`;
 
 function compile(type,code){const shader=gl.createShader(type);gl.shaderSource(shader,code);gl.compileShader(shader);if(!gl.getShaderParameter(shader,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(shader)||'shader');return shader;}
@@ -167,7 +189,7 @@ function draw(at){
     uploadTo(texture);const cadence=Math.max(90,Number(envelope?.fault?.cadenceMs)||420);if(!staleReady||at-lastStaleAt>=cadence){staleReady=uploadTo(staleTexture);lastStaleAt=at;}
     const transitionState=transitionUniform(at);
     gl.useProgram(program);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,texture);gl.uniform1i(gl.getUniformLocation(program,'image'),0);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,staleTexture);gl.uniform1i(gl.getUniformLocation(program,'staleImage'),1);gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,outgoingTexture);gl.uniform1i(gl.getUniformLocation(program,'outgoingImage'),2);gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D,blueNoiseTexture);gl.uniform1i(gl.getUniformLocation(program,'blueNoise'),3);
-    gl.uniform4f(gl.getUniformLocation(program,'crop'),Number(assignment?.crop?.x)||0,Number(assignment?.crop?.y)||0,Number(assignment?.crop?.w)||1,Number(assignment?.crop?.h)||1);gl.uniform2f(gl.getUniformLocation(program,'desktopOrigin'),Number(envelope?.desktopOrigin?.x)||0,Number(envelope?.desktopOrigin?.y)||0);gl.uniform2f(gl.getUniformLocation(program,'framebufferSize'),w,h);gl.uniform2f(gl.getUniformLocation(program,'blueNoiseSize'),BLUE_NOISE_SIZE,BLUE_NOISE_SIZE);
+    gl.uniform4f(gl.getUniformLocation(program,'crop'),Number(assignment?.crop?.x)||0,Number(assignment?.crop?.y)||0,Number(assignment?.crop?.w)||1,Number(assignment?.crop?.h)||1);gl.uniform2f(gl.getUniformLocation(program,'desktopOrigin'),Number(envelope?.desktopOrigin?.x)||0,Number(envelope?.desktopOrigin?.y)||0);gl.uniform2f(gl.getUniformLocation(program,'framebufferSize'),w,h);gl.uniform2f(gl.getUniformLocation(program,'blueNoiseSize'),BLUE_NOISE_SIZE,BLUE_NOISE_SIZE);gl.uniform1f(gl.getUniformLocation(program,'dpr'),dpr);gl.uniform1f(gl.getUniformLocation(program,'negative'),frontEndNegative);
     const preset=assignment?.content?.preset,mode=envelope?.fault?.flashMode;gl.uniform1i(gl.getUniformLocation(program,'procedural'),preset==='iris-abstraction'?1:preset==='distant-dot'?2:preset==='empty-field'?3:assignment?.content?.kind==='procedural'?4:0);gl.uniform1f(gl.getUniformLocation(program,'coherence'),envelope?.coherent?1:0);gl.uniform1f(gl.getUniformLocation(program,'faultIntensity'),Math.max(0,Math.min(1,Number(envelope?.fault?.intensity)||0)));gl.uniform1f(gl.getUniformLocation(program,'faultTick'),Math.floor(Date.now()/cadence));gl.uniform1f(gl.getUniformLocation(program,'faultSeed'),Number(envelope?.fault?.seed)||0);gl.uniform1i(gl.getUniformLocation(program,'flashMode'),mode==='off'?2:mode==='reduced'?1:0);gl.uniform1i(gl.getUniformLocation(program,'nvme'),envelope?.shader==='nvme-sector'?1:0);gl.uniform1i(gl.getUniformLocation(program,'transitionMode'),transitionState.mode);gl.uniform1f(gl.getUniformLocation(program,'transitionProgress'),transitionState.progress);gl.drawArrays(gl.TRIANGLES,0,6);
   }else if(source?.src){fallback.style.display='block';fallback.src=source.src;}
   raf=requestAnimationFrame(draw);
@@ -225,11 +247,24 @@ async function boot(){
   try{await listen('window-media-freeze',({payload})=>{if(!envelope||payload?.cueId!==envelope.cueId)return;executeAction({type:'frozen',frozen:!!payload.frozen},'external-freeze');});}catch(_){}
   try{await listen('window-media-origin',({payload})=>{if(!envelope||payload?.cueId!==envelope.cueId)return;envelope={...envelope,desktopOrigin:payload.desktopOrigin||envelope.desktopOrigin};});}catch(_){}
   try{await listen('window-media-coherence',({payload})=>{if(!envelope||payload?.cueId!==envelope.cueId)return;envelope={...envelope,coherent:!!payload.coherent};});}catch(_){}
+  // THE PLATE THE FRONT END IS WEARING. Broadcast to every surface rather than
+  // addressed to one composition, because it is a property of the screen behind
+  // them and not of any cue: while the opening and menu are up the desktop is a
+  // negative, and four violet fragments unfolding onto it belong to a different
+  // picture. It crossfades, so the surfaces turn with the background instead of
+  // snapping at the boundary.
+  try{await listen('window-media-plate',({payload})=>{frontEndNegative=Math.max(0,Math.min(1,Number(payload?.negative)||0));});}catch(_){}
   await announceReady();
   if(import.meta.env.DEV){
-    const preview=new URLSearchParams(location.search).get('preview');
+    const params=new URLSearchParams(location.search);
+    const preview=params.get('preview');
+    // `origin` places the preview on the desktop lattice, so two previews can be
+    // checked for the thing the surfaces are supposed to have: cells that agree
+    // across the bezel rather than each window starting its own grid.
+    const originX=Number(params.get('originX'))||0,originY=Number(params.get('originY'))||0;
+    frontEndNegative=Math.max(0,Math.min(1,Number(params.get('negative'))||0));
     if(assetById.has(preview)){
-      envelope={cueId:'dev:preview',paneId:'dev:preview',score:{epochMs:Date.now(),durationMs:12000,loop:true,cues:[],initial:{content:{kind:'video',assetId:preview},crop:{x:0,y:0,w:1,h:1},phaseOffsetMs:0}},fault:{},desktopOrigin:{x:0,y:0},coherent:true,shader:'violet-dither'};
+      envelope={cueId:'dev:preview',paneId:'dev:preview',score:{epochMs:Date.now(),durationMs:12000,loop:true,cues:[],initial:{content:{kind:'video',assetId:preview},crop:{x:0,y:0,w:1,h:1},phaseOffsetMs:0}},fault:{},desktopOrigin:{x:originX,y:originY},coherent:true,shader:'violet-dither'};
       resetScoreCycle(0);
     }
   }
