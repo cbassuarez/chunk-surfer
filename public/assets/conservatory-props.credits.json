@@ -4,10 +4,10 @@
     "author": "Chunk Surfer project",
     "source": "tools/chunk_surfer/build-props.mjs",
     "license": "project source (mixed: see meshes)",
-    "sha256": "dce174a0e410350a0db7140853d084347b8b8f7db862efd33182be93c7a9d732",
+    "sha256": "a2b64ca7843a50a939f3d5afb82681555c486949e099f62d8021dbc06a6725fa",
     "modifications": "Metres, Y-up, ground-centred. Procedural fallback geometry, project-authored Blender meshes, and user-supplied source meshes (unverified provenance) baked, re-axised, height-scaled, and vertex-cluster decimated under budget. Per-mesh provenance below says which is which.",
-    "triangles": 351278,
-    "bytes": 25463652
+    "triangles": 352314,
+    "bytes": 25547384
   },
   "meshes": [
     {
@@ -4037,7 +4037,7 @@
           0.7
         ]
       },
-      "triangles": 132,
+      "triangles": 144,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -4059,6 +4059,48 @@
         ]
       },
       "triangles": 112,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "ending_coffee_handoff",
+      "bounds": {
+        "min": [
+          -0.738,
+          0,
+          -0.234
+        ],
+        "max": [
+          0.737,
+          0.234,
+          0.216
+        ]
+      },
+      "triangles": 160,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "ending_returned_ledger",
+      "bounds": {
+        "min": [
+          -0.48,
+          -0.003,
+          -0.31
+        ],
+        "max": [
+          0.48,
+          0.083,
+          0.31
+        ]
+      },
+      "triangles": 720,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -4143,6 +4185,27 @@
         ]
       },
       "triangles": 100,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "ending_containment_ribs",
+      "bounds": {
+        "min": [
+          -0.389,
+          0.04,
+          -0.52
+        ],
+        "max": [
+          0.04,
+          2.365,
+          0.52
+        ]
+      },
+      "triangles": 144,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",

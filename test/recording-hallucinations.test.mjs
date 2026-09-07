@@ -60,6 +60,20 @@ test('recording hallucination director starts, holds, expires, and cools down', 
     reduceDread: false,
   };
 
+  // IT HAS TO BE REACHABLE EARLY IN A TAKE. With no hush pressure the gate used
+  // to open only past progress 0.33 — fifteen seconds of a forty-five second
+  // take — while the scripted training encounter ends the first take at about
+  // six. So during the whole tutorial arc a hallucination was unreachable, and a
+  // player who recorded, got pulled into the fight, and recorded again had never
+  // seen one.
+  {
+    const quiet = { ...base, hushPressure: 0 };
+    assert.equal(recordingHallucinationEligibility({ ...quiet, takeProgress: 0.05 }).reason, 'too-early',
+      'the take still gets its first seconds clean');
+    assert.equal(recordingHallucinationEligibility({ ...quiet, takeProgress: 0.2 }).eligible, true,
+      'but a fifth of the way in, with no hush pressure at all, one may fire');
+  }
+
   const first = d.tick({ ...base, nowMs: 1000 });
   assert.equal(first.started, true);
   assert.ok(first.active);

@@ -1,3 +1,5 @@
+import { makePracticeFightScene } from './practice-fight.js';
+import { makeBattlePreparation } from './battle-preparation.js';
 // Player-paced signal combat: deterministic rules, ordinary actions staged over
 // a readable 1.2-second beat and reactive strikes over a four-beat phrase — the opponent
 // floats top-centre, the recordist's hands rise from the bottom foreground,
@@ -55,7 +57,6 @@ import {
   predictedCombatIntent,
   reduceCombat,
   rivalCombatIntent,
-  resolveCombatResult,
   advanceEnemy,
   applyFireballImpact,
   applyFireballReturn,
@@ -86,6 +87,7 @@ import { createBattleSubmersionController } from './battle-submersion.js';
 import { createBattleWaterAudio } from '../audio/battle-water.js';
 import { createFireballExchange, FIREBALL_RETURN_DAMAGE } from './fireball-exchange.js';
 import { createFireballVoice } from '../audio/fireball-voice.js';
+import { pressControl, releaseControl, cancelControlScope } from './control-mechanics.js';
 
 // Five to eight seconds, cycling, so the clock is a rhythm rather than a number
 // the player learns to count against.
@@ -117,7 +119,6 @@ export function combatEnemyAttackAudioShape(shape = {}, presentation = null, sub
 // reaction branch of render().
 const UTILITY_TURN_SECONDS = .82;
 const CPS = 40;
-const BATTLE_GRID_LABEL = '168 BPM / 4:4 / 40 BARS';
 const CHANNELS = Object.freeze([
   { id: SOURCE_CHANNEL.RESCUE, label: 'RETURN / RESCUE', glyph: '↩' },
   { id: SOURCE_CHANNEL.CONTAIN, label: 'ISOLATE / CONTAIN', glyph: '▣' },
@@ -199,6 +200,9 @@ export function makeCombatScene({
   // between them. See the note at the call site in main.js.
   seed = 0,
   loadout = {},
+  encounterIntro = false,
+  preparation = null,
+  getPreparedLoadout = null,
   resources = {},
   source = null,
   // Knowledge of what this player has already read, so a second run of a fight
@@ -218,6 +222,7 @@ export function makeCombatScene({
   skipOpening = false,
   director = null,
   interference = null,
+  practiceClues = null,
   environmentLighting = null,
   initialPerformanceIntrusion = 0,
   onPerformanceStage = () => {},
@@ -229,6 +234,9 @@ export function makeCombatScene({
   // this module cannot see the renderer that took the picture.
   onDefeatScreen = null,
 } = {}) {
+  if (battle?.combat?.practice) return makePracticeFightScene({
+    battle,seed,difficulty,loadout,resources,getAudio,audio,practiceClues,onWin,onLose,onAbort,encounterIntro,
+  });
   if (!battle?.combat) throw new Error(`missing signal combat definition: ${battle?.id || 'unknown'}`);
   const voice = createSamDialogVoice({ volume: 0.26, getAudio });
   voice.warm?.();
@@ -270,6 +278,7 @@ export function makeCombatScene({
   // two beats (player, then enemy), and the director/music must see the turn as
   // one span from here to the settled end.
   let turnStart = null;
+  let presentedTutorialStep = null;
   let takeConfirmation = false;
   let resolution = null;
 
@@ -283,6 +292,7 @@ export function makeCombatScene({
   // one pure snapshot so there is no second, almost-matching UI definition.
   function parryWindow() {
     if (phase !== 'resolve' || !resolution) return null;
+    if (director?.allowsParry?.() === false) return null;
     return parryOpportunitySnapshot({
       side: resolution.side,
       actionKind: resolution.action?.kind,
@@ -372,6 +382,28 @@ export function makeCombatScene({
   let musicFinished = false;
   let toolRows = [];
   let moveRows = [];
+  // Inputs remember the cap they started on. Releasing over another tile, or
+  // after the reducer has advanced the turn, must release the original switch.
+  const heldControls = new Map();
+  const controlInput = (e = {}) => e.type?.startsWith('pointer') || e.type === 'lostpointercapture'
+    ? `pointer:${e.pointerId ?? 'primary'}`
+    : e.controllerAction ? `controller:${e.controllerAction}` : `key:${e.code || e.key || ''}`;
+  function pressDeckControl(id, e) {
+    const input = controlInput(e);
+    if (heldControls.get(input) === id) return;
+    releaseDeckControl(e);
+    heldControls.set(input, id);
+    pressControl(id);
+  }
+  function releaseDeckControl(e) {
+    const input = controlInput(e), id = heldControls.get(input);
+    heldControls.delete(input);
+    if (id && ![...heldControls.values()].includes(id)) releaseControl(id);
+  }
+  function resetDeckControls() {
+    heldControls.clear();
+    cancelControlScope('combat:');
+  }
   let channelRows = [];
   let apparitionRows = [];
   let reactionRect = null;
@@ -393,6 +425,8 @@ export function makeCombatScene({
   let skipArmed = false;
   let regionRects = {};
   let introElapsed = 0;
+  let preparationMenu = null, preparationStarted = false, preparationDone = !preparation;
+  let readyElapsed = 0, entryConfirmLocked = false;
   let resultSurfacePending = false;
   let resultChoreographyPending = false;
   let hitstop = 0;
@@ -484,7 +518,13 @@ export function makeCombatScene({
     });
   }
 
-  function tools() { return availableCombatTools(state); }
+  function tools() {
+    const list = availableCombatTools(state);
+    if (!director?.active?.()) return list;
+    return list.map(tool => ({ ...tool,
+      ready: director.filterMoves(combatMovesForTool(state, tool.id)).some(move => move.enabled),
+    }));
+  }
   function activeTool() { return tools()[selectedTool] || tools()[0] || { id: COMBAT_TOOL.SELF, label: 'HANDS' }; }
   function moves() {
     const list = combatMovesForTool(state, activeTool().id);
@@ -504,6 +544,7 @@ export function makeCombatScene({
   }
 
   function armTurnClock() {
+    if (director?.pausesTurnClock?.()) { turnClock = null; return; }
     const limit = turnSeconds(state.turns);
     turnClock = { limit, left:limit, expired:false };
   }
@@ -520,11 +561,48 @@ export function makeCombatScene({
   }
 
   function beginToolSelection() {
+    if (!preparationDone && !preparationStarted) {
+      preparationStarted = true;
+      phase = 'prepare';
+      disarmTurnClock();
+      resetDeckControls();
+      musicSession?.setDialogueActive?.(true);
+      preparationMenu = makeBattlePreparation({
+        ...preparation, audio,
+        onReady: ({confirmHeld}) => {
+          if (!sceneEntered) return;
+          const fresh = getPreparedLoadout?.() || loadout;
+          state = createCombatState(battle.combat, {
+            difficulty, seed, injuries:fresh.injuries, composure:fresh.composure ?? null,
+            battery:fresh.battery, torchDrainScale:fresh.torchDrainScale,
+            tools:fresh.tools, techniques:fresh.techniques,
+            carriedRead, continuation, startingMovementIndex:state.movementIndex, source,
+          });
+          preparationDone = true;
+          preparationMenu = null;
+          phase = 'ready'; readyElapsed = 0; entryConfirmLocked = confirmHeld;
+          repairSelection();
+        },
+      });
+      return;
+    }
     phase = 'tool';
     takeConfirmation = false;
     selectedMove = 0;
+    state = director?.prepareState?.(state) || state;
     armTurnClock();
     repairSelection();
+    const lesson = director?.step?.();
+    if (lesson && (director?.guided?.() || lesson.id !== presentedTutorialStep)) {
+      const preferred = director?.preferredAction?.(state);
+      const targetTool = tools().findIndex(tool => tool.moves.includes(preferred));
+      if (targetTool >= 0) {
+        selectedTool = targetTool;
+        selectedMove = Math.max(0, moves().findIndex(move => move.id === preferred));
+        phase = 'move';
+      }
+    }
+    presentedTutorialStep = lesson?.id || null;
     // The exchange is over and the beat is his again: this is where a bark
     // lands, on top of the deck he is already reading.
     nextBark();
@@ -660,8 +738,8 @@ export function makeCombatScene({
     })).catch(() => null);
     armBarks(next);
     const lines = next?.before || [];
-    if (lines.length) speak(lines, () => { beginToolSelection(); musicSession?.setDialogueActive?.(false); });
-    else { beginToolSelection(); musicSession?.setDialogueActive?.(false); }
+    if (lines.length) speak(lines, () => { beginToolSelection(); musicSession?.setDialogueActive?.(phase === 'prepare'); });
+    else { beginToolSelection(); musicSession?.setDialogueActive?.(phase === 'prepare'); }
   }
 
   function enterMovement(index = state.movementIndex) {
@@ -699,6 +777,7 @@ export function makeCombatScene({
 
   function beginOpening() {
     if (!sceneEntered || openingStarted) return;
+    if (encounterIntro && introElapsed < 1.54) return;
     openingStarted = true;
     if (skipOpening) { enterMovement(state.movementIndex); return; }
     const opening = battle.intro || [];
@@ -1018,10 +1097,7 @@ export function makeCombatScene({
     fx?.stopCues?.();
     // The director and music read the turn as one span: from where the player
     // committed (turnStart) to the settled end-state.
-    const tutorialAdvanced=director?.advance?.(turnStart || resolved.before, state);
-    if(tutorialAdvanced&&director?.completeBattle?.()&&!state.result){
-      state=resolveCombatResult(state,'win');
-    }
+    director?.advance?.(turnStart || resolved.before, state);
     turnStart = null;
     const last=state.last||{};
     const correct=last.perfect===true||last.parried===true||((Number(last.dealt)||0)>0&&(Number(last.received)||0)===0);
@@ -1200,6 +1276,7 @@ export function makeCombatScene({
     director.skip();
     skipArmed = false;
     notice = 'DRILL SKIPPED · ALL MOVES OPEN';
+    beginToolSelection();
     audio?.menuMove?.();
     return true;
   }
@@ -1236,6 +1313,8 @@ export function makeCombatScene({
     lensPreset: 'battle',
 
     enter() {
+      resetDeckControls();
+      if (typeof window !== 'undefined') window.addEventListener('blur', resetDeckControls);
       sceneEntered = true;
       if (state.practice) {
         const rig = getAudio?.();
@@ -1262,8 +1341,8 @@ export function makeCombatScene({
         };
         window.addEventListener('chunk-surfer:fireball-forgive',onSurfaceForgive);
       }
-      phase = musicSession ? 'arrival' : 'talk';
-      if (!musicSession) { beginOpening(); return; }
+      phase = musicSession || encounterIntro ? 'arrival' : 'talk';
+      if (!musicSession) { musicBootResolved = true; beginOpening(); return; }
       Promise.resolve(musicSession.start?.()).then((music) => {
         if (!sceneEntered) return;
         musicBootResolved = true;
@@ -1277,6 +1356,9 @@ export function makeCombatScene({
     },
 
     exit() {
+      preparationMenu?.dispose(); preparationMenu = null;
+      resetDeckControls();
+      if (typeof window !== 'undefined') window.removeEventListener('blur', resetDeckControls);
       sceneEntered = false;
       if (onSurfaceHit && typeof window !== 'undefined') {
         window.removeEventListener('chunk-surfer:fireball-hit', onSurfaceHit);
@@ -1308,6 +1390,9 @@ export function makeCombatScene({
     battleView() {
       return {
         phase,
+        preparation: preparationMenu?.snapshot() || null,
+        preparationDone,
+        introElapsed,
         state: JSON.parse(JSON.stringify(state)),
         intent: currentCombatIntent(state),
         // Both sides of the split, so a test can prove they are the same when
@@ -1324,7 +1409,7 @@ export function makeCombatScene({
           fidelity: readFidelity(state),
           apparitions: combatApparitions(state),
         }),
-        tools: availableCombatTools(state),
+        tools: tools(),
         moves: moves(),
         actions: availableCombatActions(state),
         prediction: combatPrediction(state),
@@ -1347,12 +1432,24 @@ export function makeCombatScene({
         } : null,
         statePhase: state.phase,
         tutorial: director?.snapshot?.() || null,
+        turnClock: turnClock ? { ...turnClock } : null,
+        inputRects: {
+          tools: toolRows.map(row => ({ ...row })),
+          moves: moveRows.map(row => ({ ...row })),
+          reaction: reactionRect ? { ...reactionRect } : null,
+        },
         interlude: phase === 'interlude',
         repriseReturn:repriseReturnPulse>0?{id:repriseReturnId,left:repriseReturnPulse}:null,
       };
     },
 
     update(dt) {
+      if (phase === 'prepare') { now += dt; preparationMenu?.update(dt); return; }
+      if (phase === 'ready') {
+        readyElapsed += Math.max(0, Math.min(.08, dt));
+        if (readyElapsed >= .68) { musicSession?.setDialogueActive?.(false); beginToolSelection(); }
+        return;
+      }
       introElapsed += dt;
       repriseReturnPulse=Math.max(0,repriseReturnPulse-dt);
       if (practiceClick) {
@@ -1456,6 +1553,9 @@ export function makeCombatScene({
     },
 
     key(e) {
+      if (phase === 'prepare') return preparationMenu?.key(e) ?? true;
+      if (phase === 'ready' || (encounterIntro && phase === 'arrival')) return e.key !== 'Escape';
+      if (entryConfirmLocked && isConfirmInput(e)) return true;
       const confirm = isConfirmInput(e);
       // Escape remains the run-level pause. The fight's semantic Back is the
       // controller binding (or X on keyboard), never Tab.
@@ -1543,11 +1643,17 @@ export function makeCombatScene({
           notice = 'BACK AGAIN TO SKIP THE DRILL';
           audio?.menuMove?.();
         }
-      } else if (confirm && phase === 'move') execute(moves()[selectedMove]?.id);
+      } else if (confirm && phase === 'move') {
+        const move = moves()[selectedMove];
+        if (move?.enabled) pressDeckControl(`combat:action:${move.id}`, e);
+        execute(move?.id);
+      }
       return true;
     },
 
     keyup(e) {
+      if (isConfirmInput(e) || e.controllerAction === 'start') entryConfirmLocked = false;
+      releaseDeckControl(e);
       if (isConfirmInput(e)) {
         confirmAdvanceLocked = false;
         confirmHeld = false;
@@ -1557,7 +1663,18 @@ export function makeCombatScene({
     },
 
     pointer(e) {
+      if (phase === 'prepare') return preparationMenu?.pointer(e) ?? true;
+      if (phase === 'ready' || (encounterIntro && phase === 'arrival')) return true;
+      if (e.type === 'pointercancel' && e.pointerId == null) {
+        resetDeckControls();
+        return true;
+      }
+      if (e.type === 'pointerup' || e.type === 'pointercancel' || e.type === 'lostpointercapture') {
+        releaseDeckControl(e);
+        return true;
+      }
       if (e.type !== 'pointerdown') return true;
+      if (e.button != null && e.button !== 0) return true;
       const x = Math.floor(Number(e.cellX));
       const y = Math.floor(Number(e.cellY));
       if(['tool','move','resolve'].includes(phase)&&fireballRect
@@ -1601,6 +1718,8 @@ export function makeCombatScene({
       }
       const tool = toolRows.find((row) => y >= row.y && y < row.y + (row.h || 1) && x >= row.x && x < row.x + row.w);
       if (tool) {
+        const entry = tools()[tool.index];
+        if (entry?.ready !== false) pressDeckControl(`combat:tool:${entry?.id || 'self'}`, e);
         selectedTool = tool.index;
         selectedMove = 0;
         phase = 'tool';
@@ -1619,19 +1738,21 @@ export function makeCombatScene({
         // stop. Pointing at a thing is a way of choosing it.
         selectedMove = move.index;
         phase = 'move';
+        if (moves().find((entry) => entry.id === move.id)?.enabled) pressDeckControl(`combat:action:${move.id}`, e);
         execute(move.id);
       }
       return true;
     },
 
     render() {
+      preparationMenu?.visible(scenes.top({ includeOverlay:true }) === scene);
       // The reprise is a real handoff to the room renderer. Leaving this panel
       // composited underneath the child scene makes the old fight read as the
       // replayed space and hides the very evidence Source is weaponising.
       if (phase === 'interlude') return;
       const { cols, rows } = uiSize();
       uiFill(0, 0, cols, rows, 'rgba(2,2,3,0.97)');
-      const w = Math.min(118, cols - 4);
+      const w = Math.max(36, cols - 8);
       const x = Math.floor((cols - w) / 2);
       const choosing = ['tool', 'move'].includes(phase);
       const parryPrompt = activeInputPromptDevice() === 'controller'
@@ -1639,8 +1760,12 @@ export function makeCombatScene({
         : '[SPACE] PARRY';
       const footer = phase === 'interlude'
         ? 'SOURCE HAS THE TRANSPORT'
+        : phase === 'prepare'
+          ? 'TURNS PAUSED'
+        : phase === 'ready'
+          ? ''
         : phase === 'arrival'
-          ? '168 BPM · LOCKING DOWNBEAT'
+          ? ''
         : phase === 'tool'
           ? activeInputPromptDevice() === 'controller'
             ? '[STICK / D-PAD ←→] TOOL · [↓] ACTIONS'
@@ -1685,7 +1810,7 @@ export function makeCombatScene({
       const reaction = parryWindow();
       const hudMode = reaction ? 'reaction'
         : phase === 'talk' ? 'dialogue'
-          : phase === 'arrival' ? 'arrival' : 'command';
+          : ['arrival','prepare','ready'].includes(phase) ? 'arrival' : 'command';
       const layout = combatHudLayout({ panel, mode: hudMode, sourceActive: !!state.source, rosterActive: !!state.apparitions || !!state.practice });
       const compact = layout.compact;
       reactionRect = null;
@@ -1748,13 +1873,14 @@ export function makeCombatScene({
       const stageH = layout.stage.h;
       fireballRect={x:panel.x,y:stageY,w:panel.w,h:stageH};
       const reducedMotion = shakeMode() !== 'full';
-      const introP = Math.min(1, introElapsed / 1.05);
+      const introP = Math.max(0, Math.min(1, encounterIntro ? (introElapsed - .38) / 1.16 : introElapsed / 1.05));
       const introIn = reducedMotion ? 1 : ease(introP);
       const dealtFlash = impactFx && impactFx.dealt > 0 ? Math.max(0, 1 - (now - impactFx.at) / .18) : 0;
       const hurtNow = impactFx && impactFx.received > 0 ? Math.max(0, 1 - (now - impactFx.at) / .35) : 0;
-      const ew = Math.min(40, Math.floor(panel.w * .36));
+      const preparing = phase === 'prepare';
+      const ew = Math.min(40, Math.floor(panel.w * (preparing ? .27 : .36)));
       const eh = Math.max(4, stageH - 1);
-      const ex = panel.x + Math.floor(panel.w * .56 - ew / 2) + Math.round((1 - introIn) * panel.w * .45);
+      const ex = panel.x + (preparing ? Math.floor(panel.w * .84 - ew / 2) : Math.floor(panel.w * .56 - ew / 2)) + Math.round((1 - introIn) * panel.w * .45);
       drawEnemyVoidStage(battle.combat.id, {
         x: panel.x, y: stageY, w: panel.w, h: stageH,
         enemyBox: { x: ex, w: ew },
@@ -1926,7 +2052,7 @@ export function makeCombatScene({
       });
 
       // ── stage overlays: intent card (left) and stance triangle (right) ─────
-      const showOverlays = !['arrival', 'talk'].includes(phase) && !reaction;
+      const showOverlays = !['arrival', 'talk', 'prepare', 'ready'].includes(phase) && !reaction;
       const intentX = panel.x + 1;
       const intentW = Math.min(34, Math.floor(panel.w * .30));
       if (showOverlays) {
@@ -2100,9 +2226,11 @@ export function makeCombatScene({
       }
 
       if (phase === 'arrival') {
-        // No title card: the stage is already on screen behind the entry wipe.
-        // The footer carries the BPM lock; one dim status line is enough.
-        uiText(layout.arrival.x, layout.arrival.y, `ACQUIRING · GRID ${BATTLE_GRID_LABEL}`.slice(0, layout.arrival.w), 'ui-secondary', .55);
+        return;
+      }
+      if (phase === 'prepare') return;
+      if (phase === 'ready') {
+        drawVfdText(panel.x + Math.max(0, (panel.w - 18) / 2), stageY + stageH * .5, 'YOUR TURN', {scale:2});
         return;
       }
 
@@ -2282,6 +2410,7 @@ export function makeCombatScene({
         // simply louder than the grid until he understands the room, and it
         // fades as he does. Three passes at the bar and it is gone, which is
         // what "maintenance packed the grille twice" was always describing.
+        const roomForClick = panel.w >= barsW + 30;
         const clickX = panel.x + panel.w - 12;
         if (roomForClick) {
         // The SAME clock the metronome is running on, rushed by exactly as much.
@@ -2308,7 +2437,6 @@ export function makeCombatScene({
         // it, because the point is that he does it anyway.
         // The click only gets a corner if there is one to give it; on a narrow
         // deck the fragment and what he has heard come first.
-        const roomForClick = panel.w >= barsW + 30;
         const textRight = panel.x + (roomForClick ? panel.w - 13 : panel.w - 1);
         const right = panel.x + Math.max(barsW + 3, panel.w * .40);
         const textW = Math.max(8, Math.floor(textRight - right));
@@ -2424,6 +2552,7 @@ export function makeCombatScene({
             x, y: moveY, w: moveW, h: moveRect.h,
             selected: index === selectedMove,
             focused: phase === 'move' && index === selectedMove,
+            executing: phase === 'resolve' && resolution?.side === 'player' && resolution.action?.id === move.id,
           });
           moveRows.push({ id: move.id, index, x, y: moveY, w: moveW, h: moveRect.h });
         });

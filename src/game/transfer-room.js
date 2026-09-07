@@ -16,7 +16,7 @@
 
 import * as scenes from './scenes.js';
 import { uiFill, uiLine, uiSize, uiText, uiWrap } from '../render/ui.js';
-import { drawMachinePanel, drawVfdText } from '../render/presentation.js';
+import { withMachinePanel, drawVfdText } from '../render/presentation.js';
 import { UI_COLOR } from '../render/palette.js';
 import * as AUDIO from '../audio/story-audio.js';
 import { HUSH_DOSSIER } from './hush-dossier.js';
@@ -137,14 +137,14 @@ export function makeTransferRoomScene({ meta = {} } = {}) {
       const row = current();
       const cited = resolveCitations(row, everyRow);
 
-      const body = drawMachinePanel(x, y, w, h, {
+      withMachinePanel(x, y, w, h, {
         label: 'TRANSFER ROOM',
         source: 'TR-4417',
         footer: cited.length
           ? '↑↓ ROW · TAB REGISTER · ENTER FOLLOW REFERENCE · ESC CLOSE'
           : '↑↓ ROW · TAB REGISTER · ESC CLOSE',
         meter: false,
-      });
+      }, (body) => {
       drawVfdText(body.x, body.y, 'W. ELLERY / WORKS', { color: UI_COLOR.amber, max: body.w });
 
       // Registers along the top.
@@ -232,6 +232,7 @@ export function makeTransferRoomScene({ meta = {} } = {}) {
         const refs = cited.map((entry) => entry.ref).join('  ');
         uiText(dx, body.y + body.h - 2, `SEE ALSO  ${refs}`.slice(0, dw), 'ui-amber');
       }
+      });
     },
   };
 }

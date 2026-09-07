@@ -259,6 +259,12 @@ function normalizeSaveV4(data, meta = null) {
     : inferLegacyChapelTower(source);
   const inferredTower=inferLegacyChapelTower(source);
   if(chapelTower.phase==='foreshadow'&&inferredTower.phase!=='foreshadow')chapelTower={...chapelTower,...inferredTower,attempts:chapelTower.attempts};
+  const run = sanitizeRun(normalizeRun(source.run, {
+    meta,
+    settings,
+    activeFallback: hasOldRunState,
+    legacyFlags: source.flags,
+  }));
 
   return {
     ...base,
@@ -274,7 +280,13 @@ function normalizeSaveV4(data, meta = null) {
     items: Array.isArray(source.items) ? source.items : [],
     props: { ...base.props, ...(source.props && typeof source.props === 'object' ? source.props : {}) },
     encounters: { ...base.encounters, ...(source.encounters && typeof source.encounters === 'object' ? source.encounters : {}) },
-    combatBuild: normalizeCombatBuild(source.combatBuild, source.encounters?.cleared, source.flags),
+    // Context is supplied only at the save boundary. The completion flag is
+    // already committed by the bench drill, including its authored skip exit;
+    // old completed saves therefore receive the same one-time starter issue.
+    combatBuild: normalizeCombatBuild(source.combatBuild, source.encounters?.cleared, source.flags, {
+      tutorialComplete: source.flags?.['combat.trained'] === true,
+      combatAssistance: run?.rules?.values?.combatAssistance || 'standard',
+    }),
     bagLoadout: normalizeCombatLoadout(source.bagLoadout),
     bagSheets: normalizeBagSheetState(source.bagSheets),
     bagMap: normalizeBagMapState(source.bagMap),
@@ -291,12 +303,7 @@ function normalizeSaveV4(data, meta = null) {
     }),
     endingCutscene: normalizeEndingCutsceneCheckpoint(source.endingCutscene),
     settings,
-    run: sanitizeRun(normalizeRun(source.run, {
-      meta,
-      settings,
-      activeFallback: hasOldRunState,
-      legacyFlags: source.flags,
-    })),
+    run,
   };
 }
 

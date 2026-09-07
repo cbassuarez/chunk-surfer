@@ -20,7 +20,7 @@
 
 import * as scenes from './scenes.js';
 import { uiSize, uiScrim } from '../render/ui.js';
-import { drawMachinePanel } from '../render/presentation.js';
+import { withMachinePanel } from '../render/presentation.js';
 import { createConversation } from './conversation.js';
 import {
   drawStoryArtCard,
@@ -148,7 +148,7 @@ export function makeThoughtScene({
             ? 'me'
             : v.who;
 
-        const panel = drawMachinePanel(
+        withMachinePanel(
           x,
           y0,
           w,
@@ -161,7 +161,7 @@ export function makeThoughtScene({
               : promptLine([{ action: 'continue', label: 'CONTINUE' }]),
             meter: true,
           },
-        );
+        (panel) => {
 
         const contentX = panel.x + 1;
         const contentW = Math.max(8, panel.w - 2);
@@ -301,6 +301,7 @@ export function makeThoughtScene({
             maxRows: choiceLayout.height,
           });
         }
+        });
       },
   };
   return scene;

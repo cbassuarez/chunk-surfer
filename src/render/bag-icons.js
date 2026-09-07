@@ -162,6 +162,10 @@ export function drawBagIcon(kind, x, y, {
   state = 'active',
   alpha = 1,
   empty = false,
+  // Printed on an illuminated cap instead of glowing on glass. Overrides the
+  // tone entirely and suppresses both the flicker and the bloom: a silkscreened
+  // symbol on plastic does neither. See presentation.js drawLampButton.
+  ink = null,
 } = {}) {
   uiDraw(({ ctx, dpr, cellW, cellH, cols }) => {
     const box = {
@@ -170,14 +174,16 @@ export function drawBagIcon(kind, x, y, {
       w: w * cellW * dpr,
       h: h * cellH * dpr,
     };
-    const color = iconColor(empty ? 'danger' : state, x, cols);
-    const flicker = uiFlickerAlpha(x, y, empty ? 'danger' : 'phosphor');
+    const color = ink || iconColor(empty ? 'danger' : state, x, cols);
+    const flicker = ink ? 1 : uiFlickerAlpha(x, y, empty ? 'danger' : 'phosphor');
 
     ctx.save();
     withStyle(ctx, {
       color,
-      alpha: Math.max(0, Math.min(1, alpha * flicker * uiBrightness() * (empty ? .42 : 1))),
-      active,
+      alpha: ink
+        ? Math.max(0, Math.min(1, alpha))
+        : Math.max(0, Math.min(1, alpha * flicker * uiBrightness() * (empty ? .42 : 1))),
+      active: ink ? false : active,
       dpr,
     });
 

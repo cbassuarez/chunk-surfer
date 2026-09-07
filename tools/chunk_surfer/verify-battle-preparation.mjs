@@ -1,0 +1,64 @@
+import assert from 'node:assert/strict';
+import {mkdir,writeFile} from 'node:fs/promises';
+import puppeteer from 'puppeteer-core';
+const out='artifacts/battle-preparation';await mkdir(out,{recursive:true});
+const browser=await puppeteer.launch({executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:true,args:['--no-sandbox','--use-angle=metal','--autoplay-policy=no-user-gesture-required']});
+const errors=[];const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+try{
+ const page=await browser.newPage();await page.setViewport({width:1440,height:900,deviceScaleFactor:1});
+ page.on('pageerror',e=>{errors.push(String(e.stack||e));console.log(String(e.stack||e));});
+ page.on('console',m=>{if(m.type()==='error'&&m.text().includes('LOOP'))errors.push(m.text());});
+ await page.evaluateOnNewDocument(()=>Object.defineProperty(document,'hasFocus',{configurable:true,value:()=>true}));
+ await page.goto(`${process.env.GAME_URL||'http://127.0.0.1:5203'}/?nomic=1&sam=0&nothink=1`,{waitUntil:'domcontentloaded'});
+ await page.waitForFunction(()=>window.__probe?.battleId&&window.__scenes?.top()?.id);
+ await page.evaluate(async()=>{
+  window.__probe.testRun();window.__probe.setFlags(['bag.taken','has.interface','has.fork','combat.trained']);
+  window.__probe.battleId('natatorium');
+ });
+ const state=()=>page.evaluate(()=>{const s=window.__scenes.top();return{id:s?.id,...(s?.battleView?.()||s?.view?.())};});
+ console.log('OPEN',JSON.stringify(await state()));
+ await page.waitForFunction(()=>window.__scenes.top()?.view?.().phase==='versus');
+ await page.screenshot({path:`${out}/versus.png`});
+ await page.waitForFunction(()=>window.__scenes.top()?.battleView?.().phase==='arrival');
+ await sleep(650);await page.screenshot({path:`${out}/reveal.png`});
+ for(let i=0;i<55;i++){
+  await sleep(400);const s=await state();if(s.phase==='prepare')break;
+  if(s.phase==='talk')await page.keyboard.press('Enter');
+ }
+ let s=await state();console.log('PREP',JSON.stringify(s).slice(0,900));assert.equal(s.phase,'prepare');
+ await page.screenshot({path:`${out}/equipment-wide.png`});
+ const click=async(command)=>{const r=await page.evaluate(c=>{const b=document.querySelector('#battle-preparation').shadowRoot.querySelector(`[data-command="${c}"]`);const r=b.getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2};},command);await page.mouse.click(r.x,r.y);await sleep(200);};
+ await click('tab:skills');assert.equal((await state()).preparation.page,'skills');
+ await page.screenshot({path:`${out}/skills-wide.png`});
+ await click('patch');assert.equal((await state()).preparation.build.techniques.length,1);
+ await click('patch');assert.equal((await state()).preparation.build.techniques.length,0);
+ await click('patch');
+ await page.screenshot({path:`${out}/skills-patched.png`});
+ await page.keyboard.press('q');assert.equal((await state()).preparation.page,'equipment');
+ await click('slot:3');await click('equip:interface');assert.equal((await state()).preparation.loadout.top[3],'interface');
+ const before=await state();await sleep(2200);assert.deepEqual((await state()).state,before.state);assert.equal((await state()).fireball.active,null);
+ await page.keyboard.press('Escape');await sleep(200);
+ console.log('PAUSE',(await state()).id);assert.equal(await page.evaluate(()=>document.querySelector('#battle-preparation').hidden),true);
+ await page.keyboard.press('Escape');await sleep(300);assert.equal((await state()).phase,'prepare');
+ assert.equal(await page.evaluate(()=>document.querySelector('#battle-preparation').hidden),false);
+ await page.setViewport({width:960,height:640,deviceScaleFactor:1});await sleep(600);
+ await page.screenshot({path:`${out}/equipment-compact.png`});
+ await click('tab:skills');await page.screenshot({path:`${out}/skills-compact.png`});
+ await page.evaluate(()=>window.__chunkSurferDisplay.setUiScale(1.5));await sleep(400);
+ await page.screenshot({path:`${out}/skills-large-text.png`});
+ const layout=await page.evaluate(()=>{const r=document.querySelector('#battle-preparation').shadowRoot;const rect=e=>{const b=e.getBoundingClientRect();return{x:b.x,y:b.y,right:b.right,bottom:b.bottom,w:b.width,h:b.height};};return{case:rect(r.querySelector('.case')),ready:rect(r.querySelector('[data-command="ready"]')),page:rect(r.querySelector('.page')),viewport:{w:innerWidth,h:innerHeight}};});
+ console.log('COMPACT',JSON.stringify(layout));assert.ok(layout.ready.bottom<=layout.viewport.h&&layout.ready.right<=layout.viewport.w);
+ assert.ok(layout.page.h>40);
+ await page.evaluate(()=>window.__chunkSurferDisplay.setUiScale(1));await page.setViewport({width:1440,height:900});await sleep(500);
+ await click('ready');assert.equal((await state()).phase,'ready');assert.equal(await page.$('#battle-preparation'),null);
+ await page.waitForFunction(()=>window.__scenes.top()?.battleView?.().phase==='tool');
+ s=await state();assert.ok(s.state.tools.rig);assert.ok(s.state.techniques.includes('torch.afterimage'));assert.ok(s.turnClock);
+ const saved=await page.evaluate(()=>{const s=JSON.parse(localStorage.getItem('chunk-surfer:save:v4'));return{top:s.bagLoadout.top,skills:s.combatBuild.techniques};});
+ assert.equal(saved.top[3],'interface');assert.ok(saved.skills.includes('torch.afterimage'));
+ await page.screenshot({path:`${out}/fight.png`});
+ await page.keyboard.press('ArrowDown');assert.equal((await state()).phase,'move');
+ await page.keyboard.press('Enter');assert.notEqual((await state()).phase,'move','pointer READY does not swallow a fresh keyboard confirmation');
+ const report={checks:['automatic splash','battle reveal','authored dialogue before preparation','pointer equipment assignment','skill patch and pull','keyboard tabs','combat frozen during preparation','pause hides and restores module','compact and 150% scale','save commits on READY','selected gear and skills reach reducer','turn timer starts after READY','first action accepts input'],errors,layout,saved};
+ await writeFile(`${out}/report.json`,JSON.stringify(report,null,2));console.log('PASS',report.checks.length,'browser checks');
+ await writeFile(`${out}/errors.json`,JSON.stringify(errors,null,2));assert.deepEqual(errors,[]);
+}finally{await browser.close();}

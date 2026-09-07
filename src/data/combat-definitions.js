@@ -393,7 +393,22 @@ export function trainingCombatDefinition() {
 }
 
 export function trainingCombatBattle() {
-  const combat = trainingCombatDefinition();
+  // Separate from the legacy training profile used by reducer labs. A single
+  // honest coherence bar contains the taught setup and a short choice-based
+  // finish; no second health bar waits after graduation.
+  const combat = {
+    ...trainingCombatDefinition(),
+    rehearsal: 'bench-drill-v2',
+    movements: [pinned('bench-rehearsal', 'THE THING YOU JUST INVENTED', 85, [
+      B('training:brace', 'ITS SHOULDERS DRAW BACK. A BLOW IS COMING.', 4, { takeLabel: 'BENCH TONE', playbackDamage: 10 }),
+      C('training:conceal', 'ITS OUTLINE DISAPPEARS INTO THE DARK.', 4),
+      B('training:capture', 'TWO CLEAN NOTES REPEAT THROUGH ITS TEETH.', 4, { takeLabel: 'THE WRONG TWO NOTES', playbackDamage: 10 }),
+      O('training:contact', 'ONE ARM RISES. THE BLOW COMES STRAIGHT AT YOU.', 4),
+      B('training:answer', 'IT OPENS ITS MOUTH AND REPEATS THE TWO NOTES.', 4, { takeLabel: 'RETURNED TWO NOTES', playbackDamage: 10 }),
+      C('training:withdraw', 'IT TRIES TO HIDE WHAT THE LIGHT LEFT BEHIND.', 4),
+      O('training:last-blow', 'IT PULLS BACK FOR ONE MORE HEAVY BLOW.', 4),
+    ])],
+  };
   return {
     id: combat.id,
     enemy: combat.enemy,

@@ -1,6 +1,6 @@
 import * as scenes from './scenes.js';
 import { uiFill, uiLine, uiSize, uiText, uiWrap } from '../render/ui.js';
-import { drawMachinePanel, drawVfdText } from '../render/presentation.js';
+import { withMachinePanel, drawVfdText } from '../render/presentation.js';
 import { UI_COLOR } from '../render/palette.js';
 import { returnIndexEntries } from '../progression/report.js';
 import * as AUDIO from '../audio/story-audio.js';
@@ -48,14 +48,14 @@ export function makeReturnIndexScene({ meta, onRevealFieldReturn = null, onDelet
       const entry = entries[sel];
       const dossier = dossierFor(entry);
       const deletePending = dossier && deleteArmed?.caseId === dossier.caseId && deleteArmed.until > Date.now();
-      const body = drawMachinePanel(x, y, w, h, {
+      withMachinePanel(x, y, w, h, {
         label: 'ENDINGS',
         source: `${meta?.endingsSeen?.length || 0} / ${entries.length}`,
         footer: dossier
           ? `R OPEN INTERFERENCE FILE · ${deletePending ? 'DEL CONFIRM DELETE' : 'DEL DELETE INTERFERENCE FILE'} · ESC CLOSE`
           : '↑↓ ENDING · ESC CLOSE',
         meter: false,
-      });
+      }, (body) => {
       drawVfdText(body.x, body.y, 'ENDINGS', { color: UI_COLOR.amber, max: body.w });
       const listW = Math.max(30, Math.floor(body.w * 0.44));
       const divider = body.x + listW + 1;
@@ -90,6 +90,7 @@ export function makeReturnIndexScene({ meta, onRevealFieldReturn = null, onDelet
       const copyY = dossier ? body.y + 16 : body.y + 13;
       const maxCopyRows = Math.max(1, body.h - 14 - (dossier ? 3 : 0));
       uiWrap(copy, dw).slice(0, maxCopyRows).forEach((line, i) => uiText(dx, copyY + i, line, 'ui-primary'));
+      });
     },
   };
 }

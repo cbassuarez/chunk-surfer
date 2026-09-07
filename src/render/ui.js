@@ -23,6 +23,9 @@ export function uiInit(hostEl) {
   if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
   host.appendChild(canvas);
   ctx = canvas.getContext('2d');
+  // Start the bundled instrument typeface during arrival; never gate gameplay
+  // on font decoding. Printed-label metric caches also key font readiness.
+  document.fonts?.load?.('600 14px "Hardware Sans"')?.catch?.(() => {});
   resize();
   window.addEventListener('resize', resize);
   return { cols: () => cols, rows: () => rows };
@@ -94,6 +97,51 @@ export function uiWithAlpha(alpha,draw){const prev=uiAlphaScope;uiAlphaScope=pre
 export function uiDraw(draw) {
   if (!ctx || typeof draw !== 'function') return;
   ctx.save();ctx.globalAlpha*=uiAlphaScope;try{draw({ ctx, dpr: atlasDpr(), cellW: scaledCellW, cellH: scaledCellH, cols, rows });}finally{ctx.restore();}
+}
+
+// Instrument surfaces have two physical planes. Display content is clipped to
+// the aperture; keys and their ink are painted after the cover glass. Scopes
+// are synchronous, nestable, and restore both clipping and alpha on exceptions.
+let hardwareLayer = null;
+export function uiDrawHardware(draw) {
+  if (typeof draw !== 'function') return;
+  if (!hardwareLayer) return uiDraw(draw);
+  const alpha = uiAlphaScope;
+  hardwareLayer.push(() => {
+    const previous = uiAlphaScope;
+    uiAlphaScope = alpha;
+    try { uiDraw(draw); } finally { uiAlphaScope = previous; }
+  });
+}
+export function uiWithClip(rect, draw) {
+  if (typeof draw !== 'function') return;
+  if (!ctx) return draw();
+  const dpr = atlasDpr();
+  ctx.save();
+  try {
+    ctx.beginPath();
+    ctx.rect(rect.x * scaledCellW * dpr, rect.y * scaledCellH * dpr,
+      Math.max(0, rect.w) * scaledCellW * dpr, Math.max(0, rect.h) * scaledCellH * dpr);
+    ctx.clip();
+    return draw();
+  } finally { ctx.restore(); }
+}
+export function uiWithHardwareLayer(draw, cover) {
+  const previous = hardwareLayer, queue = [];
+  hardwareLayer = queue;
+  let result;
+  try { result = draw(); }
+  finally {
+    hardwareLayer = previous;
+    // Flush only after the caller's display clipping has unwound. In nested
+    // panels, keep their hardware above the outermost cover too.
+    try { cover?.(); }
+    finally {
+      if (previous) previous.push(...queue);
+      else for (const paint of queue) paint();
+    }
+  }
+  return result;
 }
 
 // Dim the world behind a scene without hiding it — dread survives, text reads.

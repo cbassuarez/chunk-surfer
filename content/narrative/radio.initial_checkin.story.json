@@ -10,7 +10,7 @@
   "tags": [
     "radio"
   ],
-  "notes": "",
+  "notes": "The first call is dependable human contact. Only the contact click arriving before the player's thumb is wrong; sourceId hooks own its physical presentation.",
   "regions": [
     {
       "id": "radio.initial_checkin.region",
@@ -21,102 +21,138 @@
         "start",
         "identify",
         "work",
-        "channel"
+        "channel",
+        "after"
       ]
     }
   ],
   "nodes": {
     "start": {
+      "id": "start",
+      "type": "choice",
       "art": {
         "id": "walkie",
         "mode": "hero",
-        "caption": "Field radio / carrier quiet",
+        "caption": "Field radio / front desk relay",
         "status": "LIVE"
       },
       "lines": [
         {
+          "id": "checkin.onset",
           "who": "radio",
-          "text": "4417-C? Just checkin' in. You in yet?",
-          "id": "start.line.1"
+          "text": "4417-C? Martin, front desk. Are you inside all right?"
+        },
+        {
+          "id": "checkin.latch",
+          "who": "direction",
+          "text": "A small contact clicks under your thumb, just before you press transmit."
         }
       ],
       "choices": [
         {
-          "text": "Yeah, that's me. I'm inside, no problems. Basement first.",
-          "goto": "identify",
-          "id": "start.choice.1"
+          "id": "start.choice.1",
+          "text": "I'm in. Basement first.",
+          "goto": "identify"
         },
         {
-          "text": "Just checking: five room tones, one minute apiece?",
-          "goto": "work",
-          "id": "start.choice.2"
+          "id": "start.choice.2",
+          "text": "Five room tones, a minute each?",
+          "goto": "work"
         },
         {
-          "text": "Who've I got?",
-          "goto": "channel",
-          "id": "start.choice.3"
+          "id": "start.choice.3",
+          "text": "You'll be on this channel?",
+          "goto": "channel"
         }
-      ],
-      "id": "start",
-      "type": "choice"
+      ]
     },
     "identify": {
+      "id": "identify",
+      "type": "dialogue",
       "art": {
         "id": "walkie",
         "mode": "hero",
-        "caption": "Field radio / carrier quiet",
+        "caption": "Field radio / front desk relay",
         "status": "LIVE"
       },
       "lines": [
         {
+          "id": "identify.line.1",
           "who": "me",
-          "text": "Yeah, that's me. I'm inside, no problems. Basement first.",
-          "id": "identify.line.1"
+          "text": "I'm in. Basement first."
         },
         {
+          "id": "identify.line.2",
           "who": "radio",
-          "text": "Got you. Do your level check in the Get In, then take the main basement stair to Studio B3. Call again around the hour—or if the plan stops making sense.",
-          "id": "identify.line.2"
+          "text": "Good. {SETUPROUTE}"
         },
         {
-          "who": "direction",
-          "text": "Paper slides across a desk. A laugh in the room is cut off when the radio transmission ends.",
-          "hold": 2.2,
-          "id": "identify.line.3"
+          "id": "identify.line.3",
+          "who": "radio",
+          "text": "I've got you down as arrived."
         }
       ],
-      "id": "identify",
-      "type": "dialogue"
+      "goto": "after"
     },
     "work": {
+      "id": "work",
+      "type": "dialogue",
       "art": {
         "id": "walkie",
         "mode": "hero",
-        "caption": "Field radio / carrier quiet",
+        "caption": "Field radio / front desk relay",
         "status": "LIVE"
       },
       "lines": [
         {
+          "id": "work.line.1",
           "who": "me",
-          "text": "Just checking: five room tones, one minute apiece?",
-          "id": "work.line.1"
+          "text": "Five room tones, a minute each?"
         },
         {
+          "id": "work.line.2",
           "who": "radio",
-          "text": "That's it. Hands off the case, torch off while you're rolling. Studio B3 first. Call if you lose the route.",
-          "id": "work.line.2"
+          "text": "That's the order. B3 first. Get the case settled before you roll, and leave yourself a note when each one's done."
         },
         {
-          "who": "direction",
-          "text": "A telephone rings once behind the voice. The radio hushes shut.",
-          "hold": 1.8,
-          "id": "work.line.3"
+          "id": "work.line.3",
+          "who": "radio",
+          "text": "If a room number's been painted over, call me. The old plan still has them."
         }
       ],
-      "id": "work",
-      "type": "dialogue"
+      "goto": "after"
     },
     "channel": {
+      "id": "channel",
+      "type": "dialogue",
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Field radio / front desk relay",
+        "status": "LIVE"
+      },
+      "lines": [
+        {
+          "id": "channel.line.1",
+          "who": "me",
+          "text": "You'll be on this channel?"
+        },
+        {
+          "id": "channel.line.2",
+          "who": "radio",
+          "text": "Channel two. I'm here till the morning man comes in."
+        },
+        {
+          "id": "channel.line.3",
+          "who": "radio",
+          "text": "Say which landing you're on and I'll find you. No need to guess your way down."
+        }
+      ],
+      "goto": "after"
+    },
+    "after": {
+      "id": "after",
+      "type": "dialogue",
       "art": {
         "id": "walkie",
         "mode": "hero",
@@ -125,24 +161,11 @@
       },
       "lines": [
         {
-          "who": "me",
-          "text": "Who've I got?",
-          "id": "channel.line.1"
-        },
-        {
-          "who": "radio",
-          "text": "Martin. Front desk relay. I've got the old floor plan, so call if you get turned around.",
-          "id": "channel.line.2"
-        },
-        {
+          "id": "checkin.after",
           "who": "direction",
-          "text": "Someone asks him a question away from the microphone. He answers with his palm over the grille.",
-          "hold": 2,
-          "id": "channel.line.3"
+          "text": "A pencil taps the desk twice. Martin puts down the handset; the channel closes."
         }
-      ],
-      "id": "channel",
-      "type": "dialogue"
+      ]
     }
   }
 }

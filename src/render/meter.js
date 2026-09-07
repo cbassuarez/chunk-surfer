@@ -206,12 +206,38 @@ export function meterTicks(w, { minGap = 3, ticks = TICK_DB, avoid = [] } = {}) 
 }
 
 // Where a mark's legend will sit, so the ticks can get out of its way.
+//
+// AND SO THAT THE LEGENDS DO NOT COLLIDE WITH EACH OTHER. SPOIL sits at -14.9
+// and CATCH at -8.0, which is about five cells apart on a narrow bar — and both
+// words are five characters, so on the recorder's own panel they printed as
+// `SPOILCATCH`. Ticks were already made to give way to marks; marks now give
+// way to each other.
+//
+// Placed by IMPORTANCE, not by position, so a narrow bar keeps the mark that
+// matters. SPOIL is the line that ends the take you are holding; CATCH is the
+// one that gets you found; FLOOR is only the room. Placing left-to-right kept
+// FLOOR and dropped SPOIL, which is exactly backwards.
+//
+// Returned in scale order regardless, so the caller still draws left to right.
+const MARK_RANK = Object.freeze({ spoil: 0, catch: 1, floor: 2 });
+const MARK_GAP = 1.5;
+
 export function meterMarkBoxes(marks, w) {
   const width = Math.max(0, Number(w) || 0);
-  return meterMarks(marks, w).filter((mark) => mark.label).map((mark) => {
+  const candidates = meterMarks(marks, w).filter((mark) => mark.label);
+  const byRank = [...candidates].sort((a, b) =>
+    (MARK_RANK[a.kind] ?? 3) - (MARK_RANK[b.kind] ?? 3));
+  const placed = [];
+  for (const mark of byRank) {
     const left = Math.max(0, Math.min(width - mark.label.length, mark.x - mark.label.length / 2));
-    return { left, right: left + mark.label.length, mark };
-  });
+    const box = { left, right: left + mark.label.length, mark };
+    // A GAP, not merely non-overlap. Two boxes that touch exactly print as one
+    // word — `SPOILCATCH` — and the draw call rounds to whole cells, which can
+    // close a fractional gap that looked fine in the arithmetic.
+    if (placed.some((other) => box.left < other.right + MARK_GAP && box.right + MARK_GAP > other.left)) continue;
+    placed.push(box);
+  }
+  return placed.sort((a, b) => a.left - b.left);
 }
 
 // Below this there is no room for a scale worth printing, so the caller falls

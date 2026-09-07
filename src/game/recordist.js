@@ -101,6 +101,11 @@ export { spoilThreshold };
 // sealed, so there is nothing to persist and nothing to migrate.
 const TAKE_EVENT_LIMIT = 24;
 
+// Set by main.js. Kept as a sink so the recordist does not have to know what a
+// presence, a hunter or a building is.
+let loudNoiseSink = null;
+export function setLoudNoiseSink(fn) { loudNoiseSink = typeof fn === 'function' ? fn : null; }
+
 export function takeEvents() {
   return state.takeEvents.map((event) => ({ ...event }));
 }
@@ -117,6 +122,18 @@ function handleRecordingNoise(level, reason, meta = {}) {
   // difference between "the room was silent" and "you kept getting away with
   // it", and only one of those is a lesson.
   if (level > threshold * .25) noteTakeEvent(level > threshold ? 'spoil' : 'near', level);
+  // NOISE IS HEARD BY THE BUILDING, not only by the tape — and it is heard well
+  // before it ruins anything.
+  //
+  // TRIPPING THE MONITOR AND SPOILING THE TAKE ARE DIFFERENT THRESHOLDS, and
+  // this deliberately uses the lower one. A sink on the spoil threshold is
+  // useless: the same noise that fetches something also ends the take, and the
+  // take ending is what takes the hunter away again — so it would arrive and
+  // vanish on the same frame. Measured, it did exactly that.
+  //
+  // The near band is the beat the game wants: you made a sound, the building
+  // heard it, and the minute is STILL RUNNING with something on its way.
+  if (level > threshold * .25) loudNoiseSink?.(level, reason, meta, level > threshold);
   if (level <= threshold) return;
   if (difficultyRules.minorNoise === 'pause' && level <= threshold * 1.35) {
     state.assistPause = Math.max(state.assistPause, Number(difficultyRules.pauseSeconds) || 0.7);

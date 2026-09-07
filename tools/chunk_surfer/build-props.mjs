@@ -2115,11 +2115,49 @@ addMainStairDressing('academic_stair_dressing',{rise:5.2,run:10,steps:26,runner:
   addBeam(m,[-.48,.76,-.50],[-.48,1.02,-.43],.045,MAT.dark);
   addBox(m,[-.48,.28,.34],[.70,.50,.72],MAT.dark);
   addBox(m,[.62,.72,-.48],[.54,.08,.42],MAT.steel);
+  addBox(m,[.30,.92,-.46],[1.05,.035,.46],MAT.steel);
 }
 {
   const m=mesh('ending_van_cup');
   addCylinder(m,[0,.09,0],.075,.18,MAT.paper,14);
   addCylinder(m,[0,.19,0],.078,.018,MAT.dark,14);
+}
+{
+  // The helped ending does not cut to a caption about kindness. It remembers
+  // the exact spatial fact: two hands briefly sharing the same paper cup at the
+  // booth window. Kept as one tableau so camera staging cannot separate them.
+  const m=mesh('ending_coffee_handoff');
+  addCylinder(m,[0,.11,0],.082,.22,MAT.paper,14);
+  addCylinder(m,[0,.225,0],.085,.018,MAT.dark,14);
+  addBox(m,[-.19,.10,.015],[.24,.085,.17],MAT.skinWarm,0,-.08);
+  addBox(m,[ .19,.11,-.02],[.24,.085,.17],MAT.skinWarm,0,.09);
+  addBeam(m,[-.31,.10,.02],[-.72,.15,.18],.075,MAT.cloth);
+  addBeam(m,[ .31,.11,-.01],[ .72,.12,-.20],.075,MAT.dark);
+}
+{
+  // Two names in the physical RETURNED ledger. The marks are geometry rather
+  // than UI text: close enough to read as fresh handwriting, never an ending
+  // label pasted over the frame.
+  const m=mesh('ending_returned_ledger');
+  addBox(m,[-.24,.025,0],[.48,.035,.62],MAT.paper,0,-.035);
+  addBox(m,[ .24,.025,0],[.48,.035,.62],MAT.paper,0,.035);
+  addBeam(m,[0,.055,-.31],[0,.055,.31],.018,MAT.dark);
+  for(let row=0;row<3;row++)for(const x of[-.24,.24])
+    addBox(m,[x,.058,-.21+row*.18],[.37,.004,.003],MAT.steel);
+  // Fresh ink on the right page. Small planar glyphs sit on the paper, so
+  // these names are readable only by looking down at the actual ledger.
+  const glyphs={A:['010','101','111','101','101'],L:['100','100','100','100','111'],
+    N:['101','111','111','111','101']};
+  // The player's name has deliberately never been specified. Keep their
+  // signature cursive instead of inventing a name or printing the UI word YOU.
+  const signature=[[.11,-.07],[.13,-.14],[.15,-.07],[.18,-.13],[.17,-.05],
+    [.21,-.11],[.24,-.07],[.27,-.10],[.30,-.07],[.34,-.11],[.37,-.09]];
+  for(let i=1;i<signature.length;i++)addBeam(m,
+    [signature[i-1][0],.064,signature[i-1][1]],[signature[i][0],.064,signature[i][1]],.006,MAT.black);
+  for(const [word,z]of[['ALAN',.08]])for(let ci=0;ci<word.length;ci++)
+    for(let row=0;row<5;row++)for(let col=0;col<3;col++)if(glyphs[word[ci]][row][col]==='1')
+      addBox(m,[.11+(ci*4+col)*.015,.063,z+row*.016],[.012,.003,.012],MAT.black);
+  addBeam(m,[.08,.072,.25],[.43,.075,.10],.016,MAT.brass);
 }
 {
   // Ending evidence is world geometry, not a caption that says HEADPHONES.
@@ -2163,6 +2201,16 @@ addMainStairDressing('academic_stair_dressing',{rise:5.2,run:10,steps:26,runner:
   addBeam(m,[.13,.66,0],[.18,.03,-.04],.13,MAT.denim);
   addBeam(m,[-.26,1.30,0],[-.31,.67,.04],.11,MAT.cloth);
   addBeam(m,[.26,1.30,0],[.31,.67,-.04],.11,MAT.cloth);
+}
+{
+  const m=mesh('ending_containment_ribs');
+  for(let index=0;index<5;index++){
+    const z=-.48+index*.24;
+    addBeam(m,[0,.04,z],[0,2.12,z],.036,MAT.steel);
+    addBeam(m,[0,2.12,z],[-.38,2.35,z],.036,MAT.steel);
+  }
+  addBeam(m,[0,.08,-.52],[0,.08,.52],.08,MAT.steel);
+  addBeam(m,[0,1.05,-.52],[0,1.05,.52],.035,MAT.steel);
 }
 {
   const m=mesh('ending_collapse_debris');

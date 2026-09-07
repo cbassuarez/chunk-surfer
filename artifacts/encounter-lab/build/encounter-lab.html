@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Encounter transition — Chunk Surfer</title>
+  <link rel="icon" href="data:," />
+  <script type="module" crossorigin src="./assets/encounter-lab-DJDqdUjj.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/encounter-lab-GrH1exNh.css">
+</head>
+<body data-phase="exploration">
+  <header class="review-bar" aria-label="Prototype review controls">
+    <a class="study-mark" href="/encounter-lab.html"><b>CS</b><span>ENCOUNTER STUDY<small>01 / CONTACT → COMBAT</small></span></a>
+    <nav aria-label="Preview a stage">
+      <button data-preview="exploration" class="current">SEQUENCE</button>
+      <button data-preview="versus">SPLASH</button>
+      <button data-preview="equipment">EQUIPMENT</button>
+      <button data-preview="skills">SKILLS</button>
+      <button data-preview="fight">BATTLE</button>
+    </nav>
+    <div class="review-options">
+      <label><input id="dialogue-option" type="checkbox" checked /> Dialogue</label>
+      <label><input id="motion-option" type="checkbox" /> Reduced motion</label>
+      <button id="sound-option" aria-pressed="false">SOUND OFF</button>
+      <button id="replay">↻ REPLAY</button>
+    </div>
+  </header>
+
+  <main id="game" aria-label="Playable encounter prototype">
+    <div id="world" aria-hidden="true"></div>
+    <div class="screen-grain" aria-hidden="true"></div>
+
+    <section class="arrival" aria-label="Encounter trigger">
+      <div class="location-tag"><span>02 / NATATORIUM</span><h1>The empty pool.</h1><p>Your recorder is still picking up a voice.</p></div>
+      <button id="approach" class="hardware" data-color="white"><span>APPROACH THE DEEP END</span><kbd>ENTER</kbd></button>
+      <div class="field-monitor"><i></i> MONITOR <span>00:14</span><div class="tiny-meter"></div><small>ROOM LEVEL −48 dB</small></div>
+    </section>
+
+    <div id="splash" aria-hidden="true">
+      <span class="splash-index">ENCOUNTER / 02</span>
+      <div class="splash-rule"></div>
+      <div class="splash-title"><small>THE RECORDIST <em>VS</em></small><strong>THE FOURTH<br />RETURN</strong></div>
+      <div class="splash-bottom"><span>NATATORIUM</span><b>CONTACT</b><span>NO. 004</span></div>
+    </div>
+
+    <section class="battle-hud" aria-label="Battle status">
+      <div class="identity player"><small>FIELD OPERATOR / 01</small><h2>THE RECORDIST</h2><div class="gauge-label"><span>COMPOSURE</span><b id="composure-number">40 / 40</b></div><div class="gauge"><i id="composure-bar"></i></div></div>
+      <div class="battle-location"><span>NATATORIUM</span><b id="round-label">PREPARATION</b><span id="phase-label">TURNS PAUSED</span></div>
+      <div class="identity enemy"><small>ADVERSARY / 02</small><h2>THE FOURTH RETURN</h2><div class="gauge-label"><span>COHERENCE <em id="cycle-label">I / III</em></span><b id="coherence-number">25 / 25</b></div><div class="gauge"><i id="coherence-bar"></i></div></div>
+    </section>
+    <div class="reveal-tag hero-tag"><small>FIELD OPERATOR</small>THE RECORDIST</div>
+    <div class="reveal-tag enemy-tag"><small>ADVERSARY IDENTIFIED</small>THE FOURTH RETURN</div>
+    <div id="enemy-read"><span>ADVERSARY INTENT</span><strong id="intent-name">BROADCAST</strong><small id="intent-detail">A voice comes from the empty drain.</small></div>
+
+    <section id="dialogue" class="dialogue-panel" aria-label="Pre-fight dialogue" hidden>
+      <div><span>THE RECORDER</span><p>“You’re standing where I was.”</p><small>The tape has stopped. The voice hasn’t.</small></div>
+      <button id="dialogue-next" class="hardware" data-color="white"><span>PREPARE</span><kbd>ENTER</kbd></button>
+    </section>
+
+    <section id="module" class="control-module" aria-label="Pre-fight field control" hidden>
+      <i class="screw tl"></i><i class="screw tr"></i><i class="screw bl"></i><i class="screw br"></i>
+      <header class="module-header"><div class="manufacturer">AUDIOCORP<span>FIELD CONTROL / FCM–04</span></div><div class="safety-state"><i></i> PREPARATION <span>TURNS PAUSED</span></div></header>
+      <div class="module-topline">
+        <div class="module-tabs" role="tablist" aria-label="Field control pages">
+          <button id="equipment-tab" class="hardware" data-color="amber" role="tab" aria-controls="equipment-page" aria-selected="true"><span>EQUIPMENT</span><kbd>1</kbd></button>
+          <button id="skills-tab" class="hardware" data-color="green" role="tab" aria-controls="skills-page" aria-selected="false" tabindex="-1"><span>SKILLS</span><kbd>2</kbd></button>
+        </div>
+        <div class="instrument-readout"><span>BATTERY <b>84%</b></span><span>PATCH LEADS <b id="leads-count">2 SPARE</b></span></div>
+      </div>
+      <div id="equipment-page" class="module-page" role="tabpanel" aria-labelledby="equipment-tab">
+        <div class="section-label"><span>QUICK ACCESS / SELECT A SLOT</span><span>4 CONTACTS</span></div>
+        <div id="equipment-slots" class="equipment-slots"></div>
+        <div class="equipment-bottom">
+          <div class="reserve"><div class="section-label"><span>IN THE CASE</span><span>SELECT TO FIT</span></div><div id="reserve-tools"></div></div>
+          <div class="tool-inspector" aria-live="polite"><div class="inspector-top"><span id="tool-category">TORCH / BATTERY POWERED</span><span id="tool-state">SLOT 01</span></div><h3 id="tool-title">FIELD TORCH</h3><p id="tool-description"></p><div class="tool-moves" id="tool-moves"></div></div>
+        </div>
+      </div>
+      <div id="skills-page" class="module-page" role="tabpanel" aria-labelledby="skills-tab" hidden>
+        <div class="section-label"><span>SKILL PATCHBAY / SELECT A SOCKET</span><span id="patched-count">2 PATCHED</span></div>
+        <div id="patchbay" class="patchbay"><canvas id="patch-cables" aria-hidden="true"></canvas><div id="skill-columns"></div></div>
+        <div class="skill-inspector"><div><span id="skill-category">TORCH / PASSIVE</span><h3 id="skill-title">AFTERIMAGE</h3><p id="skill-detail"></p></div><button id="patch-action" class="hardware" data-color="green"><span>PATCH LEAD</span></button></div>
+      </div>
+      <footer class="module-footer"><div class="module-message" aria-live="polite"><strong id="module-status">EQUIPMENT READY</strong><span id="module-hint">Select a slot, then an item from the case.</span></div><button id="ready" class="hardware" data-color="white"><span>READY</span><kbd>ENTER ↵</kbd></button></footer>
+    </section>
+
+    <section id="battle-controls" class="battle-controls" aria-label="Battle controls">
+      <div class="combat-readout"><span id="turn-status">BATTLE CONTROLS / LOCKED</span><span id="take-status">TAKE — EMPTY</span><span id="charge-status">CHARGE 1 / 3</span></div>
+      <div class="battle-lower"><div id="tool-rail" class="tool-rail" aria-label="Combat tools"></div><div id="move-buttons" class="move-buttons"></div></div>
+      <div id="combat-notice" role="status">Prepare your equipment. No turns pass until you are ready.</div>
+    </section>
+    <div id="arming-label" aria-hidden="true"><span>READY</span><strong>YOUR TURN</strong></div>
+    <section id="result" class="result-panel" hidden><small>ENCOUNTER COMPLETE</small><h2 id="result-title">SIGNAL CLEARED</h2><p id="result-detail"></p><button id="result-replay" class="hardware" data-color="white"><span>REPLAY ENCOUNTER</span></button></section>
+    <div id="paused" hidden>PAUSED<span>Return to the prototype to continue.</span></div>
+  </main>
+  <footer class="review-footer"><span id="sequence-position">01 / EXPLORATION</span><div id="sequence-track" aria-hidden="true"></div><span>PLAYABLE PROTOTYPE · LOCAL STATE</span></footer>
+</body>
+</html>

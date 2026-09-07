@@ -1,144 +1,131 @@
-// THUNDER, AND WHAT DISTANCE DOES TO IT.
+// THE THUNDER VOICE.
 //
-// Distance is not a volume knob here — it is the whole character of the sound,
-// and treating it as a fader is why most synthesised thunder reads as "noise
-// burst, quieter". Three things change together as a strike gets further away,
-// and all three come off the one distance number the storm already scheduled it
-// with (game/storm.js):
+// All of the physics is next door in thunder-channel.js, which is pure and has
+// no Web Audio in it. This file is only the part that has to touch the graph:
+// take a strike, get a rendered buffer for it, and play it once at the right
+// level with the right tilt for where the player is standing.
 //
-//   THE CRACK GOES FIRST. High frequencies are absorbed by air far faster than
-//   low ones, so a strike at two hundred metres is a rip and a slam, and the
-//   same strike at five kilometres has no top at all — just the roll. That is a
-//   lowpass sweeping down with distance, and it does most of the work.
+// WHAT DISTANCE DOES is no longer a set of curves written here. It used to be —
+// a lowpass swept by distance, a length, an attack, a crack layer — and those
+// were good guesses, but they were guesses, and the published listening test of
+// synthesised thunder says guesses are exactly what listeners hear as "too
+// perfect". Now distance is real: the channel is kilometres of tortuous geometry,
+// the delays are its path lengths, and the top of the spectrum is eaten by a
+// tabulated ISO 9613-1 absorption over each of those path lengths. The crack, the
+// roll and the length of the tail are consequences rather than parameters.
 //
-//   THE TAIL GETS LONGER. Close thunder is one event. Distant thunder is the
-//   same event smeared by every surface between it and you, so it arrives as a
-//   roll lasting several seconds rather than a bang.
-//
-//   IT SOFTENS AT THE FRONT. A near strike has an instant attack; a far one
-//   fades up over a quarter second because the direct path and the reflections
-//   arrive together.
-//
-// Synthesised for the same reason as the rain bed: it has to be available with
-// no asset load in front of it, and a scheduled event cannot wait on a decode.
+// RENDER AT THE FLASH, PLAY AT THE THUNDER. `prepare()` is called when the sky
+// lights up and `strike()` when the sound arrives, and between them is
+// distance/343 seconds — 1.2s at 400m, 20s at 7km. The render is a couple of
+// milliseconds, but it should not be a couple of milliseconds on the frame the
+// player is listening to. If nothing prepared it, strike() renders inline; that
+// is the god menu's path and the credits' path, and it is fine.
+import { makeChannel, renderThunder, thunderFar, thunderGain } from './thunder-channel.js';
+
+export { thunderGain, thunderFar, thunderIndoorBands } from './thunder-channel.js';
 
 const clamp = (value, lo, hi) => Math.max(lo, Math.min(hi, Number(value) || 0));
 
-// The reference distances the shaping is written against.
-const NEAR = 300;
-const FAR = 7000;
+// The band tilt is applied HERE rather than baked into the buffer, because the
+// buffer is rendered at the flash and the player has up to twenty seconds to
+// walk indoors before it lands. Two shelves are exactly the three-band split the
+// pure renderer does offline: everything below LOW_HZ, everything above HIGH_HZ,
+// and the middle left alone.
+const LOW_HZ = 120, HIGH_HZ = 800;
+const asDb = (ratio) => 20 * Math.log10(Math.max(0.0001, ratio));
 
-export function thunderShape(distance = 1200, energy = 0.7) {
-  const d = clamp(distance, 60, FAR * 1.5);
-  // 0 at the yard fence, 1 at the horizon.
-  const far = clamp((d - NEAR) / (FAR - NEAR), 0, 1);
-  return {
-    far,
-    // Air eats the top. 5.2kHz overhead down to 210Hz on the horizon.
-    cutoff: 5200 * Math.pow(0.04, far) + 190,
-    // One event up close, a roll at distance.
-    length: 1.1 + far * 5.4,
-    // Instant, then increasingly smeared.
-    attack: 0.004 + far * 0.30,
-    // The inverse square, floored so a distant storm is still THERE.
-    // The old 0.34 front was mastering-level, not weather-level: a close crack
-    // arrived beside UI and dialogue at nearly half scale before the SFX bus.
-    // Preserve distance and tail character at roughly eight decibels less.
-    gain: clamp(0.14 * energy * (1 - far * 0.72), 0.016, 0.17),
-    // Only a near strike has a crack on the front of it.
-    crack: clamp(1 - far * 2.4, 0, 1),
-  };
-}
+// Buffers are megabytes each and two strikes can overlap. Keep only enough to
+// cover the flash-to-thunder gap of the strikes actually in the air.
+const CACHE_MAX = 6;
 
 export function createThunderVoice({ context, destination } = {}) {
-  if (!context || !destination) return { strike() { return false; }, stop() {} };
+  if (!context || !destination) return { strike() { return false; }, prepare() {}, stop() {} };
 
-  // One noise buffer for every strike. Six seconds so the longest roll never
-  // has to loop, and a random read offset per strike so two distant rumbles are
-  // never the same rumble.
-  const seconds = 6;
-  const buffer = context.createBuffer(1, Math.max(1, Math.floor(context.sampleRate * seconds)), context.sampleRate);
-  const data = buffer.getChannelData(0);
-  let brown = 0;
-  for (let i = 0; i < data.length; i += 1) {
-    // Brown-ish noise: thunder has almost nothing above the low mids once it
-    // has travelled, and white noise filtered down still sounds like a hiss
-    // with the top removed rather than like weight.
-    brown = brown * 0.994 + (Math.random() * 2 - 1) * 0.055;
-    data[i] = clamp(brown * 3.4, -1, 1);
-  }
-
-  let stopped = false;
+  const cache = new Map();
   const live = new Set();
+  let stopped = false;
 
-  function strike({ distance = 1200, energy = 0.7, bearing = 0 } = {}) {
-    if (stopped) return false;
-    const shape = thunderShape(distance, energy);
-    const now = context.currentTime;
-
-    const src = context.createBufferSource();
-    src.buffer = buffer;
-    src.loop = true;
-    src.loopStart = 0;
-    src.loopEnd = seconds;
-    // Offset so repeated strikes are not the same waveform.
-    try { src.start(now, Math.random() * (seconds - shape.length - 0.1)); } catch (_) { return false; }
-
-    const low = context.createBiquadFilter();
-    low.type = 'lowpass';
-    low.frequency.setValueAtTime(shape.cutoff, now);
-    // The tail dulls further as it decays — the last of a roll is always lower
-    // than the front of it.
-    low.frequency.exponentialRampToValueAtTime(Math.max(80, shape.cutoff * 0.4), now + shape.length);
-    low.Q.value = 0.7;
-
-    const gain = context.createGain();
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, shape.gain), now + shape.attack);
-    // Not a straight fall: thunder swells once as the reflections catch up.
-    gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, shape.gain * 0.55), now + shape.attack + shape.length * 0.26);
-    gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, shape.gain * 0.78), now + shape.attack + shape.length * 0.44);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + shape.attack + shape.length);
-
-    const panner = context.createStereoPanner();
-    // Distant thunder is everywhere; a near strike has a side.
-    panner.pan.value = clamp(Math.sin(bearing) * (1 - shape.far) * 0.7, -1, 1);
-
-    src.connect(low); low.connect(gain); gain.connect(panner); panner.connect(destination);
-
-    // The crack: a short bright layer on the front, only for a near strike.
-    let crackNodes = [];
-    if (shape.crack > 0.01) {
-      const crackSrc = context.createBufferSource();
-      crackSrc.buffer = buffer;
-      const band = context.createBiquadFilter();
-      band.type = 'highpass';
-      band.frequency.value = 900 + shape.crack * 1600;
-      const crackGain = context.createGain();
-      const peak = shape.gain * shape.crack * 1.08;
-      crackGain.gain.setValueAtTime(Math.max(0.0002, peak), now);
-      crackGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.10 + shape.crack * 0.22);
-      crackSrc.connect(band); band.connect(crackGain); crackGain.connect(panner);
-      try { crackSrc.start(now, Math.random() * 4); crackSrc.stop(now + 0.45); } catch (_) {}
-      crackNodes = [crackSrc, band, crackGain];
-    }
-
-    const ends = now + shape.attack + shape.length + 0.2;
-    try { src.stop(ends); } catch (_) {}
-    const nodes = [src, low, gain, panner, ...crackNodes];
-    live.add(nodes);
-    src.onended = () => {
-      live.delete(nodes);
-      for (const node of nodes) { try { node.disconnect(); } catch (_) {} }
-    };
-    return true;
+  function render(event) {
+    const seed = (Math.floor(Number(event?.seed) || 0) >>> 0) || 1;
+    const cached = cache.get(seed);
+    if (cached) return cached;
+    const channel = makeChannel(seed, {
+      distance: event?.distance,
+      bearing: event?.bearing,
+      energy: event?.energy,
+    });
+    // The listener stands at the origin at ear height; the channel was built
+    // around them. Bands are left flat — the tilt is two shelves at play time.
+    const rendered = renderThunder(channel, { sampleRate: context.sampleRate, seed });
+    const buffer = context.createBuffer(1, rendered.samples.length, context.sampleRate);
+    buffer.getChannelData(0).set(rendered.samples);
+    if (cache.size >= CACHE_MAX) cache.delete(cache.keys().next().value);
+    cache.set(seed, buffer);
+    return buffer;
   }
 
   return {
-    strike,
+    // Called when the sky lights up, while the sound is still on its way.
+    prepare(event) {
+      if (stopped || !event) return false;
+      try { render(event); return true; } catch (_) { return false; }
+    },
+
+    strike(event = {}) {
+      if (stopped) return false;
+      const { distance = 1200, energy = 0.7, bearing = 0, bands = null } = event;
+      let buffer;
+      try { buffer = render(event); } catch (_) { return false; }
+      if (!buffer || !buffer.length) return false;
+
+      const now = context.currentTime;
+      const far = thunderFar(distance);
+      const src = context.createBufferSource();
+      src.buffer = buffer;
+
+      const gain = context.createGain();
+      // The render is peak-normalised, so the whole distance law lives here and
+      // in one place. The ceiling is 0.17 and it stays: 0.34 was a mastering
+      // level, not a weather level, and a close crack arrived beside UI and
+      // dialogue at nearly half scale before the SFX bus. A better-sounding
+      // thunder is not a louder one.
+      gain.gain.setValueAtTime(thunderGain(distance, energy) * (bands ? clamp(bands.mid, 0, 1) : 1), now);
+
+      const panner = context.createStereoPanner?.();
+      if (panner) panner.pan.value = clamp(Math.sin(bearing) * (1 - far) * 0.7, -1, 1);
+
+      // Two shelves, only when there is something to tilt. Feature-detected and
+      // bypassed cleanly, the way the bell rig guards its optional nodes.
+      const shelves = [];
+      if (bands && typeof context.createBiquadFilter === 'function') {
+        const low = context.createBiquadFilter();
+        low.type = 'lowshelf'; low.frequency.value = LOW_HZ;
+        low.gain.value = asDb(bands.low / Math.max(0.0001, bands.mid));
+        const high = context.createBiquadFilter();
+        high.type = 'highshelf'; high.frequency.value = HIGH_HZ;
+        high.gain.value = asDb(bands.high / Math.max(0.0001, bands.mid));
+        shelves.push(low, high);
+      }
+
+      const chain = [src, ...shelves, gain, ...(panner ? [panner] : [])];
+      for (let i = 0; i < chain.length - 1; i += 1) chain[i].connect(chain[i + 1]);
+      chain[chain.length - 1].connect(destination);
+
+      try { src.start(now); } catch (_) { return false; }
+      live.add(chain);
+      src.onended = () => {
+        live.delete(chain);
+        for (const node of chain) { try { node.disconnect(); } catch (_) {} }
+      };
+      return true;
+    },
+
     stop() {
       stopped = true;
-      for (const nodes of live) for (const node of nodes) { try { node.stop?.(); } catch (_) {} try { node.disconnect(); } catch (_) {} }
+      cache.clear();
+      for (const chain of live) {
+        for (const node of chain) { try { node.stop?.(); } catch (_) {} try { node.disconnect(); } catch (_) {} }
+      }
       live.clear();
     },
   };

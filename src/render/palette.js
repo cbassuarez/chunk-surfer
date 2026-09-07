@@ -18,6 +18,9 @@ export const THEMES = Object.freeze({
     marker: '#FF5A3C',
     accent: '#FFC247',
     glass: '#050505',
+    // Ink on a lit cap. Not a phosphor: this is print on plastic with a lamp
+    // behind it, so it is nearly black and it never glows (see atlas.js).
+    capInk: '#12130B',
     silkscreen: '#8C7C54',               // printed legend, unlit
     wordmark: '#C7B27E',
     strip: '#B9A06A',
@@ -32,6 +35,9 @@ export const THEMES = Object.freeze({
     marker: '#FF3B30',                   // the red location marker
     accent: '#3B7BFF',                   // POWER, blue
     glass: '#040606',
+    // Ink on a lit cap. Not a phosphor: this is print on plastic with a lamp
+    // behind it, so it is nearly black and it never glows (see atlas.js).
+    capInk: '#12130B',
     silkscreen: '#4E6E5F',
     wordmark: '#9FD4FF',
     strip: '#8A8F94',
@@ -105,6 +111,9 @@ const FORCED = Object.freeze({
     marker: '#FF4A38',
     accent: '#8FEAFF',
     glass: '#030707',
+    // Ink on a lit cap. Not a phosphor: this is print on plastic with a lamp
+    // behind it, so it is nearly black and it never glows (see atlas.js).
+    capInk: '#12130B',
     silkscreen: 'rgba(102,255,212,0.24)',
     wordmark: '#B7FFF0',
     strip: '#78918D',
@@ -119,6 +128,9 @@ const FORCED = Object.freeze({
     marker: '#FF513C',
     accent: '#B2E9FF',
     glass: '#020608',
+    // Ink on a lit cap. Not a phosphor: this is print on plastic with a lamp
+    // behind it, so it is nearly black and it never glows (see atlas.js).
+    capInk: '#12130B',
     silkscreen: 'rgba(127,215,255,0.20)',
     wordmark: '#B9E8FF',
     strip: '#607B86',
@@ -133,6 +145,9 @@ const FORCED = Object.freeze({
     marker: '#FF5A3C',
     accent: '#FFD36A',
     glass: '#060502',
+    // Ink on a lit cap. Not a phosphor: this is print on plastic with a lamp
+    // behind it, so it is nearly black and it never glows (see atlas.js).
+    capInk: '#12130B',
     silkscreen: 'rgba(255,224,106,0.22)',
     wordmark: '#D8C17A',
     strip: '#9B8754',
@@ -147,6 +162,9 @@ const FORCED = Object.freeze({
     marker: '#FF473A',
     accent: '#BFDFFF',
     glass: '#050606',
+    // Ink on a lit cap. Not a phosphor: this is print on plastic with a lamp
+    // behind it, so it is nearly black and it never glows (see atlas.js).
+    capInk: '#12130B',
     silkscreen: 'rgba(234,248,242,0.18)',
     wordmark: '#E6EEE8',
     strip: '#8A928C',
@@ -161,6 +179,9 @@ const FORCED = Object.freeze({
     marker: '#FFFFFF',
     accent: '#FF8C4A',
     glass: '#070302',
+    // Ink on a lit cap. Not a phosphor: this is print on plastic with a lamp
+    // behind it, so it is nearly black and it never glows (see atlas.js).
+    capInk: '#12130B',
     silkscreen: 'rgba(255,106,56,0.20)',
     wordmark: '#E79A76',
     strip: '#8A5A4A',
@@ -177,6 +198,9 @@ const FORCED = Object.freeze({
     marker: '#FF3B30',
     accent: '#FFC247',
     glass: '#030505',
+    // Ink on a lit cap. Not a phosphor: this is print on plastic with a lamp
+    // behind it, so it is nearly black and it never glows (see atlas.js).
+    capInk: '#12130B',
     silkscreen: 'rgba(170,210,190,0.20)',
     wordmark: '#D8EAD8',
     strip: '#8A8F94',
@@ -230,6 +254,11 @@ const ROLE = {
   'ui-amber': 'accent', 'ui-blue': 'accent', 'ui-green': 'phosphor',
   'ui-counter': 'counter', 'ui-warning': 'warning', 'ui-danger': 'danger', 'ui-marker': 'marker',
   'ui-strip': 'glass', 'ui-wordmark': 'wordmark',
+  // The one role that is DARK. Everything else on these surfaces is light on
+  // black; a legend printed on an illuminated cap is the inverse, and it is a
+  // role rather than a colour parameter so the glyph atlas can keep caching by
+  // class the way it does for every other kind of text.
+  'ui-ink': 'capInk',
 };
 const BANDED_ROLES = new Set(['phosphor', 'counter', 'accent']);
 const DIM_ROLES = new Set(['phosphor', 'counter']);

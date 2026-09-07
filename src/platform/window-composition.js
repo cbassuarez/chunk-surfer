@@ -5,7 +5,7 @@ export const WINDOW_MEDIA_PROTOCOL=2;
 export const WINDOW_MEDIA_SURFACE_LABELS=Object.freeze(
   Array.from({length:MAX_MEDIA_SURFACES},(_,index)=>`window-media-${index+1}`),
 );
-export const WINDOW_COMPOSITION_PURPOSES=Object.freeze(['title','death','ending','puzzle','return','sector']);
+export const WINDOW_COMPOSITION_PURPOSES=Object.freeze(['title','death','ending','puzzle','return','sector','practice']);
 export const WINDOW_MEDIA_CONTENT_KINDS=Object.freeze(['video','image','snapshot','text','procedural']);
 export const WINDOW_MEDIA_PROCEDURAL_PRESETS=Object.freeze(['iris-abstraction','distant-dot','empty-field','game-fragment']);
 export const WINDOW_MEDIA_SHADER_PROFILES=Object.freeze(['violet-dither','nvme-sector']);

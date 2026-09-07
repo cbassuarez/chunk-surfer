@@ -5,7 +5,7 @@
 import * as scenes from './scenes.js';
 import { uiCenter, uiFill, uiSize, uiText, uiWrap, uiStrokeRect } from '../render/ui.js';
 import { UI_COLOR } from '../render/palette.js';
-import { drawMachinePanel } from '../render/presentation.js';
+import { withMachinePanel } from '../render/presentation.js';
 import { eulaPreamble, eulaSections, eulaVersion } from './eula.js';
 import { EULA_TEXT } from './eula-text.js';
 
@@ -93,9 +93,9 @@ export function makeEulaScene({
       const footer = reviewOnly
         ? '[↑↓] SCROLL · [ESC] CLOSE'
         : '[↑↓] SCROLL · [←→] CHOOSE · [ENTER] CONFIRM';
-      const panel = drawMachinePanel(x, 1, width, rows - 2, {
+      withMachinePanel(x, 1, width, rows - 2, {
         label: 'LICENCE', source: 'EULA', meter: false, footer,
-      });
+      }, (panel) => {
 
       const stamp = `VERSION ${version}`;
       const splitHeading = AGREEMENT_TITLE.length + stamp.length + 2 > panel.w;
@@ -151,6 +151,7 @@ export function makeEulaScene({
       });
       const note = 'ACCEPTING RECORDS ONLY THIS VERSION NUMBER, LOCALLY.';
       uiText(panel.x + Math.max(0, panel.w - note.length), buttonY, note, 'ui-secondary', .5);
+      });
     },
   };
   return scene;

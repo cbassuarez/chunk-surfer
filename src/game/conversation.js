@@ -66,6 +66,7 @@ function sayLabel(l) {
 export function createConversation({
   nodes = null, beats = [], startAt = 'start', sceneId = 'conversation', replay = null,
   onChoice, onLine, onDone, cue, fx, audio, getAudio, volume = 0.26,
+  isActive = () => true,
 } = {}) {
   const voice = createSamDialogVoice({ volume, getAudio });
   voice.warm?.();
@@ -115,6 +116,8 @@ export function createConversation({
   // the line; keeping that value fixed prevents the displayed text and voice
   // from changing again while the player sits on it.
   let activeLine = null;
+  let deferredUtterance = null;
+  let stopped = false;
   const line = () => activeLine || sourceLine();
 
   function updateStoryArtShot(l = line()) {
@@ -150,6 +153,7 @@ export function createConversation({
     typed = 0; acc = 0; held = 0;
     accelerateHeld = false; accelerateStartedAt = 0;
     stopVoice();
+    deferredUtterance = null;
   }
 
     function pushHistory(text, who, mask = null) {
@@ -181,6 +185,15 @@ export function createConversation({
   function utter(l) {
     fire(l);
     onLine?.(l);
+    if (stopped) return;
+    // Authored line hooks can hand control to a physical action. The line is
+    // selected once, but its mouth and typewriter wait until that action gives
+    // the conversation back. Re-entering utter() would fire the action twice.
+    if (!isActive()) { deferredUtterance = l; return; }
+    startLineAudio(l);
+  }
+
+  function startLineAudio(l) {
     const who = whoOf(l);
     const text = textOf(l);
     if (text) audio?.duckSoundtrack?.();
@@ -361,16 +374,28 @@ export function createConversation({
 
   return {
     start() {
+      stopped = false;
       if (mode === 'beats') { if (!visibleBeats().length) { finish(); return; } }
       else visited.add(nodeId);
       beginLine();
     },
-    stop() { stopVoice(); audio?.stopTyping?.(); },
+    stop() {
+      stopped = true;
+      deferredUtterance = null;
+      clearTimeout(maskChoke);
+      stopVoice();
+      audio?.stopTyping?.();
+    },
 
     // ── the frame loop ───────────────────────────────────────────────────────
     // Nothing here advances anything. It only reveals letters.
     update(dt) {
-      if (pending || finished) return;
+      if (pending || finished || stopped || !isActive()) return;
+      if (deferredUtterance) {
+        const ready = deferredUtterance;
+        deferredUtterance = null;
+        startLineAudio(ready);
+      }
       const l = line();
       if (!l) return;
       const text = textOf(l);
@@ -402,7 +427,7 @@ export function createConversation({
 
     // ── input ────────────────────────────────────────────────────────────────
     key(e) {
-      if (finished) return true;
+      if (finished || stopped || !isActive() || deferredUtterance) return true;
 
       if (pending) {
         const cs = visibleOptions();
@@ -451,6 +476,7 @@ export function createConversation({
     },
 
     keyup(e) {
+      if (finished || stopped || !isActive()) return false;
       if (!(e.key === ' ' || e.key === 'Enter' || e.key === 'z')) return false;
       if (!accelerateHeld) return false;
       const heldMs = performance.now() - accelerateStartedAt;

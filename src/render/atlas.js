@@ -62,8 +62,18 @@ function renderUiTile(glyph, cls, x = 0, cols = 80) {
   c.width = w; c.height = h;
   const ctx = c.getContext('2d');
 
-  const isVfd = cls.startsWith('ui-');
-    const color = isVfd ? uiRoleColor(cls, x, cols) : (resolveStyle(cls).color || '#F2A81E');
+  // INK IS NOT A PHOSPHOR. 'ui-ink' is a legend printed on an illuminated cap;
+  // it takes the dot matrix and none of the light, which is the same rule the
+  // paper roles follow two lines down.
+  const isInk = cls === 'ui-ink';
+  const isVfd = cls.startsWith('ui-') && !isInk;
+    // Ink takes its colour from the PALETTE like every other ui- role — it is a
+    // theme token (capInk), not a CSS style. Falling through to resolveStyle
+    // here returned the amber default, which printed a legend the same colour as
+    // the lit cap it was supposed to be readable on.
+    const color = isVfd || isInk ? uiRoleColor(cls, x, cols) : (resolveStyle(cls).color || '#F2A81E');
+    // No dormant matrix under ink. The unlit dots are the tell of a display; a
+    // silkscreened word has no unlit half.
     const dim = isVfd ? uiRoleDim(cls, x, cols) : null;
     const b = uiBrightness();
 

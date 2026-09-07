@@ -199,7 +199,31 @@ assert.deepEqual(radioTimeline.documents,[
 ]);
 for(const id of radioTimeline.documents)assert.ok(authoringProject.runtimeEntrypoints.includes(id),`${id} is an explicit runtime entrypoint`);
 assert.match(JSON.stringify(runtimeTree('radio.guidance',{TARGET:'STUDIO B3',ROUTEFIRST:'Studio B3 first.',ROUTEREPEAT:'Take the main basement stair.'})),/main basement stair/i);
-assert.ok(runtimeTree('radio.hush_help_rupture').start.lines.length>=5,'the alternate rupture rehydrates independently');
+// The alternate rupture is now a physical sequence with its own contact
+// choice, not five lines packed into one prose node. Preserve the independent
+// authoring/rehydration contract and validate both complete local branches.
+const alternateRupture=runtimeTree('radio.hush_help_rupture');
+const alternateRuptureDocument=JSON.parse(radioDocuments[3]);
+assert.equal(alternateRuptureDocument.id,'radio.hush_help_rupture');
+assert.deepEqual(alternateRupture,rehydrateTree(alternateRuptureDocument),'the alternate rupture rehydrates from its own canonical document');
+assert.notDeepEqual(alternateRupture.start.lines,radioRuntime.start.lines,'the danger-call route keeps its own entrance, independent of the work-order breakdown');
+assert.equal(alternateRupture.start.goto,'relay');
+assert.equal(alternateRupture.relay.goto,'contact');
+assert.deepEqual(alternateRupture.contact.choices.map((choice)=>choice.goto),['reseat','still']);
+for(const choice of alternateRupture.contact.choices){
+  const route=['start','relay','contact'];
+  let nodeId=choice.goto;
+  while(nodeId){
+    assert.ok(alternateRupture[nodeId],`alternate rupture branch resolves its own node ${nodeId}`);
+    assert.ok(!route.includes(nodeId),`alternate rupture branch cannot cycle at ${nodeId}`);
+    route.push(nodeId);
+    nodeId=alternateRupture[nodeId].goto;
+  }
+  assert.deepEqual(route.slice(-3),[choice.goto,'break','after']);
+  const stages=route.flatMap((id)=>alternateRupture[id].lines.map((line)=>line.sourceId));
+  for(const stage of ['onset','relay','decision',choice.goto,'break','after'])assert.ok(stages.includes(`rupture.${stage}`),`alternate ${choice.goto} branch preserves physical stage ${stage}`);
+  assert.equal(alternateRupture[route.at(-1)].art.status,'DEAD');
+}
 const roomRuntime = runtimeTree('room-listen.main_b3', { label: 'The Concert Hall' });
 assert.match(JSON.stringify(roomRuntime), /The Concert Hall/);
 

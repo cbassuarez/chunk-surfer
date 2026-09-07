@@ -1,7 +1,7 @@
 import * as scenes from './scenes.js';
 import { uiCenter, uiFill, uiLine, uiSize, uiText, uiWrap } from '../render/ui.js';
 import {
-  drawLocationIndicator, drawMachinePanel, drawVfdCounter, drawVfdText,
+  drawLocationIndicator, withMachinePanel, drawVfdCounter, drawVfdText,
 } from '../render/presentation.js';
 import { drawTakeRail } from '../render/field-deck.js';
 import { drawVfdGlyph } from '../render/vfd-font.js';
@@ -288,7 +288,7 @@ export function makeReturnReportScene({
       // at the narrow width it ran out of room and truncated mid-word. The
       // brand is the first thing a faceplate can afford to lose.
       const narrow = w < 70;
-      const body = drawMachinePanel(x, y, w, h, {
+      withMachinePanel(x, y, w, h, {
         label: 'RETURN',
         source: pageSource,
         wordmark: narrow ? '' : 'AUDIOCORP',
@@ -298,7 +298,7 @@ export function makeReturnReportScene({
         // which is flat zero once the run is over and has always read dead here.
         meterSnapshot: returnMeterSnapshot(summary),
         meter: true,
-      });
+      }, (body) => {
 
       const left = body.x;
       const width = body.w;
@@ -386,6 +386,7 @@ export function makeReturnReportScene({
         }
         ry += 1;
       }
+      });
     },
 
     drawReport() {
@@ -425,7 +426,7 @@ export function makeReturnReportScene({
       // as ASCII strings.
       if (current === 'report') { this.drawTransport(x, y, w, h, pageSource); return; }
 
-      const body = drawMachinePanel(x, y, w, h, {
+      withMachinePanel(x, y, w, h, {
         label: stageCopy.panel,
         source: pageSource,
         footer: current === 'actions'
@@ -433,7 +434,7 @@ export function makeReturnReportScene({
           : promptLine([{ action: 'continue', label: 'CONTINUE' }]),
         meter: current !== 'actions',
         meterSnapshot: returnMeterSnapshot(summary),
-      });
+      }, (body) => {
 
       if (current === 'filing') {
         drawVfdText(body.x, body.y, stageCopy.title, { color: UI_COLOR.danger, max: body.w });
@@ -536,6 +537,7 @@ export function makeReturnReportScene({
         uiText(body.x + body.w - 12, body.y + body.h - 2, `STATUS ${reportStamp(summary)}`, 'ui-label', 0.6);
         return;
       }
+      });
     },
   };
 }

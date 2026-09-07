@@ -19,7 +19,7 @@
 import * as scenes from './scenes.js';
 import { flagTest, flagApply, flagGet, flagBump } from './flags.js';
 import { uiText, uiWrap, uiGlyph, uiSize, uiScrim } from '../render/ui.js';
-import { drawMachinePanel, drawVfdText } from '../render/presentation.js';
+import { withMachinePanel, drawVfdText } from '../render/presentation.js';
 import { portrait, degrade } from '../render/portraits.js';
 import { textCps } from './access.js';
 import { drawStoryArtCard, planStoryArtInPanel, planStoryArtSideBySide, storyArtRows, storyArtSideBySidePanelRows } from './story-art-card.js';
@@ -183,13 +183,13 @@ function makeDialogueScene(nodeId) {
       const boxH = Math.min(rows - 2, Math.max(12 + wantedArtRows, fixedSideBySideRows));
       const boxY = rows - boxH - 1;
       const boxX = 1, boxW = cols - 2;
-      const panel = drawMachinePanel(boxX, boxY, boxW, boxH, {
+      withMachinePanel(boxX, boxY, boxW, boxH, {
         label: 'MONITOR', source: node.speaker || 'DIALOGUE',
         footer: done && choices().length
           ? promptLine([{ action: 'select', label: 'SELECT' }, { action: 'confirm', label: 'CONFIRM' }])
           : promptLine([{ action: 'continue', label: 'CONTINUE' }]),
         meter: true,
-      });
+      }, (panel) => {
 
       let contentY = panel.y;
       let contentX = panel.x;
@@ -305,6 +305,7 @@ function makeDialogueScene(nodeId) {
         const full = String(line.text ?? line.direction ?? '');
         if (chars >= full.length) uiText(boxX + boxW - 4, boxY + boxH - 3, '▾', 'ui-amber');
       }
+      });
     },
   };
 }

@@ -145,6 +145,7 @@ export function freshBootWeatherState(kind = 'rain', { seed = 1, reducedMotion =
       ? freshStorm({ seed: (Math.floor(Number(seed) || 1) >>> 0) + 11, intensity: 0.85 })
       : null,
     thunder: [],
+    flashes: [],
     particles: [],
   };
 }
@@ -234,8 +235,12 @@ export function stepBootWeather(state, dt, { presence = 0, targetCount = null, s
   // whole night or it is not a gust — see world/wind.js.
   state.wind = windAt(state.time, { depth: config.gust });
   if (state.storm) {
-    const { thunder } = stepStorm(state.storm, step, { active: !!stormActive });
+    const { thunder, flashes } = stepStorm(state.storm, step, { active: !!stormActive });
     for (const event of thunder) state.thunder.push(event);
+    // Thunder is rendered from a seeded lightning channel now, and the render
+    // wants the flash-to-thunder gap to happen in rather than the frame the
+    // sound lands on. Queued the same way the strikes are.
+    for (const flash of flashes) (state.flashes || (state.flashes = [])).push(flash);
   }
 
   const maximum = Math.max(0, Math.round(config.count * state.density));
@@ -273,6 +278,13 @@ export function stepBootWeather(state, dt, { presence = 0, targetCount = null, s
 
 // The strikes that fell due this step, for the caller to play. Drained, like
 // the field itself, so a queue cannot carry one into the next screen.
+export function drainBootFlashes(state) {
+  if (!state?.flashes?.length) return [];
+  const events = state.flashes;
+  state.flashes = [];
+  return events;
+}
+
 export function drainBootThunder(state) {
   if (!state?.thunder?.length) return [];
   const events = state.thunder;

@@ -32,7 +32,7 @@ await page.evaluateOnNewDocument(()=>{
 });
 const errs=[]; page.on('pageerror',e=>errs.push('PAGEERROR: '+e.message));
 page.on('console',m=>{if(m.type()==='error'&&!/favicon/.test(m.text()))errs.push('CONSOLE: '+m.text().slice(0,160));});
-await page.goto('http://127.0.0.1:5199/index.html?nomic=1&sam=0&diffusion=ws%3A%2F%2F127.0.0.1%3A5198',{waitUntil:'domcontentloaded',timeout:120000});
+await page.goto('http://127.0.0.1:5199/index.html?nodisplaynotice=1&nomic=1&sam=0&diffusion=ws%3A%2F%2F127.0.0.1%3A5198',{waitUntil:'domcontentloaded',timeout:120000});
 await page.waitForFunction(()=>!!window.__probe,{timeout:180000});
 const wait=(ms)=>new Promise(r=>setTimeout(r,ms));
 const top=()=>page.evaluate(()=>window.__scenes?.top?.()?.id||null);

@@ -2,7 +2,7 @@ import * as scenes from './scenes.js';
 import { uiFill, uiSize, uiText, uiWrap } from '../render/ui.js';
 import { createHitRegions } from '../render/hit-regions.js';
 import { creditAtmosphereFrame } from './credit-visual.js';
-import { attachBootWeatherAudio, bootWeather, bootWeatherAudio, bootWeatherOpeningEnvelope, drainBootThunder, renderBootWeather, stepBootWeather } from './boot-weather.js';
+import { attachBootWeatherAudio, bootWeather, bootWeatherAudio, bootWeatherOpeningEnvelope, drainBootFlashes, drainBootThunder, renderBootWeather, stepBootWeather } from './boot-weather.js';
 
 export const OPENING_CREDITS_DURATION = 23.5;
 export const OPENING_CREDITS_SKIP_CONFIRM_SECONDS = 0.45;
@@ -331,6 +331,12 @@ export function makeOpeningCreditsScene({
         // drainBootThunder's own comment says it exists to prevent.
         const strikes = drainBootThunder(weather);
         const bed = bootWeatherAudio();
+        // The flash first, while its own sound is still on its way — that gap is
+        // where the render belongs. Drained whether or not there is a bed, for
+        // the same reason the strikes are: an undrained queue is a stale clap
+        // carried into the next screen.
+        const lit = drainBootFlashes(weather);
+        if (bed) for (const flash of lit) bed.prepare(flash);
         if (bed) for (const event of strikes) bed.strike(event);
       }
       if (skipCommittedAt != null) {

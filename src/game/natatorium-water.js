@@ -240,14 +240,24 @@ export function natatoriumDefeatBattery(charge) {
   return {before,after,lost:before-after,torchOff:after<=0};
 }
 
-export function recordNatatoriumDefeat(run,{batteryLost=0}={}) {
+// YOU CANNOT BE SOAKED IN AN EMPTY POOL.
+//
+// This set `soaked:true` unconditionally, and the pool is DRAINED on a first
+// run — so the most common defeat in the game wrote a wet flag about a dry
+// concrete box, and every downstream reader (the footstep muffle at .48, the
+// SOAKED debug tag, the `soaked` post-effect in r3d) believed it.
+//
+// `defeats` and `batteryLost` are true either way: the torch pack is lost to
+// the fall and the fight, not to the water.
+export function recordNatatoriumDefeat(run,{batteryLost=0,water=null}={}) {
   const next={...(run||{})},ledger={...(next.ledger||{})};
-  const water=normalizeNatatoriumWaterLedger(ledger.natatoriumWater);
+  const prior=normalizeNatatoriumWaterLedger(ledger.natatoriumWater);
+  const filled=(water||next.environment?.natatoriumWater)===NATATORIUM_WATER_STATES.MURKY;
   ledger.natatoriumWater={
-    ...water,
-    soaked:true,
-    defeats:water.defeats+1,
-    batteryLost:water.batteryLost+Math.max(0,Number(batteryLost)||0),
+    ...prior,
+    soaked:prior.soaked||filled,
+    defeats:prior.defeats+1,
+    batteryLost:prior.batteryLost+Math.max(0,Number(batteryLost)||0),
   };
   next.ledger=ledger;
   return next;

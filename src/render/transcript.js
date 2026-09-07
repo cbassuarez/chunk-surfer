@@ -766,6 +766,7 @@ export function layoutTranscriptChoices(view, width, { lane = null } = {}) {
     parts.forEach((part, lineIdx) => {
       rows.push({
         kind: 'choice',
+        choiceIndex: idx,
         text:
           `${lineIdx === 0 ? prefix : continuation}` +
           `${part}`,

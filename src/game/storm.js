@@ -91,6 +91,13 @@ function makeStrike(state) {
   }
   const duration = at + 0.45;
   return {
+    // THE STRIKE'S OWN NAME. The thunder for a flash is rendered from a seeded
+    // lightning channel (audio/thunder-channel.js), and the render happens at the
+    // FLASH while the sound is still travelling. So the flash and the thunder
+    // have to agree about which bolt they are, and this is how. Taken from the
+    // generator's current state rather than by drawing a number, so adding it
+    // does not shift the sequence of every storm that already exists.
+    seed: (state.rng ^ Math.floor(state.time * 1000)) >>> 0 || 1,
     bearing: nextRandom(state) * Math.PI * 2,
     distance,
     energy,
@@ -102,16 +109,23 @@ function makeStrike(state) {
   };
 }
 
-// Returns the events that fell due this step: `{ thunder: [...] }`. The caller
-// plays them; this module never touches audio.
+// Returns the events that fell due this step: `{ thunder: [...], flashes: [...] }`.
+// The caller plays them; this module never touches audio.
+//
+// `flashes` is every strike that BEGAN this step. It exists because thunder is
+// rendered rather than sampled, and the render wants somewhere to happen that is
+// not the frame the sound lands on — the gap between the flash and the thunder is
+// distance/343, which is 1.2s at 400m and 20s at 7km, and that is the budget.
 export function stepStorm(state, dt, { active = true } = {}) {
-  if (!state) return { thunder: [] };
+  if (!state) return { thunder: [], flashes: [] };
   const step = clamp(dt, 0, 0.5);
   state.time += step;
   const thunder = [];
+  const flashes = [];
 
   if (active && state.time >= state.nextAt) {
     const strike = makeStrike(state);
+    flashes.push({ seed: strike.seed, distance: strike.distance, energy: strike.energy, bearing: strike.bearing });
     state.strikes.push(strike);
     state.pending.push(strike);
     state.lastDistance = strike.distance;
@@ -125,6 +139,7 @@ export function stepStorm(state, dt, { active = true } = {}) {
   state.pending = state.pending.filter((strike) => {
     if (state.time < strike.thunderAt) return true;
     thunder.push({
+      seed: strike.seed,
       distance: strike.distance,
       energy: strike.energy,
       bearing: strike.bearing,
@@ -135,7 +150,7 @@ export function stepStorm(state, dt, { active = true } = {}) {
     return false;
   });
 
-  return { thunder };
+  return { thunder, flashes };
 }
 
 // 0..1 right now, across every live strike.

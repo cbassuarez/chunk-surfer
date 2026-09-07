@@ -6,7 +6,7 @@
 // while the player can already see the manifestation in the world.
 
 import { uiCellMetrics, uiDraw, uiFill, uiGlyph, uiText, uiSize } from './ui.js';
-import { drawMachinePanel } from './presentation.js';
+import { withMachinePanel } from './presentation.js';
 import { themeRoleColor, UI_COLOR } from './palette.js';
 import { buildMinimapCommands } from './map-commands.js';
 import { drawAnomalyMarker, drawEquipmentMarker, drawHushAwareness, drawHushMarker, drawPlayerMarker, drawTargetLozenge, drawWaypointMarker } from './map-icons.js';
@@ -550,12 +550,12 @@ export function drawMinimap(model, opts = {}) {
   const hush = hushStatus(model, now);
   const floor=model.floors.find((candidate)=>candidate.id===model.player.floorId);
   const targetReadout=minimapTargetReadout(model);
-  const panel = drawMachinePanel(x0, y0, width, height, {
+  withMachinePanel(x0, y0, width, height, {
     label: 'FIELD NAV',model:'FN-12',
     source:opts.source||'',
     meter: false,
     theme: hush.cls === 'ui-danger' ? 'amber' : 'green',
-  });
+  }, (panel) => {
   const panelPulse = hushStatusPulse(hush, now);
   const targetPulse = targetStatusPulse(model.waypoint, now);
   if (targetPulse > 0) uiFill(panel.x, panel.y, panel.w, panel.h, `rgba(80,174,255,${targetPulse})`);
@@ -606,6 +606,7 @@ export function drawMinimap(model, opts = {}) {
   uiText(panel.x,panel.y+panel.h-1,clip(footer,panel.w),footerCls,.72);
   drawFloorDeltaLed(panel, anomalyFloor?.delta || floorTarget?.delta || 0);
   if (opts.expanded) uiText(panel.x, panel.y + panel.h, '[GREEN] YOU · [BLUE] TARGET · [RED ?] HUSH (SEEN)', 'ui-secondary', .66);
+  });
 }
 
 // Small explicit marker used only for recorder playback origin. It is not part

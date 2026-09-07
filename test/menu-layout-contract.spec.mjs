@@ -7,7 +7,7 @@ assert.match(title, new RegExp(`id: '${id}'`), `title keeps stable ${id} slot`);
 }
 assert.doesNotMatch(title,/just-surf|onJustSurf/,'production title removes the sample-field route');
 assert.match(title, /let sel = activeRun \? 0 : 1/, 'title defaults to NEW RUN when CONTINUE is unavailable');
-assert.match(title, /drawMachinePanel/, 'title uses the AUDIOCORP case-select panel');
+assert.match(title, /withMachinePanel/, 'title renders its readout behind the AUDIOCORP case-select glass');
 assert.match(title, /drawVfdText/, 'title uses the established VFD wordmark');
 assert.match(title, /drawLocationIndicator/, 'title keeps the case-select signal instrument');
 assert.doesNotMatch(title, /renderCinematicConservatory/, 'title does not share credit-sequence geometry');
@@ -21,7 +21,7 @@ assert.match(archive, /body\.h - 13/, 'archive caps description rows to body hei
 const transferRoom = fs.readFileSync('src/game/transfer-room.js', 'utf8');
 assert.match(transferRoom, /let scroll = 0/, 'transfer room scrolls its register');
 assert.match(transferRoom, /Nothing filed/, 'transfer room has empty-file copy rather than a blank pane');
-assert.match(transferRoom, /drawMachinePanel/, 'transfer room uses the established case panel');
+assert.match(transferRoom, /withMachinePanel/, 'transfer room renders its readout behind the established case-panel glass');
 
 const returnIndex = fs.readFileSync('src/game/return-index.js', 'utf8');
 assert.match(returnIndex, /let scroll = 0/, 'return index scrolls entries');

@@ -20,7 +20,12 @@ const text = (value, fallback = '') => typeof value === 'string' ? value.slice(0
 const point = (value) => {
   const source = object(value);
   if (!Number.isFinite(Number(source.x)) || !Number.isFinite(Number(source.y))) return null;
-  return { x: Number(source.x), y: Number(source.y) };
+  return {
+    x: Number(source.x),
+    y: Number(source.y),
+    ...(Number.isFinite(source.yaw) ? { yaw:source.yaw } : {}),
+    ...(Number.isFinite(source.pitch) ? { pitch:source.pitch } : {}),
+  };
 };
 
 function pose(value) {
@@ -234,6 +239,7 @@ function takeSegment(take) {
 export function buildSourceReprisePlan(manifest) {
   const source = normalizeSourceReplayManifest(manifest);
   const takes = source.takes.map(takeSegment);
+  const finalTakes = takes.slice(0, 4);
   const firstBattle = source.battles[0] || null;
   const firstContact = source.hushContacts[0] || null;
   return {
@@ -256,10 +262,13 @@ export function buildSourceReprisePlan(manifest) {
     'final-clause': {
       id: 'final-clause',
       segments: [
-        ...takes.slice(0, 4),
+        ...finalTakes.slice(0, -1),
         source.sourceEntry && { ...source.sourceEntry, kind: 'source-threshold', id: 'source-entry' },
+        // The threshold can contaminate the replay, but it was never a take.
+        // Source must still force R at a mark the player actually recorded.
+        finalTakes.at(-1),
       ].filter(Boolean),
-      finalMark: source.sourceEntry ? 'source-entry' : takes[Math.min(3, takes.length - 1)]?.id || null,
+      finalMark: finalTakes.at(-1)?.id || null,
     },
   };
 }

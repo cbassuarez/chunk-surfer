@@ -6,6 +6,7 @@ import {
   activeInputPromptDevice,
   formatBindingTip,
   inputPrompt,
+  isRadioControlEvent,
   promptLine,
   setActiveInputDevice,
 } from '../src/game/bindings.js';
@@ -26,6 +27,14 @@ test('input prompts swap between keyboard and active controller labels', () => {
 
   setActiveInputDevice('keyboard');
   assert.equal(inputPrompt('allow'), '[Y]');
+});
+
+test('the dedicated radio has an authored V keycap and accepts only its own fresh action',()=>{
+  assert.equal(inputPrompt('radio',{device:'keyboard'}),'[V]');
+  assert.equal(inputPrompt('radio',{device:'controller',family:'xbox'}),'[RB]');
+  assert.equal(inputPrompt('radio',{device:'controller',family:'playstation'}),'[R1]');
+  for(const event of [{key:'v'},{key:'V'},{code:'KeyV'},{controller:true,controllerAction:'radio'}])assert.equal(isRadioControlEvent(event),true);
+  for(const event of [{key:'r'},{key:'v',repeat:true},{key:'v',metaKey:true},{code:'KeyV',ctrlKey:true},{key:'v',altKey:true},{key:'V',shiftKey:true},{key:'v',controllerAction:'tabNext'}])assert.equal(isRadioControlEvent(event),false);
 });
 
 test('omnibus profile discloses microphone handling before the on/off choice', () => {

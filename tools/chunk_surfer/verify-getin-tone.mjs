@@ -51,7 +51,7 @@ async function assertInWorld(label) {
   return at;
 }
 
-await page.goto(`http://127.0.0.1:5199/index.html?nomic=1&sam=0&skiptut=1&nothink=0&diffusion=${encodeURIComponent(LENS)}`,
+await page.goto(`http://127.0.0.1:5199/index.html?nodisplaynotice=1&nomic=1&sam=0&skiptut=1&nothink=0&diffusion=${encodeURIComponent(LENS)}`,
   { waitUntil: 'domcontentloaded', timeout: 60000 });
 // The opening is a walk, not a splash: the scene chain has to be driven the way
 // ending-shots.mjs drives it, or `screen === 'game'` never arrives.

@@ -1,6 +1,6 @@
 import * as scenes from './scenes.js';
 import { uiScrim, uiSize } from '../render/ui.js';
-import { drawMachinePanel } from '../render/presentation.js';
+import { withMachinePanel } from '../render/presentation.js';
 import { drawStoryArtCard } from './story-art-card.js';
 import { storyArtRefId } from './story-art.js';
 
@@ -27,18 +27,19 @@ export function makeStoryArtPreviewScene({ art = 'guard', mode = 'hero' } = {}) 
       const h = Math.min(rows - 4, Math.max(20, Math.floor(rows * 0.72)));
       const x = Math.floor((cols - w) / 2);
       const y = Math.floor((rows - h) / 2);
-      const panel = drawMachinePanel(x, y, w, h, {
+      withMachinePanel(x, y, w, h, {
         label: 'STORY ART',
         source: id.toUpperCase(),
         footer: '[ESC] CLOSE',
         meter: true,
-      });
+      }, (panel) => {
       drawStoryArtCard({ id, mode }, {
         x: panel.x,
         y: panel.y,
         w: panel.w,
         rows: Math.min(16, panel.h - 1),
         mode,
+      });
       });
     },
   };

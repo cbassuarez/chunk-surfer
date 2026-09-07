@@ -380,3 +380,75 @@ test('main bridges stable ending beat ids and title selection into the score dir
   assert.match(main,/onSelectionChange:\(\)=>windowChoreography\?\.compositionEvent\?\.\('title:selection'\)/);
   assert.match(title,/onSelectionChange\(items\[sel\]\?\.id\|\|'',sel\)/);
 });
+
+// A fullscreen cue must wait for the advisory, including its native exit.
+test('fullscreen advisory gates native geometry and surfaces', async()=>{
+  let acknowledge, prompted=0;
+  const calls=[];
+  const director=createWindowChoreographyDirector({
+    documentApi:null,waitFn:async()=>{},
+    runtimeApi:{invoke:async(command)=>{
+      calls.push(command);
+      return command==='chunk_window_metrics' ? {native_fullscreen:true} : true;
+    }},
+    releaseFullscreen:(transition)=>{
+      prompted++;
+      return new Promise(resolve=>{acknowledge=async()=>resolve(await transition());});
+    },
+    effects:{showPanes:async()=>{calls.push('show-panes');return true;},hidePanes:async()=>true},
+  });
+  director.prepareBattle({battleId:'natatorium'});
+  const cast=director.fireballCast({battleId:'natatorium'});
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(prompted,1);
+  assert.deepEqual(calls,['chunk_window_metrics']);
+  await acknowledge();
+  await cast;
+  assert.ok(calls.indexOf('chunk_window_choreography_begin')<calls.indexOf('show-panes'));
+  await director.restore('test-complete');
+});
+
+test('restoring during the fullscreen advisory cancels the pending cue', async()=>{
+  let signal, begin;
+  const calls=[];
+  const director=createWindowChoreographyDirector({
+    documentApi:null,waitFn:async()=>{},
+    runtimeApi:{invoke:async(command)=>{
+      calls.push(command);
+      return command==='chunk_window_metrics' ? {native_fullscreen:true} : true;
+    }},
+    releaseFullscreen:(transition,options)=>{
+      begin=transition;signal=options.signal;
+      return new Promise(resolve=>signal.addEventListener('abort',()=>resolve(false),{once:true}));
+    },
+  });
+  director.prepareBattle({battleId:'natatorium'});
+  const cast=director.fireballCast({battleId:'natatorium'});
+  await new Promise(resolve=>setImmediate(resolve));
+  await director.restore('scene-replaced');
+  assert.equal(signal.aborted,true);
+  assert.equal(await begin(),false);
+  assert.equal(await cast,null);
+  assert.deepEqual(calls,['chunk_window_metrics']);
+});
+
+test('an in-flight native exit is restored if its scene was cancelled', async()=>{
+  let settle;
+  const calls=[];
+  const director=createWindowChoreographyDirector({
+    documentApi:null,waitFn:async()=>{},
+    runtimeApi:{invoke:async(command)=>{
+      calls.push(command);
+      if(command==='chunk_window_metrics')return {native_fullscreen:true};
+      if(command==='chunk_window_choreography_begin')return new Promise(resolve=>{settle=resolve;});
+      return true;
+    }},
+  });
+  director.prepareBattle({battleId:'natatorium'});
+  const cast=director.fireballCast({battleId:'natatorium'});
+  await new Promise(resolve=>setImmediate(resolve));
+  await director.restore('scene-replaced');
+  settle(true);
+  assert.equal(await cast,null);
+  assert.deepEqual(calls,['chunk_window_metrics','chunk_window_choreography_begin','chunk_window_choreography_restore']);
+});

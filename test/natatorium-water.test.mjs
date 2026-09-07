@@ -180,11 +180,25 @@ assert.deepEqual(
 for (const [before, after, lost] of [[1, 0, 1], [1.5, .5, 1], [.4, 0, .4], [0, 0, 0]]) {
   assert.deepEqual(natatoriumDefeatBattery(before), { before, after, lost, torchOff: after === 0 });
 }
+// YOU CANNOT BE SOAKED IN AN EMPTY POOL. This used to set `soaked:true`
+// unconditionally, and the pool is DRAINED on a first run — so the most common
+// defeat in the game wrote a wet flag about a dry concrete box, and the
+// footstep muffle, the debug tag and the r3d `soaked` post-effect all believed
+// it. The battery and the count are true either way: the pack is lost to the
+// fall and the fight, not to the water.
 const defeatedOnce = recordNatatoriumDefeat(firstRun, { batteryLost: 1 });
 const defeatedTwice = recordNatatoriumDefeat(defeatedOnce, { batteryLost: .4 });
-assert.equal(defeatedTwice.ledger.natatoriumWater.soaked, true);
+assert.equal(defeatedTwice.ledger.natatoriumWater.soaked, false,
+  'a drained pool cannot soak anybody');
 assert.equal(defeatedTwice.ledger.natatoriumWater.defeats, 2);
 assert.equal(defeatedTwice.ledger.natatoriumWater.batteryLost, 1.4);
+assert.equal(recordNatatoriumDefeat(firstRun, { batteryLost: 1, water: 'murky' })
+  .ledger.natatoriumWater.soaked, true, 'and a full one does');
+// Once soaked, always soaked — a later defeat in a drained pool does not dry
+// the man out.
+assert.equal(recordNatatoriumDefeat(
+  recordNatatoriumDefeat(firstRun, { batteryLost: 0, water: 'murky' }), { batteryLost: 0 },
+).ledger.natatoriumWater.soaked, true);
 
 const murkyRun = freshRunRecord({
   id: 'murky',

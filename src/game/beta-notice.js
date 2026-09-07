@@ -1,6 +1,6 @@
 import * as scenes from './scenes.js';
 import { uiFill, uiLine, uiSize, uiText } from '../render/ui.js';
-import { drawMachinePanel, drawVfdText } from '../render/presentation.js';
+import { withMachinePanel, drawVfdText } from '../render/presentation.js';
 import { createHitRegions } from '../render/hit-regions.js';
 import { drawVfdRow, vfdRowStyle } from '../render/vfd-select.js';
 import { UI_COLOR, activeTheme } from '../render/palette.js';
@@ -570,12 +570,12 @@ export function makeBetaNoticeScene({
       const h = Math.min(Math.max(34, rows - 8), rows - 4);
       const x = Math.floor((cols - w) / 2);
       const y = Math.floor((rows - h) / 2);
-      const body = drawMachinePanel(x, y, w, h, {
+      withMachinePanel(x, y, w, h, {
         label: 'BETA NOTICE',
         source: `REV ${normalized.revision || 0}`,
         footerParts: betaNoticeFooterParts(w),
         meter: true,
-      });
+      }, (body) => {
 
       drawVfdText(body.x, body.y, 'BETA NOTICE', { color: UI_COLOR.amber, max: Math.min(28, body.w) });
       if (normalized.updatedAt) {
@@ -597,6 +597,7 @@ export function makeBetaNoticeScene({
         uiFill(mx - 2, my - 0.25, msg.length + 4, 1.5, activeTheme().dim);
         uiText(mx, my, msg, 'ui-amber', 0.96);
       }
+      });
     },
   };
 }

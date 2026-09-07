@@ -1,5 +1,5 @@
 import { uiFill, uiSize, uiText } from '../render/ui.js';
-import { drawMachinePanel, drawVfdText } from '../render/presentation.js';
+import { withMachinePanel, drawVfdText } from '../render/presentation.js';
 import { UI_COLOR } from '../render/palette.js';
 import { PROGRESSION_CASE_IDS, progressionFixture } from '../data/progression-fixtures.js';
 import { deriveUnlocks } from '../progression/unlocks.js';
@@ -24,7 +24,7 @@ export function makeProgressionLabScene() {
       uiFill(0, 0, cols, rows, UI_COLOR.glass);
       const w = Math.min(88, cols - 4), h = Math.min(28, rows - 4);
       const x = Math.floor((cols - w) / 2), y = Math.floor((rows - h) / 2);
-      const body = drawMachinePanel(x, y, w, h, { label: 'PROGRESSION LAB', source: 'FIXTURE', footer: '[C] NEXT · [SHIFT+C] PREVIOUS', meter: false });
+      withMachinePanel(x, y, w, h, { label: 'PROGRESSION LAB', source: 'FIXTURE', footer: '[C] NEXT · [SHIFT+C] PREVIOUS', meter: false }, (body) => {
       drawVfdText(body.x, body.y, fixture.id.toUpperCase().replaceAll('-', ' '), { color: UI_COLOR.amber, max: body.w });
       const difficulty = resolveDifficulty(fixture.run.rules);
       const unlocks = deriveUnlocks(fixture.meta);
@@ -42,6 +42,7 @@ export function makeProgressionLabScene() {
       rowsOut.forEach(([label, value], i) => {
         uiText(body.x, body.y + 4 + i * 2, label.padEnd(18), 'ui-secondary');
         uiText(body.x + 19, body.y + 4 + i * 2, String(value).toUpperCase(), label === 'CERTIFICATION' && value === 'ENDED' ? 'ui-danger' : 'ui-primary');
+      });
       });
     },
   };

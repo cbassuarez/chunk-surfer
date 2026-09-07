@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 const source = readFileSync('src/game/title.js', 'utf8');
 
 test('title screen restores the AUDIOCORP case-select machine panel', () => {
-  assert.match(source, /drawMachinePanel/);
+  assert.match(source, /withMachinePanel/);
   assert.match(source, /drawVfdText/);
   assert.match(source, /drawLocationIndicator/);
   assert.match(source, /label: 'CASE SELECT'/);

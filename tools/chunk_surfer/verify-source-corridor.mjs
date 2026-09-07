@@ -7,7 +7,7 @@ await p.evaluateOnNewDocument(()=>{Object.defineProperty(document,'hasFocus',{co
 p.on('pageerror',e=>console.log('  PAGEERROR:',String(e).slice(0,200)));
 const w=(f,t=300000)=>p.waitForFunction(f,{timeout:t});
 const top=()=>p.evaluate(()=>window.__scenes?.top?.()?.id||null);
-await p.goto(`http://127.0.0.1:5199/index.html?nomic=1&sam=0&skiptut=1&nothink=0&diffusion=${encodeURIComponent(LENS)}`,{waitUntil:'domcontentloaded',timeout:60000});
+await p.goto(`http://127.0.0.1:5199/index.html?nodisplaynotice=1&nomic=1&sam=0&skiptut=1&nothink=0&diffusion=${encodeURIComponent(LENS)}`,{waitUntil:'domcontentloaded',timeout:60000});
 await w(()=>!!window.__scenes?.top?.()?.id);
 if(await top()==='eula'){await p.keyboard.press('Enter');await w(()=>window.__scenes?.top?.()?.id!=='eula',30000);}
 await w(()=>window.__scenes?.top?.()?.id==='opening-credits');

@@ -1,0 +1,105 @@
+{
+  "generator": "scripts/build-item-models.mjs",
+  "license": "Existing project assets retain their source credits. Portable searchlight: Poly Haven CC0, see conservatory-acquisitions.credits.json. Detailed inspection models: original project geometry; reference photographs are not redistributed.",
+  "items": [
+    {
+      "id": "light",
+      "origin": "existing",
+      "source": "public/assets/conservatory-acquisitions.glb",
+      "sourceSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+      "meshes": [
+        {
+          "mesh": "portable_searchlight"
+        }
+      ],
+      "triangles": 6859
+    },
+    {
+      "id": "marble-eyes",
+      "origin": "existing",
+      "source": "public/assets/conservatory-props.glb",
+      "sourceSha256": "a2b64ca7843a50a939f3d5afb82681555c486949e099f62d8021dbc06a6725fa",
+      "meshes": [
+        {
+          "mesh": "park_marble_eyes",
+          "isolation": "Exclude cabinet mounting stud or fountain coins; retained vertex positions unchanged."
+        }
+      ],
+      "triangles": 304
+    },
+    {
+      "id": "sheet-music",
+      "origin": "existing",
+      "source": "public/assets/conservatory-props.glb",
+      "sourceSha256": "a2b64ca7843a50a939f3d5afb82681555c486949e099f62d8021dbc06a6725fa",
+      "meshes": [
+        {
+          "mesh": "open_score"
+        }
+      ],
+      "triangles": 36
+    },
+    {
+      "id": "tuning-fork",
+      "origin": "existing",
+      "source": "public/assets/tuning-fork.glb",
+      "sourceSha256": "fcaf153b658557efb3554fe8261d583f4909d95c993f984dd82aff71968a9851"
+    },
+    {
+      "id": "interface",
+      "origin": "authored",
+      "source": "scripts/build-item-models.mjs",
+      "pieces": 178,
+      "triangles": 14884
+    },
+    {
+      "id": "coffee",
+      "origin": "authored",
+      "source": "scripts/build-item-models.mjs",
+      "pieces": 7,
+      "triangles": 3106
+    },
+    {
+      "id": "radio",
+      "origin": "authored",
+      "source": "scripts/build-item-models.mjs",
+      "pieces": 94,
+      "triangles": 9680
+    },
+    {
+      "id": "recorder",
+      "origin": "authored",
+      "source": "scripts/build-item-models.mjs",
+      "pieces": 172,
+      "triangles": 23620
+    },
+    {
+      "id": "keyring",
+      "origin": "authored",
+      "source": "scripts/build-item-models.mjs",
+      "pieces": 24,
+      "triangles": 5640
+    },
+    {
+      "id": "chapel-key",
+      "origin": "authored",
+      "source": "scripts/build-item-models.mjs",
+      "pieces": 11,
+      "triangles": 2996
+    },
+    {
+      "id": "plant-spanner",
+      "origin": "authored",
+      "source": "scripts/build-item-models.mjs",
+      "pieces": 22,
+      "triangles": 5072
+    },
+    {
+      "id": "badge",
+      "origin": "authored",
+      "source": "scripts/build-item-models.mjs",
+      "pieces": 34,
+      "triangles": 5892
+    }
+  ]
+}

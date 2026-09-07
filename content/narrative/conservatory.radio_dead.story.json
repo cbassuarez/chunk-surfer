@@ -8,7 +8,7 @@
     "start"
   ],
   "tags": [],
-  "notes": "",
+  "notes": "A dead set remains dead. Inspection checks the physical switch, reassures the saved route, and puts it away. The battery decision occurred during the terminal rupture; there is no shake, retry loop, voice return, or squelch resurrection.",
   "regions": [
     {
       "id": "conservatory.radio_dead.region",
@@ -17,128 +17,50 @@
       "color": "#245c62",
       "nodeIds": [
         "start",
-        "again",
-        "shake",
         "clip"
       ]
     }
   ],
   "nodes": {
     "start": {
-      "speaker": "",
-      "lines": [
-        {
-          "who": "direction",
-          "text": "The carrier lamp stays dark. Pressing transmit gives one dry switch click at your thumb.",
-          "id": "start.line.1",
-          "cues": [
-            "radio-dead-click"
-          ]
-        },
-        {
-          "who": "you",
-          "text": "Right. Dead. Still got weight to it.",
-          "id": "start.line.2"
-        }
-      ],
-      "choices": [
-        {
-          "text": "try channel two again",
-          "goto": "again",
-          "id": "start.choice.1"
-        },
-        {
-          "text": "shake it",
-          "goto": "shake",
-          "id": "start.choice.2"
-        },
-        {
-          "text": "leave it alone for now",
-          "goto": "clip",
-          "id": "start.choice.3"
-        }
-      ],
       "id": "start",
-      "type": "choice"
-    },
-    "again": {
-      "speaker": "",
+      "type": "dialogue",
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Field radio / no carrier",
+        "status": "DEAD"
+      },
       "lines": [
         {
-          "who": "me",
-          "text": "4417-C, radio check. Martin?",
-          "id": "again.line.1"
-        },
-        {
+          "id": "dead.onset",
           "who": "direction",
-          "text": "The speaker cone does not move. The transmit switch clicks back under your thumb.",
-          "id": "again.line.2"
+          "text": "The transmit key moves and returns. The carrier lamp stays dark."
         },
         {
-          "who": "me",
-          "text": "Martin, you there?",
-          "id": "again.line.3"
-        }
-      ],
-      "choices": [
-        {
-          "text": "shake it",
-          "goto": "shake",
-          "id": "again.choice.1"
-        },
-        {
-          "text": "leave it alone",
-          "goto": "clip",
-          "id": "again.choice.2"
-        }
-      ],
-      "id": "again",
-      "type": "choice"
-    },
-    "shake": {
-      "speaker": "",
-      "lines": [
-        {
-          "who": "direction",
-          "text": "The battery knocks once inside its compartment when you shake the set.",
-          "shake": 1.1,
-          "shakeMs": 260,
-          "id": "shake.line.1",
-          "cues": [
-            "squelch"
-          ]
-        },
-        {
-          "who": "direction",
-          "text": "A hard squelch snaps from the grille and cuts off before it becomes a voice.",
-          "id": "shake.line.2"
-        },
-        {
+          "id": "dead.route",
           "who": "you",
-          "text": "No. That wasn't battery contact.",
-          "id": "shake.line.3"
-        },
-        {
-          "who": "you",
-          "text": "All right. Don't do that again in here.",
-          "id": "shake.line.4"
+          "text": "The last route is still on the location indicator."
         }
       ],
-      "goto": "clip",
-      "id": "shake",
-      "type": "dialogue"
+      "goto": "clip"
     },
     "clip": {
-      "speaker": "",
+      "id": "clip",
+      "type": "dialogue",
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Field radio / no carrier",
+        "status": "DEAD"
+      },
       "lines": [
         {
+          "id": "dead.after",
           "who": "direction",
-          "text": "Your hand leaves the set. Its dead carrier lamp catches a small green reflection from the recorder display.",
-          "id": "clip.line.1"
+          "text": "You clip the set back onto the strap, grille against your coat."
         }
-      ],
-      "id": "clip",
-      "type": "dialogue"
+      ]
     }
   }
 }

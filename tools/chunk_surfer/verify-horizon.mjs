@@ -41,7 +41,7 @@ page.on('console',m=>{const t=m.text();if(/shader|GLSL|compile|ERROR:/i.test(t))
 const top=()=>page.evaluate(()=>window.__scenes?.top?.()?.id||null);
 const wait=(fn,t=300000)=>page.waitForFunction(fn,{timeout:t});
 
-await page.goto(`${BASE}/index.html?nomic=1&sam=0&skiptut=1&nothink=1`,{waitUntil:'domcontentloaded',timeout:60000});
+await page.goto(`${BASE}/index.html?nodisplaynotice=1&nomic=1&sam=0&skiptut=1&nothink=1`,{waitUntil:'domcontentloaded',timeout:60000});
 await wait(()=>!!window.__scenes?.top?.()?.id);
 if(await top()==='eula'){await page.keyboard.press('Enter');await wait(()=>window.__scenes?.top?.()?.id!=='eula',30000);}
 await wait(()=>window.__scenes?.top?.()?.id==='opening-credits');

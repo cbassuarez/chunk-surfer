@@ -11,10 +11,14 @@
 import { uiFill, uiLine, uiStrokeRect, uiText, uiWrap } from './ui.js';
 import { UI_COLOR } from './palette.js';
 import { drawBagIcon } from './bag-icons.js';
+import {drawItemPortrait} from './item-portraits.js';
+import {itemPortrait} from '../data/item-portraits.js';
 import { bagEntry, bagSection } from '../game/bag-model.js';
 import { drawMapView } from './map-view.js';
-import { inputPrompt, inputPromptLabel } from '../game/bindings.js';
+import { activeInputPromptDevice, inputPrompt, inputPromptLabel } from '../game/bindings.js';
 import { fitText } from './fit-text.js';
+import { drawLampButton } from './presentation.js';
+import { bagTabRegions, bagTabButtonState } from './bag-tabs.js';
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
@@ -49,35 +53,27 @@ export function bagListCapacity(layout, sectionId) {
   return Math.max(1, usable);
 }
 
-function drawTabs(model, nav, layout, pulse, breadcrumb = '') {
+function drawTabs(model, nav, layout, pulse, breadcrumb = '', guide = null) {
   const tabs = model.sections || [];
   const active = nav.sectionId;
-  const compact = layout.mode === 'compact';
-  const gap = compact ? 1 : 2;
-
-  const labels = tabs.map((tab) => {
-    const short = tab.id === 'kit' ? 'I' : tab.id === 'map' ? 'M' : tab.id === 'skills' ? 'K' : 'S';
-    const core = compact ? `${short} ${tab.countLabel}` : `${tab.label} ${tab.countLabel}`;
-    return tab.id === active ? `[${compact ? '' : ' '}${core}${compact ? '' : ' '}]` : core;
-  });
-
-  const total = labels.reduce((sum, label) => sum + label.length, 0) + gap * Math.max(0, labels.length - 1);
-  let x = layout.tabs.x + Math.max(0, Math.floor((layout.tabs.w - total) / 2));
-
-  tabs.forEach((tab, i) => {
-    const on = tab.id === active;
-    const text = labels[i];
-    uiText(x, layout.tabs.y, clip(text, Math.max(1, layout.tabs.x + layout.tabs.w - x)), on ? 'ui-amber' : 'ui-secondary', on ? .72 + pulse * .28 : .72);
-    x += text.length + gap;
-  });
+  for (const tab of bagTabRegions(model, layout)) {
+    const state=bagTabButtonState(tab, active);
+    if(guide?.kind==='section')state.focused=tab.sectionId===guide.sectionId;
+    drawLampButton(tab.x, tab.y, tab.w, tab.h, state);
+    // Dynamic counts belong to the readout beneath the fixed printed legend,
+    // never to the plastic. A long SKILLS delta cannot stretch its switch.
+    const count = clip(tab.countLabel, tab.readout.w);
+    uiText(tab.readout.x + Math.max(0, (tab.readout.w - count.length) / 2), tab.readout.y,
+      count, tab.sectionId === active ? 'ui-primary' : 'ui-secondary', tab.sectionId === active ? .9 : .62);
+  }
 
   const help = layout.tabs.w >= 64
     ? `${inputPrompt('tabNext')} / ${inputPrompt('tabPrev')} SECTION`
     : `${inputPrompt('tabNext')} SECTION`;
   const crumb=breadcrumb||`FIELD CASE / ${tabs.find((tab)=>tab.id===active)?.label||'SECTION'}`;
   const crumbW=Math.max(8,layout.tabs.w-help.length-2);
-  uiText(layout.tabs.x,layout.tabs.y+1,clip(crumb,crumbW),'ui-label',.62);
-  rightText(layout.tabs.x,layout.tabs.y+1,layout.tabs.w,help,'ui-label',.58);
+  uiText(layout.tabs.x,layout.tabs.y+3.7,clip(crumb,crumbW),'ui-label',.62);
+  rightText(layout.tabs.x,layout.tabs.y+3.7,layout.tabs.w,help,'ui-label',.58);
 }
 
 function sectionHeader(sectionId) {
@@ -220,11 +216,23 @@ function drawKitRuleStrip(region, model) {
 
 function drawReadySlot(slot, rect, index, selected) {
   const entry = slot || null;
+  if (rect.h < 1 || rect.w < 2) return;
   drawMicroBox(rect, { selected, dim: !entry, active: !!entry });
+  if (rect.h < 3) {
+    uiText(rect.x + .6, rect.y + (rect.h - 1) / 2,
+      clip(`[${index + 1}] ${entry?.title || 'EMPTY'}`, rect.w - 1.2),
+      selected ? 'ui-amber' : entry ? 'ui-primary' : 'ui-secondary', entry ? .88 : .48);
+    return;
+  }
   uiText(rect.x + 1, rect.y, `[${index + 1}]`, entry ? 'ui-blue' : 'ui-secondary', entry ? .84 : .44);
   if (!entry) {
     uiText(rect.x + 1, rect.y + 1, clip('EMPTY', rect.w - 2), 'ui-secondary', .42);
     if (rect.h >= 3) uiText(rect.x + 1, rect.y + 2, clip('CHOOSE SET TO FILL', rect.w - 2), 'ui-label', .40);
+    return;
+  }
+  if(rect.h>=4&&itemPortrait(entry)){
+    drawItemPortrait(entry,rect.x+1,rect.y+.35,{w:rect.w-2,h:rect.h-1.7,empty:entry.present===false});
+    uiText(rect.x+1,rect.y+rect.h-1.15,clip(entry.title,rect.w-2),selected?'ui-amber':'ui-primary',.9);
     return;
   }
   const titleY = rect.h >= 6 ? rect.y + 2 : rect.y + 1;
@@ -233,19 +241,23 @@ function drawReadySlot(slot, rect, index, selected) {
 }
 
 function drawReadyNow(model, entries, selectedId, rect) {
+  if (rect.h < 1) return;
   const slots = kitReadySlots(model, entries);
   const cap = slots.length;
-  const gap = 1;
-  const slotW = Math.max(8, Math.floor((rect.w - gap * Math.max(0, cap - 1)) / cap));
-  uiText(rect.x, rect.y, 'QUICK SLOTS', 'ui-amber', .90);
-  rightText(rect.x, rect.y, rect.w, `1-${cap}`, 'ui-blue', .56);
-  uiText(rect.x, rect.y + 1, clip('Items here are available when a fight starts.', rect.w), 'ui-secondary', .58);
+  const gap = rect.w >= 60 ? 1 : .5;
+  const slotW = Math.max(0, (rect.w - gap * Math.max(0, cap - 1)) / cap);
+  const headerH = rect.h >= 3 ? 1.35 : 0;
+  if (headerH) {
+    uiText(rect.x, rect.y, 'QUICK SLOTS', 'ui-amber', .90);
+    rightText(rect.x, rect.y, rect.w, `1-${cap}`, 'ui-blue', .56);
+  }
+  if (headerH >= 3) uiText(rect.x, rect.y + 1, clip('Items here are available when a fight starts.', rect.w), 'ui-secondary', .58);
 
   for (let i = 0; i < cap; i++) {
     const slotX = rect.x + i * (slotW + gap);
-    const w = i === cap - 1 ? Math.max(8, rect.x + rect.w - slotX) : slotW;
+    const w = i === cap - 1 ? Math.max(0, rect.x + rect.w - slotX) : slotW;
     const entry = slots[i];
-    drawReadySlot(entry, { x: slotX, y: rect.y + 3, w, h: Math.max(3, rect.h - 3) }, i, !!entry && entry.id === selectedId);
+    drawReadySlot(entry, { x: slotX, y: rect.y + headerH, w, h: Math.max(0, rect.h - headerH) }, i, !!entry && entry.id === selectedId);
   }
 }
 
@@ -383,45 +395,74 @@ export function bagKitDetailAction(entry) {
 
 export function bagInventoryGeometry(model, nav, layout) {
   const region=kitRegion(layout);
-  // Header (2 rows), gap, and four-row cards must finish before ALL ITEMS.
-  const readyH=region.h>=18?7:6;
-  const contentY=region.y+readyH+1;
-  const contentH=Math.max(5,region.y+region.h-contentY);
-  if(region.w>=66&&contentH>=8){
-    const listW=clamp(Math.floor(region.w*.42),27,38);
+  // Screen selectors have first claim on the case. A shallow inventory folds
+  // its quick-slot summary down, not its content through the lower faceplate.
+  const readyH=region.h>=21?7:region.h>=16?5:region.h>=11?3.2:region.h>=8?1.5:0;
+  const gap=readyH?Math.min(.7,region.h*.04):0;
+  const contentY=region.y+readyH+gap;
+  const contentH=Math.max(0,region.y+region.h-contentY);
+  if(region.w>=52&&contentH>=4){
+    const listW=clamp(Math.floor(region.w*.42),20,38);
     return{region,ready:{x:region.x,y:region.y,w:region.w,h:readyH},
       list:{x:region.x,y:contentY,w:listW,h:contentH},
       detail:{x:region.x+listW+2,y:contentY,w:region.w-listW-2,h:contentH}};
   }
-  const listH=Math.max(4,Math.floor(contentH*.46));
+  const splitGap=Math.min(.6,contentH*.06);
+  const listH=Math.max(0,(contentH-splitGap)*.48);
   return{region,ready:{x:region.x,y:region.y,w:region.w,h:readyH},
     list:{x:region.x,y:contentY,w:region.w,h:listH},
-    detail:{x:region.x,y:contentY+listH+1,w:region.w,h:Math.max(4,contentH-listH-1)}};
+    detail:{x:region.x,y:contentY+listH+splitGap,w:region.w,h:Math.max(0,contentH-listH-splitGap)}};
+}
+
+export function bagInventoryListLayout(rect) {
+  const compact=rect.h<5;
+  const rowH=compact?1:2;
+  return {compact,rowH,startY:rect.y+1,capacity:Math.max(0,Math.floor((rect.h-1)/rowH))};
+}
+
+export function bagInventoryActionLayout(rect, entry, nav = {}) {
+  const portrait=itemPortrait(entry)&&rect.w>=40&&rect.h>=7
+    ?{x:rect.x+.5,y:rect.y+1.55,w:Math.floor(rect.w*.41),h:Math.max(0,rect.h-2)}:null;
+  const textRect=portrait?{...rect,x:portrait.x+portrait.w+.5,w:rect.w-portrait.w-1}:rect;
+  const actions=entry?.actionList||[];
+  const descriptionRows=Math.min(3,Math.max(0,Math.floor(rect.h)-7));
+  const titleY=rect.h>=1?rect.y+Math.min(.3,rect.h-1):null;
+  const descriptionY=rect.y+1.55;
+  const hintY=rect.h>=2.8?descriptionY+descriptionRows+.2:null;
+  const startY=hintY===null?rect.y+rect.h:hintY+1.15;
+  const capacity=Math.max(0,Math.floor(rect.y+rect.h-startY));
+  const index=Math.max(0,Number(nav.actionIndex)||0);
+  const offset=nav.actionFocus&&capacity?Math.max(0,Math.min(index-capacity+1,actions.length-capacity)):0;
+  return {titleY,descriptionY,descriptionRows,hintY,startY,capacity,offset,portrait,textRect,
+    rows:actions.slice(offset,offset+capacity).map((action,row)=>({action,index:offset+row,x:textRect.x+1,y:startY+row,w:Math.max(0,textRect.w-2),h:1}))};
 }
 
 function drawInventoryList(entries,selectedId,rect,scroll,pulse){
+  if(rect.h<1)return;
   uiText(rect.x,rect.y,'ALL ITEMS','ui-label',.72);
-  rightText(rect.x,rect.y,rect.w,`${entries.length} CARRIED / TRACKED`,'ui-blue',.52);
-  const cap=Math.max(1,Math.floor((rect.h-1)/2));
-  entries.slice(scroll,scroll+cap).forEach((entry,index)=>{
-    const y=rect.y+1+index*2,on=entry.id===selectedId;
-    uiFill(rect.x,y,rect.w,1.8,on?'rgba(216,138,59,.13)':'rgba(255,255,255,.018)');
+  rightText(rect.x,rect.y,rect.w,rect.w>=32?`${entries.length} CARRIED / TRACKED`:`${entries.length} ITEMS`,'ui-blue',.52);
+  const list=bagInventoryListLayout(rect);
+  entries.slice(scroll,scroll+list.capacity).forEach((entry,index)=>{
+    const y=list.startY+index*list.rowH,on=entry.id===selectedId;
+    uiFill(rect.x,y,rect.w,list.rowH-.15,on?'rgba(216,138,59,.13)':'rgba(255,255,255,.018)');
     uiText(rect.x,y,on?'▸':' ',on?'ui-amber':'ui-secondary',on ? .9 : .5);
     uiText(rect.x+2,y,clip(entry.title,Math.max(8,rect.w-14)),on?'ui-amber':entry.present?'ui-primary':'ui-secondary',on?1:.75);
     const slot=entry.compartment==='top'?`SET ${entry.topIndex+1}`:entry.source?.deployed?'DEPLOYED':'BAG';
     rightText(rect.x,y,rect.w,slot,entry.compartment==='top'?'ui-amber':entry.source?.deployed?'ui-blue':'ui-label',on ? .9 : .55);
-    uiText(rect.x+2,y+1,clip(entry.subtitle,rect.w-3),'ui-secondary',on ? .64 : .42);
+    if(!list.compact)uiText(rect.x+2,y+1,clip(entry.subtitle,rect.w-3),'ui-secondary',on ? .64 : .42);
   });
 }
 
 function drawInventoryActions(entry,rect,nav,motion,now){
+  if(rect.h<1||rect.w<4)return;
   drawMicroBox(rect,{active:true});
-  if(!entry){uiText(rect.x+1,rect.y+1,'NO ITEM SELECTED','ui-secondary',.6);return;}
+  if(!entry){uiText(rect.x+1,rect.y,'NO ITEM SELECTED','ui-secondary',.6);return;}
   const focused=!!nav.actionFocus,index=Math.max(0,Number(nav.actionIndex)||0);
-  uiText(rect.x+1,rect.y+1,clip(entry.title,rect.w-2),'ui-amber',.95);
-  const descriptionRows=Math.min(3,Math.max(1,rect.h-8));
-  drawDescription(entry.description||'',rect.x+1,rect.y+2,rect.w-2,descriptionRows,'ui-secondary');
-  const start=rect.y+2+descriptionRows+1;
+  const actionLayout=bagInventoryActionLayout(rect,entry,nav);
+  const textRect=actionLayout.textRect;
+  if(actionLayout.portrait){const p=actionLayout.portrait;drawItemPortrait(entry,p.x,p.y,{w:p.w,h:p.h,large:true,empty:entry.present===false});}
+  if(actionLayout.titleY!==null)uiText(rect.x+1,actionLayout.titleY,clip(entry.title,rect.w-2),'ui-amber',.95);
+  drawDescription(entry.description||'',textRect.x+1,actionLayout.descriptionY,textRect.w-2,actionLayout.descriptionRows,'ui-secondary');
   const actions=entry.actionList||[];
   // SAY WHAT THE STAGE IS, IN WORDS.
   //
@@ -430,18 +471,17 @@ function drawInventoryActions(entry,rect,nav,motion,now){
   // about the UI rather than about what you are doing. Each stage now names its
   // own keys, and the first available action carries a dim caret even before you
   // step in, so the list looks like the menu it is.
-  uiText(rect.x+1,start-1,
-    focused?'ACTIONS · [↑↓] PICK · [ENTER] DO IT · [←] BACK':'ACTIONS · [ENTER] TO CHOOSE ONE',
+  if(actionLayout.hintY!==null)uiText(textRect.x+1,actionLayout.hintY,
+    clip(focused?'[↑↓] CHOOSE · [ENTER] USE':'[ENTER] ACTIONS',textRect.w-2),
     'ui-label',focused ? .82 : .62);
-  const visible=Math.max(1,rect.y+rect.h-start);
   const firstEnabled=actions.findIndex((action)=>action.enabled);
-  actions.slice(0,visible).forEach((action,i)=>{
+  actionLayout.rows.forEach(({action,index:i,x,y,w})=>{
     const on=focused&&i===index;
     const hint=!focused&&i===firstEnabled;
-    uiText(rect.x+1,start+i,on||hint?'▸':' ',on?'ui-amber':'ui-secondary',on?1:hint?.42:.45);
+    uiText(x,y,on||hint?'▸':' ',on?'ui-amber':'ui-secondary',on?1:hint?.42:.45);
     const verb=action.verb==='special'?action.label:`${action.verb.toUpperCase()}${action.label!==action.verb.toUpperCase()?` · ${action.label}`:''}`;
     const reason=!action.enabled?` — ${action.reason}`:action.exitPolicy==='close'?' — CLOSES BAG':'';
-    uiText(rect.x+3,start+i,clip(`${verb}${reason}`,rect.w-4),!action.enabled?'ui-secondary':on?'ui-amber':'ui-primary',!action.enabled ? .42 : on ? 1 : .72);
+    uiText(x+2,y,clip(`${verb}${reason}`,w-2),!action.enabled?'ui-secondary':on?'ui-amber':'ui-primary',!action.enabled ? .42 : on ? 1 : .72);
   });
   void motion;void now;
 }
@@ -453,7 +493,7 @@ function drawKitLoadoutView(model, nav, layout, motion, now) {
   // The ready tray is a summary only. Every item appears exactly once in the
   // catalog below, with its numbered assignment shown beside it.
   drawReadyNow(model,section.entries,selected?.id||null,geo.ready);
-  const cap=Math.max(1,Math.floor((geo.list.h-1)/2));
+  const cap=bagInventoryListLayout(geo.list).capacity;
   const at=Math.max(0,section.entries.findIndex((entry)=>entry.id===selected?.id));
   const scroll=Math.max(0,Math.min(Number(nav.scroll?.kit)||0,Math.max(0,section.entries.length-cap)));
   const visibleScroll=at<scroll?at:at>=scroll+cap?at-cap+1:scroll;
@@ -652,8 +692,34 @@ export function bagTaskText({ hint, model, entry }) {
 // around a callout that is always fully readable — never clipped, never scrolled.
 export function bagGuideRows(guide, width) {
   if (!guide) return 0;
-  const w = Math.max(12, Math.floor(width) - 4);
+  const side=guide.kind==='skills'&&guide.continueLabel?Math.min(22,width*.4)+2:0;
+  const w = Math.max(12, Math.floor(width-side) - 4);
   return 2 + uiWrap(String(guide.why || ''), w).length;
+}
+
+export function bagGuideContinueRegion(guide,region){
+  if(!region||region.h<2||guide?.kind!=='skills'||!guide.continueLabel)return null;
+  const w=Math.min(22,region.w*.4),h=1.8;
+  return{x:region.x+region.w-w,y:region.y+(region.h-h)/2,w,h};
+}
+
+function guideSelectKey(guide){
+  if(activeInputPromptDevice()==='controller')return inputPromptLabel('tabNext');
+  const section=guide.sectionId||guide.section;
+  return{kit:'1',map:'2',sheets:'3',files:'3',skills:'4'}[section]||'TAB';
+}
+
+function guideContinueKey(){return activeInputPromptDevice()==='controller'?inputPromptLabel('tabNext'):'C';}
+function guidePatchKey(){return activeInputPromptDevice()==='controller'?inputPromptLabel('confirm'):'ENTER';}
+
+export function bagGuideActions(guide){
+  const controller=activeInputPromptDevice()==='controller';
+  const actions=guide.kind==='section'?[[guideSelectKey(guide),String(guide.title||'OPEN SECTION').toUpperCase()]]
+    :guide.kind==='skills'?[[inputPromptLabel('select'),'INPUT'],[guidePatchKey(),controller?'PATCH / PULL':'PATCH'],...(!controller?[['SPACE','PULL']]:[]),...(guide.continueLabel?[[guideContinueKey(),guide.continueLabel]]:[])]
+      :guide.kind==='close'?[[inputPromptLabel('bag'),'CLOSE & FOLLOW TARGET']]
+        :[[inputPromptLabel(guide.action||'confirm'),String(guide.title||'CONTINUE').toUpperCase()]];
+  if(guide.allowClose!==false&&guide.kind!=='close')actions.push([inputPromptLabel('bag'),'CLOSE']);
+  return actions;
 }
 
 // The guided callout. A locked surface has to say three things at once, loudly:
@@ -668,22 +734,31 @@ export function drawBagGuide({ guide, region, nudge = 1 }) {
   uiFill(region.x - 1, region.y - .3, region.w + 2, region.h + .6, refused ? 'rgba(60,34,4,0.55)' : 'rgba(28,20,6,0.42)');
   uiStrokeRect(region.x - 1, region.y - .3, region.w + 2, region.h + .6, UI_COLOR.amber, .35 + pulse * .5, 1);
 
-  const key = inputPromptLabel(guide.action || 'confirm');
+  const continuation=bagGuideContinueRegion(guide,region);
+  const copyW=continuation?Math.max(12,continuation.x-region.x-2):region.w;
+  const key = guide.kind==='section'?guideSelectKey(guide):guide.kind==='skills'?guidePatchKey():guide.kind==='close'?inputPromptLabel('bag'):inputPromptLabel(guide.action || 'confirm');
   const head = `▶ GUIDED · [${key}] ${String(guide.title || '').toUpperCase()}`;
-  uiText(region.x, region.y, clip(head, region.w), 'ui-amber', 1);
-  uiWrap(String(guide.why || ''), Math.max(12, region.w - 2))
+  uiText(region.x, region.y, clip(head, copyW), 'ui-amber', 1);
+  uiWrap(String(guide.why || ''), Math.max(12, copyW - 2))
     .slice(0, Math.max(0, region.h - 2))
-    .forEach((line, i) => uiText(region.x + 2, region.y + 1 + i, clip(line, region.w - 2), 'ui-primary', .88));
+    .forEach((line, i) => uiText(region.x + 2, region.y + 1 + i, clip(line, copyW - 2), 'ui-primary', .88));
   const foot = refused
-    ? 'THE CASE IS HELD ON THIS ONE THING. THE REST OF THE NIGHT IS YOURS.'
-    : `EVERYTHING ELSE IS HELD UNTIL THIS IS DONE · [${inputPromptLabel('bag')}] CLOSE THE CASE`;
-  uiText(region.x + 2, region.y + region.h - 1, clip(foot, region.w - 2), refused ? 'ui-amber' : 'ui-secondary', refused ? .95 : .6);
+    ? guide.refusal || (guide.allowClose===false?'FINISH THIS STEP BEFORE LEAVING THE CASE.':'THE CASE IS HELD ON THIS ONE THING. THE REST OF THE NIGHT IS YOURS.')
+    : guide.footer || (guide.kind==='skills'?`CHOOSE AN INPUT · ${guidePatchKey()} PATCHES · ${guideContinueKey()} CONTINUES`
+      :guide.kind==='section'?'PRESS THE HIGHLIGHTED SCREEN SELECTOR'
+        :guide.kind==='close'?'CLOSE THE CASE. THE WAYPOINT WILL LEAD YOU THERE.'
+          :guide.allowClose===false?'SET THE TARGET, THEN CLOSE AND FOLLOW IT.':`EVERYTHING ELSE IS HELD UNTIL THIS IS DONE · [${inputPromptLabel('bag')}] CLOSE THE CASE`);
+  uiText(region.x + 2, region.y + region.h - 1, clip(foot, copyW - 2), refused ? 'ui-amber' : 'ui-secondary', refused ? .95 : .6);
+  if(continuation)drawLampButton(continuation.x,continuation.y,continuation.w,continuation.h,{
+    controlId:'bag:guide:continue',legend:guide.continueLabel,code:guideContinueKey(),color:'green',
+    enabled:guide.continueEnabled!==false,lit:guide.continueEnabled!==false,latched:false,
+  });
 }
 
 export function drawBagView({ model, nav, mapNav = null, layout, hint = '', guide = null, guideNudge = 1, motion, now, drawContent = null, overrideActions = null, breadcrumb = '' }) {
   const selected = bagEntry(model, nav.sectionId, nav.selected?.[nav.sectionId]);
   const sectionPulse = acquire(now, motion.sectionChangedAt);
-  drawTabs(model,nav,layout,sectionPulse,breadcrumb);
+  drawTabs(model,nav,layout,sectionPulse,breadcrumb,guide);
 
   let actions = null;
   // A section may own its whole content area (the SKILLS tree does). It gets the
@@ -709,13 +784,14 @@ export function drawBagView({ model, nav, mapNav = null, layout, hint = '', guid
   }
 
   uiLine(layout.taskRail.x, layout.taskRail.y - .35, layout.taskRail.x + layout.taskRail.w, layout.taskRail.y - .35, undefined, .24);
-  uiText(layout.taskRail.x, layout.taskRail.y, clip(bagTaskText({ hint, model, entry: selected }), layout.taskRail.w), hint ? 'ui-amber' : 'ui-secondary', hint ? .92 : .62);
+  uiText(layout.taskRail.x, layout.taskRail.y, clip(guide?.title||bagTaskText({ hint, model, entry: selected }), layout.taskRail.w), guide||hint ? 'ui-amber' : 'ui-secondary', guide||hint ? .92 : .62);
 
-  if (guide && layout.guide) drawBagGuide({ guide, region: layout.guide, nudge: guideNudge });
+  // Guided instruction belongs to the exterior tour rail. The instrument's
+  // content and controls retain the whole interior; no bottom callout overlays it.
 
   // A locked case does not advertise the keys it is refusing.
   actions = overrideActions || (guide
-    ? [[inputPromptLabel(guide.action || 'confirm'), String(guide.title || '').toUpperCase()], [inputPromptLabel('bag'), 'CLOSE']]
+    ? bagGuideActions(guide)
     : nav.mode === 'confirm' ? bagActionRail(selected, nav.mode) : (actions || bagActionRail(selected, nav.mode)));
   const actionText = clip(actionRailText(actions, layout.actionRail.w), layout.actionRail.w);
   uiText(layout.actionRail.x, layout.actionRail.y, actionText, nav.mode === 'confirm' ? 'ui-danger' : 'ui-label', nav.mode === 'confirm' ? .92 : .72);

@@ -5,6 +5,8 @@
   "status": "active",
   "entry": "opening",
   "entries": [
+    "request",
+    "take-running",
     "opening",
     "route-first",
     "route-repeat",
@@ -12,81 +14,277 @@
     "hush-near",
     "post-contact"
   ],
-  "tags": ["radio", "guidance", "repeatable"],
-  "notes": "Repeatable manual-call material. Runtime routing and interpolation are authoritative; this document never owns one-shot milestones.",
+  "tags": [
+    "radio",
+    "guidance",
+    "repeatable"
+  ],
+  "notes": "Repeatable, useful human guidance. Martin has a paper plan, stays patient when the location is uncertain, and offers concrete actions under danger. Runtime routing/interpolation remains authoritative; these calls neither own one-shot milestones nor explain the later rupture.",
   "regions": [
+    {
+      "id": "radio.guidance.front-panel",
+      "title": "Before transmitting",
+      "kind": "branch",
+      "color": "#4c5558",
+      "nodeIds": [
+        "request",
+        "take-running",
+        "directions",
+        "help",
+        "lower",
+        "stop-call"
+      ]
+    },
     {
       "id": "radio.guidance.routes",
       "title": "Dependable guidance",
       "kind": "sequence",
       "color": "#2f6f64",
-      "nodeIds": ["opening", "route-first", "route-repeat", "route-unresolved"]
+      "nodeIds": [
+        "opening",
+        "route-first",
+        "route-repeat",
+        "route-unresolved"
+      ]
     },
     {
       "id": "radio.guidance.danger",
       "title": "Martin cannot explain it",
       "kind": "branch",
       "color": "#70494d",
-      "nodeIds": ["hush-near", "post-contact"]
+      "nodeIds": [
+        "hush-near",
+        "post-contact"
+      ]
     }
   ],
   "nodes": {
+    "request": {
+      "id": "request",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "request.line.front",
+          "who": "direction",
+          "text": "Channel two. Your thumb rests beside transmit."
+        }
+      ],
+      "choices": [
+        {
+          "id": "request.choice.directions",
+          "text": "Ask Martin for a route",
+          "goto": "directions"
+        },
+        {
+          "id": "request.choice.help",
+          "text": "Call for help",
+          "goto": "help"
+        },
+        {
+          "id": "request.choice.lower",
+          "text": "Lower the set",
+          "goto": "lower"
+        }
+      ]
+    },
+    "take-running": {
+      "id": "take-running",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "take-running.line.recorder",
+          "who": "direction",
+          "text": "Transmitting will stop the recorder's take or listening check."
+        }
+      ],
+      "choices": [
+        {
+          "id": "take-running.choice.stop-call",
+          "text": "Stop the recorder and call",
+          "goto": "stop-call"
+        },
+        {
+          "id": "take-running.choice.lower",
+          "text": "Keep the recorder running",
+          "goto": "lower"
+        }
+      ]
+    },
+    "directions": {
+      "id": "directions",
+      "type": "dialogue",
+      "lines": []
+    },
+    "help": {
+      "id": "help",
+      "type": "dialogue",
+      "lines": []
+    },
+    "lower": {
+      "id": "lower",
+      "type": "dialogue",
+      "lines": []
+    },
+    "stop-call": {
+      "id": "stop-call",
+      "type": "dialogue",
+      "lines": []
+    },
     "opening": {
       "id": "opening",
       "type": "dialogue",
-      "art": {"id":"walkie","mode":"hero","caption":"Field radio / front desk relay","status":"LIVE"},
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Field radio / front desk relay",
+        "status": "LIVE"
+      },
       "lines": [
-        {"id":"opening.line.1","who":"me","text":"Martin, route check. Where am I going?"},
-        {"id":"opening.line.2","who":"radio","text":"{ROUTEFIRST}"},
-        {"id":"opening.line.3","who":"radio","text":"Call me again if the signs stop matching. I've got the old floor plan open here."}
+        {
+          "id": "opening.line.1",
+          "who": "me",
+          "text": "Martin, route check. Where am I going?"
+        },
+        {
+          "id": "opening.line.2",
+          "who": "radio",
+          "text": "{ROUTEFIRST}"
+        },
+        {
+          "id": "opening.line.3",
+          "who": "radio",
+          "text": "Take your time with the plan. Call me from a landing if you lose the signs."
+        }
       ]
     },
     "route-first": {
       "id": "route-first",
       "type": "dialogue",
-      "art": {"id":"walkie","mode":"hero","caption":"Field radio / route desk","status":"LIVE"},
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Field radio / route desk",
+        "status": "LIVE"
+      },
       "lines": [
-        {"id":"route-first.line.1","who":"me","text":"Martin. Give me the next room."},
-        {"id":"route-first.line.2","who":"radio","text":"{TARGET}. {FLOOR}. Use {LANDMARK}."},
-        {"id":"route-first.line.3","who":"radio","text":"Call again when you've moved. I can narrow it from there."}
+        {
+          "id": "route-first.line.1",
+          "who": "me",
+          "text": "Martin. Give me the next room."
+        },
+        {
+          "id": "route-first.line.2",
+          "who": "radio",
+          "text": "{TARGET}. {FLOOR}. Use {LANDMARK}."
+        },
+        {
+          "id": "route-first.line.3",
+          "who": "radio",
+          "text": "Mark that before you put the set away. If you call from the next landing, I can narrow it down."
+        }
       ]
     },
     "route-repeat": {
       "id": "route-repeat",
       "type": "dialogue",
-      "art": {"id":"walkie","mode":"hero","caption":"Field radio / route desk","status":"LIVE"},
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Field radio / route desk",
+        "status": "LIVE"
+      },
       "lines": [
-        {"id":"route-repeat.line.1","who":"me","text":"Route check. Still heading for {TARGET}."},
-        {"id":"route-repeat.line.2","who":"radio","text":"{ROUTEREPEAT}"}
+        {
+          "id": "route-repeat.line.1",
+          "who": "me",
+          "text": "Route check. Still heading for {TARGET}."
+        },
+        {
+          "id": "route-repeat.line.2",
+          "who": "radio",
+          "text": "{ROUTEREPEAT}"
+        },
+        {
+          "id": "route-repeat.line.3",
+          "who": "radio",
+          "text": "I've still got your place on the sheet."
+        }
       ]
     },
     "route-unresolved": {
       "id": "route-unresolved",
       "type": "dialogue",
-      "art": {"id":"walkie","mode":"hero","caption":"Field radio / paper plan","status":"UNRESOLVED"},
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Field radio / paper plan",
+        "status": "UNRESOLVED"
+      },
       "lines": [
-        {"id":"route-unresolved.line.1","who":"me","text":"Martin, I need a route."},
-        {"id":"route-unresolved.line.2","who":"radio","text":"The plan I've got does not match where you are now. Find a signed landing and call me from there. I won't guess."}
+        {
+          "id": "route-unresolved.line.1",
+          "who": "me",
+          "text": "Martin, I need a route."
+        },
+        {
+          "id": "route-unresolved.line.2",
+          "who": "radio",
+          "text": "I can't place that on this plan. Find a signed landing and read me the number. I'll wait."
+        }
       ]
     },
     "hush-near": {
       "id": "hush-near",
       "type": "dialogue",
-      "art": {"id":"walkie","mode":"hero","caption":"Field radio / carrier under strain","status":"LIVE"},
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Field radio / front desk relay",
+        "status": "LIVE"
+      },
       "lines": [
-        {"id":"hush-near.line.1","who":"me","text":"Martin. There's something in this room. I can feel it moving."},
-        {"id":"hush-near.line.2","who":"radio","text":"Something like what? No, don't keep transmitting. Leave the room you are in and find a signed landing."},
-        {"id":"hush-near.line.3","who":"radio","text":"Call me from there. I can place a landing. I cannot place whatever you mean."}
+        {
+          "id": "hush-near.line.1",
+          "who": "me",
+          "text": "Martin. There's something in this room. I can feel it moving."
+        },
+        {
+          "id": "hush-near.line.2",
+          "who": "radio",
+          "text": "Can you get back to the door you came through? Do that first. Take your thumb off the key while you move."
+        },
+        {
+          "id": "hush-near.line.3",
+          "who": "radio",
+          "text": "Find the landing sign. Give me its number and I'll find you."
+        }
       ]
     },
     "post-contact": {
       "id": "post-contact",
       "type": "dialogue",
-      "art": {"id":"walkie","mode":"hero","caption":"Field radio / clipped signal","status":"LIVE"},
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Field radio / front desk relay",
+        "status": "LIVE"
+      },
       "lines": [
-        {"id":"post-contact.line.1","who":"me","text":"Martin. Something just made contact. I did not see it properly."},
-        {"id":"post-contact.line.2","who":"radio","text":"Did you fall? Are you bleeding? Listen—get out of that room and stop transmitting while you move."},
-        {"id":"post-contact.line.3","who":"radio","text":"Find a landing you can name. Call once from there. That's all I can do from this desk."}
+        {
+          "id": "post-contact.line.1",
+          "who": "me",
+          "text": "Martin. Something just hit me. I didn't see it properly."
+        },
+        {
+          "id": "post-contact.line.2",
+          "who": "radio",
+          "text": "Are you hurt? Can you walk? Get clear of that doorway if you can."
+        },
+        {
+          "id": "post-contact.line.3",
+          "who": "radio",
+          "text": "Find a landing you can name. Call me from there; I'm staying at the set."
+        }
       ]
     }
   }

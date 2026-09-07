@@ -32,8 +32,17 @@ test('the bag owns nested sheet routes, freezes the world, restores pages, and B
   });
   scenes.replace(first);
   assert.equal(first.blocksWorld,true);
+  // ESCAPE BACKS OUT OF WHAT YOU ARE IN, not out of the game.
+  //
+  // main.js hands Escape to the pause menu unless the top scene claims it
+  // (shouldOpenPauseForEvent's localEscape), and the bag never claimed it — so
+  // reading a sheet and pressing Escape opened the PAUSE MENU over the sheet.
+  // The only way out of a document was [E], which nobody guesses, because E is
+  // the interact key everywhere else.
+  assert.equal(first.handlesEscape,false,'at the root of the bag Escape keeps its ordinary meaning');
   first.key(key('Enter'));
   assert.equal(first.debugState().route.type,'sheet-reader');
+  assert.equal(first.handlesEscape,true,'but inside a sheet the bag owns it');
   assert.equal(first.debugState().route.reader.page,0);
   first.key(key('ArrowRight'));
   assert.equal(first.debugState().route.reader.page,1,'the work order keeps its own page');
@@ -45,8 +54,10 @@ test('the bag owns nested sheet routes, freezes the world, restores pages, and B
   scenes.push(reopened);
   reopened.key(key('Enter'));
   assert.equal(reopened.debugState().route.reader.page,1,'reopening restores this sheet without tainting another section');
+  assert.equal(reopened.handlesEscape,true,'and it still owns Escape on reopening');
   reopened.key(key('Escape'));
   assert.equal(reopened.debugState().route.type,'sheet-dialog','an unfinished important inspection follows the physical sheet');
+  assert.equal(reopened.handlesEscape,true,'a nested dialog owns it too — there is still somewhere to go back to');
   reopened.key({key:'b',code:'KeyB'});
   assert.equal(scenes.top(),null,'B also bypasses an unfinished important-sheet tree safely');
   assert.equal(reads,2);

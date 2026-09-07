@@ -10,6 +10,35 @@ export const RADIO_CALL_KIND = Object.freeze({
   ORIGINAL_BREAKDOWN: 'original-breakdown',
 });
 
+export const RADIO_TRAVERSAL_GAP_MS = 20000;
+
+// Fail closed: owning a radio is not permission to open a scene. The runtime
+// supplies the actual traversal/transport/modal facts, never a proximity guess.
+export function radioRuntimeReadiness(context = {}) {
+  for (const [field, reason] of [
+    ['isRecording', 'recording'], ['isListening', 'listening'],
+    ['isCombat', 'combat'], ['isTutorial', 'tutorial'], ['isSetup', 'setup'],
+    ['isEnding', 'ending'], ['isSource', 'source'],
+    ['dialogueOpen', 'dialogue'], ['paused', 'paused'],
+  ]) if (context[field]) return { ready:false, reason };
+  const sceneId = String(context.sceneId || '');
+  if (/^(?:source(?:[-:]|$)|ending(?:[-:]|$)|credits(?:[-:]|$)|tutorial(?:[-:]|$)|setup(?:[-:]|$)|combat(?:[-:]|$))/.test(sceneId)) {
+    return { ready:false, reason:'scene' };
+  }
+  return context.isTraversal === true
+    ? { ready:true, reason:null }
+    : { ready:false, reason:'not-traversing' };
+}
+
+export function radioTargetReadiness(target, { floorId = null } = {}) {
+  if (!target?.roomId) return { ready:false, reason:'no-target' };
+  if (!floorId || !target.floorId || target.floorId !== floorId) return { ready:false, reason:'different-floor' };
+  if (target.unfinished !== true) return { ready:false, reason:'finished-target' };
+  if (target.reachable !== true) return { ready:false, reason:'unreachable-target' };
+  if (!Number.isFinite(target.distanceMeters) || target.distanceMeters < 0) return { ready:false, reason:'unknown-distance' };
+  return { ready:true, reason:null };
+}
+
 export function freshRadioGuidanceState() {
   return {
     assignedRoomId: null,
@@ -17,11 +46,15 @@ export function freshRadioGuidanceState() {
     dangerCallCount: 0,
     recentIncidentUntil: 0,
     recentIncidentKind: null,
+    traversal: { sinceInitialMs:0, sinceWarningMs:0 },
     originalBreakdown: {
       armed: false,
       roomId: null,
       armedAt: 0,
       fallbackAt: 0,
+      floorId: null,
+      activeMs: 0,
+      delayMs: 12000,
     },
   };
 }
@@ -40,6 +73,10 @@ export function normalizeRadioGuidanceState(value = {}) {
     dangerCallCount: nonNegativeInt(value.dangerCallCount),
     recentIncidentUntil: Math.max(0, Number(value.recentIncidentUntil) || 0),
     recentIncidentKind: value.recentIncidentKind || null,
+    traversal: {
+      sinceInitialMs: Math.min(120000, nonNegativeInt(value.traversal?.sinceInitialMs)),
+      sinceWarningMs: Math.min(120000, nonNegativeInt(value.traversal?.sinceWarningMs)),
+    },
     originalBreakdown: {
       ...base.originalBreakdown,
       ...(value.originalBreakdown || {}),
@@ -47,6 +84,9 @@ export function normalizeRadioGuidanceState(value = {}) {
       roomId: value.originalBreakdown?.roomId || null,
       armedAt: Math.max(0, Number(value.originalBreakdown?.armedAt) || 0),
       fallbackAt: Math.max(0, Number(value.originalBreakdown?.fallbackAt) || 0),
+      floorId: value.originalBreakdown?.floorId || null,
+      activeMs: Math.min(120000, nonNegativeInt(value.originalBreakdown?.activeMs)),
+      delayMs: Math.min(120000, nonNegativeInt(value.originalBreakdown?.delayMs ?? 12000)),
     },
   };
 }
@@ -76,6 +116,7 @@ function withRepeat(state, targetId) {
 /** Resolve one manual call without touching runtime state. */
 export function resolveRadioCall({
   state: rawState = {},
+  intent = 'directions',
   dangerContext = false,
   dangerKind = 'near',
   originalBreakdownStarted = false,
@@ -88,12 +129,13 @@ export function resolveRadioCall({
   let state = normalizeRadioGuidanceState(rawState);
 
   // Player-caused rupture outranks an armed-but-unstarted inbound hijack.
-  if (dangerContext && state.dangerCallCount >= 1 && !originalBreakdownStarted) {
+  const askingForHelp = intent === 'help' && dangerContext;
+  if (askingForHelp && state.dangerCallCount >= 1 && !originalBreakdownStarted) {
     state = { ...state, dangerCallCount:state.dangerCallCount + 1 };
     return { kind:RADIO_CALL_KIND.HUSH_HELP_RUPTURE, entry:'start', targetId:null, repeat:state.dangerCallCount - 1, state };
   }
 
-  if (state.originalBreakdown.armed) {
+  if (intent === 'help' && state.originalBreakdown.armed) {
     return {
       kind: RADIO_CALL_KIND.ORIGINAL_BREAKDOWN,
       entry: 'manual',
@@ -103,7 +145,7 @@ export function resolveRadioCall({
     };
   }
 
-  if (dangerContext) {
+  if (askingForHelp) {
     state = { ...state, dangerCallCount:state.dangerCallCount + 1 };
     return {
       kind: RADIO_CALL_KIND.DANGER_HELP,
@@ -127,7 +169,7 @@ export function resolveRadioCall({
 
   const unfinished = new Set(unfinishedRoomIds.filter(Boolean));
   const available = availableRoomIds.filter((id) => unfinished.has(id));
-  let targetId = markedRoomId && unfinished.has(markedRoomId) ? markedRoomId : null;
+  let targetId = markedRoomId && available.includes(markedRoomId) ? markedRoomId : null;
   let assignedRoomId = state.assignedRoomId;
 
   if (targetId) assignedRoomId = null;

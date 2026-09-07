@@ -1,6 +1,6 @@
 import * as scenes from './scenes.js';
 import { uiCenter, uiLine, uiScrim, uiSize, uiText, uiWrap } from '../render/ui.js';
-import { drawLocationIndicator, drawMachinePanel, drawVfdText } from '../render/presentation.js';
+import { drawLocationIndicator, withMachinePanel, drawVfdText } from '../render/presentation.js';
 import { createHitRegions } from '../render/hit-regions.js';
 import { UI_COLOR } from '../render/palette.js';
 import {
@@ -190,7 +190,7 @@ export function makeDifficultySelectScene({
       const h = Math.min(Math.max(36, detailRowsNeeded + 7), rows - 4);
       const x = Math.floor((cols - w) / 2);
       const y = Math.floor((rows - h) / 2);
-      const body = drawMachinePanel(x, y, w, h, {
+      withMachinePanel(x, y, w, h, {
         wordmark: 'AUDIOCORP',
         label: mode === 'custom' ? 'CUSTOM DIFFICULTY' : 'DIFFICULTY',
         source: 'SETUP',
@@ -198,7 +198,7 @@ export function makeDifficultySelectScene({
           ? promptLine([{ action: 'select', label: 'RULE' }, { action: 'set', label: 'SET' }, { action: 'start', label: 'START' }, { action: 'back', label: 'DIFFICULTY' }])
           : promptLine([{ action: 'select', label: 'DIFFICULTY' }, { action: 'start', label: 'START' }, { action: 'back', label: 'BACK' }]),
         meter: true,
-      });
+      }, (body) => {
 
       drawVfdText(
         body.x,
@@ -301,6 +301,7 @@ export function makeDifficultySelectScene({
       } else if (danger && Math.floor(t * 3) % 2 === 0) {
         uiCenter(y + h - 3, 'MAKING THE GAME EASIER WILL DISABLE THE DEAD AIR ACHIEVEMENT FOR THIS RUN', 'ui-danger');
       }
+      });
     },
 
     view() {

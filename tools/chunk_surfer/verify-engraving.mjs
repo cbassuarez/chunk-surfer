@@ -39,7 +39,7 @@ let navigations = 0;
 page.on('framenavigated', () => { if (++navigations > 1) console.log('!! the page reloaded mid-run — samples are void'); });
 const wait = (fn, t = 240000) => page.waitForFunction(fn, { timeout: t });
 
-await page.goto(`${base}/index.html?skiptut=1&nomic=1&sam=0&diffusion=${encodeURIComponent('ws://127.0.0.1:5198')}`,
+await page.goto(`${base}/index.html?nodisplaynotice=1&skiptut=1&nomic=1&sam=0&diffusion=${encodeURIComponent('ws://127.0.0.1:5198')}`,
   { waitUntil: 'domcontentloaded', timeout: 60000 });
 await wait(() => !!window.__scenes?.top?.()?.id);
 if (await page.evaluate(() => window.__scenes.top().id) === 'eula') {

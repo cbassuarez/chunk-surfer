@@ -8,7 +8,6 @@ import {
   DOCK_PORTAL,
   deriveDockHauntingEligibility,
   dockEndingBeat,
-  dockExitAttemptShouldSpeak,
   dockHauntingLights,
   dockHauntingBodyLook,
   dockHauntingMilestonesCrossed,
@@ -45,9 +44,6 @@ assert.deepEqual(dockHauntingStaging({entryPortal:DOCK_PORTAL.FOYER}),{
 assert.deepEqual(dockHauntingStaging({entryPortal:DOCK_PORTAL.SERVICE}),{
   variant:DOCK_HAUNTING_VARIANT.NORTH_CAGE,x:67.2,y:7.35,yaw:Math.PI,concealment:'in front of the chandelier cage',
 });
-assert.equal(dockExitAttemptShouldSpeak({ forwardIntent:.95, hasDoor:true }), true);
-assert.equal(dockExitAttemptShouldSpeak({ forwardIntent:.1, hasDoor:true }), false);
-assert.equal(dockExitAttemptShouldSpeak({ forwardIntent:.95, hasDoor:false }), false);
 
 let transit = freshDockTransitState({ inside: true });
 transit = reduceDockTransit(transit, { kind: 'step', fromDock: true, toDock: false });

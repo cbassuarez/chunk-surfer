@@ -25,7 +25,7 @@ const errors = [];
 page.on('pageerror', (e) => errors.push(e.message));
 const wait = (f, t = 240000) => page.waitForFunction(f, { timeout: t });
 
-await page.goto('http://127.0.0.1:5199/index.html?nomic=1&sam=0&skiptut=1&nothink=1&diffusion='
+await page.goto('http://127.0.0.1:5199/index.html?nodisplaynotice=1&nomic=1&sam=0&skiptut=1&nothink=1&diffusion='
   + encodeURIComponent('ws://127.0.0.1:5198'), { waitUntil: 'domcontentloaded', timeout: 60000 });
 await wait(() => !!window.__scenes?.top?.()?.id);
 if (await page.evaluate(() => window.__scenes?.top?.()?.id) === 'eula') {

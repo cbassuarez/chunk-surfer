@@ -1,7 +1,7 @@
 import * as scenes from './scenes.js';
 import * as R3 from '../render/r3d.js';
 import { uiCenter, uiFill, uiLine, uiSize, uiText, uiWrap } from '../render/ui.js';
-import { drawLocationIndicator, drawMachinePanel, drawVfdCounter, drawVfdText } from '../render/presentation.js';
+import { drawLocationIndicator, withMachinePanel, drawVfdCounter, drawVfdText } from '../render/presentation.js';
 import { UI_COLOR } from '../render/palette.js';
 import {
   borrowView,
@@ -400,23 +400,24 @@ export function makeHushRunScene({
       if (phase === 'resume') {
         uiFill(0, 0, cols, rows, UI_COLOR.glass);
         const panelW = Math.min(70, cols - 4), panelH = Math.min(24, rows - 4);
-        const body = drawMachinePanel(Math.floor((cols - panelW) / 2), Math.floor((rows - panelH) / 2), panelW, panelH, {
+        withMachinePanel(Math.floor((cols - panelW) / 2), Math.floor((rows - panelH) / 2), panelW, panelH, {
           label: 'THE HUSH', source: 'SAVED RUN', meter: false, theme: 'green', model: 'CT-02',
           footer: 'ENTER SELECT   ESC TITLE',
-        });
+        }, (body) => {
         drawVfdText(body.x, body.y, 'UNFINISHED PLAYTHROUGH', { scale: 1, theme: 'green' });
         uiText(body.x, body.y + 3, 'YOU HAVE AN UNFINISHED HUSH PLAYTHROUGH.', 'ui-secondary');
         ['CONTINUE', 'RESTART'].forEach((label, index) => uiText(body.x + 3, body.y + 6 + index * 4, `${resumeChoice === index ? '▸' : ' '} ${label}`, resumeChoice === index ? 'ui-amber' : 'ui-secondary'));
+        });
         return;
       }
       if (phase === 'report') {
         uiFill(0, 0, cols, rows, UI_COLOR.glass);
         const report = hushPlaybackReport(state);
         const w = Math.min(76, cols - 4), h = Math.min(32, rows - 4);
-        const body = drawMachinePanel(Math.floor((cols - w) / 2), Math.floor((rows - h) / 2), w, h, {
+        withMachinePanel(Math.floor((cols - w) / 2), Math.floor((rows - h) / 2), w, h, {
           label: 'THE HUSH', source: 'COMPLETE', meter: false, theme: 'green', model: 'CT-02',
           footer: 'ENTER RETURN TO TITLE',
-        });
+        }, (body) => {
         drawVfdCounter(body.x, body.y, String(report.synchronization).padStart(3, '0'), { scale: 2, theme: 'green' });
         drawVfdText(body.x + 12, body.y, report.label, { scale: 1, theme: 'green' });
         drawLocationIndicator(body.x, body.y + 4, Math.min(40, body.w - 2), report.synchronization / 100, { theme: 'green' });
@@ -425,15 +426,16 @@ export function makeHushRunScene({
           uiText(body.x + 28, body.y + 7 + index * 2, String(value), 'ui-primary');
         });
         uiText(body.x + 2, body.y + body.h - 2, 'YOUR ORIGINAL ENDING HAS NOT CHANGED.', 'ui-label');
+        });
         return;
       }
       if (terminalOpen) {
         uiFill(0, 0, cols, rows, UI_COLOR.glass);
         const w = Math.min(104, cols - 4), h = Math.min(38, rows - 4);
-        const body = drawMachinePanel(Math.floor((cols - w) / 2), Math.floor((rows - h) / 2), w, h, {
+        withMachinePanel(Math.floor((cols - w) / 2), Math.floor((rows - h) / 2), w, h, {
           label: 'LEGACY TRANSFER ROOM', source: `+${Math.floor((performance.now() - terminalOpenedAt) / 1000)}S`,
           meter: false, theme: 'green', model: 'TR-4417', footer: 'UP/DOWN FILE   LEFT/RIGHT READ   E CLOSE',
-        });
+        }, (body) => {
         drawVfdText(body.x, body.y, 'ROOM-ONLY TERMINAL', { scale: 1, theme: 'green' });
         const listW = Math.min(31, Math.floor(body.w * 0.35));
         HUSH_DOSSIER.forEach((record, index) => uiText(body.x, body.y + 4 + index * 2, `${terminalSelection === index ? '▸' : ' '} ${record.title}`.slice(0, listW), terminalSelection === index ? 'ui-amber' : getMeta().legacyTerminal?.opened?.includes(record.id) ? 'ui-primary' : 'ui-secondary'));
@@ -448,6 +450,7 @@ export function makeHushRunScene({
         lines.slice(terminalCursor, terminalCursor + visibleLines).forEach((line, index) => uiText(dx, body.y + 9 + index, line, 'ui-primary'));
         const remain = anchorRemaining();
         if (remain <= 12_000) uiText(dx, body.y + body.h - 2, `FIXED EJECT IN ${Math.max(0, ((remain - 8000) / 1000)).toFixed(1)}S`, 'ui-danger');
+        });
         return;
       }
       const recordedAnchor = nextRecordedAnchor();
@@ -458,10 +461,10 @@ export function makeHushRunScene({
       const locusDistance = recordedAnchor ? distance(position, recordedAnchor.locus) : 0;
       if (cameraMode === 'listen') {
         uiFill(0, 0, cols, rows, UI_COLOR.glass);
-        const field = drawMachinePanel(1, 1, cols - 2, rows - 2, {
+        withMachinePanel(1, 1, cols - 2, rows - 2, {
           label: 'ACOUSTIC FIELD DISPLAY', source: `REPLAY ${transportRate}X`, meter: false, theme: 'green', model: 'AF-08',
           footer: 'SPACE PROWL   E CAUSE/SEAM   P BORROW   SHIFT SPOOL',
-        });
+        }, (field) => {
         drawVfdText(field.x, field.y, 'LISTEN', { scale: 1, theme: 'green' });
         drawVfdCounter(field.x + Math.max(12, field.w - 10), field.y, formatTapeTime(state.timeMs), { theme: 'green' });
         uiText(field.x, field.y + 2, recordedAnchor
@@ -485,15 +488,16 @@ export function makeHushRunScene({
         uiText(cx, cy, '●', 'ui-amber');
         uiText(field.x, field.y + field.h - 2, '● HUSH   ○ PLAYER SHADOW   + RECORDED EVENT   = ACOUSTIC SEAM   × PERCEPTION', 'ui-label');
         if (message && performance.now() < messageUntil) uiCenter(field.y + field.h - 4, message, message.includes('CORRECTION') ? 'ui-danger' : 'ui-amber');
+        });
         return;
       }
       const borrowed = borrowHeld && !!borrowView(state);
       const panelW = Math.min(104, cols - 2), panelH = Math.min(15, rows - 2);
       const panelX = Math.floor((cols - panelW) / 2), panelY = rows - panelH - 1;
-      const transport = drawMachinePanel(panelX, panelY, panelW, panelH, {
+      withMachinePanel(panelX, panelY, panelW, panelH, {
         label: 'THE HUSH', source: borrowed ? 'PLAYER SHADOW' : `REPLAY ${transportRate}X`, meter: false, theme: 'green', model: 'CT-02',
         footer: 'E CAUSE/SEAM  R TAUNT  B HAUNT  F MANIFEST  P BORROW  SPACE LISTEN  SHIFT SPOOL',
-      });
+      }, (transport) => {
       drawVfdText(transport.x, transport.y, borrowed ? 'BORROW' : 'PROWL', { scale: 1, theme: 'green' });
       drawVfdCounter(transport.x + Math.max(12, transport.w - 10), transport.y, formatTapeTime(state.timeMs), { theme: 'green' });
       uiText(transport.x, transport.y + 2, recordedAnchor
@@ -503,6 +507,7 @@ export function makeHushRunScene({
       drawLocationIndicator(transport.x + 26, transport.y + 4, Math.min(28, Math.max(8, transport.w - 52)), state.density / 100, { theme: 'green' });
       uiText(transport.x + Math.max(56, transport.w - 27), transport.y + 4, playerShadowPerception ? 'DIRECT PERCEPTION / LOCK' : 'PLAYER SHADOW EXCLUDED', playerShadowPerception ? 'ui-danger' : 'ui-secondary');
       if (message && performance.now() < messageUntil) uiText(transport.x, transport.y + 7, message.slice(0, transport.w), message.includes('CORRECTION') ? 'ui-danger' : 'ui-amber');
+      });
     },
   };
 }

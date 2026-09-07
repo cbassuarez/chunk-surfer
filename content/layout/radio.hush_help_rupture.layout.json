@@ -2,7 +2,34 @@
   "schemaVersion": 1,
   "documentId": "radio.hush_help_rupture",
   "positions": {
-    "start": {"x":80,"y":100}
+    "start": {
+      "x": 80,
+      "y": 210
+    },
+    "relay": {
+      "x": 440,
+      "y": 210
+    },
+    "contact": {
+      "x": 800,
+      "y": 210
+    },
+    "reseat": {
+      "x": 1160,
+      "y": 80
+    },
+    "still": {
+      "x": 1160,
+      "y": 420
+    },
+    "break": {
+      "x": 1520,
+      "y": 210
+    },
+    "after": {
+      "x": 1880,
+      "y": 210
+    }
   },
   "regions": {}
 }

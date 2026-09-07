@@ -67,7 +67,7 @@ export function bootWeatherVoice(kind) {
 export function createBootWeatherAudio({ context, destination, kind = 'rain' } = {}) {
   const voice = bootWeatherVoice(kind);
   if (!context || !destination || !voice) {
-    return { update() {}, strike() { return false; }, stop() {}, active: () => false };
+    return { update() {}, strike() { return false; }, prepare() { return false; }, stop() {}, active: () => false };
   }
 
   // THE STORM HAS BEEN STRIKING INTO A QUEUE NOBODY DRAINED. stepBootWeather has
@@ -123,6 +123,15 @@ export function createBootWeatherAudio({ context, destination, kind = 'rain' } =
   let stopped = false;
   try { noise.start(); wobble.start(); } catch (_) { /* a context that will not run is silence, not an error */ }
 
+  // The SEED is not decoration: it is which bolt this is, and dropping it
+  // rendered every strike in the credits from the same channel.
+  const strikeArgs = (event) => ({
+    seed: Number(event.seed) || 1,
+    distance: Number(event.distance) || 1200,
+    energy: Number(event.energy) || 0.7,
+    bearing: Number(event.bearing) || 0,
+  });
+
   return {
     active: () => !stopped,
     // One drained storm event. Bearing, distance and energy are the same three
@@ -130,11 +139,13 @@ export function createBootWeatherAudio({ context, destination, kind = 'rain' } =
     // clap cannot disagree about where it was.
     strike(event = {}) {
       if (stopped) return false;
-      return thunder.strike({
-        distance: Number(event.distance) || 1200,
-        energy: Number(event.energy) || 0.7,
-        bearing: Number(event.bearing) || 0,
-      });
+      return thunder.strike(strikeArgs(event));
+    },
+    // The flash, while its sound is still travelling. See thunder.js: the render
+    // is cheap but it should not happen on the frame the player is listening to.
+    prepare(event = {}) {
+      if (stopped) return false;
+      return thunder.prepare(strikeArgs(event));
     },
     // `wind` is the simulation's own gust term, ~1 ± its kind's depth. Presence
     // is the same curve the particle count rides, so the bed thickens with the

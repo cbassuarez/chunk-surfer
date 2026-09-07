@@ -1,9 +1,11 @@
 import { isTauriRuntime } from './detect.js';
 import { logWarn } from './diagnostics/diagnostics.js';
 import { sectorErrorPhases } from '../render/sector-error.js';
+import { drawPracticeRebus } from '../render/practice-rebus.js';
 import {
   apertureCompositionPlan,
   compilePaneScore,
+  compileWindowCompositionPlan,
   deathCompositionPlan,
   endingCompositionPlan,
   returnCompositionPlan,
@@ -169,6 +171,31 @@ export function compileWindowChoreographyPlan({
   const validation=validateWindowChoreographyPlan(plan);
   if(!validation.ok)throw new Error(`invalid window choreography plan: ${validation.errors.join(', ')}`);
   return plan;
+}
+
+// Two readable clue windows flank the adversary. Two separate NVMe windows
+// carry corrupted footage; their fault never destroys a letter in the puzzle.
+export function compilePracticeCuePlan(cue={}, {clueTokens=[],reducedMotion=false,flashMode='full',epochMs=Date.now()}={}){
+  if(clueTokens.length!==2)return null;
+  return compileWindowCompositionPlan({
+    compositionId:cue.id||'practice:clue',sceneId:'battle:practice',purpose:'practice',epochMs,reducedMotion,flashMode,
+    surfaces:[
+      ...clueTokens.map((token,index)=>({
+        id:`practice:clue:${index}`,content:{kind:'snapshot',token},
+        initial:{x:index ? .92 : .08,y:.44},width:280,height:280,
+        shader:'violet-dither',draggable:true,description:`Clue ${index+1} of 2. Name the image, subtract the marked letters.`,
+      })),
+      ...['bellringers-datamosh','sunflower-datamosh'].map((assetId,index)=>({
+        id:`practice:fault:${index}`,content:{kind:'video',assetId},
+        initial:{x:index ? .69 : .31,y:.09},width:220,height:124,
+        shader:'nvme-sector',draggable:false,phaseOffsetMs:index*1700,
+        description:'Corrupted practice footage',
+      })),
+    ],
+    fault:{profile:'nvme-sector',intensity:Math.min(.8,.5+(Number(cue.cycle)||1)*.075),seed:137+(Number(cue.cycle)||0),cadenceMs:reducedMotion?900:360},
+    formation:{mode:'practice-windows',durationMs:0,staggerMs:0},foldDurationMs:0,
+    completion:{mode:'nonblocking'},
+  });
 }
 
 function battleIntroPlan(profile,{sequence=0,reducedMotion=false}={}){
@@ -586,9 +613,13 @@ export function createWindowChoreographyDirector({
   isApertureComplete=()=>false,onFirstBreach=()=>{},onPuzzleState=()=>{},onApertureComplete=()=>{},
   tokenFactory=()=>`window-session-${Date.now()}-${Math.random().toString(36).slice(2)}`,
   waitFn=wait,onState=()=>{},onGeometryMotion=()=>{},
+  releaseFullscreen=async (transition)=>transition(),
 }={}){
   let api=runtimeApi;
   let transaction=null;
+  let transactionOpening=null;
+  let practiceCueGeneration=0;
+  const practiceClueTokens=new Map();
   let battle=null;
   let source={stage:'sealed',sequence:0,bucket:-1};
   let ending=null;
@@ -637,9 +668,19 @@ export function createWindowChoreographyDirector({
     return getDisplayMode()==='game-mode';
   }
 
-  async function beginTransaction(sceneId,{forceSimulate=false}={}){
-    if(transaction)return transaction;
-    const token=stableId(tokenFactory());
+  function beginTransaction(sceneId,options={}){
+    if(transaction)return Promise.resolve(transaction);
+    if(transactionOpening)return transactionOpening.promise;
+    const opening={owner:epoch,controller:new AbortController(),native:false,token:stableId(tokenFactory())};
+    transactionOpening=opening;
+    opening.promise=openTransaction(sceneId,options,opening).finally(()=>{
+      if(transactionOpening===opening)transactionOpening=null;
+    });
+    return opening.promise;
+  }
+
+  async function openTransaction(sceneId,{forceSimulate=false},opening){
+    const {token,owner,controller}=opening;
     if(forceSimulate){transaction={token,sceneId,native:false,restoreGameMode:false,cancelled:false};onState({type:'begin',...transaction});return transaction;}
     const nativeApi=await loadApi();
     // ASK THE WINDOW, DO NOT ASK THE SETTINGS FILE.
@@ -659,9 +700,27 @@ export function createWindowChoreographyDirector({
     // simple and measured fills-screen separately). The setting is only the
     // fallback for when the probe itself fails.
     const restoreGameMode=await measuredFullscreen(nativeApi);
+    if(owner!==epoch)return null;
     let native=false;
     if(nativeApi?.invoke){
-      const result=await safe(()=>nativeApi.invoke('chunk_window_choreography_begin',{request:{token,sceneId,restoreGameMode}}));
+      const undoOpening=async()=>{
+        if(!opening.native)return;
+        opening.native=false;
+        await safe(()=>nativeApi.invoke('chunk_window_choreography_restore',{token}));
+      };
+      const begin=async()=>{
+        if(owner!==epoch||controller.signal.aborted)return false;
+        const result=await safe(()=>nativeApi.invoke('chunk_window_choreography_begin',{request:{token,sceneId,restoreGameMode}}));
+        opening.native=!!result;
+        if(owner!==epoch||controller.signal.aborted){await undoOpening();return false;}
+        return result;
+      };
+      const result=restoreGameMode ? await releaseFullscreen(begin,{signal:controller.signal}) : await begin();
+      if(owner!==epoch||(restoreGameMode&&!result)){
+        controller.abort();
+        await undoOpening();
+        return null;
+      }
       native=!!result;
       // A begin that fails leaves the cue as an in-frame simulation, which is a
       // legitimate fallback and used to be a completely silent one — the only
@@ -686,6 +745,7 @@ export function createWindowChoreographyDirector({
 
   async function performPlan(plan,{forceSimulate=false,compositionMode='cold',handoffDurationMs=260}={}){
     const active=await beginTransaction(plan.sceneId,{forceSimulate});
+    if(!active)return null;
     const useNative=active.native&&!forceSimulate;
     let nativeMoved=false,nativePanes=false;
     if(plan.kind==='composition'){
@@ -750,16 +810,79 @@ export function createWindowChoreographyDirector({
   async function restore(reason='restore',{closePool=false,preserveComposition=false}={}){
     epoch+=1;
     titleGeneration+=1;
+    practiceCueGeneration+=1;
+    practiceClueTokens.clear();
     const active=transaction;
+    const opening=transactionOpening;
     const puzzleWasActive=composition?.purpose==='puzzle'&&!composition.completed;
+    const openingWasNative=!!opening?.native;
+    if(opening)opening.native=false;
+    // Invalidate every owner before abort listeners or native awaits can run.
+    transactionOpening=null;
     transaction=null;battle=null;ending=null;source={stage:'sealed',sequence:0,bucket:-1};frontEndLease=null;frontEndReady=Promise.resolve(null);
+    opening?.controller.abort();
     if(!preserveComposition){clearCompositionTimers();simulation.hide();await safe(()=>effects?.hideComposition?.());if(puzzleWasActive)onPuzzleState(false);}
     onGeometryMotion(false);
     await safe(()=>effects?.hidePanes?.());
-    if(active?.native&&api?.invoke)await safe(()=>api.invoke('chunk_window_choreography_restore',{token:active.token}));
+    if(openingWasNative&&api?.invoke)await safe(()=>api.invoke('chunk_window_choreography_restore',{token:opening.token}));
+    if(active?.native&&api?.invoke&&active.token!==opening?.token)await safe(()=>api.invoke('chunk_window_choreography_restore',{token:active.token}));
     if(closePool)await safe(()=>effects?.emergencyRestore?.({notify:false}));
     onState({type:'restore',reason,token:active?.token||null,policy:active?.policy||null});
     return true;
+  }
+
+  async function showPracticeCue(cue){
+    const generation=++practiceCueGeneration,owner=epoch;
+    const current=()=>generation===practiceCueGeneration&&owner===epoch;
+    if(!nativeDesired())return{native:false,unavailable:true,reason:getEnabled()?'desktop-required':'disabled'};
+    if(transaction?.native){
+      const fullscreen=await measuredFullscreen(api);
+      if(!current())return null;
+      if(fullscreen){
+        // A player may re-enter fullscreen mid-exercise. The next clue must
+        // perform the same advisory handoff as the first one.
+        const resetting=restore('practice:fullscreen');
+        const nextEpoch=epoch;
+        await resetting;
+        return nextEpoch===epoch?showPracticeCue(cue):null;
+      }
+    }
+    effects?.ensure?.({intensity:'standard',fullscreen:false,reducedMotion:reduced()});
+    const ready=await safe(()=>effects?.prepareMedia?.({count:4}));
+    if(!current())return null;
+    if(!ready)return{native:false,unavailable:true};
+    const clueTokens=[];
+    for(const part of cue.parts||[]){
+      if(!practiceClueTokens.has(part)){
+        const canvas=documentApi?.createElement?.('canvas');
+        if(!canvas)return{native:false,unavailable:true};
+        canvas.width=560;canvas.height=560;
+        drawPracticeRebus(canvas.getContext('2d'),0,0,560,560,part);
+        const token=effects?.registerSnapshot?.(canvas.toDataURL('image/png'));
+        if(!token)return{native:false,unavailable:true};
+        practiceClueTokens.set(part,token);
+      }
+      clueTokens.push(practiceClueTokens.get(part));
+    }
+    const plan=compilePracticeCuePlan(cue,{clueTokens,reducedMotion:reduced(),flashMode:compositionContext().flashMode});
+    if(!plan)return{native:false,unavailable:true};
+    const task=planTail.then(async()=>{
+      if(!current())return null;
+      const active=await beginTransaction('battle:practice');
+      if(!current()||!active)return null;
+      const native=!!(active.native&&await safe(()=>effects?.showComposition?.(plan,{token:effects?.sessionToken?.()})));
+      if(!current()||!native){
+        const activeCue=effects?.debug?.()?.activeCompositionCue;
+        if(!activeCue||activeCue===plan.cueId)await safe(()=>effects?.hideComposition?.({releaseSnapshots:false}));
+      }
+      if(!current())return null;
+      // These puzzles belong to actual desktop windows. Never replace the
+      // opponent or cover its controls with an in-frame simulation.
+      onState({type:'practice-clue',plan,native});
+      return{plan,native,unavailable:!native};
+    });
+    planTail=task.catch(()=>null);
+    return task;
   }
 
   function prepareBattle({battleId='',encounterId='',reducedMotion=false}={}){
@@ -1067,6 +1190,7 @@ export function createWindowChoreographyDirector({
     onState({type:'front-end-window-owner',owner:'opening',generation,token:null});
     frontEndReady=(async()=>{
       const active=await beginTransaction('opening-credits');
+      if(!active)return null;
       let effectsToken=effects?.sessionToken?.()||null;
       if(nativeDesired()){
         effectsToken=effects?.ensure?.({intensity:'standard',fullscreen:false,reducedMotion:reduced()})||effectsToken;
@@ -1181,7 +1305,13 @@ export function createWindowChoreographyDirector({
     armPuzzleHint(composition);
     onPuzzleState(true);return performPlan(puzzle.plan,{forceSimulate:true});
   }
-  function suspend(){void safe(()=>effects?.suspendSurfaces?.());return true;}
+  function suspend(){
+    void safe(()=>effects?.suspendSurfaces?.());
+    if(effects?.debug?.()?.activeCompositionCue?.startsWith('practice:')){
+      void safe(()=>effects?.hideComposition?.({releaseSnapshots:false}));
+    }
+    return true;
+  }
   function interactSource(){
     if(composition?.purpose==='puzzle'||source.stage!=='proper'||source.interacted)return false;
     source.interacted=true;
@@ -1203,7 +1333,7 @@ export function createWindowChoreographyDirector({
 
   return{
     prepareBattle,fireballCast,damage,result,finishBattle,beginReturn,finishReturn,beginSectorError,intrudeSector,sourceFrame,leaveSource,beginEnding,beginOpening,beginTitle,finishTitle,credits,
-    emergencyRestore,suspend,runPlan,compositionEvent,interactSource,puzzleInteract,noteCompositionMove,
+    emergencyRestore,suspend,runPlan,showPracticeCue,compositionEvent,interactSource,puzzleInteract,noteCompositionMove,
     // TEARDOWN FOR A CUE A CALLER RAN ITSELF. runPlan was public and this was
     // not, so anything that showed clue surfaces had no supported way to take
     // them down again — which is most of why the box office cue was compiled,

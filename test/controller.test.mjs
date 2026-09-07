@@ -160,6 +160,34 @@ test('legacy button tokens normalize into semantic bindings', () => {
   assert.equal(normalized.bindings.menu.id, 'menu');
 });
 
+test('the radio right shoulder is a world action and remains section-next in menus',()=>{
+  controller.controllerResetForTest();
+  controller.setControllerSettings({});
+  const pads=[pad('Xbox Wireless Controller',{buttons:{5:true}})];
+  controller.setControllerNavigatorForTest(nav(pads));
+  const world=[];
+  controller.gamepadTick({onPress:(action,repeat)=>world.push([action,repeat])});
+  controller.gamepadTick({onPress:(action,repeat)=>world.push([action,repeat])});
+  assert.deepEqual(world,[['radio',false]],'holding RB never repeats a route call');
+  pads[0]=pad('Xbox Wireless Controller');controller.gamepadTick();
+  pads[0]=pad('Xbox Wireless Controller',{buttons:{5:true}});
+  const menu=[];controller.gamepadTick({menuContext:true,onPress:action=>menu.push(action)});
+  assert.deepEqual(menu,['tabNext'],'ordinary modal UI does not dispatch radio');
+});
+
+test('radio remaps swap only world conflicts and migrate without stealing an existing shoulder binding',()=>{
+  const migrated=normalizeControllerSettings({bindings:{interact:{kind:'button',id:'rightShoulder'}}});
+  assert.equal(migrated.bindings.interact.id,'rightShoulder');
+  assert.notEqual(migrated.bindings.radio.id,'rightShoulder');
+  assert.equal(migrated.bindings.tabNext.id,'rightShoulder');
+  setControllerSettings({});
+  assert.equal(setControllerBinding('radio',{kind:'button',id:'rightTrigger'}),true);
+  assert.equal(controllerBindings().radio.id,'rightTrigger');
+  assert.equal(controllerBindings().recorder.id,'rightShoulder');
+  assert.equal(controllerBindings().tabNext.id,'rightShoulder');
+  setControllerSettings({});
+});
+
 test('tower haptics support dual rumble, reduction, and explicit off', async () => {
   controller.controllerResetForTest();
   const calls=[];

@@ -1,5 +1,5 @@
 import { uiSize, uiText, uiScrim } from '../render/ui.js';
-import { drawMachinePanel } from '../render/presentation.js';
+import { withMachinePanel } from '../render/presentation.js';
 import * as AUDIO from '../audio/story-audio.js';
 
 const selectable = (row) => !!row && row.kind !== 'section' && row.selectable !== false;
@@ -107,14 +107,14 @@ export function makeGodMenuScene({ tabs = [], onClose = () => {} } = {}) {
     const height = Math.min(Math.max(30, screenRows - 6), screenRows - 2);
     const x = Math.floor((cols - width) / 2);
     const y = Math.floor((screenRows - height) / 2);
-    const body = drawMachinePanel(x, y, width, height, {
+    withMachinePanel(x, y, width, height, {
       theme: 'red',
       wordmark: 'DEVELOPER',
       label: 'GOD / TESTING MENU',
       source: 'NON-CANONICAL STATE',
       footer: '[TAB/Q/E] GROUP · [↑↓] TEST · [←→] VALUE · [ENTER] FIRE · [F10] CLOSE',
       meter: false,
-    });
+    }, (body) => {
 
     let tabX = body.x;
     availableTabs.forEach((tab, index) => {
@@ -148,6 +148,7 @@ export function makeGodMenuScene({ tabs = [], onClose = () => {} } = {}) {
       const valueX = body.x + 37;
       const rendered = row.adjust ? `◀ ${value} ▶` : String(value);
       uiText(valueX, rowY, rendered.slice(0, Math.max(1, body.x + body.w - valueX)), active ? 'ui-danger' : 'ui-secondary');
+    });
     });
   }
 

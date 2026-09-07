@@ -3,7 +3,7 @@
 // A scene is { id, enter?, exit?, update?(dt), render?(), key?(e)->bool,
 //              pointer?(e)->bool,
 //              blocksInput?:bool, blocksWorld?:bool, tracksMotion?:bool,
-//              allowsLook?:bool, suppressesHud?:bool,
+//              allowsLook?:bool, suppressesHud?:bool, freezesBelow?:bool,
 //              lookProfile?:string, lensPreset?:string (legacy alias) }
 //
 // `blocksInput` stops the player walking (dialogue, menus). `blocksWorld`
@@ -119,9 +119,9 @@ export function allowsLook() { return !!top({ includeOverlay:true })?.allowsLook
 export function worldView() { return top()?.worldView?.() || null; }
 
 export function update(dt) {
-  // A pause overlay freezes authored clocks beneath it as well as the world.
-  // Settings opened from pause remain live because they sit above this index.
-  const pauseIndex = stack.findIndex((scene) => scene.id === 'pause');
+  // Pause and required display transitions freeze authored clocks beneath them.
+  // Scenes above the highest such hold remain live.
+  const pauseIndex = stack.findLastIndex((scene) => scene.id === 'pause' || scene.freezesBelow);
   const start = pauseIndex >= 0 ? pauseIndex : 0;
   // Scenes may complete/remove themselves from update(). Iterate a stable
   // frame snapshot so that shifting the live stack cannot skip the next scene,

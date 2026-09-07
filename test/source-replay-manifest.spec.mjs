@@ -42,8 +42,31 @@ test('same-run manifest preserves completed take order and bounded pose provenan
   assert.deepEqual(plan['call-site'].segments[0].mark, { x:1, y:2 });
   assert.equal(plan['call-site'].segments[0].takeOrdinal, 1);
   assert.deepEqual(plan['final-clause'].segments.map((segment) => segment.kind), [
-    'recording-room', 'recording-room', 'recording-room', 'recording-room', 'source-threshold',
+    'recording-room', 'recording-room', 'recording-room', 'source-threshold', 'recording-room',
   ]);
+  assert.equal(plan['final-clause'].finalMark, 'take:4:room-4');
+  assert.equal(plan['final-clause'].segments.at(-1).id, plan['final-clause'].finalMark);
+});
+
+test('a recorded mark keeps its exact camera orientation without inventing it for legacy takes', () => {
+  const manifest = normalizeSourceReplayManifest({
+    takes:[
+      { roomId:'main_b3', mark:{x:4,y:2,yaw:2.1,pitch:-.2} },
+      { roomId:'the_tub', mark:{x:7,y:9} },
+    ],
+  });
+  assert.deepEqual(manifest.takes[0].mark, {x:4,y:2,yaw:2.1,pitch:-.2});
+  assert.deepEqual(manifest.takes[1].mark, {x:7,y:9});
+});
+
+test('a sparse final reprise still ends at a real take after the source threshold', () => {
+  const manifest = noteSourceReplayEntry(sourceReplayFallback({
+    runId:'sparse-night',takes:[{roomId:'main_b3',mark:{x:3,y:8}}],
+  }), {locus:{x:44,y:90}});
+  const plan = buildSourceReprisePlan(manifest)['final-clause'];
+  assert.deepEqual(plan.segments.map(({kind})=>kind), ['source-threshold','recording-room']);
+  assert.equal(plan.finalMark, 'take:1:main_b3');
+  assert.equal(plan.segments.at(-1).id, plan.finalMark);
 });
 
 test('borrowed body recombines only battle and HUSH evidence the run actually contains', () => {

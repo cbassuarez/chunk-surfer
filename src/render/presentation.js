@@ -1,17 +1,20 @@
 // The instrument surfaces, modelled on the A k a i AM M5 / HX M5 and the hi ta chi
 // DA-1000. Two rules the landed refactor broke:
 //
-//   1. NO GRADIENTS. A VFD is flat black glass. All the depth is the phosphor
-//      glow on lit elements and the dim silkscreen legends that never light.
-//   2. TEXT IS A DOT MATRIX, not a segment font (see render/vfd-font.js, wired
-//      through the atlas). Segments are for the numeric counter only.
+// The VFD is a recessed optical stack: substrate, phosphor, suspended grid,
+// then smoked cover glass. Machined aluminum, etched ink, and molded controls
+// occupy separate physical planes and never inherit phosphor glow.
 //
 // A machine panel is a faceplate: a matte bezel, a wordmark, a champagne model
 // strip, silkscreen header/footer legends, and the lit data on the glass.
 
-import { uiDraw, uiFill, uiText } from './ui.js';
-import { THEMES, UI_COLOR, activeTheme, setActiveSurface, uiBrightness, themeRoleColor, themeRoleDim, uiFlickerAlpha, uiRoleColor } from './palette.js';
+import { uiDraw, uiDrawHardware, uiWithClip, uiWithHardwareLayer, uiFill, uiText, uiCellMetrics } from './ui.js';
+import { THEMES, UI_COLOR, activeTheme, activeSurface, setActiveSurface, uiBrightness, themeRoleColor, themeRoleDim, uiFlickerAlpha, uiRoleColor } from './palette.js';
 import { drawVfdGlyph, vfdGlowBleed } from './vfd-font.js';
+import { drawCapLegend, drawPrintedText } from './keycap.js';
+import { drawHardwareCap, hardwareCapGeometry, hardwareMotionReduced } from './hardware-material.js';
+import { drawInstrumentPlate, drawInstrumentWell, drawInstrumentGlass, drawVfdGrid } from './instrument-material.js';
+import { sampleControl } from '../game/control-mechanics.js';
 import { drawPromptParts } from './prompt-glyphs.js';
 import { fitText } from './fit-text.js';
 import { MONITOR_DANGER_THRESHOLDS, MONITOR_THRESHOLDS, monitorSnapshot } from '../audio/monitor.js';
@@ -55,55 +58,16 @@ function hairline(ctx, x, y, w, h, color, alpha = 1, lw = 1, dpr = 1) {
   ctx.strokeRect(x + 0.5 * dpr, y + 0.5 * dpr, w - dpr, h - dpr); ctx.restore();
 }
 
-function drawPanelHardware(ctx, { px, py, pw, ph, gx, gy, gw, gh, dpr }) {
-  const screw = Math.max(1.5 * dpr, 2);
-  const inset = Math.max(0.72 * dpr, 1);
-  ctx.save();
+export function machinePanelAperture(x, y, w, h) {
+  return { x: x + 1.4, y: y + PANEL.headerRows + .35,
+    w: Math.max(.1, w - 2.8), h: Math.max(.1, h - PANEL.headerRows - PANEL.footerRows - .7) };
+}
 
-  // Four punched square heads in the bezel. Their slots all face the same way,
-  // as if one technician closed every panel on the line.
-  for (const [sx, sy] of [
-    [px + inset, py + inset],
-    [px + pw - inset - screw, py + inset],
-    [px + inset, py + ph - inset - screw],
-    [px + pw - inset - screw, py + ph - inset - screw],
-  ]) {
-    ctx.globalAlpha = 0.16;
-    ctx.fillStyle = '#8a887f';
-    ctx.fillRect(sx, sy, screw, screw);
-    ctx.globalAlpha = 0.24;
-    ctx.fillStyle = '#050505';
-    ctx.fillRect(sx + screw * 0.18, sy + screw * 0.46, screw * 0.64, Math.max(0.5, dpr * 0.36));
-  }
-
-  // Registration crosses live on the silkscreen, outside the data area.
-  ctx.strokeStyle = '#74776e';
-  ctx.lineWidth = Math.max(0.5, dpr * 0.42);
-  ctx.globalAlpha = 0.32;
-  const arm = Math.max(2 * dpr, 1.5);
-  for (const [cx, cy] of [[gx + arm * 1.4, gy - arm], [gx + gw - arm * 1.4, gy + gh + arm]]) {
-    ctx.beginPath();
-    ctx.moveTo(cx - arm, cy); ctx.lineTo(cx + arm, cy);
-    ctx.moveTo(cx, cy - arm); ctx.lineTo(cx, cy + arm);
-    ctx.stroke();
-  }
-
-  // Dormant service lamps are manufacturing detail, not state. They never
-  // animate or brighten and remain below the footer's information hierarchy.
-  ctx.globalAlpha = 0.12;
-  const led = Math.max(1, dpr * 0.8);
-  for (let index = 0; index < 3; index += 1) {
-    ctx.fillStyle = index === 1 ? '#7b5431' : '#35584f';
-    ctx.fillRect(px + pw - (7 - index * 1.7) * dpr, py + ph - 2.3 * dpr, led, led);
-  }
-
-  // A second imperfect stamping line gives the matte plate thickness without
-  // introducing a glossy bevel or gradient.
-  ctx.globalAlpha = 0.12;
-  ctx.strokeStyle = '#6a675f';
-  ctx.lineWidth = Math.max(0.5, dpr * 0.45);
-  ctx.strokeRect(px + 1.6 * dpr, py + 1.35 * dpr, pw - 3.2 * dpr, ph - 2.7 * dpr);
-  ctx.restore();
+/** A synchronous scope guarantees the front cover also paints on early return. */
+export function withMachinePanel(x, y, w, h, options = {}, drawContent) {
+  const previous = activeSurface();
+  try { return drawMachinePanel(x, y, w, h, { ...options, drawContent }); }
+  finally { setActiveSurface(previous); }
 }
 
 // ── the faceplate ─────────────────────────────────────────────────────────────
@@ -119,26 +83,40 @@ export function drawMachinePanel(x, y, w, h, {
   // keyboard. Takes precedence over `footer` when both are given, so a caller
   // can migrate one surface at a time.
   footerParts = null,
+  finish = 'aluminum', glass = {}, drawContent = null,
 } = {}) {
   // Same guard. god-menu.js asks for theme:'red' for the whole developer panel
   // and has always drawn amber.
   if (THEMES[theme]) setActiveSurface(theme);
-  const t = activeTheme();
   if (scrim) uiFill(0, 0, 999, 999, 'rgba(2,2,3,0.74)');
-
+  const aperture = machinePanelAperture(x, y, w, h);
+  const optical = glass && typeof glass === 'object' ? glass : {};
   uiDraw(({ ctx, dpr, cellW, cellH }) => {
     const px = x * cellW * dpr, py = y * cellH * dpr;
     const pw = w * cellW * dpr, ph = h * cellH * dpr;
-    // The bezel: matte black, a shade off the glass, with a hairline edge. Flat.
-    rect(ctx, px, py, pw, ph, '#101010');
-    const gx = px + 1.4 * cellW * dpr, gy = py + (PANEL.headerRows + 0.35) * cellH * dpr;
-    const gw = pw - 2.8 * cellW * dpr, gh = ph - (PANEL.headerRows + PANEL.footerRows + 0.7) * cellH * dpr;
-    // The glass, flat.
-    rect(ctx, gx, gy, gw, gh, t.glass);
-    hairline(ctx, gx, gy, gw, gh, '#000', 0.9, 1, dpr);
-    hairline(ctx, px, py, pw, ph, '#242424', 1, 1, dpr);
-    drawPanelHardware(ctx, { px, py, pw, ph, gx, gy, gw, gh, dpr });
+    drawInstrumentPlate(ctx, { x: px, y: py, w: pw, h: ph, dpr, finish,
+      seed: `${wordmark}:${model}:${label}` });
+    drawInstrumentWell(ctx, { x: aperture.x * cellW * dpr, y: aperture.y * cellH * dpr,
+      w: aperture.w * cellW * dpr, h: aperture.h * cellH * dpr, dpr, depth: optical.depth ?? 1 });
   });
+
+  const body = machinePanelBody(x, y, w, h, { footer: footer || footerParts?.length ? 'CONTROLS' : '' });
+  if (typeof drawContent === 'function') {
+    uiWithHardwareLayer(() => uiWithClip(aperture, () => drawContent(body)), () => {
+      if (glass === false) return;
+      uiDraw(({ctx,dpr,cellW,cellH}) => drawInstrumentGlass(ctx, {
+        ...optical, x: aperture.x * cellW * dpr, y: aperture.y * cellH * dpr,
+        w: aperture.w * cellW * dpr, h: aperture.h * cellH * dpr, dpr,
+        reducedMotion: hardwareMotionReduced(), grid: false,
+      }));
+    });
+    if (THEMES[theme]) setActiveSurface(theme);
+  }
+
+  const darkPanel = finish === 'black' || finish === 'black-anodized';
+  const ink = darkPanel ? '#b7bbae' : '#333830';
+  const print = (px, py, text, pw) => drawPrintedText(px, py, text,
+    { w: pw, ink, finish: 'etched', darkPanel });
 
   // Header silkscreen legends. The brand/model/label live on one padded row;
   // earlier revisions split this into two rows and made the top band feel
@@ -149,26 +127,32 @@ export function drawMachinePanel(x, y, w, h, {
     const s = String(source).toUpperCase();
     const sx = Math.max(x + 9, meterX - 1 - s.length);
     sourceLabelX = sx - 7;
-    uiText(sx - 7, y + 1, 'SOURCE', 'ui-label');
-    uiText(sx, y + 1, s, 'ui-primary');
+    print(sx - 7, y + 1, 'SOURCE', 6);
+    print(sx, y + 1, s, Math.max(1, meterX - sx - 1));
   }
   const leftHeader = [wordmark, model, String(label).toUpperCase()].filter(Boolean).join(' ');
   if (leftHeader) {
     const maxLeft = Math.max(1, (source ? sourceLabelX : x + w - 2) - (x + 2) - 1);
-    uiText(x + 2, y + 1, leftHeader.slice(0, maxLeft), 'ui-label');
+    print(x + 2, y + 1, leftHeader.slice(0, maxLeft), maxLeft);
   }
   if (meter) {
     const snapshot = meterSnapshot || monitorSnapshot();
+    // The meter is an actual small aperture in the metal header, not glowing
+    // paint. Keep its existing scale and reserved hit/layout geometry.
+    uiDraw(({ctx,dpr,cellW,cellH}) => {
+      rect(ctx, (meterX-.3)*cellW*dpr, (y+.86)*cellH*dpr, 12.6*cellW*dpr, 1.12*cellH*dpr, '#0a130c');
+    });
     drawVfdMeter(meterX, y + 1, 12, snapshot, { theme, bandThresholds: MONITOR_DANGER_THRESHOLDS });
     drawVfdWarningTriangle(x + w - 3, y + 1, snapshot);
   }
 
   // Footer.
-  if (footerParts?.length) drawPromptParts(x + 2, y + h - 2, footerParts, { role: 'ui-label', cols: w });
-  else if (footer) uiText(x + 2, y + h - 2, String(footer).slice(0, Math.max(0, w - 4)), 'ui-label');
+  if (footerParts?.length) drawPromptParts(x + 2, y + h - 2, footerParts, {
+    role: 'ui-label', printed: true, cols: w, printedInk: ink, printedFinish: 'etched', darkPanel });
+  else if (footer) print(x + 2, y + h - 2, String(footer).slice(0, Math.max(0, w - 4)), Math.max(0,w-4));
   if (buttons) drawButtonCluster(x + w - buttons.w - 2, y + PANEL.headerRows + 1, buttons);
 
-  return machinePanelBody(x, y, w, h, { footer: footer || footerParts?.length ? 'CONTROLS' : '' });
+  return body;
 }
 
 // ── the bargraph meter (DA-1000 / Akai VOLUME scale) ─────────────────────────
@@ -324,6 +308,45 @@ export function drawVfdMeter(x, y, width = 14, snapshot = monitorSnapshot(), {
   return { rows: 2, scale: true };
 }
 
+// ── ANNUNCIATORS ─────────────────────────────────────────────────────────────
+//
+// The row of fixed legends across the top of every real VFD: RECORD, PLAY,
+// MONITOR, MIC. The panel had none, and it is the single thing that most makes
+// one of these read as a device rather than as a drawing of one — because the
+// legends that are NOT lit are still there. A machine that only shows you the
+// state it is in could be anything; a machine showing you the four states it
+// has, three of them dark, is a machine.
+//
+// So every item is always drawn. Lit is phosphor at full duty with a lamp block
+// beside it; unlit is the SAME phosphor at 0.10 — the dormant convention this
+// file already uses for meter segments, and for the same reason (see the note in
+// drawVfdMeter: the `dim` token is too faint for anything bigger than the unlit
+// dot matrix under a glyph).
+//
+// `items` are `{ label, lit, role }`. `role` only matters when lit; REC is the
+// one legend allowed to come up red, which is the rule the transport lamp
+// already follows.
+export const ANNUNCIATOR_DORMANT = 0.11;
+
+export function drawVfdAnnunciators(x, y, items = [], { theme = null, gap = 2 } = {}) {
+  if (theme) setActiveSurface(theme);
+  let at = x;
+  for (const item of items) {
+    if (!item?.label) continue;
+    const label = String(item.label).toUpperCase();
+    const lit = !!item.lit;
+    // The lamp block. A legend without one reads as a heading; with one it reads
+    // as an indicator that happens to be off.
+    uiFill(at, y + .3, .62, .42, lit
+      ? (item.role === 'ui-marker' ? 'rgba(255,86,72,0.95)' : 'rgba(119,224,187,0.92)')
+      : 'rgba(119,224,187,0.13)');
+    uiText(at + 1.1, y, label, lit ? (item.role || 'ui-primary') : 'ui-primary',
+      lit ? 1 : ANNUNCIATOR_DORMANT, label.length);
+    at += label.length + 1.1 + gap;
+  }
+  return at - x;
+}
+
 export function drawVfdWarningTriangle(x, y, snapshot = monitorSnapshot(), { now = null } = {}) {
   const band = snapshot?.band || 'normal';
   if (band === 'normal') return false;
@@ -456,21 +479,25 @@ const DIGIT = {
   0: 'abcdef', 1: 'bc', 2: 'abdeg', 3: 'abcdg', 4: 'bcfg',
   5: 'acdfg', 6: 'acdefg', 7: 'abc', 8: 'abcdefg', 9: 'abcdfg', '-': 'g', ' ': '',
 };
+// Formed phosphor plates, with clipped ends and a slight manufacturing slant.
+// Coordinates normalize the approved study's 46 × 76 electrode, not a font
+// stroke with round caps. The existing digit advances/hit geometry are intact.
 const SEG7 = {
-  a: [.16, .06, .84, .06], b: [.88, .10, .88, .48], c: [.88, .52, .88, .90],
-  d: [.16, .94, .84, .94], e: [.12, .52, .12, .90], f: [.12, .10, .12, .48], g: [.18, .50, .82, .50],
+  a: [[10,1],[37,1],[42,6],[36,11],[11,11],[6,6]],
+  b: [[40,8],[44,11],[42,33],[37,37],[33,32],[35,14]],
+  c: [[37,39],[41,43],[39,65],[33,70],[29,65],[32,45]],
+  d: [[10,65],[28,65],[34,71],[28,76],[7,76],[2,70]],
+  e: [[3,39],[8,44],[6,63],[1,68],[-2,63],[0,44]],
+  f: [[7,9],[11,13],[9,31],[4,36],[0,31],[2,13]],
+  g: [[9,33],[32,33],[37,38],[31,43],[9,43],[4,38]],
 };
 export function drawVfdCounter(x, y, value, { scale = 1, theme = null, color = null } = {}) {
   if (theme) setActiveSurface(theme);
 
-  const b = uiBrightness();
   const text = String(value);
 
   uiDraw(({ ctx, dpr, cellW, cellH, cols }) => {
     ctx.save();
-    ctx.lineCap = 'round';
-    ctx.lineWidth = Math.max(1.4, 2.0 * scale) * dpr;
-
     const uw = cellW * 1.05 * scale;
     const uh = cellH * scale;
 
@@ -480,7 +507,7 @@ export function drawVfdCounter(x, y, value, { scale = 1, theme = null, color = n
       const by = y * cellH * dpr;
       const cellX = x + i * 1.15 * scale;
       const col = color || themeRoleColor('counter', cellX, cols);
-      const dim = themeRoleDim('counter', cellX, cols) || 'rgba(255,255,255,0.05)';
+      const dim = '#4a5a46';
       const duty = litDuty(cellX, y, 'counter', 1);
 
       if (ch === ':' || ch === '.') {
@@ -491,7 +518,7 @@ export function drawVfdCounter(x, y, value, { scale = 1, theme = null, color = n
 
         const dots = ch === ':' ? [.34, .66] : [.9];
         for (const dy of dots) {
-          ctx.fillRect(bx + uw * .42, by + uh * dy, 2 * dpr, 2 * dpr);
+          ctx.fillRect(bx + uw * .42 * dpr, by + uh * dy * dpr, 2 * dpr, 2 * dpr);
         }
 
         continue;
@@ -499,23 +526,36 @@ export function drawVfdCounter(x, y, value, { scale = 1, theme = null, color = n
 
       const active = DIGIT[ch] || '';
 
-      // dormant segments first, then lit
-      for (const [name, p] of Object.entries(SEG7)) {
+      for (const [name, polygon] of Object.entries(SEG7)) {
         const on = active.includes(name);
-
-        ctx.strokeStyle = on ? col : dim;
-        ctx.globalAlpha = on ? duty : 1;
-        ctx.shadowColor = on ? col : 'transparent';
-        ctx.shadowBlur = on ? 5.5 * dpr : 0;
-
-        ctx.beginPath();
-        ctx.moveTo(bx + p[0] * uw * dpr, by + p[1] * uh * dpr);
-        ctx.lineTo(bx + p[2] * uw * dpr, by + p[3] * uh * dpr);
-        ctx.stroke();
+        const plate = (dx = 0, dy = 0) => {
+          ctx.beginPath();
+          polygon.forEach(([px,py],j) => {
+            const tx=bx+(px+2)/46*uw*dpr+dx, ty=by+py/76*uh*dpr+dy;
+            if(j)ctx.lineTo(tx,ty);else ctx.moveTo(tx,ty);
+          });
+          ctx.closePath();
+        };
+        // Internal return is faint and belongs only to energized phosphor.
+        // Dormant electrodes are passive geometry and never acquire a halo.
+        if (on) {
+          ctx.fillStyle=col;ctx.globalAlpha=duty*.035;ctx.shadowBlur=0;
+          plate(.75*dpr,1.1*dpr);ctx.fill();
+        }
+        ctx.fillStyle=on?col:dim;
+        ctx.globalAlpha=on?duty:.19;
+        ctx.shadowColor=on?col:'transparent';ctx.shadowBlur=on?3.8*dpr:0;
+        plate();ctx.fill();
       }
     }
-
+    ctx.shadowBlur=0;
     ctx.globalAlpha = 1;
+    // At ordinary body-text size a visible mesh would destroy legibility.
+    // Larger counters expose the separately suspended gate and filament pair.
+    if (uh >= 20) drawVfdGrid(ctx, {
+      x:x*cellW*dpr, y:y*cellH*dpr, w:text.length*1.15*scale*cellW*dpr,
+      h:uh*dpr, dpr, reducedMotion:hardwareMotionReduced(),
+    });
     ctx.restore();
   });
 }
@@ -628,25 +668,64 @@ export function drawVfdText(x, y, text, {
   return value.length * scale;
 }
 
-// A right-hand button cluster: square silkscreened keys, a few lit. `spec` is
-// { w, keys: [{ label, lit?: 'rec'|'play'|'power' }] }.
+// ── ILLUMINATED PUSHBUTTON LEGEND CAPS ───────────────────────────────────────
+//
+// Colored resin remains visible with the lamp off. Heating the lamp changes
+// the transmitted field, never the printed legend. Cap travel carries both the
+// face and its ink; the metal retainer and hit target stay fixed. Electronic
+// state belongs in the neighboring phosphor readout, not on the plastic.
+export const LAMP = Object.freeze({
+  amber: '#E9A62A', red: '#D63B2B', green: '#5FB878', blue: '#4A86C8', white: '#D9D8CE',
+});
+
+/**
+ * A physical actuator. All public/returned geometry is UI cells. Lamp heat and
+ * cap travel are independent; selected/focused only marks the fixed surround.
+ * The moving content rectangle owns every printed icon and legend on its face.
+ */
+export function drawLampButton(x, y, w, h, {
+  legend = '', code = '', lit = false, color = 'amber', enabled = true,
+  selected = false, focused = selected, alpha = 1, controlId = null,
+  latched = false, finish = 'lens', travel = null, lampHeat = null,
+} = {}) {
+  const state = controlId ? sampleControl(controlId, {lit,latched,enabled,reducedMotion:hardwareMotionReduced()}) : { travel: latched ? .8 : 0, lampHeat: lit && enabled ? 1 : 0 };
+  const depth = clamp01(travel ?? state.travel), heat = clamp01(lampHeat ?? state.lampHeat);
+  const ink = '#12150d';
+  const metrics = uiCellMetrics();
+  const geometry = hardwareCapGeometry(w*metrics.cellW,h*metrics.cellH,depth,{finish});
+  const content = { x: x+geometry.content.x/metrics.cellW, y: y+geometry.content.y/metrics.cellH,
+    w: geometry.content.w/metrics.cellW, h: geometry.content.h/metrics.cellH };
+  uiDrawHardware(({ ctx, dpr, cellW, cellH }) => {
+    const px = x * cellW * dpr, py = y * cellH * dpr;
+    const pw = w * cellW * dpr, ph = h * cellH * dpr;
+    drawHardwareCap(ctx,px,py,pw,ph,{color,finish,travel:depth,lampHeat:heat,enabled,focused,alpha,dpr});
+    if (code) {
+      drawCapLegend(ctx,code,content.x,content.y,content.w,content.h*.34,ink,dpr,cellW,cellH,alpha*.82);
+    }
+    drawCapLegend(ctx,legend,content.x,code ? content.y+content.h*.34 : content.y,
+      content.w,content.h*(code ? .66 : 1),ink,dpr,cellW,cellH,alpha);
+  });
+  return { x,y,w,h,content,ink,travel:depth,lampHeat:heat,offsetY:geometry.distance*depth/metrics.cellH };
+}
+
 export function drawButtonCluster(x, y, { w = 6, keys = [] } = {}) {
-  const t = activeTheme();
-  const lit = { rec: '#FF3B30', play: t.phosphor, power: '#3B7BFF' };
+  // Legend caps, not outlined labels. `lit` names which lamp is behind the cap,
+  // and it stays the transport's own vocabulary: rec is the red one, play the
+  // green, power the blue. A key with no lamp is unlit plastic, which is still a
+  // key — see drawLampButton for why that matters.
+  const lamp = { rec: 'red', play: 'green', power: 'blue' };
   keys.forEach((k, i) => {
-    const by = y + i * 2;
-    uiDraw(({ ctx, dpr, cellW, cellH }) => {
-      const bx = x * cellW * dpr, byy = by * cellH * dpr;
-      const bw = (w - 2) * cellW * dpr, bh = 1.4 * cellH * dpr;
-      rect(ctx, bx, byy, bw, bh, '#161616');
-      hairline(ctx, bx, byy, bw, bh, '#333', 1, 1, dpr);
-      if (k.lit) {
-        const c = lit[k.lit] || t.phosphor;
-        ctx.save(); ctx.globalAlpha = uiFlickerAlpha(x + w - 2, by, k.lit === 'rec' ? 'marker' : 'phosphor'); ctx.fillStyle = c; ctx.shadowColor = c; ctx.shadowBlur = 4 * dpr;
-        ctx.beginPath(); ctx.arc(bx + bw - 4 * dpr, byy + bh / 2, 2.2 * dpr, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-      }
+    drawLampButton(x, y + i * 2, w - 2, 1.6, {
+      legend: k.label || '',
+      code: k.code || '',
+      lit: !!k.lit,
+      color: k.color || lamp[k.lit] || 'white',
+      enabled: k.enabled !== false,
+      selected: !!k.selected,
+      controlId: k.controlId || null,
+      latched: !!k.latched,
+      finish: k.finish || ((k.color || lamp[k.lit] || 'white') === 'white' ? 'opaque' : 'lens'),
     });
-    if (k.label) uiText(x, by, k.label, k.lit ? 'ui-primary' : 'ui-label');
   });
 }
 

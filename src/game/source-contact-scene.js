@@ -1,6 +1,6 @@
 import * as scenes from './scenes.js';
 import { uiScrim, uiSize, uiText, uiWrap } from '../render/ui.js';
-import { drawMachinePanel } from '../render/presentation.js';
+import { withMachinePanel } from '../render/presentation.js';
 import { promptLine } from './bindings.js';
 
 export function makeSourceContactScene({ encounter, onResolve = () => {} } = {}) {
@@ -48,14 +48,14 @@ export function makeSourceContactScene({ encounter, onResolve = () => {} } = {})
       const width = Math.min(82, cols - 4);
       const height = Math.min(rows - 4, Math.max(17, 11 + choices.length * 2));
       const x = Math.floor((cols - width) / 2), y = Math.floor((rows - height) / 2);
-      const panel = drawMachinePanel(x, y, width, height, {
+      withMachinePanel(x, y, width, height, {
         label: 'SOURCE / CONTACT',
         source: encounter?.speaker || 'UNATTRIBUTED',
         meter: true,
         footer: choosing
           ? promptLine([{ action: 'select', label: 'SELECT' }, { action: 'confirm', label: 'COMMIT' }])
           : promptLine([{ action: 'continue', label: 'CONTINUE' }]),
-      });
+      }, (panel) => {
       const current = lines[Math.min(lineIndex, Math.max(0, lines.length - 1))];
       const wrapped = uiWrap(current?.text || '', Math.max(18, panel.w - 2));
       wrapped.slice(0, 5).forEach((line, index) => uiText(panel.x + 1, panel.y + 1 + index, line, current?.who === 'surfer' ? 'ui-amber' : 'ui-primary'));
@@ -64,6 +64,7 @@ export function makeSourceContactScene({ encounter, onResolve = () => {} } = {})
       choices.forEach((choice, index) => {
         const selected = index === choiceIndex;
         uiText(panel.x + 1, choiceY + index * 2, `${selected ? '>' : ' '} ${choice.text}`.slice(0, panel.w - 2), selected ? 'ui-amber' : 'ui-secondary');
+      });
       });
     },
   };

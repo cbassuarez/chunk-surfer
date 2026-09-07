@@ -49,7 +49,7 @@ const state = {
 //   why      why the recordist wants it, in his words
 //
 // ctx: { px, py, light, recording, takeElapsed, spoiled, spoilReason,
-//        workOrderRead, marked, slow }
+//        workOrderRead, marked, slow, levelChecked, rehearsed }
 const STEPS = [
   {
     id: 'light',
@@ -97,7 +97,7 @@ const STEPS = [
     objective: 'SET YOUR LEVELS',
     line: { who: 'you', text: 'Levels, before anything. Headphones on, hear the room — then roll, and hold still.' },
     prompt: () => `${inputPrompt('recorder')}  listen, then ${inputPrompt('recorder')} to roll`,
-    done: (c) => c.levelChecked && c.rehearsed !== false,
+    done: (c) => c.levelChecked && c.rehearsed === true,
   },
   {
     // The LAST step, and the hand-off out of the dock: kit honest, six seconds
@@ -192,6 +192,10 @@ let spoiltOnce = false;
 
 export function tickTutorial(dt, ctx) {
   if (!tutorialActive()) return;
+  // The saved measurement is authoritative on resume. Restoring it must not
+  // replay onLevelsGood (which hands into the rehearsal), nor can a later
+  // context without that field erase a measurement completed this session.
+  if (ctx.levelChecked === true) levelChecked = true;
   const step = STEPS[state.step];
 
   if (!state.seen.has(step.id)) {

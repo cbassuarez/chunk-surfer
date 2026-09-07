@@ -62,6 +62,9 @@ for (const mesh of [
   'ending_recorder_open',
   'ending_dead_hand',
   'ending_body_standing',
+  'ending_containment_ribs',
+  'ending_coffee_handoff',
+  'ending_returned_ledger',
 ]) assert.ok(PROP_BOUNDS[mesh], `${mesh} exists in the generated prop pack`);
 
 {

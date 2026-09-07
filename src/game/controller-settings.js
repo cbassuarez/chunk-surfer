@@ -1,6 +1,6 @@
 import * as scenes from './scenes.js';
 import { uiFill, uiScrim, uiSize, uiText } from '../render/ui.js';
-import { drawMachinePanel } from '../render/presentation.js';
+import { withMachinePanel } from '../render/presentation.js';
 import { drawPadDiagram } from '../render/pad-diagram.js';
 import { drawVfdRow, vfdBlinkOn, vfdRowStyle } from '../render/vfd-select.js';
 import { activeTheme } from '../render/palette.js';
@@ -181,7 +181,7 @@ export function makeControllerSettingsScene({
       const y = Math.floor((R - h) / 2);
       const m = model();
 
-      const body = drawMachinePanel(x, y, w, h, {
+      withMachinePanel(x, y, w, h, {
         theme: 'amber',
         wordmark: 'AUDIOCORP',
         label: 'CONTROLLER SETUP',
@@ -192,7 +192,7 @@ export function makeControllerSettingsScene({
           { action: 'confirm', label: 'REMAP' },
           { action: 'back', label: 'DONE' },
         ],
-      });
+      }, (body) => {
 
       const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
       const blink = vfdBlinkOn(now);
@@ -251,6 +251,7 @@ export function makeControllerSettingsScene({
         if (row.kind === 'option') {
           uiText(listX, ry + 1, '─'.repeat(Math.max(1, listW)), 'ui-secondary', 0.35);
         }
+      });
       });
 
     },

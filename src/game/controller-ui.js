@@ -11,6 +11,7 @@ import { padGlyphText } from '../render/pad-glyphs.js';
 export const CONTROLLER_REMAP_ACTIONS = Object.freeze([
   { id: 'interact', group: 'WORLD' },
   { id: 'recorder', group: 'WORLD' },
+  { id: 'radio', group: 'WORLD' },
   { id: 'light', group: 'WORLD' },
   { id: 'quiet', group: 'WORLD' },
   { id: 'bag', group: 'WORLD' },

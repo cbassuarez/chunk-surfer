@@ -1,4 +1,6 @@
-    /* minimal — ADR-inspired dark shell. no kitsch. */
+    @font-face{font-family:"Hardware Sans";src:url('./assets/fonts/NimbusSans-Regular.otf') format('opentype');font-style:normal;font-weight:400;font-display:swap;}
+    @font-face{font-family:"Hardware Sans";src:url('./assets/fonts/NimbusSans-Bold.otf') format('opentype');font-style:normal;font-weight:600 700;font-display:swap;}
+    /* Electronic glass and printed instrument hardware have distinct type. */
     :root{
       --cs-mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;
       --cs-glass:#07090A;--cs-glass-soft:#0D1113;--cs-white:#EAF2F0;
@@ -62,6 +64,7 @@
       gap:16px;
       min-width:0;
       color:var(--cs-vfd-silkscreen);
+      font-family:"Hardware Sans",Arial,sans-serif;
       font-size:clamp(10px,1.15vw,12px);
       font-weight:700;
       line-height:1.15;
@@ -267,6 +270,12 @@
       opacity:0;transition:opacity 90ms linear;
     }
     .window-choreography-sim.active{opacity:1;}
+    .window-choreography-sim[data-acceptance-hidden="true"]{opacity:0!important;}
+    /* In a native ending the media lives around the game window. Simulate has
+       to share the canvas, but it must not become an opaque end card over the
+       route's physical last shot. Keep it as peripheral residue once the
+       world-hold begins and let the transformed room own the image. */
+    html[data-ending-world-hold="true"] .window-choreography-sim.composition{opacity:.10;}
     .window-choreography-sim-pane{
       position:absolute;transform:translate(-50%,-50%);display:grid;place-items:center;
       box-sizing:border-box;border:2px solid rgba(225,235,242,.72);background:#000;color:#f4f5ef;

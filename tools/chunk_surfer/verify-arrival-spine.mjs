@@ -49,7 +49,7 @@ const focusGreyDoorFromBay = async () => {
 };
 const shot = async (name) => { await new Promise((r) => setTimeout(r, 500)); await page.screenshot({ path: path.join(output, name) }); };
 
-await page.goto('http://127.0.0.1:5199/index.html?nomic=1&sam=0&diffusion='
+await page.goto('http://127.0.0.1:5199/index.html?nodisplaynotice=1&nomic=1&sam=0&diffusion='
   + encodeURIComponent('ws://127.0.0.1:5198'), { waitUntil: 'domcontentloaded', timeout: 60000 });
 await wait(() => !!window.__scenes?.top?.()?.id);
 if (await top() === 'eula') {

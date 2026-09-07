@@ -4,7 +4,7 @@
 
 import * as scenes from './scenes.js';
 import { uiSize, uiText, uiCenter, uiScrim, uiFill } from '../render/ui.js';
-import { drawMachinePanel } from '../render/presentation.js';
+import { withMachinePanel } from '../render/presentation.js';
 import { createHitRegions } from '../render/hit-regions.js';
 import { drawVfdRow, vfdRowStyle } from '../render/vfd-select.js';
 import { getSave, saveCommit, clearSave, clearAllData } from './save.js';
@@ -767,7 +767,7 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
       const w = Math.min(90, cols - 4), h = Math.min(Math.max(28, R - 8), R - 2);
       const x = Math.floor((cols - w) / 2), y = Math.floor((R - h) / 2);
 
-      const body = drawMachinePanel(x, y, w, h, {
+      withMachinePanel(x, y, w, h, {
         theme: 'amber',
         wordmark: 'AUDIOCORP',
         label: inGame ? 'SERVICE MENU' : 'MAIN MENU',
@@ -780,7 +780,7 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
           ...(inGame ? [] : [{ action: 'back', label: 'DONE' }]),
         ],
         meter: false,
-      });
+      }, (body) => {
 
       const ix = body.x, iy = body.y;
       let tx = ix;
@@ -922,6 +922,7 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
           const one = (showHelp && help) ? help : (pro || help);
           uiCenter(y + h - 3, clipTip(one, footerW).toUpperCase(), 'ui-secondary');
         }
+      });
     },
   };
 }

@@ -31,7 +31,7 @@ page.on('console', (m) => { if (/mark|lens|shader/i.test(m.text())) console.log(
 const wait = (f, t = 600000) => page.waitForFunction(f, { timeout: t });
 const top = () => page.evaluate(() => window.__scenes?.top?.()?.id || null);
 
-await page.goto(`http://127.0.0.1:5199/index.html?skiptut=1&nomic=1&sam=0&diffusion=${encodeURIComponent(LENS)}`,
+await page.goto(`http://127.0.0.1:5199/index.html?nodisplaynotice=1&skiptut=1&nomic=1&sam=0&diffusion=${encodeURIComponent(LENS)}`,
   { waitUntil: 'domcontentloaded', timeout: 60000 });
 await wait(() => !!window.__scenes?.top?.()?.id);
 if (await top() === 'eula') {

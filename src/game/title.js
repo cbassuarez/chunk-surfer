@@ -8,7 +8,7 @@
 
 import * as scenes from './scenes.js';
 import { uiSize, uiCenter, uiFill, uiText, uiWithAlpha } from '../render/ui.js';
-import { drawLocationIndicator, drawMachinePanel, drawVfdText } from '../render/presentation.js';
+import { drawLocationIndicator, withMachinePanel, drawVfdText } from '../render/presentation.js';
 import { createHitRegions } from '../render/hit-regions.js';
 import { drawVfdRow, vfdRowStyle } from '../render/vfd-select.js';
 import { UI_COLOR, activeTheme } from '../render/palette.js';
@@ -16,7 +16,7 @@ import { getMeta, hasActiveRun } from './save.js';
 import * as AUDIO from '../audio/story-audio.js';
 import { monitorProgramMeasurement, monitorSnapshotForRms } from '../audio/monitor.js';
 import { promptLine } from './bindings.js';
-import { bootWeather, bootWeatherAudio, drainBootThunder, renderBootWeather, stepBootWeatherTitleTail } from './boot-weather.js';
+import { bootWeather, bootWeatherAudio, drainBootFlashes, drainBootThunder, renderBootWeather, stepBootWeatherTitleTail } from './boot-weather.js';
 import { transferRoomCopy } from './post-run-copy.js';
 
 const TITLE_CONFIRM_PROMPT = 'START NEW RUN? PRESS ENTER AGAIN';
@@ -383,6 +383,9 @@ export function makeTitleScene({
       // envelope eases their visibility away.
       stepBootWeatherTitleTail(weather,dt,{stormActive:true});
       bootWeatherAudio()?.update?.({presence:.78,wind:weather.wind});
+      // The flash, then the sound it sent. See thunder.js: the render happens
+      // in the gap between them, not on the frame the clap lands.
+      for(const flash of drainBootFlashes(weather))bootWeatherAudio()?.prepare?.(flash);
       for(const thunder of drainBootThunder(weather))bootWeatherAudio()?.strike?.(thunder);
     },
 
@@ -403,7 +406,7 @@ export function makeTitleScene({
       const h = Math.min(Math.max(28, bodyRowsNeeded + 7), rows - 4);
       const x = Math.floor((cols - w) / 2);
       const y = Math.floor((rows - h) / 2);
-      const body = drawMachinePanel(x, y, w, h, {
+      withMachinePanel(x, y, w, h, {
         label: 'CASE SELECT',
         source: '4417-C',
         footerParts: [{ action: 'select', label: 'SELECT' }, { action: 'confirm', label: 'CONFIRM' }],
@@ -415,7 +418,7 @@ export function makeTitleScene({
           peak: programPeak,
           clipped: programClipped,
         }),
-      });
+      }, (body) => {
 
       const display = 'CHUNK SURFER';
       const titleScale = cols < 82 ? 1.42 : 1.58;
@@ -552,6 +555,7 @@ export function makeTitleScene({
         const buildY = Math.max(body.y + 1, y + h - 5);
         drawRightText(buildXRight, buildY, buildText, 'ui-label', 0.62);
       }
+      });
       });
     },
   };

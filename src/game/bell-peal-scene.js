@@ -1,5 +1,5 @@
 import { uiDraw, uiFill, uiLine, uiSize, uiStrokeRect, uiText } from '../render/ui.js';
-import { drawMachinePanel, drawVfdCounter, drawVfdText } from '../render/presentation.js';
+import { withMachinePanel, drawVfdCounter, drawVfdText } from '../render/presentation.js';
 
 const clamp01=(value)=>Math.max(0,Math.min(1,Number(value)||0));
 
@@ -91,9 +91,9 @@ export function createBellPealScene({performance,reducedMotion=()=>false,onGuide
       const snap=performance?.snapshot?.();if(!snap)return;
       const{cols,rows}=uiSize(),w=Math.min(112,cols-6),x=Math.floor((cols-w)/2);
       uiFill(0,0,cols,rows,'rgba(2,2,3,0.72)');
-      const panel=drawMachinePanel(x-2,2,w+4,rows-4,{
+      withMachinePanel(x-2,2,w+4,rows-4,{
         label:'AUDIOCORP / CHANGE CONTROL',source:'TOWER',meter:false,footer:'SPACE / PULL     E / RELEASE',scrim:false,theme:'amber',model:'TC-84',
-      });
+      },(panel)=>{
       const left=panel.x+1,right=panel.x+panel.w-1,bodyW=Math.max(24,right-left),top=panel.y+.2;
       if(snap.hud?.title!==false)drawVfdText(left,top,'STEDMAN TRIPLES',{scale:1,role:'ui-primary'});
       const transport=pealTime(snap.musicalElapsedMs);uiText(Math.max(left,right-transport.length),top,transport,'ui-secondary',.76);
@@ -137,6 +137,7 @@ export function createBellPealScene({performance,reducedMotion=()=>false,onGuide
       const mode=`${String(snap.mode||'standard').toUpperCase()}  CONTACT ±${snap.timing?.acceptedMs||260} MS`;
       uiText(left,panel.y+panel.h-1.4,mode,'ui-secondary',.7);
       if(reducedMotion?.())uiText(right-14,panel.y+panel.h-1.4,'REDUCED MOTION','ui-secondary',.55);
+      });
     },
   };
   return scene;

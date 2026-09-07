@@ -46,7 +46,7 @@ async function toTitle() {
   await wait(() => window.__scenes?.top?.()?.id === 'title', 60000);
 }
 
-await page.goto(`${BASE_URL}/index.html?nomic=1&sam=0&skiptut=1`, { waitUntil:'domcontentloaded', timeout:60000 });
+await page.goto(`${BASE_URL}/index.html?nodisplaynotice=1&nomic=1&sam=0&skiptut=1`, { waitUntil:'domcontentloaded', timeout:60000 });
 await toTitle();
 await page.keyboard.press('Enter'); await page.keyboard.press('Enter');
 await wait(() => window.__scenes?.top?.()?.id === 'difficulty-select', 60000);

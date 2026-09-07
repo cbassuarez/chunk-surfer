@@ -170,12 +170,6 @@ export function dockHauntingGuidance({
   });
 }
 
-// The setup gate always blocks an early exit, but its explanatory line belongs
-// only to a deliberate forward press through a real leaf.
-export function dockExitAttemptShouldSpeak({ forwardIntent = 0, hasDoor = false } = {}) {
-  return !!hasDoor && Number(forwardIntent) > .72;
-}
-
 export function deriveDockHauntingEligibility({
   departed = false,
   spent = false,

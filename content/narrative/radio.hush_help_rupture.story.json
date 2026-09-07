@@ -4,29 +4,222 @@
   "title": "Radio · second danger call rupture",
   "status": "active",
   "entry": "start",
-  "entries": ["start"],
-  "tags": ["radio", "hush", "rupture", "one-shot"],
-  "notes": "Player-caused permanent failure. Separate from the original third-room hijack.",
+  "entries": [
+    "start"
+  ],
+  "tags": [
+    "radio",
+    "hush",
+    "rupture",
+    "one-shot"
+  ],
+  "notes": "The second danger call begins with familiar, competent Martin and joins a physical contact failure, not a separate after-the-fact shake scene. The risky battery choice is deliberate; both branches end in a dead carrier. SourceId hooks own staging and audio.",
   "regions": [
     {
-      "id": "radio.hush_help_rupture.region",
-      "title": "The nearby room answers",
+      "id": "radio.hush_help_rupture.entrance",
+      "title": "A second call for help",
       "kind": "scene",
+      "color": "#245c62",
+      "nodeIds": [
+        "start",
+        "relay"
+      ]
+    },
+    {
+      "id": "radio.hush_help_rupture.contact",
+      "title": "The hand and the contact",
+      "kind": "branch",
       "color": "#7a3038",
-      "nodeIds": ["start"]
+      "nodeIds": [
+        "contact",
+        "reseat",
+        "still",
+        "break",
+        "after"
+      ]
     }
   ],
   "nodes": {
     "start": {
       "id": "start",
       "type": "dialogue",
-      "art": {"id":"walkie","mode":"hero","caption":"Field radio / return folded through the room","status":"WRONG RETURN"},
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Field radio / front desk relay",
+        "status": "LIVE"
+      },
       "lines": [
-        {"id":"start.line.1","who":"me","text":"Martin. It's here again. Tell me which way out."},
-        {"id":"start.line.2","who":"radio","text":"Which way out—"},
-        {"id":"start.line.3","who":"direction","text":"His last four words return from the room before they return from the speaker. The walls give them back in your cadence.","hold":2.4},
-        {"id":"start.line.4","who":"radio","text":"Find a signed landing. Call me from— from—"},
-        {"id":"start.line.5","who":"direction","text":"A clipped return strikes the grille. The carrier folds shut, the speaker pops, and the transmit switch answers with one dead click.","shake":1.1,"shakeMs":480,"hold":3,"cues":["radio-rupture"]}
+        {
+          "id": "start.line.call",
+          "who": "me",
+          "text": "Martin. It's here again. Tell me which way out."
+        },
+        {
+          "id": "start.line.desk",
+          "who": "radio",
+          "text": "All right. Don't try to describe it now. Find the landing sign. Tell me the number."
+        },
+        {
+          "id": "rupture.onset",
+          "who": "direction",
+          "text": "Martin drags the plan toward him. A chair leg knocks the desk. He is still there."
+        }
+      ],
+      "goto": "relay"
+    },
+    "relay": {
+      "id": "relay",
+      "type": "dialogue",
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Field radio / transmit held",
+        "status": "CARRIER"
+      },
+      "lines": [
+        {
+          "id": "rupture.relay",
+          "who": "direction",
+          "text": "The room says the end of Martin's sentence before he does. Then his small desk voice finishes it inside the set."
+        },
+        {
+          "id": "relay.line.2",
+          "who": "radio",
+          "text": "Listen to me. Take your hand off—"
+        },
+        {
+          "id": "relay.line.3",
+          "who": "direction",
+          "text": "The transmit key goes down. Your thumb is already clear of it."
+        }
+      ],
+      "goto": "contact"
+    },
+    "contact": {
+      "id": "contact",
+      "type": "choice",
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Field radio / loose contact",
+        "status": "CARRIER"
+      },
+      "lines": [
+        {
+          "id": "contact.line.seam",
+          "who": "direction",
+          "text": "The battery plate has lifted at one corner. The speaker keeps drawing breath through it."
+        },
+        {
+          "id": "rupture.decision",
+          "who": "you",
+          "text": "I could seat the battery. Might get Martin back. But if the channel opens, this room will hear me."
+        }
+      ],
+      "choices": [
+        {
+          "id": "contact.choice.reseat",
+          "text": "Seat the battery — risk the carrier",
+          "goto": "reseat",
+          "mutations": {
+            "set": [
+              "radio.contact.reseated"
+            ],
+            "clear": [
+              "radio.contact.held"
+            ]
+          }
+        },
+        {
+          "id": "contact.choice.still",
+          "text": "Keep it still — let the channel go",
+          "goto": "still",
+          "mutations": {
+            "set": [
+              "radio.contact.held"
+            ],
+            "clear": [
+              "radio.contact.reseated"
+            ]
+          }
+        }
+      ]
+    },
+    "reseat": {
+      "id": "reseat",
+      "type": "dialogue",
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Field radio / contact seated",
+        "status": "CARRIER"
+      },
+      "lines": [
+        {
+          "id": "rupture.reseat",
+          "who": "direction",
+          "text": "You press the battery home with the heel of your hand. The lamp catches. Your intake of breath comes out of the speaker."
+        },
+        {
+          "id": "reseat.line.answer",
+          "who": "direction",
+          "text": "It continues from the room after you stop breathing in."
+        }
+      ],
+      "goto": "break"
+    },
+    "still": {
+      "id": "still",
+      "type": "dialogue",
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Field radio / contact held",
+        "status": "CARRIER"
+      },
+      "lines": [
+        {
+          "id": "rupture.still",
+          "who": "direction",
+          "text": "You hold the loose plate against your palm without pushing it home. The lamp weakens. You wait with your thumb clear of the key."
+        }
+      ],
+      "goto": "break"
+    },
+    "break": {
+      "id": "break",
+      "type": "dialogue",
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Field radio / carrier lost",
+        "status": "DEAD"
+      },
+      "lines": [
+        {
+          "id": "rupture.break",
+          "who": "direction",
+          "text": "The speaker cone pulls hard against its frame. One contact cracks. The lamp goes out."
+        }
+      ],
+      "goto": "after"
+    },
+    "after": {
+      "id": "after",
+      "type": "dialogue",
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Field radio / no carrier",
+        "status": "DEAD"
+      },
+      "lines": [
+        {
+          "id": "rupture.after",
+          "who": "direction",
+          "text": "Your palm keeps the outline of the battery plate. The speaker stays still."
+        }
       ]
     }
   }

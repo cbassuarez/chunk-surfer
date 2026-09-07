@@ -4,7 +4,7 @@
 
 import * as scenes from './scenes.js';
 import { uiSize, uiFill, uiText, uiWrap } from '../render/ui.js';
-import { drawMachinePanel, drawVfdText } from '../render/presentation.js';
+import { withMachinePanel, drawVfdText } from '../render/presentation.js';
 import { UI_COLOR } from '../render/palette.js';
 import { promptLine } from './bindings.js';
 
@@ -121,7 +121,7 @@ export function makeWarningScene({
       const h = Math.min(rows - 2, out.length + 8);
       const x = Math.floor((cols - w) / 2);
       const y = Math.floor((rows - h) / 2);
-      const panel = drawMachinePanel(x, y, w, h, {
+      withMachinePanel(x, y, w, h, {
         theme: 'amber',
         wordmark: 'AUDIOCORP',
         label: card === 0 ? 'ADVISORY' : 'PSYCHOLOGICAL PROFILE',
@@ -130,7 +130,7 @@ export function makeWarningScene({
           ? promptLine([{ action: 'continue', label: 'CONTINUE' }])
           : promptLine([{ action: 'allow', label: 'PROFILE ON' }, { action: 'deny', label: 'PROFILE OFF' }]),
         meter: false,
-      });
+      }, (panel) => {
       drawVfdText(panel.x, panel.y, card === 0 ? 'BEFORE YOU START' : 'CONSENT REQUIRED', { max: panel.w });
       let lineY = panel.y + 3;
       for (const row of out) {
@@ -138,6 +138,7 @@ export function makeWarningScene({
         if (row.text) uiText(panel.x, lineY, row.text, row.cls);
         lineY += 1;
       }
+      });
     },
   };
 }

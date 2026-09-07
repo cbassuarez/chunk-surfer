@@ -1,95 +1,359 @@
 {
   "schemaVersion": 1,
   "id": "radio.pre_third_room_breakdown",
-  "title": "Radio · original third-room hijack",
+  "title": "Radio · third-room contact failure",
   "status": "active",
   "entry": "inbound",
-  "entries": ["manual", "inbound"],
-  "tags": ["radio", "rupture", "one-shot"],
-  "notes": "Manual and inbound entrances converge on the existing three response styles.",
+  "entries": [
+    "manual",
+    "inbound"
+  ],
+  "tags": [
+    "radio",
+    "rupture",
+    "one-shot"
+  ],
+  "notes": "Manual/inbound and all three response styles converge on one physical carrier rupture. The contact choice belongs inside the failure. Scene sourceId hooks own staging and audio; no line cue or generic scream is authored. Both choices permanently lose the carrier.",
   "regions": [
     {
       "id": "radio.pre_third_room_breakdown.entrances",
-      "title": "Two entrances",
+      "title": "Martin at the desk",
       "kind": "branch",
-      "color": "#6a3943",
-      "nodeIds": ["manual", "inbound"]
+      "color": "#245c62",
+      "nodeIds": [
+        "manual",
+        "inbound",
+        "start"
+      ]
     },
     {
       "id": "radio.pre_third_room_breakdown.responses",
-      "title": "The room has the channel",
-      "kind": "scene",
-      "color": "#245c62",
-      "nodeIds": ["start", "normal", "room", "listen"]
+      "title": "The route check",
+      "kind": "branch",
+      "color": "#2f6f64",
+      "nodeIds": [
+        "normal",
+        "room",
+        "listen"
+      ]
+    },
+    {
+      "id": "radio.pre_third_room_breakdown.contact",
+      "title": "The hand and the contact",
+      "kind": "branch",
+      "color": "#6a3943",
+      "nodeIds": [
+        "relay",
+        "contact",
+        "reseat",
+        "still",
+        "break",
+        "after"
+      ]
     }
   ],
   "nodes": {
     "manual": {
       "id": "manual",
       "type": "dialogue",
-      "art": {"id":"walkie","mode":"hero","caption":"Field radio / outgoing call","status":"CALLING"},
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Field radio / outgoing call",
+        "status": "CALLING"
+      },
       "lines": [
-        {"id":"manual.line.1","who":"me","text":"Martin, route check. I'm near {ROOMLABEL}."},
-        {"id":"manual.line.2","who":"direction","text":"The carrier opens immediately. No ringback, no desk, only the empty reverberation of {ROOMLABEL} ahead.","hold":1.8,"cues":["radio-carrier-open"]}
+        {
+          "id": "manual.line.call",
+          "who": "me",
+          "text": "Martin, route check. I'm near {ROOMLABEL}."
+        },
+        {
+          "id": "manual.line.desk",
+          "who": "radio",
+          "text": "Got you. Stay there a moment; I've got the wrong sheet on top."
+        }
       ],
       "goto": "start"
     },
     "inbound": {
       "id": "inbound",
       "type": "dialogue",
-      "art": {"id":"walkie","mode":"hero","caption":"Field radio / inbound carrier","status":"CALLING"},
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Field radio / incoming call",
+        "status": "CALLING"
+      },
       "lines": [
-        {"id":"inbound.line.1","who":"radio","text":"4417-C? ...you there?"},
-        {"id":"inbound.line.2","who":"direction","text":"The carrier lamp comes on. From the grille, the empty reverberation matches {ROOMLABEL} ahead.","hold":1.8,"cues":["radio-carrier-open"]}
+        {
+          "id": "inbound.line.call",
+          "who": "radio",
+          "text": "4417-C? Martin. Before you go through to {ROOMLABEL}—"
+        },
+        {
+          "id": "inbound.line.desk",
+          "who": "radio",
+          "text": "Stay there a moment; I've got the wrong sheet on top."
+        }
       ],
       "goto": "start"
     },
     "start": {
       "id": "start",
       "type": "choice",
-      "art": {"id":"walkie","mode":"hero","caption":"Field radio / carrier open","status":"CARRIER"},
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Field radio / front desk relay",
+        "status": "LIVE"
+      },
       "lines": [
-        {"id":"start.line.1","who":"direction","text":"The open carrier waits. The room ahead holds the same acoustic tail."}
+        {
+          "id": "rupture.onset",
+          "who": "direction",
+          "text": "Paper slides over Martin's desk. His pencil taps twice. The handset settles close to your ear."
+        }
       ],
       "choices": [
-        {"id":"start.choice.1","text":"Yeah. Receiving.","goto":"normal"},
-        {"id":"start.choice.2","text":"Which room are you in?","goto":"room"},
-        {"id":"start.choice.3","text":"Keep your thumb off transmit.","goto":"listen"}
+        {
+          "id": "start.choice.1",
+          "text": "Yeah. Receiving.",
+          "goto": "normal"
+        },
+        {
+          "id": "start.choice.2",
+          "text": "Which room have you got?",
+          "goto": "room"
+        },
+        {
+          "id": "start.choice.3",
+          "text": "Keep your thumb off transmit.",
+          "goto": "listen"
+        }
       ]
     },
     "normal": {
       "id": "normal",
       "type": "dialogue",
-      "art": {"id":"walkie","mode":"hero","caption":"Field radio / carrier unstable","status":"LIVE"},
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Field radio / front desk relay",
+        "status": "LIVE"
+      },
       "lines": [
-        {"id":"normal.line.1","who":"me","text":"Yeah. Receiving."},
-        {"id":"normal.line.2","who":"radio","text":"Receiving— receiving—"},
-        {"id":"normal.line.3","who":"direction","text":"Your last word returns twice. The second repeat is lower, with a close tiled reflection around it.","hold":2.6,"cues":["radio-clipped-return"]},
-        {"id":"normal.line.4","who":"radio","text":"Go ahead."},
-        {"id":"normal.line.5","who":"direction","text":"The speaker pops once. The carrier drops into a dead click.","shake":1.2,"shakeMs":520,"hold":3,"cues":["radio-speaker-pop-dead"]}
-      ]
+        {
+          "id": "normal.line.reply",
+          "who": "me",
+          "text": "Yeah. Receiving."
+        },
+        {
+          "id": "normal.line.route",
+          "who": "radio",
+          "text": "{ROOMLABEL}. Yes, I've got you now. Hold on."
+        }
+      ],
+      "goto": "relay"
     },
     "room": {
       "id": "room",
       "type": "dialogue",
-      "art": {"id":"walkie","mode":"hero","caption":"Field radio / carrier unstable","status":"LIVE"},
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Field radio / front desk relay",
+        "status": "LIVE"
+      },
       "lines": [
-        {"id":"room.line.1","who":"me","text":"Which room are you in?"},
-        {"id":"room.line.2","who":"radio","text":"{ROOMLABEL}. {ROOMLABEL}. {ROOMLABEL}."},
-        {"id":"room.line.3","who":"direction","text":"Each repetition carries the close reflection of the room ahead. On the third, the consonants use your cadence.","hold":2.8,"cues":["radio-clipped-return"]},
-        {"id":"room.line.4","who":"radio","text":"Go ahead."},
-        {"id":"room.line.5","who":"direction","text":"One clipped syllable breaks at the speaker. The carrier lamp goes dark.","shake":1.2,"shakeMs":520,"hold":3,"cues":["radio-speaker-pop-dead"]}
-      ]
+        {
+          "id": "room.line.reply",
+          "who": "me",
+          "text": "Which room have you got?"
+        },
+        {
+          "id": "room.line.route",
+          "who": "radio",
+          "text": "{ROOMLABEL}. The doorway should be in front of you. Let me check the—"
+        }
+      ],
+      "goto": "relay"
     },
     "listen": {
       "id": "listen",
       "type": "dialogue",
-      "art": {"id":"walkie","mode":"hero","caption":"Field radio / carrier unstable","status":"LIVE"},
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Field radio / front desk relay",
+        "status": "LIVE"
+      },
       "lines": [
-        {"id":"listen.line.1","who":"direction","text":"Your thumb stays off transmit. The carrier lamp remains lit.","hold":2.4},
-        {"id":"listen.line.2","who":"radio","text":"Go ahead."},
-        {"id":"listen.line.3","who":"radio","text":"Go ahead."},
-        {"id":"listen.line.4","who":"direction","text":"The second call arrives lower than the first. A plastic click follows it, and the carrier lamp goes dark.","shake":1.2,"shakeMs":520,"hold":3,"cues":["radio-dead-click"]}
+        {
+          "id": "listen.line.hand",
+          "who": "direction",
+          "text": "You keep your thumb beside the key."
+        },
+        {
+          "id": "listen.line.route",
+          "who": "radio",
+          "text": "There you are. {ROOMLABEL}. Hold on."
+        }
+      ],
+      "goto": "relay"
+    },
+    "relay": {
+      "id": "relay",
+      "type": "dialogue",
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Field radio / transmit held",
+        "status": "CARRIER"
+      },
+      "lines": [
+        {
+          "id": "rupture.relay",
+          "who": "direction",
+          "text": "The room ahead gives back the scrape of Martin's chair. Then the same scrape reaches the speaker, small and dry."
+        },
+        {
+          "id": "relay.line.2",
+          "who": "radio",
+          "text": "Wait. I haven't moved."
+        },
+        {
+          "id": "relay.line.3",
+          "who": "direction",
+          "text": "The transmit key sinks under your thumb. You lift your thumb; the key stays down."
+        }
+      ],
+      "goto": "contact"
+    },
+    "contact": {
+      "id": "contact",
+      "type": "choice",
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Field radio / loose contact",
+        "status": "CARRIER"
+      },
+      "lines": [
+        {
+          "id": "contact.line.seam",
+          "who": "direction",
+          "text": "The battery plate has lifted at one corner. The speaker keeps drawing breath through it."
+        },
+        {
+          "id": "rupture.decision",
+          "who": "you",
+          "text": "I could seat the battery. Might get Martin back. But if the channel opens, this room will hear me."
+        }
+      ],
+      "choices": [
+        {
+          "id": "contact.choice.reseat",
+          "text": "Seat the battery — risk the carrier",
+          "goto": "reseat",
+          "mutations": {
+            "set": [
+              "radio.contact.reseated"
+            ],
+            "clear": [
+              "radio.contact.held"
+            ]
+          }
+        },
+        {
+          "id": "contact.choice.still",
+          "text": "Keep it still — let the channel go",
+          "goto": "still",
+          "mutations": {
+            "set": [
+              "radio.contact.held"
+            ],
+            "clear": [
+              "radio.contact.reseated"
+            ]
+          }
+        }
+      ]
+    },
+    "reseat": {
+      "id": "reseat",
+      "type": "dialogue",
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Field radio / contact seated",
+        "status": "CARRIER"
+      },
+      "lines": [
+        {
+          "id": "rupture.reseat",
+          "who": "direction",
+          "text": "You press the battery home with the heel of your hand. The lamp catches. Your intake of breath comes out of the speaker."
+        },
+        {
+          "id": "reseat.line.answer",
+          "who": "direction",
+          "text": "It continues from the room after you stop breathing in."
+        }
+      ],
+      "goto": "break"
+    },
+    "still": {
+      "id": "still",
+      "type": "dialogue",
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Field radio / contact held",
+        "status": "CARRIER"
+      },
+      "lines": [
+        {
+          "id": "rupture.still",
+          "who": "direction",
+          "text": "You hold the loose plate against your palm without pushing it home. The lamp weakens. You wait with your thumb clear of the key."
+        }
+      ],
+      "goto": "break"
+    },
+    "break": {
+      "id": "break",
+      "type": "dialogue",
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Field radio / carrier lost",
+        "status": "DEAD"
+      },
+      "lines": [
+        {
+          "id": "rupture.break",
+          "who": "direction",
+          "text": "The speaker cone pulls hard against its frame. One contact cracks. The lamp goes out."
+        }
+      ],
+      "goto": "after"
+    },
+    "after": {
+      "id": "after",
+      "type": "dialogue",
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Field radio / no carrier",
+        "status": "DEAD"
+      },
+      "lines": [
+        {
+          "id": "rupture.after",
+          "who": "direction",
+          "text": "The dead set hangs from its strap. Your thumb stays bent above it."
+        }
       ]
     }
   }

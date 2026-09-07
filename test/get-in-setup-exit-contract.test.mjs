@@ -50,14 +50,27 @@ test('interact checks setup exits before the distinct grey-door beat', () => {
   assert.ok(idxSetup < idxGrey, 'other setup exits retain their refusal path');
 });
 
-test('movement setup gate can speak from intended exit door before collision crosses the zone seam', () => {
+test('the movement setup gate holds the boundary without speaking', () => {
   const stepStart = source.indexOf('function step(dx,dy)');
   const geometryStart = source.indexOf('// Geometry blocks the step.', stepStart);
   assert.ok(stepStart >= 0 && geometryStart > stepStart, 'step movement setup gate can be located');
   const body = source.slice(stepStart, geometryStart);
   assert.match(body, /setupExitDoorAhead\(dx,dy\)/, 'movement checks the door ahead of the movement vector');
   assert.match(body, /movingDoor\|\|leavingHome/, 'movement blocks either door intent or actual zone departure');
-  assert.match(body, /5\.5/, 'door search is widened for collision-guard distance');
+  // The refusal is a decision, not a position. Walking near a door - it used to
+  // reach 5.5m - must not set him talking about one the player never touched.
+  assert.doesNotMatch(body, /refuseDockExit/,
+    'the boundary holds silently; the line belongs to the door verb');
+});
+
+test('the setup refusal is spoken from the door verb and nowhere passive', () => {
+  const body = sliceFunction('trySetupExitDoor');
+  assert.match(body, /setupExitDoorFromFocus\(focus\)/, 'the refusal reads the focused door');
+  assert.match(body, /refuseDockExit\(\{speak:true\}\)/, 'trying the door is what speaks');
+  assert.equal(source.includes('function speakAtExitDoor'), false,
+    'no passive gaze/proximity speaker survives');
+  assert.equal(source.split('refuseDockExit').length - 1, 2,
+    'refuseDockExit is defined once and called once, from the door verb');
 });
 
 test('setup exit guard owns only the get-in side of an exit', () => {
@@ -68,9 +81,6 @@ test('setup exit guard owns only the get-in side of an exit', () => {
     assert.doesNotMatch(body, /if\(!atHomeThreshold\(px,py\)\)/,
       `${name} does not use the two-sided home threshold`);
   }
-  const passive = sliceFunction('speakAtExitDoor');
-  assert.match(passive, /FP\.zoneAt\(px,py\)!==ZONE\.getIn/,
-    'passive exit speech is silent from the loading-bay side');
 });
 
 test('HUD always offers the door-you-came-in-through beat from Get In', () => {

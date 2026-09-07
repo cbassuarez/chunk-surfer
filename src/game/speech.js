@@ -15,7 +15,7 @@
 // [space] hurries a line. It never skips one.
 
 import { uiText, uiWrap, uiSize } from '../render/ui.js';
-import { drawMachinePanel } from '../render/presentation.js';
+import { withMachinePanel } from '../render/presentation.js';
 import { textCps } from './access.js';
 import { createSamDialogVoice, isVoiced } from '../audio/sam-voice.js';
 import { TYPE_GAIN, TYPE_LEVEL } from '../audio/story-audio.js';
@@ -429,9 +429,9 @@ export function drawSpeech() {
   const h = Math.max(1, lines.length);
   const panelH = h + 7;
   const y = rows - panelH - 2;
-  const panel = drawMachinePanel(x - 2, y, w + 4, panelH, {
+  withMachinePanel(x - 2, y, w + 4, panelH, {
     label: 'MONITOR', source: style.tag || 'VOICE', meter: true,
-  });
+  }, (panel) => {
   const textX = panel.x + 1;
   const textY = Math.max(y + 3, panel.y - 1);
   const textW = Math.max(8, panel.w - 2);
@@ -449,4 +449,5 @@ export function drawSpeech() {
     const last = visible[visible.length - 1] || '';
     uiText(textX + last.length, textY + visible.length - 1, '▌', 'ui-amber');
   }
+  });
 }

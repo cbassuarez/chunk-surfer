@@ -30,10 +30,11 @@
 //
 
 import * as scenes from './scenes.js';
-import { TRANSPORT, drawRecorderFace, recorderPanelRect } from '../render/recorder-view.js';
+import { TRANSPORT, drawRecorderFace, recorderPanelRect, recorderHitRegions } from '../render/recorder-view.js';
 import { uiSize } from '../render/ui.js';
 import { fitText } from '../render/fit-text.js';
 import { createConversation } from './conversation.js';
+import { pressControl, releaseControl, cancelControlScope } from './control-mechanics.js';
 
 export const RECORDER_SCENE_ID = 'recorder';
 
@@ -65,6 +66,16 @@ export function recorderKeys(state = {}) {
   ];
 }
 
+export function recorderControlState(id, state = {}) {
+  const active = id === RECORDER_KEY.REC ? !!state.recording
+    : id === RECORDER_KEY.PLAY ? !!state.playing
+      : id === RECORDER_KEY.TAKES ? !!state.browsing : false;
+  return {
+    controlId: `recorder:${id}`, lit: active, latched: active,
+    color: id === RECORDER_KEY.REC ? 'red' : id === RECORDER_KEY.PLAY ? 'green' : 'white',
+  };
+}
+
 export function makeRecorderScene({
   getState,          // () -> the live machine state
   getTakes,          // () -> [{ roomId, label, ordinal, playable, status, warn }]
@@ -86,6 +97,27 @@ export function makeRecorderScene({
   let closed = false;
   let guide = null;
   let guideConvo = null;
+  let hitRegions = [];
+  const heldControls = new Map();
+
+  function press(id, input) {
+    if (!id) return;
+    if (heldControls.has(input)) releaseControl(heldControls.get(input));
+    heldControls.set(input, id);
+    pressControl(id);
+  }
+  function release(input) {
+    const id = heldControls.get(input);
+    if (!id) return false;
+    heldControls.delete(input);
+    if (![...heldControls.values()].includes(id)) releaseControl(id);
+    return true;
+  }
+  function clearControls() {
+    heldControls.clear();
+    hitRegions = [];
+    cancelControlScope('recorder:');
+  }
 
   const keys = () => recorderKeys({ ...state(), browsing, tapes: takes().length });
   const key = () => keys()[Math.max(0, Math.min(keys().length - 1, cursor))] || null;
@@ -95,6 +127,7 @@ export function makeRecorderScene({
   function close({ suppressReopen = false } = {}) {
     if (closed) return false;
     closed = true;
+    clearControls();
     const removed = scenes.remove(scene);
     if (removed) {
       onClearInput?.({ suppressReopen });
@@ -182,14 +215,17 @@ export function makeRecorderScene({
     blocksInput: true,
     blocksWorld: false,
     suppressesHud: true,
-    allowsLook: true,
+    // The raised machine owns a visible cursor. Allowing first-person look
+    // here kept native pointer capture alive, swallowing movement before its
+    // transport controls could receive real hover/click coordinates.
+    allowsLook: false,
     lensPreset: null,
 
     update(dt) { t += dt || 0; guideConvo?.update?.(dt || 0); },
 
     keyup(event) {
-      if (!guideConvo) return false;
-      return guideConvo.keyup?.(event) || false;
+      const released = release(`key:${event?.code || event?.key || ''}`);
+      return (guideConvo?.keyup?.(event) || false) || released;
     },
 
     key(event) {
@@ -201,17 +237,25 @@ export function makeRecorderScene({
         // not abandon the monitor between "kill the light" and "roll"; the
         // conversation's own Continue/choice inputs own this transport state.
         if (raw === 'Escape' || code === 'Escape' || k === 'r' || code === 'KeyR') return true;
+        if (!event.repeat && ['Enter', ' ', 'z'].includes(raw) && key()?.enabled) {
+          press(`recorder:${key().id}`, `key:${code || raw}`);
+        }
         return guideConvo.key(event);
       }
       if (raw === 'Escape' || code === 'Escape') { close(); return true; }
       // [R] again puts it away. The key that took it out is the key that
       // returns it, which is how every other held thing in this game works.
-      if (k === 'r' || code === 'KeyR') { close(); return true; }
+      if (k === 'r' || code === 'KeyR') {
+        if (!event.repeat) close();
+        return true;
+      }
       if (raw === 'ArrowUp' || code === 'ArrowUp' || k === 'w') { move(-1); return true; }
       if (raw === 'ArrowDown' || code === 'ArrowDown' || k === 's') { move(1); return true; }
       if (raw === 'ArrowLeft' || code === 'ArrowLeft' || k === 'a') { move(-1); return true; }
       if (raw === 'ArrowRight' || code === 'ArrowRight' || k === 'd') { move(1); return true; }
       if (raw === 'Enter' || code === 'Enter' || k === 'e' || code === 'KeyE') {
+        if (event.repeat) return true;
+        if (key()?.enabled) press(`recorder:${key().id}`, `key:${code || raw}`);
         if (browsing) {
           const chosen = takes()[row];
           if (!chosen) return true;
@@ -224,10 +268,62 @@ export function makeRecorderScene({
       }
       // [P] is still the shortcut it always was, even with the machine up.
       if (k === 'p' || code === 'KeyP') {
+        if (event.repeat) return true;
+        press('recorder:play', `key:${code || raw}`);
         if (state().playing) onStopPlayback?.(); else onPlay?.(null);
         return true;
       }
       return true;   // the machine has the keyboard while it is out
+    },
+
+    pointer(event) {
+      if (event.type === 'pointercancel' && event.pointerId == null) {
+        heldControls.clear();
+        cancelControlScope('recorder:');
+        guideConvo?.keyup?.({ key: 'Enter', code: 'Enter' });
+        return true;
+      }
+      const input = `pointer:${event.pointerId ?? 0}`;
+      if (event.type === 'pointerup' || event.type === 'pointercancel') {
+        release(input);
+        guideConvo?.keyup?.({ key: 'Enter', code: 'Enter' });
+        return true;
+      }
+      if (event.type !== 'pointerdown' && event.type !== 'pointermove') return true;
+      const x = Number(event.cellX), y = Number(event.cellY);
+      const hit = hitRegions.find((region) => x >= region.x && x < region.x + region.w
+        && y >= region.y && y < region.y + region.h);
+      if (!hit) return true;
+      if (event.type === 'pointerdown') {
+        try { event.originalEvent?.target?.setPointerCapture?.(event.pointerId); } catch (_) {}
+      }
+      if (guideConvo) {
+        if (event.type !== 'pointerdown') return true;
+        if (hit.kind === 'choice' && Number.isInteger(hit.index)) {
+          guideConvo.key({ key: String(hit.index + 1), code: `Digit${hit.index + 1}` });
+        } else if (hit.kind === 'guide' || hit.kind === 'transport') {
+          if (hit.enabled) press(hit.controlId, input);
+          guideConvo.key({ key: 'Enter', code: 'Enter' });
+        }
+        return true;
+      }
+      if (hit.kind === 'take') {
+        row = hit.index;
+        if (event.type === 'pointerdown') {
+          const chosen = takes()[row];
+          if (!chosen?.playable) say(chosen?.status || 'NOTHING TO PLAY');
+          else { onPlay?.(chosen.roomId); browsing = false; }
+        }
+        return true;
+      }
+      if (hit.kind === 'transport') {
+        cursor = hit.index;
+        if (event.type === 'pointerdown') {
+          if (key()?.enabled) press(hit.controlId, input);
+          activate();
+        }
+      }
+      return true;
     },
 
     render() {
@@ -248,7 +344,7 @@ export function makeRecorderScene({
       });
 
       const showNotice = notice && t < noticeUntil;
-      drawRecorderFace({
+      const face = {
         ...(live.face || {}),
         mode,
         rect,
@@ -270,21 +366,31 @@ export function makeRecorderScene({
         // the machine talks about itself.
         note: showNotice ? notice : (active && !active.enabled ? active.reason : (live.note || '')),
         noteTheme: showNotice || (active && !active.enabled) ? 'amber' : (live.noteTheme || 'green'),
+        // The footer says how to WORK the machine, not what is on it. It used to
+        // reprint the key list with a caret, which put REC / PLAY / TAKES on the
+        // panel twice — once as the key cluster against the right bezel and once
+        // as a menu along the foot. The caret moved to the keys themselves.
         footer: guideConvo
           ? (guideConvo.view()?.pending?.options?.length ? 'SELECT · ENTER TRANSMIT' : 'ENTER CONTINUE')
           : browsingNow
           ? 'ENTER PLAY · R CLOSE'
-          : fitText(list.map((entry) => `${entry.id === active?.id ? '▶' : ' '}${entry.label}`).join('  '), Math.max(8, rect.w - 6)),
+          : 'UP DOWN SELECT · ENTER PRESS · R CLOSE',
         buttons: { w: 6, keys: list.map((entry) => ({
+          id: entry.id,
+          ...recorderControlState(entry.id, { ...live, browsing: browsingNow }),
           label: entry.label,
-          lit: entry.enabled && entry.id === active?.id
-            ? (entry.id === RECORDER_KEY.REC || entry.id === RECORDER_KEY.STOP ? 'rec' : 'play')
-            : null,
+          selected: entry.id === active?.id,
+          // A key the machine cannot honour here is out of service, not absent:
+          // the cap and printed legend stay readable, but its lamp stays off.
+          // The readout explains a refused press.
+          enabled: entry.enabled !== false,
         })) },
-      });
+      };
+      hitRegions = recorderHitRegions(face);
+      drawRecorderFace(face);
     },
 
-    exit() { closed = true; guideConvo?.stop?.(); guideConvo = null; guide = null; },
+    exit() { closed = true; clearControls(); guideConvo?.stop?.(); guideConvo = null; guide = null; },
 
     // The pattern the bag established: everything a headless test needs, and
     // nothing the game reads.
@@ -294,6 +400,7 @@ export function makeRecorderScene({
         guide: guide ? { id: guide.id || 'listen', view: guideConvo?.view?.() || null } : null,
         keys: keys().map((entry) => ({ id: entry.id, enabled: entry.enabled, reason: entry.reason || '' })),
         selectedKey: key()?.id || null,
+        hitRegions: hitRegions.map((region) => ({ ...region })),
       };
     },
   };

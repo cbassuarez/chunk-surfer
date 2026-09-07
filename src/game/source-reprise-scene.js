@@ -3,6 +3,7 @@
 // this. The code slab, lossy old room, playerShadow and transport do the work.
 
 import { uiFill, uiLine, uiSize, uiText } from '../render/ui.js';
+import { drawSourceRepriseCast, drawSourceRepriseScare } from '../render/source-reprise-view.js';
 import { activeInputPromptDevice, promptLine } from './bindings.js';
 
 export const SOURCE_REPRISE_BPM = 168;
@@ -43,8 +44,9 @@ function movementDirection(event = {}) {
 }
 
 function isRecord(event = {}) {
+  if (event.metaKey || event.ctrlKey || event.altKey) return false;
   const key = String(event.code || event.key || '').toLowerCase();
-  return key === 'keyr' || key === 'r' || event.controllerAction === 'record';
+  return key === 'keyr' || key === 'r' || ['record', 'recorder'].includes(event.controllerAction);
 }
 
 function normalizeFrame(value, fallback = {}) {
@@ -57,6 +59,7 @@ function normalizeFrame(value, fallback = {}) {
     renderGroup:text(value?.renderGroup || fallback?.renderGroup),
     spaceId:text(value?.spaceId || fallback?.spaceId || 'conservatory'),
     yaw:Number.isFinite(Number(value?.yaw)) ? Number(value.yaw) : Number(fallback?.yaw) || 0,
+    pitch:Number.isFinite(Number(value?.pitch)) ? Number(value.pitch) : Number(fallback?.pitch) || 0,
   };
 }
 
@@ -71,7 +74,13 @@ function routeFor(plan = {}) {
       roomId:segment.roomId,
     });
     const frames = [...supplied];
-    if (mark && (!frames.length || Math.hypot(frames.at(-1).x - mark.x, frames.at(-1).y - mark.y) > .05)) frames.push(mark);
+    if (mark) {
+      const last = frames.at(-1);
+      // Sampling can stop millimetres short of the recorder. The authentic
+      // punch-in coordinate is authoritative even inside the old .05 tolerance.
+      if (last && last.x === mark.x && last.y === mark.y) frames[frames.length - 1] = mark;
+      else frames.push(mark);
+    }
     // Sparse evidence is visibly worse, and later movements cannot look cleaner
     // merely because they happen to have more samples. Even the first reprise
     // tops out below 100: this is compiled from a route, never restored from one.
@@ -111,7 +120,8 @@ function routePose(segment, step) {
     roomId:b.roomId || a.roomId,
     renderGroup:b.renderGroup || a.renderGroup,
     spaceId:b.spaceId || a.spaceId || 'conservatory',
-    yaw:a.yaw + (b.yaw - a.yaw) * mix,
+    yaw:a.yaw + Math.atan2(Math.sin(b.yaw - a.yaw), Math.cos(b.yaw - a.yaw)) * mix,
+    pitch:a.pitch + (b.pitch - a.pitch) * mix,
   };
 }
 
@@ -146,6 +156,7 @@ export function makeSourceRepriseScene({
   worldBacked = false,
   reducedMotion = false,
   reducedFlash = false,
+  returnClockSeconds = null,
   onDryClick = () => {},
   onSeam = () => {},
   onPhase = () => {},
@@ -166,6 +177,14 @@ export function makeSourceRepriseScene({
   let heldDirection = 0;
   let walkAccumulator = 0;
   let seamFlash = 0;
+  let recordHeld = false;
+  let returnStartedAt = null;
+  let returnElapsed = 0;
+
+  const returnClock = () => {
+    const value = returnClockSeconds?.();
+    return Number.isFinite(value) ? value : null;
+  };
 
   const segment = () => route[Math.min(segmentIndex, Math.max(0, route.length - 1))] || null;
   const atMark = () => phase === 'armed';
@@ -232,12 +251,15 @@ export function makeSourceRepriseScene({
   }
 
   function pressRecord() {
-    if (!atMark() || committed) {
+    if (committed) return true;
+    if (!atMark()) {
       dryClick = .90;
       onDryClick();
       return true;
     }
     committed = true;
+    returnStartedAt = returnClock();
+    returnElapsed = 0;
     setPhase('jumpscare', { shadow:false });
     onShadowFrame(null);
     // The checkpoint write happens before the scare. If the process dies on
@@ -281,7 +303,7 @@ export function makeSourceRepriseScene({
         // The room initially resolves in the saved direction, and every bad
         // seam briefly reacquires it. Between those edits the player may look
         // freely; the replay owns the route, not their neck.
-        ...((phase === 'unfold' || seamFlash > 0) ? { yaw:current.yaw } : {}),
+        ...((phase === 'unfold' || seamFlash > 0) ? { yaw:current.yaw, pitch:current.pitch } : {}),
         suppressActors:true,
         sensoryProfile:'source-reprise',
       };
@@ -308,39 +330,73 @@ export function makeSourceRepriseScene({
         fault:fault(),
         seamFlash,
         recordRefused:dryClick > 0,
+        returnElapsed,
         elapsed,
       };
     },
 
     update(dt) {
-      const delta = Math.max(0, Number(dt) || 0);
-      elapsed += delta;
+      const delta = Number.isFinite(Number(dt)) ? Math.max(0, Number(dt)) : 0;
       dryClick = Math.max(0, dryClick - delta);
       seamFlash = Math.max(0, seamFlash - delta);
-      if (phase === 'traverse' && heldDirection) {
-        walkAccumulator += delta;
-        while (walkAccumulator >= .18 && phase === 'traverse') {
-          walkAccumulator -= .18;
-          walk(heldDirection);
-        }
+      let remaining = delta;
+      if (committed) {
+        // Simulation dt is capped by the main loop. Anchor this one musical
+        // gesture to the score clock so a slow frame cannot miss its downbeat.
+        const now = returnClock();
+        const next = now !== null && returnStartedAt !== null
+          ? Math.max(returnElapsed, now - returnStartedAt)
+          : returnElapsed + delta;
+        remaining = next - returnElapsed;
+        returnElapsed = next;
       }
-      if (phase === 'cast' && elapsed >= SOURCE_REPRISE_CAST_SECONDS) setPhase('unfold');
-      else if (phase === 'unfold' && elapsed >= SOURCE_REPRISE_UNFOLD_SECONDS) {
-        setPhase(route.length ? 'traverse' : 'recognition');
-      } else if (phase === 'recognition') {
-        syncShadow();
-        if (elapsed >= SOURCE_REPRISE_RECOGNITION_SECONDS) setPhase('armed');
-      } else if (phase === 'jumpscare' && elapsed >= SOURCE_REPRISE_JUMPSCARE_SECONDS) setPhase('rupture', { shadow:false });
-      // R starts one four-beat count shared with the score. The white-frame
-      // scare occupies its head; it is not added on top of the four beats.
-      else if (phase === 'rupture' && elapsed >= SOURCE_REPRISE_RETURN_SECONDS - SOURCE_REPRISE_JUMPSCARE_SECONDS && !returned) {
-        returned = true;
-        onDone({ id:plan?.id || '' });
+      // Consume the remainder across phase boundaries. Discarding it makes
+      // each edit add another frame, stretching the promised four-beat return.
+      while (remaining > 0 && !returned) {
+        if (phase === 'traverse') {
+          if (!heldDirection) { elapsed += remaining; break; }
+          const consumed = Math.min(remaining, .18 - walkAccumulator);
+          elapsed += consumed;
+          walkAccumulator += consumed;
+          remaining -= consumed;
+          if (walkAccumulator >= .18 - 1e-9) {
+            walkAccumulator = 0;
+            walk(heldDirection);
+          }
+          continue;
+        }
+        const duration = {
+          cast:SOURCE_REPRISE_CAST_SECONDS,
+          unfold:SOURCE_REPRISE_UNFOLD_SECONDS,
+          recognition:SOURCE_REPRISE_RECOGNITION_SECONDS,
+          jumpscare:SOURCE_REPRISE_JUMPSCARE_SECONDS,
+          rupture:SOURCE_REPRISE_RETURN_SECONDS - SOURCE_REPRISE_JUMPSCARE_SECONDS,
+        }[phase];
+        if (duration === undefined) { elapsed += remaining; break; }
+        const consumed = Math.min(remaining, Math.max(0, duration - elapsed));
+        elapsed += consumed;
+        remaining -= consumed;
+        if (phase === 'recognition') syncShadow();
+        if (elapsed < duration - 1e-9) break;
+        if (phase === 'cast') setPhase('unfold');
+        else if (phase === 'unfold') setPhase(route.length ? 'traverse' : 'recognition');
+        else if (phase === 'recognition') setPhase('armed');
+        else if (phase === 'jumpscare') setPhase('rupture', { shadow:false });
+        else if (phase === 'rupture') {
+          returned = true;
+          onDone({ id:plan?.id || '' });
+        }
       }
     },
 
     key(event) {
-      if (isRecord(event)) return pressRecord();
+      if (isRecord(event)) {
+        // Holding R from the locked part of the route is not a new punch-in.
+        // It must be released and deliberately pressed after the mark arms.
+        if (event.repeat || recordHeld) return true;
+        recordHeld = true;
+        return pressRecord();
+      }
       if (phase !== 'traverse') return true;
       const direction = movementDirection(event);
       if (!direction) return true;
@@ -350,6 +406,7 @@ export function makeSourceRepriseScene({
     },
 
     keyup(event) {
+      if (isRecord(event)) { recordHeld = false; return true; }
       if (movementDirection(event)) {
         heldDirection = 0;
         walkAccumulator = 0;
@@ -372,43 +429,12 @@ export function makeSourceRepriseScene({
       const takeNumber = current?.takeOrdinal || current?.index + 1 || 1;
 
       if (phase === 'cast') {
-        uiFill(0, 0, cols, rows, 'rgba(1,2,3,0.99)');
-        const progress = clamp(elapsed / SOURCE_REPRISE_CAST_SECONDS, 0, 1);
-        const slabW = Math.max(28, Math.min(cols - 4, Math.floor(cols * .66)));
-        const slabX = Math.round(cols + 2 - progress * (cols * .5 + slabW * .5));
-        const slabY = Math.max(2, Math.floor(rows * .23));
-        // Keep the thrower on screen long enough to make the causality
-        // unmistakable: the pale executable crosses its arm and eats the
-        // Source silhouette as it comes at the camera.
-        const sourceX = Math.max(2, cols - 15);
-        const sourceY = Math.max(2, Math.floor(rows * .31));
-        uiFill(sourceX + 4, sourceY + 2, 7, Math.max(7, Math.floor(rows * .27)), 'rgba(55,78,96,0.54)');
-        uiFill(sourceX + 5, sourceY, 5, 3, 'rgba(235,53,42,0.72)');
-        uiText(Math.max(1, sourceX - 9), sourceY + 4, '<=======', 'ui-danger', .92);
-        uiText(sourceX + 2, sourceY + Math.max(8, Math.floor(rows * .29)), 'SOURCE()', 'ui-blue', .68);
-        uiFill(slabX, slabY, slabW, Math.max(9, Math.floor(rows * .42)), 'rgba(214,214,199,0.94)');
-        uiText(slabX + 2, slabY + 1, 'SOURCE.throw(game.code)', 'ui-danger');
-        uiText(slabX + 2, slabY + 3, `recordAction("${text(plan?.id || 'reprise')}")`, 'ui-ink');
-        uiText(slabX + 2, slabY + 5, `roll({ take:${takeNumber}, room:"${text(current?.roomId || 'unknown')}" })`, 'ui-ink');
-        uiText(slabX + 2, slabY + 7, `return playerShadow // ${label}`, 'ui-danger');
-        uiText(Math.max(1, slabX - 3), slabY + 2, '///', 'ui-danger', .8);
+        drawSourceRepriseCast({ progress:clamp(elapsed / SOURCE_REPRISE_CAST_SECONDS, 0, 1),
+          id:plan?.id, roomId:current?.roomId, takeNumber, reducedMotion, reducedFlash });
         return;
       }
       if (phase === 'jumpscare') {
-        uiFill(0, 0, cols, rows, reducedFlash ? 'rgba(224,224,211,0.92)' : 'rgba(248,248,235,0.995)');
-        const faceW = Math.max(24, Math.min(cols - 6, Math.floor(cols * .48)));
-        const faceH = Math.max(13, Math.min(rows - 4, Math.floor(rows * .72)));
-        const faceX = Math.floor((cols - faceW) / 2);
-        const faceY = Math.floor((rows - faceH) / 2);
-        uiFill(faceX, faceY, faceW, faceH, 'rgba(3,5,7,0.96)');
-        const eyeW = Math.max(4, Math.floor(faceW * .22));
-        const eyeY = faceY + Math.floor(faceH * .28);
-        uiFill(faceX + Math.floor(faceW * .14), eyeY, eyeW, Math.max(2, Math.floor(faceH * .13)), 'rgba(246,58,43,0.96)');
-        uiFill(faceX + faceW - Math.floor(faceW * .14) - eyeW, eyeY, eyeW, Math.max(2, Math.floor(faceH * .13)), 'rgba(246,58,43,0.96)');
-        const mouthW = Math.max(10, Math.floor(faceW * (pulse && !reducedMotion ? .72 : .54)));
-        uiFill(Math.floor((cols - mouthW) / 2), faceY + Math.floor(faceH * .66), mouthW, Math.max(2, Math.floor(faceH * .13)), 'rgba(224,224,211,0.92)');
-        uiText(Math.floor((cols - 18) / 2), faceY + faceH - 2, 'SOURCE // ACCEPTED', 'ui-danger');
-        if (!reducedMotion && pulse) uiFill(0, Math.max(0, eyeY - 1), cols, 1, 'rgba(246,58,43,0.42)');
+        drawSourceRepriseScare({ progress:clamp(elapsed / SOURCE_REPRISE_JUMPSCARE_SECONDS, 0, 1), reducedMotion, reducedFlash });
         return;
       }
       if (phase === 'rupture') {
@@ -474,10 +500,14 @@ export function makeSourceRepriseScene({
           : 'SOURCE COPY  /  PLAY >  /  REC LOCKED';
       uiText(2, rows - 4, transport, phase === 'armed' ? 'ui-amber' : 'ui-secondary', phase === 'armed' ? 1 : .68);
       const action = activeInputPromptDevice() === 'controller'
-        ? promptLine([{ action:'record', label:'PUNCH IN' }])
+        ? promptLine([{ action:'recorder', label:'PUNCH IN' }])
         : '[R] PUNCH IN';
-      if (phase === 'armed') uiText(Math.max(2, cols - action.length - 2), rows - 4, action, pulse ? 'ui-danger' : 'ui-amber');
-      else if (phase === 'traverse') uiText(Math.max(2, cols - 25), rows - 4, '[W/S] FOLLOW THE SHADOW', 'ui-secondary', .76);
+      const follow = activeInputPromptDevice() === 'controller'
+        ? promptLine([{ action:'move', label:'FOLLOW THE SHADOW' }])
+        : '[W/S] FOLLOW THE SHADOW';
+      const actionRow = cols < transport.length + Math.max(action.length,follow.length) + 6 ? rows - 2 : rows - 4;
+      if (phase === 'armed') uiText(Math.max(2, cols - action.length - 2), actionRow, action, reducedMotion || reducedFlash ? 'ui-amber' : pulse ? 'ui-danger' : 'ui-amber');
+      else if (phase === 'traverse') uiText(Math.max(2, cols - follow.length - 2), actionRow, follow, 'ui-secondary', .76);
       if (dryClick > 0) {
         const refused = 'REC REFUSED // MARK MISMATCH';
         const refusedY=Math.max(6,Math.floor(rows*.43));

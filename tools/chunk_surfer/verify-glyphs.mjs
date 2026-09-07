@@ -23,7 +23,7 @@ const browser = await puppeteer.launch({
 const page = await browser.newPage();
 await page.setViewport({ width: 1280, height: 760 });
 page.on('pageerror', (e) => console.log('  PAGEERROR:', String(e).slice(0, 200)));
-await page.goto(`http://127.0.0.1:${PORT}/index.html?nomic=1&sam=0&diffusion=${encodeURIComponent(LENS)}`,
+await page.goto(`http://127.0.0.1:${PORT}/index.html?nodisplaynotice=1&nomic=1&sam=0&diffusion=${encodeURIComponent(LENS)}`,
   { waitUntil: 'domcontentloaded', timeout: 60000 });
 await page.waitForFunction(() => window.__scenes?.top?.()?.id === 'eula', { timeout: 60000 });
 await new Promise((r) => setTimeout(r, 1400));

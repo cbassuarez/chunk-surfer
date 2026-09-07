@@ -1,7 +1,7 @@
 // Query-driven system laboratory: ?hushaudiolab=1
 
 import { uiCenter, uiScrim, uiSize, uiText } from '../render/ui.js';
-import { drawMachinePanel, drawVfdMeter } from '../render/presentation.js';
+import { withMachinePanel, drawVfdMeter } from '../render/presentation.js';
 import { monitorSnapshotForRms } from '../audio/monitor.js';
 import { propagateNoise, isAudibleToHush } from '../audio/acoustic-propagation.js';
 import { freshHushAudition, ingestHeardNoise, tickHushAudition } from './hush-audition.js';
@@ -112,10 +112,10 @@ export function makeHushAudioLabScene({ playCue = null, applyField = null, reset
       uiScrim(1);
       const w = Math.min(92, cols - 4), h = Math.min(27, rows - 2);
       const x = Math.floor((cols - w) / 2), y = Math.floor((rows - h) / 2);
-      const body = drawMachinePanel(x, y, w, h, {
+      withMachinePanel(x, y, w, h, {
         theme: 'green', wordmark: 'AUDIOCORP', label: 'HUSH AUDIO LAB', source: current().id.toUpperCase(),
         footer: '[C] CASE · [H] DIST · [D] DOOR · [G] GAIN · [P] PRESSURE · [A] FX · [R] RESET', meter: false,
-      });
+      }, (body) => {
       const left = body.x, top = body.y + 1;
       const col = Math.floor(body.w / 2);
       uiText(left, body.y, current().label, 'ui-primary');
@@ -145,6 +145,7 @@ export function makeHushAudioLabScene({ playCue = null, applyField = null, reset
       uiText(right, top + 12, 'THE OPERATOR HEARS THE HUSH', 'ui-label');
       uiText(right, top + 13, 'THROUGH MONITOR GAIN.', 'ui-label');
       uiCenter(body.y + body.h - 1, `LAST RESET ${Math.round(performance.now() - lastAt)} ms`, 'ui-secondary', .72);
+      });
     },
     debugState() { return { case: current(), audition, propagation, field, intent, pressure: pressure(), monitorGain: monitorGain(), doorClosed, reducedEffects, hush: hushPosition() }; },
   };

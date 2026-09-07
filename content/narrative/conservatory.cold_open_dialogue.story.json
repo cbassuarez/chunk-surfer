@@ -1655,25 +1655,25 @@
         },
         {
           "who": "guard",
-          "text": "If it hisses, stop talking and wait for it to settle. If somebody answers who is not Martin — do not make a conversation out of it.",
+          "text": "Let go of transmit when you finish. Give him a second. The battery clip's worn; keep the heel of the set seated.",
           "id": "guard.radio.line.3"
         }
       ],
       "revisitLines": [
         {
           "who": "guard",
-          "text": "Channel two. Martin for directions. On the hour otherwise. Do not shake it.",
+          "text": "Channel two. Martin for directions. Keep the battery clip seated.",
           "id": "guard.radio.revisit.line.1"
         }
       ],
       "choices": [
         {
-          "text": "what happens if I shake it?",
+          "text": "is the battery loose?",
           "goto": "guard.radio.shake",
           "id": "guard.radio.choice.1"
         },
         {
-          "text": "in what way does it go funny",
+          "text": "how do I know I have lost contact?",
           "goto": "guard.radio.loud",
           "id": "guard.radio.choice.3",
           "hideWhenAsked": true
@@ -1692,12 +1692,12 @@
       "lines": [
         {
           "who": "guard",
-          "text": "Nothing. That is why I said do not.",
+          "text": "The clip, not the battery. It holds if you leave it alone.",
           "id": "guard.radio.shake.line.1"
         },
         {
           "who": "direction",
-          "text": "He laughs. He has been waiting all week to say that to somebody.",
+          "text": "He seats the heel with his thumb before he hands it over. A small click follows after his hand has left it.",
           "id": "guard.radio.shake.line.2"
         }
       ],
@@ -3309,27 +3309,27 @@
       "lines": [
         {
           "who": "me",
-          "text": "You said do not shake the radio. In what way does it go funny.",
+          "text": "How do I know I have lost contact?",
           "id": "guard.radio.loud.line.1"
         },
         {
           "who": "guard",
-          "text": "Channel two stops being channel two.",
+          "text": "Lamp goes out. Normally.",
           "id": "guard.radio.loud.line.2"
         },
         {
           "who": "me",
-          "text": "And becomes what.",
+          "text": "Normally?",
           "id": "guard.radio.loud.line.3"
         },
         {
           "who": "guard",
-          "text": "Loud.",
+          "text": "Old set. Listen for Martin, not the lamp.",
           "id": "guard.radio.loud.line.4"
         },
         {
           "who": "direction",
-          "text": "He says it like a man reporting the weather. Then he turns the television up, remembers the sound is off, and turns it back down.",
+          "text": "He turns the television down before he checks the next name on the sheet.",
           "id": "guard.radio.loud.line.5"
         }
       ],

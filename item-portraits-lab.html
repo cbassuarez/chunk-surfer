@@ -1,0 +1,22 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Item portrait review</title>
+<style>body{margin:0;background:#151a15;color:#d1cfb5;font:14px monospace}main{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;padding:28px}.item{background:#22291f;padding:16px}.item img{width:100%;aspect-ratio:4/3;object-fit:contain}.item h2{font:14px monospace;margin:8px 0}#bake{position:fixed;left:-2000px;top:0;width:512px;height:384px}</style>
+<main id="grid"></main><canvas id="bake"></canvas>
+<script type="module">
+import {createAsciiObject} from './src/render/vendor/ascii-object/renderer.js';
+import {ITEM_PORTRAITS,ITEM_ASCII_OPTIONS} from './src/data/item-portraits.js';
+const grid=document.querySelector('#grid');
+for(const item of Object.values(ITEM_PORTRAITS)){const el=document.createElement('section');el.className='item';el.innerHTML=`<img src="/${item.large}" alt="${item.id}"><h2>${item.id}</h2>`;grid.appendChild(el);}
+let loaded=null,failed=null;
+const canvas=document.querySelector('#bake');
+const renderer=createAsciiObject({canvas},{...ITEM_ASCII_OPTIONS,onLoad:()=>loaded=true,onError:e=>failed=String(e)});
+window.__portraits={items:Object.values(ITEM_PORTRAITS),async bake(id,size=512,ascii=true){
+ const item=ITEM_PORTRAITS[id];loaded=false;failed=null;
+ canvas.style.width=size+'px';canvas.style.height=Math.round(size*.75)+'px';
+ renderer.setOptions({...ITEM_ASCII_OPTIONS,src:`/${item.model}`,scale:item.scale,ascii,cellSize:size===192?3:ITEM_ASCII_OPTIONS.cellSize,onLoad:()=>loaded=true,onError:e=>failed=String(e)});renderer.resetView();renderer.resize();
+ // Same model can be rendered at two sizes without another load callback.
+ if(window.__lastModel===id)loaded=true;window.__lastModel=id;
+ for(let i=0;i<400&&!loaded&&!failed;i++)await new Promise(r=>setTimeout(r,20));
+ if(failed||!loaded)throw new Error(failed||'Model load timed out');
+ renderer.renderFrame();return canvas.toDataURL('image/webp',.94);
+}};
+</script></html>

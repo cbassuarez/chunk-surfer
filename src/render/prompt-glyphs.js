@@ -15,6 +15,8 @@
 
 import { uiText } from './ui.js';
 import { drawPadGlyph } from './pad-glyphs.js';
+import { VERB_ICON_CELLS, drawVerbIcon, hasVerbIcon } from './verb-icons.js';
+import { drawKeycap, drawPrintedText } from './keycap.js';
 import {
   activeControllerFamily,
   activeInputPromptDevice,
@@ -53,6 +55,9 @@ export function promptPartsWidth(parts = [], options = {}) {
     const sep = i ? SEPARATOR.length : 0;
     if (part.text != null && !part.action) return total + sep + String(part.text).length;
     const glyph = inputGlyph(part.action, options);
+    // An icon replaces the word, not the key: `[R]` plus a reel, never a reel on
+    // its own. See render/verb-icons.js.
+    if (part.icon && hasVerbIcon(part.icon)) return total + sep + glyph.cells + VERB_ICON_CELLS;
     const label = part.label ? ` ${part.label}` : '';
     return total + sep + glyph.cells + label.length;
   }, 0);
@@ -61,13 +66,17 @@ export function promptPartsWidth(parts = [], options = {}) {
 // Draws the line and returns the width it consumed. Glyph prompts sit on the
 // same baseline as the label text, so a mixed line stays on one row.
 export function drawPromptParts(x, y, parts = [], {
-  role = 'ui-secondary', labelRole = null, alpha = 1, cols = 120, ...options
+  role = 'ui-secondary', labelRole = null, alpha = 1, cols = 120, printed = false,
+  printedInk = '#b9bda9', printedFinish = 'faceplate', darkPanel = true, ...options
 } = {}) {
   let cx = x;
+  const legend = (at, text, a = alpha) => printed
+    ? drawPrintedText(at,y,text,{w:String(text).length,ink:printedInk,alpha:a,finish:printedFinish,darkPanel})
+    : uiText(at,y,text,labelRole || role,a);
   normalizeParts(parts).forEach((part, i) => {
-    if (i) { uiText(cx, y, SEPARATOR, role, alpha * 0.6); cx += SEPARATOR.length; }
+    if (i) { legend(cx,SEPARATOR,alpha*.6); cx += SEPARATOR.length; }
     if (part.text != null && !part.action) {
-      uiText(cx, y, String(part.text), labelRole || role, alpha);
+      legend(cx,String(part.text));
       cx += String(part.text).length;
       return;
     }
@@ -77,11 +86,22 @@ export function drawPromptParts(x, y, parts = [], {
         w: GLYPH_CELLS, h: 1.6, family: glyph.family, alpha, cols,
       });
     } else {
-      uiText(cx, y, glyph.text, role, alpha);
+      // A KEY, NOT A DESCRIPTION OF ONE. `inputPrompt` returns `[R]` / `[SPACE]`
+      // because a text grid has only brackets to say "this is a key with". The
+      // bracket run is exactly as wide as the cap that replaces it, so nothing
+      // above this has to know the difference — promptPartsWidth still measures
+      // `glyph.cells` and every right-aligned rail lands where it always did.
+      const key = /^\[(.+)\]$/.exec(glyph.text);
+      if (key) drawKeycap(cx, y - .12, glyph.cells, 1.25, { label: key[1], alpha });
+      else legend(cx,glyph.text);
     }
     cx += glyph.cells;
+    if (part.icon && hasVerbIcon(part.icon)) {
+      cx += drawVerbIcon(part.icon, cx, y, { alpha, role: labelRole || role, cols, ink: printed ? printedInk : null });
+      return;
+    }
     if (part.label) {
-      uiText(cx, y, ` ${part.label}`, labelRole || role, alpha);
+      legend(cx,` ${part.label}`);
       cx += String(part.label).length + 1;
     }
   });

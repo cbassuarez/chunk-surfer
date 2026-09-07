@@ -126,10 +126,38 @@ import {
 // player needs.
 {
   const marks = [{ db: -14.9, label: 'SPOIL', kind: 'spoil' }, { db: -8, label: 'CATCH', kind: 'catch' }];
+  // SPOIL (-14.9) and CATCH (-8.0) are 6.9 dB apart on a -48..0 scale, which on
+  // the recorder's own 42-cell bar is six cells — and two five-letter words need
+  // eleven. So on a narrow meter only the one that matters is LABELLED.
+  //
+  // Both hairlines still stand through the bar: they come from meterMarks, not
+  // from meterMarkBoxes. The player sees two red lines and reads the one that
+  // ends the take he is holding.
   const boxes = meterMarkBoxes(marks, 44);
-  assert.deepEqual(boxes.map((b) => b.mark.label), ['SPOIL', 'CATCH']);
-  assert.ok(boxes[0].right <= boxes[1].left + 1e-9 || boxes[0].left >= boxes[1].right,
-    'the legends themselves do not overlap');
+  assert.deepEqual(boxes.map((b) => b.mark.label), ['SPOIL'],
+    'a narrow bar labels the line that ends the take');
+  assert.deepEqual(meterMarkBoxes(marks, 60).map((b) => b.mark.label), ['SPOIL', 'CATCH'],
+    'and a wide one labels both');
+  assert.equal(meterMarks(marks, 44).length, 2, 'but both hairlines are always drawn');
+  // THE LEGENDS MUST NOT COLLIDE WITH EACH OTHER EITHER. SPOIL sits at -14.9
+  // and CATCH at -8.0 — about five cells apart on the recorder's own panel, and
+  // both words are five characters, so they printed as `SPOILCATCH`.
+  for (const w of [16, 20, 26, 34, 44, 60]) {
+    const placed = meterMarkBoxes(
+      [...marks, { db: -20.9, label: 'FLOOR', kind: 'floor' }], w);
+    for (let i = 1; i < placed.length; i += 1) {
+      // A GAP. Touching exactly prints as one word, and the draw call rounds
+      // to whole cells, which can close a fractional gap that passed here.
+      assert.ok(Math.round(placed[i].left) >= Math.round(placed[i - 1].right) + 1,
+        `at width ${w}, "${placed[i - 1].mark.label}" and "${placed[i].mark.label}" run together`);
+    }
+    // And what survives a squeeze is the mark that matters: SPOIL ends the take
+    // you are holding. Placing left-to-right kept FLOOR and dropped SPOIL.
+    if (placed.length) {
+      assert.ok(placed.some((box) => box.mark.kind === 'spoil'),
+        `at width ${w} the line that ends the take is the one that survives`);
+    }
+  }
 
   const plain = meterTicks(44).map((t) => t.label);
   const avoiding = meterTicks(44, { avoid: boxes }).map((t) => t.label);

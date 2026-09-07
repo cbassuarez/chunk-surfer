@@ -32,7 +32,7 @@ const wait = (f, t = 300000) => page.waitForFunction(f, { timeout: t });
 const top = () => page.evaluate(() => window.__scenes?.top?.()?.id || null);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-await page.goto(`http://127.0.0.1:${PORT}/index.html?nomic=1&sam=0&skiptut=1&nothink=0&diffusion=${encodeURIComponent(LENS)}`,
+await page.goto(`http://127.0.0.1:${PORT}/index.html?nodisplaynotice=1&nomic=1&sam=0&skiptut=1&nothink=0&diffusion=${encodeURIComponent(LENS)}`,
   { waitUntil: 'domcontentloaded', timeout: 60000 });
 await wait(() => !!window.__scenes?.top?.()?.id);
 if (await top() === 'eula') { await page.keyboard.press('Enter'); await wait(() => window.__scenes?.top?.()?.id !== 'eula', 30000); }

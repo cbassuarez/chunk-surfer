@@ -1,0 +1,59 @@
+{
+  "checks": [
+    "automatic splash",
+    "battle reveal",
+    "authored dialogue before preparation",
+    "pointer equipment assignment",
+    "skill patch and pull",
+    "keyboard tabs",
+    "combat frozen during preparation",
+    "pause hides and restores module",
+    "compact and 150% scale",
+    "save commits on READY",
+    "selected gear and skills reach reducer",
+    "turn timer starts after READY",
+    "first action accepts input"
+  ],
+  "errors": [],
+  "layout": {
+    "case": {
+      "x": 20.25,
+      "y": 171.875,
+      "right": 749.625,
+      "bottom": 575,
+      "w": 729.375,
+      "h": 403.125
+    },
+    "ready": {
+      "x": 549.75,
+      "y": 512.375,
+      "right": 729.75,
+      "bottom": 557.375,
+      "w": 180,
+      "h": 45
+    },
+    "page": {
+      "x": 40.125,
+      "y": 284.75,
+      "right": 729.75,
+      "bottom": 490.25,
+      "w": 689.625,
+      "h": 205.5
+    },
+    "viewport": {
+      "w": 960,
+      "h": 640
+    }
+  },
+  "saved": {
+    "top": [
+      "light",
+      "recorder",
+      "radio",
+      "interface"
+    ],
+    "skills": [
+      "torch.afterimage"
+    ]
+  }
+}

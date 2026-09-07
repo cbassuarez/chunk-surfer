@@ -20,7 +20,7 @@ fs.mkdirSync(output, { recursive: true });
 // One representative arrival for every distinct ending. Arrival variants are
 // narrative branches inside Sacrifice; the physical contract belongs to the
 // nine route IDs below.
-const RUNS = [
+const ALL_RUNS = [
   { id: 'sacrifice', arrival: 'agreed', note: 'chose to stay, named her' },
   { id: 'helped', arrival: 'agreed', note: 'the coffee' },
   { id: 'inversion', arrival: 'escaped', note: 'out through the other door' },
@@ -31,6 +31,10 @@ const RUNS = [
   { id: 'tower-won', arrival: 'carried', note: 'dragged him through the west doors' },
   { id: 'tower-lost', arrival: 'defeated', note: 'the completed peal' },
 ];
+const only = String(process.env.ONLY || '').trim();
+const requested = only ? only.split(',').map((id) => id.trim()) : null;
+if(requested?.some((id)=>!ALL_RUNS.some((run)=>run.id===id)))throw new Error(`Unknown ending requested by ONLY=${only}`);
+const RUNS = process.env.LEGS_ONLY==='1'?[]:requested?ALL_RUNS.filter((run)=>requested.includes(run.id)):ALL_RUNS;
 
 const browser = await puppeteer.launch({
   executablePath: process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
@@ -38,6 +42,7 @@ const browser = await puppeteer.launch({
   args: ['--use-angle=metal', '--no-sandbox', '--autoplay-policy=no-user-gesture-required',
     '--disable-renderer-backgrounding', '--disable-background-timer-throttling'],
 });
+try {
 const page = await browser.newPage();
 await page.setViewport({ width: 1280, height: 760 });
 await page.evaluateOnNewDocument(() => {
@@ -45,9 +50,19 @@ await page.evaluateOnNewDocument(() => {
 });
 const errors = [];
 page.on('pageerror', (e) => errors.push(e.message));
-const wait = (f, t = 240000) => page.waitForFunction(f, { timeout: t });
+const wait = async (f, t = 240000) => {
+  try{return await page.waitForFunction(f,{timeout:t});}
+  catch(error){
+    console.error('ending acceptance wait failed',await page.evaluate(()=>({
+      scene:window.__scenes?.top?.()?.id,view:window.__scenes?.top?.()?.view?.(),
+    })).catch(()=>null));
+    await page.screenshot({path:path.join(output,'wait-failure.png')}).catch(()=>{});
+    throw error;
+  }
+};
 
-await page.goto('http://127.0.0.1:5199/index.html?nomic=1&sam=0&skiptut=1&nothink=0&diffusion='
+const baseURL=process.env.BASE_URL||'http://127.0.0.1:5199';
+await page.goto(`${baseURL}/index.html?nodisplaynotice=1&nomic=1&sam=0&skiptut=1&nothink=0&diffusion=`
   + encodeURIComponent('ws://127.0.0.1:5198'), { waitUntil: 'domcontentloaded', timeout: 60000 });
 await wait(() => !!window.__scenes?.top?.()?.id);
 if (await page.evaluate(() => window.__scenes.top().id) === 'eula') {
@@ -115,6 +130,19 @@ for (const run of RUNS) {
     if (top.startsWith('ending-hold:')) {
       frame += 1;
       await page.screenshot({ path: path.join(output, `${stem}-final.png`) });
+      // The native presentation leaves media on the desktop around the game.
+      // Browser acceptance necessarily composes those panes into the canvas,
+      // so take one additional plate of the authored world itself. This is not
+      // a substitute render: it is the same live frame with only the Simulate
+      // DOM layer hidden, and catches weak camera/body/prop staging that a busy
+      // media score could otherwise disguise.
+      await page.evaluate(() => {
+        const sim = document.querySelector('.window-choreography-sim');
+        if (sim) sim.dataset.acceptanceHidden = 'true';
+      });
+      await new Promise((r) => setTimeout(r, 140));
+      await page.screenshot({ path: path.join(output, `${stem}-world.png`) });
+      await page.evaluate(() => document.querySelector('.window-choreography-sim')?.removeAttribute('data-acceptance-hidden'));
       break;
     }
     if (run.id === 'drugged' && top === 'finale') {
@@ -137,6 +165,8 @@ for (const run of RUNS) {
   }
   const physical = await page.evaluate(() => window.__probe?.endingCutscene?.() || null);
   evidence.push({run,dossier,started,physical});
+  if (!physical?.embodiment?.finalHold || !physical?.embodiment?.finalActionId)
+    errors.push(`${run.id}: did not reach its physical final action and held image`);
   console.log(stem.padEnd(28), run.note.padEnd(34), JSON.stringify(dossier),
     'beat', physical?.state?.cursor, 'stage', JSON.stringify(physical?.embodiment), 'frames', frame);
   // Back to a clean world for the next one.
@@ -151,7 +181,7 @@ fs.writeFileSync(path.join(output, 'ending-evidence.json'), JSON.stringify(evide
 // The three objectives are the part of an ending the player is IN, and until now
 // nothing looked at them: the carry went at walking pace and the building did not
 // close behind anybody. Set each one up and let its clock run.
-for (const leg of [
+for (const leg of process.env.SKIP_LEGS==='1'?[]:[
   { id: 'sacrifice', set: () => window.__probe.endObjective('stay'), note: 'the walk back to the screen' },
   { id: 'surfaced', set: () => window.__probe.endObjective('surfaced'), note: 'the carry' },
   { id: 'inversion', set: () => window.__probe.endObjective('inversion'), note: 'the collapse under the run' },
@@ -165,4 +195,7 @@ for (const leg of [
 }
 
 console.log(errors.length ? `page errors: ${errors.slice(0, 4).join(' | ')}` : 'no page errors');
-await browser.close();
+if(errors.length)process.exitCode=1;
+} finally {
+  await browser.close();
+}

@@ -3,6 +3,8 @@
 // physical interface, under pressure.
 
 import { uiDraw, uiFill, uiLine, uiStrokeRect, uiText } from './ui.js';
+import { drawLampButton } from './presentation.js';
+import { drawPrintedText } from './keycap.js';
 import { combatGaugeGeometry, combatGaugeState } from './meter.js';
 import { UI_COLOR, activeTheme } from './palette.js';
 import { drawBagIcon } from './bag-icons.js';
@@ -1302,6 +1304,9 @@ export function drawCombatActionIcon(actionId, x, y, {
   enabled = true,
   counter = false,
   alpha = 1,
+  // Printed on an illuminated cap rather than lit on glass: overrides the tone
+  // and takes no bloom. See presentation.js drawLampButton.
+  ink = null,
 } = {}) {
   uiDraw(({ ctx, dpr, cellW, cellH }) => {
     const box = {
@@ -1328,15 +1333,15 @@ export function drawCombatActionIcon(actionId, x, y, {
       fill ? ctx.fillRect(...args) : ctx.strokeRect(...args);
     };
     const id = String(actionId || '');
-    const color = !enabled ? UI_COLOR.secondary : counter ? '#84e6a1' : active ? UI_COLOR.counter : UI_COLOR.primary;
+    const color = ink || (!enabled ? UI_COLOR.secondary : counter ? '#84e6a1' : active ? UI_COLOR.counter : UI_COLOR.primary);
     ctx.save();
     ctx.strokeStyle = color;
     ctx.fillStyle = color;
-    ctx.globalAlpha = alpha * (enabled ? 1 : .34);
+    ctx.globalAlpha = ink ? alpha : alpha * (enabled ? 1 : .34);
     ctx.lineWidth = Math.max(1, 1.15 * dpr);
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    if (active && enabled) { ctx.shadowColor = color; ctx.shadowBlur = 4 * dpr; }
+    if (active && enabled && !ink) { ctx.shadowColor = color; ctx.shadowBlur = 4 * dpr; }
 
     if (id === 'hold') {
       path([[.5,.06],[.82,.20],[.76,.62],[.5,.92],[.24,.62],[.18,.20]], true);
@@ -1402,44 +1407,59 @@ export function combatActionReadout(move = {}) {
 
 export function drawCombatToolTile(tool, { x, y, w, h = 3, selected = false, focused = false } = {}) {
   const ready = tool?.ready !== false;
-  uiFill(x, y, w, h, selected ? 'rgba(242,168,30,.075)' : 'rgba(255,255,255,.018)');
-  uiStrokeRect(x, y, w, h, selected ? UI_COLOR.amber : UI_COLOR.frame, focused ? .86 : selected ? .46 : .18, focused ? 1.4 : 1);
-  const iconW = Math.min(4.3, Math.max(2.8, w * .34));
-  drawBagIcon(combatToolIcon(tool?.id), x + .35, y + .28, {
-    w: iconW,
-    h: h - .55,
-    active: selected,
-    state: ready ? (selected ? 'active' : 'dim') : 'dim',
-    alpha: ready ? 1 : .28,
-    empty: !ready,
+  // Tool selection really connects that tool. Focus is only the operator's
+  // cursor, and does not power a lamp or depress a switch by itself.
+  const lit = selected && ready;
+  const cap = drawLampButton(x, y, w, Math.max(1.4, h - 1.1), {
+    controlId: `combat:tool:${tool?.id || 'self'}`,
+    enabled: ready, selected: focused, lit, latched: selected && ready,
   });
-  const labelX = x + iconW + .8;
-  const labelW = Math.max(1, Math.floor(w - iconW - 1.1));
-  uiText(labelX, y + .48, String(tool?.label || '').slice(0, labelW), selected ? 'ui-primary' : 'ui-secondary', selected ? 1 : .68);
-  uiText(labelX, y + 1.50, ready ? 'READY' : 'LOCKED', ready ? 'ui-label' : 'ui-danger', ready ? .48 : .55);
+  const face = cap.content;
+  const iconW = Math.min(3.7, Math.max(2.1, face.w * .27));
+  drawBagIcon(combatToolIcon(tool?.id), face.x + .12, face.y + .05, {
+    w: iconW,
+    h: Math.max(.7, face.h - .1),
+    active: false,
+    state: ready ? 'active' : 'dim',
+    alpha: .94,
+    empty: !ready,
+    ink: cap.ink,
+  });
+  drawPrintedText(face.x + iconW + .35, face.y, String(tool?.label || ''), {
+    w: Math.max(1, face.w - iconW - .5), h: face.h, ink: cap.ink, alpha: .98,
+  });
+  // Electronic state changes belong on glass, not in the permanent cap ink.
+  uiText(x + .55, y + h - .92, selected && ready ? 'CONNECTED' : ready ? 'READY' : 'LOCKED',
+    selected && ready ? 'ui-primary' : ready ? 'ui-label' : 'ui-danger', selected && ready ? .88 : .62);
   return { x, y, w, h };
 }
 
-export function drawCombatActionTile(move, { x, y, w, h = 3.2, selected = false, focused = false } = {}) {
+export function drawCombatActionTile(move, { x, y, w, h = 3.2, selected = false, focused = false, executing = false, readout = true } = {}) {
   const enabled = move?.enabled !== false;
   const counters = !!move?.perfect;
-  const color = counters ? '#84e6a1' : selected ? UI_COLOR.primary : UI_COLOR.frame;
-  uiFill(x, y, w, h, selected ? 'rgba(91,240,138,.065)' : 'rgba(255,255,255,.018)');
-  uiStrokeRect(x, y, w, h, color, focused ? .90 : selected ? .50 : .18, focused ? 1.4 : 1);
-  const iconW = Math.min(5.5, Math.max(3.6, w * .28));
-  drawCombatActionIcon(move?.id, x + .35, y + .34, {
+  // A matching counter is an actual circuit indication. Browsing the row is
+  // not: the lamp only reports a match or the action currently being executed.
+  const lit = enabled && (counters || executing);
+  const cap = drawLampButton(x, y, w, Math.max(1.4, h - (readout ? 1.1 : 0)), {
+    controlId: `combat:action:${move?.id || 'unknown'}`,
+    enabled, selected: focused, lit, color: counters ? 'green' : 'amber',
+  });
+  const face = cap.content;
+  const iconW = Math.min(4.2, Math.max(2.4, face.w * .24));
+  drawCombatActionIcon(move?.id, face.x + .12, face.y + .05, {
     w: iconW,
-    h: h - .68,
-    active: selected,
+    h: Math.max(.7, face.h - .1),
+    active: false,
     enabled,
     counter: counters,
-    alpha: selected ? 1 : .72,
+    alpha: .94,
+    ink: cap.ink,
   });
-  const labelX = x + iconW + .85;
-  const labelW = Math.max(1, Math.floor(w - iconW - 1.15));
-  uiText(labelX, y + .48, String(move?.label || '').slice(0, labelW), !enabled ? 'ui-secondary' : counters ? 'ui-counter' : selected ? 'ui-primary' : 'ui-secondary', selected ? 1 : .72);
-  uiText(labelX, y + 1.52, combatActionReadout(move).slice(0, labelW), !enabled ? 'ui-danger' : 'ui-label', !enabled ? .52 : .58);
-  if (counters) uiText(x + w - 2, y + .35, '◆', 'ui-counter', .92);
+  drawPrintedText(face.x + iconW + .35, face.y, String(move?.label || ''), {
+    w: Math.max(1, face.w - iconW - .5), h: face.h, ink: cap.ink, alpha: .98,
+  });
+  if (readout) uiText(x + .55, y + h - .92, combatActionReadout(move).slice(0, Math.max(1, Math.floor(w - 1.1))),
+    !enabled ? 'ui-danger' : counters ? 'ui-counter' : 'ui-label', selected || executing ? .9 : .65);
   return { x, y, w, h };
 }
 

@@ -23,6 +23,17 @@ const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
 function hash32(value=''){let h=2166136261>>>0;for(const ch of String(value)){h^=ch.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;}
 function unit(value=''){return hash32(value)/0xffffffff;}
 
+// Embedded readers share the frame with their host's physical controls. Keep
+// this in cell space until rendering so resizing, UI scaling and DPR all use
+// the same reserved header, without changing a standalone Source sheet.
+export function documentViewport(surface,reservedTopRows=0){
+  const requested=Number(reservedTopRows);
+  const topRows=clamp(Number.isFinite(requested)?requested:0,0,Math.max(0,surface.rows-4));
+  const rows=Math.max(0,surface.rows-topRows);
+  const offsetY=topRows*surface.cellH*surface.dpr;
+  return {topRows,rows,offsetY,width:surface.cols*surface.cellW*surface.dpr,height:rows*surface.cellH*surface.dpr};
+}
+
 function inspectRect(surface){
   const {dpr,cellW,cellH,cols,rows}=surface;
   const viewportW=cols*cellW*dpr,viewportH=rows*cellH*dpr;
@@ -137,7 +148,7 @@ function drawTurn(ctx,doc,turn,rect){
 }
 
 export function readDocument(doc){if(!doc)return null;return scenes.push(makeDocumentScene(doc));}
-export function makeDocumentScene(doc,{id=`doc:${doc?.id||'document'}`,onSceneClose=null,onSceneTurn=null,lookProfile='calm',sourcePressureLive=false,embedded=false,initialPage=0}={}){
+export function makeDocumentScene(doc,{id=`doc:${doc?.id||'document'}`,onSceneClose=null,onSceneTurn=null,lookProfile='calm',sourcePressureLive=false,embedded=false,initialPage=0,reservedTopRows=0}={}){
   let page=clamp(Math.floor(Number(initialPage)||0),0,Math.max(0,paperPageCount(doc)-1)),turn=null;
   // The push-in, and how far down the sheet it is. Never persisted: a document
   // always opens as an object first, and the reading is something you ask for.
@@ -149,15 +160,23 @@ export function makeDocumentScene(doc,{id=`doc:${doc?.id||'document'}`,onSceneCl
     id,blocksInput:true,blocksWorld:!!embedded,lookProfile,lensPreset:lookProfile,sourcePressureLive:!!sourcePressureLive,
     enter(){void preloadPaperDocument(doc);},
     update(dt){if(turn){turn.t+=Math.max(0,Number(dt)||0);if(turn.t>=TURN_SECONDS)turn=null;}},
-    view:()=>({id,page,total,documentId:doc?.id||null,paper:resolved,paper3d:paper3dProbe(),turning:!!turn,reading,scroll}),
+    view:()=>({id,page,total,documentId:doc?.id||null,paper:resolved,paper3d:paper3dProbe(),turning:!!turn,reading,scroll,reservedTopRows}),
     render(){
       uiScrim(reading?.93:.84);
       uiDraw((surface)=>{
         const {ctx}=surface;
+        const viewport=documentViewport(surface,reservedTopRows);
+        const paperSurface={...surface,rows:viewport.rows};
+        ctx.save();
+        try{
+        if(viewport.offsetY){
+          ctx.beginPath();ctx.rect(0,viewport.offsetY,viewport.width,viewport.height);ctx.clip();
+          ctx.translate(0,viewport.offsetY);
+        }
         if(reading){
           const state=paperImageState(doc,page);
           if(state.ready&&state.image){
-            const rect=readRect(surface,state.image);
+            const rect=readRect(paperSurface,state.image);
             // Flat, and no turn animation. The bow and the pose are what make
             // small type swim, and a page you are actually reading is a page
             // somebody is holding still.
@@ -180,17 +199,21 @@ export function makeDocumentScene(doc,{id=`doc:${doc?.id||'document'}`,onSceneCl
             return;
           }
         }
-        const rect=inspectRect(surface);paperStage(ctx,rect);
+        const rect=inspectRect(paperSurface);paperStage(ctx,rect);
         if(turn)drawTurn(ctx,doc,turn,rect);else drawPhysicalPage(ctx,doc,page,rect);
+        }finally{ctx.restore();}
       });
       const {cols,rows}=uiSize(),left=total>1?`${page+1} / ${total}`:'A4';
+      const headerRows=documentViewport({cols,rows,cellW:1,cellH:1,dpr:1},reservedTopRows).topRows;
       const nav=reading
         ? `[↑↓] SCROLL   ${total>1?'[← →] PAGE   ':''}[Z] BACK OUT   [ESC] BACK`
         : embedded
           ? `[Z] READ   ${page>0?'[←] PREVIOUS   ':''}${page<total-1?'[→ / ENTER] NEXT   ':''}[ESC] BACK   [B] CLOSE BAG`
           : `[Z] READ   ${total<=1?promptLine([{action:'back',label:'CLOSE'}]):page===0?promptLine([{action:'confirm',label:'NEXT'},{action:'back',label:'CLOSE'}]):page===total-1?promptLine([{action:'select',label:'BACK'},{action:'back',label:'CLOSE'}]):promptLine([{action:'select',label:'PAGE'},{action:'back',label:'CLOSE'}])}`;
-      if(embedded)uiText(3,1,`SHEETS / ${String(doc?.title||doc?.id||'DOCUMENT').toUpperCase()}`,'ui-label',.72);
-      uiText(3,rows-2,left,'t-dim',.70);uiText(Math.max(3,cols-nav.length-3),rows-2,nav,'t-dim',.78);if(!resolved.resolved)uiText(3,embedded?2:1,'PAPER ASSET NOT BUILT','t-dim',.55);
+      // A reserving host owns the breadcrumb as well as its switches. Its
+      // document must not print a duplicate title through that header bank.
+      if(embedded&&!headerRows)uiText(3,1,`SHEETS / ${String(doc?.title||doc?.id||'DOCUMENT').toUpperCase()}`,'ui-label',.72);
+      uiText(3,rows-2,left,'t-dim',.70);uiText(Math.max(3,cols-nav.length-3),rows-2,nav,'t-dim',.78);if(!resolved.resolved)uiText(3,headerRows+(embedded?2:1),'PAPER ASSET NOT BUILT','t-dim',.55);
     },
     key(e){
       const raw=e.key||'',k=raw.toLowerCase(),code=e.code||'';

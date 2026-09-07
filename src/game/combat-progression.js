@@ -30,6 +30,30 @@ import { TECHNIQUE } from './combat-state.js';
 export const MAX_PINS = 6;
 export const MAX_TECHNIQUES = 6;
 
+// The first run of cable is issued once the bench drill has been passed. This
+// follows combat assistance, including a custom shift, rather than a preset's
+// display name. The zero-cable challenge grants are still completed grants:
+// changing difficulty afterwards must not turn them into another pickup.
+export const TUTORIAL_CABLE_GRANTS = Object.freeze({
+  guided: 2,
+  standard: 1,
+  severe: 0,
+  'dead-air': 0,
+});
+
+const isCombatAssistance = (value) => typeof value === 'string'
+  && Object.hasOwn(TUTORIAL_CABLE_GRANTS, value);
+
+function normalizeTutorialGrant(value, context = null) {
+  // Save the rule identity, not a trusted numeric balance. Its authored amount
+  // survives build-only normalization, pulls, purchases, and later rule edits.
+  if (value?.schema === 1 && isCombatAssistance(value.combatAssistance)) {
+    return { schema: 1, combatAssistance: value.combatAssistance };
+  }
+  if (context?.tutorialComplete !== true || !isCombatAssistance(context.combatAssistance)) return null;
+  return { schema: 1, combatAssistance: context.combatAssistance };
+}
+
 // Where leads come from. Beyond the two original calibration encounters, the
 // first clear of each regular battle and a collectible lead (a set save flag)
 // each grant one — so acquisition is no longer two fixed fights.
@@ -75,8 +99,8 @@ export const PIN_SOURCES = Object.freeze({
 export const TECHNIQUE_TRACK = Object.freeze({ FLAT: 'flat', TOOL: 'tool' });
 
 export const TECHNIQUE_DEFS = Object.freeze([
-  // The skills tab draws this as a grid: one column per branch, one node per
-  // tier, top to bottom. So the layout below IS the screen, and it reads the
+  // The skills rack has one channel per branch and one strip per tier, top to
+  // bottom. The layout below IS the screen, and it reads the
   // same way in every column — the tool's regular first, the special it pays
   // for second, then what makes the special worth its charge.
   //
@@ -132,11 +156,12 @@ const IDS = new Set(TECHNIQUE_DEFS.map((entry) => entry.id));
 const unique = (values) => [...new Set((Array.isArray(values) ? values : []).filter((value) => typeof value === 'string' && value))];
 
 export function freshCombatBuild() {
-  return { schema: 1, rewardedEncounters: [], rewardedFlags: [], techniques: [], pinsEarned: 0, pinsSpent: 0, unspent: 0 };
+  return { schema: 1, tutorialGrant: null, rewardedEncounters: [], rewardedFlags: [], techniques: [], pinsEarned: 0, pinsSpent: 0, unspent: 0 };
 }
 
-export function normalizeCombatBuild(value = null, clearedEncounters = [], flags = null) {
+export function normalizeCombatBuild(value = null, clearedEncounters = [], flags = null, tutorialContext = null) {
   const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  const tutorialGrant = normalizeTutorialGrant(source.tutorialGrant, tutorialContext);
   const rewarded = unique(source.rewardedEncounters).filter((id) => PIN_SOURCES.encounters.includes(id));
   for (const id of unique(clearedEncounters)) {
     if (PIN_SOURCES.encounters.includes(id) && !rewarded.includes(id)) rewarded.push(id);
@@ -160,10 +185,12 @@ export function normalizeCombatBuild(value = null, clearedEncounters = [], flags
     }
     return true;
   });
-  const pinsEarned = Math.min(MAX_PINS, rewarded.length + rewardedFlags.length);
+  const tutorialCables = tutorialGrant ? TUTORIAL_CABLE_GRANTS[tutorialGrant.combatAssistance] : 0;
+  const pinsEarned = Math.min(MAX_PINS, tutorialCables + rewarded.length + rewardedFlags.length);
   const pinsSpent = Math.min(pinsEarned, techniques.length);
   return {
     schema: 1,
+    tutorialGrant,
     rewardedEncounters: rewarded.slice(0, PIN_SOURCES.encounters.length),
     rewardedFlags,
     techniques,

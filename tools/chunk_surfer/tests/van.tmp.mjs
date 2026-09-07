@@ -6,7 +6,7 @@ const p=await b.newPage();await p.setViewport({width:1280,height:760});
 await p.evaluateOnNewDocument(()=>{Object.defineProperty(document,'hasFocus',{configurable:true,value:()=>true});});
 const errs=[];p.on('pageerror',(e)=>errs.push(e.message));
 const w=(f,t=240000)=>p.waitForFunction(f,{timeout:t});
-await p.goto('http://127.0.0.1:5173/index.html?nomic=1&sam=0&skiptut=1&nothink=1&diffusion='+encodeURIComponent('ws://127.0.0.1:5198'),{waitUntil:'domcontentloaded',timeout:60000});
+await p.goto('http://127.0.0.1:5173/index.html?nodisplaynotice=1&nomic=1&sam=0&skiptut=1&nothink=1&diffusion='+encodeURIComponent('ws://127.0.0.1:5198'),{waitUntil:'domcontentloaded',timeout:60000});
 await w(()=>!!window.__scenes?.top?.()?.id);
 if(await p.evaluate(()=>window.__scenes?.top?.()?.id)==='eula'){await p.keyboard.press('Enter');await w(()=>window.__scenes?.top?.()?.id!=='eula',30000);}
 await w(()=>window.__scenes?.top?.()?.id==='opening-credits');

@@ -5,10 +5,14 @@ import {
   freshRadioGuidanceState,
   normalizeRadioGuidanceState,
   resolveRadioCall,
+  radioRuntimeReadiness,
+  radioTargetReadiness,
+  RADIO_TRAVERSAL_GAP_MS,
 } from './radio-guidance.js';
 
 export { RADIO_CUES } from '../data/radio-cues.js';
 export { RADIO_CALL_KIND } from './radio-guidance.js';
+export { radioRuntimeReadiness, radioTargetReadiness } from './radio-guidance.js';
 
 export const RADIO_PHASE = Object.freeze({ LIVE:'live', FAILING:'failing', DEAD:'dead' });
 export const RADIO_CALL = Object.freeze({ IDLE:'idle', CALLING:'calling' });
@@ -23,11 +27,13 @@ export const RADIO = Object.freeze({
   deadFaultRangeMs: [22000, 38000],
   noiseLevel: { live:.38, failing:.31, dead:.24 },
   approachMeters: 8,
+  warningBreathingMs: RADIO_TRAVERSAL_GAP_MS,
+  cancelledRetryMs: 5000,
 });
 
 const milestoneDefaults = () => Object.fromEntries(Object.values(RADIO_CUES).map((id) => [id, false]));
 const fresh = () => ({
-  schema: 3,
+  schema: 4,
   transmissions: 0,
   phase: RADIO_PHASE.LIVE,
   diedAt: 0,
@@ -40,6 +46,7 @@ const fresh = () => ({
   candidateRoom: null,
   missed: [],
   guidance: freshRadioGuidanceState(),
+  runtimeContext: {},
   call: { status:RADIO_CALL.IDLE, deadlineAt:0, nextPulseAt:0 },
   scheduler: { deployCooldownUntil:0, nextFaultAt:0, pulses:[] },
   lastCarrierPosition: { x:0, y:0 },
@@ -86,6 +93,7 @@ export function radioState() {
     onSquelch: undefined,
     onLine: undefined,
     onMissed: undefined,
+    runtimeContext: undefined,
   };
 }
 
@@ -143,13 +151,27 @@ export function queueRadioCue(id, {
 }
 
 export function armDroppedRadioCall(now = nowMs()) {
-  if (!state.dropped || !state.pendingCue || radioCalling()) return false;
+  if (!state.dropped || !state.pendingCue || state.pendingCue.deferredUntilPickup
+    || state.pendingCue.resumeAfterTraversalMs > 0 || radioCalling()) return false;
   state.call = { status:RADIO_CALL.CALLING, deadlineAt:now + RADIO.callTimeoutMs, nextPulseAt:now };
   return true;
 }
 
-export function consumeRadioCue() {
-  if (!state.pendingCue || state.dropped) return null;
+export function consumeRadioCue(context = state.runtimeContext) {
+  if (!state.pendingCue || state.dropped || isDead() || state.activeCue
+    || state.pendingCue.deferredUntilPickup || state.pendingCue.resumeAfterTraversalMs > 0
+    || !radioRuntimeReadiness(context).ready) return null;
+  if (state.pendingCue.id === RADIO_CUES.POST_SECOND
+    && (Number(context.completedJobTakes) < 2 || !Number.isFinite(Number(context.completedJobTakes))
+      || !milestoneDone(RADIO_CUES.INITIAL)
+      || state.guidance.traversal.sinceInitialMs < RADIO.warningBreathingMs)) return null;
+  if (state.pendingCue.id === RADIO_CUES.PRE_THIRD) {
+    if (!(Number(context.completedJobTakes) >= 2) || !milestoneDone(RADIO_CUES.POST_SECOND)
+      || state.guidance.traversal.sinceWarningMs < RADIO.warningBreathingMs
+      || !radioTargetReadiness(context.target, context).ready
+      || context.target.roomId !== state.pendingCue.roomId
+      || context.target.distanceMeters > RADIO.approachMeters) return null;
+  }
   const cue = state.pendingCue;
   state.pendingCue = null;
   state.call = { status:RADIO_CALL.IDLE, deadlineAt:0, nextPulseAt:0 };
@@ -174,7 +196,9 @@ function scheduleNextFault(now, random = .5) {
 
 function applyCueOutcome(id, now) {
   state.milestones[id] = true;
+  if (id === RADIO_CUES.INITIAL) state.guidance.traversal.sinceInitialMs = 0;
   if (id === RADIO_CUES.POST_SECOND && state.phase === RADIO_PHASE.LIVE) {
+    state.guidance.traversal.sinceWarningMs = 0;
     state.phase = RADIO_PHASE.FAILING;
     scheduleNextFault(now, .5);
   }
@@ -183,7 +207,7 @@ function applyCueOutcome(id, now) {
 }
 
 export function resolveRadioCue(id, { now = nowMs() } = {}) {
-  if (!knownCue(id)) return false;
+  if (!knownCue(id) || milestoneDone(id) || state.activeCue?.id !== id) return false;
   applyCueOutcome(id, now);
   if (state.activeCue?.id === id) state.activeCue = null;
   if (state.pendingCue?.id === id) state.pendingCue = null;
@@ -191,62 +215,137 @@ export function resolveRadioCue(id, { now = nowMs() } = {}) {
   return true;
 }
 
+// Closing prose is not hearing its last line. Requeue it with a traversal-only
+// quiet interval; a failed scene allocation also uses this path.
+export function cancelRadioCue(id, { now = nowMs(), reason = 'cancelled', retryAfterMs = RADIO.cancelledRetryMs } = {}) {
+  if (!knownCue(id) || milestoneDone(id) || state.activeCue?.id !== id) return false;
+  const { startedAt, ...cue } = state.activeCue;
+  state.activeCue = null;
+  state.pendingCue = {
+    ...cue, cancelledAt:now, cancelReason:reason,
+    resumeAfterTraversalMs:remaining(retryAfterMs),
+  };
+  state.call = { status:RADIO_CALL.IDLE, deadlineAt:0, nextPulseAt:0 };
+  return true;
+}
+
 export function missPendingRadioCue({ now = nowMs() } = {}) {
   const cue = state.pendingCue;
-  if (!cue) return null;
-  state.pendingCue = null;
+  if (!cue || cue.deferredUntilPickup) return null;
+  // The radio may stop ringing, but its unheard scene cannot resolve offstage.
+  // Pickup is the only rearm: tick cannot create an endless ring/miss loop.
+  state.pendingCue = { ...cue, deferredUntilPickup:true };
   state.call = { status:RADIO_CALL.IDLE, deadlineAt:0, nextPulseAt:0 };
-  state.missed.push(cue.id);
-  applyCueOutcome(cue.id, now);
+  if (!state.missed.includes(cue.id)) state.missed.push(cue.id);
   const event = { ...cue, missedAt:now };
   state.onMissed?.(event);
   return event;
 }
 
-export function shouldQueuePostSecondTake({ completedTakes = 0, isRecording = false } = {}) {
+export function shouldQueuePostSecondTake(context = state.runtimeContext) {
   return state.phase === RADIO_PHASE.LIVE
-    && !isRecording
-    && completedTakes >= 2
+    && radioRuntimeReadiness(context).ready
+    && Number(context.completedJobTakes) >= 2
+    && milestoneDone(RADIO_CUES.INITIAL)
+    && state.guidance.traversal.sinceInitialMs >= RADIO.warningBreathingMs
+    && !state.activeCue && !state.pendingCue
     && !milestoneDone(RADIO_CUES.POST_SECOND);
 }
 
-export function shouldQueuePreThirdBreakdown({
-  completedTakes = 0,
-  isRecording = false,
-  nearestRoom = null,
-  distanceMeters = Infinity,
-  thresholdMeters = RADIO.approachMeters,
-} = {}) {
+export function shouldQueuePreThirdBreakdown(context = state.runtimeContext) {
   return state.phase === RADIO_PHASE.FAILING
-    && !isRecording
-    && completedTakes >= 2
+    && radioRuntimeReadiness(context).ready
+    && Number(context.completedJobTakes) >= 2
+    && radioTargetReadiness(context.target, context).ready
+    && state.guidance.traversal.sinceWarningMs >= RADIO.warningBreathingMs
+    && !state.activeCue && !state.pendingCue
     && milestoneDone(RADIO_CUES.POST_SECOND)
     && !milestoneDone(RADIO_CUES.PRE_THIRD)
     && !milestoneDone(RADIO_CUES.HUSH_RUPTURE)
     && !originalBreakdownStarted()
-    && !!nearestRoom
-    && Number.isFinite(distanceMeters)
-    && distanceMeters <= thresholdMeters;
+    && context.target.distanceMeters <= RADIO.approachMeters;
 }
 
-export function armOriginalBreakdown({ roomId = null, now = nowMs(), delayMs = RADIO.breakdownFallbackMs } = {}) {
+export function armOriginalBreakdown({ now = nowMs(), delayMs = RADIO.breakdownFallbackMs, ...context } = state.runtimeContext) {
   if (isDead() || milestoneDone(RADIO_CUES.PRE_THIRD) || originalBreakdownStarted()) return false;
   if (state.guidance.originalBreakdown.armed) return false;
+  if (!shouldQueuePreThirdBreakdown(context)) return false;
   state.guidance = {
     ...state.guidance,
     originalBreakdown: {
       armed: true,
-      roomId: roomId || null,
+      roomId: context.target.roomId,
+      floorId: context.target.floorId,
       armedAt: now,
+      activeMs: 0,
+      delayMs: remaining(delayMs),
+      // Kept for diagnostics/old saves, never used to advance the beat.
       fallbackAt: now + Math.max(0, Number(delayMs) || 0),
     },
   };
   return true;
 }
 
-export function originalBreakdownFallbackReady({ now = nowMs() } = {}) {
+export function originalBreakdownFallbackReady(context = state.runtimeContext) {
   const breakdown = state.guidance.originalBreakdown;
-  return !!breakdown.armed && !originalBreakdownStarted() && now >= breakdown.fallbackAt;
+  return !!breakdown.armed && !originalBreakdownStarted()
+    && radioRuntimeReadiness(context).ready
+    && radioTargetReadiness(context.target, context).ready
+    && context.target.roomId === breakdown.roomId
+    && context.target.floorId === breakdown.floorId
+    && context.target.distanceMeters <= RADIO.approachMeters
+    && Number(context.completedJobTakes) >= 2
+    && breakdown.activeMs >= breakdown.delayMs;
+}
+
+/** Feed simulation delta, not elapsed wall-clock time. Modal frames earn no credit. */
+export function updateRadioProgression(dt, context = {}) {
+  state.runtimeContext = { ...context, target:context.target ? { ...context.target } : null };
+  const ready = radioRuntimeReadiness(context).ready;
+  const elapsedMs = ready && !state.activeCue ? Math.min(.25, Math.max(0, Number(dt) || 0)) * 1000 : 0;
+  let changed = false;
+  let breakdownReset = false;
+  const traversal = state.guidance.traversal;
+  for (const [cue, key] of [[RADIO_CUES.INITIAL, 'sinceInitialMs'], [RADIO_CUES.POST_SECOND, 'sinceWarningMs']]) {
+    if (milestoneDone(cue) && elapsedMs && traversal[key] < 120000) {
+      traversal[key] = Math.min(120000, traversal[key] + elapsedMs);
+      changed = true;
+    }
+  }
+  if (state.pendingCue?.resumeAfterTraversalMs > 0 && elapsedMs) {
+    state.pendingCue.resumeAfterTraversalMs = Math.max(0, state.pendingCue.resumeAfterTraversalMs - elapsedMs);
+    changed = true;
+  }
+  const breakdown = state.guidance.originalBreakdown;
+  if (!state.activeCue && state.pendingCue?.id === RADIO_CUES.PRE_THIRD
+    && (!radioTargetReadiness(context.target, context).ready
+      || context.target.roomId !== state.pendingCue.roomId
+      || context.target.distanceMeters > RADIO.approachMeters)) {
+    state.pendingCue = null;
+    state.call = { status:RADIO_CALL.IDLE, deadlineAt:0, nextPulseAt:0 };
+    changed = true;
+  }
+  if (breakdown.armed && !state.activeCue) {
+    const valid = radioTargetReadiness(context.target, context).ready
+      && context.target.roomId === breakdown.roomId
+      && context.target.floorId === breakdown.floorId
+      && context.target.distanceMeters <= RADIO.approachMeters
+      && Number(context.completedJobTakes) >= 2;
+    if (!valid) {
+      state.guidance.originalBreakdown = { ...freshRadioGuidanceState().originalBreakdown };
+      // An inbound target was left or recorded while its radio was deployed.
+      // Rebuild the cue at the next real eligible target, not at stale geometry.
+      if (state.pendingCue?.id === RADIO_CUES.PRE_THIRD) {
+        state.pendingCue = null;
+        state.call = { status:RADIO_CALL.IDLE, deadlineAt:0, nextPulseAt:0 };
+      }
+      breakdownReset = changed = true;
+    } else if (elapsedMs && !state.pendingCue && breakdown.activeMs < breakdown.delayMs) {
+      breakdown.activeMs = Math.min(breakdown.delayMs, breakdown.activeMs + elapsedMs);
+      changed = true;
+    }
+  }
+  return { ready, changed, breakdownReset };
 }
 
 export function noteRadioDangerIncident({ now = nowMs(), durationMs = RADIO.recentIncidentMs, kind = 'contact' } = {}) {
@@ -296,6 +395,7 @@ export function dropRadio(x, y, { roomId = null, floorId = null, now = nowMs() }
 export function pickUpRadio(x, y, maxCells = 4) {
   if (!state.dropped || Math.hypot(state.dropped.x - x, state.dropped.y - y) > maxCells) return false;
   state.dropped = null;
+  if (state.pendingCue?.deferredUntilPickup) delete state.pendingCue.deferredUntilPickup;
   state.call = { status:RADIO_CALL.IDLE, deadlineAt:0, nextPulseAt:0 };
   return true;
 }
@@ -369,7 +469,7 @@ export function tickRadio(dt, { px = 0, py = 0, now = nowMs(), random = Math.ran
 export function saveRadioState(now = nowMs()) {
   const guidance = radioGuidanceState();
   return {
-    schema: 3,
+    schema: 4,
     transmissions: state.transmissions,
     phase: state.phase,
     dead: isDead(),
@@ -387,11 +487,15 @@ export function saveRadioState(now = nowMs()) {
       dangerCallCount: guidance.dangerCallCount,
       recentIncidentRemainingMs: remaining(guidance.recentIncidentUntil - now),
       recentIncidentKind: guidance.recentIncidentKind,
+      traversal: { ...guidance.traversal },
       originalBreakdown: {
         armed: guidance.originalBreakdown.armed,
         roomId: guidance.originalBreakdown.roomId,
         armedAt: guidance.originalBreakdown.armedAt,
-        fallbackRemainingMs: remaining(guidance.originalBreakdown.fallbackAt - now),
+        floorId: guidance.originalBreakdown.floorId,
+        activeMs: guidance.originalBreakdown.activeMs,
+        delayMs: guidance.originalBreakdown.delayMs,
+        fallbackRemainingMs: remaining(guidance.originalBreakdown.delayMs - guidance.originalBreakdown.activeMs),
       },
     },
     call: {
@@ -410,8 +514,8 @@ export function saveRadioState(now = nowMs()) {
 export function loadRadioState(saved = {}, now = nowMs()) {
   const schema = Number(saved.schema || 0);
   const old = schema < 2;
-  const milestones = { ...milestoneDefaults(), ...(saved.milestones || {}) };
-  const legacyDead = !!saved.dead || (old && !!milestones[RADIO_CUES.POST_SECOND]);
+  const milestones = Object.fromEntries(Object.values(RADIO_CUES).map((id) => [id, saved.milestones?.[id] === true]));
+  const legacyDead = saved.dead === true;
   const hooks = { onSquelch:state.onSquelch, onLine:state.onLine, onMissed:state.onMissed };
   const savedCue = saved.pendingCue || saved.activeCue;
   const guidanceSaved = schema >= 3 ? (saved.guidance || {}) : {};
@@ -421,10 +525,14 @@ export function loadRadioState(saved = {}, now = nowMs()) {
     dangerCallCount: guidanceSaved.dangerCallCount,
     recentIncidentUntil: guidanceSaved.recentIncidentRemainingMs ? now + remaining(guidanceSaved.recentIncidentRemainingMs) : 0,
     recentIncidentKind: guidanceSaved.recentIncidentKind || null,
+    traversal: schema >= 4 ? guidanceSaved.traversal : null,
     originalBreakdown: {
       armed: !!guidanceSaved.originalBreakdown?.armed,
       roomId: guidanceSaved.originalBreakdown?.roomId || null,
       armedAt: Number(guidanceSaved.originalBreakdown?.armedAt) || 0,
+      floorId: guidanceSaved.originalBreakdown?.floorId || null,
+      activeMs: schema >= 4 ? guidanceSaved.originalBreakdown?.activeMs : 0,
+      delayMs: schema >= 4 ? guidanceSaved.originalBreakdown?.delayMs : RADIO.breakdownFallbackMs,
       fallbackAt: guidanceSaved.originalBreakdown?.fallbackRemainingMs
         ? now + remaining(guidanceSaved.originalBreakdown.fallbackRemainingMs)
         : 0,
@@ -435,7 +543,8 @@ export function loadRadioState(saved = {}, now = nowMs()) {
     ...fresh(),
     ...hooks,
     transmissions: Number(saved.transmissions) || 0,
-    phase: legacyDead ? RADIO_PHASE.DEAD : Object.values(RADIO_PHASE).includes(saved.phase) ? saved.phase : RADIO_PHASE.LIVE,
+    phase: legacyDead ? RADIO_PHASE.DEAD : Object.values(RADIO_PHASE).includes(saved.phase) ? saved.phase
+      : old && milestones[RADIO_CUES.POST_SECOND] ? RADIO_PHASE.FAILING : RADIO_PHASE.LIVE,
     deathCause: legacyDead || saved.phase === RADIO_PHASE.DEAD ? (saved.deathCause || 'legacy') : null,
     squelches: Number(saved.squelches) || 0,
     dropped: saved.dropped && Number.isFinite(saved.dropped.x) && Number.isFinite(saved.dropped.y)
@@ -450,6 +559,8 @@ export function loadRadioState(saved = {}, now = nowMs()) {
           entry: savedCue.entry || null,
           context: savedCue.context ? { ...savedCue.context } : null,
           queuedAt: Number(savedCue.queuedAt) || now,
+          ...(savedCue.deferredUntilPickup === true && saved.dropped ? { deferredUntilPickup:true } : {}),
+          ...(savedCue.resumeAfterTraversalMs > 0 ? { resumeAfterTraversalMs:remaining(savedCue.resumeAfterTraversalMs) } : {}),
         }
       : null,
     candidateRoom: saved.candidateRoom || null,
@@ -460,7 +571,8 @@ export function loadRadioState(saved = {}, now = nowMs()) {
   const call = saved.call || {};
   const scheduler = saved.scheduler || {};
   state.call = {
-    status: state.dropped && state.pendingCue && call.status === RADIO_CALL.CALLING ? RADIO_CALL.CALLING : RADIO_CALL.IDLE,
+    status: state.dropped && state.pendingCue && !state.pendingCue.deferredUntilPickup
+      && call.status === RADIO_CALL.CALLING ? RADIO_CALL.CALLING : RADIO_CALL.IDLE,
     deadlineAt: now + remaining(call.deadlineRemainingMs),
     nextPulseAt: now + remaining(call.nextPulseRemainingMs),
   };

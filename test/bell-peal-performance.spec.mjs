@@ -104,7 +104,7 @@ scene.enter();scene.key({key:'',code:'',controllerAction:'mark',repeat:false,met
 scene.key({key:'',code:'',controllerAction:'interact',repeat:false,metaKey:false,ctrlKey:false,altKey:false});
 assert.deepEqual([sceneStarts,scenePresses,sceneReleases],[1,1,1],'controller mark rings and controller interact lets go');
 const sceneSource=readFileSync('src/game/bell-peal-scene.js','utf8');
-assert.match(sceneSource,/drawMachinePanel\(/,'the peal uses the same screen-instrument chassis as combat');
+assert.match(sceneSource,/withMachinePanel\(/,'the peal renders inside the shared screen-instrument glass');
 assert.match(sceneSource,/TENOR ABSENT/,'a missed tenor gets explicit visual feedback');
 assert.match(sceneSource,/MS \$\{side\}/,'judgements report signed early or late timing');
 assert.match(sceneSource,/suppressesHud:true/,'the peal instrument replaces rather than overlaps the ordinary exploration HUD');

@@ -10,7 +10,7 @@
 
 import * as scenes from './scenes.js';
 import { uiSize, uiFill, uiText, uiLine } from '../render/ui.js';
-import { PANEL, drawMachinePanel, drawVfdText } from '../render/presentation.js';
+import { PANEL, withMachinePanel, drawVfdText } from '../render/presentation.js';
 import {
   drawTranscript,
   drawTranscriptChoices,
@@ -57,12 +57,26 @@ export function makeColdOpenScene({
   blocksWorld = true, allowsLook = false, suppressesHud = false,
   worldUnderlay = false, worldView = null, presentation = worldUnderlay ? 'cinematic' : 'monitor',
 } = {}) {
+  let scene = null;
+  let completed = false;
+  let exited = false;
+  const active = () => !exited && (presentation !== 'cinematic' || scenes.top() === scene);
   const convo = createConversation({
     nodes: opening, beats, startAt, sceneId: id, replay, onChoice, onLine, cue, fx, audio, getAudio,
-    onDone: () => { scenes.pop(); if (ambient) audio?.stopBoothTone?.({ fade: 0.8 }); onDone?.(); },
+    isActive: active,
+    onDone: () => {
+      if (completed || exited) return;
+      completed = true;
+      // A line may have opened a held action or another scene. Only this
+      // conversation owns its removal; popping the stack can erase the child
+      // and leave this finished transcript beneath the ending's last shot.
+      scenes.remove(scene);
+      if (ambient) audio?.stopBoothTone?.({ fade: 0.8 });
+      onDone?.();
+    },
   });
 
-  return {
+  scene = {
     id,
     blocksInput: true,
     blocksWorld,
@@ -75,16 +89,18 @@ export function makeColdOpenScene({
       if (ambient) { audio?.startSoundtrack?.(); audio?.startBoothTone?.(); }
       convo.start();
     },
-    exit() { convo.stop(); audio?.stopTyping?.(); },
-    update(dt) { convo.update(dt); },
+    exit() { exited = true; convo.stop(); audio?.stopTyping?.(); },
+    update(dt) { if (active()) convo.update(dt); },
     view() { return { ...convo.view(), presentation }; }, // for the headless suites
     keyup(e) { return convo.keyup?.(e) || false; },
     key(e) {
+      if (!active()) return true;
       if (e.key === 'Escape') return true;   // no way out of a conversation
       return convo.key(e);
     },
 
       render() {
+        if (!active()) return;
         const v = convo.view();
         const { cols, rows } = uiSize();
 
@@ -186,7 +202,7 @@ export function makeColdOpenScene({
             ? 'me'
             : v.who;
 
-        const body = drawMachinePanel(
+        withMachinePanel(
           x,
           top,
           w,
@@ -199,8 +215,7 @@ export function makeColdOpenScene({
               : promptLine([{ action: 'continue', label: 'CONTINUE' }]),
             meter: true,
           },
-        );
-
+          (body) => {
         const contentX = body.x + 1;
         const contentW = Math.max(8, body.w - 2);
 
@@ -334,8 +349,10 @@ export function makeColdOpenScene({
             maxRows: choices.height,
           });
         }
+        });
       },
   };
+  return scene;
 }
 // THE ARRIVAL. He is standing at the back of his own van on a wet road and the
 // game has not started yet.
@@ -513,10 +530,11 @@ export function makeWorldTitleScene({
 
       const w = Math.min(72, cols - 4), h = Math.min(17, rows - 4);
       const x = Math.floor((cols - w) / 2), y = Math.floor((rows - h) / 2);
-      const body = drawMachinePanel(x, y, w, h, { label:'PROGRAM', source:'ELLERY', meter:true });
+      withMachinePanel(x, y, w, h, { label:'PROGRAM', source:'ELLERY', meter:true }, (body) => {
       drawVfdText(Math.max(body.x, Math.floor((cols - 12) / 2)), body.y + 2, 'CHUNK SURFER', { color:UI_COLOR.primary });
       uiText(Math.max(body.x, Math.floor((cols - 30) / 2)), body.y + 5, 'ELLERY CONSERVATOIRE OF MUSIC', 'ui-blue', up(2.4));
       uiText(Math.max(body.x, Math.floor((cols - 31) / 2)), body.y + 7, '5 ROOMS / 1 CLEAN MINUTE EACH', 'ui-secondary', up(3.6));
+      });
     },
   };
 }

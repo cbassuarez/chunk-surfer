@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-09-05T16:33:13.473Z",
-  "bytes": 25463652,
-  "totalTriangles": 351278,
+  "generatedAt": "2026-09-07T01:51:41.059Z",
+  "bytes": 25547384,
+  "totalTriangles": 352314,
   "meshes": {
     "school_desk": {
       "triangles": 176,
@@ -768,12 +768,20 @@
       "vertices": 174
     },
     "ending_van_cabin": {
-      "triangles": 132,
-      "vertices": 264
+      "triangles": 144,
+      "vertices": 288
     },
     "ending_van_cup": {
       "triangles": 112,
       "vertices": 124
+    },
+    "ending_coffee_handoff": {
+      "triangles": 160,
+      "vertices": 220
+    },
+    "ending_returned_ledger": {
+      "triangles": 720,
+      "vertices": 1440
     },
     "ending_headphones": {
       "triangles": 108,
@@ -790,6 +798,10 @@
     "ending_body_standing": {
       "triangles": 100,
       "vertices": 166
+    },
+    "ending_containment_ribs": {
+      "triangles": 144,
+      "vertices": 288
     },
     "ending_collapse_debris": {
       "triangles": 36,
@@ -3613,6 +3625,30 @@
         0.076
       ]
     },
+    "ending_coffee_handoff": {
+      "min": [
+        -0.738,
+        0,
+        -0.234
+      ],
+      "max": [
+        0.737,
+        0.234,
+        0.216
+      ]
+    },
+    "ending_returned_ledger": {
+      "min": [
+        -0.48,
+        -0.003,
+        -0.31
+      ],
+      "max": [
+        0.48,
+        0.083,
+        0.31
+      ]
+    },
     "ending_headphones": {
       "min": [
         -0.27,
@@ -3659,6 +3695,18 @@
         0.365,
         1.725,
         0.143
+      ]
+    },
+    "ending_containment_ribs": {
+      "min": [
+        -0.389,
+        0.04,
+        -0.52
+      ],
+      "max": [
+        0.04,
+        2.365,
+        0.52
       ]
     },
     "ending_collapse_debris": {
@@ -5363,8 +5411,10 @@
     "ending_body_prone": 0.11,
     "ending_body_seated": 0.96,
     "ending_van_cabin": 0.92,
+    "ending_returned_ledger": 0.05,
     "ending_recorder_open": 0.14,
     "ending_body_standing": 1.44,
+    "ending_containment_ribs": 0.04,
     "ending_collapse_debris": 0.31,
     "apparition_pose_head_turn": 1.44,
     "apparition_pose_arm_out": 1.44,

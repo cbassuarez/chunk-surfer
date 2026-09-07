@@ -19,6 +19,7 @@ const DEFAULT_BINDINGS = Object.freeze({
   light: 'F',
   bag: 'B',
   recorder: 'R',
+  radio: 'V',
   interact: 'E',
   mark: 'SPACE',
   playback: 'P',
@@ -70,11 +71,11 @@ const ID_TO_LEGACY_BUTTON = Object.freeze(
 export const CONTROLLER_FAMILIES = Object.freeze(['auto', 'xbox', 'playstation', 'nintendo', 'generic']);
 
 export const CONTROLLER_BINDING_ACTIONS = Object.freeze([
-  'quiet', 'hide', 'light', 'bag', 'recorder', 'interact', 'playback', 'mark', 'menu',
+  'quiet', 'hide', 'light', 'bag', 'recorder', 'radio', 'interact', 'playback', 'mark', 'menu',
   'confirm', 'back', 'tabPrev', 'tabNext',
 ]);
 
-const WORLD_GROUP = Object.freeze(['quiet', 'hide', 'light', 'bag', 'recorder', 'interact', 'playback', 'mark', 'menu']);
+const WORLD_GROUP = Object.freeze(['quiet', 'hide', 'light', 'bag', 'recorder', 'radio', 'interact', 'playback', 'mark', 'menu']);
 const UI_GROUP = Object.freeze(['confirm', 'back', 'menu', 'tabPrev', 'tabNext']);
 const PAD_GROUPS = Object.freeze([WORLD_GROUP, UI_GROUP]);
 
@@ -86,6 +87,7 @@ export const DEFAULT_CONTROLLER_BINDINGS = Object.freeze({
   light: { kind: 'button', id: 'north' },
   bag: { kind: 'button', id: 'west' },
   recorder: { kind: 'button', id: 'rightTrigger' },
+  radio: { kind: 'button', id: 'rightShoulder' },
   interact: { kind: 'button', id: 'south' },
   playback: { kind: 'button', id: 'east' },
   // The waypoint verb had no pad binding at all, so every prompt that mentions
@@ -116,6 +118,7 @@ const ACTION_LABELS = Object.freeze({
   light: 'LIGHT',
   bag: 'BAG',
   recorder: 'RECORDER',
+  radio: 'RADIO',
   interact: 'INTERACT',
   playback: 'PLAYBACK',
   menu: 'MENU / PAUSE',
@@ -232,6 +235,14 @@ export function normalizeControllerSettings(value = {}, legacyBindings = null) {
   const bindings = {};
   for (const action of CONTROLLER_BINDING_ACTIONS) {
     bindings[action] = normalizeBinding(bindingSource[action], DEFAULT_CONTROLLER_BINDINGS[action]);
+  }
+  // A newly authored action must not steal a player's existing world remap.
+  // UI section-next may still share RB because its input context is separate.
+  if (!bindingSource.radio) {
+    const occupied = new Set(WORLD_GROUP.filter(action => action !== 'radio').map(action => bindings[action].id));
+    const free = ['rightShoulder', 'rightStick', 'leftStick', 'view', 'south', 'east', 'west', 'north', 'leftShoulder', 'leftTrigger', 'rightTrigger']
+      .find(id => !occupied.has(id));
+    if (free) bindings.radio = { kind: 'button', id: free };
   }
   return {
     enabled: source.enabled !== false,
@@ -356,6 +367,14 @@ export function controllerActionLabel(action) {
 
 export function bindingLabel(action) {
   return DEFAULT_BINDINGS[action] || String(action || '').toUpperCase();
+}
+
+// A dedicated world verb, not a recorder-tab alias. Scene ownership and route
+// availability stay with the caller; a held key must never repeatedly call.
+export function isRadioControlEvent(event = {}) {
+  if (event.repeat || event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return false;
+  if (event.controllerAction) return event.controllerAction === 'radio';
+  return event.code === 'KeyV' || String(event.key || '').toLowerCase() === 'v';
 }
 
 // Prompt aliases: names scenes ask for that are not themselves bindable. Kept

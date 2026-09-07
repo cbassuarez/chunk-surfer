@@ -3623,8 +3623,8 @@
       "bus": "sfx",
       "concurrency": "restart",
       "layers": [
-        {"id":"radio-carrier-open.switch","assetId":"asset.game.recorder","gain":0.31,"playbackRate":0.18,"pan":0,"trimStart":0.0134,"trimEnd":0.0412,"fadeOut":0.18},
-        {"id":"radio-carrier-open.body","assetId":"asset.game.slides_keys_and_radio","gain":0.08,"playbackRate":0.72,"pan":0,"trimStart":0,"trimEnd":0.24,"fadeOut":0.2}
+        {"id":"radio-carrier-open.switch","assetId":"asset.game.recorder","gain":0.18,"playbackRate":0.18,"pan":0,"trimStart":0.0134,"trimEnd":0.0412,"fadeOut":0.18},
+        {"id":"radio-carrier-open.body","assetId":"asset.game.slides_keys_and_radio","gain":0.035,"playbackRate":0.72,"pan":0,"trimStart":0,"trimEnd":0.24,"fadeOut":0.2}
       ]
     },
     {
@@ -3633,7 +3633,7 @@
       "bus": "sfx",
       "concurrency": "overlap",
       "layers": [
-        {"id":"radio-dry-click.layer","assetId":"asset.game.recorder","gain":0.36,"playbackRate":0.31,"pan":0,"trimStart":0.0134,"trimEnd":0.0412,"fadeOut":0.08}
+        {"id":"radio-dry-click.layer","assetId":"asset.game.recorder","gain":0.2,"playbackRate":0.31,"pan":0,"trimStart":0.0134,"trimEnd":0.0412,"fadeOut":0.08}
       ]
     },
     {
@@ -4902,59 +4902,24 @@
       "cueId": "slides"
     },
     {
-      "id": "trigger.conservatory.radio_dead.shake.line.1.squelch",
-      "event": "story.line:conservatory.radio_dead:shake.line.1",
-      "cueId": "squelch"
-    },
-    {
-      "id": "trigger.radio.pre_third.manual.carrier",
-      "event": "story.line:radio.pre_third_room_breakdown:manual.line.2",
+      "id": "trigger.radio.initial.contact",
+      "event": "story.line:radio.initial_checkin:checkin.latch",
       "cueId": "radio-carrier-open"
     },
     {
-      "id": "trigger.radio.pre_third.inbound.carrier",
-      "event": "story.line:radio.pre_third_room_breakdown:inbound.line.2",
-      "cueId": "radio-carrier-open"
-    },
-    {
-      "id": "trigger.radio.pre_third.normal.return",
-      "event": "story.line:radio.pre_third_room_breakdown:normal.line.3",
-      "cueId": "radio-clipped-return"
-    },
-    {
-      "id": "trigger.radio.pre_third.normal.dead",
-      "event": "story.line:radio.pre_third_room_breakdown:normal.line.5",
-      "cueId": "radio-speaker-pop-dead"
-    },
-    {
-      "id": "trigger.radio.pre_third.room.return",
-      "event": "story.line:radio.pre_third_room_breakdown:room.line.3",
-      "cueId": "radio-clipped-return"
-    },
-    {
-      "id": "trigger.radio.pre_third.room.dead",
-      "event": "story.line:radio.pre_third_room_breakdown:room.line.5",
-      "cueId": "radio-speaker-pop-dead"
-    },
-    {
-      "id": "trigger.radio.pre_third.listen.dead",
-      "event": "story.line:radio.pre_third_room_breakdown:listen.line.4",
-      "cueId": "radio-dead-click"
-    },
-    {
-      "id": "trigger.radio.post_second.dry-click",
-      "event": "story.line:radio.post_second_take_warning:interference.line.3",
+      "id": "trigger.radio.initial.release",
+      "event": "story.line:radio.initial_checkin:checkin.after",
       "cueId": "radio-dry-click"
     },
     {
-      "id": "trigger.radio.hush_help.rupture",
-      "event": "story.line:radio.hush_help_rupture:start.line.5",
-      "cueId": "radio-rupture"
+      "id": "trigger.radio.post_second.dry-click",
+      "event": "story.line:radio.post_second_take_warning:warning.relay",
+      "cueId": "radio-dry-click"
     },
     {
-      "id": "trigger.conservatory.radio_dead.start.click",
-      "event": "story.line:conservatory.radio_dead:start.line.1",
-      "cueId": "radio-dead-click"
+      "id": "trigger.radio.post_second.release",
+      "event": "story.line:radio.post_second_take_warning:warning.after",
+      "cueId": "radio-dry-click"
     },
     {
       "id": "trigger.battle.chapel.nothing.start.line.1.freeze",

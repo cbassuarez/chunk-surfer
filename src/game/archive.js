@@ -1,6 +1,6 @@
 import * as scenes from './scenes.js';
 import { uiFill, uiLine, uiSize, uiText, uiWrap } from '../render/ui.js';
-import { drawMachinePanel, drawVfdText } from '../render/presentation.js';
+import { withMachinePanel, drawVfdText } from '../render/presentation.js';
 import { UI_COLOR } from '../render/palette.js';
 import { achievementEntries } from '../progression/achievements.js';
 import * as AUDIO from '../audio/story-audio.js';
@@ -58,12 +58,12 @@ export function makeArchiveScene({ meta, onClose = () => {} } = {}) {
       uiFill(0, 0, cols, rows, UI_COLOR.glass);
       const w = Math.min(94, cols - 4), h = Math.min(Math.max(32, rows - 8), rows - 4);
       const x = Math.floor((cols - w) / 2), y = Math.floor((rows - h) / 2);
-      const body = drawMachinePanel(x, y, w, h, {
+      withMachinePanel(x, y, w, h, {
         label: 'ARCHIVE',
         source: 'PROGRESS',
         footerParts: [{ action: 'tabNext', label: 'TAB' }, { action: 'select', label: 'ENTRY' }, { action: 'back', label: 'CLOSE' }],
         meter: false,
-      });
+      }, (body) => {
       drawVfdText(body.x, body.y, tab === 0 ? 'ACHIEVEMENTS' : 'RUN HISTORY', { color: UI_COLOR.amber, max: body.w });
       uiText(body.x + Math.max(20, body.w - 38), body.y, tab === 0 ? '[ACHIEVEMENTS]  RUN HISTORY' : ' ACHIEVEMENTS  [RUN HISTORY]', 'ui-label');
       let tx = body.x;
@@ -160,6 +160,7 @@ export function makeArchiveScene({ meta, onClose = () => {} } = {}) {
       uiText(dx, body.y + 9, `STATUS    ${entry.unlocked ? 'UNLOCKED' : 'LOCKED'}`, entry.unlocked ? 'ui-green' : 'ui-secondary');
       const description = hidden ? 'Unlock this achievement to reveal its name and requirement.' : entry.description;
       uiWrap(description, dw).slice(0, Math.max(1, body.h - 13)).forEach((line, i) => uiText(dx, body.y + 12 + i, line, entry.unlocked ? 'ui-primary' : 'ui-secondary'));
+      });
     },
   };
 }

@@ -10,7 +10,7 @@
   "tags": [
     "radio"
   ],
-  "notes": "",
+  "notes": "The second check-in retains useful, familiar Martin. One premature desk sound is the whole wrong return; no explicit warning about voices or instructions that spoil the later rupture.",
   "regions": [
     {
       "id": "radio.post_second_take_warning.region",
@@ -21,164 +21,155 @@
         "start",
         "report",
         "interference",
-        "other"
+        "other",
+        "return",
+        "after"
       ]
     }
   ],
   "nodes": {
     "start": {
+      "id": "start",
+      "type": "choice",
       "art": {
         "id": "walkie",
         "mode": "hero",
-        "caption": "Field radio / carrier open",
-        "status": "OPEN"
+        "caption": "Field radio / front desk relay",
+        "status": "LIVE"
       },
       "lines": [
         {
+          "id": "warning.onset",
           "who": "radio",
-          "text": "4417-C? Come back.",
-          "id": "start.line.1"
+          "text": "4417-C, Martin. How are you getting on?"
         }
       ],
       "choices": [
         {
-          "text": "Two rooms down.",
-          "goto": "report",
-          "id": "start.choice.1"
+          "id": "start.choice.1",
+          "text": "Two rooms done.",
+          "goto": "report"
         },
         {
-          "text": "There's somebody under you.",
-          "goto": "interference",
-          "id": "start.choice.2"
+          "id": "start.choice.2",
+          "text": "Your return sounded doubled.",
+          "goto": "interference"
         },
         {
-          "text": "Anyone else on two?",
-          "goto": "other",
-          "id": "start.choice.3"
+          "id": "start.choice.3",
+          "text": "Still just you at the desk?",
+          "goto": "other"
         }
-      ],
-      "id": "start",
-      "type": "choice"
+      ]
     },
     "report": {
+      "id": "report",
+      "type": "dialogue",
       "art": {
         "id": "walkie",
         "mode": "hero",
-        "caption": "Field radio / carrier unstable",
+        "caption": "Field radio / front desk relay",
         "status": "LIVE"
       },
       "lines": [
         {
+          "id": "report.line.1",
           "who": "me",
-          "text": "Two rooms down. Both clean.",
-          "id": "report.line.1"
+          "text": "Two rooms done. Both clean."
         },
         {
+          "id": "report.line.2",
           "who": "radio",
-          "text": "Good. I've got two— hang on, say that again?",
-          "id": "report.line.2"
-        },
-        {
-          "who": "direction",
-          "art": {
-            "id": "walkie",
-            "mode": "hero",
-            "caption": "Field radio / carrier open",
-            "status": "OPEN"
-          },
-          "text": "The carrier stays open. Under it, a second carrier tone rises and holds.",
-          "hold": 2.2,
-          "id": "report.line.3"
-        },
-        {
-          "who": "radio",
-          "text": "Don't touch the set. Just—leave it where it is.",
-          "id": "report.line.4"
+          "text": "Good. Finish the labels while they're fresh. Which landing are you taking next?"
         }
       ],
-      "id": "report",
-      "type": "dialogue"
+      "goto": "return"
     },
     "interference": {
+      "id": "interference",
+      "type": "dialogue",
       "art": {
         "id": "walkie",
         "mode": "hero",
-        "caption": "Field radio / carrier unstable",
+        "caption": "Field radio / front desk relay",
         "status": "LIVE"
       },
       "lines": [
         {
+          "id": "interference.line.1",
           "who": "me",
-          "text": "There's somebody under you. Same channel.",
-          "id": "interference.line.1"
+          "text": "Your return sounded doubled."
         },
         {
+          "id": "interference.line.2",
           "who": "radio",
-          "text": "There shouldn't be. I'm alone on two.",
-          "id": "interference.line.2"
-        },
-        {
-          "who": "direction",
-          "art": {
-            "id": "walkie",
-            "mode": "hero",
-            "caption": "Field radio / carrier open",
-            "status": "BEAT"
-          },
-          "text": "A dry relay click comes through first. Then a chair scrapes beside his microphone.",
-          "hold": 2,
-          "id": "interference.line.3",
-          "cues": [
-            "radio-dry-click"
-          ]
-        },
-        {
-          "who": "radio",
-          "text": "Do the next one quick, would you? Then call me back.",
-          "id": "interference.line.4"
+          "text": "Could be the repeater. Your end is clear. Give the key a moment to come all the way back up."
         }
       ],
-      "id": "interference",
-      "type": "dialogue"
+      "goto": "return"
     },
     "other": {
+      "id": "other",
+      "type": "dialogue",
       "art": {
         "id": "walkie",
         "mode": "hero",
-        "caption": "Field radio / carrier unstable",
+        "caption": "Field radio / front desk relay",
         "status": "LIVE"
       },
       "lines": [
         {
+          "id": "other.line.1",
           "who": "me",
-          "text": "Anyone else on two with you?",
-          "id": "other.line.1"
+          "text": "Still just you at the desk?"
         },
         {
+          "id": "other.line.2",
           "who": "radio",
-          "text": "No. Just me.",
-          "id": "other.line.2"
-        },
-        {
-          "who": "direction",
-          "art": {
-            "id": "walkie",
-            "mode": "hero",
-            "caption": "Field radio / carrier open",
-            "status": "OPEN"
-          },
-          "text": "A breath brushes the grille after he stops speaking. His chair is still moving farther away.",
-          "hold": 2.4,
-          "id": "other.line.3"
-        },
-        {
-          "who": "radio",
-          "text": "If it comes back in your voice, don't answer it. All right?",
-          "id": "other.line.4"
+          "text": "Just me. Kettle's on. Let me put this down and I'll get the plan."
         }
       ],
-      "id": "other",
-      "type": "dialogue"
+      "goto": "return"
+    },
+    "return": {
+      "id": "return",
+      "type": "dialogue",
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Field radio / front desk relay",
+        "status": "LIVE"
+      },
+      "lines": [
+        {
+          "id": "warning.relay",
+          "who": "direction",
+          "text": "The little double tap comes through the grille. A moment later, Martin's pencil makes the same two taps."
+        },
+        {
+          "id": "return.line.2",
+          "who": "radio",
+          "text": "Right. I've got it. Call me when you're at the next landing."
+        }
+      ],
+      "goto": "after"
+    },
+    "after": {
+      "id": "after",
+      "type": "dialogue",
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Field radio / carrier quiet",
+        "status": "LIVE"
+      },
+      "lines": [
+        {
+          "id": "warning.after",
+          "who": "direction",
+          "text": "The transmit key returns cleanly under your thumb."
+        }
+      ]
     }
   }
 }

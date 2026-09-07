@@ -196,7 +196,23 @@ export function recordingHallucinationEligibility({
   const pressure = clamp01(hushPressure);
   if (progress < 0.08) return { eligible: false, reason: 'too-early' };
 
-  const intensity = Math.max(progress * 0.55, pressure * 0.90, progress > 0.33 ? 0.35 : 0);
+  // THE FIRST THIRD OF EVERY TAKE USED TO BE GUARANTEED EMPTY.
+  //
+  // With no hush pressure — which is every ordinary take — the only term that
+  // could clear 0.25 was the step at `progress > 0.33`. On a forty-five second
+  // take that is FIFTEEN SECONDS before the first one can fire, and the ramp
+  // (progress * 0.55) did not reach 0.25 until twenty.
+  //
+  // Measured, that is worse than it sounds. The scripted training encounter
+  // interrupts the first take at about six seconds, so during the whole tutorial
+  // arc a hallucination was not merely unlikely, it was unreachable — and a
+  // player who records, gets pulled into the fight, and records again is a
+  // player who has never seen one and reasonably reports that they do not exist.
+  //
+  // The settling period is still real: `too-early` holds everything below 0.08,
+  // so the take gets its first few seconds clean. After that the beat is allowed
+  // to happen. Cooldown (4.8-9s) still spaces them out.
+  const intensity = Math.max(progress * 1.35, pressure * 0.90, progress > 0.16 ? 0.35 : 0);
   if (intensity < 0.25) return { eligible: false, reason: 'low-intensity' };
 
   return { eligible: true, intensity, progress, pressure };

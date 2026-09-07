@@ -215,7 +215,7 @@ try {
   await page.evaluateOnNewDocument(()=>{
     Object.defineProperty(document,'hasFocus',{configurable:true,value:()=>true});
   });
-  await page.goto(`${base}/index.html?skiptut=1&nomic=1&sam=0&diffusion=${encodeURIComponent(lens)}`,{
+  await page.goto(`${base}/index.html?nodisplaynotice=1&skiptut=1&nomic=1&sam=0&diffusion=${encodeURIComponent(lens)}`,{
     waitUntil:'domcontentloaded',timeout:60000,
   });
   await acceptEulaIfPresent();

@@ -1,7 +1,7 @@
 import { uiSize, uiText, uiCenter, uiScrim, uiFill } from '../render/ui.js';
 import { drawVfdRow, vfdRowStyle } from '../render/vfd-select.js';
 import { activeTheme } from '../render/palette.js';
-import { drawMachinePanel } from '../render/presentation.js';
+import { withMachinePanel } from '../render/presentation.js';
 import { createHitRegions } from '../render/hit-regions.js';
 import { promptLine } from './bindings.js';
 import * as AUDIO from '../audio/story-audio.js';
@@ -97,14 +97,14 @@ export function makePauseScene({
     const h = Math.min(27, rows - 4);
     const x = Math.floor((cols - w) / 2);
     const y = Math.floor((rows - h) / 2);
-    const body = drawMachinePanel(x, y, w, h, {
+    withMachinePanel(x, y, w, h, {
       theme: 'green',
       wordmark: 'CHUNK SURFER',
       label: 'FIELD HOLD',
       source: 'RUN PAUSED',
       footerParts: [{ action: 'select', label: 'SELECT' }, { action: 'confirm', label: 'CONFIRM' }, { action: 'back', label: 'RESUME' }],
       meter: false,
-    });
+    }, (body) => {
 
     const ix = body.x;
     const iy = body.y;
@@ -169,6 +169,7 @@ export function makePauseScene({
     }
 
     uiCenter(y + h - 3, 'PAUSE HOLDS THE RUN · SETTINGS CONFIGURE THE APPLICATION', 'ui-secondary');
+    });
   }
 
 

@@ -56,7 +56,7 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const top = () => page.evaluate(() => window.__scenes?.top?.()?.id || null);
 const wait = (fn, timeout = 300000, arg = undefined) => page.waitForFunction(fn, { timeout }, arg);
 
-await page.goto(`${BASE_URL}/index.html?nomic=1&sam=0&skiptut=1&nothink=0&pixelMeshSource=${encodeURIComponent(SOURCE)}`, {
+await page.goto(`${BASE_URL}/index.html?nodisplaynotice=1&nomic=1&sam=0&skiptut=1&nothink=0&pixelMeshSource=${encodeURIComponent(SOURCE)}`, {
   waitUntil: 'domcontentloaded',
   timeout: 60000,
 });

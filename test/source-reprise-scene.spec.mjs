@@ -108,6 +108,88 @@ test('holding movement traverses on the reprise clock without moving the live So
   assert.equal(scene.view().step, stopped);
 });
 
+test('the recorder arms at the exact mark even when the pose sample stopped millimetres short', () => {
+  const scene = makeSourceRepriseScene({
+    plan:{id:'call-site',segments:[{
+      id:'take:1:near',roomId:'main_b3',
+      frames:[{x:0,y:0,yaw:.2},{x:3.98,y:2,yaw:.3,pitch:.1}],
+      mark:{x:4,y:2,yaw:.8,pitch:-.2},
+    }]},
+  });
+  reachTraversal(scene);
+  walkUntil(scene, (view)=>view.phase==='recognition');
+  assert.deepEqual(
+    {x:scene.view().pose.x,y:scene.view().pose.y,yaw:scene.view().pose.yaw,pitch:scene.view().pose.pitch},
+    {x:4,y:2,yaw:.8,pitch:-.2},
+  );
+});
+
+test('saved camera angles interpolate across the short arc at the yaw wrap', () => {
+  const scene = makeSourceRepriseScene({plan:{id:'call-site',segments:[{
+    id:'take:1:turn',roomId:'main_b3',
+    frames:[{x:0,y:0,yaw:Math.PI-.1},{x:4,y:0,yaw:-Math.PI+.1}],
+  }]}});
+  reachTraversal(scene);
+  scene.key({code:'KeyW'});
+  scene.keyup({code:'KeyW'});
+  scene.key({code:'KeyW'});
+  assert.ok(Math.abs(Math.abs(scene.view().pose.yaw)-Math.PI)<1e-9,'crossing the wrap does not spin the old body through a full circle');
+});
+
+test('a held early R must be released before punch-in and cannot click through the scare', () => {
+  let commits=0,clicks=0;
+  const scene=makeSourceRepriseScene({
+    plan:{id:'call-site',segments:[]},
+    onCommit:()=>{commits+=1;},onDryClick:()=>{clicks+=1;},
+  });
+  scene.key({code:'KeyR'});
+  scene.update(SOURCE_REPRISE_CAST_SECONDS+SOURCE_REPRISE_UNFOLD_SECONDS+SOURCE_REPRISE_RECOGNITION_SECONDS);
+  assert.equal(scene.view().phase,'armed');
+  scene.key({code:'KeyR',repeat:true});
+  scene.key({code:'KeyR'});
+  assert.equal(commits,0);
+  scene.keyup({code:'KeyR'});
+  scene.key({controllerAction:'recorder'});
+  assert.equal(commits,1);
+  scene.key({controllerAction:'recorder',repeat:true});
+  scene.keyup({controllerAction:'recorder'});
+  scene.key({controllerAction:'recorder'});
+  assert.equal(commits,1);
+  assert.equal(clicks,1,'post-commit input does not dry-click over the return');
+});
+
+test('the four-beat return preserves time across frame boundaries and long frames', () => {
+  for (const frameSeconds of [1/30,1/60,1/144,.31]) {
+    let returns=0;
+    const scene=makeSourceRepriseScene({plan:{id:'call-site',segments:[]},onDone:()=>{returns+=1;}});
+    scene.update(SOURCE_REPRISE_CAST_SECONDS+SOURCE_REPRISE_UNFOLD_SECONDS+SOURCE_REPRISE_RECOGNITION_SECONDS);
+    scene.key({code:'KeyR'});
+    let total=0;
+    while(total+frameSeconds<SOURCE_REPRISE_RETURN_SECONDS-.001){scene.update(frameSeconds);total+=frameSeconds;}
+    scene.update(SOURCE_REPRISE_RETURN_SECONDS-.001-total);
+    assert.equal(returns,0,`still inside the four beats at ${frameSeconds}s frames`);
+    scene.update(.001);
+    assert.equal(returns,1,`returns on the fourth beat at ${frameSeconds}s frames`);
+    scene.update(10);
+    assert.equal(returns,1,'return callback is delivered once');
+  }
+});
+
+test('the return uses the score clock when simulation dt is capped by a slow frame', () => {
+  let now=20,returns=0;
+  const scene=makeSourceRepriseScene({
+    plan:{id:'call-site',segments:[]},returnClockSeconds:()=>now,onDone:()=>{returns+=1;},
+  });
+  scene.update(SOURCE_REPRISE_CAST_SECONDS+SOURCE_REPRISE_UNFOLD_SECONDS+SOURCE_REPRISE_RECOGNITION_SECONDS);
+  scene.key({code:'KeyR'});
+  now+=SOURCE_REPRISE_RETURN_SECONDS-.001;
+  scene.update(.05);
+  assert.equal(returns,0);
+  now+=.001;
+  scene.update(.05);
+  assert.equal(returns,1,'audio time, not the capped .1 seconds of simulation, owns the downbeat');
+});
+
 test('R checkpoints before the scare and returns after exactly four 168 BPM beats', () => {
   const order = [];
   const scene = makeSourceRepriseScene({
