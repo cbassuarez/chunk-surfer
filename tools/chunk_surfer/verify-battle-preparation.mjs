@@ -28,6 +28,12 @@ try{
  let s=await state();console.log('PREP',JSON.stringify(s).slice(0,900));assert.equal(s.phase,'prepare');
  await page.screenshot({path:`${out}/equipment-wide.png`});
  const click=async(command)=>{const r=await page.evaluate(c=>{const b=document.querySelector('#battle-preparation').shadowRoot.querySelector(`[data-command="${c}"]`);const r=b.getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2};},command);await page.mouse.click(r.x,r.y);await sleep(200);};
+ const draftBeforeInspection=(await state()).preparation;
+ await click('inspect');await page.waitForFunction(()=>window.__scenes.top()?.id==='item-inspection'&&window.__scenes.top().view().inspection?.ready);
+ await page.keyboard.press('ArrowRight');assert.ok((await state()).inspection.yaw>0);
+ await page.screenshot({path:`${out}/equipment-inspection.png`});
+ await page.keyboard.press('Escape');await sleep(200);assert.equal((await state()).phase,'prepare');
+ assert.deepEqual((await state()).preparation,draftBeforeInspection,'inspection preserves the equipment draft');
  await click('tab:skills');assert.equal((await state()).preparation.page,'skills');
  await page.screenshot({path:`${out}/skills-wide.png`});
  await click('patch');assert.equal((await state()).preparation.build.techniques.length,1);
@@ -35,7 +41,25 @@ try{
  await click('patch');
  await page.screenshot({path:`${out}/skills-patched.png`});
  await page.keyboard.press('q');assert.equal((await state()).preparation.page,'equipment');
- await click('slot:3');await click('equip:interface');assert.equal((await state()).preparation.loadout.top[3],'interface');
+ // AN EMPTY SLOT TAKES IT — no slot chosen first, nothing overwritten.
+ await click('equip:interface');assert.equal((await state()).preparation.loadout.top[3],'interface');
+ assert.equal((await state()).preparation.replacing,null);
+ await page.screenshot({path:`${out}/equipment-autofilled.png`});
+ // FULL: the case flips to the question, and the question names tools.
+ await click('equip:tuning-fork');
+ assert.equal((await state()).preparation.replacing,'tuning-fork');
+ assert.deepEqual((await state()).preparation.loadout.top,['light','recorder','radio','interface'],'nothing given up yet');
+ await page.screenshot({path:`${out}/equipment-replacing.png`});
+ await click('replace:radio');
+ assert.deepEqual((await state()).preparation.loadout.top,['light','recorder','tuning-fork','interface']);
+ assert.equal((await state()).preparation.replacing,null);
+ // Escape backs out of the flip before it leaves the case.
+ await click('equip:radio');assert.equal((await state()).preparation.replacing,'radio');
+ await page.keyboard.press('Escape');await sleep(200);
+ assert.equal((await state()).preparation.replacing,null,'escape cancels the picker');
+ assert.equal((await state()).phase,'prepare','and does not leave the case');
+ await click('equip:radio');await click('replace:tuning-fork');
+ assert.deepEqual((await state()).preparation.loadout.top,['light','recorder','radio','interface']);
  const before=await state();await sleep(2200);assert.deepEqual((await state()).state,before.state);assert.equal((await state()).fireball.active,null);
  await page.keyboard.press('Escape');await sleep(200);
  console.log('PAUSE',(await state()).id);assert.equal(await page.evaluate(()=>document.querySelector('#battle-preparation').hidden),true);
@@ -58,7 +82,7 @@ try{
  await page.screenshot({path:`${out}/fight.png`});
  await page.keyboard.press('ArrowDown');assert.equal((await state()).phase,'move');
  await page.keyboard.press('Enter');assert.notEqual((await state()).phase,'move','pointer READY does not swallow a fresh keyboard confirmation');
- const report={checks:['automatic splash','battle reveal','authored dialogue before preparation','pointer equipment assignment','skill patch and pull','keyboard tabs','combat frozen during preparation','pause hides and restores module','compact and 150% scale','save commits on READY','selected gear and skills reach reducer','turn timer starts after READY','first action accepts input'],errors,layout,saved};
+ const report={checks:['automatic splash','battle reveal','authored dialogue before preparation','3D inspection opens and preserves the equipment draft','pointer equipment assignment','skill patch and pull','keyboard tabs','combat frozen during preparation','pause hides and restores module','compact and 150% scale','save commits on READY','selected gear and skills reach reducer','turn timer starts after READY','first action accepts input'],errors,layout,saved};
  await writeFile(`${out}/report.json`,JSON.stringify(report,null,2));console.log('PASS',report.checks.length,'browser checks');
  await writeFile(`${out}/errors.json`,JSON.stringify(errors,null,2));assert.deepEqual(errors,[]);
 }finally{await browser.close();}

@@ -88,9 +88,10 @@ const TOOL_NOTES = Object.freeze({
   torch: 'The workhorse. Can be lost, and burns battery.',
   recorder: 'Builds takes and spends them. The other half of the floor: without it the whole fight rests on the torch.',
   rig: 'The bent recording rig. Optional, and the only branch of the tree that needs equipment the bag may not have.',
-  fork: 'Reading the fight rather than hitting it.',
+  fork: 'Tuning the thing rather than hitting it: what it does depends on what was coming.',
   radio: 'Misdirection.',
   coffee: "The guard's cup, if it was taken. One use.",
+  spanner: 'Ours, out of the van. The only answer that is not a signal trick — and the only one that is heard.',
 });
 
 // The moves are assembled live, so ask a real fight rather than keeping a
@@ -98,7 +99,7 @@ const TOOL_NOTES = Object.freeze({
 // run anybody plays — it is the only way to see every move at once.
 function everyMove() {
   const state = createCombatState(trainingCombatDefinition(), {
-    tools: { torch: true, recorder: true, rig: true, fork: true, radio: true, coffee: true },
+    tools: { torch: true, recorder: true, rig: true, fork: true, radio: true, coffee: true, spanner: true },
     techniques: TECHNIQUE_DEFS.map((technique) => technique.id),
   });
   state.charge = 99;

@@ -680,7 +680,7 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
     armed = null;
     pendingChallenge = null;
     set('menuTab', tabs[tab].id);
-    AUDIO.menuMove();
+    AUDIO.menuPage();
   }
 
   function selectRow(index, { sound = true } = {}) {
@@ -696,8 +696,8 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
   }
 
   function activateRow(row = rowsOf()[sel]) {
+    if (!isSelectable(row)) {AUDIO.menuDenied();return true;}
     AUDIO.menuConfirm();
-    if (!isSelectable(row)) return true;
     if (row.challengeKey && confirmPendingChallenge(row.challengeKey)) return true;
     if (row.activate) row.activate();
     else if (row.adjust) {
@@ -753,7 +753,7 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
         return activateRow(row);
       }
 
-      if (raw === 'Escape' || code === 'Escape') { scenes.pop(); return true; }
+      if (raw === 'Escape' || code === 'Escape') { AUDIO.menuBack();scenes.pop(); return true; }
       return true;
     },
 

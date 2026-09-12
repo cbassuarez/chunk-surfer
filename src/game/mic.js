@@ -74,6 +74,7 @@ export function micState() { return testLevel != null ? 'test' : state; }
 // A headless-injected level is authoritative: it means "on", whatever the real
 // getUserMedia is doing (its async rejection must not un-inject the test).
 export function micActive() { return testLevel != null || state === 'on'; }
+export function micStream(){return state==='on'?stream:null;}
 
 export function micDevices() {
   return devices.map((d) => ({ ...d }));

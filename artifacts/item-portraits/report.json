@@ -1,0 +1,25 @@
+{
+  "checks": [
+    "cached bag portraits create zero GPU contexts",
+    "inspection loads real GLB",
+    "keyboard rotation",
+    "pointer rotation",
+    "keyboard reset",
+    "controller rotation and reset",
+    "still view renders on demand",
+    "close stops rendering",
+    "inspection never changes loadout",
+    "one shared context across assets",
+    "150% text and compact layout",
+    "B closes nested inspection",
+    "missing GLB retains still and back controls"
+  ],
+  "stats": {
+    "contexts": 1,
+    "currentId": "badge",
+    "loadedId": null,
+    "renderCount": 17,
+    "active": false
+  },
+  "errors": []
+}

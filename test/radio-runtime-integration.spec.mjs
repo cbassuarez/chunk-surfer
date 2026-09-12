@@ -80,6 +80,24 @@ test('the dedicated radio entry opens authored radio controls, not the Bag monit
   assert.match(source('presentRadio'),/makeRadioScene\(/);
 });
 
+test('incoming audio leaves carried controls alone and keeps a deployed radio at its world position',()=>{
+  const alerts=[],cues=[],speech=[],shakes=[];
+  const context={actx:{},master:{},inboundRadioSound:null,sfxDirectGain:{},px:0,py:0,RENDERER:'3d',
+    createRadioSceneAudio:()=>({notify:()=>alerts.push('carrier')}),
+    R3:{r3dDelta:()=>[0,-1]},acousticSpatialAt:(x,y)=>({x,y}),acousticOcclusionDb:()=>12,
+    CUES:{CUE:{recorder:'recorder'},playCue:(id,options)=>cues.push({id,...options})},
+    SPEECH:{say:text=>speech.push(text)},CR:{fx:{shake:(...args)=>shakes.push(args)}},STAB:{reportThreat:()=>{}},
+  };
+  const squelch=compile('onSquelch',context);
+  squelch({kind:'call',dropped:false,index:1});
+  assert.equal(alerts.length,1);assert.equal(cues.length,0);
+  squelch({kind:'call',dropped:true,x:40,y:0,index:2});
+  assert.equal(alerts.length,1,'a distant set cannot buzz at the player body');
+  assert.equal(cues.length,1);assert.equal(cues[0].pan,1);
+  assert.ok(cues[0].gain<.1&&cues[0].lowpassHz<3200,'distance and walls attenuate the deployed carrier');
+  assert.deepEqual(speech,[]);assert.deepEqual(shakes,[]);
+});
+
 test('the manual call cannot bypass the same global scene firewall as incoming cues',()=>{
   for(const change of [
     {paused:true},{daydreamRunning:true},{activeBattleId:'training'},
@@ -152,10 +170,13 @@ test('the short target cache invalidates player-cell and take identity changes b
   assert.equal(nearest(),null,'changed route topology is refreshed after the bounded cache lifetime');
 });
 
-test('the actual progression entry observes heard checkin and active time, with no post-take timer bypass',()=>{
+test('progression rings without a scene and requires the radio control to accept every inbound call',()=>{
   const {context,log}=harness();
   assert.equal(context.maybeQueueRadioProgressionCue(.25),true);
-  assert.equal(log.panels[0]?.id,radio.RADIO_CUES.INITIAL,'legacy progress receives the missing real initial conversation, not a warning');
+  assert.equal(log.panels.length,0,'queueing does not interrupt gameplay');
+  assert.equal(radio.radioCalling(),true);
+  assert.equal(context.openRadio(),true);
+  assert.equal(log.panels[0]?.id,radio.RADIO_CUES.INITIAL);
   log.sceneOpen=false;log.panels[0].options.onDone();log.panels=[];
   context.scenes.blocksInput=()=>true;
   for(let i=0;i<100;i++)context.maybeQueueRadioProgressionCue(.25);
@@ -164,6 +185,9 @@ test('the actual progression entry observes heard checkin and active time, with 
   for(let i=0;i<79;i++)context.maybeQueueRadioProgressionCue(.25);
   assert.equal(log.panels.length,0);
   context.maybeQueueRadioProgressionCue(.25);
+  assert.equal(log.panels.length,0);
+  assert.equal(radio.pendingRadioCue()?.id,radio.RADIO_CUES.POST_SECOND);
+  context.openRadio();
   assert.equal(log.panels[0]?.id,radio.RADIO_CUES.POST_SECOND);
   assert.doesNotMatch(main,/once\(['"]radio-post-second['"]/);
   assert.doesNotMatch(source('tickRecorder'),/setTimeout[\s\S]*POST_SECOND/);
@@ -174,13 +198,13 @@ test('unread dialogue cancellation and failed presentation cannot manufacture a 
     const {context,log}=harness();
     radio.queueRadioCue(radio.RADIO_CUES.INITIAL);
     if(unavailable)context.presentRadio=()=>null;
-    assert.equal(context.maybeStartPendingRadioCue(),!unavailable);
+    assert.equal(context.maybeStartPendingRadioCue({accepted:true}),!unavailable);
     if(!unavailable){
       const options=log.panels[0].options;
       log.sceneOpen=false;options.onCancel();options.onDone();
     }
     assert.equal(radio.radioMilestones()[radio.RADIO_CUES.INITIAL],false);
-    assert.equal(radio.pendingRadioCue()?.id,radio.RADIO_CUES.INITIAL);
+    assert.equal(radio.pendingRadioCue()?.id,unavailable?radio.RADIO_CUES.INITIAL:undefined);
     assert.equal(log.events.some(event=>event[0]==='resolved'),false);
     assert.equal(log.noise.length,0);
   }
@@ -197,7 +221,7 @@ test('the reseated terminal emits exactly one physical noise after exit, while t
   for(const choice of ['reseat','still']) {
     const {context,log,flags}=harness();
     radio.queueRadioCue(radio.RADIO_CUES.HUSH_RUPTURE,{reason:'manual-danger-repeat'});
-    assert.equal(context.maybeStartPendingRadioCue(),true);
+    assert.equal(context.maybeStartPendingRadioCue({accepted:true}),true);
     const options=log.panels[0].options;
     assert.equal(options.terminal,true);
     options.onStage('break');

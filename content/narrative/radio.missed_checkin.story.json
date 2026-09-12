@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "radio.missed_checkin",
+  "title": "Radio · missed check-in",
+  "status": "active",
+  "entry": "start",
+  "entries": ["start"],
+  "tags": ["radio"],
+  "notes": "Offered once after an unanswered call and ninety seconds of active traversal. No dialogue plays unless the player answers.",
+  "regions": [{"id":"radio.missed_checkin.region","title":"Missed check-in","kind":"scene","color":"#245c62","nodeIds":["start","working","quiet"]}],
+  "nodes": {
+    "start": {
+      "id": "start",
+      "type": "choice",
+      "lines": [
+        {"id":"concern.open","who":"radio","text":"4417-C? Martin. I couldn't raise you. I'm starting to worry. Are you all right?"}
+      ],
+      "choices": [
+        {"id":"concern.working","text":"I'm fine. Had my hands full.","goto":"working"},
+        {"id":"concern.quiet","text":"I need the radio quiet while I'm recording.","goto":"quiet"}
+      ]
+    },
+    "working": {
+      "id": "working",
+      "type": "dialogue",
+      "lines": [
+        {"id":"working.answer","who":"me","text":"I'm fine. Had my hands full."},
+        {"id":"working.reply","who":"radio","text":"All right. Just give me a shout between rooms. I can't tell from here."}
+      ]
+    },
+    "quiet": {
+      "id": "quiet",
+      "type": "dialogue",
+      "lines": [
+        {"id":"quiet.answer","who":"me","text":"I need the radio quiet while I'm recording."},
+        {"id":"quiet.reply","who":"radio","text":"Understood. Call when you've finished the take. Even a word will do."}
+      ]
+    }
+  }
+}

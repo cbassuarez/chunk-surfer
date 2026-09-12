@@ -1,0 +1,283 @@
+{
+  "checks": [
+    "actual battle DOM wide/compact/150%-Retina LCD; accessible live values and controls retained",
+    "real preparation-model patch updates the rendered and accessible lead count",
+    "semantic button activation still routes once; LCD canvas has no input target",
+    "LCD context failure removes glass appearance; cached recovery restores formed pixels",
+    "real responsive viewport guard VFD at narrow/Retina/short dimensions preserves polite accessible notice",
+    "viewport Canvas failure exposes plain non-glass service instructions",
+    "safe viewport automatically clears the fault without reload"
+  ],
+  "layouts": [
+    {
+      "name": "wide",
+      "viewport": {
+        "w": 1440,
+        "h": 900,
+        "dpr": 1
+      },
+      "labels": [
+        {
+          "text": "BATTERY",
+          "opacity": "0",
+          "ariaHidden": null
+        },
+        {
+          "text": "67%",
+          "opacity": "0",
+          "ariaHidden": null
+        },
+        {
+          "text": "SPARE LEADS",
+          "opacity": "0",
+          "ariaHidden": null
+        },
+        {
+          "text": "3",
+          "opacity": "0",
+          "ariaHidden": null
+        }
+      ],
+      "painted": "true",
+      "canvas": {
+        "w": 142,
+        "h": 48,
+        "pointerEvents": "none",
+        "ariaHidden": "true"
+      },
+      "rect": {
+        "x": 778.453125,
+        "y": 423,
+        "width": 143.546875,
+        "height": 50
+      },
+      "ready": {
+        "x": 762,
+        "y": 780,
+        "width": 160,
+        "height": 46
+      },
+      "role": "status",
+      "live": "polite"
+    },
+    {
+      "name": "compact",
+      "viewport": {
+        "w": 960,
+        "h": 600,
+        "dpr": 1
+      },
+      "labels": [
+        {
+          "text": "BATTERY",
+          "opacity": "0",
+          "ariaHidden": null
+        },
+        {
+          "text": "67%",
+          "opacity": "0",
+          "ariaHidden": null
+        },
+        {
+          "text": "SPARE LEADS",
+          "opacity": "0",
+          "ariaHidden": null
+        },
+        {
+          "text": "3",
+          "opacity": "0",
+          "ariaHidden": null
+        }
+      ],
+      "painted": "true",
+      "canvas": {
+        "w": 115,
+        "h": 45,
+        "pointerEvents": "none",
+        "ariaHidden": "true"
+      },
+      "rect": {
+        "x": 558.296875,
+        "y": 193,
+        "width": 116.703125,
+        "height": 47
+      },
+      "ready": {
+        "x": 515,
+        "y": 499,
+        "width": 160,
+        "height": 40
+      },
+      "role": "status",
+      "live": "polite"
+    },
+    {
+      "name": "large-text-retina",
+      "viewport": {
+        "w": 960,
+        "h": 600,
+        "dpr": 2
+      },
+      "labels": [
+        {
+          "text": "BATTERY",
+          "opacity": "0",
+          "ariaHidden": null
+        },
+        {
+          "text": "67%",
+          "opacity": "0",
+          "ariaHidden": null
+        },
+        {
+          "text": "SPARE LEADS",
+          "opacity": "0",
+          "ariaHidden": null
+        },
+        {
+          "text": "3",
+          "opacity": "0",
+          "ariaHidden": null
+        }
+      ],
+      "painted": "true",
+      "canvas": {
+        "w": 268,
+        "h": 117,
+        "pointerEvents": "none",
+        "ariaHidden": "true"
+      },
+      "rect": {
+        "x": 787.453125,
+        "y": 209.5,
+        "width": 135.546875,
+        "height": 60
+      },
+      "ready": {
+        "x": 770,
+        "y": 479,
+        "width": 153,
+        "height": 60
+      },
+      "role": "status",
+      "live": "polite"
+    },
+    {
+      "name": "fault-narrow",
+      "hidden": false,
+      "painted": "true",
+      "rows": [
+        {
+          "text": "VIEWPORT BELOW SAFE SIZE",
+          "hidden": false,
+          "opacity": "0",
+          "width": 463,
+          "height": 23,
+          "canvasWidth": 463,
+          "canvasHeight": 23
+        },
+        {
+          "text": "MINIMUM SAFE SIGNAL FRAME  960 × 600",
+          "hidden": false,
+          "opacity": "0",
+          "width": 463,
+          "height": 17,
+          "canvasWidth": 463,
+          "canvasHeight": 17
+        },
+        {
+          "text": "USE FULLSCREEN OR A LARGER DISPLAY.",
+          "hidden": false,
+          "opacity": "0",
+          "width": 463,
+          "height": 17,
+          "canvasWidth": 463,
+          "canvasHeight": 17
+        }
+      ],
+      "live": "polite"
+    },
+    {
+      "name": "fault-small-retina",
+      "hidden": false,
+      "painted": "true",
+      "rows": [
+        {
+          "text": "VIEWPORT BELOW SAFE SIZE",
+          "hidden": false,
+          "opacity": "0",
+          "width": 272,
+          "height": 45,
+          "canvasWidth": 544,
+          "canvasHeight": 90
+        },
+        {
+          "text": "MINIMUM SAFE SIGNAL FRAME  960 × 600",
+          "hidden": false,
+          "opacity": "0",
+          "width": 272,
+          "height": 33,
+          "canvasWidth": 544,
+          "canvasHeight": 66
+        },
+        {
+          "text": "USE FULLSCREEN OR A LARGER DISPLAY.",
+          "hidden": false,
+          "opacity": "0",
+          "width": 272,
+          "height": 33,
+          "canvasWidth": 544,
+          "canvasHeight": 66
+        }
+      ],
+      "live": "polite"
+    },
+    {
+      "name": "fault-short",
+      "hidden": false,
+      "painted": "true",
+      "rows": [
+        {
+          "text": "VIEWPORT BELOW SAFE SIZE",
+          "hidden": false,
+          "opacity": "0",
+          "width": 463,
+          "height": 23,
+          "canvasWidth": 463,
+          "canvasHeight": 23
+        },
+        {
+          "text": "MINIMUM SAFE SIGNAL FRAME  960 × 600",
+          "hidden": false,
+          "opacity": "0",
+          "width": 463,
+          "height": 17,
+          "canvasWidth": 463,
+          "canvasHeight": 17
+        },
+        {
+          "text": "USE FULLSCREEN OR A LARGER DISPLAY.",
+          "hidden": true,
+          "opacity": "0",
+          "width": 0,
+          "height": 0,
+          "canvasWidth": 544,
+          "canvasHeight": 66
+        }
+      ],
+      "live": "polite"
+    }
+  ],
+  "errors": [],
+  "mutation": {
+    "count": 3,
+    "next": 2,
+    "labels": [
+      "BATTERY",
+      "67%",
+      "SPARE LEADS",
+      "2"
+    ],
+    "changed": true
+  }
+}

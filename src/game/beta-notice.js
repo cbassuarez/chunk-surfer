@@ -537,7 +537,7 @@ export function makeBetaNoticeScene({
       }
 
       if (raw === 'Escape' || k === 'b' || code === 'Escape' || e.controllerAction === 'back') {
-        dispatch({ type: 'close' });
+        AUDIO.menuBack();dispatch({ type: 'close' });
         return true;
       }
 

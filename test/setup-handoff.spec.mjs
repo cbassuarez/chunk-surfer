@@ -330,7 +330,7 @@ test('the real dream-ripple entry waits for clean tape before exactly one traini
 
 test('stopping a completed Get In calibration cannot seal or count a job take', () => {
   const calls=[],context={
-    takeRoom:'loading_dock',LEVEL_CHECK_ROOM:'loading_dock',activeTakeContamination:null,activeTakeWitnessed:false,
+    finishRecordingSlate(){},takeRoom:'loading_dock',LEVEL_CHECK_ROOM:'loading_dock',activeTakeContamination:null,activeTakeWitnessed:false,
     activeSourceReplayTake:{id:'must-be-discarded'},
     REC:{isRecording:()=>true,stopRecording:()=>({completed:true,elapsed:45,spoiled:false}),saveRecState:()=>({tapes:[]})},
     cancelControlScope(){},liveRecordingPointerControls:{clear(){}},recordingHallucinations:{clear(){}},clearInstrument(){},
@@ -344,7 +344,7 @@ test('stopping a completed Get In calibration cannot seal or count a job take', 
   assert.equal(context.activeSourceReplayTake,null);
   assert.equal(context.takeRoom,null);
   const tick=mainFunction('tickRecorder');
-  const guard=tick.indexOf('if(room===LEVEL_CHECK_ROOM)'),add=tick.indexOf('REC.addTake(');
+  const guard=tick.indexOf('if(room===LEVEL_CHECK_ROOM)'),add=tick.indexOf('stopTake();',guard+tick.slice(guard).indexOf('return;')+7);
   assert.ok(guard>=0&&guard<add,'calibration exits the completion branch before counting a room');
   assert.match(tick.slice(guard,add),/onLevelsSet\(\);.*stopTake\(\);return;/s);
 });
@@ -352,7 +352,7 @@ test('stopping a completed Get In calibration cannot seal or count a job take', 
 test('rolling a calibration never summons Presence or publishes a room start, even with the old tutorial inactive', () => {
   let dreams=0;
   const context={
-    PLANT:{plantRecordingBlocked:()=>false},REC:{recState:()=>({takes:[]}),startRecording:()=>true},
+    ensureTapeAudio(){},PB:{isPlaying:()=>false,cueTapeEnd:()=>false},PLANT:{plantRecordingBlocked:()=>false},REC:{isSlating:()=>false,recState:()=>({takes:[]}),startRecording:()=>true},
     takeRoom:'loading_dock',LEVEL_CHECK_ROOM:'loading_dock',armedTakeContamination:null,px:0,py:0,
     PROPS:{savePropState:()=>({})},saveCommit(){},ensureCtx(){},params:()=>new URLSearchParams('nomic=1'),
     MIC:{micIgnoreSpoilFor(){}},CUES:{CUE:{recorder:'recorder'},playCue(){}},emitRecorderTransport(){},updateAudio(){},

@@ -453,7 +453,85 @@ export function createBattleMusicSession({
     targetLead = availableLead(requested) || availableLead(targetLead) || requested;
     return targetLead;
   }
+  // ── THE FORK: A STAB, AND THE GRID TURNS OVER ──────────────────────────────
+  //
+  // The fork is a control move (see COMBAT_ACTION.TUNE) and this is the sound of
+  // it working: a true A on the next bar line, and the bed running BACKWARDS
+  // underneath for a bar before it resolves forward again.
+  //
+  // It is an overlay, not surgery on the transport. The running bed is a looping
+  // source nothing retains a handle on, and stopping and restarting it to swap a
+  // buffer would risk the one thing in this file that must never glitch. A
+  // reversed copy played OVER it for exactly one bar reads as the grid turning
+  // over, cannot desync, and ends itself — which is also the battle-audio rule
+  // about cutting at the turn rather than ringing across it.
+  let reversedBed = null;
+  function reversedBedBuffer() {
+    if (reversedBed !== null) return reversedBed;
+    const source = bankBuffer(bank, 'bed');
+    if (!source || typeof contextRef?.createBuffer !== 'function') { reversedBed = false; return false; }
+    try {
+      const out = contextRef.createBuffer(source.numberOfChannels, source.length, source.sampleRate);
+      for (let channel = 0; channel < source.numberOfChannels; channel += 1) {
+        const from = source.getChannelData(channel);
+        const to = out.getChannelData(channel);
+        for (let i = 0, n = source.length; i < n; i += 1) to[i] = from[n - 1 - i];
+      }
+      reversedBed = out;
+    } catch (_) { reversedBed = false; }
+    return reversedBed;
+  }
+
+  // Two bars when the fork took the beat off it, one when it only bent it. The
+  // length is the mechanic, heard.
+  const TUNED_BARS = Object.freeze({ broadcast: 2, silence: 2, conceal: 1, loop: 1, overload: 1 });
+
+  function forkStab(kind) {
+    if (stopped || finishing || downbeatAt == null || !master) return;
+    const at = nextBattleBarAt(now() + START_LOOKAHEAD_SECONDS, downbeatAt);
+    const bars = TUNED_BARS[String(kind)] || 1;
+    const span = bars * BATTLE_BAR_SECONDS;
+
+    // The reference itself. A=440, struck and gone — the same pitch the object
+    // makes everywhere else in the game (see strikeFork in main.js).
+    try {
+      const osc = registerNode(contextRef.createOscillator());
+      const swell = registerNode(contextRef.createGain());
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(440, at);
+      swell.gain.setValueAtTime(0.0001, at);
+      swell.gain.exponentialRampToValueAtTime(0.22, at + 0.008);
+      swell.gain.exponentialRampToValueAtTime(0.0001, at + Math.min(span, 1.15));
+      osc.connect(swell); swell.connect(master);
+      registerSource(osc);
+      osc.start(at);
+      osc.stop(at + Math.min(span, 1.2));
+    } catch (_) { /* no context: the move still works, it is just quiet */ }
+
+    // And the grid, backwards, for those bars only.
+    const buffer = reversedBedBuffer();
+    if (!buffer) return;
+    try {
+      const source = registerSource(registerNode(contextRef.createBufferSource()));
+      const layer = registerNode(contextRef.createGain());
+      source.buffer = buffer;
+      source.loop = true;
+      source.loopStart = 0;
+      source.loopEnd = buffer.duration;
+      // Under the bed rather than over it: this is the room turning, not a new
+      // arrangement. It fades in on the bar and is gone by the next one.
+      layer.gain.setValueAtTime(0.0001, at);
+      layer.gain.linearRampToValueAtTime(gainFor('bed') * 0.85, at + 0.06);
+      layer.gain.setValueAtTime(gainFor('bed') * 0.85, at + span - 0.12);
+      layer.gain.linearRampToValueAtTime(0.0001, at + span);
+      source.connect(layer); layer.connect(master);
+      source.start(at, Math.max(0, (buffer.duration - ((at - downbeatAt) % buffer.duration)) % buffer.duration));
+      source.stop(at + span);
+    } catch (_) { /* the stab alone still lands */ }
+  }
+
   function onCombatEvent(event = {}) {
+    if (event.tuned) forkStab(event.tuned);
     const transitionTo = event.transition?.to;
     if (transitionTo != null && profile.mode === 'movement') {
       setMovement(transitionTo);
@@ -603,7 +681,7 @@ export function createBattleMusicSession({
     };
   }
   return {
-    start, update, onCombatEvent, setDialogueActive, setIntrusion, setSubmersion,
+    start, update, onCombatEvent, forkStab, setDialogueActive, setIntrusion, setSubmersion,
     beginReplayInterlude, resumeReplayInterlude, cancelReplayInterlude,
     finish, abort, snapshot,
   };

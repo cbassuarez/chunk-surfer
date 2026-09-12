@@ -75,10 +75,10 @@ function nativeWindowStub({ titleBar = TITLE_BAR_PX } = {}) {
   };
 }
 
-function withTauriWindow(fn) {
+async function withTauriWindow(fn) {
   const prior = globalThis.window;
   globalThis.window = { __TAURI_INTERNALS__: {}, innerWidth: 1280, innerHeight: 800 };
-  try { return fn(); } finally {
+  try { return await fn(); } finally {
     if (prior === undefined) delete globalThis.window;
     else globalThis.window = prior;
   }
@@ -357,4 +357,102 @@ test('releasing the lease disarms pending retries', async () => {
 
   controller.release('window-blur');
   assert.equal(timers.pending(), 0, 'blur must not leave the game reaching for the cursor');
+});
+
+// Model Tao's actual macOS side effect: positioning reconnects the OS cursor.
+// A stub that only logs a warp cannot catch the regression that broke windowed look.
+function taoWindow() {
+  let grabbed=false, visible=true;
+  const operations=[];
+  const win={
+    setCursorVisible:async value=>{visible=value;operations.push(`visible:${value}`);},
+    setCursorPosition:async ()=>{grabbed=false;operations.push('position:ungrabs');},
+    setCursorGrab:async value=>{grabbed=value;operations.push(`grab:${value}`);},
+    isFocused:async ()=>true,
+  };
+  return {win,operations,get grabbed(){return grabbed;},get visible(){return visible;},
+    api:{getCurrentWindow:()=>win,LogicalPosition:class {constructor(x,y){this.x=x;this.y=y;}}}};
+}
+
+test('Tao recenter is always followed by grab, including repeated edge recovery',async()=>{
+  await withTauriWindow(async()=>{
+    const native=taoWindow(),input=new InputManager(),clock=manualClock();
+    const controller=createPointerModeController({documentRef:documentStub(),getTargetElement:()=>targetStub(),
+      getState:playing,input,loadNativeWindowApi:async()=>native.api,nowFn:clock.now});
+    await controller.requestCaptureFromGesture();await settle(60);
+    assert.equal(native.grabbed,true);assert.equal(native.visible,false);
+    assert.deepEqual(native.operations.slice(-2),['position:ungrabs','grab:true']);
+    for(let i=0;i<30;i++){
+      clock.advance(400);move(controller,1279,400,800,0);await settle(30);
+      assert.equal(native.grabbed,true,`edge ${i} keeps OS confinement`);
+      assert.equal(input.pointerDx,800*(i+1),'fast movements are neither capped nor discarded while recentering');
+    }
+    controller.release('pause');await settle(30);
+    assert.equal(native.grabbed,false);assert.equal(native.visible,true);
+    assert.equal(input.pointerDx,0);
+  });
+});
+
+test('DOM lock acquisition keeps the native grab and consumes exactly one motion stream',async()=>{
+  await withTauriWindow(async()=>{
+    const native=taoWindow(),input=new InputManager(),doc=documentStub(),el=targetStub();
+    let unlocks=0;
+    const controller=createPointerModeController({documentRef:doc,getTargetElement:()=>el,getState:playing,input,
+      loadNativeWindowApi:async()=>native.api,onUnexpectedUnlock:()=>unlocks++});
+    await controller.requestCaptureFromGesture();await settle(60);
+    const before=native.operations.length;
+    doc.pointerLockElement=el;controller.handlePointerLockChange();await settle(30);
+    assert.equal(native.grabbed,true);assert.equal(native.operations.length,before,'lock notification does not release and reacquire');
+    const event={clientX:640,clientY:400,movementX:23,movementY:11};
+    controller.handlePointerMove(event);controller.handleMouseMove(event);
+    assert.equal(input.pointerDx,23);assert.equal(input.pointerDy,11);
+    doc.pointerLockElement=null;controller.handlePointerLockChange();await settle(30);
+    assert.equal(unlocks,1);assert.equal(native.grabbed,false);assert.equal(input.pointerLocked,false,'Escape releases both owners');
+  });
+});
+
+test('a release during acquisition cannot be followed by a stale grab',async()=>{
+  await withTauriWindow(async()=>{
+    const native=taoWindow(),input=new InputManager();let finishHide;
+    native.win.setCursorVisible=value=>value?Promise.resolve():new Promise(resolve=>{finishHide=resolve;});
+    const controller=createPointerModeController({documentRef:documentStub(),getTargetElement:()=>targetStub(),getState:playing,input,
+      loadNativeWindowApi:async()=>native.api});
+    await controller.requestCaptureFromGesture();await settle();assert.ok(finishHide);
+    controller.release('blur');finishHide();await settle(60);
+    assert.equal(native.grabbed,false);assert.ok(!native.operations.includes('grab:true'));
+    assert.equal(controller.isNativeCaptured(),false);assert.equal(input.pointerLocked,false);
+  });
+});
+
+test('old release completes before a new capture, and idle sync does not flood IPC',async()=>{
+  await withTauriWindow(async()=>{
+    const native=taoWindow(),input=new InputManager();let state=playing();
+    const controller=createPointerModeController({documentRef:documentStub(),getTargetElement:()=>targetStub(),getState:()=>state,input,
+      loadNativeWindowApi:async()=>native.api});
+    await controller.requestCaptureFromGesture();await settle(60);
+    const setGrab=native.win.setCursorGrab;let finishRelease;
+    native.win.setCursorGrab=value=>value?setGrab(value):new Promise(resolve=>{finishRelease=()=>{setGrab(false);resolve();};});
+    controller.release('menu');await settle();assert.ok(finishRelease);
+    await controller.requestCaptureFromGesture('resume');await settle();
+    assert.equal(controller.isNativeCaptured(),false,'new acquisition waits for release');
+    finishRelease();await settle(60);
+    assert.equal(controller.isNativeCaptured(),true);assert.equal(native.grabbed,true);
+    native.win.setCursorGrab=setGrab;state={...state,paused:true};
+    for(let i=0;i<50;i++)controller.sync('paused-frame');
+    await settle(60);const count=native.operations.length;
+    for(let i=0;i<50;i++)controller.sync('paused-frame');
+    await settle(30);assert.equal(native.operations.length,count);
+  });
+});
+
+test('background or UI-owned windows cannot acquire native look',async()=>{
+  await withTauriWindow(async()=>{
+    const native=taoWindow(),doc=documentStub();doc.hasFocus=()=>false;
+    const controller=createPointerModeController({documentRef:doc,getTargetElement:()=>targetStub(),getState:playing,
+      input:new InputManager(),loadNativeWindowApi:async()=>native.api});
+    await controller.requestCaptureFromGesture();await settle();assert.deepEqual(native.operations,[]);
+    doc.hasFocus=()=>true;native.win.isFocused=async()=>false;
+    await controller.requestCaptureFromGesture();await settle(60);
+    assert.ok(!native.operations.includes('grab:true'));assert.equal(controller.isNativeCaptured(),false);
+  });
 });

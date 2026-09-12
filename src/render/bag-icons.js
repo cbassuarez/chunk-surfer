@@ -97,6 +97,23 @@ function drawTuningFork(ctx, box) {
   path(ctx, [[.70,.18],[.82,.10]], box);
 }
 
+// THE ADJUSTABLE SPANNER. An open jaw with the worm screw under it, drawn from
+// the side the way a parts diagram would: the fixed jaw square, the sliding one
+// stepped back, and the knurl between them. Not a hammer and not a wrench with a
+// closed head — the adjustable is a specific object in this game and the icon
+// has to be the one in the van.
+function drawSpanner(ctx, box) {
+  // The open jaw.
+  path(ctx, [[.22,.10],[.22,.30],[.44,.30]], box);
+  path(ctx, [[.22,.42],[.44,.42],[.44,.22]], box);
+  // The knurl, and the shank running out of it.
+  path(ctx, [[.34,.44],[.34,.56]], box);
+  path(ctx, [[.28,.48],[.46,.48]], box);
+  path(ctx, [[.28,.53],[.46,.53]], box);
+  path(ctx, [[.38,.56],[.62,.92]], box);
+  path(ctx, [[.30,.60],[.54,.94]], box);
+}
+
 // NERVE. Not a heart — a hand held steady: a wrist, and the trace of a pulse
 // under it that has flattened out. The composure branch, drawn as the thing the
 // composure branch is about.
@@ -147,6 +164,7 @@ const DRAW = Object.freeze({
   radio: drawRadio,
   interface: drawInterface,
   'tuning-fork': drawTuningFork,
+  spanner: drawSpanner,
   nerve: drawNerve,
   keyring: drawKeyring,
   coffee: drawCoffee,

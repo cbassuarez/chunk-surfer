@@ -316,14 +316,14 @@
       "speaker": "STUDIO B3",
       "lines": [
         {
-          "who": "me",
-          "text": "Ellery, studio B3, room tone, take one.",
-          "prompt": "slate it: \"Ellery, studio B3, room tone, take one.\"",
+          "who": "direction",
+          "text": "After rolling, say the room, take number and date aloud. The clean-room timer starts after the slate.",
+          "prompt": "slate each take after rolling",
           "id": "slate.line.1"
         },
         {
           "who": "direction",
-          "text": "Your own voice comes back off the foam with everything above four hundred hertz taken out of it.",
+          "text": "Your slate goes onto the same tape as the room. Speak normally, then let it fall quiet.",
           "id": "slate.line.2"
         },
         {
@@ -333,7 +333,7 @@
         },
         {
           "who": "you",
-          "text": "I stopped doing it years ago, when the recorders started writing the metadata themselves.",
+          "text": "One tape for the whole job. Even a bad take uses tape; the counter never starts over.",
           "id": "slate.line.4"
         },
         {
@@ -455,8 +455,23 @@
         },
         {
           "who": "direction",
-          "text": "Headphones on. Press [r] to roll — and the moment you do, the room drops out, and you do not move.",
+          "text": "Press [r] to roll. Say the room, take number and date aloud, then fall quiet. With no microphone, the recordist says it for you.",
           "id": "roll.line.2"
+        },
+        {
+          "who": "direction",
+          "text": "Your spoken slate stays with the take on this device. With the reference mic, aim for sixty clean seconds; forty-five is enough. Other microphones change those times. Check the recorder: it tells you when STOP will save a usable take.",
+          "id": "roll.line.3"
+        },
+        {
+          "who": "direction",
+          "text": "You can stop early, even after ten or twenty seconds, and come back for a fresh take. Leave without a usable replacement and the job is unfinished.",
+          "id": "roll.line.4"
+        },
+        {
+          "who": "direction",
+          "text": "One tape for the whole job. Every attempt stays on it; the counter never resets. Rewind or fast-forward to replay a take.",
+          "id": "roll.line.5"
         }
       ],
       "id": "roll",

@@ -6,6 +6,18 @@ import { TECHNIQUE } from '../src/game/combat-state.js';
 import { MAP_LAB_CASES, mapLabJob, mapLabModel } from '../src/game/map-fixtures.js';
 import { bagGuideActions } from '../src/render/bag-view.js';
 import { mapLayoutFromBag } from '../src/render/map-layout.js';
+import { uiInit } from '../src/render/ui.js';
+
+// Pointer geometry needs a physical viewport, not the uninitialized 0×0 UI.
+{
+  const previous=new Map(['document','window','getComputedStyle'].map(key=>[key,Object.getOwnPropertyDescriptor(globalThis,key)]));
+  try{
+    globalThis.document={createElement:()=>({style:{},getContext:()=>null})};
+    globalThis.window={devicePixelRatio:1,addEventListener(){}};
+    globalThis.getComputedStyle=()=>({position:'relative'});
+    uiInit({clientWidth:1280,clientHeight:760,appendChild(){}});
+  }finally{for(const[key,descriptor]of previous){if(descriptor)Object.defineProperty(globalThis,key,descriptor);else delete globalThis[key];}}
+}
 
 const key=(bag,value,code=value)=>bag.key({key:value,code});
 const state=bag=>bag.debugState();
@@ -143,28 +155,27 @@ test('a failed waypoint callback cannot complete the gate, and an existing real 
   assert.equal(existing.stage(),'close');assert.equal(existing.target(),'main_b3');assert.equal(existing.marks(),0);existing.bag.exit();
 });
 
-test('the map guide points to and clicks the visible selected-room caption, never an invisible room-list row',()=>{
+test('the map guide marks only through the visible SET TARGET control, never a caption or room-selection click',()=>{
   const f=fixture({assistance:'severe'}),{bag}=f;
   try{
     key(bag,'4','Digit4');key(bag,'c','KeyC');key(bag,'2','Digit2');bag.render();
     assert.equal(f.stage(),'mark');assert.equal(f.target(),null);
+    key(bag,'F6');assert.equal(state(bag).mapNav.focusedControlId,null,'console mode cannot bypass the mandatory B3 guide');
     const selected=state(bag).mapSelected;
     assert.equal(selected.roomId,'main_b3');
-    const mapLayout=mapLayoutFromBag(f.rendered().layout),caption=mapLayout.detail;
+    const mapLayout=mapLayoutFromBag(f.rendered().layout);
     const roomHits=state(bag).hitRegions.filter(region=>region.kind==='map-space');
-    assert.equal(roomHits.length,1,'the renderer shows one selected-space caption, not a clickable room list');
-    const clickable=roomHits[0];
-    assert.equal(clickable.id,`bag:space:${selected.id}`);
-    assert.equal(clickable.label,selected.label);
-    for(const field of ['x','y','w','h'])assert.equal(clickable[field],caption[field],`caption hit ${field} comes from mapLayoutFromBag.detail`);
+    const room=roomHits.find(region=>region.id===`bag:space:${selected.id}`);
+    if(room){pointer(bag,'pointerdown',room);pointer(bag,'pointerdown',room);assert.equal(f.marks(),0,'room presses only select');}
+    const clickable=hit(bag,'bag:map:set-target');
     const target=f.rendered().guidePresentation.targets.find(item=>item.id===clickable.id);
-    assert.ok(target,'the guide identifies that same visible caption');
-    assert.deepEqual(target.rect,caption);
-    assert.equal(roomHits.some(region=>region.y>=mapLayout.legendRail.y),false,'no stale list hit lies over the legend below the caption');
+    assert.ok(target,'the guide identifies the actual SET TARGET key');
+    for(const field of ['x','y','w','h'])assert.equal(target.rect[field],clickable[field]);
     pointer(bag,'pointerdown',mapLayout.legendRail);
-    assert.equal(f.marks(),0,'clicking the old off-by-one row cannot mark a room');
+    pointer(bag,'pointerdown',mapLayout.detail);
+    assert.equal(f.marks(),0,'a legend or selected-room caption cannot mark a room');
     assert.equal(f.stage(),'mark');
-    pointer(bag,'pointerdown',caption);
+    pointer(bag,'pointerdown',clickable);
     assert.equal(f.target(),'main_b3');assert.equal(f.marks(),1);assert.equal(f.stage(),'close');
     const marked=f.events.find(event=>event.type==='marked');
     assert.equal(marked.roomId,'main_b3');assert.equal(marked.spaceId,selected.id);

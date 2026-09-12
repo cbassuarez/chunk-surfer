@@ -9,6 +9,18 @@ export function floorForHeight(definition, height, { renderGroup = null } = {}) 
     .slice()
     .sort((a, b) => a.order - b.order)
     .filter((floor) => h >= floor.minHeight && h < floor.maxHeight);
+  // The high band is shared by different structures. A hall balcony is not
+  // the chapel tower, and the main stair does not detour through the tower on
+  // its way to the academic floor. Compiled render groups are the same physical
+  // identity used by geometry, player poses and stair endpoints. Preserve the
+  // old height-only fallback for fixtures/unknown groups and all lower levels.
+  const tower = definition?.floors?.find(floor => floor.id === 'tower');
+  if (tower && h >= tower.minHeight) {
+    const structuralId = renderGroup === 'academic' ? 'academic'
+      : renderGroup === 'upper' || renderGroup === 'hall' ? 'u1' : null;
+    const structural = structuralId && definition.floors.find(floor => floor.id === structuralId);
+    if (structural) return structural;
+  }
   if (renderGroup) {
     const specific = candidates.find((floor) => Array.isArray(floor.renderGroups) && floor.renderGroups.includes(renderGroup));
     if (specific) return specific;

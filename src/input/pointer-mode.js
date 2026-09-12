@@ -18,10 +18,9 @@ function errorName(err) {
   return err.name || err.message || String(err);
 }
 
-function clampDelta(v, limit = 140) {
-  const n = Number(v) || 0;
-  if (!Number.isFinite(n)) return 0;
-  return Math.max(-limit, Math.min(limit, n));
+function finiteDelta(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
 }
 
 const REQUIRED_TAURI_CURSOR_PERMISSIONS = Object.freeze([
@@ -70,6 +69,14 @@ export function createPointerModeController({
   let expectedUnlockReason = null;
   let wasLocked = false;
   let captureGeneration = 0;
+  // Native calls cross IPC. Finish an old release before starting a new grab,
+  // and never let a delayed recenter undo a newer capture.
+  let nativeOperations = Promise.resolve();
+  const enqueueNative = operation => {
+    const result = nativeOperations.then(operation);
+    nativeOperations = result.catch(() => {});
+    return result;
+  };
 
   const backend = {
     kind: 'pointer-lock',
@@ -90,6 +97,8 @@ export function createPointerModeController({
     available: null,
     active: false,
     pending: false,
+    cursorOwned: false,
+    positionPending: false,
     calibrated: false,
     calibrationPending: false,
     calibrationFailed: false,
@@ -174,7 +183,9 @@ export function createPointerModeController({
       && !!s.storyMode
       && !!s.inRogue
       && !s.paused
-      && !(s.blocksLook ?? s.blocksInput);
+      && !(s.blocksLook ?? s.blocksInput)
+      && documentRef?.visibilityState !== 'hidden'
+      && (typeof documentRef?.hasFocus !== 'function' || documentRef.hasFocus());
   }
 
   function target() { return getTargetElement?.() || null; }
@@ -306,58 +317,62 @@ export function createPointerModeController({
     return true;
   }
 
-  async function stopNativeCapture(reason = 'release') {
-    const gen = ++captureGeneration;
-    const win = native.win;
+  const currentCapture = generation => generation === captureGeneration && wantsCapture();
+
+  async function restoreNativeCursor(reason) {
+    try { await native.win?.setCursorGrab?.(false); } catch (err) { markNativeError(err, `${reason}:ungrab`); }
+    try { await native.win?.setCursorVisible?.(true); } catch (err) { markNativeError(err, `${reason}:show`); }
+    native.cursorOwned = false;
+  }
+
+  function stopNativeCapture(reason = 'release') {
+    const needsRelease = native.active || native.pending || native.cursorOwned;
+    native.generation = ++captureGeneration;
     native.active = false;
     native.pending = false;
+    native.cursorOwned = false;
     native.recenterPending = false;
-    native.generation = gen;
-    // The next capture may happen in a different window geometry (fullscreen
-    // toggled, window moved). Re-learn the anchor rather than inherit one.
     resetNativeCalibration();
-    try { await win?.setCursorGrab?.(false); } catch (err) { markNativeError(err, `${reason}:set-cursor-grab:false`); }
-    try { await win?.setCursorVisible?.(true); } catch (err) { markNativeError(err, `${reason}:set-cursor-visible:true`); }
+    // sync() also runs while a menu is open. Do not send release IPC every frame.
+    return needsRelease ? enqueueNative(() => restoreNativeCursor(reason)) : Promise.resolve();
   }
 
-  async function failNativeCapture(reason, err = null) {
-    if (err) markNativeError(err, reason);
-    else markNativeError(reason, reason);
-    await stopNativeCapture(reason);
-    if (!lockedToTarget()) {
-      setInputLocked(false, reason);
-      setBodyClasses('ui');
-      lastMode = wantsCapture() ? 'gameplay-ready' : 'ui';
-    }
-    return false;
+  // Tao 0.35.x/macOS setCursorPosition calls CGAssociateMouseAndMouseCursorPosition
+  // with true after warping. Position MUST precede grab, including edge/resize
+  // recovery. A successful position call alone is not evidence of confinement.
+  async function centerAndGrab(generation) {
+    if (!currentCapture(generation)) return false;
+    const { x, y } = updateCenter(true);
+    native.recenterPending = true;
+    native.recenterGeneration = generation;
+    native.recenterAt = timeNow();
+    native.recenterCount += 1;
+    await setNativeCursorPosition(x, y);
+    if (!currentCapture(generation)) return false;
+    if (native.win.isFocused && !await native.win.isFocused()) throw new Error('window not focused');
+    if (!currentCapture(generation)) return false;
+    await native.win.setCursorGrab(true);
+    return currentCapture(generation);
   }
 
-  async function recenterNativeCursor({ force = false, generation = captureGeneration, expectCalibration = false } = {}) {
-    if (generation !== captureGeneration) return false;
-    if (!native.active && !native.pending && !force) return false;
-    updateCenter(true);
-    const { x, y } = native.center;
-    if (!Number.isFinite(x) || !Number.isFinite(y)) return false;
-    try {
-      native.recenterPending = true;
-      native.recenterGeneration = generation;
-      native.recenterAt = timeNow();
-      native.recenterCount += 1;
-      if (expectCalibration) {
-        native.calibrationPending = true;
-        native.calibrated = false;
-        native.calibrationFailed = false;
-      }
-      await setNativeCursorPosition(x, y);
-      return generation === captureGeneration;
-    } catch (err) {
-      await failNativeCapture('set-cursor-position', err);
-      return false;
-    }
+  function recenterNativeCursor({ generation = captureGeneration } = {}) {
+    if (!native.active || native.positionPending || !currentCapture(generation)) return Promise.resolve(false);
+    native.positionPending = true;
+    return enqueueNative(async () => {
+      try { return await centerAndGrab(generation); }
+      catch (err) {
+        if (generation !== captureGeneration) return false;
+        markNativeError(err, 'recenter-and-grab');
+        native.active = false;
+        await restoreNativeCursor('recenter-failed');
+        if (!lockedToTarget()) { setInputLocked(false, 'recenter-failed'); setBodyClasses('ui'); }
+        return false;
+      } finally { native.positionPending = false; }
+    });
   }
 
   async function startNativeCapture(reason = 'native-capture', generation = captureGeneration) {
-    if (!allowSoftCaptureFallback || !wantsCapture()) return false;
+    if (!allowSoftCaptureFallback || !currentCapture(generation)) return false;
     if (native.active) return true;
     if (native.pending) return false;
     native.pending = true;
@@ -365,58 +380,44 @@ export function createPointerModeController({
     native.error = null;
     native.fatalReason = '';
 
-    if (!await loadTauriWindow()) {
-      native.pending = false;
+    if (!await loadTauriWindow() || !currentCapture(generation)) {
+      if (native.generation === generation) native.pending = false;
       return false;
     }
-    if (generation !== captureGeneration || !wantsCapture()) {
-      native.pending = false;
-      return false;
-    }
-
-    try {
-      updateCenter(true);
-      // These are required for free-look. If grab or hide fails, do not pretend
-      // we have capture; fall back to drag-look instead.
-      if (!native.win?.setCursorVisible) throw new Error('setCursorVisible unavailable');
-      if (!native.win?.setCursorGrab) throw new Error('setCursorGrab unavailable');
-      // TAKE THE OS WINDOW FIRST. main.js already calls window.focus() before
-      // asking for capture, but in the Tauri shell that only touches the
-      // webview — it cannot raise or focus the native window, so a click on an
-      // unfocused window grabbed a cursor for a window that was not receiving
-      // input. Not fatal if the running Tauri version lacks it.
-      if (typeof native.win.setFocus === 'function') {
-        try { await native.win.setFocus(); } catch (_) {}
+    return enqueueNative(async () => {
+      try {
+        if (!currentCapture(generation)) return false;
+        if (!native.win?.setCursorVisible) throw new Error('setCursorVisible unavailable');
+        if (!native.win?.setCursorGrab) throw new Error('setCursorGrab unavailable');
+        // Never focus another OS window from an unattended capture retry.
+        if (native.win.isFocused && !await native.win.isFocused()) throw new Error('window not focused');
+        if (!currentCapture(generation)) return false;
+        native.cursorOwned = true;
+        await native.win.setCursorVisible(false);
+        if (!currentCapture(generation)) return false;
+        resetNativeCalibration();
+        if (!await centerAndGrab(generation)) return false;
+        native.active = true;
+        native.calibrated = true;
+        native.calibrationFailed = false;
+        native.coordinateSpace = 'relative-motion';
+        lastMode = lockedToTarget() ? 'captured' : 'native-captured';
+        lastReason = reason;
+        backend.fallbackReason = 'native-cursor-capture';
+        setBodyClasses(lastMode);
+        setInputLocked(true, `native-capture:${reason}`);
+        return true;
+      } catch (err) {
+        if (generation !== captureGeneration) return false;
+        markNativeError(err, reason);
+        native.active = false;
+        await restoreNativeCursor(reason);
+        if (!lockedToTarget()) { setInputLocked(false, reason); setBodyClasses('ui'); }
+        return false;
+      } finally {
+        if (native.generation === generation) native.pending = false;
       }
-      await native.win.setCursorVisible(false);
-      await native.win.setCursorGrab(true);
-
-      native.active = true;
-      native.pending = false;
-      resetNativeCalibration();
-      // Camera input is relative. Absolute client coordinates are only an
-      // emergency fallback for old WebViews; they are never integrated from a
-      // fixed window centre, because title bars and DPI transforms turn that
-      // fixed offset into permanent look drift.
-      native.calibrated = true;
-      native.calibrationFailed = false;
-      native.coordinateSpace = 'relative-motion';
-      native.generation = generation;
-      native.suppressMovementUntil = timeNow() + 80;
-      const ok = await recenterNativeCursor({ force: true, generation, expectCalibration: false });
-      if (!ok || generation !== captureGeneration || !wantsCapture()) return failNativeCapture(`${reason}:stale-after-recenter`);
-
-      lastMode = 'native-captured';
-      lastReason = reason;
-      backend.fallbackReason = 'native-cursor-capture';
-      setBodyClasses('native-captured');
-      setInputLocked(true, `native-capture:${reason}`);
-      return true;
-    } catch (err) {
-      native.pending = false;
-      await failNativeCapture(reason, err);
-      return false;
-    }
+    });
   }
 
   function stopDragLook(reason = 'drag-look-disabled') {
@@ -501,20 +502,9 @@ export function createPointerModeController({
     }
 
     if (lockedToTarget()) {
-      // DOM POINTER LOCK IS NOT CONFINEMENT IN A WKWEBVIEW.
-      //
-      // In a browser, a true lock hides the cursor and pins it: movementX/Y keep
-      // arriving forever and the pointer cannot reach an edge. In the Tauri
-      // shell on macOS the lock is granted — `pointerLockElement` is set, and
-      // movementX/Y flow, so look feels perfect — while the OS cursor is never
-      // actually captured. It keeps physically travelling, reaches the edge of
-      // the window, and is handed back to the desktop mid-turn.
-      //
-      // So under Tauri the two backends do different jobs and BOTH run: DOM lock
-      // supplies the deltas, and the native grab supplies the thing it cannot —
-      // hiding and recentring the real cursor so there is no edge to reach.
-      // Stopping the native capture here, which is what this did, switched off
-      // the only confinement the shell had.
+      // The desktop shell keeps an OS grab alongside DOM relative events.
+      // Acquisition and pointerlockchange share this owner; neither may undo
+      // the other's native grab. Only mousemove supplies camera deltas here.
       if (tauriRuntime()) {
         if (!native.active && !native.pending) void startNativeCapture(`${reason}:tauri-confine`, captureGeneration);
       } else if (native.active || native.pending) {
@@ -524,7 +514,7 @@ export function createPointerModeController({
       setBodyClasses('captured');
       setInputLocked(true, reason);
       wasLocked = true;
-      return { mode: lastMode, wantsCapture: true, locked: true, softCaptured: false, nativeCaptured: false, dragLook: false };
+      return { mode: lastMode, wantsCapture: true, locked: true, softCaptured: false, nativeCaptured: nativeCaptured(), dragLook: false };
     }
 
     if (nativeCaptured()) {
@@ -641,16 +631,17 @@ export function createPointerModeController({
   function handlePointerLockChange() {
     const locked = lockedToTarget();
     if (locked) {
-      captureGeneration += 1;
       clearCaptureRetry();
-      if (native.active || native.pending) void stopNativeCapture('pointerlock-acquired:native');
+      if (!tauriRuntime()) {
+        if (native.active || native.pending) void stopNativeCapture('pointerlock-acquired:native');
+        else captureGeneration += 1;
+      }
     }
     setInputLocked(locked || nativeCaptured(), locked ? 'pointerlock-acquired' : 'pointerlock-lost');
 
     const docFocused = typeof documentRef?.hasFocus === 'function' ? documentRef.hasFocus() : true;
     const lostUnexpectedly = wasLocked
       && !locked
-      && !nativeCaptured()
       && wantsCapture()
       && !expectedUnlockReason
       && documentRef?.visibilityState !== 'hidden'
@@ -661,14 +652,14 @@ export function createPointerModeController({
     wasLocked = locked;
 
     if (locked) backend.lastResult = 'locked';
-    sync(reason);
     if (lostUnexpectedly) {
+      // The browser's unlock gesture also releases the desktop grab. Keeping
+      // native capture here would trap the pointer after Escape.
+      release(reason);
       onUnexpectedUnlock(reason);
-      // The callback may open pause (Escape unlock) and revoke the lease. If it
-      // did not—WebView focus churn during dialogue is the common case—recover
-      // without making the player alt-tab or donate another click.
-      if (wantsCapture()) fallbackToNativeOrRetry(`${reason}:unexpected-unlock`, captureGeneration);
+      return;
     }
+    sync(reason);
   }
 
   function handlePointerLockError(err = null) {
@@ -680,7 +671,7 @@ export function createPointerModeController({
     if (wantsCapture()) fallbackToNativeOrRetry(`${backend.lastRequestReason || 'pointerlockerror'}:native-fallback`, generation);
   }
 
-  function handleNativePointerMove(e = {}, { confineOnly = false } = {}) {
+  function handleNativePointerMove(e = {}) {
     if (!nativeCaptured() || !wantsCapture()) return false;
     native.moves += 1;
     const now = timeNow();
@@ -696,14 +687,15 @@ export function createPointerModeController({
     const landedY = point.y - c.y;
     native.lastOffset = { dx: landedX, dy: landedY };
 
-    // setCursorPosition dispatches a synthetic move in some WebViews. It is a
-    // transport echo, never camera intent. Ignore the first event in the short
-    // IPC window and remember where the cursor actually landed so diagnostics
-    // remain useful across title bars and DPI scaling.
+    // Ignore a warp landing, not an arbitrary 80ms of real hand movement.
+    // Current Tao/macOS warps do not emit events, but older WebViews may do so.
     const recentRecenter = native.recenterPending
       && native.recenterGeneration === native.generation
       && now - native.recenterAt < native.echoWindowMs;
-    if (recentRecenter && now <= native.suppressMovementUntil) {
+    const atAnchor = Math.abs(landedX) <= 2 && Math.abs(landedY) <= 48;
+    const initialEcho = !native.expectedEcho && atAnchor
+      && (!hadPrevious && (!Number(e.movementX) && (!Number(e.movementY) || Math.abs(Number(e.movementY)-landedY)<=2)));
+    if (recentRecenter && initialEcho) {
       native.bias = { x: landedX, y: landedY };
       native.recenterPending = false;
       native.ignoredRecenters += 1;
@@ -711,12 +703,7 @@ export function createPointerModeController({
       native.lastDeltaReason = 'native-recenter-ignored';
       return true;
     }
-    if (now < native.suppressMovementUntil) {
-      native.lastAppliedDelta = { dx: 0, dy: 0 };
-      native.lastDeltaReason = 'native-recenter-settling';
-      return true;
-    }
-    native.recenterPending = false;
+    if (!recentRecenter) native.recenterPending = false;
 
     const movementX = Number(e.movementX);
     const movementY = Number(e.movementY);
@@ -736,20 +723,8 @@ export function createPointerModeController({
       native.absoluteFallbackEvents += 1;
       native.lastDeltaReason = 'tauri-native-event-delta';
     }
-    // THE RECENTER ECHO, CAUGHT BY SHAPE RATHER THAN BY CLOCK.
-    //
-    // The timing test above needs `now <= suppressMovementUntil`, which is set
-    // to now+80ms, so the 350ms echoWindowMs was never actually reachable. When
-    // the synthetic event took longer than 80ms to return through IPC it was
-    // applied as camera intent — and because recentring always jumps the cursor
-    // toward the middle, that error had a direction. Push the mouse down to
-    // look down, hit the bottom edge, and the echo kicked the view UP. A
-    // handful of those pinned the camera on the ceiling and fought every
-    // attempt to look away from it.
-    //
-    // An echo is recognisable regardless of when it lands: its delta is the
-    // jump the recenter just made. Matching that is time-independent, so a slow
-    // IPC round trip can no longer be mistaken for a hand movement.
+    // A warp echo must both land at the anchor and match the requested jump.
+    // Timing alone would discard a real movement made during the IPC round trip.
     const echo = native.expectedEcho;
     if (echo && (dx || dy)) {
       const near = Math.abs(dx - echo.dx) <= Math.max(24, Math.abs(echo.dx) * 0.3)
@@ -757,7 +732,9 @@ export function createPointerModeController({
       // A stale expectation must not swallow real movement, so it only lives
       // for as long as an IPC round trip could plausibly take.
       const fresh = now - echo.at < native.echoWindowMs;
-      if (fresh && near) {
+      const anchor = nativeAnchor();
+      const landed = Math.abs(point.x-anchor.x)<=6 && Math.abs(point.y-anchor.y)<=6;
+      if (fresh && near && landed) {
         native.expectedEcho = null;
         native.ignoredRecenters += 1;
         native.lastAppliedDelta = { dx: 0, dy: 0 };
@@ -768,13 +745,11 @@ export function createPointerModeController({
     }
     dx = Math.abs(dx) >= native.deadzone ? dx : 0;
     dy = Math.abs(dy) >= native.deadzone ? dy : 0;
-    dx = clampDelta(dx);
-    dy = clampDelta(dy);
+    dx = finiteDelta(dx);
+    dy = finiteDelta(dy);
     native.lastAppliedDelta = { dx, dy };
 
-    // confineOnly: DOM pointer lock is already feeding movementX/Y through
-    // mousemove, so counting these too would run look at double speed.
-    if ((dx || dy) && !confineOnly) {
+    if (dx || dy) {
       if (input?.addPointerDelta?.(dx, dy, native.lastDeltaReason)) native.addedDeltas += 1;
     }
 
@@ -784,10 +759,11 @@ export function createPointerModeController({
     const rect = target()?.getBoundingClientRect?.();
     const right = rect ? (Number.isFinite(rect.right) ? rect.right : rect.left + rect.width) : 0;
     const bottom = rect ? (Number.isFinite(rect.bottom) ? rect.bottom : rect.top + rect.height) : 0;
-    const edge = rect && (point.x <= rect.left + 12 || point.x >= right - 12
-      || point.y <= rect.top + 12 || point.y >= bottom - 12);
-    if (edge) {
-      native.suppressMovementUntil = now + 80;
+    const marginX = rect ? Math.max(24,rect.width*.2) : 0;
+    const marginY = rect ? Math.max(24,rect.height*.2) : 0;
+    const edge = rect && (point.x <= rect.left + marginX || point.x >= right - marginX
+      || point.y <= rect.top + marginY || point.y >= bottom - marginY);
+    if (edge && !lockedToTarget() && !native.positionPending) {
       // Remember the jump this recenter is about to make. The echo it provokes
       // will carry almost exactly this delta, which identifies it far more
       // reliably than the arrival time does — see expectedEcho in the move
@@ -800,17 +776,17 @@ export function createPointerModeController({
   }
 
   function handlePointerMove(e = {}) {
-    // ONE SOURCE OF DELTAS, BUT THE CONFINEMENT STILL HAS TO RUN.
-    //
-    // When both backends are live — the Tauri case in sync() above — the DOM
-    // lock owns look and the native grab owns confinement. Returning early here
-    // was wrong twice over: it stopped the double-counting, and it also skipped
-    // the edge recentre at the bottom of handleNativePointerMove, which is the
-    // ONLY thing actually holding the cursor inside the window. setCursorGrab
-    // does not confine on macOS; warping the pointer back off the edge does. So
-    // the native handler still runs, and only its delta feed is suppressed.
-    if (nativeCaptured()) return handleNativePointerMove(e, { confineOnly: lockedToTarget() });
+    // PointerEvents and MouseEvents describe the same hand movement. A DOM
+    // lock uses mousemove only; native fallback uses pointermove only.
+    if (!lockedToTarget() && nativeCaptured()) return handleNativePointerMove(e);
     return false;
+  }
+
+  function handleMouseMove(e = {}) {
+    if (!lockedToTarget() || !wantsCapture()) return false;
+    if (nativeCaptured()) return handleNativePointerMove(e);
+    if (native.cursorOwned) return true; // acquisition is still crossing IPC
+    return input?.mouseMove?.(e) || false;
   }
 
   // Backwards-compatible name from the previous patches.
@@ -968,6 +944,7 @@ export function createPointerModeController({
     handlePointerLockChange,
     handlePointerLockError,
     handlePointerMove,
+    handleMouseMove,
     handleSoftPointerMove,
     isSoftCaptured,
     isTrueLocked,

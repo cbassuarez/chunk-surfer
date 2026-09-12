@@ -43,6 +43,8 @@
 // the guest is chosen once and stored, never re-rolled.
 const state = {
   takes: new Map(),          // roomId -> record (see freshRecord)
+  history: [],              // physical order, including failed attempts
+  head: 0, end: 0, seeking: null,
   playing: null,             // { roomId, nodes:[], startedAt, endsAt }
   ctx: null,
   bus: null,
@@ -52,10 +54,11 @@ const state = {
   chunkByKey: null,          // (key) -> chunk, coming back
   onGuest: null,             // fired when the guest crosses audibility
   scheduleDiscrete: null,
+  onTransport: null, playSlate: null,
 };
 
 export const PLAYBACK = {
-  seconds: 22,               // you do not sit through the whole minute
+  seconds: 22,               // default for legacy presentation-only snapshots
   bedGain: 0.014,
   guestDelaySec: 6.5,        // long enough to relax into the tape
   guestRiseSec: 9.0,         // and slow enough to disbelieve
@@ -74,7 +77,7 @@ export const PLAYBACK = {
   // microphone, the meter said so at the time, and the recording agrees. An
   // unreliable recorder is a haunted object; a recorder that heard something is
   // a worse claim, and it is only worth making if the instruments corroborate.
-  sourceSeconds: 45,         // mirrors ROOM_TONE.takeSeconds
+  sourceSeconds: 45,         // old saves without a recorded duration
   presenceFloor: 0.12,       // under this the take is an ordinary take
   presenceGain: 1.15,        // how much a close pass adds to the guest
   guestCeiling: 0.62,        // it is still a recording, not a jump scare
@@ -82,7 +85,7 @@ export const PLAYBACK = {
   guestEnterMinSec: 1.4,     // never on top of the take's own fade-in
 };
 
-export function playbackInit({ ctx, bus, pickGuest, chunkById, keyOf, chunkByKey, onGuest, scheduleDiscrete } = {}) {
+export function playbackInit({ ctx, bus, pickGuest, chunkById, keyOf, chunkByKey, onGuest, scheduleDiscrete, onTransport, playSlate } = {}) {
   state.ctx = ctx || state.ctx;
   state.bus = bus || state.bus;
   if (pickGuest) state.pickGuest = pickGuest;
@@ -91,6 +94,8 @@ export function playbackInit({ ctx, bus, pickGuest, chunkById, keyOf, chunkByKey
   if (chunkByKey) state.chunkByKey = chunkByKey;
   if (onGuest) state.onGuest = onGuest;
   if(scheduleDiscrete)state.scheduleDiscrete=scheduleDiscrete;
+  if(onTransport)state.onTransport=onTransport;
+  if(playSlate)state.playSlate=playSlate;
 }
 
 // A sample's identity ON DISK. The in-memory key is the manifest index, which
@@ -129,9 +134,21 @@ export function noteDiscrete(roomId,event={}){
   take.discrete.push({cueId:String(event.cueId||''),atSec:Math.max(0,Number(event.atSec)||0),gain:Number.isFinite(Number(event.gain))?Number(event.gain):1,pan:Math.max(-1,Math.min(1,Number(event.pan)||0)),provenance:{...(event.provenance||{})}});
 }
 
-export function beginTake(roomId, cell) {
+const sourceDuration = (value) => {
+  const seconds = Number(value);
+  return Number.isFinite(seconds) && seconds > 0 ? Math.max(.01, Math.min(3600, seconds)) : PLAYBACK.sourceSeconds;
+};
+const sourcePosition = (atSec, durationSeconds) => {
+  const seconds = Number(atSec);
+  return Math.max(0, Math.min(1, (Number.isFinite(seconds) ? seconds : 0) / sourceDuration(durationSeconds)));
+};
+
+export function beginTake(roomId, cell, { durationSeconds = PLAYBACK.sourceSeconds } = {}) {
+  const previous=state.takes.get(roomId);
   state.takes.set(roomId, {
+    previous:previous?.sealed?previous:previous?.previous||null,
     roomId, cell: { ...cell }, levels: new Map(), discrete: [],
+    durationSeconds: sourceDuration(durationSeconds),
     presence: { peak: 0, atSec: 0 }, sealed: false, at: 0,
     // Was the room humming when this was rolled, and where in it did he stand.
     // Both used to live in their own arrays on the recordist, keyed by room, so
@@ -180,7 +197,67 @@ export function notePresence(roomId, level, atSec = 0) {
   t.presence = { peak: value, atSec: Math.max(0, Number(atSec) || 0) };
 }
 
-export function abortTake(roomId) { state.takes.delete(roomId); }
+export function abortTake(roomId) {
+  const take=state.takes.get(roomId);
+  if(take?.sealed)return false;
+  if(take?.previous)state.takes.set(roomId,take.previous);
+  else state.takes.delete(roomId);
+  return true;
+}
+
+export function startTapeTake(roomId, slate = null) {
+  const take=state.takes.get(roomId);
+  if(!take||take.sealed)return null;
+  take.id=`take:${state.history.length+1}`;
+  take.ordinal=state.history.length+1;
+  take.startSeconds=state.end;
+  take.endSeconds=state.end;
+  take.slate=slate;
+  state.head=state.end;
+  return take;
+}
+
+export function advanceTape(roomId, elapsedSeconds) {
+  const take=state.takes.get(roomId);
+  if(!take?.id||take.sealed)return;
+  take.endSeconds=take.startSeconds+Math.max(0,Number(elapsedSeconds)||0);
+  state.head=state.end=Math.max(state.end,take.endSeconds);
+}
+
+export function finishTapeTake(roomId, result = {}) {
+  const take=state.takes.get(roomId);
+  if(!take||take.sealed)return null;
+  if(!take.id)startTapeTake(roomId);
+  advanceTape(roomId,result.tapeElapsed??result.elapsed??0);
+  take.durationSeconds=Math.max(.01,take.endSeconds-take.startSeconds);
+  take.cleanSeconds=Math.max(0,result.elapsed||0);
+  take.status=result.completed?'accepted':result.spoiled?'spoiled':'abandoned';
+  take.counted=!!result.completed;
+  const sealed=sealTake(roomId);
+  if(!result.completed){
+    if(take.previous)state.takes.set(roomId,take.previous);
+    else state.takes.delete(roomId);
+  }
+  delete take.previous;
+  return sealed;
+}
+
+export function tapeTakes(){return state.history.slice();}
+export function tapeTransport(){return {version:2,headSeconds:state.head,endSeconds:state.end};}
+export function loadTapeTransport(saved){
+  state.head=Math.max(0,Math.min(state.end,Number.isFinite(saved?.headSeconds)?saved.headSeconds:state.end));
+}
+export function tapeTake(id){return state.history.find(t=>t.id===id)||state.takes.get(id)||null;}
+
+function seekTo(target, then=null){
+  const distance=Math.abs(target-state.head);
+  if(distance<.05)return false;
+  const seconds=Math.min(3,Math.max(.35,distance/60));
+  const sound=state.onTransport?.(target<state.head?'rewind':'forward',seconds);
+  state.seeking={from:state.head,to:target,startedAt:state.ctx?.currentTime||0,seconds,then,sound};
+  return true;
+}
+export function cueTapeEnd(){return seekTo(state.end);}
 
 // A completed take is sealed: the guest is chosen once and never re-rolled, so
 // playing the tape twice plays the same tape. A tape that changes is a dream.
@@ -197,10 +274,17 @@ export function sealTake(roomId) {
   t.guest = guest ? { id: guest.idx, key: sampleKey(guest) } : null;
   t.sealed = true;
   t.at = Date.now();
+  if(!t.id){
+    t.id=`take:${state.history.length+1}`;t.ordinal=state.history.length+1;
+    t.startSeconds=state.end;t.endSeconds=state.end+sourceDuration(t.durationSeconds);
+    state.head=state.end=t.endSeconds;
+  }
+  t.status ||= 'accepted';
+  if(!state.history.includes(t))state.history.push(t);
   return t;
 }
 
-export function hasTake(roomId) { return !!state.takes.get(roomId)?.sealed; }
+export function hasTake(roomId) { return !!tapeTake(roomId)?.sealed; }
 export function takeFor(roomId) { return state.takes.get(roomId) || null; }
 
 // WHERE IN THE MINUTE THINGS HAPPENED.
@@ -213,11 +297,11 @@ export function takeFor(roomId) { return state.takes.get(roomId) || null; }
 // Positions are 0..1 across the take's own length, so the strip and the time
 // counter cannot disagree. Works on a take still rolling as well as a sealed
 // one, because both are the same record.
-export function takeMarks(roomId, { seconds = PLAYBACK.sourceSeconds } = {}) {
+export function takeMarks(roomId, { seconds = null } = {}) {
   const t = state.takes.get(roomId);
   if (!t) return [];
-  const span = Math.max(1, Number(seconds) || 1);
-  const at = (sec) => clamp01(Math.max(0, Number(sec) || 0) / span);
+  const span = sourceDuration(seconds ?? t.durationSeconds);
+  const at = (sec) => sourcePosition(sec, span);
   const marks = [];
   for (const event of t.discrete || []) {
     marks.push({ at: at(event?.atSec), kind: 'event', id: String(event?.cueId || 'event') });
@@ -229,14 +313,14 @@ export function takeMarks(roomId, { seconds = PLAYBACK.sourceSeconds } = {}) {
   }
   return marks.sort((a, b) => a.at - b.at);
 }
-export function isPlaying() { return !!state.playing; }
+export function isPlaying() { return !!state.playing || !!state.seeking; }
 
 // ── the store, read ──────────────────────────────────────────────────────────
 // Everything the recordist used to answer from three parallel arrays. Order is
 // the order they were rolled, which is the ordinal the job sheet prints.
 // The job sheet: every room that has been recorded, whether or not the
 // transport has settled yet.
-export function sealedTakes() { return [...state.takes.values()].filter((t) => t.sealed || t.counted); }
+export function sealedTakes() { return [...state.takes.values()].map(t=>t.sealed||t.counted?t:t.previous).filter(Boolean); }
 export function takeRoomIds() { return sealedTakes().map((t) => t.roomId); }
 export function takeIsContaminated(roomId) { return !!state.takes.get(roomId)?.contaminated; }
 export function contaminatedRooms() { return sealedTakes().filter((t) => t.contaminated).map((t) => t.roomId); }
@@ -244,7 +328,10 @@ export function takePlace(roomId) { return state.takes.get(roomId)?.place || nul
 export function takePlaces() {
   return Object.fromEntries(sealedTakes().filter((t) => t.place).map((t) => [t.roomId, t.place]));
 }
-export function forgetTake(roomId) { return state.takes.delete(roomId); }
+export function forgetTake(roomId) {
+  for(const take of state.history)if(take.roomId===roomId)take.voided=true;
+  return state.takes.delete(roomId);
+}
 
 // ── the store, written to disk ───────────────────────────────────────────────
 //
@@ -253,16 +340,20 @@ export function forgetTake(roomId) { return state.takes.delete(roomId); }
 // plain data, and every sample reference goes out as a NAME so it survives the
 // manifest changing under it.
 export function serializeTakes() {
-  return sealedTakes().map((t) => ({
+  return [...new Set([...state.history,...sealedTakes(),...[...state.takes.values()].filter(t=>t.id&&!t.sealed)])].map((t) => ({
+    id:t.id,ordinal:t.ordinal,startSeconds:t.startSeconds,endSeconds:t.endSeconds,
+    status:t.status||(t.id&&!t.sealed?'abandoned':'accepted'),cleanSeconds:Number(t.cleanSeconds)||0,slate:t.slate?{...t.slate}:null,
+    voided:!!t.voided,
     roomId: t.roomId,
     at: t.at,
-    counted: true,
+    durationSeconds: t.id&&!t.sealed?Math.max(.01,t.endSeconds-t.startSeconds):sourceDuration(t.durationSeconds),
+    counted: t.status? t.status==='accepted'&&!t.voided : !t.id||!!t.sealed,
     migrated: !!t.migrated,
-    cell: t.cell ? { x: t.cell.x, y: t.cell.y } : null,
+    cell: t.cell ? { x: Number(t.cell.x)||0, y: Number(t.cell.y)||0 } : null,
     contaminated: !!t.contaminated,
     place: t.place || null,
     presence: { peak: t.presence?.peak || 0, atSec: t.presence?.atSec || 0 },
-    audible: (t.audible || []).map(([ref, level]) => [
+    audible: (t.audible || [...(t.levels||new Map()).entries()].sort((a,b)=>b[1]-a[1]).slice(0,6)).map(([ref, level]) => [
       typeof ref === 'number' ? (sampleKey(state.chunkById?.(ref)) || String(ref)) : String(ref),
       level,
     ]),
@@ -275,13 +366,21 @@ export function serializeTakes() {
 // on the tape any more — the take still plays, one voice quieter, rather than
 // refusing to play at all.
 export function loadTakes(saved = []) {
+  stopPlayback();
   state.takes.clear();
+  state.history=[];state.head=0;state.end=0;
   for (const row of Array.isArray(saved) ? saved : []) {
     if (!row?.roomId) continue;
     // Kept as names. sampleFor resolves either kind at play time.
     const audible = (row.audible || []).filter((pair) => Array.isArray(pair) && pair.length === 2);
-    state.takes.set(row.roomId, {
+    const duration=sourceDuration(row.durationSeconds);
+    const take={
+      id:`take:${state.history.length+1}`,ordinal:state.history.length+1,
+      startSeconds:state.end,endSeconds:state.end+duration,
+      status:['abandoned','spoiled'].includes(row.status)?row.status:'accepted',
+      cleanSeconds:Number(row.cleanSeconds)||0,slate:row.slate?{...row.slate}:null,voided:!!row.voided,
       roomId: row.roomId,
+      durationSeconds: sourceDuration(row.durationSeconds),
       cell: row.cell ? { ...row.cell } : { x: 0, y: 0 },
       levels: new Map(),
       discrete: (row.discrete || []).map((e) => ({ ...e })),
@@ -291,10 +390,12 @@ export function loadTakes(saved = []) {
       audible,
       guest: row.guest?.key ? { id: null, key: row.guest.key } : null,
       sealed: true,
-      counted: true,
+      counted: row.counted!==false,
       at: row.at || 0,
       migrated: !!row.migrated,
-    });
+    };
+    state.history.push(take);state.head=state.end=take.endSeconds;
+    if(take.status==='accepted'&&!take.voided)state.takes.set(row.roomId,take);
   }
   return state.takes.size;
 }
@@ -313,6 +414,7 @@ export function adoptLegacyTakes({ roomIds = [], contaminated = [], places = {} 
     if (!roomId || state.takes.has(roomId)) continue;
     state.takes.set(roomId, {
       roomId, cell: { x: 0, y: 0 }, levels: new Map(), discrete: [],
+      durationSeconds: PLAYBACK.sourceSeconds,
       presence: { peak: 0, atSec: 0 },
       contaminated: dirty.has(roomId), place: places[roomId] || null,
       audible: [],
@@ -323,6 +425,9 @@ export function adoptLegacyTakes({ roomIds = [], contaminated = [], places = {} 
       sealed: true, counted: true, at: 0, migrated: true,
     });
     adopted += 1;
+    const take=state.takes.get(roomId);
+    Object.assign(take,{id:`take:${state.history.length+1}`,ordinal:state.history.length+1,status:'accepted',startSeconds:state.end,endSeconds:state.end+take.durationSeconds});
+    state.history.push(take);state.head=state.end=take.endSeconds;
   }
   return adopted;
 }
@@ -336,20 +441,20 @@ export function adoptLegacyTakes({ roomIds = [], contaminated = [], places = {} 
 // arrives late and quiet, and is still the best thing in this game. A take the
 // meter climbed through has the guest arriving AT THE MOMENT IT CLIMBED, louder
 // and sooner, because by then it is not a suggestion.
-export function guestShape(presence = null) {
+export function guestShape(presence = null, { durationSeconds = PLAYBACK.sourceSeconds, playbackSeconds = PLAYBACK.seconds } = {}) {
   const peakLevel = Math.max(0, Math.min(1, Number(presence?.peak) || 0));
-  const span = Math.max(0, PLAYBACK.seconds - 1);
+  const span = Math.max(0, playbackSeconds - 1);
   if (peakLevel <= PLAYBACK.presenceFloor) {
     return { enterSec: PLAYBACK.guestDelaySec, riseSec: PLAYBACK.guestRiseSec, peak: PLAYBACK.guestPeak, corroborated: false };
   }
   const weight = Math.max(0, Math.min(1, (peakLevel - PLAYBACK.presenceFloor) / (1 - PLAYBACK.presenceFloor)));
-  const at = Math.max(0, Math.min(1, (Number(presence?.atSec) || 0) / PLAYBACK.sourceSeconds));
+  const at = sourcePosition(presence?.atSec, durationSeconds);
   const riseSec = PLAYBACK.guestRiseSec + (PLAYBACK.guestRiseFastSec - PLAYBACK.guestRiseSec) * weight;
   // Placed where it happened in the minute, then pulled back far enough that the
   // rise still finishes on the tape — a guest that arrives after the fade is a
   // guest nobody hears, which is the one outcome this must not produce.
   const latest = Math.max(PLAYBACK.guestEnterMinSec, span - riseSec * 0.55);
-  const enterSec = Math.max(PLAYBACK.guestEnterMinSec, Math.min(latest, at * span));
+  const enterSec = Math.max(PLAYBACK.guestEnterMinSec, Math.min(latest, at * playbackSeconds));
   return {
     enterSec,
     riseSec,
@@ -359,21 +464,24 @@ export function guestShape(presence = null) {
 }
 
 // ── playing it back ─────────────────────────────────────────────────────────
-export function playTake(roomId, { character = 1 } = {}) {
-  const t = state.takes.get(roomId);
-  if (!t || !t.sealed || !state.ctx || !state.bus || state.playing) return null;
+export function playTake(roomId, { character = 1, atHead = false } = {}) {
+  const t = tapeTake(roomId);
+  if (!t || !t.sealed || !state.ctx || !state.bus || isPlaying()) return null;
+  if(!atHead&&seekTo(t.startSeconds||0,{id:t.id||roomId,character}))return state.seeking;
 
+  const playbackSeconds=sourceDuration(t.durationSeconds);
   const ctx = state.ctx;
   const t0 = ctx.currentTime + 0.05;
   const nodes = [];
 
   const out = ctx.createGain();
   out.gain.setValueAtTime(0, t0);
-  out.gain.linearRampToValueAtTime(1, t0 + 0.8);
-  out.gain.setValueAtTime(1, t0 + PLAYBACK.seconds - 1.2);
-  out.gain.linearRampToValueAtTime(0, t0 + PLAYBACK.seconds);
+  out.gain.linearRampToValueAtTime(1, t0 + Math.min(.8,playbackSeconds*.1));
+  out.gain.setValueAtTime(1, t0 + Math.max(playbackSeconds*.5,playbackSeconds-1.2));
+  out.gain.linearRampToValueAtTime(0, t0 + playbackSeconds);
   out.connect(state.bus);
   nodes.push(out);
+  const slateAt=t.slate?t0+Math.max(0,t.slate.atSeconds||0):null;
 
   // the room's own floor, as it was
   const bed = ctx.createBufferSource();
@@ -385,7 +493,7 @@ export function playTake(roomId, { character = 1 } = {}) {
   const bedGain = ctx.createGain();
   bedGain.gain.setValueAtTime(PLAYBACK.bedGain, t0);
   bed.connect(bedFilt); bedFilt.connect(bedGain); bedGain.connect(out);
-  bed.start(t0); bed.stop(t0 + PLAYBACK.seconds);
+  bed.start(t0); bed.stop(t0 + playbackSeconds);
   nodes.push(bed, bedFilt, bedGain);
 
   // what you heard, at the level you heard it
@@ -399,7 +507,7 @@ export function playTake(roomId, { character = 1 } = {}) {
     g.gain.setValueAtTime(level * 0.85, t0);
     src.connect(g); g.connect(out);
     src.start(t0, Math.random() * Math.max(0.01, chunk.buffer.duration - 0.1));
-    src.stop(t0 + PLAYBACK.seconds);
+    src.stop(t0 + playbackSeconds);
     nodes.push(src, g);
   }
 
@@ -416,7 +524,7 @@ export function playTake(roomId, { character = 1 } = {}) {
   }
   const guestChunk = t.guest ? (sampleFor(t.guest.id) || sampleFor(t.guest.key)) : null;
   if (guestChunk?.buffer) {
-    const shape = guestShape(t.presence);
+    const shape = guestShape(t.presence, { durationSeconds: t.durationSeconds, playbackSeconds });
     const src = ctx.createBufferSource();
     src.buffer = guestChunk.buffer;
     src.loop = true;
@@ -433,7 +541,7 @@ export function playTake(roomId, { character = 1 } = {}) {
     g.gain.exponentialRampToValueAtTime(shape.peak, enter + shape.riseSec);
     src.connect(filt); filt.connect(g); g.connect(out);
     src.start(t0);
-    src.stop(t0 + PLAYBACK.seconds);
+    src.stop(t0 + playbackSeconds);
     nodes.push(src, filt, g);
     // Tell the game when it becomes deniable-no-longer, so the HUD can not
     // mention it. Nothing in the interface ever acknowledges the guest.
@@ -441,23 +549,35 @@ export function playTake(roomId, { character = 1 } = {}) {
   }
 
   for(const event of t.discrete||[]){
-    const playbackAt=t0+Math.max(0,Math.min(1,event.atSec/60))*(PLAYBACK.seconds-1);
+    const playbackAt=t0+Math.min(playbackSeconds-.01,sourcePosition(event.atSec,t.durationSeconds)*playbackSeconds);
     if(state.scheduleDiscrete){state.scheduleDiscrete(event.cueId,playbackAt,{gain:event.gain,pan:event.pan,output:out,nodes});continue;}
     if(event.cueId==='bell.tenor.clock'){
       const osc=ctx.createOscillator(),gain=ctx.createGain(),panner=ctx.createStereoPanner();osc.type='sine';osc.frequency.value=233.08;gain.gain.setValueAtTime(.0001,playbackAt);gain.gain.exponentialRampToValueAtTime(.14*Math.max(.1,event.gain),playbackAt+.012);gain.gain.exponentialRampToValueAtTime(.0001,playbackAt+5.8);panner.pan.value=event.pan;osc.connect(gain);gain.connect(panner);panner.connect(out);osc.start(playbackAt);osc.stop(playbackAt+6);nodes.push(osc,gain,panner);
     }
   }
 
-  const endsAt = t0 + PLAYBACK.seconds;
-  state.playing = { roomId, nodes, startedAt: t0, endsAt, guestFired: false };
+  const endsAt = t0 + playbackSeconds;
+  state.playing = { roomId:t.roomId, take:t, nodes, output:out,slateAt,slateFired:false,startedAt: t0, endsAt, durationSec:playbackSeconds, guestFired: false };
   return state.playing;
 }
 
 // Called from the frame loop. Returns 'idle' | 'playing' | 'ended'.
 export function tickPlayback() {
+  if(state.seeking){
+    const s=state.seeking,p=Math.max(0,Math.min(1,((state.ctx?.currentTime||0)-s.startedAt)/s.seconds));
+    state.head=s.from+(s.to-s.from)*p;
+    if(p<1)return 'seeking';
+    s.sound?.stop?.();state.seeking=null;
+    if(s.then){playTake(s.then.id,{character:s.then.character,atHead:true});return 'playing';}
+    return 'cued';
+  }
   if (!state.playing || !state.ctx) return 'idle';
   const now = state.ctx.currentTime;
   const p = state.playing;
+  if(!p.slateFired&&p.slateAt!==null&&now>=p.slateAt&&now<p.endsAt){
+    p.slateFired=true;state.playSlate?.(p.take.slate,{ctx:state.ctx,output:p.output,when:p.startedAt,nodes:p.nodes});
+  }
+  state.head=(p.take.startSeconds||0)+Math.max(0,Math.min(1,(now-p.startedAt)/p.durationSec))*sourceDuration(p.take.durationSeconds);
   if (!p.guestFired && state.guestAt && now >= state.guestAt) {
     p.guestFired = true;
     state.onGuest?.(p.roomId);
@@ -470,6 +590,7 @@ export function tickPlayback() {
 }
 
 export function stopPlayback() {
+  if(state.seeking){state.seeking.sound?.stop?.();state.seeking=null;}
   const p = state.playing;
   if (!p) return;
   for (const n of p.nodes) { try { n.stop?.(); } catch (_) {} try { n.disconnect(); } catch (_) {} }
@@ -518,6 +639,7 @@ export function buildPlaybackSnapshot({ take, playing, now = 0, duration = PLAYB
     roomId: String(take.roomId || ''),
     recordedAt: Math.max(0, Number(take.at) || 0),
     durationSec: seconds,
+    sourceDurationSec: sourceDuration(take.durationSeconds),
     elapsedSec,
     remainingSec: Math.max(0, seconds - elapsedSec),
     progress,
@@ -528,18 +650,23 @@ export function buildPlaybackSnapshot({ take, playing, now = 0, duration = PLAYB
     tapeDrift: lateChange,
     markers: discrete.map((event, index) => ({
       id: `${event?.cueId || 'event'}:${index}`,
-      position: clamp01((Math.max(0, Number(event?.atSec) || 0) / 60) * ((seconds - 1) / seconds)),
+      position: clamp01(Math.min(seconds-.01,sourcePosition(event?.atSec, take.durationSeconds)*seconds)/seconds),
     })),
   };
 }
 
 export function playbackSnapshot() {
+  if(state.seeking){
+    const take=tapeTake(state.seeking.then?.id);
+    return {roomId:take?.roomId||'',ordinal:take?.ordinal||0,seeking:state.seeking.to<state.seeking.from?'rewind':'forward',tapeSeconds:state.head,progress:0,markers:[]};
+  }
   if (!state.playing || !state.ctx) return null;
-  return buildPlaybackSnapshot({
-    take: state.takes.get(state.playing.roomId),
+  return {...buildPlaybackSnapshot({
+    take: state.playing.take,
     playing: state.playing,
     now: state.ctx.currentTime,
-  });
+    duration:state.playing.durationSec,
+  }),tapeSeconds:state.head,ordinal:state.playing.take.ordinal||0};
 }
 
 function noiseBuffer(ctx, seconds) {

@@ -79,6 +79,22 @@ test('static plate/well/cover rasters are reused and viewing changes allocate no
   assert.equal(p.surfaces.length,baked);assert.deepEqual(instrumentMaterialCacheStats(),budget);
 });
 
+test('aluminum, black and olive use distinct cached finishes with the same plate and screw geometry',()=>{
+  const p=canvasProbe(),plateRasters=[];
+  for(const finish of ['aluminum','black','olive']){
+    const result=drawInstrumentPlate(p.ctx,{...box,finish});assert.deepEqual(result,box);
+    plateRasters.push(p.commands.filter(command=>command.method==='drawImage').at(-1).args[0]);
+  }
+  assert.equal(new Set(plateRasters).size,3,'enamel colors may not reuse a differently colored cached face');
+  const stops=p.surfaces.flatMap(surface=>surface.commands).flatMap(command=>command.state.fillStyle?.stops||[]).map(([,color])=>color);
+  for(const color of ['#e4e2d5','#454e45','#77805a'])assert.ok(stops.includes(color));
+  const count=p.surfaces.length;
+  for(const finish of ['olive','black','aluminum'])drawInstrumentPlate(p.ctx,{...box,finish});
+  assert.equal(p.surfaces.length,count,'swapping an already viewed finish does not rebake');
+  const screwTurns=p.surfaces.flatMap(surface=>surface.commands).filter(command=>command.method==='rotate');
+  assert.equal(screwTurns.length,12,'all finishes retain four physical fasteners');
+});
+
 test('DPR scales physical aperture depth once and never changes its fixed hit rectangle',()=>{
   const a=canvasProbe(),b=canvasProbe();
   const normal=drawInstrumentWell(a.ctx,{...box,depth:1});

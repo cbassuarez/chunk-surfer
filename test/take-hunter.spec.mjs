@@ -154,8 +154,8 @@ import {
     'the hunter ticks before the recording-only block, so a stopped take still tears it down');
 }
 
-// And the noise that fetches it comes from the recordist, past the spoil
-// threshold — a step, a dropped case, the radio, or your own voice.
+// And the noise that fetches it comes from the recordist's raw world envelope,
+// before spoiling — a step, a dropped case, the radio, or your own voice.
 {
   const rec = readFileSync('src/game/recordist.js', 'utf8');
   assert.match(rec, /export function setLoudNoiseSink/,
@@ -164,8 +164,8 @@ import {
   // the same noise that fetches something also ends the take, and the take
   // ending is what takes the hunter away — so it arrived and vanished on one
   // frame. Measured, it did exactly that.
-  assert.match(rec, /if \(level > threshold \* \.25\) loudNoiseSink/,
-    'it arms on the near band, so the minute is still running when it comes');
+  assert.match(rec, /if \(level > worldThreshold \* \.25\) loudNoiseSink/,
+    'it arms on the raw-world near band, independent of fitted microphone sensitivity');
   const main = readFileSync('src/main.js', 'utf8');
   assert.match(main, /REC\.setLoudNoiseSink/, 'and main.js is what answers');
   assert.match(main, /if\(REC\.isRecording\(\)\)armTakeHunter\(m>=MIC_LEVEL\.scream/,

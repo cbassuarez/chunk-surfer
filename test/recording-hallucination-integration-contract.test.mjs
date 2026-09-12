@@ -48,7 +48,7 @@ test('a hallucination is staged where the take overlay is not', () => {
   const source = readFileSync('src/main.js', 'utf8');
 
   assert.match(source, /function takePanelRect\(\{cols,rows,progress=0\}\)/,
-    'the DA-1000 panel rect is one function, so the draw and the staging cannot drift');
+    'the A-1000 panel rect is one function, so the draw and the staging cannot drift');
   const overlay = source.slice(source.indexOf('function drawTakeOverlay'), source.indexOf('function installProbe'));
   assert.match(overlay, /takePanelRect\(\{cols,rows,progress:p\}\)/,
     'the overlay must draw the same rect the staging tests against');

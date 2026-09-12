@@ -159,6 +159,7 @@ const G = {
   '↕': [0b00100, 0b01110, 0b00100, 0b00100, 0b00100, 0b01110, 0b00100],
   '↩': [0, 0b00001, 0b00001, 0b01001, 0b11111, 0b01000, 0],
   '›': [0, 0b01000, 0b00100, 0b00010, 0b00100, 0b01000, 0],
+  '‹': [0, 0b00010, 0b00100, 0b01000, 0b00100, 0b00010, 0],
 
   // Squares, rings and marks.
   '■': [0, 0b11111, 0b11111, 0b11111, 0b11111, 0b11111, 0],
@@ -318,19 +319,22 @@ function surface(store, index, w, h) {
   let entry = store[index];
   if (!entry) {
     const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
     const context = canvas?.getContext?.('2d');
     if (!context) return null;
-    entry = store[index] = { canvas, ctx: context };
+    entry = store[index] = { canvas, ctx: context, usedWidth: 0, usedHeight: 0 };
   }
   if (entry.canvas.width < w || entry.canvas.height < h) {
     entry.canvas.width = Math.max(entry.canvas.width, w);
     entry.canvas.height = Math.max(entry.canvas.height, h);
   }
-  // Clear only what is about to be written. These canvases grow to the largest
-  // glyph ever asked for and never shrink, so clearing the whole surface for a
-  // 4×5 mip level means wiping the biggest tile in the game, every level, twice
-  // per glyph.
-  entry.ctx.clearRect(0, 0, w, h);
+  // Clear the previous footprint too. Smoothed drawImage samples just outside
+  // its source rectangle; old pixels beside a smaller mip become thin trails
+  // when stretched back up. Everything outside the current mip must be clear.
+  entry.ctx.clearRect(0, 0, Math.max(w, entry.usedWidth), Math.max(h, entry.usedHeight));
+  entry.usedWidth = w;
+  entry.usedHeight = h;
   entry.ctx.imageSmoothingEnabled = true;
   return entry;
 }

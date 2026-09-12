@@ -37,7 +37,7 @@ export function makeReturnIndexScene({ meta, onRevealFieldReturn = null, onDelet
         } else deleteArmed = { caseId: dossier.caseId, until: at + 2400 };
         return true;
       }
-      if (e.key === 'Escape' || k === 'b' || e.key === 'Enter') { scenes.pop(); return true; }
+      if (e.key === 'Escape' || k === 'b' || e.key === 'Enter') { AUDIO.menuBack();scenes.pop(); return true; }
       return true;
     },
     render() {

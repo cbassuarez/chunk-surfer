@@ -38,23 +38,26 @@ function noiseBuffer(ctx, seconds = 2.4) {
   return buffer;
 }
 
-export function hushMixTargets(field, settings = {}, { monitorGain = 1, monitorOpen = false } = {}) {
+export function hushMixTargets(field, settings = {}, { monitorGain = 1, monitorOpen = false,
+  headphoneMonitorScale = 1, headphoneSurroundingScale = 1 } = {}) {
+  const monitorFit = Math.max(.8, Math.min(1.2, Number(headphoneMonitorScale) || 1));
+  const surroundingFit = Math.max(.8, Math.min(1.2, Number(headphoneSurroundingScale) || 1));
   const audio = clamp01(field?.presentation?.audio ?? field?.absorption?.audio ?? 0);
   const monitor = clamp01(field?.presentation?.monitor ?? field?.absorption?.monitor ?? 0);
   const hissScale = clamp01(field?.presentation?.hiss ?? (settings.hushHiss === 'reduced' ? .48 : 1));
   const softened = field?.presentation?.softenCuts ?? settings.hushSuddenCuts === 'softened';
-  const monitorPresence = clamp01(monitorGain) * (monitorOpen ? 1 : .52);
+  const monitorPresence = clamp01(monitorGain) * (monitorOpen ? 1 : .52) * monitorFit;
   // The hiss is a MONITOR artifact — it belongs in the headphones, and only
   // when the thing is genuinely close. Now that the presence never despawns,
   // a low threshold and a half-open gate meant it sat under the whole run and
   // never once stopped. Closed monitor is nearly silent; the floor is high
   // enough that ambient proximity does not qualify.
-  const hissPresence = clamp01(monitorGain) * (monitorOpen ? 1 : .08);
+  const hissPresence = clamp01(monitorGain) * (monitorOpen ? 1 : .08) * monitorFit;
   const hissFloor = .38;
   return {
-    worldGain: lerp(1, softened ? .32 : .10, Math.pow(audio, 1.30)),
+    worldGain: surroundingFit * lerp(1, softened ? .32 : .10, Math.pow(audio, 1.30)),
     worldLowpassHz: lerp(19000, softened ? 1250 : 620, Math.pow(audio, 1.08)),
-    directGain: lerp(1, softened ? .42 : .16, Math.pow(audio, 1.45)),
+    directGain: surroundingFit * lerp(1, softened ? .42 : .16, Math.pow(audio, 1.45)),
     directLowpassHz: lerp(19000, softened ? 1700 : 820, Math.pow(audio, 1.1)),
     monitorGain: monitorPresence,
     monitorDryGain: monitorPresence * lerp(1, softened ? .20 : .035, Math.pow(monitor, 1.20)),
@@ -67,6 +70,8 @@ export function hushMixTargets(field, settings = {}, { monitorGain = 1, monitorO
 
 export function createHushMix(ctx, { worldDestination = null, directDestination = null } = {}) {
   if (!ctx) return null;
+  let headphoneFit = { headphoneMonitorScale: 1, headphoneSurroundingScale: 1 };
+  let lastFieldArgs = [null, {}, {}];
   // Long-running chunk voices can represent either the world or the recorder's
   // monitor program. Route them through one input and crossfade destinations;
   // never duplicate the source or reconnect live AudioNodes during play.
@@ -147,7 +152,8 @@ export function createHushMix(ctx, { worldDestination = null, directDestination 
   }
 
   function applyField(field, settings = {}, options = {}) {
-    const targets = hushMixTargets(field, settings, options);
+    lastFieldArgs = [field, settings, options];
+    const targets = hushMixTargets(field, settings, { ...options, ...headphoneFit });
     const previousAmount = lastTargets?.fieldAmount || 0;
     const attack = targets.fieldAmount > previousAmount ? .07 : .30;
     lastTargets = targets;
@@ -166,6 +172,13 @@ export function createHushMix(ctx, { worldDestination = null, directDestination 
     programMode = monitor ? 'monitor' : 'world';
     safeRamp(programWorld.gain, monitor ? 0 : 1, ctx, .09);
     safeRamp(programMonitor.gain, monitor ? 1 : 0, ctx, .09);
+  }
+
+  // Output-only equipment fit. Never enters the acoustic event/hearing model.
+  function setHeadphoneMix(monitor = 1, surrounding = 1) {
+    if (headphoneFit.headphoneMonitorScale === monitor && headphoneFit.headphoneSurroundingScale === surrounding) return;
+    headphoneFit = { headphoneMonitorScale: monitor, headphoneSurroundingScale: surrounding };
+    applyField(...lastFieldArgs);
   }
 
   function playBuffer(url, { destination = 'monitor', gain = .2, rate = 1, pan = 0, offset = 0, duration = null, reverse = false } = {}) {
@@ -283,6 +296,7 @@ export function createHushMix(ctx, { worldDestination = null, directDestination 
     worldInput,
     directInput,
     monitorInput,
+    setHeadphoneMix,
     setProgramMode,
     applyField,
     playMischief,

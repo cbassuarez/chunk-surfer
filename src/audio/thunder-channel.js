@@ -460,3 +460,36 @@ export function thunderIndoorBands({ sky = true, floorsBelowRoof = 0 } = {}) {
   const occlusion = clamp(0.42 + 0.15 * Math.max(0, floorsBelowRoof), 0, 1);
   return propagateSpectrum({ low: 1, mid: 1, high: 1 }, { occlusion });
 }
+
+// ── WHAT IT IS WORTH TO THE ROOM ─────────────────────────────────────────────
+//
+// The storm reaches the tape, because the microphone is in a real room with a
+// real roof over it. But it must not take the night off the player: a minute of
+// held silence ruined by weather is a dice roll, not a game. So this is
+// deliberately, permanently small.
+//
+// The ceiling is 0.085, and the three numbers it has to stay under are:
+//
+//   0.18  ROOM_TONE.spoilNoise        above this a take is ruined
+//   0.34  PRESENCE.noiseClueThreshold above this the presence comes looking
+//   0.40  ROOM_TONE.catchNoise        above this it is not just the take
+//
+// Half the SPOIL mark at the very worst, and a quarter of what the presence
+// would even notice. The needle jumps and nothing follows it. The relationship
+// is pinned by test/thunder-channel.spec.mjs against config.js rather than
+// restated here, so it cannot quietly stop being true.
+//
+// It is also emitted with spoils:false, which is the real guarantee — that path
+// never reaches handleRecordingNoise at all, so no level could spoil a take even
+// if this number were wrong. The cap is the second lock, not the only one.
+export const THUNDER_ROOM_NOISE_CEILING = 0.085;
+
+// Returns the gameplay 0..1 level — the one the meter reads and the one that
+// decays. The catalogue's own levelDb is the SEMANTIC level and is nominal, the
+// way fountain_water's is: it describes what thunder is, while this describes
+// what one particular strike is worth tonight.
+export function thunderRoomNoise(distance = 1200, energy = 0.7) {
+  return clamp(
+    THUNDER_ROOM_NOISE_CEILING * clamp(energy, 0, 1) * (1 - thunderFar(distance) * 0.80),
+    0.010, THUNDER_ROOM_NOISE_CEILING);
+}

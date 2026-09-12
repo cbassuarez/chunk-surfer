@@ -231,7 +231,7 @@ export function makeTitleScene({
     if (!item) return true;
 
     if (item.disabled || item.locked) {
-      AUDIO.menuMove();
+      AUDIO.menuDenied();
       item.run?.();
       disarm();
       return true;

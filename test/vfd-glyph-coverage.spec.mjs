@@ -76,7 +76,7 @@ const LITERAL = /'([^'\\\n]*)'|"([^"\\\n]*)"|`([^`\\]*)`/g;
 
 // The ROM's own shape. A malformed entry would draw a corrupt character rather
 // than nothing, which is harder to spot than a hole.
-for (const ch of ['A', '0', '─', '│', '▌', '▲', '■', 'Ⅱ', '◆', '◇']) {
+for (const ch of ['A', '0', '─', '│', '▌', '▲', '■', 'Ⅱ', '◆', '◇', '‹', '›']) {
   const rows = vfdGlyph(ch);
   assert.ok(rows, `${ch} is in the ROM`);
   assert.equal(rows.length, VFD_ROWS, `${ch} has ${VFD_ROWS} rows`);

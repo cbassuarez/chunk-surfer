@@ -1288,6 +1288,7 @@ export const COMBAT_TOOL_ICON = Object.freeze({
   fork: 'tuning-fork',
   radio: 'radio',
   coffee: 'coffee',
+  spanner: 'spanner',
 });
 
 export function combatToolIcon(toolId) {

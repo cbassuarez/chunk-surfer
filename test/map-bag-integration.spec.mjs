@@ -26,19 +26,14 @@ const selected = map.spaces.find((space) => space.roomId === 'main_b3');
 assert.equal(resolveMapAction(selected, 'clear-waypoint', { markRoom: (id) => { calls.push(['mark', id]); return true; } }), true);
 assert.deepEqual(calls, [['mark', 'main_b3']]);
 const rail = mapActionRail(selected, { floorCount: 3 });
-assert.ok(rail.some(([key, label]) => key === '[ / ]' && label === 'FLOOR'));
-assert.ok(rail.some(([key, label]) => key === 'C' && label === 'CENTER'));
+assert.ok(rail.some(([key, label]) => key.replaceAll(' ', '') === 'PGUP/PGDN' && label === 'FLOOR'));
+assert.ok(rail.some(([key, label]) => key === 'C' && label === 'LOCATE'));
 
-// THE TARGET VERB LEFT THE FOOTER, ON PURPOSE.
-//
-// Six entries with labels this long overran the rail and truncated it mid-word,
-// and the word it cut was "[ENTER / SPACE] SET…" — the one verb a player most
-// needs. It is printed on the SELECTED ROOM now (see drawDetail in
-// render/map-view.js), beside the thing it acts on, which is both shorter and
-// nearer the point of use. CONFIRM still performs it: activateSecondary in
-// game/bag.js reads the selection directly and never consults this rail.
+// The full SET TARGET legend belongs to its physical key. The footer keeps
+// the short confirm/focus/close reminders and fits optional floor/file keys
+// only when there is room; an attached file never hijacks confirm.
 assert.ok(!rail.some(([, label]) => /TARGET/.test(label)),
-  'the target verb is advertised on the room, not repeated in the footer');
+  'the full target legend is printed on the console key');
 assert.ok(!rail.some(([key, label]) => label === 'OPEN FILE' && /ENTER/.test(key)),
   'a pinned file never occupies the map confirm key');
 assert.ok(rail.every(([key, label]) => `${key} ${label}`.length <= 24),

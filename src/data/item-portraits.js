@@ -1,14 +1,28 @@
 // Physical objects share a GLB, an authored camera fit, and two ASCII stills.
-// Map, document-navigation and skill symbols retain their own drawing systems.
-const item=(id,scale)=>Object.freeze({id,model:`assets/items/${id}.glb`,small:`assets/items/${id}-192.webp`,large:`assets/items/${id}-512.webp`,scale});
+// The Survey Indicator is physical gear; map-navigation and skill symbols
+// still retain their own drawing systems.
+import {VAN_KIT_MODELS,BENCH_MODELS} from './van-kit-models.js';
+const item=(id,scale,lighting={})=>Object.freeze({id,model:`assets/items/${id}.glb`,small:`assets/items/${id}-192.webp`,large:`assets/items/${id}-512.webp`,scale,lighting:Object.freeze(lighting)});
+const kitItems=Object.fromEntries(Object.values(VAN_KIT_MODELS).map(spec=>[spec.id,item(spec.id,spec.scale,spec.lighting)]));
+const benchItems=Object.fromEntries(Object.values(BENCH_MODELS).map(spec=>[spec.id,item(spec.id,spec.scale,spec.lighting)]));
 export const ITEM_PORTRAITS=Object.freeze({
-  recorder:item('recorder',4.2),interface:item('interface',4.1),radio:item('radio',4.0),
-  light:item('light',4.3),'tuning-fork':item('tuning-fork',4.5),coffee:item('coffee',3.25),
+  ...kitItems,
+  ...benchItems,
+  recorder:Object.freeze({...kitItems['field-recorder'],id:'recorder'}),interface:item('interface',4.1),radio:item('radio',4.0),
+  map:item('map',3.3,{environmentIntensity:1.1,exposure:1}),
+  light:item('light',4.3),'tuning-fork':item('tuning-fork',4.5),coffee:item('coffee',2.9,{environmentIntensity:.75,exposure:1}),
   badge:item('badge',3.3),keyring:item('keyring',3.55),'chapel-key':item('chapel-key',3.45),
   'plant-spanner':item('plant-spanner',3.6),'marble-eyes':item('marble-eyes',4.1),'sheet-music':item('sheet-music',3.6),
 });
 const ALIASES=Object.freeze({torch:'light',rig:'interface',fork:'tuning-fork',spanner:'plant-spanner',bust:'marble-eyes','key-c17':'chapel-key','standard-keyring':'keyring','recorder-headphones':'recorder','recorder-+-headphones':'recorder','the-guards-coffee':'coffee'});
-export function itemPortrait(value){const id=typeof value==='object'?(value?.sourceId||value?.id||value?.icon):value;return ITEM_PORTRAITS[id]||ITEM_PORTRAITS[ALIASES[id]]||null;}
+export function itemPortrait(value){
+  // Equipment keeps its gameplay identity (light) while its selected physical
+  // model changes. Only registered local assets can override that identity.
+  const modelId=typeof value==='object'?(value?.modelId||value?.source?.modelId):null;
+  if(modelId&&ITEM_PORTRAITS[modelId])return ITEM_PORTRAITS[modelId];
+  const id=typeof value==='object'?(value?.sourceId||value?.id||value?.icon):value;
+  return ITEM_PORTRAITS[id]||ITEM_PORTRAITS[ALIASES[id]]||null;
+}
 export const ITEM_ASCII_OPTIONS=Object.freeze({
   manual:true,ascii:true,colored:true,cellSize:5,cellAspect:.66,
   charset:' .,:;-=+*ox%#@',contrast:1.32,edgeContrast:2.2,exposure:1.15,

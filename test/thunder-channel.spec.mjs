@@ -7,11 +7,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+import { readFileSync } from 'node:fs';
+
 import {
+  THUNDER_ROOM_NOISE_CEILING,
   absorptionCutoffHz, absorptionDbPerMetre, channelShape, characteristicHz,
   makeChannel, nWaveKernel, relaxationRadius, renderThunder, thunderGain,
-  thunderIndoorBands, thunderRng,
+  thunderIndoorBands, thunderRng, thunderRoomNoise,
 } from '../src/audio/thunder-channel.js';
+import { ROOM_TONE } from '../src/config.js';
+import { PRESENCE } from '../src/game/presence.js';
+import { catalogueEntry } from '../src/audio/acoustic-catalogue.js';
 
 const C0 = 343;
 // A channel built by hand, so a test can ask about one shape rather than about
@@ -201,6 +207,62 @@ test('level is a separate question from character, and it has a ceiling', () => 
   for (const [d, e] of [[60, 1], [200, 1], [1200, 1], [7000, 1]]) {
     assert.ok(thunderGain(d, e) <= 0.17, `${d}m stays under the mastering ceiling`);
   }
+});
+
+// ── THE STORM REACHES THE TAPE, AND COSTS YOU NOTHING ────────────────────────
+//
+// The microphone is in a real room with a real roof over it, so a bolt over the
+// yard should exist to the take and not only to the ears. What it must never do
+// is take the night off the player: a minute of held silence ruined by weather
+// is a dice roll, not a game. It blips the needle and it is gone.
+test('thunder blips the needle and can never do anything else', () => {
+  const entry = catalogueEntry('thunder');
+  assert.ok(entry, 'the storm is in the catalogue at all');
+  assert.equal(entry.canBeMimicked, false,
+    'the HUSH does a great many things in this building; the weather is not one');
+  assert.ok(entry.spectrum.low > entry.spectrum.high * 8,
+    'through a roof and into a room, what a microphone gets is weight');
+
+  // THE THREE NUMBERS IT HAS TO STAY UNDER, read from the real config rather
+  // than restated, so the relationship cannot quietly stop being true.
+  assert.ok(THUNDER_ROOM_NOISE_CEILING < ROOM_TONE.spoilNoise / 2,
+    `under half of SPOIL (${THUNDER_ROOM_NOISE_CEILING} vs ${ROOM_TONE.spoilNoise})`);
+  assert.ok(THUNDER_ROOM_NOISE_CEILING < PRESENCE.noiseClueThreshold / 3,
+    'and nowhere near enough for the presence to come looking');
+  assert.ok(THUNDER_ROOM_NOISE_CEILING < ROOM_TONE.catchNoise / 4);
+
+  // It is still a reading, not a rounding error: a close crack moves the needle
+  // a third of the way to SPOIL, a distant one barely at all.
+  const near = thunderRoomNoise(200, 1);
+  const far = thunderRoomNoise(7000, 0.35);
+  assert.ok(near / ROOM_TONE.spoilNoise > 0.3, `a near strike blips (${(near / ROOM_TONE.spoilNoise * 100) | 0}% of SPOIL)`);
+  assert.ok(far / ROOM_TONE.spoilNoise < 0.1, `a distant one hardly does (${(far / ROOM_TONE.spoilNoise * 100) | 0}%)`);
+  assert.ok(near > far, 'and distance is what decides');
+  for (const [d, e] of [[60, 1], [200, 1], [1200, 1], [7000, 1]]) {
+    assert.ok(thunderRoomNoise(d, e) <= THUNDER_ROOM_NOISE_CEILING, `${d}m stays under the ceiling`);
+  }
+});
+
+test('the guarantee is structural, not a number', () => {
+  // A cap can be got wrong. spoils:false cannot: that path sets worldNoise
+  // rather than noise and never calls handleRecordingNoise at all, so thunder
+  // cannot spoil a take, cannot trip the monitor and cannot fetch the take
+  // hunter — whatever the level says.
+  const main = readFileSync('src/main.js', 'utf8');
+  const tick = main.slice(main.indexOf('function tickStorm('), main.indexOf('function syncDoorDynamicProps'));
+  assert.match(tick, /REC\.emitNoise\(THUNDER\.thunderRoomNoise\(/, 'the storm reaches the room');
+  assert.match(tick, /spoils:false/, 'and cannot cost the player the minute');
+  assert.match(tick, /sourceKind:'environment'/, 'it is weather, not something you did');
+  assert.match(tick, /audibleToHush:false/, 'and the presence does not investigate weather');
+  assert.doesNotMatch(tick, /spoils:true/);
+
+  const recordist = readFileSync('src/game/recordist.js', 'utf8');
+  // The needle's third channel. Everything else on the spoils:false path is the
+  // player handling equipment — a torch, a key, a pin — and a needle that jumps
+  // at every one of those is not a reading.
+  assert.match(recordist, /if \(!spoils && sourceKind === 'environment'\) state\.ambient/);
+  assert.match(recordist, /export function ambientNoise/);
+  assert.match(main, /REC\.ambientNoise\(\)/, 'and the meter reads it');
 });
 
 console.log('thunder channel contracts passed');

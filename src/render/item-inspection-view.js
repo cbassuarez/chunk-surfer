@@ -2,11 +2,11 @@ import {uiText,uiWrap,uiFill,uiStrokeRect} from './ui.js';
 import {activeInputPromptDevice,promptLine} from '../game/bindings.js';
 
 export function itemInspectionLayout(rect){
- const x=rect.x+2,y=rect.y+1,w=Math.max(1,rect.w-4),h=Math.max(1,rect.h-2);
- const wide=w>=62;
- const portrait=wide?{x,y:y+2,w:Math.floor(w*.53),h:Math.max(2,h-5)}
-  :{x,y:y+2,w,h:Math.max(2,Math.min(11,(h-4)*.55))};
- const text=wide?{x:portrait.x+portrait.w+2,y:y+2,w:w-portrait.w-2,h:h-5}
+ const x=rect.x+1.25,y=rect.y+.5,w=Math.max(1,rect.w-2.5),h=Math.max(1,rect.h-1);
+ const wide=w>=52;
+ const portrait=wide?{x,y:y+1.5,w:Math.floor(w*.53),h:Math.max(1,h-3)}
+  :{x,y:y+1.5,w,h:Math.max(1,Math.min(11,(h-3)*.60))};
+ const text=wide?{x:portrait.x+portrait.w+2,y:y+1.5,w:w-portrait.w-2,h:h-3}
   :{x,y:portrait.y+portrait.h+.5,w,h:Math.max(0,y+h-2-(portrait.y+portrait.h+.5))};
  return{title:{x,y,w},portrait,text,back:{x,y:y+h-1,w:14,h:1.5},reset:{x:x+w-18,y:y+h-1,w:18,h:1.5}};
 }

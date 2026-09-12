@@ -1,0 +1,160 @@
+{
+  "source": "http://127.0.0.1:5297",
+  "errors": [],
+  "fixtures": [
+    [
+      {
+        "mode": "monitor",
+        "finish": "aluminum",
+        "buttonSet": "classic",
+        "phosphor": "faithful",
+        "palette": {
+          "label": "#8fcd87",
+          "counter": "#b4f4e6",
+          "passive": "#4a5a46",
+          "scale": "#52713c",
+          "cursor": "#f39864",
+          "mark": "#c5aa63",
+          "bar": "#8dde9a",
+          "hot": "#d3c75d",
+          "dormant": "#263c2a",
+          "peak": "#d6e0ad",
+          "meterMark": "#cba770"
+        },
+        "rect": {
+          "x": 2.840236686390533,
+          "y": 1.75,
+          "w": 87.10059171597634,
+          "h": 20.25
+        }
+      },
+      {
+        "mode": "monitor",
+        "finish": "black",
+        "buttonSet": "signal",
+        "phosphor": "amber",
+        "palette": {
+          "label": "#e9b765",
+          "counter": "#ffdba0",
+          "passive": "#60523a",
+          "scale": "#775937",
+          "cursor": "#fff0c2",
+          "mark": "#db935a",
+          "bar": "#e9b05c",
+          "hot": "#ffd796",
+          "dormant": "#423523",
+          "peak": "#ffeac3",
+          "meterMark": "#e7c787"
+        },
+        "rect": {
+          "x": 2.840236686390533,
+          "y": 24.45,
+          "w": 87.10059171597634,
+          "h": 20.25
+        }
+      },
+      {
+        "mode": "monitor",
+        "finish": "olive",
+        "buttonSet": "sea-glass",
+        "phosphor": "ice",
+        "palette": {
+          "label": "#9ed9e7",
+          "counter": "#d0f4fc",
+          "passive": "#405860",
+          "scale": "#476570",
+          "cursor": "#ecfaff",
+          "mark": "#78b6d4",
+          "bar": "#9ddce8",
+          "hot": "#d4f1f7",
+          "dormant": "#253c43",
+          "peak": "#e2f8ff",
+          "meterMark": "#b1d2e6"
+        },
+        "rect": {
+          "x": 2.840236686390533,
+          "y": 47.15,
+          "w": 87.10059171597634,
+          "h": 20.25
+        }
+      }
+    ],
+    [
+      {
+        "mode": "check",
+        "finish": "aluminum",
+        "buttonSet": "classic",
+        "phosphor": "faithful",
+        "palette": {
+          "label": "#8fcd87",
+          "counter": "#b4f4e6",
+          "passive": "#4a5a46",
+          "scale": "#52713c",
+          "cursor": "#f39864",
+          "mark": "#c5aa63",
+          "bar": "#8dde9a",
+          "hot": "#d3c75d",
+          "dormant": "#263c2a",
+          "peak": "#d6e0ad",
+          "meterMark": "#cba770"
+        },
+        "rect": {
+          "x": 2.840236686390533,
+          "y": 1.75,
+          "w": 87.10059171597634,
+          "h": 20.25
+        }
+      },
+      {
+        "mode": "check",
+        "finish": "black",
+        "buttonSet": "signal",
+        "phosphor": "amber",
+        "palette": {
+          "label": "#e9b765",
+          "counter": "#ffdba0",
+          "passive": "#60523a",
+          "scale": "#775937",
+          "cursor": "#fff0c2",
+          "mark": "#db935a",
+          "bar": "#e9b05c",
+          "hot": "#ffd796",
+          "dormant": "#423523",
+          "peak": "#ffeac3",
+          "meterMark": "#e7c787"
+        },
+        "rect": {
+          "x": 2.840236686390533,
+          "y": 24.45,
+          "w": 87.10059171597634,
+          "h": 20.25
+        }
+      },
+      {
+        "mode": "check",
+        "finish": "olive",
+        "buttonSet": "sea-glass",
+        "phosphor": "ice",
+        "palette": {
+          "label": "#9ed9e7",
+          "counter": "#d0f4fc",
+          "passive": "#405860",
+          "scale": "#476570",
+          "cursor": "#ecfaff",
+          "mark": "#78b6d4",
+          "bar": "#9ddce8",
+          "hot": "#d4f1f7",
+          "dormant": "#253c43",
+          "peak": "#e2f8ff",
+          "meterMark": "#b1d2e6"
+        },
+        "rect": {
+          "x": 2.840236686390533,
+          "y": 47.15,
+          "w": 87.10059171597634,
+          "h": 20.25
+        }
+      }
+    ]
+  ]
+}

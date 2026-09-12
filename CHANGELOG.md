@@ -5,6 +5,13 @@ the matching section below, so a tag without one will not pass preflight.
 
 The 0.1.x betas were not sectioned here; see the git history for those.
 
+## 0.2.1-beta.1
+### Release notes
+- Version sync completed for package, tauri, and cargo metadata.
+- Windows release pipeline prepared.
+- In-flight test failures are deferred; resolve them in a dedicated follow-up pass.
+
+
 ## 0.2.0
 
 First release since v0.1.2-beta.3, and still a beta: the itch channels remain

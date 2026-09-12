@@ -1,5 +1,7 @@
 // The instrument surfaces, modelled on the A k a i AM M5 / HX M5 and the hi ta chi
-// DA-1000. Two rules the landed refactor broke:
+// DA-1000 — the real machines, named here as the reference. The recorder in the
+// player's hands is a Lo-D A-1000 (see palette.js). Two rules the landed
+// refactor broke:
 //
 // The VFD is a recessed optical stack: substrate, phosphor, suspended grid,
 // then smoked cover glass. Machined aluminum, etched ink, and molded controls
@@ -83,7 +85,7 @@ export function drawMachinePanel(x, y, w, h, {
   // keyboard. Takes precedence over `footer` when both are given, so a caller
   // can migrate one surface at a time.
   footerParts = null,
-  finish = 'aluminum', glass = {}, drawContent = null,
+  finish = 'aluminum', glass = {}, aperture: hasAperture = true, drawContent = null,
 } = {}) {
   // Same guard. god-menu.js asks for theme:'red' for the whole developer panel
   // and has always drawn amber.
@@ -96,14 +98,14 @@ export function drawMachinePanel(x, y, w, h, {
     const pw = w * cellW * dpr, ph = h * cellH * dpr;
     drawInstrumentPlate(ctx, { x: px, y: py, w: pw, h: ph, dpr, finish,
       seed: `${wordmark}:${model}:${label}` });
-    drawInstrumentWell(ctx, { x: aperture.x * cellW * dpr, y: aperture.y * cellH * dpr,
+    if (hasAperture) drawInstrumentWell(ctx, { x: aperture.x * cellW * dpr, y: aperture.y * cellH * dpr,
       w: aperture.w * cellW * dpr, h: aperture.h * cellH * dpr, dpr, depth: optical.depth ?? 1 });
   });
 
   const body = machinePanelBody(x, y, w, h, { footer: footer || footerParts?.length ? 'CONTROLS' : '' });
   if (typeof drawContent === 'function') {
     uiWithHardwareLayer(() => uiWithClip(aperture, () => drawContent(body)), () => {
-      if (glass === false) return;
+      if (glass === false || !hasAperture) return;
       uiDraw(({ctx,dpr,cellW,cellH}) => drawInstrumentGlass(ctx, {
         ...optical, x: aperture.x * cellW * dpr, y: aperture.y * cellH * dpr,
         w: aperture.w * cellW * dpr, h: aperture.h * cellH * dpr, dpr,
@@ -155,7 +157,7 @@ export function drawMachinePanel(x, y, w, h, {
   return body;
 }
 
-// ── the bargraph meter (DA-1000 / Akai VOLUME scale) ─────────────────────────
+// ── the bargraph meter (A-1000 / Akai VOLUME scale) ─────────────────────────
 //
 // The instrument, not a texture. See render/meter.js for why it has a scale at
 // all — two authored lines describe a meter "flat at the bottom of the scale",
@@ -272,7 +274,7 @@ export function drawVfdMeter(x, y, width = 14, snapshot = monitorSnapshot(), {
     for (const mark of placed) {
       const mx = (x + mark.x) * cellW * dpr;
       ctx.save();
-      // The SPOIL mark is the DA-1000's red POSITION marker, which is exactly
+      // The SPOIL mark is the A-1000's red POSITION marker, which is exactly
       // its meaning here: the one place on the scale that matters.
       ctx.fillStyle = mark.kind === 'spoil' || mark.kind === 'catch'
         ? themeRoleColor('marker', x + mark.x, cols)
@@ -377,7 +379,7 @@ export function drawVfdWarningTriangle(x, y, snapshot = monitorSnapshot(), { now
   return true;
 }
 
-// The DA-1000 LOCATION INDICATOR: a row of vertical bars with a red position
+// The A-1000 LOCATION INDICATOR: a row of vertical bars with a red position
 // marker, used for take progress. `p` is 0..1.
 export function drawLocationIndicator(x, y, width, p, {
   theme = 'green', seconds = 45, marks = null, rows = 1, label = '',
@@ -474,7 +476,7 @@ export function drawLocationIndicator(x, y, width, p, {
 }
 
 
-// ── the numeric counter (7-segment, pale-cyan on the DA-1000) ────────────────
+// ── the numeric counter (7-segment, pale-cyan on the A-1000) ────────────────
 const DIGIT = {
   0: 'abcdef', 1: 'bc', 2: 'abdeg', 3: 'abcdg', 4: 'bcfg',
   5: 'acdfg', 6: 'acdefg', 7: 'abc', 8: 'abcdefg', 9: 'abcdfg', '-': 'g', ' ': '',

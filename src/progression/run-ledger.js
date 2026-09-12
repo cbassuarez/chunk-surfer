@@ -13,6 +13,13 @@ export function reduceRunLedger(ledger = freshLedger(), event) {
   const p = event?.payload || {};
 
   switch (event?.type) {
+    case EVENT_TYPES.RADIO_USED:
+    case EVENT_TYPES.RADIO_CUE_STARTED:
+      next.radio.uses += 1;
+      break;
+    case EVENT_TYPES.RADIO_CUE_MISSED:
+      addUnique(next.radio.missed, p.id);
+      break;
     case EVENT_TYPES.TAKE_COMPLETED:
       next.takes.completed += 1;
       addUnique(next.takes.rooms, p.roomId);
@@ -75,6 +82,7 @@ export function reduceRunLedger(ledger = freshLedger(), event) {
       break;
     case EVENT_TYPES.EQUIPMENT_DROPPED:
       addUnique(next.equipment.dropped, p.id);
+      if (p.id === 'radio') next.radio.uses += 1;
       break;
     case EVENT_TYPES.EQUIPMENT_RECOVERED:
       addUnique(next.equipment.recovered, p.id);

@@ -106,6 +106,7 @@ test('inventory actions stay explicit and only the radio can be dropped safely',
       {id:'light',present:true,battleCapable:true},
       {id:'radio',present:true,battleCapable:true,primaryAction:{id:'radio-call',label:'CALL FRONT DESK',enabled:true}},
       {id:'plant-spanner',present:true},
+      {id:'marble-eyes',present:true,battleCapable:false},
     ],
     loadout:{top:['light','radio']},job:job(),
   });
@@ -120,8 +121,15 @@ test('inventory actions stay explicit and only the radio can be dropped safely',
   assert.equal(radioUse.id,'radio-call');assert.equal(radioUse.enabled,true);
   const lightDrop=bagEntry(model,'kit','gear:light').actionList.find((action)=>action.verb==='drop');
   assert.equal(lightDrop.enabled,false);assert.equal(lightDrop.reason,"CAN'T LEAVE THIS ITEM BEHIND");
+  // The spanner is battle gear now — ours, out of the van, and the only blunt
+  // thing in the case (BATTLE_GEAR in combat-loadout.js). It used to be this
+  // test's example of a thing you cannot take into a fight; the marble eyes are
+  // that example now, and they are a better one, because nothing will ever make
+  // them useful in a fight.
   const spannerSet=bagEntry(model,'kit','gear:plant-spanner').actionList.find((action)=>action.verb==='set');
-  assert.equal(spannerSet.enabled,false);assert.equal(spannerSet.reason,'NOT USED IN A FIGHT');
+  assert.equal(spannerSet.enabled,true,'the spanner can be set in a quick slot');
+  const eyesSet=bagEntry(model,'kit','gear:marble-eyes').actionList.find((action)=>action.verb==='set');
+  assert.equal(eyesSet.enabled,false);assert.equal(eyesSet.reason,'NOT USED IN A FIGHT');
 });
 
 test('numbered ready slots replace storage gear and swap already-ready gear',()=>{

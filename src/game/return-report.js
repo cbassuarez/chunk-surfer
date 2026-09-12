@@ -13,7 +13,7 @@ import { UI_COLOR } from '../render/palette.js';
 import { CAUSAL_REQUIREMENT, tapeQualifies } from '../causal/tape.js';
 import { achievementDefinition } from '../progression/achievements.js';
 import { consumeReturnReport } from '../progression/runtime.js';
-import { formatDuration, returnDefinition } from '../progression/report.js';
+import { formatDuration, returnDefinition, returnUnlockDefinition } from '../progression/report.js';
 import * as AUDIO from '../audio/story-audio.js';
 import { promptLine } from './bindings.js';
 import { getMeta } from './save.js';
@@ -65,6 +65,9 @@ function reportSections(summary) {
     ['TAKES', [
       ['ACCEPTED', `${summary.takes.completed} OF 5`],
       ['SPOILED', String(summary.takes.spoiled)],
+      ['STOPPED EARLY', String(summary.takes.aborted||0)],
+      ['WORK ORDER', summary.takes.assessment||'INCOMPLETE'],
+      ...(summary.takes.unfinishedRooms?.length?[['RETAKES DUE',summary.takes.unfinishedRooms.map(roomLabel).join(', ')]]:[]),
       ['CONTAMINATED', String(contaminated.length)],
       // WHICH rooms, not how many. The count was all the form ever printed and
       // the room list has been in the summary the whole time.
@@ -252,8 +255,8 @@ export function makeReturnReportScene({
       if (current === 'actions') {
         if (e.key === 'ArrowUp' || k === 'w') { action = (action - 1 + POST_RUN_ACTIONS.length) % POST_RUN_ACTIONS.length; AUDIO.menuMove(); return true; }
         if (e.key === 'ArrowDown' || k === 's') { action = (action + 1) % POST_RUN_ACTIONS.length; AUDIO.menuMove(); return true; }
-        if (e.key === 'ArrowLeft' || k === 'a') { action = action === 1 ? 0 : action === 3 ? 2 : action; AUDIO.menuMove(); return true; }
-        if (e.key === 'ArrowRight' || k === 'd') { action = action === 0 ? 1 : action === 2 ? 3 : action; AUDIO.menuMove(); return true; }
+        if (e.key === 'ArrowLeft' || k === 'a') { const before=action;action = action === 1 ? 0 : action === 3 ? 2 : action;if(action!==before)AUDIO.menuMove(); return true; }
+        if (e.key === 'ArrowRight' || k === 'd') { const before=action;action = action === 0 ? 1 : action === 2 ? 3 : action;if(action!==before)AUDIO.menuMove(); return true; }
         if (e.key === 'Enter' || e.key === ' ' || k === 'z') {
           const selectedAction = POST_RUN_ACTIONS[action];
           AUDIO.menuConfirm(); finish(selectedAction?.id || 'title'); return true;
@@ -268,7 +271,7 @@ export function makeReturnReportScene({
         if (wasReport && stages[stage]?.id !== 'report') onAccountRead();
         AUDIO.menuConfirm(); return true;
       }
-      if (e.key === 'ArrowLeft' && stage > 0) { stage--; AUDIO.menuMove(); return true; }
+      if (e.key === 'ArrowLeft' && stage > 0) { stage--; AUDIO.menuPage(); return true; }
       return true;
     },
     render() {
@@ -292,7 +295,7 @@ export function makeReturnReportScene({
         label: 'RETURN',
         source: pageSource,
         wordmark: narrow ? '' : 'AUDIOCORP',
-        model: 'DA-1000',
+        model: 'A-1000',
         footer: promptLine([{ action: 'continue', label: 'CONTINUE' }]),
         // The header meter is fed the run rather than the live HUSH exposure,
         // which is flat zero once the run is over and has always read dead here.
@@ -418,7 +421,7 @@ export function makeReturnReportScene({
       // cannot stand next to that. So it stops imitating a material this game
       // already does properly and goes back to the one it is actually made of.
       //
-      // The DA-1000 is the frame for it. The night was a recording job; the
+      // The A-1000 is the frame for it. The night was a recording job; the
       // return is that tape played back. The counter runs the time on site, the
       // location indicator walks the rooms actually taken, the take rail shows
       // the takes and what they cost. Those instruments are all built and
@@ -470,11 +473,16 @@ export function makeReturnReportScene({
         const maxY = body.y + body.h - 1;
         for (const id of currentStage.ids || []) {
           if (ry > maxY) break;
-          const feature = FEATURE_COPY[id];
-          const text = id.startsWith('cosmetic:') ? `DISPLAY / ${id.slice(9).replaceAll('-', ' ').toUpperCase()}` : feature?.label || id.toUpperCase();
+          const authoredUnlock = returnUnlockDefinition(id);
+          const feature = authoredUnlock || FEATURE_COPY[id];
+          const text = feature?.label || (id.startsWith('cosmetic:') ? `DISPLAY / ${id.slice(9).replaceAll('-', ' ').toUpperCase()}` : id.toUpperCase());
           uiText(body.x, ry, `▸ ${text}`.slice(0, body.w), id === 'deadAir' ? 'ui-danger' : 'ui-amber');
           const description = feature?.description;
-          if(description&&ry+1<=maxY)uiText(body.x+2,ry+1,description.slice(0,Math.max(1,body.w-2)),'ui-secondary');
+          const descriptionLines = authoredUnlock ? uiWrap(description, Math.max(1, body.w - 2)).slice(0, 2)
+            : description ? [description.slice(0, Math.max(1, body.w - 2))] : [];
+          descriptionLines.forEach((line, i) => {
+            if (ry + 1 + i <= maxY) uiText(body.x + 2, ry + 1 + i, line, 'ui-secondary');
+          });
           ry += 3;
         }
         return;

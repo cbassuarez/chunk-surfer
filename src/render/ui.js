@@ -6,9 +6,10 @@
 // Coordinates are cells, using the same metrics as the ASCII renderer, so a
 // dialogue box occupies the same visual module as the map it covers.
 
-import { UI_CELL_W as CELL_W, UI_CELL_H as CELL_H, UI_FONT_PX, MONO_STACK, atlasConfigure, atlasDpr, getTile } from './atlas.js';
-import { UI_COLOR, uiFlickerAlpha, uiRoleColor } from './palette.js';
+import { UI_CELL_W as CELL_W, UI_CELL_H as CELL_H, atlasConfigure, atlasDpr, getTile } from './atlas.js';
+import { UI_COLOR, uiFlickerAlpha, uiRoleColor, uiRoleDim, uiBrightness } from './palette.js';
 import { fitText } from './fit-text.js';
+import { drawElectronicText } from './electronic-text.js';
 
 let host = null, canvas = null, ctx = null;
 let cols = 0, rows = 0;
@@ -185,25 +186,18 @@ export function uiText(cx, cy, str, cls = 't-chunk', alpha = 1, max = null) {
   for (let i = 0; i < limit; i++) uiGlyph(cx + i, cy, s[i], cls, alpha);
 }
 
-// Direction/system copy is prose spoken by the machine, not another VFD
-// legend. Give it a real italic monospace face instead of decorating the words
-// with // marks. It keeps the same authored cell grid and phosphor colour.
+// Direction/system copy shares the display's character hardware. Keep this
+// legacy entry point so transcript semantics and pacing do not change, but a
+// machine's aside cannot bypass its ROM with italic native-font text.
 export function uiItalicText(cx, cy, str, cls = 'ui-secondary', alpha = 1) {
-  const s = String(str ?? '');
+  const s = fitText(String(str ?? ''),Math.max(0,Math.floor(cols-cx)));
   if (!ctx || !s) return;
   const dpr = atlasDpr();
-  ctx.save();
-  ctx.font = `italic ${UI_FONT_PX * dpr * uiScale}px ${MONO_STACK}`;
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = uiRoleColor(cls, cx, cols);
-  ctx.globalAlpha = alpha * uiAlphaScope;
-  ctx.shadowColor = uiRoleColor(cls, cx, cols);
-  ctx.shadowBlur = 2.2 * dpr;
-  for (let i = 0; i < s.length; i++) {
-    if (s[i] !== ' ') ctx.fillText(s[i], (cx + i) * scaledCellW * dpr, (cy + 0.5) * scaledCellH * dpr);
-  }
-  ctx.restore();
+  drawElectronicText(ctx,s,cx*scaledCellW*dpr,(cy+.5)*scaledCellH*dpr,{
+    mode:'vfd',fontSize:Math.min(scaledCellW*1.42,scaledCellH)*dpr,
+    cellWidth:scaledCellW*dpr,color:uiRoleColor(cls,cx,cols),dim:uiRoleDim(cls,cx,cols),
+    alpha:alpha*uiAlphaScope*Math.min(1,uiBrightness())*uiFlickerAlpha(cx,cy,cls),dpr,baseline:'middle',
+  });
 }
 
 // Typewriter ink on paper. NOT the VFD dot-matrix: a real monospace face with

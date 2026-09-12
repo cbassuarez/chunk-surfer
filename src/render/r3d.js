@@ -5163,8 +5163,8 @@ export function r3dFrame(state) {
   const torchPower=lightEase*Math.max(0,Math.min(1,Number(torch.power??1)||0));
   const sourceTorchMode=torch.sourceTorchMode==='xray'?1:torch.sourceTorchMode==='emergency'?2:0;
   const torchColor=Array.isArray(torch.color)?torch.color:[1,.94,.82];
-  const torchReach=Math.max(.35,Math.min(1.1,Number(torch.reach)||1));
-  const torchConeInner=Math.max(.72,Math.min(.94,Number(torch.coneInner)||.88));
+  const torchReach=Math.max(.35,Math.min(1.25,Number(torch.reach)||1));
+  const torchConeInner=Math.max(.72,Math.min(.97,Number(torch.coneInner)||.88));
   const torchConeOuter=Math.max(torchConeInner+.015,Math.min(.98,Number(torch.coneOuter)||.94));
   const torchSpill=Math.max(0,Math.min(.12,Number(torch.spill??.05)||0));
   const opticalEffects=visualEffectsEnabled()?1:0;

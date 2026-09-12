@@ -7,6 +7,7 @@ import { floorForHeight, mapKey } from './map-projection.js';
 import { resolveMapRoute } from './map-routing.js';
 import { resolveMapPolicy } from './map-policy.js';
 import { validateBuildingMap, validateMapSource } from './map-schema.js';
+import { captureMapArchitecture } from './map-architecture.js';
 
 function topologyRuns(open) {
   const rows = new Map();
@@ -88,6 +89,7 @@ export function captureFloorplanMapSource({
   definition,
   physical,
   stairPortals = [],
+  stairRuns = [],
   projectLogical,
   labelForRoom = (roomId) => roomId,
 } = {}) {
@@ -168,10 +170,12 @@ export function captureFloorplanMapSource({
       kind: 'stairs',
       a: {
         floorId: floorA.id,
+        height: portal.floor0,
         position: { x: portal.p0[0] / stride, y: portal.p0[1] / stride },
       },
       b: {
         floorId: floorB.id,
+        height: portal.floor1,
         position: { x: portal.p1[0] / stride, y: portal.p1[1] / stride },
       },
     });
@@ -214,6 +218,8 @@ export function captureFloorplanMapSource({
     connectors,
     physicalWidth: Math.ceil((physical.width || 1) / stride),
     physicalHeight: Math.ceil((physical.height || 1) / stride),
+    architecture: captureMapArchitecture({ definition, physical, stairPortals, stairRuns, topologyStride: stride,
+      spaces: [...targets.map(target => ({ ...target, id: `space:${target.roomId}` })), ...spaces, ...landmarks] }),
   };
 
   const checked = validateMapSource(source);
@@ -233,6 +239,7 @@ export function captureDoorMapState({ doors = [], projectLogical, source, hasKey
     return {
       id: door.id,
       floorId: floor?.id || null,
+      height: Number(projected.height ?? projected.y) || 0,
       position: {
         x: Number(projected.x) / stride,
         y: Number(projected.z ?? projected.y) / stride,
@@ -256,6 +263,7 @@ function normalizePlayer(source, player) {
       || !Number.isFinite(player.height)) {
     return {
       resolved: false, floorId: null, roomId: player?.roomId || null,
+      height: null,
       areaLabel: player?.areaLabel || null,
       position: null, heading: Number(player?.heading) || 0,
     };
@@ -264,6 +272,7 @@ function normalizePlayer(source, player) {
   return {
     resolved: !!floor,
     floorId: floor?.id || null,
+    height: player.height,
     roomId: player.roomId || null,
     areaLabel: player.areaLabel || null,
     position: { x: player.x / stride, y: player.y / stride },
@@ -315,7 +324,7 @@ export function buildMapModel({
     ? (spaces.find((space) => space.roomId === targetRoomId) || null)
     : null;
     return {
-      version:1, floors:[fallbackFloor], connectors:[], doors:[], spaces,
+      version:1, architecture:null, floors:[fallbackFloor], connectors:[], doors:[], spaces,
       player:{resolved:false,floorId:'unknown',roomId:player?.roomId||null,areaLabel:player?.areaLabel||null,position:null,heading:Number(player?.heading)||0},
       waypoint:activeWaypoint|| (waypointSpace?{roomId:waypointSpace.roomId,spaceId:waypointSpace.id,floorId:'unknown',position:null}:null),
       route:{status:'unresolved',points:[],nextConnectorId:null,floorDelta:0}, contacts:[],equipmentMarkers:[],
@@ -353,6 +362,7 @@ export function buildMapModel({
       shortLabel: String(target.shortLabel || room.label || target.roomId)
         .split(/\s+/).map((word) => word[0] || '').join('').slice(0, 4).toUpperCase(),
       position: target.position,
+      height: target.height,
       logical: target.logical || null,
       selectable: target.selectable !== false,
       waypointable: target.waypointable !== false,
@@ -383,7 +393,7 @@ export function buildMapModel({
     spaces.push({
       id:authored.id,kind:'facility',roomId:authored.roomId||null,floorId:authored.floorId,
       label:String(authored.label||authored.id).toUpperCase(),shortLabel:String(authored.shortLabel||authored.label||authored.id).toUpperCase(),
-      position:authored.position,logical:authored.logical||null,selectable:authored.selectable!==false,
+      position:authored.position,height:authored.height,logical:authored.logical||null,selectable:authored.selectable!==false,
       waypointable:authored.waypointable!==false,visibility:authored.visibility||'issued',current,waypoint:false,
       visited:current||visited.has(authored.id)||!!authored.visited,entrances,objective:null,
     });
@@ -398,11 +408,11 @@ export function buildMapModel({
       // unnamed — `???` — and it cannot be selected or targeted until a log names
       // it, so knowing it exists costs nothing and gives nothing away.
       spaces.push({id:`${landmark.id}:unknown`,kind:'unknown',roomId:null,floorId:landmark.floorId,
-        label:'???',shortLabel:'???',position:landmark.position,selectable:false,waypointable:false,
+        label:'???',shortLabel:'???',position:landmark.position,height:landmark.height,selectable:false,waypointable:false,
         visibility:'unknown',unknown:true,current:false,waypoint:false,objective:null});
       continue;
     }
-    spaces.push({id:landmark.id,kind:'landmark',roomId:null,floorId:landmark.floorId,label:String(live.label||landmark.label).toUpperCase(),shortLabel:landmark.shortLabel||'LAND',position:landmark.position,logical:landmark.logical||null,selectable:landmark.selectable!==false,waypointable:landmark.waypointable!==false,visibility:'discovered',current:false,waypoint:false,entrances:[],objective:null});
+    spaces.push({id:landmark.id,kind:'landmark',roomId:null,floorId:landmark.floorId,label:String(live.label||landmark.label).toUpperCase(),shortLabel:landmark.shortLabel||'LAND',position:landmark.position,height:landmark.height,logical:landmark.logical||null,selectable:landmark.selectable!==false,waypointable:landmark.waypointable!==false,visibility:'discovered',current:false,waypoint:false,entrances:[],objective:null});
   }
 
   // Same rule as the unresolved-player path above: a target must be a real room
@@ -419,12 +429,15 @@ export function buildMapModel({
     spaceId: waypointSpace.id,
     floorId: waypointSpace.floorId,
     position: waypointSpace.position,
+    height: waypointSpace.height,
   } : null;
   const explicitPlayerWaypoint=playerWaypoint?.position
     ? {
         id:playerWaypoint.id||playerWaypoint.spaceId||null,label:playerWaypoint.label||null,kind:'space',playerSelected:true,
         roomId:playerWaypoint.roomId||null,spaceId:playerWaypoint.spaceId||null,floorId:playerWaypoint.floorId||null,
         position:{x:Number(playerWaypoint.position.x),y:Number(playerWaypoint.position.y)},
+        height: Number.isFinite(playerWaypoint.height) ? playerWaypoint.height
+          : spaces.find(space => space.id === playerWaypoint.spaceId)?.height ?? null,
       }
     : null;
   const guidanceWaypoint=activeWaypoint?.position
@@ -442,6 +455,8 @@ export function buildMapModel({
         suppressExactDistance:!!activeWaypoint.suppressExactDistance,
         floorId:activeWaypoint.floorId||null,
         position:{x:Number(activeWaypoint.position.x),y:Number(activeWaypoint.position.y)},
+        height: Number.isFinite(activeWaypoint.height) ? activeWaypoint.height
+          : spaces.find(space => space.id === activeWaypoint.spaceId || (activeWaypoint.roomId && space.roomId === activeWaypoint.roomId))?.height ?? null,
       }
     : null;
   // A schema-2 personal space mark is explicit and stays independent. Legacy
@@ -469,6 +484,7 @@ export function buildMapModel({
     .map((marker)=>({
       id:marker.id,kind:String(marker.kind||'equipment'),label:String(marker.label||marker.id).toUpperCase(),
       floorId:marker.floorId,position:{x:Number(marker.position.x),y:Number(marker.position.y)},
+      height:Number.isFinite(marker.height)?marker.height:null,
       carrierOpen:!!marker.carrierOpen,
     }));
 
@@ -479,6 +495,9 @@ export function buildMapModel({
   return {
     version: 2,
     sourceVersion: source.version,
+    // Presentation cannot re-enable architecture that the current shift
+    // withholds. The immutable source remains cached for later rule changes.
+    architecture: policy.showMapTopology === false ? null : source.architecture || null,
     topologyStride: source.topologyStride,
     floors: visibleFloors,
     connectors: visibleConnectors,

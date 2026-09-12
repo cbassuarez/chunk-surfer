@@ -173,6 +173,9 @@ try{
   await routeCall();await routeCall({controller:true});
   assert.equal((await state()).radio.guidance.dangerCallCount,0,'repeated directions never spend danger help');
   await seedRadio({initial:false});await page.evaluate(()=>window.__probe.radioTransmit(0));
+  await wait(()=>window.__probe.radio().call.status==='calling');
+  assert.ok(!(await state()).id?.startsWith('radio:'),'incoming call does not take scene ownership');
+  await shot('incoming');await page.keyboard.press('v');
   await wait(()=>window.__scenes.top()?.id==='radio:initial_checkin');await sleep(350);await shot('initial');
   await page.keyboard.press('v');await noRadio();
   assert.equal((await state()).radio.milestones.initial_checkin,false,'cancelling a scripted first call does not count as hearing it');

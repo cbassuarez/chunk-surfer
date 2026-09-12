@@ -143,7 +143,12 @@ test('automatic exploration use is limited to keys and the two puzzle objects', 
   assert.equal(BAG_AUTOMATIC_USE.keyring.targets[0], 'locked-door');
   assert.equal(BAG_AUTOMATIC_USE['plant-spanner'].targets[0], 'plant-header-valve');
   assert.equal(BAG_AUTOMATIC_USE['marble-eyes'].targets[0], 'academic-bust');
-  for (const id of ['keyring', 'marble-eyes', 'plant-spanner']) assert.equal(isBattleGear(id), false);
+  // Automatic exploration use and battle gear are not exclusive. The spanner is
+  // both now: it still turns the header gland by itself, and it is also the one
+  // blunt thing in the case (BATTLE_GEAR in combat-loadout.js). The keys and the
+  // eyes remain the things that have no use in a fight.
+  for (const id of ['keyring', 'marble-eyes']) assert.equal(isBattleGear(id), false);
+  assert.equal(isBattleGear('plant-spanner'), true);
 });
 
 test('the keyring facts and inspection list all acquired keys in one entry', () => {

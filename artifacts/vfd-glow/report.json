@@ -1,0 +1,130 @@
+{
+  "checks": [
+    {
+      "dpr": 1,
+      "width": 8.45,
+      "color": "#f2a81e",
+      "changedAlphaPixels": 0,
+      "maxColorDifference": 0
+    },
+    {
+      "dpr": 1,
+      "width": 8.45,
+      "color": "#94d995",
+      "changedAlphaPixels": 0,
+      "maxColorDifference": 0
+    },
+    {
+      "dpr": 1,
+      "width": 13,
+      "color": "#f2a81e",
+      "changedAlphaPixels": 0,
+      "maxColorDifference": 0
+    },
+    {
+      "dpr": 1,
+      "width": 13,
+      "color": "#94d995",
+      "changedAlphaPixels": 0,
+      "maxColorDifference": 0
+    },
+    {
+      "dpr": 1,
+      "width": 22,
+      "color": "#f2a81e",
+      "changedAlphaPixels": 0,
+      "maxColorDifference": 0
+    },
+    {
+      "dpr": 1,
+      "width": 22,
+      "color": "#94d995",
+      "changedAlphaPixels": 0,
+      "maxColorDifference": 0
+    },
+    {
+      "dpr": 2,
+      "width": 8.45,
+      "color": "#f2a81e",
+      "changedAlphaPixels": 0,
+      "maxColorDifference": 0
+    },
+    {
+      "dpr": 2,
+      "width": 8.45,
+      "color": "#94d995",
+      "changedAlphaPixels": 0,
+      "maxColorDifference": 0
+    },
+    {
+      "dpr": 2,
+      "width": 13,
+      "color": "#f2a81e",
+      "changedAlphaPixels": 0,
+      "maxColorDifference": 0
+    },
+    {
+      "dpr": 2,
+      "width": 13,
+      "color": "#94d995",
+      "changedAlphaPixels": 0,
+      "maxColorDifference": 0
+    },
+    {
+      "dpr": 2,
+      "width": 22,
+      "color": "#f2a81e",
+      "changedAlphaPixels": 0,
+      "maxColorDifference": 0
+    },
+    {
+      "dpr": 2,
+      "width": 22,
+      "color": "#94d995",
+      "changedAlphaPixels": 0,
+      "maxColorDifference": 1.1764705882352942
+    },
+    {
+      "dpr": 3,
+      "width": 8.45,
+      "color": "#f2a81e",
+      "changedAlphaPixels": 0,
+      "maxColorDifference": 0
+    },
+    {
+      "dpr": 3,
+      "width": 8.45,
+      "color": "#94d995",
+      "changedAlphaPixels": 0,
+      "maxColorDifference": 0
+    },
+    {
+      "dpr": 3,
+      "width": 13,
+      "color": "#f2a81e",
+      "changedAlphaPixels": 0,
+      "maxColorDifference": 0
+    },
+    {
+      "dpr": 3,
+      "width": 13,
+      "color": "#94d995",
+      "changedAlphaPixels": 0,
+      "maxColorDifference": 0
+    },
+    {
+      "dpr": 3,
+      "width": 22,
+      "color": "#f2a81e",
+      "changedAlphaPixels": 0,
+      "maxColorDifference": 0
+    },
+    {
+      "dpr": 3,
+      "width": 22,
+      "color": "#94d995",
+      "changedAlphaPixels": 0,
+      "maxColorDifference": 0
+    }
+  ]
+}

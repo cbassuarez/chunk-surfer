@@ -11,25 +11,30 @@ import { TRANSPORT, recorderPanelRect } from '../src/render/recorder-view.js';
 // live: they read the same function.
 {
   const idle = recorderKeys({ playableHere: true, tapes: 2 });
-  assert.deepEqual(idle.map((k) => k.id), [RECORDER_KEY.REC, RECORDER_KEY.PLAY, RECORDER_KEY.TAKES]);
-  assert.ok(idle.every((k) => k.enabled), 'with a tape here and tapes on the machine, all three are live');
+  assert.deepEqual(idle.map((k) => k.id), [RECORDER_KEY.REC, RECORDER_KEY.STOP, RECORDER_KEY.TAKES]);
+  assert.equal(idle[0].enabled, true);
+  assert.equal(idle[1].enabled, false, 'STOP is present but no transport is running');
+  assert.equal(idle[2].enabled, true);
 
   const refused = recorderKeys({ refusal: { reason: 'STUDIO B3 FIRST' }, playableHere: false, tapes: 0 });
   assert.equal(refused[0].enabled, false, 'REC goes dark when the game would refuse the take');
   assert.equal(refused[0].reason, 'STUDIO B3 FIRST',
     'and it says why, on the panel, instead of speaking a line');
-  assert.equal(refused[1].enabled, false, 'nothing on tape in this room');
-  assert.equal(refused[2].enabled, false, 'and no tapes to browse');
+  assert.equal(refused[1].enabled, false, 'no active transport to stop');
+  assert.equal(refused[2].enabled, true, 'even an empty take list can be inspected');
 
   const warned = recorderKeys({ refusal: { reason: 'MAINS IN THE CANS', allow: true } });
   assert.equal(warned[0].enabled, true, 'an authored warning can leave REC available for deliberate confirmation');
 
-  // Rolling, the only thing you can do is stop — and stop must never be two
-  // keystrokes away.
-  assert.deepEqual(recorderKeys({ recording: true }).map((k) => k.id), [RECORDER_KEY.STOP]);
-  assert.deepEqual(recorderKeys({ recording: true, stalled: true }).map((k) => k.id),
-    [RECORDER_KEY.RESUME, RECORDER_KEY.STOP]);
-  assert.deepEqual(recorderKeys({ playing: true }).map((k) => k.id), [RECORDER_KEY.STOP]);
+  // The physical deck always has these three keys, whether the tape is
+  // recording, held, playing, stopped, or being browsed.
+  for (const state of [{ recording: true }, { recording: true, stalled: true }, { playing: true }, { browsing: true }]) {
+    assert.deepEqual(recorderKeys(state).map((k) => k.id), ['rec', 'stop', 'takes']);
+    assert.deepEqual(recorderKeys(state).map((k) => k.label), ['REC', 'STOP', 'TAKES']);
+  }
+  assert.equal(recorderKeys({ recording: true })[0].enabled, false);
+  assert.equal(recorderKeys({ recording: true, stalled: true })[0].enabled, true, 'REC resumes the held take without changing its legend');
+  assert.equal(recorderKeys({ playing: true })[1].enabled, true);
 }
 
 // The authored LISTEN tree is a transport state of this scene. It does not
@@ -121,7 +126,7 @@ function harness(state = {}) {
   scene.key({ key: 'Enter', code: 'Enter' });
   assert.deepEqual(calls.play, ['main_b3'], 'a tape is played by name, not by where you are standing');
 
-  scene.key({ key: 'Enter', code: 'Enter' });   // re-open the list
+  scene.key({ key: 'Tab', code: 'Tab' });   // re-open the list
   scene.key({ key: 'ArrowDown', code: 'ArrowDown' });
   scene.key({ key: 'Enter', code: 'Enter' });
   assert.deepEqual(calls.play, ['main_b3'], 'a tape with no print is not offered');
@@ -154,8 +159,8 @@ function harness(state = {}) {
 {
   const source = readFileSync('src/render/recorder-view.js', 'utf8');
   for (const mode of Object.values(TRANSPORT)) {
-    const label = source.match(new RegExp(`\\[TRANSPORT\\.${mode.toUpperCase()}\\]:\\s*'([^']+)'`));
-    assert.ok(label, `${mode} has a panel label, or the header falls back to RECORD and lies`);
+    const label = source.match(new RegExp(`\\b${mode}:\\s*'([^']+)'`));
+    assert.ok(label, `${mode} has an actual mode label on the instrument rather than falling back to RECORD`);
   }
   assert.ok(Object.values(TRANSPORT).includes('check'), 'the mic check is a transport state');
 
@@ -163,7 +168,8 @@ function harness(state = {}) {
   // low and off-centre like the rest of the machine. Centre screen is where the
   // recording hallucinations are staged.
   const rect = recorderPanelRect({ cols: 120, rows: 40, rowsNeeded: 4 });
-  assert.ok(rect.y > 40 / 2, 'the machine sits in the lower half, whatever it is showing');
+  assert.ok(rect.y + rect.h / 2 > 40 / 2, 'the machine remains weighted toward the lower half');
+  assert.ok(rect.y >= rect.bar, 'the room remains visible above the physical instrument');
   assert.ok(rect.y + rect.h <= 40, 'and inside the screen');
 }
 
@@ -172,7 +178,7 @@ function harness(state = {}) {
   const main = readFileSync('src/main.js', 'utf8');
   const overlay = main.slice(main.indexOf('function drawMicTestOverlay('),
     main.indexOf('function firstTakeIntercept('));
-  assert.match(overlay, /drawRecorderFace/, 'the mic check draws the DA-1000');
+  assert.match(overlay, /drawRecorderFace/, 'the mic check draws the A-1000');
   assert.match(overlay, /TRANSPORT\.CHECK/);
   assert.doesNotMatch(overlay, /drawMachinePanel/, 'and never builds a second chassis');
   assert.match(overlay, /NOTHING IS RECORDING\. NOTHING IS KEPT\./,

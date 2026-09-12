@@ -1,4 +1,5 @@
 import { detectStorageBackendKind } from '../detect.js';
+import { clearSlateAudio } from '../../audio/take-slate.js';
 import { BrowserStorage } from './browserStorage.js';
 import { DesktopStorage } from './desktopStorage.js';
 import { defaultSettings, defaultProfile } from './defaults.js';
@@ -104,6 +105,7 @@ export async function exportAllData() {
 }
 
 export async function deleteAllUserData() {
+  await clearSlateAudio();
   return storage?.deleteAllUserData?.();
 }
 

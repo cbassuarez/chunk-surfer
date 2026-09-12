@@ -44,6 +44,17 @@ export const COMBAT_ACTION = Object.freeze({
   // and rig RUNAWAY FEEDBACK are the finishers of their branches.
   MASTER_TAKE: 'master-take',
   RUNAWAY_FEEDBACK: 'runaway-feedback',
+  // THE SPANNER'S TWO. Everything else in this list manipulates a signal; these
+  // two are a heavy piece of steel, used the two ways a heavy piece of steel is
+  // ever used. SWING lands whatever the read was and is heard doing it.
+  // SPANNER_GUARD is the same object held across the body, and it is the only
+  // guard in the game that does not depend on reading the beat correctly.
+  //
+  // NOT called BRACE: TECHNIQUE.BRACE already exists, is labelled BRACE in the
+  // skills tree, and buffs HOLD. Two different BRACEs in one fight is a UI that
+  // lies about which one you bought.
+  SWING: 'swing',
+  SPANNER_GUARD: 'spanner-guard',
   // Yield the beat and face the enemy with no move of your own. The deliberate
   // "do nothing" that only means something once the enemy takes a real turn.
   WAIT: 'wait',
@@ -72,6 +83,11 @@ export const COMBAT_TOOL = Object.freeze({
   FORK: 'fork',
   RADIO: 'radio',
   COFFEE: 'coffee',
+  // OUR OWN SPANNER, out of our own van. The only object in the case that is not
+  // audio equipment, and therefore the only answer in the fight that is not a
+  // signal trick. The building's two-metre Stillson is not this and never enters
+  // the case (see getin-heavy-stillson).
+  SPANNER: 'spanner',
 });
 
 export const SNR_STATE = Object.freeze({
@@ -162,6 +178,8 @@ const ACTION_TOOL = Object.freeze({
   [COMBAT_ACTION.TUNE]: COMBAT_TOOL.FORK,
   [COMBAT_ACTION.RADIO_DECOY]: COMBAT_TOOL.RADIO,
   [COMBAT_ACTION.STEADY_HANDS]: COMBAT_TOOL.COFFEE,
+  [COMBAT_ACTION.SWING]: COMBAT_TOOL.SPANNER,
+  [COMBAT_ACTION.SPANNER_GUARD]: COMBAT_TOOL.SPANNER,
 });
 
 const ACTION_SNR = Object.freeze({
@@ -173,6 +191,8 @@ const ACTION_SNR = Object.freeze({
   [COMBAT_ACTION.WHITEOUT]: SNR_STATE.NOISE,
   [COMBAT_ACTION.PLAYBACK]: SNR_STATE.NOISE,
   [COMBAT_ACTION.RADIO_DECOY]: SNR_STATE.NOISE,
+  // Steel on bone is the loudest thing the recordist can do on purpose.
+  [COMBAT_ACTION.SWING]: SNR_STATE.NOISE,
   [COMBAT_ACTION.HOLD]: SNR_STATE.SILENCE,
   [COMBAT_ACTION.INVERT]: SNR_STATE.SILENCE,
   [COMBAT_ACTION.COMPOSE]: SNR_STATE.SILENCE,
@@ -369,6 +389,15 @@ const MISREAD_SCALE = 0.55;
 const MISREAD_GAP = 2;
 
 function maybeMisread(state, movement, intents, committed, missedLast) {
+  // CONSUMED FIRST, BEFORE ANY GUARD CAN RETURN.
+  //
+  // A swing costs the NEXT read and only that one. Read further down — after the
+  // eight early returns below — and any beat that took one of those exits left
+  // the flag standing, so a single swing kept forcing misreads for the rest of
+  // the fight. Measured: it moved standard/stock/reading from a clean night to
+  // a lost one, which is a bigger swing than the move itself is worth.
+  const swung = !!state.swungLastBeat;
+  state.swungLastBeat = false;
   // Never during a lesson. Never on a movement's opening beat, when the player
   // has just been handed new prose and no footing. Never twice running, which
   // is where a wrong read stops being a moment and becomes a broken interface.
@@ -393,8 +422,16 @@ function maybeMisread(state, movement, intents, committed, missedLast) {
   // not lie to you.
   if (state.tuneUsedMovement === state.movementIndex) return;
 
+  // YOU SWUNG, SO YOU WERE NOT LISTENING.
+  //
+  // A swing forces the next read wrong rather than rolling for it — that is what
+  // "it heard that" costs. It sits AFTER the fork's guarantee on purpose: a
+  // reference pitch held for the movement outranks the noise you made, so the
+  // pair reads as a loop the player can close rather than two unrelated items.
+  // Every safety guard above still applies; being loud never overrides the
+  // critical-composure or guided rules.
   const fidelity = readFidelity(state);
-  if (unitFor(state, 'misread') >= (1 - fidelity) * MISREAD_SCALE) return;
+  if (!swung && unitFor(state, 'misread') >= (1 - fidelity) * MISREAD_SCALE) return;
 
   const context = mindContext(state, movement, intents);
   context.stanceId = state.stance?.id || 'testing';
@@ -766,6 +803,7 @@ export function createCombatState(definition, {
       fork: !!tools.fork,
       radio: !!tools.radio,
       coffee: !!tools.coffee,
+      spanner: !!tools.spanner,
       order: unique(tools.order).filter((id) => Object.values(COMBAT_TOOL).includes(id) && id !== COMBAT_TOOL.SELF),
     },
     injuries: Math.max(0, integer(injuries, 0)),
@@ -775,6 +813,8 @@ export function createCombatState(definition, {
     ringing: false,
     snr: SNR_STATE.SIGNAL,
     tempo: false,
+    // Set by SWING, consumed by maybeMisread on the next beat.
+    swungLastBeat: false,
     tuneUsedMovement: null,
     tuneBonus: 0,
     // Earned by reading the opponent right; spent on specials. See CHARGE_COST.
@@ -1740,12 +1780,13 @@ export function availableCombatActions(state) {
     }] : []),
     ...(state.tools.fork ? [{
       id: COMBAT_ACTION.TUNE, tool: COMBAT_TOOL.FORK, label: 'TUNE',
-      // It used to reveal the next two or three entries in the list. There is
-      // no list any more — only one blow is ever committed — so the fork does
-      // the thing a reference pitch actually does: it gives you a true one. For
-      // the rest of the movement your read cannot be wrong, and every swing you
-      // throw lands higher in its band.
-      detail: 'READ · FREE · YOUR READ HOLDS THIS MOVEMENT · EVERY HIT LANDS HIGHER · ENTER SIGNAL',
+      // It used to reveal the next two or three entries in the list, then it
+      // bought a true read. Both were things it did to the RECORDIST. A
+      // reference pitch is louder than that: it goes into the room and the thing
+      // in the room has to sit against it, so what it does now depends on what
+      // was coming — see the switch in the TUNE branch. Still free, still holds
+      // your read for the movement.
+      detail: 'TUNE IT · FREE · WHAT IT DOES DEPENDS ON WHAT IS COMING · YOUR READ HOLDS · ENTER SIGNAL',
       reveals: hasTechnique(state, TECHNIQUE.PERFECT_PITCH) ? 3 : 2, free: true,
     }] : []),
     ...(state.tools.radio ? [{
@@ -1754,6 +1795,31 @@ export function availableCombatActions(state) {
       prevents: defensivePrevention(noise, 2 * GRID + (hasTechnique(state, TECHNIQUE.MISDIRECTION) ? GRID : 0)),
       ...bandFields(noise, bandFrom(hasTechnique(state, TECHNIQUE.DEAD_AIR) ? 2 * GRID : GRID)),
       special: true, charge: chargeCost(COMBAT_ACTION.RADIO_DECOY),
+    }] : []),
+    ...(state.tools.spanner ? [{
+      id: COMBAT_ACTION.SWING, tool: COMBAT_TOOL.SPANNER, label: 'SWING',
+      // The one move in the fight with no band check. Everything else asks what
+      // the signal is doing; two pounds of adjustable spanner does not care, and
+      // that is the whole of its appeal at the point in a night where the reads
+      // have stopped working.
+      //
+      // The price is that it is LOUD, and loud in this game means heard: it
+      // enters NOISE, and the thing gets a true read on its next beat, which is
+      // exactly the currency the fork spends a turn buying back. A player who
+      // swings twice has told the room where they are standing.
+      detail: `HIT · HEAVY · NO READ NEEDED · IT HEARS YOU · ENTER NOISE`,
+      ...bandFields(noise, bandFrom(2 * GRID)),
+      loud: true,
+      regular: true,
+    }, {
+      id: COMBAT_ACTION.SPANNER_GUARD, tool: COMBAT_TOOL.SPANNER, label: 'ON THE STEEL',
+      // Held across the body. HOLD is a breath and a read; this is an object in
+      // the way, so it prevents without asking whether the read was right — the
+      // only guard in the fight that still works when the bands are against you.
+      detail: `GUARD · PREVENT ${defensivePrevention(silence, holdPrevention(state) + GRID)} · NO READ NEEDED · ENTER SILENCE`,
+      prevents: defensivePrevention(silence, holdPrevention(state) + GRID),
+      ...bandFields(silence, bandFrom(0)),
+      regular: true,
     }] : []),
     ...(state.tools.coffee ? [{
       id: COMBAT_ACTION.STEADY_HANDS, tool: COMBAT_TOOL.COFFEE, label: 'STEADY HANDS',
@@ -1867,13 +1933,14 @@ const TOOL_LABEL = Object.freeze({
   [COMBAT_TOOL.TORCH]: 'FIELD TORCH',
   [COMBAT_TOOL.RECORDER]: 'RECORDER',
   [COMBAT_TOOL.RIG]: 'BENT RIG',
+  [COMBAT_TOOL.SPANNER]: 'ADJUSTABLE SPANNER',
   [COMBAT_TOOL.FORK]: 'TUNING FORK',
   [COMBAT_TOOL.RADIO]: 'RADIO',
   [COMBAT_TOOL.COFFEE]: 'COFFEE',
 });
 
 export function availableCombatTools(state) {
-  const available = [COMBAT_TOOL.TORCH, COMBAT_TOOL.RECORDER, COMBAT_TOOL.RIG, COMBAT_TOOL.FORK, COMBAT_TOOL.RADIO, COMBAT_TOOL.COFFEE]
+  const available = [COMBAT_TOOL.TORCH, COMBAT_TOOL.RECORDER, COMBAT_TOOL.RIG, COMBAT_TOOL.FORK, COMBAT_TOOL.RADIO, COMBAT_TOOL.COFFEE, COMBAT_TOOL.SPANNER]
     .filter((id) => !!state.tools[id]);
   const ordered = unique([...(state.tools.order || []), ...available]).filter((id) => available.includes(id));
   const equipped = [COMBAT_TOOL.SELF, ...ordered];
@@ -2027,9 +2094,59 @@ export function reduceCombat(input, action = {}) {
     // rest of this movement their read holds (see maybeMisread).
     state.misread = null;
     toolCount(state, 'fork');
+
+    // ── THE FORK TUNES THE THING, NOT THE RECORDIST ──────────────────────────
+    //
+    // It used to be a self-buff: clear your own misread, bank a bonus, done. A
+    // reference pitch is louder than that. You put a true A into a room and
+    // everything in the room has to sit against it — so what the fork does is
+    // decided by what the thing was ABOUT to throw, and it makes it do or not do
+    // that. It is the only move in the fight that reaches across.
+    //
+    // Still free. Costing no beat is what makes it worth a slot, and a control
+    // move that also cost the turn would never be played.
+    const tuned = currentCombatIntent(state);
+    let tuneNotice = 'FORK · A440 · YOUR READ HOLDS THIS MOVEMENT';
+    switch (tuned?.kind) {
+      case INTENT_KIND.BROADCAST:
+        // You cannot broadcast over a reference. It has nothing to say into a
+        // room that is already sounding.
+        state.skipEnemyBeat = true;
+        tuneNotice = 'FORK · A440 · IT HAS NOTHING TO SAY OVER THIS';
+        break;
+      case INTENT_KIND.CONCEAL:
+        // A true pitch finds it. Whatever it was hiding behind is gone, and the
+        // next thing thrown lands on an open guard.
+        state.enemyGuard = null;
+        state.exposedBonus = Math.max(state.exposedBonus, GRID);
+        tuneNotice = 'FORK · A440 · IT CANNOT SIT STILL AGAINST THIS';
+        break;
+      case INTENT_KIND.LOOP:
+        // It locks to the tone and comes round again — the intent is NOT
+        // advanced, so the same thing arrives twice and the read you just bought
+        // is still good for it.
+        tuneNotice = 'FORK · A440 · IT LOCKS ON AND COMES ROUND AGAIN';
+        break;
+      case INTENT_KIND.SILENCE:
+        // The tone fills the gap it was going to leave, so it has to do
+        // something. Advancing the intent is the thing being made to act.
+        advanceIntent(state);
+        tuneNotice = 'FORK · A440 · THE GAP IS FILLED · IT HAS TO MOVE';
+        break;
+      case INTENT_KIND.OVERLOAD:
+      default:
+        // Nothing is turned aside; the room simply has a floor under it. The
+        // resonant bonus above is the whole of the effect, which is why OVERLOAD
+        // is the one kind the fork is a poor answer to.
+        break;
+    }
+
     state.last = {
-      notice: 'FORK CALIBRATED · SIGNAL CLEAN · YOUR READ HOLDS THIS MOVEMENT',
+      notice: tuneNotice,
       transition: null, action: actionId, perfect: false,
+      // The sound-design hook: the scene forwards this to the battle music,
+      // which stabs A and turns the bed over for a bar. See audio/battle-music.
+      tuned: tuned?.kind || null,
       snrFrom: snrShift.from, snrTo: snrShift.to, dealt: 0, received: 0,
     };
     return state;
@@ -2165,6 +2282,25 @@ export function reduceCombat(input, action = {}) {
         ? ' · SECOND BREATH READY'
         : ` · CATCH BREATH ${state.recoveryHolds} / ${recoveryBefore.required}`;
     }
+  } else if (actionId === COMBAT_ACTION.SWING) {
+    // No band check and no read check: it lands. `strike` is still what applies
+    // it, so techniques and difficulty reach it the way they reach everything
+    // else — what SWING skips is the counter triangle, not the arithmetic.
+    dealt = strike(state, bandFrom(2 * GRID), actionId, { perfect });
+    // AND IT IS HEARD. The price is the read, taken on the next beat, which is
+    // precisely the thing the fork spends a free action buying back — so a case
+    // carrying both has an answer to its own noise, and a case carrying only the
+    // spanner is choosing to fight blind. maybeMisread consumes this.
+    state.swungLastBeat = true;
+    notice = `SWING · ${dealt} COHERENCE · IT HEARD THAT`;
+  } else if (actionId === COMBAT_ACTION.SPANNER_GUARD) {
+    // A guard that is an OBJECT rather than a posture. HOLD is a breath and a
+    // read and pays out on a correct one; this prevents the same either way,
+    // which is what makes it the thing you reach for once the reads have stopped
+    // working — and why it is worth a slot next to HOLD rather than replacing it.
+    prevention = defensivePrevention(state, holdPrevention(state) + GRID);
+    state.ringing = false;
+    notice = `ON THE STEEL · PREVENT ${prevention}`;
   } else if (actionId === COMBAT_ACTION.COMPOSE) {
     const restored = Math.min(composeHeal(state), state.maxComposure - state.composure);
     state.composure += restored;

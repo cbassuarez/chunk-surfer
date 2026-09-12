@@ -1,0 +1,42 @@
+{
+  "item": "map",
+  "views": [
+    "front",
+    "back",
+    "edge"
+  ],
+  "inspection": {
+    "loaded": {
+      "id": "map",
+      "yaw": 0,
+      "pitch": 0,
+      "dragging": false,
+      "ready": true,
+      "failed": false
+    },
+    "rotated": {
+      "id": "map",
+      "yaw": 0.1,
+      "pitch": 0,
+      "dragging": false,
+      "ready": true,
+      "failed": false
+    },
+    "reset": {
+      "id": "map",
+      "yaw": 0,
+      "pitch": 0,
+      "dragging": false,
+      "ready": true,
+      "failed": false
+    },
+    "after": {
+      "contexts": 1,
+      "currentId": "map",
+      "loadedId": "map",
+      "renderCount": 0,
+      "active": false
+    }
+  },
+  "pageErrors": []
+}

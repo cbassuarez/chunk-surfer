@@ -8,6 +8,7 @@
 // a bad localStorage value must never brick the game.
 
 import { PLAN_SCALE } from '../data/floorplan/legend.js';
+import { clearSlateAudio } from '../audio/take-slate.js';
 import {
   SAVE_VERSION,
   META_VERSION,
@@ -23,6 +24,7 @@ import { normalizeRuleValues } from '../progression/difficulty.js';
 import { DIFFICULTY_PRESETS } from '../progression/difficulty-defs.js';
 import { ACHIEVEMENT_BY_ID } from '../progression/achievement-defs.js';
 import { queueChangedStats } from '../progression/stat-defs.js';
+import { witnessEditionStatus, WITNESS_EDITION_ID } from '../progression/unlocks.js';
 import {
   firstStored,
   parseStoredJson,
@@ -55,6 +57,8 @@ import { freshBasementWatcherState, normalizeBasementWatcherState } from './base
 import { freshBagSheetState, normalizeBagSheetState } from './bag-sheets.js';
 import { freshBagMapState, normalizeBagMapState } from './bag-map-state.js';
 import { freshSourceReplayManifest, normalizeSourceReplayManifest } from './source-replay-manifest.js';
+import { freshFieldKit, resolveFieldKit, fieldKitForNewRun, normalizeFieldKitOwnership } from './field-kit.js';
+import { freshVanPreparation, normalizeVanPreparation, prepareVanDifficultyFinalization } from '../progression/van-preparation.js';
 
 const SAVE_KEY = 'chunk-surfer:save:v4';
 const LEGACY_SAVE_KEYS = STORAGE_LEGACY_SAVE_KEYS.filter((key) => key !== SAVE_KEY);
@@ -78,6 +82,8 @@ export const freshSave = ({ settings = DEFAULT_SETTINGS, run = null } = {}) => (
   encounters: { cleared: [] },
   combatBuild: freshCombatBuild(),
   bagLoadout: freshCombatLoadout(),
+  fieldKit: freshFieldKit(),
+  vanPreparation: freshVanPreparation(),
   doors: { schema: 2, states: {} },
   playSeconds: 0,
   steps: 0,
@@ -275,7 +281,7 @@ function normalizeSaveV4(data, meta = null) {
     view:Number.isFinite(Number(source?.view?.yaw))&&Number.isFinite(Number(source?.view?.pitch))?{yaw:Number(source.view.yaw),pitch:Number(source.view.pitch)}:null,
     cameraRevision:Math.max(0,Math.floor(finiteNumber(source.cameraRevision,0))),
     checkpointRevision:Math.max(0,Math.floor(finiteNumber(source.checkpointRevision,0))),
-    flags: source.flags && typeof source.flags === 'object' ? source.flags : {},
+    flags: normalizeFieldKitOwnership(source.flags),
     takes: Array.isArray(source.takes) ? source.takes : [],
     items: Array.isArray(source.items) ? source.items : [],
     props: { ...base.props, ...(source.props && typeof source.props === 'object' ? source.props : {}) },
@@ -288,6 +294,8 @@ function normalizeSaveV4(data, meta = null) {
       combatAssistance: run?.rules?.values?.combatAssistance || 'standard',
     }),
     bagLoadout: normalizeCombatLoadout(source.bagLoadout),
+    fieldKit: resolveFieldKit(source.fieldKit, meta),
+    vanPreparation: normalizeVanPreparation(source.vanPreparation),
     bagSheets: normalizeBagSheetState(source.bagSheets),
     bagMap: normalizeBagMapState(source.bagMap),
     doors: normalizeDoorSave(source.doors),
@@ -330,6 +338,9 @@ function sanitizeRun(run) {
 
 function sanitizeMeta(metaValue) {
   const clean = normalizeMeta(metaValue);
+  if (witnessEditionStatus(clean).owned && !clean.cosmetics.unlocked.includes(WITNESS_EDITION_ID)) {
+    clean.cosmetics.unlocked.push(WITNESS_EDITION_ID);
+  }
   clean.achievements = Object.fromEntries(
     Object.entries(clean.achievements || {}).filter(([id, record]) => (
       !!ACHIEVEMENT_BY_ID[id] && record && typeof record === 'object'
@@ -484,7 +495,7 @@ export function metaCommit(patch = {}) {
   return meta;
 }
 
-export function newGame({ preset = null, values = null, now = Date.now(), launchPlan = null } = {}) {
+export function newGame({ preset = null, values = null, now = Date.now(), launchPlan = null, prepareInVan = false } = {}) {
   const settings = normalizeSettings(save?.settings);
   const plannedNow = Number.isFinite(Number(launchPlan?.startedAt))
     ? Number(launchPlan.startedAt)
@@ -492,21 +503,23 @@ export function newGame({ preset = null, values = null, now = Date.now(), launch
   const plannedId = typeof launchPlan?.runId === 'string' && launchPlan.runId
     ? launchPlan.runId
     : null;
-  const selectedPreset = preset || settings.lastDifficulty || 'contract';
-  settings.lastDifficulty = selectedPreset;
+  const selectedPreset = prepareInVan ? 'contract' : preset || settings.lastDifficulty || 'contract';
+  if (!prepareInVan) settings.lastDifficulty = selectedPreset;
   if (selectedPreset === 'custom') settings.customShiftRules = normalizeRuleValues(values || settings.customShiftRules || {});
 
   save = freshSave({
     settings,
     run: freshRunRecord({
       preset: selectedPreset,
-      values: values || undefined,
+      values: prepareInVan ? DIFFICULTY_PRESETS.contract.values : values || undefined,
       meta,
       settings,
       now: plannedNow,
       id: plannedId,
     }),
   });
+  save.fieldKit = fieldKitForNewRun(meta);
+  if (prepareInVan) save.flags = { 'van.preparation.v1': true, 'van.bench.v2': true, 'van.difficulty.pending': true };
   if (
     launchPlan?.initialPosition
     && Number.isFinite(Number(launchPlan.initialPosition.x))
@@ -544,6 +557,14 @@ export function newGame({ preset = null, values = null, now = Date.now(), launch
   return save;
 }
 
+// Main publishes the returned event through progressionEvents.emit after this
+// atomic commit. Reopening/reloading the workbench cannot finalize twice.
+export function finalizeVanDifficulty(selection = getSave()?.vanPreparation?.difficulty, now = Date.now()) {
+  const result = prepareVanDifficultyFinalization(getSave(), selection, getMeta(), now);
+  if (result.ok) saveCommit(result.patch);
+  return result;
+}
+
 export function clearSave() {
   removeKeys([SAVE_KEY, ...LEGACY_SAVE_KEYS]);
   save = freshSave({ settings: save?.settings });
@@ -559,4 +580,5 @@ export function clearMeta() {
 export function clearAllData() {
   clearSave();
   clearMeta();
+  void clearSlateAudio();
 }

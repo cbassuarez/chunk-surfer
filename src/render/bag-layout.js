@@ -11,11 +11,11 @@ import { BAG_TABS_HEIGHT } from './bag-tabs.js';
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
-export function bagPanelBounds({ cols, rows }) {
+export function bagPanelBounds({ cols, rows, sectionId = null }) {
   const maxW = Math.max(20, cols - 4);
   const maxH = Math.max(14, rows - 3);
-  const w = Math.min(100, maxW);
-  const h = Math.min(38, maxH);
+  const w = Math.min(sectionId === 'map' ? 128 : 100, maxW);
+  const h = Math.min(sectionId === 'map' ? 46 : 38, maxH);
 
   return {
     x: Math.max(0, Math.floor((cols - w) / 2)),
@@ -28,16 +28,17 @@ export function bagPanelBounds({ cols, rows }) {
 // `guideRows` reserves a band above the rails for a guided-step callout. It is
 // real geometry, not an overlay: a guided moment pushes the case's own content
 // up rather than printing on top of it.
-export function bagLayout({ body, forceMode = null, guideRows = 0 } = {}) {
+export function bagLayout({ body, forceMode = null, guideRows = 0, sectionId = null } = {}) {
   const b = body || { x: 0, y: 0, w: 60, h: 22 };
   const compact = forceMode === 'compact' || (forceMode !== 'wide' && (b.w < 68 || b.h < 20));
 
-  const tabs = { x: b.x, y: b.y, w: b.w, h: BAG_TABS_HEIGHT };
+  const shortMap = sectionId === 'map' && b.h < 30;
+  const tabs = { x: b.x, y: b.y, w: b.w, h: shortMap ? 2 : sectionId==='map'?3.6:BAG_TABS_HEIGHT, compact:shortMap };
   const actionRail = { x: b.x, y: b.y + b.h - 1, w: b.w, h: 1 };
   const guideH = Math.max(0, Math.min(Math.floor(b.h / 3), Math.floor(guideRows), Math.floor(b.h - tabs.h - 6)));
   const guide = guideH ? { x: b.x, y: actionRail.y - 1 - guideH, w: b.w, h: guideH } : null;
   const taskRail = { x: b.x, y: actionRail.y - 1 - guideH - (guideH ? 1 : 0), w: b.w, h: 1 };
-  const contentY = tabs.y + tabs.h + .7;
+  const contentY = tabs.y + tabs.h + (shortMap ? .25 : .7);
   const contentH = Math.max(0, taskRail.y - contentY - .7);
 
   if (compact) {

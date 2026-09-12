@@ -56,7 +56,7 @@ import {
   // IT ARRIVES WHERE IT HAPPENED. Half way through the minute is half way
   // through the tape — that is what makes the two instruments corroborate
   // rather than merely both being spooky.
-  const span = PLAYBACK.seconds - 1;
+  const span = PLAYBACK.seconds;
   assert.ok(Math.abs(close.enterSec - span * .5) < .01,
     `a pass at the halfway mark lands at the halfway mark (got ${close.enterSec})`);
 
@@ -81,7 +81,7 @@ import {
 
 // ── the recorder never names it ────────────────────────────────────────────
 // Transport telemetry describes the recording and the machine. Nothing visible
-// on the DA-1000 is allowed to classify what the headphones reveal, and the
+// on the A-1000 is allowed to classify what the headphones reveal, and the
 // presence peak is exactly the kind of thing that would.
 {
   const snapshot = buildPlaybackSnapshot({

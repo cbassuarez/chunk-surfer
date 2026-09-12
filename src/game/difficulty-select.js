@@ -107,6 +107,7 @@ export function makeDifficultySelectScene({
 
   return {
     id: 'difficulty-select',
+    handlesEscape: true,
     blocksInput: true,
     blocksWorld: true,
     worldPresentation: 'visible',
@@ -152,7 +153,7 @@ export function makeDifficultySelectScene({
         }
         if (e.key === 'Escape' || k === 'b') {
           mode = 'select';
-          AUDIO.menuMove();
+          AUDIO.menuBack();
           return true;
         }
         return true;
@@ -173,7 +174,7 @@ export function makeDifficultySelectScene({
         return true;
       }
       if (e.key === 'Escape' || k === 'b') {
-        AUDIO.menuMove();
+        AUDIO.menuBack();
         scenes.pop();
         onCancel();
         return true;

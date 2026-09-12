@@ -1,0 +1,680 @@
+{
+  "stats": {
+    "physicalCells": 65610,
+    "spans": 78622,
+    "levels": 352,
+    "surfaces": 999,
+    "boundaries": 2791
+  },
+  "warmDrawTiming": {
+    "viewport": {
+      "width": 1600,
+      "height": 1050,
+      "dpr": 1
+    },
+    "sampleCount": 12,
+    "medianMs": 4.0999999940395355,
+    "p95Ms": 4.700000047683716,
+    "samplesMs": [
+      4.099999964237213,
+      4.700000047683716,
+      4.299999952316284,
+      4,
+      3.900000035762787,
+      4.300000011920929,
+      4.099999964237213,
+      3.900000035762787,
+      4.599999964237213,
+      4.300000011920929,
+      4.100000023841858,
+      3.899999976158142
+    ],
+    "scope": "12 sequential warm uiClear() + scene.render() calls. JavaScript draw-call timing, not GPU completion, actual frame rate, or native game performance."
+  },
+  "layouts": [
+    {
+      "name": "desktop",
+      "viewport": {
+        "cols": 151,
+        "rows": 40
+      },
+      "hits": [
+        {
+          "id": "bag:floor:b1",
+          "x": 108.55,
+          "y": 8.5,
+          "w": 8.916666666666666,
+          "h": 2.150000000000001
+        },
+        {
+          "id": "bag:floor:g",
+          "x": 117.81666666666666,
+          "y": 8.5,
+          "w": 8.916666666666666,
+          "h": 2.150000000000001
+        },
+        {
+          "id": "bag:floor:u1",
+          "x": 127.08333333333333,
+          "y": 8.5,
+          "w": 8.916666666666666,
+          "h": 2.150000000000001
+        },
+        {
+          "id": "bag:floor:academic",
+          "x": 108.55,
+          "y": 10.870000000000001,
+          "w": 13.549999999999999,
+          "h": 2.150000000000001
+        },
+        {
+          "id": "bag:floor:tower",
+          "x": 122.44999999999999,
+          "y": 10.870000000000001,
+          "w": 13.549999999999999,
+          "h": 2.150000000000001
+        },
+        {
+          "id": "bag:map:view-stack",
+          "x": 108.55,
+          "y": 13.870000000000001,
+          "w": 13.549999999999999,
+          "h": 2.150000000000001
+        },
+        {
+          "id": "bag:map:view-floor",
+          "x": 122.44999999999999,
+          "y": 13.870000000000001,
+          "w": 13.549999999999999,
+          "h": 2.150000000000001
+        },
+        {
+          "id": "bag:map:rotate-left",
+          "x": 108.55,
+          "y": 16.240000000000002,
+          "w": 13.549999999999999,
+          "h": 2.150000000000001
+        },
+        {
+          "id": "bag:map:rotate-right",
+          "x": 122.44999999999999,
+          "y": 16.240000000000002,
+          "w": 13.549999999999999,
+          "h": 2.150000000000001
+        },
+        {
+          "id": "bag:map:center-player",
+          "x": 108.55,
+          "y": 19.240000000000002,
+          "w": 13.549999999999999,
+          "h": 2.150000000000001
+        },
+        {
+          "id": "bag:map:reset-view",
+          "x": 122.44999999999999,
+          "y": 19.240000000000002,
+          "w": 13.549999999999999,
+          "h": 2.150000000000001
+        },
+        {
+          "id": "bag:map:zoom-out",
+          "x": 108.55,
+          "y": 21.610000000000003,
+          "w": 13.549999999999999,
+          "h": 2.150000000000001
+        },
+        {
+          "id": "bag:map:zoom-in",
+          "x": 122.44999999999999,
+          "y": 21.610000000000003,
+          "w": 13.549999999999999,
+          "h": 2.150000000000001
+        },
+        {
+          "id": "bag:map:set-target",
+          "x": 108.55,
+          "y": 29.720000000000002,
+          "w": 27.45,
+          "h": 2.150000000000001
+        },
+        {
+          "id": "bag:map:clear-target",
+          "x": 108.55,
+          "y": 32.09,
+          "w": 13.549999999999999,
+          "h": 2.150000000000001
+        },
+        {
+          "id": "bag:map:read-file",
+          "x": 122.44999999999999,
+          "y": 32.09,
+          "w": 13.549999999999999,
+          "h": 2.150000000000001
+        }
+      ],
+      "footer": {
+        "width": 122,
+        "actions": [
+          [
+            "F6",
+            "CONTROLS"
+          ],
+          [
+            "ENTER",
+            "SET"
+          ],
+          [
+            "B",
+            "CLOSE"
+          ],
+          [
+            "WASD / ARROWS",
+            "ROOM"
+          ],
+          [
+            "PGUP/PGDN",
+            "FLOOR"
+          ],
+          [
+            "C",
+            "LOCATE"
+          ],
+          [
+            "R",
+            "FILE"
+          ]
+        ],
+        "offline": false,
+        "focused": false,
+        "text": "[F6] CONTROLS   [ENTER] SET   [B] CLOSE   [WASD / ARROWS] ROOM   [PGUP/PGDN] FLOOR   [C] LOCATE   [R] FILE"
+      }
+    },
+    {
+      "name": "compact",
+      "viewport": {
+        "cols": 113,
+        "rows": 30
+      },
+      "hits": [
+        {
+          "id": "bag:floor:b1",
+          "x": 84.825,
+          "y": 6.449999999999999,
+          "w": 7.491666666666667,
+          "h": 1.1562499999999996
+        },
+        {
+          "id": "bag:floor:g",
+          "x": 92.66666666666667,
+          "y": 6.449999999999999,
+          "w": 7.491666666666667,
+          "h": 1.1562499999999996
+        },
+        {
+          "id": "bag:floor:u1",
+          "x": 100.50833333333334,
+          "y": 6.449999999999999,
+          "w": 7.491666666666667,
+          "h": 1.1562499999999996
+        },
+        {
+          "id": "bag:floor:academic",
+          "x": 84.825,
+          "y": 7.826249999999999,
+          "w": 11.4125,
+          "h": 1.1562499999999996
+        },
+        {
+          "id": "bag:floor:tower",
+          "x": 96.5875,
+          "y": 7.826249999999999,
+          "w": 11.4125,
+          "h": 1.1562499999999996
+        },
+        {
+          "id": "bag:map:view-stack",
+          "x": 84.825,
+          "y": 9.832499999999998,
+          "w": 11.4125,
+          "h": 1.1562499999999996
+        },
+        {
+          "id": "bag:map:view-floor",
+          "x": 96.5875,
+          "y": 9.832499999999998,
+          "w": 11.4125,
+          "h": 1.1562499999999996
+        },
+        {
+          "id": "bag:map:rotate-left",
+          "x": 84.825,
+          "y": 11.208749999999997,
+          "w": 11.4125,
+          "h": 1.1562499999999996
+        },
+        {
+          "id": "bag:map:rotate-right",
+          "x": 96.5875,
+          "y": 11.208749999999997,
+          "w": 11.4125,
+          "h": 1.1562499999999996
+        },
+        {
+          "id": "bag:map:center-player",
+          "x": 84.825,
+          "y": 13.214999999999998,
+          "w": 11.4125,
+          "h": 1.1562499999999996
+        },
+        {
+          "id": "bag:map:reset-view",
+          "x": 96.5875,
+          "y": 13.214999999999998,
+          "w": 11.4125,
+          "h": 1.1562499999999996
+        },
+        {
+          "id": "bag:map:zoom-out",
+          "x": 84.825,
+          "y": 14.591249999999997,
+          "w": 11.4125,
+          "h": 1.1562499999999996
+        },
+        {
+          "id": "bag:map:zoom-in",
+          "x": 96.5875,
+          "y": 14.591249999999997,
+          "w": 11.4125,
+          "h": 1.1562499999999996
+        },
+        {
+          "id": "bag:map:set-target",
+          "x": 84.825,
+          "y": 21.707499999999996,
+          "w": 23.175,
+          "h": 1.1562499999999996
+        },
+        {
+          "id": "bag:map:clear-target",
+          "x": 84.825,
+          "y": 23.083749999999995,
+          "w": 11.4125,
+          "h": 1.1562499999999996
+        },
+        {
+          "id": "bag:map:read-file",
+          "x": 96.5875,
+          "y": 23.083749999999995,
+          "w": 11.4125,
+          "h": 1.1562499999999996
+        }
+      ],
+      "footer": {
+        "width": 103,
+        "actions": [
+          [
+            "F6",
+            "CONTROLS"
+          ],
+          [
+            "ENTER",
+            "SET"
+          ],
+          [
+            "B",
+            "CLOSE"
+          ],
+          [
+            "WASD / ARROWS",
+            "ROOM"
+          ],
+          [
+            "PGUP/PGDN",
+            "FLOOR"
+          ],
+          [
+            "C",
+            "LOCATE"
+          ]
+        ],
+        "offline": false,
+        "focused": false,
+        "text": "[F6] CONTROLS   [ENTER] SET   [B] CLOSE   [WASD / ARROWS] ROOM   [PGUP/PGDN] FLOOR   [C] LOCATE"
+      }
+    },
+    {
+      "name": "large-text",
+      "viewport": {
+        "cols": 75,
+        "rows": 20
+      },
+      "hits": [
+        {
+          "id": "bag:floor:b1",
+          "x": 5,
+          "y": 10.4065,
+          "w": 7.81875,
+          "h": 0.9717500000000001
+        },
+        {
+          "id": "bag:floor:g",
+          "x": 13.16875,
+          "y": 10.4065,
+          "w": 7.81875,
+          "h": 0.9717500000000001
+        },
+        {
+          "id": "bag:floor:u1",
+          "x": 21.3375,
+          "y": 10.4065,
+          "w": 7.81875,
+          "h": 0.9717500000000001
+        },
+        {
+          "id": "bag:floor:academic",
+          "x": 29.506249999999998,
+          "y": 10.4065,
+          "w": 7.81875,
+          "h": 0.9717500000000001
+        },
+        {
+          "id": "bag:floor:tower",
+          "x": 37.675,
+          "y": 10.4065,
+          "w": 7.81875,
+          "h": 0.9717500000000001
+        },
+        {
+          "id": "bag:map:view-stack",
+          "x": 45.84375,
+          "y": 10.4065,
+          "w": 7.81875,
+          "h": 0.9717500000000001
+        },
+        {
+          "id": "bag:map:view-floor",
+          "x": 54.012499999999996,
+          "y": 10.4065,
+          "w": 7.81875,
+          "h": 0.9717500000000001
+        },
+        {
+          "id": "bag:map:center-player",
+          "x": 62.18124999999999,
+          "y": 10.4065,
+          "w": 7.81875,
+          "h": 0.9717500000000001
+        },
+        {
+          "id": "bag:map:reset-view",
+          "x": 5,
+          "y": 11.62825,
+          "w": 7.81875,
+          "h": 0.9717500000000001
+        },
+        {
+          "id": "bag:map:rotate-left",
+          "x": 13.16875,
+          "y": 11.62825,
+          "w": 7.81875,
+          "h": 0.9717500000000001
+        },
+        {
+          "id": "bag:map:rotate-right",
+          "x": 21.3375,
+          "y": 11.62825,
+          "w": 7.81875,
+          "h": 0.9717500000000001
+        },
+        {
+          "id": "bag:map:zoom-out",
+          "x": 29.506249999999998,
+          "y": 11.62825,
+          "w": 7.81875,
+          "h": 0.9717500000000001
+        },
+        {
+          "id": "bag:map:zoom-in",
+          "x": 37.675,
+          "y": 11.62825,
+          "w": 7.81875,
+          "h": 0.9717500000000001
+        },
+        {
+          "id": "bag:map:set-target",
+          "x": 45.84375,
+          "y": 11.62825,
+          "w": 7.81875,
+          "h": 0.9717500000000001
+        },
+        {
+          "id": "bag:map:clear-target",
+          "x": 54.012499999999996,
+          "y": 11.62825,
+          "w": 7.81875,
+          "h": 0.9717500000000001
+        },
+        {
+          "id": "bag:map:read-file",
+          "x": 62.18124999999999,
+          "y": 11.62825,
+          "w": 7.81875,
+          "h": 0.9717500000000001
+        }
+      ],
+      "footer": {
+        "width": 65,
+        "actions": [
+          [
+            "F6",
+            "CONTROLS"
+          ],
+          [
+            "ENTER",
+            "SET"
+          ],
+          [
+            "B",
+            "CLOSE"
+          ],
+          [
+            "WASD / ARROWS",
+            "ROOM"
+          ]
+        ],
+        "offline": false,
+        "focused": false,
+        "text": "[F6] CONTROLS   [ENTER] SET   [B] CLOSE   [WASD / ARROWS] ROOM"
+      },
+      "consoleFooter": {
+        "width": 65,
+        "actions": [
+          [
+            "F6",
+            "ROOMS"
+          ],
+          [
+            "ENTER",
+            "PRESS"
+          ],
+          [
+            "B",
+            "CLOSE"
+          ],
+          [
+            "WASD / ARROWS",
+            "KEY"
+          ]
+        ],
+        "offline": false,
+        "focused": true,
+        "text": "[F6] ROOMS   [ENTER] PRESS   [B] CLOSE   [WASD / ARROWS] KEY"
+      }
+    }
+  ],
+  "interactions": {
+    "polygon": {
+      "id": "space:main_b3",
+      "point": {
+        "x": 46.72485795454544,
+        "y": 37.12372399082378
+      },
+      "polygon": [
+        {
+          "x": 39.05667613636362,
+          "y": 37.41530660446014
+        },
+        {
+          "x": 48.16264204545453,
+          "y": 35.56861671809651
+        },
+        {
+          "x": 54.39303977272726,
+          "y": 36.83214137718741
+        },
+        {
+          "x": 45.28707386363635,
+          "y": 38.67883126355105
+        }
+      ]
+    },
+    "otherFloorPolygon": {
+      "id": "space:the_tub",
+      "point": {
+        "x": 87.94133522727272,
+        "y": 27.832574636772897
+      },
+      "polygon": [
+        {
+          "x": 80.75241477272726,
+          "y": 28.80451668222744
+        },
+        {
+          "x": 92.73394886363636,
+          "y": 26.37466156859108
+        },
+        {
+          "x": 95.13025568181817,
+          "y": 26.86063259131835
+        },
+        {
+          "x": 83.14872159090908,
+          "y": 29.290487704954714
+        }
+      ]
+    },
+    "consoleFooter": {
+      "width": 122,
+      "actions": [
+        [
+          "F6",
+          "ROOMS"
+        ],
+        [
+          "ENTER",
+          "PRESS"
+        ],
+        [
+          "B",
+          "CLOSE"
+        ],
+        [
+          "WASD / ARROWS",
+          "KEY"
+        ]
+      ],
+      "offline": false,
+      "focused": true,
+      "text": "[F6] ROOMS   [ENTER] PRESS   [B] CLOSE   [WASD / ARROWS] KEY"
+    },
+    "wheel": {
+      "before": 1,
+      "after": 1.3099644507332473
+    },
+    "pan": {
+      "x": 6.496875000000003,
+      "y": 1.386666666666665
+    }
+  },
+  "restricted": {
+    "policy": {
+      "id": "minimal",
+      "showMap": true,
+      "showBearing": true,
+      "showDistance": true,
+      "showRoom": false,
+      "showMapTopology": false,
+      "showExactPlayer": false,
+      "showAllTargetLabels": false,
+      "showWaypoint": true,
+      "showCrossFloorConnector": false,
+      "showRoute": false,
+      "showRouteStatus": false,
+      "minimapMode": "topology",
+      "contactHoldScale": 1,
+      "contactResolveBias": 0,
+      "contactShowRoom": true
+    },
+    "roomHits": [
+      {
+        "id": "bag:space:space:main_b3",
+        "hasPolygons": false
+      },
+      {
+        "id": "bag:space:space:basement-corridor",
+        "hasPolygons": false
+      },
+      {
+        "id": "bag:space:space:prop-store",
+        "hasPolygons": false
+      },
+      {
+        "id": "bag:space:space:studio-b2",
+        "hasPolygons": false
+      },
+      {
+        "id": "bag:space:space:studio-b1",
+        "hasPolygons": false
+      },
+      {
+        "id": "bag:space:space:studio-b5",
+        "hasPolygons": false
+      },
+      {
+        "id": "bag:space:space:plant-room",
+        "hasPolygons": false
+      },
+      {
+        "id": "bag:space:space:services-substation",
+        "hasPolygons": false
+      },
+      {
+        "id": "bag:space:space:services-tank",
+        "hasPolygons": false
+      },
+      {
+        "id": "bag:space:space:lift-shaft",
+        "hasPolygons": false
+      }
+    ]
+  },
+  "offline": {
+    "reason": "THE SURVEY INDICATOR IS NOT IN THE CASE. RETURN TO THE VAN TO COLLECT IT.",
+    "hits": [],
+    "calls": 1,
+    "footer": {
+      "width": 122,
+      "actions": [
+        [
+          "B",
+          "CLOSE"
+        ]
+      ],
+      "offline": true,
+      "focused": false,
+      "text": "[B] CLOSE"
+    }
+  },
+  "pageErrors": [],
+  "scope": "Production Bag and compiled conservatory with disposable state adapter. Real browser pointer, wheel and keyboard events; not a live save or native-gamepad acceptance."
+}

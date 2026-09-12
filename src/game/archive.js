@@ -22,7 +22,7 @@ export function makeArchiveScene({ meta, onClose = () => {} } = {}) {
   // A filed document runs to five paragraphs and the panel holds two or three, so
   // it pages. Up/Down already move between returns; left/right are free on this
   // tab and were doing nothing.
-  let docPage = 0;
+  let docPage = 0, renderedPages = 1;
 
   const visibleEntries = () => tab === 0 ? entries.filter((entry) => entry.category === CATEGORY_ORDER[category]) : files;
   const clamp = () => {
@@ -38,18 +38,18 @@ export function makeArchiveScene({ meta, onClose = () => {} } = {}) {
       const k = String(e.key || '').toLowerCase();
       if (e.key === 'Tab') {
         tab = (tab + (e.shiftKey ? -1 : 1) + 2) % 2;
-        sel = 0; scroll = 0; AUDIO.menuMove(); return true;
+        sel = 0; scroll = 0; docPage=0; AUDIO.menuPage(); return true;
       }
       if (tab === 0 && e.key === 'ArrowRight') {
         category = (category + (e.shiftKey ? -1 : 1) + CATEGORY_ORDER.length) % CATEGORY_ORDER.length;
-        sel = 0; scroll = 0; AUDIO.menuMove(); return true;
+        sel = 0; scroll = 0; docPage=0; AUDIO.menuPage(); return true;
       }
-      if (tab === 0 && e.key === 'ArrowLeft') { category = (category - 1 + CATEGORY_ORDER.length) % CATEGORY_ORDER.length; sel = 0; scroll = 0; AUDIO.menuMove(); return true; }
-      if (tab === 1 && e.key === 'ArrowRight') { docPage++; AUDIO.menuMove(); return true; }
-      if (tab === 1 && e.key === 'ArrowLeft') { docPage = Math.max(0, docPage - 1); AUDIO.menuMove(); return true; }
-      if (e.key === 'ArrowUp' || k === 'w') { sel--; docPage = 0; clamp(); AUDIO.menuMove(); return true; }
-      if (e.key === 'ArrowDown' || k === 's') { sel++; docPage = 0; clamp(); AUDIO.menuMove(); return true; }
-      if (e.key === 'Escape' || k === 'b' || e.key === 'Enter') { scenes.pop(); return true; }
+      if (tab === 0 && e.key === 'ArrowLeft') { category = (category - 1 + CATEGORY_ORDER.length) % CATEGORY_ORDER.length; sel = 0; scroll = 0; docPage=0; AUDIO.menuPage(); return true; }
+      if (tab === 1 && e.key === 'ArrowRight') { const next=Math.min(renderedPages-1,docPage+1);if(next!==docPage)AUDIO.menuPage();docPage=next;return true; }
+      if (tab === 1 && e.key === 'ArrowLeft') { if(docPage>0){docPage--;AUDIO.menuPage();}return true; }
+      if (e.key === 'ArrowUp' || k === 'w') { const before=sel;sel--;clamp();if(sel!==before){docPage=0;AUDIO.menuMove();}return true; }
+      if (e.key === 'ArrowDown' || k === 's') { const before=sel;sel++;clamp();if(sel!==before){docPage=0;AUDIO.menuMove();}return true; }
+      if (e.key === 'Escape' || k === 'b' || e.key === 'Enter') { AUDIO.menuBack();scenes.pop(); return true; }
       return true;
     },
     render() {
@@ -97,7 +97,7 @@ export function makeArchiveScene({ meta, onClose = () => {} } = {}) {
         uiText(body.x + listW - status.length, body.y + 5 + j, status, entry.unlocked ? 'ui-green' : 'ui-secondary');
       });
 
-      const entry = list[sel];
+      const entry = list[sel];renderedPages=1;
       if (!entry) {
         if (tab === 1) {
           uiText(body.x, body.y + 6, 'NO COMPLETED RUNS', 'ui-secondary');
@@ -142,6 +142,7 @@ export function makeArchiveScene({ meta, onClose = () => {} } = {}) {
             used += wrapped.length + 1;
           }
           if (page.length) pages.push(page);
+          renderedPages=Math.max(1,pages.length);
           docPage = pages.length ? Math.min(docPage, pages.length - 1) : 0;
           uiText(dx, ry, doc.title.slice(0, dw), 'ui-amber');
           const filing = `${doc.classification} · ${doc.filedBy}`;

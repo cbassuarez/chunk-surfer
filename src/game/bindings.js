@@ -33,6 +33,11 @@ const DEFAULT_BINDINGS = Object.freeze({
   back: 'ESC',
   tabPrev: 'Q',
   tabNext: 'E',
+  mapFloorPrev: 'PGUP',
+  mapFloorNext: 'PGDN',
+  mapLocate: 'C',
+  mapFile: 'R',
+  mapConsole: 'F6',
 });
 
 export const CONTROLLER_BUTTON_IDS = Object.freeze([
@@ -73,10 +78,12 @@ export const CONTROLLER_FAMILIES = Object.freeze(['auto', 'xbox', 'playstation',
 export const CONTROLLER_BINDING_ACTIONS = Object.freeze([
   'quiet', 'hide', 'light', 'bag', 'recorder', 'radio', 'interact', 'playback', 'mark', 'menu',
   'confirm', 'back', 'tabPrev', 'tabNext',
+  'mapFloorPrev', 'mapFloorNext', 'mapLocate', 'mapFile', 'mapConsole',
 ]);
 
 const WORLD_GROUP = Object.freeze(['quiet', 'hide', 'light', 'bag', 'recorder', 'radio', 'interact', 'playback', 'mark', 'menu']);
-const UI_GROUP = Object.freeze(['confirm', 'back', 'menu', 'tabPrev', 'tabNext']);
+const MAP_ACTIONS = Object.freeze(['mapFloorPrev', 'mapFloorNext', 'mapLocate', 'mapFile', 'mapConsole']);
+const UI_GROUP = Object.freeze(['confirm', 'back', 'menu', 'tabPrev', 'tabNext', ...MAP_ACTIONS]);
 const PAD_GROUPS = Object.freeze([WORLD_GROUP, UI_GROUP]);
 
 export const DEFAULT_CONTROLLER_BINDINGS = Object.freeze({
@@ -98,6 +105,11 @@ export const DEFAULT_CONTROLLER_BINDINGS = Object.freeze({
   back: { kind: 'button', id: 'east' },
   tabPrev: { kind: 'button', id: 'leftShoulder' },
   tabNext: { kind: 'button', id: 'rightShoulder' },
+  mapFloorPrev: { kind: 'button', id: 'leftTrigger' },
+  mapFloorNext: { kind: 'button', id: 'rightTrigger' },
+  mapLocate: { kind: 'button', id: 'north' },
+  mapFile: { kind: 'button', id: 'west' },
+  mapConsole: { kind: 'button', id: 'rightStick' },
 });
 
 export const DEFAULT_CONTROLLER_SETTINGS = Object.freeze({
@@ -126,6 +138,11 @@ const ACTION_LABELS = Object.freeze({
   back: 'BACK',
   tabPrev: 'PREV SECTION',
   tabNext: 'NEXT SECTION',
+  mapFloorPrev: 'MAP / PREVIOUS FLOOR',
+  mapFloorNext: 'MAP / NEXT FLOOR',
+  mapLocate: 'MAP / LOCATE PLAYER',
+  mapFile: 'MAP / OPEN FILE',
+  mapConsole: 'MAP / CONSOLE CONTROLS',
 });
 
 const FAMILY_BUTTON_LABELS = Object.freeze({
@@ -243,6 +260,16 @@ export function normalizeControllerSettings(value = {}, legacyBindings = null) {
     const free = ['rightShoulder', 'rightStick', 'leftStick', 'view', 'south', 'east', 'west', 'north', 'leftShoulder', 'leftTrigger', 'rightTrigger']
       .find(id => !occupied.has(id));
     if (free) bindings.radio = { kind: 'button', id: free };
+  }
+  // New MAP-only actions may share world buttons, but must not steal an old
+  // UI remap. Explicit player choices remain untouched during migration.
+  for (const action of MAP_ACTIONS) {
+    if (bindingSource[action]) continue;
+    const occupied = new Set(UI_GROUP.filter(other => other !== action).map(other => bindings[other].id));
+    const preferred = DEFAULT_CONTROLLER_BINDINGS[action].id;
+    const free = [preferred, 'leftTrigger', 'rightTrigger', 'north', 'west', 'view', 'leftStick', 'rightStick', 'touchpad']
+      .find(id => !occupied.has(id));
+    if (free) bindings[action] = { kind: 'button', id: free };
   }
   return {
     enabled: source.enabled !== false,

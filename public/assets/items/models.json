@@ -92,7 +92,7 @@
       "origin": "authored",
       "source": "scripts/build-item-models.mjs",
       "pieces": 22,
-      "triangles": 5072
+      "triangles": 5084
     },
     {
       "id": "badge",
@@ -100,6 +100,13 @@
       "source": "scripts/build-item-models.mjs",
       "pieces": 34,
       "triangles": 5892
+    },
+    {
+      "id": "map",
+      "origin": "authored",
+      "source": "scripts/build-item-models.mjs",
+      "pieces": 174,
+      "triangles": 12658
     }
   ]
 }

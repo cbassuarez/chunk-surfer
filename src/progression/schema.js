@@ -167,6 +167,7 @@ export function freshLedger() {
     itemsObtained: [],
     choices: { drankCoffee: false, namedSarah: false },
     equipment: { dropped: [], recovered: [] },
+    radio: { tracked: true, uses: 0, missed: [] },
     natatoriumWater: { ...DEFAULT_NATATORIUM_WATER_LEDGER },
     stairAnomaly: freshStairAnomalyLedger(),
     power: { live: [], everRestored: [] },
@@ -381,6 +382,13 @@ export function normalizeLedger(value, { legacyFlags = null, stairMissing = 'com
     equipment: {
       dropped: uniqueStrings(equipment.dropped),
       recovered: uniqueStrings(equipment.recovered),
+    },
+    // Missing history cannot prove a radio-free run. New runs explicitly opt
+    // into tracking; older saves retain their other achievement eligibility.
+    radio: {
+      tracked: source.radio?.tracked === true,
+      uses: Math.max(0, Math.floor(finiteOr(source.radio?.uses, 0))),
+      missed: uniqueStrings(source.radio?.missed),
     },
     natatoriumWater: normalizeNatatoriumWaterLedger(source.natatoriumWater),
     stairAnomaly: normalizeStairAnomalyLedger(source.stairAnomaly, { missing: stairMissing }),

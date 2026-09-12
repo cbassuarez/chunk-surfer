@@ -1,0 +1,86 @@
+{
+  "source": "http://127.0.0.1:5297",
+  "errors": [],
+  "items": [
+    {
+      "id": "field-case",
+      "poses": [
+        "front",
+        "back",
+        "edge"
+      ]
+    },
+    {
+      "id": "amp-reference",
+      "poses": [
+        "front",
+        "back",
+        "edge"
+      ]
+    },
+    {
+      "id": "amp-low-draw",
+      "poses": [
+        "front",
+        "back",
+        "edge"
+      ]
+    },
+    {
+      "id": "amp-headroom",
+      "poses": [
+        "front",
+        "back",
+        "edge"
+      ]
+    },
+    {
+      "id": "flashlight-reference",
+      "poses": [
+        "front",
+        "back",
+        "edge"
+      ]
+    },
+    {
+      "id": "flashlight-throw",
+      "poses": [
+        "front",
+        "back",
+        "edge"
+      ]
+    },
+    {
+      "id": "flashlight-flood",
+      "poses": [
+        "front",
+        "back",
+        "edge"
+      ]
+    },
+    {
+      "id": "faceplate-aluminum",
+      "poses": [
+        "front",
+        "back",
+        "edge"
+      ]
+    },
+    {
+      "id": "faceplate-black",
+      "poses": [
+        "front",
+        "back",
+        "edge"
+      ]
+    },
+    {
+      "id": "faceplate-olive",
+      "poses": [
+        "front",
+        "back",
+        "edge"
+      ]
+    }
+  ]
+}

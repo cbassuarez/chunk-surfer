@@ -1,0 +1,230 @@
+{
+  "source": "http://127.0.0.1:5297",
+  "errors": [],
+  "items": [
+    {
+      "id": "field-case",
+      "inspection": {
+        "loaded": {
+          "id": "field-case",
+          "yaw": 0,
+          "pitch": 0,
+          "dragging": false,
+          "ready": true,
+          "failed": false
+        },
+        "rotated": {
+          "id": "field-case",
+          "yaw": 0.1,
+          "pitch": 0,
+          "dragging": false,
+          "ready": true,
+          "failed": false
+        },
+        "after": {
+          "contexts": 1,
+          "currentId": "field-case",
+          "loadedId": "field-case",
+          "renderCount": 0,
+          "active": false
+        }
+      }
+    },
+    {
+      "id": "field-recorder",
+      "inspection": {
+        "loaded": {
+          "id": "field-recorder",
+          "yaw": 0,
+          "pitch": 0,
+          "dragging": false,
+          "ready": true,
+          "failed": false
+        },
+        "rotated": {
+          "id": "field-recorder",
+          "yaw": 0.1,
+          "pitch": 0,
+          "dragging": false,
+          "ready": true,
+          "failed": false
+        },
+        "after": {
+          "contexts": 1,
+          "currentId": "field-recorder",
+          "loadedId": "field-recorder",
+          "renderCount": 0,
+          "active": false
+        }
+      }
+    },
+    {
+      "id": "headphones-reference",
+      "inspection": {
+        "loaded": {
+          "id": "headphones-reference",
+          "yaw": 0,
+          "pitch": 0,
+          "dragging": false,
+          "ready": true,
+          "failed": false
+        },
+        "rotated": {
+          "id": "headphones-reference",
+          "yaw": 0.1,
+          "pitch": 0,
+          "dragging": false,
+          "ready": true,
+          "failed": false
+        },
+        "after": {
+          "contexts": 1,
+          "currentId": "headphones-reference",
+          "loadedId": "headphones-reference",
+          "renderCount": 0,
+          "active": false
+        }
+      }
+    },
+    {
+      "id": "headphones-closed",
+      "inspection": {
+        "loaded": {
+          "id": "headphones-closed",
+          "yaw": 0,
+          "pitch": 0,
+          "dragging": false,
+          "ready": true,
+          "failed": false
+        },
+        "rotated": {
+          "id": "headphones-closed",
+          "yaw": 0.1,
+          "pitch": 0,
+          "dragging": false,
+          "ready": true,
+          "failed": false
+        },
+        "after": {
+          "contexts": 1,
+          "currentId": "headphones-closed",
+          "loadedId": "headphones-closed",
+          "renderCount": 0,
+          "active": false
+        }
+      }
+    },
+    {
+      "id": "headphones-open",
+      "inspection": {
+        "loaded": {
+          "id": "headphones-open",
+          "yaw": 0,
+          "pitch": 0,
+          "dragging": false,
+          "ready": true,
+          "failed": false
+        },
+        "rotated": {
+          "id": "headphones-open",
+          "yaw": 0.1,
+          "pitch": 0,
+          "dragging": false,
+          "ready": true,
+          "failed": false
+        },
+        "after": {
+          "contexts": 1,
+          "currentId": "headphones-open",
+          "loadedId": "headphones-open",
+          "renderCount": 0,
+          "active": false
+        }
+      }
+    },
+    {
+      "id": "microphone-reference",
+      "inspection": {
+        "loaded": {
+          "id": "microphone-reference",
+          "yaw": 0,
+          "pitch": 0,
+          "dragging": false,
+          "ready": true,
+          "failed": false
+        },
+        "rotated": {
+          "id": "microphone-reference",
+          "yaw": 0.1,
+          "pitch": 0,
+          "dragging": false,
+          "ready": true,
+          "failed": false
+        },
+        "after": {
+          "contexts": 1,
+          "currentId": "microphone-reference",
+          "loadedId": "microphone-reference",
+          "renderCount": 0,
+          "active": false
+        }
+      }
+    },
+    {
+      "id": "microphone-directional",
+      "inspection": {
+        "loaded": {
+          "id": "microphone-directional",
+          "yaw": 0,
+          "pitch": 0,
+          "dragging": false,
+          "ready": true,
+          "failed": false
+        },
+        "rotated": {
+          "id": "microphone-directional",
+          "yaw": 0.1,
+          "pitch": 0,
+          "dragging": false,
+          "ready": true,
+          "failed": false
+        },
+        "after": {
+          "contexts": 1,
+          "currentId": "microphone-directional",
+          "loadedId": "microphone-directional",
+          "renderCount": 0,
+          "active": false
+        }
+      }
+    },
+    {
+      "id": "microphone-wide",
+      "inspection": {
+        "loaded": {
+          "id": "microphone-wide",
+          "yaw": 0,
+          "pitch": 0,
+          "dragging": false,
+          "ready": true,
+          "failed": false
+        },
+        "rotated": {
+          "id": "microphone-wide",
+          "yaw": 0.1,
+          "pitch": 0,
+          "dragging": false,
+          "ready": true,
+          "failed": false
+        },
+        "after": {
+          "contexts": 1,
+          "currentId": "microphone-wide",
+          "loadedId": "microphone-wide",
+          "renderCount": 0,
+          "active": false
+        }
+      }
+    }
+  ]
+}

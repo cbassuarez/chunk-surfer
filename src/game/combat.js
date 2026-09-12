@@ -87,7 +87,7 @@ import { createBattleSubmersionController } from './battle-submersion.js';
 import { createBattleWaterAudio } from '../audio/battle-water.js';
 import { createFireballExchange, FIREBALL_RETURN_DAMAGE } from './fireball-exchange.js';
 import { createFireballVoice } from '../audio/fireball-voice.js';
-import { pressControl, releaseControl, cancelControlScope } from './control-mechanics.js';
+import { pressControl, releaseControl, cancelControlScope } from './control-feedback.js';
 
 // Five to eight seconds, cycling, so the clock is a rhythm rather than a number
 // the player learns to count against.
@@ -1130,7 +1130,7 @@ export function makeCombatScene({
     const action = moves().find((entry) => entry.id === actionId);
     if (!action?.enabled) {
       notice = action?.reason || 'MOVE UNAVAILABLE';
-      audio?.menuMove?.();
+      audio?.menuDenied?.();
       return;
     }
     const before = state;
@@ -1152,6 +1152,12 @@ export function makeCombatScene({
     interference?.action?.(actionId);
     notice = state.last?.notice || '';
     audio?.menuConfirm?.();
+    // THE FORK IS A SOUND BEFORE IT IS A MOVE.
+    //
+    // Fired here rather than at the settle below, because TUNE is free: it
+    // returns from the reducer without an enemy phase, so the exchange-settled
+    // event never runs for it. The stab has to land on the press.
+    if (state.last?.tuned) musicSession?.onCombatEvent?.({ tuned: state.last.tuned });
     resolution = {
       before,
       after: state,
@@ -1311,6 +1317,18 @@ export function makeCombatScene({
     blocksInput: true,
     blocksWorld: true,
     lensPreset: 'battle',
+
+    // ESCAPE, BUT ONLY FOR THE ONE QUESTION.
+    //
+    // Escape opens the pause menu before any scene's key handler runs, unless
+    // the top scene claims it (main.js, shouldOpenPauseForEvent) — so a fight
+    // cannot simply handle Escape itself without taking pause away from the
+    // whole battle. This claims it for exactly as long as the field case is
+    // asking which tool to give up, which is the one place in a fight where
+    // Escape obviously means "back out of this" rather than "stop playing".
+    get handlesEscape() {
+      return phase === 'prepare' && !!preparationMenu?.snapshot?.()?.replacing;
+    },
 
     enter() {
       resetDeckControls();

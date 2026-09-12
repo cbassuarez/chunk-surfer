@@ -1,0 +1,681 @@
+{
+  "scope": "Real GLB production inspector, browser pointer/keys, isolated fixture profile. No complete game or native controller claim.",
+  "results": [
+    {
+      "kind": "front",
+      "state": {
+        "mode": "recorder",
+        "yaw": -0.19,
+        "pitch": 0.12,
+        "ready": true,
+        "failed": false,
+        "error": "",
+        "disposed": false,
+        "contexts": 1,
+        "renderCount": 1,
+        "testing": false,
+        "owned": true,
+        "canFit": true,
+        "count": 2,
+        "required": 2,
+        "layout": {
+          "rect": {
+            "x": 2,
+            "y": 2,
+            "w": 166,
+            "h": 41
+          },
+          "portrait": {
+            "x": 3,
+            "y": 5,
+            "w": 114,
+            "h": 34
+          },
+          "detail": {
+            "x": 119,
+            "y": 5,
+            "w": 47,
+            "h": 34
+          },
+          "buttons": [
+            {
+              "id": "close",
+              "label": "BACK",
+              "key": "ESC",
+              "x": 3,
+              "y": 40,
+              "w": 26.75,
+              "h": 2
+            },
+            {
+              "id": "reset",
+              "label": "RESET",
+              "key": "R",
+              "x": 30.45,
+              "y": 40,
+              "w": 26.75,
+              "h": 2
+            },
+            {
+              "id": "turn",
+              "label": "TURN OVER",
+              "key": "T",
+              "x": 57.9,
+              "y": 40,
+              "w": 26.75,
+              "h": 2
+            },
+            {
+              "id": "model",
+              "label": "PLATE/RIG",
+              "key": "V",
+              "x": 85.35,
+              "y": 40,
+              "w": 26.75,
+              "h": 2
+            },
+            {
+              "id": "test",
+              "label": "TEST KEYS",
+              "key": "K",
+              "x": 112.8,
+              "y": 40,
+              "w": 26.75,
+              "h": 2
+            },
+            {
+              "id": "fit",
+              "label": "FIT PLATE",
+              "key": "ENTER",
+              "x": 140.25,
+              "y": 40,
+              "w": 26.75,
+              "h": 2
+            }
+          ],
+          "wide": true
+        },
+        "focused": "close",
+        "closed": false
+      },
+      "screenshot": "/Users/seb/chunk-surfer/artifacts/witness-edition/inspector-front.png"
+    },
+    {
+      "kind": "oblique-pointer",
+      "state": {
+        "mode": "recorder",
+        "yaw": 0.503,
+        "pitch": 0.255,
+        "ready": true,
+        "failed": false,
+        "error": "",
+        "disposed": false,
+        "contexts": 1,
+        "renderCount": 9,
+        "testing": false,
+        "owned": true,
+        "canFit": true,
+        "count": 2,
+        "required": 2,
+        "layout": {
+          "rect": {
+            "x": 2,
+            "y": 2,
+            "w": 166,
+            "h": 41
+          },
+          "portrait": {
+            "x": 3,
+            "y": 5,
+            "w": 114,
+            "h": 34
+          },
+          "detail": {
+            "x": 119,
+            "y": 5,
+            "w": 47,
+            "h": 34
+          },
+          "buttons": [
+            {
+              "id": "close",
+              "label": "BACK",
+              "key": "ESC",
+              "x": 3,
+              "y": 40,
+              "w": 26.75,
+              "h": 2
+            },
+            {
+              "id": "reset",
+              "label": "RESET",
+              "key": "R",
+              "x": 30.45,
+              "y": 40,
+              "w": 26.75,
+              "h": 2
+            },
+            {
+              "id": "turn",
+              "label": "TURN OVER",
+              "key": "T",
+              "x": 57.9,
+              "y": 40,
+              "w": 26.75,
+              "h": 2
+            },
+            {
+              "id": "model",
+              "label": "PLATE/RIG",
+              "key": "V",
+              "x": 85.35,
+              "y": 40,
+              "w": 26.75,
+              "h": 2
+            },
+            {
+              "id": "test",
+              "label": "TEST KEYS",
+              "key": "K",
+              "x": 112.8,
+              "y": 40,
+              "w": 26.75,
+              "h": 2
+            },
+            {
+              "id": "fit",
+              "label": "FIT PLATE",
+              "key": "ENTER",
+              "x": 140.25,
+              "y": 40,
+              "w": 26.75,
+              "h": 2
+            }
+          ],
+          "wide": true
+        },
+        "focused": "close",
+        "closed": false
+      },
+      "screenshot": "/Users/seb/chunk-surfer/artifacts/witness-edition/inspector-oblique.png"
+    },
+    {
+      "kind": "back",
+      "state": {
+        "mode": "recorder",
+        "yaw": 2.951592653589793,
+        "pitch": 0.12,
+        "ready": true,
+        "failed": false,
+        "error": "",
+        "disposed": false,
+        "contexts": 1,
+        "renderCount": 11,
+        "testing": false,
+        "owned": true,
+        "canFit": true,
+        "count": 2,
+        "required": 2,
+        "layout": {
+          "rect": {
+            "x": 2,
+            "y": 2,
+            "w": 166,
+            "h": 41
+          },
+          "portrait": {
+            "x": 3,
+            "y": 5,
+            "w": 114,
+            "h": 34
+          },
+          "detail": {
+            "x": 119,
+            "y": 5,
+            "w": 47,
+            "h": 34
+          },
+          "buttons": [
+            {
+              "id": "close",
+              "label": "BACK",
+              "key": "ESC",
+              "x": 3,
+              "y": 40,
+              "w": 26.75,
+              "h": 2
+            },
+            {
+              "id": "reset",
+              "label": "RESET",
+              "key": "R",
+              "x": 30.45,
+              "y": 40,
+              "w": 26.75,
+              "h": 2
+            },
+            {
+              "id": "turn",
+              "label": "TURN OVER",
+              "key": "T",
+              "x": 57.9,
+              "y": 40,
+              "w": 26.75,
+              "h": 2
+            },
+            {
+              "id": "model",
+              "label": "PLATE/RIG",
+              "key": "V",
+              "x": 85.35,
+              "y": 40,
+              "w": 26.75,
+              "h": 2
+            },
+            {
+              "id": "test",
+              "label": "TEST KEYS",
+              "key": "K",
+              "x": 112.8,
+              "y": 40,
+              "w": 26.75,
+              "h": 2
+            },
+            {
+              "id": "fit",
+              "label": "FIT PLATE",
+              "key": "ENTER",
+              "x": 140.25,
+              "y": 40,
+              "w": 26.75,
+              "h": 2
+            }
+          ],
+          "wide": true
+        },
+        "focused": "close",
+        "closed": false
+      },
+      "screenshot": "/Users/seb/chunk-surfer/artifacts/witness-edition/inspector-back.png"
+    },
+    {
+      "kind": "sleeve",
+      "state": {
+        "mode": "plate",
+        "yaw": -0.19,
+        "pitch": 0.12,
+        "ready": true,
+        "failed": false,
+        "error": "",
+        "disposed": false,
+        "contexts": 1,
+        "renderCount": 13,
+        "testing": false,
+        "owned": true,
+        "canFit": true,
+        "count": 2,
+        "required": 2,
+        "layout": {
+          "rect": {
+            "x": 2,
+            "y": 2,
+            "w": 166,
+            "h": 41
+          },
+          "portrait": {
+            "x": 3,
+            "y": 5,
+            "w": 114,
+            "h": 34
+          },
+          "detail": {
+            "x": 119,
+            "y": 5,
+            "w": 47,
+            "h": 34
+          },
+          "buttons": [
+            {
+              "id": "close",
+              "label": "BACK",
+              "key": "ESC",
+              "x": 3,
+              "y": 40,
+              "w": 26.75,
+              "h": 2
+            },
+            {
+              "id": "reset",
+              "label": "RESET",
+              "key": "R",
+              "x": 30.45,
+              "y": 40,
+              "w": 26.75,
+              "h": 2
+            },
+            {
+              "id": "turn",
+              "label": "TURN OVER",
+              "key": "T",
+              "x": 57.9,
+              "y": 40,
+              "w": 26.75,
+              "h": 2
+            },
+            {
+              "id": "model",
+              "label": "PLATE/RIG",
+              "key": "V",
+              "x": 85.35,
+              "y": 40,
+              "w": 26.75,
+              "h": 2
+            },
+            {
+              "id": "test",
+              "label": "TEST KEYS",
+              "key": "K",
+              "x": 112.8,
+              "y": 40,
+              "w": 26.75,
+              "h": 2
+            },
+            {
+              "id": "fit",
+              "label": "FIT PLATE",
+              "key": "ENTER",
+              "x": 140.25,
+              "y": 40,
+              "w": 26.75,
+              "h": 2
+            }
+          ],
+          "wide": true
+        },
+        "focused": "close",
+        "closed": false
+      },
+      "screenshot": "/Users/seb/chunk-surfer/artifacts/witness-edition/inspector-sleeve.png"
+    },
+    {
+      "kind": "physical-key-test",
+      "state": {
+        "mode": "recorder",
+        "yaw": -0.19,
+        "pitch": 0.12,
+        "ready": true,
+        "failed": false,
+        "error": "",
+        "disposed": false,
+        "contexts": 1,
+        "renderCount": 16,
+        "testing": true,
+        "owned": true,
+        "canFit": true,
+        "count": 2,
+        "required": 2,
+        "layout": {
+          "rect": {
+            "x": 2,
+            "y": 2,
+            "w": 166,
+            "h": 41
+          },
+          "portrait": {
+            "x": 3,
+            "y": 5,
+            "w": 114,
+            "h": 34
+          },
+          "detail": {
+            "x": 119,
+            "y": 5,
+            "w": 47,
+            "h": 34
+          },
+          "buttons": [
+            {
+              "id": "close",
+              "label": "BACK",
+              "key": "ESC",
+              "x": 3,
+              "y": 40,
+              "w": 26.75,
+              "h": 2
+            },
+            {
+              "id": "reset",
+              "label": "RESET",
+              "key": "R",
+              "x": 30.45,
+              "y": 40,
+              "w": 26.75,
+              "h": 2
+            },
+            {
+              "id": "turn",
+              "label": "TURN OVER",
+              "key": "T",
+              "x": 57.9,
+              "y": 40,
+              "w": 26.75,
+              "h": 2
+            },
+            {
+              "id": "model",
+              "label": "PLATE/RIG",
+              "key": "V",
+              "x": 85.35,
+              "y": 40,
+              "w": 26.75,
+              "h": 2
+            },
+            {
+              "id": "test",
+              "label": "TEST KEYS",
+              "key": "K",
+              "x": 112.8,
+              "y": 40,
+              "w": 26.75,
+              "h": 2
+            },
+            {
+              "id": "fit",
+              "label": "FIT PLATE",
+              "key": "ENTER",
+              "x": 140.25,
+              "y": 40,
+              "w": 26.75,
+              "h": 2
+            }
+          ],
+          "wide": true
+        },
+        "focused": "close",
+        "closed": false
+      },
+      "screenshot": "/Users/seb/chunk-surfer/artifacts/witness-edition/inspector-key-travel.png"
+    },
+    {
+      "kind": "locked-first-ending",
+      "state": {
+        "mode": "recorder",
+        "yaw": -0.19,
+        "pitch": 0.12,
+        "ready": true,
+        "failed": false,
+        "error": "",
+        "disposed": false,
+        "contexts": 1,
+        "renderCount": 1,
+        "testing": false,
+        "owned": false,
+        "canFit": false,
+        "count": 1,
+        "required": 2,
+        "layout": {
+          "rect": {
+            "x": 2,
+            "y": 2,
+            "w": 166,
+            "h": 41
+          },
+          "portrait": {
+            "x": 3,
+            "y": 5,
+            "w": 114,
+            "h": 34
+          },
+          "detail": {
+            "x": 119,
+            "y": 5,
+            "w": 47,
+            "h": 34
+          },
+          "buttons": [
+            {
+              "id": "close",
+              "label": "BACK",
+              "key": "ESC",
+              "x": 3,
+              "y": 40,
+              "w": 32.239999999999995,
+              "h": 2
+            },
+            {
+              "id": "reset",
+              "label": "RESET",
+              "key": "R",
+              "x": 35.94,
+              "y": 40,
+              "w": 32.239999999999995,
+              "h": 2
+            },
+            {
+              "id": "turn",
+              "label": "TURN OVER",
+              "key": "T",
+              "x": 68.88,
+              "y": 40,
+              "w": 32.239999999999995,
+              "h": 2
+            },
+            {
+              "id": "model",
+              "label": "PLATE/RIG",
+              "key": "V",
+              "x": 101.82,
+              "y": 40,
+              "w": 32.239999999999995,
+              "h": 2
+            },
+            {
+              "id": "test",
+              "label": "TEST KEYS",
+              "key": "K",
+              "x": 134.76,
+              "y": 40,
+              "w": 32.239999999999995,
+              "h": 2
+            }
+          ],
+          "wide": true
+        },
+        "focused": "close",
+        "closed": false
+      },
+      "screenshot": "/Users/seb/chunk-surfer/artifacts/witness-edition/inspector-locked.png"
+    },
+    {
+      "kind": "readonly-retina-large-text",
+      "state": {
+        "mode": "recorder",
+        "yaw": -0.19,
+        "pitch": 0.12,
+        "ready": true,
+        "failed": false,
+        "error": "",
+        "disposed": false,
+        "contexts": 1,
+        "renderCount": 1,
+        "testing": false,
+        "owned": true,
+        "canFit": false,
+        "count": 2,
+        "required": 2,
+        "layout": {
+          "rect": {
+            "x": 2,
+            "y": 2,
+            "w": 71,
+            "h": 16
+          },
+          "portrait": {
+            "x": 3,
+            "y": 5,
+            "w": 69,
+            "h": 7.199999999999999
+          },
+          "detail": {
+            "x": 3,
+            "y": 12.5,
+            "w": 69,
+            "h": 2.1
+          },
+          "buttons": [
+            {
+              "id": "close",
+              "label": "BACK",
+              "key": "ESC",
+              "x": 3,
+              "y": 15,
+              "w": 13.24,
+              "h": 2
+            },
+            {
+              "id": "reset",
+              "label": "RESET",
+              "key": "R",
+              "x": 16.939999999999998,
+              "y": 15,
+              "w": 13.24,
+              "h": 2
+            },
+            {
+              "id": "turn",
+              "label": "TURN OVER",
+              "key": "T",
+              "x": 30.88,
+              "y": 15,
+              "w": 13.24,
+              "h": 2
+            },
+            {
+              "id": "model",
+              "label": "PLATE/RIG",
+              "key": "V",
+              "x": 44.82,
+              "y": 15,
+              "w": 13.24,
+              "h": 2
+            },
+            {
+              "id": "test",
+              "label": "TEST KEYS",
+              "key": "K",
+              "x": 58.76,
+              "y": 15,
+              "w": 13.24,
+              "h": 2
+            }
+          ],
+          "wide": false
+        },
+        "focused": "close",
+        "closed": false
+      },
+      "screenshot": "/Users/seb/chunk-surfer/artifacts/witness-edition/inspector-retina-large-text.png"
+    }
+  ],
+  "pageErrors": []
+}

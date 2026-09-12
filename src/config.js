@@ -124,7 +124,8 @@ export const ROOM_TONE = {
   monitorPoly: 4,        // voices; the lab uses POLY_MAX = 24
   monitorGain: 1.15,     // headphones are louder than the room
   monitorFadeSec: 1.1,   // the monitor opens slowly, like a hand on a fader
-  takeSeconds: 45,       // an unbroken clean minute, near enough
+  takeSeconds: 60,       // requested room tone; 45 clean seconds is fully usable
+  minimumTakeSeconds: 45,
   spoilNoise: 0.18,      // noise above this ruins the take
   catchNoise: 0.40,      // noise above this doesn't just ruin the take — it
                          // finds you. A footstep (0.22) or a lone squelch

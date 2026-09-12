@@ -223,7 +223,7 @@ test('reduced motion preserves authored stages, choices and dwell without mutati
 });
 
 test('all authored radio prose and choices fit the viewport without overlapping at 960/1280 and 1.5 scale',()=>{
-  const docs=[...terminalIds,'radio.initial_checkin','radio.post_second_take_warning','conservatory.radio_dead','radio.guidance'].map(readStory);
+  const docs=[...terminalIds,'radio.initial_checkin','radio.missed_checkin','radio.post_second_take_warning','conservatory.radio_dead','radio.guidance'].map(readStory);
   for(const [width,height] of [[960,600],[1280,760]])for(const scale of [1,1.5]){
     const size={cols:Math.floor(width/(UI_CELL_W*scale)),rows:Math.floor(height/(UI_CELL_H*scale))};
     for(const doc of docs)for(const node of Object.values(doc.nodes)){
@@ -238,7 +238,7 @@ test('all authored radio prose and choices fit the viewport without overlapping 
         assert.ok(bottom<=(layout.choices[0]?.y-.15||layout.footerY-.5),`${label}: prose ${bottom} overlaps choices/footer`);
         for(const rect of layout.choices){
           assert.ok(rect.x>=0&&rect.y>=0&&rect.x+rect.w<=size.cols&&rect.y+rect.h<=layout.footerY,label);
-          const rows=uiWrap(rect.choice.text,rect.w-3);
+          const rows=uiWrap(rect.choice.text,rect.w-8);
           assert.ok(rows.length<=2,`${label}: choice must not be silently truncated`);
           assert.ok((rows.length-1)*.9+1<=rect.h+.001,label);
         }
@@ -278,12 +278,12 @@ function renderProbe(width=960,height=600){
   };
 }
 
-test('reduced-motion equipment drawing uses one static pose per stage, without flicker or residual settling',()=>{
+test('the shared radio panel has no animated substitute for the inventory model',()=>{
   const probe=renderProbe();
   try{
     for(const stage of ['live',...Object.keys(RADIO_STAGE_HOLDS)]){
       assert.deepEqual(probe.draw(stage,.1,true),probe.draw(stage,1.1,true),`${stage} must not animate within its reduced-motion stage`);
     }
-    assert.notDeepEqual(probe.draw('relay',.1,false),probe.draw('relay',1.1,false),'normal motion still provides authored physical progression');
+    assert.deepEqual(probe.draw('relay',.1,false),probe.draw('relay',1.1,false),'the panel stays steady while dialogue and audio own the event');
   }finally{probe.restore();}
 });

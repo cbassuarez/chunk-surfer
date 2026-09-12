@@ -1,0 +1,4837 @@
+{
+  "base": "http://127.0.0.1:5296",
+  "scope": "Production main.js scenes; seeded ending history and setup prerequisites, not full ending playthroughs.",
+  "checks": [
+    "Zero seeded endings: Witness selector and physical sleeve absent",
+    "One seeded ending: visible locked preview, actual 3D turn-over, no fit action or sleeve",
+    "Two seeded endings: independent sleeve on live shelf, real case pickup, physical inspect/plate/turn/fit replaces recorder GLB and persists only finish",
+    "Closing and reopening the actual Bag uses fitted Witness inspection, owned but with no remote fitting action",
+    "Actual R recorder scene renders fitted Witness finish"
+  ],
+  "errors": [],
+  "snapshots": {
+    "hidden": {
+      "state": {
+        "bagTaken": false,
+        "mapTaken": false,
+        "fieldKit": {
+          "schema": 1,
+          "headphones": "reference",
+          "microphone": "reference",
+          "recorder": "reference",
+          "cosmetics": {
+            "faceplate": "aluminum",
+            "buttons": "classic",
+            "vfd": "faithful"
+          }
+        },
+        "witness": {
+          "visible": false,
+          "owned": false,
+          "count": 0,
+          "required": 2,
+          "endingIds": [],
+          "reason": "FILE 2 DIFFERENT ENDINGS TO UNLOCK. 0 OF 2 FILED."
+        },
+        "cosmeticMeta": {
+          "endingsSeen": [],
+          "cosmetics": {
+            "unlocked": [],
+            "selected": null
+          }
+        },
+        "reduceMotion": false,
+        "difficultyConfirmed": false,
+        "difficultyLabel": "CHOOSE SHIFT"
+      },
+      "selectedGroup": "faceplate",
+      "focusId": "van:group:faceplate",
+      "notice": "",
+      "continuationPending": false,
+      "ready": false,
+      "layout": {
+        "size": {
+          "cols": 151,
+          "rows": 40
+        },
+        "outer": {
+          "x": 1.3,
+          "y": 0.55,
+          "w": 148.4,
+          "h": 38.9
+        },
+        "stage": {
+          "x": 1.3,
+          "y": 2.1,
+          "w": 100.17000000000002,
+          "h": 32.55
+        },
+        "compact": false,
+        "caseRect": {
+          "x": 2.1,
+          "y": 33.6,
+          "w": 43.073100000000004,
+          "h": 0.9
+        },
+        "mapRect": {
+          "x": 52.386700000000005,
+          "y": 33.6,
+          "w": 31.052700000000005,
+          "h": 0.9
+        },
+        "difficulty": {
+          "x": 71.24178500898057,
+          "y": 15.30279668856444,
+          "w": 14.84676577152888,
+          "h": 3.6227349219368303
+        },
+        "fittings": {
+          "x": 102.12000000000002,
+          "y": 2.1,
+          "w": 47.57999999999999,
+          "h": 32.55
+        },
+        "preview": {
+          "x": 102.77000000000002,
+          "y": 3.6,
+          "w": 46.279999999999994,
+          "h": 9.2
+        },
+        "recorder": {
+          "x": 106.12418657316096,
+          "y": 3.6,
+          "w": 39.57162685367813,
+          "h": 9.2
+        },
+        "showRecorder": true,
+        "selectedObject": "recorder",
+        "groups": [
+          {
+            "id": "van:group:headphones",
+            "label": "HEADPHONES",
+            "color": "amber",
+            "x": 2.2,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:headphones",
+            "group": "headphones"
+          },
+          {
+            "id": "van:group:microphone",
+            "label": "MICROPHONE",
+            "color": "blue",
+            "x": 26.749999999999996,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:microphone",
+            "group": "microphone"
+          },
+          {
+            "id": "van:group:recorder",
+            "label": "RECORDER",
+            "color": "red",
+            "x": 51.3,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:recorder",
+            "group": "recorder"
+          },
+          {
+            "id": "van:group:faceplate",
+            "label": "FACEPLATE",
+            "color": "white",
+            "cosmetic": true,
+            "x": 75.85,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:faceplate",
+            "group": "faceplate"
+          },
+          {
+            "id": "van:group:buttons",
+            "label": "BUTTONS",
+            "color": "green",
+            "cosmetic": true,
+            "x": 100.39999999999999,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:buttons",
+            "group": "buttons"
+          },
+          {
+            "id": "van:group:vfd",
+            "label": "PHOSPHOR",
+            "color": "blue",
+            "cosmetic": true,
+            "x": 124.94999999999999,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:vfd",
+            "group": "vfd"
+          }
+        ],
+        "variants": [
+          {
+            "id": "van:kit:faceplate:aluminum",
+            "label": "BRUSHED ALUMINUM",
+            "description": "Unpainted aluminum faceplate. Appearance only.",
+            "effects": {},
+            "availability": {
+              "visible": true,
+              "available": true,
+              "owned": true,
+              "count": 0,
+              "required": 0,
+              "endingIds": [],
+              "reason": ""
+            },
+            "x": 102.92000000000002,
+            "y": 13.6,
+            "w": 45.97999999999999,
+            "h": 1.42,
+            "kind": "kit",
+            "group": "faceplate",
+            "optionId": "aluminum",
+            "controlId": "van:kit:faceplate:aluminum",
+            "enabled": false,
+            "fittable": false,
+            "locked": false,
+            "displayLabel": "BRUSHED ALUMINUM"
+          },
+          {
+            "id": "van:kit:faceplate:black",
+            "label": "BLACK",
+            "description": "Black enamel faceplate. Appearance only.",
+            "effects": {},
+            "availability": {
+              "visible": true,
+              "available": true,
+              "owned": true,
+              "count": 0,
+              "required": 0,
+              "endingIds": [],
+              "reason": ""
+            },
+            "x": 102.92000000000002,
+            "y": 15.299999999999999,
+            "w": 45.97999999999999,
+            "h": 1.42,
+            "kind": "kit",
+            "group": "faceplate",
+            "optionId": "black",
+            "controlId": "van:kit:faceplate:black",
+            "enabled": false,
+            "fittable": false,
+            "locked": false,
+            "displayLabel": "BLACK"
+          },
+          {
+            "id": "van:kit:faceplate:olive",
+            "label": "OLIVE",
+            "description": "Olive enamel faceplate. Appearance only.",
+            "effects": {},
+            "availability": {
+              "visible": true,
+              "available": true,
+              "owned": true,
+              "count": 0,
+              "required": 0,
+              "endingIds": [],
+              "reason": ""
+            },
+            "x": 102.92000000000002,
+            "y": 17,
+            "w": 45.97999999999999,
+            "h": 1.42,
+            "kind": "kit",
+            "group": "faceplate",
+            "optionId": "olive",
+            "controlId": "van:kit:faceplate:olive",
+            "enabled": false,
+            "fittable": false,
+            "locked": false,
+            "displayLabel": "OLIVE"
+          }
+        ],
+        "variantColumns": 1,
+        "witness": {
+          "visible": false,
+          "owned": false,
+          "count": 0,
+          "required": 2,
+          "endingIds": [],
+          "reason": "FILE 2 DIFFERENT ENDINGS TO UNLOCK. 0 OF 2 FILED.",
+          "available": false
+        },
+        "witnessFitted": false,
+        "witnessInspect": null,
+        "description": {
+          "x": 103.02000000000002,
+          "y": 18.87,
+          "w": 45.779999999999994,
+          "h": 14.679999999999998
+        },
+        "filmY": 35.05,
+        "footerY": 37.5,
+        "continueRegion": {
+          "x": 121.70000000000002,
+          "y": 37.65,
+          "w": 27,
+          "h": 1.5,
+          "id": "van:continue",
+          "kind": "continue",
+          "controlId": "van:continue",
+          "enabled": false
+        },
+        "close": {
+          "x": 2.3,
+          "y": 37.65,
+          "w": 12,
+          "h": 1.5,
+          "id": "van:close",
+          "kind": "close",
+          "controlId": "van:close",
+          "enabled": true
+        },
+        "regions": [
+          {
+            "x": 6.172755199939505,
+            "y": 2.1,
+            "w": 68.83321929469422,
+            "h": 24.319419575152835,
+            "id": "van:object:case",
+            "kind": "case",
+            "enabled": true
+          },
+          {
+            "x": 12.281233417518852,
+            "y": 18.519318071025413,
+            "w": 22.579486356689845,
+            "h": 9.532157217410404,
+            "id": "van:object:headphones",
+            "kind": "group",
+            "group": "headphones",
+            "item": "headphones-reference",
+            "enabled": true
+          },
+          {
+            "x": 27.779234676072893,
+            "y": 16.285474178389467,
+            "w": 9.83444413573174,
+            "h": 2.829699823114712,
+            "id": "van:object:microphone",
+            "kind": "group",
+            "group": "microphone",
+            "item": "microphone-reference",
+            "enabled": true
+          },
+          {
+            "x": 27.100698666856392,
+            "y": 12.540479138586665,
+            "w": 12.803095037265816,
+            "h": 3.0028669359249403,
+            "id": "van:object:recorder",
+            "kind": "group",
+            "group": "recorder",
+            "item": "field-recorder",
+            "enabled": true
+          },
+          {
+            "x": 41.160034295549096,
+            "y": 13.886138720829612,
+            "w": 11.537150186641874,
+            "h": 3.7725126366453257,
+            "id": "van:object:map",
+            "kind": "map",
+            "enabled": true
+          },
+          {
+            "x": 55.0108266391871,
+            "y": 14.623344539993422,
+            "w": 5.086265654147681,
+            "h": 3.7879492366694016,
+            "id": "van:object:radio",
+            "kind": "inspect",
+            "item": "radio",
+            "enabled": true,
+            "object": true
+          },
+          {
+            "x": 74.12148198886962,
+            "y": 17.830375852768896,
+            "w": 12.750429425202555,
+            "h": 4.965764514348397,
+            "id": "van:object:light",
+            "kind": "inspect",
+            "item": "light",
+            "enabled": true,
+            "object": true
+          },
+          {
+            "x": 2.1,
+            "y": 33.6,
+            "w": 43.073100000000004,
+            "h": 0.9,
+            "id": "van:case",
+            "kind": "case",
+            "enabled": true
+          },
+          {
+            "x": 52.386700000000005,
+            "y": 33.6,
+            "w": 31.052700000000005,
+            "h": 0.9,
+            "id": "van:map",
+            "kind": "map",
+            "enabled": true
+          },
+          {
+            "x": 71.24178500898057,
+            "y": 15.30279668856444,
+            "w": 14.84676577152888,
+            "h": 3.6227349219368303,
+            "id": "van:difficulty",
+            "kind": "difficulty",
+            "enabled": true
+          },
+          {
+            "id": "van:group:headphones",
+            "label": "HEADPHONES",
+            "color": "amber",
+            "x": 2.2,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:headphones",
+            "group": "headphones"
+          },
+          {
+            "id": "van:group:microphone",
+            "label": "MICROPHONE",
+            "color": "blue",
+            "x": 26.749999999999996,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:microphone",
+            "group": "microphone"
+          },
+          {
+            "id": "van:group:recorder",
+            "label": "RECORDER",
+            "color": "red",
+            "x": 51.3,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:recorder",
+            "group": "recorder"
+          },
+          {
+            "id": "van:group:faceplate",
+            "label": "FACEPLATE",
+            "color": "white",
+            "cosmetic": true,
+            "x": 75.85,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:faceplate",
+            "group": "faceplate"
+          },
+          {
+            "id": "van:group:buttons",
+            "label": "BUTTONS",
+            "color": "green",
+            "cosmetic": true,
+            "x": 100.39999999999999,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:buttons",
+            "group": "buttons"
+          },
+          {
+            "id": "van:group:vfd",
+            "label": "PHOSPHOR",
+            "color": "blue",
+            "cosmetic": true,
+            "x": 124.94999999999999,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:vfd",
+            "group": "vfd"
+          },
+          {
+            "id": "van:kit:faceplate:aluminum",
+            "label": "BRUSHED ALUMINUM",
+            "description": "Unpainted aluminum faceplate. Appearance only.",
+            "effects": {},
+            "availability": {
+              "visible": true,
+              "available": true,
+              "owned": true,
+              "count": 0,
+              "required": 0,
+              "endingIds": [],
+              "reason": ""
+            },
+            "x": 102.92000000000002,
+            "y": 13.6,
+            "w": 45.97999999999999,
+            "h": 1.42,
+            "kind": "kit",
+            "group": "faceplate",
+            "optionId": "aluminum",
+            "controlId": "van:kit:faceplate:aluminum",
+            "enabled": false,
+            "fittable": false,
+            "locked": false,
+            "displayLabel": "BRUSHED ALUMINUM"
+          },
+          {
+            "id": "van:kit:faceplate:black",
+            "label": "BLACK",
+            "description": "Black enamel faceplate. Appearance only.",
+            "effects": {},
+            "availability": {
+              "visible": true,
+              "available": true,
+              "owned": true,
+              "count": 0,
+              "required": 0,
+              "endingIds": [],
+              "reason": ""
+            },
+            "x": 102.92000000000002,
+            "y": 15.299999999999999,
+            "w": 45.97999999999999,
+            "h": 1.42,
+            "kind": "kit",
+            "group": "faceplate",
+            "optionId": "black",
+            "controlId": "van:kit:faceplate:black",
+            "enabled": false,
+            "fittable": false,
+            "locked": false,
+            "displayLabel": "BLACK"
+          },
+          {
+            "id": "van:kit:faceplate:olive",
+            "label": "OLIVE",
+            "description": "Olive enamel faceplate. Appearance only.",
+            "effects": {},
+            "availability": {
+              "visible": true,
+              "available": true,
+              "owned": true,
+              "count": 0,
+              "required": 0,
+              "endingIds": [],
+              "reason": ""
+            },
+            "x": 102.92000000000002,
+            "y": 17,
+            "w": 45.97999999999999,
+            "h": 1.42,
+            "kind": "kit",
+            "group": "faceplate",
+            "optionId": "olive",
+            "controlId": "van:kit:faceplate:olive",
+            "enabled": false,
+            "fittable": false,
+            "locked": false,
+            "displayLabel": "OLIVE"
+          },
+          {
+            "x": 94.77000000000001,
+            "y": 33.6,
+            "w": 6.2,
+            "h": 0.9,
+            "id": "van:inspect:map",
+            "kind": "inspect",
+            "item": "map",
+            "enabled": true
+          },
+          {
+            "x": 103.02000000000002,
+            "y": 33.83,
+            "w": 45.779999999999994,
+            "h": 0.75,
+            "id": "van:inspect:recorder",
+            "kind": "inspect",
+            "item": "recorder",
+            "enabled": false
+          },
+          {
+            "x": 40.9731,
+            "y": 32.550000000000004,
+            "w": 4.2,
+            "h": 0.8,
+            "id": "van:inspect:field-case",
+            "kind": "inspect",
+            "item": "field-case",
+            "enabled": true
+          },
+          {
+            "x": 2.3,
+            "y": 37.65,
+            "w": 12,
+            "h": 1.5,
+            "id": "van:close",
+            "kind": "close",
+            "controlId": "van:close",
+            "enabled": true
+          },
+          {
+            "x": 121.70000000000002,
+            "y": 37.65,
+            "w": 27,
+            "h": 1.5,
+            "id": "van:continue",
+            "kind": "continue",
+            "controlId": "van:continue",
+            "enabled": false
+          }
+        ],
+        "previewFinish": "aluminum",
+        "effects": {
+          "monitorGainScale": 1,
+          "surroundingGainScale": 1,
+          "recordingNoiseScale": 1,
+          "takeDurationScale": 1,
+          "spoilToleranceScale": 1,
+          "torchDrainScale": 1
+        },
+        "descriptionLines": [
+          "Take the field case from the shelf. Then fit each component before you go."
+        ],
+        "effectLines": [
+          "REFERENCE SIGNAL PATH / NO MODIFIERS"
+        ]
+      },
+      "stage": {
+        "ready": true,
+        "models": {
+          "case": "field-case",
+          "headphones": "headphones-reference",
+          "microphone": "microphone-reference",
+          "recorder": "field-recorder",
+          "map": "map",
+          "radio": "radio",
+          "light": "light"
+        },
+        "loading": [],
+        "failed": [],
+        "error": "",
+        "docked": {
+          "microphone": "microphone",
+          "recorder": "recorder",
+          "map": "survey-indicator",
+          "radio": "radio"
+        },
+        "materials": {
+          "recorder-faceplate": {
+            "color": "#bfc2b5",
+            "textured": false
+          },
+          "recorder-cover-glass": {
+            "color": "#547660",
+            "textured": false
+          },
+          "recorder-ink": {
+            "color": "#28312b",
+            "textured": false
+          },
+          "recorder-button-rec": {
+            "color": "#bc6b57",
+            "textured": false
+          },
+          "recorder-button-stop": {
+            "color": "#bcbda9",
+            "textured": false
+          },
+          "recorder-button-takes": {
+            "color": "#c9a151",
+            "textured": false
+          }
+        },
+        "readoutTexture": true,
+        "detailModel": "headphones-reference",
+        "lifts": {
+          "case": 0,
+          "headphones": 0.06897858336261904,
+          "microphone": 0,
+          "recorder": 0.34622461080936956,
+          "map": 0,
+          "radio": 0,
+          "light": 0
+        },
+        "rendererCount": 1,
+        "renderCount": 13,
+        "suspended": false,
+        "disposed": false,
+        "selected": "recorder",
+        "targets": {
+          "case": {
+            "x": 6.172755199939505,
+            "y": 2.1,
+            "w": 68.83321929469422,
+            "h": 24.319419575152835
+          },
+          "headphones": {
+            "x": 12.281233417518852,
+            "y": 18.519318071025413,
+            "w": 22.579486356689845,
+            "h": 9.532157217410404
+          },
+          "microphone": {
+            "x": 27.779234676072893,
+            "y": 16.285474178389467,
+            "w": 9.83444413573174,
+            "h": 2.829699823114712
+          },
+          "recorder": {
+            "x": 27.100698666856392,
+            "y": 12.540479138586665,
+            "w": 12.803095037265816,
+            "h": 3.0028669359249403
+          },
+          "map": {
+            "x": 41.160034295549096,
+            "y": 13.886138720829612,
+            "w": 11.537150186641874,
+            "h": 3.7725126366453257
+          },
+          "radio": {
+            "x": 55.0108266391871,
+            "y": 14.623344539993422,
+            "w": 5.086265654147681,
+            "h": 3.7879492366694016
+          },
+          "light": {
+            "x": 74.12148198886962,
+            "y": 17.830375852768896,
+            "w": 12.750429425202555,
+            "h": 4.965764514348397
+          },
+          "difficulty": {
+            "x": 71.24178500898057,
+            "y": 15.30279668856444,
+            "w": 14.84676577152888,
+            "h": 3.6227349219368303
+          }
+        }
+      },
+      "pickedObject": null,
+      "hitRegions": [
+        {
+          "x": 6.172755199939505,
+          "y": 2.1,
+          "w": 68.83321929469422,
+          "h": 24.319419575152835,
+          "id": "van:object:case",
+          "kind": "case",
+          "enabled": true
+        },
+        {
+          "x": 12.281233417518852,
+          "y": 18.519318071025413,
+          "w": 22.579486356689845,
+          "h": 9.532157217410404,
+          "id": "van:object:headphones",
+          "kind": "group",
+          "group": "headphones",
+          "item": "headphones-reference",
+          "enabled": true
+        },
+        {
+          "x": 27.779234676072893,
+          "y": 16.285474178389467,
+          "w": 9.83444413573174,
+          "h": 2.829699823114712,
+          "id": "van:object:microphone",
+          "kind": "group",
+          "group": "microphone",
+          "item": "microphone-reference",
+          "enabled": true
+        },
+        {
+          "x": 27.100698666856392,
+          "y": 12.540479138586665,
+          "w": 12.803095037265816,
+          "h": 3.0028669359249403,
+          "id": "van:object:recorder",
+          "kind": "group",
+          "group": "recorder",
+          "item": "field-recorder",
+          "enabled": true
+        },
+        {
+          "x": 41.160034295549096,
+          "y": 13.886138720829612,
+          "w": 11.537150186641874,
+          "h": 3.7725126366453257,
+          "id": "van:object:map",
+          "kind": "map",
+          "enabled": true
+        },
+        {
+          "x": 55.0108266391871,
+          "y": 14.623344539993422,
+          "w": 5.086265654147681,
+          "h": 3.7879492366694016,
+          "id": "van:object:radio",
+          "kind": "inspect",
+          "item": "radio",
+          "enabled": true,
+          "object": true
+        },
+        {
+          "x": 74.12148198886962,
+          "y": 17.830375852768896,
+          "w": 12.750429425202555,
+          "h": 4.965764514348397,
+          "id": "van:object:light",
+          "kind": "inspect",
+          "item": "light",
+          "enabled": true,
+          "object": true
+        },
+        {
+          "x": 2.1,
+          "y": 33.6,
+          "w": 43.073100000000004,
+          "h": 0.9,
+          "id": "van:case",
+          "kind": "case",
+          "enabled": true
+        },
+        {
+          "x": 52.386700000000005,
+          "y": 33.6,
+          "w": 31.052700000000005,
+          "h": 0.9,
+          "id": "van:map",
+          "kind": "map",
+          "enabled": true
+        },
+        {
+          "x": 71.24178500898057,
+          "y": 15.30279668856444,
+          "w": 14.84676577152888,
+          "h": 3.6227349219368303,
+          "id": "van:difficulty",
+          "kind": "difficulty",
+          "enabled": true
+        },
+        {
+          "id": "van:group:headphones",
+          "label": "HEADPHONES",
+          "color": "amber",
+          "x": 2.2,
+          "y": 35.3,
+          "w": 23.849999999999998,
+          "h": 1.45,
+          "kind": "group",
+          "controlId": "van:group:headphones",
+          "group": "headphones"
+        },
+        {
+          "id": "van:group:microphone",
+          "label": "MICROPHONE",
+          "color": "blue",
+          "x": 26.749999999999996,
+          "y": 35.3,
+          "w": 23.849999999999998,
+          "h": 1.45,
+          "kind": "group",
+          "controlId": "van:group:microphone",
+          "group": "microphone"
+        },
+        {
+          "id": "van:group:recorder",
+          "label": "RECORDER",
+          "color": "red",
+          "x": 51.3,
+          "y": 35.3,
+          "w": 23.849999999999998,
+          "h": 1.45,
+          "kind": "group",
+          "controlId": "van:group:recorder",
+          "group": "recorder"
+        },
+        {
+          "id": "van:group:faceplate",
+          "label": "FACEPLATE",
+          "color": "white",
+          "cosmetic": true,
+          "x": 75.85,
+          "y": 35.3,
+          "w": 23.849999999999998,
+          "h": 1.45,
+          "kind": "group",
+          "controlId": "van:group:faceplate",
+          "group": "faceplate"
+        },
+        {
+          "id": "van:group:buttons",
+          "label": "BUTTONS",
+          "color": "green",
+          "cosmetic": true,
+          "x": 100.39999999999999,
+          "y": 35.3,
+          "w": 23.849999999999998,
+          "h": 1.45,
+          "kind": "group",
+          "controlId": "van:group:buttons",
+          "group": "buttons"
+        },
+        {
+          "id": "van:group:vfd",
+          "label": "PHOSPHOR",
+          "color": "blue",
+          "cosmetic": true,
+          "x": 124.94999999999999,
+          "y": 35.3,
+          "w": 23.849999999999998,
+          "h": 1.45,
+          "kind": "group",
+          "controlId": "van:group:vfd",
+          "group": "vfd"
+        },
+        {
+          "id": "van:kit:faceplate:aluminum",
+          "label": "BRUSHED ALUMINUM",
+          "description": "Unpainted aluminum faceplate. Appearance only.",
+          "effects": {},
+          "availability": {
+            "visible": true,
+            "available": true,
+            "owned": true,
+            "count": 0,
+            "required": 0,
+            "endingIds": [],
+            "reason": ""
+          },
+          "x": 102.92000000000002,
+          "y": 13.6,
+          "w": 45.97999999999999,
+          "h": 1.42,
+          "kind": "kit",
+          "group": "faceplate",
+          "optionId": "aluminum",
+          "controlId": "van:kit:faceplate:aluminum",
+          "enabled": false,
+          "fittable": false,
+          "locked": false,
+          "displayLabel": "BRUSHED ALUMINUM"
+        },
+        {
+          "id": "van:kit:faceplate:black",
+          "label": "BLACK",
+          "description": "Black enamel faceplate. Appearance only.",
+          "effects": {},
+          "availability": {
+            "visible": true,
+            "available": true,
+            "owned": true,
+            "count": 0,
+            "required": 0,
+            "endingIds": [],
+            "reason": ""
+          },
+          "x": 102.92000000000002,
+          "y": 15.299999999999999,
+          "w": 45.97999999999999,
+          "h": 1.42,
+          "kind": "kit",
+          "group": "faceplate",
+          "optionId": "black",
+          "controlId": "van:kit:faceplate:black",
+          "enabled": false,
+          "fittable": false,
+          "locked": false,
+          "displayLabel": "BLACK"
+        },
+        {
+          "id": "van:kit:faceplate:olive",
+          "label": "OLIVE",
+          "description": "Olive enamel faceplate. Appearance only.",
+          "effects": {},
+          "availability": {
+            "visible": true,
+            "available": true,
+            "owned": true,
+            "count": 0,
+            "required": 0,
+            "endingIds": [],
+            "reason": ""
+          },
+          "x": 102.92000000000002,
+          "y": 17,
+          "w": 45.97999999999999,
+          "h": 1.42,
+          "kind": "kit",
+          "group": "faceplate",
+          "optionId": "olive",
+          "controlId": "van:kit:faceplate:olive",
+          "enabled": false,
+          "fittable": false,
+          "locked": false,
+          "displayLabel": "OLIVE"
+        },
+        {
+          "x": 94.77000000000001,
+          "y": 33.6,
+          "w": 6.2,
+          "h": 0.9,
+          "id": "van:inspect:map",
+          "kind": "inspect",
+          "item": "map",
+          "enabled": true
+        },
+        {
+          "x": 103.02000000000002,
+          "y": 33.83,
+          "w": 45.779999999999994,
+          "h": 0.75,
+          "id": "van:inspect:recorder",
+          "kind": "inspect",
+          "item": "recorder",
+          "enabled": false
+        },
+        {
+          "x": 40.9731,
+          "y": 32.550000000000004,
+          "w": 4.2,
+          "h": 0.8,
+          "id": "van:inspect:field-case",
+          "kind": "inspect",
+          "item": "field-case",
+          "enabled": true
+        },
+        {
+          "x": 2.3,
+          "y": 37.65,
+          "w": 12,
+          "h": 1.5,
+          "id": "van:close",
+          "kind": "close",
+          "controlId": "van:close",
+          "enabled": true
+        },
+        {
+          "x": 121.70000000000002,
+          "y": 37.65,
+          "w": 27,
+          "h": 1.5,
+          "id": "van:continue",
+          "kind": "continue",
+          "controlId": "van:continue",
+          "enabled": false
+        }
+      ]
+    },
+    "locked": {
+      "state": {
+        "bagTaken": false,
+        "mapTaken": false,
+        "fieldKit": {
+          "schema": 1,
+          "headphones": "reference",
+          "microphone": "reference",
+          "recorder": "reference",
+          "cosmetics": {
+            "faceplate": "aluminum",
+            "buttons": "classic",
+            "vfd": "faithful"
+          }
+        },
+        "witness": {
+          "visible": true,
+          "owned": false,
+          "count": 1,
+          "required": 2,
+          "endingIds": [
+            "sacrifice"
+          ],
+          "reason": "FILE 2 DIFFERENT ENDINGS TO UNLOCK. 1 OF 2 FILED."
+        },
+        "cosmeticMeta": {
+          "endingsSeen": [
+            "sacrifice"
+          ],
+          "cosmetics": {
+            "unlocked": [],
+            "selected": null
+          }
+        },
+        "reduceMotion": false,
+        "difficultyConfirmed": false,
+        "difficultyLabel": "CHOOSE SHIFT"
+      },
+      "selectedGroup": "faceplate",
+      "focusId": "van:group:faceplate",
+      "notice": "",
+      "continuationPending": false,
+      "ready": false,
+      "layout": {
+        "size": {
+          "cols": 151,
+          "rows": 40
+        },
+        "outer": {
+          "x": 1.3,
+          "y": 0.55,
+          "w": 148.4,
+          "h": 38.9
+        },
+        "stage": {
+          "x": 1.3,
+          "y": 2.1,
+          "w": 100.17000000000002,
+          "h": 32.55
+        },
+        "compact": false,
+        "caseRect": {
+          "x": 2.1,
+          "y": 33.6,
+          "w": 43.073100000000004,
+          "h": 0.9
+        },
+        "mapRect": {
+          "x": 52.386700000000005,
+          "y": 33.6,
+          "w": 31.052700000000005,
+          "h": 0.9
+        },
+        "difficulty": {
+          "x": 71.24178500898057,
+          "y": 15.30279668856444,
+          "w": 14.84676577152888,
+          "h": 3.6227349219368303
+        },
+        "fittings": {
+          "x": 102.12000000000002,
+          "y": 2.1,
+          "w": 47.57999999999999,
+          "h": 32.55
+        },
+        "preview": {
+          "x": 102.77000000000002,
+          "y": 3.6,
+          "w": 46.279999999999994,
+          "h": 9.2
+        },
+        "recorder": {
+          "x": 106.12418657316096,
+          "y": 3.6,
+          "w": 39.57162685367813,
+          "h": 9.2
+        },
+        "showRecorder": true,
+        "selectedObject": "recorder",
+        "groups": [
+          {
+            "id": "van:group:headphones",
+            "label": "HEADPHONES",
+            "color": "amber",
+            "x": 2.2,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:headphones",
+            "group": "headphones"
+          },
+          {
+            "id": "van:group:microphone",
+            "label": "MICROPHONE",
+            "color": "blue",
+            "x": 26.749999999999996,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:microphone",
+            "group": "microphone"
+          },
+          {
+            "id": "van:group:recorder",
+            "label": "RECORDER",
+            "color": "red",
+            "x": 51.3,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:recorder",
+            "group": "recorder"
+          },
+          {
+            "id": "van:group:faceplate",
+            "label": "FACEPLATE",
+            "color": "white",
+            "cosmetic": true,
+            "x": 75.85,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:faceplate",
+            "group": "faceplate"
+          },
+          {
+            "id": "van:group:buttons",
+            "label": "BUTTONS",
+            "color": "green",
+            "cosmetic": true,
+            "x": 100.39999999999999,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:buttons",
+            "group": "buttons"
+          },
+          {
+            "id": "van:group:vfd",
+            "label": "PHOSPHOR",
+            "color": "blue",
+            "cosmetic": true,
+            "x": 124.94999999999999,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:vfd",
+            "group": "vfd"
+          }
+        ],
+        "variants": [
+          {
+            "id": "van:kit:faceplate:aluminum",
+            "label": "BRUSHED ALUMINUM",
+            "description": "Unpainted aluminum faceplate. Appearance only.",
+            "effects": {},
+            "availability": {
+              "visible": true,
+              "available": true,
+              "owned": true,
+              "count": 0,
+              "required": 0,
+              "endingIds": [],
+              "reason": ""
+            },
+            "x": 102.92000000000002,
+            "y": 13.6,
+            "w": 45.97999999999999,
+            "h": 1.42,
+            "kind": "kit",
+            "group": "faceplate",
+            "optionId": "aluminum",
+            "controlId": "van:kit:faceplate:aluminum",
+            "enabled": false,
+            "fittable": false,
+            "locked": false,
+            "displayLabel": "BRUSHED ALUMINUM"
+          },
+          {
+            "id": "van:kit:faceplate:black",
+            "label": "BLACK",
+            "description": "Black enamel faceplate. Appearance only.",
+            "effects": {},
+            "availability": {
+              "visible": true,
+              "available": true,
+              "owned": true,
+              "count": 0,
+              "required": 0,
+              "endingIds": [],
+              "reason": ""
+            },
+            "x": 102.92000000000002,
+            "y": 15.299999999999999,
+            "w": 45.97999999999999,
+            "h": 1.42,
+            "kind": "kit",
+            "group": "faceplate",
+            "optionId": "black",
+            "controlId": "van:kit:faceplate:black",
+            "enabled": false,
+            "fittable": false,
+            "locked": false,
+            "displayLabel": "BLACK"
+          },
+          {
+            "id": "van:kit:faceplate:olive",
+            "label": "OLIVE",
+            "description": "Olive enamel faceplate. Appearance only.",
+            "effects": {},
+            "availability": {
+              "visible": true,
+              "available": true,
+              "owned": true,
+              "count": 0,
+              "required": 0,
+              "endingIds": [],
+              "reason": ""
+            },
+            "x": 102.92000000000002,
+            "y": 17,
+            "w": 45.97999999999999,
+            "h": 1.42,
+            "kind": "kit",
+            "group": "faceplate",
+            "optionId": "olive",
+            "controlId": "van:kit:faceplate:olive",
+            "enabled": false,
+            "fittable": false,
+            "locked": false,
+            "displayLabel": "OLIVE"
+          },
+          {
+            "id": "van:kit:faceplate:witness",
+            "label": "WITNESS EDITION",
+            "description": "Witness Edition recorder faceplate. Appearance only; keys and phosphor remain your choice.",
+            "effects": {},
+            "availability": {
+              "visible": true,
+              "owned": false,
+              "count": 1,
+              "required": 2,
+              "endingIds": [
+                "sacrifice"
+              ],
+              "reason": "FILE 2 DIFFERENT ENDINGS TO UNLOCK. 1 OF 2 FILED.",
+              "available": false
+            },
+            "x": 102.92000000000002,
+            "y": 18.7,
+            "w": 45.97999999999999,
+            "h": 1.42,
+            "kind": "kit",
+            "group": "faceplate",
+            "optionId": "witness",
+            "controlId": "van:kit:faceplate:witness",
+            "enabled": true,
+            "fittable": false,
+            "locked": true,
+            "displayLabel": "WITNESS · 1/2"
+          }
+        ],
+        "variantColumns": 1,
+        "witness": {
+          "visible": true,
+          "owned": false,
+          "count": 1,
+          "required": 2,
+          "endingIds": [
+            "sacrifice"
+          ],
+          "reason": "FILE 2 DIFFERENT ENDINGS TO UNLOCK. 1 OF 2 FILED.",
+          "available": false
+        },
+        "witnessFitted": false,
+        "witnessInspect": null,
+        "description": {
+          "x": 103.02000000000002,
+          "y": 20.569999999999997,
+          "w": 45.779999999999994,
+          "h": 12.980000000000002
+        },
+        "filmY": 35.05,
+        "footerY": 37.5,
+        "continueRegion": {
+          "x": 121.70000000000002,
+          "y": 37.65,
+          "w": 27,
+          "h": 1.5,
+          "id": "van:continue",
+          "kind": "continue",
+          "controlId": "van:continue",
+          "enabled": false
+        },
+        "close": {
+          "x": 2.3,
+          "y": 37.65,
+          "w": 12,
+          "h": 1.5,
+          "id": "van:close",
+          "kind": "close",
+          "controlId": "van:close",
+          "enabled": true
+        },
+        "regions": [
+          {
+            "x": 6.172755199939505,
+            "y": 2.1,
+            "w": 68.83321929469422,
+            "h": 24.319419575152835,
+            "id": "van:object:case",
+            "kind": "case",
+            "enabled": true
+          },
+          {
+            "x": 12.287454202993677,
+            "y": 18.52760037605945,
+            "w": 22.57544478522496,
+            "h": 9.531387449399851,
+            "id": "van:object:headphones",
+            "kind": "group",
+            "group": "headphones",
+            "item": "headphones-reference",
+            "enabled": true
+          },
+          {
+            "x": 27.779234676072893,
+            "y": 16.285474178389467,
+            "w": 9.83444413573174,
+            "h": 2.829699823114712,
+            "id": "van:object:microphone",
+            "kind": "group",
+            "group": "microphone",
+            "item": "microphone-reference",
+            "enabled": true
+          },
+          {
+            "x": 27.100698666856392,
+            "y": 12.540479138586665,
+            "w": 12.803095037265816,
+            "h": 3.0028669359249403,
+            "id": "van:object:recorder",
+            "kind": "group",
+            "group": "recorder",
+            "item": "field-recorder",
+            "enabled": true
+          },
+          {
+            "x": 41.160034295549096,
+            "y": 13.886138720829612,
+            "w": 11.537150186641874,
+            "h": 3.7725126366453257,
+            "id": "van:object:map",
+            "kind": "map",
+            "enabled": true
+          },
+          {
+            "x": 55.0108266391871,
+            "y": 14.623344539993422,
+            "w": 5.086265654147681,
+            "h": 3.7879492366694016,
+            "id": "van:object:radio",
+            "kind": "inspect",
+            "item": "radio",
+            "enabled": true,
+            "object": true
+          },
+          {
+            "x": 74.12148198886962,
+            "y": 17.830375852768896,
+            "w": 12.750429425202555,
+            "h": 4.965764514348397,
+            "id": "van:object:light",
+            "kind": "inspect",
+            "item": "light",
+            "enabled": true,
+            "object": true
+          },
+          {
+            "x": 2.1,
+            "y": 33.6,
+            "w": 43.073100000000004,
+            "h": 0.9,
+            "id": "van:case",
+            "kind": "case",
+            "enabled": true
+          },
+          {
+            "x": 52.386700000000005,
+            "y": 33.6,
+            "w": 31.052700000000005,
+            "h": 0.9,
+            "id": "van:map",
+            "kind": "map",
+            "enabled": true
+          },
+          {
+            "x": 71.24178500898057,
+            "y": 15.30279668856444,
+            "w": 14.84676577152888,
+            "h": 3.6227349219368303,
+            "id": "van:difficulty",
+            "kind": "difficulty",
+            "enabled": true
+          },
+          {
+            "id": "van:group:headphones",
+            "label": "HEADPHONES",
+            "color": "amber",
+            "x": 2.2,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:headphones",
+            "group": "headphones"
+          },
+          {
+            "id": "van:group:microphone",
+            "label": "MICROPHONE",
+            "color": "blue",
+            "x": 26.749999999999996,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:microphone",
+            "group": "microphone"
+          },
+          {
+            "id": "van:group:recorder",
+            "label": "RECORDER",
+            "color": "red",
+            "x": 51.3,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:recorder",
+            "group": "recorder"
+          },
+          {
+            "id": "van:group:faceplate",
+            "label": "FACEPLATE",
+            "color": "white",
+            "cosmetic": true,
+            "x": 75.85,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:faceplate",
+            "group": "faceplate"
+          },
+          {
+            "id": "van:group:buttons",
+            "label": "BUTTONS",
+            "color": "green",
+            "cosmetic": true,
+            "x": 100.39999999999999,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:buttons",
+            "group": "buttons"
+          },
+          {
+            "id": "van:group:vfd",
+            "label": "PHOSPHOR",
+            "color": "blue",
+            "cosmetic": true,
+            "x": 124.94999999999999,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:vfd",
+            "group": "vfd"
+          },
+          {
+            "id": "van:kit:faceplate:aluminum",
+            "label": "BRUSHED ALUMINUM",
+            "description": "Unpainted aluminum faceplate. Appearance only.",
+            "effects": {},
+            "availability": {
+              "visible": true,
+              "available": true,
+              "owned": true,
+              "count": 0,
+              "required": 0,
+              "endingIds": [],
+              "reason": ""
+            },
+            "x": 102.92000000000002,
+            "y": 13.6,
+            "w": 45.97999999999999,
+            "h": 1.42,
+            "kind": "kit",
+            "group": "faceplate",
+            "optionId": "aluminum",
+            "controlId": "van:kit:faceplate:aluminum",
+            "enabled": false,
+            "fittable": false,
+            "locked": false,
+            "displayLabel": "BRUSHED ALUMINUM"
+          },
+          {
+            "id": "van:kit:faceplate:black",
+            "label": "BLACK",
+            "description": "Black enamel faceplate. Appearance only.",
+            "effects": {},
+            "availability": {
+              "visible": true,
+              "available": true,
+              "owned": true,
+              "count": 0,
+              "required": 0,
+              "endingIds": [],
+              "reason": ""
+            },
+            "x": 102.92000000000002,
+            "y": 15.299999999999999,
+            "w": 45.97999999999999,
+            "h": 1.42,
+            "kind": "kit",
+            "group": "faceplate",
+            "optionId": "black",
+            "controlId": "van:kit:faceplate:black",
+            "enabled": false,
+            "fittable": false,
+            "locked": false,
+            "displayLabel": "BLACK"
+          },
+          {
+            "id": "van:kit:faceplate:olive",
+            "label": "OLIVE",
+            "description": "Olive enamel faceplate. Appearance only.",
+            "effects": {},
+            "availability": {
+              "visible": true,
+              "available": true,
+              "owned": true,
+              "count": 0,
+              "required": 0,
+              "endingIds": [],
+              "reason": ""
+            },
+            "x": 102.92000000000002,
+            "y": 17,
+            "w": 45.97999999999999,
+            "h": 1.42,
+            "kind": "kit",
+            "group": "faceplate",
+            "optionId": "olive",
+            "controlId": "van:kit:faceplate:olive",
+            "enabled": false,
+            "fittable": false,
+            "locked": false,
+            "displayLabel": "OLIVE"
+          },
+          {
+            "id": "van:kit:faceplate:witness",
+            "label": "WITNESS EDITION",
+            "description": "Witness Edition recorder faceplate. Appearance only; keys and phosphor remain your choice.",
+            "effects": {},
+            "availability": {
+              "visible": true,
+              "owned": false,
+              "count": 1,
+              "required": 2,
+              "endingIds": [
+                "sacrifice"
+              ],
+              "reason": "FILE 2 DIFFERENT ENDINGS TO UNLOCK. 1 OF 2 FILED.",
+              "available": false
+            },
+            "x": 102.92000000000002,
+            "y": 18.7,
+            "w": 45.97999999999999,
+            "h": 1.42,
+            "kind": "kit",
+            "group": "faceplate",
+            "optionId": "witness",
+            "controlId": "van:kit:faceplate:witness",
+            "enabled": true,
+            "fittable": false,
+            "locked": true,
+            "displayLabel": "WITNESS · 1/2"
+          },
+          {
+            "x": 94.77000000000001,
+            "y": 33.6,
+            "w": 6.2,
+            "h": 0.9,
+            "id": "van:inspect:map",
+            "kind": "inspect",
+            "item": "map",
+            "enabled": true
+          },
+          {
+            "x": 103.02000000000002,
+            "y": 33.83,
+            "w": 45.779999999999994,
+            "h": 0.75,
+            "id": "van:inspect:recorder",
+            "kind": "inspect",
+            "item": "recorder",
+            "enabled": false
+          },
+          {
+            "x": 40.9731,
+            "y": 32.550000000000004,
+            "w": 4.2,
+            "h": 0.8,
+            "id": "van:inspect:field-case",
+            "kind": "inspect",
+            "item": "field-case",
+            "enabled": true
+          },
+          {
+            "x": 2.3,
+            "y": 37.65,
+            "w": 12,
+            "h": 1.5,
+            "id": "van:close",
+            "kind": "close",
+            "controlId": "van:close",
+            "enabled": true
+          },
+          {
+            "x": 121.70000000000002,
+            "y": 37.65,
+            "w": 27,
+            "h": 1.5,
+            "id": "van:continue",
+            "kind": "continue",
+            "controlId": "van:continue",
+            "enabled": false
+          }
+        ],
+        "previewFinish": "aluminum",
+        "effects": {
+          "monitorGainScale": 1,
+          "surroundingGainScale": 1,
+          "recordingNoiseScale": 1,
+          "takeDurationScale": 1,
+          "spoilToleranceScale": 1,
+          "torchDrainScale": 1
+        },
+        "descriptionLines": [
+          "Take the field case from the shelf. Then fit each component before you go."
+        ],
+        "effectLines": [
+          "REFERENCE SIGNAL PATH / NO MODIFIERS"
+        ]
+      },
+      "stage": {
+        "ready": true,
+        "models": {
+          "case": "field-case",
+          "headphones": "headphones-reference",
+          "microphone": "microphone-reference",
+          "recorder": "field-recorder",
+          "map": "map",
+          "radio": "radio",
+          "light": "light"
+        },
+        "loading": [],
+        "failed": [],
+        "error": "",
+        "docked": {
+          "microphone": "microphone",
+          "recorder": "recorder",
+          "map": "survey-indicator",
+          "radio": "radio"
+        },
+        "materials": {
+          "recorder-faceplate": {
+            "color": "#bfc2b5",
+            "textured": false
+          },
+          "recorder-cover-glass": {
+            "color": "#547660",
+            "textured": false
+          },
+          "recorder-ink": {
+            "color": "#28312b",
+            "textured": false
+          },
+          "recorder-button-rec": {
+            "color": "#bc6b57",
+            "textured": false
+          },
+          "recorder-button-stop": {
+            "color": "#bcbda9",
+            "textured": false
+          },
+          "recorder-button-takes": {
+            "color": "#c9a151",
+            "textured": false
+          }
+        },
+        "readoutTexture": true,
+        "detailModel": "headphones-reference",
+        "lifts": {
+          "case": 0,
+          "headphones": 0.06589109295787011,
+          "microphone": 0,
+          "recorder": 0.34622461080936956,
+          "map": 0,
+          "radio": 0,
+          "light": 0
+        },
+        "rendererCount": 1,
+        "renderCount": 13,
+        "suspended": false,
+        "disposed": false,
+        "selected": "recorder",
+        "targets": {
+          "case": {
+            "x": 6.172755199939505,
+            "y": 2.1,
+            "w": 68.83321929469422,
+            "h": 24.319419575152835
+          },
+          "headphones": {
+            "x": 12.287454202993677,
+            "y": 18.52760037605945,
+            "w": 22.57544478522496,
+            "h": 9.531387449399851
+          },
+          "microphone": {
+            "x": 27.779234676072893,
+            "y": 16.285474178389467,
+            "w": 9.83444413573174,
+            "h": 2.829699823114712
+          },
+          "recorder": {
+            "x": 27.100698666856392,
+            "y": 12.540479138586665,
+            "w": 12.803095037265816,
+            "h": 3.0028669359249403
+          },
+          "map": {
+            "x": 41.160034295549096,
+            "y": 13.886138720829612,
+            "w": 11.537150186641874,
+            "h": 3.7725126366453257
+          },
+          "radio": {
+            "x": 55.0108266391871,
+            "y": 14.623344539993422,
+            "w": 5.086265654147681,
+            "h": 3.7879492366694016
+          },
+          "light": {
+            "x": 74.12148198886962,
+            "y": 17.830375852768896,
+            "w": 12.750429425202555,
+            "h": 4.965764514348397
+          },
+          "difficulty": {
+            "x": 71.24178500898057,
+            "y": 15.30279668856444,
+            "w": 14.84676577152888,
+            "h": 3.6227349219368303
+          }
+        }
+      },
+      "pickedObject": null,
+      "hitRegions": [
+        {
+          "x": 6.172755199939505,
+          "y": 2.1,
+          "w": 68.83321929469422,
+          "h": 24.319419575152835,
+          "id": "van:object:case",
+          "kind": "case",
+          "enabled": true
+        },
+        {
+          "x": 12.287454202993677,
+          "y": 18.52760037605945,
+          "w": 22.57544478522496,
+          "h": 9.531387449399851,
+          "id": "van:object:headphones",
+          "kind": "group",
+          "group": "headphones",
+          "item": "headphones-reference",
+          "enabled": true
+        },
+        {
+          "x": 27.779234676072893,
+          "y": 16.285474178389467,
+          "w": 9.83444413573174,
+          "h": 2.829699823114712,
+          "id": "van:object:microphone",
+          "kind": "group",
+          "group": "microphone",
+          "item": "microphone-reference",
+          "enabled": true
+        },
+        {
+          "x": 27.100698666856392,
+          "y": 12.540479138586665,
+          "w": 12.803095037265816,
+          "h": 3.0028669359249403,
+          "id": "van:object:recorder",
+          "kind": "group",
+          "group": "recorder",
+          "item": "field-recorder",
+          "enabled": true
+        },
+        {
+          "x": 41.160034295549096,
+          "y": 13.886138720829612,
+          "w": 11.537150186641874,
+          "h": 3.7725126366453257,
+          "id": "van:object:map",
+          "kind": "map",
+          "enabled": true
+        },
+        {
+          "x": 55.0108266391871,
+          "y": 14.623344539993422,
+          "w": 5.086265654147681,
+          "h": 3.7879492366694016,
+          "id": "van:object:radio",
+          "kind": "inspect",
+          "item": "radio",
+          "enabled": true,
+          "object": true
+        },
+        {
+          "x": 74.12148198886962,
+          "y": 17.830375852768896,
+          "w": 12.750429425202555,
+          "h": 4.965764514348397,
+          "id": "van:object:light",
+          "kind": "inspect",
+          "item": "light",
+          "enabled": true,
+          "object": true
+        },
+        {
+          "x": 2.1,
+          "y": 33.6,
+          "w": 43.073100000000004,
+          "h": 0.9,
+          "id": "van:case",
+          "kind": "case",
+          "enabled": true
+        },
+        {
+          "x": 52.386700000000005,
+          "y": 33.6,
+          "w": 31.052700000000005,
+          "h": 0.9,
+          "id": "van:map",
+          "kind": "map",
+          "enabled": true
+        },
+        {
+          "x": 71.24178500898057,
+          "y": 15.30279668856444,
+          "w": 14.84676577152888,
+          "h": 3.6227349219368303,
+          "id": "van:difficulty",
+          "kind": "difficulty",
+          "enabled": true
+        },
+        {
+          "id": "van:group:headphones",
+          "label": "HEADPHONES",
+          "color": "amber",
+          "x": 2.2,
+          "y": 35.3,
+          "w": 23.849999999999998,
+          "h": 1.45,
+          "kind": "group",
+          "controlId": "van:group:headphones",
+          "group": "headphones"
+        },
+        {
+          "id": "van:group:microphone",
+          "label": "MICROPHONE",
+          "color": "blue",
+          "x": 26.749999999999996,
+          "y": 35.3,
+          "w": 23.849999999999998,
+          "h": 1.45,
+          "kind": "group",
+          "controlId": "van:group:microphone",
+          "group": "microphone"
+        },
+        {
+          "id": "van:group:recorder",
+          "label": "RECORDER",
+          "color": "red",
+          "x": 51.3,
+          "y": 35.3,
+          "w": 23.849999999999998,
+          "h": 1.45,
+          "kind": "group",
+          "controlId": "van:group:recorder",
+          "group": "recorder"
+        },
+        {
+          "id": "van:group:faceplate",
+          "label": "FACEPLATE",
+          "color": "white",
+          "cosmetic": true,
+          "x": 75.85,
+          "y": 35.3,
+          "w": 23.849999999999998,
+          "h": 1.45,
+          "kind": "group",
+          "controlId": "van:group:faceplate",
+          "group": "faceplate"
+        },
+        {
+          "id": "van:group:buttons",
+          "label": "BUTTONS",
+          "color": "green",
+          "cosmetic": true,
+          "x": 100.39999999999999,
+          "y": 35.3,
+          "w": 23.849999999999998,
+          "h": 1.45,
+          "kind": "group",
+          "controlId": "van:group:buttons",
+          "group": "buttons"
+        },
+        {
+          "id": "van:group:vfd",
+          "label": "PHOSPHOR",
+          "color": "blue",
+          "cosmetic": true,
+          "x": 124.94999999999999,
+          "y": 35.3,
+          "w": 23.849999999999998,
+          "h": 1.45,
+          "kind": "group",
+          "controlId": "van:group:vfd",
+          "group": "vfd"
+        },
+        {
+          "id": "van:kit:faceplate:aluminum",
+          "label": "BRUSHED ALUMINUM",
+          "description": "Unpainted aluminum faceplate. Appearance only.",
+          "effects": {},
+          "availability": {
+            "visible": true,
+            "available": true,
+            "owned": true,
+            "count": 0,
+            "required": 0,
+            "endingIds": [],
+            "reason": ""
+          },
+          "x": 102.92000000000002,
+          "y": 13.6,
+          "w": 45.97999999999999,
+          "h": 1.42,
+          "kind": "kit",
+          "group": "faceplate",
+          "optionId": "aluminum",
+          "controlId": "van:kit:faceplate:aluminum",
+          "enabled": false,
+          "fittable": false,
+          "locked": false,
+          "displayLabel": "BRUSHED ALUMINUM"
+        },
+        {
+          "id": "van:kit:faceplate:black",
+          "label": "BLACK",
+          "description": "Black enamel faceplate. Appearance only.",
+          "effects": {},
+          "availability": {
+            "visible": true,
+            "available": true,
+            "owned": true,
+            "count": 0,
+            "required": 0,
+            "endingIds": [],
+            "reason": ""
+          },
+          "x": 102.92000000000002,
+          "y": 15.299999999999999,
+          "w": 45.97999999999999,
+          "h": 1.42,
+          "kind": "kit",
+          "group": "faceplate",
+          "optionId": "black",
+          "controlId": "van:kit:faceplate:black",
+          "enabled": false,
+          "fittable": false,
+          "locked": false,
+          "displayLabel": "BLACK"
+        },
+        {
+          "id": "van:kit:faceplate:olive",
+          "label": "OLIVE",
+          "description": "Olive enamel faceplate. Appearance only.",
+          "effects": {},
+          "availability": {
+            "visible": true,
+            "available": true,
+            "owned": true,
+            "count": 0,
+            "required": 0,
+            "endingIds": [],
+            "reason": ""
+          },
+          "x": 102.92000000000002,
+          "y": 17,
+          "w": 45.97999999999999,
+          "h": 1.42,
+          "kind": "kit",
+          "group": "faceplate",
+          "optionId": "olive",
+          "controlId": "van:kit:faceplate:olive",
+          "enabled": false,
+          "fittable": false,
+          "locked": false,
+          "displayLabel": "OLIVE"
+        },
+        {
+          "id": "van:kit:faceplate:witness",
+          "label": "WITNESS EDITION",
+          "description": "Witness Edition recorder faceplate. Appearance only; keys and phosphor remain your choice.",
+          "effects": {},
+          "availability": {
+            "visible": true,
+            "owned": false,
+            "count": 1,
+            "required": 2,
+            "endingIds": [
+              "sacrifice"
+            ],
+            "reason": "FILE 2 DIFFERENT ENDINGS TO UNLOCK. 1 OF 2 FILED.",
+            "available": false
+          },
+          "x": 102.92000000000002,
+          "y": 18.7,
+          "w": 45.97999999999999,
+          "h": 1.42,
+          "kind": "kit",
+          "group": "faceplate",
+          "optionId": "witness",
+          "controlId": "van:kit:faceplate:witness",
+          "enabled": true,
+          "fittable": false,
+          "locked": true,
+          "displayLabel": "WITNESS · 1/2"
+        },
+        {
+          "x": 94.77000000000001,
+          "y": 33.6,
+          "w": 6.2,
+          "h": 0.9,
+          "id": "van:inspect:map",
+          "kind": "inspect",
+          "item": "map",
+          "enabled": true
+        },
+        {
+          "x": 103.02000000000002,
+          "y": 33.83,
+          "w": 45.779999999999994,
+          "h": 0.75,
+          "id": "van:inspect:recorder",
+          "kind": "inspect",
+          "item": "recorder",
+          "enabled": false
+        },
+        {
+          "x": 40.9731,
+          "y": 32.550000000000004,
+          "w": 4.2,
+          "h": 0.8,
+          "id": "van:inspect:field-case",
+          "kind": "inspect",
+          "item": "field-case",
+          "enabled": true
+        },
+        {
+          "x": 2.3,
+          "y": 37.65,
+          "w": 12,
+          "h": 1.5,
+          "id": "van:close",
+          "kind": "close",
+          "controlId": "van:close",
+          "enabled": true
+        },
+        {
+          "x": 121.70000000000002,
+          "y": 37.65,
+          "w": 27,
+          "h": 1.5,
+          "id": "van:continue",
+          "kind": "continue",
+          "controlId": "van:continue",
+          "enabled": false
+        }
+      ]
+    },
+    "lockedInspection": {
+      "mode": "plate",
+      "yaw": -0.19,
+      "pitch": 0.12,
+      "ready": true,
+      "failed": false,
+      "error": "",
+      "disposed": false,
+      "contexts": 1,
+      "renderCount": 1,
+      "testing": false,
+      "owned": false,
+      "canFit": false,
+      "count": 1,
+      "required": 2,
+      "fittingNotice": "",
+      "layout": {
+        "rect": {
+          "x": 2,
+          "y": 2,
+          "w": 147,
+          "h": 36
+        },
+        "portrait": {
+          "x": 3,
+          "y": 5,
+          "w": 100,
+          "h": 29
+        },
+        "detail": {
+          "x": 105,
+          "y": 5,
+          "w": 42,
+          "h": 29
+        },
+        "buttons": [
+          {
+            "id": "close",
+            "label": "BACK",
+            "key": "ESC",
+            "x": 3,
+            "y": 35,
+            "w": 28.439999999999998,
+            "h": 2
+          },
+          {
+            "id": "reset",
+            "label": "RESET",
+            "key": "R",
+            "x": 32.14,
+            "y": 35,
+            "w": 28.439999999999998,
+            "h": 2
+          },
+          {
+            "id": "turn",
+            "label": "TURN OVER",
+            "key": "T",
+            "x": 61.279999999999994,
+            "y": 35,
+            "w": 28.439999999999998,
+            "h": 2
+          },
+          {
+            "id": "model",
+            "label": "PLATE/RIG",
+            "key": "V",
+            "x": 90.41999999999999,
+            "y": 35,
+            "w": 28.439999999999998,
+            "h": 2
+          },
+          {
+            "id": "test",
+            "label": "TEST KEYS",
+            "key": "K",
+            "x": 119.55999999999999,
+            "y": 35,
+            "w": 28.439999999999998,
+            "h": 2
+          }
+        ],
+        "wide": true
+      },
+      "focused": "close",
+      "closed": false
+    },
+    "owned": {
+      "state": {
+        "bagTaken": false,
+        "mapTaken": false,
+        "fieldKit": {
+          "schema": 1,
+          "headphones": "reference",
+          "microphone": "reference",
+          "recorder": "reference",
+          "cosmetics": {
+            "faceplate": "aluminum",
+            "buttons": "classic",
+            "vfd": "faithful"
+          }
+        },
+        "witness": {
+          "visible": true,
+          "owned": true,
+          "count": 2,
+          "required": 2,
+          "endingIds": [
+            "sacrifice",
+            "helped"
+          ],
+          "reason": "WITNESS EDITION UNLOCKED. FIT AT THE VAN."
+        },
+        "cosmeticMeta": {
+          "endingsSeen": [
+            "sacrifice",
+            "helped"
+          ],
+          "cosmetics": {
+            "unlocked": [
+              "witness"
+            ],
+            "selected": null
+          }
+        },
+        "reduceMotion": false,
+        "difficultyConfirmed": false,
+        "difficultyLabel": "CHOOSE SHIFT"
+      },
+      "selectedGroup": "headphones",
+      "focusId": "van:case",
+      "notice": "",
+      "continuationPending": false,
+      "ready": false,
+      "layout": {
+        "size": {
+          "cols": 151,
+          "rows": 40
+        },
+        "outer": {
+          "x": 1.3,
+          "y": 0.55,
+          "w": 148.4,
+          "h": 38.9
+        },
+        "stage": {
+          "x": 1.3,
+          "y": 2.1,
+          "w": 100.17000000000002,
+          "h": 32.55
+        },
+        "compact": false,
+        "caseRect": {
+          "x": 2.1,
+          "y": 33.6,
+          "w": 43.073100000000004,
+          "h": 0.9
+        },
+        "mapRect": {
+          "x": 52.386700000000005,
+          "y": 33.6,
+          "w": 31.052700000000005,
+          "h": 0.9
+        },
+        "difficulty": {
+          "x": 71.24178500898057,
+          "y": 15.30279668856444,
+          "w": 14.84676577152888,
+          "h": 3.6227349219368303
+        },
+        "fittings": {
+          "x": 102.12000000000002,
+          "y": 2.1,
+          "w": 47.57999999999999,
+          "h": 32.55
+        },
+        "preview": {
+          "x": 102.77000000000002,
+          "y": 3.6,
+          "w": 46.279999999999994,
+          "h": 9.2
+        },
+        "recorder": {
+          "x": 106.12418657316096,
+          "y": 3.6,
+          "w": 39.57162685367813,
+          "h": 9.2
+        },
+        "showRecorder": false,
+        "selectedObject": "headphones",
+        "groups": [
+          {
+            "id": "van:group:headphones",
+            "label": "HEADPHONES",
+            "color": "amber",
+            "x": 2.2,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:headphones",
+            "group": "headphones"
+          },
+          {
+            "id": "van:group:microphone",
+            "label": "MICROPHONE",
+            "color": "blue",
+            "x": 26.749999999999996,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:microphone",
+            "group": "microphone"
+          },
+          {
+            "id": "van:group:recorder",
+            "label": "RECORDER",
+            "color": "red",
+            "x": 51.3,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:recorder",
+            "group": "recorder"
+          },
+          {
+            "id": "van:group:faceplate",
+            "label": "FACEPLATE",
+            "color": "white",
+            "cosmetic": true,
+            "x": 75.85,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:faceplate",
+            "group": "faceplate"
+          },
+          {
+            "id": "van:group:buttons",
+            "label": "BUTTONS",
+            "color": "green",
+            "cosmetic": true,
+            "x": 100.39999999999999,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:buttons",
+            "group": "buttons"
+          },
+          {
+            "id": "van:group:vfd",
+            "label": "PHOSPHOR",
+            "color": "blue",
+            "cosmetic": true,
+            "x": 124.94999999999999,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:vfd",
+            "group": "vfd"
+          }
+        ],
+        "variants": [
+          {
+            "id": "van:kit:headphones:reference",
+            "label": "REFERENCE",
+            "description": "Balanced monitor and surrounding sound. No modifiers.",
+            "effects": {},
+            "availability": {
+              "visible": true,
+              "available": true,
+              "owned": true,
+              "count": 0,
+              "required": 0,
+              "endingIds": [],
+              "reason": ""
+            },
+            "x": 102.92000000000002,
+            "y": 13.6,
+            "w": 45.97999999999999,
+            "h": 1.42,
+            "kind": "kit",
+            "group": "headphones",
+            "optionId": "reference",
+            "controlId": "van:kit:headphones:reference",
+            "enabled": false,
+            "fittable": false,
+            "locked": false,
+            "displayLabel": "REFERENCE"
+          },
+          {
+            "id": "van:kit:headphones:closed",
+            "label": "CLOSED BACK",
+            "description": "Monitor level +15%; surrounding sound −10% while monitoring.",
+            "effects": {
+              "monitorGainScale": 1.15,
+              "surroundingGainScale": 0.9
+            },
+            "availability": {
+              "visible": true,
+              "available": true,
+              "owned": true,
+              "count": 0,
+              "required": 0,
+              "endingIds": [],
+              "reason": ""
+            },
+            "x": 102.92000000000002,
+            "y": 15.299999999999999,
+            "w": 45.97999999999999,
+            "h": 1.42,
+            "kind": "kit",
+            "group": "headphones",
+            "optionId": "closed",
+            "controlId": "van:kit:headphones:closed",
+            "enabled": false,
+            "fittable": false,
+            "locked": false,
+            "displayLabel": "CLOSED BACK"
+          },
+          {
+            "id": "van:kit:headphones:open",
+            "label": "OPEN BACK",
+            "description": "Surrounding sound +10%; monitor level −15% while monitoring.",
+            "effects": {
+              "monitorGainScale": 0.85,
+              "surroundingGainScale": 1.1
+            },
+            "availability": {
+              "visible": true,
+              "available": true,
+              "owned": true,
+              "count": 0,
+              "required": 0,
+              "endingIds": [],
+              "reason": ""
+            },
+            "x": 102.92000000000002,
+            "y": 17,
+            "w": 45.97999999999999,
+            "h": 1.42,
+            "kind": "kit",
+            "group": "headphones",
+            "optionId": "open",
+            "controlId": "van:kit:headphones:open",
+            "enabled": false,
+            "fittable": false,
+            "locked": false,
+            "displayLabel": "OPEN BACK"
+          }
+        ],
+        "variantColumns": 1,
+        "witness": {
+          "visible": true,
+          "owned": true,
+          "count": 2,
+          "required": 2,
+          "endingIds": [
+            "sacrifice",
+            "helped"
+          ],
+          "reason": "WITNESS EDITION UNLOCKED. FIT AT THE VAN.",
+          "available": true
+        },
+        "witnessFitted": false,
+        "witnessInspect": {
+          "x": 83.43442052475393,
+          "y": 24.93624569864359,
+          "w": 17.522813816083357,
+          "h": 3.104261230354499,
+          "id": "van:inspect:witness",
+          "kind": "inspect-witness",
+          "item": "witness",
+          "enabled": true,
+          "object": true
+        },
+        "description": {
+          "x": 103.02000000000002,
+          "y": 18.87,
+          "w": 45.779999999999994,
+          "h": 14.679999999999998
+        },
+        "filmY": 35.05,
+        "footerY": 37.5,
+        "continueRegion": {
+          "x": 121.70000000000002,
+          "y": 37.65,
+          "w": 27,
+          "h": 1.5,
+          "id": "van:continue",
+          "kind": "continue",
+          "controlId": "van:continue",
+          "enabled": false
+        },
+        "close": {
+          "x": 2.3,
+          "y": 37.65,
+          "w": 12,
+          "h": 1.5,
+          "id": "van:close",
+          "kind": "close",
+          "controlId": "van:close",
+          "enabled": true
+        },
+        "regions": [
+          {
+            "x": 6.172755199939505,
+            "y": 2.1,
+            "w": 68.83321929469422,
+            "h": 24.319419575152835,
+            "id": "van:object:case",
+            "kind": "case",
+            "enabled": true
+          },
+          {
+            "x": 11.65443202182827,
+            "y": 17.68651113951631,
+            "w": 22.987318154945186,
+            "h": 9.608709737985539,
+            "id": "van:object:headphones",
+            "kind": "group",
+            "group": "headphones",
+            "item": "headphones-reference",
+            "enabled": true
+          },
+          {
+            "x": 27.779234676072893,
+            "y": 16.285474178389467,
+            "w": 9.83444413573174,
+            "h": 2.829699823114712,
+            "id": "van:object:microphone",
+            "kind": "group",
+            "group": "microphone",
+            "item": "microphone-reference",
+            "enabled": true
+          },
+          {
+            "x": 27.453928489802532,
+            "y": 13.448595611062713,
+            "w": 12.60688905359044,
+            "h": 2.994053080119807,
+            "id": "van:object:recorder",
+            "kind": "group",
+            "group": "recorder",
+            "item": "field-recorder",
+            "enabled": true
+          },
+          {
+            "x": 41.160034295549096,
+            "y": 13.886138720829612,
+            "w": 11.537150186641874,
+            "h": 3.7725126366453257,
+            "id": "van:object:map",
+            "kind": "map",
+            "enabled": true
+          },
+          {
+            "x": 55.0108266391871,
+            "y": 14.623344539993422,
+            "w": 5.086265654147681,
+            "h": 3.7879492366694016,
+            "id": "van:object:radio",
+            "kind": "inspect",
+            "item": "radio",
+            "enabled": true,
+            "object": true
+          },
+          {
+            "x": 74.12148198886962,
+            "y": 17.830375852768896,
+            "w": 12.750429425202555,
+            "h": 4.965764514348397,
+            "id": "van:object:light",
+            "kind": "inspect",
+            "item": "light",
+            "enabled": true,
+            "object": true
+          },
+          {
+            "x": 2.1,
+            "y": 33.6,
+            "w": 43.073100000000004,
+            "h": 0.9,
+            "id": "van:case",
+            "kind": "case",
+            "enabled": true
+          },
+          {
+            "x": 52.386700000000005,
+            "y": 33.6,
+            "w": 31.052700000000005,
+            "h": 0.9,
+            "id": "van:map",
+            "kind": "map",
+            "enabled": true
+          },
+          {
+            "x": 71.24178500898057,
+            "y": 15.30279668856444,
+            "w": 14.84676577152888,
+            "h": 3.6227349219368303,
+            "id": "van:difficulty",
+            "kind": "difficulty",
+            "enabled": true
+          },
+          {
+            "id": "van:group:headphones",
+            "label": "HEADPHONES",
+            "color": "amber",
+            "x": 2.2,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:headphones",
+            "group": "headphones"
+          },
+          {
+            "id": "van:group:microphone",
+            "label": "MICROPHONE",
+            "color": "blue",
+            "x": 26.749999999999996,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:microphone",
+            "group": "microphone"
+          },
+          {
+            "id": "van:group:recorder",
+            "label": "RECORDER",
+            "color": "red",
+            "x": 51.3,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:recorder",
+            "group": "recorder"
+          },
+          {
+            "id": "van:group:faceplate",
+            "label": "FACEPLATE",
+            "color": "white",
+            "cosmetic": true,
+            "x": 75.85,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:faceplate",
+            "group": "faceplate"
+          },
+          {
+            "id": "van:group:buttons",
+            "label": "BUTTONS",
+            "color": "green",
+            "cosmetic": true,
+            "x": 100.39999999999999,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:buttons",
+            "group": "buttons"
+          },
+          {
+            "id": "van:group:vfd",
+            "label": "PHOSPHOR",
+            "color": "blue",
+            "cosmetic": true,
+            "x": 124.94999999999999,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:vfd",
+            "group": "vfd"
+          },
+          {
+            "id": "van:kit:headphones:reference",
+            "label": "REFERENCE",
+            "description": "Balanced monitor and surrounding sound. No modifiers.",
+            "effects": {},
+            "availability": {
+              "visible": true,
+              "available": true,
+              "owned": true,
+              "count": 0,
+              "required": 0,
+              "endingIds": [],
+              "reason": ""
+            },
+            "x": 102.92000000000002,
+            "y": 13.6,
+            "w": 45.97999999999999,
+            "h": 1.42,
+            "kind": "kit",
+            "group": "headphones",
+            "optionId": "reference",
+            "controlId": "van:kit:headphones:reference",
+            "enabled": false,
+            "fittable": false,
+            "locked": false,
+            "displayLabel": "REFERENCE"
+          },
+          {
+            "id": "van:kit:headphones:closed",
+            "label": "CLOSED BACK",
+            "description": "Monitor level +15%; surrounding sound −10% while monitoring.",
+            "effects": {
+              "monitorGainScale": 1.15,
+              "surroundingGainScale": 0.9
+            },
+            "availability": {
+              "visible": true,
+              "available": true,
+              "owned": true,
+              "count": 0,
+              "required": 0,
+              "endingIds": [],
+              "reason": ""
+            },
+            "x": 102.92000000000002,
+            "y": 15.299999999999999,
+            "w": 45.97999999999999,
+            "h": 1.42,
+            "kind": "kit",
+            "group": "headphones",
+            "optionId": "closed",
+            "controlId": "van:kit:headphones:closed",
+            "enabled": false,
+            "fittable": false,
+            "locked": false,
+            "displayLabel": "CLOSED BACK"
+          },
+          {
+            "id": "van:kit:headphones:open",
+            "label": "OPEN BACK",
+            "description": "Surrounding sound +10%; monitor level −15% while monitoring.",
+            "effects": {
+              "monitorGainScale": 0.85,
+              "surroundingGainScale": 1.1
+            },
+            "availability": {
+              "visible": true,
+              "available": true,
+              "owned": true,
+              "count": 0,
+              "required": 0,
+              "endingIds": [],
+              "reason": ""
+            },
+            "x": 102.92000000000002,
+            "y": 17,
+            "w": 45.97999999999999,
+            "h": 1.42,
+            "kind": "kit",
+            "group": "headphones",
+            "optionId": "open",
+            "controlId": "van:kit:headphones:open",
+            "enabled": false,
+            "fittable": false,
+            "locked": false,
+            "displayLabel": "OPEN BACK"
+          },
+          {
+            "x": 94.77000000000001,
+            "y": 33.6,
+            "w": 6.2,
+            "h": 0.9,
+            "id": "van:inspect:map",
+            "kind": "inspect",
+            "item": "map",
+            "enabled": true
+          },
+          {
+            "x": 2.1,
+            "y": 32.550000000000004,
+            "w": 30.051000000000002,
+            "h": 0.8,
+            "id": "van:inspect:recorder",
+            "kind": "inspect",
+            "item": "recorder",
+            "enabled": false
+          },
+          {
+            "x": 103.02000000000002,
+            "y": 33.83,
+            "w": 45.779999999999994,
+            "h": 0.75,
+            "id": "van:inspect:headphones-reference",
+            "kind": "inspect",
+            "item": "headphones-reference",
+            "enabled": true
+          },
+          {
+            "x": 40.9731,
+            "y": 32.550000000000004,
+            "w": 4.2,
+            "h": 0.8,
+            "id": "van:inspect:field-case",
+            "kind": "inspect",
+            "item": "field-case",
+            "enabled": true
+          },
+          {
+            "x": 83.43442052475393,
+            "y": 24.93624569864359,
+            "w": 17.522813816083357,
+            "h": 3.104261230354499,
+            "id": "van:inspect:witness",
+            "kind": "inspect-witness",
+            "item": "witness",
+            "enabled": true,
+            "object": true
+          },
+          {
+            "x": 2.3,
+            "y": 37.65,
+            "w": 12,
+            "h": 1.5,
+            "id": "van:close",
+            "kind": "close",
+            "controlId": "van:close",
+            "enabled": true
+          },
+          {
+            "x": 121.70000000000002,
+            "y": 37.65,
+            "w": 27,
+            "h": 1.5,
+            "id": "van:continue",
+            "kind": "continue",
+            "controlId": "van:continue",
+            "enabled": false
+          }
+        ],
+        "previewFinish": "aluminum",
+        "effects": {
+          "monitorGainScale": 1,
+          "surroundingGainScale": 1,
+          "recordingNoiseScale": 1,
+          "takeDurationScale": 1,
+          "spoilToleranceScale": 1,
+          "torchDrainScale": 1
+        },
+        "descriptionLines": [
+          "Take the field case from the shelf. Then fit each component before you go."
+        ],
+        "effectLines": [
+          "REFERENCE SIGNAL PATH / NO MODIFIERS"
+        ]
+      },
+      "stage": {
+        "ready": true,
+        "models": {
+          "case": "field-case",
+          "headphones": "headphones-reference",
+          "microphone": "microphone-reference",
+          "recorder": "field-recorder",
+          "map": "map",
+          "radio": "radio",
+          "witness": "witness-faceplate",
+          "light": "light"
+        },
+        "loading": [],
+        "failed": [],
+        "error": "",
+        "docked": {
+          "microphone": "microphone",
+          "recorder": "recorder",
+          "map": "survey-indicator",
+          "radio": "radio"
+        },
+        "materials": {
+          "recorder-faceplate": {
+            "color": "#bfc2b5",
+            "textured": false
+          },
+          "recorder-cover-glass": {
+            "color": "#547660",
+            "textured": false
+          },
+          "recorder-ink": {
+            "color": "#28312b",
+            "textured": false
+          },
+          "recorder-button-rec": {
+            "color": "#bc6b57",
+            "textured": false
+          },
+          "recorder-button-stop": {
+            "color": "#bcbda9",
+            "textured": false
+          },
+          "recorder-button-takes": {
+            "color": "#c9a151",
+            "textured": false
+          }
+        },
+        "readoutTexture": true,
+        "detailModel": "headphones-reference",
+        "lifts": {
+          "case": 0,
+          "headphones": 0.3751150532164204,
+          "microphone": 0,
+          "recorder": 0,
+          "map": 0,
+          "radio": 0,
+          "witness": 0,
+          "light": 0
+        },
+        "rendererCount": 1,
+        "renderCount": 8,
+        "suspended": false,
+        "disposed": false,
+        "selected": "headphones",
+        "targets": {
+          "case": {
+            "x": 6.172755199939505,
+            "y": 2.1,
+            "w": 68.83321929469422,
+            "h": 24.319419575152835
+          },
+          "headphones": {
+            "x": 11.65443202182827,
+            "y": 17.68651113951631,
+            "w": 22.987318154945186,
+            "h": 9.608709737985539
+          },
+          "microphone": {
+            "x": 27.779234676072893,
+            "y": 16.285474178389467,
+            "w": 9.83444413573174,
+            "h": 2.829699823114712
+          },
+          "recorder": {
+            "x": 27.453928489802532,
+            "y": 13.448595611062713,
+            "w": 12.60688905359044,
+            "h": 2.994053080119807
+          },
+          "map": {
+            "x": 41.160034295549096,
+            "y": 13.886138720829612,
+            "w": 11.537150186641874,
+            "h": 3.7725126366453257
+          },
+          "radio": {
+            "x": 55.0108266391871,
+            "y": 14.623344539993422,
+            "w": 5.086265654147681,
+            "h": 3.7879492366694016
+          },
+          "witness": {
+            "x": 83.43442052475393,
+            "y": 24.93624569864359,
+            "w": 17.522813816083357,
+            "h": 3.104261230354499
+          },
+          "light": {
+            "x": 74.12148198886962,
+            "y": 17.830375852768896,
+            "w": 12.750429425202555,
+            "h": 4.965764514348397
+          },
+          "difficulty": {
+            "x": 71.24178500898057,
+            "y": 15.30279668856444,
+            "w": 14.84676577152888,
+            "h": 3.6227349219368303
+          }
+        }
+      },
+      "pickedObject": null,
+      "hitRegions": [
+        {
+          "x": 6.172755199939505,
+          "y": 2.1,
+          "w": 68.83321929469422,
+          "h": 24.319419575152835,
+          "id": "van:object:case",
+          "kind": "case",
+          "enabled": true
+        },
+        {
+          "x": 11.65443202182827,
+          "y": 17.68651113951631,
+          "w": 22.987318154945186,
+          "h": 9.608709737985539,
+          "id": "van:object:headphones",
+          "kind": "group",
+          "group": "headphones",
+          "item": "headphones-reference",
+          "enabled": true
+        },
+        {
+          "x": 27.779234676072893,
+          "y": 16.285474178389467,
+          "w": 9.83444413573174,
+          "h": 2.829699823114712,
+          "id": "van:object:microphone",
+          "kind": "group",
+          "group": "microphone",
+          "item": "microphone-reference",
+          "enabled": true
+        },
+        {
+          "x": 27.453928489802532,
+          "y": 13.448595611062713,
+          "w": 12.60688905359044,
+          "h": 2.994053080119807,
+          "id": "van:object:recorder",
+          "kind": "group",
+          "group": "recorder",
+          "item": "field-recorder",
+          "enabled": true
+        },
+        {
+          "x": 41.160034295549096,
+          "y": 13.886138720829612,
+          "w": 11.537150186641874,
+          "h": 3.7725126366453257,
+          "id": "van:object:map",
+          "kind": "map",
+          "enabled": true
+        },
+        {
+          "x": 55.0108266391871,
+          "y": 14.623344539993422,
+          "w": 5.086265654147681,
+          "h": 3.7879492366694016,
+          "id": "van:object:radio",
+          "kind": "inspect",
+          "item": "radio",
+          "enabled": true,
+          "object": true
+        },
+        {
+          "x": 74.12148198886962,
+          "y": 17.830375852768896,
+          "w": 12.750429425202555,
+          "h": 4.965764514348397,
+          "id": "van:object:light",
+          "kind": "inspect",
+          "item": "light",
+          "enabled": true,
+          "object": true
+        },
+        {
+          "x": 2.1,
+          "y": 33.6,
+          "w": 43.073100000000004,
+          "h": 0.9,
+          "id": "van:case",
+          "kind": "case",
+          "enabled": true
+        },
+        {
+          "x": 52.386700000000005,
+          "y": 33.6,
+          "w": 31.052700000000005,
+          "h": 0.9,
+          "id": "van:map",
+          "kind": "map",
+          "enabled": true
+        },
+        {
+          "x": 71.24178500898057,
+          "y": 15.30279668856444,
+          "w": 14.84676577152888,
+          "h": 3.6227349219368303,
+          "id": "van:difficulty",
+          "kind": "difficulty",
+          "enabled": true
+        },
+        {
+          "id": "van:group:headphones",
+          "label": "HEADPHONES",
+          "color": "amber",
+          "x": 2.2,
+          "y": 35.3,
+          "w": 23.849999999999998,
+          "h": 1.45,
+          "kind": "group",
+          "controlId": "van:group:headphones",
+          "group": "headphones"
+        },
+        {
+          "id": "van:group:microphone",
+          "label": "MICROPHONE",
+          "color": "blue",
+          "x": 26.749999999999996,
+          "y": 35.3,
+          "w": 23.849999999999998,
+          "h": 1.45,
+          "kind": "group",
+          "controlId": "van:group:microphone",
+          "group": "microphone"
+        },
+        {
+          "id": "van:group:recorder",
+          "label": "RECORDER",
+          "color": "red",
+          "x": 51.3,
+          "y": 35.3,
+          "w": 23.849999999999998,
+          "h": 1.45,
+          "kind": "group",
+          "controlId": "van:group:recorder",
+          "group": "recorder"
+        },
+        {
+          "id": "van:group:faceplate",
+          "label": "FACEPLATE",
+          "color": "white",
+          "cosmetic": true,
+          "x": 75.85,
+          "y": 35.3,
+          "w": 23.849999999999998,
+          "h": 1.45,
+          "kind": "group",
+          "controlId": "van:group:faceplate",
+          "group": "faceplate"
+        },
+        {
+          "id": "van:group:buttons",
+          "label": "BUTTONS",
+          "color": "green",
+          "cosmetic": true,
+          "x": 100.39999999999999,
+          "y": 35.3,
+          "w": 23.849999999999998,
+          "h": 1.45,
+          "kind": "group",
+          "controlId": "van:group:buttons",
+          "group": "buttons"
+        },
+        {
+          "id": "van:group:vfd",
+          "label": "PHOSPHOR",
+          "color": "blue",
+          "cosmetic": true,
+          "x": 124.94999999999999,
+          "y": 35.3,
+          "w": 23.849999999999998,
+          "h": 1.45,
+          "kind": "group",
+          "controlId": "van:group:vfd",
+          "group": "vfd"
+        },
+        {
+          "id": "van:kit:headphones:reference",
+          "label": "REFERENCE",
+          "description": "Balanced monitor and surrounding sound. No modifiers.",
+          "effects": {},
+          "availability": {
+            "visible": true,
+            "available": true,
+            "owned": true,
+            "count": 0,
+            "required": 0,
+            "endingIds": [],
+            "reason": ""
+          },
+          "x": 102.92000000000002,
+          "y": 13.6,
+          "w": 45.97999999999999,
+          "h": 1.42,
+          "kind": "kit",
+          "group": "headphones",
+          "optionId": "reference",
+          "controlId": "van:kit:headphones:reference",
+          "enabled": false,
+          "fittable": false,
+          "locked": false,
+          "displayLabel": "REFERENCE"
+        },
+        {
+          "id": "van:kit:headphones:closed",
+          "label": "CLOSED BACK",
+          "description": "Monitor level +15%; surrounding sound −10% while monitoring.",
+          "effects": {
+            "monitorGainScale": 1.15,
+            "surroundingGainScale": 0.9
+          },
+          "availability": {
+            "visible": true,
+            "available": true,
+            "owned": true,
+            "count": 0,
+            "required": 0,
+            "endingIds": [],
+            "reason": ""
+          },
+          "x": 102.92000000000002,
+          "y": 15.299999999999999,
+          "w": 45.97999999999999,
+          "h": 1.42,
+          "kind": "kit",
+          "group": "headphones",
+          "optionId": "closed",
+          "controlId": "van:kit:headphones:closed",
+          "enabled": false,
+          "fittable": false,
+          "locked": false,
+          "displayLabel": "CLOSED BACK"
+        },
+        {
+          "id": "van:kit:headphones:open",
+          "label": "OPEN BACK",
+          "description": "Surrounding sound +10%; monitor level −15% while monitoring.",
+          "effects": {
+            "monitorGainScale": 0.85,
+            "surroundingGainScale": 1.1
+          },
+          "availability": {
+            "visible": true,
+            "available": true,
+            "owned": true,
+            "count": 0,
+            "required": 0,
+            "endingIds": [],
+            "reason": ""
+          },
+          "x": 102.92000000000002,
+          "y": 17,
+          "w": 45.97999999999999,
+          "h": 1.42,
+          "kind": "kit",
+          "group": "headphones",
+          "optionId": "open",
+          "controlId": "van:kit:headphones:open",
+          "enabled": false,
+          "fittable": false,
+          "locked": false,
+          "displayLabel": "OPEN BACK"
+        },
+        {
+          "x": 94.77000000000001,
+          "y": 33.6,
+          "w": 6.2,
+          "h": 0.9,
+          "id": "van:inspect:map",
+          "kind": "inspect",
+          "item": "map",
+          "enabled": true
+        },
+        {
+          "x": 2.1,
+          "y": 32.550000000000004,
+          "w": 30.051000000000002,
+          "h": 0.8,
+          "id": "van:inspect:recorder",
+          "kind": "inspect",
+          "item": "recorder",
+          "enabled": false
+        },
+        {
+          "x": 103.02000000000002,
+          "y": 33.83,
+          "w": 45.779999999999994,
+          "h": 0.75,
+          "id": "van:inspect:headphones-reference",
+          "kind": "inspect",
+          "item": "headphones-reference",
+          "enabled": true
+        },
+        {
+          "x": 40.9731,
+          "y": 32.550000000000004,
+          "w": 4.2,
+          "h": 0.8,
+          "id": "van:inspect:field-case",
+          "kind": "inspect",
+          "item": "field-case",
+          "enabled": true
+        },
+        {
+          "x": 83.43442052475393,
+          "y": 24.93624569864359,
+          "w": 17.522813816083357,
+          "h": 3.104261230354499,
+          "id": "van:inspect:witness",
+          "kind": "inspect-witness",
+          "item": "witness",
+          "enabled": true,
+          "object": true
+        },
+        {
+          "x": 2.3,
+          "y": 37.65,
+          "w": 12,
+          "h": 1.5,
+          "id": "van:close",
+          "kind": "close",
+          "controlId": "van:close",
+          "enabled": true
+        },
+        {
+          "x": 121.70000000000002,
+          "y": 37.65,
+          "w": 27,
+          "h": 1.5,
+          "id": "van:continue",
+          "kind": "continue",
+          "controlId": "van:continue",
+          "enabled": false
+        }
+      ]
+    },
+    "beforeFit": {
+      "schema": 1,
+      "headphones": "reference",
+      "microphone": "reference",
+      "recorder": "headroom",
+      "cosmetics": {
+        "faceplate": "aluminum",
+        "buttons": "signal",
+        "vfd": "amber"
+      }
+    },
+    "fitInspection": {
+      "mode": "plate",
+      "yaw": -0.19,
+      "pitch": 0.12,
+      "ready": true,
+      "failed": false,
+      "error": "",
+      "disposed": false,
+      "contexts": 1,
+      "renderCount": 1,
+      "testing": false,
+      "owned": true,
+      "canFit": true,
+      "count": 2,
+      "required": 2,
+      "fittingNotice": "",
+      "layout": {
+        "rect": {
+          "x": 2,
+          "y": 2,
+          "w": 147,
+          "h": 36
+        },
+        "portrait": {
+          "x": 3,
+          "y": 5,
+          "w": 100,
+          "h": 29
+        },
+        "detail": {
+          "x": 105,
+          "y": 5,
+          "w": 42,
+          "h": 29
+        },
+        "buttons": [
+          {
+            "id": "close",
+            "label": "BACK",
+            "key": "ESC",
+            "x": 3,
+            "y": 35,
+            "w": 23.583333333333332,
+            "h": 2
+          },
+          {
+            "id": "reset",
+            "label": "RESET",
+            "key": "R",
+            "x": 27.28333333333333,
+            "y": 35,
+            "w": 23.583333333333332,
+            "h": 2
+          },
+          {
+            "id": "turn",
+            "label": "TURN OVER",
+            "key": "T",
+            "x": 51.56666666666666,
+            "y": 35,
+            "w": 23.583333333333332,
+            "h": 2
+          },
+          {
+            "id": "model",
+            "label": "PLATE/RIG",
+            "key": "V",
+            "x": 75.85,
+            "y": 35,
+            "w": 23.583333333333332,
+            "h": 2
+          },
+          {
+            "id": "test",
+            "label": "TEST KEYS",
+            "key": "K",
+            "x": 100.13333333333333,
+            "y": 35,
+            "w": 23.583333333333332,
+            "h": 2
+          },
+          {
+            "id": "fit",
+            "label": "FIT PLATE",
+            "key": "ENTER",
+            "x": 124.41666666666666,
+            "y": 35,
+            "w": 23.583333333333332,
+            "h": 2
+          }
+        ],
+        "wide": true
+      },
+      "focused": "close",
+      "closed": false
+    },
+    "fitted": {
+      "state": {
+        "bagTaken": true,
+        "mapTaken": false,
+        "fieldKit": {
+          "schema": 1,
+          "headphones": "reference",
+          "microphone": "reference",
+          "recorder": "headroom",
+          "cosmetics": {
+            "faceplate": "witness",
+            "buttons": "signal",
+            "vfd": "amber"
+          }
+        },
+        "witness": {
+          "visible": true,
+          "owned": true,
+          "count": 2,
+          "required": 2,
+          "endingIds": [
+            "sacrifice",
+            "helped"
+          ],
+          "reason": "WITNESS EDITION UNLOCKED. FIT AT THE VAN."
+        },
+        "cosmeticMeta": {
+          "endingsSeen": [
+            "sacrifice",
+            "helped"
+          ],
+          "cosmetics": {
+            "unlocked": [
+              "witness"
+            ],
+            "selected": "witness"
+          }
+        },
+        "reduceMotion": false,
+        "difficultyConfirmed": false,
+        "difficultyLabel": "CHOOSE SHIFT"
+      },
+      "selectedGroup": "faceplate",
+      "focusId": "van:kit:faceplate:witness",
+      "notice": "WITNESS EDITION FITTED. APPEARANCE ONLY.",
+      "continuationPending": false,
+      "ready": false,
+      "layout": {
+        "size": {
+          "cols": 151,
+          "rows": 40
+        },
+        "outer": {
+          "x": 1.3,
+          "y": 0.55,
+          "w": 148.4,
+          "h": 38.9
+        },
+        "stage": {
+          "x": 1.3,
+          "y": 2.1,
+          "w": 100.17000000000002,
+          "h": 32.55
+        },
+        "compact": false,
+        "caseRect": {
+          "x": 2.1,
+          "y": 33.6,
+          "w": 43.073100000000004,
+          "h": 0.9
+        },
+        "mapRect": {
+          "x": 52.386700000000005,
+          "y": 33.6,
+          "w": 31.052700000000005,
+          "h": 0.9
+        },
+        "difficulty": {
+          "x": 71.24178500898057,
+          "y": 15.30279668856444,
+          "w": 14.84676577152888,
+          "h": 3.6227349219368303
+        },
+        "fittings": {
+          "x": 102.12000000000002,
+          "y": 2.1,
+          "w": 47.57999999999999,
+          "h": 32.55
+        },
+        "preview": {
+          "x": 102.77000000000002,
+          "y": 3.6,
+          "w": 46.279999999999994,
+          "h": 9.2
+        },
+        "recorder": {
+          "x": 106.12418657316096,
+          "y": 3.6,
+          "w": 39.57162685367813,
+          "h": 9.2
+        },
+        "showRecorder": true,
+        "selectedObject": "recorder",
+        "groups": [
+          {
+            "id": "van:group:headphones",
+            "label": "HEADPHONES",
+            "color": "amber",
+            "x": 2.2,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:headphones",
+            "group": "headphones"
+          },
+          {
+            "id": "van:group:microphone",
+            "label": "MICROPHONE",
+            "color": "blue",
+            "x": 26.749999999999996,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:microphone",
+            "group": "microphone"
+          },
+          {
+            "id": "van:group:recorder",
+            "label": "RECORDER",
+            "color": "red",
+            "x": 51.3,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:recorder",
+            "group": "recorder"
+          },
+          {
+            "id": "van:group:faceplate",
+            "label": "FACEPLATE",
+            "color": "white",
+            "cosmetic": true,
+            "x": 75.85,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:faceplate",
+            "group": "faceplate"
+          },
+          {
+            "id": "van:group:buttons",
+            "label": "BUTTONS",
+            "color": "green",
+            "cosmetic": true,
+            "x": 100.39999999999999,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:buttons",
+            "group": "buttons"
+          },
+          {
+            "id": "van:group:vfd",
+            "label": "PHOSPHOR",
+            "color": "blue",
+            "cosmetic": true,
+            "x": 124.94999999999999,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:vfd",
+            "group": "vfd"
+          }
+        ],
+        "variants": [
+          {
+            "id": "van:kit:faceplate:aluminum",
+            "label": "BRUSHED ALUMINUM",
+            "description": "Unpainted aluminum faceplate. Appearance only.",
+            "effects": {},
+            "availability": {
+              "visible": true,
+              "available": true,
+              "owned": true,
+              "count": 0,
+              "required": 0,
+              "endingIds": [],
+              "reason": ""
+            },
+            "x": 102.92000000000002,
+            "y": 13.6,
+            "w": 45.97999999999999,
+            "h": 1.42,
+            "kind": "kit",
+            "group": "faceplate",
+            "optionId": "aluminum",
+            "controlId": "van:kit:faceplate:aluminum",
+            "enabled": true,
+            "fittable": true,
+            "locked": false,
+            "displayLabel": "BRUSHED ALUMINUM"
+          },
+          {
+            "id": "van:kit:faceplate:black",
+            "label": "BLACK",
+            "description": "Black enamel faceplate. Appearance only.",
+            "effects": {},
+            "availability": {
+              "visible": true,
+              "available": true,
+              "owned": true,
+              "count": 0,
+              "required": 0,
+              "endingIds": [],
+              "reason": ""
+            },
+            "x": 102.92000000000002,
+            "y": 15.299999999999999,
+            "w": 45.97999999999999,
+            "h": 1.42,
+            "kind": "kit",
+            "group": "faceplate",
+            "optionId": "black",
+            "controlId": "van:kit:faceplate:black",
+            "enabled": true,
+            "fittable": true,
+            "locked": false,
+            "displayLabel": "BLACK"
+          },
+          {
+            "id": "van:kit:faceplate:olive",
+            "label": "OLIVE",
+            "description": "Olive enamel faceplate. Appearance only.",
+            "effects": {},
+            "availability": {
+              "visible": true,
+              "available": true,
+              "owned": true,
+              "count": 0,
+              "required": 0,
+              "endingIds": [],
+              "reason": ""
+            },
+            "x": 102.92000000000002,
+            "y": 17,
+            "w": 45.97999999999999,
+            "h": 1.42,
+            "kind": "kit",
+            "group": "faceplate",
+            "optionId": "olive",
+            "controlId": "van:kit:faceplate:olive",
+            "enabled": true,
+            "fittable": true,
+            "locked": false,
+            "displayLabel": "OLIVE"
+          },
+          {
+            "id": "van:kit:faceplate:witness",
+            "label": "WITNESS EDITION",
+            "description": "Witness Edition recorder faceplate. Appearance only; keys and phosphor remain your choice.",
+            "effects": {},
+            "availability": {
+              "visible": true,
+              "owned": true,
+              "count": 2,
+              "required": 2,
+              "endingIds": [
+                "sacrifice",
+                "helped"
+              ],
+              "reason": "WITNESS EDITION UNLOCKED. FIT AT THE VAN.",
+              "available": true
+            },
+            "x": 102.92000000000002,
+            "y": 18.7,
+            "w": 45.97999999999999,
+            "h": 1.42,
+            "kind": "kit",
+            "group": "faceplate",
+            "optionId": "witness",
+            "controlId": "van:kit:faceplate:witness",
+            "enabled": true,
+            "fittable": true,
+            "locked": false,
+            "displayLabel": "WITNESS EDITION"
+          }
+        ],
+        "variantColumns": 1,
+        "witness": {
+          "visible": true,
+          "owned": true,
+          "count": 2,
+          "required": 2,
+          "endingIds": [
+            "sacrifice",
+            "helped"
+          ],
+          "reason": "WITNESS EDITION UNLOCKED. FIT AT THE VAN.",
+          "available": true
+        },
+        "witnessFitted": true,
+        "witnessInspect": null,
+        "description": {
+          "x": 103.02000000000002,
+          "y": 20.569999999999997,
+          "w": 45.779999999999994,
+          "h": 12.980000000000002
+        },
+        "filmY": 35.05,
+        "footerY": 37.5,
+        "continueRegion": {
+          "x": 121.70000000000002,
+          "y": 37.65,
+          "w": 27,
+          "h": 1.5,
+          "id": "van:continue",
+          "kind": "continue",
+          "controlId": "van:continue",
+          "enabled": false
+        },
+        "close": {
+          "x": 2.3,
+          "y": 37.65,
+          "w": 12,
+          "h": 1.5,
+          "id": "van:close",
+          "kind": "close",
+          "controlId": "van:close",
+          "enabled": true
+        },
+        "regions": [
+          {
+            "x": 6.172755199939505,
+            "y": 2.1,
+            "w": 68.83321929469422,
+            "h": 24.319419575152835,
+            "id": "van:object:case",
+            "kind": "case",
+            "enabled": false
+          },
+          {
+            "x": 12.419743669604689,
+            "y": 18.70380877121187,
+            "w": 22.489525959872037,
+            "h": 9.514971038489609,
+            "id": "van:object:headphones",
+            "kind": "group",
+            "group": "headphones",
+            "item": "headphones-reference",
+            "enabled": true
+          },
+          {
+            "x": 27.779234676072893,
+            "y": 16.285474178389467,
+            "w": 9.83444413573174,
+            "h": 2.829699823114712,
+            "id": "van:object:microphone",
+            "kind": "group",
+            "group": "microphone",
+            "item": "microphone-reference",
+            "enabled": true
+          },
+          {
+            "x": 27.453928489802532,
+            "y": 13.448595611062713,
+            "w": 12.60688905359044,
+            "h": 2.994053080119807,
+            "id": "van:object:recorder",
+            "kind": "group",
+            "group": "recorder",
+            "item": "field-recorder-witness",
+            "enabled": true
+          },
+          {
+            "x": 41.160034295549096,
+            "y": 13.886138720829612,
+            "w": 11.537150186641874,
+            "h": 3.7725126366453257,
+            "id": "van:object:map",
+            "kind": "map",
+            "enabled": true
+          },
+          {
+            "x": 55.0108266391871,
+            "y": 14.623344539993422,
+            "w": 5.086265654147681,
+            "h": 3.7879492366694016,
+            "id": "van:object:radio",
+            "kind": "inspect",
+            "item": "radio",
+            "enabled": true,
+            "object": true
+          },
+          {
+            "x": 74.12148198886962,
+            "y": 17.830375852768896,
+            "w": 12.750429425202555,
+            "h": 4.965764514348397,
+            "id": "van:object:light",
+            "kind": "inspect",
+            "item": "light",
+            "enabled": true,
+            "object": true
+          },
+          {
+            "x": 2.1,
+            "y": 33.6,
+            "w": 43.073100000000004,
+            "h": 0.9,
+            "id": "van:case",
+            "kind": "case",
+            "enabled": false
+          },
+          {
+            "x": 52.386700000000005,
+            "y": 33.6,
+            "w": 31.052700000000005,
+            "h": 0.9,
+            "id": "van:map",
+            "kind": "map",
+            "enabled": true
+          },
+          {
+            "x": 71.24178500898057,
+            "y": 15.30279668856444,
+            "w": 14.84676577152888,
+            "h": 3.6227349219368303,
+            "id": "van:difficulty",
+            "kind": "difficulty",
+            "enabled": true
+          },
+          {
+            "id": "van:group:headphones",
+            "label": "HEADPHONES",
+            "color": "amber",
+            "x": 2.2,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:headphones",
+            "group": "headphones"
+          },
+          {
+            "id": "van:group:microphone",
+            "label": "MICROPHONE",
+            "color": "blue",
+            "x": 26.749999999999996,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:microphone",
+            "group": "microphone"
+          },
+          {
+            "id": "van:group:recorder",
+            "label": "RECORDER",
+            "color": "red",
+            "x": 51.3,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:recorder",
+            "group": "recorder"
+          },
+          {
+            "id": "van:group:faceplate",
+            "label": "FACEPLATE",
+            "color": "white",
+            "cosmetic": true,
+            "x": 75.85,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:faceplate",
+            "group": "faceplate"
+          },
+          {
+            "id": "van:group:buttons",
+            "label": "BUTTONS",
+            "color": "green",
+            "cosmetic": true,
+            "x": 100.39999999999999,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:buttons",
+            "group": "buttons"
+          },
+          {
+            "id": "van:group:vfd",
+            "label": "PHOSPHOR",
+            "color": "blue",
+            "cosmetic": true,
+            "x": 124.94999999999999,
+            "y": 35.3,
+            "w": 23.849999999999998,
+            "h": 1.45,
+            "kind": "group",
+            "controlId": "van:group:vfd",
+            "group": "vfd"
+          },
+          {
+            "id": "van:kit:faceplate:aluminum",
+            "label": "BRUSHED ALUMINUM",
+            "description": "Unpainted aluminum faceplate. Appearance only.",
+            "effects": {},
+            "availability": {
+              "visible": true,
+              "available": true,
+              "owned": true,
+              "count": 0,
+              "required": 0,
+              "endingIds": [],
+              "reason": ""
+            },
+            "x": 102.92000000000002,
+            "y": 13.6,
+            "w": 45.97999999999999,
+            "h": 1.42,
+            "kind": "kit",
+            "group": "faceplate",
+            "optionId": "aluminum",
+            "controlId": "van:kit:faceplate:aluminum",
+            "enabled": true,
+            "fittable": true,
+            "locked": false,
+            "displayLabel": "BRUSHED ALUMINUM"
+          },
+          {
+            "id": "van:kit:faceplate:black",
+            "label": "BLACK",
+            "description": "Black enamel faceplate. Appearance only.",
+            "effects": {},
+            "availability": {
+              "visible": true,
+              "available": true,
+              "owned": true,
+              "count": 0,
+              "required": 0,
+              "endingIds": [],
+              "reason": ""
+            },
+            "x": 102.92000000000002,
+            "y": 15.299999999999999,
+            "w": 45.97999999999999,
+            "h": 1.42,
+            "kind": "kit",
+            "group": "faceplate",
+            "optionId": "black",
+            "controlId": "van:kit:faceplate:black",
+            "enabled": true,
+            "fittable": true,
+            "locked": false,
+            "displayLabel": "BLACK"
+          },
+          {
+            "id": "van:kit:faceplate:olive",
+            "label": "OLIVE",
+            "description": "Olive enamel faceplate. Appearance only.",
+            "effects": {},
+            "availability": {
+              "visible": true,
+              "available": true,
+              "owned": true,
+              "count": 0,
+              "required": 0,
+              "endingIds": [],
+              "reason": ""
+            },
+            "x": 102.92000000000002,
+            "y": 17,
+            "w": 45.97999999999999,
+            "h": 1.42,
+            "kind": "kit",
+            "group": "faceplate",
+            "optionId": "olive",
+            "controlId": "van:kit:faceplate:olive",
+            "enabled": true,
+            "fittable": true,
+            "locked": false,
+            "displayLabel": "OLIVE"
+          },
+          {
+            "id": "van:kit:faceplate:witness",
+            "label": "WITNESS EDITION",
+            "description": "Witness Edition recorder faceplate. Appearance only; keys and phosphor remain your choice.",
+            "effects": {},
+            "availability": {
+              "visible": true,
+              "owned": true,
+              "count": 2,
+              "required": 2,
+              "endingIds": [
+                "sacrifice",
+                "helped"
+              ],
+              "reason": "WITNESS EDITION UNLOCKED. FIT AT THE VAN.",
+              "available": true
+            },
+            "x": 102.92000000000002,
+            "y": 18.7,
+            "w": 45.97999999999999,
+            "h": 1.42,
+            "kind": "kit",
+            "group": "faceplate",
+            "optionId": "witness",
+            "controlId": "van:kit:faceplate:witness",
+            "enabled": true,
+            "fittable": true,
+            "locked": false,
+            "displayLabel": "WITNESS EDITION"
+          },
+          {
+            "x": 94.77000000000001,
+            "y": 33.6,
+            "w": 6.2,
+            "h": 0.9,
+            "id": "van:inspect:map",
+            "kind": "inspect",
+            "item": "map",
+            "enabled": true
+          },
+          {
+            "x": 103.02000000000002,
+            "y": 33.83,
+            "w": 45.779999999999994,
+            "h": 0.75,
+            "id": "van:inspect:recorder",
+            "kind": "inspect",
+            "item": "recorder",
+            "enabled": true
+          },
+          {
+            "x": 40.9731,
+            "y": 32.550000000000004,
+            "w": 4.2,
+            "h": 0.8,
+            "id": "van:inspect:field-case",
+            "kind": "inspect",
+            "item": "field-case",
+            "enabled": true
+          },
+          {
+            "x": 2.3,
+            "y": 37.65,
+            "w": 12,
+            "h": 1.5,
+            "id": "van:close",
+            "kind": "close",
+            "controlId": "van:close",
+            "enabled": true
+          },
+          {
+            "x": 121.70000000000002,
+            "y": 37.65,
+            "w": 27,
+            "h": 1.5,
+            "id": "van:continue",
+            "kind": "continue",
+            "controlId": "van:continue",
+            "enabled": false
+          }
+        ],
+        "previewFinish": "witness",
+        "effects": {
+          "monitorGainScale": 1,
+          "surroundingGainScale": 1,
+          "recordingNoiseScale": 1,
+          "takeDurationScale": 1,
+          "spoilToleranceScale": 1.1,
+          "torchDrainScale": 1.15
+        },
+        "descriptionLines": [
+          "WITNESS EDITION FITTED. APPEARANCE ONLY."
+        ],
+        "effectLines": [
+          "MONITOR 0% / OUTSIDE 0%",
+          "NOISE 0% / TAKE TIME 0%",
+          "OVERLOAD +10% / CELL +15%"
+        ]
+      },
+      "stage": {
+        "ready": true,
+        "models": {
+          "case": "field-case",
+          "headphones": "headphones-reference",
+          "microphone": "microphone-reference",
+          "recorder": "field-recorder-witness",
+          "map": "map",
+          "radio": "radio",
+          "light": "light"
+        },
+        "loading": [],
+        "failed": [],
+        "error": "",
+        "docked": {
+          "microphone": "microphone",
+          "recorder": "recorder",
+          "map": "survey-indicator",
+          "radio": "radio"
+        },
+        "materials": {
+          "recorder-cover-glass": {
+            "color": "#547660",
+            "textured": false
+          },
+          "recorder-button-rec": {
+            "color": "#bc6b57",
+            "textured": false
+          },
+          "recorder-button-stop": {
+            "color": "#729aa9",
+            "textured": false
+          },
+          "recorder-button-takes": {
+            "color": "#d0bc64",
+            "textured": false
+          }
+        },
+        "readoutTexture": true,
+        "detailModel": "headphones-reference",
+        "lifts": {
+          "case": 0,
+          "headphones": 0,
+          "microphone": 0,
+          "recorder": 0,
+          "map": 0,
+          "radio": 0,
+          "light": 0
+        },
+        "rendererCount": 1,
+        "renderCount": 30,
+        "suspended": false,
+        "disposed": false,
+        "selected": "witness",
+        "targets": {
+          "case": {
+            "x": 6.172755199939505,
+            "y": 2.1,
+            "w": 68.83321929469422,
+            "h": 24.319419575152835
+          },
+          "headphones": {
+            "x": 12.419743669604689,
+            "y": 18.70380877121187,
+            "w": 22.489525959872037,
+            "h": 9.514971038489609
+          },
+          "microphone": {
+            "x": 27.779234676072893,
+            "y": 16.285474178389467,
+            "w": 9.83444413573174,
+            "h": 2.829699823114712
+          },
+          "recorder": {
+            "x": 27.453928489802532,
+            "y": 13.448595611062713,
+            "w": 12.60688905359044,
+            "h": 2.994053080119807
+          },
+          "map": {
+            "x": 41.160034295549096,
+            "y": 13.886138720829612,
+            "w": 11.537150186641874,
+            "h": 3.7725126366453257
+          },
+          "radio": {
+            "x": 55.0108266391871,
+            "y": 14.623344539993422,
+            "w": 5.086265654147681,
+            "h": 3.7879492366694016
+          },
+          "light": {
+            "x": 74.12148198886962,
+            "y": 17.830375852768896,
+            "w": 12.750429425202555,
+            "h": 4.965764514348397
+          },
+          "difficulty": {
+            "x": 71.24178500898057,
+            "y": 15.30279668856444,
+            "w": 14.84676577152888,
+            "h": 3.6227349219368303
+          }
+        }
+      },
+      "pickedObject": null,
+      "hitRegions": [
+        {
+          "x": 6.172755199939505,
+          "y": 2.1,
+          "w": 68.83321929469422,
+          "h": 24.319419575152835,
+          "id": "van:object:case",
+          "kind": "case",
+          "enabled": false
+        },
+        {
+          "x": 12.419743669604689,
+          "y": 18.70380877121187,
+          "w": 22.489525959872037,
+          "h": 9.514971038489609,
+          "id": "van:object:headphones",
+          "kind": "group",
+          "group": "headphones",
+          "item": "headphones-reference",
+          "enabled": true
+        },
+        {
+          "x": 27.779234676072893,
+          "y": 16.285474178389467,
+          "w": 9.83444413573174,
+          "h": 2.829699823114712,
+          "id": "van:object:microphone",
+          "kind": "group",
+          "group": "microphone",
+          "item": "microphone-reference",
+          "enabled": true
+        },
+        {
+          "x": 27.453928489802532,
+          "y": 13.448595611062713,
+          "w": 12.60688905359044,
+          "h": 2.994053080119807,
+          "id": "van:object:recorder",
+          "kind": "group",
+          "group": "recorder",
+          "item": "field-recorder-witness",
+          "enabled": true
+        },
+        {
+          "x": 41.160034295549096,
+          "y": 13.886138720829612,
+          "w": 11.537150186641874,
+          "h": 3.7725126366453257,
+          "id": "van:object:map",
+          "kind": "map",
+          "enabled": true
+        },
+        {
+          "x": 55.0108266391871,
+          "y": 14.623344539993422,
+          "w": 5.086265654147681,
+          "h": 3.7879492366694016,
+          "id": "van:object:radio",
+          "kind": "inspect",
+          "item": "radio",
+          "enabled": true,
+          "object": true
+        },
+        {
+          "x": 74.12148198886962,
+          "y": 17.830375852768896,
+          "w": 12.750429425202555,
+          "h": 4.965764514348397,
+          "id": "van:object:light",
+          "kind": "inspect",
+          "item": "light",
+          "enabled": true,
+          "object": true
+        },
+        {
+          "x": 2.1,
+          "y": 33.6,
+          "w": 43.073100000000004,
+          "h": 0.9,
+          "id": "van:case",
+          "kind": "case",
+          "enabled": false
+        },
+        {
+          "x": 52.386700000000005,
+          "y": 33.6,
+          "w": 31.052700000000005,
+          "h": 0.9,
+          "id": "van:map",
+          "kind": "map",
+          "enabled": true
+        },
+        {
+          "x": 71.24178500898057,
+          "y": 15.30279668856444,
+          "w": 14.84676577152888,
+          "h": 3.6227349219368303,
+          "id": "van:difficulty",
+          "kind": "difficulty",
+          "enabled": true
+        },
+        {
+          "id": "van:group:headphones",
+          "label": "HEADPHONES",
+          "color": "amber",
+          "x": 2.2,
+          "y": 35.3,
+          "w": 23.849999999999998,
+          "h": 1.45,
+          "kind": "group",
+          "controlId": "van:group:headphones",
+          "group": "headphones"
+        },
+        {
+          "id": "van:group:microphone",
+          "label": "MICROPHONE",
+          "color": "blue",
+          "x": 26.749999999999996,
+          "y": 35.3,
+          "w": 23.849999999999998,
+          "h": 1.45,
+          "kind": "group",
+          "controlId": "van:group:microphone",
+          "group": "microphone"
+        },
+        {
+          "id": "van:group:recorder",
+          "label": "RECORDER",
+          "color": "red",
+          "x": 51.3,
+          "y": 35.3,
+          "w": 23.849999999999998,
+          "h": 1.45,
+          "kind": "group",
+          "controlId": "van:group:recorder",
+          "group": "recorder"
+        },
+        {
+          "id": "van:group:faceplate",
+          "label": "FACEPLATE",
+          "color": "white",
+          "cosmetic": true,
+          "x": 75.85,
+          "y": 35.3,
+          "w": 23.849999999999998,
+          "h": 1.45,
+          "kind": "group",
+          "controlId": "van:group:faceplate",
+          "group": "faceplate"
+        },
+        {
+          "id": "van:group:buttons",
+          "label": "BUTTONS",
+          "color": "green",
+          "cosmetic": true,
+          "x": 100.39999999999999,
+          "y": 35.3,
+          "w": 23.849999999999998,
+          "h": 1.45,
+          "kind": "group",
+          "controlId": "van:group:buttons",
+          "group": "buttons"
+        },
+        {
+          "id": "van:group:vfd",
+          "label": "PHOSPHOR",
+          "color": "blue",
+          "cosmetic": true,
+          "x": 124.94999999999999,
+          "y": 35.3,
+          "w": 23.849999999999998,
+          "h": 1.45,
+          "kind": "group",
+          "controlId": "van:group:vfd",
+          "group": "vfd"
+        },
+        {
+          "id": "van:kit:faceplate:aluminum",
+          "label": "BRUSHED ALUMINUM",
+          "description": "Unpainted aluminum faceplate. Appearance only.",
+          "effects": {},
+          "availability": {
+            "visible": true,
+            "available": true,
+            "owned": true,
+            "count": 0,
+            "required": 0,
+            "endingIds": [],
+            "reason": ""
+          },
+          "x": 102.92000000000002,
+          "y": 13.6,
+          "w": 45.97999999999999,
+          "h": 1.42,
+          "kind": "kit",
+          "group": "faceplate",
+          "optionId": "aluminum",
+          "controlId": "van:kit:faceplate:aluminum",
+          "enabled": true,
+          "fittable": true,
+          "locked": false,
+          "displayLabel": "BRUSHED ALUMINUM"
+        },
+        {
+          "id": "van:kit:faceplate:black",
+          "label": "BLACK",
+          "description": "Black enamel faceplate. Appearance only.",
+          "effects": {},
+          "availability": {
+            "visible": true,
+            "available": true,
+            "owned": true,
+            "count": 0,
+            "required": 0,
+            "endingIds": [],
+            "reason": ""
+          },
+          "x": 102.92000000000002,
+          "y": 15.299999999999999,
+          "w": 45.97999999999999,
+          "h": 1.42,
+          "kind": "kit",
+          "group": "faceplate",
+          "optionId": "black",
+          "controlId": "van:kit:faceplate:black",
+          "enabled": true,
+          "fittable": true,
+          "locked": false,
+          "displayLabel": "BLACK"
+        },
+        {
+          "id": "van:kit:faceplate:olive",
+          "label": "OLIVE",
+          "description": "Olive enamel faceplate. Appearance only.",
+          "effects": {},
+          "availability": {
+            "visible": true,
+            "available": true,
+            "owned": true,
+            "count": 0,
+            "required": 0,
+            "endingIds": [],
+            "reason": ""
+          },
+          "x": 102.92000000000002,
+          "y": 17,
+          "w": 45.97999999999999,
+          "h": 1.42,
+          "kind": "kit",
+          "group": "faceplate",
+          "optionId": "olive",
+          "controlId": "van:kit:faceplate:olive",
+          "enabled": true,
+          "fittable": true,
+          "locked": false,
+          "displayLabel": "OLIVE"
+        },
+        {
+          "id": "van:kit:faceplate:witness",
+          "label": "WITNESS EDITION",
+          "description": "Witness Edition recorder faceplate. Appearance only; keys and phosphor remain your choice.",
+          "effects": {},
+          "availability": {
+            "visible": true,
+            "owned": true,
+            "count": 2,
+            "required": 2,
+            "endingIds": [
+              "sacrifice",
+              "helped"
+            ],
+            "reason": "WITNESS EDITION UNLOCKED. FIT AT THE VAN.",
+            "available": true
+          },
+          "x": 102.92000000000002,
+          "y": 18.7,
+          "w": 45.97999999999999,
+          "h": 1.42,
+          "kind": "kit",
+          "group": "faceplate",
+          "optionId": "witness",
+          "controlId": "van:kit:faceplate:witness",
+          "enabled": true,
+          "fittable": true,
+          "locked": false,
+          "displayLabel": "WITNESS EDITION"
+        },
+        {
+          "x": 94.77000000000001,
+          "y": 33.6,
+          "w": 6.2,
+          "h": 0.9,
+          "id": "van:inspect:map",
+          "kind": "inspect",
+          "item": "map",
+          "enabled": true
+        },
+        {
+          "x": 103.02000000000002,
+          "y": 33.83,
+          "w": 45.779999999999994,
+          "h": 0.75,
+          "id": "van:inspect:recorder",
+          "kind": "inspect",
+          "item": "recorder",
+          "enabled": true
+        },
+        {
+          "x": 40.9731,
+          "y": 32.550000000000004,
+          "w": 4.2,
+          "h": 0.8,
+          "id": "van:inspect:field-case",
+          "kind": "inspect",
+          "item": "field-case",
+          "enabled": true
+        },
+        {
+          "x": 2.3,
+          "y": 37.65,
+          "w": 12,
+          "h": 1.5,
+          "id": "van:close",
+          "kind": "close",
+          "controlId": "van:close",
+          "enabled": true
+        },
+        {
+          "x": 121.70000000000002,
+          "y": 37.65,
+          "w": 27,
+          "h": 1.5,
+          "id": "van:continue",
+          "kind": "continue",
+          "controlId": "van:continue",
+          "enabled": false
+        }
+      ]
+    },
+    "meta": {
+      "version": 2,
+      "endingsSeen": [
+        "sacrifice",
+        "helped"
+      ],
+      "hushMet": false,
+      "windowChoreographyIntroduced": false,
+      "openingCreditsCompleted": false,
+      "leftMidRun": false,
+      "eulaAccepted": "",
+      "eulaAcceptedAt": 0,
+      "psychProfile": {
+        "schema": 1,
+        "dimensions": {
+          "vigilance": 0.5,
+          "composure": 0.5,
+          "exposure": 0.5,
+          "resistance": 0.5
+        },
+        "confidence": 0,
+        "sampleCount": 0,
+        "adaptiveBand": 0,
+        "classification": "UNRESOLVED",
+        "dominantDimension": null,
+        "bandEvidence": 0,
+        "lastUpdatedRun": null
+      },
+      "lensRuntimeReady": "",
+      "lensRuntimeReadyAt": 0,
+      "runs": 2,
+      "lastSeenAt": 0,
+      "achievements": {},
+      "stats": {
+        "runsStarted": 2,
+        "runsCompleted": 0,
+        "takesCompleted": 0,
+        "takesSpoiled": 0,
+        "battlesWon": 0,
+        "endingsSeen": 2,
+        "disclosuresFound": 0,
+        "objectsInspected": 0
+      },
+      "knowledge": {
+        "lines": {},
+        "choices": {},
+        "documents": {},
+        "playbacks": {},
+        "props": {}
+      },
+      "challengeCompletions": {
+        "deadAir": false
+      },
+      "returns": {
+        "records": {},
+        "history": []
+      },
+      "causalTape": {
+        "status": "none",
+        "latestId": null,
+        "contentHash": null,
+        "topologyHash": null,
+        "endingId": null,
+        "durationMs": 0,
+        "recordedAt": 0,
+        "injuries": null,
+        "failure": null
+      },
+      "hushRun": {
+        "completed": 0,
+        "bestSync": 0,
+        "bestGrade": null
+      },
+      "legacyTerminal": {
+        "opened": [],
+        "cursors": {},
+        "lastFileId": null
+      },
+      "cosmetics": {
+        "unlocked": [
+          "witness"
+        ],
+        "selected": "witness"
+      },
+      "platform": {
+        "pendingAchievements": [],
+        "pendingStats": {
+          "STAT_RUNS_STARTED": 2
+        },
+        "lastSyncAt": 0
+      },
+      "presentation": {
+        "pendingReports": [],
+        "pendingNotices": [],
+        "lastBootWeather": ""
+      }
+    },
+    "carried": {
+      "mode": "recorder",
+      "yaw": -0.19,
+      "pitch": 0.12,
+      "ready": true,
+      "failed": false,
+      "error": "",
+      "disposed": false,
+      "contexts": 1,
+      "renderCount": 1,
+      "testing": false,
+      "owned": true,
+      "canFit": false,
+      "count": 2,
+      "required": 2,
+      "fittingNotice": "",
+      "layout": {
+        "rect": {
+          "x": 2,
+          "y": 2,
+          "w": 147,
+          "h": 36
+        },
+        "portrait": {
+          "x": 3,
+          "y": 5,
+          "w": 100,
+          "h": 29
+        },
+        "detail": {
+          "x": 105,
+          "y": 5,
+          "w": 42,
+          "h": 29
+        },
+        "buttons": [
+          {
+            "id": "close",
+            "label": "BACK",
+            "key": "ESC",
+            "x": 3,
+            "y": 35,
+            "w": 28.439999999999998,
+            "h": 2
+          },
+          {
+            "id": "reset",
+            "label": "RESET",
+            "key": "R",
+            "x": 32.14,
+            "y": 35,
+            "w": 28.439999999999998,
+            "h": 2
+          },
+          {
+            "id": "turn",
+            "label": "TURN OVER",
+            "key": "T",
+            "x": 61.279999999999994,
+            "y": 35,
+            "w": 28.439999999999998,
+            "h": 2
+          },
+          {
+            "id": "model",
+            "label": "PLATE/RIG",
+            "key": "V",
+            "x": 90.41999999999999,
+            "y": 35,
+            "w": 28.439999999999998,
+            "h": 2
+          },
+          {
+            "id": "test",
+            "label": "TEST KEYS",
+            "key": "K",
+            "x": 119.55999999999999,
+            "y": 35,
+            "w": 28.439999999999998,
+            "h": 2
+          }
+        ],
+        "wide": true
+      },
+      "focused": "close",
+      "closed": false
+    }
+  }
+}

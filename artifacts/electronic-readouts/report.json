@@ -1,0 +1,1193 @@
+{
+  "scope": "Production recorder six-state rendering fixtures and shared system/direction transcript; actual R and post-door main.js scene integration. Disposable Chromium profile, probe-seeded progression; no native input/audio-perception claim.",
+  "sizes": [
+    {
+      "name": "wide",
+      "width": 1280,
+      "height": 760,
+      "deviceScaleFactor": 1,
+      "scale": 1
+    },
+    {
+      "name": "large-text-retina",
+      "width": 960,
+      "height": 600,
+      "deviceScaleFactor": 2,
+      "scale": 1.5
+    }
+  ],
+  "measurements": [
+    {
+      "size": "wide",
+      "mode": "monitor",
+      "dimensions": {
+        "cols": 151,
+        "rows": 38
+      },
+      "metrics": {
+        "cellW": 8.45,
+        "cellH": 20,
+        "aspect": 0.4225
+      },
+      "rect": {
+        "x": 31.949704142011832,
+        "y": 14.75,
+        "w": 87.10059171597634,
+        "h": 20.25,
+        "bar": 2,
+        "compact": false
+      },
+      "body": {
+        "x": 38.4585798816568,
+        "y": 19.55,
+        "w": 74.0828402366864,
+        "h": 9.95
+      },
+      "display": {
+        "x": 36.09171597633136,
+        "y": 18.55,
+        "w": 78.81656804733728,
+        "h": 11.95
+      },
+      "hits": [
+        {
+          "kind": "transport",
+          "id": "rec",
+          "index": 0,
+          "controlId": "recorder:rec",
+          "x": 81.0621301775148,
+          "y": 31.45,
+          "w": 10.532544378698226,
+          "h": 1.65,
+          "enabled": true
+        },
+        {
+          "kind": "transport",
+          "id": "stop",
+          "index": 1,
+          "controlId": "recorder:stop",
+          "x": 92.77810650887574,
+          "y": 31.45,
+          "w": 10.532544378698226,
+          "h": 1.65,
+          "enabled": false
+        },
+        {
+          "kind": "transport",
+          "id": "takes",
+          "index": 2,
+          "controlId": "recorder:takes",
+          "x": 104.4940828402367,
+          "y": 31.45,
+          "w": 10.532544378698226,
+          "h": 1.65,
+          "enabled": true
+        }
+      ],
+      "nativeInside": [],
+      "nativePrintCalls": 2808,
+      "coldMs": 14.799999952316284,
+      "warmP95Ms": 0.6000000238418579,
+      "screenshot": "/Users/seb/chunk-surfer/artifacts/electronic-readouts/recorder-monitor-wide.png"
+    },
+    {
+      "size": "wide",
+      "mode": "record",
+      "dimensions": {
+        "cols": 151,
+        "rows": 38
+      },
+      "metrics": {
+        "cellW": 8.45,
+        "cellH": 20,
+        "aspect": 0.4225
+      },
+      "rect": {
+        "x": 31.949704142011832,
+        "y": 14.75,
+        "w": 87.10059171597634,
+        "h": 20.25,
+        "bar": 2,
+        "compact": false
+      },
+      "body": {
+        "x": 38.4585798816568,
+        "y": 19.55,
+        "w": 74.0828402366864,
+        "h": 9.95
+      },
+      "display": {
+        "x": 36.09171597633136,
+        "y": 18.55,
+        "w": 78.81656804733728,
+        "h": 11.95
+      },
+      "hits": [
+        {
+          "kind": "transport",
+          "id": "rec",
+          "index": 0,
+          "controlId": "recording:rec",
+          "x": 81.0621301775148,
+          "y": 31.45,
+          "w": 10.532544378698226,
+          "h": 1.65,
+          "enabled": true
+        },
+        {
+          "kind": "transport",
+          "id": "stop",
+          "index": 1,
+          "controlId": "recording:stop",
+          "x": 92.77810650887574,
+          "y": 31.45,
+          "w": 10.532544378698226,
+          "h": 1.65,
+          "enabled": true
+        },
+        {
+          "kind": "transport",
+          "id": "takes",
+          "index": 2,
+          "controlId": "recording:takes",
+          "x": 104.4940828402367,
+          "y": 31.45,
+          "w": 10.532544378698226,
+          "h": 1.65,
+          "enabled": true
+        }
+      ],
+      "nativeInside": [],
+      "nativePrintCalls": 2808,
+      "coldMs": 0.699999988079071,
+      "warmP95Ms": 0.3999999761581421,
+      "screenshot": "/Users/seb/chunk-surfer/artifacts/electronic-readouts/recorder-record-wide.png"
+    },
+    {
+      "size": "wide",
+      "mode": "play",
+      "dimensions": {
+        "cols": 151,
+        "rows": 38
+      },
+      "metrics": {
+        "cellW": 8.45,
+        "cellH": 20,
+        "aspect": 0.4225
+      },
+      "rect": {
+        "x": 31.949704142011832,
+        "y": 14.75,
+        "w": 87.10059171597634,
+        "h": 20.25,
+        "bar": 2,
+        "compact": false
+      },
+      "body": {
+        "x": 38.4585798816568,
+        "y": 19.55,
+        "w": 74.0828402366864,
+        "h": 9.95
+      },
+      "display": {
+        "x": 36.09171597633136,
+        "y": 18.55,
+        "w": 78.81656804733728,
+        "h": 11.95
+      },
+      "hits": [
+        {
+          "kind": "transport",
+          "id": "rec",
+          "index": 0,
+          "controlId": "recorder:rec",
+          "x": 81.0621301775148,
+          "y": 31.45,
+          "w": 10.532544378698226,
+          "h": 1.65,
+          "enabled": false
+        },
+        {
+          "kind": "transport",
+          "id": "stop",
+          "index": 1,
+          "controlId": "recorder:stop",
+          "x": 92.77810650887574,
+          "y": 31.45,
+          "w": 10.532544378698226,
+          "h": 1.65,
+          "enabled": true
+        },
+        {
+          "kind": "transport",
+          "id": "takes",
+          "index": 2,
+          "controlId": "recorder:takes",
+          "x": 104.4940828402367,
+          "y": 31.45,
+          "w": 10.532544378698226,
+          "h": 1.65,
+          "enabled": true
+        }
+      ],
+      "nativeInside": [],
+      "nativePrintCalls": 2808,
+      "coldMs": 0.6000000238418579,
+      "warmP95Ms": 0.5,
+      "screenshot": "/Users/seb/chunk-surfer/artifacts/electronic-readouts/recorder-play-wide.png"
+    },
+    {
+      "size": "wide",
+      "mode": "check",
+      "dimensions": {
+        "cols": 151,
+        "rows": 38
+      },
+      "metrics": {
+        "cellW": 8.45,
+        "cellH": 20,
+        "aspect": 0.4225
+      },
+      "rect": {
+        "x": 31.949704142011832,
+        "y": 14.75,
+        "w": 87.10059171597634,
+        "h": 20.25,
+        "bar": 2,
+        "compact": false
+      },
+      "body": {
+        "x": 38.4585798816568,
+        "y": 19.55,
+        "w": 74.0828402366864,
+        "h": 9.95
+      },
+      "display": {
+        "x": 36.09171597633136,
+        "y": 18.55,
+        "w": 78.81656804733728,
+        "h": 11.95
+      },
+      "hits": [],
+      "nativeInside": [],
+      "nativePrintCalls": 2808,
+      "coldMs": 3.899999976158142,
+      "warmP95Ms": 0.699999988079071,
+      "screenshot": "/Users/seb/chunk-surfer/artifacts/electronic-readouts/recorder-check-wide.png"
+    },
+    {
+      "size": "wide",
+      "mode": "listen",
+      "dimensions": {
+        "cols": 151,
+        "rows": 38
+      },
+      "metrics": {
+        "cellW": 8.45,
+        "cellH": 20,
+        "aspect": 0.4225
+      },
+      "rect": {
+        "x": 31.949704142011832,
+        "y": 14.75,
+        "w": 87.10059171597634,
+        "h": 20.25,
+        "bar": 2,
+        "compact": false
+      },
+      "body": {
+        "x": 38.4585798816568,
+        "y": 19.55,
+        "w": 74.0828402366864,
+        "h": 9.95
+      },
+      "display": {
+        "x": 36.09171597633136,
+        "y": 18.55,
+        "w": 78.81656804733728,
+        "h": 11.95
+      },
+      "hits": [
+        {
+          "kind": "transport",
+          "id": "rec",
+          "index": 0,
+          "controlId": "recorder:rec",
+          "x": 81.0621301775148,
+          "y": 31.45,
+          "w": 10.532544378698226,
+          "h": 1.65,
+          "enabled": true
+        },
+        {
+          "kind": "transport",
+          "id": "stop",
+          "index": 1,
+          "controlId": "recorder:stop",
+          "x": 92.77810650887574,
+          "y": 31.45,
+          "w": 10.532544378698226,
+          "h": 1.65,
+          "enabled": false
+        },
+        {
+          "kind": "transport",
+          "id": "takes",
+          "index": 2,
+          "controlId": "recorder:takes",
+          "x": 104.4940828402367,
+          "y": 31.45,
+          "w": 10.532544378698226,
+          "h": 1.65,
+          "enabled": true
+        },
+        {
+          "kind": "choice",
+          "index": 0,
+          "x": 52.5414201183432,
+          "y": 26.5,
+          "w": 59,
+          "h": 1
+        },
+        {
+          "kind": "choice",
+          "index": 1,
+          "x": 52.5414201183432,
+          "y": 27.5,
+          "w": 59,
+          "h": 1
+        },
+        {
+          "kind": "guide",
+          "x": 38.4585798816568,
+          "y": 19.55,
+          "w": 74.0828402366864,
+          "h": 9.95
+        }
+      ],
+      "nativeInside": [],
+      "nativePrintCalls": 2808,
+      "coldMs": 2.299999952316284,
+      "warmP95Ms": 0.30000001192092896,
+      "screenshot": "/Users/seb/chunk-surfer/artifacts/electronic-readouts/recorder-listen-wide.png"
+    },
+    {
+      "size": "wide",
+      "mode": "browse",
+      "dimensions": {
+        "cols": 151,
+        "rows": 38
+      },
+      "metrics": {
+        "cellW": 8.45,
+        "cellH": 20,
+        "aspect": 0.4225
+      },
+      "rect": {
+        "x": 31.949704142011832,
+        "y": 14.75,
+        "w": 87.10059171597634,
+        "h": 20.25,
+        "bar": 2,
+        "compact": false
+      },
+      "body": {
+        "x": 38.4585798816568,
+        "y": 19.55,
+        "w": 74.0828402366864,
+        "h": 9.95
+      },
+      "display": {
+        "x": 36.09171597633136,
+        "y": 18.55,
+        "w": 78.81656804733728,
+        "h": 11.95
+      },
+      "hits": [
+        {
+          "kind": "transport",
+          "id": "rec",
+          "index": 0,
+          "controlId": "recorder:rec",
+          "x": 81.0621301775148,
+          "y": 31.45,
+          "w": 10.532544378698226,
+          "h": 1.65,
+          "enabled": true
+        },
+        {
+          "kind": "transport",
+          "id": "stop",
+          "index": 1,
+          "controlId": "recorder:stop",
+          "x": 92.77810650887574,
+          "y": 31.45,
+          "w": 10.532544378698226,
+          "h": 1.65,
+          "enabled": false
+        },
+        {
+          "kind": "transport",
+          "id": "takes",
+          "index": 2,
+          "controlId": "recorder:takes",
+          "x": 104.4940828402367,
+          "y": 31.45,
+          "w": 10.532544378698226,
+          "h": 1.65,
+          "enabled": true
+        },
+        {
+          "kind": "take",
+          "id": "0",
+          "index": 0,
+          "x": 38.4585798816568,
+          "y": 21.05,
+          "w": 74.0828402366864,
+          "h": 1
+        },
+        {
+          "kind": "take",
+          "id": "1",
+          "index": 1,
+          "x": 38.4585798816568,
+          "y": 22.05,
+          "w": 74.0828402366864,
+          "h": 1
+        }
+      ],
+      "nativeInside": [],
+      "nativePrintCalls": 2808,
+      "coldMs": 1.600000023841858,
+      "warmP95Ms": 0.30000001192092896,
+      "screenshot": "/Users/seb/chunk-surfer/artifacts/electronic-readouts/recorder-browse-wide.png"
+    },
+    {
+      "size": "wide",
+      "mode": "transcript-fixture",
+      "dimensions": {
+        "cols": 151,
+        "rows": 38
+      },
+      "panel": {
+        "x": 31.5,
+        "y": 7,
+        "w": 88,
+        "h": 24
+      },
+      "body": {
+        "x": 34.5,
+        "y": 11,
+        "w": 82,
+        "h": 19
+      },
+      "display": {
+        "x": 32.9,
+        "y": 9.35,
+        "w": 85.2,
+        "h": 19.3
+      },
+      "roles": [
+        "incoming",
+        "system",
+        "direction"
+      ],
+      "directionRows": 1,
+      "nativeInside": [],
+      "screenshot": "/Users/seb/chunk-surfer/artifacts/electronic-readouts/dialogue-transcript-wide.png"
+    },
+    {
+      "size": "large-text-retina",
+      "mode": "monitor",
+      "dimensions": {
+        "cols": 75,
+        "rows": 20
+      },
+      "metrics": {
+        "cellW": 12.674999999999999,
+        "cellH": 30,
+        "aspect": 0.4225
+      },
+      "rect": {
+        "x": 6.315837533786247,
+        "y": 2.5,
+        "w": 62.368324932427505,
+        "h": 14.500000000000002,
+        "bar": 2,
+        "compact": false
+      },
+      "body": {
+        "x": 10.9765139893345,
+        "y": 5.937037037037037,
+        "w": 53.04697202133101,
+        "h": 7.124691358024692
+      },
+      "display": {
+        "x": 9.281722550953315,
+        "y": 5.220987654320988,
+        "w": 56.43655489809337,
+        "h": 8.556790123456791
+      },
+      "hits": [
+        {
+          "kind": "transport",
+          "id": "rec",
+          "index": 0,
+          "controlId": "recorder:rec",
+          "x": 41.48275988019577,
+          "y": 14.458024691358025,
+          "w": 7.54182190079626,
+          "h": 1.1814814814814816,
+          "enabled": true
+        },
+        {
+          "kind": "transport",
+          "id": "stop",
+          "index": 1,
+          "controlId": "recorder:stop",
+          "x": 49.87197750018264,
+          "y": 14.458024691358025,
+          "w": 7.54182190079626,
+          "h": 1.1814814814814816,
+          "enabled": false
+        },
+        {
+          "kind": "transport",
+          "id": "takes",
+          "index": 2,
+          "controlId": "recorder:takes",
+          "x": 58.26119512016949,
+          "y": 14.458024691358025,
+          "w": 7.54182190079626,
+          "h": 1.1814814814814816,
+          "enabled": true
+        }
+      ],
+      "nativeInside": [],
+      "nativePrintCalls": 2808,
+      "coldMs": 4.400000035762787,
+      "warmP95Ms": 0.5999999642372131,
+      "screenshot": "/Users/seb/chunk-surfer/artifacts/electronic-readouts/recorder-monitor-large-text-retina.png"
+    },
+    {
+      "size": "large-text-retina",
+      "mode": "record",
+      "dimensions": {
+        "cols": 75,
+        "rows": 20
+      },
+      "metrics": {
+        "cellW": 12.674999999999999,
+        "cellH": 30,
+        "aspect": 0.4225
+      },
+      "rect": {
+        "x": 6.315837533786247,
+        "y": 2.5,
+        "w": 62.368324932427505,
+        "h": 14.500000000000002,
+        "bar": 2,
+        "compact": false
+      },
+      "body": {
+        "x": 10.9765139893345,
+        "y": 5.937037037037037,
+        "w": 53.04697202133101,
+        "h": 7.124691358024692
+      },
+      "display": {
+        "x": 9.281722550953315,
+        "y": 5.220987654320988,
+        "w": 56.43655489809337,
+        "h": 8.556790123456791
+      },
+      "hits": [
+        {
+          "kind": "transport",
+          "id": "rec",
+          "index": 0,
+          "controlId": "recording:rec",
+          "x": 41.48275988019577,
+          "y": 14.458024691358025,
+          "w": 7.54182190079626,
+          "h": 1.1814814814814816,
+          "enabled": true
+        },
+        {
+          "kind": "transport",
+          "id": "stop",
+          "index": 1,
+          "controlId": "recording:stop",
+          "x": 49.87197750018264,
+          "y": 14.458024691358025,
+          "w": 7.54182190079626,
+          "h": 1.1814814814814816,
+          "enabled": true
+        },
+        {
+          "kind": "transport",
+          "id": "takes",
+          "index": 2,
+          "controlId": "recording:takes",
+          "x": 58.26119512016949,
+          "y": 14.458024691358025,
+          "w": 7.54182190079626,
+          "h": 1.1814814814814816,
+          "enabled": true
+        }
+      ],
+      "nativeInside": [],
+      "nativePrintCalls": 2808,
+      "coldMs": 0.5,
+      "warmP95Ms": 0.30000001192092896,
+      "screenshot": "/Users/seb/chunk-surfer/artifacts/electronic-readouts/recorder-record-large-text-retina.png"
+    },
+    {
+      "size": "large-text-retina",
+      "mode": "play",
+      "dimensions": {
+        "cols": 75,
+        "rows": 20
+      },
+      "metrics": {
+        "cellW": 12.674999999999999,
+        "cellH": 30,
+        "aspect": 0.4225
+      },
+      "rect": {
+        "x": 6.315837533786247,
+        "y": 2.5,
+        "w": 62.368324932427505,
+        "h": 14.500000000000002,
+        "bar": 2,
+        "compact": false
+      },
+      "body": {
+        "x": 10.9765139893345,
+        "y": 5.937037037037037,
+        "w": 53.04697202133101,
+        "h": 7.124691358024692
+      },
+      "display": {
+        "x": 9.281722550953315,
+        "y": 5.220987654320988,
+        "w": 56.43655489809337,
+        "h": 8.556790123456791
+      },
+      "hits": [
+        {
+          "kind": "transport",
+          "id": "rec",
+          "index": 0,
+          "controlId": "recorder:rec",
+          "x": 41.48275988019577,
+          "y": 14.458024691358025,
+          "w": 7.54182190079626,
+          "h": 1.1814814814814816,
+          "enabled": false
+        },
+        {
+          "kind": "transport",
+          "id": "stop",
+          "index": 1,
+          "controlId": "recorder:stop",
+          "x": 49.87197750018264,
+          "y": 14.458024691358025,
+          "w": 7.54182190079626,
+          "h": 1.1814814814814816,
+          "enabled": true
+        },
+        {
+          "kind": "transport",
+          "id": "takes",
+          "index": 2,
+          "controlId": "recorder:takes",
+          "x": 58.26119512016949,
+          "y": 14.458024691358025,
+          "w": 7.54182190079626,
+          "h": 1.1814814814814816,
+          "enabled": true
+        }
+      ],
+      "nativeInside": [],
+      "nativePrintCalls": 2808,
+      "coldMs": 0.5999999642372131,
+      "warmP95Ms": 2.700000047683716,
+      "screenshot": "/Users/seb/chunk-surfer/artifacts/electronic-readouts/recorder-play-large-text-retina.png"
+    },
+    {
+      "size": "large-text-retina",
+      "mode": "check",
+      "dimensions": {
+        "cols": 75,
+        "rows": 20
+      },
+      "metrics": {
+        "cellW": 12.674999999999999,
+        "cellH": 30,
+        "aspect": 0.4225
+      },
+      "rect": {
+        "x": 6.315837533786247,
+        "y": 2.5,
+        "w": 62.368324932427505,
+        "h": 14.500000000000002,
+        "bar": 2,
+        "compact": false
+      },
+      "body": {
+        "x": 10.9765139893345,
+        "y": 5.937037037037037,
+        "w": 53.04697202133101,
+        "h": 7.124691358024692
+      },
+      "display": {
+        "x": 9.281722550953315,
+        "y": 5.220987654320988,
+        "w": 56.43655489809337,
+        "h": 8.556790123456791
+      },
+      "hits": [],
+      "nativeInside": [],
+      "nativePrintCalls": 2808,
+      "coldMs": 3.699999988079071,
+      "warmP95Ms": 0.30000001192092896,
+      "screenshot": "/Users/seb/chunk-surfer/artifacts/electronic-readouts/recorder-check-large-text-retina.png"
+    },
+    {
+      "size": "large-text-retina",
+      "mode": "listen",
+      "dimensions": {
+        "cols": 75,
+        "rows": 20
+      },
+      "metrics": {
+        "cellW": 12.674999999999999,
+        "cellH": 30,
+        "aspect": 0.4225
+      },
+      "rect": {
+        "x": 6.315837533786247,
+        "y": 2.5,
+        "w": 62.368324932427505,
+        "h": 14.500000000000002,
+        "bar": 2,
+        "compact": false
+      },
+      "body": {
+        "x": 10.9765139893345,
+        "y": 5.937037037037037,
+        "w": 53.04697202133101,
+        "h": 7.124691358024692
+      },
+      "display": {
+        "x": 9.281722550953315,
+        "y": 5.220987654320988,
+        "w": 56.43655489809337,
+        "h": 8.556790123456791
+      },
+      "hits": [
+        {
+          "kind": "transport",
+          "id": "rec",
+          "index": 0,
+          "controlId": "recorder:rec",
+          "x": 41.48275988019577,
+          "y": 14.458024691358025,
+          "w": 7.54182190079626,
+          "h": 1.1814814814814816,
+          "enabled": true
+        },
+        {
+          "kind": "transport",
+          "id": "stop",
+          "index": 1,
+          "controlId": "recorder:stop",
+          "x": 49.87197750018264,
+          "y": 14.458024691358025,
+          "w": 7.54182190079626,
+          "h": 1.1814814814814816,
+          "enabled": false
+        },
+        {
+          "kind": "transport",
+          "id": "takes",
+          "index": 2,
+          "controlId": "recorder:takes",
+          "x": 58.26119512016949,
+          "y": 14.458024691358025,
+          "w": 7.54182190079626,
+          "h": 1.1814814814814816,
+          "enabled": true
+        },
+        {
+          "kind": "choice",
+          "index": 0,
+          "x": 21.023486010665508,
+          "y": 10.686831275720163,
+          "w": 42,
+          "h": 0.7916323731138547
+        },
+        {
+          "kind": "choice",
+          "index": 1,
+          "x": 21.023486010665508,
+          "y": 11.478463648834017,
+          "w": 42,
+          "h": 0.7916323731138547
+        },
+        {
+          "kind": "guide",
+          "x": 10.9765139893345,
+          "y": 5.937037037037037,
+          "w": 53.04697202133101,
+          "h": 7.124691358024692
+        }
+      ],
+      "nativeInside": [],
+      "nativePrintCalls": 2808,
+      "coldMs": 1.9000000357627869,
+      "warmP95Ms": 0.30000001192092896,
+      "screenshot": "/Users/seb/chunk-surfer/artifacts/electronic-readouts/recorder-listen-large-text-retina.png"
+    },
+    {
+      "size": "large-text-retina",
+      "mode": "browse",
+      "dimensions": {
+        "cols": 75,
+        "rows": 20
+      },
+      "metrics": {
+        "cellW": 12.674999999999999,
+        "cellH": 30,
+        "aspect": 0.4225
+      },
+      "rect": {
+        "x": 6.315837533786247,
+        "y": 2.5,
+        "w": 62.368324932427505,
+        "h": 14.500000000000002,
+        "bar": 2,
+        "compact": false
+      },
+      "body": {
+        "x": 10.9765139893345,
+        "y": 5.937037037037037,
+        "w": 53.04697202133101,
+        "h": 7.124691358024692
+      },
+      "display": {
+        "x": 9.281722550953315,
+        "y": 5.220987654320988,
+        "w": 56.43655489809337,
+        "h": 8.556790123456791
+      },
+      "hits": [
+        {
+          "kind": "transport",
+          "id": "rec",
+          "index": 0,
+          "controlId": "recorder:rec",
+          "x": 41.48275988019577,
+          "y": 14.458024691358025,
+          "w": 7.54182190079626,
+          "h": 1.1814814814814816,
+          "enabled": true
+        },
+        {
+          "kind": "transport",
+          "id": "stop",
+          "index": 1,
+          "controlId": "recorder:stop",
+          "x": 49.87197750018264,
+          "y": 14.458024691358025,
+          "w": 7.54182190079626,
+          "h": 1.1814814814814816,
+          "enabled": false
+        },
+        {
+          "kind": "transport",
+          "id": "takes",
+          "index": 2,
+          "controlId": "recorder:takes",
+          "x": 58.26119512016949,
+          "y": 14.458024691358025,
+          "w": 7.54182190079626,
+          "h": 1.1814814814814816,
+          "enabled": true
+        },
+        {
+          "kind": "take",
+          "id": "0",
+          "index": 0,
+          "x": 10.9765139893345,
+          "y": 7.437037037037037,
+          "w": 53.04697202133101,
+          "h": 1
+        },
+        {
+          "kind": "take",
+          "id": "1",
+          "index": 1,
+          "x": 10.9765139893345,
+          "y": 8.437037037037037,
+          "w": 53.04697202133101,
+          "h": 1
+        }
+      ],
+      "nativeInside": [],
+      "nativePrintCalls": 2808,
+      "coldMs": 1.399999976158142,
+      "warmP95Ms": 0.30000001192092896,
+      "screenshot": "/Users/seb/chunk-surfer/artifacts/electronic-readouts/recorder-browse-large-text-retina.png"
+    },
+    {
+      "size": "large-text-retina",
+      "mode": "transcript-fixture",
+      "dimensions": {
+        "cols": 75,
+        "rows": 20
+      },
+      "panel": {
+        "x": 3,
+        "y": 1.5,
+        "w": 69,
+        "h": 17
+      },
+      "body": {
+        "x": 6,
+        "y": 5.5,
+        "w": 63,
+        "h": 12
+      },
+      "display": {
+        "x": 4.4,
+        "y": 3.85,
+        "w": 66.2,
+        "h": 12.3
+      },
+      "roles": [
+        "incoming",
+        "system",
+        "direction"
+      ],
+      "directionRows": 1,
+      "nativeInside": [],
+      "screenshot": "/Users/seb/chunk-surfer/artifacts/electronic-readouts/dialogue-transcript-large-text-retina.png"
+    }
+  ],
+  "live": [
+    {
+      "size": "wide",
+      "kind": "recorder-main-R",
+      "scene": "recorder",
+      "state": {
+        "cursor": 0,
+        "browsing": false,
+        "focus": "transport",
+        "row": 0,
+        "notice": "",
+        "guide": null,
+        "keys": [
+          {
+            "id": "rec",
+            "enabled": false,
+            "reason": "NOT A ROOM ON THE ORDER"
+          },
+          {
+            "id": "stop",
+            "enabled": false,
+            "reason": "TRANSPORT STOPPED"
+          },
+          {
+            "id": "takes",
+            "enabled": true,
+            "reason": ""
+          }
+        ],
+        "selectedKey": "rec",
+        "hitRegions": [
+          {
+            "kind": "transport",
+            "id": "rec",
+            "index": 0,
+            "controlId": "recorder:rec",
+            "x": 81.0621301775148,
+            "y": 33.45,
+            "w": 10.532544378698226,
+            "h": 1.65,
+            "enabled": false
+          },
+          {
+            "kind": "transport",
+            "id": "stop",
+            "index": 1,
+            "controlId": "recorder:stop",
+            "x": 92.77810650887574,
+            "y": 33.45,
+            "w": 10.532544378698226,
+            "h": 1.65,
+            "enabled": false
+          },
+          {
+            "kind": "transport",
+            "id": "takes",
+            "index": 2,
+            "controlId": "recorder:takes",
+            "x": 104.4940828402367,
+            "y": 33.45,
+            "w": 10.532544378698226,
+            "h": 1.65,
+            "enabled": true
+          }
+        ]
+      },
+      "screenshot": "/Users/seb/chunk-surfer/artifacts/electronic-readouts/live-recorder-wide.png"
+    },
+    {
+      "size": "large-text-retina",
+      "kind": "recorder-main-R",
+      "scene": "recorder",
+      "state": {
+        "cursor": 0,
+        "browsing": false,
+        "focus": "transport",
+        "row": 0,
+        "notice": "",
+        "guide": null,
+        "keys": [
+          {
+            "id": "rec",
+            "enabled": false,
+            "reason": "NOT A ROOM ON THE ORDER"
+          },
+          {
+            "id": "stop",
+            "enabled": false,
+            "reason": "TRANSPORT STOPPED"
+          },
+          {
+            "id": "takes",
+            "enabled": true,
+            "reason": ""
+          }
+        ],
+        "selectedKey": "rec",
+        "hitRegions": [
+          {
+            "kind": "transport",
+            "id": "rec",
+            "index": 0,
+            "controlId": "recorder:rec",
+            "x": 55.562130177514796,
+            "y": 19.45,
+            "w": 10.532544378698226,
+            "h": 1.65,
+            "enabled": false
+          },
+          {
+            "kind": "transport",
+            "id": "stop",
+            "index": 1,
+            "controlId": "recorder:stop",
+            "x": 67.27810650887574,
+            "y": 19.45,
+            "w": 10.532544378698226,
+            "h": 1.65,
+            "enabled": false
+          },
+          {
+            "kind": "transport",
+            "id": "takes",
+            "index": 2,
+            "controlId": "recorder:takes",
+            "x": 78.9940828402367,
+            "y": 19.45,
+            "w": 10.532544378698226,
+            "h": 1.65,
+            "enabled": true
+          }
+        ]
+      },
+      "screenshot": "/Users/seb/chunk-surfer/artifacts/electronic-readouts/live-recorder-large-text-retina.png"
+    },
+    {
+      "size": "wide",
+      "kind": "post-door-main-thought",
+      "scene": "thought:post-door",
+      "view": {
+        "mode": "nodes",
+        "nodeId": "self",
+        "finished": false,
+        "speaker": "",
+        "history": [],
+        "line": {
+          "who": "direction",
+          "text": "You reach back for the push bar instinctively...",
+          "signalRole": "unattributed",
+          "sourceId": "self.line.1"
+        },
+        "who": "direction",
+        "typed": 48,
+        "typing": false,
+        "lineAge": 1.576899999916554,
+        "lineSerial": 1,
+        "lineContentId": "thought:post-door:self:line:0",
+        "seenBeforeRun": false,
+        "accelerating": false,
+        "voice": null,
+        "pending": null,
+        "art": {
+          "id": "door",
+          "mode": "hero",
+          "caption": "The push bar is not where the push bar is.",
+          "status": "THRESHOLD"
+        },
+        "artReason": "node",
+        "lineSourceId": "self.line.1",
+        "spent": {}
+      },
+      "screenshot": "/Users/seb/chunk-surfer/artifacts/electronic-readouts/live-dialogue-wide.png"
+    },
+    {
+      "size": "large-text-retina",
+      "kind": "post-door-main-thought",
+      "scene": "thought:post-door",
+      "view": {
+        "mode": "nodes",
+        "nodeId": "self",
+        "finished": false,
+        "speaker": "",
+        "history": [],
+        "line": {
+          "who": "direction",
+          "text": "You reach back for the push bar instinctively...",
+          "signalRole": "unattributed",
+          "sourceId": "self.line.1"
+        },
+        "who": "direction",
+        "typed": 48,
+        "typing": false,
+        "lineAge": 2.133999999880791,
+        "lineSerial": 1,
+        "lineContentId": "thought:post-door:self:line:0",
+        "seenBeforeRun": false,
+        "accelerating": false,
+        "voice": null,
+        "pending": null,
+        "art": {
+          "id": "door",
+          "mode": "hero",
+          "caption": "The push bar is not where the push bar is.",
+          "status": "THRESHOLD"
+        },
+        "artReason": "node",
+        "lineSourceId": "self.line.1",
+        "spent": {}
+      },
+      "screenshot": "/Users/seb/chunk-surfer/artifacts/electronic-readouts/live-dialogue-large-text-retina.png"
+    }
+  ],
+  "pageErrors": [],
+  "visualReview": "Screenshots require human/agent inspection; numeric assertions prove geometry and native-type exclusion, not appearance."
+}

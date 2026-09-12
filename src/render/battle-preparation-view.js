@@ -8,10 +8,67 @@ import { TECHNIQUE_DEFS, techniqueAvailability } from '../game/combat-progressio
 import { skillPatchSource } from '../game/skill-patchbay.js';
 import { BATTLE_EQUIPMENT_COPY } from '../game/battle-preparation-model.js';
 import { uiCurrentScale } from './ui.js';
+import { drawElectronicText } from './electronic-text.js';
 
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const BRANCHES=[['torch','TORCH'],['recorder','RECORDER'],['rig','BENT RIG'],['nerve','NERVE'],['fork','FORK'],['radio','RADIO']];
+// AN ITEM WEARS THE COLOUR OF THE SKILL BRANCH IT FEEDS.
+//
+// The SKILLS tab colours every socket ring with PATCH_COLORS[branch], and a
+// tool's branch IS its toolId — so the torch in quick slot one and the TORCH
+// column are the same amber without either side naming the other. Derived here
+// rather than authored a second time, because a second table is a second table
+// to keep in step.
+//
+// COFFEE AND THE FILM BADGE COME BACK EMPTY, and that is the honest answer
+// rather than a gap: they are the two items in the case with no branch behind
+// them, nothing to patch and no column to point at. They keep the neutral edge,
+// which is a fact about them and not a missing colour.
+const gearBranchColor=(id)=>PATCH_COLORS[BATTLE_GEAR[id]?.toolId]||'';
+const branchStyle=(id)=>{const c=gearBranchColor(id);return c?` style="--branch:${c}"`:'';};
 const cap=(command,label,color='white',extra='')=>`<button class="hardware" data-command="${esc(command)}" data-color="${color}" ${extra}><span>${esc(label)}</span></button>`;
+
+// DOM values remain the accessible source of truth. Only their visible image
+// is drawn by the LCD character ROM; this canvas never owns focus or input.
+export function paintBattlePreparationReadout(readout, { window: win = globalThis.window } = {}) {
+  if (!readout?.clientWidth || !readout.clientHeight || !win?.getComputedStyle) return false;
+  let canvas = readout.querySelector('.readout-display');
+  if (!canvas) {
+    canvas = readout.ownerDocument.createElement('canvas');
+    canvas.className = 'readout-display';
+    canvas.setAttribute('aria-hidden', 'true');
+    readout.appendChild(canvas);
+  }
+  const ctx = canvas.getContext?.('2d');
+  if (!ctx) { delete readout.dataset.electronicPainted; return false; }
+  const bounds = readout.getBoundingClientRect();
+  // clientWidth is before CSS zoom, while bounds include the player's UI scale.
+  const dpr = Math.max(1, win.devicePixelRatio || 1) * bounds.width / readout.offsetWidth;
+  const width = Math.round(readout.clientWidth * dpr), height = Math.round(readout.clientHeight * dpr);
+  const canvasBounds = canvas.getBoundingClientRect();
+  const ratioX = width / canvasBounds.width, ratioY = height / canvasBounds.height;
+  const rows = [...readout.querySelectorAll('[data-readout-text]')].map(node => {
+    const rect = node.getBoundingClientRect(), style = win.getComputedStyle(node);
+    return { text: node.textContent, x: (rect.left - canvasBounds.left) * ratioX,
+      y: (rect.top - canvasBounds.top) * ratioY, width: rect.width * ratioX,
+      fontSize: parseFloat(style.fontSize) * dpr, color: node.tagName === 'B' ? '#c1d39f' : '#8ba078' };
+  });
+  const key = JSON.stringify([width, height, rows]);
+  if (canvas.dataset.paintKey === key) {
+    readout.dataset.electronicPainted = 'true';
+    return true;
+  }
+  if (canvas.width !== width) canvas.width = width;
+  if (canvas.height !== height) canvas.height = height;
+  ctx.clearRect(0, 0, width, height);
+  for (const row of rows) drawElectronicText(ctx, row.text, row.x, row.y, {
+    fontSize: row.fontSize, color: row.color, mode: 'lcd', baseline: 'top',
+    maxWidth: row.width, dpr,
+  });
+  canvas.dataset.paintKey = key;
+  readout.dataset.electronicPainted = 'true';
+  return true;
+}
 
 export function createBattlePreparationView({ host = globalThis.document?.getElementById('map'), onActivate = () => {} } = {}) {
   if(!host||!globalThis.document)return null;
@@ -43,6 +100,7 @@ export function createBattlePreparationView({ host = globalThis.document?.getEle
       const ctx=canvas.getContext('2d');ctx.clearRect(0,0,w,h);
       drawHardwareCap(ctx,0,0,w,h,{color:button.dataset.color,dpr,enabled:!button.disabled,focused:focus===button.dataset.command,travel:state.travel,lampHeat:0});
     }
+    paintBattlePreparationReadout(shadow.querySelector('.readout'));
   }
   function cables(){
     if(!current||current.page!=='skills'||root.hidden)return;
@@ -69,11 +127,22 @@ export function createBattlePreparationView({ host = globalThis.document?.getEle
     const id=loadout.top[selectedSlot],gear=BATTLE_GEAR[id],copy=BATTLE_EQUIPMENT_COPY[id];
     const skill=TECHNIQUE_DEFS.find(t=>t.id===selectedSkill),status=techniqueAvailability(build,selectedSkill,{hasRig});
     const reserve=available.filter(id=>!loadout.top.includes(id));
-    const equipment=`<div class="heading">QUICK SLOTS<small>Select a slot</small></div><div class="slots">${Array.from({length:4},(_,i)=>{
-      const id=loadout.top[i],gear=BATTLE_GEAR[id],copy=BATTLE_EQUIPMENT_COPY[id];return `<button class="slot" data-command="slot:${i}" aria-pressed="${selectedSlot===i}" ${i>loadout.top.length?'disabled':''} aria-label="Slot ${i+1}: ${esc(gear?.label||'empty')}"><span class="number">0${i+1}</span>${gear?`<i class="lamp"></i>${icon(id)}`:''}<strong>${esc(gear?.label||'EMPTY')}</strong><small>${esc(copy?.move||'')}</small></button>`;
-    }).join('')}</div><div class="equipment-bottom"><div class="reserve"><div class="heading">IN THE CASE</div><div class="items">${reserve.map(id=>`<button class="item" data-command="equip:${id}" aria-label="Put ${esc(BATTLE_GEAR[id].label)} in slot ${selectedSlot+1}">${icon(id)}<span>${esc(BATTLE_GEAR[id].label)}</span></button>`).join('')||'<div class="empty">No other equipment.</div>'}</div></div><div class="inspector"><h3>${esc(gear?.label||'EMPTY SLOT')}</h3><p>${esc(copy?.detail||'Choose an item from the case.')}</p>${id?'<button class="put-away" data-command="inspect">INSPECT</button> <button class="put-away" data-command="store">PUT BACK IN CASE</button>':''}</div></div>`;
+    const incoming=snapshot.replacing?BATTLE_GEAR[snapshot.replacing]:null;
+    // THE CASE FLIPS TO THE QUESTION.
+    //
+    // Picking an item now fills the first empty slot on its own, so the case is
+    // just the case — until there is no empty slot, and then the one thing that
+    // could not be decided for the player is the only thing the panel shows.
+    // Asked BY NAME: giving up the RADIO is the decision being made, where
+    // "slot 3" is a different question they would have to translate first.
+    const casePanel=incoming
+      ? `<div class="reserve replacing"><div class="heading">SLOTS FULL<small>What does ${esc(incoming.label)} take the place of?</small></div><div class="items">${loadout.top.map(id=>`<button class="item"${branchStyle(id)} data-command="replace:${id}" aria-label="Put ${esc(incoming.label)} in place of ${esc(BATTLE_GEAR[id].label)}">${icon(id)}<span>${esc(BATTLE_GEAR[id].label)}</span></button>`).join('')}</div><button class="put-away" data-command="cancel-replace">KEEP WHAT I HAVE</button></div>`
+      : `<div class="reserve"><div class="heading">IN THE CASE</div><div class="items">${reserve.map(id=>`<button class="item"${branchStyle(id)} data-command="equip:${id}" aria-label="Take out ${esc(BATTLE_GEAR[id].label)}">${icon(id)}<span>${esc(BATTLE_GEAR[id].label)}</span></button>`).join('')||'<div class="empty">No other equipment.</div>'}</div></div>`;
+    const equipment=`<div class="heading">QUICK SLOTS<small>Select to inspect</small></div><div class="slots">${Array.from({length:4},(_,i)=>{
+      const id=loadout.top[i],gear=BATTLE_GEAR[id],copy=BATTLE_EQUIPMENT_COPY[id];return `<button class="slot"${branchStyle(id)} data-command="slot:${i}" aria-pressed="${selectedSlot===i}" ${i>loadout.top.length?'disabled':''} aria-label="Slot ${i+1}: ${esc(gear?.label||'empty')}"><span class="number">0${i+1}</span>${gear?`<i class="lamp"></i>${icon(id)}`:''}<strong>${esc(gear?.label||'EMPTY')}</strong><small>${esc(copy?.move||'')}</small></button>`;
+    }).join('')}</div><div class="equipment-bottom">${casePanel}<div class="inspector"><h3>${esc(gear?.label||'EMPTY SLOT')}</h3><p>${esc(copy?.detail||'Choose an item from the case.')}</p>${id?'<button class="put-away" data-command="inspect">INSPECT</button> <button class="put-away" data-command="store">PUT BACK IN CASE</button>':''}</div></div>`;
     const skills=`<div class="heading">SKILLS<small>${build.techniques.length} patched · Scroll for more</small></div><div class="rack"><div class="columns">${BRANCHES.map(([branch,label])=>`<div class="column" style="--branch:${PATCH_COLORS[branch]}"><div class="branch">${label}</div><i class="supply" data-source="supply:${branch}"></i>${TECHNIQUE_DEFS.filter(t=>t.branch===branch).map(t=>{const a=techniqueAvailability(build,t.id,{hasRig});return `<button class="skill" data-skill="${t.id}" data-command="skill:${t.id}" data-selected="${selectedSkill===t.id}" data-patched="${a.patched}" data-available="${a.enabled}" aria-pressed="${selectedSkill===t.id}" aria-label="${esc(t.label)}, ${a.patched?'patched':a.enabled?'available':esc(a.reason)}">${esc(t.label)}<i class="skill-input"></i><em>${a.patched?'PATCHED':t.special?'SPECIAL':''}</em></button>`;}).join('')}</div>`).join('')}</div><canvas class="cables" aria-hidden="true"></canvas></div><div class="skill-inspector"><div><h3>${esc(skill.label)}</h3><p>${esc(skill.detail.replace(/^SPECIAL — /,''))}</p>${!status.enabled&&!status.patched?`<div class="status">${esc(status.reason)}</div>`:''}</div>${cap('patch',status.patched?'PULL LEAD':'PATCH LEAD',status.patched?'amber':'green',!status.patched&&!status.enabled?'disabled':'')}</div>`;
-    shadow.innerHTML=`<style>${battlePreparationStyle}</style><section class="case" role="dialog" aria-modal="true" aria-label="Prepare for battle"><i class="screw tl"></i><i class="screw tr"></i><i class="screw bl"></i><i class="screw br"></i><header><div class="brand">AUDIOCORP<span>FIELD CASE</span></div><span class="paused">TURNS PAUSED</span></header><div class="topline"><div class="tabs" role="tablist" aria-label="Preparation">${cap('tab:equipment','EQUIPMENT','amber',`role="tab" aria-selected="${page==='equipment'}"`)}${cap('tab:skills','SKILLS','green',`role="tab" aria-selected="${page==='skills'}"`)}</div><div class="readout"><span>BATTERY<b>${Math.round(Math.max(0,battery)*100)}%</b></span><span>SPARE LEADS<b>${build.unspent}</b></span></div></div><div class="page ${page}" role="tabpanel" aria-label="${page==='equipment'?'Equipment':'Skills'}">${page==='equipment'?equipment:skills}</div><footer><div class="footer-copy"><div class="hint">${page==='equipment'?'Choose a slot, then an item.':'Select a skill to patch or pull its lead.'}</div>${message?`<div class="status" role="status">${esc(message)}</div>`:''}<span class="keys">${esc(keys)}</span></div>${cap('ready','READY','white')}</footer></section>`;
+    shadow.innerHTML=`<style>${battlePreparationStyle}</style><section class="case" role="dialog" aria-modal="true" aria-label="Prepare for battle"><i class="screw tl"></i><i class="screw tr"></i><i class="screw bl"></i><i class="screw br"></i><header><div class="brand">AUDIOCORP<span>FIELD CASE</span></div><span class="paused">TURNS PAUSED</span></header><div class="topline"><div class="tabs" role="tablist" aria-label="Preparation">${cap('tab:equipment','EQUIPMENT','amber',`role="tab" aria-selected="${page==='equipment'}"`)}${cap('tab:skills','SKILLS','green',`role="tab" aria-selected="${page==='skills'}"`)}</div><div class="readout" role="status" aria-live="polite"><span><span data-readout-text>BATTERY</span><b data-readout-text>${Math.round(Math.max(0,battery)*100)}%</b></span><span><span data-readout-text>SPARE LEADS</span><b data-readout-text>${build.unspent}</b></span></div></div><div class="page ${page}" role="tabpanel" aria-label="${page==='equipment'?'Equipment':'Skills'}">${page==='equipment'?equipment:skills}</div><footer><div class="footer-copy"><div class="hint">${page!=='equipment'?'Select a skill to patch or pull its lead.':incoming?`Choose which tool ${esc(incoming.label)} replaces.`:'Choose an item — it fills the first empty slot.'}</div>${message?`<div class="status" role="status">${esc(message)}</div>`:''}<span class="keys">${esc(keys)}</span></div>${cap('ready','READY','white')}</footer></section>`;
     // Keep the primary action's shared cap class and its own sizing class.
     shadow.querySelector('[data-command="ready"]').classList.add('ready');
     if(shadow.querySelector('.rack'))shadow.querySelector('.rack').scrollTop=scroll;

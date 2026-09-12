@@ -1,6 +1,6 @@
 // THE MACHINE, SITTING THERE.
 //
-// The DA-1000 in MONITOR — the state a player looks at longest and the one no
+// The A-1000 in MONITOR — the state a player looks at longest and the one no
 // other harness reaches: verify-take-screen forces a take, which is RECORD.
 // This opens the face the way a player does, with [r], and shoots it at both
 // supported widths.

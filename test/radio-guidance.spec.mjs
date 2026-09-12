@@ -55,7 +55,7 @@ test('danger help ruptures on the second run-wide call before an armed hijack be
   assert.equal(begun.kind, 'original-breakdown');
 });
 
-test('schema 4 restores guidance history and active-time pacing without spending saved wall time', () => {
+test('schema 5 restores guidance history and active-time pacing without spending saved wall time', () => {
   radio.resetRadioState();
   radio.resolveManualRadioCall({ intent:'help', dangerContext:true });
   warning();
@@ -63,7 +63,7 @@ test('schema 4 restores guidance history and active-time pacing without spending
   radio.armOriginalBreakdown({...context,now:1000});
   walk(1);
   const saved = radio.saveRadioState(2000);
-  assert.equal(saved.schema, 4);
+  assert.equal(saved.schema, 5);
   assert.equal(saved.guidance.dangerCallCount, 1);
   assert.equal(saved.guidance.recentIncidentRemainingMs, 29000);
   assert.equal(saved.guidance.originalBreakdown.fallbackRemainingMs, 11000);

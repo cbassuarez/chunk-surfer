@@ -56,6 +56,18 @@ export const ACHIEVEMENT_DEFS = Object.freeze([
     events: [EVENT_TYPES.COFFEE_DRUNK], test: () => true,
   },
   {
+    id: 'ACH_DO_NOT_DISTURB', name: 'Do Not Disturb',
+    description: "Let Martin's worried check-in go unanswered.", category: 'method', hidden: true,
+    events: [EVENT_TYPES.RADIO_CUE_MISSED],
+    test: ({ event }) => event.payload?.id === 'missed_checkin',
+  },
+  {
+    id: 'ACH_RADIO_SILENCE', name: 'Radio Silence',
+    description: 'Finish a run without answering, transmitting, or using the radio.', category: 'method', hidden: false,
+    events: [EVENT_TYPES.RUN_FINISHED],
+    test: ({ summary }) => summary?.radio?.tracked === true && summary.radio.uses === 0,
+  },
+  {
     id: 'ACH_CATALOGUE', name: 'Serviceable',
     description: 'Inspect every field-relevant object in one run.', category: 'method', hidden: false,
     events: [EVENT_TYPES.PROP_INSPECTED, EVENT_TYPES.RUN_FINISHED],

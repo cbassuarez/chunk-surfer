@@ -12,7 +12,7 @@ const renderer=createAsciiObject({canvas},{...ITEM_ASCII_OPTIONS,onLoad:()=>load
 window.__portraits={items:Object.values(ITEM_PORTRAITS),async bake(id,size=512,ascii=true){
  const item=ITEM_PORTRAITS[id];loaded=false;failed=null;
  canvas.style.width=size+'px';canvas.style.height=Math.round(size*.75)+'px';
- renderer.setOptions({...ITEM_ASCII_OPTIONS,src:`/${item.model}`,scale:item.scale,ascii,cellSize:size===192?3:ITEM_ASCII_OPTIONS.cellSize,onLoad:()=>loaded=true,onError:e=>failed=String(e)});renderer.resetView();renderer.resize();
+ renderer.setOptions({...ITEM_ASCII_OPTIONS,...item.lighting,src:`/${item.model}`,scale:item.scale,ascii,cellSize:size===192?3:ITEM_ASCII_OPTIONS.cellSize,onLoad:()=>loaded=true,onError:e=>failed=String(e)});renderer.resetView();renderer.resize();
  // Same model can be rendered at two sizes without another load callback.
  if(window.__lastModel===id)loaded=true;window.__lastModel=id;
  for(let i=0;i<400&&!loaded&&!failed;i++)await new Promise(r=>setTimeout(r,20));

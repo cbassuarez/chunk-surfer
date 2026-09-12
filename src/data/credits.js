@@ -43,6 +43,7 @@ export const CREDITS = Object.freeze([
     lines: Object.freeze([
       'Tauri',
       'Vite',
+      'Cuelume — Daniel Belyi (MIT)',
       'JavaScript',
       'Rust',
     ]),

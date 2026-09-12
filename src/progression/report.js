@@ -2,8 +2,17 @@ import { ENDING_IDS } from './schema.js';
 import { lastReturnRecord } from './return-history.js';
 import { secondShiftForEnding } from '../game/second-shift.js';
 import { normalizeInterferenceRecord } from '../game/interference-case.js';
+import { WITNESS_EDITION_ID } from './unlocks.js';
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
+
+export function returnUnlockDefinition(id) {
+  if (id !== `cosmetic:${WITNESS_EDITION_ID}`) return null;
+  return {
+    label: 'WITNESS EDITION',
+    description: 'PERMANENT RECORDER FINISH. FIT AT THE VAN.',
+  };
+}
 
 export const RETURN_DEFS = Object.freeze([
   Object.freeze({ id: 'sacrifice', order: 1, title: 'THE SEAL', classification: 'CONTAINMENT', hiddenUntilSeen: true }),
@@ -58,6 +67,9 @@ export function buildRunSummary({ endingId, save, meta, authoritative = {}, now 
   const contaminatedRooms = Array.isArray(rec.contaminated)
     ? [...new Set(rec.contaminated)].filter((id) => completedRooms.includes(id))
     : [...new Set(ledger.takes?.contaminated || [])].filter((id) => completedRooms.includes(id));
+  const tapeRows=Array.isArray(save?.rec?.tapes)?save.rec.tapes:[];
+  const unfinishedRooms=[...new Set(tapeRows.filter(t=>['abandoned','spoiled'].includes(t.status)).map(t=>t.roomId))]
+    .filter(id=>!completedRooms.includes(id)||contaminatedRooms.includes(id));
 
   return {
     schema: 1,
@@ -73,6 +85,9 @@ export function buildRunSummary({ endingId, save, meta, authoritative = {}, now 
       completed: completedRooms.length,
       spoiled: Number(ledger.takes?.spoiled) || 0,
       aborted: Number(ledger.takes?.aborted) || 0,
+      unfinishedRooms,
+      assessment:unfinishedRooms.length?'RETAKES OUTSTANDING':contaminatedRooms.length?'CONTAMINATED':completedRooms.length>=5?'COMPLETE':'INCOMPLETE',
+      tapeSeconds:Number(save?.rec?.tapeTransport?.endSeconds)||0,
       rooms: completedRooms,
       contaminated: contaminatedRooms,
       // Where in the room each one was rolled. Only the concert hall has more
@@ -93,6 +108,13 @@ export function buildRunSummary({ endingId, save, meta, authoritative = {}, now 
       recovered: [...(ledger.equipment?.recovered || [])],
     },
     choices: clone(ledger.choices || {}),
+    radio: {
+      tracked: ledger.radio?.tracked === true,
+      uses: Math.max(Number(ledger.radio?.uses) || 0, Number(save?.radio?.transmissions) || 0,
+        dropped.includes('radio') ? 1 : 0,
+        ...Object.values(ledger.battles?.results || {}).map(battle => Number(battle.toolsUsed?.radio) || 0)),
+      missed: [...(ledger.radio?.missed || [])],
+    },
     interference: normalizeInterferenceRecord(authoritative.interference || run.interference),
     replay: clone(run.replay || {}),
     power: clone(ledger.power || { live: [], everRestored: [] }),

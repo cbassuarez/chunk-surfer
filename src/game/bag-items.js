@@ -4,6 +4,8 @@
 // intent: which truthful verb is available, whether it closes before dispatch,
 // and which objects the world may apply automatically at a matching target.
 
+import { mapAcquired } from './map-ownership.js';
+
 export const BAG_ACTION_MODE = Object.freeze({
   COMMAND: 'command',
   DIALOG: 'dialog',
@@ -39,7 +41,7 @@ export const BAG_ITEM_REGISTRY = Object.freeze({
 export const COLLECTED_ITEM_AUDIT = Object.freeze([
   { id: 'light', acquired: 'bag.taken', destination: 'kit' },
   { id: 'recorder', acquired: 'bag.taken', destination: 'kit' },
-  { id: 'map', acquired: 'bag.taken', destination: 'kit' },
+  { id: 'map', acquired: 'map.taken', destination: 'kit' },
   { id: 'radio', acquired: 'bag.taken', destination: 'kit' },
   { id: 'work-order', acquired: 'bag.taken', destination: 'file' },
   { id: 'master-key', acquired: 'prologueDone', destination: 'keyring' },
@@ -64,7 +66,9 @@ export function resolveBagOwnership(context = {}) {
   const caseOwned = !!context.bagTaken;
   if (!caseOwned) return { caseOwned: false, kit: [], filesAvailable: false, keyring: null };
 
-  const kit = [...STARTER_CASE_ITEMS];
+  const flags = context.flags || { 'bag.taken': caseOwned };
+  const ownsMap = context.mapOwned == null ? mapAcquired(flags) : !!context.mapOwned;
+  const kit = STARTER_CASE_ITEMS.filter(id => id !== 'map' || ownsMap);
   if (context.interfaceOwned) kit.push('interface');
   if (context.forkOwned) kit.push('tuning-fork');
   if (context.spannerOwned) kit.push('plant-spanner');

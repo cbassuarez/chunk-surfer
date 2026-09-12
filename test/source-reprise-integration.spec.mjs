@@ -15,6 +15,7 @@ const section=(start,end)=>{
 {
   const calls=[];
   const sourceState={active:true,phase:'final',checkpointId:'final'};
+  const radioState={schema:5,concernRemainingMs:15000};
   const runtime={state:()=>sourceState,sourceSurfaceLines:()=>['SOURCE BODY']};
   let camera={yaw:1.73,pitch:-.22};
   const sandbox={
@@ -32,6 +33,7 @@ const section=(start,end)=>{
     CHAPEL_TOWER_PHASE:{TOWER_ACTIVE:'tower-active'},
     chapelTowerState:()=>({phase:'source-ready'}),bellTowerRuntime:null,towerBellDirector:null,
     hushAudioRuntime:null,getSave:()=>({area:'source-space',playSeconds:0,view:{yaw:1.73,pitch:-.22}}),
+    RADIO:{saveRadioState:()=>radioState},
     saveCommit:(value)=>calls.push(value),
   };
   const api=vm.runInNewContext(`${section('let sourceRepriseWorldLease=null;','function sourceReplayMovementInterlude')}
@@ -47,6 +49,7 @@ const section=(start,end)=>{
   assert.equal(checkpoint.px,12);
   assert.equal(checkpoint.py,-444);
   assert.equal(checkpoint.chunkSurf,sourceState);
+  assert.equal(checkpoint.radio,radioState,'the borrowed room does not discard the radio timer');
   assert.equal('view' in checkpoint,false,'the borrowed camera is not persisted as the live body');
   assert.equal('cameraRevision' in checkpoint,false);
   assert.equal(lease.release(),true);

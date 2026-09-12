@@ -9,10 +9,16 @@ import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js'
 import {buildDetailedItems} from './item-model-details.mjs';
 const out='public/assets/items';await mkdir(out,{recursive:true});
 const io=new NodeIO(),stats=[];
+const onlyArg=process.argv.find(arg=>arg.startsWith('--only='));
+const only=onlyArg?new Set(onlyArg.slice(7).split(',').filter(Boolean)):null;
+if(only&&(!only.size||[...only].some(id=>!/^[-a-z0-9]+$/.test(id))))throw new Error('Use --only=item-id[,item-id]');
+const wants=id=>!only||only.has(id);
+const previous=only?JSON.parse(await readFile(`${out}/models.json`,'utf8')):null;
 const palette={
   shell:['#59604e',.86,.08],rubber:['#333c34',.95,0],dark:['#353e35',.88,0],steel:['#a6aaa0',.38,.82],edge:['#687267',.55,.6],ivory:['#d4cfad',.78,0],amber:['#c4a653',.72,.1],red:['#913e30',.82,0],green:['#76866a',.7,0],glass:['#142b24',.33,.18],paper:['#d5cbb1',.92,0],coffee:['#271c12',.9,0],marble:['#bbbbaa',.88,.08],fracture:['#929b8f',1,0],brass:['#b59b56',.48,.7],blue:['#73828a',.82,0],wire:['#ad714c',.8,0],light:['#c6d09d',.4,.1],cloth:['#454c3c',1,0],badge:['#484a36',.94,0],white:['#e2ddc9',.6,.1],wood:['#76664a',.95,0]
 };
 function model(id,build){
+ if(!wants(id))return Promise.resolve();
  const doc=new Document(),buffer=doc.createBuffer(),scene=doc.createScene(id),root=doc.createNode(id);scene.addChild(root);
  const mats=Object.fromEntries(Object.entries(palette).map(([key,[hex,rough,metal]])=>{const c=new THREE.Color(hex);return[key,doc.createMaterial(key).setBaseColorFactor([c.r,c.g,c.b,1]).setRoughnessFactor(rough).setMetallicFactor(metal)];}));
  const cache=new Map();let triangles=0,pieces=0,currentParent=root;
@@ -41,6 +47,7 @@ function model(id,build){
 }
 const sourceCache=new Map();
 async function extract(id,source,parts,rotation=[0,0,0]){
+ if(!wants(id))return;
  if(!sourceCache.has(source))sourceCache.set(source,await io.read(source));
  const src=sourceCache.get(source),doc=new Document(),scene=doc.createScene(id);
  const root=doc.createNode('portrait-pose').setRotation(new THREE.Quaternion().setFromEuler(new THREE.Euler(...rotation)).toArray());scene.addChild(root);
@@ -79,9 +86,11 @@ await extract('light','public/assets/conservatory-acquisitions.glb',[{mesh:'port
 await extract('marble-eyes',props,[{mesh:'park_marble_eyes',filter:p=>p[1]>.0101}],[.55,0,.12]);
 await extract('sheet-music',props,[{mesh:'open_score'}],[.85,0,.08]);
 const forkSource='public/assets/tuning-fork.glb';
+if(wants('tuning-fork')){
 const fork=await io.read(forkSource),pose=fork.createNode('portrait-pose').setRotation(new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.PI/2,0,Math.PI/2+.13,'ZYX')).toArray());
 for(const s of fork.getRoot().listScenes()){for(const n of [...s.listChildren()]){s.removeChild(n);pose.addChild(n);}s.addChild(pose);}
 await io.write(`${out}/tuning-fork.glb`,fork);stats.push({id:'tuning-fork',origin:'existing',source:forkSource,sourceSha256:createHash('sha256').update(await readFile(forkSource)).digest('hex')});
+}
 
 await model('interface',({box,cyl,ring,cable,screw,knob,socket})=>{
  // Folded converter chassis, inset front plate and a separate rear shell.
@@ -120,6 +129,8 @@ await model('interface',({box,cyl,ring,cable,screw,knob,socket})=>{
  for(const x of[-1.02,1.02]){box([x,0,-.02],[.08,.75,.18],'rubber',undefined,.04);for(const y of[-.39,.39])box([x*.85,y,-.35],[.16,.12,.06],'rubber',undefined,.03);}
 });
 await buildDetailedItems(model);
+if(only)for(const id of only)if(!stats.some(item=>item.id===id))throw new Error(`Unknown item ${id}`);
+const entries=previous?[...previous.items.filter(item=>!only.has(item.id)),...stats]:stats;
 await writeFile(`${out}/models.json`,JSON.stringify({generator:'scripts/build-item-models.mjs',
- license:'Existing project assets retain their source credits. Portable searchlight: Poly Haven CC0, see conservatory-acquisitions.credits.json. Detailed inspection models: original project geometry; reference photographs are not redistributed.',items:stats},null,2)+'\n');
+ ...(previous||{}),license:previous?.license||'Existing project assets retain their source credits. Portable searchlight: Poly Haven CC0, see conservatory-acquisitions.credits.json. Detailed inspection models: original project geometry; reference photographs are not redistributed.',items:entries},null,2)+'\n');
 console.log(`Built ${stats.length} portraits: ${stats.filter(s=>s.origin==='existing').length} existing assets, ${stats.filter(s=>s.origin==='authored').length} detailed inspection models.`);

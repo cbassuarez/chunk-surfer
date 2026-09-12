@@ -4,6 +4,7 @@
 // state is presentation memory; world simulation never advances underneath it.
 
 import * as scenes from './scenes.js';
+import { roomHistory } from '../data/room-history.js';
 import * as AUDIO from '../audio/story-audio.js';
 import { uiFill, uiScrim, uiSize, uiCellMetrics, uiStrokeRect, uiText, uiWrap } from '../render/ui.js';
 import { UI_COLOR } from '../render/palette.js';
@@ -18,8 +19,9 @@ import {
   reduceBagNav,
   repairBagSelection,
 } from './bag-navigation.js';
-import { initialMapNav, reduceMapNav, selectedMapSpace } from './map-navigation.js';
+import { initialMapNav, reduceMapNav, selectedMapSpace, moveMapConsoleFocus, MAP_VIEW_DEFAULTS } from './map-navigation.js';
 import { resolveMapAction } from './map-actions.js';
+import { pointInMapPolygon, mapArchitecturalHeight, createMapAxonometricProjection } from './map-axonometric.js';
 import { bagLayout, bagPanelBounds } from '../render/bag-layout.js';
 import { bagInventoryGeometry, bagInventoryListLayout, bagInventoryActionLayout, bagListCapacity, drawBagView } from '../render/bag-view.js';
 import { bagGuideFrame, drawBagGuideCallouts } from '../render/bag-tour.js';
@@ -28,10 +30,10 @@ import { normalizeCombatBuild, pullCombatTechnique } from './combat-progression.
 import { skillPatchSource, skillPatchAvailability, compatibleSkillInputs, connectSkillPatch } from './skill-patchbay.js';
 import { createHitRegions } from '../render/hit-regions.js';
 import { makeEmbeddedDocumentReader } from './document.js';
-import { sheetDialogueFor, sheetInsightComplete } from './bag-sheets.js';
 import { mapLayoutFromBag } from '../render/map-layout.js';
-import { pressControl, releaseControl, cancelControlScope } from './control-mechanics.js';
-import {createItemInspection} from './item-inspection.js';
+import { sheetDialogueFor, sheetInsightComplete } from './bag-sheets.js';
+import { pressControl, releaseControl, cancelControlScope } from './control-feedback.js';
+import {createItemInspection,itemInspectionStats} from './item-inspection.js';
 import {drawItemInspectionView,itemInspectionLayout} from '../render/item-inspection-view.js';
 import {preloadItemPortraits} from '../render/item-portraits.js';
 
@@ -59,6 +61,7 @@ export function makeBagScene({
   reorderEquipment = null,
   getJob = null,
   getMap = null,
+  getMapUnavailableReason = null,
   hint = '',
   getHint = null,
   focus = null,
@@ -75,8 +78,11 @@ export function makeBagScene({
   readDocument = () => {},
   markRoom = () => false,
   markSpace = null,
+  setMapTarget = null,
+  clearMapTarget = null,
   onItemAction = () => false,
   getItemInspection = () => null,
+  onInspectEquipment = () => false,
   getSheetInsights = () => null,
   onSheetInsight = () => false,
   onClose = () => {},
@@ -92,6 +98,7 @@ export function makeBagScene({
   const loadoutSource = typeof getLoadout === 'function' ? getLoadout : () => loadout;
   const jobSource = typeof getJob === 'function' ? getJob : () => job;
   const mapSource = typeof getMap === 'function' ? getMap : () => map;
+  const mapUnavailableSource = typeof getMapUnavailableReason === 'function' ? getMapUnavailableReason : () => '';
   const hintSource = typeof getHint === 'function' ? getHint : () => hint;
   const focusSource = typeof getFocus === 'function' ? getFocus : () => focus;
   const guideSource = typeof getGuide === 'function' ? getGuide : () => guide;
@@ -118,17 +125,19 @@ export function makeBagScene({
   };
   let model = buildBagModel({
     equipment: equipmentSource(), job: jobSource(), map: mapSource(), loadout: loadoutSource(),
+    mapUnavailableReason: mapUnavailableSource(),
     build: workingBuild, settledBuild, hasRig: rigSource(), sheetInsights:sheetInsightSource(),
   });
   let nav = (memory || rememberedNav) ? repairBagSelection(memory || rememberedNav, model) : initialBagState(model, focus || {});
   let mapNav = initialMapNav({ model: model.map, preferredRoomId: focus?.entryId?.replace(/^room:/, '') || null });
-  if (nav.map) mapNav = reduceMapNav(nav.map, { type: 'MODEL_REFRESH' }, model.map);
+  if (nav.map) mapNav = reduceMapNav({ ...nav.map, ...MAP_VIEW_DEFAULTS, focusedControlId:null }, { type: 'MODEL_REFRESH' }, model.map);
   let t = 0;
   let notice = '';
   let noticeUntil = 0;
   const hits=createHitRegions();
   const heldControls = new Map();
   let patchDrag = null, patchLayout = null, patchLayoutKey = '';
+  let mapPresentation = null, mapDrag = null, locatePending = false, mapViewportKey = '';
   const controlInput = (e = {}) => e.type?.startsWith('pointer') || e.type === 'lostpointercapture'
     ? `pointer:${e.pointerId ?? 'primary'}`
     : e.controllerAction ? `controller:${e.controllerAction}` : `key:${e.code || e.key || ''}`;
@@ -146,6 +155,8 @@ export function makeBagScene({
   }
   function resetBagControls() {
     cancelPatchDrag();
+    mapDrag = null;
+    mapNav=reduceMapNav(mapNav,{type:'FOCUS_CONTROL',controlId:null},model.map);
     heldControls.clear();
     cancelControlScope('bag:');
   }
@@ -171,12 +182,15 @@ export function makeBagScene({
   }
 
   function remember() {
-    nav = reduceBagNav(nav, { type: 'SET_MAP_NAV', map: cloneMapNav(mapNav) }, model);
+    // Room/floor selection persists; viewing transforms do not become an old
+    // zoom trap on the next opening or pretend to be progression data.
+    const { viewMode, rotation, zoom, panX, panY, focusedControlId, ...savedMap } = cloneMapNav(mapNav);
+    nav = reduceBagNav(nav, { type: 'SET_MAP_NAV', map: savedMap }, model);
     rememberedNav = {
       ...nav,
       selected: { ...nav.selected },
       scroll: { ...nav.scroll },
-      map: cloneMapNav(mapNav),
+      map: savedMap,
       mode: 'browse',
       pendingAction: null,
     };
@@ -243,8 +257,7 @@ export function makeBagScene({
   function guidedAction(g) {
     const entry = currentBagEntry(nav, model);
     if (!entry) return null;
-    if(g.action==='mark'&&selectedMapSpace(mapNav,model.map)?.waypoint)return{id:'confirm-waypoint',label:'KEEP THIS TARGET',enabled:true};
-    return g.action === 'mark' ? entry.actions?.secondary : entry.actions?.primary;
+    return g.action === 'mark' ? {id:'set-target',label:'SET TARGET',enabled:true} : entry.actions?.primary;
   }
 
   // The guide, but only once it has an action to hand the player. A guide
@@ -277,7 +290,8 @@ export function makeBagScene({
     if(hit.kind==='bag-tab')return hit.id===`bag:tab:${g.sectionId}`;
     if(g.kind==='section'||g.kind==='close')return false;
     if(g.kind==='skills')return hit.kind==='bag-skill'||hit.kind.startsWith('bag-patch-');
-    if(g.action==='mark')return hit.kind==='map-space' && hit.id===`bag:space:${selectedMapSpace(mapNav,model.map)?.id}`;
+    if(g.action==='mark')return (hit.kind==='map-space' && hit.id===`bag:space:${selectedMapSpace(mapNav,model.map)?.id}`)
+      || (hit.kind==='map-control' && hit.data?.action==='set-target');
     return (hit.kind==='bag-sheet' && hit.id===`bag:sheet:${g.entry}`)
       || (hit.kind==='bag-action' && hit.id===`bag:action:${guidedAction(g)?.id}`);
   }
@@ -290,6 +304,7 @@ export function makeBagScene({
   function refresh() {
     model = buildBagModel({
       equipment: equipmentSource(), job: jobSource(), map: mapSource(), loadout: loadoutSource(),
+      mapUnavailableReason: mapUnavailableSource(),
       build: workingBuild, settledBuild, hasRig: rigSource(), sheetInsights:sheetInsightSource(),
     });
     nav = reduceBagNav(nav, { type: 'MODEL_REFRESH' }, model);
@@ -378,6 +393,7 @@ export function makeBagScene({
 
   function openItemInspection(entry){
     if(!entry)return false;
+    if(onInspectEquipment(entry)===true)return true;
     pushRoute({type:'item-inspect',entryId:entry.id,tree:getItemInspection(entry.sourceId)||null,page:0,inspection:createItemInspection(entry)});
     return true;
   }
@@ -399,6 +415,8 @@ export function makeBagScene({
     const normalized = normalizeBagSectionId(sectionId);
     if(!guideAllowsSection(normalized)){refuseGuided();return false;}
     cancelPatchDrag();
+    mapDrag=null;
+    mapNav=reduceMapNav(mapNav,{type:'FOCUS_CONTROL',controlId:null},model.map);
     if(routes.length>1){for(const route of routes.splice(1)){route.inspection?.dispose();route.reader?.exit?.();}syncActionPresentation();}
     const before = nav.sectionId;
     nav = reduceBagNav(nav, { type: 'SELECT_SECTION', sectionId: normalized }, model);
@@ -529,7 +547,7 @@ export function makeBagScene({
 
   function moveMap(vector) {
     const before = selectedMapSpace(mapNav, model.map)?.id;
-    mapNav = reduceMapNav(mapNav, { type: 'MOVE_SPATIAL', vector }, model.map);
+    mapNav = reduceMapNav(mapNav, { type: 'MOVE_SPATIAL', vector, projectedPoints:mapPresentation?.projectedPoints }, model.map);
     syncBagSelectionFromMap();
     if (selectedMapSpace(mapNav, model.map)?.id !== before) {
       motion.selectionChangedAt = t;
@@ -620,6 +638,7 @@ export function makeBagScene({
       rerouteId, returnable: !!rerouteId, compatibleIds, valid: false,
       pointerId: event.pointerId ?? 'primary', captureTarget: event.originalEvent?.target || null,
     };
+    AUDIO.menuMove?.({scope:'bag:patch',profile:'patch'});
     try { patchDrag.captureTarget?.setPointerCapture?.(event.pointerId); } catch (_) { /* global pointerup is also routed */ }
     notice = rerouteId ? 'MOVE THIS PLUG · DROP ON SPARES TO RETURN ITS RUN' : 'MATCH COLOR AND COLUMN · DROP INTO AN INPUT';
     noticeUntil = t + 5;
@@ -643,10 +662,10 @@ export function makeBagScene({
     const gesture = patchDrag, hit = hits.hit(event.cellX, event.cellY);
     cancelPatchDrag();
     if (hit?.kind === 'bag-patch-return' && gesture.rerouteId && gesture.moved) {
-      if (pullCable(gesture.rerouteId)) { refresh(); emitGuideEvent('skills-changed'); AUDIO.menuConfirm?.(); }
+      if (pullCable(gesture.rerouteId)) { refresh(); emitGuideEvent('skills-changed'); AUDIO.menuUnpatch?.(); }
       return;
     }
-    if (hit?.kind !== 'bag-patch-input') { notice = 'PATCH UNCHANGED'; noticeUntil = t + 1.2; return; }
+    if (hit?.kind !== 'bag-patch-input') { notice = 'PATCH UNCHANGED'; noticeUntil = t + 1.2; AUDIO.menuBack?.({scope:'bag:patch'}); return; }
     const result = connectSkillPatch(workingBuild, gesture.from, hit.data?.socket?.techniqueId, {
       hasRig: rigSource(), rerouteId: gesture.rerouteId,
     });
@@ -664,7 +683,74 @@ export function makeBagScene({
     if (target) selectSkill(target);
     notice = `${target?.label || 'INPUT'} PATCHED · TAKES EFFECT WHEN THE CASE CLOSES`;
     noticeUntil = t + 3; motion.actionAt = t;
-    refresh(); emitGuideEvent('skills-changed'); AUDIO.menuConfirm?.();
+    refresh(); emitGuideEvent('skills-changed'); AUDIO.menuPatch?.();
+  }
+
+  function mapAction(action, payload = {}) {
+    if(nav.sectionId!=='map'||currentRoute().type!=='root')return false;
+    const guided=lockedGuide();
+    if(guided&&!(guided.kind==='action'&&guided.action==='mark'&&(action==='set-target'
+      ||action==='select-space'&&payload.spaceId===selectedMapSpace(mapNav,model.map)?.id))){refuseGuided();return false;}
+    const selected=selectedMapSpace(mapNav,model.map);
+    const entry=currentBagEntry(nav,model)||{id:`room:${selected?.roomId||selected?.id}`,kind:'room',roomId:selected?.roomId,actionList:[]};
+    if(action==='set-target'||action==='clear-target')return execute(entry,action);
+    if(action==='read-file'){activateTertiary();return true;}
+    if(action==='file-document')return openSheet(selected?.objective?.notes?.[0]||selected?.attached);
+    if(action==='file-next'||action==='file-prev'){
+      if(!mapNav.roomFile)return false;
+      const page=Math.max(0,Math.min((mapPresentation?.filePages||1)-1,mapNav.roomFile.page+(action==='file-next'?1:-1)));
+      if(page!==mapNav.roomFile.page)AUDIO.menuPage?.();
+      mapNav={...mapNav,roomFile:{...mapNav.roomFile,page}};return true;
+    }
+    if(action==='floor-prev'||action==='floor-next'){changeFloor(action==='floor-prev'?-1:1);return true;}
+    const event = action==='select-space'?{type:'SELECT_SPACE',spaceId:payload.spaceId}
+      :action==='select-floor'?{type:'SELECT_FLOOR',floorId:payload.floorId}
+      :action==='view-stack'||action==='view-floor'?{type:'SET_VIEW_MODE',mode:action==='view-stack'?'stack':'floor'}
+      :action==='rotate-left'||action==='rotate-right'?{type:'ROTATE',delta:action==='rotate-left'?-1:1}
+      :action==='zoom-in'||action==='zoom-out'?{type:'ZOOM',factor:action==='zoom-in'?1.15:1/1.15}
+      :action==='zoom'?{type:'ZOOM',factor:payload.factor}
+      :action==='pan'?{type:'PAN',dx:payload.dx,dy:payload.dy}
+      :action==='center-player'?{type:'CENTER_PLAYER'}
+      :action==='reset-view'?{type:'RESET_VIEW'}:null;
+    if(!event)return false;
+    mapNav=reduceMapNav(mapNav,event,model.map);
+    if(action==='center-player')locatePending=true;
+    syncBagSelectionFromMap();motion.selectionChangedAt=t;
+    if(!['pan','zoom'].includes(action))AUDIO.menuMove();remember();return true;
+  }
+
+  const mapConsoleControls=()=> (mapPresentation?.hits||[]).filter(hit=>hit.kind==='map-control');
+  function focusMapControl(controlId){
+    mapNav=reduceMapNav(mapNav,{type:'FOCUS_CONTROL',controlId},model.map);
+    mapDrag=null;remember();
+  }
+  function consoleMapKey(event){
+    if(nav.sectionId!=='map'||currentRoute().type!=='root')return false;
+    const toggle=event.key==='F6'||event.code==='F6'||event.controllerAction==='mapConsole';
+    if(toggle){
+      event.preventDefault?.();
+      if(!event.repeat){focusMapControl(mapNav.focusedControlId?null:mapConsoleControls()[0]?.id);AUDIO.menuMove();}
+      return true;
+    }
+    if(!mapNav.focusedControlId)return false;
+    const k=String(event.key||'').toLowerCase(),code=event.code;
+    const vector=event.key==='ArrowUp'||k==='w'||code==='KeyW'?{x:0,y:-1}
+      :event.key==='ArrowDown'||k==='s'||code==='KeyS'?{x:0,y:1}
+      :event.key==='ArrowLeft'||k==='a'||code==='KeyA'?{x:-1,y:0}
+      :event.key==='ArrowRight'||k==='d'||code==='KeyD'?{x:1,y:0}:null;
+    if(vector){
+      const metrics=uiCellMetrics(),next=moveMapConsoleFocus(mapNav.focusedControlId,vector,mapConsoleControls(),{cellAspect:metrics.cellW/metrics.cellH});
+      if(next!==mapNav.focusedControlId){focusMapControl(next);AUDIO.menuMove();}return true;
+    }
+    if(confirmInput(event)||k==='e'||code==='KeyE'){
+      if(!event.repeat){
+        const control=mapConsoleControls().find(hit=>hit.id===mapNav.focusedControlId);
+        if(control?.enabled!==false&&control){pressBagControl(control.id,event);mapAction(control.action,control.payload);}
+        else AUDIO.menuDenied?.();
+      }
+      return true;
+    }
+    return false;
   }
 
   function actionFor(entry,actionId){
@@ -677,15 +763,16 @@ export function makeBagScene({
     if (!entry || !actionId) return false;
     const targetSpace=nav.sectionId==='map'?selectedMapSpace(mapNav,model.map):null;
     const descriptor=actionFor(entry,actionId);
-    if(descriptor?.enabled===false){notice=descriptor.reason||'UNAVAILABLE';noticeUntil=t+2.4;AUDIO.menuMove?.();return false;}
+    if(descriptor?.enabled===false){notice=descriptor.reason||'UNAVAILABLE';noticeUntil=t+2.4;AUDIO.menuDenied?.();return false;}
     if(descriptor?.confirm&&!confirmed){pushRoute({type:'confirm',entryId:entry.id,actionId,descriptor});AUDIO.menuConfirm?.();return true;}
     let ok = false;
 
     if (nav.sectionId === 'map') {
       const selected = selectedMapSpace(mapNav, model.map);
       if(actionId==='confirm-waypoint')ok=!!selected?.waypoint;
-      else if(actionId==='read-attached')ok=selected?.objective?.notes?.[0]?openSheet(selected.objective.notes[0]):false;
-      else ok = resolveMapAction(selected, actionId, { readDocument:openSheet, markRoom, markSpace:markSpace||null });
+      else if(actionId==='read-attached')ok=selected?.objective?.notes?.[0]||selected?.attached?openSheet(selected.objective?.notes?.[0]||selected.attached):false;
+      else ok = resolveMapAction(selected, actionId, { readDocument:openSheet, markRoom, markSpace:markSpace||null,
+        setTarget:setMapTarget,clearTarget:clearMapTarget,playerWaypoint:model.map?.playerWaypoint });
     } else if (entry.kind === 'file' && actionId === 'read') {
       ok=openSheet(entry.source);
     } else if(entry.kind==='file'&&actionId==='review-insight'){
@@ -737,10 +824,14 @@ export function makeBagScene({
 
     if (ok) {
       motion.actionAt = t;
-      AUDIO.menuConfirm();
+      if(actionId==='patch-cable')AUDIO.menuPatch?.();
+      else if(actionId==='pull-cable')AUDIO.menuUnpatch?.();
+      else if(['unset-slot','move-storage'].includes(actionId))AUDIO.menuRemove?.();
+      else if(['read','read-attached'].includes(actionId))AUDIO.menuPage?.();
+      else AUDIO.menuConfirm();
       if(descriptor?.exitPolicy!=='close')refresh();
       if(entry.kind==='skill')emitGuideEvent('skills-changed');
-      if(['mark','mark-room','mark-waypoint','confirm-waypoint'].includes(actionId))emitGuideEvent('marked',{
+      if(['mark','mark-room','mark-waypoint','set-target','confirm-waypoint'].includes(actionId))emitGuideEvent('marked',{
         roomId:targetSpace?.roomId||entry.roomId||null,spaceId:targetSpace?.id||null,
       });
     } else {
@@ -786,7 +877,7 @@ export function makeBagScene({
     if(nav.sectionId==='map'){
       const selected=selectedMapSpace(mapNav,model.map);
       if(!selected||selected.waypointable===false)return;
-      const actionId=selected.waypoint?'clear-waypoint':'mark-waypoint';
+      const actionId='set-target';
       const entry=currentBagEntry(nav,model)||{id:`room:${selected.roomId||selected.id}`,kind:'room',roomId:selected.roomId,actionList:[]};
       execute(entry,actionId);
       return;
@@ -799,7 +890,12 @@ export function makeBagScene({
   function activateTertiary() {
     if(nav.sectionId==='map'){
       const selected=selectedMapSpace(mapNav,model.map);
-      if(selected?.objective?.notes?.[0])openSheet(selected.objective.notes[0]);
+      if(roomHistory(selected)){
+        mapNav={...mapNav,roomFile:mapNav.roomFile?null:{spaceId:selected.id,page:0}};
+        AUDIO.menuPage?.();return;
+      }
+      const document=selected?.objective?.notes?.[0]||selected?.attached;
+      if(document)openSheet(document);
       return;
     }
     const entry = currentBagEntry(nav, model);
@@ -842,7 +938,7 @@ export function makeBagScene({
       }
       if(confirmInput(e)){
         const action=actions[route.index||0];
-        if(action?.enabled===false){notice=action.reason;noticeUntil=t+2.4;AUDIO.menuMove?.();return true;}
+        if(action?.enabled===false){notice=action.reason;noticeUntil=t+2.4;AUDIO.menuDenied?.();return true;}
         if(action){routes.pop();syncActionPresentation();execute(entry,action.id);}
         return true;
       }
@@ -856,8 +952,8 @@ export function makeBagScene({
       if(confirmInput(e)){
         const entry=bagEntry(model,'kit',route.entryId);
         const result=typeof assignEquipmentSlot==='function'?assignEquipmentSlot(entry?.sourceId,route.index):{changed:false,reason:'unavailable'};
-        if(result?.changed){popRoute();refresh();AUDIO.menuConfirm?.();}
-        else{notice=result?.reason==='already-in-slot'?'ALREADY SET IN THAT SLOT':'QUICK SLOT UNCHANGED';noticeUntil=t+2.2;AUDIO.menuMove?.();}
+        if(result?.changed){popRoute();refresh();AUDIO.menuFit?.();}
+        else{notice=result?.reason==='already-in-slot'?'ALREADY SET IN THAT SLOT':'QUICK SLOT UNCHANGED';noticeUntil=t+2.2;AUDIO.menuDenied?.();}
         return true;
       }
       if(backInput(e)){popRoute();return true;}
@@ -975,6 +1071,15 @@ export function makeBagScene({
   }
 
   function addHit(region){hits.add(region);}
+  function hitContainsPoint(hit,event){
+    const polygons=hit?.data?.polygons;
+    return !polygons?.length || polygons.some(polygon=>pointInMapPolygon({x:event.cellX,y:event.cellY},polygon));
+  }
+  function mapViewportContains(event){
+    const rect=mapPresentation?.layout?.mapViewport;
+    return nav.sectionId==='map'&&currentRoute().type==='root'&&rect
+      &&event.cellX>=rect.x&&event.cellX<=rect.x+rect.w&&event.cellY>=rect.y&&event.cellY<=rect.y+rect.h;
+  }
   function registerCommonHits(outer,layout){
     addHit({id:'bag:close',kind:'bag-close',x:outer.x+outer.w-18,y:outer.y,w:18,h:2,label:'CLOSE BAG',onClick:close});
     for (const tab of bagTabRegions(model, layout)) addHit({ ...tab, kind:'bag-tab', onClick:()=>setSection(tab.sectionId) });
@@ -995,21 +1100,12 @@ export function makeBagScene({
       const section=model.sections.find((candidate)=>candidate.id==='sheets'),cap=bagListCapacity(layout,'sheets'),scroll=nav.scroll?.sheets||0;
       (section?.entries||[]).slice(scroll,scroll+cap).forEach((entry,index)=>addHit({id:`bag:sheet:${entry.id}`,kind:'bag-sheet',x:layout.list.x,y:layout.list.y+2+index*2,w:layout.list.w,h:1,label:entry.title,onHover:()=>selectEntry('sheets',entry.id),onClick:()=>{selectEntry('sheets',entry.id);openSheet(entry.source);}}));
     }else if(nav.sectionId==='map'){
-      const mapLayout=mapLayoutFromBag(layout),floors=model.map?.floors||[];
-      let floorX=mapLayout.floorRail.x;
-      floors.forEach((floor)=>{
-        const width=`[${floor.shortLabel||floor.label}]`.length;
-        addHit({id:`bag:floor:${floor.id}`,kind:'map-floor',x:floorX,y:mapLayout.floorRail.y,w:width,h:1,label:floor.label,onClick:()=>scene.selectFloor(floor.id)});
-        floorX+=width+1;
+      for(const region of mapPresentation?.hits||[])addHit({...region,
+        disabled:region.enabled===false,
+        data:{action:region.action,payload:region.payload,polygons:region.polygons},
+        // Selecting a plotted room, even twice, is never a waypoint command.
+        onClick:()=>region.kind==='map-pan'?false:mapAction(region.action,region.payload),
       });
-      // drawMapView paints one selected-room caption, not a room list. Keep
-      // its pointer target (and the tour leader) on that exact visible row.
-      const space=selectedMapSpace(mapNav,model.map);
-      if(space&&space.selectable!==false)addHit({id:`bag:space:${space.id}`,kind:'map-space',...mapLayout.detail,label:space.label,onClick:()=>{
-        const alreadySelected=selectedMapSpace(mapNav,model.map)?.id===space.id;
-        mapNav=reduceMapNav(mapNav,{type:'SELECT_SPACE',spaceId:space.id},model.map);remember();
-        if(alreadySelected&&space.waypointable!==false)activateSecondary();
-      }});
     }else if(nav.sectionId==='skills'){
       if (!patchLayout) return;
       for (const node of patchLayout.nodes) {
@@ -1061,7 +1157,9 @@ export function makeBagScene({
     // bag there is nothing to back out of, so Escape keeps its ordinary
     // meaning and opens the menu; a controller's `back` still closes the bag
     // there, which is what backInput is for.
-    get handlesEscape() { return currentRoute().type !== 'root'; },
+    get handlesEscape() { return currentRoute().type !== 'root'||nav.sectionId==='map'&&!!(mapNav.focusedControlId||mapNav.roomFile); },
+    get modalActions() { return currentRoute().type==='root'&&nav.sectionId==='map'
+      ? ['mapFloorPrev','mapFloorNext','mapLocate','mapFile','mapConsole'] : []; },
 
     enter() {
       preloadItemPortraits();
@@ -1099,9 +1197,12 @@ export function makeBagScene({
 
     debugState() {
       return {
+        viewport:uiSize(),portraitRenderer:itemInspectionStats(),
         model, nav, mapNav, selected: currentBagEntry(nav, model), mapSelected: selectedMapSpace(mapNav, model.map),
         chosenTechniqueIds: [...chosenTechniqueIds], workingBuild: structuredClone(workingBuild),
         route:{...currentRoute(),reader:currentRoute()?.reader?.view?.()||null,inspection:currentRoute()?.inspection?.view()||null},hitRegions:hits.view(),sheetPages:{...sheetPages},guidePresentation,
+        mapPresentation:mapPresentation?{hits:mapPresentation.hits,layout:mapPresentation.layout,projectedPoints:mapPresentation.projectedPoints}:null,
+        mapDrag:mapDrag?{...mapDrag}:null,
         patchDrag:patchDrag?{from:patchDrag.from,to:patchDrag.to,rerouteId:patchDrag.rerouteId,valid:patchDrag.valid,compatibleIds:patchDrag.compatibleIds}:null,
       };
     },
@@ -1117,6 +1218,7 @@ export function makeBagScene({
       const raw = e.key || '';
       const k = raw.toLowerCase();
       const code = e.code || '';
+      mapDrag=null;
       if (patchDrag) {
         cancelPatchDrag();
         if (backInput(e)) { notice='PATCH UNCHANGED'; noticeUntil=t+1.2; return true; }
@@ -1127,6 +1229,15 @@ export function makeBagScene({
       };
       if (bagCloseInput(e)) { close({suppressReopen:true}); return true; }
       if(currentRoute().type!=='root')return handleRouteKey(e);
+      if(nav.sectionId==='map'&&mapNav.roomFile){
+        if(backInput(e)){mapNav={...mapNav,roomFile:null};AUDIO.menuBack?.();return true;}
+        if(confirmInput(e)&&!mapNav.focusedControlId){mapAction('file-document');return true;}
+        const delta=['ArrowRight','ArrowDown','PageDown'].includes(raw)?1:['ArrowLeft','ArrowUp','PageUp'].includes(raw)?-1:0;
+        if(delta){mapAction(delta>0?'file-next':'file-prev');return true;}
+      }
+      if(nav.sectionId==='map'&&mapNav.focusedControlId&&backInput(e)){
+        focusMapControl(null);AUDIO.menuBack?.();return true;
+      }
       if (backInput(e)) { close(); return true; }
 
       // The lock. One control is live; the rest of the case answers with the
@@ -1154,12 +1265,17 @@ export function makeBagScene({
         if (wants&&!e.repeat) {
           if(guided.kind==='section')momentarySection(guided.sectionId);
           else if(guided.kind==='close')close();
-          else execute(currentBagEntry(nav, model), guidedAction(guided).id);
+          else {
+            if(guided.action==='mark')pressBagControl('bag:map:set-target',e);
+            execute(currentBagEntry(nav, model), guidedAction(guided).id);
+          }
           return true;
         }
         refuseGuided();
         return true;
       }
+
+      if(consoleMapKey(e))return true;
 
       if (nav.sectionId === 'skills') {
         const entry = currentBagEntry(nav, model);
@@ -1179,16 +1295,17 @@ export function makeBagScene({
         if (raw === 'ArrowDown' || k === 's' || code === 'KeyS') { moveList(1); return true; }
         if (raw === 'ArrowRight' || k === 'd' || code === 'KeyD') { activatePrimary(); return true; }
       } else if (nav.sectionId === 'map') {
-        if (raw === '[' || code === 'BracketLeft') { changeFloor(-1); return true; }
-        if (raw === ']' || code === 'BracketRight') { changeFloor(1); return true; }
-        if (k === 'c' || code === 'KeyC') {
-          mapNav = reduceMapNav(mapNav, { type: 'CENTER_PLAYER' }, model.map);
-          syncBagSelectionFromMap();
-          motion.selectionChangedAt = t;
-          AUDIO.menuMove();
-          remember();
-          return true;
-        }
+        const action = e.controllerAction==='mapFloorPrev'||raw==='PageUp'||code==='PageUp'||raw==='['||code==='BracketLeft'?'floor-prev'
+          :e.controllerAction==='mapFloorNext'||raw==='PageDown'||code==='PageDown'||raw===']'||code==='BracketRight'?'floor-next'
+          :e.controllerAction==='mapLocate'||k==='c'||code==='KeyC'?'center-player'
+          :e.controllerAction==='mapFile'||k==='r'||code==='KeyR'?'read-file'
+          :raw==='Delete'||code==='Delete'?'clear-target'
+          :raw==='Enter'||code==='Enter'||k==='e'||code==='KeyE'||e.controllerAction==='confirm'?'set-target':null;
+        if(action){if(!e.repeat){
+          const region=mapPresentation?.hits?.find(hit=>hit.action===action);if(region)pressBagControl(region.id,e);
+          mapAction(action);
+          if(action==='floor-prev'||action==='floor-next')pressBagControl(`bag:floor:${mapNav.floorId}`,e);
+        }return true;}
         if (raw === 'ArrowUp' || k === 'w' || code === 'KeyW') { moveMap({ x: 0, y: -1 }); return true; }
         if (raw === 'ArrowDown' || k === 's' || code === 'KeyS') { moveMap({ x: 0, y: 1 }); return true; }
         if (raw === 'ArrowLeft' || k === 'a' || code === 'KeyA') { moveMap({ x: -1, y: 0 }); return true; }
@@ -1211,25 +1328,39 @@ export function makeBagScene({
       // Global focus/input cancellation must clear both the lifted cable and
       // any simultaneously held screen-selector key, even without a keyup.
       if(e.type==='pointercancel'&&e.pointerId==null){resetBagControls();return true;}
+      if(e.type==='wheel'){
+        if(!mapViewportContains(e))return false;
+        e.preventDefault?.();
+        mapAction('zoom',{factor:Math.exp(-Math.max(-240,Math.min(240,Number(e.deltaY)||0))*.0015)});return true;
+      }
+      if(mapDrag){
+        if((e.pointerId??'primary')!==mapDrag.pointerId)return true;
+        if(e.type==='pointermove'){
+          mapAction('pan',{dx:e.cellX-mapDrag.x,dy:e.cellY-mapDrag.y});mapDrag.x=e.cellX;mapDrag.y=e.cellY;return true;
+        }
+        if(['pointerup','pointercancel','lostpointercapture'].includes(e.type)){mapDrag=null;releaseBagControl(e);return true;}
+      }
       if(patchDrag){
         if((e.type==='pointercancel'||e.type==='lostpointercapture')&&e.pointerId===patchDrag.pointerId){cancelPatchDrag();releaseBagControl(e);return true;}
         if(e.type==='pointermove'){updatePatchPointer(e);return true;}
         if(e.type==='pointerup'){finishPatchPointer(e);releaseBagControl(e);return true;}
       }
-      if(e.type==='pointermove'){hits.handle(e,{click:false,filter:hit=>guideAllowsHit(hit)});return true;}
+      if(e.type==='pointermove'){hits.handle(e,{click:false,filter:hit=>guideAllowsHit(hit)&&hitContainsPoint(hit,e)});return true;}
       if(e.type==='pointerup'||e.type==='pointercancel'||e.type==='lostpointercapture'){releaseBagControl(e);return true;}
       if(e.type==='pointerdown'){
         if(e.button!=null&&e.button!==0)return true;
-        const hit=hits.hit(e.cellX,e.cellY);
+        const hit=hits.hit(e.cellX,e.cellY,region=>hitContainsPoint(region,e));
         if(!guideAllowsHit(hit)){refuseGuided();return true;}
-        const guided=lockedGuide();
-        if(guided?.kind==='action'&&guided.action==='mark'&&hit?.kind==='map-space'){
-          execute(currentBagEntry(nav,model),guidedAction(guided).id);return true;
+        if(nav.sectionId==='map'&&mapNav.focusedControlId){
+          if(hit?.kind==='map-control')focusMapControl(hit.id);
+          else if(hit?.kind==='map-space'||hit?.kind==='map-pan')focusMapControl(null);
         }
+        if(hit?.kind==='map-pan'){mapDrag={pointerId:e.pointerId??'primary',x:e.cellX,y:e.cellY};return true;}
         if(hit?.kind==='bag-guide-continue')pressBagControl(hit.id,e);
         if (hit?.kind==='bag-patch-input'||hit?.kind==='bag-patch-output') { beginPatch(hit.data.socket,e); return true; }
         if(hit?.kind==='bag-tab'&&!hit.disabled)pressBagControl(hit.id,e);
-        hits.handle(e);return true;
+        if(hit?.kind==='map-control'&&!hit.disabled)pressBagControl(hit.id,e);
+        hits.handle(e,{filter:region=>guideAllowsHit(region)&&hitContainsPoint(region,e)});return true;
       }
       return true;
     },
@@ -1237,6 +1368,7 @@ export function makeBagScene({
     render() {
       hits.reset();
       guidePresentation = null;
+      mapPresentation = null;
       const route=currentRoute();
       if(route.type==='sheet-reader'){
         const size=uiSize(),reader=route.reader.view?.()||{page:0,total:1};
@@ -1260,11 +1392,12 @@ export function makeBagScene({
       applyFocus(focusSource());
       const size = uiSize();
       const guided = lockedGuide();
-      const frame = bagGuideFrame({size,outer:bagPanelBounds(size),guide:guided});
+      const frame = bagGuideFrame({size,outer:bagPanelBounds({...size,sectionId:nav.sectionId}),guide:guided});
       const outer = frame.outer;
       uiScrim(0.74);
       const skills = nav.sectionId === 'skills';
       const subview=!['root','item-actions'].includes(route.type);
+      const mapHardware=nav.sectionId==='map'&&!subview;
       let layout;
       withMachinePanel(outer.x, outer.y, outer.w, outer.h, {
         label: 'FIELD CASE / 4417-C',
@@ -1272,12 +1405,21 @@ export function makeBagScene({
         footer: '', meter: true, theme: 'amber',
         // Sockets, plugs, cables, and switches are exposed hardware. The case
         // still has its metal faceplate, but never puts a cover over that bay.
-        glass: skills && !subview ? false : {},
+        glass: skills && !subview || mapHardware ? false : {},
+        aperture: !mapHardware,
       }, (body) => {
       layout = bagLayout({
-        body,
+        body:mapHardware?{x:outer.x+3,y:outer.y+2.6,w:outer.w-6,h:outer.h-3.6}:body,
+        sectionId:mapHardware?'map':null,
         forceMode: typeof forceLayout === 'function' ? forceLayout() : forceLayout,
       });
+      if(mapHardware){
+        const viewport=mapLayoutFromBag(layout).mapViewport,key=JSON.stringify(viewport);
+        if(mapViewportKey&&key!==mapViewportKey){
+          mapNav=reduceMapNav(mapNav,{type:'PAN',dx:-mapNav.panX,dy:-mapNav.panY},model.map);mapDrag=null;
+        }
+        mapViewportKey=key;
+      }
       if (nav.sectionId !== 'map') {
         nav = ensureBagSelectionVisible(nav, model, bagListCapacity(layout, nav.sectionId));
       }
@@ -1299,7 +1441,24 @@ export function makeBagScene({
         : skills
           ? 'DRAG OUTPUT TO MATCHING INPUT · RETURN PLUG TO SPARES · ENTER PATCH / SPACE PULL'
           : hintSource()));
-      drawBagView({ model, nav, mapNav, layout, hint: liveHint, guide: guided, guideNudge, motion, now: t,
+      if(locatePending&&mapHardware){
+        const player=model.map?.player,policy=model.map?.policy||{},metrics=uiCellMetrics();
+        const anchor=player?.resolved&&policy.showExactPlayer!==false?player:selectedMapSpace(mapNav,model.map);
+        if(anchor?.position){
+          const viewport=mapLayoutFromBag(layout).mapViewport;
+          const anchors=(model.map?.spaces||[]).filter(space=>space.selectable!==false&&space.position)
+            .map(space=>({...space.position,height:mapArchitecturalHeight(model.map?.architecture,space),floorId:space.floorId}));
+          if(player?.resolved&&player.position&&policy.showExactPlayer!==false)anchors.push({...player.position,
+            height:mapArchitecturalHeight(model.map?.architecture,player),floorId:player.floorId});
+          const projection=createMapAxonometricProjection({architecture:model.map?.architecture,nav:mapNav,viewport,
+            floors:model.map?.floors,anchors,cellAspect:metrics.cellW/metrics.cellH});
+          const point=projection.point({...anchor.position,floorId:anchor.floorId,
+            height:mapArchitecturalHeight(model.map?.architecture,anchor,anchor.floorId)});
+          mapNav=reduceMapNav(mapNav,{type:'PAN',dx:viewport.x+viewport.w/2-point.x,dy:viewport.y+viewport.h/2-point.y},model.map);
+        }
+        locatePending=false;
+      }
+      mapPresentation=drawBagView({ model, nav, mapNav, layout, hint: liveHint, guide: guided, guideNudge, motion, now: t,
         // The tree owns the content area for its own section; the tabs, task line
         // and action rail around it stay exactly as they are everywhere else.
         drawContent: subview

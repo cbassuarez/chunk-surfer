@@ -181,7 +181,7 @@ test('empty Archive and empty history keep all explanatory text inside the cover
   const h = surfaceHarness({
     achievementEntries: () => [], returnFileEntries: () => [],
     CATEGORY_ORDER: ['work'], CATEGORY_LABEL: { work: 'STORY' },
-    AUDIO: { menuMove() {} },
+    AUDIO: { menuMove() {}, menuPage() {}, menuBack() {} },
   });
   const scene = factory('archive', 'makeArchiveScene', h.globals)();
   scene.render();

@@ -68,7 +68,7 @@ export function setupHandoffGuide(flags={}, context={}) {
     case 'mark':return {...base,kind:'action',section:'map',entry:'room:main_b3',action:'mark',title:'MARK STUDIO B3',
       why:'STUDIO B3 IS ON THE BASEMENT FLOOR. MARK THIS ROOM: THE HUD BEARING WILL GUIDE YOU THERE. THE GET IN IS NOT STUDIO B3.'};
     case 'close':return {...base,kind:'close',section:'map',allowClose:true,action:'bag',title:'CLOSE THE CASE AND FOLLOW THE BEARING',
-      why:'STUDIO B3 IS MARKED. CLOSE THE BAG, LEAVE THROUGH THE INNER DOOR, AND FOLLOW THE HUD ROUTE DOWN THE BASEMENT STAIR.'};
+      why:'STUDIO B3 IS MARKED. CLOSE THE BAG, LEAVE THROUGH THE INNER DOOR, AND FOLLOW THE HUD BEARING DOWN THE BASEMENT STAIR.'};
     default:return null;
   }
 }

@@ -13,11 +13,11 @@ try{
  await page.waitForFunction(()=>window.__probe?.bagOpen&&window.__scenes?.top()?.id);
  await page.evaluate(async()=>{
   window.__probe.testRun();window.__probe.setFlags(['bag.taken','has.interface','has.fork','combat.trained','badge.taken']);window.__probe.bagOpen('kit');
-  window.__itemQA=await import('/src/game/item-inspection.js');window.__uiQA=await import('/src/render/ui.js');
+  window.__itemQABag=window.__scenes.top();
  });
  const state=()=>page.evaluate(()=>window.__scenes.top()?.debugState?.());
- const stats=()=>page.evaluate(()=>window.__itemQA.itemInspectionStats());
- async function cellPoint(r){return page.evaluate(r=>{const size=window.__uiQA.uiSize(),host=document.getElementById('map').getBoundingClientRect();return{x:host.x+(r.x+r.w/2)/size.cols*host.width,y:host.y+(r.y+r.h/2)/size.rows*host.height};},r);}
+ const stats=()=>page.evaluate(()=>window.__itemQABag.debugState().portraitRenderer);
+ async function cellPoint(r){return page.evaluate(r=>{const size=window.__scenes.top().debugState().viewport,host=document.getElementById('map').getBoundingClientRect();return{x:host.x+(r.x+r.w/2)/size.cols*host.width,y:host.y+(r.y+r.h/2)/size.rows*host.height};},r);}
  async function clickHit(id){const hit=(await state()).hitRegions.find(h=>h.id===id);assert.ok(hit,`Visible target ${id}`);const p=await cellPoint(hit);await page.mouse.click(p.x,p.y);await sleep(180);}
  async function inspect(id){
   const entry=(await state()).model.sections.find(s=>s.id==='kit').entries.find(e=>e.sourceId===id);assert.ok(entry,id);
@@ -25,7 +25,7 @@ try{
   for(let i=0;i<30&&(await state()).selected.sourceId!==id;i++)await page.keyboard.press('ArrowDown');
   assert.equal((await state()).selected.sourceId,id);
   await page.keyboard.press('Enter');await sleep(150);
-  await clickHit('bag:action:inspect');
+  await clickHit('bag:action:inspect-item');
   await page.waitForFunction(()=>window.__scenes.top()?.debugState?.().route.inspection?.ready);
   await sleep(200);
  }
@@ -35,7 +35,7 @@ try{
  const first=await state(),loadout=first.model.loadout;
  await page.screenshot({path:`${out}/recorder-inspect.png`});
  await page.keyboard.press('ArrowRight');assert.ok((await state()).route.inspection.yaw>0);
- const layout=await page.evaluate(async()=>{const {itemInspectionLayout}=await import('/src/render/item-inspection-view.js');const r=window.__scenes.top().debugState().hitRegions;const back=r.find(h=>h.kind==='bag-back');return{back};});
+ const layout=await page.evaluate(()=>{const r=window.__scenes.top().debugState().hitRegions;const back=r.find(h=>h.kind==='bag-back');return{back};});
  // Drag across the left half of the actual inspection surface.
  const backPoint=await cellPoint(layout.back);await page.mouse.move(340,backPoint.y-230);await page.mouse.down();await page.mouse.move(470,backPoint.y-180,{steps:10});await page.mouse.up();
  assert.ok((await state()).route.inspection.yaw>.2,'pointer drag rotates the object');
@@ -54,11 +54,11 @@ try{
  await clickHit('bag:inspection-reset');await page.keyboard.press('b');assert.notEqual(await page.evaluate(()=>window.__scenes.top()?.id),'bag');assert.equal((await stats()).active,false);
  // The actual renderer fails gracefully while the cached picture stays usable.
  await page.setRequestInterception(true);page.on('request',r=>r.url().includes('/assets/items/badge.glb')?r.abort():r.continue());
- await page.evaluate(()=>window.__probe.bagOpen('kit'));await sleep(200);
+ await page.evaluate(()=>{window.__probe.bagOpen('kit');window.__itemQABag=window.__scenes.top();});await sleep(200);
  for(let i=0;i<30&&(await state()).selected.sourceId!=='badge';i++)await page.keyboard.press('ArrowDown');
  await page.keyboard.press('Enter');await sleep(150);
  // Compact layouts can scroll action rows using keyboard; inspect is always first.
- const badge=(await state()).selected;const index=badge.actionList.findIndex(a=>a.id==='inspect');
+ const badge=(await state()).selected;const index=badge.actionList.findIndex(a=>a.id==='inspect-item');
  for(let i=0;i<index;i++)await page.keyboard.press('ArrowDown');await page.keyboard.press('Enter');
  await page.waitForFunction(()=>window.__scenes.top()?.debugState?.().route.inspection?.failed);
  await page.screenshot({path:`${out}/inspection-fallback.png`});await page.keyboard.press('b');

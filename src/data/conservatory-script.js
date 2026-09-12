@@ -272,7 +272,7 @@ export const LEVEL_CHECK = {
     lines: [
       { who: 'you', text: 'Anything I do. A step. A hand on the torch. The radio, if it ever decides to speak.' },
       { who: 'you', text: 'Their own words: if you can hear yourself on the take, try again.' },
-      { who: 'you', text: 'So: light off, feet still, and forty-five seconds of being furniture.' },
+      { who: 'you', text: 'So: light off, feet still. Aim for sixty seconds; forty-five clean seconds is enough for the job.' },
     ],
     choices: [
       { text: 'and if I move?', goto: 'move' },
@@ -291,8 +291,8 @@ export const LEVEL_CHECK = {
     speaker: '',
     lines: [
       { who: 'you', text: 'Light off. Easier that way.' },
-      { who: 'you', text: 'That is the level. That is the room. Now you keep sixty seconds of it with nothing added.' },
-      { who: 'direction', text: 'The headphones are on and the monitor is open. Press [r] to roll sound and start recording — and once you roll: do not move.' },
+      { who: 'you', text: 'That is the level. Roll, say the room, take number and date out loud, then fall quiet. With no microphone, I will say it for you.' },
+      { who: 'direction', text: 'The headphones are on and the monitor is open. Press [r] to roll. Slate first, then hold still. Aim for a minute; after forty-five clean seconds, STOP saves a usable take.' },
     ],
   },
 };
@@ -426,11 +426,11 @@ export const FIRST_TAKE = {
   slate: {
     speaker: 'STUDIO B3',
     lines: [
-      { who: 'me', text: 'Ellery, studio B3, room tone, take one.', prompt: 'slate it: "Ellery, studio B3, room tone, take one."' },
-      { who: 'direction', text: 'Your own voice comes back off the foam with everything above four hundred hertz taken out of it.' },
+      { who: 'direction', text: 'After rolling, say the room, take number and date aloud. The clean-room timer starts after the slate.', prompt: 'slate each take after rolling' },
+      { who: 'direction', text: 'Your slate goes onto the same tape as the room. Speak normally, then let it fall quiet.' },
       { who: 'you', text: 'You slate out loud so that in eight months, when the file is a number, somebody knows what they are listening to.' },
-      { who: 'you', text: 'I stopped doing it years ago, when the recorders started writing the metadata themselves.' },
-      { who: 'you', text: 'The last man slated three of his four.' },
+      { who: 'you', text: 'One tape for the whole job. Even a bad take uses tape; the counter never starts over.' },
+      { who: 'you', text: 'The last man slated three of his four. I am doing every one.' },
     ],
     goto: 'hub',
   },
@@ -452,7 +452,10 @@ export const FIRST_TAKE = {
     speaker: 'STUDIO B3',
     lines: [
       { who: 'direction', text: 'The monitor opens. The room comes up in the cans, close and quiet — the foam, the dead air, the size of it.' },
-      { who: 'direction', text: 'Headphones on. Press [r] to roll — and the moment you do, the room drops out, and you do not move.' },
+      { who: 'direction', text: 'Press [r] to roll. Say the room, take number and date aloud, then fall quiet. With no microphone, the recordist says it for you.' },
+      { who: 'direction', text: 'Your spoken slate stays with the take on this device. With the reference mic, aim for sixty clean seconds; forty-five is enough. Other microphones change those times. Check the recorder: it tells you when STOP will save a usable take.' },
+      { who: 'direction', text: 'You can stop early, even after ten or twenty seconds, and come back for a fresh take. Leave without a usable replacement and the job is unfinished.' },
+      { who: 'direction', text: 'One tape for the whole job. Every attempt stays on it; the counter never resets. Rewind or fast-forward to replay a take.' },
     ],
   },
 };
@@ -546,7 +549,7 @@ export function roomListen(room, label) {
     roll: {
       speaker: '',
       lines: [
-        { who: 'direction', text: 'You kill the light. The room drops out of the cans, the tape hiss comes up, and there is you and forty-five seconds and nothing else.' },
+        { who: 'direction', text: 'You kill the light and roll. Say the slate, then hold still. Aim for a minute; forty-five clean seconds is enough.' },
         { who: 'you', text: 'Sixty seconds of nothing, with nothing added. Do not move.' },
       ],
     },
@@ -1392,6 +1395,10 @@ export const HIM_LINES = [
 ];
 
 export const LINES = {
+  // Referenced by recordAction since the room gate was written, and never
+  // authored — so pressing [r] anywhere off the order was a silent no-op. It is
+  // only reached indoors now: outside, the same press opens the rig hub.
+  notARoom: { who: 'you', text: 'Nothing in here worth a minute. The order names five rooms and this is not one of them.' },
   lightOn: { who: 'you', text: 'On. Anything in here with eyes has me now.' },
   lightOff: { who: 'you', text: 'Off.' },
   // LISTEN: the room comes up in the cans, and you can still move.
@@ -1401,10 +1408,10 @@ export const LINES = {
   already: { who: 'you', text: "Done that one. Clean minute, in the bag. I'm not doing it twice." },
   chapelLocked: { who: 'you', text: 'Not the chapel. Not yet. You do the chapel last, when the other four are on tape.' },
   // ROLL: the room drops out and the hiss comes up, and you must not move.
-  recStart: { who: 'direction', text: 'The room drops out of the cans. Tape hiss, and under it nothing, and you have forty-five seconds to hold still inside it.' },
-  recDone: { who: 'you', text: 'Clean. One minute of nothing, and the nothing is theirs.' },
+  recStart: { who: 'direction', text: 'The room drops out of the cans. Hold still. Aim for sixty seconds; forty-five clean seconds is enough.' },
+  recDone: { who: 'you', text: 'Clean. Enough room tone for the job.' },
   recSpoiled: (why) => ({ who: 'you', text: `Spoiled. ${why[0].toUpperCase()}${why.slice(1)}.` }),
-  recAbort: { who: 'you', text: 'Stopped it.' },
+  recAbort: { who: 'you', text: 'Stopped early. That stays on tape. I still owe them a usable take from this room.' },
   // Moving in a take: he hears his own body on the tape, and now something
   // heard where the body was.
   flinch: [
@@ -1654,3 +1661,190 @@ export function endingChoice(options = {}, legacyCanSurface = false) {
 // game and they were five lines each, and three of the six never touched the
 // RETURNED column, which is the best object in this story. See data/endings.js —
 // each ending declares which coda closes it, and every coda reads the dossier.
+
+// ── THE RIG ─────────────────────────────────────────────────────────────────
+//
+// [R] outside Ellery. There are two of these and they are the same scene twice,
+// on either side of picking the case up:
+//
+//   THE WALK   he has nothing. The kit is in the van behind him and the press is
+//              a man rehearsing a night he has not started. Four presses used to
+//              cycle a list here (RECORDER_BEFORE_KIT) and then repeat the last
+//              line for ever, which is a dead end wearing a costume.
+//   THE BAY    he has it on his shoulder, under a canopy, at a door he has not
+//              opened. Now the same key is an actual check of an actual bag.
+//
+// Both are hubs, and the engine already knows what a hub is: come back to it and
+// the questions are there again, minus the ones you have spent
+// (conversation.js). The spending is on FLAGS rather than the conversation's own
+// `asked` set, because that set dies with the scene and this is a bag he can
+// come back to across the whole walk — put a question to bed and it stays in
+// bed. When there is nothing left to ask, main.js does not open the hub at all.
+//
+// Nothing in here invents kit. Every spoke that names an object is gated on the
+// flag that says he is carrying it, so the tree cannot describe a tuning fork he
+// has not found. The three-and-a-half things he always has are ungated.
+export const RIG_CHECK_FLAGS = Object.freeze([
+  'rig.van', 'rig.count', 'rig.crew',
+  'rig.machine', 'rig.ears', 'rig.power', 'rig.fork', 'rig.bent', 'rig.radio', 'rig.voice',
+]);
+
+// Which of them can be asked where. main.js reads this to decide whether there
+// is a conversation left to have — see rigCheckExhausted.
+export const RIG_CHECK_TOPICS = Object.freeze({
+  walk: Object.freeze(['rig.van', 'rig.count', 'rig.crew']),
+  bay: Object.freeze(['rig.machine', 'rig.ears', 'rig.power', 'rig.fork', 'rig.bent', 'rig.radio', 'rig.voice']),
+});
+
+// `place` is 'walk' or 'bay'. Possession flags are read by the engine's own
+// `if` (visibleByFlag), so this takes no inventory argument and cannot fall out
+// of step with one.
+export function rigCheckNodes({ place = 'bay' } = {}) {
+  const walk = place === 'walk';
+
+  const hub = walk ? {
+    speaker: '',
+    lines: [
+      { who: 'direction', text: 'Rain, and a long enough walk to think in. The case is still in the back of the van and he keeps checking it is, which is not the same as it being there.' },
+      { who: 'you', text: 'Go through it now. Not at the door with somebody watching me do it.' },
+    ],
+    revisitLines: [{ who: 'you', text: 'What else.' }],
+    choices: [
+      { text: 'the case in the back', goto: 'van', if: '!rig.van', set: ['rig.van'] },
+      { text: 'what the job actually is', goto: 'count', if: '!rig.count', set: ['rig.count'] },
+      { text: 'why there is nobody with me', goto: 'crew', if: '!rig.crew', set: ['rig.crew'] },
+      { text: '(stop thinking about it. walk.)', goto: 'done' },
+    ],
+  } : {
+    speaker: '',
+    lines: [
+      // The bay is the first room in the game that is worth listening to, and he
+      // notices it before he notices the bag. That is the character.
+      { who: 'direction', text: 'Under the canopy the rain goes quiet and the bay gets loud. Every drip off the lip comes back off the roller door a beat late.' },
+      { who: 'you', text: 'Good room. Bad night to be standing in a good room doing nothing.' },
+      { who: 'you', text: 'Check the kit. You always check the kit, and you have never once found anything wrong with it.' },
+    ],
+    revisitLines: [{ who: 'direction', text: 'The bag is still open on the step.' }],
+    choices: [
+      { text: 'the machine', goto: 'machine', if: '!rig.machine', set: ['rig.machine'] },
+      { text: 'the cans', goto: 'ears', if: '!rig.ears', set: ['rig.ears'] },
+      { text: 'batteries', goto: 'power', if: '!rig.power', set: ['rig.power'] },
+      { text: 'the fork', goto: 'fork', if: 'has.fork && !rig.fork', set: ['rig.fork'] },
+      { text: 'the return', goto: 'bent', if: 'has.interface && !rig.bent', set: ['rig.bent'] },
+      { text: 'the set', goto: 'radio', if: '!rig.radio', set: ['rig.radio'] },
+      { text: 'say something and listen to it come back', goto: 'voice', if: '!rig.voice', set: ['rig.voice'] },
+      { text: '(close the bag.)', goto: 'done' },
+    ],
+  };
+
+  return {
+    start: hub,
+
+    // ── the walk ────────────────────────────────────────────────────────────
+    // The four lines that used to cycle here, given somewhere to go.
+    van: {
+      speaker: '',
+      lines: [
+        { who: 'you', text: 'The A-1000 is in the case, in the back, where it has been since Tuesday. I could describe every scratch on the lid.' },
+        { who: 'you', text: 'It will still be in the van when I have stopped thinking about it. That is the trouble with a machine you trust. There is nothing to do about it in advance.' },
+      ],
+      goto: 'start',
+    },
+    count: {
+      speaker: '',
+      lines: [
+        { who: 'you', text: 'Five rooms, one clean minute each. Forty-five seconds of that is standing still and not breathing on the capsule.' },
+        { who: 'you', text: 'Five minutes of tape. For that they are giving me a building for a night, and the keys, and nobody in it.' },
+        { who: 'you', text: 'Written down like that it sounds like a bargain somebody else came out of well.' },
+      ],
+      goto: 'start',
+    },
+    crew: {
+      speaker: '',
+      lines: [
+        { who: 'you', text: 'They send two people for a job this size. I stopped asking for the second one; he only ever talked over the room.' },
+        { who: 'direction', text: 'He has told this to enough people that it comes out the same way every time, which is how you know it is the version he has settled on.' },
+      ],
+      goto: 'start',
+    },
+
+    // ── the bay ─────────────────────────────────────────────────────────────
+    machine: {
+      speaker: '',
+      lines: [
+        { who: 'you', text: 'One minute. Uninterrupted. That is the whole job and it is the only rule in it.' },
+        { who: 'you', text: 'Anything that lands inside the minute — a step, a door, my own breath on the capsule — and the minute is gone and I start it again.' },
+        { who: 'you', text: 'The machine does not care whose fault it was. That is the thing I like about it. It is the only part of this that has never once argued.' },
+      ],
+      goto: 'start',
+    },
+    ears: {
+      speaker: '',
+      lines: [
+        { who: 'you', text: 'Cans on, and I am not standing in the room any more. I am inside the machine, listening to the room through it.' },
+        { who: 'you', text: 'People never believe that. You do not hear a building. You hear what your microphone thinks of a building, and you spend the night deciding whether to believe it.' },
+        { who: 'you', text: 'Everything I decide tonight I decide off a meter and a pair of headphones. Write that down and it sounds thin. It has been twenty years.' },
+      ],
+      goto: 'start',
+    },
+    power: {
+      speaker: '',
+      lines: [
+        { who: 'you', text: 'Batteries. The torch and the deck come out of the same tin, and it is the torch that empties it.' },
+        { who: 'you', text: 'So every minute of light is a minute of tape I might want later. There is no way round that and there never has been.' },
+        { who: 'direction', text: 'He checks the spare cells twice, in the dark, by feel — the way you check a thing you have already checked.' },
+      ],
+      goto: 'start',
+    },
+    fork: {
+      speaker: '',
+      art: { id: 'tuningFork', mode: 'hero', caption: 'One known thing, going into unknown rooms.', status: 'A440' },
+      lines: [
+        { who: 'you', text: 'A440. Steel. It does not drift, it does not want power, and it does not care what the room thinks of it.' },
+        { who: 'you', text: 'One known thing to carry into rooms that are not. You would be amazed how far that gets you at four in the morning.' },
+      ],
+      goto: 'start',
+    },
+    bent: {
+      speaker: '',
+      lines: [
+        { who: 'you', text: 'And the return. Somebody took a perfectly good interface and rewired it wrong, on purpose, and it does something a right one cannot.' },
+        { who: 'you', text: 'It is not on the inventory. It is not on anybody\'s inventory. I am not going to be the one who puts it on one.' },
+      ],
+      goto: 'start',
+    },
+    radio: {
+      speaker: '',
+      lines: [
+        { who: 'you', text: 'The set. Check in on the hour, he said. Nobody said what happens if I do not, which I noticed at the time and did not ask about.' },
+        { who: 'you', text: 'It works out here. Everything works out here.' },
+      ],
+      goto: 'start',
+    },
+
+    // The one thing a location recordist actually does in a space he has not
+    // worked before, and the only `me` beat in the tree: saying it out loud is
+    // the point, so the engine offers it as a decision (conversation.js rule 2).
+    voice: {
+      speaker: '',
+      lines: [
+        { who: 'direction', text: 'He turns to face the roller door and waits for a gap in the rain.' },
+        { who: 'me', text: 'Testing. One. Ellery, service bay, twenty-two forty.', prompt: 'slate it properly, out of habit' },
+        { who: 'me', text: '...', prompt: '(clap once. that is all it takes.)' },
+      ],
+      goto: 'voice.back',
+    },
+    'voice.back': {
+      speaker: '',
+      lines: [
+        { who: 'direction', text: 'The bay hands it back off the roller door about a beat late, the way a room this shape should.' },
+        // Not a scare. A professional noticing a number that is very slightly
+        // wrong and having nowhere to put it yet.
+        { who: 'you', text: 'Long tail on that. Longer than a bay this size has any business having.' },
+        { who: 'you', text: 'Wet steel. Wet steel does that.' },
+        { who: 'direction', text: 'He writes nothing down, and does not move for a moment, and then picks the bag up.' },
+      ],
+      goto: 'start',
+    },
+  };
+}

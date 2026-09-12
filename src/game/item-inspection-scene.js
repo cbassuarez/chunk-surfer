@@ -2,11 +2,12 @@ import * as scenes from './scenes.js';
 import {createItemInspection} from './item-inspection.js';
 import {drawItemInspectionView} from '../render/item-inspection-view.js';
 import {uiSize,uiScrim} from '../render/ui.js';
-import {drawMachinePanel} from '../render/presentation.js';
+import {withMachinePanel,machinePanelAperture} from '../render/presentation.js';
+import {uiCue,UI_CUE} from '../audio/ui-cues.js';
 
 export function makeItemInspectionScene(entry){
  const inspection=createItemInspection(entry);let layout=null;
- const back=()=>scenes.remove(scene);
+ const back=()=>{uiCue(UI_CUE.BACK,{scope:'item-inspection'});scenes.remove(scene);};
  const scene={id:'item-inspection',blocksInput:true,blocksWorld:true,freezesBelow:true,allowsLook:false,handlesEscape:true,
   key(e){if(inspection?.key(e))return true;
    if(['Escape','Enter','b','B'].includes(e.key)||['back','confirm','bag'].includes(e.controllerAction))back();return true;},
@@ -18,8 +19,11 @@ export function makeItemInspectionScene(entry){
   view:()=>({inspection:inspection?.view(),layout}),
   exit(){inspection?.dispose();},
   render(){const {cols,rows}=uiSize();const rect={x:3,y:3,w:cols-6,h:rows-6};
-   uiScrim(.86);const body=drawMachinePanel(rect.x,rect.y,rect.w,rect.h,{label:'INSPECT',source:'FIELD CASE',meter:false});
-   layout=drawItemInspectionView({entry,inspection,rect:body,active:scenes.top()===scene});},
+   const aperture=machinePanelAperture(rect.x,rect.y,rect.w,rect.h);
+   const content={x:aperture.x+1,y:aperture.y+.5,w:aperture.w-2,h:aperture.h-1};
+   uiScrim(.86);withMachinePanel(rect.x,rect.y,rect.w,rect.h,{label:'INSPECT',source:'FIELD CASE',meter:false},()=>{
+    layout=drawItemInspectionView({entry,inspection,rect:content,active:scenes.top()===scene});
+   });},
  };
  return scene;
 }

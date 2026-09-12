@@ -34,7 +34,8 @@ import { TRANSPORT, drawRecorderFace, recorderPanelRect, recorderHitRegions } fr
 import { uiSize } from '../render/ui.js';
 import { fitText } from '../render/fit-text.js';
 import { createConversation } from './conversation.js';
-import { pressControl, releaseControl, cancelControlScope } from './control-mechanics.js';
+import { pressControl, releaseControl, cancelControlScope } from './control-feedback.js';
+import { uiCue, UI_CUE } from '../audio/ui-cues.js';
 
 export const RECORDER_SCENE_ID = 'recorder';
 
@@ -43,43 +44,38 @@ export const RECORDER_SCENE_ID = 'recorder';
 export const RECORDER_KEY = Object.freeze({
   REC: 'rec',
   STOP: 'stop',
-  PLAY: 'play',
   TAKES: 'takes',
-  RESUME: 'resume',
 });
 
 // What the machine will accept right now. Pure: given a state, it says which
 // keys are live and why the dead ones are dead.
 export function recorderKeys(state = {}) {
-  const { recording = false, stalled = false, playing = false, browsing = false,
-    refusal = null, playableHere = false, tapes = 0 } = state;
-  if (recording) {
-    return stalled
-      ? [{ id: RECORDER_KEY.RESUME, label: 'RESUME', enabled: true }, { id: RECORDER_KEY.STOP, label: 'STOP', enabled: true }]
-      : [{ id: RECORDER_KEY.STOP, label: 'STOP', enabled: true }];
-  }
-  if (playing) return [{ id: RECORDER_KEY.STOP, label: 'STOP', enabled: true }];
+  const { recording = false, stalled = false, slating = false, playing = false, refusal = null } = state;
+  // A transport changes state, never its physical key arrangement. In
+  // particular, inspecting TAKES must remain possible while the tape rolls.
+  const canRecord = recording ? stalled||slating : !playing && (!refusal || !!refusal?.allow);
   return [
-    { id: RECORDER_KEY.REC, label: 'REC', enabled: !refusal || !!refusal?.allow, reason: refusal?.reason || '' },
-    { id: RECORDER_KEY.PLAY, label: 'PLAY', enabled: playableHere, reason: playableHere ? '' : 'NOTHING ON TAPE IN THIS ROOM' },
-    { id: RECORDER_KEY.TAKES, label: browsing ? 'CLOSE' : 'TAKES', enabled: tapes > 0, reason: tapes ? '' : 'NO TAPES YET' },
+    { id: RECORDER_KEY.REC, label: 'REC', enabled: canRecord,
+      reason: recording ? (stalled ? '' : 'TAKE ALREADY RUNNING') : playing ? 'STOP PLAYBACK BEFORE RECORDING' : refusal?.reason || '' },
+    { id: RECORDER_KEY.STOP, label: 'STOP', enabled: recording || playing, reason: recording || playing ? '' : 'TRANSPORT STOPPED' },
+    { id: RECORDER_KEY.TAKES, label: 'TAKES', enabled: true },
   ];
 }
 
 export function recorderControlState(id, state = {}) {
   const active = id === RECORDER_KEY.REC ? !!state.recording
-    : id === RECORDER_KEY.PLAY ? !!state.playing
-      : id === RECORDER_KEY.TAKES ? !!state.browsing : false;
+    : id === RECORDER_KEY.TAKES ? !!state.browsing : false;
   return {
     controlId: `recorder:${id}`, lit: active, latched: active,
-    color: id === RECORDER_KEY.REC ? 'red' : id === RECORDER_KEY.PLAY ? 'green' : 'white',
+    color: id === RECORDER_KEY.REC ? 'red' : 'white',
   };
 }
 
 export function makeRecorderScene({
   getState,          // () -> the live machine state
   getTakes,          // () -> [{ roomId, label, ordinal, playable, status, warn }]
-  onRecord,          // REC / STOP / RESUME all route to the game's own verb
+  onRecord,          // REC starts or resumes through the game's own verb
+  onStopRecording,   // STOP does not resume a held take
   onPlay,            // (roomId|null) -> play that tape, or the one in this room
   onStopPlayback,
   onClose,
@@ -88,8 +84,10 @@ export function makeRecorderScene({
   const state = () => (typeof getState === 'function' ? getState() : {}) || {};
   const takes = () => (typeof getTakes === 'function' ? getTakes() : []) || [];
 
-  let cursor = 0;
+  const initial = state();
+  let cursor = initial.playing || (initial.recording && !initial.stalled) ? 1 : 0;
   let browsing = false;
+  let focus = 'transport';
   let row = 0;
   let notice = '';
   let noticeUntil = 0;
@@ -99,6 +97,7 @@ export function makeRecorderScene({
   let guideConvo = null;
   let hitRegions = [];
   const heldControls = new Map();
+  const sound=name=>uiCue(name,{scope:'recorder',profile:'recorder',quiet:state().recording?true:undefined});
 
   function press(id, input) {
     if (!id) return;
@@ -122,12 +121,42 @@ export function makeRecorderScene({
   const keys = () => recorderKeys({ ...state(), browsing, tapes: takes().length });
   const key = () => keys()[Math.max(0, Math.min(keys().length - 1, cursor))] || null;
 
-  function say(text, seconds = 2.2) { notice = text; noticeUntil = t + seconds; }
+  function say(text, seconds = 2.2) { notice = text; noticeUntil = t + seconds; sound(UI_CUE.DENIED); }
 
-  function close({ suppressReopen = false } = {}) {
+  function browseTakes(open = true) {
+    if (closed || guideConvo) return false;
+    if(browsing!==!!open)sound(open?UI_CUE.ON:UI_CUE.OFF);
+    browsing = !!open;
+    focus = browsing ? 'takes' : 'transport';
+    cursor = 2;
+    row = Math.max(0, Math.min(row, takes().length - 1));
+    return true;
+  }
+
+  function audition(chosen = null) {
+    // A browse is harmless during recording; another live audio transport is
+    // not. Check fresh state at activation, including stale pointer targets.
+    const live = state();
+    if (live.recording) { say('STOP RECORDING BEFORE PLAYBACK'); return true; }
+    if (chosen && !chosen.playable) { say(chosen.status || 'NOTHING TO PLAY'); return true; }
+    if (!chosen && !live.playing && !live.playableHere) { say('NOTHING ON TAPE IN THIS ROOM'); return true; }
+    if (!chosen && live.playing) {onStopPlayback?.();if(!state().playing)sound(UI_CUE.OFF);}
+    else {
+      const accepted = onPlay?.(chosen?.takeId || chosen?.roomId || null);
+      if (accepted === false) {sound(UI_CUE.DENIED);return true;}
+      if(state().playing)sound(UI_CUE.ON);
+    }
+    browsing = false;
+    focus = 'transport';
+    cursor = 1;
+    return true;
+  }
+
+  function close({ suppressReopen = false, feedback = true } = {}) {
     if (closed) return false;
     closed = true;
     clearControls();
+    if(feedback)sound(UI_CUE.BACK);
     const removed = scenes.remove(scene);
     if (removed) {
       onClearInput?.({ suppressReopen });
@@ -144,6 +173,7 @@ export function makeRecorderScene({
       nodes: config.nodes,
       startAt: config.startAt || 'start',
       sceneId: `recorder:${config.id || 'listen'}`,
+      feedbackProfile: 'recorder',
       replay: config.replay || null,
       onChoice: config.onChoice,
       onLine: config.onLine,
@@ -159,7 +189,7 @@ export function makeRecorderScene({
         guideConvo = null;
         guide = null;
         completed?.onDone?.();
-        if (completed?.closeOnDone !== false) close({ suppressReopen: true });
+        if (completed?.closeOnDone !== false) close({ suppressReopen: true, feedback:false });
       },
     });
     guideConvo.start();
@@ -177,36 +207,44 @@ export function makeRecorderScene({
     }
     switch (current.id) {
       case RECORDER_KEY.REC:
-      case RECORDER_KEY.STOP:
-      case RECORDER_KEY.RESUME:
         // One verb. The game's own gate ladder still owns what a press means,
         // so the machine can never get out of step with it.
-        onRecord?.({ beginGuide, close });
+        {const before=state();onRecord?.({ beginGuide, close });const after=state();
+        if(guideConvo||after.recording&&(!before.recording||before.stalled&&!after.stalled||before.slating&&!after.slating))sound(UI_CUE.ON);
+        else if(!closed)sound(UI_CUE.DENIED);}
         // Rolling puts the machine away: he is holding still and listening now,
         // not working the transport.
-        if (current.id === RECORDER_KEY.REC && !guideConvo) close();
+        if (!guideConvo) close({feedback:false});
         return true;
-      case RECORDER_KEY.PLAY:
-        if (state().playing) onStopPlayback?.(); else onPlay?.(null);
+      case RECORDER_KEY.STOP:
+        {const before=state();
+        if (state().playing) onStopPlayback?.();
+        else if (state().recording) (onStopRecording || onRecord)?.({ beginGuide, close });
+        const after=state();
+        if(before.playing&&!after.playing||before.recording&&(!after.recording||after.stalled))sound(UI_CUE.OFF);}
         return true;
       case RECORDER_KEY.TAKES:
-        browsing = !browsing;
-        row = 0;
+        browseTakes(!browsing);
         return true;
       default: return false;
     }
   }
 
-  function move(delta) {
-    if (browsing) {
+  function move(delta, transport = false) {
+    const previous=`${focus}:${row}:${cursor}`;
+    if (browsing && !transport) {
+      focus = 'takes';
       const list = takes();
       if (!list.length) return;
       row = (row + delta + list.length) % list.length;
+      if(previous!==`${focus}:${row}:${cursor}`)sound(UI_CUE.MOVE);
       return;
     }
     const list = keys();
     if (!list.length) return;
+    focus = 'transport';
     cursor = (cursor + delta + list.length) % list.length;
+    if(previous!==`${focus}:${row}:${cursor}`)sound(UI_CUE.MOVE);
   }
 
   const scene = {
@@ -221,14 +259,16 @@ export function makeRecorderScene({
     allowsLook: false,
     lensPreset: null,
 
-    update(dt) { t += dt || 0; guideConvo?.update?.(dt || 0); },
+    update(dt) { if (closed) return; t += dt || 0; guideConvo?.update?.(dt || 0); },
 
     keyup(event) {
+      if (closed) return false;
       const released = release(`key:${event?.code || event?.key || ''}`);
       return (guideConvo?.keyup?.(event) || false) || released;
     },
 
     key(event) {
+      if (closed) return true;
       const code = event?.code || '';
       const raw = event?.key || '';
       const k = String(raw).toLowerCase();
@@ -251,32 +291,36 @@ export function makeRecorderScene({
       }
       if (raw === 'ArrowUp' || code === 'ArrowUp' || k === 'w') { move(-1); return true; }
       if (raw === 'ArrowDown' || code === 'ArrowDown' || k === 's') { move(1); return true; }
-      if (raw === 'ArrowLeft' || code === 'ArrowLeft' || k === 'a') { move(-1); return true; }
-      if (raw === 'ArrowRight' || code === 'ArrowRight' || k === 'd') { move(1); return true; }
-      if (raw === 'Enter' || code === 'Enter' || k === 'e' || code === 'KeyE') {
+      if (raw === 'ArrowLeft' || code === 'ArrowLeft' || k === 'a') { move(-1, true); return true; }
+      if (raw === 'ArrowRight' || code === 'ArrowRight' || k === 'd') { move(1, true); return true; }
+      if (raw === 'Tab' || code === 'Tab' || k === 't' || code === 'KeyT') {
+        if (!event.repeat) { press('recorder:takes', `key:${code || raw}`); browseTakes(!browsing); }
+        return true;
+      }
+      if (raw === 'Enter' || code === 'Enter' || k === 'e' || code === 'KeyE' || event.controllerAction === 'confirm') {
         if (event.repeat) return true;
-        if (key()?.enabled) press(`recorder:${key().id}`, `key:${code || raw}`);
-        if (browsing) {
+        if (browsing && focus === 'takes') {
           const chosen = takes()[row];
           if (!chosen) return true;
-          if (!chosen.playable) { say(chosen.status || 'NOTHING TO PLAY'); return true; }
-          onPlay?.(chosen.roomId);
-          browsing = false;
-          return true;
+          return audition(chosen);
         }
+        if (key()?.enabled) press(`recorder:${key().id}`, `key:${code || raw}`);
         return activate();
       }
-      // [P] is still the shortcut it always was, even with the machine up.
-      if (k === 'p' || code === 'KeyP') {
+      // Audition remains a shortcut, not a fourth physical key.
+      if (k === 'p' || code === 'KeyP' || raw === ' ' || code === 'Space') {
         if (event.repeat) return true;
-        press('recorder:play', `key:${code || raw}`);
-        if (state().playing) onStopPlayback?.(); else onPlay?.(null);
-        return true;
+        if (state().playing && !state().recording) press('recorder:stop', `key:${code || raw}`);
+        const chosen = browsing && focus === 'takes' ? takes()[row] : null;
+        if (browsing && focus === 'takes' && !chosen) return true;
+        return audition(chosen);
       }
       return true;   // the machine has the keyboard while it is out
     },
 
     pointer(event) {
+      if (closed) return true;
+      if (event.type === 'pointerdown' && (event.button ?? event.originalEvent?.button ?? 0) !== 0) return true;
       if (event.type === 'pointercancel' && event.pointerId == null) {
         heldControls.clear();
         cancelControlScope('recorder:');
@@ -308,15 +352,20 @@ export function makeRecorderScene({
         return true;
       }
       if (hit.kind === 'take') {
+        if (!browsing) return true;
+        if(event.type==='pointermove'&&(focus!=='takes'||row!==hit.index))sound(UI_CUE.MOVE);
+        focus = 'takes';
         row = hit.index;
         if (event.type === 'pointerdown') {
           const chosen = takes()[row];
-          if (!chosen?.playable) say(chosen?.status || 'NOTHING TO PLAY');
-          else { onPlay?.(chosen.roomId); browsing = false; }
+          if (!chosen) say('NOTHING TO PLAY');
+          else audition(chosen);
         }
         return true;
       }
       if (hit.kind === 'transport') {
+        if(event.type==='pointermove'&&(focus!=='transport'||cursor!==hit.index))sound(UI_CUE.MOVE);
+        focus = 'transport';
         cursor = hit.index;
         if (event.type === 'pointerdown') {
           if (key()?.enabled) press(hit.controlId, input);
@@ -327,11 +376,12 @@ export function makeRecorderScene({
     },
 
     render() {
+      if (closed) return;
       const { cols, rows } = uiSize();
       const live = state();
       const list = keys();
       const active = key();
-      const browsingNow = browsing && !live.recording && !live.playing;
+      const browsingNow = browsing;
       const mode = guideConvo ? TRANSPORT.LISTEN
         : browsingNow ? TRANSPORT.BROWSE
         : live.recording ? TRANSPORT.RECORD
@@ -347,6 +397,9 @@ export function makeRecorderScene({
       const face = {
         ...(live.face || {}),
         mode,
+        browsing: browsingNow,
+        recording: !!live.recording,
+        playing: !!live.playing,
         rect,
         source: live.source || null,
         guide: guideConvo?.view?.() || null,
@@ -354,6 +407,7 @@ export function makeRecorderScene({
         // Nothing is moving on a machine sitting in your hands doing nothing.
         spin: live.recording || live.playing ? (live.spin ?? 0) : 0,
         rows: browsingNow ? takes().map((take, index) => ({
+          roomId: take.roomId,
           ordinal: take.ordinal,
           label: take.label,
           status: take.status,
@@ -373,13 +427,13 @@ export function makeRecorderScene({
         footer: guideConvo
           ? (guideConvo.view()?.pending?.options?.length ? 'SELECT · ENTER TRANSMIT' : 'ENTER CONTINUE')
           : browsingNow
-          ? 'ENTER PLAY · R CLOSE'
+          ? '↑↓ TAKE · ←→ TRANSPORT · ENTER PLAY/PRESS · TAB TAKES · R CLOSE'
           : 'UP DOWN SELECT · ENTER PRESS · R CLOSE',
         buttons: { w: 6, keys: list.map((entry) => ({
           id: entry.id,
           ...recorderControlState(entry.id, { ...live, browsing: browsingNow }),
           label: entry.label,
-          selected: entry.id === active?.id,
+          selected: focus === 'transport' && entry.id === active?.id,
           // A key the machine cannot honour here is out of service, not absent:
           // the cap and printed legend stay readable, but its lamp stays off.
           // The readout explains a refused press.
@@ -392,11 +446,13 @@ export function makeRecorderScene({
 
     exit() { closed = true; clearControls(); guideConvo?.stop?.(); guideConvo = null; guide = null; },
 
+    browseTakes,
+
     // The pattern the bag established: everything a headless test needs, and
     // nothing the game reads.
     debugState() {
       return {
-        cursor, browsing, row, notice: t < noticeUntil ? notice : '',
+        cursor, browsing, focus, row, notice: t < noticeUntil ? notice : '',
         guide: guide ? { id: guide.id || 'listen', view: guideConvo?.view?.() || null } : null,
         keys: keys().map((entry) => ({ id: entry.id, enabled: entry.enabled, reason: entry.reason || '' })),
         selectedKey: key()?.id || null,

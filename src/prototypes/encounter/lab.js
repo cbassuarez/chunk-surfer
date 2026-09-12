@@ -24,7 +24,7 @@ const ICONS = {
 const icon = id => `<svg viewBox="0 0 76 60" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[id] || ICONS.self}</svg>`;
 const GEAR = {
   light: { category:'TORCH / BATTERY POWERED', detail:'Break concealment. Leave exposed residue for your next playback.', moves:['EXPOSE', 'WHITEOUT'], short:'BREAK CONCEALMENT', stamp:'3 CELL' },
-  recorder: { category:'RECORDER / TAPE TRANSPORT', detail:'Capture a broadcast, then play the recorded take back at the adversary.', moves:['MONITOR', 'PLAYBACK'], short:'CAPTURE / RETURN', stamp:'DA-1000' },
+  recorder: { category:'RECORDER / TAPE TRANSPORT', detail:'Capture a broadcast, then play the recorded take back at the adversary.', moves:['MONITOR', 'PLAYBACK'], short:'CAPTURE / RETURN', stamp:'A-1000' },
   interface: { category:'BENT RIG / SIGNAL ROUTING', detail:'Invert a loop with a loaded take. Rig skills need this unit connected.', moves:['INVERT'], short:'REVERSE A LOOP', stamp:'MODIFIED' },
   'tuning-fork': { category:'TUNING FORK / PASSIVE TOOL', detail:'Read the next two enemy intents. Tuning costs no battery.', moves:['TUNE'], short:'READ TWO INTENTS', stamp:'440 Hz' },
   radio: { category:'RADIO / VOICE DECOY', detail:'Throw a voice to interrupt a broadcast and set a guard. Once per encounter.', moves:['THROW VOICE'], short:'DISTRACT / GUARD', stamp:'FM / AM' },

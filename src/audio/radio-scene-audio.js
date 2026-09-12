@@ -73,6 +73,18 @@ export function createRadioSceneAudio({getAudio=()=>null,reducedMotion=false}={}
     voice({tone:108,gain:.0035*level});
   }
   function contact(gain=.018,delay=0){voice({frequency:1700,gain,seconds:.055,delay,attack:.003});}
+  function notify(){
+    if(disposed||paused||!audio())return false;
+    clear();
+    // A short contact scratch and opening carrier. No voice or looping bed:
+    // unanswered calls leave the room and the player's controls alone.
+    try{
+      contact(.045);
+      voice({frequency:1450,gain:.05,seconds:.62,delay:.045,attack:.035});
+      voice({frequency:720,gain:.03,seconds:.18,delay:.16,attack:.004});
+      return true;
+    }catch(_){clear();return false;}
+  }
   function stage(name,options={}){
     if(disposed||terminal||!STAGES.has(name))return false;
     const nextChoice=options.choice||null;
@@ -120,5 +132,5 @@ export function createRadioSceneAudio({getAudio=()=>null,reducedMotion=false}={}
     try{carrier(current==='reseat'?.42:current==='relay'?.6:1);return true;}
     catch(_){clear();return false;}
   }
-  return {stage,pause,resume,stop,snapshot:()=>({stage:current,choice,disposed,terminal,paused,silent:voices.size===0,voices:voices.size,nodes:nodes.size})};
+  return {stage,notify,pause,resume,stop,snapshot:()=>({stage:current,choice,disposed,terminal,paused,silent:voices.size===0,voices:voices.size,nodes:nodes.size})};
 }

@@ -10,6 +10,10 @@ export const BATTLE_GEAR = Object.freeze({
   interface: Object.freeze({ toolId: 'rig', label: 'BENT RIG' }),
   'tuning-fork': Object.freeze({ toolId: 'fork', label: 'TUNING FORK' }),
   radio: Object.freeze({ toolId: 'radio', label: 'RADIO' }),
+  // OURS, out of our own van. The building's two-metre Stillson is not in this
+  // registry and never will be: it is the plant's problem, it is dragged rather
+  // than carried, and a man does not take it into a fight.
+  'plant-spanner': Object.freeze({ toolId: 'spanner', label: 'ADJUSTABLE SPANNER' }),
   coffee: Object.freeze({ toolId: 'coffee', label: 'COFFEE' }),
   // THE FILM BADGE. Assignable to a quick slot like anything else in this
   // registry, and that is the entire cost of it: four slots, seven things worth

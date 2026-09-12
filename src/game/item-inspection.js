@@ -21,12 +21,15 @@ async function renderer(){
 export function itemInspectionStats(){return{contexts:shared?1:0,currentId,loadedId,renderCount,active:!!owner};}
 export function createItemInspection(value){
  const item=itemPortrait(value);if(!item)return null;
+ const appearance=value?.source||value||{};
  const token={};let closed=false,rect=null,drag=null,yaw=0,pitch=0,dirty=true,failed=false;
  owner=token;
  const ready=renderer().then(r=>{
   if(!r||r.lost||closed||owner!==token){failed=!r||!!r?.lost;return;}
   const same=currentId===item.id&&loadedId===item.id;currentId=item.id;if(!same)loadedId=null;
-  r.engine.setOptions({...ITEM_ASCII_OPTIONS,src:assetUrl(item.model),scale:item.scale,
+  r.engine.setOptions({...ITEM_ASCII_OPTIONS,...item.lighting,src:assetUrl(item.model),scale:item.scale,
+   materialColors:appearance.materialColors||null,nodeRotations:appearance.nodeRotations||null,hiddenNodes:appearance.hiddenNodes||null,
+   recorderPhosphor:appearance.recorderPhosphor||null,
    onLoad:()=>{if(owner===token&&currentId===item.id){loadedId=item.id;r.engine.resetView();if(yaw||pitch)r.engine.orbitBy(yaw,pitch);dirty=true;}},onError:()=>{if(owner===token&&currentId===item.id){failed=true;loadedId=null;}}});
   r.engine.resetView();if(yaw||pitch)r.engine.orbitBy(yaw,pitch);dirty=true;
  });

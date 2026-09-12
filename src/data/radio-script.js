@@ -3,8 +3,9 @@
 // code, so a registry rebuild and the shipped runtime always read the same tree.
 import { runtimeTree } from '../narrative/runtime-content.js';
 
-export function radioDialogue(cueId,{roomLabel='the next room'}={}){
+export function radioDialogue(cueId,{roomLabel='the next room',...context}={}){
   return runtimeTree(`radio.${cueId}`,{
+    ...context,
     roomLabel,
     ROOMLABEL:String(roomLabel).toUpperCase(),
   });

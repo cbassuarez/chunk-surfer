@@ -2,7 +2,7 @@
 // progress bar: it is a small, physical transport whose reels, counter, trace,
 // printed sources and cue marks all describe the tape currently in the cans.
 
-import { TRANSPORT, drawRecorderFace, recorderPanelRect } from './recorder-view.js';
+import { TRANSPORT, drawRecorderFace, recorderPanelRect, playbackOverlayButtons } from './recorder-view.js';
 
 export function formatPlaybackTime(seconds = 0) {
   const whole = Math.max(0, Math.floor(Number(seconds) || 0));
@@ -15,7 +15,7 @@ export function buildPlaybackViewModel(snapshot, { roomTitle = 'SEALED TAKE', ta
     ...snapshot,
     roomTitle: String(roomTitle || 'sealed take').toUpperCase(),
     takeLabel: takeNumber > 0 ? `TAKE ${String(takeNumber).padStart(2, '0')}` : 'SEALED TAKE',
-    elapsedLabel: formatPlaybackTime(snapshot.elapsedSec),
+    elapsedLabel: formatPlaybackTime(snapshot.tapeSeconds??snapshot.elapsedSec),
     remainingLabel: `-${formatPlaybackTime(snapshot.remainingSec)}`,
     printLabel: `${snapshot.sourceCount} SOURCE${snapshot.sourceCount === 1 ? '' : 'S'}`
       + (snapshot.eventCount ? ` · ${snapshot.eventCount} EVENT${snapshot.eventCount === 1 ? '' : 'S'}` : ''),
@@ -34,10 +34,11 @@ export function drawPlaybackOverlay({ snapshot, cols, rows, roomTitle, takeNumbe
   drawRecorderFace({
     mode: TRANSPORT.PLAY,
     rect,
+    buttons: playbackOverlayButtons(),
     source: 'HEADPHONES',
     // A tape return has no transport lamp of its own; the take number is what
     // identifies the thing in the cans.
-    lamp: { text: `▶ ${view.takeLabel}`, role: 'ui-blue' },
+    lamp: { text: view.seeking==='rewind'?'◀ REWIND':view.seeking?'▶ FAST FORWARD':`▶ ${view.takeLabel}`, role: 'ui-blue' },
     progress: view.progress,
     // The reels follow the tape rather than the clock: this one is being played,
     // not recorded, and it is the print moving past the head.
@@ -51,7 +52,7 @@ export function drawPlaybackOverlay({ snapshot, cols, rows, roomTitle, takeNumbe
       at: marker.position, kind: 'event', id: marker.id,
     })),
     counter: view.elapsedLabel,
-    counterLabel: 'TIME COUNTER',
+    counterLabel: 'TAPE COUNTER',
     counterTotal: view.remainingLabel,
     levels: { left: view.signalLeft, right: view.signalRight },
     // No LEVEL meter: nothing being played back can spoil anything, and a
@@ -61,7 +62,7 @@ export function drawPlaybackOverlay({ snapshot, cols, rows, roomTitle, takeNumbe
     // anything about the guest — see the note in game/playback.js.
     note: view.tapeDrift >= .18 ? 'REF MATCH' : view.roomTitle,
     noteTheme: view.tapeDrift >= .18 ? 'amber' : 'green',
-    footer: `SEALED PRINT · ${view.printLabel} · IN THE CANS ONLY`,
+    footer: view.seeking?'LOCATING TAKE':`SEALED PRINT · ${view.printLabel} · IN THE CANS ONLY`,
     footerParts: [{ action: 'playback', label: 'STOP' }],
   });
   return true;

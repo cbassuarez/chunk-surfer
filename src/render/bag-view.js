@@ -14,10 +14,11 @@ import { drawBagIcon } from './bag-icons.js';
 import {drawItemPortrait} from './item-portraits.js';
 import {itemPortrait} from '../data/item-portraits.js';
 import { bagEntry, bagSection } from '../game/bag-model.js';
-import { drawMapView } from './map-view.js';
+import { drawMapView, drawMapOffline } from './map-view.js';
 import { activeInputPromptDevice, inputPrompt, inputPromptLabel } from '../game/bindings.js';
 import { fitText } from './fit-text.js';
 import { drawLampButton } from './presentation.js';
+import { drawPrintedText } from './keycap.js';
 import { bagTabRegions, bagTabButtonState } from './bag-tabs.js';
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -60,20 +61,27 @@ function drawTabs(model, nav, layout, pulse, breadcrumb = '', guide = null) {
     const state=bagTabButtonState(tab, active);
     if(guide?.kind==='section')state.focused=tab.sectionId===guide.sectionId;
     drawLampButton(tab.x, tab.y, tab.w, tab.h, state);
+    if(layout.tabs.compact)continue;
     // Dynamic counts belong to the readout beneath the fixed printed legend,
     // never to the plastic. A long SKILLS delta cannot stretch its switch.
     const count = clip(tab.countLabel, tab.readout.w);
-    uiText(tab.readout.x + Math.max(0, (tab.readout.w - count.length) / 2), tab.readout.y,
+    if(active!=='map')uiText(tab.readout.x + Math.max(0, (tab.readout.w - count.length) / 2), tab.readout.y,
       count, tab.sectionId === active ? 'ui-primary' : 'ui-secondary', tab.sectionId === active ? .9 : .62);
   }
 
-  const help = layout.tabs.w >= 64
+  if(layout.tabs.compact)return;
+  const help = activeInputPromptDevice()==='keyboard' ? 'TAB / SHIFT+TAB SECTION' : layout.tabs.w >= 64
     ? `${inputPrompt('tabNext')} / ${inputPrompt('tabPrev')} SECTION`
     : `${inputPrompt('tabNext')} SECTION`;
   const crumb=breadcrumb||`FIELD CASE / ${tabs.find((tab)=>tab.id===active)?.label||'SECTION'}`;
   const crumbW=Math.max(8,layout.tabs.w-help.length-2);
-  uiText(layout.tabs.x,layout.tabs.y+3.7,clip(crumb,crumbW),'ui-label',.62);
-  rightText(layout.tabs.x,layout.tabs.y+3.7,layout.tabs.w,help,'ui-label',.58);
+  if(active==='map'){
+    drawPrintedText(layout.tabs.x,layout.tabs.y+2.7,clip(crumb,crumbW),{w:crumbW,h:.8,ink:'#333830',finish:'etched',darkPanel:false});
+    drawPrintedText(layout.tabs.x+layout.tabs.w-help.length,layout.tabs.y+2.7,help,{w:help.length,h:.8,ink:'#333830',finish:'etched',darkPanel:false});
+  }else{
+    uiText(layout.tabs.x,layout.tabs.y+3.7,clip(crumb,crumbW),'ui-label',.62);
+    rightText(layout.tabs.x,layout.tabs.y+3.7,layout.tabs.w,help,'ui-label',.58);
+  }
 }
 
 function sectionHeader(sectionId) {
@@ -760,7 +768,7 @@ export function drawBagView({ model, nav, mapNav = null, layout, hint = '', guid
   const sectionPulse = acquire(now, motion.sectionChangedAt);
   drawTabs(model,nav,layout,sectionPulse,breadcrumb,guide);
 
-  let actions = null;
+  let actions = null, mapPresentation = null;
   // A section may own its whole content area (the SKILLS tree does). It gets the
   // list+detail region and the surrounding chrome is untouched.
   if (drawContent) {
@@ -768,8 +776,12 @@ export function drawBagView({ model, nav, mapNav = null, layout, hint = '', guid
       ? { x: layout.list.x, y: layout.list.y, w: (layout.detail.x + layout.detail.w) - layout.list.x, h: layout.list.h }
       : { x: layout.list.x, y: layout.detail.y, w: layout.list.w, h: (layout.list.y + layout.list.h) - layout.detail.y };
     drawContent(region);
+  } else if (nav.sectionId === 'map' && model.mapUnavailableReason) {
+    mapPresentation=drawMapOffline({bagLayout:layout,reason:model.mapUnavailableReason,now});
+    actions=mapPresentation.actions;
   } else if (nav.sectionId === 'map' && model.map && mapNav) {
     const rendered = drawMapView({ model: model.map, nav: mapNav, bagLayout: layout, now });
+    mapPresentation = rendered;
     actions = rendered.actions;
   } else if (nav.sectionId === 'kit') {
     drawKitLoadoutView(model, nav, layout, motion, now);
@@ -784,7 +796,13 @@ export function drawBagView({ model, nav, mapNav = null, layout, hint = '', guid
   }
 
   uiLine(layout.taskRail.x, layout.taskRail.y - .35, layout.taskRail.x + layout.taskRail.w, layout.taskRail.y - .35, undefined, .24);
-  uiText(layout.taskRail.x, layout.taskRail.y, clip(guide?.title||bagTaskText({ hint, model, entry: selected }), layout.taskRail.w), guide||hint ? 'ui-amber' : 'ui-secondary', guide||hint ? .92 : .62);
+  const taskText=clip(guide?.title||bagTaskText({ hint, model, entry: selected }), layout.taskRail.w);
+  if(nav.sectionId==='map'){
+    // Live task state is electronic, never changing etched ink on the metal.
+    uiFill(layout.taskRail.x,layout.taskRail.y-.45,layout.taskRail.w,1.1,'#0a130c');
+    uiText(layout.taskRail.x+.7,layout.taskRail.y-.4,clip(taskText,layout.taskRail.w-1.4),'ui-secondary',.9);
+  }
+  else uiText(layout.taskRail.x, layout.taskRail.y-.4, taskText, guide||hint ? 'ui-amber' : 'ui-secondary', guide||hint ? .92 : .62);
 
   // Guided instruction belongs to the exterior tour rail. The instrument's
   // content and controls retain the whole interior; no bottom callout overlays it.
@@ -794,5 +812,7 @@ export function drawBagView({ model, nav, mapNav = null, layout, hint = '', guid
     ? bagGuideActions(guide)
     : nav.mode === 'confirm' ? bagActionRail(selected, nav.mode) : (actions || bagActionRail(selected, nav.mode)));
   const actionText = clip(actionRailText(actions, layout.actionRail.w), layout.actionRail.w);
-  uiText(layout.actionRail.x, layout.actionRail.y, actionText, nav.mode === 'confirm' ? 'ui-danger' : 'ui-label', nav.mode === 'confirm' ? .92 : .72);
+  drawPrintedText(layout.actionRail.x,layout.actionRail.y,actionText,{w:layout.actionRail.w,
+    ink:nav.mode==='confirm'?'#612014':'#333830',finish:'etched',darkPanel:false});
+  return mapPresentation;
 }

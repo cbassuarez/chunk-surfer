@@ -22,6 +22,7 @@ import {
   techniqueAvailability,
 } from './combat-progression.js';
 import { sheetDialogueFor } from './bag-sheets.js';
+import { FIELD_KIT_OPTIONS } from './field-kit.js';
 
 export const EMPTY_JOB = Object.freeze({
   rooms: [],
@@ -31,6 +32,14 @@ export const EMPTY_JOB = Object.freeze({
 });
 
 const KNOWN_GEAR = Object.freeze({
+  'field-case': {
+    title: 'FIELD CASE',
+    subtitle: 'AUDIOCORP FC–7 / FITTED TRANSIT CASE',
+    icon: 'field-case',
+    status: ['READY', 'active'],
+    description: 'Formed shell, replaceable foam, two over-center latches. A polished patch on the handle marks where every night begins.',
+    facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'PROTECT / CARRY'], ['CONTENTS', 'RECORDER / MICROPHONE / HEADPHONES / FIELD INSTRUMENTS']],
+  },
   light: {
     title: 'LIGHT',
     subtitle: 'FIELD TORCH',
@@ -40,12 +49,28 @@ const KNOWN_GEAR = Object.freeze({
     facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'ILLUMINATION'], ['BATTLE', 'EXPOSE · DMG · COUNTERS CONCEAL · USES BATTERY']],
   },
   recorder: {
-    title: 'RECORDER + HEADPHONES',
+    title: 'RECORDER',
     subtitle: 'PORTABLE RECORDER',
     icon: 'recorder',
     status: ['READY', 'active'],
-    description: 'Captures one uninterrupted minute of room tone.',
+    description: 'Captures room tone and auditions the recorded take. The fitted microphone determines take length.',
     facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'CAPTURE / MONITOR'], ['BATTLE', 'MONITOR CAPTURES A TAKE · PLAYBACK SPENDS IT · COUNTERS BROADCAST']],
+  },
+  headphones: {
+    title: 'HEADPHONES',
+    subtitle: 'FIELD MONITORING',
+    icon: 'recorder',
+    status: ['FITTED', 'active'],
+    description: 'The fitted headphones balance monitor output against surrounding sound while listening.',
+    facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'MONITOR / SURROUNDINGS']],
+  },
+  microphone: {
+    title: 'MICROPHONE',
+    subtitle: 'FIELD PICKUP',
+    icon: 'recorder',
+    status: ['FITTED', 'active'],
+    description: 'The fitted microphone balances incidental recording noise against take length.',
+    facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'ROOM-TONE PICKUP']],
   },
   interface: {
     title: 'BENT RIG INTERFACE',
@@ -64,8 +89,8 @@ const KNOWN_GEAR = Object.freeze({
     facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'TUNE / REVEAL'], ['BATTLE', 'TUNE IS FREE · REVEALS THE NEXT TWO INTENTS']],
   },
   map: {
-    title: 'LOCATION INDICATOR',
-    subtitle: 'BUILDING PLAN / CURRENT SLICE',
+    title: 'SURVEY INDICATOR',
+    subtitle: 'AUDIOCORP SI–1 / BUILDING PLAN',
     icon: 'room',
     status: ['LIVE', 'active'],
     description: 'Tracks the current physical floor, marked destination, and nearby interference.',
@@ -92,8 +117,9 @@ const KNOWN_GEAR = Object.freeze({
     subtitle: 'PLANT TOOL / SIDE POCKET',
     icon: 'spanner',
     status: ['READY', 'active'],
-    description: 'A compact adjustable spanner set close to the heating-header gland size.',
-    facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'PLANT ISOLATION']],
+    description: 'A compact adjustable spanner set close to the heating-header gland size. Two pounds of steel, and the only thing in the case that was never meant to be heard.',
+    facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'PLANT ISOLATION / STRIKE'],
+      ['BATTLE', 'SWING LANDS WITHOUT A READ AND IS HEARD · ON THE STEEL GUARDS EITHER WAY']],
   },
   'marble-eyes': {
     title: 'TWO MARBLE EYES',
@@ -170,7 +196,11 @@ function gearKey(raw) {
 
 function gearProfile(raw) {
   const key = gearKey(raw);
-  const known = KNOWN_GEAR[key];
+  // The family supplies behavior/copy; the exact variant key stays intact for
+  // its GLB and saved selection. These are not battle-slot aliases.
+  const family = ['headphones', 'microphone'].find((group) =>
+    FIELD_KIT_OPTIONS[group].some((option) => key === `${group}-${option.id}`));
+  const known = KNOWN_GEAR[key] || (family ? KNOWN_GEAR[family] : null);
   if (known) return { key, ...known };
 
   return {
@@ -584,7 +614,7 @@ function buildSkillsSection({ build, settledBuild = null, hasRig }) {
   };
 }
 
-export function buildBagModel({ equipment = [], job = EMPTY_JOB, map = null, loadout = null, build = null, settledBuild = null, hasRig = false, sheetInsights = null } = {}) {
+export function buildBagModel({ equipment = [], job = EMPTY_JOB, map = null, mapUnavailableReason = '', loadout = null, build = null, settledBuild = null, hasRig = false, sheetInsights = null } = {}) {
   const safeJob = {
     ...EMPTY_JOB,
     ...(job || {}),
@@ -618,7 +648,7 @@ export function buildBagModel({ equipment = [], job = EMPTY_JOB, map = null, loa
       interface: 'SET IT IN A QUICK SLOT',
       'tuning-fork': 'SET IT IN A QUICK SLOT',
       radio: 'CHANNEL UNAVAILABLE',
-      'plant-spanner': 'USE AT THE HEATING HEADER',
+      'plant-spanner': 'SET IT IN A QUICK SLOT · OR USE AT THE HEATING HEADER',
       'marble-eyes': 'USE AT THE BLIND BUST',
       keyring: 'USED AUTOMATICALLY AT LOCKED DOORS',
     })[entry.sourceId] || 'NO USE AVAILABLE FROM THE BAG';
@@ -665,7 +695,7 @@ export function buildBagModel({ equipment = [], job = EMPTY_JOB, map = null, loa
     };
   });
   const total = Math.max(0, Number(safeJob.total) || safeJob.rooms.length || 0);
-  const mapEntries = safeJob.rooms.map((room, index) => {
+  const mapEntries = (mapUnavailableReason ? [] : safeJob.rooms).map((room, index) => {
     const entry = normalizeRoom(room, index, total || safeJob.rooms.length || 5);
     const space = map?.spaces?.find((candidate) => candidate.roomId === entry.roomId) || null;
     return space ? {
@@ -693,6 +723,7 @@ export function buildBagModel({ equipment = [], job = EMPTY_JOB, map = null, loa
     loadout: normalizedLoadout,
     job: safeJob,
     map,
+    mapUnavailableReason: String(mapUnavailableReason || ''),
   };
 }
 

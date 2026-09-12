@@ -85,7 +85,8 @@ export function makeTransferRoomScene({ meta = {} } = {}) {
 
   const rows = () => registers[TABS[tab].id] || [];
   const current = () => rows()[sel] || null;
-  const reset = () => { sel = 0; scroll = 0; bodyScroll = 0; };
+  let bodyLimit=0;
+  const reset = () => { sel = 0; scroll = 0; bodyScroll = 0; bodyLimit=0; };
 
   // Following a citation is the only verb in here beyond reading, and it may
   // cross registers: the sheet you carried out and the copy the company has been
@@ -100,7 +101,7 @@ export function makeTransferRoomScene({ meta = {} } = {}) {
     tab = nextTab;
     sel = Math.max(0, registers[target.register].findIndex((r) => r.id === target.id));
     scroll = 0; bodyScroll = 0;
-    AUDIO.menuMove();
+    AUDIO.menuPage();
     return true;
   }
 
@@ -111,19 +112,19 @@ export function makeTransferRoomScene({ meta = {} } = {}) {
     key(e) {
       const k = String(e.key || '').toLowerCase();
       const list = rows();
-      if (e.key === 'Escape' || k === 'b') { scenes.pop(); return true; }
+      if (e.key === 'Escape' || k === 'b') { AUDIO.menuBack();scenes.pop(); return true; }
       if (e.key === 'Tab') {
         tab = (tab + (e.shiftKey ? TABS.length - 1 : 1)) % TABS.length;
-        reset(); AUDIO.menuMove(); return true;
+        reset(); AUDIO.menuPage(); return true;
       }
       if (k === '1' || k === '2' || k === '3') {
-        tab = Number(k) - 1; reset(); AUDIO.menuMove(); return true;
+        const next=Number(k)-1;if(tab!==next){tab=next;reset();AUDIO.menuPage();} return true;
       }
       if (list.length) {
-        if (e.key === 'ArrowUp' || k === 'w') { sel = (sel - 1 + list.length) % list.length; bodyScroll = 0; AUDIO.menuMove(); return true; }
-        if (e.key === 'ArrowDown' || k === 's') { sel = (sel + 1) % list.length; bodyScroll = 0; AUDIO.menuMove(); return true; }
-        if (e.key === 'PageDown') { bodyScroll += 6; return true; }
-        if (e.key === 'PageUp') { bodyScroll = Math.max(0, bodyScroll - 6); return true; }
+        if (e.key === 'ArrowUp' || k === 'w') { sel = (sel - 1 + list.length) % list.length; bodyScroll = 0; if(list.length>1)AUDIO.menuMove(); return true; }
+        if (e.key === 'ArrowDown' || k === 's') { sel = (sel + 1) % list.length; bodyScroll = 0; if(list.length>1)AUDIO.menuMove(); return true; }
+        if (e.key === 'PageDown') { const next=Math.min(bodyLimit,bodyScroll+6);if(next!==bodyScroll)AUDIO.menuPage();bodyScroll=next;return true; }
+        if (e.key === 'PageUp') { const next=Math.max(0,bodyScroll-6);if(next!==bodyScroll)AUDIO.menuPage();bodyScroll=next;return true; }
         if (e.key === 'Enter') { follow(); return true; }
       }
       return true;
@@ -221,6 +222,7 @@ export function makeTransferRoomScene({ meta = {} } = {}) {
       const remaining = Math.max(1, body.y + body.h - dy - (cited.length ? 3 : 1));
       const wrapped = row.lines.flatMap((line) => (line ? uiWrap(line, dw) : ['']));
       const maxScroll = Math.max(0, wrapped.length - remaining);
+      bodyLimit=maxScroll;
       if (bodyScroll > maxScroll) bodyScroll = maxScroll;
       wrapped.slice(bodyScroll, bodyScroll + remaining)
         .forEach((line, i) => uiText(dx, dy + i, line, 'ui-primary'));

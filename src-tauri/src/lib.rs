@@ -23,6 +23,12 @@ pub fn run() {
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .on_window_event(|window, event| {
             if window.label() == "main" {
+                // Return the physical cursor even if the WebView is busy or its
+                // blur/pagehide handler cannot run. Capture is focus-scoped.
+                if matches!(event, tauri::WindowEvent::Focused(false) | tauri::WindowEvent::Destroyed) {
+                    let _ = window.set_cursor_grab(false);
+                    let _ = window.set_cursor_visible(true);
+                }
                 window_choreography::note_main_window_event(window.app_handle(), event);
             }
             if window.label() == "main" && matches!(event, tauri::WindowEvent::Destroyed) {

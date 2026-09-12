@@ -18,7 +18,7 @@ try {
     const {drawPrintedText}=await import('/src/render/keycap.js');
     ui.uiInit(document.getElementById('plate'));await document.fonts.load('600 14px "Hardware Sans"');
     const draw=()=>{
-      p.drawMachinePanel(1,1,111,21,{label:'CONTROL ASSEMBLY',model:'DA-1000',wordmark:'AUDIOCORP',meter:false,footer:'MOLDED LENS / SILKSCREEN / MACHINED RETAINER'});
+      p.drawMachinePanel(1,1,111,21,{label:'CONTROL ASSEMBLY',model:'A-1000',wordmark:'AUDIOCORP',meter:false,footer:'MOLDED LENS / SILKSCREEN / MACHINED RETAINER'});
       for(const [i,key] of [{legend:'MONITOR',color:'amber'},{legend:'RECORD',color:'red'},{legend:'RETURN',color:'green'},{legend:'POWER',color:'blue'},{legend:'STOP',color:'white',finish:'opaque'}].entries()) {
         const x=4+i*21;
         drawPrintedText(x,5,'UNLIT / RAISED',{w:18,ink:'#b9bda9'});

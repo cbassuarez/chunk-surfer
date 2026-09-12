@@ -1,5 +1,23 @@
 import { ENDING_IDS } from './schema.js';
 
+export const WITNESS_EDITION_ID = 'witness';
+
+// Count filed ending identities, not runs, return-history rows, difficulty, or
+// the profile's cached statistic. A recorded unlock stays owned permanently.
+export function witnessEditionStatus(meta = null) {
+  const seen = Array.isArray(meta?.endingsSeen) ? meta.endingsSeen : [];
+  const endingIds = ENDING_IDS.filter((id) => seen.includes(id));
+  const count = endingIds.length;
+  const required = 2;
+  const owned = count >= required || (Array.isArray(meta?.cosmetics?.unlocked)
+    && meta.cosmetics.unlocked.includes(WITNESS_EDITION_ID));
+  return {
+    visible: count >= 1 || owned, owned, count, required, endingIds,
+    reason: owned ? 'WITNESS EDITION UNLOCKED. FIT AT THE VAN.'
+      : `FILE 2 DIFFERENT ENDINGS TO UNLOCK. ${count} OF 2 FILED.`,
+  };
+}
+
 export const ENDING_REPLAY_UNLOCKS = Object.freeze({
   sacrifice: Object.freeze({ archiveEntry: 'sealed-ledger', titleDetail: 'ledger-line' }),
   helped: Object.freeze({ archiveEntry: 'operator-annotation', titleDetail: 'returned-key' }),
@@ -13,7 +31,7 @@ export const ENDING_REPLAY_UNLOCKS = Object.freeze({
 });
 
 export function deriveUnlocks(meta) {
-  const endings = new Set((meta?.endingsSeen || []).filter((id) => ENDING_IDS.includes(id)));
+  const endings = new Set((Array.isArray(meta?.endingsSeen) ? meta.endingsSeen : []).filter((id) => ENDING_IDS.includes(id)));
   const anyEnding = endings.size >= 1;
   const twoEndings = endings.size >= 2;
   const allEndings = ENDING_IDS.every((id) => endings.has(id));
@@ -29,9 +47,10 @@ export function deriveUnlocks(meta) {
     customShift: allEndings || !!meta?.challengeCompletions?.deadAir,
     fullReturnIndex: allEndings,
     cosmetics: [...new Set([
-      ...(meta?.cosmetics?.unlocked || []),
+      ...(Array.isArray(meta?.cosmetics?.unlocked) ? meta.cosmetics.unlocked : []),
       ...[...endings].map((id) => ENDING_REPLAY_UNLOCKS[id]?.cosmetic).filter(Boolean),
       ...(meta?.challengeCompletions?.deadAir ? ['dead-air-certified'] : []),
+      ...(witnessEditionStatus(meta).owned ? [WITNESS_EDITION_ID] : []),
     ])],
   };
 }

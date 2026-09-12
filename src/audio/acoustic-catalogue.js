@@ -51,6 +51,30 @@ export const ACOUSTIC_CATALOGUE = Object.freeze({
   // near, which is the fact this entry exists to state.
   fountain_water: D({ levelDb: -32, durationMs: 1000, spectrum: S(.22, .68, .74), impulsiveness: .06, family: 'water', canBeMimicked: false }),
 
+  // THUNDER. The only entry that comes from outside the building.
+  //
+  // It is here so that the storm exists to the room and not only to the ears:
+  // the microphone is in a real room with a real roof over it, and a bolt over
+  // the yard does reach the tape. What it must NOT do is take the night off the
+  // player. A minute of held silence ruined by weather is not a game, it is a
+  // dice roll, so thunder is emitted with spoils:false — it never reaches
+  // handleRecordingNoise, so it cannot spoil a take, cannot trip the monitor and
+  // cannot fetch the take hunter. It blips the needle and it is gone.
+  //
+  // The level here is the SEMANTIC one, and it is honest: a clap is louder than
+  // a door. The gameplay 0..1 number is a separate, much smaller thing (see
+  // thunderRoomNoise in audio/thunder-channel.js) and the two are allowed to
+  // disagree, because they answer different questions — how loud was it, and
+  // how much should it cost you. This entry's levelDb is what the masking and
+  // the causal record read; the small one is what the meter reads.
+  //
+  // Overwhelmingly low. Whatever crack a near strike has by the time it is
+  // through a roof and into a room, what a microphone gets is weight.
+  //
+  // Not mimickable. The HUSH does a great many things in this building; the
+  // weather is not one of them.
+  thunder: D({ levelDb: -28, durationMs: 3200, spectrum: S(.94, .40, .08), impulsiveness: .62, family: 'weather', canBeMimicked: false }),
+
   // THE BYPASS LETTING GO. The other continuous source, and the loudest thing
   // the player can do to this building on purpose.
   //

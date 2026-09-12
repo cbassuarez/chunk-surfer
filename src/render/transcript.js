@@ -137,9 +137,12 @@ export function transcriptRole(who) {
       side: 'center',
       speaker: '',
       labelCls: 'ui-secondary',
-      bodyCls: 'ui-secondary',
-      cursorCls: 'ui-secondary',
-      activeAlpha: 0.68,
+      // Narration is a live signal, not unlit faceplate ink. The centered rail
+      // identifies its role; sparse phosphor dots must not also be dimmed to
+      // the history floor. History still cools through the shared fade below.
+      bodyCls: 'ui-counter',
+      cursorCls: 'ui-counter',
+      activeAlpha: 0.95,
       groupable: false,
     };
   }

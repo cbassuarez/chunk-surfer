@@ -113,17 +113,17 @@ test('deployed calls ring in world and miss safely after 24 seconds',()=>{
   assert.equal(radioCallState().status,'calling');
   tickRadio(0,{px:0,py:0,now:1100,random:()=>.5});
   assert.equal(pulses.at(-1).dropped,true);
-  tickRadio(0,{px:0,py:0,now:25101,random:()=>.5});
+  for(let i=0;i<96;i++)tickRadio(.25,{px:0,py:0,now:1100+(i+1)*250,random:()=>.5});
   assert.equal(missed[0].id,RADIO_CUES.POST_SECOND);
   assert.equal(radioPhase(),RADIO_PHASE.LIVE);
   assert.equal(radioMilestones()[RADIO_CUES.POST_SECOND],false);
-  assert.equal(pendingRadioCue().deferredUntilPickup,true);
+  assert.equal(pendingRadioCue(),null);
   assert.equal(armDroppedRadioCall(80000),false);
   tickRadio(0,{now:80000,random:()=>.5});
-  assert.equal(missed.length,1,'a quiet deferred cue does not ring/miss repeatedly');
+  assert.equal(missed.length,1,'a missed cue never rings again');
   pickUpRadio(10,20);
-  assert.equal(consumeRadioCue(traversal())?.id,RADIO_CUES.POST_SECOND);
-  assert.equal(resolveRadioCue(RADIO_CUES.POST_SECOND),true);
+  assert.equal(consumeRadioCue(traversal()),null);
+  assert.equal(resolveRadioCue(RADIO_CUES.POST_SECOND),false);
 });
 
 test('deployment cooldown and fault schedule survive pickup and save/load',()=>{
@@ -188,7 +188,7 @@ test('radio keeps one pending cue instead of overwriting it', () => {
   assert.equal(pendingRadioCue().reason, 'first');
 });
 
-test('ordinary cancellations do not mark heard, replay immediately, or skip their dependency', () => {
+test('lowering an answered call retires it without claiming its unheard outcome', () => {
   for (const id of [RADIO_CUES.INITIAL,RADIO_CUES.POST_SECOND]) {
     resetRadioState();
     if (id === RADIO_CUES.POST_SECOND) initial();
@@ -201,9 +201,9 @@ test('ordinary cancellations do not mark heard, replay immediately, or skip thei
     walk(90,traversal({dialogueOpen:true}));
     assert.equal(consumeRadioCue(traversal()),null,'modal wall time does not restart the call');
     walk(5);
-    assert.equal(consumeRadioCue(traversal())?.id,id);
-    assert.equal(resolveRadioCue(id),true);
-    assert.equal(resolveRadioCue(id),false,'one-shot outcome is idempotent');
+    assert.equal(consumeRadioCue(traversal()),null);
+    assert.equal(queueRadioCue(id),false,'lowered calls do not ring again');
+    assert.equal(resolveRadioCue(id),false);
   }
 });
 
@@ -218,16 +218,16 @@ test('unheard or queued cues cannot be resolved, including either terminal', () 
   }
 });
 
-test('terminal calls expire quietly, survive reload, and play exactly once after pickup', () => {
+test('missed terminal calls stay missed across reload and pickup, without killing the radio', () => {
   for (const id of [RADIO_CUES.PRE_THIRD,RADIO_CUES.HUSH_RUPTURE]) {
     resetRadioState(); warning();
     const missed=[]; radioInit({missed:cue=>missed.push(cue)});
     dropRadio(5,6,{floorId:'ground',now:1000});
     queueRadioCue(id,{roomId:'the_tub',now:1100});
-    tickRadio(0,{now:26000,random:()=>.5});
+    for(let i=0;i<96;i++)tickRadio(.25,{now:1100+(i+1)*250,random:()=>.5});
     assert.equal(isDead(),false,id);
     assert.equal(radioMilestones()[id],false);
-    assert.equal(pendingRadioCue()?.id,id);
+    assert.equal(pendingRadioCue(),null);
     assert.equal(missed.length,1);
     const saved=saveRadioState(26000);
     loadRadioState(saved,90000);
@@ -235,9 +235,9 @@ test('terminal calls expire quietly, survive reload, and play exactly once after
     assert.equal(consumeRadioCue(traversal()),null);
     pickUpRadio(5,6);
     assert.equal(consumeRadioCue(traversal({isRecording:true})),null);
-    assert.equal(consumeRadioCue(traversal())?.id,id);
-    assert.equal(resolveRadioCue(id,{now:91000}),true);
-    assert.equal(isDead(),true);
+    assert.equal(consumeRadioCue(traversal()),null);
+    assert.equal(resolveRadioCue(id,{now:91000}),false);
+    assert.equal(isDead(),false);
     assert.equal(resolveRadioCue(id,{now:92000}),false);
     assert.equal(queueRadioCue(id),false);
   }

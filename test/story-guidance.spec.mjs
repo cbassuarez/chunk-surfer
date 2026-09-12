@@ -20,10 +20,14 @@ const target=(patch={})=>resolveStoryGuidanceTarget({
 // both.
 assert.equal(resolveStoryGuidanceTarget().id,'story:yard-van');
 assert.equal(resolveStoryGuidanceTarget({bagTaken:true}).id,'story:yard-van-shut','the van is not finished with when the bag is off the shelf');
-assert.equal(resolveStoryGuidanceTarget({bagTaken:true}).label,'SHUT THE VAN');
+assert.equal(resolveStoryGuidanceTarget({bagTaken:true}).label,'FINISH PACKING AT THE VAN');
 assert.equal(STORY_TARGET.vanShut.propId,STORY_TARGET.van.propId,'both halves point at the same van');
 assert.equal(resolveStoryGuidanceTarget({bagTaken:true,vanClosed:true}).id,'story:lodge','the optional shelter never replaces the check-in route');
 assert.equal(resolveStoryGuidanceTarget({vanClosed:true}).id,'story:yard-van','shutting a van you never unpacked is not progress');
+assert.equal(resolveStoryGuidanceTarget({bagTaken:true,kitReady:false}).id,'story:yard-van','the case alone does not finish the new fitting');
+assert.equal(resolveStoryGuidanceTarget({bagTaken:true,kitReady:false,vanClosed:true}).id,'story:yard-van','missing map or unconfirmed fitting cannot be bypassed by a stale closed-door flag');
+assert.equal(resolveStoryGuidanceTarget({bagTaken:true,kitReady:true}).id,'story:yard-van-shut');
+assert.equal(resolveStoryGuidanceTarget({bagTaken:true,kitReady:true,vanClosed:true}).id,'story:lodge');
 assert.equal(resolveStoryGuidanceTarget({prologueDone:true}).id,'story:get-in','the handoff routes all the way to the arrival threshold');
 assert.equal(STORY_TARGET.lookBench.required,false,'the shelter remains optional atmosphere');
 assert.equal(target({selectedWaypoint:{x:10,y:12,roomId:'main_b3'},selectedLabel:'Studio B3'}).id,'room:main_b3');

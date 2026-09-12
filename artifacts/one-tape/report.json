@@ -1,0 +1,130 @@
+{
+  "checks": [
+    "room histories open and page inside the existing survey console at three sizes",
+    "pausing freezes the tape and microphone capture; resume continues the slate",
+    "normal recorder input starts a slate and retains an early stopped take",
+    "the abandoned take is playable and rewinds the same physical tape counter",
+    "the actual encoded microphone slate is stored locally and decodes to audible samples",
+    "recording after playback fast-forwards to the end before appending",
+    "a fresh replacement appends after the failed take and stopping at 45 seconds completes the actual job room",
+    "the full tape, slate references and accepted room survive a production save/reload"
+  ],
+  "errors": [],
+  "tape": {
+    "transport": {
+      "version": 2,
+      "headSeconds": 79.89579999989317,
+      "endSeconds": 79.89579999989317
+    },
+    "takes": [
+      {
+        "id": "take:1",
+        "ordinal": 1,
+        "startSeconds": 0,
+        "endSeconds": 24.071500000059636,
+        "status": "abandoned",
+        "cleanSeconds": 12.025200000047684,
+        "slate": {
+          "text": "Ellery. studio B3. Room tone. Take 1. 12 September 2026.",
+          "mode": "player",
+          "atSeconds": 8.071100000023838,
+          "durationSeconds": 3.9751999999880816,
+          "audioKey": "run_1789202409912_79g20:take:1"
+        },
+        "voided": false,
+        "roomId": "main_b3",
+        "at": 1789202444231,
+        "durationSeconds": 24.071500000059636,
+        "counted": false,
+        "migrated": false,
+        "cell": {
+          "x": 31,
+          "y": 25
+        },
+        "contaminated": false,
+        "place": null,
+        "presence": {
+          "peak": 0.2167415997034921,
+          "atSec": 0.03160000002384186
+        },
+        "audible": [],
+        "guest": {
+          "key": "lux_nova_lux-008.mp3"
+        },
+        "discrete": []
+      },
+      {
+        "id": "take:2",
+        "ordinal": 2,
+        "startSeconds": 24.071500000059636,
+        "endSeconds": 79.89579999989317,
+        "status": "accepted",
+        "cleanSeconds": 45.19569999992951,
+        "slate": {
+          "text": "Ellery. studio B3. Room tone. Take 2. 12 September 2026.",
+          "mode": "player",
+          "atSeconds": 8.02919999992847,
+          "durationSeconds": 2.599399999976164,
+          "audioKey": "run_1789202409912_79g20:take:2"
+        },
+        "voided": false,
+        "roomId": "main_b3",
+        "at": 1789202503562,
+        "durationSeconds": 55.824299999833535,
+        "counted": true,
+        "migrated": false,
+        "cell": {
+          "x": 31,
+          "y": 25
+        },
+        "contaminated": false,
+        "place": null,
+        "presence": {
+          "peak": 0,
+          "atSec": 0
+        },
+        "audible": [],
+        "guest": {
+          "key": "the_tub_tub-04.mp3"
+        },
+        "discrete": []
+      }
+    ],
+    "machine": {
+      "recording": false,
+      "slating": false,
+      "stalled": false,
+      "playing": false,
+      "refusal": {
+        "reason": "NOT A ROOM ON THE ORDER"
+      },
+      "playableHere": true,
+      "progress": 0,
+      "spin": 0,
+      "clearBottom": 0,
+      "source": null,
+      "note": "studio B3",
+      "face": {
+        "lamp": {
+          "text": "◆ READY",
+          "role": "ui-blue"
+        },
+        "counter": "01:19",
+        "counterLabel": "TAPE COUNTER",
+        "counterTotal": "",
+        "levels": null,
+        "markers": [],
+        "drift": 0,
+        "meter": null,
+        "meterLabel": "LEVEL",
+        "locationSeconds": 60,
+        "locationMarks": [],
+        "meterMarks": [],
+        "meterThresholdDb": null,
+        "roomMeter": null
+      }
+    },
+    "slateCaptureState": null
+  },
+  "microphoneInput": true
+}

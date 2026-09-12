@@ -72,7 +72,7 @@ export function makeGodMenuScene({ tabs = [], onClose = () => {} } = {}) {
     event.preventDefault?.();
 
     if (raw === 'Escape' || code === 'Escape' || raw === 'F10' || code === 'F10') {
-      close();
+      AUDIO.menuBack();close();
       return true;
     }
     if (raw === 'Tab') { changeTab(event.shiftKey ? -1 : 1); return true; }

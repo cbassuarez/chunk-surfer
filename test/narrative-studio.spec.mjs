@@ -188,14 +188,14 @@ assert.doesNotMatch(radioAdapterSource,/4417-C|because it is not yours|stays cli
 const conservatoryScriptSource=await readFile('src/data/conservatory-script.js','utf8');
 assert.doesNotMatch(conservatoryScriptSource,/export const (RADIO_DEAD|TRANSMISSIONS|RADIO_DEAD_LINE)/,'conservatory script no longer carries parallel radio dialogue');
 const radioDocuments=await Promise.all([
-  'radio.initial_checkin','radio.guidance','radio.post_second_take_warning','radio.hush_help_rupture','radio.pre_third_room_breakdown','conservatory.radio_dead',
+  'radio.initial_checkin','radio.missed_checkin','radio.guidance','radio.post_second_take_warning','radio.hush_help_rupture','radio.pre_third_room_breakdown','conservatory.radio_dead',
 ].map((id)=>readFile(`content/narrative/${id}.story.json`,'utf8')));
 assert.doesNotMatch(radioDocuments.join('\n'),/because it is not yours|stays clipped to my belt|room to take the channel|It says it with your mouth/,'law-like ownership and authorial cause text is retired');
 const radioTimeline=authoringProject.timeline.find((group)=>group.id==='radio');
 assert.equal(radioTimeline.title,'Radio guidance and failures');
 assert.equal(radioTimeline.kind,'sequence');
 assert.deepEqual(radioTimeline.documents,[
-  'radio.initial_checkin','radio.guidance','radio.post_second_take_warning','radio.hush_help_rupture','radio.pre_third_room_breakdown','conservatory.radio_dead',
+  'radio.initial_checkin','radio.missed_checkin','radio.guidance','radio.post_second_take_warning','radio.hush_help_rupture','radio.pre_third_room_breakdown','conservatory.radio_dead',
 ]);
 for(const id of radioTimeline.documents)assert.ok(authoringProject.runtimeEntrypoints.includes(id),`${id} is an explicit runtime entrypoint`);
 assert.match(JSON.stringify(runtimeTree('radio.guidance',{TARGET:'STUDIO B3',ROUTEFIRST:'Studio B3 first.',ROUTEREPEAT:'Take the main basement stair.'})),/main basement stair/i);
@@ -203,7 +203,7 @@ assert.match(JSON.stringify(runtimeTree('radio.guidance',{TARGET:'STUDIO B3',ROU
 // choice, not five lines packed into one prose node. Preserve the independent
 // authoring/rehydration contract and validate both complete local branches.
 const alternateRupture=runtimeTree('radio.hush_help_rupture');
-const alternateRuptureDocument=JSON.parse(radioDocuments[3]);
+const alternateRuptureDocument=radioDocuments.map(text=>JSON.parse(text)).find(doc=>doc.id==='radio.hush_help_rupture');
 assert.equal(alternateRuptureDocument.id,'radio.hush_help_rupture');
 assert.deepEqual(alternateRupture,rehydrateTree(alternateRuptureDocument),'the alternate rupture rehydrates from its own canonical document');
 assert.notDeepEqual(alternateRupture.start.lines,radioRuntime.start.lines,'the danger-call route keeps its own entrance, independent of the work-order breakdown');

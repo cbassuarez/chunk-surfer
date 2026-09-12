@@ -38,7 +38,7 @@ function tourContent(guide,hasOutput,controller){
       key:controller?inputPromptLabel('confirm'):'ENTER',verb:controller?'PATCH / PULL':'PATCH · SPACE PULL',color:'#e5bc68'};
   }
   if(kind==='close')return{number:5,title:'Follow your bearing',body:'B3 is marked. Close the case, take the inner door, and follow the HUD route down the basement stair.',key:inputPromptLabel('bag'),verb:'CLOSE CASE',color:'#8bbfdf'};
-  if(guide.action==='mark')return{number:4,title:'Mark Studio B3',body:'This is Studio B3, on the basement floor. Select it to set your target. The HUD will guide you there.',key:controller?inputPromptLabel('confirm'):'ENTER',verb:'SET B3 TARGET',color:'#8bbfdf'};
+  if(guide.action==='mark')return{number:4,title:'Mark Studio B3',body:'Studio B3 is selected on the basement floor. Press SET TARGET to mark it. Then follow your HUD bearing downstairs.',key:controller?inputPromptLabel('confirm'):'ENTER',verb:'SET B3 TARGET',color:'#8bbfdf'};
   return{number:null,title:guide.title||'Check the case',body:guide.why||'',key:inputPromptLabel(guide.action||'confirm'),verb:'CONTINUE',color:'#e5bc68',step};
 }
 
@@ -70,7 +70,7 @@ export function bagGuideCalloutLayout({size={},outer,layout,guide,regions=[],pat
       if(node)add(`bag:patch:${node.input.id}`,node.input.hit,PATCH_COLORS[node.branch]);
     }
   }else if(kind==='close')add('bag:close');
-  else if(guide.action==='mark')add('bag:space:space:main_b3');
+  else if(guide.action==='mark')add('bag:map:set-target');
   else{
     const entry=guide.entryId||guide.entry;
     const target=find(`bag:action:${guide.action}`)||find(`bag:sheet:${entry}`)||find(`bag:item:${entry}`)
@@ -102,9 +102,11 @@ export function bagGuideCalloutLayout({size={},outer,layout,guide,regions=[],pat
   // Long high-scale text uses smaller leading, never ellipsis or an overlap.
   const bodyEnd=(continueRegion?continueRegion.y-.45:rect.y+rect.h-footerH-1);
   const bodyLeading=Math.min(1.1,Math.max(.5,(bodyEnd-bodyY)/Math.max(1,bodyRows.length)));
-  const leader=to=>{
+  const leader=(to,id=null)=>{
     const end=center(to),start={x:rect.x+rect.w,y:clamp(end.y,rect.y+1,rect.y+rect.h-1)},elbow=panel.x-1.2;
-    if(to.w>=8&&to.h>=2){
+    // SET remains a labelled button even in the dense two-row console. Its
+    // guide touches the cap edge; only small patch jacks use a center point.
+    if(id==='bag:map:set-target'||to.w>=8&&to.h>=2){
       const cap={x:end.x,y:to.y};
       return[start,{x:elbow,y:start.y},{x:elbow,y:to.y-.5},{x:cap.x,y:to.y-.5},cap];
     }
@@ -114,8 +116,8 @@ export function bagGuideCalloutLayout({size={},outer,layout,guide,regions=[],pat
     return[start,{x:elbow,y:start.y},{x:elbow,y:end.y},end];
   };
   return{outer:panel,rail,continueRegion,targets,callouts:[{rect,...copy,titleRows,bodyRows,bodyY,bodyLeading,footerRows,
-    targetId:primary?.id||null,targetRect:primary?.rect||null,leaderPoints:leader(target),
-    leaders:targets.map(value=>({targetId:value.id,points:leader(value.rect),color:value.color}))}]};
+    targetId:primary?.id||null,targetRect:primary?.rect||null,leaderPoints:leader(target,primary?.id),
+    leaders:targets.map(value=>({targetId:value.id,points:leader(value.rect,value.id),color:value.color}))}]};
 }
 
 export function drawBagGuideCallouts(options={}){

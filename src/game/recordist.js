@@ -57,6 +57,9 @@ let difficultyRules = {
   minorNoise: 'spoil',
   pauseSeconds: 0,
   torchDrainScale: 1,
+  spoilToleranceScale: 1,
+  recordingNoiseScale: 1,
+  takeSecondsScale: 1,
 };
 
 export function configureDifficulty(next = {}) {
@@ -65,8 +68,23 @@ export function configureDifficulty(next = {}) {
 
 export function recordistDifficulty() { return { ...difficultyRules }; }
 
+const hardwareScale = (value) => {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? Math.max(.8, Math.min(1.2, number)) : 1;
+};
+const configuredTakeDuration = () => ROOM_TONE.takeSeconds * hardwareScale(difficultyRules.takeSecondsScale);
+
 function spoilThreshold() {
-  return ROOM_TONE.spoilNoise * Math.max(0.25, Number(difficultyRules.spoilNoiseScale) || 1);
+  return ROOM_TONE.spoilNoise * Math.max(0.25, Number(difficultyRules.spoilNoiseScale) || 1)
+    * hardwareScale(difficultyRules.spoilToleranceScale);
+}
+export function recordingInputLevel(level) {
+  const raw = Number(level);
+  return (Number.isFinite(raw) ? Math.max(0, raw) : 0) * hardwareScale(difficultyRules.recordingNoiseScale);
+}
+export function takeDuration() {
+  return state.phase === 'recording' && state.takeDurationSeconds > 0
+    ? state.takeDurationSeconds : configuredTakeDuration();
 }
 
 // ── WHAT THE METER IS ALLOWED TO DRAW ────────────────────────────────────────
@@ -75,17 +93,17 @@ function spoilThreshold() {
 // scale `currentNoise()` reports, so the meter can put them on its own scale
 // without a second copy of these rules drifting away from these ones.
 //
-// SPOIL is difficulty-scaled and CATCH is not, which is exactly why they are
-// worth printing: on a forgiving difficulty the gap between "ruined" and
-// "found" is wider, and until now there was no way for a player to see that.
+// SPOIL changes with difficulty and recorder headroom. CATCH remains the same
+// world-hearing threshold, mapped into the microphone's meter scale: choosing
+// a quieter pickup does not make the recordist less audible to the building.
 export function noiseMarks() {
   const spoil = spoilThreshold();
   return [
     // FLOOR appears only once there IS one — an uninjured recordist has no
     // floor above the room's own, and a mark at zero would be furniture.
-    { level: noiseFloor(), kind: 'floor', label: 'FLOOR' },
+    { level: recordingInputLevel(noiseFloor()), kind: 'floor', label: 'FLOOR' },
     { level: spoil, kind: 'spoil', label: 'SPOIL' },
-    { level: ROOM_TONE.catchNoise, kind: 'catch', label: 'CATCH' },
+    { level: recordingInputLevel(ROOM_TONE.catchNoise), kind: 'catch', label: 'CATCH' },
   ].filter((mark) => mark.level > 0 && mark.label);
 }
 
@@ -116,12 +134,13 @@ function noteTakeEvent(kind, level) {
 }
 
 function handleRecordingNoise(level, reason, meta = {}) {
-  if (state.phase !== 'recording' || state.stalled) return;
+  if (state.phase !== 'recording' || state.stalled || state.slating) return;
   const threshold = spoilThreshold();
+  const inputLevel = recordingInputLevel(level);
   // A quarter of the way to spoiling is already worth marking: it is the
   // difference between "the room was silent" and "you kept getting away with
   // it", and only one of those is a lesson.
-  if (level > threshold * .25) noteTakeEvent(level > threshold ? 'spoil' : 'near', level);
+  if (inputLevel > threshold * .25) noteTakeEvent(inputLevel > threshold ? 'spoil' : 'near', inputLevel);
   // NOISE IS HEARD BY THE BUILDING, not only by the tape — and it is heard well
   // before it ruins anything.
   //
@@ -133,9 +152,10 @@ function handleRecordingNoise(level, reason, meta = {}) {
   //
   // The near band is the beat the game wants: you made a sound, the building
   // heard it, and the minute is STILL RUNNING with something on its way.
-  if (level > threshold * .25) loudNoiseSink?.(level, reason, meta, level > threshold);
-  if (level <= threshold) return;
-  if (difficultyRules.minorNoise === 'pause' && level <= threshold * 1.35) {
+  const worldThreshold = ROOM_TONE.spoilNoise * Math.max(.25, Number(difficultyRules.spoilNoiseScale) || 1);
+  if (level > worldThreshold * .25) loudNoiseSink?.(level, reason, meta, inputLevel > threshold);
+  if (inputLevel <= threshold) return;
+  if (difficultyRules.minorNoise === 'pause' && inputLevel <= threshold * 1.35) {
     state.assistPause = Math.max(state.assistPause, Number(difficultyRules.pauseSeconds) || 0.7);
     return;
   }
@@ -148,6 +168,7 @@ const state = {
   battery: 1,           // 0..1. Drains only while it is actually burning.
   phase: 'idle',        // 'idle' | 'listening' | 'recording'
   takeElapsed: 0,       // seconds of unbroken quiet
+  takeDurationSeconds: 0, // latched when rolling; a settings refresh cannot move the finish line
   takeEvents: [],       // when noise landed in this take — see noteTakeEvent
   stalled: false,       // an instrument woke: the take is paused, not running,
                         // and you may move to go and silence it.
@@ -174,6 +195,7 @@ const state = {
   sheetsTaken: [],      // which of the five have ever been lifted off the floor
   noise: 0,             // current, decaying
   worldNoise: 0,        // remote sources the presence hears but this mic does not
+  ambient: 0,           // what the ROOM did — weather, not you. See ambientNoise().
   lastNoiseAt: { x: 0, y: 0, t: 0 },   // where the presence goes looking
   slow: false,          // Shift held
   hidden: false,        // pressed into cover: see game/cover.js
@@ -199,6 +221,10 @@ export function lightOn() { return state.light; }
 export function noiseFloor() { return state.hidden ? 0 : state.injuries * NOISE.perInjury; }
 export function currentNoise() { return state.noise; }
 export function currentWorldNoise() { return Math.max(state.noise, state.worldNoise); }
+// The room's own contribution to the needle. Never spoils anything — it comes in
+// through the spoils:false path, which does not reach handleRecordingNoise — so
+// this is a reading and not a threat.
+export function ambientNoise() { return state.ambient; }
 
 // ── composure ───────────────────────────────────────────────────────────────
 // The pool every fight draws down. The CEILING is what injuries own: each one
@@ -343,6 +369,13 @@ export function emitNoise(level, x, y, reason = 'something moved', options = {})
   const heard = level + noiseFloor();
   if (spoils) state.noise = Math.max(state.noise, heard);
   else state.worldNoise = Math.max(state.worldNoise, heard);
+  // WHAT THE ROOM DID, kept apart from what you did and from what is happening
+  // elsewhere in the building. The meter is the instrument the whole take is
+  // played on, so what reaches it is a decision rather than a leftover: your own
+  // noise, the thing your voice fetched, and the weather. Not the torch, not a
+  // key, not a pin — those are spoils:false too, and a needle that twitches
+  // every time the player handles anything stops being a reading.
+  if (!spoils && sourceKind === 'environment') state.ambient = Math.max(state.ambient, heard);
   if (x != null) state.lastNoiseAt = { x, y, t: performance.now() };
   if (spoils) handleRecordingNoise(state.noise, reason, {
     sourceKind,sourceId,playerGenerated,deliberate,kind:kind || inferAcousticKind(reason, heard),
@@ -382,6 +415,9 @@ export function addNoise(level, x, y, reason = 'something moved', options = {}) 
 export function decayNoise(dt) {
   state.noise = Math.max(0, state.noise - NOISE.decayPerSec * dt);
   state.worldNoise = Math.max(0, state.worldNoise - NOISE.decayPerSec * dt);
+  // Weather falls away faster than a footfall does: a clap is over, and the
+  // needle should not sit up for it the way it sits up for you.
+  state.ambient = Math.max(0, state.ambient - NOISE.decayPerSec * 1.8 * dt);
 }
 
 // ── The recorder ─────────────────────────────────────────────────────────────
@@ -404,11 +440,14 @@ export function stopListening() {
 
 // ROLL. The room drops out, the hiss comes up, and the forty-five seconds
 // begin. Only reachable from LISTEN.
-export function startRecording() {
+export function startRecording({ slate = false } = {}) {
   if (state.phase !== 'listening') return false;
+  state.takeDurationSeconds = configuredTakeDuration();
   state.phase = 'recording';
   state.light = false;
   state.takeElapsed = 0;
+  state.takeTapeElapsed = 0;
+  state.slating = !!slate;
   state.takeEvents = [];
   state.stalled = false;
   state.assistPause = 0;
@@ -430,15 +469,22 @@ export function resumeTake() {
 }
 export function isStalled() { return state.stalled; }
 export function isAssistPaused() { return state.phase === 'recording' && state.assistPause > 0; }
+export function isSlating(){return state.phase==='recording'&&!!state.slating;}
+export function finishSlate(){state.slating=false;state.noise=noiseFloor();}
+export function minimumTakeDuration(){return takeDuration()*ROOM_TONE.minimumTakeSeconds/ROOM_TONE.takeSeconds;}
+export function usableTake(){return state.phase==='recording'&&!state.slating&&!state.spoiled&&state.takeElapsed>=minimumTakeDuration();}
 
 export function stopRecording() {
   if (state.phase !== 'recording') return null;
-  const completed = state.takeElapsed >= ROOM_TONE.takeSeconds && !state.spoiled;
+  const durationSeconds = takeDuration();
+  const completed = usableTake();
   state.phase = 'idle';
   // The light does NOT come back by itself. Reaching for it is a decision you
   // make in the dark, every time, knowing what it costs.
-  const result = { completed, elapsed: state.takeElapsed, spoiled: state.spoiled, reason: state.spoilReason, spoilMeta:state.spoilMeta?{...state.spoilMeta}:null };
+  const result = { completed, elapsed: state.takeElapsed, tapeElapsed:state.takeTapeElapsed||0, durationSeconds, spoiled: state.spoiled, reason: state.spoilReason, spoilMeta:state.spoilMeta?{...state.spoilMeta}:null };
+  state.slating=false;
   state.takeElapsed = 0;
+  state.takeDurationSeconds = 0;
   state.stalled = false;
   state.assistPause = 0;
   return result;
@@ -455,6 +501,9 @@ export { spoil as spoilTake };
 // Returns 'running' | 'complete' | 'spoiled'
 export function tickRecording(dt) {
   if (state.phase !== 'recording') return 'idle';
+  dt=Math.max(0,Number(dt)||0);
+  state.takeTapeElapsed=(state.takeTapeElapsed||0)+dt;
+  if(state.slating)return 'slating';
   if (state.spoiled) return 'spoiled';
   if (state.assistPause > 0) {
     state.assistPause = Math.max(0, state.assistPause - dt);
@@ -463,7 +512,7 @@ export function tickRecording(dt) {
   // While an instrument sounds the take is held: the clock stops and noise does
   // not spoil it. Silence the instrument (resumeTake) to let it run again.
   if (state.stalled) return 'stalled';
-  if (state.noise > spoilThreshold()) {
+  if (recordingInputLevel(state.noise) > spoilThreshold()) {
     handleRecordingNoise(state.noise, 'the room was not empty', {
       sourceKind:'environment',sourceId:'room',playerGenerated:false,deliberate:false,
     });
@@ -471,11 +520,11 @@ export function tickRecording(dt) {
     if (state.assistPause > 0) return 'paused';
   }
   state.takeElapsed += dt;
-  return state.takeElapsed >= ROOM_TONE.takeSeconds ? 'complete' : 'running';
+  return state.takeElapsed >= takeDuration() ? 'complete' : 'running';
 }
 
 export function takeProgress() {
-  return Math.min(1, state.takeElapsed / ROOM_TONE.takeSeconds);
+  return Math.min(1, state.takeElapsed / takeDuration());
 }
 
 export function injure() {
@@ -563,12 +612,13 @@ export function loadRecState(saved = {}) {
   const tapes = Array.isArray(saved.tapes) ? saved.tapes : null;
   // A save written since the stores were merged carries tapes and nothing else;
   // anything older carries the three lists. Read whichever is there.
-  const rooms = tapes ? tapes.map((t) => t?.roomId).filter(Boolean) : (saved.takes || []);
+  const accepted=tapes?.filter(t=>!t.voided&&(!t.status||t.status==='accepted'));
+  const rooms = accepted ? [...new Set(accepted.map((t) => t?.roomId).filter(Boolean))] : (saved.takes || []);
   const dirty = tapes
-    ? tapes.filter((t) => t?.contaminated).map((t) => t.roomId)
+    ? accepted.filter((t) => t?.contaminated).map((t) => t.roomId)
     : (saved.contaminated || []).filter((id) => rooms.includes(id));
   const places = tapes
-    ? Object.fromEntries(tapes.filter((t) => t?.place).map((t) => [t.roomId, t.place]))
+    ? Object.fromEntries(accepted.filter((t) => t?.place).map((t) => [t.roomId, t.place]))
     // Same hygiene as contaminated: a place for a take that is not in the list
     // is a stale save, not a fact about tonight.
     : Object.fromEntries(Object.entries(saved.places || {}).filter(([id]) => rooms.includes(id)));
@@ -588,8 +638,9 @@ export function loadRecState(saved = {}) {
     assistPause: 0,
     battery: saved.battery == null ? 1 : saved.battery,
     worldNoise: 0,
+    ambient: 0,
   });
-  return { tapes, legacy: { roomIds: state.takes, contaminated: state.contaminated, places: state.places } };
+  return { tapes, transport:saved.tapeTransport, legacy: { roomIds: state.takes, contaminated: state.contaminated, places: state.places } };
 }
 
 // Tapes, always. With the store wired they are the real recordings; without it
@@ -604,6 +655,7 @@ export function saveRecState(tapes = null) {
     sheets: [...state.sheets],
     sheetsTaken: [...state.sheetsTaken],
     battery: state.battery,
+    tapeTransport:takeSink?.transport?.(),
     tapes: fromStore || state.takes.map((roomId) => ({
       roomId,
       contaminated: state.contaminated.includes(roomId),

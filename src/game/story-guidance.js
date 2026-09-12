@@ -37,7 +37,7 @@ export const STORY_TARGET = Object.freeze({
   // The van is not finished with when the bag is off the shelf. Shutting it is
   // the second half of the same errand, and leaving the doors open behind you
   // was the one thing in the opening the player was silently allowed to skip.
-  vanShut: target('story:yard-van-shut','SHUT THE VAN',STORY_GUIDANCE_ANCHORS.van,{kind:'prop',propId:'yard-van'}),
+  vanShut: target('story:yard-van-shut','FINISH PACKING AT THE VAN',STORY_GUIDANCE_ANCHORS.van,{kind:'prop',propId:'yard-van'}),
   // The shelter is an invitation to notice the yard, never a mandatory story
   // gate. It remains addressable for capture/review, but it cannot replace the
   // route to the person holding the building key.
@@ -84,6 +84,7 @@ function selectedRoomTarget(selectedWaypoint,selectedLabel=''){
 export function resolveStoryGuidanceTarget({
   prologueDone=false,
   bagTaken=false,
+  kitReady=true,
   vanClosed=false,
   getInEntered=false,
   tower=null,
@@ -96,7 +97,7 @@ export function resolveStoryGuidanceTarget({
   selectedLabel='',
 }={}){
   if(!prologueDone){
-    if(!bagTaken)return STORY_TARGET.van;
+    if(!bagTaken||!kitReady)return STORY_TARGET.van;
     if(!vanClosed)return STORY_TARGET.vanShut;
     return STORY_TARGET.lodge;
   }

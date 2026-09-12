@@ -47,6 +47,22 @@ async function point(id) {
   }, id);
 }
 async function click(id) { const p = await point(id); await page.mouse.click(p.x, p.y); await sleep(200); }
+async function clickLive(id) {
+  const p = await page.evaluate(async id => {
+    const r = await import('/src/render/recorder-view.js'), ui = await import('/src/render/ui.js');
+    const speech = await import('/src/game/speech.js');
+    const dimensions = ui.uiSize(), live = window.__probe.rec();
+    const recorder = await import('/src/game/recordist.js');
+    const rect = r.recorderPanelRect({ ...dimensions, progress: live.recording ? recorder.takeProgress() : 0,
+      clearBottom: speech.speechPanelRows() });
+    const buttons = live.recording ? r.recordingOverlayButtons() : r.playbackOverlayButtons();
+    const hit = r.recorderControlRegions(rect, buttons).find(hit => hit.id === id);
+    const canvas = document.getElementById('map').getBoundingClientRect();
+    return { x: canvas.left + (hit.x + hit.w / 2) / dimensions.cols * canvas.width,
+      y: canvas.top + (hit.y + hit.h / 2) / dimensions.rows * canvas.height };
+  }, id);
+  await page.mouse.click(p.x, p.y); await sleep(200);
+}
 
 async function recorderBoard(mode, size) {
   const value = await page.evaluate(async ({ mode }) => {
@@ -83,15 +99,15 @@ async function recorderBoard(mode, size) {
       ui.uiClear(); const start = performance.now(); r.drawRecorderFace(view); samples.push(performance.now() - start);
     }
     samples.sort((a, b) => a - b);
-    return { dimensions, rect, body, hits: r.recorderHitRegions(view), coldMs, p95Ms: samples[38], maxMs: samples.at(-1) };
+    return { dimensions, metrics: ui.uiCellMetrics(), rect, body, hits: r.recorderHitRegions(view), coldMs, p95Ms: samples[38], maxMs: samples.at(-1) };
   }, { mode });
   measurements.push({ state: mode, size: size.name, ...value });
-  assert.ok(value.hits.filter(hit => hit.kind === 'transport').every(hit => hit.w >= 7), 'transport legend cap retains its width');
+  assert.ok(value.hits.filter(hit => hit.kind === 'transport').every(hit => hit.w * value.metrics.cellW >= 40), 'physical transport cap retains its width');
   assert.ok(value.rect.y + value.rect.h <= value.dimensions.rows, `${mode}/${size.name}: complete bezel stays onscreen`);
   if (mode === 'listen') {
     const choices = value.hits.filter(hit => hit.kind === 'choice');
     assert.equal(choices.length, 2);
-    assert.ok(choices.every(hit => hit.y + hit.h <= value.rect.y + value.rect.h - 2), 'both pre-roll options remain above the footer');
+    assert.ok(choices.every(hit => hit.y >= value.body.y && hit.y + hit.h <= value.body.y + value.body.h), 'both pre-roll options remain inside the display');
   }
   await shot(`recorder-${mode}-${size.name}`);
   return value;
@@ -140,7 +156,9 @@ try {
     window.__probe.testRun(); window.__probe.godWarpGetIn(); window.__probe.tutSkip();
     window.__probe.setFlags(['bag.taken', 'title.shown', 'setup.levels', 'combat.trained', 'setup.waypoint',
       'setup.case.started', 'setup.case.opened', 'setup.case.skills-opened', 'setup.case.skills-done', 'setup.case.map-opened', 'setup.case.closed', 'setup.case.arrived']);
-    radio.loadRadioState({ schema: 4, milestones: { [radio.RADIO_CUES.INITIAL]: true } });
+    // Radio timing is verified separately. This disposable two-take fixture
+    // must not open its authored post-take warning over the transport targets.
+    radio.loadRadioState({ schema: 4, milestones: Object.fromEntries(Object.values(radio.RADIO_CUES).map(id => [id, true])) });
     save.saveCommit({ radio: radio.saveRadioState(), combatBuild: progression.normalizeCombatBuild(null, [], null,
       { tutorialComplete: true, combatAssistance: 'guided' }) });
   });
@@ -148,7 +166,7 @@ try {
   await page.keyboard.press('r'); await wait(() => window.__scenes.top()?.id === 'recorder');
   assert.equal(await page.evaluate(() => document.pointerLockElement === null), true, 'R releases the pointer');
   for (const size of sizes) { await resize(size); await shot(`live-recorder-${size.name}`); }
-  await resize(sizes[0]); await click('play');
+  await resize(sizes[0]); await page.keyboard.press('p');
   assert.match(await page.evaluate(() => window.__scenes.top().debugState().notice), /TAPE|NOTHING/);
   await shot('live-recorder-refused');
   await page.evaluate(async () => {
@@ -163,7 +181,29 @@ try {
   await shot('live-recorder-browse');
   const tapeId = await page.evaluate(() => window.__scenes.top().debugState().hitRegions.find(hit => hit.kind === 'take').id);
   await click(tapeId); await wait(() => window.__probe.playback().playing); await shot('live-recorder-play');
-  await click('stop'); await page.keyboard.press('r'); await wait(() => window.__scenes.top()?.id !== 'recorder');
+  await click('stop');
+  assert.equal(await page.evaluate(() => window.__probe.playback().playing), false, 'STOP stops playback');
+  await click('takes'); await click(tapeId); await wait(() => window.__probe.playback().playing);
+  await page.keyboard.press('r'); await wait(() => window.__scenes.top()?.id !== 'recorder');
+  await clickLive('takes'); await wait(() => window.__scenes.top()?.id === 'recorder');
+  assert.equal(await page.evaluate(() => window.__scenes.top().debugState().browsing), true, 'passive playback TAKES opens the list');
+  assert.equal(await page.evaluate(() => window.__probe.playback().playing), true, 'browsing does not stop playback');
+  await page.keyboard.press('r'); await clickLive('stop');
+  assert.equal(await page.evaluate(() => window.__probe.playback().playing), false, 'passive STOP stops playback');
+
+  await page.evaluate(() => window.__probe.setRecording(true)); await sleep(400);
+  assert.equal(await page.evaluate(() => window.__probe.rec().recording), true);
+  await clickLive('takes'); await wait(() => window.__scenes.top()?.id === 'recorder');
+  assert.equal(await page.evaluate(() => window.__scenes.top().debugState().browsing), true);
+  const elapsed = await page.evaluate(() => window.__probe.rec().takeElapsed);
+  await click(tapeId); await sleep(400);
+  assert.equal(await page.evaluate(() => window.__probe.rec().recording), true, 'TAKES never aborts the live recording');
+  assert.equal(await page.evaluate(() => window.__probe.playback().playing), false, 'audition refuses to mix another tape into recording');
+  assert.ok(await page.evaluate(start => window.__probe.rec().takeElapsed > start, elapsed), 'the take clock keeps advancing in TAKES');
+  await shot('live-recorder-browse-while-recording');
+  await click('stop');
+  assert.equal(await page.evaluate(() => window.__probe.rec().recording), false, 'STOP terminates the live take');
+  await page.keyboard.press('r'); await wait(() => window.__scenes.top()?.id !== 'recorder');
   await page.keyboard.press('b'); await wait(() => window.__scenes.top()?.id === 'bag');
   for (const size of sizes) {
     await resize(size); await click('bag:tab:kit'); await shot(`bag-inventory-${size.name}`);

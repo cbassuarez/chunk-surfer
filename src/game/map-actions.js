@@ -1,20 +1,38 @@
 // Contextual MAP actions. Gameplay authorities remain outside this module.
 
 import { activeInputPromptDevice, inputPromptLabel } from './bindings.js';
+import { roomHistory } from '../data/room-history.js';
 
 export function resolveMapAction(selected, actionId, api = {}) {
   if (!selected || !actionId) return false;
 
   switch (actionId) {
     case 'mark':
-    case 'unmark':
     case 'mark-waypoint':
-    case 'clear-waypoint':
+    case 'set-target': {
+      if (selected.waypointable === false) return false;
+      if (typeof api.setTarget === 'function') return !!api.setTarget(selected);
+      const current = api.playerWaypoint;
+      const alreadySet = current ? current.spaceId === selected.id || (!current.spaceId && current.roomId && current.roomId === selected.roomId)
+        : api.playerWaypoint === undefined && !!(selected.waypoint || selected.marked);
+      if (alreadySet) return true;
       return typeof api.markSpace === 'function'
         ? !!api.markSpace(selected)
         : selected.roomId && typeof api.markRoom === 'function'
           ? !!api.markRoom(selected.roomId)
           : false;
+    }
+    case 'unmark':
+    case 'clear-waypoint':
+    case 'clear-target': {
+      if (typeof api.clearTarget === 'function') return !!api.clearTarget(selected);
+      const current = api.playerWaypoint;
+      const isSet = current ? current.spaceId === selected.id || (!current.spaceId && current.roomId && current.roomId === selected.roomId)
+        : api.playerWaypoint === undefined && !!(selected.waypoint || selected.marked);
+      if (!isSet) return true; // Clearing cannot accidentally create a mark.
+      return typeof api.markSpace === 'function' ? !!api.markSpace(selected)
+        : selected.roomId && typeof api.markRoom === 'function' ? !!api.markRoom(selected.roomId) : false;
+    }
 
     case 'read-attached': {
       const doc = selected.objective?.notes?.[0] || selected.attached || null;
@@ -28,33 +46,28 @@ export function resolveMapAction(selected, actionId, api = {}) {
   }
 }
 
-// CONFIRM IS THE MAP'S OWN VERB. A plan is for saying where you are going, so
-// the key every other surface uses to commit sets and clears the target here.
-// The file pinned to a room is secondary and keeps its own key; it used to own
-// confirm, which put the map's only real action on an unadvertised binding.
-export function mapActionRail(selected, { floorCount = 1 } = {}) {
-  const targetAction = selected?.waypoint || selected?.marked
-    ? 'CLEAR TARGET'
-    : selected && selected.waypointable !== false ? 'SET TARGET' : null;
-  if (activeInputPromptDevice() === 'controller') {
-    const actions = [[inputPromptLabel('select'), 'ROOM']];
-    if (targetAction) actions.push([inputPromptLabel('confirm'), targetAction]);
-    if (selected?.objective?.notes?.length || selected?.attached) actions.push([inputPromptLabel('interact'), 'OPEN FILE']);
-    actions.push([inputPromptLabel('back'), 'CLOSE BAG']);
-    return actions;
+// Confirm sets the selected target. Clearing has its own explicit control,
+// and the attached file keeps a separate shortcut rather than owning confirm.
+export function mapActionRail(selected, { floorCount = 1, width = 96, consoleFocused = false, offline = false, roomFile = false } = {}) {
+  const controller=activeInputPromptDevice()==='controller';
+  const close=[controller?inputPromptLabel('back'):inputPromptLabel('bag'),controller&&consoleFocused?'ROOMS':'CLOSE'];
+  if(offline)return[close];
+  if(roomFile)return [[controller?inputPromptLabel('select'):'←/→','PAGE'],
+    [controller?inputPromptLabel('mapFile'):'R','PLAN'],
+    ...(selected?.objective?.notes?.length?[[controller?inputPromptLabel('confirm'):'ENTER','SHEET']]:[]),close];
+  const toggle=[controller?inputPromptLabel('mapConsole'):'F6',consoleFocused?'ROOMS':'CONTROLS'];
+  const confirm=[controller?inputPromptLabel('confirm'):'ENTER',consoleFocused?'PRESS':'SET'];
+  const move=[controller?inputPromptLabel('select'):inputPromptLabel('move'),consoleFocused?'KEY':'ROOM'];
+  const actions=[toggle,confirm,close];
+  // Essential actions survive large text. Optional direct shortcuts are added
+  // only when the complete label fits; never hide CLOSE behind an ellipsis.
+  const extras=consoleFocused?[move]:[move,
+    ...(floorCount>1?[[controller?`${inputPromptLabel('mapFloorPrev')}/${inputPromptLabel('mapFloorNext')}`:'PGUP/PGDN','FLOOR']]:[]),
+    [controller?inputPromptLabel('mapLocate'):'C','LOCATE'],
+    ...(roomHistory(selected)||selected?.objective?.notes?.length||selected?.attached?[[controller?inputPromptLabel('mapFile'):'R','FILE']]:[])];
+  for(const extra of extras){
+    const proposed=[...actions,extra],text=proposed.map(([key,label])=>`[${key}] ${label}`).join('   ');
+    if(text.length<=width)actions.push(extra);
   }
-  // TWO CONTROLS, AND THEY FIT.
-  //
-  // This listed six, which overran the footer and truncated it mid-word — and
-  // the word it cut was "[ENTER / SPACE] SET…", the one verb a player most
-  // needs. The target verb now lives on the selected room itself, where the
-  // thing it acts on is, so the footer is left with the two things you steer:
-  // the floor and the room. C still centres; it is simply no longer shouted
-  // over the verb that matters.
-  const actions = [[inputPromptLabel('move'), 'ROOM']];
-  if (floorCount > 1) actions.push(['[ / ]', 'FLOOR']);
-  actions.push(['C', 'CENTER']);
-  if (selected?.objective?.notes?.length || selected?.attached) actions.push(['R', 'OPEN FILE']);
-  actions.push([inputPromptLabel('bag'), 'CLOSE BAG']);
   return actions;
 }

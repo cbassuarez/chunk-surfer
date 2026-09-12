@@ -2,9 +2,15 @@
 //
 //   AMBER  — the A k a i AM M5 amp / HX M5 deck. Warm gold-amber phosphor on flat
 //            black glass. Menus, the bag, dialogue, document chrome.
-//   GREEN  — the hi ta chi DA-1000 CD player. FL green bargraphs, a pale-cyan time
-//            counter, a red position marker, a blue POWER accent. Record and
-//            playback.
+//   GREEN  — the hi ta chi DA-1000 CD player, 1982. FL green bargraphs, a
+//            pale-cyan time counter, a red position marker, a blue POWER accent.
+//            Record and playback.
+//
+// The real machines are named here and nowhere else. In the fiction the green
+// one is a Lo-D A-1000 — Lo-D being the badge Lo-D's audio division
+// actually wore through the seventies, so the homage stays traceable without
+// the panel carrying the parent wordmark. The model number is the part that
+// carries the trace; see render/recorder-view.js.
 //
 // Two machines, two jobs. A surface sets the active theme; every `ui-*` class
 // then resolves its colour from that theme and from the player's settings.

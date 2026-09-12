@@ -1,0 +1,128 @@
+{
+  "checks": [
+    "room histories open and page inside the existing survey console at three sizes",
+    "pausing freezes the tape and microphone capture; resume continues the slate",
+    "denying microphone access automatically speaks the recordist slate and then starts clean time",
+    "normal recorder input starts a slate and retains an early stopped take",
+    "the abandoned take is playable and rewinds the same physical tape counter",
+    "recording after playback fast-forwards to the end before appending",
+    "a fresh replacement appends after the failed take and stopping at 45 seconds completes the actual job room",
+    "the full tape, slate references and accepted room survive a production save/reload"
+  ],
+  "errors": [],
+  "tape": {
+    "transport": {
+      "version": 2,
+      "headSeconds": 80.56279999995253,
+      "endSeconds": 80.56279999995253
+    },
+    "takes": [
+      {
+        "id": "take:1",
+        "ordinal": 1,
+        "startSeconds": 0,
+        "endSeconds": 23.7435,
+        "status": "abandoned",
+        "cleanSeconds": 12.002899999976162,
+        "slate": {
+          "text": "Ellery. studio B3. Room tone. Take 1. 12 September 2026.",
+          "mode": "fallback",
+          "atSeconds": 8.25580000001192,
+          "durationSeconds": 3.4848000000119264
+        },
+        "voided": false,
+        "roomId": "main_b3",
+        "at": 1789202449697,
+        "durationSeconds": 23.7435,
+        "counted": false,
+        "migrated": false,
+        "cell": {
+          "x": 31,
+          "y": 25
+        },
+        "contaminated": false,
+        "place": null,
+        "presence": {
+          "peak": 0.3913472479604921,
+          "atSec": 0.031
+        },
+        "audible": [],
+        "guest": {
+          "key": "lux_nova_lux-030.mp3"
+        },
+        "discrete": []
+      },
+      {
+        "id": "take:2",
+        "ordinal": 2,
+        "startSeconds": 23.7435,
+        "endSeconds": 80.56279999995253,
+        "status": "accepted",
+        "cleanSeconds": 45.17340000003694,
+        "slate": {
+          "text": "Ellery. studio B3. Room tone. Take 2. 12 September 2026.",
+          "mode": "fallback",
+          "atSeconds": 8.06099999988079,
+          "durationSeconds": 3.5849000000357556
+        },
+        "voided": false,
+        "roomId": "main_b3",
+        "at": 1789202509979,
+        "durationSeconds": 56.819299999952534,
+        "counted": true,
+        "migrated": false,
+        "cell": {
+          "x": 31,
+          "y": 25
+        },
+        "contaminated": false,
+        "place": null,
+        "presence": {
+          "peak": 0,
+          "atSec": 0
+        },
+        "audible": [],
+        "guest": {
+          "key": "lux_nova_lux-008.mp3"
+        },
+        "discrete": []
+      }
+    ],
+    "machine": {
+      "recording": false,
+      "slating": false,
+      "stalled": false,
+      "playing": false,
+      "refusal": {
+        "reason": "NOT A ROOM ON THE ORDER"
+      },
+      "playableHere": true,
+      "progress": 0,
+      "spin": 0,
+      "clearBottom": 0,
+      "source": null,
+      "note": "studio B3",
+      "face": {
+        "lamp": {
+          "text": "◆ READY",
+          "role": "ui-blue"
+        },
+        "counter": "01:20",
+        "counterLabel": "TAPE COUNTER",
+        "counterTotal": "",
+        "levels": null,
+        "markers": [],
+        "drift": 0,
+        "meter": null,
+        "meterLabel": "LEVEL",
+        "locationSeconds": 60,
+        "locationMarks": [],
+        "meterMarks": [],
+        "meterThresholdDb": null,
+        "roomMeter": null
+      }
+    },
+    "slateCaptureState": null
+  },
+  "microphoneInput": false
+}

@@ -106,6 +106,7 @@ function layer(ctx,bounds,kind,key,pad,paint){
 export function drawInstrumentPlate(ctx,options={}){
   const bounds=region(options);if(!ctx||!bounds)return null;
   const {dpr}=bounds,black=['black','anodized','Black anodized'].includes(options.finish);
+  const olive=options.finish==='olive',finish=black?'black':olive?'olive':'aluminum',dark=black||olive;
   const seed=seedNumber(options.seed),fasteners=options.fasteners!==false;
   const radius=clamp(finite(options.screwRadius,3.3*dpr)/dpr,0,7);
   const inset=Math.max(radius,finite(options.screwInset,6.3*dpr)/dpr);
@@ -115,23 +116,25 @@ export function drawInstrumentPlate(ctx,options={}){
     fill(c,0,5*u,w,h,'#111713',r);c.restore();
     fill(c,0,0,w,h,gradient(c,0,0,w*.15,h,black
       ?[[0,'#515951'],[.035,'#252e2b'],[.975,'#0d1310'],[1,'#6e7465']]
+      :olive?[[0,'#9c9f75'],[.035,'#555d3f'],[.975,'#282e1e'],[1,'#909470']]
       :[[0,'#e9e8d6'],[.02,'#686f65'],[.08,'#aab0a2'],[.975,'#505a50'],[1,'#acb09e']]),r);
     const off=(.35-.5)*w*.55;
     const shine=gradient(c,off-w*.18,0,w*1.45,h*.14,black
       ?[[0,'#202825'],[.24,'#323c36'],[.43,'#454e45'],[.55,'#343d36'],[.76,'#1d2823'],[1,'#313b32']]
+      :olive?[[0,'#424a32'],[.24,'#5d6544'],[.43,'#77805a'],[.55,'#65704b'],[.76,'#424d33'],[1,'#5a6344']]
       :[[0,'#7d807d'],[.19,'#a9aba5'],[.38,'#d3d3c8'],[.48,'#e4e2d5'],[.64,'#b8b9af'],[.88,'#8e928a'],[1,'#b4b6aa']]);
     fill(c,2*u,2*u,w-4*u,h-5*u,shine,3*u);
-    paintGrain(c,2*u,2*u,w-4*u,h-5*u,black?.28:.65,seed);
-    line(c,5*u,1.3*u,w-5*u,1.3*u,black?'#b7bd9b55':'#fffce5aa',.65*u);
+    paintGrain(c,2*u,2*u,w-4*u,h-5*u,dark?.28:.65,seed);
+    line(c,5*u,1.3*u,w-5*u,1.3*u,dark?'#b7bd9b55':'#fffce5aa',.65*u);
     line(c,4*u,h-1.6*u,w-4*u,h-1.6*u,'#080f0b88',u);
     if(fasteners&&radius>0){
       const r=Math.min(radius,w*.06,h*.12),i=Math.min(Math.max(inset,r),w/2,h/2);
       for(const[index,[x,y]]of [[i,i],[w-i,i],[i,h-i],[w-i,h-i]].entries()){
-        drawHardwareScrew(c,x,y,r,{seed:`instrument:${seed}:${index}`,dpr:1,darkPanel:black});
+        drawHardwareScrew(c,x,y,r,{seed:`instrument:${seed}:${index}`,dpr:1,darkPanel:dark});
       }
     }
   };
-  ctx.save();try{layer(ctx,bounds,'plate',[black,seed,fasteners,radius,inset],Math.ceil(24*dpr),paint);}finally{ctx.restore();}
+  ctx.save();try{layer(ctx,bounds,'plate',[finish,seed,fasteners,radius,inset],Math.ceil(24*dpr),paint);}finally{ctx.restore();}
   return bounds;
 }
 

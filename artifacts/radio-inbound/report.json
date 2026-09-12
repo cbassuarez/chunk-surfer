@@ -1,0 +1,18 @@
+{
+  "checks": [
+    "incoming leaves world running",
+    "pause preserves answer time",
+    "ignored call expires unheard",
+    "reminder countdown autosaves",
+    "one worried follow-up",
+    "Do Not Disturb persisted",
+    "Radio Silence awarded at completion",
+    "V accepts pending call",
+    "answer counts as use",
+    "shared panel choices fit at 150%",
+    "lowering retires the call",
+    "controller radio button accepts the call"
+  ],
+  "errors": [],
+  "scope": "Production bundle; disposable run and shortened deadline fixtures. Completion hook validates awards, not an earned full playthrough."
+}

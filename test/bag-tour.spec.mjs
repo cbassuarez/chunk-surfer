@@ -6,7 +6,7 @@ import { bagLayout, bagPanelBounds } from '../src/render/bag-layout.js';
 import { bagTabRegions } from '../src/render/bag-tabs.js';
 import { patchBayLayout } from '../src/render/bag-skills.js';
 import { machinePanelBody } from '../src/render/presentation.js';
-import { mapLayoutFromBag } from '../src/render/map-layout.js';
+import { mapLayoutFromBag, mapConsoleControls } from '../src/render/map-layout.js';
 import { UI_CELL_W, UI_CELL_H } from '../src/render/atlas.js';
 import { buildBagModel } from '../src/game/bag-model.js';
 import { learnCombatTechnique, normalizeCombatBuild } from '../src/game/combat-progression.js';
@@ -33,8 +33,11 @@ const guides=[
 
 function fixture({width=1280,height=760,scale=1,guide=skills(false),installed=false,zero=false}={}){
   const size={cols:Math.floor(width/(UI_CELL_W*scale)),rows:Math.floor(height/(UI_CELL_H*scale))};
-  const original=bagPanelBounds(size),frame=bagGuideFrame({size,outer:original,guide}),outer=frame.outer;
-  const body=machinePanelBody(outer.x,outer.y,outer.w,outer.h),layout=bagLayout({body});
+  const sectionId=guide?.sectionId||guide?.section||'skills',mapHardware=sectionId==='map';
+  const original=bagPanelBounds({...size,sectionId}),frame=bagGuideFrame({size,outer:original,guide}),outer=frame.outer;
+  const body=mapHardware?{x:outer.x+3,y:outer.y+2.6,w:outer.w-6,h:outer.h-3.6}
+    :machinePanelBody(outer.x,outer.y,outer.w,outer.h);
+  const layout=bagLayout({body,sectionId:mapHardware?'map':null});
   let build=normalizeCombatBuild(null,[],null,{tutorialComplete:true,combatAssistance:zero?'severe':'guided'});
   if(installed)build=learnCombatTechnique(build,TECHNIQUE.AFTERIMAGE,{hasRig:true}).build;
   const model=buildBagModel({build,hasRig:true}),tree=model.sections.find(section=>section.id==='skills').tree;
@@ -43,15 +46,19 @@ function fixture({width=1280,height=760,scale=1,guide=skills(false),installed=fa
     :{x:layout.list.x,y:layout.detail.y,w:layout.list.w,h:layout.list.y+layout.list.h-layout.detail.y};
   const patchLayout=patchBayLayout({region,branches:tree.branches,maxTier:tree.maxTier});
   const mapLayout=mapLayoutFromBag(layout);
+  const mapModel={floors:['b1','g','u1','academic','tower'].map((id,index)=>({id,shortLabel:['B1','G','U1','3F','TWR'][index]})),
+    spaces:[{id:'space:main_b3',roomId:'main_b3',floorId:'b1',waypointable:true}],playerWaypoint:null};
+  const mapControls=mapConsoleControls(mapLayout,mapModel,{floorId:'b1',viewMode:'stack',selectedByFloor:{b1:'space:main_b3'}});
   const regions=[
     ...bagTabRegions(model,layout),
     ...patchLayout.sockets.map(socket=>({id:`bag:patch:${socket.id}`,...socket.hit})),
     {id:'bag:patch:return',...patchLayout.returnZone},
-    {id:'bag:space:space:main_b3',kind:'map-space',...mapLayout.detail},
+    ...mapControls,
+    {id:'bag:space:space:main_b3',kind:'map-space',x:mapLayout.mapViewport.x+1,y:mapLayout.mapViewport.y+1,w:3,h:1},
     {id:'bag:close',x:outer.x+outer.w-18,y:outer.y,w:18,h:2},
     {id:'bag:sheet:file:work-order',kind:'bag-sheet',x:layout.list.x,y:layout.list.y+2,w:layout.list.w,h:1},
   ];
-  return{size,outer,layout,guide,regions,patchLayout,frame,selectedSkillId:`skill:${TECHNIQUE.AFTERIMAGE}`};
+  return{size,outer,layout,guide,regions,patchLayout,frame,mapLayout,selectedSkillId:`skill:${TECHNIQUE.AFTERIMAGE}`};
 }
 
 test('the guided assembly reserves a readable exterior rail without taking case height or moving between steps',()=>{
@@ -122,19 +129,27 @@ test('target relocation updates leaders from shared hit geometry instead of cach
   assert.deepEqual(result.targets[0].rect,copyBox(target));
 });
 
-test('the B3 caption leader ends at its left edge without crossing the printed label',()=>{
+test('the B3 lesson points to the physical SET button and never crosses its printed legend',()=>{
   for(const [width,height] of [[1280,760],[960,600]])for(const scale of [1,1.25,1.5]){
     const f=fixture({width,height,scale,guide:guides[4]}),result=bagGuideCalloutLayout(f);
-    const caption=f.regions.find(region=>region.id==='bag:space:space:main_b3');
-    assert.ok(caption.w>=8&&caption.h<2,'the visible map caption is a wide single-row target');
-    const card=result.callouts[0],leader=card.leaders.find(item=>item.targetId===caption.id);
-    assert.deepEqual(leader.points.at(-1),{x:caption.x,y:caption.y+caption.h/2});
+    const button=f.regions.find(region=>region.id==='bag:map:set-target');
+    assert.equal(button.action,'set-target'); assert.equal(button.enabled,true);
+    assert.deepEqual(result.targets.map(target=>target.id),['bag:map:set-target']);
+    assert.ok(outside(button,f.mapLayout.detail),'the readout is not the clickable confirmation');
+    const card=result.callouts[0],leader=card.leaders.find(item=>item.targetId===button.id),end=leader.points.at(-1);
+    assert.ok(contains(button,end));
+    assert.ok(Math.abs(end.x-button.x)<1e-8||Math.abs(end.x-button.x-button.w)<1e-8
+      ||Math.abs(end.y-button.y)<1e-8||Math.abs(end.y-button.y-button.h)<1e-8,
+    `${width}x${height} at ${scale}: a leader touches the cap boundary, not the text at its center`);
     assert.deepEqual(card.leaderPoints,leader.points,'primary and drawn leaders share the same safe endpoint');
     for(let i=1;i<leader.points.length;i++){
-      assert.ok(Math.max(leader.points[i-1].x,leader.points[i].x)<=caption.x,
-        'every segment remains on or left of the caption boundary, outside its text interior');
+      const a=leader.points[i-1],b=leader.points[i];
+      assert.ok(Math.abs(a.x-b.x)<1e-8||Math.abs(a.y-b.y)<1e-8,'leaders use inspectable orthogonal segments');
+      const crosses=a.x===b.x
+        ?a.x>button.x+1e-8&&a.x<button.x+button.w-1e-8&&Math.max(a.y,b.y)>button.y+1e-8&&Math.min(a.y,b.y)<button.y+button.h-1e-8
+        :a.y>button.y+1e-8&&a.y<button.y+button.h-1e-8&&Math.max(a.x,b.x)>button.x+1e-8&&Math.min(a.x,b.x)<button.x+button.w-1e-8;
+      assert.equal(crosses,false,'the line cannot strike through the SET legend');
     }
-    assert.ok(leader.points.at(-2).x<caption.x,'the final segment approaches the label from outside');
   }
   const button=bagGuideCalloutLayout(fixture({guide:guides[0]})).callouts[0];
   assert.deepEqual(button.leaderPoints.at(-1),{x:button.targetRect.x+button.targetRect.w/2,y:button.targetRect.y},'larger selector caps retain their top-edge endpoint');
@@ -173,9 +188,14 @@ test('controller-only tours never advertise an Enter key for the map confirmatio
 
 test('live Bag registers module hits before the external guide and never resurrects an internal bottom band',()=>{
   const source=readFileSync(new URL('../src/game/bag.js',import.meta.url),'utf8');
-  assert.match(source,/const frame = bagGuideFrame\(\{size,outer:bagPanelBounds\(size\),guide:guided\}\)/);
+  assert.match(source,/const frame = bagGuideFrame\(\{size,outer:bagPanelBounds\(\{\.\.\.size,sectionId:nav\.sectionId\}\),guide:guided\}\)/);
+  assert.match(source,/body:mapHardware\?\{x:outer\.x\+3,y:outer\.y\+2\.6,w:outer\.w-6,h:outer\.h-3\.6\}:body/,
+    'the map uses the approved larger exposed console body, not the inherited glass aperture');
+  assert.match(source,/sectionId:mapHardware\?'map':null/,'the map body receives its own tab and content geometry');
   assert.doesNotMatch(source,/guideRows:\s*bagGuideRows/);
-  assert.ok(source.indexOf('registerRootHits(layout);',source.indexOf('const frame = bagGuideFrame'))<source.indexOf('guidePresentation = drawBagGuideCallouts('));
+  const render=source.slice(source.indexOf('const frame = bagGuideFrame'));
+  const registration=render.indexOf('registerRootHits(layout);'),guideDraw=render.indexOf('guidePresentation = drawBagGuideCallouts(');
+  assert.ok(registration>=0&&guideDraw>registration,'registered pointer geometry exists before guide leaders resolve');
   assert.match(source,/regions:hits\.view\(\),patchLayout/);
   assert.match(source,/kind:'bag-guide-continue',\.\.\.continuation/,'the exterior button is its actual pointer hit target');
 });

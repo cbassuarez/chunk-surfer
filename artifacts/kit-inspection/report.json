@@ -1,0 +1,431 @@
+{
+  "scope": "Production generic inspector with isolated equipment fixtures; same-model cosmetic changes, selected flashlight identity, closed-case pose, keyboard orbit/reset/close.",
+  "results": [
+    {
+      "name": "recorder-black-signal-amber",
+      "state": {
+        "view": {
+          "inspection": {
+            "id": "recorder",
+            "yaw": 0,
+            "pitch": 0,
+            "dragging": false,
+            "ready": true,
+            "failed": false
+          },
+          "layout": {
+            "title": {
+              "x": 6.65,
+              "y": 6.35,
+              "w": 156.7
+            },
+            "portrait": {
+              "x": 6.65,
+              "y": 7.85,
+              "w": 83,
+              "h": 29.299999999999997
+            },
+            "text": {
+              "x": 91.65,
+              "y": 7.85,
+              "w": 71.69999999999999,
+              "h": 29.299999999999997
+            },
+            "back": {
+              "x": 6.65,
+              "y": 37.65,
+              "w": 14,
+              "h": 1.5
+            },
+            "reset": {
+              "x": 145.35,
+              "y": 37.65,
+              "w": 18,
+              "h": 1.5
+            }
+          }
+        },
+        "stats": {
+          "contexts": 1,
+          "currentId": "recorder",
+          "loadedId": "recorder",
+          "renderCount": 1,
+          "active": true
+        },
+        "source": {
+          "id": "recorder",
+          "title": "FIELD RECORDER",
+          "label": "FIELD RECORDER",
+          "materialColors": {
+            "recorder-faceplate": "#242b2d",
+            "recorder-ink": "#d7d9bd",
+            "recorder-button-rec": "#bc6b57",
+            "recorder-button-stop": "#729aa9",
+            "recorder-button-takes": "#d0bc64"
+          },
+          "recorderPhosphor": "amber",
+          "subtitle": "BLACK / PORTABLE RECORDER",
+          "description": "Portable field recorder. Capture, monitor, and replay takes; the selected microphone and amplifier supply the signal path.",
+          "facts": [
+            [
+              "POSITION",
+              "CARRIED"
+            ],
+            [
+              "FUNCTION",
+              "CAPTURE / MONITOR"
+            ],
+            [
+              "BATTLE",
+              "MONITOR CAPTURES A TAKE / PLAYBACK SPENDS IT"
+            ],
+            [
+              "FINISH",
+              "BLACK / SIGNAL KEYS / AMBER VFD"
+            ]
+          ],
+          "battleCapable": true,
+          "present": true
+        }
+      },
+      "screenshot": "artifacts/kit-inspection/recorder-black-signal-amber.png"
+    },
+    {
+      "name": "recorder-olive-seaglass-ice",
+      "state": {
+        "view": {
+          "inspection": {
+            "id": "recorder",
+            "yaw": 0,
+            "pitch": 0,
+            "dragging": false,
+            "ready": true,
+            "failed": false
+          },
+          "layout": {
+            "title": {
+              "x": 6.65,
+              "y": 6.35,
+              "w": 156.7
+            },
+            "portrait": {
+              "x": 6.65,
+              "y": 7.85,
+              "w": 83,
+              "h": 29.299999999999997
+            },
+            "text": {
+              "x": 91.65,
+              "y": 7.85,
+              "w": 71.69999999999999,
+              "h": 29.299999999999997
+            },
+            "back": {
+              "x": 6.65,
+              "y": 37.65,
+              "w": 14,
+              "h": 1.5
+            },
+            "reset": {
+              "x": 145.35,
+              "y": 37.65,
+              "w": 18,
+              "h": 1.5
+            }
+          }
+        },
+        "stats": {
+          "contexts": 1,
+          "currentId": "recorder",
+          "loadedId": "recorder",
+          "renderCount": 4,
+          "active": true
+        },
+        "source": {
+          "id": "recorder",
+          "title": "FIELD RECORDER",
+          "label": "FIELD RECORDER",
+          "materialColors": {
+            "recorder-faceplate": "#61694b",
+            "recorder-ink": "#d7d9bd",
+            "recorder-button-rec": "#d09179",
+            "recorder-button-stop": "#a7bda0",
+            "recorder-button-takes": "#bcbda9"
+          },
+          "recorderPhosphor": "ice",
+          "subtitle": "OLIVE / PORTABLE RECORDER",
+          "description": "Portable field recorder. Capture, monitor, and replay takes; the selected microphone and amplifier supply the signal path.",
+          "facts": [
+            [
+              "POSITION",
+              "CARRIED"
+            ],
+            [
+              "FUNCTION",
+              "CAPTURE / MONITOR"
+            ],
+            [
+              "BATTLE",
+              "MONITOR CAPTURES A TAKE / PLAYBACK SPENDS IT"
+            ],
+            [
+              "FINISH",
+              "OLIVE / SEA GLASS KEYS / ICE BLUE VFD"
+            ]
+          ],
+          "battleCapable": true,
+          "present": true
+        }
+      },
+      "screenshot": "artifacts/kit-inspection/recorder-olive-seaglass-ice.png"
+    },
+    {
+      "name": "recorder-aluminum-restored",
+      "state": {
+        "view": {
+          "inspection": {
+            "id": "recorder",
+            "yaw": 0,
+            "pitch": 0,
+            "dragging": false,
+            "ready": true,
+            "failed": false
+          },
+          "layout": {
+            "title": {
+              "x": 6.65,
+              "y": 6.35,
+              "w": 156.7
+            },
+            "portrait": {
+              "x": 6.65,
+              "y": 7.85,
+              "w": 83,
+              "h": 29.299999999999997
+            },
+            "text": {
+              "x": 91.65,
+              "y": 7.85,
+              "w": 71.69999999999999,
+              "h": 29.299999999999997
+            },
+            "back": {
+              "x": 6.65,
+              "y": 37.65,
+              "w": 14,
+              "h": 1.5
+            },
+            "reset": {
+              "x": 145.35,
+              "y": 37.65,
+              "w": 18,
+              "h": 1.5
+            }
+          }
+        },
+        "stats": {
+          "contexts": 1,
+          "currentId": "recorder",
+          "loadedId": "recorder",
+          "renderCount": 7,
+          "active": true
+        },
+        "source": {
+          "id": "recorder",
+          "title": "FIELD RECORDER",
+          "label": "FIELD RECORDER",
+          "materialColors": {
+            "recorder-faceplate": "#bfc2b5",
+            "recorder-ink": "#28312b",
+            "recorder-button-rec": "#bc6b57",
+            "recorder-button-stop": "#bcbda9",
+            "recorder-button-takes": "#c9a151"
+          },
+          "recorderPhosphor": "faithful",
+          "subtitle": "BRUSHED ALUMINUM / PORTABLE RECORDER",
+          "description": "Portable field recorder. Capture, monitor, and replay takes; the selected microphone and amplifier supply the signal path.",
+          "facts": [
+            [
+              "POSITION",
+              "CARRIED"
+            ],
+            [
+              "FUNCTION",
+              "CAPTURE / MONITOR"
+            ],
+            [
+              "BATTLE",
+              "MONITOR CAPTURES A TAKE / PLAYBACK SPENDS IT"
+            ],
+            [
+              "FINISH",
+              "BRUSHED ALUMINUM / CLASSIC KEYS / FAITHFUL VFD"
+            ]
+          ],
+          "battleCapable": true,
+          "present": true
+        }
+      },
+      "screenshot": "artifacts/kit-inspection/recorder-aluminum-restored.png"
+    },
+    {
+      "name": "flashlight-longthrow-ivory",
+      "state": {
+        "view": {
+          "inspection": {
+            "id": "flashlight-throw",
+            "yaw": 0,
+            "pitch": 0,
+            "dragging": false,
+            "ready": true,
+            "failed": false
+          },
+          "layout": {
+            "title": {
+              "x": 6.65,
+              "y": 6.35,
+              "w": 156.7
+            },
+            "portrait": {
+              "x": 6.65,
+              "y": 7.85,
+              "w": 83,
+              "h": 29.299999999999997
+            },
+            "text": {
+              "x": 91.65,
+              "y": 7.85,
+              "w": 71.69999999999999,
+              "h": 29.299999999999997
+            },
+            "back": {
+              "x": 6.65,
+              "y": 37.65,
+              "w": 14,
+              "h": 1.5
+            },
+            "reset": {
+              "x": 145.35,
+              "y": 37.65,
+              "w": 18,
+              "h": 1.5
+            }
+          }
+        },
+        "stats": {
+          "contexts": 1,
+          "currentId": "flashlight-throw",
+          "loadedId": "flashlight-throw",
+          "renderCount": 10,
+          "active": true
+        },
+        "source": {
+          "id": "light",
+          "title": "LONG THROW FLASHLIGHT",
+          "label": "LONG THROW FLASHLIGHT",
+          "modelId": "flashlight-throw",
+          "materialColors": {
+            "flashlight-housing": "#c5c5ad"
+          },
+          "subtitle": "FIELD FLASHLIGHT",
+          "description": "A narrow beam reaches 25% farther; flashlight battery draw +20%.",
+          "facts": [
+            [
+              "POSITION",
+              "CARRIED"
+            ],
+            [
+              "FUNCTION",
+              "FIELD ILLUMINATION"
+            ],
+            [
+              "FIT",
+              "LONG THROW"
+            ],
+            [
+              "TRADEOFF",
+              "A narrow beam reaches 25% farther; flashlight battery draw +20%."
+            ],
+            [
+              "HOUSING",
+              "IVORY"
+            ]
+          ],
+          "battleCapable": false,
+          "present": true
+        }
+      },
+      "screenshot": "artifacts/kit-inspection/flashlight-longthrow-ivory.png"
+    },
+    {
+      "name": "case-closed",
+      "state": {
+        "view": {
+          "inspection": {
+            "id": "field-case",
+            "yaw": 0,
+            "pitch": 0,
+            "dragging": false,
+            "ready": true,
+            "failed": false
+          },
+          "layout": {
+            "title": {
+              "x": 6.65,
+              "y": 6.35,
+              "w": 156.7
+            },
+            "portrait": {
+              "x": 6.65,
+              "y": 7.85,
+              "w": 83,
+              "h": 29.299999999999997
+            },
+            "text": {
+              "x": 91.65,
+              "y": 7.85,
+              "w": 71.69999999999999,
+              "h": 29.299999999999997
+            },
+            "back": {
+              "x": 6.65,
+              "y": 37.65,
+              "w": 14,
+              "h": 1.5
+            },
+            "reset": {
+              "x": 145.35,
+              "y": 37.65,
+              "w": 18,
+              "h": 1.5
+            }
+          }
+        },
+        "stats": {
+          "contexts": 1,
+          "currentId": "field-case",
+          "loadedId": "field-case",
+          "renderCount": 13,
+          "active": true
+        },
+        "source": {
+          "id": "field-case",
+          "title": "FIELD CASE / NOT YET TAKEN",
+          "nodeRotations": {
+            "open-lid-hinge": [
+              1.5707963267948966,
+              0,
+              0
+            ]
+          },
+          "hiddenNodes": [
+            "lid-retaining-strap"
+          ],
+          "present": true
+        }
+      },
+      "screenshot": "artifacts/kit-inspection/case-closed.png"
+    }
+  ],
+  "pageErrors": []
+}

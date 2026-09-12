@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { applyItemModelAppearance, disposeItemModelAppearance, fitItemModelPose } from "../../item-model-appearance.js";
 const PRINTABLE_ASCII = Array.from(
   { length: 95 },
   (_, i) => String.fromCharCode(32 + i)
@@ -24,6 +25,10 @@ const DEFAULTS = {
   highlight: "#066aff",
   environmentIntensity: 1,
   roughness: -1,
+  materialColors: null,
+  nodeRotations: null,
+  hiddenNodes: null,
+  recorderPhosphor: null,
   scale: 3,
   xOffset: 0,
   yOffset: 0,
@@ -701,6 +706,7 @@ function createImageObject(canvas, anisotropy) {
   return new THREE.Mesh(geometry, material);
 }
 function disposeObject(root) {
+  disposeItemModelAppearance(root);
   root.traverse((node) => {
     const mesh = node;
     if (mesh.geometry) mesh.geometry.dispose();
@@ -896,6 +902,18 @@ function createAsciiObject(elements, options = {}) {
   loader.setDRACOLoader(draco);
   function applyRoughness() {
     if (!model) return;
+    applyItemModelAppearance(model, {
+      materialColors: config.materialColors || {},
+      nodeRotations: config.nodeRotations || {},
+      hiddenNodes: config.hiddenNodes || [],
+      recorderPhosphor: config.recorderPhosphor,
+      textureFactory: (width,height,draw) => {
+        const surface=document.createElement('canvas');surface.width=width;surface.height=height;
+        const ctx=surface.getContext('2d');if(!ctx)return null;
+        draw(ctx,width,height);
+        const texture=new THREE.CanvasTexture(surface);texture.colorSpace=THREE.SRGBColorSpace;return texture;
+      }
+    });
     model.traverse((node) => {
       const mesh = node;
       const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
@@ -908,6 +926,14 @@ function createAsciiObject(elements, options = {}) {
         standard.roughness = config.roughness >= 0 ? config.roughness : standard.userData.baseRoughness;
       }
     });
+    if(config.nodeRotations&&Object.keys(config.nodeRotations).length){
+      modelMaxDim=fitItemModelPose(THREE,model)||modelMaxDim;
+    }else if(model.userData.inspectionPosedFit){
+      // Reopening the same cached case without a closed-lid override restores
+      // its authored open framing rather than retaining the old fitted center.
+      modelMaxDim=fitItemModelPose(THREE,model)||modelMaxDim;
+    }
+    model.userData.inspectionPosedFit=!!(config.nodeRotations&&Object.keys(config.nodeRotations).length);
   }
   function applyFit() {
     if (!model) return;

@@ -130,7 +130,7 @@
         },
         {
           "who": "you",
-          "text": "So: light off, feet still, and forty-five seconds of being furniture.",
+          "text": "So: light off, feet still. Aim for sixty seconds; forty-five clean seconds is enough for the job.",
           "id": "spoils.line.3"
         }
       ],
@@ -177,12 +177,12 @@
         },
         {
           "who": "you",
-          "text": "That is the level. That is the room. Now you keep sixty seconds of it with nothing added.",
+          "text": "That is the level. Roll, say the room, take number and date out loud, then fall quiet. With no microphone, I will say it for you.",
           "id": "roll.line.2"
         },
         {
           "who": "direction",
-          "text": "The headphones are on and the monitor is open. Press [r] to roll sound and start recording — and once you roll: do not move.",
+          "text": "The headphones are on and the monitor is open. Press [r] to roll. Slate first, then hold still. Aim for a minute; after forty-five clean seconds, STOP saves a usable take.",
           "id": "roll.line.3"
         }
       ],

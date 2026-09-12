@@ -29,7 +29,7 @@ export function bagTabRegions(model, layout) {
       label: material.label,
       color: material.color,
       countLabel: String(section.countLabel ?? ''),
-      x: left, y: strip.y, w: width, h: BAG_TAB_CAP_HEIGHT,
+      x: left, y: strip.y, w: width, h: strip.compact ? 1.7 : BAG_TAB_CAP_HEIGHT,
       readout: { x: left + .2, y: strip.y + 2.65, w: Math.max(0, width - .4), h: 1 },
     };
   });

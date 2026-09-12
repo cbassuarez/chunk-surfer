@@ -1,0 +1,26 @@
+{
+  "scope": "Actual main.js and compiled building in disposable browser profile; probe-seeded progression, real mouse/keyboard/wheel dispatch; native gamepad not tested.",
+  "stats": {
+    "physicalCells": 65610,
+    "spans": 78622,
+    "levels": 352,
+    "surfaces": 999,
+    "boundaries": 2791
+  },
+  "guideStage": "follow",
+  "guidance": {
+    "id": "space:main_b3",
+    "label": "STUDIO B3",
+    "kind": "space",
+    "playerSelected": true,
+    "roomId": "main_b3",
+    "spaceId": "space:main_b3",
+    "floorId": "b1",
+    "position": {
+      "x": 15.5,
+      "y": 12.5
+    },
+    "height": -4
+  },
+  "pageErrors": []
+}

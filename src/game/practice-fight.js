@@ -5,7 +5,7 @@ import { createPracticeClick } from '../audio/practice-click.js';
 import { uiFill, uiSize, uiText, uiWrap } from '../render/ui.js';
 import { drawMachinePanel, machinePanelBody } from '../render/presentation.js';
 import { drawBattleWipe, drawCombatActionTile, drawCombatGauge, drawEnemyVoidStage, drawSignalBeing, drawFirstPersonHands } from '../render/combat-view.js';
-import { pressControl, cancelControlScope } from './control-mechanics.js';
+import { pressControl, cancelControlScope } from './control-feedback.js';
 import { activeInputPromptDevice, promptLine } from './bindings.js';
 import { flashMode, shakeMode } from './access.js';
 

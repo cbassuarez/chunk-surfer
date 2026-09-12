@@ -1,0 +1,29 @@
+{
+  "checks": [
+    "New Run reaches arrival without the old difficulty screen",
+    "Partial pickup survives a real reload without granting the map or difficulty",
+    "Seven independent GLBs load in one physical shelf; actual object clicks and hardware swaps change the fitted models",
+    "Fitted hardware reaches real recordist configuration; draft finalizes once at packing",
+    "Authored lore and optional spanner/badge choices complete, then doors close without another E",
+    "Finished equipment, cosmetics, difficulty and closed doors survive reload"
+  ],
+  "pageErrors": [],
+  "runId": "run_1788837605129_53vkn",
+  "gear": {
+    "schema": 1,
+    "headphones": "closed",
+    "microphone": "directional",
+    "recorder": "headroom",
+    "cosmetics": {
+      "faceplate": "olive",
+      "buttons": "signal",
+      "vfd": "amber"
+    }
+  },
+  "doors": {
+    "open": 0,
+    "shut": true,
+    "landed": true,
+    "waypoint": "story:lodge"
+  }
+}

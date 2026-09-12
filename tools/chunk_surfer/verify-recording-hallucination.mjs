@@ -5,7 +5,7 @@
 // screenshots the first few beats that land, because "it fired" and "you could
 // see it" turned out to be different questions. Measured 2026-08-27: the
 // director started four events in one take and placed a body for every one,
-// and the opaque DA-1000 overlay covered all four from the shins up.
+// and the opaque A-1000 overlay covered all four from the shins up.
 //
 //   npx vite --port 5199 --host 127.0.0.1
 //   npm run verify:recording-hallucination        # TORCH=1 to roll with the light on

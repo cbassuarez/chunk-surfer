@@ -18,6 +18,7 @@
 
 import { uiDraw } from './ui.js';
 import { UI_COLOR, themeRoleColor } from './palette.js';
+import { drawElectronicText } from './electronic-text.js';
 
 // What is printed on the plastic, by physical position.
 const FACE_TEXT = Object.freeze({
@@ -124,11 +125,10 @@ export function drawPadGlyph(id, x, y, {
     }
 
     if (label && !DPAD.has(id)) {
-      ctx.fillStyle = pressed ? (UI_COLOR.glass || '#050505') : stroke;
-      ctx.font = `${Math.round(ph * .52)}px ui-monospace, monospace`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(label, cx, cy + ph * .02);
+      // This is an icon inside the electronic display, not the real plastic
+      // button. Its letter is formed by the same LCD matrix as its readout.
+      drawElectronicText(ctx,label,cx,cy+ph*.02,{mode:'lcd',fontSize:ph*.52,
+        color:pressed?(UI_COLOR.glass||'#050505'):stroke,align:'center',baseline:'middle',maxWidth:pw*.74,dpr});
     }
     ctx.restore();
   });

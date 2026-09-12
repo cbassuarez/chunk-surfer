@@ -1,0 +1,228 @@
+{
+  "checks": [
+    "one game AudioContext, shared interface bus",
+    "radio choice navigation and accepted confirmation",
+    "recorder keyboard press, latch, release",
+    "pointer hover is stable; disabled STOP refuses",
+    "controller and pointer use the same refusal",
+    "desktop mute silences real controls; unmute does not replay them",
+    "blur cancels voices; focus replays nothing",
+    "live recording uses reduced interface level",
+    "completed controls release every voice; shortcut hints stay silent",
+    "pause keeps the interface bus audible while gameplay is stopped",
+    "all 13 recipes render audible finite signals below peak limit"
+  ],
+  "errors": [],
+  "live": {
+    "global": 1,
+    "sfx": 1,
+    "enabled": true,
+    "focused": true,
+    "effective": 0.55,
+    "voices": 0,
+    "pending": 0,
+    "buffers": 4,
+    "played": 16,
+    "suppressed": 0,
+    "history": [
+      {
+        "name": "tick",
+        "scope": "radio:initial_checkin",
+        "start": 4.8,
+        "level": 0.20900000000000002,
+        "profile": "radio",
+        "quiet": false
+      },
+      {
+        "name": "press",
+        "scope": "radio:initial_checkin:start:1",
+        "start": 4.997333333333334,
+        "level": 0.396,
+        "profile": "radio",
+        "quiet": false
+      },
+      {
+        "name": "release",
+        "scope": "radio:initial_checkin:start:1",
+        "start": 5.0873333333333335,
+        "level": 0.264,
+        "profile": "radio",
+        "quiet": false
+      },
+      {
+        "name": "toggle",
+        "scope": "radio:initial_checkin",
+        "start": 4.997333333333334,
+        "level": 0.41250000000000003,
+        "profile": "radio",
+        "quiet": false
+      },
+      {
+        "name": "back",
+        "scope": "radio:initial_checkin",
+        "start": 5.002666666666666,
+        "level": 0.35750000000000004,
+        "profile": "radio",
+        "quiet": false
+      },
+      {
+        "name": "press",
+        "scope": "recorder:takes",
+        "start": 5.365333333333333,
+        "level": 0.396,
+        "profile": "recorder",
+        "quiet": false
+      },
+      {
+        "name": "latch",
+        "scope": "recorder",
+        "start": 5.365333333333333,
+        "level": 0.396,
+        "profile": "recorder",
+        "quiet": false
+      },
+      {
+        "name": "release",
+        "scope": "recorder:takes",
+        "start": 5.46006666670243,
+        "level": 0.264,
+        "profile": "recorder",
+        "quiet": false
+      },
+      {
+        "name": "tick",
+        "scope": "recorder",
+        "start": 5.536,
+        "level": 0.20900000000000002,
+        "profile": "recorder",
+        "quiet": false
+      },
+      {
+        "name": "refuse",
+        "scope": "recorder",
+        "start": 5.765333333333333,
+        "level": 0.4675,
+        "profile": "recorder",
+        "quiet": false
+      },
+      {
+        "name": "refuse",
+        "scope": "recorder",
+        "start": 6.218666666666667,
+        "level": 0.4675,
+        "profile": "recorder",
+        "quiet": false
+      },
+      {
+        "name": "press",
+        "scope": "recorder:takes",
+        "start": 6.768,
+        "level": 0.2574,
+        "profile": "recorder",
+        "quiet": true
+      },
+      {
+        "name": "latch",
+        "scope": "recorder",
+        "start": 6.768,
+        "level": 0.2574,
+        "profile": "recorder",
+        "quiet": true
+      },
+      {
+        "name": "release",
+        "scope": "recorder:takes",
+        "start": 6.857199999988079,
+        "level": 0.1716,
+        "profile": "recorder",
+        "quiet": true
+      },
+      {
+        "name": "back",
+        "scope": "recorder",
+        "start": 7.029333333333334,
+        "level": 0.35750000000000004,
+        "profile": "recorder",
+        "quiet": false
+      },
+      {
+        "name": "tick",
+        "scope": "ui",
+        "start": 7.216,
+        "level": 0.20900000000000002,
+        "profile": "panel",
+        "quiet": false
+      }
+    ],
+    "disposed": false,
+    "connected": true
+  },
+  "recipes": [
+    {
+      "name": "tick",
+      "peak": 0.010609763674438,
+      "rms": 0.00039756879048725676
+    },
+    {
+      "name": "press",
+      "peak": 0.014148172922432423,
+      "rms": 0.00042217347413695905
+    },
+    {
+      "name": "release",
+      "peak": 0.013468165881931782,
+      "rms": 0.00043661960064266046
+    },
+    {
+      "name": "toggle",
+      "peak": 0.019502956420183182,
+      "rms": 0.0007296599491525102
+    },
+    {
+      "name": "back",
+      "peak": 0.011005206033587456,
+      "rms": 0.0003934001474074492
+    },
+    {
+      "name": "refuse",
+      "peak": 0.01320160273462534,
+      "rms": 0.000560945345640402
+    },
+    {
+      "name": "latch",
+      "peak": 0.016520053148269653,
+      "rms": 0.0005759492016102593
+    },
+    {
+      "name": "unlatch",
+      "peak": 0.01567479968070984,
+      "rms": 0.0005147606297861041
+    },
+    {
+      "name": "fit",
+      "peak": 0.017914259806275368,
+      "rms": 0.0008500668814581262
+    },
+    {
+      "name": "remove",
+      "peak": 0.011075763031840324,
+      "rms": 0.0005027937961177021
+    },
+    {
+      "name": "patch",
+      "peak": 0.017033249139785767,
+      "rms": 0.00063766730951947
+    },
+    {
+      "name": "unpatch",
+      "peak": 0.012765614315867424,
+      "rms": 0.00048040087447547757
+    },
+    {
+      "name": "page",
+      "peak": 0.014863112941384315,
+      "rms": 0.00124059065912216
+    }
+  ],
+  "scope": "Production browser input with a disposable God run and simulated controller. Real OfflineAudioContext renders. Native hardware and acoustic speaker/microphone feedback are not covered."
+}

@@ -94,7 +94,7 @@ export function radioHudPresentation({
   return Object.freeze({
     visible:true,enabled:!dead&&!deployed&&!noSignal&&!busy,
     status,
-    part:Object.freeze({action:'radio',label:states.length?`RADIO · ${status}`:'RADIO',persistent:true}),
+    part:Object.freeze({action:'radio',label:calling&&!dead&&!deployed&&!noSignal&&!busy?'ANSWER RADIO':states.length?`RADIO · ${status}`:'RADIO',persistent:true}),
   });
 }
 

@@ -36,7 +36,11 @@ const BATTLES = {
 // What the player brought. STOCK is the bag the game hands you and never asks
 // you to improve; INVESTED is a plausible six-pin run.
 const STOCK_TOOLS = { torch: true, recorder: true, rig: false, fork: false, radio: false, coffee: false };
-const FULL_TOOLS = { torch: true, recorder: true, rig: true, fork: true, radio: true, coffee: true };
+// The spanner is in the full bag because a full bag HAS one: it is taken at the
+// van in the first minute of the run and never consumed. Leaving it out meant
+// the tuner could not see SWING or ON THE STEEL at all, and a move the balance
+// tool cannot measure is a move that is not balanced.
+const FULL_TOOLS = { torch: true, recorder: true, rig: true, fork: true, radio: true, coffee: true, spanner: true };
 const INVESTED = ['deep-reserve', 'brace', 'punch-in', 'master-take', 'perfect-pitch', 'headroom']
   .filter((id) => TECHNIQUE_DEFS.some((def) => def.id === id));
 
@@ -133,7 +137,11 @@ for (const presetId of presets) {
         // Only the pairings that mean something: a stock bag cannot invest, and
         // an invested one that never reads has wasted its pins.
         if (bagId === 'stock' && lineId === 'investing') continue;
-        if (bagId === 'full' && lineId !== 'reading') continue;
+        // full+swinging is kept BECAUSE of the spanner. It is the only pairing
+        // in the matrix where a blunt tool is both carried and chosen — the
+        // swinging policy takes the biggest damage on the board, which is SWING
+        // — so without it the two spanner moves ship unmeasured.
+        if (bagId === 'full' && !['reading', 'swinging'].includes(lineId)) continue;
         if (bagId === 'invested' && lineId === 'swinging') continue;
         const out = play(definition, { difficulty, ...bag, policy });
         const flag = out.result === 'lose' ? '  ← LOSS' : out.result === 'unresolved' ? '  ← STALL' : '';
@@ -174,7 +182,10 @@ for (const presetId of presets) {
   for (const [bagId, bag] of Object.entries(BAGS)) {
     for (const [lineId, policy] of Object.entries(POLICIES)) {
       if (bagId === 'stock' && lineId === 'investing') continue;
-      if (bagId === 'full' && lineId !== 'reading') continue;
+      // Same reason as the per-battle matrix above: full+swinging is the only
+      // row where a blunt tool is carried AND chosen, so it is the only one that
+      // can price the spanner across a whole night.
+      if (bagId === 'full' && !['reading', 'swinging'].includes(lineId)) continue;
       if (bagId === 'invested' && lineId === 'swinging') continue;
       const night = (sheets) => {
         let pool = COMPOSURE_BASE;

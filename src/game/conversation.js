@@ -66,6 +66,7 @@ function sayLabel(l) {
 export function createConversation({
   nodes = null, beats = [], startAt = 'start', sceneId = 'conversation', replay = null,
   onChoice, onLine, onDone, cue, fx, audio, getAudio, volume = 0.26,
+  feedbackScope=sceneId,feedbackProfile=sceneId.includes('radio')?'radio':'panel',
   isActive = () => true,
 } = {}) {
   const voice = createSamDialogVoice({ volume, getAudio });
@@ -353,6 +354,13 @@ export function createConversation({
     else startBeats();
   }
 
+  function selectChoice(index,{sound=true}={}) {
+    const cs=visibleOptions();if(!pending||!cs.length)return false;
+    const next=Math.max(0,Math.min(cs.length-1,Math.floor(Number(index)||0)));
+    if(next===choiceIdx)return false;choiceIdx=next;
+    if(sound)(audio?.menuMove||audio?.tick)?.({scope:feedbackScope,profile:feedbackProfile});
+    return true;
+  }
   function choose(c) {
     if (!c) return;
     // "Say it" is not a branch. It is permission for the line to happen.
@@ -362,7 +370,7 @@ export function createConversation({
       utter(l);
       return;
     }
-    audio?.confirm?.();
+    (audio?.menuConfirm||audio?.confirm)?.({scope:feedbackScope,profile:feedbackProfile});
     const key = choiceKey(c);
     asked.add(key);
     replay?.markChoice?.(key);
@@ -373,6 +381,7 @@ export function createConversation({
   }
 
   return {
+    selectChoice,
     start() {
       stopped = false;
       if (mode === 'beats') { if (!visibleBeats().length) { finish(); return; } }
@@ -439,8 +448,8 @@ export function createConversation({
           else startBeats();
           return true;
         }
-        if (e.key === 'ArrowUp' || e.key === 'w') { choiceIdx = (choiceIdx - 1 + cs.length) % cs.length; audio?.tick?.(); return true; }
-        if (e.key === 'ArrowDown' || e.key === 's') { choiceIdx = (choiceIdx + 1) % cs.length; audio?.tick?.(); return true; }
+        if (e.key === 'ArrowUp' || e.key === 'w') { selectChoice((choiceIdx - 1 + cs.length) % cs.length);return true; }
+        if (e.key === 'ArrowDown' || e.key === 's') { selectChoice((choiceIdx + 1) % cs.length);return true; }
         const num = Number(e.key);
         if (num >= 1 && num <= cs.length) { choose(cs[num - 1]); return true; }
         if (e.key === 'Enter' || e.key === ' ' || e.key === 'z') { choose(cs[choiceIdx]); return true; }

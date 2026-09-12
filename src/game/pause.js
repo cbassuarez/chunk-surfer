@@ -51,7 +51,7 @@ export function makePauseScene({
   }
 
   function activate() {
-    AUDIO.menuConfirm?.();
+    if(items[selected]?.id==='resume')AUDIO.menuBack?.();else AUDIO.menuConfirm?.();
     items[selected]?.action?.();
   }
 
@@ -66,7 +66,7 @@ export function makePauseScene({
 
     if (raw === 'Escape' || code === 'Escape') {
       e.preventDefault?.();
-      onResume?.();
+      AUDIO.menuBack?.();onResume?.();
       return true;
     }
     if (raw === 'ArrowUp' || k === 'w' || code === 'KeyW') {

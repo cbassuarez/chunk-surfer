@@ -17,6 +17,17 @@ function fakeAudio({panner=true}={}){
   return {ctx,destination,nodes,getAudio:()=>({ctx,destination})};
 }
 
+test('the inbound alert is a finite carrier scratch with no voice or lingering audio graph',()=>{
+  const audio=fakeAudio(),sound=createRadioSceneAudio(audio);
+  assert.equal(sound.notify(),true);
+  const first=audio.nodes.slice();
+  assert.ok(first.filter(node=>node.starts).every(node=>node.kind==='noise'&&node.stops[0]-node.starts[0]<.7));
+  sound.notify();assert.ok(first.every(node=>node.disconnected));
+  for(const source of audio.nodes.filter(node=>node.starts&&!node.disconnected))source.onended();
+  assert.equal(sound.snapshot().nodes,0);
+  sound.pause();assert.equal(sound.notify(),false);sound.stop();assert.equal(sound.notify(),false);
+});
+
 test('radio stages own a small graph, stay below dialogue-scale gains, and pause completely at decision',()=>{
   const audio=fakeAudio(),sound=createRadioSceneAudio(audio);
   assert.equal(sound.stage('unknown'),false);assert.equal(audio.nodes.length,0);

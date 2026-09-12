@@ -6,10 +6,110 @@
 // Wrench: https://www.stanleytools.com/product/87-367/6-adjustable-wrench
 // Coffee and radio silhouette: the game's existing story-art photographs.
 import * as THREE from 'three';
+import {SVGLoader} from 'three/addons/loaders/SVGLoader.js';
 const circle=(x,y,r)=>{const h=new THREE.Path();h.absarc(x,y,r,0,Math.PI*2,true);return h;};
 function outline(points,holes=[]){const s=new THREE.Shape();points.forEach(([x,y],i)=>i?s.lineTo(x,y):s.moveTo(x,y));s.closePath();s.holes.push(...holes);return s;}
 
 export async function buildDetailedItems(model){
+ await model('map',({box,cyl,ring,cable,plate,group,add,root})=>{
+  // AUDIOCORP SI–1 Survey Indicator. Original portable survey hardware: a
+  // broad optical well, protected lower controls and a complete service back.
+  // Its unpowered reticle is not a fabricated floor plan or enemy reading.
+  root.setExtras({name:'AUDIOCORP SI–1 Survey Indicator',function:'Building plan / bearing',authorship:'Original project geometry'});
+  const mark=(node,name)=>{node.setName(name);return node;};
+  mark(box([0,0,-.012],[1.98,1.43,.43],'rubber',undefined,.11),'impact-bumper');
+  mark(box([0,0,.022],[1.88,1.34,.42],'edge',undefined,.075),'die-cast-body');
+  mark(box([0,0,-.214],[1.75,1.23,.048],'dark',undefined,.054),'rear-case-seam');
+  const aperture=new THREE.Path();aperture.moveTo(-.79,-.10);aperture.lineTo(-.79,.48);aperture.lineTo(.79,.48);aperture.lineTo(.79,-.10);aperture.closePath();
+  const face=outline([[-.91,-.59],[-.84,-.66],[.84,-.66],[.91,-.59],[.91,.59],[.84,.66],[-.84,.66],[-.91,.59]],[aperture]);
+  mark(plate(face,.035,[0,0,.253],'steel',undefined,.007),'machined-faceplate-with-aperture');
+  mark(box([0,.19,.225],[1.65,.66,.020],'rubber',undefined,.025),'recessed-display-throat');
+  mark(box([0,.19,.237],[1.54,.53,.008],'glass',undefined,.015),'smoked-display-glass');
+  // A printed registration graticule remains passive until the actual map
+  // surface supplies readings. Fine, interrupted traces leave real darkness.
+  for(let i=-3;i<=3;i++)mark(box([i*.18,.19,.242],[.002,.45,.001],'green',undefined,0),`reticle-vertical-${i+3}`);
+  for(let i=-1;i<=1;i++)mark(box([0,.19+i*.145,.242],[1.38,.002,.001],'green',undefined,0),`reticle-horizontal-${i+1}`);
+  // Two glass-edge returns, not a bright outline around the whole aperture.
+  mark(box([-.015,.451,.245],[1.43,.009,.002],'edge',undefined,.003),'glass-upper-return');
+  mark(box([.752,.19,.245],[.006,.46,.002],'edge',undefined,.002),'glass-side-return');
+  // Recessed slotted fasteners: dark countersink, steel dome, narrow slot.
+  const fastener=(x,y,z,back=false)=>{
+   group([x,y,z],[0,back?Math.PI:0,0],()=>{
+    cyl([0,0,0],.036,.009,'dark');cyl([0,0,.007],.029,.013,'steel');
+    box([0,0,.015],[.041,.007,.002],'dark',[0,0,.46+x*.2],.002);
+   });
+  };
+  for(const x of[-.85,.85])for(const y of[-.59,.59])fastener(x,y,.278);
+  // Three momentary selectors sit behind the lower rubber rail; each cap has
+  // a separate bezel, shadow gap, formed shoulder and opaque printed legend.
+  for(const[x,color,id]of[[-.61,'blue','floor'],[-.22,'amber','mark'],[.17,'ivory','return']]){
+   mark(box([x,-.38,.267],[.315,.226,.012],'dark',undefined,.022),`${id}-socket`);
+   mark(box([x,-.385,.286],[.273,.186,.029],'edge',undefined,.016),`${id}-bezel`);
+   mark(box([x,-.371,.31],[.246,.151,.043],color,undefined,.019),`${id}-cap`);
+   box([x,-.306,.334],[.202,.006,.002],'ivory',undefined,.002);
+  }
+  mark(cyl([.625,-.385,.282],.155,.018,'dark',undefined,40),'range-recess');
+  mark(cyl([.625,-.385,.325],.127,.083,'rubber',undefined,40),'range-knob');
+  cyl([.625,-.385,.37],.093,.012,'edge',undefined,40);
+  for(let i=0;i<28;i++){const a=i/28*Math.PI*2;box([.625+Math.cos(a)*.125,-.385+Math.sin(a)*.125,.334],[.010,.018,.045],'dark',[0,0,a],.002);}
+  mark(box([.625,-.319,.380],[.009,.042,.003],'ivory',undefined,.002),'range-pointer');
+  for(let i=0;i<7;i++){const a=-1.10+i*.37;box([.625+Math.sin(a)*.172,-.385+Math.cos(a)*.172,.282],[.008,.021,.002],'dark',[0,0,-a],0);}
+  // Fine original rounded-stroke engineering lettering: actual continuous
+  // geometry on the face, not a bitmap label, font dependency or fake glyphs.
+  const glyphs={
+   A:[[[0,0],[.3,1],[.6,0]],[[.13,.4],[.47,.4]]],
+   C:[[[.6,.85],[.46,1],[.14,1],[0,.84],[0,.16],[.14,0],[.46,0],[.6,.15]]],
+   D:[[[0,0],[0,1],[.36,1],[.6,.78],[.6,.22],[.36,0],[0,0]]],
+   E:[[[.6,1],[0,1],[0,0],[.6,0]],[[0,.5],[.46,.5]]],
+   F:[[[0,0],[0,1],[.6,1]],[[0,.5],[.46,.5]]],
+   I:[[[.3,0],[.3,1]]],
+   K:[[[0,0],[0,1]],[[.6,1],[0,.47],[.6,0]]],
+   L:[[[0,1],[0,0],[.6,0]]],
+   M:[[[0,0],[0,1],[.3,.45],[.6,1],[.6,0]]],
+   N:[[[0,0],[0,1],[.6,0],[.6,1]]],
+   O:[[[.14,0],[0,.16],[0,.84],[.14,1],[.46,1],[.6,.84],[.6,.16],[.46,0],[.14,0]]],
+   P:[[[0,0],[0,1],[.45,1],[.6,.85],[.6,.64],[.45,.5],[0,.5]]],
+   R:[[[0,0],[0,1],[.45,1],[.6,.85],[.6,.64],[.45,.5],[0,.5]],[[.29,.5],[.6,0]]],
+   S:[[[.6,.85],[.45,1],[.15,1],[0,.85],[0,.65],[.15,.5],[.45,.5],[.6,.35],[.6,.15],[.45,0],[.15,0],[0,.15]]],
+   T:[[[0,1],[.6,1]],[[.3,1],[.3,0]]],
+   U:[[[0,1],[0,.17],[.15,0],[.45,0],[.6,.17],[.6,1]]],
+   V:[[[0,1],[.3,0],[.6,1]]],
+   Y:[[[0,1],[.3,.5],[.6,1]],[[.3,.5],[.3,0]]],
+   1:[[[.05,.8],[.3,1],[.3,0]],[[.06,0],[.54,0]]],
+   '-':[[[.07,.5],[.53,.5]]],
+  };
+  const legend=(value,x,y,z,size=.033,material='dark')=>{
+   [...value].forEach((char,i)=>{for(const path of glyphs[char]||[]){
+    const points=path.map(([xx,yy])=>new THREE.Vector2(x+(i*.86+xx)*size,y+yy*size));
+    const geometry=SVGLoader.pointsToStroke(points,SVGLoader.getStrokeStyle(size*.075,'#000','round','round'),3);
+    if(geometry)mark(add(geometry,material,[0,0,z]),`legend-${value}`);
+   }});
+  };
+  legend('AUDIOCORP',-.74,.552,.282,.044);
+  legend('SI-1',.53,.552,.282,.037);
+  legend('SURVEY INDICATOR',-.76,-.212,.282,.032);
+  legend('FLOOR',-.68,-.391,.334,.033);legend('MARK',-.274,-.391,.334,.033);
+  legend('RETURN',.086,-.390,.334,.031);legend('RANGE',.558,-.591,.282,.031);
+  // Separate side transducer grille and a protected cable receptacle identify
+  // a survey instrument, not a second recorder or miniature handheld radio.
+  group([-.947,.18,.012],[0,-Math.PI/2,0],()=>{
+   box([0,0,0],[.25,.37,.025],'rubber',undefined,.019);
+   for(let i=0;i<5;i++)box([0,-.12+i*.06,.016],[.19,.022,.009],'dark',undefined,.007);
+  });
+  group([.947,.24,.007],[0,Math.PI/2,0],()=>{
+   cyl([0,0,0],.081,.025,'edge');cyl([0,0,.015],.055,.014,'dark');ring([0,0,.025],.057,.008,'steel');
+  });
+  // Service cover, two quarter-turn retainers, feet and a working strap bail.
+  mark(box([0,-.08,-.247],[1.39,.79,.035],'shell',undefined,.035),'battery-service-cover');
+  for(const x of[-.57,.57])fastener(x,-.08,-.274,true);
+  for(const x of[-.76,.76])for(const y of[-.49,.49])box([x,y,-.281],[.19,.13,.055],'rubber',undefined,.032);
+  for(const x of[-.73,.73]){
+   box([x,.722,-.03],[.14,.072,.20],'edge',undefined,.023);
+   ring([x,.728,-.03],.06,.012,'steel',[0,Math.PI/2,0]);
+  }
+  mark(cable([[-.73,.75,-.05],[-.65,.98,-.08],[-.26,1.05,-.08],[.29,1.01,-.08],[.65,.93,-.08],[.73,.75,-.05]],.035,'cloth'),'woven-carry-strap');
+ });
+
  await model('coffee',({lathe,ring,cyl,add})=>{
   // Tapered paper wall with an actual open interior and folded base. The coffee
   // sits below the rolled lip, as in booth.coffee.form, instead of a dark lid.
@@ -150,7 +250,7 @@ export async function buildDetailedItems(model){
   group([0,0,0],[0,0,-.48],()=>{
    // One forged body and fixed jaw, with an actual crescent opening. A small
    // six-inch wrench: narrow waist, broad jaw stock and drilled hanging hole.
-   const body=outline([[-.13,-.94],[-.20,-.86],[-.18,-.62],[-.10,.22],[-.27,.39],[-.36,.62],[-.30,.89],[-.21,1.00],[-.19,.80],[-.14,.60],[.23,.51],[.30,.32],[.16,.18],[.09,-.65],[.065,-.87],[-.015,-.95]],
+   const body=outline([[-.13,-.94],[-.20,-.86],[-.18,-.62],[-.10,.22],[-.31,.37],[-.43,.61],[-.42,.85],[-.31,1.02],[-.235,1.03],[-.235,.64],[.16,.50],[.23,.32],[.12,.22],[.09,-.65],[.065,-.87],[-.015,-.95]],
     [circle(-.064,-.78,.058)]);
    plate(body,.11,[0,0,0],'steel',undefined,.014);
    // Enamel inset leaves the forged perimeter visible.
@@ -158,8 +258,8 @@ export async function buildDetailedItems(model){
    plate([[-.12,-.60],[-.058,.14],[.035,.13],[.035,-.64],[-.018,-.69],[-.08,-.68]],.013,[0,0,-.068],'blue',undefined,.009);
    // Sliding jaw: rack stem terminates below the worm. Parallel gripping
    // faces leave a clear gap set near the heating-header gland size.
-   plate([[.04,.46],[.13,.47],[.29,.78],[.43,.90],[.47,.81],[.39,.53],[.19,.34],[.07,.30]],.12,[0,0,.005],'edge',undefined,.011);
-   plate([[.26,.75],[.42,.87],[.40,.78],[.24,.63]],.014,[0,0,.076],'steel',undefined,.005);
+   plate([[-.03,.52],[.08,.51],[.20,.64],[.27,.89],[.25,.98],[.17,1.01],[.04,.94],[.02,.64],[-.08,.57]],.12,[0,0,.005],'edge',undefined,.011);
+   plate([[.04,.66],[.055,.94],[.17,1.00],[.16,.69]],.014,[0,0,.076],'steel',undefined,.005);
    box([.035,.35,.076],[.235,.145,.035],'dark',[0,0,.16],.022);
    cyl([.035,.35,.105],.066,.19,'steel',[0,0,Math.PI/2],24);
    for(let i=0;i<8;i++)ring([-.047+i*.024,.35,.105],.067,.006,'dark',[0,Math.PI/2,0]);
