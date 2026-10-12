@@ -1,0 +1,32 @@
+[
+  {
+    "file": "unfa-pain-grunts.mp3",
+    "source": "https://freesound.org/people/unfa/sounds/610991/",
+    "download": "https://cdn.freesound.org/previews/610/610991_1038806-hq.mp3",
+    "author": "unfa",
+    "license": "CC0-1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "sha256": "fc63160db51a6812e80b54be1b517f5f4b944fc59acac5b626fed54f8eeb395f",
+    "usage": "edited playback only; not used for model training"
+  },
+  {
+    "file": "vrymaa-leather-creak.mp3",
+    "source": "https://freesound.org/people/Vrymaa/sounds/734598/",
+    "download": "https://cdn.freesound.org/previews/734/734598_13973196-hq.mp3",
+    "author": "Vrymaa",
+    "license": "CC0-1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "sha256": "e3c08c184b8675f9220854ce5a8e52501683613d15800d291d9d4c4845f3f5f1",
+    "usage": "edited playback only; not used for model training"
+  },
+  {
+    "file": "unfa-medium-grunts.mp3",
+    "source": "https://freesound.org/people/unfa/sounds/610998/",
+    "download": "https://cdn.freesound.org/previews/610/610998_1038806-hq.mp3",
+    "author": "unfa",
+    "license": "CC0-1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "sha256": "26b00b3722ac581979d595f43a67933e95d7d56f55f0450e1d17fdd6552476b4",
+    "usage": "edited playback only; not used for model training"
+  }
+]

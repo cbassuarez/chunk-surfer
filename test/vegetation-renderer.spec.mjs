@@ -37,6 +37,8 @@ assert.match(renderer,/instance\.fallbackMesh&&pack\.catalog\.has\(instance\.fal
 assert.match(renderer,/renderShadowPass\(eye,yaw,pitch,light,shadowLight,\{timeSec,reducedMotion,lodEye:eye\}\)/);
 assert.match(props,/fallbackMesh:p\.fallbackMesh\|\|null/);
 assert.match(world,/opening-street\.glb'[\s\S]*vegetation\.glb'[\s\S]*source-structures\.glb'/,'vegetation loads after the exterior fallback and before later structural packs');
-assert.equal((world.match(/timeSec:now,reducedMotion:pixelMeshSettings\.reduceMotion/g)||[]).length,2);
+assert.equal((world.match(/timeSec:now,reducedMotion:pixelMeshSettings\.reduceMotion/g)||[]).length,
+  (world.match(/P3\.(?:renderPropPass|preparePropShadowPass)\(/g)||[]).length,
+  'every prop pass and shared shadow preparation carries the same motion policy');
 
 console.log('vegetation renderer contracts passed');

@@ -1,0 +1,22 @@
+[
+  {
+    "role": "boy",
+    "vertices": 7206,
+    "triangles": 13891,
+    "bytes": 831366,
+    "gzipBytes": 279110,
+    "bones": 34,
+    "weightMaxError": 1.000000000139778e-06,
+    "sha256": "165cdbfb0b21ba644c62a8ed0a65ea723cc24c6d11513cb7aa097ca3d069f016"
+  },
+  {
+    "role": "contractor",
+    "vertices": 7277,
+    "triangles": 13955,
+    "bytes": 837966,
+    "gzipBytes": 281958,
+    "bones": 34,
+    "weightMaxError": 1.000000000139778e-06,
+    "sha256": "4260fe1d7ef194cc9aa0d24b15de612b9c96565d303f6842871b134c912965ef"
+  }
+]

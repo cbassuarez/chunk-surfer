@@ -7,13 +7,21 @@ import {makeItemInspectionScene} from './item-inspection-scene.js';
 import {BATTLE_GEAR} from './combat-loadout.js';
 import {BATTLE_EQUIPMENT_COPY} from './battle-preparation-model.js';
 
-export function makeBattlePreparation({ getLoadout, getEquipment, getBuild, hasRig, getBattery, apply, onReady, audio } = {}) {
+export function makeBattlePreparation({ getLoadout, getEquipment, getBuild, hasRig, getBattery, getSheets, readSheet, apply, onReady, audio, createView = createBattlePreparationView } = {}) {
   const model=createBattlePreparationModel({loadout:getLoadout?.(),equipment:getEquipment?.()||[],build:getBuild?.(),hasRig:!!hasRig?.()});
   let age=0,closed=false,message='',paintFor=.25;
   const keys=()=>activeInputPromptDevice()==='controller'
     ? promptLine([{action:'select',label:'SELECT'},{action:'confirm',label:'CONFIRM'},{action:'tabNext',label:'TAB'},{action:'start',label:'READY'}])
     : 'ARROWS / TAB  SELECT · Q / E  TAB · ENTER  CONFIRM';
-  const render=()=>{view?.render(model.snapshot(),{battery:getBattery?.()||0,message,keys:keys()});paintFor=.25;};
+  // Sheets are not part of the draft. Reading one is spent the moment it is
+  // read, and READY re-reads composure when it builds the fight.
+  const sheets=()=>{
+    const s=getSheets?.();if(!s)return null;
+    const carried=Math.max(0,Math.floor(Number(s.carried)||0)),composure=Number(s.composure)||0,ceiling=Number(s.ceiling)||0;
+    return {carried,composure,ceiling,top:s.top||null,
+      reason:!carried?'NO SHEETS':composure>=ceiling?'ALREADY COMPOSED':''};
+  };
+  const render=()=>{view?.render(model.snapshot(),{battery:getBattery?.()||0,sheets:sheets(),message,keys:keys()});paintFor=.25;};
   const feedback=name=>audio?.[name]?.({scope:'battle-preparation',profile:'combat'});
   const command=(value,{confirmHeld=false}={})=>{
     if(closed||age<.22||!value)return;
@@ -30,6 +38,14 @@ export function makeBattlePreparation({ getLoadout, getEquipment, getBuild, hasR
     else if(value.startsWith('replace:'))sound=model.replace(value.slice(8))?'menuFit':'menuDenied';
     else if(value==='cancel-replace'){if(model.cancelReplace())sound='menuBack';}
     else if(value==='store')sound=model.store()?'menuRemove':'menuDenied';
+    else if(value==='read-sheet'){
+      const status=sheets();
+      const result=status&&!status.reason?readSheet?.():false;
+      if(result&&result.spent!==false){
+        sound='menuFit';
+        message=`+${result.restored??0} COMPOSURE. ${result.sheets??0} ${result.sheets===1?'SHEET':'SHEETS'} LEFT.`;
+      }else{sound='menuDenied';message=status?.reason||'Could not read it.';}
+    }
     else if(value==='inspect'){
       const id=before.loadout.top[before.selectedSlot];
       if(id){view?.visible(false);scenes.push(makeItemInspectionScene({id,title:BATTLE_GEAR[id].label,description:BATTLE_EQUIPMENT_COPY[id]?.detail}));}
@@ -44,7 +60,7 @@ export function makeBattlePreparation({ getLoadout, getEquipment, getBuild, hasR
     if(sound)feedback(sound);render();
   };
   const moveFocus=direction=>{const before=view?.focus();view?.moveFocus(direction);if(view?.focus()!==before)feedback('menuMove');};
-  const view=createBattlePreparationView({onActivate:command});render();
+  const view=createView({onActivate:command});render();
   return {
     snapshot:model.snapshot,
     update(dt){age+=Math.max(0,dt);if(paintFor>0){paintFor-=dt;view?.paint();}},

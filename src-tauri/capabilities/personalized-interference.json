@@ -1,9 +1,10 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "personalized-interference",
-  "description": "Restricts opted-in choreography to four fixed fireball surfaces and eight fixed game-owned media surfaces; no external applications, arbitrary web content, or player files are permitted.",
+  "description": "Restricts opted-in choreography to four fixed fireball surfaces, eight fixed game-owned media surfaces and one passive Source overlay; no external applications, arbitrary web content, or player files are permitted.",
   "windows": [
     "main",
+    "source-desktop",
     "fireball-cast-1",
     "fireball-cast-2",
     "fireball-cast-3",

@@ -120,18 +120,33 @@ export function createHorizonScore(ctx, {
   // and a score that swells up from a held tone over the first second would be
   // announcing itself. Stopping is the event, not starting.
   let motion = 1;
-  // Where it is standing across the corridor (-1..1) and which way it is
-  // looking, so the score knows the same two things the picture does. Both are
-  // smoothed: a grid step is a jump, and a jump in the pan is a click.
+  // THE SCORE IS A PLACE, NOT A WIDTH.
+  //
+  // It used to be a full-width stereo bed: every grain carried the file's own
+  // stereo and a random pan around the body's offset, so the piece surrounded
+  // him and said nothing about where anything was. Now it is one point, standing
+  // at the next checkpoint on his route (runtime horizonGuide), and it pans as
+  // he turns his head: ahead is the middle, a bend in the route is a sound off
+  // to one side, and behind is darker and quieter. The ears can steer.
+  //
+  // Every grain is folded to mono first — a stereo source through a stereo
+  // panner keeps both channels, which is width again — and then goes through
+  // one shared panner, so the point is a point rather than a cloud around it.
   let pan = 0;
-  let panTarget = 0;
+  let rear = 0;
+  const mono = ctx.createGain();
+  mono.channelCount = 1;
+  mono.channelCountMode = 'explicit';
+  mono.channelInterpretation = 'speakers';
+  const point = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
   // How dark the tape sounds. The far end of a recording should not be as
-  // present as the slice underfoot, and the collapse should take the top off
-  // as well as the level.
+  // present as the slice underfoot, the collapse takes the top off as well as
+  // the level, and a point behind the head loses its air.
   const tone = ctx.createBiquadFilter();
   tone.type = 'lowpass';
   tone.frequency.value = 18000;
   tone.Q.value = 0.4;
+  if (point) { mono.connect(point); point.connect(tone); } else mono.connect(tone);
   tone.connect(output);
 
   function release(grain) {
@@ -202,23 +217,8 @@ export function createHorizonScore(ctx, {
     const gain = ctx.createGain();
     gain.gain.value = 0;
     source.connect(gain);
-    // A GRAIN LANDS SOMEWHERE. The picture is a hundred and twenty-eight metres
-    // wide and the body walks across it, and none of that reached the ears: the
-    // score was a mono bed into a bare gain, identical whichever way you faced.
-    //
-    // whisper-grains.js — the engine this was forked from — pans every grain,
-    // and the fork dropped it. Each grain is placed near the body's own offset
-    // across the corridor with a little scatter, so the field has width rather
-    // than a single moving point, which is what a room full of a drone does.
-    if (ctx.createStereoPanner) {
-      const panner = ctx.createStereoPanner();
-      panner.pan.value = clamp(pan + (random() * 2 - 1) * 0.28, -1, 1);
-      gain.connect(panner);
-      panner.connect(tone);
-      grainNodes.push(panner);
-    } else {
-      gain.connect(tone);
-    }
+    // Into the one point (see the note on `mono` above).
+    gain.connect(mono);
 
     const now = Math.max(ctx.currentTime, at || 0);
     const peak = Math.max(0.00001, level * DENSITY_TRIM * (0.8 + random() * 0.2));
@@ -288,21 +288,29 @@ export function createHorizonScore(ctx, {
       const moving = clamp(Math.abs(velocity) / NOMINAL_RATE, 0, 1);
       motion += (moving - motion) * Math.min(1, dt * MOTION_LERP);
 
-      // WHERE HE IS STANDING, AND WHICH WAY HE IS LOOKING.
+      // WHERE THE CHECKPOINT IS, AGAINST WHERE HE IS LOOKING.
       //
-      // `lateral` is -1..1 across the corridor and `facing` is the head's yaw.
-      // Turning has to move the field or the ears are told nothing at all —
-      // stand still, turn a full circle, and the old score was bit-identical.
-      // Rotating the offset by the yaw is the cheap correct version of that.
-      panTarget = clamp(finite(room.lateral, 0) * Math.cos(finite(room.facing, 0)), -1, 1);
-      pan += (panTarget - pan) * Math.min(1, dt * 3.5);
+      // `bearing` is the checkpoint's angle from the direction the head faces,
+      // radians, positive to the right. Its sine is the pan, shaped so a small
+      // turn is already heard; its cosine says ahead or behind, which a stereo
+      // pan cannot, so behind takes the air out of it and some of the level.
+      // Smoothed, because a grid step or a flick of the mouse is a jump and a
+      // jump in the pan is a click. No bearing at all is the middle.
+      const bearing = Number.isFinite(Number(room.bearing)) ? Number(room.bearing) : null;
+      const sine = bearing === null ? 0 : Math.sin(bearing);
+      const panTarget = clamp(Math.sign(sine) * Math.abs(sine) ** 0.7, -1, 1);
+      const rearTarget = bearing === null ? 0 : clamp((-Math.cos(bearing) + 0.15) / 1.15, 0, 1);
+      const follow = Math.min(1, dt * 7);
+      pan += (panTarget - pan) * follow;
+      rear += (rearTarget - rear) * follow;
+      if (point) point.pan.value = pan;
 
-      // The tail takes the top off as well as the level, and distance from the
-      // head of the tape darkens it a little throughout — the far end of a
-      // recording should not be as present as the slice underfoot.
+      // The tail takes the top off as well as the level, distance from the head
+      // of the tape darkens it a little throughout, and a checkpoint behind the
+      // head is heard through it.
       const collapse = clamp(finite(room.collapse, 0), 0, 1);
-      const target = 18000 * (1 - collapse * 0.93) * (1 - clamp(finite(room.depth01, 0), 0, 1) * 0.25);
-      tone.frequency.value += (Math.max(220, target) - tone.frequency.value) * Math.min(1, dt * 2);
+      const target = 18000 * (1 - collapse * 0.93) * (1 - clamp(finite(room.depth01, 0), 0, 1) * 0.25) * (1 - rear * 0.82);
+      tone.frequency.value += (Math.max(220, target) - tone.frequency.value) * Math.min(1, dt * 4);
 
       if (level <= 0.0001) { output.gain.value = 0; return { active: false, live: live.size }; }
       if (!buffer) { load(); output.gain.value = 0; return { active: false, live: live.size, loading: !failed }; }
@@ -310,7 +318,9 @@ export function createHorizonScore(ctx, {
       // THE HELD TONE. Level and density both follow the legs: at a walk this is
       // the full stream at the caller's level, and stopped it is STILL_LEVEL of
       // it through a stream thinned by STILL_INTERVAL_MULT — one voice, held.
-      const carried = level * (STILL_LEVEL + (1 - STILL_LEVEL) * motion);
+      // Behind is quieter, and so, a little, is far.
+      const distance = clamp(finite(room.distance01, 0), 0, 1);
+      const carried = level * (STILL_LEVEL + (1 - STILL_LEVEL) * motion) * (1 - rear * 0.38) * (1 - distance * 0.25);
       const interval = INTERVAL_MS * (1 + (STILL_INTERVAL_MULT - 1) * (1 - motion));
 
       output.gain.value = 1;
@@ -331,7 +341,7 @@ export function createHorizonScore(ctx, {
         scheduled += 1;
       }
       return {
-        active: true, live: live.size, position, velocity, pan,
+        active: true, live: live.size, position, velocity, pan, rear,
         motion, carried, interval, tone: tone.frequency.value,
       };
     },

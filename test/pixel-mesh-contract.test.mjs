@@ -56,7 +56,7 @@ test('renderer keeps UI outside the world-only VFD pass and exposes authored pro
   const r3d = readFileSync('src/render/r3d.js', 'utf8');
   const main = readFileSync('src/main.js', 'utf8');
   assert.match(r3d, /const\s+pixelSourceTex\s*=\s*runPixelMeshPass\(state,\s*now\)/);
-  assert.match(r3d, /const\s+postSourceTex\s*=\s*runDatamoshPass\(pixelSourceTex,\s*now\)/);
+  assert.match(r3d, /const\s+pixelSourceTex\s*=\s*runPixelMeshPass\(state,\s*now\);\s*const\s+faultedSourceTex\s*=\s*runSourceFaultPass\(pixelSourceTex,\s*now\);\s*const\s+postSourceTex\s*=\s*runDatamoshPass\(faultedSourceTex,\s*now\)/);
   assert.match(r3d, /r3dResetVfdMemory/);
   assert.match(r3d, /r3dSetLookProfile/);
   assert.match(main, /__chunkSurferPixelMesh/);

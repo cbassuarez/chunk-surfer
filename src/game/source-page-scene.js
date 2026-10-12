@@ -1,7 +1,7 @@
 import * as scenes from './scenes.js';
-import { uiSize, uiFill } from '../render/ui.js';
+import { uiSize, uiFill, uiDraw } from '../render/ui.js';
 import { sourcePageDocument } from '../data/source-pages.js';
-import { makeDocumentScene } from './document.js';
+import { makeDocumentScene, documentInspectRect, drawPhysicalPage } from './document.js';
 
 // READING ONE OF THE PAGES IN THE LONG HALL.
 //
@@ -103,14 +103,10 @@ export function makeSourcePageScene({ page = null, onClose = () => {} } = {}) {
 
 // THE STILL SHEET IS THE WIPE.
 //
-// It already has a baked physical-paper asset (`source-real-still`); what was
-// missing was a reader. Taking it jumped straight from the floor mesh to the
-// rebuilt world, so the only legible view of the one sheet that matters was a
-// small texture under the player's feet. Present the actual A4 sheet at the
-// ordinary inspection size and make its surround fully opaque. The Source
-// runtime can replace the forward half of the corridor synchronously underneath
-// it, and the next uncovered frame is therefore the Scene Dock rather than a
-// visible world-plan pop.
+// The hand owns the transition. Raise the same physical A4 into its ordinary
+// inspection view, commit only while the surround is completely opaque, then
+// lower it into a room that has already rendered. No camera turn is hidden in
+// the paper and closing it never removes the inspection in one frame.
 export const SOURCE_STILL_DOCUMENT = Object.freeze({
   id: 'source-real-still',
   title: 'ELLERY FIELD RECORDING · TAKE SHEET',
@@ -132,24 +128,95 @@ export const SOURCE_STILL_DOCUMENT = Object.freeze({
   }),
 });
 
-export function makeSourceStillPageScene({ onClose = () => {} } = {}) {
+export const SOURCE_STILL_ARRIVAL = Object.freeze({ raise: .6, cover: .08, lower: .6, reduced: .18 });
+
+export function makeSourceStillPageScene({
+  onCovered = () => {}, onReveal = () => {}, onClose = () => {}, reducedMotion = false,
+} = {}) {
+  let stage = 'raising', elapsed = 0, closeRequested = false, covered = false, done = false;
+  const duration = () => reducedMotion ? SOURCE_STILL_ARRIVAL.reduced
+    : stage === 'lowering' ? SOURCE_STILL_ARRIVAL.lower : SOURCE_STILL_ARRIVAL.raise;
+  const ease = (value) => { const t = Math.max(0, Math.min(1, value)); return t * t * (3 - 2 * t); };
+  function lower() {
+    if (stage === 'lowering' || done) return;
+    stage = 'lowering'; elapsed = 0;
+    onReveal();
+  }
   const scene = makeDocumentScene(SOURCE_STILL_DOCUMENT, {
     id: 'source-still-page',
-    onSceneClose: onClose,
-    lookProfile: 'hush',
+    onRequestClose: lower,
+    // The paper has its own light. The world keeps its material calibration
+    // while covered, rather than changing look again as the hand drops away.
+    lookProfile: 'explore',
   });
   return {
     ...scene,
     transitionCover: true,
+    suppressesHud: true,
+    enter() { scene.enter?.(); },
+    update(dt) {
+      if (done) return;
+      const delta = Math.max(0, Number(dt) || 0);
+      elapsed += delta;
+      scene.update?.(delta);
+      if (stage === 'raising' && elapsed >= duration()) {
+        stage = 'covered'; elapsed = 0; covered = true;
+        onCovered();
+      } else if (stage === 'covered' && elapsed >= SOURCE_STILL_ARRIVAL.cover) {
+        stage = 'held'; elapsed = 0;
+        if (closeRequested) lower();
+      } else if (stage === 'lowering' && elapsed >= duration()) {
+        done = true; stage = 'done';
+        // Remove this exact scene; a pause or other overlay must never be popped
+        // in its place if it arrived during the short lowering action.
+        scenes.remove(this);
+        onClose();
+      }
+    },
+    key(event) {
+      if (done) return true;
+      if (stage === 'held') return scene.key(event);
+      const key = String(event?.key || '').toLowerCase();
+      if (stage === 'raising' || stage === 'covered') {
+        if (['e', 'escape', 'enter', ' '].includes(key) || event?.controllerAction === 'back') closeRequested = true;
+      }
+      return true;
+    },
     view: () => ({
       ...scene.view(),
       id: 'source-still-page',
       lines: SOURCE_STILL_DOCUMENT.body.map((entry) => entry.raw || ''),
+      arrival: {
+        stage, covered, done, reducedMotion,
+        progress: stage === 'raising' || stage === 'lowering' ? Math.min(1, elapsed / duration()) : 1,
+        coverage: stage === 'raising' ? ease(elapsed / duration())
+          : stage === 'lowering' ? 1 - ease(elapsed / duration()) : done ? 0 : 1,
+      },
     }),
     render() {
       const { cols, rows } = uiSize();
-      uiFill(0, 0, cols, rows, '#000');
-      scene.render();
+      if (stage === 'held' || stage === 'covered') {
+        uiFill(0, 0, cols, rows, '#000');
+        scene.render();
+        return;
+      }
+      if (done) return;
+      const t = ease(elapsed / duration());
+      const coverage = stage === 'lowering' ? 1 - t : t;
+      uiFill(0, 0, cols, rows, `rgba(0,0,0,${coverage.toFixed(4)})`);
+      uiDraw((surface) => {
+        const rect = documentInspectRect(surface);
+        const travel = stage === 'lowering' ? t : 1 - t;
+        const scale = reducedMotion ? 1 : 1 - travel * (stage === 'lowering' ? .07 : .22);
+        const width = rect.w * scale, height = rect.h * scale;
+        const moved = {
+          ...rect, w: width, h: height,
+          x: rect.x + (rect.w - width) / 2,
+          y: rect.y + (rect.h - height) / 2 + (reducedMotion ? 0 : surface.rows * surface.cellH * surface.dpr * travel * .92),
+        };
+        if (reducedMotion) surface.ctx.globalAlpha *= coverage;
+        drawPhysicalPage(surface.ctx, SOURCE_STILL_DOCUMENT, 0, moved);
+      });
     },
   };
 }

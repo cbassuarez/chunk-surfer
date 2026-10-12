@@ -235,3 +235,45 @@ test('every item in the case carries its own branch colour, and two honestly do 
   assert.ok(!Object.values(BATTLE_GEAR).some((gear) => gear.toolId === 'nerve'),
     'NERVE is a column you cannot put in a slot');
 });
+
+// ── SHEET MUSIC IS READ IN THE CASE, BEFORE THE TURNS START ──────────────────
+//
+// The only thing in the case he uses on himself. It is not a slot and not part
+// of the draft: a read is spent the moment it happens, and READY re-reads
+// composure when it builds the fight.
+test('the case reads sheet music on the spot, and refuses when there is nothing to gain',()=>{
+  let composure=20,carried=2,reads=0,last=null;
+  const view={render:(_,extra)=>{last=extra;},paint(){},dispose(){},visible(){},focus:()=>'read-sheet'};
+  const p=makeBattlePreparation({getEquipment:()=>equipment,createView:()=>view,apply:()=>true,
+    getSheets:()=>({carried,composure,ceiling:40,top:{composer:'J. S. BACH',title:'ARIA'}}),
+    readSheet:()=>{reads++;const before=composure;composure=Math.min(40,composure+15);carried--;
+      return {spent:true,sheets:carried,restored:composure-before};}});
+  assert.deepEqual({carried:last.sheets.carried,composure:last.sheets.composure,reason:last.sheets.reason},
+    {carried:2,composure:20,reason:''});
+  p.update(.3);
+  p.key({key:'Enter'});
+  assert.equal(reads,1);assert.equal(last.message,'+15 COMPOSURE. 1 SHEET LEFT.');
+  assert.equal(last.sheets.composure,35,'the readout shows what the fight will open at');
+  p.key({key:'Enter'});
+  assert.equal(reads,2);assert.equal(last.sheets.composure,40);
+  // Composed now, and one left: the case keeps it rather than burning it.
+  carried=1;p.key({key:'Enter'});
+  assert.equal(reads,2);assert.equal(last.sheets.reason,'ALREADY COMPOSED');assert.equal(last.message,'ALREADY COMPOSED');
+  composure=10;carried=0;p.key({key:'Enter'});
+  assert.equal(reads,2);assert.equal(last.message,'NO SHEETS');
+  p.dispose();
+});
+test('a case with no sheet source shows no sheet row and no composure readout',()=>{
+  let last=null;const view={render:(_,extra)=>{last=extra;},paint(){},dispose(){},visible(){},focus:()=>'ready'};
+  const p=makeBattlePreparation({getEquipment:()=>equipment,createView:()=>view});
+  assert.equal(last.sheets,null);p.dispose();
+});
+test('the sheet panel is its own row, never one of the four slots',()=>{
+  const view=readFileSync('src/render/battle-preparation-view.js','utf8');
+  assert.match(view,/data-command="read-sheet"/);
+  assert.match(view,/const sheetPanel=sheets\?\.carried/,'shown only while one is carried');
+  assert.doesNotMatch(view,/equip:sheet-music/);
+  const main=readFileSync('src/main.js','utf8');
+  assert.match(main,/readSheet:\(\)=>godBattleOpen\?false:readSheetFromBag\(\{speak:false\}\)/,
+    'a god-menu fight cannot spend a real sheet');
+});

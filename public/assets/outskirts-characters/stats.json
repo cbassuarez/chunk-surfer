@@ -1,0 +1,201 @@
+{
+  "source": "tools/chunk_surfer/characters/build-outskirts-characters.py",
+  "blender": "4.5.3 LTS",
+  "units": "metres",
+  "forward": "-Z",
+  "height": 1.82,
+  "clips": {
+    "fold": 12,
+    "writhe": 24,
+    "idle": 4,
+    "walk": 1.1,
+    "turn": 1.2
+  },
+  "initialForce": {
+    "start": 1.1,
+    "end": 2.55,
+    "curve": "smoothstep"
+  },
+  "palmContact": [
+    -0.55,
+    0.82,
+    -0.14
+  ],
+  "palmSide": "L",
+  "seatContact": [
+    0,
+    0.47,
+    0.04
+  ],
+  "soleContacts": [
+    [
+      -0.2,
+      0.001,
+      -0.51
+    ],
+    [
+      0.2,
+      0.001,
+      -0.51
+    ]
+  ],
+  "foldPosture": "seated diagonal forward fold beyond right thigh, sideways face outward and separated from lap",
+  "joints": [
+    "pelvis",
+    "spine_lower",
+    "spine_mid",
+    "spine_upper",
+    "chest",
+    "neck",
+    "head",
+    "jaw",
+    "clavicle_L",
+    "upperarm_L",
+    "forearm_L",
+    "hand_L",
+    "thumb_L",
+    "index_L",
+    "middle_L",
+    "ring_L",
+    "little_L",
+    "thigh_L",
+    "shin_L",
+    "foot_L",
+    "toe_L",
+    "clavicle_R",
+    "upperarm_R",
+    "forearm_R",
+    "hand_R",
+    "thumb_R",
+    "index_R",
+    "middle_R",
+    "ring_R",
+    "little_R",
+    "thigh_R",
+    "shin_R",
+    "foot_R",
+    "toe_R"
+  ],
+  "morphs": [
+    "rib_compression",
+    "shoulder_tension",
+    "throat_strain",
+    "mouth_pain"
+  ],
+  "bytes": 11812992,
+  "sha256": "80bfb9ca094946ce6f5d6496caf78a0d99846fd3e8477d09a3363c0bfa6ea114",
+  "walk": {
+    "cycleSeconds": 1.1,
+    "distanceMetres": 1.2,
+    "planted": {
+      "R": [
+        0,
+        0.5
+      ],
+      "L": [
+        0.5,
+        1
+      ]
+    }
+  },
+  "effortMarkers": {
+    "fold": [
+      3.15,
+      4.95,
+      7.8,
+      9,
+      10.35
+    ],
+    "writhe": [
+      3.8,
+      7.9,
+      13.1,
+      17.7,
+      21
+    ]
+  },
+  "textureResidencyMiB": 29.667,
+  "guardFitting": {
+    "concealedUpperTrouserTuckMetres": 0.012,
+    "jacketAndMotionUnchanged": false,
+    "bindGeometryAndCostumeUnchanged": true
+  },
+  "meshes": {
+    "outskirts_fold_guard": {
+      "primitives": 6,
+      "vertices": 27890,
+      "triangles": 48296
+    },
+    "outskirts_overprint_body": {
+      "primitives": 6,
+      "vertices": 28514,
+      "triangles": 50032
+    }
+  },
+  "animations": [
+    {
+      "name": "fold",
+      "channels": 104
+    },
+    {
+      "name": "writhe",
+      "channels": 104
+    },
+    {
+      "name": "idle",
+      "channels": 104
+    },
+    {
+      "name": "walk",
+      "channels": 104
+    },
+    {
+      "name": "turn",
+      "channels": 104
+    }
+  ],
+  "qualityLimit": "CC0 MakeHuman anatomical source with authored tailored garment surfaces, hand-directed rig/correctives/performance; not photogrammetry or actor mocap.",
+  "rightHandClutch": {
+    "bindSurfacePosition": [
+      0.5087558627,
+      1.0941674709,
+      -0.2902439237
+    ],
+    "exportedPrimitive": 0,
+    "exportedVertex": 7084,
+    "contact": "right palm against moving posterior jacket surface",
+    "foldEndpointSurfacePosition": [
+      0.0963487,
+      0.9613402,
+      -0.0798601
+    ]
+  },
+  "headAxes": {
+    "upright": [
+      0,
+      1,
+      0
+    ],
+    "face": [
+      0,
+      0,
+      -1
+    ],
+    "folded": "crown diagonally right/down; face outward and away from pelvis"
+  },
+  "mouthSeparation": {
+    "bindSurfacePosition": [
+      0,
+      1.5850901604,
+      -0.1316766888
+    ],
+    "exportedPrimitive": 0,
+    "exportedVertex": 783,
+    "weights": {
+      "jaw": 0.884,
+      "head": 0.09,
+      "neck": 0.026
+    },
+    "contact": "mouth remains above and laterally outside the lap throughout the completed fold and pain loop"
+  }
+}

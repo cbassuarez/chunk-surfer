@@ -1,0 +1,1613 @@
+{
+  "schemaVersion": 1,
+  "id": "source-space.payphone",
+  "title": "The Phone Box, 1988",
+  "status": "active",
+  "entry": "unobtainable",
+  "entries": [
+    "unobtainable",
+    "london",
+    "van-ringing",
+    "van-answer",
+    "van-offhook",
+    "flat",
+    "flat-message",
+    "flat-kept",
+    "flat-again",
+    "lyle",
+    "lyle-nobody",
+    "lyle-silent",
+    "lyle-again",
+    "sarah",
+    "sarah-confessed",
+    "sarah-unpaid",
+    "sarah-again",
+    "sister",
+    "office",
+    "lodge",
+    "office-key",
+    "lodge-key",
+    "clock-key",
+    "office-again",
+    "lodge-again",
+    "clock-again",
+    "hold",
+    "hold-again",
+    "clock",
+    "emergency",
+    "emergency-speech",
+    "emergency-silence",
+    "emergency-slate",
+    "operator",
+    "operator-pardon",
+    "operator-sarah",
+    "operator-end",
+    "enquiries",
+    "enquiries-sarah",
+    "enquiries-sister",
+    "enquiries-lyle",
+    "enquiries-end",
+    "loop",
+    "loop-spoken",
+    "loop-silent",
+    "self-line",
+    "self-line-mic",
+    "pips-first",
+    "tape-first",
+    "look-card",
+    "look-instructions",
+    "look-scratches",
+    "look-directory",
+    "look-window",
+    "lyle-recall",
+    "van-hanging",
+    "unpaid",
+    "tape-lost",
+    "flurry",
+    "flurry.lyle",
+    "flurry.them",
+    "flurry.him"
+  ],
+  "tags": [
+    "source-space",
+    "outskirts",
+    "payphone"
+  ],
+  "notes": "The kiosk on the repeating arrival road, on a 1988 network: a grey pay-on-answer coinbox with a rotary dial (docs/plans/phone-box-1988.md). src/game/payphone.js picks the node. Pay on answer: when the far end picks up he hears rapid pips until the slot is fed; he has no coins, and the tape fits, and the call records over his takes. Numbers are found, never remembered for him: the van's car phone on the dash, Lyle's he still knows (his old hall payphone), Sarah's on the torn directory page, her sister's in the phone book and from 192. Calling himself escalates by pass: the van rings early; on the loop pass the box rings until he answers and speaks; late, he is already on the line. Lines marked here carry weight and are Seb's to revise first: lyle-nobody, sarah, sarah-confessed, loop-spoken, self-line, self-line-mic. THE PAGES (docs/plans/outskirts-losing-himself.md): flurry, flurry.lyle, flurry.them, flurry.him are read by pass, Sarah's first and his last; his worst moments, both sides, everyone's. All drafts for Seb; the lines that have to land are \"there's always another take\" and \"That was all you got.\" The late self-call is his box heard from underwater (sound self-underwater).",
+  "regions": [
+    {
+      "id": "source-space.payphone.region",
+      "title": "The Phone Box",
+      "kind": "scene",
+      "color": "#5a1a14",
+      "nodeIds": [
+        "unobtainable",
+        "london",
+        "van-ringing",
+        "van-answer",
+        "van-offhook",
+        "flat",
+        "flat-message",
+        "flat-kept",
+        "flat-again",
+        "lyle",
+        "lyle-nobody",
+        "lyle-silent",
+        "lyle-again",
+        "sarah",
+        "sarah-confessed",
+        "sarah-unpaid",
+        "sarah-again",
+        "sister",
+        "office",
+        "lodge",
+        "office-key",
+        "lodge-key",
+        "clock-key",
+        "office-again",
+        "lodge-again",
+        "clock-again",
+        "hold",
+        "hold-again",
+        "clock",
+        "emergency",
+        "emergency-speech",
+        "emergency-silence",
+        "emergency-slate",
+        "operator",
+        "operator-pardon",
+        "operator-sarah",
+        "operator-end",
+        "enquiries",
+        "enquiries-sarah",
+        "enquiries-sister",
+        "enquiries-lyle",
+        "enquiries-end",
+        "loop",
+        "loop-spoken",
+        "loop-silent",
+        "self-line",
+        "self-line-mic",
+        "pips-first",
+        "tape-first",
+        "look-card",
+        "look-instructions",
+        "look-scratches",
+        "look-directory",
+        "look-window",
+        "lyle-recall",
+        "van-hanging",
+        "unpaid",
+        "tape-lost",
+        "flurry",
+        "flurry.lyle",
+        "flurry.them",
+        "flurry.him"
+      ]
+    }
+  ],
+  "nodes": {
+    "unobtainable": {
+      "id": "unobtainable",
+      "type": "dialogue",
+      "speaker": "THE PHONE BOX",
+      "lines": [
+        {
+          "id": "unobtainable.1",
+          "who": "direction",
+          "text": "[Number unobtainable. A single steady tone that does not care.]"
+        },
+        {
+          "id": "unobtainable.2",
+          "who": "you",
+          "text": "Not a number. Not tonight."
+        }
+      ]
+    },
+    "london": {
+      "id": "london",
+      "type": "dialogue",
+      "speaker": "THE PHONE BOX",
+      "lines": [
+        {
+          "id": "london.1",
+          "who": "direction",
+          "text": "[Unobtainable. Oh one is London on this exchange, and London has never heard of it.]"
+        },
+        {
+          "id": "london.2",
+          "who": "you",
+          "text": "That's the letterhead. It's got a digit this line doesn't have yet."
+        }
+      ]
+    },
+    "van-ringing": {
+      "id": "van-ringing",
+      "type": "dialogue",
+      "speaker": "THE PHONE BOX",
+      "lines": [
+        {
+          "id": "van-ringing.1",
+          "who": "direction",
+          "text": "[Ringing. And up the road, faintly through the glass, something in the van is ringing too.]"
+        },
+        {
+          "id": "van-ringing.2",
+          "who": "you",
+          "text": "That's mine. That's the van."
+        }
+      ]
+    },
+    "van-answer": {
+      "id": "van-answer",
+      "type": "dialogue",
+      "speaker": "THE VAN",
+      "lines": [
+        {
+          "id": "van-answer.1",
+          "who": "direction",
+          "text": "[The car phone, still warm from ringing. Down it: the box you just left. Rain on its glass.]",
+          "cue": "phone:answer:van-cab"
+        },
+        {
+          "id": "van-answer.2",
+          "who": "direction",
+          "text": "[The handset you left, knocking against the glass as it swings.]"
+        },
+        {
+          "id": "van-answer.3",
+          "who": "direction",
+          "text": "[And under the rain, breathing.]"
+        },
+        {
+          "id": "van-answer.4",
+          "who": "you",
+          "text": "That's me. That was me a minute ago, standing in there."
+        }
+      ],
+      "choices": [
+        {
+          "id": "phone.van.leave-off",
+          "text": "Leave it off the hook. Let it listen.",
+          "goto": "van-offhook",
+          "mutations": {
+            "set": [
+              "phone.van.offhook"
+            ]
+          }
+        },
+        {
+          "id": "phone.van.hang-up",
+          "text": "Put it back.",
+          "terminal": true
+        }
+      ]
+    },
+    "van-offhook": {
+      "id": "van-offhook",
+      "type": "dialogue",
+      "speaker": "THE VAN",
+      "lines": [
+        {
+          "id": "van-offhook.1",
+          "who": "direction",
+          "text": "[You lay it on the seat. The box across the road goes on listening to the van.]"
+        }
+      ]
+    },
+    "flat": {
+      "id": "flat",
+      "type": "dialogue",
+      "speaker": "HIS FLAT",
+      "lines": [
+        {
+          "id": "flat.1",
+          "who": "direction",
+          "text": "[Four rings, then the click of a cassette machine starting.]",
+          "cue": "phone:answer:flat-machine"
+        },
+        {
+          "id": "flat.2",
+          "who": "me",
+          "text": "You've got me. I'm not in. Leave it after the tone and I'll ring you back."
+        },
+        {
+          "id": "flat.3",
+          "who": "direction",
+          "text": "[The tone.]",
+          "cue": "phone:beep:beep"
+        }
+      ],
+      "choices": [
+        {
+          "id": "phone.flat.kept",
+          "text": "(it is recording — say what you like)",
+          "goto": "flat-kept",
+          "when": "phone.voicemail.live"
+        },
+        {
+          "id": "phone.flat.checking",
+          "text": "\"It's me. Just checking the machine works.\"",
+          "goto": "flat-message",
+          "when": "!phone.voicemail.live"
+        },
+        {
+          "id": "phone.flat.where",
+          "text": "\"I'm in a phone box. I don't know where. Don't wait up.\"",
+          "goto": "flat-message",
+          "when": "!phone.voicemail.live"
+        },
+        {
+          "id": "phone.flat.rain",
+          "text": "(say nothing, and let it record the rain)",
+          "goto": "flat-message",
+          "when": "!phone.voicemail.live"
+        }
+      ]
+    },
+    "flat-message": {
+      "id": "flat-message",
+      "type": "dialogue",
+      "speaker": "HIS FLAT",
+      "lines": [
+        {
+          "id": "flat-message.1",
+          "who": "direction",
+          "text": "[It takes it until it has had enough, and clicks off.]",
+          "cue": "phone:hang:voicemail-cut"
+        }
+      ]
+    },
+    "flat-kept": {
+      "id": "flat-kept",
+      "type": "dialogue",
+      "speaker": "HIS FLAT",
+      "lines": [
+        {
+          "id": "flat-kept.1",
+          "who": "direction",
+          "text": "[It takes it until you stop.]"
+        },
+        {
+          "id": "flat-kept.2",
+          "who": "you",
+          "text": "That's on the machine now. Nobody's there to play it."
+        }
+      ]
+    },
+    "flat-again": {
+      "id": "flat-again",
+      "type": "dialogue",
+      "speaker": "HIS FLAT",
+      "lines": [
+        {
+          "id": "flat-again.1",
+          "who": "me",
+          "text": "You've got me. I'm not in."
+        },
+        {
+          "id": "flat-again.2",
+          "who": "you",
+          "text": "I'm not. That's true."
+        }
+      ]
+    },
+    "lyle": {
+      "id": "lyle",
+      "type": "dialogue",
+      "speaker": "A HALL OF RESIDENCE",
+      "lines": [
+        {
+          "id": "lyle.1",
+          "who": "direction",
+          "text": "[Picked up on the ninth ring. A party at the end of a corridor. Someone singing, a key below the record.]",
+          "cue": "phone:answer:hall-party"
+        },
+        {
+          "id": "lyle.2",
+          "who": "student",
+          "text": "Yeah?"
+        }
+      ],
+      "choices": [
+        {
+          "id": "phone.lyle.ask",
+          "text": "\"Is Lyle there?\"",
+          "goto": "lyle-nobody"
+        },
+        {
+          "id": "phone.lyle.silent",
+          "text": "(say nothing)",
+          "goto": "lyle-silent"
+        }
+      ]
+    },
+    "lyle-nobody": {
+      "id": "lyle-nobody",
+      "type": "dialogue",
+      "speaker": "A HALL OF RESIDENCE",
+      "lines": [
+        {
+          "id": "lyle-nobody.1",
+          "who": "student",
+          "text": "Who?"
+        },
+        {
+          "id": "lyle-nobody.2",
+          "who": "student",
+          "text": "There's no Lyle here, mate. This is the payphone. Nobody lives at a payphone."
+        },
+        {
+          "id": "lyle-nobody.3",
+          "who": "direction",
+          "text": "[It is set down on the shelf, not the hook. The party goes on without either of you.]"
+        },
+        {
+          "id": "lyle-nobody.4",
+          "who": "you",
+          "text": "Second floor. The window that wouldn't shut. He used to sit on the radiator in his green jumper."
+        }
+      ]
+    },
+    "lyle-silent": {
+      "id": "lyle-silent",
+      "type": "dialogue",
+      "speaker": "A HALL OF RESIDENCE",
+      "lines": [
+        {
+          "id": "lyle-silent.1",
+          "who": "student",
+          "text": "Hello? ... Hello?"
+        },
+        {
+          "id": "lyle-silent.2",
+          "who": "direction",
+          "text": "[Put down.]",
+          "cue": "phone:hang:far-clear"
+        },
+        {
+          "id": "lyle-silent.3",
+          "who": "you",
+          "text": "Same number. Same corridor. Just not us in it."
+        }
+      ]
+    },
+    "lyle-again": {
+      "id": "lyle-again",
+      "type": "dialogue",
+      "speaker": "A HALL OF RESIDENCE",
+      "lines": [
+        {
+          "id": "lyle-again.1",
+          "who": "direction",
+          "text": "[Engaged. Somebody on it already, ringing home.]"
+        },
+        {
+          "id": "lyle-again.2",
+          "who": "you",
+          "text": "Somebody always is."
+        }
+      ]
+    },
+    "sarah": {
+      "id": "sarah",
+      "type": "dialogue",
+      "speaker": "A HALLWAY YOU KNOW",
+      "lines": [
+        {
+          "id": "sarah.1",
+          "who": "direction",
+          "text": "[Answered on the sixth ring. A hallway you know by its sound.]",
+          "cue": "phone:answer:sarah-hall"
+        },
+        {
+          "id": "sarah.2",
+          "who": "man",
+          "text": "Hello?"
+        },
+        {
+          "id": "sarah.3",
+          "who": "direction",
+          "text": "[He waits. The hallway waits with him.]"
+        },
+        {
+          "id": "sarah.4",
+          "who": "man",
+          "text": "Hello? ... Who is this?"
+        },
+        {
+          "id": "sarah.5",
+          "who": "direction",
+          "text": "[Away from the phone, gently:]"
+        },
+        {
+          "id": "sarah.6",
+          "who": "man",
+          "text": "Sarah, it's no one."
+        },
+        {
+          "id": "sarah.7",
+          "who": "direction",
+          "text": "[Put down, carefully, the way you put a phone down in a house where someone is asleep.]",
+          "cue": "phone:hang:far-clear"
+        },
+        {
+          "id": "sarah.8",
+          "who": "you",
+          "text": "No one."
+        }
+      ]
+    },
+    "sarah-confessed": {
+      "id": "sarah-confessed",
+      "type": "dialogue",
+      "speaker": "A HALLWAY YOU KNOW",
+      "lines": [
+        {
+          "id": "sarah-confessed.1",
+          "who": "direction",
+          "text": "[Answered on the sixth ring. A hallway you know by its sound.]",
+          "cue": "phone:answer:sarah-hall"
+        },
+        {
+          "id": "sarah-confessed.2",
+          "who": "man",
+          "text": "Hello?"
+        },
+        {
+          "id": "sarah-confessed.3",
+          "who": "direction",
+          "text": "[Breathing. Yours, and then his, and he knows whose the first was.]"
+        },
+        {
+          "id": "sarah-confessed.4",
+          "who": "man",
+          "text": "She's gone up."
+        },
+        {
+          "id": "sarah-confessed.5",
+          "who": "direction",
+          "text": "[Put down.]",
+          "cue": "phone:hang:far-clear"
+        },
+        {
+          "id": "sarah-confessed.6",
+          "who": "you",
+          "text": "I said that. At the gate. That's what I said."
+        }
+      ]
+    },
+    "sarah-unpaid": {
+      "id": "sarah-unpaid",
+      "type": "dialogue",
+      "speaker": "A HALLWAY YOU KNOW",
+      "lines": [
+        {
+          "id": "sarah-unpaid.1",
+          "who": "man",
+          "text": "Hello? ... You're in a box, I can't hear you. Put your money in."
+        },
+        {
+          "id": "sarah-unpaid.2",
+          "who": "direction",
+          "text": "[He waits through the pips longer than he has to. Then he doesn't.]",
+          "cue": "phone:hang:far-clear"
+        }
+      ]
+    },
+    "sarah-again": {
+      "id": "sarah-again",
+      "type": "dialogue",
+      "speaker": "A HALLWAY YOU KNOW",
+      "lines": [
+        {
+          "id": "sarah-again.1",
+          "who": "direction",
+          "text": "[Engaged. Off the hook, now, in a hallway you know.]"
+        },
+        {
+          "id": "sarah-again.2",
+          "who": "you",
+          "text": "Off the hook."
+        }
+      ]
+    },
+    "sister": {
+      "id": "sister",
+      "type": "dialogue",
+      "speaker": "THE PHONE BOX",
+      "lines": [
+        {
+          "id": "sister.1",
+          "who": "direction",
+          "text": "[It rings, and rings. Nobody is coming down the stairs for this.]"
+        },
+        {
+          "id": "sister.2",
+          "who": "you",
+          "text": "She knows it's a box. She knows who rings from boxes."
+        }
+      ]
+    },
+    "office": {
+      "id": "office",
+      "type": "dialogue",
+      "speaker": "THE PHONE BOX",
+      "lines": [
+        {
+          "id": "office.1",
+          "who": "direction",
+          "text": "[Eleven rings, in an office with no chairs left in it.]"
+        },
+        {
+          "id": "office.2",
+          "who": "you",
+          "text": "Same as before."
+        }
+      ]
+    },
+    "lodge": {
+      "id": "lodge",
+      "type": "dialogue",
+      "speaker": "THE PHONE BOX",
+      "lines": [
+        {
+          "id": "lodge.1",
+          "who": "direction",
+          "text": "[Across the road, the phone on the lodge counter. Nobody behind the glass.]"
+        }
+      ]
+    },
+    "office-key": {
+      "id": "office-key",
+      "type": "dialogue",
+      "speaker": "THE GENERAL OFFICE",
+      "lines": [
+        {
+          "id": "office-key.1",
+          "who": "direction",
+          "text": "[Lifted on the third ring. Nobody speaks.]",
+          "cue": "phone:answer:office-room"
+        },
+        {
+          "id": "office-key.2",
+          "who": "direction",
+          "text": "[Down the line: a key ring off a hook, onto a counter.]",
+          "cue": "phone:-:key-hook"
+        },
+        {
+          "id": "office-key.3",
+          "who": "direction",
+          "text": "[The return.]",
+          "cue": "phone:return:return"
+        },
+        {
+          "id": "office-key.4",
+          "who": "you",
+          "text": "C-seventeen."
+        }
+      ]
+    },
+    "lodge-key": {
+      "id": "lodge-key",
+      "type": "dialogue",
+      "speaker": "ELLERY LODGE",
+      "lines": [
+        {
+          "id": "lodge-key.1",
+          "who": "direction",
+          "text": "[Lifted on the third ring. Breathing, and the booth radio under it.]",
+          "cue": "phone:answer:lodge-room"
+        },
+        {
+          "id": "lodge-key.2",
+          "who": "guard",
+          "text": "Bring me back the keyring."
+        },
+        {
+          "id": "lodge-key.3",
+          "who": "direction",
+          "text": "[Set down on the counter, still open. The return.]",
+          "cue": "phone:return:return"
+        },
+        {
+          "id": "lodge-key.4",
+          "who": "you",
+          "text": "C-seventeen."
+        }
+      ]
+    },
+    "clock-key": {
+      "id": "clock-key",
+      "type": "dialogue",
+      "speaker": "THE SPEAKING CLOCK",
+      "lines": [
+        {
+          "id": "clock-key.1",
+          "who": "line",
+          "text": "At the third stroke, it will be eight fourteen and twenty seconds.",
+          "cue": "phone:stroke:clock-pips"
+        },
+        {
+          "id": "clock-key.2",
+          "who": "direction",
+          "text": "[On the third pip, the return.]",
+          "cue": "phone:return:return"
+        },
+        {
+          "id": "clock-key.3",
+          "who": "you",
+          "text": "C-seventeen."
+        }
+      ]
+    },
+    "office-again": {
+      "id": "office-again",
+      "type": "dialogue",
+      "speaker": "THE PHONE BOX",
+      "lines": [
+        {
+          "id": "office-again.1",
+          "who": "direction",
+          "text": "[It rings. Nobody lifts it this time.]"
+        }
+      ]
+    },
+    "lodge-again": {
+      "id": "lodge-again",
+      "type": "dialogue",
+      "speaker": "THE PHONE BOX",
+      "lines": [
+        {
+          "id": "lodge-again.1",
+          "who": "direction",
+          "text": "[The lodge phone rings on the counter across the road, and stays there.]"
+        }
+      ]
+    },
+    "clock-again": {
+      "id": "clock-again",
+      "type": "dialogue",
+      "speaker": "THE SPEAKING CLOCK",
+      "lines": [
+        {
+          "id": "clock-again.1",
+          "who": "line",
+          "text": "At the third stroke, it will be eight fourteen and twenty seconds.",
+          "cue": "phone:stroke:clock-pips"
+        }
+      ]
+    },
+    "hold": {
+      "id": "hold",
+      "type": "dialogue",
+      "speaker": "PLEASE HOLD",
+      "lines": [
+        {
+          "id": "hold.1",
+          "who": "line",
+          "text": "Please hold.",
+          "cue": "phone:answer:hold"
+        },
+        {
+          "id": "hold.2",
+          "who": "direction",
+          "text": "[Hold music. A minuet, very polite about it.]",
+          "cue": "phone:-:hold-music"
+        },
+        {
+          "id": "hold.3",
+          "who": "direction",
+          "text": "[Once through, and it stops. The return gives up a folded page.]",
+          "cue": "phone:return:return"
+        },
+        {
+          "id": "hold.4",
+          "who": "you",
+          "text": "Hold music. Somebody chose this for people waiting to be told no."
+        }
+      ]
+    },
+    "hold-again": {
+      "id": "hold-again",
+      "type": "dialogue",
+      "speaker": "PLEASE HOLD",
+      "lines": [
+        {
+          "id": "hold-again.1",
+          "who": "line",
+          "text": "Please hold.",
+          "cue": "phone:answer:hold"
+        },
+        {
+          "id": "hold-again.2",
+          "who": "direction",
+          "text": "[The minuet from the top. It does not stop this time.]",
+          "cue": "phone:-:hold-music"
+        }
+      ]
+    },
+    "clock": {
+      "id": "clock",
+      "type": "dialogue",
+      "speaker": "THE SPEAKING CLOCK",
+      "lines": [
+        {
+          "id": "clock.1",
+          "who": "line",
+          "text": "At the third stroke, it will be eight fourteen and twenty seconds.",
+          "cue": "phone:stroke:clock-pips"
+        },
+        {
+          "id": "clock.2",
+          "who": "you",
+          "text": "Twenty fourteen. That's the carbon on the guard's form."
+        }
+      ]
+    },
+    "emergency": {
+      "id": "emergency",
+      "type": "dialogue",
+      "speaker": "THE PHONE BOX",
+      "listen": {
+        "speech": "emergency-speech",
+        "silence": "emergency-silence",
+        "seconds": 5
+      },
+      "lines": [
+        {
+          "id": "emergency.which",
+          "who": "operator",
+          "text": "Emergency, which service?",
+          "cue": "phone:answer:operator-room"
+        }
+      ],
+      "choices": [
+        {
+          "id": "emergency.spoke",
+          "text": "(speak into it)",
+          "goto": "emergency-speech",
+          "when": "phone.mic.live"
+        },
+        {
+          "id": "emergency.say-nothing",
+          "text": "(say nothing)",
+          "goto": "emergency-silence"
+        },
+        {
+          "id": "emergency.slate",
+          "text": "\"Room, take number, date —\"",
+          "goto": "emergency-slate"
+        }
+      ]
+    },
+    "emergency-speech": {
+      "id": "emergency-speech",
+      "type": "dialogue",
+      "speaker": "THE PHONE BOX",
+      "lines": [
+        {
+          "id": "emergency-speech.cannot",
+          "who": "operator",
+          "text": "Caller, I can't make out what you're saying."
+        },
+        {
+          "id": "emergency-speech.where",
+          "who": "operator",
+          "text": "Can you tell me where you are?"
+        },
+        {
+          "id": "emergency-speech.no",
+          "who": "you",
+          "text": "No."
+        },
+        {
+          "id": "emergency-speech.end",
+          "who": "direction",
+          "text": "[She waits. The line holds at the level of an empty room. Then it clears.]",
+          "cue": "phone:-:far-clear"
+        }
+      ]
+    },
+    "emergency-silence": {
+      "id": "emergency-silence",
+      "type": "dialogue",
+      "speaker": "THE PHONE BOX",
+      "lines": [
+        {
+          "id": "emergency-silence.where",
+          "who": "operator",
+          "text": "Caller, can you tell me where you are?"
+        },
+        {
+          "id": "emergency-silence.cannot",
+          "who": "you",
+          "text": "No."
+        },
+        {
+          "id": "emergency-silence.end",
+          "who": "direction",
+          "text": "[The line holds at the level of an empty room. Then it clears.]",
+          "cue": "phone:-:far-clear"
+        }
+      ]
+    },
+    "emergency-slate": {
+      "id": "emergency-slate",
+      "type": "dialogue",
+      "speaker": "THE PHONE BOX",
+      "lines": [
+        {
+          "id": "emergency-slate.again",
+          "who": "operator",
+          "text": "Caller? Which service do you need?"
+        },
+        {
+          "id": "emergency-slate.habit",
+          "who": "you",
+          "text": "Sorry. Habit."
+        },
+        {
+          "id": "emergency-slate.end",
+          "who": "direction",
+          "text": "You put it down before she has to ask a third time."
+        }
+      ]
+    },
+    "operator": {
+      "id": "operator",
+      "type": "dialogue",
+      "speaker": "THE PHONE BOX",
+      "listen": {
+        "speech": "operator-pardon",
+        "seconds": 6
+      },
+      "lines": [
+        {
+          "id": "operator.require",
+          "who": "operator",
+          "text": "Operator. What number do you require?",
+          "cue": "phone:answer:operator-room"
+        }
+      ],
+      "choices": [
+        {
+          "id": "operator.spoke",
+          "text": "(speak into it)",
+          "goto": "operator-pardon",
+          "when": "phone.mic.live"
+        },
+        {
+          "id": "operator.sarah",
+          "text": "\"A number for Sarah. I can give you the surname.\"",
+          "goto": "operator-sarah"
+        },
+        {
+          "id": "operator.nothing",
+          "text": "\"Nothing. Wrong number.\"",
+          "goto": "operator-end"
+        }
+      ]
+    },
+    "operator-pardon": {
+      "id": "operator-pardon",
+      "type": "dialogue",
+      "speaker": "THE PHONE BOX",
+      "lines": [
+        {
+          "id": "operator-pardon.sorry",
+          "who": "operator",
+          "text": "Sorry, caller, you're very faint. What number?"
+        }
+      ],
+      "choices": [
+        {
+          "id": "operator-pardon.sarah",
+          "text": "\"A number for Sarah. I can give you the surname.\"",
+          "goto": "operator-sarah"
+        },
+        {
+          "id": "operator-pardon.nothing",
+          "text": "\"Nothing. Wrong number.\"",
+          "goto": "operator-end"
+        }
+      ]
+    },
+    "operator-sarah": {
+      "id": "operator-sarah",
+      "type": "dialogue",
+      "speaker": "THE PHONE BOX",
+      "lines": [
+        {
+          "id": "operator-sarah.ex",
+          "who": "operator",
+          "text": "I'm sorry, caller. That number is ex-directory. I can't give it out."
+        },
+        {
+          "id": "operator-sarah.me",
+          "who": "you",
+          "text": "Even to me."
+        },
+        {
+          "id": "operator-sarah.even",
+          "who": "operator",
+          "text": "Especially not, caller."
+        }
+      ]
+    },
+    "operator-end": {
+      "id": "operator-end",
+      "type": "dialogue",
+      "speaker": "THE PHONE BOX",
+      "lines": [
+        {
+          "id": "operator-end.thanks",
+          "who": "operator",
+          "text": "Thank you for calling."
+        },
+        {
+          "id": "operator-end.clear",
+          "who": "direction",
+          "text": "[The line clears.]",
+          "cue": "phone:-:far-clear"
+        }
+      ]
+    },
+    "enquiries": {
+      "id": "enquiries",
+      "type": "dialogue",
+      "speaker": "DIRECTORY ENQUIRIES",
+      "lines": [
+        {
+          "id": "enquiries.1",
+          "who": "direction",
+          "text": "[Answered on the second ring.]",
+          "cue": "phone:answer:enquiries-room"
+        },
+        {
+          "id": "enquiries.2",
+          "who": "enquiries",
+          "text": "Directory enquiries. Which town, please?"
+        }
+      ],
+      "choices": [
+        {
+          "id": "phone.enquiries.sarah",
+          "text": "\"Ashworth. Sarah Ashworth.\"",
+          "goto": "enquiries-sarah"
+        },
+        {
+          "id": "phone.enquiries.sister",
+          "text": "\"Ashworth, J. Carr Lane.\"",
+          "goto": "enquiries-sister"
+        },
+        {
+          "id": "phone.enquiries.lyle",
+          "text": "\"Lyle. Leeds. I never knew his surname.\"",
+          "goto": "enquiries-lyle"
+        },
+        {
+          "id": "phone.enquiries.sorry",
+          "text": "\"Sorry. Nothing.\"",
+          "goto": "enquiries-end"
+        }
+      ]
+    },
+    "enquiries-sarah": {
+      "id": "enquiries-sarah",
+      "type": "dialogue",
+      "speaker": "DIRECTORY ENQUIRIES",
+      "lines": [
+        {
+          "id": "enquiries-sarah.1",
+          "who": "enquiries",
+          "text": "I'm sorry, caller. That number is ex-directory."
+        },
+        {
+          "id": "enquiries-sarah.2",
+          "who": "you",
+          "text": "Even to me."
+        },
+        {
+          "id": "enquiries-sarah.3",
+          "who": "enquiries",
+          "text": "I don't know who you are, caller."
+        }
+      ]
+    },
+    "enquiries-sister": {
+      "id": "enquiries-sister",
+      "type": "dialogue",
+      "speaker": "DIRECTORY ENQUIRIES",
+      "lines": [
+        {
+          "id": "enquiries-sister.1",
+          "who": "enquiries",
+          "text": "The number is oh six three two, nine six oh, five five two."
+        },
+        {
+          "id": "enquiries-sister.2",
+          "who": "you",
+          "text": "Her sister. She won't pick up for me."
+        }
+      ]
+    },
+    "enquiries-lyle": {
+      "id": "enquiries-lyle",
+      "type": "dialogue",
+      "speaker": "DIRECTORY ENQUIRIES",
+      "lines": [
+        {
+          "id": "enquiries-lyle.1",
+          "who": "enquiries",
+          "text": "I'd need a surname, caller."
+        },
+        {
+          "id": "enquiries-lyle.2",
+          "who": "you",
+          "text": "So would I."
+        }
+      ]
+    },
+    "enquiries-end": {
+      "id": "enquiries-end",
+      "type": "dialogue",
+      "speaker": "DIRECTORY ENQUIRIES",
+      "lines": [
+        {
+          "id": "enquiries-end.1",
+          "who": "enquiries",
+          "text": "Thank you for calling."
+        }
+      ]
+    },
+    "loop": {
+      "id": "loop",
+      "type": "dialogue",
+      "speaker": "THE PHONE BOX",
+      "lines": [
+        {
+          "id": "loop.1",
+          "who": "direction",
+          "text": "[Lifted. The van's cab: rain on a windscreen, the dash light, a handset lying on a seat.]",
+          "cue": "phone:answer:van-cab"
+        },
+        {
+          "id": "loop.2",
+          "who": "direction",
+          "text": "[And someone else on the line with it. Not breathing. Waiting.]"
+        }
+      ],
+      "listen": {
+        "speech": "loop-spoken",
+        "silence": "loop-silent",
+        "seconds": 8
+      },
+      "choices": [
+        {
+          "id": "phone.loop.speak",
+          "text": "(speak into it)",
+          "goto": "loop-spoken",
+          "when": "phone.mic.live",
+          "mutations": {
+            "set": [
+              "phone.loop.broken"
+            ]
+          }
+        },
+        {
+          "id": "phone.loop.hello",
+          "text": "\"Hello?\"",
+          "goto": "loop-spoken",
+          "mutations": {
+            "set": [
+              "phone.loop.broken"
+            ]
+          }
+        },
+        {
+          "id": "phone.loop.who",
+          "text": "\"Who is this?\"",
+          "goto": "loop-spoken",
+          "mutations": {
+            "set": [
+              "phone.loop.broken"
+            ]
+          }
+        },
+        {
+          "id": "phone.loop.nothing",
+          "text": "(say nothing)",
+          "goto": "loop-silent"
+        }
+      ]
+    },
+    "loop-spoken": {
+      "id": "loop-spoken",
+      "type": "dialogue",
+      "speaker": "THE PHONE BOX",
+      "lines": [
+        {
+          "id": "loop-spoken.1",
+          "who": "direction",
+          "text": "[A moment later, across the road, your voice comes out of the van, small.]"
+        },
+        {
+          "id": "loop-spoken.2",
+          "who": "caller",
+          "text": "There you are."
+        },
+        {
+          "id": "loop-spoken.3",
+          "who": "direction",
+          "text": "[Put down. The van's handset stays where it is, on the seat.]",
+          "cue": "phone:hang:far-clear"
+        }
+      ],
+      "mutations": {
+        "set": [
+          "phone.loop.broken"
+        ]
+      }
+    },
+    "loop-silent": {
+      "id": "loop-silent",
+      "type": "dialogue",
+      "speaker": "THE PHONE BOX",
+      "lines": [
+        {
+          "id": "loop-silent.1",
+          "who": "direction",
+          "text": "[Nobody says anything. The rain on the windscreen.]"
+        },
+        {
+          "id": "loop-silent.2",
+          "who": "direction",
+          "text": "[Then the line clears, and the dial tone comes back as if nobody had rung. Outside, the road is the same road again.]",
+          "cue": "phone:hang:far-clear"
+        }
+      ]
+    },
+    "self-line": {
+      "id": "self-line",
+      "type": "dialogue",
+      "speaker": "THE PHONE BOX",
+      "lines": [
+        {
+          "id": "self-line.1",
+          "who": "direction",
+          "text": "[Already on the line when you lift it: this box, heard from underneath. The rain on its glass comes up through something thick and wet, a beat late, and under it, breathing.]",
+          "cue": "phone:answer:self-underwater"
+        }
+      ]
+    },
+    "self-line-mic": {
+      "id": "self-line-mic",
+      "type": "dialogue",
+      "speaker": "THE PHONE BOX",
+      "lines": [
+        {
+          "id": "self-line-mic.1",
+          "who": "direction",
+          "text": "[Already on the line. When you speak it comes back from under the road, slow and smeared, a beat late, and then again, further down.]",
+          "cue": "phone:answer:self-voice"
+        }
+      ]
+    },
+    "pips-first": {
+      "id": "pips-first",
+      "type": "dialogue",
+      "speaker": "THE PHONE BOX",
+      "lines": [
+        {
+          "id": "pips-first.1",
+          "who": "direction",
+          "text": "[Rapid pips. The lamp by the slot lights.]"
+        },
+        {
+          "id": "pips-first.2",
+          "who": "you",
+          "text": "Pay on answer. They've picked up. All they can hear is the pips."
+        }
+      ]
+    },
+    "tape-first": {
+      "id": "tape-first",
+      "type": "dialogue",
+      "speaker": "THE PHONE BOX",
+      "lines": [
+        {
+          "id": "tape-first.1",
+          "who": "direction",
+          "text": "[It goes in. It should not fit, and it goes in, and something inside the box takes hold of it and starts to pull.]"
+        },
+        {
+          "id": "tape-first.2",
+          "who": "you",
+          "text": "It's recording. Over my rooms."
+        }
+      ]
+    },
+    "look-card": {
+      "id": "look-card",
+      "type": "dialogue",
+      "speaker": "THE PHONE BOX",
+      "lines": [
+        {
+          "id": "look-card.1",
+          "who": "direction",
+          "text": "[The card in the middle of the dial, under yellowed celluloid: 999, 100, directory enquiries 192, the speaking clock 123, and this payphone's own number, 0632 960901.]"
+        }
+      ]
+    },
+    "look-instructions": {
+      "id": "look-instructions",
+      "type": "dialogue",
+      "speaker": "THE PHONE BOX",
+      "lines": [
+        {
+          "id": "look-instructions.1",
+          "who": "direction",
+          "text": "[LIFT HANDSET. LISTEN FOR DIAL TONE. DIAL NUMBER. WHEN YOU HEAR RAPID PIPS, INSERT MONEY.]"
+        },
+        {
+          "id": "look-instructions.2",
+          "who": "you",
+          "text": "Pay on answer. I haven't seen one of these in years."
+        }
+      ]
+    },
+    "look-scratches": {
+      "id": "look-scratches",
+      "type": "dialogue",
+      "speaker": "THE PHONE BOX",
+      "lines": [
+        {
+          "id": "look-scratches.1",
+          "who": "direction",
+          "text": "[Numbers keyed into the red paint at head height. KAREN. TAXIS. D, in Leeds, the last two digits gone.]"
+        },
+        {
+          "id": "look-scratches.2",
+          "who": "direction",
+          "text": "[CAR 0836 9_0 4_7. LODGE 0632 96_ 214, SEE CARD. And under them, cut deep: DON'T RING HER.]"
+        },
+        {
+          "id": "look-scratches.3",
+          "who": "you",
+          "text": "The car one's mine. Half of it. The rest is on the dash."
+        }
+      ]
+    },
+    "look-directory": {
+      "id": "look-directory",
+      "type": "dialogue",
+      "speaker": "THE PHONE BOOK",
+      "lines": [
+        {
+          "id": "look-directory.1",
+          "who": "direction",
+          "text": "[The phone book on its chain, open at A. Ashworth J., Carr Lane, 0632 960552. Ashworth R.M., Mill Row.]"
+        },
+        {
+          "id": "look-directory.2",
+          "who": "direction",
+          "text": "[The page that comes after is gone. Torn out close to the spine, recently.]"
+        },
+        {
+          "id": "look-directory.3",
+          "who": "you",
+          "text": "Somebody wanted her more than I did. Or not somebody."
+        }
+      ]
+    },
+    "look-window": {
+      "id": "look-window",
+      "type": "dialogue",
+      "speaker": "THE PHONE BOX",
+      "lines": [
+        {
+          "id": "look-window.1",
+          "who": "direction",
+          "text": "[A little glass window in the coinbox. Behind it, when the tape is in, its spools, turning, and the name of whatever room is going under the head.]"
+        }
+      ]
+    },
+    "lyle-recall": {
+      "id": "lyle-recall",
+      "type": "dialogue",
+      "speaker": "THE PHONE BOX",
+      "lines": [
+        {
+          "id": "lyle-recall.1",
+          "who": "you",
+          "text": "Oh five three two, nine six oh, two eight three. His hall. I still know it. Of course I still know it."
+        }
+      ]
+    },
+    "van-hanging": {
+      "id": "van-hanging",
+      "type": "dialogue",
+      "speaker": "THE PHONE BOX",
+      "lines": [
+        {
+          "id": "van-hanging.1",
+          "who": "direction",
+          "text": "[You leave the handset hanging off its hook. Up the road, the van goes on ringing.]"
+        }
+      ]
+    },
+    "unpaid": {
+      "id": "unpaid",
+      "type": "dialogue",
+      "speaker": "THE PHONE BOX",
+      "lines": [
+        {
+          "id": "unpaid.1",
+          "who": "direction",
+          "text": "[They listen to the pips as long as anyone would. Then the line clears.]"
+        }
+      ]
+    },
+    "tape-lost": {
+      "id": "tape-lost",
+      "type": "dialogue",
+      "speaker": "THE PHONE BOX",
+      "lines": [
+        {
+          "id": "tape-lost.1",
+          "who": "you",
+          "text": "That was a room. It's a phone call now."
+        }
+      ]
+    },
+    "flurry": {
+      "id": "flurry",
+      "type": "dialogue",
+      "speaker": "HER PAGE",
+      "lines": [
+        {
+          "id": "flurry.1",
+          "who": "direction",
+          "text": "TXT 23:41 — are you coming or not. S"
+        },
+        {
+          "id": "flurry.2",
+          "who": "direction",
+          "text": "TXT 23:58 — you said nine."
+        },
+        {
+          "id": "flurry.3",
+          "who": "direction",
+          "text": "ANSWERPHONE, typed out — \"It's me. It's gone midnight. I'm going to bed. Don't bother.\""
+        },
+        {
+          "id": "flurry.4",
+          "who": "direction",
+          "text": "TXT 02:10 — sorry. session ran over. tomorrow? — you"
+        },
+        {
+          "id": "flurry.5",
+          "who": "direction",
+          "text": "TXT 02:11 — there's always a tomorrow with you."
+        },
+        {
+          "id": "flurry.6",
+          "who": "direction",
+          "text": "CARD, torn in half — Happy birth— / —love from both of us"
+        },
+        {
+          "id": "flurry.7",
+          "who": "direction",
+          "text": "LETTER — I'm not angry any more. That's the part that should frighten you. S."
+        },
+        {
+          "id": "flurry.8",
+          "who": "direction",
+          "text": "you, to S — I'll make it up to you. next week. properly."
+        },
+        {
+          "id": "flurry.9",
+          "who": "direction",
+          "text": "0632 960331 — I waited by it all that week."
+        },
+        {
+          "id": "flurry.10",
+          "who": "direction",
+          "text": "S. — Don't ring here again."
+        }
+      ]
+    },
+    "flurry.lyle": {
+      "id": "flurry.lyle",
+      "type": "dialogue",
+      "speaker": "HER PAGE",
+      "lines": [
+        {
+          "id": "flurry.lyle.1",
+          "who": "direction",
+          "text": "HALL PAYPHONE, message pad — LYLE: your boyfriend rang. again. no name."
+        },
+        {
+          "id": "flurry.lyle.2",
+          "who": "direction",
+          "text": "LETTER, Leeds — You love the idea of me more than you love me. L."
+        },
+        {
+          "id": "flurry.lyle.3",
+          "who": "direction",
+          "text": "POSTCARD — I came to the gig. You never looked up from the desk. L."
+        },
+        {
+          "id": "flurry.lyle.4",
+          "who": "direction",
+          "text": "you, to L, never posted — I'll come up at Christmas. Properly this time."
+        },
+        {
+          "id": "flurry.lyle.5",
+          "who": "direction",
+          "text": "L. — Don't come up at Christmas."
+        },
+        {
+          "id": "flurry.lyle.6",
+          "who": "direction",
+          "text": "you — we'll do it properly next year."
+        },
+        {
+          "id": "flurry.lyle.7",
+          "who": "direction",
+          "text": "L. — It was never the distance."
+        }
+      ]
+    },
+    "flurry.them": {
+      "id": "flurry.them",
+      "type": "dialogue",
+      "speaker": "HER PAGE",
+      "lines": [
+        {
+          "id": "flurry.them.1",
+          "who": "direction",
+          "text": "GUARD'S FORM — VISITOR IN 20:14. OUT: —. KNOWN TO STAFF: NO."
+        },
+        {
+          "id": "flurry.them.2",
+          "who": "direction",
+          "text": "OFFICE, on the letterhead — We will not be requiring your services again."
+        },
+        {
+          "id": "flurry.them.3",
+          "who": "direction",
+          "text": "THE STUDENT AT LYLE'S HALL — some bloke keeps ringing for him. he left in the spring."
+        },
+        {
+          "id": "flurry.them.4",
+          "who": "direction",
+          "text": "THE MAN AT SARAH'S — Leave her be. You had your go."
+        },
+        {
+          "id": "flurry.them.5",
+          "who": "direction",
+          "text": "DIRECTORY ENQUIRIES — I'm sorry, caller. There's no listing for you either."
+        },
+        {
+          "id": "flurry.them.6",
+          "who": "direction",
+          "text": "HER SISTER — She cried for a month, and then she stopped, and you couldn't stand that."
+        },
+        {
+          "id": "flurry.them.7",
+          "who": "direction",
+          "text": "YOUR ANSWERPHONE — \"You've got me. I'm not in.\" You never were."
+        }
+      ]
+    },
+    "flurry.him": {
+      "id": "flurry.him",
+      "type": "dialogue",
+      "speaker": "HER PAGE",
+      "lines": [
+        {
+          "id": "flurry.him.1",
+          "who": "direction",
+          "text": "TAKE 1 — no good. go again."
+        },
+        {
+          "id": "flurry.him.2",
+          "who": "direction",
+          "text": "TAKE 2 — no good. go again."
+        },
+        {
+          "id": "flurry.him.3",
+          "who": "direction",
+          "text": "you, to S — next time. I promise. next time."
+        },
+        {
+          "id": "flurry.him.4",
+          "who": "direction",
+          "text": "you, to L — there'll be another chance."
+        },
+        {
+          "id": "flurry.him.5",
+          "who": "direction",
+          "text": "TAKE 9 — no good. go again."
+        },
+        {
+          "id": "flurry.him.6",
+          "who": "direction",
+          "text": "you — there's always another take."
+        },
+        {
+          "id": "flurry.him.7",
+          "who": "direction",
+          "text": "TAKE — (no number) — there wasn't."
+        },
+        {
+          "id": "flurry.him.8",
+          "who": "direction",
+          "text": "That was it. That was all you got."
+        }
+      ]
+    }
+  }
+}

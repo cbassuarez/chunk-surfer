@@ -19,15 +19,16 @@ export function combatHudLayout({
   // The Hall's three-entity roster and the practice transport borrow the
   rosterActive = false,
   compact = null,
+  desktop = false,
 } = {}) {
   const x = finite(panel.x);
   const y = finite(panel.y);
   const w = Math.max(36, finite(panel.w, 36));
-  const h = Math.max(18, finite(panel.h, 18));
-  const isCompact = compact == null ? h < 28 : !!compact;
+  const h = Math.max(desktop ? 13 : 18, finite(panel.h, 18));
+  const isCompact = desktop || (compact == null ? h < 28 : !!compact);
   const contentBottom = y + h - 1.45;
 
-  const headerH = isCompact ? 3.45 : 4.15;
+  const headerH = desktop ? 2.95 : isCompact ? 3.45 : 4.15;
   const header = rect(x, y, w, headerH);
   const enemyGaugeW = Math.min(isCompact ? 42 : 49, Math.max(28, Math.floor(w * .43)));
   const enemyGauge = rect(x, y + (isCompact ? 1.05 : 2.0), enemyGaugeW, 1.8);
@@ -48,9 +49,9 @@ export function combatHudLayout({
   const stageAvailable = Math.max(6, contentBottom - stageY - 1);
   const stageMin = isCompact ? 6 : 9;
   const stageMax = isCompact ? 10 : 18;
-  const stageH = clamp(stageAvailable - deckTarget, stageMin, stageMax);
+  const stageH = desktop ? clamp(h - 15.4, 1.05, 2.7) : clamp(stageAvailable - deckTarget, stageMin, stageMax);
   const stage = rect(x, stageY, w, stageH);
-  const deckY = stage.y + stage.h + 1;
+  const deckY = stage.y + stage.h + (desktop ? .35 : 1);
   const deck = rect(x, deckY, w, Math.max(4, contentBottom - deckY));
 
   const playerGaugeW = Math.min(isCompact ? 42 : 49, Math.max(28, Math.floor(w * .43)));
@@ -71,13 +72,13 @@ export function combatHudLayout({
     cursor += cellW + resourceGap;
   });
 
-  const bodyY = deckY + 2.45;
+  const bodyY = deckY + (desktop ? 2.05 : 2.45);
   const body = rect(x, bodyY, w, Math.max(0, contentBottom - bodyY));
   const reaction = rect(x, bodyY, w, body.h);
   const dialogue = rect(x, bodyY, w, body.h);
   const arrival = rect(x, bodyY, w, body.h);
 
-  const channelH = (sourceActive || rosterActive) && mode === 'command' ? (isCompact ? 2.45 : 3.15) : 0;
+  const channelH = (sourceActive || rosterActive) && mode === 'command' ? (desktop ? 1.5 : isCompact ? 2.45 : 3.15) : 0;
   const channels = rect(x, bodyY, w, channelH);
   const commandY = bodyY + (channelH ? channelH + .55 : 0);
   const detailH = isCompact ? 1.55 : 1.9;
@@ -101,6 +102,7 @@ export function combatHudLayout({
 
   return Object.freeze({
     compact: isCompact,
+    desktop,
     mode,
     contentBottom,
     header,

@@ -1,0 +1,839 @@
+{
+  "passed": true,
+  "failure": null,
+  "checks": [
+    "Actual pressure-character.glb is loaded and drawn by the world renderer.",
+    "Actual covered mesh pixels change from material shading into distinct dark and lit acquisition marks.",
+    "No JavaScript, shader, context or framebuffer feedback errors."
+  ],
+  "errors": [],
+  "pixels": {
+    "width": 1280,
+    "height": 800,
+    "samples": 5478,
+    "changed": 0.35542168674698793,
+    "dark": 0.690215407082877,
+    "light": 0.309784592917123,
+    "edges": 1150,
+    "rawColors": 25,
+    "recordedColors": 2
+  },
+  "status": {
+    "body": {
+      "ready": true,
+      "mode": "live",
+      "manifestation": 0.9999999999998787,
+      "secondaryManifestation": 0,
+      "asset": "assets/pressure-character.glb",
+      "revision": "pressure-volume-v1",
+      "error": null,
+      "geometry": {
+        "color": {},
+        "depth": {},
+        "ready": true,
+        "width": 1280,
+        "height": 800,
+        "near": 0.05,
+        "far": 90,
+        "instances": 1,
+        "draws": 1,
+        "error": null
+      },
+      "body": {
+        "id": "court-trace:source",
+        "x": -24,
+        "y": -1182,
+        "floorH": 4.2,
+        "strength": 0.9873672321946789,
+        "radiusM": 8,
+        "heightM": 1.83,
+        "widthM": 0.68,
+        "glow": 0.4,
+        "mode": null,
+        "performance": {
+          "version": 1,
+          "role": "court-trace",
+          "heading": 3.141592653589793,
+          "clip": "pressure_hold",
+          "time": 0,
+          "loop": true,
+          "seed": 3746091609,
+          "manifestation": 0.9999999999998787,
+          "motion": "idle",
+          "cue": null,
+          "reducedMotion": false
+        }
+      },
+      "projection": {
+        "x": 0.5,
+        "y": 0.4085526315789474,
+        "w": 0.055309893586425116,
+        "h": 0.23815789473684223,
+        "amount": 0.9999999999998787
+      }
+    },
+    "presence": {
+      "active": true,
+      "x": -24,
+      "y": -1182,
+      "targetX": 0,
+      "targetY": 0,
+      "hasTarget": false,
+      "targetLevel": 0,
+      "targetConfidence": 0,
+      "targetReason": null,
+      "targetPriority": 0,
+      "targetSetAt": 0,
+      "lastHeardAt": 0,
+      "lastCatchAt": 33034.10000000149,
+      "spawnedAt": -1000000000,
+      "awareness": 0,
+      "caughtCount": 0,
+      "externalTargetUntil": 0,
+      "externalTargetPriority": 0,
+      "lastEngagedAt": 0,
+      "lastSoundX": 0,
+      "lastSoundY": 0,
+      "hasSearchOrigin": false,
+      "prowlX": 0,
+      "prowlY": 0,
+      "hasProwl": false,
+      "prowlUntil": 0,
+      "dwellUntil": 0,
+      "velocityX": 0,
+      "velocityY": 0,
+      "speed": 0,
+      "motionMode": "idle",
+      "gait": null,
+      "behaviorMode": "source-pace",
+      "phaseUntil": 0,
+      "chaseUntil": 0,
+      "directorIntent": "IGNORE",
+      "tauntRequested": false,
+      "nextLightListenAt": 0,
+      "spawnSector": null,
+      "contactSerial": 0,
+      "pendingContact": null,
+      "contactDirector": {
+        "schema": 1,
+        "lastKind": null,
+        "eligibleSinceBrush": 0,
+        "brushesShown": 0,
+        "warningsShown": 0,
+        "recentContentIds": []
+      },
+      "dist": 8,
+      "pressure": 0.8666666666666667
+    },
+    "source": {
+      "available": false,
+      "mandatory": false,
+      "completed": false,
+      "bestEligible": false,
+      "offered": false,
+      "entered": false,
+      "active": true,
+      "phase": "landscape",
+      "hallDistance": 112,
+      "pageStage": 4,
+      "landscapeOrigin": {
+        "x": 0,
+        "y": -252
+      },
+      "checkpointId": "landing-fork",
+      "attempts": 0,
+      "hasFork": false,
+      "visited": [
+        "approach"
+      ],
+      "tuned": [],
+      "recorded": [],
+      "optionalTraces": [],
+      "sourceContacts": {
+        "captures": 0,
+        "insightIds": []
+      },
+      "bossExposed": true,
+      "firstLiftCompleted": true,
+      "sourceApproachDistance": 0,
+      "sourceApproachComplete": true,
+      "landingWeatherSpent": false,
+      "hushStage": "hunt",
+      "pursuitBeat": "body-run",
+      "pursuitsCleared": [],
+      "finalEncounter": {
+        "status": "locked",
+        "outcome": null,
+        "won": null,
+        "rescuedRecordist": false,
+        "legacyRedaction": null,
+        "compatibility": {},
+        "channels": {
+          "rescue": 0,
+          "contain": 0,
+          "submit": 0
+        },
+        "turns": 0
+      },
+      "armedRedaction": null,
+      "redaction": null,
+      "injuriesAtEntry": 1,
+      "bossAvailable": true,
+      "horizon": {
+        "entered": false,
+        "reason": null,
+        "exit": null,
+        "maxDepth": 0,
+        "unravelling": {
+          "active": false,
+          "furthestMetres": -50,
+          "elapsedSeconds": 0,
+          "amount": 0,
+          "markers": []
+        }
+      },
+      "finale": {
+        "route": null,
+        "stage": "uncommitted",
+        "result": null,
+        "bust": {
+          "recognized": false,
+          "decision": null,
+          "defeats": 0
+        },
+        "cathedral": {
+          "alarm": 0,
+          "damage": [],
+          "lessons": [],
+          "fight": null,
+          "extraction": null
+        },
+        "compatibility": {}
+      },
+      "divide": {
+        "x": -12,
+        "z": -461,
+        "depth": 71,
+        "ground": 4.2,
+        "support": {
+          "id": "divide-ground",
+          "floor": 4.2,
+          "kind": "ground",
+          "drop": false
+        },
+        "collision": null,
+        "active": true,
+        "body": {
+          "version": 1,
+          "feet": 4.2,
+          "fallVelocity": 0,
+          "falling": false
+        }
+      },
+      "transitionProgress": 1,
+      "pageCount": 960,
+      "planOrigin": {
+        "x": -384,
+        "y": -1552
+      },
+      "focus": {
+        "kind": "hush",
+        "id": "source-hush",
+        "source": null
+      },
+      "objective": {
+        "schema": 2,
+        "id": "final-horizon",
+        "label": "REACH THE FINAL HORIZON",
+        "target": {
+          "id": "final-page",
+          "x": 80,
+          "y": -1304,
+          "sector": "final"
+        },
+        "bearingEligible": true,
+        "bearing": "NE",
+        "distance": 166.48123017325406,
+        "distanceMeters": 83.24061508662703,
+        "alignmentPulse": false,
+        "knownLandmarks": [],
+        "coherentRoute": [],
+        "tier": "trace",
+        "altitude": 4.2,
+        "bossExposed": true
+      },
+      "hush": {
+        "mode": "atmospheric",
+        "colliding": false,
+        "meeting": true,
+        "contactAvailable": true,
+        "protected": false,
+        "pursuitBeat": null,
+        "haystackHunt": false,
+        "hallSearch": false,
+        "searchActive": false,
+        "bracketActive": false,
+        "landingTableau": false,
+        "rearPace": false,
+        "frontManifestation": false,
+        "restartGrace": 0,
+        "grounded": true
+      },
+      "sensory": {
+        "phase": "landscape",
+        "transitionProgress": 1,
+        "settled": false,
+        "mix": 0
+      },
+      "traversal": {
+        "active": false,
+        "grounded": true,
+        "locksMovement": false
+      },
+      "horizonFrame": {
+        "active": false
+      },
+      "landing": {
+        "source": "conservatory.ground / ZONE.getIn",
+        "shore": {
+          "originMetres": {
+            "x": 0,
+            "z": -126
+          },
+          "room": {
+            "minX": -6,
+            "maxX": 6,
+            "minZ": -134.5,
+            "maxZ": -117,
+            "floor": 0,
+            "underside": -0.32,
+            "roof": 5.5
+          },
+          "bank": {
+            "minX": -42,
+            "maxX": 42,
+            "frontZ": -516,
+            "backZ": -532,
+            "underside": 3.55,
+            "floor": 4.2,
+            "top": 18.35
+          },
+          "ledge": {
+            "minX": -14,
+            "maxX": 14,
+            "minZ": -516,
+            "maxZ": -512,
+            "floor": 4.2,
+            "underside": 3.55
+          },
+          "lift": {
+            "minX": 0,
+            "maxX": 8,
+            "minZ": -512,
+            "maxZ": -508,
+            "bottom": 0,
+            "top": 4.2,
+            "thickness": 0.24,
+            "callRadius": 34,
+            "speed": 0.7,
+            "boardingSeconds": 0.8,
+            "version": 1,
+            "phase": "upper",
+            "floor": 4.2,
+            "boardElapsed": 0,
+            "bodyFloor": 4.2,
+            "falling": true,
+            "fallVelocity": 0,
+            "boarded": false,
+            "adapted": true,
+            "exposureElapsed": 14,
+            "moving": false,
+            "progress": 1,
+            "gateClosed": false,
+            "distanceMetres": 75.95393340703298
+          },
+          "facade": "exposed-strata",
+          "entry": {
+            "minX": 6,
+            "maxX": 14,
+            "frontZ": -516,
+            "turnZ": -522,
+            "releaseZ": -516,
+            "properX": 4
+          },
+          "walls": [],
+          "doorway": {
+            "centreX": 4,
+            "doorZ": -134,
+            "width": 1,
+            "height": 2.2
+          },
+          "rearDoorway": {
+            "centreX": 0.5,
+            "doorZ": -117.5,
+            "width": 3.4,
+            "height": 4.5
+          },
+          "active": false,
+          "visible": true,
+          "outside": false,
+          "proper": true,
+          "surface": "void",
+          "bodyFloor": 4.2,
+          "distanceFromRoomMetres": 452.5397772572042,
+          "distanceToBankMetres": 55,
+          "distanceToLiftMetres": 75.95393340703298,
+          "whiteout": 0,
+          "recovery": 1,
+          "adapted": true,
+          "exposureElapsed": 14,
+          "targetSeconds": 77.91666666666667,
+          "walkMetresPerSecond": 4.8
+        },
+        "bounds": {
+          "minX": 58,
+          "maxX": 73,
+          "minY": 4,
+          "maxY": 14
+        },
+        "centre": {
+          "x": 66,
+          "y": 9.5
+        },
+        "entry": {
+          "x": 1,
+          "y": 2
+        },
+        "opening": {
+          "x": 8,
+          "y": -18
+        },
+        "portal": {
+          "id": "dock-foyer-service",
+          "requested": false,
+          "closing": false,
+          "progress": 0,
+          "phase": "closed",
+          "motionId": 0,
+          "closeRequested": false,
+          "moving": false,
+          "passable": false,
+          "complete": false,
+          "locksMovement": false,
+          "sealed": false,
+          "redPressure": 0,
+          "depth": 0
+        },
+        "hush": {
+          "x": 0,
+          "y": 13.5
+        },
+        "fieldEdgeY": -16,
+        "propIds": [
+          "dock-scene-roof",
+          "dock-level-check-box",
+          "dock-desk-1",
+          "dock-work-order-clipboard",
+          "acq-maintenance-searchlight-dock",
+          "dock-hand-truck",
+          "dock-freight-crates",
+          "dock-freight-crate-low",
+          "dock-road-case",
+          "dock-cable-reel",
+          "dock-shutter-bar",
+          "dock-chandelier-frame",
+          "dock-chandelier-intact",
+          "dock-chandelier-tag",
+          "getin-heavy-stillson"
+        ],
+        "doorIds": [
+          "dock-foyer-service"
+        ],
+        "design": {
+          "id": "remembered-room",
+          "title": "The Remembered Room",
+          "widthMetres": 11,
+          "depthMetres": 16,
+          "ceilingMetres": 5.5,
+          "freeWalking": true,
+          "orderedRecognitions": false,
+          "recognitionPropIds": [
+            "dock-desk-1",
+            "dock-road-case",
+            "dock-chandelier-frame"
+          ],
+          "clearFloorMetres": {
+            "minX": -0.5,
+            "maxX": 3.35,
+            "minZ": -6.65,
+            "maxZ": 7.5
+          },
+          "sideServices": "sealed-building-wall"
+        },
+        "recognitions": [
+          {
+            "id": "source-dock:desk",
+            "sourcePropId": "dock-desk-1",
+            "label": "unfinished clipboard",
+            "standX": -5.3,
+            "standZ": 5.4,
+            "first": "The same little desk. The last line on the clipboard is still waiting to be crossed out.",
+            "again": "Somebody meant to come back to it.",
+            "optional": true,
+            "x": -7.3,
+            "y": -241.2,
+            "standY": -241.2,
+            "footprint": {
+              "id": "source-landing:dock-desk-1",
+              "sourcePropId": "dock-desk-1",
+              "minX": -3.9864046478972996,
+              "maxX": -3.311898184019704,
+              "minZ": 5.090450474561636,
+              "maxZ": 5.726464596248091
+            }
+          },
+          {
+            "id": "source-dock:case",
+            "sourcePropId": "dock-road-case",
+            "label": "recordist’s case",
+            "standX": 6.2,
+            "standZ": 4,
+            "first": "The recorder-shaped absence. Four tally marks under the handle. Space for one more.",
+            "again": "You remember the shape of it.",
+            "optional": true,
+            "x": 8.6,
+            "y": -244,
+            "standY": -244,
+            "footprint": {
+              "id": "source-landing:dock-road-case",
+              "sourcePropId": "dock-road-case",
+              "minX": 3.6999999999999997,
+              "maxX": 4.8999999999999995,
+              "minZ": 3.74,
+              "maxZ": 4.21
+            }
+          },
+          {
+            "id": "source-dock:chandelier",
+            "sourcePropId": "dock-chandelier-frame",
+            "label": "caged chandelier",
+            "standX": -1.7,
+            "standZ": -0.7,
+            "first": "The cage is still locked around it. Black bulbs, bright glass. Its wire still ends in open air.",
+            "again": "Too carefully held for rubbish. Too dead to be a lamp.",
+            "optional": true,
+            "x": -4.4,
+            "y": -253.4,
+            "standY": -253.4,
+            "footprint": {
+              "id": "source-landing:dock-chandelier-frame",
+              "sourcePropId": "dock-chandelier-frame",
+              "minX": -3.1900000000000004,
+              "maxX": -1.2100000000000002,
+              "minZ": -1.6072,
+              "maxZ": 0.20720000000000005
+            }
+          }
+        ],
+        "footprints": [
+          {
+            "id": "source-landing:dock-desk-1",
+            "sourcePropId": "dock-desk-1",
+            "minX": -3.9864046478972996,
+            "maxX": -3.311898184019704,
+            "minZ": 5.090450474561636,
+            "maxZ": 5.726464596248091
+          },
+          {
+            "id": "source-landing:acq-maintenance-searchlight-dock",
+            "sourcePropId": "acq-maintenance-searchlight-dock",
+            "minX": -4.848999999999999,
+            "maxX": -4.351,
+            "minZ": 4.119,
+            "maxZ": 4.881
+          },
+          {
+            "id": "source-landing:dock-hand-truck",
+            "sourcePropId": "dock-hand-truck",
+            "minX": -5.41125,
+            "maxX": -4.08875,
+            "minZ": -4.92375,
+            "maxZ": -4.17625
+          },
+          {
+            "id": "source-landing:dock-freight-crates",
+            "sourcePropId": "dock-freight-crates",
+            "minX": -5.196,
+            "maxX": -4.204000000000001,
+            "minZ": -3.8459,
+            "maxZ": -3.0229999999999997
+          },
+          {
+            "id": "source-landing:dock-freight-crate-low",
+            "sourcePropId": "dock-freight-crate-low",
+            "minX": -3.46,
+            "maxX": -2.1399999999999997,
+            "minZ": -6.885999999999999,
+            "maxZ": -6.369
+          },
+          {
+            "id": "source-landing:dock-road-case",
+            "sourcePropId": "dock-road-case",
+            "minX": 3.6999999999999997,
+            "maxX": 4.8999999999999995,
+            "minZ": 3.74,
+            "maxZ": 4.21
+          },
+          {
+            "id": "source-landing:dock-cable-reel",
+            "sourcePropId": "dock-cable-reel",
+            "minX": -2.96,
+            "maxX": -2.1284,
+            "minZ": -5.893039999999999,
+            "maxZ": -5.30696
+          },
+          {
+            "id": "source-landing:dock-chandelier-frame",
+            "sourcePropId": "dock-chandelier-frame",
+            "minX": -3.1900000000000004,
+            "maxX": -1.2100000000000002,
+            "minZ": -1.6072,
+            "maxZ": 0.20720000000000005
+          },
+          {
+            "id": "source-landing:getin-heavy-stillson",
+            "sourcePropId": "getin-heavy-stillson",
+            "minX": -4.79,
+            "maxX": -4.61,
+            "minZ": -2.36,
+            "maxZ": -0.41999999999999993
+          }
+        ],
+        "forwardWallRemoved": false,
+        "portalRequiresInteraction": true,
+        "emergencyLightId": "getin-grey-door-seam",
+        "lightIds": [
+          "source-landing:getin-grey-door-seam",
+          "source-landing:foh-work-light",
+          "source-landing:foh-white-threshold",
+          "source-landing:opening-emergency",
+          "source-landing:first-lift-emergency",
+          "source-landing:desk-light",
+          "source-landing:cage-light"
+        ],
+        "emergencyLightIds": [
+          "source-landing:opening-emergency",
+          "source-landing:first-lift-emergency"
+        ],
+        "tableau": {
+          "active": false,
+          "safe": true,
+          "rear": {
+            "visible": false,
+            "x": 1,
+            "y": -218,
+            "strength": 0.96
+          }
+        },
+        "void": {
+          "phase": "landscape",
+          "sourcePhase": true,
+          "active": false,
+          "sceneDock": false,
+          "approach": false,
+          "complete": true,
+          "proper": true,
+          "localY": -922,
+          "distance": 748,
+          "windowIntrusionReady": true,
+          "targetDistance": 748,
+          "progress": 1,
+          "elapsedSeconds": 14,
+          "targetSeconds": 77.91666666666667,
+          "redOnsetSeconds": null,
+          "redProgress": 0,
+          "whiteout": 0,
+          "thresholdLight": 0,
+          "horizonDistanceMetres": 55,
+          "horizonScale": 1,
+          "shore": {
+            "originMetres": {
+              "x": 0,
+              "z": -126
+            },
+            "room": {
+              "minX": -6,
+              "maxX": 6,
+              "minZ": -134.5,
+              "maxZ": -117,
+              "floor": 0,
+              "underside": -0.32,
+              "roof": 5.5
+            },
+            "bank": {
+              "minX": -42,
+              "maxX": 42,
+              "frontZ": -516,
+              "backZ": -532,
+              "underside": 3.55,
+              "floor": 4.2,
+              "top": 18.35
+            },
+            "ledge": {
+              "minX": -14,
+              "maxX": 14,
+              "minZ": -516,
+              "maxZ": -512,
+              "floor": 4.2,
+              "underside": 3.55
+            },
+            "lift": {
+              "minX": 0,
+              "maxX": 8,
+              "minZ": -512,
+              "maxZ": -508,
+              "bottom": 0,
+              "top": 4.2,
+              "thickness": 0.24,
+              "callRadius": 34,
+              "speed": 0.7,
+              "boardingSeconds": 0.8,
+              "version": 1,
+              "phase": "upper",
+              "floor": 4.2,
+              "boardElapsed": 0,
+              "bodyFloor": 4.2,
+              "falling": true,
+              "fallVelocity": 0,
+              "boarded": false,
+              "adapted": true,
+              "exposureElapsed": 14,
+              "moving": false,
+              "progress": 1,
+              "gateClosed": false,
+              "distanceMetres": 75.95393340703298
+            },
+            "facade": "exposed-strata",
+            "entry": {
+              "minX": 6,
+              "maxX": 14,
+              "frontZ": -516,
+              "turnZ": -522,
+              "releaseZ": -516,
+              "properX": 4
+            },
+            "walls": [],
+            "doorway": {
+              "centreX": 4,
+              "doorZ": -134,
+              "width": 1,
+              "height": 2.2
+            },
+            "rearDoorway": {
+              "centreX": 0.5,
+              "doorZ": -117.5,
+              "width": 3.4,
+              "height": 4.5
+            },
+            "active": false,
+            "visible": true,
+            "outside": false,
+            "proper": true,
+            "surface": "void",
+            "bodyFloor": 4.2,
+            "distanceFromRoomMetres": 452.5397772572042,
+            "distanceToBankMetres": 55,
+            "distanceToLiftMetres": 75.95393340703298,
+            "whiteout": 0,
+            "recovery": 1,
+            "adapted": true,
+            "exposureElapsed": 14,
+            "targetSeconds": 77.91666666666667,
+            "walkMetresPerSecond": 4.8
+          }
+        },
+        "flashlight": {
+          "mode": "normal",
+          "profile": "proper",
+          "active": false,
+          "xray": false,
+          "cycle": 1,
+          "flicker": 1
+        },
+        "textSpaceActive": true,
+        "weatherRemaining": 7.869500000007435
+      },
+      "contact": {
+        "captures": 0,
+        "insightIds": [],
+        "bossExposed": true,
+        "pendingBeatId": null,
+        "movementRequired": false,
+        "graceSeconds": 0
+      },
+      "haystack": {
+        "phase": "landscape",
+        "elapsed": 4.130499999992552,
+        "searchElapsed": 12,
+        "searchActive": false,
+        "standingPressure": 0,
+        "pressure": 0,
+        "fearFloor": 0,
+        "approach": false,
+        "movementMultiplier": 1,
+        "fear": null,
+        "rain": 0.6557916666672863,
+        "rainLatched": true,
+        "mosh": {
+          "active": false,
+          "amount": 0,
+          "cycle": -1
+        },
+        "wrongReads": 0,
+        "wrongReadImpulse": 0,
+        "noProgressSeconds": 4.114499999992551
+      },
+      "bracket": {
+        "active": false,
+        "progress": 1,
+        "boundary": {
+          "x": 0,
+          "y": -224,
+          "metres": 112
+        },
+        "rear": {
+          "visible": false,
+          "x": -2,
+          "y": -1158,
+          "gapMetres": 8,
+          "strength": 0.96
+        },
+        "front": {
+          "visible": false,
+          "x": 0,
+          "y": -233,
+          "gapBeyondBoundaryMetres": 4.5,
+          "strength": 0.96
+        }
+      },
+      "hallDesign": {
+        "regime": "stillness",
+        "targetSeconds": 50
+      },
+      "geometryBoundary": {
+        "physicalBeyondBoundary": false,
+        "visualBeyondBoundary": false,
+        "y": -224,
+        "metres": 112
+      },
+      "realPage": null,
+      "sourceSceneCacheSize": 16,
+      "sourceStructureCount": 19,
+      "sourceSeededStructureCount": 0,
+      "sourceSceneKey": "landscape:4:8:0:-252:-2,-11;-1,-11;0,-11;1,-11;-2,-10;-1,-10;0,-10;1,-10;-2,-9;-1,-9;0,-9;1,-9;-2,-8;-1,-8;0,-8;1,-8",
+      "visibleGlyphs": 0,
+      "exitSnapshot": null
+    }
+  },
+  "scope": "Chromium/Metal actual Source first-contact checkpoint and real Hush GLB; pixel comparison uses same-frame raw material, covered geometry and shared acquisition buffers. Not a full playthrough."
+}

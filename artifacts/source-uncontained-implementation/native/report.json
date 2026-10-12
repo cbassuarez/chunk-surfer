@@ -1,0 +1,682 @@
+{
+  "checks": [
+    {
+      "detail": null,
+      "id": "transaction-begins",
+      "pass": true
+    },
+    {
+      "detail": {
+        "backgroundAlpha": 0,
+        "canBecomeKey": false,
+        "ignoresMouseEvents": true,
+        "opaque": false
+      },
+      "id": "native-alpha-surface",
+      "pass": true
+    },
+    {
+      "detail": {
+        "backgroundAlpha": 0,
+        "canBecomeKey": false,
+        "ignoresMouseEvents": true,
+        "opaque": false
+      },
+      "id": "native-click-through",
+      "pass": true
+    },
+    {
+      "detail": null,
+      "id": "real-overlay-ready-visible",
+      "pass": true
+    },
+    {
+      "detail": {
+        "main": {
+          "decorated": false,
+          "focused": true,
+          "inner": {
+            "height": 960,
+            "width": 2080
+          },
+          "label": "main",
+          "native": {
+            "backgroundAlpha": 1,
+            "canBecomeKey": true,
+            "ignoresMouseEvents": false,
+            "opaque": true
+          },
+          "outer": {
+            "height": 960,
+            "width": 2080
+          },
+          "position": {
+            "x": 760,
+            "y": 1346
+          },
+          "resizable": false,
+          "scale": 2,
+          "topmost": true,
+          "visible": true
+        },
+        "placement": {
+          "command": {
+            "height": 480,
+            "width": 1040,
+            "x": 380,
+            "y": 629
+          },
+          "height": 1125,
+          "monitor": "Monitor #41052",
+          "origin": {
+            "x": 0,
+            "y": 44
+          },
+          "scale": 2,
+          "width": 1800
+        }
+      },
+      "id": "island-bounds-match",
+      "pass": true
+    },
+    {
+      "detail": null,
+      "id": "main-sole-focus-owner",
+      "pass": true
+    },
+    {
+      "detail": null,
+      "id": "command-island-fixed",
+      "pass": true
+    },
+    {
+      "detail": null,
+      "id": "pause-hides-with-owner-retained",
+      "pass": true
+    },
+    {
+      "detail": null,
+      "id": "resume-reveals-same-owner",
+      "pass": true
+    },
+    {
+      "detail": null,
+      "id": "overlay-hidden-on-end",
+      "pass": true
+    },
+    {
+      "detail": {
+        "after": {
+          "decorated": true,
+          "focused": true,
+          "inner": {
+            "height": 1600,
+            "width": 2560
+          },
+          "label": "main",
+          "native": {
+            "backgroundAlpha": 1,
+            "canBecomeKey": true,
+            "ignoresMouseEvents": false,
+            "opaque": true
+          },
+          "outer": {
+            "height": 1600,
+            "width": 2560
+          },
+          "position": {
+            "x": 520,
+            "y": 252
+          },
+          "resizable": true,
+          "scale": 2,
+          "topmost": false,
+          "visible": true
+        },
+        "before": {
+          "decorated": true,
+          "focused": true,
+          "inner": {
+            "height": 1600,
+            "width": 2560
+          },
+          "label": "main",
+          "native": {
+            "backgroundAlpha": 1,
+            "canBecomeKey": true,
+            "ignoresMouseEvents": false,
+            "opaque": true
+          },
+          "outer": {
+            "height": 1600,
+            "width": 2560
+          },
+          "position": {
+            "x": 520,
+            "y": 252
+          },
+          "resizable": true,
+          "scale": 2,
+          "topmost": false,
+          "visible": true
+        }
+      },
+      "id": "content-size-and-position-restored",
+      "pass": true
+    },
+    {
+      "detail": {
+        "after": {
+          "height": 1600,
+          "width": 2560
+        },
+        "before": {
+          "height": 1600,
+          "width": 2560
+        },
+        "exact": true
+      },
+      "id": "outer-frame-restored",
+      "pass": true
+    },
+    {
+      "detail": null,
+      "id": "decoration-and-resize-restored",
+      "pass": true
+    },
+    {
+      "detail": null,
+      "id": "main-retains-focus",
+      "pass": true
+    },
+    {
+      "detail": null,
+      "id": "native-owner-retired",
+      "pass": true
+    },
+    {
+      "detail": null,
+      "id": "created-backdrop-closed",
+      "pass": true
+    }
+  ],
+  "frames": [
+    {
+      "active": false,
+      "ready": false,
+      "stage": "initial",
+      "windows": [
+        {
+          "decorated": true,
+          "focused": true,
+          "inner": {
+            "height": 1600,
+            "width": 2560
+          },
+          "label": "main",
+          "native": {
+            "backgroundAlpha": 1,
+            "canBecomeKey": true,
+            "ignoresMouseEvents": false,
+            "opaque": true
+          },
+          "outer": {
+            "height": 1600,
+            "width": 2560
+          },
+          "position": {
+            "x": 520,
+            "y": 252
+          },
+          "resizable": true,
+          "scale": 2,
+          "topmost": false,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "active": true,
+      "ready": true,
+      "stage": "live",
+      "windows": [
+        {
+          "decorated": false,
+          "focused": true,
+          "inner": {
+            "height": 960,
+            "width": 2080
+          },
+          "label": "main",
+          "native": {
+            "backgroundAlpha": 1,
+            "canBecomeKey": true,
+            "ignoresMouseEvents": false,
+            "opaque": true
+          },
+          "outer": {
+            "height": 960,
+            "width": 2080
+          },
+          "position": {
+            "x": 760,
+            "y": 1346
+          },
+          "resizable": false,
+          "scale": 2,
+          "topmost": true,
+          "visible": true
+        },
+        {
+          "decorated": false,
+          "focused": false,
+          "inner": {
+            "height": 2250,
+            "width": 3600
+          },
+          "label": "source-desktop",
+          "native": {
+            "backgroundAlpha": 0,
+            "canBecomeKey": false,
+            "ignoresMouseEvents": true,
+            "opaque": false
+          },
+          "outer": {
+            "height": 2250,
+            "width": 3600
+          },
+          "position": {
+            "x": 0,
+            "y": 88
+          },
+          "resizable": false,
+          "scale": 2,
+          "topmost": true,
+          "visible": true
+        },
+        {
+          "decorated": false,
+          "focused": false,
+          "inner": {
+            "height": 2250,
+            "width": 3600
+          },
+          "label": "source-desktop-probe-backdrop",
+          "native": {
+            "backgroundAlpha": 1,
+            "canBecomeKey": false,
+            "ignoresMouseEvents": false,
+            "opaque": true
+          },
+          "outer": {
+            "height": 2250,
+            "width": 3600
+          },
+          "position": {
+            "x": 0,
+            "y": 88
+          },
+          "resizable": false,
+          "scale": 2,
+          "topmost": true,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "active": true,
+      "ready": true,
+      "stage": "paused",
+      "windows": [
+        {
+          "decorated": false,
+          "focused": true,
+          "inner": {
+            "height": 960,
+            "width": 2080
+          },
+          "label": "main",
+          "native": {
+            "backgroundAlpha": 1,
+            "canBecomeKey": true,
+            "ignoresMouseEvents": false,
+            "opaque": true
+          },
+          "outer": {
+            "height": 960,
+            "width": 2080
+          },
+          "position": {
+            "x": 760,
+            "y": 1346
+          },
+          "resizable": false,
+          "scale": 2,
+          "topmost": true,
+          "visible": true
+        },
+        {
+          "decorated": false,
+          "focused": false,
+          "inner": {
+            "height": 2250,
+            "width": 3600
+          },
+          "label": "source-desktop",
+          "native": {
+            "backgroundAlpha": 0,
+            "canBecomeKey": false,
+            "ignoresMouseEvents": true,
+            "opaque": false
+          },
+          "outer": {
+            "height": 2250,
+            "width": 3600
+          },
+          "position": {
+            "x": 0,
+            "y": 88
+          },
+          "resizable": false,
+          "scale": 2,
+          "topmost": true,
+          "visible": false
+        },
+        {
+          "decorated": false,
+          "focused": false,
+          "inner": {
+            "height": 2250,
+            "width": 3600
+          },
+          "label": "source-desktop-probe-backdrop",
+          "native": {
+            "backgroundAlpha": 1,
+            "canBecomeKey": false,
+            "ignoresMouseEvents": false,
+            "opaque": true
+          },
+          "outer": {
+            "height": 2250,
+            "width": 3600
+          },
+          "position": {
+            "x": 0,
+            "y": 88
+          },
+          "resizable": false,
+          "scale": 2,
+          "topmost": true,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "active": true,
+      "ready": true,
+      "stage": "resumed",
+      "windows": [
+        {
+          "decorated": false,
+          "focused": true,
+          "inner": {
+            "height": 960,
+            "width": 2080
+          },
+          "label": "main",
+          "native": {
+            "backgroundAlpha": 1,
+            "canBecomeKey": true,
+            "ignoresMouseEvents": false,
+            "opaque": true
+          },
+          "outer": {
+            "height": 960,
+            "width": 2080
+          },
+          "position": {
+            "x": 760,
+            "y": 1346
+          },
+          "resizable": false,
+          "scale": 2,
+          "topmost": true,
+          "visible": true
+        },
+        {
+          "decorated": false,
+          "focused": false,
+          "inner": {
+            "height": 2250,
+            "width": 3600
+          },
+          "label": "source-desktop",
+          "native": {
+            "backgroundAlpha": 0,
+            "canBecomeKey": false,
+            "ignoresMouseEvents": true,
+            "opaque": false
+          },
+          "outer": {
+            "height": 2250,
+            "width": 3600
+          },
+          "position": {
+            "x": 0,
+            "y": 88
+          },
+          "resizable": false,
+          "scale": 2,
+          "topmost": true,
+          "visible": true
+        },
+        {
+          "decorated": false,
+          "focused": false,
+          "inner": {
+            "height": 2250,
+            "width": 3600
+          },
+          "label": "source-desktop-probe-backdrop",
+          "native": {
+            "backgroundAlpha": 1,
+            "canBecomeKey": false,
+            "ignoresMouseEvents": false,
+            "opaque": true
+          },
+          "outer": {
+            "height": 2250,
+            "width": 3600
+          },
+          "position": {
+            "x": 0,
+            "y": 88
+          },
+          "resizable": false,
+          "scale": 2,
+          "topmost": true,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "active": false,
+      "ready": true,
+      "stage": "restored",
+      "windows": [
+        {
+          "decorated": true,
+          "focused": true,
+          "inner": {
+            "height": 1600,
+            "width": 2560
+          },
+          "label": "main",
+          "native": {
+            "backgroundAlpha": 1,
+            "canBecomeKey": true,
+            "ignoresMouseEvents": false,
+            "opaque": true
+          },
+          "outer": {
+            "height": 1600,
+            "width": 2560
+          },
+          "position": {
+            "x": 520,
+            "y": 252
+          },
+          "resizable": true,
+          "scale": 2,
+          "topmost": false,
+          "visible": true
+        },
+        {
+          "decorated": false,
+          "focused": false,
+          "inner": {
+            "height": 2250,
+            "width": 3600
+          },
+          "label": "source-desktop",
+          "native": {
+            "backgroundAlpha": 0,
+            "canBecomeKey": false,
+            "ignoresMouseEvents": true,
+            "opaque": false
+          },
+          "outer": {
+            "height": 2250,
+            "width": 3600
+          },
+          "position": {
+            "x": 0,
+            "y": 88
+          },
+          "resizable": false,
+          "scale": 2,
+          "topmost": false,
+          "visible": false
+        },
+        {
+          "decorated": false,
+          "focused": false,
+          "inner": {
+            "height": 2250,
+            "width": 3600
+          },
+          "label": "source-desktop-probe-backdrop",
+          "native": {
+            "backgroundAlpha": 1,
+            "canBecomeKey": false,
+            "ignoresMouseEvents": false,
+            "opaque": true
+          },
+          "outer": {
+            "height": 2250,
+            "width": 3600
+          },
+          "position": {
+            "x": 0,
+            "y": 88
+          },
+          "resizable": false,
+          "scale": 2,
+          "topmost": true,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "active": false,
+      "ready": true,
+      "stage": "cleaned",
+      "windows": [
+        {
+          "decorated": true,
+          "focused": true,
+          "inner": {
+            "height": 1600,
+            "width": 2560
+          },
+          "label": "main",
+          "native": {
+            "backgroundAlpha": 1,
+            "canBecomeKey": true,
+            "ignoresMouseEvents": false,
+            "opaque": true
+          },
+          "outer": {
+            "height": 1600,
+            "width": 2560
+          },
+          "position": {
+            "x": 520,
+            "y": 252
+          },
+          "resizable": true,
+          "scale": 2,
+          "topmost": false,
+          "visible": true
+        },
+        {
+          "decorated": false,
+          "focused": false,
+          "inner": {
+            "height": 2250,
+            "width": 3600
+          },
+          "label": "source-desktop",
+          "native": {
+            "backgroundAlpha": 0,
+            "canBecomeKey": false,
+            "ignoresMouseEvents": true,
+            "opaque": false
+          },
+          "outer": {
+            "height": 2250,
+            "width": 3600
+          },
+          "position": {
+            "x": 0,
+            "y": 88
+          },
+          "resizable": false,
+          "scale": 2,
+          "topmost": false,
+          "visible": false
+        }
+      ]
+    }
+  ],
+  "outerRestoration": {
+    "after": {
+      "height": 1600,
+      "width": 2560
+    },
+    "before": {
+      "height": 1600,
+      "width": 2560
+    },
+    "exact": true
+  },
+  "passed": true,
+  "physicalPointerVerified": false,
+  "placement": {
+    "command": {
+      "height": 480,
+      "width": 1040,
+      "x": 380,
+      "y": 629
+    },
+    "height": 1125,
+    "monitor": "Monitor #41052",
+    "origin": {
+      "x": 0,
+      "y": 44
+    },
+    "scale": 2,
+    "width": 1800
+  },
+  "platform": "macOS"
+}

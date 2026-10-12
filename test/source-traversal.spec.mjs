@@ -167,42 +167,41 @@ assert.doesNotMatch(runtimeSource,/emitNoise|MONITOR\./,'Source weather, contact
   const runtime = createSourceSpaceRuntime({ initialState: built.state });
   runtime.setPlayerPosition(built.position);
   runtime.tick(6, { px: built.position.x, py: built.position.y, facing: built.position.facing });
-  assert.equal(runtime.hushMode().colliding, true,
-    'the CONTACT / TRAILING PURSUIT God hook lands inside a protected landmark hold');
-  // Stand on the return tier, wherever the field currently puts it.
-  const returnTier = SOURCE_TIERS.find((tier) => tier.id === 'return');
-  const traceTier = SOURCE_TIERS.find((tier) => tier.id === 'trace');
-  const contactAt={ x: ORIGIN.x + 30, y: ORIGIN.y + returnTier.from - 20, facing: 2 };
+  assert.equal(runtime.hushMode().colliding, false,
+    'meeting the human trace never turns proximity into an involuntary catch');
+  const origin=runtime.state().landscapeOrigin;
+  const contactAt={ x: origin.x - 24, y: origin.y - 922, facing: 0 };
   runtime.setPlayerPosition(contactAt);
-  const trailingPresence={active:true,x:contactAt.x,y:contactAt.y+5};
-  assert.equal(runtime.focusAt(contactAt.x,contactAt.y,contactAt.facing,trailingPresence)?.kind,'hush',
-    'turning around does not acquire the trailing Source Presence');
-  assert.equal(runtime.inspectFocused(contactAt.x,contactAt.y,contactAt.facing,trailingPresence)?.event,'hush-contact',
+  assert.equal(runtime.hushMode().contactAvailable,true,'walking into service-court speaking range offers contact');
+  const waitingTrace={active:true,x:contactAt.x,y:contactAt.y-8};
+  assert.equal(runtime.focusAt(contactAt.x,contactAt.y,contactAt.facing,waitingTrace)?.kind,'hush',
+    'facing the waiting trace does not acquire the visible figure');
+  assert.equal(runtime.inspectFocused(contactAt.x,contactAt.y,contactAt.facing,waitingTrace)?.event,'hush-contact',
     'the visible SPEAK prompt is not wired to the Contact interaction');
   const encounter = runtime.beginHushContact();
   assert.ok(encounter);
-  const aligned = encounter.choices.find((choice) => choice.aligns);
-  const captured = runtime.resolveHushContactChoice(aligned.id);
-  // One tier back: the trace checkpoint, eight cells past its own start.
-  assert.equal(captured.checkpoint.y, ORIGIN.y + traceTier.from - 8, 'return capture removes exactly one tier');
+  const answer = runtime.resolveHushContactChoice('contact.way-through');
+  assert.equal(answer.terminal, false, 'a question keeps the conversation open');
+  assert.equal(answer.combat, false);
+  const left = runtime.resolveHushContactChoice('contact.leave');
+  assert.deepEqual(left.checkpoint, contactAt, 'leaving the trace keeps the player where they spoke');
+  assert.equal(left.combat, false);
+  assert.equal(runtime.state().phase, 'landscape');
   assert.equal(runtime.state().sourceContacts.captures, 1);
-  runtime.setPlayerPosition(captured.checkpoint);
-  runtime.tick(6, { px: captured.checkpoint.x, py: captured.checkpoint.y, facing: 0 });
-  assert.equal(runtime.beginHushContact(), null, 'waiting out grace is insufficient without subsequent movement');
-  const moved = { ...captured.checkpoint, x: captured.checkpoint.x + 2 };
-  runtime.onStep(captured.checkpoint, moved);
-  runtime.tick(.01, { px: moved.x, py: moved.y, facing: 0 });
-  assert.ok(runtime.beginHushContact(), 'capture becomes eligible after grace and renewed movement');
+  assert.ok(runtime.beginHushContact(), 'returning to the conversation needs no catch cooldown or forced movement');
+  runtime.resolveHushContactChoice('contact.leave');
 }
 
 {
   const built=buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.EXPOSED_BATTLE,{seed:4417});
   const runtime=createSourceSpaceRuntime({initialState:built.state});
-  runtime.setPlayerPosition(built.position);
+  const origin=runtime.state().landscapeOrigin;
+  runtime.setPlayerPosition({x:origin.x-24,y:origin.y-930,facing:0});
   assert.equal(runtime.finalEncounterRequest().battleAvailable,true);
   const insights=[...runtime.state().sourceContacts.insights];
-  runtime.requestBossBattle();
-  runtime.commitContact();
+  assert.ok(runtime.beginHushContact(),'the service court offers the voluntary conversation');
+  assert.equal(runtime.resolveHushContactChoice('contact.warning').combat,false);
+  assert.equal(runtime.resolveHushContactChoice('contact.confirm').combat,true);
   // LOSING CONTACT COSTS THE RUN. It used to drop him one plateau and then put
   // him on the tape; the declared no-return route now terminates where he fell.
   const loss=runtime.failFinalEncounter();
@@ -220,8 +219,8 @@ assert.doesNotMatch(runtimeSource,/emitNoise|MONITOR\./,'Source weather, contact
 }
 
 {
-  // WALKING AWAY GOES TO THE SAME PLACE. Declining the fault still reads as
-  // contain — the dossier is unchanged — but it no longer closes the chapter.
+  // The walk onward is not a combat outcome. Contact remains unresolved so
+  // the player can return through the outskirts until the bust decision.
   const built=buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.NORMAL_EXIT,{seed:4417});
   const runtime=createSourceSpaceRuntime({initialState:built.state,onComplete:()=>{
     throw new Error('walking away must not complete the chapter — that happens at an exit');
@@ -231,8 +230,9 @@ assert.doesNotMatch(runtimeSource,/emitNoise|MONITOR\./,'Source weather, contact
   assert.equal(out.horizon,true);
   assert.equal(out.reason,'walked-away');
   assert.equal(runtime.state().phase,'horizon');
-  assert.equal(runtime.state().finalEncounter.outcome,'contain','declining the fault still contains it');
-  assert.equal(runtime.state().redaction,'comfort');
+  assert.equal(runtime.state().finalEncounter.outcome,null,'walking onward must not invent a combat result');
+  assert.equal(runtime.state().finalEncounter.won,null);
+  assert.equal(runtime.state().redaction,null);
   assert.equal(runtime.state().completed,false);
 }
 
@@ -258,6 +258,10 @@ assert.doesNotMatch(runtimeSource,/emitNoise|MONITOR\./,'Source weather, contact
       assert.equal(runtime.state().completed,false,'the Tower route is not complete before the belfry room');
       assert.equal(completion,null,'main.js is not handed the Tower before the bell passage is walked');
       assert.equal(runtime.enterBellsRoom().handled,true);
+    } else {
+      assert.equal(runtime.state().phase,'chapel-outskirts','straight on opens the chapel outskirts');
+      assert.equal(completion,null,'main.js is handed the Chapel before its door is walked through');
+      assert.equal(runtime.enterChapelDoor().handled,true);
     }
     assert.equal(runtime.state().completed,true);
     assert.equal(completion?.horizonExit,exit,'the completed route reaches main.js');
@@ -273,16 +277,15 @@ assert.doesNotMatch(runtimeSource,/emitNoise|MONITOR\./,'Source weather, contact
 }
 
 {
-  // THE GATE ON THE FAULT. Three insights are not enough on their own: the night
-  // has to have taken him at least once before he ever walked in here.
+  // Arriving unharmed does not remove the warned choice to fight.
   const built=buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.EXPOSED_BATTLE,{seed:4417,injuries:0});
   const runtime=createSourceSpaceRuntime({initialState:built.state});
   runtime.setPlayerPosition(built.position);
   const request=runtime.finalEncounterRequest();
-  assert.equal(request.exposed,true,'the insights are still earned');
+  assert.equal(request.exposed,true,'contact has no knowledge gate');
   assert.equal(request.hurtBefore,false);
-  assert.equal(request.battleAvailable,false,'an unhurt recordist has no reason to believe there is anything to argue with');
-  assert.equal(runtime.requestBossBattle().available,false);
+  assert.equal(request.battleAvailable,true,'prior injury is not a combat prerequisite');
+  assert.equal(runtime.requestBossBattle().available,true);
   assert.equal(request.normalExitAvailable,true,'and the way past is never closed');
 }
 

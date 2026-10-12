@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><base href="/"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exposed Recordist · Live Battle Review</title>
+<style>
+@font-face{font-family:"Hardware Sans";src:url('/assets/fonts/NimbusSans-Regular.otf')}@font-face{font-family:"Hardware Sans";src:url('/assets/fonts/NimbusSans-Bold.otf');font-weight:600 700}
+*{box-sizing:border-box}body{margin:0;background:#070907;color:#c6d0bb;font:12px ui-monospace,monospace}header{height:64px;display:flex;align-items:center;gap:15px;padding:10px 24px;border-bottom:1px solid #394333}header span{margin-right:auto}button,a{color:#d2dbc6;background:#253025;border:1px solid #4b5b43;border-radius:3px;padding:8px 10px;font:inherit;text-decoration:none}#battle{position:relative;height:calc(100vw * 9 / 16);min-height:640px;max-height:900px;outline:none}footer{min-height:36px;padding:10px 24px;color:#9fae93}label{white-space:nowrap}input{accent-color:#bdc6a4}
+</style></head><body>
+<header><span>EXPOSED RECORDIST · LIVE NATATORIUM BATTLE</span><a href="/artifacts/battle-hands/review.html">Tool / material review</a><button id="start">Enter encounter</button><button id="restart">Restart</button><button id="step">Step 50 ms</button><label><input id="pause" type="checkbox" checked>Paused</label></header>
+<div id="battle" tabindex="0" role="application" aria-label="Live production battle scene. Arrow keys select tools and moves. Enter acts. Space parries."></div>
+<footer><output id="status">Loading production combat…</output></footer>
+<script type="module">
+import { uiInit, uiClear } from '/src/render/ui.js';
+import { makeCombatScene } from '/src/game/combat.js';
+import { natatoriumBattle } from '/src/data/battles.js';
+import { attachCombatDefinition } from '/src/data/combat-definitions.js';
+import { battleHandsDiagnostics, warmBattleHands } from '/src/render/battle-hands.js';
+const host=document.querySelector('#battle'),pause=document.querySelector('#pause'),status=document.querySelector('#status');
+uiInit(host);let scene,last=0,lastStatus='';
+function restart(){scene?.exit();scene=makeCombatScene({battle:attachCombatDefinition(natatoriumBattle()),skipOpening:true,loadout:{tools:{recorder:true,torch:true,radio:true,rig:true,fork:true,coffee:true,spanner:true},composure:100},difficulty:{},getAudio:()=>null});scene.enter();pause.checked=true;}
+function press(key){scene.key({key,preventDefault(){}});scene.keyup({key});}
+document.querySelector('#restart').onclick=restart;
+document.querySelector('#start').onclick=()=>{for(let i=0;i<60&&!['tool','move','resolve'].includes(scene.battleView().phase);i++){press('Enter');scene.update(.22);}host.focus();};
+document.querySelector('#step').onclick=()=>{pause.checked=true;scene.update(.05);};
+host.addEventListener('keydown',event=>scene.key(event));host.addEventListener('keyup',event=>scene.keyup(event));
+restart();warmBattleHands();
+function frame(ms){const dt=Math.min(.05,Math.max(0,(ms-last)/1000));last=ms;if(!pause.checked)scene.update(dt);uiClear();scene.render();const v=scene.battleView(),h=v.hands||{},d=battleHandsDiagnostics();const text=`${v.phase.toUpperCase()} · ${h.tool||'self'} · ${h.actionActor||'select'} ${h.move||''} · ${h.actionElapsed?.toFixed(2)||'0.00'} s · ${d.ready?'anatomical renderer':d.error||'loading hand mesh'} · This review runs the production combat scene in memory; it does not advance a saved run.`;if(text!==lastStatus){status.textContent=text;lastStatus=text;}requestAnimationFrame(frame);}requestAnimationFrame(frame);
+</script></body></html>

@@ -1,0 +1,1565 @@
+{
+  "schemaVersion": 1,
+  "id": "source-space.outskirts",
+  "title": "The Road That Does Not End",
+  "status": "active",
+  "entry": "skip",
+  "entries": [
+    "skip",
+    "skip-again",
+    "gate",
+    "gate-again",
+    "gate-far",
+    "fence",
+    "fence-far",
+    "lamp",
+    "lamp-again",
+    "lamp-far",
+    "lodge",
+    "lodge-again",
+    "lodge-far",
+    "lodge-dark",
+    "ledger",
+    "ledger-2",
+    "ledger-3",
+    "ledger-same",
+    "ledger-done",
+    "shelter",
+    "shelter-again",
+    "shelter-far",
+    "bus",
+    "bus-again",
+    "bus-far",
+    "van",
+    "van-again",
+    "van-far",
+    "dog",
+    "dog-again",
+    "guard",
+    "guard-again",
+    "fold-guard",
+    "fold-guard-again",
+    "woman",
+    "woman-again",
+    "woman-return",
+    "woman-after",
+    "van-ticket",
+    "van-phone-off",
+    "page-ledger",
+    "page-ledger-again",
+    "page-fence",
+    "page-dash",
+    "page-flurry",
+    "van.b0",
+    "van.b1",
+    "van.b2",
+    "van.b3",
+    "van.b4",
+    "van.b5",
+    "van-letter-back",
+    "bag",
+    "bag-again",
+    "postbox",
+    "postbox-letter",
+    "postbox-posted",
+    "postbox-after",
+    "bin.b0",
+    "bin.b1",
+    "bin-ticket",
+    "bin.b2",
+    "bin.b3",
+    "bin.b4",
+    "bin.b5",
+    "bench.b0",
+    "bench.b1",
+    "bench.b2",
+    "bench.b3",
+    "bench.b4",
+    "bench.b5",
+    "car.b0",
+    "car.b1",
+    "car.b2",
+    "car.b3",
+    "car.b4",
+    "car.b5",
+    "lamp.b2",
+    "lamp.b4",
+    "page-flurry.b3",
+    "page-flurry.b4",
+    "page-flurry.b5",
+    "ledger-him",
+    "coat",
+    "coat-again"
+  ],
+  "tags": [
+    "source-space",
+    "outskirts",
+    "inspect"
+  ],
+  "notes": "Things on the road past the grey doors to look at, and go on looking at. The road is one short scene passed over and over, more worn each pass, and more likely to break. src/data/source-outskirts-arrival.js gives a piece an `inspect` key; main.js picks the node: the key the first time, `-again` after that, `-far` when it is found further down the road (pass 15 and on), and the errand steps by flag. Two errands pay out a little composure, once each (a choice's `reward` and `rewardId`): the ledger read at three different lodges and signed, and the return half of a ticket found in the van and given back. Three go nowhere on purpose: the timetable, the lodge phone, the guard's name. Lines are his or the direction's; nobody out here explains the road. LOSING HIMSELF (docs/plans/outskirts-losing-himself.md): after the loop pass, her traces become his: the take sheet on the gate, the track sheet on the dash, the bin, the bench slate, the car plate, his name in the ledger (ledger-him, pass 15 on), his coat on the shelter (coat, pass 12 on). The woman is nobody.",
+  "regions": [
+    {
+      "id": "source-space.outskirts.region",
+      "title": "The road out",
+      "kind": "scene",
+      "color": "#23262b",
+      "nodeIds": [
+        "skip",
+        "skip-again",
+        "gate",
+        "gate-again",
+        "gate-far",
+        "fence",
+        "fence-far",
+        "lamp",
+        "lamp-again",
+        "lamp-far",
+        "lodge",
+        "lodge-again",
+        "lodge-far",
+        "lodge-dark",
+        "lodge-knock",
+        "lodge-phone",
+        "lodge-phone-again",
+        "ledger",
+        "ledger-2",
+        "ledger-3",
+        "ledger-signed",
+        "ledger-same",
+        "ledger-done",
+        "shelter",
+        "shelter-again",
+        "shelter-far",
+        "bus",
+        "bus-again",
+        "bus-far",
+        "van",
+        "van-again",
+        "van-far",
+        "dog",
+        "dog-again",
+        "guard",
+        "guard-name",
+        "guard-name-again",
+        "guard-again",
+        "fold-guard",
+        "fold-guard-again",
+        "woman",
+        "woman-lost",
+        "woman-again",
+        "woman-return",
+        "woman-given",
+        "woman-after",
+        "van-ticket",
+        "van-phone-off",
+        "page-ledger",
+        "page-ledger-again",
+        "page-fence",
+        "page-dash",
+        "page-flurry",
+        "van.b0",
+        "van.b1",
+        "van.b2",
+        "van.b3",
+        "van.b4",
+        "van.b5",
+        "van-letter-back",
+        "bag",
+        "bag-again",
+        "postbox",
+        "postbox-letter",
+        "postbox-posted",
+        "postbox-after",
+        "bin.b0",
+        "bin.b1",
+        "bin-ticket",
+        "bin.b2",
+        "bin.b3",
+        "bin.b4",
+        "bin.b5",
+        "bench.b0",
+        "bench.b1",
+        "bench.b2",
+        "bench.b3",
+        "bench.b4",
+        "bench.b5",
+        "car.b0",
+        "car.b1",
+        "car.b2",
+        "car.b3",
+        "car.b4",
+        "car.b5",
+        "lamp.b2",
+        "lamp.b4",
+        "page-flurry.b3",
+        "page-flurry.b4",
+        "page-flurry.b5",
+        "ledger-him",
+        "coat",
+        "coat-again"
+      ]
+    }
+  ],
+  "nodes": {
+    "skip": {
+      "id": "skip",
+      "type": "dialogue",
+      "speaker": "ON THE ROAD",
+      "lines": [
+        {
+          "id": "skip.1",
+          "who": "direction",
+          "text": "A builder's skip against the wall. Empty, except for rainwater and a single office chair on its back."
+        }
+      ]
+    },
+    "skip-again": {
+      "id": "skip-again",
+      "type": "dialogue",
+      "speaker": "ON THE ROAD",
+      "lines": [
+        {
+          "id": "skip-again.1",
+          "who": "you",
+          "text": "Still just the chair. It has not moved. I checked."
+        }
+      ]
+    },
+    "gate": {
+      "id": "gate",
+      "type": "dialogue",
+      "speaker": "ON THE ROAD",
+      "lines": [
+        {
+          "id": "gate.1",
+          "who": "direction",
+          "text": "Two brick gate piers and no gate. The hinges are still in the brick, painted over."
+        }
+      ]
+    },
+    "gate-again": {
+      "id": "gate-again",
+      "type": "dialogue",
+      "speaker": "ON THE ROAD",
+      "lines": [
+        {
+          "id": "gate-again.1",
+          "who": "you",
+          "text": "The same piers. The same hinges, painted over the same way."
+        }
+      ]
+    },
+    "gate-far": {
+      "id": "gate-far",
+      "type": "dialogue",
+      "speaker": "ON THE ROAD",
+      "lines": [
+        {
+          "id": "gate-far.1",
+          "who": "direction",
+          "text": "The paint on the left pier has worn through in one place, at shoulder height, where people lean."
+        }
+      ]
+    },
+    "fence": {
+      "id": "fence",
+      "type": "dialogue",
+      "speaker": "ON THE ROAD",
+      "lines": [
+        {
+          "id": "fence.1",
+          "who": "direction",
+          "text": "Palisade fencing, the pointed kind. Beyond it the ground is black and flat and does not end."
+        }
+      ]
+    },
+    "fence-far": {
+      "id": "fence-far",
+      "type": "dialogue",
+      "speaker": "ON THE ROAD",
+      "lines": [
+        {
+          "id": "fence-far.1",
+          "who": "direction",
+          "text": "A gap where two railings are missing. The ground on the other side of the gap is the same ground."
+        }
+      ]
+    },
+    "lamp": {
+      "id": "lamp",
+      "type": "dialogue",
+      "speaker": "ON THE ROAD",
+      "lines": [
+        {
+          "id": "lamp.1",
+          "who": "direction",
+          "text": "A lamp column. Sodium, humming. Rain comes out of the dark into the light and goes back out again."
+        }
+      ]
+    },
+    "lamp-again": {
+      "id": "lamp-again",
+      "type": "dialogue",
+      "speaker": "ON THE ROAD",
+      "lines": [
+        {
+          "id": "lamp-again.1",
+          "who": "you",
+          "text": "Ten steps to the next one. I did not change how I walk."
+        }
+      ]
+    },
+    "lamp-far": {
+      "id": "lamp-far",
+      "type": "dialogue",
+      "speaker": "ON THE ROAD",
+      "lines": [
+        {
+          "id": "lamp-far.1",
+          "who": "direction",
+          "text": "This one is out. The glass is warm, as if it went out when he looked at it."
+        }
+      ]
+    },
+    "lodge": {
+      "id": "lodge",
+      "type": "dialogue",
+      "speaker": "THE LODGE",
+      "lines": [
+        {
+          "id": "lodge.1",
+          "who": "direction",
+          "text": "The security lodge. Lit. A chair pushed back from the desk, a mug, a phone on the counter under the window."
+        },
+        {
+          "id": "lodge.2",
+          "who": "you",
+          "text": "Nobody in it. The mug is still steaming."
+        }
+      ],
+      "choices": [
+        {
+          "id": "outskirts.lodge.knock",
+          "text": "Knock on the glass.",
+          "goto": "lodge-knock"
+        },
+        {
+          "id": "outskirts.lodge.phone",
+          "text": "Reach in for the phone.",
+          "goto": "lodge-phone",
+          "when": "!outskirts.phone.tried"
+        },
+        {
+          "id": "outskirts.lodge.phone-again",
+          "text": "Reach in for the phone again.",
+          "goto": "lodge-phone-again",
+          "when": "outskirts.phone.tried"
+        },
+        {
+          "id": "outskirts.lodge.leave",
+          "text": "Leave it.",
+          "terminal": true
+        }
+      ]
+    },
+    "lodge-knock": {
+      "id": "lodge-knock",
+      "type": "dialogue",
+      "speaker": "THE LODGE",
+      "lines": [
+        {
+          "id": "lodge-knock.1",
+          "who": "direction",
+          "text": "The glass gives the knock back, dull. The steam off the mug bends toward the sound and straightens."
+        }
+      ]
+    },
+    "lodge-phone": {
+      "id": "lodge-phone",
+      "type": "dialogue",
+      "speaker": "THE LODGE",
+      "lines": [
+        {
+          "id": "lodge-phone.1",
+          "who": "direction",
+          "text": "As his hand goes through the hatch, the phone rings. Once. It stops before his fingers reach it."
+        }
+      ],
+      "mutations": {
+        "set": [
+          "outskirts.phone.tried"
+        ]
+      }
+    },
+    "lodge-phone-again": {
+      "id": "lodge-phone-again",
+      "type": "dialogue",
+      "speaker": "THE LODGE",
+      "lines": [
+        {
+          "id": "lodge-phone-again.1",
+          "who": "direction",
+          "text": "Once. It stops."
+        }
+      ]
+    },
+    "lodge-again": {
+      "id": "lodge-again",
+      "type": "dialogue",
+      "speaker": "THE LODGE",
+      "lines": [
+        {
+          "id": "lodge-again.1",
+          "who": "direction",
+          "text": "The chair is a little further from the desk than it was. The mug is still steaming."
+        },
+        {
+          "id": "lodge-again.2",
+          "who": "you",
+          "text": "Just stepped out. Again."
+        }
+      ],
+      "choices": [
+        {
+          "id": "outskirts.lodge-again.phone",
+          "text": "Reach in for the phone.",
+          "goto": "lodge-phone-again",
+          "when": "outskirts.phone.tried"
+        },
+        {
+          "id": "outskirts.lodge-again.phone-first",
+          "text": "Reach in for the phone.",
+          "goto": "lodge-phone",
+          "when": "!outskirts.phone.tried"
+        },
+        {
+          "id": "outskirts.lodge-again.leave",
+          "text": "Leave it.",
+          "terminal": true
+        }
+      ]
+    },
+    "lodge-far": {
+      "id": "lodge-far",
+      "type": "dialogue",
+      "speaker": "THE LODGE",
+      "lines": [
+        {
+          "id": "lodge-far.1",
+          "who": "direction",
+          "text": "The light in here has gone the colour of weak tea. The chair is against the back wall now. The mug has stopped steaming."
+        }
+      ]
+    },
+    "lodge-dark": {
+      "id": "lodge-dark",
+      "type": "dialogue",
+      "speaker": "THE LODGE",
+      "lines": [
+        {
+          "id": "lodge-dark.1",
+          "who": "direction",
+          "text": "The lodge is dark. Through the window, the desk, the chair, the mug. All where they were at the first one."
+        }
+      ]
+    },
+    "ledger": {
+      "id": "ledger",
+      "type": "dialogue",
+      "speaker": "THE LEDGER",
+      "lines": [
+        {
+          "id": "ledger.1",
+          "who": "direction",
+          "text": "The visitors' ledger, open on the counter. Name, company, time in, time out. The last name has a time in and no time out."
+        }
+      ]
+    },
+    "ledger-2": {
+      "id": "ledger-2",
+      "type": "dialogue",
+      "speaker": "THE LEDGER",
+      "lines": [
+        {
+          "id": "ledger-2.1",
+          "who": "direction",
+          "text": "Another lodge, the same ledger. The names above are different. The last one has a time in and no time out, and the ink is wet."
+        }
+      ]
+    },
+    "ledger-3": {
+      "id": "ledger-3",
+      "type": "dialogue",
+      "speaker": "THE LEDGER",
+      "lines": [
+        {
+          "id": "ledger-3.1",
+          "who": "direction",
+          "text": "A third lodge. Every name on the page is in the same hand, and the last line is blank except for the time in, which is now."
+        },
+        {
+          "id": "ledger-3.2",
+          "who": "you",
+          "text": "It is waiting for somebody to sign."
+        }
+      ],
+      "choices": [
+        {
+          "id": "outskirts.ledger.sign",
+          "text": "Sign it. Put a time out, too.",
+          "goto": "ledger-signed",
+          "reward": "composure",
+          "rewardId": "ledger",
+          "mutations": {
+            "set": [
+              "outskirts.ledger.signed"
+            ]
+          }
+        },
+        {
+          "id": "outskirts.ledger.leave",
+          "text": "Leave the line blank.",
+          "terminal": true
+        }
+      ]
+    },
+    "ledger-signed": {
+      "id": "ledger-signed",
+      "type": "dialogue",
+      "speaker": "THE LEDGER",
+      "lines": [
+        {
+          "id": "ledger-signed.1",
+          "who": "direction",
+          "text": "He writes his name, and a time out that has not happened yet. The pen is warm."
+        }
+      ]
+    },
+    "ledger-same": {
+      "id": "ledger-same",
+      "type": "dialogue",
+      "speaker": "THE LEDGER",
+      "lines": [
+        {
+          "id": "ledger-same.1",
+          "who": "you",
+          "text": "I have read this page. I need another lodge's."
+        }
+      ]
+    },
+    "ledger-done": {
+      "id": "ledger-done",
+      "type": "dialogue",
+      "speaker": "THE LEDGER",
+      "lines": [
+        {
+          "id": "ledger-done.1",
+          "who": "direction",
+          "text": "His name is at the bottom of this page too. The same time out, in his hand."
+        }
+      ]
+    },
+    "shelter": {
+      "id": "shelter",
+      "type": "dialogue",
+      "speaker": "THE SHELTER",
+      "lines": [
+        {
+          "id": "shelter.1",
+          "who": "direction",
+          "text": "The timetable in the shelter. One route. Every stop on it has the same name, and it is the name of this stop."
+        }
+      ]
+    },
+    "shelter-again": {
+      "id": "shelter-again",
+      "type": "dialogue",
+      "speaker": "THE SHELTER",
+      "lines": [
+        {
+          "id": "shelter-again.1",
+          "who": "you",
+          "text": "I read it again. It has not changed its mind."
+        }
+      ]
+    },
+    "shelter-far": {
+      "id": "shelter-far",
+      "type": "dialogue",
+      "speaker": "THE SHELTER",
+      "lines": [
+        {
+          "id": "shelter-far.1",
+          "who": "direction",
+          "text": "A new timetable, pasted over the old. The paper is still wet with paste. Every stop is this stop."
+        }
+      ]
+    },
+    "bus": {
+      "id": "bus",
+      "type": "dialogue",
+      "speaker": "THE BUS",
+      "lines": [
+        {
+          "id": "bus.1",
+          "who": "direction",
+          "text": "The late bus, doors shut, engine off, the destination blind rolled to a blank. Warm air coming off the wheel arches."
+        }
+      ]
+    },
+    "bus-again": {
+      "id": "bus-again",
+      "type": "dialogue",
+      "speaker": "THE BUS",
+      "lines": [
+        {
+          "id": "bus-again.1",
+          "who": "you",
+          "text": "It has moved on. A metre, maybe. While nobody was driving it."
+        }
+      ]
+    },
+    "bus-far": {
+      "id": "bus-far",
+      "type": "dialogue",
+      "speaker": "THE BUS",
+      "lines": [
+        {
+          "id": "bus-far.1",
+          "who": "direction",
+          "text": "The same fleet number. The same long scratch down the side, from the same corner of the same wall."
+        }
+      ]
+    },
+    "van": {
+      "id": "van",
+      "type": "dialogue",
+      "speaker": "THE VAN",
+      "lines": [
+        {
+          "id": "van.1",
+          "who": "direction",
+          "text": "A van with its back doors open toward him, the load light on inside. Straps, a blanket, nothing on the blanket."
+        },
+        {
+          "id": "van.3",
+          "who": "direction",
+          "text": "In the cab, the car phone in its cradle on the dash, a Dymo label stuck under it: CAR 0836 900417."
+        }
+      ]
+    },
+    "van-again": {
+      "id": "van-again",
+      "type": "dialogue",
+      "speaker": "THE VAN",
+      "lines": [
+        {
+          "id": "van-again.2",
+          "who": "direction",
+          "text": "The Dymo label under the car phone: CAR 0836 900417."
+        }
+      ]
+    },
+    "van-far": {
+      "id": "van-far",
+      "type": "dialogue",
+      "speaker": "THE VAN",
+      "lines": [
+        {
+          "id": "van-far.1",
+          "who": "direction",
+          "text": "The load light has a note taped under it, in capitals: BACK IN FIVE."
+        }
+      ]
+    },
+    "dog": {
+      "id": "dog",
+      "type": "dialogue",
+      "speaker": "ON THE ROAD",
+      "lines": [
+        {
+          "id": "dog.1",
+          "who": "direction",
+          "text": "A man walking a dog, stopped under the lamp. The dog will not look at him. The man will not look away."
+        },
+        {
+          "id": "dog.3",
+          "who": "direction",
+          "text": "Nothing back. The lead is slack."
+        }
+      ]
+    },
+    "dog-again": {
+      "id": "dog-again",
+      "type": "dialogue",
+      "speaker": "ON THE ROAD",
+      "lines": [
+        {
+          "id": "dog-again.1",
+          "who": "you",
+          "text": "He has turned round to keep watching me. The dog has not."
+        }
+      ]
+    },
+    "guard": {
+      "id": "guard",
+      "type": "dialogue",
+      "speaker": "THE LODGE",
+      "lines": [
+        {
+          "id": "guard.1",
+          "who": "direction",
+          "text": "A guard in the lodge, back to the road, a ledger open on the counter."
+        }
+      ],
+      "choices": [
+        {
+          "id": "outskirts.guard.name",
+          "text": "Ask him his name.",
+          "goto": "guard-name"
+        },
+        {
+          "id": "outskirts.guard.leave",
+          "text": "Leave him to it.",
+          "terminal": true
+        }
+      ]
+    },
+    "guard-name": {
+      "id": "guard-name",
+      "type": "dialogue",
+      "speaker": "THE LODGE",
+      "lines": [
+        {
+          "id": "guard-name.1",
+          "who": "direction",
+          "text": "Without turning round: \"Who's asking?\""
+        }
+      ],
+      "choices": [
+        {
+          "id": "outskirts.guard-name.tell",
+          "text": "Tell him who you are.",
+          "goto": "guard-name-again"
+        },
+        {
+          "id": "outskirts.guard-name.leave",
+          "text": "Leave him to it.",
+          "terminal": true
+        }
+      ]
+    },
+    "guard-name-again": {
+      "id": "guard-name-again",
+      "type": "dialogue",
+      "speaker": "THE LODGE",
+      "lines": [
+        {
+          "id": "guard-name-again.1",
+          "who": "direction",
+          "text": "He writes something in the ledger. \"And who's asking that?\""
+        }
+      ],
+      "choices": [
+        {
+          "id": "outskirts.guard-name-again.tell",
+          "text": "Tell him again.",
+          "goto": "guard-name"
+        },
+        {
+          "id": "outskirts.guard-name-again.leave",
+          "text": "Leave him to it.",
+          "terminal": true
+        }
+      ]
+    },
+    "guard-again": {
+      "id": "guard-again",
+      "type": "dialogue",
+      "speaker": "THE LODGE",
+      "lines": [
+        {
+          "id": "guard-again.1",
+          "who": "you",
+          "text": "Same back. Same hand on the same ledger. I am not asking him again."
+        }
+      ]
+    },
+    "fold-guard": {
+      "id": "fold-guard",
+      "type": "dialogue",
+      "speaker": "THE LODGE",
+      "lines": [
+        {
+          "id": "fold-guard.1",
+          "who": "you",
+          "text": "The chair is outside now. He's sitting in it, facing me."
+        }
+      ]
+    },
+    "fold-guard-again": {
+      "id": "fold-guard-again",
+      "type": "dialogue",
+      "speaker": "THE LODGE",
+      "lines": [
+        {
+          "id": "fold-guard-again.1",
+          "who": "you",
+          "text": "His hand hasn't left the ledge."
+        }
+      ]
+    },
+    "woman": {
+      "id": "woman",
+      "type": "dialogue",
+      "speaker": "THE SHELTER",
+      "lines": [
+        {
+          "id": "woman.1",
+          "who": "direction",
+          "text": "A woman waiting, coat buttoned wrong, going through her pockets for the second time."
+        }
+      ],
+      "choices": [
+        {
+          "id": "outskirts.woman.ask",
+          "text": "Ask what she has lost.",
+          "goto": "woman-lost"
+        },
+        {
+          "id": "outskirts.woman.leave",
+          "text": "Leave her to it.",
+          "terminal": true
+        }
+      ]
+    },
+    "woman-lost": {
+      "id": "woman-lost",
+      "type": "dialogue",
+      "speaker": "THE SHELTER",
+      "lines": [
+        {
+          "id": "woman-lost.1",
+          "who": "direction",
+          "text": "\"My ticket. The return half.\" She does not look up. \"I had it in the car. The van. The one with its doors open.\""
+        }
+      ],
+      "mutations": {
+        "set": [
+          "outskirts.ticket.asked"
+        ]
+      }
+    },
+    "woman-again": {
+      "id": "woman-again",
+      "type": "dialogue",
+      "speaker": "THE SHELTER",
+      "lines": [
+        {
+          "id": "woman-again.1",
+          "who": "direction",
+          "text": "The same coat, buttoned wrong the same way. She is still going through her pockets."
+        }
+      ]
+    },
+    "woman-return": {
+      "id": "woman-return",
+      "type": "dialogue",
+      "speaker": "THE SHELTER",
+      "lines": [
+        {
+          "id": "woman-return.1",
+          "who": "direction",
+          "text": "She is facing the road this time, as if she knew he would be along."
+        }
+      ],
+      "choices": [
+        {
+          "id": "outskirts.woman.give",
+          "text": "Give her the return half.",
+          "goto": "woman-given",
+          "reward": "composure",
+          "rewardId": "ticket",
+          "mutations": {
+            "set": [
+              "outskirts.ticket.returned"
+            ]
+          }
+        },
+        {
+          "id": "outskirts.woman.keep",
+          "text": "Keep it for now.",
+          "terminal": true
+        }
+      ]
+    },
+    "woman-given": {
+      "id": "woman-given",
+      "type": "dialogue",
+      "speaker": "THE SHELTER",
+      "lines": [
+        {
+          "id": "woman-given.1",
+          "who": "direction",
+          "text": "She takes it without looking at it and puts it in the right pocket, the one she searched first."
+        },
+        {
+          "id": "woman-given.2",
+          "who": "direction",
+          "text": "\"Thank you. It's a long way back.\""
+        }
+      ]
+    },
+    "woman-after": {
+      "id": "woman-after",
+      "type": "dialogue",
+      "speaker": "THE SHELTER",
+      "lines": [
+        {
+          "id": "woman-after.1",
+          "who": "direction",
+          "text": "The return half is in her hand now. She holds it ready, still waiting to be taken somewhere."
+        }
+      ]
+    },
+    "van-ticket": {
+      "id": "van-ticket",
+      "type": "dialogue",
+      "speaker": "THE VAN",
+      "lines": [
+        {
+          "id": "van-ticket.1",
+          "who": "direction",
+          "text": "On the blanket in the back of the van, a bus ticket torn in half. The return half."
+        },
+        {
+          "id": "van-ticket.2",
+          "who": "you",
+          "text": "She said the return half. She said the car. It was the van."
+        }
+      ],
+      "choices": [
+        {
+          "id": "outskirts.van.take-ticket",
+          "text": "Take it.",
+          "terminal": true,
+          "mutations": {
+            "set": [
+              "outskirts.ticket.found"
+            ]
+          }
+        },
+        {
+          "id": "outskirts.van.leave-ticket",
+          "text": "Leave it where it is.",
+          "terminal": true
+        }
+      ]
+    },
+    "van-phone-off": {
+      "id": "van-phone-off",
+      "type": "dialogue",
+      "speaker": "THE VAN",
+      "lines": [
+        {
+          "id": "van-phone-off.1",
+          "who": "direction",
+          "text": "The car phone lying on the passenger seat, off its cradle, where you left it. A little light on it, still lit."
+        }
+      ]
+    },
+    "page-ledger": {
+      "id": "page-ledger",
+      "type": "dialogue",
+      "speaker": "THE LEDGER",
+      "lines": [
+        {
+          "id": "page-ledger.1",
+          "who": "direction",
+          "text": "Pressed between the ledger's pages: a page from a phone book, torn out close to the spine. ASHWORTH. One line of it ringed twice in biro: Ashworth S., 0632 960331."
+        }
+      ]
+    },
+    "page-ledger-again": {
+      "id": "page-ledger-again",
+      "type": "dialogue",
+      "speaker": "THE LEDGER",
+      "lines": [
+        {
+          "id": "page-ledger-again.1",
+          "who": "direction",
+          "text": "The same torn page, in the same ledger, at the same line. Ringed again, harder, until the biro has gone through."
+        }
+      ]
+    },
+    "page-fence": {
+      "id": "page-fence",
+      "type": "dialogue",
+      "speaker": "ON THE ROAD",
+      "lines": [
+        {
+          "id": "page-fence.1",
+          "who": "direction",
+          "text": "Caught on the gate pier, flapping: a take sheet. ROOM: —. TAKE: 14. NOTES, in your hand: no good. go again."
+        }
+      ]
+    },
+    "page-dash": {
+      "id": "page-dash",
+      "type": "dialogue",
+      "speaker": "THE VAN",
+      "lines": [
+        {
+          "id": "page-dash.1",
+          "who": "direction",
+          "text": "On the dashboard, where you would see it: your own track sheet from tonight. Every room is listed. Every take is crossed through, and beside each one, in your hand: again."
+        }
+      ]
+    },
+    "page-flurry": {
+      "id": "page-flurry",
+      "type": "dialogue",
+      "speaker": "HER PAGE",
+      "lines": [
+        {
+          "id": "page-flurry.1",
+          "who": "direction",
+          "text": "You catch one out of the air. The torn page again. Her number, and across it, in a hand that changes while you read it: YOU HAD IT THE WHOLE TIME."
+        }
+      ]
+    },
+    "van.b0": {
+      "id": "van.b0",
+      "type": "dialogue",
+      "speaker": "THE VAN",
+      "lines": [
+        {
+          "id": "van.b0.1",
+          "who": "direction",
+          "text": "The back open, the load light on. Straps, a blanket. On the dash, a Dymo label under the car phone: CAR 0836 900417."
+        }
+      ]
+    },
+    "van.b1": {
+      "id": "van.b1",
+      "type": "dialogue",
+      "speaker": "THE VAN",
+      "lines": [
+        {
+          "id": "van.b1.1",
+          "who": "direction",
+          "text": "Your flight case is on the blanket, the one that was in the bay tonight. The Dymo label under the car phone: CAR 0836 900417."
+        }
+      ]
+    },
+    "van.b2": {
+      "id": "van.b2",
+      "type": "dialogue",
+      "speaker": "THE VAN",
+      "lines": [
+        {
+          "id": "van.b2.1",
+          "who": "direction",
+          "text": "All of your kit is in the back now, strapped down and labelled in your hand. The car phone is off its cradle."
+        }
+      ]
+    },
+    "van.b3": {
+      "id": "van.b3",
+      "type": "dialogue",
+      "speaker": "THE VAN",
+      "lines": [
+        {
+          "id": "van.b3.1",
+          "who": "direction",
+          "text": "Three torn pages on the dash, her number ringed on each. The kit is packed for a job that has already finished."
+        }
+      ]
+    },
+    "van.b4": {
+      "id": "van.b4",
+      "type": "dialogue",
+      "speaker": "THE VAN",
+      "lines": [
+        {
+          "id": "van.b4.1",
+          "who": "direction",
+          "text": "The load light flickers. Her page is all over the cab: the dash, the seats, the footwell. The car phone is ringing and makes no sound."
+        }
+      ]
+    },
+    "van.b5": {
+      "id": "van.b5",
+      "type": "dialogue",
+      "speaker": "THE VAN",
+      "lines": [
+        {
+          "id": "van.b5.1",
+          "who": "direction",
+          "text": "The back has been emptied and scrubbed. On the blanket, laid out the way you would lay out a body: your headphones. The handset hangs out of the side on its cord."
+        }
+      ]
+    },
+    "van-letter-back": {
+      "id": "van-letter-back",
+      "type": "dialogue",
+      "speaker": "THE VAN",
+      "lines": [
+        {
+          "id": "van-letter-back.1",
+          "who": "direction",
+          "text": "On the passenger seat, your letter. Across her name, in red: RETURN TO SENDER. NOT KNOWN AT THIS ADDRESS."
+        }
+      ]
+    },
+    "bag": {
+      "id": "bag",
+      "type": "dialogue",
+      "speaker": "THE VAN",
+      "lines": [
+        {
+          "id": "bag.1",
+          "who": "direction",
+          "text": "Your bag, on the blanket. In the front pocket, a letter: Miss S. Ashworth, c/o 14 Carr Lane. Stamped. Sealed. Never posted."
+        }
+      ],
+      "choices": [
+        {
+          "id": "outskirts.bag.take",
+          "text": "Take the letter.",
+          "terminal": true,
+          "mutations": {
+            "set": [
+              "outskirts.letter.found"
+            ]
+          }
+        },
+        {
+          "id": "outskirts.bag.leave",
+          "text": "Leave it in the bag.",
+          "terminal": true
+        }
+      ]
+    },
+    "bag-again": {
+      "id": "bag-again",
+      "type": "dialogue",
+      "speaker": "THE VAN",
+      "lines": [
+        {
+          "id": "bag-again.1",
+          "who": "direction",
+          "text": "The front pocket is empty."
+        }
+      ]
+    },
+    "postbox": {
+      "id": "postbox",
+      "type": "dialogue",
+      "speaker": "THE PILLAR BOX",
+      "lines": [
+        {
+          "id": "postbox.1",
+          "who": "direction",
+          "text": "A pillar box. LAST COLLECTION 5.30 PM. The plate for the next collection is missing."
+        }
+      ]
+    },
+    "postbox-letter": {
+      "id": "postbox-letter",
+      "type": "dialogue",
+      "speaker": "THE PILLAR BOX",
+      "lines": [
+        {
+          "id": "postbox-letter.1",
+          "who": "direction",
+          "text": "A pillar box. LAST COLLECTION 5.30 PM. The letter is in your hand."
+        }
+      ],
+      "choices": [
+        {
+          "id": "outskirts.postbox.post",
+          "text": "Post it.",
+          "goto": "postbox-posted",
+          "reward": "composure",
+          "rewardId": "letter",
+          "mutations": {
+            "set": [
+              "outskirts.letter.posted"
+            ]
+          }
+        },
+        {
+          "id": "outskirts.postbox.keep",
+          "text": "Not yet.",
+          "terminal": true
+        }
+      ]
+    },
+    "postbox-posted": {
+      "id": "postbox-posted",
+      "type": "dialogue",
+      "speaker": "THE PILLAR BOX",
+      "lines": [
+        {
+          "id": "postbox-posted.1",
+          "who": "direction",
+          "text": "It drops. A long time after, it lands."
+        }
+      ]
+    },
+    "postbox-after": {
+      "id": "postbox-after",
+      "type": "dialogue",
+      "speaker": "THE PILLAR BOX",
+      "lines": [
+        {
+          "id": "postbox-after.1",
+          "who": "direction",
+          "text": "The slot has been taped over. On the tape, in marker: TOO LATE."
+        }
+      ]
+    },
+    "bin.b0": {
+      "id": "bin.b0",
+      "type": "dialogue",
+      "speaker": "THE BIN",
+      "lines": [
+        {
+          "id": "bin.b0.1",
+          "who": "direction",
+          "text": "Chip papers, gone to pulp in the rain."
+        }
+      ]
+    },
+    "bin.b1": {
+      "id": "bin.b1",
+      "type": "dialogue",
+      "speaker": "THE BIN",
+      "lines": [
+        {
+          "id": "bin.b1.1",
+          "who": "direction",
+          "text": "Under the chip papers, half a bus ticket. The return half."
+        }
+      ]
+    },
+    "bin-ticket": {
+      "id": "bin-ticket",
+      "type": "dialogue",
+      "speaker": "THE BIN",
+      "lines": [
+        {
+          "id": "bin-ticket.1",
+          "who": "direction",
+          "text": "Under the chip papers, half a bus ticket. The return half."
+        }
+      ],
+      "choices": [
+        {
+          "id": "outskirts.bin.take-ticket",
+          "text": "Take it.",
+          "terminal": true,
+          "mutations": {
+            "set": [
+              "outskirts.ticket.found"
+            ]
+          }
+        },
+        {
+          "id": "outskirts.bin.leave-ticket",
+          "text": "Leave it.",
+          "terminal": true
+        }
+      ]
+    },
+    "bin.b2": {
+      "id": "bin.b2",
+      "type": "dialogue",
+      "speaker": "THE BIN",
+      "lines": [
+        {
+          "id": "bin.b2.1",
+          "who": "direction",
+          "text": "A cassette, snapped, the tape pulled out of it in loops. The label is in your writing: STUDIO B3."
+        }
+      ]
+    },
+    "bin.b3": {
+      "id": "bin.b3",
+      "type": "dialogue",
+      "speaker": "THE BIN",
+      "lines": [
+        {
+          "id": "bin.b3.1",
+          "who": "direction",
+          "text": "Take sheets. Dozens, all in your hand. Every one says the same thing at the bottom: go again."
+        }
+      ]
+    },
+    "bin.b4": {
+      "id": "bin.b4",
+      "type": "dialogue",
+      "speaker": "THE BIN",
+      "lines": [
+        {
+          "id": "bin.b4.1",
+          "who": "direction",
+          "text": "Your security pass. Your photograph has been scratched out with a key."
+        }
+      ]
+    },
+    "bin.b5": {
+      "id": "bin.b5",
+      "type": "dialogue",
+      "speaker": "THE BIN",
+      "lines": [
+        {
+          "id": "bin.b5.1",
+          "who": "direction",
+          "text": "Empty. Scrubbed out. It smells of the van."
+        }
+      ]
+    },
+    "bench.b0": {
+      "id": "bench.b0",
+      "type": "dialogue",
+      "speaker": "THE BENCH",
+      "lines": [
+        {
+          "id": "bench.b0.1",
+          "who": "direction",
+          "text": "A bench. Cut into the top slat: S +, and nothing after it."
+        }
+      ]
+    },
+    "bench.b1": {
+      "id": "bench.b1",
+      "type": "dialogue",
+      "speaker": "THE BENCH",
+      "lines": [
+        {
+          "id": "bench.b1.1",
+          "who": "direction",
+          "text": "S +. Beside it, five tally marks."
+        }
+      ]
+    },
+    "bench.b2": {
+      "id": "bench.b2",
+      "type": "dialogue",
+      "speaker": "THE BENCH",
+      "lines": [
+        {
+          "id": "bench.b2.1",
+          "who": "direction",
+          "text": "More tally marks. Somebody has been counting something, a long time."
+        }
+      ]
+    },
+    "bench.b3": {
+      "id": "bench.b3",
+      "type": "dialogue",
+      "speaker": "THE BENCH",
+      "lines": [
+        {
+          "id": "bench.b3.1",
+          "who": "direction",
+          "text": "A clapper slate left on the slat, the chalk still on it: ROOM —. TAKE —. Your writing."
+        }
+      ]
+    },
+    "bench.b4": {
+      "id": "bench.b4",
+      "type": "dialogue",
+      "speaker": "THE BENCH",
+      "lines": [
+        {
+          "id": "bench.b4.1",
+          "who": "direction",
+          "text": "The slate again. Somebody has rubbed out the take number and written, in capitals: ENOUGH."
+        }
+      ]
+    },
+    "bench.b5": {
+      "id": "bench.b5",
+      "type": "dialogue",
+      "speaker": "THE BENCH",
+      "lines": [
+        {
+          "id": "bench.b5.1",
+          "who": "direction",
+          "text": "Sanded smooth. One new mark."
+        }
+      ]
+    },
+    "car.b0": {
+      "id": "car.b0",
+      "type": "dialogue",
+      "speaker": "A PARKED CAR",
+      "lines": [
+        {
+          "id": "car.b0.1",
+          "who": "direction",
+          "text": "Engine ticking as it cools. The radio is on, tuned to the speaking clock: eight fourteen and twenty seconds."
+        }
+      ]
+    },
+    "car.b1": {
+      "id": "car.b1",
+      "type": "dialogue",
+      "speaker": "A PARKED CAR",
+      "lines": [
+        {
+          "id": "car.b1.1",
+          "who": "direction",
+          "text": "The same car. The clock on its radio says eight oh two."
+        }
+      ]
+    },
+    "car.b2": {
+      "id": "car.b2",
+      "type": "dialogue",
+      "speaker": "A PARKED CAR",
+      "lines": [
+        {
+          "id": "car.b2.1",
+          "who": "direction",
+          "text": "Seven forty. The clock is going backwards. Somebody has written 0632 in the fog inside the windscreen."
+        }
+      ]
+    },
+    "car.b3": {
+      "id": "car.b3",
+      "type": "dialogue",
+      "speaker": "A PARKED CAR",
+      "lines": [
+        {
+          "id": "car.b3.1",
+          "who": "direction",
+          "text": "Six o'clock. The number plate is your van's. The driver's seat is warm."
+        }
+      ]
+    },
+    "car.b4": {
+      "id": "car.b4",
+      "type": "dialogue",
+      "speaker": "A PARKED CAR",
+      "lines": [
+        {
+          "id": "car.b4.1",
+          "who": "direction",
+          "text": "The radio says it is the afternoon. Your van's plate, your parking permit in the windscreen, your flight case on the back seat."
+        }
+      ]
+    },
+    "car.b5": {
+      "id": "car.b5",
+      "type": "dialogue",
+      "speaker": "A PARKED CAR",
+      "lines": [
+        {
+          "id": "car.b5.1",
+          "who": "direction",
+          "text": "At the third stroke, it will be the evening before. The pips do not come."
+        }
+      ]
+    },
+    "lamp.b2": {
+      "id": "lamp.b2",
+      "type": "dialogue",
+      "speaker": "ON THE ROAD",
+      "lines": [
+        {
+          "id": "lamp.b2.1",
+          "who": "direction",
+          "text": "The glass is cracked. There are moths in the bowl, dead, a lot of them."
+        }
+      ]
+    },
+    "lamp.b4": {
+      "id": "lamp.b4",
+      "type": "dialogue",
+      "speaker": "ON THE ROAD",
+      "lines": [
+        {
+          "id": "lamp.b4.1",
+          "who": "direction",
+          "text": "It lights nothing under it. The rain goes past it without catching the light."
+        }
+      ]
+    },
+    "page-flurry.b3": {
+      "id": "page-flurry.b3",
+      "type": "dialogue",
+      "speaker": "HER PAGE",
+      "lines": [
+        {
+          "id": "page-flurry.b3.1",
+          "who": "direction",
+          "text": "You catch one out of the air. A page off a message pad from a hall of residence: LYLE, your boyfriend rang again. Under it, in another hand: he always rings when it's too late."
+        }
+      ]
+    },
+    "page-flurry.b4": {
+      "id": "page-flurry.b4",
+      "type": "dialogue",
+      "speaker": "HER PAGE",
+      "lines": [
+        {
+          "id": "page-flurry.b4.1",
+          "who": "direction",
+          "text": "You catch one out of the air. A track sheet in your own hand, every line crossed out: TAKE 1 NG. TAKE 2 NG. TAKE 3 NG. At the bottom, in a hand that isn't yours: there wasn't going to be a take four."
+        }
+      ]
+    },
+    "page-flurry.b5": {
+      "id": "page-flurry.b5",
+      "type": "dialogue",
+      "speaker": "HER PAGE",
+      "lines": [
+        {
+          "id": "page-flurry.b5.1",
+          "who": "direction",
+          "text": "A page with nothing on it but your name, and after it a time in. No time out."
+        }
+      ]
+    },
+    "ledger-him": {
+      "id": "ledger-him",
+      "type": "dialogue",
+      "speaker": "THE LEDGER",
+      "lines": [
+        {
+          "id": "ledger-him.1",
+          "who": "direction",
+          "text": "The visitors' ledger. Your name is on the last line, in a hand you do not know, with a time in. The time out is already filled in. It is before you came."
+        }
+      ]
+    },
+    "coat": {
+      "id": "coat",
+      "type": "dialogue",
+      "speaker": "THE SHELTER",
+      "lines": [
+        {
+          "id": "coat.1",
+          "who": "direction",
+          "text": "Your coat, over the back of the shelter seat, wet through. The pockets have been gone through and put back wrong."
+        }
+      ]
+    },
+    "coat-again": {
+      "id": "coat-again",
+      "type": "dialogue",
+      "speaker": "THE SHELTER",
+      "lines": [
+        {
+          "id": "coat-again.1",
+          "who": "direction",
+          "text": "Your coat. Still here. Nobody is waiting for the bus in it."
+        }
+      ]
+    }
+  }
+}

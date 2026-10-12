@@ -25,7 +25,7 @@ const B=(x,y)=>FP.toRuntimePoint({x:170+x,y:169+y});
 const Y=(x,y)=>FP.toRuntimePoint({x:50+x,y:200+y});
 const key=(x,y)=>`${Math.floor(x)},${Math.floor(y)}`;
 
-function flood(start,{props=false,limit=250000}={}){
+function flood(start,{props=false,limit=250000,avoid=null}={}){
   const queue=[[Math.floor(start.x),Math.floor(start.y)]],seen=new Set([key(...queue[0])]);
   for(let i=0;i<queue.length&&i<limit;i+=1){
     const[x,y]=queue[i];
@@ -33,7 +33,7 @@ function flood(start,{props=false,limit=250000}={}){
       const step=FP.canStep(x,y,x+dx,y+dy,{keys:new Set()});
       if(!step.ok)continue;
       const nx=Math.floor(step.redirect?.x??x+dx),ny=Math.floor(step.redirect?.y??y+dy),k=key(nx,ny);
-      if(seen.has(k)||(props&&!PROPS.propCanOccupy(nx,ny)))continue;
+      if(seen.has(k)||(props&&!PROPS.propCanOccupy(nx,ny))||avoid?.(nx,ny))continue;
       seen.add(k);queue.push([nx,ny]);
     }
   }
@@ -106,9 +106,21 @@ FP.setAllDoorsOpen(true);
   const inside=flood(G(16,60));
   for(const[name,point]of[
     ['crossing',G(16,73)],['choir',G(16,80)],['side chapel',G(10,79)],['sacristy',G(22,79)],
-    ['organ loft',L(16,59)],['north triforium',L(10,68)],['south triforium',L(21,78)],['belfry',B(15,72)],
+    ['organ loft',L(16,59)],['north triforium',L(10,68)],['south triforium',L(22,77)],['belfry',B(18,72)],
     ['west yard',Y(16,54)],['south porch yard',Y(25,73)],
   ])assert.ok(reached(inside,point,2),`${name} is outside the cathedral circuit`);
+
+  // THE ONE WAY DOWN. From the belfry arrival, with the choked turrets, the
+  // ground is reached — and only across the crossing walk over the lantern.
+  const walkable=flood(B(19,72),{props:true});
+  assert.ok(reached(walkable,G(16,60),2),'the belfry cannot get down to the west nave');
+  assert.ok(reached(walkable,G(16,73),2),'the belfry cannot get down to the crossing');
+  const overLantern=(x,y)=>{
+    const a=L(10,71),b=L(22,75);
+    return x>=Math.min(a.x,b.x)-1&&x<=Math.max(a.x,b.x)+1&&y>=Math.min(a.y,b.y)-1&&y<=Math.max(a.y,b.y)+1;
+  };
+  const bypass=flood(B(19,72),{props:true,avoid:overLantern});
+  assert.equal(reached(bypass,G(16,60),2),false,'there is a way down that does not cross the walk over the lantern');
 
   const carryingRoute=flood(G(16,73),{props:true});
   assert.ok(reached(carryingRoute,Y(16,54),2),'nave furniture leaves the mandatory west-door drag clear');

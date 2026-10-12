@@ -121,13 +121,17 @@ test('a sheet is lifted once and the pickup survives a reload', () => {
   assert.equal(REC.sheetsCarried(), 1);
 });
 
-test('the five sheets are distinct, authored, and spread across the target rooms', () => {
-  assert.equal(SHEET_MUSIC.length, 5, 'few, and far between');
+test('the six sheets are distinct, authored, five across the target rooms and one down a phone line', () => {
+  assert.equal(SHEET_MUSIC.length, 6, 'few, and far between');
   const ids = SHEET_MUSIC.map((sheet) => sheet.id);
-  assert.equal(new Set(ids).size, 5);
+  assert.equal(new Set(ids).size, 6);
+  // Five lie on floors in the building; the sixth comes out of the phone box in
+  // Source's first outskirts (src/game/payphone.js) and is on no floor at all.
+  const offFloor = SHEET_MUSIC.filter((sheet) => sheet.at === null);
+  assert.deepEqual(offFloor.map((sheet) => sheet.room), ['source-payphone'], 'a sheet is off the floor that should not be');
   for (const sheet of SHEET_MUSIC) {
     assert.equal(sheetMusicById(sheet.id), sheet);
-    assert.ok(Number.isFinite(sheet.at?.x) && Number.isFinite(sheet.at?.y), `${sheet.id} has a cell`);
+    if (sheet.at !== null) assert.ok(Number.isFinite(sheet.at?.x) && Number.isFinite(sheet.at?.y), `${sheet.id} has a cell`);
     assert.ok(sheet.line?.length, `${sheet.id} has something he thinks about it`);
     // Real pieces by real people, and the licence is recorded on the object
     // rather than in a comment somewhere.
@@ -135,8 +139,8 @@ test('the five sheets are distinct, authored, and spread across the target rooms
     assert.ok(sheet.licence?.length, `${sheet.id} records its licence`);
     assert.ok(sheet.detail?.length, `${sheet.id} has a page description`);
   }
-  assert.equal(new Set(SHEET_MUSIC.map((sheet) => sheet.room)).size, 5, 'one per room, never two in a room');
-  assert.equal(new Set(SHEET_MUSIC.map((sheet) => sheet.composer)).size, 5, 'five composers, not one man five times');
+  assert.equal(new Set(SHEET_MUSIC.map((sheet) => sheet.room)).size, 6, 'one per room, never two in a room');
+  assert.equal(new Set(SHEET_MUSIC.map((sheet) => sheet.composer)).size, 6, 'six composers, not one man six times');
 });
 
 test('every sheet has a real recording on disk, and every CC-BY one carries its credit', () => {
@@ -180,7 +184,8 @@ test('every sheet carries a playable figure, and four of the five fall', () => {
     // actual musicological through-line of the set, not a curation flourish.
     if (hz[hz.length - 1].hz < hz[0].hz) falling += 1;
   }
-  assert.equal(falling, 4, 'four descend; the Bach comes back to where it started');
+  // The phone box's minuet does not fall either: it is being polite.
+  assert.equal(falling, 4, 'four descend; the Bach comes back to where it started, and the hold music does not care');
   const bach = sheetMotifHz(sheetMusicById('sheet-goldberg-aria')).hz;
   assert.equal(bach[0].hz, bach[bach.length - 1].hz, 'the ground bass returns to its own first note');
 });

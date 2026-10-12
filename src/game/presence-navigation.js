@@ -47,6 +47,7 @@ export function createPresenceNavigation({
   canStep,
   canOccupy = () => true,
   connectorDestination = () => null,
+  rebaseHeading = null,
   planSize = () => ({ w: 0, h: 0 }),
   keys = null,
   maxVisited = 24000,
@@ -176,7 +177,7 @@ export function createPresenceNavigation({
     // the physical building. Crossing one is the same discrete redirect used
     // by player movement; interpolating through the atlas gap would cut walls.
     if (Math.abs(waypoint.x - currentCell.x) + Math.abs(waypoint.y - currentCell.y) > 1) {
-      return { x: waypoint.x, y: waypoint.y };
+      return { x: waypoint.x, y: waypoint.y, redirect: true };
     }
     if (distance <= maxDistance) return { x: waypoint.x, y: waypoint.y };
     return { x: fromPoint.x + dx / distance * maxDistance, y: fromPoint.y + dy / distance * maxDistance };
@@ -233,6 +234,7 @@ export function createPresenceNavigation({
     nearestWalkable,
     findPath,
     resolveMove,
+    rebaseHeading,
     sampleSpawn,
     clearCache() { routeCache = new Map(); },
   };

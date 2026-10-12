@@ -72,21 +72,42 @@ test('the playhead glides across a grid step and snaps across a warp', async () 
   assert.equal(score.tick(200, 16, 1, {}).position, 200);
 });
 
-test('grains follow the body across the corridor, and the head as it turns', async () => {
-  const left = harness(); await left.score.load();
-  left.run(40, (i) => 100 + i * 0.1, { lateral: -1, facing: 0 });
-  const right = harness(); await right.score.load();
-  right.run(40, (i) => 100 + i * 0.1, { lateral: 1, facing: 0 });
-  const mean = (xs) => xs.reduce((a, b) => a + b, 0) / Math.max(1, xs.length);
-  assert.ok(left.state.pans.length, 'grains are panned at all');
-  assert.ok(mean(left.state.pans) < -0.3, `standing left puts the field left (${mean(left.state.pans).toFixed(2)})`);
-  assert.ok(mean(right.state.pans) > 0.3, `and right, right (${mean(right.state.pans).toFixed(2)})`);
+test('the score is one point at the checkpoint, panned by where the head is turned', async () => {
+  // It used to be a full-width stereo bed — every grain its own random pan
+  // around the body's offset, carrying the file's own width — so it surrounded
+  // him and told the ears nothing about where to go. Now it stands at the next
+  // checkpoint: `bearing` is that point's angle from where he is looking.
+  const at = async (bearing) => {
+    const h = harness(); await h.score.load();
+    h.run(40, (i) => 100 + i * 0.1, { bearing });
+    return { last: h.score.tick(104.1, 50, 1, { bearing }), state: h.state };
+  };
+  const ahead = await at(0), right = await at(Math.PI / 2), left = await at(-Math.PI / 2);
+  const quarter = await at(Math.PI / 6), behind = await at(Math.PI);
+  assert.ok(Math.abs(ahead.last.pan) < 0.02, `a checkpoint straight ahead is not in the middle (${ahead.last.pan.toFixed(2)})`);
+  assert.ok(right.last.pan > 0.95, `a checkpoint to the right is not heard right (${right.last.pan.toFixed(2)})`);
+  assert.ok(left.last.pan < -0.95, `and left, left (${left.last.pan.toFixed(2)})`);
+  assert.ok(quarter.last.pan > 0.5, `a small turn is not already heard (${quarter.last.pan.toFixed(2)})`);
+  // A stereo pan cannot say behind; the tone and the level do.
+  assert.ok(behind.last.rear > 0.9 && ahead.last.rear < 0.05, 'behind does not sound behind');
+  assert.ok(behind.last.tone < ahead.last.tone * 0.4, `behind is not darker (${Math.round(behind.last.tone)} vs ${Math.round(ahead.last.tone)}Hz)`);
+  assert.ok(behind.last.carried < ahead.last.carried * 0.7, 'behind is not quieter');
+  // One point, not a cloud: the pan is the shared node's, and grains carry none of their own.
+  assert.ok(ahead.state.pans.every((value) => Math.abs(value) < 0.02), 'grains are still scattered across the field');
+});
 
-  // Turning has to move it too, or the score is telling the ears nothing about
-  // where the body is looking — which is what it used to do.
-  const turned = harness(); await turned.score.load();
-  turned.run(40, (i) => 100 + i * 0.1, { lateral: 1, facing: Math.PI });
-  assert.ok(mean(turned.state.pans) < 0, 'facing about-turn mirrors the field');
+test('grains are folded to mono before they are placed', async () => {
+  const made = [];
+  const { score } = harness();
+  await score.load();
+  void made;
+  const src = await import('node:fs').then((fs) => fs.readFileSync(new URL('../src/audio/horizon-score.js', import.meta.url), 'utf8'));
+  assert.match(src, /mono\.channelCount = 1;\s*mono\.channelCountMode = 'explicit';/, 'a stereo grain through a stereo panner keeps its width');
+  assert.match(src, /gain\.connect\(mono\);/, 'grains do not go through the one point');
+  assert.doesNotMatch(src, /panner\.pan\.value = clamp\(pan \+ \(random\(\)/, 'grains are still scattered across the field');
+  const main = await import('node:fs').then((fs) => fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8'));
+  assert.match(main, /const guide=frame\.guide;/, 'main never tells the score where the checkpoint is');
+  assert.match(main, /horizonScoreFrame=horizonScore\?\.tick\(frame\.seconds,dt\*1000,level\*0\.85,\{\s*bearing,/, 'the bearing never reaches the score');
 });
 
 test('the collapse takes the top off, not just the level', async () => {

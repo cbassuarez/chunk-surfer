@@ -1,0 +1,119 @@
+diff --git a/private/tmp/tower-route-snapshot-PQ12rZ/src/main.js b/src/main.js
+index fda57ff..ab2d406 100644
+--- a/private/tmp/tower-route-snapshot-PQ12rZ/src/main.js
++++ b/src/main.js
+@@ -7771,7 +7771,7 @@ function chapelTowerDiagnostics(){
+ let elsewhereBeds=null;
+ function clearStationPresentation(){
+   lowerTowerPersonalRecorder();
+-  stopTowerPersonalWorldSignal();towerPersonalWorldSounds.clear();
++  stopTowerPersonalWorldSignal();towerPersonalWorldSounds?.clear();
+   towerPersonalHud?.setAttribute?.('hidden','');towerPersonalCaption=null;towerPersonalInvitationSeen=false;
+   syncStationEdgeSound(null,{immediate:true});
+   elsewhereBeds?.stop();elsewhereBeds=null;
+@@ -7835,7 +7835,7 @@ var stationWay={crossingId:null,world:null,home:false,wrong:false,crossingSeed:0
+ var towerPersonalRecorderHeld=false,towerPersonalListening=null,towerPersonalListeningAt=0;
+ var towerPersonalMonitorFrame={left:0,right:0,audibleSeconds:0,recordingOffset:0};
+ var towerPersonalHud=null,towerPersonalCaption=null,towerPersonalStateNotice=null,towerPersonalSavedSecond=-1;
+-var towerPersonalWorldSound=null,towerPersonalWorldSounds=new Map(),towerPersonalInvitationSeen=false,towerPersonalInvitationUntil=0;
++var towerPersonalWorldSound=null,towerPersonalWorldSounds=new Map(),towerPersonalInvitationSeen=false,towerPersonalInvitationUntil=0,towerPersonalWorldSavedKey='';
+ function applyTowerPersonalTraversal(result){
+   if(!['personal-entry','personal-transition','personal-exit'].includes(result?.event))return false;
+   // Runtime has already committed the crossing. In particular the final exit
+@@ -7865,6 +7865,11 @@ function stopTowerPersonalWorldSignal(){
+   const {key,signal}=towerPersonalWorldSound,sample=signal.sample();
+   towerPersonalWorldSounds.set(key,{offset:sample.offset,finished:sample.finished});
+   signal.stop();towerPersonalWorldSound=null;
++  if(chunkSurfRuntime?.towerLandFrame?.()?.active){
++    chunkSurfRuntime.tickTowerLand?.(0,{recorderHeld:towerPersonalRecorderHeld,audibleSeconds:0,paused:false,
++      sourceRecordingWorld:key,sourceRecordingOffset:sample.offset,sourceRecordingFinished:sample.finished,sourceRecordingActive:false});
++    saveCommit({chunkSurf:chunkSurfRuntime.state()});
++  }
+ }
+ function tickTowerPersonalWorldSignal(frame){
+   const target=frame.targets?.source,world=frame.world;
+@@ -7873,7 +7878,7 @@ function tickTowerPersonalWorldSignal(frame){
+   const distance=target?Math.hypot(target.x-px,target.y-py)*CELL:Infinity;
+   if(towerPersonalWorldSound&&(!eligible||towerPersonalWorldSound.key!==world||distance>24))stopTowerPersonalWorldSignal();
+   if(!eligible||distance>18||!actx||actx.state!=='running')return;
+-  const saved=towerPersonalWorldSounds.get(world);
++  const saved=towerPersonalWorldSounds.get(world)||frame.ambientRecordings?.[world];
+   if(!towerPersonalWorldSound&&!saved?.finished){
+     const signal=createTowerPersonalWorldSignal({context:actx,destination:sfxGain||master||actx.destination,
+       world,offset:saved?.offset||0});
+@@ -7885,8 +7890,14 @@ function tickTowerPersonalWorldSignal(frame){
+   sound.signal.position({distance,pan:Math.sin(bearing)});
+   const sample=sound.signal.sample();
+   towerPersonalMonitorCaptions(sound.offset,sample.offset);sound.offset=sample.offset;
++  towerPersonalWorldSounds.set(world,{offset:sample.offset,finished:sample.finished});
+   if(sample.finished)stopTowerPersonalWorldSignal();
+ }
++function towerPersonalWorldSoundOptions(frame){
++  const world=frame.world,sound=towerPersonalWorldSounds.get(world)||frame.ambientRecordings?.[world];
++  return {sourceRecordingWorld:world,sourceRecordingOffset:sound?.offset,sourceRecordingFinished:!!sound?.finished,
++    sourceRecordingActive:!!towerPersonalWorldSound&&towerPersonalWorldSound.key===world};
++}
+ function towerPersonalCaptionEvent(text){
+   towerPersonalCaption={text,until:(chunkSurfRuntime?.towerLandFrame?.()?.time??stationTime())+5};
+ }
+@@ -7952,8 +7963,8 @@ function towerPersonalEvent(event){
+   };
+   if(lines[id])SPEECH.say({who:'you',text:lines[id]},{id:`tower-personal:${id}`,replace:true});
+   if(id==='recording-heard')towerPersonalStateNotice={text:'RECORDING KEPT',until:(chunkSurfRuntime?.towerLandFrame?.()?.time??stationTime())+4};
+-  if(id==='handover-started'&&playTowerPersonalContact({context:actx,destination:sfxGain||master||actx?.destination,kind:'cloth'}))towerPersonalCaptionEvent('[Clothing shifts beside the chair.]');
+-  if(id==='handover-finished'&&playTowerPersonalContact({context:actx,destination:sfxGain||master||actx?.destination,kind:'wood'}))towerPersonalCaptionEvent('[The recorder settles against wood.]');
++  if(id==='handover-started'){playTowerPersonalContact({context:actx,destination:sfxGain||master||actx?.destination,kind:'cloth'});towerPersonalCaptionEvent('[Clothing shifts beside the chair.]');}
++  if(id==='handover-finished'){playTowerPersonalContact({context:actx,destination:sfxGain||master||actx?.destination,kind:'wood'});towerPersonalCaptionEvent('[The recorder settles against wood.]');}
+   if(['recording-heard','completed'].includes(id))reconcileTowerPersonalTake();
+ }
+ function towerPersonalMonitorCaptions(beforeOffset,afterOffset){
+@@ -7975,10 +7986,14 @@ function tickTowerPersonal(dt){
+   if(sample){towerPersonalMonitorFrame=sample;towerPersonalMonitorCaptions(lastOffset,sample.recordingOffset);}
+   const result=chunkSurfRuntime.tickTowerLand?.(dt,{recorderHeld:towerPersonalRecorderHeld,
+     audibleSeconds:sample?.audibleSeconds||0,recordingOffset:sample?.recordingOffset??before.recordingOffset,
+-    paused:paused||scenes.blocksWorld()||document.hidden,reducedMotion:shakeMode()!=='full'});
++    paused:paused||scenes.blocksWorld()||document.hidden,reducedMotion:shakeMode()!=='full',...towerPersonalWorldSoundOptions(before)});
+   for(const event of result?.events||[])towerPersonalEvent(event);
+   const second=Math.floor((result?.frame?.listenedSeconds??before.listenedSeconds)||0);
+   if(towerPersonalRecorderHeld&&second!==towerPersonalSavedSecond){towerPersonalSavedSecond=second;saveCommit({chunkSurf:chunkSurfRuntime.state()});}
++  if(towerPersonalWorldSound){
++    const key=`${towerPersonalWorldSound.key}:${Math.floor(towerPersonalWorldSound.offset)}`;
++    if(key!==towerPersonalWorldSavedKey){towerPersonalWorldSavedKey=key;saveCommit({chunkSurf:chunkSurfRuntime.state()});}
++  }
+   endSourceHaystackMosh();endSourceBracketPresence({despawn:true});
+   if(PRES.isActive())PRES.despawn();
+   sourceFearFloor=0;syncSourceCorridorRain(0);
+@@ -7993,6 +8008,13 @@ function ensureTowerPersonalHud(){
+   hud.querySelector('.personal-quiet-inspect').addEventListener('click',()=>interact());
+   (document.getElementById('wrap')||document.body).appendChild(hud);towerPersonalHud=hud;return hud;
+ }
++function towerPersonalFocusLabel(focus,frame){
++  if(focus.kind==='land-door')return frame.stage==='return-hall'&&frame.exitAvailable&&focus.id==='land-return-door'?'EXIT DOOR':'SERVICE DOOR';
++  const authored=runtimeTree('source-space.door-field')[focus.look]?.speaker;
++  return authored?String(authored).replace(/^(?:THE|AN?)\s+/i,'').toUpperCase():focus.label||focus.title||({
++    'land-boy':'BOY','land-recorder':'DA1000','land-recordist':'RECORDIST',
++  }[focus.id])||'OBJECT';
++}
+ function drawTowerPersonalQuiet(frame,cols,rows){
+   const hud=ensureTowerPersonalHud();if(!hud)return;
+   hud.hidden=!!(paused||document.hidden||scenes.blocksWorld());if(hud.hidden)return;
+@@ -8000,10 +8022,7 @@ function drawTowerPersonalQuiet(frame,cols,rows){
+   const object=hud.querySelector('.personal-quiet-focus'),button=hud.querySelector('.personal-quiet-inspect');
+   object.hidden=!focus;
+   if(focus){
+-    hud.querySelector('.personal-quiet-object').textContent=focus.label||focus.title||({
+-      'land-boy':'CONCERT CHAIR','land-recorder':'DA1000','land-recordist':'RECORDIST',
+-      'land-return-door':'EXIT DOOR','land-door':'SERVICE DOOR','land-workroom-door':'SERVICE DOOR',
+-    }[focus.id])||(String(focus.id||'').replace(/^land-/,'').replaceAll('-',' ').toUpperCase());
++    hud.querySelector('.personal-quiet-object').textContent=towerPersonalFocusLabel(focus,frame);
+     button.textContent=`${BINDINGS.inputPrompt('interact')} INSPECT`;
+   }
+   const raised=hud.querySelector('.personal-quiet-machine');raised.hidden=!towerPersonalRecorderHeld;
+@@ -28921,6 +28940,7 @@ function onKey(e){
+       + ` | story=${storyMode?1:0} rec=${REC.isRecording()?1:0} scenes=${scenes.depth()} rogue=${inRogue?1:0}`;
+   }
+   if(e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
++  if(e.target?.closest?.('#tower-personal-quiet button')&&['Enter',' ','Tab'].includes(e.key))return;
+   // Reload and devtools belong to the dev server, not to a shipped game. This is
+   // gated on the build rather than on Tauri alone so `tauri dev` keeps them:
+   // import.meta.env.DEV is true there and false in the packaged bundle. First

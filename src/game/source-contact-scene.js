@@ -1,71 +1,66 @@
 import * as scenes from './scenes.js';
-import { uiScrim, uiSize, uiText, uiWrap } from '../render/ui.js';
-import { withMachinePanel } from '../render/presentation.js';
-import { promptLine } from './bindings.js';
+import { makeColdOpenScene } from './coldopen.js';
+import { SOURCE_CONTACT_ACTION, SOURCE_CONTACT_CANCEL_CHOICE, sourceContactChoice } from './source-contact.js';
 
-export function makeSourceContactScene({ encounter, onResolve = () => {} } = {}) {
-  let lineIndex = 0;
-  let choiceIndex = 0;
-  let choosing = false;
-  let resolved = false;
-  const lines = Array.isArray(encounter?.lines) ? encounter.lines : [];
-  const choices = Array.isArray(encounter?.choices) ? encounter.choices : [];
-
-  function advance() {
-    if (lineIndex < lines.length - 1) { lineIndex += 1; return; }
-    choosing = true;
+// Same embodied, branching presenter as the guard and finale. There is no
+// separate quiz panel, answer scoring, or forced catch/restart presentation.
+export function makeSourceContactScene({
+  encounter, onResolve = () => {}, onChoice = () => {}, onLine, onBody = () => {}, audio, getAudio, cue, fx, replay,
+} = {}) {
+  let resolution = null;
+  let closed = false;
+  function metadata(choice) {
+    return {
+      action: choice.sourceContactAction,
+      terminal: choice.terminal === true,
+      nodeId: choice.nodeId,
+      combat: choice.sourceContactAction === SOURCE_CONTACT_ACTION.COMBAT,
+    };
   }
-
-  function choose() {
-    if (resolved || !choices.length) return;
-    resolved = true;
-    const choice = choices[Math.max(0, Math.min(choiceIndex, choices.length - 1))];
-    onResolve(choice.id, { aligned: choice.aligns === true, insightId: encounter?.insightId || null });
-    scenes.pop();
+  function finish() {
+    if (closed) return;
+    closed = true;
+    const choice = resolution || sourceContactChoice(encounter, SOURCE_CONTACT_CANCEL_CHOICE);
+    if (choice) onResolve(choice.id, metadata(choice));
   }
-
-  return {
-    id: `source-contact:${encounter?.id || 'unknown'}`,
-    blocksInput: true,
-    blocksWorld: false,
-    allowsLook: true,
-    suppressesHud: true,
-    sourcePressureLive: true,
-    lookProfile: 'rupture',
-    key(event) {
-      if (choosing) {
-        if (event.key === 'ArrowUp' || event.key === 'w') choiceIndex = (choiceIndex - 1 + choices.length) % choices.length;
-        else if (event.key === 'ArrowDown' || event.key === 's') choiceIndex = (choiceIndex + 1) % choices.length;
-        else if (event.key === 'Enter' || event.key === ' ' || event.key === 'z') choose();
-        return true;
-      }
-      if (event.key === 'Enter' || event.key === ' ' || event.key === 'z') advance();
-      return true;
+  const scene = makeColdOpenScene({
+    id: 'source-contact:' + (encounter?.id || 'approach'),
+    opening: encounter?.nodes,
+    startAt: encounter?.startAt || 'approach',
+    slate: '', ambient: false, lensPreset: 'battle',
+    blocksWorld: false, allowsLook: true, suppressesHud: true, worldUnderlay: true,
+    transcriptBackground: 'rgba(2,4,5,.94)',
+    audio, getAudio, cue, fx, replay,
+    // The HUSH answers with its body. A line that names a cue hands it to the
+    // renderer as the line is spoken (hush-pose.js).
+    onLine(line) {
+      if (line?.body) onBody(line.body, line);
+      onLine?.(line);
     },
-    render() {
-      const { cols, rows } = uiSize();
-      uiScrim(0.62);
-      const width = Math.min(82, cols - 4);
-      const height = Math.min(rows - 4, Math.max(17, 11 + choices.length * 2));
-      const x = Math.floor((cols - width) / 2), y = Math.floor((rows - height) / 2);
-      withMachinePanel(x, y, width, height, {
-        label: 'SOURCE / CONTACT',
-        source: encounter?.speaker || 'UNATTRIBUTED',
-        meter: true,
-        footer: choosing
-          ? promptLine([{ action: 'select', label: 'SELECT' }, { action: 'confirm', label: 'COMMIT' }])
-          : promptLine([{ action: 'continue', label: 'CONTINUE' }]),
-      }, (panel) => {
-      const current = lines[Math.min(lineIndex, Math.max(0, lines.length - 1))];
-      const wrapped = uiWrap(current?.text || '', Math.max(18, panel.w - 2));
-      wrapped.slice(0, 5).forEach((line, index) => uiText(panel.x + 1, panel.y + 1 + index, line, current?.who === 'surfer' ? 'ui-amber' : 'ui-primary'));
-      if (!choosing) return;
-      const choiceY = panel.y + 7;
-      choices.forEach((choice, index) => {
-        const selected = index === choiceIndex;
-        uiText(panel.x + 1, choiceY + index * 2, `${selected ? '>' : ' '} ${choice.text}`.slice(0, panel.w - 2), selected ? 'ui-amber' : 'ui-secondary');
-      });
-      });
+    onChoice(choice) {
+      const authored = sourceContactChoice(encounter, choice.id);
+      if (!authored) return;
+      encounter.markChoice?.(authored.id);
+      if (authored.terminal) resolution = authored;
+      onChoice(authored.id, metadata(authored));
     },
+    onDone: finish,
+  });
+  const key = scene.key;
+  scene.key = (event) => {
+    if (scenes.top() !== scene) return true;
+    if (event.key !== 'Escape') return key(event);
+    // Once deliberately committed, Escape cannot turn a fight into a retreat.
+    if (resolution?.sourceContactAction === SOURCE_CONTACT_ACTION.COMBAT) return true;
+    if (!closed) {
+      resolution = sourceContactChoice(encounter, SOURCE_CONTACT_CANCEL_CHOICE);
+      if (resolution) onChoice(resolution.id, metadata(resolution));
+      scenes.remove(scene);
+      finish();
+    }
+    return true;
   };
+  scene.sourcePressureLive = false;
+  scene.sourceContactDialogue = true;
+  return scene;
 }

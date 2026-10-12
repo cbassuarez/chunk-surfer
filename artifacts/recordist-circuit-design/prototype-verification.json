@@ -1,0 +1,41 @@
+{
+  "results": [
+    {
+      "pack": "quiet",
+      "actualAudio": true,
+      "meters": true,
+      "partialResume": true,
+      "keyboard": true,
+      "pause": true,
+      "receipt": true
+    },
+    {
+      "pack": "monitor",
+      "actualAudio": true,
+      "meters": true,
+      "partialResume": true,
+      "keyboard": true,
+      "pause": true,
+      "receipt": true
+    }
+  ],
+  "widths": [
+    1024,
+    360,
+    320
+  ],
+  "scenes": 7,
+  "doorNoTeleport": true,
+  "selectionStub": true,
+  "errors": [],
+  "limitations": "Illustrated UI prototypes only. No game runtime or perceptual playtest acceptance.",
+  "finalLayout": {
+    "allGameControlsWithinView": true,
+    "widths": [
+      1024,
+      360,
+      320
+    ],
+    "scenesPerPack": 7
+  }
+}

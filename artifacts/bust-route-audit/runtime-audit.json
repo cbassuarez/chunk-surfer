@@ -1,0 +1,815 @@
+{
+  "generatedAt": "2026-10-12T03:58:44.362Z",
+  "scope": "Read-only audit of CURRENT dirty tree. Dedicated bust-revealed tower route / T4 prioritized; production and tests unchanged.",
+  "method": "Actual imported runtime + seeded presets in Node; main.js integration and authored plan statically traced. This is not a browser playthrough.",
+  "units": {
+    "cellMetres": 0.5
+  },
+  "sharedPrelude": {
+    "beats": [
+      "Source approach/physical receiving lift",
+      "nothingness/Pressure",
+      "Source proper/real perimeter door",
+      "telephone road",
+      "continuous unravelling/video",
+      "optional bust audience"
+    ],
+    "observation": "Current unravelling has a broad fixed walkable floor and tickHorizon does not reset the body. Bell-noise resets belong to the separate route AFTER accepting the bust.",
+    "references": [
+      {
+        "file": "/Users/seb/chunk-surfer/src/game/source-space-runtime.js",
+        "lines": [
+          1106,
+          1117
+        ],
+        "reason": "wide horizon floor"
+      },
+      {
+        "file": "/Users/seb/chunk-surfer/src/game/source-space-runtime.js",
+        "lines": [
+          2806,
+          2811
+        ],
+        "reason": "tickHorizon advances decay without returning a body reset"
+      },
+      {
+        "file": "/Users/seb/chunk-surfer/src/game/source-bell-field.js",
+        "lines": [
+          172,
+          178
+        ],
+        "reason": "separate tower-road noise reset"
+      }
+    ]
+  },
+  "dedicatedRoute": {
+    "current": "Accept qualified bust proposition -> revealed sideways path -> bells/service-door field -> two hidden key doors unlock belfry -> actual tower/finale. Optional lock-in door -> forward walk -> school-hall stub -> its exit returns straight to road.",
+    "intendedT4": "Lock-in -> snowed hall/boy -> tape field -> dead broadcast/mast -> ash building/last recordist -> second hall/handover/collapse -> original road. Ordered bell errand; playable take, ending flag, combat advantage."
+  },
+  "reproduction": {
+    "seed": 4417,
+    "sourceBounds": {
+      "horizon": {
+        "from": -3330,
+        "to": -3842,
+        "length": 512,
+        "tapeSeconds": 259.375,
+        "sliceMetres": 2,
+        "slices": 256,
+        "halfWidth": 96,
+        "entryStandoff": 6
+      },
+      "bells": {
+        "from": -3842,
+        "to": -4394,
+        "length": 552,
+        "entryStandoff": 8,
+        "checkpoints": [
+          {
+            "depth": 148,
+            "x": 0
+          },
+          {
+            "depth": 282,
+            "x": 0
+          }
+        ],
+        "halfWidth": 58,
+        "room": {
+          "at": -4386,
+          "halfX": 6.5,
+          "halfZ": 4.5,
+          "height": 11,
+          "threshold": -4380
+        },
+        "doors": {
+          "from": -4270,
+          "to": -4366
+        },
+        "resolveFrom": -4142,
+        "resolveTo": -4358
+      }
+    },
+    "ordinaryLockInDoor": {
+      "id": "source-tower-door-2",
+      "mesh": "door_frame_single_steel",
+      "archetype": "pool-fire-single",
+      "route": null,
+      "shut": false,
+      "key": false,
+      "opened": false,
+      "erased": false,
+      "variant": 6,
+      "seed": 0.5606542943419549,
+      "wrong": true,
+      "fails": false,
+      "lockIn": true,
+      "home": false,
+      "reawakened": false,
+      "threshold": [
+        {
+          "x": -5.94715886592865,
+          "y": -4538.071521613598
+        },
+        {
+          "x": -3.9517802667617796,
+          "y": -4538.495861198902
+        }
+      ],
+      "normal": [
+        0.20800960469623703,
+        0,
+        0.9781267833742797
+      ]
+    },
+    "crossing": {
+      "open": {
+        "handled": true,
+        "opened": true,
+        "event": "outskirt-door-opened"
+      },
+      "from": {
+        "x": -4.63745515930086,
+        "y": -4536.816501231188,
+        "facing": 0
+      },
+      "to": {
+        "x": -5.26148397338957,
+        "y": -4539.750881581312,
+        "facing": 0
+      },
+      "collision": {
+        "ok": true,
+        "floor": 15.2
+      },
+      "crossing": {
+        "id": "source-tower-door-2",
+        "variant": 6,
+        "seed": 0.5606542943419549,
+        "key": false,
+        "world": "school-hall",
+        "home": false,
+        "released": false,
+        "wrong": true,
+        "fails": false,
+        "lockIn": true,
+        "forward": [
+          -0.20800960469623703,
+          -0.9781267833742797
+        ],
+        "startedAt": 0,
+        "phase": "open",
+        "progress": 0,
+        "reveal": 0,
+        "elapsed": 0,
+        "wayOut": true
+      }
+    },
+    "released": true,
+    "hallBeforeTick": {
+      "phase": "bells",
+      "towerLand": "school-hall",
+      "entry": {
+        "x": 40,
+        "y": -3714,
+        "facing": 0
+      },
+      "localY": -3462,
+      "cellAt": null,
+      "neighboringSteps": [
+        {
+          "to": {
+            "x": 41,
+            "y": -3714
+          },
+          "result": {
+            "ok": false,
+            "why": "wall"
+          }
+        },
+        {
+          "to": {
+            "x": 39,
+            "y": -3714
+          },
+          "result": {
+            "ok": false,
+            "why": "wall"
+          }
+        },
+        {
+          "to": {
+            "x": 40,
+            "y": -3713
+          },
+          "result": {
+            "ok": false,
+            "why": "wall"
+          }
+        },
+        {
+          "to": {
+            "x": 40,
+            "y": -3715
+          },
+          "result": {
+            "ok": false,
+            "why": "wall"
+          }
+        }
+      ],
+      "submittedProps": 37,
+      "ambient": {
+        "color": [
+          0.52,
+          0.56,
+          0.64
+        ],
+        "intensity": 0.085
+      },
+      "lights": [
+        {
+          "id": "source-void-lamp",
+          "kind": "fitting",
+          "x": 20,
+          "y": 17.599999999999998,
+          "z": -1857,
+          "color": [
+            0.74,
+            0.79,
+            0.88
+          ],
+          "intensity": 4.2,
+          "radius": 44,
+          "penetration": 1,
+          "castsShadow": false
+        }
+      ],
+      "weather": {
+        "rain": 0,
+        "sky": false
+      }
+    },
+    "hallTick": {
+      "position": {
+        "x": 40,
+        "y": -4094.2
+      },
+      "moved": true,
+      "contacts": [],
+      "strikes": [],
+      "reset": null,
+      "time": 0.016,
+      "noise": 0,
+      "noiseLimit": 3,
+      "hits": 0,
+      "rings": 0,
+      "resets": 0,
+      "checkpointDepth": 0,
+      "recoiling": false
+    },
+    "displacement": {
+      "cells": 380.1999999999998,
+      "metres": 190.0999999999999
+    },
+    "reload": {
+      "savedKeys": [
+        "schema",
+        "active",
+        "completed",
+        "phase",
+        "seed",
+        "profile",
+        "returnPoint",
+        "hallMaxDistance",
+        "hallExperience",
+        "pageStage",
+        "haystackOrigin",
+        "landscapeOrigin",
+        "interactivePageSlot",
+        "haystackDialogue",
+        "sourceContacts",
+        "landingDoorOpen",
+        "landingDoorSealed",
+        "edgeDoorOpen",
+        "edgeDoorEchoesErased",
+        "outskirtsExperience",
+        "sourceApproachDistance",
+        "sourceShore",
+        "sourceApproachComplete",
+        "firstLiftCompleted",
+        "landingWeatherSpent",
+        "hasFork",
+        "visited",
+        "tuned",
+        "recorded",
+        "optionalTraces",
+        "checkpointId",
+        "checkpoint",
+        "attempts",
+        "hushStage",
+        "pursuitBeat",
+        "pursuitsCleared",
+        "finalEncounter",
+        "armedRedaction",
+        "redaction",
+        "bestEligible",
+        "injuriesAtEntry",
+        "horizon",
+        "bellField",
+        "routeDoorsErased",
+        "routeDoorsOpened",
+        "station",
+        "finale"
+      ],
+      "station": {
+        "time": 0,
+        "crossing": {
+          "id": "source-tower-door-2",
+          "variant": 6,
+          "seed": 0.5606542943419549,
+          "world": "school-hall",
+          "key": false,
+          "home": false,
+          "released": true,
+          "wrong": true,
+          "fails": false,
+          "lockIn": true,
+          "forward": [
+            -0.20800960469623703,
+            -0.9781267833742797
+          ],
+          "startedAt": -2.5500000000000003
+        },
+        "walk": null,
+        "entries": [
+          {
+            "doorId": "source-tower-door-2",
+            "world": "school-hall",
+            "variant": 6,
+            "home": false,
+            "enteredAt": 0
+          }
+        ],
+        "takeBacks": [
+          {
+            "id": "source-tower-door-2",
+            "at": 0.6
+          }
+        ]
+      },
+      "savedHasTowerLand": false,
+      "savedHasLockInFrom": false,
+      "restoredTowerLand": null,
+      "restoredCellAtEntry": null,
+      "restoredPropCount": 78,
+      "lockInDoorErased": true
+    },
+    "afterReleasedWorldFolds": {
+      "crossing": null,
+      "towerLand": "school-hall",
+      "wrong": true,
+      "wrongReturnSpot": {
+        "x": -7,
+        "y": -4603,
+        "facing": 0
+      },
+      "note": "main.syncStationErrand calls putBackWrong when this released crossing becomes null, even while towerLand stays active. Components dynamically verified; main integration statically traced."
+    },
+    "lockInAvailabilityScan": {
+      "seeds": [
+        1,
+        250
+      ],
+      "failures": [
+        {
+          "seed": 31,
+          "id": "source-tower-door-11",
+          "shut": true,
+          "wrong": false,
+          "variant": 8,
+          "open": {
+            "handled": true,
+            "opened": false,
+            "event": "outskirt-door-shut",
+            "line": "There’s no handle on this side.",
+            "answer": null,
+            "position": {
+              "x": 1.1197946071624756,
+              "z": -2296.2021484375
+            }
+          }
+        }
+      ]
+    },
+    "actualKeyUnlockWithStationTime": [
+      {
+        "door": "source-tower-door-0",
+        "crossingId": "source-tower-door-0",
+        "unlockedBeforeWait": false,
+        "unlockedAfterWait": false
+      },
+      {
+        "door": "source-tower-door-9",
+        "crossingId": "source-tower-door-9",
+        "unlockedBeforeWait": true,
+        "unlockedAfterWait": true
+      }
+    ]
+  },
+  "findings": [
+    {
+      "id": "F1",
+      "priority": "P1",
+      "kind": "confirmed runtime defect",
+      "title": "Lock-in hall is outside the current floor and is immediately clamped 190.1m away",
+      "effect": "Entry localY -3462 is above BELLS.from -3842; all four attempted steps are walls. The next ordinary bell-field tick moves localY to -3842.2 while hall-only props remain active.",
+      "evidenceStrength": "Dynamic runtime reproduction plus ordinary main loop trace",
+      "refs": [
+        {
+          "file": "/Users/seb/chunk-surfer/src/game/source-space-runtime.js",
+          "start": 6033,
+          "end": 6034,
+          "reason": "legacy unshifted placement"
+        },
+        {
+          "file": "/Users/seb/chunk-surfer/src/game/source-space-runtime.js",
+          "start": 2876,
+          "end": 2882,
+          "reason": "floor excludes entry"
+        },
+        {
+          "file": "/Users/seb/chunk-surfer/src/game/source-space-runtime.js",
+          "start": 2866,
+          "end": 2873,
+          "reason": "bell step not guarded for active land"
+        },
+        {
+          "file": "/Users/seb/chunk-surfer/src/game/source-bell-field.js",
+          "start": 187,
+          "end": 191,
+          "reason": "current field clamp"
+        },
+        {
+          "file": "/Users/seb/chunk-surfer/src/main.js",
+          "start": 17360,
+          "end": 17370,
+          "reason": "normal main adopts displacement"
+        }
+      ],
+      "recommendation": "Author lands relative to current route bounds and give their floor/collision/tick ownership an explicit active-land branch."
+    },
+    {
+      "id": "F2",
+      "priority": "P1",
+      "kind": "confirmed seeded reachability defect",
+      "title": "A seed can assign the sole lock-in to a barred door",
+      "effect": "Seed31 source-tower-door-11 is lockIn=true and shut=true; openDoorFieldDoor returns outskirt-door-shut. The only T4 entrance is unreachable in that seed.",
+      "evidenceStrength": "Dynamic bounded seed scan (1 failure in seeds1–250) and actual open attempt",
+      "refs": [
+        {
+          "file": "/Users/seb/chunk-surfer/src/game/source-space-runtime.js",
+          "start": 5464,
+          "end": 5478,
+          "reason": "key/openable fallback can select any non-key piece"
+        },
+        {
+          "file": "/Users/seb/chunk-surfer/src/game/source-space-runtime.js",
+          "start": 5495,
+          "end": 5512,
+          "reason": "later world coverage pass does not guarantee selected lock-in is unbarred"
+        }
+      ],
+      "recommendation": "Choose the lock-in after the final openable deal or explicitly guarantee that chosen non-key door opens."
+    },
+    {
+      "id": "F3",
+      "priority": "P1",
+      "kind": "confirmed persistence omission",
+      "title": "Hall identity and its return point disappear on reload after entrance consumption is saved",
+      "effect": "Active hall is closure state; main return point is transient stationWay.lockInFrom. Snapshot omits both, while lockIn.seen/consumed crossing are persisted. Restored runtime has no active hall and the original hall entry has no floor.",
+      "evidenceStrength": "Focused real-runtime serialize/recreate reproduction; main save/return wiring traced",
+      "refs": [
+        {
+          "file": "/Users/seb/chunk-surfer/src/game/source-space-runtime.js",
+          "start": 6097,
+          "end": 6106,
+          "reason": "unsaved active land"
+        },
+        {
+          "file": "/Users/seb/chunk-surfer/src/game/source-space-runtime.js",
+          "start": 6244,
+          "end": 6247,
+          "reason": "snapshot fields"
+        },
+        {
+          "file": "/Users/seb/chunk-surfer/src/game/chunk-surf-state.js",
+          "start": 135,
+          "end": 162,
+          "reason": "normalizer has no land/return data"
+        },
+        {
+          "file": "/Users/seb/chunk-surfer/src/main.js",
+          "start": 7784,
+          "end": 7788,
+          "reason": "transient return point"
+        },
+        {
+          "file": "/Users/seb/chunk-surfer/src/main.js",
+          "start": 7841,
+          "end": 7852,
+          "reason": "entrance marked seen before hall entry"
+        },
+        {
+          "file": "/Users/seb/chunk-surfer/src/main.js",
+          "start": 7870,
+          "end": 7881,
+          "reason": "return only uses transient point"
+        },
+        {
+          "file": "/Users/seb/chunk-surfer/src/main.js",
+          "start": 8686,
+          "end": 8690,
+          "reason": "resume restores saved position without active land"
+        }
+      ],
+      "recommendation": "Save active land, stage/progress, and exact road return pose together with entrance consumption; repair already stranded saves."
+    },
+    {
+      "id": "F4",
+      "priority": "P2",
+      "kind": "integration defect with dynamic component proof",
+      "title": "A wrong-return lock-in can teleport the player out of the hall when its old world folds",
+      "effect": "Seed4417 lock-in is wrong=true. finishLockIn releases crossing then enters hall. After .7s crossing=null; syncStationErrand still calls putBackWrong from its old crossing, relocating to road while towerLand remains active.",
+      "evidenceStrength": "Seed/crossing/fold/return spot dynamically reproduced; main call order statically traced, not browser-executed",
+      "refs": [
+        {
+          "file": "/Users/seb/chunk-surfer/src/game/source-space-runtime.js",
+          "start": 5475,
+          "end": 5478,
+          "reason": "wrong lock-in fallback allowed"
+        },
+        {
+          "file": "/Users/seb/chunk-surfer/src/main.js",
+          "start": 7846,
+          "end": 7852,
+          "reason": "release then enter hall"
+        },
+        {
+          "file": "/Users/seb/chunk-surfer/src/main.js",
+          "start": 7793,
+          "end": 7797,
+          "reason": "wrong return applies to ended lock-in too"
+        },
+        {
+          "file": "/Users/seb/chunk-surfer/src/main.js",
+          "start": 7907,
+          "end": 7915,
+          "reason": "relocation does not clear land state"
+        }
+      ],
+      "recommendation": "Consume the previous crossing return action on entry to a persistent land, or prohibit wrong-return semantics for that entrance."
+    },
+    {
+      "id": "F5",
+      "priority": "P2",
+      "kind": "authored planned behavior missing, not a proven regression",
+      "title": "T4 journey stops at an inspection-only hall and its door immediately returns to road",
+      "effect": "Only school-hall exists as a walkable land. The boy is a static shadow prop; land-piece only inspects; land-door calls leaveTowerLandNow. No tape/broadcast/ash/second-hall progression occurs.",
+      "evidenceStrength": "Closed land registry and interaction dispatch traced; plan explicitly remains unchecked",
+      "refs": [
+        {
+          "file": "/Users/seb/chunk-surfer/docs/plans/door-field-station.md",
+          "start": 248,
+          "end": 265,
+          "reason": "authored sequence and return"
+        },
+        {
+          "file": "/Users/seb/chunk-surfer/docs/plans/door-field-station.md",
+          "start": 334,
+          "end": 346,
+          "reason": "T4 unchecked"
+        },
+        {
+          "file": "/Users/seb/chunk-surfer/src/game/source-space-runtime.js",
+          "start": 6029,
+          "end": 6035,
+          "reason": "only land registered"
+        },
+        {
+          "file": "/Users/seb/chunk-surfer/src/game/source-space-runtime.js",
+          "start": 6076,
+          "end": 6082,
+          "reason": "static boy and exit"
+        },
+        {
+          "file": "/Users/seb/chunk-surfer/src/game/source-space-runtime.js",
+          "start": 3289,
+          "end": 3290,
+          "reason": "only inspect/exit verbs"
+        },
+        {
+          "file": "/Users/seb/chunk-surfer/src/main.js",
+          "start": 13300,
+          "end": 13300,
+          "reason": "exit immediately returns to road"
+        },
+        {
+          "file": "/Users/seb/chunk-surfer/src/data/elsewhere-worlds.js",
+          "start": 25,
+          "end": 39,
+          "reason": "the worlds do exist as crossing visual/bed variants"
+        }
+      ],
+      "recommendation": "Design/implement the finite state route and narrative verbs before adding more staging or palette work."
+    },
+    {
+      "id": "F6",
+      "priority": "P2",
+      "kind": "authored planned behavior missing, not a proven regression",
+      "title": "Ordered bell errand and promised recordist rewards have no connected runtime owner",
+      "effect": "Key-door takebacks only play a remote toll/unlock cue. Physical bell strikes increment noise and can reset; no order comparison, recordist tape grant, ending quote flag, or T4 combat advantage is wired to a land event.",
+      "evidenceStrength": "Bounded production/search inspection of land dispatch, station snapshot/reducer, key-answer callback, bell field, finale entry, and Source narrative; not a claim that unrelated tapes/recordists do not exist elsewhere",
+      "refs": [
+        {
+          "file": "/Users/seb/chunk-surfer/docs/plans/door-field-station.md",
+          "start": 203,
+          "end": 209,
+          "reason": "ordered bell errand"
+        },
+        {
+          "file": "/Users/seb/chunk-surfer/docs/plans/door-field-station.md",
+          "start": 255,
+          "end": 258,
+          "reason": "recordist tape and combat reward"
+        },
+        {
+          "file": "/Users/seb/chunk-surfer/docs/plans/door-field-station.md",
+          "start": 342,
+          "end": 345,
+          "reason": "unchecked payoff"
+        },
+        {
+          "file": "/Users/seb/chunk-surfer/src/main.js",
+          "start": 7924,
+          "end": 7934,
+          "reason": "key answers are audio only"
+        },
+        {
+          "file": "/Users/seb/chunk-surfer/src/game/source-bell-field.js",
+          "start": 164,
+          "end": 178,
+          "reason": "physical rings count noise/reset"
+        },
+        {
+          "file": "/Users/seb/chunk-surfer/src/game/chunk-surf-state.js",
+          "start": 135,
+          "end": 162,
+          "reason": "station schema carries no T4 objective/reward state"
+        }
+      ],
+      "recommendation": "Give T4 one saved objective/reward contract and wire order recognition, replayable take, ending consequence, and combat initialization to its completion."
+    },
+    {
+      "id": "F7",
+      "priority": "P2",
+      "kind": "latent presentation wiring omission",
+      "title": "Hall swaps props but keeps the bell-field environment and observer-centred light",
+      "effect": "Tower-land branch exists for propInstances only. sourceAmbient stays BELLS_AMBIENT, localLights returns source-void-lamp centred on player; stage lamp metadata is only emissive. Main still selects corridor rain/elsewhere crossing beds; released crossing folds away. Static snow drifts exist, but no active hall snow/weather/bed ownership.",
+      "evidenceStrength": "Dynamic ambient/light/weather values plus traced renderer/audio inputs",
+      "refs": [
+        {
+          "file": "/Users/seb/chunk-surfer/src/game/source-space-runtime.js",
+          "start": 6531,
+          "end": 6531,
+          "reason": "land isolates props only"
+        },
+        {
+          "file": "/Users/seb/chunk-surfer/src/game/source-space-runtime.js",
+          "start": 2582,
+          "end": 2587,
+          "reason": "bell ambient remains"
+        },
+        {
+          "file": "/Users/seb/chunk-surfer/src/game/source-space-runtime.js",
+          "start": 6053,
+          "end": 6056,
+          "reason": "stage lamps authored emissive"
+        },
+        {
+          "file": "/Users/seb/chunk-surfer/src/game/source-space-runtime.js",
+          "start": 6086,
+          "end": 6094,
+          "reason": "no light submission from land props"
+        },
+        {
+          "file": "/Users/seb/chunk-surfer/src/game/source-space-runtime.js",
+          "start": 7002,
+          "end": 7029,
+          "reason": "observer lamp wins"
+        },
+        {
+          "file": "/Users/seb/chunk-surfer/src/game/source-space-runtime.js",
+          "start": 6415,
+          "end": 6420,
+          "reason": "weather remains corridor rain"
+        },
+        {
+          "file": "/Users/seb/chunk-surfer/src/main.js",
+          "start": 8277,
+          "end": 8288,
+          "reason": "renderer/beds/weather use old crossing/road"
+        },
+        {
+          "file": "/Users/seb/chunk-surfer/content/narrative/source-space.door-field.story.json",
+          "start": 893,
+          "end": 915,
+          "reason": "snowed hall and warm stage promised in inspection text"
+        }
+      ],
+      "recommendation": "Give each real land its own weather, ambient/local fixture lights, sound bed, and saved environment lifecycle; reuse the actual world-variant identity."
+    }
+  ],
+  "tests": {
+    "command": "node --test test/horizon-bust.spec.mjs test/horizon.spec.mjs test/source-finale-routes.spec.mjs test/source-bell-field.spec.mjs test/source-bell-passage.spec.mjs test/source-hall-runtime.spec.mjs test/source-station-progression.spec.mjs test/source-station-main.spec.mjs test/station-walk.spec.mjs",
+    "exitCode": 1,
+    "total": 27,
+    "pass": 23,
+    "fail": 4,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0,
+    "durationMs": 6764.260791,
+    "failures": [
+      {
+        "file": "test/horizon.spec.mjs",
+        "line": 178,
+        "assertion": "key doors did not unlock tower door",
+        "classification": "stale fixture timing",
+        "explanation": "Crosses multiple doors synchronously; active crossing blocks eraseCrossedDoors. No advanceStationTime between visits. Actual two-key reproduction with 5s active station time succeeds."
+      },
+      {
+        "file": "test/source-bell-passage.spec.mjs",
+        "line": 405,
+        "assertion": "both key doors left tower locked",
+        "classification": "stale fixture timing",
+        "explanation": "Same zero-time visit assumption, including decoy during previous visit. Actual two-key reproduction with station time succeeds."
+      },
+      {
+        "file": "test/source-hall-runtime.spec.mjs",
+        "line": 273,
+        "assertion": "proper torch normal !== xray",
+        "classification": "intentional behavior change / stale expectation",
+        "explanation": "Selected Rooms leaking through implementation explicitly restores normal physical torch in Source proper."
+      },
+      {
+        "file": "test/source-finale-routes.spec.mjs",
+        "line": 273,
+        "assertion": "God finale preset contains inline godAbortBattle before carry",
+        "classification": "stale source-text shape contract",
+        "explanation": "godCathedralFinalePreset now uses godWarpToHook; commit calls godReleaseViewForWarp which clears scenes and activeBattleId/godBattleOpen before startCathedralCarry. Static helper trace, not a new interactive finale verification.",
+        "refs": [
+          [
+            "src/main.js",
+            24121,
+            24134
+          ],
+          [
+            "src/main.js",
+            23750,
+            23755
+          ],
+          [
+            "src/main.js",
+            23712,
+            23726
+          ]
+        ]
+      }
+    ],
+    "coverageGap": "No bounded suite traverses enterTowerLand -> tickBellField -> save/reload -> land exit, seed31 barred lock-in, or the planned T4 story/rewards. Green station tests prove ordinary crossing persistence, not T4 completion.",
+    "testsEdited": false
+  },
+  "searchScope": {
+    "files": [
+      "src/game/source-space-runtime.js",
+      "src/game/chunk-surf-state.js",
+      "src/main.js",
+      "src/game/source-bell-field.js",
+      "src/game/chapel-tower-state.js",
+      "src/game/bell-tower-runtime.js",
+      "src/data/elsewhere-worlds.js",
+      "content/narrative/source-space.door-field.story.json",
+      "docs/plans/door-field-station.md"
+    ],
+    "queries": [
+      "TOWER_LANDS / towerLandActive / towerLandState",
+      "land-piece / land-door",
+      "recordist / reward / errand / tape",
+      "ordered bell / bell order / ring order",
+      "bell alarm / startCathedralCarry / finale cathedral",
+      "lockIn / lockInFrom / stationSnapshot"
+    ],
+    "limitation": "Absence conclusions are scoped to connected Source land/station/finale owners and explicit T4 plan. Existing unrelated recordist art, recordings, combat dialogue, and elsewhere visual variants were not counted as T4 implementation."
+  }
+}

@@ -61,17 +61,10 @@ export function resolveTorchLook({ on = true, battery = 1, timeSec = 0, reducedE
 
 // THE TORCH INSIDE SOURCE.
 //
-// Before the body crosses the FOH threshold it is an x-ray: the screen-space
-// cone inverts the picture instead of pretending Source's paper and code are
-// ordinary surfaces a warm bulb could illuminate. The renderer owns that
-// inversion; this pure look object only names the mode and preserves the real
-// battery/failing-bulb power beneath it.
-//
-// Across the threshold, in the white nothingness and everything beyond it, the
-// torch is taken by the maintained emergency circuit. It throws red and its
-// power follows the SAME cycle as sourceEmergencyFrame. The flashlight does not
-// wait for the room-wide wash ten seconds into the crossing: it is the first red
-// thing the player carries into the blank field.
+// The physical hall receives a soft, surface-based profile. Elsewhere Source
+// may ask for an x-ray inversion or a beam taken by the emergency circuit;
+// those modes preserve the battery/failing-bulb power beneath them. The runtime
+// owns their geographic boundaries, while the renderer owns their appearance.
 //
 // Pure, and composes with applyHushTorchInterference rather than replacing it.
 const mix = (a, b, t) => a + (b - a) * t;
@@ -82,11 +75,42 @@ export const SOURCE_TORCH_MODE = Object.freeze({
   EMERGENCY: 'emergency',
 });
 
+// A surface-based beam for physical interiors. Compose after the fitted optics
+// and HUSH so the softer highlight response cannot restore power or reach.
+export function applyPhysicalTorchProfile(torch = {}, { profile = 'hall', flicker = 1 } = {}) {
+  const base = Array.isArray(torch.color) ? torch.color : [1, .94, .82];
+  const widen = (cosine, amount) => Math.cos(Math.acos(clamp(cosine, -1, 1)) * amount);
+  return {
+    ...torch,
+    color: base.map((channel, index) => mix(channel, [1, .95, .86][index], .35)),
+    // The church's recording gain reveals its dim maintained practicals. Its
+    // close stone receives a quieter lamp with the renderer's full shoulder.
+    power: clamp((Number(torch.power) || 0) * (profile === 'church' ? .18 : profile === 'dock' ? .74 : profile === 'shore' || profile === 'proper' ? .82 : .90) * clamp(flicker, 0, 1), 0, 1),
+    coneInner: widen(Number(torch.coneInner) || .88, 1.32),
+    coneOuter: widen(Number(torch.coneOuter) || .94, .78),
+    spill: clamp((Number(torch.spill) || 0) * (profile === 'shore' ? .85 : 1.25), 0, .12),
+    shoulder: profile === 'church' ? 2 : .75,
+  };
+}
+
 export function applySourceEmergencyTorch(torch = {}, {
   xray = false,
   active = false,
   cycle = 1,
+  flicker = 1,
+  profile = null,
 } = {}) {
+  // The hall is still a physical corridor. Its torch lights the paper and
+  // concrete, with a broad penumbra and a shoulder on the received light;
+  // neither darkness nor empty air is an image to invert. Keep the battery,
+  // fitted optics and HUSH attenuation that were composed before this profile.
+  if (profile === 'hall' || profile === 'dock' || profile === 'shore' || profile === 'proper') {
+    return {
+      ...applyPhysicalTorchProfile(torch, { profile, flicker }),
+      sourceEmergencyTorch: SOURCE_TORCH_MODE.NONE,
+      sourceTorchMode: SOURCE_TORCH_MODE.NONE,
+    };
+  }
   if (xray) return {
     ...torch,
     sourceEmergencyTorch: SOURCE_TORCH_MODE.XRAY,
@@ -94,6 +118,8 @@ export function applySourceEmergencyTorch(torch = {}, {
   };
   if (!active) return {
     ...torch,
+    // The outskirts' tired torch: same beam, power dipping in bursts.
+    ...(flicker !== 1 ? { power: clamp((Number(torch.power) || 0) * clamp(flicker, 0, 1), 0, 1) } : {}),
     sourceEmergencyTorch: SOURCE_TORCH_MODE.NONE,
     sourceTorchMode: SOURCE_TORCH_MODE.NONE,
   };

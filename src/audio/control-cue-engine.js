@@ -2,6 +2,9 @@
 // world-noise emission, recorder feed, or wall-clock cleanup timers.
 import { CONTROL_RECIPES, CONTROL_PROFILES } from './vendor/cuelume-mechanical.js';
 export const CONTROL_VOICE_LIMIT=6;
+// Cuelume's recipes are mixed for its engine's ×4 output stage (dist/audio/engine.js
+// OUTPUT_GAIN). Without it every contact lands ~12 dB down, around -40 dBFS: silent.
+export const CUELUME_OUTPUT_GAIN=4;
 const clamp=(value,lo,hi)=>Math.max(lo,Math.min(hi,Number(value)||0));
 
 export function createControlCueEngine({context:ctx,destination,gain=.55}={}){
@@ -32,7 +35,7 @@ export function createControlCueEngine({context:ctx,destination,gain=.55}={}){
     // Suspended input is dropped. Resuming the game must never replay old keys.
     if(disposed||!recipe||!destination||ctx?.state!=='running')return false;
     const now=ctx.currentTime,start=now+clamp(delay,0,.2);
-    const level=clamp(volume,0,1)*gain*recipe.volume*(quiet?(recipe.priority===0?.18:.65):1);
+    const level=clamp(volume,0,1)*gain*CUELUME_OUTPUT_GAIN*recipe.volume*(quiet?(recipe.priority===0?.18:.65):1);
     if(level<=0)return false;
     const bucket=recipe.priority===0?'navigation':`${scope}:${key}`;
     if(start-(recent.get(bucket)??-Infinity)<recipe.gap/1000){suppressed++;return false;}

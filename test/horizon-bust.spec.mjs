@@ -7,6 +7,8 @@ import { buildChunkSurfGodPreset, CHUNK_SURF_GOD_PRESET } from '../src/game/chun
 import {
   HORIZON_BUST_AUDIENCE,
   HORIZON_BUST_REFUSAL,
+  horizonBustAudience,
+  horizonBustRefusalTree,
   horizonBustProposition,
 } from '../src/game/horizon-bust.js';
 import { TOWER_DEFEAT_CEILING } from '../src/game/chunk-surf-state.js';
@@ -63,8 +65,16 @@ for (const mode of ['carried', 'returned']) {
   const words = lines.reduce((sum, line) => sum + line.text.trim().split(/\s+/).length, 0);
   assert.ok(words >= 80 && words <= 210, `${mode} audience has substance without becoming a monologue (${words} words)`);
   assert.ok(lines.some((line) => /another way/i.test(line.text)), `${mode} arrives at the offer`);
+  assert.match(lines.map((line) => line.text).join(' '), /chapel without my help/i,
+    `${mode} hears that the portrait is optional before the detour is offered`);
+  assert.match(lines.map((line) => line.text).join(' '), /what's gone stays gone.*ground stays under your feet.*take your time/i,
+    `${mode} receives the same irreversible-loss and safe-footing explanation as a player without the eyes`);
 }
 assert.equal(HORIZON_BUST_REFUSAL.length, 2);
+for (const mode of ['untouched', 'declined']) {
+  assert.deepEqual(horizonBustAudience(mode), HORIZON_BUST_REFUSAL,
+    `${mode} cannot receive an eligible eyes audience`);
+}
 
 // ── the first meeting ───────────────────────────────────────────────────────
 const proposition = horizonBustProposition(HORIZON_BUST_AUDIENCE.carried.at(-1));
@@ -100,7 +110,37 @@ assert.notEqual(
   horizonBustProposition(null, { defeats: 1 }).start.lines.at(-1).text,
   horizonBustProposition(null, { defeats: 2 }).start.lines.at(-1).text,
 );
-assert.match(proposition.accepted.lines.map((line) => line.text).join(' '), /sigil|bell-like/i);
+const acceptedText=proposition.accepted.lines.map((line) => line.text).join(' ');
+assert.match(acceptedText, /path opens beside the pedestal.*out of the picture/i,
+  'the accepted offer describes a visible lateral path, not instant relocation');
+assert.match(acceptedText, /walk it.*bells.*silent.*not all.*noise.*again/i,
+  'even skipping optional questions still explains how the bell field behaves');
+assert.match(acceptedText, /user experience/i, 'the portrait keeps his ceremonial-button joke');
+assert.doesNotMatch(acceptedText, /six narrow fractures|sigil|teleport/i);
+assert.match(proposition.decision.lines.map((line) => line.text).join(' '),
+  /agree.*tower.*no going back.*no choosing the nave/i,
+  'the irreversible route commitment is explained before choosing, not hidden in an optional question');
+assert.match(proposition.decision.choices[0].text,/commit to the tower/i);
+assert.equal(TOWER_DEFEAT_CEILING, 3, 'the disclosed third-defeat limit matches the route state machine');
+assert.match(proposition.decision.lines.map((line) => line.text).join(' '),
+  /first two defeats.*third is final.*no fourth attempt.*hand.*seal.*accept/i,
+  'skipping every optional question still discloses the defeat ceiling at the seal choice');
+assert.match(horizonBustProposition(null, { defeats: 1 }).decision.lines.at(-1).text, /two attempts remain/i);
+assert.match(horizonBustProposition(null, { defeats: 2 }).decision.lines.at(-1).text, /last attempt.*third defeat is final/i);
+assert.doesNotMatch(JSON.stringify(proposition), /twenty minute/i, 'the compact detour has no stale duration promise');
+assert.match(acceptedText, /last quiet clearing.*next clearing.*noise settles/i,
+  'the portrait explains durable cluster progress and how a clearing settles warnings');
+const refusalText=horizonBustRefusalTree().told.lines.map((line)=>line.text).join(' ');
+assert.match(refusalText,/street you came by.*its own recording.*telephone box/i,
+  'the image is the familiar street losing substance, not another place after it');
+assert.match(refusalText,/what's gone stays gone/i,
+  'the portrait describes cumulative loss rather than a middle act that repairs itself');
+assert.match(refusalText,/ground stays under your feet.*stop to listen.*walk beside the picture.*won't take away the road you've walked/i,
+  'the portrait promises dependable footing, unhurried listening, and free exploration without progress loss');
+assert.match(refusalText,/chapel is ahead.*doesn't require my eyes or my permission/i,
+  'a player without the eyes receives a clear way onward that does not depend on the portrait');
+assert.doesNotMatch(refusalText,/puts itself back together|legible again|fall back before|keep to the bright|picture wanders|carries you aside|come to on/i,
+  'the portrait cannot advertise the removed repair, restart, or steering challenge');
 assert.match(proposition.declined.lines.map((line) => line.text).join(' '), /warn|detour/i);
 
 function onTape(marbleEyes) {
@@ -110,29 +150,54 @@ function onTape(marbleEyes) {
   return runtime;
 }
 
-{
-  const runtime = onTape('carried');
+for (const mode of ['carried', 'returned']) {
+  const runtime = onTape(mode);
   const point = runtime.horizonBustPoint(), origin = runtime.state().landscapeOrigin;
   runtime.setPlayerPosition({ x: point.x, y: point.y + 4, facing: 0 });
   assert.equal(runtime.geometry.canStep(point.x, point.y + 4, point.x, point.y).ok, false, 'the pedestal has truthful collision');
   assert.equal(runtime.geometry.canStep(point.x + 5, point.y + 4, point.x + 5, point.y).ok, true, 'the monument can be passed');
   const depth = (origin.y + SOURCE_HORIZON.from) - point.y;
   assert.ok(depth > 40 && depth < SOURCE_HORIZON.length - 40);
-  for (let beat = 1; beat <= HORIZON_BUST_AUDIENCE.carried.length; beat += 1) {
+  for (let beat = 1; beat <= HORIZON_BUST_AUDIENCE[mode].length; beat += 1) {
     const response = runtime.talkToHorizonBust();
+    assert.equal(response.eligible, true, `${mode} still qualifies for the optional detour`);
+    assert.equal(response.evidence.mode, mode);
     assert.equal(response.beat, beat);
-    assert.equal(response.offers, beat === HORIZON_BUST_AUDIENCE.carried.length);
+    assert.equal(response.offers, beat === HORIZON_BUST_AUDIENCE[mode].length);
+    assert.equal(runtime.state().finale.route, null, 'hearing the portrait does not commit a route');
   }
+  const before = runtime.horizonFrame();
+  assert.equal(runtime.takeHorizonBustDetour().handled, false, 'the eyes and audience cannot substitute for consent');
+  assert.equal(runtime.decideHorizonBust(true).accepted, true);
+  assert.equal(runtime.state().finale.route, 'tower', 'explicit acceptance commits the tower');
+  assert.equal(runtime.state().profile.marbleEyes, mode, 'the detour preserves actual eyes evidence');
+  assert.equal(runtime.takeHorizonBustDetour().pathOpened, true);
+  assert.equal(runtime.horizonFrame().depth, before.depth, 'the detour opens ground without moving the player');
+  assert.equal(runtime.horizonFrame().lateral, before.lateral);
+  assert.equal(runtime.chooseHorizonExit('chapel').handled, false, 'the accepted detour preserves its declared consequence');
 }
 
-{
-  const runtime = onTape(null);
+for (const mode of [null, 'declined']) {
+  const runtime = onTape(mode);
   for (let beat = 1; beat <= HORIZON_BUST_REFUSAL.length; beat += 1) {
     const response = runtime.talkToHorizonBust();
     assert.equal(response.eligible, false);
     assert.equal(response.offers, false);
   }
   assert.equal(runtime.state().finale.bust.decision, 'declined');
+  assert.equal(runtime.talkToHorizonBust().offersRefusal, true, 'the complete explanation remains available without the eyes');
+  assert.equal(runtime.takeHorizonBustDetour().handled, false, 'the explainer does not quietly grant the tower');
+  assert.equal(runtime.chooseHorizonExit('chapel').handled, true, 'a refused audience leaves the chapel continuation available');
+}
+
+for (const mode of [null, 'carried', 'returned']) {
+  const runtime = onTape(mode);
+  assert.equal(runtime.chooseHorizonExit('chapel').handled, true,
+    `the chapel is reachable without meeting the bust in eyes mode ${mode ?? 'untouched'}`);
+  assert.equal(runtime.state().phase, 'chapel-outskirts');
+  assert.equal(runtime.state().finale.bust.recognized, false);
+  assert.equal(runtime.state().finale.bust.decision, null, 'passing the portrait requires no audience or seal interaction');
+  assert.equal(runtime.state().profile.marbleEyes, mode);
 }
 
 console.log('horizon bust asset and audience specs passed');

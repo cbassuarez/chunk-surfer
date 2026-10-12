@@ -1,0 +1,2739 @@
+{
+  "passed": true,
+  "failure": null,
+  "diagnosticOnly": false,
+  "scope": "Chromium/Metal actual production game post-processing at 1440x900, disposable chapel checkpoint. Five relic eligibility flags, doorway entry, gaze and capture travel are fixtures. Fixture travel uses real swept realm movement, ground height and collision, bypassing natural-departure input lifecycle deliberately. Near-window W/A/D checks use actual held keyboard input. No earned errand, uninterrupted route, native/controller, frame-rate or perceptual-audio acceptance claim.",
+  "checks": [
+    "Collision-ground travel reaches all five central approach distances without a forced local pose.",
+    "Both front corners and side scours are reached along supported collision routes; no invalid body pose is injected.",
+    "Real held W approaches the bedroom, then remains blocked outside closed glazing without entering the room.",
+    "Real A/D movement near the facade produces lateral parallax and preserves the visit.",
+    "Stationary looks aside and back into snow release the room attention without false departure or jumper grant."
+  ],
+  "errors": [],
+  "diagnostics": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "net::ERR_ABORTED: http://127.0.0.1:5298/audio/main_b3/main_b3_56.mp3",
+    "net::ERR_ABORTED: http://127.0.0.1:5298/audio/the_tub/02_trillion_hull.wav",
+    "net::ERR_ABORTED: http://127.0.0.1:5298/audio/the_tub/04_xemf_mass.wav",
+    "net::ERR_ABORTED: http://127.0.0.1:5298/audio/the_tub/05_xither_glass.wav",
+    "net::ERR_ABORTED: http://127.0.0.1:5298/audio/the_tub/06_wetair_core.wav",
+    "net::ERR_ABORTED: http://127.0.0.1:5298/audio/the_tub/19_xemf_bloom.wav",
+    "net::ERR_ABORTED: http://127.0.0.1:5298/audio/lux_nova/lux_008.mp3",
+    "net::ERR_ABORTED: http://127.0.0.1:5298/audio/lux_nova/lux_015.mp3",
+    "net::ERR_ABORTED: http://127.0.0.1:5298/audio/lux_nova/lux_064.mp3"
+  ],
+  "snapshots": {
+    "build": {
+      "url": "http://127.0.0.1:5298/?nodisplaynotice=1&skipwarn=1&nomic=1&sam=0",
+      "scripts": [
+        "http://127.0.0.1:5298/assets/main-DZML3hQK.js"
+      ],
+      "resources": [
+        "http://127.0.0.1:5298/assets/main-DZML3hQK.js",
+        "http://127.0.0.1:5298/assets/rolldown-runtime-BQ-_32WO.js",
+        "http://127.0.0.1:5298/assets/modulepreload-polyfill-CWIbYaaI.js",
+        "http://127.0.0.1:5298/assets/window-composition-DSLHiWnL.js",
+        "http://127.0.0.1:5298/assets/source-desktop-view-BebSQ949.js"
+      ]
+    },
+    "approach-z3": {
+      "realm": {
+        "frame": {
+          "version": 1,
+          "world": "whiteout",
+          "variant": 5,
+          "seed": 0.12104450655169785,
+          "entryDoorId": "source-chapel-door-7",
+          "home": {
+            "eligible": true,
+            "nearWindow": false,
+            "reached": false,
+            "fold": 0,
+            "recognized": false,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "returnPose": {
+            "x": -4.367981850593306,
+            "y": -4337.423106308808,
+            "facing": 0,
+            "yaw": -0.12802500708305276,
+            "pitch": 0
+          },
+          "pose": {
+            "x": 0,
+            "z": 3,
+            "yaw": -0.0026865607006460734,
+            "pitch": -0.001940289070423054,
+            "floorY": 0
+          },
+          "stage": "inside",
+          "steps": 2,
+          "strideM": 0.6400000000000006,
+          "startedAt": 0.3031000000014901,
+          "returnStartedAt": null,
+          "returnDuration": 1.15,
+          "returnReason": null,
+          "windowReached": false,
+          "homeState": {
+            "recognized": false,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "time": 1.0765000000149012,
+          "stepBudget": 36,
+          "strideLength": 0.68,
+          "eyeHeight": 1.62,
+          "window": {
+            "x": -0.18,
+            "z": 70,
+            "bottom": 0.78,
+            "top": 2.2,
+            "halfWidth": 0.89
+          },
+          "decoherence": 0,
+          "atWindow": false
+        },
+        "return": null,
+        "action": null
+      },
+      "reward": {
+        "relics": [
+          "burning",
+          "flood",
+          "inverted",
+          "two-moons",
+          "glass-storm"
+        ],
+        "home": false,
+        "jumper": false,
+        "walk": null,
+        "composure": 40
+      },
+      "view": {
+        "yaw": -0.13071156778369883,
+        "pitch": -0.001940289070423054,
+        "facing": 0
+      },
+      "scene": null,
+      "capture": "approach-z3.png",
+      "render": "actual full game post-processing and HUD; no raw-scene substitution"
+    },
+    "approach-z40": {
+      "realm": {
+        "frame": {
+          "version": 1,
+          "world": "whiteout",
+          "variant": 5,
+          "seed": 0.12104450655169785,
+          "entryDoorId": "source-chapel-door-7",
+          "home": {
+            "eligible": true,
+            "nearWindow": false,
+            "reached": false,
+            "fold": 0,
+            "recognized": false,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "returnPose": {
+            "x": -4.367981850593306,
+            "y": -4337.423106308808,
+            "facing": 0,
+            "yaw": -0.12802500708305276,
+            "pitch": 0
+          },
+          "pose": {
+            "x": 0,
+            "z": 40,
+            "yaw": -0.00599992800155516,
+            "pitch": -0.004333228213752637,
+            "floorY": 0
+          },
+          "stage": "inside",
+          "steps": 57,
+          "strideM": 0.23999999999999788,
+          "startedAt": 0.3031000000014901,
+          "returnStartedAt": null,
+          "returnDuration": 1.15,
+          "returnReason": null,
+          "windowReached": false,
+          "homeState": {
+            "recognized": false,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "time": 2.6878000000193736,
+          "stepBudget": 36,
+          "strideLength": 0.68,
+          "eyeHeight": 1.62,
+          "window": {
+            "x": -0.18,
+            "z": 70,
+            "bottom": 0.78,
+            "top": 2.2,
+            "halfWidth": 0.89
+          },
+          "decoherence": 0,
+          "atWindow": false
+        },
+        "return": null,
+        "action": null
+      },
+      "reward": {
+        "relics": [
+          "burning",
+          "flood",
+          "inverted",
+          "two-moons",
+          "glass-storm"
+        ],
+        "home": false,
+        "jumper": false,
+        "walk": null,
+        "composure": 40
+      },
+      "view": {
+        "yaw": -0.13402493508460792,
+        "pitch": -0.004333228213752637,
+        "facing": 0
+      },
+      "scene": null,
+      "capture": "approach-z40.png",
+      "render": "actual full game post-processing and HUD; no raw-scene substitution"
+    },
+    "approach-z57": {
+      "realm": {
+        "frame": {
+          "version": 1,
+          "world": "whiteout",
+          "variant": 5,
+          "seed": 0.12104450655169785,
+          "entryDoorId": "source-chapel-door-7",
+          "home": {
+            "eligible": true,
+            "nearWindow": false,
+            "reached": false,
+            "fold": 0,
+            "recognized": false,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "returnPose": {
+            "x": -4.367981850593306,
+            "y": -4337.423106308808,
+            "facing": 0,
+            "yaw": -0.12802500708305276,
+            "pitch": 0
+          },
+          "pose": {
+            "x": 0,
+            "z": 56.99999999999875,
+            "yaw": -0.013845269104954011,
+            "pitch": -0.009998708340417344,
+            "floorY": 0
+          },
+          "stage": "inside",
+          "steps": 82,
+          "strideM": 0.2399999999987461,
+          "startedAt": 0.3031000000014901,
+          "returnStartedAt": null,
+          "returnDuration": 1.15,
+          "returnReason": null,
+          "windowReached": false,
+          "homeState": {
+            "recognized": false,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "time": 3.9687000000178876,
+          "stepBudget": 36,
+          "strideLength": 0.68,
+          "eyeHeight": 1.62,
+          "window": {
+            "x": -0.18,
+            "z": 70,
+            "bottom": 0.78,
+            "top": 2.2,
+            "halfWidth": 0.89
+          },
+          "decoherence": 0,
+          "atWindow": false
+        },
+        "return": null,
+        "action": null
+      },
+      "reward": {
+        "relics": [
+          "burning",
+          "flood",
+          "inverted",
+          "two-moons",
+          "glass-storm"
+        ],
+        "home": false,
+        "jumper": false,
+        "walk": null,
+        "composure": 40
+      },
+      "view": {
+        "yaw": -0.14187027618800677,
+        "pitch": -0.009998708340417344,
+        "facing": 0
+      },
+      "scene": null,
+      "capture": "approach-z57.png",
+      "render": "actual full game post-processing and HUD; no raw-scene substitution"
+    },
+    "approach-z62": {
+      "realm": {
+        "frame": {
+          "version": 1,
+          "world": "whiteout",
+          "variant": 5,
+          "seed": 0.12104450655169785,
+          "entryDoorId": "source-chapel-door-7",
+          "home": {
+            "eligible": true,
+            "nearWindow": false,
+            "reached": false,
+            "fold": 0.45977011494252856,
+            "recognized": false,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "returnPose": {
+            "x": -4.367981850593306,
+            "y": -4337.423106308808,
+            "facing": 0,
+            "yaw": -0.12802500708305276,
+            "pitch": 0
+          },
+          "pose": {
+            "x": 0,
+            "z": 62,
+            "yaw": -0.0224962042778839,
+            "pitch": -0.01624445925307766,
+            "floorY": 0
+          },
+          "stage": "inside",
+          "steps": 89,
+          "strideM": 0.4799999999999963,
+          "startedAt": 0.3031000000014901,
+          "returnStartedAt": null,
+          "returnDuration": 1.15,
+          "returnReason": null,
+          "windowReached": false,
+          "homeState": {
+            "recognized": false,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "time": 5.017900000013418,
+          "stepBudget": 36,
+          "strideLength": 0.68,
+          "eyeHeight": 1.62,
+          "window": {
+            "x": -0.18,
+            "z": 70,
+            "bottom": 0.78,
+            "top": 2.2,
+            "halfWidth": 0.89
+          },
+          "decoherence": 0,
+          "atWindow": false
+        },
+        "return": null,
+        "action": null
+      },
+      "reward": {
+        "relics": [
+          "burning",
+          "flood",
+          "inverted",
+          "two-moons",
+          "glass-storm"
+        ],
+        "home": false,
+        "jumper": false,
+        "walk": null,
+        "composure": 40
+      },
+      "view": {
+        "yaw": -0.15052121136093666,
+        "pitch": -0.01624445925307766,
+        "facing": 0
+      },
+      "scene": null,
+      "capture": "approach-z62.png",
+      "render": "actual full game post-processing and HUD; no raw-scene substitution"
+    },
+    "approach-z66-8": {
+      "realm": {
+        "frame": {
+          "version": 1,
+          "world": "whiteout",
+          "variant": 5,
+          "seed": 0.12104450655169785,
+          "entryDoorId": "source-chapel-door-7",
+          "home": {
+            "eligible": true,
+            "nearWindow": true,
+            "reached": true,
+            "fold": 1,
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0.2,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "returnPose": {
+            "x": -4.367981850593306,
+            "y": -4337.423106308808,
+            "facing": 0,
+            "yaw": -0.12802500708305276,
+            "pitch": 0
+          },
+          "pose": {
+            "x": 0,
+            "z": 66.8,
+            "yaw": -0.05619078620123705,
+            "pitch": -0.04053866063908138,
+            "floorY": 0
+          },
+          "stage": "inside",
+          "steps": 96,
+          "strideM": 0.5199999999999931,
+          "startedAt": 0.3031000000014901,
+          "returnStartedAt": null,
+          "returnDuration": 1.15,
+          "returnReason": null,
+          "windowReached": true,
+          "homeState": {
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0.2,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "time": 6.138000000014906,
+          "stepBudget": 36,
+          "strideLength": 0.68,
+          "eyeHeight": 1.62,
+          "window": {
+            "x": -0.18,
+            "z": 70,
+            "bottom": 0.78,
+            "top": 2.2,
+            "halfWidth": 0.89
+          },
+          "decoherence": 0,
+          "atWindow": true
+        },
+        "return": null,
+        "action": "LOOK"
+      },
+      "reward": {
+        "relics": [
+          "burning",
+          "flood",
+          "inverted",
+          "two-moons",
+          "glass-storm"
+        ],
+        "home": false,
+        "jumper": false,
+        "walk": null,
+        "composure": 40
+      },
+      "view": {
+        "yaw": -0.1842157932842898,
+        "pitch": -0.04053866063908138,
+        "facing": 0
+      },
+      "scene": null,
+      "capture": "approach-z66-8.png",
+      "render": "actual full game post-processing and HUD; no raw-scene substitution"
+    },
+    "whole-house-z64": {
+      "realm": {
+        "frame": {
+          "version": 1,
+          "world": "whiteout",
+          "variant": 5,
+          "seed": 0.12104450655169785,
+          "entryDoorId": "source-chapel-door-7",
+          "home": {
+            "eligible": true,
+            "nearWindow": false,
+            "reached": true,
+            "fold": 0.6896551724137929,
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "returnPose": {
+            "x": -4.367981850593306,
+            "y": -4337.423106308808,
+            "facing": 0,
+            "yaw": -0.12802500708305276,
+            "pitch": 0
+          },
+          "pose": {
+            "x": 0,
+            "z": 64,
+            "yaw": 0.16347643817069402,
+            "pitch": -0.037618014398071865,
+            "floorY": 0
+          },
+          "stage": "inside",
+          "steps": 100,
+          "strideM": 0.5999999999999901,
+          "startedAt": 0.3031000000014901,
+          "returnStartedAt": null,
+          "returnDuration": 1.15,
+          "returnReason": null,
+          "windowReached": true,
+          "homeState": {
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "time": 7.216400000013417,
+          "stepBudget": 36,
+          "strideLength": 0.68,
+          "eyeHeight": 1.62,
+          "window": {
+            "x": -0.18,
+            "z": 70,
+            "bottom": 0.78,
+            "top": 2.2,
+            "halfWidth": 0.89
+          },
+          "decoherence": 0,
+          "atWindow": false
+        },
+        "return": null,
+        "action": "TURN AWAY"
+      },
+      "reward": {
+        "relics": [
+          "burning",
+          "flood",
+          "inverted",
+          "two-moons",
+          "glass-storm"
+        ],
+        "home": false,
+        "jumper": false,
+        "walk": null,
+        "composure": 40
+      },
+      "view": {
+        "yaw": 0.03545143108764126,
+        "pitch": -0.037618014398071865,
+        "facing": 0
+      },
+      "scene": null,
+      "capture": "whole-house-z64.png",
+      "render": "actual full game post-processing and HUD; no raw-scene substitution"
+    },
+    "whole-house-z66": {
+      "realm": {
+        "frame": {
+          "version": 1,
+          "world": "whiteout",
+          "variant": 5,
+          "seed": 0.12104450655169785,
+          "entryDoorId": "source-chapel-door-7",
+          "home": {
+            "eligible": true,
+            "nearWindow": false,
+            "reached": true,
+            "fold": 0.9195402298850571,
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "returnPose": {
+            "x": -4.367981850593306,
+            "y": -4337.423106308808,
+            "facing": 0,
+            "yaw": -0.12802500708305276,
+            "pitch": 0
+          },
+          "pose": {
+            "x": 0,
+            "z": 66,
+            "yaw": 0.2048767170371084,
+            "pitch": -0.04701232758708857,
+            "floorY": 0
+          },
+          "stage": "inside",
+          "steps": 103,
+          "strideM": 0.55999999999999,
+          "startedAt": 0.3031000000014901,
+          "returnStartedAt": null,
+          "returnDuration": 1.15,
+          "returnReason": null,
+          "windowReached": true,
+          "homeState": {
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "time": 8.282600000016398,
+          "stepBudget": 36,
+          "strideLength": 0.68,
+          "eyeHeight": 1.62,
+          "window": {
+            "x": -0.18,
+            "z": 70,
+            "bottom": 0.78,
+            "top": 2.2,
+            "halfWidth": 0.89
+          },
+          "decoherence": 0,
+          "atWindow": false
+        },
+        "return": null,
+        "action": "TURN AWAY"
+      },
+      "reward": {
+        "relics": [
+          "burning",
+          "flood",
+          "inverted",
+          "two-moons",
+          "glass-storm"
+        ],
+        "home": false,
+        "jumper": false,
+        "walk": null,
+        "composure": 40
+      },
+      "view": {
+        "yaw": 0.07685170995405566,
+        "pitch": -0.04701232758708857,
+        "facing": 0
+      },
+      "scene": null,
+      "capture": "whole-house-z66.png",
+      "render": "actual full game post-processing and HUD; no raw-scene substitution",
+      "supplementalRaw": {
+        "capture": "whole-house-z66-raw-scene.png",
+        "render": "DIAGNOSTIC ONLY: raw scene RGB copied to opaque canvas, linear values quantized to PNG without pixel mesh/post or display encoding; not the game appearance"
+      }
+    },
+    "whole-house-clear-z66-8": {
+      "realm": {
+        "frame": {
+          "version": 1,
+          "world": "whiteout",
+          "variant": 5,
+          "seed": 0.12104450655169785,
+          "entryDoorId": "source-chapel-door-7",
+          "home": {
+            "eligible": true,
+            "nearWindow": true,
+            "reached": true,
+            "fold": 1,
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0.2,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "returnPose": {
+            "x": -4.367981850593306,
+            "y": -4337.423106308808,
+            "facing": 0,
+            "yaw": -0.12802500708305276,
+            "pitch": 0
+          },
+          "pose": {
+            "x": 0,
+            "z": 66.8,
+            "yaw": 0.22785704871709953,
+            "pitch": -0.002823623521095925,
+            "floorY": 0
+          },
+          "stage": "inside",
+          "steps": 105,
+          "strideM": 0,
+          "startedAt": 0.3031000000014901,
+          "returnStartedAt": null,
+          "returnDuration": 1.15,
+          "returnReason": null,
+          "windowReached": true,
+          "homeState": {
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0.2,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "time": 9.436400000020868,
+          "stepBudget": 36,
+          "strideLength": 0.68,
+          "eyeHeight": 1.62,
+          "window": {
+            "x": -0.18,
+            "z": 70,
+            "bottom": 0.78,
+            "top": 2.2,
+            "halfWidth": 0.89
+          },
+          "decoherence": 0,
+          "atWindow": true
+        },
+        "return": null,
+        "action": "LOOK"
+      },
+      "reward": {
+        "relics": [
+          "burning",
+          "flood",
+          "inverted",
+          "two-moons",
+          "glass-storm"
+        ],
+        "home": false,
+        "jumper": false,
+        "walk": null,
+        "composure": 40
+      },
+      "view": {
+        "yaw": 0.0998320416340468,
+        "pitch": -0.002823623521095925,
+        "facing": 0
+      },
+      "scene": null,
+      "capture": "whole-house-clear-z66-8.png",
+      "render": "actual full game post-processing and HUD; no raw-scene substitution",
+      "supplementalRaw": {
+        "capture": "whole-house-clear-z66-8-raw-scene.png",
+        "render": "DIAGNOSTIC ONLY: raw scene RGB copied to opaque canvas, linear values quantized to PNG without pixel mesh/post or display encoding; not the game appearance"
+      }
+    },
+    "upper-front-secondary-window": {
+      "realm": {
+        "frame": {
+          "version": 1,
+          "world": "whiteout",
+          "variant": 5,
+          "seed": 0.12104450655169785,
+          "entryDoorId": "source-chapel-door-7",
+          "home": {
+            "eligible": true,
+            "nearWindow": false,
+            "reached": true,
+            "fold": 1,
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "returnPose": {
+            "x": -4.367981850593306,
+            "y": -4337.423106308808,
+            "facing": 0,
+            "yaw": -0.12802500708305276,
+            "pitch": 0
+          },
+          "pose": {
+            "x": 3.45,
+            "z": 66.8,
+            "yaw": 0,
+            "pitch": -0.04372211860158762,
+            "floorY": 0
+          },
+          "stage": "inside",
+          "steps": 110,
+          "strideM": 0.050000000000001155,
+          "startedAt": 0.3031000000014901,
+          "returnStartedAt": null,
+          "returnDuration": 1.15,
+          "returnReason": null,
+          "windowReached": true,
+          "homeState": {
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "time": 10.621200000017888,
+          "stepBudget": 36,
+          "strideLength": 0.68,
+          "eyeHeight": 1.62,
+          "window": {
+            "x": -0.18,
+            "z": 70,
+            "bottom": 0.78,
+            "top": 2.2,
+            "halfWidth": 0.89
+          },
+          "decoherence": 0,
+          "atWindow": false
+        },
+        "return": null,
+        "action": "TURN AWAY"
+      },
+      "reward": {
+        "relics": [
+          "burning",
+          "flood",
+          "inverted",
+          "two-moons",
+          "glass-storm"
+        ],
+        "home": false,
+        "jumper": false,
+        "walk": null,
+        "composure": 40
+      },
+      "view": {
+        "yaw": -0.12802500708305276,
+        "pitch": -0.04372211860158762,
+        "facing": 0
+      },
+      "scene": null,
+      "capture": "upper-front-secondary-window.png",
+      "render": "actual full game post-processing and HUD; no raw-scene substitution",
+      "supplementalRaw": {
+        "capture": "upper-front-secondary-window-raw-scene.png",
+        "render": "DIAGNOSTIC ONLY: raw scene RGB copied to opaque canvas, linear values quantized to PNG without pixel mesh/post or display encoding; not the game appearance"
+      }
+    },
+    "left-side-z70": {
+      "realm": {
+        "frame": {
+          "version": 1,
+          "world": "whiteout",
+          "variant": 5,
+          "seed": 0.12104450655169785,
+          "entryDoorId": "source-chapel-door-7",
+          "home": {
+            "eligible": true,
+            "nearWindow": false,
+            "reached": true,
+            "fold": 1,
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "returnPose": {
+            "x": -4.367981850593306,
+            "y": -4337.423106308808,
+            "facing": 0,
+            "yaw": -0.12802500708305276,
+            "pitch": 0
+          },
+          "pose": {
+            "x": -3.5,
+            "z": 70,
+            "yaw": 0.572966142888707,
+            "pitch": -0.23111269834670697,
+            "floorY": -1.0518734350381291
+          },
+          "stage": "inside",
+          "steps": 125,
+          "strideM": 0.2554646630809756,
+          "startedAt": 0.3031000000014901,
+          "returnStartedAt": null,
+          "returnDuration": 1.15,
+          "returnReason": null,
+          "windowReached": true,
+          "homeState": {
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "time": 12.410800000019373,
+          "stepBudget": 36,
+          "strideLength": 0.68,
+          "eyeHeight": 1.62,
+          "window": {
+            "x": -0.18,
+            "z": 70,
+            "bottom": 0.78,
+            "top": 2.2,
+            "halfWidth": 0.89
+          },
+          "decoherence": 0,
+          "atWindow": false
+        },
+        "return": null,
+        "action": "TURN AWAY"
+      },
+      "reward": {
+        "relics": [
+          "burning",
+          "flood",
+          "inverted",
+          "two-moons",
+          "glass-storm"
+        ],
+        "home": false,
+        "jumper": false,
+        "walk": null,
+        "composure": 40
+      },
+      "view": {
+        "yaw": 0.4449411358056542,
+        "pitch": -0.23111269834670697,
+        "facing": 0
+      },
+      "scene": null,
+      "capture": "left-side-z70.png",
+      "render": "actual full game post-processing and HUD; no raw-scene substitution"
+    },
+    "left-side-z72": {
+      "realm": {
+        "frame": {
+          "version": 1,
+          "world": "whiteout",
+          "variant": 5,
+          "seed": 0.12104450655169785,
+          "entryDoorId": "source-chapel-door-7",
+          "home": {
+            "eligible": true,
+            "nearWindow": false,
+            "reached": true,
+            "fold": 1,
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "returnPose": {
+            "x": -4.367981850593306,
+            "y": -4337.423106308808,
+            "facing": 0,
+            "yaw": -0.12802500708305276,
+            "pitch": 0
+          },
+          "pose": {
+            "x": -3.5,
+            "z": 72,
+            "yaw": 1.067953115867038,
+            "pitch": -0.25399586155759923,
+            "floorY": -1.3274458627207308
+          },
+          "stage": "inside",
+          "steps": 128,
+          "strideM": 0.28512569643397895,
+          "startedAt": 0.3031000000014901,
+          "returnStartedAt": null,
+          "returnDuration": 1.15,
+          "returnReason": null,
+          "windowReached": true,
+          "homeState": {
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "time": 13.51630000001938,
+          "stepBudget": 36,
+          "strideLength": 0.68,
+          "eyeHeight": 1.62,
+          "window": {
+            "x": -0.18,
+            "z": 70,
+            "bottom": 0.78,
+            "top": 2.2,
+            "halfWidth": 0.89
+          },
+          "decoherence": 0,
+          "atWindow": false
+        },
+        "return": null,
+        "action": "TURN AWAY"
+      },
+      "reward": {
+        "relics": [
+          "burning",
+          "flood",
+          "inverted",
+          "two-moons",
+          "glass-storm"
+        ],
+        "home": false,
+        "jumper": false,
+        "walk": null,
+        "composure": 40
+      },
+      "view": {
+        "yaw": 0.9399281087839851,
+        "pitch": -0.25399586155759923,
+        "facing": 1
+      },
+      "scene": null,
+      "capture": "left-side-z72.png",
+      "render": "actual full game post-processing and HUD; no raw-scene substitution"
+    },
+    "leftDeepScour": {
+      "realm": {
+        "frame": {
+          "version": 1,
+          "world": "whiteout",
+          "variant": 5,
+          "seed": 0.12104450655169785,
+          "entryDoorId": "source-chapel-door-7",
+          "home": {
+            "eligible": true,
+            "nearWindow": false,
+            "reached": true,
+            "fold": 1,
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "returnPose": {
+            "x": -4.367981850593306,
+            "y": -4337.423106308808,
+            "facing": 0,
+            "yaw": -0.12802500708305276,
+            "pitch": 0
+          },
+          "pose": {
+            "x": -2.6500000000000004,
+            "z": 72,
+            "yaw": 1.067953115867038,
+            "pitch": -0.25399586155759923,
+            "floorY": -1.253302903745729
+          },
+          "stage": "inside",
+          "steps": 129,
+          "strideM": 0.4706344722982728,
+          "startedAt": 0.3031000000014901,
+          "returnStartedAt": null,
+          "returnDuration": 1.15,
+          "returnReason": null,
+          "windowReached": true,
+          "homeState": {
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "time": 14.05690000002087,
+          "stepBudget": 36,
+          "strideLength": 0.68,
+          "eyeHeight": 1.62,
+          "window": {
+            "x": -0.18,
+            "z": 70,
+            "bottom": 0.78,
+            "top": 2.2,
+            "halfWidth": 0.89
+          },
+          "decoherence": 0,
+          "atWindow": false
+        },
+        "return": null,
+        "action": "TURN AWAY"
+      },
+      "reward": {
+        "relics": [
+          "burning",
+          "flood",
+          "inverted",
+          "two-moons",
+          "glass-storm"
+        ],
+        "home": false,
+        "jumper": false,
+        "walk": null,
+        "composure": 40
+      },
+      "view": {
+        "yaw": 0.9399281087839851,
+        "pitch": -0.25399586155759923,
+        "facing": 1
+      },
+      "scene": null
+    },
+    "left-scour-lower-window": {
+      "realm": {
+        "frame": {
+          "version": 1,
+          "world": "whiteout",
+          "variant": 5,
+          "seed": 0.12104450655169785,
+          "entryDoorId": "source-chapel-door-7",
+          "home": {
+            "eligible": true,
+            "nearWindow": false,
+            "reached": true,
+            "fold": 1,
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "returnPose": {
+            "x": -4.367981850593306,
+            "y": -4337.423106308808,
+            "facing": 0,
+            "yaw": -0.12802500708305276,
+            "pitch": 0
+          },
+          "pose": {
+            "x": -4.2,
+            "z": 72,
+            "yaw": 1.5707963267948966,
+            "pitch": -0.5816599495454454,
+            "floorY": -1.024912980647758
+          },
+          "stage": "inside",
+          "steps": 132,
+          "strideM": 0.06258482686897723,
+          "startedAt": 0.3031000000014901,
+          "returnStartedAt": null,
+          "returnDuration": 1.15,
+          "returnReason": null,
+          "windowReached": true,
+          "homeState": {
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "time": 14.88540000002087,
+          "stepBudget": 36,
+          "strideLength": 0.68,
+          "eyeHeight": 1.62,
+          "window": {
+            "x": -0.18,
+            "z": 70,
+            "bottom": 0.78,
+            "top": 2.2,
+            "halfWidth": 0.89
+          },
+          "decoherence": 0,
+          "atWindow": false
+        },
+        "return": null,
+        "action": "TURN AWAY"
+      },
+      "reward": {
+        "relics": [
+          "burning",
+          "flood",
+          "inverted",
+          "two-moons",
+          "glass-storm"
+        ],
+        "home": false,
+        "jumper": false,
+        "walk": null,
+        "composure": 40
+      },
+      "view": {
+        "yaw": 1.4427713197118437,
+        "pitch": -0.5816599495454454,
+        "facing": 1
+      },
+      "scene": null,
+      "capture": "left-scour-lower-window.png",
+      "render": "actual full game post-processing and HUD; no raw-scene substitution",
+      "supplementalRaw": {
+        "capture": "left-scour-lower-window-raw-scene.png",
+        "render": "DIAGNOSTIC ONLY: raw scene RGB copied to opaque canvas, linear values quantized to PNG without pixel mesh/post or display encoding; not the game appearance"
+      }
+    },
+    "right-side-z70": {
+      "realm": {
+        "frame": {
+          "version": 1,
+          "world": "whiteout",
+          "variant": 5,
+          "seed": 0.12104450655169785,
+          "entryDoorId": "source-chapel-door-7",
+          "home": {
+            "eligible": true,
+            "nearWindow": false,
+            "reached": true,
+            "fold": 1,
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "returnPose": {
+            "x": -4.367981850593306,
+            "y": -4337.423106308808,
+            "facing": 0,
+            "yaw": -0.12802500708305276,
+            "pitch": 0
+          },
+          "pose": {
+            "x": 6.2,
+            "z": 70,
+            "yaw": -0.39707944522498295,
+            "pitch": -0.4366783920933545,
+            "floorY": -0.3510682136547627
+          },
+          "stage": "inside",
+          "steps": 160,
+          "strideM": 0.09213832801486592,
+          "startedAt": 0.3031000000014901,
+          "returnStartedAt": null,
+          "returnDuration": 1.15,
+          "returnReason": null,
+          "windowReached": true,
+          "homeState": {
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "time": 16.80850000001493,
+          "stepBudget": 36,
+          "strideLength": 0.68,
+          "eyeHeight": 1.62,
+          "window": {
+            "x": -0.18,
+            "z": 70,
+            "bottom": 0.78,
+            "top": 2.2,
+            "halfWidth": 0.89
+          },
+          "decoherence": 0,
+          "atWindow": false
+        },
+        "return": null,
+        "action": "TURN AWAY"
+      },
+      "reward": {
+        "relics": [
+          "burning",
+          "flood",
+          "inverted",
+          "two-moons",
+          "glass-storm"
+        ],
+        "home": false,
+        "jumper": false,
+        "walk": null,
+        "composure": 40
+      },
+      "view": {
+        "yaw": -0.5251044523080357,
+        "pitch": -0.4366783920933545,
+        "facing": 0
+      },
+      "scene": null,
+      "capture": "right-side-z70.png",
+      "render": "actual full game post-processing and HUD; no raw-scene substitution"
+    },
+    "right-side-z72": {
+      "realm": {
+        "frame": {
+          "version": 1,
+          "world": "whiteout",
+          "variant": 5,
+          "seed": 0.12104450655169785,
+          "entryDoorId": "source-chapel-door-7",
+          "home": {
+            "eligible": true,
+            "nearWindow": false,
+            "reached": true,
+            "fold": 1,
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "returnPose": {
+            "x": -4.367981850593306,
+            "y": -4337.423106308808,
+            "facing": 0,
+            "yaw": -0.12802500708305276,
+            "pitch": 0
+          },
+          "pose": {
+            "x": 6.2,
+            "z": 72,
+            "yaw": -0.868539395285892,
+            "pitch": -0.4108961788697764,
+            "floorY": -1.1780345899646507
+          },
+          "stage": "inside",
+          "steps": 163,
+          "strideM": 0.21865773479252432,
+          "startedAt": 0.3031000000014901,
+          "returnStartedAt": null,
+          "returnDuration": 1.15,
+          "returnReason": null,
+          "windowReached": true,
+          "homeState": {
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "time": 17.944000000014935,
+          "stepBudget": 36,
+          "strideLength": 0.68,
+          "eyeHeight": 1.62,
+          "window": {
+            "x": -0.18,
+            "z": 70,
+            "bottom": 0.78,
+            "top": 2.2,
+            "halfWidth": 0.89
+          },
+          "decoherence": 0,
+          "atWindow": false
+        },
+        "return": null,
+        "action": "TURN AWAY"
+      },
+      "reward": {
+        "relics": [
+          "burning",
+          "flood",
+          "inverted",
+          "two-moons",
+          "glass-storm"
+        ],
+        "home": false,
+        "jumper": false,
+        "walk": null,
+        "composure": 40
+      },
+      "view": {
+        "yaw": -0.9965644023689447,
+        "pitch": -0.4108961788697764,
+        "facing": 3
+      },
+      "scene": null,
+      "capture": "right-side-z72.png",
+      "render": "actual full game post-processing and HUD; no raw-scene substitution"
+    },
+    "rightDeepScour": {
+      "realm": {
+        "frame": {
+          "version": 1,
+          "world": "whiteout",
+          "variant": 5,
+          "seed": 0.12104450655169785,
+          "entryDoorId": "source-chapel-door-7",
+          "home": {
+            "eligible": true,
+            "nearWindow": false,
+            "reached": true,
+            "fold": 1,
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "returnPose": {
+            "x": -4.367981850593306,
+            "y": -4337.423106308808,
+            "facing": 0,
+            "yaw": -0.12802500708305276,
+            "pitch": 0
+          },
+          "pose": {
+            "x": 6.2,
+            "z": 73.1,
+            "yaw": -0.868539395285892,
+            "pitch": -0.4108961788697764,
+            "floorY": -1.3371886845539467
+          },
+          "stage": "inside",
+          "steps": 164,
+          "strideM": 0.6536355380478501,
+          "startedAt": 0.3031000000014901,
+          "returnStartedAt": null,
+          "returnDuration": 1.15,
+          "returnReason": null,
+          "windowReached": true,
+          "homeState": {
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "time": 18.55520000001791,
+          "stepBudget": 36,
+          "strideLength": 0.68,
+          "eyeHeight": 1.62,
+          "window": {
+            "x": -0.18,
+            "z": 70,
+            "bottom": 0.78,
+            "top": 2.2,
+            "halfWidth": 0.89
+          },
+          "decoherence": 0,
+          "atWindow": false
+        },
+        "return": null,
+        "action": "TURN AWAY"
+      },
+      "reward": {
+        "relics": [
+          "burning",
+          "flood",
+          "inverted",
+          "two-moons",
+          "glass-storm"
+        ],
+        "home": false,
+        "jumper": false,
+        "walk": null,
+        "composure": 40
+      },
+      "view": {
+        "yaw": -0.9965644023689447,
+        "pitch": -0.4108961788697764,
+        "facing": 3
+      },
+      "scene": null
+    },
+    "right-scour-lower-door": {
+      "realm": {
+        "frame": {
+          "version": 1,
+          "world": "whiteout",
+          "variant": 5,
+          "seed": 0.12104450655169785,
+          "entryDoorId": "source-chapel-door-7",
+          "home": {
+            "eligible": true,
+            "nearWindow": false,
+            "reached": true,
+            "fold": 1,
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "returnPose": {
+            "x": -4.367981850593306,
+            "y": -4337.423106308808,
+            "facing": 0,
+            "yaw": -0.12802500708305276,
+            "pitch": 0
+          },
+          "pose": {
+            "x": 7.2,
+            "z": 73.1,
+            "yaw": -1.3787483095541617,
+            "pitch": -0.5861794385503808,
+            "floorY": -1.1523484301147637
+          },
+          "stage": "inside",
+          "steps": 166,
+          "strideM": 0.32517693570478684,
+          "startedAt": 0.3031000000014901,
+          "returnStartedAt": null,
+          "returnDuration": 1.15,
+          "returnReason": null,
+          "windowReached": true,
+          "homeState": {
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "time": 19.324400000013423,
+          "stepBudget": 36,
+          "strideLength": 0.68,
+          "eyeHeight": 1.62,
+          "window": {
+            "x": -0.18,
+            "z": 70,
+            "bottom": 0.78,
+            "top": 2.2,
+            "halfWidth": 0.89
+          },
+          "decoherence": 0,
+          "atWindow": false
+        },
+        "return": null,
+        "action": "TURN AWAY"
+      },
+      "reward": {
+        "relics": [
+          "burning",
+          "flood",
+          "inverted",
+          "two-moons",
+          "glass-storm"
+        ],
+        "home": false,
+        "jumper": false,
+        "walk": null,
+        "composure": 40
+      },
+      "view": {
+        "yaw": -1.5067733166372146,
+        "pitch": -0.5861794385503808,
+        "facing": 3
+      },
+      "scene": null,
+      "capture": "right-scour-lower-door.png",
+      "render": "actual full game post-processing and HUD; no raw-scene substitution",
+      "supplementalRaw": {
+        "capture": "right-scour-lower-door-raw-scene.png",
+        "render": "DIAGNOSTIC ONLY: raw scene RGB copied to opaque canvas, linear values quantized to PNG without pixel mesh/post or display encoding; not the game appearance"
+      }
+    },
+    "bedroom-close-z69-2": {
+      "realm": {
+        "frame": {
+          "version": 1,
+          "world": "whiteout",
+          "variant": 5,
+          "seed": 0.12104450655169785,
+          "entryDoorId": "source-chapel-door-7",
+          "home": {
+            "eligible": true,
+            "nearWindow": true,
+            "reached": true,
+            "fold": 1,
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0.75,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "returnPose": {
+            "x": -4.367981850593306,
+            "y": -4337.423106308808,
+            "facing": 0,
+            "yaw": -0.12802500708305276,
+            "pitch": 0
+          },
+          "pose": {
+            "x": -0.18,
+            "z": 69.2,
+            "yaw": 0,
+            "pitch": -0.16109190453758093,
+            "floorY": 0
+          },
+          "stage": "inside",
+          "steps": 190,
+          "strideM": 0.08539474270586957,
+          "startedAt": 0.3031000000014901,
+          "returnStartedAt": null,
+          "returnDuration": 1.15,
+          "returnReason": null,
+          "windowReached": true,
+          "homeState": {
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0.75,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "time": 21.45440000002088,
+          "stepBudget": 36,
+          "strideLength": 0.68,
+          "eyeHeight": 1.62,
+          "window": {
+            "x": -0.18,
+            "z": 70,
+            "bottom": 0.78,
+            "top": 2.2,
+            "halfWidth": 0.89
+          },
+          "decoherence": 0,
+          "atWindow": true
+        },
+        "return": null,
+        "action": "LOOK"
+      },
+      "reward": {
+        "relics": [
+          "burning",
+          "flood",
+          "inverted",
+          "two-moons",
+          "glass-storm"
+        ],
+        "home": false,
+        "jumper": false,
+        "walk": null,
+        "composure": 40
+      },
+      "view": {
+        "yaw": -0.12802500708305276,
+        "pitch": -0.16109190453758093,
+        "facing": 0
+      },
+      "scene": null,
+      "capture": "bedroom-close-z69-2.png",
+      "render": "actual full game post-processing and HUD; no raw-scene substitution"
+    },
+    "glazingCollision": {
+      "before": {
+        "x": -0.18,
+        "z": 69.2,
+        "yaw": 0,
+        "pitch": 0,
+        "floorY": 0
+      },
+      "after": {
+        "x": -0.18,
+        "z": 69.75250000000005,
+        "yaw": 0,
+        "pitch": 0,
+        "floorY": 0
+      },
+      "blocked": {
+        "x": -0.18,
+        "z": 69.75250000000005,
+        "yaw": 0,
+        "pitch": 0,
+        "floorY": 0
+      },
+      "input": "real held W"
+    },
+    "bedroom-real-right": {
+      "realm": {
+        "frame": {
+          "version": 1,
+          "world": "whiteout",
+          "variant": 5,
+          "seed": 0.12104450655169785,
+          "entryDoorId": "source-chapel-door-7",
+          "home": {
+            "eligible": true,
+            "nearWindow": true,
+            "reached": true,
+            "fold": 1,
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0.75,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "returnPose": {
+            "x": -4.367981850593306,
+            "y": -4337.423106308808,
+            "facing": 0,
+            "yaw": -0.12802500708305276,
+            "pitch": 0
+          },
+          "pose": {
+            "x": 0.5,
+            "z": 69.75250000000005,
+            "yaw": -1.2217301638335631,
+            "pitch": -0.17775109063450278,
+            "floorY": 0
+          },
+          "stage": "inside",
+          "steps": 191,
+          "strideM": 0.6378947427059212,
+          "startedAt": 0.3031000000014901,
+          "returnStartedAt": null,
+          "returnDuration": 1.15,
+          "returnReason": null,
+          "windowReached": true,
+          "homeState": {
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0.75,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "time": 25.856700000017913,
+          "stepBudget": 36,
+          "strideLength": 0.68,
+          "eyeHeight": 1.62,
+          "window": {
+            "x": -0.18,
+            "z": 70,
+            "bottom": 0.78,
+            "top": 2.2,
+            "halfWidth": 0.89
+          },
+          "decoherence": 0,
+          "atWindow": true
+        },
+        "return": null,
+        "action": "LOOK"
+      },
+      "reward": {
+        "relics": [
+          "burning",
+          "flood",
+          "inverted",
+          "two-moons",
+          "glass-storm"
+        ],
+        "home": false,
+        "jumper": false,
+        "walk": null,
+        "composure": 40
+      },
+      "view": {
+        "yaw": -1.349755170916616,
+        "pitch": -0.17775109063450278,
+        "facing": 3
+      },
+      "scene": null,
+      "capture": "bedroom-real-right.png",
+      "render": "actual full game post-processing and HUD; no raw-scene substitution"
+    },
+    "realSidesteps": {
+      "before": {
+        "x": -0.18,
+        "z": 69.75250000000005,
+        "yaw": 0,
+        "pitch": 0,
+        "floorY": 0
+      },
+      "right": {
+        "x": 0.5,
+        "z": 69.75250000000005,
+        "yaw": 0,
+        "pitch": 0,
+        "floorY": 0
+      },
+      "left": {
+        "x": -0.18000000000000002,
+        "z": 69.75250000000005,
+        "yaw": 0,
+        "pitch": 0,
+        "floorY": 0
+      },
+      "input": "real held D / A, camera facing the house"
+    },
+    "lookAside": {
+      "realm": {
+        "frame": {
+          "version": 1,
+          "world": "whiteout",
+          "variant": 5,
+          "seed": 0.12104450655169785,
+          "entryDoorId": "source-chapel-door-7",
+          "home": {
+            "eligible": true,
+            "nearWindow": true,
+            "reached": true,
+            "fold": 1,
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "returnPose": {
+            "x": -4.367981850593306,
+            "y": -4337.423106308808,
+            "facing": 0,
+            "yaw": -0.12802500708305276,
+            "pitch": 0
+          },
+          "pose": {
+            "x": -0.18000000000000002,
+            "z": 69.75250000000005,
+            "yaw": 1.5707963267948966,
+            "pitch": -0.4836449429740471,
+            "floorY": 0
+          },
+          "stage": "inside",
+          "steps": 192,
+          "strideM": 0.637894742705921,
+          "startedAt": 0.3031000000014901,
+          "returnStartedAt": null,
+          "returnDuration": 1.15,
+          "returnReason": null,
+          "windowReached": true,
+          "homeState": {
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "time": 27.681400000020897,
+          "stepBudget": 36,
+          "strideLength": 0.68,
+          "eyeHeight": 1.62,
+          "window": {
+            "x": -0.18,
+            "z": 70,
+            "bottom": 0.78,
+            "top": 2.2,
+            "halfWidth": 0.89
+          },
+          "decoherence": 0,
+          "atWindow": true
+        },
+        "return": null,
+        "action": "LOOK"
+      },
+      "reward": {
+        "relics": [
+          "burning",
+          "flood",
+          "inverted",
+          "two-moons",
+          "glass-storm"
+        ],
+        "home": false,
+        "jumper": false,
+        "walk": null,
+        "composure": 40
+      },
+      "view": {
+        "yaw": 1.442771319711844,
+        "pitch": -0.4836449429740471,
+        "facing": 1
+      },
+      "scene": null
+    },
+    "look-aside": {
+      "realm": {
+        "frame": {
+          "version": 1,
+          "world": "whiteout",
+          "variant": 5,
+          "seed": 0.12104450655169785,
+          "entryDoorId": "source-chapel-door-7",
+          "home": {
+            "eligible": true,
+            "nearWindow": true,
+            "reached": true,
+            "fold": 1,
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "returnPose": {
+            "x": -4.367981850593306,
+            "y": -4337.423106308808,
+            "facing": 0,
+            "yaw": -0.12802500708305276,
+            "pitch": 0
+          },
+          "pose": {
+            "x": -0.18000000000000002,
+            "z": 69.75250000000005,
+            "yaw": 1.5707963267948966,
+            "pitch": -0.4836449429740471,
+            "floorY": 0
+          },
+          "stage": "inside",
+          "steps": 192,
+          "strideM": 0.637894742705921,
+          "startedAt": 0.3031000000014901,
+          "returnStartedAt": null,
+          "returnDuration": 1.15,
+          "returnReason": null,
+          "windowReached": true,
+          "homeState": {
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "time": 27.715000000022386,
+          "stepBudget": 36,
+          "strideLength": 0.68,
+          "eyeHeight": 1.62,
+          "window": {
+            "x": -0.18,
+            "z": 70,
+            "bottom": 0.78,
+            "top": 2.2,
+            "halfWidth": 0.89
+          },
+          "decoherence": 0,
+          "atWindow": true
+        },
+        "return": null,
+        "action": "LOOK"
+      },
+      "reward": {
+        "relics": [
+          "burning",
+          "flood",
+          "inverted",
+          "two-moons",
+          "glass-storm"
+        ],
+        "home": false,
+        "jumper": false,
+        "walk": null,
+        "composure": 40
+      },
+      "view": {
+        "yaw": 1.442771319711844,
+        "pitch": -0.4836449429740471,
+        "facing": 1
+      },
+      "scene": null,
+      "capture": "look-aside.png",
+      "render": "actual full game post-processing and HUD; no raw-scene substitution"
+    },
+    "lookBack": {
+      "realm": {
+        "frame": {
+          "version": 1,
+          "world": "whiteout",
+          "variant": 5,
+          "seed": 0.12104450655169785,
+          "entryDoorId": "source-chapel-door-7",
+          "home": {
+            "eligible": true,
+            "nearWindow": true,
+            "reached": true,
+            "fold": 1,
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": true,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "returnPose": {
+            "x": -4.367981850593306,
+            "y": -4337.423106308808,
+            "facing": 0,
+            "yaw": -0.12802500708305276,
+            "pitch": 0
+          },
+          "pose": {
+            "x": -0.18000000000000002,
+            "z": 69.75250000000005,
+            "yaw": -3.141592653589793,
+            "pitch": -0.4836449429740471,
+            "floorY": 0
+          },
+          "stage": "inside",
+          "steps": 192,
+          "strideM": 0.637894742705921,
+          "startedAt": 0.3031000000014901,
+          "returnStartedAt": null,
+          "returnDuration": 1.15,
+          "returnReason": null,
+          "windowReached": true,
+          "homeState": {
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": true,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "time": 28.732300000019404,
+          "stepBudget": 36,
+          "strideLength": 0.68,
+          "eyeHeight": 1.62,
+          "window": {
+            "x": -0.18,
+            "z": 70,
+            "bottom": 0.78,
+            "top": 2.2,
+            "halfWidth": 0.89
+          },
+          "decoherence": 0,
+          "atWindow": true
+        },
+        "return": null,
+        "action": "LOOK"
+      },
+      "reward": {
+        "relics": [
+          "burning",
+          "flood",
+          "inverted",
+          "two-moons",
+          "glass-storm"
+        ],
+        "home": false,
+        "jumper": false,
+        "walk": null,
+        "composure": 40
+      },
+      "view": {
+        "yaw": 3.0135676465067407,
+        "pitch": -0.4836449429740471,
+        "facing": 2
+      },
+      "scene": null
+    },
+    "look-back-snow": {
+      "realm": {
+        "frame": {
+          "version": 1,
+          "world": "whiteout",
+          "variant": 5,
+          "seed": 0.12104450655169785,
+          "entryDoorId": "source-chapel-door-7",
+          "home": {
+            "eligible": true,
+            "nearWindow": true,
+            "reached": true,
+            "fold": 1,
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": true,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "returnPose": {
+            "x": -4.367981850593306,
+            "y": -4337.423106308808,
+            "facing": 0,
+            "yaw": -0.12802500708305276,
+            "pitch": 0
+          },
+          "pose": {
+            "x": -0.18000000000000002,
+            "z": 69.75250000000005,
+            "yaw": -3.141592653589793,
+            "pitch": -0.4836449429740471,
+            "floorY": 0
+          },
+          "stage": "inside",
+          "steps": 192,
+          "strideM": 0.637894742705921,
+          "startedAt": 0.3031000000014901,
+          "returnStartedAt": null,
+          "returnDuration": 1.15,
+          "returnReason": null,
+          "windowReached": true,
+          "homeState": {
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": true,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "time": 28.754000000022383,
+          "stepBudget": 36,
+          "strideLength": 0.68,
+          "eyeHeight": 1.62,
+          "window": {
+            "x": -0.18,
+            "z": 70,
+            "bottom": 0.78,
+            "top": 2.2,
+            "halfWidth": 0.89
+          },
+          "decoherence": 0,
+          "atWindow": true
+        },
+        "return": null,
+        "action": "LOOK"
+      },
+      "reward": {
+        "relics": [
+          "burning",
+          "flood",
+          "inverted",
+          "two-moons",
+          "glass-storm"
+        ],
+        "home": false,
+        "jumper": false,
+        "walk": null,
+        "composure": 40
+      },
+      "view": {
+        "yaw": 3.0135676465067407,
+        "pitch": -0.4836449429740471,
+        "facing": 2
+      },
+      "scene": null,
+      "capture": "look-back-snow.png",
+      "render": "actual full game post-processing and HUD; no raw-scene substitution"
+    },
+    "loaded": {
+      "url": "http://127.0.0.1:5298/?nodisplaynotice=1&skipwarn=1&nomic=1&sam=0",
+      "scripts": [
+        "http://127.0.0.1:5298/assets/main-DZML3hQK.js"
+      ],
+      "resources": [
+        "http://127.0.0.1:5298/assets/main-DZML3hQK.js",
+        "http://127.0.0.1:5298/assets/rolldown-runtime-BQ-_32WO.js",
+        "http://127.0.0.1:5298/assets/modulepreload-polyfill-CWIbYaaI.js",
+        "http://127.0.0.1:5298/assets/window-composition-DSLHiWnL.js",
+        "http://127.0.0.1:5298/assets/source-desktop-view-BebSQ949.js"
+      ]
+    }
+  },
+  "travel": [
+    {
+      "label": "central approach z3",
+      "input": "fixture realmMove; swept production ground/collision",
+      "start": {
+        "x": 0,
+        "z": 1,
+        "yaw": 0.12802500708305276,
+        "pitch": 0,
+        "floorY": 0
+      },
+      "target": {
+        "x": 0,
+        "z": 3
+      },
+      "end": {
+        "x": 0,
+        "z": 3,
+        "yaw": 0.12802500708305276,
+        "pitch": 0,
+        "floorY": 0
+      }
+    },
+    {
+      "label": "central approach z40",
+      "input": "fixture realmMove; swept production ground/collision",
+      "start": {
+        "x": 0,
+        "z": 3,
+        "yaw": -0.0026865607006460734,
+        "pitch": -0.001940289070423054,
+        "floorY": 0
+      },
+      "target": {
+        "x": 0,
+        "z": 40
+      },
+      "end": {
+        "x": 0,
+        "z": 40,
+        "yaw": -0.0026865607006460734,
+        "pitch": -0.001940289070423054,
+        "floorY": 0
+      }
+    },
+    {
+      "label": "central approach z57",
+      "input": "fixture realmMove; swept production ground/collision",
+      "start": {
+        "x": 0,
+        "z": 40,
+        "yaw": -0.00599992800155516,
+        "pitch": -0.004333228213752637,
+        "floorY": 0
+      },
+      "target": {
+        "x": 0,
+        "z": 57
+      },
+      "end": {
+        "x": 0,
+        "z": 56.99999999999875,
+        "yaw": -0.00599992800155516,
+        "pitch": -0.004333228213752637,
+        "floorY": 0
+      }
+    },
+    {
+      "label": "central approach z62",
+      "input": "fixture realmMove; swept production ground/collision",
+      "start": {
+        "x": 0,
+        "z": 56.99999999999875,
+        "yaw": -0.013845269104954011,
+        "pitch": -0.009998708340417344,
+        "floorY": 0
+      },
+      "target": {
+        "x": 0,
+        "z": 62
+      },
+      "end": {
+        "x": 0,
+        "z": 62,
+        "yaw": -0.013845269104954011,
+        "pitch": -0.009998708340417344,
+        "floorY": 0
+      }
+    },
+    {
+      "label": "central approach z66.8",
+      "input": "fixture realmMove; swept production ground/collision",
+      "start": {
+        "x": 0,
+        "z": 62,
+        "yaw": -0.0224962042778839,
+        "pitch": -0.01624445925307766,
+        "floorY": 0
+      },
+      "target": {
+        "x": 0,
+        "z": 66.8
+      },
+      "end": {
+        "x": 0,
+        "z": 66.8,
+        "yaw": -0.0224962042778839,
+        "pitch": -0.01624445925307766,
+        "floorY": 0
+      }
+    },
+    {
+      "label": "whole house z64",
+      "input": "fixture realmMove; swept production ground/collision",
+      "start": {
+        "x": 0,
+        "z": 66.8,
+        "yaw": -0.05619078620123705,
+        "pitch": -0.04053866063908138,
+        "floorY": 0
+      },
+      "target": {
+        "x": 0,
+        "z": 64
+      },
+      "end": {
+        "x": 0,
+        "z": 64,
+        "yaw": -0.05619078620123705,
+        "pitch": -0.04053866063908138,
+        "floorY": 0
+      }
+    },
+    {
+      "label": "whole house z66",
+      "input": "fixture realmMove; swept production ground/collision",
+      "start": {
+        "x": 0,
+        "z": 64,
+        "yaw": 0.16347643817069402,
+        "pitch": -0.037618014398071865,
+        "floorY": 0
+      },
+      "target": {
+        "x": 0,
+        "z": 66
+      },
+      "end": {
+        "x": 0,
+        "z": 66,
+        "yaw": 0.16347643817069402,
+        "pitch": -0.037618014398071865,
+        "floorY": 0
+      }
+    },
+    {
+      "label": "clear house after arrival gust",
+      "input": "fixture realmMove; swept production ground/collision",
+      "start": {
+        "x": 0,
+        "z": 66,
+        "yaw": 0.2048767170371084,
+        "pitch": -0.04701232758708857,
+        "floorY": 0
+      },
+      "target": {
+        "x": 0,
+        "z": 66.8
+      },
+      "end": {
+        "x": 0,
+        "z": 66.8,
+        "yaw": 0.2048767170371084,
+        "pitch": -0.04701232758708857,
+        "floorY": 0
+      }
+    },
+    {
+      "label": "secondary front-window approach",
+      "input": "fixture realmMove; swept production ground/collision",
+      "start": {
+        "x": 0,
+        "z": 66.8,
+        "yaw": 0.22785704871709953,
+        "pitch": -0.002823623521095925,
+        "floorY": 0
+      },
+      "target": {
+        "x": 3.45,
+        "z": 66.8
+      },
+      "end": {
+        "x": 3.45,
+        "z": 66.8,
+        "yaw": 0.22785704871709953,
+        "pitch": -0.002823623521095925,
+        "floorY": 0
+      }
+    },
+    {
+      "label": "front staging before left side",
+      "input": "fixture realmMove; swept production ground/collision",
+      "start": {
+        "x": 3.45,
+        "z": 66.8,
+        "yaw": 0,
+        "pitch": -0.04372211860158762,
+        "floorY": 0
+      },
+      "target": {
+        "x": 0,
+        "z": 66.8
+      },
+      "end": {
+        "x": 0,
+        "z": 66.8,
+        "yaw": 0,
+        "pitch": -0.04372211860158762,
+        "floorY": 0
+      }
+    },
+    {
+      "label": "left front crossing",
+      "input": "fixture realmMove; swept production ground/collision",
+      "start": {
+        "x": 0,
+        "z": 66.8,
+        "yaw": 0,
+        "pitch": -0.04372211860158762,
+        "floorY": 0
+      },
+      "target": {
+        "x": -3.5,
+        "z": 66.8
+      },
+      "end": {
+        "x": -3.5,
+        "z": 66.8,
+        "yaw": 0,
+        "pitch": -0.04372211860158762,
+        "floorY": 0
+      }
+    },
+    {
+      "label": "left side z70",
+      "input": "fixture realmMove; swept production ground/collision",
+      "start": {
+        "x": -3.5,
+        "z": 66.8,
+        "yaw": 0,
+        "pitch": -0.04372211860158762,
+        "floorY": 0
+      },
+      "target": {
+        "x": -3.5,
+        "z": 70
+      },
+      "end": {
+        "x": -3.5,
+        "z": 70,
+        "yaw": 0,
+        "pitch": -0.04372211860158762,
+        "floorY": -1.0518734350381291
+      }
+    },
+    {
+      "label": "left side z72",
+      "input": "fixture realmMove; swept production ground/collision",
+      "start": {
+        "x": -3.5,
+        "z": 70,
+        "yaw": 0.572966142888707,
+        "pitch": -0.23111269834670697,
+        "floorY": -1.0518734350381291
+      },
+      "target": {
+        "x": -3.5,
+        "z": 72
+      },
+      "end": {
+        "x": -3.5,
+        "z": 72,
+        "yaw": 0.572966142888707,
+        "pitch": -0.23111269834670697,
+        "floorY": -1.3274458627207308
+      }
+    },
+    {
+      "label": "left lower-storey reveal",
+      "input": "fixture realmMove; swept production ground/collision",
+      "start": {
+        "x": -3.5,
+        "z": 72,
+        "yaw": 1.067953115867038,
+        "pitch": -0.25399586155759923,
+        "floorY": -1.3274458627207308
+      },
+      "target": {
+        "x": -2.65,
+        "z": 72
+      },
+      "end": {
+        "x": -2.6500000000000004,
+        "z": 72,
+        "yaw": 1.067953115867038,
+        "pitch": -0.25399586155759923,
+        "floorY": -1.253302903745729
+      }
+    },
+    {
+      "label": "left depressed face-on view",
+      "input": "fixture realmMove; swept production ground/collision",
+      "start": {
+        "x": -2.6500000000000004,
+        "z": 72,
+        "yaw": 1.067953115867038,
+        "pitch": -0.25399586155759923,
+        "floorY": -1.253302903745729
+      },
+      "target": {
+        "x": -4.2,
+        "z": 72
+      },
+      "end": {
+        "x": -4.2,
+        "z": 72,
+        "yaw": 1.067953115867038,
+        "pitch": -0.25399586155759923,
+        "floorY": -1.024912980647758
+      }
+    },
+    {
+      "label": "left scour return",
+      "input": "fixture realmMove; swept production ground/collision",
+      "start": {
+        "x": -4.2,
+        "z": 72,
+        "yaw": 1.5707963267948966,
+        "pitch": -0.5816599495454454,
+        "floorY": -1.024912980647758
+      },
+      "target": {
+        "x": -4.2,
+        "z": 66.8
+      },
+      "end": {
+        "x": -4.2,
+        "z": 66.8,
+        "yaw": 1.5707963267948966,
+        "pitch": -0.5816599495454454,
+        "floorY": 0
+      }
+    },
+    {
+      "label": "right front crossing",
+      "input": "fixture realmMove; swept production ground/collision",
+      "start": {
+        "x": -4.2,
+        "z": 66.8,
+        "yaw": 1.5707963267948966,
+        "pitch": -0.5816599495454454,
+        "floorY": 0
+      },
+      "target": {
+        "x": 6.2,
+        "z": 66.8
+      },
+      "end": {
+        "x": 6.2,
+        "z": 66.8,
+        "yaw": 1.5707963267948966,
+        "pitch": -0.5816599495454454,
+        "floorY": 0
+      }
+    },
+    {
+      "label": "right side z70",
+      "input": "fixture realmMove; swept production ground/collision",
+      "start": {
+        "x": 6.2,
+        "z": 66.8,
+        "yaw": 1.5707963267948966,
+        "pitch": -0.5816599495454454,
+        "floorY": 0
+      },
+      "target": {
+        "x": 6.2,
+        "z": 70
+      },
+      "end": {
+        "x": 6.2,
+        "z": 70,
+        "yaw": 1.5707963267948966,
+        "pitch": -0.5816599495454454,
+        "floorY": -0.3510682136547627
+      }
+    },
+    {
+      "label": "right side z72",
+      "input": "fixture realmMove; swept production ground/collision",
+      "start": {
+        "x": 6.2,
+        "z": 70,
+        "yaw": -0.39707944522498295,
+        "pitch": -0.4366783920933545,
+        "floorY": -0.3510682136547627
+      },
+      "target": {
+        "x": 6.2,
+        "z": 72
+      },
+      "end": {
+        "x": 6.2,
+        "z": 72,
+        "yaw": -0.39707944522498295,
+        "pitch": -0.4366783920933545,
+        "floorY": -1.1780345899646507
+      }
+    },
+    {
+      "label": "right lower-storey reveal",
+      "input": "fixture realmMove; swept production ground/collision",
+      "start": {
+        "x": 6.2,
+        "z": 72,
+        "yaw": -0.868539395285892,
+        "pitch": -0.4108961788697764,
+        "floorY": -1.1780345899646507
+      },
+      "target": {
+        "x": 6.2,
+        "z": 73.1
+      },
+      "end": {
+        "x": 6.2,
+        "z": 73.1,
+        "yaw": -0.868539395285892,
+        "pitch": -0.4108961788697764,
+        "floorY": -1.3371886845539467
+      }
+    },
+    {
+      "label": "right depressed face-on view",
+      "input": "fixture realmMove; swept production ground/collision",
+      "start": {
+        "x": 6.2,
+        "z": 73.1,
+        "yaw": -0.868539395285892,
+        "pitch": -0.4108961788697764,
+        "floorY": -1.3371886845539467
+      },
+      "target": {
+        "x": 7.2,
+        "z": 73.1
+      },
+      "end": {
+        "x": 7.2,
+        "z": 73.1,
+        "yaw": -0.868539395285892,
+        "pitch": -0.4108961788697764,
+        "floorY": -1.1523484301147637
+      }
+    },
+    {
+      "label": "right scour return",
+      "input": "fixture realmMove; swept production ground/collision",
+      "start": {
+        "x": 7.2,
+        "z": 73.1,
+        "yaw": -1.3787483095541617,
+        "pitch": -0.5861794385503808,
+        "floorY": -1.1523484301147637
+      },
+      "target": {
+        "x": 7.2,
+        "z": 66.8
+      },
+      "end": {
+        "x": 7.2,
+        "z": 66.8099999999994,
+        "yaw": -1.3787483095541617,
+        "pitch": -0.5861794385503808,
+        "floorY": 0
+      }
+    },
+    {
+      "label": "central approach restored",
+      "input": "fixture realmMove; swept production ground/collision",
+      "start": {
+        "x": 7.2,
+        "z": 66.8099999999994,
+        "yaw": -1.3787483095541617,
+        "pitch": -0.5861794385503808,
+        "floorY": 0
+      },
+      "target": {
+        "x": 0,
+        "z": 66.8
+      },
+      "end": {
+        "x": 0,
+        "z": 66.8,
+        "yaw": -1.3787483095541617,
+        "pitch": -0.5861794385503808,
+        "floorY": 0
+      }
+    },
+    {
+      "label": "close bedroom approach",
+      "input": "fixture realmMove; swept production ground/collision",
+      "start": {
+        "x": 0,
+        "z": 66.8,
+        "yaw": -1.3787483095541617,
+        "pitch": -0.5861794385503808,
+        "floorY": 0
+      },
+      "target": {
+        "x": -0.18,
+        "z": 69.2
+      },
+      "end": {
+        "x": -0.18,
+        "z": 69.2,
+        "yaw": -1.3787483095541617,
+        "pitch": -0.5861794385503808,
+        "floorY": 0
+      }
+    }
+  ]
+}

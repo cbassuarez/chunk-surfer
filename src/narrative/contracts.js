@@ -121,6 +121,14 @@ export function validateNarrativeDocument(doc, options = {}) {
       if (!choice?.text) issue(errors, `nodes.${nodeId}.choices.${index}.text`, 'is required');
       if (choice?.goto && !nodes[choice.goto]) issue(errors, `nodes.${nodeId}.choices.${index}.goto`, `target ${choice.goto} does not exist`);
       condition(errors, `nodes.${nodeId}.choices.${index}.when`, choice?.when);
+      if (choice?.check != null) {
+        const path = `nodes.${nodeId}.choices.${index}.check`;
+        if (!ID.test(String(choice.check.voice || ''))) issue(errors, `${path}.voice`, 'must name the voice that makes the check');
+        if (!String(choice.check.pass || '').trim()) issue(errors, `${path}.pass`, 'is required');
+        condition(errors, `${path}.pass`, choice.check.pass);
+        if (!choice.check.fail || !nodes[choice.check.fail]) issue(errors, `${path}.fail`, `target ${choice.check.fail || '(empty)'} does not exist`);
+        if (!choice.goto) issue(errors, `${path}`, 'a check needs a goto for when it passes');
+      }
       mutations(errors, `nodes.${nodeId}.choices.${index}.mutations`, choice?.mutations);
       validateCueRefs(errors, `nodes.${nodeId}.choices.${index}.cues`, choice?.cues, cueIds);
     });
@@ -143,6 +151,7 @@ export function reachableNodeIds(doc, context = null) {
     if (node.goto) pending.push(node.goto);
     for (const choice of node.choices || []) {
       if (choice.goto && (!context || conditionFor(choice, context))) pending.push(choice.goto);
+      if (choice.check?.fail) pending.push(choice.check.fail);
     }
   }
   return reached;

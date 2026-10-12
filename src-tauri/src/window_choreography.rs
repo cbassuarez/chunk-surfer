@@ -160,6 +160,9 @@ struct MainTransaction {
     #[allow(dead_code)]
     scene_id: String,
     stable: MainBounds,
+    // set_size takes content size; restoring an outer frame as content adds
+    // the titlebar to the saved height on macOS.
+    restore_inner: PhysicalSize<u32>,
     decorated: bool,
     was_focused: bool,
     scale_factor: f64,
@@ -187,7 +190,7 @@ fn transaction() -> &'static Mutex<Option<MainTransaction>> {
     MAIN_TRANSACTION.get_or_init(|| Mutex::new(None))
 }
 
-fn valid_token(value: &str) -> bool {
+pub(crate) fn valid_token(value: &str) -> bool {
     !value.is_empty()
         && value.len() <= 96
         && value
@@ -291,6 +294,7 @@ fn lerp_u32(a: u32, b: u32, t: f64) -> u32 {
 }
 
 fn begin_transaction(app: &AppHandle, request: ChoreographyBeginRequest) -> Result<bool, String> {
+    if crate::source_desktop::active() { return Ok(false); }
     if !valid_token(&request.token) || request.scene_id.is_empty() {
         return Ok(false);
     }
@@ -364,6 +368,7 @@ fn begin_transaction(app: &AppHandle, request: ChoreographyBeginRequest) -> Resu
         token: request.token,
         scene_id: request.scene_id,
         stable,
+        restore_inner: main.inner_size().map_err(|error| error.to_string())?,
         decorated,
         was_focused,
         scale_factor,
@@ -422,6 +427,7 @@ fn execute_transaction(
     app: &AppHandle,
     request: ChoreographyExecuteRequest,
 ) -> Result<bool, String> {
+    if crate::source_desktop::active() { return Ok(false); }
     if request.keyframes.len() > 8 || request.cue_id.is_empty() {
         return Ok(false);
     }
@@ -539,53 +545,124 @@ pub async fn chunk_window_choreography_execute(
         .map_err(|error| error.to_string())?
 }
 
+#[cfg(target_os = "macos")]
+fn settle_cocoa_window_changes() {
+    // Tao dispatches style and content-size changes asynchronously to GCD.
+    // End/restore IPC runs off the main thread; this fence drains those changes
+    // before we measure chrome or apply the next dependent operation.
+    if unsafe { libc::pthread_main_np() } == 0 {
+        dispatch2::DispatchQueue::main().exec_sync(|| {});
+    }
+}
+
 fn restore_transaction(app: &AppHandle, required: Option<&str>) -> Result<bool, String> {
+    let desktop_owned = crate::source_desktop::active();
     let active = {
         let mut slot = transaction()
             .lock()
             .map_err(|_| "transaction lock poisoned".to_string())?;
-        if required.is_some_and(|token| slot.as_ref().is_none_or(|value| value.token != token)) {
+        if required.is_some_and(|token| slot.as_ref().is_some_and(|value| value.token != token)) {
             return Ok(false);
         }
         slot.take()
     };
+    // Retire the frame owner before restoring minimum size: the OS may resize
+    // the island immediately, and that event must not replace the saved frame.
+    let had_input_focus = main_window(app).ok().is_some_and(|main| main.is_focused().unwrap_or(false));
+    let presentation_result = crate::source_desktop::release_presentation(app, required);
     let Some(active) = active else {
-        return Ok(false);
+        return presentation_result;
     };
     let main = main_window(app)?;
+    let mut errors = Vec::new();
+    if let Err(error) = presentation_result { errors.push(error); }
     let _ = main.set_simple_fullscreen(false);
     let _ = main.set_fullscreen(false);
     crate::display_policy::note_simple_fullscreen(false);
-    let _ = main.set_decorations(active.decorated);
-    main.set_position(active.stable.position)
-        .map_err(|error| error.to_string())?;
-    main.set_size(active.stable.size)
-        .map_err(|error| error.to_string())?;
+    if let Err(error) = main.set_decorations(active.decorated) { errors.push(error.to_string()); }
+    #[cfg(target_os = "macos")]
+    if active.decorated {
+        settle_cocoa_window_changes();
+        // Tao's decoration setter replaces the style mask and drops Wry's
+        // FullSizeContentView flag. Reapply the configured title-bar style so
+        // the restored content and outer frame match the window we measured.
+        let style = app.config().app.windows.iter().find(|window| window.label == "main")
+            .map(|window| window.title_bar_style.clone()).unwrap_or_default();
+        if let Err(error) = main.set_title_bar_style(style) { errors.push(error.to_string()); }
+        settle_cocoa_window_changes();
+    }
+    // A monitor may have disappeared while the desktop presentation was
+    // suspended. Keep the restore frame wholly on an available work area.
+    let mut bounds = active.stable;
+    let mut restore_inner = active.restore_inner;
+    if let Some(monitors) = desktop_owned.then(|| main.available_monitors().ok()).flatten() {
+        let visible = monitors.iter().any(|monitor| {
+            let r = monitor.work_area();
+            bounds.position.x >= r.position.x && bounds.position.y >= r.position.y
+                && bounds.position.x as i64 + bounds.size.width as i64 <= r.position.x as i64 + r.size.width as i64
+                && bounds.position.y as i64 + bounds.size.height as i64 <= r.position.y as i64 + r.size.height as i64
+        });
+        if !visible {
+            if let Some(monitor) = main.current_monitor().ok().flatten().or_else(|| main.primary_monitor().ok().flatten()) {
+                let r = monitor.work_area();
+                bounds.size.width = bounds.size.width.min(r.size.width);
+                bounds.size.height = bounds.size.height.min(r.size.height);
+                let chrome_w = bounds.size.width.saturating_sub(restore_inner.width);
+                let chrome_h = bounds.size.height.saturating_sub(restore_inner.height);
+                restore_inner.width = restore_inner.width.min(r.size.width.saturating_sub(chrome_w));
+                restore_inner.height = restore_inner.height.min(r.size.height.saturating_sub(chrome_h));
+                bounds.position = PhysicalPosition::new(r.position.x + ((r.size.width-bounds.size.width)/2) as i32,
+                    r.position.y + ((r.size.height-bounds.size.height)/2) as i32);
+            }
+        }
+    }
+    if let Err(error) = main.set_position(bounds.position) { errors.push(error.to_string()); }
+    if let Err(error) = main.set_size(restore_inner) { errors.push(error.to_string()); }
+    #[cfg(target_os = "macos")]
+    settle_cocoa_window_changes();
     // Put back the mode that was actually left. A window that only happened to
     // fill the monitor gets its geometry back and nothing else — imposing simple
     // fullscreen on it is what stripped the title bar from ordinary windowed
     // play, every time a scene transition ran a transaction.
     if active.left_simple_fullscreen {
-        let _ = main.set_simple_fullscreen(true);
-        crate::display_policy::note_simple_fullscreen(true);
+        match main.set_simple_fullscreen(true) {
+            Ok(()) => crate::display_policy::note_simple_fullscreen(true),
+            Err(error) => errors.push(error.to_string()),
+        }
     } else if active.left_native_fullscreen {
-        let _ = main.set_fullscreen(true);
+        if let Err(error) = main.set_fullscreen(true) { errors.push(error.to_string()); }
     }
     if active.was_focused {
-        let _ = main.set_focus();
+        // Cleanup after Alt-Tab must not steal focus from another application.
+        if !desktop_owned || had_input_focus { let _ = main.set_focus(); }
     }
-    Ok(true)
+    if errors.is_empty() { Ok(true) } else { Err(errors.join("; ")) }
+}
+
+pub(crate) fn desktop_generation(token: &str) -> Result<u64, String> {
+    transaction().lock().map_err(|_| "transaction lock poisoned".to_owned())?
+        .as_ref().filter(|active| active.token == token && !active.cancelled)
+        .map(|active| active.generation).ok_or_else(|| "desktop transaction is not owned".into())
+}
+pub(crate) fn desktop_apply_frame(app: &AppHandle, token: &str, generation: u64,
+    position: PhysicalPosition<i32>, size: PhysicalSize<u32>) -> Result<bool, String> {
+    apply_frame(app, token, generation, position, size)
+}
+pub(crate) fn desktop_restore(app: &AppHandle, token: &str) -> Result<bool, String> {
+    restore_transaction(app, Some(token))
 }
 
 #[tauri::command]
-pub fn chunk_window_choreography_restore(app: AppHandle, token: String) -> Result<bool, String> {
-    restore_transaction(&app, Some(&token))
+pub async fn chunk_window_choreography_restore(app: AppHandle, token: String) -> Result<bool, String> {
+    tauri::async_runtime::spawn_blocking(move || restore_transaction(&app, Some(&token)))
+        .await.map_err(|error| error.to_string())?
 }
 
 // Called from the app-wide window event hook. Programmatic geometry events
 // match the expected frame. Anything else is a player intervention: cancel the
 // tween and make the new geometry the exact restore target.
 pub fn note_main_window_event(app: &AppHandle, event: &WindowEvent) {
+    if crate::source_desktop::note_main_event(app, event) { return; }
     let Ok(mut slot) = transaction().lock() else {
         return;
     };
@@ -608,6 +685,7 @@ pub fn note_main_window_event(app: &AppHandle, event: &WindowEvent) {
     if let Ok(window) = main_window(app) {
         if let Ok(bounds) = current_bounds(&window) {
             active.stable = bounds;
+            if let Ok(size) = window.inner_size() { active.restore_inner = size; }
         }
         if let Ok(Some(monitor)) = window.current_monitor() {
             active.scale_factor = monitor.scale_factor().max(0.1);
@@ -623,6 +701,7 @@ pub fn chunk_window_surface_place(
     app: AppHandle,
     request: SurfacePlaceRequest,
 ) -> Result<bool, String> {
+    if crate::source_desktop::active() { return Ok(false); }
     if request.index >= 4
         || FIREBALL_LABELS.get(request.index as usize) != Some(&request.label.as_str())
         || ![request.x, request.y, request.size]
@@ -737,6 +816,7 @@ fn place_media(
     app: &AppHandle,
     request: MediaPlaceRequest,
 ) -> Result<Option<MediaPlacement>, String> {
+    if crate::source_desktop::active() { return Ok(None); }
     if !valid_media_label(&request.label, request.index)
         || ![
             request.x,
@@ -1253,6 +1333,7 @@ fn place_one(
     ray: &FireballRay,
     progress: f64,
 ) -> Result<bool, String> {
+    if crate::source_desktop::active() { return Ok(false); }
     match base_center(app, label, index, count, ray, progress)? {
         Some(base) => apply_placement(app, label, &base, base.center),
         None => Ok(false),

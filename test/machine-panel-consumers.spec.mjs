@@ -10,7 +10,7 @@ const consumers = {
   coldopen: 2, 'controller-settings': 1, dialogue: 1, 'difficulty-select': 1,
   'eula-scene': 1, 'god-menu': 1, 'hush-audio-lab': 1, 'hush-run': 5,
   pause: 1, 'progression-lab': 1, 'return-index': 1, 'return-report': 2,
-  settings: 1, 'setup-handoff-scene': 2, 'source-contact-scene': 1,
+  settings: 1, 'setup-handoff-scene': 2,
   speech: 1, 'story-art-preview': 1, thoughts: 1, title: 1, 'transfer-room': 1, warning: 1,
 };
 
@@ -79,7 +79,7 @@ function assertTextFitsWell(harness) {
   }
 }
 
-test('all 32 scoped electronic panels submit their body through the optical callback', () => {
+test('all 31 scoped electronic panels submit their body through the optical callback', () => {
   let count = 0;
   for (const [file, expected] of Object.entries(consumers)) {
     const source = gameSource(file);
@@ -89,7 +89,7 @@ test('all 32 scoped electronic panels submit their body through the optical call
     assert.equal(calls, expected, file);
     count += calls;
   }
-  assert.equal(count, 32);
+  assert.equal(count, 31);
   assert.doesNotMatch(gameSource('document'), /\bwithMachinePanel\s*\(/, 'physical documents remain paper rather than electronic displays');
 });
 
@@ -153,28 +153,37 @@ test('tiny achievement and tutorial readouts retain every glyph inside the real 
   }
 });
 
-test('Source dialogue early return still closes the cover and does not resolve a choice', () => {
-  let pops = 0, outcomes = [];
-  const h = surfaceHarness({ scenes: { pop: () => pops++ } });
-  const make = factory('source-contact-scene', 'makeSourceContactScene', h.globals);
-  const scene = make({
-    encounter: { id: 'material-test', lines: [{ who: 'surfer', text: 'A live line.' }], choices: [{ id: 'listen', text: 'Listen.', aligns: true }], insightId: 'listen' },
-    onResolve: (...args) => outcomes.push(args),
-  });
-  scene.render();
-  assert.deepEqual(h.events.map((event) => event.kind), ['scrim', 'back', 'text', 'cover']);
-  assert.equal(outcomes.length, 0);
-  scene.key({ key: 'Enter' });
-  scene.render();
-  assert.equal(h.events.at(-1).kind, 'cover');
-  assert.equal(h.events.filter((event) => event.kind === 'cover').length, 2);
-  assert.equal(h.events.filter((event) => event.kind === 'text').length, 3);
-  scene.key({ key: 'Enter' });
-  scene.key({ key: 'Enter' });
-  assert.equal(pops, 1);
-  assert.equal(outcomes.length, 1);
-  assert.equal(outcomes[0][0], 'listen');
-  assert.equal(outcomes[0][1].aligned, true);
+test('Source uses the shared cinematic strip with denser glass, without darkening other dialogues or the entire world', () => {
+  let active = null;
+  const events = [];
+  const globals = {
+    scenes: { top: () => active },
+    createConversation: () => ({ view: () => ({ who: 'you', pending: { kind: 'branch', options: [{}] } }), key: () => true }),
+    uiSize: () => ({ cols: 112, rows: 48 }),
+    uiFill: (...args) => events.push({ kind: 'fill', args }),
+    layoutTranscript: () => ({ height: 3 }),
+    layoutTranscriptChoices: () => ({ height: 2 }),
+    drawTranscript: (...args) => events.push({ kind: 'transcript', args }),
+    drawTranscriptChoices: (...args) => events.push({ kind: 'choices', args }),
+    SOURCE_CONTACT_ACTION: { COMBAT: 'combat' },
+  };
+  globals.makeColdOpenScene = factory('coldopen', 'makeColdOpenScene', globals);
+  const makeContact = factory('source-contact-scene', 'makeSourceContactScene', globals);
+  for (const source of [false, true]) {
+    active = source ? makeContact({ encounter: { id: 'material-test', nodes: {} } })
+      : globals.makeColdOpenScene({ worldUnderlay: true, ambient: false });
+    events.length = 0;
+    active.render();
+    assert.deepEqual(events.map((event) => event.kind), ['fill', 'transcript', 'choices']);
+    const [x, y, width, height, color] = events[0].args;
+    assert.equal(color, source ? 'rgba(2,4,5,.94)' : 'rgba(2,4,5,.58)');
+    assert.ok(x > 0 && y > 0 && width < 112 && height < 48, 'only the dialogue strip receives dense glass');
+    if (source) {
+      assert.equal(active.blocksWorld, false);
+      assert.equal(active.allowsLook, true);
+      assert.equal(active.sourceContactDialogue, true);
+    }
+  }
 });
 
 test('empty Archive and empty history keep all explanatory text inside the cover', () => {

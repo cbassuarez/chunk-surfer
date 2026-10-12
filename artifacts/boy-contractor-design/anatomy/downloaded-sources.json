@@ -1,0 +1,16 @@
+[
+  {
+    "file": "caucasian-male-child.target.gz",
+    "source": "https://raw.githubusercontent.com/makehumancommunity/mpfb2/master/src/mpfb/data/targets/macrodetails/caucasian-male-child.target.gz",
+    "gitBlob": "2e2d044806fe6200cd94995a58ae559b1cf68250",
+    "sha256": "18188350f6cfca20725f4057ba207ac5c7c759bfcc5badb212edabfd8563a544",
+    "license": "CC0-1.0"
+  },
+  {
+    "file": "universal-male-child-averagemuscle-averageweight.target.gz",
+    "source": "https://raw.githubusercontent.com/makehumancommunity/mpfb2/master/src/mpfb/data/targets/macrodetails/universal-male-child-averagemuscle-averageweight.target.gz",
+    "gitBlob": "5dc1292e32c74fc5ca4817eb0c88bb87ea3e3a0f",
+    "sha256": "2249784050014a68afac7efdbb9cae9e427fd8bdd2d7965f7898a6e8aec019dc",
+    "license": "CC0-1.0"
+  }
+]

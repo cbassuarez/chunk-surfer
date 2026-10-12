@@ -1,0 +1,273 @@
+{
+  "schemaVersion": 1,
+  "id": "practice-wing.student",
+  "title": "The Practice Wing: Through the Wall",
+  "status": "active",
+  "entry": "start",
+  "entries": [
+    "start"
+  ],
+  "tags": [
+    "practice-wing",
+    "reward",
+    "chunk-surfer"
+  ],
+  "notes": "The reward for quieting all six metronomes (src/game/practice-metronomes.js), heard once, in the wing, the first safe moment after the last one goes quiet. What the ticking was covering: the student through the partition, in exactly the order Source files it under STUDENT FILE (a scale, the correction tone, a faculty voice saying retain the reference, the same bar again after the room has emptied). Overheard first, then he can speak into the wall. The student has nothing of its own to say: every SIGNAL line quotes the rehearsal room. Nobody settles whether it is a person or the partition returning something once recorded there. The HUSH is only felt. Sounds are fired from main.js by line id (practiceStudentLine): scale, correction, bar, bar played sharp, knock, stop.",
+  "regions": [
+    {
+      "id": "practice-wing.student.region",
+      "title": "Through the wall",
+      "kind": "scene",
+      "color": "#2b2f36",
+      "nodeIds": [
+        "start",
+        "wall",
+        "knock",
+        "who",
+        "tune",
+        "want",
+        "leave"
+      ]
+    }
+  ],
+  "nodes": {
+    "start": {
+      "id": "start",
+      "type": "dialogue",
+      "speaker": "THE PRACTICE WING",
+      "lines": [
+        {
+          "id": "start.line.1",
+          "who": "direction",
+          "text": "The last tick goes. For the first time tonight the wing has nothing in it."
+        },
+        {
+          "id": "start.line.2",
+          "who": "direction",
+          "text": "Then, through the wall, a scale. Up and back down, slowly, the way you play one when somebody is listening for mistakes."
+        },
+        {
+          "id": "start.line.3",
+          "who": "direction",
+          "text": "A tone cuts across the top note. Not a note: a correction, a hair sharp of anything in the room."
+        },
+        {
+          "id": "start.line.4",
+          "who": "institution",
+          "text": "Retain the reference."
+        },
+        {
+          "id": "start.line.5",
+          "who": "direction",
+          "text": "A bar. It stops in the same place."
+        },
+        {
+          "id": "start.line.6",
+          "who": "surfer",
+          "quotes": "rehearsal",
+          "rate": 0.94,
+          "text": "Again."
+        },
+        {
+          "id": "start.line.7",
+          "who": "direction",
+          "text": "The bar again. The teaching voice does not come back, and the bar goes on without it."
+        }
+      ],
+      "goto": "wall"
+    },
+    "wall": {
+      "id": "wall",
+      "type": "choice",
+      "speaker": "THE PRACTICE WING",
+      "lines": [
+        {
+          "id": "wall.line.1",
+          "who": "direction",
+          "text": "Through the partition, the bar starts again."
+        }
+      ],
+      "choices": [
+        {
+          "id": "wall.choice.knock",
+          "text": "knock on the wall",
+          "goto": "knock",
+          "hideWhenAsked": true
+        },
+        {
+          "id": "wall.choice.who",
+          "text": "who is in there?",
+          "goto": "who",
+          "hideWhenAsked": true
+        },
+        {
+          "id": "wall.choice.tune",
+          "text": "you were in tune",
+          "goto": "tune",
+          "if": "practice.trace.marks>=1",
+          "hideWhenAsked": true
+        },
+        {
+          "id": "wall.choice.want",
+          "text": "play it the way you want to",
+          "goto": "want",
+          "hideWhenAsked": true
+        },
+        {
+          "id": "wall.choice.leave",
+          "text": "leave it",
+          "goto": "leave"
+        }
+      ]
+    },
+    "knock": {
+      "id": "knock",
+      "type": "dialogue",
+      "speaker": "THE PRACTICE WING",
+      "lines": [
+        {
+          "id": "knock.line.1",
+          "who": "direction",
+          "text": "Two knuckles on the partition."
+        },
+        {
+          "id": "knock.line.2",
+          "who": "direction",
+          "text": "The bar stops."
+        },
+        {
+          "id": "knock.line.3",
+          "who": "surfer",
+          "quotes": "rehearsal",
+          "rate": 0.94,
+          "text": "Again."
+        }
+      ],
+      "goto": "wall"
+    },
+    "who": {
+      "id": "who",
+      "type": "dialogue",
+      "speaker": "THE PRACTICE WING",
+      "lines": [
+        {
+          "id": "who.line.1",
+          "who": "you",
+          "text": "Who's practising?"
+        },
+        {
+          "id": "who.line.2",
+          "who": "direction",
+          "text": "Your own voice comes back off the partition, late, and a little lower."
+        },
+        {
+          "id": "who.line.3",
+          "who": "ears",
+          "text": "Eighty-five milliseconds. That is the wall answering, not a person."
+        },
+        {
+          "id": "who.line.4",
+          "who": "tape",
+          "text": "Or it is a person on tape, and the wall is where the tape was made."
+        },
+        {
+          "id": "who.line.5",
+          "who": "surfer",
+          "quotes": "rehearsal",
+          "rate": 0.94,
+          "text": "Retain the reference."
+        }
+      ],
+      "goto": "wall"
+    },
+    "tune": {
+      "id": "tune",
+      "type": "dialogue",
+      "speaker": "THE PRACTICE WING",
+      "lines": [
+        {
+          "id": "tune.line.1",
+          "who": "you",
+          "text": "Four-forty. You were in tune. Every time."
+        },
+        {
+          "id": "tune.line.2",
+          "who": "direction",
+          "text": "The bar stops."
+        },
+        {
+          "id": "tune.line.3",
+          "who": "surfer",
+          "quotes": "rehearsal",
+          "rate": 0.94,
+          "text": "Sixteen flat."
+        },
+        {
+          "id": "tune.line.4",
+          "who": "direction",
+          "text": "It starts again, a little sharp, and this time it gets two notes further before it stops."
+        }
+      ],
+      "goto": "wall"
+    },
+    "want": {
+      "id": "want",
+      "type": "dialogue",
+      "speaker": "THE PRACTICE WING",
+      "lines": [
+        {
+          "id": "want.line.1",
+          "who": "you",
+          "text": "Play it the way you want to. Nobody is marking it."
+        },
+        {
+          "id": "want.line.2",
+          "who": "surfer",
+          "quotes": "rehearsal",
+          "rate": 0.94,
+          "text": "Again."
+        },
+        {
+          "id": "want.line.3",
+          "who": "direction",
+          "text": "The bar. It stops in the same place."
+        },
+        {
+          "id": "want.line.4",
+          "who": "you",
+          "text": "That is not what I asked."
+        },
+        {
+          "id": "want.line.5",
+          "who": "surfer",
+          "quotes": "rehearsal",
+          "rate": 0.94,
+          "text": "Again."
+        }
+      ],
+      "goto": "wall"
+    },
+    "leave": {
+      "id": "leave",
+      "type": "dialogue",
+      "speaker": "THE PRACTICE WING",
+      "lines": [
+        {
+          "id": "leave.line.1",
+          "who": "direction",
+          "text": "You step back from the partition. The quiet you made is not empty. Something in it is listening to the bar as closely as the student is."
+        },
+        {
+          "id": "leave.line.2",
+          "who": "direction",
+          "text": "Across the plaster, for a moment, five ruled lines, and five more under them. Then it is plaster."
+        },
+        {
+          "id": "leave.line.3",
+          "who": "direction",
+          "text": "The bar stops in the same place, and does not start again."
+        }
+      ]
+    }
+  }
+}

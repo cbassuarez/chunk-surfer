@@ -1,0 +1,26 @@
+[
+  {
+    "file": "african-female-young.target.gz",
+    "source": "https://raw.githubusercontent.com/makehumancommunity/mpfb2/master/src/mpfb/data/targets/macrodetails/african-female-young.target.gz",
+    "sha256": "1147ae55ecb0f66bade3f45176b3af187e265878322db172ad1090e9f3108e84",
+    "license": "CC0-1.0"
+  },
+  {
+    "file": "african-female-old.target.gz",
+    "source": "https://raw.githubusercontent.com/makehumancommunity/mpfb2/master/src/mpfb/data/targets/macrodetails/african-female-old.target.gz",
+    "sha256": "a097b300928d3be97f30b6182cb252c2de09433cb3a571de890952a1d25d3f18",
+    "license": "CC0-1.0"
+  },
+  {
+    "file": "universal-female-young-averagemuscle-averageweight.target.gz",
+    "source": "https://raw.githubusercontent.com/makehumancommunity/mpfb2/master/src/mpfb/data/targets/macrodetails/universal-female-young-averagemuscle-averageweight.target.gz",
+    "sha256": "30046c85a461249824548d5319d74c16392842a1ee00ca9a4485ea3eeb06e2e8",
+    "license": "CC0-1.0"
+  },
+  {
+    "file": "universal-female-old-averagemuscle-averageweight.target.gz",
+    "source": "https://raw.githubusercontent.com/makehumancommunity/mpfb2/master/src/mpfb/data/targets/macrodetails/universal-female-old-averagemuscle-averageweight.target.gz",
+    "sha256": "e592836eee975b83de976b30a04444a36c1f4da7abe8c7c910e751926f040a7e",
+    "license": "CC0-1.0"
+  }
+]

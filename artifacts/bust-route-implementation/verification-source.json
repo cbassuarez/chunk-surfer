@@ -1,0 +1,22 @@
+{
+  "capturedAt": "2026-10-12T05:32:38.783Z",
+  "snapshot": "/private/tmp/bust-route-snapshot-Q1PqoQ",
+  "scope": "Production bundle of a frozen source copy; static public assets and raw asset directories are shared without duplicating their bytes; source and content are frozen. No game module or shader is substituted.",
+  "sha256": {
+    "src/main.js": "01334005766e698afc91fbda56061010dfc10d9e85e8e225046c2b076b2afb88",
+    "src/game/source-space-runtime.js": "cea0b6c100bdf36fa0b60c9b99fecfc753bdbfbe9081db55ff3ffb902ff9ce31",
+    "src/game/tower-personal-journey.js": "451ce4e129ea88d87457714acd43c7dce7e5807bceaf7c14cc5256388886edf7",
+    "src/audio/tower-personal-recording.js": "db0af38840b4a6aeaa78ab0404edc744b91f862d2234a9e1dd731a0895cccdff",
+    "src/render/tower-personal-meshes.js": "23bce6d6d0c883305da420abd84760a13b80fe2aeb3e7256cf7ea8b317f359b1",
+    "src/render/r3d.js": "f6e690a6bf08ac12019b78a88bd7e751de012db231e84c7a18397b485f513124",
+    "src/game/chunk-surf-state.js": "d75edff602991311b8c8c0b2d3616c099dba30e3482cc5eb7b36ac992a2f4aa7",
+    "src/game/playback.js": "840ad6ee0a16c8b084decb4949e39cd7421ef8f25ec7a1e2bf5b28bda63199e4",
+    "src/data/combat-definitions.js": "7d34a32eb1eb076af5171214876625daa7d06a8ddab60510d6ea03674590af49",
+    "src/data/tower-personal-journey.js": "eb8d9adc7dda440244845f38622fde21bef12ea5b33f2352d3f163a47f73609a",
+    "src/game/horizon-bust.js": "4704abb7f004f215f5dbef9d2c304d223a385e76811443dad945d7c643b10aa3",
+    "src/game/source-bell-field.js": "2768316dcb043011768bd60d20dde133b80b75c6deb43d0a67e9d6311019b6a5",
+    "src/data/source-level.js": "59fb998b26471c3557ea5daac091f1251fbbbb3093551a1b12ee51b99f003b1d",
+    "src/render/props3d.js": "3be82005dcb6fe162c566cdcf968db1f057fddb6c0bdfc8ac7adb42ab2ed27fc",
+    "content/narrative/source-space.door-field.story.json": "5e75e4fef41c1c57b175861c20e7dc7cde23a6a5b64c8bf1b99121d760675a6a"
+  }
+}

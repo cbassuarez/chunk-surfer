@@ -10,10 +10,10 @@ import { drawRecorderInstrument, recorderFaceLayout, drawRecorderDisplayText, dr
 
 const clamp01 = value => Math.max(0, Math.min(1, Number(value) || 0));
 export const TRANSPORT = Object.freeze({
-  MONITOR: 'monitor', RECORD: 'record', PLAY: 'play', BROWSE: 'browse', CHECK: 'check', LISTEN: 'listen',
+  MONITOR: 'monitor', RECORD: 'record', PLAY: 'play', BROWSE: 'browse', CHECK: 'check', LISTEN: 'listen', TRACE: 'trace',
 });
 const LABEL = Object.freeze({ monitor: 'MONITOR', record: 'RECORD', play: 'TAPE RETURN',
-  browse: 'TAKES', check: 'MIC CHECK', listen: 'LISTEN / PRE-ROLL' });
+  browse: 'TAKES', check: 'MIC CHECK', listen: 'LISTEN / PRE-ROLL', trace: 'TRACE' });
 export function formatTakeTime(seconds = 0) {
   const whole = Math.max(0, Math.floor(Number(seconds) || 0));
   return `${String(Math.floor(whole / 60)).padStart(2, '0')}:${String(whole % 60).padStart(2, '0')}`;

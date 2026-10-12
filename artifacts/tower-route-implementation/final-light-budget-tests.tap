@@ -1,0 +1,77 @@
+TAP version 13
+# ending physical staging and post-image lifecycle specs passed
+# Subtest: test/ending-staging.spec.mjs
+ok 1 - test/ending-staging.spec.mjs
+  ---
+  duration_ms: 6003.151917
+  type: 'test'
+  ...
+# Subtest: physical interior beam preserves the real battery, fitted reach and HUSH absorption
+ok 2 - physical interior beam preserves the real battery, fitted reach and HUSH absorption
+  ---
+  duration_ms: 3.354166
+  type: 'test'
+  ...
+# Subtest: the actual architecture and prop shaders bound received lamp highlights
+ok 3 - the actual architecture and prop shaders bound received lamp highlights
+  ---
+  duration_ms: 2.736709
+  type: 'test'
+  ...
+# Subtest: church beam leaves received highlight headroom at its authored recording gain
+ok 4 - church beam leaves received highlight headroom at its authored recording gain
+  ---
+  duration_ms: 0.193542
+  type: 'test'
+  ...
+# Subtest: main applies the physical beam only to the ordinary church
+ok 5 - main applies the physical beam only to the ordinary church
+  ---
+  duration_ms: 7.73625
+  type: 'test'
+  ...
+# Subtest: the hall and Source models keep physical light without reviving an off or attenuated torch
+ok 6 - the hall and Source models keep physical light without reviving an off or attenuated torch
+  ---
+  duration_ms: 1.3785
+  type: 'test'
+  ...
+# Subtest: the soft hall penumbra retains the fitted throw and flood differences
+ok 7 - the soft hall penumbra retains the fitted throw and flood differences
+  ---
+  duration_ms: 0.565167
+  type: 'test'
+  ...
+# Subtest: later Source modes and ordinary light keep their prior optical response
+ok 8 - later Source modes and ordinary light keep their prior optical response
+  ---
+  duration_ms: 0.136583
+  type: 'test'
+  ...
+# Subtest: hall exposure follows the physical hall and releases at the still-page threshold
+ok 9 - hall exposure follows the physical hall and releases at the still-page threshold
+  ---
+  duration_ms: 59.722167
+  type: 'test'
+  ...
+# Subtest: recording exposure is bounded and resets with the next lighting context
+ok 10 - recording exposure is bounded and resets with the next lighting context
+  ---
+  duration_ms: 0.664625
+  type: 'test'
+  ...
+# Subtest: capture exposure reveals dim form while preserving the raw-light black gate
+ok 11 - capture exposure reveals dim form while preserving the raw-light black gate
+  ---
+  duration_ms: 0.634291
+  type: 'test'
+  ...
+1..11
+# tests 11
+# suites 0
+# pass 11
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6010.411291

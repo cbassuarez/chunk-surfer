@@ -1,0 +1,86 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Source native lifecycle probe</title><style>html,body{margin:0;background:#14211d;color:#e9eee9;font:16px system-ui}main{padding:22px}button{padding:12px 18px;font:16px system-ui;margin:6px}pre{font:12px monospace;white-space:pre-wrap}#status{font-size:20px}</style></head><body><main><h1>Source native lifecycle probe</h1><div id="status">Starting isolated presentation…</div><button id="finish" disabled>Finish and restore</button><pre id="log"></pre></main><script type="module">
+import {invoke} from '@tauri-apps/api/core';
+import {listen} from '@tauri-apps/api/event';
+const token=`source-native-probe-${Date.now()}`, report={platform:'macOS',scenario:'shared-hush-dither',checks:[],frames:[],surfaceErrors:[],presented:[]};let revision=1;
+const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+const log=value=>{document.getElementById('log').textContent+=`${value}\n`;};
+const check=(id,pass,detail=null)=>{report.checks.push({id,pass,detail});log(`${pass?'PASS':'FAIL'} ${id}`);};
+const metrics=()=>invoke('chunk_source_desktop_probe',{action:'metrics'});
+const get=(frame,label)=>frame.windows.find(window=>window.label===label);
+const snapshot={version:1,mode:'native',phase:'desktop',breached:true,active:true,clock:1,transition:1,movementIndex:1,tier:1,
+  commandMinWidth:963.3,commandMinHeight:480,composureRatio:.5,coherenceRatio:.4,cover:{capacity:3,count:2},intent:{kind:'broadcast',progress:.45}};
+let start,placement,clicks=0,finished=false;
+await listen('source-desktop:error',event=>{report.surfaceErrors.push(event.payload);});
+await listen('source-desktop:presented',event=>{if(event.payload.token===token)report.presented.push(event.payload);});
+await listen('source-desktop:probe-click',event=>{if(event.payload.trusted){clicks=event.payload.count;report.pointerWitness={trusted:true,count:clicks};document.getElementById('status').textContent='Physical click-through witnessed. Restoring shortly.';}});
+async function verifyWebKitDither(){
+  const {createSourceDesktopView}=await import('../src/render/source-desktop-view.js');
+  const proto=WebGL2RenderingContext.prototype, compile=proto.compileShader, link=proto.linkProgram;
+  const shader={compiled:0,linked:0,sharedFragments:0,errors:[]};
+  proto.compileShader=function(value){compile.call(this,value);shader.compiled++;
+    const source=this.getShaderSource(value)||'';
+    if(source.includes('uSourceCoverage')&&source.includes('uRecordingPatternScale'))shader.sharedFragments++;
+    if(!this.getShaderParameter(value,this.COMPILE_STATUS))shader.errors.push(this.getShaderInfoLog(value));};
+  proto.linkProgram=function(value){link.call(this,value);shader.linked++;
+    if(!this.getProgramParameter(value,this.LINK_STATUS))shader.errors.push(this.getProgramInfoLog(value));};
+  const canvas=document.createElement('canvas');canvas.style.cssText='position:fixed;left:-9999px;top:0;width:240px;height:180px';document.body.append(canvas);
+  const view=createSourceDesktopView({canvas,assetBase:new URL('/',location.href).href,onError:error=>shader.errors.push(String(error))});
+  try{
+    await view.ready;view.resize(240,180,2);const rendered=view.update({...snapshot,token,mode:'fallback',desktop:null});
+    const gl=canvas.getContext('webgl2'), pixels=new Uint8Array(canvas.width*canvas.height*4);
+    gl.readPixels(0,0,canvas.width,canvas.height,gl.RGBA,gl.UNSIGNED_BYTE,pixels);
+    const glErrors=[];for(let n=0;n<8;n++){const error=gl.getError();if(error===gl.NO_ERROR)break;glErrors.push(error);}
+    let visible=0,transparent=0;const colors=new Set();
+    for(let i=0;i<pixels.length;i+=4){if(pixels[i+3]){visible++;if(colors.size<1024)colors.add(`${pixels[i]},${pixels[i+1]},${pixels[i+2]}`);}else transparent++;}
+    report.webkitDither={...shader,rendered,glErrors,visible,transparent,colors:colors.size,
+      drawingBuffer:{width:gl.drawingBufferWidth,height:gl.drawingBufferHeight},
+      version:gl.getParameter(gl.VERSION),renderer:gl.getParameter(gl.RENDERER),
+      colorBufferFloat:!!gl.getExtension('EXT_color_buffer_float'),maxSamples:gl.getParameter(gl.MAX_SAMPLES),view:view.debug()};
+    check('webkit-shared-shader-compiled-linked',rendered&&shader.sharedFragments>0&&shader.linked>0&&shader.errors.length===0,shader);
+    check('webkit-shared-dither-no-gl-error',glErrors.length===0,glErrors);
+    check('webkit-dither-noise-prewarmed',view.debug().dither?.noiseReady===true,view.debug().dither);
+    check('webkit-dither-visible-ink-and-transparent-alpha',visible>0&&transparent>0&&colors.size>2,{visible,transparent,colors:colors.size});
+  }finally{view.dispose();canvas.remove();proto.compileShader=compile;proto.linkProgram=link;}
+}
+async function finish(){
+  if(finished)return;finished=true;document.getElementById('finish').disabled=true;
+  try{await invoke('chunk_source_desktop_end',{token});await delay(500);const final=await metrics();report.frames.push({stage:'restored',...final});
+    const a=get(start,'main'),b=get(final,'main');check('overlay-hidden-on-end',!get(final,'source-desktop')?.visible);
+    check('content-size-and-position-restored',Math.abs(a.position.x-b.position.x)<=4&&Math.abs(a.position.y-b.position.y)<=4&&Math.abs(a.inner.width-b.inner.width)<=4&&Math.abs(a.inner.height-b.inner.height)<=4,{before:a,after:b});
+    report.outerRestoration={before:a.outer,after:b.outer,exact:Math.abs(a.outer.width-b.outer.width)<=4&&Math.abs(a.outer.height-b.outer.height)<=4};
+    check('outer-frame-restored',report.outerRestoration.exact,report.outerRestoration);
+    check('decoration-and-resize-restored',a.decorated===b.decorated&&a.resizable===b.resizable);
+    check('main-retains-focus',b.focused);check('native-owner-retired',!final.active);
+  }catch(error){check('restore-completed',false,String(error));}
+  await invoke('chunk_source_desktop_probe',{action:'cleanup'});const cleanup=await metrics();report.frames.push({stage:'cleaned',...cleanup});
+  check('created-backdrop-closed',!get(cleanup,'source-desktop-probe-backdrop'));
+  check('native-dither-surface-no-reported-errors',report.surfaceErrors.length===0,report.surfaceErrors);
+  check('native-dither-first-frame-presented',report.presented.some(frame=>frame.revision===1),report.presented);
+  report.passed=report.checks.every(x=>x.pass);report.physicalPointerVerified=clicks>0;
+  await invoke('chunk_source_desktop_probe',{action:'report',report});document.getElementById('status').textContent=report.passed?'Native lifecycle verified.':'Probe incomplete or failed; report saved.';
+}
+document.getElementById('finish').addEventListener('click',finish);
+try{
+  await delay(1000);start=await metrics();
+  // Observe the lease rather than activating over another app. An unrelated
+  // focus change is allowed to refuse this probe exactly as production does.
+  for(let tries=0;!get(start,'main')?.focused&&tries<50;tries++){await delay(100);start=await metrics();}
+  report.frames.push({stage:'initial',...start});
+  await verifyWebKitDither();
+  await invoke('chunk_source_desktop_probe',{action:'backdrop'});
+  check('transaction-begins',await invoke('chunk_window_choreography_begin',{request:{token,sceneId:'source:desktop-native-probe',restoreGameMode:false}}));
+  placement=await invoke('chunk_source_desktop_begin',{request:{token,revision,snapshot}});report.placement=placement;
+  await delay(350);const live=await metrics();report.frames.push({stage:'live',...live});const overlay=get(live,'source-desktop'),main=get(live,'main');
+  check('native-alpha-surface',overlay.native?.opaque===false&&overlay.native?.backgroundAlpha===0,overlay.native);
+  check('native-click-through',overlay.native?.ignoresMouseEvents===true&&overlay.native?.canBecomeKey===false,overlay.native);
+  check('real-overlay-ready-visible',live.ready&&overlay.visible);
+  check('island-bounds-match',Math.abs(main.inner.width/placement.scale-placement.command.width)<=4&&Math.abs(main.inner.height/placement.scale-placement.command.height)<=4,{main,placement});
+  check('main-sole-focus-owner',main.focused&&!overlay.focused);
+  check('command-island-fixed',!main.resizable);
+  await invoke('chunk_source_desktop_suspend',{token,suspended:true});await delay(180);const paused=await metrics();report.frames.push({stage:'paused',...paused});check('pause-hides-with-owner-retained',!get(paused,'source-desktop').visible&&paused.active);
+  await invoke('chunk_source_desktop_update',{request:{token,revision:++revision,snapshot:{...snapshot,clock:1,paused:false}}});await delay(180);const resumed=await metrics();report.frames.push({stage:'resumed',...resumed});check('resume-reveals-same-owner',get(resumed,'source-desktop').visible&&resumed.active);
+  document.getElementById('status').textContent='Optional: click the yellow witness through the overlay. Automatic restore in 8 seconds.';document.getElementById('finish').disabled=false;
+  await invoke('chunk_source_desktop_probe',{action:'report',report});
+  await delay(8000);await finish();
+}catch(error){check('native-begin-completed',false,String(error));await invoke('chunk_source_desktop_end',{token}).catch(()=>{});await invoke('chunk_source_desktop_probe',{action:'cleanup'});await invoke('chunk_source_desktop_probe',{action:'report',report});document.getElementById('status').textContent=`Probe failed: ${error}`;}
+</script></body></html>

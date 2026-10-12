@@ -234,6 +234,15 @@ npm run test:acoustic
 
 Browser smoke tests under `tools/chunk_surfer/tests/` expect a running Vite dev server and a local Chrome/Chromium compatible with `puppeteer-core`.
 
+### Audits
+
+`npm run audits` starts every audit page, the system map and the narrative studio together at one address (http://127.0.0.1:4322/), and runs the one-shot checks on request. Each page also runs on its own:
+
+- `npm run endings:audit` — every ending, how it is reached and what it says
+- `npm run progression:audit` — achievements, pins, skills and weapons
+- `npm run puzzles:audit` — every puzzle and microgame, and the way through each
+- `npm run source:audit` — the walk through source space as a timeline; `npm run source:path` prints it and fails if it no longer matches the code
+
 ### Migration Note
 
 Extracted from `/Users/seb/cbassuarez.github.io` after source snapshot commit:

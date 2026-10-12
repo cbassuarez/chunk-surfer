@@ -136,7 +136,7 @@ test('renderer wires both acquisition stages and transitions recording profiles'
   assert.match(renderer, /recording:\s*blendLayer\(lookFrom\.recording,\s*lookTarget\.recording,\s*t\)/);
 });
 
-test('Source Space remains outside physical recording acquisition', () => {
+test('legacy text compositing remains independent of physical recording acquisition', () => {
   // Sliced to the END OF ITS OWN TEMPLATE LITERAL, not to the next section
   // comment. Reaching for the section marker meant this quietly policed every
   // shader that happened to be declared after TEXT_SPACE_FRAG, and it failed

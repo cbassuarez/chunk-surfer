@@ -31,7 +31,7 @@ import { SOURCE_LANDMARK_OFFSETS, sourceLandscapeFloorAt } from '../src/game/sou
   // may be a climb or a fall from what it adjoins.
   assert.deepEqual(
     SOURCE_TIERS.filter((tier) => !tier.field).map((tier) => tier.id),
-    ['outskirts', 'nothing', 'horizon', 'bells'],
+    ['nothing', 'outskirts', 'horizon', 'bells'],
     'the field ends at the perimeter and everything past it is walked, not climbed',
   );
   // AND THEY ARE IN THAT ORDER, ADJOINING, WITH NO GAP AND NO STEP. A gap is

@@ -49,7 +49,10 @@ PRES.offerSoundTarget({ position: { x: 2, y: 1 }, level: 1, confidence: 1, prior
 const before = PRES.distanceTo(2, 1);
 PRES.updatePresence(.2, 2, 1, null);
 assert.equal(actor.behaviorMode, 'chase');
-assert.ok(PRES.distanceTo(2, 1) < before, 'pinpoint noise starts a chase');
+assert.equal(PRES.distanceTo(2, 1), before, 'pinpoint noise may not bypass the arrested warning/load');
+for (let i = 0; i < 60 && PRES.distanceTo(2, 1) === before; i++) PRES.updatePresence(.1, 2, 1, null);
+assert.ok(PRES.distanceTo(2, 1) < before, 'pinpoint noise starts a real step after the held warning');
+for (let i = 0; i < 20 && actor.gait.phase === 'advance'; i++) PRES.updatePresence(.1, 2, 1, null);
 actor.chaseUntil = -1;
 PRES.updatePresence(.1, 2, 1, null);
 assert.equal(actor.behaviorMode, 'listen', 'a chase burst stops to listen');

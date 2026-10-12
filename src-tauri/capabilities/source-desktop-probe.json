@@ -1,0 +1,7 @@
+{
+  "$schema":"../gen/schemas/desktop-schema.json",
+  "identifier":"source-desktop-probe",
+  "description":"A fixed game-owned backdrop for the opt-in debug-only native lifecycle verifier.",
+  "windows":["source-desktop-probe-backdrop"],
+  "permissions":["core:event:allow-emit","core:event:allow-listen","core:event:allow-unlisten"]
+}

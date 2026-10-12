@@ -1,0 +1,23 @@
+{
+  "snapshot": "CaExKM",
+  "bundle": "main-GQaEPLuq.js",
+  "functionalChecks": {
+    "passed": 115,
+    "failed": 0,
+    "errors": 0
+  },
+  "visualAcceptance": false,
+  "findings": [
+    {
+      "ending": "tower-won",
+      "frame": "normal-10-won-final-hold.webp",
+      "finding": "Exterior physical framing is correct; authored yard exposure1 leaves the prone body too dark. Diagnostic2 improves legibility,4.5 washes the wall/floor."
+    },
+    {
+      "ending": "tower-lost",
+      "frame": "normal-24-lost-final-hold.webp",
+      "finding": "The wide camera drifts into the clustered crossing pier at12.15,71.15; exposure1 still shows the physical obstruction. The earlier normal21 frame shows both figures and eight bells."
+    }
+  ],
+  "followup": "Presentation-only fixes move the lost camera endpoint to13.1,70.9, use explicit Tower ending exposure2 and add modest local prone-body fill. Actual authored final frames must be verified after refresh."
+}

@@ -79,6 +79,14 @@ export function remove(sceneOrId) {
   return s;
 }
 
+// Explicit view-owner handoff (developer warp). Unlike repeated pop(), this
+// cannot resume an intermediate scene and let it install another camera.
+export function clear() {
+  while (stack.length) stack.pop()?.exit?.();
+  syncLens();
+  emitChange('clear');
+}
+
 export function replace(scene, params) {
   // Replacement is one scene transaction. Calling pop()/push() here used to
   // publish an intermediate `explore` profile, enqueueing a needless material

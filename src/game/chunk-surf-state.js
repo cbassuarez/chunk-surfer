@@ -1,4 +1,11 @@
+import { normalizeSourceShore } from './source-hanging-shore.js';
 import { CHUNK_SURF_FLAGS, chunkSurfRouteProfile } from '../data/chunk-surf-script.js';
+import { normalizeOutskirtsExperience } from './outskirts-experience.js';
+import { normalizeSourceUnravelling } from './source-unravelling.js';
+import { normalizeStationRealm } from './station-realms.js';
+import { normalizeTowerPersonalJourney } from './tower-personal-journey.js';
+import { normalizeCathedralExtractionCheckpoint } from './cathedral-extraction.js';
+import { normalizeCombatCheckpoint } from './combat-checkpoint.js';
 import {
   normalizeSourceContactState,
   sourceBossExposed,
@@ -28,6 +35,9 @@ export const CHUNK_SURF_PHASE = Object.freeze({
   // It is still Source space — same runtime, same area, the tier past the tape
   // (SOURCE_BELLS in data/source-level.js).
   BELLS: 'bells',
+  // THE CHAPEL'S OUTSKIRTS. Straight on, past the end of the tape: nothing, a
+  // field of doors, and the chapel's own door, which is the way out.
+  CHAPEL_OUTSKIRTS: 'chapel-outskirts',
   COMPLETED: 'completed',
 });
 
@@ -124,6 +134,60 @@ const finitePoint = (value) => value && Number.isFinite(Number(value.x)) && Numb
   ? { x: Number(value.x), y: Number(value.y), ...(Number.isFinite(Number(value.facing)) ? { facing: Number(value.facing) } : {}) }
   : null;
 
+// Feet and falling belong to the body, not the surface beneath a crossing.
+// Old saves have no body-height record until the divided field initializes it.
+export function normalizeSourceDivide(value = null) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const bounded = (n, maximum) => Number.isFinite(Number(n))
+    ? Math.max(0, Math.min(maximum, Number(n))) : 0;
+  return { version: 1, feet: bounded(value.feet, 45),
+    fallVelocity: bounded(value.fallVelocity, 40), falling: !!value.falling };
+}
+
+// The station clock advances only while its world is active. Door entry, the
+// visit it starts, and the door's later disappearance share one saved clock.
+export function normalizeSourceStation(value = null) {
+  const source = value && typeof value === 'object' ? value : {};
+  const finite = (n, fallback = 0) => Number.isFinite(Number(n)) ? Number(n) : fallback;
+  const seconds = (n) => Math.max(0, finite(n));
+  const forward = (v) => Array.isArray(v) && v.length >= 2
+    ? [finite(v[0]), finite(v[1], -1)] : [0, -1];
+  const crossing = source.crossing && typeof source.crossing.id === 'string' ? {
+    id: source.crossing.id, variant: Math.max(0, Math.floor(finite(source.crossing.variant))),
+    seed: finite(source.crossing.seed), world: String(source.crossing.world || ''),
+    key: !!source.crossing.key, home: !!source.crossing.home, released: !!source.crossing.released,
+    wrong: !!source.crossing.wrong, fails: !!source.crossing.fails, lockIn: !!source.crossing.lockIn,
+    forward: forward(source.crossing.forward), startedAt: finite(source.crossing.startedAt),
+  } : null;
+  const walk = source.walk && ['home', 'lock-in'].includes(source.walk.kind) ? {
+    kind: source.walk.kind, progress: Math.max(0, Math.min(1, finite(source.walk.progress))),
+    windowAt: source.walk.windowAt == null ? null : seconds(source.walk.windowAt),
+    thought: !!source.walk.thought, done: !!source.walk.done, forward: forward(source.walk.forward),
+  } : null;
+  return {
+    time: seconds(source.time), crossing, walk, realm: normalizeStationRealm(source.realm),
+    personal: normalizeTowerPersonalJourney(source.personal),
+    homeDiscovered: !!source.homeDiscovered, homeResolved: !!source.homeResolved,
+    lastReturn: source.lastReturn && typeof source.lastReturn.id === 'string' ? {
+      id: source.lastReturn.id, world: String(source.lastReturn.world || ''), home: !!source.lastReturn.home,
+      reason: ['budget', 'retreat', 'home'].includes(source.lastReturn.reason) ? source.lastReturn.reason : 'budget',
+      windowReached: !!source.lastReturn.windowReached, at: seconds(source.lastReturn.at),
+      returnPose: source.lastReturn.returnPose ? { ...finitePoint(source.lastReturn.returnPose),
+        yaw: finite(source.lastReturn.returnPose.yaw), pitch: finite(source.lastReturn.returnPose.pitch) } : null,
+    } : null,
+    entries: (Array.isArray(source.entries) ? source.entries : [])
+      .filter((entry) => entry && typeof entry.doorId === 'string' && entry.doorId && typeof entry.world === 'string')
+      .slice(-64).map((entry) => ({ doorId: entry.doorId, world: entry.world,
+        variant: Math.max(0, Math.floor(finite(entry.variant))), home: !!entry.home, enteredAt: seconds(entry.enteredAt),
+        // Earlier journals granted their residue on entry. Preserve that earned
+        // state; new visits explicitly wait until reassembly to expose it.
+        returnedAt: entry.returnedAt === null ? null : seconds(entry.returnedAt ?? entry.enteredAt) })),
+    takeBacks: (Array.isArray(source.takeBacks) ? source.takeBacks : [])
+      .filter((entry) => entry && typeof entry.id === 'string' && entry.id)
+      .slice(-64).map((entry) => ({ id: entry.id, at: seconds(entry.at) })),
+  };
+}
+
 export function canOfferChunkSurf({ completedTakes = 0, roomId = '', alreadyCompleted = false } = {}) {
   if (alreadyCompleted || Number(completedTakes) < 4) return false;
   if (roomId && roomId !== 'lux_nova' && roomId !== 'chapel' && roomId !== 'chapel_approach') return false;
@@ -165,6 +229,7 @@ export function freshChunkSurfState({
     },
     returnPoint: finitePoint(returnPoint),
     hallMaxDistance: 0,
+    hallExperience: { searchElapsed: 0, pressure: 0, rainLatched: false },
     pageStage: 0,
     haystackOrigin: null,
     landscapeOrigin: null,
@@ -181,11 +246,20 @@ export function freshChunkSurfState({
     // it — the same contract the Scene Dock HUSH beat runs on, where the door
     // remains a door and stops being an exit.
     landingDoorSealed: false,
+    // THE GREY DOORS AT THE FAR EDGE OF THE FIELD, the one way out to the
+    // outskirts and back. Opened by the player, shut behind him on the crossing.
+    edgeDoorOpen: false,
+    // False copies of that pair disappear when touched. Every touched index
+    // stays gone even after a long walk away and a reload.
+    edgeDoorEchoesErased: [],
+    outskirtsExperience: normalizeOutskirtsExperience(),
     // The white interval is measured in successful body steps, not an axis.
     // That makes thirty seconds mean thirty seconds even when the player walks
     // sideways into the apparent infinity. It is persisted on ordinary saves so
     // a reload cannot restart the cinematic or skip its red onset.
     sourceApproachDistance: 0,
+    sourceShore: normalizeSourceShore(),
+    sourceDivide: null,
     sourceApproachComplete: false,
     firstLiftCompleted: false,
     landingWeatherSpent: false,
@@ -219,12 +293,48 @@ export function freshChunkSurfState({
     // it cannot be earned late — see sourceBossAvailable().
     injuriesAtEntry: 0,
     horizon: freshHorizon(),
+    bellField: null,
+    // Door-field doors walked through (and so erased), by id. Two in the tower's
+    // field are the key to the tower door.
+    routeDoorsErased: [],
+    // Door-field doors opened (they stay open), by id.
+    routeDoorsOpened: [],
+    station: normalizeSourceStation(),
     finale: freshFinale(),
   };
 }
 
 function freshHorizon() {
-  return { entered: false, reason: null, exit: null, maxDepth: 0 };
+  return { entered: false, reason: null, exit: null, maxDepth: 0, unravelling: normalizeSourceUnravelling() };
+}
+
+// WHAT ST BRENDAN'S REMEMBERS. alarm is how many bells the body brushed on the
+// belfry deck on the way down; damage is what the fight has broken, in the order
+// it broke. Both survive a loss: every retry the bust grants is fought in the
+// church the last one left.
+export const CATHEDRAL_DAMAGE_MARKS = Object.freeze(['bells-swinging', 'frame-shaken', 'bell-fallen', 'pulpitum-split', 'lantern-out']);
+export const CATHEDRAL_ALARM_CEILING = 9;
+function freshCathedral() {
+  return { alarm: 0, damage: [], lessons: [], fight: null, extraction: null };
+}
+function normalizeCathedral(value = null) {
+  const source = value && typeof value === 'object' ? value : {};
+  const checkpoint = normalizeCombatCheckpoint(source.fight?.checkpoint);
+  const fight = source.fight && typeof source.fight === 'object' ? {
+    phase: checkpoint?.cathedralPhase === 2 || source.fight.phase === 2 ? 2 : 1,
+    checkpoint,
+    continuation: source.fight.continuation && typeof source.fight.continuation === 'object'
+      ? JSON.parse(JSON.stringify(source.fight.continuation)) : null,
+    retry: !!source.fight.retry,
+  } : null;
+  return {
+    alarm: Math.max(0, Math.min(CATHEDRAL_ALARM_CEILING, Math.floor(Number(source.alarm) || 0))),
+    damage: CATHEDRAL_DAMAGE_MARKS.filter((mark) => Array.isArray(source.damage) && source.damage.includes(mark)),
+    lessons: ['clapper', 'louvre', 'wheel'].filter((id) => source.lessons?.includes(id)),
+    fight,
+    extraction: normalizeCathedralExtractionCheckpoint(source.extraction),
+    ...(source.personalOpening ? { personalOpening: true } : {}),
+  };
 }
 
 function freshFinale() {
@@ -233,6 +343,7 @@ function freshFinale() {
     stage: SOURCE_FINALE_STAGE.UNCOMMITTED,
     result: null,
     bust: { recognized: false, decision: null, defeats: 0 },
+    cathedral: freshCathedral(),
     compatibility: {},
   };
 }
@@ -245,23 +356,18 @@ function normalizeHorizon(value = null) {
     reason,
     exit: HORIZON_EXITS.has(source.exit) ? source.exit : null,
     maxDepth: Math.max(0, Number(source.maxDepth) || 0),
+    unravelling: normalizeSourceUnravelling(source.unravelling, { legacyDepthCells: source.maxDepth }),
   };
 }
 
-// The two gates on the fault, and neither of them is the rig.
-//
-// (a) The night has to have hurt him already. Injuries come from the presence
-// TAKING you — so the gate is not an abstract difficulty check, it is prior
-// contact with the hush, in the only currency the game has for it.
-// (b) All three insights, which is the three contacts inside source.
-//
-// The rig used to sit here too and it was the wrong shape: it made the fight
-// unreachable for anyone who had not kitted up, when what the rig actually buys
-// is the ability to invert the contract. It buys the rescue, not the argument.
-// See applyRigAdvantage() in source-rig-bridge.js.
+// The service-court meeting is optional until the bust commits another route.
+// Equipment changes the fight's possibilities, never permission to enter it.
 export function sourceBossAvailable(value) {
   const state = normalizeChunkSurfState(value);
-  return state.injuriesAtEntry >= 1 && sourceBossExposed(state.sourceContacts);
+  // Combat still requires the separate warned commitment event.
+  return state.firstLiftCompleted && !state.finale?.bust?.decision
+    && (!state.finale?.route || state.finale.route === SOURCE_FINALE_ROUTE.CONTACT)
+    && !state.completed;
 }
 
 // Compatibility name retained for callers and legacy tests while the state is
@@ -348,14 +454,31 @@ export function normalizeChunkSurfState(value = null, fallback = {}) {
       : base.profile,
     returnPoint: finitePoint(value.returnPoint),
     hallMaxDistance,
+    hallExperience: {
+      searchElapsed: Number.isFinite(Number(value.hallExperience?.searchElapsed))
+        ? Math.max(phase === CHUNK_SURF_PHASE.HAYSTACK ? 12 : 0, Number(value.hallExperience.searchElapsed))
+        : (phase === CHUNK_SURF_PHASE.HAYSTACK ? 12 : 0),
+      pressure: Math.max(0, Math.min(.985, Number(value.hallExperience?.pressure) || 0)),
+      rainLatched: !!value.hallExperience?.rainLatched || phase === CHUNK_SURF_PHASE.HAYSTACK,
+    },
     pageStage: Math.max(pageStageForDistance(hallMaxDistance), Math.min(4, Math.floor(Number(value.pageStage) || 0))),
     haystackOrigin: finitePoint(value.haystackOrigin),
     landscapeOrigin: finitePoint(value.landscapeOrigin),
     interactivePageSlot: value.interactivePageSlot == null ? null : Math.max(0, Math.floor(Number(value.interactivePageSlot) || 0)),
     sourceContacts: normalizeSourceContactState(value.sourceContacts),
+    bellField: value.bellField && typeof value.bellField === 'object' ? value.bellField : null,
+    routeDoorsErased: unique(value.routeDoorsErased).slice(-64),
+    routeDoorsOpened: unique(value.routeDoorsOpened).slice(-64),
+    station: normalizeSourceStation(value.station),
     landingDoorOpen: !!value.landingDoorOpen,
     landingDoorSealed: !!value.landingDoorSealed,
+    edgeDoorOpen: !!value.edgeDoorOpen,
+    edgeDoorEchoesErased: [...new Set((Array.isArray(value.edgeDoorEchoesErased) ? value.edgeDoorEchoesErased : [])
+      .filter((index) => Number.isSafeInteger(index) && index !== 0))],
+    outskirtsExperience: normalizeOutskirtsExperience(value.outskirtsExperience),
     sourceApproachDistance: Math.max(0, Number(value.sourceApproachDistance) || 0),
+    sourceShore: normalizeSourceShore(firstLiftCompleted && !value.sourceShore?.adapted ? {...value.sourceShore,adapted:true,exposureElapsed:14,bodyFloor:4.2} : value.sourceShore),
+    sourceDivide: normalizeSourceDivide(value.sourceDivide),
     sourceApproachComplete,
     firstLiftCompleted,
     landingWeatherSpent: value.landingWeatherSpent == null ? legacyLandscape : !!value.landingWeatherSpent,
@@ -406,6 +529,7 @@ export function normalizeChunkSurfState(value = null, fallback = {}) {
         // Absent on every save written before the bust kept its word.
         defeats: Math.max(0, Math.floor(Number(rawFinale.bust?.defeats) || 0)),
       },
+      cathedral: normalizeCathedral(rawFinale.cathedral),
       compatibility: {
         ...(rawFinale.compatibility && typeof rawFinale.compatibility === 'object' && !Array.isArray(rawFinale.compatibility)
           ? rawFinale.compatibility : {}),
@@ -460,12 +584,16 @@ export function reduceChunkSurf(value, event = {}) {
       };
 
     case 'HAYSTACK_PAGE_FOUND':
-      if (state.phase !== CHUNK_SURF_PHASE.HAYSTACK) return state;
+      // Recognition can happen on approach. The page has always been here;
+      // reaching the end of the corridor is no longer a prerequisite.
+      if (state.phase !== CHUNK_SURF_PHASE.HAYSTACK && state.phase !== CHUNK_SURF_PHASE.HALL) return state;
       return {
         ...state,
         phase: CHUNK_SURF_PHASE.TRANSFORMING,
         landscapeOrigin: finitePoint(event.landscapeOrigin) || state.landscapeOrigin,
         sourceApproachDistance: 0,
+        sourceShore: normalizeSourceShore(),
+        sourceDivide: null,
         sourceApproachComplete: false,
         checkpointId: 'landing-arrival',
         checkpoint: { id: 'landing-arrival', facing: 0 },
@@ -503,6 +631,19 @@ export function reduceChunkSurf(value, event = {}) {
       if (state.landingDoorSealed) return state;
       return state.landingDoorOpen ? state : { ...state, landingDoorOpen: true };
 
+    case 'SOURCE_EDGE_DOOR_OPENED':
+      return state.edgeDoorOpen ? state : { ...state, edgeDoorOpen: true };
+
+    case 'SOURCE_EDGE_DOOR_CLOSED':
+      return state.edgeDoorOpen ? { ...state, edgeDoorOpen: false } : state;
+
+    case 'SOURCE_EDGE_DOOR_ECHO_ERASED': {
+      if (![CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.HORIZON].includes(state.phase)
+        || !Number.isSafeInteger(event.index) || event.index === 0) return state;
+      const erased = state.edgeDoorEchoesErased || [];
+      return erased.includes(event.index) ? state : { ...state, edgeDoorEchoesErased: [...erased, event.index] };
+    }
+
     case 'SOURCE_LANDING_DOOR_SEALED':
       return state.landingDoorSealed
         ? state
@@ -528,7 +669,6 @@ export function reduceChunkSurf(value, event = {}) {
     case 'SOURCE_CONTACT_RESOLVED':
       return {
         ...state,
-        attempts: state.attempts + 1,
         sourceContacts: normalizeSourceContactState(event.contact),
         armedRedaction: null,
         checkpointId: event.checkpointId || state.checkpointId,
@@ -605,11 +745,15 @@ export function reduceChunkSurf(value, event = {}) {
       };
 
     case 'CONTACT_COMMITTED':
-      if (state.phase !== CHUNK_SURF_PHASE.FINAL
-        || state.finalEncounter.status !== SOURCE_FINAL_STATUS.READY
+      if (![CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL].includes(state.phase)
+        || !sourceBossAvailable(state)
+        || !state.sourceContacts.warningSeen || !state.sourceContacts.combatCommitted
+        || state.sourceContacts.lastChoiceId !== 'contact.confirm'
         || (state.finale.route && state.finale.route !== SOURCE_FINALE_ROUTE.CONTACT)) return state;
       return {
         ...state,
+        phase: CHUNK_SURF_PHASE.FINAL,
+        finalEncounter: { ...state.finalEncounter, status: SOURCE_FINAL_STATUS.READY },
         finale: {
           ...state.finale,
           route: SOURCE_FINALE_ROUTE.CONTACT,
@@ -657,33 +801,28 @@ export function reduceChunkSurf(value, event = {}) {
       };
     }
 
-    // Walking to the normal exit still contains the thing — that reading is
-    // unchanged and the dossier still gets it. What changed is where it puts
-    // you: the chapter does not close on a page you declined to turn.
+    // Walking onward leaves HUSH unresolved. The player can return until the
+    // bust decision; merely reaching the outskirts is not a combat outcome.
     case 'SOURCE_NORMAL_EXIT': {
-      if (state.phase !== CHUNK_SURF_PHASE.FINAL || state.finale.route === SOURCE_FINALE_ROUTE.CONTACT) return state;
-      const resolved = reduceChunkSurf(state, {
-        type: 'FINAL_ENCOUNTER_RESOLVED',
-        result: {
-          outcome: SOURCE_FINAL_OUTCOME.CONTAIN,
-          won: true,
-          legacyRedaction: 'comfort',
-          compatibility: { adapter: 'source-pass-v2', route: 'normal-exit' },
-          channels: { rescue: 0, contain: 1, submit: 0 },
-          turns: 0,
-        },
-      });
+      if (![CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL].includes(state.phase)
+        || state.finale.route === SOURCE_FINALE_ROUTE.CONTACT) return state;
       return {
-        ...resolved,
+        ...state,
         active: true,
         completed: false,
         phase: CHUNK_SURF_PHASE.HORIZON,
-        horizon: { ...freshHorizon(), entered: true, reason: HORIZON_REASON.WALKED_AWAY },
+        horizon: { ...state.horizon, entered: true, reason: HORIZON_REASON.WALKED_AWAY },
         checkpointId: 'landing-horizon',
         checkpoint: { id: 'landing-horizon', facing: 0 },
-        finale: { ...resolved.finale, route: null, stage: SOURCE_FINALE_STAGE.HORIZON, result: null },
+        finale: { ...state.finale, route: null, stage: SOURCE_FINALE_STAGE.HORIZON, result: null },
       };
     }
+
+    case 'SOURCE_FIELD_RETURNED':
+      if (state.phase !== CHUNK_SURF_PHASE.HORIZON || state.finale.bust.decision) return state;
+      return { ...state, phase: CHUNK_SURF_PHASE.LANDSCAPE,
+        finalEncounter: { ...state.finalEncounter, status: SOURCE_FINAL_STATUS.LOCKED },
+        finale: { ...state.finale, route: null, stage: SOURCE_FINALE_STAGE.UNCOMMITTED } };
 
     // Contact is a declared point of no return.  Losing here is a terminal
     // result, not a hidden route into the safer Horizon branch.
@@ -716,10 +855,24 @@ export function reduceChunkSurf(value, event = {}) {
         },
       };
 
-    case 'HORIZON_ADVANCED': { // metres into the tape, monotonically increasing
+    case 'HORIZON_ADVANCED': { // runtime cells into the tape, monotonically increasing
       if (state.phase !== CHUNK_SURF_PHASE.HORIZON) return state;
       const maxDepth = Math.max(state.horizon.maxDepth, Number(event.depth) || 0);
       return { ...state, horizon: { ...state.horizon, maxDepth } };
+    }
+
+    case 'HORIZON_UNRAVELLING_ADVANCED': {
+      if (state.phase !== CHUNK_SURF_PHASE.HORIZON) return state;
+      const before = state.horizon.unravelling;
+      const next = normalizeSourceUnravelling(event.unravelling);
+      const unravelling = normalizeSourceUnravelling({
+        active: before.active || next.active,
+        furthestMetres: Math.max(before.furthestMetres, next.furthestMetres),
+        elapsedSeconds: Math.max(before.elapsedSeconds, next.elapsedSeconds),
+        amount: Math.max(before.amount, next.amount),
+        markers: [...before.markers, ...next.markers],
+      });
+      return { ...state, horizon: { ...state.horizon, unravelling } };
     }
 
     case 'HORIZON_BUST_RECOGNIZED':
@@ -756,12 +909,14 @@ export function reduceChunkSurf(value, event = {}) {
       const tower = requestedRoute === SOURCE_FINALE_ROUTE.TOWER;
       return {
         ...state,
-        active: tower,
-        completed: !tower,
-        phase: tower ? CHUNK_SURF_PHASE.BELLS : CHUNK_SURF_PHASE.COMPLETED,
+        // Neither road closes the chapter here any more. The tower opens the bell
+        // passage; straight on opens the chapel's outskirts. Each ends at a door.
+        active: true,
+        completed: false,
+        phase: tower ? CHUNK_SURF_PHASE.BELLS : CHUNK_SURF_PHASE.CHAPEL_OUTSKIRTS,
         horizon: { ...state.horizon, exit: event.exit },
-        checkpointId: tower ? 'bells-entry' : state.checkpointId,
-        checkpoint: tower ? { id: 'bells-entry', facing: 0 } : state.checkpoint,
+        checkpointId: tower ? 'bells-entry' : 'chapel-outskirts',
+        checkpoint: { id: tower ? 'bells-entry' : 'chapel-outskirts', facing: 0 },
         finale: {
           ...state.finale,
           route: requestedRoute,
@@ -785,18 +940,84 @@ export function reduceChunkSurf(value, event = {}) {
       };
     }
 
+    // The chapel road's last metre: through the chapel's own door.
+    case 'CHAPEL_DOOR_ENTERED': {
+      if (state.phase !== CHUNK_SURF_PHASE.CHAPEL_OUTSKIRTS) return state;
+      return {
+        ...state,
+        active: false,
+        completed: true,
+        phase: CHUNK_SURF_PHASE.COMPLETED,
+        finale: { ...state.finale, stage: SOURCE_FINALE_STAGE.CHAPEL_COMMITTED },
+      };
+    }
+
+    case 'STATION_DOOR_CROSSED': {
+      if (![CHUNK_SURF_PHASE.BELLS, CHUNK_SURF_PHASE.CHAPEL_OUTSKIRTS].includes(state.phase)
+        || typeof event.id !== 'string' || !event.id) return state;
+      const station = normalizeSourceStation(event.station);
+      if (!station.crossing || station.crossing.id !== event.id
+        || !station.entries.some((entry) => entry.doorId === event.id)) return state;
+      return { ...state, station, routeDoorsErased: unique([...state.routeDoorsErased, event.id]).slice(-64) };
+    }
+
+    case 'STATION_SAVED':
+      return { ...state, station: normalizeSourceStation(event.station) };
+
+    case 'ROUTE_DOOR_ERASED': {
+      if (![CHUNK_SURF_PHASE.BELLS, CHUNK_SURF_PHASE.CHAPEL_OUTSKIRTS].includes(state.phase)
+        || typeof event.id !== 'string' || !event.id) return state;
+      const erased = state.routeDoorsErased || [];
+      if (erased.includes(event.id)) return state;
+      return { ...state, routeDoorsErased: [...erased, event.id].slice(-64) };
+    }
+
+    case 'ROUTE_DOOR_OPENED': {
+      if (![CHUNK_SURF_PHASE.BELLS, CHUNK_SURF_PHASE.CHAPEL_OUTSKIRTS].includes(state.phase)
+        || typeof event.id !== 'string' || !event.id) return state;
+      const opened = state.routeDoorsOpened || [];
+      if (opened.includes(event.id)) return state;
+      return { ...state, routeDoorsOpened: [...opened, event.id].slice(-64) };
+    }
+
     case 'CATHEDRAL_ENTERED':
       if (state.finale.route !== SOURCE_FINALE_ROUTE.TOWER
         || ![SOURCE_FINALE_STAGE.TOWER_COMMITTED, SOURCE_FINALE_STAGE.CATHEDRAL].includes(state.finale.stage)) return state;
       return { ...state, finale: { ...state.finale, stage: SOURCE_FINALE_STAGE.CATHEDRAL } };
 
-    case 'CATHEDRAL_FIGHT_STARTED':
+    case 'CATHEDRAL_FIGHT_STARTED': {
       if (state.finale.route !== SOURCE_FINALE_ROUTE.TOWER || state.finale.stage !== SOURCE_FINALE_STAGE.CATHEDRAL) return state;
-      return { ...state, finale: { ...state.finale, stage: SOURCE_FINALE_STAGE.CATHEDRAL_FIGHT } };
+      const personal = state.station.personal;
+      const earned = personal.completed && personal.rewardEarned && !personal.rewardConsumed;
+      return { ...state,
+        station: earned ? { ...state.station, personal: { ...personal, rewardConsumed: true } } : state.station,
+        finale: { ...state.finale, stage: SOURCE_FINALE_STAGE.CATHEDRAL_FIGHT,
+          cathedral: earned ? { ...state.finale.cathedral, alarm: 0, personalOpening: true } : state.finale.cathedral } };
+    }
 
     case 'CATHEDRAL_FIGHT_WON':
       if (state.finale.route !== SOURCE_FINALE_ROUTE.TOWER || state.finale.stage !== SOURCE_FINALE_STAGE.CATHEDRAL_FIGHT) return state;
-      return { ...state, finale: { ...state.finale, stage: SOURCE_FINALE_STAGE.TOWER_ESCAPE, result: SOURCE_FINALE_RESULT.WON } };
+      return { ...state, finale: { ...state.finale, cathedral: normalizeCathedral({ ...state.finale.cathedral, personalOpening: false, fight: null }), stage: SOURCE_FINALE_STAGE.TOWER_ESCAPE, result: SOURCE_FINALE_RESULT.WON } };
+
+    case 'CATHEDRAL_FIGHT_CHECKPOINT': {
+      if (state.finale.route !== SOURCE_FINALE_ROUTE.TOWER || state.finale.stage !== SOURCE_FINALE_STAGE.CATHEDRAL_FIGHT) return state;
+      const cathedral = normalizeCathedral({ ...state.finale.cathedral, fight: event.fight });
+      return { ...state, finale: { ...state.finale, cathedral } };
+    }
+
+    case 'CATHEDRAL_EXTRACTION_CHECKPOINT': {
+      if (state.finale.route !== SOURCE_FINALE_ROUTE.TOWER || state.finale.stage !== SOURCE_FINALE_STAGE.TOWER_ESCAPE) return state;
+      const extraction = normalizeCathedralExtractionCheckpoint(event.checkpoint);
+      if (!extraction) return state;
+      return { ...state, finale: { ...state.finale, cathedral: { ...state.finale.cathedral, extraction } } };
+    }
+
+    case 'CATHEDRAL_LESSON_COMPLETED': {
+      if (state.finale.route !== SOURCE_FINALE_ROUTE.TOWER || !['clapper', 'louvre', 'wheel'].includes(event.id)) return state;
+      const cathedral = normalizeCathedral(state.finale.cathedral);
+      if (cathedral.lessons.includes(event.id)) return state;
+      return { ...state, finale: { ...state.finale, cathedral: { ...cathedral, lessons: [...cathedral.lessons, event.id] } } };
+    }
 
     // LOSING THE CATHEDRAL IS NOT THE END UNTIL THE THIRD TIME.
     //
@@ -815,10 +1036,26 @@ export function reduceChunkSurf(value, event = {}) {
       if (state.finale.route !== SOURCE_FINALE_ROUTE.TOWER || state.finale.stage !== SOURCE_FINALE_STAGE.CATHEDRAL_FIGHT) return state;
       const defeats = Math.max(0, Math.floor(Number(state.finale.bust?.defeats) || 0)) + 1;
       const bust = { ...state.finale.bust, defeats };
+      const cathedral = normalizeCathedral({ ...state.finale.cathedral, personalOpening: false,
+        fight: state.finale.cathedral.fight ? { ...state.finale.cathedral.fight, retry: true } : null });
       if (defeats >= TOWER_DEFEAT_CEILING) {
-        return { ...state, finale: { ...state.finale, bust, stage: SOURCE_FINALE_STAGE.RESOLVED, result: SOURCE_FINALE_RESULT.LOST } };
+        return { ...state, finale: { ...state.finale, bust, cathedral, stage: SOURCE_FINALE_STAGE.RESOLVED, result: SOURCE_FINALE_RESULT.LOST } };
       }
-      return { ...state, finale: { ...state.finale, bust, stage: SOURCE_FINALE_STAGE.CATHEDRAL, result: null } };
+      return { ...state, finale: { ...state.finale, bust, cathedral, stage: SOURCE_FINALE_STAGE.CATHEDRAL, result: null } };
+    }
+
+    case 'CATHEDRAL_BELL_RUNG': {
+      if (state.finale.route !== SOURCE_FINALE_ROUTE.TOWER || state.finale.stage !== SOURCE_FINALE_STAGE.CATHEDRAL) return state;
+      const cathedral = normalizeCathedral(state.finale.cathedral);
+      return { ...state, finale: { ...state.finale, cathedral: { ...cathedral, alarm: Math.min(CATHEDRAL_ALARM_CEILING, cathedral.alarm + 1) } } };
+    }
+
+    case 'CATHEDRAL_STAGED': {
+      if (state.finale.route !== SOURCE_FINALE_ROUTE.TOWER || state.finale.stage !== SOURCE_FINALE_STAGE.CATHEDRAL_FIGHT
+        || !CATHEDRAL_DAMAGE_MARKS.includes(event.mark)) return state;
+      const cathedral = normalizeCathedral(state.finale.cathedral);
+      if (cathedral.damage.includes(event.mark)) return state;
+      return { ...state, finale: { ...state.finale, cathedral: normalizeCathedral({ ...cathedral, damage: [...cathedral.damage, event.mark] }) } };
     }
 
     case 'TOWER_ESCAPE_COMPLETED':

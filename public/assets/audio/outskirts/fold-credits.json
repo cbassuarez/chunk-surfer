@@ -1,0 +1,109 @@
+{
+  "sources": [
+    {
+      "file": "unfa-pain-grunts.mp3",
+      "source": "https://freesound.org/people/unfa/sounds/610991/",
+      "download": "https://cdn.freesound.org/previews/610/610991_1038806-hq.mp3",
+      "author": "unfa",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "sha256": "fc63160db51a6812e80b54be1b517f5f4b944fc59acac5b626fed54f8eeb395f",
+      "usage": "edited playback only; not used for model training"
+    },
+    {
+      "file": "vrymaa-leather-creak.mp3",
+      "source": "https://freesound.org/people/Vrymaa/sounds/734598/",
+      "download": "https://cdn.freesound.org/previews/734/734598_13973196-hq.mp3",
+      "author": "Vrymaa",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "sha256": "e3c08c184b8675f9220854ce5a8e52501683613d15800d291d9d4c4845f3f5f1",
+      "usage": "edited playback only; not used for model training"
+    },
+    {
+      "file": "unfa-medium-grunts.mp3",
+      "source": "https://freesound.org/people/unfa/sounds/610998/",
+      "download": "https://cdn.freesound.org/previews/610/610998_1038806-hq.mp3",
+      "author": "unfa",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "sha256": "26b00b3722ac581979d595f43a67933e95d7d56f55f0450e1d17fdd6552476b4",
+      "usage": "edited playback only; not used for model training"
+    }
+  ],
+  "clips": [
+    {
+      "id": "fold-effort-a",
+      "url": "assets/audio/outskirts/fold-effort-a.wav",
+      "source": "unfa-medium-grunts.mp3",
+      "start": 1.04,
+      "duration": 1.48,
+      "gainDb": -4,
+      "sha256": "c5c898e0d2b1e82089873131e02c0f7b0d0d17bf4861fe05a20115a207de04b0"
+    },
+    {
+      "id": "fold-effort-b",
+      "url": "assets/audio/outskirts/fold-effort-b.wav",
+      "source": "unfa-medium-grunts.mp3",
+      "start": 4.8,
+      "duration": 1.5,
+      "gainDb": -4,
+      "sha256": "2121cdd2eb19dce82e8bb221dada2f6b0c55a92c6f43a9cc28fec48d92645cb8"
+    },
+    {
+      "id": "fold-effort-c",
+      "url": "assets/audio/outskirts/fold-effort-c.wav",
+      "source": "unfa-medium-grunts.mp3",
+      "start": 7.07,
+      "duration": 1.57,
+      "gainDb": -5,
+      "sha256": "ea16a126fb24e6548f47c9cbcaaa1fd84f606b88b452a410c5fef1b3f5fc9ee5"
+    },
+    {
+      "id": "fold-effort-d",
+      "url": "assets/audio/outskirts/fold-effort-d.wav",
+      "source": "unfa-medium-grunts.mp3",
+      "start": 12.6,
+      "duration": 1.57,
+      "gainDb": -5,
+      "sha256": "086c3937b9910df37a87352f5d18592c03da1b1db2070823b079f02ca4bb6114"
+    },
+    {
+      "id": "fold-catch",
+      "url": "assets/audio/outskirts/fold-catch.wav",
+      "source": "unfa-pain-grunts.mp3",
+      "start": 13.32,
+      "duration": 0.63,
+      "gainDb": -5,
+      "sha256": "71c9e80d967ef5d0b3fa978ebcadf192542903f931453a87ac69176b4aa19d55"
+    },
+    {
+      "id": "fold-cloth-a",
+      "url": "assets/audio/outskirts/fold-cloth-a.wav",
+      "source": "vrymaa-leather-creak.mp3",
+      "start": 0.24,
+      "duration": 1.7,
+      "gainDb": -2,
+      "sha256": "35b8f961a5ca1df4d0662400121e709a4bf14c5e12a6353568608adc06c8a172"
+    },
+    {
+      "id": "fold-cloth-b",
+      "url": "assets/audio/outskirts/fold-cloth-b.wav",
+      "source": "vrymaa-leather-creak.mp3",
+      "start": 4.53,
+      "duration": 1.1,
+      "gainDb": -2,
+      "sha256": "382685549eebc869f28825c7568b3d395d833e38822e70ddcaef8a5f57639fd3"
+    },
+    {
+      "id": "fold-cloth-c",
+      "url": "assets/audio/outskirts/fold-cloth-c.wav",
+      "source": "vrymaa-leather-creak.mp3",
+      "start": 9.5,
+      "duration": 1.85,
+      "gainDb": -3,
+      "sha256": "e3fa0d878d53d399e74fe7ad4f4e54d54d66db06c578b09aa53cb45217345635"
+    }
+  ],
+  "processing": "Trimmed and filtered excerpts, 18ms onset / 75ms release, mono 32kHz PCM. No synthetic vocal layer."
+}

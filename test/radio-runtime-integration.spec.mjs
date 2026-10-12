@@ -33,7 +33,7 @@ function harness() {
     activeBattleId:null,daydreamRunning:false,activeEndingCutscene:null,
     workOrderRead:false,px:0,py:0,performance:{now:()=>log.now},
     radioTargetCache:{key:'',until:0,target:null},
-    usingSpecialSpace:()=>false,
+    usingSpecialSpace:()=>false,usingSourceSpace:()=>false,
     scenes:{top:()=>null,blocksInput:()=>false},
     REC:{isRecording:()=>false,isListening:()=>false,recState:()=>({takes:log.takes}),
       hasTake:id=>log.takes.includes(id),emitNoise:(...args)=>{
@@ -266,4 +266,32 @@ test('radio mix leases restore the current player mix only after the final lease
   assert.deepEqual([...levels.values()],[0,0,0],'last scene exit cannot unmute a paused game');
   context.paused=false;mix('paused-scene');
   assert.deepEqual([...levels.values()],[.4,.25,1]);
+});
+
+test('in Source the radio calls the HUSH: a completed call is a talk, a cancelled one is not', () => {
+  const {context,log}=harness();
+  const talks=[];
+  let available=false;
+  context.usingSourceSpace=()=>true;context.usingSpecialSpace=()=>true;
+  context.runtimeTree=id=>({id});
+  context.chunkSurfRuntime={
+    hushMode:()=>({contactAvailable:available}),
+    recordHushRadioTalk:()=>{talks.push(1);return {handled:true,talks:talks.length};},
+    state:()=>({}),
+  };
+  context.openSourceHushRadio=compile('openSourceHushRadio',context);
+  assert.equal(context.openRadio(),true);
+  assert.equal(log.panels.length,0,'a call opened with no HUSH out there to hear it');
+  assert.equal(log.spoken.length,1,'an empty carrier says nothing to the player');
+  available=true;
+  assert.equal(context.openRadio(),true);
+  const call=log.panels.at(-1);
+  assert.equal(call.id,'source-hush');
+  assert.equal(call.nodes.id,'source-space.contact');
+  assert.equal(call.options.startAt,'radio');
+  call.options.onCancel?.();
+  assert.equal(talks.length,0,'escaping the call counted it');
+  call.options.onDone();call.options.onDone();
+  assert.equal(talks.length,1,'a completed call must count exactly once');
+  assert.equal(log.saves.length,1,'the talk was not saved');
 });

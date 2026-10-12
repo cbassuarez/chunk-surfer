@@ -3,6 +3,7 @@
 // the throw. The surrounding executable is drawn in the game's cell space.
 import { uiFill, uiInk, uiLine, uiSize, uiText } from './ui.js';
 import { drawOpponentCombatArt } from './combat-view.js';
+import { sectorErrorLines } from './sector-error.js';
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, Number(value) || 0));
 const ease = (t) => t * t * (3 - 2 * t);
@@ -61,4 +62,60 @@ export function drawSourceRepriseScare({ progress = 0, reducedMotion = false, re
   uiFill(0, rows * .76, cols, 2, 'rgba(2,3,6,0.78)');
   const write = 'TAKE ACCEPTED // SOURCE';
   uiText(Math.max(1, (cols - write.length) / 2), rows * .76 + .5, write, 'ui-danger', .95);
+}
+
+// SENT BACK: THE SURFER THROWS THE CODE, AND THE MUSIC WITH IT.
+//
+// Not a card handed over. The screen floods with the executable from the top
+// down — ntfsclone failing to read the volume, with his calls threaded through
+// it — faster as it fills, torn by red scan faults, his face breaking up behind
+// it, until it is solid and the last frames flash to the cut into the building.
+// main.js slams his stems on the same 1.6 seconds. Reduced motion keeps the
+// rows still; reduced flash never goes white.
+const SEND_BACK_CODE = Object.freeze([
+  'SOURCE.throw(game.code)',
+  'recordAction(player) != history',
+  'building.load(take.room)',
+  'player.position = take.mark',
+  'combat.suspend(movement)',
+  'return playerShadow;',
+]);
+export function drawSourceSendBackFlood({ progress = 0, id = '', roomId = '', roomName = '', takeNumber = 1, reducedMotion = false, reducedFlash = false, seed = 4417 } = {}) {
+  const { cols, rows } = uiSize();
+  const p = clamp(progress, 0, 1);
+  uiFill(0, 0, cols, rows, 'rgba(2,3,6,0.97)');
+  const strobe = !reducedFlash && Math.floor(p * 16) % 2 === 1;
+  drawOpponentCombatArt('surfer', {
+    x:cols * .26, y:rows * .02, w:cols * .48, h:rows * .96,
+    coherence:1, maxCoherence:1, reduceFlash:reducedFlash,
+    hitFlash:strobe ? .42 : 0,
+    resolveProgress:reducedMotion ? 0 : p * .9,
+    oblique:reducedMotion ? 0 : (p - .5) * .12,
+  });
+  const warnings = (sectorErrorLines({ count:Math.max(12, Math.ceil(rows)), seed }) || []).map((line) => String(line?.text ?? line));
+  const code = [
+    ...SEND_BACK_CODE,
+    `recordAction("${id || 'movement'}")`,
+    `roll({ take:${takeNumber}, room:"${roomId || 'main_b3'}" })`,
+  ];
+  const filled = Math.min(rows, Math.floor(rows * ease(p) * 1.2));
+  const scroll = reducedMotion ? 0 : Math.floor(p * p * 60);
+  for (let r = 0; r < filled; r += 1) {
+    const ours = r % 3 === 1;
+    const source = ours ? code : warnings;
+    const line = source.length ? source[(r + scroll) % source.length] : '';
+    const shift = reducedMotion ? 0 : ((r * 7 + Math.floor(p * 40)) % 5) - 2;
+    uiFill(0, r, cols, 1, `rgba(1,2,4,${(.45 + .5 * p).toFixed(3)})`);
+    uiText(Math.max(0, 1 + shift), r, String(line).slice(0, Math.max(0, cols - 2)), ours ? 'ui-amber' : 'ui-danger', .5 + .5 * p);
+  }
+  if (!reducedMotion) {
+    for (let i = 0; i < 3; i += 1) {
+      const y = Math.floor((p * rows * 2.4 + (i * rows) / 3) % rows);
+      uiFill(0, y, cols, 1 + (i % 2), 'rgba(255,60,40,0.34)');
+    }
+  }
+  const where = String(roomName || roomId || 'the building').toUpperCase();
+  uiFill(0, rows - 3, cols, 2, 'rgba(1,2,3,0.86)');
+  uiText(2, rows - 2.5, `SOURCE.throw(game.code)  →  ${where}`.slice(0, Math.max(0, cols - 4)), 'ui-danger', .95);
+  if (p > .9) uiFill(0, 0, cols, rows, reducedFlash ? 'rgba(6,6,10,0.92)' : 'rgba(236,232,216,0.94)');
 }

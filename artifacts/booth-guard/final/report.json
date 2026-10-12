@@ -1,0 +1,132 @@
+{
+  "passed": true,
+  "failure": null,
+  "checks": [
+    "Opening booth draws the real Wrong Fold guard in normal idle, with one body and no pose errors.",
+    "Real dialogue reaches ledger and handoff; both retain the same upright character.",
+    "No JavaScript, shader, asset or character-pose errors."
+  ],
+  "errors": [],
+  "frames": [
+    {
+      "name": "01-opening-booth",
+      "guard": {
+        "id": "yard-booth-guard-idle",
+        "mesh": "outskirts_fold_guard",
+        "clip": "idle",
+        "time": 0,
+        "layers": [
+          {
+            "clip": "idle",
+            "time": 0,
+            "weight": 1
+          }
+        ],
+        "bounds": {
+          "min": [
+            -1.6920280974460578,
+            -0.8238793973141818,
+            -1.5678747776998019
+          ],
+          "max": [
+            1.6868038284828526,
+            2.539145126576517,
+            1.5759916711700892
+          ]
+        }
+      },
+      "scene": null
+    },
+    {
+      "name": "02-conversation",
+      "guard": {
+        "id": "yard-booth-guard-idle",
+        "mesh": "outskirts_fold_guard",
+        "clip": "idle",
+        "time": 0,
+        "layers": [
+          {
+            "clip": "idle",
+            "time": 0,
+            "weight": 1
+          }
+        ],
+        "bounds": {
+          "min": [
+            -1.6920280974460578,
+            -0.8238793973141818,
+            -1.5678747776998019
+          ],
+          "max": [
+            1.6868038284828526,
+            2.539145126576517,
+            1.5759916711700892
+          ]
+        }
+      },
+      "scene": "thought:cold-open",
+      "sourceId": "start.line.1"
+    },
+    {
+      "name": "03-ledger",
+      "guard": {
+        "id": "yard-booth-guard-ledger",
+        "mesh": "outskirts_fold_guard",
+        "clip": "idle",
+        "time": 0,
+        "layers": [
+          {
+            "clip": "idle",
+            "time": 0,
+            "weight": 1
+          }
+        ],
+        "bounds": {
+          "min": [
+            -1.6920280974460578,
+            -0.8238793973141818,
+            -1.5678747776998019
+          ],
+          "max": [
+            1.6868038284828526,
+            2.539145126576517,
+            1.5759916711700892
+          ]
+        }
+      },
+      "scene": "thought:cold-open",
+      "sourceId": "start.line.6"
+    },
+    {
+      "name": "03-handoff",
+      "guard": {
+        "id": "yard-booth-guard-handoff",
+        "mesh": "outskirts_fold_guard",
+        "clip": "idle",
+        "time": 0,
+        "layers": [
+          {
+            "clip": "idle",
+            "time": 0,
+            "weight": 1
+          }
+        ],
+        "bounds": {
+          "min": [
+            -1.6920280974460578,
+            -0.8238793973141818,
+            -1.5678747776998019
+          ],
+          "max": [
+            1.6868038284828526,
+            2.539145126576517,
+            1.5759916711700892
+          ]
+        }
+      },
+      "scene": "thought:cold-open",
+      "sourceId": "threshold.line.5"
+    }
+  ],
+  "scope": "Chromium/Metal actual opening lodge and keyboard-driven dialogue from an authored checkpoint; not a complete opening playthrough."
+}

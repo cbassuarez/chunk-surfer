@@ -22,8 +22,8 @@
 //   · Each world gets a fixed seed (ZONE_SEEDS) so a place is the same place
 //     every time you enter it. Texture crawls; geography does not.
 //
-// Reference register: P.T. / Silent Hills — a domestic hallway lit badly,
-// filmed on a bad camera, wrong in a way you cannot name.
+// Reference register: a domestic hallway lit badly, filmed on a bad camera,
+// wrong in a way you cannot name.
 //
 // In M4 these become the narrative registers (straight / ironic / decay /
 // refusal): each area will literally look like the mode of its dialogue.

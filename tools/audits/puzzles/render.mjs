@@ -18,6 +18,7 @@
 // until this field existed.
 
 import { cite, escape, globalPanel, ordinal, pageShell, prose } from '../shared.mjs';
+import { sourcePathStagesForPuzzle } from '../source-path/audit.mjs';
 
 const GROUPS = [
   {
@@ -33,6 +34,14 @@ const GROUPS = [
     blurb: 'Things to do, against a clock or a tolerance. Waiting does not help and sometimes hurts — so the way through one is a wider window.',
   },
 ];
+
+// A puzzle on the walk through source space links to the stage it sits on.
+function onPath(id) {
+  const stages = sourcePathStagesForPuzzle(id);
+  return stages.length
+    ? `<p class="ident">On the source space path: ${stages.map((stage) => `<a href="${escape(stage.href)}">${escape(stage.title)}</a>`).join(' · ')}</p>`
+    : '';
+}
 
 function card(entry) {
   const live = entry.liveError
@@ -63,6 +72,7 @@ function card(entry) {
     ${live}
     <p class="ident">Called <code>${escape(entry.id)}</code> here · covered by <code>${escape(entry.spec)}</code>${
       entry.covered ? '' : ' <b class="bad">which is not there</b>'}</p>
+    ${onPath(entry.id)}
     ${cite(entry.where)}
   </section>`;
 }

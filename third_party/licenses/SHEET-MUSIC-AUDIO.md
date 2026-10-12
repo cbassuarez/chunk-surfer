@@ -1,6 +1,6 @@
 # Sheet music recordings
 
-The five sheet-music pieces in `src/data/sheet-music.js` play a real recorded
+The six sheet-music pieces in `src/data/sheet-music.js` play a real recorded
 performance when the player looks at them (`src/audio/sheet-voice.js`). Every
 one is an 11-second excerpt, downmixed to mono at 32 kHz, from a recording that
 is public domain, CC0, or CC BY. Nothing here is share-alike and nothing here is
@@ -16,6 +16,7 @@ date) before download, not assumed from a page badge.
 | 3 | J. Dowland — Flow, my tears | uncredited soprano and lute, 2004 | CC BY 2.5 | [Commons](https://commons.wikimedia.org/wiki/File:Flow,_my_tears.ogg) |
 | 4 | F. Couperin — L'Art de toucher le clavecin (1716) | David Joseph | CC0 | [Commons](https://commons.wikimedia.org/wiki/File:L%27Art_de_toucher_le_Clavecin_Fran%C3%A7ois_Couperin.ogg) |
 | 5 | E. Satie — Gymnopédie No. 1 (arr. guitar) | Michael Laucke, 2001 | Public domain (author's own dedication) | [Commons](https://commons.wikimedia.org/wiki/File:Satie_Gymnopedie_No_1_performed_by_Michael_Laucke.flac) |
+| 6 | W. A. Mozart — Eine kleine Nachtmusik K. 525, III. Menuetto (hold music, the phone box) | Musopen | Public domain (Commons LicenseShortName "Public domain", Copyrighted False, verified 2026-09-13) | [Commons](https://commons.wikimedia.org/wiki/File:Mozart_K525_Serenade_in_G_Major_3_-_Minuet.ogg) |
 
 ## Attribution required
 

@@ -1,0 +1,474 @@
+{
+  "scope": "Actual current dev5296 Source geometry, rawGPU736×460 JPEGs, Chromium/Metal, same cameras and torchOFF. Isolated response substitutions inside TEXT_SPACE_FRAG approximate shared overworld engraving/material roles. These previews do not run the full pixelmesh acquisition/history pipeline. Exactblackdoor mask and Pressure pass remain after the experiment. No production source edits or native/full-run acceptance.",
+  "captures": [
+    {
+      "variant": "opened",
+      "label": "One continuous world",
+      "name": "landing",
+      "preset": "first-contact",
+      "path": "artifacts/source-overworld-study/variants/opened-landing.jpg",
+      "bytes": 51902,
+      "webpPath": "artifacts/source-overworld-study/variants/opened-landing.webp",
+      "webpBytes": 32832,
+      "width": 736,
+      "height": 460,
+      "pos": {
+        "x": 0,
+        "y": -1056
+      },
+      "camera": {
+        "yaw": 0,
+        "pitch": 0,
+        "facing": 0
+      },
+      "torch": false,
+      "phase": "landscape",
+      "pixelMesh": {
+        "supported": true,
+        "shaderReady": true,
+        "enabled": false,
+        "framesSeen": 5,
+        "framesRendered": 5,
+        "lastProfile": "explore",
+        "lastError": null,
+        "lastGlError": 0,
+        "forceSignalUntil": 0,
+        "sceneWidth": 736,
+        "sceneHeight": 460,
+        "settings": {
+          "cellSize": "auto",
+          "debugSource": "final",
+          "reduceFlash": false,
+          "reduceMotion": false,
+          "memory": true
+        },
+        "forced": false,
+        "bypassedByTextSpace": true
+      }
+    },
+    {
+      "variant": "opened",
+      "label": "One continuous world",
+      "name": "middle",
+      "preset": "all-insights",
+      "path": "artifacts/source-overworld-study/variants/opened-middle.jpg",
+      "bytes": 44779,
+      "webpPath": "artifacts/source-overworld-study/variants/opened-middle.webp",
+      "webpBytes": 29106,
+      "width": 736,
+      "height": 460,
+      "pos": {
+        "x": 0,
+        "y": -1120
+      },
+      "camera": {
+        "yaw": 0.7,
+        "pitch": 0,
+        "facing": 0
+      },
+      "torch": false,
+      "phase": "landscape",
+      "pixelMesh": {
+        "supported": true,
+        "shaderReady": true,
+        "enabled": false,
+        "framesSeen": 5,
+        "framesRendered": 5,
+        "lastProfile": "explore",
+        "lastError": null,
+        "lastGlError": 0,
+        "forceSignalUntil": 0,
+        "sceneWidth": 736,
+        "sceneHeight": 460,
+        "settings": {
+          "cellSize": "auto",
+          "debugSource": "final",
+          "reduceFlash": false,
+          "reduceMotion": false,
+          "memory": true
+        },
+        "forced": false,
+        "bypassedByTextSpace": true
+      }
+    },
+    {
+      "variant": "opened",
+      "label": "One continuous world",
+      "name": "doors",
+      "preset": "final",
+      "path": "artifacts/source-overworld-study/variants/opened-doors.jpg",
+      "bytes": 44676,
+      "webpPath": "artifacts/source-overworld-study/variants/opened-doors.webp",
+      "webpBytes": 27222,
+      "width": 736,
+      "height": 460,
+      "pos": {
+        "x": 0,
+        "y": -1321
+      },
+      "camera": {
+        "yaw": 0.65,
+        "pitch": 0,
+        "facing": 0
+      },
+      "torch": false,
+      "phase": "final",
+      "pixelMesh": {
+        "supported": true,
+        "shaderReady": true,
+        "enabled": false,
+        "framesSeen": 5,
+        "framesRendered": 5,
+        "lastProfile": "explore",
+        "lastError": null,
+        "lastGlError": 0,
+        "forceSignalUntil": 0,
+        "sceneWidth": 736,
+        "sceneHeight": 460,
+        "settings": {
+          "cellSize": "auto",
+          "debugSource": "final",
+          "reduceFlash": false,
+          "reduceMotion": false,
+          "memory": true
+        },
+        "forced": false,
+        "bypassedByTextSpace": true
+      }
+    },
+    {
+      "variant": "negative",
+      "label": "Its photographic negative",
+      "name": "landing",
+      "preset": "first-contact",
+      "path": "artifacts/source-overworld-study/variants/negative-landing.jpg",
+      "bytes": 54182,
+      "webpPath": "artifacts/source-overworld-study/variants/negative-landing.webp",
+      "webpBytes": 33580,
+      "width": 736,
+      "height": 460,
+      "pos": {
+        "x": 0,
+        "y": -1056
+      },
+      "camera": {
+        "yaw": 0,
+        "pitch": 0,
+        "facing": 0
+      },
+      "torch": false,
+      "phase": "landscape",
+      "pixelMesh": {
+        "supported": true,
+        "shaderReady": true,
+        "enabled": false,
+        "framesSeen": 3,
+        "framesRendered": 3,
+        "lastProfile": "explore",
+        "lastError": null,
+        "lastGlError": 0,
+        "forceSignalUntil": 0,
+        "sceneWidth": 736,
+        "sceneHeight": 460,
+        "settings": {
+          "cellSize": "auto",
+          "debugSource": "final",
+          "reduceFlash": false,
+          "reduceMotion": false,
+          "memory": true
+        },
+        "forced": false,
+        "bypassedByTextSpace": true
+      }
+    },
+    {
+      "variant": "negative",
+      "label": "Its photographic negative",
+      "name": "middle",
+      "preset": "all-insights",
+      "path": "artifacts/source-overworld-study/variants/negative-middle.jpg",
+      "bytes": 43225,
+      "webpPath": "artifacts/source-overworld-study/variants/negative-middle.webp",
+      "webpBytes": 27574,
+      "width": 736,
+      "height": 460,
+      "pos": {
+        "x": 0,
+        "y": -1120
+      },
+      "camera": {
+        "yaw": 0.7,
+        "pitch": 0,
+        "facing": 0
+      },
+      "torch": false,
+      "phase": "landscape",
+      "pixelMesh": {
+        "supported": true,
+        "shaderReady": true,
+        "enabled": false,
+        "framesSeen": 3,
+        "framesRendered": 3,
+        "lastProfile": "explore",
+        "lastError": null,
+        "lastGlError": 0,
+        "forceSignalUntil": 0,
+        "sceneWidth": 736,
+        "sceneHeight": 460,
+        "settings": {
+          "cellSize": "auto",
+          "debugSource": "final",
+          "reduceFlash": false,
+          "reduceMotion": false,
+          "memory": true
+        },
+        "forced": false,
+        "bypassedByTextSpace": true
+      }
+    },
+    {
+      "variant": "negative",
+      "label": "Its photographic negative",
+      "name": "doors",
+      "preset": "final",
+      "path": "artifacts/source-overworld-study/variants/negative-doors.jpg",
+      "bytes": 50507,
+      "webpPath": "artifacts/source-overworld-study/variants/negative-doors.webp",
+      "webpBytes": 31424,
+      "width": 736,
+      "height": 460,
+      "pos": {
+        "x": 0,
+        "y": -1321
+      },
+      "camera": {
+        "yaw": 0.65,
+        "pitch": 0,
+        "facing": 0
+      },
+      "torch": false,
+      "phase": "final",
+      "pixelMesh": {
+        "supported": true,
+        "shaderReady": true,
+        "enabled": false,
+        "framesSeen": 3,
+        "framesRendered": 3,
+        "lastProfile": "explore",
+        "lastError": null,
+        "lastGlError": 0,
+        "forceSignalUntil": 0,
+        "sceneWidth": 736,
+        "sceneHeight": 460,
+        "settings": {
+          "cellSize": "auto",
+          "debugSource": "final",
+          "reduceFlash": false,
+          "reduceMotion": false,
+          "memory": true
+        },
+        "forced": false,
+        "bypassedByTextSpace": true
+      }
+    },
+    {
+      "variant": "rooms",
+      "label": "Rooms leaking through",
+      "name": "landing",
+      "preset": "first-contact",
+      "path": "artifacts/source-overworld-study/variants/rooms-landing.jpg",
+      "bytes": 50735,
+      "webpPath": "artifacts/source-overworld-study/variants/rooms-landing.webp",
+      "webpBytes": 38230,
+      "width": 736,
+      "height": 460,
+      "pos": {
+        "x": 0,
+        "y": -1056
+      },
+      "camera": {
+        "yaw": 0,
+        "pitch": 0,
+        "facing": 0
+      },
+      "torch": false,
+      "phase": "landscape",
+      "pixelMesh": {
+        "supported": true,
+        "shaderReady": true,
+        "enabled": false,
+        "framesSeen": 5,
+        "framesRendered": 5,
+        "lastProfile": "explore",
+        "lastError": null,
+        "lastGlError": 0,
+        "forceSignalUntil": 0,
+        "sceneWidth": 736,
+        "sceneHeight": 460,
+        "settings": {
+          "cellSize": "auto",
+          "debugSource": "final",
+          "reduceFlash": false,
+          "reduceMotion": false,
+          "memory": true
+        },
+        "forced": false,
+        "bypassedByTextSpace": true
+      }
+    },
+    {
+      "variant": "rooms",
+      "label": "Rooms leaking through",
+      "name": "middle",
+      "preset": "all-insights",
+      "path": "artifacts/source-overworld-study/variants/rooms-middle.jpg",
+      "bytes": 45546,
+      "webpPath": "artifacts/source-overworld-study/variants/rooms-middle.webp",
+      "webpBytes": 30516,
+      "width": 736,
+      "height": 460,
+      "pos": {
+        "x": 0,
+        "y": -1120
+      },
+      "camera": {
+        "yaw": 0.7,
+        "pitch": 0,
+        "facing": 0
+      },
+      "torch": false,
+      "phase": "landscape",
+      "pixelMesh": {
+        "supported": true,
+        "shaderReady": true,
+        "enabled": false,
+        "framesSeen": 5,
+        "framesRendered": 5,
+        "lastProfile": "explore",
+        "lastError": null,
+        "lastGlError": 0,
+        "forceSignalUntil": 0,
+        "sceneWidth": 736,
+        "sceneHeight": 460,
+        "settings": {
+          "cellSize": "auto",
+          "debugSource": "final",
+          "reduceFlash": false,
+          "reduceMotion": false,
+          "memory": true
+        },
+        "forced": false,
+        "bypassedByTextSpace": true
+      }
+    },
+    {
+      "variant": "rooms",
+      "label": "Rooms leaking through",
+      "name": "doors",
+      "preset": "final",
+      "path": "artifacts/source-overworld-study/variants/rooms-doors.jpg",
+      "bytes": 59469,
+      "webpPath": "artifacts/source-overworld-study/variants/rooms-doors.webp",
+      "webpBytes": 38030,
+      "width": 736,
+      "height": 460,
+      "pos": {
+        "x": 0,
+        "y": -1321
+      },
+      "camera": {
+        "yaw": 0.65,
+        "pitch": 0,
+        "facing": 0
+      },
+      "torch": false,
+      "phase": "final",
+      "pixelMesh": {
+        "supported": true,
+        "shaderReady": true,
+        "enabled": false,
+        "framesSeen": 5,
+        "framesRendered": 5,
+        "lastProfile": "explore",
+        "lastError": null,
+        "lastGlError": 0,
+        "forceSignalUntil": 0,
+        "sceneWidth": 736,
+        "sceneHeight": 460,
+        "settings": {
+          "cellSize": "auto",
+          "debugSource": "final",
+          "reduceFlash": false,
+          "reduceMotion": false,
+          "memory": true
+        },
+        "forced": false,
+        "bypassedByTextSpace": true
+      }
+    }
+  ],
+  "intercepts": [
+    {
+      "variant": "opened",
+      "url": "http://127.0.0.1:5296/src/render/r3d.js?t=1791773123770",
+      "originalBytes": 1812619,
+      "patchedBytes": 1815708
+    },
+    {
+      "variant": "opened",
+      "url": "http://127.0.0.1:5296/src/game/source-space-runtime.js?t=1791773254167",
+      "originalBytes": 2033012,
+      "patchedBytes": 2033089
+    },
+    {
+      "variant": "negative",
+      "url": "http://127.0.0.1:5296/src/render/r3d.js?t=1791773123770",
+      "originalBytes": 1812619,
+      "patchedBytes": 1815718
+    },
+    {
+      "variant": "negative",
+      "url": "http://127.0.0.1:5296/src/game/source-space-runtime.js?t=1791773254167",
+      "originalBytes": 2033012,
+      "patchedBytes": 2033089
+    },
+    {
+      "variant": "rooms",
+      "url": "http://127.0.0.1:5296/src/render/r3d.js?t=1791773313866",
+      "originalBytes": 1812619,
+      "patchedBytes": 1816380
+    },
+    {
+      "variant": "rooms",
+      "url": "http://127.0.0.1:5296/src/game/source-space-runtime.js?t=1791773254167",
+      "originalBytes": 2033012,
+      "patchedBytes": 2033089
+    },
+    {
+      "variant": "rooms",
+      "url": "http://127.0.0.1:5296/src/render/r3d.js?t=1791773440086",
+      "originalBytes": 1812619,
+      "patchedBytes": 1816380
+    },
+    {
+      "variant": "rooms",
+      "url": "http://127.0.0.1:5296/src/game/source-space-runtime.js?t=1791773353171",
+      "originalBytes": 2033076,
+      "patchedBytes": 2033153
+    }
+  ],
+  "priorAttempts": [
+    {
+      "errors": [
+        {
+          "variant": "rooms",
+          "error": "SyntaxError: The requested module '/src/game/outskirts-experience.js' does not provide an export named 'normalizeOutskirtsCharacterFrame'"
+        },
+        {
+          "fatal": "TimeoutError: Waiting failed: 90000ms exceeded\n    at new WaitTask (file:///Users/seb/chunk-surfer/node_modules/puppeteer-core/lib/puppeteer/common/WaitTask.js:46:34)\n    at IsolatedWorld.waitForFunction (file:///Users/seb/chunk-surfer/node_modules/puppeteer-core/lib/puppeteer/api/Realm.js:49:26)\n    at CdpFrame.waitForFunction (file:///Users/seb/chunk-surfer/node_modules/puppeteer-core/lib/puppeteer/api/Frame.js:580:43)\n    at CdpFrame.<anonymous> (file:///Users/seb/chunk-surfer/node_modules/puppeteer-core/lib/puppeteer/util/decorators.js:101:27)\n    at CdpPage.waitForFunction (file:///Users/seb/chunk-surfer/node_modules/puppeteer-core/lib/puppeteer/api/Page.js:1447:37)\n    at file:///Users/seb/chunk-surfer/tools/chunk_surfer/capture-source-overworld-variants.mjs:37:16"
+        }
+      ]
+    }
+  ],
+  "errors": []
+}

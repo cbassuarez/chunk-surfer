@@ -188,10 +188,11 @@ function haystackState(slot = 0) {
   assert.equal(runtime.hushMode().bracketActive, true);
   const result = runtime.inspectFocused(target.x, target.y + 3, 0);
   assert.equal(result.event, 'page-found');
+  runtime.commitStillPageReveal();
   assert.equal(runtime.state().phase, 'transforming');
   assert.equal(runtime.hushMode().colliding, false);
   assert.equal(runtime.hushMode().protected, true);
-  assert.equal(runtime.pressureFrame().rain, 1, 'landing rain begins beneath the physical-to-Source transition');
+  assert.equal(runtime.pressureFrame().rain, 0, 'the roofed room clears the hall rain under the page');
   assert.equal(runtime.pressureFrame().mosh.active, false);
 }
 

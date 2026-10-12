@@ -1,3 +1,6 @@
+import { normalizeOutskirtsCharacterFrame } from '../game/outskirts-experience.js';
+import { normalizePressurePresentation, interpolatePressurePresentation } from '../game/pressure-performance.js';
+
 export const CAUSAL_TAPE_SCHEMA = 1;
 export const CAUSAL_TOPOLOGY_HASH = 'conservatory-night:v2';
 export const CAUSAL_SPINE_IDS = Object.freeze([
@@ -52,6 +55,8 @@ export function causalContentHash(value) {
 }
 
 function normalizeFrame(frame = {}) {
+  const characters = frame.spaceId === 'source-space' ? normalizeOutskirtsCharacterFrame(frame.outskirtsCharacters) : null;
+  const pressure = normalizePressurePresentation(frame.pressurePresentation);
   return {
     t: Math.max(0, Math.round(finite(frame.t))),
     x: rounded(frame.x),
@@ -63,6 +68,8 @@ function normalizeFrame(frame = {}) {
     renderGroup: typeof frame.renderGroup === 'string' ? frame.renderGroup : '',
     spaceId: typeof frame.spaceId === 'string' && frame.spaceId ? frame.spaceId : 'conservatory',
     perceived: !!frame.perceived,
+    ...(characters ? { outskirtsCharacters: characters } : {}),
+    ...(pressure ? { pressurePresentation: pressure } : {}),
   };
 }
 
@@ -74,6 +81,12 @@ function deltaFrame(previous, current) {
   }
   for (const key of ['roomId', 'renderGroup', 'spaceId', 'perceived']) {
     if (current[key] !== previous[key]) delta[key] = current[key];
+  }
+  if (canonicalJson(previous.outskirtsCharacters || null) !== canonicalJson(current.outskirtsCharacters || null)) {
+    delta.outskirtsCharacters = current.outskirtsCharacters || null;
+  }
+  if (canonicalJson(previous.pressurePresentation || null) !== canonicalJson(current.pressurePresentation || null)) {
+    delta.pressurePresentation = current.pressurePresentation || null;
   }
   return delta;
 }
@@ -113,6 +126,8 @@ export function unpackShadowFrames(segments) {
       for (const key of ['roomId', 'renderGroup', 'spaceId', 'perceived']) {
         if (raw[key] != null) next[key] = raw[key];
       }
+      if (Object.hasOwn(raw, 'outskirtsCharacters')) next.outskirtsCharacters = raw.outskirtsCharacters;
+      if (Object.hasOwn(raw, 'pressurePresentation')) next.pressurePresentation = raw.pressurePresentation;
       previous = normalizeFrame(next);
       out.push(previous);
     }
@@ -247,5 +262,31 @@ export function shadowFrameAt(tape, at) {
     result.spaceId = right.spaceId;
     result.perceived = right.perceived;
   }
+  const a = left.outskirtsCharacters, b = right.outskirtsCharacters;
+  if (a && b && left.spaceId === right.spaceId) {
+    const lerp = (x, y) => rounded(finite(x) + (finite(y) - finite(x)) * mix);
+    const sampled = structuredClone(mix < .5 ? a : b);
+    sampled.clock = lerp(a.clock, b.clock);
+    if (a.fold.seed === b.fold.seed && ['force', 'pain'].includes(a.fold.phase) && ['force', 'pain'].includes(b.fold.phase)) {
+      sampled.fold.elapsed = lerp(a.fold.elapsed, b.fold.elapsed);
+      sampled.fold.phase = sampled.fold.elapsed < 2.55 ? 'force' : 'pain';
+    }
+    if (a.locomotion && b.locomotion && sampled.locomotion && a.locomotion.pass === b.locomotion.pass) {
+      for (const key of ['along', 'across', 'pitch', 'gaitTime', 'speed', 'walkWeight', 'floorOffset']) sampled.locomotion[key] = lerp(a.locomotion[key], b.locomotion[key]);
+      if (a.locomotion.clip === b.locomotion.clip) sampled.locomotion.clipTime = lerp(a.locomotion.clipTime, b.locomotion.clipTime);
+      for (const key of ['yaw', 'heading', 'headYaw']) {
+        const delta = Math.atan2(Math.sin(b.locomotion[key] - a.locomotion[key]), Math.cos(b.locomotion[key] - a.locomotion[key]));
+        sampled.locomotion[key] = rounded(a.locomotion[key] + delta * mix);
+      }
+    }
+    result.outskirtsCharacters = normalizeOutskirtsCharacterFrame(sampled);
+  }
+  // The saved actor pose is presentation authority. Never ask the live driver
+  // to fill an absent actor or interpolate across a role/clip/cue reset.
+  const pressure = left.spaceId === right.spaceId
+    ? interpolatePressurePresentation(left.pressurePresentation, right.pressurePresentation, mix)
+    : normalizePressurePresentation((mix < .5 ? left : right).pressurePresentation);
+  if (pressure) result.pressurePresentation = pressure;
+  else delete result.pressurePresentation;
   return result;
 }

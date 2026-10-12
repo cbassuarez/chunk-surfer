@@ -1,0 +1,2327 @@
+{
+  "passed": true,
+  "failure": null,
+  "scope": "Chromium/Metal, disposable authored checkpoints; real keyboard dialogue and held movement. Route bearings use the camera probe; independent mouse-look is also tested. Not a complete playthrough or native OS-window validation.",
+  "checks": [
+    "HUSH approaches; real interact opens branching warning; player can withdraw without combat.",
+    "Actual held W crosses open-sky outskirts.",
+    "Bell field permits real turn and locomotion and submits shipped bell meshes.",
+    "Real bust interaction reveals a path without teleport; held movement walks the whole route into bells.",
+    "Warned dialogue confirmation opens actual combat pipeline."
+  ],
+  "errors": [],
+  "snapshots": {
+    "dock": {
+      "available": false,
+      "mandatory": false,
+      "completed": false,
+      "bestEligible": false,
+      "offered": false,
+      "entered": false,
+      "active": true,
+      "phase": "landscape",
+      "hallDistance": 112,
+      "pageStage": 4,
+      "landscapeOrigin": {
+        "x": 0,
+        "y": -252
+      },
+      "checkpointId": "landing-arrival",
+      "attempts": 0,
+      "hasFork": false,
+      "visited": [
+        "approach"
+      ],
+      "tuned": [],
+      "recorded": [],
+      "optionalTraces": [],
+      "sourceContacts": {
+        "captures": 0,
+        "insightIds": []
+      },
+      "bossExposed": true,
+      "firstLiftCompleted": false,
+      "sourceApproachDistance": 0,
+      "sourceApproachComplete": false,
+      "landingWeatherSpent": false,
+      "hushStage": "stalk",
+      "pursuitBeat": null,
+      "pursuitsCleared": [],
+      "finalEncounter": {
+        "status": "locked",
+        "outcome": null,
+        "won": null,
+        "rescuedRecordist": false,
+        "legacyRedaction": null,
+        "compatibility": {},
+        "channels": {
+          "rescue": 0,
+          "contain": 0,
+          "submit": 0
+        },
+        "turns": 0
+      },
+      "armedRedaction": null,
+      "redaction": null,
+      "injuriesAtEntry": 1,
+      "bossAvailable": false,
+      "horizon": {
+        "entered": false,
+        "reason": null,
+        "exit": null,
+        "maxDepth": 0
+      },
+      "finale": {
+        "route": null,
+        "stage": "uncommitted",
+        "result": null,
+        "bust": {
+          "recognized": false,
+          "decision": null,
+          "defeats": 0
+        },
+        "compatibility": {}
+      },
+      "transitionProgress": 1,
+      "pageCount": 960,
+      "planOrigin": {
+        "x": -384,
+        "y": -960
+      },
+      "focus": null,
+      "objective": {
+        "schema": 2,
+        "id": "open-foh-door",
+        "label": "OPEN THE FOH DOOR",
+        "target": {
+          "x": 8,
+          "y": -268,
+          "facing": 0
+        },
+        "bearingEligible": true,
+        "bearing": "N",
+        "distance": 18.38477631085024,
+        "distanceMeters": 9.19238815542512,
+        "alignmentPulse": false,
+        "knownLandmarks": [],
+        "coherentRoute": [],
+        "tier": "arrival",
+        "altitude": 0.15616712240829334,
+        "bossExposed": true
+      },
+      "hush": {
+        "mode": "atmospheric",
+        "colliding": false,
+        "meeting": false,
+        "contactAvailable": false,
+        "protected": true,
+        "pursuitBeat": null,
+        "haystackHunt": false,
+        "hallSearch": false,
+        "searchActive": false,
+        "bracketActive": false,
+        "landingTableau": true,
+        "rearPace": false,
+        "frontManifestation": false,
+        "restartGrace": 0,
+        "grounded": true
+      },
+      "sensory": {
+        "phase": "landscape",
+        "transitionProgress": 1,
+        "settled": false,
+        "mix": 0
+      },
+      "traversal": {
+        "active": false,
+        "grounded": true,
+        "locksMovement": false
+      },
+      "horizonFrame": {
+        "active": false
+      },
+      "landing": {
+        "source": "conservatory.ground / ZONE.getIn",
+        "bounds": {
+          "minX": 58,
+          "maxX": 73,
+          "minY": 4,
+          "maxY": 14
+        },
+        "centre": {
+          "x": 66,
+          "y": 9.5
+        },
+        "entry": {
+          "x": 1,
+          "y": 2
+        },
+        "opening": {
+          "x": 8,
+          "y": -18
+        },
+        "portal": {
+          "id": "dock-foyer-service",
+          "requested": false,
+          "closing": false,
+          "progress": 0,
+          "passable": false,
+          "complete": false,
+          "locksMovement": false,
+          "sealed": false,
+          "redPressure": 0,
+          "depth": 0
+        },
+        "hush": {
+          "x": 0,
+          "y": 13.5
+        },
+        "fieldEdgeY": -16,
+        "propIds": [
+          "dock-level-check-box",
+          "dock-desk-1",
+          "dock-work-order-clipboard",
+          "acq-maintenance-searchlight-dock",
+          "dock-hand-truck",
+          "dock-freight-crates",
+          "dock-freight-crate-low",
+          "dock-road-case",
+          "dock-cable-reel",
+          "dock-shutter-bar",
+          "dock-chandelier-frame",
+          "dock-chandelier-intact",
+          "dock-chandelier-tag",
+          "getin-heavy-stillson"
+        ],
+        "doorIds": [
+          "dock-foyer-service"
+        ],
+        "forwardWallRemoved": false,
+        "portalRequiresInteraction": true,
+        "emergencyLightId": "getin-grey-door-seam",
+        "lightIds": [
+          "source-landing:getin-grey-door-seam",
+          "source-landing:foh-work-light",
+          "source-landing:foh-white-threshold",
+          "source-landing:opening-emergency",
+          "source-landing:first-lift-emergency",
+          "source-approach-emergency-0",
+          "source-approach-emergency-1",
+          "source-approach-emergency-2",
+          "source-approach-emergency-3",
+          "source-approach-emergency-4",
+          "source-approach-emergency-5",
+          "source-approach-emergency-6",
+          "source-approach-emergency-7",
+          "source-approach-emergency-8",
+          "source-approach-emergency-9",
+          "source-approach-emergency-10",
+          "source-approach-emergency-11",
+          "source-approach-emergency-12",
+          "source-approach-emergency-13"
+        ],
+        "emergencyLightIds": [
+          "source-landing:opening-emergency",
+          "source-landing:first-lift-emergency",
+          "source-approach-emergency-0",
+          "source-approach-emergency-1",
+          "source-approach-emergency-2",
+          "source-approach-emergency-3",
+          "source-approach-emergency-4",
+          "source-approach-emergency-5",
+          "source-approach-emergency-6",
+          "source-approach-emergency-7",
+          "source-approach-emergency-8",
+          "source-approach-emergency-9",
+          "source-approach-emergency-10",
+          "source-approach-emergency-11",
+          "source-approach-emergency-12",
+          "source-approach-emergency-13"
+        ],
+        "tableau": {
+          "active": true,
+          "safe": true,
+          "rear": {
+            "visible": true,
+            "x": 1,
+            "y": -235,
+            "strength": 0.96
+          }
+        },
+        "void": {
+          "phase": "landscape",
+          "sourcePhase": true,
+          "active": true,
+          "sceneDock": true,
+          "approach": false,
+          "complete": false,
+          "proper": false,
+          "localY": 1,
+          "distance": 0,
+          "targetDistance": 288,
+          "progress": 0,
+          "elapsedSeconds": 0,
+          "targetSeconds": 30,
+          "redOnsetSeconds": 10,
+          "redProgress": 0,
+          "whiteout": 0,
+          "thresholdLight": 0,
+          "horizonDistanceMetres": 145,
+          "horizonScale": 0.035
+        },
+        "flashlight": {
+          "mode": "normal",
+          "active": false,
+          "xray": false,
+          "cycle": 1
+        },
+        "textSpaceActive": false,
+        "weatherRemaining": 12
+      },
+      "contact": {
+        "captures": 0,
+        "insightIds": [],
+        "bossExposed": true,
+        "pendingBeatId": null,
+        "movementRequired": false,
+        "graceSeconds": 0
+      },
+      "haystack": {
+        "phase": "landscape",
+        "elapsed": 0.9708999999761584,
+        "searchElapsed": 0,
+        "searchActive": false,
+        "standingPressure": 0,
+        "pressure": 0,
+        "fearFloor": 0,
+        "approach": false,
+        "movementMultiplier": 1,
+        "fear": null,
+        "rain": 1,
+        "rainLatched": true,
+        "mosh": {
+          "active": false,
+          "amount": 0,
+          "cycle": -1
+        },
+        "wrongReads": 0,
+        "wrongReadImpulse": 0,
+        "noProgressSeconds": 0.9548999999761583
+      },
+      "bracket": {
+        "active": false,
+        "progress": 1,
+        "boundary": {
+          "x": 0,
+          "y": -224,
+          "metres": 112
+        },
+        "rear": {
+          "visible": false,
+          "x": 1,
+          "y": -235,
+          "gapMetres": 8,
+          "strength": 0.96
+        },
+        "front": {
+          "visible": false,
+          "x": 0,
+          "y": -233,
+          "gapBeyondBoundaryMetres": 4.5,
+          "strength": 0.96
+        }
+      },
+      "geometryBoundary": {
+        "physicalBeyondBoundary": false,
+        "visualBeyondBoundary": true,
+        "y": -224,
+        "metres": 112
+      },
+      "realPage": null,
+      "sourceSceneCacheSize": 0,
+      "sourceStructureCount": 19,
+      "sourceSeededStructureCount": 14,
+      "sourceSceneKey": "source:landing-beat",
+      "visibleGlyphs": 0,
+      "exitSnapshot": null
+    },
+    "hush": {
+      "initial": {
+        "p": {
+          "active": true,
+          "x": 6.653853987096834,
+          "y": -587.8675117935485,
+          "targetX": 0,
+          "targetY": 0,
+          "hasTarget": false,
+          "targetLevel": 0,
+          "targetConfidence": 0,
+          "targetReason": null,
+          "targetPriority": 0,
+          "targetSetAt": 0,
+          "lastHeardAt": 0,
+          "lastCatchAt": 1386.9000000357628,
+          "spawnedAt": -1000000000,
+          "awareness": 0,
+          "caughtCount": 0,
+          "externalTargetUntil": 0,
+          "externalTargetPriority": 0,
+          "lastEngagedAt": 0,
+          "lastSoundX": 0,
+          "lastSoundY": 0,
+          "hasSearchOrigin": false,
+          "prowlX": 0,
+          "prowlY": 0,
+          "hasProwl": false,
+          "prowlUntil": 0,
+          "dwellUntil": 0,
+          "velocityX": -3.1661889512863444,
+          "velocityY": -3.869786496017235,
+          "speed": 5.000000000000507,
+          "motionMode": "moving",
+          "behaviorMode": "source-pace",
+          "phaseUntil": 0,
+          "chaseUntil": 0,
+          "directorIntent": "IGNORE",
+          "tauntRequested": false,
+          "nextLightListenAt": 0,
+          "spawnSector": null,
+          "contactSerial": 0,
+          "pendingContact": null,
+          "contactDirector": {
+            "schema": 1,
+            "lastKind": null,
+            "eligibleSinceBrush": 0,
+            "brushesShown": 0,
+            "warningsShown": 0,
+            "recentContentIds": []
+          },
+          "dist": 10.50767040355175,
+          "pressure": 0.8248721599408042
+        },
+        "s": {
+          "available": false,
+          "mandatory": false,
+          "completed": false,
+          "bestEligible": false,
+          "offered": false,
+          "entered": false,
+          "active": true,
+          "phase": "landscape",
+          "hallDistance": 112,
+          "pageStage": 4,
+          "landscapeOrigin": {
+            "x": 0,
+            "y": -252
+          },
+          "checkpointId": "landing-fork",
+          "attempts": 0,
+          "hasFork": false,
+          "visited": [
+            "approach"
+          ],
+          "tuned": [],
+          "recorded": [],
+          "optionalTraces": [],
+          "sourceContacts": {
+            "captures": 0,
+            "insightIds": []
+          },
+          "bossExposed": true,
+          "firstLiftCompleted": true,
+          "sourceApproachDistance": 0,
+          "sourceApproachComplete": true,
+          "landingWeatherSpent": false,
+          "hushStage": "hunt",
+          "pursuitBeat": "body-run",
+          "pursuitsCleared": [],
+          "finalEncounter": {
+            "status": "locked",
+            "outcome": null,
+            "won": null,
+            "rescuedRecordist": false,
+            "legacyRedaction": null,
+            "compatibility": {},
+            "channels": {
+              "rescue": 0,
+              "contain": 0,
+              "submit": 0
+            },
+            "turns": 0
+          },
+          "armedRedaction": null,
+          "redaction": null,
+          "injuriesAtEntry": 1,
+          "bossAvailable": true,
+          "horizon": {
+            "entered": false,
+            "reason": null,
+            "exit": null,
+            "maxDepth": 0
+          },
+          "finale": {
+            "route": null,
+            "stage": "uncommitted",
+            "result": null,
+            "bust": {
+              "recognized": false,
+              "decision": null,
+              "defeats": 0
+            },
+            "compatibility": {}
+          },
+          "transitionProgress": 1,
+          "pageCount": 960,
+          "planOrigin": {
+            "x": -384,
+            "y": -960
+          },
+          "focus": null,
+          "objective": {
+            "schema": 2,
+            "id": "final-horizon",
+            "label": "REACH THE FINAL HORIZON",
+            "target": {
+              "id": "final-page",
+              "x": 80,
+              "y": -844,
+              "sector": "final"
+            },
+            "bearingEligible": true,
+            "bearing": "N",
+            "distance": 260.58395959843733,
+            "distanceMeters": 130.29197979921867,
+            "alignmentPulse": false,
+            "knownLandmarks": [],
+            "coherentRoute": [],
+            "tier": "fork",
+            "altitude": 4.295210166034057,
+            "bossExposed": true
+          },
+          "hush": {
+            "mode": "atmospheric",
+            "colliding": false,
+            "meeting": true,
+            "contactAvailable": true,
+            "protected": false,
+            "pursuitBeat": null,
+            "haystackHunt": false,
+            "hallSearch": false,
+            "searchActive": false,
+            "bracketActive": false,
+            "landingTableau": false,
+            "rearPace": false,
+            "frontManifestation": false,
+            "restartGrace": 0,
+            "grounded": true
+          },
+          "sensory": {
+            "phase": "landscape",
+            "transitionProgress": 1,
+            "settled": false,
+            "mix": 0
+          },
+          "traversal": {
+            "active": false,
+            "grounded": true,
+            "locksMovement": false
+          },
+          "horizonFrame": {
+            "active": false
+          },
+          "landing": {
+            "source": "conservatory.ground / ZONE.getIn",
+            "bounds": {
+              "minX": 58,
+              "maxX": 73,
+              "minY": 4,
+              "maxY": 14
+            },
+            "centre": {
+              "x": 66,
+              "y": 9.5
+            },
+            "entry": {
+              "x": 1,
+              "y": 2
+            },
+            "opening": {
+              "x": 8,
+              "y": -18
+            },
+            "portal": {
+              "id": "dock-foyer-service",
+              "requested": false,
+              "closing": false,
+              "progress": 0,
+              "passable": false,
+              "complete": false,
+              "locksMovement": false,
+              "sealed": false,
+              "redPressure": 0,
+              "depth": 0
+            },
+            "hush": {
+              "x": 0,
+              "y": 13.5
+            },
+            "fieldEdgeY": -16,
+            "propIds": [
+              "dock-level-check-box",
+              "dock-desk-1",
+              "dock-work-order-clipboard",
+              "acq-maintenance-searchlight-dock",
+              "dock-hand-truck",
+              "dock-freight-crates",
+              "dock-freight-crate-low",
+              "dock-road-case",
+              "dock-cable-reel",
+              "dock-shutter-bar",
+              "dock-chandelier-frame",
+              "dock-chandelier-intact",
+              "dock-chandelier-tag",
+              "getin-heavy-stillson"
+            ],
+            "doorIds": [
+              "dock-foyer-service"
+            ],
+            "forwardWallRemoved": false,
+            "portalRequiresInteraction": true,
+            "emergencyLightId": "getin-grey-door-seam",
+            "lightIds": [
+              "source-landing:getin-grey-door-seam",
+              "source-landing:foh-work-light",
+              "source-landing:foh-white-threshold",
+              "source-landing:opening-emergency",
+              "source-landing:first-lift-emergency",
+              "source-approach-emergency-0",
+              "source-approach-emergency-1",
+              "source-approach-emergency-2",
+              "source-approach-emergency-3",
+              "source-approach-emergency-4",
+              "source-approach-emergency-5",
+              "source-approach-emergency-6",
+              "source-approach-emergency-7",
+              "source-approach-emergency-8",
+              "source-approach-emergency-9",
+              "source-approach-emergency-10",
+              "source-approach-emergency-11",
+              "source-approach-emergency-12",
+              "source-approach-emergency-13"
+            ],
+            "emergencyLightIds": [
+              "source-landing:opening-emergency",
+              "source-landing:first-lift-emergency",
+              "source-approach-emergency-0",
+              "source-approach-emergency-1",
+              "source-approach-emergency-2",
+              "source-approach-emergency-3",
+              "source-approach-emergency-4",
+              "source-approach-emergency-5",
+              "source-approach-emergency-6",
+              "source-approach-emergency-7",
+              "source-approach-emergency-8",
+              "source-approach-emergency-9",
+              "source-approach-emergency-10",
+              "source-approach-emergency-11",
+              "source-approach-emergency-12",
+              "source-approach-emergency-13"
+            ],
+            "tableau": {
+              "active": false,
+              "safe": true,
+              "rear": {
+                "visible": false,
+                "x": 0,
+                "y": -580,
+                "strength": 0.96
+              }
+            },
+            "void": {
+              "phase": "landscape",
+              "sourcePhase": true,
+              "active": false,
+              "sceneDock": false,
+              "approach": false,
+              "complete": true,
+              "proper": true,
+              "localY": -344,
+              "distance": 0,
+              "targetDistance": 288,
+              "progress": 0,
+              "elapsedSeconds": 0,
+              "targetSeconds": 30,
+              "redOnsetSeconds": 10,
+              "redProgress": 0,
+              "whiteout": 0,
+              "thresholdLight": 0,
+              "horizonDistanceMetres": 145,
+              "horizonScale": 0.035
+            },
+            "flashlight": {
+              "mode": "emergency",
+              "active": true,
+              "xray": false,
+              "cycle": 0.56
+            },
+            "textSpaceActive": true,
+            "weatherRemaining": 11.258999999999997
+          },
+          "contact": {
+            "captures": 0,
+            "insightIds": [],
+            "bossExposed": true,
+            "pendingBeatId": null,
+            "movementRequired": false,
+            "graceSeconds": 0
+          },
+          "haystack": {
+            "phase": "landscape",
+            "elapsed": 0.7409999999999999,
+            "searchElapsed": 0,
+            "searchActive": false,
+            "standingPressure": 0,
+            "pressure": 0,
+            "fearFloor": 0,
+            "approach": false,
+            "movementMultiplier": 1,
+            "fear": null,
+            "rain": 0.9382499999999997,
+            "rainLatched": true,
+            "mosh": {
+              "active": false,
+              "amount": 0,
+              "cycle": -1
+            },
+            "wrongReads": 0,
+            "wrongReadImpulse": 0,
+            "noProgressSeconds": 0.7249999999999999
+          },
+          "bracket": {
+            "active": false,
+            "progress": 1,
+            "boundary": {
+              "x": 0,
+              "y": -224,
+              "metres": 112
+            },
+            "rear": {
+              "visible": false,
+              "x": 0,
+              "y": -580,
+              "gapMetres": 8,
+              "strength": 0.96
+            },
+            "front": {
+              "visible": false,
+              "x": 0,
+              "y": -233,
+              "gapBeyondBoundaryMetres": 4.5,
+              "strength": 0.96
+            }
+          },
+          "geometryBoundary": {
+            "physicalBeyondBoundary": false,
+            "visualBeyondBoundary": false,
+            "y": -224,
+            "metres": 112
+          },
+          "realPage": null,
+          "sourceSceneCacheSize": 20,
+          "sourceStructureCount": 19,
+          "sourceSeededStructureCount": 14,
+          "sourceSceneKey": "landscape:4:8:0:-252:-2,-7;-1,-7;0,-7;1,-7;-2,-6;-1,-6;0,-6;1,-6;-2,-5;-1,-5;0,-5;1,-5;-2,-4;-1,-4;0,-4;1,-4;-2,-3;-1,-3;0,-3;1,-3",
+          "visibleGlyphs": 886604,
+          "exitSnapshot": null
+        }
+      },
+      "approached": {
+        "p": {
+          "active": true,
+          "x": 3.1661889512863706,
+          "y": -592.1302135039834,
+          "targetX": 0,
+          "targetY": 0,
+          "hasTarget": false,
+          "targetLevel": 0,
+          "targetConfidence": 0,
+          "targetReason": null,
+          "targetPriority": 0,
+          "targetSetAt": 0,
+          "lastHeardAt": 0,
+          "lastCatchAt": 1386.9000000357628,
+          "spawnedAt": -1000000000,
+          "awareness": 0,
+          "caughtCount": 0,
+          "externalTargetUntil": 0,
+          "externalTargetPriority": 0,
+          "lastEngagedAt": 0,
+          "lastSoundX": 0,
+          "lastSoundY": 0,
+          "hasSearchOrigin": false,
+          "prowlX": 0,
+          "prowlY": 0,
+          "hasProwl": false,
+          "prowlUntil": 0,
+          "dwellUntil": 0,
+          "velocityX": 0,
+          "velocityY": 0,
+          "speed": 0,
+          "motionMode": "idle",
+          "behaviorMode": "source-pace",
+          "phaseUntil": 0,
+          "chaseUntil": 0,
+          "directorIntent": "IGNORE",
+          "tauntRequested": false,
+          "nextLightListenAt": 0,
+          "spawnSector": null,
+          "contactSerial": 0,
+          "pendingContact": null,
+          "contactDirector": {
+            "schema": 1,
+            "lastKind": null,
+            "eligibleSinceBrush": 0,
+            "brushesShown": 0,
+            "warningsShown": 0,
+            "recentContentIds": []
+          },
+          "dist": 5,
+          "pressure": 0.9166666666666666
+        },
+        "s": {
+          "available": false,
+          "mandatory": false,
+          "completed": false,
+          "bestEligible": false,
+          "offered": false,
+          "entered": false,
+          "active": true,
+          "phase": "landscape",
+          "hallDistance": 112,
+          "pageStage": 4,
+          "landscapeOrigin": {
+            "x": 0,
+            "y": -252
+          },
+          "checkpointId": "landing-fork",
+          "attempts": 0,
+          "hasFork": false,
+          "visited": [
+            "approach"
+          ],
+          "tuned": [],
+          "recorded": [],
+          "optionalTraces": [],
+          "sourceContacts": {
+            "captures": 0,
+            "insightIds": []
+          },
+          "bossExposed": true,
+          "firstLiftCompleted": true,
+          "sourceApproachDistance": 0,
+          "sourceApproachComplete": true,
+          "landingWeatherSpent": false,
+          "hushStage": "hunt",
+          "pursuitBeat": "body-run",
+          "pursuitsCleared": [],
+          "finalEncounter": {
+            "status": "locked",
+            "outcome": null,
+            "won": null,
+            "rescuedRecordist": false,
+            "legacyRedaction": null,
+            "compatibility": {},
+            "channels": {
+              "rescue": 0,
+              "contain": 0,
+              "submit": 0
+            },
+            "turns": 0
+          },
+          "armedRedaction": null,
+          "redaction": null,
+          "injuriesAtEntry": 1,
+          "bossAvailable": true,
+          "horizon": {
+            "entered": false,
+            "reason": null,
+            "exit": null,
+            "maxDepth": 0
+          },
+          "finale": {
+            "route": null,
+            "stage": "uncommitted",
+            "result": null,
+            "bust": {
+              "recognized": false,
+              "decision": null,
+              "defeats": 0
+            },
+            "compatibility": {}
+          },
+          "transitionProgress": 1,
+          "pageCount": 960,
+          "planOrigin": {
+            "x": -384,
+            "y": -960
+          },
+          "focus": null,
+          "objective": {
+            "schema": 2,
+            "id": "final-horizon",
+            "label": "REACH THE FINAL HORIZON",
+            "target": {
+              "id": "final-page",
+              "x": 80,
+              "y": -844,
+              "sector": "final"
+            },
+            "bearingEligible": true,
+            "bearing": "N",
+            "distance": 260.58395959843733,
+            "distanceMeters": 130.29197979921867,
+            "alignmentPulse": false,
+            "knownLandmarks": [],
+            "coherentRoute": [],
+            "tier": "fork",
+            "altitude": 4.295210166034057,
+            "bossExposed": true
+          },
+          "hush": {
+            "mode": "atmospheric",
+            "colliding": false,
+            "meeting": true,
+            "contactAvailable": true,
+            "protected": false,
+            "pursuitBeat": null,
+            "haystackHunt": false,
+            "hallSearch": false,
+            "searchActive": false,
+            "bracketActive": false,
+            "landingTableau": false,
+            "rearPace": false,
+            "frontManifestation": false,
+            "restartGrace": 0,
+            "grounded": true
+          },
+          "sensory": {
+            "phase": "landscape",
+            "transitionProgress": 1,
+            "settled": false,
+            "mix": 0
+          },
+          "traversal": {
+            "active": false,
+            "grounded": true,
+            "locksMovement": false
+          },
+          "horizonFrame": {
+            "active": false
+          },
+          "landing": {
+            "source": "conservatory.ground / ZONE.getIn",
+            "bounds": {
+              "minX": 58,
+              "maxX": 73,
+              "minY": 4,
+              "maxY": 14
+            },
+            "centre": {
+              "x": 66,
+              "y": 9.5
+            },
+            "entry": {
+              "x": 1,
+              "y": 2
+            },
+            "opening": {
+              "x": 8,
+              "y": -18
+            },
+            "portal": {
+              "id": "dock-foyer-service",
+              "requested": false,
+              "closing": false,
+              "progress": 0,
+              "passable": false,
+              "complete": false,
+              "locksMovement": false,
+              "sealed": false,
+              "redPressure": 0,
+              "depth": 0
+            },
+            "hush": {
+              "x": 0,
+              "y": 13.5
+            },
+            "fieldEdgeY": -16,
+            "propIds": [
+              "dock-level-check-box",
+              "dock-desk-1",
+              "dock-work-order-clipboard",
+              "acq-maintenance-searchlight-dock",
+              "dock-hand-truck",
+              "dock-freight-crates",
+              "dock-freight-crate-low",
+              "dock-road-case",
+              "dock-cable-reel",
+              "dock-shutter-bar",
+              "dock-chandelier-frame",
+              "dock-chandelier-intact",
+              "dock-chandelier-tag",
+              "getin-heavy-stillson"
+            ],
+            "doorIds": [
+              "dock-foyer-service"
+            ],
+            "forwardWallRemoved": false,
+            "portalRequiresInteraction": true,
+            "emergencyLightId": "getin-grey-door-seam",
+            "lightIds": [
+              "source-landing:getin-grey-door-seam",
+              "source-landing:foh-work-light",
+              "source-landing:foh-white-threshold",
+              "source-landing:opening-emergency",
+              "source-landing:first-lift-emergency",
+              "source-approach-emergency-0",
+              "source-approach-emergency-1",
+              "source-approach-emergency-2",
+              "source-approach-emergency-3",
+              "source-approach-emergency-4",
+              "source-approach-emergency-5",
+              "source-approach-emergency-6",
+              "source-approach-emergency-7",
+              "source-approach-emergency-8",
+              "source-approach-emergency-9",
+              "source-approach-emergency-10",
+              "source-approach-emergency-11",
+              "source-approach-emergency-12",
+              "source-approach-emergency-13"
+            ],
+            "emergencyLightIds": [
+              "source-landing:opening-emergency",
+              "source-landing:first-lift-emergency",
+              "source-approach-emergency-0",
+              "source-approach-emergency-1",
+              "source-approach-emergency-2",
+              "source-approach-emergency-3",
+              "source-approach-emergency-4",
+              "source-approach-emergency-5",
+              "source-approach-emergency-6",
+              "source-approach-emergency-7",
+              "source-approach-emergency-8",
+              "source-approach-emergency-9",
+              "source-approach-emergency-10",
+              "source-approach-emergency-11",
+              "source-approach-emergency-12",
+              "source-approach-emergency-13"
+            ],
+            "tableau": {
+              "active": false,
+              "safe": true,
+              "rear": {
+                "visible": false,
+                "x": 0,
+                "y": -580,
+                "strength": 0.96
+              }
+            },
+            "void": {
+              "phase": "landscape",
+              "sourcePhase": true,
+              "active": false,
+              "sceneDock": false,
+              "approach": false,
+              "complete": true,
+              "proper": true,
+              "localY": -344,
+              "distance": 0,
+              "targetDistance": 288,
+              "progress": 0,
+              "elapsedSeconds": 0,
+              "targetSeconds": 30,
+              "redOnsetSeconds": 10,
+              "redProgress": 0,
+              "whiteout": 0,
+              "thresholdLight": 0,
+              "horizonDistanceMetres": 145,
+              "horizonScale": 0.035
+            },
+            "flashlight": {
+              "mode": "emergency",
+              "active": true,
+              "xray": false,
+              "cycle": 1
+            },
+            "textSpaceActive": true,
+            "weatherRemaining": 8.759999999999991
+          },
+          "contact": {
+            "captures": 0,
+            "insightIds": [],
+            "bossExposed": true,
+            "pendingBeatId": null,
+            "movementRequired": false,
+            "graceSeconds": 0
+          },
+          "haystack": {
+            "phase": "landscape",
+            "elapsed": 3.2400000000000007,
+            "searchElapsed": 0,
+            "searchActive": false,
+            "standingPressure": 0,
+            "pressure": 0,
+            "fearFloor": 0,
+            "approach": false,
+            "movementMultiplier": 1,
+            "fear": null,
+            "rain": 0.7299999999999992,
+            "rainLatched": true,
+            "mosh": {
+              "active": false,
+              "amount": 0,
+              "cycle": -1
+            },
+            "wrongReads": 0,
+            "wrongReadImpulse": 0,
+            "noProgressSeconds": 3.2240000000000006
+          },
+          "bracket": {
+            "active": false,
+            "progress": 1,
+            "boundary": {
+              "x": 0,
+              "y": -224,
+              "metres": 112
+            },
+            "rear": {
+              "visible": false,
+              "x": 0,
+              "y": -580,
+              "gapMetres": 8,
+              "strength": 0.96
+            },
+            "front": {
+              "visible": false,
+              "x": 0,
+              "y": -233,
+              "gapBeyondBoundaryMetres": 4.5,
+              "strength": 0.96
+            }
+          },
+          "geometryBoundary": {
+            "physicalBeyondBoundary": false,
+            "visualBeyondBoundary": false,
+            "y": -224,
+            "metres": 112
+          },
+          "realPage": null,
+          "sourceSceneCacheSize": 20,
+          "sourceStructureCount": 19,
+          "sourceSeededStructureCount": 14,
+          "sourceSceneKey": "landscape:4:8:0:-252:-2,-7;-1,-7;0,-7;1,-7;-2,-6;-1,-6;0,-6;1,-6;-2,-5;-1,-5;0,-5;1,-5;-2,-4;-1,-4;0,-4;1,-4;-2,-3;-1,-3;0,-3;1,-3",
+          "visibleGlyphs": 886604,
+          "exitSnapshot": null
+        }
+      }
+    },
+    "bells": {
+      "frame": {
+        "active": true,
+        "depth": 54.52883382895402,
+        "progress": 0.126224152381838,
+        "lateral": 15.1104251373173,
+        "resolve": 0,
+        "remaining": 377.471166171046,
+        "atRoom": false,
+        "time": 2.616900000035763,
+        "noise": 0,
+        "noiseLimit": 3,
+        "hits": 1,
+        "rings": 0,
+        "resets": 0,
+        "checkpointDepth": 0,
+        "recoiling": true
+      },
+      "props": [
+        {
+          "id": "bells-arch-west",
+          "mesh": "tower_bell_04",
+          "connector": null,
+          "x": -22,
+          "y": 32.220001220703125,
+          "z": -886,
+          "sx": 25.999999316580645,
+          "sy": 26,
+          "sz": 25.999999316580645,
+          "distance": 32.39529820914853
+        },
+        {
+          "id": "bells-arch-east",
+          "mesh": "tower_bell_01",
+          "connector": null,
+          "x": 22,
+          "y": 30.639999389648438,
+          "z": -895,
+          "sx": 21.99999990950404,
+          "sy": 22,
+          "sz": 21.99999990950404,
+          "distance": 15.06111335715639
+        },
+        {
+          "id": "bells-arch-far",
+          "mesh": "tower_bell_06",
+          "connector": null,
+          "x": -21,
+          "y": 30.760000228881836,
+          "z": -919,
+          "sx": 28.000000304992145,
+          "sy": 28,
+          "sz": 28.000000304992145,
+          "distance": 34.71157450428981
+        },
+        {
+          "id": "bells-arch-frame",
+          "mesh": "tower_frame",
+          "connector": null,
+          "x": 24.5,
+          "y": 15.199999809265137,
+          "z": -927,
+          "sx": 3.9999999793408563,
+          "sy": 4,
+          "sz": 3.9999999793408563,
+          "distance": 32.5021290100709
+        },
+        {
+          "id": "bells-arch-lean",
+          "mesh": "tower_bell_01",
+          "connector": null,
+          "x": -22,
+          "y": 30.360000610351562,
+          "z": -947,
+          "sx": 17.999999011638756,
+          "sy": 17.999999150264742,
+          "sz": 18.00000022203676,
+          "distance": 56.144425212958296
+        },
+        {
+          "id": "bells-field-1",
+          "mesh": "tower_bell_01",
+          "connector": null,
+          "x": -2,
+          "y": 18.260000228881836,
+          "z": -891,
+          "sx": 3,
+          "sy": 3,
+          "sz": 3,
+          "distance": 12.63339519561333
+        },
+        {
+          "id": "bells-field-2",
+          "mesh": "tower_bell_02",
+          "connector": null,
+          "x": 7.5,
+          "y": 20.503999710083008,
+          "z": -902.5,
+          "sx": 5.199999666303959,
+          "sy": 5.199999809265137,
+          "sz": 5.199999666303959,
+          "distance": 3.2360541298100003
+        },
+        {
+          "id": "bells-field-3",
+          "mesh": "tower_bell_03",
+          "connector": null,
+          "x": 5.5,
+          "y": 17.239999771118164,
+          "z": -913,
+          "sx": 2.000000031934043,
+          "sy": 2,
+          "sz": 2.000000031934043,
+          "distance": 13.88848952916327
+        },
+        {
+          "id": "bells-field-4",
+          "mesh": "tower_bell_04",
+          "connector": null,
+          "x": 2.5,
+          "y": 21.72800064086914,
+          "z": -924.5,
+          "sx": 6.4000003116020565,
+          "sy": 6.400000095367432,
+          "sz": 6.4000003116020565,
+          "distance": 25.736935089102165
+        },
+        {
+          "id": "bells-field-5",
+          "mesh": "tower_bell_05",
+          "connector": null,
+          "x": 11.5,
+          "y": 18.667999267578125,
+          "z": -934,
+          "sx": 3.4000000445971397,
+          "sy": 3.4000000953674316,
+          "sz": 3.4000000445971397,
+          "distance": 34.95886268415693
+        },
+        {
+          "id": "bells-field-6",
+          "mesh": "tower_bell_06",
+          "connector": null,
+          "x": -6,
+          "y": 19.892000198364258,
+          "z": -959,
+          "sx": 4.5999997460723066,
+          "sy": 4.599999904632568,
+          "sz": 4.5999997460723066,
+          "distance": 61.25425433673111
+        },
+        {
+          "id": "bells-field-7",
+          "mesh": "tower_bell_01",
+          "connector": null,
+          "x": 6.5,
+          "y": 17.851999282836914,
+          "z": -969.5,
+          "sx": 2.5999999170085832,
+          "sy": 2.5999999046325684,
+          "sz": 2.5999999170085832,
+          "distance": 70.24350934377111
+        },
+        {
+          "id": "bells-field-8",
+          "mesh": "tower_bell_02",
+          "connector": null,
+          "x": -1.5,
+          "y": 22.34000015258789,
+          "z": -980,
+          "sx": 7.0000002408607305,
+          "sy": 7,
+          "sz": 7.0000002408607305,
+          "distance": 81.24180728432239
+        },
+        {
+          "id": "bells-field-9",
+          "mesh": "tower_bell_03",
+          "connector": null,
+          "x": 12.5,
+          "y": 19.280000686645508,
+          "z": -992,
+          "sx": 3.9999999423192207,
+          "sy": 4,
+          "sz": 3.9999999423192207,
+          "distance": 92.86732090974246
+        },
+        {
+          "id": "bells-field-10",
+          "mesh": "tower_bell_04",
+          "connector": null,
+          "x": -8.5,
+          "y": 17.648000717163086,
+          "z": -1001,
+          "sx": 2.4000000484678496,
+          "sy": 2.4000000953674316,
+          "sz": 2.4000000484678496,
+          "distance": 102.9946538242455
+        },
+        {
+          "id": "bells-field-11",
+          "mesh": "tower_bell_05",
+          "connector": null,
+          "x": 3,
+          "y": 20.809999465942383,
+          "z": -1028,
+          "sx": 5.500000209621105,
+          "sy": 5.5,
+          "sz": 5.500000209621105,
+          "distance": 128.81614927451938
+        },
+        {
+          "id": "bells-field-12",
+          "mesh": "tower_bell_06",
+          "connector": null,
+          "x": -6.5,
+          "y": 18.260000228881836,
+          "z": -1039,
+          "sx": 2.9999999405488156,
+          "sy": 3,
+          "sz": 2.9999999405488156,
+          "distance": 140.44067139045325
+        },
+        {
+          "id": "bells-field-13",
+          "mesh": "tower_bell_01",
+          "connector": null,
+          "x": 8.5,
+          "y": 19.687999725341797,
+          "z": -1048,
+          "sx": 4.40000010777728,
+          "sy": 4.400000095367432,
+          "sz": 4.40000010777728,
+          "distance": 148.73858376050555
+        },
+        {
+          "id": "bells-field-14",
+          "mesh": "tower_bell_02",
+          "connector": null,
+          "x": -2.5,
+          "y": 17.444000244140625,
+          "z": -1059,
+          "sx": 2.200000041223905,
+          "sy": 2.200000047683716,
+          "sz": 2.200000041223905,
+          "distance": 160.05175351577043
+        },
+        {
+          "id": "bells-field-15",
+          "mesh": "tower_bell_03",
+          "connector": null,
+          "x": 10,
+          "y": 18.464000701904297,
+          "z": -1069.5,
+          "sx": 3.1999998980405366,
+          "sy": 3.200000047683716,
+          "sz": 3.1999998980405366,
+          "distance": 170.2531372223503
+        },
+        {
+          "id": "bells-null-canopy",
+          "mesh": "tower_bell_06",
+          "connector": null,
+          "x": 1,
+          "y": 49.099998474121094,
+          "z": -964,
+          "sx": 29.999998534344332,
+          "sy": 29.999998534215717,
+          "sz": 29.999999357726857,
+          "distance": 65.06663145762927
+        },
+        {
+          "id": "bells-null-wheel",
+          "mesh": "tower_wheel_01",
+          "connector": null,
+          "x": -11,
+          "y": 26.799999237060547,
+          "z": -968,
+          "sx": 10.999999693311697,
+          "sy": 10.999999870566553,
+          "sz": 10.999999958680233,
+          "distance": 71.19604129145763
+        },
+        {
+          "id": "bells-null-inverted",
+          "mesh": "tower_bell_04",
+          "connector": null,
+          "x": 19.5,
+          "y": 15.600000381469727,
+          "z": -975,
+          "sx": 14.000000551594992,
+          "sy": 14.000000256530726,
+          "sz": 13.999999920434359,
+          "distance": 76.67174507003271
+        },
+        {
+          "id": "bells-null-clapper",
+          "mesh": "tower_clapper_01",
+          "connector": null,
+          "x": -6.5,
+          "y": 35.79999923706055,
+          "z": -982,
+          "sx": 16.00000023202179,
+          "sy": 16,
+          "sz": 16.00000023202179,
+          "distance": 83.92094916557879
+        },
+        {
+          "id": "bells-null-coin-1",
+          "mesh": "tower_bell_01",
+          "connector": null,
+          "x": -3.200000047683716,
+          "y": 15.546799659729004,
+          "z": -985,
+          "sx": 0.3399999989745402,
+          "sy": 0.3399999989745402,
+          "sz": 0.3400000035762787,
+          "distance": 86.40755062746163
+        },
+        {
+          "id": "bells-null-coin-2",
+          "mesh": "tower_bell_02",
+          "connector": null,
+          "x": -1.0499999523162842,
+          "y": 15.485600471496582,
+          "z": -987,
+          "sx": 0.2799999959590211,
+          "sy": 0.27999999125578556,
+          "sz": 0.27999999965323535,
+          "distance": 88.15657787078541
+        },
+        {
+          "id": "bells-null-coin-3",
+          "mesh": "tower_bell_03",
+          "connector": null,
+          "x": 0.8999999761581421,
+          "y": 15.618200302124023,
+          "z": -986,
+          "sx": 0.40999997538487243,
+          "sy": 0.4099999855442,
+          "sz": 0.41000000903996914,
+          "distance": 86.99053527733369
+        },
+        {
+          "id": "bells-null-coin-4",
+          "mesh": "tower_bell_04",
+          "connector": null,
+          "x": 2.299999952316284,
+          "y": 15.516200065612793,
+          "z": -989,
+          "sx": 0.3100000243247988,
+          "sy": 0.3100000074582468,
+          "sz": 0.3100000135427166,
+          "distance": 89.88933268937846
+        },
+        {
+          "id": "bells-null-coin-5",
+          "mesh": "tower_bell_05",
+          "connector": null,
+          "x": -2.450000047683716,
+          "y": 15.56719970703125,
+          "z": -991,
+          "sx": 0.36000001583426594,
+          "sy": 0.3600000026438566,
+          "sz": 0.3600000285729699,
+          "distance": 92.27958324320234
+        },
+        {
+          "id": "bells-null-coin-6",
+          "mesh": "tower_bell_06",
+          "connector": null,
+          "x": 0.3499999940395355,
+          "y": 15.465200424194336,
+          "z": -993,
+          "sx": 0.25999999820622965,
+          "sy": 0.26000000341557916,
+          "sz": 0.25999998100501165,
+          "distance": 94.0120982886162
+        },
+        {
+          "id": "bells-null-coin-7",
+          "mesh": "tower_bell_01",
+          "connector": null,
+          "x": 1.600000023841858,
+          "y": 15.648799896240234,
+          "z": -995,
+          "sx": 0.440000001191175,
+          "sy": 0.4400000058141094,
+          "sz": 0.4399999749642006,
+          "distance": 95.92062565047738
+        },
+        {
+          "id": "bells-null-coin-8",
+          "mesh": "tower_bell_02",
+          "connector": null,
+          "x": -1.399999976158142,
+          "y": 15.505999565124512,
+          "z": -997,
+          "sx": 0.3000000151991368,
+          "sy": 0.3000000261973291,
+          "sz": 0.30000001230015333,
+          "distance": 98.14499494518309
+        },
+        {
+          "id": "bells-null-coin-9",
+          "mesh": "tower_bell_03",
+          "connector": null,
+          "x": 3.049999952316284,
+          "y": 15.557000160217285,
+          "z": -992,
+          "sx": 0.349999972213957,
+          "sy": 0.34999997794483745,
+          "sz": 0.34999999051644537,
+          "distance": 92.8449530719381
+        },
+        {
+          "id": "bells-null-coin-10",
+          "mesh": "tower_bell_04",
+          "connector": null,
+          "x": -3.8499999046325684,
+          "y": 15.44480037689209,
+          "z": -994,
+          "sx": 0.23999999639349504,
+          "sy": 0.23999999055967342,
+          "sz": 0.24000000204828256,
+          "distance": 95.41964983228007
+        },
+        {
+          "id": "bells-null-sunk",
+          "mesh": "tower_bell_02",
+          "connector": null,
+          "x": -22,
+          "y": 17.200000762939453,
+          "z": -1000,
+          "sx": 20.00000010609192,
+          "sy": 20,
+          "sz": 20.00000010609192,
+          "distance": 104.98175217417028
+        },
+        {
+          "id": "bells-ring-1",
+          "mesh": "tower_bell_01",
+          "connector": null,
+          "x": -4.25,
+          "y": 18.799999237060547,
+          "z": -1018,
+          "sx": 1.000000015176351,
+          "sy": 0.9999999953961366,
+          "sz": 1.0000000034862695,
+          "distance": 119.3210029058185
+        },
+        {
+          "id": "bells-ring-2",
+          "mesh": "tower_bell_02",
+          "connector": null,
+          "x": -2.549999952316284,
+          "y": 18.799999237060547,
+          "z": -1029.5999755859375,
+          "sx": 1.0599999595490066,
+          "sy": 1.0599999567782536,
+          "sz": 1.059999994642765,
+          "distance": 130.72671178567825
+        },
+        {
+          "id": "bells-ring-3",
+          "mesh": "tower_bell_03",
+          "connector": null,
+          "x": -0.8500000238418579,
+          "y": 18.799999237060547,
+          "z": -1041.199951171875,
+          "sx": 1.1200000047265852,
+          "sy": 1.1200000129237462,
+          "sz": 1.1199999977032962,
+          "distance": 142.18418858529287
+        },
+        {
+          "id": "bells-ring-4",
+          "mesh": "tower_bell_04",
+          "connector": null,
+          "x": 0.8500000238418579,
+          "y": 18.799999237060547,
+          "z": -1052.800048828125,
+          "sx": 1.1799999822494607,
+          "sy": 1.179999922419664,
+          "sz": 1.1800000144753946,
+          "distance": 153.68197728554372
+        },
+        {
+          "id": "bells-ring-5",
+          "mesh": "tower_bell_05",
+          "connector": null,
+          "x": 2.549999952316284,
+          "y": 18.799999237060547,
+          "z": -1064.4000244140625,
+          "sx": 1.2399999826037964,
+          "sy": 1.240000017868513,
+          "sz": 1.2399999667491326,
+          "distance": 165.21144336150553
+        },
+        {
+          "id": "bells-ring-6",
+          "mesh": "tower_bell_06",
+          "connector": null,
+          "x": 4.25,
+          "y": 18.799999237060547,
+          "z": -1076,
+          "sx": 1.2999999360895658,
+          "sy": 1.2999999353560687,
+          "sz": 1.2999999622727214,
+          "distance": 176.76648652587915
+        },
+        {
+          "id": "bells-ring-frame",
+          "mesh": "tower_frame",
+          "connector": null,
+          "x": 0,
+          "y": 15.199999809265137,
+          "z": -1079,
+          "sx": 1.350000023841858,
+          "sy": 1.350000023841858,
+          "sz": 1.350000023841858,
+          "distance": 179.89430525742208
+        }
+      ],
+      "source": {
+        "available": false,
+        "mandatory": false,
+        "completed": false,
+        "bestEligible": false,
+        "offered": false,
+        "entered": false,
+        "active": true,
+        "phase": "bells",
+        "hallDistance": 112,
+        "pageStage": 4,
+        "landscapeOrigin": {
+          "x": 0,
+          "y": -252
+        },
+        "checkpointId": "bells-entry",
+        "attempts": 0,
+        "hasFork": false,
+        "visited": [
+          "approach",
+          "fork-room",
+          "recordist-loop",
+          "surfer-origin",
+          "work-order-loop",
+          "body-room",
+          "final-page"
+        ],
+        "tuned": [],
+        "recorded": [],
+        "optionalTraces": [
+          "surfer-origin",
+          "work-order-loop"
+        ],
+        "sourceContacts": {
+          "captures": 3,
+          "insightIds": [
+            "music-human-name",
+            "surfer-vessel",
+            "borrowed-body-return"
+          ]
+        },
+        "bossExposed": true,
+        "firstLiftCompleted": true,
+        "sourceApproachDistance": 0,
+        "sourceApproachComplete": true,
+        "landingWeatherSpent": false,
+        "hushStage": "stalk",
+        "pursuitBeat": null,
+        "pursuitsCleared": [
+          "body-run",
+          "final-run"
+        ],
+        "finalEncounter": {
+          "status": "ready",
+          "outcome": null,
+          "won": null,
+          "rescuedRecordist": false,
+          "legacyRedaction": null,
+          "compatibility": {},
+          "channels": {
+            "rescue": 0,
+            "contain": 0,
+            "submit": 0
+          },
+          "turns": 0
+        },
+        "armedRedaction": null,
+        "redaction": null,
+        "injuriesAtEntry": 1,
+        "bossAvailable": false,
+        "horizon": {
+          "entered": true,
+          "reason": "walked-away",
+          "exit": "tower",
+          "maxDepth": 168
+        },
+        "finale": {
+          "route": "tower",
+          "stage": "tower-committed",
+          "result": null,
+          "bust": {
+            "recognized": true,
+            "decision": "accepted",
+            "defeats": 0
+          },
+          "compatibility": {}
+        },
+        "transitionProgress": 0,
+        "pageCount": 960,
+        "planOrigin": {
+          "x": -384,
+          "y": -2192
+        },
+        "focus": null,
+        "objective": {
+          "schema": 2,
+          "id": "bell-field",
+          "label": "WALK BETWEEN THE BELLS — KEEP THEM QUIET",
+          "target": null,
+          "bearingEligible": false,
+          "bellNoise": 0,
+          "bellNoiseLimit": 3,
+          "horizonDepth": 54.52883382895402,
+          "horizonProgress": 0.126224152381838,
+          "bearing": null,
+          "distance": null,
+          "distanceMeters": null,
+          "alignmentPulse": false,
+          "knownLandmarks": [],
+          "coherentRoute": [],
+          "tier": null,
+          "altitude": null,
+          "bossExposed": true
+        },
+        "hush": {
+          "mode": "absent",
+          "colliding": false,
+          "meeting": false,
+          "contactAvailable": false,
+          "protected": true,
+          "pursuitBeat": null,
+          "haystackHunt": false,
+          "hallSearch": false,
+          "searchActive": false,
+          "bracketActive": false,
+          "landingTableau": false,
+          "rearPace": false,
+          "frontManifestation": false,
+          "restartGrace": 5,
+          "grounded": true
+        },
+        "sensory": {
+          "phase": "bells",
+          "transitionProgress": 1,
+          "settled": false,
+          "mix": 0
+        },
+        "traversal": {
+          "active": false,
+          "grounded": true,
+          "locksMovement": false
+        },
+        "horizonFrame": {
+          "active": false
+        },
+        "landing": {
+          "source": "conservatory.ground / ZONE.getIn",
+          "bounds": {
+            "minX": 58,
+            "maxX": 73,
+            "minY": 4,
+            "maxY": 14
+          },
+          "centre": {
+            "x": 66,
+            "y": 9.5
+          },
+          "entry": {
+            "x": 1,
+            "y": 2
+          },
+          "opening": {
+            "x": 8,
+            "y": -18
+          },
+          "portal": {
+            "id": "dock-foyer-service",
+            "requested": false,
+            "closing": false,
+            "progress": 0,
+            "passable": false,
+            "complete": false,
+            "locksMovement": false,
+            "sealed": false,
+            "redPressure": 0,
+            "depth": 0
+          },
+          "hush": {
+            "x": 0,
+            "y": 13.5
+          },
+          "fieldEdgeY": -16,
+          "propIds": [
+            "dock-level-check-box",
+            "dock-desk-1",
+            "dock-work-order-clipboard",
+            "acq-maintenance-searchlight-dock",
+            "dock-hand-truck",
+            "dock-freight-crates",
+            "dock-freight-crate-low",
+            "dock-road-case",
+            "dock-cable-reel",
+            "dock-shutter-bar",
+            "dock-chandelier-frame",
+            "dock-chandelier-intact",
+            "dock-chandelier-tag",
+            "getin-heavy-stillson"
+          ],
+          "doorIds": [
+            "dock-foyer-service"
+          ],
+          "forwardWallRemoved": false,
+          "portalRequiresInteraction": true,
+          "emergencyLightId": "getin-grey-door-seam",
+          "lightIds": [
+            "source-landing:getin-grey-door-seam",
+            "source-landing:foh-work-light",
+            "source-landing:foh-white-threshold",
+            "source-landing:opening-emergency",
+            "source-landing:first-lift-emergency",
+            "source-approach-emergency-0",
+            "source-approach-emergency-1",
+            "source-approach-emergency-2",
+            "source-approach-emergency-3",
+            "source-approach-emergency-4",
+            "source-approach-emergency-5",
+            "source-approach-emergency-6",
+            "source-approach-emergency-7",
+            "source-approach-emergency-8",
+            "source-approach-emergency-9",
+            "source-approach-emergency-10",
+            "source-approach-emergency-11",
+            "source-approach-emergency-12",
+            "source-approach-emergency-13"
+          ],
+          "emergencyLightIds": [
+            "source-landing:opening-emergency",
+            "source-landing:first-lift-emergency",
+            "source-approach-emergency-0",
+            "source-approach-emergency-1",
+            "source-approach-emergency-2",
+            "source-approach-emergency-3",
+            "source-approach-emergency-4",
+            "source-approach-emergency-5",
+            "source-approach-emergency-6",
+            "source-approach-emergency-7",
+            "source-approach-emergency-8",
+            "source-approach-emergency-9",
+            "source-approach-emergency-10",
+            "source-approach-emergency-11",
+            "source-approach-emergency-12",
+            "source-approach-emergency-13"
+          ],
+          "tableau": {
+            "active": false,
+            "safe": true,
+            "rear": {
+              "visible": false,
+              "x": 15.1104251373173,
+              "y": -1782.528833828954,
+              "strength": 0.96
+            }
+          },
+          "void": {
+            "phase": "bells",
+            "sourcePhase": false,
+            "active": false,
+            "sceneDock": false,
+            "approach": false,
+            "complete": true,
+            "proper": false,
+            "localY": -1546.528833828954,
+            "distance": 0,
+            "targetDistance": 288,
+            "progress": 0,
+            "elapsedSeconds": 0,
+            "targetSeconds": 30,
+            "redOnsetSeconds": 10,
+            "redProgress": 0,
+            "whiteout": 0,
+            "thresholdLight": 0,
+            "horizonDistanceMetres": 145,
+            "horizonScale": 0.035
+          },
+          "flashlight": {
+            "mode": "emergency",
+            "active": true,
+            "xray": false,
+            "cycle": 0.38
+          },
+          "textSpaceActive": false,
+          "weatherRemaining": 12
+        },
+        "contact": {
+          "captures": 3,
+          "insightIds": [
+            "music-human-name",
+            "surfer-vessel",
+            "borrowed-body-return"
+          ],
+          "bossExposed": true,
+          "pendingBeatId": null,
+          "movementRequired": false,
+          "graceSeconds": 5
+        },
+        "haystack": {
+          "phase": "bells",
+          "elapsed": 2.616900000035763,
+          "searchElapsed": 0,
+          "searchActive": false,
+          "standingPressure": 0,
+          "pressure": 0,
+          "fearFloor": 0,
+          "approach": false,
+          "movementMultiplier": 1,
+          "fear": null,
+          "rain": 0,
+          "rainLatched": false,
+          "mosh": {
+            "active": false,
+            "amount": 0,
+            "cycle": -1
+          },
+          "wrongReads": 0,
+          "wrongReadImpulse": 0,
+          "noProgressSeconds": 0
+        },
+        "bracket": {
+          "active": false,
+          "progress": 1,
+          "boundary": {
+            "x": 0,
+            "y": -224,
+            "metres": 112
+          },
+          "rear": {
+            "visible": false,
+            "x": 2,
+            "y": -1782.528833828954,
+            "gapMetres": 8,
+            "strength": 0.96
+          },
+          "front": {
+            "visible": false,
+            "x": 0,
+            "y": -233,
+            "gapBeyondBoundaryMetres": 4.5,
+            "strength": 0.96
+          }
+        },
+        "geometryBoundary": {
+          "physicalBeyondBoundary": false,
+          "visualBeyondBoundary": false,
+          "y": -224,
+          "metres": 112
+        },
+        "realPage": null,
+        "sourceSceneCacheSize": 0,
+        "sourceStructureCount": 19,
+        "sourceSeededStructureCount": 14,
+        "sourceSceneKey": "source:landing-beat",
+        "visibleGlyphs": 578,
+        "exitSnapshot": null
+      },
+      "lighting": {
+        "localLightCount": 1,
+        "ambientColor": [
+          0.5199999809265137,
+          0.5600000023841858,
+          0.6399999856948853
+        ],
+        "ambientIntensity": 0.085,
+        "whitePointScale": 1,
+        "sourceEmergency": 0,
+        "sourceVoidPhysical": true,
+        "lights": [
+          {
+            "x": 7.555212497711182,
+            "y": 17.600000381469727,
+            "z": -899.264404296875,
+            "radius": 44,
+            "color": [
+              0.7400000095367432,
+              0.7900000214576721,
+              0.8799999952316284
+            ],
+            "intensity": 4.199999809265137,
+            "emergency": 0
+          }
+        ]
+      }
+    },
+    "horizon": {
+      "active": true,
+      "onTape": true,
+      "preTape": false,
+      "preTapeProgress": 1,
+      "reason": "walked-away",
+      "depth": 168,
+      "progress": 0.328125,
+      "seconds": 85.107421875,
+      "slice": 84,
+      "sliceFraction": 0,
+      "lateral": 0,
+      "towerPath": [],
+      "onTowerPath": false,
+      "falling": 0,
+      "dream": 1,
+      "collapsing": false,
+      "edge": 0,
+      "band": {
+        "centre": -8.49,
+        "reach": 29.722800000000003,
+        "mosh": 0.64,
+        "lum": 0.51
+      },
+      "bandAhead": {
+        "centre": -9.675,
+        "reach": 26.5794,
+        "mosh": 0.69,
+        "lum": 0.52
+      },
+      "bandLookahead": 110,
+      "collapse": 0,
+      "exposure": 0.9345
+    },
+    "walkedTower": {
+      "phase": "bells",
+      "position": {
+        "input": {
+          "held": [],
+          "justPressed": [
+            "KeyW"
+          ],
+          "justReleased": [
+            "KeyW"
+          ],
+          "pointerDx": 0,
+          "pointerDy": 0,
+          "pointerLocked": true,
+          "lastPointerDeltaReason": "dom-mousemove",
+          "lastPointerDeltaAt": 22439.80000001192,
+          "lastPointerDeltaSource": {
+            "dx": 13,
+            "dy": -2
+          },
+          "focused": true,
+          "generation": 48,
+          "eventsSeen": 158,
+          "lastResetReason": "scene-consumed",
+          "lastResetAt": 31575.100000023842,
+          "lastKeyCode": "KeyW",
+          "lastKeyAt": 94734.70000004768,
+          "axes": {
+            "moveX": 0,
+            "moveY": 0,
+            "turnX": 0
+          }
+        },
+        "renderer": "3d",
+        "storyMode": true,
+        "inRogue": true,
+        "paused": false,
+        "scene": null,
+        "blocksInput": false,
+        "blocksWorld": false,
+        "pointer": {
+          "desiredMode": "gameplay-ready",
+          "lastMode": "captured",
+          "lastReason": "pointerlock-acquired",
+          "policy": {
+            "wantsCapture": true,
+            "renderer": "3d",
+            "storyMode": true,
+            "inRogue": true,
+            "paused": false,
+            "blocksLook": false
+          },
+          "backend": {
+            "kind": "pointer-lock",
+            "supported": true,
+            "requestPointerLockType": "function",
+            "lastRequestAt": 31575,
+            "lastRequestReason": "scene-remove:finale",
+            "lastRequestGesture": true,
+            "lastError": null,
+            "lastErrorAt": 0,
+            "lastResult": "locked",
+            "fallbackReason": null,
+            "requests": 2,
+            "errors": 0,
+            "retryPending": false,
+            "retryAttempts": 0,
+            "retriesFired": 0,
+            "retryReason": ""
+          },
+          "nativeBackend": {
+            "kind": "tauri-native-cursor",
+            "attempted": false,
+            "available": null,
+            "active": false,
+            "pending": false,
+            "calibrated": false,
+            "calibrationPending": false,
+            "calibrationFailed": false,
+            "coordinateSpace": "unverified-client",
+            "bias": {
+              "x": 0,
+              "y": 0
+            },
+            "anchor": {
+              "x": 0,
+              "y": 0
+            },
+            "generation": 8,
+            "error": null,
+            "errorAt": 0,
+            "fatalReason": "",
+            "permissionHint": "",
+            "requiredPermissions": [
+              "core:window:allow-set-cursor-visible",
+              "core:window:allow-set-cursor-grab",
+              "core:window:allow-set-cursor-position"
+            ],
+            "center": {
+              "x": 0,
+              "y": 0
+            },
+            "recenterPending": false,
+            "recenterCount": 0,
+            "ignoredRecenters": 0,
+            "moves": 0,
+            "addedDeltas": 0,
+            "lastMoveAt": 0,
+            "lastClient": {
+              "x": 0,
+              "y": 0
+            },
+            "lastOffset": {
+              "dx": 0,
+              "dy": 0
+            },
+            "lastAppliedDelta": {
+              "dx": 0,
+              "dy": 0
+            },
+            "lastDeltaReason": "",
+            "gain": 1,
+            "deadzone": 0.1,
+            "relativeEvents": 0,
+            "absoluteFallbackEvents": 0
+          },
+          "softBackend": {
+            "nativeActive": false,
+            "nativeKind": "tauri-native-cursor",
+            "nativeError": null,
+            "nativeErrorAt": 0,
+            "permissionHint": "",
+            "center": {
+              "x": 0,
+              "y": 0
+            },
+            "bias": {
+              "x": 0,
+              "y": 0
+            },
+            "anchor": {
+              "x": 0,
+              "y": 0
+            },
+            "recenterPending": false,
+            "recenterCount": 0,
+            "ignoredRecenters": 0,
+            "moves": 0,
+            "addedDeltas": 0,
+            "lastMoveAt": 0,
+            "lastClient": {
+              "x": 0,
+              "y": 0
+            },
+            "lastRawDelta": {
+              "dx": 0,
+              "dy": 0
+            },
+            "lastAppliedDelta": {
+              "dx": 0,
+              "dy": 0
+            },
+            "lastDeltaReason": "",
+            "browserGain": 3.2,
+            "nativeGain": 1,
+            "deadzone": 0.1
+          },
+          "dragBackend": {
+            "active": false,
+            "pointerId": null,
+            "moves": 0,
+            "addedDeltas": 0,
+            "lastMoveAt": 0,
+            "lastAppliedDelta": {
+              "dx": 0,
+              "dy": 0
+            },
+            "lastDeltaReason": "scene-push:finale:drag",
+            "gain": 3.2
+          },
+          "lock": {
+            "locked": true,
+            "nativeCaptured": false,
+            "dragLook": false,
+            "softCaptured": false,
+            "pointerLockElement": "map",
+            "targetId": "map"
+          },
+          "input": {
+            "pointerLocked": true,
+            "dx": 0,
+            "dy": 0,
+            "lastPointerDeltaReason": "dom-mousemove",
+            "lastPointerDeltaSource": {
+              "dx": 13,
+              "dy": -2
+            }
+          },
+          "locked": true,
+          "softCaptured": false,
+          "nativeCaptured": false,
+          "dragLook": false,
+          "wantsCapture": true,
+          "pointerLockElement": "map"
+        },
+        "nextMoveInMs": 0,
+        "nextTurnInMs": 0,
+        "motionResetReason": "scene-consumed",
+        "px": -1,
+        "py": -1752,
+        "rendered": {
+          "x": -0.9999793887012982,
+          "z": -1749.8824806564744
+        },
+        "arrowDelta": [
+          0,
+          0
+        ],
+        "turnHeldDir": 0,
+        "facing": 0,
+        "facingDelta": [
+          0,
+          -1
+        ],
+        "moveIntervalMs": 46,
+        "sinceLastMoveMs": 201,
+        "lastLoopMs": 94886.80000001192,
+        "focusRecovery": "reset-and-reacquire",
+        "motionRig": {
+          "x": -0.9999793887012982,
+          "z": -1749.8824806564744,
+          "vx": -0.00006802634406507374,
+          "vz": -6.833045099868603,
+          "reason": "scene-consumed"
+        }
+      },
+      "bells": {
+        "active": true,
+        "depth": 8,
+        "progress": 0.018518518518518517,
+        "lateral": -1,
+        "resolve": 0,
+        "remaining": 424,
+        "atRoom": false,
+        "time": 0.5231999999880791,
+        "noise": 0,
+        "noiseLimit": 3,
+        "hits": 0,
+        "rings": 0,
+        "resets": 0,
+        "checkpointDepth": 0,
+        "recoiling": false
+      }
+    },
+    "combat": {
+      "scene": "battle:source-final",
+      "view": null
+    }
+  }
+}

@@ -325,7 +325,7 @@ export const GLYPHS = {
   'c': { floor: 0.0, ceil: 5.8, zone: 'church', material: 'chapelStone' },   // aisles, chapel, sacristy
   'X': { floor: 0.0, ceil: 12.4, zone: 'church', material: 'chapelStone' },  // crossing under the central tower
   'l': { floor: 0.0, ceil: 5.4, zone: 'church', material: 'chapelStone' },   // organ loft / triforium, base +4.6
-  'b': { floor: 0.0, ceil: 4.0, zone: 'church', material: 'chapelStone' },   // belfry, base +10.2
+  'b': { floor: 0.0, ceil: 5.4, zone: 'church', material: 'chapelStone' },   // belfry, base +10.2
   'e': { floor: 0.0,  ceil: 16.0, sky: true, walled: true, zone: 'street', material: 'wetTarmac' },
   'p': { floor: 0.12, ceil: 16.0, sky: true, walled: true, zone: 'civicCourt', material: 'wetPaving' },
   's': { floor: 0.025,ceil: 16.0, sky: true, walled: true, zone: 'street', material: 'wetSetts' },

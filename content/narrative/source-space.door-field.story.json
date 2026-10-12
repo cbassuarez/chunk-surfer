@@ -1,0 +1,1288 @@
+{
+  "schemaVersion": 1,
+  "id": "source-space.door-field",
+  "title": "The Station",
+  "status": "active",
+  "entry": "door.bay-goods-pair",
+  "entries": [
+    "door.public-glazed-pair",
+    "door.bay-goods-pair",
+    "door.hall-acoustic-pair",
+    "door.practice-acoustic-single",
+    "door.service-fire-single",
+    "door.service-wired-pair",
+    "door.staff-half-glazed",
+    "door.pool-fire-single",
+    "door.pool-glazed-pair",
+    "door.academic-wired-glass",
+    "seep.burning",
+    "seep.flood",
+    "seep.inverted",
+    "seep.two-moons",
+    "seep.glass-storm",
+    "seep.whiteout",
+    "seep.open",
+    "extra.front-door",
+    "extra.bedroom-door",
+    "extra.wardrobe-door",
+    "extra.waiting-room-door",
+    "extra.vestry-door",
+    "extra.dock-door",
+    "extra.front-main",
+    "scar.burning",
+    "scar.flood",
+    "scar.inverted",
+    "scar.two-moons",
+    "scar.glass-storm",
+    "scar.whiteout",
+    "relic.burning",
+    "relic.flood",
+    "relic.inverted",
+    "relic.two-moons",
+    "relic.glass-storm",
+    "relics.bag",
+    "home.door",
+    "home.walk",
+    "home.window",
+    "home.stay",
+    "home.jumper",
+    "door.chapel-oak-pair",
+    "edge.lamps",
+    "edge.building",
+    "service.stored-frame",
+    "service.stored-leaf",
+    "service.stored-wrapped",
+    "service.half-frame",
+    "service.half-trestles",
+    "service.workbench",
+    "service.ledger",
+    "seep.school-hall",
+    "seep.tape-field",
+    "seep.ash-building",
+    "seep.dead-broadcast",
+    "scar.school-hall",
+    "scar.tape-field",
+    "scar.ash-building",
+    "scar.dead-broadcast",
+    "edge.tower",
+    "edge.chapel-road",
+    "land.school-hall",
+    "land.school-hall.stage",
+    "land.school-hall.piano",
+    "land.school-hall.chairs",
+    "land.school-hall.boy",
+    "land.school-hall.door",
+    "land.school-hall.tape",
+    "land.connector.tape",
+    "land.connector.window",
+    "land.connector.mast",
+    "land.connector.door",
+    "land.ash-room.recordist",
+    "land.ash-room.ash",
+    "land.return-hall.handover",
+    "land.return-hall.door",
+    "land.school-hall.entrance",
+    "land.tape-field.reel",
+    "land.tape-field.strands",
+    "land.tape-field.door",
+    "land.dead-broadcast.mast",
+    "land.dead-broadcast.shelter",
+    "land.dead-broadcast.relay",
+    "land.dead-broadcast.door",
+    "land.ash-room.ellery",
+    "land.school-hall.roof",
+    "land.tape-field.case",
+    "land.dead-broadcast.surface",
+    "land.ash-room.door"
+  ],
+  "tags": [
+    "source-space",
+    "door-field",
+    "inspect"
+  ],
+  "notes": "Looking at the doors in the route door fields before trying them (docs/plans/door-field-station.md). Main joins the door's own node (door.<archetype>) to what comes under it (seep.<world>, or seep.open). The extra doors are out of reach: floating or sunk, never openable from here. Direction only; nobody out here explains the station. All drafts for Seb. THE WAY HOME: each crossing leaves relic.<world>; carrying the five others, a whiteout door keeps the crossing open (home.walk) to his childhood bedroom, seen only from outside closed glazing. The room is timeless, lived in and a little untidy as he left it for college. Broad arrival restores composure; home.window is optional, repeatable LOOK and home.stay accompanies an optional STAY. Neither node departs or grants the jumper. The local invitation to stay ends when he deliberately leaves; after the unseen return, home.jumper describes Lyle's own warm jumper. Lyle is he/him, met years after he left this room. Bedroom geometry and sound share src/data/childhood-bedroom.js; the superseded kitchen plate is not the live scene. THE TOWER ROAD (service side): service.* nodes; service.ledger is filled by main openDoorLedger from the live door list, taken-back doors marked.",
+  "regions": [
+    {
+      "id": "source-space.door-field.region",
+      "title": "The Station",
+      "kind": "scene",
+      "color": "#1d2226",
+      "nodeIds": [
+        "door.public-glazed-pair",
+        "door.bay-goods-pair",
+        "door.hall-acoustic-pair",
+        "door.practice-acoustic-single",
+        "door.service-fire-single",
+        "door.service-wired-pair",
+        "door.staff-half-glazed",
+        "door.pool-fire-single",
+        "door.pool-glazed-pair",
+        "door.academic-wired-glass",
+        "seep.burning",
+        "seep.flood",
+        "seep.inverted",
+        "seep.two-moons",
+        "seep.glass-storm",
+        "seep.whiteout",
+        "seep.open",
+        "extra.front-door",
+        "extra.bedroom-door",
+        "extra.wardrobe-door",
+        "extra.waiting-room-door",
+        "extra.vestry-door",
+        "extra.dock-door",
+        "extra.front-main",
+        "scar.burning",
+        "scar.flood",
+        "scar.inverted",
+        "scar.two-moons",
+        "scar.glass-storm",
+        "scar.whiteout",
+        "relic.burning",
+        "relic.flood",
+        "relic.inverted",
+        "relic.two-moons",
+        "relic.glass-storm",
+        "relics.bag",
+        "home.door",
+        "home.walk",
+        "home.window",
+        "home.stay",
+        "home.jumper",
+        "door.chapel-oak-pair",
+        "edge.lamps",
+        "edge.building",
+        "service.stored-frame",
+        "service.stored-leaf",
+        "service.stored-wrapped",
+        "service.half-frame",
+        "service.half-trestles",
+        "service.workbench",
+        "service.ledger",
+        "seep.school-hall",
+        "seep.tape-field",
+        "seep.ash-building",
+        "seep.dead-broadcast",
+        "scar.school-hall",
+        "scar.tape-field",
+        "scar.ash-building",
+        "scar.dead-broadcast",
+        "edge.tower",
+        "edge.chapel-road",
+        "land.school-hall",
+        "land.school-hall.stage",
+        "land.school-hall.piano",
+        "land.school-hall.chairs",
+        "land.school-hall.boy",
+        "land.school-hall.door",
+        "land.school-hall.tape",
+        "land.connector.tape",
+        "land.connector.window",
+        "land.connector.mast",
+        "land.connector.door",
+        "land.ash-room.recordist",
+        "land.ash-room.ash",
+        "land.return-hall.handover",
+        "land.return-hall.door",
+        "land.school-hall.entrance",
+        "land.tape-field.reel",
+        "land.tape-field.strands",
+        "land.tape-field.door",
+        "land.dead-broadcast.mast",
+        "land.dead-broadcast.shelter",
+        "land.dead-broadcast.relay",
+        "land.dead-broadcast.door",
+        "land.ash-room.ellery",
+        "land.school-hall.roof",
+        "land.tape-field.case",
+        "land.dead-broadcast.surface",
+        "land.ash-room.door"
+      ]
+    }
+  ],
+  "nodes": {
+    "door.public-glazed-pair": {
+      "id": "door.public-glazed-pair",
+      "type": "dialogue",
+      "speaker": "A DOOR",
+      "lines": [
+        {
+          "id": "door.public-glazed-pair.1",
+          "who": "direction",
+          "text": "The front doors of the building, the public pair, mahogany and glass. The closure order is still taped to the inside of the glass, the right way round from this side."
+        }
+      ]
+    },
+    "door.bay-goods-pair": {
+      "id": "door.bay-goods-pair",
+      "type": "dialogue",
+      "speaker": "A DOOR",
+      "lines": [
+        {
+          "id": "door.bay-goods-pair.1",
+          "who": "direction",
+          "text": "The bay's goods doors, three metres of ribbed galvanised steel. The ones you came in through. The paint round the handles has been worn to bare metal by hands."
+        }
+      ]
+    },
+    "door.hall-acoustic-pair": {
+      "id": "door.hall-acoustic-pair",
+      "type": "dialogue",
+      "speaker": "A DOOR",
+      "lines": [
+        {
+          "id": "door.hall-acoustic-pair.1",
+          "who": "direction",
+          "text": "The concert hall's acoustic pair, dark oak, the seals still good. Somebody has been through here often enough to wear a pale track in the varnish at shoulder height."
+        }
+      ]
+    },
+    "door.practice-acoustic-single": {
+      "id": "door.practice-acoustic-single",
+      "type": "dialogue",
+      "speaker": "A DOOR",
+      "lines": [
+        {
+          "id": "door.practice-acoustic-single.1",
+          "who": "direction",
+          "text": "A practice room door off the sub-basement corridor, oak, acoustic. The wedge that kept it open is still under it, crushed flat."
+        }
+      ]
+    },
+    "door.service-fire-single": {
+      "id": "door.service-fire-single",
+      "type": "dialogue",
+      "speaker": "A DOOR",
+      "lines": [
+        {
+          "id": "door.service-fire-single.1",
+          "who": "direction",
+          "text": "A grey-green fire door from a service corridor. Its kick plate is dented from the far side."
+        }
+      ]
+    },
+    "door.service-wired-pair": {
+      "id": "door.service-wired-pair",
+      "type": "dialogue",
+      "speaker": "A DOOR",
+      "lines": [
+        {
+          "id": "door.service-wired-pair.1",
+          "who": "direction",
+          "text": "The Scene Dock's wired-glass pair. The glass is crazed outward, as if leaned on from behind."
+        }
+      ]
+    },
+    "door.staff-half-glazed": {
+      "id": "door.staff-half-glazed",
+      "type": "dialogue",
+      "speaker": "A DOOR",
+      "lines": [
+        {
+          "id": "door.staff-half-glazed.1",
+          "who": "direction",
+          "text": "A staff room door, half glazed. On the glass, a paper sign: KNOCK. The knuckle marks under it are on this side."
+        }
+      ]
+    },
+    "door.pool-fire-single": {
+      "id": "door.pool-fire-single",
+      "type": "dialogue",
+      "speaker": "A DOOR",
+      "lines": [
+        {
+          "id": "door.pool-fire-single.1",
+          "who": "direction",
+          "text": "The natatorium's fire door. The chlorine smell is gone. The wired glass is fogged from the other side."
+        }
+      ]
+    },
+    "door.pool-glazed-pair": {
+      "id": "door.pool-glazed-pair",
+      "type": "dialogue",
+      "speaker": "A DOOR",
+      "lines": [
+        {
+          "id": "door.pool-glazed-pair.1",
+          "who": "direction",
+          "text": "The pool's glazed pair. Water marks run up the lower panels, higher than any pool."
+        }
+      ]
+    },
+    "door.academic-wired-glass": {
+      "id": "door.academic-wired-glass",
+      "type": "dialogue",
+      "speaker": "A DOOR",
+      "lines": [
+        {
+          "id": "door.academic-wired-glass.1",
+          "who": "direction",
+          "text": "An academic wing door, old oak and wired glass, a mortise lock with the key long gone. The keyhole is warm."
+        }
+      ]
+    },
+    "seep.burning": {
+      "id": "seep.burning",
+      "type": "dialogue",
+      "speaker": "UNDER IT",
+      "lines": [
+        {
+          "id": "seep.burning.1",
+          "who": "direction",
+          "text": "Heat under the door. The paint on the bottom rail blisters and settles again, blisters and settles. An ember rolls out and goes grey on the slab."
+        }
+      ]
+    },
+    "seep.flood": {
+      "id": "seep.flood",
+      "type": "dialogue",
+      "speaker": "UNDER IT",
+      "lines": [
+        {
+          "id": "seep.flood.1",
+          "who": "direction",
+          "text": "Water coming under the door, black and still, spreading a hand's width across the slab and drawing back, as if something on the far side breathes."
+        }
+      ]
+    },
+    "seep.inverted": {
+      "id": "seep.inverted",
+      "type": "dialogue",
+      "speaker": "UNDER IT",
+      "lines": [
+        {
+          "id": "seep.inverted.1",
+          "who": "direction",
+          "text": "Dust coming under the door, and falling upward. It collects on the underside of the head."
+        }
+      ]
+    },
+    "seep.two-moons": {
+      "id": "seep.two-moons",
+      "type": "dialogue",
+      "speaker": "UNDER IT",
+      "lines": [
+        {
+          "id": "seep.two-moons.1",
+          "who": "direction",
+          "text": "Sand under the door, fine as flour, packed into the joint and fanned out across the slab."
+        }
+      ]
+    },
+    "seep.glass-storm": {
+      "id": "seep.glass-storm",
+      "type": "dialogue",
+      "speaker": "UNDER IT",
+      "lines": [
+        {
+          "id": "seep.glass-storm.1",
+          "who": "direction",
+          "text": "Glass dust under the door, glittering. Where it touches the frame the paint is scoured pale."
+        }
+      ]
+    },
+    "seep.whiteout": {
+      "id": "seep.whiteout",
+      "type": "dialogue",
+      "speaker": "UNDER IT",
+      "lines": [
+        {
+          "id": "seep.whiteout.1",
+          "who": "direction",
+          "text": "Snow drifted against the foot of the door, on this side. The frame is rimed with frost to the height of a man."
+        }
+      ]
+    },
+    "seep.open": {
+      "id": "seep.open",
+      "type": "dialogue",
+      "speaker": "UNDER IT",
+      "lines": [
+        {
+          "id": "seep.open.1",
+          "who": "direction",
+          "text": "It stands open onto somewhere that is not here."
+        }
+      ]
+    },
+    "extra.front-door": {
+      "id": "extra.front-door",
+      "type": "dialogue",
+      "speaker": "OUT OF REACH",
+      "lines": [
+        {
+          "id": "extra.front-door.1",
+          "who": "direction",
+          "text": "A house's front door, navy, a brass letterbox and a number, standing in the air above the hedges. The letterbox flap moves, as though something has just been posted through it."
+        }
+      ]
+    },
+    "extra.bedroom-door": {
+      "id": "extra.bedroom-door",
+      "type": "dialogue",
+      "speaker": "OUT OF REACH",
+      "lines": [
+        {
+          "id": "extra.bedroom-door.1",
+          "who": "direction",
+          "text": "A child's bedroom door, sunk to the handle in the ground. A dressing gown on the hook on the back."
+        }
+      ]
+    },
+    "extra.wardrobe-door": {
+      "id": "extra.wardrobe-door",
+      "type": "dialogue",
+      "speaker": "OUT OF REACH",
+      "lines": [
+        {
+          "id": "extra.wardrobe-door.1",
+          "who": "direction",
+          "text": "A wardrobe door, tilted, floating. Its mirror shows the corridor with nobody standing in it."
+        }
+      ]
+    },
+    "extra.waiting-room-door": {
+      "id": "extra.waiting-room-door",
+      "type": "dialogue",
+      "speaker": "OUT OF REACH",
+      "lines": [
+        {
+          "id": "extra.waiting-room-door.1",
+          "who": "direction",
+          "text": "A station waiting room's door, green, WAITING ROOM on the board above it, high up over the planting. The push plate is polished bright."
+        }
+      ]
+    },
+    "extra.vestry-door": {
+      "id": "extra.vestry-door",
+      "type": "dialogue",
+      "speaker": "OUT OF REACH",
+      "lines": [
+        {
+          "id": "extra.vestry-door.1",
+          "who": "direction",
+          "text": "A vestry door, planked, iron strap hinges, half in the ground at a slant. The ring latch has been lifted from the other side."
+        }
+      ]
+    },
+    "extra.dock-door": {
+      "id": "extra.dock-door",
+      "type": "dialogue",
+      "speaker": "OUT OF REACH",
+      "lines": [
+        {
+          "id": "extra.dock-door.1",
+          "who": "direction",
+          "text": "The loading dock's grey doors. The real ones. Hanging four metres up in the black, shut, the bay behind them. If only you could reach them."
+        }
+      ]
+    },
+    "extra.front-main": {
+      "id": "extra.front-main",
+      "type": "dialogue",
+      "speaker": "OUT OF REACH",
+      "lines": [
+        {
+          "id": "extra.front-main.1",
+          "who": "direction",
+          "text": "The building's own front doors, far off over the hedges, lit from inside. The way everyone else came in."
+        }
+      ]
+    },
+    "scar.burning": {
+      "id": "scar.burning",
+      "type": "dialogue",
+      "speaker": "WHERE IT STOOD",
+      "lines": [
+        {
+          "id": "scar.burning.1",
+          "who": "direction",
+          "text": "The slab is scorched where the door stood, the shape of its frame burned in black. The stone is still too hot to put a hand on."
+        }
+      ]
+    },
+    "scar.flood": {
+      "id": "scar.flood",
+      "type": "dialogue",
+      "speaker": "WHERE IT STOOD",
+      "lines": [
+        {
+          "id": "scar.flood.1",
+          "who": "direction",
+          "text": "A tide line on the slab, three of them, each a little lower, where the water drew back. It smells of a sea."
+        }
+      ]
+    },
+    "scar.inverted": {
+      "id": "scar.inverted",
+      "type": "dialogue",
+      "speaker": "WHERE IT STOOD",
+      "lines": [
+        {
+          "id": "scar.inverted.1",
+          "who": "direction",
+          "text": "Where the door stood there is a slot in the slab, and nothing at the bottom of it. Grit on the edge falls in, upward."
+        }
+      ]
+    },
+    "scar.two-moons": {
+      "id": "scar.two-moons",
+      "type": "dialogue",
+      "speaker": "WHERE IT STOOD",
+      "lines": [
+        {
+          "id": "scar.two-moons.1",
+          "who": "direction",
+          "text": "Sand heaped against where the posts were, blown into ridges toward a wind that is not blowing here."
+        }
+      ]
+    },
+    "scar.glass-storm": {
+      "id": "scar.glass-storm",
+      "type": "dialogue",
+      "speaker": "WHERE IT STOOD",
+      "lines": [
+        {
+          "id": "scar.glass-storm.1",
+          "who": "direction",
+          "text": "Glass ground into the slab like frost, glittering in the shape of the frame. It cuts the light, not the hand."
+        }
+      ]
+    },
+    "scar.whiteout": {
+      "id": "scar.whiteout",
+      "type": "dialogue",
+      "speaker": "WHERE IT STOOD",
+      "lines": [
+        {
+          "id": "scar.whiteout.1",
+          "who": "direction",
+          "text": "Frost where the door stood, in the shape of it, and a drift banked on the far side of nothing. It is not melting."
+        }
+      ]
+    },
+    "relic.burning": {
+      "id": "relic.burning",
+      "type": "dialogue",
+      "speaker": "FROM THE BURNING PLAIN",
+      "lines": [
+        {
+          "id": "relic.burning.1",
+          "who": "direction",
+          "text": "A cinder, still warm. It has not cooled since he closed his hand on it."
+        }
+      ]
+    },
+    "relic.flood": {
+      "id": "relic.flood",
+      "type": "dialogue",
+      "speaker": "FROM THE STILL SEA",
+      "lines": [
+        {
+          "id": "relic.flood.1",
+          "who": "direction",
+          "text": "A shell, wet. The water on it does not dry."
+        }
+      ]
+    },
+    "relic.inverted": {
+      "id": "relic.inverted",
+      "type": "dialogue",
+      "speaker": "FROM THE CITY OVERHEAD",
+      "lines": [
+        {
+          "id": "relic.inverted.1",
+          "who": "direction",
+          "text": "A pebble that falls upward if he lets go of it."
+        }
+      ]
+    },
+    "relic.two-moons": {
+      "id": "relic.two-moons",
+      "type": "dialogue",
+      "speaker": "FROM THE ASH DUNES",
+      "lines": [
+        {
+          "id": "relic.two-moons.1",
+          "who": "direction",
+          "text": "A matchbox full of fine sand. It is heavier than a matchbox of sand."
+        }
+      ]
+    },
+    "relic.glass-storm": {
+      "id": "relic.glass-storm",
+      "type": "dialogue",
+      "speaker": "FROM THE GLASS STORM",
+      "lines": [
+        {
+          "id": "relic.glass-storm.1",
+          "who": "direction",
+          "text": "A shard of black glass with lightning still moving in it, very small."
+        }
+      ]
+    },
+    "relics.bag": {
+      "id": "relics.bag",
+      "type": "dialogue",
+      "speaker": "WHAT THE WORLDS LEFT",
+      "lines": [
+        {
+          "id": "relics.bag.1",
+          "who": "direction",
+          "text": "A cinder that stays warm, a shell that stays wet, a pebble that falls upward, a matchbox of sand, a shard of black glass. Kept together, they are cold on one side, the way something is when there is snow near it."
+        }
+      ]
+    },
+    "home.door": {
+      "id": "home.door",
+      "type": "dialogue",
+      "speaker": "A DOOR",
+      "lines": [
+        {
+          "id": "home.door.1",
+          "who": "direction",
+          "text": "Snow drifted against the foot of the door, on this side. The frame rimed to the height of a man. In his bag, the five things are cold on one side, the side toward it."
+        }
+      ]
+    },
+    "home.walk": {
+      "id": "home.walk",
+      "type": "dialogue",
+      "speaker": "THE WHITEOUT",
+      "lines": [
+        {
+          "id": "home.walk.1",
+          "who": "direction",
+          "text": "Snow to the edge of sight, power lines, and one lit window a long way off. He walks at it. It gets no nearer."
+        }
+      ]
+    },
+    "home.window": {
+      "id": "home.window",
+      "type": "dialogue",
+      "speaker": "A LIT WINDOW",
+      "lines": [
+        {
+          "id": "home.window.1",
+          "who": "direction",
+          "text": "The room he grew up in. He took the books from the middle shelf when he left for college. The bottom drawer is still open a little. Nobody in it."
+        },
+        {
+          "id": "home.window.2",
+          "who": "direction",
+          "text": "On the radiator, a green jumper, the cuffs pulled long, a darn in one elbow. Lyle's own. He did not know Lyle until years after he left this room."
+        }
+      ]
+    },
+    "home.stay": {
+      "id": "home.stay",
+      "type": "dialogue",
+      "speaker": "A LIT WINDOW",
+      "lines": [
+        {
+          "id": "home.stay.1",
+          "who": "direction",
+          "text": "The radiator ticks. He lets his breathing settle. The wind is further away."
+        }
+      ]
+    },
+    "home.jumper": {
+      "id": "home.jumper",
+      "type": "dialogue",
+      "speaker": "LYLE'S JUMPER",
+      "lines": [
+        {
+          "id": "home.jumper.1",
+          "who": "direction",
+          "text": "Lyle's green jumper, warm through, as if it has just come off the radiator. It smells of his hall, and of the room behind the window, which is impossible."
+        }
+      ]
+    },
+    "door.chapel-oak-pair": {
+      "id": "door.chapel-oak-pair",
+      "type": "dialogue",
+      "speaker": "THE CHAPEL DOOR",
+      "lines": [
+        {
+          "id": "door.chapel-oak-pair.1",
+          "who": "direction",
+          "text": "The chapel's own pair, dark oak, standing open. Stone jambs and an arch that were never part of the chapel, and in the tympanum a relief of seven small arched doors, cut in a row. The middle one is cut through, and there is dark behind it."
+        },
+        {
+          "id": "door.chapel-oak-pair.2",
+          "who": "direction",
+          "text": "Strap hinges, studs, iron rings worn bright. Above the little doors, a bell, cut very small. The lanterns either side are lit, and have been kept lit."
+        }
+      ]
+    },
+    "edge.lamps": {
+      "id": "edge.lamps",
+      "type": "dialogue",
+      "speaker": "A LONG WAY OFF",
+      "lines": [
+        {
+          "id": "edge.lamps.1",
+          "who": "direction",
+          "text": "The road's lamp line, standing in the black, one out and one catching. A phone box lit among them. It is nearer than it was. It stops where it stops, as if against glass."
+        }
+      ]
+    },
+    "edge.building": {
+      "id": "edge.building",
+      "type": "dialogue",
+      "speaker": "A LONG WAY OFF",
+      "lines": [
+        {
+          "id": "edge.building.1",
+          "who": "direction",
+          "text": "The building, its whole west side, windows lit, pressed up against nothing. It is nearer than the last time you looked. It has come as close as it is going to."
+        }
+      ]
+    },
+    "service.stored-frame": {
+      "id": "service.stored-frame",
+      "type": "dialogue",
+      "speaker": "IN STORE",
+      "lines": [
+        {
+          "id": "service.stored-frame.1",
+          "who": "direction",
+          "text": "A door frame stood against the hedge, no leaf in it. A tag on the head: a room number from the building, and under it, in a different hand, a word nobody uses here."
+        }
+      ]
+    },
+    "service.stored-leaf": {
+      "id": "service.stored-leaf",
+      "type": "dialogue",
+      "speaker": "IN STORE",
+      "lines": [
+        {
+          "id": "service.stored-leaf.1",
+          "who": "direction",
+          "text": "A leaf leaning on the hedge, its hinges taken off and wrapped separately so the screws are not lost. The paint on the edge is still wet."
+        }
+      ]
+    },
+    "service.stored-wrapped": {
+      "id": "service.stored-wrapped",
+      "type": "dialogue",
+      "speaker": "IN STORE",
+      "lines": [
+        {
+          "id": "service.stored-wrapped.1",
+          "who": "direction",
+          "text": "A door wrapped in brown paper and tape, the way furniture is before a move. Written on the paper: FRAGILE. THIS WAY UP. The arrow points at the ground."
+        }
+      ]
+    },
+    "service.half-frame": {
+      "id": "service.half-frame",
+      "type": "dialogue",
+      "speaker": "BEING PUT TOGETHER",
+      "lines": [
+        {
+          "id": "service.half-frame.1",
+          "who": "direction",
+          "text": "A frame stood up in the field with nothing in it, the joints glued and clamped, drying. The clamps are warm."
+        }
+      ]
+    },
+    "service.half-trestles": {
+      "id": "service.half-trestles",
+      "type": "dialogue",
+      "speaker": "BEING PUT TOGETHER",
+      "lines": [
+        {
+          "id": "service.half-trestles.1",
+          "who": "direction",
+          "text": "A leaf lying flat on two trestles, a hinge half fitted, the pencil marks for the other two still on it. Somebody stopped in the middle of a screw."
+        }
+      ]
+    },
+    "service.workbench": {
+      "id": "service.workbench",
+      "type": "dialogue",
+      "speaker": "THE BENCH",
+      "lines": [
+        {
+          "id": "service.workbench.1",
+          "who": "direction",
+          "text": "A joiner's bench. A leaf clamped in the vice, planed along half its edge and not the rest. A tin of hinges, a plane set down on its side the way you are told never to, shavings under everything."
+        },
+        {
+          "id": "service.workbench.2",
+          "who": "direction",
+          "text": "The hurricane lamp on the end of the bench is lit and has been kept lit. There is fresh oil in it."
+        }
+      ]
+    },
+    "service.ledger": {
+      "id": "service.ledger",
+      "type": "dialogue",
+      "speaker": "THE LEDGER OF DOORS",
+      "lines": [
+        {
+          "id": "service.ledger.1",
+          "who": "direction",
+          "text": "A ledger open on a lectern, ruled by hand. Every door in this field, by what it was in the building and where it goes now."
+        }
+      ]
+    },
+    "seep.school-hall": {
+      "id": "seep.school-hall",
+      "type": "dialogue",
+      "speaker": "UNDER IT",
+      "lines": [
+        {
+          "id": "seep.school-hall.1",
+          "who": "direction",
+          "text": "Snow under the door, and with it floor polish and wet coats. Somewhere past it a chair is dragged across a floor."
+        }
+      ]
+    },
+    "seep.tape-field": {
+      "id": "seep.tape-field",
+      "type": "dialogue",
+      "speaker": "UNDER IT",
+      "lines": [
+        {
+          "id": "seep.tape-field.1",
+          "who": "direction",
+          "text": "Tape under the door, yards of it, brown and shining, combed flat by a wind on the other side. It is still moving."
+        }
+      ]
+    },
+    "seep.ash-building": {
+      "id": "seep.ash-building",
+      "type": "dialogue",
+      "speaker": "UNDER IT",
+      "lines": [
+        {
+          "id": "seep.ash-building.1",
+          "who": "direction",
+          "text": "Grey ash, fine as talc, drifted up the bottom rail. It is warm, and it smells like the building does in summer."
+        }
+      ]
+    },
+    "seep.dead-broadcast": {
+      "id": "seep.dead-broadcast",
+      "type": "dialogue",
+      "speaker": "UNDER IT",
+      "lines": [
+        {
+          "id": "seep.dead-broadcast.1",
+          "who": "direction",
+          "text": "No light under this one. A flicker instead: something on the far side going on and off at the speed of a picture."
+        }
+      ]
+    },
+    "scar.school-hall": {
+      "id": "scar.school-hall",
+      "type": "dialogue",
+      "speaker": "WHERE IT STOOD",
+      "lines": [
+        {
+          "id": "scar.school-hall.1",
+          "who": "direction",
+          "text": "Snow in the shape of the frame, and inside it a rectangle of parquet, polished, with the marks of chair legs on it."
+        }
+      ]
+    },
+    "scar.tape-field": {
+      "id": "scar.tape-field",
+      "type": "dialogue",
+      "speaker": "WHERE IT STOOD",
+      "lines": [
+        {
+          "id": "scar.tape-field.1",
+          "who": "direction",
+          "text": "Tape wound tight around where the posts were, as if the door had been pulled through a spool."
+        }
+      ]
+    },
+    "scar.ash-building": {
+      "id": "scar.ash-building",
+      "type": "dialogue",
+      "speaker": "WHERE IT STOOD",
+      "lines": [
+        {
+          "id": "scar.ash-building.1",
+          "who": "direction",
+          "text": "Ash banked against nothing in the shape of a doorway. It keeps that shape."
+        }
+      ]
+    },
+    "scar.dead-broadcast": {
+      "id": "scar.dead-broadcast",
+      "type": "dialogue",
+      "speaker": "WHERE IT STOOD",
+      "lines": [
+        {
+          "id": "scar.dead-broadcast.1",
+          "who": "direction",
+          "text": "The slab where it stood is snowing: a rectangle of static lying on the stone, going on and off."
+        }
+      ]
+    },
+    "edge.tower": {
+      "id": "edge.tower",
+      "type": "dialogue",
+      "speaker": "A LONG WAY OFF",
+      "lines": [
+        {
+          "id": "edge.tower.1",
+          "who": "direction",
+          "text": "St Brendan's, whole, standing in the black with nothing under it. The belfry is lit and the louvres are open. It is nearer than it was, and it will come no nearer than that."
+        }
+      ]
+    },
+    "edge.chapel-road": {
+      "id": "edge.chapel-road",
+      "type": "dialogue",
+      "speaker": "A LONG WAY OFF",
+      "lines": [
+        {
+          "id": "edge.chapel-road.1",
+          "who": "direction",
+          "text": "The other road, across the dark: its doors in a row, its lanterns lit, its hedge running beside them. Like standing on one platform and looking at the other. Nobody is walking on it."
+        }
+      ]
+    },
+    "land.school-hall": {
+      "id": "land.school-hall",
+      "type": "dialogue",
+      "speaker": "A SCHOOL HALL",
+      "lines": [
+        {
+          "id": "land.school-hall.1",
+          "who": "direction",
+          "text": "The roof is gone and the snow has come in on the chairs. They are set out in rows, facing a stage with its lights still on. Somebody put out more chairs than there were ever going to be people."
+        }
+      ]
+    },
+    "land.school-hall.stage": {
+      "id": "land.school-hall.stage",
+      "type": "dialogue",
+      "speaker": "THE STAGE",
+      "lines": [
+        {
+          "id": "land.school-hall.stage.1",
+          "who": "direction",
+          "text": "Three lamps on the bar, still warm. The snow stops just short of the boards. The light has outlasted the concert."
+        }
+      ]
+    },
+    "land.school-hall.piano": {
+      "id": "land.school-hall.piano",
+      "type": "dialogue",
+      "speaker": "THE PIANO",
+      "lines": [
+        {
+          "id": "land.school-hall.piano.1",
+          "who": "direction",
+          "text": "An upright with the lid shut and snow lying along it. The keys are cold. It is in tune, which is the wrong thing about it."
+        }
+      ]
+    },
+    "land.school-hall.chairs": {
+      "id": "land.school-hall.chairs",
+      "type": "dialogue",
+      "speaker": "THE CHAIRS",
+      "lines": [
+        {
+          "id": "land.school-hall.chairs.1",
+          "who": "direction",
+          "text": "Stacking chairs, the kind with the steel legs that slide. Snow in the seats of the back rows, none in the front three: somebody was sitting in them, recently enough."
+        }
+      ]
+    },
+    "land.school-hall.boy": {
+      "id": "land.school-hall.boy",
+      "type": "dialogue",
+      "speaker": "A BOY",
+      "lines": [
+        {
+          "id": "land.school-hall.boy.1",
+          "who": "direction",
+          "text": "A boy at the front, nine or ten, waiting with his hands in his lap. He does not turn round. He is waiting to be given something."
+        }
+      ]
+    },
+    "land.school-hall.door": {
+      "id": "land.school-hall.door",
+      "type": "dialogue",
+      "speaker": "THE SERVICE DOOR",
+      "lines": [
+        {
+          "id": "land.school-hall.door.1",
+          "who": "direction",
+          "text": "It stands open at the side of the stage. A brown strand runs through the opening, close enough to the floor to catch the torch."
+        }
+      ]
+    },
+    "land.school-hall.tape": {
+      "id": "land.school-hall.tape",
+      "type": "dialogue",
+      "speaker": "THE LOOSE END",
+      "lines": [
+        {
+          "id": "land.school-hall.tape.1",
+          "who": "direction",
+          "text": "Magnetic tape, caught under the boy’s chair. It crosses the aisle and passes under the open service door. There is more of it outside than there could have been on one reel."
+        }
+      ]
+    },
+    "land.connector.tape": {
+      "id": "land.connector.tape",
+      "type": "dialogue",
+      "speaker": "THE LOOSE END",
+      "lines": [
+        {
+          "id": "land.connector.tape.1",
+          "who": "direction",
+          "text": "The strand follows the worn centre of the service walk. Beyond its rail, whole reels have gone into the dark. This one still goes somewhere."
+        }
+      ]
+    },
+    "land.connector.window": {
+      "id": "land.connector.window",
+      "type": "dialogue",
+      "speaker": "THE FAILED SERVICE WINDOW",
+      "lines": [
+        {
+          "id": "land.connector.window.1",
+          "who": "direction",
+          "text": "The glass is blind with television snow. Behind it, the mast is intact. Its beacon answers in the same slow intervals as a recorder’s level lamp."
+        }
+      ]
+    },
+    "land.connector.mast": {
+      "id": "land.connector.mast",
+      "type": "dialogue",
+      "speaker": "THE MAST",
+      "lines": [
+        {
+          "id": "land.connector.mast.1",
+          "who": "direction",
+          "text": "A small transmitter on the service side, with its guy wires drawn tight. The broadcast has failed. Something below it is still being recorded."
+        }
+      ]
+    },
+    "land.connector.door": {
+      "id": "land.connector.door",
+      "type": "dialogue",
+      "speaker": "THE ASH ROOM",
+      "lines": [
+        {
+          "id": "land.connector.door.1",
+          "who": "direction",
+          "text": "Open. The lead runs under a workbench in the room beyond. Someone has brushed the ash from just enough of the floor to keep working."
+        }
+      ]
+    },
+    "land.ash-room.recordist": {
+      "id": "land.ash-room.recordist",
+      "type": "dialogue",
+      "speaker": "THE WORKING RECORDIST",
+      "lines": [
+        {
+          "id": "land.ash-room.recordist.1",
+          "who": "direction",
+          "text": "Headphones on. A DA1000 on the desk, with the same worn corner and two scratches in the case. The contractor keeps working. Your own monitor picks up the machine beside them."
+        }
+      ]
+    },
+    "land.ash-room.ash": {
+      "id": "land.ash-room.ash",
+      "type": "dialogue",
+      "speaker": "THE ASH",
+      "lines": [
+        {
+          "id": "land.ash-room.ash.1",
+          "who": "direction",
+          "text": "Fine cinder in the window channels. Above the sills, the building is still recognisable. Below them, it is being buried. The desk has been wiped clean."
+        }
+      ]
+    },
+    "land.return-hall.handover": {
+      "id": "land.return-hall.handover",
+      "type": "dialogue",
+      "speaker": "THE HANDOVER",
+      "lines": [
+        {
+          "id": "land.return-hall.handover.1",
+          "who": "direction",
+          "text": "The contractor has reached the boy first. One hand under the recorder, one holding the strap clear. The boy takes its weight before either lets go."
+        }
+      ]
+    },
+    "land.return-hall.door": {
+      "id": "land.return-hall.door",
+      "type": "dialogue",
+      "speaker": "THE WAY BACK",
+      "lines": [
+        {
+          "id": "land.return-hall.door.1",
+          "who": "direction",
+          "text": "The same station frame, still lit. The chairs are losing their edges, but the boards leading to it remain under your feet. You can leave when you are ready."
+        }
+      ]
+    },
+    "land.school-hall.entrance": {
+      "id": "land.school-hall.entrance",
+      "type": "dialogue",
+      "speaker": "THE ENTRANCE",
+      "lines": [
+        {
+          "id": "land.school-hall.entrance.1",
+          "who": "direction",
+          "text": "The same worn patch beside the latch. Snow lies on the sill on both sides. The draught comes from inside the hall."
+        }
+      ]
+    },
+    "land.tape-field.reel": {
+      "id": "land.tape-field.reel",
+      "type": "dialogue",
+      "speaker": "THE REEL",
+      "lines": [
+        {
+          "id": "land.tape-field.reel.1",
+          "who": "direction",
+          "text": "The flange rises well above your head. Between its spokes, brown tape is wound in tight, dark layers. A loose length has slipped from the bottom and settled into the ground."
+        }
+      ]
+    },
+    "land.tape-field.strands": {
+      "id": "land.tape-field.strands",
+      "type": "dialogue",
+      "speaker": "THE TAPE",
+      "lines": [
+        {
+          "id": "land.tape-field.strands.1",
+          "who": "direction",
+          "text": "The high strands draw slowly against their supports. At your feet the same material lies slack, folded over itself. There is room to pass underneath."
+        }
+      ]
+    },
+    "land.tape-field.door": {
+      "id": "land.tape-field.door",
+      "type": "dialogue",
+      "speaker": "THE SERVICE DOOR",
+      "lines": [
+        {
+          "id": "land.tape-field.door.1",
+          "who": "direction",
+          "text": "An ordinary handle at an ordinary height. The frame stands on a worn concrete sill. The brown lead goes through the opening."
+        }
+      ]
+    },
+    "land.dead-broadcast.mast": {
+      "id": "land.dead-broadcast.mast",
+      "type": "dialogue",
+      "speaker": "THE MAST",
+      "lines": [
+        {
+          "id": "land.dead-broadcast.mast.1",
+          "who": "direction",
+          "text": "The guy wires still hold. A small light remains on above the empty fittings. Below it, a relay closes and opens again."
+        }
+      ]
+    },
+    "land.dead-broadcast.shelter": {
+      "id": "land.dead-broadcast.shelter",
+      "type": "dialogue",
+      "speaker": "THE EQUIPMENT SHELTER",
+      "lines": [
+        {
+          "id": "land.dead-broadcast.shelter.1",
+          "who": "direction",
+          "text": "The cabinet doors are shut. A small receiver sits behind a barred inspection opening. The concrete apron is worn where someone used to stand."
+        }
+      ]
+    },
+    "land.dead-broadcast.relay": {
+      "id": "land.dead-broadcast.relay",
+      "type": "dialogue",
+      "speaker": "THE RELAY",
+      "lines": [
+        {
+          "id": "land.dead-broadcast.relay.1",
+          "who": "direction",
+          "text": "The fittings are still in place. Behind the panel, a contact closes and opens again. Above the shelter, the small mast light holds."
+        }
+      ]
+    },
+    "land.dead-broadcast.door": {
+      "id": "land.dead-broadcast.door",
+      "type": "dialogue",
+      "speaker": "THE SERVICE DOOR",
+      "lines": [
+        {
+          "id": "land.dead-broadcast.door.1",
+          "who": "direction",
+          "text": "The sill is clear of grit. A cable passes beneath the hinge and continues into the next room."
+        }
+      ]
+    },
+    "land.ash-room.ellery": {
+      "id": "land.ash-room.ellery",
+      "type": "dialogue",
+      "speaker": "ELLERY",
+      "lines": [
+        {
+          "id": "land.ash-room.ellery.1",
+          "who": "direction",
+          "text": "The same proportions: high windows, a low service door, pipes turning just below the ceiling. Ash has reached the sills. Someone has kept a narrow part of the floor clear."
+        }
+      ]
+    },
+    "land.school-hall.roof": {
+      "id": "land.school-hall.roof",
+      "type": "dialogue",
+      "speaker": "THE ROOF",
+      "lines": [
+        {
+          "id": "land.school-hall.roof.1",
+          "who": "direction",
+          "text": "The roof opens in long strips between the ribs. Snow has gathered on the broken ends. The lamps below it are still wired in."
+        }
+      ]
+    },
+    "land.tape-field.case": {
+      "id": "land.tape-field.case",
+      "type": "dialogue",
+      "speaker": "THE CASE",
+      "lines": [
+        {
+          "id": "land.tape-field.case.1",
+          "who": "direction",
+          "text": "A hard equipment case, set clear of the wet ground. The lid is shut. A thin sound comes through the seam beside the hinges."
+        }
+      ]
+    },
+    "land.dead-broadcast.surface": {
+      "id": "land.dead-broadcast.surface",
+      "type": "dialogue",
+      "speaker": "THE INSPECTION PANE",
+      "lines": [
+        {
+          "id": "land.dead-broadcast.surface.1",
+          "who": "direction",
+          "text": "Bars across a little inspection opening. Behind them, the receiver has a dark face and a pale label along its upper edge. The grain stops at the frame."
+        }
+      ]
+    },
+    "land.ash-room.door": {
+      "id": "land.ash-room.door",
+      "type": "dialogue",
+      "speaker": "THE SERVICE DOOR",
+      "lines": [
+        {
+          "id": "land.ash-room.door.1",
+          "who": "direction",
+          "text": "The lead passes beneath the open leaf. Fine ash has collected against the jambs; the middle of the sill has been brushed clear."
+        }
+      ]
+    }
+  }
+}

@@ -9,6 +9,8 @@
     {"id":"start.line.5","who":"guard","text":"I kept the line."},
     {"id":"start.line.6","who":"direction","text":"The demolition order is still clipped under the ledger. It does not happen in this account."},
     {"id":"start.line.7","who":"direction","text":"The guard writes WEST DOORS beside both signatures."},
-    {"id":"start.line.8","who":"direction","text":"Later, somebody adds EXIT THROUGH THE GIFT SHOP in another hand and leaves both names alone."}
+    {"id":"start.line.8","who":"direction","text":"Later, somebody adds EXIT THROUGH THE GIFT SHOP in another hand and leaves both names alone."},
+    {"id":"start.line.9","who":"you","when":"station.recordist.complete","text":"There's another recording. Listen to what comes before the notes."},
+    {"id":"start.line.10","who":"direction","when":"station.recordist.complete","text":"The guard listens to the chair scrape, the two notes and the machine being set down. He writes RECORDING RETAINED beside the two signatures."}
   ]}}
 }

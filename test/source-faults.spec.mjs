@@ -41,7 +41,7 @@ test('bad-sector overflow is a visible scored run and never leaks into the white
 
 test('PS2 object deformation is deterministic, bounded, and render-only',()=>{
   const identity=[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1];
-  const instances=Array.from({length:24},(_,index)=>({id:`source-object-${index}`,matrix:new Float32Array(identity)}));
+  const instances=Array.from({length:256},(_,index)=>({id:`source-object-${index}`,matrix:new Float32Array(identity)}));
   const frame=sourceFaultFrame({sourcePhase:true,transitionElapsedMs:0,timeMs:340});
   const first=applySourcePs2GeometryFault(instances,frame);
   const second=applySourcePs2GeometryFault(instances,frame);
@@ -67,5 +67,13 @@ test('PS2 shader vocabulary stays in Source while window choreography uses NVMe 
 
 test('the runtime explicitly arms overflow only after the Source proper threshold',()=>{
   const main=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
-  assert.match(main,/sourceFaultFrame\(\{[\s\S]{0,240}proper:!!sourceVoid\?\.proper/);
+  const call=main.match(/const sourceFault=(sourceFaultFrame\(\{[\s\S]*?\}\));/)?.[1];
+  assert.ok(call,'main must submit an explicit Source fault frame');
+  const frameFor=new Function('sourceFaultFrame','sourceVoid','firstNothingness',
+    'sourceFaultTransitionStartedAt','performance','reducedMotion','flashMode',`return ${call};`);
+  const faultAt=(proper,firstNothingness)=>frameFor(sourceFaultFrame,{proper},firstNothingness,
+    0,{now:()=>9000},false,()=> 'full');
+  assert.equal(faultAt(false,false).active,false,'Scene Dock cannot arm Source faults');
+  assert.equal(faultAt(true,false).active,true,'later Source proper retains its corruption');
+  assert.equal(faultAt(true,true).active,false,'the first nothingness remains clear even with a stale proper flag');
 });

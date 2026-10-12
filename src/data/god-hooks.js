@@ -10,7 +10,7 @@ const cathedralHook = (hook) => {
   else if(hook.component===CHURCH_LEVELS.loft.id)at={x:150+hook.x-10,y:240+hook.y-57};
   else at={x:180+hook.x-10,y:240+hook.y-71};
   const facing=hook.id==='cathedral-exterior'||hook.id==='cathedral-west-nave'?2
-    :hook.id==='cathedral-choir'?0:hook.id==='cathedral-side-chapel'?3:1;
+    :hook.id==='cathedral-choir'?0:['cathedral-side-chapel','cathedral-belfry'].includes(hook.id)?3:1;
   return Object.freeze({at,facing,zone,group:hook.group,floor:hook.floor,component:hook.component});
 };
 
@@ -24,6 +24,10 @@ export const GOD_LOCATION_HOOKS = Object.freeze({
   'studio-b3': Object.freeze({ at:{x:15,y:12}, facing:0, zone:ZONE.studio, group:'basement', floor:-4,component:'basement' }),
   natatorium: Object.freeze({ at:{x:85,y:30}, facing:2, zone:ZONE.natatorium, group:'ground', floor:0,component:'natatorium' }),
   'concert-hall': Object.freeze({ at:{x:102,y:15}, facing:1, zone:ZONE.hall, group:'hall', floor:-2.06,component:'hall' }),
+  // Same physical X/Z, separate authored balcony addresses and height bands.
+  'hall-lower-balcony': Object.freeze({at:{x:2,y:68},facing:1,zone:ZONE.hall,group:'hall',floor:3.56,component:'hall',layer:'hall_lower'}),
+  'hall-upper-balcony': Object.freeze({at:{x:2,y:110},facing:1,zone:ZONE.hall,group:'hall',floor:7.06,component:'hall',layer:'hall_upper'}),
+  'hall-stage': Object.freeze({at:{x:105,y:8},facing:2,zone:ZONE.hall,group:'hall',floor:-1.5,component:'hall',layer:'hall_stage'}),
   'practice-wing': Object.freeze({ at:{x:60,y:65}, facing:2, zone:ZONE.practice, group:'upper', floor:4.8,component:'practice' }),
   'academic-gallery': Object.freeze({ at:{x:23,y:246}, facing:2, zone:ZONE.academic, group:'academic', floor:10,component:'academic' }),
   chapel: Object.freeze({ at:{x:92,y:74}, facing:0, zone:ZONE.chapel, group:'upper', floor:4.8,component:'chapel' }),

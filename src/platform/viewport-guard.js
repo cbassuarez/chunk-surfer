@@ -11,6 +11,22 @@ import { drawElectronicText, measureElectronicText } from '../render/electronic-
 
 let styleInstalled = false;
 let lastLayout = null;
+let sourceCommandMinimum = null;
+
+// Only the leased Source command window uses its own physical viewport. The
+// ordinary game returns to its designed frame as soon as that lease ends.
+export function setSourceCommandViewport(minimum = null, options = {}) {
+  sourceCommandMinimum = minimum ? {
+    width: Math.max(960, Number(minimum.width) || 960),
+    height: Math.max(400, Number(minimum.height) || 480),
+  } : null;
+  const win = options.window || globalThis.window;
+  const doc = options.document || globalThis.document;
+  doc?.body?.classList?.toggle('source-command-window', !!sourceCommandMinimum);
+  applyCurrentStageLayout({window:win,document:doc});
+  // UI canvas dimensions are measured from the host after its layout changes.
+  if (win?.dispatchEvent && win.Event) win.dispatchEvent(new win.Event('resize'));
+}
 
 function installViewportStyle(doc) {
   if (styleInstalled || !doc?.head) return;
@@ -30,6 +46,7 @@ body.cursor-captured,body.cursor-captured #wrap,body.cursor-captured #map{cursor
 body.cursor-ui,body.cursor-ui #wrap,body.cursor-ui #map,body.pause-open,body.title-screen,body.god-menu-open{cursor:default;}
 body.desktop-game-mode #wrap{box-shadow:0 0 0 1px rgba(112,255,230,.08),0 0 48px rgba(112,255,230,.08);}
 body.viewport-too-small #wrap{filter:brightness(.74) saturate(.88);}
+body.source-command-window #wrap{left:0!important;top:0!important;width:100vw!important;height:100vh!important;transform:none!important;}
 .viewport-fault{z-index:99999;}
 .viewport-fault[hidden]{display:none;}
 .viewport-fault__panel{width:min(680px,calc(100vw - 20px));max-height:calc(100vh - 20px);min-height:min(330px,calc(100vh - 20px));}
@@ -147,6 +164,7 @@ export function applyCurrentStageLayout(options = {}) {
 
   const layout = computeStageLayout(win.innerWidth, win.innerHeight, {
     allowUpscale: options.allowUpscale !== false,
+    ...(sourceCommandMinimum ? {design:{width:win.innerWidth,height:win.innerHeight}} : {}),
   });
   applyStageLayout(layout, doc.documentElement);
   doc.body?.classList?.toggle('stage-scaled-down', layout.scaledDown);
@@ -172,7 +190,7 @@ export function installViewportGuard(options = {}) {
     frame = 0;
     applyVfdDomTheme(overlay, 'amber');
     applyCurrentStageLayout({ window: win, document: doc, allowUpscale: options.allowUpscale !== false });
-    const tooSmall = isViewportTooSmall(win.innerWidth, win.innerHeight, min);
+    const tooSmall = isViewportTooSmall(win.innerWidth, win.innerHeight, sourceCommandMinimum || min);
     doc.body.classList.toggle('viewport-too-small', tooSmall);
     // Desktop windows are clamped/adaptively scaled. Keep the fault overlay as
     // a web-only escape hatch for genuinely tiny browser viewports.

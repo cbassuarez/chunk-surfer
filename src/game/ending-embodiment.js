@@ -30,6 +30,8 @@ export const ENDING_EMBODIMENT_EFFECTS = Object.freeze([
   'sync-posture',
   'take-look',
   'take-movement',
+  'sync-voice',
+  'sync-step',
   'final-wide',
 ]);
 
@@ -46,7 +48,9 @@ const SYNC_STAGE = Object.freeze({
   'sync-posture': 3,
   'take-look': 4,
   'take-movement': 5,
-  'final-wide': 6,
+  'sync-voice': 6,
+  'sync-step': 7,
+  'final-wide': 8,
 });
 
 export function createEndingEmbodimentState(endingId = '') {

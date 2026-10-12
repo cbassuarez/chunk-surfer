@@ -248,7 +248,11 @@ assert.ok(practiceDoors.every((door)=>door.open&&door.wedge),'all eight practice
 const clutterMeshes=new Set(['piano_bench','open_score','loose_pages','metronome','wastebasket','soft_bag','draped_coat','mallet_pair','cable_coil','open_instrument_case']);
 const practiceClutter=practiceRoomProps.filter((prop)=>clutterMeshes.has(prop.mesh));
 assert.ok(practiceClutter.length>=20,'the full lived-in prop kit materially dresses the suite');
-assert.ok(practiceClutter.every((prop)=>prop.interactive===false&&!prop.blocks),'small clutter is non-blocking and non-interactive');
+// The one exception: the six running metronomes can be stopped by hand
+// (src/game/practice-metronomes.js). Everything else small stays mute.
+const stoppableMetronomes=new Set(['practice-metronome-lesson','practice-metronome-claimed','practice-metronome-rehearsal','practice-metronome-paper','practice-metronome-emptied','practice-metronome-ensemble']);
+assert.ok(practiceClutter.filter((prop)=>!stoppableMetronomes.has(prop.id)).every((prop)=>prop.interactive===false&&!prop.blocks),'small clutter is non-blocking and non-interactive');
+assert.ok(practiceClutter.filter((prop)=>stoppableMetronomes.has(prop.id)).every((prop)=>prop.action==='practice-metronome'&&!prop.blocks),'the six running metronomes can be stopped and never block');
 for(const id of ['practice-ensemble-marimba','practice-ensemble-cello','practice-ensemble-violin','practice-ensemble-mallets','practice-case-1']){
   assert.ok(byId[id],`${id} is present in the interrupted ensemble rehearsal`);
 }

@@ -224,8 +224,8 @@ export function createFireballExchange({
     return snapshot();
   }
 
-  function click({ x = -1, y = -1, aspect = 1 } = {}) {
-    const hit = hitTestFireballCast(snapshot().active, { x, y, aspect });
+  function click({ x = -1, y = -1, aspect = 1, radius = .085 } = {}) {
+    const hit = hitTestFireballCast(snapshot().active, { x, y, aspect, radius });
     if (!hit) return { hit:false, returned:false, charge, threshold };
     return register(active.rays[hit.index]);
   }
@@ -308,6 +308,9 @@ export function createFireballExchange({
         if (ray.wait > 0) continue;
         ray.state = 'inflight';
         onLaunch({ castId:active.plan.castId, rayId:ray.id, index:ray.index, volley:!!active.plan.volley });
+        // A callback may end the exchange outright (a blow that breaks the
+        // recordist hands the fight to the Surfer's throw, which cancels this).
+        if (!active) return snapshot();
       }
       if (ray.state === 'inflight') {
         ray.elapsed += seconds;
@@ -334,6 +337,7 @@ export function createFireballExchange({
         finish(ray, 'impact', landing || null);
         last = { type:'missed', castId:active.plan.castId, rayId:ray.id, damage:landing };
         if (landing > 0) onImpact({ castId:active.plan.castId, rayId:ray.id, damage:landing, casterId:active.plan.casterId || null });
+        if (!active) return snapshot();
         continue;
       }
       if(ray.state==='rebound'){
@@ -352,9 +356,11 @@ export function createFireballExchange({
       if (ray.state === 'reversed') {
         onReturn({ castId:active.plan.castId, rayId:ray.id, damage:rangedDamage, casterId:active.plan.casterId || null });
         last = { type:'returned', castId:active.plan.castId, rayId:ray.id, damage:rangedDamage };
+        if (!active) return snapshot();
       }
       ray.state = 'gone';
     }
+    if (!active) return snapshot();
     if (active.rays.every((ray) => ray.state === 'gone')) { clearActive(); return snapshot(); }
     sync();
     return snapshot();

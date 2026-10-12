@@ -64,16 +64,35 @@ const SPEAKER_LABEL = Object.freeze({
   recordist: 'RECORDIST',
   surfer: 'SIGNAL',
   unknown: 'UNKNOWN',
+  // The recordist's own faculties, at the HUSH (source-contact.js).
+  meter: 'METER',
+  tape: 'TAPE',
+  hands: 'HANDS',
+  ears: 'EARS',
+  // The phone box (source-space.payphone): the network, the operator, and Lyle's greeting.
+  line: 'LINE',
+  operator: 'OPERATOR',
+  lyle: 'LYLE',
+  // The conservatoire's teaching voice, through a practice-room wall.
+  institution: 'FACULTY',
 });
 
 const SPEAKER_ACCENT = Object.freeze({
   guard: 'ui-amber',
   sarah: 'ui-blue',
+  line: 'ui-counter',
+  operator: 'ui-blue',
+  lyle: 'ui-green',
   client: 'ui-blue',
   radio: 'ui-amber',
   recordist: 'ui-green',
   surfer: 'ui-danger',
   unknown: 'ui-counter',
+  meter: 'ui-green',
+  tape: 'ui-marker',
+  hands: 'ui-warning',
+  ears: 'ui-counter',
+  institution: 'ui-amber',
 });
 
 function keyOf(who) {
@@ -760,8 +779,11 @@ export function layoutTranscriptChoices(view, width, { lane = null } = {}) {
     const prefix = `${selected ? '▸' : ' '} ${idx + 1}${signal} `;
     const continuation = ' '.repeat(prefix.length);
 
+    // A check names the voice that makes it, the way it is printed on the
+    // choice before you commit to it.
+    const tag = choice.tag ? `[${String(choice.tag).toUpperCase()}] ` : '';
     const parts = wrappedChoice(
-      `${String(choice.text || '')}`,
+      `${tag}${String(choice.text || '')}`,
         Math.max(8, choiceLane.w - prefix.length),
       2,
     );

@@ -28,6 +28,7 @@ export default defineConfig({
         main: resolve(import.meta.dirname, 'index.html'),
         fireballCast: resolve(import.meta.dirname, 'fireball-cast.html'),
         windowMedia: resolve(import.meta.dirname, 'window-media.html'),
+        sourceDesktop: resolve(import.meta.dirname, 'source-desktop-surface.html'),
       },
     },
   }

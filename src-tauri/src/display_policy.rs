@@ -159,7 +159,7 @@ fn effective_default_size(window: &WebviewWindow) -> (f64, f64) {
     }
 }
 
-fn effective_min_size(window: &WebviewWindow) -> (f64, f64) {
+pub(crate) fn effective_min_size(window: &WebviewWindow) -> (f64, f64) {
     if let Some((safe_w, safe_h)) = monitor_safe_logical_size(window) {
         (CONFIG_MIN_WIDTH.min(safe_w), CONFIG_MIN_HEIGHT.min(safe_h))
     } else {

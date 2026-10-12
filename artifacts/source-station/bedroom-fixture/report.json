@@ -1,0 +1,286 @@
+{
+  "passed": true,
+  "failure": null,
+  "errors": [],
+  "scope": "Chromium/Metal actual production-look visual fixture. Five-relic eligibility, doorway entry, and travel to z69.20/rightward .40m are injected. Tab/E STAY uses real keyboard input. No earned-errand, pacing, native/controller or perceptual-audio acceptance claim.",
+  "snapshots": {
+    "build": {
+      "url": "http://127.0.0.1:5298/?nodisplaynotice=1&skipwarn=1&nomic=1&sam=0",
+      "scripts": [
+        "http://127.0.0.1:5298/assets/main-BGgTL5TK.js"
+      ]
+    },
+    "front": {
+      "frame": {
+        "version": 1,
+        "world": "whiteout",
+        "variant": 5,
+        "seed": 0.12104450655169785,
+        "entryDoorId": "source-chapel-door-7",
+        "home": {
+          "eligible": true,
+          "nearWindow": true,
+          "reached": true,
+          "fold": 1,
+          "recognized": true,
+          "departed": false,
+          "settled": false,
+          "attention": 0.75,
+          "awayArmed": false,
+          "outwardDistance": 0,
+          "interactionDown": false
+        },
+        "returnPose": {
+          "x": -4.367981850593306,
+          "y": -4337.423106308808,
+          "facing": 0,
+          "yaw": -0.12802500708305276,
+          "pitch": 0
+        },
+        "pose": {
+          "x": 0,
+          "z": 69.2,
+          "yaw": -0.22131444234779205,
+          "pitch": 0,
+          "floorY": 0
+        },
+        "stage": "inside",
+        "steps": 100,
+        "strideM": 0.20000000000205398,
+        "startedAt": 0.20960000000149012,
+        "returnStartedAt": null,
+        "returnDuration": 1.15,
+        "returnReason": null,
+        "windowReached": true,
+        "homeState": {
+          "recognized": true,
+          "departed": false,
+          "settled": false,
+          "attention": 0.75,
+          "awayArmed": false,
+          "outwardDistance": 0,
+          "interactionDown": false
+        },
+        "time": 0.9923999999985099,
+        "stepBudget": 36,
+        "strideLength": 0.68,
+        "eyeHeight": 1.62,
+        "window": {
+          "x": -0.18,
+          "z": 70,
+          "bottom": 0.78,
+          "top": 2.2,
+          "halfWidth": 0.89
+        },
+        "decoherence": 0,
+        "atWindow": true
+      },
+      "return": null,
+      "action": "LOOK"
+    },
+    "right": {
+      "frame": {
+        "version": 1,
+        "world": "whiteout",
+        "variant": 5,
+        "seed": 0.12104450655169785,
+        "entryDoorId": "source-chapel-door-7",
+        "home": {
+          "eligible": true,
+          "nearWindow": true,
+          "reached": true,
+          "fold": 1,
+          "recognized": true,
+          "departed": false,
+          "settled": false,
+          "attention": 0.75,
+          "awayArmed": false,
+          "outwardDistance": 0,
+          "interactionDown": false
+        },
+        "returnPose": {
+          "x": -4.367981850593306,
+          "y": -4337.423106308808,
+          "facing": 0,
+          "yaw": -0.12802500708305276,
+          "pitch": 0
+        },
+        "pose": {
+          "x": 0.4,
+          "z": 69.2,
+          "yaw": -0.6273081922757643,
+          "pitch": 0,
+          "floorY": 0
+        },
+        "stage": "inside",
+        "steps": 100,
+        "strideM": 0.600000000002054,
+        "startedAt": 0.20960000000149012,
+        "returnStartedAt": null,
+        "returnDuration": 1.15,
+        "returnReason": null,
+        "windowReached": true,
+        "homeState": {
+          "recognized": true,
+          "departed": false,
+          "settled": false,
+          "attention": 0.75,
+          "awayArmed": false,
+          "outwardDistance": 0,
+          "interactionDown": false
+        },
+        "time": 1.468200000002981,
+        "stepBudget": 36,
+        "strideLength": 0.68,
+        "eyeHeight": 1.62,
+        "window": {
+          "x": -0.18,
+          "z": 70,
+          "bottom": 0.78,
+          "top": 2.2,
+          "halfWidth": 0.89
+        },
+        "decoherence": 0,
+        "atWindow": true
+      },
+      "return": null,
+      "action": "LOOK"
+    },
+    "stay": {
+      "frame": {
+        "version": 1,
+        "world": "whiteout",
+        "variant": 5,
+        "seed": 0.12104450655169785,
+        "entryDoorId": "source-chapel-door-7",
+        "home": {
+          "eligible": true,
+          "nearWindow": true,
+          "reached": true,
+          "fold": 1,
+          "recognized": true,
+          "departed": false,
+          "settled": true,
+          "attention": 1,
+          "awayArmed": false,
+          "outwardDistance": 0,
+          "interactionDown": false
+        },
+        "returnPose": {
+          "x": -4.367981850593306,
+          "y": -4337.423106308808,
+          "facing": 0,
+          "yaw": -0.12802500708305276,
+          "pitch": 0
+        },
+        "pose": {
+          "x": 0.4,
+          "z": 69.2,
+          "yaw": -0.6273081922757643,
+          "pitch": 0,
+          "floorY": 0
+        },
+        "stage": "inside",
+        "steps": 100,
+        "strideM": 0.600000000002054,
+        "startedAt": 0.20960000000149012,
+        "returnStartedAt": null,
+        "returnDuration": 1.15,
+        "returnReason": null,
+        "windowReached": true,
+        "homeState": {
+          "recognized": true,
+          "departed": false,
+          "settled": true,
+          "attention": 1,
+          "awayArmed": false,
+          "outwardDistance": 0,
+          "interactionDown": false
+        },
+        "time": 2.0122000000029807,
+        "stepBudget": 36,
+        "strideLength": 0.68,
+        "eyeHeight": 1.62,
+        "window": {
+          "x": -0.18,
+          "z": 70,
+          "bottom": 0.78,
+          "top": 2.2,
+          "halfWidth": 0.89
+        },
+        "decoherence": 0,
+        "atWindow": true
+      },
+      "return": null,
+      "action": "STAY"
+    },
+    "snow": {
+      "frame": {
+        "version": 1,
+        "world": "whiteout",
+        "variant": 5,
+        "seed": 0.12104450655169785,
+        "entryDoorId": "source-chapel-door-7",
+        "home": {
+          "eligible": true,
+          "nearWindow": true,
+          "reached": true,
+          "fold": 1,
+          "recognized": true,
+          "departed": false,
+          "settled": false,
+          "attention": 0,
+          "awayArmed": true,
+          "outwardDistance": 0,
+          "interactionDown": false
+        },
+        "returnPose": {
+          "x": -4.367981850593306,
+          "y": -4337.423106308808,
+          "facing": 0,
+          "yaw": -0.12802500708305276,
+          "pitch": 0
+        },
+        "pose": {
+          "x": 0.4,
+          "z": 69.2,
+          "yaw": 2.514284461314029,
+          "pitch": 0,
+          "floorY": 0
+        },
+        "stage": "inside",
+        "steps": 100,
+        "strideM": 0.600000000002054,
+        "startedAt": 0.20960000000149012,
+        "returnStartedAt": null,
+        "returnDuration": 1.15,
+        "returnReason": null,
+        "windowReached": true,
+        "homeState": {
+          "recognized": true,
+          "departed": false,
+          "settled": false,
+          "attention": 0,
+          "awayArmed": true,
+          "outwardDistance": 0,
+          "interactionDown": false
+        },
+        "time": 2.9623000000044737,
+        "stepBudget": 36,
+        "strideLength": 0.68,
+        "eyeHeight": 1.62,
+        "window": {
+          "x": -0.18,
+          "z": 70,
+          "bottom": 0.78,
+          "top": 2.2,
+          "halfWidth": 0.89
+        },
+        "decoherence": 0,
+        "atWindow": true
+      },
+      "return": null,
+      "action": "STAY"
+    }
+  }
+}

@@ -221,6 +221,63 @@ test('every event-driven ending cue names a stable authored cutscene beat or the
   }
 });
 
+test('Tower media leaves the central physical scene clear from entry through every placement',()=>{
+  for(const id of ['tower-won','tower-lost'])for(const reducedMotion of [false,true]){
+    const plan=endingCompositionPlan(id,{epochMs:1000,reducedMotion});
+    assert.equal(plan.surfaces.length,2);
+    for(const surface of plan.surfaces){
+      const placements=[surface.entry,surface.initial,surface.target,
+        ...compilePaneScore(plan,surface.id).cues.filter((cue)=>cue.action.type==='geometry').map((cue)=>cue.action.geometry)];
+      assert.equal(surface.draggable,false);
+      for(const [width,height]of [[640,480],[828,518],[1440,900]])for(const placement of placements){
+        const x=(placement.anchorX??placement.x)*width+(placement.offsetX||0);
+        const y=(placement.anchorY??placement.y)*height+(placement.offsetY||0);
+        const left=x-surface.width/2,right=x+surface.width/2,bottom=y+surface.height/2;
+        assert.ok(right<=width*.22||left>=width*.78,`${id} covers the physical hero area at ${width}×${height}`);
+        assert.ok(bottom<height*.35,`${id} covers the body's lower silhouette or dialogue`);
+      }
+    }
+  }
+});
+
+test('all eight real Tower strikes reach pane scores and retire the media before the final wide image',()=>{
+  const beats=endingManifest('tower-lost').cutscene.beats;
+  assert.equal(beats.length,8);
+  for(const reducedMotion of [false,true]){
+    const plan=endingCompositionPlan('tower-lost',{epochMs:1000,reducedMotion});
+    assert.deepEqual(plan.score.cues.filter((cue)=>cue.event?.startsWith('ending:beat:')).map((cue)=>cue.event),
+      beats.map((beat)=>`ending:beat:${beat.id}`));
+    const scores=plan.surfaces.map((surface)=>compilePaneScore(plan,surface.id));
+    const states=(count)=>scores.map((score)=>paneScoreStateAt(score,{
+      nowMs:1000,events:beats.slice(0,count).map((beat)=>`ending:beat:${beat.id}`),
+    }));
+    assert.ok(states(5).every((state)=>state.visible&&!state.frozen));
+    assert.ok(states(6).every((state)=>state.visible&&state.frozen&&state.shader?.intensity===0));
+    assert.equal(states(7).filter((state)=>state.visible).length,1);
+    assert.ok(states(8).every((state)=>!state.visible&&state.frozen));
+    // Even an immediate skip to the final hold clears every pane independently
+    // of whether the asynchronous desktop setup saw the preceding strikes.
+    for(const score of scores){
+      const held=paneScoreStateAt(score,{nowMs:1000,events:['ending:final-hold']});
+      assert.equal(held.visible,false);assert.equal(held.frozen,true);assert.equal(held.shader.intensity,0);
+    }
+  }
+});
+
+test('Tower victory quiets at the threshold and clears the windows when the real west doors open',()=>{
+  for(const reducedMotion of [false,true]){
+    const plan=endingCompositionPlan('tower-won',{epochMs:1000,reducedMotion});
+    for(const surface of plan.surfaces){
+      const score=compilePaneScore(plan,surface.id);
+      const threshold=paneScoreStateAt(score,{nowMs:1000,events:['ending:beat:west-threshold']});
+      assert.equal(threshold.visible,true);assert.equal(threshold.frozen,true);assert.equal(threshold.shader.intensity,0);
+      for(const event of ['ending:beat:open-west-doors','ending:beat:ordinary-weight','ending:final-hold']){
+        assert.equal(paneScoreStateAt(score,{nowMs:1000,events:[event]}).visible,false,event);
+      }
+    }
+  }
+});
+
 test('window faults respect flash accessibility without removing their sector grammar',()=>{
   for(const flashMode of ['full','reduced','off']){
     const plan=endingCompositionPlan('tower-lost',{flashMode});

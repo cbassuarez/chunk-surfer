@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-09-07T01:51:41.059Z",
-  "bytes": 25547384,
-  "totalTriangles": 352314,
+  "generatedAt": "2026-10-12T17:10:40.959Z",
+  "bytes": 31271620,
+  "totalTriangles": 433562,
   "meshes": {
     "school_desk": {
       "triangles": 176,
@@ -912,8 +912,8 @@
       "vertices": 1452
     },
     "st_brendan_church": {
-      "triangles": 13468,
-      "vertices": 23798
+      "triangles": 39204,
+      "vertices": 75748
     },
     "cathedral_font": {
       "triangles": 128,
@@ -968,8 +968,8 @@
       "vertices": 146
     },
     "exterior_bus_woman": {
-      "triangles": 588,
-      "vertices": 1050
+      "triangles": 2204,
+      "vertices": 1760
     },
     "exterior_mews_neighbor": {
       "triangles": 564,
@@ -1132,16 +1132,16 @@
       "vertices": 118
     },
     "yard_booth_guard_idle": {
-      "triangles": 116,
-      "vertices": 182
+      "triangles": 1916,
+      "vertices": 1567
     },
     "yard_booth_guard_ledger": {
-      "triangles": 116,
-      "vertices": 182
+      "triangles": 1916,
+      "vertices": 1567
     },
     "yard_booth_guard_handoff": {
-      "triangles": 104,
-      "vertices": 158
+      "triangles": 1916,
+      "vertices": 1567
     },
     "yard_booth_handoff": {
       "triangles": 56,
@@ -1231,6 +1231,214 @@
       "triangles": 132,
       "vertices": 264
     },
+    "city_phone_box": {
+      "triangles": 2928,
+      "vertices": 5856
+    },
+    "city_phone_box_glow": {
+      "triangles": 60,
+      "vertices": 120
+    },
+    "city_phone_box_apparatus": {
+      "triangles": 4750,
+      "vertices": 10428
+    },
+    "city_phone_box_handset": {
+      "triangles": 532,
+      "vertices": 898
+    },
+    "city_phone_box_cord": {
+      "triangles": 464,
+      "vertices": 578
+    },
+    "city_phone_box_cord_drape": {
+      "triangles": 36,
+      "vertices": 72
+    },
+    "city_phone_box_door": {
+      "triangles": 504,
+      "vertices": 906
+    },
+    "door_threshold_slab": {
+      "triangles": 24,
+      "vertices": 48
+    },
+    "door_plinth": {
+      "triangles": 24,
+      "vertices": 48
+    },
+    "door_wear_scorch": {
+      "triangles": 12,
+      "vertices": 24
+    },
+    "door_wear_frost": {
+      "triangles": 12,
+      "vertices": 24
+    },
+    "door_wear_damp": {
+      "triangles": 12,
+      "vertices": 24
+    },
+    "door_wear_scour": {
+      "triangles": 12,
+      "vertices": 24
+    },
+    "door_wear_sand": {
+      "triangles": 12,
+      "vertices": 24
+    },
+    "door_wear_polish": {
+      "triangles": 12,
+      "vertices": 24
+    },
+    "seep_ember": {
+      "triangles": 12,
+      "vertices": 24
+    },
+    "seep_water": {
+      "triangles": 12,
+      "vertices": 24
+    },
+    "seep_drift": {
+      "triangles": 48,
+      "vertices": 96
+    },
+    "seep_fleck": {
+      "triangles": 12,
+      "vertices": 24
+    },
+    "seep_sand": {
+      "triangles": 36,
+      "vertices": 72
+    },
+    "door_scar_burn": {
+      "triangles": 48,
+      "vertices": 96
+    },
+    "door_scar_tide": {
+      "triangles": 72,
+      "vertices": 144
+    },
+    "door_scar_frost": {
+      "triangles": 48,
+      "vertices": 96
+    },
+    "door_scar_sand": {
+      "triangles": 72,
+      "vertices": 144
+    },
+    "door_scar_glass": {
+      "triangles": 144,
+      "vertices": 288
+    },
+    "door_scar_hole": {
+      "triangles": 24,
+      "vertices": 48
+    },
+    "chapel_door_carving": {
+      "triangles": 360,
+      "vertices": 720
+    },
+    "chapel_door_ironwork": {
+      "triangles": 456,
+      "vertices": 828
+    },
+    "chapel_door_step": {
+      "triangles": 24,
+      "vertices": 48
+    },
+    "chapel_door_lantern": {
+      "triangles": 48,
+      "vertices": 96
+    },
+    "door_hinge_knuckle": {
+      "triangles": 32,
+      "vertices": 38
+    },
+    "station_flag": {
+      "triangles": 12,
+      "vertices": 24
+    },
+    "school_stage": {
+      "triangles": 204,
+      "vertices": 408
+    },
+    "school_light_bar": {
+      "triangles": 60,
+      "vertices": 120
+    },
+    "school_stage_lamp": {
+      "triangles": 36,
+      "vertices": 72
+    },
+    "school_snow_drift": {
+      "triangles": 60,
+      "vertices": 120
+    },
+    "school_piano": {
+      "triangles": 36,
+      "vertices": 72
+    },
+    "school_hall_wall": {
+      "triangles": 264,
+      "vertices": 528
+    },
+    "school_chair_row": {
+      "triangles": 432,
+      "vertices": 864
+    },
+    "stored_door_wrapped": {
+      "triangles": 48,
+      "vertices": 96
+    },
+    "door_tag": {
+      "triangles": 24,
+      "vertices": 48
+    },
+    "door_trestle": {
+      "triangles": 72,
+      "vertices": 144
+    },
+    "station_workbench": {
+      "triangles": 352,
+      "vertices": 670
+    },
+    "station_work_lamp": {
+      "triangles": 36,
+      "vertices": 72
+    },
+    "door_ledger_lectern": {
+      "triangles": 60,
+      "vertices": 120
+    },
+    "extra_front_door": {
+      "triangles": 108,
+      "vertices": 216
+    },
+    "extra_bedroom_door": {
+      "triangles": 120,
+      "vertices": 240
+    },
+    "extra_wardrobe_door": {
+      "triangles": 72,
+      "vertices": 144
+    },
+    "extra_waiting_room_door": {
+      "triangles": 108,
+      "vertices": 216
+    },
+    "extra_vestry_door": {
+      "triangles": 132,
+      "vertices": 264
+    },
+    "set_beam": {
+      "triangles": 12,
+      "vertices": 24
+    },
+    "wet_footprint": {
+      "triangles": 24,
+      "vertices": 48
+    },
     "park_fountain": {
       "triangles": 10556,
       "vertices": 14388
@@ -1279,9 +1487,125 @@
       "triangles": 784,
       "vertices": 1168
     },
+    "outskirts_road": {
+      "triangles": 2992,
+      "vertices": 5984
+    },
+    "outskirts_boundary_wall_6": {
+      "triangles": 420,
+      "vertices": 840
+    },
+    "outskirts_boundary_rail_6": {
+      "triangles": 936,
+      "vertices": 1872
+    },
+    "outskirts_bus_funnel_west": {
+      "triangles": 648,
+      "vertices": 1296
+    },
+    "outskirts_bus_funnel_east": {
+      "triangles": 504,
+      "vertices": 1008
+    },
+    "outskirts_hedge_run_6": {
+      "triangles": 732,
+      "vertices": 1056
+    },
+    "outskirts_bus": {
+      "triangles": 5104,
+      "vertices": 8988
+    },
+    "outskirts_bus_door": {
+      "triangles": 204,
+      "vertices": 408
+    },
+    "outskirts_shelter": {
+      "triangles": 1060,
+      "vertices": 2086
+    },
+    "outskirts_shelter_timetable": {
+      "triangles": 1008,
+      "vertices": 2016
+    },
+    "outskirts_lodge": {
+      "triangles": 592,
+      "vertices": 1154
+    },
+    "outskirts_fold_chair": {
+      "triangles": 1116,
+      "vertices": 926
+    },
+    "outskirts_fold_sideledge": {
+      "triangles": 312,
+      "vertices": 456
+    },
+    "outskirts_lodge_glazing": {
+      "triangles": 492,
+      "vertices": 984
+    },
+    "outskirts_lodge_hatch": {
+      "triangles": 204,
+      "vertices": 408
+    },
+    "outskirts_lodge_interior": {
+      "triangles": 480,
+      "vertices": 960
+    },
+    "outskirts_lodge_phone": {
+      "triangles": 1396,
+      "vertices": 1518
+    },
+    "outskirts_lodge_kettle": {
+      "triangles": 592,
+      "vertices": 730
+    },
+    "outskirts_lodge_practicals": {
+      "triangles": 24,
+      "vertices": 48
+    },
+    "outskirts_mug_steam": {
+      "triangles": 252,
+      "vertices": 504
+    },
+    "outskirts_lodge_ledger": {
+      "triangles": 728,
+      "vertices": 1456
+    },
+    "outskirts_ledger_signed": {
+      "triangles": 884,
+      "vertices": 1768
+    },
+    "outskirts_ticket": {
+      "triangles": 380,
+      "vertices": 760
+    },
+    "outskirts_van_step": {
+      "triangles": 216,
+      "vertices": 432
+    },
+    "outskirts_letter": {
+      "triangles": 86,
+      "vertices": 174
+    },
+    "outskirts_car": {
+      "triangles": 2108,
+      "vertices": 3242
+    },
+    "outskirts_bus_woman": {
+      "triangles": 2204,
+      "vertices": 1760
+    },
+    "outskirts_guard": {
+      "triangles": 1916,
+      "vertices": 1567
+    },
+    "outskirts_stranger": {
+      "triangles": 1732,
+      "vertices": 1419
+    },
     "baseboard_ground": {
-      "triangles": 6648,
-      "vertices": 13296
+      "triangles": 7824,
+      "vertices": 15648
     },
     "baseboard_hall": {
       "triangles": 2400,
@@ -1304,8 +1628,8 @@
       "vertices": 9288
     },
     "baseboard_cathedral": {
-      "triangles": 1920,
-      "vertices": 3840
+      "triangles": 6792,
+      "vertices": 13584
     }
   },
   "bounds": {
@@ -3580,12 +3904,12 @@
     "ending_body_prone": {
       "min": [
         -0.494,
-        -0.23,
+        0.04,
         -0.94
       ],
       "max": [
         0.474,
-        0.61,
+        0.34,
         0.733
       ]
     },
@@ -4035,8 +4359,8 @@
     },
     "st_brendan_church": {
       "min": [
-        -8.2,
-        0,
+        -8.32,
+        -0.14,
         -15.245
       ],
       "max": [
@@ -4203,14 +4527,14 @@
     },
     "exterior_bus_woman": {
       "min": [
-        -0.39,
+        -0.373,
         0,
-        -0.376
+        -0.31
       ],
       "max": [
-        0.53,
-        1.73,
-        0.315
+        0.49,
+        1.743,
+        0.205
       ]
     },
     "exterior_mews_neighbor": {
@@ -4695,38 +5019,38 @@
     },
     "yard_booth_guard_idle": {
       "min": [
-        -0.367,
-        0.85,
-        -0.117
+        0.032,
+        0,
+        -0.08
       ],
       "max": [
-        0.669,
-        1.883,
-        0.436
+        0.78,
+        1.923,
+        0.435
       ]
     },
     "yard_booth_guard_ledger": {
       "min": [
-        -0.524,
-        0.85,
-        -0.746
+        -0.541,
+        0,
+        -0.772
       ],
       "max": [
-        0.11,
-        1.883,
-        -0.06
+        0.207,
+        1.923,
+        -0.015
       ]
     },
     "yard_booth_guard_handoff": {
       "min": [
-        -0.624,
-        0.85,
-        -1.057
+        -0.637,
+        0,
+        -1.083
       ],
       "max": [
-        0.147,
-        1.883,
-        -0.147
+        0.249,
+        1.923,
+        -0.095
       ]
     },
     "yard_booth_handoff": {
@@ -4993,6 +5317,630 @@
         2.5
       ]
     },
+    "city_phone_box": {
+      "min": [
+        -0.51,
+        0,
+        -0.51
+      ],
+      "max": [
+        0.51,
+        2.71,
+        0.51
+      ]
+    },
+    "city_phone_box_glow": {
+      "min": [
+        -0.504,
+        2.168,
+        -0.504
+      ],
+      "max": [
+        0.504,
+        2.437,
+        0.504
+      ]
+    },
+    "city_phone_box_apparatus": {
+      "min": [
+        -0.273,
+        1.136,
+        -0.446
+      ],
+      "max": [
+        0.447,
+        1.712,
+        -0.233
+      ]
+    },
+    "city_phone_box_handset": {
+      "min": [
+        -0.042,
+        -0.174,
+        -0.052
+      ],
+      "max": [
+        0.042,
+        0.159,
+        0.027
+      ]
+    },
+    "city_phone_box_cord": {
+      "min": [
+        -0.009,
+        -0.314,
+        -0.008
+      ],
+      "max": [
+        0.009,
+        0,
+        0.008
+      ]
+    },
+    "city_phone_box_cord_drape": {
+      "min": [
+        -0.007,
+        -0.007,
+        -0.257
+      ],
+      "max": [
+        0.037,
+        0.17,
+        0.001
+      ]
+    },
+    "city_phone_box_door": {
+      "min": [
+        -0.009,
+        0.12,
+        -0.082
+      ],
+      "max": [
+        0.803,
+        2.32,
+        0.082
+      ]
+    },
+    "door_threshold_slab": {
+      "min": [
+        -0.5,
+        0,
+        -0.31
+      ],
+      "max": [
+        0.5,
+        0.103,
+        0.31
+      ]
+    },
+    "door_plinth": {
+      "min": [
+        -0.51,
+        0,
+        -0.71
+      ],
+      "max": [
+        0.51,
+        0.151,
+        0.61
+      ]
+    },
+    "door_wear_scorch": {
+      "min": [
+        -0.08,
+        0,
+        -0.006
+      ],
+      "max": [
+        0.08,
+        1,
+        0.006
+      ]
+    },
+    "door_wear_frost": {
+      "min": [
+        -0.09,
+        0,
+        -0.006
+      ],
+      "max": [
+        0.09,
+        1,
+        0.006
+      ]
+    },
+    "door_wear_damp": {
+      "min": [
+        -0.1,
+        0,
+        -0.006
+      ],
+      "max": [
+        0.1,
+        1,
+        0.006
+      ]
+    },
+    "door_wear_scour": {
+      "min": [
+        -0.07,
+        0,
+        -0.006
+      ],
+      "max": [
+        0.07,
+        1,
+        0.006
+      ]
+    },
+    "door_wear_sand": {
+      "min": [
+        -0.5,
+        0,
+        -0.05
+      ],
+      "max": [
+        0.5,
+        0.04,
+        0.05
+      ]
+    },
+    "door_wear_polish": {
+      "min": [
+        -0.025,
+        -0.07,
+        -0.015
+      ],
+      "max": [
+        0.025,
+        0.07,
+        0.015
+      ]
+    },
+    "seep_ember": {
+      "min": [
+        -0.015,
+        -0.015,
+        -0.015
+      ],
+      "max": [
+        0.015,
+        0.015,
+        0.015
+      ]
+    },
+    "seep_water": {
+      "min": [
+        -0.5,
+        0,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        0.008,
+        0.5
+      ]
+    },
+    "seep_drift": {
+      "min": [
+        -0.5,
+        0,
+        -0.2
+      ],
+      "max": [
+        0.5,
+        0.21,
+        0.45
+      ]
+    },
+    "seep_fleck": {
+      "min": [
+        -0.01,
+        -0.01,
+        -0.01
+      ],
+      "max": [
+        0.01,
+        0.01,
+        0.01
+      ]
+    },
+    "seep_sand": {
+      "min": [
+        -0.5,
+        0,
+        -0.2
+      ],
+      "max": [
+        0.5,
+        0.02,
+        0.4
+      ]
+    },
+    "door_scar_burn": {
+      "min": [
+        -0.525,
+        0.1,
+        -0.075
+      ],
+      "max": [
+        0.525,
+        0.108,
+        0.27
+      ]
+    },
+    "door_scar_tide": {
+      "min": [
+        -0.525,
+        0.1,
+        -0.075
+      ],
+      "max": [
+        0.525,
+        0.108,
+        0.33
+      ]
+    },
+    "door_scar_frost": {
+      "min": [
+        -0.54,
+        0.1,
+        -0.09
+      ],
+      "max": [
+        0.54,
+        0.14,
+        0.225
+      ]
+    },
+    "door_scar_sand": {
+      "min": [
+        -0.525,
+        0.1,
+        -0.075
+      ],
+      "max": [
+        0.525,
+        0.15,
+        0.27
+      ]
+    },
+    "door_scar_glass": {
+      "min": [
+        -0.515,
+        0.1,
+        -0.07
+      ],
+      "max": [
+        0.515,
+        0.106,
+        0.305
+      ]
+    },
+    "door_scar_hole": {
+      "min": [
+        -0.48,
+        0.1,
+        -0.06
+      ],
+      "max": [
+        0.48,
+        0.105,
+        0.325
+      ]
+    },
+    "chapel_door_carving": {
+      "min": [
+        -1.42,
+        0,
+        -0.13
+      ],
+      "max": [
+        1.42,
+        3.89,
+        0.19
+      ]
+    },
+    "chapel_door_ironwork": {
+      "min": [
+        -0.97,
+        0.47,
+        0.01
+      ],
+      "max": [
+        0.97,
+        2.03,
+        0.15
+      ]
+    },
+    "chapel_door_step": {
+      "min": [
+        -1.8,
+        0,
+        0.2
+      ],
+      "max": [
+        1.8,
+        0.16,
+        1.25
+      ]
+    },
+    "chapel_door_lantern": {
+      "min": [
+        -0.1,
+        -0.32,
+        -0.025
+      ],
+      "max": [
+        0.1,
+        0.25,
+        0.43
+      ]
+    },
+    "door_hinge_knuckle": {
+      "min": [
+        -0.022,
+        -0.05,
+        -0.022
+      ],
+      "max": [
+        0.022,
+        0.05,
+        0.022
+      ]
+    },
+    "station_flag": {
+      "min": [
+        -0.525,
+        0,
+        -0.525
+      ],
+      "max": [
+        0.525,
+        0.05,
+        0.525
+      ]
+    },
+    "school_stage": {
+      "min": [
+        -4.5,
+        0,
+        -2.5
+      ],
+      "max": [
+        4.5,
+        0.516,
+        3.05
+      ]
+    },
+    "school_light_bar": {
+      "min": [
+        -4.7,
+        -0.25,
+        -0.08
+      ],
+      "max": [
+        4.7,
+        0.03,
+        0.08
+      ]
+    },
+    "school_stage_lamp": {
+      "min": [
+        -0.13,
+        -0.13,
+        -0.15
+      ],
+      "max": [
+        0.13,
+        0.23,
+        0.18
+      ]
+    },
+    "school_snow_drift": {
+      "min": [
+        -1.6,
+        0.005,
+        -1.2
+      ],
+      "max": [
+        1.6,
+        0.215,
+        0.68
+      ]
+    },
+    "school_piano": {
+      "min": [
+        -0.77,
+        0,
+        -0.34
+      ],
+      "max": [
+        0.77,
+        1.32,
+        0.36
+      ]
+    },
+    "school_hall_wall": {
+      "min": [
+        -6.05,
+        0,
+        -0.16
+      ],
+      "max": [
+        6.05,
+        4.16,
+        0.21
+      ]
+    },
+    "school_chair_row": {
+      "min": [
+        -2.4,
+        0,
+        -0.2
+      ],
+      "max": [
+        2.4,
+        0.92,
+        0.2
+      ]
+    },
+    "stored_door_wrapped": {
+      "min": [
+        -0.49,
+        0,
+        -0.05
+      ],
+      "max": [
+        0.49,
+        2.2,
+        0.05
+      ]
+    },
+    "door_tag": {
+      "min": [
+        -0.035,
+        -0.15,
+        -0.002
+      ],
+      "max": [
+        0.035,
+        0.04,
+        0.002
+      ]
+    },
+    "door_trestle": {
+      "min": [
+        -0.45,
+        0.002,
+        -0.891
+      ],
+      "max": [
+        0.45,
+        0.77,
+        0.891
+      ]
+    },
+    "station_workbench": {
+      "min": [
+        -1.1,
+        0,
+        -0.35
+      ],
+      "max": [
+        1.1,
+        1.02,
+        0.72
+      ]
+    },
+    "station_work_lamp": {
+      "min": [
+        -0.08,
+        0,
+        -0.08
+      ],
+      "max": [
+        0.08,
+        0.36,
+        0.08
+      ]
+    },
+    "door_ledger_lectern": {
+      "min": [
+        -0.31,
+        0,
+        -0.25
+      ],
+      "max": [
+        0.31,
+        1.155,
+        0.25
+      ]
+    },
+    "extra_front_door": {
+      "min": [
+        -0.54,
+        0,
+        -0.06
+      ],
+      "max": [
+        0.54,
+        2.13,
+        0.075
+      ]
+    },
+    "extra_bedroom_door": {
+      "min": [
+        -0.46,
+        0,
+        -0.075
+      ],
+      "max": [
+        0.46,
+        2.04,
+        0.06
+      ]
+    },
+    "extra_wardrobe_door": {
+      "min": [
+        -0.325,
+        0,
+        -0.06
+      ],
+      "max": [
+        0.325,
+        1.9,
+        0.06
+      ]
+    },
+    "extra_waiting_room_door": {
+      "min": [
+        -0.575,
+        0,
+        -0.06
+      ],
+      "max": [
+        0.575,
+        2.55,
+        0.064
+      ]
+    },
+    "extra_vestry_door": {
+      "min": [
+        -0.565,
+        0,
+        -0.06
+      ],
+      "max": [
+        0.565,
+        2.14,
+        0.08
+      ]
+    },
+    "set_beam": {
+      "min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    },
+    "wet_footprint": {
+      "min": [
+        -0.05,
+        0,
+        -0.135
+      ],
+      "max": [
+        0.05,
+        0.006,
+        0.115
+      ]
+    },
     "park_fountain": {
       "min": [
         -3.854,
@@ -5137,6 +6085,354 @@
         2.26
       ]
     },
+    "outskirts_road": {
+      "min": [
+        -17.2,
+        -0.095,
+        -11.8
+      ],
+      "max": [
+        17.2,
+        0.144,
+        11.8
+      ]
+    },
+    "outskirts_boundary_wall_6": {
+      "min": [
+        -0.16,
+        0,
+        -3.16
+      ],
+      "max": [
+        0.16,
+        1.67,
+        3.16
+      ]
+    },
+    "outskirts_boundary_rail_6": {
+      "min": [
+        -0.06,
+        0,
+        -3.06
+      ],
+      "max": [
+        0.06,
+        1.345,
+        3.06
+      ]
+    },
+    "outskirts_bus_funnel_west": {
+      "min": [
+        -0.06,
+        0,
+        -3.45
+      ],
+      "max": [
+        0.06,
+        1.1,
+        3.45
+      ]
+    },
+    "outskirts_bus_funnel_east": {
+      "min": [
+        -0.06,
+        0,
+        -2.6
+      ],
+      "max": [
+        0.06,
+        1.1,
+        2.6
+      ]
+    },
+    "outskirts_hedge_run_6": {
+      "min": [
+        -0.48,
+        0,
+        -3.017
+      ],
+      "max": [
+        0.46,
+        1.827,
+        3.01
+      ]
+    },
+    "outskirts_bus": {
+      "min": [
+        -1.411,
+        0.02,
+        -4.696
+      ],
+      "max": [
+        1.411,
+        3.1,
+        4.68
+      ]
+    },
+    "outskirts_bus_door": {
+      "min": [
+        -0.1,
+        0,
+        -0.01
+      ],
+      "max": [
+        0.075,
+        2,
+        1.1
+      ]
+    },
+    "outskirts_shelter": {
+      "min": [
+        -1.44,
+        0,
+        -2.49
+      ],
+      "max": [
+        1.44,
+        2.699,
+        2.49
+      ]
+    },
+    "outskirts_shelter_timetable": {
+      "min": [
+        -0.325,
+        1.09,
+        -0.081
+      ],
+      "max": [
+        0.325,
+        2.11,
+        0.045
+      ]
+    },
+    "outskirts_lodge": {
+      "min": [
+        -1.715,
+        0,
+        -1.64
+      ],
+      "max": [
+        1.715,
+        3.64,
+        1.51
+      ]
+    },
+    "outskirts_fold_chair": {
+      "min": [
+        -0.43,
+        -0.12,
+        -0.78
+      ],
+      "max": [
+        0.43,
+        0.955,
+        0.35
+      ]
+    },
+    "outskirts_fold_sideledge": {
+      "min": [
+        -0.69,
+        0,
+        -0.2
+      ],
+      "max": [
+        -0.41,
+        0.82,
+        0.909
+      ]
+    },
+    "outskirts_lodge_glazing": {
+      "min": [
+        -1.45,
+        1.44,
+        -1.342
+      ],
+      "max": [
+        1.45,
+        2.753,
+        1.29
+      ]
+    },
+    "outskirts_lodge_hatch": {
+      "min": [
+        -1.3,
+        1.5,
+        -1.383
+      ],
+      "max": [
+        -0.16,
+        2.13,
+        -1.307
+      ]
+    },
+    "outskirts_lodge_interior": {
+      "min": [
+        -1.31,
+        0.125,
+        -1.15
+      ],
+      "max": [
+        1.25,
+        2.245,
+        1
+      ]
+    },
+    "outskirts_lodge_phone": {
+      "min": [
+        -0.236,
+        1.48,
+        -0.98
+      ],
+      "max": [
+        0.276,
+        1.753,
+        -0.674
+      ]
+    },
+    "outskirts_lodge_kettle": {
+      "min": [
+        0.215,
+        1.48,
+        -0.9
+      ],
+      "max": [
+        0.821,
+        1.806,
+        -0.62
+      ]
+    },
+    "outskirts_lodge_practicals": {
+      "min": [
+        -0.77,
+        0.854,
+        -0.07
+      ],
+      "max": [
+        0.8,
+        2.777,
+        0.495
+      ]
+    },
+    "outskirts_mug_steam": {
+      "min": [
+        -0.035,
+        -0.001,
+        -0.012
+      ],
+      "max": [
+        0.033,
+        0.239,
+        0.012
+      ]
+    },
+    "outskirts_lodge_ledger": {
+      "min": [
+        -0.92,
+        1.477,
+        -1.575
+      ],
+      "max": [
+        -0.419,
+        1.507,
+        -1.225
+      ]
+    },
+    "outskirts_ledger_signed": {
+      "min": [
+        -0.92,
+        1.477,
+        -1.575
+      ],
+      "max": [
+        -0.419,
+        1.508,
+        -1.225
+      ]
+    },
+    "outskirts_ticket": {
+      "min": [
+        -0.035,
+        0,
+        -0.071
+      ],
+      "max": [
+        0.035,
+        0.005,
+        0.071
+      ]
+    },
+    "outskirts_van_step": {
+      "min": [
+        -0.85,
+        0.205,
+        2.233
+      ],
+      "max": [
+        0.85,
+        0.529,
+        2.953
+      ]
+    },
+    "outskirts_letter": {
+      "min": [
+        -0.113,
+        0,
+        -0.078
+      ],
+      "max": [
+        0.113,
+        0.009,
+        0.077
+      ]
+    },
+    "outskirts_car": {
+      "min": [
+        -1.101,
+        0.03,
+        -2.226
+      ],
+      "max": [
+        1.101,
+        1.665,
+        2.235
+      ]
+    },
+    "outskirts_bus_woman": {
+      "min": [
+        -0.373,
+        0,
+        -0.31
+      ],
+      "max": [
+        0.49,
+        1.743,
+        0.205
+      ]
+    },
+    "outskirts_guard": {
+      "min": [
+        -0.349,
+        0,
+        -0.31
+      ],
+      "max": [
+        0.397,
+        1.823,
+        0.205
+      ]
+    },
+    "outskirts_stranger": {
+      "min": [
+        -0.387,
+        0,
+        -0.31
+      ],
+      "max": [
+        0.362,
+        1.843,
+        0.205
+      ]
+    },
     "baseboard_ground": {
       "min": [
         -80,
@@ -5211,19 +6507,19 @@
     },
     "baseboard_cathedral": {
       "min": [
-        -2,
-        -2.3,
-        0
+        -3.667,
+        -7.9,
+        -10
       ],
       "max": [
-        12,
-        5.715,
-        26
+        13,
+        0.115,
+        16
       ]
     }
   },
   "baseboards": {
-    "planHash": "7b97706ccebdac1ee524d1fcf0f368e9f9a60aed1f3f590e8d1e7b2d0418cf00",
+    "planHash": "baeb9748b2023f3bdba87db834823a3914838a44a9feb445cda4ef6632cc84e7",
     "groups": {
       "ground": {
         "mesh": "baseboard_ground",
@@ -5270,8 +6566,8 @@
       "cathedral": {
         "mesh": "baseboard_cathedral",
         "anchor": {
-          "x": 302,
-          "y": 480
+          "x": 364,
+          "y": 472
         }
       }
     }
@@ -5408,7 +6704,7 @@
     "apparition_pose_neutral": 1.44,
     "apparition_pose_side": 1.44,
     "apparition_pose_stoop": 1.42,
-    "ending_body_prone": 0.11,
+    "ending_body_prone": 0.33,
     "ending_body_seated": 0.96,
     "ending_van_cabin": 0.92,
     "ending_returned_ledger": 0.05,
@@ -5441,7 +6737,7 @@
     "yard_rehearsal_range": 8.8,
     "yard_baths_plant": 7.2,
     "yard_covered_stores": 6.4,
-    "st_brendan_church": 4.64,
+    "st_brendan_church": 4.6,
     "cathedral_font": 1.14,
     "cathedral_pulpitum": 2.6,
     "cathedral_tomb": 0.68,
@@ -5455,7 +6751,7 @@
     "ambient_cyclist": 0.56,
     "ambient_dog_walker": 0.61,
     "ambient_awning_figure": 1.42,
-    "exterior_bus_woman": 0.04,
+    "exterior_bus_woman": 0.02,
     "exterior_mews_neighbor": 0.04,
     "exterior_pub_driver": 0.04,
     "scene_dock_sign_foh": 0.29,
@@ -5492,9 +6788,9 @@
     "yard_booth_glazing": 2.75,
     "yard_booth_interior": 1.55,
     "yard_booth_practicals": 2.82,
-    "yard_booth_guard_idle": 1.55,
-    "yard_booth_guard_ledger": 1.55,
-    "yard_booth_guard_handoff": 1.55,
+    "yard_booth_guard_idle": 0.02,
+    "yard_booth_guard_ledger": 0.02,
+    "yard_booth_guard_handoff": 0.02,
     "yard_booth_handoff": 1.62,
     "yard_fence_run": 0.28,
     "yard_lamp_column": 7.18,
@@ -5517,15 +6813,71 @@
     "yard_van_lamp": 0.1,
     "yard_look_bench": 0.61,
     "city_bus_shelter": 2.63,
+    "city_phone_box": 2.51,
+    "city_phone_box_apparatus": 1.69,
+    "door_threshold_slab": 0.1,
+    "door_plinth": 0.15,
+    "door_wear_sand": 0.04,
+    "seep_water": 0.01,
+    "seep_drift": 0.06,
+    "seep_sand": 0.02,
+    "door_scar_burn": 0.11,
+    "door_scar_tide": 0.11,
+    "door_scar_frost": 0.14,
+    "door_scar_sand": 0.12,
+    "door_scar_hole": 0.11,
+    "chapel_door_carving": 2.44,
+    "chapel_door_step": 0.16,
+    "station_flag": 0.05,
+    "school_stage": 0.5,
+    "school_light_bar": 0.03,
+    "school_stage_lamp": 0.13,
+    "school_snow_drift": 0.08,
+    "school_piano": 1.32,
+    "school_hall_wall": 3.8,
+    "school_chair_row": 0.46,
+    "stored_door_wrapped": 1.83,
+    "door_trestle": 0.77,
+    "station_workbench": 0.9,
+    "door_ledger_lectern": 1.13,
+    "extra_front_door": 2.13,
+    "extra_bedroom_door": 2.04,
+    "extra_wardrobe_door": 1.9,
+    "extra_waiting_room_door": 2.35,
+    "extra_vestry_door": 2.14,
+    "set_beam": 0.5,
     "park_fountain": 0.46,
     "city_parked_car": 0.85,
     "city_moving_car": 0.85,
+    "outskirts_road": 0.01,
+    "outskirts_boundary_wall_6": 1.45,
+    "outskirts_boundary_rail_6": 0.16,
+    "outskirts_bus_funnel_west": 1.04,
+    "outskirts_bus_funnel_east": 1.04,
+    "outskirts_hedge_run_6": 0.16,
+    "outskirts_bus": 0.49,
+    "outskirts_bus_door": 2,
+    "outskirts_shelter": 2.61,
+    "outskirts_lodge": 0.16,
+    "outskirts_fold_chair": 0,
+    "outskirts_fold_sideledge": 0.82,
+    "outskirts_lodge_glazing": 1.52,
+    "outskirts_lodge_interior": 1.48,
+    "outskirts_lodge_kettle": 1.53,
+    "outskirts_lodge_practicals": 2.78,
+    "outskirts_lodge_ledger": 1.5,
+    "outskirts_ledger_signed": 1.5,
+    "outskirts_van_step": 0.34,
+    "outskirts_car": 0.58,
+    "outskirts_bus_woman": 0.02,
+    "outskirts_guard": 0.02,
+    "outskirts_stranger": 0.02,
     "baseboard_ground": 0.12,
     "baseboard_hall": 9.11,
     "baseboard_basement": 0.12,
     "baseboard_upper": 0.29,
     "baseboard_academic": 2.89,
     "baseboard_tower": 3.92,
-    "baseboard_cathedral": 0.12
+    "baseboard_cathedral": -5.48
   }
 }

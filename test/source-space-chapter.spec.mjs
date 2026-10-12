@@ -7,6 +7,7 @@ import {
   reduceChunkSurf,
 } from '../src/game/chunk-surf-state.js';
 import { SOURCE_LANDMARK_OFFSETS, createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
+import { SOURCE_BRAIDED_REVIEW_WALK } from '../src/data/source-braided-divide.js';
 
 const ORIGIN={x:0,y:-252};
 // Derived from the real landmark table rather than re-hardcoded. These were
@@ -26,10 +27,9 @@ const POINTS={
 };
 const apply=(state,type,details={})=>reduceChunkSurf(state,{type,...details});
 
-function landscapeState({injuries=1}={}){
+function landscapeState({injuries=0}={}){
   let state=freshChunkSurfState({drankCoffee:true,hasRig:true,seed:4417,returnPoint:{x:10,y:20,facing:1}});
-  // The night took him once before he came in here. That is the first gate on
-  // the fault now — see sourceBossAvailable().
+  // A fresh, uninjured arrival has the same physical route and contact choice.
   state=apply(state,'SOURCE_ENTERED',{returnPoint:state.returnPoint,injuries});
   state=apply(state,'HALL_ADVANCED',{distance:112});
   state=apply(state,'HAYSTACK_REACHED',{origin:{x:0,y:-224},slot:0});
@@ -38,57 +38,52 @@ function landscapeState({injuries=1}={}){
   return apply(state,'SOURCE_LANDING_DOOR_OPENED');
 }
 
-function reachable(runtime,start,goal,maxVisited=180000){
-  const key=(x,y)=>`${x},${y}`;
-  const queue=[[Math.round(start.x),Math.round(start.y)]];
-  const visited=new Set([key(queue[0][0],queue[0][1])]);
-  let index=0;
-  while(index<queue.length&&index<maxVisited){
-    const [x,y]=queue[index++];
-    if(Math.hypot(x-goal.x,y-goal.y)<=2)return true;
-    for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
-      const nx=x+dx,ny=y+dy,k=key(nx,ny);
-      if(visited.has(k)||!runtime.geometry.canStep(x,y,nx,ny).ok)continue;
-      visited.add(k);queue.push([nx,ny]);
+function walk(runtime,points){
+  const origin=runtime.state().landscapeOrigin;
+  const world=(point)=>({x:origin.x+point.x/.5,y:origin.y+point.z/.5,facing:0});
+  let from=world(points[0]);
+  runtime.setPlayerPosition(from);
+  const floors=new Map();
+  for(const target of points.slice(1)){
+    const end=world(target),start={...from};
+    const steps=Math.ceil(Math.hypot(end.x-from.x,end.y-from.y)/.6);
+    for(let index=1;index<=steps;index++){
+      const to={x:start.x+(end.x-start.x)*index/steps,y:start.y+(end.y-start.y)*index/steps,facing:0};
+      const result=runtime.geometry.canStep(from.x,from.y,to.x,to.y);
+      assert.equal(result.ok,true,`${target.id}: blocked at ${JSON.stringify(from)} (${result.why})`);
+      assert.equal(result.via,undefined,'ordinary Source ground never starts a ride');
+      runtime.onStep(from,to);
+      runtime.tick(.1,{px:to.x,py:to.y,facing:0});
+      from=to;
     }
+    // Descending belongs to the vertical clock. Never assign the target floor
+    // or ask canStep about distant cells with an unrelated body height.
+    for(let tick=0;tick<10;tick++)runtime.tick(.05,{px:from.x,py:from.y,facing:0});
+    const feet=runtime.state().sourceDivide?.feet;
+    if(target.floor!=null)assert.ok(Math.abs(feet-target.floor)<.025,`${target.id}: body is at ${feet}, expected ${target.floor}`);
+    floors.set(target.id,feet);
   }
-  return false;
+  return floors;
 }
 
 {
-  // Exploration-first: the whole field is walkable the moment it opens — no fork
-  // gate, no tune-to-unlock. Every landmark and the horizon are reachable from a
-  // fresh, untuned state, so nothing action-gates the walk.
-  const state=landscapeState();
+  // The opaque turn opens one freely explored field. Walk the actual ramps,
+  // both model faces and both underpasses with one durable body height.
+  const state=apply(landscapeState(),'SOURCE_LIFT_COMPLETED',{id:'lift-fork',checkpointId:'landing-fork'});
   const runtime=createSourceSpaceRuntime({initialState:state});
   assert.equal('tuneFocused' in runtime,false);
   assert.equal('recordFocused' in runtime,false);
   assert.equal(runtime.sourceObjective().schema,2);
   assert.equal('optionalProgress' in runtime.sourceObjective(),false);
-  assert.equal(reachable(runtime,POINTS.entry,POINTS.fork),true,'the entry spine reaches the Fork Gate');
-  assert.notEqual(runtime.geometry.cellAt(0,-330),null,'the field is open for exploration from the start — no action walls the downstream source');
-  assert.equal(reachable(runtime,POINTS.fork,POINTS.surfer),true,'the Surfer Origin loop is reachable without tuning');
-  assert.equal(reachable(runtime,POINTS.fork,POINTS.work),true,'the Work Order loop is reachable without tuning');
-  assert.equal(reachable(runtime,POINTS.fork,POINTS.recordist),true,'the central spine is reachable without tuning');
-  assert.equal(reachable(runtime,POINTS.recordist,POINTS.body),true,'Body Return is reachable without tuning');
-  assert.equal(reachable(runtime,POINTS.body,POINTS.final),true,'the final causeway reaches the horizon without tuning');
-  // THE SPINE IS TIERED NOW. "Every step is within the movement limit" was the
-  // old contract and it is exactly what made the field a lawn; the contract now
-  // is that every cliff on the spine is crossable — the runtime's own canStep
-  // answers yes, via a ladder or a chute — so the player is constrained but
-  // never stuck. (The reachability assertions above already prove the whole
-    // route end to end through that same canStep.)
-  for(let y=POINTS.entry.y;y>=POINTS.body.y;y-=1){
-    const here=runtime.geometry.cellAt(0,y),next=runtime.geometry.cellAt(0,y-1);
-    if(!here||!next)continue;
-    if(Math.abs(here.floor-next.floor)<=.45)continue;
-    const step=runtime.geometry.canStep(0,y,0,y-1);
-    assert.ok(step.ok,`spine cliff at ${y} has no staircase on it`);
-    // Nothing in the field is ridden any more. The lifts are gone and every
-    // connector is an `ascendable` staircase, so a cliff is crossed by ordinary
-    // walking or it is not crossed at all — `via` must stay absent.
-    assert.equal(step.via,undefined,`spine cliff at ${y} committed a ride instead of being walked`);
-  }
+  const floors=walk(runtime,SOURCE_BRAIDED_REVIEW_WALK);
+  assert.equal(floors.get('case-over'),9);
+  assert.equal(floors.get('case-under'),4.2,'passing below the case cannot acquire its top');
+  assert.equal(floors.get('piano-over'),15.2);
+  assert.equal(floors.get('piano-under'),4.2,'passing below the piano cannot acquire its lid');
+  assert.equal(floors.get('listening-court'),4.2);
+  assert.equal(floors.get('grey-door-approach'),15.2);
+  assert.equal(runtime.state().sourceContacts.talks,0,'exploring every level does not require a conversation');
+  assert.equal(runtime.state().finale.route,null,'walking the architecture never commits an ending');
 }
 
 {
@@ -97,21 +92,25 @@ function reachable(runtime,start,goal,maxVisited=180000){
   const runtime=createSourceSpaceRuntime({initialState:state});
   assert.equal(runtime.sourceObjective().label,'REACH THE FINAL HORIZON',
     'the post-lift objective names the destination without an equipment verb');
-  const diagonal={x:-22,y:-56};
-  const tangent={x:-44,y:-28};
-  const length=Math.hypot(tangent.x,tangent.y);
-  const normal={x:-tangent.y/length,y:tangent.x/length};
-  const width=Array.from({length:17},(_,index)=>index-8)
-    .filter((offset)=>runtime.geometry.cellAt(ORIGIN.x+diagonal.x+normal.x*offset,ORIGIN.y+diagonal.y+normal.y*offset)).length;
-  assert.ok(width>=8,'optional causeways remain at least eight runtime cells wide');
-  const criticalWidth=Array.from({length:19},(_,index)=>index-9)
-    .filter((offset)=>runtime.geometry.cellAt(offset,ORIGIN.y-24)).length;
-  assert.ok(criticalWidth>=10,'the critical spine remains at least ten runtime cells wide');
+  walk(runtime,[
+    {id:'forecourt-west',x:-80,z:-410,floor:4.2},
+    {id:'forecourt-east',x:80,z:-410,floor:4.2},
+    {id:'forecourt-return',x:-80,z:-410,floor:4.2},
+    {id:'lower-street',x:0,z:-410,floor:4.2},
+    {id:'case-under',x:0,z:-440,floor:4.2},
+    {id:'court-street',x:0,z:-465,floor:4.2},
+    {id:'piano-under',x:0,z:-498,floor:4.2},
+    {id:'final-rise-foot',x:0,z:-508,floor:4.2},
+    {id:'grey-door-approach',x:0,z:-539,floor:15.2},
+    {id:'return-to-lower-ground',x:0,z:-508,floor:4.2},
+  ]);
+  assert.equal(runtime.state().sourceContacts.talks,0,'the direct ground route needs no tour or talk count');
+  assert.equal(runtime.state().finale.route,null,'the grey-door approach remains reversible');
 }
 
 {
   // The landing tableau is safe. The first completed lift is the explicit
-  // pursuit activation seam; ordinary landscape movement cannot arm it early.
+  // meeting activation seam; ordinary landscape movement cannot arm combat.
   let state=landscapeState();
   const runtime=createSourceSpaceRuntime({initialState:state});
   assert.equal(runtime.hushMode().landingTableau,true);
@@ -119,17 +118,22 @@ function reachable(runtime,start,goal,maxVisited=180000){
   state=apply(state,'SOURCE_LIFT_COMPLETED',{id:'lift-fork',checkpointId:'landing-fork'});
   const active=createSourceSpaceRuntime({initialState:state});
   assert.equal(active.state().pursuitBeat,SOURCE_PURSUIT_BEAT.BODY_RUN);
-  assert.equal(active.hushMode().colliding,true,'the first lift activates ordinary pursuit');
+  assert.equal(active.hushMode().colliding,false,'the meeting is not a damaging pursuit');
+  assert.equal(active.hushMode().meeting,true,'the first lift makes the patient trace present');
+  assert.equal(active.hushMode().contactAvailable,false,'the first lift cannot open remote dialogue');
+  active.setPlayerPosition({x:ORIGIN.x-24,y:ORIGIN.y-922,facing:0});
+  assert.equal(active.hushMode().contactAvailable,true,'walking into service-court range offers voluntary contact');
 }
 
 {
   let state=landscapeState();
   state=apply(state,'SOURCE_LIFT_COMPLETED',{id:'lift-fork',checkpointId:'landing-fork'});
   state=apply(state,'LANDMARK_VISITED',{id:'body-room'});
+  state={...state,sourceDivide:{version:1,feet:15.2,fallVelocity:0,falling:false}};
   const runtime=createSourceSpaceRuntime({initialState:state});
   assert.equal(runtime.sourceObjective().label,'REACH THE FINAL HORIZON');
-  // Step onto the final page wherever the field currently puts it.
-  runtime.onStep({x:POINTS.final.x-10,y:POINTS.final.y+12},{...POINTS.final,facing:0});
+  const finalX=(POINTS.final.x-ORIGIN.x)*.5,finalZ=(POINTS.final.y-ORIGIN.y)*.5;
+  walk(runtime,[{id:'upper-final-approach',x:finalX-10,z:finalZ,floor:15.2},{id:'final-page',x:finalX,z:finalZ,floor:15.2}]);
   assert.equal(runtime.state().phase,'final','the final page is tool-independent');
   runtime.setPlayerPosition(POINTS.final);
   assert.equal(runtime.finalEncounterRequest().bodyReturnAssist,true,
@@ -142,34 +146,42 @@ function reachable(runtime,start,goal,maxVisited=180000){
   for(const id of ['fork-room','recordist-loop','surfer-origin','work-order-loop','body-room']){
     state=apply(state,'LANDMARK_VISITED',{id});
   }
-  state=apply(state,'SOURCE_CONTACT_RESOLVED',{checkpointId:'landing-return',contact:{
-    captures:3,
-    insights:['music-human-name','surfer-vessel','borrowed-body-return'],
-    seenBeats:['music-1','vessel-1','body-1'],
-    lastChoiceId:'body-1.return',
-  }});
+  // Battle is available without a talk count; only warned confirmation commits it.
   state=apply(state,'PURSUIT_STARTED',{id:SOURCE_PURSUIT_BEAT.FINAL_RUN});
+  state={...state,sourceDivide:{version:1,feet:15.2,fallVelocity:0,falling:false}};
   const runtime=createSourceSpaceRuntime({initialState:state});
-  // Step onto the final page wherever the field currently puts it.
-  runtime.onStep({x:POINTS.final.x-10,y:POINTS.final.y+12},{...POINTS.final,facing:0});
+  const finalX=(POINTS.final.x-ORIGIN.x)*.5,finalZ=(POINTS.final.y-ORIGIN.y)*.5;
+  walk(runtime,[{id:'upper-final-approach',x:finalX-10,z:finalZ,floor:15.2},{id:'final-page',x:finalX,z:finalZ,floor:15.2}]);
   assert.equal(runtime.state().phase,'final');
   assert.equal(runtime.hushMode().colliding,false,'the final endpoint suspends HUSH collision');
-  const attempts=runtime.state().attempts;
-  runtime.handleHushContact();
-  assert.equal(runtime.state().attempts,attempts,'protected final interactions cannot reset the player');
+  assert.deepEqual(runtime.state().sourceContacts.insights,[],'no contact answers were collected en route');
   assert.equal(runtime.finalEncounterRequest().adapter,null,'the optional battle never begins merely by reaching the horizon');
   assert.equal(runtime.finalEncounterRequest().normalExitAvailable,true);
   assert.equal(runtime.requestBossBattle().available,true);
   assert.equal(runtime.finalEncounterRequest().adapter,null,'the warning does not silently commit Contact');
-  assert.equal(runtime.commitContact().handled,true);
+  // The court remains an ordinary place to return to after reaching the upper
+  // field. Descend the final rise instead of teleporting an elevated body down.
+  walk(runtime,[
+    {id:'final-page',x:(POINTS.final.x-ORIGIN.x)*.5,z:(POINTS.final.y-ORIGIN.y)*.5,floor:15.2},
+    {id:'upper-bank-return',x:40,z:-537,floor:15.2},
+    {id:'final-rise-return',x:0,z:-537,floor:15.2},
+    {id:'lower-ground-return',x:0,z:-508,floor:4.2},
+    {id:'court-street-return',x:0,z:-465,floor:4.2},
+    {id:'service-court-return',x:-12,z:-465,floor:4.2},
+  ]);
+  assert.ok(runtime.beginHushContact());
+  assert.equal(runtime.resolveHushContactChoice('contact.warning').combat,false);
+  assert.equal(runtime.resolveHushContactChoice('contact.confirm').combat,true);
   assert.equal(runtime.finalEncounterRequest().adapter,'combat-v1','accepting NO RETURN opens the shared deterministic combat contract');
   const result=runtime.resolveFinalEncounter({outcome:SOURCE_FINAL_OUTCOME.RESCUE,won:true,channels:{rescue:4,contain:1,submit:0},turns:9,compatibility:{fightVersion:'signal-combat'}});
   assert.equal(result.handled,true);
   assert.equal(runtime.state().completed,true);
   assert.equal(runtime.state().finalEncounter.compatibility.fightVersion,'signal-combat');
   assert.deepEqual(runtime.state().finalEncounter.channels,{rescue:4,contain:1,submit:0});
-  assert.equal(runtime.state().finalEncounter.rescuedRecordist,true,'rig and three acquired insights unlock the Source-side rescue condition');
-  assert.equal(runtime.sourceLook().sunrise,1,'encounter resolution completes the white-paper sunrise');
+  assert.equal(runtime.state().finalEncounter.rescuedRecordist,true,'the qualifying rig enables rescue without a repeated contact quiz');
+  assert.equal(runtime.sourceLook().roomMemoryActive,true,'the resolved field remains in the building\'s recording medium');
+  assert.equal(runtime.sourceLook().sunrise,0,'encounter resolution does not recolour proper with a global sunrise');
+  assert.equal(runtime.sourceLook().paper,0,'encounter resolution does not replace the surviving rooms with white paper');
 }
 
 {

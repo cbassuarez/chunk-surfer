@@ -5,6 +5,7 @@
 // and which objects the world may apply automatically at a matching target.
 
 import { mapAcquired } from './map-ownership.js';
+import { runtimeTree } from '../narrative/runtime-content.js';
 
 export const BAG_ACTION_MODE = Object.freeze({
   COMMAND: 'command',
@@ -34,6 +35,10 @@ export const BAG_ITEM_REGISTRY = Object.freeze({
   'plant-spanner': Object.freeze({ role: 'puzzle-tool', automaticUse: BAG_AUTOMATIC_USE['plant-spanner'] }),
   'marble-eyes': Object.freeze({ role: 'puzzle-piece', automaticUse: BAG_AUTOMATIC_USE['marble-eyes'] }),
   keyring: Object.freeze({ role: 'access', automaticUse: BAG_AUTOMATIC_USE.keyring }),
+  // What the worlds behind the station's doors leave in his hand, and what the
+  // way home left him with (docs/plans/door-field-station.md).
+  'station-relics': Object.freeze({ role: 'keepsake', automaticUse: null }),
+  'lyle-jumper': Object.freeze({ role: 'keepsake', automaticUse: null }),
 });
 
 // The complete acquisition audit. Patterns are deliberate where the game owns
@@ -58,6 +63,8 @@ export const COLLECTED_ITEM_AUDIT = Object.freeze([
   { id: 'calibration-pins', acquired: 'pickup', destination: 'skill-resource' },
   { id: 'plant-stillson', acquired: 'grip', destination: 'external-load' },
   { id: 'source-sheets', acquired: 'read-in-place', destination: 'transient-source-document' },
+  { id: 'station-relics', acquired: 'station.relic.<world>', destination: 'kit' },
+  { id: 'lyle-jumper', acquired: 'station.jumper', destination: 'kit' },
 ]);
 
 const STARTER_CASE_ITEMS = Object.freeze(['light', 'recorder', 'map', 'radio']);
@@ -77,6 +84,8 @@ export function resolveBagOwnership(context = {}) {
   // The only stacked item in the case. It leaves the kit when the last one is
   // read, the way the cup does when it is empty.
   if (Number(context.sheetsCarried) > 0) kit.push('sheet-music');
+  if (Number(context.relicsCarried) > 0) kit.push('station-relics');
+  if (context.jumperOwned) kit.push('lyle-jumper');
 
   const keyring = {
     master: !!context.masterKey,
@@ -162,6 +171,8 @@ export function resolveBagItemAction(itemId, context = {}) {
       // NOT IN A FIGHT. The pool is what the fight is fought with; letting him
       // reach into the case mid-exchange would make every battle a question of
       // how many sheets he happens to have rather than how well he reads.
+      // The place to read one before a fight is the field case (battle-
+      // preparation.js), while the turns are still paused.
       if (context.inCombat) {
         return action('sheet-read', 'READ IT', BAG_ACTION_MODE.CONSUME, {
           enabled: false,
@@ -186,6 +197,10 @@ export function resolveBagItemAction(itemId, context = {}) {
       return action('inspect-marble-eyes', 'INSPECT', BAG_ACTION_MODE.DIALOG);
     case 'keyring':
       return action('inspect-keyring', 'CHECK KEYS', BAG_ACTION_MODE.DIALOG);
+    case 'station-relics':
+      return action('inspect-station-relics', 'INSPECT', BAG_ACTION_MODE.DIALOG);
+    case 'lyle-jumper':
+      return action('inspect-lyle-jumper', 'INSPECT', BAG_ACTION_MODE.DIALOG);
     default:
       return action('none', '', BAG_ACTION_MODE.DIALOG, { enabled: false, reason: 'NO DIRECT ACTION' });
   }
@@ -199,7 +214,37 @@ export function bagKeyFacts({ master = false, chapel = false, chapelIdentified =
   return facts;
 }
 
+const STATION_RELIC_WORLDS = Object.freeze(['burning', 'flood', 'inverted', 'two-moons', 'glass-storm']);
+// Older case callers supply object labels rather than world IDs. Keep that
+// contract while the authored nodes own every line the inspection presents.
+const STATION_RELIC_LABEL_KEYS = Object.freeze({
+  cinder: 'burning', shell: 'flood', pebble: 'inverted', matchbox: 'two-moons', shard: 'glass-storm',
+});
+
+function stationRelicWorlds(context) {
+  const supplied = context.relicWorlds || context.relics || [];
+  return [...new Set(supplied.map((value) => {
+    if (STATION_RELIC_WORLDS.includes(value)) return value;
+    return Object.entries(STATION_RELIC_LABEL_KEYS).find(([word]) => new RegExp(`\\b${word}\\b`, 'i').test(String(value)))?.[1];
+  }).filter(Boolean))];
+}
+
+function stationInspectionDialogue(itemId, context) {
+  const tree = runtimeTree('source-space.door-field');
+  if (itemId === 'lyle-jumper') return { start: tree['home.jumper'] };
+  const worlds = stationRelicWorlds(context);
+  if (!worlds.length) return { start: { speaker: 'WHAT THE WORLDS LEFT', lines: [{ who: 'direction', text: 'Nothing in that pocket.' }] } };
+  if (worlds.length === STATION_RELIC_WORLDS.length) return { start: tree['relics.bag'] };
+  return {
+    start: {
+      speaker: 'WHAT THE WORLDS LEFT',
+      lines: worlds.flatMap((world) => tree[`relic.${world}`].lines),
+    },
+  };
+}
+
 export function bagInspectionDialogue(itemId, context = {}) {
+  if (itemId === 'station-relics' || itemId === 'lyle-jumper') return stationInspectionDialogue(itemId, context);
   const keyLines = [];
   if (context.master) keyLines.push({ who: 'you', text: 'Building master. The one the guard handed over.' });
   if (context.chapel) keyLines.push({ who: 'you', text: context.chapelIdentified ? 'C-seventeen. Chapel.' : 'C-seventeen. Still only a tag.' });

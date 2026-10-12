@@ -149,6 +149,25 @@ export function inferLegacyChapelTower(source = {}) {
   return freshChapelTowerState();
 }
 
+// THE LONG HALL OPENS ON FOUR ROOMS, HOWEVER THEY GOT ON TAPE.
+//
+// Readiness used to be an event fired from exactly one place — the moment an
+// ordinary take was accepted AND the count was exactly four. Takes that arrived
+// any other way (restored with a save, granted from the review menu, a count
+// that stepped past four while the tower was not listening) left the tower in
+// FORESHADOW for good, and the chapel screen, which only answers SOURCE_READY,
+// silently did nothing. It is a fact about the tape, so it is derived from the
+// tape: four or more rooms other than the chapel, and a tower still waiting.
+export function ordinaryTakeCount(takes = []) {
+  return (Array.isArray(takes) ? takes : []).filter((id) => id && id !== 'lux_nova').length;
+}
+
+export function chapelTowerForTakes(value, takes = []) {
+  const state = normalizeChapelTowerState(value);
+  if (state.phase !== CHAPEL_TOWER_PHASE.FORESHADOW || ordinaryTakeCount(takes) < 4) return state;
+  return reduceChapelTower(state, { type: 'FOURTH_TAKE_COMPLETED' });
+}
+
 function assertPhase(state, expected, eventType) {
   if (state.phase !== expected) {
     throw new Error(`chapel tower: ${eventType} requires ${expected}, got ${state.phase}`);

@@ -202,7 +202,7 @@ function pulseInCycle(time, {
 
 export function hallRainFrame({ elapsed = 0, distanceMetres = 0, seed = 4417 } = {}) {
   const depth = clamp01((Number(distanceMetres) || 0) / 112);
-  const eligible = smoothstep(0.22, 0.48, depth);
+  const eligible = smoothstep(48 / 112, 68 / 112, depth);
   const front = pulseInCycle(elapsed, {
     seed, channel: 100, period: 17,
     minStart: 1, maxStart: 5,
@@ -300,20 +300,35 @@ export function haystackPageGuidance({
 
 export function sourceFocusActionLabel(focus) {
   if (!focus) return null;
-  // THE ONE DOOR THAT DOES NOT SAY WHAT IT IS.
-  // Every other prompt in the game names its object, because naming it is how
-  // the player knows the verb is safe. This leaf opens onto Source, and the
-  // whole point of the beat is that nothing on the other side has a name yet —
-  // so the prompt withholds one. It is the same contract as the scene dock
-  // HUSH: the door is legible as a door and illegible as a destination.
-  if (focus.kind === 'source-landing-door') return focus.sealed ? 'SEALED' : '???';
+  // The destination stays unknown; the physical action must still be clear.
+  // Once latched, this candidate lasts only until the hinge finishes opening.
+  if (focus.kind === 'source-landing-door') return focus.sealed ? 'SEALED' : focus.open ? 'OPENING' : 'OPEN DOOR';
   if (focus.kind === 'haystack-page') return 'TAKE THE STILL PAGE';
+  if (focus.kind === 'source-sheet') return 'READ THE SHEET';
+  if (focus.kind === 'source-dock-inspect') return 'LOOK';
   if (focus.kind === 'normal-exit') return 'LEAVE SOURCE SPACE';
   if (focus.kind === 'boss-fault') return focus.available === false ? 'RETURN PATH EXPOSED / NO INTERFACE' : 'CONNECT THE RIG';
-  // IT DOES NOT GET A NAME EITHER. Same contract as the landing door: the
-  // player can see perfectly well what is standing there, and the prompt is not
-  // going to be the thing that tells him what it is. A verb and no object.
+  // The player can see what is standing there. Give the verb without naming it.
   if (focus.kind === 'hush') return 'SPEAK';
+  // A door standing in the outskirts. The verb is honest; the door is not.
+  // Looked at first, then tried (docs/plans/door-field-station.md).
+  if (focus.kind === 'outskirt-door') return focus.looked === false ? 'LOOK AT THE DOOR' : 'OPEN DOOR';
+  // A door hanging where nobody can reach it.
+  if (focus.kind === 'door-extra') return 'LOOK';
+  // Where a door stood, and what its world left.
+  if (focus.kind === 'door-scar') return 'LOOK';
+  // The outskirts, a long way off either side of the chapel road.
+  if (focus.kind === 'station-edge') return 'LOOK';
+  // The tower road's store, bench and ledger.
+  if (focus.kind === 'station-service') return 'LOOK';
+  // Inside one of the lands behind the door that shuts behind him.
+  if (focus.kind === 'land-piece') return 'LOOK';
+  if (focus.kind === 'land-door') return 'OPEN DOOR';
+  // The pair he came in through, at the far end of everything.
+  if (focus.kind === 'source-edge-door') return 'OPEN THE GREY DOORS';
+  if (focus.kind === 'payphone') return 'USE THE PHONE';
+  // Something on the road out, to look at and go on looking at.
+  if (focus.kind === 'outskirt-piece') return 'LOOK';
   // Without this the prompt fell through to main.js's raw fallback and printed
   // the internal id: INSPECT HORIZON-BUST.
   if (focus.kind === 'horizon-bust') return 'LISTEN TO THE BUST';

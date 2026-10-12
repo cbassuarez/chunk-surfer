@@ -1,0 +1,132 @@
+{
+  "generatedAt": "2026-10-12T17:03:36.786Z",
+  "status": "Implemented; final held-ending rendered acceptance pending.",
+  "selected": {
+    "geometry": "Protected service bays",
+    "level": "The walk teaches the duel",
+    "fight": "A readable two-phase duel",
+    "escape": "Ordinary weight",
+    "ending": "Two endings with visible causes"
+  },
+  "implementation": [
+    {
+      "beat": "Belfry and descent",
+      "behavior": "Eight real bells, protected service bays, continuous spiral stair geometry, open mouths and landings, clear overhead collision, actual church lighting and calibrated handlamp. Ordinary movement traverses both stairs and reaches the crossing."
+    },
+    {
+      "beat": "Teaching",
+      "behavior": "Three safe optional apparatus interactions teach HOLD, MONITOR and EXPOSE; wrong answers cost nothing, leaving is permitted, completion is saved, and learned machinery visibly settles."
+    },
+    {
+      "beat": "Duel",
+      "behavior": "Two legible Cathedral phases use the recorder, torch and optional rig. Correct counters prevent their blow. Real movement progress damages the bell frame, drops a bell, splits the pulpitum and extinguishes the lantern. Retries preserve the cleared phase; the third defeat causes the terminal ending."
+    },
+    {
+      "beat": "Extraction",
+      "behavior": "An actual regrippable body follows the player through the nave and west doors. There is no timed-reset gauntlet. Saves preserve player/body trail, grip and camera. Both centres must clear the authored west leaf by 0.25 m within the actual 1.5 m half-width lane."
+    },
+    {
+      "beat": "Endings",
+      "behavior": "Rescue is earned by moving both bodies outside. Loss is caused by the third defeat and uses eight real strikes and progressive body control. Resistance expresses agency without gating completion. Both have a unique held world image, epilogue, credits and persisted return. Reloading an already-earned rescue retains its completed spatial score."
+    },
+    {
+      "beat": "Personal recording",
+      "behavior": "When earned in the personal walk, the actual retained 14 second PCM receives its coda; confirmation cannot cut it short, pause preserves its offset, and credits clean it up."
+    }
+  ],
+  "productionSnapshot": "artifacts/tower-route-implementation/verification-source.json",
+  "tests": [
+    {
+      "path": "artifacts/tower-route-implementation/final-targeted-tests.tap",
+      "passed": 127,
+      "total": 127,
+      "note": "Broader route, combat, geometry, ending, presentation and Source-boundary checks before the final narrow exit/resume/torch corrections."
+    },
+    {
+      "path": "artifacts/tower-route-implementation/final-boundary-tests.tap",
+      "passed": 27,
+      "total": 27,
+      "note": "Latest exit plane/lane, terminal resume, held-image staging, recording pause, resistance, church lamp and exact Source default checks."
+    },
+    {
+      "path": "artifacts/tower-route-implementation/final-tableau-tests.tap",
+      "passed": 12,
+      "total": 12,
+      "note": "Final held-light geometry, ending isolation, completed-extraction resume, recording pause and optional-resistance checks on the final lighting source."
+    },
+    {
+      "path": "artifacts/tower-route-implementation/final-light-budget-tests.tap",
+      "passed": 11,
+      "total": 11,
+      "note": "Latest terminal tableau geometry, ordinary church torch and Source torch boundary checks after reserving the terminal light slot and disabling the detached camera torch."
+    }
+  ],
+  "evidence": {
+    "combat": {
+      "path": "artifacts/tower-route-implementation/live-combat/report.json",
+      "passed": 12,
+      "total": 12,
+      "errors": [],
+      "artifactErrorCount": 0,
+      "scope": "Frozen production bundle in Chromium/Metal. Preset establishes accepted crossing precondition. A model-informed automated player uses ordinary arrow/Enter inputs to play both phases; actual reload and Continue tests phase/resource restoration. No game or shader substitutions. This proves integration, not human difficulty or native-platform acceptance.",
+      "visualAssessment": null
+    },
+    "descent": {
+      "path": "artifacts/tower-route-implementation/live-descent/report-U7rgzV.json",
+      "passed": 44,
+      "total": 44,
+      "errors": [],
+      "artifactErrorCount": 11,
+      "scope": "Frozen production Chromium/Metal. One God-menu belfry establishment per mode, then only actual W body movement through service bays, spiral mouths, crossing walk, north triforium, lower spiral and nave. Local compiled FP/props select a path; every runtime step is checked and ordinary input must traverse it. No warps after start, renderer substitutions, module mocks or screenshot stand-ins. Normal and reduced motion. Waypoint arrival accepts <=.505m on the same floor. Excludes earned route access and combat/ending acceptance. Screenshot filesystem errors are reported separately and do not cancel behavior checks; a null capture path is not visual evidence.",
+      "visualAssessment": null
+    },
+    "extractionAndEndings": {
+      "path": "artifacts/tower-route-implementation/live-endings/final-CaExKM/report.json",
+      "passed": 115,
+      "total": 115,
+      "errors": [],
+      "artifactErrorCount": 0,
+      "scope": "Frozen production page in actual Chromium/Metal. When selected, a diagnostic won-fight checkpoint establishes the collapsed body; ordinary E/W performs extraction and actual reload + title Continue verifies persistence. An isolated terminal review establishes the defeat-ending presenter precondition; ordinary Enter completes it without E/resistance. A separate fourth-strike E tests optional expression. No served source, shader or module substitution. This does not prove a whole campaign, three earned combat defeats or perceptual headphone acceptance.",
+      "visualAssessment": null
+    },
+    "finalTorch": {
+      "path": "artifacts/tower-route-implementation/live-descent/torch-views/report.json",
+      "passed": 18,
+      "total": 18,
+      "errors": [],
+      "artifactErrorCount": 0,
+      "scope": "Frozen production Chromium/Metal targeted normal/reduced physical handlamp pass. One belfry start per motion mode, then only ordinary W presses through both real spiral descents. Explicit physical bearings face each actual turret opening. Actual F raises/restores the normal handlamp at both mouths and midstairs. No exposure overrides, renderer substitutions or warps after the start. Exact actual WebP canvas bytes are buffered in memory until browser/profilecleanup, then atomically saved; a null capture path is not visual evidence. Excludes lessons, combat and endings.",
+      "visualAssessment": {
+        "accepted": true,
+        "acceptanceScope": "Church handlamp hotspot correction and readable stair depth in the existing dither treatment, at the tested desktop Chromium/Metal resolution. This is not a claim that every scene, device or ending is visually accepted.",
+        "upperMouth": "First tread faces, their edges, the rail and masonry remain separate under the calibrated beam.",
+        "lowerMouth": "Unchanged-bearing view retains masonry/diagonal surface detail across the former featureless pale disk. Actual-first-tread bearing shows the tread fan and rail separately from the drum wall in normal and reduced motion.",
+        "midStairs": "Nearest horizontal tread faces remain bright, but their edge/rail and the farther wall/depth remain distinct; the large clipped far-wall hotspot is removed.",
+        "torchOff": "Dim stippled interiors are retained; no exposure override or global grade change was used.",
+        "beforeReport": "../torch-views-LHXz7v/report.json",
+        "fullFunctionalReport": "../report-U7rgzV.json",
+        "limits": "Targeted18/18 ordinary-input checks and34actual-canvas frames supplement the prior44/44 normal/reduced functional route pass. Entry is established once per mode; earned Source access, combat and ending acceptance are outside this verifier."
+      }
+    },
+    "finalEndingLifecycle": {
+      "path": "artifacts/tower-route-implementation/live-endings/final-7OORqQ-accepted/report.json",
+      "passed": 40,
+      "total": 40,
+      "errors": [],
+      "scope": "Frozen production page in actual Chromium/Metal. Bounded presentation follow-up: when an earned-position fixture is selected, its real completed extraction plus pending Tower-won ending is loaded through an actual page reload and native Continue; otherwise the existing God review supplies the won boundary. The isolated God ending review establishes the lost crossing boundary. Ordinary Enter reaches the actual authored held image, credits and return. Default choreography remains enabled; no exposure override is used unless a separately labeled diagnostic A/B is selected. Whole-route earning is not re-proved here. No served source, shader or module substitution.",
+      "note": "Functional40/40 result is retained. Held-image contrast from this build was rejected and superseded by the terminal light-slot correction."
+    }
+  },
+  "finalEndingPresentation": {
+    "path": "artifacts/tower-route-implementation/live-endings/final-WxlkWE-held/report.json",
+    "status": "Running"
+  },
+  "limits": [
+    "Chromium/Metal automation uses explicit route checkpoints; it is not a complete campaign or a human difficulty/play-feel review.",
+    "Native Tauri behavior and headphone perception have not been accepted by these checks.",
+    "Dedicated Tower soundtrack beds remain explicit placeholders; actual bell cues and the earned personal recording are implemented.",
+    "The broad descent behavior run passed44/44 but11 captures encountered storage errors. The later targeted torch run saved all34 actual frames without storage errors."
+  ],
+  "workspace": "Unrelated shared-workspace edits are preserved. No commit, staging, push or deployment was performed.",
+  "workspaceReview": "artifacts/tower-route-implementation/final-shared-workspace-review.json"
+}

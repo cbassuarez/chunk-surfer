@@ -2,9 +2,9 @@
 //
 // The rig used to be a gate: no rig, no fight, the fault sat there exposed and
 // unopenable. That was the wrong shape. The thing at the fault does not check
-// your equipment before it will argue with you — it argues with anyone who got
-// hurt on the way in and then went and talked to it three times. Those are the
-// gates, and they live in sourceBossAvailable().
+// your equipment before it will argue with you. The court offers a warning on
+// the first meeting; only a separate confirmation commits the battle. That
+// boundary lives in source-contact.js and sourceBossAvailable().
 //
 // What the rig buys is leverage. With it he has an interface and can hold the
 // last clause open while he decides where the return value goes; without it he

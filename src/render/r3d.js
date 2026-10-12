@@ -18,7 +18,9 @@ import { FRONT_END_PLATE_PRESETS, normalizeFrontEndPlate } from './front-end-pla
 import { AMBIENT_PLACE_SCALE, CELL, EYE as EYE_METERS, MATERIAL, PLAN_SCALE } from '../data/floorplan/legend.js';
 import * as P3 from './props3d.js';
 import * as HZ from './horizon3d.js';
+import * as SHORE from './source-shore3d.js';
 import { normalizePixelMeshSettings } from './pixel-mesh/settings.js';
+import { homeRealmAcquisition } from './realm-pocket-geometry.js';
 import { PIXEL_MESH_FRAG } from './pixel-mesh/shader.js';
 import { isScreen, screenUniforms } from './pixel-mesh/screens.js';
 import { MARK_FIELD_SIZE, MARK_FIELD_SOURCE, deriveMarkField } from './mark-field.js';
@@ -26,6 +28,9 @@ import { FRONT_END_GRADE, NEUTRAL_GRADE, getLookProfile } from './look-profiles.
 import { LIGHT_KIND } from '../data/conservatory-lights.js';
 import { visualEffectsEnabled } from '../game/access.js';
 import { PAPER_ATLAS } from '../generated/paper-catalog.js';
+import { hushPoseAt, isHushBodyCue } from './hush-pose.js';
+import { pressureInstances } from './pressure-volume.js';
+import { PRESSURE_FINISH_FRAG, PRESSURE_SCENE_GLSL, PRESSURE_IDENTITY_GLSL } from './pressure-composite.js';
 
 const MAX_CHUNKS = 48;
 const RD_SIZE = 256;
@@ -66,6 +71,10 @@ let municipalLightPower=1;
 // Scales the look profile's white point to the room actually being stood in. 1
 // is "use the profile as authored"; a dim interior asks for a fraction of it.
 let lightingWhitePointScale=1;
+// The physical recorder's acquisition also needs the room's exposure. It is
+// independent of VFD levels(), which full recording capture replaces.
+let lightingCaptureExposure=1;
+let captureExposureOverride=null;
 // The taste dial for the above, so the ceiling can be A/B'd live without a
 // rebuild. 1 = the authored scale, 0 = the flat profile white point this shipped
 // with, which is the before-picture for the whole tone-floor fix.
@@ -210,6 +219,134 @@ void main(){
 }`;
 
 // ── World raymarcher ──────────────────────────────────────────────────────────
+// The rain, as one piece of GLSL: the march draws it over the building, and
+// the physical void draws the same drops over the corridors of doors. Needs
+// hash01(), uTime and uReduceMotionOptical declared before it.
+const RAIN_GLSL = `
+// RAIN. Actual drops, in the world, with positions.
+//
+// What was here before was not rain. It was the angular field the rolling sky
+// and the fireflies are built from, repurposed: the cell grid was indexed by
+// RAY DIRECTION — bearing was rd.x + rd.z*.17, and the other axis rd.y — with the camera
+// position folded in only as a scalar offset. Every drop lived on a sphere
+// around the head. Its own comment claimed world metres and parallax and the
+// maths did neither: turning slid the pattern around the eye, the three "depth
+// sheets" were authored constants rather than anywhere a drop actually was, and
+// nothing ever converged toward a vanishing point, because a direction field has
+// no perspective to converge in.
+//
+// A drop is a thing in the world. So: sample the view ray at a few real depths,
+// take the WORLD POINT at each, and let the world lattice there decide whether a
+// drop is falling and where. Turning the camera now moves the eye through a
+// standing volume of rain instead of dragging the rain with it, near drops sweep
+// past faster than far ones because they genuinely are nearer, and a streak
+// leans with the wind because the segment it is drawn from leans.
+//
+// The cost is bounded by the sample count, not by a march: RAIN_TAPS points, each
+// a hash and a segment distance. Everything is derived from the world point P,
+// never from the ray direction.
+
+// How many world columns of rain a single ray will walk before giving up. Each
+// is one hash and — for the tenth or so that actually hold a drop — one segment
+// distance, so the cost is bounded and mostly early-out.
+// Thirteen broad cells replace twenty-two narrow ones: forty per cent fewer
+// worst-case column tests, with occupancy raised so the weather is denser even
+// though the shader does less work.
+const int RAIN_COLUMNS = 13;
+const float RAIN_CELL_M = 0.95;
+
+// Closest distance from the ray (ro, rd) to the segment a→b. Standard
+// segment-segment closest approach, with the ray clamped to s >= 0 so drops
+// behind the eye cannot draw.
+float rayToSegment(vec3 ro, vec3 rd, vec3 a, vec3 b){
+  vec3 u = rd, v = b - a, w = ro - a;
+  float A = dot(u,u), B = dot(u,v), C = dot(v,v), D = dot(u,w), E = dot(v,w);
+  float den = A*C - B*B;
+  float s, t;
+  if(den < 1e-6){ s = 0.0; t = clamp(E/max(C,1e-6), 0.0, 1.0); }
+  else { s = (B*E - C*D)/den; t = clamp((A*E - B*D)/den, 0.0, 1.0); }
+  s = max(s, 0.0);
+  return length((ro + u*s) - (a + v*t));
+}
+
+// One column of world: does it hold a drop right now, and does this ray cross it?
+// 0 is ordinary rain. 1 runs it backwards (a played-back pass of the outskirts). Every
+// program sharing this function gets 0 unless it sets it, so their rain still falls.
+uniform float uRainBack;
+float rainColumn(vec3 ro, vec3 rd, vec2 cell, float eyeY, float surfaceViewM, float reduced){
+  float seed = hash01(cell.x*1.7 + 11.0, cell.y*1.3 - 7.0);
+  // Rain is sparse — but not THIS sparse. At 0.90 the streaks read as the odd
+  // stray drop; a wet night wants air between them and still a curtain of them.
+  if(seed < 0.72) return 0.0;
+
+  float jitterX = hash01(cell.x + 31.0, cell.y - 17.0);
+  float jitterZ = hash01(cell.x - 53.0, cell.y + 29.0);
+  float clock = uTime * mix(1.0, 0.38, reduced) * (1.0 - 2.0 * uRainBack);
+
+  // It falls, and it wraps. Fall speed and the wrap height are per-column, so the
+  // field does not pulse in unison the way one shared clock would make it.
+  float fallSpeed = mix(17.0, 27.0, seed);
+  float span = 7.0 + 5.0 * jitterX;
+  float phase = fract(seed*3.3 + clock * fallSpeed / span);
+  // Wrapped around the EYE's height, so there is always rain where you are
+  // looking without simulating a column from the cloud deck to the ground.
+  float topY = eyeY + span * 0.5 - phase * span;
+
+  // The streak is how far it travels while the shutter is open, leaned by wind.
+  float streak = mix(0.78, 1.62, seed) * mix(1.0, 0.38, reduced);
+  vec3 a = vec3(cell.x*RAIN_CELL_M + jitterX*RAIN_CELL_M, topY,
+                cell.y*RAIN_CELL_M + jitterZ*RAIN_CELL_M);
+  vec3 b = a - vec3(0.29*streak, streak, 0.10*streak);
+
+  // Thin in METRES, so perspective alone decides how wide it lands on screen.
+  float radius = 0.016 + 0.008 * jitterZ;
+  float d = rayToSegment(ro, rd, a, b);
+  return 1.0 - smoothstep(radius * 0.30, radius, d);
+}
+
+// WALK THE COLUMNS, do not sample depths.
+//
+// Sampling a handful of depths and looking up whatever cell each landed in was
+// the first attempt, and it drew specks rather than streaks: neighbouring pixels
+// along one drop land their taps in DIFFERENT cells, so each drop got found at a
+// point instead of along its length, and the streak came apart. Marching the
+// columns means every ray that crosses a drop finds the same drop, which is what
+// makes a streak a streak.
+//
+// A standard 2D DDA over the xz lattice, the same shape as the world march above.
+float rainVolume(vec3 ro, vec3 rd, float surfaceViewM){
+  float reduced = uReduceMotionOptical;
+  float range = min(surfaceViewM, 16.0);
+  float horiz = length(rd.xz);
+
+  vec2 pos = ro.xz / RAIN_CELL_M;
+  vec2 cell = floor(pos);
+  float acc = rainColumn(ro, rd, cell, ro.y, surfaceViewM, reduced);
+  // Looking straight up or down there is no horizontal march to make; the column
+  // overhead has already been tested and that is the honest answer.
+  if(horiz < 1e-3) return acc;
+
+  vec2 dirn = rd.xz / horiz;
+  vec2 stp = sign(dirn);
+  vec2 safe = max(abs(dirn), vec2(1e-6));
+  vec2 tDelta = 1.0 / safe;
+  vec2 tMax = (cell + max(stp, vec2(0.0)) - pos) / mix(safe, -safe, step(stp, vec2(-0.5)));
+  float travelled = 0.0;
+
+  for(int i = 0; i < RAIN_COLUMNS; i++){
+    if(tMax.x < tMax.y){ travelled = tMax.x; tMax.x += tDelta.x; cell.x += stp.x; }
+    else               { travelled = tMax.y; tMax.y += tDelta.y; cell.y += stp.y; }
+    // Cell units along the horizontal projection back into world metres of view.
+    float tWorld = travelled * RAIN_CELL_M / horiz;
+    if(tWorld > range || tWorld >= surfaceViewM) break;
+    float depthFade = 1.0 - smoothstep(surfaceViewM*0.72, surfaceViewM, tWorld);
+    acc = max(acc, rainColumn(ro, rd, cell, ro.y, surfaceViewM, reduced) * depthFade);
+  }
+  return acc * mix(1.0, 0.35, reduced);
+}
+
+`;
+
 const MARCH_FRAG = COMMON_GLSL + `
 uniform vec2  uRes;
 uniform float uTime;
@@ -228,6 +365,7 @@ uniform vec3 uTorchColor;
 uniform float uTorchReach;
 uniform vec2 uTorchCone;
 uniform float uTorchSpill;
+uniform float uTorchShoulder;
 uniform vec3 uAmbientColor;
 uniform float uAmbientIntensity;
 // How much ambient survives at distance, 0..1. Tunable live rather than
@@ -288,10 +426,7 @@ uniform vec3  uChunkC[${MAX_CHUNKS}]; // biome rgb
 uniform vec4  uKey;          // x, z, active, -
 uniform vec4  uDoor;
 uniform vec4  uHush;         // x, z, absorption strength, radius in metres
-uniform vec4  uHushBody;          // x, z, manifestation, texture ready
-uniform vec4  uHushBodyLook;      // height metres, width metres, glow, composite mode
-uniform vec4  uHushBodySecondary; // render-only second manifestation
-uniform vec4  uHushBodyLookSecondary;
+uniform float uPressureGeometryReady;
 uniform sampler2D uHushBodyTex;
 uniform sampler2D uPlan;     // the authored building: R=floor G=ceil B=flags A=zone
 uniform sampler2D uMat;      // R=material id
@@ -362,6 +497,8 @@ uniform float uSurfacesReady;
 uniform float uPropsReady;
 uniform float uPropNear;
 uniform float uPropFar;
+uniform vec4 uSourceShoreAperture; // centre x, plane z, width, height (metres)
+uniform vec2 uSourceShoreApertureState; // floor metres, room-side enabled
 uniform vec2  uPlanSize;
 uniform vec2  uPlanOrigin;
 uniform float uPlanHeightOffset;
@@ -985,13 +1122,6 @@ float architecturalLightVisibility(vec3 fromM,vec3 toM){
   }
   return 1.0;
 }
-vec3 hushScreen(vec3 base,vec3 layer){
-  return 1.0-(1.0-base)*(1.0-clamp(layer,0.0,0.92));
-}
-vec3 hushColorDodge(vec3 base,vec3 layer){
-  return min(vec3(1.0),base/max(vec3(0.075),vec3(1.0)-clamp(layer,0.0,0.90)));
-}
-
 // ── THE NIGHT ────────────────────────────────────────────────────────────────
 //
 // Half nine, raining, a condemned site on the edge of a northern town that still
@@ -1307,125 +1437,7 @@ vec3 nightSky(vec3 dir){
   return col;
 }
 
-// RAIN. Actual drops, in the world, with positions.
-//
-// What was here before was not rain. It was the angular field the rolling sky
-// and the fireflies are built from, repurposed: the cell grid was indexed by
-// RAY DIRECTION — bearing was rd.x + rd.z*.17, and the other axis rd.y — with the camera
-// position folded in only as a scalar offset. Every drop lived on a sphere
-// around the head. Its own comment claimed world metres and parallax and the
-// maths did neither: turning slid the pattern around the eye, the three "depth
-// sheets" were authored constants rather than anywhere a drop actually was, and
-// nothing ever converged toward a vanishing point, because a direction field has
-// no perspective to converge in.
-//
-// A drop is a thing in the world. So: sample the view ray at a few real depths,
-// take the WORLD POINT at each, and let the world lattice there decide whether a
-// drop is falling and where. Turning the camera now moves the eye through a
-// standing volume of rain instead of dragging the rain with it, near drops sweep
-// past faster than far ones because they genuinely are nearer, and a streak
-// leans with the wind because the segment it is drawn from leans.
-//
-// The cost is bounded by the sample count, not by a march: RAIN_TAPS points, each
-// a hash and a segment distance. Everything is derived from the world point P,
-// never from the ray direction.
-
-// How many world columns of rain a single ray will walk before giving up. Each
-// is one hash and — for the tenth or so that actually hold a drop — one segment
-// distance, so the cost is bounded and mostly early-out.
-// Thirteen broad cells replace twenty-two narrow ones: forty per cent fewer
-// worst-case column tests, with occupancy raised so the weather is denser even
-// though the shader does less work.
-const int RAIN_COLUMNS = 13;
-const float RAIN_CELL_M = 0.95;
-
-// Closest distance from the ray (ro, rd) to the segment a→b. Standard
-// segment-segment closest approach, with the ray clamped to s >= 0 so drops
-// behind the eye cannot draw.
-float rayToSegment(vec3 ro, vec3 rd, vec3 a, vec3 b){
-  vec3 u = rd, v = b - a, w = ro - a;
-  float A = dot(u,u), B = dot(u,v), C = dot(v,v), D = dot(u,w), E = dot(v,w);
-  float den = A*C - B*B;
-  float s, t;
-  if(den < 1e-6){ s = 0.0; t = clamp(E/max(C,1e-6), 0.0, 1.0); }
-  else { s = (B*E - C*D)/den; t = clamp((A*E - B*D)/den, 0.0, 1.0); }
-  s = max(s, 0.0);
-  return length((ro + u*s) - (a + v*t));
-}
-
-// One column of world: does it hold a drop right now, and does this ray cross it?
-float rainColumn(vec3 ro, vec3 rd, vec2 cell, float eyeY, float surfaceViewM, float reduced){
-  float seed = hash01(cell.x*1.7 + 11.0, cell.y*1.3 - 7.0);
-  // Rain is sparse — but not THIS sparse. At 0.90 the streaks read as the odd
-  // stray drop; a wet night wants air between them and still a curtain of them.
-  if(seed < 0.72) return 0.0;
-
-  float jitterX = hash01(cell.x + 31.0, cell.y - 17.0);
-  float jitterZ = hash01(cell.x - 53.0, cell.y + 29.0);
-  float clock = uTime * mix(1.0, 0.38, reduced);
-
-  // It falls, and it wraps. Fall speed and the wrap height are per-column, so the
-  // field does not pulse in unison the way one shared clock would make it.
-  float fallSpeed = mix(17.0, 27.0, seed);
-  float span = 7.0 + 5.0 * jitterX;
-  float phase = fract(seed*3.3 + clock * fallSpeed / span);
-  // Wrapped around the EYE's height, so there is always rain where you are
-  // looking without simulating a column from the cloud deck to the ground.
-  float topY = eyeY + span * 0.5 - phase * span;
-
-  // The streak is how far it travels while the shutter is open, leaned by wind.
-  float streak = mix(0.78, 1.62, seed) * mix(1.0, 0.38, reduced);
-  vec3 a = vec3(cell.x*RAIN_CELL_M + jitterX*RAIN_CELL_M, topY,
-                cell.y*RAIN_CELL_M + jitterZ*RAIN_CELL_M);
-  vec3 b = a - vec3(0.29*streak, streak, 0.10*streak);
-
-  // Thin in METRES, so perspective alone decides how wide it lands on screen.
-  float radius = 0.016 + 0.008 * jitterZ;
-  float d = rayToSegment(ro, rd, a, b);
-  return 1.0 - smoothstep(radius * 0.30, radius, d);
-}
-
-// WALK THE COLUMNS, do not sample depths.
-//
-// Sampling a handful of depths and looking up whatever cell each landed in was
-// the first attempt, and it drew specks rather than streaks: neighbouring pixels
-// along one drop land their taps in DIFFERENT cells, so each drop got found at a
-// point instead of along its length, and the streak came apart. Marching the
-// columns means every ray that crosses a drop finds the same drop, which is what
-// makes a streak a streak.
-//
-// A standard 2D DDA over the xz lattice, the same shape as the world march above.
-float rainVolume(vec3 ro, vec3 rd, float surfaceViewM){
-  float reduced = uReduceMotionOptical;
-  float range = min(surfaceViewM, 16.0);
-  float horiz = length(rd.xz);
-
-  vec2 pos = ro.xz / RAIN_CELL_M;
-  vec2 cell = floor(pos);
-  float acc = rainColumn(ro, rd, cell, ro.y, surfaceViewM, reduced);
-  // Looking straight up or down there is no horizontal march to make; the column
-  // overhead has already been tested and that is the honest answer.
-  if(horiz < 1e-3) return acc;
-
-  vec2 dirn = rd.xz / horiz;
-  vec2 stp = sign(dirn);
-  vec2 safe = max(abs(dirn), vec2(1e-6));
-  vec2 tDelta = 1.0 / safe;
-  vec2 tMax = (cell + max(stp, vec2(0.0)) - pos) / mix(safe, -safe, step(stp, vec2(-0.5)));
-  float travelled = 0.0;
-
-  for(int i = 0; i < RAIN_COLUMNS; i++){
-    if(tMax.x < tMax.y){ travelled = tMax.x; tMax.x += tDelta.x; cell.x += stp.x; }
-    else               { travelled = tMax.y; tMax.y += tDelta.y; cell.y += stp.y; }
-    // Cell units along the horizontal projection back into world metres of view.
-    float tWorld = travelled * RAIN_CELL_M / horiz;
-    if(tWorld > range || tWorld >= surfaceViewM) break;
-    float depthFade = 1.0 - smoothstep(surfaceViewM*0.72, surfaceViewM, tWorld);
-    acc = max(acc, rainColumn(ro, rd, cell, ro.y, surfaceViewM, reduced) * depthFade);
-  }
-  return acc * mix(1.0, 0.35, reduced);
-}
-
+`+RAIN_GLSL+`
 // Sparse rings in the wet aggregate. This is surface response, not a second
 // particle system: one deterministic impact lives in some metre-wide cells,
 // expands, dies, and leaves the existing night-sky reflection to do the actual
@@ -1456,124 +1468,9 @@ float rainImpactRings(vec2 worldM){
   return present*(ring*life+strike*.88+(beadA+beadB)*beadLife*.48)*mix(1.0,.14,uReduceMotionOptical);
 }
 
-void compositeHushBody(
-  vec4 bodySpec,
-  vec4 bodyLook,
-  vec3 ro,
-  vec3 rd,
-  vec3 fwd,
-  inout vec3 col,
-  inout float zView
-){
-  // The cover-art figure is a real presence in the room, not a screen decal.
-  // Intersect a vertical cylindrical billboard at the HUSH position and test
-  // that depth against the already-composed architecture + prop surface. The
-  // body therefore vanishes behind doors, walls and road cases while retaining
-  // its authored front silhouette from every approach direction.
-  if(bodySpec.w > 0.5 && bodySpec.z > 0.001 && bodyLook.w < 2.5){
-    vec2 bodyCenter=bodySpec.xy+vec2(.5);
-    vec2 planeNormal=normalize(ro.xz-bodyCenter+vec2(.0001));
-    vec2 planeRight=vec2(-planeNormal.y,planeNormal.x);
-    float planeDenom=dot(rd.xz,planeNormal);
-    float safePlaneDenom=abs(planeDenom)<.0001?-.0001:planeDenom;
-    float bodyT=dot(bodyCenter-ro.xz,planeNormal)/safePlaneDenom;
-    float bodyView=bodyT*CELL_METERS*max(.001,dot(rd,fwd));
-    float bodyRange=length(bodyCenter-ro.xz)*CELL_METERS;
-    Cell bodyCell=cellAtI(ivec2(floor(bodyCenter)));
-    float bodyBase=bodyCell.f+.025/CELL_METERS;
-    vec3 bodyHit=ro+rd*bodyT;
-    vec2 bodyUv=vec2(
-      dot(bodyHit.xz-bodyCenter,planeRight)*CELL_METERS/max(.1,bodyLook.y)+.5,
-      (bodyHit.y-bodyBase)*CELL_METERS/max(.2,bodyLook.x)
-    );
-    bool insideCard=bodyT>0.0&&bodyUv.x>0.0&&bodyUv.x<1.0&&bodyUv.y>0.0&&bodyUv.y<1.0;
-    bool bodyVisible=insideCard&&bodyView<zView+.012&&bodyRange>.22;
-    if(bodyVisible){
-      vec4 bodySample=texture(uHushBodyTex,bodyUv);
-      float sdf=(bodySample.r-.5)*56.0;
-      // Never let minification turn the SDF derivative into card coverage.
-      // At distance fwidth can span many source texels; unbounded, that makes
-      // the zero-crossing wide enough to resolve the transparent billboard as
-      // a rectangle.  The authored body only needs a couple of SDF texels of
-      // antialiasing at any range.
-      float aa=clamp(fwidth(sdf)*1.35,.7,2.6);
-      float cardDistance=min(
-        min(bodyUv.x,1.0-bodyUv.x),
-        min(bodyUv.y,1.0-bodyUv.y)
-      );
-      // The feet intentionally sit near the bottom of the texture, so the
-      // outer glow can reach the card boundary even though the body cannot.
-      // Fade the last few transparent texels for every manifestation channel
-      // (including depth) so a clipped halo can never draw a straight edge.
-      float cardFade=smoothstep(.008,.055,cardDistance);
-      // The source-alpha channel carries a faint matte over the original
-      // smart-object bounds. Treating it as literal coverage exposed the
-      // entire rectangular card. Only the authored opaque figure and the SDF
-      // interior are allowed to become body coverage.
-      float sourceCoverage=smoothstep(.28,.72,bodySample.g)*cardFade;
-      float silhouette=max(sourceCoverage,smoothstep(-aa,aa,sdf))*cardFade;
-      float edge=exp(-abs(sdf)/max(1.15,aa*1.4))*cardFade;
-      float outsideDistance=max(0.0,-sdf);
-      // A Photoshop-style outer glow has finite support. The old exponential
-      // had a non-zero tail at every pixel of the billboard, which the
-      // recording acquisition pass correctly revealed as a box.
-      float haloSupport=1.0-smoothstep(9.0,14.0,outsideDistance);
-      float outer=exp(-outsideDistance/5.2)*haloSupport*(1.0-silhouette)*cardFade;
-      float rangeFade=smoothstep(.22,.68,bodyRange);
-      float manifestation=clamp(bodySpec.z*rangeFade,0.0,1.0);
-      // In/out is a material apparition, not character animation: the figure
-      // remains perfectly still while its lower and upper contours resolve at
-      // slightly different rates. Reduced motion still sees the same static
-      // final silhouette because this contains no time-driven motion.
-      float resolveBand=1.0-smoothstep(-.18,1.12,bodyUv.y-(manifestation-.5)*1.55);
-      float resolved=manifestation*mix(manifestation,resolveBand,.28);
-      float mode=bodyLook.w;
-      float coreEnabled=mode<1.5?1.0:0.0;
-      float glowEnabled=(mode<.5||(mode>1.5&&mode<2.5))?1.0:0.0;
-      float bodyAlpha=clamp(silhouette*resolved*coreEnabled,0.0,1.0);
-      float outlineAlpha=clamp(edge*resolved*coreEnabled,0.0,1.0);
-      float fieldAlpha=clamp(
-        (outer*.48+edge*.08)*bodyLook.z*resolved*glowEnabled,
-        0.0,
-        .72
-      );
-      // The cover figure is negative first: its surrounding field eats the
-      // available light, and the human mass consumes almost everything that
-      // remains.  The card itself never participates because every term is
-      // derived from the guarded SDF coverage above.
-      col*=1.0-clamp(fieldAlpha*.44+bodyAlpha*.88,0.0,.965);
-      // Photoshop ordering from the cover, kept deliberately low-energy:
-      // a cold Screen haze gives the absence an edge, then Color Dodge raises
-      // only the local boundary.  Neither operation fills the person.
-      vec3 negativeTint=vec3(.045,.105,.115);
-      vec3 glowLayer=negativeTint*(outer*.24+edge*.055)*bodyLook.z*resolved*glowEnabled;
-      col=hushScreen(col,glowLayer);
-      vec3 bodySeed=negativeTint*(.020+edge*.026)*bodyAlpha;
-      col=hushScreen(col,bodySeed);
-      vec3 dodgeLayer=vec3(.025,.065,.072)*outlineAlpha;
-      vec3 dodged=hushColorDodge(col,dodgeLayer);
-      col=mix(col,dodged,outlineAlpha*.24);
-      // The recording-acquisition pass intentionally reduces ordinary light
-      // to one-bit ink. Reserve two chroma keys for this authored compositor
-      // so that pass can reconstruct the PSD ordering *after* acquisition
-      // instead of collapsing the figure and its glow into a white contour.
-      // These are not visible cards: both keys are bounded by the actual SDF.
-      float acquisitionGlow=clamp((outer*.82+edge*.11)*resolved*glowEnabled,0.0,1.0);
-      float acquisitionBody=bodyAlpha;
-      col=mix(col,vec3(.018,.355,.145),acquisitionGlow*.72);
-      // The reserved body key is diagnostic transport, not display colour.
-      // The acquisition pass consumes it and restores a light-eating mass;
-      // carrying the full silhouette avoids reducing the cover to line art.
-      col=mix(col,vec3(.016,.245,.735),acquisitionBody*.94);
-      // The billboard is only an intersection aid.  It must never become a
-      // rectangular depth surface: doing so makes the fog/post stack reveal
-      // the transparent card as a black slab.  Only authored body coverage
-      // writes depth; the outer glow remains light with no geometry of its own.
-      if(silhouette*resolved>.018) zView=min(zView,bodyView);
-    }
-  }
+${PRESSURE_SCENE_GLSL}
 
-}
+${SHORE.SOURCE_SHORE_APERTURE_GLSL}
 
 void main(){
   vec2 uv = (gl_FragCoord.xy / uRes) * 2.0 - 1.0;
@@ -1899,6 +1796,9 @@ void main(){
     float propShadow=propFlashShadow(posM,n,ldir);
     float lamp = lambert * falloff * nearSoft * 3.0 * beam * propShadow;   // a torch, not a flare
     if(uLocalShadowIndex>=0)lamp=lambert*falloff*nearSoft*3.0*beam;         // the map belongs to the hero practical
+    // Compress only the received torch energy. Near paper keeps its print,
+    // while distance, material normals and actual shadows still own the pool.
+    lamp=lamp/(1.0+uTorchShoulder*lamp);
     // THE FIGURES MUST BLOCK THE WHOLE RED FIELD, NOT ONE LAMP OF FIVE.
     //
     // The shadow map belongs to a single hero practical, and the silhouette used
@@ -2322,10 +2222,8 @@ void main(){
   // approach into an indiscriminate screen fade.
   col*=1.0-clamp(uDockHauntingFade,0.0,.995);
 
-  // The same SDF compositor is used for both positions. uHush remains a single
-  // gameplay field; the secondary card is only a visual contradiction.
-  compositeHushBody(uHushBody,uHushBodyLook,ro,rd,fwd,col,zView);
-  compositeHushBody(uHushBodySecondary,uHushBodyLookSecondary,ro,rd,fwd,col,zView);
+  // Both articulated volumes share the depth-tested geometry target.
+  if(uPressureGeometryReady>.5)compositePressureVolume(col,zView);
 
   if(uWaterCamera.z>.5){
     float edge=smoothstep(.28,.76,length(uv));
@@ -2337,6 +2235,15 @@ void main(){
   col += (grain - 0.5) * 0.035;             // film grain
   // The expressive post pass owns the fear vignette. A second fixed vignette
   // here used to halve the corners before fear was even applied.
+
+  // From the remembered room the FOH opening admits only white absence.
+  // Compare against the nearest fully composed surface, including the actual
+  // moving leaf and room props: nothing in front of the plane is washed out.
+  float shoreApertureView=sourceShoreApertureView(ro*CELL_METERS,rd,fwd,
+    uSourceShoreAperture,uSourceShoreApertureState);
+  if(shoreApertureView>0.0&&shoreApertureView+.015<zView){
+    col=vec3(1.0);zView=shoreApertureView;gMark=vec4(0.0);gMarkBlend=0.0;
+  }
 
   // DEPTH RIDES IN THE ALPHA CHANNEL. The post pass reads .rgb and writes 1.0,
   // so nothing on screen can see this; the diffusion lens resolves it back out
@@ -2410,6 +2317,8 @@ float correlatedGrain(vec2 p, float clock, float temporalSmear){
 
 const POST_FRAG = COMMON_GLSL + GRAIN_GLSL + `
 uniform sampler2D uSrc;
+uniform sampler2D uUnravellingScene;
+uniform float uUnravellingColour;
 uniform vec2 uRes;
 uniform float uFear;      // 0..1
 uniform float uTimeP;
@@ -2427,6 +2336,7 @@ uniform float uSourceEmergency;
 uniform float uSourceWhiteout;
 uniform float uSourceTorchMode;
 uniform float uSourceTorchPower;
+uniform float uSourceShore;
 uniform float uFrontEndAmount;
 uniform float uFrontEndDetailRetention;
 uniform float uFrontEndChromaRetention;
@@ -2434,8 +2344,12 @@ uniform float uFrontEndExposureStops;
 uniform float uFrontEndShoulder;
 uniform float uFrontEndToe;
 out vec4 o;
+${PRESSURE_IDENTITY_GLSL}
 void main(){
   vec2 uv = gl_FragCoord.xy / uRes;
+  // The shore's material has already passed through the game instrument. Its
+  // empty field must stay uniform, including while the torch is switched on.
+  if(uSourceShore>.5){o=vec4(texture(uSrc,uv).rgb,1.0);return;}
   float f = clamp(uFear, 0.0, 1.0);
   float glass=clamp(uGlassStrength,0.0,1.0);
   // Phosphor behind thick instrument glass: restrained RGB separation rather
@@ -2491,6 +2405,7 @@ void main(){
   // The FOH aperture and its white sea take the exposure before the emergency
   // circuit arrives. Red is applied after this, so the delayed wash can truly
   // replace white rather than tinting a dark room underneath it.
+  vec3 pressureInstrument=c;
   c=mix(c,vec3(1.0),clamp(uSourceWhiteout,0.0,1.0));
   // SOURCE'S FLASHLIGHT IS A SCREEN OPERATION. The physical cone already lit
   // the surfaces in the march, but Source's x-ray must invert the finished
@@ -2517,6 +2432,7 @@ void main(){
   float eWash=clamp(uSourceEmergency*ePulse*eMask,0.0,.94);
   vec3 emergencyRed=vec3(max(.82,c.r*1.18+.18),c.g*.025,c.b*.012);
   c=mix(c,emergencyRed,eWash);
+  c=mix(c,pressureInstrument,pressureIdentityMask(uv));
 
   // FRONT-END DENSITY PLATE. This is deliberately content-driven: no radial
   // vignette and no UI-position glow. At amount zero it is a strict identity.
@@ -2546,15 +2462,20 @@ void main(){
     float retention=clamp(mix(1.0,uFrontEndChromaRetention,fe)+practicalProtect*fe,0.0,1.0);
     c=mix(grey,c,retention);
   }
+  // Colour leaks through the same street progressively; changing render modes
+  // at the tape seam must not announce a new level.
+  c=mix(c,texture(uUnravellingScene,uv).rgb,clamp(uUnravellingColour,0.0,1.0)*(1.0-pressureIdentityMask(uv)));
   o=vec4(c,1.0);
 }`;
 
 // Source Space is a deliberately separate proof: transparent glyph geometry
 // over a clear void. It must not inherit the VFD cell mesh, halftone, glass,
-// fear or material stack used by the physical building.
+// fear or material stack used by the physical building. This legacy compositor
+// remains for the early passages; Source proper now uses shared acquisition.
 const TEXT_SPACE_FRAG = COMMON_GLSL + `
 uniform sampler2D uText;
-uniform sampler2D uHushBodyTex;
+uniform sampler2D uOpeningMask;
+uniform float uOpeningMaskReady;
 uniform vec2 uRes;
 uniform float uSunrise;
 uniform float uSourceChroma;
@@ -2570,8 +2491,6 @@ uniform float uSourceTorchMode;
 uniform float uSourceTorchPower;
 uniform vec2 uView;
 uniform vec2 uMoonCloud;
-uniform vec4 uHushScreen;
-uniform float uHushAmount;
 out vec4 o;
 float sourceHash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 void main(){
@@ -2639,20 +2558,6 @@ void main(){
       }
     }
   }
-  if(uHushAmount>.001&&uHushScreen.z>.001&&uHushScreen.w>.001){
-    vec2 bodyUv=(uv-uHushScreen.xy)/uHushScreen.zw+vec2(.5);
-    float card=min(min(bodyUv.x,1.0-bodyUv.x),min(bodyUv.y,1.0-bodyUv.y));
-    if(card>0.0){
-      vec4 bodySample=texture(uHushBodyTex,bodyUv);
-      float sdf=(bodySample.r-.5)*56.0;
-      float aa=clamp(fwidth(sdf)*1.35,.7,2.6);
-      float fade=smoothstep(.008,.055,card);
-      float silhouette=max(smoothstep(.28,.72,bodySample.g),smoothstep(-aa,aa,sdf))*fade;
-      float halo=exp(-max(0.0,-sdf)/5.4)*fade*(1.0-silhouette);
-      darkScene=mix(darkScene,vec3(.0001,.0003,.0004),silhouette*uHushAmount*.98);
-      darkScene+=vec3(.10,.18,.20)*halo*uHushAmount*.42;
-    }
-  }
   vec3 paper=vec3(.965,.925,.835);
   vec3 paperScene=mix(paper,vec3(.012,.010,.009),smoothstep(.02,.72,glyphAlpha));
   float lightMix=clamp(max(uSunrise,uPaper*.72),0.0,1.0);
@@ -2682,7 +2587,57 @@ void main(){
   float eWash=clamp(uSourceEmergency*ePulse*eMask,0.0,.94);
   vec3 emergencyRed=vec3(max(.84,composed.r*1.18+.18),composed.g*.022,composed.b*.010);
   composed=mix(composed,emergencyRed,eWash);
+  // A door's absence is material identity, not dark ink. Its separately
+  // depth-tested mask survives paper, x-ray and the red circuit. Pressure still
+  // resolves afterwards, so the figure can stand visibly in front of a hole.
+  float doorAbsence=texture(uOpeningMask,uv).r*uOpeningMaskReady;
+  composed=mix(composed,vec3(0.0),doorAbsence);
   o=vec4(composed,1.0);
+}`;
+
+// Source proper is built from the same surviving materials and lights as the
+// conservatoire. This pass only adapts the prop targets to the recording pass's
+// colour/depth/mark contract. It does not infer materials from hue or alpha.
+const SOURCE_ROOM_ACQUISITION_FRAG = COMMON_GLSL + `
+uniform sampler2D uProps,uPropDepth,uPropMarks,uHull,uHullDepth;
+uniform vec2 uRes,uNearFar,uHullNearFar;
+uniform float uMarksReady,uHullReady;
+layout(location=0) out vec4 o;
+layout(location=1) out vec4 oMark;
+float sourceViewDepth(float depth,vec2 range){
+  float ndc=depth*2.0-1.0;
+  return 2.0*range.x*range.y/max(.0001,range.y+range.x-ndc*(range.y-range.x));
+}
+void main(){
+  vec2 uv=gl_FragCoord.xy/uRes;
+  vec4 material=texture(uProps,uv);
+  float viewMetres=sourceViewDepth(texture(uPropDepth,uv).r,uNearFar);
+  vec4 hull=texture(uHull,uv);
+  float hullMetres=sourceViewDepth(texture(uHullDepth,uv).r,uHullNearFar);
+  bool useHull=uHullReady>.5&&hull.a>.001&&(material.a<=.001||hullMetres+.015<viewMetres);
+  if(useHull){material=hull;viewMetres=hullMetres;}
+  // Glyph RGB is already premultiplied, while physical surfaces are opaque.
+  // Compositing both over unlit absence preserves their actual light values.
+  o=vec4(clamp(material.rgb,0.0,1.0),1.0/(1.0+viewMetres*.14));
+  // The exact production sentinel has no derived grain. Never read marks left
+  // by a preceding overworld frame when this surface has no authored marks.
+  oMark=!useHull&&uMarksReady>.5?texture(uPropMarks,uv):vec4(0.0,.5,.5,1.0);
+}`;
+
+// Exact door absence after POST, preserving real geometry in front of it.
+const SOURCE_IDENTITY_FRAG = COMMON_GLSL + `
+uniform sampler2D uOpeningMask,uHushBodyTex,uPropDepth;
+uniform float uOpeningMaskReady,uPressureReady;
+uniform vec2 uRes,uNearFar;
+out vec4 o;
+void main(){
+ vec2 uv=gl_FragCoord.xy/uRes;vec4 g=texture(uHushBodyTex,uv);
+ float d=dot(g.rg,vec2(65280.0,255.0))*uNearFar.y/65535.0;
+ float z=texture(uPropDepth,uv).r*2.0-1.0;
+ float front=2.0*uNearFar.x*uNearFar.y/(uNearFar.y+uNearFar.x-z*(uNearFar.y-uNearFar.x));
+ float cover=g.a*step(d,front+.022)*uPressureReady;
+ float absence=clamp(texture(uOpeningMask,uv).r*uOpeningMaskReady,0.0,1.0);
+ o=vec4(0.0,0.0,0.0,absence*(1.0-cover));
 }`;
 
 const COPY_FRAG = COMMON_GLSL + `
@@ -2690,6 +2645,226 @@ uniform sampler2D uSrc;
 uniform vec2 uRes;
 out vec4 o;
 void main(){o=texture(uSrc,gl_FragCoord.xy/uRes);}`;
+
+// A PICTURE IN PLACE OF THE SCENE. Standing in the phone box, what is in front
+// of him is drawn (render/payphone-view.js), not modelled; drawn straight onto the
+// UI it was a clean painting laid over a game that is printed. Uploaded here it
+// takes the scene's place in the colour target, at arm's length, and goes through
+// the pixel mesh and the post upscale like everything else he looks at.
+const TABLEAU_FRAG = COMMON_GLSL + `
+uniform sampler2D uTableau;
+uniform vec2 uRes;
+uniform float uGain;
+out vec4 o;
+void main(){
+  vec3 c=texture(uTableau,gl_FragCoord.xy/uRes).rgb;
+  // Canvas colour is sRGB; the scene target is linear light. Packed depth 0.92
+  // is about 0.6 m: the set on the back wall of the box.
+  o=vec4(pow(c,vec3(2.2))*uGain,0.92);
+}`;
+
+// The outskirts and bell field are physical objects in empty space, not text
+// projected through the instrument. Preserve their GLB materials and prop-pass
+// depth. In particular a black metal surface is still opaque: alpha, never
+// luminance, decides whether the void behind it is visible.
+const SOURCE_VOID_PHYSICAL_FRAG = COMMON_GLSL + `
+uniform sampler2D uProps, uDepth;
+uniform sampler2D uOpeningMask;
+uniform float uOpeningMaskReady;
+uniform vec2 uRes, uNearFar;
+uniform float uPitch;
+uniform float uVoidDawn;
+uniform vec4 uBeacon;
+uniform float uYaw;
+uniform vec4 uTorch;
+uniform vec4 uUnravelling; // amount, street retention, loss, active
+uniform vec3 uUnravelOrigin; // physical seam x, ground y, seam z
+uniform float uRain;
+uniform float uTime, uReduceMotionOptical, uOpticalEffects, uFlash, uOvercast;
+uniform vec3 uEyeCells;
+uniform vec4 uDoorA[3]; // threshold x, z (m); facing x, z
+uniform vec4 uDoorB[3]; // colour, strength
+uniform vec4 uDoorC[3]; // width (m), open, pool
+uniform vec3 uEyeGround; // eye x, z (m); eye height above that ground
+uniform sampler2D uReflection; // the scene mirrored under the road (props3d reflection pass)
+uniform vec4 uReflectEye;      // eye x, z (m); eye height above the road; active
+uniform vec4 uPuddle;          // the pool under the last light: x, z, radius (m); how wet the road is
+uniform float uReflectDebug;    // 1: show the mirrored pass everywhere (probe)
+out vec4 o;
+vec3 displayColour(vec3 linear){
+  vec3 low=linear*12.92;
+  vec3 high=1.055*pow(max(linear,vec3(0.0)),vec3(1.0/2.4))-.055;
+  return mix(low,high,step(vec3(.0031308),linear));
+}
+// hash01 as the march has it, spelled without a screen-space fract.
+float hash01(float x, float y){ float h=abs(sin(x*127.1 + y*311.7) * 43758.5); return h-floor(h); }
+float vnoise(vec2 p){
+  // Spelled with floor rather than the fractional-part builtin, which this shader's spec bans.
+  vec2 i=floor(p),f=p-floor(p);f=f*f*(3.0-2.0*f);
+  float a=hash01(i.x,i.y),b=hash01(i.x+1.0,i.y),c=hash01(i.x,i.y+1.0),d=hash01(i.x+1.0,i.y+1.0);
+  return mix(mix(a,b,f.x),mix(c,d,f.x),f.y);
+}
+// WHERE THE ROAD HOLDS WATER: patches that spread as the road gets wetter, and the
+// one pool that is always there, under the last light.
+float puddleMask(vec2 p){
+  float n=vnoise(p*.32)*.6+vnoise(p*.9+13.1)*.3+vnoise(p*2.3-7.7)*.1;
+  float threshold=mix(.8,.55,clamp(uPuddle.w,0.0,1.0));
+  float patches=smoothstep(threshold,threshold+.05,n);
+  float pool=uPuddle.z>.01?1.0-smoothstep(uPuddle.z*.7,uPuddle.z,length(p-uPuddle.xy)):0.0;
+  return max(patches,pool);
+}
+`+RAIN_GLSL+HZ.UNRAVELLING_GLSL+`
+void main(){
+  vec2 uv=gl_FragCoord.xy/uRes;
+  vec2 screen=(uv*2.0-1.0)*vec2(uRes.x/uRes.y*.95,.95);
+  float rayY=(screen.y*cos(uPitch)+sin(uPitch))/sqrt(1.0+dot(screen,screen));
+  float below=1.0-smoothstep(-.045,.025,rayY);
+  vec3 empty=mix(vec3(.007,.010,.013),vec3(.017,.021,.023),below);
+  empty+=vec3(.007,.008,.008)*exp(-pow(rayY/.018,2.0));
+  // THE FIELD'S PAPER, going out. At the field's edge the empty ground is still
+  // the paper the field was printed on; across the outskirts it goes to black.
+  empty=mix(empty,mix(vec3(.965,.925,.835),vec3(.80,.77,.70),below),clamp(uVoidDawn,0.0,1.0));
+  // UNDER THE STORM there is cloud: a low, lit overcast the hedges and the trees
+  // stand black against, brightest toward the horizon. The ground stays dark.
+  empty=mix(empty,vec3(.050,.057,.072)*(1.0-.55*smoothstep(.0,.5,rayY)),clamp(uOvercast,0.0,1.0)*(1.0-below));
+  // THE PICTURE, AHEAD. Short of the tape its head stands on the horizon as a lit
+  // screen at the size it really is from here: somewhere to walk to. Props in
+  // front of it still hide it.
+  if(uBeacon.w>.001){
+    float azimuth=uYaw+atan(screen.x);
+    float offset=atan(sin(azimuth-uBeacon.x),cos(azimuth-uBeacon.x));
+    float across=1.0-smoothstep(uBeacon.y*.92,uBeacon.y,abs(offset));
+    float up=smoothstep(-.004,.004,rayY)*(1.0-smoothstep(uBeacon.z*.9,uBeacon.z,rayY));
+    vec3 picture=mix(vec3(.80,.78,.10),vec3(.04,.82,.70),step(0.0,offset));
+    float halo=exp(-pow(max(0.0,abs(offset)-uBeacon.y)/.04,2.0))*exp(-pow(rayY/max(.01,uBeacon.z),2.0));
+    empty=mix(empty,picture,across*up*uBeacon.w);
+    empty+=picture*halo*.35*uBeacon.w;
+  }
+  // THE TORCH, WHERE THERE IS NOTHING TO LAND ON. The beam still has to be
+  // seen: a pool where it meets the ground and a faint cone in the air.
+  if(uTorch.x>.001){
+    float axis=1.0/sqrt(1.0+dot(screen,screen));
+    float cone=smoothstep(uTorch.y-.05,uTorch.z,axis);
+    float groundT=1.6/max(.004,-rayY);
+    float pool=cone*(1.0-smoothstep(-.004,.02,rayY))/(1.0+pow(groundT/(9.0*max(.35,uTorch.w)),2.0));
+    empty+=vec3(.88,.90,.94)*(pool*.62+cone*.035)*uTorch.x;
+  }
+  // LIGHT OUT OF THE DOORS. A world behind a door lights the ground in front of
+  // it: a wide pool through an open doorway, a thin bright line under a shut one.
+  vec3 dv=normalize(vec3(screen.x,screen.y,1.0));
+  float cp=cos(uPitch),sp=sin(uPitch);
+  dv=vec3(dv.x,dv.y*cp+dv.z*sp,-dv.y*sp+dv.z*cp);
+  vec3 wd=vec3(dv.x*cos(uYaw)+dv.z*sin(uYaw),dv.y,dv.x*sin(uYaw)-dv.z*cos(uYaw));
+  if(uUnravelling.w>.5&&wd.y<-.001){
+    float roadT=(uEyeCells.y*.5-uUnravelOrigin.y)/-wd.y;
+    vec2 road=uEyeCells.xz*.5+wd.xz*roadT;
+    float grit=vnoise(road*2.1)*.65+vnoise(road*.31)*.35;
+    vec3 asphalt=vec3(.115,.123,.120)*(.78+grit*.35);
+    float worn=1.0-smoothstep(4.0,7.0,abs(road.x-uUnravelOrigin.x)+(vnoise(road*.12)-.5)*1.4);
+    asphalt+=vec3(.027,.025,.016)*worn;
+    float roadFade=1.0-smoothstep(38.0,100.0,roadT);
+    // A broad continuous footing remains when the walls and picture fail.
+    // Its quiet texture gives speed without rails, sleepers or a narrow lane.
+    empty=mix(empty,asphalt,roadFade*smoothstep(0.0,.12,uUnravelling.x));
+  }
+  if(uDoorB[0].w+uDoorB[1].w+uDoorB[2].w>.001){
+    if(wd.y<-.001){
+      vec2 hit=uEyeGround.xy+wd.xz*(uEyeGround.z/-wd.y);
+      for(int k=0;k<3;k++){
+        if(uDoorB[k].w<=.001)continue;
+        vec2 rel=hit-uDoorA[k].xy;
+        vec2 n=uDoorA[k].zw;
+        float along=dot(rel,n);
+        float across=abs(rel.x*n.y-rel.y*n.x);
+        if(uDoorC[k].z>.5){
+          // A LAMP'S POOL on the road: round, brightest under the head.
+          float r=length(rel)/max(.5,uDoorC[k].x);
+          empty+=uDoorB[k].rgb*uDoorB[k].w*(1.0-smoothstep(.15,1.0,r))*(1.0-smoothstep(.15,1.0,r))*.55;
+          continue;
+        }
+        float openness=uDoorC[k].y;
+        float spread=uDoorC[k].x*.5+max(along,0.0)*mix(.02,.35,openness);
+        float reach=mix(.45,7.0,openness);
+        float lit=(1.0-smoothstep(spread*.85,spread*1.05,across))*smoothstep(-.05,.05,along)*(1.0-smoothstep(reach*.6,reach,along));
+        float fall=exp(-max(along,0.0)/mix(.18,3.2,openness));
+        empty+=uDoorB[k].rgb*uDoorB[k].w*lit*fall*mix(1.4,.55,openness);
+      }
+    }
+  }
+  vec4 body=texture(uProps,uv);
+  float ndc=texture(uDepth,uv).r*2.0-1.0;
+  float distanceM=2.0*uNearFar.x*uNearFar.y/max(.0001,uNearFar.y+uNearFar.x-ndc*(uNearFar.y-uNearFar.x));
+  // At the prop pass's true far plane the material resolves into nothing,
+  // instead of the ninety-metre clip drawing a hard ring around the player.
+  float haze=smoothstep(uNearFar.y*.58,uNearFar.y*.99,distanceM);
+  vec3 material=displayColour(clamp(body.rgb,0.0,1.0));
+  material=mix(material,empty,haze*.98);
+  float coverage=clamp(body.a,0.0,1.0);
+  if(uUnravelling.w>.5){
+    vec3 fwd=vec3(sin(uYaw)*cos(uPitch),sin(uPitch),-cos(uYaw)*cos(uPitch));
+    vec3 hit=uEyeCells*.5+wd*(distanceM/max(.001,dot(wd,fwd)));
+    float keep=unravelKeep(hit-uUnravelOrigin,uUnravelling.x);
+    coverage*=keep;
+    float broken=smoothstep(.12,.70,uUnravelling.x)*(1.0-keep);
+    // Surviving chunks retain their material and silhouette before their
+    // colour separates into the same cold/warm packets as the recording.
+    material=mix(material,material.brg,broken*.45);
+  }
+  vec3 colour=mix(empty,material,coverage);
+  // THE WET ROAD. Where the ray reaches the road with nothing standing in front of
+  // it, and the road holds water there, the scene shows in it mirrored, trembling
+  // with the rain. It is the only place the double is drawn.
+  if(uReflectDebug>.5&&uReflectEye.w>.5){
+    vec4 m=texture(uReflection,vec2(uv.x,1.0-uv.y));
+    colour=mix(vec3(.25,0.0,.25),displayColour(clamp(m.rgb,0.0,1.0))+vec3(.15),clamp(m.a,0.0,1.0));
+  } else if(uReflectEye.w>.5&&wd.y<-.002){
+    float tRoad=uReflectEye.z/-wd.y;
+    vec3 fwd=vec3(sin(uYaw)*cos(uPitch),sin(uPitch),-cos(uYaw)*cos(uPitch));
+    float roadDepth=tRoad*dot(wd,fwd);
+    bool onRoad=body.a<.02||abs(distanceM-roadDepth)<.25+roadDepth*.015;
+    if(onRoad&&tRoad<60.0){
+      vec2 hit=uReflectEye.xy+wd.xz*tRoad;
+      float mask=puddleMask(hit);
+      if(mask>.001){
+        vec2 ripple=vec2(sin(hit.x*7.0+uTime*3.1+vnoise(hit*2.0)*6.0),sin(hit.y*7.0+uTime*2.6+vnoise(hit*2.0+4.0)*6.0))*.0035*uRain*(1.0-uReduceMotionOptical);
+        vec4 mirrored=texture(uReflection,vec2(uv.x,1.0-uv.y)+ripple);
+        float held=clamp(mirrored.a,0.0,1.0);
+        // Where nothing is mirrored the water only darkens the road a little: a sheen.
+        // Where something is, standing water gives it back almost whole.
+        vec3 sheen=mix(colour,empty*.5,.55);
+        // Night water gives things back darker than they stand, and only the bright
+        // points (a lamp head, a lit window) hold up: the mids go down, so a figure
+        // standing in a lit pool reads as a dark shape in it.
+        vec3 given=displayColour(clamp(mirrored.rgb,0.0,1.0));
+        given=min(vec3(1.0),given*given*1.25);
+        vec3 seen=mix(sheen,given,held);
+        float fresnel=mix(.3,.85,pow(1.0-clamp(-wd.y,0.0,1.0),3.0));
+        float fade=1.0-smoothstep(35.0,60.0,tRoad);
+        colour=mix(colour,seen,mask*fade*mix(fresnel,.95,held));
+      }
+    }
+  }
+  // THE RAIN in the corridors of doors is the building's rain: rainVolume, the
+  // same world-anchored drops the yard falls through, stopped by whatever each
+  // ray reaches. This frame is continuous tone, so a drop is lifted toward the
+  // weather colour rather than pushed through a one-bit encode.
+  if(uRain>.001&&uOpticalEffects>.0){
+    float rain=rainVolume(uEyeCells,wd,distanceM)*uRain;
+    colour=mix(colour,vec3(.70,.75,.82),clamp(rain,0.0,1.0)*.55);
+  }
+  // THE STORM, when the night's storm strikes (main.js stormFlashStrength): the
+  // sky and the open ground lift; lit things are already lifted by the prop pass.
+  if(uFlash>.001){
+    colour+=vec3(.42,.46,.56)*uFlash*mix(.45,1.0,1.0-below)*(1.0-clamp(body.a,0.0,1.0)*.7);
+  }
+  colour=mix(colour,vec3(0.0),texture(uOpeningMask,uv).r*uOpeningMaskReady);
+  // During the overlap alpha records surviving physical coverage for the
+  // splat pass's real-depth occlusion, not the background's opacity.
+  o=vec4(colour,mix(1.0,coverage,uUnravelling.w));
+}`;
+
+export function r3dSourceVoidPhysicalShader(){ return SOURCE_VOID_PHYSICAL_FRAG; }
+export function r3dPostShader(){ return POST_FRAG; }
 
 // THE HORIZON IS PROJECTED, NOT DISPLAYED.
 //
@@ -2811,7 +2986,8 @@ void main(){
 
 // ── GL plumbing ──────────────────────────────────────────────────────────────
 let gl = null, canvas = null;
-let progRD, progWater, progMarch, progPost, progDepth, progPixelMesh, progDatamosh, progSourceFault, progTextSpace, progCopy, progProjection;
+let progRD, progWater, progMarch, progPost, progDepth, progPixelMesh, progDatamosh, progSourceFault, progTextSpace, progCopy, progProjection, progSourceVoidPhysical;
+let progSourceRoomAcquisition,progSourceIdentity;
 // How frightened he is, 0..1. main.js owns the number; the post pass spends it.
 let fearLevel = 0;
 let nightSeed=0.37;
@@ -2889,7 +3065,10 @@ export function r3dLightingDebug(){
     ambientColor:[...lightingAmbientColor],
     ambientIntensity:lightingAmbientIntensity,
     whitePointScale:whitePointScaleOverride??lightingWhitePointScale,
+    captureExposure:captureExposureOverride??lightingCaptureExposure,
     sourceEmergency:sourceEmergencyStrength,
+    sourceVoidPhysical:sourceVoidPhysicalActive,
+    sourceShore:SHORE.sourceShoreDebug(),
     lights,
   };
 }
@@ -2918,6 +3097,8 @@ export function r3dSetLightingContext(context={}){
   // that never sets one behaves exactly as it did before this existed.
   const scale=Number(context.whitePointScale);
   lightingWhitePointScale=Number.isFinite(scale)&&scale>0?Math.max(.05,Math.min(4,scale)):1;
+  const captureExposure=Number(context.captureExposure);
+  lightingCaptureExposure=Number.isFinite(captureExposure)?Math.max(1,Math.min(12,captureExposure)):1;
   lightingScreenId=isScreen(context.screen)?context.screen:null;
   const bounceColor=Array.isArray(context.bounce?.color)?context.bounce.color:color;
   lightingBounceColor=new Float32Array([
@@ -2926,7 +3107,7 @@ export function r3dSetLightingContext(context={}){
   const bounce=Number(context.bounce?.intensity);
   lightingBounceIntensity=Number.isFinite(bounce)?Math.max(0,Math.min(.6,bounce)):0;
   return{ambientColor:[...lightingAmbientColor],ambientIntensity:lightingAmbientIntensity,
-    whitePointScale:lightingWhitePointScale,screen:lightingScreenId,
+    whitePointScale:lightingWhitePointScale,captureExposure:lightingCaptureExposure,screen:lightingScreenId,
     bounceIntensity:lightingBounceIntensity};
 }
 let lookFrom = getLookProfile('explore');
@@ -3018,12 +3199,14 @@ export function r3dPixelMeshStatus() {
     ...pixelMeshStatus,
     settings: pixelMeshSettings,
     forced: pixelMeshStatus.forceSignalUntil > pixelMeshNow(),
-    bypassedByTextSpace: textSpaceActive,
+    bypassedByTextSpace: textSpaceActive && !sourceLook.roomMemoryActive,
+    sourceRoomMemoryActive: textSpaceActive && !!sourceLook.roomMemoryActive,
   };
 }
 let rdTexA, rdTexB, rdFboA, rdFboB, rdFlip = false, rdWarm = 0;
 let waterTexA, waterTexB, waterFboA, waterFboB, waterFlip = false, waterWasActive = false;
 let sceneTex, sceneFbo, fogTexture, surfaceTexture=null;
+let horizonStreetTex=null;
 // Screen-space engraving, written beside the scene by the march (see oMark).
 let markTex=null;
 let meshTexA=null, meshTexB=null, meshFboA=null, meshFboB=null, meshFlip=false;
@@ -3065,7 +3248,10 @@ const SURFACE_LAYERS=10,SURFACE_TILE=512;
 let markLiveBase=0;               // which half the shader reads as live
 const markReady=new Uint8Array(SURFACE_LAYERS);
 const markStageReady=new Uint8Array(SURFACE_LAYERS);
-let hushBodyTex=null,hushBodyReady=false,hushBodyLoadError=null;
+let hushBodyReady=false,hushBodyLoadError=null;
+let progPressureFinish=null,pressureFinishTex=null,pressureFinishFbo=null;
+let pressureSceneDepthReady=false;
+const pressureFinishUniformCache=new Map();
 let hushBodyMode='live';
 const BLUE_NOISE_SIZE=64;
 let blueNoiseTex=null;
@@ -3109,13 +3295,28 @@ let hushBodySecondaryManifestation=0;
 let surfacesManifestation=0;
 let hushBodyLast={x:0,y:0,strength:.9,heightM:1.83,widthM:.58,glow:null,mode:null};
 let hushBodySecondaryLast={x:0,y:0,strength:.9,heightM:1.83,widthM:.58,glow:null,mode:null};
-const HUSH_BODY_ASSET='assets/hush/hush-body-sdf.png';
-const HUSH_BODY_ASSET_REV='8f52397c';
+const HUSH_BODY_ASSET='assets/pressure-character.glb';
+const HUSH_BODY_ASSET_REV='pressure-volume-v1';
 export const HUSH_BODY_MODES=Object.freeze(['live','core','glow','off']);
 
 export function r3dSetHushBodyMode(mode='live'){
   hushBodyMode=HUSH_BODY_MODES.includes(mode)?mode:'live';
   return hushBodyMode;
+}
+
+// THE HUSH ANSWERS WITH ITS BODY. One cue at a time, eased in and relaxed back
+// (hush-pose.js), evaluated from the simulation-owned captured cue elapsed.
+let hushPoseCue=null,pressureCueSink=null;
+export function r3dSetPressureCueSink(callback){pressureCueSink=typeof callback==='function'?callback:null;}
+export function r3dHushPose(cue){
+  if(!isHushBodyCue(cue))return false;
+  pressureCueSink?.(cue);
+  hushPoseCue=cue;
+  return true;
+}
+export function r3dHushPoseStatus(){
+  const p=hushBodyLast.performance,cue=p?.cue;
+  return{cue:cue?.name||null,requested:hushPoseCue,pose:hushPoseAt(cue?.name,0,cue?.elapsed??-1,{reducedMotion:p?.reducedMotion??!!pixelMeshSettings.reduceMotion})};
 }
 
 export function r3dHushBodyStatus(){
@@ -3127,6 +3328,9 @@ export function r3dHushBodyStatus(){
     asset:HUSH_BODY_ASSET,
     revision:HUSH_BODY_ASSET_REV,
     error:hushBodyLoadError,
+    geometry:P3.pressureTargets(),
+    body:{...hushBodyLast},
+    projection:sourceHushProjection(),
   };
 }
 // Five temporal frames of ten 512² surfaces, live plus staged, is the ceiling
@@ -3189,9 +3393,19 @@ let lastPixelMeshAt = 0;
 let vfdMovement = 0;
 let vfdPreviousX = null, vfdPreviousZ = null;
 let textSpaceActive = false;
+let sourceVoidPhysicalActive = false;
 let sourceLook = { sunrise: 0, chroma: 1, paper: 0 };
 let sourceEmergencyStrength = 0;
 let sourceWhiteoutStrength = 0;
+let sourceShoreState = null;
+export function r3dSetSourceShore(frame = null) {
+  sourceShoreState = frame?.active || frame?.visible ? frame : null;
+  SHORE.sourceShoreStats.active = SHORE.sourceShoreRenderActive(sourceShoreState);
+  return !!sourceShoreState;
+}
+export function r3dSourceShoreDebug() {
+  return { ...SHORE.sourceShoreDebug(), frame: sourceShoreState };
+}
 
 // THE HORIZON. Set by main.js from the runtime's horizonFrame(); the renderer
 // never works out where on the tape the body is, it is told.
@@ -3237,6 +3451,21 @@ export function r3dSetHorizon(frame = null) {
     band: horizonBandInTape(frame.band),
     bandAhead: horizonBandInTape(frame.bandAhead || frame.band),
     bandLookahead: Math.max(1, Number(frame.bandLookahead) || 110),
+    towerPath: (frame.towerPath||[]).map(p=>({x:p.x*HORIZON_LATERAL_SCALE,depth:p.depth})),
+    onTowerPath: !!frame.onTowerPath,
+    dream: Math.max(0,Math.min(1,Number(frame.dream)||0)),
+    falling: Math.max(0,Math.min(1,Number(frame.falling)||0)),
+    worldOriginM: Array.isArray(frame.worldOriginM)?frame.worldOriginM.map(value=>Number(value)||0):null,
+    cellMetres: Math.max(.01,Number(frame.cellMetres)||CELL),
+    floorY: Number.isFinite(Number(frame.floorY))?Number(frame.floorY):null,
+    unravelling: frame.unravelling?.active?{
+      ...frame.unravelling,
+      active:true,
+      amount:Math.max(0,Math.min(1,Number(frame.unravelling.amount)||0)),
+      street:Math.max(0,Math.min(1,Number(frame.unravelling.street)||0)),
+      splats:Math.max(0,Math.min(1,Number(frame.unravelling.splats)||0)),
+      loss:Math.max(0,Math.min(1,Number(frame.unravelling.loss)||0)),
+    }:null,
   };
   return true;
 }
@@ -3425,7 +3654,57 @@ function presentProjection(texture, now) {
 }
 export function r3dHorizonTune(next = {}) { Object.assign(horizonTune, next); return { ...horizonTune }; }
 
-function drawHorizon(now) {
+function drawUnravelling(now, physical) {
+  const unravelling=horizonState.unravelling;
+  // The street, tape and bust share the actual world camera. The old tape-only
+  // camera scaled the body's X/Z and made the seam a change of room.
+  drawSourceVoidPhysical(now,{...physical,present:false,unravelling});
+  gl.bindFramebuffer(gl.FRAMEBUFFER,sceneFbo);
+  gl.drawBuffers([gl.COLOR_ATTACHMENT0,gl.COLOR_ATTACHMENT1]);
+  gl.clearBufferfv(gl.COLOR,1,new Float32Array(4));
+  gl.drawBuffers([gl.COLOR_ATTACHMENT0,gl.NONE]);
+  gl.viewport(0,0,uniforms.sceneW,uniforms.sceneH);
+  gl.activeTexture(gl.TEXTURE6);gl.bindTexture(gl.TEXTURE_2D,horizonStreetTex);
+  gl.copyTexSubImage2D(gl.TEXTURE_2D,0,0,0,0,0,uniforms.sceneW,uniforms.sceneH);
+  // Bust triangles need a clean depth buffer; the street's own real depth is
+  // sampled explicitly by the splats, including its missing chunks.
+  gl.depthMask(true);gl.clear(gl.DEPTH_BUFFER_BIT);
+  if(horizonReadyState&&!horizonSuppress){
+    const tape=HZ.horizonManifest(),worldTransform=HZ.horizonWorldTransform(horizonState,tape);
+    const {view,projection}=HZ.horizonCamera({
+      camX:camX*CELL,camY:camY*CELL,camZ:camZ*CELL,
+      yaw:physical.worldYaw,pitch,aspect:uniforms.sceneW/Math.max(1,uniforms.sceneH),
+    });
+    const targets=P3.propTargets();
+    HZ.horizonRender({
+      view,projection,worldTransform,unravelling,
+      street:{color:horizonStreetTex,depth:targets.depth,near:targets.near,far:targets.far,width:uniforms.sceneW,height:uniforms.sceneH},
+      slice:horizonState.slice,reach:horizonTune.reach,behind:horizonTune.reach,
+      floorCut:horizonState.floorY??horizonState.worldOriginM[1],
+      // Short, broken image packets replace the street; no vaulted bore,
+      // stretched curtains or moving corridor is carved into the recording.
+      bore:{amount:0},dream:0,curtain:1,shimmer:0,
+      mosh:0,boil:0,nearFade:5,veil:.68,
+      exposure:unravelling.splats*.48,collapse:0,
+    });
+    if(horizonState.towerPath.length===4){
+      const localFloor=(horizonState.floorY-worldTransform.offset[1])/worldTransform.scale[1];
+      HZ.horizonGround({view,projection,worldTransform,camZ:-horizonState.slice*(Number(tape.sliceMetres)||2),
+        floorY:localFloor+.035,exposure:1,collapse:0,far:180,near:180,
+        towerPath:horizonState.towerPath,pathOnly:true});
+    }
+  }
+  gl.drawBuffers([gl.COLOR_ATTACHMENT0,gl.COLOR_ATTACHMENT1]);
+  // Let the game's existing image become colour over time, through one post
+  // chain. At onset this is exactly the telephone street's presentation.
+  const encoded=runPixelMeshPass(physical.voidState,now);
+  presentThroughPost(encoded,{torchPower:physical.torchPower,sourceTorchMode:physical.sourceTorchMode,
+    unravellingColour:Math.max(0,Math.min(1,(unravelling.amount-.04)/.40)),unravellingScene:sceneTex});
+  lastPostSourceFbo=sceneFbo;
+}
+
+function drawHorizon(now,physical={}) {
+  if(horizonState.unravelling?.active&&horizonState.worldOriginM){drawUnravelling(now,physical);return;}
   gl.bindFramebuffer(gl.FRAMEBUFFER, sceneFbo);
   gl.viewport(0, 0, uniforms.sceneW, uniforms.sceneH);
   // THE ENGRAVING TARGET IS NOT WANTED OUT HERE.
@@ -3437,8 +3716,9 @@ function drawHorizon(now) {
   // reads. The shader still declares both outputs (it must, or the draws are
   // rejected outright); this stops the second one costing bandwidth.
   gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.NONE]);
-  const dim = 1 - horizonState.collapse * 0.85;
+  const dim = (1 - horizonState.collapse * 0.85)*(1-horizonState.falling*.96);
   gl.clearColor(HORIZON_VOID[0] * dim, HORIZON_VOID[1] * dim, HORIZON_VOID[2] * dim, 1);
+  gl.depthMask(true);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   if (horizonReadyState && !horizonSuppress) {
     // THE TAPE IS NOT IN WORLD SPACE.
@@ -3496,7 +3776,8 @@ function drawHorizon(now) {
       // Cells along the tape are tape metres, so the lookahead needs no scale.
       aheadZ: horizonState.bandLookahead,
       far: horizonTune.reach * sliceMetres,
-      near: 4,
+      near: horizonTune.reach * sliceMetres,
+      towerPath:horizonState.towerPath,
     });
     const band = horizonState.band || { centre: 0, reach: 24, lum: 0.5, mosh: 0 };
     const bandAhead = horizonState.bandAhead || band;
@@ -3515,16 +3796,23 @@ function drawHorizon(now) {
       },
       // How hard the damage crawls here. See uMosh in horizon3d.js.
       mosh: band.mosh,
+      dream:horizonState.dream,
       curtain: horizonTune.curtain,
       shimmer: horizonTune.shimmer,
       veil: horizonTune.veil,
       view, projection,
       slice: horizonState.slice,
       collapse: horizonState.collapse,
-      exposure: horizonState.exposure,
+      exposure: horizonState.exposure*(horizonState.onTowerPath?Math.max(0,Math.min(1,(512-horizonState.slice*2)/90))*.6:1),
       nearFade: horizonTune.nearFade,
       reach: horizonTune.reach,
       boil: now * 0.6,
+    });
+    if(horizonState.towerPath.length===4)HZ.horizonGround({
+      view,projection,camZ:tapeCamZ,floorY:feetY,exposure:1,collapse:0,
+      band:horizonState.band,bandAhead:horizonState.bandAhead,
+      aheadZ:horizonState.bandLookahead,far:horizonTune.reach*sliceMetres,
+      near:horizonTune.reach*sliceMetres,towerPath:horizonState.towerPath,pathOnly:true,
     });
   }
   // The VFD never runs out here. This is the one place in the game that is in
@@ -3541,6 +3829,8 @@ let sourceWeather = { rain: 0, moon: 1, clouds: 1, leaves: 0 };
 const pixelMeshUniformCache = new Map();
 const postUniformCache = new Map();
 const textSpaceUniformCache = new Map();
+const sourceRoomUniformCache = new Map();
+const sourceIdentityUniformCache = new Map();
 const pixelMeshStatus = {
   supported: false,
   shaderReady: false,
@@ -3837,6 +4127,13 @@ export function r3dMarkGrainGain(){return markGrainGain;}
 export function r3dSetWhitePointZoneAmount(v=1){whitePointZoneAmount=Math.max(0,Math.min(1,Number(v)??1));return whitePointZoneAmount;}
 export function r3dWhitePointZoneAmount(){return whitePointZoneAmount;}
 export function r3dWhitePointScale(){return whitePointScaleOverride??lightingWhitePointScale;}
+// Diagnostic sweep of the existing acquisition exposure; null restores the
+// room's authored exposure without changing its material or display palette.
+export function r3dSetCaptureExposureOverride(value=null){
+  const number=Number(value);
+  captureExposureOverride=value!=null&&Number.isFinite(number)?Math.max(1,Math.min(12,number)):null;
+  return captureExposureOverride??lightingCaptureExposure;
+}
 // Forces the scale regardless of zone, so the ceiling can be SWEPT against
 // measured ink instead of derived from an authored ambient that turns out not to
 // predict screen luminance. null hands the room back its own.
@@ -4062,7 +4359,250 @@ function presentTexture(texture){
   gl.drawArrays(gl.TRIANGLES,0,3);
 }
 
-function drawTextSpace(texture,now,{torchPower=0,sourceTorchMode=0}={}) {
+const sourceVoidPhysicalUniformCache = new Map();
+let sourceVoidDawn = 0;
+let sourceVoidBeacon = null;
+let sourceVoidRain = 0;
+// THE WET ROAD in the outskirts: { groundY (m), puddle [x, z, radius], wet 0–1 }, or null.
+let sourceReflection = null, sourceReflectionDebug = false;
+export function r3dSetSourceReflectionDebug(on = true) { sourceReflectionDebug = !!on; return sourceReflectionDebug; }
+export function r3dReflectionStats() { return { active: !!sourceReflection, debug: sourceReflectionDebug, ...(P3.reflectionStats?.() || {}) }; }
+export function r3dSetSourceReflection(frame = null) {
+  sourceReflection = frame && frame.active ? {
+    groundY: Number(frame.groundY) || 0,
+    puddle: Array.isArray(frame.puddle) ? frame.puddle.map((v) => Number(v) || 0) : [0, 0, 0],
+    wet: Math.max(0, Math.min(1, Number(frame.wet) || 0)),
+  } : null;
+  return !!sourceReflection;
+}
+let sourceVoidRainRate = 1;
+export function r3dSetSourceRainRate(rate = 1) { sourceVoidRainRate = Number(rate) < 0 ? -1 : 1; return sourceVoidRainRate; }
+let sourceCrossing = null;
+// ST BRENDAN'S BELFRY, FOR THE TOWER DOOR. r3dCaptureTowerView renders the
+// building's own frame once, off screen, from the belfry arrival, and keeps its
+// colour and scene depth; the Source tower door reprojects them (props3d.js
+// renderSourceTowerView). sourceTowerView is where the door is this frame.
+let towerViewCapture=null,towerViewColorTex=null,towerViewColorFbo=null,towerViewDepthTex=null,towerViewDepthFbo=null,towerViewW=0,towerViewH=0;
+let sourceTowerView=null,sourceTowerViewDrawn=0;
+// Doorways that show a flat field of colour, by which side the eye is on: the
+// grey doors at the field's edge are black from the field and paper from outside.
+let sourceOpenings=[];
+// Where the building's post pass presents. Null is the canvas; a capture points it elsewhere.
+let presentTarget=null;
+function sourceTowerViewInside(eyeX,eyeZ){
+  const view=sourceTowerView;if(!view)return false;
+  const f=view.forward,o=view.origin,dx=eyeX-o[0],dz=eyeZ-o[2];
+  const depth=dx*f[0]+dz*f[1],lateral=-dx*f[1]+dz*f[0];
+  // From a hand-width short of the plane: nearer than that the opening would be
+  // cut by the near plane and let the field show round its edges.
+  return depth>=-.15&&depth<3&&Math.abs(lateral)<view.width/2+.3;
+}
+let sourceCrossingDrawn = false;
+let sourceDoorLights = [];
+const sourceVoidPhysicalLightPositions = new Float32Array(8);
+const sourceVoidPhysicalLightColours = new Float32Array([.80,.86,.91,1.25, .92,.81,.64,.28]);
+const sourceVoidPhysicalLightPenetration = new Float32Array([1,1]);
+const sourceVoidPhysicalLightEmergency = new Float32Array([0,0]);
+const sourceHomeNoMarks = new Float32Array(4);
+function sourceVoidPhysicalU(name){
+  if(!sourceVoidPhysicalUniformCache.has(name))sourceVoidPhysicalUniformCache.set(name,gl.getUniformLocation(progSourceVoidPhysical,name));
+  return sourceVoidPhysicalUniformCache.get(name);
+}
+
+function drawSourceShore(now,{voidState,worldYaw,torchPower,torchColor,torchReach,torchConeInner,torchConeOuter,torchSpill,torchShoulder,torchYawOffset=0}={}){
+  const eyeX=camX*CELL,eyeY=camY*CELL,eyeZ=camZ*CELL;
+  const torch={power:torchPower,color:torchColor,reach:torchReach,coneInner:torchConeInner,
+    coneOuter:torchConeOuter,spill:torchSpill,shoulder:torchShoulder,yawOffset:torchYawOffset};
+  // Keep nearby remembered-room detail on its own authored GLB materials and
+  // real flashlight shadows. The dedicated hull pass supplies the distant
+  // room and bank which are beyond props3d's ordinary ninety-metre camera.
+  P3.renderPropPass({
+    camX:eyeX,camY:eyeY,camZ:eyeZ,yaw:worldYaw,pitch,light:torchPower,
+    timeSec:now,reducedMotion:pixelMeshSettings.reduceMotion,
+    fogTexture,fogOrigin,fogSize:FOG_TEX,cellMeters:CELL,zoneTints:ZONE_TINTS,
+    localLightCount,localLightPositions,localLightColors,localLightPenetrations,
+    localLightEmergency,localShadowIndex:-1,shadowLight:null,torchYawOffset,torch,
+    ambientColor:[.67,.74,.77],ambientIntensity:.12,
+    planTexture:null,planSize:[0,0],planOrigin:[0,0],streetTextures:false,
+  });
+  SHORE.sourceShoreDraw({frame:sourceShoreState,camX:eyeX,camY:eyeY,camZ:eyeZ,
+    yaw:worldYaw,pitch,width:uniforms.sceneW,height:uniforms.sceneH,torch});
+  const props=P3.propTargets();
+  // Empty marks prevent the room we just left from engraving stale surface
+  // marks into these independent world-space hulls.
+  gl.bindFramebuffer(gl.FRAMEBUFFER,sceneFbo);gl.drawBuffers([gl.COLOR_ATTACHMENT0,gl.COLOR_ATTACHMENT1]);
+  gl.clearBufferfv(gl.COLOR,1,new Float32Array([0,0,0,0]));
+  SHORE.sourceShoreComposite({target:sceneFbo,props,frame:sourceShoreState,reduceFlash:pixelMeshSettings.reduceFlash});
+  const encoded=runPixelMeshPass(voidState,now);
+  const finished=SHORE.sourceShoreComposite({props,encoded,frame:sourceShoreState,reduceFlash:pixelMeshSettings.reduceFlash});
+  // The shore keeps its own empty field and material tint. Only the already
+  // recorded performer is restored where that specialised composite lands.
+  presentThroughPost(finished?finishPressure(finished,{acquired:encoded}):encoded,{sourceShore:true});
+  lastPostSourceFbo=sceneFbo;
+}
+
+function drawSourceVoidPhysical(now,{voidState,worldYaw,torchPower,torchReach,torchConeInner,torchConeOuter,torchSpill,sourceTorchMode=0,torchYawOffset=0,present=true,unravelling=null}={}){
+  const eyeX=camX*CELL,eyeY=camY*CELL,eyeZ=camZ*CELL;
+  // Broad, unobtrusive light gives the real normals form. No imaginary lamp
+  // models, red emergency sources or inherited Scene Dock light fixtures.
+  // The second lamp is the nearest leaking door when there is one, so the trees
+  // and frames beside it take its world's colour.
+  const leak=sourceDoorLights[0]||null;
+  sourceVoidPhysicalLightPositions.set(leak
+    ?[eyeX-60,eyeY+80,eyeZ-36,260, ...(Array.isArray(leak.lightAt)?[leak.lightAt[0],leak.lightAt[1],leak.lightAt[2],leak.pool?16:9+7*leak.strength]:[leak.x+leak.forward[0]*1.5,leak.y+1.4,leak.z+leak.forward[1]*1.5,9+7*leak.strength])]
+    :[eyeX-60,eyeY+80,eyeZ-36,260, eyeX+45,eyeY+18,eyeZ+20,180]);
+  sourceVoidPhysicalLightColours.set(leak?[leak.colour[0],leak.colour[1],leak.colour[2],.9*leak.strength]:[.92,.81,.64,.28],4);
+  // The horizon renderer leaves blending and depth writes in a different state.
+  // Reassert both before drawing real mutually occluding GLB triangles.
+  gl.disable(gl.BLEND);
+  gl.depthMask(true);
+  gl.depthFunc(gl.LEQUAL);
+  // Out here there is almost nothing for the beam to land on, so what it does
+  // reach it lights hard and far.
+  const voidTorch=Math.min(1.6,Math.max(0,Number(torchPower)||0)*1.35);
+  // Standing in the tower doorway the belfry is all there is: no rain, no sky.
+  const towerInside=sourceTowerViewInside(eyeX,eyeZ);
+  const flash=towerInside?0:stormFlash;
+  // Character animation is simulation-owned. Freeze its evaluated pose and
+  // this frame's shadow before either camera samples the deforming body.
+  P3.prepareCharacterFrame(now);
+  P3.preparePropShadowPass({camX:eyeX,camY:eyeY,camZ:eyeZ,yaw:worldYaw,pitch,
+    light:voidTorch,shadowLight:null,timeSec:now,reducedMotion:pixelMeshSettings.reduceMotion,torchYawOffset});
+  // THE WET ROAD, MIRRORED: the scene again from under the road at half size, for
+  // the composite's puddles. Drawn before the main pass, into its own target.
+  const reflecting=!!(sourceReflection&&!towerInside&&visualEffectsEnabled()&&P3.reflectionTargets);
+  if(reflecting){
+    P3.renderPropPass({
+      camX:eyeX,camY:2*sourceReflection.groundY-eyeY,camZ:eyeZ,yaw:worldYaw,pitch:-pitch,light:voidTorch,
+      timeSec:now,reducedMotion:pixelMeshSettings.reduceMotion,
+      fogTexture,fogOrigin,fogSize:FOG_TEX,cellMeters:CELL,zoneTints:ZONE_TINTS,
+      localLightCount:2,localLightPositions:sourceVoidPhysicalLightPositions,
+      localLightColors:sourceVoidPhysicalLightColours,localLightPenetrations:sourceVoidPhysicalLightPenetration,
+      localLightEmergency:sourceVoidPhysicalLightEmergency,localShadowIndex:-1,shadowLight:null,
+      torch:{power:0,color:[.94,.96,1],reach:1,coneInner:.9,coneOuter:.95,spill:.1},
+      ambientColor:[.66,.73,.80],ambientIntensity:.19*(1+flash*5),
+      planTexture:null,planSize:[0,0],planOrigin:[0,0],streetTextures:true,maxDistance:70,reflection:true,
+    });
+  }
+  P3.renderPropPass({
+    camX:eyeX,camY:eyeY,camZ:eyeZ,yaw:worldYaw,pitch,light:voidTorch,
+    shadowPrepared:true,
+    timeSec:now,reducedMotion:pixelMeshSettings.reduceMotion,
+    fogTexture,fogOrigin,fogSize:FOG_TEX,cellMeters:CELL,zoneTints:ZONE_TINTS,
+    localLightCount:2,localLightPositions:sourceVoidPhysicalLightPositions,
+    localLightColors:sourceVoidPhysicalLightColours,localLightPenetrations:sourceVoidPhysicalLightPenetration,
+    localLightEmergency:sourceVoidPhysicalLightEmergency,localShadowIndex:-1,shadowLight:null,
+    torchYawOffset,
+    torch:{power:voidTorch,color:[.94,.96,1],reach:Math.min(3,torchReach*2.3),coneInner:torchConeInner,coneOuter:torchConeOuter,spill:Math.max(.08,torchSpill),shoulder:.65},
+    ambientColor:[.66,.73,.80],ambientIntensity:.19*(1+flash*5),
+    // Empty ground has no architectural occluder. Real props retain their own
+    // depth test and flashlight shadow; no corridor plan is sampled here.
+    planTexture:null,planSize:[0,0],planOrigin:[0,0],
+    // The street's own surfaces on the untextured props out here.
+    streetTextures:true,
+  });
+  // Open door frames show somewhere else. Same targets, same camera, real depth.
+  sourcePortalsDrawn=P3.renderSourcePortals?.({camX:eyeX,camY:eyeY,camZ:eyeZ,yaw:worldYaw,pitch,portals:sourcePortals,reducedMotion:pixelMeshSettings.reduceMotion,timeSec:now,stormFlash:flash})||0;
+  if(sourceOpenings.length)P3.renderSourceOpenings?.({camX:eyeX,camY:eyeY,camZ:eyeZ,yaw:worldYaw,pitch,openings:sourceOpenings});
+  // The open tower door shows St Brendan's belfry, rendered by the building's
+  // own pass ahead of time and reprojected here; inside the doorway, all of it.
+  sourceTowerViewDrawn=sourceTowerView&&P3.renderSourceTowerView
+    ?P3.renderSourceTowerView({camX:eyeX,camY:eyeY,camZ:eyeZ,yaw:worldYaw,pitch,view:sourceTowerView,inside:towerInside}):0;
+  const targets=P3.propTargets();
+  gl.disable(gl.BLEND);gl.disable(gl.DEPTH_TEST);
+  gl.bindVertexArray(null);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,sceneFbo);
+  gl.drawBuffers([gl.COLOR_ATTACHMENT0]);
+  gl.viewport(0,0,uniforms.sceneW,uniforms.sceneH);
+  gl.useProgram(progSourceVoidPhysical);
+  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,targets.color);
+  gl.uniform1i(sourceVoidPhysicalU('uProps'),0);
+  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,targets.depth);
+  gl.uniform1i(sourceVoidPhysicalU('uDepth'),1);
+  gl.uniform2f(sourceVoidPhysicalU('uRes'),uniforms.sceneW,uniforms.sceneH);
+  gl.uniform2f(sourceVoidPhysicalU('uNearFar'),targets.near,targets.far);
+  gl.uniform1f(sourceVoidPhysicalU('uPitch'),pitch);
+  gl.uniform1f(sourceVoidPhysicalU('uVoidDawn'),sourceVoidDawn);
+  gl.uniform4f(sourceVoidPhysicalU('uUnravelling'),unravelling?.amount||0,unravelling?.street||0,unravelling?.loss||0,unravelling?.active?1:0);
+  gl.uniform3fv(sourceVoidPhysicalU('uUnravelOrigin'),horizonState.worldOriginM||[0,0,0]);
+  const beacon=sourceVoidBeacon,beaconRange=Math.max(1,Number(beacon?.distanceM)||1);
+  gl.uniform4f(sourceVoidPhysicalU('uBeacon'),
+    beacon?beacon.bearing:0,
+    beacon?Math.atan2(Number(beacon.halfWidthM)||0,beaconRange):0,
+    beacon?Math.atan2(Number(beacon.heightM)||0,beaconRange):0,
+    beacon&&!unravelling?.active?Math.max(0,Math.min(1,Number(beacon.strength)||0)):0);
+  gl.uniform1f(sourceVoidPhysicalU('uYaw'),worldYaw);
+  gl.uniform4f(sourceVoidPhysicalU('uTorch'),Math.max(0,Number(torchPower)||0),torchConeInner,torchConeOuter,torchReach);
+  gl.uniform1f(sourceVoidPhysicalU('uRain'),towerInside?0:sourceVoidRain);
+  gl.uniform1f(sourceVoidPhysicalU('uRainBack'),sourceVoidRainRate<0?1:0);
+  gl.uniform1f(sourceVoidPhysicalU('uTime'),now);
+  gl.uniform1f(sourceVoidPhysicalU('uReduceMotionOptical'),pixelMeshSettings.reduceMotion?1:0);
+  gl.uniform1f(sourceVoidPhysicalU('uOpticalEffects'),visualEffectsEnabled()?1:0);
+  gl.uniform1f(sourceVoidPhysicalU('uFlash'),flash);
+  gl.uniform1f(sourceVoidPhysicalU('uOvercast'),towerInside?0:sourceVoidRain);
+  gl.uniform3f(sourceVoidPhysicalU('uEyeCells'),camX,camY,camZ);
+  const doorA=new Float32Array(12),doorB=new Float32Array(12),doorC=new Float32Array(12);
+  sourceDoorLights.forEach((door,k)=>{
+    doorA.set([door.x,door.z,door.forward[0],door.forward[1]],k*4);
+    doorB.set([door.colour[0],door.colour[1],door.colour[2],Math.max(0,Number(door.strength)||0)],k*4);
+    doorC.set([Math.max(.3,Number(door.width)||1),door.open?1:0,door.pool?1:0,0],k*4);
+  });
+  gl.uniform4fv(sourceVoidPhysicalU('uDoorA'),doorA);
+  gl.uniform4fv(sourceVoidPhysicalU('uDoorB'),doorB);
+  gl.uniform4fv(sourceVoidPhysicalU('uDoorC'),doorC);
+  gl.uniform3f(sourceVoidPhysicalU('uEyeGround'),eyeX,eyeZ,Math.max(.2,eyeY-(Number.isFinite(leak?.y)?leak.y:eyeY-1.6)));
+  const reflection=reflecting?P3.reflectionTargets():null,puddle=sourceReflection?.puddle||[0,0,0];
+  gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,reflection?.ready?reflection.color:null);
+  gl.uniform1i(sourceVoidPhysicalU('uReflection'),2);
+  gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D,targets.openingMask);
+  gl.uniform1i(sourceVoidPhysicalU('uOpeningMask'),3);
+  gl.uniform1f(sourceVoidPhysicalU('uOpeningMaskReady'),targets.openingMaskReady?1:0);
+  gl.uniform4f(sourceVoidPhysicalU('uReflectEye'),eyeX,eyeZ,Math.max(.05,eyeY-(sourceReflection?.groundY??eyeY)),reflection?.ready?1:0);
+  gl.uniform4f(sourceVoidPhysicalU('uPuddle'),puddle[0],puddle[1],puddle[2],sourceReflection?.wet??0);
+  gl.uniform1f(sourceVoidPhysicalU('uReflectDebug'),sourceReflectionDebug?1:0);
+  gl.drawArrays(gl.TRIANGLES,0,3);
+  // Walking through an open door: its world, over everything, for a few seconds.
+  sourceCrossingDrawn=false;
+  if(sourceCrossing&&P3.renderSourceCrossing){
+    const realm=sourceCrossing.realm||null;
+    const f=sourceCrossing.forward||[0,1],length=Math.hypot(f[0],f[1])||1,fx=f[0]/length,fz=f[1]/length;
+    const cx=Math.sin(worldYaw),cz=-Math.cos(worldYaw);
+    const reveal=pixelMeshSettings.reduceMotion?(sourceCrossing.reveal>.5?1:0):sourceCrossing.reveal;
+    if(homeRealmAcquisition({realm,variant:sourceCrossing.variant,reveal})){
+      // No station material field may survive behind this fully occupied home.
+      gl.drawBuffers([gl.COLOR_ATTACHMENT0,gl.COLOR_ATTACHMENT1]);
+      gl.clearBufferfv(gl.COLOR,1,sourceHomeNoMarks);
+      gl.drawBuffers([gl.COLOR_ATTACHMENT0]);
+    }
+    sourceCrossingDrawn=P3.renderSourceCrossing({
+      framebuffer:sceneFbo,width:uniforms.sceneW,height:uniforms.sceneH,
+      dir:realm?[Math.sin(realm.pose.yaw),Math.cos(realm.pose.yaw)]:[cx*-fz+cz*fx,cx*fx+cz*fz],pitch:realm?realm.pose.pitch:pitch,reveal,
+      variant:sourceCrossing.variant,seed:sourceCrossing.seed,key:sourceCrossing.key,
+      // A door shut behind him: the way out stands in the world.
+      wayOut:sourceCrossing.wayOut?1:0,
+      // A crossing may carry its own distance walked (the way home); otherwise it drifts with time.
+      drift:Number.isFinite(Number(sourceCrossing.drift))?Number(sourceCrossing.drift):(Number(sourceCrossing.elapsed)||0)*.6,reducedMotion:pixelMeshSettings.reduceMotion,timeSec:Number.isFinite(realm?.time)?realm.time:now,stormFlash:flash,
+      realm,realmId:sourceCrossing.id,frameTimeSec:now,homePresentation:sourceCrossing.homePresentation||null,torchPower,
+    });
+  }
+  // In the phone box, the drawn set in place of the scene.
+  if(!sourceCrossing?.realm)drawTableau();
+  gl.drawBuffers([gl.COLOR_ATTACHMENT0,gl.COLOR_ATTACHMENT1]);
+  // THE GAME'S OWN LOOK, OUT HERE TOO. This used to copy its colour straight to
+  // the screen, and out past the grey doors the game stopped looking like itself
+  // — bare PBR in a void. It goes through the pixel mesh and the post upscale
+  // now, like the building. Still no datamosh history and no Source fault: those
+  // belong to the text field, not to these physical objects.
+  if(present)presentThroughPost(runPixelMeshPass(voidState,now),{torchPower,sourceTorchMode});
+  lastPostSourceFbo=sceneFbo;
+}
+
+function drawTextSpace(texture,now,{torchPower=0,sourceTorchMode=0,torchColor,torchReach,torchConeInner,torchConeOuter,torchSpill,torchShoulder,worldState=null}={}) {
+  if(sourceLook.roomMemoryActive){
+    drawSourceRoomMemory(now,{torchPower,sourceTorchMode,torchColor,torchReach,
+      torchConeInner,torchConeOuter,torchSpill,torchShoulder,worldState});
+    return;
+  }
   gl.useProgram(progTextSpace);
   gl.bindFramebuffer(gl.FRAMEBUFFER, sceneFbo);
   // The scene framebuffer normally carries both colour and the architectural
@@ -4075,6 +4615,10 @@ function drawTextSpace(texture,now,{torchPower=0,sourceTorchMode=0}={}) {
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, texture);
   gl.uniform1i(textSpaceU('uText'), 0);
+  const openingTargets=P3.propTargets();
+  gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,openingTargets.openingMask);
+  gl.uniform1i(textSpaceU('uOpeningMask'),2);
+  gl.uniform1f(textSpaceU('uOpeningMaskReady'),openingTargets.openingMaskReady?1:0);
   gl.uniform2f(textSpaceU('uRes'), uniforms.sceneW, uniforms.sceneH);
   gl.uniform1f(textSpaceU('uSunrise'), Math.max(0, Math.min(1, Number(sourceLook.sunrise) || 0)));
   gl.uniform1f(textSpaceU('uSourceChroma'), Math.max(0, Math.min(1, Number(sourceLook.chroma) || 0)));
@@ -4090,18 +4634,101 @@ function drawTextSpace(texture,now,{torchPower=0,sourceTorchMode=0}={}) {
   gl.uniform1f(textSpaceU('uSourceTorchPower'),torchPower);
   gl.uniform2f(textSpaceU('uView'),yaw+planYaw,pitch);
   gl.uniform2f(textSpaceU('uMoonCloud'),Math.max(0,Math.min(1,Number(sourceWeather.moon)||0)),Math.max(0,Math.min(1,Number(sourceWeather.clouds)||0)));
-  const body=sourceHushProjection();
-  gl.uniform4f(textSpaceU('uHushScreen'),body.x,body.y,body.w,body.h);
-  gl.uniform1f(textSpaceU('uHushAmount'),body.amount);
-  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,hushBodyReady?hushBodyTex:texture);
-  gl.uniform1i(textSpaceU('uHushBodyTex'),1);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
   gl.drawBuffers([gl.COLOR_ATTACHMENT0,gl.COLOR_ATTACHMENT1]);
-  pixelMeshStatus.enabled = false;
-  const faulted=runSourceFaultPass(sceneTex,now);
+  // The legacy text field retains its authored presentation. Physical Pressure
+  // still uses the shared recording shader, then only its depth-tested mesh
+  // footprint and finite halo are merged back into the untouched text field.
+  const pressure=P3.pressureTargets();
+  const acquired=pressure.ready&&pressure.draws>0?runPixelMeshPass(worldState,now):null;
+  pixelMeshStatus.enabled = !!acquired;
+  const recorded=acquired?finishPressure(sceneTex,{acquired}):sceneTex;
+  const faulted=runSourceFaultPass(recorded,now);
   const resolved=runDatamoshPass(faulted,now);
-  presentTexture(resolved);
+  if(SHORE.sourceShoreBoundaryVisible(sourceShoreState)){
+    SHORE.sourceShoreDraw({frame:sourceShoreState,camX:camX*CELL,camY:camY*CELL,camZ:camZ*CELL,
+      yaw:yaw+planYaw,pitch,width:uniforms.sceneW,height:uniforms.sceneH,boundaryOnly:true,
+      torch:{power:torchPower,color:torchColor,reach:torchReach,coneInner:torchConeInner,
+        coneOuter:torchConeOuter,spill:torchSpill,shoulder:torchShoulder}});
+    const boundary=SHORE.sourceShoreComposite({props:P3.propTargets(),encoded:resolved,
+      frame:sourceShoreState,boundaryOnly:true});
+    presentTexture(boundary&&acquired?finishPressure(boundary,{acquired}):boundary||resolved);
+  }else presentTexture(resolved);
   lastPostSourceFbo = sceneFbo;
+}
+
+function sourceRoomU(name){
+  if(!sourceRoomUniformCache.has(name))sourceRoomUniformCache.set(name,gl.getUniformLocation(progSourceRoomAcquisition,name));
+  return sourceRoomUniformCache.get(name);
+}
+function sourceIdentityU(name){
+  if(!sourceIdentityUniformCache.has(name))sourceIdentityUniformCache.set(name,gl.getUniformLocation(progSourceIdentity,name));
+  return sourceIdentityUniformCache.get(name);
+}
+function drawSourceIdentity(now){
+  const targets=P3.propTargets();
+  const width=presentTarget?.width||canvas.width,height=presentTarget?.height||canvas.height;
+  gl.useProgram(progSourceIdentity);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,presentTarget?.fbo||null);
+  gl.viewport(0,0,width,height);
+  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,targets.openingMask);
+  gl.uniform1i(sourceIdentityU('uOpeningMask'),0);
+  gl.uniform1f(sourceIdentityU('uOpeningMaskReady'),targets.openingMaskReady?1:0);
+  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,P3.pressureTargets().color||targets.color);
+  gl.uniform1i(sourceIdentityU('uHushBodyTex'),1);
+  gl.uniform2f(sourceIdentityU('uRes'),width,height);
+  gl.uniform1f(sourceIdentityU('uPressureReady'),hushBodyReady&&P3.pressureTargets().draws>0?1:0);
+  gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,targets.depth);
+  gl.uniform1i(sourceIdentityU('uPropDepth'),2);gl.uniform2f(sourceIdentityU('uNearFar'),targets.near,targets.far);
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+  gl.drawArrays(gl.TRIANGLES,0,3);
+  gl.disable(gl.BLEND);
+}
+function drawSourceRoomMemory(now,{torchPower=0,sourceTorchMode=0,torchColor,torchReach,
+  torchConeInner,torchConeOuter,torchSpill,torchShoulder,worldState=null}={}){
+  pressureSceneDepthReady=true;
+  const targets=P3.propTargets();
+  // The finite first-lift bank remains behind the player after entering the
+  // field. Resolve its real long-range hull depth before recording, rather
+  // than letting the new text path erase the physical boundary on return.
+  let hull=null;
+  if(SHORE.sourceShoreBoundaryVisible(sourceShoreState)){
+    SHORE.sourceShoreDraw({frame:sourceShoreState,camX:camX*CELL,camY:camY*CELL,camZ:camZ*CELL,
+      yaw:yaw+planYaw,pitch,width:uniforms.sceneW,height:uniforms.sceneH,boundaryOnly:true,
+      recordingExposure:captureExposureOverride??lightingCaptureExposure,
+      torch:{power:torchPower,color:torchColor,reach:torchReach,coneInner:torchConeInner,
+        coneOuter:torchConeOuter,spill:torchSpill,shoulder:torchShoulder}});
+    hull=SHORE.sourceShoreTargets?.();
+  }
+  gl.useProgram(progSourceRoomAcquisition);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,sceneFbo);
+  gl.drawBuffers([gl.COLOR_ATTACHMENT0,gl.COLOR_ATTACHMENT1]);
+  gl.viewport(0,0,uniforms.sceneW,uniforms.sceneH);
+  gl.disable(gl.BLEND);gl.disable(gl.DEPTH_TEST);gl.bindVertexArray(null);
+  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,targets.color);
+  gl.uniform1i(sourceRoomU('uProps'),0);
+  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,targets.depth);
+  gl.uniform1i(sourceRoomU('uPropDepth'),1);
+  gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,targets.marks||targets.color);
+  gl.uniform1i(sourceRoomU('uPropMarks'),2);
+  gl.uniform1f(sourceRoomU('uMarksReady'),targets.marksReady&&targets.marks?1:0);
+  gl.uniform2f(sourceRoomU('uRes'),uniforms.sceneW,uniforms.sceneH);
+  gl.uniform2f(sourceRoomU('uNearFar'),targets.near,targets.far);
+  gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D,hull?.color||targets.color);
+  gl.uniform1i(sourceRoomU('uHull'),3);
+  gl.activeTexture(gl.TEXTURE4);gl.bindTexture(gl.TEXTURE_2D,hull?.depth||targets.depth);
+  gl.uniform1i(sourceRoomU('uHullDepth'),4);
+  gl.uniform1f(sourceRoomU('uHullReady'),hull?.ready?1:0);
+  gl.uniform2f(sourceRoomU('uHullNearFar'),hull?.near||targets.near,hull?.far||targets.far);
+  gl.drawArrays(gl.TRIANGLES,0,3);
+  // Use the actual overworld acquisition kernel and active look profile. The
+  // Source fault still damages that same recording, rather than replacing it.
+  const encoded=runPixelMeshPass({...worldState,hushBodyAllowed:false},now);
+  const faulted=runSourceFaultPass(encoded,now);
+  const resolved=runDatamoshPass(faulted,now);
+  presentThroughPost(resolved,{torchPower,sourceTorchMode});
+  drawSourceIdentity(now);
 }
 
 const DATAMOSH_FRAG=`#version 300 es
@@ -4400,8 +5027,12 @@ function runPixelMeshPass(state, now) {
   const prevTex = meshFlip ? meshTexB : meshTexA;
   meshFlip = !meshFlip;
 
+  // The physical performer, its overprints and its cold edge enter the same
+  // acquisition as everything else. Never paint smooth mesh relief back over
+  // the recorded result at presentation time.
+  const pressureSourceTex = finishPressure(sceneTex);
   // The possession composites first so the VFD encodes it as part of the world.
-  const worldTex = runBurstPass(sceneTex, now);
+  const worldTex = runBurstPass(pressureSourceTex, now);
 
   // Other passes may leave a WebGL diagnostic behind. Clear before the pixel
   // pass so __chunkSurferPixelMesh.status() reports this layer, not stale GL.
@@ -4419,7 +5050,7 @@ function runPixelMeshPass(state, now) {
   gl.uniform1i(pixelMeshU('uPrev'), 1);
 
   gl.activeTexture(gl.TEXTURE2);
-  gl.bindTexture(gl.TEXTURE_2D, sceneTex);
+  gl.bindTexture(gl.TEXTURE_2D, pressureSourceTex);
   gl.uniform1i(pixelMeshU('uDepth'), 2);
 
   // The engraving, in screen space. Unit 3 — this pass uses three samplers
@@ -4429,6 +5060,14 @@ function runPixelMeshPass(state, now) {
   gl.uniform1i(pixelMeshU('uMarks'), 3);
   gl.uniform1f(pixelMeshU('uMarkDensityGain'), markDensityGain);
   gl.uniform1f(pixelMeshU('uMarkGrainGain'), markGrainGain);
+  // A physical performer carries no wall engraving. The recording shader
+  // rejects background material marks only where this mesh wrote view depth.
+  const recordedPressure=P3.pressureTargets();
+  gl.activeTexture(gl.TEXTURE5);
+  gl.bindTexture(gl.TEXTURE_2D,recordedPressure.color||markTex);
+  gl.uniform1i(pixelMeshU('uRecordedPressureGeometry'),5);
+  gl.uniform1f(pixelMeshU('uRecordedPressureReady'),recordedPressure.ready&&recordedPressure.draws>0?1:0);
+  gl.uniform2f(pixelMeshU('uRecordedPressureNearFar'),recordedPressure.near,recordedPressure.far);
 
   // THE SCREEN. The dial overrules the room, the room overrules the look, and
   // the look is what an ordinary frame uses.
@@ -4484,12 +5123,18 @@ function runPixelMeshPass(state, now) {
   gl.uniform1f(pixelMeshU('uToneAmount'), look.vfd.toneAmount ?? 0.0);
 
   gl.uniform2f(pixelMeshU('uRes'), uniforms.sceneW, uniforms.sceneH);
-  gl.uniform3f(pixelMeshU('uCam'), camX, camY, camZ);
+  const homeAcquisition=sourceCrossingDrawn&&sourceVoidPhysicalActive?homeRealmAcquisition({
+    realm:sourceCrossing?.realm,variant:sourceCrossing?.variant,
+    reveal:pixelMeshSettings.reduceMotion?(sourceCrossing?.reveal>.5?1:0):sourceCrossing?.reveal,
+  }):null;
+  const acquisitionCamera=homeAcquisition?.cameraMetres;
+  gl.uniform3f(pixelMeshU('uCam'), acquisitionCamera?acquisitionCamera[0]/CELL:camX,
+    acquisitionCamera?acquisitionCamera[1]/CELL:camY,acquisitionCamera?acquisitionCamera[2]/CELL:camZ);
   // World bearing, not the logical one. This uniform drives the VFD temporal
   // reprojection: if the scene pass rotates on the spiral and this does not, the
   // whole climb smears.
-  gl.uniform1f(pixelMeshU('uYaw'), yaw + planYaw);
-  gl.uniform1f(pixelMeshU('uPitch'), pitch);
+  gl.uniform1f(pixelMeshU('uYaw'), homeAcquisition?.yaw??yaw + planYaw);
+  gl.uniform1f(pixelMeshU('uPitch'), homeAcquisition?.pitch??pitch);
   gl.uniform1f(pixelMeshU('uCellMeters'), CELL);
   gl.uniform1f(pixelMeshU('uTime'), now);
   const dt = lastPixelMeshAt > 0 ? Math.max(0, Math.min(0.25, now - lastPixelMeshAt)) : 1 / 60;
@@ -4510,6 +5155,9 @@ function runPixelMeshPass(state, now) {
   gl.uniform1f(pixelMeshU('uReduceFlash'), effectiveSettings.reduceFlash ? 1 : 0);
   gl.uniform1f(pixelMeshU('uReduceMotion'), effectiveSettings.reduceMotion ? 1 : 0);
   gl.uniform1f(pixelMeshU('uRecordingCaptureMix'), look.recording.captureMix);
+  const captureExposure=captureExposureOverride??lightingCaptureExposure;
+  gl.uniform1f(pixelMeshU('uRecordingExposure'), captureExposure);
+  gl.uniform1f(pixelMeshU('uRecordingSensitivity'), textSpaceActive&&sourceLook.roomMemoryActive?captureExposure:1);
   gl.uniform1f(pixelMeshU('uRecordingPatternScale'), look.recording.patternScale);
   gl.uniform1f(pixelMeshU('uRecordingBlackFloor'), look.recording.blackFloor);
   gl.uniform1f(pixelMeshU('uRecordingDensityGamma'), look.recording.densityGamma);
@@ -4526,16 +5174,8 @@ function runPixelMeshPass(state, now) {
   gl.uniform1f(pixelMeshU('uPaletteChroma'), look.vfd.paletteChroma ?? 0);
   gl.uniform1f(pixelMeshU('uShadowLift'), look.vfd.shadowLift ?? 0);
   gl.uniform1f(pixelMeshU('uAgitation'), dreamAgitation);
-  const hushBodyModeIndex=Math.max(0,HUSH_BODY_MODES.indexOf(hushBodyMode));
-  const hushBodyPostManifestation=Math.max(hushBodyManifestation,hushBodySecondaryManifestation);
-  const hushBodyPostActive=state?.hushBodyAllowed!==false&&hushBodyReady&&hushBodyPostManifestation>.001&&hushBodyModeIndex<3;
-  gl.uniform4f(
-    pixelMeshU('uHushBodyPost'),
-    hushBodyPostManifestation,
-    hushBodyPostActive?1:0,
-    hushBodyModeIndex<2?1:0,
-    hushBodyModeIndex===0||hushBodyModeIndex===2?1:0,
-  );
+  // Real geometry was acquired above; retire bitmap chroma-key reconstruction.
+  gl.uniform4f(pixelMeshU('uHushBodyPost'),0,0,0,0);
 
   gl.drawArrays(gl.TRIANGLES, 0, 3);
   pixelMeshStatus.framesRendered += 1;
@@ -4595,9 +5235,17 @@ export function r3dInit(mapEl) {
   progSourceFault = program(SOURCE_FAULT_FRAG);
   canvas.dataset.sourceFaultShader='ready';
   progCopy = program(COPY_FRAG);
+  progPressureFinish=program(PRESSURE_FINISH_FRAG);pressureFinishUniformCache.clear();
+  progSourceVoidPhysical = program(SOURCE_VOID_PHYSICAL_FRAG);
+  SHORE.sourceShoreInit(gl);
+  sourceVoidPhysicalUniformCache.clear();
+  canvas.dataset.sourceVoidPhysicalShader='ready';
   progProjection = program(PROJECTION_FRAG);
   try { progBurst = program(BURST_FRAG); } catch (_) { progBurst = null; }
   progTextSpace = program(TEXT_SPACE_FRAG);
+  progSourceRoomAcquisition=program(SOURCE_ROOM_ACQUISITION_FRAG);
+  progSourceIdentity=program(SOURCE_IDENTITY_FRAG);
+  sourceRoomUniformCache.clear();sourceIdentityUniformCache.clear();
   try {
     progPixelMesh = program(PIXEL_MESH_FRAG);
     pixelMeshStatus.shaderReady = true;
@@ -4654,7 +5302,15 @@ export function r3dInit(mapEl) {
   fogTexture = makeTex(FOG_TEX, FOG_TEX, new Uint8Array(FOG_TEX * FOG_TEX).fill(255), 'r8');
   resize();
   P3.loadPropPack(assetUrl('assets/conservatory-props.glb'))
-    .then(()=>P3.addPropPack(assetUrl('assets/conservatory-acquisitions.glb')))
+    .then((pack)=>{
+      SHORE.sourceShoreSetHardwarePack(pack);
+      // The opening booth and the later Wrong Fold share this actor. Begin its
+      // optional decode as soon as the base catalog is installed, so unrelated
+      // street/vegetation/Source packs cannot delay his opening appearance.
+      void P3.addCharacterPack(assetUrl('assets/outskirts-characters.glb')).catch((err)=>console.warn('outskirts character pack unavailable',err));
+      void P3.addCharacterPack(assetUrl('assets/recordist-characters.glb')).catch((err)=>console.warn('recordist character pack unavailable',err));
+      return P3.addPropPack(assetUrl('assets/conservatory-acquisitions.glb'));
+    })
     // Floor textiles, after the procedural pack so atrium_waiting_rug's
     // flat-shaded version is overridden by the textured one of the same name.
     // Optional, like vegetation: a missing pack leaves the bands in place.
@@ -4665,6 +5321,11 @@ export function r3dInit(mapEl) {
     // without preventing later structural packs from loading.
     .then(()=>P3.addPropPack(assetUrl('assets/vegetation.glb')).catch((err)=>console.warn('vegetation pack unavailable; retaining procedural fallbacks',err)))
     .then(()=>P3.addPropPack(assetUrl('assets/source-structures.glb')))
+    .then(()=>{
+      // Pressure decoding is optional and must not delay the doors or stairs.
+      void P3.addCharacterPack(assetUrl(HUSH_BODY_ASSET)).then(()=>{hushBodyReady=true;hushBodyLoadError=null;})
+        .catch((err)=>{hushBodyReady=false;hushBodyLoadError=err?.message||String(err);console.warn('Pressure volume unavailable; retaining absence field',err);});
+    })
     .then(()=>P3.addPropPack(assetUrl('assets/conservatory-doors.glb')))
     .then(()=>P3.addPropPack(assetUrl('assets/tuning-fork.glb')))
     .then(()=>P3.addPropPack(assetUrl('assets/conservatory-main-stair.glb')))
@@ -4680,13 +5341,6 @@ export function r3dInit(mapEl) {
                             assetUrl('assets/surfaces/surface-height.png')),
   ]).then(([a,n,m])=>{surfAlbedoTex=a;surfNormalTex=n;surfMaterialTex=m;surfaceTexture=a;})
     .catch((err)=>console.warn('surface arrays unavailable; using native material fallback',err));
-  // The body is generated data, not an ordinary colour texture. Fingerprint
-  // its URL so a running desktop/webview cannot retain an older matte/card
-  // from the same filename after an asset-only rebuild.
-  const hushBodyAssetUrl=assetUrl(HUSH_BODY_ASSET);
-  loadDataTexture(`${hushBodyAssetUrl}${hushBodyAssetUrl.includes('?')?'&':'?'}v=${HUSH_BODY_ASSET_REV}`)
-    .then((texture)=>{hushBodyTex=texture;hushBodyReady=true;hushBodyLoadError=null;})
-    .catch((err)=>{hushBodyReady=false;hushBodyLoadError=err?.message||String(err);console.warn('HUSH body unavailable; retaining absence field',err);});
   window.addEventListener('resize', resize);
 }
 
@@ -4699,6 +5353,11 @@ function resize() {
   const sw = Math.max(64, Math.round(canvas.width * RENDER_SCALE));
   const sh = Math.max(64, Math.round(canvas.height * RENDER_SCALE));
   if (sceneTex) { gl.deleteTexture(sceneTex); gl.deleteFramebuffer(sceneFbo); }
+  if(pressureFinishTex){gl.deleteTexture(pressureFinishTex);gl.deleteFramebuffer(pressureFinishFbo);}
+  // Pressure now carries material and view depth into the recording. Match
+  // scene precision so its presence cannot quantise the whole world's depth.
+  pressureFinishTex=makeTex(sw,sh,null,'rgba16f');pressureFinishFbo=makeFbo(pressureFinishTex);
+  if(horizonStreetTex)gl.deleteTexture(horizonStreetTex);
   if (markTex) { gl.deleteTexture(markTex); markTex = null; }
   if (meshTexA) {
     gl.deleteTexture(meshTexA); gl.deleteTexture(meshTexB);
@@ -4713,6 +5372,7 @@ function resize() {
   // crawl sideways as the camera changed angle. RGB is explicitly clamped in
   // the raymarch shader, so this precision upgrade does not alter exposure.
   sceneTex = makeTex(sw, sh, null, 'rgba16f');
+  horizonStreetTex = makeTex(sw,sh,null,'rgba16f');
   // RGBA8, not the scene's rgba16f: density, a doubled-angle direction and a
   // coherence all live in 0..1, and test/mark-field.spec.mjs shows eight bits
   // resolve the grain to about a tenth of a degree, far finer than the warp
@@ -4838,6 +5498,11 @@ export function r3dStepDelta(sign = 1) {
   return [v[0] * sign, v[1] * sign];
 }
 export function r3dFacing() { return facing; }
+let cameraSnapPending = false;
+// A warp changes camera ownership. Consume on the next rendered frame, after
+// main.js has selected the destination's physical slice and eye-height policy.
+export function r3dSnapCameraOnNextFrame() { cameraSnapPending = true; }
+
 // Corridors are two cells wide, so an arbitrary spawn facing can put a wall
 // both ahead of you and behind you — which reads exactly like broken arrow keys.
 export function r3dSetFacing(f) {
@@ -4907,7 +5572,8 @@ export function r3dSetSourceTextInstances(instances) { P3.setSourceTextInstances
 export function r3dSetSourceScene(scene = {}) {
   P3.setSourceScene(scene);
   sourceLook = scene.look && typeof scene.look === 'object'
-    ? { sunrise: scene.look.sunrise, chroma: scene.look.chroma, paper: scene.look.paper }
+    ? { sunrise: scene.look.sunrise, chroma: scene.look.chroma, paper: scene.look.paper,
+      roomMemoryActive: scene.look.roomMemoryActive===true }
     : { sunrise: 0, chroma: 1, paper: 0 };
   sourceWeather = scene.weather && typeof scene.weather === 'object'
     ? { rain: scene.weather.rain, moon: scene.weather.moon, clouds: scene.weather.clouds }
@@ -4920,6 +5586,128 @@ export function r3dSetSourceEmergency(value = 0) {
   sourceEmergencyStrength = Math.max(0, Math.min(1.5, Number.isFinite(strength) ? strength : 0));
   return sourceEmergencyStrength;
 }
+// The outskirts' open door frames, as world-metre quads (see renderSourcePortals).
+let sourcePortals=[],sourcePortalsDrawn=0;
+// The door fields' crossings, and the light their doors leak (runtime
+// doorCrossingFrame / doorFieldLeaks). See renderSourceCrossing.
+// state: an ordinary building r3dFrame state. yaw/planYaw: the camera to take it
+// with. sourceEye (metres) and sourceYaw: where that camera stands in Source,
+// looking through the tower door, so the door can put the picture back.
+export function r3dCaptureTowerView(state,{yaw:captureYaw=0,planYaw:capturePlanYaw=0,sourceEye=[0,0,0],sourceYaw=0,key=''}={}){
+  if(!gl||!uniforms.sceneW||!uniforms.sceneH||!state)return null;
+  const w=uniforms.sceneW,h=uniforms.sceneH;
+  if(towerViewW!==w||towerViewH!==h){
+    for(const t of[towerViewColorTex,towerViewDepthTex])if(t)gl.deleteTexture(t);
+    for(const f of[towerViewColorFbo,towerViewDepthFbo])if(f)gl.deleteFramebuffer(f);
+    towerViewColorTex=makeTex(w,h);towerViewColorFbo=makeFbo(towerViewColorTex);
+    towerViewDepthTex=makeTex(w,h,null,'rgba16f');towerViewDepthFbo=makeFbo(towerViewDepthTex);
+    towerViewW=w;towerViewH=h;
+  }
+  const saved={camX,camY,camZ,yaw,yawTarget,pitch,pitchTarget,planYaw,planYawTarget,leanEase,lightEase,lastT,vfdPreviousX,vfdPreviousZ,vfdMovement};
+  yaw=yawTarget=captureYaw;pitch=pitchTarget=0;
+  cameraSnapPending=true;presentTarget={fbo:towerViewColorFbo,width:w,height:h};
+  try{
+    r3dFrame({...state,yawOffset:capturePlanYaw,lean:0,textSpace:false,sourceVoidPhysical:false});
+    // The march leaves 1/(1+zView*.14) in the scene's alpha: view depth, metres.
+    gl.useProgram(progCopy);gl.bindFramebuffer(gl.FRAMEBUFFER,towerViewDepthFbo);gl.viewport(0,0,w,h);
+    gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,sceneTex);
+    gl.uniform1i(gl.getUniformLocation(progCopy,'uSrc'),0);gl.uniform2f(gl.getUniformLocation(progCopy,'uRes'),w,h);
+    gl.drawArrays(gl.TRIANGLES,0,3);
+    gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+  }finally{
+    presentTarget=null;cameraSnapPending=false;
+    ({camX,camY,camZ,yaw,yawTarget,pitch,pitchTarget,planYaw,planYawTarget,leanEase,lightEase,lastT,vfdPreviousX,vfdPreviousZ,vfdMovement}=saved);
+    r3dResetVfdMemory();
+  }
+  towerViewCapture={color:towerViewColorTex,depth:towerViewDepthTex,width:w,height:h,aspect:w/h,
+    eye:[...sourceEye].map(Number),yaw:Number(sourceYaw)||0,key:String(key),at:performance.now()};
+  if(sourceTowerView)sourceTowerView={...sourceTowerView,capture:towerViewCapture};
+  return{width:w,height:h,key:towerViewCapture.key};
+}
+// Diagnostics: the captured belfry as an image, and what its depth says.
+export function r3dTowerViewImage(){
+  if(!gl||!towerViewCapture)return null;
+  const w=towerViewCapture.width,h=towerViewCapture.height,raw=new Uint8Array(w*h*4);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,towerViewColorFbo);gl.readPixels(0,0,w,h,gl.RGBA,gl.UNSIGNED_BYTE,raw);gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+  const c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d'),img=ctx.createImageData(w,h);
+  for(let y=0;y<h;y++){const s=(h-1-y)*w*4;img.data.set(raw.subarray(s,s+w*4),y*w*4);}
+  ctx.putImageData(img,0,0);return c.toDataURL('image/png');
+}
+export function r3dTowerViewDepthStats(){
+  if(!gl||!towerViewCapture)return null;
+  const w=towerViewCapture.width,h=towerViewCapture.height,raw=new Float32Array(w*h*4);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,towerViewDepthFbo);
+  try{gl.readPixels(0,0,w,h,gl.RGBA,gl.FLOAT,raw);}catch(error){gl.bindFramebuffer(gl.FRAMEBUFFER,null);return{error:String(error)};}
+  gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+  const z=(x,y)=>{const a=raw[(y*w+x)*4+3];return (1/Math.max(a,1e-4)-1)/.14;};
+  const samples=[];for(let y=0;y<h;y+=Math.ceil(h/24))for(let x=0;x<w;x+=Math.ceil(w/24))samples.push(z(x,y));
+  samples.sort((p,q)=>p-q);
+  return{glError:gl.getError(),center:z(w>>1,h>>1),min:samples[0],p50:samples[samples.length>>1],max:samples.at(-1)};
+}
+export function r3dTowerViewCaptured(){return towerViewCapture?{key:towerViewCapture.key,width:towerViewCapture.width,height:towerViewCapture.height,sceneMatches:towerViewCapture.width===uniforms.sceneW&&towerViewCapture.height===uniforms.sceneH}:null;}
+export function r3dClearTowerView(){towerViewCapture=null;sourceTowerView=null;return true;}
+// frame: runtime towerDoorView(); null takes the belfry out of the door.
+export function r3dSetSourceOpenings(list=[]){sourceOpenings=Array.isArray(list)?list.filter((o)=>Array.isArray(o?.corners)&&o.corners.length===4):[];return sourceOpenings.length;}
+export function r3dSetSourceTowerView(frame=null){
+  sourceTowerView=frame&&towerViewCapture&&Array.isArray(frame.corners)&&Array.isArray(frame.origin)&&Array.isArray(frame.forward)
+    ?{...frame,capture:towerViewCapture}:null;
+  return !!sourceTowerView;
+}
+export function r3dSourceTowerViewStats(){return{captured:!!towerViewCapture,submitted:!!sourceTowerView,drawn:sourceTowerViewDrawn,
+  capture:towerViewCapture?{eye:towerViewCapture.eye,yaw:towerViewCapture.yaw,width:towerViewCapture.width,height:towerViewCapture.height,key:towerViewCapture.key}:null};}
+export function r3dSetSourceCrossing(frame=null){sourceCrossing=frame&&Number.isFinite(Number(frame.reveal))?frame:null;if(!sourceCrossing)P3.resetSourceRealmEye?.();return !!sourceCrossing;}
+// 2.6 measured: at 1 the red wall printed black and the grey box went to ink; at
+// 3.6 the housing burnt out to paper and the card went with it.
+let tableauSource=null,tableauTex=null,tableauGain=2.6,progTableau=null,tableauDrawn=0;
+const TABLEAU_NO_MARKS=new Float32Array([0,.5,.5,1]);
+export function r3dSetTableau(source=null,{gain=null}={}){
+  tableauSource=source||null;
+  if(gain!=null)tableauGain=Math.max(0,Number(gain)||0);
+  return !!tableauSource;
+}
+export function r3dSetTableauGain(value=1){tableauGain=Math.max(0,Number(value)||0);return tableauGain;}
+export function r3dTableauStats(){return {active:!!tableauSource,gain:tableauGain,drawn:tableauDrawn};}
+function drawTableau(){
+  if(!tableauSource||!gl||!sceneFbo)return false;
+  if(!progTableau)progTableau=program(TABLEAU_FRAG);
+  if(!tableauTex){
+    tableauTex=gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D,tableauTex);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  }
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D,tableauTex);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA8,gl.RGBA,gl.UNSIGNED_BYTE,tableauSource);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,sceneFbo);
+  // This opaque booth painting owns the whole view. It has no architectural
+  // UV attachment: clear the prior world's marks to the production sentinel.
+  gl.drawBuffers([gl.COLOR_ATTACHMENT0,gl.COLOR_ATTACHMENT1]);
+  gl.clearBufferfv(gl.COLOR,1,TABLEAU_NO_MARKS);
+  gl.drawBuffers([gl.COLOR_ATTACHMENT0]);
+  gl.viewport(0,0,uniforms.sceneW,uniforms.sceneH);
+  gl.disable(gl.BLEND);gl.disable(gl.DEPTH_TEST);
+  gl.bindVertexArray(null);
+  gl.useProgram(progTableau);
+  gl.uniform1i(gl.getUniformLocation(progTableau,'uTableau'),0);
+  gl.uniform2f(gl.getUniformLocation(progTableau,'uRes'),uniforms.sceneW,uniforms.sceneH);
+  gl.uniform1f(gl.getUniformLocation(progTableau,'uGain'),tableauGain);
+  gl.drawArrays(gl.TRIANGLES,0,3);
+  tableauDrawn+=1;
+  return true;
+}
+export function r3dSetSourceDoorLights(list=[]){
+  sourceDoorLights=(Array.isArray(list)?list:[]).filter((leak)=>leak&&Number.isFinite(leak.x)&&Number.isFinite(leak.z)
+    &&Array.isArray(leak.forward)&&Array.isArray(leak.colour)).slice(0,3);
+  return sourceDoorLights.length;
+}
+export function r3dSourceCrossingStats(){return{active:!!sourceCrossing,drawn:sourceCrossingDrawn,lights:sourceDoorLights.length};}
+export function r3dSetSourcePortals(list=[]){sourcePortals=Array.isArray(list)?list:[];return sourcePortals.length;}
+export function r3dSourcePortalStats(){return{submitted:sourcePortals.length,drawn:sourcePortalsDrawn,programReady:P3.sourcePortalProgramReady?.()??null};}
 export function r3dSetSourceWhiteout(value = 0) {
   sourceWhiteoutStrength = Math.max(0, Math.min(1, Number(value) || 0));
   return sourceWhiteoutStrength;
@@ -5094,6 +5882,8 @@ function updateWaterField(water, dt) {
 //          hush:{x,y,strength}|null, dockHauntingFade:0..1, audio:0..1 }
 export function r3dFrame(state) {
   if (!gl) return;
+  const snapCamera = cameraSnapPending;
+  cameraSnapPending = false;
   lastBeacons = { key: state.key || null, door: state.door || null };
   const now = performance.now() / 1000;
   const dt = Math.min(0.1, now - (lastT || now));
@@ -5112,22 +5902,22 @@ export function r3dFrame(state) {
   // Two drains, two budgets, one frame, and the budget is checked AFTER a tile
   // rather than before: a ~6ms tile does not trip an 8ms check, so each call can
   // run to ~12ms and the pair to ~24ms. That is the frame, not a slice of it.
-  if (!state.textSpace && !horizonState.active) drainMarkQueue();
+  if (!state.textSpace && !state.sourceVoidPhysical && !horizonState.active) drainMarkQueue();
 
   // main.js supplies a frame-interpolated physical player position. The camera
   // is that position—never a follower with its own lag or acceleration state.
   const nextCamX=state.px+0.5, nextCamZ=state.py+0.5;
   const travel=vfdPreviousX==null?0:Math.hypot(nextCamX-vfdPreviousX,nextCamZ-vfdPreviousZ);
-  if(travel>1.25)r3dResetVfdMemory();
+  if(snapCamera || travel>1.25)r3dResetVfdMemory();
   vfdMovement=Math.max(0,Math.min(1,travel/Math.max(dt*3.0,0.001)));
   vfdPreviousX=nextCamX;vfdPreviousZ=nextCamZ;
   camX=nextCamX;
   camZ=nextCamZ;
-  yaw += (yawTarget - yaw) * (1 - Math.exp(-dt * 12));
+  yaw = snapCamera ? yawTarget : yaw + (yawTarget - yaw) * (1 - Math.exp(-dt * 12));
   planYawTarget = Number(state.yawOffset) || 0;
   // Shortest way round, so crossing the atan2 branch does not spin the camera.
   const planYawDelta = Math.atan2(Math.sin(planYawTarget - planYaw), Math.cos(planYawTarget - planYaw));
-  planYaw += planYawDelta * (1 - Math.exp(-dt * 9));
+  planYaw = snapCamera ? planYawTarget : planYaw + planYawDelta * (1 - Math.exp(-dt * 9));
   const worldYaw = yaw + planYaw;
   // LEANING OUT OF COVER MOVES THE EYE AND NOTHING ELSE.
   //
@@ -5143,16 +5933,16 @@ export function r3dFrame(state) {
   // raymarch, the prop and shadow passes, pixel-mesh, and r3dProjectWorld, which
   // is why world-anchored HUD tracks the lean without being told.
   const leanGoal = Number(state.lean) || 0;
-  leanEase += (leanGoal - leanEase) * (1 - Math.exp(-dt * 11));
+  leanEase = snapCamera ? leanGoal : leanEase + (leanGoal - leanEase) * (1 - Math.exp(-dt * 11));
   if (leanEase) {
     camX += leanEase * Math.cos(worldYaw);
     camZ += leanEase * Math.sin(worldYaw);
   }
-  pitch += (pitchTarget - pitch) * (1 - Math.exp(-dt * 14));
+  pitch = snapCamera ? pitchTarget : pitch + (pitchTarget - pitch) * (1 - Math.exp(-dt * 14));
   // Eye height above whatever floor you are standing on. Eased, so a stair is
   // a climb rather than a series of teleports.
   const floorGoal = ((state.floorH ?? 0) + EYE_METERS) / CELL;
-  camY += (floorGoal - camY) * (1 - Math.exp(-dt * 14));
+  camY = snapCamera ? floorGoal : camY + (floorGoal - camY) * (1 - Math.exp(-dt * 14));
   // A flashlight snaps. The only easing is a filament's breath on the way out.
   const lightGoal = typeof state.light === 'number'
     ? Math.max(0, Math.min(1, state.light))
@@ -5167,6 +5957,7 @@ export function r3dFrame(state) {
   const torchConeInner=Math.max(.72,Math.min(.97,Number(torch.coneInner)||.88));
   const torchConeOuter=Math.max(torchConeInner+.015,Math.min(.98,Number(torch.coneOuter)||.94));
   const torchSpill=Math.max(0,Math.min(.12,Number(torch.spill??.05)||0));
+  const torchShoulder=Math.max(0,Math.min(2,Number(torch.shoulder)||0));
   const opticalEffects=visualEffectsEnabled()?1:0;
   const sensoryProfile=String(state.sensoryProfile||'story');
   const hushSense=sensoryProfile==='hush-prowl'?1:sensoryProfile==='hush-listen'?.75:0;
@@ -5192,6 +5983,7 @@ export function r3dFrame(state) {
     ?state.hushSecondary:null;
   if(incomingHush){
     hushBodyLast={
+      ...incomingHush,
       x:Number(incomingHush.x),
       y:Number(incomingHush.y),
       strength:Math.max(0,Math.min(1,Number(incomingHush.strength)||0)),
@@ -5204,6 +5996,8 @@ export function r3dFrame(state) {
   }
   if(incomingHushSecondary){
     hushBodySecondaryLast={
+      ...incomingHushSecondary,
+      floorH:Number.isFinite(Number(incomingHushSecondary.floorH))?Number(incomingHushSecondary.floorH):0,
       x:Number(incomingHushSecondary.x),
       y:Number(incomingHushSecondary.y),
       strength:Math.max(0,Math.min(1,Number(incomingHushSecondary.strength)||0)),
@@ -5221,24 +6015,41 @@ export function r3dFrame(state) {
     ? (surfacesTarget-surfacesManifestation)*(1-Math.exp(-dt*1.35))
     : (surfacesTarget-surfacesManifestation);
   if(Math.abs(surfacesTarget-surfacesManifestation)<.002)surfacesManifestation=surfacesTarget;
-  const hushBodyTarget=incomingHush?1:0;
-  const hushBodySecondaryTarget=incomingHushSecondary?1:0;
-  const hushBodyRate=hushBodyTarget?7.2:4.0;
-  const hushBodySecondaryRate=hushBodySecondaryTarget?5.4:4.0;
-  hushBodyManifestation+=(hushBodyTarget-hushBodyManifestation)*(1-Math.exp(-dt*hushBodyRate));
-  hushBodySecondaryManifestation+=(hushBodySecondaryTarget-hushBodySecondaryManifestation)*(1-Math.exp(-dt*hushBodySecondaryRate));
-  if(Math.abs(hushBodyTarget-hushBodyManifestation)<.002)hushBodyManifestation=hushBodyTarget;
-  if(Math.abs(hushBodySecondaryTarget-hushBodySecondaryManifestation)<.002)hushBodySecondaryManifestation=hushBodySecondaryTarget;
+  // Simulation/replay owns fades and pose time; rendering never advances them.
+  hushBodyManifestation=incomingHush?(incomingHush.performance?.manifestation??1):0;
+  hushBodySecondaryManifestation=incomingHushSecondary?(incomingHushSecondary.performance?.manifestation??1):0;
+  P3.setPressureInstances(pressureInstances(incomingHush,incomingHushSecondary,{mode:hushBodyMode,reducedMotion:!!pixelMeshSettings.reduceMotion,reduceFlash:!!pixelMeshSettings.reduceFlash}));
+  pressureSceneDepthReady=false;
+  P3.prepareCharacterFrame(now);
+  P3.renderPressurePass({camX:camX*CELL,camY:camY*CELL,camZ:camZ*CELL,yaw:worldYaw,pitch,timeSec:now,reducedMotion:!!pixelMeshSettings.reduceMotion});
 
   gl.disable(gl.DEPTH_TEST);
   textSpaceActive = !!state.textSpace;
+  canvas.dataset.sourceRoomMemory=textSpaceActive&&sourceLook.roomMemoryActive?'true':'false';
+  sourceVoidPhysicalActive=!!state.sourceVoidPhysical&&!horizonState.active;
+  sourceVoidDawn=Math.max(0,Math.min(1,Number(state.sourceVoidDawn)||0));
+  sourceVoidBeacon=state.sourceVoidBeacon&&Number.isFinite(state.sourceVoidBeacon.bearing)?state.sourceVoidBeacon:null;
+  sourceVoidRain=Math.max(0,Math.min(1,Number(state.sourceVoidRain)||0));
+  canvas.dataset.sourceVoidPhysical=sourceVoidPhysicalActive?'true':'false';
 
-  // PAST THE PERIMETER. Its own branch, before the text space and before the
-  // march, for the same reason the text space has one: nothing out there is made
-  // of the building. No reaction-diffusion, no water, no props, no marks, no
-  // VFD — a splat cloud in a void, in colour, and then straight to the screen.
+  // Beyond the telephone street, its physical props and recorded splats share
+  // one camera, ground and gradually failing image. The building's raymarch
+  // is bypassed; the existing street's post look dissolves progressively too.
+  if (SHORE.sourceShoreRenderActive(sourceShoreState)) {
+    drawSourceShore(now,{voidState:state,worldYaw,torchPower,torchColor,torchReach,
+      torchConeInner,torchConeOuter,torchSpill,torchShoulder,
+      torchYawOffset:Math.max(-.4,Math.min(.4,Number(torch.yawOffset)||0))});
+    return;
+  }
+
   if (horizonState.active) {
-    drawHorizon(now);
+    drawHorizon(now,{voidState:state,worldYaw,torchPower,torchReach,torchConeInner,torchConeOuter,torchSpill,sourceTorchMode,
+      torchYawOffset:Math.max(-.4,Math.min(.4,Number(torch.yawOffset)||0))});
+    return;
+  }
+
+  if(sourceVoidPhysicalActive){
+    drawSourceVoidPhysical(now,{voidState:state,worldYaw,torchPower,torchReach,torchConeInner,torchConeOuter,torchSpill,sourceTorchMode,torchYawOffset:Math.max(-.4,Math.min(.4,Number(torch.yawOffset)||0))});
     return;
   }
 
@@ -5247,14 +6058,17 @@ export function r3dFrame(state) {
       camX: camX * CELL, camY: camY * CELL, camZ: camZ * CELL,
       yaw: worldYaw, pitch, light: torchPower, fogTexture, fogOrigin, fogSize: FOG_TEX,
       timeSec:now,reducedMotion:pixelMeshSettings.reduceMotion,
+      sourceRoomLighting:sourceLook.roomMemoryActive===true,
       cellMeters: CELL, zoneTints: ZONE_TINTS,
       localLightCount, localLightPositions, localLightColors, localLightPenetrations, localLightEmergency,
       localShadowIndex,shadowLight:localShadowLight,
-      torch:{power:torchPower,color:torchColor,reach:torchReach,coneInner:torchConeInner,coneOuter:torchConeOuter,spill:torchSpill},
+      torch:{power:torchPower,color:torchColor,reach:torchReach,coneInner:torchConeInner,coneOuter:torchConeOuter,spill:torchSpill,shoulder:torchShoulder},
       ambientColor:lightingAmbientColor,ambientIntensity:lightingAmbientIntensity,
       planTexture,planSize:[planW,planH],planOrigin:[planOriginX,planOriginY],
     });
-    drawTextSpace(P3.propTargets().color,now,{torchPower,sourceTorchMode});
+    if(sourceOpenings.length)P3.renderSourceOpenings?.({camX:camX*CELL,camY:camY*CELL,camZ:camZ*CELL,yaw:worldYaw,pitch,openings:sourceOpenings});
+    drawTextSpace(P3.propTargets().color,now,{torchPower,sourceTorchMode,torchColor,torchReach,
+      torchConeInner,torchConeOuter,torchSpill,torchShoulder,worldState:state});
     return;
   }
 
@@ -5291,13 +6105,14 @@ export function r3dFrame(state) {
     cellMeters:CELL, zoneTints:ZONE_TINTS,
     localLightCount,localLightPositions,localLightColors,localLightPenetrations,localLightEmergency,
     localShadowIndex,shadowLight:localShadowLight,
-    torch:{power:torchPower,color:torchColor,reach:torchReach,coneInner:torchConeInner,coneOuter:torchConeOuter,spill:torchSpill},
+    torch:{power:torchPower,color:torchColor,reach:torchReach,coneInner:torchConeInner,coneOuter:torchConeOuter,spill:torchSpill,shoulder:torchShoulder},
     ambientColor:frameAmbientColor,ambientIntensity:frameAmbientIntensity,
     planTexture,planSize:[planW,planH],planOrigin:[planOriginX,planOriginY],
   });
 
   // march into low-res scene buffer
   gl.useProgram(progMarch);
+  pressureSceneDepthReady=true;
   gl.bindFramebuffer(gl.FRAMEBUFFER, sceneFbo);
   gl.viewport(0, 0, uniforms.sceneW, uniforms.sceneH);
   const U = (n) => {if(!marchUniformCache.has(n))marchUniformCache.set(n,gl.getUniformLocation(progMarch,n));return marchUniformCache.get(n);};
@@ -5322,6 +6137,7 @@ export function r3dFrame(state) {
   gl.uniform1f(U('uTorchReach'),torchReach);
   gl.uniform2f(U('uTorchCone'),torchConeInner,torchConeOuter);
   gl.uniform1f(U('uTorchSpill'),torchSpill);
+  gl.uniform1f(U('uTorchShoulder'),torchShoulder);
   gl.uniform3fv(U('uAmbientColor'),frameAmbientColor);
   gl.uniform1f(U('uAmbientIntensity'),frameAmbientIntensity);
   gl.uniform1f(U('uAmbientFloor'),ambientFloor);
@@ -5329,7 +6145,7 @@ export function r3dFrame(state) {
   gl.uniform3fv(U('uBounceColor'),lightingBounceColor);
   gl.uniform1f(U('uBounceIntensity'),lightingBounceIntensity*bounceAmount);
   gl.uniform1f(U('uBounceLampGain'),bounceLampGain);
-  gl.uniform1f(U('uRainAmount'),rainAmount);
+  gl.uniform1f(U('uRainAmount'),Number.isFinite(state.rainAmount)?state.rainAmount:rainAmount);
   gl.uniform1f(U('uRainIndoor'),indoorRain);
   gl.uniform1f(U('uNightSeed'),nightSeed);
   gl.uniform1f(U('uEndingWorldLook'),endingWorldLook);
@@ -5359,9 +6175,8 @@ export function r3dFrame(state) {
   // WebGL2 only guarantees sixteen fragment samplers and this pass already
   // uses them all. Source Space suppresses building actors, so its corpus atlas
   // and the HUSH SDF safely share unit 13 without ever being sampled together.
-  const hushBodyTextureActive=hushBodyRenderAllowed&&hushBodyReady
-    &&(hushBodyManifestation>.001||hushBodySecondaryManifestation>.001)&&hushBodyMode!=='off';
-  const unit13Texture=hushBodyTextureActive?hushBodyTex:sourceSurfaceTexture;
+  const hushBodyTextureActive=hushBodyRenderAllowed&&hushBodyReady&&P3.pressureTargets().draws>0;
+  const unit13Texture=hushBodyTextureActive?P3.pressureTargets().color:sourceSurfaceTexture;
   gl.uniform1f(U('uSourceReady'),sourceSurfaceTexture&&!hushBodyTextureActive?1:0);
   gl.activeTexture(gl.TEXTURE13);gl.bindTexture(gl.TEXTURE_2D,unit13Texture);gl.uniform1i(U('uSourceSurface'),13);gl.uniform1i(U('uHushBodyTex'),13);
   gl.activeTexture(gl.TEXTURE14);gl.bindTexture(gl.TEXTURE_2D,sourceLayerTexture);gl.uniform1i(U('uSourceLayer'),14);
@@ -5369,6 +6184,11 @@ export function r3dFrame(state) {
   gl.uniform1f(U('uPropsReady'),propTargets.ready?1:0);
   gl.uniform1f(U('uPropNear'),propTargets.near);
   gl.uniform1f(U('uPropFar'),propTargets.far);
+  const shoreAperture=sourceShoreState?.doorway;
+  const shoreRoomSide=!!(sourceShoreState?.active&&!sourceShoreState.outside&&!sourceShoreState.proper&&shoreAperture);
+  gl.uniform4f(U('uSourceShoreAperture'),shoreAperture?.centreX||0,shoreAperture?.doorZ||0,
+    shoreAperture?.width||1,shoreAperture?.height||2.2);
+  gl.uniform2f(U('uSourceShoreApertureState'),sourceShoreState?.room?.floor||0,shoreRoomSide?1:0);
   gl.uniform1f(U('uPropShadowReady'),propTargets.shadowReady?1:0);
   gl.uniformMatrix4fv(U('uPropShadowMatrix'),false,propTargets.shadowMatrix);
   gl.uniform2fv(U('uPropShadowTexel'),propTargets.shadowTexel);
@@ -5386,6 +6206,9 @@ export function r3dFrame(state) {
   const look=currentLook();
   const bankBlend=surfaceDreamBlend();
   gl.uniform1f(U('uSurfacesReady'),surfacesManifestation);
+  // Sampler types need distinct units even while the asset-dependent branch
+  // is disabled. Default zero aliases these arrays with the 2D uRD sampler.
+  for(const[name,unit]of [['uSurfAlbedo',6],['uSurfNormal',7],['uSurfMaterial',8],['uSurfDream',9],['uSurfDreamNext',11],['uSurfMarks',10]])gl.uniform1i(U(name),unit);
   if(surfAlbedoTex&&surfNormalTex&&surfMaterialTex){
     gl.activeTexture(gl.TEXTURE6);gl.bindTexture(gl.TEXTURE_2D_ARRAY,surfAlbedoTex);gl.uniform1i(U('uSurfAlbedo'),6);
     gl.activeTexture(gl.TEXTURE7);gl.bindTexture(gl.TEXTURE_2D_ARRAY,surfNormalTex);gl.uniform1i(U('uSurfNormal'),7);
@@ -5432,30 +6255,63 @@ export function r3dFrame(state) {
   gl.uniform4f(U('uKey'), state.key?.x ?? 0, state.key?.y ?? 0, state.key ? 1 : 0, 0);
   gl.uniform4f(U('uDoor'), state.door?.x ?? 0, state.door?.y ?? 0, state.door ? 1 : 0, 0);
   gl.uniform4f(U('uHush'), state.hush?.x ?? 0, state.hush?.y ?? 0, state.hush?.strength ?? 0, state.hush?.radiusM ?? 0);
-  const hushBodyModeIndex=Math.max(0,HUSH_BODY_MODES.indexOf(hushBodyMode));
-  const hushBodyLastMode=HUSH_BODY_MODES.includes(hushBodyLast.mode)?HUSH_BODY_MODES.indexOf(hushBodyLast.mode):hushBodyModeIndex;
-  const hushBodySecondaryMode=HUSH_BODY_MODES.includes(hushBodySecondaryLast.mode)?HUSH_BODY_MODES.indexOf(hushBodySecondaryLast.mode):hushBodyModeIndex;
-  gl.uniform4f(U('uHushBody'),hushBodyLast.x,hushBodyLast.y,hushBodyRenderAllowed?hushBodyManifestation:0,hushBodyTextureActive?1:0);
-  gl.uniform4f(U('uHushBodyLook'),hushBodyLast.heightM,hushBodyLast.widthM,
-    hushBodyLast.glow??(.88+hushBodyLast.strength*.22),hushBodyLastMode);
-  gl.uniform4f(U('uHushBodySecondary'),hushBodySecondaryLast.x,hushBodySecondaryLast.y,
-    hushBodyRenderAllowed?hushBodySecondaryManifestation:0,hushBodyTextureActive?1:0);
-  gl.uniform4f(U('uHushBodyLookSecondary'),hushBodySecondaryLast.heightM,hushBodySecondaryLast.widthM,
-    hushBodySecondaryLast.glow??(.88+hushBodySecondaryLast.strength*.22),hushBodySecondaryMode);
+  gl.uniform1f(U('uPressureGeometryReady'),hushBodyTextureActive?1:0);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
 
   const pixelSourceTex = runPixelMeshPass(state, now);
   const faultedSourceTex = runSourceFaultPass(pixelSourceTex,now);
   const postSourceTex = runDatamoshPass(faultedSourceTex,now);
+  presentThroughPost(postSourceTex,{torchPower,sourceTorchMode});
+}
 
+// THE GAME'S OWN LOOK, AS ONE STEP. The post upscale the building frame ends in:
+// glass, grain, the recording's temporal smear, the front-end plate. The
+// physical void pass (outskirts, bell passage, chapel outskirts) used to skip it
+// and copy its colour straight to the screen, which is why out there the game
+// stopped looking like itself and showed bare PBR.
+function finishPressure(sourceTex,{acquired=null}={}){
+  const geometry=P3.pressureTargets(),props=P3.propTargets();
+  if(!progPressureFinish||!pressureFinishFbo||!geometry.ready||!geometry.draws||!props.depth)return sourceTex;
+  const U=name=>{
+    if(!pressureFinishUniformCache.has(name))pressureFinishUniformCache.set(name,gl.getUniformLocation(progPressureFinish,name));
+    return pressureFinishUniformCache.get(name);
+  };
+  gl.bindFramebuffer(gl.FRAMEBUFFER,pressureFinishFbo);
+  gl.drawBuffers([gl.COLOR_ATTACHMENT0]);gl.viewport(0,0,uniforms.sceneW,uniforms.sceneH);
+  gl.disable(gl.DEPTH_TEST);gl.disable(gl.BLEND);gl.bindVertexArray(null);gl.useProgram(progPressureFinish);
+  for(const[unit,name,texture]of[[0,'uSrc',sourceTex],[1,'uGeometry',geometry.color],[2,'uScene',sceneTex],[3,'uPropsDepth',props.depth],[4,'uAcquired',acquired||sourceTex]]){
+    gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,texture);gl.uniform1i(U(name),unit);
+  }
+  gl.uniform2f(U('uRes'),uniforms.sceneW,uniforms.sceneH);
+  gl.uniform2f(U('uPressureRes'),geometry.width,geometry.height);
+  gl.uniform2f(U('uNearFar'),geometry.near,geometry.far);
+  gl.uniform1f(U('uSceneDepthReady'),pressureSceneDepthReady?1:0);
+  gl.uniform1f(U('uAcquiredOnly'),acquired?1:0);
+  gl.uniform1f(U('uCaptureExposure'),captureExposureOverride??lightingCaptureExposure);
+  gl.drawArrays(gl.TRIANGLES,0,3);
+  return pressureFinishTex;
+}
+
+function presentThroughPost(sourceTex,{torchPower=0,sourceTorchMode=0,unravellingColour=0,unravellingScene=null,sourceShore=false}={}){
   // post upscale to screen
   gl.useProgram(progPost);
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  gl.viewport(0, 0, canvas.width, canvas.height);
+  const presentW=presentTarget?.width||canvas.width,presentH=presentTarget?.height||canvas.height;
+  gl.bindFramebuffer(gl.FRAMEBUFFER, presentTarget?.fbo||null);
+  gl.viewport(0, 0, presentW, presentH);
   gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D, postSourceTex);
+  gl.bindTexture(gl.TEXTURE_2D, sourceTex);
   gl.uniform1i(postU('uSrc'), 0);
-  gl.uniform2f(postU('uRes'), canvas.width, canvas.height);
+  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,unravellingScene||sourceTex);
+  gl.uniform1i(postU('uUnravellingScene'),1);
+  gl.uniform1f(postU('uUnravellingColour'),unravellingColour);
+  const pressure=P3.pressureTargets(),props=P3.propTargets();
+  for(const[unit,name,texture]of[[2,'uPressureGeometry',pressure.color],[3,'uPressureScene',sceneTex],[4,'uPressurePropsDepth',props.depth]]){
+    gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,texture||sourceTex);gl.uniform1i(postU(name),unit);
+  }
+  gl.uniform1f(postU('uPressureReady'),pressure.ready&&pressure.draws>0?1:0);
+  gl.uniform1f(postU('uPressureSceneDepthReady'),pressureSceneDepthReady?1:0);
+  gl.uniform2f(postU('uPressureNearFar'),pressure.near,pressure.far);
+  gl.uniform2f(postU('uRes'), presentW, presentH);
   gl.uniform1f(postU('uFear'), fearLevel);
   gl.uniform1f(postU('uTimeP'), performance.now() * 0.001);
   const postLook=currentLook();
@@ -5473,6 +6329,7 @@ export function r3dFrame(state) {
   gl.uniform1f(postU('uSourceWhiteout'),sourceWhiteoutStrength);
   gl.uniform1f(postU('uSourceTorchMode'),sourceTorchMode);
   gl.uniform1f(postU('uSourceTorchPower'),torchPower);
+  gl.uniform1f(postU('uSourceShore'),sourceShore?1:0);
   gl.uniform1f(postU('uFrontEndAmount'),frontEndPlate.amount);
   gl.uniform1f(postU('uFrontEndDetailRetention'),frontEndPlate.detailRetention);
   gl.uniform1f(postU('uFrontEndChromaRetention'),frontEndPlate.chromaRetention);
@@ -5483,6 +6340,108 @@ export function r3dFrame(state) {
 }
 
 export function r3dCanvas() { return canvas; }
+
+// Explicit evidence readback only; never part of the frame loop. Coordinates
+// here are framebuffer pixels (bottom-left), including the door-core sample.
+export function r3dSourceRoomRender({sample=false}={}){
+  const targets=P3.propTargets(),active=textSpaceActive&&!!sourceLook.roomMemoryActive;
+  const result={active,acquisition:active?'overworld-pixel-mesh':null,
+    depthSource:active&&targets.depth?'current-prop-depth':null,
+    marksSource:active?(targets.marksReady&&targets.marks?'current-prop-material-marks':'no-marks-sentinel'):null,
+    pixelMeshEnabled:pixelMeshStatus.enabled,bypassedByTextSpace:textSpaceActive&&!sourceLook.roomMemoryActive,
+    width:uniforms.sceneW,height:uniforms.sceneH,pressure:sourceHushProjection(),
+    finalIdentityPass:active&&!!progSourceIdentity};
+  if(!sample||!active||!gl||!sceneFbo)return result;
+  const w=uniforms.sceneW,h=uniforms.sceneH;
+  const previousRead=gl.getParameter(gl.READ_FRAMEBUFFER_BINDING);
+  const previousReadBuffer=gl.getParameter(gl.READ_BUFFER);
+  const readTexture=(texture,width,height,floating=false)=>{
+    const framebuffer=gl.createFramebuffer();
+    const values=floating?new Float32Array(width*height*4):new Uint8Array(width*height*4);
+    try{
+      gl.bindFramebuffer(gl.READ_FRAMEBUFFER,framebuffer);
+      gl.framebufferTexture2D(gl.READ_FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,texture,0);
+      gl.readBuffer(gl.COLOR_ATTACHMENT0);
+      if(gl.checkFramebufferStatus(gl.READ_FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)return null;
+      gl.readPixels(0,0,width,height,gl.RGBA,floating?gl.FLOAT:gl.UNSIGNED_BYTE,values);
+      return values;
+    }finally{gl.deleteFramebuffer(framebuffer);}
+  };
+  try{
+    const scene=readTexture(sceneTex,w,h,true),marks=readTexture(markTex,w,h);
+    const openings=targets.openingMaskReady?readTexture(targets.openingMask,w,h):null;
+    const outputW=presentTarget?.width||canvas.width,outputH=presentTarget?.height||canvas.height;
+    const final=new Uint8Array(outputW*outputH*4);
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER,presentTarget?.fbo||null);
+    gl.readBuffer(presentTarget?gl.COLOR_ATTACHMENT0:gl.BACK);
+    gl.readPixels(0,0,outputW,outputH,gl.RGBA,gl.UNSIGNED_BYTE,final);
+    let finalNonBlackPixels=0;
+    for(let at=0;at<final.length;at+=4)if(final[at]||final[at+1]||final[at+2])finalNonBlackPixels++;
+    const packedFar=1/(1+targets.far*.14);
+    let validDepth=0,surfaceDepth=0,derivedMarks=0,sentinelMarks=0,minDepth=1,maxDepth=0;
+    let doorCore=0,exactBlackCore=0,doorCoreSample=null;
+    for(let i=0;i<w*h;i++){
+      const at=i*4,d=scene?.[at+3];
+      if(Number.isFinite(d)&&d>0&&d<=1){validDepth++;minDepth=Math.min(minDepth,d);maxDepth=Math.max(maxDepth,d);if(d>packedFar+.0001)surfaceDepth++;}
+      if(marks){if(marks[at]>0)derivedMarks++;else sentinelMarks++;}
+      if(openings?.[at]===255){
+        const x=i%w,y=Math.floor(i/w);
+        const ox=Math.min(outputW-1,Math.floor((x+.5)*outputW/w));
+        const oy=Math.min(outputH-1,Math.floor((y+.5)*outputH/h));
+        const oi=(oy*outputW+ox)*4,rgb=Array.from(final.subarray(oi,oi+3));
+        doorCore++;if(rgb.every(value=>value===0))exactBlackCore++;
+        if(!doorCoreSample)doorCoreSample={sceneX:x,sceneY:y,outputX:ox,outputY:oy,rgb};
+      }
+    }
+    result.samples={pixels:w*h,validDepth,surfaceDepth,packedDepthRange:[minDepth,maxDepth],
+      derivedMarks,sentinelMarks,doorCore,exactBlackCore,doorCoreSample,
+      outputPixels:outputW*outputH,finalNonBlackPixels,
+      note:'Door-core pixels covered by Pressure may contain its final silhouette; door-only views should be exact black.',glError:gl.getError()};
+  }finally{
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER,previousRead);
+    gl.readBuffer(previousReadBuffer);
+  }
+  return result;
+}
+
+// Pull a raw stage only on explicit diagnostic requests. The physical march,
+// prop pass and VFD encode must be distinguishable when a finished frame loses
+// geometry; inspecting the final screenshot cannot tell which pass lost it.
+export function r3dCaptureStageCanvas(stage='scene') {
+  if(!gl||!uniforms.sceneW||!uniforms.sceneH)return null;
+  const texture=stage==='props'?P3.propTargets().color
+    :stage==='pressure-material'?pressureFinishTex
+    :stage==='pressure-geometry'?P3.pressureTargets().color
+    :stage==='marks'?markTex
+    :stage==='openingMask'?P3.propTargets().openingMask
+    :stage==='vfd'?(meshFlip?meshTexB:meshTexA)
+    :stage==='scene'?sceneTex:null;
+  if(!texture)return null;
+  const width=uniforms.sceneW,height=uniforms.sceneH;
+  const previousRead=gl.getParameter(gl.READ_FRAMEBUFFER_BINDING);
+  const target=gl.createFramebuffer();
+  const floating=stage==='scene'||stage==='pressure-material';
+  const pixels=floating?new Float32Array(width*height*4):new Uint8Array(width*height*4);
+  try{
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER,target);
+    gl.framebufferTexture2D(gl.READ_FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,texture,0);
+    if(gl.checkFramebufferStatus(gl.READ_FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)return null;
+    gl.readPixels(0,0,width,height,gl.RGBA,floating?gl.FLOAT:gl.UNSIGNED_BYTE,pixels);
+  }finally{
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER,previousRead);
+    gl.deleteFramebuffer(target);
+  }
+  const captured=document.createElement('canvas');captured.width=width;captured.height=height;
+  const context=captured.getContext('2d'),frame=context.createImageData(width,height),row=width*4;
+  for(let y=0;y<height;y++){
+    if(floating){for(let x=0;x<row;x++)frame.data[y*row+x]=Math.round(Math.max(0,Math.min(1,pixels[(height-1-y)*row+x]))*255);}
+    else frame.data.set(pixels.subarray((height-1-y)*row,(height-y)*row),y*row);
+    // Scene alpha stores depth, not opacity. Keep it opaque for honest viewing.
+    if(stage!=='props'&&stage!=='pressure-geometry')for(let x=0;x<width;x++)frame.data[y*row+x*4+3]=255;
+  }
+  context.putImageData(frame,0,0);
+  return captured;
+}
 
 // ── The depth the lens gets ─────────────────────────────────────────────────
 // Resolves the alpha channel of the last rendered frame into a grey depth image
@@ -5513,6 +6472,8 @@ export function r3dCaptureSceneCanvas(size=384){
   gl.viewport(0,0,uniforms.sceneW,uniforms.sceneH);
   gl.useProgram(progPost);
   gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,sceneTex);gl.uniform1i(postU('uSrc'),0);
+  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,sceneTex);gl.uniform1i(postU('uUnravellingScene'),1);
+  gl.uniform1f(postU('uUnravellingColour'),0);
   gl.uniform2f(postU('uRes'),uniforms.sceneW,uniforms.sceneH);
   gl.drawArrays(gl.TRIANGLES,0,3);
   const sx=Math.max(0,Math.floor((uniforms.sceneW-Math.min(uniforms.sceneW,uniforms.sceneH))/2));

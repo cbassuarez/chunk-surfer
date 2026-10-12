@@ -88,3 +88,42 @@ export function createBellFrameLayout(bells, {
     };
   });
 }
+
+// ST BRENDAN'S HANGS THE SAME EIGHT IN TWO TIERS. Its working chamber has an
+// 8.4 by 7.6m clear interior; two four-bell pits side by side are nearly
+// eight metres long. So the heavy back four (5–8) hang in a two-by-two pit on the
+// belfry deck and the light front four (1–4) on a second frame above them. Same
+// bells, same per-bell fields as createBellFrameLayout, so the chapel's assembly
+// meshes and full-circle curve draw them unchanged. Every bell swings along x;
+// the pitch keeps the two in each row from ever meeting at the top of a stroke.
+export const TWO_TIER_PITCH = Object.freeze({ x: 2.2, z: 2.0 });
+export function createTwoTierBellFrameLayout(bells, {
+  centerX,
+  centerZ,
+  lowerFloorY=10.2,
+  upperPivotY=14.4,
+  pitchX=TWO_TIER_PITCH.x,
+  pitchZ=TWO_TIER_PITCH.z,
+} = {}) {
+  if (!Number.isFinite(centerX) || !Number.isFinite(centerZ)) {
+    throw new Error('bell frame requires a finite physical centre');
+  }
+  return (bells || []).map((bell, index) => {
+    const upper=index<4;
+    const slot=upper?index:index-4;
+    const bay=slot%2,row=Math.floor(slot/2);
+    const visualScale=.76+index*.028;
+    return{
+      ...bell,
+      tier:upper?'upper':'lower',
+      pivot:{
+        x:centerX+(bay?1:-1)*pitchX/2,
+        y:upper?upperPivotY:lowerFloorY+2.05,
+        z:centerZ+(row?1:-1)*pitchZ/2,
+      },
+      frameYaw:0,
+      visualScale,
+      sweepRadius:1.05*visualScale,
+    };
+  });
+}

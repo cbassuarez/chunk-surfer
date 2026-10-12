@@ -22,6 +22,8 @@ Every presented line has a semantic `signalRole`: `human`, `playerShadowReturn`,
 
 Player-noise perception accepts player-generated diegetic sound and allowed microphone activity. The 168 BPM battle performance, architectural resonators, program playback, score, and room leakage are non-player audio. They cannot reveal the player, spoil a take, or feed the player-noise meter.
 
+One exception, and it is physical: a source standing in the room being recorded. The practice wing's metronomes are non-player audio, and a room tone with a clock ticking in it is not a room tone, so their ticks reach the take by level and can spoil it. They still cannot reveal the player, never fetch anything after him, and are quieted by hand or by shutting their rooms in. Nothing says who keeps them running.
+
 ## The unresolved name
 
 The gate guard asks for the operator's name and visibly accepts two answers. Rain masks both written presentations and accessibility captions print `[NAME OBSCURED]`. When a Steam display name or OS username has been separately enabled, the sanitized value may be synthesized locally beneath those two booth lines; it remains runtime-only and the repeat is clearer. Without a permitted value, the voice uses the stable obscured-shape syllables. Persistence records only `operator.name.received = true`. No literal operator name is permitted in saves, tapes, captions, transcripts, replay data, diagnostics, telemetry, or exports, and the B3 pre-roll echo never repeats it.

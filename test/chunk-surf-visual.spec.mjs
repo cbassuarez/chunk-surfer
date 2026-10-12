@@ -242,10 +242,12 @@ for (const entry of Object.values(SOURCE_ATLAS.entries)) {
 
 {
   const runtime=createSourceSpaceRuntime({initialState:hallState(0)});
-  const sheets=runtime.propInstances(0,0);
+  const props=runtime.propInstances(0,0);
+  const sheets=props.filter((entry)=>entry.mesh==='loose_note');
   assert.deepEqual(runtime.textInstances({px:0,py:0}),[],'the long hall never uses Source Space text geometry');
   assert.ok(sheets.length>=180,'the regular 3D hall begins full of real sheet meshes');
   assert.ok(sheets.every((entry)=>entry.mesh==='loose_note'&&entry.matrix?.length===16),'every hall page is a rendered 3D sheet');
+  assert.ok(props.some((entry)=>entry.semantic==='hall-service-bay'),'the physical hall has repeated architectural bays');
   assert.ok(sheets.some((entry)=>Math.abs(entry.matrix[12])>2.8),'sheet meshes reach both physical walls');
   assert.ok(sheets.some((entry)=>entry.matrix[13]>4),'sheet meshes occupy the ceiling as well as the floor');
   assert.ok(runtime.probe().pageCount>=260,'the dense sheet field exists before hall progression');
@@ -317,7 +319,9 @@ assert.ok(new Set(SOURCE_TIERS.filter((tier)=>tier.field)
   // own perimeter, rendered as a visible wall of code.
   assert.ok(runtime.geometry.cellAt(20,FIELD_ORIGIN.y+(SOURCE_TIER_BY_ID.trace.from+SOURCE_TIER_BY_ID.trace.to)/2),'off-route space remains open except where authored solid architecture occupies it');
   assert.equal(runtime.geometry.cellAt(40,FIELD_ORIGIN.y-184-SOURCE_APPROACH_CELLS),null,'the colossal percussion shelf is physically present in off-route space');
-  assert.equal(runtime.geometry.cellAt(0,-900),null,'beyond the field perimeter there is no ground (sky, not corridor)');
+  // Straight on past the perimeter is the walk out to the tape, which IS ground.
+  // Off to the side of it there is none.
+  assert.equal(runtime.geometry.cellAt(92,FIELD_ORIGIN.y+SOURCE_TIER_BY_ID.outskirts.from-40),null,'beyond the field perimeter, off the walk out, there is no ground (sky, not corridor)');
 }
 
 {

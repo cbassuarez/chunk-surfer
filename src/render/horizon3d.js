@@ -1,16 +1,12 @@
-// THE HORIZON PASS — the tape, standing up.
+// The telephone street unravels into the recorded tape. Its baked slices are
+// transformed into physical world metres and use the street's actual camera.
+// Surviving real props occlude the splats; fixed missing sectors and settling
+// fragments accumulate with the runtime's saved unravelling amount. Ground
+// remains continuous and the bust is an optional solid remnant.
 //
-// A splat cloud where depth is time. Every slice is one frame of the recording
-// hung in a plane, two metres apart, and walking forward is the playhead. The
-// frames behind you do not go anywhere, which is the entire point: datamosh
-// survives by keeping the last picture it had, and out here that is architecture
-// you can turn around and look at.
-//
-// SEPARATE FROM EVERYTHING. This does not go through MARCH_FRAG — that pass has
-// all sixteen fragment samplers spoken for (see r3d.js) and nothing can be added
-// to it. It does not go through the pixel-mesh either: the horizon is the one
-// place in the game that is in colour, and it follows the precedent
-// TEXT_SPACE_FRAG set, which renders and returns before the VFD stack ever runs.
+// The pass bypasses MARCH_FRAG. r3d composites street and splats together, then
+// progressively releases the existing pixel mesh into full recording colour.
+// The baked buffer remains immutable; damage and world placement are uniforms.
 //
 // THE BUFFER IS UPLOADED ONCE AND NEVER TOUCHED AGAIN. The bake sorts every
 // splat by slice, so a slice is a contiguous run of records: drawing one is an
@@ -26,6 +22,31 @@
 // ordering plus a per-slice fade uniform that the single-draw version could
 // not have.
 
+// Shared with the physical street compositor. Damage is attached to space and
+// a durable amount; turning around or pausing cannot put a missing sector back.
+export const UNRAVELLING_GLSL = `
+float unravelHash(vec2 p){float h=abs(sin(dot(p,vec2(127.1,311.7)))*43758.5);return h-floor(h);}
+float unravelKeep(vec3 p,float amount){
+  vec2 sector=floor(p.xz/vec2(7.0,11.0));
+  float seed=unravelHash(sector);
+  float remnant=step(.91,seed);
+  float chunk=unravelHash(vec2(floor(p.x*.8)+floor(p.y*.7)*19.0,floor(p.z*.7)));
+  float sectorLoss=smoothstep(.20+seed*.70,.24+seed*.70,amount);
+  float chunkLoss=smoothstep(.20+chunk*.72,.24+chunk*.72,amount);
+  return mix((1.0-sectorLoss)*(1.0-chunkLoss*.72),1.0,remnant);
+}
+`;
+
+export function horizonWorldTransform({ worldOriginM = [0, 0, 0], cellMetres = .5 } = {}, tape = {}) {
+  const cell = Math.max(.01, Number(cellMetres) || .5);
+  const origin = worldOriginM.map(value => Number(value) || 0);
+  return { scale: [cell * 1.5, cell, cell], offset: [origin[0], origin[1] - (Number(tape.floor) || 0) * cell, origin[2]] };
+}
+
+export function horizonWorldPoint(point, transform) {
+  return point.map((value, axis) => value * transform.scale[axis] + transform.offset[axis]);
+}
+
 const VERT = `#version 300 es
 precision highp float;
 layout(location=0) in vec2 aQuad;      // unit quad, -0.5..0.5
@@ -34,6 +55,10 @@ layout(location=2) in vec2 aSize;      // fixed point, /uSizeScale
 layout(location=3) in vec4 aColor;     // normalised
 layout(location=4) in vec2 aTrim;      // x: seed, y: kind
 uniform mat4 uView, uProj;
+uniform vec3 uWorldScale, uWorldOffset;
+uniform vec3 uDamageOrigin;
+uniform vec2 uUnravelling; // durable amount, cumulative loss
+uniform float uWorldActive;
 uniform float uPosScale, uSizeScale;
 uniform float uSliceFade;   // per-slice opacity, distance + collapse
 uniform float uBoil;        // sub-pixel unrest, so a still frame is not dead
@@ -66,6 +91,7 @@ uniform float uBoreZ, uBoreAheadZ, uBoreAxisY, uBoreHeight, uBoreAmount;
 // picture is clean and still, the middle seethes, and the tail is clean again
 // and dying — three acts nobody had to author.
 uniform float uMosh;
+uniform float uDream;
 // AURORA, NOT WALLPAPER. Flat fields are the substance of the recording, and
 // baked at 4m wide by 2.2m tall they tile like brickwork. Drawn tall they
 // overlap into vertical curtains instead — light hanging in a column rather
@@ -76,17 +102,41 @@ uniform float uCurtain;
 // hung in a plane does not, and the difference is most of the feeling.
 uniform float uShimmer;
 out vec2 vQuad; out vec4 vColor; out float vKind; out float vSeed;
+out float vViewDepth;
+` + UNRAVELLING_GLSL + `
 
 void main(){
   vec3 center = aCenter / uPosScale;
   vec2 size = aSize / uSizeScale;
   float kind = aTrim.y;
+  vec3 anchored = center * uWorldScale + uWorldOffset;
+  float pictureLoss=max(uUnravelling.y,.24+uUnravelling.x*.46);
+  float keep = mix(1.0,unravelKeep(anchored-uDamageOrigin,pictureLoss),uWorldActive);
+  // Gaps continue through successive frames instead of filling with the next
+  // intact slice. The picture arrives already failing.
+  float sector=unravelHash(floor((anchored-uDamageOrigin).xy/vec2(6.0,3.5)));
+  float sectorLoss=smoothstep(.16+sector*.65,.20+sector*.65,uUnravelling.x);
+  keep*=mix(1.0,1.0-sectorLoss*(1.0-step(.92,sector)),uWorldActive);
+  float detached = smoothstep(.12,.66,uUnravelling.x)*uWorldActive;
+  float packet = unravelHash(floor(center.xz/vec2(4.0,8.0)));
+  // Fragments separate and settle once. They do not orbit like aurora curtains.
+  center.x += (packet-.5)*detached*5.0;
+  center.y -= packet*detached*3.0;
+  size *= 1.0-detached*(.18+packet*.35);
   // Macroblock damage gets a small, seeded wander. The recording is a single
   // still per slice and a perfectly rigid one reads as a photograph on a wall
   // rather than as a signal that is still arriving.
   // The amplitude used to be 0.06m on a splat 1.8m across — a 3% displacement,
   // which is to say invisible. The damage should visibly crawl.
   float phase = aTrim.x * 0.0246 + uBoil;
+  // Recursive folds of the actual recorded splats: no invented image layer.
+  // The clear navigation bore and ground remain untouched.
+  vec2 fold=center.xy*.13;
+  for(int octave=0;octave<3;octave++){
+    fold=sin(fold.yx*1.73+vec2(.7,1.3)+uBoil*.035);
+    center.xy+=fold*uDream*(.95/float(octave+1));
+  }
+  size *= 1.0 + uDream*.24*sin(phase*.3);
   if (kind > 1.5) {
     center.xy += vec2(sin(phase), cos(phase * 1.37)) * (0.42 * uMosh);
   } else if (kind > 0.5) {
@@ -102,10 +152,12 @@ void main(){
     center.x += cos(phase * 0.19 + center.y * 0.05) * uShimmer * 0.35;
   }
   // Camera-space expansion: the splat faces the body, always.
-  vec4 viewPos = uView * vec4(center, 1.0);
-  viewPos.xy += aQuad * size;
+  vec3 world = center * uWorldScale + uWorldOffset;
+  vec4 viewPos = uView * vec4(world, 1.0);
+  viewPos.xy += aQuad * size * uWorldScale.xy;
+  vViewDepth = -viewPos.z;
   vQuad = aQuad;
-  float buried = smoothstep(uFloorCut - 2.2, uFloorCut + 0.6, center.y);
+  float buried = smoothstep(uFloorCut - 1.1, uFloorCut + 0.3, world.y);
   // Where the tube is at this splat's depth.
   float along = clamp((uBoreZ - center.z) / max(1.0, uBoreAheadZ), 0.0, 1.0);
   float axisX = mix(uBoreCentre.x, uBoreCentre.y, along);
@@ -121,7 +173,7 @@ void main(){
   // Soft-walled, not a hole punched in a poster: the tape thins toward the axis
   // over the last third of the radius, so the corridor has haze in it.
   float bore = mix(1.0 - uBoreAmount, 1.0, smoothstep(0.58, 1.20, r));
-  vColor = vec4(aColor.rgb, aColor.a * uSliceFade * buried * bore);
+  vColor = vec4(aColor.rgb, aColor.a * uSliceFade * buried * bore * keep);
   vKind = kind;
   vSeed = aTrim.x;
   gl_Position = uProj * viewPos;
@@ -147,10 +199,14 @@ void main(){
 const FRAG = `#version 300 es
 precision highp float;
 in vec2 vQuad; in vec4 vColor; in float vKind; in float vSeed;
+in float vViewDepth;
 layout(location=0) out vec4 o;
 layout(location=1) out vec4 oMark;
 // How opaque a flat field is allowed to get. See the veil note below.
 uniform float uVeil;
+uniform sampler2D uStreet, uStreetDepth;
+uniform vec2 uSceneRes, uStreetNearFar;
+uniform float uWorldActive, uStreetRetention;
 
 // Cheap value noise. The tape is a 32x18 image per slice, so there is no detail
 // in the source below four metres; this invents structure at the scale the eye
@@ -192,6 +248,15 @@ void main(){
     // at by addition rather than by occlusion.
     a = (1.0 - smoothstep(0.35, 2.1, d)) * min(1.0, vColor.a * uVeil);
   }
+  if(uWorldActive>.5){
+    vec2 uv=gl_FragCoord.xy/uSceneRes;
+    float coverage=texture(uStreet,uv).a;
+    float ndc=texture(uStreetDepth,uv).r*2.0-1.0;
+    float streetDepth=2.0*uStreetNearFar.x*uStreetNearFar.y/max(.0001,uStreetNearFar.y+uStreetNearFar.x-ndc*(uStreetNearFar.y-uStreetNearFar.x));
+    // Real surviving shapes occlude the picture. Near fragments can cross in
+    // front, gently at first, so the same telephone street remains legible.
+    a*=vViewDepth>streetDepth-.035?1.0-coverage:1.0-coverage*uStreetRetention*.88;
+  }
   if (a < 0.004) discard;
 
   // Sub-splat break-up, keyed off the per-splat seed so it is stable frame to
@@ -214,13 +279,16 @@ const QUAD = new Float32Array([-0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5]);
 const NEAR = 0.05;
 const FAR = 120;
 
-export function horizonCamera({ camX = 0, camY = 0, camZ = 0, yaw = 0, pitch = 0, aspect = 1.6 } = {}) {
+export function horizonCamera({ camX = 0, camY = 0, camZ = 0, yaw = 0, pitch = 0, aspect = 1.6, near = NEAR, far = FAR } = {}) {
   const f = 1 / 0.95;
+  // The first shore has fixed architecture hundreds of metres away. Other
+  // callers retain the tape camera's original range and depth precision.
+  const n = Math.max(.01, Number(near) || NEAR), fa = Math.max(n + 1, Number(far) || FAR);
   const projection = new Float32Array([
     f / aspect, 0, 0, 0,
     0, f, 0, 0,
-    0, 0, (FAR + NEAR) / (NEAR - FAR), -1,
-    0, 0, (2 * FAR * NEAR) / (NEAR - FAR), 0,
+    0, 0, (fa + n) / (n - fa), -1,
+    0, 0, (2 * fa * n) / (n - fa), 0,
   ]);
   const cp = Math.cos(pitch);
   const fwd = [Math.sin(yaw) * cp, Math.sin(pitch), -Math.cos(yaw) * cp];
@@ -270,6 +338,7 @@ precision highp float;
 layout(location=0) in vec2 aQuad;
 uniform mat4 uView, uProj;
 uniform float uFloorY, uHalfWidth, uNear, uFar, uCamZ;
+uniform vec3 uWorldScale, uWorldOffset;
 out vec3 vLocal;
 void main(){
   // The quad is laid out in tape space directly: x across the corridor, z back
@@ -278,7 +347,7 @@ void main(){
   float x = aQuad.x * 2.0 * uHalfWidth;
   float z = uCamZ + mix(uNear, uFar, aQuad.y + 0.5);
   vLocal = vec3(x, uFloorY, z);
-  gl_Position = uProj * uView * vec4(vLocal, 1.0);
+  gl_Position = uProj * uView * vec4(vLocal*uWorldScale+uWorldOffset, 1.0);
 }`;
 
 const GROUND_FRAG = `#version 300 es
@@ -287,6 +356,9 @@ in vec3 vLocal;
 layout(location=0) out vec4 o;
 layout(location=1) out vec4 oMark;
 uniform vec3 uVoid;
+uniform vec2 uPath[4];
+uniform float uPathOpen;
+uniform float uPathOnly;
 // uFadeDist is the POSITIVE run of the floor. uFar in the vertex shader is the
 // signed z offset of the far edge, and reusing it here as a scale divided by a
 // negative number — which clamped the fade to 1 everywhere and made the whole
@@ -308,41 +380,40 @@ void main(){
 
   // Distance fade. The ground has to run out before the tape does, or the
   // recording appears to be standing on a floor that continues past it.
-  float depth = clamp(back / max(1.0, uFadeDist), 0.0, 1.0);
+  float depth = clamp(abs(back) / max(1.0, uFadeDist), 0.0, 1.0);
   float reach = 1.0 - smoothstep(0.62, 1.0, depth);
-  // And it has to run out UNDER the body too, or the near edge of the quad is a
-  // hard line across the bottom of the frame.
-  reach *= smoothstep(0.0, 0.035, depth);
+  // Ground remains underfoot and behind the body when looking back. Its quad
+  // extends beyond this fade, so there is no artificial near edge to conceal.
 
   // The lane: lit inside the walkable band, gone outside it, with the edge
   // itself the brightest part. That edge is the only thing out here that is
   // telling the truth about where the step will be refused.
   float inside = 1.0 - smoothstep(band.y * 0.86, band.y * 1.04, off);
-  float edge = smoothstep(band.y * 0.72, band.y * 0.99, off) * (1.0 - smoothstep(band.y * 1.0, band.y * 1.22, off));
-
-  // Sleepers every eight metres, thin, and gone before the far fade: they are
-  // here to give the walk a rate, not to be a pattern.
-  float rungs = smoothstep(0.93, 0.995, abs(fract(vLocal.z * 0.125) * 2.0 - 1.0)) * inside
-    * (1.0 - smoothstep(0.30, 0.75, depth));
-
-  // Sleepers across the lane, every four metres, so speed is legible. Without
-  // them a flat lane gives the walk no rate at all and the whole crossing feels
-  // slower than it is.
-  // Bright enough to be a floor. The first pass at this was the void colour
-  // times a small number, which on screen is black — the ground was there and
-  // nobody could see it, which is the same as not having one.
-  // A floor in a recording of a place, not a lit floor in a place. It reads at
-  // the same value as the void it stands in and everything on it is a shade of
-  // that plum — the first tuning had glowing rails and a checkerboard on it,
-  // which is a different game.
-  vec3 col = vec3(0.036, 0.014, 0.046);
-  col += vec3(0.052, 0.020, 0.068) * inside;
-  col += vec3(0.155, 0.062, 0.180) * edge;
-  col += vec3(0.048, 0.020, 0.058) * rungs;
+  // One broad worn surface continues the street. There are no luminous rails
+  // or periodic sleepers suggesting another obstacle course.
+  vec3 col = vec3(.095,.105,.108)+vec3(.025,.025,.018)*inside;
   // Grain, so the floor belongs to the same failing recording as the picture.
   col *= 0.86 + hash21(floor(vLocal.xz * 3.0)) * 0.28;
+  float pathDistance=10000.0;
+  // Match the body's cell metric; only the picture compresses the X axis.
+  vec2 pathPoint=vLocal.xz*vec2(1.5,1.0);
+  for(int i=0;i<3;i++){
+    vec2 a=uPath[i]*vec2(1.5,1.0),b=uPath[i+1]*vec2(1.5,1.0),ab=b-a;
+    float t=clamp(dot(pathPoint-a,ab)/max(.001,dot(ab,ab)),0.0,1.0);
+    pathDistance=min(pathDistance,length(pathPoint-a-ab*t));
+  }
+  float ribbon=(1.0-smoothstep(4.8,6.0,pathDistance))*uPathOpen;
+  float lip=(1.0-smoothstep(.18,.63,abs(pathDistance-4.8)))*uPathOpen;
+  col=mix(col,vec3(.095,.098,.082),ribbon*.9);
+  col+=vec3(.10,.085,.04)*lip;
 
-  float a = reach * uExposure * (1.0 - uCollapse * 0.9) * 0.96;
+  float a = reach * uExposure * 0.96;
+  // The opened road is solid ground, not another translucent video layer.
+  // A second narrow pass keeps only it legible through the picture's splats.
+  if(uPathOnly>.5){
+    a*=max(ribbon,lip);
+    col=vec3(.19,.19,.145)+vec3(.10,.085,.04)*lip;
+  }
   o = vec4(col * a, a);
   oMark = vec4(0.0);
 }`;
@@ -361,13 +432,14 @@ layout(location=1) in vec3 aNormal;
 uniform mat4 uView, uProj;
 uniform vec3 uOrigin;
 uniform float uScale;
+uniform vec3 uWorldScale, uWorldOffset;
 out vec3 vNormal;
 out vec3 vPosition;
 void main(){
   vec3 world = aPosition * uScale + uOrigin;
-  vPosition = world;
-  vNormal = normalize(aNormal);
-  gl_Position = uProj * uView * vec4(world, 1.0);
+  vPosition = world*uWorldScale+uWorldOffset;
+  vNormal = normalize(aNormal/uWorldScale);
+  gl_Position = uProj * uView * vec4(vPosition, 1.0);
 }`;
 
 const MODEL_FRAG = `#version 300 es
@@ -598,7 +670,7 @@ export function horizonReady() { return ready; }
 // Per-frame draw accounting, for the probe. "It went black" has too many
 // candidate causes to guess at; this says whether the pass ran and how much of
 // the tape it actually submitted.
-export const horizonStats = { calls: 0, draws: 0, instances: 0, skipped: 0, bail: null };
+export const horizonStats = { calls: 0, draws: 0, instances: 0, skipped: 0, bail: null, glErrors: [] };
 export function horizonManifest() { return manifest; }
 
 export function horizonDispose() {
@@ -612,15 +684,17 @@ export function horizonDispose() {
   manifest = null; ready = false;
 }
 
-function drawHorizonBust(view, projection, exposure, collapse) {
+function drawHorizonBust(view, projection, exposure, collapse, worldTransform = null) {
   if (!horizonBustPresent()) return false;
   gl.useProgram(modelProgram);
   gl.uniformMatrix4fv(MU('uView'), false, view); gl.uniformMatrix4fv(MU('uProj'), false, projection);
-  gl.uniform3f(MU('uOrigin'), bustPlacement.x, bustPlacement.floor, bustPlacement.z);
+  gl.uniform3f(MU('uOrigin'),bustPlacement.x,worldTransform?(Number(manifest.floor)||0):bustPlacement.floor,bustPlacement.z);
   gl.uniform1f(MU('uScale'), bustPlacement.scale);
+  gl.uniform3fv(MU('uWorldScale'),worldTransform?.scale||[1,1,1]);
+  gl.uniform3fv(MU('uWorldOffset'),worldTransform?.offset||[0,0,0]);
   gl.uniform1f(MU('uRecognized'), bustPlacement.eyes ? 1 : 0);
   gl.uniform1f(MU('uReturned'), bustPlacement.eyeMode === 'returned' ? 1 : 0);
-  gl.uniform1f(MU('uExposure'), Math.max(0.08, exposure * (1 - collapse * 0.92)));
+  gl.uniform1f(MU('uExposure'),worldTransform?Math.max(.40,exposure):Math.max(0.08,exposure*(1-collapse*.92)));
   gl.disable(gl.BLEND); gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(true);
   for (const primitive of bustPrimitives) {
     gl.bindVertexArray(primitive.vao);
@@ -670,7 +744,8 @@ const drawOrder = [];
 // the tape does not.
 export function horizonGround({
   view, projection, camZ = 0, floorY = null, collapse = 0, exposure = 1,
-  band = null, bandAhead = null, aheadZ = 96, far = 300, near = 6,
+  band = null, bandAhead = null, aheadZ = 96, far = 300, near = 300, towerPath = [], pathOnly = false,
+  worldTransform = null,
 } = {}) {
   if (!gl || !groundProgram || !view || !projection) return false;
   const here = band || { centre: 0, reach: 24 };
@@ -680,6 +755,8 @@ export function horizonGround({
   gl.bindVertexArray(vao);
   gl.uniformMatrix4fv(GU('uView'), false, view);
   gl.uniformMatrix4fv(GU('uProj'), false, projection);
+  gl.uniform3fv(GU('uWorldScale'),worldTransform?.scale||[1,1,1]);
+  gl.uniform3fv(GU('uWorldOffset'),worldTransform?.offset||[0,0,0]);
   gl.uniform1f(GU('uFloorY'), y);
   // Wide enough that the quad's own side edges never enter the frame; the fade
   // is what ends the floor, not the geometry.
@@ -694,11 +771,21 @@ export function horizonGround({
   gl.uniform2f(GU('uBandHere'), here.centre, Math.max(2, here.reach));
   gl.uniform2f(GU('uBandAhead'), ahead.centre, Math.max(2, ahead.reach));
   gl.uniform1f(GU('uAheadZ'), Math.max(1, aheadZ));
-  gl.disable(gl.DEPTH_TEST);
+  gl.uniform1f(GU('uPathOpen'), towerPath.length===4?1:0);
+  gl.uniform1f(GU('uPathOnly'),pathOnly?1:0);
+  gl.uniform2fv(GU('uPath[0]'),new Float32Array(Array.from({length:4},(_,i)=>[towerPath[i]?.x||0,-(towerPath[i]?.depth||0)]).flat()));
+  if(pathOnly){gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);}
+  else gl.disable(gl.DEPTH_TEST);
   gl.depthMask(false);
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  // The path overlay runs after the video, so it must leave the same state as
+  // that pass: writable depth for the next clear/GLB draw, no fullscreen depth
+  // test, and no inherited blending in a subsequent physical scene.
+  gl.depthMask(true);
+  gl.disable(gl.BLEND);
+  gl.disable(gl.DEPTH_TEST);
   gl.bindVertexArray(null);
   return true;
 }
@@ -706,7 +793,8 @@ export function horizonGround({
 export function horizonRender({
   view, projection, slice = 0, reach = 44, behind = reach,
   collapse = 0, boil = 0, exposure = 1, nearFade = 9, floorCut = -1e9,
-  mosh = 1, curtain = 1, shimmer = 0, veil = 1.7, bore = null,
+  mosh = 1, curtain = 1, shimmer = 0, veil = 1.7, bore = null, dream = 0,
+  worldTransform = null, unravelling = null, street = null,
 } = {}) {
   bore = {
     centre: 0, centreAhead: 0, reach: 24, reachAhead: 24,
@@ -714,7 +802,7 @@ export function horizonRender({
     ...(bore || {}),
   };
   horizonStats.calls += 1;
-  horizonStats.draws = 0; horizonStats.instances = 0; horizonStats.skipped = 0; horizonStats.bail = null;
+  horizonStats.draws = 0; horizonStats.instances = 0; horizonStats.skipped = 0; horizonStats.bail = null; horizonStats.glErrors=[];
   if (!ready || !gl || !program || !view || !projection) {
     horizonStats.bail = `ready=${ready} gl=${!!gl} program=${!!program} view=${!!view} proj=${!!projection}`;
     return false;
@@ -725,9 +813,20 @@ export function horizonRender({
   if (last < first) { horizonStats.bail = `empty range ${first}..${last}`; return false; }
 
   gl.useProgram(program);
+  gl.uniform1f(U('uDream'),Math.max(0,Math.min(1,dream)));
   gl.bindVertexArray(vao);
   gl.uniformMatrix4fv(U('uView'), false, view);
   gl.uniformMatrix4fv(U('uProj'), false, projection);
+  gl.uniform3fv(U('uWorldScale'),worldTransform?.scale||[1,1,1]);
+  gl.uniform3fv(U('uWorldOffset'),worldTransform?.offset||[0,0,0]);
+  gl.uniform3fv(U('uDamageOrigin'),worldTransform?[worldTransform.offset[0],floorCut,worldTransform.offset[2]]:[0,0,0]);
+  gl.uniform1f(U('uWorldActive'),worldTransform?1:0);
+  gl.uniform2f(U('uUnravelling'),unravelling?.amount||0,unravelling?.loss||0);
+  gl.uniform1f(U('uStreetRetention'),Math.max(0,1-(unravelling?.amount||0)));
+  gl.uniform2f(U('uSceneRes'),street?.width||1,street?.height||1);
+  gl.uniform2f(U('uStreetNearFar'),street?.near||.05,street?.far||90);
+  gl.activeTexture(gl.TEXTURE6);gl.bindTexture(gl.TEXTURE_2D,street?.color||null);gl.uniform1i(U('uStreet'),6);
+  gl.activeTexture(gl.TEXTURE7);gl.bindTexture(gl.TEXTURE_2D,street?.depth||null);gl.uniform1i(U('uStreetDepth'),7);
   gl.uniform1f(U('uPosScale'), manifest.posScale);
   gl.uniform1f(U('uSizeScale'), manifest.sizeScale);
   gl.uniform1f(U('uBoil'), boil);
@@ -771,7 +870,7 @@ export function horizonRender({
   const drawBust = () => {
     if (bustDrawn) return;
     bustDrawn = true;
-    drawHorizonBust(view, projection, exposure, collapse);
+    drawHorizonBust(view, projection, exposure, collapse, worldTransform);
   };
 
   for (const index of drawOrder) {
@@ -829,5 +928,12 @@ export function horizonRender({
   gl.disable(gl.DEPTH_TEST);
   gl.bindVertexArray(null);
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
+  // Capture these before the pixel mesh clears the GL error queue. The probe
+  // can distinguish a submitted but rejected tape pass from a dark picture.
+  for(let i=0;i<4;i++){
+    const error=gl.getError();
+    if(!error)break;
+    horizonStats.glErrors.push(error);
+  }
   return true;
 }

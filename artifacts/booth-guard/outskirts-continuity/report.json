@@ -1,0 +1,195 @@
+{
+  "passed": true,
+  "failure": null,
+  "checks": [
+    "Third lodge submits the existing skinned guard in idle through the actual renderer.",
+    "No character pose errors; active road pass is 2.",
+    "Physical hatch approach opens the guard conversation.",
+    "No JavaScript, shader, character-load or pose errors."
+  ],
+  "errors": [],
+  "resources": [
+    "http://127.0.0.1:5329/src/render/r3d.js?t=1791819429126",
+    "http://127.0.0.1:5329/src/render/props3d.js?t=1791819429126",
+    "http://127.0.0.1:5329/src/render/paper3d.js",
+    "http://127.0.0.1:5329/assets/conservatory-props.glb",
+    "http://127.0.0.1:5329/assets/outskirts-characters.glb"
+  ],
+  "frame": {
+    "characters": {
+      "loaded": true,
+      "error": null,
+      "frame": 11.64439999999851,
+      "meshes": [
+        "outskirts_fold_guard",
+        "outskirts_overprint_body",
+        "pressure_body"
+      ],
+      "assets": [
+        {
+          "mesh": "outskirts_fold_guard",
+          "vertices": 27890,
+          "triangles": 48296,
+          "primitives": 6,
+          "joints": 34,
+          "morphs": 4
+        },
+        {
+          "mesh": "outskirts_overprint_body",
+          "vertices": 28514,
+          "triangles": 50032,
+          "primitives": 6,
+          "joints": 34,
+          "morphs": 4
+        },
+        {
+          "mesh": "pressure_body",
+          "vertices": 28762,
+          "triangles": 46996,
+          "primitives": 1,
+          "joints": 34,
+          "morphs": 4
+        }
+      ],
+      "clips": [
+        "fold",
+        "writhe",
+        "idle",
+        "walk",
+        "turn",
+        "pressure_hold",
+        "pressure_idle",
+        "pressure_approach",
+        "pressure_limp",
+        "pressure_listen",
+        "pressure_load",
+        "pressure_advance",
+        "pressure_arrest",
+        "pressure_pivot"
+      ],
+      "poses": [
+        {
+          "id": "r2-booth-guard",
+          "mesh": "outskirts_fold_guard",
+          "clip": "idle",
+          "time": 0,
+          "layers": [
+            {
+              "clip": "idle",
+              "time": 0,
+              "weight": 1
+            }
+          ],
+          "bounds": {
+            "min": [
+              -1.6920280974460578,
+              -0.8238793973141818,
+              -1.5678747776998019
+            ],
+            "max": [
+              1.6868038284828526,
+              2.539145126576517,
+              1.5759916711700892
+            ]
+          }
+        },
+        {
+          "id": "r6-booth-guard",
+          "mesh": "outskirts_fold_guard",
+          "clip": "fold",
+          "time": 0,
+          "layers": [
+            {
+              "clip": "fold",
+              "time": 0,
+              "weight": 1
+            }
+          ],
+          "bounds": {
+            "min": [
+              -1.6920279626371324,
+              -1.0270369414808214,
+              -1.5107820805730283
+            ],
+            "max": [
+              1.6868036941962457,
+              2.116829193067735,
+              1.6330840539755285
+            ]
+          }
+        }
+      ],
+      "poseErrors": []
+    },
+    "road": {
+      "pass": 2,
+      "flurry": 0,
+      "vanRinging": false,
+      "boxRinging": false,
+      "loopBroken": false,
+      "vanOffhook": false,
+      "composure": 40,
+      "box": {
+        "id": "r2-phone-box",
+        "pass": 2,
+        "inside": {
+          "x": 17.04,
+          "y": -1575.91
+        },
+        "outside": {
+          "x": 14.6,
+          "y": -1575.91
+        },
+        "insideWorld": {
+          "x": 8.77,
+          "z": -787.705
+        },
+        "outsideWorld": {
+          "x": 7.55,
+          "z": -787.705
+        },
+        "faceSet": 1.5707963267948966,
+        "faceRoad": -1.5707963267948968,
+        "door": 0,
+        "open": false,
+        "occupied": false
+      }
+    },
+    "pos": {
+      "x": -10.8,
+      "y": -1576.01
+    },
+    "scene": null
+  },
+  "dialogue": {
+    "scene": "thought:outskirts-guard",
+    "view": {
+      "mode": "nodes",
+      "nodeId": "guard",
+      "finished": false,
+      "speaker": "THE LODGE",
+      "history": [],
+      "line": {
+        "who": "direction",
+        "text": "A guard in the lodge, back to the road, a ledger open on the counter.",
+        "signalRole": "unattributed",
+        "sourceId": "guard.1"
+      },
+      "who": "direction",
+      "typed": 32,
+      "typing": true,
+      "lineAge": 0.7663999999985097,
+      "lineSerial": 1,
+      "lineContentId": "thought:outskirts-guard:guard:line:0",
+      "seenBeforeRun": false,
+      "accelerating": false,
+      "voice": null,
+      "pending": null,
+      "art": null,
+      "artReason": "none",
+      "lineSourceId": "guard.1",
+      "spent": {}
+    }
+  },
+  "scope": "Isolated Chromium/Metal preview at authored third-lodge checkpoint, not a full arrival playthrough."
+}

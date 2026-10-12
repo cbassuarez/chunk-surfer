@@ -11,7 +11,7 @@ import { OPENING_STREET_MESHES, OPENING_STREET_PROPS } from './opening-street.js
 import { VIGIL_MESHES, VIGIL_PART_MESHES, vigilFigures, vigilParts } from './exterior-vigil.js';
 import { YARD_PARK_MESHES, YARD_PARK_PROPS } from './yard-park.js';
 import { BASEBOARDS } from './generated/prop-geometry.js';
-import { CHURCH_COLLIDERS } from './st-brendans.js';
+import { CATHEDRAL_DESCENT_BLOCKERS, CHURCH_COLLIDERS } from './st-brendans.js';
 import { VEGETATION_FALLBACKS, VEGETATION_MESHES } from './vegetation.js';
 
 const P = (id, mesh, x, y, yaw = 0, extra = {}) => ({ id, mesh, x, y, yaw, scale:1, ...extra });
@@ -221,6 +221,7 @@ export const PROP_MESH = Object.freeze({
   cathedral_pulpitum:{w:8.0,d:.55,h:2.65,blocks:false},
   cathedral_tomb:{w:2.1,d:.85,h:1.05,blocks:true},
   cathedral_monument:{w:1.25,d:.42,h:2.5,blocks:false},
+  ending_collapse_debris:{w:1.5,d:.9,h:.37,blocks:true},
   yard_rehearsal_range:{w:14,d:10,h:8.8,blocks:true},
   yard_baths_plant:{w:13,d:12,h:7.2,blocks:true},
   yard_covered_stores:{w:12,d:13,h:6.4,blocks:true},
@@ -342,7 +343,7 @@ export const STRUCTURAL_COLLIDERS = Object.freeze([
       :collider.floor>=4.5?CPL(collider.x,collider.y):CPG(collider.x,collider.y);
     const diameter=(collider.radius||0)*2;
     return{id:collider.id,kind:'obb',x:point.x,y:point.y,
-      width:collider.w||diameter,depth:collider.d||diameter,yaw:0,
+      width:collider.w||diameter,depth:collider.d||diameter,yaw:collider.yaw||0,
       minElevation:collider.floor,maxElevation:collider.ceil,
       spaceId:collider.floor>=10?'cathedral_belfry':collider.floor>=4.5?'cathedral_loft':'cathedral_ground'};
   }),
@@ -726,7 +727,7 @@ export const CONSERVATORY_PROPS = [
   // the cathedral component; CPG(16,70.5) still resolves to the same physical
   // centre the mesh was authored around. Keeping the hero off the sealed yard
   // underlay prevents prop initialisation from discarding it as embedded.
-  P('brendan-church','st_brendan_church',CPG(16,70.5).x,CPG(16,70.5).y,0,{
+  P('brendan-church','st_brendan_church',CPG(16,70).x,CPG(16,70).y,0,{
     structural:true,blocks:false,label:'St Brendan\u2019s Cathedral',renderGroups:['ground','cathedral'],
     inspect:inspect(
       'St Brendan\u2019s Cathedral. Rubble stone, slate, a crossing tower and a west door with no exterior handle. Older than the conservatoire and outliving it.',
@@ -741,6 +742,15 @@ export const CONSERVATORY_PROPS = [
     P(`brendan-choir-stall-n-${i+1}`,'pew',CPG(13.0,y).x,CPG(13.0,y).y,Math.PI/2,{scale:.72,renderGroups:['ground'],inspect:inspect('Choir stalls under misericords blackened by age.','The seat lifts. The carving underneath is worn smooth.')}),
     P(`brendan-choir-stall-s-${i+1}`,'pew',CPG(19.0,y).x,CPG(19.0,y).y,Math.PI/2,{scale:.72,renderGroups:['ground'],inspect:inspect('Choir stalls facing the empty centre line.','No books. No cushions. No recent dust broken.')}),
   ]),
+  // The two short ways down are choked (st-brendans CATHEDRAL_DESCENT_BLOCKERS),
+  // so the descent is the long walk over the crossing and along the nave.
+  ...CATHEDRAL_DESCENT_BLOCKERS.map((blocker,i)=>{
+    const at=blocker.level==='belfry'?CPB(blocker.x,blocker.y):CPL(blocker.x,blocker.y);
+    return P(blocker.id,'ending_collapse_debris',at.x,at.y,.4+i*1.3,{scale:1.45,blocks:true,renderGroups:['cathedral'],
+      inspect:blocker.level==='belfry'
+        ?inspect('Louvre boards and their frame, down across the turret mouth. The stair behind them is full to the roof.','Nobody is getting down this one.')
+        :inspect('Rubble from the turret vault, packed into the stair mouth to the ceiling.','Not this way down.')});
+  }),
   P('brendan-pulpitum','cathedral_pulpitum',CPG(16,76.05).x,CPG(16,76.05).y,0,{structural:true,blocks:false,renderGroups:['ground'],inspect:inspect('An open stone pulpitum. Two flights of pierced tracery leave the centre passage clear.','A screen that divides without sealing.')}),
   P('brendan-font','cathedral_font',CPG(16,59.2).x,CPG(16,59.2).y,0,{renderGroups:['ground'],inspect:inspect('A battered octagonal font. The bowl is dry except for plaster grit.','Stone dust in the bowl.')}),
   P('brendan-lectern','lectern',CPG(14.5,77.2).x,CPG(14.5,77.2).y,.12,{renderGroups:['ground'],inspect:inspect('A brass lectern gone green at the joints. The service book is gone.','The ribbon remains, marking air.')}),
@@ -1492,6 +1502,18 @@ export const CONSERVATORY_PROPS = [
   ].map((entry,i)=>P(`practice-stand-${i+1}`,'music_stand',entry.x,entry.y,entry.yaw,{
     roomHistory:entry.history,interactive:false,blocks:false,
   })),
+  // Six metronomes still running (src/game/practice-metronomes.js): on the lid of
+  // five uprights and the end of the ensemble room's marimba, each set to a
+  // ratio of the wing's clock, settling onto it over the night. The service
+  // room has none, and the exam room's is the one that stopped. These six can
+  // be stopped by hand ([e]), which is why they are not mute like the rest.
+  // Placed from the host's pose: a point on its top, turned by its yaw.
+  P('practice-metronome-lesson','metronome',74.57,59.89,-1.47,{blocks:false,action:'practice-metronome',label:'the metronome',interactionPriority:5,inspect:inspect('A metronome on the lid, still going.','Still going.'),elevation:1.42,roomHistory:'cello-lesson'}),
+  P('practice-metronome-claimed','metronome',74.43,65.00,-1.55,{blocks:false,action:'practice-metronome',label:'the metronome',interactionPriority:5,inspect:inspect('A metronome on the lid, still going.','Still going.'),elevation:1.42,roomHistory:'coat-and-bag-drop'}),
+  P('practice-metronome-rehearsal','metronome',52.46,72.78,1.45,{blocks:false,action:'practice-metronome',label:'the metronome',interactionPriority:5,inspect:inspect('A metronome on the lid, still going.','Still going.'),elevation:1.42,roomHistory:'chamber-spillover'}),
+  P('practice-metronome-paper','metronome',74.46,73.56,-1.64,{blocks:false,action:'practice-metronome',label:'the metronome',interactionPriority:5,inspect:inspect('A metronome on the lid, still going.','Still going.'),elevation:1.42,roomHistory:'copied-parts'}),
+  P('practice-metronome-emptied','metronome',52.30,81.91,1.69,{blocks:false,action:'practice-metronome',label:'the metronome',interactionPriority:5,inspect:inspect('A metronome on the lid, still going.','Still going.'),elevation:1.42,roomHistory:'hurried-departure'}),
+  P('practice-metronome-ensemble','metronome',72.74,79.39,0.04,{blocks:false,action:'practice-metronome',label:'the metronome',interactionPriority:5,inspect:inspect('A metronome on the lid, still going.','Still going.'),elevation:1.17,roomHistory:'ensemble-rehearsal'}),
   ...[
     {x:56.05,y:61.00,yaw:-1.34,state:'pencil room number beneath the seat',history:'exam-preparation'},
     {x:70.45,y:60.65,yaw:1.84,state:'new rubber foot on the piano-side leg',history:'cello-lesson'},

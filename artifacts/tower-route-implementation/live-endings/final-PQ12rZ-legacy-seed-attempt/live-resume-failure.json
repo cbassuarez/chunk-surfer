@@ -1,0 +1,877 @@
+{
+  "url": "http://127.0.0.1:5299/?nodisplaynotice=1&skipwarn=1&nomic=1&sam=0&nothink=1",
+  "cutscene": null,
+  "cathedral": {
+    "finale": {
+      "route": null,
+      "stage": "uncommitted",
+      "result": null,
+      "bust": {
+        "recognized": false,
+        "decision": null,
+        "defeats": 0
+      },
+      "cathedral": {
+        "alarm": 0,
+        "damage": [],
+        "lessons": [],
+        "fight": null,
+        "extraction": null
+      },
+      "compatibility": {}
+    },
+    "here": null,
+    "ring": 8,
+    "carry": null,
+    "physical": {
+      "player": {
+        "x": 7.5,
+        "y": 0,
+        "z": 7.5
+      },
+      "body": null,
+      "westPlane": {
+        "x": 16,
+        "y": 0,
+        "z": 55
+      },
+      "bothOutside": false
+    },
+    "anchors": {
+      "collapsedSurfer": null,
+      "nave": {
+        "x": 257,
+        "y": 379
+      },
+      "westDoors": {
+        "x": 256.5,
+        "y": 360.5
+      }
+    },
+    "cutscene": null,
+    "at": null,
+    "bells": [
+      {
+        "id": 1,
+        "tier": "upper",
+        "pivot": {
+          "x": 14.9,
+          "y": 14.399999809265138,
+          "z": 72
+        }
+      },
+      {
+        "id": 2,
+        "tier": "upper",
+        "pivot": {
+          "x": 17.1,
+          "y": 14.399999809265138,
+          "z": 72
+        }
+      },
+      {
+        "id": 3,
+        "tier": "upper",
+        "pivot": {
+          "x": 14.9,
+          "y": 14.399999809265138,
+          "z": 74
+        }
+      },
+      {
+        "id": 4,
+        "tier": "upper",
+        "pivot": {
+          "x": 17.1,
+          "y": 14.399999809265138,
+          "z": 74
+        }
+      },
+      {
+        "id": 5,
+        "tier": "lower",
+        "pivot": {
+          "x": 14.9,
+          "y": 12.249999809265137,
+          "z": 72
+        }
+      },
+      {
+        "id": 6,
+        "tier": "lower",
+        "pivot": {
+          "x": 17.1,
+          "y": 12.249999809265137,
+          "z": 72
+        }
+      },
+      {
+        "id": 7,
+        "tier": "lower",
+        "pivot": {
+          "x": 14.9,
+          "y": 12.249999809265137,
+          "z": 74
+        }
+      },
+      {
+        "id": 8,
+        "tier": "lower",
+        "pivot": {
+          "x": 17.1,
+          "y": 12.249999809265137,
+          "z": 74
+        }
+      }
+    ],
+    "towerInstances": []
+  },
+  "pos": {
+    "x": 115,
+    "y": 415
+  },
+  "save": {
+    "version": 4,
+    "flags": {
+      "prologueDone": true
+    },
+    "area": "conservatory",
+    "layoutRevision": 3,
+    "px": 115,
+    "py": 415,
+    "facing": 1,
+    "view": {
+      "yaw": 1.5707963267948966,
+      "pitch": 0
+    },
+    "cameraRevision": 34,
+    "checkpointRevision": 34,
+    "takes": [],
+    "items": [],
+    "props": {
+      "inspected": [],
+      "auditioned": [],
+      "cycles": {},
+      "hushSeed": 1129534802,
+      "hushCount": 0
+    },
+    "encounters": {
+      "cleared": []
+    },
+    "combatBuild": {
+      "schema": 1,
+      "tutorialGrant": null,
+      "rewardedEncounters": [],
+      "rewardedFlags": [],
+      "techniques": [],
+      "pinsEarned": 0,
+      "pinsSpent": 0,
+      "unspent": 0
+    },
+    "bagLoadout": {
+      "schema": 1,
+      "capacity": 4,
+      "top": [
+        "light",
+        "recorder",
+        "radio"
+      ]
+    },
+    "fieldKit": {
+      "schema": 1,
+      "headphones": "reference",
+      "microphone": "reference",
+      "recorder": "reference",
+      "flashlight": "reference",
+      "cosmetics": {
+        "faceplate": "aluminum",
+        "buttons": "classic",
+        "vfd": "faithful",
+        "flashlightHousing": "graphite"
+      }
+    },
+    "vanPreparation": {
+      "schema": 1,
+      "difficulty": null
+    },
+    "doors": {
+      "schema": 2,
+      "states": {},
+      "legacyOpen": []
+    },
+    "playSeconds": 136,
+    "steps": 0,
+    "bagNav": null,
+    "bagSheets": {
+      "schema": 1,
+      "inspected": []
+    },
+    "bagMap": {
+      "schema": 1,
+      "visited": []
+    },
+    "hushAudio": {
+      "schema": 1,
+      "audition": {
+        "interest": 0,
+        "certainty": 0,
+        "agitation": 0,
+        "playfulness": 0.48,
+        "lastHeard": null,
+        "hypotheses": [],
+        "pressure": {
+          "recentEnergy": 0,
+          "repeatedNoise": 0,
+          "impulsiveNoise": 0
+        },
+        "noiseMemory": []
+      },
+      "mischief": {
+        "lastCueAgeMs": 604800000,
+        "familyRemaining": {},
+        "cueRemaining": {},
+        "cueCounts": {},
+        "history": []
+      }
+    },
+    "chunkSurf": {
+      "schema": 5,
+      "active": false,
+      "completed": false,
+      "phase": "hall",
+      "seed": 4417,
+      "profile": {
+        "id": "sober",
+        "mandatory": false,
+        "bestEligible": false,
+        "weight": "institution",
+        "sourceGuidance": false,
+        "evidenceTags": [],
+        "sourceMemoryFacts": {},
+        "marbleEyes": null
+      },
+      "returnPoint": null,
+      "hallMaxDistance": 0,
+      "hallExperience": {
+        "searchElapsed": 0,
+        "pressure": 0,
+        "rainLatched": false
+      },
+      "pageStage": 0,
+      "haystackOrigin": null,
+      "landscapeOrigin": null,
+      "interactivePageSlot": null,
+      "haystackDialogue": null,
+      "sourceContacts": {
+        "schema": 2,
+        "captures": 0,
+        "talks": 0,
+        "radioCalls": 0,
+        "lastTalk": null,
+        "insights": [],
+        "seenBeats": [],
+        "lastChoiceId": null,
+        "met": false,
+        "questions": [],
+        "beats": [],
+        "tells": [],
+        "warningSeen": false,
+        "combatCommitted": false
+      },
+      "landingDoorOpen": false,
+      "landingDoorSealed": false,
+      "edgeDoorOpen": false,
+      "edgeDoorEchoesErased": [],
+      "outskirtsExperience": {
+        "seen": [],
+        "lampsOff": [],
+        "actions": [],
+        "observed": [],
+        "busStage": 0,
+        "history": [],
+        "clock": 0,
+        "fold": {
+          "version": 1,
+          "phase": "armed",
+          "elapsed": 0,
+          "seed": 0,
+          "cues": [],
+          "lastEffort": -1
+        },
+        "locomotion": null,
+        "playback": {
+          "started": false,
+          "done": false,
+          "elapsed": 0
+        }
+      },
+      "sourceApproachDistance": 0,
+      "sourceShore": {
+        "version": 1,
+        "phase": "upper",
+        "floor": 4.2,
+        "boardElapsed": 0,
+        "bodyFloor": 0,
+        "falling": false,
+        "fallVelocity": 0,
+        "boarded": false,
+        "adapted": false,
+        "exposureElapsed": 0
+      },
+      "sourceDivide": null,
+      "sourceApproachComplete": false,
+      "firstLiftCompleted": false,
+      "landingWeatherSpent": false,
+      "hasFork": false,
+      "visited": [],
+      "tuned": [],
+      "recorded": [],
+      "optionalTraces": [],
+      "checkpointId": "hall-entry",
+      "checkpoint": {
+        "id": "hall-entry",
+        "facing": 0
+      },
+      "attempts": 0,
+      "hushStage": "absent",
+      "pursuitBeat": null,
+      "pursuitsCleared": [],
+      "finalEncounter": {
+        "status": "locked",
+        "outcome": null,
+        "won": null,
+        "rescuedRecordist": false,
+        "legacyRedaction": null,
+        "compatibility": {},
+        "channels": {
+          "rescue": 0,
+          "contain": 0,
+          "submit": 0
+        },
+        "turns": 0
+      },
+      "armedRedaction": null,
+      "redaction": null,
+      "bestEligible": false,
+      "injuriesAtEntry": 0,
+      "horizon": {
+        "entered": false,
+        "reason": null,
+        "exit": null,
+        "maxDepth": 0,
+        "unravelling": {
+          "active": false,
+          "furthestMetres": -50,
+          "elapsedSeconds": 0,
+          "amount": 0,
+          "markers": []
+        }
+      },
+      "bellField": null,
+      "routeDoorsErased": [],
+      "routeDoorsOpened": [],
+      "station": {
+        "time": 0,
+        "crossing": null,
+        "walk": null,
+        "realm": null,
+        "personal": {
+          "version": 2,
+          "active": false,
+          "stage": "school-hall",
+          "graphVersion": 2,
+          "migratedFrom": null,
+          "entryDoorId": null,
+          "returnPose": null,
+          "entryPose": null,
+          "pose": {
+            "x": 0,
+            "z": 17,
+            "yaw": 0,
+            "pitch": 0
+          },
+          "worldPoses": {
+            "school-hall": {
+              "x": 0,
+              "z": 17,
+              "yaw": 0,
+              "pitch": 0
+            },
+            "tape-field": {
+              "x": 0,
+              "z": 18.25,
+              "yaw": 0,
+              "pitch": 0
+            },
+            "dead-broadcast": {
+              "x": 0,
+              "z": 18.25,
+              "yaw": 0,
+              "pitch": 0
+            },
+            "ash-room": {
+              "x": 0,
+              "z": 18.25,
+              "yaw": 0,
+              "pitch": 0
+            },
+            "return-hall": {
+              "x": 5,
+              "z": -8.25,
+              "yaw": 3.141592653589793,
+              "pitch": 0
+            }
+          },
+          "visited": {
+            "school-hall": false,
+            "tape-field": false,
+            "dead-broadcast": false,
+            "ash-room": false,
+            "return-hall": false
+          },
+          "transition": null,
+          "portalLatch": null,
+          "time": 0,
+          "listenedSeconds": 0,
+          "recordingOffsetSeconds": 0,
+          "recordingHeard": false,
+          "handoverSeconds": 0,
+          "collapseSeconds": 0,
+          "completed": false,
+          "rewardEarned": false,
+          "rewardConsumed": false,
+          "ringAnswered": false
+        },
+        "homeDiscovered": false,
+        "homeResolved": false,
+        "lastReturn": null,
+        "entries": [],
+        "takeBacks": []
+      },
+      "finale": {
+        "route": null,
+        "stage": "uncommitted",
+        "result": null,
+        "bust": {
+          "recognized": false,
+          "decision": null,
+          "defeats": 0
+        },
+        "cathedral": {
+          "alarm": 0,
+          "damage": [],
+          "lessons": [],
+          "fight": null,
+          "extraction": null
+        },
+        "compatibility": {}
+      }
+    },
+    "chapelTower": {
+      "schema": 4,
+      "layoutSchema": 2,
+      "legacyLayout": false,
+      "phase": "foreshadow",
+      "corridorDiscovered": false,
+      "tenorRopeTaken": false,
+      "tenorRowsCompleted": 0,
+      "tenorMisses": 0,
+      "pealCompleted": false,
+      "bellsStanding": false,
+      "transportElapsedMs": 0,
+      "transportMode": "dormant",
+      "transportWashMs": 0,
+      "transportTransitionProgress": 0,
+      "attempts": 0,
+      "chapelReached": false
+    },
+    "power": {
+      "schema": 2,
+      "live": [],
+      "everRestored": [],
+      "lastChanged": null
+    },
+    "dockHaunting": {
+      "schema": 1,
+      "status": "idle",
+      "entryPortal": null,
+      "variant": null,
+      "firedMilestones": [],
+      "doorEndpoints": {},
+      "presenceSnapshot": null,
+      "doorAttempted": false,
+      "coffee": false
+    },
+    "practiceHaunts": {
+      "schema": 2,
+      "seed": 0,
+      "assignment": null,
+      "fired": []
+    },
+    "basementWatcher": {
+      "schema": 1,
+      "roomId": "b5",
+      "seen": false,
+      "armed": false,
+      "resolved": false,
+      "roll": null,
+      "huntTriggered": false
+    },
+    "sourceReplay": {
+      "schema": 2,
+      "runId": "run_1791819076973_6q804",
+      "takes": [],
+      "battles": [],
+      "hushContacts": [],
+      "sourceEntry": null,
+      "encounter": {
+        "completed": [],
+        "active": null,
+        "movementIndex": 0,
+        "continuation": null
+      }
+    },
+    "endingCutscene": null,
+    "plantIncident": null,
+    "marbleHead": null,
+    "yardVigil": {
+      "held": 45,
+      "placed": true,
+      "seen": false,
+      "at": {
+        "x": 101,
+        "y": 418,
+        "yaw": 1.5707963267948966
+      }
+    },
+    "exteriorVigil": null,
+    "settings": {
+      "volume": 1,
+      "dialog": 1,
+      "sfx": 1,
+      "music": 1,
+      "monitorGain": 1,
+      "backgroundAudio": "continue",
+      "textCps": 42,
+      "instantText": false,
+      "fx": true,
+      "flash": "full",
+      "shake": "full",
+      "haptics": "full",
+      "towerPealAssist": "standard",
+      "rhythmTimingOffsetMs": 0,
+      "reduceDread": false,
+      "hushAudioDistortion": "full",
+      "hushSilence": "full",
+      "hushHiss": "full",
+      "hushWhispers": "full",
+      "hushSuddenCuts": "full",
+      "hushLightFlicker": "full",
+      "hushCueCaptions": false,
+      "tutorialPrompts": true,
+      "objectiveHints": "full",
+      "controlHud": "smart",
+      "pauseOnBlur": true,
+      "controlMode": "direct",
+      "mouseSensitivity": 1,
+      "mouseInvertY": false,
+      "mic": "ask",
+      "micInput": {
+        "deviceId": "default",
+        "channelMode": "mono",
+        "echoCancellation": true,
+        "noiseSuppression": false,
+        "autoGainControl": false,
+        "lastDeviceLabel": ""
+      },
+      "lastDifficulty": "contract",
+      "seenTextMode": "fast",
+      "archiveSignals": "subtle",
+      "condensedCheckIn": false,
+      "personalInterference": {
+        "enabled": false,
+        "sourceSteam": true,
+        "sourceOs": false,
+        "sourceHost": true,
+        "sourceMic": true,
+        "vfdText": true,
+        "localSpeech": false,
+        "intensity": "standard"
+      },
+      "psychProfile": {
+        "schema": 1,
+        "consentVersion": "",
+        "modules": {
+          "microphone": false,
+          "steamName": false,
+          "osUsername": false,
+          "computerName": false,
+          "microphoneLabel": false,
+          "behavioralMeasurement": false,
+          "adaptiveDifficulty": false,
+          "windowChoreography": true,
+          "fieldReturnFiles": false
+        },
+        "windowIntensity": "hostile"
+      },
+      "controller": {
+        "enabled": true,
+        "activePadId": null,
+        "lookSensitivity": 1,
+        "moveDeadzone": 0.12,
+        "lookDeadzone": 0.16,
+        "triggerThreshold": 0.55,
+        "invertLookY": false,
+        "family": "auto",
+        "bindings": {
+          "quiet": {
+            "kind": "button",
+            "id": "leftShoulder"
+          },
+          "hide": {
+            "kind": "button",
+            "id": "leftTrigger"
+          },
+          "light": {
+            "kind": "button",
+            "id": "north"
+          },
+          "bag": {
+            "kind": "button",
+            "id": "west"
+          },
+          "recorder": {
+            "kind": "button",
+            "id": "rightTrigger"
+          },
+          "radio": {
+            "kind": "button",
+            "id": "rightShoulder"
+          },
+          "interact": {
+            "kind": "button",
+            "id": "south"
+          },
+          "playback": {
+            "kind": "button",
+            "id": "east"
+          },
+          "mark": {
+            "kind": "button",
+            "id": "dpadUp"
+          },
+          "menu": {
+            "kind": "button",
+            "id": "menu"
+          },
+          "confirm": {
+            "kind": "button",
+            "id": "south"
+          },
+          "back": {
+            "kind": "button",
+            "id": "east"
+          },
+          "tabPrev": {
+            "kind": "button",
+            "id": "leftShoulder"
+          },
+          "tabNext": {
+            "kind": "button",
+            "id": "rightShoulder"
+          },
+          "mapFloorPrev": {
+            "kind": "button",
+            "id": "leftTrigger"
+          },
+          "mapFloorNext": {
+            "kind": "button",
+            "id": "rightTrigger"
+          },
+          "mapLocate": {
+            "kind": "button",
+            "id": "north"
+          },
+          "mapFile": {
+            "kind": "button",
+            "id": "west"
+          },
+          "mapConsole": {
+            "kind": "button",
+            "id": "rightStick"
+          }
+        }
+      },
+      "customShiftRules": null
+    },
+    "run": {
+      "schema": 3,
+      "id": "run_1791819076973_6q804",
+      "status": "active",
+      "startedAt": 1791819076973,
+      "completedAt": null,
+      "rules": {
+        "startedPreset": "contract",
+        "currentPreset": "contract",
+        "custom": false,
+        "values": {
+          "presencePressure": "standard",
+          "recordingForgiveness": "standard",
+          "combatAssistance": "standard",
+          "navigationSignal": "directional",
+          "escapeTimer": "standard",
+          "torchDrain": "standard",
+          "involuntaryBreath": "standard"
+        }
+      },
+      "integrity": {
+        "deadAir": {
+          "startedEligible": false,
+          "eligible": false,
+          "invalidations": []
+        }
+      },
+      "replay": {
+        "isReplay": false,
+        "endingsAtStart": 0,
+        "seenTextMode": "fast",
+        "archiveSignals": true,
+        "condensedCheckIn": false,
+        "seenTextAssistUsed": false,
+        "condensedCheckInUsed": false
+      },
+      "environment": {
+        "natatoriumWater": "drained",
+        "routeTrunk": "baseline",
+        "stairAnomaly": {
+          "stairId": "basement",
+          "travel": "up",
+          "visualSlope": "up",
+          "variant": "baseline",
+          "seed": 1838120836
+        }
+      },
+      "ledger": {
+        "seq": 1,
+        "takes": {
+          "completed": 0,
+          "spoiled": 0,
+          "aborted": 0,
+          "rooms": [],
+          "contaminated": []
+        },
+        "injuries": 0,
+        "battles": {
+          "started": 0,
+          "won": 0,
+          "lost": 0,
+          "firstPassWon": 0,
+          "results": {}
+        },
+        "disclosures": [],
+        "documentsRead": [],
+        "propsInspected": [],
+        "propsAuditioned": [],
+        "itemsObtained": [],
+        "choices": {
+          "drankCoffee": false,
+          "namedSarah": false
+        },
+        "equipment": {
+          "dropped": [],
+          "recovered": []
+        },
+        "radio": {
+          "tracked": true,
+          "uses": 0,
+          "missed": []
+        },
+        "natatoriumWater": {
+          "seen": false,
+          "choice": null,
+          "routeBias": null,
+          "rippleSerial": 0,
+          "soaked": false,
+          "defeats": 0,
+          "batteryLost": 0
+        },
+        "stairAnomaly": {
+          "status": "armed",
+          "stage": 0,
+          "progress": 0,
+          "checkpoint": 0
+        },
+        "power": {
+          "live": [],
+          "everRestored": []
+        },
+        "reference": {
+          "schema": 1,
+          "roomsHeard": [],
+          "playbackCounts": {},
+          "breadth": 0,
+          "density": 0,
+          "thresholdsCrossed": [],
+          "propagatedBattles": []
+        }
+      },
+      "interference": null,
+      "enemyRead": null,
+      "pendingReturn": null,
+      "finalizedReturn": null
+    },
+    "radio": {
+      "schema": 5,
+      "transmissions": 0,
+      "phase": "live",
+      "dead": false,
+      "deathCause": null,
+      "squelches": 0,
+      "dropped": null,
+      "milestones": {
+        "initial_checkin": false,
+        "missed_checkin": false,
+        "post_second_take_warning": false,
+        "hush_help_rupture": false,
+        "pre_third_room_breakdown": false
+      },
+      "pendingCue": null,
+      "activeCue": null,
+      "candidateRoom": null,
+      "missed": [],
+      "skipped": [],
+      "concernRemainingMs": null,
+      "guidance": {
+        "assignedRoomId": null,
+        "repeatCounts": {},
+        "dangerCallCount": 0,
+        "recentIncidentRemainingMs": 0,
+        "recentIncidentKind": null,
+        "traversal": {
+          "sinceInitialMs": 0,
+          "sinceWarningMs": 0
+        },
+        "originalBreakdown": {
+          "armed": false,
+          "roomId": null,
+          "armedAt": 0,
+          "floorId": null,
+          "activeMs": 0,
+          "delayMs": 12000,
+          "fallbackRemainingMs": 12000
+        }
+      },
+      "call": {
+        "status": "idle",
+        "deadlineRemainingMs": 0,
+        "nextPulseRemainingMs": 0
+      },
+      "scheduler": {
+        "deployCooldownRemainingMs": 0,
+        "nextFaultRemainingMs": 0,
+        "pulseRemainingMs": []
+      }
+    }
+  },
+  "grade": false
+}

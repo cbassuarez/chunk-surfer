@@ -633,6 +633,20 @@ export function loadRadioState(saved = {}, now = nowMs()) {
   return radioState();
 }
 
+// Phase-only debug edit. Preserve progression, guidance, deployment and all
+// unrelated runtime state; loading a save here would replay an active cue.
+export function debugSetRadioPhase(phase, { now = nowMs() } = {}) {
+  if (!Object.values(RADIO_PHASE).includes(phase) || state.pendingCue || state.activeCue || radioCalling()) return false;
+  if (state.phase === phase) return true;
+  state.phase = phase;
+  state.deathCause = phase === RADIO_PHASE.DEAD ? 'god-menu' : null;
+  state.diedAt = phase === RADIO_PHASE.DEAD ? now : 0;
+  state.scheduler.pulses = [];
+  state.scheduler.nextFaultAt = 0;
+  if (phase !== RADIO_PHASE.LIVE) scheduleNextFault(now, .5);
+  return true;
+}
+
 export function resetRadioState() {
   const hooks = { onSquelch:state.onSquelch, onLine:state.onLine, onMissed:state.onMissed };
   state = { ...fresh(), ...hooks };

@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "design": "Listening Pair clothes, Held Between Takes performance, absent boy face",
+  "bytes": 3499748,
+  "sha256": "75a2f992886a22468a1b2d5ccf17e6bc4dc18be579e7f624502871e98536da05",
+  "meshes": [
+    {
+      "actor": "boy",
+      "vertices": 15293,
+      "triangles": 29229,
+      "primitives": 12,
+      "joints": 34
+    },
+    {
+      "actor": "contractor",
+      "vertices": 23882,
+      "triangles": 45544,
+      "primitives": 12,
+      "joints": 34
+    }
+  ],
+  "clips": [
+    "boy_wait",
+    "boy_transfer",
+    "contractor_work",
+    "contractor_transfer"
+  ],
+  "transferSeconds": 4,
+  "embeddedTextures": 4
+}

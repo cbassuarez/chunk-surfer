@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { shouldOpenPauseForEvent } from '../src/game/pause.js';
 
 import {
   CLOSING_QUOTE,
@@ -77,6 +78,19 @@ test('menu credits preserve pause, manual navigation, website, and back controls
   assert.equal(done, 1);
   scene.key({ key: 'Escape' });
   assert.equal(done, 1);
+});
+
+test('the advertised Escape skip reaches ending credits before the run-level pause and finishes once',()=>{
+  let completed=0,blacked=0,pauses=0;
+  const scene=makeCreditsScene({context:'ending',onDone:()=>completed++,onBlack:()=>blacked++});
+  assert.equal(scene.handlesEscape,true);
+  // Main's actual pause policy runs before scene.key; test that order rather
+  // than bypassing the global interception by calling credits.key directly.
+  for(const event of [{key:'Escape'},{code:'Escape'}]){
+    if(shouldOpenPauseForEvent({storyMode:true,...event,topSceneId:scene.id,localEscape:!!scene.handlesEscape}))pauses++;
+    else scene.key(event);
+  }
+  assert.equal(pauses,0);assert.equal(completed,1);assert.equal(blacked,1);
 });
 
 // The ending does not cut from the roll to a stats panel. After the closing hold
@@ -168,7 +182,26 @@ test('credit roll layout stays inside compact and wide viewports', () => {
 
 test('ending routing places cinematic credits between the epilogue and return report', () => {
   const source = readFileSync('src/main.js', 'utf8');
-  assert.match(source, /onDone:\(\)=>openEndingCredits\(summary\)/);
+  const epilogueStart = source.indexOf('presentFinale(guardEpilogue(variant),');
+  const epilogueEnd = source.indexOf('\n  });', epilogueStart);
+  assert.ok(epilogueStart >= 0 && epilogueEnd > epilogueStart, 'the ending presents its gate epilogue');
+  const callback = source.slice(epilogueStart, epilogueEnd).match(/onDone:\(\)=>\{([^]*?)\},/);
+  assert.ok(callback, 'the epilogue supplies a completion callback');
+  for (const hasPlayback of [true, false]) {
+    const calls = [], summary = { ending: 'tower-won' };
+    let api;
+    api = new Function('summary', 'openEndingCredits', 'initialPlayback', `
+      let towerEndingPlayback=initialPlayback;
+      const onDone=()=>{${callback[1]}};
+      return {onDone,playback:()=>towerEndingPlayback};
+    `)(summary, (actualSummary) => {
+      assert.equal(actualSummary, summary);
+      assert.equal(api.playback(), null, 'the ended recording is released before credits open');
+      calls.push('credits');
+    }, hasPlayback ? { stop() { calls.push('stop'); } } : null);
+    api.onDone();
+    assert.deepEqual(calls, hasPlayback ? ['stop', 'credits'] : ['credits']);
+  }
   assert.match(source, /presentCredits\(\{context:'ending',onDone:\(\)=>showReturnReport\(summary\)\}\)/);
   assert.doesNotMatch(source, /makeCreditsIntroScene|credits-intro/);
 });

@@ -56,6 +56,7 @@ export function makeColdOpenScene({
   onDone, onChoice, onLine, cue, fx, audio, getAudio, replay = null,
   blocksWorld = true, allowsLook = false, suppressesHud = false,
   worldUnderlay = false, worldView = null, presentation = worldUnderlay ? 'cinematic' : 'monitor',
+  transcriptBackground = 'rgba(2,4,5,.58)',
 } = {}) {
   let scene = null;
   let completed = false;
@@ -91,7 +92,7 @@ export function makeColdOpenScene({
     },
     exit() { exited = true; convo.stop(); audio?.stopTyping?.(); },
     update(dt) { if (active()) convo.update(dt); },
-    view() { return { ...convo.view(), presentation }; }, // for the headless suites
+    view() { return { ...convo.view(), presentation, transcriptBackground }; }, // for the headless suites
     keyup(e) { return convo.keyup?.(e) || false; },
     key(e) {
       if (!active()) return true;
@@ -127,7 +128,7 @@ export function makeColdOpenScene({
           });
           const h = Math.min(rows - 3, Math.max(4, transcript.height + choiceRows + 2));
           const y = Math.max(2, rows - h - 1);
-          uiFill(x, y, width, h, 'rgba(2,4,5,.58)');
+          uiFill(x, y, width, h, transcriptBackground);
           const transcriptY = y + 1;
           drawTranscript(transcript, {
             x: x + 2,

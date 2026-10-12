@@ -579,6 +579,7 @@ dependencies = [
 name = "chunk-surfer"
 version = "0.2.1-beta.1"
 dependencies = [
+ "dispatch2",
  "libc",
  "libloading 0.8.9",
  "rand",

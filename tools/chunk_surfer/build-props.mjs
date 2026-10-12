@@ -17,6 +17,7 @@ import { ELLERY_MASSING, YARD_SERVICE_RANGES } from '../../src/data/exterior-dis
 import { LEAF_SHAPES, leafOutline } from '../../src/world/leaf-species.js';
 import {
   CHURCH, CHURCH_BOUNDS, CHURCH_BUTTRESSES, CHURCH_HEIGHTS, CHURCH_SKIN,
+  CHURCH_BELFRY, CHURCH_BELFRY_WALLS, CHURCH_TURRETS, CHURCH_TURRET_WALLS, CHURCH_LIGHTS, CHURCH_LEVELS, CHURCH_LOFT_RAILS,
   churchWallAt, churchWallExposed, churchWallHeight,
 } from '../../src/data/st-brendans.js';
 import { conservatory } from '../../src/data/floorplan/conservatory.js';
@@ -2090,7 +2091,7 @@ addMainStairDressing('academic_stair_dressing',{rise:5.2,run:10,steps:26,runner:
   // separate meshes so normal apparition staging and collision remain intact.
   const m=mesh('ending_body_prone');
   addCylinder(m,[0,.19,-.78],.16,.30,MAT.dark,12);
-  addBox(m,[0,.19,-.22],[.50,.27,.84],MAT.dark,0,Math.PI/2);
+  addBox(m,[0,.19,-.22],[.50,.27,.84],MAT.dark);
   addBeam(m,[-.14,.17,.10],[-.23,.13,.72],.13,MAT.dark);
   addBeam(m,[.14,.17,.10],[.25,.13,.70],.13,MAT.dark);
   addBeam(m,[-.25,.18,-.34],[-.44,.12,.18],.11,MAT.dark);
@@ -2778,6 +2779,8 @@ function buildStBrendans(){
   for(let y=CHURCH_BOUNDS.y0;y<=CHURCH_BOUNDS.y1;y++){
     for(let x=CHURCH_BOUNDS.x0;x<=CHURCH_BOUNDS.x1;x++){
       if(!churchWallAt(x,y))continue;
+      // The north-lower stair drum replaces this part of the aisle skin.
+      if(CHURCH_TURRETS.some((s)=>Math.min(s.fromH,s.toH)===0&&Math.hypot(x+.5-s.center.x,y+.5-s.center.y)<s.outerRadius+.5))continue;
       const h=churchWallHeight(x,y);
       for(const [dx,dy] of FACES){
         if(!churchWallExposed(x,y,dx,dy))continue;
@@ -2824,34 +2827,54 @@ function buildStBrendans(){
     w:(r.x1-r.x0)+pad,d:(r.y1-r.y0)+pad,
     eaves,rise,mat:MAT.slate,gableMat:MAT.stone,ridge,overhang:.24,
   });
-  roof(rooms.nave,CHURCH_HEIGHTS.nave,2.65,'z',1.0);
-  roof(rooms.north_aisle,CHURCH_HEIGHTS.aisle,1.45,'z',1.0);
-  roof(rooms.south_aisle,CHURCH_HEIGHTS.aisle,1.45,'z',1.0);
-  roof({x0:9,y0:71,x1:23,y1:75},CHURCH_HEIGHTS.nave,2.25,'x',1.0);
+  roof({...rooms.nave,y1:66},CHURCH_HEIGHTS.nave,2.65,'z',1.0);
+  // The triforium floor is4.6m high: give its low edge2.4m headroom, and
+  // stop both aisle roofs before the upper turret mouths.
+  const walkEaves=CHURCH_LEVELS.loft.base+2.4;
+  roof({...rooms.north_aisle,y1:69},walkEaves,1.45,'z',1.0);
+  roof({...rooms.south_aisle,y1:69},walkEaves,1.45,'z',1.0);
+  for(const [x,a,b] of[[9.8,59,62],[9.8,67,70],[22.2,59,70]])
+    addBox(m,[X(x),6.4,Z((a+b)/2)],[.34,1.2,b-a],MAT.stone);
+  // Transept roofs stop at the tower walls. A full pitched roof across the
+  // crossing would seal the bell trap below the playable belfry.
+  // Upper turret caps replace the transept roof over each spiral. A pitched
+  // roof through those drums would intersect the belfry landing at head height.
   roof(rooms.choir,CHURCH_HEIGHTS.choir,2.35,'z',1.0);
   roof(rooms.side_chapel,CHURCH_HEIGHTS.aisle,1.35,'z',.8);
-  roof(rooms.sacristy,CHURCH_HEIGHTS.ancillary,1.15,'z',.8);
+  roof(rooms.sacristy,walkEaves,1.15,'z',.8);
 
-  // Central crossing tower: square, weighty, louvred, then a modest broached
-  // slate spire. No west-work and no crenellations.
-  const tx=X(16),tz=Z(73),tW=7.0,tD=5.8,TH=CHURCH_HEIGHTS.belfry;
-  for(const [dx,dy] of FACES){
-    const fx=tx+dx*(tW/2), fz=tz+dy*(tD/2);
-    addBox(m,[fx,11.25,fz],[dx?.46:tW,TH-8.2,dy?.46:tD],MAT.stone);
-    for(let i=-2;i<=2;i++){
-      const along=i*.48;
-      addBox(m,[fx+dx*.25+(dy?along:0),12.05,fz+dy*.25+(dx?along:0)],
-        [dx?.12:.28,2.1,dy?.12:.28],MAT.black,dx?0:.18);
-    }
-    addBox(m,[fx+dx*.12,13.42,fz+dy*.12],[dx?.24:tW+.18,.25,dy?.24:tD+.18],MAT.stone);
+  // The working tower has actual service recesses and two real turret mouths.
+  // Masonry is made of the same wall pieces the runtime contact consumes.
+  const tx=X(16),tz=Z(73),TH=CHURCH_HEIGHTS.belfry;
+  for(const wall of CHURCH_BELFRY_WALLS){
+    addBox(m,[X(wall.x),(8.25+wall.ceil)/2,Z(wall.y)],
+      [wall.w,wall.ceil-8.25,wall.d],MAT.stone);
+    addBox(m,[X(wall.x),TH-.18,Z(wall.y)],
+      [wall.w+.08,.25,wall.d+.08],MAT.stone);
   }
-  const spireY=13.85,halfX=3.18,halfZ=2.58,apex=[tx,CHURCH_HEIGHTS.spire,tz];
+  // Louvres are recessed within the wall, rather than solid panels covering a
+  // doorway. The north bays retain their masonry back; apparatus is dynamic.
+  for(const bay of CHURCH_BELFRY.serviceBays){
+    const x=X(bay.center.x),z=Z(bay.y0+.02);
+    addBox(m,[x,12.7,z],[1.12,2.15,.06],MAT.black);
+    for(let i=0;i<8;i++)addBox(m,[x,11.78+i*.25,z+.045],[1.08,.09,.12],MAT.dark,0,.18);
+  }
+  for(const x of[11.68,20.32])for(const y of[70.25,75.45]){
+    addBox(m,[X(x),13.55,Z(y)],[.08,1.7,.9],MAT.black);
+    for(let i=0;i<7;i++)addBox(m,[X(x),12.8+i*.24,Z(y)],[.14,.08,.86],MAT.dark);
+  }
+  const spireY=TH+.05,halfX=4.5,halfZ=4.0,apex=[tx,CHURCH_HEIGHTS.spire,tz];
   for(const [a,b] of[
     [[tx-halfX,spireY,tz-halfZ],[tx+halfX,spireY,tz-halfZ]],
     [[tx+halfX,spireY,tz-halfZ],[tx+halfX,spireY,tz+halfZ]],
     [[tx+halfX,spireY,tz+halfZ],[tx-halfX,spireY,tz+halfZ]],
     [[tx-halfX,spireY,tz+halfZ],[tx-halfX,spireY,tz-halfZ]],
   ]){addTriangle(m,a,b,apex,MAT.slate);addTriangle(m,apex,b,a,MAT.slate);}
+  // Shallow lean-to caps cover the three projecting recesses.
+  for(const bay of CHURCH_BELFRY.serviceBays)addPitchedRoof(m,{
+    x:X(bay.center.x),z:Z(bay.center.y),w:2.2,d:2.35,
+    eaves:15.3,rise:.32,mat:MAT.slate,ridge:'z',overhang:.06,
+  });
   addCylinder(m,[tx,17.18,tz],.055,.34,MAT.steel,8);
 
   // West portal and south-transept porch, both recessed behind ashlar orders.
@@ -2873,6 +2896,7 @@ function buildStBrendans(){
   // Interior arcades and clustered crossing piers. The openings remain clear;
   // these are structure around circulation, not a second collision wall.
   for(const x of[12.1,20.9])for(const y of[60.5,63.7,66.9,70.1]){
+    if(CHURCH_TURRETS.some((s)=>Math.min(s.fromH,s.toH)===0&&Math.hypot(x-s.center.x,y-s.center.y)<s.outerRadius+.4))continue;
     addCylinder(m,[X(x),3.25,Z(y)],.34,6.5,MAT.stone,12);
     for(const dx of[-.28,.28])addCylinder(m,[X(x)+dx,3.0,Z(y)],.12,5.8,MAT.stone,10);
   }
@@ -2881,6 +2905,7 @@ function buildStBrendans(){
     for(let a=0;a<4;a++)addCylinder(m,[X(x)+Math.cos(a*Math.PI/2)*.38,4.2,Z(y)+Math.sin(a*Math.PI/2)*.38],.13,8.4,MAT.stone,8);
   }
   for(const x of[12.1,20.9])for(const y of[62.1,65.3,68.5]){
+    if(CHURCH_TURRETS.some((s)=>Math.min(s.fromH,s.toH)===0&&Math.hypot(x-s.center.x,y-s.center.y)<s.outerRadius+1.5))continue;
     addWallArch(m,{axis:'z',plane:X(x),inside:x<16?1:-1,along:Z(y),spring:4.5,radius:1.45,depth:.11,section:.18,mat:MAT.stone,segments:10});
   }
 
@@ -2892,33 +2917,123 @@ function buildStBrendans(){
     addCylinder(m,[X(16.5),8.25,Z(y)],.12,.78,MAT.dark,10);
     addCylinder(m,[X(16.5),7.82,Z(y)],.19,.18,MAT.dark,10);
   }
-  addBeam(m,[X(16.5),9.02,Z(58.8)],[X(16.5),9.02,Z(84.1)],.13,MAT.dark);
+  addBeam(m,[X(16.5),9.02,Z(58.8)],[X(16.5),9.02,Z(70)],.13,MAT.dark);
+  addBeam(m,[X(16.5),9.02,Z(76)],[X(16.5),9.02,Z(84.1)],.13,MAT.dark);
 
-  // Walks and rails at 4.6m, then the belfry deck and six-bell timber frame.
-  addBox(m,[X(16),4.55,Z(59.2)],[7.0,.18,4.4],MAT.dark);
-  for(const x of[10.5,21.5])addBox(m,[X(x),4.55,Z(67)],[1.55,.18,16.0],MAT.dark);
-  addBox(m,[X(16),4.55,Z(73)],[11.0,.18,4.2],MAT.dark);
-  for(const x of[10,22])addBox(m,[X(x),5.05,Z(67)],[.16,1.0,16.0],MAT.dark);
-  addBox(m,[X(16),10.14,Z(73)],[6.6,.16,4.2],MAT.dark);
-  for(const x of[14,16,18]){
-    for(const z of[71.2,74.8])addBox(m,[X(x),11.8,Z(z)],[.24,3.2,.24],MAT.dark);
-    addBeam(m,[X(x),13.1,Z(71.2)],[X(x),13.1,Z(74.8)],.18,MAT.dark);
-  }
-  let bell=0;
-  for(const x of[14,16,18])for(const y of[72,74]){
-    bell+=1;
-    addCylinder(m,[X(x),11.55,Z(y)],.38,.52,MAT.brass,14);
-    addCylinder(m,[X(x),11.22,Z(y)],.48,.20,MAT.brass,14);
-    addCylinder(m,[X(x),12.03,Z(y)],.08,.52,MAT.steel,8);
-  }
-  for(let i=0;i<18;i++)addBox(m,[X(13.3+(i%6)*.56),10.27,Z(71.3+Math.floor(i/6)*1.25)],[.08,.04,.14],i%4?MAT.deadLeaf:MAT.ivory,i*.31);
+  // A deck is four slabs around the actual shared one-metre trap. Both
+  // storeys use that column, so the view reaches the crossing, not a lower lid.
+  const slab=(r,top,depth=.16,cutWells=true)=>{
+    if(r.x1<=r.x0||r.y1<=r.y0)return;
+    const wells=cutWells?CHURCH_TURRETS.filter((s)=>Math.abs(s.fromH-top)<.01||Math.abs(s.toH-top)<.01):[];
+    const box=(x0,x1,y0,y1)=>{
+      if(x1-x0<.001||y1-y0<.001)return;
+      addBox(m,[X((x0+x1)/2),top-depth/2,Z((y0+y1)/2)],[x1-x0,depth,y1-y0],MAT.dark);
+    };
+    if(!wells.length){box(r.x0,r.x1,r.y0,r.y1);return;}
+    // Conservative narrow strips subtract the actual spiral wells. Full flat
+    // triforium slabs must never pass through the upper visible treads.
+    const strips=Math.ceil((r.x1-r.x0)/.125);
+    for(let i=0;i<strips;i++){
+      const x0=r.x0+(r.x1-r.x0)*i/strips,x1=r.x0+(r.x1-r.x0)*(i+1)/strips;
+      let bands=[[r.y0,r.y1]];
+      for(const stair of wells){
+        const radius=stair.outerRadius+.1,dx=Math.max(x0-stair.center.x,0,stair.center.x-x1);
+        if(dx>=radius)continue;
+        const extent=Math.sqrt(radius*radius-dx*dx),lo=stair.center.y-extent,hi=stair.center.y+extent;
+        bands=bands.flatMap(([a,b])=>hi<=a||lo>=b?[[a,b]]:[[a,Math.max(a,lo)],[Math.min(b,hi),b]].filter(([c,d])=>d-c>.001));
+      }
+      for(const [a,b] of bands)box(x0,x1,a,b);
+    }
+  };
+  const deckWithTrap=(r,top)=>{
+    const h=CHURCH_BELFRY.hatch;
+    slab({x0:r.x0,x1:h.x0,y0:r.y0,y1:r.y1},top);
+    slab({x0:h.x1,x1:r.x1,y0:r.y0,y1:r.y1},top);
+    slab({x0:h.x0,x1:h.x1,y0:r.y0,y1:h.y0},top);
+    slab({x0:h.x0,x1:h.x1,y0:h.y1,y1:r.y1},top);
+  };
+  slab({x0:12.5,x1:19.5,y0:57,y1:61.4},4.6);
+  for(const x of[10.5,21.5])slab({x0:x-.9,x1:x+.9,y0:59,y1:76},4.6);
+  deckWithTrap({x0:10,x1:23,y0:71,y1:76},4.6);
+  slab({x0:10,x1:14,y0:62,y1:68},4.6);
+  slab({x0:21,x1:25,y0:77,y1:83},4.6);
+  slab({x0:18,x1:23,y0:75,y1:78},4.6);
+  deckWithTrap(CHURCH_BELFRY.interior,10.2);
+  for(const bay of CHURCH_BELFRY.serviceBays)slab(bay,10.2);
+  // Broad two-metre approaches lead out through the cut wall to each turret.
+  for(const r of[{x0:9,x1:11.8,y0:70,y1:72},{x0:20.2,x1:24,y0:70,y1:72}])slab(r,10.2);
 
-  // Stair turrets read outside as round ashlar drums. The actual climb is the
-  // floorplan's authored helical tread field, not these skins.
-  for(const [x,y,h] of[[10.5,64.5,6.2],[21.5,79.5,6.2],[10.5,73.5,11.0],[21.5,73.5,11.0]]){
-    addCylinder(m,[X(x),h/2,Z(y)],1.52,h,MAT.stone,16);
-    addCylinder(m,[X(x),h-.35,Z(y)],1.62,.32,MAT.stone,16);
+  const rail=(x0,y0,x1,y1,floor,mat=MAT.steel)=>{
+    addBeam(m,[X(x0),floor+1.05,Z(y0)],[X(x1),floor+1.05,Z(y1)],.075,mat);
+    addBeam(m,[X(x0),floor+.12,Z(y0)],[X(x1),floor+.12,Z(y1)],.06,mat);
+    const n=Math.max(1,Math.ceil(Math.hypot(x1-x0,y1-y0)/.16));
+    for(let i=0;i<=n;i++){
+      const t=i/n;addBox(m,[X(x0+(x1-x0)*t),floor+.57,Z(y0+(y1-y0)*t)],[.035,.96,.035],mat);
+    }
+  };
+  for(const r of CHURCH_LOFT_RAILS)rail(r.x0,r.y0,r.x1,r.y1,4.6);
+  const f=CHURCH_BELFRY.frame;
+  for(const floor of[10.2]){
+    rail(f.x0,f.y0,f.x1,f.y0,floor);rail(f.x0,f.y1,f.x1,f.y1,floor);
+    rail(f.x0,f.y0,f.x0,f.y1,floor);rail(f.x1,f.y0,f.x1,f.y1,floor);
   }
+  const h=CHURCH_BELFRY.hatch;
+  rail(h.x0,h.y0,h.x1,h.y0,4.6);rail(h.x0,h.y1,h.x1,h.y1,4.6);
+  rail(h.x0,h.y0,h.x0,h.y1,4.6);rail(h.x1,h.y0,h.x1,h.y1,4.6);
+  // Keep both physical stair mouths clear of triforium rails.
+  for(const [a,b] of[[58.5,61.9],[66.8,70.9]])rail(9.55,a,9.55,b,4.6,MAT.dark);
+  for(const [a,b] of[[58.5,70.9],[75.9,77.1]])rail(22.45,a,22.45,b,4.6,MAT.dark);
+  // One eight-bell frame. The live assembly supplies every bell, wheel and
+  // clapper; no static six-bell duplicate remains in this hero mesh.
+  for(const x of[f.x0,f.x1])for(const y of[f.y0,f.y1])
+    addBox(m,[X(x),12.4,Z(y)],[.22,4.4,.22],MAT.dark);
+  for(const height of[12.25,14.4])for(const y of[72,74])
+    addBeam(m,[X(f.x0),height,Z(y)],[X(f.x1),height,Z(y)],.18,MAT.dark);
+
+  // Hollow drums and their landing mouths are the same tangent segments as
+  // CHURCH_COLLIDERS; the old closed cylinders have been removed.
+  for(const wall of CHURCH_TURRET_WALLS)addBox(m,
+    [X(wall.x),(wall.floor+wall.ceil)/2,Z(wall.y)],
+    [wall.w,wall.ceil-wall.floor,wall.d],MAT.stone,wall.yaw);
+  for(const stair of CHURCH_TURRETS){
+    // The hero anchor and compiler share exactly the same physical origin.
+    const center=[X(stair.center.x),Z(stair.center.y)];
+    const point=(angle,r,height)=>[center[0]+Math.sin(angle)*r,height,center[1]-Math.cos(angle)*r];
+    const span=stair.toH-stair.fromH;
+    for(let i=0;i<stair.rises;i++){
+      const a=i*Math.PI*2/stair.rises,b=(i+1)*Math.PI*2/stair.rises;
+      const top=stair.fromH+span*i/stair.rises,next=stair.fromH+span*(i+1)/stair.rises;
+      const p=point(a,stair.innerRadius,top),q=point(a,stair.outerRadius,top),
+        r=point(b,stair.outerRadius,top),t=point(b,stair.innerRadius,top);
+      addQuad(m,p,t,r,q,MAT.stone);
+      addQuad(m,point(b,stair.innerRadius,top),point(b,stair.outerRadius,top),
+        point(b,stair.outerRadius,next),point(b,stair.innerRadius,next),MAT.stone);
+      addQuad(m,point(a,stair.innerRadius,top-.14),point(b,stair.innerRadius,top-.14),
+        point(b,stair.innerRadius,top),point(a,stair.innerRadius,top),MAT.stone);
+      addQuad(m,point(b,stair.outerRadius,top-.14),point(a,stair.outerRadius,top-.14),
+        point(a,stair.outerRadius,top),point(b,stair.outerRadius,top),MAT.stone);
+      for(const radius of[stair.innerRadius+.05,stair.outerRadius-.05]){
+        addBeam(m,point(a,radius,top+1),point(b,radius,next+1),.045,MAT.steel);
+        addBeam(m,point(a,radius,top+.05),point(a,radius,top+1),.035,MAT.steel);
+      }
+    }
+    const top=Math.max(stair.fromH,stair.toH)+2.6;
+    const low=Math.min(stair.fromH,stair.toH);
+    addCylinder(m,[center[0],(top+low)/2,center[1]],stair.innerRadius,top-low,MAT.stone,16);
+    addCylinder(m,[center[0],top+.06,center[1]],stair.outerRadius+.1,.12,MAT.slate,40);
+    for(const [floor,origin] of[[stair.fromH,stair.footLandingOrigin],[stair.toH,stair.headLandingOrigin]]){
+      slab({x0:origin.x,y0:origin.y,x1:origin.x+stair.landingSize,y1:origin.y+stair.landingSize},floor,.14,false);
+    }
+  }
+  // Modest maintenance bulkheads make each turn legible in the ordinary
+  // lighting pass; their light anchors come from the same manifest.
+  for(const lamp of CHURCH_LIGHTS.filter((light)=>light.kind==='fitting')){
+    const x=X(lamp.x),z=Z(lamp.y),y=lamp.h;
+    addBox(m,[x,y,z],[.30,.16,.24],MAT.black);
+    addBox(m,[x,y-.1,z],[.23,.08,.18],MAT.warmWindow);
+    for(const dx of[-.1,.1])addBox(m,[x+dx,y-.11,z],[.018,.13,.21],MAT.steel);
+  }
+
 }
 buildStBrendans();
 
@@ -4505,6 +4620,461 @@ const addBoothGuard=(m,{x=0,z=-.15,lean=0,arm='rest'}={})=>{
   addBox(m,[1.28,1.45,-1.20],[.10,1.30,1.10],MAT.agedWhite);         // the timetable case
 }
 {
+  // BEGIN PAYPHONE RED BOX GEOMETRY
+  // Selected Red Box: cast K6 enclosure, genuinely curved roof and broad grey
+  // rotary cabinet. The 1.02m footprint, +z doorway, hinge and receiver anchors
+  // are the production contracts in source-space-runtime phoneBoxInstances.
+  const phoneMaterial=(name,baseColorFactor,metallicFactor,roughnessFactor,role)=>{
+    const i=materials.length;
+    materials.push({name,pbrMetallicRoughness:{baseColorFactor:[...baseColorFactor,1],metallicFactor,roughnessFactor},extras:{payphoneRole:role}});
+    return i;
+  };
+  const P={
+    red:phoneMaterial('payphone cast iron',[.55,.052,.032],.26,.43,'cast-iron'),
+    grey:phoneMaterial('payphone grey enamel',[.47,.50,.46],.16,.49,'cabinet'),
+    black:phoneMaterial('payphone black bakelite',[.018,.022,.021],.08,.29,'bakelite'),
+    nickel:phoneMaterial('payphone nickel',[.62,.67,.62],.80,.26,'fittings'),
+  };
+  const m=mesh('city_phone_box'),glow=mesh('city_phone_box_glow');
+  // Cut-corner casting with a shallow front bevel, instead of a flat box decal.
+  const casting=(target,c,size,mat,bevel=.009)=>{
+    const [x,y,z]=c,[w,h,d]=size,b=Math.min(bevel,w*.18,h*.18);
+    const outline=(inset,zz)=>[
+      [-w/2+b+inset,-h/2+inset],[w/2-b-inset,-h/2+inset],
+      [w/2-inset,-h/2+b+inset],[w/2-inset,h/2-b-inset],
+      [w/2-b-inset,h/2-inset],[-w/2+b+inset,h/2-inset],
+      [-w/2+inset,h/2-b-inset],[-w/2+inset,-h/2+b+inset]
+    ].map(([xx,yy])=>[x+xx,y+yy,zz]);
+    const rear=outline(0,z-d/2),edge=outline(0,z+d/2-.004),front=outline(.004,z+d/2);
+    for(let i=0;i<8;i++){
+      const j=(i+1)%8;
+      addTriangle(target,[x,y,z+d/2],front[i],front[j],mat);
+      addTriangle(target,[x,y,z-d/2],rear[j],rear[i],mat);
+      addQuad(target,rear[i],rear[j],edge[j],edge[i],mat);
+      addQuad(target,edge[i],edge[j],front[j],front[i],mat);
+    }
+  };
+  const disc=(target,c,r,depth,mat,segments=24)=>{
+    const [x,y,z]=c;
+    for(let i=0;i<segments;i++){
+      const a=i/segments*Math.PI*2,b=(i+1)/segments*Math.PI*2;
+      const p=[x+Math.cos(a)*r,y+Math.sin(a)*r],q=[x+Math.cos(b)*r,y+Math.sin(b)*r];
+      addTriangle(target,[x,y,z+depth/2],[...p,z+depth/2],[...q,z+depth/2],mat);
+      addTriangle(target,[x,y,z-depth/2],[...q,z-depth/2],[...p,z-depth/2],mat);
+      addQuad(target,[...p,z-depth/2],[...q,z-depth/2],[...q,z+depth/2],[...p,z+depth/2],mat);
+    }
+  };
+  const fixing=(target,x,y,z,r=.006)=>{
+    disc(target,[x,y,z],r,.004,P.nickel,8);
+    addBox(target,[x,y,z+.0025],[r*1.3,.0014,.001],P.black);
+  };
+  // Face coordinates put printed lettering in reading order on all four faces.
+  const faces=[{x:0,z:.491,ax:1,az:0},{x:.491,z:0,ax:0,az:-1},
+    {x:0,z:-.491,ax:-1,az:0},{x:-.491,z:0,ax:0,az:1}];
+  const point=(f,u,y,n=0)=>[f.x+f.ax*u-f.az*n,y,f.z+f.az*u+f.ax*n];
+  const faceBox=(target,f,u,y,w,h,d,mat,n=0)=>addBox(target,point(f,u,y,n),[w,h,d],mat,Math.atan2(f.az,f.ax));
+  const faceQuad=(target,f,u,y,w,h,mat,n=0)=>addQuad(target,
+    point(f,u-w/2,y-h/2,n),point(f,u+w/2,y-h/2,n),
+    point(f,u+w/2,y+h/2,n),point(f,u-w/2,y+h/2,n),mat);
+  const digitGlyphs={
+    '2':['01110','10001','00001','00010','00100','01000','11111'],
+    '3':['11110','00001','00001','01110','00001','00001','11110'],
+    '4':['00010','00110','01010','10010','11111','00010','00010'],
+    '5':['11111','10000','10000','11110','00001','00001','11110'],
+    '7':['11111','00001','00010','00100','01000','01000','01000'],
+  };
+  const print=(target,text,f,{w,y,h,z=0,mat=P.black})=>{
+    const source=text.toUpperCase(),dot=Math.min(h/7,w/(source.length*6-1)),start=-(source.length*6-1)*dot/2;
+    for(let ci=0;ci<source.length;ci++){
+      const glyph=digitGlyphs[source[ci]]||VIGIL_GLYPHS[source[ci]];if(!glyph)continue;
+      for(let row=0;row<7;row++){
+        // Merge adjacent pixels into one ink stroke: planar, legible and cheap.
+        for(let col=0;col<5;){if(glyph[row][col]!=='1'){col++;continue;}let end=col+1;while(end<5&&glyph[row][end]==='1')end++;
+          faceQuad(target,f,start+(ci*6+(col+end)/2)*dot,y+(3-row)*dot,(end-col)*dot*.94,dot*.87,mat,z);col=end;
+        }
+      }
+    }
+  };
+  addBox(m,[0,.05,0],[1.02,.10,1.02],MAT.concrete);
+  addBox(m,[0,.112,0],[.90,.025,.90],P.red);
+  addBox(m,[0,.128,0],[.78,.012,.78],MAT.slate);
+  for(let i=0;i<7;i++)addBox(m,[0,.136,-.33+i*.11],[.74,.003,.005],P.black);
+  for(const x of[-.43,.43])for(const z of[-.43,.43]){
+    addBox(m,[x,1.24,z],[.082,2.24,.082],P.red);
+    addBox(m,[x,.215,z],[.123,.19,.123],P.red);
+    addBox(m,[x,2.315,z],[.111,.07,.111],P.red);
+    addBox(m,[x+Math.sign(x)*.043,1.25,z+Math.sign(z)*.043],[.009,1.95,.009],P.black);
+  }
+  const cellular=(target,f,center=0)=>{
+    const xs=[-.39,-.22,.22,.39],bottom=.48,row=.273;
+    faceBox(target,f,center,.235,.80,.22,.042,P.red);
+    faceBox(target,f,center,.235,.735,.142,.010,P.black,.027);
+    faceBox(target,f,center,.235,.706,.118,.010,P.red,.035);
+    for(const x of xs)faceBox(target,f,center+x,1.299,.026,1.72,.041,P.red);
+    for(let i=0;i<=6;i++)faceBox(target,f,center,bottom+i*row,.80,.026,.041,P.red);
+    faceBox(target,f,center,2.231,.80,.12,.045,P.red);
+    // The prop renderer is opaque. Panes remain clear openings; their thin
+    // recessed edge and rain catches suggest glass without hiding the interior.
+    for(let col=0;col<3;col++)for(let r=0;r<6;r++){
+      const u=center+(xs[col]+xs[col+1])/2,y=bottom+(r+.5)*row,w=xs[col+1]-xs[col]-.036,h=row-.038;
+      faceQuad(target,f,u-w/2+.001,y,.0015,h,MAT.roofGlass,.010);
+      faceQuad(target,f,u,y+h/2-.001,w,.0015,MAT.roofGlass,.010);
+      if((col+r)%3===0)faceQuad(target,f,u+w*.31,y+h*.18,.0013,h*.28,P.nickel,.011);
+    }
+  };
+  for(const f of[{x:0,z:-.455,ax:-1,az:0},{x:-.455,z:0,ax:0,az:1},{x:.455,z:0,ax:0,az:-1}])cellular(m,f);
+  // Cornice, luminous opal sign and cast crown relief are distinct layers.
+  addBox(m,[0,2.294,0],[.976,.054,.976],P.red);
+  addBox(m,[0,2.384,0],[.982,.178,.982],P.red);
+  addBox(m,[0,2.49,0],[1.02,.046,1.02],P.red);
+  addBox(m,[0,2.277,0],[.79,.025,.79],P.grey);
+  for(const f of faces){
+    faceBox(m,f,0,2.385,.797,.130,.013,P.black);
+    faceBox(glow,f,0,2.385,.753,.104,.009,MAT.warmWindow,.009);
+    print(m,'TELEPHONE',f,{w:.706,h:.082,y:2.385,z:.016});
+    faceBox(m,f,0,2.51,.135,.015,.009,P.red,.010);
+    for(const u of[-.047,0,.047]){
+      const h=u===0?.045:.032;
+      addBeam(m,point(f,u-.018,2.516,.014),point(f,u,2.516+h,.014),.009,P.red);
+      addBeam(m,point(f,u,2.516+h,.014),point(f,u+.018,2.516,.014),.009,P.red);
+    }
+  }
+  // Smooth doubly-curved dome replaces the former stack of shrinking cubes.
+  const roofN=12,roofY=(x,z)=>2.513+.197*(1-(x/.501)**2)*(1-(z/.501)**2);
+  for(let j=0;j<roofN;j++)for(let i=0;i<roofN;i++){
+    const x0=-.501+i*1.002/roofN,x1=x0+1.002/roofN,z0=-.501+j*1.002/roofN,z1=z0+1.002/roofN;
+    addQuad(m,[x0,roofY(x0,z0),z0],[x0,roofY(x0,z1),z1],[x1,roofY(x1,z1),z1],[x1,roofY(x1,z0),z0],P.red);
+  }
+  const apparatus=mesh('city_phone_box_apparatus');
+  // Same broad 1.12 aspect and normalized arrangement as payphone-view's close
+  // instrument. Put its receiver at the existing runtime anchor, rather than
+  // moving the live receiver to accommodate a differently shaped cabinet.
+  const cabinetW=.60,cabinetH=cabinetW/1.12;
+  const cabinetX=-.235-(-.185+.145*.54)*cabinetW;
+  const cabinetTop=1.46+(.17+.53*.5)*cabinetH;
+  const faceRect=(x,y,w,h)=>({x:cabinetX+(x+w/2)*cabinetW,y:cabinetTop-(y+h/2)*cabinetH,w:w*cabinetW,h:h*cabinetH});
+  const body=faceRect(0,0,1,1),board=faceRect(-.17,-.035,1.20,1.075);
+  casting(apparatus,[board.x,board.y,-.432],[board.w,board.h,.028],P.black,.012);
+  casting(apparatus,[body.x,body.y,-.365],[body.w,body.h,.115],P.grey,.015);
+  addBox(apparatus,[body.x,cabinetTop-cabinetH*.039,-.363],[cabinetW+.010,cabinetH*.078,.132],P.grey);
+  addBox(apparatus,[cabinetX+cabinetW*.666,body.y,-.304],[.005,cabinetH*.89,.005],P.black);
+  const instruction=faceRect(.055,.12,.54,.235),bandH=instruction.h*.27;
+  casting(apparatus,[instruction.x,instruction.y,-.301],[instruction.w,instruction.h,.009],P.nickel,.004);
+  addBox(apparatus,[instruction.x,instruction.y,-.294],[instruction.w-.012,instruction.h-.012,.003],MAT.paper);
+  const bandY=instruction.y+instruction.h/2-bandH/2;
+  addBox(apparatus,[instruction.x,bandY,-.291],[instruction.w-.012,bandH,.002],MAT.navy);
+  const card={x:instruction.x,z:-.289,ax:1,az:0};
+  print(apparatus,'PAY ON ANSWER',card,{w:instruction.w*.88,h:bandH*.64,y:bandY,mat:MAT.ivory});
+  for(let row=0;row<4;row++)addBox(apparatus,[instruction.x,instruction.y+instruction.h*.13-row*instruction.h*.15,-.291],[instruction.w*(.78-row*.04),.003,.002],P.black);
+  const header={x:body.x,z:-.293,ax:1,az:0};
+  print(apparatus,'POST OFFICE',header,{w:.38,h:.025,y:cabinetTop-cabinetH*.039});
+  // The fixed ivory number annulus is behind the drilled black finger plate.
+  const cx=cabinetX+cabinetW*.335,cy=cabinetTop-cabinetH*.665,cz=-.289,r=cabinetW*.265,orbit=r*.72,hole=r*.115,inner=r*.362,outer=r*.913,depth=.009;
+  disc(apparatus,[cx,cy,cz-.018],r,.019,P.nickel,32);
+  disc(apparatus,[cx,cy,cz-.006],r*.965,.004,MAT.ivory,40);
+  const holes=[];
+  for(let p=1;p<=10;p++){
+    // The UI's screen Y grows down; world Y grows up. Negate the whole angle
+    // so hole one stays just below three o'clock and the stop below it.
+    const a=-(Math.PI/3-(p+1)*(Math.PI/6.4));holes.push(a);
+    print(apparatus,String(p%10),{x:cx+Math.cos(a)*orbit,z:cz-.0035,ax:1,az:0},{w:.016,h:.018,y:cy+Math.sin(a)*orbit});
+  }
+  const tau=Math.PI*2,normalAngle=a=>((a%tau)+tau)%tau,half=Math.asin(hole/orbit),breaks=[0,tau];
+  for(const a0 of holes){const a=normalAngle(a0);for(let k=0;k<=10;k++)breaks.push(normalAngle(a-half+2*half*k/10));}
+  for(let k=0;k<32;k++)breaks.push(k/32*tau);
+  breaks.sort((a,b)=>a-b);
+  const cut=a=>{for(const center of holes){const d=Math.atan2(Math.sin(a-center),Math.cos(a-center));if(Math.abs(d)<=half+1e-9){const q=Math.sqrt(Math.max(0,hole*hole-orbit*orbit*Math.sin(d)**2)),v=orbit*Math.cos(d);return[v-q,v+q];}}return null;};
+  const at=(a,rr,z)=>[cx+Math.cos(a)*rr,cy+Math.sin(a)*rr,z];
+  const surface=(a,b,ra0,ra1,rb0,rb1,z,back=false)=>{
+    const v=[at(a,ra0,z),at(a,ra1,z),at(b,rb1,z),at(b,rb0,z)];
+    if(back)v.reverse();addQuad(apparatus,...v,P.black);
+  };
+  for(let i=0;i<breaks.length-1;i++){
+    const a=breaks[i],b=breaks[i+1];if(b-a<1e-7)continue;
+    const mid=cut((a+b)/2),aa=cut(a),bb=cut(b),lo=cz+.005,hi=lo+depth;
+    const strips=mid?[[inner,aa?.[0]??orbit,inner,bb?.[0]??orbit],[aa?.[1]??orbit,outer,bb?.[1]??orbit,outer]]:[[inner,outer,inner,outer]];
+    for(const [ra0,ra1,rb0,rb1]of strips){surface(a,b,ra0,ra1,rb0,rb1,hi);surface(a,b,ra0,ra1,rb0,rb1,lo,true);}
+    // The drilled rims and the two annulus rims have actual visible thickness.
+    for(const [ra,rb]of[[inner,inner],[outer,outer],...(mid?[[aa?.[0]??orbit,bb?.[0]??orbit],[aa?.[1]??orbit,bb?.[1]??orbit]]:[])])
+      addQuad(apparatus,at(a,ra,lo),at(b,rb,lo),at(b,rb,hi),at(a,ra,hi),P.black);
+  }
+  disc(apparatus,[cx,cy,cz+.018],inner*.96,.008,P.nickel,24);
+  disc(apparatus,[cx,cy,cz+.023],inner*.87,.003,MAT.paper,24);
+  const dialCard={x:cx,z:cz+.026,ax:1,az:0};
+  print(apparatus,'999',dialCard,{w:.060,h:.017,y:cy+.009});
+  print(apparatus,'100',dialCard,{w:.060,h:.014,y:cy-.014});
+  // Raised fixed chrome finger stop, kept separate from the rotating plate.
+  addBeam(apparatus,[cx+r*.394,cy-r*.614,cz+.034],[cx+r*.591,cy-r*.772,cz+.034],.016,P.nickel);
+  // Payment column follows the same top slot and right-hand lamp, middle
+  // tape well, and lower return as the close face.
+  const column=faceRect(.705,.12,.25,.82),slot=faceRect(.725,.14,.215,.13);
+  const window=faceRect(.715,.385,.235,.23),returnCup=faceRect(.715,.745,.235,.17);
+  casting(apparatus,[column.x,column.y,-.298],[column.w,column.h,.019],P.grey,.006);
+  casting(apparatus,[slot.x,slot.y,-.283],[slot.w,slot.h,.012],P.nickel,.004);
+  const moneyX=slot.x-slot.w/2+slot.w*.37;
+  addBox(apparatus,[moneyX,slot.y,-.274],[slot.w*.48,.009,.004],P.black);
+  addBox(apparatus,[moneyX,slot.y+.011,-.271],[slot.w*.60,.006,.013],P.nickel);
+  const lampX=slot.x-slot.w/2+slot.w*.84,lampR=Math.min(slot.w*.085,slot.h*.2);
+  disc(apparatus,[lampX,slot.y,-.277],lampR*1.5,.006,P.nickel,12);
+  disc(apparatus,[lampX,slot.y,-.272],lampR,.004,MAT.brass,12);
+  casting(apparatus,[window.x,window.y,-.277],[window.w,window.h,.013],P.nickel,.004);
+  addBox(apparatus,[window.x,window.y,-.267],[window.w-.018,window.h-.018,.008],MAT.dark);
+  addBox(apparatus,[window.x-window.w*.36,window.y,-.262],[.0015,window.h-.026,.001],P.nickel);
+  casting(apparatus,[returnCup.x,returnCup.y,-.274],[returnCup.w,returnCup.h,.027],P.black,.004);
+  addBox(apparatus,[returnCup.x,returnCup.y+returnCup.h/2,-.251],[returnCup.w+.004,.014,.035],P.nickel);
+  for(const x of[cabinetX+.018,cabinetX+cabinetW-.018])for(const y of[cabinetTop-cabinetH+.018,cabinetTop-cabinetH*.11])fixing(apparatus,x,y,-.304);
+  // The receiver center is unchanged: local[-.235,1.46,-.385]. Forks and
+  // cradle lever now sit around that actual handset instead of beside it.
+  casting(apparatus,[-.229,1.46,-.413],[.066,.164,.037],P.black,.004);
+  for(const y of[1.565,1.356])addBox(apparatus,[-.235,y,-.39],[.077,.012,.052],P.nickel);
+  addBox(apparatus,[-.235,1.477,-.377],[.038,.047,.014],P.nickel);
+  const grommetY=cabinetTop-cabinetH*.64;
+  disc(apparatus,[-.17,grommetY,-.348],.015,.013,P.nickel,10);
+  for(let i=0;i<4;i++)addCylinder(apparatus,[-.172,grommetY-.03-i*.032,-.37],.009,.028,P.nickel,6);
+  // Shelf lip remains z=-.12,y=.99: the runtime's hanging-cord anchor.
+  addBox(m,[0,.97,-.275],[.76,.04,.31],MAT.dark);
+  addBox(m,[0,.972,-.116],[.77,.019,.018],P.nickel);
+  for(const x of[-.265,.265])addBeam(m,[x,.806,-.414],[x,.945,-.142],.024,P.nickel);
+  addBox(m,[.16,1.007,-.276],[.291,.026,.199],MAT.mustard);
+  addBox(m,[.16,1.024,-.276],[.274,.007,.186],MAT.paper);
+  addBox(m,[.16,1.030,-.276],[.005,.003,.188],P.black);
+  for(const x of[.082,.229])for(let i=0;i<7;i++)addBox(m,[x,1.03,-.341+i*.021],[.104,.001,.0018],P.black);
+  addBeam(m,[.327,.997,-.381],[.344,.945,-.285],.004,P.nickel);
+  addBeam(m,[.344,.945,-.285],[.296,1.029,-.214],.004,P.nickel);
+  // Protected opal lamp, ventilation slots and a purposeful supply conduit.
+  addBox(m,[0,2.205,-.035],[.276,.038,.188],P.nickel);
+  addBox(glow,[0,2.179,-.035],[.236,.022,.153],MAT.warmWindow);
+  for(let i=0;i<10;i++)addBox(m,[-.30+i*.067,2.126,-.425],[.039,.008,.008],P.black);
+  addBeam(m,[.368,.145,-.423],[.368,2.154,-.423],.014,P.nickel);
+  addBox(m,[.368,.255,-.412],[.061,.084,.028],P.grey);
+
+  // The movable handset retains its origin, long Y axis and cups facing -z.
+  const handset=mesh('city_phone_box_handset');
+  addBeam(handset,[0,-.105,0],[-.012,-.06,.008],.036,P.black);
+  addBeam(handset,[-.012,-.06,.008],[-.012,.06,.008],.036,P.black);
+  addBeam(handset,[-.012,.06,.008],[0,.105,0],.036,P.black);
+  for(const y of[-.112,.112]){
+    addEllipsoid(handset,[0,y,-.010],[.044,.047,.039],P.black,5,10);
+    disc(handset,[0,y,-.047],.034,.005,P.black,16);
+    for(const x of[-.014,0,.014])addBox(handset,[x,y,-.051],[.003,.031,.002],MAT.dark);
+  }
+  addCylinder(handset,[0,-.16,.003],.009,.027,P.nickel,8);
+  const cord=mesh('city_phone_box_cord');
+  addCylinder(cord,[0,-.157,0],.006,.314,P.black,8);
+  for(let i=0;i<18;i++)addCylinder(cord,[0,-.009-i*.0175,0],.009,.009,P.nickel,6);
+  const drape=mesh('city_phone_box_cord_drape');
+  for(const [a,b]of[[[.03,.17,-.25],[.03,.035,-.25]],[[.03,.035,-.25],[0,.015,-.13]],[[0,.015,-.13],[0,0,0]]])addBeam(drape,a,b,.014,P.nickel);
+
+  // Separate leaf: origin stays at the hinge; the runtime places it at[-.4,.47].
+  const door=mesh('city_phone_box_door'),doorFace={x:.40,z:0,ax:1,az:0};
+  cellular(door,doorFace);
+  for(const x of[.022,.778])addBox(door,[x,1.22,.006],[.043,2.20,.061],P.red);
+  for(const y of[.39,1.16,2.06])addCylinder(door,[.006,y,.006],.015,.073,P.nickel,10);
+  for(const side of[-1,1]){
+    addBox(door,[.697,1.30,side*.035],[.046,.217,.009],P.black);
+    addBeam(door,[.697,1.21,side*.048],[.697,1.227,side*.075],.014,P.nickel);
+    addBeam(door,[.697,1.227,side*.075],[.697,1.373,side*.075],.014,P.nickel);
+    addBeam(door,[.697,1.373,side*.075],[.697,1.39,side*.048],.014,P.nickel);
+  }
+  // END PAYPHONE RED BOX GEOMETRY
+}
+{
+  // THE DOOR FIELD, KEPT LIKE A STATION (docs/plans/door-field-station.md). Every
+  // door stands on a threshold slab and a low stone plinth of the building's own
+  // stone. One metre wide, for the runtime to scale to each opening; local +z is
+  // the door's front. The slab's middle is worn hollow by feet that are not his.
+  const slab=mesh('door_threshold_slab');
+  addBox(slab,[0,.05,0],[1,.10,.62],MAT.stone);
+  addBox(slab,[0,.101,.02],[.62,.004,.34],MAT.slate);                  // the hollow worn by use
+  const plinth=mesh('door_plinth');
+  addBox(plinth,[0,.07,-.05],[1,.14,1.3],MAT.concrete);
+  addBox(plinth,[0,.145,-.05],[1.02,.012,1.32],MAT.stone);             // its arris
+  // Wear, laid on a frame by the runtime per world: scorch, frost, a damp tide
+  // line, glass-scoured pale, sand packed into the joint. Thin, unit height.
+  addBox(mesh('door_wear_scorch'),[0,.5,0],[.16,1,.012],MAT.black);
+  addBox(mesh('door_wear_frost'),[0,.5,0],[.18,1,.012],MAT.agedWhite);
+  addBox(mesh('door_wear_damp'),[0,.5,0],[.2,1,.012],MAT.slate);
+  addBox(mesh('door_wear_scour'),[0,.5,0],[.14,1,.012],MAT.ivory);
+  addBox(mesh('door_wear_sand'),[0,.02,0],[1,.04,.1],MAT.mustard);
+  // Handles polished bright by hands that are not his.
+  addBox(mesh('door_wear_polish'),[0,0,0],[.05,.14,.03],MAT.brass);
+  // WHAT SEEPS UNDER A SHUT DOOR, moved by the runtime: an ember, a sheet of
+  // water, a drift of snow, a fleck of glass or dust, a fan of sand.
+  addBox(mesh('seep_ember'),[0,0,0],[.03,.03,.03],MAT.terracotta);
+  addBox(mesh('seep_water'),[0,.004,0],[1,.008,1],MAT.slate);
+  { const drift=mesh('seep_drift'); for(let k=0;k<4;k+=1)addBox(drift,[0,.03+k*.05,.2-k*.1],[1-k*.18,.06,.5-k*.1],MAT.agedWhite); }
+  addBox(mesh('seep_fleck'),[0,0,0],[.02,.02,.02],MAT.ivory);
+  { const sand=mesh('seep_sand'); for(let k=0;k<3;k+=1)addBox(sand,[0,.01,.25-k*.15],[1-k*.3,.02,.3],MAT.mustard); }
+}
+{
+  // WHAT A DOOR'S WORLD LEAVES ON ITS SLAB when it has taken the door back. One
+  // metre across (the runtime scales to the opening), laid just proud of the slab
+  // top (y .10); local +z is the door's front.
+  const outline=(m,mat,h=.008,t=.05)=>{ addBox(m,[-.5,.1+h/2,0],[t,h,.14],mat); addBox(m,[.5,.1+h/2,0],[t,h,.14],mat); addBox(m,[0,.1+h/2,-.05],[1,h,t],mat); };
+  const burn=mesh('door_scar_burn');   outline(burn,MAT.black); addBox(burn,[0,.104,.12],[.8,.006,.3],MAT.dark);
+  const tide=mesh('door_scar_tide');   outline(tide,MAT.slate); for(let k=0;k<3;k+=1)addBox(tide,[0,.103,.08+k*.12],[.9-k*.2,.005,.02],MAT.slate);
+  const frost=mesh('door_scar_frost'); outline(frost,MAT.agedWhite,.03,.08); addBox(frost,[0,.12,.1],[.7,.04,.25],MAT.agedWhite);
+  const sand=mesh('door_scar_sand');   outline(sand,MAT.mustard,.02); for(let k=0;k<3;k+=1)addBox(sand,[-.2+k*.2,.11+k*.01,.12],[.4,.02+k*.01,.3-k*.06],MAT.mustard);
+  const glass=mesh('door_scar_glass'); outline(glass,MAT.ivory,.006,.03); for(let k=0;k<9;k+=1)addBox(glass,[-.4+k*.1,.103,.05+((k*37)%9)*.03],[.03,.006,.03],MAT.ivory);
+  const hole=mesh('door_scar_hole');   addBox(hole,[0,.102,0],[.96,.004,.12],MAT.black); addBox(hole,[0,.103,.2],[.5,.004,.25],MAT.black);
+}
+{
+  // THE STATION'S OWN DOOR, dressed as the best thing on the road
+  // (docs/plans/door-field-station.md). Door space: origin at the foot of the
+  // opening, +z the front. The chapel pair's opening is 2.06 × 2.40; its head is
+  // the flat tympanum at y 2.92.
+  const carving=mesh('chapel_door_carving');
+  // An arch of voussoirs springing from the posts over the tympanum.
+  for(let k=0;k<13;k+=1){
+    const a=Math.PI*(k+.5)/13, r=1.32;
+    addBox(carving,[Math.cos(a)*r,2.44+Math.sin(a)*r,.02],[.2,.26,.3],MAT.stone,0,0);
+  }
+  for(const x of[-1.3,1.3])addBox(carving,[x,1.22,.03],[.24,2.44,.32],MAT.stone); // the jambs, in stone
+  // The relief in the tympanum: a row of small arched doors, the middle one open.
+  for(let k=0;k<7;k+=1){
+    const x=-.9+k*.3, open=k===3;
+    addBox(carving,[x,2.84,.105],[.16,.36,.03],open?MAT.black:MAT.stone);
+    addBox(carving,[x,3.03,.105],[.12,.06,.03],MAT.stone);
+  }
+  addBox(carving,[0,3.3,.11],[.14,.14,.04],MAT.bronze);                 //   a bell cut above them
+  const iron=mesh('chapel_door_ironwork');
+  for(const x of[-.52,.52])for(const y of[.5,1.25,2.0])addBox(iron,[x,y,.06],[.9,.06,.018],MAT.black); // strap hinges on the leaves' faces
+  for(const x of[-.12,.12])addCylinder(iron,[x,1.1,.08],.07,.018,MAT.black,12);                        // ring handles
+  for(let k=0;k<24;k+=1)addBox(iron,[-.95+((k%12)*.173),.9+(k>=12?.9:0),.065],[.03,.03,.02],MAT.black); // studs
+  const step=mesh('chapel_door_step');
+  addBox(step,[0,.08,.55],[3.2,.16,.7],MAT.stone);
+  addBox(step,[0,.03,1.05],[3.6,.06,.4],MAT.stone);
+  const lantern=mesh('chapel_door_lantern');
+  addBox(lantern,[0,0,0],[.05,.5,.05],MAT.black);                        // bracket
+  addBox(lantern,[0,-.02,.18],[.04,.04,.3],MAT.black);
+  addBox(lantern,[0,-.18,.33],[.2,.28,.2],MAT.black);                   // cage
+  addBox(lantern,[0,-.18,.33],[.14,.2,.14],MAT.warmWindow);             // flame glass
+  // Hinge knuckles for the field doors' frames, and a stone flag for the path.
+  const knuckle=mesh('door_hinge_knuckle');
+  addCylinder(knuckle,[0,0,0],.022,.1,MAT.black,8);
+  const flag=mesh('station_flag');
+  addBox(flag,[0,.025,0],[1.05,.05,1.05],MAT.stone);
+}
+{
+  // THE SCHOOL HALL, SNOWED IN (docs/plans/door-field-station.md, stage T4).
+  // The first of the lands behind the door that shuts behind him: a primary
+  // school hall with the roof gone, chairs set out for a concert that will not
+  // happen, and the stage lights still on. Built at true size, in metres.
+  const stage=mesh('school_stage');                                      // a low stage, boards on a frame
+  addBox(stage,[0,.45,0],[9.0,.10,5.0],MAT.wood);
+  addBox(stage,[0,.22,0],[8.8,.44,4.8],MAT.dark);
+  for(let k=0;k<12;k+=1)addBox(stage,[-4.1+k*.75,.51,0],[.04,.012,5.0],MAT.dark);   // the board joints
+  addBox(stage,[0,.14,2.62],[9.0,.28,.24],MAT.wood);                     // its front edge
+  for(const x of[-3.2,3.2])addBox(stage,[x,.24,2.9],[1.6,.48,.3],MAT.wood);          // the two sets of steps
+  const bar=mesh('school_light_bar');                                    // a lighting bar over the stage
+  addBox(bar,[0,0,0],[9.4,.06,.06],MAT.black);
+  for(const x of[-4.2,-1.4,1.4,4.2])addBox(bar,[x,-.14,0],[.16,.22,.16],MAT.black);
+  const lamp=mesh('school_stage_lamp');                                  // one fresnel on it, lit
+  addBox(lamp,[0,0,0],[.26,.26,.3],MAT.black);
+  addBox(lamp,[0,0,.17],[.22,.22,.02],MAT.warmWindow);
+  addBox(lamp,[0,.16,-.02],[.06,.14,.06],MAT.black);
+  const drift=mesh('school_snow_drift');                                 // snow, blown in where the roof was
+  for(let k=0;k<5;k+=1)addBox(drift,[0,.04+k*.035,-.5+k*.22],[3.2-k*.5,.07,1.4-k*.2],MAT.agedWhite);
+  const piano=mesh('school_piano');                                      // the upright, lid shut, under snow
+  addBox(piano,[0,.62,0],[1.48,1.24,.62],MAT.dark);
+  addBox(piano,[0,1.28,0],[1.54,.08,.68],MAT.agedWhite);
+  addBox(piano,[0,.74,.33],[1.30,.10,.06],MAT.ivory);
+  // A length of the hall's wall: dado, painted brick above it, and the high
+  // window band that a school hall always has. Twelve metres to a panel, and the
+  // top is ragged because the roof went.
+  const wall=mesh('school_hall_wall');
+  addBox(wall,[0,1.9,0],[12.0,3.8,.30],MAT.agedWhite);
+  addBox(wall,[0,.55,.16],[12.0,1.1,.06],MAT.pubGreen);                  // the dado
+  addBox(wall,[0,1.14,.16],[12.0,.06,.08],MAT.wood);                     // its rail
+  for(let k=0;k<5;k+=1)addBox(wall,[-4.8+k*2.4,3.0,.16],[1.5,1.1,.05],MAT.roofGlass);  // the window band
+  for(let k=0;k<5;k+=1)addBox(wall,[-4.8+k*2.4,3.0,.19],[1.55,.06,.04],MAT.agedWhite);
+  for(let k=0;k<9;k+=1)addBox(wall,[-5.4+k*1.35,3.85+((k*7)%3)*.10,0],[1.3,.22,.32],MAT.agedWhite); // the broken top
+  const chairRow=mesh('school_chair_row');                               // six stacking chairs in a row
+  for(let k=0;k<6;k+=1){
+    const x=-2.2+k*.88;
+    addBox(chairRow,[x,.44,0],[.40,.04,.40],MAT.wood);
+    addBox(chairRow,[x,.70,-.18],[.40,.44,.04],MAT.wood);
+    for(const [dx,dz] of [[-.17,-.17],[.17,-.17],[-.17,.17],[.17,.17]])addBox(chairRow,[x+dx,.22,dz],[.035,.44,.035],MAT.steel);
+  }
+}
+{
+  // THE TOWER ROAD: THE SERVICE SIDE OF THE STATION (docs/plans/door-field-station.md).
+  // Where doors are kept, mended and put together.
+  const wrapped=mesh('stored_door_wrapped');                            // a leaf in brown paper, taped
+  addBox(wrapped,[0,1.1,0],[.96,2.2,.09],MAT.paper);
+  for(const y of[.4,1.1,1.8])addBox(wrapped,[0,y,0],[.98,.06,.1],MAT.agedWhite);
+  const tag=mesh('door_tag');                                           // a manila tag on a string
+  addBox(tag,[0,-.09,0],[.07,.12,.004],MAT.mustard); addBox(tag,[0,0,0],[.004,.08,.004],MAT.ivory);
+  const trestle=mesh('door_trestle');                                   // a pair of trestles for a leaf to lie on
+  for(const z of[-.8,.8]){ addBox(trestle,[0,.74,z],[.9,.06,.08],MAT.wood); for(const x of[-.35,.35])addBox(trestle,[x,.37,z],[.05,.74,.05],MAT.wood,0,x>0?.18:-.18); }
+  const bench=mesh('station_workbench');                                // a joiner's bench
+  addBox(bench,[0,.86,0],[2.2,.08,.7],MAT.wood);
+  for(const x of[-1,1])for(const z of[-.28,.28])addBox(bench,[x,.42,z],[.08,.84,.08],MAT.wood);
+  addBox(bench,[0,.2,0],[2.0,.04,.6],MAT.wood);                         //   its shelf
+  addBox(bench,[-.95,.95,.3],[.2,.12,.14],MAT.steel);                    //   the vice
+  addBox(bench,[.1,.92,.1],[1.2,.04,.5],MAT.wood);                       //   a leaf clamped on it, half planed
+  addBox(bench,[.55,.97,.05],[.28,.06,.07],MAT.wood); addBox(bench,[.55,1.0,.05],[.06,.04,.04],MAT.steel); // the plane
+  addCylinder(bench,[-.5,.94,-.2],.07,.1,MAT.steel,10);                  //   a tin of hinges
+  for(let k=0;k<9;k+=1)addBox(bench,[-.2+k*.12,.905,-.25+((k*7)%5)*.04],[.08,.012,.05],MAT.ivory); // shavings
+  for(let k=0;k<7;k+=1)addBox(bench,[-.6+k*.2,.015,.45+((k*3)%4)*.08],[.1,.012,.06],MAT.ivory);    // shavings on the ground
+  const workLamp=mesh('station_work_lamp');                              // a hurricane lamp on the bench, still lit
+  addBox(workLamp,[0,.04,0],[.16,.08,.16],MAT.black); addBox(workLamp,[0,.2,0],[.12,.22,.12],MAT.warmWindow); addBox(workLamp,[0,.34,0],[.16,.04,.16],MAT.black);
+  const lectern=mesh('door_ledger_lectern');                             // the ledger of doors, open on a lectern
+  addBox(lectern,[0,.5,0],[.08,1.0,.08],MAT.wood); addBox(lectern,[0,.02,0],[.5,.04,.5],MAT.wood);
+  addBox(lectern,[0,1.04,0],[.62,.04,.44],MAT.wood,0,-.35);
+  addBox(lectern,[-.14,1.08,.02],[.28,.02,.38],MAT.paper,0,-.35); addBox(lectern,[.14,1.08,.02],[.28,.02,.38],MAT.paper,0,-.35);
+}
+{
+  // DOORS NOBODY CAN REACH: a few extra doors in the field, floating or half sunk,
+  // that are not the building's assemblies. Frame and leaf in one mesh, the
+  // opening's foot at the origin, front +z. Domestic, and old station and church.
+  const frame=(m,w,h,mat,post=.08)=>{addBox(m,[-w/2-post/2,h/2,0],[post,h,.12],mat);addBox(m,[w/2+post/2,h/2,0],[post,h,.12],mat);addBox(m,[0,h+post/2,0],[w+post*2,post,.12],mat);};
+  const front=mesh('extra_front_door');                                // a house's front door
+  frame(front,.92,2.05,MAT.agedWhite);
+  addBox(front,[0,1.025,.02],[.9,2.05,.05],MAT.navy);
+  for(const y of[.55,1.45])addBox(front,[0,y,.05],[.7,.6,.012],MAT.navy);
+  addBox(front,[0,1.02,.055],[.28,.06,.01],MAT.brass);                  //   the letterbox
+  addBox(front,[0,1.62,.055],[.1,.12,.01],MAT.brass);                   //   the number
+  addBox(front,[.36,1.0,.06],[.03,.12,.03],MAT.brass);                  //   the knob
+  const bedroom=mesh('extra_bedroom_door');                             // a child's bedroom door
+  frame(bedroom,.8,1.98,MAT.agedWhite,.06);
+  addBox(bedroom,[0,.99,.02],[.78,1.98,.04],MAT.agedWhite);
+  for(let r=0;r<2;r+=1)for(let c=0;c<2;c+=1)addBox(bedroom,[-.18+c*.36,.55+r*.8,.045],[.28,.6,.01],MAT.ivory);
+  addBox(bedroom,[0,1.75,-.035],[.05,.04,.04],MAT.brass);               //   the hook on the back
+  addBox(bedroom,[0,1.55,-.06],[.34,.42,.03],MAT.cloth);                //   a dressing gown on it
+  const wardrobe=mesh('extra_wardrobe_door');                           // a wardrobe door, on its own
+  frame(wardrobe,.55,1.85,MAT.wood,.05);
+  addBox(wardrobe,[0,.925,.02],[.54,1.85,.03],MAT.wood);
+  addBox(wardrobe,[0,1.2,.04],[.36,.8,.006],MAT.ivory);                 //   its mirror
+  addBox(wardrobe,[.22,.95,.045],[.02,.08,.02],MAT.brass);
+  const waiting=mesh('extra_waiting_room_door');                        // a station waiting room's door
+  frame(waiting,.95,2.25,MAT.pubGreen,.1);
+  addBox(waiting,[0,.45,.02],[.93,.9,.05],MAT.pubGreen);
+  addBox(waiting,[0,1.55,.02],[.8,1.3,.02],MAT.roofGlass);
+  for(const y of[.92,2.2])addBox(waiting,[0,y,.03],[.93,.08,.06],MAT.pubGreen);
+  addBox(waiting,[0,1.1,.06],[.16,.3,.008],MAT.brass);                  //   the push plate
+  addBox(waiting,[0,2.45,.02],[1.1,.2,.04],MAT.paper);                  //   WAITING ROOM
+  const vestry=mesh('extra_vestry_door');                               // a vestry door, planked, strap hinges
+  frame(vestry,.85,2.0,MAT.stone,.14);
+  for(let k=0;k<5;k+=1)addBox(vestry,[-.34+k*.17,1.0,.02],[.16,2.0,.06],MAT.wood);
+  for(const y of[.35,1.65])addBox(vestry,[-.08,y,.06],[.66,.05,.012],MAT.black); // the strap hinges
+  addBox(vestry,[.32,1.02,.07],[.06,.06,.02],MAT.black);                 //   the ring latch
+}
+{
+  // A BEAM OF UNBUILT SET: one metre of raw timber, centred, for the runtime to
+  // scale into the frames of things on an unfinished pass of the outskirts road
+  // (source-space-runtime unfinishedFrame). The skeleton of a lodge, a bus.
+  const m=mesh('set_beam');
+  addBox(m,[0,0,0],[1,1,1],MAT.wood);
+}
+{
+  // A WET FOOTPRINT on the road, one shoe long, a darker, shinier patch of tarmac
+  // just proud of it. The "already walked" pass lays them out ahead of him.
+  const m=mesh('wet_footprint');
+  addBox(m,[0,.003,.03],[.10,.006,.17],MAT.slate);                     // the sole
+  addBox(m,[0,.003,-.10],[.085,.006,.07],MAT.slate);                   // the heel
+}
+{
   // THE FOUNTAIN, in the middle of the park's crossing paths.
   //
   // Municipal, tiered, and — this is the point of it — STILL RUNNING. Nothing
@@ -4815,6 +5385,739 @@ function buildStreetCar(name,{moving=false,body=MAT.dark}={}){
 // headlamps and a separately authored, more articulated road-car mesh.
 buildStreetCar('city_parked_car',{moving:false,body:MAT.dark});
 buildStreetCar('city_moving_car',{moving:true,body:MAT.terracotta});
+
+// ── THE REPEATING OUTSKIRTS: CLOSE, USABLE CONSTRUCTION ──────────────────────
+// These are separate from the opening street assets. Apertures are empty space;
+// the prop renderer supports opaque/masked materials, not transmissive glass.
+// Raised rain at pane edges describes glazing without filling its depth buffer.
+// Runtime owns the collider pieces and every articulation, never PROP_BOUNDS
+// for the whole of one of these deliberately hollow shells.
+{
+  const material=(name,color,metal=.0,rough=.7,emissive=null)=>{
+    const index=materials.length;
+    materials.push({name,pbrMetallicRoughness:{baseColorFactor:[...color,1],metallicFactor:metal,roughnessFactor:rough},...(emissive?{emissiveFactor:emissive}:{})});
+    return index;
+  };
+  const O={
+    enamel:material('outskirts municipal enamel',[.095,.16,.145],.18,.43),
+    enamelEdge:material('outskirts worn enamel edge',[.28,.33,.29],.26,.48),
+    cream:material('outskirts ivory coachwork',[.58,.61,.53],.08,.53),
+    iron:material('outskirts black iron',[.055,.065,.060],.65,.47),
+    rust:material('outskirts joint oxidation',[.22,.115,.068],.15,.87),
+    rubber:material('outskirts tyre and gasket',[.022,.026,.025],.0,.92),
+    seat:material('outskirts green moquette',[.10,.15,.12],.0,.98),
+    seatEdge:material('outskirts worn seat piping',[.24,.29,.23],.0,.85),
+    ink:material('outskirts printed carbon',[.027,.035,.032],.0,.94),
+    paper:material('outskirts rain stained paper',[.69,.70,.61],.0,.92),
+    glassEdge:material('outskirts glass edge reflection',[.29,.37,.36],.10,.19),
+    leaf:material('outskirts hedge leaf',[.07,.105,.078],.0,.97),
+    leafEdge:material('outskirts wet hedge edge',[.16,.21,.15],.0,.69),
+    face:material('outskirts face in rain',[.37,.29,.23],.0,.86),
+    hair:material('outskirts wet hair',[.032,.037,.034],.0,.65),
+    coat:material('outskirts charcoal raincoat',[.075,.09,.085],.0,.78),
+    seam:material('outskirts wet coat seams',[.18,.20,.17],.0,.60),
+    lining:material('outskirts coat lining',[.12,.135,.115],.0,.94),
+    lamp:material('outskirts opal strip',[.68,.70,.60],.0,.52,[.30,.31,.25]),
+  };
+  const printGlyphs={
+    A:['01110','10001','10001','11111','10001','10001','10001'],B:['11110','10001','10001','11110','10001','10001','11110'],
+    C:['01111','10000','10000','10000','10000','10000','01111'],D:['11110','10001','10001','10001','10001','10001','11110'],
+    E:['11111','10000','10000','11110','10000','10000','11111'],F:['11111','10000','10000','11110','10000','10000','10000'],
+    G:['01111','10000','10000','10111','10001','10001','01110'],H:['10001','10001','10001','11111','10001','10001','10001'],
+    I:['11111','00100','00100','00100','00100','00100','11111'],J:['00111','00010','00010','00010','10010','10010','01100'],
+    K:['10001','10010','10100','11000','10100','10010','10001'],L:['10000','10000','10000','10000','10000','10000','11111'],
+    M:['10001','11011','10101','10101','10001','10001','10001'],N:['10001','11001','10101','10011','10001','10001','10001'],
+    O:['01110','10001','10001','10001','10001','10001','01110'],P:['11110','10001','10001','11110','10000','10000','10000'],
+    Q:['01110','10001','10001','10001','10101','10010','01101'],R:['11110','10001','10001','11110','10100','10010','10001'],
+    S:['01111','10000','10000','01110','00001','00001','11110'],T:['11111','00100','00100','00100','00100','00100','00100'],
+    U:['10001','10001','10001','10001','10001','10001','01110'],V:['10001','10001','10001','10001','10001','01010','00100'],
+    W:['10001','10001','10001','10101','10101','10101','01010'],X:['10001','10001','01010','00100','01010','10001','10001'],
+    Y:['10001','10001','01010','00100','00100','00100','00100'],Z:['11111','00001','00010','00100','01000','10000','11111'],
+    '0':['01110','10001','10011','10101','11001','10001','01110'],'1':['00100','01100','00100','00100','00100','00100','01110'],
+    '2':['01110','10001','00001','00010','00100','01000','11111'],'3':['11110','00001','00001','01110','00001','00001','11110'],
+    '4':['00010','00110','01010','10010','11111','00010','00010'],'5':['11111','10000','10000','11110','00001','00001','11110'],
+    '6':['01110','10000','10000','11110','10001','10001','01110'],'7':['11111','00001','00010','00100','01000','01000','01000'],
+    '8':['01110','10001','10001','01110','10001','10001','01110'],'9':['01110','10001','10001','01111','00001','00001','01110'],
+    ':':['00000','00100','00100','00000','00100','00100','00000'],'-':['00000','00000','00000','11111','00000','00000','00000'],
+    '.':['00000','00000','00000','00000','00000','00110','00110'],
+  };
+  // Printed pixels are two-triangle ink, not embossed little boxes. Face -Z;
+  // yaw rotates the board and the letters by the same authoring convention.
+  const print=(m,text,c,height,mat=O.ink,yaw=0,pitch=0)=>{
+    const px=height/7,advance=px*6,total=(String(text).length*6-1)*px;
+    [...String(text)].forEach((char,index)=>{
+      const glyph=printGlyphs[char];if(!glyph)return;
+      glyph.forEach((row,j)=>[...row].forEach((bit,k)=>{
+        if(bit!=='1')return;
+        const x=-total/2+index*advance+(k+.5)*px,y=(3-j)*px;
+        const cs=Math.cos(yaw),sn=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);
+        const a=(dx,dy)=>[c[0]+(x+dx)*cs-(y+dy)*sp*sn,c[1]+(y+dy)*cp,c[2]+(x+dx)*sn+(y+dy)*sp*cs];
+        addQuad(m,a(-px*.46,-px*.46),a(-px*.46,px*.46),a(px*.46,px*.46),a(px*.46,-px*.46),mat);
+      }));
+    });
+  };
+  const translate=(m,offset)=>{
+    for(const g of m.groups.values())for(let i=0;i<g.positions.length;i+=3)for(let k=0;k<3;k++)g.positions[i+k]+=offset[k];
+    return m;
+  };
+  const bolt=(m,x,y,z)=>{
+    addBox(m,[x,y,z],[.035,.035,.012],MAT.steel,Math.PI/4);
+    addBox(m,[x,y,z-.008],[.020,.004,.003],O.ink);
+  };
+  const endRain=(m,x,z,side=1,y0=1.5,height=.8)=>{
+    for(let i=0;i<5;i++){
+      const off=(i-2)*.026,h=height*(.30+(i%3)*.16);
+      addBox(m,[x+off,y0+height-h/2-i*height*.09,z],[.008,h,.006],O.glassEdge,0,side*.025);
+    }
+  };
+  {
+    // Seamless 34.4m along local X; at yard_road's pi/2 yaw local Z is across.
+    // Drainage occupies the gutter, never the player's walking surface.
+    const m=mesh('outskirts_road'),L=34.4,H=L/2;
+    addBox(m,[0,-.045,0],[L,.10,7.2],MAT.slate);
+    addQuad(m,[-H,.012,-3.6],[-H,.045,0],[H,.045,0],[H,.012,-3.6],MAT.slate);
+    addQuad(m,[-H,.045,0],[-H,.012,3.6],[H,.012,3.6],[H,.045,0],MAT.slate);
+    for(const side of[-1,1]){
+      addBox(m,[0,-.035,side*9.05],[L,.09,5.5],MAT.soil);
+      addBox(m,[0,.005,side*3.48],[L,.018,.24],O.rubber);
+      addBox(m,[0,.070,side*3.69],[L,.14,.18],MAT.stone);
+      addBox(m,[0,.060,side*4.99],[L,.12,2.42],MAT.concrete);
+      addBox(m,[0,.125,side*6.24],[L,.025,.14],MAT.stone);
+      // Pavement joints meet the same slab at both ends: no repeat seam gap.
+      for(let i=0;i<43;i++){
+        const x=-H+i*.8+.4;
+        addBox(m,[x,.123,side*4.99],[.012,.004,2.42],O.ink);
+        addBox(m,[x,.141,side*3.69],[.012,.006,.18],O.ink);
+      }
+      for(const z of[side*4.40,side*5.60])addBox(m,[0,.123,z],[L,.004,.012],O.ink);
+      for(const x of[-11.7,5.5]){
+        addBox(m,[x,.013,side*3.42],[.62,.022,.26],O.iron);
+        for(let j=0;j<7;j++)addBox(m,[x-.24+j*.08,.027,side*3.42],[.022,.008,.21],MAT.steel);
+      }
+      // Broken repairs follow the carriageway edge; no random primer patches.
+      for(let i=0;i<7;i++){
+        const x=-H+1.4+i*4.8,z=side*(3.15+(i%2)*.11);
+        addBox(m,[x,.020,z],[1.25+(i%3)*.28,.012,.12],O.rubber,.012*side);
+      }
+    }
+    // Worn white centre dashes belong to the road, with enough gap to read wet.
+    for(let i=0;i<8;i++){
+      const x=-H+1.1+i*4.3;
+      addBox(m,[x,.050,0],[1.20,.006,.085],MAT.agedWhite);
+      addBox(m,[x+.47,.054,0],[.09,.002,.10],MAT.slate);
+    }
+  }
+  {
+    const m=mesh('outskirts_boundary_wall_6');
+    addBox(m,[0,.68,0],[.32,1.36,6],MAT.brickDark);
+    addBox(m,[0,1.39,0],[.32,.13,6],MAT.stone);
+    addBox(m,[0,.13,0],[.32,.26,6],MAT.stone);
+    for(let i=0;i<=3;i++){
+      const z=-3+i*2;
+      addBox(m,[0,.78,z],[.32,1.56,.32],MAT.brickDark);
+      addBox(m,[0,1.60,z],[.32,.14,.32],MAT.stone);
+      addBox(m,[-.155,.75,z-.12],[.010,.64,.03],O.rust);
+    }
+    for(const side of[-1,1])for(let i=0;i<10;i++){
+      const z=-2.75+i*.56;
+      addBox(m,[side*.155,.27+(i%3)*.075,z],[.010,.035,.14],MAT.stone);
+    }
+  }
+  {
+    const m=mesh('outskirts_boundary_rail_6');
+    addBox(m,[0,.08,0],[.12,.16,6],MAT.stone);
+    for(const z of[-3,-1.5,0,1.5,3]){
+      addBox(m,[0,.68,z],[.085,1.20,.085],O.iron);
+      addBox(m,[0,1.30,z],[.12,.09,.12],MAT.steel);
+      addBox(m,[0,.16,z],[.12,.035,.12],O.rust);
+    }
+    for(const y of[.46,1.18])addBox(m,[0,y,0],[.055,.055,6],O.iron);
+    for(let i=0;i<30;i++){
+      const z=-2.9+i*.2;
+      addBox(m,[0,.82,z],[.027,.75,.027],O.iron);
+      addBox(m,[0,1.22,z],[.048,.075,.048],O.enamelEdge,Math.PI/4);
+    }
+  }
+  {
+    // Exact end-to-end funnel lengths. Posts sit inside the declared envelope;
+    // runtime collision and the visible nose passage therefore agree.
+    const rail=(name,L)=>{
+      const m=mesh(name),half=L/2;
+      for(const y of[.38,1.02])addBox(m,[0,y,0],[.048,.048,L],O.iron);
+      const intervals=Math.ceil((L-.12)/1.4);
+      for(let i=0;i<=intervals;i++){
+        const z=-half+.06+(L-.12)*i/intervals;
+        addBox(m,[0,.55,z],[.085,1.10,.085],O.iron);
+        addBox(m,[0,1.075,z],[.12,.05,.12],O.enamelEdge);
+        addBox(m,[0,.035,z],[.12,.07,.12],MAT.steel);
+      }
+      const n=Math.floor((L-.24)/.20);
+      for(let i=0;i<=n;i++)addBox(m,[0,.69,-half+.12+(L-.24)*i/n],[.025,.66,.025],O.iron);
+    };
+    rail('outskirts_bus_funnel_west',6.9);
+    rail('outskirts_bus_funnel_east',5.2);
+  }
+  {
+    const m=mesh('outskirts_hedge_run_6');
+    addBox(m,[0,.08,0],[.92,.16,6],MAT.soil);
+    for(let i=0;i<12;i++){
+      const z=-2.75+i*.5,h=1.60+(i%3)*.09;
+      addLoft(m,[
+        [[-.43,.12,z-.26],[.43,.12,z-.26],[.43,.12,z+.26],[-.43,.12,z+.26]],
+        [[-.48,h*.66,z-.24],[.45,h*.66,z-.24],[.45,h*.66,z+.24],[-.48,h*.66,z+.24]],
+        [[-.31,h,z-.21],[.34,h,z-.21],[.34,h,z+.21],[-.31,h,z+.21]],
+      ],O.leaf);
+      for(let j=0;j<3;j++)addBox(m,[(j-1)*.22,h+.015-j*.05,z+(j-1)*.09],[.20,.065,.30],O.leafEdge,.4+j*.9);
+    }
+  }
+  {
+    // Local -Z is the bus's nose; the -X front entry is a real clear opening.
+    // Collider contract: floor .50, walls X +/-1.20; doorway on -X has
+    // Z[-3.70,-2.60], Y[.50,2.50]. Moving leaf has its own hinge-local mesh.
+    const m=mesh('outskirts_bus');
+    addBox(m,[0,.42,.03],[2.34,.14,8.90],O.iron);
+    addBox(m,[0,.495,.12],[2.28,.010,8.62],O.rubber);
+    // Driver/entrance well and two actual steps, standing below the saloon floor.
+    addBox(m,[-.90,.20,-3.15],[.55,.10,1.08],O.iron);
+    addBox(m,[-.67,.35,-3.15],[.39,.10,1.08],O.rubber);
+    for(const x of[-.90,-.67])addBox(m,[x,.26+(x>-.8?.15:0),-3.15],[.035,.012,1.03],MAT.steel);
+    // Side skins stop below the windows, and stop again at the entry.
+    addBox(m,[1.19,1.03,.02],[.12,.96,8.96],O.enamel);
+    for(const [a,b] of[[-4.48,-3.70],[-2.60,4.48]])addBox(m,[-1.19,1.03,(a+b)/2],[.12,.96,b-a],O.enamel);
+    for(const side of[-1,1]){
+      const x=side*1.20;
+      addBox(m,[x,2.70,.02],[.10,.43,8.98],O.cream);
+      // Body mouldings carry edge wear, with dark joints and fastener heads.
+      for(const y of[.69,1.48,2.49]){
+        const ranges=side<0?[[-4.48,-3.70],[-2.60,4.48]]:[[-4.48,4.48]];
+        for(const [a,b] of ranges)addBox(m,[x+side*.067,y,(a+b)/2],[.035,.035,b-a],O.enamelEdge);
+      }
+      for(const z of[-4.40,-2.60,-.84,.92,2.68,4.40]){
+        if(side<0&&z<-2.61&&z>-3.71)continue;
+        addBox(m,[x,2.0,z],[.095,1.00,.085],O.cream);
+        addBox(m,[x+side*.055,2.0,z+.055],[.018,.94,.018],O.rubber);
+        for(const y of[1.54,2.43])addBox(m,[x+side*.075,y,z],[.016,.028,.028],MAT.steel);
+      }
+      for(const z of[-3.28,-1.75,.02,1.78,3.54]){
+        if(side<0&&z<-2.61)continue;
+        addBox(m,[x,2.40,z],[.025,.035,1.48],O.rubber);
+        addBox(m,[x,2.32,z],[.025,.018,1.48],O.glassEdge);
+        // Window sightlines are clear; only a few edge streaks enter depth.
+        for(let j=0;j<3;j++)addBox(m,[x+side*.012,2.20-j*.13,z-.60+j*.018],[.008,.22+j*.07,.008],O.glassEdge);
+      }
+      for(const z of[-2.85,2.85]){
+        addCylinderX(m,[side*1.16,.45,z],.43,.24,O.rubber,28);
+        addCylinderX(m,[side*1.292,.45,z],.24,.022,O.iron,24);
+        addCylinderX(m,[side*1.31,.45,z],.12,.028,MAT.steel,16);
+        for(let i=0;i<6;i++){
+          const a=i*Math.PI/3;
+          addBox(m,[side*1.329,.45+Math.sin(a)*.16,z+Math.cos(a)*.16],[.014,.031,.031],O.enamelEdge);
+        }
+      }
+      addBox(m,[side*1.265,.63,0],[.018,.025,7.8],O.rust);
+    }
+    // Roof is a shallow barrel, with a visible rim and drip rail.
+    for(let i=0;i<16;i++){
+      const a=i/16,b=(i+1)/16,xa=-1.22+2.44*a,xb=-1.22+2.44*b,ya=2.90+.20*Math.sin(Math.PI*a),yb=2.90+.20*Math.sin(Math.PI*b);
+      const p0=[xa,ya,-4.58],p1=[xa,ya,4.62],p2=[xb,yb,4.62],p3=[xb,yb,-4.58];
+      addQuad(m,p0,p1,p2,p3,O.cream);addQuad(m,p3,p2,p1,p0,O.cream);
+    }
+    for(const x of[-1.245,1.245])addBox(m,[x,2.86,.02],[.045,.055,9.18],O.iron);
+    for(const z of[-4.53,4.53]){
+      addBox(m,[0,1.03,z],[2.40,.96,.14],O.enamel);
+      addBox(m,[0,2.73,z],[2.40,.39,.12],O.cream);
+      for(const x of[-1.12,0,1.12])addBox(m,[x,2.00,z],[.065,1.10,.065],O.cream);
+      addBox(m,[0,1.49,z],[2.35,.055,.065],O.iron);
+      addBox(m,[0,.61,z+Math.sign(z)*.10],[2.39,.15,.10],MAT.steel);
+    }
+    // The front windscreen remains open to the cabin and its occupant.
+    addBox(m,[0,1.24,-4.30],[1.95,.16,.40],O.iron);
+    addBox(m,[.57,1.46,-4.19],[.45,.045,.33],O.rubber,0,.18);
+    addRingBeam(m,[.57,1.45,-4.13],.185,.024,O.iron,20);
+    // Driver and farebox remain outside the entrance-to-aisle circulation.
+    addBox(m,[.68,.82,-3.35],[.43,.56,.43],O.iron);
+    addBox(m,[.68,1.03,-3.35],[.56,.16,.62],O.seat);
+    addBox(m,[.68,1.36,-3.08],[.56,.62,.10],O.seat);
+    addBox(m,[-.30,.86,-3.90],[.11,.72,.12],O.iron);
+    addBox(m,[-.30,1.27,-3.90],[.30,.26,.28],MAT.steel);
+    addBox(m,[-.30,1.405,-3.90],[.19,.012,.13],O.rubber);
+    addBox(m,[-.30,1.17,-4.045],[.18,.09,.014],O.ink);
+    for(const x of[-.36,-.24])addBox(m,[x,1.28,-4.047],[.075,.035,.015],O.paper);
+    for(const x of[-.50,.50]){
+      addBeam(m,[x,1.51,-4.62],[x-.28,1.90,-4.63],.018,O.iron);
+      addBeam(m,[x-.28,1.90,-4.63],[x-.47,2.07,-4.63],.025,O.rubber);
+    }
+    for(const x of[-.82,.82]){
+      addBox(m,[x,.97,-4.62],[.37,.22,.09],MAT.ivory);
+      addBox(m,[x,.97,-4.675],[.29,.15,.025],O.glassEdge);
+      addBox(m,[x,.91,4.63],[.24,.19,.07],O.rust);
+      addBeam(m,[x,2.18,-4.53],[x*1.66,2.12,-4.38],.032,O.iron);
+      addBox(m,[x*1.66,2.04,-4.38],[.10,.25,.26],O.iron);
+    }
+    addBox(m,[0,2.73,-4.605],[1.65,.27,.035],O.ink);
+    print(m,'ELLERY',[0,2.73,-4.627],.17,O.paper);
+    addBox(m,[0,.86,-4.61],[.61,.25,.065],O.iron);
+    for(let i=0;i<7;i++)addBox(m,[-.24+i*.08,.86,-4.653],[.025,.19,.012],O.enamelEdge);
+    addBox(m,[0,.48,-4.68],[.60,.13,.025],O.paper);
+    print(m,'J 063',[0,.48,-4.696],.075,O.ink);
+    // Two seat columns and a clear .79m aisle. At the entrance the first row is
+    // absent, so the threshold genuinely leads somewhere.
+    for(const side of[-1,1])for(let row=0;row<7;row++){
+      const x=side*.77,z=-2.1+row*.88;
+      addBox(m,[x,.81,z],[.69,.48,.065],O.iron);
+      addBox(m,[x,1.03,z],[.75,.16,.67],O.seat);
+      addBox(m,[x,1.37,z+.29],[.75,.67,.13],O.seat,0,-.075);
+      addBox(m,[x,1.71,z+.26],[.72,.035,.14],O.seatEdge);
+      for(const dx of[-.34,.34])addBeam(m,[x+dx,1.07,z-.25],[x+dx,1.44,z+.27],.022,MAT.steel);
+    }
+    for(const side of[-1,1]){
+      addBox(m,[side*.81,2.80,.05],[.08,.035,7.9],O.lamp);
+      for(const z of[-2.6,.1,2.8])addCylinder(m,[side*.36,1.69,z],.019,2.08,MAT.steel,10);
+      addBeam(m,[side*.36,2.70,-2.6],[side*.36,2.70,3.65],.022,MAT.steel);
+    }
+  }
+  {
+    // Place at bus-local [-1.245,.50,-3.70]. Leaf rotates about its hinge;
+    // CLOSED yaw=0, opening swings inward, never through the roadside player.
+    const m=mesh('outskirts_bus_door');
+    for(const z of[.035,1.065])addBox(m,[0,1.00,z],[.065,2.00,.065],O.cream);
+    for(const y of[.035,.70,1.965])addBox(m,[0,y,.55],[.065,.07,1.10],O.cream);
+    addBox(m,[0,.35,.55],[.045,.59,1.00],O.enamel);
+    addBox(m,[0,1.34,.55],[.045,1.21,.045],O.iron);
+    for(const y of[.22,1.78])addBox(m,[.045,y,.035],[.06,.16,.09],MAT.steel);
+    addBox(m,[-.06,1.08,.96],[.08,.27,.04],O.iron);
+    for(const z of[.11,.98])for(let j=0;j<3;j++)addBox(m,[-.035,1.70-j*.18,z],[.009,.22,.007],O.glassEdge);
+    addBox(m,[-.04,.78,.25],[.008,.045,.27],O.enamelEdge);
+  }
+  {
+    // Open +X. Rear X=-1.22; ends Z=+/-2.24; seat top .50. No whole-shell
+    // collision: posts, rear, ends and seat are separate runtime rectangles.
+    const m=mesh('outskirts_shelter');
+    addBox(m,[0,.035,0],[2.60,.07,4.60],MAT.concrete);
+    for(const x of[-1.20,1.20])for(const z of[-2.20,2.20]){
+      addBox(m,[x,1.28,z],[.10,2.50,.10],O.iron);
+      addBox(m,[x,.085,z],[.22,.045,.22],MAT.steel);
+      for(const dx of[-.075,.075])addBox(m,[x+dx,.115,z],[.025,.025,.025],O.rust);
+      addBox(m,[x-.054,1.26,z],[.012,1.9,.022],O.enamelEdge);
+    }
+    addBox(m,[0,2.53,0],[2.88,.14,4.98],O.iron);
+    addBox(m,[0,2.62,-.01],[2.77,.07,4.86],MAT.slate,0,.018);
+    addBox(m,[0,2.43,0],[2.45,.055,4.55],MAT.agedWhite);
+    addBox(m,[-.64,2.395,0],[.12,.035,3.52],O.lamp);
+    for(const x of[-1.25,1.25])addBox(m,[x,2.55,0],[.09,.12,4.98],MAT.steel);
+    // End rails and glazing bars enclose the two ends without blocking sight.
+    for(const z of[-2.24,2.24]){
+      for(const y of[.30,1.28,2.42])addBox(m,[0,y,z],[2.40,.045,.05],O.iron);
+      addBox(m,[0,1.36,z],[.045,2.08,.045],O.iron);
+      for(const x of[-1.08,1.08])endRain(m,x,z,Math.sign(z),1.5,.7);
+    }
+    for(const y of[.30,1.28,2.42])addBox(m,[-1.22,y,0],[.05,.045,4.4],O.iron);
+    for(const z of[-.72,.72])addBox(m,[-1.22,1.36,z],[.05,2.08,.045],O.iron);
+    for(const z of[-2.06,-.64,.80,2.06])for(let i=0;i<3;i++)addBox(m,[-1.245,2.12-i*.16,z+i*.018],[.008,.30-i*.04,.008],O.glassEdge);
+    // Slatted timber seat, worn along the front edge where people actually sit.
+    for(const z of[-1.35,1.35]){
+      addBox(m,[-.72,.27,z],[.065,.48,.09],O.iron);
+      addBeam(m,[-.94,.42,z],[-.45,.46,z],.055,O.iron);
+      addBox(m,[-.96,.73,z],[.045,.73,.07],O.iron);
+    }
+    for(const x of[-.91,-.75,-.59])addBox(m,[x,.49,0],[.14,.055,3.23],MAT.wood);
+    for(const y of[.71,.88])addBox(m,[-.98,y,0],[.06,.14,3.23],MAT.wood,0,-.04);
+    addBox(m,[-.51,.508,0],[.018,.012,3.18],O.enamelEdge);
+    addCylinder(m,[1.21,1.25,2.28],.028,2.40,O.iron,10);
+    addBox(m,[1.25,.14,2.28],[.15,.18,.12],O.rust);
+  }
+  {
+    // Separate, addressable timetable. Local -Z print; place on shelter front
+    // post or turn pi/2 for a side-facing case. 0.58w x .94h, centre at Y=1.60.
+    const m=mesh('outskirts_shelter_timetable');
+    addBox(m,[0,1.60,0],[.65,1.02,.09],O.iron);
+    addBox(m,[0,1.60,-.051],[.57,.93,.014],O.paper);
+    print(m,'ELLERY',[0,1.94,-.063],.065);
+    print(m,'LAST BUS',[0,1.82,-.063],.045);
+    print(m,'23:10',[0,1.66,-.063],.078);
+    print(m,'23:40',[0,1.52,-.063],.078);
+    print(m,'00:10',[0,1.38,-.063],.078);
+    for(const y of[1.89,1.75,1.22])addBox(m,[0,y,-.065],[.46,.008,.002],O.ink);
+    for(const x of[-.29,.29])for(const y of[1.17,2.03])bolt(m,x,y,-.061);
+    // Lower paper edge curls outward; water gathers inside the case perimeter.
+    addBox(m,[0,1.15,-.069],[.55,.035,.014],O.enamelEdge,0,-.14);
+    endRain(m,.26,-.075,1,1.39,.44);
+  }
+  {
+    // Lodge shell retains the old three-metre workplace and front -Z counter,
+    // but its windows and hatch are real openings. Its door is a distinct leaf.
+    const m=mesh('outskirts_lodge');
+    addBox(m,[0,.08,0],[3.30,.16,2.90],MAT.stone);
+    for(const x of[-1.43,1.43])addBox(m,[x,.78,0],[.16,1.24,2.46],O.enamel);
+    for(const z of[-1.22,1.22])addBox(m,[0,.78,z],[2.86,1.24,.16],O.enamel);
+    for(const x of[-1.43,1.43])for(const z of[-1.22,1.22])addBox(m,[x,1.52,z],[.14,2.70,.14],O.iron);
+    for(const x of[-1.43,1.43])addBox(m,[x,1.40,0],[.18,.12,2.64],MAT.stone);
+    for(const z of[-1.23,1.23])addBox(m,[0,1.40,z],[2.86,.12,.18],MAT.stone);
+    for(const x of[-1.43,1.43])addBox(m,[x,2.80,0],[.14,.18,2.54],O.enamel);
+    for(const z of[-1.22,1.22])addBox(m,[0,2.80,z],[2.92,.18,.14],O.enamel);
+    addPitchedRoof(m,{x:0,z:0,w:3.30,d:2.90,eaves:2.91,rise:.68,mat:MAT.slate,gableMat:O.enamel,ridge:'z',overhang:0});
+    for(const x of[-1.65,1.65])addBox(m,[x,2.94,0],[.10,.14,3.02],O.iron);
+    // Front service ledge reaches the player, with metal lip and runoff stains.
+    addBox(m,[-.48,1.43,-1.41],[1.82,.105,.46],MAT.wood);
+    addBox(m,[-.48,1.487,-1.60],[1.83,.012,.035],MAT.steel);
+    for(const x of[-1.30,-.72,.22])addBox(m,[x,1.17,-1.309],[.027,.37,.012],O.rust);
+    addBox(m,[0,2.81,-1.308],[1.52,.20,.025],O.ink);
+    print(m,'PORTER',[0,2.81,-1.326],.13,O.paper);
+    addCylinder(m,[1.55,1.43,1.20],.035,2.65,O.iron,10);
+    addBox(m,[1.55,.16,1.23],[.16,.18,.19],O.rust);
+  }
+  {
+    // The Fold sits facing the road. This chair and its low side ledge share
+    // the character's floor origin: seat Y.47, left palm [-.55,.82,-.14].
+    // They belong to this encounter, rather than stretching him to the hatch.
+    const m=mesh('outskirts_fold_chair');
+    const vinyl=material('outskirts worn brown chair vinyl',[.105,.075,.055],0,.86);
+    const tube=(points,r,mat=O.iron)=>{
+      const rings=points.map((p,i)=>{
+        const a=points[Math.max(0,i-1)],b=points[Math.min(points.length-1,i+1)],v=b.map((x,k)=>x-a[k]),len=Math.hypot(...v),t=v.map(x=>x/len);
+        const ref=Math.abs(t[1])<.9?[0,1,0]:[0,0,1],u=[t[1]*ref[2]-t[2]*ref[1],t[2]*ref[0]-t[0]*ref[2],t[0]*ref[1]-t[1]*ref[0]],ul=Math.hypot(...u);for(let k=0;k<3;k++)u[k]/=ul;
+        const w=[t[1]*u[2]-t[2]*u[1],t[2]*u[0]-t[0]*u[2],t[0]*u[1]-t[1]*u[0]];
+        return Array.from({length:12},(_,j)=>p.map((x,k)=>x+r*(u[k]*Math.cos(j*Math.PI/6)+w[k]*Math.sin(j*Math.PI/6))));
+      });
+      addLoft(m,rings,mat);
+    };
+    const outline=[[-.23,-.18],[-.25,-.15],[-.25,.23],[-.22,.27],[.22,.27],[.25,.23],[.25,-.15],[.23,-.18]];
+    addLoft(m,[.425,.437].map(y=>outline.map(([x,z])=>[x,y,z])),O.iron);
+    addLoft(m,[.437,.47].map(y=>outline.map(([x,z])=>[x*.96,y,.04+(z-.04)*.96])),vinyl);
+    for(const x of[-.225,.225]){
+      // Two crossed folding frames, rubber ferrules and a retained hinge.
+      tube([[x,.026,-.20],[x,.32,.035],[x,.43,.20]],.014);
+      tube([[x,.026,.32],[x,.32,.035],[x,.43,-.16]],.014);
+      tube([[x,.45,.24],[x,.88,.29],[x*.92,.94,.27]],.015);
+      addCylinderX(m,[x,.32,.035],.027,.033,O.enamelEdge,16);
+      for(const z of[-.20,.32])addCylinder(m,[x,.016,z],.021,.032,O.rubber,12);
+    }
+    for(const z of[-.16,.20])tube([[-.225,.425,z],[.225,.425,z]],.014);
+    tube([[-.207,.94,.27],[.207,.94,.27]],.015);
+    addBox(m,[0,.79,.275],[.43,.23,.036],vinyl,0,.045);
+    for(const x of[-.19,.19])addCylinderX(m,[x,.79,.253],.008,.012,O.enamelEdge,12);
+    // A small unpainted paving extension puts the whole chair and both boots
+    // on real support. Its roadward edge still leaves a clear walking lane.
+    addBox(m,[0,-.06,-.215],[.86,.12,1.13],MAT.stone);
+    for(const x of[-.285,.285])addBox(m,[x,.001,-.215],[.004,.002,1.10],O.ink);
+    addBox(m,[0,.001,-.215],[.84,.002,.004],O.ink);
+  }
+  {
+    const m=mesh('outskirts_fold_sideledge');
+    addBox(m,[-.55,.798,.10],[.28,.044,.60],MAT.wood);
+    addBox(m,[-.55,.817,-.195],[.28,.006,.010],O.enamelEdge);
+    // The bracket returns into the lodge. The palm meets the broad flat top,
+    // rather than floating above a tall service counter.
+    for(const x of[-.66,-.44]){
+      addBeam(m,[x,.75,-.10],[x,.75,.90],.018,O.iron);
+      addBeam(m,[x,.53,.82],[x,.75,-.10],.018,O.iron);
+      addBox(m,[x,.66,.90],[.045,.31,.018],O.iron);
+    }
+    addBox(m,[-.55,.35,.23],[.22,.70,.18],O.enamel);
+    addBox(m,[-.55,.025,.23],[.28,.05,.24],MAT.stone);
+    for(const x of[-.66,-.44])for(const y of[.56,.76])addCylinderX(m,[x,y,.882],.008,.018,O.enamelEdge,12);
+  }
+  {
+    const m=mesh('outskirts_lodge_glazing');
+    // Front hatch aperture X[-1.30,-.16], Y[1.49,2.14]. Header/sill/jambs
+    // stay in this static mesh; the sliding pane is outskirts_lodge_hatch.
+    for(const x of[-1.32,-.13,1.32])addBox(m,[x,2.09,-1.24],[.07,1.30,.10],MAT.agedWhite);
+    for(const y of[1.49,2.72])addBox(m,[0,y,-1.24],[2.70,.065,.10],MAT.agedWhite);
+    addBox(m,[-.73,2.15,-1.24],[1.13,.055,.11],MAT.agedWhite);
+    addBox(m,[.59,2.10,-1.24],[.055,1.22,.10],MAT.agedWhite);
+    for(const x of[-1.40,1.40]){
+      for(const y of[1.49,2.72])addBox(m,[x,y,0],[.10,.065,2.30],MAT.agedWhite);
+      for(const z of[-.67,.67])addBox(m,[x,2.10,z],[.10,1.25,.055],MAT.agedWhite);
+    }
+    for(const y of[1.49,2.72])addBox(m,[0,y,1.24],[2.70,.065,.10],MAT.agedWhite);
+    for(const x of[-.67,.67])addBox(m,[x,2.10,1.24],[.055,1.25,.10],MAT.agedWhite);
+    for(const x of[-1.22,.01,.68,1.22])endRain(m,x,-1.295,1,1.69,.80);
+    addBox(m,[-.73,1.505,-1.302],[1.26,.035,.08],MAT.steel);
+    addBox(m,[-.73,2.125,-1.302],[1.26,.035,.08],MAT.steel);
+  }
+  {
+    // Full lodge coordinates, sharing the shell's world anchor. The closed
+    // pane spans X[-1.30,-.16], Y[1.50,2.13]. Runtime slides +X1.14 to open.
+    const m=mesh('outskirts_lodge_hatch');
+    for(const x of[.025,1.115])addBox(m,[x,.315,0],[.05,.63,.035],O.enamelEdge);
+    for(const y of[.025,.605])addBox(m,[.57,y,0],[1.14,.05,.035],O.enamelEdge);
+    addBox(m,[1.04,.13,-.035],[.055,.18,.045],O.iron);
+    for(const x of[.08,1.06])endRain(m,x,-.022,1,.10,.43);
+    for(const x of[.13,.62])addBox(m,[x,.04,-.025],[.21,.008,.010],O.glassEdge);
+    translate(m,[-1.30,1.50,-1.325]);
+  }
+  {
+    const m=mesh('outskirts_lodge_interior');
+    addBox(m,[-.45,1.42,-.80],[1.72,.12,.70],MAT.wood);
+    addBox(m,[-.45,.89,-.56],[1.50,.92,.11],O.enamel);
+    addBox(m,[.52,.85,.55],[1.00,.09,.63],MAT.wood);
+    for(const x of[.12,.92])for(const z of[.31,.79])addBox(m,[x,.48,z],[.05,.69,.05],O.iron);
+    addBox(m,[.40,.56,.16],[.43,.08,.42],MAT.wood);
+    addBox(m,[.40,.91,.34],[.43,.52,.07],O.iron);
+    for(const x of[.24,.56])for(const z of[.02,.30])addBox(m,[x,.34,z],[.035,.43,.035],O.iron);
+    // The ledger is an addressable mesh on the ledge, not baked dressing.
+    addBox(m,[.92,1.88,.98],[.66,.73,.04],O.enamel);
+    for(let row=0;row<3;row++)for(let col=0;col<4;col++){
+      const x=.70+col*.14,y=1.66+row*.19;
+      addBeam(m,[x,y, .95],[x,y-.045,.88],.011,MAT.brass);
+      if((row+col)%3)addBox(m,[x,y-.085,.87],[.025,.11,.015],MAT.brass);
+    }
+    addBox(m,[-1.10,.40,.70],[.37,.55,.21],MAT.agedWhite);
+    for(let i=0;i<5;i++)addBox(m,[-1.10,.20+i*.09,.586],[.29,.017,.014],O.iron);
+  }
+  {
+    // Counter phone origin lodgelocal[.02,1.48,-.82]; handset centred at +Y.18.
+    const m=mesh('outskirts_lodge_phone');
+    addLoft(m,[
+      [[-.18,0,-.16],[.18,0,-.16],[.18,0,.14],[-.18,0,.14]],
+      [[-.14,.10,-.12],[.14,.10,-.12],[.14,.13,.11],[-.14,.13,.11]],
+    ],O.iron);
+    addCylinder(m,[0,.125,-.015],.104,.018,MAT.ivory,28);
+    addCylinder(m,[0,.140,-.015],.079,.014,O.rubber,28);
+    addCylinder(m,[0,.152,-.015],.030,.012,O.paper,20);
+    for(let i=0;i<10;i++){
+      const a=i*Math.PI*2/10;
+      addCylinder(m,[Math.sin(a)*.059,.151,-.015+Math.cos(a)*.059],.012,.015,O.iron,10);
+    }
+    for(const x of[-.14,.14])addBox(m,[x,.15,.07],[.035,.09,.045],MAT.steel);
+    addBeam(m,[-.18,.235,.07],[.18,.235,.07],.057,O.rubber);
+    for(const x of[-.19,.19]){
+      addEllipsoid(m,[x,.208,.07],[.066,.065,.078],O.iron,8,14);
+      addBox(m,[x,.17,.07],[.10,.025,.12],O.rubber);
+    }
+    for(let i=0;i<14;i++){
+      const a=i*.9;
+      addBeam(m,[.21+Math.cos(a)*.018,.19-i*.009,.10+Math.sin(a)*.018],[.21+Math.cos(a+.9)*.018,.19-(i+1)*.009,.10+Math.sin(a+.9)*.018],.008,O.rubber);
+    }
+    translate(m,[.02,1.48,-.82]);
+  }
+  {
+    // Place at lodge-local[.67,1.48,-.76]. Steam emission anchor local
+    // [+ .105,+ .235,- .075] is the spout, not the centre of the whole building.
+    const m=mesh('outskirts_lodge_kettle');
+    addBox(m,[0,.025,0],[.29,.05,.28],O.iron);
+    addCylinder(m,[0,.16,0],.105,.25,MAT.steel,24);
+    addCylinder(m,[0,.292,0],.11,.025,O.iron,24);
+    addCylinder(m,[0,.314,0],.027,.025,O.rubber,12);
+    addBeam(m,[.07,.18,-.01],[.12,.235,-.075],.055,MAT.steel);
+    addBox(m,[.12,.240,-.080],[.06,.018,.065],O.iron,0,-.35);
+    addBeam(m,[-.10,.22,0],[-.16,.22,.01],.027,O.rubber);
+    addBeam(m,[-.16,.22,.01],[-.16,.09,.01],.027,O.rubber);
+    addBeam(m,[-.16,.09,.01],[-.09,.09,0],.027,O.rubber);
+    for(const x of[-.25,-.38]){
+      addCylinder(m,[x,.075,-.02],.047,.14,MAT.ivory,16);
+      addCylinder(m,[x,.149,-.02],.038,.005,O.ink,16);
+      addBeam(m,[x-.04,.11,-.02],[x-.075,.11,-.02],.015,MAT.ivory);
+    }
+    translate(m,[.67,1.48,-.76]);
+  }
+  {
+    const m=mesh('outskirts_lodge_practicals');
+    addBox(m,[0,2.75,0],[1.54,.055,.14],O.lamp);
+    addBox(m,[.70,.86,.42],[.20,.012,.15],O.lamp);
+  }
+  {
+    // Thin steam filaments begin at a mug rim. A full opaque billboard would
+    // hide the human through the hatch; these narrow ribbons leave its air clear.
+    const m=mesh('outskirts_mug_steam');
+    for(let strand=0;strand<3;strand++)for(let i=0;i<7;i++){
+      const y=i*.034,x=Math.sin(i*.69+strand*1.8)*(.008+i*.0018)+(strand-1)*.013,z=Math.cos(i*.59+strand)*.009;
+      const ny=(i+1)*.034,nx=Math.sin((i+1)*.69+strand*1.8)*(.008+(i+1)*.0018)+(strand-1)*.013,nz=Math.cos((i+1)*.59+strand)*.009;
+      addBeam(m,[x,y,z],[nx,ny,nz],.0028+(6-i)*.00045,O.glassEdge);
+    }
+  }
+  {
+    const ledger=(name,signed)=>{
+      const m=mesh(name);
+      addBox(m,[0,0,0],[.48,.018,.35],O.enamel);
+      addBox(m,[-.12,.011,0],[.224,.005,.327],O.paper,0,-.014);
+      addBox(m,[.12,.011,0],[.224,.005,.327],O.paper,0,.014);
+      addBox(m,[0,.015,0],[.009,.006,.326],O.ink);
+      print(m,'VISITORS',[.115,.019,.106],.022,O.ink,0,Math.PI/2);
+      for(const x of[-.116,.116]){
+        for(const z of[-.114,-.067,-.020,.027,.074])addBox(m,[x,.019,z],[.195,.0015,.0016],O.ink);
+        addBox(m,[x-.047,.019,-.020],[.0016,.0015,.231],O.ink);
+      }
+      // Existing entries stop before the usable last line; the signed version
+      // adds an unmistakable continuous pen stroke rather than a floating icon.
+      for(let row=0;row<3;row++)for(const side of[-1,1])for(let i=0;i<4;i++){
+        const x=side*.116-.014+i*.027,z=.066-row*.047;
+        addBeam(m,[x,.020,z],[x+.016,.020,z+.004-(i%2)*.008],.0017,O.ink);
+      }
+      if(signed){
+        const pts=[[-.010,-.105],[.009,-.087],[.016,-.121],[.031,-.095],[.040,-.111],[.061,-.093],[.070,-.113],[.087,-.102],[.102,-.109],[.119,-.096],[.142,-.110],[.164,-.104],[.196,-.109]];
+        for(let i=1;i<pts.length;i++)addBeam(m,[pts[i-1][0],.021,pts[i-1][1]],[pts[i][0],.021,pts[i][1]],.0026,O.ink);
+        addBeam(m,[.007,.021,-.127],[.197,.021,-.119],.0016,O.ink);
+      }
+      addBox(m,[.248,.015,.040],[.008,.008,.236],MAT.brass,.08);
+      translate(m,[-.68,1.486,-1.40]);
+    };
+    ledger('outskirts_lodge_ledger',false);
+    ledger('outskirts_ledger_signed',true);
+  }
+  {
+    // Loose papers use their own centre as origin, for actual taking/posting.
+    const m=mesh('outskirts_ticket');
+    addBox(m,[0,.002,0],[.070,.004,.143],O.paper);
+    print(m,'ELLERY',[0,.005,.046],.010,O.ink,0,Math.PI/2);
+    print(m,'063',[0,.005,.010],.021,O.ink,0,Math.PI/2);
+    for(const z of[-.047,-.039,.029])addBox(m,[0,.005,z],[.055,.001,.0014],O.ink);
+    for(let i=0;i<5;i++)addBox(m,[-.027+i*.013,.005,-.064],[.006,.001,.004],O.ink);
+  }
+  {
+    // Full van-local coordinates, placed at the same origin as yard_van.
+    // Its .335m top is the intermediate tread between street and .67m load bed.
+    const m=mesh('outskirts_van_step');
+    addBox(m,[0,.27,2.65],[1.70,.13,.60],O.iron);
+    for(let i=0;i<14;i++)addBox(m,[-.78+i*.12,.338,2.65],[.028,.006,.52],MAT.steel);
+    addBox(m,[0,.34,2.94],[1.70,.015,.025],O.enamelEdge);
+    for(const x of[-.60,.60])addBeam(m,[x,.24,2.45],[x,.51,2.26],.065,O.iron);
+  }
+  {
+    const m=mesh('outskirts_letter');
+    addBox(m,[0,.003,0],[.225,.006,.155],O.paper);
+    addTriangle(m,[-.112,.007,.077],[.112,.007,.077],[0,.009,-.018],MAT.agedWhite);
+    for(const [a,b] of[[[-.112,.008,-.077],[0,.008,.023]],[[.112,.008,-.077],[0,.008,.023]]])addBeam(m,a,b,.0015,O.seam);
+    addBox(m,[.080,.008,.049],[.032,.002,.037],O.rust);
+    for(let i=0;i<3;i++)addBox(m,[-.028+i*.003,.008,-.012-i*.014],[.083-i*.008,.001,.0015],O.ink);
+  }
+  {
+    // A close roadside car is a shell with seat backs behind clear openings,
+    // rather than the street-set's solid blue cabin. Front remains local -Z.
+    const m=mesh('outskirts_car'),body=O.enamel;
+    addLoft(m,[
+      [[-.79,.29,-2.17],[.79,.29,-2.17],[.87,.29,2.15],[-.87,.29,2.15]],
+      [[-.93,.67,-2.11],[.93,.67,-2.11],[.93,.67,2.09],[-.93,.67,2.09]],
+    ],body);
+    // Hood and boot are distinct from the occupied cabin aperture.
+    addBox(m,[0,.75,-1.55],[1.77,.20,1.18],body,0,-.025);
+    addBox(m,[0,.79,1.65],[1.77,.18,.88],body,0,.04);
+    addBox(m,[0,.54,.15],[1.63,.075,2.75],O.rubber);
+    for(const side of[-1,1]){
+      const x=side*.884;
+      addBox(m,[x,.86,.19],[.075,.32,2.49],body);
+      addBox(m,[x,1.015,.19],[.035,.042,2.49],MAT.steel);
+      addBox(m,[side*.77,1.57,.26],[.055,.065,1.75],body);
+      addBeam(m,[side*.84,1.03,-1.08],[side*.72,1.55,-.64],.073,body);
+      addBeam(m,[side*.84,1.03,1.43],[side*.73,1.55,1.12],.085,body);
+      addBeam(m,[side*.86,1.01,.30],[side*.76,1.55,.30],.060,O.iron);
+      for(const z of[-.40,.92]){
+        addBox(m,[x+side*.043,1.04,z],[.024,.025,.17],MAT.steel);
+        addBox(m,[x+side*.040,.80,z-.31],[.009,.40,.013],O.rubber);
+      }
+      addBox(m,[side*.99,1.10,-.90],[.20,.12,.24],body);
+      addBox(m,[side*1.095,1.10,-.90],[.013,.085,.16],O.glassEdge);
+      for(const z of[-1.39,1.40]){
+        addCylinderX(m,[side*.89,.40,z],.37,.20,O.rubber,24);
+        addCylinderX(m,[side*1.002,.40,z],.215,.022,MAT.steel,24);
+        addCylinderX(m,[side*1.020,.40,z],.100,.022,O.iron,16);
+      }
+      addBox(m,[side*.94,.46,.06],[.035,.05,3.77],MAT.steel);
+      for(let i=0;i<3;i++)addBox(m,[side*.841,1.43-i*.09,-.59+i*.008],[.007,.18,.007],O.glassEdge);
+    }
+    addBox(m,[0,1.60,.26],[1.58,.095,1.84],body);
+    addBox(m,[0,1.655,.26],[1.49,.020,1.76],O.enamelEdge);
+    addBeam(m,[-.72,1.55,-.66],[.72,1.55,-.66],.045,O.iron);
+    addBeam(m,[-.73,1.55,1.15],[.73,1.55,1.15],.045,O.iron);
+    for(const x of[-.44,.44]){
+      addBox(m,[x,.69,-.17],[.61,.16,.61],O.seat);
+      addBox(m,[x,1.02,.08],[.61,.60,.14],O.seat,0,-.11);
+      addBox(m,[x,1.37,.12],[.30,.17,.12],O.rubber);
+      addBox(m,[x,.71,1.00],[.66,.14,.58],O.seat);
+      addBox(m,[x,1.04,1.26],[.66,.62,.12],O.seat);
+    }
+    addBox(m,[0,1.00,-.94],[1.57,.14,.30],O.iron);
+    addRingBeam(m,[.42,1.09,-.76],.19,.022,O.rubber,20);
+    addBeam(m,[.42,1.09,-.76],[.42,.82,-.99],.038,O.iron);
+    for(const z of[-2.16,2.16])addBox(m,[0,.48,z],[1.87,.11,.10],MAT.steel);
+    addBox(m,[0,.68,-2.18],[.77,.22,.032],O.iron);
+    for(let i=0;i<9;i++)addBox(m,[-.32+i*.08,.68,-2.204],[.027,.18,.012],MAT.steel);
+    for(const x of[-.66,.66]){
+      addBox(m,[x,.73,-2.19],[.31,.22,.045],MAT.ivory);
+      addBox(m,[x,.73,-2.219],[.25,.16,.014],O.glassEdge);
+      addBox(m,[x,.77,2.18],[.29,.15,.045],O.rust);
+    }
+    // Rear plate attachment face: local [0,.58,2.22], outward +Z.
+    addBox(m,[0,.58,2.22],[.56,.12,.022],O.paper);
+    print(m,'J 063',[0,.58,2.235],.072,O.ink,Math.PI);
+    for(const x of[-.38,.38])addBeam(m,[x,1.04,-1.09],[x-.22,1.12,-1.02],.014,O.iron);
+  }
+  // The close figures use tapered continuous garments and anatomical joints,
+  // rather than a box torso and round peg head. Faces are human but unlit:
+  // cheek, brow and nose planes remain ambiguous until a real light reaches them.
+  const person=(name,{height=1.72,coat=O.coat,lean=0,guard=false,bag=false,pose='rest',offset=[0,0,0],skin=O.face,hair=O.hair,scarf=null,woolCap=false,trousers=null,capMaterial=coat}={})=>{
+    const m=mesh(name),hip=.79,shoulder=height-.38,head=height-.145;
+    const dx=lean*.18;
+    for(const side of[-1,1]){
+      const ankle=[side*.12,.10,side<0?-.06:.06],knee=[side*.11,.46,side<0?-.015:.08],pelvis=[side*.12,hip,.025];
+      addBeam(m,ankle,knee,.105,trousers??O.iron);addBeam(m,knee,pelvis,.12,trousers??O.coat);
+      addBox(m,[ankle[0],.065,ankle[2]-.07],[.18,.13,.34],O.rubber,side*.055);
+      addBox(m,[ankle[0],.012,ankle[2]-.07],[.19,.024,.35],O.iron,side*.055);
+    }
+    const ring=(y,w,d,z=0,x=0)=>[
+      [x-w*.35,y,z-d/2],[x+w*.35,y,z-d/2],[x+w/2,y,z-d*.30],
+      [x+w/2,y,z+d*.30],[x+w*.35,y,z+d/2],[x-w*.35,y,z+d/2],
+      [x-w/2,y,z+d*.30],[x-w/2,y,z-d*.30],
+    ];
+    addLoft(m,[ring(.66,.54,.34,.035),ring(.84,.48,.32,.025,dx*.35),ring(1.10,.43,.33,0,dx*.65),ring(shoulder-.06,.55,.34,0,dx),ring(shoulder+.025,.37,.26,0,dx)],coat);
+    addBox(m,[dx*.4,.70,-.141],[.018,.12,.015],O.lining);
+    const hands=pose==='write'?[[-.32,1.52,-.50],[0,1.50,-.48]]:pose==='handoff'?[[-.46,1.58,-.73],[.23,1.18,-.19]]:guard?[[-.29,1.07,-.19],[.22,1.10,-.17]]:[[-.28,.88,-.08],[.28,.94,-.10]];
+    for(const side of[-1,1]){
+      const i=side<0?0:1,should=[side*.25+dx,shoulder-.045,0],elbow=[side*.31+dx*.5,1.10,.025],hand=hands[i];
+      addBeam(m,should,elbow,.13,coat);addBeam(m,elbow,hand,.105,coat);
+      addEllipsoid(m,[hand[0],hand[1]-.025,hand[2]],[.050,.079,.038],guard?skin:O.iron,7,10);
+      addBox(m,[hand[0],hand[1]+.045,hand[2]],[.11,.045,.105],O.seam);
+    }
+    addCylinder(m,[dx,shoulder+.045,0],.060,.17,skin,12);
+    addLoft(m,[ring(shoulder-.04,.31,.28,.02,dx),ring(shoulder+.085,.23,.22,.02,dx)],O.lining);
+    addEllipsoid(m,[dx,head,.015],[.125,.164,.112],skin,12,18);
+    // Nose bridge, under-brow and jaw do not resolve as painted dots for eyes.
+    addLoft(m,[
+      [[dx-.028,head+.045,-.094],[dx+.028,head+.045,-.094],[dx+.022,head-.035,-.155],[dx-.022,head-.035,-.155]],
+      [[dx-.018,head-.055,-.112],[dx+.018,head-.055,-.112],[dx+.014,head-.065,-.135],[dx-.014,head-.065,-.135]],
+    ],skin);
+    addBox(m,[dx,head+.040,-.103],[.18,.028,.030],hair,0,.06);
+    addEllipsoid(m,[dx,head+.07,.035],[.135,.118,.115],hair,9,16);
+    if(guard){
+      addEllipsoid(m,[dx,head+.12,.02],[.15,.06,.13],O.iron,7,16);
+      addBox(m,[dx,head+.095,-.10],[.28,.028,.15],O.iron);
+      addBox(m,[dx,shoulder-.12,-.175],[.12,.05,.012],MAT.steel);
+    }else{
+      for(const side of[-1,1])addLoft(m,[ring(head-.18,.10,.15,.07,dx+side*.10),ring(head+.045,.10,.12,.06,dx+side*.10)],hair);
+    }
+    addBox(m,[dx*.65,1.075,-.177],[.035,.50,.015],O.seam,0,.012);
+    for(const y of[.87,1.04,1.21])addEllipsoid(m,[dx*.65,y,-.191],[.015,.015,.009],O.iron,5,8);
+    for(const side of[-1,1]){
+      addBeam(m,[dx+side*.11,shoulder-.01,-.16],[dx*.6+side*.05,1.16,-.18],.035,O.lining);
+      addBeam(m,[side*.13,.91,-.159],[side*.22,.94,-.16],.013,O.seam);
+    }
+    if(woolCap){
+      addEllipsoid(m,[dx,head+.11,.025],[.145,.077,.13],capMaterial,10,18);
+      addLoft(m,[ring(head+.055,.286,.26,.025,dx),ring(head+.09,.29,.26,.025,dx)],capMaterial);
+    }
+    if(scarf!==null){
+      addLoft(m,[ring(shoulder-.04,.31,.28,.02,dx),ring(shoulder+.06,.26,.25,.02,dx)],scarf);
+      addBeam(m,[dx+.055,shoulder-.015,-.168],[dx+.08,shoulder-.36,-.19],.09,scarf,.025);
+    }
+    if(bag){
+      addBox(m,[.36,.68,.03],[.26,.39,.17],MAT.wood,0,.04);
+      addBeam(m,[.24,.91,.03],[.36,.88,.02],.025,O.iron);
+      addBox(m,[.36,.77,-.064],[.19,.015,.012],O.iron);
+    }
+    return translate(m,offset);
+  };
+  // One existing baseline body supplies both appearances while the hero design
+  // is selected. The scene changes; her face, clothes and bag do not.
+  const busWoman=person('outskirts_bus_woman',{height:1.70,coat:MAT.navy,skin:MAT.skinDeep,hair:MAT.black,scarf:MAT.mustard,woolCap:true,capMaterial:MAT.black,trousers:MAT.denim,bag:true});
+  meshes.set('exterior_bus_woman',{...busWoman,name:'exterior_bus_woman',groups:structuredClone(busWoman.groups)});
+  person('outskirts_guard',{height:1.78,guard:true,lean:.25});
+  person('outskirts_stranger',{height:1.80,coat:O.iron,lean:-.12});
+  // Preserve the original workplace poses and anchors while upgrading their
+  // close geometry. The arm endpoints still meet the existing ledger/handoff.
+  person('yard_booth_guard_idle',{height:1.88,guard:true,lean:.28,offset:[.38,0,.23]});
+  person('yard_booth_guard_ledger',{height:1.88,guard:true,lean:-.08,pose:'write',offset:[-.16,0,-.22]});
+  person('yard_booth_guard_handoff',{height:1.88,guard:true,lean:-.05,pose:'handoff',offset:[-.12,0,-.30]});
+}
 
 // ── BASEBOARDS ───────────────────────────────────────────────────────────────
 //

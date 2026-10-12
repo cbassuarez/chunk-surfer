@@ -1,0 +1,42 @@
+TAP version 13
+# cathedral extraction specs passed
+# Subtest: test/cathedral-extraction.spec.mjs
+ok 1 - test/cathedral-extraction.spec.mjs
+  ---
+  duration_ms: 2558.804375
+  type: 'test'
+  ...
+# ending physical staging and post-image lifecycle specs passed
+# Subtest: test/ending-staging.spec.mjs
+ok 2 - test/ending-staging.spec.mjs
+  ---
+  duration_ms: 2593.747416
+  type: 'test'
+  ...
+# Subtest: reloading the earned Tower ending reaches its final image without repeating grip, movement or door actions
+ok 3 - reloading the earned Tower ending reaches its final image without repeating grip, movement or door actions
+  ---
+  duration_ms: 4.146875
+  type: 'test'
+  ...
+# Subtest: the Tower resume repair preserves ordinary ending replay and rejects an invalid Tower arrival
+ok 4 - the Tower resume repair preserves ordinary ending replay and rejects an invalid Tower arrival
+  ---
+  duration_ms: 1.881333
+  type: 'test'
+  ...
+# Subtest: an unfinished carry without a terminal ending checkpoint is not completed by the resume repair
+ok 5 - an unfinished carry without a terminal ending checkpoint is not completed by the resume repair
+  ---
+  duration_ms: 0.881833
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2600.172584

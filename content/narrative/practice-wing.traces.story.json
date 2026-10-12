@@ -1,0 +1,203 @@
+{
+  "schemaVersion": 1,
+  "id": "practice-wing.traces",
+  "title": "The Practice Wing: Traces",
+  "status": "active",
+  "entry": "tuning-log.b0",
+  "entries": [
+    "tuning-log.b0",
+    "tuning-log.b1",
+    "tuning-log.b2",
+    "marks.b0",
+    "marks.b1",
+    "marks.b2",
+    "parts.b0",
+    "parts.b1",
+    "parts.b2"
+  ],
+  "tags": [
+    "practice-wing",
+    "inspect",
+    "pressure"
+  ],
+  "notes": "Pressure's face on the practice floor: what the institution did to the reference. Three traces live inside three of the wing's uprights (PRACTICE_TRACES in src/game/practice-seams.js): the tuning log in the service room's open case, a marking sheet on the examination room's desk, the copied parts in the paper room. Each has three bands. b0 is the first look. b1 opens once another trace has been read, b2 once all three have. Each band is shown once; otherwise the upright plays as it always did. The log does not explain itself: the pitch goes up, and then it goes on being written. 440 is the fork. 444 is the engraving on it. Nothing here says so.",
+  "regions": [
+    {
+      "id": "practice-wing.traces.region",
+      "title": "The practice wing, traces",
+      "kind": "scene",
+      "color": "#2b2f36",
+      "nodeIds": [
+        "tuning-log.b0",
+        "tuning-log.b1",
+        "tuning-log.b2",
+        "marks.b0",
+        "marks.b1",
+        "marks.b2",
+        "parts.b0",
+        "parts.b1",
+        "parts.b2"
+      ]
+    }
+  ],
+  "nodes": {
+    "tuning-log.b0": {
+      "id": "tuning-log.b0",
+      "type": "dialogue",
+      "speaker": "THE SERVICE ROOM",
+      "lines": [
+        {
+          "id": "tuning-log.b0.1",
+          "who": "direction",
+          "text": "Inside the open case, on the bare wood above the action, a tuner's log in pencil. A date, a pitch, a set of initials. One line a morning."
+        },
+        {
+          "id": "tuning-log.b0.2",
+          "who": "direction",
+          "text": "440. 440. 440. Years of it. Then a line that says 441, and a long run of 441."
+        }
+      ]
+    },
+    "tuning-log.b1": {
+      "id": "tuning-log.b1",
+      "type": "dialogue",
+      "speaker": "THE SERVICE ROOM",
+      "lines": [
+        {
+          "id": "tuning-log.b1.1",
+          "who": "direction",
+          "text": "Further along the wood: 442. 443. The initials change twice. The pitch never comes back down."
+        },
+        {
+          "id": "tuning-log.b1.2",
+          "who": "direction",
+          "text": "Then 444, and after that the initials stop. 444. again. 444. again. The dates run on past the year the building closed."
+        }
+      ]
+    },
+    "tuning-log.b2": {
+      "id": "tuning-log.b2",
+      "type": "dialogue",
+      "speaker": "THE SERVICE ROOM",
+      "lines": [
+        {
+          "id": "tuning-log.b2.1",
+          "who": "direction",
+          "text": "There is a line at the end of the log that was not there before. The same pencil. No initials."
+        },
+        {
+          "id": "tuning-log.b2.2",
+          "who": "direction",
+          "text": "Tonight's date. 444. again."
+        }
+      ]
+    },
+    "marks.b0": {
+      "id": "marks.b0",
+      "type": "dialogue",
+      "speaker": "THE EXAMINATION ROOM",
+      "lines": [
+        {
+          "id": "marks.b0.1",
+          "who": "direction",
+          "text": "Under the examination piece, a marking sheet. Candidates by number, and beside each one a figure in cents."
+        },
+        {
+          "id": "marks.b0.2",
+          "who": "direction",
+          "text": "Printed across the head of the column: REFERENCE A=444."
+        }
+      ]
+    },
+    "marks.b1": {
+      "id": "marks.b1",
+      "type": "dialogue",
+      "speaker": "THE EXAMINATION ROOM",
+      "lines": [
+        {
+          "id": "marks.b1.1",
+          "who": "direction",
+          "text": "Every figure in the column is the same. −16. −16. −16."
+        },
+        {
+          "id": "marks.b1.2",
+          "who": "you",
+          "text": "Sixteen cents flat of 444 is 440. They all played in tune."
+        },
+        {
+          "id": "marks.b1.3",
+          "who": "direction",
+          "text": "Every one of them is marked down for it."
+        }
+      ]
+    },
+    "marks.b2": {
+      "id": "marks.b2",
+      "type": "dialogue",
+      "speaker": "THE EXAMINATION ROOM",
+      "lines": [
+        {
+          "id": "marks.b2.1",
+          "who": "direction",
+          "text": "A new line at the foot of the column, in the examiner's hand, the ink still wet."
+        },
+        {
+          "id": "marks.b2.2",
+          "who": "direction",
+          "text": "4417-C. −16."
+        }
+      ]
+    },
+    "parts.b0": {
+      "id": "parts.b0",
+      "type": "dialogue",
+      "speaker": "THE PAPER ROOM",
+      "lines": [
+        {
+          "id": "parts.b0.1",
+          "who": "direction",
+          "text": "The copied parts on the desk are all one part. Page after page of a single bar, copied out again down every staff."
+        },
+        {
+          "id": "parts.b0.2",
+          "who": "direction",
+          "text": "Over each copy, in pencil: again."
+        }
+      ]
+    },
+    "parts.b1": {
+      "id": "parts.b1",
+      "type": "dialogue",
+      "speaker": "THE PAPER ROOM",
+      "lines": [
+        {
+          "id": "parts.b1.1",
+          "who": "direction",
+          "text": "Every copy has a correction over the same note. A small arrow above the A, pointing up."
+        },
+        {
+          "id": "parts.b1.2",
+          "who": "direction",
+          "text": "The arrows get heavier down the pile. On the last pages the pencil has gone through the paper."
+        }
+      ]
+    },
+    "parts.b2": {
+      "id": "parts.b2",
+      "type": "dialogue",
+      "speaker": "THE PAPER ROOM",
+      "lines": [
+        {
+          "id": "parts.b2.1",
+          "who": "direction",
+          "text": "Somebody has started a new copy since you last looked. It is on top of the pile."
+        },
+        {
+          "id": "parts.b2.2",
+          "who": "direction",
+          "text": "Half a bar, and the arrow already drawn."
+        }
+      ]
+    }
+  }
+}

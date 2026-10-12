@@ -33,7 +33,7 @@ assert.ok(text.indexOf('float eWash=')>text.indexOf('vec3 composed=mix(darkScene
 assert.match(r3d,/gl\.uniform1f\(postU\('uSourceEmergency'\),sourceEmergencyStrength\)/);
 assert.match(r3d,/gl\.uniform1f\(textSpaceU\('uSourceEmergency'\),sourceEmergencyStrength\)/);
 assert.match(r3d,/gl\.uniform1f\(textSpaceU\('uSourceTorchPower'\),torchPower\)/);
-assert.match(r3d,/drawTextSpace\(P3\.propTargets\(\)\.color,now,\{torchPower,sourceTorchMode\}\)/,
+assert.match(r3d,/drawTextSpace\(P3\.propTargets\(\)\.color,now,\{torchPower,sourceTorchMode(?:,[^}]+)?\}\)/,
   'Text Space ignores the carried flashlight state at the renderer handoff');
 assert.match(r3d,/gl\.uniform1f\(postU\('uSourceWhiteout'\),sourceWhiteoutStrength\)/);
 const textDraw=r3d.slice(r3d.indexOf('function drawTextSpace'),r3d.indexOf('const DATAMOSH_FRAG'));
@@ -47,7 +47,7 @@ assert.match(datamosh,/uSourceEmergency/);
 const sync=main.slice(main.indexOf('function syncSourceRender'),main.indexOf('// ── ARRIVING IN THE BELFRY'));
 assert.match(sync,/sourceEmergencyLightingFrame/,
   'main bypasses the runtime boundary and writes an unconditional Source wash');
-assert.match(sync,/r3dSetSourceEmergency\?\.\(sourceEmergency\?\.active[\s\S]*?: 0\)/,
+assert.match(sync,/r3dSetSourceEmergency\?\.\(!firstNothingness&&sourceEmergency\?\.active[\s\S]*?: 0\)/,
   'the full-frame red compositor cannot be disabled inside the Scene Dock');
 assert.match(main,/function clearSourceRuntime\([^)]*\)[\s\S]*?r3dSetSourceEmergency\?\.\(0\)/,
   'leaving Source cannot leak the red wash into the conservatoire');
@@ -60,10 +60,8 @@ assert.match(main,/if\(!preserveWindows\)void windowChoreography\?\.leaveSource\
 assert.match(main,/function clearSourceRuntime\([^)]*\)[\s\S]*?r3dSetSourceWhiteout\?\.\(0\)/,
   'leaving Source cannot leak the blinding aperture into the conservatoire');
 
-// The hard boundary is player-facing, not a claim about lamp occlusion. Inside
-// the Scene Dock the compositor is off and only the steady sodium fitting is
-// submitted. Past FOH is white for ten authored seconds; only then do both the
-// post wash and Source-side emergency lamps become available.
+// The first nothingness has its own exposure clock and physical material
+// flashlight. Old travel counters can no longer switch on a red circuit.
 {
   const apply=(state,type,details={})=>reduceChunkSurf(state,{type,...details});
   let state=freshChunkSurfState({seed:4417,returnPoint:{x:0,y:0,facing:0}});
@@ -77,8 +75,8 @@ assert.match(main,/function clearSourceRuntime\([^)]*\)[\s\S]*?r3dSetSourceWhite
   const portal={x:origin.x+SOURCE_LANDING_PORTAL_LOCAL.x,y:origin.y+SOURCE_LANDING_PORTAL_LOCAL.y};
 
   runtime.setPlayerPosition({x:portal.x,y:portal.y+4,facing:0});
-  assert.equal(runtime.sourceFlashlightFrame().mode,'xray',
-    'the Source flashlight is not an x-ray before the nothingness');
+  assert.equal(runtime.sourceFlashlightFrame().mode,'normal',
+    'the physical Scene Dock uses normal torch light, not an opaque inverse disc');
   assert.equal(runtime.sourceEmergencyLightingFrame().active,false,
     'the Scene Dock still receives the full-frame red wash');
   const dockLights=runtime.localLights();
@@ -88,14 +86,18 @@ assert.match(main,/function clearSourceRuntime\([^)]*\)[\s\S]*?r3dSetSourceWhite
   assert.ok(dockLights.every((light)=>light.color[1]>.2),
     'the surviving Scene Dock light is still saturated red');
 
-  runtime.setPlayerPosition({x:portal.x,y:portal.y-2,facing:0});
-  assert.equal(runtime.sourceFlashlightFrame({time:.3}).mode,'emergency',
-    'crossing into the nothingness does not turn the flashlight emergency red');
+  const from={x:portal.x,y:portal.y-.5,facing:0};
+  const to={x:portal.x,y:portal.y-2,facing:0};
+  runtime.setPlayerPosition(from);
+  runtime.onStep(from,to);
+  runtime.tick(3,{px:to.x,py:to.y,facing:0});
+  assert.equal(runtime.sourceFlashlightFrame({time:.3}).mode,'normal',
+    'the nothingness torch must illuminate actual surfaces without inversion');
   assert.equal(runtime.sourceEmergencyLightingFrame().active,false,
-    'emergency lighting begins before ten seconds of white traversal');
+    'the first nothingness receives an emergency wash');
   assert.ok(runtime.localLights().every((light)=>light.kind!=='emergency'),
-    'the approach submits a red emitter before its onset');
-  assert.ok(runtime.sourceVoidFrame().whiteout>.8,'the pre-emergency interval is not a white frame');
+    'the first nothingness submits a red emitter');
+  assert.equal(runtime.sourceVoidFrame().whiteout,1,'the threshold has no sustained blinding interval');
 
   const onset=createSourceSpaceRuntime({initialState:{
     ...runtime.state(),
@@ -104,11 +106,10 @@ assert.match(main,/function clearSourceRuntime\([^)]*\)[\s\S]*?r3dSetSourceWhite
     sourceApproachDistance:96,
   }});
   onset.setPlayerPosition({x:portal.x,y:portal.y-2,facing:0});
-  assert.equal(onset.sourceVoidFrame().elapsedSeconds,10);
-  assert.equal(onset.sourceEmergencyLightingFrame().active,true,
-    'emergency lighting does not begin at ten seconds');
-  assert.ok(onset.localLights().some((light)=>light.kind==='emergency'),
-    'the approach lost its authored emergency lamps at onset');
+  assert.equal(onset.sourceEmergencyLightingFrame().active,false,
+    'a legacy travel counter switched on the retired emergency circuit');
+  assert.ok(onset.localLights().every((light)=>light.kind!=='emergency'),
+    'a legacy travel counter restored red emitters');
 
   const completed=createSourceSpaceRuntime({initialState:{
     ...runtime.state(),sourceApproachDistance:288,sourceApproachComplete:true,

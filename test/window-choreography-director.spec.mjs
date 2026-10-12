@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { ENDING_CUTSCENES } from '../src/data/endings.js';
 import {
   WINDOW_CHOREOGRAPHY_PRIMITIVES,
   battleChoreographyProfile,
@@ -220,32 +221,34 @@ test('emergency restoration forgives a live fireball before closing its surfaces
   assert.deepEqual(reasons,['emergency-restore']);
 });
 
-test('near Source proper opens the required Aperture instead of the old enter pane',async()=>{
-  let shown=null;
+test('near Source proper prints a nonblocking warning instead of requiring an Aperture',async()=>{
+  let shown=null;const puzzleStates=[];
   const director=createWindowChoreographyDirector({
     runtimeApi:{invoke:async()=>true},documentApi:null,
     effects:{active:()=>true,sessionToken:()=> 'source-session',showComposition:async(plan)=>{shown=plan;return true;},hidePanes:async()=>true},
+    onPuzzleState:(active)=>puzzleStates.push(active),
   });
   await director.sourceFrame({approach:true,elapsedSeconds:29,progress:.97,redProgress:1});
-  assert.equal(shown?.compositionId,'source:aperture');
-  assert.equal(shown?.completion?.holdMs,650);
-  assert.equal(director.interactSource(),false,'the retired enter pane cannot bypass the arrangement');
+  assert.equal(shown?.compositionId,'source:warning');
+  assert.equal(shown?.completion?.mode,'nonblocking');
+  assert.equal(shown?.constraints.length,0);
+  assert.deepEqual(puzzleStates,[],'walking never acquires a puzzle input lock');
+  assert.equal(await director.puzzleInteract(),false);
+  assert.equal(director.interactSource(),false,'the first HUSH interaction must not pay an invisible enter-pane tax');
+  await director.leaveSource();
 });
 
-test('the Aperture explains itself and God hooks distinguish puzzle from first lift',()=>{
-  const hud=mainSource.slice(mainSource.indexOf('function drawSourceApertureHud'),mainSource.indexOf('function drawSourceHud'));
-  for(const instruction of[
-    'DRAG THE FOUR LOOSE WINDOWS INTO ONE APERTURE.',
-    'THE TWO IRISES TOUCH SIDE BY SIDE.',
-    'THE ECLIPSE TOUCHES ABOVE THEIR SEAM.',
-    'THE CATHEDRAL TOUCHES BELOW IT.',
-    'HOLD THE FINISHED SHAPE STILL.',
-  ])assert.match(hud,new RegExp(instruction.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
-  assert.match(hud,/ASSIST AVAILABLE IN/);
-  assert.match(hud,/AUTO-ASSEMBLE/);
-  assert.match(mainSource,/SOURCE \/ APERTURE PUZZLE[\s\S]*?apertureComplete:false/);
-  assert.match(mainSource,/SOURCE \/ FIRST LIFT[\s\S]*?apertureComplete:true/);
-  assert.match(mainSource,/FINAL \/ CONTACT FIGHT[\s\S]*?commitContact:true/);
+test('the Source warning cannot repeat every time progress crosses another bucket',async()=>{
+  const shown=[];
+  const director=createWindowChoreographyDirector({
+    runtimeApi:{invoke:async()=>true},documentApi:null,
+    effects:{showComposition:async(plan)=>{shown.push(plan);return true;},hidePanes:async()=>true},
+  });
+  await director.sourceFrame({approach:true,elapsedSeconds:29,progress:.97,redProgress:1});
+  await director.sourceFrame({complete:true,progress:1});
+  await director.sourceFrame({complete:true,progress:1});
+  assert.equal(shown.length,1);
+  await director.leaveSource();
 });
 
 test('leaving Source cancels its transaction and restores the desktop before Horizon',async()=>{
@@ -261,7 +264,7 @@ test('leaving Source cancels its transaction and restores the desktop before Hor
   assert.ok(calls.includes('chunk_window_choreography_restore'));
 });
 
-test('a near-correct Aperture settles over 120ms before its completion hold',async()=>{
+test('stale Aperture placements cannot settle a puzzle or acquire a movement gate',async()=>{
   const snaps=[];
   const director=createWindowChoreographyDirector({
     runtimeApi:{invoke:async()=>true},documentApi:null,
@@ -283,12 +286,64 @@ test('a near-correct Aperture settles over 120ms before its completion hold',asy
   });
   await Promise.resolve();
   await Promise.resolve();
-  assert.equal(snaps.length,1);
-  assert.equal(snaps[0][1].durationMs,120);
-  assert.equal(snaps[0][1].coherent,true);
+  assert.equal(snaps.length,0);
+  assert.equal(director.debug().composition.purpose,'source-warning');
+  assert.equal(await director.puzzleInteract(),false);
+  await director.leaveSource();
 });
 
-test('named composition events queue until the scored panes are presented',async()=>{
+test('HUSH battle retires Source warning and its timer without replaying it on return',async()=>{
+  const shown=[],hidden=[];
+  const director=createWindowChoreographyDirector({
+    runtimeApi:{invoke:async()=>true},documentApi:null,
+    effects:{showComposition:async(plan)=>{shown.push(plan);return true;},hideComposition:async()=>{hidden.push(true);return true;},hidePanes:async()=>true},
+  });
+  await director.sourceFrame({complete:true,progress:1});
+  assert.equal(director.debug().composition.purpose,'source-warning');
+  director.prepareBattle({battleId:'source-final'});
+  assert.equal(director.debug().composition,null);
+  await director.restore('battle:win');
+  await director.sourceFrame({complete:true,progress:1});
+  assert.equal(shown.length,1,'the same Source journey does not replay its warning after combat');
+  assert.ok(hidden.length>0);
+  await director.leaveSource();
+});
+
+test('opening HUSH dialogue immediately retires the warning and never reoffers it after withdrawal',async()=>{
+  const shown=[],hidden=[],events=[];
+  const director=createWindowChoreographyDirector({
+    runtimeApi:{invoke:async()=>true},documentApi:null,onState:(event)=>events.push(event),
+    effects:{showComposition:async(plan)=>{shown.push(plan);return true;},hideComposition:async()=>{hidden.push(true);return true;},hidePanes:async()=>true},
+  });
+  await director.sourceFrame({complete:true,progress:1});
+  assert.equal(director.debug().composition.purpose,'source-warning');
+  const retiring=director.beginSourceContact();
+  assert.equal(director.debug().composition,null,'the dialog is unobscured before the native cleanup promise resolves');
+  await retiring;
+  assert.ok(hidden.length>0);
+  assert.ok(events.some((event)=>event.type==='restore'&&event.reason==='source-contact'));
+  await director.sourceFrame({complete:true,progress:1});
+  assert.equal(shown.length,1,'backing out of HUSH dialogue cannot restart the warning');
+  assert.equal(director.interactSource(),false);
+  await director.leaveSource();
+});
+
+test('HUSH contact cancels an unpresented warning without allowing a late pane over dialogue',async()=>{
+  const shown=[];
+  const director=createWindowChoreographyDirector({
+    runtimeApi:{invoke:async()=>true},documentApi:null,
+    effects:{showComposition:async(plan)=>{shown.push(plan);return true;},hideComposition:async()=>true,hidePanes:async()=>true},
+  });
+  const printing=director.sourceFrame({complete:true,progress:1});
+  await director.beginSourceContact();
+  await printing;
+  assert.equal(shown.length,0);
+  await director.sourceFrame({complete:true,progress:1});
+  assert.equal(shown.length,0,'the canceled warning remains consumed');
+  await director.leaveSource();
+});
+
+test('all eight Tower composition events queue until the scored panes are presented',async()=>{
   const events=[];
   const effects={
     sessionToken:()=> 'ending-session',prepareMedia:async()=>true,showComposition:async()=>true,hidePanes:async()=>true,
@@ -297,9 +352,11 @@ test('named composition events queue until the scored panes are presented',async
   };
   const director=createWindowChoreographyDirector({runtimeApi:{invoke:async()=>true},documentApi:null,effects,waitFn:async()=>{}});
   const pending=director.beginEnding('tower-lost');
-  assert.equal(director.compositionEvent('ending:beat:strike-one-breath'),true);
+  const strikes=ENDING_CUTSCENES['tower-lost'].beats.map((beat)=>`ending:beat:${beat.id}`);
+  for(const event of strikes)assert.equal(director.compositionEvent(event),true,event);
   await pending;
-  assert.deepEqual(events,[['ending:tower-lost','ending:beat:strike-one-breath']]);
+  assert.deepEqual(events,strikes.map((event)=>['ending:tower-lost',event]));
+  assert.equal(director.compositionEvent('ending:beat:strike-six-full-peal'),false,'the obsolete sixth-strike terminal cannot fire');
   assert.equal(director.compositionEvent('ending:beat:not-authored'),false,'events cannot inject unauthored actions');
 });
 
@@ -366,12 +423,54 @@ test('live bounds animation latches framebuffer allocation until the final nativ
 });
 
 test('main samples Source leakage only from the runtime frame after movement crossing',()=>{
-  const source=readFileSync('src/main.js','utf8');
-  const onStep=source.indexOf('const sourceStep=chunkSurfRuntime.onStep');
-  const branch=source.slice(onStep-80,onStep+1400);
-  assert.match(branch,/chunkSurfRuntime\.onStep/);
-  assert.match(branch,/windowChoreography\.sourceFrame\(chunkSurfRuntime\.sourceVoidFrame\(\)\)/);
-  assert.ok(branch.indexOf('chunkSurfRuntime.onStep')<branch.indexOf('windowChoreography.sourceFrame'));
+  const stepStart=mainSource.indexOf('function step(dx,dy){');
+  const stepEnd=mainSource.indexOf('\nfunction teleport()',stepStart);
+  assert.ok(stepStart>=0&&stepEnd>stepStart,'the movement function is bounded by its next declaration');
+  const step=mainSource.slice(stepStart,stepEnd);
+  const onStep=step.indexOf('const sourceStep=chunkSurfRuntime.onStep');
+  const branchStart=step.lastIndexOf('  if(usingSourceSpace()){',onStep);
+  const branchEnd=step.indexOf('\n  if(storyMode&&usingPlan()){',onStep);
+  assert.ok(onStep>=0&&branchStart>=0&&branchEnd>onStep,'the Source movement branch is complete');
+  const sourceBranch=step.slice(branchStart,branchEnd);
+  const makeStep=new Function('chunkSurfRuntime','windowChoreography','usingSourceSpace','trace',`
+    let px=10,py=20,sx=1,sy=0,lastStepDx=0,lastStepDy=0;
+    const stepFrom={x:9,y:20},trail=[],TRAIL_LEN=8,stepCount=1;
+    const R3={r3dFacing:()=>2,r3dLookAngles:()=>({yaw:.3,pitch:.1})};
+    const syncSourceRender=()=>trace.push('render');
+    const syncSourceWindowDecay=()=>trace.push('decay');
+    const sourceShoreCameraPatch=()=>({});
+    const saveCommit=()=>trace.push('save'),updateAudio=()=>trace.push('audio');
+    return ()=>{${sourceBranch}};
+  `);
+  for(const mode of ['ready','not-ready','shore','released']){
+    const trace=[],frames=[],runtimeOnly={},frame={sourcePhase:true,windowIntrusionReady:mode!=='not-ready',revision:'before'};
+    let active=true;
+    const runtime={
+      crossesRouteDoor:()=>false,
+      onStep(from,to){
+        trace.push('crossing');assert.deepEqual(from,{x:9,y:20});
+        assert.deepEqual(to,{x:10,y:20,facing:2,yaw:.3,pitch:.1});
+        Object.assign(frame,{revision:'after',runtimeOnly});
+        if(mode==='released')active=false;
+        return null;
+      },
+      setPlayerPosition(position){trace.push('position');frame.position=position;},
+      sourceVoidFrame(){trace.push('runtime-frame');return frame;},
+      sourceShoreFrame:()=>({active:mode==='shore'}),state:()=>({}),
+    };
+    makeStep(runtime,{sourceFrame(next){trace.push('director');frames.push(next);}},()=>active,trace)();
+    if(mode==='released'){
+      assert.deepEqual(trace,['crossing'],'a completed route cannot leak a stale Source frame');
+      assert.equal(frames.length,0);
+      continue;
+    }
+    assert.equal(frames.length,1);
+    assert.equal(frames[0].revision,'after');assert.equal(frames[0].runtimeOnly,runtimeOnly);
+    assert.deepEqual(frames[0].position,{x:10,y:20,facing:2,yaw:.3,pitch:.1});
+    assert.equal(frames[0].sourcePhase,mode==='ready','shore and unready intrusion retain their intentional suppression');
+    for(const earlier of ['crossing','position','render'])assert.ok(trace.indexOf(earlier)<trace.indexOf('runtime-frame'));
+    assert.ok(trace.indexOf('runtime-frame')<trace.indexOf('director'));
+  }
 });
 
 test('main bridges stable ending beat ids and title selection into the score director',()=>{

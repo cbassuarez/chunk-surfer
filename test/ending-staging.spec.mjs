@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
+import { conservatory } from '../src/data/floorplan/conservatory.js';
+import * as FP from '../src/world/floorplan.js';
+import { cathedralBodiesOutsideWest, cathedralGroundRuntimePoint } from '../src/game/cathedral-extraction.js';
+import { CHURCH_COLLIDERS } from '../src/data/st-brendans.js';
 
 const runtime=readFileSync('src/main.js','utf8');
 const section=(start,end)=>{
@@ -33,6 +37,87 @@ const section=(start,end)=>{
   assert.ok(Math.abs(shot.yaw-Math.atan2(-2,-6))<1e-8,'shot faces the physical doorway, not the remote atlas island');
   const east=offset(active,1,0,{x:20,y:2,yaw:Math.PI/2});
   assert.equal(east.x,22,'local forward follows the prop renderer yaw convention');
+}
+
+// The last Tower image must use the actual completed extraction, not the
+// crossing origin retained by the physical score. Test the compiled atlas:
+// the exterior camera also has to map back to its intended metre coordinate.
+{
+  FP.compile(conservatory.levels, conservatory);
+  const crossing=cathedralGroundRuntimePoint(FP,{x:16,y:73});
+  const player={x:256,y:357},body={x:256,y:359.3};
+  let now=7700,saved={player,drag:{position:body},dragVector:{x:0,y:-1}};
+  const sandbox={
+    FP,CELL:.5,D:m=>m/.5,px:player.x,py:player.y,
+    usingSpecialSpace:()=>false,usingSourceSpace:()=>false,
+    performance:{now:()=>now},getSave:()=>({chunkSurf:{finale:{cathedral:{extraction:saved}}}}),
+    normalizeChunkSurfState:v=>v,cathedralBodiesOutsideWest,
+    activeEndingCutscene:{spec:{endingId:'tower-won'},origin:{...crossing,yaw:Math.PI/2,forward:[1,0]},
+      state:{reducedMotion:false},startedMs:0,embodiment:{finalHold:true}},
+  };
+  const staging=vm.runInNewContext([
+    section('function endingLogicalOffset','function endingSourcePropInstances'),
+    section('function endingTowerWonTableau','// Review evidence for the physical ending layer.'),
+    '({tableau:endingTowerWonTableau,props:endingWorldPropInstances,view:endingCutsceneWorldView})',
+  ].join('\n'),sandbox);
+  const metres=point=>{const p=FP.logicalToPhysical(point.x,point.y);return{x:p.x*.5,z:p.z*.5};};
+  const near=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z)<1e-7;
+  const projected=(prop,view)=>{
+    const from=metres(view),dx=prop.x-from.x,dz=prop.z-from.z;
+    const depth=dx*Math.sin(view.yaw)-dz*Math.cos(view.yaw);
+    return{x:(dx*Math.cos(view.yaw)+dz*Math.sin(view.yaw))/depth,depth};
+  };
+  const assertVisiblePair=(props,view)=>{
+    const frames=props.map(prop=>projected(prop,view));
+    assert.ok(frames.every(p=>p.depth>1&&Math.abs(p.x)<.9),'both body centres are in the camera frustum');
+    assert.ok(Math.abs(frames[0].x-frames[1].x)>.08,'two bodies remain separately readable in horizontal projection');
+  };
+  const props=staging.props(),view=staging.view();
+  assert.ok(near(props[0],metres(body))&&near(props[1],metres(player)),'the held bodies stay at their earned physical exit positions');
+  assert.ok(near(metres(view),{x:13.3,z:51.1}),'the exterior camera does not fall back into a remote logical island');
+  assert.ok(metres(view).z<53.5,'the camera is on the exterior side of both bodies and the west wall');
+  assertVisiblePair(props,view);
+  sandbox.activeEndingCutscene.towerExterior={player,body,dragVector:{x:0,y:-1}};
+  saved=null;
+  assert.ok(near(staging.props()[0],metres(body)),'the live seam snapshot preserves the extraction before save reconciliation');
+  sandbox.activeEndingCutscene={spec:{endingId:'tower-lost'},origin:{...crossing,yaw:Math.PI/2,forward:[1,0]},
+    state:{reducedMotion:false},startedMs:0,embodiment:{syncStage:8,finalHold:true}};
+  for(now of [7700,8412.5,9125,9837.5,10550]){
+    const pair=staging.props().filter(prop=>prop.id==='tower-lost-surfer'||prop.id==='tower-lost-player');
+    const shot=staging.view(),camera=metres(shot);
+    assertVisiblePair(pair,shot);
+    for(const pier of CHURCH_COLLIDERS.filter(c=>c.id.startsWith('cathedral-crossing-pier-'))){
+      assert.ok(Math.hypot(camera.x-pier.x,camera.z-pier.y)>pier.radius+.32,
+        'the full wide drift stays clear of the actual clustered crossing piers');
+    }
+  }
+  const wideLighting=vm.runInNewContext(`${section('function endingTowerTableauLighting','function syncArchitecturalLocalLights')}endingTowerTableauLighting`,{
+    FP,CELL:.5,endingLogicalOffset:vm.runInNewContext(`${section('function endingLogicalOffset','function endingPropInstance')}endingLogicalOffset`,sandbox),
+    endingTowerWonTableau:staging.tableau,
+  });
+  const authored={ambientIntensity:.035};
+  assert.equal(wideLighting({...sandbox.activeEndingCutscene,embodiment:{syncStage:7}},authored),null,
+    'earlier seven strikes retain their existing lighting');
+  assert.equal(wideLighting({...sandbox.activeEndingCutscene,spec:{endingId:'contact-won'}},authored),null,
+    'the Tower tableau lighting does not change other endings');
+  assert.equal(wideLighting({...sandbox.activeEndingCutscene,spec:{endingId:'tower-won'},embodiment:{finalHold:false}},authored),null,
+    'the won lighting preserves the playable extraction');
+  const lit=wideLighting(sandbox.activeEndingCutscene,authored);
+  assert.equal(lit.ambientIntensity,authored.ambientIntensity,'the last wide retains authored church ambient');
+  const actors=staging.props().filter(prop=>prop.id==='tower-lost-surfer'||prop.id==='tower-lost-player');
+  for(const actor of actors)assert.ok(Math.hypot(actor.x-lit.fill.x,actor.y+1.1-lit.fill.y,actor.z-lit.fill.z)<lit.fill.radius,
+    'the localized key contains both actual actor torsos');
+  for(const pier of CHURCH_COLLIDERS.filter(c=>c.id.startsWith('cathedral-crossing-pier-'))){
+    assert.ok(Math.hypot(pier.x-lit.fill.x,pier.y-lit.fill.z)>lit.fill.radius,
+      'the actor key does not wash the crossing piers behind the figures');
+  }
+  sandbox.activeEndingCutscene={spec:{endingId:'tower-won'},origin:crossing,
+    towerExterior:{player,body,dragVector:{x:0,y:-1}},embodiment:{finalHold:true}};
+  const wonLighting=wideLighting(sandbox.activeEndingCutscene,authored);
+  const playerMetres=metres(player),bodyMetres=metres(body);
+  assert.ok(near(wonLighting.fill,{x:(playerMetres.x+bodyMetres.x)/2,z:(playerMetres.z+bodyMetres.z)/2}),
+    'the won key follows the earned pair across the church/exterior atlas seam');
+  assert.equal(wonLighting.ambientIntensity,authored.ambientIntensity);
 }
 
 // Runtime narrative lines retain sourceId, not the source document's id field.

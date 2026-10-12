@@ -12,11 +12,28 @@ import {
   freshChunkSurfState,
   inferLegacyChunkSurf,
   normalizeChunkSurfState,
+  normalizeSourceDivide,
   pageStageForDistance,
   reduceChunkSurf,
 } from '../src/game/chunk-surf-state.js';
+import { nextSourceContact, resolveSourceContact } from '../src/game/source-contact.js';
 
 const event = (state, type, details = {}) => reduceChunkSurf(state, { type, ...details });
+
+{
+  assert.equal(freshChunkSurfState().sourceDivide, null);
+  assert.equal(normalizeChunkSurfState({}).sourceDivide, null, 'old saves have no invented body height');
+  assert.deepEqual(normalizeSourceDivide({ feet: 90, fallVelocity: -5, falling: true, extra: 'discard' }),
+    { version: 1, feet: 45, fallVelocity: 0, falling: true });
+  assert.deepEqual(normalizeSourceDivide({ feet: Infinity, fallVelocity: 90 }),
+    { version: 1, feet: 0, fallVelocity: 40, falling: false });
+  const falling = { version: 1, feet: 7.8, fallVelocity: 3.2, falling: true };
+  const saved = normalizeChunkSurfState({ ...freshChunkSurfState(), sourceDivide: falling });
+  assert.deepEqual(normalizeChunkSurfState(JSON.parse(JSON.stringify(saved))).sourceDivide, falling,
+    'a mid-fall save preserves body elevation independently of terrain');
+  assert.deepEqual(event(saved, 'LANDMARK_VISITED', { id: 'surfer-origin' }).sourceDivide, falling,
+    'ordinary progression preserves the serialized body height');
+}
 
 function landscapeState({ best = true } = {}) {
   let state = freshChunkSurfState({ drankCoffee: true, hasRig: best, seed: 4417, returnPoint: { x: 86, y: 58, facing: 2 } });
@@ -25,6 +42,19 @@ function landscapeState({ best = true } = {}) {
   state = event(state, 'HAYSTACK_REACHED', { origin: { x: 0, y: -224 }, slot: 5 });
   state = event(state, 'HAYSTACK_PAGE_FOUND', { landscapeOrigin: { x: 0, y: -246 } });
   return event(state, 'TRANSFORMATION_COMPLETED');
+}
+
+{
+  let state = { ...landscapeState(), firstLiftCompleted: true };
+  assert.equal(event(state, 'CONTACT_COMMITTED').finale.route, null, 'a bare event cannot commit battle');
+  const encounter = nextSourceContact(state.sourceContacts);
+  const warned = resolveSourceContact(state.sourceContacts, encounter, 'contact.warning');
+  state = event(state, 'SOURCE_CONTACT_RESOLVED', { contact: warned });
+  assert.equal(event(state, 'CONTACT_COMMITTED').finale.route, null, 'seeing the warning is not consent');
+  const confirmed = resolveSourceContact(warned, encounter, 'contact.confirm');
+  assert.equal(warned.talks, 0, 'no tour or previous conversation qualifies the warning');
+  state = event(state, 'SOURCE_CONTACT_RESOLVED', { contact: confirmed });
+  assert.equal(event(state, 'CONTACT_COMMITTED').finale.route, 'contact', 'the actual warned choice commits battle');
 }
 
 function completeCandidate(redaction = 'body', { best = true } = {}) {
@@ -65,10 +95,10 @@ assert.equal(inferLegacyChunkSurf({flags:{[CHUNK_SURF_FLAGS.completed]:true}}).f
   assert.equal(migrated.finalEncounter.status,SOURCE_FINAL_STATUS.LOCKED);
   assert.deepEqual(migrated.checkpoint,{id:'hall-entry',facing:0});
   // Saves written before the horizon existed carry no injury snapshot and no
-  // tape. Zero only ever closes the fault, never opens one, so an old save can
-  // lose the optional fight but can never be handed it unearned.
+  // tape. Migration preserves that history without inventing a prior injury.
   assert.equal(migrated.injuriesAtEntry,0,'pre-horizon saves do not invent a prior injury');
-  assert.deepEqual(migrated.horizon,{entered:false,reason:null,exit:null,maxDepth:0});
+  assert.deepEqual(migrated.horizon,{entered:false,reason:null,exit:null,maxDepth:0,
+    unravelling:{active:false,furthestMetres:-50,elapsedSeconds:0,amount:0,markers:[]}});
 }
 
 {
@@ -126,7 +156,7 @@ assert.equal(inferLegacyChunkSurf({flags:{[CHUNK_SURF_FLAGS.completed]:true}}).f
   state=event(state,'FINAL_ENCOUNTER_RESOLVED',{result:{outcome:SOURCE_FINAL_OUTCOME.RESCUE,won:true}});
   state=event(state,'SOURCE_COMPLETED');
   assert.equal(state.completed,true,'the generic fight seam can complete the chapter without the redaction adapter');
-  assert.equal(state.bestEligible,false,'both optional traces jointly gate rescue');
+  assert.equal(state.bestEligible,true,'the qualifying rig enables rescue without optional answers or repeated contact');
 }
 
 {

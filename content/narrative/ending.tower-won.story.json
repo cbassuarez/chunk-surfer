@@ -9,15 +9,17 @@
   "notes": "Tower victory after the collapsed Surfer is dragged through St Brendan's nave and out the ceremonial west doors.",
   "regions": [{"id":"ending.tower-won.region","title":"Exit Through the Gift Shop","kind":"ending","color":"#b89657","nodeIds":["start"]}],
   "nodes": {"start":{"type":"ending","speaker":"ST BRENDAN'S · WEST DOORS","lines":[
-    {"id":"start.line.1","who":"direction","text":"The west doors take both shoulders and all the leverage you have left. One leaf opens; the closer holds the other against the stone."},
+    {"id":"start.line.1","who":"direction","text":"You take the Surfer under the arms. Cloth gathers in your hands; his heels find the floor. The west doors are down the nave you walked to reach him."},
     {"id":"start.line.2","who":"direction","text":"Behind you, halfway down the nave, VISITOR SHOP still points south toward the route you did not take."},
     {"id":"start.line.3","who":"you","text":"Of course it does."},
     {"id":"start.line.4","who":"direction","text":"The Surfer makes a sound that may be a laugh. His weight remains human and inconvenient."},
     {"id":"start.line.5","who":"surfer","quotes":"signal","text":"You cut the bells off."},
     {"id":"start.line.6","who":"you","text":"I cut you off them. Different job."},
     {"id":"start.line.7","who":"direction","text":"The dawn in the west glass is colour before it is warmth. The same cold chord remains in six panes, but nothing above them answers."},
-    {"id":"start.line.8","who":"direction","text":"The closer brings the ceremonial doors together behind you. From the yard there is no handle."},
+    {"id":"start.line.8","who":"direction","text":"The west door takes your shoulder. You keep hold of him as one leaf opens. The closer brings it together behind you; from the yard there is no handle."},
     {"id":"start.line.9","who":"you","text":"Exit through the gift shop. Fine. Stay awake."},
-    {"id":"start.line.10","who":"direction","text":"Two bodies clear the threshold. Outside, his weight is only body weight and the bells are only metal cooling above an empty nave."}
+    {"id":"start.line.10","who":"direction","text":"Two bodies clear the threshold. Outside, his weight is only body weight and the bells are only metal cooling above an empty nave."},
+    {"id":"start.line.11","who":"surfer","quotes":"recordist","when":"station.recordist.complete","text":"You heard the chair. Before the bells."},
+    {"id":"start.line.12","who":"you","when":"station.recordist.complete","text":"I've still got it."}
   ]}}
 }

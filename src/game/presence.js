@@ -14,6 +14,7 @@
 
 import { CELL_SCALE, NOISE } from '../config.js';
 import * as REC from './recordist.js';
+import { freshPressureGait, normalizePressureGait, stepPressureGait, PRESSURE_GAIT } from './pressure-gait.js';
 import {
   freshHushContactDirectorState,
   normalizeHushContactDirectorState,
@@ -108,6 +109,7 @@ const state = {
   velocityY: 0,
   speed: 0,
   motionMode: 'idle',
+  gait: freshPressureGait(),
   behaviorMode: 'stand',
   phaseUntil: 0,
   chaseUntil: 0,
@@ -149,6 +151,7 @@ export function capturePresenceTableauState(now = performance.now()) {
     velocityX: state.velocityX, velocityY: state.velocityY, speed: state.speed,
     escapeDir: Array.isArray(state.escapeDir)?[...state.escapeDir]:null,
     motionMode: state.motionMode, behaviorMode: state.behaviorMode,
+    gait: normalizePressureGait(state.gait),
     directorIntent: state.directorIntent, tauntRequested: !!state.tauntRequested,
     spawnSector: state.spawnSector,
     contactDirector: contactDirectorState(),
@@ -171,6 +174,7 @@ export function beginPresenceTableau({ x, y, snapshot = null } = {}) {
   state.x = Number(x); state.y = Number(y);
   state.velocityX = 0; state.velocityY = 0; state.speed = 0;
   state.motionMode = 'idle'; state.behaviorMode = 'stand';
+  state.gait = null;
   state.hasTarget = false; state.targetLevel = 0; state.targetConfidence = 0;
   state.targetReason = null; state.targetPriority = 0;
   state.externalTargetUntil = 0; state.externalTargetPriority = 0;
@@ -226,6 +230,7 @@ export function restorePresenceTableau(snapshot = tableau?.snapshot, now = perfo
     speed: Math.max(0, Number(snapshot.speed) || 0),
     escapeDir: Array.isArray(snapshot.escapeDir)?[Number(snapshot.escapeDir[0])||0,Number(snapshot.escapeDir[1])||0]:null,
     motionMode: snapshot.motionMode || 'idle', behaviorMode: snapshot.behaviorMode || 'stand',
+    gait: normalizePressureGait(snapshot.gait) || freshPressureGait(),
     phaseUntil: now + Math.max(0, Number(remaining.phase) || 0),
     chaseUntil: now + Math.max(0, Number(remaining.chase) || 0),
     directorIntent: snapshot.directorIntent || 'IGNORE',
@@ -319,7 +324,7 @@ export function offerSoundTarget({ position, level = 0.2, confidence = 0.5, expi
   return true;
 }
 
-function activateAt(x, y, { sector = null } = {}) {
+function activateAt(x, y, { sector = null, gaitSeed = null } = {}) {
   if (tableau) return false;
   state.active = true;
   state.x = x;
@@ -334,6 +339,8 @@ function activateAt(x, y, { sector = null } = {}) {
   state.lastHeardAt = performance.now();
   state.spawnedAt = state.lastHeardAt;
   state.velocityX = 0; state.velocityY = 0; state.speed = 0; state.motionMode = 'idle';
+  state.gait = freshPressureGait({ seed: Number.isFinite(gaitSeed) ? gaitSeed
+    : (Math.imul(Math.round(x * 100), 73856093) ^ Math.imul(Math.round(y * 100), 19349663) ^ state.caughtCount) >>> 0 });
   state.hasProwl = false; state.prowlUntil = 0; state.dwellUntil = 0;
   state.lastSoundX = x; state.lastSoundY = y; state.hasSearchOrigin = true;
   state.behaviorMode = 'stand';
@@ -358,9 +365,9 @@ export function spawnBehind(px, py, dirX = 0, dirY = 1) {
 // everywhere except the concert hall, where the three floors share one footprint
 // and "fifteen metres away" can mean directly overhead. The caller owns the
 // choice; this only refuses a cell that is not a cell.
-export function spawnAtCell(x, y, { sector = null } = {}) {
+export function spawnAtCell(x, y, { sector = null, gaitSeed = null } = {}) {
   if (!Number.isFinite(x) || !Number.isFinite(y)) return false;
-  return activateAt(x, y, { sector });
+  return activateAt(x, y, { sector, gaitSeed });
 }
 
 export function spawnInHabitableSpace(px, py, {
@@ -589,7 +596,11 @@ export function updatePresence(dt, px, py, onContactAttempt, {
   // A sound is only useful for a few seconds. Losing it leaves a search origin,
   // not a hidden tether to the player.
   const sinceTarget = (now - state.targetSetAt) / 1000;
-  if (state.hasTarget && !externalFresh && sinceTarget > PRESENCE.memorySec * difficultyRules.memoryScale) {
+  const committedGait = !sourceMode && ['load', 'advance', 'recover'].includes(state.gait?.phase);
+  if (state.hasTarget && !externalFresh && sinceTarget > PRESENCE.memorySec * difficultyRules.memoryScale
+      && !committedGait) {
+    // Let one already telegraphed compression/step finish before releasing its
+    // remembered clue. The next arrested frame loses that belief immediately.
     enterStand(now, 1600, 5200);
   }
 
@@ -649,15 +660,18 @@ export function updatePresence(dt, px, py, onContactAttempt, {
       : stalkSpeed() * difficultyRules.baseSpeedScale;
     }
   } else {
-    if (state.tauntRequested && state.targetPriority < .88) {
+    if (state.tauntRequested && state.targetPriority < .88 && !committedGait) {
       state.tauntRequested = false;
       enterStand(now, 1400, 3400);
     }
     if (state.hasTarget) {
       const remaining = Math.hypot(state.targetX - state.x, state.targetY - state.y);
-      if (remaining < .72 * D) {
+      if (remaining < .72 * D && !committedGait) {
         enterStand(now, state.targetPriority >= .88 ? 450 : 1800, state.targetPriority >= .88 ? 1100 : 6200);
-      } else if (state.behaviorMode === 'chase' && now >= state.chaseUntil) {
+      } else if (state.behaviorMode === 'chase' && now >= state.chaseUntil
+          && !committedGait) {
+        // A natural chase timeout waits for the committed compression/step to
+        // finish. Dropping to listen mid-load would visibly unload the body.
         state.behaviorMode = 'listen';
         state.phaseUntil = now + between(320, 920);
       } else if (state.behaviorMode === 'listen' && now >= state.phaseUntil) {
@@ -668,7 +682,7 @@ export function updatePresence(dt, px, py, onContactAttempt, {
       chooseSearchPoint(now, navigation, { taunt: state.directorIntent === 'PLAY' || Math.random() < .28 });
     } else if (state.hasProwl) {
       const arrived = Math.hypot(state.prowlX - state.x, state.prowlY - state.y) < .72 * D;
-      if (arrived || now >= state.prowlUntil) enterStand(now, 2200, state.behaviorMode === 'feint' ? 7800 : 5600);
+      if ((arrived || now >= state.prowlUntil) && !committedGait) enterStand(now, 2200, state.behaviorMode === 'feint' ? 7800 : 5600);
     }
 
     if (state.hasTarget) {
@@ -683,10 +697,7 @@ export function updatePresence(dt, px, py, onContactAttempt, {
       case 'chase': speed = huntSpeed() * difficultyRules.huntSpeedScale; break;
       case 'investigate': speed = PRESENCE.investigateSpeedRatio * PLAYER_CELLS_PER_SEC * difficultyRules.baseSpeedScale; break;
       case 'limp': {
-        // It advances unevenly: weight, drag, listen. This is a world-space
-        // gait, not a cosmetic animation over uninterrupted homing.
-        const stride = ((now - state.spawnedAt) % 1150) / 1150;
-        speed = stride < .62 ? PRESENCE.limpSpeedRatio * PLAYER_CELLS_PER_SEC * difficultyRules.baseSpeedScale : 0;
+        speed = PRESENCE.limpSpeedRatio * PLAYER_CELLS_PER_SEC * difficultyRules.baseSpeedScale;
         break;
       }
       case 'feint': speed = stalkSpeed() * .82 * difficultyRules.baseSpeedScale; break;
@@ -705,7 +716,18 @@ export function updatePresence(dt, px, py, onContactAttempt, {
   const dx = tx - state.x, dy = ty - state.y;
   const d = Math.hypot(dx, dy);
   const beforeX=state.x,beforeY=state.y;
-  if (d > 0.001) {
+  if (!sourceMode) {
+    const next = stepPressureGait(state.gait, {
+      dt, x: state.x, y: state.y, targetX: tx, targetY: ty, speed,
+      // Nearness may increase the held interval. It never names a target or
+      // changes the sound belief, destination, or heading.
+      proximity: Math.max(0, 1 - distanceTo(px, py) * .5 / PRESSURE_GAIT.nearMetres),
+      listening: state.behaviorMode === 'listen' && state.hasTarget,
+      resolveMove: navigation?.resolveMove?.bind(navigation),
+      rebaseHeading: navigation?.rebaseHeading,
+    });
+    state.x = next.x; state.y = next.y; state.gait = next.gait;
+  } else if (d > 0.001) {
     const step = Math.min(d, speed * dt);
     const destination={x:state.x+(dx/d)*step,y:state.y+(dy/d)*step};
     const resolved=navigation?.resolveMove?.({x:state.x,y:state.y},{x:tx,y:ty},step);
@@ -734,7 +756,8 @@ export function updatePresence(dt, px, py, onContactAttempt, {
   //    moment has an after.
   const cooling = (now - state.lastCatchAt) / 1000 < PRESENCE.catchCooldownSec;
   const spawning = (now - state.spawnedAt) / 1000 < PRESENCE.spawnGraceSec;
-  if (!suppressContact && !state.pendingContact && !cooling && !spawning && distanceTo(px, py) <= PRESENCE.catchRadius) {
+  const recovering = !sourceMode && state.gait?.phase === 'recover';
+  if (!suppressContact && !recovering && !state.pendingContact && !cooling && !spawning && distanceTo(px, py) <= PRESENCE.catchRadius) {
     // Preserve the approach that actually made contact. `enterStand()` below
     // deliberately clears the chase belief, so reading these fields afterwards
     // would mislabel every collision as a quiet surprise.
@@ -808,6 +831,10 @@ export function loadPresenceState(saved = {}) {
     velocityX: 0, velocityY: 0,
     speed: 0,
     motionMode: 'idle',
+    // Saves deliberately retain no live body. A fresh manifestation derives a
+    // deterministic scheduler seed from its chosen spawn; a borrowed tableau
+    // instead captures/restores the complete mid-phase scheduler above.
+    gait: freshPressureGait(),
     behaviorMode: 'stand',
     phaseUntil: 0,
     chaseUntil: 0,

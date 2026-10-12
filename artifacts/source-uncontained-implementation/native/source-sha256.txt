@@ -1,0 +1,4 @@
+10286308e103d95c1a42ffcb895ba30d751fa2fe3f9bf632f4c898607f0ff1cf  src-tauri/src/source_desktop.rs
+eb3ec061de658830d89d6d869f1a3eeb491c8243253892ec22e5406a145145c1  src-tauri/src/window_choreography.rs
+fed48404a5c93909501fbb9e569b783456d1d2565573db6d9c4795224340ab14  src/platform/window-choreography.js
+1865374892ecae87a4058971403f263e7a039151e81d343d21f21aebff26a1ac  test/source-desktop-native-harness.html

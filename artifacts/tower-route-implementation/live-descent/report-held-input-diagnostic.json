@@ -1,0 +1,4600 @@
+{
+  "generatedAt": "2026-10-12T07:15:30.454Z",
+  "url": "http://127.0.0.1:5299/?nodisplaynotice=1&skipwarn=1&nomic=1&sam=0&nothink=1",
+  "scope": "Frozen production Chromium/Metal. One God-menu belfry establishment per mode, then only actual W body movement through service bays, spiral mouths, crossing walk, north triforium, lower spiral and nave. Local compiled FP/props select a path; every runtime step is checked and ordinary input must traverse it. No warps after start, renderer substitutions, module mocks or screenshot stand-ins. Normal and reduced motion. Waypoint arrival accepts <=.505m on the same floor. Excludes earned route access and combat/ending acceptance.",
+  "checks": [
+    {
+      "pass": true,
+      "mode": "normal",
+      "name": "diagnostic establishes only the real belfry start",
+      "detail": {
+        "level": "belfry",
+        "x": 19.5,
+        "y": 72.5
+      }
+    },
+    {
+      "pass": true,
+      "mode": "normal",
+      "name": "ordinary W reaches service-louvre",
+      "detail": {
+        "target": {
+          "x": 367,
+          "y": 475
+        },
+        "actual": {
+          "x": 367,
+          "y": 474
+        },
+        "floor": 10.199999809265137,
+        "physicalDistance": 0.5
+      }
+    },
+    {
+      "pass": true,
+      "mode": "normal",
+      "name": "ordinary E opens louvre apparatus",
+      "detail": "start"
+    },
+    {
+      "pass": true,
+      "mode": "normal",
+      "name": "louvre first response is saved",
+      "detail": [
+        "louvre"
+      ]
+    },
+    {
+      "pass": true,
+      "mode": "normal",
+      "name": "ordinary W reaches service-wheel",
+      "detail": {
+        "target": {
+          "x": 373,
+          "y": 475
+        },
+        "actual": {
+          "x": 373,
+          "y": 475
+        },
+        "floor": 10.199999809265137,
+        "physicalDistance": 0
+      }
+    },
+    {
+      "pass": true,
+      "mode": "normal",
+      "name": "ordinary E opens wheel apparatus",
+      "detail": "start"
+    },
+    {
+      "pass": true,
+      "mode": "normal",
+      "name": "wheel first response is saved",
+      "detail": [
+        "louvre",
+        "wheel"
+      ]
+    },
+    {
+      "pass": false,
+      "mode": "normal",
+      "name": "ordinary W reaches service-clapper",
+      "detail": {
+        "target": {
+          "x": 379,
+          "y": 475
+        },
+        "actual": {
+          "x": 379,
+          "y": 472
+        },
+        "floor": 10.199999809265137,
+        "physicalDistance": 1.5
+      }
+    },
+    {
+      "pass": false,
+      "mode": "normal",
+      "name": "ordinary E opens clapper apparatus"
+    },
+    {
+      "pass": false,
+      "mode": "normal",
+      "name": "clapper first response is saved",
+      "detail": [
+        "louvre",
+        "wheel"
+      ]
+    }
+  ],
+  "captures": [
+    {
+      "mode": "normal",
+      "name": "01-working-belfry",
+      "path": "/Users/seb/chunk-surfer/artifacts/tower-route-implementation/live-descent/normal-01-working-belfry.webp",
+      "surface": "actual-r3d-canvas",
+      "pos": {
+        "x": 379,
+        "y": 483
+      },
+      "floor": 10.199999809265137,
+      "look": {
+        "yaw": -1.892546881191539,
+        "pitch": 0.18,
+        "facing": 3
+      },
+      "cathedral": {
+        "finale": {
+          "route": "tower",
+          "stage": "cathedral",
+          "result": null,
+          "bust": {
+            "recognized": true,
+            "decision": "accepted",
+            "defeats": 0
+          },
+          "cathedral": {
+            "alarm": 0,
+            "damage": [],
+            "lessons": [],
+            "fight": null,
+            "extraction": null
+          },
+          "compatibility": {}
+        },
+        "here": {
+          "level": "belfry",
+          "x": 19.5,
+          "y": 72.5
+        },
+        "ring": 8,
+        "carry": null,
+        "physical": {
+          "player": {
+            "x": 19.5,
+            "y": 10.199999809265137,
+            "z": 72.5
+          },
+          "body": null,
+          "westPlane": {
+            "x": 16.25,
+            "y": 0,
+            "z": 55.25
+          },
+          "bothOutside": false
+        },
+        "anchors": {
+          "collapsedSurfer": null,
+          "nave": {
+            "x": 257,
+            "y": 379
+          },
+          "westDoors": {
+            "x": 256.5,
+            "y": 360.5
+          }
+        },
+        "cutscene": null,
+        "at": {
+          "x": 19.5,
+          "z": 72.5,
+          "y": 10.199999809265137
+        },
+        "bells": [
+          {
+            "id": 1,
+            "tier": "upper",
+            "pivot": {
+              "x": 14.9,
+              "y": 14.399999809265138,
+              "z": 72
+            }
+          },
+          {
+            "id": 2,
+            "tier": "upper",
+            "pivot": {
+              "x": 17.1,
+              "y": 14.399999809265138,
+              "z": 72
+            }
+          },
+          {
+            "id": 3,
+            "tier": "upper",
+            "pivot": {
+              "x": 14.9,
+              "y": 14.399999809265138,
+              "z": 74
+            }
+          },
+          {
+            "id": 4,
+            "tier": "upper",
+            "pivot": {
+              "x": 17.1,
+              "y": 14.399999809265138,
+              "z": 74
+            }
+          },
+          {
+            "id": 5,
+            "tier": "lower",
+            "pivot": {
+              "x": 14.9,
+              "y": 12.249999809265137,
+              "z": 72
+            }
+          },
+          {
+            "id": 6,
+            "tier": "lower",
+            "pivot": {
+              "x": 17.1,
+              "y": 12.249999809265137,
+              "z": 72
+            }
+          },
+          {
+            "id": 7,
+            "tier": "lower",
+            "pivot": {
+              "x": 14.9,
+              "y": 12.249999809265137,
+              "z": 74
+            }
+          },
+          {
+            "id": 8,
+            "tier": "lower",
+            "pivot": {
+              "x": 17.1,
+              "y": 12.249999809265137,
+              "z": 74
+            }
+          }
+        ],
+        "towerInstances": [
+          "brendan-bell-1",
+          "brendan-wheel-1",
+          "brendan-clapper-1",
+          "brendan-stay-1",
+          "brendan-slider-1",
+          "brendan-bell-2",
+          "brendan-wheel-2",
+          "brendan-clapper-2",
+          "brendan-stay-2",
+          "brendan-slider-2",
+          "brendan-bell-3",
+          "brendan-wheel-3",
+          "brendan-clapper-3",
+          "brendan-stay-3",
+          "brendan-slider-3",
+          "brendan-bell-4",
+          "brendan-wheel-4",
+          "brendan-clapper-4",
+          "brendan-stay-4",
+          "brendan-slider-4",
+          "brendan-bell-5",
+          "brendan-wheel-5",
+          "brendan-clapper-5",
+          "brendan-stay-5",
+          "brendan-slider-5",
+          "brendan-bell-6",
+          "brendan-wheel-6",
+          "brendan-clapper-6",
+          "brendan-stay-6",
+          "brendan-slider-6",
+          "brendan-bell-7",
+          "brendan-wheel-7",
+          "brendan-clapper-7",
+          "brendan-stay-7",
+          "brendan-slider-7",
+          "brendan-bell-8",
+          "brendan-wheel-8",
+          "brendan-clapper-8",
+          "brendan-stay-8",
+          "brendan-slider-8",
+          "brendan-lesson-clapper",
+          "brendan-lesson-wheel",
+          "brendan-lesson-louvre",
+          "brendan-tower-door-frame",
+          "brendan-tower-door-head",
+          "brendan-tower-door-leaf"
+        ]
+      },
+      "settings": {
+        "volume": 1,
+        "dialog": 1,
+        "sfx": 1,
+        "music": 1,
+        "monitorGain": 1,
+        "backgroundAudio": "continue",
+        "textCps": 42,
+        "instantText": false,
+        "fx": true,
+        "flash": "full",
+        "shake": "full",
+        "haptics": "full",
+        "towerPealAssist": "standard",
+        "rhythmTimingOffsetMs": 0,
+        "reduceDread": false,
+        "hushAudioDistortion": "full",
+        "hushSilence": "full",
+        "hushHiss": "full",
+        "hushWhispers": "full",
+        "hushSuddenCuts": "full",
+        "hushLightFlicker": "full",
+        "hushCueCaptions": false,
+        "tutorialPrompts": true,
+        "objectiveHints": "full",
+        "controlHud": "smart",
+        "pauseOnBlur": true,
+        "controlMode": "direct",
+        "mouseSensitivity": 1,
+        "mouseInvertY": false,
+        "mic": "ask",
+        "micInput": {
+          "deviceId": "default",
+          "channelMode": "mono",
+          "echoCancellation": true,
+          "noiseSuppression": false,
+          "autoGainControl": false,
+          "lastDeviceLabel": ""
+        },
+        "lastDifficulty": "contract",
+        "seenTextMode": "fast",
+        "archiveSignals": "subtle",
+        "condensedCheckIn": false,
+        "personalInterference": {
+          "enabled": false,
+          "sourceSteam": true,
+          "sourceOs": false,
+          "sourceHost": true,
+          "sourceMic": true,
+          "vfdText": true,
+          "localSpeech": false,
+          "intensity": "standard"
+        },
+        "psychProfile": {
+          "schema": 1,
+          "consentVersion": "",
+          "modules": {
+            "microphone": false,
+            "steamName": false,
+            "osUsername": false,
+            "computerName": false,
+            "microphoneLabel": false,
+            "behavioralMeasurement": false,
+            "adaptiveDifficulty": false,
+            "windowChoreography": true,
+            "fieldReturnFiles": false
+          },
+          "windowIntensity": "hostile"
+        },
+        "controller": {
+          "enabled": true,
+          "activePadId": null,
+          "lookSensitivity": 1,
+          "moveDeadzone": 0.12,
+          "lookDeadzone": 0.16,
+          "triggerThreshold": 0.55,
+          "invertLookY": false,
+          "family": "auto",
+          "bindings": {
+            "quiet": {
+              "kind": "button",
+              "id": "leftShoulder"
+            },
+            "hide": {
+              "kind": "button",
+              "id": "leftTrigger"
+            },
+            "light": {
+              "kind": "button",
+              "id": "north"
+            },
+            "bag": {
+              "kind": "button",
+              "id": "west"
+            },
+            "recorder": {
+              "kind": "button",
+              "id": "rightTrigger"
+            },
+            "radio": {
+              "kind": "button",
+              "id": "rightShoulder"
+            },
+            "interact": {
+              "kind": "button",
+              "id": "south"
+            },
+            "playback": {
+              "kind": "button",
+              "id": "east"
+            },
+            "mark": {
+              "kind": "button",
+              "id": "dpadUp"
+            },
+            "menu": {
+              "kind": "button",
+              "id": "menu"
+            },
+            "confirm": {
+              "kind": "button",
+              "id": "south"
+            },
+            "back": {
+              "kind": "button",
+              "id": "east"
+            },
+            "tabPrev": {
+              "kind": "button",
+              "id": "leftShoulder"
+            },
+            "tabNext": {
+              "kind": "button",
+              "id": "rightShoulder"
+            },
+            "mapFloorPrev": {
+              "kind": "button",
+              "id": "leftTrigger"
+            },
+            "mapFloorNext": {
+              "kind": "button",
+              "id": "rightTrigger"
+            },
+            "mapLocate": {
+              "kind": "button",
+              "id": "north"
+            },
+            "mapFile": {
+              "kind": "button",
+              "id": "west"
+            },
+            "mapConsole": {
+              "kind": "button",
+              "id": "rightStick"
+            }
+          }
+        },
+        "customShiftRules": null
+      },
+      "lighting": {
+        "localLightCount": 8,
+        "ambientColor": [
+          0.5799999833106995,
+          0.6399999856948853,
+          0.699999988079071
+        ],
+        "ambientIntensity": 0.035,
+        "whitePointScale": 0.3423913043478261,
+        "captureExposure": 4.5,
+        "sourceEmergency": 0,
+        "sourceVoidPhysical": false,
+        "sourceShore": {
+          "ready": true,
+          "active": false,
+          "facade": "exposed-strata",
+          "boxCount": 0,
+          "pieceCount": 0,
+          "hardwareCount": 0,
+          "hardwareDraws": 0,
+          "triangles": 0,
+          "far": 1600,
+          "air": [
+            0.73,
+            0.79,
+            0.8
+          ],
+          "bounds": [],
+          "strata": []
+        },
+        "lights": [
+          {
+            "x": 16,
+            "y": 5.800000190734863,
+            "z": 58,
+            "radius": 10,
+            "color": [
+              0.5799999833106995,
+              0.6700000166893005,
+              0.8600000143051147
+            ],
+            "intensity": 0.46000000834465027,
+            "emergency": 0
+          },
+          {
+            "x": 16,
+            "y": 10.800000190734863,
+            "z": 73,
+            "radius": 13,
+            "color": [
+              0.5799999833106995,
+              0.6700000166893005,
+              0.8600000143051147
+            ],
+            "intensity": 0.5,
+            "emergency": 0
+          },
+          {
+            "x": 16,
+            "y": 5.400000095367432,
+            "z": 82.69999694824219,
+            "radius": 8,
+            "color": [
+              0.5799999833106995,
+              0.6700000166893005,
+              0.8600000143051147
+            ],
+            "intensity": 0.44999998807907104,
+            "emergency": 0
+          },
+          {
+            "x": 10,
+            "y": 3.4000000953674316,
+            "z": 79,
+            "radius": 5,
+            "color": [
+              0.5799999833106995,
+              0.6700000166893005,
+              0.8600000143051147
+            ],
+            "intensity": 0.44999998807907104,
+            "emergency": 0
+          },
+          {
+            "x": 19,
+            "y": 12.5,
+            "z": 70,
+            "radius": 8,
+            "color": [
+              0.8600000143051147,
+              0.7699999809265137,
+              0.5699999928474426
+            ],
+            "intensity": 0.8999999761581421,
+            "emergency": 0
+          },
+          {
+            "x": 21,
+            "y": 6.800000190734863,
+            "z": 72,
+            "radius": 5.5,
+            "color": [
+              0.8600000143051147,
+              0.7699999809265137,
+              0.5699999928474426
+            ],
+            "intensity": 0.7799999713897705,
+            "emergency": 0
+          },
+          {
+            "x": 10,
+            "y": 6.800000190734863,
+            "z": 68,
+            "radius": 8,
+            "color": [
+              0.6499999761581421,
+              0.7300000190734863,
+              0.7599999904632568
+            ],
+            "intensity": 0.699999988079071,
+            "emergency": 0
+          },
+          {
+            "x": 10,
+            "y": 2.299999952316284,
+            "z": 63,
+            "radius": 5,
+            "color": [
+              0.8600000143051147,
+              0.7699999809265137,
+              0.5699999928474426
+            ],
+            "intensity": 0.7799999713897705,
+            "emergency": 0
+          }
+        ]
+      },
+      "torch": false
+    },
+    {
+      "mode": "normal",
+      "name": "02-service-louvre",
+      "path": "/Users/seb/chunk-surfer/artifacts/tower-route-implementation/live-descent/normal-02-service-louvre.webp",
+      "surface": "actual-r3d-canvas",
+      "pos": {
+        "x": 367,
+        "y": 474
+      },
+      "floor": 10.199999809265137,
+      "look": {
+        "yaw": 0,
+        "pitch": -0.12,
+        "facing": 0
+      },
+      "cathedral": {
+        "finale": {
+          "route": "tower",
+          "stage": "cathedral",
+          "result": null,
+          "bust": {
+            "recognized": true,
+            "decision": "accepted",
+            "defeats": 0
+          },
+          "cathedral": {
+            "alarm": 1,
+            "damage": [],
+            "lessons": [],
+            "fight": null,
+            "extraction": null
+          },
+          "compatibility": {}
+        },
+        "here": {
+          "level": "belfry",
+          "x": 13.5,
+          "y": 68
+        },
+        "ring": 8,
+        "carry": null,
+        "physical": {
+          "player": {
+            "x": 13.5,
+            "y": 10.199999809265137,
+            "z": 68
+          },
+          "body": null,
+          "westPlane": {
+            "x": 16.25,
+            "y": 0,
+            "z": 55.25
+          },
+          "bothOutside": false
+        },
+        "anchors": {
+          "collapsedSurfer": null,
+          "nave": {
+            "x": 257,
+            "y": 379
+          },
+          "westDoors": {
+            "x": 256.5,
+            "y": 360.5
+          }
+        },
+        "cutscene": null,
+        "at": {
+          "x": 13.5,
+          "z": 68,
+          "y": 10.199999809265137
+        },
+        "bells": [
+          {
+            "id": 1,
+            "tier": "upper",
+            "pivot": {
+              "x": 14.9,
+              "y": 14.399999809265138,
+              "z": 72
+            }
+          },
+          {
+            "id": 2,
+            "tier": "upper",
+            "pivot": {
+              "x": 17.1,
+              "y": 14.399999809265138,
+              "z": 72
+            }
+          },
+          {
+            "id": 3,
+            "tier": "upper",
+            "pivot": {
+              "x": 14.9,
+              "y": 14.399999809265138,
+              "z": 74
+            }
+          },
+          {
+            "id": 4,
+            "tier": "upper",
+            "pivot": {
+              "x": 17.1,
+              "y": 14.399999809265138,
+              "z": 74
+            }
+          },
+          {
+            "id": 5,
+            "tier": "lower",
+            "pivot": {
+              "x": 14.9,
+              "y": 12.249999809265137,
+              "z": 72
+            }
+          },
+          {
+            "id": 6,
+            "tier": "lower",
+            "pivot": {
+              "x": 17.1,
+              "y": 12.249999809265137,
+              "z": 72
+            }
+          },
+          {
+            "id": 7,
+            "tier": "lower",
+            "pivot": {
+              "x": 14.9,
+              "y": 12.249999809265137,
+              "z": 74
+            }
+          },
+          {
+            "id": 8,
+            "tier": "lower",
+            "pivot": {
+              "x": 17.1,
+              "y": 12.249999809265137,
+              "z": 74
+            }
+          }
+        ],
+        "towerInstances": [
+          "brendan-bell-1",
+          "brendan-wheel-1",
+          "brendan-clapper-1",
+          "brendan-stay-1",
+          "brendan-slider-1",
+          "brendan-bell-2",
+          "brendan-wheel-2",
+          "brendan-clapper-2",
+          "brendan-stay-2",
+          "brendan-slider-2",
+          "brendan-bell-3",
+          "brendan-wheel-3",
+          "brendan-clapper-3",
+          "brendan-stay-3",
+          "brendan-slider-3",
+          "brendan-bell-4",
+          "brendan-wheel-4",
+          "brendan-clapper-4",
+          "brendan-stay-4",
+          "brendan-slider-4",
+          "brendan-bell-5",
+          "brendan-wheel-5",
+          "brendan-clapper-5",
+          "brendan-stay-5",
+          "brendan-slider-5",
+          "brendan-bell-6",
+          "brendan-wheel-6",
+          "brendan-clapper-6",
+          "brendan-stay-6",
+          "brendan-slider-6",
+          "brendan-bell-7",
+          "brendan-wheel-7",
+          "brendan-clapper-7",
+          "brendan-stay-7",
+          "brendan-slider-7",
+          "brendan-bell-8",
+          "brendan-wheel-8",
+          "brendan-clapper-8",
+          "brendan-stay-8",
+          "brendan-slider-8",
+          "brendan-lesson-clapper",
+          "brendan-lesson-wheel",
+          "brendan-lesson-louvre",
+          "brendan-tower-door-frame",
+          "brendan-tower-door-head",
+          "brendan-tower-door-leaf"
+        ]
+      },
+      "settings": {
+        "volume": 1,
+        "dialog": 1,
+        "sfx": 1,
+        "music": 1,
+        "monitorGain": 1,
+        "backgroundAudio": "continue",
+        "textCps": 42,
+        "instantText": false,
+        "fx": true,
+        "flash": "full",
+        "shake": "full",
+        "haptics": "full",
+        "towerPealAssist": "standard",
+        "rhythmTimingOffsetMs": 0,
+        "reduceDread": false,
+        "hushAudioDistortion": "full",
+        "hushSilence": "full",
+        "hushHiss": "full",
+        "hushWhispers": "full",
+        "hushSuddenCuts": "full",
+        "hushLightFlicker": "full",
+        "hushCueCaptions": false,
+        "tutorialPrompts": true,
+        "objectiveHints": "full",
+        "controlHud": "smart",
+        "pauseOnBlur": true,
+        "controlMode": "direct",
+        "mouseSensitivity": 1,
+        "mouseInvertY": false,
+        "mic": "ask",
+        "micInput": {
+          "deviceId": "default",
+          "channelMode": "mono",
+          "echoCancellation": true,
+          "noiseSuppression": false,
+          "autoGainControl": false,
+          "lastDeviceLabel": ""
+        },
+        "lastDifficulty": "contract",
+        "seenTextMode": "fast",
+        "archiveSignals": "subtle",
+        "condensedCheckIn": false,
+        "personalInterference": {
+          "enabled": false,
+          "sourceSteam": true,
+          "sourceOs": false,
+          "sourceHost": true,
+          "sourceMic": true,
+          "vfdText": true,
+          "localSpeech": false,
+          "intensity": "standard"
+        },
+        "psychProfile": {
+          "schema": 1,
+          "consentVersion": "",
+          "modules": {
+            "microphone": false,
+            "steamName": false,
+            "osUsername": false,
+            "computerName": false,
+            "microphoneLabel": false,
+            "behavioralMeasurement": false,
+            "adaptiveDifficulty": false,
+            "windowChoreography": true,
+            "fieldReturnFiles": false
+          },
+          "windowIntensity": "hostile"
+        },
+        "controller": {
+          "enabled": true,
+          "activePadId": null,
+          "lookSensitivity": 1,
+          "moveDeadzone": 0.12,
+          "lookDeadzone": 0.16,
+          "triggerThreshold": 0.55,
+          "invertLookY": false,
+          "family": "auto",
+          "bindings": {
+            "quiet": {
+              "kind": "button",
+              "id": "leftShoulder"
+            },
+            "hide": {
+              "kind": "button",
+              "id": "leftTrigger"
+            },
+            "light": {
+              "kind": "button",
+              "id": "north"
+            },
+            "bag": {
+              "kind": "button",
+              "id": "west"
+            },
+            "recorder": {
+              "kind": "button",
+              "id": "rightTrigger"
+            },
+            "radio": {
+              "kind": "button",
+              "id": "rightShoulder"
+            },
+            "interact": {
+              "kind": "button",
+              "id": "south"
+            },
+            "playback": {
+              "kind": "button",
+              "id": "east"
+            },
+            "mark": {
+              "kind": "button",
+              "id": "dpadUp"
+            },
+            "menu": {
+              "kind": "button",
+              "id": "menu"
+            },
+            "confirm": {
+              "kind": "button",
+              "id": "south"
+            },
+            "back": {
+              "kind": "button",
+              "id": "east"
+            },
+            "tabPrev": {
+              "kind": "button",
+              "id": "leftShoulder"
+            },
+            "tabNext": {
+              "kind": "button",
+              "id": "rightShoulder"
+            },
+            "mapFloorPrev": {
+              "kind": "button",
+              "id": "leftTrigger"
+            },
+            "mapFloorNext": {
+              "kind": "button",
+              "id": "rightTrigger"
+            },
+            "mapLocate": {
+              "kind": "button",
+              "id": "north"
+            },
+            "mapFile": {
+              "kind": "button",
+              "id": "west"
+            },
+            "mapConsole": {
+              "kind": "button",
+              "id": "rightStick"
+            }
+          }
+        },
+        "customShiftRules": null
+      },
+      "lighting": {
+        "localLightCount": 8,
+        "ambientColor": [
+          0.5799999833106995,
+          0.6399999856948853,
+          0.699999988079071
+        ],
+        "ambientIntensity": 0.035,
+        "whitePointScale": 0.3423913043478261,
+        "captureExposure": 4.5,
+        "sourceEmergency": 0,
+        "sourceVoidPhysical": false,
+        "sourceShore": {
+          "ready": true,
+          "active": false,
+          "facade": "exposed-strata",
+          "boxCount": 0,
+          "pieceCount": 0,
+          "hardwareCount": 0,
+          "hardwareDraws": 0,
+          "triangles": 0,
+          "far": 1600,
+          "air": [
+            0.73,
+            0.79,
+            0.8
+          ],
+          "bounds": [],
+          "strata": []
+        },
+        "lights": [
+          {
+            "x": 16,
+            "y": 5.800000190734863,
+            "z": 58,
+            "radius": 10,
+            "color": [
+              0.5799999833106995,
+              0.6700000166893005,
+              0.8600000143051147
+            ],
+            "intensity": 0.46000000834465027,
+            "emergency": 0
+          },
+          {
+            "x": 16,
+            "y": 10.800000190734863,
+            "z": 73,
+            "radius": 13,
+            "color": [
+              0.5799999833106995,
+              0.6700000166893005,
+              0.8600000143051147
+            ],
+            "intensity": 0.5,
+            "emergency": 0
+          },
+          {
+            "x": 16,
+            "y": 5.400000095367432,
+            "z": 82.69999694824219,
+            "radius": 8,
+            "color": [
+              0.5799999833106995,
+              0.6700000166893005,
+              0.8600000143051147
+            ],
+            "intensity": 0.44999998807907104,
+            "emergency": 0
+          },
+          {
+            "x": 10,
+            "y": 3.4000000953674316,
+            "z": 79,
+            "radius": 5,
+            "color": [
+              0.5799999833106995,
+              0.6700000166893005,
+              0.8600000143051147
+            ],
+            "intensity": 0.44999998807907104,
+            "emergency": 0
+          },
+          {
+            "x": 19,
+            "y": 12.5,
+            "z": 70,
+            "radius": 8,
+            "color": [
+              0.8600000143051147,
+              0.7699999809265137,
+              0.5699999928474426
+            ],
+            "intensity": 0.8999999761581421,
+            "emergency": 0
+          },
+          {
+            "x": 21,
+            "y": 6.800000190734863,
+            "z": 72,
+            "radius": 5.5,
+            "color": [
+              0.8600000143051147,
+              0.7699999809265137,
+              0.5699999928474426
+            ],
+            "intensity": 0.7799999713897705,
+            "emergency": 0
+          },
+          {
+            "x": 10,
+            "y": 6.800000190734863,
+            "z": 68,
+            "radius": 8,
+            "color": [
+              0.6499999761581421,
+              0.7300000190734863,
+              0.7599999904632568
+            ],
+            "intensity": 0.699999988079071,
+            "emergency": 0
+          },
+          {
+            "x": 10,
+            "y": 2.299999952316284,
+            "z": 63,
+            "radius": 5,
+            "color": [
+              0.8600000143051147,
+              0.7699999809265137,
+              0.5699999928474426
+            ],
+            "intensity": 0.7799999713897705,
+            "emergency": 0
+          }
+        ]
+      },
+      "torch": false
+    },
+    {
+      "mode": "normal",
+      "name": "02-service-wheel",
+      "path": "/Users/seb/chunk-surfer/artifacts/tower-route-implementation/live-descent/normal-02-service-wheel.webp",
+      "surface": "actual-r3d-canvas",
+      "pos": {
+        "x": 373,
+        "y": 475
+      },
+      "floor": 10.199999809265137,
+      "look": {
+        "yaw": 0,
+        "pitch": -0.12,
+        "facing": 0
+      },
+      "cathedral": {
+        "finale": {
+          "route": "tower",
+          "stage": "cathedral",
+          "result": null,
+          "bust": {
+            "recognized": true,
+            "decision": "accepted",
+            "defeats": 0
+          },
+          "cathedral": {
+            "alarm": 1,
+            "damage": [],
+            "lessons": [
+              "louvre"
+            ],
+            "fight": null,
+            "extraction": null
+          },
+          "compatibility": {}
+        },
+        "here": {
+          "level": "belfry",
+          "x": 16.5,
+          "y": 68.5
+        },
+        "ring": 8,
+        "carry": null,
+        "physical": {
+          "player": {
+            "x": 16.5,
+            "y": 10.199999809265137,
+            "z": 68.5
+          },
+          "body": null,
+          "westPlane": {
+            "x": 16.25,
+            "y": 0,
+            "z": 55.25
+          },
+          "bothOutside": false
+        },
+        "anchors": {
+          "collapsedSurfer": null,
+          "nave": {
+            "x": 257,
+            "y": 379
+          },
+          "westDoors": {
+            "x": 256.5,
+            "y": 360.5
+          }
+        },
+        "cutscene": null,
+        "at": {
+          "x": 16.5,
+          "z": 68.5,
+          "y": 10.199999809265137
+        },
+        "bells": [
+          {
+            "id": 1,
+            "tier": "upper",
+            "pivot": {
+              "x": 14.9,
+              "y": 14.399999809265138,
+              "z": 72
+            }
+          },
+          {
+            "id": 2,
+            "tier": "upper",
+            "pivot": {
+              "x": 17.1,
+              "y": 14.399999809265138,
+              "z": 72
+            }
+          },
+          {
+            "id": 3,
+            "tier": "upper",
+            "pivot": {
+              "x": 14.9,
+              "y": 14.399999809265138,
+              "z": 74
+            }
+          },
+          {
+            "id": 4,
+            "tier": "upper",
+            "pivot": {
+              "x": 17.1,
+              "y": 14.399999809265138,
+              "z": 74
+            }
+          },
+          {
+            "id": 5,
+            "tier": "lower",
+            "pivot": {
+              "x": 14.9,
+              "y": 12.249999809265137,
+              "z": 72
+            }
+          },
+          {
+            "id": 6,
+            "tier": "lower",
+            "pivot": {
+              "x": 17.1,
+              "y": 12.249999809265137,
+              "z": 72
+            }
+          },
+          {
+            "id": 7,
+            "tier": "lower",
+            "pivot": {
+              "x": 14.9,
+              "y": 12.249999809265137,
+              "z": 74
+            }
+          },
+          {
+            "id": 8,
+            "tier": "lower",
+            "pivot": {
+              "x": 17.1,
+              "y": 12.249999809265137,
+              "z": 74
+            }
+          }
+        ],
+        "towerInstances": [
+          "brendan-bell-1",
+          "brendan-wheel-1",
+          "brendan-clapper-1",
+          "brendan-stay-1",
+          "brendan-slider-1",
+          "brendan-bell-2",
+          "brendan-wheel-2",
+          "brendan-clapper-2",
+          "brendan-stay-2",
+          "brendan-slider-2",
+          "brendan-bell-3",
+          "brendan-wheel-3",
+          "brendan-clapper-3",
+          "brendan-stay-3",
+          "brendan-slider-3",
+          "brendan-bell-4",
+          "brendan-wheel-4",
+          "brendan-clapper-4",
+          "brendan-stay-4",
+          "brendan-slider-4",
+          "brendan-bell-5",
+          "brendan-wheel-5",
+          "brendan-clapper-5",
+          "brendan-stay-5",
+          "brendan-slider-5",
+          "brendan-bell-6",
+          "brendan-wheel-6",
+          "brendan-clapper-6",
+          "brendan-stay-6",
+          "brendan-slider-6",
+          "brendan-bell-7",
+          "brendan-wheel-7",
+          "brendan-clapper-7",
+          "brendan-stay-7",
+          "brendan-slider-7",
+          "brendan-bell-8",
+          "brendan-wheel-8",
+          "brendan-clapper-8",
+          "brendan-stay-8",
+          "brendan-slider-8",
+          "brendan-lesson-clapper",
+          "brendan-lesson-wheel",
+          "brendan-lesson-louvre",
+          "brendan-tower-door-frame",
+          "brendan-tower-door-head",
+          "brendan-tower-door-leaf"
+        ]
+      },
+      "settings": {
+        "volume": 1,
+        "dialog": 1,
+        "sfx": 1,
+        "music": 1,
+        "monitorGain": 1,
+        "backgroundAudio": "continue",
+        "textCps": 42,
+        "instantText": false,
+        "fx": true,
+        "flash": "full",
+        "shake": "full",
+        "haptics": "full",
+        "towerPealAssist": "standard",
+        "rhythmTimingOffsetMs": 0,
+        "reduceDread": false,
+        "hushAudioDistortion": "full",
+        "hushSilence": "full",
+        "hushHiss": "full",
+        "hushWhispers": "full",
+        "hushSuddenCuts": "full",
+        "hushLightFlicker": "full",
+        "hushCueCaptions": false,
+        "tutorialPrompts": true,
+        "objectiveHints": "full",
+        "controlHud": "smart",
+        "pauseOnBlur": true,
+        "controlMode": "direct",
+        "mouseSensitivity": 1,
+        "mouseInvertY": false,
+        "mic": "ask",
+        "micInput": {
+          "deviceId": "default",
+          "channelMode": "mono",
+          "echoCancellation": true,
+          "noiseSuppression": false,
+          "autoGainControl": false,
+          "lastDeviceLabel": ""
+        },
+        "lastDifficulty": "contract",
+        "seenTextMode": "fast",
+        "archiveSignals": "subtle",
+        "condensedCheckIn": false,
+        "personalInterference": {
+          "enabled": false,
+          "sourceSteam": true,
+          "sourceOs": false,
+          "sourceHost": true,
+          "sourceMic": true,
+          "vfdText": true,
+          "localSpeech": false,
+          "intensity": "standard"
+        },
+        "psychProfile": {
+          "schema": 1,
+          "consentVersion": "",
+          "modules": {
+            "microphone": false,
+            "steamName": false,
+            "osUsername": false,
+            "computerName": false,
+            "microphoneLabel": false,
+            "behavioralMeasurement": false,
+            "adaptiveDifficulty": false,
+            "windowChoreography": true,
+            "fieldReturnFiles": false
+          },
+          "windowIntensity": "hostile"
+        },
+        "controller": {
+          "enabled": true,
+          "activePadId": null,
+          "lookSensitivity": 1,
+          "moveDeadzone": 0.12,
+          "lookDeadzone": 0.16,
+          "triggerThreshold": 0.55,
+          "invertLookY": false,
+          "family": "auto",
+          "bindings": {
+            "quiet": {
+              "kind": "button",
+              "id": "leftShoulder"
+            },
+            "hide": {
+              "kind": "button",
+              "id": "leftTrigger"
+            },
+            "light": {
+              "kind": "button",
+              "id": "north"
+            },
+            "bag": {
+              "kind": "button",
+              "id": "west"
+            },
+            "recorder": {
+              "kind": "button",
+              "id": "rightTrigger"
+            },
+            "radio": {
+              "kind": "button",
+              "id": "rightShoulder"
+            },
+            "interact": {
+              "kind": "button",
+              "id": "south"
+            },
+            "playback": {
+              "kind": "button",
+              "id": "east"
+            },
+            "mark": {
+              "kind": "button",
+              "id": "dpadUp"
+            },
+            "menu": {
+              "kind": "button",
+              "id": "menu"
+            },
+            "confirm": {
+              "kind": "button",
+              "id": "south"
+            },
+            "back": {
+              "kind": "button",
+              "id": "east"
+            },
+            "tabPrev": {
+              "kind": "button",
+              "id": "leftShoulder"
+            },
+            "tabNext": {
+              "kind": "button",
+              "id": "rightShoulder"
+            },
+            "mapFloorPrev": {
+              "kind": "button",
+              "id": "leftTrigger"
+            },
+            "mapFloorNext": {
+              "kind": "button",
+              "id": "rightTrigger"
+            },
+            "mapLocate": {
+              "kind": "button",
+              "id": "north"
+            },
+            "mapFile": {
+              "kind": "button",
+              "id": "west"
+            },
+            "mapConsole": {
+              "kind": "button",
+              "id": "rightStick"
+            }
+          }
+        },
+        "customShiftRules": null
+      },
+      "lighting": {
+        "localLightCount": 8,
+        "ambientColor": [
+          0.5799999833106995,
+          0.6399999856948853,
+          0.699999988079071
+        ],
+        "ambientIntensity": 0.035,
+        "whitePointScale": 0.3423913043478261,
+        "captureExposure": 4.5,
+        "sourceEmergency": 0,
+        "sourceVoidPhysical": false,
+        "sourceShore": {
+          "ready": true,
+          "active": false,
+          "facade": "exposed-strata",
+          "boxCount": 0,
+          "pieceCount": 0,
+          "hardwareCount": 0,
+          "hardwareDraws": 0,
+          "triangles": 0,
+          "far": 1600,
+          "air": [
+            0.73,
+            0.79,
+            0.8
+          ],
+          "bounds": [],
+          "strata": []
+        },
+        "lights": [
+          {
+            "x": 16,
+            "y": 5.800000190734863,
+            "z": 58,
+            "radius": 10,
+            "color": [
+              0.5799999833106995,
+              0.6700000166893005,
+              0.8600000143051147
+            ],
+            "intensity": 0.46000000834465027,
+            "emergency": 0
+          },
+          {
+            "x": 16,
+            "y": 10.800000190734863,
+            "z": 73,
+            "radius": 13,
+            "color": [
+              0.5799999833106995,
+              0.6700000166893005,
+              0.8600000143051147
+            ],
+            "intensity": 0.5,
+            "emergency": 0
+          },
+          {
+            "x": 16,
+            "y": 5.400000095367432,
+            "z": 82.69999694824219,
+            "radius": 8,
+            "color": [
+              0.5799999833106995,
+              0.6700000166893005,
+              0.8600000143051147
+            ],
+            "intensity": 0.44999998807907104,
+            "emergency": 0
+          },
+          {
+            "x": 10,
+            "y": 3.4000000953674316,
+            "z": 79,
+            "radius": 5,
+            "color": [
+              0.5799999833106995,
+              0.6700000166893005,
+              0.8600000143051147
+            ],
+            "intensity": 0.44999998807907104,
+            "emergency": 0
+          },
+          {
+            "x": 19,
+            "y": 12.5,
+            "z": 70,
+            "radius": 8,
+            "color": [
+              0.8600000143051147,
+              0.7699999809265137,
+              0.5699999928474426
+            ],
+            "intensity": 0.8999999761581421,
+            "emergency": 0
+          },
+          {
+            "x": 21,
+            "y": 6.800000190734863,
+            "z": 72,
+            "radius": 5.5,
+            "color": [
+              0.8600000143051147,
+              0.7699999809265137,
+              0.5699999928474426
+            ],
+            "intensity": 0.7799999713897705,
+            "emergency": 0
+          },
+          {
+            "x": 10,
+            "y": 6.800000190734863,
+            "z": 68,
+            "radius": 8,
+            "color": [
+              0.6499999761581421,
+              0.7300000190734863,
+              0.7599999904632568
+            ],
+            "intensity": 0.699999988079071,
+            "emergency": 0
+          },
+          {
+            "x": 10,
+            "y": 2.299999952316284,
+            "z": 63,
+            "radius": 5,
+            "color": [
+              0.8600000143051147,
+              0.7699999809265137,
+              0.5699999928474426
+            ],
+            "intensity": 0.7799999713897705,
+            "emergency": 0
+          }
+        ]
+      },
+      "torch": false
+    },
+    {
+      "mode": "normal",
+      "name": "02-service-clapper",
+      "path": "/Users/seb/chunk-surfer/artifacts/tower-route-implementation/live-descent/normal-02-service-clapper.webp",
+      "surface": "actual-r3d-canvas",
+      "pos": {
+        "x": 379,
+        "y": 472
+      },
+      "floor": 10.199999809265137,
+      "look": {
+        "yaw": 0,
+        "pitch": -0.12,
+        "facing": 0
+      },
+      "cathedral": {
+        "finale": {
+          "route": "tower",
+          "stage": "cathedral",
+          "result": null,
+          "bust": {
+            "recognized": true,
+            "decision": "accepted",
+            "defeats": 0
+          },
+          "cathedral": {
+            "alarm": 1,
+            "damage": [],
+            "lessons": [
+              "louvre",
+              "wheel"
+            ],
+            "fight": null,
+            "extraction": null
+          },
+          "compatibility": {}
+        },
+        "here": {
+          "level": "belfry",
+          "x": 19.5,
+          "y": 67
+        },
+        "ring": 8,
+        "carry": null,
+        "physical": {
+          "player": {
+            "x": 19.5,
+            "y": 10.199999809265137,
+            "z": 67
+          },
+          "body": null,
+          "westPlane": {
+            "x": 16.25,
+            "y": 0,
+            "z": 55.25
+          },
+          "bothOutside": false
+        },
+        "anchors": {
+          "collapsedSurfer": null,
+          "nave": {
+            "x": 257,
+            "y": 379
+          },
+          "westDoors": {
+            "x": 256.5,
+            "y": 360.5
+          }
+        },
+        "cutscene": null,
+        "at": {
+          "x": 19.5,
+          "z": 67,
+          "y": 10.199999809265137
+        },
+        "bells": [
+          {
+            "id": 1,
+            "tier": "upper",
+            "pivot": {
+              "x": 14.9,
+              "y": 14.399999809265138,
+              "z": 72
+            }
+          },
+          {
+            "id": 2,
+            "tier": "upper",
+            "pivot": {
+              "x": 17.1,
+              "y": 14.399999809265138,
+              "z": 72
+            }
+          },
+          {
+            "id": 3,
+            "tier": "upper",
+            "pivot": {
+              "x": 14.9,
+              "y": 14.399999809265138,
+              "z": 74
+            }
+          },
+          {
+            "id": 4,
+            "tier": "upper",
+            "pivot": {
+              "x": 17.1,
+              "y": 14.399999809265138,
+              "z": 74
+            }
+          },
+          {
+            "id": 5,
+            "tier": "lower",
+            "pivot": {
+              "x": 14.9,
+              "y": 12.249999809265137,
+              "z": 72
+            }
+          },
+          {
+            "id": 6,
+            "tier": "lower",
+            "pivot": {
+              "x": 17.1,
+              "y": 12.249999809265137,
+              "z": 72
+            }
+          },
+          {
+            "id": 7,
+            "tier": "lower",
+            "pivot": {
+              "x": 14.9,
+              "y": 12.249999809265137,
+              "z": 74
+            }
+          },
+          {
+            "id": 8,
+            "tier": "lower",
+            "pivot": {
+              "x": 17.1,
+              "y": 12.249999809265137,
+              "z": 74
+            }
+          }
+        ],
+        "towerInstances": [
+          "brendan-bell-1",
+          "brendan-wheel-1",
+          "brendan-clapper-1",
+          "brendan-stay-1",
+          "brendan-slider-1",
+          "brendan-bell-2",
+          "brendan-wheel-2",
+          "brendan-clapper-2",
+          "brendan-stay-2",
+          "brendan-slider-2",
+          "brendan-bell-3",
+          "brendan-wheel-3",
+          "brendan-clapper-3",
+          "brendan-stay-3",
+          "brendan-slider-3",
+          "brendan-bell-4",
+          "brendan-wheel-4",
+          "brendan-clapper-4",
+          "brendan-stay-4",
+          "brendan-slider-4",
+          "brendan-bell-5",
+          "brendan-wheel-5",
+          "brendan-clapper-5",
+          "brendan-stay-5",
+          "brendan-slider-5",
+          "brendan-bell-6",
+          "brendan-wheel-6",
+          "brendan-clapper-6",
+          "brendan-stay-6",
+          "brendan-slider-6",
+          "brendan-bell-7",
+          "brendan-wheel-7",
+          "brendan-clapper-7",
+          "brendan-stay-7",
+          "brendan-slider-7",
+          "brendan-bell-8",
+          "brendan-wheel-8",
+          "brendan-clapper-8",
+          "brendan-stay-8",
+          "brendan-slider-8",
+          "brendan-lesson-clapper",
+          "brendan-lesson-wheel",
+          "brendan-lesson-louvre",
+          "brendan-tower-door-frame",
+          "brendan-tower-door-head",
+          "brendan-tower-door-leaf"
+        ]
+      },
+      "settings": {
+        "volume": 1,
+        "dialog": 1,
+        "sfx": 1,
+        "music": 1,
+        "monitorGain": 1,
+        "backgroundAudio": "continue",
+        "textCps": 42,
+        "instantText": false,
+        "fx": true,
+        "flash": "full",
+        "shake": "full",
+        "haptics": "full",
+        "towerPealAssist": "standard",
+        "rhythmTimingOffsetMs": 0,
+        "reduceDread": false,
+        "hushAudioDistortion": "full",
+        "hushSilence": "full",
+        "hushHiss": "full",
+        "hushWhispers": "full",
+        "hushSuddenCuts": "full",
+        "hushLightFlicker": "full",
+        "hushCueCaptions": false,
+        "tutorialPrompts": true,
+        "objectiveHints": "full",
+        "controlHud": "smart",
+        "pauseOnBlur": true,
+        "controlMode": "direct",
+        "mouseSensitivity": 1,
+        "mouseInvertY": false,
+        "mic": "ask",
+        "micInput": {
+          "deviceId": "default",
+          "channelMode": "mono",
+          "echoCancellation": true,
+          "noiseSuppression": false,
+          "autoGainControl": false,
+          "lastDeviceLabel": ""
+        },
+        "lastDifficulty": "contract",
+        "seenTextMode": "fast",
+        "archiveSignals": "subtle",
+        "condensedCheckIn": false,
+        "personalInterference": {
+          "enabled": false,
+          "sourceSteam": true,
+          "sourceOs": false,
+          "sourceHost": true,
+          "sourceMic": true,
+          "vfdText": true,
+          "localSpeech": false,
+          "intensity": "standard"
+        },
+        "psychProfile": {
+          "schema": 1,
+          "consentVersion": "",
+          "modules": {
+            "microphone": false,
+            "steamName": false,
+            "osUsername": false,
+            "computerName": false,
+            "microphoneLabel": false,
+            "behavioralMeasurement": false,
+            "adaptiveDifficulty": false,
+            "windowChoreography": true,
+            "fieldReturnFiles": false
+          },
+          "windowIntensity": "hostile"
+        },
+        "controller": {
+          "enabled": true,
+          "activePadId": null,
+          "lookSensitivity": 1,
+          "moveDeadzone": 0.12,
+          "lookDeadzone": 0.16,
+          "triggerThreshold": 0.55,
+          "invertLookY": false,
+          "family": "auto",
+          "bindings": {
+            "quiet": {
+              "kind": "button",
+              "id": "leftShoulder"
+            },
+            "hide": {
+              "kind": "button",
+              "id": "leftTrigger"
+            },
+            "light": {
+              "kind": "button",
+              "id": "north"
+            },
+            "bag": {
+              "kind": "button",
+              "id": "west"
+            },
+            "recorder": {
+              "kind": "button",
+              "id": "rightTrigger"
+            },
+            "radio": {
+              "kind": "button",
+              "id": "rightShoulder"
+            },
+            "interact": {
+              "kind": "button",
+              "id": "south"
+            },
+            "playback": {
+              "kind": "button",
+              "id": "east"
+            },
+            "mark": {
+              "kind": "button",
+              "id": "dpadUp"
+            },
+            "menu": {
+              "kind": "button",
+              "id": "menu"
+            },
+            "confirm": {
+              "kind": "button",
+              "id": "south"
+            },
+            "back": {
+              "kind": "button",
+              "id": "east"
+            },
+            "tabPrev": {
+              "kind": "button",
+              "id": "leftShoulder"
+            },
+            "tabNext": {
+              "kind": "button",
+              "id": "rightShoulder"
+            },
+            "mapFloorPrev": {
+              "kind": "button",
+              "id": "leftTrigger"
+            },
+            "mapFloorNext": {
+              "kind": "button",
+              "id": "rightTrigger"
+            },
+            "mapLocate": {
+              "kind": "button",
+              "id": "north"
+            },
+            "mapFile": {
+              "kind": "button",
+              "id": "west"
+            },
+            "mapConsole": {
+              "kind": "button",
+              "id": "rightStick"
+            }
+          }
+        },
+        "customShiftRules": null
+      },
+      "lighting": {
+        "localLightCount": 8,
+        "ambientColor": [
+          0.5799999833106995,
+          0.6399999856948853,
+          0.699999988079071
+        ],
+        "ambientIntensity": 0.035,
+        "whitePointScale": 0.3423913043478261,
+        "captureExposure": 4.5,
+        "sourceEmergency": 0,
+        "sourceVoidPhysical": false,
+        "sourceShore": {
+          "ready": true,
+          "active": false,
+          "facade": "exposed-strata",
+          "boxCount": 0,
+          "pieceCount": 0,
+          "hardwareCount": 0,
+          "hardwareDraws": 0,
+          "triangles": 0,
+          "far": 1600,
+          "air": [
+            0.73,
+            0.79,
+            0.8
+          ],
+          "bounds": [],
+          "strata": []
+        },
+        "lights": [
+          {
+            "x": 16,
+            "y": 5.800000190734863,
+            "z": 58,
+            "radius": 10,
+            "color": [
+              0.5799999833106995,
+              0.6700000166893005,
+              0.8600000143051147
+            ],
+            "intensity": 0.46000000834465027,
+            "emergency": 0
+          },
+          {
+            "x": 16,
+            "y": 10.800000190734863,
+            "z": 73,
+            "radius": 13,
+            "color": [
+              0.5799999833106995,
+              0.6700000166893005,
+              0.8600000143051147
+            ],
+            "intensity": 0.5,
+            "emergency": 0
+          },
+          {
+            "x": 16,
+            "y": 5.400000095367432,
+            "z": 82.69999694824219,
+            "radius": 8,
+            "color": [
+              0.5799999833106995,
+              0.6700000166893005,
+              0.8600000143051147
+            ],
+            "intensity": 0.44999998807907104,
+            "emergency": 0
+          },
+          {
+            "x": 10,
+            "y": 3.4000000953674316,
+            "z": 79,
+            "radius": 5,
+            "color": [
+              0.5799999833106995,
+              0.6700000166893005,
+              0.8600000143051147
+            ],
+            "intensity": 0.44999998807907104,
+            "emergency": 0
+          },
+          {
+            "x": 19,
+            "y": 12.5,
+            "z": 70,
+            "radius": 8,
+            "color": [
+              0.8600000143051147,
+              0.7699999809265137,
+              0.5699999928474426
+            ],
+            "intensity": 0.8999999761581421,
+            "emergency": 0
+          },
+          {
+            "x": 21,
+            "y": 6.800000190734863,
+            "z": 72,
+            "radius": 5.5,
+            "color": [
+              0.8600000143051147,
+              0.7699999809265137,
+              0.5699999928474426
+            ],
+            "intensity": 0.7799999713897705,
+            "emergency": 0
+          },
+          {
+            "x": 10,
+            "y": 6.800000190734863,
+            "z": 68,
+            "radius": 8,
+            "color": [
+              0.6499999761581421,
+              0.7300000190734863,
+              0.7599999904632568
+            ],
+            "intensity": 0.699999988079071,
+            "emergency": 0
+          },
+          {
+            "x": 10,
+            "y": 2.299999952316284,
+            "z": 63,
+            "radius": 5,
+            "color": [
+              0.8600000143051147,
+              0.7699999809265137,
+              0.5699999928474426
+            ],
+            "intensity": 0.7799999713897705,
+            "emergency": 0
+          }
+        ]
+      },
+      "torch": false
+    },
+    {
+      "mode": "normal",
+      "name": "failure",
+      "path": "/Users/seb/chunk-surfer/artifacts/tower-route-implementation/live-descent/normal-failure.webp",
+      "surface": "actual-r3d-canvas",
+      "pos": {
+        "x": 379,
+        "y": 479
+      },
+      "floor": 10.199999809265137,
+      "look": {
+        "yaw": 3.141592653589793,
+        "pitch": -0.09,
+        "facing": 2
+      },
+      "cathedral": {
+        "finale": {
+          "route": "tower",
+          "stage": "cathedral",
+          "result": null,
+          "bust": {
+            "recognized": true,
+            "decision": "accepted",
+            "defeats": 0
+          },
+          "cathedral": {
+            "alarm": 1,
+            "damage": [],
+            "lessons": [
+              "louvre",
+              "wheel"
+            ],
+            "fight": null,
+            "extraction": null
+          },
+          "compatibility": {}
+        },
+        "here": {
+          "level": "belfry",
+          "x": 19.5,
+          "y": 70.5
+        },
+        "ring": 8,
+        "carry": null,
+        "physical": {
+          "player": {
+            "x": 19.5,
+            "y": 10.199999809265137,
+            "z": 70.5
+          },
+          "body": null,
+          "westPlane": {
+            "x": 16.25,
+            "y": 0,
+            "z": 55.25
+          },
+          "bothOutside": false
+        },
+        "anchors": {
+          "collapsedSurfer": null,
+          "nave": {
+            "x": 257,
+            "y": 379
+          },
+          "westDoors": {
+            "x": 256.5,
+            "y": 360.5
+          }
+        },
+        "cutscene": null,
+        "at": {
+          "x": 19.5,
+          "z": 70.5,
+          "y": 10.199999809265137
+        },
+        "bells": [
+          {
+            "id": 1,
+            "tier": "upper",
+            "pivot": {
+              "x": 14.9,
+              "y": 14.399999809265138,
+              "z": 72
+            }
+          },
+          {
+            "id": 2,
+            "tier": "upper",
+            "pivot": {
+              "x": 17.1,
+              "y": 14.399999809265138,
+              "z": 72
+            }
+          },
+          {
+            "id": 3,
+            "tier": "upper",
+            "pivot": {
+              "x": 14.9,
+              "y": 14.399999809265138,
+              "z": 74
+            }
+          },
+          {
+            "id": 4,
+            "tier": "upper",
+            "pivot": {
+              "x": 17.1,
+              "y": 14.399999809265138,
+              "z": 74
+            }
+          },
+          {
+            "id": 5,
+            "tier": "lower",
+            "pivot": {
+              "x": 14.9,
+              "y": 12.249999809265137,
+              "z": 72
+            }
+          },
+          {
+            "id": 6,
+            "tier": "lower",
+            "pivot": {
+              "x": 17.1,
+              "y": 12.249999809265137,
+              "z": 72
+            }
+          },
+          {
+            "id": 7,
+            "tier": "lower",
+            "pivot": {
+              "x": 14.9,
+              "y": 12.249999809265137,
+              "z": 74
+            }
+          },
+          {
+            "id": 8,
+            "tier": "lower",
+            "pivot": {
+              "x": 17.1,
+              "y": 12.249999809265137,
+              "z": 74
+            }
+          }
+        ],
+        "towerInstances": [
+          "brendan-bell-1",
+          "brendan-wheel-1",
+          "brendan-clapper-1",
+          "brendan-stay-1",
+          "brendan-slider-1",
+          "brendan-bell-2",
+          "brendan-wheel-2",
+          "brendan-clapper-2",
+          "brendan-stay-2",
+          "brendan-slider-2",
+          "brendan-bell-3",
+          "brendan-wheel-3",
+          "brendan-clapper-3",
+          "brendan-stay-3",
+          "brendan-slider-3",
+          "brendan-bell-4",
+          "brendan-wheel-4",
+          "brendan-clapper-4",
+          "brendan-stay-4",
+          "brendan-slider-4",
+          "brendan-bell-5",
+          "brendan-wheel-5",
+          "brendan-clapper-5",
+          "brendan-stay-5",
+          "brendan-slider-5",
+          "brendan-bell-6",
+          "brendan-wheel-6",
+          "brendan-clapper-6",
+          "brendan-stay-6",
+          "brendan-slider-6",
+          "brendan-bell-7",
+          "brendan-wheel-7",
+          "brendan-clapper-7",
+          "brendan-stay-7",
+          "brendan-slider-7",
+          "brendan-bell-8",
+          "brendan-wheel-8",
+          "brendan-clapper-8",
+          "brendan-stay-8",
+          "brendan-slider-8",
+          "brendan-lesson-clapper",
+          "brendan-lesson-wheel",
+          "brendan-lesson-louvre",
+          "brendan-tower-door-frame",
+          "brendan-tower-door-head",
+          "brendan-tower-door-leaf"
+        ]
+      },
+      "settings": {
+        "volume": 1,
+        "dialog": 1,
+        "sfx": 1,
+        "music": 1,
+        "monitorGain": 1,
+        "backgroundAudio": "continue",
+        "textCps": 42,
+        "instantText": false,
+        "fx": true,
+        "flash": "full",
+        "shake": "full",
+        "haptics": "full",
+        "towerPealAssist": "standard",
+        "rhythmTimingOffsetMs": 0,
+        "reduceDread": false,
+        "hushAudioDistortion": "full",
+        "hushSilence": "full",
+        "hushHiss": "full",
+        "hushWhispers": "full",
+        "hushSuddenCuts": "full",
+        "hushLightFlicker": "full",
+        "hushCueCaptions": false,
+        "tutorialPrompts": true,
+        "objectiveHints": "full",
+        "controlHud": "smart",
+        "pauseOnBlur": true,
+        "controlMode": "direct",
+        "mouseSensitivity": 1,
+        "mouseInvertY": false,
+        "mic": "ask",
+        "micInput": {
+          "deviceId": "default",
+          "channelMode": "mono",
+          "echoCancellation": true,
+          "noiseSuppression": false,
+          "autoGainControl": false,
+          "lastDeviceLabel": ""
+        },
+        "lastDifficulty": "contract",
+        "seenTextMode": "fast",
+        "archiveSignals": "subtle",
+        "condensedCheckIn": false,
+        "personalInterference": {
+          "enabled": false,
+          "sourceSteam": true,
+          "sourceOs": false,
+          "sourceHost": true,
+          "sourceMic": true,
+          "vfdText": true,
+          "localSpeech": false,
+          "intensity": "standard"
+        },
+        "psychProfile": {
+          "schema": 1,
+          "consentVersion": "",
+          "modules": {
+            "microphone": false,
+            "steamName": false,
+            "osUsername": false,
+            "computerName": false,
+            "microphoneLabel": false,
+            "behavioralMeasurement": false,
+            "adaptiveDifficulty": false,
+            "windowChoreography": true,
+            "fieldReturnFiles": false
+          },
+          "windowIntensity": "hostile"
+        },
+        "controller": {
+          "enabled": true,
+          "activePadId": null,
+          "lookSensitivity": 1,
+          "moveDeadzone": 0.12,
+          "lookDeadzone": 0.16,
+          "triggerThreshold": 0.55,
+          "invertLookY": false,
+          "family": "auto",
+          "bindings": {
+            "quiet": {
+              "kind": "button",
+              "id": "leftShoulder"
+            },
+            "hide": {
+              "kind": "button",
+              "id": "leftTrigger"
+            },
+            "light": {
+              "kind": "button",
+              "id": "north"
+            },
+            "bag": {
+              "kind": "button",
+              "id": "west"
+            },
+            "recorder": {
+              "kind": "button",
+              "id": "rightTrigger"
+            },
+            "radio": {
+              "kind": "button",
+              "id": "rightShoulder"
+            },
+            "interact": {
+              "kind": "button",
+              "id": "south"
+            },
+            "playback": {
+              "kind": "button",
+              "id": "east"
+            },
+            "mark": {
+              "kind": "button",
+              "id": "dpadUp"
+            },
+            "menu": {
+              "kind": "button",
+              "id": "menu"
+            },
+            "confirm": {
+              "kind": "button",
+              "id": "south"
+            },
+            "back": {
+              "kind": "button",
+              "id": "east"
+            },
+            "tabPrev": {
+              "kind": "button",
+              "id": "leftShoulder"
+            },
+            "tabNext": {
+              "kind": "button",
+              "id": "rightShoulder"
+            },
+            "mapFloorPrev": {
+              "kind": "button",
+              "id": "leftTrigger"
+            },
+            "mapFloorNext": {
+              "kind": "button",
+              "id": "rightTrigger"
+            },
+            "mapLocate": {
+              "kind": "button",
+              "id": "north"
+            },
+            "mapFile": {
+              "kind": "button",
+              "id": "west"
+            },
+            "mapConsole": {
+              "kind": "button",
+              "id": "rightStick"
+            }
+          }
+        },
+        "customShiftRules": null
+      },
+      "lighting": {
+        "localLightCount": 8,
+        "ambientColor": [
+          0.5799999833106995,
+          0.6399999856948853,
+          0.699999988079071
+        ],
+        "ambientIntensity": 0.035,
+        "whitePointScale": 0.3423913043478261,
+        "captureExposure": 4.5,
+        "sourceEmergency": 0,
+        "sourceVoidPhysical": false,
+        "sourceShore": {
+          "ready": true,
+          "active": false,
+          "facade": "exposed-strata",
+          "boxCount": 0,
+          "pieceCount": 0,
+          "hardwareCount": 0,
+          "hardwareDraws": 0,
+          "triangles": 0,
+          "far": 1600,
+          "air": [
+            0.73,
+            0.79,
+            0.8
+          ],
+          "bounds": [],
+          "strata": []
+        },
+        "lights": [
+          {
+            "x": 16,
+            "y": 5.800000190734863,
+            "z": 58,
+            "radius": 10,
+            "color": [
+              0.5799999833106995,
+              0.6700000166893005,
+              0.8600000143051147
+            ],
+            "intensity": 0.46000000834465027,
+            "emergency": 0
+          },
+          {
+            "x": 16,
+            "y": 10.800000190734863,
+            "z": 73,
+            "radius": 13,
+            "color": [
+              0.5799999833106995,
+              0.6700000166893005,
+              0.8600000143051147
+            ],
+            "intensity": 0.5,
+            "emergency": 0
+          },
+          {
+            "x": 16,
+            "y": 5.400000095367432,
+            "z": 82.69999694824219,
+            "radius": 8,
+            "color": [
+              0.5799999833106995,
+              0.6700000166893005,
+              0.8600000143051147
+            ],
+            "intensity": 0.44999998807907104,
+            "emergency": 0
+          },
+          {
+            "x": 10,
+            "y": 3.4000000953674316,
+            "z": 79,
+            "radius": 5,
+            "color": [
+              0.5799999833106995,
+              0.6700000166893005,
+              0.8600000143051147
+            ],
+            "intensity": 0.44999998807907104,
+            "emergency": 0
+          },
+          {
+            "x": 19,
+            "y": 12.5,
+            "z": 70,
+            "radius": 8,
+            "color": [
+              0.8600000143051147,
+              0.7699999809265137,
+              0.5699999928474426
+            ],
+            "intensity": 0.8999999761581421,
+            "emergency": 0
+          },
+          {
+            "x": 21,
+            "y": 6.800000190734863,
+            "z": 72,
+            "radius": 5.5,
+            "color": [
+              0.8600000143051147,
+              0.7699999809265137,
+              0.5699999928474426
+            ],
+            "intensity": 0.7799999713897705,
+            "emergency": 0
+          },
+          {
+            "x": 10,
+            "y": 6.800000190734863,
+            "z": 68,
+            "radius": 8,
+            "color": [
+              0.6499999761581421,
+              0.7300000190734863,
+              0.7599999904632568
+            ],
+            "intensity": 0.699999988079071,
+            "emergency": 0
+          },
+          {
+            "x": 10,
+            "y": 2.299999952316284,
+            "z": 63,
+            "radius": 5,
+            "color": [
+              0.8600000143051147,
+              0.7699999809265137,
+              0.5699999928474426
+            ],
+            "intensity": 0.7799999713897705,
+            "emergency": 0
+          }
+        ]
+      },
+      "torch": false
+    }
+  ],
+  "traces": [
+    {
+      "mode": "normal",
+      "name": "service-louvre",
+      "steps": 18,
+      "visited": [
+        {
+          "from": {
+            "x": 379,
+            "y": 483
+          },
+          "to": {
+            "x": 377,
+            "y": 483
+          },
+          "floor": 10.199999809265137,
+          "here": {
+            "level": "belfry",
+            "x": 18.5,
+            "y": 72.5
+          }
+        },
+        {
+          "from": {
+            "x": 377,
+            "y": 483
+          },
+          "to": {
+            "x": 376,
+            "y": 483
+          },
+          "floor": 10.199999809265137,
+          "here": {
+            "level": "belfry",
+            "x": 18,
+            "y": 72.5
+          }
+        },
+        {
+          "from": {
+            "x": 376,
+            "y": 483
+          },
+          "to": {
+            "x": 376,
+            "y": 482
+          },
+          "floor": 10.199999809265137,
+          "here": {
+            "level": "belfry",
+            "x": 18,
+            "y": 72
+          }
+        },
+        {
+          "from": {
+            "x": 376,
+            "y": 482
+          },
+          "to": {
+            "x": 376,
+            "y": 481
+          },
+          "floor": 10.199999809265137,
+          "here": {
+            "level": "belfry",
+            "x": 18,
+            "y": 71.5
+          }
+        },
+        {
+          "from": {
+            "x": 376,
+            "y": 481
+          },
+          "to": {
+            "x": 376,
+            "y": 480
+          },
+          "floor": 10.199999809265137,
+          "here": {
+            "level": "belfry",
+            "x": 18,
+            "y": 71
+          }
+        },
+        {
+          "from": {
+            "x": 376,
+            "y": 480
+          },
+          "to": {
+            "x": 376,
+            "y": 479
+          },
+          "floor": 10.199999809265137,
+          "here": {
+            "level": "belfry",
+            "x": 18,
+            "y": 70.5
+          }
+        },
+        {
+          "from": {
+            "x": 376,
+            "y": 479
+          },
+          "to": {
+            "x": 375,
+            "y": 479
+          },
+          "floor": 10.199999809265137,
+          "here": {
+            "level": "belfry",
+            "x": 17.5,
+            "y": 70.5
+          }
+        },
+        {
+          "from": {
+            "x": 375,
+            "y": 479
+          },
+          "to": {
+            "x": 374,
+            "y": 479
+          },
+          "floor": 10.199999809265137,
+          "here": {
+            "level": "belfry",
+            "x": 17,
+            "y": 70.5
+          }
+        },
+        {
+          "from": {
+            "x": 374,
+            "y": 479
+          },
+          "to": {
+            "x": 373,
+            "y": 479
+          },
+          "floor": 10.199999809265137,
+          "here": {
+            "level": "belfry",
+            "x": 16.5,
+            "y": 70.5
+          }
+        },
+        {
+          "from": {
+            "x": 373,
+            "y": 479
+          },
+          "to": {
+            "x": 372,
+            "y": 479
+          },
+          "floor": 10.199999809265137,
+          "here": {
+            "level": "belfry",
+            "x": 16,
+            "y": 70.5
+          }
+        },
+        {
+          "from": {
+            "x": 372,
+            "y": 479
+          },
+          "to": {
+            "x": 371,
+            "y": 479
+          },
+          "floor": 10.199999809265137,
+          "here": {
+            "level": "belfry",
+            "x": 15.5,
+            "y": 70.5
+          }
+        },
+        {
+          "from": {
+            "x": 371,
+            "y": 479
+          },
+          "to": {
+            "x": 370,
+            "y": 479
+          },
+          "floor": 10.199999809265137,
+          "here": {
+            "level": "belfry",
+            "x": 15,
+            "y": 70.5
+          }
+        },
+        {
+          "from": {
+            "x": 370,
+            "y": 479
+          },
+          "to": {
+            "x": 369,
+            "y": 479
+          },
+          "floor": 10.199999809265137,
+          "here": {
+            "level": "belfry",
+            "x": 14.5,
+            "y": 70.5
+          }
+        },
+        {
+          "from": {
+            "x": 369,
+            "y": 479
+          },
+          "to": {
+            "x": 368,
+            "y": 479
+          },
+          "floor": 10.199999809265137,
+          "here": {
+            "level": "belfry",
+            "x": 14,
+            "y": 70.5
+          }
+        },
+        {
+          "from": {
+            "x": 368,
+            "y": 479
+          },
+          "to": {
+            "x": 367,
+            "y": 479
+          },
+          "floor": 10.199999809265137,
+          "here": {
+            "level": "belfry",
+            "x": 13.5,
+            "y": 70.5
+          }
+        },
+        {
+          "from": {
+            "x": 367,
+            "y": 479
+          },
+          "to": {
+            "x": 367,
+            "y": 477
+          },
+          "floor": 10.199999809265137,
+          "here": {
+            "level": "belfry",
+            "x": 13.5,
+            "y": 69.5
+          }
+        },
+        {
+          "from": {
+            "x": 367,
+            "y": 477
+          },
+          "to": {
+            "x": 367,
+            "y": 476
+          },
+          "floor": 10.199999809265137,
+          "here": {
+            "level": "belfry",
+            "x": 13.5,
+            "y": 69
+          }
+        },
+        {
+          "from": {
+            "x": 367,
+            "y": 476
+          },
+          "to": {
+            "x": 367,
+            "y": 474
+          },
+          "floor": 10.199999809265137,
+          "here": {
+            "level": "belfry",
+            "x": 13.5,
+            "y": 68
+          }
+        }
+      ],
+      "final": {
+        "pos": {
+          "x": 367,
+          "y": 474
+        },
+        "floor": 10.199999809265137,
+        "look": {
+          "yaw": 0,
+          "pitch": -0.09,
+          "facing": 0
+        },
+        "cathedral": {
+          "finale": {
+            "route": "tower",
+            "stage": "cathedral",
+            "result": null,
+            "bust": {
+              "recognized": true,
+              "decision": "accepted",
+              "defeats": 0
+            },
+            "cathedral": {
+              "alarm": 1,
+              "damage": [],
+              "lessons": [],
+              "fight": null,
+              "extraction": null
+            },
+            "compatibility": {}
+          },
+          "here": {
+            "level": "belfry",
+            "x": 13.5,
+            "y": 68
+          },
+          "ring": 8,
+          "carry": null,
+          "physical": {
+            "player": {
+              "x": 13.5,
+              "y": 10.199999809265137,
+              "z": 68
+            },
+            "body": null,
+            "westPlane": {
+              "x": 16.25,
+              "y": 0,
+              "z": 55.25
+            },
+            "bothOutside": false
+          },
+          "anchors": {
+            "collapsedSurfer": null,
+            "nave": {
+              "x": 257,
+              "y": 379
+            },
+            "westDoors": {
+              "x": 256.5,
+              "y": 360.5
+            }
+          },
+          "cutscene": null,
+          "at": {
+            "x": 13.5,
+            "z": 68,
+            "y": 10.199999809265137
+          },
+          "bells": [
+            {
+              "id": 1,
+              "tier": "upper",
+              "pivot": {
+                "x": 14.9,
+                "y": 14.399999809265138,
+                "z": 72
+              }
+            },
+            {
+              "id": 2,
+              "tier": "upper",
+              "pivot": {
+                "x": 17.1,
+                "y": 14.399999809265138,
+                "z": 72
+              }
+            },
+            {
+              "id": 3,
+              "tier": "upper",
+              "pivot": {
+                "x": 14.9,
+                "y": 14.399999809265138,
+                "z": 74
+              }
+            },
+            {
+              "id": 4,
+              "tier": "upper",
+              "pivot": {
+                "x": 17.1,
+                "y": 14.399999809265138,
+                "z": 74
+              }
+            },
+            {
+              "id": 5,
+              "tier": "lower",
+              "pivot": {
+                "x": 14.9,
+                "y": 12.249999809265137,
+                "z": 72
+              }
+            },
+            {
+              "id": 6,
+              "tier": "lower",
+              "pivot": {
+                "x": 17.1,
+                "y": 12.249999809265137,
+                "z": 72
+              }
+            },
+            {
+              "id": 7,
+              "tier": "lower",
+              "pivot": {
+                "x": 14.9,
+                "y": 12.249999809265137,
+                "z": 74
+              }
+            },
+            {
+              "id": 8,
+              "tier": "lower",
+              "pivot": {
+                "x": 17.1,
+                "y": 12.249999809265137,
+                "z": 74
+              }
+            }
+          ],
+          "towerInstances": [
+            "brendan-bell-1",
+            "brendan-wheel-1",
+            "brendan-clapper-1",
+            "brendan-stay-1",
+            "brendan-slider-1",
+            "brendan-bell-2",
+            "brendan-wheel-2",
+            "brendan-clapper-2",
+            "brendan-stay-2",
+            "brendan-slider-2",
+            "brendan-bell-3",
+            "brendan-wheel-3",
+            "brendan-clapper-3",
+            "brendan-stay-3",
+            "brendan-slider-3",
+            "brendan-bell-4",
+            "brendan-wheel-4",
+            "brendan-clapper-4",
+            "brendan-stay-4",
+            "brendan-slider-4",
+            "brendan-bell-5",
+            "brendan-wheel-5",
+            "brendan-clapper-5",
+            "brendan-stay-5",
+            "brendan-slider-5",
+            "brendan-bell-6",
+            "brendan-wheel-6",
+            "brendan-clapper-6",
+            "brendan-stay-6",
+            "brendan-slider-6",
+            "brendan-bell-7",
+            "brendan-wheel-7",
+            "brendan-clapper-7",
+            "brendan-stay-7",
+            "brendan-slider-7",
+            "brendan-bell-8",
+            "brendan-wheel-8",
+            "brendan-clapper-8",
+            "brendan-stay-8",
+            "brendan-slider-8",
+            "brendan-lesson-clapper",
+            "brendan-lesson-wheel",
+            "brendan-lesson-louvre",
+            "brendan-tower-door-frame",
+            "brendan-tower-door-head",
+            "brendan-tower-door-leaf"
+          ]
+        },
+        "settings": {
+          "volume": 1,
+          "dialog": 1,
+          "sfx": 1,
+          "music": 1,
+          "monitorGain": 1,
+          "backgroundAudio": "continue",
+          "textCps": 42,
+          "instantText": false,
+          "fx": true,
+          "flash": "full",
+          "shake": "full",
+          "haptics": "full",
+          "towerPealAssist": "standard",
+          "rhythmTimingOffsetMs": 0,
+          "reduceDread": false,
+          "hushAudioDistortion": "full",
+          "hushSilence": "full",
+          "hushHiss": "full",
+          "hushWhispers": "full",
+          "hushSuddenCuts": "full",
+          "hushLightFlicker": "full",
+          "hushCueCaptions": false,
+          "tutorialPrompts": true,
+          "objectiveHints": "full",
+          "controlHud": "smart",
+          "pauseOnBlur": true,
+          "controlMode": "direct",
+          "mouseSensitivity": 1,
+          "mouseInvertY": false,
+          "mic": "ask",
+          "micInput": {
+            "deviceId": "default",
+            "channelMode": "mono",
+            "echoCancellation": true,
+            "noiseSuppression": false,
+            "autoGainControl": false,
+            "lastDeviceLabel": ""
+          },
+          "lastDifficulty": "contract",
+          "seenTextMode": "fast",
+          "archiveSignals": "subtle",
+          "condensedCheckIn": false,
+          "personalInterference": {
+            "enabled": false,
+            "sourceSteam": true,
+            "sourceOs": false,
+            "sourceHost": true,
+            "sourceMic": true,
+            "vfdText": true,
+            "localSpeech": false,
+            "intensity": "standard"
+          },
+          "psychProfile": {
+            "schema": 1,
+            "consentVersion": "",
+            "modules": {
+              "microphone": false,
+              "steamName": false,
+              "osUsername": false,
+              "computerName": false,
+              "microphoneLabel": false,
+              "behavioralMeasurement": false,
+              "adaptiveDifficulty": false,
+              "windowChoreography": true,
+              "fieldReturnFiles": false
+            },
+            "windowIntensity": "hostile"
+          },
+          "controller": {
+            "enabled": true,
+            "activePadId": null,
+            "lookSensitivity": 1,
+            "moveDeadzone": 0.12,
+            "lookDeadzone": 0.16,
+            "triggerThreshold": 0.55,
+            "invertLookY": false,
+            "family": "auto",
+            "bindings": {
+              "quiet": {
+                "kind": "button",
+                "id": "leftShoulder"
+              },
+              "hide": {
+                "kind": "button",
+                "id": "leftTrigger"
+              },
+              "light": {
+                "kind": "button",
+                "id": "north"
+              },
+              "bag": {
+                "kind": "button",
+                "id": "west"
+              },
+              "recorder": {
+                "kind": "button",
+                "id": "rightTrigger"
+              },
+              "radio": {
+                "kind": "button",
+                "id": "rightShoulder"
+              },
+              "interact": {
+                "kind": "button",
+                "id": "south"
+              },
+              "playback": {
+                "kind": "button",
+                "id": "east"
+              },
+              "mark": {
+                "kind": "button",
+                "id": "dpadUp"
+              },
+              "menu": {
+                "kind": "button",
+                "id": "menu"
+              },
+              "confirm": {
+                "kind": "button",
+                "id": "south"
+              },
+              "back": {
+                "kind": "button",
+                "id": "east"
+              },
+              "tabPrev": {
+                "kind": "button",
+                "id": "leftShoulder"
+              },
+              "tabNext": {
+                "kind": "button",
+                "id": "rightShoulder"
+              },
+              "mapFloorPrev": {
+                "kind": "button",
+                "id": "leftTrigger"
+              },
+              "mapFloorNext": {
+                "kind": "button",
+                "id": "rightTrigger"
+              },
+              "mapLocate": {
+                "kind": "button",
+                "id": "north"
+              },
+              "mapFile": {
+                "kind": "button",
+                "id": "west"
+              },
+              "mapConsole": {
+                "kind": "button",
+                "id": "rightStick"
+              }
+            }
+          },
+          "customShiftRules": null
+        },
+        "lighting": {
+          "localLightCount": 8,
+          "ambientColor": [
+            0.5799999833106995,
+            0.6399999856948853,
+            0.699999988079071
+          ],
+          "ambientIntensity": 0.035,
+          "whitePointScale": 0.3423913043478261,
+          "captureExposure": 4.5,
+          "sourceEmergency": 0,
+          "sourceVoidPhysical": false,
+          "sourceShore": {
+            "ready": true,
+            "active": false,
+            "facade": "exposed-strata",
+            "boxCount": 0,
+            "pieceCount": 0,
+            "hardwareCount": 0,
+            "hardwareDraws": 0,
+            "triangles": 0,
+            "far": 1600,
+            "air": [
+              0.73,
+              0.79,
+              0.8
+            ],
+            "bounds": [],
+            "strata": []
+          },
+          "lights": [
+            {
+              "x": 16,
+              "y": 5.800000190734863,
+              "z": 58,
+              "radius": 10,
+              "color": [
+                0.5799999833106995,
+                0.6700000166893005,
+                0.8600000143051147
+              ],
+              "intensity": 0.46000000834465027,
+              "emergency": 0
+            },
+            {
+              "x": 16,
+              "y": 10.800000190734863,
+              "z": 73,
+              "radius": 13,
+              "color": [
+                0.5799999833106995,
+                0.6700000166893005,
+                0.8600000143051147
+              ],
+              "intensity": 0.5,
+              "emergency": 0
+            },
+            {
+              "x": 16,
+              "y": 5.400000095367432,
+              "z": 82.69999694824219,
+              "radius": 8,
+              "color": [
+                0.5799999833106995,
+                0.6700000166893005,
+                0.8600000143051147
+              ],
+              "intensity": 0.44999998807907104,
+              "emergency": 0
+            },
+            {
+              "x": 10,
+              "y": 3.4000000953674316,
+              "z": 79,
+              "radius": 5,
+              "color": [
+                0.5799999833106995,
+                0.6700000166893005,
+                0.8600000143051147
+              ],
+              "intensity": 0.44999998807907104,
+              "emergency": 0
+            },
+            {
+              "x": 19,
+              "y": 12.5,
+              "z": 70,
+              "radius": 8,
+              "color": [
+                0.8600000143051147,
+                0.7699999809265137,
+                0.5699999928474426
+              ],
+              "intensity": 0.8999999761581421,
+              "emergency": 0
+            },
+            {
+              "x": 21,
+              "y": 6.800000190734863,
+              "z": 72,
+              "radius": 5.5,
+              "color": [
+                0.8600000143051147,
+                0.7699999809265137,
+                0.5699999928474426
+              ],
+              "intensity": 0.7799999713897705,
+              "emergency": 0
+            },
+            {
+              "x": 10,
+              "y": 6.800000190734863,
+              "z": 68,
+              "radius": 8,
+              "color": [
+                0.6499999761581421,
+                0.7300000190734863,
+                0.7599999904632568
+              ],
+              "intensity": 0.699999988079071,
+              "emergency": 0
+            },
+            {
+              "x": 10,
+              "y": 2.299999952316284,
+              "z": 63,
+              "radius": 5,
+              "color": [
+                0.8600000143051147,
+                0.7699999809265137,
+                0.5699999928474426
+              ],
+              "intensity": 0.7799999713897705,
+              "emergency": 0
+            }
+          ]
+        },
+        "torch": false
+      }
+    },
+    {
+      "mode": "normal",
+      "name": "service-wheel",
+      "steps": 8,
+      "visited": [
+        {
+          "from": {
+            "x": 367,
+            "y": 474
+          },
+          "to": {
+            "x": 367,
+            "y": 476
+          },
+          "floor": 10.199999809265137,
+          "here": {
+            "level": "belfry",
+            "x": 13.5,
+            "y": 69
+          }
+        },
+        {
+          "from": {
+            "x": 367,
+            "y": 476
+          },
+          "to": {
+            "x": 368,
+            "y": 476
+          },
+          "floor": 10.199999809265137,
+          "here": {
+            "level": "belfry",
+            "x": 14,
+            "y": 69
+          }
+        },
+        {
+          "from": {
+            "x": 368,
+            "y": 476
+          },
+          "to": {
+            "x": 369,
+            "y": 476
+          },
+          "floor": 10.199999809265137,
+          "here": {
+            "level": "belfry",
+            "x": 14.5,
+            "y": 69
+          }
+        },
+        {
+          "from": {
+            "x": 369,
+            "y": 476
+          },
+          "to": {
+            "x": 370,
+            "y": 476
+          },
+          "floor": 10.199999809265137,
+          "here": {
+            "level": "belfry",
+            "x": 15,
+            "y": 69
+          }
+        },
+        {
+          "from": {
+            "x": 370,
+            "y": 476
+          },
+          "to": {
+            "x": 371,
+            "y": 476
+          },
+          "floor": 10.199999809265137,
+          "here": {
+            "level": "belfry",
+            "x": 15.5,
+            "y": 69
+          }
+        },
+        {
+          "from": {
+            "x": 371,
+            "y": 476
+          },
+          "to": {
+            "x": 372,
+            "y": 476
+          },
+          "floor": 10.199999809265137,
+          "here": {
+            "level": "belfry",
+            "x": 16,
+            "y": 69
+          }
+        },
+        {
+          "from": {
+            "x": 372,
+            "y": 476
+          },
+          "to": {
+            "x": 373,
+            "y": 476
+          },
+          "floor": 10.199999809265137,
+          "here": {
+            "level": "belfry",
+            "x": 16.5,
+            "y": 69
+          }
+        },
+        {
+          "from": {
+            "x": 373,
+            "y": 476
+          },
+          "to": {
+            "x": 373,
+            "y": 475
+          },
+          "floor": 10.199999809265137,
+          "here": {
+            "level": "belfry",
+            "x": 16.5,
+            "y": 68.5
+          }
+        }
+      ],
+      "final": {
+        "pos": {
+          "x": 373,
+          "y": 475
+        },
+        "floor": 10.199999809265137,
+        "look": {
+          "yaw": 0,
+          "pitch": -0.09,
+          "facing": 0
+        },
+        "cathedral": {
+          "finale": {
+            "route": "tower",
+            "stage": "cathedral",
+            "result": null,
+            "bust": {
+              "recognized": true,
+              "decision": "accepted",
+              "defeats": 0
+            },
+            "cathedral": {
+              "alarm": 1,
+              "damage": [],
+              "lessons": [
+                "louvre"
+              ],
+              "fight": null,
+              "extraction": null
+            },
+            "compatibility": {}
+          },
+          "here": {
+            "level": "belfry",
+            "x": 16.5,
+            "y": 68.5
+          },
+          "ring": 8,
+          "carry": null,
+          "physical": {
+            "player": {
+              "x": 16.5,
+              "y": 10.199999809265137,
+              "z": 68.5
+            },
+            "body": null,
+            "westPlane": {
+              "x": 16.25,
+              "y": 0,
+              "z": 55.25
+            },
+            "bothOutside": false
+          },
+          "anchors": {
+            "collapsedSurfer": null,
+            "nave": {
+              "x": 257,
+              "y": 379
+            },
+            "westDoors": {
+              "x": 256.5,
+              "y": 360.5
+            }
+          },
+          "cutscene": null,
+          "at": {
+            "x": 16.5,
+            "z": 68.5,
+            "y": 10.199999809265137
+          },
+          "bells": [
+            {
+              "id": 1,
+              "tier": "upper",
+              "pivot": {
+                "x": 14.9,
+                "y": 14.399999809265138,
+                "z": 72
+              }
+            },
+            {
+              "id": 2,
+              "tier": "upper",
+              "pivot": {
+                "x": 17.1,
+                "y": 14.399999809265138,
+                "z": 72
+              }
+            },
+            {
+              "id": 3,
+              "tier": "upper",
+              "pivot": {
+                "x": 14.9,
+                "y": 14.399999809265138,
+                "z": 74
+              }
+            },
+            {
+              "id": 4,
+              "tier": "upper",
+              "pivot": {
+                "x": 17.1,
+                "y": 14.399999809265138,
+                "z": 74
+              }
+            },
+            {
+              "id": 5,
+              "tier": "lower",
+              "pivot": {
+                "x": 14.9,
+                "y": 12.249999809265137,
+                "z": 72
+              }
+            },
+            {
+              "id": 6,
+              "tier": "lower",
+              "pivot": {
+                "x": 17.1,
+                "y": 12.249999809265137,
+                "z": 72
+              }
+            },
+            {
+              "id": 7,
+              "tier": "lower",
+              "pivot": {
+                "x": 14.9,
+                "y": 12.249999809265137,
+                "z": 74
+              }
+            },
+            {
+              "id": 8,
+              "tier": "lower",
+              "pivot": {
+                "x": 17.1,
+                "y": 12.249999809265137,
+                "z": 74
+              }
+            }
+          ],
+          "towerInstances": [
+            "brendan-bell-1",
+            "brendan-wheel-1",
+            "brendan-clapper-1",
+            "brendan-stay-1",
+            "brendan-slider-1",
+            "brendan-bell-2",
+            "brendan-wheel-2",
+            "brendan-clapper-2",
+            "brendan-stay-2",
+            "brendan-slider-2",
+            "brendan-bell-3",
+            "brendan-wheel-3",
+            "brendan-clapper-3",
+            "brendan-stay-3",
+            "brendan-slider-3",
+            "brendan-bell-4",
+            "brendan-wheel-4",
+            "brendan-clapper-4",
+            "brendan-stay-4",
+            "brendan-slider-4",
+            "brendan-bell-5",
+            "brendan-wheel-5",
+            "brendan-clapper-5",
+            "brendan-stay-5",
+            "brendan-slider-5",
+            "brendan-bell-6",
+            "brendan-wheel-6",
+            "brendan-clapper-6",
+            "brendan-stay-6",
+            "brendan-slider-6",
+            "brendan-bell-7",
+            "brendan-wheel-7",
+            "brendan-clapper-7",
+            "brendan-stay-7",
+            "brendan-slider-7",
+            "brendan-bell-8",
+            "brendan-wheel-8",
+            "brendan-clapper-8",
+            "brendan-stay-8",
+            "brendan-slider-8",
+            "brendan-lesson-clapper",
+            "brendan-lesson-wheel",
+            "brendan-lesson-louvre",
+            "brendan-tower-door-frame",
+            "brendan-tower-door-head",
+            "brendan-tower-door-leaf"
+          ]
+        },
+        "settings": {
+          "volume": 1,
+          "dialog": 1,
+          "sfx": 1,
+          "music": 1,
+          "monitorGain": 1,
+          "backgroundAudio": "continue",
+          "textCps": 42,
+          "instantText": false,
+          "fx": true,
+          "flash": "full",
+          "shake": "full",
+          "haptics": "full",
+          "towerPealAssist": "standard",
+          "rhythmTimingOffsetMs": 0,
+          "reduceDread": false,
+          "hushAudioDistortion": "full",
+          "hushSilence": "full",
+          "hushHiss": "full",
+          "hushWhispers": "full",
+          "hushSuddenCuts": "full",
+          "hushLightFlicker": "full",
+          "hushCueCaptions": false,
+          "tutorialPrompts": true,
+          "objectiveHints": "full",
+          "controlHud": "smart",
+          "pauseOnBlur": true,
+          "controlMode": "direct",
+          "mouseSensitivity": 1,
+          "mouseInvertY": false,
+          "mic": "ask",
+          "micInput": {
+            "deviceId": "default",
+            "channelMode": "mono",
+            "echoCancellation": true,
+            "noiseSuppression": false,
+            "autoGainControl": false,
+            "lastDeviceLabel": ""
+          },
+          "lastDifficulty": "contract",
+          "seenTextMode": "fast",
+          "archiveSignals": "subtle",
+          "condensedCheckIn": false,
+          "personalInterference": {
+            "enabled": false,
+            "sourceSteam": true,
+            "sourceOs": false,
+            "sourceHost": true,
+            "sourceMic": true,
+            "vfdText": true,
+            "localSpeech": false,
+            "intensity": "standard"
+          },
+          "psychProfile": {
+            "schema": 1,
+            "consentVersion": "",
+            "modules": {
+              "microphone": false,
+              "steamName": false,
+              "osUsername": false,
+              "computerName": false,
+              "microphoneLabel": false,
+              "behavioralMeasurement": false,
+              "adaptiveDifficulty": false,
+              "windowChoreography": true,
+              "fieldReturnFiles": false
+            },
+            "windowIntensity": "hostile"
+          },
+          "controller": {
+            "enabled": true,
+            "activePadId": null,
+            "lookSensitivity": 1,
+            "moveDeadzone": 0.12,
+            "lookDeadzone": 0.16,
+            "triggerThreshold": 0.55,
+            "invertLookY": false,
+            "family": "auto",
+            "bindings": {
+              "quiet": {
+                "kind": "button",
+                "id": "leftShoulder"
+              },
+              "hide": {
+                "kind": "button",
+                "id": "leftTrigger"
+              },
+              "light": {
+                "kind": "button",
+                "id": "north"
+              },
+              "bag": {
+                "kind": "button",
+                "id": "west"
+              },
+              "recorder": {
+                "kind": "button",
+                "id": "rightTrigger"
+              },
+              "radio": {
+                "kind": "button",
+                "id": "rightShoulder"
+              },
+              "interact": {
+                "kind": "button",
+                "id": "south"
+              },
+              "playback": {
+                "kind": "button",
+                "id": "east"
+              },
+              "mark": {
+                "kind": "button",
+                "id": "dpadUp"
+              },
+              "menu": {
+                "kind": "button",
+                "id": "menu"
+              },
+              "confirm": {
+                "kind": "button",
+                "id": "south"
+              },
+              "back": {
+                "kind": "button",
+                "id": "east"
+              },
+              "tabPrev": {
+                "kind": "button",
+                "id": "leftShoulder"
+              },
+              "tabNext": {
+                "kind": "button",
+                "id": "rightShoulder"
+              },
+              "mapFloorPrev": {
+                "kind": "button",
+                "id": "leftTrigger"
+              },
+              "mapFloorNext": {
+                "kind": "button",
+                "id": "rightTrigger"
+              },
+              "mapLocate": {
+                "kind": "button",
+                "id": "north"
+              },
+              "mapFile": {
+                "kind": "button",
+                "id": "west"
+              },
+              "mapConsole": {
+                "kind": "button",
+                "id": "rightStick"
+              }
+            }
+          },
+          "customShiftRules": null
+        },
+        "lighting": {
+          "localLightCount": 8,
+          "ambientColor": [
+            0.5799999833106995,
+            0.6399999856948853,
+            0.699999988079071
+          ],
+          "ambientIntensity": 0.035,
+          "whitePointScale": 0.3423913043478261,
+          "captureExposure": 4.5,
+          "sourceEmergency": 0,
+          "sourceVoidPhysical": false,
+          "sourceShore": {
+            "ready": true,
+            "active": false,
+            "facade": "exposed-strata",
+            "boxCount": 0,
+            "pieceCount": 0,
+            "hardwareCount": 0,
+            "hardwareDraws": 0,
+            "triangles": 0,
+            "far": 1600,
+            "air": [
+              0.73,
+              0.79,
+              0.8
+            ],
+            "bounds": [],
+            "strata": []
+          },
+          "lights": [
+            {
+              "x": 16,
+              "y": 5.800000190734863,
+              "z": 58,
+              "radius": 10,
+              "color": [
+                0.5799999833106995,
+                0.6700000166893005,
+                0.8600000143051147
+              ],
+              "intensity": 0.46000000834465027,
+              "emergency": 0
+            },
+            {
+              "x": 16,
+              "y": 10.800000190734863,
+              "z": 73,
+              "radius": 13,
+              "color": [
+                0.5799999833106995,
+                0.6700000166893005,
+                0.8600000143051147
+              ],
+              "intensity": 0.5,
+              "emergency": 0
+            },
+            {
+              "x": 16,
+              "y": 5.400000095367432,
+              "z": 82.69999694824219,
+              "radius": 8,
+              "color": [
+                0.5799999833106995,
+                0.6700000166893005,
+                0.8600000143051147
+              ],
+              "intensity": 0.44999998807907104,
+              "emergency": 0
+            },
+            {
+              "x": 10,
+              "y": 3.4000000953674316,
+              "z": 79,
+              "radius": 5,
+              "color": [
+                0.5799999833106995,
+                0.6700000166893005,
+                0.8600000143051147
+              ],
+              "intensity": 0.44999998807907104,
+              "emergency": 0
+            },
+            {
+              "x": 19,
+              "y": 12.5,
+              "z": 70,
+              "radius": 8,
+              "color": [
+                0.8600000143051147,
+                0.7699999809265137,
+                0.5699999928474426
+              ],
+              "intensity": 0.8999999761581421,
+              "emergency": 0
+            },
+            {
+              "x": 21,
+              "y": 6.800000190734863,
+              "z": 72,
+              "radius": 5.5,
+              "color": [
+                0.8600000143051147,
+                0.7699999809265137,
+                0.5699999928474426
+              ],
+              "intensity": 0.7799999713897705,
+              "emergency": 0
+            },
+            {
+              "x": 10,
+              "y": 6.800000190734863,
+              "z": 68,
+              "radius": 8,
+              "color": [
+                0.6499999761581421,
+                0.7300000190734863,
+                0.7599999904632568
+              ],
+              "intensity": 0.699999988079071,
+              "emergency": 0
+            },
+            {
+              "x": 10,
+              "y": 2.299999952316284,
+              "z": 63,
+              "radius": 5,
+              "color": [
+                0.8600000143051147,
+                0.7699999809265137,
+                0.5699999928474426
+              ],
+              "intensity": 0.7799999713897705,
+              "emergency": 0
+            }
+          ]
+        },
+        "torch": false
+      }
+    },
+    {
+      "mode": "normal",
+      "name": "service-clapper",
+      "steps": 6,
+      "visited": [
+        {
+          "from": {
+            "x": 373,
+            "y": 475
+          },
+          "to": {
+            "x": 373,
+            "y": 476
+          },
+          "floor": 10.199999809265137,
+          "here": {
+            "level": "belfry",
+            "x": 16.5,
+            "y": 69
+          }
+        },
+        {
+          "from": {
+            "x": 373,
+            "y": 476
+          },
+          "to": {
+            "x": 374,
+            "y": 476
+          },
+          "floor": 10.199999809265137,
+          "here": {
+            "level": "belfry",
+            "x": 17,
+            "y": 69
+          }
+        },
+        {
+          "from": {
+            "x": 374,
+            "y": 476
+          },
+          "to": {
+            "x": 375,
+            "y": 476
+          },
+          "floor": 10.199999809265137,
+          "here": {
+            "level": "belfry",
+            "x": 17.5,
+            "y": 69
+          }
+        },
+        {
+          "from": {
+            "x": 375,
+            "y": 476
+          },
+          "to": {
+            "x": 376,
+            "y": 476
+          },
+          "floor": 10.199999809265137,
+          "here": {
+            "level": "belfry",
+            "x": 18,
+            "y": 69
+          }
+        },
+        {
+          "from": {
+            "x": 376,
+            "y": 476
+          },
+          "to": {
+            "x": 379,
+            "y": 476
+          },
+          "floor": 10.199999809265137,
+          "here": {
+            "level": "belfry",
+            "x": 19.5,
+            "y": 69
+          }
+        },
+        {
+          "from": {
+            "x": 379,
+            "y": 476
+          },
+          "to": {
+            "x": 379,
+            "y": 472
+          },
+          "floor": 10.199999809265137,
+          "here": {
+            "level": "belfry",
+            "x": 19.5,
+            "y": 67
+          }
+        }
+      ],
+      "final": {
+        "pos": {
+          "x": 379,
+          "y": 472
+        },
+        "floor": 10.199999809265137,
+        "look": {
+          "yaw": 0,
+          "pitch": -0.09,
+          "facing": 0
+        },
+        "cathedral": {
+          "finale": {
+            "route": "tower",
+            "stage": "cathedral",
+            "result": null,
+            "bust": {
+              "recognized": true,
+              "decision": "accepted",
+              "defeats": 0
+            },
+            "cathedral": {
+              "alarm": 1,
+              "damage": [],
+              "lessons": [
+                "louvre",
+                "wheel"
+              ],
+              "fight": null,
+              "extraction": null
+            },
+            "compatibility": {}
+          },
+          "here": {
+            "level": "belfry",
+            "x": 19.5,
+            "y": 67
+          },
+          "ring": 8,
+          "carry": null,
+          "physical": {
+            "player": {
+              "x": 19.5,
+              "y": 10.199999809265137,
+              "z": 67
+            },
+            "body": null,
+            "westPlane": {
+              "x": 16.25,
+              "y": 0,
+              "z": 55.25
+            },
+            "bothOutside": false
+          },
+          "anchors": {
+            "collapsedSurfer": null,
+            "nave": {
+              "x": 257,
+              "y": 379
+            },
+            "westDoors": {
+              "x": 256.5,
+              "y": 360.5
+            }
+          },
+          "cutscene": null,
+          "at": {
+            "x": 19.5,
+            "z": 67,
+            "y": 10.199999809265137
+          },
+          "bells": [
+            {
+              "id": 1,
+              "tier": "upper",
+              "pivot": {
+                "x": 14.9,
+                "y": 14.399999809265138,
+                "z": 72
+              }
+            },
+            {
+              "id": 2,
+              "tier": "upper",
+              "pivot": {
+                "x": 17.1,
+                "y": 14.399999809265138,
+                "z": 72
+              }
+            },
+            {
+              "id": 3,
+              "tier": "upper",
+              "pivot": {
+                "x": 14.9,
+                "y": 14.399999809265138,
+                "z": 74
+              }
+            },
+            {
+              "id": 4,
+              "tier": "upper",
+              "pivot": {
+                "x": 17.1,
+                "y": 14.399999809265138,
+                "z": 74
+              }
+            },
+            {
+              "id": 5,
+              "tier": "lower",
+              "pivot": {
+                "x": 14.9,
+                "y": 12.249999809265137,
+                "z": 72
+              }
+            },
+            {
+              "id": 6,
+              "tier": "lower",
+              "pivot": {
+                "x": 17.1,
+                "y": 12.249999809265137,
+                "z": 72
+              }
+            },
+            {
+              "id": 7,
+              "tier": "lower",
+              "pivot": {
+                "x": 14.9,
+                "y": 12.249999809265137,
+                "z": 74
+              }
+            },
+            {
+              "id": 8,
+              "tier": "lower",
+              "pivot": {
+                "x": 17.1,
+                "y": 12.249999809265137,
+                "z": 74
+              }
+            }
+          ],
+          "towerInstances": [
+            "brendan-bell-1",
+            "brendan-wheel-1",
+            "brendan-clapper-1",
+            "brendan-stay-1",
+            "brendan-slider-1",
+            "brendan-bell-2",
+            "brendan-wheel-2",
+            "brendan-clapper-2",
+            "brendan-stay-2",
+            "brendan-slider-2",
+            "brendan-bell-3",
+            "brendan-wheel-3",
+            "brendan-clapper-3",
+            "brendan-stay-3",
+            "brendan-slider-3",
+            "brendan-bell-4",
+            "brendan-wheel-4",
+            "brendan-clapper-4",
+            "brendan-stay-4",
+            "brendan-slider-4",
+            "brendan-bell-5",
+            "brendan-wheel-5",
+            "brendan-clapper-5",
+            "brendan-stay-5",
+            "brendan-slider-5",
+            "brendan-bell-6",
+            "brendan-wheel-6",
+            "brendan-clapper-6",
+            "brendan-stay-6",
+            "brendan-slider-6",
+            "brendan-bell-7",
+            "brendan-wheel-7",
+            "brendan-clapper-7",
+            "brendan-stay-7",
+            "brendan-slider-7",
+            "brendan-bell-8",
+            "brendan-wheel-8",
+            "brendan-clapper-8",
+            "brendan-stay-8",
+            "brendan-slider-8",
+            "brendan-lesson-clapper",
+            "brendan-lesson-wheel",
+            "brendan-lesson-louvre",
+            "brendan-tower-door-frame",
+            "brendan-tower-door-head",
+            "brendan-tower-door-leaf"
+          ]
+        },
+        "settings": {
+          "volume": 1,
+          "dialog": 1,
+          "sfx": 1,
+          "music": 1,
+          "monitorGain": 1,
+          "backgroundAudio": "continue",
+          "textCps": 42,
+          "instantText": false,
+          "fx": true,
+          "flash": "full",
+          "shake": "full",
+          "haptics": "full",
+          "towerPealAssist": "standard",
+          "rhythmTimingOffsetMs": 0,
+          "reduceDread": false,
+          "hushAudioDistortion": "full",
+          "hushSilence": "full",
+          "hushHiss": "full",
+          "hushWhispers": "full",
+          "hushSuddenCuts": "full",
+          "hushLightFlicker": "full",
+          "hushCueCaptions": false,
+          "tutorialPrompts": true,
+          "objectiveHints": "full",
+          "controlHud": "smart",
+          "pauseOnBlur": true,
+          "controlMode": "direct",
+          "mouseSensitivity": 1,
+          "mouseInvertY": false,
+          "mic": "ask",
+          "micInput": {
+            "deviceId": "default",
+            "channelMode": "mono",
+            "echoCancellation": true,
+            "noiseSuppression": false,
+            "autoGainControl": false,
+            "lastDeviceLabel": ""
+          },
+          "lastDifficulty": "contract",
+          "seenTextMode": "fast",
+          "archiveSignals": "subtle",
+          "condensedCheckIn": false,
+          "personalInterference": {
+            "enabled": false,
+            "sourceSteam": true,
+            "sourceOs": false,
+            "sourceHost": true,
+            "sourceMic": true,
+            "vfdText": true,
+            "localSpeech": false,
+            "intensity": "standard"
+          },
+          "psychProfile": {
+            "schema": 1,
+            "consentVersion": "",
+            "modules": {
+              "microphone": false,
+              "steamName": false,
+              "osUsername": false,
+              "computerName": false,
+              "microphoneLabel": false,
+              "behavioralMeasurement": false,
+              "adaptiveDifficulty": false,
+              "windowChoreography": true,
+              "fieldReturnFiles": false
+            },
+            "windowIntensity": "hostile"
+          },
+          "controller": {
+            "enabled": true,
+            "activePadId": null,
+            "lookSensitivity": 1,
+            "moveDeadzone": 0.12,
+            "lookDeadzone": 0.16,
+            "triggerThreshold": 0.55,
+            "invertLookY": false,
+            "family": "auto",
+            "bindings": {
+              "quiet": {
+                "kind": "button",
+                "id": "leftShoulder"
+              },
+              "hide": {
+                "kind": "button",
+                "id": "leftTrigger"
+              },
+              "light": {
+                "kind": "button",
+                "id": "north"
+              },
+              "bag": {
+                "kind": "button",
+                "id": "west"
+              },
+              "recorder": {
+                "kind": "button",
+                "id": "rightTrigger"
+              },
+              "radio": {
+                "kind": "button",
+                "id": "rightShoulder"
+              },
+              "interact": {
+                "kind": "button",
+                "id": "south"
+              },
+              "playback": {
+                "kind": "button",
+                "id": "east"
+              },
+              "mark": {
+                "kind": "button",
+                "id": "dpadUp"
+              },
+              "menu": {
+                "kind": "button",
+                "id": "menu"
+              },
+              "confirm": {
+                "kind": "button",
+                "id": "south"
+              },
+              "back": {
+                "kind": "button",
+                "id": "east"
+              },
+              "tabPrev": {
+                "kind": "button",
+                "id": "leftShoulder"
+              },
+              "tabNext": {
+                "kind": "button",
+                "id": "rightShoulder"
+              },
+              "mapFloorPrev": {
+                "kind": "button",
+                "id": "leftTrigger"
+              },
+              "mapFloorNext": {
+                "kind": "button",
+                "id": "rightTrigger"
+              },
+              "mapLocate": {
+                "kind": "button",
+                "id": "north"
+              },
+              "mapFile": {
+                "kind": "button",
+                "id": "west"
+              },
+              "mapConsole": {
+                "kind": "button",
+                "id": "rightStick"
+              }
+            }
+          },
+          "customShiftRules": null
+        },
+        "lighting": {
+          "localLightCount": 8,
+          "ambientColor": [
+            0.5799999833106995,
+            0.6399999856948853,
+            0.699999988079071
+          ],
+          "ambientIntensity": 0.035,
+          "whitePointScale": 0.3423913043478261,
+          "captureExposure": 4.5,
+          "sourceEmergency": 0,
+          "sourceVoidPhysical": false,
+          "sourceShore": {
+            "ready": true,
+            "active": false,
+            "facade": "exposed-strata",
+            "boxCount": 0,
+            "pieceCount": 0,
+            "hardwareCount": 0,
+            "hardwareDraws": 0,
+            "triangles": 0,
+            "far": 1600,
+            "air": [
+              0.73,
+              0.79,
+              0.8
+            ],
+            "bounds": [],
+            "strata": []
+          },
+          "lights": [
+            {
+              "x": 16,
+              "y": 5.800000190734863,
+              "z": 58,
+              "radius": 10,
+              "color": [
+                0.5799999833106995,
+                0.6700000166893005,
+                0.8600000143051147
+              ],
+              "intensity": 0.46000000834465027,
+              "emergency": 0
+            },
+            {
+              "x": 16,
+              "y": 10.800000190734863,
+              "z": 73,
+              "radius": 13,
+              "color": [
+                0.5799999833106995,
+                0.6700000166893005,
+                0.8600000143051147
+              ],
+              "intensity": 0.5,
+              "emergency": 0
+            },
+            {
+              "x": 16,
+              "y": 5.400000095367432,
+              "z": 82.69999694824219,
+              "radius": 8,
+              "color": [
+                0.5799999833106995,
+                0.6700000166893005,
+                0.8600000143051147
+              ],
+              "intensity": 0.44999998807907104,
+              "emergency": 0
+            },
+            {
+              "x": 10,
+              "y": 3.4000000953674316,
+              "z": 79,
+              "radius": 5,
+              "color": [
+                0.5799999833106995,
+                0.6700000166893005,
+                0.8600000143051147
+              ],
+              "intensity": 0.44999998807907104,
+              "emergency": 0
+            },
+            {
+              "x": 19,
+              "y": 12.5,
+              "z": 70,
+              "radius": 8,
+              "color": [
+                0.8600000143051147,
+                0.7699999809265137,
+                0.5699999928474426
+              ],
+              "intensity": 0.8999999761581421,
+              "emergency": 0
+            },
+            {
+              "x": 21,
+              "y": 6.800000190734863,
+              "z": 72,
+              "radius": 5.5,
+              "color": [
+                0.8600000143051147,
+                0.7699999809265137,
+                0.5699999928474426
+              ],
+              "intensity": 0.7799999713897705,
+              "emergency": 0
+            },
+            {
+              "x": 10,
+              "y": 6.800000190734863,
+              "z": 68,
+              "radius": 8,
+              "color": [
+                0.6499999761581421,
+                0.7300000190734863,
+                0.7599999904632568
+              ],
+              "intensity": 0.699999988079071,
+              "emergency": 0
+            },
+            {
+              "x": 10,
+              "y": 2.299999952316284,
+              "z": 63,
+              "radius": 5,
+              "color": [
+                0.8600000143051147,
+                0.7699999809265137,
+                0.5699999928474426
+              ],
+              "intensity": 0.7799999713897705,
+              "emergency": 0
+            }
+          ]
+        },
+        "torch": false
+      }
+    }
+  ],
+  "errors": [
+    {
+      "mode": "normal",
+      "stage": "normal:belfry-south-mouth",
+      "fatal": "Error: Body left planned route at belfry-south-mouth:6: 379,479, expected 379,478\n    at walk (file:///Users/seb/chunk-surfer/tools/chunk_surfer/verify-cathedral-descent-live.mjs:62:53)\n    at async run (file:///Users/seb/chunk-surfer/tools/chunk_surfer/verify-cathedral-descent-live.mjs:104:5)\n    at async file:///Users/seb/chunk-surfer/tools/chunk_surfer/verify-cathedral-descent-live.mjs:119:3"
+    }
+  ]
+}

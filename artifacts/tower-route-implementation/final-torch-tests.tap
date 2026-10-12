@@ -1,0 +1,89 @@
+TAP version 13
+# Subtest: reference optics preserve the exact authored torch object
+ok 1 - reference optics preserve the exact authored torch object
+  ---
+  duration_ms: 0.652125
+  type: 'test'
+  ...
+# Subtest: throw and flood change physical beam geometry without overriding battery or perception
+ok 2 - throw and flood change physical beam geometry without overriding battery or perception
+  ---
+  duration_ms: 0.254208
+  type: 'test'
+  ...
+# Subtest: lens choices do not revive a flat or failed flashlight and invalid scalars stay bounded
+ok 3 - lens choices do not revive a flat or failed flashlight and invalid scalars stay bounded
+  ---
+  duration_ms: 0.1035
+  type: 'test'
+  ...
+# Subtest: physical interior beam preserves the real battery, fitted reach and HUSH absorption
+ok 4 - physical interior beam preserves the real battery, fitted reach and HUSH absorption
+  ---
+  duration_ms: 1.772125
+  type: 'test'
+  ...
+# Subtest: the actual architecture and prop shaders bound received lamp highlights
+ok 5 - the actual architecture and prop shaders bound received lamp highlights
+  ---
+  duration_ms: 0.958709
+  type: 'test'
+  ...
+# Subtest: main applies the physical beam only to the ordinary church
+ok 6 - main applies the physical beam only to the ordinary church
+  ---
+  duration_ms: 5.663834
+  type: 'test'
+  ...
+# Subtest: the hall and Source models keep physical light without reviving an off or attenuated torch
+ok 7 - the hall and Source models keep physical light without reviving an off or attenuated torch
+  ---
+  duration_ms: 0.7745
+  type: 'test'
+  ...
+# Subtest: the soft hall penumbra retains the fitted throw and flood differences
+ok 8 - the soft hall penumbra retains the fitted throw and flood differences
+  ---
+  duration_ms: 0.338041
+  type: 'test'
+  ...
+# Subtest: later Source modes and ordinary light keep their prior optical response
+ok 9 - later Source modes and ordinary light keep their prior optical response
+  ---
+  duration_ms: 0.079833
+  type: 'test'
+  ...
+# Subtest: hall exposure follows the physical hall and releases at the still-page threshold
+ok 10 - hall exposure follows the physical hall and releases at the still-page threshold
+  ---
+  duration_ms: 33.213292
+  type: 'test'
+  ...
+# Subtest: recording exposure is bounded and resets with the next lighting context
+ok 11 - recording exposure is bounded and resets with the next lighting context
+  ---
+  duration_ms: 0.331834
+  type: 'test'
+  ...
+# Subtest: capture exposure reveals dim form while preserving the raw-light black gate
+ok 12 - capture exposure reveals dim form while preserving the raw-light black gate
+  ---
+  duration_ms: 0.318125
+  type: 'test'
+  ...
+# torch lighting contracts passed
+# Subtest: test/torch-lighting.spec.mjs
+ok 4 - test/torch-lighting.spec.mjs
+  ---
+  duration_ms: 46.727625
+  type: 'test'
+  ...
+1..13
+# tests 13
+# suites 0
+# pass 13
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 200.708416

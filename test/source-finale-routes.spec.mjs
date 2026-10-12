@@ -26,7 +26,6 @@ import {
   normalizeChunkSurfState,
   reduceChunkSurf,
 } from '../src/game/chunk-surf-state.js';
-import { HORIZON_TRANSPORT_DIALS, horizonTransportTruth } from '../src/game/horizon-transport.js';
 import { createSourceSpaceRuntime, horizonBustEyeEvidence } from '../src/game/source-space-runtime.js';
 import { ENDING_IDS } from '../src/progression/schema.js';
 import { RETURN_DEFS } from '../src/progression/report.js';
@@ -37,41 +36,22 @@ const finalState=()=>buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.EXPOSED_BATTL
 // Contact is explicit, durable, terminal in either direction, and cannot be
 // converted into Horizon by an old normal-exit call after commitment.
 {
-  const faultPreset=buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.EXPOSED_BATTLE,{seed:4417,hasRig:false});
+  const faultPreset=buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.FIRST_CONTACT,{seed:4417,hasRig:false,injuries:0});
   const ready=faultPreset.state;
   const faultRuntime=createSourceSpaceRuntime({initialState:ready});
-  faultRuntime.setPlayerPosition(faultPreset.position);
-  const faultDecision=faultRuntime.inspectFocused(faultPreset.position.x,faultPreset.position.y,faultPreset.position.facing);
-  assert.equal(faultDecision.event,'boss-warning','the exposed fault reaches the no-return decision');
-
-  const normalExitPreset=buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.NORMAL_EXIT,{seed:4417,hasRig:false});
-  const normalExitRuntime=createSourceSpaceRuntime({initialState:normalExitPreset.state});
-  normalExitRuntime.setPlayerPosition(normalExitPreset.position);
-  assert.equal(
-    normalExitRuntime.inspectFocused(normalExitPreset.position.x,normalExitPreset.position.y,normalExitPreset.position.facing).event,
-    'horizon-transport',
-    'the transport gates the normal exit before the no-return decision',
-  );
-  assert.equal(normalExitRuntime.state().finale.route,null,'the transport gate does not choose a finale route');
-  assert.equal(normalExitRuntime.state().finale.stage,SOURCE_FINALE_STAGE.UNCOMMITTED,'the transport gate leaves the finale uncommitted');
-
-  const transportTruth=horizonTransportTruth();
-  for(const dial of HORIZON_TRANSPORT_DIALS){
-    normalExitRuntime.setHorizonTransportDial(dial,transportTruth[dial]);
-  }
-  const threaded=normalExitRuntime.runHorizonTransport();
-  assert.equal(threaded.ran,true,'the correctly threaded transport opens the normal exit');
-  assert.equal(threaded.state.threaded,true,'threaded is derived from the three correct settings');
-  assert.equal(normalExitRuntime.state().finale.stage,SOURCE_FINALE_STAGE.UNCOMMITTED,'threading the transport does not commit a route');
-
-  const normalExitDecision=normalExitRuntime.inspectFocused(
-    normalExitPreset.position.x,
-    normalExitPreset.position.y,
-    normalExitPreset.position.facing,
-  );
-  assert.equal(normalExitDecision.event,faultDecision.event,'after threading, both fault approaches share the no-return decision');
-  assert.equal(normalExitRuntime.state().finale.stage,SOURCE_FINALE_STAGE.UNCOMMITTED,'the warning is still a decision, not a commitment');
-  const committed=dispatch(ready,'CONTACT_COMMITTED');
+  const origin=ready.landscapeOrigin;
+  const court={x:origin.x-24,y:origin.y-925,facing:0};
+  faultRuntime.setPlayerPosition(court);
+  const presence={active:true,x:court.x,y:court.y-5};
+  const faultDecision=faultRuntime.inspectFocused(court.x,court.y,court.facing,presence);
+  assert.equal(faultDecision.event,'hush-contact','the visible body opens the conversation, not a remote knowledge gate');
+  assert.deepEqual(ready.sourceContacts.insights,[]);
+  assert.equal(ready.injuriesAtEntry,0);
+  assert.ok(faultRuntime.beginHushContact());
+  faultRuntime.resolveHushContactChoice('contact.warning');
+  assert.equal(faultRuntime.state().finale.stage,SOURCE_FINALE_STAGE.UNCOMMITTED,'the warning is still a decision, not a commitment');
+  assert.equal(faultRuntime.resolveHushContactChoice('contact.confirm').combat,true);
+  const committed=faultRuntime.state();
   assert.equal(committed.finale.route,SOURCE_FINALE_ROUTE.CONTACT);
   assert.equal(committed.finale.stage,SOURCE_FINALE_STAGE.CONTACT_COMMITTED);
   assert.deepEqual(dispatch(committed,'SOURCE_NORMAL_EXIT'),committed,'Contact cannot walk away after committing');
@@ -92,12 +72,14 @@ const finalState=()=>buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.EXPOSED_BATTL
   assert.deepEqual(dispatch(lost,'SOURCE_NORMAL_EXIT'),lost);
 }
 
-// Horizon is produced only by deliberate refusal. The eyes prove a past act;
+// Walking onward leaves contact open until the bust. The eyes prove a past act;
 // they are neither consumed nor made eligible merely by having been offered.
 {
   const walked=dispatch(finalState(),'SOURCE_NORMAL_EXIT');
   assert.equal(walked.phase,CHUNK_SURF_PHASE.HORIZON);
   assert.equal(walked.horizon.reason,HORIZON_REASON.WALKED_AWAY);
+  assert.equal(walked.finalEncounter.outcome,null,'passing into the outskirts is not a fight result');
+  assert.equal(walked.finale.route,null,'the bust has not closed the return route yet');
   assert.equal(horizonBustEyeEvidence('carried').eligible,true);
   assert.equal(horizonBustEyeEvidence('returned').eligible,true);
   assert.equal(horizonBustEyeEvidence('declined').eligible,false);
@@ -114,9 +96,24 @@ const finalState=()=>buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.EXPOSED_BATTL
   // route commits here and the completion arrives four hundred metres later,
   // when the body walks into the room. See test/horizon.spec.mjs for the walk.
   const tower=runtime.takeHorizonBustDetour();
-  assert.equal(tower.entered,'bells');
+  assert.equal(tower.pathOpened,true,'the bust opens a path instead of teleporting to the bells');
+  assert.equal(runtime.state().phase,CHUNK_SURF_PHASE.HORIZON);
   assert.equal(runtime.state().finale.route,SOURCE_FINALE_ROUTE.TOWER);
   assert.equal(runtime.state().completed,false);
+  const origin=runtime.state().landscapeOrigin;
+  let position={x:origin.x+tower.path[0].x,y:origin.y+tower.path[0].y};
+  runtime.setPlayerPosition(position);
+  for(const point of tower.path.slice(1)){
+    const target={x:origin.x+point.x,y:origin.y+point.y};
+    const start={...position},steps=Math.ceil(Math.hypot(target.x-start.x,target.y-start.y));
+    for(let step=1;step<=steps;step++){
+      const next={x:start.x+(target.x-start.x)*step/steps,y:start.y+(target.y-start.y)*step/steps};
+      assert.equal(runtime.geometry.canStep(position.x,position.y,next.x,next.y).ok,true,'the bust path is physically walkable');
+      runtime.onStep(position,next);
+      position=next;
+    }
+  }
+  assert.equal(runtime.state().phase,CHUNK_SURF_PHASE.BELLS,'walking the opened path reaches the field');
   const towerDone=runtime.enterBellsRoom();
   assert.equal(towerDone.completion.route,SOURCE_FINALE_ROUTE.TOWER);
   assert.equal(towerDone.completion.transitionTarget,'cathedral');
@@ -126,7 +123,9 @@ const finalState=()=>buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.EXPOSED_BATTL
   assert.equal(noEyes.talkToHorizonBust().eligible,false);
   assert.equal(noEyes.state().finale.route,SOURCE_FINALE_ROUTE.CHAPEL);
   const chapelExit=noEyes.chooseHorizonExit(HORIZON_EXIT.CHAPEL);
-  assert.equal(chapelExit.completion.transitionTarget,'chapel');
+  assert.equal(chapelExit.entered,CHUNK_SURF_PHASE.CHAPEL_OUTSKIRTS,'straight on still ends at the last frame of the tape');
+  assert.equal(noEyes.state().completed,false);
+  assert.equal(noEyes.enterChapelDoor().completion.transitionTarget,'chapel');
 }
 
 // A recognized bust decision permanently partitions Tower from Chapel. Tower
@@ -219,7 +218,7 @@ const finalState=()=>buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.EXPOSED_BATTL
   const second=cathedralBellCombatDefinition({phase:2,carriedDamage:10});
   assert.deepEqual(validateCombatDefinition(first),[]);
   assert.deepEqual(validateCombatDefinition(second),[]);
-  assert.ok(second.baseComposure<first.baseComposure);
+  assert.equal(second.baseComposure,first.baseComposure,'spent composure carries once; phase two does not lower the ceiling again');
   assert.equal(first.cathedralPhase,1);
   assert.equal(second.cathedralPhase,2);
   assert.ok(first.movements.every((movement)=>movement.intents.every((intent)=>!('timing' in intent)&&!('rope' in intent))));
@@ -273,7 +272,7 @@ const finalState=()=>buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.EXPOSED_BATTL
     "['tower-won',ENDING_ARRIVAL.CARRIED",
     "['tower-lost',ENDING_ARRIVAL.DEFEATED",
   ])assert.ok(mainSource.includes(id),`missing God route preset ${id}`);
-  assert.match(mainSource,/function godCathedralFinalePreset[\s\S]*?godAbortBattle\(\);[\s\S]*?startCathedralCarry\(\)/,
+  assert.match(mainSource,/function godCathedralFinalePreset[\s\S]*?godWarpToHook\(hookId\)[\s\S]*?startCathedralCarry\(\)/,
     'Cathedral checkpoints can replace an active fight, including the carry hook');
   assert.match(mainSource,/function godEnterHorizon[\s\S]*?marbleEyes:'returned'/,
     'the Horizon bust review hook reaches the qualified Tower or Chapel proposition');
@@ -283,3 +282,15 @@ const finalState=()=>buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.EXPOSED_BATTL
 }
 
 console.log('source finale route specs passed');
+
+// EVERY WAY OUT OF SOURCE HAS SOMEWHERE TO GO. 172f8bf deleted
+// beginChapelFromHorizon but kept its calls, so the chapel road threw at its
+// last step and left the body standing in a completed Source with no ground.
+{
+  const { readFileSync } = await import('node:fs');
+  const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+  for (const name of ['beginChapelFromHorizon', 'beginSourceTowerTransition', 'beginContactEnding']) {
+    assert.ok(main.includes(name), `${name} is no longer referenced — update this guard`);
+    assert.match(main, new RegExp(`function ${name}\\(`), `main.js calls ${name} but never defines it`);
+  }
+}

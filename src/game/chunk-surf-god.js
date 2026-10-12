@@ -1,5 +1,7 @@
 import { CELL } from '../data/floorplan/legend.js';
-import { SOURCE_APPROACH_CELLS, SOURCE_BELLS, SOURCE_CHUTES, SOURCE_HORIZON, SOURCE_PRE_TAPE, SOURCE_TIER_BY_ID } from '../data/source-level.js';
+import { OUTSKIRT_BUS_ENCOUNTER, OUTSKIRT_FOLD_ENCOUNTER, OUTSKIRT_LAST_MARK, OUTSKIRT_STRETCH_START, OUTSKIRT_STRETCH_METRES } from '../data/source-outskirts-arrival.js';
+import { SOURCE_APPROACH_CELLS, SOURCE_BELLS, SOURCE_CHAPEL_OUTSKIRTS, SOURCE_HORIZON, SOURCE_PRE_TAPE, SOURCE_TIER_BY_ID } from '../data/source-level.js';
+import { SOURCE_HANGING_SHORE } from '../data/source-hanging-shore.js';
 import {
   CHUNK_SURF_PHASE,
   SOURCE_PURSUIT_BEAT,
@@ -28,7 +30,6 @@ const HAYSTACK_ORIGIN = Object.freeze({ x: 0, y: -224 });
 // these below the arrival tier moved out by SOURCE_APPROACH_CELLS when the red
 // approach was inserted between the Scene Dock and the first staircase.
 const LANDSCAPE_ORIGIN = Object.freeze({ x: 0, y: -252 });
-const FIRST_STAIR = SOURCE_CHUTES.find((chute) => chute.id === 'chute-fork');
 const localPosition = (x, y, facing = 0) => ({
   x: LANDSCAPE_ORIGIN.x + x,
   y: LANDSCAPE_ORIGIN.y + y,
@@ -89,19 +90,20 @@ export function buildChunkSurfGodPreset(id, options = {}) {
     return { state, position };
   }
 
-  // This hook means the approach to the first lift. It previously dispatched
-  // its completion and dropped the player forty-eight cells into the field,
-  // turning on the entire Text Space compositor in the same frame as the warp.
-  // Apart from being the wrong review location, that was the heaviest possible
-  // Source initialization path and could take the renderer down with it.
+  // Review the exterior receiving ledge. The lift's height does not reveal
+  // Source proper: the player still has to walk around the opaque entry return.
   if (id === CHUNK_SURF_GOD_PRESET.FIRST_LIFT) {
     state = dispatch(state,
       { type: 'SOURCE_LANDING_DOOR_OPENED' },
       { type: 'SOURCE_LANDING_DOOR_SEALED' },
       { type: 'SOURCE_APPROACH_COMPLETED', distance: SOURCE_APPROACH_CELLS },
     );
-    position = localPosition(FIRST_STAIR?.x || 0, (FIRST_STAIR?.y || SOURCE_TIER_BY_ID.fork.from)
-      + (FIRST_STAIR?.run || 16) + 2);
+    state = { ...state, sourceShore: {
+      version: 1, phase: 'upper', floor: SOURCE_HANGING_SHORE.lift.top,
+      bodyFloor: SOURCE_HANGING_SHORE.lift.top, adapted: true,
+      exposureElapsed: SOURCE_HANGING_SHORE.adaptationSeconds,
+    } };
+    position = localPosition(0, (SOURCE_HANGING_SHORE.ledge.minZ + SOURCE_HANGING_SHORE.ledge.maxZ) / (2 * CELL));
     return { state, position };
   }
 
@@ -109,12 +111,10 @@ export function buildChunkSurfGodPreset(id, options = {}) {
     { type: 'SOURCE_LIFT_COMPLETED', id: 'lift-fork', checkpointId: 'landing-fork' },
   );
   if (id === CHUNK_SURF_GOD_PRESET.FIRST_CONTACT) {
-    // Put the review body in genuinely open ground. Eight cells past the tier
-    // seam is only six cells from fork-room, inside the landmark protection
-    // radius, so the hook labelled TRAILING PURSUIT rendered HUSH / SUSPENDED
-    // forever. Twenty-four cells clears both the arrival grace and the authored
-    // landmark hold while leaving a long, straight sightline for turning back.
-    position = localPosition(0, SOURCE_TIER_BY_ID.fork.from - 24);
+    // Face the waiting human trace from four metres away on its actual ground.
+    // This reviews the ordinary SPEAK interaction without a remote contact hook.
+    state = { ...state, sourceDivide: { version: 1, feet: 4.2, fallVelocity: 0, falling: false } };
+    position = localPosition(-24, -922, 0);
     return { state, position };
   }
 
@@ -126,6 +126,7 @@ export function buildChunkSurfGodPreset(id, options = {}) {
       contact: {
         schema: 1,
         captures: 3,
+        talks: 3,
         insights: ['music-human-name', 'surfer-vessel', 'borrowed-body-return'],
         seenBeats: ['music-1', 'vessel-1', 'body-1'],
         lastChoiceId: 'body-return',
@@ -207,11 +208,21 @@ export function buildPreTapeGodPreset(depth = 0, options = {}) {
   };
 }
 
+// Still first, then the road; depths are cells out from the grey doors.
 export const PRE_TAPE_GOD_STOPS = Object.freeze([
   { id: 'pre-tape-edge', label: 'OUT — THE FIELD ENDS', depth: SOURCE_PRE_TAPE.entryStandoff },
-  { id: 'pre-tape-thinning', label: 'OUT — THE OUTSKIRTS', depth: 90 },
-  { id: 'pre-tape-nothing', label: 'OUT — NOTHING', depth: 260 },
-  { id: 'pre-tape-seam', label: 'OUT — THE HEAD OF THE TAPE', depth: 352 },
+  { id: 'pre-tape-still', label: 'OUT — STILL', depth: Math.round(SOURCE_PRE_TAPE.stillLength / 2) },
+  { id: 'pre-tape-road', label: 'OUT — THE ROAD', depth: SOURCE_PRE_TAPE.stillLength + 12 },
+  { id: 'pre-tape-lodge', label: 'OUT — THE LODGE HATCH', depth: SOURCE_PRE_TAPE.stillLength + (OUTSKIRT_STRETCH_START + 6 * OUTSKIRT_STRETCH_METRES + 11.55) / CELL, across: -5.9, yaw: -Math.PI / 2, pitch: -.07 },
+  // The cell eye offset aligns the approach with the seated face. One ordinary
+  // westward step reaches personal space without reaching the feet or chair.
+  { id: 'pre-tape-fold-approach', label: 'OUT — WRONG FOLD APPROACH', depth: SOURCE_PRE_TAPE.stillLength + (OUTSKIRT_STRETCH_START + OUTSKIRT_FOLD_ENCOUNTER.pass * OUTSKIRT_STRETCH_METRES + 12 - OUTSKIRT_FOLD_ENCOUNTER.root[0] - CELL * .5) / CELL, across: -4.35, yaw: -Math.PI / 2, pitch: -.26 },
+  { id: 'pre-tape-bus', label: 'OUT — THE BUS PASSAGE', depth: SOURCE_PRE_TAPE.stillLength + Math.round((OUTSKIRT_STRETCH_START + OUTSKIRT_BUS_ENCOUNTER.pass * OUTSKIRT_STRETCH_METRES + 16) / CELL) },
+  { id: 'pre-tape-bus-close', label: 'OUT — BESIDE THE BUS', depth: SOURCE_PRE_TAPE.stillLength + (OUTSKIRT_STRETCH_START + OUTSKIRT_BUS_ENCOUNTER.pass * OUTSKIRT_STRETCH_METRES + 24.3) / CELL, across: 5.45, yaw: -Math.PI / 2, pitch: .04 },
+  { id: 'pre-tape-road-mid', label: 'OUT — HALFWAY DOWN THE ROAD', depth: SOURCE_PRE_TAPE.stillLength + Math.round(SOURCE_PRE_TAPE.roadLength / 2) },
+  { id: 'pre-tape-road-late', label: 'OUT — THE LAST OF THE ROAD', depth: SOURCE_PRE_TAPE.length - 90 },
+  { id: 'pre-tape-last-light', label: 'OUT — THE LAST LIGHT', depth: SOURCE_PRE_TAPE.stillLength + (OUTSKIRT_LAST_MARK.along - 5) / CELL },
+  { id: 'pre-tape-seam', label: 'OUT — THE HEAD OF THE TAPE', depth: SOURCE_PRE_TAPE.length - 8 },
 ]);
 
 // THE BELL PASSAGE, addressed by depth like the tape it hangs off.
@@ -241,7 +252,30 @@ export const BELLS_GOD_STOPS = Object.freeze([
   { id: 'bells-architecture', label: 'BELLS — ARCHITECTURE', depth: 90 },
   { id: 'bells-null', label: 'BELLS — WHERE TIME IS NULL', depth: 200 },
   { id: 'bells-ring', label: 'BELLS — THE RING', depth: 330 },
-  { id: 'bells-door', label: 'BELLS — THE MISSING WALL', depth: 410 },
+  { id: 'bells-doors', label: 'BELLS — THE DOORS', depth: 440 },
+  { id: 'bells-door', label: 'BELLS — THE TOWER DOOR', depth: 530 },
+]);
+
+// THE CHAPEL'S OUTSKIRTS, by depth past the end of the tape: nothing, the door
+// field, the chapel's own door.
+export function buildChapelOutskirtsGodPreset(depth = 0, options = {}) {
+  const horizon = buildHorizonGodPreset(SOURCE_HORIZON.length, options);
+  const state = reduceChunkSurf(horizon.state, { type: 'HORIZON_EXIT_CHOSEN', exit: 'chapel' });
+  const along = Math.max(0, Math.min(SOURCE_CHAPEL_OUTSKIRTS.from - SOURCE_CHAPEL_OUTSKIRTS.to, Number(depth) || 0));
+  return {
+    state,
+    position: {
+      x: LANDSCAPE_ORIGIN.x,
+      y: LANDSCAPE_ORIGIN.y + SOURCE_CHAPEL_OUTSKIRTS.from - Math.max(SOURCE_CHAPEL_OUTSKIRTS.entryStandoff, along),
+      facing: 0,
+    },
+  };
+}
+
+export const CHAPEL_OUTSKIRTS_GOD_STOPS = Object.freeze([
+  { id: 'chapel-nothing', label: 'CHAPEL — PAST THE TAPE', depth: SOURCE_CHAPEL_OUTSKIRTS.entryStandoff },
+  { id: 'chapel-doors', label: 'CHAPEL — THE DOORS', depth: SOURCE_CHAPEL_OUTSKIRTS.from - SOURCE_CHAPEL_OUTSKIRTS.doorsFrom + 8 },
+  { id: 'chapel-door', label: 'CHAPEL — ITS DOOR', depth: SOURCE_CHAPEL_OUTSKIRTS.from - SOURCE_CHAPEL_OUTSKIRTS.doorAt - 10 },
 ]);
 
 export const HORIZON_GOD_STOPS = Object.freeze([

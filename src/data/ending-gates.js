@@ -438,7 +438,7 @@ export const ENDING_GATES = Object.freeze({
       Object.freeze({
         label: 'Walk to the cathedral crossing',
         kind: GATE_KIND.TASK,
-        detail: 'Getting close to the crossing starts the first half of the fight.',
+        detail: 'Reach the crossing and choose to begin the bell return. Arriving or looking around does not start the fight.',
         where: at('src/main.js', 'function tickCathedralFinale()'),
       }),
       Object.freeze({
@@ -450,7 +450,7 @@ export const ENDING_GATES = Object.freeze({
       Object.freeze({
         label: 'Drag him out',
         kind: GATE_KIND.TASK,
-        detail: 'The body has real collision and you can lose your grip; the doorway makes you take hold again. Both of you have to be outside.',
+        detail: 'The body has real collision. Set him down and take hold again when you need to; there is no timer or forced threshold drop. Both of you have to be outside the west doors, still holding on.',
         where: at('src/main.js', 'function startCathedralCarry()'),
       }),
     ]),
@@ -481,7 +481,7 @@ export const ENDING_GATES = Object.freeze({
   'tower-lost': Object.freeze({
     id: 'tower-lost',
     family: 'tower',
-    summary: 'Take the detour and lose it. Six bells finish the job on both bodies, one faculty at a time.',
+    summary: 'Take the detour and lose it. Eight bells finish the job on both bodies, one faculty at a time.',
     arrivals: Object.freeze({
       [ENDING_ARRIVAL.DEFEATED]: Object.freeze({
         how: 'Lose either half of the cathedral fight TOWER_DEFEAT_CEILING times. The first two send you back to the bust with only its own path left.',

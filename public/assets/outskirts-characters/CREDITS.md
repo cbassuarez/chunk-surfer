@@ -1,0 +1,5 @@
+# Outskirts character assets
+
+Anatomical base: MakeHuman hm08 and male macro targets, CC0-1.0. MakeHuman/Data Collection AB, Joel Palmius and Jonas Hauquier. Exact source URLs and SHA256 digests are retained in tools/chunk_surfer/character-sources/makehuman/sources.json; licence in LICENSE.ASSETS.md. Base source https://raw.githubusercontent.com/makehumancommunity/mpfb2/master/src/mpfb/data/3dobjs/base.obj (SHA256 8e761e6624b8f54536409135d1636da63b32486a90d4897f84e121d144f6fb4c). Original CC0 skin, eyes, hair, clothing and authored skin envelopes are retained with their source UVs. Garment fitting, compact weight mapping, skeleton, corrective shapes and animation adapted/authored for Chunk Surfer in Blender 4.5.3 LTS; no actor mocap. Further source manifest: tools/chunk_surfer/character-sources/makehuman/system/sources.json and tools/chunk_surfer/character-sources/makehuman/weights-sources.json. Regeneration source: tools/chunk_surfer/characters/build-outskirts-characters.py.
+
+The approved Wrong Fold and Overprint concept sheets informed the pose and costume; those images are not projected onto the model.

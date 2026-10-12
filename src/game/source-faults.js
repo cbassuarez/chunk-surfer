@@ -18,8 +18,8 @@ export function sourceFaultFrame({
     reduceMotion:!!reducedMotion,flashMode,
   });
   const transition=Number.isFinite(transitionElapsedMs)?1-clamp(transitionElapsedMs/2200):0;
-  const nvme=clamp(.34+transition*.48);
-  const ps2=clamp(.22+transition*.66);
+  const nvme=clamp(.065+transition*.32);
+  const ps2=clamp(.045+transition*.28);
   const now=Math.max(0,Number(timeMs)||0);
   const slot=reducedMotion?0:Math.floor(now/(transition>.01?170:420));
 
@@ -45,7 +45,7 @@ export function sourceFaultFrame({
   const overflowLane=Math.min(3,Math.floor(hash(`${seed}:${overflowRun}:lane`)*4));
   const overflowDirection=hash(`${seed}:${overflowRun}:direction`)<.5?-1:1;
   return Object.freeze({
-    active:true,nvme,ps2,transition,geometry:clamp(.12+transition*.44),slot,seed,
+    active:true,nvme,ps2,transition,geometry:clamp(.025+transition*.22),slot,seed,
     overflow:envelope*.96,overflowActive,overflowHead,overflowLane,overflowDirection,overflowRun,
     reduceMotion:!!reducedMotion,flashMode:['full','reduced','off'].includes(flashMode)?flashMode:'full',
   });

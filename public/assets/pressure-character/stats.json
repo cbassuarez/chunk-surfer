@@ -1,0 +1,162 @@
+{
+  "source": "tools/chunk_surfer/characters/build-pressure-character.py",
+  "blender": "4.5.3 LTS",
+  "units": "metres",
+  "forward": "-Z",
+  "height": 2.18,
+  "clips": {
+    "pressure_hold": 1,
+    "pressure_idle": 9.6,
+    "pressure_approach": 2.4,
+    "pressure_limp": 3.4,
+    "pressure_listen": 4.8,
+    "pressure_load": 0.5,
+    "pressure_advance": 0.72,
+    "pressure_arrest": 1.0,
+    "pressure_pivot": 0.72
+  },
+  "joints": [
+    "pelvis",
+    "spine_lower",
+    "spine_mid",
+    "spine_upper",
+    "chest",
+    "neck",
+    "head",
+    "jaw",
+    "clavicle_L",
+    "upperarm_L",
+    "forearm_L",
+    "hand_L",
+    "thumb_L",
+    "index_L",
+    "middle_L",
+    "ring_L",
+    "little_L",
+    "clavicle_R",
+    "upperarm_R",
+    "forearm_R",
+    "hand_R",
+    "thumb_R",
+    "index_R",
+    "middle_R",
+    "ring_R",
+    "little_R",
+    "thigh_L",
+    "shin_L",
+    "foot_L",
+    "toe_L",
+    "thigh_R",
+    "shin_R",
+    "foot_R",
+    "toe_R"
+  ],
+  "morphs": [
+    "sternum_sink",
+    "collar_draw",
+    "scapula_lock",
+    "longitudinal_tension"
+  ],
+  "bytes": 8728844,
+  "sha256": "29f4321a45f48cff08f243591153adbc0de5b25e31a3adb2f26ce2c6d78368b9",
+  "motion": {
+    "pressure_approach": {
+      "cycleSeconds": 2.4,
+      "distanceMetres": 0.5,
+      "planted": {
+        "L": [
+          0.34,
+          1.0
+        ],
+        "R": [
+          [
+            0,
+            0.44
+          ],
+          [
+            0.78,
+            1.0
+          ]
+        ]
+      }
+    },
+    "pressure_limp": {
+      "cycleSeconds": 3.4,
+      "distanceMetres": 0.375,
+      "planted": {
+        "L": [
+          0.34,
+          1.0
+        ],
+        "R": [
+          [
+            0,
+            0.44
+          ],
+          [
+            0.78,
+            1.0
+          ]
+        ]
+      }
+    },
+    "arrested": {
+      "loadSeconds": 0.5,
+      "advanceSeconds": 0.72,
+      "arrestSeconds": 1.0,
+      "pivotSeconds": 0.72,
+      "distanceMetres": 0.42,
+      "pivotDistanceMetres": 0,
+      "rootCurve": "linear forward -Z; supplied by authoritative runtime, not mesh root",
+      "staggerMetres": {
+        "L": -0.08,
+        "R": 0.08
+      },
+      "planted": {
+        "load": "both",
+        "arrest": "both",
+        "advance": {
+          "L": [
+            0.38,
+            1.0
+          ],
+          "R": [
+            0,
+            0.58
+          ]
+        },
+        "pivot": {
+          "L": [
+            0.38,
+            1.0
+          ],
+          "R": [
+            0,
+            0.58
+          ]
+        }
+      },
+      "release": {
+        "chest": 0.18,
+        "shoulder": 0.62,
+        "head": 0.73,
+        "hand": 0.84
+      },
+      "seams": [
+        "pressure_arrest = pressure_load start = pressure_advance end = pressure_pivot end",
+        "pressure_load end = pressure_advance start = pressure_pivot start"
+      ],
+      "retainedAppearanceBaselineSha256": "7d38a4539c0083783ad8da157ebe8bec5a692038d5b64dd4b660846030a3365b"
+    }
+  },
+  "meshes": {
+    "pressure_body": {
+      "primitives": 1,
+      "vertices": 28762,
+      "triangles": 46996
+    }
+  },
+  "surface": "continuous anatomically based sculpt, sealed featureless cranium, concave sternum, unequal shoulder/collar displacement and tension-oriented geometry relief",
+  "textureResidencyMiB": 12.0,
+  "qualityLimit": "Authored procedural anatomical sculpt, compact rig and corrective performance, using CC0 MakeHuman topology and envelopes. Not photogrammetry or actor mocap."
+}

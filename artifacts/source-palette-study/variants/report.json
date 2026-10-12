@@ -1,0 +1,314 @@
+{
+  "scope": "Actual current dev renderer, Chromium/Metal, same cameras and geometry, torch off; palette experiments substitute only TEXT_SPACE_FRAG in intercepted dev module responses. Raw GPU canvas JPEG exports; no raster grading. Provisional experiments, not implemented palettes or native acceptance.",
+  "captures": [
+    {
+      "variant": "baseline",
+      "name": "landing",
+      "preset": "first-contact",
+      "yaw": 0,
+      "pitch": 0,
+      "path": "artifacts/source-palette-study/variants/baseline-landing.jpg",
+      "bytes": 20811,
+      "width": 736,
+      "height": 460,
+      "pos": {
+        "x": 0,
+        "y": -1056
+      },
+      "camera": {
+        "yaw": 0,
+        "pitch": 0,
+        "facing": 0
+      },
+      "torch": false,
+      "phase": "landscape"
+    },
+    {
+      "variant": "baseline",
+      "name": "middle",
+      "preset": "all-insights",
+      "yaw": 0.7,
+      "pitch": 0,
+      "path": "artifacts/source-palette-study/variants/baseline-middle.jpg",
+      "bytes": 36548,
+      "width": 736,
+      "height": 460,
+      "pos": {
+        "x": 0,
+        "y": -1120
+      },
+      "camera": {
+        "yaw": 0.7,
+        "pitch": 0,
+        "facing": 0
+      },
+      "torch": false,
+      "phase": "landscape"
+    },
+    {
+      "variant": "baseline",
+      "name": "doors",
+      "preset": "final",
+      "yaw": 0.65,
+      "pitch": 0,
+      "path": "artifacts/source-palette-study/variants/baseline-doors.jpg",
+      "bytes": 25636,
+      "width": 736,
+      "height": 460,
+      "pos": {
+        "x": 0,
+        "y": -1321
+      },
+      "camera": {
+        "yaw": 0.65,
+        "pitch": 0,
+        "facing": 0
+      },
+      "torch": false,
+      "phase": "final"
+    },
+    {
+      "variant": "cyanotype",
+      "name": "middle",
+      "preset": "all-insights",
+      "yaw": 0.7,
+      "pitch": 0,
+      "path": "artifacts/source-palette-study/variants/cyanotype-middle.jpg",
+      "bytes": 28068,
+      "width": 736,
+      "height": 460,
+      "pos": {
+        "x": 0,
+        "y": -1120
+      },
+      "camera": {
+        "yaw": 0.7,
+        "pitch": 0,
+        "facing": 0
+      },
+      "torch": false,
+      "phase": "landscape"
+    },
+    {
+      "variant": "cyanotype",
+      "name": "doors",
+      "preset": "final",
+      "yaw": 0.65,
+      "pitch": 0,
+      "path": "artifacts/source-palette-study/variants/cyanotype-doors.jpg",
+      "bytes": 19294,
+      "width": 736,
+      "height": 460,
+      "pos": {
+        "x": 0,
+        "y": -1321
+      },
+      "camera": {
+        "yaw": 0.65,
+        "pitch": 0,
+        "facing": 0
+      },
+      "torch": false,
+      "phase": "final"
+    },
+    {
+      "variant": "oxide",
+      "name": "landing",
+      "preset": "first-contact",
+      "yaw": 0,
+      "pitch": 0,
+      "path": "artifacts/source-palette-study/variants/oxide-landing.jpg",
+      "bytes": 19558,
+      "width": 736,
+      "height": 460,
+      "pos": {
+        "x": 0,
+        "y": -1056
+      },
+      "camera": {
+        "yaw": 0,
+        "pitch": 0,
+        "facing": 0
+      },
+      "torch": false,
+      "phase": "landscape"
+    },
+    {
+      "variant": "oxide",
+      "name": "middle",
+      "preset": "all-insights",
+      "yaw": 0.7,
+      "pitch": 0,
+      "path": "artifacts/source-palette-study/variants/oxide-middle.jpg",
+      "bytes": 26814,
+      "width": 736,
+      "height": 460,
+      "pos": {
+        "x": 0,
+        "y": -1120
+      },
+      "camera": {
+        "yaw": 0.7,
+        "pitch": 0,
+        "facing": 0
+      },
+      "torch": false,
+      "phase": "landscape"
+    },
+    {
+      "variant": "oxide",
+      "name": "doors",
+      "preset": "final",
+      "yaw": 0.65,
+      "pitch": 0,
+      "path": "artifacts/source-palette-study/variants/oxide-doors.jpg",
+      "bytes": 17815,
+      "width": 736,
+      "height": 460,
+      "pos": {
+        "x": 0,
+        "y": -1321
+      },
+      "camera": {
+        "yaw": 0.65,
+        "pitch": 0,
+        "facing": 0
+      },
+      "torch": false,
+      "phase": "final"
+    },
+    {
+      "variant": "cyanotype",
+      "name": "landing",
+      "preset": "first-contact",
+      "yaw": 0,
+      "pitch": 0,
+      "path": "artifacts/source-palette-study/variants/cyanotype-landing.jpg",
+      "bytes": 20122,
+      "width": 736,
+      "height": 460,
+      "pos": {
+        "x": 0,
+        "y": -1056
+      },
+      "camera": {
+        "yaw": 0,
+        "pitch": 0,
+        "facing": 0
+      },
+      "torch": false,
+      "phase": "landscape"
+    },
+    {
+      "variant": "opal",
+      "name": "landing",
+      "preset": "first-contact",
+      "yaw": 0,
+      "pitch": 0,
+      "path": "artifacts/source-palette-study/variants/opal-landing.jpg",
+      "bytes": 20033,
+      "width": 736,
+      "height": 460,
+      "pos": {
+        "x": 0,
+        "y": -1056
+      },
+      "camera": {
+        "yaw": 0,
+        "pitch": 0,
+        "facing": 0
+      },
+      "torch": false,
+      "phase": "landscape"
+    },
+    {
+      "variant": "opal",
+      "name": "middle",
+      "preset": "all-insights",
+      "yaw": 0.7,
+      "pitch": 0,
+      "path": "artifacts/source-palette-study/variants/opal-middle.jpg",
+      "bytes": 27676,
+      "width": 736,
+      "height": 460,
+      "pos": {
+        "x": 0,
+        "y": -1120
+      },
+      "camera": {
+        "yaw": 0.7,
+        "pitch": 0,
+        "facing": 0
+      },
+      "torch": false,
+      "phase": "landscape"
+    },
+    {
+      "variant": "opal",
+      "name": "doors",
+      "preset": "final",
+      "yaw": 0.65,
+      "pitch": 0,
+      "path": "artifacts/source-palette-study/variants/opal-doors.jpg",
+      "bytes": 20456,
+      "width": 736,
+      "height": 460,
+      "pos": {
+        "x": 0,
+        "y": -1321
+      },
+      "camera": {
+        "yaw": 0.65,
+        "pitch": 0,
+        "facing": 0
+      },
+      "torch": false,
+      "phase": "final"
+    }
+  ],
+  "intercepts": [
+    {
+      "variant": "cyanotype",
+      "url": "http://127.0.0.1:5296/src/render/r3d.js?t=1791771854763",
+      "originalBytes": 1806954,
+      "patchedBytes": 1808026
+    },
+    {
+      "variant": "cyanotype",
+      "url": "http://127.0.0.1:5296/src/render/r3d.js?t=1791771854763",
+      "originalBytes": 1806954,
+      "patchedBytes": 1808026
+    },
+    {
+      "variant": "opal",
+      "url": "http://127.0.0.1:5296/src/render/r3d.js?t=1791771854763",
+      "originalBytes": 1806954,
+      "patchedBytes": 1808026
+    },
+    {
+      "variant": "opal",
+      "url": "http://127.0.0.1:5296/src/render/r3d.js?t=1791771981191",
+      "originalBytes": 1806954,
+      "patchedBytes": 1808026
+    },
+    {
+      "variant": "oxide",
+      "url": "http://127.0.0.1:5296/src/render/r3d.js?t=1791771981191",
+      "originalBytes": 1806954,
+      "patchedBytes": 1808026
+    },
+    {
+      "variant": "cyanotype",
+      "url": "http://127.0.0.1:5296/src/render/r3d.js?t=1791772043930",
+      "originalBytes": 1806954,
+      "patchedBytes": 1808026
+    },
+    {
+      "variant": "opal",
+      "url": "http://127.0.0.1:5296/src/render/r3d.js?t=1791772043930",
+      "originalBytes": 1806954,
+      "patchedBytes": 1808495
+    }
+  ],
+  "errors": []
+}

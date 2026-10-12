@@ -213,6 +213,7 @@ export function makeCreditsScene({
 
   return {
     id: 'credits',
+    handlesEscape: true,
     blocksInput: true,
     blocksWorld: true,
     lensPreset: 'calm',

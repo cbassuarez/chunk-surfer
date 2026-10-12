@@ -263,6 +263,13 @@ export const VOICE_PROFILES = {
   recordist: { rate: 0.98, gain: 0.95, hp: 120, lp: 5200, hiss: 0.010, wobble: 0.006 },
   surfer: { rate: 0.80, gain: 1.05, hp: 60, lp: 1500, smear: { time: 0.19, feedback: 0.42, mix: 0.5 } },
   client: { rate: 0.96, gain: 1.0, hp: 300, lp: 3000, drive: 0.3 },
+  // THE PHONE BOX (src/audio/payphone-line.js puts these through the handset
+  // codec, so the band here is only the voice: the line does the rest). The
+  // network's recorded announcer is steady and slightly slow; the operator is
+  // brisk; Lyle is a greeting recorded years ago in a practice room.
+  line: { rate: 0.92, gain: 1.0, hp: 240, lp: 3600 },
+  operator: { rate: 1.06, gain: 1.0, hp: 220, lp: 3600 },
+  lyle: { rate: 0.9, gain: 1.05, hp: 160, lp: 3600, smear: { time: 0.07, feedback: 0.22, mix: 0.24 } },
   // The voice that asks him a question in an empty building, eleven seconds in.
   // It is the surfer, and it must not be named yet — so it sounds like the surfer
   // heard through a wall: same transposition and smear, quieter, and with the top
@@ -601,6 +608,10 @@ export function createSamDialogVoice({ volume = 0.22, getAudio = null } = {}) {
 // different and much smaller scene.
 export const VOICED = new Set([
   'me','guard','radio','recordist','surfer','client','sarah','unknown',
+  'line','operator','lyle',
+  // The phone box, 1988: the student in Lyle's old hall, the man at Sarah's,
+  // directory enquiries, and whoever is waiting on the line on the loop pass.
+  'student','man','enquiries','caller',
   'woman at the shelter','man under the awning','driver by the pub yard',
 ]);
 export const isVoiced = (who) => VOICED.has(who);

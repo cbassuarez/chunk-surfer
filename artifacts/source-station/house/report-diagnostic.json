@@ -1,0 +1,584 @@
+{
+  "passed": true,
+  "failure": null,
+  "diagnosticOnly": true,
+  "scope": "Chromium/Metal actual production game post-processing at 1440x900, disposable chapel checkpoint. Five relic eligibility flags, doorway entry, gaze and capture travel are fixtures. Fixture travel uses real swept realm movement, ground height and collision, bypassing natural-departure input lifecycle deliberately. Diagnostic-only run: supplemental raw scene PNGs are explicitly labelled and do not represent the game appearance; no held-key checks in this mode. No earned errand, uninterrupted route, native/controller, frame-rate or perceptual-audio acceptance claim.",
+  "checks": [
+    "Diagnostic-only material/post comparison: coherent house and secondary window, plus supported depressed stand-back views with unclamped lower-storey head bearings."
+  ],
+  "errors": [],
+  "diagnostics": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "net::ERR_ABORTED: http://127.0.0.1:5298/audio/the_tub/02_trillion_hull.wav",
+    "net::ERR_ABORTED: http://127.0.0.1:5298/audio/the_tub/04_xemf_mass.wav",
+    "net::ERR_ABORTED: http://127.0.0.1:5298/audio/the_tub/05_xither_glass.wav",
+    "net::ERR_ABORTED: http://127.0.0.1:5298/audio/the_tub/06_wetair_core.wav",
+    "net::ERR_ABORTED: http://127.0.0.1:5298/audio/the_tub/19_xemf_bloom.wav"
+  ],
+  "snapshots": {
+    "build": {
+      "url": "http://127.0.0.1:5298/?nodisplaynotice=1&skipwarn=1&nomic=1&sam=0",
+      "scripts": [
+        "http://127.0.0.1:5298/assets/main-BoxZVWhN.js"
+      ],
+      "resources": [
+        "http://127.0.0.1:5298/assets/main-BoxZVWhN.js",
+        "http://127.0.0.1:5298/assets/rolldown-runtime-BQ-_32WO.js",
+        "http://127.0.0.1:5298/assets/modulepreload-polyfill-CWIbYaaI.js",
+        "http://127.0.0.1:5298/assets/window-composition-Dkptwx5-.js",
+        "http://127.0.0.1:5298/assets/source-desktop-view-DAfVRhTi.js"
+      ]
+    },
+    "diagnostic-whole-house-z66": {
+      "realm": {
+        "frame": {
+          "version": 1,
+          "world": "whiteout",
+          "variant": 5,
+          "seed": 0.12104450655169785,
+          "entryDoorId": "source-chapel-door-7",
+          "home": {
+            "eligible": true,
+            "nearWindow": false,
+            "reached": false,
+            "fold": 0.9195402298850571,
+            "recognized": false,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "returnPose": {
+            "x": -4.367981850593306,
+            "y": -4337.423106308808,
+            "facing": 0,
+            "yaw": -0.12802500708305276,
+            "pitch": 0
+          },
+          "pose": {
+            "x": 0,
+            "z": 66,
+            "yaw": 0.2048767170371084,
+            "pitch": -0.04701232758708857,
+            "floorY": 0
+          },
+          "stage": "inside",
+          "steps": 95,
+          "strideM": 0.4000000000020514,
+          "startedAt": 0.2726999999955297,
+          "returnStartedAt": null,
+          "returnDuration": 1.15,
+          "returnReason": null,
+          "windowReached": false,
+          "homeState": {
+            "recognized": false,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "time": 2.9498000000119213,
+          "stepBudget": 36,
+          "strideLength": 0.68,
+          "eyeHeight": 1.62,
+          "window": {
+            "x": -0.18,
+            "z": 70,
+            "bottom": 0.78,
+            "top": 2.2,
+            "halfWidth": 0.89
+          },
+          "decoherence": 0,
+          "atWindow": false
+        },
+        "return": null,
+        "action": null
+      },
+      "reward": {
+        "relics": [
+          "burning",
+          "flood",
+          "inverted",
+          "two-moons",
+          "glass-storm"
+        ],
+        "home": false,
+        "jumper": false,
+        "walk": null,
+        "composure": 40
+      },
+      "view": {
+        "yaw": 0.07685170995405566,
+        "pitch": -0.04701232758708857,
+        "facing": 0
+      },
+      "scene": null,
+      "capture": "diagnostic-whole-house-z66.png",
+      "render": "actual full game post-processing and HUD; no raw-scene substitution",
+      "supplementalRaw": {
+        "capture": "diagnostic-whole-house-z66-raw-scene.png",
+        "render": "DIAGNOSTIC ONLY: raw scene RGB copied to opaque canvas, linear values quantized to PNG without pixel mesh/post or display encoding; not the game appearance"
+      }
+    },
+    "diagnostic-upper-front-secondary-window": {
+      "realm": {
+        "frame": {
+          "version": 1,
+          "world": "whiteout",
+          "variant": 5,
+          "seed": 0.12104450655169785,
+          "entryDoorId": "source-chapel-door-7",
+          "home": {
+            "eligible": true,
+            "nearWindow": false,
+            "reached": false,
+            "fold": 1,
+            "recognized": false,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "returnPose": {
+            "x": -4.367981850593306,
+            "y": -4337.423106308808,
+            "facing": 0,
+            "yaw": -0.12802500708305276,
+            "pitch": 0
+          },
+          "pose": {
+            "x": 3.45,
+            "z": 66.8,
+            "yaw": 0,
+            "pitch": -0.04372211860158762,
+            "floorY": 0
+          },
+          "stage": "inside",
+          "steps": 100,
+          "strideM": 0.5415392133950074,
+          "startedAt": 0.2726999999955297,
+          "returnStartedAt": null,
+          "returnDuration": 1.15,
+          "returnReason": null,
+          "windowReached": false,
+          "homeState": {
+            "recognized": false,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "time": 4.403900000013411,
+          "stepBudget": 36,
+          "strideLength": 0.68,
+          "eyeHeight": 1.62,
+          "window": {
+            "x": -0.18,
+            "z": 70,
+            "bottom": 0.78,
+            "top": 2.2,
+            "halfWidth": 0.89
+          },
+          "decoherence": 0,
+          "atWindow": false
+        },
+        "return": null,
+        "action": null
+      },
+      "reward": {
+        "relics": [
+          "burning",
+          "flood",
+          "inverted",
+          "two-moons",
+          "glass-storm"
+        ],
+        "home": false,
+        "jumper": false,
+        "walk": null,
+        "composure": 40
+      },
+      "view": {
+        "yaw": -0.12802500708305276,
+        "pitch": -0.04372211860158762,
+        "facing": 0
+      },
+      "scene": null,
+      "capture": "diagnostic-upper-front-secondary-window.png",
+      "render": "actual full game post-processing and HUD; no raw-scene substitution",
+      "supplementalRaw": {
+        "capture": "diagnostic-upper-front-secondary-window-raw-scene.png",
+        "render": "DIAGNOSTIC ONLY: raw scene RGB copied to opaque canvas, linear values quantized to PNG without pixel mesh/post or display encoding; not the game appearance"
+      }
+    },
+    "diagnostic-left-scour-window-head": {
+      "realm": {
+        "frame": {
+          "version": 1,
+          "world": "whiteout",
+          "variant": 5,
+          "seed": 0.12104450655169785,
+          "entryDoorId": "source-chapel-door-7",
+          "home": {
+            "eligible": true,
+            "nearWindow": true,
+            "reached": true,
+            "fold": 1,
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "returnPose": {
+            "x": -4.367981850593306,
+            "y": -4337.423106308808,
+            "facing": 0,
+            "yaw": -0.12802500708305276,
+            "pitch": 0
+          },
+          "pose": {
+            "x": -2.65,
+            "z": 69.6,
+            "yaw": 0.18534794999569423,
+            "pitch": -0.5921910023232095,
+            "floorY": -0.6773036800878727
+          },
+          "stage": "inside",
+          "steps": 114,
+          "strideM": 0.05511670050722517,
+          "startedAt": 0.2726999999955297,
+          "returnStartedAt": null,
+          "returnDuration": 1.15,
+          "returnReason": null,
+          "windowReached": true,
+          "homeState": {
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "time": 6.140800000011919,
+          "stepBudget": 36,
+          "strideLength": 0.68,
+          "eyeHeight": 1.62,
+          "window": {
+            "x": -0.18,
+            "z": 70,
+            "bottom": 0.78,
+            "top": 2.2,
+            "halfWidth": 0.89
+          },
+          "decoherence": 0,
+          "atWindow": true
+        },
+        "return": null,
+        "action": "LOOK"
+      },
+      "reward": {
+        "relics": [
+          "burning",
+          "flood",
+          "inverted",
+          "two-moons",
+          "glass-storm"
+        ],
+        "home": false,
+        "jumper": false,
+        "walk": null,
+        "composure": 40
+      },
+      "view": {
+        "yaw": 0.05732294291264148,
+        "pitch": -0.5921910023232095,
+        "facing": 0
+      },
+      "scene": null,
+      "capture": "diagnostic-left-scour-window-head.png",
+      "render": "actual full game post-processing and HUD; no raw-scene substitution",
+      "supplementalRaw": {
+        "capture": "diagnostic-left-scour-window-head-raw-scene.png",
+        "render": "DIAGNOSTIC ONLY: raw scene RGB copied to opaque canvas, linear values quantized to PNG without pixel mesh/post or display encoding; not the game appearance"
+      }
+    },
+    "diagnostic-right-scour-door-head": {
+      "realm": {
+        "frame": {
+          "version": 1,
+          "world": "whiteout",
+          "variant": 5,
+          "seed": 0.12104450655169785,
+          "entryDoorId": "source-chapel-door-7",
+          "home": {
+            "eligible": true,
+            "nearWindow": false,
+            "reached": true,
+            "fold": 1,
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "returnPose": {
+            "x": -4.367981850593306,
+            "y": -4337.423106308808,
+            "facing": 0,
+            "yaw": -0.12802500708305276,
+            "pitch": 0
+          },
+          "pose": {
+            "x": 6.2,
+            "z": 70.7,
+            "yaw": -0.2830957852994955,
+            "pitch": -0.5765555459609174,
+            "floorY": -0.507664807013176
+          },
+          "stage": "inside",
+          "steps": 137,
+          "strideM": 0.16924682558214718,
+          "startedAt": 0.2726999999955297,
+          "returnStartedAt": null,
+          "returnDuration": 1.15,
+          "returnReason": null,
+          "windowReached": true,
+          "homeState": {
+            "recognized": true,
+            "departed": false,
+            "settled": false,
+            "attention": 0,
+            "awayArmed": false,
+            "outwardDistance": 0,
+            "interactionDown": false
+          },
+          "time": 8.18650000000745,
+          "stepBudget": 36,
+          "strideLength": 0.68,
+          "eyeHeight": 1.62,
+          "window": {
+            "x": -0.18,
+            "z": 70,
+            "bottom": 0.78,
+            "top": 2.2,
+            "halfWidth": 0.89
+          },
+          "decoherence": 0,
+          "atWindow": false
+        },
+        "return": null,
+        "action": "TURN AWAY"
+      },
+      "reward": {
+        "relics": [
+          "burning",
+          "flood",
+          "inverted",
+          "two-moons",
+          "glass-storm"
+        ],
+        "home": false,
+        "jumper": false,
+        "walk": null,
+        "composure": 40
+      },
+      "view": {
+        "yaw": -0.41112079238254823,
+        "pitch": -0.5765555459609174,
+        "facing": 0
+      },
+      "scene": null,
+      "capture": "diagnostic-right-scour-door-head.png",
+      "render": "actual full game post-processing and HUD; no raw-scene substitution",
+      "supplementalRaw": {
+        "capture": "diagnostic-right-scour-door-head-raw-scene.png",
+        "render": "DIAGNOSTIC ONLY: raw scene RGB copied to opaque canvas, linear values quantized to PNG without pixel mesh/post or display encoding; not the game appearance"
+      }
+    },
+    "loaded": {
+      "url": "http://127.0.0.1:5298/?nodisplaynotice=1&skipwarn=1&nomic=1&sam=0",
+      "scripts": [
+        "http://127.0.0.1:5298/assets/main-BoxZVWhN.js"
+      ],
+      "resources": [
+        "http://127.0.0.1:5298/assets/main-BoxZVWhN.js",
+        "http://127.0.0.1:5298/assets/rolldown-runtime-BQ-_32WO.js",
+        "http://127.0.0.1:5298/assets/modulepreload-polyfill-CWIbYaaI.js",
+        "http://127.0.0.1:5298/assets/window-composition-Dkptwx5-.js",
+        "http://127.0.0.1:5298/assets/source-desktop-view-DAfVRhTi.js"
+      ]
+    }
+  },
+  "travel": [
+    {
+      "label": "diagnostic whole-house approach",
+      "input": "fixture realmMove; swept production ground/collision",
+      "start": {
+        "x": 0,
+        "z": 1,
+        "yaw": 0.12802500708305276,
+        "pitch": 0,
+        "floorY": 0
+      },
+      "target": {
+        "x": 0,
+        "z": 66
+      },
+      "end": {
+        "x": 0,
+        "z": 66,
+        "yaw": 0.12802500708305276,
+        "pitch": 0,
+        "floorY": 0
+      }
+    },
+    {
+      "label": "diagnostic secondary-window approach",
+      "input": "fixture realmMove; swept production ground/collision",
+      "start": {
+        "x": 0,
+        "z": 66,
+        "yaw": 0.2048767170371084,
+        "pitch": -0.04701232758708857,
+        "floorY": 0
+      },
+      "target": {
+        "x": 3.45,
+        "z": 66.8
+      },
+      "end": {
+        "x": 3.45,
+        "z": 66.8,
+        "yaw": 0.2048767170371084,
+        "pitch": -0.04701232758708857,
+        "floorY": 0
+      }
+    },
+    {
+      "label": "diagnostic left front crossing",
+      "input": "fixture realmMove; swept production ground/collision",
+      "start": {
+        "x": 3.45,
+        "z": 66.8,
+        "yaw": 0,
+        "pitch": -0.04372211860158762,
+        "floorY": 0
+      },
+      "target": {
+        "x": -2.65,
+        "z": 66.8
+      },
+      "end": {
+        "x": -2.65,
+        "z": 66.8,
+        "yaw": 0,
+        "pitch": -0.04372211860158762,
+        "floorY": 0
+      }
+    },
+    {
+      "label": "diagnostic left depressed stand-back",
+      "input": "fixture realmMove; swept production ground/collision",
+      "start": {
+        "x": -2.65,
+        "z": 66.8,
+        "yaw": 0,
+        "pitch": -0.04372211860158762,
+        "floorY": 0
+      },
+      "target": {
+        "x": -2.65,
+        "z": 69.6
+      },
+      "end": {
+        "x": -2.65,
+        "z": 69.6,
+        "yaw": 0,
+        "pitch": -0.04372211860158762,
+        "floorY": -0.6773036800878727
+      }
+    },
+    {
+      "label": "diagnostic left return",
+      "input": "fixture realmMove; swept production ground/collision",
+      "start": {
+        "x": -2.65,
+        "z": 69.6,
+        "yaw": 0.18534794999569423,
+        "pitch": -0.5921910023232095,
+        "floorY": -0.6773036800878727
+      },
+      "target": {
+        "x": -2.65,
+        "z": 66.8
+      },
+      "end": {
+        "x": -2.65,
+        "z": 66.8,
+        "yaw": 0.18534794999569423,
+        "pitch": -0.5921910023232095,
+        "floorY": 0
+      }
+    },
+    {
+      "label": "diagnostic right front crossing",
+      "input": "fixture realmMove; swept production ground/collision",
+      "start": {
+        "x": -2.65,
+        "z": 66.8,
+        "yaw": 0.18534794999569423,
+        "pitch": -0.5921910023232095,
+        "floorY": 0
+      },
+      "target": {
+        "x": 6.2,
+        "z": 66.8
+      },
+      "end": {
+        "x": 6.19000000000002,
+        "z": 66.8,
+        "yaw": 0.18534794999569423,
+        "pitch": -0.5921910023232095,
+        "floorY": 0
+      }
+    },
+    {
+      "label": "diagnostic right depressed stand-back",
+      "input": "fixture realmMove; swept production ground/collision",
+      "start": {
+        "x": 6.19000000000002,
+        "z": 66.8,
+        "yaw": 0.18534794999569423,
+        "pitch": -0.5921910023232095,
+        "floorY": 0
+      },
+      "target": {
+        "x": 6.2,
+        "z": 70.7
+      },
+      "end": {
+        "x": 6.2,
+        "z": 70.7,
+        "yaw": 0.18534794999569423,
+        "pitch": -0.5921910023232095,
+        "floorY": -0.507664807013176
+      }
+    }
+  ]
+}

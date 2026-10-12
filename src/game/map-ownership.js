@@ -3,6 +3,8 @@
 // Temporary equipment loss stays a separate runtime fact: historic lost.map
 // flags have no persisted recovery position and cannot decide availability.
 export function mapAcquired(flags = {}) {
+  // An explicit debug removal outranks the old-run starter-map fallback.
+  if (!flags?.['map.taken'] && flags?.['god.map-acquired'] === false) return false;
   return !!(flags?.['map.taken'] || (flags?.['bag.taken'] && !flags?.['van.preparation.v1']));
 }
 

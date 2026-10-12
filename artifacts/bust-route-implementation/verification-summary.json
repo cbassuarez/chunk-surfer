@@ -1,0 +1,82 @@
+{
+  "completedAt": "2026-10-12T05:39:42.779480+00:00",
+  "status": "Selected bust-route implementation complete",
+  "savedTapeSelection": "The loose end crosses the hall; compact connector with distant reels",
+  "choices": [
+    "A deal made in stone",
+    "Keep the quiet trial",
+    "Repairs that answer",
+    "A voluntary threshold",
+    "The loose end crosses the hall",
+    "The mast beyond the door",
+    "Still at work",
+    "The same hall, changed",
+    "Let the ring answer itself",
+    "The ring holds its breath"
+  ],
+  "focusedTests": {
+    "passed": 47,
+    "failed": 0,
+    "command": "node --test test/horizon-bust.spec.mjs test/source-bell-field.spec.mjs test/tower-personal-journey.spec.mjs test/tower-personal-meshes.spec.mjs test/tower-personal-reward.spec.mjs test/tower-personal-main.spec.mjs test/horizon.spec.mjs test/source-bell-passage.spec.mjs test/one-tape.spec.mjs test/playback-presentation.spec.mjs"
+  },
+  "productionBundle": {
+    "passed": true,
+    "mode": "Vite production bundle; copyPublicDir:false. Live preview served original static public assets. Final snapshot also contains the authored null-cell preservation fix.",
+    "sourceHashes": "verification-source.json",
+    "previewStopped": true
+  },
+  "browserVerification": {
+    "backend": "Chromium with actual Metal/WebGL renderer; no shader or module substitution",
+    "fullReport": "live/report.json",
+    "targetedReport": "live/targeted-report.json",
+    "fullChecks": 71,
+    "fullPassed": 68,
+    "fullDiagnosticFailures": [
+      {
+        "mode": "normal",
+        "name": "key 2 actual crossing answers its lock"
+      },
+      {
+        "mode": "normal",
+        "name": "both distinct key visits unlock the actual tower route"
+      },
+      {
+        "mode": "reduced",
+        "name": "walk through the centre aisle to the voluntary onward opening"
+      }
+    ],
+    "resolvedByTargetedChecks": {
+      "report": "report.json",
+      "checks": [
+        "key 2 actual crossing answers its lock",
+        "both distinct key visits unlock the actual tower route",
+        "walk through the centre aisle to the voluntary onward opening"
+      ],
+      "reason": "Wait for each actual field visit to finish; use the clear centre aisle and a target radius compatible with quantized movement."
+    },
+    "targetedChecks": 23,
+    "targetedPassed": 22,
+    "remainingDiagnosticLimitation": "A targeted connector steering assertion stopped 1.12m from its waypoint. Ordinary movement continued into the workroom and the rest of that pass succeeded; both full journeys traversed the connector. This is a precision limit of the scripted steering assertion, not evidence of blocked ground.",
+    "pageOrGLErrors": [],
+    "savedCaptures": 50,
+    "confirmed": [
+      "normal and reduced journeys completed",
+      "six real reloads with received tape retained",
+      "physical meter changes on the recorder",
+      "handover and collapse with permanent floor and exit",
+      "exact road x/y/yaw/pitch restored",
+      "ring answers the carried recording",
+      "sequential key visits withdraw both locks",
+      "ordinary movement enters the real belfry",
+      "full player recorder UI visible"
+    ]
+  },
+  "additionalFixes": [
+    "Cold Source activation no longer reconciles before REC/PB restore, preserving existing recordings.",
+    "Authored tape null spatial metadata remains null across reload."
+  ],
+  "verificationLimits": [
+    "Diagnostic approach presets were used; this is not a full earned campaign or completed combat.",
+    "Native Tauri builds and human headphone listening were not performed."
+  ]
+}

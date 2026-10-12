@@ -1,3 +1,5 @@
+import { TOWER_PERSONAL_CUE, playTowerPersonalRecording } from '../audio/tower-personal-recording.js';
+
 // Playback. The take contains what you did not hear.
 //
 // This is the single strongest thing the audio engine can do, and it costs
@@ -243,11 +245,55 @@ export function finishTapeTake(roomId, result = {}) {
 }
 
 export function tapeTakes(){return state.history.slice();}
-export function tapeTransport(){return {version:2,headSeconds:state.head,endSeconds:state.end};}
+export function tapeTransport(){return {version:2,headSeconds:state.head,endSeconds:state.end,markers:(state.markers||[]).map(m=>({...m}))};}
 export function loadTapeTransport(saved){
   state.head=Math.max(0,Math.min(state.end,Number.isFinite(saved?.headSeconds)?saved.headSeconds:state.end));
+  state.markers=Array.isArray(saved?.markers)?saved.markers.filter(m=>m&&m.id&&Number.isFinite(Number(m.atSeconds))).map(m=>({id:String(m.id),kind:String(m.kind||'mark'),label:String(m.label||''),atSeconds:Number(m.atSeconds)})):[];
 }
+// THE TAPE PLAYED WITHOUT THE MACHINE: the phone box runs it through its slot
+// one second per second connected (src/game/payphone-tape.js). The head moves;
+// nothing on the tape changes; it never runs past the end.
+export function advanceHeadTo(seconds){
+  if(state.playing||state.seeking)return state.head;
+  state.head=Math.max(0,Math.min(state.end,Number(seconds)||0));
+  return state.head;
+}
+// Things that got onto the tape without being a take (his voicemail to Lyle,
+// recorded while the tape was in the slot). One per id.
+export function addTapeMarker({id,kind='mark',label='',atSeconds=0}={}){
+  if(!id)return null;
+  state.markers=(state.markers||[]).filter(m=>m.id!==id);
+  const marker={id:String(id),kind:String(kind),label:String(label),atSeconds:Math.max(0,Math.min(state.end,Number(atSeconds)||0))};
+  state.markers.push(marker);state.markers.sort((a,b)=>a.atSeconds-b.atSeconds);
+  return {...marker};
+}
+export function tapeMarkers(){return (state.markers||[]).map(m=>({...m}));}
+export function removeTapeMarker(id){const before=(state.markers||[]).length;state.markers=(state.markers||[]).filter(m=>m.id!==id);return state.markers.length!==before;}
 export function tapeTake(id){return state.history.find(t=>t.id===id)||state.takes.get(id)||null;}
+
+// A recording received in the world occupies the same physical tape as the
+// player's takes. Its authored material never picks a guest or counts as work.
+// The stable room id makes receipt idempotent, including recovery after reload.
+export function archiveAuthoredTake({ roomId, durationSeconds, discrete = [], place = null } = {}) {
+  if (!roomId || !Number.isFinite(durationSeconds) || durationSeconds <= 0) return null;
+  const existing = state.history.find(t => t.roomId === roomId && !t.voided);
+  if (existing) return existing;
+  if (hasOpenTake()) return null;
+  const duration = sourceDuration(durationSeconds), ordinal = state.history.length + 1;
+  const take = { id: `take:${ordinal}`, ordinal, roomId, startSeconds: state.end,
+    endSeconds: state.end + duration, durationSeconds: duration, cleanSeconds: 0,
+    status: 'archived', counted: false, sealed: true, authored: true,
+    at: Date.now(), contaminated: false, place, cell: null, levels: new Map(),
+    audible: [], guest: null, presence: { peak: 0, atSec: 0 },
+    discrete: discrete.map((e) => ({ cueId: String(e.cueId || ''),
+      atSec: Math.max(0, Math.min(duration, Number(e.atSec) || 0)),
+      gain: Number.isFinite(Number(e.gain)) ? Number(e.gain) : 1, pan: 0,
+      provenance: { system: 'authored-recording', ...(e.provenance || {}) } })),
+  };
+  state.history.push(take); state.takes.set(roomId, take);
+  state.head = state.end = take.endSeconds;
+  return take;
+}
 
 function seekTo(target, then=null){
   const distance=Math.abs(target-state.head);
@@ -313,6 +359,7 @@ export function takeMarks(roomId, { seconds = null } = {}) {
   }
   return marks.sort((a, b) => a.at - b.at);
 }
+export function hasOpenTake() { return [...state.takes.values()].some(take => !take.sealed); }
 export function isPlaying() { return !!state.playing || !!state.seeking; }
 
 // ── the store, read ──────────────────────────────────────────────────────────
@@ -321,13 +368,52 @@ export function isPlaying() { return !!state.playing || !!state.seeking; }
 // The job sheet: every room that has been recorded, whether or not the
 // transport has settled yet.
 export function sealedTakes() { return [...state.takes.values()].map(t=>t.sealed||t.counted?t:t.previous).filter(Boolean); }
-export function takeRoomIds() { return sealedTakes().map((t) => t.roomId); }
+export function takeRoomIds() { return sealedTakes().filter((t) => t.counted !== false).map((t) => t.roomId); }
 export function takeIsContaminated(roomId) { return !!state.takes.get(roomId)?.contaminated; }
 export function contaminatedRooms() { return sealedTakes().filter((t) => t.contaminated).map((t) => t.roomId); }
 export function takePlace(roomId) { return state.takes.get(roomId)?.place || null; }
 export function takePlaces() {
   return Object.fromEntries(sealedTakes().filter((t) => t.place).map((t) => [t.roomId, t.place]));
 }
+// Explicit, non-narrative fixtures. Never relax markTake() to invent a tape.
+// Validate the complete batch before writing: a busy deck or malformed room
+// must not leave half of the work order granted. Existing real tapes are kept
+// byte-for-byte, including their guest, contamination, timestamps and location.
+export function debugSetTakes(roomIds, present = true, { durationSeconds = PLAYBACK.sourceSeconds, cells = {}, places = {} } = {}) {
+  if (!Array.isArray(roomIds) || roomIds.some(id => typeof id !== 'string' || !id.trim()) || typeof present !== 'boolean') {
+    return { ok: false, changed: 0, reason: 'INVALID TAKE REQUEST' };
+  }
+  if (isPlaying() || hasOpenTake()) {
+    return { ok: false, changed: 0, reason: 'STOP RECORDING / PLAYBACK FIRST' };
+  }
+  const ids = [...new Set(roomIds)], staged = [];
+  if (present) {
+    for (const roomId of ids) {
+      if (state.takes.has(roomId)) continue;
+      const cell = cells[roomId] ?? null;
+      if (cell && (!Number.isFinite(cell.x) || !Number.isFinite(cell.y))) {
+        return { ok: false, changed: 0, reason: `INVALID TAKE LOCATION: ${roomId}` };
+      }
+      const duration = sourceDuration(durationSeconds), ordinal = state.history.length + staged.length + 1;
+      const start = staged.at(-1)?.endSeconds ?? state.end;
+      staged.push({
+        id: `take:${ordinal}`, ordinal, roomId, cell: cell ? { ...cell } : null,
+        startSeconds: start, endSeconds: start + duration, durationSeconds: duration,
+        cleanSeconds: duration, status: 'accepted', counted: true, sealed: true,
+        debug: true, at: Date.now(), contaminated: false, place: places[roomId] || null,
+        levels: new Map(), audible: [], discrete: [], guest: null,
+        presence: { peak: 0, atSec: 0 },
+      });
+    }
+    for (const take of staged) { state.history.push(take); state.takes.set(take.roomId, take); }
+    if (staged.length) state.head = state.end = staged.at(-1).endSeconds;
+    return { ok: true, changed: staged.length, reason: '' };
+  }
+  let changed = 0;
+  for (const id of ids) if (forgetTake(id)) changed++;
+  return { ok: true, changed, reason: '' };
+}
+
 export function forgetTake(roomId) {
   for(const take of state.history)if(take.roomId===roomId)take.voided=true;
   return state.takes.delete(roomId);
@@ -344,6 +430,8 @@ export function serializeTakes() {
     id:t.id,ordinal:t.ordinal,startSeconds:t.startSeconds,endSeconds:t.endSeconds,
     status:t.status||(t.id&&!t.sealed?'abandoned':'accepted'),cleanSeconds:Number(t.cleanSeconds)||0,slate:t.slate?{...t.slate}:null,
     voided:!!t.voided,
+    ...(t.authored ? { authored: true } : {}),
+    ...(t.debug ? { debug: true } : {}),
     roomId: t.roomId,
     at: t.at,
     durationSeconds: t.id&&!t.sealed?Math.max(.01,t.endSeconds-t.startSeconds):sourceDuration(t.durationSeconds),
@@ -377,11 +465,13 @@ export function loadTakes(saved = []) {
     const take={
       id:`take:${state.history.length+1}`,ordinal:state.history.length+1,
       startSeconds:state.end,endSeconds:state.end+duration,
-      status:['abandoned','spoiled'].includes(row.status)?row.status:'accepted',
+      status:['abandoned','spoiled','archived'].includes(row.status)?row.status:'accepted',
       cleanSeconds:Number(row.cleanSeconds)||0,slate:row.slate?{...row.slate}:null,voided:!!row.voided,
+      ...(row.debug ? { debug: true } : {}),
+      ...(row.authored ? { authored: true } : {}),
       roomId: row.roomId,
       durationSeconds: sourceDuration(row.durationSeconds),
-      cell: row.cell ? { ...row.cell } : { x: 0, y: 0 },
+      cell: row.cell ? { ...row.cell } : row.debug || row.authored ? null : { x: 0, y: 0 },
       levels: new Map(),
       discrete: (row.discrete || []).map((e) => ({ ...e })),
       presence: { peak: row.presence?.peak || 0, atSec: row.presence?.atSec || 0 },
@@ -395,7 +485,7 @@ export function loadTakes(saved = []) {
       migrated: !!row.migrated,
     };
     state.history.push(take);state.head=state.end=take.endSeconds;
-    if(take.status==='accepted'&&!take.voided)state.takes.set(row.roomId,take);
+    if(['accepted','archived'].includes(take.status)&&!take.voided)state.takes.set(row.roomId,take);
   }
   return state.takes.size;
 }
@@ -550,6 +640,11 @@ export function playTake(roomId, { character = 1, atHead = false } = {}) {
 
   for(const event of t.discrete||[]){
     const playbackAt=t0+Math.min(playbackSeconds-.01,sourcePosition(event.atSec,t.durationSeconds)*playbackSeconds);
+    if(event.cueId===TOWER_PERSONAL_CUE){
+      const recording=playTowerPersonalRecording({context:ctx,destination:out,when:playbackAt,gain:event.gain});
+      if(recording)nodes.push(recording);
+      continue;
+    }
     if(state.scheduleDiscrete){state.scheduleDiscrete(event.cueId,playbackAt,{gain:event.gain,pan:event.pan,output:out,nodes});continue;}
     if(event.cueId==='bell.tenor.clock'){
       const osc=ctx.createOscillator(),gain=ctx.createGain(),panner=ctx.createStereoPanner();osc.type='sine';osc.frequency.value=233.08;gain.gain.setValueAtTime(.0001,playbackAt);gain.gain.exponentialRampToValueAtTime(.14*Math.max(.1,event.gain),playbackAt+.012);gain.gain.exponentialRampToValueAtTime(.0001,playbackAt+5.8);panner.pan.value=event.pan;osc.connect(gain);gain.connect(panner);panner.connect(out);osc.start(playbackAt);osc.stop(playbackAt+6);nodes.push(osc,gain,panner);

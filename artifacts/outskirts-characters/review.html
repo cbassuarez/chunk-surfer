@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Outskirts · production character review</title>
+<style>
+:root{color-scheme:dark;font:14px/1.45 system-ui;background:#101211;color:#e4e6de}*{box-sizing:border-box}body{margin:0;padding:24px;max-width:1440px;margin:auto}h1{font:500 23px/1.2 system-ui;margin:0 0 6px}p{margin:0 0 18px;color:#a8afa4}.layout{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:20px}.picture{background:#030403;border:1px solid #33382f;aspect-ratio:16/10;position:relative}canvas{width:100%;height:100%;display:block}#frame-label{position:absolute;left:16px;bottom:12px;font:12px monospace;color:#d2d6cc;pointer-events:none;text-shadow:0 1px 4px #000}aside{display:flex;flex-direction:column;gap:14px}label{display:block;color:#b9c0b3}select,button,input{font:inherit}select,button{padding:7px 10px;border:1px solid #4d5645;background:#22271e;color:#f0f3e9;border-radius:3px}select{display:block;width:100%;margin-top:5px}input[type=range]{display:block;width:100%;accent-color:#bbcba8;margin:6px 0 0}.row{display:flex;gap:7px}.row>*{flex:1}.value{float:right;color:#f0f3e9;font-variant-numeric:tabular-nums}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #d8e4c5;outline-offset:3px}#status{padding:12px 14px;background:#1a2117;border-left:3px solid #8ba574;white-space:pre-wrap;font:12px/1.6 monospace;margin:18px 0 0}#status.error{border-color:#c47f63;background:#281c17}details{margin-top:16px;color:#adb6a3}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:11px/1.5 monospace}.note{font-size:12px;color:#929c89;margin-top:14px}@media(max-width:780px){body{padding:14px}.layout{grid-template-columns:1fr}.picture{aspect-ratio:1/1;min-height:350px}aside{display:grid;grid-template-columns:1fr 1fr;gap:12px}h1{font-size:20px}}
+</style>
+<h1>Outskirts · production character review</h1>
+<p>Seated Wrong Fold and recorded Overprint. Actual encounter layout, game meshes, skinning, corrective morphs, torch shadows, Source world composite, VFD encode and final post.</p>
+<div class="layout"><div class="picture"><canvas id="scene" aria-label="Production character renderer"></canvas><span id="frame-label">Compiling production shaders…</span></div><aside>
+<label>Body<select id="body"><option value="fold">Wrong Fold · guard</option><option value="overprint">Overprint · three recorded poses</option></select></label>
+<label>Clip<select id="clip"><option>fold</option><option>writhe</option><option>idle</option><option>walk</option><option>turn</option></select></label>
+<label>Time <output id="time-value" class="value">0.00 s</output><input id="time" type="range" min="0" max="12" step=".01" value="0"></label>
+<div class="row"><button id="play">Play</button><button id="force-start">1.10 s</button><button id="force-end">2.55 s</button></div>
+<label>Inspect pass<select id="stage"><option value="finished">Finished physical view</option><option value="reflection">Finished mirrored pass</option><option value="raw">Raw physical material pass</option><option value="shadow">Torch shadow map</option></select></label>
+<label>Finish<select id="finish"><option value="full">Actual VFD + POST_FRAG</option><option value="post">Actual POST_FRAG only</option></select></label>
+<label>Orbit <output id="orbit-value" class="value">180°</output><input id="orbit" type="range" min="-180" max="180" step="1" value="180"></label>
+<label>Distance <output id="distance-value" class="value">2.2 m</output><input id="distance" type="range" min="1.1" max="8" step=".05" value="2.15"></label>
+<label>Eye height <output id="height-value" class="value">1.6 m</output><input id="height" type="range" min=".25" max="2.8" step=".05" value="1.6"></label>
+<label>Light scale <output id="light-value" class="value">1.0</output><input id="light" type="range" min=".15" max="3" step=".05" value="1"></label>
+<div class="row"><button id="reload">Reload GLB</button><button id="reset">Reset camera</button></div>
+<button id="reference">Reference front view</button>
+</aside></div>
+<div id="status" role="status">Initializing…</div>
+<p class="note">The reflective stage displays the mirrored camera submission, then the same finish. The physical Overprint view uses the actual road puddle compositor. This harness does not reproduce story progression or collision. Animation only advances after Play.</p>
+<details><summary>Renderer diagnostics</summary><pre id="diagnostics"></pre></details>
+<script type="module" src="./review.js"></script>
+</html>

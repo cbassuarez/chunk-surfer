@@ -2,7 +2,7 @@ import { uiSize, uiText, uiScrim } from '../render/ui.js';
 import { withMachinePanel } from '../render/presentation.js';
 import * as AUDIO from '../audio/story-audio.js';
 
-const selectable = (row) => !!row && row.kind !== 'section' && row.selectable !== false;
+import { godRowSelectable as selectable, validateGodTabs } from './god-menu-actions.js';
 
 export function resolveGodRowValue(row) {
   if (typeof row?.value === 'function') return row.value();
@@ -14,7 +14,9 @@ export function resolveGodRowDanger(row) {
   return typeof row?.danger === 'function' ? !!row.danger() : !!row?.danger;
 }
 
-export function makeGodMenuScene({ tabs = [], onClose = () => {} } = {}) {
+export function makeGodMenuScene({ tabs = [], onClose = () => {}, onError = (error) => console.error('[god-menu]', error) } = {}) {
+  validateGodTabs(tabs);
+  let pending = false, closed = false;
   const availableTabs = tabs.filter((tab) => Array.isArray(tab?.rows) && tab.rows.length);
   let tabIndex = 0;
   let selected = 0;
@@ -50,22 +52,32 @@ export function makeGodMenuScene({ tabs = [], onClose = () => {} } = {}) {
   }
 
   function close() {
+    if (closed) return;
+    closed = true;
     onClose();
   }
 
+  function invoke(row, adjustment = null) {
+    if (closed || pending || !selectable(row)) return;
+    const handler = adjustment == null ? (row.activate || (() => row.adjust(1))) : () => row.adjust?.(adjustment);
+    try {
+      pending = true;
+      if (adjustment == null && row.closeMenu) close();
+      const result = handler();
+      if (result && typeof result.then === 'function') {
+        void Promise.resolve(result).catch(onError).finally(() => { pending = false; });
+      } else pending = false;
+    } catch (error) { pending = false; onError(error); }
+  }
+
   function activate(row) {
-    if (!selectable(row)) return;
+    if (closed || pending || !selectable(row)) return;
     AUDIO.menuConfirm();
-    if (row.closeMenu) {
-      close();
-      row.activate?.();
-      return;
-    }
-    if (row.activate) row.activate();
-    else row.adjust?.(1);
+    invoke(row);
   }
 
   function key(event) {
+    if (closed) return true;
     const raw = event.key || '';
     const keyName = raw.toLowerCase();
     const code = event.code || '';
@@ -84,12 +96,12 @@ export function makeGodMenuScene({ tabs = [], onClose = () => {} } = {}) {
     clampSelection();
     const row = rows()[selected];
     if (raw === 'ArrowLeft' || keyName === 'a' || code === 'KeyA') {
-      row?.adjust?.(-1);
+      invoke(row, -1);
       AUDIO.menuMove();
       return true;
     }
     if (raw === 'ArrowRight' || keyName === 'd' || code === 'KeyD') {
-      row?.adjust?.(1);
+      invoke(row, 1);
       AUDIO.menuMove();
       return true;
     }

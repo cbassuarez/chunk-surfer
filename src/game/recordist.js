@@ -279,6 +279,18 @@ export function addSheet(id = 'sheet-goldberg-aria') {
   state.sheets.push(String(id));
   return state.sheets.length;
 }
+// A debug edit names the piece and its acquisition state, never fabricates
+// duplicate copies and never reloads/reset the live recordist to edit inventory.
+export function debugSetSheet(id, mode = 'carried') {
+  const key = typeof id === 'string' ? id.trim() : '';
+  if (!key || !['uncollected', 'carried', 'spent'].includes(mode) || isRecording()) return false;
+  const carried = state.sheets.includes(key);
+  state.sheets = state.sheets.filter((value, index, all) => value !== key || (mode === 'carried' && all.indexOf(key) === index));
+  state.sheetsTaken = state.sheetsTaken.filter((value, index, all) => value !== key || (mode !== 'uncollected' && all.indexOf(key) === index));
+  if (mode !== 'uncollected' && !state.sheetsTaken.includes(key)) state.sheetsTaken.push(key);
+  if (mode === 'carried' && !carried) state.sheets.push(key);
+  return true;
+}
 // Spending one is the whole transaction: it fails if there is none, and it
 // fails if it would do nothing, so a full recordist cannot burn a sheet.
 export function readSheet(amount = 3 * COMPOSURE_GRID) {
@@ -384,6 +396,30 @@ export function emitNoise(level, x, y, reason = 'something moved', options = {})
     kind: kind || inferAcousticKind(reason, heard),
     level: heard, x, y, reason, sourceKind, sourceId, playerGenerated,
     spoils, deliberate, sampleId, audibleToHush, audibleToMonitor,
+  });
+}
+
+// A THING STANDING IN THE ROOM BEING RECORDED, THAT IS NOT HIM.
+//
+// The practice wing's metronomes (game/practice-metronomes.js). A room-tone take
+// of a room with a clock ticking in it is a spoiled take, so these reach the
+// needle and spoil exactly by level, as his own noise does. They are not his:
+// no injury floor is added (that is his limp, not the metronome's), they are not
+// player-generated, and `audibleToHush: false` tells the loud-noise sink not to
+// send anything after him for it. They land on the ambient channel, which is
+// what the needle already draws for things in the room that are not him.
+export function emitRoomSourceNoise(level, x, y, reason = 'something in the room', options = {}) {
+  const heard = Math.max(0, Number(level) || 0);
+  if (!(heard > 0)) return;
+  state.ambient = Math.max(state.ambient, heard);
+  if (x != null) state.lastNoiseAt = { x, y, t: performance.now() };
+  handleRecordingNoise(heard, reason, {
+    sourceKind: 'environment',
+    sourceId: options.sourceId || 'room-source',
+    playerGenerated: false,
+    deliberate: false,
+    kind: options.kind || 'instrument_note',
+    audibleToHush: false,
   });
 }
 
@@ -590,7 +626,13 @@ export function hasTake(roomId) { return state.takes.includes(roomId); }
 export function takeIsContaminated(roomId) { return state.contaminated.includes(roomId); }
 export function contaminatedTakes() { return [...state.contaminated]; }
 export function setTake(roomId, present = true) {
+  if (isRecording()) return false;
   if (!roomId) return false;
+  if (takeSink) {
+    const result = takeSink.debugSet?.([roomId], !!present);
+    projectTakes();
+    return result?.ok === true && hasTake(roomId) === !!present;
+  }
   if (present) addTake(roomId);
   else {
     takeSink?.forget?.(roomId);

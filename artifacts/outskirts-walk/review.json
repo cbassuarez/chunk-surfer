@@ -1,0 +1,54 @@
+{
+  "date": "2026-10-11",
+  "preview": "http://127.0.0.1:5291/",
+  "implementation": "29-pass outskirts street, actual shell openings and support surfaces, close bus encounter, persistent world actions and observation state, recorded reflection replay, positioned street foley, resumable Last Light",
+  "checks": {
+    "production_build": "passed",
+    "focused_tests": {
+      "passed": 30,
+      "failed": 0
+    },
+    "continuous_runtime_walk": {
+      "passed": true,
+      "metres": 1120.5,
+      "passes": 29,
+      "halfway_save_reload": true,
+      "last_light_pool_reached": true
+    },
+    "browser_review": {
+      "renderer": "production world shader",
+      "viewport": [
+        1200,
+        800
+      ],
+      "stops": [
+        "OUT \u2014 THE BUS PASSAGE",
+        "OUT \u2014 BESIDE THE BUS",
+        "OUT \u2014 THE LODGE HATCH",
+        "OUT \u2014 THE LAST LIGHT"
+      ],
+      "captured_console_errors": 0
+    }
+  },
+  "screenshots": [
+    "bus-approach.jpg",
+    "bus-close.jpg",
+    "lodge-counter.jpg",
+    "last-light.jpg"
+  ],
+  "full_suite": {
+    "passed": false,
+    "stop": "test/setup-handoff.spec.mjs:352",
+    "reason": "VM fixture: rollMetronomeRestart is not defined"
+  },
+  "remaining_acceptance": [
+    "Supply the real Seb and Sarah performer recording at public/assets/audio/outskirts/last-light.mp3. Hiss and unchanged timed captions currently play.",
+    "An uninterrupted first-person walk and listening review remain necessary for pacing and emotional acceptance. Developer stops and the continuous runtime test are distinct evidence."
+  ],
+  "logs": [
+    "focused-tests.log",
+    "build.log",
+    "continuous-walk.log",
+    "full-suite-attempt.log"
+  ]
+}

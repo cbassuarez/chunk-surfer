@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { isViewportTooSmall } from '../src/platform/display-policy.js';
-import { ensureViewportFaultOverlay, installViewportGuard, paintViewportFaultReadout, viewportFaultTextRows } from '../src/platform/viewport-guard.js';
+import { ensureViewportFaultOverlay, installViewportGuard, paintViewportFaultReadout, viewportFaultTextRows, setSourceCommandViewport, currentStageLayout } from '../src/platform/viewport-guard.js';
 import { measureElectronicText } from '../src/render/electronic-text.js';
 import { applyVfdSettings, vfdSettings } from '../src/render/palette.js';
 import { vfdDomTheme } from '../src/render/vfd-dom.js';
@@ -46,6 +46,28 @@ test('viewport guard toggles fault class and overlay', () => {
 
   dispose();
   assert.equal(listeners.has('resize'), false);
+});
+
+test('Source command lease retains physical type size and restores the ordinary viewport guard', () => {
+  const classes=new Set(),listeners=new Map(),overlay={hidden:true};
+  const doc={head:{appendChild(){}},documentElement:{style:{setProperty(){}},dataset:{}},
+    body:{classList:{toggle(name,on){if(on)classes.add(name);else classes.delete(name);}}},
+    querySelector:()=>overlay,createElement:()=>({dataset:{}})};
+  const win={innerWidth:1040,innerHeight:480,Event:class{constructor(type){this.type=type;}},
+    addEventListener:(name,fn)=>listeners.set(name,fn),removeEventListener:name=>listeners.delete(name),
+    dispatchEvent:e=>listeners.get(e.type)?.()};
+  const dispose=installViewportGuard({window:win,document:doc});
+  try{
+    assert.equal(overlay.hidden,false);
+    setSourceCommandViewport({width:960,height:480},{window:win,document:doc});
+    assert.equal(overlay.hidden,true);assert.equal(classes.has('source-command-window'),true);
+    assert.equal(currentStageLayout().scale,1);assert.equal(currentStageLayout().renderedWidth,1040);
+    win.innerHeight=479;win.dispatchEvent(new win.Event('resize'));assert.equal(overlay.hidden,false);
+    win.innerHeight=480;
+    setSourceCommandViewport(null,{window:win,document:doc});
+    assert.equal(overlay.hidden,false);assert.equal(classes.has('source-command-window'),false);
+    assert.equal(currentStageLayout().scale,.6);
+  }finally{setSourceCommandViewport(null,{window:win,document:doc});dispose();}
 });
 
 test('viewport fault uses the shared VFD machine card', () => {

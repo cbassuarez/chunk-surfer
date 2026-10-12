@@ -1,0 +1,216 @@
+{
+  "schemaVersion": 1,
+  "id": "source-space.last-light",
+  "title": "The Last Light",
+  "status": "active",
+  "entry": "recording",
+  "entries": [
+    "recording"
+  ],
+  "tags": [
+    "source-space",
+    "outskirts",
+    "recording"
+  ],
+  "notes": "The recording on his DA-1000, lying in the road under the one faulty streetlight at the end of the outskirts road (docs/plans/outskirts-losing-himself.md). Early days: the two of them out at night with this same recorder, narrating an ordinary street like a nature documentary. About 90 seconds; it plays out once he is standing where the reflection was, it cannot be stopped, and the light fails on the last word. The voices are Seb's to record: until an audio file exists (public/assets/audio/outskirts/last-light.mp3), main plays room tone and tape hiss and shows these lines at their `at` seconds. Every line is a draft for Seb to revise first; the one that has to land is \"We'll do another one. We'll do loads.\"",
+  "regions": [
+    {
+      "id": "source-space.last-light.region",
+      "title": "The Last Light",
+      "kind": "scene",
+      "color": "#2b2620",
+      "nodeIds": [
+        "recording"
+      ]
+    }
+  ],
+  "nodes": {
+    "recording": {
+      "id": "recording",
+      "type": "dialogue",
+      "speaker": "THE DA-1000",
+      "lines": [
+        {
+          "id": "recording.1",
+          "who": "direction",
+          "text": "[Tape hiss. A click. Wind across the mic, and traffic a long way off.]",
+          "at": 0
+        },
+        {
+          "id": "recording.2",
+          "who": "you",
+          "text": "Testing. Testing. This is... what is this.",
+          "at": 2.5
+        },
+        {
+          "id": "recording.3",
+          "who": "sarah",
+          "text": "It's the street. Tell them it's the street.",
+          "at": 5
+        },
+        {
+          "id": "recording.4",
+          "who": "you",
+          "text": "This... is the street.",
+          "at": 7.5
+        },
+        {
+          "id": "recording.5",
+          "who": "direction",
+          "text": "[She laughs straight into the mic. It peaks.]",
+          "at": 9.5
+        },
+        {
+          "id": "recording.6",
+          "who": "you",
+          "text": "Here we see the lamp post, in its natural habitat. Solitary. Nocturnal.",
+          "at": 12
+        },
+        {
+          "id": "recording.7",
+          "who": "sarah",
+          "text": "He's lonely.",
+          "at": 17
+        },
+        {
+          "id": "recording.8",
+          "who": "you",
+          "text": "He's not lonely. He's got a job to do.",
+          "at": 18.5
+        },
+        {
+          "id": "recording.9",
+          "who": "sarah",
+          "text": "(low, as the lamp) I light the pavement. Nobody thanks me.",
+          "at": 21
+        },
+        {
+          "id": "recording.10",
+          "who": "direction",
+          "text": "[Both of them gone, laughing, a long way from the mic.]",
+          "at": 25
+        },
+        {
+          "id": "recording.11",
+          "who": "you",
+          "text": "Keep it down, keep it down, there's one coming.",
+          "at": 29
+        },
+        {
+          "id": "recording.12",
+          "who": "direction",
+          "text": "[A bus pulling in. The doors hiss open. Nobody gets on.]",
+          "at": 32
+        },
+        {
+          "id": "recording.13",
+          "who": "you",
+          "text": "(whispering) The night bus. Nobody knows where it goes. Nobody has ever come back.",
+          "at": 35
+        },
+        {
+          "id": "recording.14",
+          "who": "sarah",
+          "text": "It's the forty-two. It goes to my mum's.",
+          "at": 40
+        },
+        {
+          "id": "recording.15",
+          "who": "you",
+          "text": "Nobody has ever come back from your mum's.",
+          "at": 43
+        },
+        {
+          "id": "recording.16",
+          "who": "direction",
+          "text": "[The doors close. She's laughing so hard she has to sit down on the kerb.]",
+          "at": 46
+        },
+        {
+          "id": "recording.17",
+          "who": "sarah",
+          "text": "Give it here. Give it. It's my turn.",
+          "at": 50
+        },
+        {
+          "id": "recording.18",
+          "who": "direction",
+          "text": "[The mic changes hands. Closer now, her breath on it.]",
+          "at": 53
+        },
+        {
+          "id": "recording.19",
+          "who": "sarah",
+          "text": "And here we have the recordist. Rare. Very shy. Only comes out at night.",
+          "at": 56
+        },
+        {
+          "id": "recording.20",
+          "who": "you",
+          "text": "Don't.",
+          "at": 61
+        },
+        {
+          "id": "recording.21",
+          "who": "sarah",
+          "text": "He's pretending he isn't listening. He's always listening.",
+          "at": 62.5
+        },
+        {
+          "id": "recording.22",
+          "who": "sarah",
+          "text": "He thinks he's recording the street. He's recording me.",
+          "at": 66.5
+        },
+        {
+          "id": "recording.23",
+          "who": "direction",
+          "text": "[Nothing for a while but the street.]",
+          "at": 70.5
+        },
+        {
+          "id": "recording.24",
+          "who": "you",
+          "text": "...Yeah.",
+          "at": 73
+        },
+        {
+          "id": "recording.25",
+          "who": "sarah",
+          "text": "What are we going to do with this?",
+          "at": 75
+        },
+        {
+          "id": "recording.26",
+          "who": "you",
+          "text": "Keep it. We'll play it when we're old.",
+          "at": 77.5
+        },
+        {
+          "id": "recording.27",
+          "who": "sarah",
+          "text": "We'll do another one. We'll do loads.",
+          "at": 81
+        },
+        {
+          "id": "recording.28",
+          "who": "you",
+          "text": "Loads.",
+          "at": 84
+        },
+        {
+          "id": "recording.29",
+          "who": "direction",
+          "text": "[She's already walking away, calling something back. He follows. The mic knocks against something.]",
+          "at": 85.5
+        },
+        {
+          "id": "recording.30",
+          "who": "direction",
+          "text": "[Click.]",
+          "at": 89
+        }
+      ]
+    }
+  }
+}

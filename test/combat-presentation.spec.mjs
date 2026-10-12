@@ -113,7 +113,7 @@ test('hits carry weight: hit-stop, ghost gauge, damage popups, entry wipe, impac
 test('the enemy takes its own beat: player and enemy resolutions are sequenced', () => {
   // The player action resolves, then a distinct enemy beat runs when the turn
   // was deferred to the enemy phase — not folded into one atomic flash.
-  assert.match(combatSceneSource, /function beginEnemyBeat\(\)/);
+  assert.match(combatSceneSource, /function beginEnemyBeat\(heldTool = activeTool\(\)\.id\)/);
   assert.match(combatSceneSource, /advanceEnemy\(state\)/);
   assert.match(combatSceneSource, /side: 'enemy'/);
   assert.match(combatSceneSource, /side: 'player'/);

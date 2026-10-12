@@ -59,6 +59,14 @@ export function plantHissing(){return plantRecordingBlocked();}
 export function hasPlantSpanner(){return state.spannerOwned;}
 export function heavyWrenchDragging(){return state.heavyMode==='dragging';}
 
+// Debug ownership only: do not normalize/reload the incident (that resets its
+// live isolation clock). A tool cannot disappear out of an active repair.
+export function debugSetPlantSpanner(owned) {
+  if (state.phase === PLANT_INCIDENT_PHASE.ISOLATING && state.activeTool === PLANT_TOOL.SPANNER) return false;
+  state.spannerOwned = !!owned;
+  return true;
+}
+
 export function collectPlantSpanner(){
   if(state.spannerOwned)return false;state.spannerOwned=true;return true;
 }

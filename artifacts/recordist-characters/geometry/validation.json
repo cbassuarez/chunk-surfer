@@ -1,0 +1,91 @@
+{
+  "boy": {
+    "stats": {
+      "vertices": 15293,
+      "triangles": 29229,
+      "materialGroups": 12
+    },
+    "sha256": "86a60ae94c2862a702495af1705dffaadbf965854657f4bd4657a89f5c838e91",
+    "same34RestBones": true,
+    "finiteNormalizedArrays": true,
+    "facialAbsence": {
+      "removedFaces": 3931,
+      "boundaryVertices": 80,
+      "closedRear": true,
+      "eyesPresent": false,
+      "nosePresent": false,
+      "mouthPresent": false,
+      "rearZ": -0.035,
+      "recessionMetres": 0.044,
+      "closedBowl": true
+    },
+    "frontApertureRays": [
+      {
+        "xy": [
+          0,
+          1.19
+        ],
+        "firstHit": [
+          -0.035,
+          12,
+          "boy-closed-facial-absence"
+        ]
+      },
+      {
+        "xy": [
+          0,
+          1.235
+        ],
+        "firstHit": [
+          -0.035,
+          12,
+          "boy-closed-facial-absence"
+        ]
+      },
+      {
+        "xy": [
+          0,
+          1.275
+        ],
+        "firstHit": [
+          -0.03500000000000001,
+          12,
+          "boy-closed-facial-absence"
+        ]
+      },
+      {
+        "xy": [
+          0.035,
+          1.235
+        ],
+        "firstHit": [
+          -0.035,
+          12,
+          "boy-closed-facial-absence"
+        ]
+      },
+      {
+        "xy": [
+          -0.035,
+          1.235
+        ],
+        "firstHit": [
+          -0.035,
+          12,
+          "boy-closed-facial-absence"
+        ]
+      }
+    ]
+  },
+  "contractor": {
+    "stats": {
+      "vertices": 23882,
+      "triangles": 45544,
+      "materialGroups": 12
+    },
+    "sha256": "9d80535407f009bfd36f56548d6e1b6031fdafafa06e3d238c4eb3413a9d8a8d",
+    "same34RestBones": true,
+    "finiteNormalizedArrays": true,
+    "facialAbsence": null
+  }
+}

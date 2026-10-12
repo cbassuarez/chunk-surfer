@@ -1,0 +1,22 @@
+{
+  "generatedAt": "2026-10-12T07:16:23.574Z",
+  "url": "http://127.0.0.1:5299/?nodisplaynotice=1&skipwarn=1&nomic=1&sam=0&nothink=1",
+  "scope": "Frozen production page in actual Chromium/Metal. When selected, a diagnostic won-fight checkpoint establishes the collapsed body; ordinary E/W performs extraction and actual reload + title Continue verifies persistence. An isolated terminal review establishes the defeat-ending presenter precondition; ordinary Enter completes it without E/resistance. A separate fourth-strike E tests optional expression. No served source, shader or module substitution. This does not prove a whole campaign, three earned combat defeats or perceptual headphone acceptance.",
+  "selected": {
+    "only": "won-and-lost",
+    "normalOnly": false,
+    "recordingFlagPrecondition": "station.recordist.complete=true; personal-journey earning proved separately"
+  },
+  "recordingCheck": true,
+  "production": [],
+  "checks": [],
+  "captures": [],
+  "traces": [],
+  "errors": [
+    {
+      "mode": "normal",
+      "stage": "boot",
+      "fatal": "ProtocolError: Target.setAutoAttach timed out. Increase the 'protocolTimeout' setting in launch/connect calls for a higher timeout if needed.\n    at <instance_members_initializer> (file:///Users/seb/chunk-surfer/node_modules/puppeteer-core/lib/puppeteer/common/CallbackRegistry.js:102:14)\n    at new Callback (file:///Users/seb/chunk-surfer/node_modules/puppeteer-core/lib/puppeteer/common/CallbackRegistry.js:106:16)\n    at CallbackRegistry.create (file:///Users/seb/chunk-surfer/node_modules/puppeteer-core/lib/puppeteer/common/CallbackRegistry.js:25:26)\n    at Connection._rawSend (file:///Users/seb/chunk-surfer/node_modules/puppeteer-core/lib/puppeteer/cdp/Connection.js:118:26)\n    at Connection.send (file:///Users/seb/chunk-surfer/node_modules/puppeteer-core/lib/puppeteer/cdp/Connection.js:105:21)\n    at TargetManager.initialize (file:///Users/seb/chunk-surfer/node_modules/puppeteer-core/lib/puppeteer/cdp/TargetManager.js:98:32)\n    at async CdpBrowser._attach (file:///Users/seb/chunk-surfer/node_modules/puppeteer-core/lib/puppeteer/cdp/Browser.js:90:9)\n    at async CdpBrowser._create (file:///Users/seb/chunk-surfer/node_modules/puppeteer-core/lib/puppeteer/cdp/Browser.js:38:9)\n    at async ChromeLauncher.launch (file:///Users/seb/chunk-surfer/node_modules/puppeteer-core/lib/puppeteer/node/BrowserLauncher.js:145:31)\n    at async ChromeLauncher.launch (file:///Users/seb/chunk-surfer/node_modules/puppeteer-core/lib/puppeteer/node/ChromeLauncher.js:39:16)"
+    }
+  ]
+}

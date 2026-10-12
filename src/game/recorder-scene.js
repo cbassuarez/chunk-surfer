@@ -386,6 +386,8 @@ export function makeRecorderScene({
         : browsingNow ? TRANSPORT.BROWSE
         : live.recording ? TRANSPORT.RECORD
           : live.playing ? TRANSPORT.PLAY
+            // In Source the idle machine is a trace instrument (source-trace.js).
+            : live.trace ? TRANSPORT.TRACE
             : TRANSPORT.MONITOR;
       const rowsNeeded = guideConvo ? 15
         : browsingNow ? Math.max(6, Math.min(9, takes().length + 2)) : 10;
@@ -403,7 +405,7 @@ export function makeRecorderScene({
         rect,
         source: live.source || null,
         guide: guideConvo?.view?.() || null,
-        progress: live.progress || 0,
+        progress: live.trace ? (live.face?.progress ?? 0) : (live.progress || 0),
         // Nothing is moving on a machine sitting in your hands doing nothing.
         spin: live.recording || live.playing ? (live.spin ?? 0) : 0,
         rows: browsingNow ? takes().map((take, index) => ({
@@ -418,8 +420,10 @@ export function makeRecorderScene({
         selected: row,
         // The reason the key under the cursor cannot be pressed, printed where
         // the machine talks about itself.
-        note: showNotice ? notice : (active && !active.enabled ? active.reason : (live.note || '')),
-        noteTheme: showNotice || (active && !active.enabled) ? 'amber' : (live.noteTheme || 'green'),
+        // Tracing, the note is the thread; REC's refusal is not what he raised the
+        // machine to read.
+        note: showNotice ? notice : live.trace ? (live.note || '') : (active && !active.enabled ? active.reason : (live.note || '')),
+        noteTheme: showNotice || (!live.trace && active && !active.enabled) ? 'amber' : (live.noteTheme || 'green'),
         // The footer says how to WORK the machine, not what is on it. It used to
         // reprint the key list with a caret, which put REC / PLAY / TAKES on the
         // panel twice — once as the key cluster against the right bezel and once

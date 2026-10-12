@@ -1,0 +1,442 @@
+TAP version 13
+# Subtest: production anatomy uses the approved rest bones, bounded geometry and real facial absence
+ok 1 - production anatomy uses the approved rest bones, bounded geometry and real facial absence
+  ---
+  duration_ms: 2240.972333
+  type: 'test'
+  ...
+# Subtest: exported poses retain supported feet and exact limb contacts throughout the saved transfer
+ok 2 - exported poses retain supported feet and exact limb contacts throughout the saved transfer
+  ---
+  duration_ms: 14950.141917
+  type: 'test'
+  ...
+# Subtest: idle clips close their breathing loop and move while the saved transfer does not loop
+ok 3 - idle clips close their breathing loop and move while the saved transfer does not loop
+  ---
+  duration_ms: 2.61575
+  type: 'test'
+  ...
+# Subtest: school and workroom use distinct ordinary physical characters with persisted, pause-safe performances
+ok 4 - school and workroom use distinct ordinary physical characters with persisted, pause-safe performances
+  ---
+  duration_ms: 2252.511666
+  type: 'test'
+  ...
+# Subtest: both transfer actors follow one four-second saved timeline and one recorder at every quarter
+ok 5 - both transfer actors follow one four-second saved timeline and one recorder at every quarter
+  ---
+  duration_ms: 806.832208
+  type: 'test'
+  ...
+# Subtest: the production GLB submits independent frozen body palettes to material, torch shadow and reflection passes
+ok 6 - the production GLB submits independent frozen body palettes to material, torch shadow and reflection passes
+  ---
+  duration_ms: 3887.179667
+  type: 'test'
+  ...
+# Subtest: portal crossings own actual destination ground and atomically reload there
+ok 7 - portal crossings own actual destination ground and atomically reload there
+  ---
+  duration_ms: 3728.145
+  type: 'test'
+  ...
+# Subtest: authored routes remain physically supported and furniture never blocks the main aisle
+ok 8 - authored routes remain physically supported and furniture never blocks the main aisle
+  ---
+  duration_ms: 4757.37575
+  type: 'test'
+  ...
+# Subtest: collapse removes the same furniture from rendering, collision and inspection in every motion mode
+ok 9 - collapse removes the same furniture from rendering, collision and inspection in every motion mode
+  ---
+  duration_ms: 2268.591667
+  type: 'test'
+  ...
+# Subtest: dissolution is deterministic and permanent floor or exit pieces never disappear
+ok 10 - dissolution is deterministic and permanent floor or exit pieces never disappear
+  ---
+  duration_ms: 7.357083
+  type: 'test'
+  ...
+# Subtest: every inspectable circuit prop resolves authored prose, including backtracking doors
+ok 11 - every inspectable circuit prop resolves authored prose, including backtracking doors
+  ---
+  duration_ms: 57.088875
+  type: 'test'
+  ...
+# Subtest: the voluntary invitation remains reachable and ungated across seeded door deals
+ok 12 - the voluntary invitation remains reachable and ungated across seeded door deals
+  ---
+  duration_ms: 33094.445541
+  type: 'test'
+  ...
+# Subtest: runtime entry clears the old crossing and early leave cannot restore the road
+ok 13 - runtime entry clears the old crossing and early leave cannot restore the road
+  ---
+  duration_ms: 475.314583
+  type: 'test'
+  ...
+# Subtest: legacy lock-in entry saves recover onto the committed physical hall without a wrong return
+ok 14 - legacy lock-in entry saves recover onto the committed physical hall without a wrong return
+  ---
+  duration_ms: 239.658625
+  type: 'test'
+  ...
+# Subtest: all authored routes, loops, door apertures and arrivals have shared physical footing
+ok 15 - all authored routes, loops, door apertures and arrivals have shared physical footing
+  ---
+  duration_ms: 5.830625
+  type: 'test'
+  ...
+# Subtest: entering commits atomically and the first entrance loops into the same hall
+ok 16 - entering commits atomically and the first entrance loops into the same hall
+  ---
+  duration_ms: 23.482084
+  type: 'test'
+  ...
+# Subtest: door passage requires a physical outward aperture crossing, never focus or proximity
+ok 17 - door passage requires a physical outward aperture crossing, never focus or proximity
+  ---
+  duration_ms: 42.691334
+  type: 'test'
+  ...
+# Subtest: the real supported walk traverses four distinct worlds and every reverse door preserves progress
+ok 18 - the real supported walk traverses four distinct worlds and every reverse door preserves progress
+  ---
+  duration_ms: 311.205416
+  type: 'test'
+  ...
+# Subtest: the ash forward door loops locally until actual audible recording evidence is earned
+ok 19 - the ash forward door loops locally until actual audible recording evidence is earned
+  ---
+  duration_ms: 8.239625
+  type: 'test'
+  ...
+# Subtest: pause freezes audible receipts, PCM offset, active clock, handover and collapse
+ok 20 - pause freezes audible receipts, PCM offset, active clock, handover and collapse
+  ---
+  duration_ms: 12.740916
+  type: 'test'
+  ...
+# Subtest: spatial source offsets survive passage/reload without granting ash listening evidence
+ok 21 - spatial source offsets survive passage/reload without granting ash listening evidence
+  ---
+  duration_ms: 1.2595
+  type: 'test'
+  ...
+# Subtest: changed hall waits for proximity, resumes durable handover, and its exit stays safe forever
+ok 22 - changed hall waits for proximity, resumes durable handover, and its exit stays safe forever
+  ---
+  duration_ms: 34.520417
+  type: 'test'
+  ...
+# Subtest: v1 compact and completed saves migrate explicitly without losing partial evidence or rewards
+ok 23 - v1 compact and completed saves migrate explicitly without losing partial evidence or rewards
+  ---
+  duration_ms: 0.442167
+  type: 'test'
+  ...
+# Subtest: normalization rejects unsupported/nonfinite poses and unearned choreography
+ok 24 - normalization rejects unsupported/nonfinite poses and unearned choreography
+  ---
+  duration_ms: 0.269833
+  type: 'test'
+  ...
+# Subtest: the recorder verb raises and lowers the real audition while keeping the personal world nonmodal
+ok 25 - the recorder verb raises and lowers the real audition while keeping the personal world nonmodal
+  ---
+  duration_ms: 639.812667
+  type: 'test'
+  ...
+# Subtest: monitor and saved tape replace each other in both directions without overlapping audio
+ok 26 - monitor and saved tape replace each other in both directions without overlapping audio
+  ---
+  duration_ms: 311.327584
+  type: 'test'
+  ...
+# Subtest: a rolling take refuses both monitor audition and saved playback before touching either transport
+ok 27 - a rolling take refuses both monitor audition and saved playback before touching either transport
+  ---
+  duration_ms: 72.142458
+  type: 'test'
+  ...
+# Subtest: raising the machine resumes an unfinished audition but still requires the owned recorder
+ok 28 - raising the machine resumes an unfinished audition but still requires the owned recorder
+  ---
+  duration_ms: 62.907042
+  type: 'test'
+  ...
+# Subtest: world suspension freezes the journey and leaving audition range or the world stops the held sound
+ok 29 - world suspension freezes the journey and leaving audition range or the world stops the held sound
+  ---
+  duration_ms: 136.730583
+  type: 'test'
+  ...
+# Subtest: entry clears the obsolete return job and completed exit saves the exact road pose with its inactive state
+ok 30 - entry clears the obsolete return job and completed exit saves the exact road pose with its inactive state
+  ---
+  duration_ms: 407.651666
+  type: 'test'
+  ...
+# Subtest: lowering flushes only the actual audible fraction and resumes that tape position
+ok 31 - lowering flushes only the actual audible fraction and resumes that tape position
+  ---
+  duration_ms: 129.828541
+  type: 'test'
+  ...
+# Subtest: physical personal crossings apply the runtime pose and never invoke a second exit
+ok 32 - physical personal crossings apply the runtime pose and never invoke a second exit
+  ---
+  duration_ms: 357.703666
+  type: 'test'
+  ...
+# Subtest: the immediate Source save relocates active-to-active transitions atomically
+ok 33 - the immediate Source save relocates active-to-active transitions atomically
+  ---
+  duration_ms: 13.711416
+  type: 'test'
+  ...
+# Subtest: Quiet Threshold shows remapped contextual buttons, live levels and optional captions without a transport counter
+ok 34 - Quiet Threshold shows remapped contextual buttons, live levels and optional captions without a transport counter
+  ---
+  duration_ms: 184.312625
+  type: 'test'
+  ...
+# Subtest: world sources wait for audible approach, preserve partial offsets, and do not repeat a finished world
+ok 35 - world sources wait for audible approach, preserve partial offsets, and do not repeat a finished world
+  ---
+  duration_ms: 140.571875
+  type: 'test'
+  ...
+# Subtest: focused labels use authored object names and only name the final available doorway an exit
+ok 36 - focused labels use authored object names and only name the final available doorway an exit
+  ---
+  duration_ms: 0.961416
+  type: 'test'
+  ...
+# Subtest: handover captions remain available when audio cannot sound
+ok 37 - handover captions remain available when audio cannot sound
+  ---
+  duration_ms: 52.423583
+  type: 'test'
+  ...
+# Subtest: the personal cadence walks the actual cell size at 1.35 metres per second and retains quiet movement
+ok 38 - the personal cadence walks the actual cell size at 1.35 metres per second and retains quiet movement
+  ---
+  duration_ms: 3.23925
+  type: 'test'
+  ...
+# Subtest: blocking scene entry flushes its prior audible fraction and cannot earn evidence while the world loop is stopped
+ok 39 - blocking scene entry flushes its prior audible fraction and cannot earn evidence while the world loop is stopped
+  ---
+  duration_ms: 73.831166
+  type: 'test'
+  ...
+# Subtest: the gameplay focus watchdog preserves a visible Quiet Threshold native button
+ok 40 - the gameplay focus watchdog preserves a visible Quiet Threshold native button
+  ---
+  duration_ms: 136.453875
+  type: 'test'
+  ...
+# Subtest: personal ambience follows the discrete physical world in both directions
+ok 41 - personal ambience follows the discrete physical world in both directions
+  ---
+  duration_ms: 220.319
+  type: 'test'
+  ...
+# Subtest: the real renderer option excludes personal rooms from the physical Source void
+ok 42 - the real renderer option excludes personal rooms from the physical Source void
+  ---
+  duration_ms: 127.005375
+  type: 'test'
+  ...
+# Subtest: personal rain suppression is a frame override and returning restores the global amount including zero
+ok 43 - personal rain suppression is a frame override and returning restores the global amount including zero
+  ---
+  duration_ms: 623.906584
+  type: 'test'
+  ...
+# Subtest: cold story restore preserves recorded audio while recovering a missing authored tape (active heard journey)
+ok 44 - cold story restore preserves recorded audio while recovering a missing authored tape (active heard journey)
+  ---
+  duration_ms: 523.328041
+  type: 'test'
+  ...
+# Subtest: cold story restore preserves recorded audio while recovering a missing authored tape (completed road save)
+ok 45 - cold story restore preserves recorded audio while recovering a missing authored tape (completed road save)
+  ---
+  duration_ms: 269.407541
+  type: 'test'
+  ...
+# Subtest: Source activation cannot reconcile the authored tape before story restores the recorder stores
+ok 46 - Source activation cannot reconcile the authored tape before story restores the recorder stores
+  ---
+  duration_ms: 163.08575
+  type: 'test'
+  ...
+# Subtest: arriving and waiting under the lantern preserves the reward until the player starts the fight
+ok 47 - arriving and waiting under the lantern preserves the reward until the player starts the fight
+  ---
+  duration_ms: 1104.628208
+  type: 'test'
+  ...
+# Subtest: an active ending presenter cannot be replaced by a saved extraction checkpoint
+ok 48 - an active ending presenter cannot be replaced by a saved extraction checkpoint
+  ---
+  duration_ms: 1.495208
+  type: 'test'
+  ...
+# Subtest: held personal movement uses the authored cadence in cardinal and diagonal directions without catch-up bursts
+ok 49 - held personal movement uses the authored cadence in cardinal and diagonal directions without catch-up bursts
+  ---
+  duration_ms: 335.555917
+  type: 'test'
+  ...
+# Subtest: the recordist circuit has finite grounded geometry with complete surface attributes
+ok 50 - the recordist circuit has finite grounded geometry with complete surface attributes
+  ---
+  duration_ms: 1945.034833
+  type: 'test'
+  ...
+# Subtest: one continuous tape strand covers the hall without floor-spanning geometry
+ok 51 - one continuous tape strand covers the hall without floor-spanning geometry
+  ---
+  duration_ms: 240.7175
+  type: 'test'
+  ...
+# Subtest: snow and ash are tiny physical double-sided facets
+ok 52 - snow and ash are tiny physical double-sided facets
+  ---
+  duration_ms: 7.943583
+  type: 'test'
+  ...
+# Subtest: the tape field has immense upright reels and physically slack overhead strands
+ok 53 - the tape field has immense upright reels and physically slack overhead strands
+  ---
+  duration_ms: 254.62225
+  type: 'test'
+  ...
+# Subtest: the physical level bar moves on the actual recorder panel, including the shared LED origin offset
+ok 54 - the physical level bar moves on the actual recorder panel, including the shared LED origin offset
+  ---
+  duration_ms: 2032.83525
+  type: 'test'
+  ...
+# Subtest: personal props install once into the shared pack with the normal instance layout and useful cull bounds
+ok 55 - personal props install once into the shared pack with the normal instance layout and useful cull bounds
+  ---
+  duration_ms: 372.877583
+  type: 'test'
+  ...
+# Subtest: the monitor plays the fixed master from the saved offset and measures each stereo channel
+ok 56 - the monitor plays the fixed master from the saved offset and measures each stereo channel
+  ---
+  duration_ms: 16.494125
+  type: 'test'
+  ...
+# Subtest: listening and tape position follow the audio clock, including wrap and suspension
+ok 57 - listening and tape position follow the audio clock, including wrap and suspension
+  ---
+  duration_ms: 164.160416
+  type: 'test'
+  ...
+# Subtest: stopping tears down analyser connections exactly once and leaves no audible time or level
+ok 58 - stopping tears down analyser connections exactly once and leaves no audible time or level
+  ---
+  duration_ms: 70.110291
+  type: 'test'
+  ...
+# Subtest: spatial world sound reuses the master at a saved offset with source-relative level and pan
+ok 59 - spatial world sound reuses the master at a saved offset with source-relative level and pan
+  ---
+  duration_ms: 222.478417
+  type: 'test'
+  ...
+# Subtest: handover contacts play actual cloth and wood fragments from the same fixed master
+ok 60 - handover contacts play actual cloth and wood fragments from the same fixed master
+  ---
+  duration_ms: 141.692208
+  type: 'test'
+  ...
+# Subtest: only confirming the first fight spends the completed journey and quiets the alarm atomically
+ok 61 - only confirming the first fight spends the completed journey and quiets the alarm atomically
+  ---
+  duration_ms: 1896.278166
+  type: 'test'
+  ...
+# Subtest: the earned opening adds no charge to the quiet baseline and cannot be granted again on retry or phase two
+ok 62 - the earned opening adds no charge to the quiet baseline and cannot be granted again on retry or phase two
+  ---
+  duration_ms: 393.134125
+  type: 'test'
+  ...
+# Subtest: an attempted early retreat or recording without completing the circuit earns no opening
+ok 63 - an attempted early retreat or recording without completing the circuit earns no opening
+  ---
+  duration_ms: 339.979625
+  type: 'test'
+  ...
+# Subtest: the received authored tape is idempotent, replayable after reload, and never counts as ordinary work
+ok 64 - the received authored tape is idempotent, replayable after reload, and never counts as ordinary work
+  ---
+  duration_ms: 2263.486458
+  type: 'test'
+  ...
+# Subtest: receiving the recording cannot interrupt an open player take
+ok 65 - receiving the recording cannot interrupt an open player take
+  ---
+  duration_ms: 13.424292
+  type: 'test'
+  ...
+# Subtest: every circuit layout has finite metre-space pieces, grounded solids and corresponding practical lights
+ok 66 - every circuit layout has finite metre-space pieces, grounded solids and corresponding practical lights
+  ---
+  duration_ms: 607.209459
+  type: 'test'
+  ...
+# Subtest: the return reuses the exact hall, chair banks, roof breaks, lamps and loose lead
+ok 67 - the return reuses the exact hall, chair banks, roof breaks, lamps and loose lead
+  ---
+  duration_ms: 387.667333
+  type: 'test'
+  ...
+# Subtest: all primary and rejoining routes remain supported and clear of physical dressing
+ok 68 - all primary and rejoining routes remain supported and clear of physical dressing
+  ---
+  duration_ms: 11877.535875
+  type: 'test'
+  ...
+# Subtest: ordinary portal frames and opened leaves leave the same physical aperture clear from either side
+ok 69 - ordinary portal frames and opened leaves leave the same physical aperture clear from either side
+  ---
+  duration_ms: 1334.478125
+  type: 'test'
+  ...
+# Subtest: low accumulated-ground banks occur only on exterior support boundaries and leave route joins open
+ok 70 - low accumulated-ground banks occur only on exterior support boundaries and leave route joins open
+  ---
+  duration_ms: 33.370041
+  type: 'test'
+  ...
+# Subtest: the handover has one machine, four articulated hands and a coherent collapse group throughout
+ok 71 - the handover has one machine, four articulated hands and a coherent collapse group throughout
+  ---
+  duration_ms: 3406.408584
+  type: 'test'
+  ...
+# Subtest: reduced motion retains the same readable transfer without an extra machine rock
+ok 72 - reduced motion retains the same readable transfer without an extra machine rock
+  ---
+  duration_ms: 0.879875
+  type: 'test'
+  ...
+1..72
+# tests 72
+# suites 0
+# pass 72
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 47107.087625

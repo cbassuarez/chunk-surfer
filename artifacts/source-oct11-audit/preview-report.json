@@ -1,0 +1,89 @@
+{
+  "checks": [
+    {
+      "width": 768,
+      "variant": 0,
+      "selected": "Continuous unravelling",
+      "scrollWidth": 736,
+      "clientWidth": 736,
+      "canvas": {
+        "width": 736,
+        "height": 375
+      },
+      "before": 269642,
+      "after": 329445,
+      "overflow": []
+    },
+    {
+      "width": 768,
+      "variant": 1,
+      "selected": "Spatial fold",
+      "scrollWidth": 736,
+      "clientWidth": 736,
+      "canvas": {
+        "width": 736,
+        "height": 375
+      },
+      "before": 319253,
+      "after": 321693,
+      "overflow": []
+    },
+    {
+      "width": 768,
+      "variant": 2,
+      "selected": "Failed playback",
+      "scrollWidth": 736,
+      "clientWidth": 736,
+      "canvas": {
+        "width": 736,
+        "height": 375
+      },
+      "before": 281873,
+      "after": 584997,
+      "overflow": []
+    },
+    {
+      "width": 352,
+      "variant": 0,
+      "selected": "Continuous unravelling",
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "canvas": {
+        "width": 320,
+        "height": 304
+      },
+      "before": 95301,
+      "after": 131875,
+      "overflow": []
+    },
+    {
+      "width": 352,
+      "variant": 1,
+      "selected": "Spatial fold",
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "canvas": {
+        "width": 320,
+        "height": 304
+      },
+      "before": 105406,
+      "after": 111447,
+      "overflow": []
+    },
+    {
+      "width": 352,
+      "variant": 2,
+      "selected": "Failed playback",
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "canvas": {
+        "width": 320,
+        "height": 304
+      },
+      "before": 83858,
+      "after": 193694,
+      "overflow": []
+    }
+  ],
+  "errors": []
+}

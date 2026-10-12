@@ -1,0 +1,25 @@
+{
+  "capturedAt": "2026-10-12T07:14:04.180Z",
+  "snapshot": "/private/tmp/tower-route-snapshot-BTjWYA",
+  "scope": "Production bundle of a frozen source copy; static public assets and raw asset directories are shared without duplicating their bytes; source and content are frozen. No game module or shader is substituted.",
+  "sha256": {
+    "src/main.js": "304030f920deb7e23e21efeb386485faed9e2dfd35007befc92f561a74222cf3",
+    "src/game/chunk-surf-state.js": "c93626cc52dcb3133adfb5bc2293f2199d1b8b9352ab5f268496bccdbeaaff23",
+    "src/game/combat.js": "4830355e0df58e50a32eaeb7e884429d0448c299aa71590a8fc983d6fadb1b07",
+    "src/game/combat-state.js": "9342660df50516e164d3fda28f7dc4cc6fbe6ab08d307de1665b5ec7ec32f243",
+    "src/game/combat-checkpoint.js": "5e9162bfb8dbf891921cb520d7feb118934f8e57b6f94207a6e24e6610370e5f",
+    "src/game/cathedral-extraction.js": "cf1eea1c5a4c92252b1f38d51d314a3be53e3b581f50f008b0cd450114d62779",
+    "src/game/cathedral-descent.js": "3d8269855a2b67c469f9d2fbe52726b058168ddac28749ef315e75353cd3e38b",
+    "src/data/st-brendans.js": "33a7f595f5f57d44f37a555e47bfd2b8be85a207807b914ec6324af064e593dd",
+    "src/data/floorplan/conservatory.js": "42edf5f3ddeaa8710f6c86bf259ee382509f705e0fa4f97659de69f96042d553",
+    "src/data/combat-definitions.js": "c8194e54f2936ea29304bdb248bd4567496fb4a27bd62598b1bc2e8eb1ad74b1",
+    "src/data/endings.js": "ef7fba5773ba2e44850a623934f8f595debb635e6a5d3e52522e4aa8a36ab209",
+    "src/data/conservatory-lights.js": "7691fc7e7c47508982c7fb0348cc6fdd72ff1262b610eda4242f669107cc74f1",
+    "src/game/ending-embodiment.js": "c86660793f5df921978776328a9cd8b4bbb00e0aeaa12f237a671007128f629b",
+    "src/game/credits.js": "94331c6e6e2891a83c1b8a59fcfdd92d6f5a189e8edaa863b96d2a2009f026e2",
+    "src/platform/window-composition.js": "05f11e97a7351479dca3a41fd3dc37977605afb83f24e0330a3e8054741db206",
+    "content/narrative/ending.tower-won.story.json": "d15633f017883c4e3aa22aee5f3f14d8f5eb5c137ebc32af41a3d8065ca8fd7d",
+    "content/narrative/ending.tower-lost.story.json": "d984018e55a86da2a426565f31067fbf73548c11a86919e06a090e8ec210f78b",
+    "public/assets/conservatory-props.glb": "b593e374728e801ab068e5650ddc389e461704e09672e9eb236bf8ceb02a4f9b"
+  }
+}

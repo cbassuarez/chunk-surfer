@@ -1,0 +1,8 @@
+{
+  "asset": "right.glb",
+  "source": "https://github.com/immersive-web/webxr-input-profiles/tree/main/packages/assets/profiles/generic-hand",
+  "package": "@webxr-input-profiles/assets@1.0.20",
+  "license": "MIT",
+  "copyright": "Copyright (c) 2019 Amazon",
+  "use": "Anatomical base mesh and 25 joint bind skeleton; game-specific hierarchical rig, contact solver, skin shading, nails and performance."
+}

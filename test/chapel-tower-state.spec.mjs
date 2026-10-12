@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import {
+import { readFileSync } from 'node:fs';
+import { chapelTowerForTakes, ordinaryTakeCount,
   CHAPEL_TOWER_PHASE,
   TOWER_PEAL_STAGE,
   TOWER_STEDMAN_ROWS,
@@ -55,4 +56,25 @@ assert.equal(migratedSolved.tenorRowsCompleted,84);assert.equal(migratedSolved.p
 assert.equal(inferLegacyChapelTower({takes:['a','b','c','d']}).phase,CHAPEL_TOWER_PHASE.SOURCE_READY);
 assert.equal(inferLegacyChapelTower({flags:{'chunkSurf.completed':true}}).phase,CHAPEL_TOWER_PHASE.TRANSITION_READY);
 assert.equal(inferLegacyChapelTower({takes:['lux_nova']}).phase,CHAPEL_TOWER_PHASE.CHAPEL_FINAL);
+// Four rooms on tape ready the long hall however they arrived — past four, and
+// never counting the chapel.
+{
+  assert.equal(ordinaryTakeCount(['a','lux_nova',null,'b']),2);
+  assert.equal(chapelTowerForTakes(freshChapelTowerState(),['a','b','c']).phase,CHAPEL_TOWER_PHASE.FORESHADOW,'three rooms opened the long hall');
+  assert.equal(chapelTowerForTakes(freshChapelTowerState(),['a','b','c','lux_nova']).phase,CHAPEL_TOWER_PHASE.FORESHADOW,'the chapel counted as one of the four');
+  assert.equal(chapelTowerForTakes(freshChapelTowerState(),['a','b','c','d','e','f']).phase,CHAPEL_TOWER_PHASE.SOURCE_READY,'every room but the chapel left the long hall shut');
+  const cleared={...freshChapelTowerState(),phase:CHAPEL_TOWER_PHASE.TOWER_CLEARED};
+  assert.equal(chapelTowerForTakes(cleared,['a','b','c','d','e']).phase,CHAPEL_TOWER_PHASE.TOWER_CLEARED,'readiness rewound a tower that had moved on');
+}
+{
+  const main=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
+  assert.doesNotMatch(main,/length===4&&chapelTowerState\(\)\.phase===CHAPEL_TOWER_PHASE\.FORESHADOW/,'readiness is still an exact-count event on one path');
+  const accept=main.slice(main.indexOf('function acceptRoomTake('),main.indexOf('function stopTake('));
+  assert.match(accept,/const sourceBecameReady=reconcileChapelTowerTakes\(\);/,'an accepted take does not ready the long hall');
+  const screen=main.slice(main.indexOf('function interactChapelScreen('),main.indexOf('function interact()'));
+  assert.ok(screen.indexOf('reconcileChapelTowerTakes()')>=0&&screen.indexOf('reconcileChapelTowerTakes()')<screen.indexOf('tower.phase===CHAPEL_TOWER_PHASE.SOURCE_READY'),'the chapel screen asks the tower before the tape');
+  const god=main.slice(main.indexOf('function godSetTakes('),main.indexOf('function godSetAllTakes('));
+  assert.match(god,/reconcileChapelTowerTakes\(\);/,'granted takes leave the long hall shut');
+  assert.match(main,/REC\.syncTakes\(\);\s*reconcileChapelTowerTakes\(\);\s*\}/,'a restored tape leaves the long hall shut');
+}
 console.log('chapel tower state tests ok');

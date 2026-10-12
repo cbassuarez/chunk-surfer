@@ -1,0 +1,872 @@
+{
+  "checks": [
+    {
+      "detail": {
+        "compiled": 14,
+        "errors": [],
+        "linked": 7,
+        "sharedFragments": 1
+      },
+      "id": "webkit-shared-shader-compiled-linked",
+      "pass": true
+    },
+    {
+      "detail": [],
+      "id": "webkit-shared-dither-no-gl-error",
+      "pass": true
+    },
+    {
+      "detail": {
+        "coveragePreserved": true,
+        "disposed": false,
+        "height": 360,
+        "noiseReady": true,
+        "orthoDepth": true,
+        "profile": "hush",
+        "renderCount": 1,
+        "screen": "crosshatch",
+        "shader": "pixel-mesh",
+        "temporalMemory": false,
+        "width": 480
+      },
+      "id": "webkit-dither-noise-prewarmed",
+      "pass": true
+    },
+    {
+      "detail": {
+        "colors": 245,
+        "transparent": 124367,
+        "visible": 48433
+      },
+      "id": "webkit-dither-visible-ink-and-transparent-alpha",
+      "pass": true
+    },
+    {
+      "detail": null,
+      "id": "transaction-begins",
+      "pass": true
+    },
+    {
+      "detail": {
+        "backgroundAlpha": 0,
+        "canBecomeKey": false,
+        "ignoresMouseEvents": true,
+        "opaque": false
+      },
+      "id": "native-alpha-surface",
+      "pass": true
+    },
+    {
+      "detail": {
+        "backgroundAlpha": 0,
+        "canBecomeKey": false,
+        "ignoresMouseEvents": true,
+        "opaque": false
+      },
+      "id": "native-click-through",
+      "pass": true
+    },
+    {
+      "detail": null,
+      "id": "real-overlay-ready-visible",
+      "pass": true
+    },
+    {
+      "detail": {
+        "main": {
+          "decorated": false,
+          "focused": true,
+          "inner": {
+            "height": 960,
+            "width": 2080
+          },
+          "label": "main",
+          "native": {
+            "backgroundAlpha": 1,
+            "canBecomeKey": true,
+            "ignoresMouseEvents": false,
+            "opaque": true
+          },
+          "outer": {
+            "height": 960,
+            "width": 2080
+          },
+          "position": {
+            "x": 760,
+            "y": 1346
+          },
+          "resizable": false,
+          "scale": 2,
+          "topmost": true,
+          "visible": true
+        },
+        "placement": {
+          "command": {
+            "height": 480,
+            "width": 1040,
+            "x": 380,
+            "y": 629
+          },
+          "height": 1125,
+          "monitor": "Monitor #41052",
+          "origin": {
+            "x": 0,
+            "y": 44
+          },
+          "scale": 2,
+          "width": 1800
+        }
+      },
+      "id": "island-bounds-match",
+      "pass": true
+    },
+    {
+      "detail": null,
+      "id": "main-sole-focus-owner",
+      "pass": true
+    },
+    {
+      "detail": null,
+      "id": "command-island-fixed",
+      "pass": true
+    },
+    {
+      "detail": null,
+      "id": "pause-hides-with-owner-retained",
+      "pass": true
+    },
+    {
+      "detail": null,
+      "id": "resume-reveals-same-owner",
+      "pass": true
+    },
+    {
+      "detail": null,
+      "id": "overlay-hidden-on-end",
+      "pass": true
+    },
+    {
+      "detail": {
+        "after": {
+          "decorated": true,
+          "focused": true,
+          "inner": {
+            "height": 1600,
+            "width": 2560
+          },
+          "label": "main",
+          "native": {
+            "backgroundAlpha": 1,
+            "canBecomeKey": true,
+            "ignoresMouseEvents": false,
+            "opaque": true
+          },
+          "outer": {
+            "height": 1600,
+            "width": 2560
+          },
+          "position": {
+            "x": 520,
+            "y": 252
+          },
+          "resizable": true,
+          "scale": 2,
+          "topmost": false,
+          "visible": true
+        },
+        "before": {
+          "decorated": true,
+          "focused": true,
+          "inner": {
+            "height": 1600,
+            "width": 2560
+          },
+          "label": "main",
+          "native": {
+            "backgroundAlpha": 1,
+            "canBecomeKey": true,
+            "ignoresMouseEvents": false,
+            "opaque": true
+          },
+          "outer": {
+            "height": 1600,
+            "width": 2560
+          },
+          "position": {
+            "x": 520,
+            "y": 252
+          },
+          "resizable": true,
+          "scale": 2,
+          "topmost": false,
+          "visible": true
+        }
+      },
+      "id": "content-size-and-position-restored",
+      "pass": true
+    },
+    {
+      "detail": {
+        "after": {
+          "height": 1600,
+          "width": 2560
+        },
+        "before": {
+          "height": 1600,
+          "width": 2560
+        },
+        "exact": true
+      },
+      "id": "outer-frame-restored",
+      "pass": true
+    },
+    {
+      "detail": null,
+      "id": "decoration-and-resize-restored",
+      "pass": true
+    },
+    {
+      "detail": null,
+      "id": "main-retains-focus",
+      "pass": true
+    },
+    {
+      "detail": null,
+      "id": "native-owner-retired",
+      "pass": true
+    },
+    {
+      "detail": null,
+      "id": "created-backdrop-closed",
+      "pass": true
+    },
+    {
+      "detail": [],
+      "id": "native-dither-surface-no-reported-errors",
+      "pass": true
+    },
+    {
+      "detail": [
+        {
+          "revision": 1,
+          "token": "source-native-probe-1791788971882"
+        },
+        {
+          "revision": 2,
+          "token": "source-native-probe-1791788971882"
+        }
+      ],
+      "id": "native-dither-first-frame-presented",
+      "pass": true
+    }
+  ],
+  "frames": [
+    {
+      "active": false,
+      "ready": false,
+      "stage": "initial",
+      "windows": [
+        {
+          "decorated": true,
+          "focused": true,
+          "inner": {
+            "height": 1600,
+            "width": 2560
+          },
+          "label": "main",
+          "native": {
+            "backgroundAlpha": 1,
+            "canBecomeKey": true,
+            "ignoresMouseEvents": false,
+            "opaque": true
+          },
+          "outer": {
+            "height": 1600,
+            "width": 2560
+          },
+          "position": {
+            "x": 520,
+            "y": 252
+          },
+          "resizable": true,
+          "scale": 2,
+          "topmost": false,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "active": true,
+      "ready": true,
+      "stage": "live",
+      "windows": [
+        {
+          "decorated": false,
+          "focused": true,
+          "inner": {
+            "height": 960,
+            "width": 2080
+          },
+          "label": "main",
+          "native": {
+            "backgroundAlpha": 1,
+            "canBecomeKey": true,
+            "ignoresMouseEvents": false,
+            "opaque": true
+          },
+          "outer": {
+            "height": 960,
+            "width": 2080
+          },
+          "position": {
+            "x": 760,
+            "y": 1346
+          },
+          "resizable": false,
+          "scale": 2,
+          "topmost": true,
+          "visible": true
+        },
+        {
+          "decorated": false,
+          "focused": false,
+          "inner": {
+            "height": 2250,
+            "width": 3600
+          },
+          "label": "source-desktop",
+          "native": {
+            "backgroundAlpha": 0,
+            "canBecomeKey": false,
+            "ignoresMouseEvents": true,
+            "opaque": false
+          },
+          "outer": {
+            "height": 2250,
+            "width": 3600
+          },
+          "position": {
+            "x": 0,
+            "y": 88
+          },
+          "resizable": false,
+          "scale": 2,
+          "topmost": true,
+          "visible": true
+        },
+        {
+          "decorated": false,
+          "focused": false,
+          "inner": {
+            "height": 2250,
+            "width": 3600
+          },
+          "label": "source-desktop-probe-backdrop",
+          "native": {
+            "backgroundAlpha": 1,
+            "canBecomeKey": false,
+            "ignoresMouseEvents": false,
+            "opaque": true
+          },
+          "outer": {
+            "height": 2250,
+            "width": 3600
+          },
+          "position": {
+            "x": 0,
+            "y": 88
+          },
+          "resizable": false,
+          "scale": 2,
+          "topmost": true,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "active": true,
+      "ready": true,
+      "stage": "paused",
+      "windows": [
+        {
+          "decorated": false,
+          "focused": true,
+          "inner": {
+            "height": 960,
+            "width": 2080
+          },
+          "label": "main",
+          "native": {
+            "backgroundAlpha": 1,
+            "canBecomeKey": true,
+            "ignoresMouseEvents": false,
+            "opaque": true
+          },
+          "outer": {
+            "height": 960,
+            "width": 2080
+          },
+          "position": {
+            "x": 760,
+            "y": 1346
+          },
+          "resizable": false,
+          "scale": 2,
+          "topmost": true,
+          "visible": true
+        },
+        {
+          "decorated": false,
+          "focused": false,
+          "inner": {
+            "height": 2250,
+            "width": 3600
+          },
+          "label": "source-desktop",
+          "native": {
+            "backgroundAlpha": 0,
+            "canBecomeKey": false,
+            "ignoresMouseEvents": true,
+            "opaque": false
+          },
+          "outer": {
+            "height": 2250,
+            "width": 3600
+          },
+          "position": {
+            "x": 0,
+            "y": 88
+          },
+          "resizable": false,
+          "scale": 2,
+          "topmost": true,
+          "visible": false
+        },
+        {
+          "decorated": false,
+          "focused": false,
+          "inner": {
+            "height": 2250,
+            "width": 3600
+          },
+          "label": "source-desktop-probe-backdrop",
+          "native": {
+            "backgroundAlpha": 1,
+            "canBecomeKey": false,
+            "ignoresMouseEvents": false,
+            "opaque": true
+          },
+          "outer": {
+            "height": 2250,
+            "width": 3600
+          },
+          "position": {
+            "x": 0,
+            "y": 88
+          },
+          "resizable": false,
+          "scale": 2,
+          "topmost": true,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "active": true,
+      "ready": true,
+      "stage": "resumed",
+      "windows": [
+        {
+          "decorated": false,
+          "focused": true,
+          "inner": {
+            "height": 960,
+            "width": 2080
+          },
+          "label": "main",
+          "native": {
+            "backgroundAlpha": 1,
+            "canBecomeKey": true,
+            "ignoresMouseEvents": false,
+            "opaque": true
+          },
+          "outer": {
+            "height": 960,
+            "width": 2080
+          },
+          "position": {
+            "x": 760,
+            "y": 1346
+          },
+          "resizable": false,
+          "scale": 2,
+          "topmost": true,
+          "visible": true
+        },
+        {
+          "decorated": false,
+          "focused": false,
+          "inner": {
+            "height": 2250,
+            "width": 3600
+          },
+          "label": "source-desktop",
+          "native": {
+            "backgroundAlpha": 0,
+            "canBecomeKey": false,
+            "ignoresMouseEvents": true,
+            "opaque": false
+          },
+          "outer": {
+            "height": 2250,
+            "width": 3600
+          },
+          "position": {
+            "x": 0,
+            "y": 88
+          },
+          "resizable": false,
+          "scale": 2,
+          "topmost": true,
+          "visible": true
+        },
+        {
+          "decorated": false,
+          "focused": false,
+          "inner": {
+            "height": 2250,
+            "width": 3600
+          },
+          "label": "source-desktop-probe-backdrop",
+          "native": {
+            "backgroundAlpha": 1,
+            "canBecomeKey": false,
+            "ignoresMouseEvents": false,
+            "opaque": true
+          },
+          "outer": {
+            "height": 2250,
+            "width": 3600
+          },
+          "position": {
+            "x": 0,
+            "y": 88
+          },
+          "resizable": false,
+          "scale": 2,
+          "topmost": true,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "active": false,
+      "ready": true,
+      "stage": "restored",
+      "windows": [
+        {
+          "decorated": true,
+          "focused": true,
+          "inner": {
+            "height": 1600,
+            "width": 2560
+          },
+          "label": "main",
+          "native": {
+            "backgroundAlpha": 1,
+            "canBecomeKey": true,
+            "ignoresMouseEvents": false,
+            "opaque": true
+          },
+          "outer": {
+            "height": 1600,
+            "width": 2560
+          },
+          "position": {
+            "x": 520,
+            "y": 252
+          },
+          "resizable": true,
+          "scale": 2,
+          "topmost": false,
+          "visible": true
+        },
+        {
+          "decorated": false,
+          "focused": false,
+          "inner": {
+            "height": 2250,
+            "width": 3600
+          },
+          "label": "source-desktop",
+          "native": {
+            "backgroundAlpha": 0,
+            "canBecomeKey": false,
+            "ignoresMouseEvents": true,
+            "opaque": false
+          },
+          "outer": {
+            "height": 2250,
+            "width": 3600
+          },
+          "position": {
+            "x": 0,
+            "y": 88
+          },
+          "resizable": false,
+          "scale": 2,
+          "topmost": false,
+          "visible": false
+        },
+        {
+          "decorated": false,
+          "focused": false,
+          "inner": {
+            "height": 2250,
+            "width": 3600
+          },
+          "label": "source-desktop-probe-backdrop",
+          "native": {
+            "backgroundAlpha": 1,
+            "canBecomeKey": false,
+            "ignoresMouseEvents": false,
+            "opaque": true
+          },
+          "outer": {
+            "height": 2250,
+            "width": 3600
+          },
+          "position": {
+            "x": 0,
+            "y": 88
+          },
+          "resizable": false,
+          "scale": 2,
+          "topmost": true,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "active": false,
+      "ready": true,
+      "stage": "cleaned",
+      "windows": [
+        {
+          "decorated": true,
+          "focused": true,
+          "inner": {
+            "height": 1600,
+            "width": 2560
+          },
+          "label": "main",
+          "native": {
+            "backgroundAlpha": 1,
+            "canBecomeKey": true,
+            "ignoresMouseEvents": false,
+            "opaque": true
+          },
+          "outer": {
+            "height": 1600,
+            "width": 2560
+          },
+          "position": {
+            "x": 520,
+            "y": 252
+          },
+          "resizable": true,
+          "scale": 2,
+          "topmost": false,
+          "visible": true
+        },
+        {
+          "decorated": false,
+          "focused": false,
+          "inner": {
+            "height": 2250,
+            "width": 3600
+          },
+          "label": "source-desktop",
+          "native": {
+            "backgroundAlpha": 0,
+            "canBecomeKey": false,
+            "ignoresMouseEvents": true,
+            "opaque": false
+          },
+          "outer": {
+            "height": 2250,
+            "width": 3600
+          },
+          "position": {
+            "x": 0,
+            "y": 88
+          },
+          "resizable": false,
+          "scale": 2,
+          "topmost": false,
+          "visible": false
+        }
+      ]
+    }
+  ],
+  "outerRestoration": {
+    "after": {
+      "height": 1600,
+      "width": 2560
+    },
+    "before": {
+      "height": 1600,
+      "width": 2560
+    },
+    "exact": true
+  },
+  "passed": true,
+  "physicalPointerVerified": false,
+  "placement": {
+    "command": {
+      "height": 480,
+      "width": 1040,
+      "x": 380,
+      "y": 629
+    },
+    "height": 1125,
+    "monitor": "Monitor #41052",
+    "origin": {
+      "x": 0,
+      "y": 44
+    },
+    "scale": 2,
+    "width": 1800
+  },
+  "platform": "macOS",
+  "presented": [
+    {
+      "revision": 1,
+      "token": "source-native-probe-1791788971882"
+    },
+    {
+      "revision": 2,
+      "token": "source-native-probe-1791788971882"
+    }
+  ],
+  "scenario": "shared-hush-dither",
+  "surfaceErrors": [],
+  "webkitDither": {
+    "colorBufferFloat": true,
+    "colors": 245,
+    "compiled": 14,
+    "drawingBuffer": {
+      "height": 360,
+      "width": 480
+    },
+    "errors": [],
+    "glErrors": [],
+    "linked": 7,
+    "maxSamples": 4,
+    "rendered": true,
+    "renderer": "WebKit WebGL",
+    "sharedFragments": 1,
+    "transparent": 124367,
+    "version": "WebGL 2.0",
+    "view": {
+      "animationClips": [
+        "pressure_hold",
+        "pressure_idle",
+        "pressure_approach",
+        "pressure_limp",
+        "pressure_listen",
+        "pressure_load",
+        "pressure_advance",
+        "pressure_arrest",
+        "pressure_pivot"
+      ],
+      "bones": 34,
+      "disposed": false,
+      "dither": {
+        "coveragePreserved": true,
+        "disposed": false,
+        "height": 360,
+        "noiseReady": true,
+        "orthoDepth": true,
+        "profile": "hush",
+        "renderCount": 1,
+        "screen": "crosshatch",
+        "shader": "pixel-mesh",
+        "temporalMemory": false,
+        "width": 480
+      },
+      "dpr": 2,
+      "error": null,
+      "frame": {
+        "clip": "pressure_listen",
+        "clipTime": 1,
+        "guardVisible": false,
+        "openness": 1,
+        "rakeVisible": false,
+        "state": {
+          "actionId": "",
+          "active": true,
+          "camera": null,
+          "clock": 1,
+          "coherenceRatio": 0.4,
+          "composureRatio": 0.5,
+          "cover": {
+            "capacity": 3,
+            "count": 2,
+            "exposed": false,
+            "guard": 0
+          },
+          "desktop": null,
+          "intent": {
+            "kind": "broadcast",
+            "progress": 0.45
+          },
+          "mode": "fallback",
+          "movementIndex": 1,
+          "paused": false,
+          "phase": "desktop",
+          "pressurePresentation": null,
+          "reaction": {
+            "armed": false,
+            "phase": "",
+            "progress": 0,
+            "tier": ""
+          },
+          "reduceFlash": false,
+          "reducedMotion": false,
+          "revision": 0,
+          "tier": 1,
+          "token": "source-native-probe-1791788971882",
+          "toolId": "",
+          "transition": 1,
+          "version": 1
+        }
+      },
+      "glyphLines": 48,
+      "gpu": {
+        "calls": 30,
+        "geometries": 19,
+        "textures": 12,
+        "triangles": 95450
+      },
+      "height": 180,
+      "modelIds": [
+        "upright_piano",
+        "open_instrument_case"
+      ],
+      "plates": [
+        "strata-west-course-0",
+        "strata-west-course-2",
+        "strata-west-cleft-crest",
+        "strata-east-course-0",
+        "strata-east-course-3",
+        "strata-east-cleft-chip"
+      ],
+      "ready": true,
+      "renderCount": 1,
+      "skinnedMeshes": 1,
+      "width": 240
+    },
+    "visible": 48433
+  }
+}

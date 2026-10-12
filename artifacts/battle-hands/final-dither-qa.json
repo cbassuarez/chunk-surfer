@@ -1,0 +1,27 @@
+{
+  "date": "2026-10-12",
+  "implementation": {
+    "renderer": "Exposed Recordist articulated hands and physical tools",
+    "finalShader": "src/render/pixel-mesh/shader.js: PIXEL_MESH_FRAG",
+    "transport": "linear PBR source, display acquisition with orthographic depth, transparent final shader, physical-pixel Canvas composition",
+    "liveSettings": ["scene look profile", "screen override", "cell size", "world render scale", "reduced motion", "reduced flash"],
+    "sourceLimit": "1280 x 640 maximum; final acquisition remains at destination resolution",
+    "screenAlignment": "global bottom-left stage offset",
+    "canvasImageSmoothing": false
+  },
+  "validation": {
+    "productionBuild": {"passed": true, "log": "/tmp/battle-hands-dither-final-build.log"},
+    "targetedTests": {"passed": 80, "failed": 0, "log": "/tmp/battle-hands-final-qa.log"},
+    "browser": {
+      "shaderErrors": 0,
+      "review": "http://127.0.0.1:5327/artifacts/battle-hands/review.html",
+      "productionCombat": "http://127.0.0.1:5327/artifacts/battle-hands/combat.html",
+      "contact": "Production MONITOR action at 0.35 seconds, recorder supported and left index at REC",
+      "scope": "Production combat module in an isolated in-memory natatorium encounter; not a full-game traversal",
+      "pixelSample": {"width": 1728, "height": 585, "transparent": 779455, "opaque": 226691, "edge": 4734, "dark": 125357, "light": 101334, "middle": 0},
+      "pixelSampleMethod": "Review canvas readback via visible Verify print control; opaque alpha >= 254; luminance dark < .035, light > .70"
+    },
+    "contactRegression": "Both hand meshes, nails and chassis clearance at three control depths; 1 mm soft-contact allowance"
+  },
+  "evidence": ["final-dither-operate.jpg", "final-dither-battle-contact.jpg", "final-dither-pixels.json"]
+}

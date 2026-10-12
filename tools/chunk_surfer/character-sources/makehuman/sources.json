@@ -1,0 +1,40 @@
+{
+  "creator": "MakeHuman Community",
+  "licenseSource": "https://github.com/makehumancommunity/mpfb2/blob/master/LICENSE.md",
+  "assets": [
+    {
+      "file": "caucasian-male-old.target.gz",
+      "source": "https://raw.githubusercontent.com/makehumancommunity/mpfb2/master/src/mpfb/data/targets/macrodetails/caucasian-male-old.target.gz",
+      "gitBlob": "f14d7c89660d73c12758623634c4d4f9d0160fb2",
+      "sha256": "123cb7758c86aa2aa71d80ea0c8f5f4b3e96f394180edc1682e34720c4949df6",
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "caucasian-male-young.target.gz",
+      "source": "https://raw.githubusercontent.com/makehumancommunity/mpfb2/master/src/mpfb/data/targets/macrodetails/caucasian-male-young.target.gz",
+      "gitBlob": "a422546d7026c93e17f04679249f5c7e2d3b7800",
+      "sha256": "ffe69537e53148edff2776204ba48cf3bf1f3cbc72966592c8a562ab80b07333",
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "universal-male-old-averagemuscle-averageweight.target.gz",
+      "source": "https://raw.githubusercontent.com/makehumancommunity/mpfb2/master/src/mpfb/data/targets/macrodetails/universal-male-old-averagemuscle-averageweight.target.gz",
+      "gitBlob": "2f566bec26a14011818209bbf0867d1309d79805",
+      "sha256": "3721ecc3f7a6af1d7c22ef20c709b1d37402445b3d203fe31e762b12356b59a6",
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "universal-male-young-averagemuscle-averageweight.target.gz",
+      "source": "https://raw.githubusercontent.com/makehumancommunity/mpfb2/master/src/mpfb/data/targets/macrodetails/universal-male-young-averagemuscle-averageweight.target.gz",
+      "gitBlob": "4cc4b83c564a121719ce45f0389e50b01932f358",
+      "sha256": "e814651195c53971503d9823d6841216718a561951ef064f81d132297f4fa494",
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "base.obj",
+      "source": "https://raw.githubusercontent.com/makehumancommunity/mpfb2/master/src/mpfb/data/3dobjs/base.obj",
+      "sha256": "8e761e6624b8f54536409135d1636da63b32486a90d4897f84e121d144f6fb4c",
+      "license": "CC0-1.0"
+    }
+  ]
+}

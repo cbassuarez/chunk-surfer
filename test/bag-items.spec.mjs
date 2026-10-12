@@ -41,8 +41,8 @@ test('every collected-object family has exactly one audited destination', () => 
 
 test('the action resolver exposes the full semantic descriptor contract', () => {
   assert.deepEqual(Object.keys(BAG_ITEM_REGISTRY).sort(), [
-    'coffee', 'interface', 'keyring', 'light', 'map', 'marble-eyes',
-    'plant-spanner', 'radio', 'recorder', 'sheet-music', 'tuning-fork',
+    'coffee', 'interface', 'keyring', 'light', 'lyle-jumper', 'map', 'marble-eyes',
+    'plant-spanner', 'radio', 'recorder', 'sheet-music', 'station-relics', 'tuning-fork',
   ]);
   const cases = [
     ['light', {}, 'light-toggle', 'TURN ON', BAG_ACTION_MODE.COMMAND],
@@ -59,6 +59,8 @@ test('the action resolver exposes the full semantic descriptor contract', () => 
     ['marble-eyes', {}, 'inspect-marble-eyes', 'INSPECT', BAG_ACTION_MODE.DIALOG],
     ['keyring', {}, 'inspect-keyring', 'CHECK KEYS', BAG_ACTION_MODE.DIALOG],
     ['sheet-music', {}, 'sheet-read', 'READ IT', BAG_ACTION_MODE.CONSUME],
+    ['station-relics', {}, 'inspect-station-relics', 'INSPECT', BAG_ACTION_MODE.DIALOG],
+    ['lyle-jumper', {}, 'inspect-lyle-jumper', 'INSPECT', BAG_ACTION_MODE.DIALOG],
   ];
 
   for (const [id, context, actionId, label, mode] of cases) {
@@ -163,6 +165,30 @@ test('the keyring facts and inspection list all acquired keys in one entry', () 
   assert.match(dialogue.start.lines.map((line) => line.text).join(' '), /Building master/);
   assert.match(dialogue.start.lines.map((line) => line.text).join(' '), /C-seventeen\. Chapel/);
   assert.match(dialogue.start.lines.map((line) => line.text).join(' '), /PLANT SERVICES/);
+});
+
+test('station keepsakes inspect their acquired authored evidence', () => {
+  const station = JSON.parse(readFileSync(new URL('../content/narrative/source-space.door-field.story.json', import.meta.url), 'utf8'));
+  const subset = bagInspectionDialogue('station-relics', { relicWorlds: ['burning', 'glass-storm', 'burning'] });
+  assert.deepEqual(subset.start.lines.map((line) => line.sourceId), ['relic.burning.1', 'relic.glass-storm.1']);
+  assert.deepEqual(subset.start.lines.map((line) => line.text), [
+    station.nodes['relic.burning'].lines[0].text,
+    station.nodes['relic.glass-storm'].lines[0].text,
+  ]);
+  assert.ok(!subset.start.lines.some((line) => /cold on one side/.test(line.text)), 'the assembled clue requires all five worlds');
+
+  const legacy = bagInspectionDialogue('station-relics', { relics: ['a cinder, still warm', 'a shell, still wet'] });
+  assert.deepEqual(legacy.start.lines.map((line) => line.sourceId), ['relic.burning.1', 'relic.flood.1'], 'existing label-based callers still select their authored relics');
+  const together = bagInspectionDialogue('station-relics', { relicWorlds: ['burning', 'flood', 'inverted', 'two-moons', 'glass-storm'] });
+  assert.equal(together.start.sourceId, 'relics.bag');
+  assert.equal(together.start.lines[0].text, station.nodes['relics.bag'].lines[0].text);
+
+  const jumper = bagInspectionDialogue('lyle-jumper');
+  assert.equal(jumper.start.sourceId, 'home.jumper');
+  assert.equal(jumper.start.lines[0].text, station.nodes['home.jumper'].lines[0].text);
+  assert.match(jumper.start.lines[0].text, /his hall, and of this kitchen/);
+  jumper.start.lines[0].text = 'changed by a presenter';
+  assert.equal(bagInspectionDialogue('lyle-jumper').start.lines[0].text, station.nodes['home.jumper'].lines[0].text, 'a presenter cannot alter later authored inspections');
 });
 
 test('deployed radio stays actionable and detail copy never invents a verb', () => {

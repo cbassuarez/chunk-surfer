@@ -4,6 +4,7 @@
 // tape is sealed after an ending; the Source fight happens before that seal and
 // must survive a quit. The manifest keeps only authored provenance plus a
 // bounded set of player poses. It never stores microphone or program audio.
+import { normalizePressurePresentation } from './pressure-performance.js';
 
 export const SOURCE_REPLAY_SCHEMA = 2;
 export const SOURCE_REPRISE_IDS = Object.freeze(['call-site', 'borrowed-body', 'final-clause']);
@@ -41,6 +42,7 @@ function pose(value) {
     roomId: text(source.roomId),
     renderGroup: text(source.renderGroup),
     spaceId: text(source.spaceId),
+    ...(source.pressurePresentation ? { pressurePresentation: normalizePressurePresentation(source.pressurePresentation) } : {}),
   };
 }
 

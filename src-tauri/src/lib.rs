@@ -5,6 +5,7 @@ mod desktop_menu;
 mod display_policy;
 mod identity;
 mod lens_service;
+mod source_desktop;
 mod window_choreography;
 
 pub fn run() {
@@ -57,6 +58,11 @@ pub fn run() {
             window_choreography::chunk_window_media_position,
             window_choreography::chunk_window_media_hide_all,
             window_choreography::chunk_window_surfaces_sync_app_activation,
+            source_desktop::chunk_source_desktop_begin,
+            source_desktop::chunk_source_desktop_update,
+            source_desktop::chunk_source_desktop_end,
+            source_desktop::chunk_source_desktop_suspend,
+            source_desktop::chunk_source_desktop_probe,
             lens_service::chunk_lens_bootstrap,
             lens_service::chunk_lens_retry,
             lens_service::chunk_lens_stop,
@@ -65,6 +71,7 @@ pub fn run() {
             window_choreography::recover_stale_snapshot(app.handle());
             desktop_menu::install(app)?;
             display_policy::enforce_window_floor(app.handle());
+            source_desktop::open_native_probe(app.handle());
             Ok(())
         })
         .build(tauri::generate_context!())

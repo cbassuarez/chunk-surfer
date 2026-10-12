@@ -1,0 +1,21 @@
+{
+  "glb": "/assets/pressure-character.glb",
+  "sha256": "7d38a4539c0083783ad8da157ebe8bec5a692038d5b64dd4b660846030a3365b",
+  "views": [
+    "front",
+    "side",
+    "rear",
+    "chest-close",
+    "compression",
+    "drag",
+    "listen"
+  ],
+  "lighting": "neutral Eevee studio, actual skinned source material, no negative-mass/post mask",
+  "clips": {
+    "pressure_hold": 1,
+    "pressure_idle": 9.6,
+    "pressure_approach": 2.4,
+    "pressure_limp": 3.4,
+    "pressure_listen": 4.8
+  }
+}

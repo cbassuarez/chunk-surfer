@@ -67,6 +67,24 @@ for (const mesh of [
   'ending_returned_ledger',
 ]) assert.ok(PROP_BOUNDS[mesh], `${mesh} exists in the generated prop pack`);
 
+// The extracted companion lies on the floor. A quarter-turn of the torso
+// pitched its long axis upright and buried its lower half in the paving.
+{
+  const bounds = PROP_BOUNDS.ending_body_prone;
+  assert.ok(bounds.min[1] >= 0, 'the prone body has no geometry below its floor origin');
+  assert.ok(bounds.max[1] <= .4, 'the prone body stays within a lying torso height');
+  assert.ok(bounds.max[2] - bounds.min[2] >= 1.6, 'the prone body retains a full horizontal body length');
+  const bytes = readFileSync('public/assets/conservatory-props.glb');
+  const pack = JSON.parse(bytes.subarray(20, 20 + bytes.readUInt32LE(12)).toString('utf8'));
+  const packedBody = pack.meshes.find(mesh => mesh.name === 'ending_body_prone');
+  assert.ok(packedBody, 'the generated bounds correspond to a shipped prone mesh');
+  for (const primitive of packedBody.primitives) {
+    const position = pack.accessors[primitive.attributes.POSITION];
+    assert.ok(position.min[1] >= 0 && position.max[1] <= .4,
+      'the shipped prone mesh also stays above the floor in its lying envelope');
+  }
+}
+
 {
   const renderer = readFileSync('src/render/r3d.js', 'utf8');
   assert.match(renderer, /uniform float uEndingWorldLook/,
@@ -78,7 +96,7 @@ for (const mesh of [
 }
 
 // The physical reducer turns the authored vocabulary into route-specific world
-// state. In particular, workers and the six-stage peal cannot regress to prose.
+// state. In particular, workers and the eight-stage peal cannot regress to prose.
 {
   let morning = createEndingEmbodimentState('inversion');
   for (const effect of ['sodium-shutdown', 'birds-bus-arrival', 'staff-behind-heras']) {
@@ -88,7 +106,7 @@ for (const mesh of [
 
   let peal = createEndingEmbodimentState('tower-lost');
   for (const beat of ENDING_CUTSCENES['tower-lost'].beats) peal = reduceEndingEmbodiment(peal, { type: 'beat', beat });
-  assert.equal(peal.syncStage, 6, 'all six strikes progressively take the two bodies');
+  assert.equal(peal.syncStage, 8, 'all eight strikes progressively take the two bodies');
 }
 
 assert.deepEqual(

@@ -23,6 +23,8 @@
     "endings:audit": "node tools/audits/endings/server.mjs",
     "puzzles:audit": "node tools/audits/puzzles/server.mjs",
     "progression:audit": "node tools/audits/progression/server.mjs",
+    "source:audit": "node tools/audits/source-path/server.mjs",
+    "source:path": "node tools/audits/source-path/print.mjs",
     "studio:build": "vite build --config tools/narrative-studio/vite.config.ts",
     "system-map": "node tools/system-map/server.mjs",
     "system-map:build": "vite build --config tools/system-map/vite.config.js",

@@ -1,0 +1,29 @@
+--- /private/tmp/tower-route-snapshot-CaExKM/src/main.js	2026-10-12 01:32:01
++++ src/main.js	2026-10-12 01:38:09
+@@ -6960,7 +6960,7 @@
+   const unlitSeal=endingId==='sacrifice'&&activeEndingCutscene?.embodiment?.collapseStage>=4;
+   R3.r3dSetLightingContext?.(endingShot?{
+     ...context,ambientIntensity:Math.max(context.ambientIntensity||0,unlitSeal?.025:.16),
+-    ...(towerEndingShot?{captureExposure:Math.min(context.captureExposure||1,2)}:{}),
++    ...(towerEndingShot?{captureExposure:2}:{}),
+   }:context);
+   const ordinaryLights=resolveLocalLights(context,{
+     timeSec,
+@@ -21133,7 +21133,7 @@
+   }
+   if(id==='tower-won'&&embodied.finalHold){
+     const tableau=endingTowerWonTableau(active);
+-    add(endingPropInstance('ending-tower-won-surfer','ending_body_prone',tableau.body,{yaw:tableau.yaw,elevation:.08,scale:.97,noShadow:true,emissive:[.30,.37,.42,.12]}));
++    add(endingPropInstance('ending-tower-won-surfer','ending_body_prone',tableau.body,{yaw:tableau.yaw,elevation:.08,scale:.97,noShadow:true,emissive:[.32,.38,.42,.24]}));
+     add(endingPropInstance('ending-tower-won-player','ending_body_seated',tableau.player,{yaw:Math.PI,elevation:.02,scale:.98,noShadow:true,emissive:[.30,.37,.42,.12]}));
+   }
+   if(id==='tower-lost'){
+@@ -21231,7 +21231,7 @@
+   const [fx,fy]=active.origin.forward;
+   if(towerWide){
+     return endingViewToward(
+-      endingLogicalOffset(active,-(3.1+progress*1.3),-(1.75+progress*1.1)),
++      endingLogicalOffset(active,-(3.1+progress*.3),-(1.75+progress*.85)),
+       endingLogicalOffset(active,1.1,0),
+       {pitch:.06},
+     );

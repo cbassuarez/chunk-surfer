@@ -544,11 +544,11 @@ let tape = null;
 
 // One looping file, one gain, faded in. Returns null (and retries) if the
 // buffer has not landed yet.
-function loopFile(url, gain, fade, out) {
+function loopFile(url, gain, fade, out, { seamless = false } = {}) {
   const buf = buffers.get(url);
   if (!buf) { preload(url); return null; }
   const src = ctx.createBufferSource();
-  src.buffer = buf;
+  src.buffer = seamless ? seamlessLoop(buf) : buf;
   src.loop = true;
   const g = ctx.createGain();
   g.gain.setValueAtTime(0, ctx.currentTime);
@@ -568,17 +568,30 @@ function loopFile(url, gain, fade, out) {
 //
 // It has its own bed now. It starts when he is outdoors and it stops at the
 // door, which is what the comment under stopRain always claimed.
+//
+// A STOP WINS OVER A START THAT IS STILL WAITING. The first call of a session
+// has to fetch the file, and the start used to come back and run whenever the
+// fetch landed — including after the stop that should have cancelled it, so the
+// rain began on the far side of the door it had already stopped at. `rainWanted`
+// is the one question the deferred start asks.
+let rainWanted = false;
+// How much of the rain there is (0–1), on top of its authored gain: out on the
+// outskirts road it thins as his own sound takes its place.
+let rainLevel = 1;
 export function startRain({ gain = RAIN_GAIN, fade = 2.4 } = {}) {
+  rainWanted = true;
   if (!ctx || !bus || rainBed) return;
   if (!buffers.has(STORY_AUDIO.rain)) {
-    preload(STORY_AUDIO.rain).then(() => { if (!rainBed) startRain({ gain, fade }); });
+    preload(STORY_AUDIO.rain).then(() => { if (rainWanted && !rainBed) startRain({ gain, fade }); });
     return;
   }
   const out = ctx.createGain();
-  out.gain.setValueAtTime(1, ctx.currentTime);
+  out.gain.setValueAtTime(rainLevel, ctx.currentTime);
   out.connect(outBus('sfx'));
   const nodes = [out];
-  const rain = loopFile(STORY_AUDIO.rain, gain, fade, out);
+  // Looped seamless: the mp3's own head and tail do not meet, and every
+  // seventy seconds the weather used to hitch.
+  const rain = loopFile(STORY_AUDIO.rain, gain, fade, out, { seamless: true });
   const surfaceGains={};
   if (rain) {
     nodes.push(rain.src, rain.g);
@@ -601,6 +614,12 @@ export function startRain({ gain = RAIN_GAIN, fade = 2.4 } = {}) {
   }
   rainBed = { nodes, gain: out, surfaceGains };
   setRainSurfaceMix(rainSurfaceMix,{fade,force:true});
+}
+
+export function setRainLevel(level = 1, { fade = 1 } = {}) {
+  rainLevel = Math.max(0, Math.min(1, Number(level) || 0));
+  if (rainBed) setGain(rainBed.gain, rainLevel, fade);
+  return rainLevel;
 }
 
 export function setRainSurfaceMix(mix={}, {fade=.35,force=false}={}){
@@ -636,6 +655,7 @@ export function startBoothTone({ gain = BOOTH_GAIN, fade = 1.6 } = {}) {
 
 // The rain stops at the door, because he is the one who went inside.
 export function stopRain({ fade = 0.5 } = {}) {
+  rainWanted = false;
   if (!rainBed) return;
   const b = rainBed; rainBed = null;
   setGain(b.gain, 0, fade);

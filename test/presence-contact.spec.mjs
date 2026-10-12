@@ -48,6 +48,17 @@ PRES.updatePresence(0,0,0,(count)=>{sourceCount=count;},{deferContact:true,catch
 assert.equal(sourceCount,1,'Source checkpoint mode keeps immediate contact semantics');
 assert.equal(state.caughtCount,1);
 
+state=stageContact();calls=0;
+state.gait={...state.gait,phase:'recover',elapsed:.2,duration:.8,recoveryReset:false,
+  recoveryClip:'pressure_advance',recoveryTime:.3};
+PRES.updatePresence(.1,0,0,()=>{calls++;},{deferContact:true});
+assert.equal(calls,0,'a withdrawing or reforming body initiates an invisible catch');
+assert.equal(PRES.pendingContactAttempt(),null);
+assert.equal(state.x,0);assert.equal(state.y,0,'recovery grace moved the collider');
+PRES.updatePresence(.5,0,0,()=>{calls++;},{deferContact:true});
+assert.equal(calls,1,'contact did not resume when the body fully reformed');
+assert.ok(PRES.pendingContactAttempt()?.id);
+
 PRES.loadPresenceState({awareness:.4,caughtCount:3,contactDirector:{brushesShown:2,warningsShown:1,recentContentIds:['a']}});
 assert.equal(PRES.pendingContactAttempt(),null,'pending attempts never survive load');
 assert.equal(PRES.isActive(),false,'a loaded or fresh run never inherits the previous live manifestation');

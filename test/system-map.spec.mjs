@@ -31,7 +31,7 @@ assert.deepEqual(topologyContractErrors(), [], 'system-map topology is structura
 const snapshot = await buildSystemMapSnapshot();
 assert.equal(snapshot.schema, 1);
 assert.equal(snapshot.nodes.length, 21, 'the full lifecycle is represented by twenty-one subsystem buildings');
-assert.equal(snapshot.edges.length, 38, 'semantic routes stay curated instead of becoming a raw import graph');
+assert.equal(snapshot.edges.length, 39, 'semantic routes stay curated instead of becoming a raw import graph');
 assert.equal(snapshot.traces.length, 8);
 assert.ok(snapshot.traces.some((trace) => trace.id === snapshot.defaultTraceId));
 for (const node of snapshot.nodes) {

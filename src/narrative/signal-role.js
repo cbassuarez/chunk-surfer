@@ -44,9 +44,10 @@ export function inferredSignalRole(who=''){
   if(speaker==='hush')throw new Error('HUSH is nonverbal and may not be a narrative speaker');
   if(speaker==='surfer')return'chunkSurferTrace';
   if(speaker==='building')return'building';
-  if(speaker==='institution'||speaker==='client')return'institution';
+  if(speaker==='institution'||speaker==='client'||speaker==='line')return'institution';
   if(speaker==='recordist')return'playerShadowReturn';
-  if(['me','you','guard','radio','sarah'].includes(speaker))return'human';
+  // meter/tape/hands/ears are the recordist's own faculties at the HUSH.
+  if(['me','you','guard','radio','sarah','meter','tape','hands','ears','operator','lyle'].includes(speaker))return'human';
   return'unattributed';
 }
 

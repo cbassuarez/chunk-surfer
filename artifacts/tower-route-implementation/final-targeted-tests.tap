@@ -1,0 +1,797 @@
+TAP version 13
+# Subtest: Cathedral has its own objective and truthful reads, without Source channels or signature
+ok 1 - Cathedral has its own objective and truthful reads, without Source channels or signature
+  ---
+  duration_ms: 2.9765
+  type: 'test'
+  ...
+# Subtest: each basic Cathedral counter prevents the whole blow, including loops, on every difficulty
+ok 2 - each basic Cathedral counter prevents the whole blow, including loops, on every difficulty
+  ---
+  duration_ms: 6.812417
+  type: 'test'
+  ...
+# Subtest: the optional reference gives one safe playback without another charge or a repeat grant
+ok 3 - the optional reference gives one safe playback without another charge or a repeat grant
+  ---
+  duration_ms: 1.444416
+  type: 'test'
+  ...
+# Subtest: a basic torch and recorder can finish both phases by reading their counters
+ok 4 - a basic torch and recorder can finish both phases by reading their counters
+  ---
+  duration_ms: 75.867833
+  type: 'test'
+  ...
+# Subtest: phase two carries spent composure once and keeps the same ceiling
+ok 5 - phase two carries spent composure once and keeps the same ceiling
+  ---
+  duration_ms: 0.590875
+  type: 'test'
+  ...
+# Subtest: Guided Cathedral choices are untimed; other fights retain their clocks
+ok 6 - Guided Cathedral choices are untimed; other fights retain their clocks
+  ---
+  duration_ms: 0.314458
+  type: 'test'
+  ...
+# Subtest: JSON checkpoints preserve resources, committed action and deterministic next resolution
+ok 7 - JSON checkpoints preserve resources, committed action and deterministic next resolution
+  ---
+  duration_ms: 1.235459
+  type: 'test'
+  ...
+# Subtest: actual scene restores a player resolution without repeating the action or resource spend
+ok 8 - actual scene restores a player resolution without repeating the action or resource spend
+  ---
+  duration_ms: 32.292709
+  type: 'test'
+  ...
+# Subtest: actual scene restores an enemy resolution with its parry window and applies the blow once
+ok 9 - actual scene restores an enemy resolution with its parry window and applies the blow once
+  ---
+  duration_ms: 23.990292
+  type: 'test'
+  ...
+# Subtest: a restored enemy blow can still be parried at its saved contact time
+ok 10 - a restored enemy blow can still be parried at its saved contact time
+  ---
+  duration_ms: 20.721542
+  type: 'test'
+  ...
+# Subtest: normal and final movement completion reach the world callback once, including reload
+ok 11 - normal and final movement completion reach the world callback once, including reload
+  ---
+  duration_ms: 23.535209
+  type: 'test'
+  ...
+# cathedral extraction specs passed
+# Subtest: test/cathedral-extraction.spec.mjs
+ok 2 - test/cathedral-extraction.spec.mjs
+  ---
+  duration_ms: 4201.655666
+  type: 'test'
+  ...
+# cathedral compiled/GLB geometry specs passed
+# Subtest: test/cathedral-geometry.spec.mjs
+ok 3 - test/cathedral-geometry.spec.mjs
+  ---
+  duration_ms: 19593.089125
+  type: 'test'
+  ...
+# Subtest: phase-two handoff survives reload before its first command surface exists
+ok 14 - phase-two handoff survives reload before its first command surface exists
+  ---
+  duration_ms: 6.431417
+  type: 'test'
+  ...
+# Subtest: two defeats preserve the second phase and damage, while the third closes the route
+ok 15 - two defeats preserve the second phase and damage, while the third closes the route
+  ---
+  duration_ms: 9.029167
+  type: 'test'
+  ...
+# Subtest: safe lessons keep the same responses as the actual duel and cannot spend a fight attempt
+ok 16 - safe lessons keep the same responses as the actual duel and cannot spend a fight attempt
+  ---
+  duration_ms: 0.595459
+  type: 'test'
+  ...
+# cathedral tower specs passed
+# Subtest: test/cathedral-tower.spec.mjs
+ok 5 - test/cathedral-tower.spec.mjs
+  ---
+  duration_ms: 207.329584
+  type: 'test'
+  ...
+# st brendan's cathedral specs passed
+# Subtest: test/church.spec.mjs
+ok 6 - test/church.spec.mjs
+  ---
+  duration_ms: 23743.53625
+  type: 'test'
+  ...
+# Subtest: credits use one cinematic scene with a fixed opening card and fractional roll
+ok 19 - credits use one cinematic scene with a fixed opening card and fractional roll
+  ---
+  duration_ms: 2.228167
+  type: 'test'
+  ...
+# Subtest: credit roll positions change continuously rather than snapping by rows
+ok 20 - credit roll positions change continuously rather than snapping by rows
+  ---
+  duration_ms: 0.230958
+  type: 'test'
+  ...
+# Subtest: menu credits preserve pause, manual navigation, website, and back controls
+ok 21 - menu credits preserve pause, manual navigation, website, and back controls
+  ---
+  duration_ms: 0.415875
+  type: 'test'
+  ...
+# Subtest: the advertised Escape skip reaches ending credits before the run-level pause and finishes once
+ok 22 - the advertised Escape skip reaches ending credits before the run-level pause and finishes once
+  ---
+  duration_ms: 0.303833
+  type: 'test'
+  ...
+# Subtest: ending credits close on the Butler quote, then black, then the summary
+ok 23 - ending credits close on the Butler quote, then black, then the summary
+  ---
+  duration_ms: 0.796791
+  type: 'test'
+  ...
+# Subtest: the closing quote fades up, holds, and goes out to nothing
+ok 24 - the closing quote fades up, holds, and goes out to nothing
+  ---
+  duration_ms: 0.482959
+  type: 'test'
+  ...
+# Subtest: credit roll layout stays inside compact and wide viewports
+ok 25 - credit roll layout stays inside compact and wide viewports
+  ---
+  duration_ms: 0.347667
+  type: 'test'
+  ...
+# Subtest: ending routing places cinematic credits between the epilogue and return report
+ok 26 - ending routing places cinematic credits between the epilogue and return report
+  ---
+  duration_ms: 8.179958
+  type: 'test'
+  ...
+# ending contract specs passed
+#   hall take placement flags ok
+#   ⚠ ENDING AUDIO OUTSTANDING — all nine endings play the opening title theme.
+#      ending.bed.sacrifice           bed        60-90s   The Seal. Containment: it closes over you, and the last thing to go is your own torch.
+#      ending.bed.helped              bed        60-90s   He Tried to Help. The same closing, but somebody outside it was kind and it was not enough.
+#      ending.bed.inversion           bed        60-90s   The Other Door. A building coming down, and a yard that is not there.
+#      ending.bed.drugged             bed        60-90s   Cold, Bitter, Gone. Ordinary. A car park. Nothing wrong with the light, which is the frightening part.
+#      ending.bed.surfaced            bed        60-90s   The Other Recordist. Two of them, on a service road, arriving in the morning.
+#      ending.bed.contact-won         bed        45-70s   Open Channel. Source ends; the fatal return leaves forty-one seconds of breath on the recorder.
+#      ending.bed.contact-lost        bed        30-55s   No Return. The carrier ends at the fault without a Horizon release.
+#      ending.bed.tower-won           bed        60-90s   Exit Through the Gift Shop. Cathedral dust, severed bells, two bodies at an outward door.
+#      ending.bed.tower-lost          bed        40-65s   The Full Peal. Eight bells complete the return through both bodies.
+#      ending.strike.first            one-shot     4-8s   The 06:00 first strike. The demolition landing on the downbeat — the loudest thing in the game.
+#      ending.room.silent             one-shot    6-12s   A room going properly silent: the moment the building stops having a signal in it.
+#      ending.demolition.bed          bed        30-60s   Demolition, sustained: plant, hydraulics, masonry, at a distance and then not.
+#      ending.demolition.collapse     one-shot    8-15s   One span letting go. For the inversion collapse, which is currently lens effects and prose.
+# Subtest: test/ending-contract.spec.mjs
+ok 8 - test/ending-contract.spec.mjs
+  ---
+  duration_ms: 159.761167
+  type: 'test'
+  ...
+# ending cutscene specs passed
+# Subtest: test/ending-cutscene.spec.mjs
+ok 9 - test/ending-cutscene.spec.mjs
+  ---
+  duration_ms: 204.629459
+  type: 'test'
+  ...
+# ending physical staging and post-image lifecycle specs passed
+# Subtest: test/ending-staging.spec.mjs
+ok 10 - test/ending-staging.spec.mjs
+  ---
+  duration_ms: 6092.049
+  type: 'test'
+  ...
+# Subtest: reference optics preserve the exact authored torch object
+ok 30 - reference optics preserve the exact authored torch object
+  ---
+  duration_ms: 1.745416
+  type: 'test'
+  ...
+# Subtest: throw and flood change physical beam geometry without overriding battery or perception
+ok 31 - throw and flood change physical beam geometry without overriding battery or perception
+  ---
+  duration_ms: 0.962584
+  type: 'test'
+  ...
+# Subtest: lens choices do not revive a flat or failed flashlight and invalid scalars stay bounded
+ok 32 - lens choices do not revive a flat or failed flashlight and invalid scalars stay bounded
+  ---
+  duration_ms: 0.411166
+  type: 'test'
+  ...
+# Subtest: actual review entry finishes front-end session so its per-frame snapshot cannot restore title inversion
+ok 33 - actual review entry finishes front-end session so its per-frame snapshot cannot restore title inversion
+  ---
+  duration_ms: 4.107125
+  type: 'test'
+  ...
+# Subtest: review entry also resets an explicitly pinned title plate when no front-end session exists
+ok 34 - review entry also resets an explicitly pinned title plate when no front-end session exists
+  ---
+  duration_ms: 0.664375
+  type: 'test'
+  ...
+# Subtest: native Continue restores through the actual title lift and retires its persistent negative plate
+ok 35 - native Continue restores through the actual title lift and retires its persistent negative plate
+  ---
+  duration_ms: 3.281792
+  type: 'test'
+  ...
+# Subtest: native Continue also finishes the real iris transition when the prepared view is not exact
+ok 36 - native Continue also finishes the real iris transition when the prepared view is not exact
+  ---
+  duration_ms: 6.624
+  type: 'test'
+  ...
+# Subtest: native Continue resumes an active run without rebuilding its live encounter or tapes
+ok 37 - native Continue resumes an active run without rebuilding its live encounter or tapes
+  ---
+  duration_ms: 4.292375
+  type: 'test'
+  ...
+# Subtest: native Continue with no saved run opens the existing new-run flow
+ok 38 - native Continue with no saved run opens the existing new-run flow
+  ---
+  duration_ms: 1.879667
+  type: 'test'
+  ...
+# lighting rig contracts passed
+# Subtest: test/lighting-rig.spec.mjs
+ok 13 - test/lighting-rig.spec.mjs
+  ---
+  duration_ms: 5859.145667
+  type: 'test'
+  ...
+# Subtest: physical interior beam preserves the real battery, fitted reach and HUSH absorption
+ok 40 - physical interior beam preserves the real battery, fitted reach and HUSH absorption
+  ---
+  duration_ms: 4.108792
+  type: 'test'
+  ...
+# Subtest: the actual architecture and prop shaders bound received lamp highlights
+ok 41 - the actual architecture and prop shaders bound received lamp highlights
+  ---
+  duration_ms: 2.0835
+  type: 'test'
+  ...
+# Subtest: Source physical profiles delegate without changing their mode or optical output
+ok 42 - Source physical profiles delegate without changing their mode or optical output
+  ---
+  duration_ms: 2.005209
+  type: 'test'
+  ...
+# Subtest: preferences opens full app settings
+ok 43 - preferences opens full app settings
+  ---
+  duration_ms: 2.442708
+  type: 'test'
+  ...
+# Subtest: pause routes to pause menu, not settings
+ok 44 - pause routes to pause menu, not settings
+  ---
+  duration_ms: 0.130875
+  type: 'test'
+  ...
+# Subtest: god menu has its own desktop route
+ok 45 - god menu has its own desktop route
+  ---
+  duration_ms: 0.109417
+  type: 'test'
+  ...
+# Subtest: audio diagnostics opens settings audio tab
+ok 46 - audio diagnostics opens settings audio tab
+  ---
+  duration_ms: 0.190083
+  type: 'test'
+  ...
+# Subtest: reset window routes separately from game mode
+ok 47 - reset window routes separately from game mode
+  ---
+  duration_ms: 0.115875
+  type: 'test'
+  ...
+# source finale route specs passed
+# Subtest: test/source-finale-routes.spec.mjs
+ok 16 - test/source-finale-routes.spec.mjs
+  ---
+  duration_ms: 513.103042
+  type: 'test'
+  ...
+# Subtest: the hall and Source models keep physical light without reviving an off or attenuated torch
+ok 49 - the hall and Source models keep physical light without reviving an off or attenuated torch
+  ---
+  duration_ms: 2.621709
+  type: 'test'
+  ...
+# Subtest: the soft hall penumbra retains the fitted throw and flood differences
+ok 50 - the soft hall penumbra retains the fitted throw and flood differences
+  ---
+  duration_ms: 1.471875
+  type: 'test'
+  ...
+# Subtest: later Source modes and ordinary light keep their prior optical response
+ok 51 - later Source modes and ordinary light keep their prior optical response
+  ---
+  duration_ms: 0.193375
+  type: 'test'
+  ...
+# Subtest: hall exposure follows the physical hall and releases at the still-page threshold
+ok 52 - hall exposure follows the physical hall and releases at the still-page threshold
+  ---
+  duration_ms: 89.720542
+  type: 'test'
+  ...
+# Subtest: recording exposure is bounded and resets with the next lighting context
+ok 53 - recording exposure is bounded and resets with the next lighting context
+  ---
+  duration_ms: 0.701083
+  type: 'test'
+  ...
+# Subtest: capture exposure reveals dim form while preserving the raw-light black gate
+ok 54 - capture exposure reveals dim form while preserving the raw-light black gate
+  ---
+  duration_ms: 0.62225
+  type: 'test'
+  ...
+# torch lighting contracts passed
+# Subtest: test/torch-lighting.spec.mjs
+ok 18 - test/torch-lighting.spec.mjs
+  ---
+  duration_ms: 122.286291
+  type: 'test'
+  ...
+# Subtest: fast confirmation reveals the guard recognition but credits wait for the complete actual take
+ok 56 - fast confirmation reveals the guard recognition but credits wait for the complete actual take
+  ---
+  duration_ms: 24.795167
+  type: 'test'
+  ...
+# Subtest: gameplay pause preserves unheard audio and resumes the same PCM at its saved offset
+ok 57 - gameplay pause preserves unheard audio and resumes the same PCM at its saved offset
+  ---
+  duration_ms: 3.011666
+  type: 'test'
+  ...
+# Subtest: AudioContext suspension freezes the listening gate without inventing playback progress
+ok 58 - AudioContext suspension freezes the listening gate without inventing playback progress
+  ---
+  duration_ms: 3.307083
+  type: 'test'
+  ...
+# Subtest: unavailable playback does not strand the epilogue and an unearned take never plays
+ok 59 - unavailable playback does not strand the epilogue and an unearned take never plays
+  ---
+  duration_ms: 4.756417
+  type: 'test'
+  ...
+# Subtest: the recorder verb raises and lowers the real audition while keeping the personal world nonmodal
+ok 60 - the recorder verb raises and lowers the real audition while keeping the personal world nonmodal
+  ---
+  duration_ms: 4.671583
+  type: 'test'
+  ...
+# Subtest: monitor and saved tape replace each other in both directions without overlapping audio
+ok 61 - monitor and saved tape replace each other in both directions without overlapping audio
+  ---
+  duration_ms: 1.201292
+  type: 'test'
+  ...
+# Subtest: a rolling take refuses both monitor audition and saved playback before touching either transport
+ok 62 - a rolling take refuses both monitor audition and saved playback before touching either transport
+  ---
+  duration_ms: 0.8315
+  type: 'test'
+  ...
+# Subtest: raising the machine resumes an unfinished audition but still requires the owned recorder
+ok 63 - raising the machine resumes an unfinished audition but still requires the owned recorder
+  ---
+  duration_ms: 0.805625
+  type: 'test'
+  ...
+# Subtest: world suspension freezes the journey and leaving audition range or the world stops the held sound
+ok 64 - world suspension freezes the journey and leaving audition range or the world stops the held sound
+  ---
+  duration_ms: 1.111417
+  type: 'test'
+  ...
+# Subtest: entry clears the obsolete return job and completed exit saves the exact road pose with its inactive state
+ok 65 - entry clears the obsolete return job and completed exit saves the exact road pose with its inactive state
+  ---
+  duration_ms: 1.087167
+  type: 'test'
+  ...
+# Subtest: personal ambience follows the physical room in both directions rather than the narrative stage
+ok 66 - personal ambience follows the physical room in both directions rather than the narrative stage
+  ---
+  duration_ms: 3.104292
+  type: 'test'
+  ...
+# Subtest: the real renderer option excludes personal rooms from the physical Source void
+ok 67 - the real renderer option excludes personal rooms from the physical Source void
+  ---
+  duration_ms: 3.707125
+  type: 'test'
+  ...
+# Subtest: personal rain suppression is a frame override and returning restores the global amount including zero
+ok 68 - personal rain suppression is a frame override and returning restores the global amount including zero
+  ---
+  duration_ms: 12.1895
+  type: 'test'
+  ...
+# Subtest: cold story restore preserves recorded audio while recovering a missing authored tape (active heard journey)
+ok 69 - cold story restore preserves recorded audio while recovering a missing authored tape (active heard journey)
+  ---
+  duration_ms: 7.635375
+  type: 'test'
+  ...
+# Subtest: cold story restore preserves recorded audio while recovering a missing authored tape (completed road save)
+ok 70 - cold story restore preserves recorded audio while recovering a missing authored tape (completed road save)
+  ---
+  duration_ms: 2.175959
+  type: 'test'
+  ...
+# Subtest: Source activation cannot reconcile the authored tape before story restores the recorder stores
+ok 71 - Source activation cannot reconcile the authored tape before story restores the recorder stores
+  ---
+  duration_ms: 0.476375
+  type: 'test'
+  ...
+# Subtest: arriving and waiting under the lantern preserves the reward until the player starts the fight
+ok 72 - arriving and waiting under the lantern preserves the reward until the player starts the fight
+  ---
+  duration_ms: 8.452125
+  type: 'test'
+  ...
+# Subtest: an active ending presenter cannot be replaced by a saved extraction checkpoint
+ok 73 - an active ending presenter cannot be replaced by a saved extraction checkpoint
+  ---
+  duration_ms: 1.046959
+  type: 'test'
+  ...
+# Subtest: only confirming the first fight spends the completed journey and quiets the alarm atomically
+ok 74 - only confirming the first fight spends the completed journey and quiets the alarm atomically
+  ---
+  duration_ms: 13.218458
+  type: 'test'
+  ...
+# Subtest: the earned opening adds no charge to the quiet baseline and cannot be granted again on retry or phase two
+ok 75 - the earned opening adds no charge to the quiet baseline and cannot be granted again on retry or phase two
+  ---
+  duration_ms: 5.452417
+  type: 'test'
+  ...
+# Subtest: retreating or hearing the recording without completing the handover earns no opening
+ok 76 - retreating or hearing the recording without completing the handover earns no opening
+  ---
+  duration_ms: 2.305583
+  type: 'test'
+  ...
+# Subtest: the received authored tape is idempotent, replayable after reload, and never counts as ordinary work
+ok 77 - the received authored tape is idempotent, replayable after reload, and never counts as ordinary work
+  ---
+  duration_ms: 24.812917
+  type: 'test'
+  ...
+# Subtest: receiving the recording cannot interrupt an open player take
+ok 78 - receiving the recording cannot interrupt an open player take
+  ---
+  duration_ms: 0.309208
+  type: 'test'
+  ...
+# Subtest: the actual finale wrapper leaves controller confirm for prose and routes RT to optional resistance
+ok 79 - the actual finale wrapper leaves controller confirm for prose and routes RT to optional resistance
+  ---
+  duration_ms: 9.262334
+  type: 'test'
+  ...
+# Subtest: the resistance prompt renders over dialogue, uses RT on controller, and retires after the gesture
+ok 80 - the resistance prompt renders over dialogue, uses RT on controller, and retires after the gesture
+  ---
+  duration_ms: 4.967708
+  type: 'test'
+  ...
+# Subtest: resistance submits a distinct player pose at every possession stage, then restores the authored pose
+ok 81 - resistance submits a distinct player pose at every possession stage, then restores the authored pose
+  ---
+  duration_ms: 1.487625
+  type: 'test'
+  ...
+# Subtest: the actual resolution scene completes the peal without E or a controller gesture
+ok 82 - the actual resolution scene completes the peal without E or a controller gesture
+  ---
+  duration_ms: 4.913625
+  type: 'test'
+  ...
+# Subtest: the director exposes the complete authored primitive vocabulary
+ok 83 - the director exposes the complete authored primitive vocabulary
+  ---
+  duration_ms: 4.072833
+  type: 'test'
+  ...
+# Subtest: battle profiles escalate monotonically and keep their authored formations
+ok 84 - battle profiles escalate monotonically and keep their authored formations
+  ---
+  duration_ms: 0.436791
+  type: 'test'
+  ...
+# Subtest: the Source leak cannot begin before the physical FOH crossing
+ok 85 - the Source leak cannot begin before the physical FOH crossing
+  ---
+  duration_ms: 0.517208
+  type: 'test'
+  ...
+# Subtest: top-level scene policy keeps all pre-Source exploration stable
+ok 86 - top-level scene policy keeps all pre-Source exploration stable
+  ---
+  duration_ms: 1.410167
+  type: 'test'
+  ...
+# Subtest: prewarming a battle does not breach; its first actual fireball does
+ok 87 - prewarming a battle does not breach; its first actual fireball does
+  ---
+  duration_ms: 1.950959
+  type: 'test'
+  ...
+# Subtest: the fullscreen exit is driven by measured window state, not the saved setting
+ok 88 - the fullscreen exit is driven by measured window state, not the saved setting
+  ---
+  duration_ms: 1.431292
+  type: 'test'
+  ...
+# Subtest: first-launch title stays sealed and a pending return-title reveal is stale-token safe
+ok 89 - first-launch title stays sealed and a pending return-title reveal is stale-token safe
+  ---
+  duration_ms: 3.52425
+  type: 'test'
+  ...
+# Subtest: one failed native assignment converts the complete composition to Simulate
+ok 90 - one failed native assignment converts the complete composition to Simulate
+  ---
+  duration_ms: 1.482541
+  type: 'test'
+  ...
+# Subtest: death scoring schedules asynchronously and cannot extend retry timing
+ok 91 - death scoring schedules asynchronously and cannot extend retry timing
+  ---
+  duration_ms: 1.516375
+  type: 'test'
+  ...
+# Subtest: damage geometry is suppressed during a committed fireball catch
+ok 92 - damage geometry is suppressed during a committed fireball catch
+  ---
+  duration_ms: 1.333167
+  type: 'test'
+  ...
+# Subtest: emergency restoration forgives a live fireball before closing its surfaces
+ok 93 - emergency restoration forgives a live fireball before closing its surfaces
+  ---
+  duration_ms: 0.559959
+  type: 'test'
+  ...
+# Subtest: near Source proper prints a nonblocking warning instead of requiring an Aperture
+ok 94 - near Source proper prints a nonblocking warning instead of requiring an Aperture
+  ---
+  duration_ms: 1.57775
+  type: 'test'
+  ...
+# Subtest: the Source warning cannot repeat every time progress crosses another bucket
+ok 95 - the Source warning cannot repeat every time progress crosses another bucket
+  ---
+  duration_ms: 0.519417
+  type: 'test'
+  ...
+# Subtest: leaving Source cancels its transaction and restores the desktop before Horizon
+ok 96 - leaving Source cancels its transaction and restores the desktop before Horizon
+  ---
+  duration_ms: 0.45775
+  type: 'test'
+  ...
+# Subtest: stale Aperture placements cannot settle a puzzle or acquire a movement gate
+ok 97 - stale Aperture placements cannot settle a puzzle or acquire a movement gate
+  ---
+  duration_ms: 0.717208
+  type: 'test'
+  ...
+# Subtest: HUSH battle retires Source warning and its timer without replaying it on return
+ok 98 - HUSH battle retires Source warning and its timer without replaying it on return
+  ---
+  duration_ms: 0.941708
+  type: 'test'
+  ...
+# Subtest: opening HUSH dialogue immediately retires the warning and never reoffers it after withdrawal
+ok 99 - opening HUSH dialogue immediately retires the warning and never reoffers it after withdrawal
+  ---
+  duration_ms: 0.779292
+  type: 'test'
+  ...
+# Subtest: HUSH contact cancels an unpresented warning without allowing a late pane over dialogue
+ok 100 - HUSH contact cancels an unpresented warning without allowing a late pane over dialogue
+  ---
+  duration_ms: 0.350167
+  type: 'test'
+  ...
+# Subtest: all eight Tower composition events queue until the scored panes are presented
+ok 101 - all eight Tower composition events queue until the scored panes are presented
+  ---
+  duration_ms: 1.922375
+  type: 'test'
+  ...
+# Subtest: credits restore the exact transaction and leave the pool for the return
+ok 102 - credits restore the exact transaction and leave the pool for the return
+  ---
+  duration_ms: 0.27175
+  type: 'test'
+  ...
+# Subtest: the return files its sections onto the surfaces as registered images
+ok 103 - the return files its sections onto the surfaces as registered images
+  ---
+  duration_ms: 0.730584
+  type: 'test'
+  ...
+# Subtest: every authored ending has a distinct resolution primitive
+ok 104 - every authored ending has a distinct resolution primitive
+  ---
+  duration_ms: 0.077
+  type: 'test'
+  ...
+# Subtest: live bounds animation latches framebuffer allocation until the final native size
+ok 105 - live bounds animation latches framebuffer allocation until the final native size
+  ---
+  duration_ms: 1.545833
+  type: 'test'
+  ...
+# Subtest: main samples Source leakage only from the runtime frame after movement crossing
+ok 106 - main samples Source leakage only from the runtime frame after movement crossing
+  ---
+  duration_ms: 1.951208
+  type: 'test'
+  ...
+# Subtest: main bridges stable ending beat ids and title selection into the score director
+ok 107 - main bridges stable ending beat ids and title selection into the score director
+  ---
+  duration_ms: 6.03475
+  type: 'test'
+  ...
+# Subtest: fullscreen advisory gates native geometry and surfaces
+ok 108 - fullscreen advisory gates native geometry and surfaces
+  ---
+  duration_ms: 21.585875
+  type: 'test'
+  ...
+# Subtest: restoring during the fullscreen advisory cancels the pending cue
+ok 109 - restoring during the fullscreen advisory cancels the pending cue
+  ---
+  duration_ms: 3.273083
+  type: 'test'
+  ...
+# Subtest: an in-flight native exit is restored if its scene was cancelled
+ok 110 - an in-flight native exit is restored if its scene was cancelled
+  ---
+  duration_ms: 3.410167
+  type: 'test'
+  ...
+# Subtest: media compositions use a separate eight-pane pool while fireballs stay at four
+ok 111 - media compositions use a separate eight-pane pool while fireballs stay at four
+  ---
+  duration_ms: 4.707666
+  type: 'test'
+  ...
+# Subtest: composition content is repository-owned and strictly allowlisted
+ok 112 - composition content is repository-owned and strictly allowlisted
+  ---
+  duration_ms: 0.398333
+  type: 'test'
+  ...
+# Subtest: schema-2 scores compile legacy surface content into independent pane programs
+ok 113 - schema-2 scores compile legacy surface content into independent pane programs
+  ---
+  duration_ms: 0.859
+  type: 'test'
+  ...
+# Subtest: clone, echo, mosaic, relay and ripple lower deterministically per pane
+ok 114 - clone, echo, mosaic, relay and ripple lower deterministically per pane
+  ---
+  duration_ms: 15.80775
+  type: 'test'
+  ...
+# Subtest: procedural scores author deterministic ripples, circular motion, cut bursts and mosaic breaths
+ok 115 - procedural scores author deterministic ripples, circular motion, cut bursts and mosaic breaths
+  ---
+  duration_ms: 2.480291
+  type: 'test'
+  ...
+# Subtest: pane envelopes bind one score to one label, session and monotonic revision
+ok 116 - pane envelopes bind one score to one label, session and monotonic revision
+  ---
+  duration_ms: 1.629417
+  type: 'test'
+  ...
+# Subtest: reduced motion retains assignments and events while lowering optical transitions
+ok 117 - reduced motion retains assignments and events while lowering optical transitions
+  ---
+  duration_ms: 0.748083
+  type: 'test'
+  ...
+# Subtest: return-title media selection is non-clinical and keyed by the last return
+ok 118 - return-title media selection is non-clinical and keyed by the last return
+  ---
+  duration_ms: 0.4405
+  type: 'test'
+  ...
+# Subtest: reduceDread replaces clinical death imagery without changing geometry or timing
+ok 119 - reduceDread replaces clinical death imagery without changing geometry or timing
+  ---
+  duration_ms: 1.234417
+  type: 'test'
+  ...
+# Subtest: The Aperture requires the exact eye-and-path topology for 650ms
+ok 120 - The Aperture requires the exact eye-and-path topology for 650ms
+  ---
+  duration_ms: 1.405166
+  type: 'test'
+  ...
+# Subtest: every ending has authored media and credits restore owns cleanup
+ok 121 - every ending has authored media and credits restore owns cleanup
+  ---
+  duration_ms: 3.347708
+  type: 'test'
+  ...
+# Subtest: every event-driven ending cue names a stable authored cutscene beat or the shared final hold
+ok 122 - every event-driven ending cue names a stable authored cutscene beat or the shared final hold
+  ---
+  duration_ms: 2.101667
+  type: 'test'
+  ...
+# Subtest: Tower media leaves the central physical scene clear from entry through every placement
+ok 123 - Tower media leaves the central physical scene clear from entry through every placement
+  ---
+  duration_ms: 4.317875
+  type: 'test'
+  ...
+# Subtest: all eight real Tower strikes reach pane scores and retire the media before the final wide image
+ok 124 - all eight real Tower strikes reach pane scores and retire the media before the final wide image
+  ---
+  duration_ms: 1.55425
+  type: 'test'
+  ...
+# Subtest: Tower victory quiets at the threshold and clears the windows when the real west doors open
+ok 125 - Tower victory quiets at the threshold and clears the windows when the real west doors open
+  ---
+  duration_ms: 0.363542
+  type: 'test'
+  ...
+# Subtest: window faults respect flash accessibility without removing their sector grammar
+ok 126 - window faults respect flash accessibility without removing their sector grammar
+  ---
+  duration_ms: 0.309166
+  type: 'test'
+  ...
+# Subtest: the return composition files the account across the panes as images
+ok 127 - the return composition files the account across the panes as images
+  ---
+  duration_ms: 0.809
+  type: 'test'
+  ...
+1..127
+# tests 127
+# suites 0
+# pass 127
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 32796.365959

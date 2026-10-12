@@ -62,7 +62,7 @@ test('rapid navigation stays bounded and a refusal takes priority over incidenta
 test('mute and focus loss cancel current and future contacts, and gain is applied only by the mixer',()=>{
   const f=fixture();setUiCueGlobalLevel(.5);setUiCueSfxLevel(.4);
   uiCue(UI_CUE.CONFIRM);uiCue(UI_CUE.RELEASE,{delay:.09});
-  assert.equal(uiCueSnapshot().history[0].level,.55*CONTROL_RECIPES.toggle.volume,'the bus has already applied the two sliders');
+  assert.equal(uiCueSnapshot().history[0].level,.55*4*CONTROL_RECIPES.toggle.volume,'the bus has already applied the two sliders');
   setUiCueSfxLevel(0);assert.equal(uiCueSnapshot().voices,0);assert.equal(uiCue(UI_CUE.MOVE),false);
   setUiCueSfxLevel(1);f.advance();uiCue(UI_CUE.PRESS);setUiCueFocused(false);
   assert.equal(uiCueSnapshot().voices,0);assert.equal(uiCue(UI_CUE.CONFIRM),false);

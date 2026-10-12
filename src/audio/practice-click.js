@@ -175,3 +175,7 @@ export function createPracticeClick({
     },
   };
 }
+
+// The click voice on its own, for anything else in the wing that keeps time
+// against this clock (the six metronomes on the floor: metronome-field.js).
+export { tick as practiceClickTick };

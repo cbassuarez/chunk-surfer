@@ -1,0 +1,1458 @@
+{
+  "url": "http://127.0.0.1:5307",
+  "kind": "passive-browser-renderer-fixture",
+  "checks": [
+    {
+      "name": "actual assets initialize",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "actual borrowed body is skinned",
+      "passed": true,
+      "detail": {
+        "meshes": 1,
+        "bones": 34
+      }
+    },
+    {
+      "name": "authored clips are loaded",
+      "passed": true,
+      "detail": [
+        "pressure_hold",
+        "pressure_idle",
+        "pressure_approach",
+        "pressure_limp",
+        "pressure_listen",
+        "pressure_load",
+        "pressure_advance",
+        "pressure_arrest",
+        "pressure_pivot"
+      ]
+    },
+    {
+      "name": "actual Source model architecture is loaded",
+      "passed": true,
+      "detail": [
+        "upright_piano",
+        "open_instrument_case"
+      ]
+    },
+    {
+      "name": "01-contained accepts authoritative state",
+      "passed": true
+    },
+    {
+      "name": "contained stage renders visible body and transparent desktop",
+      "passed": true,
+      "detail": {
+        "width": 1440,
+        "height": 900,
+        "transparent": 0.7537970679012346,
+        "solid": 0.24193441358024692,
+        "nearWhite": 0,
+        "meanAlpha": 62.09917052469136,
+        "hash": 2868311985,
+        "bounds": {
+          "minX": 127,
+          "maxX": 1329,
+          "minY": 76,
+          "maxY": 541
+        },
+        "body": {
+          "samples": 6093,
+          "dark": 0.8381749548662399,
+          "light": 0.16182504513376006,
+          "mid": 0,
+          "edges": 1043
+        }
+      }
+    },
+    {
+      "name": "02-dissolving accepts authoritative state",
+      "passed": true
+    },
+    {
+      "name": "03-desktop accepts authoritative state",
+      "passed": true
+    },
+    {
+      "name": "the live model passes through the shared game shader",
+      "passed": true,
+      "detail": {
+        "shader": "pixel-mesh",
+        "profile": "hush",
+        "screen": "crosshatch",
+        "renderCount": 3,
+        "noiseReady": true,
+        "orthoDepth": true,
+        "coveragePreserved": true,
+        "temporalMemory": false,
+        "width": 1440,
+        "height": 900,
+        "disposed": false
+      }
+    },
+    {
+      "name": "actual torso pixels contain distinct dark and light dither marks",
+      "passed": true,
+      "detail": {
+        "samples": 6094,
+        "dark": 0.8400065638332787,
+        "light": 0.15999343616672138,
+        "mid": 0,
+        "edges": 1034
+      }
+    },
+    {
+      "name": "owner transition drives shell dissolution",
+      "passed": true
+    },
+    {
+      "name": "dissolution exposes more desktop without erasing the body",
+      "passed": true,
+      "detail": {
+        "contained": 0.7537970679012346,
+        "desktop": 0.7936049382716049
+      }
+    },
+    {
+      "name": "all rendered physical presentation clears command island",
+      "passed": true,
+      "detail": {
+        "minX": 74,
+        "maxX": 1382,
+        "minY": 77,
+        "maxY": 541
+      }
+    },
+    {
+      "name": "04-hold accepts authoritative state",
+      "passed": true
+    },
+    {
+      "name": "HOLD materializes surviving cover",
+      "passed": true
+    },
+    {
+      "name": "05-expose accepts authoritative state",
+      "passed": true
+    },
+    {
+      "name": "EXPOSE produces a bounded rake without a white hotspot",
+      "passed": true,
+      "detail": 0
+    },
+    {
+      "name": "06-overload accepts authoritative state",
+      "passed": true
+    },
+    {
+      "name": "07-loop accepts authoritative state",
+      "passed": true
+    },
+    {
+      "name": "08-reduced-motion accepts authoritative state",
+      "passed": true
+    },
+    {
+      "name": "09-paused accepts authoritative state",
+      "passed": true
+    },
+    {
+      "name": "pause freezes actual rendered pixels",
+      "passed": true,
+      "detail": {
+        "before": 2590125047,
+        "after": 2590125047
+      }
+    },
+    {
+      "name": "late native revisions cannot erase current encounter",
+      "passed": true
+    },
+    {
+      "name": "10-reformed accepts authoritative state",
+      "passed": true
+    },
+    {
+      "name": "completing the movement reforms finite shell",
+      "passed": true
+    },
+    {
+      "name": "11-small-dense accepts authoritative state",
+      "passed": true
+    },
+    {
+      "name": "monitor resize updates logical dimensions and bounded dense rendering",
+      "passed": true
+    },
+    {
+      "name": "dense monitor body remains outside command island",
+      "passed": true,
+      "detail": {
+        "minX": 0,
+        "maxX": 1279,
+        "minY": 82,
+        "maxY": 576
+      }
+    },
+    {
+      "name": "DPR does not enlarge the passive CSS surface",
+      "passed": true,
+      "detail": {
+        "width": 640,
+        "height": 480
+      }
+    },
+    {
+      "name": "12-ended accepts authoritative state",
+      "passed": true
+    },
+    {
+      "name": "ending disposes the visual footprint while paused",
+      "passed": true
+    },
+    {
+      "name": "no browser or shader errors",
+      "passed": true,
+      "detail": []
+    }
+  ],
+  "errors": [],
+  "frames": [
+    {
+      "name": "01-contained",
+      "frame": {
+        "openness": 0,
+        "clip": "pressure_listen",
+        "clipTime": 2,
+        "guardVisible": false,
+        "rakeVisible": false,
+        "state": {
+          "version": 1,
+          "token": "source-desktop-fixture",
+          "revision": 0,
+          "active": true,
+          "mode": "native",
+          "phase": "contained",
+          "transition": 0,
+          "clock": 2,
+          "movementIndex": 0,
+          "tier": 0,
+          "composureRatio": 1,
+          "coherenceRatio": 1,
+          "cover": {
+            "capacity": 3,
+            "count": 3,
+            "guard": 5,
+            "exposed": false
+          },
+          "intent": {
+            "kind": "broadcast",
+            "progress": 0.25
+          },
+          "reaction": {
+            "phase": "closed",
+            "progress": 0.25,
+            "tier": "",
+            "armed": false
+          },
+          "toolId": "",
+          "actionId": "",
+          "pressurePresentation": null,
+          "desktop": {
+            "width": 1440,
+            "height": 900,
+            "scale": 1,
+            "origin": {
+              "x": 0,
+              "y": 0
+            },
+            "command": {
+              "x": 0,
+              "y": 648,
+              "width": 1440,
+              "height": 252
+            }
+          },
+          "camera": null,
+          "reducedMotion": false,
+          "reduceFlash": false,
+          "paused": false
+        }
+      },
+      "gpu": {
+        "calls": 32,
+        "triangles": 95506,
+        "geometries": 20,
+        "textures": 12
+      },
+      "dither": {
+        "shader": "pixel-mesh",
+        "profile": "hush",
+        "screen": "crosshatch",
+        "renderCount": 1,
+        "noiseReady": true,
+        "orthoDepth": true,
+        "coveragePreserved": true,
+        "temporalMemory": false,
+        "width": 1440,
+        "height": 900,
+        "disposed": false
+      },
+      "pixels": {
+        "width": 1440,
+        "height": 900,
+        "transparent": 0.7537970679012346,
+        "solid": 0.24193441358024692,
+        "nearWhite": 0,
+        "meanAlpha": 62.09917052469136,
+        "hash": 2868311985,
+        "bounds": {
+          "minX": 127,
+          "maxX": 1329,
+          "minY": 76,
+          "maxY": 541
+        },
+        "body": {
+          "samples": 6093,
+          "dark": 0.8381749548662399,
+          "light": 0.16182504513376006,
+          "mid": 0,
+          "edges": 1043
+        }
+      }
+    },
+    {
+      "name": "02-dissolving",
+      "frame": {
+        "openness": 0.5,
+        "clip": "pressure_listen",
+        "clipTime": 3.2,
+        "guardVisible": false,
+        "rakeVisible": false,
+        "state": {
+          "version": 1,
+          "token": "source-desktop-fixture",
+          "revision": 1,
+          "active": true,
+          "mode": "native",
+          "phase": "dissolving",
+          "transition": 0.5,
+          "clock": 3.2,
+          "movementIndex": 0,
+          "tier": 0,
+          "composureRatio": 1,
+          "coherenceRatio": 1,
+          "cover": {
+            "capacity": 2,
+            "count": 0,
+            "guard": 4,
+            "exposed": false
+          },
+          "intent": {
+            "kind": "broadcast",
+            "progress": 0.25
+          },
+          "reaction": {
+            "phase": "closed",
+            "progress": 0.25,
+            "tier": "",
+            "armed": false
+          },
+          "toolId": "",
+          "actionId": "",
+          "pressurePresentation": null,
+          "desktop": {
+            "width": 1440,
+            "height": 900,
+            "scale": 1,
+            "origin": {
+              "x": 0,
+              "y": 0
+            },
+            "command": {
+              "x": 0,
+              "y": 648,
+              "width": 1440,
+              "height": 252
+            }
+          },
+          "camera": null,
+          "reducedMotion": false,
+          "reduceFlash": false,
+          "paused": false
+        }
+      },
+      "gpu": {
+        "calls": 26,
+        "triangles": 95338,
+        "geometries": 20,
+        "textures": 12
+      },
+      "dither": {
+        "shader": "pixel-mesh",
+        "profile": "hush",
+        "screen": "crosshatch",
+        "renderCount": 2,
+        "noiseReady": true,
+        "orthoDepth": true,
+        "coveragePreserved": true,
+        "temporalMemory": false,
+        "width": 1440,
+        "height": 900,
+        "disposed": false
+      },
+      "pixels": {
+        "width": 1440,
+        "height": 900,
+        "transparent": 0.7700802469135802,
+        "solid": 0.1096412037037037,
+        "nearWhite": 0,
+        "meanAlpha": 49.25260956790123,
+        "hash": 3471428689,
+        "bounds": {
+          "minX": 108,
+          "maxX": 1348,
+          "minY": 76,
+          "maxY": 541
+        },
+        "body": {
+          "samples": 6093,
+          "dark": 0.8375184638109305,
+          "light": 0.16248153618906944,
+          "mid": 0,
+          "edges": 1046
+        }
+      }
+    },
+    {
+      "name": "03-desktop",
+      "frame": {
+        "openness": 1,
+        "clip": "pressure_listen",
+        "clipTime": 4.4,
+        "guardVisible": false,
+        "rakeVisible": false,
+        "state": {
+          "version": 1,
+          "token": "source-desktop-fixture",
+          "revision": 2,
+          "active": true,
+          "mode": "native",
+          "phase": "desktop",
+          "transition": 1,
+          "clock": 4.4,
+          "movementIndex": 0,
+          "tier": 1,
+          "composureRatio": 1,
+          "coherenceRatio": 1,
+          "cover": {
+            "capacity": 2,
+            "count": 0,
+            "guard": 4,
+            "exposed": false
+          },
+          "intent": {
+            "kind": "broadcast",
+            "progress": 0.25
+          },
+          "reaction": {
+            "phase": "closed",
+            "progress": 0.25,
+            "tier": "",
+            "armed": false
+          },
+          "toolId": "",
+          "actionId": "",
+          "pressurePresentation": null,
+          "desktop": {
+            "width": 1440,
+            "height": 900,
+            "scale": 1,
+            "origin": {
+              "x": 0,
+              "y": 0
+            },
+            "command": {
+              "x": 0,
+              "y": 648,
+              "width": 1440,
+              "height": 252
+            }
+          },
+          "camera": null,
+          "reducedMotion": false,
+          "reduceFlash": false,
+          "paused": false
+        }
+      },
+      "gpu": {
+        "calls": 26,
+        "triangles": 95338,
+        "geometries": 20,
+        "textures": 12
+      },
+      "dither": {
+        "shader": "pixel-mesh",
+        "profile": "hush",
+        "screen": "crosshatch",
+        "renderCount": 3,
+        "noiseReady": true,
+        "orthoDepth": true,
+        "coveragePreserved": true,
+        "temporalMemory": false,
+        "width": 1440,
+        "height": 900,
+        "disposed": false
+      },
+      "pixels": {
+        "width": 1440,
+        "height": 900,
+        "transparent": 0.7936049382716049,
+        "solid": 0.10874537037037037,
+        "nearWhite": 0,
+        "meanAlpha": 33.363902006172836,
+        "hash": 4185775400,
+        "bounds": {
+          "minX": 74,
+          "maxX": 1382,
+          "minY": 77,
+          "maxY": 541
+        },
+        "body": {
+          "samples": 6094,
+          "dark": 0.8400065638332787,
+          "light": 0.15999343616672138,
+          "mid": 0,
+          "edges": 1034
+        }
+      }
+    },
+    {
+      "name": "04-hold",
+      "frame": {
+        "openness": 1,
+        "clip": "pressure_listen",
+        "clipTime": 0.20000000000000018,
+        "guardVisible": true,
+        "rakeVisible": false,
+        "state": {
+          "version": 1,
+          "token": "source-desktop-fixture",
+          "revision": 3,
+          "active": true,
+          "mode": "native",
+          "phase": "desktop",
+          "transition": 0,
+          "clock": 5,
+          "movementIndex": 0,
+          "tier": 1,
+          "composureRatio": 1,
+          "coherenceRatio": 1,
+          "cover": {
+            "capacity": 2,
+            "count": 1,
+            "guard": 4,
+            "exposed": false
+          },
+          "intent": {
+            "kind": "broadcast",
+            "progress": 0.25
+          },
+          "reaction": {
+            "phase": "closed",
+            "progress": 0.25,
+            "tier": "",
+            "armed": false
+          },
+          "toolId": "",
+          "actionId": "hold",
+          "pressurePresentation": null,
+          "desktop": {
+            "width": 1440,
+            "height": 900,
+            "scale": 1,
+            "origin": {
+              "x": 0,
+              "y": 0
+            },
+            "command": {
+              "x": 0,
+              "y": 648,
+              "width": 1440,
+              "height": 252
+            }
+          },
+          "camera": null,
+          "reducedMotion": false,
+          "reduceFlash": false,
+          "paused": false
+        }
+      },
+      "gpu": {
+        "calls": 30,
+        "triangles": 95450,
+        "geometries": 21,
+        "textures": 12
+      },
+      "dither": {
+        "shader": "pixel-mesh",
+        "profile": "hush",
+        "screen": "crosshatch",
+        "renderCount": 4,
+        "noiseReady": true,
+        "orthoDepth": true,
+        "coveragePreserved": true,
+        "temporalMemory": false,
+        "width": 1440,
+        "height": 900,
+        "disposed": false
+      },
+      "pixels": {
+        "width": 1440,
+        "height": 900,
+        "transparent": 0.7768788580246914,
+        "solid": 0.12613117283950617,
+        "nearWhite": 0,
+        "meanAlpha": 37.79840740740741,
+        "hash": 520139473,
+        "bounds": {
+          "minX": 74,
+          "maxX": 1382,
+          "minY": 77,
+          "maxY": 541
+        },
+        "body": {
+          "samples": 6095,
+          "dark": 0.8400328137817884,
+          "light": 0.15996718621821165,
+          "mid": 0,
+          "edges": 1030
+        }
+      }
+    },
+    {
+      "name": "05-expose",
+      "frame": {
+        "openness": 1,
+        "clip": "pressure_listen",
+        "clipTime": 0.7999999999999998,
+        "guardVisible": false,
+        "rakeVisible": true,
+        "state": {
+          "version": 1,
+          "token": "source-desktop-fixture",
+          "revision": 4,
+          "active": true,
+          "mode": "native",
+          "phase": "desktop",
+          "transition": 0,
+          "clock": 5.6,
+          "movementIndex": 0,
+          "tier": 1,
+          "composureRatio": 1,
+          "coherenceRatio": 1,
+          "cover": {
+            "capacity": 2,
+            "count": 0,
+            "guard": 4,
+            "exposed": true
+          },
+          "intent": {
+            "kind": "broadcast",
+            "progress": 0.25
+          },
+          "reaction": {
+            "phase": "closed",
+            "progress": 0.25,
+            "tier": "",
+            "armed": false
+          },
+          "toolId": "",
+          "actionId": "expose",
+          "pressurePresentation": null,
+          "desktop": {
+            "width": 1440,
+            "height": 900,
+            "scale": 1,
+            "origin": {
+              "x": 0,
+              "y": 0
+            },
+            "command": {
+              "x": 0,
+              "y": 648,
+              "width": 1440,
+              "height": 252
+            }
+          },
+          "camera": null,
+          "reducedMotion": false,
+          "reduceFlash": false,
+          "paused": false
+        }
+      },
+      "gpu": {
+        "calls": 26,
+        "triangles": 95338,
+        "geometries": 21,
+        "textures": 12
+      },
+      "dither": {
+        "shader": "pixel-mesh",
+        "profile": "hush",
+        "screen": "crosshatch",
+        "renderCount": 5,
+        "noiseReady": true,
+        "orthoDepth": true,
+        "coveragePreserved": true,
+        "temporalMemory": false,
+        "width": 1440,
+        "height": 900,
+        "disposed": false
+      },
+      "pixels": {
+        "width": 1440,
+        "height": 900,
+        "transparent": 0.7936103395061729,
+        "solid": 0.10874537037037037,
+        "nearWhite": 0,
+        "meanAlpha": 33.362377314814815,
+        "hash": 1200538186,
+        "bounds": {
+          "minX": 74,
+          "maxX": 1382,
+          "minY": 77,
+          "maxY": 541
+        },
+        "body": {
+          "samples": 6094,
+          "dark": 0.8372169346898589,
+          "light": 0.1627830653101411,
+          "mid": 0,
+          "edges": 1040
+        }
+      }
+    },
+    {
+      "name": "06-overload",
+      "frame": {
+        "openness": 1,
+        "clip": "pressure_load",
+        "clipTime": 0.36,
+        "guardVisible": false,
+        "rakeVisible": false,
+        "state": {
+          "version": 1,
+          "token": "source-desktop-fixture",
+          "revision": 5,
+          "active": true,
+          "mode": "native",
+          "phase": "desktop",
+          "transition": 0,
+          "clock": 6,
+          "movementIndex": 0,
+          "tier": 1,
+          "composureRatio": 1,
+          "coherenceRatio": 1,
+          "cover": {
+            "capacity": 3,
+            "count": 3,
+            "guard": 5,
+            "exposed": false
+          },
+          "intent": {
+            "kind": "overload",
+            "progress": 0.72
+          },
+          "reaction": {
+            "phase": "open",
+            "progress": 0.72,
+            "tier": "perfect",
+            "armed": true
+          },
+          "toolId": "",
+          "actionId": "",
+          "pressurePresentation": null,
+          "desktop": {
+            "width": 1440,
+            "height": 900,
+            "scale": 1,
+            "origin": {
+              "x": 0,
+              "y": 0
+            },
+            "command": {
+              "x": 0,
+              "y": 648,
+              "width": 1440,
+              "height": 252
+            }
+          },
+          "camera": null,
+          "reducedMotion": false,
+          "reduceFlash": false,
+          "paused": false
+        }
+      },
+      "gpu": {
+        "calls": 32,
+        "triangles": 95506,
+        "geometries": 21,
+        "textures": 12
+      },
+      "dither": {
+        "shader": "pixel-mesh",
+        "profile": "hush",
+        "screen": "crosshatch",
+        "renderCount": 6,
+        "noiseReady": true,
+        "orthoDepth": true,
+        "coveragePreserved": true,
+        "temporalMemory": false,
+        "width": 1440,
+        "height": 900,
+        "disposed": false
+      },
+      "pixels": {
+        "width": 1440,
+        "height": 900,
+        "transparent": 0.7850586419753086,
+        "solid": 0.1183395061728395,
+        "nearWhite": 0,
+        "meanAlpha": 35.735224537037034,
+        "hash": 89670172,
+        "bounds": {
+          "minX": 74,
+          "maxX": 1382,
+          "minY": 77,
+          "maxY": 541
+        },
+        "body": {
+          "samples": 5980,
+          "dark": 0.8224080267558529,
+          "light": 0.17759197324414716,
+          "mid": 0,
+          "edges": 1009
+        }
+      }
+    },
+    {
+      "name": "07-loop",
+      "frame": {
+        "openness": 1,
+        "clip": "pressure_pivot",
+        "clipTime": 0.504,
+        "guardVisible": false,
+        "rakeVisible": false,
+        "state": {
+          "version": 1,
+          "token": "source-desktop-fixture",
+          "revision": 6,
+          "active": true,
+          "mode": "native",
+          "phase": "desktop",
+          "transition": 0,
+          "clock": 7,
+          "movementIndex": 0,
+          "tier": 1,
+          "composureRatio": 1,
+          "coherenceRatio": 1,
+          "cover": {
+            "capacity": 3,
+            "count": 3,
+            "guard": 5,
+            "exposed": false
+          },
+          "intent": {
+            "kind": "loop",
+            "progress": 0.7
+          },
+          "reaction": {
+            "phase": "closed",
+            "progress": 0.25,
+            "tier": "",
+            "armed": false
+          },
+          "toolId": "",
+          "actionId": "",
+          "pressurePresentation": null,
+          "desktop": {
+            "width": 1440,
+            "height": 900,
+            "scale": 1,
+            "origin": {
+              "x": 0,
+              "y": 0
+            },
+            "command": {
+              "x": 0,
+              "y": 648,
+              "width": 1440,
+              "height": 252
+            }
+          },
+          "camera": null,
+          "reducedMotion": false,
+          "reduceFlash": false,
+          "paused": false
+        }
+      },
+      "gpu": {
+        "calls": 34,
+        "triangles": 189498,
+        "geometries": 21,
+        "textures": 13
+      },
+      "dither": {
+        "shader": "pixel-mesh",
+        "profile": "hush",
+        "screen": "crosshatch",
+        "renderCount": 7,
+        "noiseReady": true,
+        "orthoDepth": true,
+        "coveragePreserved": true,
+        "temporalMemory": false,
+        "width": 1440,
+        "height": 900,
+        "disposed": false
+      },
+      "pixels": {
+        "width": 1440,
+        "height": 900,
+        "transparent": 0.7759969135802469,
+        "solid": 0.11846990740740741,
+        "nearWhite": 0,
+        "meanAlpha": 36.830925925925925,
+        "hash": 3967786487,
+        "bounds": {
+          "minX": 74,
+          "maxX": 1382,
+          "minY": 77,
+          "maxY": 541
+        },
+        "body": {
+          "samples": 6067,
+          "dark": 0.8234712378440745,
+          "light": 0.1765287621559255,
+          "mid": 0,
+          "edges": 1047
+        }
+      }
+    },
+    {
+      "name": "08-reduced-motion",
+      "frame": {
+        "openness": 1,
+        "clip": "pressure_hold",
+        "clipTime": 0,
+        "guardVisible": false,
+        "rakeVisible": false,
+        "state": {
+          "version": 1,
+          "token": "source-desktop-fixture",
+          "revision": 7,
+          "active": true,
+          "mode": "native",
+          "phase": "desktop",
+          "transition": 0,
+          "clock": 8,
+          "movementIndex": 0,
+          "tier": 2,
+          "composureRatio": 1,
+          "coherenceRatio": 1,
+          "cover": {
+            "capacity": 3,
+            "count": 3,
+            "guard": 5,
+            "exposed": false
+          },
+          "intent": {
+            "kind": "overload",
+            "progress": 0.7
+          },
+          "reaction": {
+            "phase": "closed",
+            "progress": 0.25,
+            "tier": "",
+            "armed": false
+          },
+          "toolId": "",
+          "actionId": "",
+          "pressurePresentation": null,
+          "desktop": {
+            "width": 1440,
+            "height": 900,
+            "scale": 1,
+            "origin": {
+              "x": 0,
+              "y": 0
+            },
+            "command": {
+              "x": 0,
+              "y": 648,
+              "width": 1440,
+              "height": 252
+            }
+          },
+          "camera": null,
+          "reducedMotion": true,
+          "reduceFlash": true,
+          "paused": false
+        }
+      },
+      "gpu": {
+        "calls": 32,
+        "triangles": 95506,
+        "geometries": 21,
+        "textures": 13
+      },
+      "dither": {
+        "shader": "pixel-mesh",
+        "profile": "hush",
+        "screen": "crosshatch",
+        "renderCount": 8,
+        "noiseReady": true,
+        "orthoDepth": true,
+        "coveragePreserved": true,
+        "temporalMemory": false,
+        "width": 1440,
+        "height": 900,
+        "disposed": false
+      },
+      "pixels": {
+        "width": 1440,
+        "height": 900,
+        "transparent": 0.7918603395061729,
+        "solid": 0.11914351851851852,
+        "nearWhite": 0,
+        "meanAlpha": 35.470091820987655,
+        "hash": 2590125047,
+        "bounds": {
+          "minX": 127,
+          "maxX": 1329,
+          "minY": 77,
+          "maxY": 541
+        },
+        "body": {
+          "samples": 6096,
+          "dark": 0.8405511811023622,
+          "light": 0.1594488188976378,
+          "mid": 0,
+          "edges": 1030
+        }
+      }
+    },
+    {
+      "name": "09-paused",
+      "frame": {
+        "openness": 1,
+        "clip": "pressure_hold",
+        "clipTime": 0,
+        "guardVisible": false,
+        "rakeVisible": false,
+        "state": {
+          "version": 1,
+          "token": "source-desktop-fixture",
+          "revision": 7,
+          "active": true,
+          "mode": "native",
+          "phase": "desktop",
+          "transition": 0,
+          "clock": 8,
+          "movementIndex": 0,
+          "tier": 2,
+          "composureRatio": 1,
+          "coherenceRatio": 1,
+          "cover": {
+            "capacity": 3,
+            "count": 3,
+            "guard": 5,
+            "exposed": false
+          },
+          "intent": {
+            "kind": "overload",
+            "progress": 0.7
+          },
+          "reaction": {
+            "phase": "closed",
+            "progress": 0.25,
+            "tier": "",
+            "armed": false
+          },
+          "toolId": "",
+          "actionId": "",
+          "pressurePresentation": null,
+          "desktop": {
+            "width": 1440,
+            "height": 900,
+            "scale": 1,
+            "origin": {
+              "x": 0,
+              "y": 0
+            },
+            "command": {
+              "x": 0,
+              "y": 648,
+              "width": 1440,
+              "height": 252
+            }
+          },
+          "camera": null,
+          "reducedMotion": true,
+          "reduceFlash": true,
+          "paused": true
+        }
+      },
+      "gpu": {
+        "calls": 32,
+        "triangles": 95506,
+        "geometries": 21,
+        "textures": 13
+      },
+      "dither": {
+        "shader": "pixel-mesh",
+        "profile": "hush",
+        "screen": "crosshatch",
+        "renderCount": 9,
+        "noiseReady": true,
+        "orthoDepth": true,
+        "coveragePreserved": true,
+        "temporalMemory": false,
+        "width": 1440,
+        "height": 900,
+        "disposed": false
+      },
+      "pixels": {
+        "width": 1440,
+        "height": 900,
+        "transparent": 0.7918603395061729,
+        "solid": 0.11914351851851852,
+        "nearWhite": 0,
+        "meanAlpha": 35.470091820987655,
+        "hash": 2590125047,
+        "bounds": {
+          "minX": 127,
+          "maxX": 1329,
+          "minY": 77,
+          "maxY": 541
+        },
+        "body": {
+          "samples": 6096,
+          "dark": 0.8405511811023622,
+          "light": 0.1594488188976378,
+          "mid": 0,
+          "edges": 1030
+        }
+      }
+    },
+    {
+      "name": "10-reformed",
+      "frame": {
+        "openness": 0,
+        "clip": "pressure_listen",
+        "clipTime": 4.2,
+        "guardVisible": false,
+        "rakeVisible": false,
+        "state": {
+          "version": 1,
+          "token": "source-desktop-fixture",
+          "revision": 9,
+          "active": true,
+          "mode": "native",
+          "phase": "reforming",
+          "transition": 1,
+          "clock": 9,
+          "movementIndex": 0,
+          "tier": 0,
+          "composureRatio": 1,
+          "coherenceRatio": 1,
+          "cover": {
+            "capacity": 2,
+            "count": 2,
+            "guard": 4,
+            "exposed": false
+          },
+          "intent": {
+            "kind": "broadcast",
+            "progress": 0.25
+          },
+          "reaction": {
+            "phase": "closed",
+            "progress": 0.25,
+            "tier": "",
+            "armed": false
+          },
+          "toolId": "",
+          "actionId": "",
+          "pressurePresentation": null,
+          "desktop": {
+            "width": 1440,
+            "height": 900,
+            "scale": 1,
+            "origin": {
+              "x": 0,
+              "y": 0
+            },
+            "command": {
+              "x": 0,
+              "y": 648,
+              "width": 1440,
+              "height": 252
+            }
+          },
+          "camera": null,
+          "reducedMotion": false,
+          "reduceFlash": false,
+          "paused": false
+        }
+      },
+      "gpu": {
+        "calls": 30,
+        "triangles": 95450,
+        "geometries": 21,
+        "textures": 13
+      },
+      "dither": {
+        "shader": "pixel-mesh",
+        "profile": "hush",
+        "screen": "crosshatch",
+        "renderCount": 10,
+        "noiseReady": true,
+        "orthoDepth": true,
+        "coveragePreserved": true,
+        "temporalMemory": false,
+        "width": 1440,
+        "height": 900,
+        "disposed": false
+      },
+      "pixels": {
+        "width": 1440,
+        "height": 900,
+        "transparent": 0.7556682098765433,
+        "solid": 0.24000385802469135,
+        "nearWhite": 0,
+        "meanAlpha": 61.61606635802469,
+        "hash": 1347799861,
+        "bounds": {
+          "minX": 127,
+          "maxX": 1329,
+          "minY": 76,
+          "maxY": 541
+        },
+        "body": {
+          "samples": 6094,
+          "dark": 0.8388578930095175,
+          "light": 0.16114210699048245,
+          "mid": 0,
+          "edges": 1036
+        }
+      }
+    },
+    {
+      "name": "11-small-dense",
+      "frame": {
+        "openness": 1,
+        "clip": "pressure_listen",
+        "clipTime": 0.40000000000000036,
+        "guardVisible": false,
+        "rakeVisible": false,
+        "state": {
+          "version": 1,
+          "token": "source-desktop-fixture",
+          "revision": 10,
+          "active": true,
+          "mode": "native",
+          "phase": "desktop",
+          "transition": 0,
+          "clock": 10,
+          "movementIndex": 0,
+          "tier": 2,
+          "composureRatio": 1,
+          "coherenceRatio": 1,
+          "cover": {
+            "capacity": 1,
+            "count": 0,
+            "guard": 3,
+            "exposed": false
+          },
+          "intent": {
+            "kind": "broadcast",
+            "progress": 0.25
+          },
+          "reaction": {
+            "phase": "closed",
+            "progress": 0.25,
+            "tier": "",
+            "armed": false
+          },
+          "toolId": "",
+          "actionId": "",
+          "pressurePresentation": null,
+          "desktop": {
+            "width": 640,
+            "height": 480,
+            "scale": 2,
+            "command": {
+              "x": 0,
+              "y": 345,
+              "width": 640,
+              "height": 135
+            }
+          },
+          "camera": null,
+          "reducedMotion": false,
+          "reduceFlash": false,
+          "paused": false
+        }
+      },
+      "gpu": {
+        "calls": 26,
+        "triangles": 95338,
+        "geometries": 21,
+        "textures": 13
+      },
+      "dither": {
+        "shader": "pixel-mesh",
+        "profile": "hush",
+        "screen": "crosshatch",
+        "renderCount": 12,
+        "noiseReady": true,
+        "orthoDepth": true,
+        "coveragePreserved": true,
+        "temporalMemory": false,
+        "width": 1280,
+        "height": 960,
+        "disposed": false
+      },
+      "pixels": {
+        "width": 1280,
+        "height": 960,
+        "transparent": 0.7752596028645833,
+        "solid": 0.13012858072916667,
+        "nearWhite": 0,
+        "meanAlpha": 38.693478190104166,
+        "hash": 3352484970,
+        "bounds": {
+          "minX": 0,
+          "maxX": 1279,
+          "minY": 82,
+          "maxY": 576
+        },
+        "body": {
+          "samples": 5865,
+          "dark": 0.8235294117647058,
+          "light": 0.17647058823529413,
+          "mid": 0,
+          "edges": 579
+        }
+      }
+    },
+    {
+      "name": "12-ended",
+      "frame": {
+        "openness": 0,
+        "clip": "pressure_listen",
+        "clipTime": 0.40000000000000036,
+        "guardVisible": false,
+        "rakeVisible": false,
+        "state": {
+          "version": 1,
+          "token": "source-desktop-fixture",
+          "revision": 11,
+          "active": false,
+          "mode": "native",
+          "phase": "ended",
+          "transition": 0,
+          "clock": 10,
+          "movementIndex": 0,
+          "tier": 0,
+          "composureRatio": 1,
+          "coherenceRatio": 1,
+          "cover": {
+            "capacity": 3,
+            "count": 3,
+            "guard": 5,
+            "exposed": false
+          },
+          "intent": {
+            "kind": "broadcast",
+            "progress": 0.25
+          },
+          "reaction": {
+            "phase": "closed",
+            "progress": 0.25,
+            "tier": "",
+            "armed": false
+          },
+          "toolId": "",
+          "actionId": "",
+          "pressurePresentation": null,
+          "desktop": {
+            "width": 1440,
+            "height": 900,
+            "scale": 1,
+            "origin": {
+              "x": 0,
+              "y": 0
+            },
+            "command": {
+              "x": 0,
+              "y": 648,
+              "width": 1440,
+              "height": 252
+            }
+          },
+          "camera": null,
+          "reducedMotion": false,
+          "reduceFlash": false,
+          "paused": true
+        }
+      },
+      "gpu": {
+        "calls": 2,
+        "triangles": 2,
+        "geometries": 21,
+        "textures": 13
+      },
+      "dither": {
+        "shader": "pixel-mesh",
+        "profile": "hush",
+        "screen": "crosshatch",
+        "renderCount": 13,
+        "noiseReady": true,
+        "orthoDepth": true,
+        "coveragePreserved": true,
+        "temporalMemory": false,
+        "width": 1280,
+        "height": 960,
+        "disposed": false
+      },
+      "pixels": {
+        "width": 1280,
+        "height": 960,
+        "transparent": 1,
+        "solid": 0,
+        "nearWhite": 0,
+        "meanAlpha": 0,
+        "hash": 1331207621,
+        "bounds": {
+          "minX": 1280,
+          "maxX": 0,
+          "minY": 960,
+          "maxY": 0
+        },
+        "body": {
+          "samples": 0,
+          "dark": 0,
+          "light": 0,
+          "mid": 0,
+          "edges": 0
+        }
+      }
+    }
+  ],
+  "failure": null
+}

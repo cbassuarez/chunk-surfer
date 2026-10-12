@@ -1,6 +1,7 @@
 import { isTauriRuntime } from './detect.js';
 import { logWarn } from './diagnostics/diagnostics.js';
 import { sectorErrorPhases } from '../render/sector-error.js';
+import { sourceWarningFrames } from '../render/source-warning.js';
 import { drawPracticeRebus } from '../render/practice-rebus.js';
 import {
   apertureCompositionPlan,
@@ -10,6 +11,9 @@ import {
   endingCompositionPlan,
   returnCompositionPlan,
   sectorErrorCompositionPlan,
+  sourceWarningCompositionPlan,
+  sourceDecayCompositionPlan,
+  SOURCE_DECAY_STAGES,
   SECTOR_INTRUSION_EVENT,
   evaluateCompositionConstraints,
   titleCompositionPlan,
@@ -610,6 +614,7 @@ export function createWindowChoreographyDirector({
   effects=null,runtimeApi=null,documentApi=globalThis.document,
   getEnabled=()=>true,getDisplayMode=()=> 'windowed',getReducedMotion=()=>false,
   getCompositionContext=()=>({introduced:false,lastEndingId:'',reduceDread:false}),
+  getSourceIdentity=()=>({operatorName:null,permitted:false}),
   isApertureComplete=()=>false,onFirstBreach=()=>{},onPuzzleState=()=>{},onApertureComplete=()=>{},
   tokenFactory=()=>`window-session-${Date.now()}-${Math.random().toString(36).slice(2)}`,
   waitFn=wait,onState=()=>{},onGeometryMotion=()=>{},
@@ -622,6 +627,10 @@ export function createWindowChoreographyDirector({
   const practiceClueTokens=new Map();
   let battle=null;
   let source={stage:'sealed',sequence:0,bucket:-1};
+  let sourceWarningSeen=false;
+  // The windows' walk out of Source (sourceDecay). done: gone for this crossing.
+  let decay={stage:0,active:null,done:false};
+  let decayTokens=null;
   let ending=null;
   let composition=null;
   let sequence=0;
@@ -631,6 +640,10 @@ export function createWindowChoreographyDirector({
   let titleGeneration=0;
   let frontEndLease=null;
   let frontEndReady=Promise.resolve(null);
+  let sourceDesktop=null;
+  let sourceDesktopGeneration=0;
+  let sourceDesktopEvents=null;
+  let sourceDesktopLastReason=null;
   const simulation=createSimulation(documentApi,effects);
 
   const reduced=()=>!!getReducedMotion();
@@ -744,6 +757,7 @@ export function createWindowChoreographyDirector({
   }
 
   async function performPlan(plan,{forceSimulate=false,compositionMode='cold',handoffDurationMs=260}={}){
+    if(sourceDesktop)return null;
     const active=await beginTransaction(plan.sceneId,{forceSimulate});
     if(!active)return null;
     const useNative=active.native&&!forceSimulate;
@@ -778,10 +792,137 @@ export function createWindowChoreographyDirector({
   }
 
   function runPlan(plan,options={}){
+    if(sourceDesktop)return Promise.resolve(null);
     const owner=epoch;
     const task=planTail.then(()=>owner===epoch?performPlan(plan,options):null);
     planTail=task.catch(()=>null);
     return task;
+  }
+
+  function sourceDesktopState(){
+    return sourceDesktop?{active:true,mode:sourceDesktop.mode,token:sourceDesktop.token,revision:sourceDesktop.revision,
+      placement:sourceDesktop.placement||null,reason:sourceDesktop.reason||null,suspended:!!sourceDesktop.suspended}
+      :{active:false,mode:'fallback',token:null,revision:0,placement:null,reason:sourceDesktopLastReason,suspended:false};
+  }
+  function reportSourceDesktop(active){
+    const state=sourceDesktopState();
+    onState({type:'source-desktop',...(state||{mode:'ended'}),generation:active?.generation});
+    return state||{mode:'fallback',reason:'cancelled'};
+  }
+  async function bindSourceDesktopEvents(){
+    if(sourceDesktopEvents)return sourceDesktopEvents;
+    sourceDesktopEvents=(async()=>{
+      let events=api;
+      if(!events?.listen){try{events=await import('@tauri-apps/api/event');}catch(_){return false;}}
+      if(!events?.listen)return false;
+      await events.listen('source-desktop:cancelled',event=>{
+        const payload=event?.payload||event,active=sourceDesktop;
+        if(!active||payload?.token!==active.token)return;
+        active.mode='fallback';active.reason=String(payload.reason||'native-stage-cancelled');active.suspended=false;
+        transaction=null;reportSourceDesktop(active);
+      });
+      await events.listen('source-desktop:visibility',event=>{
+        const payload=event?.payload||event,active=sourceDesktop;
+        if(!active||payload?.token!==active.token)return;
+        active.focusSuspended=payload.focused===false;
+        active.suspended=payload.visible!==true;reportSourceDesktop(active);
+      });
+      await events.listen('source-desktop:error',event=>{
+        const payload=event?.payload||event,active=sourceDesktop;
+        if(!active||payload?.label!=='source-desktop')return;
+        const token=active.token;
+        active.mode='fallback';active.reason=String(payload.message||'desktop-renderer-failed');
+        void (async()=>{
+          if(token)await safe(()=>api.invoke('chunk_source_desktop_end',{token}));
+          if(sourceDesktop===active){transaction=null;reportSourceDesktop(active);}
+        })();
+      });
+      return true;
+    })().catch(()=>false);
+    return sourceDesktopEvents;
+  }
+
+  // The same reducer drives either presentation. An unavailable compositor
+  // changes the mode, never grants another recovery or advances combat time.
+  function beginSourceDesktop(snapshot={}){
+    if(sourceDesktop){
+      if(sourceDesktop.mode==='opening')return sourceDesktop.opening;
+      void updateSourceDesktop(snapshot);return Promise.resolve(sourceDesktopState());
+    }
+    const active={generation:++sourceDesktopGeneration,mode:'opening',token:null,revision:0,
+      placement:null,pending:null,pumping:null,suspended:false,reason:null};
+    sourceDesktop=active;
+    const current=()=>sourceDesktop===active&&sourceDesktopGeneration===active.generation;
+    active.opening=(async()=>{
+      // Acquire the guard synchronously, then drain a frame tween already in
+      // flight. No later damage/cast cue can queue behind the desktop lease.
+      await planTail.catch(()=>null);
+      if(!current())return{mode:'fallback',reason:'cancelled'};
+      clearCompositionTimers();simulation.hide();
+      await safe(()=>effects?.hideComposition?.());await safe(()=>effects?.hidePanes?.());
+      if(!current())return{mode:'fallback',reason:'cancelled'};
+      if(!getEnabled()||!(api?.invoke||nativeDesired())){
+        active.mode='fallback';active.reason='native-disabled';return reportSourceDesktop(active);
+      }
+      const tx=await beginTransaction('source:desktop');
+      if(!current())return{mode:'fallback',reason:'cancelled'};
+      active.token=tx?.token||null;
+      if(!tx?.native){active.mode='fallback';active.reason='native-unavailable';return reportSourceDesktop(active);}
+      const bound=await bindSourceDesktopEvents();
+      if(!current())return{mode:'fallback',reason:'cancelled'};
+      active.revision=1;onGeometryMotion(true);
+      try{
+        if(!bound)throw new Error('desktop lifecycle events unavailable');
+        const placement=await api.invoke('chunk_source_desktop_begin',{request:{token:active.token,revision:active.revision,snapshot}});
+        if(!placement||!Number.isFinite(placement.width)||!Number.isFinite(placement.command?.height))throw new Error('native desktop placement refused');
+        if(!current()){
+          await safe(()=>api.invoke('chunk_source_desktop_end',{token:active.token}));
+          return{mode:'fallback',reason:'cancelled'};
+        }
+        active.mode='native';active.placement=placement;
+        return reportSourceDesktop(active);
+      }catch(error){
+        await safe(()=>api.invoke('chunk_source_desktop_end',{token:active.token}));
+        await safe(()=>api.invoke('chunk_window_choreography_restore',{token:active.token}));
+        if(current()){
+          transaction=null;active.mode='fallback';active.reason=String(error?.message||error||'native-stage-unavailable');
+          void logWarn('Source desktop presentation unavailable',active.reason);
+          return reportSourceDesktop(active);
+        }
+        return{mode:'fallback',reason:'cancelled'};
+      }finally{onGeometryMotion(false);}
+    })();
+    return active.opening;
+  }
+  function updateSourceDesktop(snapshot={}){
+    const active=sourceDesktop;
+    if(!active||active.mode!=='native')return Promise.resolve(false);
+    active.pending=snapshot;
+    if(active.pumping)return active.pumping;
+    active.pumping=(async()=>{
+      let accepted=false;
+      while(sourceDesktop===active&&active.mode==='native'&&active.pending){
+        const next=active.pending;active.pending=null;
+        try{
+          accepted=!!await api.invoke('chunk_source_desktop_update',{request:{token:active.token,revision:++active.revision,snapshot:next}});
+          if(!accepted)throw new Error('native desktop lease expired');
+          if(sourceDesktop===active)active.suspended=!!active.focusSuspended||next.paused===true;
+        }catch(error){
+          if(sourceDesktop!==active)break;
+          // Hide before publishing fallback, including a failed emitter. The
+          // native side always attempts the geometry restore as well.
+          await safe(()=>api.invoke('chunk_source_desktop_end',{token:active.token}));
+          transaction=null;active.mode='fallback';active.reason=String(error?.message||error);reportSourceDesktop(active);break;
+        }
+      }
+      return accepted;
+    })().finally(()=>{active.pumping=null;});
+    return active.pumping;
+  }
+  async function endSourceDesktop(reason='source-desktop-end'){
+    if(!sourceDesktop)return{restored:true,mode:'ended'};
+    const result=await restore(reason);
+    return{restored:result,mode:'ended'};
   }
 
   function compositionEvent(name,payload={}){
@@ -805,13 +946,21 @@ export function createWindowChoreographyDirector({
   function clearCompositionTimers(){
     if(composition?.holdTimer)clearTimeout(composition.holdTimer);
     if(composition?.hintTimer)clearTimeout(composition.hintTimer);
+    if(composition?.retireTimer)clearTimeout(composition.retireTimer);
+    if(composition?.warningTokens)effects?.releaseSnapshots?.(composition.warningTokens);
     composition=null;
   }
   async function restore(reason='restore',{closePool=false,preserveComposition=false}={}){
+    const desktop=sourceDesktop;sourceDesktop=null;sourceDesktopGeneration+=1;
+    sourceDesktopLastReason=reason;
+    let restored=true;
     epoch+=1;
     titleGeneration+=1;
     practiceCueGeneration+=1;
     practiceClueTokens.clear();
+    if(['source-runtime-exit','source-god-warp','title-exit'].includes(reason))sourceWarningSeen=false;
+    if(['source-runtime-exit','source-god-warp','god-source-preset','title-exit'].includes(reason))decay={stage:0,active:null,done:false};
+    else if(decay.active)decay={stage:0,active:null,done:true};
     const active=transaction;
     const opening=transactionOpening;
     const puzzleWasActive=composition?.purpose==='puzzle'&&!composition.completed;
@@ -821,6 +970,10 @@ export function createWindowChoreographyDirector({
     transactionOpening=null;
     transaction=null;battle=null;ending=null;source={stage:'sealed',sequence:0,bucket:-1};frontEndLease=null;frontEndReady=Promise.resolve(null);
     opening?.controller.abort();
+    if(desktop?.token&&api?.invoke){
+      try{await api.invoke('chunk_source_desktop_end',{token:desktop.token});}
+      catch(error){restored=false;onState({type:'source-desktop-restore-error',reason:String(error?.message||error),token:desktop.token});}
+    }
     if(!preserveComposition){clearCompositionTimers();simulation.hide();await safe(()=>effects?.hideComposition?.());if(puzzleWasActive)onPuzzleState(false);}
     onGeometryMotion(false);
     await safe(()=>effects?.hidePanes?.());
@@ -828,7 +981,8 @@ export function createWindowChoreographyDirector({
     if(active?.native&&api?.invoke&&active.token!==opening?.token)await safe(()=>api.invoke('chunk_window_choreography_restore',{token:active.token}));
     if(closePool)await safe(()=>effects?.emergencyRestore?.({notify:false}));
     onState({type:'restore',reason,token:active?.token||null,policy:active?.policy||null});
-    return true;
+    if(desktop)onState({type:'source-desktop',...sourceDesktopState()});
+    return restored;
   }
 
   async function showPracticeCue(cue){
@@ -886,7 +1040,11 @@ export function createWindowChoreographyDirector({
   }
 
   function prepareBattle({battleId='',encounterId='',reducedMotion=false}={}){
-    if(composition?.purpose==='death'){
+    // A fast deliberate HUSH challenge may arrive while the warning is still
+    // printing. Invalidate a pending renderer and retire the visible warning
+    // before a battle owns the panes. Keep the once-per-journey warning latch.
+    if(source.warningStarted)source={...source};
+    if(composition?.purpose==='death'||composition?.purpose==='source-warning'){
       void safe(()=>effects?.hideComposition?.());simulation.hide();clearCompositionTimers();
     }
     const profile=battleChoreographyProfile(battleId);
@@ -894,7 +1052,22 @@ export function createWindowChoreographyDirector({
     return battle;
   }
 
+  function beginSourceContact(){
+    // Dialogue has foreground ownership before the player chooses whether to
+    // fight. Suppress any later warning in this journey, including one still
+    // waiting for snapshot registration or a desktop presentation transaction.
+    sourceWarningSeen=true;
+    const sourceOwned=source.stage!=='sealed'||source.warningStarted
+      ||composition?.purpose==='source-warning'||String(transaction?.sceneId||'').startsWith('source:');
+    if(!sourceOwned)return Promise.resolve(false);
+    // restore invalidates queued plans synchronously, removes the simulated
+    // panes immediately, and erases native image envelopes before resolving.
+    // This reason deliberately does not reset the once-per-journey latch.
+    return restore('source-contact');
+  }
+
   async function fireballCast({battleId='',castId='',windowLock=false}={}){
+    if(sourceDesktop)return null;
     const profile=battle?.profile||battleChoreographyProfile(battleId);
     if(!profile)return null;
     if(!battle)battle={battleId:profile.battleId,encounterId:battleId,profile,sequence:0,damageCount:0,breached:false,reducedMotion:reduced()};
@@ -913,6 +1086,7 @@ export function createWindowChoreographyDirector({
   }
 
   async function damage({battleId='',received=0,phase=false,origin=null,windowLock=false}={}){
+    if(sourceDesktop)return null;
     const profile=battle?.profile||battleChoreographyProfile(battleId);
     if(!profile||windowLock)return null;
     if(battle)battle.damageCount+=1;
@@ -928,6 +1102,7 @@ export function createWindowChoreographyDirector({
   }
 
   async function result({battleId='',result='abort'}={}){
+    if(sourceDesktop)return null;
     if(result!=='lose')return null;
     const profile=battle?.profile||battleChoreographyProfile(battleId);
     if(!profile)return null;
@@ -943,6 +1118,9 @@ export function createWindowChoreographyDirector({
   }
 
   async function finishBattle({battleId='',result='abort'}={}){
+    if(sourceDesktop&&['win','lose'].includes(result)){
+      battle=null;onState({type:'handoff',from:'source-desktop',to:'ending'});return true;
+    }
     // A battle breach is one transaction. Source hands that transaction to its
     // ending; every other result and every abort restores here.
     if((battleId==='source-final'||battle?.battleId==='source-final')&&['win','lose'].includes(result)){
@@ -1038,8 +1216,11 @@ export function createWindowChoreographyDirector({
     const stage=sourceLeakStage(frame);
     if(stage.id==='sealed'){
       // A stale Source transaction may exist after a god-menu jump or reload,
-      // but the real page/dock/door chain must never inherit it.
-      if(source.stage!=='sealed')await restore('source-threshold-exit');
+      // but the real page/dock/door chain must never inherit it. Past the
+      // perimeter nothing is cut here: sourceDecay() takes the windows apart
+      // across the outskirts and restores at the tape.
+      const outskirts=String(frame?.phase||'').toLowerCase()==='horizon';
+      if(source.stage!=='sealed'&&!outskirts)await restore('source-threshold-exit');
       source={stage:'sealed',sequence:0,bucket:-1};
       return stage;
     }
@@ -1051,21 +1232,67 @@ export function createWindowChoreographyDirector({
       effects?.ensure?.({intensity:'hostile',fullscreen:getDisplayMode()==='game-mode',reducedMotion:reduced()});
       if(stage.id==='white')void safe(()=>effects?.prepareMedia?.({count:4}));
     }
-    if(stage.id==='proper'&&!isApertureComplete()){
-      await startAperture();
+    if(stage.id==='proper'){
+      await beginSourceWarning();
       return stage;
     }
     await runPlan(sourcePlan(stage,source.sequence++,reduced()));
     return stage;
   }
 
+  async function ensureDecayFrames(){
+    if(decayTokens&&(!effects?.snapshotData||decayTokens.every((token)=>effects.snapshotData(token))))return decayTokens;
+    const context=compositionContext();
+    const frames=[.25,.5,.75,1].flatMap((damage,index)=>sectorErrorPhases({
+      count:1,rowsPerPhase:1,width:640,height:432,seed:4417+index*13,reducedMotion:reduced(),flashMode:context.flashMode,damage,
+    }));
+    const tokens=[];
+    for(const frame of frames){const token=await safe(()=>effects?.registerSnapshot?.(frame));if(token)tokens.push(token);}
+    decayTokens=tokens.length?tokens:null;
+    return decayTokens;
+  }
+
+  // THE WINDOWS COME APART ON THE WAY OUT. progress is the walk from the field's
+  // edge (0) to the head of the tape (1). Stages only advance: walking back does
+  // not mend a window, and once they are gone nothing reopens them.
+  async function sourceDecay(progress=0){
+    const p=clamp(progress);
+    if(decay.done||p<=0)return false;
+    if(p>=1){
+      const owned=decay.active&&composition===decay.active;
+      decay={stage:0,active:null,done:true};
+      if(owned)await restore('source-decay-end');
+      return true;
+    }
+    if(!decay.active){
+      if(composition&&!['source-warning','sector'].includes(composition.purpose))return false;
+      const opening={stage:0,active:true,done:false};decay=opening;
+      const context=compositionContext();
+      const terminals=await ensureSectorPhases();
+      const decays=await ensureDecayFrames();
+      if(decay!==opening)return false;
+      const plan=sourceDecayCompositionPlan({phaseTokens:terminals||[],decayTokens:decays||[],epochMs:Date.now(),reducedMotion:reduced(),flashMode:context.flashMode});
+      const active={plan,purpose:'source-decay',state:{},startedAt:Date.now(),completed:false,presented:false,pendingEvents:new Set()};
+      composition=active;decay.active=active;
+      if(nativeDesired())effects?.ensure?.({intensity:'hostile',fullscreen:getDisplayMode()==='game-mode',reducedMotion:reduced()});
+      await runPlan(plan);markCompositionPresented(active);
+      if(decay.active!==active)return false;
+    }
+    if(decay.active===true)return false;
+    const reached=SOURCE_DECAY_STAGES.filter((at)=>p>=at).length;
+    while(decay.stage<reached){decay.stage+=1;compositionEvent(`source-decay-${decay.stage}`);}
+    return true;
+  }
+
   function leaveSource(reason='source-exit'){
+    if(sourceDesktop&&['source-exit','source-runtime-exit'].includes(reason))return Promise.resolve(false);
     const sourceOwned=source.stage!=='sealed'||composition?.purpose==='puzzle'||String(transaction?.sceneId||'').startsWith('source:');
     if(!sourceOwned)return Promise.resolve(false);
     return restore(reason);
   }
 
   async function beginEnding(endingId=''){
+    if(sourceDesktop){ending=endingChoreographyProfile(endingId);return{...sourceDesktopState(),handoff:true};}
     const profile=endingChoreographyProfile(endingId);
     if(!profile)return null;
     ending=profile;
@@ -1128,17 +1355,60 @@ export function createWindowChoreographyDirector({
   // beginEnding found no composition to queue against. Nothing on the hot path
   // may await ahead of that assignment.
   let sectorTokens=null;
+  let sectorPhaseMode=null;
+  let sectorPending=null;
   async function ensureSectorPhases(){
-    if(sectorTokens)return sectorTokens;
-    const phases=sectorErrorPhases({count:10,width:512,height:340,seed:4417});
-    if(!phases.length)return null;
-    const tokens=[];
-    for(const phase of phases){
-      const token=await safe(()=>effects?.registerSnapshot?.(phase));
-      if(token)tokens.push(token);
-    }
-    sectorTokens=tokens.length?tokens:null;
-    return sectorTokens;
+    const context=compositionContext(),mode=`${reduced()}:${context.flashMode}`;
+    if(sectorTokens&&sectorPhaseMode===mode&&(!effects?.snapshotData||sectorTokens.every((token)=>effects.snapshotData(token))))return sectorTokens;
+    if(sectorPending)return sectorPending;
+    effects?.releaseSnapshots?.(sectorTokens||[]);
+    sectorPending=(async()=>{
+      // Twenty phases, six rows apart: enough churn that the offsets never read
+      // still, and inside the 32-snapshot bank with the eight Source warning cards.
+      const phases=sectorErrorPhases({count:20,rowsPerPhase:reduced()||context.flashMode!=='full'?1:6,width:640,height:432,seed:4417,reducedMotion:reduced(),flashMode:context.flashMode});
+      const tokens=[];
+      for(const phase of phases){
+        const token=await safe(()=>effects?.registerSnapshot?.(phase));
+        if(token)tokens.push(token);
+      }
+      sectorTokens=tokens.length?tokens:null;sectorPhaseMode=mode;
+      return sectorTokens;
+    })().finally(()=>{sectorPending=null;});
+    return sectorPending;
+  }
+
+  async function beginSourceWarning(){
+    if(source.warningStarted||sourceWarningSeen)return null;
+    const owner=source,ownerEpoch=epoch;
+    owner.warningStarted=true;sourceWarningSeen=true;
+    const context=compositionContext();
+    const identity=getSourceIdentity()||{};
+    // THE MESSAGE COMES OUT OF THE FAILING DISK. Every frame is still the
+    // ntfsclone terminal; the name and the warning gather in its cells as bits
+    // (render/source-warning.js). They are this composition's own frames —
+    // registered last, so the 32-snapshot bank keeps them — and all of them are
+    // released when it retires.
+    const baked=sourceWarningFrames({operatorName:identity.operatorName,permitted:identity.permitted===true,documentApi,reducedMotion:reduced(),flashMode:context.flashMode});
+    const register=async(list=[])=>{const tokens=[];for(const frame of list){const token=await safe(()=>effects?.registerSnapshot?.(frame));if(token)tokens.push(token);}return tokens;};
+    const preTokens=await register(baked.pre);
+    const messageTokens=[];
+    for(const frames of baked.messages||[])messageTokens.push(await register(frames));
+    const warningTokens=[...preTokens,...messageTokens.flat()];
+    if(source!==owner||epoch!==ownerEpoch){effects?.releaseSnapshots?.(warningTokens);return null;}
+    const plan=sourceWarningCompositionPlan({preTokens,messageTokens,epochMs:Date.now(),reducedMotion:reduced(),flashMode:context.flashMode});
+    const active={plan,purpose:'source-warning',state:{},startedAt:Date.now(),completed:false,presented:false,pendingEvents:new Set(),warningTokens};
+    composition=active;
+    if(nativeDesired())effects?.ensure?.({intensity:'hostile',fullscreen:getDisplayMode()==='game-mode',reducedMotion:reduced()});
+    await runPlan(plan);markCompositionPresented(active);
+    if(composition!==active){effects?.releaseSnapshots?.(warningTokens);return null;}
+    active.retireTimer=setTimeout(()=>{
+      if(composition!==active)return;
+      active.completed=true;simulation.hide();
+      effects?.releaseSnapshots?.(warningTokens);
+      void safe(()=>effects?.hideComposition?.({releaseSnapshots:false}));
+    },Math.max(0,16500-(Date.now()-active.startedAt)));
+    active.retireTimer.unref?.();
+    return {plan,scheduled:true};
   }
 
   // The disk failing, as a screen of its own.
@@ -1306,6 +1576,11 @@ export function createWindowChoreographyDirector({
     onPuzzleState(true);return performPlan(puzzle.plan,{forceSimulate:true});
   }
   function suspend(){
+    if(sourceDesktop?.mode==='native'){
+      sourceDesktop.suspended=true;
+      void safe(()=>api.invoke('chunk_source_desktop_suspend',{token:sourceDesktop.token,suspended:true}));
+      reportSourceDesktop(sourceDesktop);
+    }
     void safe(()=>effects?.suspendSurfaces?.());
     if(effects?.debug?.()?.activeCompositionCue?.startsWith('practice:')){
       void safe(()=>effects?.hideComposition?.({releaseSnapshots:false}));
@@ -1313,11 +1588,9 @@ export function createWindowChoreographyDirector({
     return true;
   }
   function interactSource(){
-    if(composition?.purpose==='puzzle'||source.stage!=='proper'||source.interacted)return false;
-    source.interacted=true;
-    simulation.hide();void safe(()=>effects?.hidePanes?.());
-    onState({type:'pane-action',sceneId:'source:white-crossing',action:'enter'});
-    return true;
+    // The Source warning is noninteractive. The retired "enter" pane used to
+    // consume the first E even with no visible pane, stealing HUSH's prompt.
+    return false;
   }
 
   const keyTarget=documentApi?.defaultView||globalThis.window;
@@ -1332,14 +1605,15 @@ export function createWindowChoreographyDirector({
   keyTarget?.addEventListener?.('chunk-surfer:window-media-action',(event)=>{if(event.detail?.action==='escape')void emergencyRestore();});
 
   return{
-    prepareBattle,fireballCast,damage,result,finishBattle,beginReturn,finishReturn,beginSectorError,intrudeSector,sourceFrame,leaveSource,beginEnding,beginOpening,beginTitle,finishTitle,credits,
+    prepareBattle,fireballCast,damage,result,finishBattle,beginReturn,finishReturn,beginSectorError,beginSourceWarning,beginSourceContact,intrudeSector,sourceFrame,sourceDecay,leaveSource,beginEnding,beginOpening,beginTitle,finishTitle,credits,
     emergencyRestore,suspend,runPlan,showPracticeCue,compositionEvent,interactSource,puzzleInteract,noteCompositionMove,
+    beginSourceDesktop,updateSourceDesktop,endSourceDesktop,sourceDesktopState,
     // TEARDOWN FOR A CUE A CALLER RAN ITSELF. runPlan was public and this was
     // not, so anything that showed clue surfaces had no supported way to take
     // them down again — which is most of why the box office cue was compiled,
     // spec-pinned, and never fired by anything in the game.
     restore,
     active:()=>!!transaction,
-    debug:()=>({transaction:transaction?{...transaction}:null,battle:battle?{battleId:battle.battleId,breached:battle.breached}:null,source:{...source},ending,composition:composition?{purpose:composition.purpose,cueId:composition.plan.cueId,completed:composition.completed}:null,frontEnd:frontEndLease?{...frontEndLease,effectsToken:effects?.sessionToken?.()||frontEndLease.effectsToken||null}:null}),
+    debug:()=>({sourceDesktop:sourceDesktopState(),decay:{stage:decay.stage,active:!!decay.active,done:decay.done},transaction:transaction?{...transaction}:null,battle:battle?{battleId:battle.battleId,breached:battle.breached}:null,source:{...source},ending,composition:composition?{purpose:composition.purpose,cueId:composition.plan.cueId,completed:composition.completed}:null,frontEnd:frontEndLease?{...frontEndLease,effectsToken:effects?.sessionToken?.()||frontEndLease.effectsToken||null}:null}),
   };
 }

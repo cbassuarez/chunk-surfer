@@ -1,0 +1,55 @@
+TAP version 13
+# ending cutscene specs passed
+# Subtest: test/ending-cutscene.spec.mjs
+ok 1 - test/ending-cutscene.spec.mjs
+  ---
+  duration_ms: 142.325291
+  type: 'test'
+  ...
+# ending physical staging and post-image lifecycle specs passed
+# Subtest: test/ending-staging.spec.mjs
+ok 2 - test/ending-staging.spec.mjs
+  ---
+  duration_ms: 13632.199459
+  type: 'test'
+  ...
+# lighting rig contracts passed
+# Subtest: test/lighting-rig.spec.mjs
+ok 3 - test/lighting-rig.spec.mjs
+  ---
+  duration_ms: 14136.739916
+  type: 'test'
+  ...
+# Subtest: the actual finale wrapper leaves controller confirm for prose and routes RT to optional resistance
+ok 4 - the actual finale wrapper leaves controller confirm for prose and routes RT to optional resistance
+  ---
+  duration_ms: 6.194709
+  type: 'test'
+  ...
+# Subtest: the resistance prompt renders over dialogue, uses RT on controller, and retires after the gesture
+ok 5 - the resistance prompt renders over dialogue, uses RT on controller, and retires after the gesture
+  ---
+  duration_ms: 3.109875
+  type: 'test'
+  ...
+# Subtest: resistance submits a distinct player pose at every possession stage, then restores the authored pose
+ok 6 - resistance submits a distinct player pose at every possession stage, then restores the authored pose
+  ---
+  duration_ms: 0.792208
+  type: 'test'
+  ...
+# Subtest: the actual resolution scene completes the peal without E or a controller gesture
+ok 7 - the actual resolution scene completes the peal without E or a controller gesture
+  ---
+  duration_ms: 2.067209
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 14149.688875

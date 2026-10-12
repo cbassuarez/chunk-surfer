@@ -1,0 +1,11 @@
+  · school_desk: source school_desk.glb not found, keeping fallback
+  · pew: source pew.glb not found, keeping fallback
+  · chair: source chair.glb not found, keeping fallback
+  · grand_piano: source grand_piano.glb not found, keeping fallback
+  · marimba: source marimba.glb not found, keeping fallback
+  · cello: source cello.glb not found, keeping fallback
+  · violin: source violin.glb not found, keeping fallback
+  · hall_seating: source hall_seating.glb not found, keeping fallback
+  · plant_header_manifold: 4196 -> 4196 tris from plant_header_manifold.glb
+  · baseboards: 2395 runs -> 2469 segments across 7 render groups
+wrote public/assets/conservatory-props.glb (31271620 bytes, 433562 triangles, 407 meshes, 1 from real sources)

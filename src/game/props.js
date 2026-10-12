@@ -43,20 +43,33 @@ export function propsInit(fp, placements=CONSERVATORY_PROPS){
   if(placements===CONSERVATORY_PROPS){
     placements=[...placements,...derivedDressing(fp)];
   }
-  instances=placements.map((p)=>{
-    const mesh=PROP_MESH[p.mesh]||{};
-    const rx=rt(p.x),ry=rt(p.y);
-    const interactionX=Number.isFinite(p.inspectAt?.x)?p.inspectAt.x:p.x;
-    const interactionY=Number.isFinite(p.inspectAt?.y)?p.inspectAt.y:p.y;
-    const physical=fp.logicalToPhysical?.(rx,ry);
-    const renderGroup=physical?.renderGroup||'';
-    const renderGroups=Array.isArray(p.renderGroups)&&p.renderGroups.length?[...new Set(p.renderGroups.map(String))]:[renderGroup];
-    const floor=Number.isFinite(p.floorOverride)?Number(p.floorOverride):fp.floorAt(rx,ry);
-    return {...mesh,...p,rx,ry,interactionX,interactionY,interactionRx:rt(interactionX),interactionRy:rt(interactionY),floor,zone:fp.zoneAt(rx,ry),renderGroup,renderGroups,blocks:p.blocks??mesh.blocks??false};
-  }).filter((p)=>!fp.isSolid(p.rx,p.ry));
+  instances=placements.map(p=>instantiateProp(fp,p)).filter((p)=>!fp.isSolid(p.rx,p.ry));
   colliders=STRUCTURAL_COLLIDERS.map(c=>({...c,rx:rt(c.x),ry:rt(c.y)}));
   resolveContacts(fp);
   return instances;
+}
+
+function instantiateProp(fp,p){
+  const mesh=PROP_MESH[p.mesh]||{};
+  const rx=rt(p.x),ry=rt(p.y);
+  const interactionX=Number.isFinite(p.inspectAt?.x)?p.inspectAt.x:p.x;
+  const interactionY=Number.isFinite(p.inspectAt?.y)?p.inspectAt.y:p.y;
+  const physical=fp.logicalToPhysical?.(rx,ry);
+  const renderGroup=physical?.renderGroup||'';
+  const renderGroups=Array.isArray(p.renderGroups)&&p.renderGroups.length?[...new Set(p.renderGroups.map(String))]:[renderGroup];
+  const floor=Number.isFinite(p.floorOverride)?Number(p.floorOverride):fp.floorAt(rx,ry);
+  return {...mesh,...p,rx,ry,interactionX,interactionY,interactionRx:rt(interactionX),interactionRy:rt(interactionY),floor,zone:fp.zoneAt(rx,ry),renderGroup,renderGroups,blocks:p.blocks??mesh.blocks??false};
+}
+
+// Restore just one authored pickup. Do not reinitialize the whole building or
+// turn its metre anchor into a loose prop's half-cell-centred approximation.
+export function restoreAuthoredProp(id){
+  const existing=propById(id);if(existing)return existing;
+  const authored=CONSERVATORY_PROPS.find(p=>p.id===id);
+  if(!floorplan||!authored)return null;
+  const restored=instantiateProp(floorplan,authored);
+  if(floorplan.isSolid(restored.rx,restored.ry))return null;
+  instances.push(restored);resolveContacts(floorplan,[restored]);return restored;
 }
 
 // THE HALF-DEPTH OF A PROP, from the geometry rather than from a typed number.
@@ -95,13 +108,13 @@ function halfDepthOf(p){
 // Visual contact resolution never moves collision. An implicit interaction
 // anchor, however, belongs to the rendered object and follows the snap. An
 // explicit inspectAt remains an authored override and is left untouched.
-function resolveContacts(fp){
+function resolveContacts(fp,selected=instances){
   const plan={
     size:fp.planSize,isSolid:fp.isSolid,floorAt:fp.floorAt,zoneAt:fp.zoneAt,
     materialAt:fp.materialAt,doorAt:fp.doorAt,logicalToPhysical:fp.logicalToPhysical,
   };
   if(typeof plan.size!=='function')return;
-  for(const p of instances){
+  for(const p of selected){
     if(p.mount==='wall'){
       // A PROP MAY NAME THE WALL IT BELONGS TO.
       //

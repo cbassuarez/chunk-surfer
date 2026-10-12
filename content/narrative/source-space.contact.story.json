@@ -1,283 +1,1752 @@
 {
- "schemaVersion": 1,
- "id": "source-space.contact",
- "title": "Source Space Contact",
- "status": "active",
- "entry": "music-1",
- "entries": [
-  "music-1",
-  "music-2",
-  "vessel-1",
-  "vessel-2",
-  "body-1",
-  "body-2",
-  "residue-1"
- ],
- "tags": [
-  "source-space",
-  "contact",
-  "chunk-surfer"
- ],
- "notes": "Capture dialogue remains unattributed. HUSH is never a speaking character.",
- "regions": [
-  {
-   "id": "source-space.contact.region",
-   "title": "Contact",
-   "kind": "scene",
-   "color": "#163b37",
-   "nodeIds": [
-    "music-1",
-    "music-2",
-    "vessel-1",
-    "vessel-2",
-    "body-1",
-    "body-2",
-    "residue-1"
-   ]
+  "schemaVersion": 1,
+  "id": "source-space.contact",
+  "title": "At the Service Court",
+  "status": "active",
+  "entry": "approach",
+  "entries": [
+    "approach",
+    "return",
+    "radio"
+  ],
+  "tags": [
+    "source-space",
+    "contact",
+    "chunk-surfer"
+  ],
+  "notes": "An optional conversation at the service court. The visible outlines are an unstable human trace, not a body or speaking identity for HUSH. Movement cues on the lines (hush-pose.js) belong to that trace; HUSH remains nonverbal pressure in the space. The recordist's own faculties speak around it — METER, TAPE, HANDS, EARS, and the recordist (you/me). Two menus: ask (questions) and examine (things you do). Talk two opens the case of the recordist before you (dock clues and papers unlock questions); talk three asks what it agreed to. The warning is an argument between the voices that have earned a side. Checks read what the night already gave you (takes, composure, patch leads) and never gate the fight; one-shot checks are gone once tried. A few actions leave small tells for the Source fight. The warning is available on the first meeting; no conversation count, answer or tour qualifies it. Only the explicit warned confirmation starts battle. Leaving never relocates the player or closes the route back.",
+  "regions": [
+    {
+      "id": "source-space.contact.region",
+      "title": "At the Service Court",
+      "kind": "scene",
+      "color": "#163b37",
+      "nodeIds": [
+        "approach",
+        "return",
+        "ask",
+        "identity",
+        "identity-smaller",
+        "following",
+        "following-offer",
+        "following-blank",
+        "way-through",
+        "name",
+        "hurt",
+        "bad-take",
+        "examine",
+        "torch",
+        "mic",
+        "stance-held",
+        "stance-shaking",
+        "listen-heard",
+        "listen-nothing",
+        "feet",
+        "case",
+        "case-tallies",
+        "case-latch",
+        "case-chandelier",
+        "case-minute",
+        "case-client",
+        "case-client-blank",
+        "case-preroll",
+        "case-preroll-missed",
+        "consent",
+        "consent-agreed",
+        "consent-body",
+        "consent-body-flinch",
+        "consent-small",
+        "consent-student",
+        "consent-minute",
+        "consent-return",
+        "consent-return-silence",
+        "warning",
+        "leave",
+        "contact",
+        "done",
+        "radio",
+        "radio-done"
+      ]
+    }
+  ],
+  "nodes": {
+    "approach": {
+      "id": "approach",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "approach.line.1",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "A human outline waits at the service court, a few paces away. The way past it is open.",
+          "body": "still"
+        },
+        {
+          "id": "approach.line.2",
+          "who": "ears",
+          "signalRole": "human",
+          "text": "No footsteps. You did not hear it arrive."
+        },
+        {
+          "id": "approach.line.3",
+          "who": "meter",
+          "signalRole": "human",
+          "text": "-18 on the needle, and steady. Nothing in this court is making a sound."
+        },
+        {
+          "id": "approach.line.4",
+          "who": "me",
+          "signalRole": "human",
+          "text": "You can hear me.",
+          "body": "lean"
+        },
+        {
+          "id": "approach.line.5",
+          "who": "hands",
+          "signalRole": "human",
+          "text": "Your hands have come away from your sides, palms out. Nobody told them to."
+        }
+      ],
+      "goto": "ask"
+    },
+    "return": {
+      "id": "return",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "return.line.1",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "It turns before you speak. The hand is still open.",
+          "body": "turn",
+          "when": "talk <= 2"
+        },
+        {
+          "id": "return.line.7",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "It does not turn this time. It was already facing the way you would come.",
+          "body": "still",
+          "when": "talk >= 3"
+        },
+        {
+          "id": "return.line.8",
+          "who": "tape",
+          "signalRole": "human",
+          "text": "Same court, take two. On a job you would slate it that way and pretend the first one never happened.",
+          "when": "talk == 2"
+        },
+        {
+          "id": "return.line.9",
+          "who": "hands",
+          "signalRole": "human",
+          "text": "Your body has stopped treating it like a stranger. That is not the same as trusting it.",
+          "when": "talk >= 3"
+        },
+        {
+          "id": "return.line.2",
+          "who": "tape",
+          "signalRole": "human",
+          "text": "The carrier is still in your ear. The breath on the set had exactly this shape.",
+          "when": "lastTalk == radio"
+        },
+        {
+          "id": "return.line.3",
+          "who": "meter",
+          "signalRole": "human",
+          "text": "-18 again. It picks the level up where it left it.",
+          "when": "ever.mic"
+        },
+        {
+          "id": "return.line.4",
+          "who": "hands",
+          "signalRole": "human",
+          "text": "Your weight has gone to the back foot by itself. You stood like that for it once already.",
+          "when": "tell.stance"
+        },
+        {
+          "id": "return.line.5",
+          "who": "ears",
+          "signalRole": "human",
+          "text": "The thin source is still there, low down, just behind it.",
+          "when": "tell.ears"
+        },
+        {
+          "id": "return.line.6",
+          "who": "hands",
+          "signalRole": "human",
+          "text": "Your hand has started toward it before you have decided anything. You have to tell it to wait.",
+          "when": "ever.smaller || ever.consent_return"
+        }
+      ],
+      "goto": "ask"
+    },
+    "ask": {
+      "id": "ask",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [],
+      "choices": [
+        {
+          "id": "contact.identity",
+          "text": "Who are you?",
+          "goto": "identity",
+          "sourceContactAction": "question",
+          "questionId": "identity",
+          "beat": "identity"
+        },
+        {
+          "id": "contact.following",
+          "text": "Why did you follow me?",
+          "goto": "following",
+          "sourceContactAction": "question",
+          "questionId": "following",
+          "beat": "following"
+        },
+        {
+          "id": "contact.way-through",
+          "text": "Can I get past you?",
+          "goto": "way-through",
+          "sourceContactAction": "question",
+          "questionId": "way-through",
+          "beat": "way_through",
+          "when": "talk <= 2"
+        },
+        {
+          "id": "contact.examine",
+          "text": "Look at it properly.",
+          "goto": "examine"
+        },
+        {
+          "id": "contact.name",
+          "text": "Tell it who you are.",
+          "goto": "name",
+          "beat": "name"
+        },
+        {
+          "id": "contact.hurt",
+          "text": "Ask the one on the floor if it is hurt.",
+          "goto": "hurt",
+          "beat": "hurt",
+          "when": "tell.ears && talk <= 2"
+        },
+        {
+          "id": "contact.case",
+          "text": "Ask about the recordist who came before you.",
+          "goto": "case",
+          "when": "talk >= 2"
+        },
+        {
+          "id": "contact.consent",
+          "text": "Ask what it agreed to.",
+          "goto": "consent",
+          "when": "talk >= 3"
+        },
+        {
+          "id": "contact.warning",
+          "text": "Reach toward it.",
+          "goto": "warning",
+          "sourceContactAction": "warn"
+        },
+        {
+          "id": "contact.leave",
+          "text": "Keep my distance. Leave.",
+          "goto": "leave",
+          "sourceContactAction": "away",
+          "terminal": true
+        }
+      ]
+    },
+    "identity": {
+      "id": "identity",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "identity.line.1",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "Its head tilts. A second outline lags behind the first: a shoulder, a sleeve, a hand held in the same position.",
+          "body": "double"
+        },
+        {
+          "id": "identity.line.2",
+          "who": "you",
+          "signalRole": "human",
+          "text": "Someone is still in there."
+        },
+        {
+          "id": "identity.line.3",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "The hand closes. For a moment, only the smaller outline moves.",
+          "body": "flicker"
+        },
+        {
+          "id": "identity.line.4",
+          "who": "tape",
+          "signalRole": "human",
+          "text": "Two voices on one reel sound like that. Not an echo. A second take, laid over the first before the first was wiped."
+        }
+      ],
+      "choices": [
+        {
+          "id": "contact.identity-smaller",
+          "text": "Talk to the smaller one.",
+          "goto": "identity-smaller",
+          "beat": "smaller"
+        },
+        {
+          "id": "contact.identity-back",
+          "text": "Ask something else.",
+          "goto": "ask"
+        }
+      ]
+    },
+    "identity-smaller": {
+      "id": "identity-smaller",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "identity-smaller.line.1",
+          "who": "me",
+          "signalRole": "human",
+          "text": "You. Not the tall one. You."
+        },
+        {
+          "id": "identity-smaller.line.2",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "Neither outline answers. The larger steps half across the smaller, the way you would stand in front of a child at a door.",
+          "body": "step-side"
+        },
+        {
+          "id": "identity-smaller.line.3",
+          "who": "hands",
+          "signalRole": "human",
+          "text": "Your hand has come up flat, the gesture for all right, all right. You didn't send it."
+        },
+        {
+          "id": "identity-smaller.line.4",
+          "who": "you",
+          "signalRole": "human",
+          "text": "It's protecting it. Or it's keeping it."
+        }
+      ],
+      "goto": "ask"
+    },
+    "following": {
+      "id": "following",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "following.line.1",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "It looks at the recorder. The level meter rises although neither of you has made a sound.",
+          "body": "lean-in"
+        },
+        {
+          "id": "following.line.2",
+          "who": "meter",
+          "signalRole": "human",
+          "text": "-31. -24. -19. Climbing, on a room that isn't getting any louder."
+        },
+        {
+          "id": "following.line.3",
+          "who": "you",
+          "signalRole": "human",
+          "text": "Not me. What I brought with me."
+        },
+        {
+          "id": "following.line.4",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "You cover the microphone with your palm. The level does not fall."
+        },
+        {
+          "id": "following.line.5",
+          "who": "meter",
+          "signalRole": "human",
+          "text": "Still -19. Whatever it's reading, it isn't coming in through the capsule."
+        }
+      ],
+      "choices": [
+        {
+          "id": "contact.following-offer",
+          "text": "Unhook the recorder. Hold it out to it.",
+          "goto": "following-offer",
+          "beat": "offer",
+          "check": {
+            "voice": "tape",
+            "pass": "takes >= 1",
+            "fail": "following-blank"
+          }
+        },
+        {
+          "id": "contact.following-back",
+          "text": "Put the recorder back on your shoulder. Ask something else.",
+          "goto": "ask"
+        }
+      ]
+    },
+    "following-offer": {
+      "id": "following-offer",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "following-offer.line.1",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "You unhook the strap and hold the machine out at arm's length, reels toward it."
+        },
+        {
+          "id": "following-offer.line.2",
+          "who": "tape",
+          "signalRole": "human",
+          "text": "Every room you've finished tonight is on that spool. It isn't looking at you. It's looking at the spool."
+        },
+        {
+          "id": "following-offer.line.3",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "It leans in. Not toward you. Toward the reels.",
+          "body": "lean-in"
+        },
+        {
+          "id": "following-offer.line.4",
+          "who": "you",
+          "signalRole": "human",
+          "text": "It wants what's on the tape. Or it wants to be on it."
+        }
+      ],
+      "goto": "ask"
+    },
+    "following-blank": {
+      "id": "following-blank",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "following-blank.line.1",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "You hold the machine out. The window shows clean leader on both reels."
+        },
+        {
+          "id": "following-blank.line.2",
+          "who": "tape",
+          "signalRole": "human",
+          "text": "Nothing on it yet. Not one room. You've brought it an empty tape."
+        },
+        {
+          "id": "following-blank.line.3",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "It doesn't move. There is nothing on the machine for it to want.",
+          "body": "still"
+        }
+      ],
+      "goto": "ask"
+    },
+    "way-through": {
+      "id": "way-through",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "way-through.line.1",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "It turns toward the open ground, leaving enough room for you to pass.",
+          "body": "turn"
+        },
+        {
+          "id": "way-through.line.2",
+          "who": "ears",
+          "signalRole": "human",
+          "text": "The court comes back wrong. Too short a tail on your breath, as if there's a wall two metres out that you can't see."
+        },
+        {
+          "id": "way-through.line.3",
+          "who": "you",
+          "signalRole": "human",
+          "text": "I can go on. I don't have to do this."
+        },
+        {
+          "id": "way-through.line.4",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "It does not follow your glance. It is still watching the hand nearest the recorder."
+        }
+      ],
+      "goto": "ask"
+    },
+    "name": {
+      "id": "name",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "name.line.1",
+          "who": "me",
+          "signalRole": "human",
+          "text": "I'm the one doing the fifth room."
+        },
+        {
+          "id": "name.line.2",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "The smaller outline lifts its head. The larger one doesn't let it get far.",
+          "body": "double"
+        },
+        {
+          "id": "name.line.3",
+          "who": "tape",
+          "signalRole": "human",
+          "text": "Four slates on the reel before yours. Same voice, same breath before each number. He never got to say five."
+        },
+        {
+          "id": "name.line.4",
+          "who": "you",
+          "signalRole": "human",
+          "text": "You never got to say five."
+        }
+      ],
+      "goto": "ask"
+    },
+    "hurt": {
+      "id": "hurt",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "hurt.line.1",
+          "who": "me",
+          "signalRole": "human",
+          "text": "The one on the floor. Are you hurt?"
+        },
+        {
+          "id": "hurt.line.2",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "The larger outline turns its back on you, completely, for the first time, and stands over the place the thin sound was.",
+          "body": "turn"
+        },
+        {
+          "id": "hurt.line.3",
+          "who": "ears",
+          "signalRole": "human",
+          "text": "The thin source stops. Not gone. Held."
+        },
+        {
+          "id": "hurt.line.4",
+          "who": "you",
+          "signalRole": "human",
+          "text": "That's an answer. I just don't know what to."
+        }
+      ],
+      "goto": "ask"
+    },
+    "bad-take": {
+      "id": "bad-take",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "bad-take.line.1",
+          "who": "me",
+          "signalRole": "human",
+          "text": "You're a bad take. Noise on the reel. That's all you are."
+        },
+        {
+          "id": "bad-take.line.2",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "Nothing changes. Then the needle drops to the stop, the way it does when somebody pulls a cable.",
+          "body": "dim"
+        },
+        {
+          "id": "bad-take.line.3",
+          "who": "meter",
+          "signalRole": "human",
+          "text": "Minus infinity. Not quiet. Disconnected."
+        },
+        {
+          "id": "bad-take.line.4",
+          "who": "hands",
+          "signalRole": "human",
+          "text": "Your thumb is already on the input jack, pressing it home. It's seated."
+        },
+        {
+          "id": "bad-take.line.5",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "The level comes back when you stop saying it."
+        },
+        {
+          "id": "bad-take.line.6",
+          "who": "you",
+          "signalRole": "human",
+          "text": "Point taken."
+        }
+      ],
+      "goto": "ask"
+    },
+    "examine": {
+      "id": "examine",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "examine.line.1",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "Up close the edges don't hold. It is printed, not lit. The paper shows through where the shoulders should be."
+        },
+        {
+          "id": "examine.line.2",
+          "who": "hands",
+          "signalRole": "human",
+          "text": "Your pulse is in your thumbs. Keep them off the transport keys."
+        }
+      ],
+      "choices": [
+        {
+          "id": "contact.torch",
+          "text": "Put the torch on it.",
+          "goto": "torch",
+          "beat": "torch",
+          "tell": "outline"
+        },
+        {
+          "id": "contact.mic",
+          "text": "Hold the microphone out. Say nothing.",
+          "goto": "mic",
+          "beat": "mic",
+          "tell": "meter"
+        },
+        {
+          "id": "contact.stance",
+          "text": "Stand the way it's standing.",
+          "goto": "stance-held",
+          "beat": "stance",
+          "check": {
+            "voice": "hands",
+            "pass": "composure >= 0.6 || lead.nerve >= 1",
+            "fail": "stance-shaking",
+            "once": true,
+            "tell": "stance"
+          }
+        },
+        {
+          "id": "contact.listen",
+          "text": "Close your eyes. Listen for where it is.",
+          "goto": "listen-heard",
+          "beat": "listen",
+          "check": {
+            "voice": "ears",
+            "pass": "lead.recorder >= 1 || takes >= 2",
+            "fail": "listen-nothing",
+            "once": true,
+            "tell": "ears"
+          }
+        },
+        {
+          "id": "contact.feet",
+          "text": "Look at its feet.",
+          "goto": "feet",
+          "beat": "feet"
+        },
+        {
+          "id": "contact.bad-take",
+          "text": "\"You're a bad take. That's all you are.\"",
+          "goto": "bad-take",
+          "beat": "bad_take"
+        },
+        {
+          "id": "contact.examine-back",
+          "text": "Stop looking. Talk to it.",
+          "goto": "ask"
+        },
+        {
+          "id": "contact.leave-examine",
+          "text": "Step back. Leave it alone.",
+          "goto": "leave",
+          "sourceContactAction": "away",
+          "terminal": true
+        }
+      ]
+    },
+    "torch": {
+      "id": "torch",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "torch.line.1",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "You bring the beam up. The source behind it takes the light. At the shoulders, a thin second edge arrives a moment later.",
+          "body": "flicker"
+        },
+        {
+          "id": "torch.line.2",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "Inside the pale shape there are two. One is the height of a man. One is shorter, and holds its arm the way you are holding the torch.",
+          "body": "double"
+        },
+        {
+          "id": "torch.line.3",
+          "who": "you",
+          "signalRole": "human",
+          "text": "It's copying me. The small one's copying me."
+        },
+        {
+          "id": "torch.line.4",
+          "who": "you",
+          "signalRole": "human",
+          "text": "Afterimage. When the beam drops, the small one stays burned in a second longer. Remember which is which.",
+          "when": "lead.torch >= 1"
+        }
+      ],
+      "goto": "examine"
+    },
+    "mic": {
+      "id": "mic",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "mic.line.1",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "You hold the microphone out at arm's length, the way you would to a stranger in the street.",
+          "body": "lean-in"
+        },
+        {
+          "id": "mic.line.2",
+          "who": "meter",
+          "signalRole": "human",
+          "text": "Rising. Not from sound. From distance closing, and it isn't its distance. It's yours."
+        },
+        {
+          "id": "mic.line.3",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "You haven't moved. You look down to be sure."
+        },
+        {
+          "id": "mic.line.4",
+          "who": "tape",
+          "signalRole": "human",
+          "text": "'Room five, take one.' That's the slate that belongs here. Nobody has said it."
+        },
+        {
+          "id": "mic.line.5",
+          "who": "you",
+          "signalRole": "human",
+          "text": "I didn't say anything."
+        }
+      ],
+      "goto": "examine"
+    },
+    "stance-held": {
+      "id": "stance-held",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "stance-held.line.1",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "You set your weight on the back foot and let your right hand hang open, a little out from the hip.",
+          "body": "mirror"
+        },
+        {
+          "id": "stance-held.line.2",
+          "who": "hands",
+          "signalRole": "human",
+          "text": "It's wrong for a body. Held for long it would cramp. You hold it."
+        },
+        {
+          "id": "stance-held.line.3",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "For a second there are two of you in the court. Then it shifts first: the smaller outline flinches, as if you had raised your voice.",
+          "body": "recoil"
+        },
+        {
+          "id": "stance-held.line.4",
+          "who": "you",
+          "signalRole": "human",
+          "text": "It didn't like being matched. The small one didn't."
+        }
+      ],
+      "goto": "examine"
+    },
+    "stance-shaking": {
+      "id": "stance-shaking",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "stance-shaking.line.1",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "You try to stand the way it stands. Your knee won't lock.",
+          "body": "still"
+        },
+        {
+          "id": "stance-shaking.line.2",
+          "who": "hands",
+          "signalRole": "human",
+          "text": "Shaking. Too much of the night in your legs to hold a shape that isn't yours."
+        },
+        {
+          "id": "stance-shaking.line.3",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "It watches you give up. Its hand doesn't move."
+        }
+      ],
+      "goto": "examine"
+    },
+    "listen-heard": {
+      "id": "listen-heard",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "listen-heard.line.1",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "You close your eyes. The field hisses. Somewhere, paper is turned.",
+          "body": "still"
+        },
+        {
+          "id": "listen-heard.line.2",
+          "who": "ears",
+          "signalRole": "human",
+          "text": "There. Two sources, not one. A low one a pace ahead of you, and a thin one just behind it, close to the floor, like someone sitting down."
+        },
+        {
+          "id": "listen-heard.line.3",
+          "who": "you",
+          "signalRole": "human",
+          "text": "Something's sitting down in there."
+        }
+      ],
+      "goto": "examine"
+    },
+    "listen-nothing": {
+      "id": "listen-nothing",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "listen-nothing.line.1",
+          "who": "ears",
+          "signalRole": "human",
+          "text": "Hiss. Your own blood. The field. Nothing you can place. It's everywhere or it's nowhere."
+        },
+        {
+          "id": "listen-nothing.line.2",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "When you open your eyes it is half a pace closer.",
+          "body": "step-in"
+        }
+      ],
+      "goto": "examine"
+    },
+    "feet": {
+      "id": "feet",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "feet.line.1",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "There is no floor under it. The printed lines on the paper run straight through where its feet should be, unbroken."
+        },
+        {
+          "id": "feet.line.2",
+          "who": "ears",
+          "signalRole": "human",
+          "text": "That's why there were no footsteps."
+        }
+      ],
+      "goto": "examine"
+    },
+    "case": {
+      "id": "case",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "case.line.1",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "You say it plainly: the one before me. The larger outline goes still in a way that is not the same as not moving.",
+          "body": "still"
+        },
+        {
+          "id": "case.line.2",
+          "who": "tape",
+          "signalRole": "human",
+          "text": "Four slates on his reel. Short, dry, close. A voice that didn't waste breath on the take number."
+        }
+      ],
+      "choices": [
+        {
+          "id": "contact.case-tallies",
+          "text": "\"Four marks under the handle of your case.\"",
+          "goto": "case-tallies",
+          "beat": "case_tallies",
+          "when": "clue.tallies"
+        },
+        {
+          "id": "contact.case-latch",
+          "text": "\"I know how your latch sounds.\"",
+          "goto": "case-latch",
+          "beat": "case_latch",
+          "when": "clue.voice"
+        },
+        {
+          "id": "contact.case-chandelier",
+          "text": "\"The last line on your work order. The chandelier.\"",
+          "goto": "case-chandelier",
+          "beat": "case_chandelier",
+          "when": "clue.chandelier"
+        },
+        {
+          "id": "contact.case-minute",
+          "text": "\"You wrote that it wanted a minute of you on the tape.\"",
+          "goto": "case-minute",
+          "beat": "case_minute",
+          "when": "evidence.borrowed_body"
+        },
+        {
+          "id": "contact.case-client",
+          "text": "\"What did the client promise you?\"",
+          "goto": "case-client",
+          "beat": "case_client",
+          "check": {
+            "voice": "tape",
+            "pass": "evidence.contract",
+            "fail": "case-client-blank"
+          }
+        },
+        {
+          "id": "contact.case-preroll",
+          "text": "Ask if it heard the room before the slate.",
+          "goto": "case-preroll",
+          "beat": "case_preroll",
+          "check": {
+            "voice": "ears",
+            "pass": "evidence.pre_roll || lead.fork >= 1",
+            "fail": "case-preroll-missed",
+            "once": true
+          }
+        },
+        {
+          "id": "contact.case-back",
+          "text": "Leave him out of it. Ask something else.",
+          "goto": "ask"
+        }
+      ]
+    },
+    "case-tallies": {
+      "id": "case-tallies",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "case-tallies.line.1",
+          "who": "me",
+          "signalRole": "human",
+          "text": "Four marks under the handle of your case. Cut with a key. Room for a fifth."
+        },
+        {
+          "id": "case-tallies.line.2",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "The smaller outline's hand goes to its own hip, where a key would hang, and finds nothing.",
+          "body": "double"
+        },
+        {
+          "id": "case-tallies.line.3",
+          "who": "tape",
+          "signalRole": "human",
+          "text": "Four rooms, four clean minutes. He kept count on the case, so the case would remember if he didn't."
+        },
+        {
+          "id": "case-tallies.line.4",
+          "who": "you",
+          "signalRole": "human",
+          "text": "You were going to cut the fifth when you came back up."
+        }
+      ],
+      "goto": "case"
+    },
+    "case-latch": {
+      "id": "case-latch",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "case-latch.line.1",
+          "who": "me",
+          "signalRole": "human",
+          "text": "I snapped your latch on the dock. I know how it sounds."
+        },
+        {
+          "id": "case-latch.line.2",
+          "who": "ears",
+          "signalRole": "human",
+          "text": "And there it is. One small metal cough, from nowhere in the court. Exactly the pitch."
+        },
+        {
+          "id": "case-latch.line.3",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "Neither outline moved. The sound came anyway.",
+          "body": "flicker"
+        },
+        {
+          "id": "case-latch.line.4",
+          "who": "you",
+          "signalRole": "human",
+          "text": "It keeps his sounds. It keeps them where it can reach them."
+        }
+      ],
+      "goto": "case"
+    },
+    "case-chandelier": {
+      "id": "case-chandelier",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "case-chandelier.line.1",
+          "who": "me",
+          "signalRole": "human",
+          "text": "The last line on your work order. Chandelier, frame and lock. You didn't tick it."
+        },
+        {
+          "id": "case-chandelier.line.2",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "The larger outline lifts its head toward a ceiling that isn't there.",
+          "body": "lean"
+        },
+        {
+          "id": "case-chandelier.line.3",
+          "who": "meter",
+          "signalRole": "human",
+          "text": "-40 and falling. Everything in the court just got quieter to listen."
+        },
+        {
+          "id": "case-chandelier.line.4",
+          "who": "you",
+          "signalRole": "human",
+          "text": "You stopped at the chandelier. Or it stopped you."
+        }
+      ],
+      "goto": "case"
+    },
+    "case-minute": {
+      "id": "case-minute",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "case-minute.line.1",
+          "who": "me",
+          "signalRole": "human",
+          "text": "Your notes. You wrote that it wanted a minute of you on the tape. That's all."
+        },
+        {
+          "id": "case-minute.line.2",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "The smaller outline turns to the larger one, the way you turn to someone who has just been quoted.",
+          "body": "mirror"
+        },
+        {
+          "id": "case-minute.line.3",
+          "who": "tape",
+          "signalRole": "human",
+          "text": "'I was not sad, and I was not haunted.' His hand, sheet ten. 'It asked.'"
+        },
+        {
+          "id": "case-minute.line.4",
+          "who": "you",
+          "signalRole": "human",
+          "text": "You gave it the minute. And it kept the rest."
+        }
+      ],
+      "goto": "case"
+    },
+    "case-client": {
+      "id": "case-client",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "case-client.line.1",
+          "who": "me",
+          "signalRole": "human",
+          "text": "What did the client promise you?"
+        },
+        {
+          "id": "case-client.line.2",
+          "who": "tape",
+          "signalRole": "human",
+          "text": "The carbon says it. Names and consent at the gate, and the officer's field blank under every layer. Nobody living signed for this."
+        },
+        {
+          "id": "case-client.line.3",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "The larger outline opens its hand again, palm up, the way a contract is offered across a desk.",
+          "body": "lean-in"
+        },
+        {
+          "id": "case-client.line.4",
+          "who": "you",
+          "signalRole": "human",
+          "text": "Nobody promised you anything. There wasn't anybody to promise."
+        }
+      ],
+      "goto": "case"
+    },
+    "case-client-blank": {
+      "id": "case-client-blank",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "case-client-blank.line.1",
+          "who": "me",
+          "signalRole": "human",
+          "text": "What did the client promise you?"
+        },
+        {
+          "id": "case-client-blank.line.2",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "The hand stays open. Whatever it is offering, you don't have the paper to read it by.",
+          "body": "still"
+        },
+        {
+          "id": "case-client-blank.line.3",
+          "who": "tape",
+          "signalRole": "human",
+          "text": "Nothing on file. You never saw his copy of the order. You only have yours."
+        }
+      ],
+      "goto": "case"
+    },
+    "case-preroll": {
+      "id": "case-preroll",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "case-preroll.line.1",
+          "who": "ears",
+          "signalRole": "human",
+          "text": "Before each of his slates there's a breath that isn't his. A second and a bit early. The room answering a question he hadn't asked yet."
+        },
+        {
+          "id": "case-preroll.line.2",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "The smaller outline flinches at the word early.",
+          "body": "recoil"
+        },
+        {
+          "id": "case-preroll.line.3",
+          "who": "you",
+          "signalRole": "human",
+          "text": "It was on your tape before you were."
+        }
+      ],
+      "goto": "case"
+    },
+    "case-preroll-missed": {
+      "id": "case-preroll-missed",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "case-preroll-missed.line.1",
+          "who": "ears",
+          "signalRole": "human",
+          "text": "Hiss before the slate. Just hiss. If there was anything there, you'd need better ears, or a better night."
+        },
+        {
+          "id": "case-preroll-missed.line.2",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "The larger outline waits, as if you had missed something obvious.",
+          "body": "still"
+        }
+      ],
+      "goto": "case"
+    },
+    "consent": {
+      "id": "consent",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "consent.line.1",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "You don't lower your voice. There is nobody here to lower it for."
+        },
+        {
+          "id": "consent.line.2",
+          "who": "hands",
+          "signalRole": "human",
+          "text": "Your hands have gone into your pockets. They do that when you're about to ask somebody to sign."
+        }
+      ],
+      "choices": [
+        {
+          "id": "contact.consent-agreed",
+          "text": "\"Did you agree to this?\"",
+          "goto": "consent-agreed",
+          "beat": "consent_agreed"
+        },
+        {
+          "id": "contact.consent-body",
+          "text": "\"Whose body is that?\"",
+          "goto": "consent-body",
+          "beat": "consent_body",
+          "check": {
+            "voice": "hands",
+            "pass": "tell.stance || composure >= 0.5",
+            "fail": "consent-body-flinch",
+            "once": true
+          }
+        },
+        {
+          "id": "contact.consent-small",
+          "text": "\"Is the small one you?\"",
+          "goto": "consent-small",
+          "beat": "consent_small",
+          "when": "tell.outline || ever.smaller"
+        },
+        {
+          "id": "contact.consent-student",
+          "text": "\"Were you a student here, once?\"",
+          "goto": "consent-student",
+          "beat": "consent_student",
+          "when": "evidence.student_performance"
+        },
+        {
+          "id": "contact.consent-minute",
+          "text": "\"If I give it a minute of me, does he go free?\"",
+          "goto": "consent-minute",
+          "beat": "consent_minute",
+          "when": "ever.case_minute"
+        },
+        {
+          "id": "contact.consent-return",
+          "text": "\"Can he come back?\"",
+          "goto": "consent-return",
+          "beat": "consent_return",
+          "check": {
+            "voice": "tape",
+            "pass": "evidence.borrowed_body || rig",
+            "fail": "consent-return-silence"
+          }
+        },
+        {
+          "id": "contact.consent-hurt",
+          "text": "Ask the one on the floor if it is hurt.",
+          "goto": "hurt",
+          "beat": "hurt",
+          "when": "tell.ears && talk >= 3"
+        },
+        {
+          "id": "contact.consent-back",
+          "text": "Enough. Ask something else.",
+          "goto": "ask"
+        }
+      ]
+    },
+    "consent-agreed": {
+      "id": "consent-agreed",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "consent-agreed.line.1",
+          "who": "me",
+          "signalRole": "human",
+          "text": "Did you agree to this? Any of it?"
+        },
+        {
+          "id": "consent-agreed.line.2",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "The larger outline nods. Once, slowly, all the way down.",
+          "body": "lean"
+        },
+        {
+          "id": "consent-agreed.line.3",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "The smaller one doesn't. Its head stays where it is, and the two outlines come apart by a hand's width.",
+          "body": "double"
+        },
+        {
+          "id": "consent-agreed.line.4",
+          "who": "you",
+          "signalRole": "human",
+          "text": "One of you agreed."
+        }
+      ],
+      "goto": "consent"
+    },
+    "consent-body": {
+      "id": "consent-body",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "consent-body.line.1",
+          "who": "me",
+          "signalRole": "human",
+          "text": "Whose body is that?"
+        },
+        {
+          "id": "consent-body.line.2",
+          "who": "hands",
+          "signalRole": "human",
+          "text": "You ask it steadily. Your hands stay out of it."
+        },
+        {
+          "id": "consent-body.line.3",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "The larger outline looks down at itself, at the arms, the way you look at a coat you've been lent.",
+          "body": "lean-in"
+        },
+        {
+          "id": "consent-body.line.4",
+          "who": "tape",
+          "signalRole": "human",
+          "text": "A lent coat sits wrong at the shoulders. So does that."
+        },
+        {
+          "id": "consent-body.line.5",
+          "who": "you",
+          "signalRole": "human",
+          "text": "It's his. It's wearing him."
+        }
+      ],
+      "goto": "consent"
+    },
+    "consent-body-flinch": {
+      "id": "consent-body-flinch",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "consent-body-flinch.line.1",
+          "who": "me",
+          "signalRole": "human",
+          "text": "Whose—"
+        },
+        {
+          "id": "consent-body-flinch.line.2",
+          "who": "hands",
+          "signalRole": "human",
+          "text": "Your voice goes before the question does. Too much of the night in your throat."
+        },
+        {
+          "id": "consent-body-flinch.line.3",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "It takes a step toward you, into the space where the end of the sentence should have been.",
+          "body": "step-in"
+        },
+        {
+          "id": "consent-body-flinch.line.4",
+          "who": "you",
+          "signalRole": "human",
+          "text": "Not now. I can't ask that now."
+        }
+      ],
+      "goto": "consent"
+    },
+    "consent-small": {
+      "id": "consent-small",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "consent-small.line.1",
+          "who": "me",
+          "signalRole": "human",
+          "text": "The small one. Is that you?"
+        },
+        {
+          "id": "consent-small.line.2",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "The smaller outline raises its hand. Not to you. To the larger one's wrist, and holds it.",
+          "body": "double"
+        },
+        {
+          "id": "consent-small.line.3",
+          "who": "ears",
+          "signalRole": "human",
+          "text": "Two breaths, one held. The held one is the thin one."
+        },
+        {
+          "id": "consent-small.line.4",
+          "who": "you",
+          "signalRole": "human",
+          "text": "You're still in there. And you're holding on."
+        }
+      ],
+      "goto": "consent"
+    },
+    "consent-student": {
+      "id": "consent-student",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "consent-student.line.1",
+          "who": "me",
+          "signalRole": "human",
+          "text": "Were you a student here? Before the files?"
+        },
+        {
+          "id": "consent-student.line.2",
+          "who": "meter",
+          "signalRole": "human",
+          "text": "The needle jumps to the first bar of something and drops back. Rehearsal level. A room full of people correcting each other."
+        },
+        {
+          "id": "consent-student.line.3",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "The larger outline flinches, the way a player does when somebody stops the tape mid-bar.",
+          "body": "recoil"
+        },
+        {
+          "id": "consent-student.line.4",
+          "who": "you",
+          "signalRole": "human",
+          "text": "Not him. The thing wearing him learned here."
+        }
+      ],
+      "goto": "consent"
+    },
+    "consent-minute": {
+      "id": "consent-minute",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "consent-minute.line.1",
+          "who": "me",
+          "signalRole": "human",
+          "text": "If I give it a minute of me on the tape, does he go free?"
+        },
+        {
+          "id": "consent-minute.line.2",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "Nothing moves for so long that you check the meter.",
+          "body": "still"
+        },
+        {
+          "id": "consent-minute.line.3",
+          "who": "meter",
+          "signalRole": "human",
+          "text": "-18. It was listening. It's still listening."
+        },
+        {
+          "id": "consent-minute.line.4",
+          "who": "hands",
+          "signalRole": "human",
+          "text": "Your thumb has found the record key. It's resting on it. Take it off."
+        },
+        {
+          "id": "consent-minute.line.5",
+          "who": "you",
+          "signalRole": "human",
+          "text": "That's not a no."
+        }
+      ],
+      "goto": "consent"
+    },
+    "consent-return": {
+      "id": "consent-return",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "consent-return.line.1",
+          "who": "me",
+          "signalRole": "human",
+          "text": "Can he come back?"
+        },
+        {
+          "id": "consent-return.line.2",
+          "who": "tape",
+          "signalRole": "human",
+          "text": "Sheet ten again: 'It asked.' Asked means there was someone to answer. Someone to answer is someone to return."
+        },
+        {
+          "id": "consent-return.line.3",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "The smaller outline steps half out of the larger. For a moment there is air between them.",
+          "body": "step-side"
+        },
+        {
+          "id": "consent-return.line.4",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "Then the larger closes the gap, gently, the way you would take back something you had only lent."
+        },
+        {
+          "id": "consent-return.line.5",
+          "who": "you",
+          "signalRole": "human",
+          "text": "He can. It won't let him."
+        }
+      ],
+      "goto": "consent"
+    },
+    "consent-return-silence": {
+      "id": "consent-return-silence",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "consent-return-silence.line.1",
+          "who": "me",
+          "signalRole": "human",
+          "text": "Can he come back?"
+        },
+        {
+          "id": "consent-return-silence.line.2",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "Nothing. Not a lean, not a flinch. The question goes out across the court and does not come back.",
+          "body": "dim"
+        },
+        {
+          "id": "consent-return-silence.line.3",
+          "who": "tape",
+          "signalRole": "human",
+          "text": "You don't know enough about what was taken to ask for it back."
+        }
+      ],
+      "goto": "consent"
+    },
+    "warning": {
+      "id": "warning",
+      "type": "dialogue",
+      "speaker": "CONTACT WARNING",
+      "lines": [
+        {
+          "id": "warning.line.1",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "Before your fingers touch it, the smaller body recoils. The other holds its hand out. You can still lower yours.",
+          "body": "recoil"
+        },
+        {
+          "id": "warning.line.3",
+          "who": "hands",
+          "signalRole": "human",
+          "text": "Your hand wants to go. The rest of you is asking it to wait."
+        },
+        {
+          "id": "warning.line.4",
+          "who": "tape",
+          "signalRole": "human",
+          "text": "Room five. He never slated it. Maybe this is how it gets slated.",
+          "when": "ever.name"
+        },
+        {
+          "id": "warning.line.5",
+          "who": "ears",
+          "signalRole": "human",
+          "text": "The thin one is breathing faster.",
+          "when": "tell.ears"
+        },
+        {
+          "id": "warning.line.6",
+          "who": "meter",
+          "signalRole": "human",
+          "text": "The needle's already against the stop, and you haven't touched it yet.",
+          "when": "tell.meter"
+        },
+        {
+          "id": "warning.line.7",
+          "who": "tape",
+          "signalRole": "human",
+          "text": "He gave it a minute. This will take a great deal more than a minute.",
+          "when": "ever.consent_minute"
+        },
+        {
+          "id": "warning.line.8",
+          "who": "ears",
+          "signalRole": "human",
+          "text": "The small one isn't recoiling from you. It's pulling back from the other one's grip.",
+          "when": "ever.consent_small"
+        },
+        {
+          "id": "warning.line.9",
+          "who": "hands",
+          "signalRole": "human",
+          "text": "You're not steady enough for this, and every part of you that holds things knows it.",
+          "when": "composure < 0.5"
+        },
+        {
+          "id": "warning.line.10",
+          "who": "you",
+          "signalRole": "human",
+          "text": "If he can come back, this is the only way I've found to ask for him.",
+          "when": "ever.consent_return"
+        },
+        {
+          "id": "warning.line.2",
+          "who": "you",
+          "signalRole": "human",
+          "text": "If I touch it, I will have to fight it. I won't be able to retreat. If I lose, I die here."
+        }
+      ],
+      "choices": [
+        {
+          "id": "contact.lower-hand",
+          "text": "Lower my hand. Keep talking.",
+          "goto": "ask",
+          "sourceContactAction": "return"
+        },
+        {
+          "id": "contact.leave-warning",
+          "text": "Step back. Leave it alone.",
+          "goto": "leave",
+          "sourceContactAction": "away",
+          "terminal": true
+        },
+        {
+          "id": "contact.confirm",
+          "text": "MAKE CONTACT — FIGHT. NO RETREAT.",
+          "goto": "contact",
+          "sourceContactAction": "combat",
+          "terminal": true,
+          "requiresWarning": true
+        }
+      ]
+    },
+    "leave": {
+      "id": "leave",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": [
+        {
+          "id": "leave.line.1",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "You lower your hand and step back. It lets you.",
+          "body": "still"
+        },
+        {
+          "id": "leave.line.2",
+          "who": "meter",
+          "signalRole": "human",
+          "text": "-18. The needle settles where it found it."
+        }
+      ],
+      "goto": "done"
+    },
+    "contact": {
+      "id": "contact",
+      "type": "dialogue",
+      "speaker": "CONTACT",
+      "lines": [
+        {
+          "id": "contact.line.1",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "You close the distance. Its fingers close around yours. The level meter strikes the end stop.",
+          "body": "lean-in"
+        }
+      ],
+      "goto": "done"
+    },
+    "done": {
+      "id": "done",
+      "type": "dialogue",
+      "speaker": "AT THE SERVICE COURT",
+      "lines": []
+    },
+    "radio": {
+      "id": "radio",
+      "type": "dialogue",
+      "speaker": "FIELD RADIO / OPEN CARRIER",
+      "art": {
+        "id": "walkie",
+        "mode": "hero",
+        "caption": "Field radio / no desk",
+        "status": "CARRIER"
+      },
+      "lines": [
+        {
+          "id": "radio.line.1",
+          "who": "you",
+          "signalRole": "human",
+          "text": "Not Martin. I'm not calling Martin."
+        },
+        {
+          "id": "radio.line.2",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "No desk answers. The carrier opens anyway, and the hiss takes the shape of a wide room with one thing standing in it."
+        },
+        {
+          "id": "radio.line.3",
+          "who": "you",
+          "signalRole": "human",
+          "text": "You can hear me on this too."
+        },
+        {
+          "id": "radio.line.4",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "When you let go of the key, the breath in the speaker is not yours. It holds, the way a hand stays open."
+        }
+      ],
+      "goto": "radio-done"
+    },
+    "radio-done": {
+      "id": "radio-done",
+      "type": "dialogue",
+      "speaker": "FIELD RADIO / OPEN CARRIER",
+      "lines": []
+    }
   }
- ],
- "nodes": {
-  "music-1": {
-   "id": "music-1",
-   "type": "dialogue",
-   "speaker": "SOURCE / UNATTRIBUTED",
-   "insightId": "music-human-name",
-   "lines": [
-    {
-     "id": "music-1.line.1",
-     "who": "direction",
-     "signalRole": "unattributed",
-     "text": "The interval arrives before the impact. The field prints a word underneath it: MUSIC."
-    },
-    {
-     "id": "music-1.line.2",
-     "who": "surfer",
-     "signalRole": "chunkSurferTrace",
-     "text": "That was the name on the listening side.",
-     "quotes": "signal"
-    }
-   ],
-   "choices": [
-    {
-     "id": "music-1.name",
-     "text": "A human name for what crossed the room.",
-     "aligns": true
-    },
-    {
-     "id": "music-1.object",
-     "text": "A thing the room made."
-    },
-    {
-     "id": "music-1.memory",
-     "text": "A memory repeating itself."
-    }
-   ]
-  },
-  "music-2": {
-   "id": "music-2",
-   "type": "dialogue",
-   "speaker": "SOURCE / UNATTRIBUTED",
-   "insightId": "music-human-name",
-   "lines": [
-    {
-     "id": "music-2.line.1",
-     "who": "direction",
-     "signalRole": "unattributed",
-     "text": "Notation grows over the fault, but the pressure beneath it is older than any stave."
-    },
-    {
-     "id": "music-2.line.2",
-     "who": "surfer",
-     "signalRole": "chunkSurferTrace",
-     "text": "You named the mark. You did not name what left it.",
-     "quotes": "signal"
-    }
-   ],
-   "choices": [
-    {
-     "id": "music-2.score",
-     "text": "The score is the source."
-    },
-    {
-     "id": "music-2.name",
-     "text": "The score is only our notation for it.",
-     "aligns": true
-    },
-    {
-     "id": "music-2.noise",
-     "text": "There is no difference between it and noise."
-    }
-   ]
-  },
-  "vessel-1": {
-   "id": "vessel-1",
-   "type": "dialogue",
-   "speaker": "SOURCE / BORROWED TRACE",
-   "insightId": "surfer-vessel",
-   "lines": [
-    {
-     "id": "vessel-1.line.1",
-     "who": "direction",
-     "signalRole": "unattributed",
-     "text": "A second outline stands inside the first. Only the outside one follows the correction tone."
-    },
-    {
-     "id": "vessel-1.line.2",
-     "who": "surfer",
-     "signalRole": "chunkSurferTrace",
-     "text": "I kept the reference until the reference kept me.",
-     "quotes": "signal"
-    }
-   ],
-   "choices": [
-    {
-     "id": "vessel-1.same",
-     "text": "They are the same body."
-    },
-    {
-     "id": "vessel-1.vessel",
-     "text": "One force, using a conditioned vessel.",
-     "aligns": true
-    },
-    {
-     "id": "vessel-1.mask",
-     "text": "The outside shape is a disguise."
-    }
-   ]
-  },
-  "vessel-2": {
-   "id": "vessel-2",
-   "type": "dialogue",
-   "speaker": "SOURCE / BORROWED TRACE",
-   "insightId": "surfer-vessel",
-   "lines": [
-    {
-     "id": "vessel-2.line.1",
-     "who": "direction",
-     "signalRole": "unattributed",
-     "text": "The silhouette separates into an instruction and the person trained to obey it."
-    },
-    {
-     "id": "vessel-2.line.2",
-     "who": "surfer",
-     "signalRole": "chunkSurferTrace",
-     "text": "The correction needed hands. Mine were already in position.",
-     "quotes": "signal"
-    }
-   ],
-   "choices": [
-    {
-     "id": "vessel-2.person",
-     "text": "The person made the force."
-    },
-    {
-     "id": "vessel-2.vessel",
-     "text": "The person carried it without becoming it.",
-     "aligns": true
-    },
-    {
-     "id": "vessel-2.possession",
-     "text": "Nothing of the person remains."
-    }
-   ]
-  },
-  "body-1": {
-   "id": "body-1",
-   "type": "dialogue",
-   "speaker": "SOURCE / RETURN PATH",
-   "insightId": "borrowed-body-return",
-   "lines": [
-    {
-     "id": "body-1.line.1",
-     "who": "direction",
-     "signalRole": "unattributed",
-     "text": "The body address and the source address disagree. The fault keeps trying to reconcile them."
-    },
-    {
-     "id": "body-1.line.2",
-     "who": "surfer",
-     "signalRole": "chunkSurferTrace",
-     "text": "A borrowed channel can still be closed at the send.",
-     "quotes": "signal"
-    }
-   ],
-   "choices": [
-    {
-     "id": "body-1.return",
-     "text": "Separate the carrier from what it carries.",
-     "aligns": true
-    },
-    {
-     "id": "body-1.destroy",
-     "text": "Destroy both addresses."
-    },
-    {
-     "id": "body-1.keep",
-     "text": "Keep the channel open and contain it here."
-    }
-   ]
-  },
-  "body-2": {
-   "id": "body-2",
-   "type": "dialogue",
-   "speaker": "SOURCE / RETURN PATH",
-   "insightId": "borrowed-body-return",
-   "lines": [
-    {
-     "id": "body-2.line.1",
-     "who": "direction",
-     "signalRole": "unattributed",
-     "text": "BODY and SOURCE occupy one return line. The line is joined, not sealed."
-    },
-    {
-     "id": "body-2.line.2",
-     "who": "surfer",
-     "signalRole": "chunkSurferTrace",
-     "text": "Do not mistake a held note for a permanent one.",
-     "quotes": "signal"
-    }
-   ],
-   "choices": [
-    {
-     "id": "body-2.fuse",
-     "text": "The joined line cannot be divided."
-    },
-    {
-     "id": "body-2.return",
-     "text": "A joined line can be routed apart.",
-     "aligns": true
-    },
-    {
-     "id": "body-2.silence",
-     "text": "Silence the whole path."
-    }
-   ]
-  },
-  "residue-1": {
-   "id": "residue-1",
-   "type": "dialogue",
-   "speaker": "SOURCE / RESIDUE",
-   "lines": [
-    {
-     "id": "residue-1.line.1",
-     "who": "direction",
-     "signalRole": "unattributed",
-     "text": "The three resolved intervals hold. The impact can no longer move them."
-    },
-    {
-     "id": "residue-1.line.2",
-     "who": "surfer",
-     "signalRole": "chunkSurferTrace",
-     "text": "You have enough of the return to expose it. Exposure is not victory.",
-     "quotes": "signal"
-    }
-   ],
-   "choices": [
-    {
-     "id": "residue-1.continue",
-     "text": "Get up and keep moving."
-    }
-   ]
-  }
- }
 }

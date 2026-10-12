@@ -8,6 +8,8 @@ import { buildAudit as buildProgression } from '../tools/audits/progression/audi
 import { renderAudit as renderProgression } from '../tools/audits/progression/render.mjs';
 import { buildAudit as buildPuzzles } from '../tools/audits/puzzles/audit.mjs';
 import { renderAudit as renderPuzzles } from '../tools/audits/puzzles/render.mjs';
+import { buildAudit as buildSourcePath } from '../tools/audits/source-path/audit.mjs';
+import { renderAudit as renderSourcePath } from '../tools/audits/source-path/render.mjs';
 
 // ── the registry ─────────────────────────────────────────────────────────────
 assert.deepEqual(auditRegistryErrors(), [], 'the audit registry is internally consistent');
@@ -108,7 +110,35 @@ for (const entry of puzzles.puzzles) {
   for (const entry of puzzles.puzzles) assert.ok(html.includes(`id="${entry.id}"`), `the page has a card for ${entry.id}`);
 }
 
+// ── the source space path ─────────────────────────────────────────────────────
+//
+// Its claim is coverage: every phase, finale stage and recorder note the game
+// can produce sits on some stage, so a new stretch of source space cannot ship
+// without the page saying where it is on the walk.
+const sourcePath = await buildSourcePath();
+assert.deepEqual(sourcePath.global.broken, [], 'the source space path matches the code');
+assert.ok(sourcePath.stages.length >= 18);
+for (const [kind, map] of Object.entries({ phases: sourcePath.coverage.phases, finale: sourcePath.coverage.finale, objectives: sourcePath.coverage.objectives })) {
+  for (const [value, stages] of Object.entries(map)) assert.ok(stages.length, `the ${kind} value ${value} is on the path`);
+}
+for (const road of sourcePath.roads) assert.ok(road.stage && road.endings.length, `the ${road.id} road is walked and has endings`);
+for (const stage of sourcePath.stages) {
+  for (const { label, where } of stage.cites) assert.ok(where.resolved, `${stage.id}: "${label}" points at ${where.symbol} in ${where.file}, which is not there`);
+}
+{
+  const html = renderSourcePath(sourcePath);
+  assert.ok(html.startsWith('<!doctype html>'));
+  assert.ok(!html.includes('undefined'), 'the source path page renders no undefined values');
+  assert.ok(!html.includes('no longer there'), 'every source path citation still resolves');
+  assert.ok(html.includes('<svg class="sp-strip"'), 'the page draws the path');
+  for (const stage of sourcePath.stages) assert.ok(html.includes(`id="${stage.id}"`), `the page has a card for ${stage.id}`);
+  const port = AUDITS.find((audit) => audit.id === 'source-path').port;
+  assert.ok(renderEndings(endings).includes(`:${port}/#`), 'the endings page links each road to where it is walked');
+  assert.ok(renderPuzzles(puzzles).includes(`:${port}/#haystack`), 'a puzzle on the path links to its stage');
+}
+
 console.log(`audit tools ok — ${AUDITS.length} audits, ${endings.endings.length} endings, `
+  + `${sourcePath.stages.length} source path stages, `
   + `${progression.achievements.length} achievements, ${progression.pins.length} pin sources, `
   + `${progression.skills.reduce((n, b) => n + b.rungs.length, 0)} skills, `
   + `${progression.weapons.reduce((n, t) => n + t.moves.length, 0)} moves, `

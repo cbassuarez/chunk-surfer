@@ -478,20 +478,39 @@ export function practiceRoomHushBattle() {
   };
 }
 
-export function sourceCombatDefinition({ bodyReturn = false } = {}) {
+// WHAT THE TALKS AT THE LIFT LEFT YOU KNOWING. Small on purpose: a tell is a
+// little off one phase or a little composure, never a way past the fight. The
+// ids are SOURCE_CONTACT_TELLS in source-contact.js.
+const SOURCE_TELLS = Object.freeze({
+  outline: Object.freeze({ movement: 'borrowed-body', coherence: -2, line: Object.freeze({ who: 'tape', text: 'Two outlines. You know which one is the small one.' }) }),
+  meter: Object.freeze({ movement: 'call-site', coherence: -2, line: Object.freeze({ who: 'meter', text: 'It reads before it sounds. Watch the needle, not the room.' }) }),
+  ears: Object.freeze({ movement: 'final-clause', coherence: -2, line: Object.freeze({ who: 'ears', text: 'Two sources. The thin one is still behind it, close to the floor.' }) }),
+  stance: Object.freeze({ composure: 2, line: Object.freeze({ who: 'hands', text: 'You have stood the way it stands. Your body knows the weight.' }) }),
+});
+export const SOURCE_TELL_IDS = Object.freeze(Object.keys(SOURCE_TELLS));
+
+export function sourceCombatDefinition({ bodyReturn = false, tells = [] } = {}) {
   const profile = authoredCombatProfile('source');
+  const known = [...new Set(Array.isArray(tells) ? tells : [])].filter((id) => Object.hasOwn(SOURCE_TELLS, id));
+  const coherenceFor = (id) => known.reduce((sum, tell) => sum + (SOURCE_TELLS[tell].movement === id ? SOURCE_TELLS[tell].coherence : 0), 0);
   return {
     id: 'source-final',
     enemy: 'THE THING WEARING THE RECORDIST',
     art: { id: 'surfer', mode: 'boss', caption: 'Source / borrowed body', status: 'RETURN' },
-    baseComposure: (bodyReturn ? 10 : 8) * GRID,
+    baseComposure: (bodyReturn ? 10 : 8) * GRID + known.reduce((sum, tell) => sum + (SOURCE_TELLS[tell].composure || 0), 0),
     kind: profile.kind,
     signature: profile.signature,
     music: profile.music,
-    movements: profile.movements.map((entry) => entry.id === 'borrowed-body' && bodyReturn
-      ? { ...entry, coherence: 4 * GRID }
-      : entry),
+    movements: profile.movements.map((entry) => {
+      const base = entry.id === 'borrowed-body' && bodyReturn ? { ...entry, coherence: 4 * GRID } : entry;
+      const delta = coherenceFor(entry.id);
+      return delta ? { ...base, coherence: Math.max(GRID, base.coherence + delta) } : base;
+    }),
     bodyReturnAssist: !!bodyReturn,
+    tells: known,
+    // A first break in each movement loses shelter and opens the persistent
+    // desktop fight. The legacy option name remains save/authoring compatible.
+    sendBackOnBreak: true,
   };
 }
 
@@ -507,20 +526,25 @@ export function sourceCombatBattle(options = {}) {
     intro: [
       { who: 'direction', text: 'The exposed fault opens. Three return channels rise out of the source at once.' },
       { who: 'you', text: 'Return. Isolate. Open. I decide where every signal goes.' },
+      ...combat.tells.map((id) => ({ ...SOURCE_TELLS[id].line })),
     ],
     win: [{ who: 'direction', text: 'The clause loses coherence. The armed channel takes the return value.' }],
     lose: [{ who: 'direction', text: 'Your monitoring path clips to silence. The page remains unresolved.' }],
   };
 }
 
-export function cathedralBellCombatDefinition({ phase = 1, carriedDamage = 0 } = {}) {
+export function cathedralBellCombatDefinition({ phase = 1, carriedDamage = 0, alarm = 0, personalOpening = false, openingReference = personalOpening } = {}) {
   const source = authoredCombatProfile('source');
   const second = Number(phase) >= 2;
+  // WHAT THE BELFRY TOLD THE CROSSING. A body that came down without brushing a
+  // bell arrives unseen and opens with one more charge; one that rang two or more
+  // walks into bells already moving. Small either way, like every tell.
+  const rung = personalOpening && !second ? 0 : Math.max(0, Math.floor(Number(alarm) || 0));
   const movements = second
     ? [
         movement('surfer-return', 'THE SURFER ENTERS THE PEAL', 30, [
           B('cathedral:surfer-print', 'SURFER PRINT IN SIX BELLS', 15, { takeLabel: 'SURFER / RETURN', playbackDamage: 15 }),
-          L('cathedral:amplify', 'SIX MOUTHS PATCHED TO ONE BODY', 20),
+          L('cathedral:amplify', 'SIX MOUTHS PATCHED TO ONE BODY', 20, { recordable: true, takeLabel: 'SURFER / ECHO', playbackDamage: 15 }),
           O('cathedral:full-peal', 'THE FULL PEAL THROUGH THE CROSSING', 25, { effect: 'ringing' }),
         ]),
         movement('severance', 'THE LINE BETWEEN BODY AND BELL', 30, [
@@ -537,7 +561,7 @@ export function cathedralBellCombatDefinition({ phase = 1, carriedDamage = 0 } =
         ]),
         movement('frame', 'THE FRAME BEGINS TO MOVE', 25, [
           B('cathedral:timber', 'OLD TIMBER CARRIES A NEW RETURN', 15, { takeLabel: 'BELL FRAME', playbackDamage: 10 }),
-          L('cathedral:wheel', 'WHEEL TURNS OUTPUT BACK TO INPUT', 15),
+          L('cathedral:wheel', 'WHEEL TURNS OUTPUT BACK TO INPUT', 15, { recordable: true, takeLabel: 'WHEEL / ECHO', playbackDamage: 10 }),
           O('cathedral:weight', 'TEN METRES OF CLOCK WEIGHT', 20, { effect: 'ringing' }),
         ]),
       ];
@@ -545,12 +569,25 @@ export function cathedralBellCombatDefinition({ phase = 1, carriedDamage = 0 } =
     id: second ? 'cathedral-surfer-final' : 'cathedral-bell-return',
     enemy: second ? 'THE SURFER / THE FULL PEAL' : 'THE CATHEDRAL BELL RETURN',
     art: { id: 'surfer', mode: second ? 'boss' : 'signal', caption: second ? 'Surfer / amplified return' : 'St Brendan\'s / crossing', status: second ? 'AMPLIFY' : 'STRIKE' },
-    baseComposure: Math.max(4 * GRID, 8 * GRID - Math.min(4 * GRID, Math.max(0,Number(carriedDamage)||0))),
-    kind: source.kind,
-    signature: source.signature,
+    // Phase two carries the remaining pool through continuation. Damage must
+    // not also shrink its ceiling, or one blow is charged twice.
+    baseComposure: 8 * GRID,
+    kind: 'cathedral',
+    objective: second ? 'SEPARATE THE SURFER FROM THE RING' : 'BREAK THE BELL RETURN',
+    readableIntents: true,
+    counterDamageShare: 0,
+    untimedGuided: true,
+    presentation: { mode: 'cathedral', worldVisible: true },
     music: { ...source.music, movementLeads: second ? ['lead-2','lead-3'] : ['lead-1','lead-2'] },
     movements,
     cathedralPhase: second ? 2 : 1,
+    alarm: rung,
+    personalOpening: !!personalOpening && !second,
+    ...(!second && openingReference ? { openingTake: {
+      id: 'cathedral:contractor-reference', label: 'CONTRACTOR / TWO NOTES',
+      damage: 3 * GRID, tag: 'cathedral-reference',
+    } } : {}),
+    ...(!second && rung === 0 ? { openingCharge: 2 } : {}),
   };
 }
 
@@ -567,8 +604,19 @@ export function cathedralBellCombatBattle(options = {}) {
       { who: 'direction', text: 'A man drops from the crossing dark and catches the bell return before it can die.' },
       { who: 'surfer', text: 'You brought me a cathedral.' },
       { who: 'direction', text: 'He opens both hands. Every bell answers through him, and the pressure you spent reaching this phase remains spent.' },
+    ] : combat.personalOpening ? [
+      { who: 'direction', text: 'The two notes on the old recording answer from the belfry. The full ring holds its breath.' },
+      { who: 'direction', text: 'The contractor\'s reference is already loaded. Play it once to answer any strike safely.' },
+      { who: 'you', text: 'They left me the first word.' },
+    ] : combat.alarm >= 2 ? [
+      { who: 'direction', text: 'The eight bells are already swinging when you reach the crossing. You told them you were coming, one bell at a time.' },
+      { who: 'you', text: 'Not a rope. Not a pattern. Just a signal with too much stone behind it.' },
+    ] : combat.alarm === 0 ? [
+      { who: 'direction', text: 'You reach the lantern before anything in the tower knows you are under it. Above the trap, eight bells hang mouth-down and still.' },
+      { who: 'direction', text: 'Then all eight begin without moving. Their return comes down the clustered piers looking for a body.' },
+      { who: 'you', text: 'Before it finds me, then.' },
     ] : [
-      { who: 'direction', text: 'At the crossing, the six bells begin without moving. Their return comes down the clustered piers looking for a body.' },
+      { who: 'direction', text: 'At the crossing, the eight bells begin without moving. Their return comes down the clustered piers looking for a body.' },
       { who: 'you', text: 'Not a rope. Not a pattern. Just a signal with too much stone behind it.' },
     ],
     win: second

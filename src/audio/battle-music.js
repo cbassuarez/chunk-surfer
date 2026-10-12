@@ -2,6 +2,8 @@ import { assetUrl } from '../platform/paths.js';
 import { authoredCue } from './authored-cues.js';
 
 export const BATTLE_BPM = 168;
+// How far the phrase sits under the Surfer's throw (a ducked replay interlude).
+export const REPLAY_DUCK_GAIN = 0.34;
 export const BATTLE_BEATS_PER_BAR = 4;
 export const BATTLE_LOOP_BARS = 40;
 export const BATTLE_BEAT_SECONDS = 60 / BATTLE_BPM;
@@ -258,6 +260,8 @@ export function createBattleMusicSession({
   let finishing = false;
   let stopped = false;
   let replayInterlude = false;
+  // A ducked interlude keeps the bed playing under the Surfer's throw.
+  let replayDucked = false;
   let replayResumeAt = null;
   let intrusion = 0;
   let submersionSnapshot = profile.submersion ? {
@@ -351,12 +355,24 @@ export function createBattleMusicSession({
     }
     return true;
   }
-  function beginReplayInterlude(){
+  function beginReplayInterlude({duck=false}={}){
     if(finishing||stopped||replayInterlude)return false;
     replayInterlude=true;
     replayResumeAt=null;
     status='interlude';
     const at=now();
+    if(duck){
+      // THE THROW IS NOT A SILENCE. The phrase keeps running under it at a
+      // fraction of its level; leads are held off until the return downbeat.
+      replayDucked=true;
+      if(master){
+        cancelParam(master.gain,at);
+        paramValueAt(master.gain,master.gain.value,at);
+        rampParam(master.gain,masterTarget()*REPLAY_DUCK_GAIN,at+.08);
+      }
+      return true;
+    }
+    replayDucked=false;
     if(master){
       cancelParam(master.gain,at);
       paramValueAt(master.gain,master.gain.value,at);
@@ -379,6 +395,19 @@ export function createBattleMusicSession({
     if(finishing||stopped)return{delaySeconds:0,downbeatAt};
     const delaySeconds=Math.max(1,Math.floor(Number(beats)||4))*BATTLE_BEAT_SECONDS;
     replayResumeAt=now()+delaySeconds;
+    if(replayDucked){
+      // The bed never stopped, so there is nothing to reconnect: bring it back up
+      // on the return downbeat and leave the loop's own clock alone.
+      replayDucked=false;
+      if(master){
+        const at=now();
+        cancelParam(master.gain,at);
+        paramValueAt(master.gain,master.gain.value,at);
+        paramValueAt(master.gain,master.gain.value,replayResumeAt);
+        rampParam(master.gain,masterTarget(),replayResumeAt+.04);
+      }
+      return{delaySeconds,downbeatAt:replayResumeAt};
+    }
     downbeatAt=replayResumeAt;
     if(master){
       const at=now();

@@ -3,8 +3,9 @@
 // this. The code slab, lossy old room, playerShadow and transport do the work.
 
 import { uiFill, uiLine, uiSize, uiText } from '../render/ui.js';
-import { drawSourceRepriseCast, drawSourceRepriseScare } from '../render/source-reprise-view.js';
+import { drawSourceRepriseCast, drawSourceRepriseScare, drawSourceSendBackFlood } from '../render/source-reprise-view.js';
 import { activeInputPromptDevice, promptLine } from './bindings.js';
+import { normalizePressurePresentation, interpolatePressurePresentation } from './pressure-performance.js';
 
 export const SOURCE_REPRISE_BPM = 168;
 export const SOURCE_REPRISE_RETURN_BEATS = 4;
@@ -13,6 +14,10 @@ export const SOURCE_REPRISE_CAST_SECONDS = 1.05;
 export const SOURCE_REPRISE_UNFOLD_SECONDS = .62;
 export const SOURCE_REPRISE_JUMPSCARE_SECONDS = .24;
 export const SOURCE_REPRISE_RECOGNITION_SECONDS = .72;
+// SENT BACK: the throw is longer and louder (code flood, his stems), and the
+// room does not unfold out of it — it cuts in.
+export const SOURCE_SEND_BACK_CAST_SECONDS = 1.6;
+export const SOURCE_SEND_BACK_UNFOLD_SECONDS = .18;
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, Number(value) || 0));
 const text = (value) => String(value || '');
@@ -52,6 +57,7 @@ function isRecord(event = {}) {
 function normalizeFrame(value, fallback = {}) {
   const at = point(value) || point(fallback);
   if (!at) return null;
+  const pressure=normalizePressurePresentation(Object.hasOwn(value||{},'pressurePresentation')?value.pressurePresentation:fallback.pressurePresentation);
   return {
     ...at,
     floorH:Number.isFinite(Number(value?.floorH)) ? Number(value.floorH) : Number(fallback?.floorH) || 0,
@@ -60,6 +66,7 @@ function normalizeFrame(value, fallback = {}) {
     spaceId:text(value?.spaceId || fallback?.spaceId || 'conservatory'),
     yaw:Number.isFinite(Number(value?.yaw)) ? Number(value.yaw) : Number(fallback?.yaw) || 0,
     pitch:Number.isFinite(Number(value?.pitch)) ? Number(value.pitch) : Number(fallback?.pitch) || 0,
+    ...(pressure ? { pressurePresentation: pressure } : {}),
   };
 }
 
@@ -107,12 +114,16 @@ function routeFor(plan = {}) {
 function routePose(segment, step) {
   const frames = segment?.frames || [];
   if (!frames.length) return null;
-  if (frames.length === 1) return { ...frames[0] };
+  if (frames.length === 1) return { ...frames[0], ...(frames[0].pressurePresentation
+    ? { pressurePresentation:normalizePressurePresentation(frames[0].pressurePresentation) } : {}) };
   const scaled = clamp(step / Math.max(1, segment.steps), 0, 1) * (frames.length - 1);
   const lo = Math.floor(scaled);
   const hi = Math.min(frames.length - 1, Math.ceil(scaled));
   const mix = scaled - lo;
   const a = frames[lo], b = frames[hi];
+  const pressure=a.spaceId===b.spaceId
+    ? interpolatePressurePresentation(a.pressurePresentation,b.pressurePresentation,mix)
+    : normalizePressurePresentation((mix<.5?a:b).pressurePresentation);
   return {
     x:a.x + (b.x - a.x) * mix,
     y:a.y + (b.y - a.y) * mix,
@@ -122,6 +133,7 @@ function routePose(segment, step) {
     spaceId:b.spaceId || a.spaceId || 'conservatory',
     yaw:a.yaw + Math.atan2(Math.sin(b.yaw - a.yaw), Math.cos(b.yaw - a.yaw)) * mix,
     pitch:a.pitch + (b.pitch - a.pitch) * mix,
+    ...(pressure ? { pressurePresentation: pressure } : {}),
   };
 }
 
@@ -152,6 +164,11 @@ function segmentLabel(segment, roomLabel) {
 
 export function makeSourceRepriseScene({
   plan,
+  // 'reprise' is the old lossy recompile; 'sent-back' is the Surfer throwing you
+  // into the real building after you broke in a movement.
+  mode = 'reprise',
+  castSeconds = null,
+  unfoldSeconds = null,
   roomLabel = (id) => text(id).replaceAll('_', ' '),
   worldBacked = false,
   reducedMotion = false,
@@ -166,6 +183,9 @@ export function makeSourceRepriseScene({
   onExit = () => {},
 } = {}) {
   const route = routeFor(plan);
+  const sentBack = mode === 'sent-back';
+  const castFor = Number(castSeconds) > 0 ? Number(castSeconds) : sentBack ? SOURCE_SEND_BACK_CAST_SECONDS : SOURCE_REPRISE_CAST_SECONDS;
+  const unfoldFor = Number(unfoldSeconds) > 0 ? Number(unfoldSeconds) : sentBack ? SOURCE_SEND_BACK_UNFOLD_SECONDS : SOURCE_REPRISE_UNFOLD_SECONDS;
   let phase = 'cast';
   let elapsed = 0;
   let segmentIndex = 0;
@@ -283,6 +303,9 @@ export function makeSourceRepriseScene({
     allowsLook:true,
     suppressesHud:true,
     worldPresentation:worldBacked ? 'visible' : 'hidden',
+    // Sent back, the building is the building: it must not inherit the fight's
+    // look profile from the battle scene underneath (scenes.js syncLens).
+    ...(sentBack ? { lookProfile:'explore' } : {}),
 
     enter() { onPhase(phasePayload()); syncShadow(); },
     exit() {
@@ -305,7 +328,8 @@ export function makeSourceRepriseScene({
         // freely; the replay owns the route, not their neck.
         ...((phase === 'unfold' || seamFlash > 0) ? { yaw:current.yaw, pitch:current.pitch } : {}),
         suppressActors:true,
-        sensoryProfile:'source-reprise',
+        // Sent back is the building as it is, not Source's recompile of it.
+        sensoryProfile:sentBack ? 'source-sent-back' : 'source-reprise',
       };
     },
 
@@ -313,10 +337,12 @@ export function makeSourceRepriseScene({
       const current = segment();
       return {
         id:plan?.id || '',
+        mode,
         phase,
         segmentIndex,
         segmentCount:route.length,
-        segment:current ? { ...current, frames:[...current.frames] } : null,
+        segment:current ? { ...current, frames:current.frames.map(frame=>({ ...frame,
+          ...(frame.pressurePresentation ? { pressurePresentation:normalizePressurePresentation(frame.pressurePresentation) } : {}) })) } : null,
         step,
         steps:current?.steps || 0,
         shadowStep:current ? Math.min(current.steps, step + Math.max(1, Math.round(current.steps * .2))) : 0,
@@ -366,8 +392,8 @@ export function makeSourceRepriseScene({
           continue;
         }
         const duration = {
-          cast:SOURCE_REPRISE_CAST_SECONDS,
-          unfold:SOURCE_REPRISE_UNFOLD_SECONDS,
+          cast:castFor,
+          unfold:unfoldFor,
           recognition:SOURCE_REPRISE_RECOGNITION_SECONDS,
           jumpscare:SOURCE_REPRISE_JUMPSCARE_SECONDS,
           rupture:SOURCE_REPRISE_RETURN_SECONDS - SOURCE_REPRISE_JUMPSCARE_SECONDS,
@@ -429,7 +455,12 @@ export function makeSourceRepriseScene({
       const takeNumber = current?.takeOrdinal || current?.index + 1 || 1;
 
       if (phase === 'cast') {
-        drawSourceRepriseCast({ progress:clamp(elapsed / SOURCE_REPRISE_CAST_SECONDS, 0, 1),
+        if (sentBack) {
+          drawSourceSendBackFlood({ progress:clamp(elapsed / castFor, 0, 1), id:plan?.id, roomId:current?.roomId,
+            roomName:current?.roomId ? roomLabel(current.roomId) : '', takeNumber, reducedMotion, reducedFlash });
+          return;
+        }
+        drawSourceRepriseCast({ progress:clamp(elapsed / castFor, 0, 1),
           id:plan?.id, roomId:current?.roomId, takeNumber, reducedMotion, reducedFlash });
         return;
       }
@@ -451,26 +482,27 @@ export function makeSourceRepriseScene({
       // doubled labels and code fragments over the same recognisable props.
       if (!worldBacked) uiFill(0, 0, cols, rows, 'rgba(1,2,3,0.99)');
       if (phase === 'unfold') {
-        const cover = 1 - clamp(elapsed / SOURCE_REPRISE_UNFOLD_SECONDS, 0, 1);
+        const cover = 1 - clamp(elapsed / unfoldFor, 0, 1);
         uiFill(0, 0, cols, rows, `rgba(1,2,3,${(.12 + cover * .86).toFixed(3)})`);
-        const tearY = Math.floor(rows * (.28 + clamp(elapsed / SOURCE_REPRISE_UNFOLD_SECONDS, 0, 1) * .34));
+        const tearY = Math.floor(rows * (.28 + clamp(elapsed / unfoldFor, 0, 1) * .34));
         uiText(1, tearY, `${'\\/ '.repeat(Math.ceil(cols / 3)).slice(0, cols - 2)}`, 'ui-danger', .42);
       }
 
       const header = text(plan?.id || 'source').replaceAll('-', ' ').toUpperCase();
       uiFill(0, 0, cols, 5, 'rgba(1,2,3,0.80)');
       uiFill(0, rows - 5, cols, 5, 'rgba(1,2,3,0.84)');
-      uiText(2, 1, `SOURCE // ${header}`, 'ui-danger');
-      uiText(Math.max(2, cols - 32), 1, 'RECOMPILED / NON-IDENTICAL', 'ui-secondary', .82);
+      uiText(2, 1, sentBack ? `SENT BACK // ${label}` : `SOURCE // ${header}`, 'ui-danger');
+      uiText(Math.max(2, cols - 32), 1, sentBack ? 'PUNCH IN TO GO BACK' : 'RECOMPILED / NON-IDENTICAL', 'ui-secondary', .82);
       uiText(2, 3, `${String(segmentIndex + 1).padStart(2, '0')}/${String(Math.max(1, route.length)).padStart(2, '0')}  ${label} // ${current?.integrity || 0}%`, 'ui-primary');
-      uiText(Math.max(2, cols - fault().length - 2), 3, fault(), 'ui-danger', pulse ? .94 : .62);
+      if (!sentBack) uiText(Math.max(2, cols - fault().length - 2), 3, fault(), 'ui-danger', pulse ? .94 : .62);
       if (current?.takeOrdinal) {
         const take = `TAKE ${String(current.takeOrdinal).padStart(2, '0')} // ${text(current.place || 'ORIGINAL REC MARK').toUpperCase()}`;
         uiText(2, 4, take.slice(0, Math.max(0, cols - 4)), 'ui-secondary', .54);
       }
 
       const corruption = current?.corruption || .7;
-      const glitchCount = reducedMotion ? Math.max(1, Math.round(corruption * 3)) : Math.max(1, Math.round(corruption * 8));
+      // Sent back, the room is the room: none of Source's rejected geometry over it.
+      const glitchCount = sentBack ? 0 : reducedMotion ? Math.max(1, Math.round(corruption * 3)) : Math.max(1, Math.round(corruption * 8));
       for (let index = 0; index < glitchCount; index += 1) {
         const row = 6 + ((index * 11 + segmentIndex * 7 + Math.floor(elapsed * (reducedMotion ? 2 : 9))) % Math.max(1, rows - 13));
         const width = Math.max(8, Math.floor(cols * (.08 + corruption * .14)));
@@ -478,8 +510,8 @@ export function makeSourceRepriseScene({
         uiFill(left, row, width, 1 + (index % 2), `rgba(255,42,35,${(.04 + corruption * .12).toFixed(3)})`);
         uiText(left, row, (index % 2 ? 'NULL_GEOMETRY//' : 'FRAME_REJECTED//').slice(0, width), 'ui-danger', .20 + corruption * .28);
       }
-      if (corruption > .3) uiText(4 + (segmentIndex * 9) % Math.max(1, cols - label.length - 8), 6 + segmentIndex * 3, label, 'ui-blue', .12 + corruption * .18);
-      if (corruption > .6) uiText(Math.max(2, cols - 34), Math.max(7, rows - 9), `recordAction(${takeNumber}) != history`, 'ui-danger', .42);
+      if (!sentBack && corruption > .3) uiText(4 + (segmentIndex * 9) % Math.max(1, cols - label.length - 8), 6 + segmentIndex * 3, label, 'ui-blue', .12 + corruption * .18);
+      if (!sentBack && corruption > .6) uiText(Math.max(2, cols - 34), Math.max(7, rows - 9), `recordAction(${takeNumber}) != history`, 'ui-danger', .42);
 
       if (seamFlash > 0) {
         uiFill(0, Math.floor(rows * .42), cols, 3, 'rgba(255,70,45,0.25)');
@@ -493,7 +525,9 @@ export function makeSourceRepriseScene({
         uiText(Math.floor((cols - collision.length) / 2), Math.floor(rows * .44) + 1, collision, resolve > .5 ? 'ui-danger' : 'ui-blue');
       }
 
-      const transport = phase === 'armed'
+      const transport = sentBack
+        ? (phase === 'armed' ? 'SENT BACK  /  AT YOUR MARK  /  ● PUNCH IN' : 'SENT BACK  /  WALK TO YOUR MARK  /  REC LOCKED')
+        : phase === 'armed'
         ? 'SOURCE COPY  /  PLAY >  /  ● PUNCH IN'
         : phase === 'recognition'
           ? 'SOURCE COPY  /  PLAY >  /  ACTOR ID COLLISION'
@@ -504,7 +538,7 @@ export function makeSourceRepriseScene({
         : '[R] PUNCH IN';
       const follow = activeInputPromptDevice() === 'controller'
         ? promptLine([{ action:'move', label:'FOLLOW THE SHADOW' }])
-        : '[W/S] FOLLOW THE SHADOW';
+        : sentBack ? '[W/S] BACK TO YOUR MARK' : '[W/S] FOLLOW THE SHADOW';
       const actionRow = cols < transport.length + Math.max(action.length,follow.length) + 6 ? rows - 2 : rows - 4;
       if (phase === 'armed') uiText(Math.max(2, cols - action.length - 2), actionRow, action, reducedMotion || reducedFlash ? 'ui-amber' : pulse ? 'ui-danger' : 'ui-amber');
       else if (phase === 'traverse') uiText(Math.max(2, cols - follow.length - 2), actionRow, follow, 'ui-secondary', .76);

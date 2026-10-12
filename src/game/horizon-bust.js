@@ -9,9 +9,9 @@ const SHARED_AUDIENCE = freezeLines([
     { who: 'you', text: 'Hello?' },
     { who: 'bust', text: 'Bold choice. You made it this far, but have left so much behind. I have been expecting you, however.' },
     { who: 'you', text: 'What choice do I have?' },
-    { who: 'bust', text: "You have had many choices tonight. But I'm afraid your possibilities are ending. Beyond me lies the end." },
+    { who: 'bust', text: "You can keep walking to the chapel without my help. Beyond me lies the end." },
     { who: 'you', text: 'Of?' },
-    { who: 'bust', text: 'Of it all? Of nothing? Of this game? Take your pick... though, there is another way.' },
+    { who: 'bust', text: "Of the road's career as a road. Those lamps and telephone boxes are turning back into their recording. What's gone stays gone. The ground stays under your feet; take your time. Rather bad for property values. Though I do have another way." },
 ]);
 
 export const HORIZON_BUST_AUDIENCE = Object.freeze({
@@ -121,12 +121,12 @@ export function horizonBustRefusalTree() {
       lines: [
         { who: 'you', text: 'Then what can you do?' },
         { who: 'bust', text: "Talk. I'm very good at it and there's no queue." },
-        { who: 'bust', text: "You're inside a recording of somewhere, walking up its length. That's not a figure of speech — the far end of this is later, and the way you've come is earlier, and it's all still standing because nothing here knows how to throw a picture away." },
-        { who: 'you', text: 'I noticed the middle of it is ruined.' },
-        { who: 'bust', text: "It is. It comes apart around where I'm standing and it puts itself back together a good way on, and nobody repaired anything in between. Whatever decided it should be legible again did that on its own." },
-        { who: 'bust', text: "Keep to the bright of it. The picture wanders and the walkable part wanders with it, and the dark at the sides is where the recording simply stops having anything. You won't fall. You'll just stop being anywhere." },
+        { who: 'bust', text: "The street you came by is turning into its own recording. That was a telephone box a moment ago. Now it's light remembering the shape of one. Very poor weatherproofing." },
+        { who: 'you', text: 'Can it put itself back?' },
+        { who: 'bust', text: "No. Turn round if you like. What's gone stays gone. I'm marble; I find this distressingly casual." },
+        { who: 'bust', text: "The ground stays under your feet. Stop to listen, look about — you're allowed. Walk beside the picture if you like; it won't take away the road you've walked. No need to walk it twice on my account." },
         { who: 'you', text: 'And the end?' },
-        { who: 'bust', text: "Goes out. Not dramatically — it's a tape, it runs out of tape. Then you're in the nave, and the nave is a different problem, and I'd tell you about that one too if you'd brought my eyes." },
+        { who: 'bust', text: "The chapel is ahead. Keep going when you're ready; it doesn't require my eyes or my permission. The nave is a different problem, of course. I remain available for complaints." },
       ],
       goto: 'stone',
     },
@@ -160,6 +160,7 @@ export function horizonBustProposition(lastLine = null, { defeats = 0 } = {}) {
       lines: returning ? [
         ...(lastLine ? [lastLine] : []),
         { who: 'direction', text: 'The bevel is warm. Your own hand did that, and not long ago.' },
+        { who: 'bust', text: 'The same phase. I will give you your breath and enough battery to answer. The damage stays. Two returns, then the full peal.' },
         again === 1
           ? { who: 'bust', text: 'There you are. I did say.' }
           : { who: 'bust', text: 'Again. I am starting to feel responsible for you, which is new, and I do not care for it.' },
@@ -205,9 +206,11 @@ export function horizonBustProposition(lastLine = null, { defeats = 0 } = {}) {
       speaker: 'THE PORTRAIT',
       lines: [
         { who: 'you', text: 'Where does this go?' },
-        { who: 'bust', text: "A detour. Some would call it a French exit." },
+        { who: 'bust', text: "A detour. Some would call it a French exit. A path beside this pedestal, out of the side of the picture. Bells beyond it; the tower at the far end." },
+        { who: 'you', text: 'Do the bells ring?' },
+        { who: 'bust', text: "Most have the good manners not to. A few don't. Make enough noise and you'll have to walk that part again. I recommend a quiet entrance." },
         { who: 'you', text: 'How much longer?' },
-        { who: 'bust', text: "How should I know? I'm marble and metal, and this place is empty and timeless. Regardless, probably about another 20 minutes if all goes well." },
+        { who: 'bust', text: "How should I know? I'm marble and metal. There is time to look around. The bells do not object to patience." },
       ],
       goto: 'questions',
     },
@@ -215,9 +218,12 @@ export function horizonBustProposition(lastLine = null, { defeats = 0 } = {}) {
       speaker: 'THE PORTRAIT',
       lines: [
         { who: 'you', text: "What's the catch?" },
+        { who: 'bust', text: "Once I open it, you're committed to the tower. No going back to the thing by the lift. No taking the nave instead." },
+        { who: 'you', text: 'And the tower?' },
         { who: 'bust', text: "It's easier as long as you don't lose." },
         { who: 'you', text: 'And if I lose?' },
         { who: 'bust', text: "Then I'll see you here again, but you'll have no choice but to continue." },
+        { who: 'bust', text: 'The first two defeats bring you back to me. The third is final. There is no fourth attempt.' },
       ],
       goto: 'questions',
     },
@@ -229,30 +235,32 @@ export function horizonBustProposition(lastLine = null, { defeats = 0 } = {}) {
           ? { who: 'bust', text: 'No. I told you that part before you agreed, which is more than most get.' }
           : { who: 'bust', text: 'You know the answer. Ask me something you do not know.' },
         { who: 'direction', text: 'There is one bevel, and it is the one your hand already knows.' },
+        { who: 'bust', text: again === 1 ? 'Two attempts remain. The third defeat is final.' : 'This is your last attempt. A third defeat is final.' },
       ] : [
-        { who: 'bust', text: 'So. Keep going, or let me introduce you.' },
+        { who: 'bust', text: 'So. Keep going to the chapel, or take my path. Agree, and it is the tower: no going back to the lift, no choosing the nave later.' },
+        { who: 'bust', text: 'The first two defeats bring you back to me. The third is final. There is no fourth attempt. Put your hand in the worn seal only if you accept that.' },
       ],
       // The chapel is simply not here on a return. "No choice but to continue"
       // is one row, not two rows with one of them dimmed.
       choices: returning ? [
         { text: 'Set your hand in the bevel. Again.', goto: 'accepted', sourceFinaleChoice: 'tower' },
       ] : [
-        { text: "Set your hand in the bevel. Take the Bust's path.", goto: 'accepted', sourceFinaleChoice: 'tower' },
+        { text: "Set your hand in the bevel. Commit to the tower.", goto: 'accepted', sourceFinaleChoice: 'tower' },
         { text: "Leave the way you were going.", goto: 'declined', sourceFinaleChoice: 'chapel' },
       ],
     },
     accepted: {
       speaker: 'THE PORTRAIT',
       lines: returning ? [
-        { who: 'direction', text: 'The fractures are already open. They never closed.' },
+        { who: 'direction', text: 'The path is still there, leading away from the picture. It never closed.' },
         again === 1
           ? { who: 'bust', text: 'They still know you are coming. That was never the hard part.' }
           : { who: 'bust', text: 'Last time I will watch you do this. One way or the other.' },
       ] : [
-        { who: 'you', text: 'If I put my hand there, what happens?' },
-        { who: 'bust', text: "To be honest, it's more fun to press something to make it happen. You've already agreed, the button is just symbolic. Call it user experience." },
-        { who: 'direction', text: 'The stone is colder than the rain. Six narrow fractures open behind the pedestal, each holding a small imprint of a bell-like sigil.' },
-        { who: 'bust', text: "There. Now they know you're coming." },
+        { who: 'you', text: 'All that, and it is a button?' },
+        { who: 'bust', text: "You've already agreed. The button is ceremonial. Call it user experience." },
+        { who: 'direction', text: 'The bronze warms under your palm. A narrow path opens beside the pedestal and bends out of the picture. Bells hang beyond it.' },
+        { who: 'bust', text: "There. Walk it. Most of the bells are silent; not all. Make enough noise and you'll have to walk that bit again, from the last quiet clearing. Reach the next clearing and the noise settles. They know you're coming. No need to announce yourself." },
         { who: 'you', text: 'Fun.' },
       ],
       goto: 'done',
@@ -262,7 +270,7 @@ export function horizonBustProposition(lastLine = null, { defeats = 0 } = {}) {
       lines: [
         { who: 'you', text: "I'm alright for now." },
         { who: 'bust', text: "Don't say I didn't warn you." },
-        { who: 'direction', text: "Something tells you that you narrowly missed a twenty minute detour." },
+        { who: 'direction', text: 'Your hand stays off the seal. Beyond the pedestal, the chapel light holds.' },
       ],
       goto: 'done',
     },

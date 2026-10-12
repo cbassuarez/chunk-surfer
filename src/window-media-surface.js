@@ -24,13 +24,16 @@ const eventTimers=new Set();
 const vertex=`#version 300 es
 in vec2 p;out vec2 uv;void main(){uv=p*.5+.5;gl_Position=vec4(p,0.,1.);}`;
 const fragment=`#version 300 es
-precision highp float;in vec2 uv;out vec4 outColor;uniform sampler2D image;uniform sampler2D staleImage;uniform sampler2D outgoingImage;uniform sampler2D blueNoise;uniform vec4 crop;uniform vec2 desktopOrigin;uniform vec2 framebufferSize;uniform vec2 blueNoiseSize;uniform float dpr;uniform int procedural;uniform float coherence;uniform float faultIntensity;uniform float faultTick;uniform float faultSeed;uniform int flashMode;uniform int nvme;uniform int transitionMode;uniform float transitionProgress;uniform float negative;
+precision highp float;in vec2 uv;out vec4 outColor;uniform sampler2D image;uniform sampler2D staleImage;uniform sampler2D outgoingImage;uniform sampler2D blueNoise;uniform vec4 crop;uniform vec2 desktopOrigin;uniform vec2 framebufferSize;uniform vec2 blueNoiseSize;uniform float dpr;uniform int procedural;uniform float coherence;uniform float faultIntensity;uniform float faultTick;uniform float faultSeed;uniform int flashMode;uniform int nvme;uniform int terminal;uniform int transitionMode;uniform float transitionProgress;uniform float negative;
 float blueNoiseRank(vec2 at){vec2 cell=mod(floor(at),blueNoiseSize);return texture(blueNoise,(cell+.5)/blueNoiseSize).r;}
 float hash21(vec2 p){p=fract(p*vec2(.1031,.1030));p+=dot(p,p.yx+33.33);return fract((p.x+p.y)*p.x);}
 float form(vec2 q){vec2 c=q*2.-1.;if(procedural==1){float iris=1.-smoothstep(.20,.72,length(vec2(c.x,c.y*1.35)));float pupil=1.-smoothstep(.08,.20,length(c));return max(iris*.62,pupil);}if(procedural==2)return 1.-smoothstep(.012,.028,length(c));if(procedural==3)return .025;return .10+.08*sin((q.x+q.y)*30.);}
 vec3 mediaAt(vec2 q,bool stale){if(procedural>0)return vec3(form(q));return stale?texture(staleImage,q).rgb:texture(image,q).rgb;}
 ${WINDOW_SURFACE_LOOK_GLSL}
 void main(){
+  // A terminal is already rasterised at the correct column pitch. The media
+  // dither lattice erased character stems and made real stderr unreadable.
+  if(terminal==1){outColor=vec4(texture(image,crop.xy+uv*crop.zw).rgb,1.);return;}
   // THE ONE SPACE EVERY SURFACE AGREES ON: desktop LOGICAL points. gl_FragCoord
   // is device pixels and desktopOrigin arrives from a DOM rect in points, so
   // adding them -- which is what this did -- put every retina window half a
@@ -114,7 +117,20 @@ function loadAssignment(next,{transition:mode='cut',durationMs=0}={}){
   beginTransition(mode,durationMs);destroySource();assignment=next;
   const serial=assignmentSerial,content=assignment.content||{};
   document.documentElement.dataset.contentId=windowMediaContentId(content);
-  if(content.kind==='snapshot'&&envelope?.snapshotData){poster=loadImage(envelope.snapshotData,serial);return;}
+  if(content.kind==='snapshot'){
+    const initialToken=envelope?.score?.initial?.content?.token;
+    const data=envelope?.snapshotFrames?.[content.token]||(content.token===initialToken?envelope?.snapshotData:null);
+    if(data)poster=loadImage(data,serial);
+    return;
+  }
+  if(content.kind==='text'){
+    const plate=document.createElement('canvas');plate.width=640;plate.height=360;
+    const ctx=plate.getContext('2d');if(!ctx)return;
+    ctx.fillStyle='#171743';ctx.fillRect(0,0,640,360);ctx.fillStyle='#e1e4e8';ctx.font='48px monospace';
+    const text=String(content.text||'');const size=Math.min(48,48*584/Math.max(1,ctx.measureText(text).width));
+    ctx.font=`${size}px monospace`;ctx.textAlign='center';ctx.fillText(text,320,196);
+    poster=loadImage(plate.toDataURL('image/png'),serial);return;
+  }
   if(content.kind==='image'){
     const asset=assetById.get(content.assetId),path=asset?.derivatives?.poster?.path||asset?.path;
     if(path)poster=loadImage(assetUrl(path),serial);return;
@@ -190,7 +206,7 @@ function draw(at){
     const transitionState=transitionUniform(at);
     gl.useProgram(program);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,texture);gl.uniform1i(gl.getUniformLocation(program,'image'),0);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,staleTexture);gl.uniform1i(gl.getUniformLocation(program,'staleImage'),1);gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,outgoingTexture);gl.uniform1i(gl.getUniformLocation(program,'outgoingImage'),2);gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D,blueNoiseTexture);gl.uniform1i(gl.getUniformLocation(program,'blueNoise'),3);
     gl.uniform4f(gl.getUniformLocation(program,'crop'),Number(assignment?.crop?.x)||0,Number(assignment?.crop?.y)||0,Number(assignment?.crop?.w)||1,Number(assignment?.crop?.h)||1);gl.uniform2f(gl.getUniformLocation(program,'desktopOrigin'),Number(envelope?.desktopOrigin?.x)||0,Number(envelope?.desktopOrigin?.y)||0);gl.uniform2f(gl.getUniformLocation(program,'framebufferSize'),w,h);gl.uniform2f(gl.getUniformLocation(program,'blueNoiseSize'),BLUE_NOISE_SIZE,BLUE_NOISE_SIZE);gl.uniform1f(gl.getUniformLocation(program,'dpr'),dpr);gl.uniform1f(gl.getUniformLocation(program,'negative'),frontEndNegative);
-    const preset=assignment?.content?.preset,mode=envelope?.fault?.flashMode;gl.uniform1i(gl.getUniformLocation(program,'procedural'),preset==='iris-abstraction'?1:preset==='distant-dot'?2:preset==='empty-field'?3:assignment?.content?.kind==='procedural'?4:0);gl.uniform1f(gl.getUniformLocation(program,'coherence'),envelope?.coherent?1:0);gl.uniform1f(gl.getUniformLocation(program,'faultIntensity'),Math.max(0,Math.min(1,Number(envelope?.fault?.intensity)||0)));gl.uniform1f(gl.getUniformLocation(program,'faultTick'),Math.floor(Date.now()/cadence));gl.uniform1f(gl.getUniformLocation(program,'faultSeed'),Number(envelope?.fault?.seed)||0);gl.uniform1i(gl.getUniformLocation(program,'flashMode'),mode==='off'?2:mode==='reduced'?1:0);gl.uniform1i(gl.getUniformLocation(program,'nvme'),envelope?.shader==='nvme-sector'?1:0);gl.uniform1i(gl.getUniformLocation(program,'transitionMode'),transitionState.mode);gl.uniform1f(gl.getUniformLocation(program,'transitionProgress'),transitionState.progress);gl.drawArrays(gl.TRIANGLES,0,6);
+    const preset=assignment?.content?.preset,mode=envelope?.fault?.flashMode;gl.uniform1i(gl.getUniformLocation(program,'procedural'),preset==='iris-abstraction'?1:preset==='distant-dot'?2:preset==='empty-field'?3:assignment?.content?.kind==='procedural'?4:0);gl.uniform1f(gl.getUniformLocation(program,'coherence'),envelope?.coherent?1:0);gl.uniform1f(gl.getUniformLocation(program,'faultIntensity'),Math.max(0,Math.min(1,Number(envelope?.fault?.intensity)||0)));gl.uniform1f(gl.getUniformLocation(program,'faultTick'),Math.floor(Date.now()/cadence));gl.uniform1f(gl.getUniformLocation(program,'faultSeed'),Number(envelope?.fault?.seed)||0);gl.uniform1i(gl.getUniformLocation(program,'flashMode'),mode==='off'?2:mode==='reduced'?1:0);gl.uniform1i(gl.getUniformLocation(program,'nvme'),envelope?.shader==='nvme-sector'?1:0);gl.uniform1i(gl.getUniformLocation(program,'terminal'),envelope?.shader==='terminal'?1:0);gl.uniform1i(gl.getUniformLocation(program,'transitionMode'),transitionState.mode);gl.uniform1f(gl.getUniformLocation(program,'transitionProgress'),transitionState.progress);gl.drawArrays(gl.TRIANGLES,0,6);
   }else if(source?.src){fallback.style.display='block';fallback.src=source.src;}
   raf=requestAnimationFrame(draw);
 }
@@ -214,6 +230,15 @@ function matchesActiveScore(payload){
     && Number(payload?.revision)===currentRevision
     && String(payload?.cueId||'')===String(envelope.cueId||'')
     && String(payload?.paneId||'')===String(envelope.paneId||'');
+}
+function clearMediaScore(payload){
+  if(String(payload?.sessionToken)!==currentSession||Number(payload?.revision)!==currentRevision)return false;
+  clearEventTimers();destroySource();envelope=null;assignment=null;scoreSuspended=true;executedTimed.clear();
+  fallback.removeAttribute('src');document.documentElement.style.visibility='hidden';
+  if(gl)for(const tex of [texture,staleTexture,outgoingTexture])if(tex){
+    gl.bindTexture(gl.TEXTURE_2D,tex);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([0,0,0,255]));
+  }
+  return true;
 }
 function holdScore(payload){
   if(!matchesActiveScore(payload))return false;
@@ -243,6 +268,7 @@ async function boot(){
   try{await listen('window-media-score',({payload})=>{void acceptEnvelope(payload);});}catch(_){}
   try{await listen('window-media-trigger',({payload})=>triggerEvent(payload));}catch(_){}
   try{await listen('window-media-score-hold',({payload})=>holdScore(payload));}catch(_){}
+  try{await listen('window-media-clear',({payload})=>clearMediaScore(payload));}catch(_){}
   try{await listen('window-media-probe',()=>{void announceReady();});}catch(_){}
   try{await listen('window-media-freeze',({payload})=>{if(!envelope||payload?.cueId!==envelope.cueId)return;executeAction({type:'frozen',frozen:!!payload.frozen},'external-freeze');});}catch(_){}
   try{await listen('window-media-origin',({payload})=>{if(!envelope||payload?.cueId!==envelope.cueId)return;envelope={...envelope,desktopOrigin:payload.desktopOrigin||envelope.desktopOrigin};});}catch(_){}

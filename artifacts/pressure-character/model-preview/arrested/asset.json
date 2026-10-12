@@ -1,0 +1,21 @@
+{
+  "sha256": "29f4321a45f48cff08f243591153adbc0de5b25e31a3adb2f26ce2c6d78368b9",
+  "source": "Unmasked Blender studio. Advance frames include canonical linear .42m world root translation. These frames verify authored form/contact; actual game shaders are reviewed separately.",
+  "frames": [
+    "arrest-front.png",
+    "arrest-side.png",
+    "load-chest-close.png",
+    "load-end-front.png",
+    "load-end-side.png",
+    "load-half-front.png",
+    "load-half-side.png",
+    "step-contact-front.png",
+    "step-contact-side.png",
+    "step-drag-front.png",
+    "step-drag-side.png",
+    "step-end-front.png",
+    "step-end-side.png",
+    "step-leading-front.png",
+    "step-leading-side.png"
+  ]
+}

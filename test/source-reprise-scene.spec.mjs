@@ -233,19 +233,29 @@ test('Source combat can resume directly at a saved movement without replaying cl
   assert.equal(state.last.notice, definition.movements[2].title);
 });
 
-test('combat freezes in an explicit interlude until the reprise returns its resume verb', () => {
+test('a movement never throws you on its own; a God preview stop freezes in an interlude until the reprise returns', () => {
   const battle = structuredClone(sourceCombatBattle());
   battle.intro = [];
   battle.combat.movements.forEach((movement) => { movement.before = []; movement.after = []; });
   let handoff = null;
+  // The Surfer sends you back when you break (combat-state sendBackOnBreak), not
+  // because a movement began.
+  const plain = makeCombatScene({ battle, difficulty: {}, onMovementInterlude: (value) => { handoff = value; return true; } });
+  plain.enter();
+  assert.equal(handoff, null, 'an ordinary movement opened the throw');
+  assert.notEqual(plain.battleView().phase, 'interlude');
+  plain.exit();
+  const preview = structuredClone(battle);
+  preview.combat.previewSendBackAt = 0;
   const scene = makeCombatScene({
-    battle,
+    battle: preview,
     difficulty: {},
     onMovementInterlude: (value) => { handoff = value; return true; },
   });
   scene.enter();
   assert.equal(scene.battleView().phase, 'interlude');
   assert.equal(handoff.id, 'call-site');
+  assert.equal(handoff.reason, 'preview');
   scene.update(90);
   assert.equal(scene.battleView().phase, 'interlude');
   handoff.resume();

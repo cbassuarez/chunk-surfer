@@ -5,6 +5,7 @@ import {
   sealCausalDraft,
 } from '../platform/storage/storageService.js';
 import { CAUSAL_TOPOLOGY_HASH, packShadowFrames, sealCausalTape, tapeQualifies } from './tape.js';
+import { normalizePressurePresentation } from '../game/pressure-performance.js';
 
 const SEGMENT_MS = 30_000;
 const MOVING_SAMPLE_MS = 100;
@@ -16,16 +17,26 @@ function changedDiscontinuously(a, b) {
   return a.roomId !== b.roomId
     || a.renderGroup !== b.renderGroup
     || a.spaceId !== b.spaceId
+    || pressureBoundary(a.pressurePresentation) !== pressureBoundary(b.pressurePresentation)
     || Math.abs(finite(a.floorH) - finite(b.floorH)) > 0.5
     || Math.abs(finite(a.yaw) - finite(b.yaw)) > 0.55
     || Math.abs(finite(a.pitch) - finite(b.pitch)) > 0.35;
+}
+
+function pressureBoundary(frame) {
+  return ['primary', 'secondary'].map((slot) => {
+    const actor = frame?.[slot], performance = actor?.performance;
+    return actor ? `${actor.id}:${performance?.role}:${performance?.clip}:${performance?.cue?.name || ''}` : '';
+  }).join('|');
 }
 
 function moving(a, b) {
   if (!a || !b) return true;
   return Math.hypot(finite(a.x) - finite(b.x), finite(a.y) - finite(b.y)) > 0.015
     || Math.abs(finite(a.yaw) - finite(b.yaw)) > 0.01
-    || Math.abs(finite(a.pitch) - finite(b.pitch)) > 0.01;
+    || Math.abs(finite(a.pitch) - finite(b.pitch)) > 0.01
+    || Math.abs(finite(a.outskirtsCharacters?.clock) - finite(b.outskirtsCharacters?.clock)) > .001
+    || Math.abs(finite(a.pressurePresentation?.clock) - finite(b.pressurePresentation?.clock)) > .001;
 }
 
 export class CausalRecorder {
@@ -69,6 +80,11 @@ export class CausalRecorder {
     this.elapsedMs += Math.max(0, finite(dtSeconds)) * 1000;
     if (!frame) return;
     const next = { ...frame, t: Math.round(this.elapsedMs) };
+    // Freeze the bounded resolved actor descriptors at observation time, not
+    // at a later disk flush after the driver may have advanced or despawned.
+    const pressure = normalizePressurePresentation(frame.pressurePresentation);
+    if (pressure) next.pressurePresentation = pressure;
+    else delete next.pressurePresentation;
     const interval = moving(this.lastFrame, next) ? MOVING_SAMPLE_MS : STATIONARY_SAMPLE_MS;
     if (changedDiscontinuously(this.lastFrame, next) || this.elapsedMs - this.lastSampleAt >= interval) {
       this.frames.push(next);
@@ -126,6 +142,7 @@ export class CausalRecorder {
       roomId: typeof frame.roomId === 'string' ? frame.roomId : '',
       renderGroup: typeof frame.renderGroup === 'string' ? frame.renderGroup : '',
       spaceId: typeof frame.spaceId === 'string' ? frame.spaceId : '',
+      ...(frame.pressurePresentation ? { pressurePresentation: normalizePressurePresentation(frame.pressurePresentation) } : {}),
     }));
   }
 

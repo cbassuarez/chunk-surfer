@@ -69,6 +69,16 @@ test('pointer hit testing follows the drawn fireball and ignores empty stage cli
   assert.equal(exchange.snapshot().charge,1);
 });
 
+test('compact Source aperture can retain a fourteen-pixel catch radius without changing ordinary targets',()=>{
+  const {exchange}=harness();exchange.update(.71);
+  const point=pointAt(exchange,0);
+  // A 360x60 logical aperture: thirteen pixels from the visible ray center.
+  const click={x:point.x+13/360,y:point.y,aspect:6};
+  assert.equal(exchange.click(click).hit,false,'ordinary target radius is unchanged');
+  assert.equal(exchange.click({...click,radius:14/60}).hit,true);
+  assert.equal(exchange.snapshot().charge,1,'one catch consumes only one projectile');
+});
+
 // HITTING ONE COMET IS NOT HITTING ALL OF THEM.
 //
 // A cast used to be a single flight with several sprites drawn along it, so one

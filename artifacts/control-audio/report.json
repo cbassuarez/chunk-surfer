@@ -28,128 +28,128 @@
       {
         "name": "tick",
         "scope": "radio:initial_checkin",
-        "start": 4.8,
-        "level": 0.20900000000000002,
+        "start": 8.48,
+        "level": 0.8360000000000001,
         "profile": "radio",
         "quiet": false
       },
       {
         "name": "press",
         "scope": "radio:initial_checkin:start:1",
-        "start": 4.997333333333334,
-        "level": 0.396,
+        "start": 8.634666666666666,
+        "level": 1.584,
         "profile": "radio",
         "quiet": false
       },
       {
         "name": "release",
         "scope": "radio:initial_checkin:start:1",
-        "start": 5.0873333333333335,
-        "level": 0.264,
+        "start": 8.724666666666666,
+        "level": 1.056,
         "profile": "radio",
         "quiet": false
       },
       {
         "name": "toggle",
         "scope": "radio:initial_checkin",
-        "start": 4.997333333333334,
-        "level": 0.41250000000000003,
+        "start": 8.634666666666666,
+        "level": 1.6500000000000001,
         "profile": "radio",
         "quiet": false
       },
       {
         "name": "back",
         "scope": "radio:initial_checkin",
-        "start": 5.002666666666666,
-        "level": 0.35750000000000004,
+        "start": 8.634666666666666,
+        "level": 1.4300000000000002,
         "profile": "radio",
         "quiet": false
       },
       {
         "name": "press",
         "scope": "recorder:takes",
-        "start": 5.365333333333333,
-        "level": 0.396,
+        "start": 8.970666666666666,
+        "level": 1.584,
         "profile": "recorder",
         "quiet": false
       },
       {
         "name": "latch",
         "scope": "recorder",
-        "start": 5.365333333333333,
-        "level": 0.396,
+        "start": 8.970666666666666,
+        "level": 1.584,
         "profile": "recorder",
         "quiet": false
       },
       {
         "name": "release",
         "scope": "recorder:takes",
-        "start": 5.46006666670243,
-        "level": 0.264,
+        "start": 9.060166666666666,
+        "level": 1.056,
         "profile": "recorder",
         "quiet": false
       },
       {
         "name": "tick",
         "scope": "recorder",
-        "start": 5.536,
-        "level": 0.20900000000000002,
+        "start": 9.136,
+        "level": 0.8360000000000001,
         "profile": "recorder",
         "quiet": false
       },
       {
         "name": "refuse",
         "scope": "recorder",
-        "start": 5.765333333333333,
-        "level": 0.4675,
+        "start": 9.36,
+        "level": 1.87,
         "profile": "recorder",
         "quiet": false
       },
       {
         "name": "refuse",
         "scope": "recorder",
-        "start": 6.218666666666667,
-        "level": 0.4675,
+        "start": 9.770666666666667,
+        "level": 1.87,
         "profile": "recorder",
         "quiet": false
       },
       {
         "name": "press",
         "scope": "recorder:takes",
-        "start": 6.768,
-        "level": 0.2574,
+        "start": 10.314666666666668,
+        "level": 1.0296,
         "profile": "recorder",
         "quiet": true
       },
       {
         "name": "latch",
         "scope": "recorder",
-        "start": 6.768,
-        "level": 0.2574,
+        "start": 10.314666666666668,
+        "level": 1.0296,
         "profile": "recorder",
         "quiet": true
       },
       {
         "name": "release",
         "scope": "recorder:takes",
-        "start": 6.857199999988079,
-        "level": 0.1716,
+        "start": 10.406533333321413,
+        "level": 0.6864,
         "profile": "recorder",
         "quiet": true
       },
       {
         "name": "back",
         "scope": "recorder",
-        "start": 7.029333333333334,
-        "level": 0.35750000000000004,
+        "start": 10.581333333333333,
+        "level": 1.4300000000000002,
         "profile": "recorder",
         "quiet": false
       },
       {
         "name": "tick",
         "scope": "ui",
-        "start": 7.216,
-        "level": 0.20900000000000002,
+        "start": 10.736,
+        "level": 0.8360000000000001,
         "profile": "panel",
         "quiet": false
       }
@@ -160,68 +160,68 @@
   "recipes": [
     {
       "name": "tick",
-      "peak": 0.010609763674438,
-      "rms": 0.00039756879048725676
+      "peak": 0.042439054697752,
+      "rms": 0.001590275161949027
     },
     {
       "name": "press",
-      "peak": 0.014148172922432423,
-      "rms": 0.00042217347413695905
+      "peak": 0.05659269168972969,
+      "rms": 0.0016886938965478362
     },
     {
       "name": "release",
-      "peak": 0.013468165881931782,
-      "rms": 0.00043661960064266046
+      "peak": 0.05387266352772713,
+      "rms": 0.0017464784025706418
     },
     {
       "name": "toggle",
-      "peak": 0.019502956420183182,
-      "rms": 0.0007296599491525102
+      "peak": 0.07801182568073273,
+      "rms": 0.0029186397966100407
     },
     {
       "name": "back",
-      "peak": 0.011005206033587456,
-      "rms": 0.0003934001474074492
+      "peak": 0.04402082413434982,
+      "rms": 0.001573600589629797
     },
     {
       "name": "refuse",
-      "peak": 0.01320160273462534,
-      "rms": 0.000560945345640402
+      "peak": 0.05280641093850136,
+      "rms": 0.002243781382561608
     },
     {
       "name": "latch",
-      "peak": 0.016520053148269653,
-      "rms": 0.0005759492016102593
+      "peak": 0.06608021259307861,
+      "rms": 0.002303796806441037
     },
     {
       "name": "unlatch",
-      "peak": 0.01567479968070984,
-      "rms": 0.0005147606297861041
+      "peak": 0.06269919872283936,
+      "rms": 0.0020590425191444163
     },
     {
       "name": "fit",
-      "peak": 0.017914259806275368,
-      "rms": 0.0008500668814581262
+      "peak": 0.07165703922510147,
+      "rms": 0.003400267525832505
     },
     {
       "name": "remove",
-      "peak": 0.011075763031840324,
-      "rms": 0.0005027937961177021
+      "peak": 0.0443030521273613,
+      "rms": 0.0020111751844708084
     },
     {
       "name": "patch",
-      "peak": 0.017033249139785767,
-      "rms": 0.00063766730951947
+      "peak": 0.06813299655914307,
+      "rms": 0.00255066923807788
     },
     {
       "name": "unpatch",
-      "peak": 0.012765614315867424,
-      "rms": 0.00048040087447547757
+      "peak": 0.051062457263469696,
+      "rms": 0.0019216034979019103
     },
     {
       "name": "page",
-      "peak": 0.014863112941384315,
-      "rms": 0.00124059065912216
+      "peak": 0.05945245176553726,
+      "rms": 0.004962362637095286
     }
   ],
   "scope": "Production browser input with a disposable God run and simulated controller. Real OfflineAudioContext renders. Native hardware and acoustic speaker/microphone feedback are not covered."

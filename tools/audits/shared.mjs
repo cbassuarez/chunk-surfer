@@ -236,13 +236,13 @@ function elsewhere(activeId) {
 export function pageShell({
   id, title, heading, deck, rail = '', body = '', roads = '',
   filterPlaceholder = 'find one…', mastTitle, mastNote,
-  statusRows = [], global = '',
+  statusRows = [], global = '', extraStyles = '',
 }) {
   return `<!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escape(title)}</title>
-<style>${STYLES}</style>
+<style>${STYLES}${extraStyles}</style>
 </head><body>
 <div class="layout">
 <nav>

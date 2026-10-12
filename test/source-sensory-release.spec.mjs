@@ -55,6 +55,7 @@ runtime.setPlayerPosition(player);
 
 assert.equal(runtime.sourceSensoryFrame().mix, 1);
 assert.equal(runtime.inspectFocused(player.x, player.y, player.facing).event, 'page-found');
+runtime.commitStillPageReveal();
 assert.equal(runtime.state().phase, CHUNK_SURF_PHASE.TRANSFORMING);
 assert.equal(runtime.sourceSensoryFrame().mix, 1, 'the fade does not begin from the current pressure');
 assert.equal(runtime.sourceLandingHushFrame().rear.visible, true,
@@ -79,9 +80,9 @@ assert.equal(runtime.sourceLandingHushFrame().rear.visible, true,
   'Pressure cannot remain visible in the quiet Scene Dock');
 
 const main = await readFile(new URL('../src/main.js', import.meta.url), 'utf8');
-assert.match(main, /onClose:\(\)=>\{[\s\S]{0,180}chunkSurfRuntime\?\.settleSourceSensory\?\.\(\)/,
+assert.match(main, /onReveal:\(\)=>\{[\s\S]{0,180}chunkSurfRuntime\?\.settleSourceSensory\?\.\(\)/,
   'the still page does not finish the fade on the frame that reveals the dock');
-assert.match(main, /onClose:\(\)=>\{[\s\S]{0,240}sourceFaultTransitionStartedAt=performance\.now\(\)/,
+assert.match(main, /onReveal:\(\)=>\{[\s\S]{0,240}sourceFaultTransitionStartedAt=performance\.now\(\)/,
   'the still-page close does not begin the authored Source fault transition');
 assert.match(main, /presentationGain:sourcePlayerSensoryMix\(\)/,
   'the live HUSH graph bypasses the Source sensory envelope');

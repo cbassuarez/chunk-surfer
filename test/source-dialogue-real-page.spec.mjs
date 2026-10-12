@@ -10,7 +10,8 @@ const realBranch = runtime.slice(runtime.indexOf("focus.kind === 'haystack-page'
 
 assert.match(falseBranch, /assignSourceDialoguePage/, 'false sheets bypass the dialogue director');
 assert.doesNotMatch(realBranch, /assignSourceDialoguePage|sourceDialogue|SOURCE_PAGES/, 'the still page entered the dialogue system');
-assert.match(realBranch, /HAYSTACK_PAGE_FOUND/, 'the still page no longer commits the chapter transition');
+assert.match(realBranch, /pendingStillPage = true/, 'the still page no longer prepares its covered transition');
+assert.match(runtime, /function commitStillPageReveal[\s\S]*?HAYSTACK_PAGE_FOUND/, 'the covered commit disappeared');
 assert.match(realBranch, /event: 'page-found'/, 'the still page no longer takes the threshold branch');
 assert.doesNotMatch(realBranch, /kind: 'page'/, 'the still page can be rendered as a false document');
 const liveBranch = main.slice(main.indexOf("if(result.event==='page-found')"), main.indexOf("if(result.event==='horizon')"));

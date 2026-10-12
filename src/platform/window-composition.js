@@ -5,10 +5,10 @@ export const WINDOW_MEDIA_PROTOCOL=2;
 export const WINDOW_MEDIA_SURFACE_LABELS=Object.freeze(
   Array.from({length:MAX_MEDIA_SURFACES},(_,index)=>`window-media-${index+1}`),
 );
-export const WINDOW_COMPOSITION_PURPOSES=Object.freeze(['title','death','ending','puzzle','return','sector','practice']);
+export const WINDOW_COMPOSITION_PURPOSES=Object.freeze(['title','death','ending','puzzle','return','sector','practice','source-warning','source-decay']);
 export const WINDOW_MEDIA_CONTENT_KINDS=Object.freeze(['video','image','snapshot','text','procedural']);
 export const WINDOW_MEDIA_PROCEDURAL_PRESETS=Object.freeze(['iris-abstraction','distant-dot','empty-field','game-fragment']);
-export const WINDOW_MEDIA_SHADER_PROFILES=Object.freeze(['violet-dither','nvme-sector']);
+export const WINDOW_MEDIA_SHADER_PROFILES=Object.freeze(['violet-dither','nvme-sector','terminal']);
 export const WINDOW_COMPOSITION_FLASH_MODES=Object.freeze(['full','reduced','off']);
 export const WINDOW_SCORE_OPERATIONS=Object.freeze([
   'assign','clone','echo','mosaic','swap','relay','ripple',
@@ -366,12 +366,20 @@ export function paneScoreStateAt(score,{nowMs=score?.epochMs||0,events=[]}={}){
   return freeze(state);
 }
 
-export function createPaneScoreEnvelope(plan,paneId,{targetLabel,sessionToken,revision,snapshotData=null}={}){
+export function createPaneScoreEnvelope(plan,paneId,{targetLabel,sessionToken,revision,snapshotData=null,snapshotFrames={}}={}){
   const surface=plan.surfaces.find((entry)=>entry.id===paneId);
   if(!surface)throw new Error(`unknown composition pane: ${paneId}`);
+  const score=compilePaneScore(plan,surface.id);
+  const assignments=[score.initial,...score.cues.map((cue)=>cue.action?.assignment).filter(Boolean)];
+  const frames={};
+  for(const assignment of assignments){
+    const token=assignment.content?.kind==='snapshot'?assignment.content.token:null;
+    const data=token?snapshotFrames[token]:null;
+    if(token&&typeof data==='string'&&data.startsWith('data:image/'))frames[token]=data;
+  }
   return freeze({
     protocol:WINDOW_MEDIA_PROTOCOL,targetLabel:String(targetLabel||''),sessionToken:stableId(sessionToken),revision:Math.max(1,Math.floor(Number(revision)||1)),
-    cueId:plan.cueId,paneId:surface.id,score:compilePaneScore(plan,surface.id),snapshotData,
+    cueId:plan.cueId,paneId:surface.id,score,snapshotData,snapshotFrames:freeze(frames),
     description:surface.description,draggable:surface.draggable,desktopOrigin:{x:0,y:0},coherent:false,shader:surface.shader,
     fault:{...plan.fault,seed:(Number(plan.fault?.seed)||0)+surface.index*19,intensity:Math.max(0,Math.min(1,Number(plan.fault?.intensity)*Number(surface.faultScale||1)))},
   });
@@ -623,17 +631,19 @@ export function sectorErrorCompositionPlan({
   const surfaces=seats.map((initial,index)=>({
     id:`sector:${index}`,
     content:{kind:'snapshot',token:tokens[index%tokens.length]},
-    width:300,height:200,
+    width:320,height:216,
     entry:initial,initial,
     target:{anchorX:.5,anchorY:.5,offsetX:(index%2?1:-1)*150,offsetY:(index<2?-1:1)*96},
-    shader:'nvme-sector',
-    faultScale:1.15+(index%3)*.12,
-    description:'Bad sector readout',
+    shader:'terminal',
+    faultScale:1,
+    description:'ntfsclone: unreadable sectors',
   }));
   const targets=surfaces.map((surface)=>surface.id);
   // The scroll. One cut per phase, staggered per pane so the four terminals are
   // not in lockstep, looping for as long as the screen is up.
-  const stepMs=reducedMotion?420:140;
+  // At a failing clone's pace: stderr floods faster than it can be read. Reduced
+  // motion keeps a slow, readable cut.
+  const stepMs=reducedMotion||flashMode!=='full'?1200:60;
   const cues=[];
   tokens.forEach((token,phase)=>{
     surfaces.forEach((surface,index)=>{
@@ -652,10 +662,139 @@ export function sectorErrorCompositionPlan({
     compositionId:'sector:unreadable',sceneId:'sector',purpose:'sector',epochMs,reducedMotion,flashMode,
     surfaces,score:{durationMs:Math.max(1000,tokens.length*stepMs),loop:true,cues},
     completion:{mode:'nonblocking'},
-    // The hardest fault in the game: this IS the bad sector, not a surface with
-    // one under it.
-    fault:{profile:'nvme-sector',intensity:.92,seed:29,cadenceMs:150},
-    formation:{mode:'impact-scatter',durationMs:280,staggerMs:30},
+    // Framebuffer damage is in the source image. Never dither or spatially
+    // resample terminal glyphs into an unreadable second layer of damage.
+    fault:{profile:'terminal',intensity:0,seed:29,cadenceMs:900},
+    formation:{mode:'terminal-open',durationMs:0,staggerMs:0},
+  });
+}
+
+// Replaces the mandatory pre-lift arrangement. This is an authored warning,
+// never a puzzle: no input lease, constraints, progress count, or movement gate.
+// The caller supplies only opaque transient image tokens, never identity text.
+// THE WALK OUT OF SOURCE: THE TERMINALS COME APART.
+//
+// The windows do not stop at the field's edge. Four terminals come back already
+// failing, and each stage (fired by name as he walks, window-choreography
+// sourceDecay) tears them further, pushes the survivors out toward the screen's
+// edges and loses one. The fourth stage loses the last. Reduced motion and flash
+// off get the same stages as cuts, without the drift.
+export const SOURCE_DECAY_STAGES = Object.freeze([.2, .45, .7, .92]);
+export function sourceDecayCompositionPlan({
+  phaseTokens=[], decayTokens=[], epochMs=Date.now(), reducedMotion=false, flashMode='full',
+}={}){
+  const terminals=phaseTokens.filter((token)=>String(token).startsWith('snapshot-'));
+  const decays=decayTokens.filter((token)=>String(token).startsWith('snapshot-'));
+  const gentle=reducedMotion||flashMode!=='full';
+  const seats=[{x:.18,y:.22},{x:.82,y:.22},{x:.18,y:.78},{x:.82,y:.78}];
+  const fallback=['READ ERROR','SECTOR 0x0','NOT FOUND','—'];
+  const surfaces=seats.map((initial,index)=>({
+    id:`source-decay:${index}`,entry:initial,initial,target:initial,
+    width:280,height:160,draggable:false,shader:'terminal',faultScale:1,
+    content:terminals.length?{kind:'snapshot',token:terminals[(index*5)%terminals.length]}:{kind:'text',text:fallback[index]},
+    description:'Source terminal, failing',
+  }));
+  const damaged=(stage,index)=>decays.length
+    ?{kind:'snapshot',token:decays[Math.min(decays.length-1,stage)]}
+    :{kind:'text',text:fallback[(index+stage+1)%fallback.length]};
+  // The order they go in: across, then down, then the last.
+  const order=[1,2,0,3];
+  const cues=SOURCE_DECAY_STAGES.map((_,stage)=>{
+    const lost=order.slice(0,stage+1);
+    const survivors=surfaces.filter((_,index)=>!lost.includes(index));
+    const push=(value,step)=>value<.5?Math.max(0,value-step):Math.min(1,value+step);
+    return {
+      id:`source-decay-stage-${stage+1}`,event:`source-decay-${stage+1}`,
+      operations:[
+        ...(survivors.length?[{type:'assign',transition:'cut',
+          assignments:Object.fromEntries(survivors.map((surface)=>[surface.id,{content:damaged(stage,surfaces.indexOf(surface))}]))}]:[]),
+        ...(gentle?[]:survivors.map((surface)=>{
+          const seat=seats[surfaces.indexOf(surface)];
+          return {type:'geometry',targets:[surface.id],durationMs:300,
+            geometry:{anchorX:push(seat.x,.05*(stage+1)),anchorY:push(seat.y,.04*(stage+1))}};
+        })),
+        {type:'hide',targets:[surfaces[order[stage]].id]},
+      ],
+    };
+  });
+  return compileWindowCompositionPlan({
+    compositionId:'source:decay',sceneId:'source:proper',purpose:'source-decay',epochMs,reducedMotion,flashMode,
+    surfaces,score:{durationMs:120000,loop:false,cues},completion:{mode:'nonblocking'},
+    fault:{profile:'terminal',intensity:0,seed:4417,cadenceMs:1200},
+    formation:{mode:'terminal-open',durationMs:0,staggerMs:0},
+  });
+}
+
+export function sourceWarningCompositionPlan({
+  preTokens=[], messageTokens=[], epochMs=Date.now(), reducedMotion=false, flashMode='full',
+  // Older callers: plain terminal phases, and one frame per message.
+  phaseTokens=[], warningTokens=[],
+}={}){
+  const isSnapshot=(token)=>String(token).startsWith('snapshot-');
+  const terminals=[...preTokens,...phaseTokens].filter(isSnapshot);
+  const messages=(messageTokens.length?messageTokens:warningTokens.map((token)=>[token]))
+    .map((steps)=>(Array.isArray(steps)?steps:[steps]).filter(isSnapshot));
+  const ready=messages.length>=8&&messages.every((steps)=>steps.length);
+  const seats=[{x:.18,y:.22},{x:.82,y:.22},{x:.18,y:.78},{x:.82,y:.78}];
+  const anonymous=['WATCH OUT','IT IS','COMING','CLOSER'];
+  const surfaces=seats.map((initial,index)=>({
+    id:`source-warning:${index}`,entry:initial,initial,target:initial,
+    width:320,height:180,draggable:false,shader:'terminal',faultScale:1,
+    content:terminals.length?{kind:'snapshot',token:terminals[index%terminals.length]}:{kind:'text',text:anonymous[index]},
+    description:'Source terminal warning',
+  }));
+  const cues=[];
+  const gentle=reducedMotion||flashMode!=='full';
+  const noise=(n)=>{const x=Math.sin(n*12.9898+78.233)*43758.5453;return x-Math.floor(x);};
+  const assign=(id,atMs,surface,token)=>cues.push({id,atMs:Math.round(atMs),
+    operations:[{type:'assign',assignments:{[surface.id]:{content:{kind:'snapshot',token}}},transition:'cut'}]});
+  // The terminal prints first: a cut every 60ms under full motion, three slow
+  // prints when gentle.
+  const printSteps=gentle?3:Math.floor(3100/60);
+  if(terminals.length)for(let phase=1;phase<=printSteps;phase++)surfaces.forEach((surface,index)=>
+    assign(`source-print-${phase}-${index}`,phase*(gentle?900:60),surface,terminals[(phase+index)%terminals.length]));
+  // THE MESSAGE GATHERS OUT OF THE FAILING DISK (render/source-warning.js). Each
+  // pane steps through its message's formation frames, then cannot quite hold
+  // it: the formed frame keeps dipping back to the half-gathered one. Gentle
+  // modes cut straight to the formed frame and hold it still.
+  const gather=(prefix,surface,index,steps,startMs,untilMs)=>{
+    if(gentle||steps.length===1){assign(`${prefix}-${index}`,startMs,surface,steps.at(-1));return;}
+    const offsets=[0,140,320];
+    steps.forEach((token,step)=>assign(`${prefix}-${index}-form-${step}`,startMs+(offsets[step]??320),surface,token));
+    const formed=steps.at(-1),half=steps[Math.max(0,steps.length-2)];
+    let at=startMs+320+380+noise(index*13)*140,beat=0;
+    while(at<untilMs-200){
+      const dip=90+noise(index*17+beat)*70;
+      assign(`${prefix}-${index}-slip-${beat}`,at,surface,half);
+      assign(`${prefix}-${index}-hold-${beat}`,at+dip,surface,formed);
+      at+=dip+380+noise(index*31+beat)*140;beat+=1;
+    }
+  };
+  surfaces.forEach((surface,index)=>{
+    const nameAt=3200+index*900,warnAt=8000+index*900;
+    if(!ready){
+      cues.push({id:`source-warning-${index}`,atMs:warnAt,operations:[{
+        type:'assign',assignments:{[surface.id]:{content:{kind:'text',text:anonymous[index]}}},transition:'cut',
+      }]});
+      return;
+    }
+    gather('source-address',surface,index,messages[index],nameAt,warnAt);
+    // It lets go of the name back into the scroll before the warning gathers.
+    let warningStart=warnAt;
+    if(!gentle&&terminals.length){
+      const name=messages[index];
+      assign(`source-release-${index}`,warnAt-110,surface,name[Math.max(0,name.length-2)]);
+      assign(`source-release-scroll-${index}`,warnAt,surface,terminals[(index+1)%terminals.length]);
+      warningStart=warnAt+110;
+    }
+    gather('source-warning',surface,index,messages[index+4],warningStart,16000);
+  });
+  cues.push({id:'source-warning-retire',atMs:16000,operations:[{type:'hide',targets:surfaces.map((surface)=>surface.id)}]});
+  return compileWindowCompositionPlan({
+    compositionId:'source:warning',sceneId:'source:proper',purpose:'source-warning',epochMs,reducedMotion,flashMode,
+    surfaces,score:{durationMs:16500,loop:false,cues},completion:{mode:'nonblocking'},
+    fault:{profile:'terminal',intensity:0,seed:4417,cadenceMs:1200},
+    formation:{mode:'terminal-open',durationMs:0,staggerMs:0},
   });
 }
 
@@ -737,20 +876,30 @@ function endingScore(id,surfaces){
   }
   if(id==='tower-won')return{durationMs:120000,loop:false,cues:[
     at('ending:beat:drag-through-nave',[{type:'mosaic',targets,source:{content:{kind:'video',assetId:'cathedral'}},layout:'spatial',transition:'dissolve',durationMs:220}]),
-    at('ending:beat:west-threshold',[{type:'ripple',targets,order:'left-to-right',intervalMs:80,operation:{type:'clone',targets,source:{content:{kind:'video',assetId:'clouds'}},transition:'dissolve',durationMs:220}}]),
-    at('ending:beat:open-west-doors',[{type:'echo',targets,source:{content:{kind:'video',assetId:'clouds'}},stepMs:180,transition:'dissolve',durationMs:260},{type:'shader',targets,coherent:true}]),
+    at('ending:beat:west-threshold',[{type:'freeze',targets},{type:'shader',targets,coherent:true,intensity:0}]),
+    at('ending:beat:open-west-doors',[{type:'hide',targets}]),
+    at('ending:beat:ordinary-weight',[{type:'hide',targets}]),
   ]};
-  if(id==='tower-lost')return{durationMs:12000,loop:false,cues:Array.from({length:6},(_,index)=>at(`ending:beat:strike-${['one-breath','two-hands','three-posture','four-look','five-movement','six-full-peal'][index]}`,[
-    {type:'echo',targets:targets.slice(0,index+1),source:{content:{kind:'video',assetId:'bellringers-datamosh'}},stepMs:145,transition:'dip-black',durationMs:120},
-    ...(index===5?[{type:'freeze',targets},{type:'shader',targets,coherent:true}]:[]),
-  ]))};
+  if(id==='tower-lost')return{durationMs:12000,loop:false,cues:[
+    ...['one-breath','two-hands','three-posture','four-look','five-movement'].map((strike,index)=>
+      at(`ending:beat:strike-${strike}`,[assignAsset(targets[index%targets.length],'bellringers-datamosh',{
+        phaseOffsetMs:index*430,transition:'dissolve',durationMs:180,
+      })])),
+    at('ending:beat:strike-six-voice',[{type:'freeze',targets},{type:'shader',targets,coherent:true,intensity:0}]),
+    at('ending:beat:strike-seven-step',[{type:'hide',targets:[targets[0]]}]),
+    at('ending:beat:strike-eight-full-peal',[{type:'hide',targets}]),
+  ]};
   return{durationMs:12000,loop:false,cues:[]};
 }
 
 export function endingCompositionPlan(endingId,{epochMs=Date.now(),reduceDread=false,reducedMotion=false,flashMode='full',intrusionToken=''}={}){
   const id=String(endingId||'');
+  const towerEnding=id==='tower-won'||id==='tower-lost';
   const eye=(asset,initial,index)=>reduceDread?{id:`ending:${id}:${index}`,...procedural('iris-abstraction',{initial})}:endingSurface(id,asset,initial,index,{sensitivity:'clinical'});
   const ring=[{x:.15,y:.25},{x:.39,y:.16},{x:.66,y:.18},{x:.86,y:.34},{x:.75,y:.75},{x:.49,y:.84},{x:.20,y:.72},{x:.08,y:.50}];
+  // These endings are performed by real bodies. Their media stays at the
+  // upper outer edges from entry through resolution, including Simulate.
+  const towerPerimeter=[{x:.06,y:.16},{x:.94,y:.16}];
   let surfaces=[];
   if(id==='sacrifice')surfaces=[eye('eye-s5',ring[0],0),endingSurface(id,'eclipse',ring[2],1),endingSurface(id,'flowers-seb',ring[5],2),endingSurface(id,'sunflower-datamosh',ring[7],3)];
   else if(id==='helped')surfaces=[endingSurface(id,'pollination',ring[0],0),endingSurface(id,'flowers-seb',ring[3],1),endingSurface(id,'pollination',ring[5],2),endingSurface(id,'flowers-seb',ring[7],3)];
@@ -759,8 +908,8 @@ export function endingCompositionPlan(endingId,{epochMs=Date.now(),reduceDread=f
   else if(id==='surfaced')surfaces=[endingSurface(id,'clouds',ring[1],0),endingSurface(id,'pollination',ring[3],1),endingSurface(id,'clouds',ring[5],2),endingSurface(id,'pollination',ring[7],3)];
   else if(id==='contact-won')surfaces=[eye('eye-s3',ring[0],0),eye('eye-s5',ring[2],1),endingSurface(id,'sunflower-datamosh',ring[4],2),endingSurface(id,'sunflower-datamosh',ring[6],3)];
   else if(id==='contact-lost')surfaces=ring.map((at,index)=>index%3===0?eye(index%2?'eye-s3':'eye-s5',at,index):index%3===1?endingSurface(id,'eclipse',at,index):{id:`ending:${id}:${index}`,...procedural('distant-dot',{initial:at,width:160,height:120})});
-  else if(id==='tower-won')surfaces=ring.filter((_,index)=>index%2===0).map((at,index)=>endingSurface(id,'cathedral',at,index,{crop:{x:(index%2)*.5,y:Math.floor(index/2)*.5,w:.5,h:.5}}));
-  else if(id==='tower-lost')surfaces=ring.slice(0,6).map((at,index)=>endingSurface(id,index%2?'bellringers-datamosh':'cathedral',at,index));
+  else if(id==='tower-won')surfaces=towerPerimeter.map((at,index)=>endingSurface(id,'cathedral',at,index,{width:160,height:96,crop:{x:index*.5,y:0,w:.5,h:1}}));
+  else if(id==='tower-lost')surfaces=towerPerimeter.map((at,index)=>endingSurface(id,index%2?'bellringers-datamosh':'cathedral',at,index,{width:160,height:96}));
   else surfaces=[endingSurface(id,'eclipse',ring[0],0)];
   const inward=surfaces.map((_,index)=>({anchorX:.5,anchorY:.5,offsetX:(index%2?1:-1)*(18+index*4),offsetY:(index<2?-1:1)*(14+(index%3)*5)}));
   let targets=inward;
@@ -768,8 +917,7 @@ export function endingCompositionPlan(endingId,{epochMs=Date.now(),reduceDread=f
   else if(id==='drugged')targets=surfaces.map((_,index)=>({anchorX:.84,anchorY:.78,offsetX:index*10,offsetY:index*8}));
   else if(id==='surfaced')targets=surfaces.map((_,index)=>({anchorX:index%2?.85:.15,anchorY:.5,offsetY:index<2?-12:12}));
   else if(id==='contact-lost')targets=surfaces.map((_,index)=>({anchorX:.88,anchorY:.82,offsetX:index*7,offsetY:index*5}));
-  else if(id==='tower-won')targets=[{anchorX:.06,anchorY:.20},{anchorX:.94,anchorY:.20},{anchorX:.94,anchorY:.80},{anchorX:.06,anchorY:.80}];
-  else if(id==='tower-lost')targets=surfaces.map((_,index)=>({anchorX:[.30,.50,.70][index%3],anchorY:index<3?.34:.66}));
+  else if(towerEnding)targets=towerPerimeter.map((at)=>({anchorX:at.x,anchorY:at.y}));
   surfaces=surfaces.map((surface,index)=>({...surface,entry:targets[index]||inward[index],target:targets[index]||inward[index],faultScale:.75+(index%3)*.14}));
   const loss=id.endsWith('lost')||id==='drugged'||id==='sacrifice';
   const endingCues=endingScore(id,surfaces);
@@ -777,7 +925,11 @@ export function endingCompositionPlan(endingId,{epochMs=Date.now(),reduceDread=f
   // game frame, but the complete Simulate path shares its canvas; unfold the
   // residue to the authored perimeter before the physical final hold so media
   // can frame the booth/body/door without replacing it.
-  const finalHold={id:'ending-final-hold',event:'ending:final-hold',operations:surfaces.map((surface)=>({
+  const finalHold={id:'ending-final-hold',event:'ending:final-hold',operations:towerEnding?[
+    {type:'freeze',targets:surfaces.map((surface)=>surface.id)},
+    {type:'shader',targets:surfaces.map((surface)=>surface.id),coherent:true,intensity:0},
+    {type:'hide',targets:surfaces.map((surface)=>surface.id)},
+  ]:surfaces.map((surface)=>({
     type:'geometry',targets:[surface.id],
     geometry:{anchorX:surface.initial.x,anchorY:surface.initial.y,force:true},
     durationMs:reducedMotion?0:300,

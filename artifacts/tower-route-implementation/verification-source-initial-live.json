@@ -1,0 +1,22 @@
+{
+  "capturedAt": "2026-10-12T06:54:40.653Z",
+  "snapshot": "/private/tmp/tower-route-snapshot-6xlDuE",
+  "scope": "Production bundle of a frozen source copy; static public assets and raw asset directories are shared without duplicating their bytes; source and content are frozen. No game module or shader is substituted.",
+  "sha256": {
+    "src/main.js": "5153c7610fb30a9304328233de5aed01aa0e629e0e5a610aa87cd80c117b5d4b",
+    "src/game/chunk-surf-state.js": "c93626cc52dcb3133adfb5bc2293f2199d1b8b9352ab5f268496bccdbeaaff23",
+    "src/game/combat.js": "4830355e0df58e50a32eaeb7e884429d0448c299aa71590a8fc983d6fadb1b07",
+    "src/game/combat-state.js": "9342660df50516e164d3fda28f7dc4cc6fbe6ab08d307de1665b5ec7ec32f243",
+    "src/game/combat-checkpoint.js": "5e9162bfb8dbf891921cb520d7feb118934f8e57b6f94207a6e24e6610370e5f",
+    "src/game/cathedral-extraction.js": "b093e3ad7831e3a9bd1456a5571adf04c2245bb487ae510db62d7773acccfee1",
+    "src/game/cathedral-descent.js": "3d8269855a2b67c469f9d2fbe52726b058168ddac28749ef315e75353cd3e38b",
+    "src/data/st-brendans.js": "09ec488c5735f090d9dab4627ae1db1d4512cbacb8a7bfab5a6ba928df3a94a3",
+    "src/data/floorplan/conservatory.js": "63a33dfddbf6cc4817075ac80a9305dc95bc90764d3a20109807df2ca1bef4ed",
+    "src/data/combat-definitions.js": "c8194e54f2936ea29304bdb248bd4567496fb4a27bd62598b1bc2e8eb1ad74b1",
+    "src/data/endings.js": "ef7fba5773ba2e44850a623934f8f595debb635e6a5d3e52522e4aa8a36ab209",
+    "src/data/conservatory-lights.js": "28a9fdbdac28c4f336ee75e73d58f887daf47d74a1de738d47eef378948654c9",
+    "content/narrative/ending.tower-won.story.json": "d15633f017883c4e3aa22aee5f3f14d8f5eb5c137ebc32af41a3d8065ca8fd7d",
+    "content/narrative/ending.tower-lost.story.json": "d984018e55a86da2a426565f31067fbf73548c11a86919e06a090e8ec210f78b",
+    "public/assets/conservatory-props.glb": "d8607c4e6383e80c8909776dfe162698679da4d77c42f1d8fa56bdac5bc3b34c"
+  }
+}

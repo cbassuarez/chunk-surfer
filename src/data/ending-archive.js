@@ -124,7 +124,7 @@ export const ENDING_ARCHIVE = Object.freeze({
     body: () => list(
       "Two men exited St Brendan's Cathedral through the ceremonial west doors before dawn. Neither is recorded as entering.",
       'Dust and cloth marks form one clear drag route from the crossing, through the nave and over the west threshold. The abandoned visitor shop was not entered.',
-      'The six bells and frame are intact. No bell is recorded as having swung, although fresh abrasion is present on the clappers and crossing screen.',
+      'Eight bells are listed in the tower inventory. The fallen bell, split screen and cloth marks agree with the surviving carriers’ route.',
       'The exterior latch remains absent. Re-entry from the yard was not possible when inspected.',
     ),
   }),
@@ -134,7 +134,7 @@ export const ENDING_ARCHIVE = Object.freeze({
     classification: 'TOWER / TERMINAL',
     filedBy: 'DIOCESAN PROPERTY OFFICE',
     body: () => list(
-      'Six bells were reported simultaneously from the disused cathedral. The bells were found mouth-down and the wheels at rest.',
+      'Eight bells were reported simultaneously from the disused cathedral. The bells were found mouth-down and the wheels at rest.',
       'Two carrier signatures reach the crossing. Neither reaches the south porch or west door.',
       'The waveform completes a conventional full peal only when both signatures are treated as part of the instrument.',
       'No ringing controls were present at ground level. The matter is recorded as an unexplained structural transmission.',

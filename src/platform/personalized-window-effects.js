@@ -440,10 +440,13 @@ export function createPersonalizedWindowEffects({
     if(!url.startsWith('data:'))return null;
     const id=`snapshot-${Date.now()}-${Math.random().toString(36).slice(2,10)}`;
     snapshots.set(id,url);
-    while(snapshots.size>MAX_MEDIA_SURFACES+4)snapshots.delete(snapshots.keys().next().value);
+    // A score can reference several frames per pane. Twelve entries silently
+    // evicted the ntfsclone scroll before the first warning was presented.
+    while(snapshots.size>32)snapshots.delete(snapshots.keys().next().value);
     return id;
   }
   function snapshotData(id){return snapshots.get(String(id||''))||null;}
+  function releaseSnapshots(tokens=[]){for(const token of tokens)snapshots.delete(String(token));}
 
   async function assignMediaScore(session,plan,pane,label){
     const revision=++mediaRevisionCounter;
@@ -452,6 +455,7 @@ export function createPersonalizedWindowEffects({
     const envelope={...createPaneScoreEnvelope(plan,pane.id,{
       targetLabel:label,sessionToken:session.token,revision,
       snapshotData:snapshotToken?snapshots.get(snapshotToken)||null:null,
+      snapshotFrames:Object.fromEntries(snapshots),
     }),desktopOrigin:{x:0,y:0}};
     const key=acceptanceKey(session.token,revision,label),accepted=waitForMediaSignal(mediaAcceptedWaiters,key,320);
     await safe(()=>api.emitTo(label,'window-media-score',envelope));
@@ -661,7 +665,12 @@ export function createPersonalizedWindowEffects({
   }
 
   async function hideComposition({releaseSnapshots=true}={}){
-    const session=current;if(session){session.activeComposition=null;session.compositionQuiesced=false;session.compositionGeneration=(session.compositionGeneration||0)+1;session.mediaRevisions.clear();session.manualMediaPanes.clear();}
+    const session=current;
+    const retiring=session?[...session.mediaRevisions].map(([targetLabel,revision])=>({targetLabel,revision,sessionToken:session.token})):[];
+    if(session){session.activeComposition=null;session.compositionQuiesced=false;session.compositionGeneration=(session.compositionGeneration||0)+1;session.mediaRevisions.clear();session.manualMediaPanes.clear();}
+    // Hiding a WebView does not clear its image sampler or JS envelope. Erase
+    // transient Source name frames too, guarded against a newer score lease.
+    if(api?.emitTo)await Promise.all(retiring.map((payload)=>safe(()=>api.emitTo(payload.targetLabel,'window-media-clear',payload))));
     await Promise.all([...mediaSurfaces.values()].map((surface)=>safe(()=>surface.hide())));
     if(api?.invoke)await safe(()=>api.invoke('chunk_window_media_hide_all'));
     if(api?.invoke)await safe(()=>api.invoke('chunk_fireball_cast_focus_main'));
@@ -882,7 +891,7 @@ export function createPersonalizedWindowEffects({
 
   return{
     begin,ensure,apply,reject,prepareFireballs,prepareMedia,arrangeMovement,beginFireballCast,syncFireballCast,showPanes,hidePanes,
-    captureSnapshot,registerSnapshot,snapshotData,showComposition,quiesceComposition,snapComposition,freezeComposition,setCompositionCoherence,setFrontEndPlate,triggerComposition,hideComposition,suspendSurfaces,
+    captureSnapshot,registerSnapshot,snapshotData,releaseSnapshots,showComposition,quiesceComposition,snapComposition,freezeComposition,setCompositionCoherence,setFrontEndPlate,triggerComposition,hideComposition,suspendSurfaces,
     // Compatibility preview name; there is no channel interaction behind it.
     previewChannel,end,emergencyRestore,
     active:()=>!!current,sessionToken:()=>current?.token||null,statusLine:()=>'',

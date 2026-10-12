@@ -1,5 +1,23 @@
 export const BOOTH_POSE=Object.freeze({IDLE:'idle',LEDGER:'ledger',HANDOFF:'handoff'});
 
+// The man later seen in Wrong Fold, before anything has happened to him.
+// The idle clip is upright with relaxed arms; even frame zero of fold is
+// already seated and braced. Stand on the lodge plinth beside the chair,
+// facing the public approach through the clear window light.
+const GUARD_AT=Object.freeze({x:-.38,y:.20,z:.22});
+export function boothGuardRenderInstance(instance){
+  if(!/^yard-booth-guard-(idle|ledger|handoff)$/.test(instance?.id||''))return instance;
+  const yaw=instance.yaw||0,c=Math.cos(yaw),s=Math.sin(yaw),scale=instance.scale||1;
+  return{...instance,mesh:'outskirts_fold_guard',fallbackMesh:instance.mesh,
+    fallbackTransform:{x:instance.x,y:instance.y,z:instance.z,yaw:instance.yaw},
+    x:instance.x+(GUARD_AT.x*c-GUARD_AT.z*s)*scale,
+    y:instance.y+GUARD_AT.y*scale,
+    z:instance.z+(GUARD_AT.x*s+GUARD_AT.z*c)*scale,
+    yaw:yaw+Math.PI,
+    character:{clip:'idle',time:0,loop:true},
+  };
+}
+
 export function boothPoseForSourceId(sourceId=''){
   const id=String(sourceId||'');
   if(id==='threshold.line.5'||id.startsWith('coffee.'))return BOOTH_POSE.HANDOFF;

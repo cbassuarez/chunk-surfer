@@ -9,6 +9,7 @@ const {
   makeSourceThresholdScene,
 } = await import('../src/game/source-page-scene.js');
 import { CHUNK_SURF_PHASE, pageStageForDistance } from '../src/game/chunk-surf-state.js';
+import { sourceShoreOutside } from '../src/game/source-sensory.js';
 
 // THE LONG HALL. Three things were wrong with it and these hold each one down.
 
@@ -168,7 +169,13 @@ import { CHUNK_SURF_PHASE, pageStageForDistance } from '../src/game/chunk-surf-s
   assert.match(shader, /if\(\(cameraInWeather\|\|uRainIndoor>\.0\)/,
     'a space with no sky can no longer be rained through');
   const main = fs.readFileSync('src/main.js', 'utf8');
-  assert.match(main, /r3dSetIndoorRain\?\.\(pressureFrame\.rain\|\|0\)/, 'the hall no longer drives its authored weather envelope');
+  const rainArgument=main.match(/r3dSetIndoorRain\?\.\(([^;]+pressureFrame\.rain\|\|0)\);/)?.[1];
+  assert.ok(rainArgument, 'the hall no longer drives its authored weather envelope');
+  const rainFor=new Function('sourceShoreOutside','chunkSurfRuntime','pressureFrame',`return (${rainArgument});`);
+  const hall={sourceShoreFrame:()=>null};
+  const shore={sourceShoreFrame:()=>({active:true,outside:true,proper:false})};
+  assert.equal(rainFor(sourceShoreOutside,hall,{rain:.64}),.64,'the physical hall retains its authored indoor rain');
+  assert.equal(rainFor(sourceShoreOutside,shore,{rain:.64}),0,'the first nothingness excludes the hall weather');
   assert.match(main, /r3dSetIndoorRain\?\.\(0\)/,
     'leaving source space carries the corridor weather back into the building');
 }

@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { SOURCE_BELLS, SOURCE_HORIZON } from '../src/data/source-level.js';
+import { ELSEWHERE_CROSSING_SECONDS } from '../src/data/elsewhere-worlds.js';
 import {
   CHUNK_SURF_PHASE, HORIZON_EXIT, HORIZON_REASON,
   SOURCE_FINALE_ROUTE, SOURCE_FINALE_STAGE,
@@ -35,6 +36,7 @@ function onTape({marbleEyes=null,completions=null}={}) {
   const at = (depth) => {
     const y = origin.y + SOURCE_HORIZON.from - depth;
     runtime.setPlayerPosition({ x: origin.x, y, facing: 0 });
+    runtime.tickHorizon(.001);
     return runtime.horizonFrame();
   };
 
@@ -52,9 +54,11 @@ function onTape({marbleEyes=null,completions=null}={}) {
   // And walking back up the tape genuinely goes backwards.
   assert.ok(at(60).seconds < at(120).seconds, 'backing up rewinds the score');
 
-  // The collapse is the recording's own tail, not a timer.
+  // Spatial loss is remembered even when the score is walked backwards.
   assert.equal(at(SOURCE_HORIZON.length * 0.5).collapsing, false);
-  assert.equal(at(SOURCE_HORIZON.length * 0.95).collapsing, true);
+  const worn = at(SOURCE_HORIZON.length * 0.95);
+  assert.equal(worn.collapsing, true);
+  assert.equal(at(60).unravelling.amount, worn.unravelling.amount, 'retreat rewinds the score without restoring the image');
 }
 
 // ── walking to the end is the exit you cannot miss ──────────────────────────
@@ -76,6 +80,21 @@ function onTape({marbleEyes=null,completions=null}={}) {
   // The far end is the nave, and it costs nothing and gives nothing.
   const end = { x: origin.x, y: origin.y + SOURCE_HORIZON.to };
   runtime.onStep(mid, end);
+  // It does not end at the last frame any more. The tape runs out into nothing,
+  // then a field of doors, and the chapel's own door is the way out.
+  assert.equal(runtime.state().phase, 'chapel-outskirts');
+  assert.equal(runtime.state().completed, false);
+  assert.equal(completion, null, 'the end of the tape ended the chapter');
+  assert.ok(runtime.geometry.cellAt(end.x, end.y), 'the body is not standing on ground at the end of the tape');
+  const chapelDoor = runtime.doorFieldDoors().find((door) => door.route === 'chapel');
+  assert.ok(chapelDoor, 'the chapel outskirts have no chapel door');
+  const [doorA, doorB] = chapelDoor.threshold, doorX = (doorA.x + doorB.x) / 2, doorY = (doorA.y + doorB.y) / 2;
+  const front = { x: doorX + chapelDoor.normal[0] * 1.5, y: doorY + chapelDoor.normal[2] * 1.5 };
+  const back = { x: doorX - chapelDoor.normal[0] * 1.5, y: doorY - chapelDoor.normal[2] * 1.5 };
+  runtime.onStep({ x: front.x + 6, y: front.y }, { x: back.x + 6, y: back.y });
+  assert.equal(completion, null, 'walking past beside the chapel door ended the chapter');
+  runtime.setPlayerPosition({ ...front, facing: 0 });
+  runtime.onStep(front, back);
   assert.equal(runtime.state().completed, true);
   assert.equal(completion?.horizonExit, HORIZON_EXIT.CHAPEL);
   assert.ok(completion.flags.includes('chunkSurf.horizon.exit.chapel'));
@@ -106,16 +125,19 @@ function onTape({marbleEyes=null,completions=null}={}) {
 
   // THE DETOUR OPENS A PLACE, IT DOES NOT CLOSE THE CHAPTER.
   //
-  // It used to complete Source space on the spot and hand main.js a datamosh to
-  // play over a warp. Taking it now puts the body at the head of the bell
-  // passage and the chapter stays open — and stays ACTIVE — for the four hundred
-  // metres it takes to walk to the room at the end.
+  // The bust opens the promised route without moving the body. The player
+  // walks that route into the bell field; neither accepting nor reopening the
+  // offer can silently teleport them into a different scene.
+  const before=runtime.horizonFrame();
   const taken = runtime.takeHorizonBustDetour();
   assert.equal(taken.handled, true);
-  assert.equal(taken.exit, HORIZON_EXIT.TOWER);
-  assert.equal(taken.entered, 'bells');
+  assert.equal(taken.pathOpened, true);
+  assert.equal(taken.exit, undefined);
+  assert.equal(taken.entered, undefined);
   assert.equal(taken.completion, undefined, 'nothing is reported to the world yet');
-  assert.equal(runtime.state().phase, CHUNK_SURF_PHASE.BELLS);
+  assert.equal(runtime.state().phase, CHUNK_SURF_PHASE.HORIZON);
+  assert.equal(runtime.horizonFrame().depth,before.depth);
+  assert.equal(runtime.horizonFrame().lateral,before.lateral);
   assert.equal(runtime.state().completed, false, 'the chapter is still open');
   assert.equal(runtime.state().active, true);
   // The route is committed at the bust, though: reloading inside the passage
@@ -123,7 +145,19 @@ function onTape({marbleEyes=null,completions=null}={}) {
   assert.equal(runtime.state().finale.route, SOURCE_FINALE_ROUTE.TOWER);
   assert.equal(runtime.state().finale.stage, SOURCE_FINALE_STAGE.TOWER_COMMITTED);
 
-  // He is put over the seam rather than walked there, facing into the passage.
+  // Stepping the returned route, not accepting the offer, crosses the seam.
+  let from={x:origin.x+taken.path[0].x,y:origin.y+taken.path[0].y};
+  runtime.setPlayerPosition({...from,facing:0});
+  for(const target of taken.path.slice(1)){
+    const world={x:origin.x+target.x,y:origin.y+target.y};
+    const start={...from},steps=Math.ceil(Math.hypot(world.x-from.x,world.y-from.y)/.75);
+    for(let i=1;i<=steps;i++){
+      const to={x:start.x+(world.x-start.x)*i/steps,y:start.y+(world.y-start.y)*i/steps};
+      assert.equal(runtime.geometry.canStep(from.x,from.y,to.x,to.y).ok,true,'the revealed route is continuously walkable');
+      runtime.onStep(from,to);from=to;
+    }
+  }
+  assert.equal(runtime.state().phase,CHUNK_SURF_PHASE.BELLS);
   const bells = runtime.bellsFrame();
   assert.equal(bells.active, true);
   assert.ok(bells.depth >= 0 && bells.depth < 20, 'he starts at the head of the passage');
@@ -133,6 +167,28 @@ function onTape({marbleEyes=null,completions=null}={}) {
   const origin2 = runtime.state().landscapeOrigin || { x: 0, y: -252 };
   runtime.setPlayerPosition({ x: origin2.x, y: origin2.y + SOURCE_BELLS.resolveTo, facing: 0 });
   assert.ok(runtime.bellsFrame().resolve > 0.99, 'the room is fully arrived by the time you reach it');
+  // The tower door stands in the missing wall, locked until the two seeded doors
+  // in its field have been walked through.
+  const keys = runtime.doorFieldDoors().filter((door) => door.key);
+  assert.equal(keys.length, 2);
+  for (const [index, key] of keys.entries()) {
+    assert.equal(runtime.doorCrossingFrame(), null, 'the previous visit has finished before entering the next door');
+    assert.equal(runtime.openDoorFieldDoor(key.id).opened, true, `${key.id} opens for a real visit`);
+    const [a, b] = key.threshold, cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2;
+    const from = { x: cx + key.normal[0] * 1.5, y: cy + key.normal[2] * 1.5 };
+    runtime.setPlayerPosition({ ...from, facing: 0 });
+    runtime.onStep(from, { x: cx - key.normal[0] * 1.5, y: cy - key.normal[2] * 1.5 });
+    assert.equal(runtime.doorCrossingFrame()?.id, key.id, 'walking through the key begins its actual crossing');
+    assert.equal(runtime.doorCrossingFrame()?.key, true);
+    assert.ok(runtime.state().station.entries.some((entry) => entry.doorId === key.id), 'the visit enters the persistent journal');
+    assert.equal(runtime.doorFieldDoors().find((door) => door.route === 'tower')?.unlocked, index === 1,
+      'one distinct key leaves the tower locked; two distinct keys open it');
+    runtime.advanceStationTime(ELSEWHERE_CROSSING_SECONDS - .01);
+    assert.equal(runtime.doorCrossingFrame()?.id, key.id, 'the visit remains active until its full public-clock duration');
+    runtime.advanceStationTime(.02);
+    assert.equal(runtime.doorCrossingFrame(), null, 'the completed crossing releases the next door visit');
+  }
+  assert.equal(runtime.doorFieldDoors().find((door) => door.route === 'tower')?.unlocked, true, 'the key doors did not unlock the tower door');
   const doorway = { x: origin2.x, y: origin2.y + SOURCE_BELLS.room.threshold - 1 };
   runtime.onStep({ x: origin2.x, y: origin2.y + SOURCE_BELLS.room.threshold + 2 }, doorway);
   assert.equal(runtime.state().phase, CHUNK_SURF_PHASE.COMPLETED, 'the missing wall is the end of the chapter');
@@ -145,9 +201,11 @@ function onTape({marbleEyes=null,completions=null}={}) {
 {
   const built = buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.EXPOSED_BATTLE, { seed: 4417 });
   const runtime = createSourceSpaceRuntime({ initialState: built.state });
-  runtime.setPlayerPosition(built.position);
-  runtime.requestBossBattle();
-  runtime.commitContact();
+  const origin = runtime.state().landscapeOrigin;
+  runtime.setPlayerPosition({ x: origin.x - 24, y: origin.y - 930, facing: 0 });
+  assert.ok(runtime.beginHushContact(), 'the service court offers the voluntary conversation');
+  assert.equal(runtime.resolveHushContactChoice('contact.warning').combat, false);
+  assert.equal(runtime.resolveHushContactChoice('contact.confirm').combat, true);
   const lost = runtime.failFinalEncounter();
   assert.equal(lost.completion.route,SOURCE_FINALE_ROUTE.CONTACT);
   assert.equal(lost.completion.result,'lost');
@@ -157,7 +215,8 @@ function onTape({marbleEyes=null,completions=null}={}) {
 
   const walked = onTape();
   assert.equal(walked.state().horizon.reason, HORIZON_REASON.WALKED_AWAY);
-  assert.equal(walked.state().finalEncounter.outcome, 'contain');
+  assert.equal(walked.state().finalEncounter.outcome, null, 'walking onward does not invent a combat result');
+  assert.equal(walked.state().finale.route, null, 'the route remains uncommitted before the bust so HUSH can still be revisited');
 }
 
 // ── the rig is an advantage, not a key ──────────────────────────────────────
@@ -206,6 +265,38 @@ function onTape({marbleEyes=null,completions=null}={}) {
     assert.ok(bin.size < 6e6, `tape is ${(bin.size / 1e6).toFixed(1)}MB — over budget`);
     assert.ok(manifest.splats / manifest.slices < 1600, 'too many splats per slice to hold a frame rate');
   }
+}
+
+// ── THE SCORE STANDS AT THE NEXT CHECKPOINT ─────────────────────────────────
+{
+  const runtime = onTape({ marbleEyes: 'carried' });
+  const origin = runtime.state().landscapeOrigin;
+  for (const depth of [10, 120, 300]) {
+    const y = origin.y + SOURCE_HORIZON.from - depth;
+    runtime.setPlayerPosition({ x: origin.x, y, facing: 0 });
+    const frame = runtime.horizonFrame();
+    assert.equal(frame.guide?.kind, 'path', `there is no checkpoint on the tape at ${depth}`);
+    assert.ok(frame.guide.y < y, 'the checkpoint is not ahead of him');
+    assert.ok(Math.abs(frame.guide.y - (y - 48)) < 1e-9, 'the checkpoint is not a steady distance on along the route');
+  }
+  // The guide holds a dependable forward axis while the picture drifts.
+  const lateral = new Set([60, 200, 380].map((depth) => {
+    runtime.setPlayerPosition({ x: origin.x, y: origin.y + SOURCE_HORIZON.from - depth, facing: 0 });
+    return Math.round(runtime.horizonFrame().guide.x);
+  }));
+  assert.deepEqual([...lateral], [Math.round(origin.x)], 'picture drift cannot pull the walking guide off the fixed axis');
+  // Short of the tape it is the head of the tape; at its end it holds.
+  runtime.setPlayerPosition({ x: origin.x, y: origin.y + SOURCE_HORIZON.from + 20, facing: 0 });
+  assert.equal(runtime.horizonFrame().guide.kind, 'head');
+  runtime.setPlayerPosition({ x: origin.x, y: origin.y + SOURCE_HORIZON.to + 4, facing: 0 });
+  assert.ok(runtime.horizonFrame().guide.y >= origin.y + SOURCE_HORIZON.to, 'the checkpoint runs off the end of the tape');
+  // Once the bust has cut the tower road, the checkpoint is on that road.
+  for (let beat = 0; beat < 3; beat += 1) runtime.talkToHorizonBust();
+  runtime.decideHorizonBust(true);
+  runtime.setPlayerPosition({ x: origin.x - 76, y: origin.y + SOURCE_HORIZON.from - 250, facing: 0 });
+  const tower = runtime.horizonFrame().guide;
+  assert.equal(tower.kind, 'tower', 'the accepted road does not move the checkpoint');
+  assert.ok(Math.abs(tower.x - (origin.x - 76)) < 1e-6 && tower.y < origin.y + SOURCE_HORIZON.from - 250, 'the checkpoint is not along the tower road');
 }
 
 console.log('horizon specs passed');

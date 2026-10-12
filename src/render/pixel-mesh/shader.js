@@ -67,6 +67,8 @@ uniform float uFear;
 uniform float uReduceFlash;
 uniform float uReduceMotion;
 uniform float uRecordingCaptureMix;
+uniform float uRecordingExposure;
+uniform float uRecordingSensitivity;
 uniform float uRecordingPatternScale;
 uniform float uRecordingBlackFloor;
 uniform float uRecordingDensityGamma;
@@ -101,6 +103,21 @@ uniform vec2 uScreenBands;
 uniform float uScreenSharpness;
 uniform float uScreenGrainFollow;
 uniform float uScreenJitter;
+#ifdef SOURCE_DESKTOP_TRANSPARENT
+// The passive desktop surface supplies real coverage separately from the
+// recorder's depth and excitation channels. Ordinary r3d does not enable this.
+uniform sampler2D uSourceCoverage;
+uniform mat4 uSourceProjectionInverse;
+uniform mat4 uSourceCameraWorld;
+uniform vec4 uSourceViewport;
+uniform vec2 uSourceScreenOffset;
+#else
+// Physical Pressure supplies its own volume and relief. Engraving on the wall
+// behind that volume must not become print on the figure after acquisition.
+uniform sampler2D uRecordedPressureGeometry;
+uniform vec2 uRecordedPressureNearFar;
+uniform float uRecordedPressureReady;
+#endif
 out vec4 o;
 
 float hash21(vec2 p){
@@ -164,6 +181,13 @@ vec3 cameraRay(vec2 frag){
 }
 
 vec3 reconstructWorldMetres(vec2 frag, float packedDepth){
+#ifdef SOURCE_DESKTOP_TRANSPARENT
+  vec2 ndc = ((frag-uSourceViewport.xy)/uSourceViewport.zw)*2.0-1.0;
+  vec4 view = uSourceProjectionInverse*vec4(ndc,0.0,1.0);
+  view /= view.w;
+  view.z = -max(0.0,(1.0/max(packedDepth,1e-6)-1.0)/0.14);
+  return (uSourceCameraWorld*vec4(view.xyz,1.0)).xyz;
+#else
   vec3 rd = cameraRay(frag);
   float cy = cos(uYaw), sy = sin(uYaw);
   vec3 fwd = normalize(vec3(sy, uPitch, -cy));
@@ -171,6 +195,7 @@ vec3 reconstructWorldMetres(vec2 frag, float packedDepth){
   float viewDepth = max(0.0, (1.0 / safeDepth - 1.0) / 0.14);
   float gridDistance = viewDepth / max(0.001, uCellMeters * dot(rd, fwd));
   return (uCam + rd * gridDistance) * uCellMeters;
+#endif
 }
 
 // The density argument is the generated material's own local contrast, 0
@@ -391,7 +416,16 @@ vec3 hushColorDodge(vec3 base,vec3 layer){
 
 void main(){
   vec2 frag = gl_FragCoord.xy;
+  vec2 plateOffset = vec2(0.0);
+#ifdef SOURCE_DESKTOP_TRANSPARENT
+  plateOffset = uSourceScreenOffset;
+#endif
+  vec2 plateFrag = frag + plateOffset;
   vec2 fullUv = clamp(frag / uRes, vec2(0.001), vec2(0.999));
+#ifdef SOURCE_DESKTOP_TRANSPARENT
+  float sourceCoverage = texture(uSourceCoverage,frag/uRes).a;
+  if(sourceCoverage <= 0.0){ o=vec4(0.0); return; }
+#endif
   // The world, the engraving and the direction the strokes will run, read once
   // and shared. These used to be reconstructed further down, beside the capture
   // pass that first needed them; the halftone needs the same direction, and two
@@ -400,6 +434,19 @@ void main(){
   float packedDepth = texture(uDepth, fullUv).a;
   vec3 worldMetres = reconstructWorldMetres(frag, packedDepth);
   vec4 markSample = texture(uMarks, fullUv);
+#ifndef SOURCE_DESKTOP_TRANSPARENT
+  if(uRecordedPressureReady>.5){
+    vec4 pressureGeometry=texture(uRecordedPressureGeometry,fullUv);
+    float pressureCore=mod(floor(floor(pressureGeometry.b*255.0+.5)/64.0),2.0);
+    float pressureDepth=dot(pressureGeometry.rg,vec2(65280.0,255.0))*uRecordedPressureNearFar.y/65535.0;
+    float pressurePackedDepth=1.0/(1.0+pressureDepth*.14);
+    // The material pass writes mesh depth only on the visible core. Matching
+    // that depth excludes walls in front, transparent glow and stale targets.
+    // Compare encoded depth at the RGBA16F acquisition target's precision;
+    // a fixed metric epsilon becomes too strict near the far end of the room.
+    if(pressureGeometry.a*pressureCore>.018&&abs(pressurePackedDepth-packedDepth)<max(.00006,pressurePackedDepth*.00075))markSample=vec4(0.0);
+  }
+#endif
   // R == 0 is the sentinel. Passing the pivot through leaves the threshold
   // exactly as the hash produced it, so an underived slot is not a darker or
   // lighter wall — it is the wall this game already drew.
@@ -411,8 +458,8 @@ void main(){
   // cell so an entire untextured wall does not become one continuous comb.
   vec2 screenDir = grainToScreen(markGrain, worldMetres, 0.6283);
   float cell = max(1.0, uCellPx);
-  vec2 cellId = floor(frag / cell);
-  vec2 cellCenter = (cellId + 0.5) * cell;
+  vec2 cellId = floor(plateFrag / cell);
+  vec2 cellCenter = (cellId + 0.5) * cell - plateOffset;
   vec2 cellUv = clamp(cellCenter / uRes, vec2(0.001), vec2(0.999));
 
   vec4 srcFull = texture(uSrc, fullUv);
@@ -508,7 +555,7 @@ void main(){
   // hard edges, because the note above is right that ordered structure is what
   // holds an architectural line together, and a hatch running along a wall does
   // nothing for the wall's corner.
-  float screenMask = screenThreshold(frag, screenDir, clamp(y, 0.0, 1.0),
+  float screenMask = screenThreshold(plateFrag, screenDir, clamp(y, 0.0, 1.0),
     hash21(cellId * 0.317), blueNoise(cellId));
   float maskThreshold = mix(screenMask, ordered, clamp(edge, 0.0, 1.0));
   float threshold = mix(
@@ -561,7 +608,7 @@ void main(){
   float lift = clamp(recordedSignal, 0.0, 1.25) * 0.45;
   float selected = step(threshold, clamp(exposure + lift, 0.0, 1.0));
 
-  vec2 local = fract(frag / cell) - 0.5;
+  vec2 local = fract(plateFrag / cell) - 0.5;
   vec2 apertureScale = vec2(0.94, mix(0.62, 0.88, clamp(uAperture, 0.0, 1.0)));
   float aperture = 1.0 - smoothstep(0.39, 0.54, length(local / apertureScale));
   float phosphorMask = selected * aperture;
@@ -658,12 +705,19 @@ void main(){
     luma(sx0.rgb) + luma(sx1.rgb) + luma(sy0.rgb) + luma(sy1.rgb)
   );
   float broadForm = mix(neighbourLuma, sourceLuma, 0.71);
-  float materialRelief = clamp((sourceLuma - neighbourLuma) * 1.35, -0.10, 0.10);
-  float blackFloor = clamp(uRecordingBlackFloor, 0.0, 0.08);
-  float exposed = clamp((broadForm - blackFloor) / max(0.001, 1.0 - blackFloor), 0.0, 1.0);
+  // Expose the captured form before the one-bit decision, rather than making
+  // its selected ink brighter. Keep the raw-light gate below: black geometry
+  // remains black, and the room still has only its existing two ink values.
+  float captureExposure = clamp(uRecordingExposure, 1.0, 12.0);
+  float materialRelief = clamp((sourceLuma - neighbourLuma) * 1.35 * captureExposure, -0.10, 0.10);
+  // Low-light acquisition measures the sensor floor in the same input units
+  // as exposure. Exact zero remains unrecorded; faint real material can pass.
+  float sensitivity = clamp(uRecordingSensitivity, 1.0, 12.0);
+  float blackFloor = clamp(uRecordingBlackFloor, 0.0, 0.08) / sensitivity;
+  float exposed = clamp((broadForm - blackFloor) * captureExposure / max(0.001, 1.0 - blackFloor), 0.0, 1.0);
   float formTone = pow(exposed, clamp(uRecordingDensityGamma, 0.45, 1.5));
   formTone = clamp(formTone + materialRelief, 0.0, 1.0);
-  float captureBlackProtect = smoothstep(blackFloor, blackFloor + 0.024, sourceLuma);
+  float captureBlackProtect = smoothstep(blackFloor, blackFloor + 0.024 / sensitivity, sourceLuma);
   float hasCapturedLight = step(0.18, captureBlackProtect);
 
   // Resolve only the middle of the light volume into irregular stipple. Deep
@@ -676,7 +730,7 @@ void main(){
   // still earns its extra marks.
   float stippleThreshold = formStipple(worldMetres, uRecordingIrregularity, markDensity, markGrain);
   if(uScreenKind != 0){
-    float hatched = screenThreshold(frag, screenDir, halfTone,
+    float hatched = screenThreshold(plateFrag, screenDir, halfTone,
       recordingHash3(floor(worldMetres * 3.1)), stippleThreshold);
     stippleThreshold = clamp(hatched - (markDensity - 0.22) * uMarkDensityGain, 0.0, 1.0);
   }
@@ -786,6 +840,12 @@ void main(){
   if(uDebugSource == 7.0) finalColor = vec3(recordedSignal);
   if(uDebugSource == 8.0) finalColor = vec3(instability * 4.0 + 0.5);
 
+#ifdef SOURCE_DESKTOP_TRANSPARENT
+  // The WebView surface expects premultiplied display colour. Excitation must
+  // never become native-window opacity or fill the surrounding desktop.
+  o = vec4(finalColor*sourceCoverage,sourceCoverage);
+#else
   o = vec4(finalColor, clamp(mem, 0.0, 1.0));
+#endif
 }
 `;

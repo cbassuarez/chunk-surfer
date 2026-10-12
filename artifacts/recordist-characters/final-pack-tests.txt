@@ -1,0 +1,46 @@
+TAP version 13
+# Subtest: production anatomy uses the approved rest bones, bounded geometry and real facial absence
+ok 1 - production anatomy uses the approved rest bones, bounded geometry and real facial absence
+  ---
+  duration_ms: 17.831875
+  type: 'test'
+  ...
+# Subtest: exported poses retain supported feet and exact limb contacts throughout the saved transfer
+ok 2 - exported poses retain supported feet and exact limb contacts throughout the saved transfer
+  ---
+  duration_ms: 106.8945
+  type: 'test'
+  ...
+# Subtest: idle clips close their breathing loop and move while the saved transfer does not loop
+ok 3 - idle clips close their breathing loop and move while the saved transfer does not loop
+  ---
+  duration_ms: 0.895083
+  type: 'test'
+  ...
+# Subtest: school and workroom use distinct ordinary physical characters with persisted, pause-safe performances
+ok 4 - school and workroom use distinct ordinary physical characters with persisted, pause-safe performances
+  ---
+  duration_ms: 35.980708
+  type: 'test'
+  ...
+# Subtest: both transfer actors follow one four-second saved timeline and one recorder at every quarter
+ok 5 - both transfer actors follow one four-second saved timeline and one recorder at every quarter
+  ---
+  duration_ms: 21.267542
+  type: 'test'
+  ...
+# Subtest: the production GLB submits independent frozen body palettes to material, torch shadow and reflection passes
+ok 6 - the production GLB submits independent frozen body palettes to material, torch shadow and reflection passes
+  ---
+  duration_ms: 64.415917
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 305.426333

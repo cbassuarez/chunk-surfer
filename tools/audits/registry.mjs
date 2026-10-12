@@ -16,6 +16,7 @@
 //   4318  the system map         (tools/system-map/server.mjs)
 //   4319+ the audits, below
 //   4322  the desk               (tools/audits/all/server.mjs)
+//   4323  the source space path  (the first audit added after the desk)
 
 export const STUDIO_PORT = 4317;
 export const SYSTEM_MAP_PORT = 4318;
@@ -59,6 +60,16 @@ export const AUDITS = Object.freeze([
     systems: Object.freeze(['scene-orchestration', 'narrative-runtime']),
     health: Object.freeze({ wrong: Object.freeze(['broken']), outstanding: Object.freeze(['unfinished']) }),
   }),
+  Object.freeze({
+    id: 'source-path',
+    title: 'The source space path',
+    blurb: 'The whole walk through source space as one timeline: every stage, where the road forks, what moves you on, and which ending each road reaches.',
+    npm: 'source:audit',
+    port: 4323,
+    entry: 'tools/audits/source-path/server.mjs',
+    systems: Object.freeze(['source-space', 'save-progression', 'scene-orchestration']),
+    health: Object.freeze({ wrong: Object.freeze(['broken']), outstanding: Object.freeze(['unfinished']) }),
+  }),
 ]);
 
 // THE CHECKS THAT ARE NOT PAGES.
@@ -81,6 +92,8 @@ export const CHECKS = Object.freeze([
     blurb: 'Proves the cast-surface windows spawn, place, and can be clicked.', slow: true }),
   Object.freeze({ id: 'post-run', npm: 'verify:post-run', title: 'The post-run report',
     blurb: 'Proves the return report and its copy survive a finished run.', slow: true }),
+  Object.freeze({ id: 'source-path', npm: 'source:path', title: 'The source space path',
+    blurb: 'Prints every stage of the walk through source space, and fails if the path no longer matches the code.', slow: false }),
   Object.freeze({ id: 'combat', npm: 'tune:combat', title: 'Combat tuning',
     blurb: 'Plays every fight on every preset headless and prints the damage table.', slow: false }),
   Object.freeze({ id: 'lens', npm: 'lens:verify', title: 'The lens bundle',

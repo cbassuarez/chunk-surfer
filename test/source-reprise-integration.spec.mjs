@@ -34,6 +34,7 @@ const section=(start,end)=>{
     chapelTowerState:()=>({phase:'source-ready'}),bellTowerRuntime:null,towerBellDirector:null,
     hushAudioRuntime:null,getSave:()=>({area:'source-space',playSeconds:0,view:{yaw:1.73,pitch:-.22}}),
     RADIO:{saveRadioState:()=>radioState},
+    sourceShoreCameraPatch:()=>({}),
     saveCommit:(value)=>calls.push(value),
   };
   const api=vm.runInNewContext(`${section('let sourceRepriseWorldLease=null;','function sourceReplayMovementInterlude')}
@@ -114,6 +115,7 @@ const section=(start,end)=>{
     apparitionDirector:{suspend:()=>{}},apparitionProbeLightId:null,
     buildEmergencyShadowFrame:(_lights,options)=>{enabled.push(options.enabled);return null;},
     noteEmergencyApparitions:()=>{},lastEmergencyShadowFrame:null,
+    brendanLightPresentation:(lights)=>lights,
   };
   const sync=vm.runInNewContext(`${section('function syncArchitecturalLocalLights','function liveLightCircuits')}
     syncArchitecturalLocalLights;`,sandbox);

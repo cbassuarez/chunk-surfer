@@ -5,6 +5,7 @@
 // go and find it. The chrome, the studio links and the citations are shared with
 // every other audit — see ../shared.mjs.
 
+import { sourcePathStageForEndingFamily } from '../source-path/audit.mjs';
 import { cite, escape, globalPanel, ordinal, pageShell, prose, studioLink } from '../shared.mjs';
 
 const seconds = (value) => (Number.isInteger(value) ? `${value}s` : `${Number(value).toFixed(1)}s`);
@@ -197,6 +198,7 @@ function section(ending, index, titles) {
       <span class="ordinal">${ordinal(index)}</span>
       <h2>${escape(ending.title)}</h2>
       <p class="ids">${escape(ending.family.title)} · called <code>${escape(ending.id)}</code> in the code</p>
+      ${roadWalk(ending.family.id)}
       <p class="summary">${prose(ending.summary)}</p>
     </header>
 
@@ -272,6 +274,12 @@ function section(ending, index, titles) {
       </table>
     </div>
   </section>`;
+}
+
+// Where the road to this ending is walked, on the source space path page.
+function roadWalk(family) {
+  const stage = sourcePathStageForEndingFamily(family);
+  return stage ? `<p class="ids">The road here is walked on the source space path: <a href="${escape(stage.href)}">${escape(stage.title)}</a></p>` : '';
 }
 
 export function renderAudit(audit) {

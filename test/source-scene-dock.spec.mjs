@@ -48,8 +48,7 @@ function haystackRuntime(slot=0){
     'the corridor needs a render gate of its own, separate from the body gate');
   assert.ok(/function visualHallCell\(x, y\) \{\n    if \(!hallRenderableInPhase\(\)\) return null;/.test(runtime),
     'the eye uses the render gate');
-  assert.ok(/function physicalHallCell\(x, y\) \{\n    if \(!hallVisibleInPhase\(\)\) return null;/.test(runtime),
-    'the BODY keeps the strict gate — there is no walking back up the corridor');
+  assert.match(runtime, /const backtracking =/, 'the visible rear hall must remain freely walkable before ascent');
 }
 
 // ── 1b. THE SHEET REVERSES THE BRACKET, NOT THE PLAYER ─────────────────────
@@ -71,6 +70,7 @@ function haystackRuntime(slot=0){
 
   const result=game.inspectFocused(player.x,player.y,player.facing);
   assert.equal(result.event,'page-found');
+  game.commitStillPageReveal();
   const origin=game.state().landscapeOrigin;
   assert.equal(origin.x+SOURCE_LANDING_REAR_LOCAL.x,player.x,'the Scene Dock mouth moved sideways from the body');
   assert.equal(origin.y+SOURCE_LANDING_REAR_LOCAL.y+1,player.y,'the Scene Dock mouth is not seated on the transition line');
@@ -84,10 +84,10 @@ function haystackRuntime(slot=0){
   const forward=game.geometry.cellAt(player.x,player.y-2);
   assert.ok(threshold?.sourceLanding,'the player is left standing outside the new physical room');
   assert.ok(forward?.sourceLanding,'forward space did not become the Scene Dock');
-  assert.equal(game.geometry.cellAt(player.x,player.y+2),null,'the fake rear corridor remains physically open');
+  assert.ok(game.geometry.cellAt(player.x,player.y+2),'the real rear corridor is no longer walkable');
   assert.ok(game.geometry.renderCellAt(player.x,player.y+2),'the fake rear corridor disappeared visually');
-  assert.equal(game.geometry.canStep(player.x,player.y,player.x,player.y+1).ok,false,
-    'the player can walk back into the painted corridor');
+  assert.equal(game.geometry.canStep(player.x,player.y,player.x,player.y+1).ok,true,
+    'the visible rear mouth hides an invisible barrier');
   assert.equal(game.geometry.canStep(player.x,player.y,player.x,player.y-1).ok,true,
     'the Scene Dock in front is not traversable');
 
@@ -100,8 +100,9 @@ function haystackRuntime(slot=0){
     const at={x:page.x,y:page.y+3,facing:0};
     variant.setPlayerPosition(at);
     assert.equal(variant.inspectFocused(at.x,at.y,at.facing).event,'page-found',`slot ${slot} cannot commit`);
+    variant.commitStillPageReveal();
     assert.ok(variant.geometry.cellAt(at.x,at.y)?.sourceLanding,`slot ${slot} leaves the body outside the dock`);
-    assert.equal(variant.geometry.canStep(at.x,at.y,at.x,at.y+1).ok,false,`slot ${slot} leaves the rear corridor open`);
+    assert.equal(variant.geometry.canStep(at.x,at.y,at.x,at.y+1).ok,true,`slot ${slot} blocks the visible rear corridor`);
     assert.equal(variant.geometry.canStep(at.x,at.y,at.x,at.y-1).ok,true,`slot ${slot} blocks the Scene Dock`);
   }
 
@@ -115,35 +116,34 @@ function haystackRuntime(slot=0){
   reverse.setPlayerPosition(reverseAt);
   const reverseResult=reverse.inspectFocused(reverseAt.x,reverseAt.y,reverseAt.facing);
   assert.equal(reverseResult.event,'page-found');
-  assert.equal(reverseResult.revealFacing,0,'the opaque sheet does not hand the camera back toward the Scene Dock');
-  assert.ok(reverse.geometry.cellAt(reverseAt.x,reverseAt.y-2)?.sourceLanding,
-    'the recentered forward view does not contain the Scene Dock');
-  assert.match(main,/enterSourceLandscape\(result\.revealFacing\)/,
-    'the live page event ignores the runtime reveal bearing');
-  assert.match(main,/R3\.r3dSetFacing\(facing\);[\s\S]*?chunkSurfRuntime\.setPlayerPosition\(\{x:px,y:py,facing\}\)/,
-    'the covered swap does not synchronize camera and Source body facing');
+  reverse.commitStillPageReveal();
+  assert.equal(reverseResult.revealFacing,undefined,'the still sheet must preserve the live bearing');
+  assert.ok(reverse.geometry.cellAt(reverseAt.x,reverseAt.y-2)?.sourceLanding);
+  const arrival=main.slice(main.indexOf('function enterSourceLandscape('),main.indexOf('function ',main.indexOf('function enterSourceLandscape(')+10));
+  assert.doesNotMatch(arrival,/r3dSetFacing|r3dSetPitch/,'the covered swap recentres the camera');
+
 }
 
-// FIRST LIFT RETAINS THE SAME PLAN TOO. Its topology change is the narrow fake
-// corridor at the player's back; the atlas and compositor already switch on
-// this frame, so a 768x768 CPU rebuild/GPU upload here is not an acceptable
-// third transition workload.
+// The first-lift fixture starts on the exterior ledge. Height alone must not
+// reveal Source: only walking around the opaque return completes the arrival.
 {
   const preset=buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.FIRST_LIFT,{seed:4417});
   const game=createSourceSpaceRuntime({initialState:preset.state});
   game.setPlayerPosition(preset.position);
-  const retained=game.geometry.renderPlanFor(preset.position.x,preset.position.y);
-  retained.patch=null;
-  const before=retained.rgba.slice();
-
-  game.onStep({x:0,y:-572,facing:0},{x:0,y:-573,facing:0});
-  assert.equal(game.state().firstLiftCompleted,true,'the FIRST LIFT fixture did not cross the tier boundary');
-  const crossed=game.geometry.renderPlanFor(0,-573);
-  assert.strictEqual(crossed,retained,'FIRST LIFT rebuilt the full Source plan');
-  assert.ok(crossed.patch,'FIRST LIFT did not submit its corridor mutation');
-  assert.ok(crossed.patch.w<=16&&crossed.patch.h===crossed.h,
-    `FIRST LIFT patch escaped the corridor (${crossed.patch.w}x${crossed.patch.h})`);
-  assert.notDeepEqual(crossed.rgba,before,'the retained patch did not remove the painted forward corridor');
+  const o=game.state().landscapeOrigin;
+  const p=(x,z)=>({x:o.x+x/.5,y:o.y+z/.5,facing:0});
+  assert.equal(game.sourceShoreFrame().surface,'ledge');
+  assert.equal(game.state().firstLiftCompleted,false);
+  let from=preset.position;
+  for(const to of [p(9,-388),p(9,-392),p(5,-392)]){
+    assert.equal(game.geometry.canStep(from.x,from.y,to.x,to.y).ok,true);
+    const result=game.onStep(from,to); assert.equal(result?.relocate,undefined);
+    game.setPlayerPosition(to);from=to;
+  }
+  assert.equal(game.state().firstLiftCompleted,true);
+  assert.equal(game.sourceShoreFrame().proper,true);
+  assert.equal(game.sourceShoreFrame().visible,true);
+  assert.ok(game.geometry.renderPlanFor(from.x,from.y).w<=768,'the void length grew the square render plan');
 }
 
 // ── 2. THE WAY UP LOOKS LIKE A WAY UP, AND THE CHUTE DOES NOT ───────────────
@@ -173,6 +173,7 @@ function haystackRuntime(slot=0){
   const player={x:target.x,y:target.y+3,facing:0};
   game.setPlayerPosition(player);
   game.inspectFocused(player.x,player.y,player.facing);
+  game.commitStillPageReveal();
   game.tick(6,player);
 
   const origin=game.state().landscapeOrigin;
@@ -183,7 +184,7 @@ function haystackRuntime(slot=0){
   assert.equal(game.inspectFocused(observer.x,observer.y,observer.facing).event,'landing-door-opened');
   const opening=game.geometry.renderPlanFor(observer.x,observer.y);
   assert.strictEqual(opening,retained,'opening the FOH leaf rebuilt the full Source plan');
-  assert.ok(opening.patch&&opening.patch.w<=13&&opening.patch.h<=13,'the FOH patch escaped its aperture');
+  assert.equal(opening.patch,null,'the permanent aperture must not mutate while the leaf moves');
 
   let elapsed=0;
   while(!game.landingPortalFrame().complete&&elapsed<3){
@@ -198,8 +199,7 @@ function haystackRuntime(slot=0){
   assert.equal(beyond?.material,MATERIAL.sourceVoid,'the real FOH leaf still opens into a wall');
   assert.doesNotMatch(runtime,/id: 'source-landing-opening-emergency-casing'/,
     'the brick bulkhead prop still stands behind the open FOH leaf');
-  assert.ok(game.sourceVoidFrame().whiteout>.25,
-    'opening the real leaf no longer admits a blinding white cinematic');
+  assert.equal(game.sourceVoidFrame().whiteout,0,'opening the leaf must preserve room exposure');
 
   const branch=main.slice(main.indexOf("if(result.event==='landing-door-opened')"),main.indexOf("if(result.event==='page-found')"));
   assert.match(branch,/syncSourceRender\(\)/,'the FOH event no longer submits its retained-plan patch');
@@ -209,32 +209,21 @@ function haystackRuntime(slot=0){
     'the FOH animation still invalidates the full plan per tick');
 }
 
-// The body seals collision immediately, but the visible object completes a real
-// closing swing instead of teleporting from open to shut.
+// The leaf completes its opening swing continuously and keeps the room
+// returnable through the long first nothingness.
 {
-  const game=haystackRuntime(0);
-  const target=game.sourceObjective().target;
-  const player={x:target.x,y:target.y+3,facing:0};
-  game.setPlayerPosition(player);
-  game.inspectFocused(player.x,player.y,player.facing);
-  game.tick(6,player);
-  const origin=game.state().landscapeOrigin;
-  const door={x:origin.x+SOURCE_LANDING_PORTAL_LOCAL.x,y:origin.y+SOURCE_LANDING_PORTAL_LOCAL.y};
-  const observer={x:door.x,y:door.y+5,facing:0};
-  game.setPlayerPosition(observer);
-  game.inspectFocused(observer.x,observer.y,observer.facing);
-  game.tick(2.3,observer);
-  game.setPlayerPosition({x:door.x,y:door.y-3,facing:0});
-  assert.equal(game.landingPortalFrame().closing,true,'the sealed leaf snapped shut');
-  assert.equal(game.landingPortalFrame().progress,1,'the closing swing does not begin from open');
-  game.tick(1,{px:door.x,py:door.y-3,facing:0});
-  assert.ok(game.landingPortalFrame().progress>0&&game.landingPortalFrame().progress<1,
-    'the closing swing has no physical duration');
-  game.tick(2,{px:door.x,py:door.y-3,facing:0});
-  assert.equal(game.landingPortalFrame().progress,0,'the real leaf never finishes closing');
+  const preset=buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.LANDING,{seed:4417});
+  const game=createSourceSpaceRuntime({initialState:preset.state});
+  const o=game.state().landscapeOrigin,door={x:o.x+8,y:o.y-16};
+  const observer={x:door.x,y:door.y+5,facing:0},outside={x:door.x,y:door.y-3,facing:0};
+  game.setPlayerPosition(observer);game.inspectFocused(observer.x,observer.y,0);game.tick(2.3,observer);
+  game.onStep(observer,outside);game.setPlayerPosition(outside);game.tick(3,outside);
+  assert.equal(game.landingPortalFrame().progress,1);
+  assert.equal(game.state().landingDoorSealed,false);
+  assert.equal(game.geometry.canStep(outside.x,outside.y,observer.x,observer.y).ok,true);
 }
 
-// ── 3. THE LEAF SHUTS BEHIND YOU AND DOES NOT REOPEN ────────────────────────
+// ── 3. EXPLICIT LEGACY SEALS STILL NORMALIZE, BUT WALKING DOES NOT SEAL ──────
 {
   let state = freshChunkSurfState();
   assert.equal(state.landingDoorOpen, false, 'the dock arrives with its leaf closed');
@@ -255,18 +244,18 @@ function haystackRuntime(slot=0){
   const reloaded = reduceChunkSurf(freshChunkSurfState(), { type: 'SOURCE_LANDING_DOOR_OPENED' });
   assert.equal(reloaded.landingDoorOpen, true, 'a fresh run can still open it');
 
-  // The runtime seals on the body crossing the threshold, not on the prompt.
-  assert.ok(/SOURCE_LANDING_DOOR_SEALED/.test(runtime),
-    'the runtime must dispatch the seal itself');
-  assert.ok(/candidate\.y - o\.y < SOURCE_LANDING_PORTAL_LOCAL\.y - 1/.test(runtime),
-    'the seal triggers on the body reaching the Source side of the leaf');
+  // First-shore walking no longer dispatches the irreversible legacy seal.
+  const step=runtime.slice(runtime.indexOf('function onStep('),runtime.indexOf('function onStep(')+1900);
+  assert.doesNotMatch(step,/SOURCE_LANDING_DOOR_SEALED/);
 }
 
-// ── 4. THE PROMPT WITHHOLDS THE DESTINATION ────────────────────────────────
+// ── 4. THE PROMPT NAMES THE ACTION, NOT THE UNKNOWN DESTINATION ───────────
 {
-  assert.equal(sourceFocusActionLabel({ kind: 'source-landing-door', open: false }), '???');
-  assert.equal(sourceFocusActionLabel({ kind: 'source-landing-door', open: true }), '???');
+  assert.equal(sourceFocusActionLabel({ kind: 'source-landing-door', open: false }), 'OPEN DOOR');
+  assert.equal(sourceFocusActionLabel({ kind: 'source-landing-door', open: true }), 'OPENING');
   assert.equal(sourceFocusActionLabel({ kind: 'source-landing-door', sealed: true }), 'SEALED');
+  assert.equal(sourceFocusActionLabel({ kind: 'source-landing-door', sealed: true, open: true }), 'SEALED',
+    'the irreversible seal wins over an old open flag');
 }
 
 console.log('source scene dock specs passed');

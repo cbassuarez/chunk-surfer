@@ -1,0 +1,49 @@
+{
+  "generatedAt": "2026-10-12T15:36:00.362Z",
+  "snapshot": "/private/tmp/tower-route-snapshot-PQ12rZ",
+  "bundle": "main-COyr0pnV.js",
+  "sourceDrift": [
+    {
+      "path": "content/narrative/source-space.door-field.story.json",
+      "frozenSha256": "98fb8bcbbcb2e154c4fbb308ed8c096dacd16ad31510ff81553721fa95a7c76a",
+      "currentSha256": "56e4b9bf6c24a7cc68d140969811d743e169178fcde8c20c37bd6e6a414ec01e"
+    },
+    {
+      "path": "src/game/source-space-runtime.js",
+      "frozenSha256": "1c180228ee551ab9a75bda54ed6ece62768073fe73d19d4122c60e5703546687",
+      "currentSha256": "4f44a8cf1e457cf0cc7470a222808786b901ce3d4cbb1798dcd1a1ee0308ef5c"
+    },
+    {
+      "path": "src/game/tower-personal-journey.js",
+      "frozenSha256": "48b8f5d22215fcdbcdc676b5929abfc5c3fda5b85f1d96a7787a7e87af4c392a",
+      "currentSha256": "1ea06b64fa7eda372124274487db8ec92271e42f440654acdff02b5783e95bfd"
+    },
+    {
+      "path": "src/main.js",
+      "frozenSha256": "b3ba6b47fbbe9b8332a39b430e116d20ce079ad0ff214952e71f31e17a6036bc",
+      "currentSha256": "4add3c27b16804dd25264dcfdc051621de3c3b1c374bf7602bec55415e169643"
+    },
+    {
+      "path": "src/render/battle-hand-tools.js",
+      "frozenSha256": "171d3cc73d5a83a339b4a4f27e9b5c52407b1b43df18bc614eb252fd8df7c862",
+      "currentSha256": "f12a1283c72b61a6a830e9cd8e910c60e0eb07c2aa91449d941a1c87e06a8886"
+    },
+    {
+      "path": "src/render/battle-hands.js",
+      "frozenSha256": "8d5680cccbbc2ccb8287581aeb5f05f5f1b89f6d0582673038eefb4468031fd3",
+      "currentSha256": "1a7829d535028cf91b199546546adb2a991725a98a7038339dbb361afbb7d3aa"
+    },
+    {
+      "path": "src/render/tower-personal-meshes.js",
+      "frozenSha256": "14706513008fa3342f204eab20fa1c64580459a58db622649c8557d7327da0aa",
+      "currentSha256": "dc3e194895fc286aa1869dce79228eeb9b0d8cd8a147c493fd0765d600323bb3"
+    },
+    {
+      "path": "src/render/tower-personal-worlds.js",
+      "frozenSha256": "676a89d47a6e734fb82bdbc7d40b4e982876811905065ec00b5d72814ee18061",
+      "currentSha256": "ae8e5cc95d16c76059e4a8e9f569f72ac6c185693fc38da719563a44f1d8709c"
+    }
+  ],
+  "note": "Concurrent Source personal-world changes preserved. Independent function-bounded review found19 Tower spans identical to the frozen rendered preview. Main delta is retained separately.",
+  "mainDelta": "artifacts/tower-route-implementation/concurrent-source-delta.diff"
+}

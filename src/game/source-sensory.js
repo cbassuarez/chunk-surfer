@@ -62,3 +62,40 @@ export function attenuateSourceHushAudioField(field = null, mix = 1) {
     sourceSensoryMix: gain,
   };
 }
+
+// The first nothingness has no room of its own. These are transmission gains
+// from the room left behind and the receiving hardware, measured from the
+// actual body rather than elapsed walking time. A long detour stays a detour.
+export function sourceShoreOutside(frame = null) {
+  return !!(frame?.active && frame.outside && !frame.proper);
+}
+
+const distance = (value) => Number.isFinite(Number(value))
+  ? Math.max(0, Number(value)) : Infinity;
+const finiteFalloff = (metres, full, end) => {
+  const d = distance(metres);
+  if (!Number.isFinite(d)) return 0;
+  const t = clamp01((d - full) / (end - full));
+  return (1 - t) * (1 - t) * (1 + 2 * t);
+};
+
+export function sourceShoreSensoryFrame(frame = null) {
+  const active = sourceShoreOutside(frame);
+  const surface = frame?.surface || (frame?.lift?.boarded ? 'lift' : 'void');
+  const roomDistance = distance(frame?.distanceFromRoomMetres);
+  const bankDistance = distance(frame?.distanceToBankMetres);
+  const liftDistance = distance(frame?.distanceToLiftMetres ?? bankDistance);
+  return Object.freeze({
+    active,
+    // Nothing is emitted by the volume itself. Even a long pause cannot turn
+    // the distant air handler into an ambient bed that follows the player.
+    roomLeak: active ? finiteFalloff(roomDistance, 0, 26) : 0,
+    liftGain: active ? finiteFalloff(liftDistance, 2, 30) : 0,
+    metalReturn: active ? finiteFalloff(bankDistance, 1, 11) : 0,
+    footstepGain: active && surface === 'void' ? .74 : 1,
+    footstepMuffle: active ? (surface === 'void' ? .86 : .30) : null,
+    surface,
+    liftMoving: active && frame?.lift?.moving === true,
+    liftPhase: String(frame?.lift?.phase || ''),
+  });
+}

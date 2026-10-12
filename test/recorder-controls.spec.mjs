@@ -435,10 +435,11 @@ test('the raised recorder uses the same actual noise reading and recorded event 
       takeMarks: () => [{ at: .1, kind: 'event', id: 'stored' }] },
     MIC: { micActive: () => live.microphone, micLevel: () => .12 },
     MONITOR: { monitorSnapshotForRms: rms => ({ rms, db: 20 * Math.log10(rms) }) },
-    presenceMeterLevel: () => .4, currentWorld: () => 'main_b3', recorderRefusal: () => null,
+    presenceMeterLevel: () => .4, currentWorld: () => 'main_b3', recorderRefusal: () => null, usingSourceSpace: () => false,
     roomLabel: room => room.toUpperCase(), formatPlaybackTime: seconds => String(seconds),
     recordingDurationLabel: () => String(live.duration),
     ROOM_TONE: { takeSeconds: 45 }, performance: { now: () => 1000 }, SPEECH: { speechPanelRows: () => 0 },
+    tickTapeMarkers: () => {}, tapeMarkerNote: () => '',
   });
   let face = machine().face;
   assert.equal(face.levels, null, 'monitor mode invents no stereo signal');

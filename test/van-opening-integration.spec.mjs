@@ -200,6 +200,8 @@ test('actual bag equipment exposes fitted variants only with case ownership and 
   Object.assign(f.context,{
     PLANT:{plantIncidentState:()=>({spannerOwned:false})},resolveBagOwnership,resolveBagItemAction,BAG_AUTOMATIC_USE,bagKeyFacts,
     CHUNK_SURF_FLAGS:{fork:'source.fork'},HEAD:{carryingMarbleHead:()=>false},playerKeys:new Set(),chapelKeyIsIdentified:()=>false,
+    // The station's errand (door-field-station): nothing carried from the worlds.
+    stationRelics:()=>[],STATION_RELIC_LABEL:{},
     REC:{sheetsCarried:()=>0,lightOn:()=>false,isListening:()=>false,isRecording:()=>false,
       composure:()=>10,composureCeiling:()=>10,batteryLevel:()=>1},
     itemLost:(id)=>missing.has(id),activeBattleId:null,usingSpecialSpace:()=>false,

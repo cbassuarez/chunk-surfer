@@ -232,6 +232,19 @@ export function actionCounterKinds(actionId) {
   return kinds;
 }
 
+export function combatActionCounterKinds(state, actionId) {
+  const kinds = actionCounterKinds(actionId);
+  if (state.definition.kind !== 'cathedral') return kinds;
+  // A remembered echo can be captured with the ordinary recorder. The rig
+  // remains another answer, rather than an equipment gate on the tower ending.
+  if (actionId === COMBAT_ACTION.MONITOR) kinds.push(INTENT_KIND.LOOP);
+  if (actionId === COMBAT_ACTION.PLAYBACK && !state.openingReferenceUsed
+    && state.take?.tag === 'cathedral-reference') {
+    return [INTENT_KIND.BROADCAST, INTENT_KIND.OVERLOAD, INTENT_KIND.CONCEAL, INTENT_KIND.LOOP];
+  }
+  return kinds;
+}
+
 const SOURCE_READING = Object.freeze({
   [SOURCE_CHANNEL.RESCUE]: 'BODY BORROWED RETURN',
   [SOURCE_CHANNEL.CONTAIN]: 'RETURN STILL INSIDE',
@@ -243,6 +256,16 @@ const integer = (value, fallback = 0) => Math.floor(finite(value, fallback));
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const unique = (values) => [...new Set((Array.isArray(values) ? values : []).filter((value) => typeof value === 'string' && value))];
 import { readFidelity } from './thought-trace.js';
+import {
+  SOURCE_EXPOSE_COVER_DAMAGE,
+  absorbSourceCover,
+  breachSourceDesktop,
+  normalizeSourceDesktop,
+  rebuildSourceCover,
+  sourceDesktopCapacity,
+  sourceDesktopGuard,
+  spendSourceCover,
+} from './source-desktop-state.js';
 import {
   EARNED,
   GRID,
@@ -403,7 +426,7 @@ function maybeMisread(state, movement, intents, committed, missedLast) {
   // is where a wrong read stops being a moment and becomes a broken interface.
   // And never while composure is critical: a misread there is a death spiral,
   // and the fight has better ways to be frightening.
-  if (state.definition.pinnedCycle) return;
+  if (state.definition.pinnedCycle || state.definition.readableIntents) return;
   // Guided never misreads. It is the preset for a player who wants the story
   // and the safety relay, and handing them a card that can be wrong is exactly
   // the hazard they opted out of. Confidence still varies in the prose; only
@@ -743,12 +766,14 @@ export function createCombatState(definition, {
   // half your composure and no further.
   const maxComposure = Math.max(4 * GRID, baseComposure - Math.max(0, integer(injuries, 0)) * GRID);
   const normalizedTechniques = unique(techniques).filter((id) => Object.values(TECHNIQUE).includes(id));
-  const roomTone = normalizedTechniques.includes(TECHNIQUE.ROOM_TONE)
+  const roomTone = definition.kind === 'cathedral' && definition.openingTake
+    ? clone(definition.openingTake)
+    : normalizedTechniques.includes(TECHNIQUE.ROOM_TONE)
     ? { id: 'room-tone', label: 'ROOM TONE', damage: 2 * GRID, tag: 'room' }
     : null;
   const firstIndex = clamp(integer(startingMovementIndex, 0), 0, definition.movements.length - 1);
   const first = definition.movements[firstIndex];
-  const sourceEnabled = definition.kind === 'source' || !!source;
+  const sourceEnabled = definition.kind !== 'cathedral' && (definition.kind === 'source' || !!source);
   const state = {
     schema: COMBAT_SCHEMA,
     definition: clone(definition),
@@ -762,6 +787,9 @@ export function createCombatState(definition, {
     result: null,
     movementIndex: firstIndex,
     movementCoherence: integer(first.coherence, 1),
+    // Compatibility name: movements whose one shell breach has been spent.
+    sentBack: [],
+    sourceDesktop: definition.sendBackOnBreak ? normalizeSourceDesktop() : null,
     movementMaxCoherence: integer(first.coherence, 1),
     // Two jobs that used to be one. intentIndex names the beat the opponent has
     // COMMITTED to, and `committed` is the note it wrote; cycleIndex is the
@@ -820,7 +848,9 @@ export function createCombatState(definition, {
     // Earned by reading the opponent right; spent on specials. See CHARGE_COST.
     // Opens on one, so the cheap utility special — the radio's thrown voice — is
     // in reach from the first beat and the loud ones have to be earned.
-    charge: 1,
+    // A definition may open richer: St Brendan's gives one more to a body that
+    // reached the crossing without ringing a bell on the way down.
+    charge: Math.max(0, integer(definition.openingCharge, 1)),
     maxCharge: BASE_MAX_CHARGE + (normalizedTechniques.includes(TECHNIQUE.HEADROOM) ? 2 : 0),
     feedbackLoopUsed: false,
     feedbackMovements: [],
@@ -829,6 +859,8 @@ export function createCombatState(definition, {
     punchInMovements: [],
     overdubMovements: [],
     composeMovements: [],
+    completedMovements: [],
+    openingReferenceUsed: false,
     // If the loadout cannot attack or capture this beat, HOLD can recover the
     // player's baseline SECOND BREATH. The unlock is encounter-wide: Contract
     // gets the intended bad beat once, rather than every time a tool runs dry.
@@ -887,6 +919,8 @@ export function createCombatState(definition, {
   // continuation snapshot, not general save-state restoration: it is produced
   // only by finishCombat and consumed immediately by the next stage.
   if(continuation&&typeof continuation==='object'&&!Array.isArray(continuation)){
+    if (definition.kind === 'cathedral' && Number.isFinite(continuation.maxComposure)
+      && continuation.maxComposure >= 4 * GRID) state.maxComposure = continuation.maxComposure;
     state.composure=clamp(integer(continuation.composure,state.composure),1,state.maxComposure);
     state.charge=clamp(integer(continuation.charge,state.charge),0,state.maxCharge);
     state.battery=clamp(finite(continuation.battery,state.battery),0,1);
@@ -901,6 +935,7 @@ export function createCombatState(definition, {
     state.toolsUsed=continuation.toolsUsed&&typeof continuation.toolsUsed==='object'?{...continuation.toolsUsed}:{};
     state.proofs=unique(continuation.proofs);
     state.actionLog=Array.isArray(continuation.actionLog)?continuation.actionLog.map((entry)=>clone(entry)):[];
+    state.sentBack=Array.isArray(continuation.sentBack)?unique(continuation.sentBack.map(String)):[];
     state.coffeeUsed=!!continuation.coffeeUsed;
     state.safetyRelayUsed=!!continuation.safetyRelayUsed;
     state.feedbackLoopUsed=!!continuation.feedbackLoopUsed;
@@ -911,11 +946,65 @@ export function createCombatState(definition, {
     state.recoveryHolds=Math.max(0,integer(continuation.recoveryHolds,0));
     state.recoveryUnlocked=!!continuation.recoveryUnlocked;
     state.signaturePressure=Math.max(0,integer(continuation.signaturePressure,0));
+    state.openingReferenceUsed=!!continuation.openingReferenceUsed;
+    if (state.source && continuation.source) {
+      if (Object.values(SOURCE_CHANNEL).includes(continuation.source.armed)) state.source.armed = continuation.source.armed;
+      for (const id of Object.values(SOURCE_CHANNEL)) state.source.channels[id] = Math.max(0, integer(continuation.source.channels?.[id], state.source.channels[id]));
+    }
+    const saved = continuation.sourceCombat;
+    if (state.sourceDesktop && saved?.version === 1 && saved.definitionId === definition.id) {
+      state.movementIndex = clamp(integer(saved.movementIndex), 0, definition.movements.length - 1);
+      state.seed = integer(saved.seed, state.seed);
+      const maximum = integer(currentMovement(state)?.coherence, 1);
+      state.movementMaxCoherence = clamp(integer(saved.movementMaxCoherence, maximum), 1, maximum);
+      state.movementCoherence = clamp(integer(saved.movementCoherence, state.movementMaxCoherence), 0, state.movementMaxCoherence);
+      for (const field of ['intentIndex','cycleIndex','turnsInMovement','movementDamage','exposedBonus','tuneBonus','misreadsThisMovement']) state[field] = Math.max(0, integer(saved[field], state[field]));
+      for (const field of ['lastMisreadBeat','lastGuardBeat','tuneUsedMovement']) if (saved[field] != null) state[field] = integer(saved[field], state[field]);
+      for (const field of ['tempo','swungLastBeat','skipEnemyBeat','recommitted']) state[field] = !!saved[field];
+      for (const field of ['committed','misread','stance','read','pendingEnemy','enemyGuard','last']) if (saved[field] && typeof saved[field] === 'object') state[field] = clone(saved[field]);
+      if (Object.values(SNR_STATE).includes(saved.snrBefore)) state.snrBefore = saved.snrBefore;
+      state.phase = saved.phase === 'enemy' && state.pendingEnemy ? 'enemy' : 'select';
+    }
+  }
+  if (state.sourceDesktop) {
+    state.sourceDesktop = normalizeSourceDesktop(continuation?.sourceDesktop, { breaks:state.sentBack, movementIds:definition.movements.map((entry)=>entry.id) });
+    state.sentBack = [...state.sourceDesktop.breaks];
   }
   // The opponent is already decided before the player has done anything. The
   // first card is a real commitment, not a placeholder read off the script.
-  commitNextIntent(state);
+  if (!state.committed) commitNextIntent(state);
   return state;
+}
+
+// The outer scene owns persistence and transition clocks. These snapshots own
+// the single fight, including a partial movement that must not heal on reload.
+export function sourceDesktopSnapshot(state) {
+  return state?.sourceDesktop ? normalizeSourceDesktop(state.sourceDesktop, { breaks:state.sentBack }) : null;
+}
+
+export function sourceDesktopFrame(state) {
+  const desktop = sourceDesktopSnapshot(state);
+  if (!desktop) return null;
+  return {
+    active: desktop.breached, breached: desktop.breached, tier: desktop.tier,
+    breaks: [...desktop.breaks], movementIndex: state.movementIndex,
+    cover: { count:desktop.cover, capacity:sourceDesktopCapacity(desktop), guard:sourceDesktopGuard(state.movementIndex), exposed:desktop.cover === 0 },
+    composureRatio: clamp(state.composure / Math.max(1, state.maxComposure), 0, 1),
+    coherenceRatio: clamp(state.movementCoherence / Math.max(1, state.movementMaxCoherence), 0, 1),
+  };
+}
+
+export function combatContinuationSnapshot(state) {
+  const fields = ['composure','charge','battery','take','snr','ringing','turns','perfectCounters','missedCounters','damageTaken','torchSpent','toolsUsed','proofs','actionLog','coffeeUsed','safetyRelayUsed','feedbackLoopUsed','feedbackMovements','punchInMovements','overdubMovements','composeMovements','recoveryHolds','recoveryUnlocked','signaturePressure','sentBack','openingReferenceUsed'];
+  const snapshot = Object.fromEntries(fields.map((field)=>[field,state[field] ?? null]));
+  if (state.definition.kind === 'cathedral') snapshot.maxComposure = state.maxComposure;
+  if (state.source) snapshot.source = { armed:state.source.armed, channels:{...state.source.channels} };
+  if (state.sourceDesktop) {
+    snapshot.sourceDesktop = sourceDesktopSnapshot(state);
+    const movementFields = ['seed','movementIndex','movementCoherence','movementMaxCoherence','intentIndex','cycleIndex','turnsInMovement','movementDamage','committed','read','stance','pendingEnemy','enemyGuard','phase','last','exposedBonus','tuneBonus','misread','misreadsThisMovement','lastMisreadBeat','lastGuardBeat','tuneUsedMovement','tempo','swungLastBeat','skipEnemyBeat','recommitted','snrBefore'];
+    snapshot.sourceCombat = { version:1, definitionId:state.definition.id, ...Object.fromEntries(movementFields.map((field)=>[field,state[field] ?? null])) };
+  }
+  return clone(snapshot);
 }
 
 function predictedSourceOutcome(source) {
@@ -1018,32 +1107,7 @@ function finishCombat(state, result) {
       pressure: state.damageTaken + state.missedCounters,
       proofs: [...state.proofs],
     },
-    continuation: {
-      composure: state.composure,
-      charge: state.charge,
-      battery: state.battery,
-      take: state.take ? clone(state.take) : null,
-      snr: state.snr,
-      ringing: state.ringing,
-      turns: state.turns,
-      perfectCounters: state.perfectCounters,
-      missedCounters: state.missedCounters,
-      damageTaken: state.damageTaken,
-      torchSpent: state.torchSpent,
-      toolsUsed: { ...state.toolsUsed },
-      proofs: [...state.proofs],
-      actionLog: state.actionLog.map((entry)=>clone(entry)),
-      coffeeUsed: state.coffeeUsed,
-      safetyRelayUsed: state.safetyRelayUsed,
-      feedbackLoopUsed: state.feedbackLoopUsed,
-      feedbackMovements: [...state.feedbackMovements],
-      punchInMovements: [...state.punchInMovements],
-      overdubMovements: [...state.overdubMovements],
-      composeMovements: [...state.composeMovements],
-      recoveryHolds: state.recoveryHolds,
-      recoveryUnlocked: state.recoveryUnlocked,
-      signaturePressure: state.signaturePressure,
-    },
+    continuation: combatContinuationSnapshot(state),
   };
 }
 
@@ -1058,9 +1122,47 @@ export function resolveCombatResult(input, result = 'win') {
   return state;
 }
 
+// UNCONTAINED. The first break in a Source movement destroys shelter, not the
+// damage already dealt. The desktop remains open for the rest of this fight.
+// A second break in that movement is still terminal. The compatibility opt-in
+// and sentBack IDs also let old saves retain their already-spent recovery.
+export const SEND_BACK_COMPOSURE_SHARE = 0.5;
+function sendBackOnBreak(state, notice = '') {
+  if (!state.definition?.sendBackOnBreak || state.apparitions || state.practice) return false;
+  const movement = currentMovement(state);
+  if (!movement?.id) return false;
+  const sent = Array.isArray(state.sentBack) ? state.sentBack : [];
+  if (sent.includes(movement.id)) return false;
+  const index = state.movementIndex;
+  const before = sourceDesktopSnapshot(state) || normalizeSourceDesktop();
+  state.sentBack = [...sent, movement.id];
+  state.composure = Math.max(1, Math.ceil(state.maxComposure * SEND_BACK_COMPOSURE_SHARE));
+  state.sourceDesktop = breachSourceDesktop(before, movement.id);
+  state.last = {
+    ...(state.last || {}),
+    notice: `${notice} · SHELL BREACHED · COVER ${sourceDesktopCapacity(state.sourceDesktop)} REMAIN`,
+    transition: null,
+    desktopBreach: { movementId:movement.id, index, tier:state.sourceDesktop.tier, first:!before.breached, coverLost:before.cover, capacity:sourceDesktopCapacity(state.sourceDesktop) },
+  };
+  return true;
+}
+
 function completeMovement(state) {
   const finishedIndex = state.movementIndex;
+  if (state.definition.kind === 'cathedral') {
+    const id = currentMovement(state)?.id;
+    state.completedMovements = unique([...(state.completedMovements || []), id]);
+  }
   if (state.source) addSourcePoint(state, 1);
+  if (state.sourceDesktop) {
+    // A ranged return can finish a movement while an ordinary enemy blow is
+    // pending. That old blow belongs to the cleared movement, not the next one.
+    state.pendingEnemy = null;
+    state.phase = 'select';
+    state.skipEnemyBeat = false;
+    state.recommitted = false;
+    state.enemyGuard = null;
+  }
   if (finishedIndex >= state.definition.movements.length - 1) {
     // The final Hall movement is not a surrogate enemy health bar. If any of
     // the three bodies remains, the last movement repeats until the targeted
@@ -1152,6 +1254,17 @@ function applyDamageToPlayer(state, damage) {
   state.composure = Math.max(0, state.composure - amount);
   state.damageTaken += amount;
   return false;
+}
+
+function coverIncomingDamage(state, damage) {
+  if (!state.sourceDesktop) return damage;
+  const guarded = absorbSourceCover(state.sourceDesktop, damage, state.movementIndex);
+  state.sourceDesktop = guarded.state;
+  if (guarded.spent) {
+    const prior = state.last?.cover || {};
+    state.last.cover = { spent:integer(prior.spent) + 1, prevented:integer(prior.prevented) + guarded.prevented, remaining:guarded.state.cover };
+  }
+  return guarded.damage;
 }
 
 export function hallSpecialTargetCap(state, actionId) {
@@ -1386,9 +1499,12 @@ export function applyFireballImpact(input,{damage=GRID,castId=''}={}){
   if(state.result||state.phase==='done')return state;
   const priorLast=clone(state.last||{});
   const composureFrom=state.composure;
-  const relay=applyDamageToPlayer(state,Math.max(1,integer(damage,GRID)));
+  state.last = { ...priorLast, cover:null };
+  const coveredDamage=coverIncomingDamage(state,Math.max(1,integer(damage,GRID)));
+  const cover=state.last?.cover?clone(state.last.cover):null;
+  const relay=applyDamageToPlayer(state,coveredDamage);
   const received=Math.max(0,composureFrom-state.composure);
-  const event={castId:String(castId||''),received,relay};
+  const event={castId:String(castId||''),received,relay,...(cover?{cover}: {})};
   state.fireballImpact=event;
   state.actionLog.push({
     turn:state.turns,movement:currentMovement(state)?.id||null,
@@ -1396,7 +1512,7 @@ export function applyFireballImpact(input,{damage=GRID,castId=''}={}){
   });
   if(state.composure<=0){
     state.last={...priorLast,notice:`RANGED · ${received} · COMPOSURE LOST`,action:COMBAT_ACTION.FIREBALL_IMPACT,dealt:0,received,fireballImpact:event};
-    finishCombat(state,'lose');
+    if(!sendBackOnBreak(state,state.last.notice))finishCombat(state,'lose');
   }else state.last=priorLast;
   return state;
 }
@@ -1567,8 +1683,9 @@ function applyEnemyIntent(state, intent, prevention, share = 1, first = true) {
   // Chipped here rather than at the source, so prevention, the signature
   // pressure and the fragile-signal penalty all still apply in the ordinary way
   // and the reduction is the last word on the beat.
-  const landed = share >= 1 ? damage
+  const unguarded = share <= 0 ? 0 : share >= 1 ? damage
     : (damage > 0 ? Math.max(1, Math.round(damage * share)) : 0);
+  const landed = coverIncomingDamage(state, unguarded);
   if (landed > 0) {
     if (applyDamageToPlayer(state, landed)) state.last.notice += ' · SAFETY RELAY REMAINS AT 1';
     state.movementDamage = integer(state.movementDamage, 0) + landed;
@@ -1671,8 +1788,9 @@ function actionAvailability(state, actionId) {
 // to compare or sum move values. `damageBand` is what the player is SHOWN, and
 // it is the range that will actually be rolled (stance already folded in), so
 // the tile can never promise a number the reducer will not honour.
-function bandFields(state, band) {
-  const rolled = outgoingBand(state, band);
+function bandFields(state, band, flatBonus = 0) {
+  const base = outgoingBand(state, band);
+  const rolled = flatBonus ? { ...base, min:base.min + flatBonus, max:base.max + flatBonus } : base;
   return {
     damage: Math.round((rolled.min + rolled.max) / 2),
     damageBand: rolled,
@@ -1684,6 +1802,7 @@ export function availableCombatActions(state) {
   // they are in — see predictedCombatIntent.
   const intent = predictedCombatIntent(state);
   const recovery = combatRecoveryStatus(state);
+  const desktop = sourceDesktopFrame(state);
   // The tiles are written VERB FIRST. A player choosing a move is asking "what
   // will this do", not "how much will this do", and the old copy answered the
   // second question with a number that was a lie the moment stance changed.
@@ -1699,11 +1818,15 @@ export function availableCombatActions(state) {
     },
     {
       id: COMBAT_ACTION.HOLD, tool: COMBAT_TOOL.SELF, label: 'HOLD',
-      detail: recovery.stranded && !recovery.unlocked
+      detail: desktop
+        ? `${desktop.cover.capacity ? `REBUILD COVER · ${desktop.cover.count} / ${desktop.cover.capacity} PLATES` : 'BRACE · NO PLATES REMAIN'} · PREVENT ${defensivePrevention(silence, holdPrevention(state))} · NO ATTACK`
+        : recovery.stranded && !recovery.unlocked
         ? `BRACE · PREVENT ${defensivePrevention(silence, holdPrevention(state))} · CATCH BREATH ${Math.min(recovery.required, recovery.holds + 1)} / ${recovery.required}`
         : `BRACE · PREVENT ${defensivePrevention(silence, holdPrevention(state))} · CHIPS ON A READ · ENTER SILENCE`,
       prevents: defensivePrevention(silence, holdPrevention(state)),
-      ...bandFields(silence, bandFrom(GRID)),
+      ...(desktop ? {coverRebuild:desktop.cover.count < desktop.cover.capacity ? 1 : 0,
+        coverCount:desktop.cover.count,coverCapacity:desktop.cover.capacity,coverGuard:desktop.cover.guard} : {}),
+      ...bandFields(silence, bandFrom(desktop ? 0 : GRID)),
       regular: true,
     },
     {
@@ -1727,9 +1850,10 @@ export function availableCombatActions(state) {
     // it never sits in the tool menu.
     {
       id: COMBAT_ACTION.EXPOSE, tool: COMBAT_TOOL.TORCH, label: 'EXPOSE',
-      detail: `SET UP · ${bandText(outgoingBand(noise, ACTION_BAND[COMBAT_ACTION.EXPOSE]))} COHERENCE · LEAVES RESIDUE FOR PLAYBACK · ENTER NOISE`,
+      detail: `SET UP · ${bandText(outgoingBand(noise, ACTION_BAND[COMBAT_ACTION.EXPOSE]))} COHERENCE${desktop?.cover.count ? ` · SPEND 1 COVER FOR +${SOURCE_EXPOSE_COVER_DAMAGE}` : ''} · LEAVES RESIDUE FOR PLAYBACK · ENTER NOISE`,
       regular: true,
-      ...bandFields(noise, ACTION_BAND[COMBAT_ACTION.EXPOSE]),
+      ...bandFields(noise, ACTION_BAND[COMBAT_ACTION.EXPOSE], desktop?.cover.count ? SOURCE_EXPOSE_COVER_DAMAGE : 0),
+      ...(desktop?.cover.count ? { coverCost:1, coverDamage:SOURCE_EXPOSE_COVER_DAMAGE } : {}),
     },
     {
       id: COMBAT_ACTION.MONITOR, tool: COMBAT_TOOL.RECORDER, label: 'MONITOR',
@@ -1865,7 +1989,7 @@ export function availableCombatActions(state) {
   ];
   return actions.map((action) => {
     const availability = actionAvailability(state, action.id);
-    const countersKinds = actionCounterKinds(action.id);
+    const countersKinds = combatActionCounterKinds(state, action.id);
     return {
       damage: 0,
       damageBand: makeBand(0, 0),
@@ -1890,6 +2014,25 @@ export function availableCombatActions(state) {
 // reducer runs on so the UI copy can never drift from the rules.
 export function combatMoveSubtext(state, move) {
   if (!move) return { short: '', long: '' };
+  if (state.sourceDesktop && move.id === COMBAT_ACTION.HOLD) {
+    const cover = sourceDesktopFrame(state).cover;
+    const next = Math.min(cover.capacity,cover.count+1);
+    const rebuilding = next > cover.count;
+    const coverShort = rebuilding ? 'REBUILD +1' : cover.capacity ? 'COVER FULL' : 'NO PLATES';
+    const coverLong = rebuilding ? `rebuilds one surviving plate (${cover.count} → ${next}/${cover.capacity}); each plate blocks up to ${cover.guard} incoming`
+      : cover.capacity ? `cover is full (${cover.count}/${cover.capacity}); each plate blocks up to ${cover.guard} incoming`
+        : 'no surviving plates remain';
+    return {short:`${coverShort} · BRACE ${move.prevents} · NO ATTACK`,
+      long:`HOLD — ${coverLong} · braces against ${move.prevents} incoming · deals no coherence damage · enters SILENCE`};
+  }
+  if (state.sourceDesktop && move.id === COMBAT_ACTION.EXPOSE) {
+    const damage = move.damageBand ? bandText(move.damageBand) : move.damage;
+    const coverShort = move.coverCost ? `COVER -1 · +${move.coverDamage}` : 'NO COVER BONUS';
+    const coverLong = move.coverCost ? `spends one cover plate for +${move.coverDamage} coherence, included in ${damage} total damage`
+      : `${damage} coherence damage · no cover bonus with an empty shelter`;
+    return {short:`${coverShort} · ${damage} DMG · →NOISE`,
+      long:`EXPOSE — ${coverLong} · leaves residue for PLAYBACK · enters NOISE`};
+  }
   const bits = [];
   if (move.damage) bits.push(`${move.damageBand ? bandText(move.damageBand) : move.damage} DMG`);
   if (move.prevents) bits.push(`GUARD ${move.prevents}`);
@@ -1915,7 +2058,7 @@ export function combatMoveSubtext(state, move) {
   if (move.once) sentences.push('once per encounter');
   if (move.stanceShift) sentences.push(`shifts stance to ${String(move.stanceShift).toUpperCase()}`);
   if (move.countersKinds?.length) {
-    sentences.push(`counters ${move.countersKinds.map((kind) => kind.toUpperCase()).join('/')} — hit negated, TEMPO opens`);
+    sentences.push(`counters ${move.countersKinds.map((kind) => kind.toUpperCase()).join('/')} — ${state.definition.kind === 'cathedral' ? 'hit negated' : 'hit blunted'}, TEMPO opens`);
   }
   const long = `${move.label} — ${sentences.join(' · ') || move.detail || ''}`;
   return { short, long };
@@ -1977,15 +2120,44 @@ export function reduceCombat(input, action = {}) {
   // — the composure it took this beat is restored and its force sent back as
   // coherence. Feints (conceal / silence) carry nothing to turn.
   if (actionId === COMBAT_ACTION.PARRY) {
+    if (state.last?.parried) return state;
     const hits = Array.isArray(state.last?.enemyHits) ? state.last.enemyHits : [];
     const blowKinds = [INTENT_KIND.BROADCAST, INTENT_KIND.OVERLOAD, INTENT_KIND.LOOP];
     const blows = hits.filter((h) => blowKinds.includes(h.kind));
     const tier = PARRY_TIERS[action.tier] ? action.tier : PARRY_TIER.PERFECT;
     const grade = PARRY_TIERS[tier];
     const took = blows.reduce((sum, h) => sum + Math.max(0, integer(h.received, 0)), 0);
+    const reaction = state.last?.sourceEnemyReaction;
+    const provisional = reaction?.version === 1 && reaction.movementIndex === state.movementIndex
+      && (reaction.breached || reaction.lost);
+    // advanceEnemy computes the blow before the scene offers its timed guard.
+    // Grade a lethal Source blow against the pool it actually struck, rather
+    // than healing the provisional 50% recovery or retaining a cancelled KO.
+    // The baseline is taken after any earlier projectile: its spent break and
+    // existing desktop state are therefore never refunded by this reaction.
+    if (state.result && !(provisional && reaction.lost && state.result.result === 'lose')) return state;
     const room = Math.max(0, state.maxComposure - state.composure);
-    const restored = Math.min(room, Math.round(took * grade.restore));
-    state.composure = Math.min(state.maxComposure, state.composure + restored);
+    const restored = provisional ? Math.min(took, Math.round(took * grade.restore))
+      : Math.min(room, Math.round(took * grade.restore));
+    if (provisional) {
+      const laterDamage = Math.max(0, reaction.settledComposure - state.composure);
+      const survived = reaction.composure - (took - restored) - laterDamage;
+      if (survived > 0) {
+        state.composure = Math.min(state.maxComposure, survived);
+        state.sourceDesktop = normalizeSourceDesktop(reaction.sourceDesktop);
+        state.sentBack = [...reaction.sentBack];
+        state.last.desktopBreach = reaction.desktopBreach || null;
+        state.result = null;
+        state.phase = 'select';
+        if (reaction.lost) {
+          state.read = observeEnemyBeat(state.read || emptyEnemyRead(), { intentId:hits[0]?.intentId || null });
+          state.stance = { ...(state.stance || openingStance()), dwell:integer(state.stance?.dwell, 0) + 1 };
+          commitNextIntent(state);
+        }
+      }
+      // A partial parry that still leaves the original pool at zero keeps the
+      // one recovery already spent; it cannot heal on top of that recovery.
+    } else state.composure = Math.min(state.maxComposure, state.composure + restored);
     const priorTarget = state.apparitions?.target;
     if (state.apparitions && state.last?.enemyActor?.id) selectHallTarget(state.apparitions, state.last.enemyActor.id);
     const reflected = blows.length && grade.reflect > 0
@@ -2010,10 +2182,13 @@ export function reduceCombat(input, action = {}) {
       parryRestored: restored,
       dealt: integer(state.last?.dealt, 0) + reflected,
       received: Math.max(0, integer(state.last?.received, 0) - restored),
+      composureTo: state.composure,
     };
     if (state.apparitions && hallApparitionsDefeated(state.apparitions)) {
       state.last.notice += ' · ALL THREE APPARITIONS RELEASED';
       finishCombat(state, 'win');
+    } else if (state.sourceDesktop && !state.result && state.movementCoherence <= 0) {
+      completeMovement(state);
     }
     return state;
   }
@@ -2162,7 +2337,7 @@ export function reduceCombat(input, action = {}) {
   const intent = currentCombatIntent(state);
   const recoveryBefore = combatRecoveryStatus(state);
   const bonusAction = !!state.tempo;
-  const perfect = !bonusAction && actionCounterKinds(actionId).includes(intent?.kind);
+  const perfect = !bonusAction && combatActionCounterKinds(state, actionId).includes(intent?.kind);
   const takeBefore = state.take ? { ...state.take } : null;
   const composureBefore = state.composure;
   const coherenceBefore = state.movementCoherence;
@@ -2192,10 +2367,20 @@ export function reduceCombat(input, action = {}) {
       state.enemyGuard = null;
     }
     dealt = strike(state, ACTION_BAND[actionId], actionId, { perfect });
+    let coverDamage = 0;
+    if (!whiteout && state.sourceDesktop) {
+      const cover = spendSourceCover(state.sourceDesktop);
+      state.sourceDesktop = cover.state;
+      if (cover.spent) {
+        coverDamage = applyDamageToEnemy(state, SOURCE_EXPOSE_COVER_DAMAGE, actionId);
+        dealt += coverDamage;
+        state.last.cover = { spent:1, prevented:0, remaining:cover.state.cover, dealt:coverDamage };
+      }
+    }
     // AFTERIMAGE raises the exposed residue; OVEREXPOSE adds a further point.
     state.exposedBonus = whiteout ? 0
       : (hasTechnique(state, TECHNIQUE.AFTERIMAGE) ? 2 * GRID : GRID) + (hasTechnique(state, TECHNIQUE.OVEREXPOSE) ? GRID : 0);
-    notice = `${whiteout ? 'WHITEOUT' : 'EXPOSE'} · ${dealt} COHERENCE`;
+    notice = `${whiteout ? 'WHITEOUT' : 'EXPOSE'} · ${dealt} COHERENCE${coverDamage ? ` · COVER SPENT +${coverDamage}` : ''}`;
   } else if (actionId === COMBAT_ACTION.MONITOR) {
     // The take-slot question is asked BEFORE anything lands. It used to be asked
     // after: the chip was applied, then the function returned to wait for a
@@ -2219,6 +2404,7 @@ export function reduceCombat(input, action = {}) {
       notice = `CAPTURED · ${state.take.label} · ${dealt} COHERENCE`;
     } else notice = `MONITORING · NO STABLE TAKE · ${dealt} COHERENCE`;
   } else if (actionId === COMBAT_ACTION.PLAYBACK) {
+    if (state.definition.kind === 'cathedral' && takeBefore?.tag === 'cathedral-reference') state.openingReferenceUsed = true;
     // Cashing in. EXPOSE first and the residue both raises the band and counts as
     // SETUP, which lifts the floor — the sequence is worth more than the sum.
     dealt = strike(
@@ -2273,8 +2459,13 @@ export function reduceCombat(input, action = {}) {
     // leaned on overloads could stall the fight indefinitely against a player
     // doing exactly the right thing. Meeting the blow on your hands costs it
     // something.
-    if (perfect) dealt = strike(state, bandFrom(GRID), actionId, { perfect });
+    if (state.sourceDesktop) {
+      const before = state.sourceDesktop.cover;
+      state.sourceDesktop = rebuildSourceCover(state.sourceDesktop);
+      state.last.cover = { rebuilt:state.sourceDesktop.cover-before, remaining:state.sourceDesktop.cover };
+    } else if (perfect) dealt = strike(state, bandFrom(GRID), actionId, { perfect });
     notice = `HOLD · PREVENT ${prevention}${dealt ? ` · ${dealt} COHERENCE` : ''}`;
+    if (state.sourceDesktop) notice += ` · ${sourceDesktopCapacity(state.sourceDesktop) ? `COVER ${state.sourceDesktop.cover} / ${sourceDesktopCapacity(state.sourceDesktop)}` : 'NO PLATES REMAIN'} · NO ATTACK`;
     if (recoveryBefore.stranded && !recoveryBefore.unlocked) {
       state.recoveryHolds = Math.min(recoveryBefore.required, recoveryBefore.holds + 1);
       state.recoveryUnlocked = state.recoveryHolds >= recoveryBefore.required;
@@ -2471,9 +2662,18 @@ export function reduceCombat(input, action = {}) {
   if (state.practice && !state.practice.stopped && !bonusAction) runPracticeBeat(state);
 
   if (state.composure <= 0) {
-    state.last.notice = `${notice} · COMPOSURE LOST`;
-    advanceIntent(state);
-    finishCombat(state, 'lose');
+    if (!sendBackOnBreak(state, `${notice} · COMPOSURE LOST`)) {
+      state.last.notice = `${notice} · COMPOSURE LOST`;
+      advanceIntent(state);
+      finishCombat(state, 'lose');
+    } else if (state.movementCoherence <= 0) {
+      // A first break spends shelter before the completed movement advances;
+      // a second break above is terminal even if the same action cleared it.
+      completeMovement(state);
+    } else {
+      advanceIntent(state);
+      state.phase = 'select';
+    }
   } else if (state.apparitions && hallApparitionsDefeated(state.apparitions)) {
     state.last.notice = `${notice} · ALL THREE APPARITIONS RELEASED`;
     finishCombat(state, 'win');
@@ -2762,12 +2962,18 @@ export function advanceEnemy(input) {
   }
 
   const intents = selectEnemyIntents(state);
+  const sourceReaction = state.sourceDesktop ? {
+    version:1, movementIndex:state.movementIndex, composure:state.composure,
+    sentBack:[...state.sentBack], desktopBreach:state.last.desktopBreach ? clone(state.last.desktopBreach) : null,
+  } : null;
   const hits = [];
   let prevention = Math.max(0, integer(pending.prevention, 0));
   // A blow that was read still lands, but only as a chip. See the note in
   // reduceCombat's `perfect` branch: what a read buys is that the beat is
   // survivable, not that it did not happen.
-  const share = pending.tempoAfter ? PERFECT_COUNTER_SHARE : 1;
+  const share = pending.tempoAfter
+    ? state.definition.kind === 'cathedral' ? 0 : PERFECT_COUNTER_SHARE
+    : 1;
   let first = true;
   for (const intent of intents) {
     const received = applyEnemyIntent(state, intent, prevention, share, first);
@@ -2777,6 +2983,7 @@ export function advanceEnemy(input) {
     if (state.composure <= 0) break;
   }
   const totalReceived = hits.reduce((sum, hit) => sum + hit.received, 0);
+  if (sourceReaction) sourceReaction.sourceDesktop = sourceDesktopSnapshot(state);
   state.pendingEnemy = null;
   const baseNotice = pending.playerNotice || state.last?.notice || '';
   state.actionLog.push({
@@ -2797,8 +3004,16 @@ export function advanceEnemy(input) {
     notice: `${baseNotice}${totalReceived ? ` · ${totalReceived} COMPOSURE LOST` : ' · INTENT HELD'}`,
   });
   if (state.composure <= 0) {
-    advanceIntent(state);
-    finishCombat(state, 'lose');
+    if (!sendBackOnBreak(state, state.last.notice)) {
+      advanceIntent(state);
+      finishCombat(state, 'lose');
+    } else {
+      state.read = observeEnemyBeat(state.read || emptyEnemyRead(), { intentId:hits[0]?.intentId || null });
+      state.stance = { ...(state.stance || openingStance()), dwell:integer(state.stance?.dwell, 0) + 1 };
+      if (state.movementCoherence <= 0) completeMovement(state);
+      else advanceIntent(state);
+      if (!state.result) state.phase = 'select';
+    }
   } else {
     // The surfer's defence, on the meaner difficulties only: once you've hurt it
     // and it is on the back foot in this movement, it sets to slip your next
@@ -2842,6 +3057,10 @@ export function advanceEnemy(input) {
     // After advanceIntent, which clears tempo.
     if (pending.tempoAfter) state.tempo = true;
   }
+  if (sourceReaction) state.last.sourceEnemyReaction = {
+    ...sourceReaction, settledComposure:state.composure,
+    breached:state.sentBack.length > sourceReaction.sentBack.length, lost:state.result?.result === 'lose',
+  };
   return state;
 }
 

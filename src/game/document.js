@@ -34,7 +34,7 @@ export function documentViewport(surface,reservedTopRows=0){
   return {topRows,rows,offsetY,width:surface.cols*surface.cellW*surface.dpr,height:rows*surface.cellH*surface.dpr};
 }
 
-function inspectRect(surface){
+export function documentInspectRect(surface){
   const {dpr,cellW,cellH,cols,rows}=surface;
   const viewportW=cols*cellW*dpr,viewportH=rows*cellH*dpr;
   // Leave enough negative space around the sheet for it to read as an object,
@@ -117,7 +117,7 @@ function drawPaperSurface(ctx,image,w,h,pose,dpr,{flipScale=1,turnDir=0}={}){
 function placeholder(ctx,w,h,dpr){
   ctx.fillStyle='#eeece5';ctx.fillRect(-w*.5,-h*.5,w,h);ctx.strokeStyle='rgba(60,56,49,.18)';ctx.lineWidth=Math.max(1,dpr);ctx.strokeRect(-w*.5,-h*.5,w,h);
 }
-function drawPhysicalPage(ctx,doc,page,rect,{flipScale=1,turnDir=0,turnAmount=null}={}){
+export function drawPhysicalPage(ctx,doc,page,rect,{flipScale=1,turnDir=0,turnAmount=null}={}){
   const state=paperImageState(doc,page),material=paperMaterialState(doc,page),pose=poseFor(doc,page),handling=state.asset?.record?.handlingVector||[-1,0,0,0];
   if(state.ready&&state.image){
     const amount=turnAmount==null?Math.max(0,1-Math.abs(flipScale)):turnAmount;
@@ -148,12 +148,12 @@ function drawTurn(ctx,doc,turn,rect){
 }
 
 export function readDocument(doc){if(!doc)return null;return scenes.push(makeDocumentScene(doc));}
-export function makeDocumentScene(doc,{id=`doc:${doc?.id||'document'}`,onSceneClose=null,onSceneTurn=null,lookProfile='calm',sourcePressureLive=false,embedded=false,initialPage=0,reservedTopRows=0}={}){
+export function makeDocumentScene(doc,{id=`doc:${doc?.id||'document'}`,onSceneClose=null,onSceneTurn=null,onRequestClose=null,lookProfile='calm',sourcePressureLive=false,embedded=false,initialPage=0,reservedTopRows=0}={}){
   let page=clamp(Math.floor(Number(initialPage)||0),0,Math.max(0,paperPageCount(doc)-1)),turn=null;
   // The push-in, and how far down the sheet it is. Never persisted: a document
   // always opens as an object first, and the reading is something you ask for.
   let reading=false,scroll=0;const total=paperPageCount(doc),closeCallback=typeof onSceneClose==='function'?onSceneClose:onClose,turnCallback=typeof onSceneTurn==='function'?onSceneTurn:onTurn,resolved=paperAssetProbe(doc);
-  function close(){if(!embedded)scenes.pop();closeCallback(doc,{page,total});}
+  function close(){if(typeof onRequestClose==='function'){onRequestClose(doc,{page,total});return;}if(!embedded)scenes.pop();closeCallback(doc,{page,total});}
   function turnTo(next){const target=clamp(Math.floor(Number(next)||0),0,total-1);if(target===page||turn)return;const prev=page;void paperImageState(doc,target);turn={from:prev,to:target,t:0};page=target;turnCallback({doc,page:target,prev,total,dir:Math.sign(target-prev)||1});}
   function next(){if(page<total-1)turnTo(page+1);else if(!embedded)close();}
   return {
@@ -199,7 +199,7 @@ export function makeDocumentScene(doc,{id=`doc:${doc?.id||'document'}`,onSceneCl
             return;
           }
         }
-        const rect=inspectRect(paperSurface);paperStage(ctx,rect);
+        const rect=documentInspectRect(paperSurface);paperStage(ctx,rect);
         if(turn)drawTurn(ctx,doc,turn,rect);else drawPhysicalPage(ctx,doc,page,rect);
         }finally{ctx.restore();}
       });

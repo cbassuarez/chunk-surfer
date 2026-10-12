@@ -109,6 +109,9 @@ const AMBIENT = Object.freeze({
   [ZONE.hall]: { color: [.50, .37, .31], intensity: .020 },
   [ZONE.practice]: { color: [.66, .51, .35], intensity: .027 },
   [ZONE.chapel]: { color: [.72, .80, .88], intensity: .043 },
+  // The tower's louvres and the church windows provide a cool baseline beneath
+  // the maintained service lamps. Keep the stone readable with the torch down.
+  [ZONE.church]: { color: [.58, .64, .70], intensity: .035 },
   [ZONE.plant]: { color: [.43, .48, .40], intensity: .020 },
   [ZONE.stair]: { color: [.55, .52, .45], intensity: .024 },
   [ZONE.chapelOuter]: { color: [.54, .61, .66], intensity: .025 },
@@ -270,25 +273,17 @@ export const CONSERVATORY_LIGHTS = Object.freeze([
     { groups:['ground'], zones:[ZONE.dock], anchorPropId:'yard-park-lamp', anchorOffset:[0,.20,0] }),
   // ── ST BRENDAN'S ─────────────────────────────────────────────────────────
   //
-  // Nothing in this building has power and nothing in it is lit. What is in here
-  // is weather: the moon coming down the belfry shaft and in through the lancets,
-  // which is why these are cold, dim and high. LIGHT_KIND.SKY rather than
-  // FITTING — there is no fitting, and putting one in would be inventing a
-  // caretaker this church has not had in years.
+  // Cold window light and the working tower's low service practicals share the
+  // same authored church manifest. Restrict them to this building so the yard
+  // retains its sodium and the rest of Ellery retains its own exposure.
   //
-  // The intensities look high for moonlight and are not negotiable: LIGHT_BANDS
-  // floors SKY at .45, because a sky legitimately runs an order above a bulkhead.
-  // The dimness in here is bought with RADIUS instead — short reaches that die
-  // before they touch a wall, which is what a shaft of light actually does.
-  //
-  // Authored on ZONE.church so none of it spills into the yard's sodium.
-  //
-  ...CHURCH_LIGHTS.map((light)=>L(`brendan-${light.id}`,LIGHT_KIND.SKY,
-    light.x,light.y,light.h,[.58,.67,.86],light.intensity,light.radius,
-    {groups:['ground','cathedral'],zones:[ZONE.church]})),
+  ...CHURCH_LIGHTS.map((light)=>L(`brendan-${light.id}`,light.kind===LIGHT_KIND.FITTING?LIGHT_KIND.FITTING:LIGHT_KIND.SKY,
+    light.x,light.y,light.h,light.color||[.58,.67,.86],light.intensity,light.radius,
+    {groups:light.groups||['ground','cathedral'],zones:[ZONE.church]})),
 
-  // The booth window. The only lit one on the site, and the last shift in it.
-  L('bay-booth-window', LIGHT_KIND.FITTING, 24.0, 14.0, 2.0, [1, .82, .58], .92, 12.0,
+  // Window spill just inside the public glazing, in front of the guard. A
+  // source at the booth's centre backlit his face into a featureless silhouette.
+  L('bay-booth-window', LIGHT_KIND.FITTING, 24.9, 14.2, 2.25, [1, .82, .58], .92, 12.0,
     { groups:['ground'], zones:[ZONE.dock], flutter:{ amount:.04, steady:.90 } }),
 
   // THE INHABITED BLOCK. Road-owned sodium, shop spill and ordinary domestic
@@ -518,6 +513,9 @@ export function resolveLightingContext(context = {}) {
     ambientIntensity: ambient.intensity,
     whitePointScale: zoneWhitePointScale(zone),
     bounce: zoneBounce(zone),
+    // The ordinary one-bit acquisition uses exposure before its ink decision;
+    // the legacy white-point curve cannot recover an underexposed stone wall.
+    ...(zone === ZONE.church ? { captureExposure: 4.5 } : {}),
   };
 }
 

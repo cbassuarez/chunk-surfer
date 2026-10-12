@@ -1,0 +1,175 @@
+TAP version 13
+# cathedral extraction specs passed
+# Subtest: test/cathedral-extraction.spec.mjs
+ok 1 - test/cathedral-extraction.spec.mjs
+  ---
+  duration_ms: 2763.6525
+  type: 'test'
+  ...
+# ending physical staging and post-image lifecycle specs passed
+# Subtest: test/ending-staging.spec.mjs
+ok 2 - test/ending-staging.spec.mjs
+  ---
+  duration_ms: 2722.019084
+  type: 'test'
+  ...
+# Subtest: reference optics preserve the exact authored torch object
+ok 3 - reference optics preserve the exact authored torch object
+  ---
+  duration_ms: 0.753792
+  type: 'test'
+  ...
+# Subtest: throw and flood change physical beam geometry without overriding battery or perception
+ok 4 - throw and flood change physical beam geometry without overriding battery or perception
+  ---
+  duration_ms: 0.249542
+  type: 'test'
+  ...
+# Subtest: lens choices do not revive a flat or failed flashlight and invalid scalars stay bounded
+ok 5 - lens choices do not revive a flat or failed flashlight and invalid scalars stay bounded
+  ---
+  duration_ms: 0.11225
+  type: 'test'
+  ...
+# Subtest: physical interior beam preserves the real battery, fitted reach and HUSH absorption
+ok 6 - physical interior beam preserves the real battery, fitted reach and HUSH absorption
+  ---
+  duration_ms: 2.503834
+  type: 'test'
+  ...
+# Subtest: the actual architecture and prop shaders bound received lamp highlights
+ok 7 - the actual architecture and prop shaders bound received lamp highlights
+  ---
+  duration_ms: 2.029
+  type: 'test'
+  ...
+# Subtest: church beam leaves received highlight headroom at its authored recording gain
+ok 8 - church beam leaves received highlight headroom at its authored recording gain
+  ---
+  duration_ms: 0.146209
+  type: 'test'
+  ...
+# Subtest: main applies the physical beam only to the ordinary church
+ok 9 - main applies the physical beam only to the ordinary church
+  ---
+  duration_ms: 7.345917
+  type: 'test'
+  ...
+# Subtest: the hall and Source models keep physical light without reviving an off or attenuated torch
+ok 10 - the hall and Source models keep physical light without reviving an off or attenuated torch
+  ---
+  duration_ms: 0.861625
+  type: 'test'
+  ...
+# Subtest: the soft hall penumbra retains the fitted throw and flood differences
+ok 11 - the soft hall penumbra retains the fitted throw and flood differences
+  ---
+  duration_ms: 0.333125
+  type: 'test'
+  ...
+# Subtest: later Source modes and ordinary light keep their prior optical response
+ok 12 - later Source modes and ordinary light keep their prior optical response
+  ---
+  duration_ms: 0.075375
+  type: 'test'
+  ...
+# Subtest: hall exposure follows the physical hall and releases at the still-page threshold
+ok 13 - hall exposure follows the physical hall and releases at the still-page threshold
+  ---
+  duration_ms: 40.379292
+  type: 'test'
+  ...
+# Subtest: recording exposure is bounded and resets with the next lighting context
+ok 14 - recording exposure is bounded and resets with the next lighting context
+  ---
+  duration_ms: 0.338542
+  type: 'test'
+  ...
+# Subtest: capture exposure reveals dim form while preserving the raw-light black gate
+ok 15 - capture exposure reveals dim form while preserving the raw-light black gate
+  ---
+  duration_ms: 0.33275
+  type: 'test'
+  ...
+# torch lighting contracts passed
+# Subtest: test/torch-lighting.spec.mjs
+ok 6 - test/torch-lighting.spec.mjs
+  ---
+  duration_ms: 66.346208
+  type: 'test'
+  ...
+# Subtest: reloading the earned Tower ending reaches its final image without repeating grip, movement or door actions
+ok 17 - reloading the earned Tower ending reaches its final image without repeating grip, movement or door actions
+  ---
+  duration_ms: 8.639042
+  type: 'test'
+  ...
+# Subtest: the Tower resume repair preserves ordinary ending replay and rejects an invalid Tower arrival
+ok 18 - the Tower resume repair preserves ordinary ending replay and rejects an invalid Tower arrival
+  ---
+  duration_ms: 2.409541
+  type: 'test'
+  ...
+# Subtest: an unfinished carry without a terminal ending checkpoint is not completed by the resume repair
+ok 19 - an unfinished carry without a terminal ending checkpoint is not completed by the resume repair
+  ---
+  duration_ms: 1.009167
+  type: 'test'
+  ...
+# Subtest: fast confirmation reveals the guard recognition but credits wait for the complete actual take
+ok 20 - fast confirmation reveals the guard recognition but credits wait for the complete actual take
+  ---
+  duration_ms: 21.862417
+  type: 'test'
+  ...
+# Subtest: gameplay pause preserves unheard audio and resumes the same PCM at its saved offset
+ok 21 - gameplay pause preserves unheard audio and resumes the same PCM at its saved offset
+  ---
+  duration_ms: 5.028125
+  type: 'test'
+  ...
+# Subtest: AudioContext suspension freezes the listening gate without inventing playback progress
+ok 22 - AudioContext suspension freezes the listening gate without inventing playback progress
+  ---
+  duration_ms: 1.953083
+  type: 'test'
+  ...
+# Subtest: unavailable playback does not strand the epilogue and an unearned take never plays
+ok 23 - unavailable playback does not strand the epilogue and an unearned take never plays
+  ---
+  duration_ms: 1.73975
+  type: 'test'
+  ...
+# Subtest: the actual finale wrapper leaves controller confirm for prose and routes RT to optional resistance
+ok 24 - the actual finale wrapper leaves controller confirm for prose and routes RT to optional resistance
+  ---
+  duration_ms: 6.503291
+  type: 'test'
+  ...
+# Subtest: the resistance prompt renders over dialogue, uses RT on controller, and retires after the gesture
+ok 25 - the resistance prompt renders over dialogue, uses RT on controller, and retires after the gesture
+  ---
+  duration_ms: 2.232791
+  type: 'test'
+  ...
+# Subtest: resistance submits a distinct player pose at every possession stage, then restores the authored pose
+ok 26 - resistance submits a distinct player pose at every possession stage, then restores the authored pose
+  ---
+  duration_ms: 0.644625
+  type: 'test'
+  ...
+# Subtest: the actual resolution scene completes the peal without E or a controller gesture
+ok 27 - the actual resolution scene completes the peal without E or a controller gesture
+  ---
+  duration_ms: 2.311125
+  type: 'test'
+  ...
+1..27
+# tests 27
+# suites 0
+# pass 27
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2770.065333

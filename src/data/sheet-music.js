@@ -1,6 +1,6 @@
 // SHEET MUSIC.
 //
-// Five pages in the whole building, and the strong half of the composure
+// Five pages in the whole building, a sixth down a telephone line, and the strong half of the composure
 // economy: a sheet is worth three grid squares against the one a clean take
 // returns, so reading one is five good takes and you should not want to spend
 // it. See recordist.js for the pool and bag-items.js for the transaction.
@@ -121,6 +121,25 @@ export const SHEET_MUSIC = Object.freeze([
     motif: motif(['F#4', 'A4', 'C#5', 'B4', 'A4', 'F#4', 'E4', 'D4'], [3, 2, 4, 2, 2, 3, 2, 5]),
     line: 'Lent et douloureux, at the top. Slow and painful. Somebody has written the tempo of the room down.',
     detail: 'LENT ET DOULOUREUX. IT NEVER RESOLVES, IT JUST STOPS.',
+  }),
+  // THE SIXTH, WHICH IS NOT IN THE BUILDING. It comes out of the coin return of
+  // the phone box on the arrival road (src/game/payphone.js), after the call
+  // that would have given him the chapel key puts him on hold instead. It is
+  // what hold music was for thirty years: the minuet out of Eine kleine
+  // Nachtmusik, played thin down a line to people waiting to be told no. The
+  // only piece in the set that is neither falling nor coming home — it is
+  // being polite.
+  Object.freeze({
+    id: 'sheet-mozart-minuet',
+    at: null, room: 'source-payphone',
+    composer: 'W. A. MOZART', title: 'MENUETTO', work: 'EINE KLEINE NACHTMUSIK K. 525',
+    audio: 'sheet-mozart-minuet', performer: 'MUSOPEN',
+    licence: 'PUBLIC DOMAIN', attribution: null,
+    // The minuet's opening strain: up the arpeggio and back, four-square, in
+    // no hurry, as though there were all the time in the world.
+    motif: motif(['G4', 'B4', 'D5', 'G5', 'F#5', 'E5', 'D5', 'C5'], [1, 1, 1, 2, 1, 1, 1, 3]),
+    line: 'Hold music. Somebody chose this for people waiting to be told no.',
+    detail: 'MENUETTO. ALLEGRETTO. THE LINE IS STILL OPEN.',
   }),
 ]);
 

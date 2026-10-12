@@ -1,0 +1,1049 @@
+{
+  "errors": [],
+  "checks": [
+    {
+      "width": 768,
+      "id": "contract",
+      "index": 0,
+      "variant": "A deal made in stone",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 3,
+      "pass": true
+    },
+    {
+      "width": 768,
+      "id": "contract",
+      "index": 1,
+      "variant": "The recorder witnesses it",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 5,
+      "pass": true
+    },
+    {
+      "width": 768,
+      "id": "contract",
+      "index": 2,
+      "variant": "A shorter audience",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 3,
+      "pass": true
+    },
+    {
+      "width": 768,
+      "id": "bells",
+      "index": 0,
+      "variant": "A field you can read",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 7,
+      "pass": true
+    },
+    {
+      "width": 768,
+      "id": "bells",
+      "index": 1,
+      "variant": "Walk the bell machinery",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 5,
+      "pass": true
+    },
+    {
+      "width": 768,
+      "id": "bells",
+      "index": 2,
+      "variant": "Keep the quiet trial",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 7,
+      "pass": true
+    },
+    {
+      "width": 768,
+      "id": "service",
+      "index": 0,
+      "variant": "Repairs that answer",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 5,
+      "pass": true
+    },
+    {
+      "width": 768,
+      "id": "service",
+      "index": 1,
+      "variant": "The ledger becomes evidence",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 5,
+      "pass": true
+    },
+    {
+      "width": 768,
+      "id": "service",
+      "index": 2,
+      "variant": "The deal already opens it",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 5,
+      "pass": true
+    },
+    {
+      "width": 768,
+      "id": "hall",
+      "index": 0,
+      "variant": "The waiting boy",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 6,
+      "pass": true
+    },
+    {
+      "width": 768,
+      "id": "hall",
+      "index": 1,
+      "variant": "You hear his seat first",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 6,
+      "pass": true
+    },
+    {
+      "width": 768,
+      "id": "hall",
+      "index": 2,
+      "variant": "A voluntary threshold",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 7,
+      "pass": true
+    },
+    {
+      "width": 768,
+      "id": "tape",
+      "index": 0,
+      "variant": "The loose end crosses the hall",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 3,
+      "pass": true
+    },
+    {
+      "width": 768,
+      "id": "tape",
+      "index": 1,
+      "variant": "Follow the loose end",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 4,
+      "pass": true
+    },
+    {
+      "width": 768,
+      "id": "tape",
+      "index": 2,
+      "variant": "Walking becomes transport",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 8,
+      "pass": true
+    },
+    {
+      "width": 768,
+      "id": "broadcast",
+      "index": 0,
+      "variant": "The mast beyond the door",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 11,
+      "pass": true
+    },
+    {
+      "width": 768,
+      "id": "broadcast",
+      "index": 1,
+      "variant": "A transmission worth finding",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 11,
+      "pass": true
+    },
+    {
+      "width": 768,
+      "id": "broadcast",
+      "index": 2,
+      "variant": "A crossing into silence",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 18,
+      "pass": true
+    },
+    {
+      "width": 768,
+      "id": "ash",
+      "index": 0,
+      "variant": "Still at work",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 8,
+      "pass": true
+    },
+    {
+      "width": 768,
+      "id": "ash",
+      "index": 1,
+      "variant": "A route you already know",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 11,
+      "pass": true
+    },
+    {
+      "width": 768,
+      "id": "ash",
+      "index": 2,
+      "variant": "One room out of time",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 8,
+      "pass": true
+    },
+    {
+      "width": 768,
+      "id": "return",
+      "index": 0,
+      "variant": "The same hall, changed",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 8,
+      "pass": true
+    },
+    {
+      "width": 768,
+      "id": "return",
+      "index": 1,
+      "variant": "Hear the handover",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 6,
+      "pass": true
+    },
+    {
+      "width": 768,
+      "id": "return",
+      "index": 2,
+      "variant": "Arrive just after",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 5,
+      "pass": true
+    },
+    {
+      "width": 768,
+      "id": "ring",
+      "index": 0,
+      "variant": "An answer, not an examination",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 7,
+      "pass": true
+    },
+    {
+      "width": 768,
+      "id": "ring",
+      "index": 1,
+      "variant": "Play the remembered order",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 7,
+      "pass": true
+    },
+    {
+      "width": 768,
+      "id": "ring",
+      "index": 2,
+      "variant": "Let the ring answer itself",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 8,
+      "pass": true
+    },
+    {
+      "width": 768,
+      "id": "belfry",
+      "index": 0,
+      "variant": "Bring the recording through",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 12,
+      "pass": true
+    },
+    {
+      "width": 768,
+      "id": "belfry",
+      "index": 1,
+      "variant": "The ring holds its breath",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 12,
+      "pass": true
+    },
+    {
+      "width": 768,
+      "id": "belfry",
+      "index": 2,
+      "variant": "A human return, without a bonus",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 12,
+      "pass": true
+    },
+    {
+      "width": 360,
+      "id": "contract",
+      "index": 0,
+      "variant": "A deal made in stone",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 3,
+      "pass": true
+    },
+    {
+      "width": 360,
+      "id": "contract",
+      "index": 1,
+      "variant": "The recorder witnesses it",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 5,
+      "pass": true
+    },
+    {
+      "width": 360,
+      "id": "contract",
+      "index": 2,
+      "variant": "A shorter audience",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 3,
+      "pass": true
+    },
+    {
+      "width": 360,
+      "id": "bells",
+      "index": 0,
+      "variant": "A field you can read",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 7,
+      "pass": true
+    },
+    {
+      "width": 360,
+      "id": "bells",
+      "index": 1,
+      "variant": "Walk the bell machinery",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 5,
+      "pass": true
+    },
+    {
+      "width": 360,
+      "id": "bells",
+      "index": 2,
+      "variant": "Keep the quiet trial",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 7,
+      "pass": true
+    },
+    {
+      "width": 360,
+      "id": "service",
+      "index": 0,
+      "variant": "Repairs that answer",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 5,
+      "pass": true
+    },
+    {
+      "width": 360,
+      "id": "service",
+      "index": 1,
+      "variant": "The ledger becomes evidence",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 5,
+      "pass": true
+    },
+    {
+      "width": 360,
+      "id": "service",
+      "index": 2,
+      "variant": "The deal already opens it",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 5,
+      "pass": true
+    },
+    {
+      "width": 360,
+      "id": "hall",
+      "index": 0,
+      "variant": "The waiting boy",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 6,
+      "pass": true
+    },
+    {
+      "width": 360,
+      "id": "hall",
+      "index": 1,
+      "variant": "You hear his seat first",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 6,
+      "pass": true
+    },
+    {
+      "width": 360,
+      "id": "hall",
+      "index": 2,
+      "variant": "A voluntary threshold",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 7,
+      "pass": true
+    },
+    {
+      "width": 360,
+      "id": "tape",
+      "index": 0,
+      "variant": "The loose end crosses the hall",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 3,
+      "pass": true
+    },
+    {
+      "width": 360,
+      "id": "tape",
+      "index": 1,
+      "variant": "Follow the loose end",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 4,
+      "pass": true
+    },
+    {
+      "width": 360,
+      "id": "tape",
+      "index": 2,
+      "variant": "Walking becomes transport",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 8,
+      "pass": true
+    },
+    {
+      "width": 360,
+      "id": "broadcast",
+      "index": 0,
+      "variant": "The mast beyond the door",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 11,
+      "pass": true
+    },
+    {
+      "width": 360,
+      "id": "broadcast",
+      "index": 1,
+      "variant": "A transmission worth finding",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 11,
+      "pass": true
+    },
+    {
+      "width": 360,
+      "id": "broadcast",
+      "index": 2,
+      "variant": "A crossing into silence",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 18,
+      "pass": true
+    },
+    {
+      "width": 360,
+      "id": "ash",
+      "index": 0,
+      "variant": "Still at work",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 8,
+      "pass": true
+    },
+    {
+      "width": 360,
+      "id": "ash",
+      "index": 1,
+      "variant": "A route you already know",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 11,
+      "pass": true
+    },
+    {
+      "width": 360,
+      "id": "ash",
+      "index": 2,
+      "variant": "One room out of time",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 8,
+      "pass": true
+    },
+    {
+      "width": 360,
+      "id": "return",
+      "index": 0,
+      "variant": "The same hall, changed",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 8,
+      "pass": true
+    },
+    {
+      "width": 360,
+      "id": "return",
+      "index": 1,
+      "variant": "Hear the handover",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 6,
+      "pass": true
+    },
+    {
+      "width": 360,
+      "id": "return",
+      "index": 2,
+      "variant": "Arrive just after",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 5,
+      "pass": true
+    },
+    {
+      "width": 360,
+      "id": "ring",
+      "index": 0,
+      "variant": "An answer, not an examination",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 7,
+      "pass": true
+    },
+    {
+      "width": 360,
+      "id": "ring",
+      "index": 1,
+      "variant": "Play the remembered order",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 7,
+      "pass": true
+    },
+    {
+      "width": 360,
+      "id": "ring",
+      "index": 2,
+      "variant": "Let the ring answer itself",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 8,
+      "pass": true
+    },
+    {
+      "width": 360,
+      "id": "belfry",
+      "index": 0,
+      "variant": "Bring the recording through",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 12,
+      "pass": true
+    },
+    {
+      "width": 360,
+      "id": "belfry",
+      "index": 1,
+      "variant": "The ring holds its breath",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 12,
+      "pass": true
+    },
+    {
+      "width": 360,
+      "id": "belfry",
+      "index": 2,
+      "variant": "A human return, without a bonus",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 12,
+      "pass": true
+    },
+    {
+      "width": 320,
+      "id": "contract",
+      "index": 0,
+      "variant": "A deal made in stone",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 3,
+      "pass": true
+    },
+    {
+      "width": 320,
+      "id": "contract",
+      "index": 1,
+      "variant": "The recorder witnesses it",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 5,
+      "pass": true
+    },
+    {
+      "width": 320,
+      "id": "contract",
+      "index": 2,
+      "variant": "A shorter audience",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 3,
+      "pass": true
+    },
+    {
+      "width": 320,
+      "id": "bells",
+      "index": 0,
+      "variant": "A field you can read",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 7,
+      "pass": true
+    },
+    {
+      "width": 320,
+      "id": "bells",
+      "index": 1,
+      "variant": "Walk the bell machinery",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 5,
+      "pass": true
+    },
+    {
+      "width": 320,
+      "id": "bells",
+      "index": 2,
+      "variant": "Keep the quiet trial",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 7,
+      "pass": true
+    },
+    {
+      "width": 320,
+      "id": "service",
+      "index": 0,
+      "variant": "Repairs that answer",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 5,
+      "pass": true
+    },
+    {
+      "width": 320,
+      "id": "service",
+      "index": 1,
+      "variant": "The ledger becomes evidence",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 5,
+      "pass": true
+    },
+    {
+      "width": 320,
+      "id": "service",
+      "index": 2,
+      "variant": "The deal already opens it",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 5,
+      "pass": true
+    },
+    {
+      "width": 320,
+      "id": "hall",
+      "index": 0,
+      "variant": "The waiting boy",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 6,
+      "pass": true
+    },
+    {
+      "width": 320,
+      "id": "hall",
+      "index": 1,
+      "variant": "You hear his seat first",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 6,
+      "pass": true
+    },
+    {
+      "width": 320,
+      "id": "hall",
+      "index": 2,
+      "variant": "A voluntary threshold",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 7,
+      "pass": true
+    },
+    {
+      "width": 320,
+      "id": "tape",
+      "index": 0,
+      "variant": "The loose end crosses the hall",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 3,
+      "pass": true
+    },
+    {
+      "width": 320,
+      "id": "tape",
+      "index": 1,
+      "variant": "Follow the loose end",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 4,
+      "pass": true
+    },
+    {
+      "width": 320,
+      "id": "tape",
+      "index": 2,
+      "variant": "Walking becomes transport",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 8,
+      "pass": true
+    },
+    {
+      "width": 320,
+      "id": "broadcast",
+      "index": 0,
+      "variant": "The mast beyond the door",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 11,
+      "pass": true
+    },
+    {
+      "width": 320,
+      "id": "broadcast",
+      "index": 1,
+      "variant": "A transmission worth finding",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 11,
+      "pass": true
+    },
+    {
+      "width": 320,
+      "id": "broadcast",
+      "index": 2,
+      "variant": "A crossing into silence",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 18,
+      "pass": true
+    },
+    {
+      "width": 320,
+      "id": "ash",
+      "index": 0,
+      "variant": "Still at work",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 8,
+      "pass": true
+    },
+    {
+      "width": 320,
+      "id": "ash",
+      "index": 1,
+      "variant": "A route you already know",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 11,
+      "pass": true
+    },
+    {
+      "width": 320,
+      "id": "ash",
+      "index": 2,
+      "variant": "One room out of time",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 8,
+      "pass": true
+    },
+    {
+      "width": 320,
+      "id": "return",
+      "index": 0,
+      "variant": "The same hall, changed",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 8,
+      "pass": true
+    },
+    {
+      "width": 320,
+      "id": "return",
+      "index": 1,
+      "variant": "Hear the handover",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 6,
+      "pass": true
+    },
+    {
+      "width": 320,
+      "id": "return",
+      "index": 2,
+      "variant": "Arrive just after",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 5,
+      "pass": true
+    },
+    {
+      "width": 320,
+      "id": "ring",
+      "index": 0,
+      "variant": "An answer, not an examination",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 7,
+      "pass": true
+    },
+    {
+      "width": 320,
+      "id": "ring",
+      "index": 1,
+      "variant": "Play the remembered order",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 7,
+      "pass": true
+    },
+    {
+      "width": 320,
+      "id": "ring",
+      "index": 2,
+      "variant": "Let the ring answer itself",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 8,
+      "pass": true
+    },
+    {
+      "width": 320,
+      "id": "belfry",
+      "index": 0,
+      "variant": "Bring the recording through",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 12,
+      "pass": true
+    },
+    {
+      "width": 320,
+      "id": "belfry",
+      "index": 1,
+      "variant": "The ring holds its breath",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 12,
+      "pass": true
+    },
+    {
+      "width": 320,
+      "id": "belfry",
+      "index": 2,
+      "variant": "A human return, without a bonus",
+      "overflow": false,
+      "clipped": [],
+      "overlaps": [],
+      "paths": 12,
+      "pass": true
+    },
+    {
+      "name": "compact choice action",
+      "pass": true
+    },
+    {
+      "name": "all recommended choices applied",
+      "pass": true,
+      "selections": [
+        [
+          "contract",
+          "A deal made in stone"
+        ],
+        [
+          "bells",
+          "A field you can read"
+        ],
+        [
+          "service",
+          "Repairs that answer"
+        ],
+        [
+          "hall",
+          "The waiting boy"
+        ],
+        [
+          "tape",
+          "The loose end crosses the hall"
+        ],
+        [
+          "broadcast",
+          "The mast beyond the door"
+        ],
+        [
+          "ash",
+          "Still at work"
+        ],
+        [
+          "return",
+          "The same hall, changed"
+        ],
+        [
+          "ring",
+          "An answer, not an examination"
+        ],
+        [
+          "belfry",
+          "Bring the recording through"
+        ]
+      ]
+    },
+    {
+      "name": "dark appearance",
+      "pass": true
+    }
+  ]
+}

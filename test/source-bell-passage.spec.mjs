@@ -8,9 +8,9 @@
 // are not, and St Brendan's belfry resolving out of the far end with one wall
 // missing.
 //
-// So what has to hold is different in kind. Not "can the obstacle be dodged" but:
-// is the place coherent, is it made of the building's real meshes, does the room
-// arrive rather than switch on, does walking into it end the chapter exactly
+// What has to hold: is the place coherent, can the bells be dodged, is it made
+// of the building's real meshes, does the road end at St Brendan's own door
+// with the belfry through it, does walking through it end the chapter exactly
 // once, and does the road it commits to still reach the same belfry.
 
 import assert from 'node:assert/strict';
@@ -18,7 +18,7 @@ import { existsSync, readFileSync } from 'node:fs';
 
 import {
   SOURCE_BELLS,
-  SOURCE_BELLS_ROOM,
+  SOURCE_HORIZON,
   SOURCE_BELL_PASSAGE,
   SOURCE_TIERS,
   SOURCE_TIER_BY_ID,
@@ -29,8 +29,15 @@ import {
   sourceTierHeightAt,
   BELL_SWING,
   bellSwingAt,
+  SOURCE_RING,
+  bellAssemblyPoseAt,
 } from '../src/data/source-level.js';
+import { ELLERY_BELLS } from '../src/data/bell-tower.js';
+import { ELSEWHERE_CROSSING_SECONDS } from '../src/data/elsewhere-worlds.js';
+import { fullCircleBellCurve } from '../src/game/bell-tower-runtime.js';
 import { PROP_BOUNDS } from '../src/data/generated/prop-geometry.js';
+import { CELL, F } from '../src/data/floorplan/legend.js';
+import { sourceBellContactShape } from '../src/game/source-bell-field.js';
 import {
   CHUNK_SURF_PHASE,
   HORIZON_EXIT,
@@ -39,8 +46,32 @@ import {
   chunkSurfCompletion,
   reduceChunkSurf,
 } from '../src/game/chunk-surf-state.js';
-import { buildChunkSurfGodPreset, CHUNK_SURF_GOD_PRESET } from '../src/game/chunk-surf-god.js';
+import { buildBellsGodPreset, buildChunkSurfGodPreset, CHUNK_SURF_GOD_PRESET } from '../src/game/chunk-surf-god.js';
 import { createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
+
+// The runtime must restore with the run's actual rules before sanitizing saves.
+{
+  const built = buildBellsGodPreset(120, { seed: 4417 });
+  const origin = built.state.landscapeOrigin || { x: 0, y: -252 };
+  const previous = { x: 40, y: SOURCE_BELLS.from - 120 };
+  assert.ok(SOURCE_BELL_PASSAGE.map((entry) => sourceBellContactShape(entry)).filter(Boolean)
+    .every((shape) => Math.hypot((previous.x - shape.x) / shape.rx, (previous.y - shape.y) / shape.ry) > 1.4),
+  'the resumed position is clear of every actual bell');
+  const runtime = createSourceSpaceRuntime({ difficulty: 'story', initialState: {
+    ...built.state, bellField: { noise: 3, checkpointDepth: 148, previous },
+  } });
+  runtime.setPlayerPosition({ x: origin.x + previous.x, y: origin.y + previous.y, facing: 0.37 });
+  assert.equal(runtime.bellsFrame().noiseLimit, 4);
+  assert.equal(runtime.bellsFrame().noise, 3);
+  assert.equal(runtime.bellsFrame().checkpointDepth, 148);
+  const frame = runtime.tickBellField(0.016);
+  assert.equal(frame.noiseLimit, 4, 'omitted per-tick difficulty retains the authoritative constructor rules');
+  assert.equal(frame.noise, 3);
+  assert.equal(frame.checkpointDepth, 148);
+  assert.equal(frame.moved, false);
+  assert.equal(frame.reset, null);
+  assert.equal(runtime.state().bellField.checkpointDepth, 148);
+}
 
 // ── the ground ──────────────────────────────────────────────────────────────
 {
@@ -97,31 +128,32 @@ import { createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
   }
 }
 
-// ── the room is a room, and it has three walls ──────────────────────────────
+// ── the road ends at the tower's own door, and the belfry is through it ────
 {
   const room = SOURCE_BELLS.room;
   assert.equal(inSourceBellsRoom(0, room.threshold - 1), true);
   assert.equal(inSourceBellsRoom(0, room.threshold + 1), false, 'the threshold is the way in');
-  assert.equal(inSourceBellsRoom(room.halfX + 2, room.threshold - 1), false, 'and the walls are walls');
-
-  const walls = SOURCE_BELLS_ROOM.filter((part) => part.mesh === 'tower_louvres');
-  assert.ok(walls.length >= 6, 'the walls are courses of the belfry’s own louvres');
-  const west = walls.filter((part) => part.x < -1);
-  const east = walls.filter((part) => part.x > 1);
-  const far = walls.filter((part) => Math.abs(part.x) <= 1 && part.y < room.at);
-  assert.ok(west.length && east.length && far.length, 'west, east and far walls are all built');
-  // THE FOURTH WALL IS SOURCE SPACE. Nothing is allowed to stand across the way
-  // in — that opening is the entire image the passage exists to arrive at.
-  const near = walls.filter((part) => part.y > room.at);
-  assert.equal(near.length, 0, 'the side you walk in through is left open');
-
-  // And what is hung in it is the ring the player is about to be standing under.
-  const bells = SOURCE_BELLS_ROOM.filter((part) => /tower_bell_0/.test(part.mesh));
-  assert.equal(bells.length, 6, 'six bells, which is what St Brendan’s has');
-  assert.equal(new Set(bells.map((part) => part.mesh)).size, 6, 'and they are the six different bells');
-  assert.ok(bells.every((part) => part.scale === 1), 'at true scale, which is the point of arriving');
-  assert.ok(SOURCE_BELLS_ROOM.some((part) => part.mesh === 'tower_frame'), 'in a real frame');
-  assert.ok(SOURCE_BELLS_ROOM.some((part) => part.mesh === 'tower_catwalk'), 'on a real deck');
+  // No replica of the belfry stands in the field: the door shows the real one.
+  const level = readFileSync('src/data/source-level.js', 'utf8');
+  assert.doesNotMatch(level, /SOURCE_BELLS_ROOM/, 'a replica belfry still stands in the field');
+  const main = readFileSync('src/main.js', 'utf8');
+  const capture = main.slice(main.indexOf('function captureBrendanTowerView()'), main.indexOf('function tickSourceDoorArrival('));
+  assert.match(capture, /R3\.r3dCaptureTowerView\?\.\(/, 'the belfry is never rendered for the door');
+  assert.match(capture, /chunkSurfRuntime=null;px=door\.arrival\.x;py=door\.arrival\.y;/, 'the capture is not taken from the belfry arrival');
+  assert.match(capture, /finally\{\s*chunkSurfRuntime=runtime;px=at\.x;py=at\.y;/, 'the capture can strand the body in the building');
+  assert.match(main, /R3\.r3dSetSourceTowerView\?\.\(syncBrendanTowerView\(x,y\)\)/, 'the door never learns it has a belfry behind it');
+  assert.match(main, /if\(chunkSurfRuntime\.crossesRouteDoor\?\.\(stepFrom,\{x:px,y:py\}\)\)\{\s*sourceDoorArrival=/, 'the step through the door is cut on its first frame');
+  assert.match(main, /if\(completion\.horizonExit&&route!==SOURCE_FINALE_ROUTE\.CONTACT\)\{leave\(\);return;\}/, 'walking through a road\'s door still stops at a slate');
+  assert.match(main, /function brendanTowerInstances\([\s\S]*?out\.push\(\.\.\.brendanTowerDoorInstances\(\)\);/, 'the belfry has no door behind the arrival');
+  const props = readFileSync('src/render/props3d.js', 'utf8');
+  assert.match(props, /export function renderSourceTowerView\(/);
+  assert.match(props, /float towerDepth\(vec2 uv\)\{float a=texture\(uViewDepth,uv\)\.a;return \(1\.0\/max\(a,1e-4\)-1\.0\)\/\.14;\}/,
+    'the door does not read the depth the march writes (1/(1+z*.14))');
+  const r3d = readFileSync('src/render/r3d.js', 'utf8');
+  assert.match(r3d, /o = vec4\(clamp\(col,0\.0,1\.0\), 1\.0 \/ \(1\.0 \+ zView \* 0\.14\)\);/, 'the march no longer writes the depth the door reads');
+  const draw = r3d.slice(r3d.indexOf('function drawSourceVoidPhysical'), r3d.indexOf('function drawTextSpace'));
+  assert.ok(draw.indexOf('P3.renderSourceTowerView') > draw.indexOf('P3.renderSourcePortals') && draw.indexOf('P3.renderSourceTowerView') < draw.indexOf('P3.propTargets()'),
+    'the belfry is not drawn into the void\'s own prop targets');
 }
 
 // ── EVERYTHING OUT THERE CAN ACTUALLY BE REACHED ───────────────────────────
@@ -152,17 +184,44 @@ import { createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
   // THE LAST HUNDRED AND FORTY METRES IS THE RING. The prose above the act says
   // so, and 432 - 140 = 292, which is where it starts.
   const ring = SOURCE_BELL_PASSAGE.filter((entry) => /^bells-ring-\d/.test(entry.id));
-  assert.equal(ring.length, 6);
+  assert.equal(ring.length, ELLERY_BELLS.length);
   const first = depth(ring[0]), last = depth(ring[ring.length - 1]);
   assert.ok(first >= 280 && first <= 300, `the ring starts at ${first.toFixed(0)}, not ~292`);
-  assert.ok(last > thresholdDepth - 20, 'and it runs up to the door rather than stopping short');
+  assert.ok(last > SOURCE_BELLS.from - SOURCE_BELLS.doors.from - 20, 'and it runs up to the tower door field rather than stopping short');
+  assert.ok(SOURCE_BELLS.doors.to > SOURCE_BELLS.room.threshold, 'the door field runs into the belfry');
   assert.ok(last - first >= 100, 'spread across the act, not bunched into forty metres of it');
 }
 
-// ── MOTION FOLLOWS THE THREE ACTS ──────────────────────────────────────────
+// ── ONE RING, THREE SIZES ───────────────────────────────────────────────────
+//
+// Every bell in the passage is one of St Brendan's eight, lifted out of the
+// chapel ring with its own wheel, clapper, stay and slider. The passage chooses
+// only size and place: miniature, the ring's own size, architectural. Nothing is
+// invented — no loose wheels or clappers, no frame standing on its own, no bell
+// that is not in the ring, and no motion the chapel does not make.
 {
-  const byId = (id) => SOURCE_BELL_PASSAGE.find((entry) => entry.id === id);
   const act = (prefix) => SOURCE_BELL_PASSAGE.filter((entry) => entry.id.startsWith(prefix));
+  assert.ok(SOURCE_BELL_PASSAGE.length >= 20, 'fewer than twenty bells to walk between');
+  for (const entry of SOURCE_BELL_PASSAGE) {
+    assert.match(entry.mesh, /^tower_bell_0[1-8]$/, `${entry.id} is not a ring bell`);
+    assert.equal(entry.assembly, true, `${entry.id} is a loose casting rather than the ring's assembly`);
+    assert.equal(entry.mesh, `tower_bell_0${entry.ring}`, `${entry.id} names a ring bell it does not draw`);
+    for (const part of ['wheel', 'clapper', 'stay', 'slider']) {
+      assert.ok(PROP_BOUNDS[`tower_${part}_0${entry.ring}`], `${entry.id} has no ${part} in the prop pack`);
+    }
+  }
+  assert.equal(new Set(SOURCE_BELL_PASSAGE.map((entry) => entry.ring)).size, ELLERY_BELLS.length, 'the passage leaves a ring bell out');
+  const sized = (size) => SOURCE_BELL_PASSAGE.filter((entry) => entry.size === size);
+  assert.ok(sized('miniature').length >= 8, 'too few miniatures');
+  assert.ok(sized('regular').length >= 8, 'too few bells at the ring’s own size');
+  assert.ok(sized('architectural').length >= 4, 'too few architectural bells');
+  assert.equal(sized('miniature').length + sized('regular').length + sized('architectural').length, SOURCE_BELL_PASSAGE.length,
+    'a bell is outside the three sizes');
+  for (const entry of sized('regular')) {
+    assert.equal(entry.scale, SOURCE_RING[entry.ring - 1].visualScale, `${entry.id} is called regular but is not the chapel's size`);
+  }
+  assert.ok(sized('miniature').every((entry) => entry.scale < .6 && !entry.blocks && !entry.contact), 'a miniature trips or shoves the player');
+  assert.ok(sized('architectural').every((entry) => entry.scale >= 4), 'an architectural bell is not large');
 
   // ARCHITECTURE: nothing moves. Too big, half sunk, indifferent to you.
   for (const entry of act('bells-arch')) {
@@ -170,37 +229,29 @@ import { createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
     assert.equal(bellSwingAt(entry, 7.3), 0);
   }
 
-  // NULL: it moves, and it is wrong.
-  assert.equal(byId('bells-null-wheel').swing.kind, 'turn', 'a wheel with nothing in it, turning');
-  assert.equal(byId('bells-null-inverted').swing.kind, 'rock', 'upside down, and rocking about it');
-  assert.ok(act('bells-null-coin').every((entry) => entry.swing?.kind === 'shiver'),
-    'and the coins shiver');
-  // Rates unlinked from size is the whole idea: the smallest things move fastest.
-  const coin = byId('bells-null-coin-1'), canopy = byId('bells-null-canopy');
-  assert.ok(coin.swing.period < canopy.swing.period / 10,
-    'a coin moves an order of magnitude faster than the thing the size of a house');
-
-  // RESOLUTION: six bells, full circle, in order.
-  const ring = SOURCE_BELL_PASSAGE.filter((entry) => /^bells-ring-\d/.test(entry.id));
-  assert.equal(ring.length, 6);
-  assert.ok(ring.every((entry) => entry.swing?.kind === 'ring'));
-  assert.ok(ring.every((entry) => entry.swing.amp === BELL_SWING.FULL), 'all the way over');
-  assert.ok(BELL_SWING.FULL > Math.PI * 0.9 && BELL_SWING.FULL < Math.PI,
-    'a full-circle bell goes up past the balance, and not through it');
-  const phases = ring.map((entry) => entry.swing.phase);
-  assert.equal(new Set(phases).size, 6, 'in order — no two of them strike together');
-
-  // NOTHING MAY EVER TOUCH THE PLAYER.
-  //
-  // Collision is the static footprint, so a piece that blocks must not swing far
-  // enough to sweep ground it does not own. Large amplitudes live on pieces you
-  // can walk through; a wheel is exempt because turning on its own axis covers
-  // exactly the same ground at every angle.
-  for (const entry of SOURCE_BELL_PASSAGE) {
-    if (!entry.swing || !entry.blocks) continue;
-    assert.ok(entry.swing.kind === 'turn' || Math.abs(entry.swing.amp || 0) <= 0.12,
-      `${entry.id} blocks and swings ${entry.swing.amp} — it would sweep through the player`);
+  // When a ring bell moves, it moves as the chapel moves it.
+  for (const entry of SOURCE_BELL_PASSAGE.filter((entry) => entry.swing)) {
+    assert.equal(entry.swing.kind, 'full-circle', `${entry.id} moves in a way the chapel ring never does`);
   }
+  const ring = act('bells-ring-');
+  assert.equal(ring.length, ELLERY_BELLS.length);
+  assert.deepEqual(ring.map((entry) => entry.ring), ELLERY_BELLS.map((bell) => bell.id), 'the ring is not walked in bell order');
+  assert.equal(new Set(ring.map((entry) => entry.swing.phase)).size, ELLERY_BELLS.length, 'two ring bells strike together — not rounds');
+  for (const entry of ring) {
+    const bell = ELLERY_BELLS[entry.ring - 1];
+    for (let t = 0; t < 6; t += 0.137) {
+      const strokes = t / entry.swing.period + entry.swing.phase / (Math.PI * 2);
+      const stroke = Math.floor(strokes), direction = stroke % 2 ? -1 : 1;
+      assert.equal(bellSwingAt(entry, t), fullCircleBellCurve({ phase: strokes - stroke, direction, balanceHold: bell.balanceHold, strikePhase: bell.strikePhase }),
+        `${entry.id} does not swing on the chapel's full-circle curve`);
+    }
+  }
+  const pose = bellAssemblyPoseAt(ring[0], 0.9);
+  assert.notEqual(pose.clapperAngle, pose.angle, 'the clapper does not lag the bell');
+  assert.ok(Math.abs(pose.angle) <= Math.PI * .94 + .03, 'a ring bell swings through the balance');
+
+  // No moving bell is also a hard grid wall.
+  for (const entry of SOURCE_BELL_PASSAGE) assert.ok(!(entry.swing && entry.blocks), `${entry.id} blocks and swings`);
 
   // The swing is a pure function of the piece and the clock, and it is bounded.
   for (const entry of SOURCE_BELL_PASSAGE) {
@@ -215,7 +266,7 @@ import { createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
 
 // ── the passage is made of the building ─────────────────────────────────────
 {
-  const all = [...SOURCE_BELL_PASSAGE, ...SOURCE_BELLS_ROOM];
+  const all = [...SOURCE_BELL_PASSAGE];
   assert.equal(new Set(all.map((entry) => entry.id)).size, all.length, 'nothing is placed twice');
   for (const entry of all) {
     assert.ok(PROP_BOUNDS[entry.mesh], `${entry.id} uses ${entry.mesh}, which is not in the built prop pack`);
@@ -225,22 +276,13 @@ import { createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
       `${entry.id} stands outside the passage`);
     assert.ok(Math.abs(entry.x) <= SOURCE_BELLS.halfWidth, `${entry.id} stands outside the open ground`);
   }
-  // Every mesh is the tower's own. Nothing here is invented for the occasion:
-  // the whole conceit is that these are the objects from the room at the end.
   assert.ok(all.every((entry) => entry.mesh.startsWith('tower_')),
     'the passage is built from St Brendan’s belfry and nothing else');
 
-  // SCALE IS THE SUBJECT. Three acts, and the middle one is where size stops
-  // meaning anything: architecture, then coins, then the ring at true scale.
   const scales = SOURCE_BELL_PASSAGE.map((entry) => entry.scale);
   assert.ok(Math.max(...scales) >= 20, 'something out there is the size of a building');
   assert.ok(Math.min(...scales) <= .5, 'and something out there is the size of a penny');
-  const coins = SOURCE_BELL_PASSAGE.filter((entry) => entry.scale < 1);
-  assert.ok(coins.length >= 8, 'the coins are a field you wade, not a couple of props');
-  assert.ok(coins.every((entry) => !entry.blocks), 'and none of them is a trip hazard');
-  // The ring at the end of the walk is in bell order, getting nearer to true.
   const ring = SOURCE_BELL_PASSAGE.filter((entry) => /^bells-ring-\d+$/.test(entry.id));
-  assert.equal(ring.length, 6);
   for (let i = 1; i < ring.length; i += 1) {
     assert.ok(ring[i].y < ring[i - 1].y, 'the ring is walked through in order');
   }
@@ -264,10 +306,14 @@ import { createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
   for (let beat = 0; beat < 3; beat += 1) runtime.talkToHorizonBust();
   runtime.decideHorizonBust(true);
 
-  // Taking the detour opens the passage and does NOT close the chapter.
+  // Taking the detour reveals a physical path. It neither teleports the body
+  // nor leaves the horizon; crossing the seam on foot opens the bell field.
+  const before = runtime.horizonFrame();
   const taken = runtime.takeHorizonBustDetour();
-  assert.equal(taken.entered, 'bells');
-  assert.equal(runtime.state().phase, CHUNK_SURF_PHASE.BELLS);
+  assert.equal(taken.pathOpened, true);
+  assert.equal(runtime.state().phase, CHUNK_SURF_PHASE.HORIZON);
+  assert.equal(runtime.horizonFrame().depth, before.depth);
+  assert.equal(runtime.horizonFrame().lateral, before.lateral);
   assert.equal(runtime.state().active, true);
   assert.equal(runtime.state().completed, false);
   assert.equal(completions.length, 0, 'nothing is reported to the world yet');
@@ -276,11 +322,45 @@ import { createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
   assert.equal(runtime.state().finale.stage, SOURCE_FINALE_STAGE.TOWER_COMMITTED);
 
   const origin = runtime.state().landscapeOrigin || { x: 0, y: -252 };
+  // Begin where a player can actually speak to the bust, not already standing
+  // on its new road. The near-side bend must clear the solid pedestal too.
+  let from = { x: origin.x, y: origin.y + SOURCE_HORIZON.from - 168 };
+  runtime.setPlayerPosition({ ...from, facing: 0 });
+  for (const target of taken.path) {
+    const world = { x: origin.x + target.x, y: origin.y + target.y };
+    const start = { ...from }, steps = Math.ceil(Math.hypot(world.x - from.x, world.y - from.y) / 0.75);
+    for (let i = 1; i <= steps; i += 1) {
+      const to = { x: start.x + (world.x - start.x) * i / steps, y: start.y + (world.y - start.y) * i / steps };
+      const cell = runtime.geometry.cellAt(to.x, to.y);
+      assert.ok(cell, 'revealed path owns every cell along its visible ribbon');
+      assert.equal(cell.ceil, null, 'the tower road has open sky, not a zero-height roof');
+      assert.ok(cell.flags & F.SKY, 'the packed render plan must preserve its no-ceiling intent');
+      assert.equal(runtime.geometry.canStep(from.x, from.y, to.x, to.y).ok, true,
+        'no-ceiling ground must not fail the headroom check');
+      runtime.onStep(from, to);
+      from = to;
+    }
+  }
+  assert.equal(runtime.state().phase, CHUNK_SURF_PHASE.BELLS);
   const head = runtime.bellsFrame();
   assert.equal(head.active, true);
-  assert.equal(head.depth, SOURCE_BELLS.entryStandoff, 'he is put over the seam, not on it');
+  assert.equal(head.depth, SOURCE_BELLS.from - taken.path.at(-1).y, 'the walked position survives the seam unchanged');
   assert.equal(head.resolve, 0);
   assert.equal(head.atRoom, false);
+  for (const entry of SOURCE_BELL_PASSAGE.filter((entry) => entry.contact)) {
+    assert.ok(runtime.geometry.cellAt(origin.x + entry.x, origin.y + entry.y),
+      `${entry.id} uses soft body contact, not an impassable cell`);
+  }
+
+  const entry = SOURCE_BELL_PASSAGE.find((entry) => entry.id === 'bells-field-14');
+  const body = sourceBellContactShape(entry);
+  runtime.setPlayerPosition({ x: origin.x + body.x, y: origin.y + body.y + body.ry - 0.1, facing: 0.37 });
+  const contact = runtime.tickBellField(0.1);
+  assert.equal(contact.moved, true, 'live runtime consumes the physical field collision');
+  assert.equal(contact.contacts[0].id, entry.id);
+  assert.equal(contact.noise, 0, 'this authored bell is mute');
+  assert.equal(contact.reset, null);
+  assert.equal(runtime.state().bellField.hits, 1, 'contact state is carried into the Source save snapshot');
 
   // Halfway down, the room is on its way and the walk has something left in it.
   runtime.setPlayerPosition({ x: origin.x, y: origin.y + (SOURCE_BELLS.resolveFrom + SOURCE_BELLS.resolveTo) / 2, facing: 0 });
@@ -288,7 +368,68 @@ import { createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
   assert.ok(middle.resolve > .4 && middle.resolve < .6);
   assert.ok(middle.remaining > 0);
 
-  // And walking in through the missing wall ends the chapter, once.
+  // THE TOWER DOOR IS LOCKED until the two seeded doors have been walked through.
+  const doors = runtime.doorFieldDoors();
+  const keys = doors.filter((door) => door.key);
+  assert.ok(doors.some((door) => door.route === 'tower'), 'the belfry has no tower door');
+  assert.equal(keys.length, 2, 'the tower door field does not seed exactly two key doors');
+  assert.ok(keys.every((door) => !door.shut), 'a key door cannot be walked through');
+  assert.ok(doors.filter((door) => !door.route).length >= 12, 'the tower door field is thin');
+  {
+    const outsideLocked = { x: origin.x, y: origin.y + SOURCE_BELLS.room.threshold + 2 };
+    const insideLocked = { x: origin.x, y: origin.y + SOURCE_BELLS.room.threshold - 1 };
+    assert.equal(runtime.geometry.canStep(outsideLocked.x, outsideLocked.y, insideLocked.x, insideLocked.y).ok, false,
+      'the locked tower door lets the body into the belfry');
+    runtime.setPlayerPosition({ ...outsideLocked, facing: 0 });
+    runtime.onStep(outsideLocked, insideLocked);
+    assert.equal(runtime.state().phase, CHUNK_SURF_PHASE.BELLS, 'a locked tower door ended the chapter');
+    assert.equal(completions.length, 0);
+  }
+  const towerDoor = () => runtime.doorFieldDoors().find((door) => door.route === 'tower');
+  const through = (door) => {
+    assert.equal(runtime.doorCrossingFrame(), null, 'only one real door visit can own the crossing at a time');
+    assert.equal(runtime.openDoorFieldDoor(door.id).opened, true, `${door.id} will not open`);
+    const [a, b] = door.threshold, cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2;
+    const from = { x: cx + door.normal[0] * 1.5, y: cy + door.normal[2] * 1.5 };
+    const to = { x: cx - door.normal[0] * 1.5, y: cy - door.normal[2] * 1.5 };
+    runtime.setPlayerPosition({ ...from, facing: 0 });
+    runtime.onStep(from, to);
+    assert.equal(runtime.doorCrossingFrame()?.id, door.id, 'the intended door starts an actual crossing');
+    assert.equal(runtime.doorCrossingFrame()?.key, door.key);
+    assert.ok(runtime.state().station.entries.some((entry) => entry.doorId === door.id), 'the visit is journaled');
+    runtime.advanceStationTime(ELSEWHERE_CROSSING_SECONDS - .01);
+    assert.equal(runtime.doorCrossingFrame()?.id, door.id, 'the crossing cannot finish before the authored duration');
+    runtime.advanceStationTime(.02);
+    assert.equal(runtime.doorCrossingFrame(), null, 'the public station clock completes this visit before another begins');
+  };
+  through(keys[0]);
+  assert.equal(towerDoor().unlocked, false, 'one key door unlocked the tower door');
+  const decoy = doors.find((door) => !door.route && !door.shut && !door.key && !door.personal && !door.home && !door.lockIn);
+  if (decoy) {
+    through(decoy);
+    assert.equal(towerDoor().unlocked, false, 'an ordinary door counted as a key');
+  }
+  assert.equal(runtime.towerDoorView(), null, 'the locked tower door already shows the belfry');
+  through(keys[1]);
+  assert.equal(towerDoor().unlocked, true, 'walking through both key doors left the tower door locked');
+  {
+    runtime.setPlayerPosition({ x: origin.x, y: origin.y + SOURCE_BELLS.room.threshold + 6, facing: 0 });
+    const view = runtime.towerDoorView();
+    assert.ok(view, 'the open tower door shows nothing');
+    assert.equal(view.width, .94, 'the opening is not the tower door frame\'s');
+    assert.deepEqual(view.forward, [0, -1], 'the belfry is not through the door the way the road runs');
+    // The eye walks through the middle of it: its cell's eye is on the door's centre line.
+    assert.ok(Math.abs(view.origin[0] - (origin.x + .5) * CELL) < 1e-6, 'the road does not walk through the middle of the tower door');
+    const [a] = towerDoor().threshold;
+    const past = Math.ceil(a.y) - 1;
+    assert.ok(Math.abs((a.y - past) * CELL - .245) < .01, 'the first cell past the door does not put the eye a quarter metre inside');
+    assert.equal(runtime.crossesRouteDoor({ x: origin.x, y: Math.ceil(a.y) }, { x: origin.x, y: past }), true, 'main cannot see the step through the door coming');
+    assert.equal(runtime.crossesRouteDoor({ x: origin.x, y: Math.ceil(a.y) + 1 }, { x: origin.x, y: Math.ceil(a.y) }), false);
+    assert.equal(runtime.geometry.canStep(origin.x + 3, Math.ceil(a.y), origin.x + 3, past).ok, false, 'the hedge beside the door lets the body round it');
+  }
+  assert.ok(runtime.state().routeDoorsErased.includes(keys[0].id), 'the explored doors are not saved');
+
+  // And walking in through the tower door ends the chapter, once.
   const outside = { x: origin.x, y: origin.y + SOURCE_BELLS.room.threshold + 2 };
   const doorway = { x: origin.x, y: origin.y + SOURCE_BELLS.room.threshold - 1 };
   runtime.setPlayerPosition({ ...outside, facing: 0 });
@@ -338,4 +479,4 @@ import { createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
   assert.match(handover, /GOD_LOCATION_HOOKS\['cathedral-belfry'\]/, 'it hands over into the real bell chamber');
 }
 
-console.log(`source bell passage specs passed (${SOURCE_BELL_PASSAGE.length} placements, ${SOURCE_BELLS_ROOM.length} room parts, ${SOURCE_BELLS.length}m)`);
+console.log(`source bell passage specs passed (${SOURCE_BELL_PASSAGE.length} placements, ${SOURCE_BELLS.length * CELL}m)`);

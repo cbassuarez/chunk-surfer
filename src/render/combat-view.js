@@ -11,6 +11,7 @@ import { drawBagIcon } from './bag-icons.js';
 import { loadStoryArtImage, resolveStoryArt } from '../game/story-art.js';
 import { SNR_TRIANGLE } from '../game/combat-state.js';
 import { fireballRayPoint } from '../game/window-channel.js';
+import { drawBattleHands3D } from './battle-hands.js';
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, Number(value) || 0));
 
@@ -1394,6 +1395,9 @@ export function drawCombatActionIcon(actionId, x, y, {
 
 export function combatActionReadout(move = {}) {
   if (move.enabled === false) return 'UNAVAILABLE';
+  if (move.coverRebuild != null) return move.coverRebuild ? 'REBUILD +1'
+    : move.coverCapacity ? 'COVER FULL' : 'NO PLATES';
+  if (move.coverCost) return `COVER -${move.coverCost} · +${move.coverDamage}`;
   const bits = [];
   if (move.damage) bits.push(`DMG ${move.damage}`);
   if (move.prevents) bits.push(`GUARD ${move.prevents}`);
@@ -1671,10 +1675,31 @@ function drawGripHandFront(ctx, box, palette, severity, lineWidth, hasTool) {
   if (severity >= 2) block(.53 + reach, .53, .025, .035, '#9b1825');
 }
 
-// The recordist's hands, first person, OFF-style: the open hand rises large in
-// the near-left foreground, the gripping hand sits smaller and further right,
-// and both are clipped to the stage so wrists never spill into the command band.
-export function drawFirstPersonHands(toolId, {
+// The anatomical view-model shares the existing stage and hand framing. A
+// transparent GPU target runs the world's final acquisition shader before
+// composition. The command band stays on the sharp UI plane below the stage.
+export function drawFirstPersonHands(toolId, options = {}) {
+  const { stage, left, right } = options;
+  if (!stage || !(stage.w > 0) || !(stage.h > 0)) return;
+  let drawn = false;
+  uiDraw(({ ctx, dpr, cellW, cellH }) => {
+    const x = stage.x * cellW * dpr, y = stage.y * cellH * dpr;
+    const width = stage.w * cellW * dpr, height = stage.h * cellH * dpr;
+    const local = box => box && ({ x: (box.x - stage.x) * cellW * dpr,
+      y: (box.y - stage.y) * cellH * dpr, w: box.w * cellW * dpr, h: box.h * cellH * dpr });
+    ctx.save();
+    try {
+      ctx.beginPath(); ctx.rect(x, y, width, height); ctx.clip();
+      drawn = drawBattleHands3D({ ...options, ctx, x, y, width, height,
+        pixelRatio: dpr, tool: toolId, left: local(left), right: local(right) });
+    } finally { ctx.restore(); }
+  });
+  // Loading or unavailable WebGL must not blank the battle's embodied cues.
+  if (!drawn) drawFallbackFirstPersonHands(toolId, options);
+}
+
+// Retained only for loading and devices unable to create a view-model context.
+function drawFallbackFirstPersonHands(toolId, {
   stage = null,
   left = null,
   right = null,

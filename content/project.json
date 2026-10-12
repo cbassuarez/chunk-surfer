@@ -70,7 +70,13 @@
     "narrative/room-listen.main_b3.story.json",
     "narrative/room-listen.soundnoisemusic.story.json",
     "narrative/room-listen.the_tub.story.json",
-    "narrative/source-space.contact.story.json"
+    "narrative/source-space.contact.story.json",
+    "narrative/source-space.payphone.story.json",
+    "narrative/source-space.outskirts.story.json",
+    "narrative/source-space.last-light.story.json",
+    "narrative/source-space.door-field.story.json",
+    "narrative/practice-wing.traces.story.json",
+    "narrative/practice-wing.student.story.json"
   ],
   "audio": [
     "audio/audio-project.audio.json"
@@ -97,6 +103,10 @@
     "conservatory.talisman",
     "conservatory.chapel_key_check",
     "source-space.contact",
+    "source-space.payphone",
+    "source-space.outskirts",
+    "source-space.last-light",
+    "source-space.door-field",
     "room-listen.main_b3",
     "radio.initial_checkin",
     "radio.missed_checkin",
@@ -125,6 +135,8 @@
       "documents": [
         "conservatory.bent_rig",
         "conservatory.talisman",
+        "practice-wing.traces",
+        "practice-wing.student",
         "conservatory.hush",
         "conservatory.chapel_key_check",
         "conservatory.bust_talk",
@@ -194,7 +206,11 @@
       "title": "Source Space contact",
       "kind": "branch",
       "documents": [
-        "source-space.contact"
+        "source-space.contact",
+        "source-space.payphone",
+        "source-space.outskirts",
+        "source-space.last-light",
+        "source-space.door-field"
       ]
     },
     {
