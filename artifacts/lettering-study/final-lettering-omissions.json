@@ -1,0 +1,392 @@
+{
+  "date": "2026-10-17T08:46:20.292Z",
+  "method": "Read actual production GLB material/mesh contracts and generator geometry,then matched placement-owned exact copy. Generic decoration and unnamed prose do not authorize invented words.",
+  "codeOwner": "tools/chunk_surfer/build-props.mjs;src/data/conservatory-props.js;exterior-district.js for civic plaques",
+  "status": "Finite audit corrected to 48 placement-owned literal jobs: 10 direct static/puzzle variants plus 38 attached inscription meshes. Candidate bake pending final installation verification.",
+  "groups": {
+    "basement": [
+      {
+        "id": "b1-stencil",
+        "mesh": "door_stencil_b1",
+        "first": "",
+        "again": "",
+        "assetTag": null
+      },
+      {
+        "id": "b2-stencil",
+        "mesh": "door_stencil_b2",
+        "first": "",
+        "again": "",
+        "assetTag": null
+      },
+      {
+        "id": "b3-stencil",
+        "mesh": "door_stencil_b3",
+        "first": "B3, stencilled on the blockwork beside the opening. The work order in your pocket says the same thing.",
+        "again": "B3. The one they picked.",
+        "assetTag": null
+      },
+      {
+        "id": "b5-stencil",
+        "mesh": "door_stencil_b5",
+        "first": "",
+        "again": "",
+        "assetTag": null
+      }
+    ],
+    "keyPuzzle": [
+      {
+        "id": "box-office-ledger",
+        "mesh": "rekey_ledger",
+        "first": "A rekey ledger: REPLACEMENT LOCK — CHAPEL — CABINET C-17.",
+        "again": "CHAPEL. REPLACEMENT LOCK. C-17.",
+        "assetTag": null
+      },
+      {
+        "id": "box-office-key-ring-ch04",
+        "mesh": "chapel_key_ring_ch04",
+        "first": "Tag: CH-04. CHAPEL — MAIN, stamped into the brass. The stamp is older than the ring.",
+        "again": "CH-04. The chapel door this was cut for is still there. The lock in it is not.",
+        "assetTag": null
+      },
+      {
+        "id": "box-office-key-ring-c17",
+        "mesh": "chapel_key_ring_c17",
+        "first": "Tag: C-17. A cabinet number in biro, written over a scratched-out one.",
+        "again": "C-17. Newer than the ring it is on, and nobody has stamped it yet.",
+        "assetTag": null
+      },
+      {
+        "id": "box-office-key-ring-fohm",
+        "mesh": "chapel_key_ring_fohm",
+        "first": "Tag: FOH-M. FRONT OF HOUSE — MASTER. Worn smooth on both faces.",
+        "again": "FOH-M. It opens everything on this side of the doors and nothing past them.",
+        "assetTag": null
+      }
+    ],
+    "civicExterior": [
+      {
+        "id": "yard-sign",
+        "mesh": "yard_sign",
+        "first": "DEMOLITION NOTICE. Works commence 06:00 Thursday. The contractor is a name you have never heard of and the client is W. ELLERY HOLDINGS, which is the name on your work order.",
+        "again": "Six on Thursday. The board beside it still counts down in fourteens, and stopped being changed some time in March.",
+        "assetTag": null
+      },
+      {
+        "id": "exterior-foundation-stone",
+        "mesh": "exterior_story_plaque",
+        "first": "ELLERY MUNICIPAL SCHOOL OF MUSIC · OPENED 1888. The older name is cut deeper than the current one.",
+        "again": "ELLERY MUNICIPAL SCHOOL OF MUSIC · OPENED 1888. The older name is cut deeper than the current one.",
+        "assetTag": null
+      },
+      {
+        "id": "exterior-chapel-plaque",
+        "mesh": "exterior_story_plaque",
+        "first": "ELLERY COLLEGIATE CHAPEL · 1908. The tower came after the school and has spent a century pretending otherwise.",
+        "again": "ELLERY COLLEGIATE CHAPEL · 1908. The tower came after the school and has spent a century pretending otherwise.",
+        "assetTag": null
+      },
+      {
+        "id": "exterior-baths-mosaic",
+        "mesh": "exterior_story_plaque",
+        "first": "MUNICIPAL BATHS · 1912. Blue tesserae survive under the paint. The pool was public before it belonged to the conservatoire.",
+        "again": "MUNICIPAL BATHS · 1912. Blue tesserae survive under the paint. The pool was public before it belonged to the conservatoire.",
+        "assetTag": null
+      },
+      {
+        "id": "exterior-hall-stone",
+        "mesh": "exterior_story_plaque",
+        "first": "CONCERT HALL · 1936. The fly tower is eight metres behind this low range, where a stage tower belongs.",
+        "again": "CONCERT HALL · 1936. The fly tower is eight metres behind this low range, where a stage tower belongs.",
+        "assetTag": null
+      }
+    ],
+    "publicRoutes": [
+      {
+        "id": "atrium-sign-main-exit",
+        "mesh": "public_exit_sign",
+        "first": "PUBLIC ENTRANCE. The glazed pair is chained under the closure order; the service entrance is around the block.",
+        "again": "PUBLIC ENTRANCE — CLOSED.",
+        "assetTag": null
+      },
+      {
+        "id": "atrium-public-directory",
+        "mesh": "notice_board",
+        "first": "PUBLIC ROOMS: HALL, BATHS, CHAPEL, PRACTICE WING. Several arrows have been amended in three different hands.",
+        "again": "The building kept changing after the sign was made.",
+        "assetTag": null
+      },
+      {
+        "id": "hall-entrance-sign",
+        "mesh": "hall_entrance_sign",
+        "first": "CONCERT HALL — STALLS / GALLERIES. The gilt house lettering survives above the acoustic pair.",
+        "again": "CONCERT HALL.",
+        "assetTag": null
+      },
+      {
+        "id": "chapel-stair-sign-nave",
+        "mesh": "public_exit_sign",
+        "first": "A painted sign over a gap in the east wall: TOWER — RINGING CHAMBER — NO ADMITTANCE TO THE PUBLIC.",
+        "again": "Somebody has added BELLS UP underneath it, in a different hand and a different decade.",
+        "assetTag": null
+      },
+      {
+        "id": "tower-sign-ringing",
+        "mesh": "tower_plaque",
+        "first": "RINGING ROOM. The enamel letters are older than the electrical conduit.",
+        "again": "RINGING ROOM.",
+        "assetTag": null
+      },
+      {
+        "id": "tower-sign-belfry",
+        "mesh": "tower_plaque",
+        "first": "BELLS — AUTHORISED ACCESS. The final word has been underlined by hand.",
+        "again": "BELLS — AUTHORISED ACCESS.",
+        "assetTag": null
+      },
+      {
+        "id": "tower-sign-organ-exit",
+        "mesh": "tower_plaque",
+        "first": "ORGAN LOFT / NAVE. An arrow follows the service stair down.",
+        "again": "ORGAN LOFT / NAVE.",
+        "assetTag": null
+      },
+      {
+        "id": "tower-sign-nave-exit",
+        "mesh": "tower_plaque",
+        "first": "NAVE / CHAPEL EXIT. The route continues through the narthex to the public doors.",
+        "again": "NAVE / CHAPEL EXIT.",
+        "assetTag": null
+      }
+    ],
+    "chapelInscriptions": [
+      {
+        "id": "chapel-hymn-board",
+        "mesh": "hymn_board",
+        "first": "The hymn board still reads 17 · 44 · 91. Nobody cleared the last service.",
+        "again": "17 · 44 · 91.",
+        "assetTag": null
+      },
+      {
+        "id": "tower-history-plaque",
+        "mesh": "tower_plaque",
+        "first": "J. VALE & SONS — CAST FOR ELLERY COLLEGIATE CHAPEL — 1908. Eight bells. Tenor: 2,200 kg.",
+        "again": "Ellery Collegiate Chapel. 1908. No county is given.",
+        "assetTag": null
+      },
+      {
+        "id": "tower-peal-board",
+        "mesh": "tower_peal_board",
+        "first": "ELLERY COLLEGIATE CHAPEL — STEDMAN TRIPLES — 1908. A touch, not a peal.",
+        "again": "The gilt names have gone brown.",
+        "assetTag": null
+      },
+      {
+        "id": "tower-hammer-isolator",
+        "mesh": "equipment_rack",
+        "first": "CLOCK HAMMER ISOLATOR. A red lever, mechanically linked.",
+        "again": "ISOLATE / SERVICE.",
+        "assetTag": null
+      }
+    ],
+    "workplacePaper": [
+      {
+        "id": "brendan-visitor-till",
+        "mesh": "cash_terminal",
+        "first": "A dead donation till. The paper roll reads THANK YOU FOR HELPING US KEEP THE BELLS SOUNDING.",
+        "again": "No power. The last receipt remains uncut.",
+        "assetTag": null
+      },
+      {
+        "id": "foyer-pew-1",
+        "mesh": "pew",
+        "first": "One chapel pew never made it upstairs. A paper removal tag is still tied to it.",
+        "again": "The tag says RETURN TO CHAPEL.",
+        "assetTag": null
+      },
+      {
+        "id": "box-office-returns-tray",
+        "mesh": "open_score",
+        "first": "A tray stencilled RETURNS, with nothing in it. The word came with the tray.",
+        "again": "RETURNED is the column the work order will not close without. Different building, same word.",
+        "assetTag": null
+      },
+      {
+        "id": "plant-header-card",
+        "mesh": "notice_board",
+        "first": "HEADER 3 — ISOLATION. Back nut, then gland, then handwheel, in that order, all three home before the line is dead. Clockwise to close, and the card is emphatic about it.",
+        "again": "The last line is in a different hand: the bypass cock feeds the return and is NOT part of this header. Somebody learned that the hard way.",
+        "assetTag": null
+      }
+    ],
+    "servicePanelCodes": [
+      {
+        "id": "acq-services-panel-pool",
+        "mesh": "power_box_01",
+        "first": "The natatorium distribution panel, S/P-02, matches the plant-room and front-of-house boxes. Chlorine has lifted the paint beneath its lower lip; every breaker is open.",
+        "again": "S/P-02. Same installation, different air, no live circuit.",
+        "assetTag": "S/P-02"
+      },
+      {
+        "id": "acq-services-panel-foh",
+        "mesh": "power_box_01",
+        "first": "The front-of-house panel, S/P-03. Its typed circuit card lists the Scene Dock, foyer and box office; the main isolator is down.",
+        "again": "S/P-03. A neat card for three dead circuits.",
+        "assetTag": "S/P-03"
+      },
+      {
+        "id": "acq-services-panel-practice",
+        "mesh": "power_box_01",
+        "first": "The practice-floor panel, S/P-04. Room numbers have been pencilled over a typed teaching-wing schedule; every breaker is open.",
+        "again": "S/P-04. The pencil is newer than the dead ballast.",
+        "assetTag": "S/P-04"
+      },
+      {
+        "id": "acq-services-panel-academic",
+        "mesh": "power_box_01",
+        "first": "The academic-floor panel, S/P-05, is fixed to the loggia wall where the stair arrives. Gallery and classroom banks are listed separately; every breaker is open.",
+        "again": "S/P-05. Last in the numbered run, nearest the way down.",
+        "assetTag": "S/P-05"
+      },
+      {
+        "id": "acq-services-panel-plant",
+        "mesh": "power_box_01",
+        "first": "The plant-room distribution panel, S/P-01. It begins the same numbered installation as the later boxes upstairs; two typed labels have been corrected in pencil.",
+        "again": "S/P-01. The oldest corrections are still the clearest instructions.",
+        "assetTag": "S/P-01"
+      }
+    ],
+    "explicitExistingStamps": [
+      {
+        "id": "acq-foyer-sofa-01",
+        "mesh": "sofa_01",
+        "first": "A pale foyer sofa from the formal front-of-house suite. FOH/F-01 is stamped beneath the centre rail; one cushion was rebuilt in a slightly firmer foam.",
+        "again": "FOH/F-01. The replacement cushion still sits higher than the others.",
+        "assetTag": "FOH/F-01"
+      },
+      {
+        "id": "deadend-ground-armchair",
+        "mesh": "arm_chair_01",
+        "first": "An armchair from the front-of-house suite, FOH/F-06, faced into the corner. The stamp matches the two still out in the atrium through this wall.",
+        "again": "FOH/F-06. It has been sat in since it was put here.",
+        "assetTag": "FOH/F-06"
+      },
+      {
+        "id": "acq-foyer-console-01",
+        "mesh": "classic_console_01",
+        "first": "The west console of the foyer suite, FOH/F-04. A long pale tide mark follows the wall side; the inventory stamp is dry beneath it.",
+        "again": "FOH/F-04. Water above, old ink below.",
+        "assetTag": "FOH/F-04"
+      },
+      {
+        "id": "acq-foyer-horse-head",
+        "mesh": "horse_head",
+        "first": "A small bronze horse study, accession ACC-41. The older paper label names no maker and records only that it arrived before the card catalogue.",
+        "again": "ACC-41. An object with a number and no useful beginning.",
+        "assetTag": "ACC-41"
+      },
+      {
+        "id": "acq-hall-chesterfield-west",
+        "mesh": "sofa_02",
+        "first": "A black Chesterfield at the rear cross aisle, H/S-01. Its machine-stamped plate is much later than the hand-marked foyer furniture.",
+        "again": "H/S-01. Newer stock, already worn at the aisle end.",
+        "assetTag": "H/S-01"
+      },
+      {
+        "id": "acq-practice-chair-1",
+        "mesh": "green_chair_01",
+        "first": "A green practice-room chair from the eight-chair order. P/CH-01 is stamped underneath; pencil room number beneath the seat.",
+        "again": "P/CH-01. One of eight, altered by this room.",
+        "assetTag": "P/CH-01"
+      },
+      {
+        "id": "acq-practice-chair-2",
+        "mesh": "green_chair_01",
+        "first": "A green practice-room chair from the eight-chair order. P/CH-02 is stamped underneath; new rubber foot on the piano-side leg.",
+        "again": "P/CH-02. One of eight, altered by this room.",
+        "assetTag": "P/CH-02"
+      },
+      {
+        "id": "acq-practice-chair-3",
+        "mesh": "green_chair_01",
+        "first": "A green practice-room chair from the eight-chair order. P/CH-03 is stamped underneath; back rail polished by a coat hook.",
+        "again": "P/CH-03. One of eight, altered by this room.",
+        "assetTag": "P/CH-03"
+      },
+      {
+        "id": "acq-practice-chair-4",
+        "mesh": "green_chair_01",
+        "first": "A green practice-room chair from the eight-chair order. P/CH-04 is stamped underneath; two upholstery tacks replaced.",
+        "again": "P/CH-04. One of eight, altered by this room.",
+        "assetTag": "P/CH-04"
+      },
+      {
+        "id": "acq-practice-chair-5",
+        "mesh": "green_chair_01",
+        "first": "A green practice-room chair from the eight-chair order. P/CH-05 is stamped underneath; old rosin ground into the front edge.",
+        "again": "P/CH-05. One of eight, altered by this room.",
+        "assetTag": "P/CH-05"
+      },
+      {
+        "id": "acq-practice-chair-6",
+        "mesh": "green_chair_01",
+        "first": "A green practice-room chair from the eight-chair order. P/CH-06 is stamped underneath; seat foam compressed towards the piano.",
+        "again": "P/CH-06. One of eight, altered by this room.",
+        "assetTag": "P/CH-06"
+      },
+      {
+        "id": "acq-practice-chair-7",
+        "mesh": "green_chair_01",
+        "first": "A green practice-room chair from the eight-chair order. P/CH-07 is stamped underneath; varnish worn where a case struck it.",
+        "again": "P/CH-07. One of eight, altered by this room.",
+        "assetTag": "P/CH-07"
+      },
+      {
+        "id": "acq-practice-chair-8",
+        "mesh": "green_chair_01",
+        "first": "A green practice-room chair from the eight-chair order. P/CH-08 is stamped underneath; violin resting across the seat.",
+        "again": "P/CH-08. One of eight, altered by this room.",
+        "assetTag": "P/CH-08"
+      },
+      {
+        "id": "acq-foyer-armchair-01",
+        "mesh": "arm_chair_01",
+        "first": "The first armchair of the foyer suite. FOH/F-02 remains on the rear rail, beside a hand-stitched repair where the public-facing arm wore through.",
+        "again": "FOH/F-02. The repaired arm has gone smooth again.",
+        "assetTag": "FOH/F-02"
+      }
+    ]
+  },
+  "authoredMarkPaths": [
+    {
+      "owner": "tools/chunk_surfer/build-props.mjs:ledger",
+      "meshes": [
+        "outskirts_lodge_ledger",
+        "outskirts_ledger_signed"
+      ],
+      "issue": "Existing entries and signed-state polylines still use raised O.ink addBeam geometry without pigment metadata; migrate these exact strokes/rules through marks jobs without inventing a name."
+    },
+    {
+      "owner": "src/data/source-hall.js:bayNumber",
+      "semantic": "hall-bay-number",
+      "copy": "17",
+      "issue": "Existing repeated17 is composed from three unmarked set_beam instances. This is a bespoke authored numeral path; preserve copy/layout if migrated to a printed stencil."
+    }
+  ],
+  "preservedSeparatePaths": [
+    "Approved annunciator/recorder/payphone hardware uses its existing native material/ROM pipeline; no restyle is requested.",
+    "Van workbench PBR,bag ASCII inspection and transparent battle/desktop compositors are separate renderers. P3 printedSurface metadata alone does not migrate those shaders.",
+    "Decorative unnamed staff bars,blank formal banners,unreadable handwritten entries and intentionally removed number plates do not imply extra prose."
+  ],
+  "repairedCopyLoss": [
+    {
+      "report": "item-glyph-rebuild-report.json",
+      "defects": [
+        "G missing from RANGE on Survey Indicator",
+        "slash missing from RECORD / MONITOR on field recorder and three replacement faceplates"
+      ],
+      "status": "Code,registered actual-geometry regressions,5 GLBs and all affected192/512 previews regenerated narrowly;no unrelated asset hashes changed."
+    }
+  ],
+  "approvedInstrumentRegression": "approved-instrument-regressions.json:97 tests,96 passed,one existing isolated VM fixture lacks lowerTowerPersonalRecorder() dependency."
+}

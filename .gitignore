@@ -27,3 +27,8 @@ tools/chunk_surfer/textile-cache/
 # Pillow for the paper rasteriser. Repo-local so building paper never installs
 # into a system python; `rm -rf .paper-venv` undoes the whole dependency.
 .paper-venv/
+
+# Working evidence: captures, takes, frozen comparisons, review pages. It stays
+# on the machine that made it. Files already tracked here stay tracked, and the
+# few that specs or asset manifests read by path are added with `git add -f`.
+artifacts/
