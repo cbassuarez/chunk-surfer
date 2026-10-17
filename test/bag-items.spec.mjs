@@ -187,7 +187,7 @@ test('station keepsakes inspect their acquired authored evidence', () => {
   const jumper = bagInspectionDialogue('lyle-jumper');
   assert.equal(jumper.start.sourceId, 'home.jumper');
   assert.equal(jumper.start.lines[0].text, station.nodes['home.jumper'].lines[0].text);
-  assert.match(jumper.start.lines[0].text, /his hall, and of this kitchen/);
+  assert.match(jumper.start.lines[0].text, /his hall, and of the room behind the window/);
   jumper.start.lines[0].text = 'changed by a presenter';
   assert.equal(bagInspectionDialogue('lyle-jumper').start.lines[0].text, station.nodes['home.jumper'].lines[0].text, 'a presenter cannot alter later authored inspections');
 });

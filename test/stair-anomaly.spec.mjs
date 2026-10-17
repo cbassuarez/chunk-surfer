@@ -242,7 +242,11 @@ assert.match(propRenderer, /const instances=emergencyOnly\?emergencyShadowInstan
 // `li==uLocalShadowIndex?propFlashShadow`, which stopped being true the moment
 // the one shadow map started being applied to the whole overlapping red field
 // rather than to its own lamp's contribution alone.
-assert.match(architectureRenderer, /heroShadow=mix\(\.015,1\.0,/, 'the selected practical shadows architecture');
+// The shadow map now darkens through the blended body (sharp core plus wide
+// halo) instead of the raw lit term, so pin its derivation from the selected
+// lamp and the place it reaches each lamp's contribution.
+assert.match(architectureRenderer, /propFlashShadow\(posM,n,heroDir\)[\s\S]*?heroShadow=1\.0-\.985\*apparitionBody/, 'the selected practical shadows architecture');
+assert.match(architectureRenderer, /localShadow=max\(float\(li==uLocalShadowIndex\),emergency\)>\.5\?heroShadow:1\.0/, 'the selected practical shadows architecture');
 assert.match(architectureRenderer, /max\(float\(li==uLocalShadowIndex\),emergency\)>\.5\?heroShadow:1\.0/,
   'and that one silhouette is applied to every emergency lamp, not just the one carrying the map');
 assert.match(architectureRenderer, /architecturalLightVisibility\(posM,uLocalLightPos\[li\]\.xyz\)/, 'bounded floorplan occlusion gates practical light');

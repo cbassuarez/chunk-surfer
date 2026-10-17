@@ -189,6 +189,6 @@ test('standalone/Haystack paper framing is unchanged and an embedded reader reta
   assert.match(source,/ctx\.rect\(0,viewport\.offsetY,viewport\.width,viewport\.height\);ctx\.clip\(\)/);
   assert.match(source,/ctx\.translate\(0,viewport\.offsetY\)/);
   assert.match(source,/readRect\(paperSurface,state\.image\)/);
-  assert.match(source,/inspectRect\(paperSurface\)/);
+  assert.match(source,/documentInspectRect\(paperSurface\)/);
   assert.match(source,/finally\{ctx\.restore\(\);\}/,'the zoom early return restores its viewport transform');
 });

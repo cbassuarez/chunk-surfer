@@ -85,7 +85,7 @@ test('flicker-off keeps steady dimming and sound still collapses in the inner fi
 
 test('the final absence pass consumes props, practicals, and beacons together', async () => {
   const renderer = await readFile(new URL('../src/render/r3d.js', import.meta.url), 'utf8');
-  const propComposite = renderer.indexOf('if(propView < archView + 0.015){ col = prop.rgb; zView = propView; }');
+  const propComposite = renderer.indexOf('if(propView < archView + 0.015');
   const absencePass = renderer.indexOf('// The HUSH is not a dark decal on the walls');
   assert.ok(propComposite >= 0 && absencePass > propComposite, 'HUSH absorption runs after the mesh-prop composite');
   assert.match(renderer, /uHush;\s*\/\/ x, z, absorption strength, radius in metres/);
@@ -159,7 +159,7 @@ test('Pressure material, cold edge and overprints enter acquisition before share
   assert.doesNotMatch(present,/finishPressure\(/,'the final presentation must not repaint smooth relief over the dither');
   const copy=renderer.slice(renderer.indexOf('function presentTexture('),renderer.indexOf('const sourceVoidPhysicalUniformCache'));
   assert.doesNotMatch(copy,/finishPressure\(/,'the legacy text presentation must not repaint an undithered figure');
-  assert.match(renderer,/presentThroughPost\(runPixelMeshPass\(voidState,now\)/,'the physical route skips acquisition');
+  assert.match(renderer,/presentThroughPost\(runPixelMeshPass\(voidState,now(?:,\{[^}]*\})?\)/,'the physical route skips acquisition');
   assert.match(renderer,/pressureFinishTex=makeTex\(sw,sh,null,'rgba16f'\)/,'the material adapter must retain scene depth precision');
   assert.match(PRESSURE_FINISH_FRAG,/z=min\(z,[\s\S]*?texture\(uScene,uv\)\.a|texture\(uScene,uv\)\.a[\s\S]*?z=min\(z/,'architecture must participate in occlusion');
   assert.match(PRESSURE_FINISH_FRAG,/float z=propDepth\(uv\)/,'prop occlusion must participate independently');

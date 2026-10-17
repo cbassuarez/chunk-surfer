@@ -36,5 +36,5 @@ test('opening bed proximity tick runs during the prologue world loop', () => {
   assert.match(source, /function tickOpeningSceneBed\(\)/);
   assert.match(source, /FP\.toRuntimePoint\(\{x:73\.85,y:214\}\)/);
   assert.match(source, /STORY\.setOpeningSceneBedProximity\?\./);
-  assert.match(source, /tickOpeningSceneBed\(\);\s*if\(!scenes\.blocksWorld\(\)\)/s);
+  assert.match(source, /tickOpeningSceneBed\(\);\s*(?:tick\w+\([^)]*\);\s*)*if\(!scenes\.blocksWorld\(\)\)/s);
 });

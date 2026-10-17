@@ -30,6 +30,13 @@ jobs:
           node-version: lts/*
           cache: npm
 
+      # The paper rasteriser's spec renders through Pillow. Same repo-local venv
+      # the paper tools look for first, so nothing installs into system python.
+      - name: Install Pillow for the paper rasteriser
+        run: |
+          python3 -m venv .paper-venv
+          .paper-venv/bin/pip install Pillow==12.3.0
+
       - run: npm install
       - run: npm test
       - run: npm run test:acoustic

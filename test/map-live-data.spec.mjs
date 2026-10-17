@@ -95,8 +95,8 @@ console.log('live map data tests ok');
 // though the building had interstitial levels in it.
 {
   const ids = source.floors.map((floor) => floor.id);
-  assert.deepEqual(ids, ['b1', 'g', 'u1', 'academic', 'tower'],
-    'five floors: basement, ground, upper, third, and one tower');
+  assert.deepEqual(ids, ['b1', 'g', 'u1', 'academic', 'tower', 'academicRoof'],
+    'six floors: basement, ground, upper, third, one tower, and the glass roof');
   assert.ok(!ids.includes('u2') && !ids.includes('u3'), 'no interstitial tower pages');
   for (const floor of source.floors) {
     assert.ok(floor.open.size > 200, `${floor.id} is a real floor, not a sliver (${floor.open.size} cells)`);

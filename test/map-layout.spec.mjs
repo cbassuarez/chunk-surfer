@@ -182,7 +182,8 @@ test('offline hardware keeps dark disabled controls without invented progress, p
     assert.doesNotMatch(labels, /\d+\/\d+ TAKES|YOU|TAKE OUTSTANDING|TAKE RECORDED|NOT VISITED|NEXT LEG/);
     assert.deepEqual(result.actions, [['B', 'CLOSE']]);
     const buttons = harness.commands.filter(c => c.kind === 'button');
-    assert.equal(buttons.length, 16, 'the instrument is physically present, not replaced by an unrelated text panel');
+    // One key per floor, plus the eleven view, target and file controls.
+    assert.equal(buttons.length, BUILDING_MAP.floors.length + 11, 'the instrument is physically present, not replaced by an unrelated text panel');
     assert.ok(buttons.every(c => c.state.enabled === false && c.state.lit === false && c.state.latched === false));
   }
 });

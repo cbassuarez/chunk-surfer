@@ -5796,9 +5796,10 @@ export function createSourceSpaceRuntime({
       piece.door.variant = variant;
       piece.door.shut = false;
     }
-    // And something is still barred, or the corridor is only a corridor.
+    // And something is still barred, or the corridor is only a corridor. Never
+    // the tower's invitation: it is dealt open below and would unbar it again.
     if (!pieces.some((piece) => piece.door.shut)) {
-      const spare = byChance(pieces.filter((piece) => !piece.door.key && opensOnto(piece.door.variant).length > 1));
+      const spare = byChance(pieces.filter((piece) => !piece.door.key && !piece.door.lockIn && opensOnto(piece.door.variant).length > 1));
       if (spare[0]) spare[0].door.shut = true;
     }
     if (route === 'tower') {

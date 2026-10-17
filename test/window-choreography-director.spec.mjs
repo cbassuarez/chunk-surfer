@@ -458,6 +458,7 @@ test('main samples Source leakage only from the runtime frame after movement cro
     const R3={r3dFacing:()=>2,r3dLookAngles:()=>({yaw:.3,pitch:.1})};
     const syncSourceRender=()=>trace.push('render');
     const syncSourceWindowDecay=()=>trace.push('decay');
+    const applyTowerPersonalTraversal=()=>false;
     const sourceShoreCameraPatch=()=>({});
     const saveCommit=()=>trace.push('save'),updateAudio=()=>trace.push('audio');
     return ()=>{${sourceBranch}};

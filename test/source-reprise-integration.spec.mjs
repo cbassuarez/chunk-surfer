@@ -102,7 +102,7 @@ const section=(start,end)=>{
   const submitted=[],enabled=[];
   const rig=[{id:'practical'}];
   const sandbox={
-    activeEndingCutscene:null,escape:null,
+    activeEndingCutscene:null,escape:null,storyMode:false,
     px:0,py:0,getSave:()=>({settings:{flash:'full'}}),performance:{now:()=>0},
     FP:{logicalToPhysical:()=>({x:0,y:0,z:0}),zoneAt:()=>1},
     resolveLightingContext:()=>({zone:1,group:'basement'}),
@@ -114,7 +114,8 @@ const section=(start,end)=>{
     dockHauntingStagingPoint:null,dockHauntingFrame:null,plantIsolationPresentation:null,
     apparitionDirector:{suspend:()=>{}},apparitionProbeLightId:null,
     buildEmergencyShadowFrame:(_lights,options)=>{enabled.push(options.enabled);return null;},
-    noteEmergencyApparitions:()=>{},lastEmergencyShadowFrame:null,
+    noteEmergencyApparitions:()=>{},lastEmergencyShadowFrame:null,syncApparitionApplause:()=>{},
+    REC:{lightOn:()=>false,batteryLevel:()=>0},
     brendanLightPresentation:(lights)=>lights,
   };
   const sync=vm.runInNewContext(`${section('function syncArchitecturalLocalLights','function liveLightCircuits')}

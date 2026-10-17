@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { pressureInstances } from '../src/render/pressure-volume.js';
 
 test('main wires recording hallucinations into the secondary HUSH body path', () => {
   const source = readFileSync('src/main.js', 'utf8');
@@ -30,10 +31,16 @@ test('main wires recording hallucinations into the secondary HUSH body path', ()
 
 test('secondary false HUSH accepts a stronger dedicated look without changing primary HUSH', () => {
   const source = readFileSync('src/render/r3d.js', 'utf8');
-  assert.match(source, /hushBodySecondaryLast\.heightM/);
-  assert.match(source, /hushBodySecondaryLast\.widthM/);
-  assert.match(source, /hushBodySecondaryLast\.glow/);
-  assert.match(source, /hushBodySecondaryMode/);
+  assert.match(source, /P3\.setPressureInstances\(pressureInstances\(incomingHush,incomingHushSecondary,/);
+  const primary = { x: 2, y: 3, strength: .9, heightM: 1.83, widthM: .58 };
+  const [alone] = pressureInstances(primary, null);
+  const [first, second] = pressureInstances(primary, { x: 6, y: 3, strength: .9, heightM: 2.3, widthM: .9, glow: 2.6, mode: 'glow' });
+  assert.deepEqual(first, alone, 'the secondary look leaves the primary volume untouched');
+  assert.ok(Math.abs(second.scale / first.scale - 2.3 / 1.83) < 1e-9, 'the secondary carries its own height');
+  assert.equal(second.pressure.glow, 2.6);
+  assert.equal(second.pressure.mode, 'glow');
+  assert.notEqual(first.pressure.glow, 2.6);
+  assert.equal(first.pressure.mode, 'live');
 });
 
 // THE BEAT WAS FIRING AND NOBODY EVER SAW IT.

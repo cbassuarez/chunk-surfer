@@ -102,7 +102,9 @@ for (let k = 0; k < 29; k += 1) {
     assert.ok(runtime.state().outskirtsExperience.observed.some(p => p.id === 'r2-booth-guard' && p.seen && p.gone), 'the walk never observes and loses the guard');
   }
   if (k === 6) {
-    walkTo(passStart(k) + 12.5, -5.5);
+    // Half a metre short of the old -5.5 mark: the fold guard's own collision
+    // now stands there, and from -4.5 the hatch is out of reach.
+    walkTo(passStart(k) + 12.5, -5);
     assert.ok(emitted.some(e => e.id === 'r6:hatch-impact'), 'the close lodge approach has no retained physical event');
   }
   if (k === 14) {

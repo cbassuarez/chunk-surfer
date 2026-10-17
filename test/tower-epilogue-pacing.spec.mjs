@@ -42,7 +42,7 @@ function harness({ context = audioContext(), complete = true, replayId = 'guard-
     let towerEndingPlayback=null,paused=false;
     const actx=context,sfxGain=context?.createGain(),master=null,dialogGain=null,sfxDirectGain=null,musicGain=null,whisperBed=null;
     const noOp=()=>{},ensureCtx=noOp,STORY={},fireCue=noOp,CR={fx:{}},createReplayService=()=>null;
-    const endingCutsceneWorldView=noOp,applyStoryChoice=noOp,advanceActiveEndingCutscene=noOp;
+    const endingCutsceneWorldView=noOp,applyStoryChoice=noOp,advanceActiveEndingCutscene=noOp,cancelApparitionApplause=noOp;
     const uiSize=()=>({cols:100,rows:40}),uiText=(...args)=>draws.push(args);
     const syncPointerMode=noOp,saveSourceShoreView=noOp,outskirtsStreetAudio=null,pauseOutskirtsLastLight=noOp,lowerTowerPersonalRecorder=noOp;
     const bellPealPerformance=null,towerBellDirector=null,personalWindowEffects={},windowChoreography={};

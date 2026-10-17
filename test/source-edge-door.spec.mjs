@@ -194,7 +194,11 @@ const field = ({ open = false } = {}) => {
   assert.match(props, /gl\.clearBufferfv\(gl\.COLOR,1,/, 'a disappeared pair leaves its previous coverage mask');
   const text = r3d.slice(r3d.indexOf('const TEXT_SPACE_FRAG'), r3d.indexOf('const COPY_FRAG'));
   assert.ok(text.indexOf('float doorAbsence=') > text.indexOf('composed=mix(composed,emergencyRed,eWash)'), 'paper, x-ray or emergency grading can relight the door absence');
-  assert.ok(text.indexOf('float doorAbsence=') < text.indexOf('composed=mix(composed,vec3(.72,.88,.92)'), 'the aperture mask swallows Pressure standing in front of it');
+  // Door absence is the text pass's last word; the Pressure volume is merged
+  // over that finished frame afterwards, so it can stand in front of a hole.
+  assert.match(text, /float doorAbsence=[^;]+;\s*composed=mix\(composed,vec3\(0\.0\),doorAbsence\);\s*o=vec4\(composed,1\.0\);/, 'the door absence is not the last composite');
+  const textDraw = r3d.slice(r3d.indexOf('function drawTextSpace'), r3d.indexOf('function sourceRoomU'));
+  assert.ok(textDraw.indexOf('gl.useProgram(progTextSpace)') >= 0 && textDraw.indexOf('gl.useProgram(progTextSpace)') < textDraw.indexOf('finishPressure(sceneTex,{acquired})'), 'the aperture mask swallows Pressure standing in front of it');
 }
 
 console.log('source edge door specs passed');

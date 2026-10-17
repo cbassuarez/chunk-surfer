@@ -387,12 +387,12 @@ test('main, the runtime and the renderer are wired to the voices, the body and t
   assert.match(main, /onBody:\(cue\)=>R3\.r3dHushPose\?\.\(cue\)/, 'body cues never reach the renderer');
   assert.match(main, /sourceCombatBattle\(\{bodyReturn:request\.bodyReturnAssist,tells:request\.tells\}\)/, 'the fight never hears the tells');
   assert.match(runtime, /tells: \[\.\.\.\(state\.sourceContacts\?\.tells \|\| \[\]\)\]/);
-  const textSpace = r3d.slice(r3d.indexOf('const TEXT_SPACE_FRAG'), r3d.indexOf('function drawTextSpace'));
-  assert.match(textSpace, /uniform vec4 uHushPose;/);
-  assert.match(textSpace, /uniform vec4 uHushPoseFx;/);
-  const draw = r3d.slice(r3d.indexOf('function drawTextSpace'), r3d.indexOf('function drawTextSpace') + 4000);
-  assert.match(draw, /textSpaceU\('uHushPose'\)/);
-  assert.match(draw, /textSpaceU\('uHushPoseFx'\)/);
+  // The cue enters the simulation-owned performance, and the volume is posed
+  // from that captured cue rather than from Text Space uniforms.
+  const volume = readFileSync(new URL('../src/render/pressure-volume.js', import.meta.url), 'utf8');
+  assert.match(r3d, /export function r3dHushPose\(cue\)\{\s*if\(!isHushBodyCue\(cue\)\)return false;\s*pressureCueSink\?\.\(cue\);/);
+  assert.match(main, /R3\.r3dSetPressureCueSink\?\.\(\(cue\)=>pressurePerformance\.cue\(cue\)\)/, 'body cues never reach the performance');
+  assert.match(volume, /hushPoseAt\(p\.cue\?\.name, 0, p\.cue\?\.elapsed \?\? -1/, 'the volume ignores its captured cue');
 });
 
 test('talk two opens the case of the recordist before you; talk three asks what it agreed to', () => {

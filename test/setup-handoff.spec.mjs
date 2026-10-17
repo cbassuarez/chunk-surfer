@@ -352,7 +352,7 @@ test('stopping a completed Get In calibration cannot seal or count a job take', 
 test('rolling a calibration never summons Presence or publishes a room start, even with the old tutorial inactive', () => {
   let dreams=0;
   const context={
-    ensureTapeAudio(){},PB:{isPlaying:()=>false,cueTapeEnd:()=>false},PLANT:{plantRecordingBlocked:()=>false},REC:{isSlating:()=>false,recState:()=>({takes:[]}),startRecording:()=>true},
+    cancelApparitionApplause(){},rollMetronomeRestart(){},ensureTapeAudio(){},PB:{isPlaying:()=>false,cueTapeEnd:()=>false},PLANT:{plantRecordingBlocked:()=>false},REC:{isSlating:()=>false,recState:()=>({takes:[]}),startRecording:()=>true},
     takeRoom:'loading_dock',LEVEL_CHECK_ROOM:'loading_dock',armedTakeContamination:null,px:0,py:0,
     PROPS:{savePropState:()=>({})},saveCommit(){},ensureCtx(){},params:()=>new URLSearchParams('nomic=1'),
     MIC:{micIgnoreSpoilFor(){}},CUES:{CUE:{recorder:'recorder'},playCue(){}},emitRecorderTransport(){},updateAudio(){},

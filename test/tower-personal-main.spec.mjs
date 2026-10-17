@@ -631,7 +631,7 @@ test('arriving and waiting under the lantern preserves the reward until the play
     ensureCtx: noOp, CR: { fx: {} }, STORY: {},
     cathedralStaging: noOp, stageCathedral: noOp, presentFinale: noOp,
     openCathedralLesson: () => false, prepareCathedralRetry: () => null, cathedralFightCheckpoint: noOp,
-    resolveCathedralLoss: noOp, openCathedralSecondPhase: noOp,
+    resolveCathedralLoss: noOp, openCathedralSecondPhase: noOp, cancelApparitionApplause: noOp,
     PB: { isPlaying: () => false },
   };
   vm.createContext(sandbox);

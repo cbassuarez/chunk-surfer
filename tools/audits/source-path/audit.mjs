@@ -174,7 +174,7 @@ export const STAGES = Object.freeze([
     happens: 'White exposure recovers into a pale field while the body keeps moving. The room and bank stay fixed; there is no visible walking surface or path lighting. The bank’s deck lowers and waits. Boarding raises the body to its exterior ledge; stepping off loses elevation safely.',
     moveOn: `Walk the direct ${number(SOURCE_SHORE_DIRECT_METRES)} m to the deck, ride up, and turn behind the bank into Source proper.`,
     callouts: [{ kind: 'note', text: 'Sideways movement, circling and returning to the room do not advance a hidden distance quota. The carried torch remains a physical light.' }],
-    phases: [P.LANDSCAPE], finale: [S.UNCOMMITTED], objectives: ['white-walk', 'first-stair'], checkpoints: [],
+    phases: [P.LANDSCAPE], finale: [S.UNCOMMITTED], objectives: ['shore-walk', 'first-stair'], checkpoints: [],
     next: [{ to: 'field', when: 'around the opaque turn behind the receiving ledge' }],
     span: () => SOURCE_SHORE_DIRECT_METRES / CELL,
     measure: () => [['Length', cells(SOURCE_SHORE_DIRECT_METRES / CELL)], ['Direct ordinary walk', `${number(SOURCE_SHORE_DIRECT_SECONDS)} s`]],

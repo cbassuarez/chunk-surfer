@@ -75,6 +75,6 @@ assert.equal(inferLegacyChapelTower({takes:['lux_nova']}).phase,CHAPEL_TOWER_PHA
   assert.ok(screen.indexOf('reconcileChapelTowerTakes()')>=0&&screen.indexOf('reconcileChapelTowerTakes()')<screen.indexOf('tower.phase===CHAPEL_TOWER_PHASE.SOURCE_READY'),'the chapel screen asks the tower before the tape');
   const god=main.slice(main.indexOf('function godSetTakes('),main.indexOf('function godSetAllTakes('));
   assert.match(god,/reconcileChapelTowerTakes\(\);/,'granted takes leave the long hall shut');
-  assert.match(main,/REC\.syncTakes\(\);\s*reconcileChapelTowerTakes\(\);\s*\}/,'a restored tape leaves the long hall shut');
+  assert.match(main,/REC\.syncTakes\(\);\s*reconcileChapelTowerTakes\(\);/,'a restored tape leaves the long hall shut');
 }
 console.log('chapel tower state tests ok');

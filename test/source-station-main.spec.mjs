@@ -180,7 +180,8 @@ function harness({ time = 0, walk = null, frame = null, realm = null, earned = [
   for (const name of ['stopOutskirtsStreetAudio', 'resetOutskirtsLastLight', 'stopSourceDockDoorAudio', 'stopSourceShoreAudio',
     'endHorizonScore', 'stopBellTowerRuntime', 'clearInstrument', 'stopHushAudioRuntime', 'stopAllVoices',
     'stopWorldLayerVoice', 'silenceAmbientDrone', 'silenceSampleField', 'endSourceHaystackMosh',
-    'endSourceBracketPresence', 'tickHorizonScore', 'speakHorizonMarker', 'syncOutskirtsNight', 'tickPayphone', 'syncSourceRender']) sandbox[name] = noOp;
+    'endSourceBracketPresence', 'tickHorizonScore', 'speakHorizonMarker', 'syncOutskirtsNight', 'tickPayphone', 'syncSourceRender',
+    'cancelApparitionApplause']) sandbox[name] = noOp;
   vm.createContext(sandbox);
   vm.runInContext(production + `\nglobalThis.api={clearSourceRuntime,resetRunAudio,syncElsewhereBeds,syncStationEdgeSound,
     syncStationErrand,homeWalkStep,tickHomeWalk,tickSourceSpace,stationFootfall,step,arrowDelta,

@@ -365,11 +365,12 @@ const outFrom = (door, cells) => { const m = middleOf(door); return { x: m.x + d
   assert.match(main, /function skyOverhead\(\)\{\s*if\(sourceDoorFieldSky\(\)\)return true;/, 'the corridor\'s flash is dimmed as if under a roof');
   const corridorRainArgument=main.match(/syncSourceCorridorRain\(([^;]+),\{hall:inHall\}\);/)?.[1];
   assert.ok(corridorRainArgument,'the corridor no longer submits its own rain');
-  const corridorRainFor=new Function('firstNothingness','inHall','hallWeather','chunkSurfRuntime','inRealm',`return (${corridorRainArgument});`);
+  const corridorRainFor=new Function('firstNothingness','inHall','hallWeather','chunkSurfRuntime','inRealm','inPersonal',`return (${corridorRainArgument});`);
   assert.equal(corridorRainFor(false,true,{rain:.4},weatherRuntime,false),.4,'the hall keeps its authored rain');
   assert.equal(corridorRainFor(false,false,{rain:.4},weatherRuntime,false),.6,'the door field keeps its own rain');
   assert.equal(corridorRainFor(true,false,{rain:.4},weatherRuntime,false),0,'the first nothingness stays silent');
   assert.equal(corridorRainFor(false,false,{rain:.4},weatherRuntime,true),0,'the station rain leaks into an elsewhere realm');
+  assert.equal(corridorRainFor(false,false,{rain:.4},weatherRuntime,false,true),0,'the station rain leaks into the tower\'s personal land');
 }
 
 // ── NIGHT FROM THE FIRST STEP, LAMPS THAT GO OUT BEHIND ─────────────────────
@@ -402,7 +403,9 @@ const outFrom = (door, cells) => { const m = middleOf(door); return { x: m.x + d
   const fresh = at(4417, (options) => buildPreTapeGodPreset(20, options));
   const pools = fresh.runtime.outskirtLampPools(fresh.position.x, fresh.position.y);
   assert.ok(pools.length > 0 && pools.length <= 3 && pools.every((pool) => pool.pool && pool.distanceM <= 45), 'the road has no light on it');
-  assert.equal(runtime.outskirtLampPools(position.x, y).length, 0, 'the nothing is lit');
+  // Past the road's own lamps there is only the faulty last light over the
+  // recorder (OUTSKIRT_LAST_LIGHT); nothing else out there is lit.
+  assert.deepEqual(runtime.outskirtLampPools(position.x, y).map((pool) => pool.id), ['end-last-light'], 'the nothing is lit');
 }
 
 // ── THE ORDINARY TORCH, TIRED ───────────────────────────────────────────────

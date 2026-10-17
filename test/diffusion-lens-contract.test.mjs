@@ -175,7 +175,7 @@ test('possession bursts repaint the frame inside the instrument', () => {
   // Bursts are never cached: the cache branch stays generate-only.
   assert.match(server, /if work\.get\("type"\) == "generate":\s+cache_key = material_cache_key/);
   // The repaint composites before the VFD pass, and camera motion damps it.
-  assert.match(r3d, /const worldTex = runBurstPass\(sceneTex, now\)/);
+  assert.match(r3d, /const pressureSourceTex = finishPressure\(sceneTex\);[\s\S]*?const worldTex = runBurstPass\(pressureSourceTex, now\)/);
   assert.match(r3d, /vfdMovement/);
   assert.match(r3d, /r3dCaptureSceneCanvas/);
   assert.match(r3d, /r3dDepthCanvas/);

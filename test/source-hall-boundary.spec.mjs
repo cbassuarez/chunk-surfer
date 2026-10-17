@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 import { CELL } from '../src/data/floorplan/legend.js';
+import { pressureInstances } from '../src/render/pressure-volume.js';
 import {
   CHUNK_SURF_PHASE,
   freshChunkSurfState,
@@ -151,17 +152,15 @@ function haystackState(slot = 0) {
   }
 }
 
-// Rendering contract: one SDF texture, two independently placed body cards.
-// The secondary never creates a second gameplay HUSH field.
+// Rendering contract: one Pressure geometry target, two independently placed
+// volumes. The secondary never creates a second gameplay HUSH field.
 {
   const renderer = readFileSync(new URL('../src/render/r3d.js', import.meta.url), 'utf8');
   const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
-  assert.match(renderer, /uniform vec4\s+uHushBodySecondary/);
-  assert.match(renderer, /uniform vec4\s+uHushBodyLookSecondary/);
-  assert.match(renderer, /compositeHushBody\(uHushBody,uHushBodyLook/);
-  assert.match(renderer, /compositeHushBody\(uHushBodySecondary,uHushBodyLookSecondary/);
-  assert.equal((renderer.match(/let hushBodyTex=null/g) || []).length, 1, 'the physical and Text Space shaders must share one decoded SDF texture');
-  assert.equal((renderer.match(/uniform sampler2D uHushBodyTex/g) || []).length, 2, 'both compositor programs declare the shared SDF sampler');
+  assert.match(renderer, /P3\.setPressureInstances\(pressureInstances\(incomingHush,incomingHushSecondary,/);
+  const [primary, secondary] = pressureInstances({ x: 2, y: 3, strength: .9 }, { x: 9, y: 3, strength: .9 });
+  assert.ok(primary && secondary && secondary.x - primary.x > 3, 'the secondary is its own volume at its own place');
+  assert.equal((renderer.match(/uniform sampler2D[^;]*\buHushBodyTex\b/g) || []).length, 2, 'the physical march and the Source identity share one Pressure geometry target');
   assert.doesNotMatch(renderer, /uHush2\b/, 'secondary manifestation accidentally gained a second gameplay field');
   assert.match(main, /hushSecondary:renderedHushSecondary/);
   assert.match(main, /sourceBracketTableauActive/);

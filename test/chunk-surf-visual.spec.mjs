@@ -209,11 +209,14 @@ assert.match(mainSource,/function beginSourceTowerTransition\(\)\{[\s\S]*?GOD_LO
 
   assert.match(
     drawTextSpaceSource,
-    /const\s+([A-Za-z_$][\w$]*)\s*=\s*runSourceFaultPass\(sceneTex,\s*now\);\s*const\s+([A-Za-z_$][\w$]*)\s*=\s*runDatamoshPass\(\1,\s*now\);\s*presentTexture\(\2\);/,
+    /const\s+recorded\s*=\s*acquired\?finishPressure\(sceneTex,\{acquired\}\):sceneTex;\s*const\s+([A-Za-z_$][\w$]*)\s*=\s*runSourceFaultPass\(recorded,\s*now\);\s*const\s+([A-Za-z_$][\w$]*)\s*=\s*runDatamoshPass\(\1,\s*now\);[\s\S]*?presentTexture\(\2\);/,
     'the Text Space target is faulted, datamoshed, and presented in order',
   );
 }
-assert.match(rendererSource,/uHushScreen[\s\S]*uRain[\s\S]*moon/,'Text Space owns literal HUSH and weather composition');
+assert.match(rendererSource,/const TEXT_SPACE_FRAG = [\s\S]*?uniform float uRain;[\s\S]*?float moon=/,'Text Space owns its weather composition');
+// The HUSH reaches Text Space as the physical Pressure volume, recorded by the
+// shared acquisition, rather than as a screen-space card.
+assert.match(rendererSource,/const pressure=P3\.pressureTargets\(\);\s*const acquired=pressure\.ready&&pressure\.draws>0\?runPixelMeshPass\(worldState,now\):null;/,'Text Space records the HUSH through Pressure acquisition');
 assert.match(rendererSource,/uSunrise/,'the text-space shader owns the deterministic sunrise look');
 assert.match(mainSource,/r3dSetSourceScene\(scene\)/,'Source rendering is submitted as one keyed static and dynamic payload');
 
@@ -274,10 +277,9 @@ for (const entry of Object.values(SOURCE_ATLAS.entries)) {
   assert.ok(leaked.length>0,'the open field surfaces drowned architecture as real meshes');
   assert.ok(leaked.some((entry)=>['chapel_vault','pew','altar_table','lectern','tower_bell_01','tower_bell_04','tower_frame','organ_console','organ_pipes','grand_piano','hall_structure','chapel_inner_screen'].includes(entry.mesh)),'real building geometry surfaces through the field (cathédrale engloutie)');
   assert.ok(leaked.every((entry)=>typeof entry.mesh==='string'&&entry.matrix?.length===16),'every surfaced/drift piece is a placed mesh');
-  assert.ok(architecture.length>=450,'the authored causeways are densely described by overlapping source geometry');
-  assert.ok(['ramp','frame','span','monolith','pillar','endpoint','reference'].every((surface)=>architecture.some((entry)=>entry.semantic===`text-architecture:${surface}`)), 'ramps, references, and large-scale structures are all built from source text');
-  assert.ok(architecture.filter((entry)=>entry.overlapLayer!=='base').length>=180,'offset source layers overlap across the map');
-  assert.ok(architecture.filter((entry)=>entry.redacted).length>=30,'selected source tokens are visibly redacted');
+  // Source proper is physical after the first lift: both text generators
+  // return nothing once it has completed, so there is no causeway density to
+  // count here. Whatever text architecture does surface keeps its provenance.
   for(const entry of architecture){
     const source=SOURCE_ATLAS.entries[entry.sourceId];
     assert.ok(source,`${entry.id} retains atlas provenance`);
@@ -293,9 +295,12 @@ for (const entry of Object.values(SOURCE_ATLAS.entries)) {
   assert.ok(architecture.every((entry)=>entry.matrix?.length===16&&[...entry.matrix].every(Number.isFinite)),'all text architecture uses complete finite matrices');
   // Sampled on the deepest field tier itself. -320 was on it before the red
   // approach pushed every tier below the arrival out by SOURCE_APPROACH_CELLS;
-  // afterwards it landed two tiers short and asserted the wrong ground.
+  // afterwards it landed two tiers short and asserted the wrong ground. The
+  // braided divide now climbs across this tier, so its middle is the ramp's
+  // foot: compare the far edge with the near one instead.
   const finalTier=SOURCE_TIERS.filter((tier)=>tier.field).at(-1);
-  assert.ok(sourceLandscapeFloorAt(0,(finalTier.from+finalTier.to)/2)>12,
+  const finalTop=sourceLandscapeFloorAt(0,finalTier.to),finalFoot=sourceLandscapeFloorAt(0,finalTier.from);
+  assert.ok(finalTop>12&&finalTop-finalFoot>8,
     'the terminal occupies the top of a substantial final ramp');
 // THE FIELD IS TIERED NOW, so "walkable everywhere" is no longer the contract —
 // it was the reason the space had no level design in it. The contract is that
@@ -318,7 +323,8 @@ assert.ok(new Set(SOURCE_TIERS.filter((tier)=>tier.field)
   // as brighter path material for wayfinding; the only hard edge is the field's
   // own perimeter, rendered as a visible wall of code.
   assert.ok(runtime.geometry.cellAt(20,FIELD_ORIGIN.y+(SOURCE_TIER_BY_ID.trace.from+SOURCE_TIER_BY_ID.trace.to)/2),'off-route space remains open except where authored solid architecture occupies it');
-  assert.equal(runtime.geometry.cellAt(40,FIELD_ORIGIN.y-184-SOURCE_APPROACH_CELLS),null,'the colossal percussion shelf is physically present in off-route space');
+  // The colossal percussion shelf stood here until the braided divide replaced
+  // the field's hero structures with its own props (sourceDividePropPlacements).
   // Straight on past the perimeter is the walk out to the tape, which IS ground.
   // Off to the side of it there is none.
   assert.equal(runtime.geometry.cellAt(92,FIELD_ORIGIN.y+SOURCE_TIER_BY_ID.outskirts.from-40),null,'beyond the field perimeter, off the walk out, there is no ground (sky, not corridor)');
@@ -344,7 +350,9 @@ assert.ok(new Set(SOURCE_TIERS.filter((tier)=>tier.field)
   assert.equal(near,far,'ordinary landscape movement never rebuilds or recentres the raster plan');
   assert.deepEqual({x:near.originX,y:near.originY},expected);
   assert.ok(near.originX<=-180&&near.originX+near.w>=180,'the anchored plan covers the complete landscape width');
-  assert.ok(near.originY<=FIELD_ORIGIN.y-FIELD_DEPTH&&near.originY+near.h>=FIELD_ORIGIN.y+18,'the anchored plan covers the complete landscape depth');
+  // The white approach in front of the field is void at floor zero (see the
+  // landscape cell descriptor); the anchored plan owns the field beyond it.
+  assert.ok(near.originY<=FIELD_ORIGIN.y-FIELD_DEPTH&&near.originY+near.h>=FIELD_ORIGIN.y-SOURCE_APPROACH_CELLS,'the anchored plan covers the complete landscape depth');
 
   const batchY=FIELD_ORIGIN.y+SOURCE_TIER_BY_ID.trace.from-20;
   const before=runtime.sourceScene({px:127,py:batchY,time:0});
@@ -417,7 +425,11 @@ assert.ok(new Set(SOURCE_TIERS.filter((tier)=>tier.field)
   assert.equal(resolved.horizon,true,'and it leaves into the horizon');
   assert.equal(runtime.state().phase,'horizon');
   assert.equal(runtime.state().completed,false,'the chapter is not over until the horizon is answered');
+  // Straight on opens the chapel's outskirts; the chapter ends at its door.
   assert.equal(runtime.chooseHorizonExit('chapel').handled,true);
+  assert.equal(runtime.state().phase,'chapel-outskirts');
+  assert.equal(runtime.state().completed,false,'the outskirts are walked before the chapter closes');
+  assert.equal(runtime.enterChapelDoor().handled,true);
   assert.equal(runtime.state().completed,true);
   assert.ok(completed?.snapshot?.sourceIds?.length,'endpoint completion produces the snapshot consumed by the datamosh route');
 }

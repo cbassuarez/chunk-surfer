@@ -135,7 +135,7 @@ for(const retired of ['RUPTURE','BLACKOUT','dock-surfer-reflection','dock-surfer
 }
 const main=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
 const renderer=readFileSync(new URL('../src/render/r3d.js',import.meta.url),'utf8');
-assert.match(renderer,/col\*=1\.0-clamp\(uDockHauntingFade[\s\S]*?compositeHushBody\(uHushBody/,
+assert.match(renderer,/col\*=1\.0-clamp\(uDockHauntingFade[\s\S]*?compositePressureVolume\(/,
   'the room fades before the HUSH body is composited, so the approached body remains visible');
 assert.match(main,/drawFearOverlay[\s\S]*?applyDockHauntingHudFade\(\)[\s\S]*?scenes\.render/,
   'all ordinary HUD and fear chrome is attenuated before the contact instruction is redrawn');

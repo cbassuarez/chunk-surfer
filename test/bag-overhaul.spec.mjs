@@ -153,7 +153,7 @@ test('schema-2 personal waypoints migrate legacy rooms and preserve generic spac
 });
 
 test('the canonical map exposes every structural floor, generic spaces, live entrances, and no unseen HUSH point',()=>{
-  assert.deepEqual(BUILDING_MAP.floors.map((floor)=>floor.id),['b1','g','u1','academic','tower']);
+  assert.deepEqual(BUILDING_MAP.floors.map((floor)=>floor.id),['b1','g','u1','academic','tower','academicRoof']);
   assert.ok(BUILDING_MAP.spaces.length>=35);
   assert.equal(new Set(FACILITY_SPACE_IDS).size,FACILITY_SPACE_IDS.length);
   const source={...fixtureMapSource(),spaces:[{

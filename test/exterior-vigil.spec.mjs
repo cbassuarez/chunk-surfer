@@ -102,7 +102,7 @@ for(const id of artIds){const art=artById.get(id),asset=media.assets.find(({id:a
 // Signs are authored language, not stripe texture.
 const slogans=new Set([...VIGIL_CROWD.map(({note})=>note),...VIGIL_STATIC_PARTS.map(({label})=>label)]);
 for(const slogan of['KEEP ELLERY STANDING','NO FIRST STRIKE / 06:00','SAVE THE 1908 CHAPEL','OUR ROOMS / OUR RECORD','WHO SIGNED THIS OFF?'])assert.ok(slogans.has(slogan),`${slogan} missing`);
-assert.match(buildSource,/Five-by-seven raised lettering/);assert.match(buildSource,/raisedVigilLine/);
+assert.match(buildSource,/function buildVigilSign\([\s\S]*?lettering\(m,lines\.join\('\\n'\),\{lines,/,'vigil copy is carried by fabricated lettering faces');
 for(const mesh of['vigil_part_sign_save','vigil_part_sign_strike','vigil_part_sign_chapel','vigil_part_sign_record','vigil_part_sign_signed','vigil_part_banner'])assert.ok(PROP_BOUNDS[mesh].max[0]-PROP_BOUNDS[mesh].min[0]>=1.3,`${mesh} too narrow to read`);
 
 // Two observations per run, context rather than fixed coordinates, persistent

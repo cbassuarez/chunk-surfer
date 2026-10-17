@@ -160,6 +160,7 @@ test('live main renderer guards keep obsolete Source overlays out of the first v
   const context = vm.createContext({ usingSourceSpace: () => true, chunkSurfRuntime: runtime,
     px: 4, py: -100, sourceShoreOutside, syncSourceDockDoorAudio() {}, syncSourceShoreAudio() {}, applySourceLighting() {},
     shakeMode: () => 'full', flashMode: () => 'full', liveLightCircuits: () => [], performance: { now: () => 1000 }, sourceFaultTransitionStartedAt: 0,
+    sourceLightingTorchState: () => ({ torchOn: true, torchBattery: 1 }),
     sourceFaultFrame: details => details, R3: {
       r3dSetSourceShore(value) { calls.push(['shore', value]); },
       r3dSetSourceWhiteout(value) { calls.push(['white', value]); },

@@ -5,6 +5,7 @@ import { conservatory } from '../src/data/floorplan/conservatory.js';
 import * as FP from '../src/world/floorplan.js';
 import { cathedralBodiesOutsideWest, cathedralGroundRuntimePoint } from '../src/game/cathedral-extraction.js';
 import { CHURCH_COLLIDERS } from '../src/data/st-brendans.js';
+import { ENDING_VARIANT } from '../src/data/ending-variants.js';
 
 const runtime=readFileSync('src/main.js','utf8');
 const section=(start,end)=>{
@@ -48,7 +49,7 @@ const section=(start,end)=>{
   const player={x:256,y:357},body={x:256,y:359.3};
   let now=7700,saved={player,drag:{position:body},dragVector:{x:0,y:-1},cutscene:{complete:true}};
   const sandbox={
-    FP,CELL:.5,D:m=>m/.5,px:player.x,py:player.y,
+    FP,CELL:.5,D:m=>m/.5,px:player.x,py:player.y,ENDING_VARIANT,
     usingSpecialSpace:()=>false,usingSourceSpace:()=>false,
     performance:{now:()=>now},getSave:()=>({chunkSurf:{finale:{stage:'resolved',result:'won',cathedral:{extraction:saved}}}}),
     normalizeChunkSurfState:v=>v,cathedralBodiesOutsideWest,
@@ -149,7 +150,7 @@ const section=(start,end)=>{
   const sequence=[];
   const residue={approach:{progress:.9},approachOrigin:{x:2,y:3}};
   const sandbox={
-    escape:residue,activeEndingCutscene:null,endingArrival:null,endingDossier:null,
+    escape:residue,activeEndingCutscene:null,endingArrival:null,endingDossier:null,ENDING_VARIANT,
     windowChoreography:{beginEnding:()=>{}},
     currentEndingDossier:()=>({coffee:false,hush:{}}),commitEndingFlags:()=>{},
     endingManifest:()=>({cutscene:{},environment:[]}),saveCommit:()=>{},

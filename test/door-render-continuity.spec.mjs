@@ -18,7 +18,7 @@ assert.doesNotMatch(thresholds,/renderGroup|renderGroups/,'structural thresholds
 
 assert.match(props3d,/if\(!propInstanceVisible\(i,eye,maxDistance\)\)continue;/,
   'the shared prop pass still distance-culls submitted thresholds');
-assert.match(r3d,/if\(propView < archView \+ 0\.015\)\{ col = prop\.rgb; zView = propView; \}/,
+assert.match(r3d,/if\(propView < archView \+ 0\.015[^)]*\)\{\s*col = [^;]+;\s*zView = propView;/,
   'ray-marched architecture still depth-occludes submitted thresholds');
 
 console.log('door render continuity contracts passed');

@@ -51,6 +51,7 @@ export const ROOM_HISTORY = Object.freeze({
   'space:faculty-office-west': note('Academic offices; date not recorded.', 'Teaching faculty.', 'A private office off the end of the academic core. Staff names are absent from the issued plan.'),
   'space:faculty-office-east': note('Academic offices; date not recorded.', 'Teaching faculty.', 'The second private office shares the reception approach with its western neighbour.'),
   'space:academic-reception': note('Academic offices; date not recorded.', 'Administrative staff and visitors.', 'Reception served the faculty offices and the teaching rooms along the core.'),
+  'space:academic-roof': note('Glazed roof over the atrium and gallery; glazing date not recorded.', 'Maintenance staff; it is not a public room.', 'The north-gallery exterior stair is the school\'s service access to the roof. The glass lights the rooms below it.'),
   'space:stripped-office': note('Former office; clearance date not recorded.', 'Administrative staff; no individual occupant is listed.', 'The room retains its office designation after its furnishings were removed.'),
 });
 

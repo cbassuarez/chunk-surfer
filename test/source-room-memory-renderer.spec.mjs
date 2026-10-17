@@ -12,7 +12,7 @@ test('Source proper hands actual material, depth and current marks to the overwo
   assert.match(adapter,/texture\(uPropDepth,uv\)/);
   assert.match(adapter,/1\.0\/\(1\.0\+viewMetres\*\.14\)/,'recording reconstruction needs the ordinary view-depth encoding');
   assert.match(adapter,/layout\(location=1\) out vec4 oMark/,'the mark attachment must have a fragment output');
-  assert.match(adapter,/!useHull&&uMarksReady>\.5\?texture\(uPropMarks,uv\):vec4\(0\.0,\.5,\.5,1\.0\)/,'missing authored marks must use the production sentinel, never stale frame data');
+  assert.match(adapter,/oMark=useHull\?texelFetch\(uHullMarks,ivec2\(gl_FragCoord\.xy\),0\):\s*uMarksReady>\.5\?texelFetch\(uPropMarks,ivec2\(gl_FragCoord\.xy\),0\):vec4\(0\.0,\.5,\.5,1\.0\)/,'missing authored marks must use the production sentinel, never stale frame data');
   assert.match(adapter,/hullMetres\+\.015<viewMetres/,'the physical first-lift return must survive and occlude by true depth');
   assert.doesNotMatch(adapter,/sourceHash|fieldDepth|sourceEnergy|screenThreshold|paperScene/,'the implementation must not ship the study recolour or synthetic hatch');
 });
@@ -23,8 +23,10 @@ test('Source identities resolve after the complete shared recording chain',()=>{
   for(let i=1;i<stages.length;i++)assert.ok(pipeline.indexOf(stages[i])>pipeline.indexOf(stages[i-1]),`${stages[i]} must follow ${stages[i-1]}`);
   const identity=section('const SOURCE_IDENTITY_FRAG','const COPY_FRAG');
   assert.match(identity,/texture\(uOpeningMask,uv\)/);
-  assert.match(identity,/sourcePressureMask\(uv,bodyInk,bodyHalo,bodyEdge\)/);
-  assert.match(identity,/alpha=mass\+\(1\.0-mass\)\*\(edge\+\(1\.0-edge\)\*absence\)/);
+  // The Pressure volume is recorded upstream; here exact absence only yields
+  // to its depth-tested coverage.
+  assert.match(identity,/float cover=g\.a\*step\(d,front\+\.022\)\*uPressureReady;/);
+  assert.match(identity,/o=vec4\(0\.0,0\.0,0\.0,absence\*\(1\.0-cover\)\)/);
   assert.doesNotMatch(identity,/uSourceTorch|uGrade|uSourceEmergency/,'no later grade can recolour exact absence');
 });
 

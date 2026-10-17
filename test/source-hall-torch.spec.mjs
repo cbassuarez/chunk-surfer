@@ -128,14 +128,20 @@ test('capture exposure reveals dim form while preserving the raw-light black gat
   // gain after the binary decision, or lifting the raw shadow gate with it.
   const block = PIXEL_MESH_FRAG.slice(PIXEL_MESH_FRAG.indexOf('  float sourceLuma ='),
     PIXEL_MESH_FRAG.indexOf('  // Resolve only the middle'));
+  // Printed lettering resolves its own endpoints in vector maths. This checks
+  // the ordinary material path, so cut that branch and give the surface no print.
+  const printStart = block.indexOf('  vec2 printEndpointTone'), printEnd = block.indexOf('  float captureBlackProtect');
+  assert.ok(printStart > 0 && printEnd > printStart, 'the printed-surface branch sits between exposure and the black gate');
+  const ordinary = block.slice(0, printStart) + block.slice(printEnd);
   const evaluate = new Function('c', 'sx0', 'sx1', 'sy0', 'sy1', 'uRecordingExposure',
     'uRecordingBlackFloor', 'uRecordingDensityGamma', 'uRecordingSensitivity', 'luma', 'mix', 'clamp', 'pow', 'smoothstep', 'step', 'max',
-    `${block.replace(/\bfloat\b/g, 'let')}\nreturn { exposed, formTone, hasCapturedLight };`);
+    'printedSampling', 'pigmentEdge', 'solidPigment', 'printed',
+    `${ordinary.replace(/\bfloat\b/g, 'let')}\nreturn { exposed, formTone, hasCapturedLight };`);
   const clamp = (value, lo, hi) => Math.max(lo, Math.min(hi, value));
   const smoothstep = (lo, hi, value) => { const t = clamp((value - lo) / (hi - lo), 0, 1); return t * t * (3 - 2 * t); };
   const sample = (luma, gain, sensitivity = 1) => evaluate(luma, ...Array.from({ length: 4 }, () => ({ rgb: luma })),
     gain, .004, .72, sensitivity, value => value, (a, b, t) => a + (b - a) * t,
-    clamp, Math.pow, smoothstep, (edge, value) => value < edge ? 0 : 1, Math.max);
+    clamp, Math.pow, smoothstep, (edge, value) => value < edge ? 0 : 1, Math.max, 0, 0, 0, { x: 0, y: 0 });
   for (const shadow of [0, .001, .004, .008]) {
     assert.equal(sample(shadow, 6).hasCapturedLight, 0, 'gain cannot manufacture light inside deep shadow');
   }

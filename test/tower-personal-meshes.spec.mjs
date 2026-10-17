@@ -47,7 +47,9 @@ test('one continuous tape strand covers the hall without floor-spanning geometry
 
 test('the roof guarantor is a complete living contractor installed in the ordinary prop pack', () => {
   const body=towerPersonalGeometry().find(piece=>piece.name==='ending_roof_guarantor');
-  assert.ok(body.bounds.max[1]>1.7&&body.bounds.max[1]<1.9);
+  // Kneeling on one knee with a palm on the glass: shorter than standing,
+  // still a full adult body.
+  assert.ok(body.bounds.max[1]>1.5&&body.bounds.max[1]<1.75);
   assert.ok(body.bounds.max[0]-body.bounds.min[0]>.7,'attached arms separate from the rounded torso');
   for(const material of ['skin','hair','cloth','navy','black'])
     assert.ok(body.groups.some(group=>group.material===material),`ordinary ${material} surface exists`);

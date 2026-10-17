@@ -43,7 +43,7 @@ import { createWindowChoreographyDirector } from '../src/platform/window-choreog
   assert.equal(facingWest.direction, 'RIGHT');
   assert.ok(ahead.strength > .9 && behind.strength < .05 && facingEast.strength > behind.strength && facingEast.strength < ahead.strength);
   assert.ok(sourceTraceSignal({ ...objective, distanceMeters: 400 }, { player, facingYaw: 0 }).strength < ahead.strength, 'distance does not weaken the signal');
-  const none = sourceTraceSignal({ id: 'white-walk', bearingEligible: false, target: null }, { player, facingYaw: 0 });
+  const none = sourceTraceSignal({ id: 'shore-walk', bearingEligible: false, target: null }, { player, facingYaw: 0 });
   assert.equal(none.available, false);
   assert.equal(none.label, 'NO SIGNAL');
   assert.equal(sourceTraceSignal({ ...objective, bearingEligible: false }, { player }).label, 'NO SIGNAL', 'a locked door is aimed at');
