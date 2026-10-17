@@ -3,6 +3,7 @@ import { lastReturnRecord } from './return-history.js';
 import { secondShiftForEnding } from '../game/second-shift.js';
 import { normalizeInterferenceRecord } from '../game/interference-case.js';
 import { WITNESS_EDITION_ID } from './unlocks.js';
+import { normalizeEndingVariant, centuryStayRecord } from '../data/ending-variants.js';
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
 
@@ -26,8 +27,12 @@ export const RETURN_DEFS = Object.freeze([
   Object.freeze({ id: 'tower-lost', order: 9, family: 'TOWER', title: 'THE FULL PEAL', classification: 'TOWER / TERMINAL', hiddenUntilSeen: true }),
 ]);
 
-export function returnDefinition(id) {
-  return RETURN_DEFS.find((def) => def.id === id) || null;
+export function returnDefinition(id, context = {}) {
+  const base = RETURN_DEFS.find((def) => def.id === id) || null;
+  if (base && normalizeEndingVariant(id, context?.endingVariant || context?.variant)) {
+    return { ...base, classification: 'CONTAINMENT / CENTURY STAY', variantTitle: 'A HUNDRED MORE YEARS' };
+  }
+  return base;
 }
 
 export function returnIndexEntries(meta) {
@@ -46,8 +51,12 @@ export function returnIndexEntries(meta) {
       adjacent: !seen.has(def.id) && shift?.adjacentEndingId === def.id,
       adjacentLead: shift?.adjacentEndingId === def.id ? shift.lead : '',
       displayTitle: seen.has(def.id) ? def.title : '████████████',
-      displayClassification: seen.has(def.id) || revealClassifications || shift?.adjacentEndingId === def.id ? def.classification : '',
+      displayClassification: normalizeEndingVariant(def.id, filed?.endingVariant)
+        ? 'CONTAINMENT / CENTURY STAY'
+        : seen.has(def.id) || revealClassifications || shift?.adjacentEndingId === def.id ? def.classification : '',
       status: seen.has(def.id) ? 'FILED' : shift?.adjacentEndingId === def.id ? 'LEAD' : 'WITHHELD',
+      endingVariant: normalizeEndingVariant(def.id, filed?.endingVariant),
+      variantTitle: normalizeEndingVariant(def.id, filed?.endingVariant) ? 'A HUNDRED MORE YEARS' : '',
       interference: normalizeInterferenceRecord(filed?.interference),
     };
   });
@@ -76,6 +85,8 @@ export function buildRunSummary({ endingId, save, meta, authoritative = {}, now 
     id: `return:${run.id}`,
     runId: run.id,
     endingId,
+    endingVariant: normalizeEndingVariant(endingId, authoritative.endingVariant, authoritative.endingArrival),
+    seal: centuryStayRecord(endingId, authoritative.endingVariant, authoritative.endingArrival),
     startedAt: run.startedAt,
     completedAt: now,
     durationSeconds: Math.max(0, Number(save?.playSeconds) || Math.floor((now - run.startedAt) / 1000)),

@@ -1,35 +1,253 @@
 {
   "file": "horizon-bust.glb",
-  "generator": "tools/chunk_surfer/build-horizon-bust.mjs",
-  "bytes": 301840,
-  "sha256": "5197cfcc344d23552d7273344a9fd6a8e2895a998b00a53b235a10431e5066d8",
-  "totalTriangles": 10324,
-  "totalVertices": 7283,
+  "bytes": 3190680,
+  "sha256": "9326e763f8194074a36c815944c0fccf8a080882fcc73643ca35ec5a70f764ec",
+  "totalTriangles": 19628,
+  "totalVertices": 58884,
   "bounds": {
     "min": [
-      -2.6,
+      -2.1,
       0,
-      -2.05
+      -1.11
     ],
     "max": [
-      2.6,
-      12.068,
-      2.05
+      2.1,
+      6.5,
+      1.11
     ]
   },
   "meshes": {
     "horizon_bust_portrait": {
-      "triangles": 9800,
-      "vertices": 5711,
-      "sourceMesh": "marble_bust_01"
+      "triangles": 7032,
+      "vertices": 21096,
+      "role": "marble",
+      "joint": "neck_pitch"
+    },
+    "horizon_bust_shoulders": {
+      "triangles": 3402,
+      "vertices": 10206,
+      "role": "marble",
+      "joint": "root"
     },
     "horizon_bust_pedestal": {
-      "triangles": 72,
-      "vertices": 216
+      "triangles": 194,
+      "vertices": 582,
+      "role": "stone",
+      "joint": "root"
+    },
+    "horizon_bust_seal_housing": {
+      "triangles": 660,
+      "vertices": 1980,
+      "role": "bronze",
+      "joint": "root"
     },
     "horizon_bust_seal": {
-      "triangles": 452,
-      "vertices": 1356
+      "triangles": 924,
+      "vertices": 2772,
+      "role": "seal",
+      "joint": "seal_plunger"
+    },
+    "horizon_bust_seal_wear": {
+      "triangles": 144,
+      "vertices": 432,
+      "role": "bronze",
+      "joint": "seal_plunger"
+    },
+    "horizon_bust_neck_core": {
+      "triangles": 704,
+      "vertices": 2112,
+      "role": "marble",
+      "joint": "neck_yaw"
+    },
+    "horizon_bust_socket_L": {
+      "triangles": 768,
+      "vertices": 2304,
+      "role": "bronze",
+      "joint": "neck_pitch"
+    },
+    "horizon_bust_gimbal_yaw_L": {
+      "triangles": 204,
+      "vertices": 612,
+      "role": "bronze",
+      "joint": "eye_L_yaw"
+    },
+    "horizon_bust_gimbal_pitch_L": {
+      "triangles": 204,
+      "vertices": 612,
+      "role": "bronze",
+      "joint": "eye_L_pitch"
+    },
+    "horizon_bust_shutter_L": {
+      "triangles": 256,
+      "vertices": 768,
+      "role": "shutter",
+      "joint": "shutter_L"
+    },
+    "horizon_bust_eye_L_stone": {
+      "triangles": 1344,
+      "vertices": 4032,
+      "role": "eye",
+      "joint": "eye_L"
+    },
+    "horizon_bust_eye_L_iris": {
+      "triangles": 192,
+      "vertices": 576,
+      "role": "eye",
+      "joint": "eye_L"
+    },
+    "horizon_bust_eye_L_pupil": {
+      "triangles": 128,
+      "vertices": 384,
+      "role": "eye",
+      "joint": "eye_L"
+    },
+    "horizon_bust_eye_L_vein": {
+      "triangles": 188,
+      "vertices": 564,
+      "role": "eye",
+      "joint": "eye_L"
+    },
+    "horizon_bust_socket_R": {
+      "triangles": 768,
+      "vertices": 2304,
+      "role": "bronze",
+      "joint": "neck_pitch"
+    },
+    "horizon_bust_gimbal_yaw_R": {
+      "triangles": 204,
+      "vertices": 612,
+      "role": "bronze",
+      "joint": "eye_R_yaw"
+    },
+    "horizon_bust_gimbal_pitch_R": {
+      "triangles": 204,
+      "vertices": 612,
+      "role": "bronze",
+      "joint": "eye_R_pitch"
+    },
+    "horizon_bust_shutter_R": {
+      "triangles": 256,
+      "vertices": 768,
+      "role": "shutter",
+      "joint": "shutter_R"
+    },
+    "horizon_bust_eye_R_stone": {
+      "triangles": 1344,
+      "vertices": 4032,
+      "role": "eye",
+      "joint": "eye_R"
+    },
+    "horizon_bust_eye_R_iris": {
+      "triangles": 192,
+      "vertices": 576,
+      "role": "eye",
+      "joint": "eye_R"
+    },
+    "horizon_bust_eye_R_pupil": {
+      "triangles": 128,
+      "vertices": 384,
+      "role": "eye",
+      "joint": "eye_R"
+    },
+    "horizon_bust_eye_R_vein": {
+      "triangles": 188,
+      "vertices": 564,
+      "role": "eye",
+      "joint": "eye_R"
     }
-  }
+  },
+  "lod": 0,
+  "generator": "tools/chunk_surfer/build-horizon-bust.mjs",
+  "design": "The Bronze Reliquary",
+  "version": 2,
+  "coordinateSystem": "world metres; Y up; forward +Z",
+  "assetWorldHeight": 6.5,
+  "jointCount": 16,
+  "rigidWeights": true,
+  "socketBoolean": true,
+  "closedPortrait": {
+    "head": 0,
+    "torso": 0
+  },
+  "seal": {
+    "center": [
+      0,
+      1.25,
+      0.794
+    ],
+    "height": 1.25,
+    "shape": "cast open hand",
+    "concavity": 0.069,
+    "travel": 0.035
+  },
+  "clips": {
+    "recognition-returned": 10,
+    "recognition-carried": 10,
+    "ritual": 5,
+    "settled": 1,
+    "blind": 1
+  },
+  "lods": [
+    {
+      "file": "horizon-bust.glb",
+      "bytes": 3190680,
+      "sha256": "9326e763f8194074a36c815944c0fccf8a080882fcc73643ca35ec5a70f764ec",
+      "totalTriangles": 19628,
+      "totalVertices": 58884,
+      "bounds": {
+        "min": [
+          -2.1,
+          0,
+          -1.11
+        ],
+        "max": [
+          2.1,
+          6.5,
+          1.11
+        ]
+      },
+      "lod": 0
+    },
+    {
+      "file": "horizon-bust-lod1.glb",
+      "bytes": 2666948,
+      "sha256": "cb945d52f99a3da6e81235f80af5b6b4b1eb991e785dccfdd48e12334685f095",
+      "totalTriangles": 15991,
+      "totalVertices": 47973,
+      "bounds": {
+        "min": [
+          -2.1,
+          0,
+          -1.11
+        ],
+        "max": [
+          2.1,
+          6.5,
+          1.11
+        ]
+      },
+      "lod": 1
+    },
+    {
+      "file": "horizon-bust-lod2.glb",
+      "bytes": 2360912,
+      "sha256": "5b6a3f59bb7f389aa53aee79e707b748624a890bdd2d267e6dd1099c3a06a4aa",
+      "totalTriangles": 13866,
+      "totalVertices": 41598,
+      "bounds": {
+        "min": [
+          -2.1,
+          0,
+          -1.11
+        ],
+        "max": [
+          2.1,
+          6.5,
+          1.11
+        ]
+      },
+      "lod": 2
+    }
+  ],
+  "retainedPortraitSha256": "95b75557925342aefc671def384be3baec4399bcb5f58f78bcfd80a2c23a7505"
 }

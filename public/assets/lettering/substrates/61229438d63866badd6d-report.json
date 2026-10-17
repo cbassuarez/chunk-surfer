@@ -1,0 +1,40 @@
+{
+  "id": "acq-foyer-console-01",
+  "sourceAsset": "/Users/seb/chunk-surfer/public/assets/conservatory-acquisitions.glb",
+  "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+  "mesh": "classic_console_01",
+  "width": 768,
+  "height": 148,
+  "orientation": {
+    "readerRight": [
+      1,
+      0,
+      0
+    ],
+    "up": [
+      0,
+      0,
+      1
+    ],
+    "normal": [
+      0,
+      -1,
+      0
+    ],
+    "center": [
+      0,
+      0.90257,
+      0
+    ]
+  },
+  "projectedTriangles": 3,
+  "missingTexels": 0,
+  "minimumSeparationM": 0.0006014450800422345,
+  "maximumSeparationM": 0.0006014538653492182,
+  "method": "Actual host triangles, barycentric TEXCOORD_0, bilinear source images; linear baseColorFactor composition; tangent-space normal reprojection; exact rough/metal/AO factors.",
+  "outputs": {
+    "albedo": "c70954c518e8b009650b145612039d4581cdd0cf6283c1282a9f2c729a8bdab0",
+    "normal": "43f0f635cba32855eb1534ce51f74a32534b38fecb710cc3c58cbc2521f7db45",
+    "orm": "90dfea6c8908a057129c7855dae8082eb2c56e1bd0e6afd94bab9c181bb3baa5"
+  }
+}

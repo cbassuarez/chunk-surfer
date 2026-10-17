@@ -1,0 +1,52 @@
+{
+ "schemaVersion": 1,
+ "id": "conservatory.bust_socketed",
+ "title": "A Face With Its Eyes Removed",
+ "status": "active",
+ "entry": "start",
+ "entries": [
+  "start"
+ ],
+ "tags": [],
+ "notes": "",
+ "regions": [
+  {
+   "id": "conservatory.bust_socketed.region",
+   "title": "A Face With Its Eyes Removed",
+   "kind": "scene",
+   "color": "#3d3d4a",
+   "nodeIds": [
+    "start"
+   ]
+  }
+ ],
+ "nodes": {
+  "start": {
+   "speaker": "THE GALLERY",
+   "lines": [
+    {
+     "who": "direction",
+     "text": "The face is still here. The eyes are not. Two dark sockets, clean around the edges; an old bronze repair takes the weight under the neck.",
+     "id": "start.line.1"
+    },
+    {
+     "who": "you",
+     "text": "Somebody did that carefully.",
+     "id": "start.line.2"
+    },
+    {
+     "who": "direction",
+     "text": "Nothing fell out. The stone around each socket is polished by a hand that knew where to hold it.",
+     "id": "start.line.3"
+    },
+    {
+     "who": "you",
+     "text": "They did not want you looking at something.",
+     "id": "start.line.4"
+    }
+   ],
+   "id": "start",
+   "type": "dialogue"
+  }
+ }
+}

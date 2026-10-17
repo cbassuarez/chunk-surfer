@@ -1,4 +1,5 @@
 // The street remembers an encounter, rather than re-dealing it on a timer.
+import { busWomanWrongOriginCuePlan, crossedBusWomanWrongOriginCues } from './bus-woman-wrong-origin-cues.js';
 const finite = (n, fallback = 0) => Number.isFinite(Number(n)) ? Number(n) : fallback;
 const ids = (v, max = 256) => [...new Set(Array.isArray(v) ? v.filter(x => typeof x === 'string' && x.length < 120) : [])].slice(-max);
 const clamp = (n, a, b) => Math.max(a, Math.min(b, finite(n)));
@@ -39,11 +40,18 @@ function normalizeLocomotion(value) {
     floorOffset: clamp(v.floorOffset, -2, 5), motionUntil: clamp(v.motionUntil, 0, 3_600_000),
   };
 }
+function normalizeWoman(value = {}) {
+  const moment = n => n == null ? null : clamp(n, 0, 3_600_000);
+  return { ticketReturned: !!value.ticketReturned,
+    receivedAt: moment(value.receivedAt), receiveId: typeof value.receiveId === 'string' ? value.receiveId.slice(0, 120) : null,
+    acknowledgedAt: moment(value.acknowledgedAt), acknowledgeYaw: clamp(value.acknowledgeYaw ?? .26, -.6, .6), stepAt: moment(value.stepAt) };
+}
 // A bounded capture/replay record. The full walk history belongs to Source state,
 // not every causal frame. Unknown versions are deliberately not approximated.
 export function normalizeOutskirtsCharacterFrame(value) {
   if (!value || typeof value !== 'object' || (value.version != null && value.version !== 1)) return null;
-  return { version: 1, clock: clamp(value.clock, 0, 3_600_000), fold: normalizeFold(value.fold), locomotion: normalizeLocomotion(value.locomotion) };
+  return { version: 1, clock: clamp(value.clock, 0, 3_600_000), fold: normalizeFold(value.fold), locomotion: normalizeLocomotion(value.locomotion),
+    busStage: clamp(value.busStage, 0, 4), woman: normalizeWoman(value.woman) };
 }
 
 export function normalizeOutskirtsExperience(value = {}) {
@@ -53,6 +61,7 @@ export function normalizeOutskirtsExperience(value = {}) {
     observed: (Array.isArray(v.observed) ? v.observed : []).filter(p => typeof p?.id === 'string').slice(-128)
       .map(p => ({ id: p.id.slice(0, 120), seen: !!p.seen, gone: !!p.gone, epoch: clamp(p.epoch, 0, 32), face: p.face == null ? null : finite(p.face) })),
     busStage: clamp(v.busStage, 0, 4),
+    woman: normalizeWoman(v.woman),
     history: (Array.isArray(v.history) ? v.history : []).slice(-1800)
       .filter(p => Number.isFinite(p?.along) && Number.isFinite(p?.across))
       .map(p => ({ pass: clamp(p.pass, 0, 28), along: finite(p.along), across: clamp(p.across, -36, 36), yaw: finite(p.yaw), clock: Math.max(0, finite(p.clock)),
@@ -67,6 +76,9 @@ export function normalizeOutskirtsExperience(value = {}) {
 export function createOutskirtsExperience(initialState) {
   const state = normalizeOutskirtsExperience(initialState);
   const events = [];
+  // Delivery cursors are deliberately not saved: the first rendered/ticked
+  // sample after a load establishes the current pose without replaying it.
+  const womanCueSamples = new Map();
   function boundHistory(pass) {
     if (state.history.length <= 1800) return;
     const take = (points, limit) => points.length <= limit ? points : Array.from({ length: limit }, (_, i) => points[Math.round(i * (points.length - 1) / (limit - 1))]);
@@ -147,6 +159,8 @@ export function createOutskirtsExperience(initialState) {
     const frame = normalizeOutskirtsCharacterFrame(value);
     if (!frame) return false;
     state.clock = frame.clock; state.fold = frame.fold; state.locomotion = frame.locomotion;
+    state.busStage = frame.busStage; state.woman = frame.woman;
+    womanCueSamples.clear();
     return true;
   }
   function tickCharacters(dt, { pass = 0, along = 0, across = 0, yaw = 0, pitch = 0, speed: suppliedSpeed,
@@ -203,25 +217,55 @@ export function createOutskirtsExperience(initialState) {
     }
     return { transition, frame: characterFrame() };
   }
-  function bus({ active, along, across, visible, near, crossed, position }) {
+  function bus({ active, along, across, visible, near, crossed, position, acknowledgeYaw = .26 }) {
     if (!active) return state.busStage;
     const emit = (cue, strength) => events.push({ id: `outskirts-bus:${cue}`, cue, ...position, strength });
     if (state.busStage === 0 && visible) { state.busStage = 1; emit('bus-air', .5); }
     // A rushed player still gets the close event. Waiting at a safe distance
     // never consumes it; retreat never resets it.
-    if (state.busStage < 2 && near) { state.busStage = 2; emit('coat-rustle', .65); }
-    if (state.busStage >= 2 && state.busStage < 3 && crossed) { state.busStage = 3; emit('footstep', .8); }
+    if (state.busStage < 2 && near) { state.busStage = 2; state.woman.acknowledgedAt = state.clock; state.woman.acknowledgeYaw = clamp(acknowledgeYaw, -.6, .6); emit('coat-rustle', .65); }
+    if (state.busStage >= 2 && state.busStage < 3 && crossed) { state.busStage = 3; state.woman.stepAt = state.clock; emit('footstep', .8); }
     if (state.busStage === 3 && visible && crossed) state.busStage = 4;
     return state.busStage;
   }
-  function action(id, cue, position) {
+  function action(id, cue, position, { strength, variant } = {}) {
     if (state.actions.includes(id)) return false;
     state.actions.push(id);
-    events.push({ id, cue, ...position, strength: cue === 'hatch-impact' ? .8 : .5 });
+    events.push({ id, cue, ...position, strength: strength ?? (cue === 'hatch-impact' ? .8 : .5),
+      ...(variant != null ? { variant } : {}) });
     return true;
   }
+  function womanWrongOrigin({ actorId, mode, seconds, stage, position, near = false, visible = true,
+    suspended = false, paused = false, replayed = false, reducedMotion = false, clock = state.clock } = {}) {
+    if (typeof actorId !== 'string' || !/^[\w-]{1,64}$/.test(actorId)) return false;
+    const sample = busWomanWrongOriginCuePlan({ mode, seconds, stage, clock, woman:state.woman });
+    const previous = womanCueSamples.get(actorId);
+    womanCueSamples.set(actorId, sample);
+    if (womanCueSamples.size>32) womanCueSamples.delete(womanCueSamples.keys().next().value);
+    if (!near || !visible || suspended || paused || replayed || reducedMotion || !sample
+      || Math.abs(clock-state.clock)>.00001) return false;
+    let changed=false;
+    for (const cue of crossedBusWomanWrongOriginCues(previous,sample)) {
+      const prefix=`woman-traction:${actorId}:${sample.kind}:${cue.phase}:`;
+      const markers=state.actions.filter(id=>id.startsWith(prefix));
+      const last=markers.reduce((n,id)=>Math.max(n,Number(id.slice(prefix.length))||0),-1);
+      if (last>=sample.epoch) continue;
+      // One high-water marker per actor/action/phase bounds persistence even
+      // during a very long wait. Rewinding an old saved frame cannot replay it.
+      state.actions=state.actions.filter(id=>!id.startsWith(prefix));
+      changed=action(prefix+sample.epoch,'woman-traction',position,{strength:cue.strength,variant:cue.variant})||changed;
+    }
+    return changed;
+  }
+  function womanState({ ticketReturned, receiveId } = {}) {
+    if (ticketReturned != null) state.woman.ticketReturned = !!ticketReturned;
+    if (receiveId && state.woman.receivedAt == null) {
+      state.woman.receivedAt = state.clock; state.woman.receiveId = receiveId;
+    }
+    return { ...state.woman };
+  }
   return {
-    remember, echo, bus, action, tickCharacters, characterFrame, applyCharacterFrame,
+    remember, echo, bus, action, tickCharacters, characterFrame, applyCharacterFrame, womanState, womanWrongOrigin,
     busStage: () => state.busStage,
     hasAction: id => state.actions.includes(id),
     events: () => events.splice(0),
@@ -230,7 +274,7 @@ export function createOutskirtsExperience(initialState) {
     snapshot: ({ seen = state.seen, lampsOff = state.lampsOff, observed = state.observed } = {}) => ({
       ...state, seen: [...seen], lampsOff: [...lampsOff], observed,
       actions: [...state.actions], history: state.history.map(p => ({ ...p, ...(p.body ? { body: { ...p.body } } : {}) })),
-      fold: { ...state.fold, cues: [...state.fold.cues] }, locomotion: state.locomotion && { ...state.locomotion }, playback: { ...state.playback },
+      fold: { ...state.fold, cues: [...state.fold.cues] }, locomotion: state.locomotion && { ...state.locomotion }, woman: { ...state.woman }, playback: { ...state.playback },
     }),
   };
 }

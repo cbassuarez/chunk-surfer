@@ -72,6 +72,33 @@ test('per-frame world look, screen override, logical cells and global plate orig
   f.pass.dispose();
 });
 
+test('perspective cast previews and orthographic performers use their actual projection at both acquisition stages', async () => {
+  const f = fixture(); await f.pass.ready;
+  for (const camera of [f.camera, new Three.PerspectiveCamera(48, 2, .03, 100)]) {
+    camera.position.set(.7, 1.2, -3.6); camera.lookAt(0, .9, 0);
+    camera.updateMatrixWorld(true);
+    f.pass.render(f.scene, camera, { width: 800, height: 400 });
+    const acquisition = f.calls.at(-2).material;
+    const display = f.calls.at(-1).material;
+    assert.deepEqual(acquisition.uniforms.projectionInverse.value.elements, camera.projectionMatrixInverse.elements,
+      'packed character depth must use the active camera projection');
+    assert.deepEqual(display.uniforms.uSourceProjectionInverse.value.elements, camera.projectionMatrixInverse.elements,
+      'world-pinned dither must use the same camera projection');
+    assert.match(acquisition.fragmentShader, /-view\.z\/view\.w/);
+    assert.doesNotMatch(acquisition.fragmentShader, /mix\(nearFar/);
+    assert.match(display.fragmentShader, /mix\(nearPoint\.xyz,farPoint\.xyz,rayAmount\)/);
+    // Camera-space positions survive depth-buffer encoding for both camera
+    // types, including off-axis fingertips and a face near the camera.
+    for (const point of [new Three.Vector3(.1, -.2, -.15), new Three.Vector3(-.3, .4, -2.7)]) {
+      const ndc = point.clone().applyMatrix4(camera.projectionMatrix);
+      const restored = ndc.clone().applyMatrix4(acquisition.uniforms.projectionInverse.value);
+      assert.ok(restored.distanceTo(point) < 1e-10);
+    }
+  }
+  assert.equal(f.pass.debug().depthReconstruction, 'inverse-projection');
+  f.pass.dispose();
+});
+
 test('Source desktop wrapper preserves Hush defaults and restores caller renderer state', async () => {
   const f = fixture(createSourceDesktopDither); await f.pass.ready;
   f.pass.render(f.scene, f.camera, { width: 800, height: 400, dpr: 2 });

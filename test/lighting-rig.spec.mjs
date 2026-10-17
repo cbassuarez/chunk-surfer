@@ -89,6 +89,13 @@ assert.deepEqual(
 const room=(group,zone)=>({group,zone});
 const deadPlant=resolveLocalLights(room('basement',ZONE.plant),{liveCircuits:new Set()});
 assert.deepEqual(deadPlant.map((light)=>light.id),['plant-panel-green'],'dead plant room preserves only the independent green pilot');
+const dormantPlant=resolveLocalLights(room('basement',ZONE.plant),{
+  liveCircuits:new Set(),includeDormantEmergency:true,slots:Infinity,
+}).find((light)=>light.id==='plant-emergency');
+assert.ok(dormantPlant,'a dead emergency circuit retains its spatial apparition anchor');
+assert.equal(dormantPlant.powered,false);
+assert.equal(dormantPlant.intensity,0);
+assert.equal(dormantPlant.shadowReveal,0);
 const livePlant=resolveLocalLights(room('basement',ZONE.plant),{liveCircuits:new Set(['sp01'])});
 assert.ok(livePlant.some((light)=>light.id==='plant-emergency'));
 assert.ok(livePlant.some((light)=>light.id==='plant-service-live'));

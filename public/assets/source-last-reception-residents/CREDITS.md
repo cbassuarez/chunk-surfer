@@ -1,0 +1,1 @@
+The Last Reception uses retained CC0 MakeHuman anatomical source meshes and weights, with source-specific clothing, erased facial relief and original skeletal performance. These are anonymous residents, not additional appearances of any named game character. Retained source provenance: `tools/chunk_surfer/character-sources/makehuman/sources.json` and `weights-sources.json`.

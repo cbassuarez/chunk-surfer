@@ -117,7 +117,7 @@ function reachable(from, targets, solidOverride) {
   return false;
 }
 
-function mutableCandidates(view) {
+function mutableCandidates(view, pinned = null) {
   const out = [];
   const R = D(34);
   for (let dy = -R; dy <= R; dy++) for (let dx = -R; dx <= R; dx++) {
@@ -129,6 +129,7 @@ function mutableCandidates(view) {
     if (touchesRoom(x, y)) continue;                 // never seal a room's doorway
     if (heardAt(x, y) > 0.02) continue;              // you were loud here
     if (observed(x, y, view)) continue;              // you are looking at it
+    if (pinned?.has(`${x},${y}`)) continue;          // something is lying on it
     out.push({ x, y });
   }
   return out;
@@ -136,11 +137,14 @@ function mutableCandidates(view) {
 
 // `view` = { px, py, facing:[fx,fy], light }
 // `anchors` = cells that must stay reachable: the waypoint, the way out.
-export function tryMutate(now, view, anchors = []) {
+// `pinned` = cells that may not be sealed because something lies on them (an
+// unread page in a corridor that moves). Opening a wall beside one is fine.
+export function tryMutate(now, view, anchors = [], pinned = []) {
   if (!heard || !FP.isLoaded()) return null;
   if ((now - lastMutateAt) / 1000 < MUTATE.cooldownSec) return null;
 
-  const cands = mutableCandidates(view);
+  const pinnedCells = pinned.length ? new Set(pinned.map((c) => `${Math.round(c.x)},${Math.round(c.y)}`)) : null;
+  const cands = mutableCandidates(view, pinnedCells);
   if (cands.length < 2) return null;
 
   // A change is small and local: seal one corridor cell, open a neighbouring

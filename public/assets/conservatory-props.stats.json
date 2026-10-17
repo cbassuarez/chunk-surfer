@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-12T17:10:40.959Z",
-  "bytes": 31271620,
-  "totalTriangles": 433562,
+  "generatedAt": "2026-10-17T15:14:17.223Z",
+  "bytes": 42576916,
+  "totalTriangles": 557572,
   "meshes": {
     "school_desk": {
       "triangles": 176,
@@ -18,6 +18,14 @@
     "music_stand": {
       "triangles": 80,
       "vertices": 134
+    },
+    "music_stand_folded": {
+      "triangles": 84,
+      "vertices": 168
+    },
+    "music_stand_folded_sheet": {
+      "triangles": 24,
+      "vertices": 48
     },
     "instrument_case": {
       "triangles": 36,
@@ -136,30 +144,38 @@
       "vertices": 48
     },
     "rekey_ledger": {
-      "triangles": 108,
-      "vertices": 216
+      "triangles": 50,
+      "vertices": 100
     },
     "chapel_key_cabinet": {
       "triangles": 180,
       "vertices": 360
     },
     "chapel_key_ring_ch04": {
-      "triangles": 204,
-      "vertices": 408
+      "triangles": 194,
+      "vertices": 388
     },
     "chapel_key_ring_c17": {
-      "triangles": 216,
-      "vertices": 432
+      "triangles": 194,
+      "vertices": 388
     },
     "chapel_key_ring_fohm": {
-      "triangles": 228,
-      "vertices": 456
+      "triangles": 194,
+      "vertices": 388
     },
     "dance_barre": {
       "triangles": 152,
       "vertices": 236
     },
     "dance_mirror": {
+      "triangles": 60,
+      "vertices": 120
+    },
+    "acoustic_foam_panel": {
+      "triangles": 972,
+      "vertices": 1944
+    },
+    "textile_studio_carpet": {
       "triangles": 60,
       "vertices": 120
     },
@@ -180,8 +196,8 @@
       "vertices": 48
     },
     "loose_note_page6": {
-      "triangles": 84,
-      "vertices": 168
+      "triangles": 36,
+      "vertices": 72
     },
     "story_waypoint_beacon": {
       "triangles": 216,
@@ -344,8 +360,8 @@
       "vertices": 72
     },
     "hymn_board": {
-      "triangles": 48,
-      "vertices": 96
+      "triangles": 50,
+      "vertices": 100
     },
     "portrait_frame": {
       "triangles": 62,
@@ -372,8 +388,8 @@
       "vertices": 1152
     },
     "hall_entrance_sign": {
-      "triangles": 120,
-      "vertices": 240
+      "triangles": 36,
+      "vertices": 72
     },
     "hall_entry_sconce": {
       "triangles": 84,
@@ -406,6 +422,66 @@
     "academic_skylight": {
       "triangles": 288,
       "vertices": 576
+    },
+    "academic_roof_structure": {
+      "triangles": 24780,
+      "vertices": 42303
+    },
+    "academic_roof_glazing": {
+      "triangles": 1920,
+      "vertices": 3039
+    },
+    "academic_roof_service_stair": {
+      "triangles": 8100,
+      "vertices": 16200
+    },
+    "academic_roof_gate": {
+      "triangles": 132,
+      "vertices": 264
+    },
+    "academic_roof_service_ladder": {
+      "triangles": 1248,
+      "vertices": 2496
+    },
+    "academic_roof_seat": {
+      "triangles": 84,
+      "vertices": 168
+    },
+    "academic_roof_ren": {
+      "triangles": 4886,
+      "vertices": 7645
+    },
+    "academic_roof_ren_ritual": {
+      "triangles": 4934,
+      "vertices": 7741
+    },
+    "academic_roof_seal_imprint": {
+      "triangles": 440,
+      "vertices": 427
+    },
+    "academic_roof_cassette": {
+      "triangles": 116,
+      "vertices": 164
+    },
+    "academic_roof_school_bell": {
+      "triangles": 856,
+      "vertices": 834
+    },
+    "academic_roof_listening_vent": {
+      "triangles": 168,
+      "vertices": 336
+    },
+    "academic_roof_guarantor_marks": {
+      "triangles": 368,
+      "vertices": 668
+    },
+    "academic_roof_rehearsal_rest": {
+      "triangles": 156,
+      "vertices": 312
+    },
+    "academic_roof_weatherwork": {
+      "triangles": 438,
+      "vertices": 876
     },
     "academic_frieze": {
       "triangles": 480,
@@ -652,8 +728,8 @@
       "vertices": 180
     },
     "tower_rope_mat_tenor": {
-      "triangles": 648,
-      "vertices": 894
+      "triangles": 160,
+      "vertices": 168
     },
     "tower_clock_hammer": {
       "triangles": 68,
@@ -676,8 +752,8 @@
       "vertices": 408
     },
     "tower_peal_board": {
-      "triangles": 72,
-      "vertices": 144
+      "triangles": 50,
+      "vertices": 100
     },
     "tower_organ_case": {
       "triangles": 1140,
@@ -748,16 +824,32 @@
       "vertices": 174
     },
     "apparition_pose_neutral": {
-      "triangles": 108,
-      "vertices": 174
+      "triangles": 5556,
+      "vertices": 3452
     },
     "apparition_pose_side": {
-      "triangles": 108,
-      "vertices": 174
+      "triangles": 5556,
+      "vertices": 3452
     },
     "apparition_pose_stoop": {
-      "triangles": 108,
-      "vertices": 174
+      "triangles": 5556,
+      "vertices": 3452
+    },
+    "apparition_pose_head_turn": {
+      "triangles": 5556,
+      "vertices": 3452
+    },
+    "apparition_pose_arm_out": {
+      "triangles": 5556,
+      "vertices": 3452
+    },
+    "apparition_pose_weight_shift": {
+      "triangles": 5556,
+      "vertices": 3452
+    },
+    "apparition_pose_symmetric": {
+      "triangles": 5556,
+      "vertices": 3452
     },
     "ending_body_prone": {
       "triangles": 108,
@@ -780,8 +872,8 @@
       "vertices": 220
     },
     "ending_returned_ledger": {
-      "triangles": 720,
-      "vertices": 1440
+      "triangles": 124,
+      "vertices": 248
     },
     "ending_headphones": {
       "triangles": 108,
@@ -806,22 +898,6 @@
     "ending_collapse_debris": {
       "triangles": 36,
       "vertices": 72
-    },
-    "apparition_pose_head_turn": {
-      "triangles": 84,
-      "vertices": 168
-    },
-    "apparition_pose_arm_out": {
-      "triangles": 120,
-      "vertices": 198
-    },
-    "apparition_pose_weight_shift": {
-      "triangles": 108,
-      "vertices": 174
-    },
-    "apparition_pose_symmetric": {
-      "triangles": 108,
-      "vertices": 174
     },
     "legacy_tape_rack": {
       "triangles": 960,
@@ -852,8 +928,8 @@
       "vertices": 48
     },
     "public_exit_sign": {
-      "triangles": 96,
-      "vertices": 192
+      "triangles": 36,
+      "vertices": 72
     },
     "bay_canopy": {
       "triangles": 772,
@@ -892,8 +968,12 @@
       "vertices": 1372
     },
     "district_outer_sprawl": {
-      "triangles": 155296,
-      "vertices": 296108
+      "triangles": 172696,
+      "vertices": 331268
+    },
+    "district_outer_streets": {
+      "triangles": 416,
+      "vertices": 832
     },
     "yard_stable_range": {
       "triangles": 488,
@@ -932,8 +1012,8 @@
       "vertices": 288
     },
     "exterior_story_plaque": {
-      "triangles": 60,
-      "vertices": 120
+      "triangles": 24,
+      "vertices": 48
     },
     "district_post_box": {
       "triangles": 148,
@@ -980,12 +1060,12 @@
       "vertices": 996
     },
     "scene_dock_sign_foh": {
-      "triangles": 446,
-      "vertices": 892
+      "triangles": 74,
+      "vertices": 148
     },
     "scene_dock_sign_services": {
-      "triangles": 426,
-      "vertices": 852
+      "triangles": 74,
+      "vertices": 148
     },
     "vigil_ruth_mallory": {
       "triangles": 540,
@@ -1084,32 +1164,32 @@
       "vertices": 1146
     },
     "vigil_part_sign_save": {
-      "triangles": 348,
-      "vertices": 696
+      "triangles": 50,
+      "vertices": 100
     },
     "vigil_part_sign_strike": {
-      "triangles": 600,
-      "vertices": 1200
+      "triangles": 50,
+      "vertices": 100
     },
     "vigil_part_sign_chapel": {
-      "triangles": 578,
-      "vertices": 1156
+      "triangles": 50,
+      "vertices": 100
     },
     "vigil_part_sign_record": {
-      "triangles": 612,
-      "vertices": 1224
+      "triangles": 50,
+      "vertices": 100
     },
     "vigil_part_sign_signed": {
-      "triangles": 574,
-      "vertices": 1148
+      "triangles": 50,
+      "vertices": 100
     },
     "vigil_part_banner": {
-      "triangles": 596,
-      "vertices": 1192
+      "triangles": 276,
+      "vertices": 219
     },
     "conservatory_west_elevation": {
-      "triangles": 17808,
-      "vertices": 34462
+      "triangles": 17856,
+      "vertices": 34562
     },
     "conservatory_stair_window": {
       "triangles": 60,
@@ -1188,8 +1268,8 @@
       "vertices": 744
     },
     "yard_sign": {
-      "triangles": 144,
-      "vertices": 288
+      "triangles": 72,
+      "vertices": 144
     },
     "yard_road": {
       "triangles": 340,
@@ -1232,16 +1312,16 @@
       "vertices": 264
     },
     "city_phone_box": {
-      "triangles": 2928,
-      "vertices": 5856
+      "triangles": 2264,
+      "vertices": 4528
     },
     "city_phone_box_glow": {
       "triangles": 60,
       "vertices": 120
     },
     "city_phone_box_apparatus": {
-      "triangles": 4750,
-      "vertices": 10428
+      "triangles": 4060,
+      "vertices": 9048
     },
     "city_phone_box_handset": {
       "triangles": 532,
@@ -1475,10 +1555,6 @@
       "triangles": 32,
       "vertices": 64
     },
-    "park_marble_eyes": {
-      "triangles": 776,
-      "vertices": 744
-    },
     "city_parked_car": {
       "triangles": 784,
       "vertices": 1168
@@ -1512,8 +1588,8 @@
       "vertices": 1056
     },
     "outskirts_bus": {
-      "triangles": 5104,
-      "vertices": 8988
+      "triangles": 4812,
+      "vertices": 8404
     },
     "outskirts_bus_door": {
       "triangles": 204,
@@ -1524,12 +1600,12 @@
       "vertices": 2086
     },
     "outskirts_shelter_timetable": {
-      "triangles": 1008,
-      "vertices": 2016
+      "triangles": 230,
+      "vertices": 460
     },
     "outskirts_lodge": {
-      "triangles": 592,
-      "vertices": 1154
+      "triangles": 402,
+      "vertices": 774
     },
     "outskirts_fold_chair": {
       "triangles": 1116,
@@ -1568,16 +1644,16 @@
       "vertices": 504
     },
     "outskirts_lodge_ledger": {
-      "triangles": 728,
-      "vertices": 1456
+      "triangles": 64,
+      "vertices": 128
     },
     "outskirts_ledger_signed": {
-      "triangles": 884,
-      "vertices": 1768
+      "triangles": 64,
+      "vertices": 128
     },
     "outskirts_ticket": {
-      "triangles": 380,
-      "vertices": 760
+      "triangles": 112,
+      "vertices": 224
     },
     "outskirts_van_step": {
       "triangles": 216,
@@ -1588,8 +1664,8 @@
       "vertices": 174
     },
     "outskirts_car": {
-      "triangles": 2108,
-      "vertices": 3242
+      "triangles": 1986,
+      "vertices": 2998
     },
     "outskirts_bus_woman": {
       "triangles": 2204,
@@ -1612,16 +1688,16 @@
       "vertices": 4800
     },
     "baseboard_basement": {
-      "triangles": 2136,
-      "vertices": 4272
+      "triangles": 2148,
+      "vertices": 4296
     },
     "baseboard_upper": {
       "triangles": 3420,
       "vertices": 6840
     },
     "baseboard_academic": {
-      "triangles": 2412,
-      "vertices": 4824
+      "triangles": 2460,
+      "vertices": 4920
     },
     "baseboard_tower": {
       "triangles": 4644,
@@ -1630,6 +1706,198 @@
     "baseboard_cathedral": {
       "triangles": 6792,
       "vertices": 13584
+    },
+    "baseboard_academicRoof": {
+      "triangles": 1404,
+      "vertices": 2808
+    },
+    "park_marble_eyes": {
+      "triangles": 2392,
+      "vertices": 7176
+    },
+    "park_fountain_coins": {
+      "triangles": 384,
+      "vertices": 1152
+    },
+    "academic_bust_socketed": {
+      "triangles": 10882,
+      "vertices": 32646
+    },
+    "academic_bust_socketed_returned": {
+      "triangles": 13274,
+      "vertices": 39822
+    },
+    "lettering_overlay_tower-history-plaque": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_acq-foyer-armchair-01": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_atrium-public-directory": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_plant-header-card": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_yard-sign": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_tower-sign-belfry": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_exterior-hall-stone": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "door_stencil_b1": {
+      "triangles": 14,
+      "vertices": 28
+    },
+    "door_stencil_b2": {
+      "triangles": 14,
+      "vertices": 28
+    },
+    "door_stencil_b3": {
+      "triangles": 14,
+      "vertices": 28
+    },
+    "lettering_overlay_exterior-chapel-plaque": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_exterior-foundation-stone": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_acq-foyer-horse-head": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_acq-practice-chair-3": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_acq-practice-chair-4": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_acq-practice-chair-5": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_acq-services-panel-academic": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "source_hall_number_17": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_brendan-visitor-till": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_exterior-baths-mosaic": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_box-office-returns-tray": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_acq-foyer-sofa-01": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_deadend-ground-armchair": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_acq-practice-chair-1": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_acq-practice-chair-2": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_tower-hammer-isolator": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_tower-sign-nave-exit": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_tower-sign-organ-exit": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_tower-sign-ringing": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_acq-hall-chesterfield-west": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "door_stencil_b5": {
+      "triangles": 14,
+      "vertices": 28
+    },
+    "lettering_overlay_acq-services-panel-pool": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_acq-services-panel-practice": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_foyer-pew-1": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_acq-foyer-console-01": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_acq-practice-chair-6": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_acq-practice-chair-7": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_acq-practice-chair-8": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_acq-services-panel-foh": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_acq-services-panel-plant": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_atrium-sign-main-exit": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_chapel-stair-sign-nave": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_hall-entrance-sign": {
+      "triangles": 2,
+      "vertices": 4
     }
   },
   "bounds": {
@@ -1679,6 +1947,30 @@
         0.275,
         1.252,
         0.275
+      ]
+    },
+    "music_stand_folded": {
+      "min": [
+        -0.24,
+        -0.003,
+        -0.211
+      ],
+      "max": [
+        0.24,
+        1.003,
+        0.148
+      ]
+    },
+    "music_stand_folded_sheet": {
+      "min": [
+        -0.15,
+        0.745,
+        -0.146
+      ],
+      "max": [
+        0.15,
+        0.962,
+        -0.075
       ]
     },
     "instrument_case": {
@@ -2062,7 +2354,7 @@
       "max": [
         0.08,
         0.274,
-        0.245
+        0.238
       ]
     },
     "chapel_key_ring_c17": {
@@ -2074,7 +2366,7 @@
       "max": [
         0.08,
         0.274,
-        0.245
+        0.238
       ]
     },
     "chapel_key_ring_fohm": {
@@ -2086,7 +2378,7 @@
       "max": [
         0.08,
         0.274,
-        0.245
+        0.238
       ]
     },
     "dance_barre": {
@@ -2111,6 +2403,30 @@
         1.98,
         2.58,
         0
+      ]
+    },
+    "acoustic_foam_panel": {
+      "min": [
+        -1.2,
+        0.04,
+        -0.08
+      ],
+      "max": [
+        1.2,
+        2.46,
+        0.019
+      ]
+    },
+    "textile_studio_carpet": {
+      "min": [
+        -3.1,
+        0,
+        -2.3
+      ],
+      "max": [
+        3.1,
+        0.021,
+        2.3
       ]
     },
     "door_stencil": {
@@ -2746,7 +3062,7 @@
       "max": [
         1.375,
         0.48,
-        0.108
+        0.095
       ]
     },
     "hall_entry_sconce": {
@@ -2843,6 +3159,186 @@
         11.55,
         6.85,
         13.05
+      ]
+    },
+    "academic_roof_structure": {
+      "min": [
+        -12.04,
+        -0.24,
+        -13.54
+      ],
+      "max": [
+        12.04,
+        5.625,
+        13.54
+      ]
+    },
+    "academic_roof_glazing": {
+      "min": [
+        -5.125,
+        -0.405,
+        -6.55
+      ],
+      "max": [
+        5.125,
+        3.44,
+        6.55
+      ]
+    },
+    "academic_roof_service_stair": {
+      "min": [
+        -18.16,
+        -10,
+        -13.85
+      ],
+      "max": [
+        3.06,
+        8.023,
+        2.14
+      ]
+    },
+    "academic_roof_gate": {
+      "min": [
+        -0.16,
+        0.04,
+        -0.89
+      ],
+      "max": [
+        0.05,
+        2.18,
+        0.89
+      ]
+    },
+    "academic_roof_service_ladder": {
+      "min": [
+        -0.549,
+        0,
+        -0.449
+      ],
+      "max": [
+        0.549,
+        8,
+        0.15
+      ]
+    },
+    "academic_roof_seat": {
+      "min": [
+        -0.92,
+        -0.21,
+        -0.75
+      ],
+      "max": [
+        0.92,
+        0.11,
+        0.75
+      ]
+    },
+    "academic_roof_ren": {
+      "min": [
+        -0.438,
+        0.004,
+        -0.28
+      ],
+      "max": [
+        0.583,
+        1.845,
+        0.195
+      ]
+    },
+    "academic_roof_ren_ritual": {
+      "min": [
+        -0.438,
+        0.004,
+        -0.718
+      ],
+      "max": [
+        0.583,
+        1.845,
+        0.195
+      ]
+    },
+    "academic_roof_seal_imprint": {
+      "min": [
+        -0.197,
+        0.08,
+        -0.029
+      ],
+      "max": [
+        0.13,
+        0.461,
+        0.018
+      ]
+    },
+    "academic_roof_cassette": {
+      "min": [
+        -0.06,
+        0,
+        -0.039
+      ],
+      "max": [
+        0.06,
+        0.033,
+        0.039
+      ]
+    },
+    "academic_roof_school_bell": {
+      "min": [
+        -0.7,
+        0,
+        -0.635
+      ],
+      "max": [
+        0.535,
+        2.485,
+        0.535
+      ]
+    },
+    "academic_roof_listening_vent": {
+      "min": [
+        -0.6,
+        0.6,
+        -0.624
+      ],
+      "max": [
+        0.6,
+        1.523,
+        0.47
+      ]
+    },
+    "academic_roof_guarantor_marks": {
+      "min": [
+        0.262,
+        0.46,
+        -0.57
+      ],
+      "max": [
+        1.48,
+        1.47,
+        0.57
+      ]
+    },
+    "academic_roof_rehearsal_rest": {
+      "min": [
+        -0.668,
+        0.039,
+        -0.297
+      ],
+      "max": [
+        0.591,
+        0.906,
+        0.412
+      ]
+    },
+    "academic_roof_weatherwork": {
+      "min": [
+        -11.44,
+        0,
+        -10.15
+      ],
+      "max": [
+        11.42,
+        0.052,
+        10.5
       ]
     },
     "academic_frieze": {
@@ -3584,8 +4080,8 @@
         -0.64
       ],
       "max": [
-        0.654,
-        0.079,
+        0.64,
+        0.051,
         0.64
       ]
     },
@@ -3867,38 +4363,86 @@
     },
     "apparition_pose_neutral": {
       "min": [
-        -0.37,
-        0.024,
-        -0.16
+        -0.372,
+        0,
+        -0.247
       ],
       "max": [
-        0.37,
-        1.73,
-        0.16
+        0.372,
+        1.815,
+        0.135
       ]
     },
     "apparition_pose_side": {
       "min": [
-        -0.245,
-        0.023,
-        -0.175
+        -0.287,
+        0,
+        -0.247
       ],
       "max": [
-        0.245,
-        1.73,
-        0.18
+        0.286,
+        1.815,
+        0.201
       ]
     },
     "apparition_pose_stoop": {
       "min": [
-        -0.419,
-        0.015,
-        -0.32
+        -0.411,
+        0,
+        -0.425
       ],
       "max": [
-        0.419,
-        1.695,
-        0.144
+        0.411,
+        1.735,
+        0.125
+      ]
+    },
+    "apparition_pose_head_turn": {
+      "min": [
+        -0.372,
+        0,
+        -0.247
+      ],
+      "max": [
+        0.372,
+        1.815,
+        0.135
+      ]
+    },
+    "apparition_pose_arm_out": {
+      "min": [
+        -0.382,
+        0,
+        -0.247
+      ],
+      "max": [
+        0.822,
+        1.815,
+        0.135
+      ]
+    },
+    "apparition_pose_weight_shift": {
+      "min": [
+        -0.462,
+        0,
+        -0.282
+      ],
+      "max": [
+        0.442,
+        1.815,
+        0.135
+      ]
+    },
+    "apparition_pose_symmetric": {
+      "min": [
+        -0.348,
+        0,
+        -0.252
+      ],
+      "max": [
+        0.348,
+        1.815,
+        0.135
       ]
     },
     "ending_body_prone": {
@@ -4045,54 +4589,6 @@
         0.395
       ]
     },
-    "apparition_pose_head_turn": {
-      "min": [
-        -0.4,
-        0.022,
-        -0.17
-      ],
-      "max": [
-        0.36,
-        1.725,
-        0.15
-      ]
-    },
-    "apparition_pose_arm_out": {
-      "min": [
-        -0.41,
-        0.022,
-        -0.16
-      ],
-      "max": [
-        0.769,
-        1.73,
-        0.16
-      ]
-    },
-    "apparition_pose_weight_shift": {
-      "min": [
-        -0.448,
-        0.008,
-        -0.16
-      ],
-      "max": [
-        0.37,
-        1.73,
-        0.16
-      ]
-    },
-    "apparition_pose_symmetric": {
-      "min": [
-        -0.313,
-        0.03,
-        -0.16
-      ],
-      "max": [
-        0.313,
-        1.73,
-        0.16
-      ]
-    },
     "legacy_tape_rack": {
       "min": [
         -0.54,
@@ -4186,7 +4682,7 @@
       "max": [
         1.15,
         0.62,
-        0.108
+        0.095
       ]
     },
     "bay_canopy": {
@@ -4309,6 +4805,18 @@
         186.245
       ]
     },
+    "district_outer_streets": {
+      "min": [
+        -77,
+        -0.07,
+        -60.76
+      ],
+      "max": [
+        227,
+        0.05,
+        172.26
+      ]
+    },
     "yard_stable_range": {
       "min": [
         -6.345,
@@ -4421,7 +4929,7 @@
       "min": [
         -0.675,
         0,
-        -0.213
+        -0.185
       ],
       "max": [
         0.675,
@@ -4913,7 +5421,7 @@
       "min": [
         -0.67,
         0.504,
-        -0.338
+        -0.339
       ],
       "max": [
         0.67,
@@ -4925,7 +5433,7 @@
       "min": [
         -0.67,
         0.504,
-        -0.338
+        -0.339
       ],
       "max": [
         0.67,
@@ -4949,7 +5457,7 @@
       "min": [
         -8.045,
         0,
-        -10.565
+        -9.865
       ],
       "max": [
         79.665,
@@ -6049,18 +6557,6 @@
         0.068
       ]
     },
-    "park_marble_eyes": {
-      "min": [
-        -0.378,
-        0,
-        -0.252
-      ],
-      "max": [
-        0.254,
-        0.048,
-        0.237
-      ]
-    },
     "city_parked_car": {
       "min": [
         -0.99,
@@ -6161,7 +6657,7 @@
       "min": [
         -1.411,
         0.02,
-        -4.696
+        -4.693
       ],
       "max": [
         1.411,
@@ -6333,7 +6829,7 @@
       ],
       "max": [
         -0.419,
-        1.507,
+        1.505,
         -1.225
       ]
     },
@@ -6345,7 +6841,7 @@
       ],
       "max": [
         -0.419,
-        1.508,
+        1.505,
         -1.225
       ]
     },
@@ -6394,7 +6890,7 @@
       "max": [
         1.101,
         1.665,
-        2.235
+        2.232
       ]
     },
     "outskirts_bus_woman": {
@@ -6516,10 +7012,586 @@
         0.115,
         16
       ]
+    },
+    "baseboard_academicRoof": {
+      "min": [
+        0,
+        -7,
+        -8
+      ],
+      "max": [
+        24,
+        0.115,
+        27
+      ]
+    },
+    "park_marble_eyes": {
+      "min": [
+        -0.062,
+        0.008,
+        -0.042
+      ],
+      "max": [
+        0.064,
+        0.042,
+        0.044
+      ]
+    },
+    "park_fountain_coins": {
+      "min": [
+        -0.378,
+        0,
+        -0.254
+      ],
+      "max": [
+        0.254,
+        0.008,
+        0.239
+      ]
+    },
+    "academic_bust_socketed": {
+      "min": [
+        -0.204,
+        0,
+        -0.15
+      ],
+      "max": [
+        0.204,
+        0.515,
+        0.15
+      ]
+    },
+    "academic_bust_socketed_returned": {
+      "min": [
+        -0.204,
+        0,
+        -0.15
+      ],
+      "max": [
+        0.204,
+        0.515,
+        0.15
+      ]
+    },
+    "lettering_overlay_tower-history-plaque": {
+      "min": [
+        -0.57,
+        0.105,
+        0.08
+      ],
+      "max": [
+        0.57,
+        0.655,
+        0.08
+      ]
+    },
+    "lettering_overlay_acq-foyer-armchair-01": {
+      "min": [
+        0.042,
+        0.392,
+        -0.358
+      ],
+      "max": [
+        0.102,
+        0.41,
+        -0.355
+      ]
+    },
+    "lettering_overlay_atrium-public-directory": {
+      "min": [
+        -0.515,
+        0.085,
+        -0.046
+      ],
+      "max": [
+        0.515,
+        0.815,
+        -0.046
+      ]
+    },
+    "lettering_overlay_plant-header-card": {
+      "min": [
+        -0.515,
+        0.085,
+        -0.046
+      ],
+      "max": [
+        0.515,
+        0.815,
+        -0.046
+      ]
+    },
+    "lettering_overlay_yard-sign": {
+      "min": [
+        -0.88,
+        1.33,
+        0.076
+      ],
+      "max": [
+        0.88,
+        2.39,
+        0.076
+      ]
+    },
+    "lettering_overlay_tower-sign-belfry": {
+      "min": [
+        -0.57,
+        0.105,
+        0.08
+      ],
+      "max": [
+        0.57,
+        0.655,
+        0.08
+      ]
+    },
+    "lettering_overlay_exterior-hall-stone": {
+      "min": [
+        -0.52,
+        0.25,
+        -0.186
+      ],
+      "max": [
+        0.52,
+        0.71,
+        -0.186
+      ]
+    },
+    "door_stencil_b1": {
+      "min": [
+        -0.23,
+        0,
+        -0.018
+      ],
+      "max": [
+        0.23,
+        0.32,
+        -0.003
+      ]
+    },
+    "door_stencil_b2": {
+      "min": [
+        -0.23,
+        0,
+        -0.018
+      ],
+      "max": [
+        0.23,
+        0.32,
+        -0.003
+      ]
+    },
+    "door_stencil_b3": {
+      "min": [
+        -0.23,
+        0,
+        -0.018
+      ],
+      "max": [
+        0.23,
+        0.32,
+        -0.003
+      ]
+    },
+    "lettering_overlay_exterior-chapel-plaque": {
+      "min": [
+        -0.52,
+        0.25,
+        -0.186
+      ],
+      "max": [
+        0.52,
+        0.71,
+        -0.186
+      ]
+    },
+    "lettering_overlay_exterior-foundation-stone": {
+      "min": [
+        -0.52,
+        0.25,
+        -0.186
+      ],
+      "max": [
+        0.52,
+        0.71,
+        -0.186
+      ]
+    },
+    "lettering_overlay_acq-foyer-horse-head": {
+      "min": [
+        -0.068,
+        0.011,
+        0.052
+      ],
+      "max": [
+        0.068,
+        0.049,
+        0.052
+      ]
+    },
+    "lettering_overlay_acq-practice-chair-3": {
+      "min": [
+        -0.126,
+        0.294,
+        0.288
+      ],
+      "max": [
+        -0.086,
+        0.296,
+        0.3
+      ]
+    },
+    "lettering_overlay_acq-practice-chair-4": {
+      "min": [
+        -0.126,
+        0.294,
+        0.288
+      ],
+      "max": [
+        -0.086,
+        0.296,
+        0.3
+      ]
+    },
+    "lettering_overlay_acq-practice-chair-5": {
+      "min": [
+        -0.126,
+        0.294,
+        0.288
+      ],
+      "max": [
+        -0.086,
+        0.296,
+        0.3
+      ]
+    },
+    "lettering_overlay_acq-services-panel-academic": {
+      "min": [
+        -0.102,
+        0.153,
+        0.062
+      ],
+      "max": [
+        0.102,
+        0.213,
+        0.062
+      ]
+    },
+    "source_hall_number_17": {
+      "min": [
+        0,
+        -0.12,
+        -0.165
+      ],
+      "max": [
+        0,
+        0.12,
+        0.165
+      ]
+    },
+    "lettering_overlay_brendan-visitor-till": {
+      "min": [
+        -0.1,
+        0.258,
+        -0.13
+      ],
+      "max": [
+        0.1,
+        0.258,
+        -0.01
+      ]
+    },
+    "lettering_overlay_exterior-baths-mosaic": {
+      "min": [
+        -0.52,
+        0.25,
+        -0.186
+      ],
+      "max": [
+        0.52,
+        0.71,
+        -0.186
+      ]
+    },
+    "lettering_overlay_box-office-returns-tray": {
+      "min": [
+        -0.289,
+        0.022,
+        -0.07
+      ],
+      "max": [
+        -0.021,
+        0.022,
+        0.07
+      ]
+    },
+    "lettering_overlay_acq-foyer-sofa-01": {
+      "min": [
+        -0.016,
+        0.112,
+        0.28
+      ],
+      "max": [
+        0.016,
+        0.112,
+        0.298
+      ]
+    },
+    "lettering_overlay_deadend-ground-armchair": {
+      "min": [
+        0.042,
+        0.392,
+        -0.358
+      ],
+      "max": [
+        0.102,
+        0.41,
+        -0.355
+      ]
+    },
+    "lettering_overlay_acq-practice-chair-1": {
+      "min": [
+        -0.126,
+        0.294,
+        0.288
+      ],
+      "max": [
+        -0.086,
+        0.296,
+        0.3
+      ]
+    },
+    "lettering_overlay_acq-practice-chair-2": {
+      "min": [
+        -0.126,
+        0.294,
+        0.288
+      ],
+      "max": [
+        -0.086,
+        0.296,
+        0.3
+      ]
+    },
+    "lettering_overlay_tower-hammer-isolator": {
+      "min": [
+        -0.23,
+        1.327,
+        -0.315
+      ],
+      "max": [
+        0.14,
+        1.432,
+        -0.315
+      ]
+    },
+    "lettering_overlay_tower-sign-nave-exit": {
+      "min": [
+        -0.57,
+        0.105,
+        0.08
+      ],
+      "max": [
+        0.57,
+        0.655,
+        0.08
+      ]
+    },
+    "lettering_overlay_tower-sign-organ-exit": {
+      "min": [
+        -0.57,
+        0.105,
+        0.08
+      ],
+      "max": [
+        0.57,
+        0.655,
+        0.08
+      ]
+    },
+    "lettering_overlay_tower-sign-ringing": {
+      "min": [
+        -0.57,
+        0.105,
+        0.08
+      ],
+      "max": [
+        0.57,
+        0.655,
+        0.08
+      ]
+    },
+    "lettering_overlay_acq-hall-chesterfield-west": {
+      "min": [
+        -0.065,
+        0.127,
+        0.402
+      ],
+      "max": [
+        0.065,
+        0.163,
+        0.402
+      ]
+    },
+    "door_stencil_b5": {
+      "min": [
+        -0.23,
+        0,
+        -0.018
+      ],
+      "max": [
+        0.23,
+        0.32,
+        -0.003
+      ]
+    },
+    "lettering_overlay_acq-services-panel-pool": {
+      "min": [
+        -0.102,
+        0.153,
+        0.062
+      ],
+      "max": [
+        0.102,
+        0.213,
+        0.062
+      ]
+    },
+    "lettering_overlay_acq-services-panel-practice": {
+      "min": [
+        -0.102,
+        0.153,
+        0.062
+      ],
+      "max": [
+        0.102,
+        0.213,
+        0.062
+      ]
+    },
+    "lettering_overlay_foyer-pew-1": {
+      "min": [
+        -1.04,
+        0.447,
+        0.241
+      ],
+      "max": [
+        -0.74,
+        0.513,
+        0.241
+      ]
+    },
+    "lettering_overlay_acq-foyer-console-01": {
+      "min": [
+        -0.075,
+        0.903,
+        -0.015
+      ],
+      "max": [
+        0.075,
+        0.903,
+        0.015
+      ]
+    },
+    "lettering_overlay_acq-practice-chair-6": {
+      "min": [
+        -0.126,
+        0.294,
+        0.288
+      ],
+      "max": [
+        -0.086,
+        0.296,
+        0.3
+      ]
+    },
+    "lettering_overlay_acq-practice-chair-7": {
+      "min": [
+        -0.126,
+        0.294,
+        0.288
+      ],
+      "max": [
+        -0.086,
+        0.296,
+        0.3
+      ]
+    },
+    "lettering_overlay_acq-practice-chair-8": {
+      "min": [
+        -0.126,
+        0.294,
+        0.288
+      ],
+      "max": [
+        -0.086,
+        0.296,
+        0.3
+      ]
+    },
+    "lettering_overlay_acq-services-panel-foh": {
+      "min": [
+        -0.102,
+        0.153,
+        0.062
+      ],
+      "max": [
+        0.102,
+        0.213,
+        0.062
+      ]
+    },
+    "lettering_overlay_acq-services-panel-plant": {
+      "min": [
+        -0.102,
+        0.153,
+        0.062
+      ],
+      "max": [
+        0.102,
+        0.213,
+        0.062
+      ]
+    },
+    "lettering_overlay_atrium-sign-main-exit": {
+      "min": [
+        -0.9,
+        0.185,
+        0.096
+      ],
+      "max": [
+        0.9,
+        0.435,
+        0.096
+      ]
+    },
+    "lettering_overlay_chapel-stair-sign-nave": {
+      "min": [
+        -0.9,
+        0.185,
+        0.096
+      ],
+      "max": [
+        0.9,
+        0.435,
+        0.096
+      ]
+    },
+    "lettering_overlay_hall-entrance-sign": {
+      "min": [
+        -1.075,
+        0.152,
+        0.096
+      ],
+      "max": [
+        1.075,
+        0.328,
+        0.096
+      ]
     }
   },
   "baseboards": {
-    "planHash": "baeb9748b2023f3bdba87db834823a3914838a44a9feb445cda4ef6632cc84e7",
+    "planHash": "f4541699f2e230cd480f2f7b2e23ca8cfdebe3c1ebaacdee04e32ebc6de176c1",
     "groups": {
       "ground": {
         "mesh": "baseboard_ground",
@@ -6569,6 +7641,13 @@
           "x": 364,
           "y": 472
         }
+      },
+      "academicRoof": {
+        "mesh": "baseboard_academicRoof",
+        "anchor": {
+          "x": 380,
+          "y": 540
+        }
       }
     }
   },
@@ -6602,6 +7681,7 @@
     "rekey_ledger": 0.96,
     "chapel_key_cabinet": 1.24,
     "dance_mirror": 2.58,
+    "textile_studio_carpet": 0.02,
     "costume_rail": 1.52,
     "rolled_lino": 1.73,
     "loose_note": 0.02,
@@ -6652,6 +7732,17 @@
     "atrium_suspended_lantern": 5.97,
     "atrium_waiting_rug": 0.05,
     "academic_skylight": 6.75,
+    "academic_roof_structure": 0,
+    "academic_roof_glazing": 0,
+    "academic_roof_service_stair": -9.96,
+    "academic_roof_gate": 2.18,
+    "academic_roof_service_ladder": 7.38,
+    "academic_roof_seat": 0.02,
+    "academic_roof_school_bell": 0.32,
+    "academic_roof_listening_vent": 0.76,
+    "academic_roof_guarantor_marks": 1.42,
+    "academic_roof_rehearsal_rest": 0.38,
+    "academic_roof_weatherwork": 0,
     "academic_frieze": 0.84,
     "academic_bust_plinth": 0.16,
     "academic_bust_fragment": 0.38,
@@ -6701,9 +7792,6 @@
     "stair_pendant_opal": -1.07,
     "stair_shadow_figure": 1.41,
     "player_shadow_figure": 1.44,
-    "apparition_pose_neutral": 1.44,
-    "apparition_pose_side": 1.44,
-    "apparition_pose_stoop": 1.42,
     "ending_body_prone": 0.33,
     "ending_body_seated": 0.96,
     "ending_van_cabin": 0.92,
@@ -6712,10 +7800,6 @@
     "ending_body_standing": 1.44,
     "ending_containment_ribs": 0.04,
     "ending_collapse_debris": 0.31,
-    "apparition_pose_head_turn": 1.44,
-    "apparition_pose_arm_out": 1.44,
-    "apparition_pose_weight_shift": 1.45,
-    "apparition_pose_symmetric": 1.44,
     "legacy_tape_rack": 2.08,
     "legacy_patchbay": 1.74,
     "legacy_transfer_deck": 0.92,
@@ -6733,6 +7817,7 @@
     "district_passage_frontage": 13,
     "district_court_walls": 9.2,
     "district_outer_sprawl": 0.96,
+    "district_outer_streets": 0,
     "yard_stable_range": 7.4,
     "yard_rehearsal_range": 8.8,
     "yard_baths_plant": 7.2,
@@ -6878,6 +7963,13 @@
     "baseboard_upper": 0.29,
     "baseboard_academic": 2.89,
     "baseboard_tower": 3.92,
-    "baseboard_cathedral": -5.48
+    "baseboard_cathedral": -5.48,
+    "baseboard_academicRoof": 0.12
+  },
+  "lettering": {
+    "surfaces": 89,
+    "pages": 9,
+    "textureBaseLevelBytes": 41631744,
+    "atlasInputSha256": "b9b9671c482134fd6f110f4329e36a2f6220a00d77b85b84485fe6092fe21ddd"
   }
 }

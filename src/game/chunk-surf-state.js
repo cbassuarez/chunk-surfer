@@ -1,4 +1,6 @@
+import { normalizeBustPerformanceState } from './bust-performance.js';
 import { normalizeSourceShore } from './source-hanging-shore.js';
+import { createLastReceptionState } from './source-last-reception.js';
 import { CHUNK_SURF_FLAGS, chunkSurfRouteProfile } from '../data/chunk-surf-script.js';
 import { normalizeOutskirtsExperience } from './outskirts-experience.js';
 import { normalizeSourceUnravelling } from './source-unravelling.js';
@@ -260,6 +262,7 @@ export function freshChunkSurfState({
     sourceApproachDistance: 0,
     sourceShore: normalizeSourceShore(),
     sourceDivide: null,
+    lastReception: createLastReceptionState(),
     sourceApproachComplete: false,
     firstLiftCompleted: false,
     landingWeatherSpent: false,
@@ -342,7 +345,7 @@ function freshFinale() {
     route: null,
     stage: SOURCE_FINALE_STAGE.UNCOMMITTED,
     result: null,
-    bust: { recognized: false, decision: null, defeats: 0 },
+    bust: { recognized: false, decision: null, defeats: 0, sealReady:false, performance:normalizeBustPerformanceState() },
     cathedral: freshCathedral(),
     compatibility: {},
   };
@@ -479,6 +482,7 @@ export function normalizeChunkSurfState(value = null, fallback = {}) {
     sourceApproachDistance: Math.max(0, Number(value.sourceApproachDistance) || 0),
     sourceShore: normalizeSourceShore(firstLiftCompleted && !value.sourceShore?.adapted ? {...value.sourceShore,adapted:true,exposureElapsed:14,bodyFloor:4.2} : value.sourceShore),
     sourceDivide: normalizeSourceDivide(value.sourceDivide),
+    lastReception: createLastReceptionState(value.lastReception),
     sourceApproachComplete,
     firstLiftCompleted,
     landingWeatherSpent: value.landingWeatherSpent == null ? legacyLandscape : !!value.landingWeatherSpent,
@@ -525,6 +529,8 @@ export function normalizeChunkSurfState(value = null, fallback = {}) {
       result: finaleResult,
       bust: {
         recognized: !!rawFinale.bust?.recognized,
+        sealReady:!!rawFinale.bust?.sealReady,
+        performance:normalizeBustPerformanceState(rawFinale.bust?.performance,rawFinale.bust?.performance?{}:{recognized:!!rawFinale.bust?.recognized,committed:rawFinale.bust?.decision==='accepted',evidence:value.profile?.marbleEyes}),
         decision: ['accepted', 'declined'].includes(rawFinale.bust?.decision) ? rawFinale.bust.decision : null,
         // Absent on every save written before the bust kept its word.
         defeats: Math.max(0, Math.floor(Number(rawFinale.bust?.defeats) || 0)),

@@ -835,12 +835,12 @@ export const PAPER_DOCUMENTS=Object.freeze({
     "processes": [
       "photocopy-toner"
     ],
-    "semanticHash": "1c05b5156c3cc3ecd104d11e4b75a0b1bef79173ec566cf851db9d9db65db63b",
+    "semanticHash": "2dcc1a2b2bc77d327657b8df70bd47257aaea4ceec8d3d748f70f275f3505d24",
     "pages": [
       {
         "path": "assets/paper/inspect/page-8-78085238-0.webp",
         "materialPath": "assets/paper/material/page-8-78085238-0-material.webp",
-        "vectorHash": "8e647892b754afa0c52f3029360664b77fb42327e38d42450a5e6f90806c7c63",
+        "vectorHash": "705a8e4a0a158f88d6dfa5ecf7795bda53080f422652a518f90b8c274b066cbd",
         "atlasIndex": 15
       }
     ],

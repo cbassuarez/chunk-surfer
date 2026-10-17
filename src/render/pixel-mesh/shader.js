@@ -1,6 +1,11 @@
 // Selective VFD compositor. The full-resolution scene remains authoritative;
 // cell-centre samples only decide where phosphor is excited. The previous pass'
 // alpha stores excitation memory, never scene colour or depth.
+import { CAMERA_FORWARD_GLSL } from '../camera-basis.js';
+import { FIRE_ESCAPE_INK_GLSL } from '../fire-escape-ink.js';
+import { ROOF_SURFACE_INK_GLSL, ROOF_GLASS_INK_GLSL } from '../roof-surface-ink.js';
+import { PRINTED_SURFACE_GLSL } from '../printed-surface.js';
+
 export const PIXEL_MESH_FRAG = `#version 300 es
 precision highp float;
 uniform sampler2D uSrc;
@@ -42,6 +47,11 @@ uniform float uMarkDensityGain;
 // How hard the engraving follows the grain. 0 is the isotropic hash that
 // shipped, which makes it the A/B (see __probe.markGrain).
 uniform float uMarkGrainGain;
+// Diagnostic ablation: 0 prior acquisition, 1 pigment-edge classification,
+// 2 full-resolution printed sampling, 3 solid pigment (production),
+// 4 the prior hollow operator, 5 the approved paint resolve before gilt work;
+// both controls are retained only for matched art review.
+uniform float uPrintedSurfaceMode;
 uniform vec2 uRes;
 uniform vec3 uCam;
 uniform float uYaw;
@@ -67,6 +77,10 @@ uniform float uFear;
 uniform float uReduceFlash;
 uniform float uReduceMotion;
 uniform float uRecordingCaptureMix;
+// Only the academic roof recovers the far-depth sky/city from the raw scene.
+// All nearer architecture, props and Ren retain the full one-bit acquisition.
+uniform float uRoofSkyRecovery;
+uniform float uRoofSkyPackedFar;
 uniform float uRecordingExposure;
 uniform float uRecordingSensitivity;
 uniform float uRecordingPatternScale;
@@ -170,11 +184,13 @@ float bayer4(ivec2 p){
 float recordingHash(vec2 p);
 float recordingHash3(vec3 p);
 
+${CAMERA_FORWARD_GLSL}
+
 vec3 cameraRay(vec2 frag){
   vec2 uv = (frag / uRes) * 2.0 - 1.0;
   uv.x *= uRes.x / uRes.y;
   float cy = cos(uYaw), sy = sin(uYaw);
-  vec3 fwd = normalize(vec3(sy, uPitch, -cy));
+  vec3 fwd = cameraForward(uYaw,uPitch);
   vec3 rgt = normalize(vec3(cy, 0.0, sy));
   vec3 up = normalize(cross(rgt, fwd));
   return normalize(fwd + uv.x * rgt * 0.95 + uv.y * up * 0.95);
@@ -183,14 +199,20 @@ vec3 cameraRay(vec2 frag){
 vec3 reconstructWorldMetres(vec2 frag, float packedDepth){
 #ifdef SOURCE_DESKTOP_TRANSPARENT
   vec2 ndc = ((frag-uSourceViewport.xy)/uSourceViewport.zw)*2.0-1.0;
-  vec4 view = uSourceProjectionInverse*vec4(ndc,0.0,1.0);
-  view /= view.w;
-  view.z = -max(0.0,(1.0/max(packedDepth,1e-6)-1.0)/0.14);
-  return (uSourceCameraWorld*vec4(view.xyz,1.0)).xyz;
+  vec4 nearPoint = uSourceProjectionInverse*vec4(ndc,-1.0,1.0);
+  vec4 farPoint = uSourceProjectionInverse*vec4(ndc,1.0,1.0);
+  nearPoint /= nearPoint.w; farPoint /= farPoint.w;
+  float viewDepth = max(0.0,(1.0/max(packedDepth,1e-6)-1.0)/0.14);
+  // Solve the camera ray at its acquired view depth. Replacing only z is
+  // correct for orthographic images but slides perspective skin and clothing
+  // marks sideways as the camera or performer moves.
+  float rayAmount = (-viewDepth-nearPoint.z)/(farPoint.z-nearPoint.z);
+  vec3 view = mix(nearPoint.xyz,farPoint.xyz,rayAmount);
+  return (uSourceCameraWorld*vec4(view,1.0)).xyz;
 #else
   vec3 rd = cameraRay(frag);
   float cy = cos(uYaw), sy = sin(uYaw);
-  vec3 fwd = normalize(vec3(sy, uPitch, -cy));
+  vec3 fwd = cameraForward(uYaw,uPitch);
   float safeDepth = max(packedDepth, 1.0 / 256.0);
   float viewDepth = max(0.0, (1.0 / safeDepth - 1.0) / 0.14);
   float gridDistance = viewDepth / max(0.001, uCellMeters * dot(rd, fwd));
@@ -414,6 +436,81 @@ vec3 hushColorDodge(vec3 base,vec3 layer){
   return min(vec3(1.0),base/max(vec3(0.07),vec3(1.0)-clamp(layer,0.0,0.91)));
 }
 
+${FIRE_ESCAPE_INK_GLSL}
+${ROOF_SURFACE_INK_GLSL}
+${ROOF_GLASS_INK_GLSL}
+${PRINTED_SURFACE_GLSL}
+vec2 printedSurfaceTexel(ivec2 pixel){
+  ivec2 limit=textureSize(uMarks,0)-1;
+  float tag=texelFetch(uMarks,clamp(pixel,ivec2(0),limit),0).a;
+  return vec2(printedSurfaceKind(tag),printedSurfaceCoverage(tag));
+}
+float absorptivePigmentTone(float tone,float kind){
+  // The generic hatch has thresholds arbitrarily close to zero. That cuts
+  // bright diagonal slits through measured dark paint. Reserve a coherent
+  // dark range for absorptive pigment; real stronger reflections still enter
+  // the same screened highlight range. Light pigment keeps its lit response.
+  return kind<1.5?clamp((tone-.25)/.75,0.0,1.0):tone;
+}
+float printedPigmentFootprint(vec2 uv,float kind,float centreDepth){
+  // The line detector samples at cell-centred, bilinear positions. Its paint
+  // footprint must include those exact contributors, not only frag +/- 1.
+  ivec2 size=textureSize(uMarks,0);
+  vec2 p=uv*vec2(size)-.5;
+  ivec2 base=ivec2(floor(p));vec2 f=fract(p);
+  float coverage=0.0;
+  for(int i=0;i<4;i++){
+    ivec2 offset=ivec2(i&1,i>>1);
+    ivec2 pixel=clamp(base+offset,ivec2(0),size-1);
+    vec2 material=printedSurfaceTexel(pixel);
+    float same=1.0-step(.5,abs(material.x-kind));
+    float depth=texelFetch(uDepth,pixel,0).a;
+    same*=1.0-step(.003,abs(depth-centreDepth));
+    vec2 weight=mix(vec2(1.0)-f,f,vec2(offset));
+    coverage+=material.y*same*weight.x*weight.y;
+  }
+  return coverage;
+}
+float roofGlassTexel(ivec2 pixel){
+  ivec2 limit=textureSize(uMarks,0)-1;
+  return roofGlassInkTag(texelFetch(uMarks,clamp(pixel,ivec2(0),limit),0).a);
+}
+float roofSurfaceTexel(ivec2 pixel){
+  ivec2 limit=textureSize(uMarks,0)-1;
+  return roofSurfaceInkTag(texelFetch(uMarks,clamp(pixel,ivec2(0),limit),0).a);
+}
+float quietMetalTexel(ivec2 pixel){
+  ivec2 limit=textureSize(uMarks,0)-1;
+  return fireEscapeInkTag(texelFetch(uMarks,clamp(pixel,ivec2(0),limit),0).a);
+}
+float quietMetalFootprint(vec2 uv){
+  // Colour/depth edges use bilinear scene samples. Any of their four actual
+  // contributors can be a thin iron bar; interpolating its categorical tag
+  // first would erase the identity precisely at the generated white fringe.
+  ivec2 pixel=ivec2(floor(uv*vec2(textureSize(uMarks,0))-.5));
+  float iron=max(max(quietMetalTexel(pixel),quietMetalTexel(pixel+ivec2(1,0))),
+    max(quietMetalTexel(pixel+ivec2(0,1)),quietMetalTexel(pixel+ivec2(1,1))));
+  float roof=max(max(roofSurfaceTexel(pixel),roofSurfaceTexel(pixel+ivec2(1,0))),
+    max(roofSurfaceTexel(pixel+ivec2(0,1)),roofSurfaceTexel(pixel+ivec2(1,1))));
+  return max(iron,roof);
+}
+float apparitionMark(float value){return step(.68,value)*(1.0-step(.86,value));}
+float apparitionCoverage(float value){return apparitionMark(value)*clamp((value-.70)/.14,0.0,1.0);}
+float apparitionSoftZone(vec2 uv,vec2 texel,float centre){
+  vec2 closeBy=texel*2.0,farAway=texel*4.0;
+  float nearMark=max(max(
+    apparitionMark(texture(uMarks,uv+vec2(closeBy.x,0.0)).a),
+    apparitionMark(texture(uMarks,uv-vec2(closeBy.x,0.0)).a)),max(
+    apparitionMark(texture(uMarks,uv+vec2(0.0,closeBy.y)).a),
+    apparitionMark(texture(uMarks,uv-vec2(0.0,closeBy.y)).a)));
+  float farMark=max(max(
+    apparitionMark(texture(uMarks,uv+farAway).a),
+    apparitionMark(texture(uMarks,uv-farAway).a)),max(
+    apparitionMark(texture(uMarks,uv+vec2(farAway.x,-farAway.y)).a),
+    apparitionMark(texture(uMarks,uv+vec2(-farAway.x,farAway.y)).a)));
+  return max(apparitionMark(centre),max(nearMark*.92,farMark*.42));
+}
+
 void main(){
   vec2 frag = gl_FragCoord.xy;
   vec2 plateOffset = vec2(0.0);
@@ -434,6 +531,10 @@ void main(){
   float packedDepth = texture(uDepth, fullUv).a;
   vec3 worldMetres = reconstructWorldMetres(frag, packedDepth);
   vec4 markSample = texture(uMarks, fullUv);
+  float quietMetal=quietMetalTexel(ivec2(frag));
+  float roofSurface=roofSurfaceTexel(ivec2(frag));
+  float roofGlass=roofGlassTexel(ivec2(frag));
+  float printedOccluded=0.0;
 #ifndef SOURCE_DESKTOP_TRANSPARENT
   if(uRecordedPressureReady>.5){
     vec4 pressureGeometry=texture(uRecordedPressureGeometry,fullUv);
@@ -444,7 +545,10 @@ void main(){
     // that depth excludes walls in front, transparent glow and stale targets.
     // Compare encoded depth at the RGBA16F acquisition target's precision;
     // a fixed metric epsilon becomes too strict near the far end of the room.
-    if(pressureGeometry.a*pressureCore>.018&&abs(pressurePackedDepth-packedDepth)<max(.00006,pressurePackedDepth*.00075))markSample=vec4(0.0);
+    if(pressureGeometry.a*pressureCore>.018&&abs(pressurePackedDepth-packedDepth)<max(.00006,pressurePackedDepth*.00075)){
+      markSample=vec4(0.0);quietMetal=0.0;roofSurface=0.0;roofGlass=0.0;
+      printedOccluded=1.0;
+    }
   }
 #endif
   // R == 0 is the sentinel. Passing the pivot through leaves the threshold
@@ -466,6 +570,11 @@ void main(){
   vec4 srcCell = texture(uSrc, cellUv);
   vec3 c = srcFull.rgb;
   float y = luma(srcCell.rgb);
+  vec2 printed=printedSurfaceTexel(ivec2(frag))*(1.0-printedOccluded);
+  float printedSampling=step(1.5,uPrintedSurfaceMode)*step(.5,printed.x);
+  // Mode 5 preserves the approved paint resolve as a gilt comparison control.
+  // Mode 4 retains the older outlined operator; gameplay always uses mode 3.
+  float solidPigment=printedSampling*step(2.5,uPrintedSurfaceMode)*max(1.0-step(3.5,uPrintedSurfaceMode),step(4.5,uPrintedSurfaceMode));
 
   // A SMALL SOFTENING, THEN THE NEGATIVE, THEN THE CURVE — and only then the
   // tone below. The reference stack put a lens blur under the plate and a
@@ -478,7 +587,11 @@ void main(){
                + texture(uSrc, fullUv + vec2(-rad.x, 0.0)).rgb
                + texture(uSrc, fullUv + vec2(0.0,  rad.y)).rgb
                + texture(uSrc, fullUv + vec2(0.0, -rad.y)).rgb;
-    c = (c + blurC) * 0.2;
+    // Physical print has already been minified in its own UVs. A second
+    // acquisition blur borrowed the pale stock into narrow dark stems before
+    // the later full-resolution sample could preserve them. Keep the same
+    // plate grade below, but acquire the actual lit texel for authored print.
+    c = mix((c + blurC) * 0.2,c,printedSampling);
     y = luma(c);
   }
   if(uGrade.x > 0.0){
@@ -498,13 +611,69 @@ void main(){
   float tone = levels(y);
 
   vec2 texel = 1.0 / uRes;
+  // Suppress the recorder's bright fringe on either side of a dark iron bar.
+  // Nearby tags affect generated outlines only; the facade/street's own tone
+  // and light ink are never darkened by a foreground neighbour.
   vec4 sx0 = texture(uSrc, cellUv - vec2(texel.x * cell * 0.45, 0.0));
   vec4 sx1 = texture(uSrc, cellUv + vec2(texel.x * cell * 0.45, 0.0));
   vec4 sy0 = texture(uSrc, cellUv - vec2(0.0, texel.y * cell * 0.45));
   vec4 sy1 = texture(uSrc, cellUv + vec2(0.0, texel.y * cell * 0.45));
   float lumaEdge = abs(luma(sx1.rgb)-luma(sx0.rgb)) + abs(luma(sy1.rgb)-luma(sy0.rgb));
   float depthEdge = abs(sx1.a-sx0.a) + abs(sy1.a-sy0.a);
+  float pigmentEdge=0.0;
+  float printCoverageSpan=0.0;
+  vec2 printLumaEndpoints=vec2(0.0);
+  if(printed.x>.5&&uPrintedSurfaceMode>.5){
+    // Categorical identity is fetched exactly. A neighbouring board edge,
+    // fastener or occluder cannot lend its pigment protection to this pixel.
+    for(int i=0;i<4;i++){
+      ivec2 offset=i==0?ivec2(-1,0):i==1?ivec2(1,0):i==2?ivec2(0,-1):ivec2(0,1);
+      vec2 next=printedSurfaceTexel(ivec2(frag)+offset);
+      float same=1.0-step(.5,abs(next.x-printed.x));
+      pigmentEdge=max(pigmentEdge,abs(next.y-printed.y)*same);
+      float coverageDelta=next.y-printed.y;
+      float span=abs(coverageDelta)*same;
+      if(printedSampling>.5&&span>max(.08,printCoverageSpan)&&uGrade.x<.001){
+        ivec2 sourcePixel=clamp(ivec2(frag)+offset,ivec2(0),textureSize(uSrc,0)-1);
+        vec4 adjacent=texelFetch(uSrc,sourcePixel,0);
+        // Reconstruct the two locally lit materials before exposure. Exposing
+        // their already blended antialias sample instead clipped pale stock
+        // into the ink and turned narrow dark glyphs into hollow outlines.
+        // These are measured light endpoints, never fixed black/white inks.
+        float slope=(luma(adjacent.rgb)-luma(srcFull.rgb))/coverageDelta;
+        float expectedContrast=printed.x<1.5?-slope:slope;
+        if(expectedContrast>.005&&abs(adjacent.a-srcFull.a)<.003){
+          float stock=luma(srcFull.rgb)-slope*printed.y;
+          printLumaEndpoints=clamp(vec2(stock,stock+slope),0.0,1.0);
+          printCoverageSpan=span;
+        }
+      }
+    }
+    pigmentEdge=smoothstep(.025,.30,pigmentEdge)*(1.0-smoothstep(.003,.014,depthEdge));
+  }
+  float pigmentFootprint=pigmentEdge;
+  if(solidPigment>.5){
+    vec2 tap=texel*cell*.45;
+    float pigment=max(printed.y,max(max(
+      printedPigmentFootprint(cellUv+vec2(tap.x,0.0),printed.x,packedDepth),
+      printedPigmentFootprint(cellUv-vec2(tap.x,0.0),printed.x,packedDepth)),max(
+      printedPigmentFootprint(cellUv+vec2(0.0,tap.y),printed.x,packedDepth),
+      printedPigmentFootprint(cellUv-vec2(0.0,tap.y),printed.x,packedDepth))));
+    pigmentFootprint=max(pigmentFootprint,smoothstep(.001,.07,pigment)*(1.0-smoothstep(.003,.014,depthEdge)));
+  }
+  float printedCrease=step(.5,abs(uPrintedSurfaceMode-2.0))*step(.5,uPrintedSurfaceMode)*pigmentFootprint;
   float edge = clamp((lumaEdge * 2.8 + depthEdge * 1.7) * uEdgeGain, 0.0, 1.0);
+  float quietMetalEdge=max(quietMetal,roofSurface);
+  if(edge>.08){
+    vec2 quietTap=texel*cell*.45;
+    quietMetalEdge=max(quietMetalEdge,max(quietMetalFootprint(cellUv),max(max(
+      quietMetalFootprint(cellUv+vec2(quietTap.x,0.0)),
+      quietMetalFootprint(cellUv-vec2(quietTap.x,0.0))),max(
+      quietMetalFootprint(cellUv+vec2(0.0,quietTap.y)),
+      quietMetalFootprint(cellUv-vec2(0.0,quietTap.y))))));
+  }
+  // The extra mark taps matter only where the display would draw a contour.
+  float apparitionZone=edge>.08?apparitionSoftZone(fullUv,texel,markSample.a):0.0;
 
   float motion = 1.0 - uReduceMotion;
   float n = hash21(cellId);
@@ -689,12 +858,14 @@ void main(){
   // the threshold already uses, so it lands exactly on the silhouettes, and it
   // picks black or white by what it sits on so a contour never disappears into
   // the tone behind it.
-  float line = smoothstep(0.30, 0.72, edge) * clamp(uLineAmount, 0.0, 1.0);
+  // The lit apparition is depth-tested but should never acquire the display's
+  // generic crisp cream contour; the room and every other prop keep it.
+  float line=smoothstep(.30,.72,edge)*clamp(uLineAmount,0.0,1.0)*(1.0-apparitionZone)*(1.0-quietMetalEdge)*(1.0-printedCrease);
   vec3 inkDark = palWorldDark();
   vec3 inkLight = palCream();
   finalColor = mix(finalColor, tone > 0.5 ? inkDark : inkLight, line);
 
-  float glow = (mem * 0.70 + edge * 0.30) * uGlowAmount * (1.0-uReduceFlash*0.68) * mix(1.0,0.78,uMovement);
+  float glow = (mem * 0.70 + edge * 0.30) * uGlowAmount * (1.0-uReduceFlash*0.68) * mix(1.0,0.78,uMovement)*(1.0-quietMetalEdge);
   finalColor += palCyan() * glow * (0.22 + phosphorMask * 0.78);
 
   // The underlying PBR light is the form model. Neighbouring luminance gives
@@ -705,11 +876,16 @@ void main(){
     luma(sx0.rgb) + luma(sx1.rgb) + luma(sy0.rgb) + luma(sy1.rgb)
   );
   float broadForm = mix(neighbourLuma, sourceLuma, 0.71);
+  // A baked letter is already filtered in its physical UVs. Sampling its lit
+  // centre preserves a narrow stem instead of borrowing the opposite ground.
+  // The same exposure, black floor, hatch, two inks and depth still apply.
+  broadForm=mix(broadForm,sourceLuma,printedSampling);
   // Expose the captured form before the one-bit decision, rather than making
   // its selected ink brighter. Keep the raw-light gate below: black geometry
   // remains black, and the room still has only its existing two ink values.
   float captureExposure = clamp(uRecordingExposure, 1.0, 12.0);
   float materialRelief = clamp((sourceLuma - neighbourLuma) * 1.35 * captureExposure, -0.10, 0.10);
+  materialRelief*=1.0-max(printedSampling*pigmentEdge,solidPigment*step(.001,printed.y));
   // Low-light acquisition measures the sensor floor in the same input units
   // as exposure. Exact zero remains unrecorded; faint real material can pass.
   float sensitivity = clamp(uRecordingSensitivity, 1.0, 12.0);
@@ -717,6 +893,34 @@ void main(){
   float exposed = clamp((broadForm - blackFloor) * captureExposure / max(0.001, 1.0 - blackFloor), 0.0, 1.0);
   float formTone = pow(exposed, clamp(uRecordingDensityGamma, 0.45, 1.5));
   formTone = clamp(formTone + materialRelief, 0.0, 1.0);
+  vec2 printEndpointTone=vec2(0.0);
+  float printEndpointsReady=0.0;
+  if(printCoverageSpan>.08){
+    vec2 endpointSignal=max(printLumaEndpoints-vec2(blackFloor),vec2(0.0));
+    float brightSignal=max(endpointSignal.x,endpointSignal.y);
+    float brightExposure=clamp(brightSignal*captureExposure/max(.001,1.0-blackFloor),0.0,1.0);
+    float densityGamma=clamp(uRecordingDensityGamma,.45,1.5);
+    // Once the lit stock reaches the sensor ceiling, preserve its measured
+    // contrast with the pigment instead of giving each mixture its own gain.
+    // The brighter endpoint still earns its tone from actual illumination;
+    // no light produces no endpoint signal, for either print polarity.
+    vec2 endpointTone=pow(endpointSignal/max(.000001,brightSignal),vec2(densityGamma))*pow(brightExposure,densityGamma);
+    printEndpointTone=vec2(endpointTone.x,absorptivePigmentTone(endpointTone.y,printed.x));
+    // Reversed lettering has an absorptive ground rather than dark pigment.
+    // Give that measured black enamel the same coherent shadow range as
+    // black paint. The gilding keeps its actual lit metallic response; this
+    // does not brighten it, emit light or remove the final tonal screen.
+    if(uPrintedSurfaceMode<3.5&&printed.x>1.5)
+      printEndpointTone.x=clamp((endpointTone.x-.25)/.75,0.0,1.0);
+    printEndpointsReady=1.0;
+    float printedTone=mix(endpointTone.x,endpointTone.y,printed.y);
+    float confidence=smoothstep(.08,.24,printCoverageSpan)*(1.0-smoothstep(.003,.014,depthEdge));
+    formTone=mix(formTone,printedTone,confidence*printedSampling);
+  }
+  if(solidPigment>.5&&printed.y>=.5&&printEndpointsReady<.5)
+    formTone=absorptivePigmentTone(formTone,printed.x);
+  if(solidPigment>.5&&uPrintedSurfaceMode<3.5&&printed.x>1.5&&printed.y<.5&&printEndpointsReady<.5)
+    formTone=clamp((formTone-.25)/.75,0.0,1.0);
   float captureBlackProtect = smoothstep(blackFloor, blackFloor + 0.024 / sensitivity, sourceLuma);
   float hasCapturedLight = step(0.18, captureBlackProtect);
 
@@ -736,6 +940,27 @@ void main(){
   }
   float captureBit = step(stippleThreshold, halfTone) * hasCapturedLight;
   captureBit = max(captureBit, step(0.82, formTone) * hasCapturedLight);
+  if(solidPigment>.5&&printEndpointsReady>.5){
+    // Coverage is area, not another material luminance. Curve and screen the
+    // two measured, lit materials first; then resolve their covered areas.
+    // Curving their mixture twice erased narrow stems into a white centre.
+    vec2 endpointHalfTone=smoothstep(vec2(.14),vec2(.76),printEndpointTone);
+    vec2 endpointThreshold=vec2(stippleThreshold);
+    if(uScreenKind!=0){
+      float jitter=recordingHash3(floor(worldMetres*3.1));
+      endpointThreshold=vec2(
+        screenThreshold(plateFrag,screenDir,endpointHalfTone.x,jitter,stippleThreshold),
+        screenThreshold(plateFrag,screenDir,endpointHalfTone.y,jitter,stippleThreshold));
+      endpointThreshold=clamp(endpointThreshold-vec2((markDensity-.22)*uMarkDensityGain),0.0,1.0);
+    }
+    vec2 endpointBit=max(step(endpointThreshold,endpointHalfTone),step(vec2(.82),printEndpointTone))*hasCapturedLight;
+    // Resolve the geometric edge once. A second coverage stipple perforated
+    // two-pixel stems, although each material already has the final light
+    // screen above. Paint interiors and counters choose one material; their
+    // actual illumination still passes through the same dither.
+    float pigmentSample=step(.5,printed.y);
+    captureBit=mix(endpointBit.x,endpointBit.y,pigmentSample);
+  }
 
   // Geometry and illumination provide the drawing. Silhouettes emerge as fine
   // light contours in darkness; recesses and material creases cut back into
@@ -744,8 +969,10 @@ void main(){
   float crease = smoothstep(0.035, 0.155, lumaEdge * uEdgeGain);
   float darkSide = 1.0 - smoothstep(0.30, 0.52, neighbourLuma);
   float lightSide = smoothstep(0.34, 0.64, neighbourLuma);
-  float brightContour = step(0.42, silhouette * darkSide) * hasCapturedLight;
+  float brightContour = step(0.42, silhouette * darkSide) * hasCapturedLight * (1.0-apparitionZone)
+    *(1.0-quietMetalEdge*(1.0-quietMetal));
   float darkCrease = step(0.52, crease * lightSide);
+  darkCrease*=1.0-printedCrease;
   captureBit = max(captureBit, brightContour);
   captureBit *= 1.0 - darkCrease;
 
@@ -787,8 +1014,52 @@ void main(){
   // erased the state change and made a correct raw frame look unlit in game.
   // Apply it only to selected light ink. Shadow/unselected marks remain black.
   captureLight=mix(captureLight,vec3(.98,.018,.008),emergencyRed);
+  // Charcoal iron has its own dim light ink. It keeps the same acquisition
+  // mask and real lighting response; a near bar cannot rival a room window.
+  vec3 quietMetalInk=vec3(.135,.170,.175);
+  captureLight=mix(captureLight,quietMetalInk,quietMetal);
+  vec3 roofSurfaceInk=vec3(.300,.355,.365);
+  captureLight=mix(captureLight,roofSurfaceInk,roofSurface);
+  captureLight=mix(captureLight,vec3(.55,.66,.69),roofGlass);
   vec3 oneBitScene = mix(captureDark, captureLight, captureBit);
   finalColor = mix(finalColor, oneBitScene, clamp(uRecordingCaptureMix, 0.0, 1.0));
+  // Still engraved glass, with enough of its real wet reflection and the
+  // descending atrium left to distinguish the supported pane from black zinc.
+  finalColor=mix(finalColor,clamp(c*1.35,0.0,1.0),roofGlass*.38);
+  // Broad rain-dark zinc and lead planes need a little of their acquired
+  // shade too. This retains weathering between the dim engraved marks rather
+  // than turning the roof back into a flat black field under a bright sky.
+  finalColor=mix(finalColor,clamp(c*1.65,0.0,1.0),roofSurface*.38);
+  // From the occupied roof the actual neighbouring frontages are much nearer
+  // than the sky, yet still far enough to be below the parapet. Their dark
+  // brick planes and sparse lit rooms disappear into one black hatch if they
+  // use the same capture as the glass a few metres from the eye. Recover a
+  // little of that *real scene* only in the 25-80 m depth band. The nearer
+  // parapet, roof, seated glass and Ren keep their full one-bit engraving; the
+  // far authored skyline has its own sentinel recovery immediately below.
+  float roofNeighbourDepth = smoothstep(uRoofSkyPackedFar + 0.008,
+                                        uRoofSkyPackedFar + 0.026, packedDepth)
+                           * (1.0 - smoothstep(0.20, 0.25, packedDepth));
+  float roofNeighbourMix = roofNeighbourDepth * clamp(uRoofSkyRecovery, 0.0, 1.0) * 0.58;
+  finalColor = mix(finalColor, clamp(c * 1.42, 0.0, 1.0), roofNeighbourMix);
+  // The source night sky already contains the moon, lit windows and roofline,
+  // but one-bit hatching turns that distant detail into a continuous field.
+  // The march leaves its far-plane sentinel in depth; foreground props replace
+  // that depth, so the supported glass, parapet and Ren stay fully engraved.
+  float farSky = 1.0 - smoothstep(uRoofSkyPackedFar + 0.0005,
+                                 uRoofSkyPackedFar + 0.0020, packedDepth);
+  finalColor = mix(finalColor, c, farSky * clamp(uRoofSkyRecovery, 0.0, 1.0));
+
+  // The lit figure's world pass has already feathered its real depth-tested
+  // silhouette. The one-bit threshold can crush that gradient into flat black.
+  // Only the transition band borrows back a little of the scene's dark red:
+  // the centre stays black, the room keeps its dither, and the boundary reads
+  // as a fading negative shape rather than a newly drawn outline.
+  float apparitionInk=apparitionCoverage(markSample.a);
+  float apparitionFringe=pow(max(0.0,4.0*apparitionInk*(1.0-apparitionInk)),.8);
+  finalColor=mix(finalColor,min(c*.55,vec3(.22,.055,.055)),apparitionFringe*.55);
+  float apparitionAbsorb=pow(apparitionInk,.65)*.22;
+  finalColor*=1.0-apparitionAbsorb;
 
   // Reconstruct the cover compositor after acquisition. The transport keys
   // carry a full negative body and its finite SDF aura across the one-bit
@@ -830,6 +1101,11 @@ void main(){
     vec3 dodged=hushColorDodge(finalColor,vec3(.028,.070,.078)*negativeRim);
     finalColor=mix(finalColor,dodged,negativeRim*.22);
   }
+
+  // Other display profiles may retain phosphor or raw colour. Keep this
+  // material's upper ink bound there too, without touching background pixels.
+  finalColor=mix(finalColor,min(finalColor,quietMetalInk),quietMetal);
+  finalColor=mix(finalColor,min(finalColor,roofSurfaceInk),roofSurface);
 
   if(uDebugSource == 1.0) finalColor = c;
   if(uDebugSource == 2.0) finalColor = vec3(signalLevel);

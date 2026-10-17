@@ -13,6 +13,8 @@ import { YARD_PARK_MESHES, YARD_PARK_PROPS } from './yard-park.js';
 import { BASEBOARDS } from './generated/prop-geometry.js';
 import { CATHEDRAL_DESCENT_BLOCKERS, CHURCH_COLLIDERS } from './st-brendans.js';
 import { VEGETATION_FALLBACKS, VEGETATION_MESHES } from './vegetation.js';
+import { ACADEMIC_ROOF_MESHES, ACADEMIC_ROOF_PROPS } from './academic-roof.js';
+import { ACADEMIC_ROOF_DRESSING_MESHES, ACADEMIC_ROOF_DRESSING_PROPS } from './academic-roof-dressing.js';
 
 const P = (id, mesh, x, y, yaw = 0, extra = {}) => ({ id, mesh, x, y, yaw, scale:1, ...extra });
 
@@ -94,11 +96,18 @@ const DOCK_REEL = [{worldId:'dock_reel',fileLabel:'01'}];
 const DOCK_SHUTTER = [{worldId:'dock_shutter',fileLabel:'01'}];
 
 export const PROP_MESH = Object.freeze({
+  ...ACADEMIC_ROOF_MESHES,
+  ...ACADEMIC_ROOF_DRESSING_MESHES,
   ...OPENING_STREET_MESHES,
   ...YARD_PARK_MESHES,
   ...VEGETATION_MESHES,
   school_desk:{w:.72,d:.78,blocks:true}, pew:{w:2.8,d:.72,blocks:true},
   chair:{w:.52,d:.56,blocks:false}, music_stand:{w:.45,d:.45,blocks:false},
+  // B3's stand, folded and leant on the wall; its sheet is drawn separately so
+  // it can go when the sheet is taken (see syncSheetMusicProps).
+  // Mounted to the wall it leans on: snapToWall puts its back (z = -d/2, the
+  // top of the shaft) on the face.
+  music_stand_folded:{w:.48,d:.40,blocks:false,mount:'wall'}, music_stand_folded_sheet:{w:.30,d:.05,blocks:false},
   instrument_case:{w:1.25,d:.5,blocks:false}, equipment_cart:{w:1.2,d:.72,blocks:true},
   piano_bench:{w:.78,d:.36,blocks:false}, open_score:{w:.62,d:.36,blocks:false},
   loose_pages:{w:.78,d:.62,blocks:false}, metronome:{w:.22,d:.18,blocks:false},
@@ -148,27 +157,36 @@ export const PROP_MESH = Object.freeze({
   // to the half-metre navigation raster.
   main_open_well_stair:{w:6.5,d:6.2,h:14.9,blocks:false},
   ticket_counter:{w:2.8,d:.75,blocks:true}, key_cabinet:{w:.9,d:.24,blocks:true},
-  rekey_ledger:{w:1.22,d:.12,blocks:false}, chapel_key_cabinet:{w:1,d:.36,h:1.24,blocks:false},
+  rekey_ledger:{w:1.22,d:.12,blocks:false,frontAxis:'-z'}, chapel_key_cabinet:{w:1,d:.36,h:1.24,blocks:false},
   chapel_key_ring_ch04:{w:.18,d:.37,h:.28,blocks:false},
   chapel_key_ring_c17:{w:.18,d:.37,h:.28,blocks:false},
   chapel_key_ring_fohm:{w:.18,d:.37,h:.28,blocks:false},
   box_office_desk:{w:1.15,d:.62,blocks:true}, program_stack:{w:.42,d:.32,blocks:false},
   cash_terminal:{w:.36,d:.28,blocks:false}, queue_stanchion:{w:.32,d:.32,blocks:false},
-  notice_board:{w:1.2,d:.12,blocks:false}, pool_start_block:{w:.62,d:.72,blocks:true},
+  notice_board:{w:1.2,d:.12,blocks:false,frontAxis:'-z'}, pool_start_block:{w:.62,d:.72,blocks:true},
   pool_access_handrail:{w:1.9,d:5.2,h:3.05,blocks:false},
   // The dance wing. The barre, the mirror and the stencil are wall furniture and
   // must face away from masonry; the rail and the lino rolls stand on the floor.
   dance_barre:{w:2.9,d:.22,h:1.14,blocks:false,mount:'wall'},
   dance_mirror:{w:3.96,d:.10,h:2.60,blocks:false,mount:'wall'},
-  door_stencil:{w:.46,d:.04,h:.34,blocks:false,mount:'wall'},
+  // Studio B3's treatment: wedge foam on boards (build-props.mjs), and carpet
+  // (build-textiles.mjs, worn_carpet; build-props.mjs keeps a flat fallback).
+  acoustic_foam_panel:{w:2.40,d:.12,h:2.45,blocks:false,mount:'wall'},
+  textile_studio_carpet:{w:6.20,d:4.60,h:.02,blocks:false,mount:'floor',softFloor:1},
+  door_stencil:{w:.46,d:.04,h:.34,blocks:false,mount:'wall',frontAxis:'-z'},
+  door_stencil_b1:{w:.46,d:.04,h:.34,blocks:false,mount:'wall',frontAxis:'-z'},
+  door_stencil_b2:{w:.46,d:.04,h:.34,blocks:false,mount:'wall',frontAxis:'-z'},
+  door_stencil_b3:{w:.46,d:.04,h:.34,blocks:false,mount:'wall',frontAxis:'-z'},
+  door_stencil_b5:{w:.46,d:.04,h:.34,blocks:false,mount:'wall',frontAxis:'-z'},
   costume_rail:{w:1.6,d:.55,h:1.62,blocks:true},
+  costume_stained_chair:{w:.58,d:.55,h:.96,blocks:false},
   rolled_lino:{w:.62,d:.42,h:1.78,blocks:true},
   pool_lane_markings:{w:10.2,d:15.5,blocks:false},
   bay_canopy:{w:8.2,d:9.2,h:5.7,blocks:false},
   getin_sightline_shell:{w:16.6,d:12.5,h:5.7,blocks:false},
   scene_dock_roof_structure:{w:16.6,d:12.5,h:5.7,blocks:false},
-  scene_dock_sign_foh:{w:2.3,d:.10,h:.58,blocks:false,mount:'wall'},
-  scene_dock_sign_services:{w:2.7,d:.10,h:.86,blocks:false,mount:'wall'},
+  scene_dock_sign_foh:{w:2.3,d:.10,h:.58,blocks:false,mount:'wall',frontAxis:'-z'},
+  scene_dock_sign_services:{w:2.7,d:.10,h:.86,blocks:false,mount:'wall',frontAxis:'-z'},
   yard_dock_access:{w:4.4,d:9.2,h:2.0,blocks:false},
   yard_booth:{w:3.4,d:3.0,blocks:false}, yard_booth_glazing:{w:3.1,d:2.7,blocks:false},
   yard_booth_interior:{w:2.7,d:2.4,blocks:false}, yard_booth_practicals:{w:2,d:2,blocks:false},
@@ -206,11 +224,12 @@ export const PROP_MESH = Object.freeze({
   district_passage_frontage:{w:5.5,d:64.0,blocks:false},
   district_court_walls:{w:9.2,d:16.5,h:9.5,blocks:false},
   district_outer_sprawl:{w:320,d:270,h:18,blocks:false},
+  district_outer_streets:{w:320,d:270,h:.08,blocks:false},
   district_post_box:{w:.8,d:.8,h:1.4,blocks:false},
   district_bench:{w:2.2,d:.8,h:1.3,blocks:false},
   district_bin_cluster:{w:1.7,d:1.0,h:1.2,blocks:false},
   district_bollard_pair:{w:2.8,d:.5,h:1.1,blocks:false},
-  exterior_story_plaque:{w:1.35,d:.28,h:1.0,blocks:false},
+  exterior_story_plaque:{w:1.35,d:.28,h:1.0,blocks:false,frontAxis:'-z'},
   yard_stable_range:{w:12,d:8,h:7.4,blocks:true},
   // ST BRENDAN'S. blocks:false is not an oversight — the church's walls are real
   // raymarched cells (ZONE.church) and already collide. A blocking prop box here
@@ -253,7 +272,7 @@ export const PROP_MESH = Object.freeze({
   calibration_pin:{w:.12,d:.12,blocks:false},
   lifeguard_chair:{w:.78,d:.78,blocks:true}, lane_reel:{w:1.05,d:.62,blocks:true},
   drain_grille:{w:1.2,d:.18,blocks:false}, altar_table:{w:1.8,d:.78,blocks:true},
-  lectern:{w:.62,d:.62,blocks:true}, hymn_board:{w:.8,d:.12,blocks:false},
+  lectern:{w:.62,d:.62,blocks:true}, hymn_board:{w:.8,d:.12,blocks:false,frontAxis:'-z'},
   plant_pipe_straight:{w:2.4,d:.16,blocks:false}, plant_pipe_bank:{w:2.8,d:.34,blocks:false},
   plant_pipe_elbow:{w:.92,d:.92,blocks:false}, plant_pipe_valve:{w:.62,d:.32,blocks:false},
   plant_calorifier:{w:1.45,d:1.45,h:2.65,blocks:true}, plant_pump_skid:{w:1.8,d:.88,h:.92,blocks:true},
@@ -295,8 +314,10 @@ export const PROP_MESH = Object.freeze({
   academic_skylight:{w:23,d:26,blocks:false},
   academic_frieze:{w:5.2,d:.12,blocks:false}, academic_bust_plinth:{w:.62,d:.62,blocks:false},
   academic_bust_fragment:{w:.72,d:.58,blocks:false}, academic_planter:{w:4,d:2,blocks:true},
+  academic_bust_socketed:{w:.408,d:.30,h:.515,blocks:false},
+  academic_bust_socketed_returned:{w:.408,d:.30,h:.515,blocks:false},
   academic_dead_tree:{w:2.8,d:1.2,blocks:false}, academic_dry_basin:{w:2.7,d:2.7,blocks:true},
-  academic_leaf_litter:{w:3,d:1.8,blocks:false}, academic_blackboard:{w:2.6,d:.12,blocks:false},
+  academic_leaf_litter:{w:3,d:1.8,blocks:false}, academic_blackboard:{w:2.6,d:.12,blocks:false,frontAxis:'-z'},
   academic_filing_bank:{w:2.1,d:.5,blocks:true}, academic_breach:{w:3,d:1.1,blocks:false},
   green_chair_01:{w:.673,d:.665,h:1.059,blocks:false,mount:'floor'},
   arm_chair_01:{w:.850,d:.765,h:1.065,blocks:false,mount:'floor'},
@@ -371,6 +392,8 @@ const BASEBOARD_PROPS = Object.entries(BASEBOARDS).map(([group, b]) =>
   }));
 
 export const CONSERVATORY_PROPS = [
+  ...ACADEMIC_ROOF_PROPS,
+  ...ACADEMIC_ROOF_DRESSING_PROPS,
   ...OPENING_STREET_PROPS,
   ...YARD_PARK_PROPS,
 
@@ -384,7 +407,9 @@ export const CONSERVATORY_PROPS = [
   // into the plant annex, which the wide annex opening already reaches and which
   // holds the heating header the Stillson has to get to. Dressing that side put
   // blocking geometry across a route the plant incident depends on.
-  P('spur-substation-mcc','plant_mcc_bank',21.4,35.0,Math.PI/2,{interactive:false,structural:true,blocks:true,
+  // The one piece in here with something to say. It was authored with its line
+  // and then switched off, so the late key opened a room that answered nothing.
+  P('spur-substation-mcc','plant_mcc_bank',21.4,35.0,Math.PI/2,{interactive:true,structural:true,blocks:true,
     inspect:inspect('Switchgear, dead, with the isolator handles all thrown the same way and a strip of tape across them somebody wrote on in 1994.','Dead switchgear. Tape, and a date, and a hand that is not yours.')}),
   P('spur-substation-idf','plant_idf_frame',23.4,36.4,0,{interactive:false,structural:true,blocks:true}),
   P('spur-substation-steps','plant_grated_steps',22.2,34.3,0,{interactive:false,structural:true,blocks:false}),
@@ -671,6 +696,7 @@ export const CONSERVATORY_PROPS = [
   DP('district-west-court-walls','district_court_walls',-15,24,Math.PI/2,{interactive:false,structural:true,scaleZ:15/16}),
   DP('district-east-court-walls','district_court_walls',143,16,-Math.PI/2,{interactive:false,structural:true,scaleZ:20/16}),
   DP('district-outer-sprawl','district_outer_sprawl',-7,-7,0,{interactive:false,structural:true}),
+  DP('district-outer-streets','district_outer_streets',-7,-7,0,{interactive:false,structural:true}),
   DP('district-south-post-box','district_post_box',8,105,0,{interactive:false,structural:true}),
   DP('district-north-bench','district_bench',56,-13,Math.PI/2,{interactive:false,structural:true}),
   DP('district-west-bench','district_bench',-13,66,0,{interactive:false,structural:true}),
@@ -703,7 +729,7 @@ export const CONSERVATORY_PROPS = [
   // Four short readings make the lineage physically inspectable. They do not
   // explain the plot; each is a date and the construction standing around it.
   ...EXTERIOR_INSPECTABLES.map((entry)=>DP(entry.id,'exterior_story_plaque',entry.physical.x,entry.physical.y,0,{
-    structural:true,blocks:false,label:entry.label,elevation:.52,
+    structural:true,blocks:false,label:entry.label,elevation:.52,mount:'wall',mountNormal:entry.mountNormal,
     inspect:inspect(entry.text,entry.text),
   })),
 
@@ -1224,22 +1250,21 @@ export const CONSERVATORY_PROPS = [
   // from the atrium instead of materialising at arm's length. It is shared by
   // both render groups because the threshold is literally where they meet.
   P('hall-entrance-portal','hall_entrance_portal',98.5,25.5,Math.PI/2,{
-    renderGroups:['ground','hall'],interactive:false,structural:true,
+    renderOffsetX:-.25,renderOffsetZ:-.75,renderGroups:['ground','hall'],interactive:false,structural:true,
   }),
   P('hall-entrance-sign','hall_entrance_sign',98.5,25.5,Math.PI/2,{
-    mount:'portal',elevation:3.08,renderOffsetX:-.22,renderGroups:['ground','hall'],inspectAt:{x:96.4,y:25.5},
-    lightMaintained:true,lightColor:[1,.58,.22],
+    mount:'portal',elevation:3.08,renderOffsetX:-.47,renderOffsetZ:-.75,renderGroups:['ground','hall'],inspectAt:{x:96.4,y:25.5},
     inspect:inspect('CONCERT HALL — STALLS / GALLERIES. The gilt house lettering survives above the acoustic pair.','CONCERT HALL.'),
   }),
   P('hall-entrance-program-north','notice_board',98.5,25.5,Math.PI/2,{
-    mount:'portal',elevation:1.22,renderOffsetX:-.20,renderOffsetZ:-1.55,renderGroups:['ground','hall'],inspectAt:{x:96.5,y:24.0},
+    mount:'portal',elevation:1.22,renderOffsetX:-.45,renderOffsetZ:-2.30,renderGroups:['ground','hall'],inspectAt:{x:96.5,y:24.0},
     inspect:inspect('A glazed programme case: winter concerts, municipal orchestras, school prize nights. The last season is crossed through in red pencil.','The last season never opened.'),
   }),
   P('hall-entrance-program-south','notice_board',98.5,25.5,Math.PI/2,{
-    mount:'portal',elevation:1.22,renderOffsetX:-.20,renderOffsetZ:1.55,renderGroups:['ground','hall'],interactive:false,
+    mount:'portal',elevation:1.22,renderOffsetX:-.45,renderOffsetZ:.80,renderGroups:['ground','hall'],interactive:false,
   }),
   ...[-1.42,1.42].map((offset,index)=>P(`hall-entrance-light-${index+1}`,'hall_entry_sconce',98.5,25.5,Math.PI/2,{
-    mount:'portal',elevation:2.18,renderOffsetX:-.26,renderOffsetZ:offset,renderGroups:['ground','hall'],interactive:false,structural:true,
+    mount:'portal',elevation:2.18,renderOffsetX:-.51,renderOffsetZ:offset-.75,renderGroups:['ground','hall'],interactive:false,structural:true,
     lightMaintained:true,lightColor:[1,.018,.008],
   })),
   // The one piece of the ruined garden you may put a hand in. Everything else
@@ -1263,7 +1288,7 @@ export const CONSERVATORY_PROPS = [
   }),
 
   // Six anonymous bust stations establish the gallery cadence. Four retain a
-  // generic head; two have collapsed into unidentifiable fragments. Still no
+  // generic head; one has empty sockets and one is a fragment. Still no
   // plaques and no accession marks — nobody wrote down who these were.
   //
   // The four intact heads are the ONE thing on this floor you may address, and
@@ -1274,7 +1299,10 @@ export const CONSERVATORY_PROPS = [
     const common={renderGroups:['ground','academic'],interactive:false};
     // All six stations are addressable, the two broken ones included — talking to
     // a head that is not there any more is worse than talking to one that is.
-    return i===2||i===5
+    return i===2
+      ?[P(`academic-bust-plinth-${i+1}`,'academic_bust_plinth',x,y,yaw,common),
+        P(`academic-bust-fragment-${i+1}`,'academic_bust_socketed',x,y,yaw,{renderGroups:['ground','academic'],talkable:true,elevation:1.10})]
+      :i===5
       ?[P(`academic-bust-plinth-${i+1}`,'academic_bust_plinth',x,y,yaw,common),
         P(`academic-bust-fragment-${i+1}`,'academic_bust_fragment',x+.18,y+.22,yaw+.45,{renderGroups:['ground','academic'],talkable:true,elevation:1.08})]
       :[P(`academic-bust-plinth-${i+1}`,'academic_bust_plinth',x,y,yaw,common),
@@ -1337,6 +1365,13 @@ export const CONSERVATORY_PROPS = [
   ...[0,1,2,3,4].map((i)=>
     P(`academic-cleared-desk-${i+1}`,'school_desk',13.4+i*1.9,264.4,Math.PI/2+.06*(i%3-1),{interactive:false})),
   P('academic-cleared-chair-1','chair',19.6,265.4,-.6,{interactive:false}),
+  // The opposed account is physically in the cleared room, where a spirit can
+  // answer beside the score it marked. Reading it is an independent witness to
+  // what demolition might mean, rather than a claim made by Ren on the roof.
+  P('academic-roof-contrary-account','open_score',19.2,265.4,-.6,{
+    on:'academic-cleared-chair-1',scale:.58,action:'roof-contrary-account',
+    label:'Annotated loose score',inspectAt:{x:18.4,y:266.2},
+  }),
   P('academic-cleared-files','academic_filing_bank',20.4,263.9,Math.PI/2,{interactive:false}),
 
   // THE CHAMBER ROOM. The corridor's head, and the one room up here you stand
@@ -1344,6 +1379,10 @@ export const CONSERVATORY_PROPS = [
   // a chamber recital and before anybody comes to stack them.
   P('academic-chamber-piano','upright_piano',3.0,244.4,Math.PI/2,{interactive:false}),
   P('academic-chamber-bench','piano_bench',4.3,244.4,Math.PI/2,{interactive:false}),
+  P('academic-roof-guarantor-trace','loose_note',4.4,244.5,Math.PI/2,{
+    on:'academic-chamber-bench',action:'roof-guarantor-trace',
+    label:'Folded guarantor slip',inspectAt:{x:5.0,y:245.2},
+  }),
   ...[0,1,2,3,4,5,6,7].map((i)=>{
     const arc=(i-3.5)*.34;
     // The room is eight metres deep, so the curve has to stay inside it — a
@@ -1364,7 +1403,9 @@ export const CONSERVATORY_PROPS = [
 
   P('academic-reception-files','academic_filing_bank',12.0,273.0,Math.PI/2,{interactive:false}),
   P('academic-stripped-office-desk','school_desk',16.0,273.0,Math.PI/2,{interactive:false,scale:1.2}),
-  P('academic-stripped-office-cabinet','academic_filing_bank',18.2,276.0,0,{interactive:false}),
+  P('academic-stripped-office-cabinet','academic_filing_bank',14.0,271.0,0,{
+    action:'roof-cabinet',label:'Unclaimed effects',inspectAt:{x:14.0,y:272.0},
+  }),
   P('academic-breach','academic_breach',17.5,267.7,0,{interactive:false,structural:true}),
 
   // ── THE SUB-BASEMENT DANCE WING ───────────────────────────────────────────
@@ -1384,17 +1425,37 @@ export const CONSERVATORY_PROPS = [
   // (edge row + 1.5). Get it the wrong way round and the prop is inside the wall,
   // where propsInit silently drops it and the room is simply empty.
   //
-  // Studio B3: a dance studio with a take on it. The kit is the intrusion here,
-  // not the barre — somebody moved a rack into a room that still has its rail up.
+  // Studio B3: the one room on the corridor somebody treated for recording.
+  // Wedge foam on three walls, carpet down over the floor, the mirrors and the
+  // barre taken out; what the first-take tree and page 2 describe. Its surface
+  // is acousticFoam (legend.js) and it is no longer sprung (SPRUNG_ZONES). The
+  // south wall, with the way in, is left bare: three walls, as the tree says.
   P('b3-desk-1','school_desk',8.0,8.0,Math.PI/2,{inspect:inspect('A desk pushed into the dead corner, its writing surface stippled with old tape marks.','Nothing is written on it now.')}),
   P('b3-desk-2','school_desk',8.0,9.0,Math.PI/2,{inspect:inspect('Another desk nested behind the first. Surplus becomes acoustic treatment if nobody moves it.','Two desks, making one bad absorber.')}),
   P('b3-rack-1','equipment_rack',23.0,16.5,Math.PI/2,{inspect:inspect('The rack is powered down. Three channels are still labelled in pencil.','No mains. No pilot lights.')}),
   P('b3-speaker-1','speaker_cabinet',22.7,8.0,Math.PI/2,{...play(PIANO,'A nearfield monitor with its cone pushed in and pulled back out.','The cone remembers a thumb.')}),
-  P('b3-mirror-north-a','dance_mirror',10.0,6.0,0,{inspect:inspect('Mirror glass in four-foot sections, floor to head height, held in an aluminium channel. Your torch comes back at you off it, twice as far away as it should be.','The room behind you in it is the room behind you.')}),
-  P('b3-mirror-north-b','dance_mirror',14.0,6.0,0,{interactive:false}),
-  P('b3-barre-east','dance_barre',24.5,11.0,-Math.PI/2,{inspect:inspect('A double barre, high rail and low, the varnish worn through to pale wood in a dozen places where hands went.','Thirty years of the same six inches.')}),
+  // Foam: north wall (yaw 0), west wall (PI/2), east wall (-PI/2), 2.4 m panels.
+  // The side walls stop two metres short of the south one: a sixth panel runs
+  // into the masonry and propsInit drops it, and the stand leans in that gap.
+  ...[7.2,9.6,12.0,14.4,16.8,19.2,21.6,23.8].map((x,i)=>P(`b3-foam-north-${i+1}`,'acoustic_foam_panel',x,6.0,0,
+    i===1?{inspect:inspect('Wedge foam, going to powder at the edges. Somebody treated this room properly, once, and then stopped paying the heating.','It eats everything above four hundred hertz. Which is why the only thing left on the take is me.')}:{interactive:false})),
+  ...[7.2,9.6,12.0,14.4,16.8].map((y,i)=>P(`b3-foam-west-${i+1}`,'acoustic_foam_panel',6.0,y,Math.PI/2,{interactive:false})),
+  // The east wall has the service door to B2 in it at y12, which stays clear.
+  ...[7.2,9.6,14.4,16.8].map((y,i)=>P(`b3-foam-east-${i+1}`,'acoustic_foam_panel',24.5,y,-Math.PI/2,{interactive:false})),
+  // Carpet in widths, three by three, wall to wall. softFloor in the mesh table.
+  ...[9.1,15.3,21.5].flatMap((x,col)=>[8.3,12.9,17.5].map((y,row)=>P(`b3-carpet-${col*3+row+1}`,'textile_studio_carpet',x,y,0,{interactive:false,structural:true}))),
+  // Between two panel centres: standing in a panel's own cell takes its wall.
+  P('b3-patchbay','legacy_patchbay',24.0,10.8,-Math.PI/2,{inspect:inspect('A patchbay with every cable pulled, coiled and hung beside it. Somebody left this room tidy.','You do not tidy a room you think is being knocked down. You tidy a room you are coming back to.')}),
+  P('b3-cable-coil','cable_coil',21.0,13.2,.4,{interactive:false,blocks:false}),
+  P('b3-chair','chair',21.6,10.8,-Math.PI/2,{inspect:inspect('A chair in front of the patchbay, at the height somebody liked it.','Somebody worked in here for a long time, and then one day they did not come back.')}),
+  // The stand the first-take tree talks about: folded down and leant into the
+  // south-west corner, on the bare stretch of west wall below the foam. The
+  // Goldberg sheet is clipped to it (sheet-music.js `host`): inspecting it, or
+  // answering "take it" in the tree, puts the sheet in the bag. The prop's own
+  // line is only heard once the sheet is gone, so it does not mention one.
+  P('b3-music-stand','music_stand_folded',6.0,18.6,Math.PI/2,{label:'music stand',inspect:inspect('A music stand, folded down and leant into the corner.','Folded. You fold a stand you mean to come back for.')}),
 
-  // Studio B2: the largest, and the only one still on a live circuit.
+  // Studio B2: the wing's live circuit runs through it (S/P-01's dance-wing hum).
   P('b2-mirror-north-a','dance_mirror',28.0,6.0,0,{inspect:inspect('The mirrored wall, and the room in it is not quite the room. The sections are out of plane by a degree or so, so the far corner arrives twice.','Two corners. One of them is the real one.')}),
   P('b2-mirror-north-b','dance_mirror',32.0,6.0,0,{interactive:false}),
   P('b2-mirror-north-c','dance_mirror',36.0,6.0,0,{interactive:false}),
@@ -1420,15 +1481,19 @@ export const CONSERVATORY_PROPS = [
 
   // The prop store: the dead end opposite the stair.
   P('store-rail-a','costume_rail',3.0,11.0,0,{inspect:inspect('A costume rail under dust sheets. Whatever is on it has kept its shape, which after this long means it was hung properly by somebody who cared.','Hung properly, and left.')}),
-  P('store-rail-b','costume_rail',3.0,15.0,0,{interactive:false}),
+  P('store-rail-b','costume_rail',3.8,14.6,0,{interactive:false}),
+  P('store-empty-chair','costume_stained_chair',3.85,17.8,Math.PI,{
+    action:'costume-pin',label:'a pin in the work chair',interactionPriority:3,
+    inspect:inspect('A dressmaker\u2019s pin is caught in the chair lining. The seam beneath it is fresh. I am not putting a hand under there again.','The pin is still caught in the lining. I can leave it.'),
+  }),
   P('store-lino','rolled_lino',2.0,19.0,0,{interactive:false}),
 
   // Stencilled door numbers, corridor side. The wing has no plaques and no signs
   // — the numbers are painted straight onto the blockwork beside each opening.
-  P('b1-stencil','door_stencil',43.0,21.0,Math.PI/2,{interactive:false}),
-  P('b2-stencil','door_stencil',28.0,21.0,Math.PI/2,{interactive:false}),
-  P('b3-stencil','door_stencil',15.0,19.0,Math.PI/2,{inspect:inspect('B3, stencilled on the blockwork beside the opening. The work order in your pocket says the same thing.','B3. The one they picked.')}),
-  P('b5-stencil','door_stencil',12.0,25.0,Math.PI/2,{interactive:false}),
+  P('b1-stencil','door_stencil_b1',43.0,21.0,Math.PI/2,{interactive:false}),
+  P('b2-stencil','door_stencil_b2',28.0,21.0,Math.PI/2,{interactive:false}),
+  P('b3-stencil','door_stencil_b3',15.0,19.0,Math.PI/2,{inspect:inspect('B3, stencilled on the blockwork beside the opening. The work order in your pocket says the same thing.','B3. The one they picked.')}),
+  P('b5-stencil','door_stencil_b5',12.0,25.0,Math.PI/2,{interactive:false}),
   P('store-stencil','door_stencil',2.0,21.0,Math.PI/2,{interactive:false}),
 
   // Concert hall and its overflow. The grand is not an upright substitute.
@@ -1681,7 +1746,7 @@ export const CONSERVATORY_PROPS = [
   }).flat(),
   P('tower-ringing-bench-west','pew',18.2,162.5,Math.PI/2,{scale:.72,inspect:inspect('A ringing bench polished by coats and waiting hands.','Eight places. No ringers.')}),
   P('tower-ringing-bench-east','pew',31.5,162.5,Math.PI/2,{scale:.72,inspect:inspect('The second bench leaves the rope circle entirely clear.','Nothing is stored inside the circle.')}),
-  P('tower-peal-board','tower_peal_board',18.0,151.1,0,{elevation:1.25,inspect:inspect('ELLERY COLLEGIATE CHAPEL — STEDMAN TRIPLES — 1908. A touch, not a peal.','The gilt names have gone brown.')}),
+  P('tower-peal-board','tower_peal_board',20.0,151.1,Math.PI,{mount:'wall',frontAxis:'-z',mountNormal:{nx:0,ny:1},elevation:1.25,inspect:inspect('ELLERY COLLEGIATE CHAPEL — STEDMAN TRIPLES — 1908. A touch, not a peal.','The gilt names have gone brown.')}),
   P('tower-tenor-clock-hammer','tower_clock_hammer',31.0,153.0,0,{elevation:.4,...play(CHAPEL,'The clock hammer lifts and strikes the tenor while the bell is down. The stone keeps it for nine seconds.','One stationary hammer. One bell down.'),acousticKind:'bell_tenor_toll',hushPlayback:{mode:'interval',minMs:4200,maxMs:6800}}),
   P('tower-hammer-isolator','equipment_rack',18.0,153.0,0,{interaction:'action',action:'tower-hammer-isolator',inspect:inspect('CLOCK HAMMER ISOLATOR. A red lever, mechanically linked.','ISOLATE / SERVICE.')}),
   P('tower-sign-ringing','tower_plaque',32.5,158.5,Math.PI/2,{
@@ -1910,9 +1975,9 @@ export const CONSERVATORY_PROPS = [
   P('light-hall-galleria-east-casing','tower_bulkhead',126.5,31.5,-Math.PI/2,{elevation:5.36,renderOffsetX:.25,interactive:false,structural:true,lightMaintained:true,lightColor:[1,.018,.008]}),
   P('light-practice-north-casing','tower_bulkhead',59.5,55.5,Math.PI,{elevation:2.5,renderOffsetZ:.25,interactive:false,structural:true,lightCircuit:'sp04',lightColor:[1,.018,.008]}),
   P('light-practice-south-casing','tower_bulkhead',60,81,-Math.PI/2,{elevation:2.5,renderOffsetX:-.25,interactive:false,structural:true,lightCircuit:'sp04',lightColor:[1,.018,.008]}),
-  // The sealed spur-substation is audible from the story route but has no
-  // ordinary door. These objects are permanent building history; only the
-  // separate HUSH navigation policy can cross the service seam to see them.
+  // The spur-substation, behind `spur-substation` on the services-core key that
+  // bust 5 gives up once the marble head is back (takeServicesKey). These are
+  // permanent building history: the old transfer kit, never wired to anything.
   P('legacy-tape-rack-west-a','legacy_tape_rack',22.15,34.65,Math.PI/2,{interactive:false}),
   P('legacy-tape-rack-west-b','legacy_tape_rack',22.15,36.15,Math.PI/2,{interactive:false}),
   P('legacy-patchbay-north','legacy_patchbay',24.15,34.45,0,{interactive:false}),

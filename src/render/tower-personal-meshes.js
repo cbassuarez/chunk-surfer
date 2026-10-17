@@ -1,6 +1,33 @@
 // The optional contractor walk uses ordinary, metre-sized props. These pieces
 // enter the same pack, depth, torch, material and shadow passes as the school
 // furniture. They do not introduce a separate apparition or screen overlay.
+import { physicalPrintPixels, uploadPhysicalPrint } from './physical-source-print.js';
+import { worldLetteringFont } from './world-lettering-fonts.js';
+
+export const TOWER_RECORDER_PRINT = Object.freeze({copy:'DA1000',frontAxis:'-z',
+  printedSurface:Object.freeze({version:1,coverage:'baseColorAlpha',polarity:'light-on-dark',
+    process:'screen-printed equipment legend',emission:'none'})});
+const recorderPrintTextures=new WeakMap();
+
+function recorderPrintTexture(gl){
+  if(typeof document==='undefined')return null;
+  if(recorderPrintTextures.has(gl))return recorderPrintTextures.get(gl);
+  const bitmap=physicalPrintPixels({width:256,height:48,ground:'rgb(129,134,132)',draw(c,m){
+    c.textAlign=m.textAlign='center';c.textBaseline=m.textBaseline='alphabetic';
+    c.font=m.font=worldLetteringFont(48,'sansBold');
+    const cap=c.measureText('H').actualBoundingBoxAscent||34;
+    c.font=m.font=worldLetteringFont(48*36/cap,'sansBold');
+    c.fillStyle='rgb(209,204,184)';m.fillStyle='#fff';
+    c.fillText(TOWER_RECORDER_PRINT.copy,128,42);m.fillText(TOWER_RECORDER_PRINT.copy,128,42);
+  }});
+  const texture=uploadPhysicalPrint(gl,bitmap,{repeat:false}),ormPixels=new Uint8Array(bitmap.pixels.length);
+  for(let i=0;i<ormPixels.length;i+=4){const paint=bitmap.pixels[i+3]/255;
+    ormPixels[i]=255;ormPixels[i+1]=Math.round((.64+(.91-.64)*paint)*255);
+    ormPixels[i+2]=Math.round(.7*(1-paint)*255);ormPixels[i+3]=255;}
+  const ormTexture=uploadPhysicalPrint(gl,{...bitmap,pixels:ormPixels},{repeat:false,srgb:false});
+  const maps={texture,ormTexture};recorderPrintTextures.set(gl,maps);return maps;
+}
+
 const MATERIALS = {
   wood: { name: 'worn wood', base: [.34, .20, .095, 1], roughness: .78 },
   dark: { name: 'dark wood', base: [.16, .095, .052, 1], roughness: .82 },
@@ -16,6 +43,7 @@ const MATERIALS = {
   hair: { name: 'contractor brown hair', base: [.085, .055, .036, 1], roughness: .98 },
   tape: { name: 'recorder oxide tape', base: [.27, .14, .065, 1], roughness: .76 },
   paper: { name: 'paper label', base: [.64, .60, .48, 1], roughness: .91 },
+  'recorder-print': {name:'screen-printed equipment legend',base:[1,1,1,1],roughness:1,metallic:1},
   meter: { name: 'vfd green glass', base: [.018, .12, .055, 1], roughness: .3, emissive: [.012, .20, .035] },
   ash: { name: 'tower cold ash', base: [.18, .19, .17, 1], roughness: .99 },
   snow: { name: 'settled hall snow', base: [.72, .77, .78, 1], roughness: .99 },
@@ -153,8 +181,12 @@ function recorder(piece, x, y, z, scale=1, withStrap=true) {
   const local=(p)=>[x+p[0]*scale,y+p[1]*scale,z+p[2]*scale];
   // Two physically modelled scratches form a repeated, recognisable scar.
   for(const [a,b] of [[[-.17,.143,-.08],[-.045,.143,.013]],[[-.157,.144,-.073],[-.058,.144,.023]]])beam(piece,local(a),local(b),.0018*scale,'paper',.001*scale);
-  const glyphs={D:[[0,0,0,1],[0,1,.6,1],[.6,1,.8,.8],[.8,.8,.8,.2],[.8,.2,.6,0],[.6,0,0,0]],A:[[0,0,.4,1],[.4,1,.8,0],[.17,.4,.63,.4]],1:[[.15,.8,.4,1],[.4,1,.4,0],[.1,0,.7,0]],0:[[0,0,0,1],[0,1,.8,1],[.8,1,.8,0],[.8,0,0,0]]};
-  for(const [i,ch] of [...'DA1000'].entries())for(const [ax,ay,bx,by] of glyphs[ch])beam(piece,local([-.18+i*.026+ax*.021,.112+ay*.015,-.158]),local([-.18+i*.026+bx*.021,.112+by*.015,-.158]),.0016*scale,'paper',.001*scale);
+  // An actual equipment legend belongs to the flat steel fascia. It is not a
+  // row of letter-shaped rods, and reader-right on its -Z face is local -X.
+  const printGroup=group(piece,'recorder-print'),uvStart=printGroup.uvs.length;
+  quad(piece,'recorder-print',local([-.184,.108,-.158]),local([-.184,.126,-.158]),
+    local([-.025,.126,-.158]),local([-.025,.108,-.158]));
+  printGroup.uvs.splice(uvStart,12,1,1,1,0,0,0,1,1,0,0,0,1);
   const strap=[[-.23,.075,.025],[-.27,.018,.04],[-.25,.006,.21],[-.02,.006,.26],[.25,.007,.21],[.27,.025,.06],[.23,.075,.025]];
   if(withStrap)for(let i=1;i<strap.length;i++)beam(piece,local(strap[i-1]),local(strap[i]),.027*scale,'cloth',.006*scale);
 }
@@ -211,6 +243,56 @@ function standingContractor(piece) {
   ellipsoid(piece,[-.03,1.67,-.16],[.14,.075,.128],'hair',12,5);
   headphones(piece,[-.035,1.57,-.16]);
   box(piece,[0,1.41,-.04],[.23,.07,.17],'navy');
+}
+
+function roofGuarantor(piece) {
+  // A single knee goes down; the right palm is planted on the roof glass.
+  // This pose belongs only to the century-stay held tableau. The ordinary
+  // contractor mesh remains upright elsewhere in the ending family.
+  for (const [hip,knee,ankle,foot] of [
+    [[-.12,.79,.10],[-.21,.45,-.29],[-.23,.14,-.21],[-.23,.065,-.30]],
+    [[.12,.79,.10],[.20,.16,-.23],[.27,.14,.15],[.27,.065,.26]],
+  ]) {
+    beam(piece,hip,knee,.19,'navy');
+    ellipsoid(piece,knee,[.09,.085,.09],'navy',10,6);
+    beam(piece,knee,ankle,.13,'navy');
+    box(piece,foot,[.19,.12,.30],'black');
+  }
+  ellipsoid(piece,[0,1.05,-.17],[.25,.34,.18],'cloth',12,8);
+  box(piece,[.10,.96,-.326],[.11,.16,.025],'navy');
+  box(piece,[0,1.34,-.12],[.23,.07,.17],'navy');
+  cylinder(piece,[-.02,1.365,-.22],.066,.12,'skin',10);
+  ellipsoid(piece,[-.035,1.47,-.31],[.135,.165,.125],'skin',12,8);
+  ellipsoid(piece,[-.03,1.56,-.29],[.14,.075,.128],'hair',12,5);
+  headphones(piece,[-.035,1.47,-.31]);
+  ellipsoid(piece,[-.035,1.47,-.435],[.027,.035,.033],'skin',8,6);
+  for (const side of [-1,1]) {
+    ellipsoid(piece,[-.035+side*.045,1.505,-.424],[.014,.010,.008],'hair',6,4);
+    beam(piece,[-.035+side*.027,1.524,-.42],[-.035+side*.071,1.520,-.413],.009,'hair');
+  }
+  // The free hand braces on a knee; only the splayed right hand carries the
+  // player's chosen hold, in contact with the supported pane at floor height.
+  for (const [shoulder,elbow,wrist] of [
+    [[-.22,1.22,-.16],[-.36,.85,-.27],[-.24,.54,-.36]],
+    [[.22,1.22,-.16],[.36,.67,-.47],[.52,.075,-.75]],
+  ]) {
+    ellipsoid(piece,shoulder,[.095,.13,.105],'cloth',10,6);
+    beam(piece,shoulder,elbow,.13,'cloth',.12);
+    ellipsoid(piece,elbow,[.075,.075,.07],'cloth',10,6);
+    beam(piece,elbow,wrist,.10,'cloth',.09);
+    ellipsoid(piece,wrist,[.057,.055,.048],'skin',10,6);
+  }
+  ellipsoid(piece,[.52,.030,-.79],[.075,.018,.087],'skin',12,6);
+  for (let finger=0;finger<4;finger++) {
+    const x=.43+finger*.057;
+    beam(piece,[.52,.025,-.82],[x,.018,-.94+(finger===0||finger===3 ? .035 : 0)],.021,'skin',.014);
+  }
+  ellipsoid(piece,[.42,.028,-.73],[.025,.014,.050],'skin',8,5);
+  // Garment seams and the headphones keep the low silhouette recognizably
+  // the same living contractor under the roof's dark dither treatment.
+  beam(piece,[-.18,1.25,.045],[0,1.21,.073],.014,'navy',.009);
+  beam(piece,[0,1.21,.073],[.18,1.25,.045],.014,'navy',.009);
+  beam(piece,[0,1.20,.077],[0,.86,.072],.010,'slate',.008);
 }
 
 function articulatedHand(piece, gripping=false) {
@@ -448,6 +530,7 @@ export function towerPersonalGeometry() {
     ['tower_personal_tape_reel',tapeReel],
     ['tower_personal_boy_body',piece=>seatedBoy(piece,0,0,false)],
     ['tower_personal_contractor_standing',standingContractor],
+    ['ending_roof_guarantor',roofGuarantor],
     ['tower_personal_upper_arm',piece=>beam(piece,[0,0,0],[0,0,1],.13,'cloth',.12)],
     ['tower_personal_forearm',piece=>beam(piece,[0,0,0],[0,0,1],.10,'cloth',.095)],
     ['tower_personal_hand_open',piece=>articulatedHand(piece,false)],
@@ -501,7 +584,8 @@ export function installTowerPersonalMeshes(gl,pack) {
         gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,size,gl.FLOAT,false,29*4,offset*4);gl.vertexAttribDivisor(location,1);
       }
       const material=MATERIALS[source.material];
-      primitives.push({vao,count:source.indices.length,indexType:gl.UNSIGNED_INT,base:material.base,emissive:material.emissive||[0,0,0],texture:null,metallic:material.metallic||0,roughness:material.roughness,aoStrength:0,portrait:false,alphaCut:0,materialName:material.name,materialRole:'tower-personal-prop'});
+      const printMaps=source.material==='recorder-print'?recorderPrintTexture(gl):null;
+      primitives.push({vao,count:source.indices.length,indexType:gl.UNSIGNED_INT,base:material.base,emissive:material.emissive||[0,0,0],texture:printMaps?.texture||null,ormTexture:printMaps?.ormTexture||null,metallic:material.metallic||0,roughness:material.roughness,aoStrength:0,portrait:false,alphaCut:0,materialName:material.name,materialRole:'tower-personal-prop',printedSurface:source.material==='recorder-print'?TOWER_RECORDER_PRINT.printedSurface:null});
     }
     pack.catalog.set(piece.name,{name:piece.name,nodeMatrix:identity,instanceBuffer,extras:{towerPersonal:true,bounds:piece.bounds},primitives});
   }

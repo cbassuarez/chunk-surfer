@@ -1,0 +1,167 @@
+{
+  "version": 1,
+  "mesh": "lettering_study_services_light_enamel",
+  "sourceMesh": "lettering_study_services_fabricated",
+  "copy": "STUDIOS / PLANT",
+  "variant": "light-enamel",
+  "process": "screen-printed vitreous enamel",
+  "control": "Only substrate/pigment albedo constants change; exactly the same condensed outlines, spacing, geometry, mounting, normal, ORM and wear field.",
+  "paletteSRGB": {
+    "substrate": [
+      219,
+      217,
+      193
+    ],
+    "ink": [
+      24,
+      31,
+      27
+    ]
+  },
+  "metrics": {
+    "font": "NimbusSansNarrow-Bold.otf",
+    "fontSha256": "6d7cec07f5a9035e208532dab35a51312aef4a7f26eb524dd614c9fcd97c3264",
+    "fontSizePx": 131,
+    "capHeightPx": 94,
+    "capHeightM": 0.24050781250000003,
+    "stemWidthPx": 16,
+    "stemWidthM": 0.0409375,
+    "boundsPx": [
+      44,
+      102,
+      982,
+      201
+    ],
+    "glyphs": [
+      {
+        "character": "S",
+        "xPx": 40.420000000000016,
+        "advancePx": 72.94
+      },
+      {
+        "character": "T",
+        "xPx": 113.36000000000001,
+        "advancePx": 66.94
+      },
+      {
+        "character": "U",
+        "xPx": 180.3,
+        "advancePx": 78.94
+      },
+      {
+        "character": "D",
+        "xPx": 259.24,
+        "advancePx": 78.94
+      },
+      {
+        "character": "I",
+        "xPx": 338.18,
+        "advancePx": 30.94
+      },
+      {
+        "character": "O",
+        "xPx": 369.12,
+        "advancePx": 84.94
+      },
+      {
+        "character": "S",
+        "xPx": 454.06,
+        "advancePx": 72.94
+      },
+      {
+        "character": " ",
+        "xPx": 527.0,
+        "advancePx": 30.94
+      },
+      {
+        "character": "/",
+        "xPx": 557.94,
+        "advancePx": 30.94
+      },
+      {
+        "character": " ",
+        "xPx": 588.8800000000001,
+        "advancePx": 30.94
+      },
+      {
+        "character": "P",
+        "xPx": 619.8200000000002,
+        "advancePx": 72.94
+      },
+      {
+        "character": "L",
+        "xPx": 692.7600000000002,
+        "advancePx": 66.94
+      },
+      {
+        "character": "A",
+        "xPx": 759.7000000000003,
+        "advancePx": 78.94
+      },
+      {
+        "character": "N",
+        "xPx": 838.6400000000003,
+        "advancePx": 78.94
+      },
+      {
+        "character": "T",
+        "xPx": 917.5800000000004,
+        "advancePx": 66.94
+      }
+    ],
+    "trackingPx": 0.9400000000000001,
+    "inkCoverage": 0.12035490337171052,
+    "surfaceWearCoverage": 0.010796797902960526,
+    "textureSize": [
+      1024,
+      304
+    ],
+    "maxPigmentHeightM": 1.2e-05,
+    "textureSizes": {
+      "albedo": [
+        1024,
+        304
+      ],
+      "orm": [
+        512,
+        152
+      ],
+      "normal": [
+        256,
+        76
+      ]
+    }
+  },
+  "unchangedMasks": {
+    "normal": "f9e858c44022e3fc992cc403383a210a6c777f7072fbce6cfc1ec2be496b3b7a",
+    "orm": "130987177a67b2685ef31dd3a5da65e4102f5f4c40a11d91eda22a1698a04857",
+    "mask": "404535ab6fb0357e70568c5dae69346f99986dc6d994c9449c26ba08f85449b6"
+  },
+  "albedoSha256": "ec618f36f2b95d9858e0d20c0c2070e5d0fce51584e6e8ae9cb2d0abaaba7568",
+  "glbSha256": "11d036c49e276b7afa2d5c17c7d438e0081e440de21bd7765e414dc2624f97cf",
+  "glbBytes": 137188,
+  "sourceHashes": {
+    "src/render/lettering-study.js": "5dcba507c810de70245f7bef94b470a22aa73526b15480dc49aa9c918be5c99c",
+    "tools/chunk_surfer/lettering-study/build.py": "01000beee790d3d861c8c1bffa3efaece41ddfb3ed254920bec9e2a22dd009d7",
+    "public/assets/lettering-study/signs.glb": "80411d242be71d2026f1cffdfe3ef4005107571df09c0ef36e9e667ba3349cbd",
+    "public/assets/lettering-study/manifest.json": "a8303a6f19c64d63753483a68ac14b895658ed93c4d76ecf9e200df1daa9cc22"
+  },
+  "frozenInputsUnchanged": true,
+  "textureSizes": {
+    "albedo": [
+      1024,
+      304
+    ],
+    "orm": [
+      512,
+      152
+    ],
+    "normal": [
+      256,
+      76
+    ]
+  },
+  "limitations": [
+    "This is a controlled plausible polarity study, not a historical facsimile or a new human-reading result."
+  ]
+}

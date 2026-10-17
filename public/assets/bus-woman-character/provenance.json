@@ -1,0 +1,342 @@
+{
+  "license": "CC0-1.0",
+  "anatomySources": {
+    "creator": "MakeHuman Community",
+    "licenseSource": "https://github.com/makehumancommunity/mpfb2/blob/master/LICENSE.md",
+    "assets": [
+      {
+        "file": "caucasian-male-old.target.gz",
+        "source": "https://raw.githubusercontent.com/makehumancommunity/mpfb2/master/src/mpfb/data/targets/macrodetails/caucasian-male-old.target.gz",
+        "gitBlob": "f14d7c89660d73c12758623634c4d4f9d0160fb2",
+        "sha256": "123cb7758c86aa2aa71d80ea0c8f5f4b3e96f394180edc1682e34720c4949df6",
+        "license": "CC0-1.0"
+      },
+      {
+        "file": "caucasian-male-young.target.gz",
+        "source": "https://raw.githubusercontent.com/makehumancommunity/mpfb2/master/src/mpfb/data/targets/macrodetails/caucasian-male-young.target.gz",
+        "gitBlob": "a422546d7026c93e17f04679249f5c7e2d3b7800",
+        "sha256": "ffe69537e53148edff2776204ba48cf3bf1f3cbc72966592c8a562ab80b07333",
+        "license": "CC0-1.0"
+      },
+      {
+        "file": "universal-male-old-averagemuscle-averageweight.target.gz",
+        "source": "https://raw.githubusercontent.com/makehumancommunity/mpfb2/master/src/mpfb/data/targets/macrodetails/universal-male-old-averagemuscle-averageweight.target.gz",
+        "gitBlob": "2f566bec26a14011818209bbf0867d1309d79805",
+        "sha256": "3721ecc3f7a6af1d7c22ef20c709b1d37402445b3d203fe31e762b12356b59a6",
+        "license": "CC0-1.0"
+      },
+      {
+        "file": "universal-male-young-averagemuscle-averageweight.target.gz",
+        "source": "https://raw.githubusercontent.com/makehumancommunity/mpfb2/master/src/mpfb/data/targets/macrodetails/universal-male-young-averagemuscle-averageweight.target.gz",
+        "gitBlob": "4cc4b83c564a121719ce45f0389e50b01932f358",
+        "sha256": "e814651195c53971503d9823d6841216718a561951ef064f81d132297f4fa494",
+        "license": "CC0-1.0"
+      },
+      {
+        "file": "base.obj",
+        "source": "https://raw.githubusercontent.com/makehumancommunity/mpfb2/master/src/mpfb/data/3dobjs/base.obj",
+        "sha256": "8e761e6624b8f54536409135d1636da63b32486a90d4897f84e121d144f6fb4c",
+        "license": "CC0-1.0"
+      }
+    ]
+  },
+  "femaleTargets": [
+    {
+      "file": "african-female-young.target.gz",
+      "source": "https://raw.githubusercontent.com/makehumancommunity/mpfb2/master/src/mpfb/data/targets/macrodetails/african-female-young.target.gz",
+      "sha256": "1147ae55ecb0f66bade3f45176b3af187e265878322db172ad1090e9f3108e84",
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "african-female-old.target.gz",
+      "source": "https://raw.githubusercontent.com/makehumancommunity/mpfb2/master/src/mpfb/data/targets/macrodetails/african-female-old.target.gz",
+      "sha256": "a097b300928d3be97f30b6182cb252c2de09433cb3a571de890952a1d25d3f18",
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "universal-female-young-averagemuscle-averageweight.target.gz",
+      "source": "https://raw.githubusercontent.com/makehumancommunity/mpfb2/master/src/mpfb/data/targets/macrodetails/universal-female-young-averagemuscle-averageweight.target.gz",
+      "sha256": "30046c85a461249824548d5319d74c16392842a1ee00ca9a4485ea3eeb06e2e8",
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "universal-female-old-averagemuscle-averageweight.target.gz",
+      "source": "https://raw.githubusercontent.com/makehumancommunity/mpfb2/master/src/mpfb/data/targets/macrodetails/universal-female-old-averagemuscle-averageweight.target.gz",
+      "sha256": "e592836eee975b83de976b30a04444a36c1f4da7abe8c7c910e751926f040a7e",
+      "license": "CC0-1.0"
+    }
+  ],
+  "garmentSources": {
+    "source": "https://files2.makehumancommunity.org/asset_packs/makehuman_system_assets/makehuman_system_assets_cc0.zip",
+    "manifest": "https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html",
+    "license": "CC0-1.0",
+    "creator": "MakeHuman Community",
+    "files": [
+      {
+        "file": "skins/young_caucasian_male/young_lightskinned_male_diffuse.png",
+        "sha256": "862a26e335e958b70534cb5f0d7c47ef30ab148a56c42b3e9da969cf76f12963"
+      },
+      {
+        "file": "skins/young_caucasian_male/young_caucasian_male.thumb",
+        "sha256": "9ea46d1b5c4230bcff248b1262eaf4f5b4b14bbffd8fc09d2c20c6058f02e12d"
+      },
+      {
+        "file": "skins/young_caucasian_male/young_caucasian_male.mhmat",
+        "sha256": "6eda60b07ff2afbde078a2535ef3913593d84e9de92b2eb76c30f396a181fe2e"
+      },
+      {
+        "file": "skins/middleage_caucasian_male/middleage_lightskinned_male_diffuse.png",
+        "sha256": "3f94f3f6a5cab92dedf5cce392a87332312fc435f1cb44c6e7b897daef9a5fbb"
+      },
+      {
+        "file": "skins/middleage_caucasian_male/middleage_caucasian_male.thumb",
+        "sha256": "0edd08641ae1bc1f832fe17a54d519445c73b8ba1024606e4c25ccaaca6d2279"
+      },
+      {
+        "file": "skins/middleage_caucasian_male/middleage_caucasian_male.mhmat",
+        "sha256": "113326b7670cb273610314b91e2597b228711adf5f0666660b16fef269bfbe72"
+      },
+      {
+        "file": "clothes/male_worksuit01/male_worksuit01.obj",
+        "sha256": "d8ef4bf71aa6bd386958921c17e0eed263ef63abc8b50a2c8be6d482f6e1d3f7"
+      },
+      {
+        "file": "clothes/male_worksuit01/male_worksuit01.thumb",
+        "sha256": "fad50094363c841033ae160982bd5570f40140b6381a5a69562a9cbdf0898e7a"
+      },
+      {
+        "file": "clothes/male_worksuit01/male_worksuit01_diffuse.png",
+        "sha256": "4b59b50f7a8a0325c33e86e29f160f59b2385a6f413fccc88287a1c951c39901"
+      },
+      {
+        "file": "clothes/male_worksuit01/male_worksuit01_normal.png",
+        "sha256": "53f51fd31ec6760c26d377b250bfcdde84be46953f4c72821892b76d13055073"
+      },
+      {
+        "file": "clothes/male_worksuit01/male_worksuit01.mhmat",
+        "sha256": "9af03afa0f8cf2d24b4fceb0bd0e3c400ae0975b402e0ea491a33fa32c3b560b"
+      },
+      {
+        "file": "clothes/male_worksuit01/male_worksuit01.mhclo",
+        "sha256": "77561689f0e9eb13537f67e0582ce4e8b93fc7291ea87f57fd86b38b9114d4e1"
+      },
+      {
+        "file": "clothes/male_worksuit01/male_worksuit01_ao.png",
+        "sha256": "1ed5f23c5efab316b98a295e1be7905009e61603657577eb922b4d1c99c46810"
+      },
+      {
+        "file": "hair/short02/short02.thumb",
+        "sha256": "af21a0e84bfcc294b9840d90a04f1b6655ad909bc09328251886adffbc0727e8"
+      },
+      {
+        "file": "hair/short02/short02.obj",
+        "sha256": "48f979114adfa712165a69cc55c45a70831af1fb3cba8e2a89120f0c87407b64"
+      },
+      {
+        "file": "hair/short02/short02.mhclo",
+        "sha256": "625736cdb73e6d094df6e5a2df18f371781f1d2cd37b0ae15795c5d7051c3ec2"
+      },
+      {
+        "file": "hair/short02/short02.mhmat",
+        "sha256": "2ed04c8aad9c1a35d858ca72091525d32b1da3b61b5a031634dd528fd8530f6d"
+      },
+      {
+        "file": "hair/short02/short02_diffuse.png",
+        "sha256": "47fe33831a3929567c733356dd66243116e05df2ace1f884ddca0080b728229f"
+      },
+      {
+        "file": "hair/short02/short02_normal.png",
+        "sha256": "2cfac7619f8eec77dd90df979d912415058f4f0fc16940cba40a8eb1ae6d74b5"
+      },
+      {
+        "file": "eyes/materials/brown.thumb",
+        "sha256": "5bd2de12f0c04d423ab00fa13f691a1879b944e63947e228117ddcce31f9cff9"
+      },
+      {
+        "file": "eyes/materials/brownlight.thumb",
+        "sha256": "32722c2f00ea29b7cee7bc2b140db165ec724cd20d10d073e906b21b278bde26"
+      },
+      {
+        "file": "eyes/materials/brownlight.mhmat",
+        "sha256": "75ae6903fe51134ee6f10147dadad3cb1b355aecf8218213431fb6ddbb3ba71d"
+      },
+      {
+        "file": "eyes/materials/bluegreen_eye.png",
+        "sha256": "653b3154e67f67e118c22acd19c472aa7543e0c229209f687c3f7f669f191fd9"
+      },
+      {
+        "file": "eyes/materials/ice.mhmat",
+        "sha256": "4b2d2d10d9d887dc6f4dd2f66ff252a85b60ca2a30bc2b57672f83b758db776b"
+      },
+      {
+        "file": "eyes/materials/brown.mhmat",
+        "sha256": "4abad93ce50541c08127721e77bce035640c9f16bed16cd0f5524b1cd5908465"
+      },
+      {
+        "file": "eyes/materials/deepblue_eye.png",
+        "sha256": "55ec9e3d06c8193e74fbbcea32ea474c100feaccef96556d9181e796fe2a7ea6"
+      },
+      {
+        "file": "eyes/materials/grey_eye.png",
+        "sha256": "ecb05613126036a3d017880fabbd570501c5f14032c186462d8f6e2d719f6c4f"
+      },
+      {
+        "file": "eyes/materials/grey.thumb",
+        "sha256": "add8c7bd15edeccaa7612cb33d8311ae849d884b6ea062e18fa78de54128805d"
+      },
+      {
+        "file": "eyes/materials/bluegreen.thumb",
+        "sha256": "d6fcfe5b57d7b05f2f9453e11cefb7cb68352746a36613b030e069442e2eadcc"
+      },
+      {
+        "file": "eyes/materials/green.thumb",
+        "sha256": "525ffdef4adb5a82ffe07814b1a46d017014fad571ae206bfeda970531560c10"
+      },
+      {
+        "file": "eyes/materials/green_eye.png",
+        "sha256": "b9864ac4f4fa484b24e18f6aba030d70dbc8820cbbacfbe63a974c76772c2009"
+      },
+      {
+        "file": "eyes/materials/bluegreen.mhmat",
+        "sha256": "2dfb910b48da0e0739b44a8fa4728b3b351bf9b408034c6402a1b9c07915b884"
+      },
+      {
+        "file": "eyes/materials/brown_eye.png",
+        "sha256": "4659691c7295ad6206c78b003e5fd0e5f91dcd53032fa914a229bb48cabe424b"
+      },
+      {
+        "file": "eyes/materials/deepblue.thumb",
+        "sha256": "10b1fa542476d35dee4ac92b6f1a654ecf391d849231727a591820b895d8d815"
+      },
+      {
+        "file": "eyes/materials/green.mhmat",
+        "sha256": "b3b512120d9f87f91cd34879ac17ad9f26eb6a250d92be52df8b19df5cc90113"
+      },
+      {
+        "file": "eyes/materials/lightblue.thumb",
+        "sha256": "4e70a6c6530469ead049980969944cf1c2860700907c9dfee0fbc87af7965c68"
+      },
+      {
+        "file": "eyes/materials/lightblue_eye.png",
+        "sha256": "687c8f6d95a8550bcd4a34158f415d6bb376c0bb32e67d127bbb51e5fa469eef"
+      },
+      {
+        "file": "eyes/materials/lightblue.mhmat",
+        "sha256": "3bb470d56dfdf40b16e499578bf6ea2c4e0e7e27db4c5bd2adb47f760f5c5f34"
+      },
+      {
+        "file": "eyes/materials/ice.thumb",
+        "sha256": "a8e150fb9fb901051a0dd6e753ec68d501ad5dc20e01adcdf6ac1f81657c5df9"
+      },
+      {
+        "file": "eyes/materials/blue.thumb",
+        "sha256": "5d7474af291a83b4b122ccd276b5ad10f9a4554efa940aad1d515363e22d7b6b"
+      },
+      {
+        "file": "eyes/materials/blue.mhmat",
+        "sha256": "bd9cab4d2f6ca54df6253c1adfbb1c82e0ee61057361d95449ade06a1b5669c4"
+      },
+      {
+        "file": "eyes/materials/deepblue.mhmat",
+        "sha256": "08f7a30d8cd8d264d21d755afcfdca3d28386e780b9e9fea11a662337e99d3a3"
+      },
+      {
+        "file": "eyes/materials/brownlight_eye.png",
+        "sha256": "3f43a4de70e446186dac1760cfa01dfe36d530ed7564208455395b0ebcdf788a"
+      },
+      {
+        "file": "eyes/materials/blue_eye.png",
+        "sha256": "572ddc93ab3e177100619ec7c00b2574540cfb382805afc2e450788117f6140c"
+      },
+      {
+        "file": "eyes/materials/ice_eye.png",
+        "sha256": "a5903596fe033371ba7130b5c8b2c09ce2f5d282d77557c21060ab8a778bf03d"
+      },
+      {
+        "file": "eyes/materials/grey.mhmat",
+        "sha256": "65c536157ef0550b2f8461a9526c726707533dc7cfe8a65abb9b9db0b4e6b25e"
+      },
+      {
+        "file": "eyes/low-poly/low-poly.thumb",
+        "sha256": "27b09c5a2bd792671c99a00016ec836855278f199bc4753c3018f1ac73068c72"
+      },
+      {
+        "file": "eyes/low-poly/low-poly.mhclo",
+        "sha256": "68582e28e9176cba7cfcf35208f671b6201b8d1bc95c32decff61a3160ec34d8"
+      },
+      {
+        "file": "eyes/low-poly/low-poly.obj",
+        "sha256": "783fe1e6331162c876520b4c2bed7a8ca06354ca15497e8ebd68bb1b59f4d3de"
+      },
+      {
+        "file": "clothes/male_elegantsuit01/male_elegantsuit01.mhclo",
+        "sha256": "6e725b0adac1a07173a14e15207d0b0125d5510455ef6dee756b5fa1c51cccef"
+      },
+      {
+        "file": "clothes/male_elegantsuit01/male_elegantsuit01.thumb",
+        "sha256": "8e3d5053b45c8bf55a8d452ce944ef7128c41bf4318e3f4de6752f25aaf972a3"
+      },
+      {
+        "file": "clothes/male_elegantsuit01/male_elegantsuit01.mhmat",
+        "sha256": "787bc0744174301c9ac0e33da4669bf37df9ac572ce950989f1bc6e71e938adf"
+      },
+      {
+        "file": "clothes/male_elegantsuit01/male_elegantsuit01_diffuse.png",
+        "sha256": "eba3c9b662a35f145f28c8932fe96c01db258080daf1a1c09807def5497e3420"
+      },
+      {
+        "file": "clothes/male_elegantsuit01/male_elegantsuit01.obj",
+        "sha256": "3f6dfc8c10de6160b1e23aad6b4b201b7651914bf3ea5bc8a8aba03e0c0298ea"
+      },
+      {
+        "file": "clothes/male_casualsuit01/male_casualsuit01_diffuse.png",
+        "sha256": "3fd0bba5dcbdea0ac427f644a6c7c298938f7369b8f96626621ce1e88989394e"
+      },
+      {
+        "file": "clothes/male_casualsuit01/male_casualsuit01_normal.png",
+        "sha256": "ff029fc5a3350ebc72813cdf050afcffd23064c7701d99e664572713cfa98a5f"
+      },
+      {
+        "file": "clothes/male_casualsuit01/male_casualsuit01.thumb",
+        "sha256": "cd8a8c9461b164542d8660b9beaae17636040c9199020b65755a03559809cfc1"
+      },
+      {
+        "file": "clothes/male_casualsuit01/male_casualsuit01.mhmat",
+        "sha256": "043b25cefd398261b893d3dae58c81fc3e9633a25a01eafe66963591f5ad6eb6"
+      },
+      {
+        "file": "clothes/male_casualsuit01/male_casualsuit01.mhclo",
+        "sha256": "78503ed7f56c149843d85e06e1164bc6871ce7319b2ef689237046352cc90de4"
+      },
+      {
+        "file": "clothes/male_casualsuit01/male_casualsuit01_ao.png",
+        "sha256": "9402d75d71318ef3ad90ee59f8b8688effefd13b3ec56423330e005bed5cd6c0"
+      },
+      {
+        "file": "clothes/male_casualsuit01/male_casualsuit01.obj",
+        "sha256": "001921d237e408c35103720d046aa37f9c5512db1a179a5ede6a065cd504ba89"
+      }
+    ]
+  },
+  "note": "Selected Button Out of Place production model. Source anatomy CC0; newly authored coat apertures and pocket bags, garment thickness, cap, scarf, shoes, handbag and paper. Same source body supplies both existing appearance aliases. No placements authored.",
+  "production": {
+    "design": "The Button Out of Place",
+    "asset": "public/assets/bus-woman-character.glb",
+    "assetSha256": "48cc9e6680daa90dcd0a0e4beae2c8683558e906ba990b95da3591c2230fd030",
+    "editableSource": "artifacts/bus-woman-production/bus-woman-character.blend",
+    "editableSourceSha256": "9943dd8b814dcffdaa2848e30435e2cfff8c7ea8354a662a80c23deaa3e519d2",
+    "clips": [
+      "bus_woman_wait",
+      "bus_woman_search",
+      "bus_woman_receive",
+      "bus_woman_ticket_wait",
+      "bus_woman_acknowledge",
+      "bus_woman_acknowledge_ticket",
+      "bus_woman_step",
+      "bus_woman_step_ticket",
+      "bus_woman_ready"
+    ],
+    "bodyJoints": 54,
+    "note": "Nine finite sampled takes; same canonical body in both existing appearance aliases. Overlapping misfastened placket, physical pocket cavities and exposed lower-chest ready ticket verified. No scene placements authored."
+  }
+}

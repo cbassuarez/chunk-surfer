@@ -31,7 +31,7 @@ test('instrument operation reaches contact at the actual 28 percent impact and r
 
 function reactionFrame(atSeconds, extra = {}) {
   return combatHandsSnapshot({ phase: 'resolve', selectedTool: 'recorder', ...extra,
-    parry: parryOpportunitySnapshot({ actionKind: 'broadcast', elapsed: atSeconds }),
+    parry: parryOpportunitySnapshot({ actionKind: 'broadcast', elapsed: atSeconds, attempted: true, parried: true }),
     resolution: { side: 'enemy', heldTool: 'recorder', action: { id: 'enemy', tool: 'self' },
       elapsed: atSeconds, duration: PARRY_REACTION_SECONDS } });
 }
@@ -105,6 +105,31 @@ test('free-hand flexion stays within anatomical joint limits at every injury and
       }
     }
   }
+});
+
+test('brace, committed parry and injury produce readable whole-hand poses while retaining the ready pose', () => {
+  const ready = battleHandPerformance({ reducedMotion: true });
+  assert.deepEqual(ready.leftOffset, [0, 0, 0]);
+  assert.deepEqual(ready.toolOffset, [0, 0, 0]);
+  assert.deepEqual(ready.leftRotation, [-.45, Math.PI - .50, .32]);
+  const brace = battleHandPerformance({ brace: true, reducedMotion: true });
+  assert.ok(brace.leftOffset[1] - ready.leftOffset[1] >= .05, 'brace raises a full defensive hand');
+  assert.ok(brace.spread.pinky > ready.spread.pinky + .07, 'brace has an open silhouette');
+  const parry = battleHandPerformance(reactionFrame(PARRY_IMPACT_SECONDS, { reducedMotion: true }));
+  assert.ok(parry.leftOffset[0] - brace.leftOffset[0] >= .10, 'committed parry sweeps across the body');
+  assert.ok(parry.leftRotation[2] - brace.leftRotation[2] > .8, 'deflection changes the whole wrist angle');
+  const incoming = battleHandPerformance({ actionActor: 'enemy', actionElapsed: PARRY_IMPACT_SECONDS,
+    parry: parryOpportunitySnapshot({ actionKind: 'broadcast', elapsed: PARRY_IMPACT_SECONDS }), brace: true });
+  assert.equal(incoming.intercept, 0, 'an unattempted parry cannot fabricate a successful deflection');
+  const critical = battleHandPerformance({ injury: 'critical', reducedMotion: true });
+  assert.ok(critical.leftFingers.ring[0] > ready.leftFingers.ring[0] + .4, 'injury visibly protects the fingers');
+  assert.ok(critical.toolOffset[1] < -.02, 'the injured holding arm sags as a whole assembly');
+  const hurt = battleHandPerformance({ hurt: 1, reducedMotion: true });
+  assert.ok(hurt.leftOffset[2] > .05 && hurt.leftFingers.index[0] > .7, 'impact pulls a clenched hand back toward the body');
+  const recovering = battleHandPerformance(combatHandsSnapshot({ hurt: 0, hurtAge: .45, injury: 'wounded' }));
+  assert.ok(recovering.flinch > .2, 'protective hand recovery outlasts the short impact flash');
+  assert.equal(battleHandPerformance(combatHandsSnapshot({ hurt: 0, hurtAge: .71 })).flinch, 0);
+  assert.equal(battleHandPerformance(combatHandsSnapshot()).flinch, 0, 'no hit age means no fabricated recoil');
 });
 
 test('framing preserves metric anatomy across window aspect ratios and moves whole assemblies inside the aperture', () => {

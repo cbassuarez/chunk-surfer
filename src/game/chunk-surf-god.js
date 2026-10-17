@@ -2,6 +2,7 @@ import { CELL } from '../data/floorplan/legend.js';
 import { OUTSKIRT_BUS_ENCOUNTER, OUTSKIRT_FOLD_ENCOUNTER, OUTSKIRT_LAST_MARK, OUTSKIRT_STRETCH_START, OUTSKIRT_STRETCH_METRES } from '../data/source-outskirts-arrival.js';
 import { SOURCE_APPROACH_CELLS, SOURCE_BELLS, SOURCE_CHAPEL_OUTSKIRTS, SOURCE_HORIZON, SOURCE_PRE_TAPE, SOURCE_TIER_BY_ID } from '../data/source-level.js';
 import { SOURCE_HANGING_SHORE } from '../data/source-hanging-shore.js';
+import { SOURCE_LAST_RECEPTION } from '../data/source-last-reception.js';
 import {
   CHUNK_SURF_PHASE,
   SOURCE_PURSUIT_BEAT,
@@ -16,6 +17,7 @@ export const CHUNK_SURF_GOD_PRESET = Object.freeze({
   LANDING: 'landing',
   FIRST_LIFT: 'first-lift',
   FIRST_CONTACT: 'first-contact',
+  LAST_RECEPTION: 'last-reception',
   ALL_INSIGHTS: 'all-insights',
   EXPOSED_BATTLE: 'exposed-battle',
   NORMAL_EXIT: 'normal-exit',
@@ -110,6 +112,12 @@ export function buildChunkSurfGodPreset(id, options = {}) {
   state = dispatch(state,
     { type: 'SOURCE_LIFT_COMPLETED', id: 'lift-fork', checkpointId: 'landing-fork' },
   );
+  if(id===CHUNK_SURF_GOD_PRESET.LAST_RECEPTION){
+    const entry=SOURCE_LAST_RECEPTION.anchors.mainOutside;
+    state={...state,sourceDivide:{version:1,feet:entry.y,fallVelocity:0,falling:false}};
+    position=localPosition(entry.x/CELL,entry.z/CELL,3);
+    return {state,position};
+  }
   if (id === CHUNK_SURF_GOD_PRESET.FIRST_CONTACT) {
     // Face the waiting human trace from four metres away on its actual ground.
     // This reviews the ordinary SPEAK interaction without a remote contact hook.

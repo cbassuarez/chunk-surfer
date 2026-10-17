@@ -6,10 +6,12 @@ import * as FP from '../src/world/floorplan.js';
 import { advanceEndingCutscene, createEndingCutsceneState } from '../src/game/ending-cutscene.js';
 import { createDraggedPayloadState, draggedPayloadStep, dropDraggedPayload, gripDraggedPayload } from '../src/game/dragged-payload.js';
 import {
+  CATHEDRAL_BODY_EXIT_CLEARANCE_METRES,
   cathedralBodiesOutsideWest, cathedralExtractionAnchors, cathedralGroundRuntimePoint,
   createCathedralExtractionCheckpoint, normalizeCathedralExtractionCheckpoint,
   restoreCathedralExtractionCheckpoint,
 } from '../src/game/cathedral-extraction.js';
+import { PROP_BOUNDS } from '../src/data/generated/prop-geometry.js';
 import { evaluateCondition } from '../src/narrative/conditions.js';
 
 FP.compile(conservatory.levels, {
@@ -81,26 +83,32 @@ assert.deepEqual(droppedRestore.escape.drag.position, drag.position);
 assert.equal(normalizeCathedralExtractionCheckpoint({ schema: 1, drag: { position: { x: null, y: 2 } } }), null);
 assert.equal(restoreCathedralExtractionCheckpoint({ schema: 0 }), null, 'legacy recovery must use an authored location');
 
-const exterior={x:257,y:359},doorBody={x:257,y:361.3},clearBody={x:257,y:359.3};
+const exterior={x:257,y:357},doorBody={x:257,y:361.3},clearBody={x:257,y:357.3};
 assert.notEqual(FP.zoneAt(doorBody.x,doorBody.y),FP.zoneAt(crossing.x,crossing.y),
   'the logical door volume differs from the church despite still being inside the physical plane');
 assert.equal(cathedralBodiesOutsideWest(FP,exterior,doorBody),false,
   'a body in the door volume has not earned the extraction');
 assert.equal(cathedralBodiesOutsideWest(FP,{x:257,y:357},clearBody),true,
-  'both real centres clear the west plane with a quarter-metre margin');
+  'the entire trailing prone body clears the west plane');
 // The compiled portal centre is55.25m; the real leaf is at55.0m. Test both
 // bodies against the latter, including continuous follower positions.
 const physicalPoint=(z,x=16)=>{const p=FP.logicalAtPhysical(x/.5,z/.5,{group:'ground',floor:0});assert.ok(p);return{x:p.x,y:p.y};};
-const quarterClear=physicalPoint(54.75),tooNear=physicalPoint(54.751),oldFalsePositive=physicalPoint(54.9);
-assert.equal(cathedralBodiesOutsideWest(FP,physicalPoint(53.5),quarterClear),true,
-  'a centre exactly0.25m beyond the authored leaf clears it');
+const quarterClear=physicalPoint(54.75),wholeBodyClear=physicalPoint(53.9),tooNear=physicalPoint(53.901),oldFalsePositive=physicalPoint(54.9);
+assert.equal(cathedralBodiesOutsideWest(FP,physicalPoint(53.5),quarterClear),false,
+  'a cleared centre cannot complete extraction with feet still in the doorway');
+assert.equal(cathedralBodiesOutsideWest(FP,physicalPoint(53.5),wholeBodyClear),true,
+  'a body exactly1.1m beyond the authored leaf clears its whole footprint');
 assert.equal(cathedralBodiesOutsideWest(FP,physicalPoint(53.5),tooNear),false,
-  'the trailing body must clear the authored leaf by the full0.25m');
+  'the trailing body must clear the complete physical margin');
+const bounds=PROP_BOUNDS.ending_body_prone;
+const rotatedRadius=Math.hypot(Math.max(Math.abs(bounds.min[0]),Math.abs(bounds.max[0])),Math.max(Math.abs(bounds.min[2]),Math.abs(bounds.max[2])))*.97;
+assert.ok(CATHEDRAL_BODY_EXIT_CLEARANCE_METRES>=rotatedRadius+.02,
+  'the extraction margin covers the shipped prone mesh at every drag heading');
 assert.equal(cathedralBodiesOutsideWest(FP,oldFalsePositive,physicalPoint(53.5)),false,
   'the player also needs the full0.25m margin, not the compiled-cell-centre margin');
-assert.equal(cathedralBodiesOutsideWest(FP,physicalPoint(53.5),physicalPoint(54.65,17.5)),true,
+assert.equal(cathedralBodiesOutsideWest(FP,physicalPoint(53.5),physicalPoint(53.9,17.5)),true,
   'the authored door lane includes its actual1.5m lateral edge');
-assert.equal(cathedralBodiesOutsideWest(FP,physicalPoint(53.5),physicalPoint(54.65,17.501)),false,
+assert.equal(cathedralBodiesOutsideWest(FP,physicalPoint(53.5),physicalPoint(53.9,17.501)),false,
   'the compiled centre cannot widen the extraction lane past its authored edge');
 assert.equal(cathedralBodiesOutsideWest(FP,{x:280,y:357},clearBody),false,
   'being west of the church elsewhere is not the ceremonial door extraction');

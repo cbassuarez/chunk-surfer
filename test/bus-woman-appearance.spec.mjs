@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { CONSERVATORY_PROPS } from '../src/data/conservatory-props.js';
-import { outskirtsArrivalLayout } from '../src/data/source-outskirts-arrival.js';
+import { outskirtsArrivalLayout, outskirtsPassLayout } from '../src/data/source-outskirts-arrival.js';
 
 // Inspect the shipped static pack, not the builder's source or its declarations.
 // This is the shared interim body; the three hero studies remain unselected.
@@ -48,19 +48,22 @@ test('the built yard and Outskirts assets have exactly the same geometry, normal
   assert.ok(points(yard).flat().every(Number.isFinite));
 });
 
-test('the existing skin, navy coat, mustard scarf and bag remain in both appearances', () => {
+test('the existing skin, navy coat, mustard scarf, cap, denim and bag remain in both appearances', () => {
   const names = new Set(yard.map((primitive) => primitive.material.name));
-  for (const name of ['deep skin', 'navy raincloth', 'mustard wool']) assert.ok(names.has(name), `missing identity material: ${name}`);
+  for (const name of ['deep skin', 'navy raincloth', 'mustard wool', 'black lacquer', 'denim']) assert.ok(names.has(name), `missing identity material: ${name}`);
   const scarf = points(yard.filter((primitive) => primitive.material.name === 'mustard wool'));
   assert.ok(scarf.some((p) => p[1] > 1.30), 'the mustard material no longer forms a scarf around her neck');
   assert.ok(scarf.some((p) => p[1] < 1.05), 'the scarf tail disappeared');
+  assert.ok(points(yard.filter((primitive) => primitive.material.name === 'black lacquer')).some((p) => p[1] > 1.70), 'the black wool cap disappeared');
+  assert.ok(points(yard.filter((primitive) => primitive.material.name === 'denim')).some((p) => p[1] > .15 && p[1] < .65), 'the denim legs disappeared');
   assert.ok(points(yard).some((p) => p[0] > .46 && p[1] > .50 && p[1] < .90), 'the asymmetric carried bag disappeared');
 });
 
 test('the shared baseline retains a protruding human face instead of inheriting the boy cavity', () => {
   const skin = points(yard.filter((primitive) => primitive.material.name === 'deep skin'));
   const nose = skin.filter((p) => Math.abs(p[0]) < .04 && p[1] > 1.48 && p[1] < 1.62 && p[2] < -.13);
-  assert.ok(nose.length >= 8, 'the actual skin-coloured nose bridge and lower face are missing');
+  assert.ok(nose.some((p) => p[2] < -.15), 'the actual skin-coloured nose does not project beyond the face');
+  for (const sign of [-1, 1]) assert.ok(nose.some((p) => Math.sign(p[0]) === sign), 'one side of the modelled nose is missing');
   for (const sign of [-1, 1]) {
     assert.ok(skin.some((p) => Math.sign(p[0]) === sign && Math.abs(p[0]) > .045 && p[1] > 1.48 && p[1] < 1.65 && p[2] < -.045), 'one side of the modelled cheek is missing');
   }
@@ -85,7 +88,11 @@ test('the ordinary placement and every repeated appearance still select the shar
   assert.equal(ordinary.loreId, 'yard-bus-waiter');
   const repeated = outskirtsArrivalLayout().filter((piece) => /^bus-woman/.test(piece.key));
   assert.ok(repeated.some((piece) => piece.key === 'bus-woman-aboard'));
-  assert.ok(repeated.some((piece) => /crowd/.test(piece.key)));
+  // Crowd is an authored override, not part of today's deterministic sequence
+  // while the woman is present. Both must retain the same visible master.
+  const crowd = outskirtsPassLayout(5, { break: 'crowd' }).filter((piece) => /^bus-woman-crowd/.test(piece.id));
+  assert.equal(crowd.length, 4);
+  assert.ok(crowd.every((piece) => piece.mesh === 'outskirts_bus_woman'));
   assert.ok(repeated.every((piece) => piece.mesh === 'outskirts_bus_woman'));
   const heights = points(yard).map((p) => p[1]);
   assert.ok(Math.max(...heights) > 1.65 && Math.max(...heights) < 1.80, 'shared body changed scale');

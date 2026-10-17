@@ -25,36 +25,39 @@ assert.equal(asset.readUInt32LE(4), 2);
 assert.equal(asset.readUInt32LE(8), asset.length);
 const jsonLength = asset.readUInt32LE(12);
 const json = JSON.parse(asset.subarray(20, 20 + jsonLength).toString('utf8').trim());
-assert.deepEqual(json.meshes.map((mesh) => mesh.name), [
-  'horizon_bust_portrait',
-  'horizon_bust_pedestal',
-  'horizon_bust_seal',
-]);
-assert.ok(json.meshes.every((mesh) => mesh.primitives.every((primitive) => Number.isInteger(primitive.indices)
-  && Number.isInteger(primitive.attributes.POSITION) && Number.isInteger(primitive.attributes.NORMAL))));
-assert.deepEqual(json.materials.map((material) => material.name), [
-  'pale funerary marble', 'black green society stone', 'aged bronze seal',
-]);
-assert.ok(!json.animations && !json.skins && !json.extensionsUsed && !json.extensionsRequired);
-
-assert.equal(stats.sha256, crypto.createHash('sha256').update(asset).digest('hex'));
-assert.equal(credits.pack.sha256, stats.sha256);
-assert.equal(credits.source.mesh, 'marble_bust_01');
-assert.equal(credits.source.license, 'CC0-1.0');
-assert.equal(credits.derivation.externalDownloadsRequired, false);
-assert.ok(stats.meshes.horizon_bust_portrait.triangles >= 9000, 'the portrait remains a high-detail sculpt');
-assert.ok(stats.meshes.horizon_bust_pedestal.triangles >= 70, 'the pedestal is geometry, not a shader block');
-assert.ok(stats.meshes.horizon_bust_seal.triangles >= 300, 'the funerary seal is modeled relief');
-assert.ok(stats.totalTriangles < 15000, 'the isolated hero prop stays inside its triangle budget');
-assert.ok(asset.length < 1024 * 1024, 'the untextured hero GLB stays below one MiB');
-assert.match(builder, /marble_bust_01/);
-assert.match(builder, /horizon_bust_pedestal/);
-assert.match(builder, /SOCIETAS OSSIUM/);
-
-assert.match(renderer, /loadHorizonBust\(bust\)/, 'the GLB is loaded with the Horizon tape');
-assert.match(renderer, /gl\.drawElements\(gl\.TRIANGLES/, 'the portrait is drawn as indexed triangles');
-assert.match(renderer, /gl\.enable\(gl\.DEPTH_TEST\)/, 'the model self-occludes');
-assert.doesNotMatch(renderer, /markerRecords|markerBuffer/, 'the old splat-built figure is gone');
+const meshes=new Map(json.meshes.map(mesh=>[mesh.name,mesh]));
+for(const name of ['horizon_bust_portrait','horizon_bust_shoulders','horizon_bust_pedestal',
+  'horizon_bust_seal_housing','horizon_bust_seal','horizon_bust_neck_core',
+  'horizon_bust_shutter_L','horizon_bust_shutter_R',
+  'horizon_bust_eye_L_iris','horizon_bust_eye_R_iris'])assert.ok(meshes.has(name),`${name} is physical geometry`);
+assert.ok(json.meshes.every(mesh=>mesh.primitives.every(primitive=>
+  Number.isInteger(primitive.indices)&&Number.isInteger(primitive.attributes.POSITION)
+  &&Number.isInteger(primitive.attributes.NORMAL)&&Number.isInteger(primitive.attributes.JOINTS_0)
+  &&Number.isInteger(primitive.attributes.WEIGHTS_0))), 'every part is skinned in the same rigid rig');
+assert.ok(json.nodes.some(node=>node.name==='neck_yaw')&&json.nodes.some(node=>node.name==='seal_plunger'));
+assert.deepEqual(json.animations.map(animation=>animation.name),
+  ['recognition-returned','recognition-carried','ritual','settled','blind']);
+assert.equal(json.skins.length,1);
+assert.ok(json.materials.some(material=>material.name==='bronze'));
+assert.ok(json.materials.some(material=>material.name==='iris'));
+assert.equal(stats.sha256,crypto.createHash('sha256').update(asset).digest('hex'));
+assert.equal(credits.pack.sha256,stats.sha256);
+assert.equal(credits.source.mesh,'marble_bust_01');
+assert.equal(credits.source.license,'CC0-1.0');
+assert.equal(credits.derivation.externalDownloadsRequired,false);
+assert.deepEqual(stats.bounds.min,[-2.1,0,-1.11]);
+assert.deepEqual(stats.bounds.max,[2.1,6.5,1.11]);
+assert.ok(stats.meshes.horizon_bust_portrait.triangles>=6000,'socketed head retains detailed sculpt');
+assert.ok(stats.meshes.horizon_bust_seal.triangles>=300,'reachable seal is actual relief');
+assert.ok(stats.totalTriangles>18000&&stats.totalTriangles<30000,'rigged close detail stays bounded after removing exposed mechanisms');
+assert.ok(asset.length<6*1024*1024,'full rigged hero asset stays bounded');
+assert.match(builder,/marble_bust_01/);
+assert.match(builder,/horizon_bust_pedestal/);
+assert.match(renderer,/parseCharacterAsset|sampleCharacterPose/,'Horizon samples the authored rig');
+assert.match(renderer,/deformCharacter\(position,normal\)/,'rigged geometry supplies both normal and position');
+assert.match(renderer,/gl\.drawElements\(gl\.TRIANGLES/);
+assert.match(renderer,/gl\.enable\(gl\.DEPTH_TEST\)/);
+assert.doesNotMatch(renderer,/markerRecords|markerBuffer/);
 
 // Both eligible modes get their own opening pair and then the same six shared
 // beats; only the way the bust notices you differs.
@@ -79,8 +82,8 @@ for (const mode of ['untouched', 'declined']) {
 // ── the first meeting ───────────────────────────────────────────────────────
 const proposition = horizonBustProposition(HORIZON_BUST_AUDIENCE.carried.at(-1));
 assert.match(proposition.start.lines.at(-1).text, /other way/i);
-assert.match(proposition.start.lines.at(1).text, /skull/i);
-assert.match(proposition.start.lines.at(1).text, /crossed bones/i);
+assert.match(proposition.start.lines.at(1).text, /open hand.*stone/i);
+assert.doesNotMatch(proposition.start.lines.at(1).text, /skull|crossed bones|bronze/i);
 assert.equal(proposition.start.goto, 'questions', 'a first meeting can be interrogated');
 // The four interrogable questions, then the commit. The catch is one of them,
 // and what it promises is tested below.

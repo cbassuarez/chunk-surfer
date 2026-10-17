@@ -1,0 +1,276 @@
+{
+  "version": 2,
+  "source": "MakeHuman CC0 retained anatomical masters",
+  "designSha256": "554f76ab8eba514b220633b605f30b396e74356de22a3819852ba5da6f2ff4ab",
+  "sourceSha256": {
+    "tools/chunk_surfer/characters/vigil-body-fit.mjs": "0e25ea53c71cc7b4d324bdc3a4aa709ba2d8ff4f584382c185c42cb27178d4cb",
+    "tools/chunk_surfer/characters/vigil-garment-drape.mjs": "e7112faedb6dade56f387bf09dc7a04b3d951f3e59f9e234df6a1a7e4cc687f5",
+    "tools/chunk_surfer/characters/vigil-character-identity.mjs": "c33e462befa21ef4631c31df27e35dfe4a012a88965dd995aaa7235936a51215",
+    "tools/chunk_surfer/characters/vigil-fabric-textures.mjs": "aab683d73e08e9099a506ebe12b8d84adfde1fe7b48ae5a1ebe2097c1cc37719",
+    "tools/chunk_surfer/characters/vigil-secondary-objects.mjs": "7c94fc3ef09bf3cbcea9b01e6569aca1bdd4104bd601d2cf8afe0c60f8ffd286",
+    "tools/chunk_surfer/characters/build-vigil-characters.mjs": "69f882478ba9e0ebe0ec9bc850ee3055619ff255649e745201142ef7484a8d83",
+    "tools/chunk_surfer/characters/vigil-tailoring.mjs": "00d6da1da44f2f83dad33704218c2acf9a95064513c549b889fe40be30203c92",
+    "src/data/vigil-object-layout.js": "41160e7c1fe5093e067a5284da8b544cbeaebdac1a4eabfce8ac356dab11e390",
+    "src/data/vigil-secondary-object-layout.js": "2643c41266c61cd57db4ec6e9e1f40756bc433fadd42e26123c0d5dad4212c24",
+    "src/render/vigil-character-performance.js": "1e3308f4a3ab859a8ed06cce47e5d61ea90dbaaf49b64e145102910c958a3c9e"
+  },
+  "packs": [
+    {
+      "file": "vigil-characters-ruth-leila.glb",
+      "bytes": 5841752,
+      "sha256": "1232a3d22b6b23ddff064a95c61ffcceb3f97d11e6a3b0e3557fafca06a72d9d",
+      "ids": [
+        "ruth",
+        "leila"
+      ]
+    },
+    {
+      "file": "vigil-characters-owen-denise.glb",
+      "bytes": 5962088,
+      "sha256": "dadaac2fdc9b5135c02446cc906a25cf33e49c1e3644f5b437f42a713844d025",
+      "ids": [
+        "owen",
+        "denise"
+      ]
+    },
+    {
+      "file": "vigil-characters-malcolm-kit.glb",
+      "bytes": 5229116,
+      "sha256": "1085cde8f078ce94c90a3f9e42dc9b8ab38f5adec0a6225bef7e81fecef10d8f",
+      "ids": [
+        "malcolm",
+        "kit"
+      ]
+    }
+  ],
+  "characters": [
+    {
+      "id": "ruth",
+      "age": "late 50s",
+      "build": "broad-shouldered, planted",
+      "dress": "long navy waxed coat, green scarf, sensible shoes",
+      "identity": {
+        "old": 0.68,
+        "jaw": 1.055,
+        "cheek": 1.035,
+        "forehead": 1.015,
+        "nose": 0.002,
+        "chin": 0.0015,
+        "hair": "swept-bob",
+        "description": "softened broad jaw, fuller cheek, short greying swept bob"
+      },
+      "bodyVertices": 44409,
+      "objectVertices": 136,
+      "joints": 54,
+      "garment": {
+        "waistY": 0.9374921529411765,
+        "cutY": 0.9374921529411765,
+        "hipY": 0.8129039176470588,
+        "hemY": 0.57,
+        "waistLoops": 1,
+        "rimVertices": 98,
+        "panelRows": 23,
+        "thickness": 0.0025,
+        "outerVertices": 8186
+      },
+      "envelopeFit": {
+        "ease": 0.012,
+        "rowStep": 0.008,
+        "poses": 3,
+        "shiftedVertices": 1259,
+        "maxDisplacement": 0.02341940965834771,
+        "posed": true
+      }
+    },
+    {
+      "id": "leila",
+      "age": "late 20s",
+      "build": "narrow and cold, shoulder drawn inward",
+      "dress": "cropped blue-grey quilted jacket, dark trousers, hood down",
+      "identity": {
+        "old": 0.08,
+        "jaw": 0.925,
+        "cheek": 0.97,
+        "forehead": 0.985,
+        "nose": -0.0015,
+        "chin": 0.002,
+        "hair": "tied-back",
+        "description": "younger tapered jaw, compact nose, tied-back hair and a low folded bun"
+      },
+      "bodyVertices": 36906,
+      "objectVertices": 786,
+      "joints": 54,
+      "garment": {
+        "waistY": 0.9061610705882353,
+        "cutY": 0.935,
+        "hipY": 0.7840434235294117,
+        "hemY": 0.935,
+        "waistLoops": 1,
+        "rimVertices": 182,
+        "panelRows": 0,
+        "thickness": 0.0025,
+        "outerVertices": 4195
+      },
+      "envelopeFit": {
+        "ease": 0.012,
+        "rowStep": 0.008,
+        "poses": 3,
+        "shiftedVertices": 565,
+        "maxDisplacement": 0.023826729748806414,
+        "posed": true
+      }
+    },
+    {
+      "id": "owen",
+      "age": "early 70s",
+      "build": "tall, thin, slightly folded toward the porch",
+      "dress": "long charcoal overcoat, high collar, old key ring",
+      "identity": {
+        "old": 0.94,
+        "jaw": 0.925,
+        "cheek": 0.96,
+        "forehead": 0.99,
+        "nose": 0.003,
+        "chin": 0.003,
+        "hair": "receding",
+        "description": "aged narrow jaw and longer nose, thin grey sides and exposed crown"
+      },
+      "bodyVertices": 43898,
+      "objectVertices": 478,
+      "joints": 54,
+      "garment": {
+        "waistY": 0.9945364606741572,
+        "cutY": 0.9945364606741572,
+        "hipY": 0.8678894018506278,
+        "hemY": 0.47,
+        "waistLoops": 1,
+        "rimVertices": 98,
+        "panelRows": 33,
+        "thickness": 0.0025,
+        "outerVertices": 9133
+      },
+      "envelopeFit": {
+        "ease": 0.012,
+        "rowStep": 0.008,
+        "poses": 3,
+        "shiftedVertices": 1977,
+        "maxDisplacement": 0.03698189422788516,
+        "posed": true
+      }
+    },
+    {
+      "id": "denise",
+      "age": "mid 40s",
+      "build": "fuller, weight on the rail side",
+      "dress": "olive belted rain trench, ochre knit, waterproof sleeves",
+      "identity": {
+        "old": 0.36,
+        "jaw": 1.025,
+        "cheek": 1.075,
+        "forehead": 1.02,
+        "nose": 0.001,
+        "chin": -0.001,
+        "hair": "close-curls",
+        "description": "rounder cheek and broader face, close gathered curls"
+      },
+      "bodyVertices": 42403,
+      "objectVertices": 96,
+      "joints": 54,
+      "garment": {
+        "waistY": 0.9270484588235294,
+        "cutY": 0.9270484588235294,
+        "hipY": 0.8032837529411764,
+        "hemY": 0.72,
+        "waistLoops": 1,
+        "rimVertices": 98,
+        "panelRows": 13,
+        "thickness": 0.0025,
+        "outerVertices": 7200
+      },
+      "envelopeFit": {
+        "ease": 0.012,
+        "rowStep": 0.008,
+        "poses": 3,
+        "shiftedVertices": 938,
+        "maxDisplacement": 0.025355793736368246,
+        "posed": true
+      }
+    },
+    {
+      "id": "malcolm",
+      "age": "early 50s",
+      "build": "solid, chest forward, elbows out",
+      "dress": "ochre canvas parka, raised hood, heavy boots",
+      "identity": {
+        "old": 0.52,
+        "jaw": 1.08,
+        "cheek": 1.035,
+        "forehead": 1.025,
+        "nose": -0.001,
+        "chin": 0.0015,
+        "hair": "concealed",
+        "description": "broad square lower face beneath the raised hood"
+      },
+      "bodyVertices": 32930,
+      "objectVertices": 253,
+      "joints": 54,
+      "garment": {
+        "waistY": 1.0215346348314605,
+        "cutY": 1.0215346348314605,
+        "hipY": 0.8928287524785193,
+        "hemY": 0.82,
+        "waistLoops": 1,
+        "rimVertices": 179,
+        "panelRows": 13,
+        "thickness": 0.0025,
+        "outerVertices": 6738
+      },
+      "envelopeFit": {
+        "ease": 0.012,
+        "rowStep": 0.008,
+        "poses": 3,
+        "shiftedVertices": 1708,
+        "maxDisplacement": 0.027598340665082537,
+        "posed": true
+      }
+    },
+    {
+      "id": "kit",
+      "age": "early 20s",
+      "build": "lanky, one shoulder lifted under equipment",
+      "dress": "short slate field jacket, cable strap, monitor headphones",
+      "identity": {
+        "old": 0.04,
+        "jaw": 1.035,
+        "cheek": 0.97,
+        "forehead": 0.98,
+        "nose": -0.001,
+        "chin": 0.001,
+        "hair": "tousled",
+        "description": "young lean cheeks, firmer chin and short swept hair under headphones"
+      },
+      "bodyVertices": 43995,
+      "objectVertices": 216,
+      "joints": 54,
+      "garment": {
+        "waistY": 0.9837371910112359,
+        "cutY": 0.9837371910112359,
+        "hipY": 0.8579136615994711,
+        "hemY": 0.955,
+        "waistLoops": 1,
+        "rimVertices": 179,
+        "panelRows": 2,
+        "thickness": 0.0025,
+        "outerVertices": 4744
+      },
+      "envelopeFit": {
+        "ease": 0.012,
+        "rowStep": 0.008,
+        "poses": 3,
+        "shiftedVertices": 1055,
+        "maxDisplacement": 0.027691185712524196,
+        "posed": true
+      }
+    }
+  ]
+}

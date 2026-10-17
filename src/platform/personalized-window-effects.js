@@ -52,7 +52,7 @@ function windowSpaceRay(ray,stage){
   };
 }
 
-function surfaceCastPayload(plan,index,flight=null){
+function surfaceCastPayload(plan,index,flight=null,choreography=null){
   const ray=plan?.rays?.[index];
   if(!ray)return null;
   const state=String(flight?.state||plan?.state||'outbound');
@@ -65,7 +65,17 @@ function surfaceCastPayload(plan,index,flight=null){
     // also how long the surface stays up.
     travelSeconds:plan.reducedMotion?.26:.62,
     catchReady:!!flight?.catchReady,
+    acquired:!!flight?.acquired,
     offer:Math.max(1,Math.floor(Number(flight?.offer)||1)),
+    motion:{
+      rebounding:!!flight?.rebounding,
+      formationProgress:Math.max(0,Math.min(1,Number(flight?.formationProgress??choreography?.formationProgress)||0)),
+      dodge:Math.max(0,Math.min(1,Number(flight?.dodge??choreography?.dodge)||0)),
+      reach:Math.max(0,Math.min(4,Number(choreography?.reach)||0)),
+      pressure:Math.max(0,Math.min(1,Number(choreography?.pressure)||0)),
+      gesture:String(choreography?.gesture||'rise-drift'),
+      seed:Number.parseInt(opaqueCastId(plan.castId).slice(5),16)>>>0,
+    },
     damage:Number.isInteger(flight?.damage)?Math.max(0,flight.damage)
       :Number.isInteger(plan.damage)?Math.max(0,plan.damage):null,
     // The surface draws rays[0]; the index rides along only so a click coming
@@ -107,6 +117,11 @@ export function createPersonalizedWindowEffects({
   let hitsBound=false;
   let paneActionsBound=false;
   let mediaEventsBound=false;
+  // Native placement may answer after another game frame or even another
+  // battle. Keep one command in flight and replace its waiting pose with the
+  // latest one, rather than letting old poses overtake newer commitments.
+  let fireballStepInFlight=null;
+  let queuedFireballFrame=null;
 
   const target=()=>documentApi?.defaultView||globalThis.window||null;
   function dispatch(event,detail){
@@ -146,11 +161,25 @@ export function createPersonalizedWindowEffects({
       if(api?.invoke)void safe(()=>api.invoke('chunk_fireball_cast_focus_main'));
       const session=current,plan=session?.activePlan;
       if(!session||!plan)return;
-      const index=Math.floor(Number(payload?.surfaceIndex));
-      if(!(index>=0&&index<plan.rayCount&&index<FIREBALL_SURFACE_LABELS.length))return;
+      const index=payload?.surfaceIndex;
+      if(!Number.isInteger(index)||!(index>=0&&index<plan.rayCount&&index<FIREBALL_SURFACE_LABELS.length))return;
       if(String(payload?.castId||'')!==opaqueCastId(plan.castId))return;
       const ray=plan.rays[index];
       dispatch('chunk-surfer:fireball-hit',{castId:plan.castId,rayId:ray?.id||null});
+    }));
+    await safe(()=>api.listen('fireball-cast-miss',({payload})=>{
+      if(api?.invoke)void safe(()=>api.invoke('chunk_fireball_cast_focus_main'));
+      const plan=current?.activePlan;
+      const index=payload?.surfaceIndex;
+      if(!plan||!Number.isInteger(index)||String(payload?.castId||'')!==opaqueCastId(plan.castId)
+        ||index<0||index>=plan.rayCount||index>=FIREBALL_SURFACE_LABELS.length)return;
+      dispatch('chunk-surfer:fireball-miss',{castId:plan.castId,rayId:plan.rays[index]?.id||null});
+    }));
+    await safe(()=>api.listen('fireball-cast-acquire',({payload})=>{
+      const plan=current?.activePlan,index=payload?.surfaceIndex,offer=payload?.offer;
+      if(!plan||!Number.isInteger(index)||!Number.isInteger(offer)||offer<1||offer>2
+        ||String(payload?.castId||'')!==opaqueCastId(plan.castId)||index<0||index>=plan.rayCount||index>=FIREBALL_SURFACE_LABELS.length)return;
+      dispatch('chunk-surfer:fireball-acquire',{castId:plan.castId,rayId:plan.rays[index]?.id||null,offer});
     }));
   }
 
@@ -264,18 +293,20 @@ export function createPersonalizedWindowEffects({
     if(!api?.WebviewWindow||current!==session)return null;
     let surface=await api.WebviewWindow.getByLabel(label);
     if(!surface){
-      const size=128;
+      const size=240;
       // No max size: the comet grows a little as it closes. `focusable` has to
       // be TRUE -- a window macOS will not make key does not reliably get a
       // mouseDown either, and a fireball you cannot click is the one thing this
       // whole surface exists to avoid. Focus is handed straight back on the
       // click instead (chunk_fireball_cast_focus_main), which is a frame of
       // borrowed focus rather than a projectile that ignores the pointer.
+      // acceptFirstMouse delivers the actual first click on macOS; activation
+      // itself is never a substitute for a pointer strike.
       surface=new api.WebviewWindow(label,{
         url:'fireball-cast.html',title:TITLE,
         parent:'main',
         width:size,height:size,minWidth:64,minHeight:64,
-        resizable:false,decorations:false,transparent:false,visible:false,focus:false,focusable:true,
+        resizable:false,decorations:false,transparent:true,visible:false,focus:false,focusable:true,acceptFirstMouse:true,
         alwaysOnTop:true,skipTaskbar:true,shadow:false,
       });
       const failure=await ready(surface);
@@ -370,6 +401,7 @@ export function createPersonalizedWindowEffects({
       // What each surface was last told it was drawing, so the payload is only
       // re-sent when a comet's own state changes rather than every frame.
       rayStates:new Map(),
+      fireballEpoch:0,fireballFrame:null,fireballLabels:new Set(),presentedRays:new Map(),lastFireballStepKey:'',
       mediaPrewarm:null,mediaReady:0,mediaPrewarmReasons:[],activeComposition:null,compositionQuiesced:false,
       mediaRevisions:new Map(),manualMediaPanes:new Set(),
     };
@@ -687,67 +719,158 @@ export function createPersonalizedWindowEffects({
   // they were. So there is one statement instead -- here is every comet that is
   // outside the game right now and where each of them is -- and anything not in
   // it is not out there.
-  function syncFireballCast(plan,rays,{token:expected=null,choreography=null}={}){
-    const session=current;
-    if(!session||(expected&&expected!==session.token))return false;
-    if(!session.surfacesReady)return false;
-    const live=Array.isArray(rays)?rays.filter((ray)=>Number.isInteger(Number(ray?.index))):[];
-    const shown=new Set();
-    if(plan&&live.length){
-      // A cast is whole or it is in-canvas: some of a volley outside the frame
-      // and the rest of it unaccounted for is a lie about where they went.
-      if(plan.rayCount<=session.readySurfaces){
-        const at=Date.now();
-        const settling=live.some((ray)=>ray.state!=='outbound');
-        const casts=[];
-        for(const ray of live){
-          const index=Math.max(0,Math.min(3,Math.floor(Number(ray.index)||0)));
-          const label=FIREBALL_SURFACE_LABELS[index];
-          if(!surfaces.get(label))continue;
-          shown.add(label);
-          const payload=surfaceCastPayload(plan,index,ray);
-          if(!payload)continue;
-          casts.push({
-            label,index,count:plan.rayCount,
-            ray:windowSpaceRay(plan.rays[index],plan.stage),
-            progress:Math.max(0,Math.min(1,Number(ray.progress)||0)),
-          });
-          // The drawing payload only changes when the comet's own state does.
-          // Position is the frequent thing and it goes through the batched step.
-          const payloadKey=`${payload.state}:${payload.catchReady?1:0}:${payload.offer}`;
-          if(session.rayStates.get(label)!==payloadKey){
-            session.rayStates.set(label,payloadKey);
-            void safe(()=>api.emitTo(label,'fireball-cast',payload));
-          }
-        }
-        // Movement is throttled; a comet that has just been hit or has just
-        // landed is not, because that frame is the whole point of it. A shoal
-        // that is actively breaking is not throttled either -- a dodge sampled
-        // at 30Hz reads as a stutter rather than a swerve.
-        const darting=Number(choreography?.dodge)>.02;
-        if(darting)session.lastStepAt=0;
-        if(casts.length&&(settling||at-session.lastStepAt>=STEP_INTERVAL_MS)){
-          session.lastStepAt=at;
-          session.placementAttempts+=1;
-          void safe(()=>api.invoke('chunk_fireball_cast_step',{casts,choreography:nativeChoreography(choreography)})).then((moved)=>{
-            if(!Number(moved))session.placementFailures+=1;
-          });
-        }
-      }
-    }
-    for(const label of FIREBALL_SURFACE_LABELS){
-      if(shown.has(label))continue;
-      if(!session.rayStates.has(label))continue;
-      session.rayStates.delete(label);
+  function currentFireballFrame(frame){
+    return current===frame.session&&frame.session.fireballEpoch===frame.epoch
+      &&frame.session.fireballFrame?.castId===frame.castId;
+  }
+
+  function retireFireballReplies(frame){
+    const wanted=current?.fireballFrame?.entries;
+    for(const {label} of frame.entries.values()){
+      if(wanted?.has(label)||current?.activePaneCue)continue;
       const surface=surfaces.get(label);
       if(surface)void safe(()=>surface.hide());
     }
-    return !live.length||shown.size===live.length;
+  }
+
+  function clearFireballFrame(session){
+    session.fireballEpoch+=1;
+    session.fireballFrame=null;
+    session.lastFireballStepKey='';
+    session.presentedRays.clear();
+    session.rayStates.clear();
+    if(queuedFireballFrame?.session===session)queuedFireballFrame=null;
+    for(const label of session.fireballLabels){
+      const surface=surfaces.get(label);
+      if(surface)void safe(()=>surface.hide());
+    }
+    session.fireballLabels.clear();
+  }
+
+  async function placeFireballFrame(frame){
+    fireballStepInFlight=frame;
+    const session=frame.session;
+    session.lastStepAt=Date.now();
+    session.placementAttempts+=1;
+    try{
+      const moved=await safe(()=>api.invoke('chunk_fireball_cast_step',{
+        casts:frame.casts,choreography:frame.choreography,
+      }));
+      if(!currentFireballFrame(frame))return;
+      if(Number(moved)!==frame.casts.length){
+        session.placementFailures+=1;
+        session.presentedRays.clear();
+        session.rayStates.clear();
+        // A partial volley is not proof of presentation. Hide whatever may
+        // have moved and let the ordinary canvas remain the complete fallback.
+        for(const label of session.fireballLabels){
+          const surface=surfaces.get(label);
+          if(surface)void safe(()=>surface.hide());
+        }
+        return;
+      }
+      const delivered=await Promise.all([...frame.entries].map(async([label,entry])=>{
+        const wanted=session.fireballFrame?.entries.get(label);
+        if(!wanted||wanted.payloadKey!==entry.payloadKey)return;
+        if(session.rayStates.get(label)!==entry.payloadKey){
+          const sent=await safe(async()=>{
+            if(!currentFireballFrame(frame)
+              ||session.fireballFrame.entries.get(label)?.payloadKey!==entry.payloadKey)return false;
+            await api.emitTo(label,'fireball-cast',entry.payload);
+            return true;
+          });
+          if(sent===null)return false;
+          if(!sent)return;
+        }
+        // A ray can expire, resolve or retire while an IPC acknowledgment is
+        // pending. Only the still-current cue may accompany that placed pose.
+        if(!currentFireballFrame(frame)
+          ||session.fireballFrame.entries.get(label)?.payloadKey!==entry.payloadKey)return;
+        session.rayStates.set(label,entry.payloadKey);
+        session.presentedRays.set(label,frame.castId);
+        return true;
+      }));
+      if(currentFireballFrame(frame)&&delivered.some((sent)=>sent===false)){
+        session.presentedRays.clear();
+        session.rayStates.clear();
+        for(const label of session.fireballLabels){
+          const surface=surfaces.get(label);
+          if(surface)void safe(()=>surface.hide());
+        }
+      }
+    }finally{
+      retireFireballReplies(frame);
+      fireballStepInFlight=null;
+      const next=queuedFireballFrame;
+      queuedFireballFrame=null;
+      if(next&&currentFireballFrame(next))void placeFireballFrame(next);
+    }
+  }
+
+  function syncFireballCast(plan,rays,{token:expected=null,choreography=null}={}){
+    const session=current;
+    if(!session||(expected&&expected!==session.token))return false;
+    const live=Array.isArray(rays)?rays.filter((ray)=>Number.isInteger(Number(ray?.index))):[];
+    if(!plan||!live.length){clearFireballFrame(session);return !live.length;}
+    if(session.activePlan&&session.activePlan.castId!==plan.castId)return false;
+    if(!session.surfacesReady)return false;
+    if(plan.rayCount>session.readySurfaces){
+      clearFireballFrame(session);
+      return false;
+    }
+    if(session.fireballFrame&&session.fireballFrame.castId!==plan.castId)clearFireballFrame(session);
+    const shown=new Set();
+    const casts=[];
+    const entries=new Map();
+    const dance=nativeChoreography(choreography);
+    for(const ray of live){
+      const index=Number(ray.index);
+      if(index<0||index>=plan.rayCount||index>=FIREBALL_SURFACE_LABELS.length)continue;
+      const label=FIREBALL_SURFACE_LABELS[index];
+      if(!surfaces.get(label)||shown.has(label))continue;
+      const payload=surfaceCastPayload(plan,index,ray,choreography);
+      if(!payload)continue;
+      shown.add(label);
+      casts.push({
+        label,index,count:plan.rayCount,
+        ray:windowSpaceRay(plan.rays[index],plan.stage),
+        progress:Math.max(0,Math.min(1,Number(ray.progress)||0)),
+        dodge:Math.max(0,Math.min(1,Number(ray.dodge??dance?.dodge)||0)),
+        formationProgress:Math.max(0,Math.min(1,Number(ray.formationProgress??dance?.formationProgress)||0)),
+        seed:payload.motion.seed,
+      });
+      const payloadKey=`${payload.castId}:${payload.state}:${payload.catchReady?1:0}:${payload.acquired?1:0}:${payload.offer}:${payload.damage??''}:${JSON.stringify(payload.motion)}`;
+      entries.set(label,{label,payload,payloadKey});
+    }
+    if(casts.length!==live.length){clearFireballFrame(session);return false;}
+    const frame={session,epoch:session.fireballEpoch,castId:plan.castId,casts,entries,choreography:dance};
+    session.fireballFrame=frame;
+    for(const label of FIREBALL_SURFACE_LABELS){
+      if(shown.has(label))continue;
+      if(!session.fireballLabels.has(label))continue;
+      session.fireballLabels.delete(label);
+      session.rayStates.delete(label);
+      session.presentedRays.delete(label);
+      const surface=surfaces.get(label);
+      if(surface)void safe(()=>surface.hide());
+    }
+    for(const label of shown)session.fireballLabels.add(label);
+    // A phase, cue, offer or membership change must reach native placement
+    // even inside the ordinary 33 ms throttle. Queue only its newest pose.
+    const stepKey=casts.map((cast)=>`${cast.index}:${cast.progress}:${cast.dodge}:${cast.formationProgress}:${entries.get(cast.label).payloadKey}`).join('|');
+    const presented=[...shown].every((label)=>session.presentedRays.get(label)===plan.castId);
+    if(stepKey!==session.lastFireballStepKey||!presented||Date.now()-session.lastStepAt>=STEP_INTERVAL_MS){
+      session.lastFireballStepKey=stepKey;
+      if(fireballStepInFlight)queuedFireballFrame=frame;
+      else void placeFireballFrame(frame);
+    }
+    return presented;
   }
 
   function beginFireballCast(plan,{token:expected=null}={}){
     const session=current;
     if(!session||!plan||(expected&&expected!==session.token))return false;
+    if(session.activePlan?.castId!==plan.castId)clearFireballFrame(session);
     session.activePlan=plan;
     dispatch('chunk-surfer:fireball-cast',plan);
     // Nothing opens here. A cast that has just left the Surfer's hand is
@@ -762,7 +885,7 @@ export function createPersonalizedWindowEffects({
     if(authored.length>session.readySurfaces)return false;
     session.activePaneCue=String(cueId||'');
     session.activePlan=null;
-    session.rayStates.clear();
+    clearFireballFrame(session);
     let shown=0;
     for(let index=0;index<FIREBALL_SURFACE_LABELS.length;index+=1){
       const label=FIREBALL_SURFACE_LABELS[index],surface=surfaces.get(label),pane=authored[index];
@@ -820,7 +943,7 @@ export function createPersonalizedWindowEffects({
     const session=current;
     if(!session)return false;
     clearTimers();
-    session.rayStates.clear();
+    clearFireballFrame(session);
     for(const surface of surfaces.values())void safe(()=>surface.hide());
     return true;
   }

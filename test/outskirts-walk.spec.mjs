@@ -14,7 +14,9 @@ import {
 import { PROP_BOUNDS } from '../src/data/generated/prop-geometry.js';
 
 const layout = outskirtsArrivalLayout();
-for (const piece of layout) assert.ok(PROP_BOUNDS[piece.mesh] || (piece.mesh === 'outskirts_fold_guard' && piece.collision?.length), `${piece.mesh} has not been generated`);
+for (const piece of layout) assert.ok(PROP_BOUNDS[piece.mesh]
+  || (['outskirts_fold_guard', 'outskirts_overprint_body', 'outskirts_dog_handler', 'outskirts_vacant_dog'].includes(piece.mesh) && piece.collision?.length)
+  || (piece.mesh === 'outskirts_slack_lead' && piece.collision === 'none'), `${piece.mesh} has not been generated`);
 const built = buildPreTapeGodPreset(SOURCE_PRE_TAPE.stillLength, { seed: 4417, marbleEyes: 'returned' });
 let runtime = createSourceSpaceRuntime({ initialState: built.state });
 let position = { ...built.position }, time = 0, moved = 0;

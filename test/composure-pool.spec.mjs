@@ -11,6 +11,11 @@ import { existsSync } from 'node:fs';
 import { resolveBagItemAction, resolveBagOwnership } from '../src/game/bag-items.js';
 import { authoredCombatProfile } from '../src/data/combat-definitions.js';
 import { GRID } from '../src/game/combat-damage.js';
+import { conservatory } from '../src/data/floorplan/conservatory.js';
+import { ZONE } from '../src/data/floorplan/legend.js';
+import { CONSERVATORY_PROPS } from '../src/data/conservatory-props.js';
+import * as FP from '../src/world/floorplan.js';
+import * as PROPS from '../src/game/props.js';
 
 // The same fixture combat-state.spec.mjs fights against, so the pool is tested
 // on a real authored definition rather than a hand-built one.
@@ -141,6 +146,34 @@ test('the six sheets are distinct, authored, five across the target rooms and on
   }
   assert.equal(new Set(SHEET_MUSIC.map((sheet) => sheet.room)).size, 6, 'one per room, never two in a room');
   assert.equal(new Set(SHEET_MUSIC.map((sheet) => sheet.composer)).size, 6, 'six composers, not one man six times');
+});
+
+// WHERE A SHEET SAYS IT IS, IT IS. The room label used to be checked for
+// uniqueness while the cell went unexamined, and the cells were being read in
+// the wrong coordinate space: three sheets lay in the dance wing, one on the
+// dock and one inside rock. `at` is authored and converts like a page's.
+test('every floor sheet lies on open floor in the room it names', () => {
+  FP.compile(conservatory.levels, {
+    width: conservatory.width, height: conservatory.height, widenCorridors: conservatory.widenCorridors,
+    connectors: conservatory.connectors, edgePortals: conservatory.edgePortals,
+  });
+  PROPS.propsInit(FP, CONSERVATORY_PROPS);
+  const ROOM_ZONE = {
+    main_b3: ZONE.studio, the_tub: ZONE.natatorium, amplifications: ZONE.hall,
+    soundnoisemusic: ZONE.practice, lux_nova: ZONE.chapel,
+  };
+  for (const sheet of SHEET_MUSIC.filter((entry) => entry.at)) {
+    const at = FP.toRuntimePoint(sheet.at);
+    assert.equal(FP.isSolid(at.x, at.y), false, `${sheet.id} is not in masonry`);
+    assert.equal(FP.zoneAt(at.x, at.y), ROOM_ZONE[sheet.room], `${sheet.id} lies in ${sheet.room}`);
+    if (!sheet.host) {
+      assert.equal(PROPS.propCanOccupy(at.x, at.y), true, `${sheet.id} is not under furniture`);
+      continue;
+    }
+    const host = PROPS.propById(sheet.host);
+    assert.ok(host, `${sheet.id} has its host prop (${sheet.host}) placed`);
+    assert.ok(Math.hypot(host.rx - at.x, host.ry - at.y) <= 2, `${sheet.id} is where its host stands`);
+  }
 });
 
 test('every sheet has a real recording on disk, and every CC-BY one carries its credit', () => {

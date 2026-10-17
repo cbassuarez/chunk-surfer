@@ -306,6 +306,7 @@ export function sourceFocusActionLabel(focus) {
   if (focus.kind === 'haystack-page') return 'TAKE THE STILL PAGE';
   if (focus.kind === 'source-sheet') return 'READ THE SHEET';
   if (focus.kind === 'source-dock-inspect') return 'LOOK';
+  if (focus.kind === 'reception-resident') return 'SPEAK';
   if (focus.kind === 'normal-exit') return 'LEAVE SOURCE SPACE';
   if (focus.kind === 'boss-fault') return focus.available === false ? 'RETURN PATH EXPOSED / NO INTERFACE' : 'CONNECT THE RIG';
   // The player can see what is standing there. Give the verb without naming it.
@@ -331,6 +332,7 @@ export function sourceFocusActionLabel(focus) {
   if (focus.kind === 'outskirt-piece') return 'LOOK';
   // Without this the prompt fell through to main.js's raw fallback and printed
   // the internal id: INSPECT HORIZON-BUST.
+  if (focus.kind === 'horizon-bust-seal') return 'CONSIDER THE SEAL';
   if (focus.kind === 'horizon-bust') return 'LISTEN TO THE BUST';
   return null;
 }

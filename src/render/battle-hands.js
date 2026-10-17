@@ -1,5 +1,5 @@
 import { assetUrl } from '../platform/paths.js';
-import { battleHandFraming, battleHandPerformance } from './battle-hand-performance.js';
+import { battleHandFraming, battleHandPerformance, battleHandReach } from './battle-hand-performance.js';
 
 // One small transparent view-model render target. The battle scene owns its
 // clock and Canvas composition; this module has no independent animation loop.
@@ -119,7 +119,7 @@ function shapeForearm(THREE, arm) {
   if (arm.lastShape && Math.abs(arm.lastShape.dot(arm.root.quaternion)) > .99999999) return;
   arm.lastShape = arm.root.quaternion.clone();
   const inverse = arm.root.quaternion.clone().invert();
-  const a = new THREE.Vector3(-arm.side * .0011275, .0025, .0011345).applyQuaternion(inverse);
+  const a = new THREE.Vector3(-arm.side * .0011275, .008, .0011345).applyQuaternion(inverse);
   const b = new THREE.Vector3(-arm.side * .0011275, -.027, .0011345).applyQuaternion(inverse);
   const c = new THREE.Vector3(-arm.side * .0011275, -.060, .0011345).applyQuaternion(inverse);
   const curve = new THREE.CubicBezierCurve3(b, c,
@@ -133,8 +133,10 @@ function shapeForearm(THREE, arm) {
     const tangent = t < .25 ? firstTangent : curve.getTangent((t - .25) / .75).normalize();
     const side = firstSide.clone().applyQuaternion(new THREE.Quaternion().setFromUnitVectors(firstTangent, tangent));
     const depth = new THREE.Vector3().crossVectors(tangent, side).normalize();
-    const radius = .0266086 + .0013914 * t;
-    const depthRadius = .0184162 + (.028 * .82 - .0184162) * t;
+    // Bury the first ring inside the scanned wrist. Starting at its exact
+    // silhouette exposes a hard cuff-like seam when a defensive arm rises.
+    const radius = t < .25 ? .0248 + .0034 * t * 4 : .0282 - .0002 * (t - .25) / .75;
+    const depthRadius = t < .25 ? .0168 + .0034 * t * 4 : .0202 + (.028 * .82 - .0202) * (t - .25) / .75;
     centre.addScaledVector(side, Math.sin(angle) * radius)
       .addScaledVector(depth, Math.cos(angle) * depthRadius);
     position.setXYZ(i, centre.x, centre.y, centre.z);
@@ -153,6 +155,7 @@ export function warmBattleHands() {
       import('three/addons/environments/RoomEnvironment.js'),
       import('./pixel-mesh/transparent.js'),
     ]);
+    await tools.warmBattleHandToolLettering({ assetUrl });
     const template = await rigs.loadBattleHandTemplate(assetUrl('assets/battle-hands/right.glb'));
     if (version !== generation) return null;
     const canvas = document.createElement('canvas');
@@ -288,14 +291,15 @@ function paint(s, { width, height, left, right, display, screenOffset, pixelRati
   s.camera.left = -framing.halfWidth; s.camera.right = framing.halfWidth;
   s.camera.top = framing.extent / 2; s.camera.bottom = -framing.extent / 2; s.camera.updateProjectionMatrix();
   const toolPosition = framing.tool.map((v, i) => v + performance.toolOffset[i]);
-  toolPosition[1] += performance.operation * .008 * performance.travel;
   tool.group.position.set(...toolPosition);
-  tool.group.rotation.set(-.045 + performance.operation * .025, -.08, -.025);
-  const restingToolRotation = tool.group.quaternion.clone();
+  tool.group.rotation.set(-.045 + performance.operation * .025 + performance.toolRotation[0],
+    -.08 + performance.toolRotation[1], -.025 + performance.toolRotation[2]);
+  const restingToolRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(-.045, -.08, -.025));
   if (performance.handling === 'strike') {
-    tool.group.rotation.z -= performance.operation * .65 * performance.travel;
-    tool.group.rotation.x -= performance.operation * .24 * performance.travel;
-    tool.group.position.z -= performance.operation * .045 * performance.travel;
+    tool.group.rotation.z += (performance.prepare * .32 - performance.operation * .95) * performance.travel;
+    tool.group.rotation.x -= performance.operation * .32 * performance.travel;
+    tool.group.position.x -= performance.operation * .055 * performance.travel;
+    tool.group.position.z -= performance.operation * .065 * performance.travel;
   } else if (performance.handling === 'drink') {
     tool.group.position.y += performance.operation * .055 * performance.travel;
     tool.group.position.z += performance.operation * .06 * performance.travel;
@@ -304,23 +308,21 @@ function paint(s, { width, height, left, right, display, screenOffset, pixelRati
   if (tool.contacts?.right) {
     const wrist = s.right.root.quaternion;
     const base = new THREE.Quaternion().setFromEuler(new THREE.Euler(...(tool.contacts.right.forearmRotation || [0, 0, 0])));
-    // Sip by flexing the wrist. Letting the sleeve follow the cup's tilt points
-    // its far end at the camera and breaks the connection to the player's body.
-    if (performance.handling === 'drink') {
-      s.rightArm.root.quaternion.copy(wrist).invert()
-        .multiply(tool.group.quaternion.clone().invert()).multiply(restingToolRotation)
-        .multiply(wrist).multiply(base);
-    } else s.rightArm.root.quaternion.copy(base);
+    // The hand can tilt an item without swinging the entire sleeve toward the
+    // camera. Keep that wrist flexion bounded; larger strikes carry the arm.
+    const compensation = wrist.clone().invert()
+      .multiply(tool.group.quaternion.clone().invert()).multiply(restingToolRotation)
+      .multiply(wrist);
+    const angle = compensation.angleTo(new THREE.Quaternion());
+    if (angle > .45) compensation.identity().slerp(wrist.clone().invert()
+      .multiply(tool.group.quaternion.clone().invert()).multiply(restingToolRotation).multiply(wrist), .45 / angle);
+    s.rightArm.root.quaternion.copy(compensation).multiply(base);
   }
   tool.update?.({ ...frame, action: frame.move, progress: performance.rawProgress,
     controlPressure: performance.operation, active: frame.actionActor === 'player',
     now: frame.now ?? frame.time, readout: frame.readout });
   const leftPosition = framing.leftWrist.map((v, i) => v + performance.leftOffset[i]);
-  leftPosition[1] += .016 * performance.guardStrength; leftPosition[2] += .008 * performance.guardStrength;
-  leftPosition[0] += performance.intercept * .025 * performance.travel;
-  leftPosition[1] += performance.intercept * .035;
   const leftRotation = [...performance.leftRotation];
-  leftRotation[1] += performance.intercept * .50;
   s.leftArm.root.quaternion.identity();
   s.left.setRootPose({ position: leftPosition, rotation: leftRotation });
   s.left.setFingerPose({ ...performance.leftFingers, thumb: performance.thumb,
@@ -328,9 +330,8 @@ function paint(s, { width, height, left, right, display, screenOffset, pixelRati
   if (!tool.contacts?.right) {
     s.right.setRootPose({
       position: [.015 + performance.flinch * .01,
-        -.12 + performance.guardStrength * .016 + performance.intercept * .035, .025],
-      rotation: [-.45 + performance.guardStrength * .19,
-        -Math.PI + .50 - performance.guardStrength * .34 - performance.flinch * .12, -.32 + performance.guardStrength * .16 - performance.intercept * .24],
+        -.12 + performance.leftOffset[1], .025 + performance.leftOffset[2]],
+      rotation: [leftRotation[0], -leftRotation[1], -leftRotation[2]],
     });
     s.right.setFingerPose({ ...performance.leftFingers, thumb: performance.thumb, spread: performance.spread });
   }
@@ -372,8 +373,12 @@ function paint(s, { width, height, left, right, display, screenOffset, pixelRati
     }
     const rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(...leftRotation)).slerp(to, performance.operation);
     const position = new THREE.Vector3(...leftPosition).lerp(wristPosition, performance.operation);
+    // Reach around the gripping hand on the camera side, tucking the spare
+    // digits before the index enters the controls. Endpoints stay planted.
+    const reach = battleHandReach(performance.operation);
+    position.z += reach.cameraArc;
     s.left.setRootPose({ position: position.toArray(), quaternion: rotation });
-    s.left.setFingerPose(blendPose(initialPose, cached.pose, performance.operation));
+    s.left.setFingerPose(blendPose(initialPose, cached.pose, reach.closure));
     if (performance.operation > .99) controlDiagnostic = s.left.measureGrip({ index: target });
   }
   s.skin.userData.handUniforms.handInjury.value = performance.injury / 3;

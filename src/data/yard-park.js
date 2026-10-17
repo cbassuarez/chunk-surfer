@@ -3,7 +3,7 @@
 // That quarter of the yard was fifty metres of wet tarmac with nothing on it —
 // the player crossed it, or skirted it, and there was nothing there. It is a
 // municipal park now: lawn, two crossing paths, a fountain at the crossing, and
-// the upper half of a marble head lying face up in the water.
+// two mineral eyes lying face up among the fountain's coins.
 //
 // The ground is not here. Grass, paths and basin are authored as glyphs in
 // floorplan/conservatory.js so that they are real underfoot — the footsteps
@@ -37,8 +37,9 @@ export const YARD_PARK_MESHES = freeze({
   // stone lid over the water. Everything above that surface is the mesh's:
   // kerb, two bowls, and the water in the air between them.
   park_fountain: freeze({ w: 7.0, d: 7.0, h: 4.4, blocks: false }),
-  // Two marble eyes among the pennies. Coin-scale on purpose — see the builder.
-  park_marble_eyes: freeze({ w: .80, d: .80, h: .06, blocks: false }),
+  // Two marble eyes. Coins are their own mesh, and stay when the eyes leave.
+  park_marble_eyes: freeze({ w: .19, d: .15, h: .06, blocks: false }),
+  park_fountain_coins: freeze({ w: .80, d: .80, h: .01, blocks: false }),
 });
 
 export const YARD_PARK_PROPS = freeze([
@@ -94,6 +95,8 @@ export const YARD_PARK_PROPS = freeze([
       again: 'Coins, and the silt they are going into.',
     }),
   }),
+  freeze({ id:'yard-park-coins', mesh:'park_fountain_coins',
+    x:61.4, y:237.4, yaw:-.42, scale:1, interactive:false, blocks:false }),
 
   // The one lamp that still works out here, at the corner of the crossing.
   freeze({ id: 'yard-park-lamp', mesh: 'yard_lamp_column', x: 64.8, y: 231.4, yaw: Math.PI, scale: 1, interactive: false, structural: true, blocks: true }),

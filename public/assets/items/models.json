@@ -15,19 +15,6 @@
       "triangles": 6859
     },
     {
-      "id": "marble-eyes",
-      "origin": "existing",
-      "source": "public/assets/conservatory-props.glb",
-      "sourceSha256": "a2b64ca7843a50a939f3d5afb82681555c486949e099f62d8021dbc06a6725fa",
-      "meshes": [
-        {
-          "mesh": "park_marble_eyes",
-          "isolation": "Exclude cabinet mounting stud or fountain coins; retained vertex positions unchanged."
-        }
-      ],
-      "triangles": 304
-    },
-    {
       "id": "sheet-music",
       "origin": "existing",
       "source": "public/assets/conservatory-props.glb",
@@ -105,8 +92,14 @@
       "id": "map",
       "origin": "authored",
       "source": "scripts/build-item-models.mjs",
-      "pieces": 174,
-      "triangles": 12658
+      "pieces": 175,
+      "triangles": 12715
+    },
+    {
+      "id": "marble-eyes",
+      "origin": "authored",
+      "source": "tools/chunk_surfer/reliquary-geometry.mjs",
+      "triangles": 3704
     }
   ]
 }

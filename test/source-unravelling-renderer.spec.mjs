@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { horizonWorldPoint, horizonWorldTransform, UNRAVELLING_GLSL } from '../src/render/horizon3d.js';
+import { horizonEntryDiffusion, horizonWorldPoint, horizonWorldTransform, UNRAVELLING_GLSL } from '../src/render/horizon3d.js';
 
 const renderer=readFileSync(new URL('../src/render/r3d.js',import.meta.url),'utf8');
 const tapeRenderer=readFileSync(new URL('../src/render/horizon3d.js',import.meta.url),'utf8');
@@ -27,16 +27,18 @@ for(const relativeMetres of [-.02,0,.02,30]){
   const camera={x:seam[0]+1.25,y:16.82,z:seam[2]-relativeMetres};
   const sent={};
   const HZ={
-    horizonManifest:()=>tape,horizonWorldTransform,
+    horizonManifest:()=>tape,horizonWorldTransform,horizonEntryDiffusion,
     horizonCamera:frame=>{sent.camera=frame;return{view:'physical-view',projection:'physical-projection'};},
     horizonRender:frame=>{sent.tape=frame;},horizonGround:()=>assert.fail('no separate corridor floor'),
   };
   const physical={voidState:{},worldYaw:.37,torchPower:.4,sourceTorchMode:0};
   const names=['gl','horizonState','drawSourceVoidPhysical','sceneFbo','uniforms','horizonStreetTex','horizonReadyState',
-    'horizonSuppress','HZ','camX','camY','camZ','CELL','pitch','P3','horizonTune','runPixelMeshPass','presentThroughPost','sceneTex'];
+    'horizonSuppress','HZ','camX','camY','camZ','CELL','pitch','P3','horizonTune','runPixelMeshPass','presentThroughPost','sceneTex',
+    'pixelMeshSettings','unravellingTorchTransmission'];
   const values=[gl,state,(_now,options)=>{sent.physical=options;},'scene-fbo',{sceneW:320,sceneH:200},'street-copy',true,false,
     HZ,camera.x/.5,camera.y/.5,camera.z/.5,.5,-.08,{propTargets:()=>({depth:'real-depth',near:.05,far:90})},
-    {reach:56},()=>{sent.encoded=true;return'game-image';},(texture,options)=>{sent.present={texture,...options};},'scene-colour'];
+    {reach:56},()=>{sent.encoded=true;return'game-image';},(texture,options)=>{sent.present={texture,...options};},'scene-colour',
+    {reduceMotion:false},()=>1];
   const draw=new Function(...names,`${body}\nreturn drawUnravelling;`)(...values);
   draw(12,physical);
   assert.equal(sent.physical.present,false,'physical scene is composed once before the picture');

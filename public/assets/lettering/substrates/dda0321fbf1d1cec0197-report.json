@@ -1,0 +1,40 @@
+{
+  "id": "acq-services-panel-pool",
+  "sourceAsset": "/Users/seb/chunk-surfer/public/assets/conservatory-acquisitions.glb",
+  "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+  "mesh": "power_box_01",
+  "width": 170,
+  "height": 50,
+  "orientation": {
+    "readerRight": [
+      1,
+      0,
+      0
+    ],
+    "up": [
+      0,
+      1,
+      0
+    ],
+    "normal": [
+      0,
+      0,
+      1
+    ],
+    "center": [
+      0,
+      0.183,
+      0.0623
+    ]
+  },
+  "projectedTriangles": 8,
+  "missingTexels": 0,
+  "minimumSeparationM": 0.0006637942373752605,
+  "maximumSeparationM": 0.0006948824132555738,
+  "method": "Actual host triangles, barycentric TEXCOORD_0, bilinear source images; linear baseColorFactor composition; tangent-space normal reprojection; exact rough/metal/AO factors.",
+  "outputs": {
+    "albedo": "798aeba35e8b56fce7deeb7605cc49bff1498dd1d6c14dd67b591e1fdb80db8e",
+    "normal": "845f26cce6a6b009e576f3ccf4b3c98c8123fd89d0bfd514e712d04b096472c8",
+    "orm": "077b17478b84d016a37ccfb38c3547d866b1322848295812b727a8755bc9c4cb"
+  }
+}

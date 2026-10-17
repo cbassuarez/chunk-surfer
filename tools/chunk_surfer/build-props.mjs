@@ -6,7 +6,15 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { bakeLetteringAtlases, printedSurfaceMetadata } from './lettering/physical-lettering.mjs';
+import { printedFaceGeometry, cross } from './lettering/face-geometry.mjs';
+import { prepareWorldInscriptionSubstrates } from './lettering/world-inscription-substrates.mjs';
+import { WORLD_INSCRIPTIONS } from '../../src/data/world-inscriptions.js';
 import { importPropMesh } from './lib/glb-import.mjs';
+import { createReliquaryPropGeometry, RELIQUARY_PROP_MATERIALS } from './reliquary-prop-geometry.mjs';
+import { buildAcademicRoof } from './academic-roof-geometry.mjs';
+import { buildAcademicRoofDressing } from './academic-roof-dressing.mjs';
+import { buildDistrictSceneryRoads } from './district-scenery-roads.mjs';
 import {
   MARIMBA_ACCIDENTAL_AFTER,
   MARIMBA_LOWER_BAR_COUNT,
@@ -26,7 +34,13 @@ import * as FP from '../../src/world/floorplan.js';
 import { wallRuns, wallRunsDigest } from '../../src/world/wall-contact.js';
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
-const OUT_DIR = path.join(ROOT, 'public/assets');
+const LETTERING_INPUTS=['tools/chunk_surfer/build-props.mjs','tools/chunk_surfer/lettering/physical-lettering.mjs',
+  'tools/chunk_surfer/lettering/rasterize.py','tools/chunk_surfer/lettering/face-geometry.mjs',
+  'tools/chunk_surfer/lettering/world-inscription-substrates.mjs','tools/chunk_surfer/lettering/sample-host-substrate.py',
+  'src/data/world-inscriptions.js','public/assets/conservatory-acquisitions.glb'];
+const sourceHash=file=>crypto.createHash('sha256').update(fs.readFileSync(path.join(ROOT,file))).digest('hex');
+const letteringBuildInputHashes=Object.fromEntries(LETTERING_INPUTS.map(file=>[file,sourceHash(file)]));
+const OUT_DIR = process.env.CHUNK_SURFER_PROPS_OUT_DIR ? path.resolve(process.env.CHUNK_SURFER_PROPS_OUT_DIR) : path.join(ROOT, 'public/assets');
 const OUT = path.join(OUT_DIR, 'conservatory-props.glb');
 const STATS = path.join(OUT_DIR, 'conservatory-props.stats.json');
 const CREDITS = path.join(OUT_DIR, 'conservatory-props.credits.json');
@@ -129,6 +143,21 @@ const group = (m, mat) => {
   if(!m.groups.has(mat)) m.groups.set(mat,{positions:[],normals:[],indices:[],uvs:[]});
   return m.groups.get(mat);
 };
+
+// Queue exact authored copy until every physical face can share a packed atlas.
+// RGB is opaque substrate; alpha carries pigment coverage only (never cutout).
+const letteringJobs=[],letteringFaces=[];
+const materialRgb=mat=>materials[mat].pbrMetallicRoughness.baseColorFactor.slice(0,3);
+function lettering(m,copy,{id,center,widthM,heightM,readerRight=[-1,0,0],up=[0,1,0],category='institution',process,ground=MAT.paper,ink=MAT.black,capHeightM,lines,lineCentres,lineScale,emission='none',emissiveFactor,shape,drapeM=0,marks,font,glyphLayout,texelCapPx,substrate,reliefM,typeWidthScale,opticalWeightM,kerned,inkMetallic,inkRoughness,rasterWidthPx,rasterHeightPx}={}){
+  id=id||`${m.name}:${letteringFaces.filter(face=>face.mesh===m).length}`;
+  const normal=cross(readerRight,up),job={id,copy,lines,widthM,heightM,category,process,
+    palette:{ground:Array.isArray(ground)?ground:materialRgb(ground),ink:Array.isArray(ink)?ink:materialRgb(ink)},
+    capHeightM,lineCentres,lineScale,emission,emissiveFactor,marks,font,glyphLayout,texelCapPx:texelCapPx??(substrate?24:undefined),substrate,
+    typeWidthScale,opticalWeightM,kerned,inkMetallic,inkRoughness,rasterWidthPx,rasterHeightPx,
+    reliefM:reliefM??(process?.startsWith('cut civic inscription')?-.0015:category==='personal'?.000035:.000007),seed:id,source:'tools/chunk_surfer/build-props.mjs',
+    orientation:{readerRight,up,normal,center}};
+  letteringJobs.push(job);letteringFaces.push({mesh:m,job,center,readerRight,up,widthM,heightM,shape,drapeM});
+}
 
 // `pitch` tilts about X before the yaw about Y. It exists because a music stand
 // has a RAKED desk and this helper could only spin things on the spot, so the
@@ -604,6 +633,30 @@ function addStringInstrument(m, {
   addBox(m,[0,.035,0],[.04,.03,.55],MAT.steel);
 }
 }
+// The B3 stand, as the first-take tree describes it: folded down and leant
+// into the corner. Tripod closed round the shaft, desk folded flat to it, the
+// top resting on the wall behind (-z; +z is into the room). The sheet clipped
+// to it is a separate mesh in the SAME frame (music_stand_folded_sheet), so the
+// game can take it away when he does without a second stand.
+const FOLDED_STAND={lean:.31,footZ:.12,length:1.05};
+function alongFoldedStand(s,out=0){
+  const {lean,footZ}=FOLDED_STAND;
+  return [0,s*Math.cos(lean)+out*Math.sin(lean),footZ-s*Math.sin(lean)+out*Math.cos(lean)];
+}
+{
+  const m=mesh('music_stand_folded'),a=-FOLDED_STAND.lean,L=FOLDED_STAND.length;
+  addBox(m,alongFoldedStand(L/2),[.022,L,.022],MAT.steel,0,a);
+  for(const x of [-.026,.026]){const [,y,z]=alongFoldedStand(.31,.008);addBox(m,[x,y,z],[.014,.62,.014],MAT.steel,0,a);}
+  addBox(m,alongFoldedStand(.31,.022),[.014,.62,.014],MAT.steel,0,a);
+  addBox(m,alongFoldedStand(.63,.01),[.05,.045,.05],MAT.steel,0,a);
+  addBox(m,alongFoldedStand(.86,.03),[.48,.33,.012],MAT.black,0,a);
+  addBox(m,alongFoldedStand(.70,.045),[.48,.025,.04],MAT.steel,0,a);
+}
+{
+  const m=mesh('music_stand_folded_sheet'),a=-FOLDED_STAND.lean;
+  addBox(m,alongFoldedStand(.88,.04),[.30,.22,.003],MAT.paper,0,a);
+  addBox(m,alongFoldedStand(.985,.043),[.05,.02,.008],MAT.steel,0,a);
+}
 {
   const m=mesh('instrument_case'); addBox(m,[0,.16,0],[1.2,.30,.42],MAT.black);addBox(m,[0,.32,0],[1.08,.025,.32],MAT.cloth);addBox(m,[0,.34,-.22],[.24,.035,.08],MAT.steel);
 }
@@ -786,8 +839,13 @@ function addStringInstrument(m, {
   addBox(m,[0,.48,0],[1.22,.96,.10],MAT.dark);
   addBox(m,[0,.48,-.065],[1.08,.82,.035],MAT.paper);
   addBox(m,[-.48,.48,-.095],[.07,.82,.035],MAT.safetyRed);
-  for(let y=.18;y<=.76;y+=.12)addBox(m,[.06,y,-.095],[.82,.018,.015],y===.54?MAT.safetyRed:MAT.dark);
   addBox(m,[.37,.71,-.11],[.20,.09,.025],MAT.brass);
+  // The old row bars were proxy text. Keep the spine and clip; the literal
+  // replacement-lock record now lives on the actual paper face below them.
+  lettering(m,'REPLACEMENT LOCK — CHAPEL — CABINET C-17',{
+    lines:['REPLACEMENT LOCK —','CHAPEL —','CABINET C-17'],center:[0,.48,-.083],widthM:1.08,heightM:.82,
+    category:'record',process:'typed rekey entry on clipped ledger paper',ground:MAT.paper,ink:MAT.black,
+    font:'NimbusMonoPS-Bold.otf',capHeightM:.067,lineCentres:[.39,.61,.81]});
 }
 {
   const m=mesh('chapel_key_cabinet');
@@ -805,7 +863,7 @@ function addStringInstrument(m, {
   }
 }
 {
-  const addRing=(name,notches)=>{
+  const addRing=(name,copy,qualifier,{ground=MAT.ivory,process='typed key-tag legend',marks=[]}={})=>{
     const m=mesh(name),cx=0,cy=.18,cz=.225,segments=12;
     // The tiny buried stud gives every independent ring the same rear datum as
     // the cabinet. Its visible metal sits over the cabinet face on +Z.
@@ -814,14 +872,18 @@ function addStringInstrument(m, {
       const a=i/segments*Math.PI*2,b=(i+1)/segments*Math.PI*2;
       addBeam(m,[cx+Math.cos(a)*.07,cy+Math.sin(a)*.085,cz],[cx+Math.cos(b)*.07,cy+Math.sin(b)*.085,cz],.018,MAT.brass);
     }
-    addBox(m,[0,.055,.225],[.16,.075,.025],MAT.ivory);
-    for(let i=0;i<notches;i++)addBox(m,[-.045+i*.045,.055,.241],[.018,.045,.009],MAT.dark);
-    addBeam(m,[-.026,.13,.225],[-.045,.025,.225],.018,MAT.brass);
-    addBeam(m,[.025,.13,.225],[.052,.025,.225],.018,MAT.brass);
+    addBox(m,[0,.055,.225],[.16,.075,.025],ground);
+    addBeam(m,[-.026,.13,.205],[-.045,.025,.205],.018,MAT.brass);
+    addBeam(m,[.025,.13,.205],[.052,.025,.205],.018,MAT.brass);
+    lettering(m,qualifier?`${copy}\n${qualifier}`:copy,{lines:qualifier?[copy,qualifier]:[copy],center:[0,.055,.238],
+      widthM:.16,heightM:.075,readerRight:[1,0,0],category:'institution',process,ground,ink:MAT.black,
+      capHeightM:.023,lineCentres:qualifier?[.33,.80]:[.63],lineScale:qualifier?[1,.39]:[1],marks});
   };
-  addRing('chapel_key_ring_ch04',1);
-  addRing('chapel_key_ring_c17',2);
-  addRing('chapel_key_ring_fohm',3);
+  addRing('chapel_key_ring_ch04','CH-04','CHAPEL — MAIN',{ground:MAT.brass,process:'oxidised die-stamped brass key tag'});
+  addRing('chapel_key_ring_c17','C-17',null,{process:'biro correction on ivory key tag',marks:[
+    {points:[[.17,.18],[.72,.24]],width:.012},{points:[[.20,.26],[.77,.13]],width:.010},
+    {points:[[.16,.20],[.31,.16],[.40,.25],[.57,.15],[.74,.22]],width:.005}]});
+  addRing('chapel_key_ring_fohm','FOH-M','FRONT OF HOUSE — MASTER',{ground:MAT.brass,process:'worn stamped master-key tag'});
 }
 // ── the sub-basement dance wing ─────────────────────────────────────────────
 // Wall-mounted, so all three are authored against z=0 with their depth running
@@ -848,8 +910,44 @@ function addStringInstrument(m, {
   addBox(m,[0,.29,-.05],[3.96,.06,.05],MAT.dark);
   addBox(m,[0,2.55,-.05],[3.96,.06,.05],MAT.dark);
 }
+// Studio B3's treatment: wedge foam glued to boards and hung over the wall, in
+// 600 mm tiles whose ridges alternate across and up, the way the stuff is sold.
+// Four tiles wide and four high, so a wall takes a handful of these rather than
+// dozens. Charcoal on a dark backer; the ridges are what catch the torch.
+{
+  const m=mesh('acoustic_foam_panel');
+  addBox(m,[0,1.25,-.07],[2.40,2.42,.02],MAT.dark);
+  for(let row=0;row<4;row++)for(let col=0;col<4;col++){
+    const cx=-.90+col*.60, cy=.35+row*.60;
+    const across=(row+col)%2===0;
+    for(let k=0;k<5;k++){
+      const o=-.24+k*.12;
+      if(across)addBox(m,[cx,cy+o,-.03],[.56,.09,.06],MAT.cloth,0,.55);
+      else addBox(m,[cx+o,cy,-.03],[.09,.56,.06],MAT.cloth,.55,0);
+    }
+  }
+}
+// Carpet, laid in widths over whatever floor B3 had. Flat, with a darker binding
+// at the edges so the seams between widths read as seams. The textured version
+// in build-textiles.mjs replaces this by name; this is its fallback.
+{
+  const m=mesh('textile_studio_carpet');
+  addBox(m,[0,.008,0],[6.20,.016,4.60],MAT.cloth);
+  for(const z of [-2.27,2.27])addBox(m,[0,.012,z],[6.20,.018,.06],MAT.dark);
+  for(const x of [-3.07,3.07])addBox(m,[x,.012,0],[.06,.018,4.60],MAT.dark);
+}
 // A painted door number. Stencilled, not signed: the wing has no plaques.
 {const m=mesh('door_stencil');addBox(m,[0,.16,-.01],[.46,.32,.015],MAT.paper);}
+for(const code of ['B1','B2','B3','B5']){
+  const m=mesh('door_stencil_'+code.toLowerCase());addBox(m,[0,.16,-.01],[.46,.32,.015],MAT.concrete);
+  lettering(m,code,{center:[0,.16,-.018],widthM:.46,heightM:.32,category:'maintenance',process:'bridged maintenance stencil on a blockwork repair patch',
+    ground:MAT.concrete,ink:MAT.black,capHeightM:.18});
+}
+{
+  const m=mesh('source_hall_number_17');lettering(m,'17',{center:[0,0,0],widthM:.33,heightM:.24,
+    readerRight:[0,0,-1],up:[0,1,0],category:'maintenance',process:'bridged maintenance stencil on concrete',
+    ground:MAT.concrete,ink:MAT.black,capHeightM:.18});
+}
 // Freestanding, and both live in the prop store.
 {
   const m=mesh('costume_rail');
@@ -884,7 +982,22 @@ function addStringInstrument(m, {
   addBox(m,[0,.018,0],[.40,.036,.50],MAT.paper,-.04);
   addBox(m,[.13,.085,-.17],[.14,.018,.15],MAT.ivory,.52,.42);
   addBox(m,[-.16,.044,.18],[.09,.055,.30],MAT.ivory,-.08,.12);
-  for(let z=-.10;z<=.13;z+=.075)addBox(m,[-.03,.047,z],[.22,.010,.013],MAT.dark,-.04);
+}
+// Runtime paper is a flipped-Y atlas, independent from the static sign atlas.
+// Only the upward sheet/fold surfaces receive page coordinates. The underside
+// and edge thickness sample the blank margin rather than invent reverse copy.
+const runtimePaperUvs=[];
+for(const [name,widthM,heightM,yaw]of [['loose_note',.32,.42,0],['loose_note_page6',.40,.50,-.04]]){
+  const m=meshes.get(name),c=Math.cos(yaw),s=Math.sin(yaw);
+  for(const g of m.groups.values()){
+    g.uvs=[];for(let i=0;i<g.positions.length;i+=3){
+      const x=g.positions[i]*c+g.positions[i+2]*s,z=-g.positions[i]*s+g.positions[i+2]*c;
+      g.uvs.push(...(g.normals[i+1]>.5?[Math.max(0,Math.min(1,.5+x/widthM)),Math.max(0,Math.min(1,.5-z/heightM))]:[0,0]));
+    }
+  }
+  runtimePaperUvs.push({mesh:name,widthM,heightM,localReaderRight:[1,0,0],localTopEdge:[0,0,-1],atlasYFlipped:true,
+    underside:'blank atlas margin (0,0)',geometryChanged:name==='loose_note_page6',
+    ...(name==='loose_note_page6'?{removedLegacyTextProxyBoxes:4}:{})});
 }
 {
   // Objective guidance is geometry in the scene, not a screen-space icon. The
@@ -1290,7 +1403,9 @@ for(const[index,angle]of[-.55,-.05,.42].entries()){
 {const m=mesh('radio_carrier_led');addBox(m,[0,.37,-.082],[.052,.028,.018],MAT.vfd);}
 {const m=mesh('altar_table');addBox(m,[0,.84,0],[1.8,.12,.78],MAT.ivory);for(const x of[-.68,.68])addBox(m,[x,.42,0],[.14,.84,.58],MAT.wood);}
 {const m=mesh('lectern');addBox(m,[0,.08,0],[.58,.16,.55],MAT.wood);addBox(m,[0,.68,.08],[.12,1.2,.12],MAT.wood);addBox(m,[0,1.28,-.08],[.62,.08,.46],MAT.wood,-.22);}
-{const m=mesh('hymn_board');addBox(m,[0,.48,0],[.8,.96,.06],MAT.dark);for(let y=.2;y<=.7;y+=.25)addBox(m,[0,y,-.04],[.65,.03,.02],MAT.ivory);}
+{const m=mesh('hymn_board');addBox(m,[0,.48,0],[.8,.96,.06],MAT.dark);for(let y=.2;y<=.7;y+=.25)addBox(m,[0,y,-.04],[.65,.03,.02],MAT.ivory);
+  lettering(m,'17 · 44 · 91',{center:[0,.48,-.0305],widthM:.72,heightM:.84,category:'institution',
+    process:'removable hymn-board numeral print',ground:MAT.dark,ink:MAT.ivory,capHeightM:.10,lineCentres:[.09]});}
 {
   const m=mesh('portrait_frame');
   addBox(m,[0,.51,0],[.76,1.02,.055],MAT.dark);
@@ -1590,7 +1705,6 @@ for(const[index,angle]of[-.55,-.05,.42].entries()){
   addBox(m,[0,.24,.03],[2.75,.48,.06],MAT.dark);
   addBox(m,[0,.24,.068],[2.52,.32,.025],MAT.brass);
   addBox(m,[0,.24,.086],[2.20,.18,.018],MAT.dark);
-  for(const x of[-.96,-.64,-.32,0,.32,.64,.96])addBox(m,[x,.24,.102],[.045,.10,.012],MAT.ivory);
 }
 {
   // Front-of-house lamps are an inherited civic fitting, not the emergency
@@ -1752,6 +1866,8 @@ for(const[index,angle]of[-.55,-.05,.42].entries()){
   addBeam(m,[-4.6,6.70,-2.6],[-1.8,6.08,.7],.09,MAT.steel);
   addBeam(m,[3.2,6.76,3.1],[5.8,6.22,5.0],.08,MAT.steel);
 }
+buildAcademicRoof({mesh,materials,MAT,addBox,addBeam,addEllipsoid,addCylinder,addQuad});
+buildAcademicRoofDressing({mesh,materials,MAT,addBox,addBeam,addEllipsoid,addCylinder,addQuad});
 {
   const m=mesh('academic_frieze');
   addBox(m,[0,.42,0],[5.2,.84,.12],MAT.plaster);
@@ -1901,16 +2017,9 @@ for(let id=1;id<=8;id++){
 {
   const m=mesh('tower_rope_mat_tenor');
   addCylinder(m,[0,.025,0],.64,.05,MAT.cloth,28);
-  addCylinder(m,[0,.057,-.17],.15,.018,MAT.ivory,20);addCylinder(m,[0,.069,-.17],.092,.020,MAT.dark,20);
-  addCylinder(m,[0,.057,.10],.15,.018,MAT.ivory,20);addCylinder(m,[0,.069,.10],.092,.020,MAT.dark,20);
-  addBox(m,[.25,.067,-.035],[.035,.018,.36],MAT.ivory,.62); // slash after 8
-  // TENOR, stencilled across the foot of the mat.
-  const stroke=(x,z,w,d,yaw=0)=>addBox(m,[x,.069,z],[w,.020,d],MAT.ivory,yaw),z=.37;
-  stroke(-.36,z,.035,.25);stroke(-.36,z-.11,.16,.035);
-  stroke(-.18,z,.035,.25);stroke(-.12,z-.11,.13,.035);stroke(-.12,z,.13,.035);stroke(-.12,z+.11,.13,.035);
-  stroke(.00,z,.035,.25);stroke(.14,z,.035,.25);stroke(.07,z,.035,.30,.48);
-  stroke(.26,z,.035,.25);stroke(.36,z,.035,.25);stroke(.31,z-.11,.12,.035);stroke(.31,z+.11,.12,.035);
-  stroke(.48,z,.035,.25);stroke(.57,z-.11,.14,.035);stroke(.57,z,.14,.035);stroke(.57,z-.03,.18,.035,.60);
+  lettering(m,'8/\nTENOR',{lines:['8/','TENOR'],center:[0,.0505,0],widthM:1.28,heightM:1.28,
+    readerRight:[1,0,0],up:[0,0,-1],shape:'circle',category:'maintenance',process:'bridged paint stencil on woven rope mat',
+    ground:MAT.cloth,ink:MAT.ivory,capHeightM:.25,lineCentres:[.36,.76]});
 }
 {const m=mesh('tower_clock_hammer');addBeam(m,[0,.1,0],[.55,.95,0],.10,MAT.steel);addCylinder(m,[.62,1.02,0],.18,.24,MAT.steel,14);}
 {const m=mesh('tower_winch');addCylinder(m,[0,.72,0],.42,.34,MAT.steel,18);addCylinder(m,[0,.72,0],.10,.70,MAT.brass,12);addBeam(m,[0,.72,-.28],[.58,1.18,-.28],.07,MAT.brass);addCylinder(m,[.62,1.22,-.28],.09,.22,MAT.wood,12);}
@@ -1927,7 +2036,13 @@ for(let id=1;id<=8;id++){
   for(const x of[-5.9,5.9]){addBeam(m,[x,1.08,-3.8],[x,1.08,3.8],.055,MAT.steel);for(let z=-3.8;z<=3.8;z+=1.25)addCylinder(m,[x,.55,z],.035,1.1,MAT.steel,8);}
 }
 {const m=mesh('tower_louvres');for(let i=-7;i<=7;i++)addBox(m,[i*.39,1.75,0],[.24,3.5,.14],MAT.wood,.38);addBox(m,[0,.10,0],[6,.20,.24],MAT.stone);addBox(m,[0,3.4,0],[6,.20,.24],MAT.stone);}
-{const m=mesh('tower_peal_board');addBox(m,[0,.62,0],[1.8,1.24,.07],MAT.dark);addBox(m,[0,.62,-.045],[1.62,1.06,.025],MAT.black);for(let y=.28;y<=.96;y+=.17)addBox(m,[0,y,-.065],[1.35,.018,.012],MAT.brass);}
+{const m=mesh('tower_peal_board');addBox(m,[0,.62,0],[1.8,1.24,.07],MAT.dark);addBox(m,[0,.62,-.045],[1.62,1.06,.025],MAT.black);
+  for(const y of[.36,.88])addBox(m,[0,y,-.065],[1.35,.018,.012],MAT.brass);
+  lettering(m,'ELLERY COLLEGIATE CHAPEL — STEDMAN TRIPLES — 1908',{
+    lines:['ELLERY COLLEGIATE','CHAPEL —','STEDMAN TRIPLES —','1908'],center:[0,.62,-.058],widthM:1.62,heightM:1.06,
+    category:'institution',font:'NimbusRoman-Bold.otf',process:'aged gilt peal-board lettering',ground:MAT.black,
+    ink:[.83,.58,.20],capHeightM:.15,lineScale:[.90,1.05,.90,1.10],lineCentres:[.12,.38,.60,.87],
+    typeWidthScale:.68,opticalWeightM:.0015,kerned:true,inkMetallic:.9,inkRoughness:.48,rasterWidthPx:598,rasterHeightPx:391});}
 {
   const m=mesh('tower_organ_case');addBox(m,[0,2.1,.35],[5.8,4.2,.70],MAT.dark);
   for(let i=-13;i<=13;i++){const h=1.6+(1-Math.abs(i)/14)*2.0;addCylinder(m,[i*.19,1.0+h/2,-.08],.055,h,MAT.steel,10);}
@@ -2055,37 +2170,95 @@ addMainStairDressing('academic_stair_dressing',{rise:5.2,run:10,steps:26,runner:
   addBox(m,[-.34,1.02,0],[.12,.76,.15],MAT.dark,.08);
   addBox(m,[.34,1.02,0],[.12,.76,.15],MAT.dark,-.08);
 }
-// APPARITION POSES. Additive by design: `player_shadow_figure` above is shared
-// by the HUSH/player-shadow path and remains byte-for-byte authored as before.
-// These seven bodies use the same foot pivot and ordinary adult envelope; what
-// changes is their social posture and the contour they project across a wall.
-{
-  const m=mesh('apparition_pose_neutral');
-  addCylinder(m,[0,1.58,0],.16,.30,MAT.dark,12);
-  addBox(m,[0,1.03,0],[.52,.82,.25],MAT.dark);
-  addBeam(m,[-.13,.66,0],[-.18,.03,0],.14,MAT.dark);
-  addBeam(m,[.13,.66,0],[.18,.03,0],.14,MAT.dark);
-  addBeam(m,[-.27,1.32,0],[-.31,.65,.01],.12,MAT.dark);
-  addBeam(m,[.27,1.32,0],[.31,.65,-.01],.12,MAT.dark);
+// APPARITION POSES. The HUSH's separate player_shadow_figure remains intact.
+// These are anonymous human volumes, not clothing or faces: a narrowing neck,
+// sloped shoulders, articulated wrists/hands, loaded hips and bent knees. The
+// same seven held poses retain their semantic identity and floor pivot.
+function apparitionLimb(m,a,b,ra,rb){
+  const delta=b.map((value,index)=>value-a[index]),length=Math.hypot(...delta)||1;
+  const axis=delta.map((value)=>value/length),reference=Math.abs(axis[1])<.88?[0,1,0]:[1,0,0];
+  let side=[axis[1]*reference[2]-axis[2]*reference[1],axis[2]*reference[0]-axis[0]*reference[2],axis[0]*reference[1]-axis[1]*reference[0]];
+  const sideLength=Math.hypot(...side)||1;side=side.map((value)=>value/sideLength);
+  const depth=[axis[1]*side[2]-axis[2]*side[1],axis[2]*side[0]-axis[0]*side[2],axis[0]*side[1]-axis[1]*side[0]];
+  const g=group(m,MAT.black),base=g.positions.length/3,rings=5,sides=10;
+  for(let ring=0;ring<=rings;ring++){
+    const t=ring/rings,bulge=1+.12*Math.sin(t*Math.PI),radius=(ra+(rb-ra)*t)*bulge;
+    const center=a.map((value,index)=>value+delta[index]*t);
+    for(let spoke=0;spoke<=sides;spoke++){
+      const angle=spoke/sides*Math.PI*2,radial=side.map((value,index)=>value*Math.cos(angle)+depth[index]*Math.sin(angle));
+      g.positions.push(...center.map((value,index)=>value+radial[index]*radius));
+      g.normals.push(...radial);
+    }
+  }
+  for(let ring=0;ring<rings;ring++)for(let spoke=0;spoke<sides;spoke++){
+    const a0=base+ring*(sides+1)+spoke,b0=a0+sides+1;
+    g.indices.push(a0,b0,a0+1,a0+1,b0,b0+1);
+  }
 }
-{
-  const m=mesh('apparition_pose_side');
-  addCylinder(m,[.015,1.58,.025],.155,.30,MAT.dark,12);
-  addBox(m,[0,1.03,0],[.34,.82,.32],MAT.dark,.05);
-  addBeam(m,[-.08,.66,.02],[-.11,.03,.04],.13,MAT.dark);
-  addBeam(m,[.09,.66,-.02],[.13,.03,-.05],.13,MAT.dark);
-  addBeam(m,[-.17,1.31,.02],[-.19,.66,.12],.11,MAT.dark);
-  addBeam(m,[.17,1.31,-.02],[.19,.69,-.12],.11,MAT.dark);
+function apparitionFigure(name,pose={}){
+  const m=mesh(name),shift=pose.shift||0,stoop=pose.stoop||0,narrow=pose.narrow||1;
+  const pelvis=[shift*.75,.79,0],chest=[shift,1.18,-stoop*.42],neck=[shift,1.47-stoop*.17,-stoop*.82];
+  addEllipsoid(m,[shift*.82,1.08,-stoop*.25],[.245*narrow,.38,.135],MAT.black,12,16);
+  addEllipsoid(m,pelvis,[.20*narrow,.15,.13],MAT.black,9,14);
+  addEllipsoid(m,neck,[.075,.13,.075],MAT.black,9,12);
+  const head=pose.head||[shift+(pose.headTurn ? .05 : 0),1.63-stoop*.20,-stoop-.015];
+  addEllipsoid(m,head,[.142,.185,.125],MAT.black,12,16);
+  for(const side of[-1,1]){
+    const shoulder=pose.shoulders?.[side]||[shift+side*.235*narrow,1.37-stoop*.34,-stoop*.60];
+    const elbow=pose.elbows?.[side]||[shift+side*.30*narrow,1.06-stoop*.23,-stoop*.35];
+    const wrist=pose.wrists?.[side]||[shift+side*.31*narrow,.73-stoop*.12,-stoop*.12];
+    addEllipsoid(m,shoulder,[.115,.108,.112],MAT.black,9,12);
+    apparitionLimb(m,shoulder,elbow,.092,.068);
+    addEllipsoid(m,elbow,[.071,.072,.071],MAT.black,8,10);
+    apparitionLimb(m,elbow,wrist,.065,.043);
+    const palm=[wrist[0]+side*.006,wrist[1]-.055,wrist[2]-.004];
+    addEllipsoid(m,palm,[.056,.072,.038],MAT.black,8,10);
+    for(let finger=0;finger<4;finger++){
+      const x=palm[0]+side*(finger-1.5)*.022;
+      apparitionLimb(m,[x,palm[1]-.03,palm[2]-.003],[x+side*.006,palm[1]-.095+(finger===0?.015:0),palm[2]-.014],.014,.009);
+    }
+    const hip=pose.hips?.[side]||[pelvis[0]+side*.125*narrow,.75,0];
+    const knee=pose.knees?.[side]||[pelvis[0]+side*.15*narrow,.41,-.055];
+    const ankle=pose.ankles?.[side]||[pelvis[0]+side*.16*narrow,.105,.015];
+    addEllipsoid(m,hip,[.12,.125,.105],MAT.black,9,12);
+    apparitionLimb(m,hip,knee,.11,.083);
+    addEllipsoid(m,knee,[.085,.085,.082],MAT.black,9,12);
+    apparitionLimb(m,knee,ankle,.079,.050);
+    addEllipsoid(m,[ankle[0],.055,ankle[2]-.065],[.078,.055,.155],MAT.black,8,12);
+    // The last charge exits through the floor, short of a drawn lightning bolt.
+    for(const sign of[-1,1])apparitionLimb(m,[ankle[0],.012,ankle[2]-.12],
+      [ankle[0]+sign*.17,.006,ankle[2]-.22+sign*.04],.009,.003);
+  }
 }
-{
-  const m=mesh('apparition_pose_stoop');
-  addCylinder(m,[0,1.55,-.16],.16,.29,MAT.dark,12);
-  addBox(m,[0,1.04,-.07],[.54,.82,.27],MAT.dark,0,.20);
-  addBeam(m,[-.14,.68,-.01],[-.23,.03,.04],.14,MAT.dark);
-  addBeam(m,[.14,.68,-.01],[.22,.03,-.02],.14,MAT.dark);
-  addBeam(m,[-.27,1.30,-.11],[-.36,.64,.02],.12,MAT.dark);
-  addBeam(m,[.27,1.30,-.11],[.36,.64,-.02],.12,MAT.dark);
-}
+apparitionFigure('apparition_pose_neutral');
+apparitionFigure('apparition_pose_side',{
+  narrow:.72,head:[.025,1.63,.045],
+  elbows:{'-1':[-.18,1.07,.08],1:[.18,1.08,-.08]},
+  wrists:{'-1':[-.20,.74,.13],1:[.20,.72,-.15]},
+  knees:{'-1':[-.12,.40,.12],1:[.13,.42,-.11]},
+});
+apparitionFigure('apparition_pose_stoop',{
+  stoop:.25,head:[0,1.55,-.30],
+  elbows:{'-1':[-.34,1.02,-.17],1:[.34,1.00,-.18]},
+  knees:{'-1':[-.19,.42,-.11],1:[.17,.39,-.09]},
+});
+apparitionFigure('apparition_pose_head_turn',{headTurn:true,head:[.08,1.63,-.035]});
+apparitionFigure('apparition_pose_arm_out',{
+  elbows:{'-1':[-.30,1.06,0],1:[.51,1.28,-.045]},
+  wrists:{'-1':[-.32,.73,0],1:[.76,1.16,-.06]},
+});
+apparitionFigure('apparition_pose_weight_shift',{
+  shift:.07,
+  elbows:{'-1':[-.29,1.08,.02],1:[.31,1.01,-.045]},
+  knees:{'-1':[-.24,.39,-.06],1:[.20,.44,-.085]},
+  ankles:{'-1':[-.29,.105,.025],1:[.23,.105,-.02]},
+});
+apparitionFigure('apparition_pose_symmetric',{
+  elbows:{'-1':[-.255,1.03,0],1:[.255,1.03,0]},
+  wrists:{'-1':[-.255,.70,0],1:[.255,.70,0]},
+  knees:{'-1':[-.12,.42,-.04],1:[.12,.42,-.04]},
+  ankles:{'-1':[-.12,.105,.01],1:[.12,.105,.01]},
+});
 {
   // Ending-only bodies are ordinary weight, not HUSH silhouettes. They are
   // separate meshes so normal apparition staging and collision remain intact.
@@ -2147,17 +2320,16 @@ addMainStairDressing('academic_stair_dressing',{rise:5.2,run:10,steps:26,runner:
     addBox(m,[x,.058,-.21+row*.18],[.37,.004,.003],MAT.steel);
   // Fresh ink on the right page. Small planar glyphs sit on the paper, so
   // these names are readable only by looking down at the actual ledger.
-  const glyphs={A:['010','101','111','101','101'],L:['100','100','100','100','111'],
-    N:['101','111','111','111','101']};
   // The player's name has deliberately never been specified. Keep their
   // signature cursive instead of inventing a name or printing the UI word YOU.
   const signature=[[.11,-.07],[.13,-.14],[.15,-.07],[.18,-.13],[.17,-.05],
     [.21,-.11],[.24,-.07],[.27,-.10],[.30,-.07],[.34,-.11],[.37,-.09]];
-  for(let i=1;i<signature.length;i++)addBeam(m,
-    [signature[i-1][0],.064,signature[i-1][1]],[signature[i][0],.064,signature[i][1]],.006,MAT.black);
-  for(const [word,z]of[['ALAN',.08]])for(let ci=0;ci<word.length;ci++)
-    for(let row=0;row<5;row++)for(let col=0;col<3;col++)if(glyphs[word[ci]][row][col]==='1')
-      addBox(m,[.11+(ci*4+col)*.015,.063,z+row*.016],[.012,.003,.012],MAT.black);
+  lettering(m,'',{id:'ending_returned_ledger:unnamed-signature',center:[.24,.047,-.095],widthM:.30,heightM:.12,
+    readerRight:[1,0,0],up:[0,Math.sin(.035),-Math.cos(.035)],category:'record',process:'fresh pen signature on ledger paper',
+    ground:MAT.paper,ink:MAT.black,marks:[{points:signature.map(([x,z])=>[(x-.09)/.30,(z+.155)/.12]),width:.012}]});
+  lettering(m,'ALAN',{center:[.215,.039,.112],widthM:.25,heightM:.078,
+    readerRight:[1,0,0],up:[0,Math.sin(.035),-Math.cos(.035)],category:'record',process:'fresh pen name on ledger paper',
+    ground:MAT.paper,ink:MAT.black,capHeightM:.056,font:'NimbusRoman-Italic.otf'});
   addBeam(m,[.08,.072,.25],[.43,.075,.10],.016,MAT.brass);
 }
 {
@@ -2218,44 +2390,6 @@ addMainStairDressing('academic_stair_dressing',{rise:5.2,run:10,steps:26,runner:
   addBox(m,[-.42,.18,.05],[.74,.32,.48],MAT.stone,.18,.12);
   addBox(m,[.30,.11,-.22],[.52,.20,.36],MAT.stone,-.30,-.08);
   addBeam(m,[-.62,.12,.36],[.66,.28,-.34],.075,MAT.steel);
-}
-{
-  const m=mesh('apparition_pose_head_turn');
-  addBox(m,[.07,1.58,-.01],[.27,.29,.23],MAT.dark,.42);
-  addBox(m,[0,1.03,0],[.52,.82,.25],MAT.dark);
-  addBeam(m,[.02,1.43,0],[.06,1.48,-.01],.12,MAT.dark);
-  addBeam(m,[-.13,.66,0],[-.19,.03,.01],.14,MAT.dark);
-  addBeam(m,[.13,.66,0],[.19,.03,-.01],.14,MAT.dark);
-  addBeam(m,[-.27,1.32,0],[-.34,.66,.03],.12,MAT.dark);
-  addBeam(m,[.27,1.32,0],[.30,.67,-.04],.12,MAT.dark);
-}
-{
-  const m=mesh('apparition_pose_arm_out');
-  addCylinder(m,[0,1.58,0],.16,.30,MAT.dark,12);
-  addBox(m,[0,1.03,0],[.52,.82,.25],MAT.dark);
-  addBeam(m,[-.13,.66,0],[-.19,.03,.01],.14,MAT.dark);
-  addBeam(m,[.13,.66,0],[.19,.03,-.01],.14,MAT.dark);
-  addBeam(m,[-.27,1.31,0],[-.35,.66,.03],.12,MAT.dark);
-  addBeam(m,[.26,1.31,0],[.58,1.12,-.03],.12,MAT.dark);
-  addBeam(m,[.58,1.12,-.03],[.72,.87,-.02],.105,MAT.dark);
-}
-{
-  const m=mesh('apparition_pose_weight_shift');
-  addCylinder(m,[.02,1.58,0],.16,.30,MAT.dark,12);
-  addBox(m,[.055,1.04,0],[.52,.82,.25],MAT.dark,-.10);
-  addBeam(m,[-.08,.67,.01],[-.27,.03,.03],.14,MAT.dark);
-  addBeam(m,[.19,.67,-.01],[.27,.03,-.05],.14,MAT.dark);
-  addBeam(m,[-.22,1.31,.01],[-.39,.72,.04],.12,MAT.dark);
-  addBeam(m,[.31,1.32,-.01],[.25,.66,-.04],.12,MAT.dark);
-}
-{
-  const m=mesh('apparition_pose_symmetric');
-  addCylinder(m,[0,1.58,0],.16,.30,MAT.dark,12);
-  addBox(m,[0,1.03,0],[.50,.82,.24],MAT.dark);
-  addBeam(m,[-.11,.66,0],[-.11,.03,0],.14,MAT.dark);
-  addBeam(m,[.11,.66,0],[.11,.03,0],.14,MAT.dark);
-  addBeam(m,[-.255,1.31,0],[-.255,.65,0],.115,MAT.dark);
-  addBeam(m,[.255,1.31,0],[.255,.65,0],.115,MAT.dark);
 }
 {
   const m=mesh('legacy_tape_rack');
@@ -2325,7 +2459,6 @@ addMainStairDressing('academic_stair_dressing',{rise:5.2,run:10,steps:26,runner:
   addBox(m,[0,.31,.03],[2.30,.62,.06],MAT.pubGreen);
   addBox(m,[0,.31,.068],[2.12,.46,.025],MAT.ivory);
   addBox(m,[0,.31,.086],[1.84,.26,.018],MAT.pubGreen);
-  for(const x of[-.82,-.41,0,.41,.82])addBox(m,[x,.31,.102],[.055,.13,.012],MAT.ivory);
 }
 
 // Real source models replace (or add) named meshes. Each overwrites the
@@ -2610,12 +2743,71 @@ buildDistrictFrontage('district_passage_frontage','passage');
   function townBuilding({x,z,w,d,h,axis='x',inward=1,index=0}){
     if(x+w/2>park.x0&&x-w/2<park.x1&&z+d/2>park.z0&&z-d/2<park.z1)return;
     const mat=palette[index%palette.length];
+    // A few taller houses retain the district's older civic ambition. These
+    // occupy the same parcels and roof envelopes as their ordinary neighbours;
+    // wealth is in the shaped eaves and window rhythm, not a new skyline.
+    const civic=h>=10.5&&(index%7===0||index%13===0);
     addBox(m,[X(x),h/2,Z(z)],[w,h,d],mat);
     addBox(m,[X(x),.48,Z(z)],[w+.08,.96,d+.08],MAT.stone);
     addBox(m,[X(x),h-.38,Z(z)],[w+.16,.24,d+.16],MAT.stone);
     const rise=1.3+(index%3)*.32;
+    const roof=()=>{
+      if(!civic){
+        addPitchedRoof(m,{x:X(x),z:Z(z),w,d,eaves:h,rise,mat:MAT.slate,gableMat:mat,ridge:axis});
+        return;
+      }
+      // Steeper lower slates and a shallow crown give the existing low roof a
+      // mansard profile. All vertices stay within the old .28 m roof overhang
+      // and the old h+rise ridge; the streets and skyline heights do not move.
+      const along=axis==='x'?w:d,cross=axis==='x'?d:w;
+      const half=(cross+.56)/2,inset=Math.min(1.12,cross*.18);
+      const profile=[[-half,h],[-half+inset,h+rise*.72],[0,h+rise],
+        [half-inset,h+rise*.72],[half,h]];
+      const point=(a,b,y)=>axis==='x'?[X(x+a),y,Z(z+b)]:[X(x+b),y,Z(z+a)];
+      const face=(a,b,c,d)=>{addQuad(m,a,b,c,d,MAT.slate);addQuad(m,d,c,b,a,MAT.slate);};
+      for(let i=1;i<profile.length;i++){
+        const[ca,ya]=profile[i-1],[cb,yb]=profile[i];
+        face(point(-(along+.56)/2,ca,ya),point((along+.56)/2,ca,ya),
+          point((along+.56)/2,cb,yb),point(-(along+.56)/2,cb,yb));
+      }
+      for(const side of[-1,1])addBeam(m,point(-(along+.56)/2,side*half,h),
+        point((along+.56)/2,side*half,h),.13,MAT.stone);
+      addBeam(m,point(-(along+.56)/2,0,h+rise),point((along+.56)/2,0,h+rise),.10,MAT.slate);
+      for(const side of[-1,1]){
+        const end=side*((along+.56)/2+.02);
+        for(let i=1;i<profile.length;i++){
+          const[a,ya]=profile[i-1],[b,yb]=profile[i];
+          const tri=[point(end,0,h),point(end,a,ya),point(end,b,yb)];
+          if((axis==='x'&&side<0)||(axis==='z'&&side>0))tri.reverse();
+          addTriangle(m,...tri,mat);
+        }
+      }
+      // Paired attic lights sit in the steep lower slopes, below the original
+      // ridge. The stout pale surrounds survive reduction as architecture;
+      // only one occasional room uses the existing occupied-window material.
+      for(const side of[-1,1])for(const lane of[-.24,.24]){
+        const a=lane*along,b=side*(half-.22),cy=h+rise*.39;
+        const size=axis==='x'?[1.08,rise*.52,.18]:[.18,rise*.52,1.08];
+        addBox(m,point(a,b,cy),size,MAT.stone);
+        addBox(m,point(a,b+side*.105,cy),axis==='x'?[.74,rise*.35,.035]:[.035,rise*.35,.74],
+          side<0&&lane<0&&index%2===0?MAT.warmWindow:MAT.black);
+        addBox(m,point(a,b+side*.07,h+rise*.68),axis==='x'?[1.22,.12,.25]:[.25,.12,1.22],MAT.slate);
+        addBox(m,point(a,b+side*.13,cy),axis==='x'?[.065,rise*.36,.035]:[.035,rise*.36,.065],MAT.stone);
+      }
+      // Three broad shadow steps replace a uniform thin eaves line. The old
+      // roof already projected farther than these mouldings on every side.
+      for(const[height,thickness,overhang]of[[h-.16,.12,.24],[h-.015,.12,.42],[h+.095,.10,.32]])
+        addBox(m,[X(x),height,Z(z)],[w+overhang,thickness,d+overhang],MAT.stone);
+      // Shallow corner orders stay against the existing long facades, well
+      // inside the old eaves footprint rather than narrowing any cross-street.
+      for(const side of[-1,1])for(const end of[-1,1]){
+        const a=end*(along/2-.30),b=side*(cross/2+.07);
+        addBox(m,point(a,b,(h-.68)/2),axis==='x'?[.32,h-1.28,.16]:[.16,h-1.28,.32],MAT.stone);
+        addBox(m,point(a,b,h-.72),axis==='x'?[.48,.25,.23]:[.23,.25,.48],MAT.stone);
+      }
+    };
     if(axis==='x'){
-      addPitchedRoof(m,{x:X(x),z:Z(z),w,d,eaves:h,rise,mat:MAT.slate,gableMat:mat,ridge:'x'});
+      roof();
       const floors=Math.max(2,Math.floor((h-1.2)/3));
       for(const side of[-1,1]){
         const face=z+side*(d/2+.06);
@@ -2623,7 +2815,8 @@ buildDistrictFrontage('district_passage_frontage','passage');
           const lit=((Math.round(wx)+floor*3+index+(side>0?2:0))%13)===0;
           const y=2.1+floor*2.8;
           addBox(m,[X(wx),y,Z(face)],[1.05,1.35,.12],lit?MAT.warmWindow:MAT.black);
-          addBox(m,[X(wx),y+.77,Z(face+side*.04)],[1.30,.13,.16],MAT.stone);
+          addBox(m,[X(wx),y+.77,Z(face+side*.04)],[civic?1.46:1.30,civic?.20:.13,civic?.20:.16],MAT.stone);
+          if(civic)addBox(m,[X(wx),y,Z(face+side*.075)],[.075,1.36,.055],MAT.stone);
         }
         addBox(m,[X(x-w*.28),1.42,Z(face+side*.03)],[1.02,2.55,.15],MAT.agedWhite);
         addCylinder(m,[X(x+w/2-.22),h/2,Z(face+side*.08)],.065,h-.3,MAT.steel,8);
@@ -2634,7 +2827,7 @@ buildDistrictFrontage('district_passage_frontage','passage');
         addBox(m,[X(face+side*.04),5.48,Z(z)],[.16,.14,1.40],MAT.stone);
       }
     }else{
-      addPitchedRoof(m,{x:X(x),z:Z(z),w,d,eaves:h,rise,mat:MAT.slate,gableMat:mat,ridge:'z'});
+      roof();
       const floors=Math.max(2,Math.floor((h-1.2)/3));
       for(const side of[-1,1]){
         const face=x+side*(w/2+.06);
@@ -2642,7 +2835,8 @@ buildDistrictFrontage('district_passage_frontage','passage');
           const lit=((Math.round(wz)+floor*5+index+(side>0?3:0))%14)===0;
           const y=2.1+floor*2.8;
           addBox(m,[X(face),y,Z(wz)],[.12,1.35,1.05],lit?MAT.warmWindow:MAT.black);
-          addBox(m,[X(face+side*.04),y+.77,Z(wz)],[.16,.13,1.30],MAT.stone);
+          addBox(m,[X(face+side*.04),y+.77,Z(wz)],[civic?.20:.16,civic?.20:.13,civic?1.46:1.30],MAT.stone);
+          if(civic)addBox(m,[X(face+side*.075),y,Z(wz)],[.055,1.36,.075],MAT.stone);
         }
         addBox(m,[X(face+side*.03),1.42,Z(z-d*.28)],[.15,2.55,1.02],MAT.agedWhite);
         addCylinder(m,[X(face+side*.08),h/2,Z(z+d/2-.22)],.065,h-.3,MAT.steel,8);
@@ -2703,6 +2897,8 @@ buildDistrictFrontage('district_passage_frontage','passage');
   addBox(m,[X(-42),4.95,Z(-62)],[8.2,.7,6.2],MAT.slate);
   addBox(m,[X(-42),2.0,Z(-59.2)],[1.5,2.7,.16],MAT.pubGreen);
 }
+
+buildDistrictSceneryRoads({mesh,materials,addBox,addQuad});
 
 function buildYardRange(name,range,kind){
   const m=mesh(name),w=range.w,d=range.d,h=range.height,service=kind==='stores';
@@ -3073,7 +3269,6 @@ buildStBrendans();
   const m=mesh('exterior_story_plaque');
   addBox(m,[0,.42,0],[1.35,.84,.28],MAT.stone);
   addBox(m,[0,.48,-.16],[1.08,.50,.05],MAT.terracotta);
-  for(let y=.30;y<=.62;y+=.16)addBox(m,[0,y,-.20],[.78,.035,.025],MAT.ivory);
 }
 {
   const m=mesh('district_post_box');
@@ -3349,74 +3544,28 @@ function vigilKit(m,{
   }
 }
 
-// Five-by-seven raised lettering, kept deliberately thick so a slogan survives
-// the pixel renderer as language at eight to twelve metres rather than texture.
-const VIGIL_GLYPHS={
-  A:['01110','10001','10001','11111','10001','10001','10001'],C:['01111','10000','10000','10000','10000','10000','01111'],
-  D:['11110','10001','10001','10001','10001','10001','11110'],E:['11111','10000','10000','11110','10000','10000','11111'],
-  F:['11111','10000','10000','11110','10000','10000','10000'],G:['01111','10000','10000','10111','10001','10001','01111'],
-  H:['10001','10001','10001','11111','10001','10001','10001'],I:['11111','00100','00100','00100','00100','00100','11111'],
-  K:['10001','10010','10100','11000','10100','10010','10001'],L:['10000','10000','10000','10000','10000','10000','11111'],
-  M:['10001','11011','10101','10101','10001','10001','10001'],N:['10001','11001','10101','10011','10001','10001','10001'],
-  O:['01110','10001','10001','10001','10001','10001','01110'],P:['11110','10001','10001','11110','10000','10000','10000'],
-  R:['11110','10001','10001','11110','10100','10010','10001'],S:['01111','10000','10000','01110','00001','00001','11110'],
-  T:['11111','00100','00100','00100','00100','00100','00100'],U:['10001','10001','10001','10001','10001','10001','01110'],
-  V:['10001','10001','10001','10001','10001','01010','00100'],W:['10001','10001','10001','10101','10101','11011','10001'],
-  Y:['10001','10001','01010','00100','00100','00100','00100'],
-  '0':['01110','10011','10101','10101','11001','10001','01110'],'1':['00100','01100','00100','00100','00100','00100','01110'],
-  '6':['00110','01000','10000','11110','10001','10001','01110'],'8':['01110','10001','10001','01110','10001','10001','01110'],
-  '9':['01110','10001','10001','01111','00001','00010','11100'],':':['00000','00100','00100','00000','00100','00100','00000'],
-  '?':['01110','10001','00001','00010','00100','00000','00100'],
-};
-// ── SIGN LETTERING ─────────────────────────────────────────────────────────
-//
-// IT READ BACKWARDS, AND IT WAS BUILT OUT OF BRICKS.
-//
-// Two faults, and the first is the one that matters. Everything in this pack
-// faces LOCAL -Z: the prop matrix turns that into (sin yaw, -cos yaw), which is
-// why a placed figure looks at you and a van's windscreen points down the road.
-// A reader standing in front of that face is looking toward +Z, and for them
-// local +X runs LEFT — so a line laid out with the first character at the most
-// negative x and each one after it further along +X arrives reversed. Every sign
-// in the game was mirror-written. The layout now walks the other way.
-//
-// The second is that the ink was geometry: one twelve-triangle box per lit pixel
-// of a five-by-seven grid, standing 18mm proud of the board. Five of those six
-// faces are never visible and all six are lit, so the type picked up edge shading
-// and read as embossed rather than printed — and a two-word placard cost four
-// thousand triangles. It is rasterised now: one flat plate per pixel, two
-// triangles, coplanar with the board it is printed on. Same 5x7 grid, same
-// deliberate thickness, a sixth of the geometry, and it reads as ink.
-function raisedVigilLine(m,text,{w,y,z,pitch=0,mat=MAT.black}){
-  const source=String(text).toUpperCase(),dot=Math.min(.038,(w-.10)/Math.max(1,source.length*6-1));
-  const total=(source.length*6-1)*dot,start=total/2-dot/2;
-  for(let ci=0;ci<source.length;ci+=1){
-    const glyph=VIGIL_GLYPHS[source[ci]];if(!glyph)continue;
-    for(let row=0;row<7;row+=1)for(let col=0;col<5;col+=1){
-      if(glyph[row][col]!=='1')continue;
-      // Reading order runs toward -X, which is the reader's right.
-      addPlate(m,[start-(ci*6+col)*dot,y+(3-row)*dot,z],[dot*.78,dot*.78],mat,0,pitch);
-    }
-  }
-}
+// The copy is carried by opaque fabricated faces, not individual pixel quads.
+// Personal signs use authored broad-nib trajectories; civic panels use a pinned
+// condensed face and pale enamel, the polarity that survived the actual study.
 function buildVigilSign(name,words,{w=1.34,boardY=1.78,lean=0,banner=false}={}){
   const m=mesh(name),lines=[...words],h=banner?1.02:.84,z=-.22;
   if(!banner)addBeam(m,[0,.58,-.10],[0,boardY+.34,z],.035,MAT.wood);
   addBox(m,[0,boardY,z],[w,h,.055],MAT.agedWhite,0,lean);
   addBox(m,[-w*.34,boardY+h*.34,z-.035],[w*.22,.055,.022],MAT.terracotta,-.04,lean);
   addBox(m,[w*.39,boardY-h*.37,z-.035],[w*.16,.05,.022],MAT.slate,.05,lean);
-  const gap=Math.min(.26,h/(lines.length+.45)),top=boardY+(lines.length-1)*gap/2;
-  lines.forEach((line,index)=>raisedVigilLine(m,line,{w,y:top-index*gap,z:z-.038,pitch:lean}));
+  const normal=[0,Math.sin(lean),-Math.cos(lean)],up=[0,Math.cos(lean),Math.sin(lean)];
+  lettering(m,lines.join('\n'),{lines,center:[0,boardY+normal[1]*.028,z+normal[2]*.028],
+    widthM:w,heightM:h,up,category:'personal',ground:MAT.agedWhite,ink:MAT.black,
+    capHeightM:Math.min(.27,h/(lines.length*1.7)),process:banner?'volunteer brush paint on tensioned cloth':'volunteer broad-nib paint on card',drapeM:banner?-.010:0});
 }
 
 function buildSceneDockSign(name,lines,{w=2.30,h=.58}={}){
   const m=mesh(name);
   addBox(m,[0,0,0],[w,h,.065],MAT.pubGreen);
   addBox(m,[0,0,-.038],[w-.08,h-.08,.018],MAT.dark);
-  const gap=h/(lines.length+.35),top=(lines.length-1)*gap/2;
-  lines.forEach((line,index)=>raisedVigilLine(m,line,{
-    w:w-.12,y:top-index*gap,z:-.057,mat:MAT.agedWhite,
-  }));
+  lettering(m,lines.join('\n'),{lines,center:[0,0,-.0475],widthM:w-.08,heightM:h-.08,
+    category:'institution',process:'vitreous-enamel screen print',capHeightM:Math.min(.245,(h-.12)*.62),
+    ground:[.7083758,.6938718,.5332764],ink:[.0091341,.0137021,.0109601]});
   // Dirty ivory surround and two phosphor corner tabs make the sign readable
   // on emergency light or torch alone; it never depends on restored S/P-03.
   addBox(m,[0,h/2-.025,-.06],[w,.05,.025],MAT.ivory);
@@ -3431,9 +3580,9 @@ buildSceneDockSign('scene_dock_sign_services',['STUDIOS / PLANT'],{w:2.70,h:.86}
 // relevant part without ever shifting the actor's collider or focus anchor.
 for(const [name,body] of [
   ['vigil_ruth_mallory',{skin:MAT.skinWarm,coat:MAT.navy,trouser:MAT.dark,hair:MAT.agedWhite,height:1.70,stance:.15,scarf:MAT.pubGreen,lean:-.05,pose:'carry'}],
-  ['vigil_leila_hart',{skin:MAT.skinDeep,coat:MAT.denim,trouser:MAT.dark,hair:MAT.black,height:1.66,stance:.14,hat:'hood',turn:.35,pose:'watch'}],
+  ['vigil_leila_hart',{skin:MAT.skinDeep,coat:MAT.slate,trouser:MAT.dark,hair:MAT.black,height:1.66,stance:.14,hat:'hood',turn:.35,pose:'watch'}],
   ['vigil_owen_pryce',{skin:MAT.skinWarm,coat:MAT.dark,trouser:MAT.dark,hair:MAT.agedWhite,height:1.73,stance:.17,hat:'hood',scarf:MAT.slate,lean:.03}],
-  ['vigil_denise_okafor',{skin:MAT.skinDeep,coat:MAT.pubGreen,trouser:MAT.denim,hair:MAT.black,height:1.68,stance:.15,scarf:MAT.mustard,pose:'carry'}],
+  ['vigil_denise_okafor',{skin:MAT.skinDeep,coat:MAT.cloth,trouser:MAT.dark,hair:MAT.black,height:1.68,stance:.15,scarf:MAT.mustard,pose:'carry'}],
   ['vigil_malcolm_vey',{skin:MAT.skinWarm,coat:MAT.mustard,trouser:MAT.dark,hair:MAT.dark,height:1.78,stance:.19,hat:'hood',lean:.06,pose:'carry'}],
   ['vigil_kit_renshaw',{skin:MAT.skinWarm,coat:MAT.slate,trouser:MAT.denim,hair:MAT.terracotta,height:1.72,stance:.16,turn:-.18,pose:'watch'}],
 ])buildExteriorLocal(name,body);
@@ -3442,7 +3591,7 @@ for(const [name,kind,opts] of [
   ['vigil_part_ruth_binder','clipboard',{height:1.70,coat:MAT.navy}],
   ['vigil_part_leila_flask','flask',{height:1.66,coat:MAT.denim,accent:MAT.terracotta}],
   ['vigil_part_owen_umbrella','umbrella',{height:1.73,coat:MAT.dark}],
-  ['vigil_part_denise_photos','pamphlets',{height:1.68,coat:MAT.pubGreen}],
+  ['vigil_part_denise_photos','pamphlets',{height:1.68,coat:MAT.cloth}],
   ['vigil_part_malcolm_map','map',{height:1.78,coat:MAT.mustard}],
   ['vigil_part_kit_microphone','shotgun-mic',{height:1.72,coat:MAT.slate}],
 ]){const m=mesh(name);vigilKit(m,{kind,...opts});}
@@ -3452,13 +3601,13 @@ for(const [name,kind,opts] of [
 for(const [name,kit,body] of [
   ['vigil_figure_umbrella_a','umbrella',{coat:MAT.dark,trouser:MAT.denim,hair:MAT.dark,height:1.74,scarf:MAT.slate,lean:-.05}],
   ['vigil_figure_umbrella_b','umbrella',{coat:MAT.navy,trouser:MAT.dark,hair:MAT.dark,height:1.68,hat:'hood',stance:.20,turn:.22}],
-  ['vigil_figure_placard_a',null,{coat:MAT.pubGreen,trouser:MAT.dark,hair:MAT.black,height:1.72,hat:'hood',skin:MAT.skinDeep,pose:'carry'}],
+  ['vigil_figure_placard_a',null,{coat:MAT.cloth,trouser:MAT.dark,hair:MAT.black,height:1.72,hat:'hood',skin:MAT.skinDeep,pose:'carry'}],
   ['vigil_figure_placard_b',null,{coat:MAT.terracotta,trouser:MAT.dark,hair:MAT.black,height:1.78,stance:.21,lean:.04,pose:'carry'}],
   ['vigil_figure_flask_a','flask',{coat:MAT.terracotta,trouser:MAT.denim,hair:MAT.agedWhite,height:1.70,scarf:MAT.mustard,pose:'carry'}],
   ['vigil_figure_flask_b','flask',{coat:MAT.dark,trouser:MAT.denim,hair:MAT.dark,height:1.76,hat:'hood',turn:-.25,pose:'carry'}],
   ['vigil_figure_seated_a','seated',{coat:MAT.navy,trouser:MAT.dark,hair:MAT.dark,height:1.28,stance:.10,scarf:MAT.terracotta,coatLength:.52,lean:-.06}],
-  ['vigil_figure_seated_b','seated',{coat:MAT.pubGreen,trouser:MAT.dark,hair:MAT.agedWhite,height:1.34,stance:.12,hat:'hood',coatLength:.48,turn:.18}],
-  ['vigil_figure_pamphlets_a','pamphlets',{coat:MAT.denim,trouser:MAT.dark,hair:MAT.black,height:1.73,skin:MAT.skinDeep,pose:'carry'}],
+  ['vigil_figure_seated_b','seated',{coat:MAT.cloth,trouser:MAT.dark,hair:MAT.agedWhite,height:1.34,stance:.12,hat:'hood',coatLength:.48,turn:.18}],
+  ['vigil_figure_pamphlets_a','pamphlets',{coat:MAT.slate,trouser:MAT.dark,hair:MAT.black,height:1.73,skin:MAT.skinDeep,pose:'carry'}],
   ['vigil_figure_pamphlets_b','pamphlets',{coat:MAT.navy,trouser:MAT.dark,hair:MAT.dark,height:1.66,hat:'hood',lean:.05,pose:'carry'}],
   ['vigil_figure_camera_a','camera',{coat:MAT.slate,trouser:MAT.denim,hair:MAT.dark,height:1.75,turn:-.22,pose:'watch'}],
   ['vigil_figure_camera_b','camera',{coat:MAT.dark,trouser:MAT.denim,hair:MAT.black,height:1.69,hat:'hood',stance:.13,lean:-.05,pose:'watch'}],
@@ -3769,15 +3918,38 @@ buildVigilSign('vigil_part_banner',['KEEP ELLERY','STANDING'],{w:3.80,boardY:.56
         const inwardEdge=bodyZ-outward*depth/2;
         if(inwardEdge>inwardLimit)bodyZ-=inwardEdge-inwardLimit;
       }
+      // The north service escape occupies the actual outside of the academic
+      // gallery (world x about 78..96, z below 2). These older generic street
+      // masses used to project window lintels and even a roof face through the
+      // grated landing. Keep their volume behind the new authored school skin;
+      // the street side of that skin is at world z=1.9. The extra allowance
+      // includes the window lintels, coping and pitched-roof overhang.
+      const roofServiceBack=outward<0&&i>=2&&i<=4;
+      if(roofServiceBack){
+        const minFace=-5.15; // local z; prop anchor is world z=7.5
+        const front=bodyZ+outward*(depth/2+.08);
+        if(front<minFace)bodyZ+=minFace-front;
+      }
       const face=bodyZ+outward*(depth/2+.08),back=bodyZ-outward*depth/2;
-      addBox(m,[mid,h/2,bodyZ],[bw,h,depth],mat);
+      // A service doorway at world x=94, floor=10 must remain an aperture in
+      // the civic mass as well as in the fine facade. Split the upper wall and
+      // its roof at the fixed jamb; below the sill this is one real building.
+      const serviceDoor=outward<0&&i===4;
+      const bodyLeft=mid-bw/2,bodyRight=mid+bw/2;
+      const doorLeft=42.8,doorRight=45.2; // local x, world x=92.8..95.2
+      const upperRuns=serviceDoor?[[bodyLeft,doorLeft],[doorRight,bodyRight]]:[[bodyLeft,bodyRight]];
+      if(serviceDoor){
+        addBox(m,[mid,5,bodyZ],[bw,10,depth],mat);
+        for(const[a,b]of upperRuns)addBox(m,[(a+b)/2,(10+h)/2,bodyZ],[b-a,h-10,depth],mat);
+      }else addBox(m,[mid,h/2,bodyZ],[bw,h,depth],mat);
       addBox(m,[mid,.50,face],[bw+.08,.95,.18],MAT.stone);
-      addBox(m,[mid,h-.42,face],[bw+.16,.22,.20],MAT.stone);
+      for(const[a,b]of upperRuns)addBox(m,[(a+b)/2,h-.42,face],[b-a+.16,.22,.20],MAT.stone);
       const floorCount=Math.max(1,Math.floor((h-1.8)/3.0));
       for(let bx=mid-bw/2+1.7;bx<mid+bw/2-1.0;bx+=3.1){
         addBox(m,[bx,1.52,face+outward*.09],[1.12,2.62,.16],i%3===0?MAT.agedWhite:MAT.black);
         for(let floor=0;floor<floorCount;floor++){
           const y=4.75+floor*2.85;if(y>h-1.0)continue;
+          if(serviceDoor&&y>9.8&&bx+1.1>doorLeft&&bx-1.1<doorRight)continue;
           addBox(m,[bx,y,face+outward*.10],[1.20,1.44,.14],((i+floor)%8===0)?MAT.warmWindow:MAT.black);
           addBox(m,[bx,y+.82,face+outward*.13],[1.48,.16,.20],MAT.stone);
         }
@@ -3785,21 +3957,22 @@ buildVigilSign('vigil_part_banner',['KEEP ELLERY','STANDING'],{w:3.80,boardY:.56
       // Older phases turn a pitched roof and a gable to the street. Later
       // concrete/service pieces keep a shallow parapet, visibly grafted on.
       if(mat===MAT.brickRed||mat===MAT.glazedBrick||mat===MAT.brickDark){
-        const rise=1.7+(i%2)*.55,xa=mid-bw/2,xb=mid+bw/2;
-        addPitchedRoof(m,{x:mid,z:bodyZ,w:bw,d:depth,eaves:h,rise,mat:MAT.slate,gableMat:mat,ridge:'x'});
+        const rise=1.7+(i%2)*.55;
+        for(const[a,b]of upperRuns)
+          addPitchedRoof(m,{x:(a+b)/2,z:bodyZ,w:b-a,d:depth,eaves:h,rise,mat:MAT.slate,gableMat:mat,ridge:'x'});
       }
       // The block is walkable on both sides, so a rear elevation cannot be a
       // blind extrusion. Quieter windows and a second stone band make it read
       // as the back of an owned building rather than the end of the model.
       const rear=bodyZ-outward*(depth/2+.08);
       addBox(m,[mid,.50,rear],[bw+.08,.95,.18],MAT.stone);
-      addBox(m,[mid,h-.42,rear],[bw+.16,.22,.20],MAT.stone);
+      for(const[a,b]of upperRuns)addBox(m,[(a+b)/2,h-.42,rear],[b-a+.16,.22,.20],MAT.stone);
       for(let bx=mid-bw/2+1.7;bx<mid+bw/2-1.0;bx+=3.1){
         addBox(m,[bx,4.72,rear-outward*.09],[1.02,1.30,.14],MAT.black);
         addBox(m,[bx,5.46,rear-outward*.12],[1.28,.14,.20],MAT.stone);
       }
       if(setback>1.5){
-        const streetFace=z+outward*2.96;
+        const streetFace=roofServiceBack?Math.max(z+outward*2.96,-5.15):z+outward*2.96;
         addBox(m,[mid,.48,streetFace],[bw,.96,.20],MAT.brickRed);
         for(const px of[mid-bw/2+.25,mid+bw/2-.25])addBox(m,[px,1.05,streetFace],[.48,2.1,.48],MAT.stone);
       }
@@ -4215,8 +4388,6 @@ const addBoothGuard=(m,{x=0,z=-.15,lean=0,arm='rest'}={})=>{
   const m=mesh('yard_sign');
   for(const x of[-.78,.78]) addBox(m,[x,1.05,0],[.09,2.10,.09],MAT.steel);
   addBox(m,[0,1.86,.05],[1.86,1.16,.05],MAT.agedWhite);              // notice board
-  addBox(m,[0,2.28,.09],[1.62,.20,.03],MAT.dark);                    // its heading bar
-  for(let i=0;i<5;i++) addBox(m,[0,2.00-i*.15,.09],[1.42,.05,.02],MAT.dark);
   addBox(m,[0,1.06,.05],[1.10,.44,.05],MAT.safetyRed);               // hazard plate
   addBox(m,[0,1.06,.09],[.94,.10,.03],MAT.agedWhite);
   addBox(m,[.62,.62,.05],[.46,.46,.04],MAT.brass,Math.PI*.25);       // warning diamond
@@ -4676,24 +4847,14 @@ const addBoothGuard=(m,{x=0,z=-.15,lean=0,arm='rest'}={})=>{
   const faceQuad=(target,f,u,y,w,h,mat,n=0)=>addQuad(target,
     point(f,u-w/2,y-h/2,n),point(f,u+w/2,y-h/2,n),
     point(f,u+w/2,y+h/2,n),point(f,u-w/2,y+h/2,n),mat);
-  const digitGlyphs={
-    '2':['01110','10001','00001','00010','00100','01000','11111'],
-    '3':['11110','00001','00001','01110','00001','00001','11110'],
-    '4':['00010','00110','01010','10010','11111','00010','00010'],
-    '5':['11111','10000','10000','11110','00001','00001','11110'],
-    '7':['11111','00001','00010','00100','01000','01000','01000'],
-  };
   const print=(target,text,f,{w,y,h,z=0,mat=P.black})=>{
-    const source=text.toUpperCase(),dot=Math.min(h/7,w/(source.length*6-1)),start=-(source.length*6-1)*dot/2;
-    for(let ci=0;ci<source.length;ci++){
-      const glyph=digitGlyphs[source[ci]]||VIGIL_GLYPHS[source[ci]];if(!glyph)continue;
-      for(let row=0;row<7;row++){
-        // Merge adjacent pixels into one ink stroke: planar, legible and cheap.
-        for(let col=0;col<5;){if(glyph[row][col]!=='1'){col++;continue;}let end=col+1;while(end<5&&glyph[row][end]==='1')end++;
-          faceQuad(target,f,start+(ci*6+(col+end)/2)*dot,y+(3-row)*dot,(end-col)*dot*.94,dot*.87,mat,z);col=end;
-        }
-      }
-    }
+    const lamp=text==='TELEPHONE',instruction=text==='PAY ON ANSWER',header=text==='POST OFFICE';
+    lettering(target,text,{center:point(f,0,y,z),widthM:lamp?.753:instruction?w/.88-.012:w,heightM:lamp?.104:instruction?h/.64:h*1.12,
+      readerRight:[f.ax,0,f.az],up:[0,1,0],category:'phone',capHeightM:h*.96,
+      ground:lamp?MAT.warmWindow:instruction?MAT.navy:header?P.grey:/^[0-9]$/.test(text)?MAT.ivory:MAT.paper,
+      ink:mat,process:lamp?'black screen print on opal telephone glass':instruction?'telephone instruction-card screen print':'telephone apparatus printed enamel and paper',
+      emission:lamp?'substrate':'none',emissiveFactor:lamp?materials[MAT.warmWindow].emissiveFactor:undefined,
+      glyphLayout:instruction?{widthM:w,heightM:h*1.12}:undefined});
   };
   addBox(m,[0,.05,0],[1.02,.10,1.02],MAT.concrete);
   addBox(m,[0,.112,0],[.90,.025,.90],P.red);
@@ -5319,36 +5480,9 @@ const addBoothGuard=(m,{x=0,z=-.15,lean=0,arm='rest'}={})=>{
     }
   }
 }
-{
-  // THE EYES IN THE WATER.
-  //
-  // Two marble eyes, face up under a working fountain. Not a head — the head is
-  // upstairs on its plinth in the academic gallery, and it has a jaw and part of
-  // a mouth and no eyes. Somebody took the eyes out of it and put them in a
-  // basin across the yard, which is a thing you do to a face you do not want
-  // looking at you.
-  //
-  // THEY ARE MEANT TO READ AS PENNIES FIRST. Small, pale, convex, lying among
-  // coins in a municipal fountain — which is exactly what two round white things
-  // in a wishing well look like until you are close enough to see that they are
-  // not stamped. So: coin-scale, coin-thickness, and a scatter of actual coins
-  // around them doing the misdirection.
-  const m=mesh('park_marble_eyes');
-  // The eyes. Domed, not discs — the iris is cut, and the dome is what stops
-  // them being coins once the torch is actually on them.
-  for(const [x,z,yaw] of[[-.055,-.02,.22],[.058,.03,-.14]]){
-    addCylinder(m,[x,.012,z],.037,.024,MAT.plaster,12);            // the ball, sunk in silt
-    addEllipsoid(m,[x,.028,z],[.036,.020,.036],MAT.plaster,7,10);  // the dome
-    addCylinder(m,[x,.041,z],.014,.006,MAT.stone,10,yaw);          // the cut iris
-  }
-  // The coins they are lying among. This is the whole trick and it costs eight
-  // cylinders: without them the eyes are two odd white objects, and with them
-  // they are two of the pennies until you look properly.
-  for(let i=0;i<8;i++){
-    const a=(i*2.399), r=.10+((i*5)%7)/7*.30;
-    addCylinder(m,[Math.cos(a)*r,.006,Math.sin(a)*r],.026,.008,i%3===0?MAT.stone:MAT.bronze,10);
-  }
-}
+// Fountain eyes and coins are authored separately with the gallery's socketed
+// portrait by createReliquaryPropGeometry() below. The basin can keep its pennies
+// when the same two mineral eyes move into the case and finally into the face.
 function buildStreetCar(name,{moving=false,body=MAT.dark}={}){
   const m=mesh(name);
   addBox(m,[0,.58,.02],[1.84,.54,4.34],body);                         // sill and lower body
@@ -5419,45 +5553,24 @@ buildStreetCar('city_moving_car',{moving:true,body:MAT.terracotta});
     lining:material('outskirts coat lining',[.12,.135,.115],.0,.94),
     lamp:material('outskirts opal strip',[.68,.70,.60],.0,.52,[.30,.31,.25]),
   };
-  const printGlyphs={
-    A:['01110','10001','10001','11111','10001','10001','10001'],B:['11110','10001','10001','11110','10001','10001','11110'],
-    C:['01111','10000','10000','10000','10000','10000','01111'],D:['11110','10001','10001','10001','10001','10001','11110'],
-    E:['11111','10000','10000','11110','10000','10000','11111'],F:['11111','10000','10000','11110','10000','10000','10000'],
-    G:['01111','10000','10000','10111','10001','10001','01110'],H:['10001','10001','10001','11111','10001','10001','10001'],
-    I:['11111','00100','00100','00100','00100','00100','11111'],J:['00111','00010','00010','00010','10010','10010','01100'],
-    K:['10001','10010','10100','11000','10100','10010','10001'],L:['10000','10000','10000','10000','10000','10000','11111'],
-    M:['10001','11011','10101','10101','10001','10001','10001'],N:['10001','11001','10101','10011','10001','10001','10001'],
-    O:['01110','10001','10001','10001','10001','10001','01110'],P:['11110','10001','10001','11110','10000','10000','10000'],
-    Q:['01110','10001','10001','10001','10101','10010','01101'],R:['11110','10001','10001','11110','10100','10010','10001'],
-    S:['01111','10000','10000','01110','00001','00001','11110'],T:['11111','00100','00100','00100','00100','00100','00100'],
-    U:['10001','10001','10001','10001','10001','10001','01110'],V:['10001','10001','10001','10001','10001','01010','00100'],
-    W:['10001','10001','10001','10101','10101','10101','01010'],X:['10001','10001','01010','00100','01010','10001','10001'],
-    Y:['10001','10001','01010','00100','00100','00100','00100'],Z:['11111','00001','00010','00100','01000','10000','11111'],
-    '0':['01110','10001','10011','10101','11001','10001','01110'],'1':['00100','01100','00100','00100','00100','00100','01110'],
-    '2':['01110','10001','00001','00010','00100','01000','11111'],'3':['11110','00001','00001','01110','00001','00001','11110'],
-    '4':['00010','00110','01010','10010','11111','00010','00010'],'5':['11111','10000','10000','11110','00001','00001','11110'],
-    '6':['01110','10000','10000','11110','10001','10001','01110'],'7':['11111','00001','00010','00100','01000','01000','01000'],
-    '8':['01110','10001','10001','01110','10001','10001','01110'],'9':['01110','10001','10001','01111','00001','00001','01110'],
-    ':':['00000','00100','00100','00000','00100','00100','00000'],'-':['00000','00000','00000','11111','00000','00000','00000'],
-    '.':['00000','00000','00000','00000','00000','00110','00110'],
-  };
-  // Printed pixels are two-triangle ink, not embossed little boxes. Face -Z;
-  // yaw rotates the board and the letters by the same authoring convention.
   const print=(m,text,c,height,mat=O.ink,yaw=0,pitch=0)=>{
-    const px=height/7,advance=px*6,total=(String(text).length*6-1)*px;
-    [...String(text)].forEach((char,index)=>{
-      const glyph=printGlyphs[char];if(!glyph)return;
-      glyph.forEach((row,j)=>[...row].forEach((bit,k)=>{
-        if(bit!=='1')return;
-        const x=-total/2+index*advance+(k+.5)*px,y=(3-j)*px;
-        const cs=Math.cos(yaw),sn=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);
-        const a=(dx,dy)=>[c[0]+(x+dx)*cs-(y+dy)*sp*sn,c[1]+(y+dy)*cp,c[2]+(x+dx)*sn+(y+dy)*sp*cs];
-        addQuad(m,a(-px*.46,-px*.46),a(-px*.46,px*.46),a(px*.46,px*.46),a(px*.46,-px*.46),mat);
-      }));
-    });
+    const horizontal=Math.abs(pitch-Math.PI/2)<1e-5,cs=Math.cos(yaw),sn=Math.sin(yaw);
+    let center=[...c],widthM=(String(text).length*6-1)*height/7*1.06,heightM=height*1.28,
+      ground=O.paper,category=horizontal?'record':'vehicle',process=horizontal?'carbon ink on paper':'transport lettering on painted metal',
+      readerRight=[-cs,0,-sn],up=[0,1,0];
+    if(horizontal){up=[0,0,1];center[1]=m.name==='outskirts_ticket'?.0045:.0125;
+      if(m.name.includes('ledger'))up=[0,-Math.sin(.014),Math.cos(.014)];}
+    if(m.name==='outskirts_bus'&&text==='ELLERY'){widthM=1.65;heightM=.27;center[2]=-4.623;ground=O.ink;process='opaque linen destination-roll print';}
+    if(m.name==='outskirts_bus'&&text==='J 063'){widthM=.60;heightM=.13;center[2]=-4.693;process='registration enamel screen print';}
+    if(m.name==='outskirts_car'){widthM=.56;heightM=.12;center[2]=2.2315;process='registration enamel screen print';}
+    if(text==='PORTER'){widthM=1.52;heightM=.20;center[2]=-1.321;ground=O.ink;category='institution';process='gatehouse painted timber lettering';}
+    if(text==='VISITORS'){widthM=.205;heightM=.035;process='printed ledger heading';}
+    lettering(m,text,{center,widthM,heightM,readerRight,up,category,process,ground,ink:mat,capHeightM:height,
+      font:text==='VISITORS'?'NimbusRoman-Bold.otf':m.name==='outskirts_ticket'?'NimbusSansNarrow-Bold.otf':undefined});
   };
   const translate=(m,offset)=>{
     for(const g of m.groups.values())for(let i=0;i<g.positions.length;i+=3)for(let k=0;k<3;k++)g.positions[i+k]+=offset[k];
+    for(const face of letteringFaces)if(face.mesh===m){for(let k=0;k<3;k++)face.center[k]+=offset[k];face.job.orientation.center=[...face.center];}
     return m;
   };
   const bolt=(m,x,y,z)=>{
@@ -5732,11 +5845,10 @@ buildStreetCar('city_moving_car',{moving:true,body:MAT.terracotta});
     const m=mesh('outskirts_shelter_timetable');
     addBox(m,[0,1.60,0],[.65,1.02,.09],O.iron);
     addBox(m,[0,1.60,-.051],[.57,.93,.014],O.paper);
-    print(m,'ELLERY',[0,1.94,-.063],.065);
-    print(m,'LAST BUS',[0,1.82,-.063],.045);
-    print(m,'23:10',[0,1.66,-.063],.078);
-    print(m,'23:40',[0,1.52,-.063],.078);
-    print(m,'00:10',[0,1.38,-.063],.078);
+    lettering(m,'ELLERY\nLAST BUS\n23:10\n23:40\n00:10',{
+      lines:['ELLERY','LAST BUS','23:10','23:40','00:10'],center:[0,1.60,-.0585],widthM:.57,heightM:.93,
+      category:'vehicle',process:'transport timetable letterpress on paper',ground:O.paper,ink:O.ink,capHeightM:.075,
+      lineCentres:[(2.065-1.94)/.93,(2.065-1.82)/.93,(2.065-1.66)/.93,(2.065-1.52)/.93,(2.065-1.38)/.93]});
     for(const y of[1.89,1.75,1.22])addBox(m,[0,y,-.065],[.46,.008,.002],O.ink);
     for(const x of[-.29,.29])for(const y of[1.17,2.03])bolt(m,x,y,-.061);
     // Lower paper edge curls outward; water gathers inside the case perimeter.
@@ -5933,21 +6045,27 @@ buildStreetCar('city_moving_car',{moving:true,body:MAT.terracotta});
       addBox(m,[-.12,.011,0],[.224,.005,.327],O.paper,0,-.014);
       addBox(m,[.12,.011,0],[.224,.005,.327],O.paper,0,.014);
       addBox(m,[0,.015,0],[.009,.006,.326],O.ink);
-      print(m,'VISITORS',[.115,.019,.106],.022,O.ink,0,Math.PI/2);
+      const marks=[];
       for(const x of[-.116,.116]){
-        for(const z of[-.114,-.067,-.020,.027,.074])addBox(m,[x,.019,z],[.195,.0015,.0016],O.ink);
-        addBox(m,[x-.047,.019,-.020],[.0016,.0015,.231],O.ink);
+        for(const z of[-.114,-.067,-.020,.027,.074])marks.push({points:[[x-.195/2,z],[x+.195/2,z]],widthM:.0016});
+        marks.push({points:[[x-.047,-.1355],[x-.047,.0955]],widthM:.0016});
       }
-      // Existing entries stop before the usable last line; the signed version
-      // adds an unmistakable continuous pen stroke rather than a floating icon.
       for(let row=0;row<3;row++)for(const side of[-1,1])for(let i=0;i<4;i++){
         const x=side*.116-.014+i*.027,z=.066-row*.047;
-        addBeam(m,[x,.020,z],[x+.016,.020,z+.004-(i%2)*.008],.0017,O.ink);
+        marks.push({points:[[x,z],[x+.016,z+.004-(i%2)*.008]],widthM:.0017});
       }
       if(signed){
         const pts=[[-.010,-.105],[.009,-.087],[.016,-.121],[.031,-.095],[.040,-.111],[.061,-.093],[.070,-.113],[.087,-.102],[.102,-.109],[.119,-.096],[.142,-.110],[.164,-.104],[.196,-.109]];
-        for(let i=1;i<pts.length;i++)addBeam(m,[pts[i-1][0],.021,pts[i-1][1]],[pts[i][0],.021,pts[i][1]],.0026,O.ink);
-        addBeam(m,[.007,.021,-.127],[.197,.021,-.119],.0016,O.ink);
+        marks.push({points:pts,widthM:.0026},{points:[[.007,-.127],[.197,-.119]],widthM:.0016});
+      }
+      for(const side of[-1,1]){
+        const x=side*.12,pitch=side*.014;
+        const pageMarks=marks.map(mark=>({points:mark.points.map(([px,pz])=>[.5+(x-px)/.224,.5-pz/.327]),width:mark.widthM/.224}));
+        lettering(m,side===1?'VISITORS':'',{id:`${name}:page-${side<0?'left':'right'}`,
+          center:[x,.0137,0],widthM:.224,heightM:.327,readerRight:[-1,0,0],up:[0,-Math.sin(pitch),Math.cos(pitch)],
+          category:'record',process:signed?'printed visitors form with fresh biro signature':'printed visitors form with earlier pen entries',
+          ground:O.paper,ink:O.ink,font:'NimbusRoman-Bold.otf',capHeightM:.020,texelCapPx:24,
+          lineCentres:[(.327/2-.106)/.327],marks:pageMarks});
       }
       addBox(m,[.248,.015,.040],[.008,.008,.236],MAT.brass,.08);
       translate(m,[-.68,1.486,-1.40]);
@@ -6240,8 +6358,53 @@ let baseboardPlanHash = '';
   console.log(`  · baseboards: ${runs.length} runs -> ${emitted} segments across ${byGroup.size} render groups`);
 }
 
+// Canonical mineral eyes and the damaged gallery host are rebuilt together.
+// Keep these after source imports so the legacy fountain fallback cannot put
+// coins back into the carried object or overwrite the socketed portrait.
+for(const [name,parts] of createReliquaryPropGeometry()) {
+  const target=mesh(name);target.groups.clear();
+  for(const [key,data] of parts) {
+    const definition=RELIQUARY_PROP_MATERIALS[key], material=materials.length;
+    materials.push({name:`reliquary ${key}`,pbrMetallicRoughness:{baseColorFactor:definition.color,
+      metallicFactor:definition.metallic,roughnessFactor:definition.roughness}});
+    const g=group(target,material);g.positions.push(...data.positions);g.normals.push(...data.normals);g.indices.push(...data.indices);
+  }
+}
+
+// Per-placement inscriptions share host geometry. Their physical print meshes
+// carry host-local coordinates and are attached by the ordinary prop runtime.
+for(const spec of WORLD_INSCRIPTIONS){
+  const m=mesh(spec.mesh);lettering(m,spec.copy,{texelCapPx:spec.substrate?24:32,...spec,id:spec.id});
+}
+const preparedLetteringJobs=await prepareWorldInscriptionSubstrates(letteringJobs,{root:ROOT,outputDir:path.join(OUT_DIR,'lettering/substrates')});
+const letteringBake=await bakeLetteringAtlases(preparedLetteringJobs,{outputDir:path.join(OUT_DIR,'lettering')});
+for(const [file,hash]of Object.entries(letteringBuildInputHashes))if(sourceHash(file)!==hash)
+  throw new Error(`Build input changed while generating props: ${file}; rerun to retain the latest work`);
+const letteringMaterials=new Map();
+for(const face of letteringFaces){
+  const entry=letteringBake.entries.get(face.job.id),page=letteringBake.pages[entry.page],key=`${entry.page}:${entry.category}:${entry.process}`;
+  if(!letteringMaterials.has(key)){
+    letteringMaterials.set(key,{index:materials.length,page:entry.page});
+    materials.push({name:`physical print: ${entry.category}: ${entry.process}`,alphaMode:'OPAQUE',
+      pbrMetallicRoughness:{baseColorFactor:[1,1,1,1],metallicFactor:1,roughnessFactor:1},
+      extras:{printedSurface:printedSurfaceMetadata(entry)},
+      ...(page.emission!=='none'?{emissiveFactor:page.emissiveFactor}:{})});
+  }
+  const material=letteringMaterials.get(key).index;
+  const geometry=printedFaceGeometry({...face,uvRect:entry.uvRect}),g=group(face.mesh,material),base=g.positions.length/3;
+  const firstIndex=g.indices.length;
+  g.positions.push(...geometry.positions);g.normals.push(...geometry.normals);g.uvs.push(...geometry.uvs);
+  g.indices.push(...geometry.indices.map(index=>index+base));
+  const description={id:face.job.id,material,firstVertex:base,vertexCount:geometry.positions.length/3,
+    firstIndex,indexCount:geometry.indices.length,center:face.center,readerRight:face.readerRight,up:face.up,
+    normal:geometry.normal,shape:face.shape||'rectangle',drapeM:face.drapeM};
+  (face.mesh.lettering||=[]).push(description);
+  Object.assign(entry,{mesh:face.mesh.name,geometry:description});
+}
+
 const chunks=[]; let byteOffset=0;
 const bufferViews=[], accessors=[], gltfMeshes=[];
+const images=[],textures=[],samplers=[{magFilter:9729,minFilter:9987,wrapS:33071,wrapT:33071}];
 const pad4=(n)=>(n+3)&~3;
 function append(typed,target){
   const b=Buffer.from(typed.buffer,typed.byteOffset,typed.byteLength), start=byteOffset;
@@ -6250,6 +6413,19 @@ function append(typed,target){
 }
 function bounds(a){const lo=[Infinity,Infinity,Infinity],hi=[-Infinity,-Infinity,-Infinity];for(let i=0;i<a.length;i+=3)for(let k=0;k<3;k++){lo[k]=Math.min(lo[k],a[i+k]);hi[k]=Math.max(hi[k],a[i+k]);}return[lo,hi];}
 function accessor(view,componentType,count,type,min,max){const a={bufferView:view,componentType,count,type};if(min)a.min=min;if(max)a.max=max;const i=accessors.length;accessors.push(a);return i;}
+for(let pageIndex=0;pageIndex<letteringBake.pages.length;pageIndex++){
+  const page=letteringBake.pages[pageIndex],ids={};
+  for(const role of ['albedo','normal','orm']){
+    const image=images.length;images.push({name:`${page.name}-${role}`,bufferView:append(page[role]),mimeType:'image/png'});
+    ids[role]=textures.length;textures.push({source:image,sampler:0});
+  }
+  for(const item of letteringMaterials.values())if(item.page===pageIndex){
+    const mat=materials[item.index];
+    mat.pbrMetallicRoughness.baseColorTexture={index:ids.albedo};
+    mat.pbrMetallicRoughness.metallicRoughnessTexture={index:ids.orm};
+    mat.normalTexture={index:ids.normal};
+  }
+}
 for(const m of meshes.values()){
   const primitives=[];
   for(const [mat,g] of m.groups){
@@ -6260,17 +6436,26 @@ for(const m of meshes.values()){
     const ia=accessor(append(ix,34963),5125,ix.length,'SCALAR',[0],[p.length/3-1]);
     primitives.push({attributes:{POSITION:pa,NORMAL:na,TEXCOORD_0:ua},indices:ia,material:mat,mode:4});
   }
-  gltfMeshes.push({name:m.name,primitives});
+  gltfMeshes.push({name:m.name,primitives,...(m.lettering?{extras:{lettering:m.lettering}}:{})});
 }
 const nodes=gltfMeshes.map((_,i)=>({name:gltfMeshes[i].name,mesh:i}));
 const bin=Buffer.concat(chunks,byteOffset);
-const gltf={asset:{version:'2.0',generator:'chunk-surfer build-props.mjs'},scene:0,scenes:[{nodes:nodes.map((_,i)=>i)}],nodes,meshes:gltfMeshes,materials,accessors,bufferViews,buffers:[{byteLength:bin.length}]};
+const gltf={asset:{version:'2.0',generator:'chunk-surfer build-props.mjs'},scene:0,scenes:[{nodes:nodes.map((_,i)=>i)}],nodes,meshes:gltfMeshes,materials,images,textures,samplers,accessors,bufferViews,buffers:[{byteLength:bin.length}]};
 const jsonRaw=Buffer.from(JSON.stringify(gltf));const json=Buffer.concat([jsonRaw,Buffer.alloc(pad4(jsonRaw.length)-jsonRaw.length,0x20)]);
 const total=12+8+json.length+8+bin.length;
 const head=Buffer.alloc(12);head.writeUInt32LE(0x46546c67,0);head.writeUInt32LE(2,4);head.writeUInt32LE(total,8);
 const jh=Buffer.alloc(8);jh.writeUInt32LE(json.length,0);jh.writeUInt32LE(0x4e4f534a,4);
 const bh=Buffer.alloc(8);bh.writeUInt32LE(bin.length,0);bh.writeUInt32LE(0x004e4942,4);
 fs.mkdirSync(OUT_DIR,{recursive:true});fs.writeFileSync(OUT,Buffer.concat([head,jh,json,bh,bin]));
+fs.writeFileSync(path.join(OUT_DIR,'conservatory-props.lettering.json'),JSON.stringify({
+  ...letteringBake.manifest,packSha256:crypto.createHash('sha256').update(fs.readFileSync(OUT)).digest('hex'),
+  sourceHashes:letteringBuildInputHashes,
+  runtimePaperUvs,
+  carrierProxyChanges:['hall_entrance_sign','public_exit_sign','exterior_story_plaque','yard_sign'],
+  worldInscriptionAttachments:WORLD_INSCRIPTIONS,
+  fontSources:['assets/fonts/manifest.json','tools/chunk_surfer/lettering/fonts/manifest.json'],
+  blankSurfacesPreserved:['door_stencil','atrium_formal_banner','yard_markings'],
+},null,2)+'\n');
 
 const stats={generatedAt:new Date().toISOString(),bytes:total,totalTriangles:0,meshes:{}};
 const meshBounds={};
@@ -6292,6 +6477,9 @@ const meshSurfaces=workSurfaces();
 stats.bounds=Object.fromEntries(Object.entries(meshBounds).map(([k,v])=>[k,{min:v.min,max:v.max}]));
 stats.baseboards={planHash:baseboardPlanHash,groups:baseboardAnchors};
 stats.surfaces=meshSurfaces;
+stats.lettering={surfaces:letteringFaces.length,pages:letteringBake.pages.length,
+  textureBaseLevelBytes:letteringBake.manifest.pages.reduce((sum,page)=>sum+page.rgbaBaseLevelBytes,0),
+  atlasInputSha256:letteringBake.inputSha256};
 fs.writeFileSync(STATS,JSON.stringify(stats,null,2)+'\n');
 
 // THE WORK SURFACE, which is not the top of the bounding box.
@@ -6340,7 +6528,7 @@ function workSurfaces(){
 // every mesh (so a clipboard can be stood on a desk without typing a height),
 // and where the baked baseboards hang.
 fs.mkdirSync(path.join(ROOT,'src/data/generated'),{recursive:true});
-fs.writeFileSync(path.join(ROOT,'src/data/generated/prop-geometry.js'),
+fs.writeFileSync(process.env.CHUNK_SURFER_PROPS_OUT_DIR?path.join(OUT_DIR,'prop-geometry.js'):path.join(ROOT,'src/data/generated/prop-geometry.js'),
 `// GENERATED by tools/chunk_surfer/build-props.mjs — do not edit by hand.
 //
 // MESH_TOP is the real height of each mesh's bounding box, in metres, measured
@@ -6367,6 +6555,12 @@ export const MESH_SURFACE = Object.freeze(${JSON.stringify(meshSurfaces)});
 // that source's (UNVERIFIED) provenance; the rest are project-native geometry.
 const packSha=crypto.createHash('sha256').update(fs.readFileSync(OUT)).digest('hex');
 const credits={
+  lettering:{manifest:'conservatory-props.lettering.json',
+    geometryAndBrushTrajectories:{source:'tools/chunk_surfer/lettering',license:'project source'},
+    stockFonts:{source:'https://github.com/ArtifexSoftware/urw-base35-fonts',
+      license:'AGPL-3.0 with the upstream stated PostScript/PDF document exception; see vendored LICENSE and COPYING',
+      manifests:['assets/fonts/manifest.json','tools/chunk_surfer/lettering/fonts/manifest.json']},
+    note:'Rasterized lettering uses pinned font files, never host font substitution. Stock outlines are not claimed as historically exact lettering.'},
   pack:{
     filename:'conservatory-props.glb', author:'Chunk Surfer project',
     source:'tools/chunk_surfer/build-props.mjs', license:'project source (mixed: see meshes)',
@@ -6382,7 +6576,9 @@ const credits={
         ? (SOURCES[m.name]?.authored
           ? { ...SOURCES[m.name].authored, sourceTriangles:src.sourceTriangles, modifications:'Re-axised to Y-up, floor-centred, height-scaled, vertex-cluster decimated, normals recomputed.' }
           : { source:src.file, origin:'user-supplied (FabConvert/SketchUp conversion)', license:'unverified', sourceTriangles:src.sourceTriangles, modifications:'Re-axised to Y-up, floor-centred, height-scaled, vertex-cluster decimated, normals recomputed.' })
-        : { source:'tools/chunk_surfer/build-props.mjs', origin:'project-native procedural geometry', license:'project source' },
+        : m.name.startsWith('academic_bust_socketed')
+          ? {source:'https://polyhaven.com/a/marble_bust_01',origin:'CC0 portrait with project-authored socket bores, bronze repair and canonical eyes',license:'CC0-1.0 portrait; project source additions',modifications:'World proportions baked; neck split and physical eye socket bores capped; scaled uniformly to gallery size.'}
+          : { source:'tools/chunk_surfer/build-props.mjs', origin:'project-native procedural geometry', license:'project source' },
     };
   }),
   rejectedIntake:[...Object.entries(SOURCES).filter(([,cfg])=>!cfg.enabled).map(([name,cfg])=>({name,source:cfg.file,license:'unverified',meshName:null,reason:cfg.reject})),{name:'portrait_frame',source:'Gold frame.glb',license:'unverified',meshName:null,reason:'The supplied GLB contains one two-triangle dark plane and no usable frame geometry or texture; project-native brass rail frame used.'}],

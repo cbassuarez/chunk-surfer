@@ -57,6 +57,7 @@ export function makeColdOpenScene({
   blocksWorld = true, allowsLook = false, suppressesHud = false,
   worldUnderlay = false, worldView = null, presentation = worldUnderlay ? 'cinematic' : 'monitor',
   transcriptBackground = 'rgba(2,4,5,.58)',
+  transcriptPlacement = 'bottom',
 } = {}) {
   let scene = null;
   let completed = false;
@@ -127,7 +128,7 @@ export function makeColdOpenScene({
             keep: choices.height ? 4 : 2,
           });
           const h = Math.min(rows - 3, Math.max(4, transcript.height + choiceRows + 2));
-          const y = Math.max(2, rows - h - 1);
+          const y = transcriptPlacement === 'top' ? 2 : Math.max(2, rows - h - 1);
           uiFill(x, y, width, h, transcriptBackground);
           const transcriptY = y + 1;
           drawTranscript(transcript, {

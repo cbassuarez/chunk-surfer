@@ -46,7 +46,7 @@ const chunk = (values, size) => {
 // Grouped into sections, because a form has sections. Each entry is
 // [label, value] and a bare string is a section heading.
 function reportSections(summary) {
-  const ret = returnDefinition(summary.endingId);
+  const ret = returnDefinition(summary.endingId, summary);
   const contaminated = summary.takes?.contaminated || [];
   const rooms = summary.takes?.rooms || [];
   const battles = summary.battles || {};
@@ -57,6 +57,7 @@ function reportSections(summary) {
   const sections = [
     ['THE JOB', [
       ['DISPOSITION', ret?.title || String(summary.endingId || '').toUpperCase()],
+      ...(ret?.variantTitle ? [['ACCOUNT', ret.variantTitle], ['STAY OF DESTRUCTION', '100 YEARS'], ['LIVING GUARANTOR', 'THE RECORDIST']] : []),
       ['CLASSIFICATION', ret?.classification || 'UNCLASSIFIED'],
       ['TERMS', String(summary.rules?.startedPreset || 'contract').replaceAll('-', ' ').toUpperCase()],
       ['TIME ON SITE', formatDuration(summary.durationSeconds)],
@@ -305,13 +306,14 @@ export function makeReturnReportScene({
 
       const left = body.x;
       const width = body.w;
-      const ret = returnDefinition(summary.endingId);
+      const ret = returnDefinition(summary.endingId, summary);
 
       // WHAT CAME BACK, on the top line, in the machine's own large type.
       drawVfdText(left, body.y, ret?.title || String(summary.endingId || '').toUpperCase(), {
         color: UI_COLOR.amber, max: width,
       });
-      uiText(left, body.y + 3, ret?.classification || 'UNCLASSIFIED', 'ui-label', 0.72);
+      uiText(left, body.y + 3, ret?.variantTitle || ret?.classification || 'UNCLASSIFIED', 'ui-label', 0.72);
+      if (ret?.variantTitle) uiText(left, body.y + 4, ret.classification, 'ui-secondary', 0.62);
 
       // TIME ON SITE — the segment counter, which is what a transport shows.
       uiText(left, body.y + 5, 'TIME ON SITE', 'ui-label', 0.68);
@@ -489,7 +491,7 @@ export function makeReturnReportScene({
       }
 
       if (current === 'second-shift') {
-        const ending = returnDefinition(summary.endingId);
+        const ending = returnDefinition(summary.endingId, summary);
         const completed = Math.max(1, Number(summary.endingsAtCompletion) || 1);
         const unseen = Math.max(0, Object.keys(NEXT_ENDING_HINTS).length - completed);
         drawVfdText(body.x, body.y, stageCopy.title, { color: UI_COLOR.danger, max: body.w });
@@ -501,6 +503,7 @@ export function makeReturnReportScene({
         }
         uiText(body.x, body.y + 4, 'YOU REACHED', 'ui-label');
         uiText(body.x, body.y + 6, ending?.title || summary.endingId.toUpperCase(), 'ui-amber');
+        if (ending?.variantTitle) uiText(body.x, body.y + 7, ending.variantTitle, 'ui-secondary');
         uiText(body.x, body.y + 9, 'HINT FOR ANOTHER ENDING', 'ui-label');
         uiWrap(endingHintForEnding(summary.endingId) || 'Try changing a major choice near the end of the story.', body.w).slice(0, 5)
           .forEach((line, i) => uiText(body.x, body.y + 11 + i, line, 'ui-primary'));

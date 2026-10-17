@@ -15,10 +15,9 @@
 //
 // The second is that the dodge always ends. Every cycle is a break followed by
 // a settle, and during the settle they hold perfectly still and can simply be
-// clicked. The settle is not a mercy that shrinks as things get harder -- it
-// GROWS with the difficulty, because the harder the break is to read the longer
-// you are owed to act on having read it. What gets worse is the darting, not
-// the chance. Missing that first commitment is also not damage: the exchange
+// clicked. Each target keeps a short readable commitment, with more time for
+// larger volleys. What escalates is the movement and formation. Missing that
+// first commitment is not damage: the exchange
 // controller bounces the comet back to the bezel and offers it once more.
 //
 // THE CURVE IS A STAIRCASE OF S-CURVES.
@@ -75,8 +74,12 @@ export function fireballPressure({ battleId = '', battleOrdinal = null, turn = 0
 // What the shoal does at that pressure. Every number here is milliseconds or a
 // unit scalar, and every one of them is read by the native side rather than
 // being re-derived there.
-export function fireballChoreography({ battleId = '', battleOrdinal = null, turn = 0, reducedMotion = false } = {}) {
+export function fireballChoreography({ battleId = '', battleOrdinal = null, turn = 0, rayCount = 1, reducedMotion = false } = {}) {
   const pressure = reducedMotion ? 0 : fireballPressure({ battleId, battleOrdinal, turn });
+  const count = Math.max(1, Math.min(4, whole(rayCount) || 1));
+  const movementMs = 550 + pressure * 150;
+  const holdMs = 1550 + (count - 1) * 300 - pressure * 100;
+  const breakMs = reducedMotion ? 0 : movementMs;
   return Object.freeze({
     pressure,
     gesture:GESTURES[battleId]||'rise-drift',
@@ -86,11 +89,10 @@ export function fireballChoreography({ battleId = '', battleOrdinal = null, turn
     // width. Kept under one width even at Source: the encounter can make a
     // complicated formation without turning a click into a chase.
     reach: .35 + pressure * .65,
-    // One short move, then a long commitment. Difficulty changes the movement,
-    // never the time owed after it: every target holds for at least 1.57 s.
-    // Together these fill the exchange's 2.05 s outside-flight contract.
-    breakMs: reducedMotion ? 0 : 260 + pressure * 220,
-    settleMs: reducedMotion ? 2050 : 1790 - pressure * 220,
+    // One readable move, then a commitment budgeted for the original volley.
+    // Extra targets earn acquisition time; single threats do not loiter.
+    breakMs,
+    settleMs: reducedMotion ? movementMs + holdMs : holdMs,
     // How much of the movement is the whole shoal moving as one body versus
     // each surface fanning on its own. High cohesion late: by the last fight
     // they are a formation, not four independent nuisances.
@@ -99,8 +101,8 @@ export function fireballChoreography({ battleId = '', battleOrdinal = null, turn
 }
 
 // Where in the break/settle cycle a cast is, given how long it has been outside
-// the frame. Shared by every surface in the cast -- that is what makes them
-// swimmers rather than four things that happen to be dodging.
+// the frame. Each ray uses its own outside clock so its cue and geometry agree;
+// simultaneous volleys still move together because their clocks start together.
 export function fireballCyclePhase(elapsedSeconds = 0, { breakMs = 240, settleMs = 300 } = {}) {
   const period = Math.max(1, Number(breakMs) || 0) + Math.max(1, Number(settleMs) || 0);
   const at = Math.min(period,Math.max(0, Number(elapsedSeconds) || 0) * 1000);

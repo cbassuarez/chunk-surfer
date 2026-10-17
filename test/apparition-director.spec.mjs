@@ -39,8 +39,8 @@ for (const poseId of APPARITION_POSE_IDS) {
 }
 
 const mainSource = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
-assert.match(mainSource, /id:'hush-player-shadow',mesh:'player_shadow_figure'/,
-  'the HUSH/player-shadow path still resolves the unchanged shared mesh');
+assert.match(mainSource, /PROPS\.setLooseProp\('hush-player-shadow',\{mesh:'player_shadow_figure'/,
+  'the HUSH/player-shadow path still retains its unchanged shared fallback mesh');
 
 const a = createApparitionDirector({ seed: 'phase-d-determinism' });
 const b = createApparitionDirector({ seed: 'phase-d-determinism' });

@@ -1,18 +1,53 @@
-import { emit, listen } from '@tauri-apps/api/event';
+import { emit } from '@tauri-apps/api/event';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import { strikeFireballSurface } from './game/fireball-surface-hit.js';
+import { fireballSurfacePose } from './game/fireball-surface-pose.js';
+import { createFireballSurfaceChase } from './game/fireball-surface-chase.js';
 
 const canvas=document.getElementById('cast');
-const ctx=canvas.getContext('2d',{alpha:false});
+const ctx=canvas.getContext('2d',{alpha:true});
 const sprite=new Image();
 sprite.src='./assets/fireball-sheet.svg';
 let cast=null,pane=null,startedAt=performance.now(),raf=0;
+let locallyStruckIdentity='';
+let lastPainted=null;
+const chase=createFireballSurfaceChase();
+const acquiredKeys=new Set();
+let acquisitionIdentity='';
 
-function strike(){
+// Study observers read the completed canvas frame, rather than inferring a
+// paint from delivery timing. Copies keep observation separate from game state.
+export function readFireballSurfaceFrame(){return lastPainted?structuredClone(lastPainted):null;}
+
+function adoptChase(frame){
+  cast=frame.cast;
+  const identity=`${cast?.castId}:${cast?.surfaceIndex}`;
+  if(identity!==acquisitionIdentity){acquiredKeys.clear();acquisitionIdentity=identity;}
+  if(frame.acquired&&!acquiredKeys.has(frame.key)){
+    acquiredKeys.add(frame.key);
+    void emit('fireball-cast-acquire',{castId:cast.castId,surfaceIndex:cast.surfaceIndex,offer:frame.offer});
+  }
+}
+
+function trackPointer(event){
+  if(pane)return;
+  const bounds=canvas.getBoundingClientRect();
+  adoptChase(chase.pointer({x:event.clientX-bounds.left,y:event.clientY-bounds.top,active:true},{paintedPose:lastPainted?.pose}));
+  paint(performance.now());
+}
+
+function strike(event){
   if(pane)return false;
-  const result=strikeFireballSurface(cast,(payload)=>emit('fireball-cast-hit',payload));
-  if(!result.hit)return false;
-  cast=result.cast;
+  trackPointer(event);
+  const bounds=canvas.getBoundingClientRect();
+  const result=strikeFireballSurface(cast,(payload)=>emit('fireball-cast-hit',payload),{
+    x:event.clientX-bounds.left,y:event.clientY-bounds.top,width:bounds.width,height:bounds.height,pose:lastPainted?.pose,
+  });
+  if(!result.hit){void emit('fireball-cast-miss',result.payload||{});return false;}
+  adoptChase(chase.setCast(result.cast));
+  locallyStruckIdentity=`${cast.castId}:${cast.surfaceIndex}`;
   startedAt=performance.now();
+  paint(startedAt);
   return true;
 }
 
@@ -33,11 +68,9 @@ function size(){
 // IT IS COMING AT YOU, NOT PAST YOU — AND IT IS BUILT THE SAME WAY THE ONE
 // INSIDE THE GAME IS.
 //
-// The window travels and grows; the native side owns the approach. What happens
-// in here is the comet filling whatever size it currently is, in the same
-// layers and the same ordered dither the stage uses, so crossing the bezel does
-// not change what the thing is made of. That is the whole trick: the fireball
-// that leaves the frame has to be recognisably the fireball that was in it.
+// The transparent native carrier stays fixed and owns every old target position.
+// Only its black target tile travels, using the same pure pose as pointer hits.
+// The layers and ordered dither remain the ones the player saw on the stage.
 const BAYER4=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];
 const dithered=(cx,cy,coverage)=>(BAYER4[((cy&3)<<2)|(cx&3)]+.5)/16<coverage;
 const EMBER_RAMP=['#FFF6AA','#FFE15A','#FFAD1F','#FF6A15','#E74712','#A9260C','#5C1406'];
@@ -99,12 +132,30 @@ function drawPane(w,h,at){
   }
 }
 
-function draw(at){
-  const {w,h,dpr}=size();ctx.fillStyle='#000';ctx.fillRect(0,0,w,h);
-  if(pane){drawPane(w,h,at);raf=requestAnimationFrame(draw);return;}
-  if(!cast){raf=requestAnimationFrame(draw);return;}
-  const ray=cast.rays?.[Math.max(0,Math.min(cast.rayCount-1,Number(cast.surfaceIndex)||0))];
-  if(!ray){raf=requestAnimationFrame(draw);return;}
+function paint(at){
+  const {w,h,dpr}=size();ctx.clearRect(0,0,w,h);
+  lastPainted=null;
+  if(pane){drawPane(w,h,at);return;}
+  if(cast){
+    const paintedCast=cast;
+    const pose=chase.snapshot().pose||fireballSurfacePose(cast,{width:w/dpr,height:h/dpr});
+    const tileW=pose.size*dpr;
+    ctx.save();ctx.translate(pose.x*dpr,pose.y*dpr);
+    ctx.beginPath();ctx.rect(0,0,tileW,tileW);ctx.clip();
+    ctx.fillStyle='#000';ctx.fillRect(0,0,tileW,tileW);
+    drawFireballTile(tileW,tileW,dpr,at);
+    ctx.restore();
+    lastPainted={cast:paintedCast,pose,at:performance.timeOrigin+at,width:w/dpr,height:h/dpr};
+  }
+}
+
+// rAF animates cosmetic breathing only. Native event delivery must paint its
+// geometry and cue synchronously even when an unfocused webview suspends rAF.
+function draw(at){paint(at);raf=requestAnimationFrame(draw);}
+
+function drawFireballTile(w,h,dpr,at){
+  const ray=cast.rays?.[0];
+  if(!ray)return;
   const elapsed=Math.max(0,(at-startedAt)/1000);
   const answered=cast.state==='deflected'||cast.state==='reversed';
   const ramp=answered?RETURN_RAMP:EMBER_RAMP;
@@ -134,7 +185,7 @@ function draw(at){
       ctx.font=`${Math.floor(Math.min(w,h)*.24)}px ui-monospace,monospace`;
       ctx.fillText(String(cast.damage),cx,cy);
     }
-    raf=requestAnimationFrame(draw);return;
+    return;
   }
 
   // ── the corona, breathing, filling the surface ─────────────────────────
@@ -175,9 +226,8 @@ function draw(at){
   }
   ctx.globalAlpha=1;
 
-  // COMMITTED. Movement has ended and these four brackets remain fixed for
-  // the whole catch interval. No caption, no instruction: just a visual change
-  // from authored tease to a safe click target.
+  // The brackets now promise a genuinely fixed catch mark. Name the action
+  // and the reoffer so a retreat cannot read as evasion from the player's hand.
   if(cast.catchReady){
     const radius=Math.min(w,h)*.43;
     const arm=Math.max(unit*3,Math.round(radius*.22));
@@ -191,6 +241,13 @@ function draw(at){
     }
     ctx.stroke();
     ctx.globalAlpha=1;
+  }
+  if(cast.state==='outbound'&&(cast.catchReady||cast.offer>1)){
+    const label=cast.catchReady?(cast.offer>1?'LAST CHANCE':'DEFLECT'):'AGAIN';
+    ctx.font=`bold ${Math.max(10*dpr,Math.round(Math.min(w,h)*.075))}px ui-monospace,monospace`;
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillStyle='#000';ctx.fillRect(w*.1,h*.825,w*.8,h*.13);
+    ctx.fillStyle=RETURN_RAMP[1];ctx.fillText(label,w*.5,h*.89);
   }
 
   // ── and what it is made of ────────────────────────────────────────────
@@ -217,17 +274,38 @@ function draw(at){
   }
   ctx.globalAlpha=1;
   void dpr;
-  raf=requestAnimationFrame(draw);
 }
 
 async function boot(){
-  addEventListener('pointerdown',(event)=>{event.preventDefault();event.stopPropagation();if(!enterPane())strike();},{capture:true});
-  // On macOS the first click may be consumed activating this non-main webview.
-  // Focus is therefore a fallback for that same physical click; `strike()` is
-  // single-fire, so a subsequent pointerdown cannot double-charge RETURN.
-  addEventListener('focus',()=>{if(!pane)strike();});
-  await listen('fireball-cast',({payload})=>{pane=null;cast=payload||null;startedAt=performance.now();});
-  await listen('window-choreography-pane',({payload})=>{cast=null;pane=payload||null;startedAt=performance.now();});
+  addEventListener('pointerdown',(event)=>{event.preventDefault();event.stopPropagation();if(!enterPane())strike(event);},{capture:true});
+  addEventListener('pointermove',trackPointer,{capture:true});
+  addEventListener('pointerenter',trackPointer,{capture:true});
+  // Native surfaces accept the first mouse press. Activation alone is not a
+  // catch: showing a window or switching applications can also focus it.
+  // Global Tauri listeners receive targeted events too. Each physical surface
+  // must keep its own cast identity and feedback when siblings are updated.
+  const surfaceWindow=getCurrentWindow();
+  await surfaceWindow.listen('fireball-cast',({payload})=>{
+    const identity=`${payload?.castId}:${payload?.surfaceIndex}`;
+    // An already accepted physical press cannot be reopened by a late in-flight
+    // pose update. The authoritative deflect/RETURN response may still replace it.
+    if(identity===locallyStruckIdentity&&payload?.state==='outbound'){paint(performance.now());return;}
+    const previous=cast;
+    if(identity!==locallyStruckIdentity)locallyStruckIdentity='';
+    pane=null;adoptChase(chase.setCast(payload||null));
+    const changed=!previous||previous.castId!==cast?.castId||previous.state!==cast?.state
+      ||previous.catchReady!==cast?.catchReady||previous.offer!==cast?.offer;
+    if(changed)startedAt=performance.now();
+    paint(performance.now());
+  });
+  await surfaceWindow.listen('window-choreography-pane',({payload})=>{
+    chase.setCast(null);cast=null;pane=payload||null;startedAt=performance.now();paint(startedAt);
+  });
+  await surfaceWindow.listen('fireball-cast-pointer',({payload})=>{
+    const frame=chase.nativePointer(payload,{paintedPose:lastPainted?.pose});
+    if(pane)return;
+    adoptChase(frame);paint(performance.now());
+  });
   raf=requestAnimationFrame(draw);
 }
 void boot();

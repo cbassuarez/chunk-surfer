@@ -66,6 +66,7 @@ function normalizeFrame(value, fallback = {}) {
     spaceId:text(value?.spaceId || fallback?.spaceId || 'conservatory'),
     yaw:Number.isFinite(Number(value?.yaw)) ? Number(value.yaw) : Number(fallback?.yaw) || 0,
     pitch:Number.isFinite(Number(value?.pitch)) ? Number(value.pitch) : Number(fallback?.pitch) || 0,
+    ...(Number.isFinite(value?.busWomanYardTime) ? { busWomanYardTime: value.busWomanYardTime } : {}),
     ...(pressure ? { pressurePresentation: pressure } : {}),
   };
 }
@@ -133,6 +134,8 @@ function routePose(segment, step) {
     spaceId:b.spaceId || a.spaceId || 'conservatory',
     yaw:a.yaw + Math.atan2(Math.sin(b.yaw - a.yaw), Math.cos(b.yaw - a.yaw)) * mix,
     pitch:a.pitch + (b.pitch - a.pitch) * mix,
+    ...(Number.isFinite(a.busWomanYardTime)&&Number.isFinite(b.busWomanYardTime)
+      ? {busWomanYardTime:a.busWomanYardTime+(b.busWomanYardTime-a.busWomanYardTime)*mix} : {}),
     ...(pressure ? { pressurePresentation: pressure } : {}),
   };
 }

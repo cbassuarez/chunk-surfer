@@ -48,9 +48,7 @@ assert.equal(peripheral.contract.shadowOnlyFigures, 1);
 assert.equal(peripheral.contract.shadowOnlyIndices.length, 1);
 assert.ok([0, 2].includes(peripheral.contract.shadowOnlyIndices[0]), 'peripheral chooses an edge identity');
 assert.equal(peripheral.instances.filter((instance) => instance.shadowOnly).length, 1);
-assert.equal(peripheral.apparitionLights.length, 2, 'an invisible body carries no local white practical');
-assert.ok(!peripheral.apparitionLights.some((lamp) =>
-  lamp.id.endsWith(`:${peripheral.contract.shadowOnlyIndices[0]}`)));
+assert.deepEqual(peripheral.apparitionLights, [], 'neither visible nor shadow-only bodies add white practicals');
 
 const reducedDirector = createApparitionDirector({ seed: 'phase-f-reduced' });
 reducedDirector.resolve(directorInput(0, 'reduced', 0));
@@ -87,8 +85,8 @@ assert.equal(revealBody.apparitionIndex, shadowBody.apparitionIndex, 'delayed re
 assert.equal(revealBody.poseId, shadowBody.poseId, 'delayed reveal retains semantic pose');
 assert.deepEqual([revealBody.x, revealBody.z], [shadowBody.x, shadowBody.z],
   'the selected motion clock is frozen until the body explains its shadow');
-assert.ok(!shadowFrames[0].apparitionLights.some((lamp) => lamp.id.endsWith(`:${delayedIndex}`)));
-assert.ok(reveal.apparitionLights.some((lamp) => lamp.id.endsWith(`:${delayedIndex}`)));
+assert.deepEqual(shadowFrames[0].apparitionLights, []);
+assert.deepEqual(reveal.apparitionLights, [], 'the returned body is revealed by the room, not self-lit');
 assert.ok(pulse > 1, 'the body returns only on a later legal pulse');
 const released = buildEmergencyShadowFrame([light(pulse + 1)], options(delayedDirector, pulse + 1));
 assert.equal(released.director.card, null, 'delayed reveal releases on the next darkness transition');

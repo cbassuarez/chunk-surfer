@@ -59,6 +59,8 @@ import { freshBagMapState, normalizeBagMapState } from './bag-map-state.js';
 import { freshSourceReplayManifest, normalizeSourceReplayManifest } from './source-replay-manifest.js';
 import { freshFieldKit, resolveFieldKit, fieldKitForNewRun, normalizeFieldKitOwnership } from './field-kit.js';
 import { freshVanPreparation, normalizeVanPreparation, prepareVanDifficultyFinalization } from '../progression/van-preparation.js';
+import { freshRoofRenState, normalizeRoofRenState } from './roof-ren.js';
+import { normalizeEndingVariant } from '../data/ending-variants.js';
 
 const SAVE_KEY = 'chunk-surfer:save:v4';
 const LEGACY_SAVE_KEYS = STORAGE_LEGACY_SAVE_KEYS.filter((key) => key !== SAVE_KEY);
@@ -102,6 +104,7 @@ export const freshSave = ({ settings = DEFAULT_SETTINGS, run = null } = {}) => (
   // ending has not committed the return yet. Reload starts this cutscene over;
   // it never tries to restore a half-read line or half-fired effect.
   endingCutscene: null,
+  roofRen: freshRoofRenState(),
   plantIncident: null,
   // The head from the fountain in the park, and whether the gallery has it back.
   // Normalised on read by game/marble-head.js, same as plantIncident above.
@@ -139,7 +142,8 @@ export function normalizeEndingCutsceneCheckpoint(value) {
   const endingId = String(value.endingId || '');
   const arrival = String(value.arrival || '');
   if (!ENDING_IDS.includes(endingId) || !ENDING_CUTSCENE_ARRIVALS.has(arrival)) return null;
-  return { schema: 1, endingId, arrival };
+  const variant=normalizeEndingVariant(endingId,value.variant,arrival);
+  return { schema: 1, endingId, arrival, ...(variant?{variant}:{}) };
 }
 
 function normalizeHushAudioSave(value) {
@@ -310,6 +314,7 @@ function normalizeSaveV4(data, meta = null) {
       runId: source.run?.id || '',
     }),
     endingCutscene: normalizeEndingCutsceneCheckpoint(source.endingCutscene),
+    roofRen: normalizeRoofRenState(source.roofRen),
     settings,
     run,
   };

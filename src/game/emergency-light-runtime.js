@@ -1,8 +1,9 @@
 // Emergency-light apparitions are a rendering event, never a second HUSH.
 // Like the HUSH body, they occupy world depth: real geometry that can be hidden
-// by doors, seats and walls. They are also practical-light occluders, so the
-// same bodies stand in the room, cast across it, and emit a local white field
-// without gaining collision, pursuit, contact, audio, or minimap state.
+// by doors, seats and walls. On the red beat they occlude the practical; in
+// its dark beat their residual charge is sparse, and in a completely unlit
+// room they are nearly a change in air pressure. None of these states gives
+// them collision, pursuit, contact or audio.
 //
 // THEY MILL. THEY DO NOT HUNT.
 //
@@ -51,20 +52,26 @@ const MAX_PUSH = 3.2;
 // which is what puts the shadow in the shot.
 const AIM_AHEAD = 8;
 
-// The projected shadow is already rendered independently from the body's own
-// emissive field. Most sightings should therefore read as a real obstruction
-// first and a white body second; the old values survive as a rare hard reveal.
+// This index is carried through the prop renderer's unused portrait slot for
+// apparition instances only. The fragment shader applies each state before
+// the shared scene dither, so even the near-invisible state belongs to world
+// depth rather than to a screen overlay.
+export const APPARITION_LIGHT_STATE = Object.freeze({
+  ON: 'emergency-on',
+  OFF: 'emergency-off',
+  UNLIT: 'unlit',
+});
+export const APPARITION_RENDER_VARIANT = Object.freeze({
+  [APPARITION_LIGHT_STATE.ON]: 10,
+  [APPARITION_LIGHT_STATE.OFF]: 11,
+  [APPARITION_LIGHT_STATE.UNLIT]: 12,
+});
+
+// The hard reveal sharpens the held silhouette. The bodies no longer light
+// their own room: doing so made the off beat white and deleted its darkness.
 const APPARITION_PRESENTATION = Object.freeze({
-  shadow: Object.freeze({
-    emissive: .82,
-    practicalIntensity: .32,
-    practicalRadius: 3.8,
-  }),
-  hard: Object.freeze({
-    emissive: 2.6,
-    practicalIntensity: 1.05,
-    practicalRadius: 4.8,
-  }),
+  shadow: Object.freeze({ charge: .18 }),
+  hard: Object.freeze({ charge: .42 }),
 });
 
 // Semantic pose identity belongs to the coordinate-blind director. Asset names
@@ -187,6 +194,7 @@ export function buildEmergencyShadowFrame(lights, {
   renderGroup = null,
   compositionResolver = resolveApparitionComposition,
   preferredLightId = null,
+  torchOn = false,
 } = {}) {
   // OFF and Reduce Dread suppression must be structural. Do not rely on the
   // light resolver happening to zero shadowReveal/intensity upstream.
@@ -230,9 +238,15 @@ export function buildEmergencyShadowFrame(lights, {
     .filter((light) => !light?.spilling)
     .filter((light) => !Number.isFinite(light?.sourceZone) || !Number.isFinite(light?.zone)
       || light.sourceZone === light.zone)
-    .filter((light) => Number(light?.shadowReveal) > .08 && Number(light?.intensity) > .01)
+    .filter((light) => light?.kind === 'emergency'
+      || (Number(light?.shadowReveal) > .08 && Number(light?.intensity) > .01))
     .filter((light) => distanceSq(light, listener) <= limitSq)
     .sort((a, b) => {
+      const active = Number(b.shadowReveal) > .08 && Number(b.intensity) > .01
+        ? 1 : 0;
+      const otherActive = Number(a.shadowReveal) > .08 && Number(a.intensity) > .01
+        ? 1 : 0;
+      if (active !== otherActive) return active - otherActive;
       const reveal = Number(b.shadowReveal) - Number(a.shadowReveal);
       if (Math.abs(reveal) > .001) return reveal;
       const throwing = behindShoulder(b) - behindShoulder(a);
@@ -257,6 +271,13 @@ export function buildEmergencyShadowFrame(lights, {
   const light = rankedCandidates.find((candidate) => candidate.id === preferredLightId)
     || rankedCandidates[0];
   if (!light) return null;
+  const emergencyOn = Number(light.shadowReveal) > .08 && Number(light.intensity) > .01;
+  const otherLight = !!torchOn || lights.some((candidate) =>
+    candidate?.kind !== 'emergency'
+    && Number(candidate?.intensity) > .06
+    && distanceSq(candidate, listener) <= Math.max(2, Number(candidate?.radius) || 6) ** 2);
+  const lightingState = emergencyOn ? APPARITION_LIGHT_STATE.ON
+    : otherLight ? APPARITION_LIGHT_STATE.OFF : APPARITION_LIGHT_STATE.UNLIT;
 
   const lightX = Number(light.x) || 0;
   const lightZ = Number(light.z) || 0;
@@ -403,30 +424,13 @@ export function buildEmergencyShadowFrame(lights, {
       scaleX: body.seed.scaleX,
       scaleY: body.seed.scaleY,
       scaleZ: .92,
-      emissive: [1.0, .985, 1.0, presentation.emissive],
+      // Renderer-owned variant: on is a dark obstruction with a charged edge;
+      // off retains broken traces; unlit is only a few unstable ink grains.
+      apparitionVariant: APPARITION_RENDER_VARIANT[lightingState],
+      emissive: [.65, .78, .82, presentation.charge],
       structural: true,
       shadowOnly,
-      zone: Number(light.zone) || 0,
-    };
-  });
-
-  // A white body that does not affect its room is still a sprite. These are
-  // deliberately compact practicals: enough to lift the floor, nearby seat
-  // backs and the edge of another figure, never enough to replace the red wash.
-  const apparitionLights = instances.filter((instance) => !instance.shadowOnly).map((instance) => {
-    const presentation = directive.hardRevealIndex === instance.apparitionIndex
-      ? APPARITION_PRESENTATION.hard
-      : APPARITION_PRESENTATION.shadow;
-    return {
-      id: `apparition-white:${light.id}:${instance.apparitionIndex}`,
-      x: instance.x,
-      y: floorY + 1.12 * instance.scaleY,
-      z: instance.z,
-      color: [1.0, .97, 1.0],
-      intensity: presentation.practicalIntensity,
-      radius: presentation.practicalRadius,
-      penetration: 0,
-      kind: 'apparition',
+      noShadow: !emergencyOn,
       zone: Number(light.zone) || 0,
     };
   });
@@ -439,17 +443,18 @@ export function buildEmergencyShadowFrame(lights, {
 
   return {
     lightId: light.id,
-    lightOverride: {
+    lightingState,
+    lightOverride: emergencyOn ? {
       castsShadow: true,
       shadowYaw,
       // Aim through the body, not horizontally over its head. The previous
       // fixed seven-degree dip put a floor-standing figure outside the shadow
       // camera whenever the practical was mounted above eye height.
       shadowPitch: Math.atan2(floorY + 1.15 - (Number(light.y) || 1.8), Math.max(.2, bodyDistance)),
-    },
+    } : null,
     instance: instances[0],
     instances,
-    apparitionLights,
+    apparitionLights: [],
     director: {
       stageKey: directive.stageKey || resolvedStageKey,
       exposure: directive.exposure ?? null,
@@ -466,7 +471,8 @@ export function buildEmergencyShadowFrame(lights, {
       stageYaw: stage,
     },
     contract: {
-      version: 1,
+      version: 2,
+      lightingState,
       figures: instances.length,
       visibleBodies: instances.filter((instance) => !instance.shadowOnly).length,
       shadowOnlyFigures: instances.filter((instance) => instance.shadowOnly).length,
@@ -482,6 +488,6 @@ export function buildEmergencyShadowFrame(lights, {
     // What the monitor is allowed to know: three positions, for as long as the
     // red is actually on. See emergencyContacts in main.js — this is a return of
     // the render event, not a contact, and it must decay with the beat.
-    contacts: instances.map((instance) => ({ x: instance.x, z: instance.z })),
+    contacts: emergencyOn ? instances.map((instance) => ({ x: instance.x, z: instance.z })) : [],
   };
 }

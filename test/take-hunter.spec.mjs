@@ -164,8 +164,13 @@ import {
   // the same noise that fetches something also ends the take, and the take
   // ending is what takes the hunter away — so it arrived and vanished on one
   // frame. Measured, it did exactly that.
-  assert.match(rec, /if \(level > worldThreshold \* \.25\) loudNoiseSink/,
+  assert.match(rec, /if \(level > worldThreshold \* \.25 && meta\.armsTakeHunter !== false\) loudNoiseSink/,
     'it arms on the raw-world near band, independent of fitted microphone sensitivity');
+  // A noise the take already accounted for (it breaking, the hunter arriving)
+  // says so, and must not fetch a second hunter on the way out.
+  assert.match(rec, /armsTakeHunter = audibleToHush/, 'what the building cannot hear cannot fetch one either');
+  assert.match(readFileSync('src/main.js', 'utf8'), /REC\.emitNoise\(0\.6, px, py, reason,\{armsTakeHunter:false\}\)/,
+    'the spoil is the HUSH\'s to hear, and fetches no hunter');
   const main = readFileSync('src/main.js', 'utf8');
   assert.match(main, /REC\.setLoudNoiseSink/, 'and main.js is what answers');
   assert.match(main, /if\(REC\.isRecording\(\)\)armTakeHunter\(m>=MIC_LEVEL\.scream/,

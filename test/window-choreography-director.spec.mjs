@@ -381,6 +381,26 @@ test('credits restore the exact transaction and leave the pool for the return',a
   assert.ok(!calls.includes('pool-close'),'the surfaces survive into the return');
 });
 
+test('a physical roof ending retires an earlier cue without closing return surfaces',async()=>{
+  const calls=[];
+  const director=createWindowChoreographyDirector({
+    runtimeApi:{invoke:async(command)=>{calls.push(command);return true;}},documentApi:null,
+    effects:{
+      showComposition:async()=>true,
+      hideComposition:async()=>{calls.push('hide-composition');return true;},
+      hidePanes:async()=>{calls.push('hide-panes');return true;},
+      emergencyRestore:async()=>{calls.push('pool-close');return true;},
+    },waitFn:async()=>{},
+  });
+  await director.beginEnding('sacrifice');
+  assert.ok(director.debug().composition,'the preceding media cue is visible');
+  await director.restore('roof-century-stay');
+  assert.equal(director.debug().composition,null);
+  assert.ok(calls.includes('hide-composition'));
+  assert.ok(calls.includes('hide-panes'));
+  assert.ok(!calls.includes('pool-close'),'the return can reuse its surface pool');
+});
+
 test('the return files its sections onto the surfaces as registered images',async()=>{
   const registered=[];
   const calls=[];

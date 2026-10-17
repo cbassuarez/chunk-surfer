@@ -117,6 +117,7 @@ const AMBIENT = Object.freeze({
   [ZONE.chapelOuter]: { color: [.54, .61, .66], intensity: .025 },
   [ZONE.bellTower]: { color: [.58, .45, .30], intensity: .025 },
   [ZONE.academic]: { color: [.62, .69, .70], intensity: .036 },
+  [ZONE.academicRoof]: { color: [.46, .56, .70], intensity: .155 },
   [ZONE.danceStudio]: { color: [.38, .34, .27], intensity: .014 },
   [ZONE.store]: { color: [.42, .43, .40], intensity: .016 },
   // The get-in keeps the sodium and rust the old dock room had.
@@ -145,7 +146,7 @@ export const ZONE_WHITE_POINT_K = 4.5;
 // source, its ambient is already the .17 of an overcast rather than a floor to
 // climb off, and scaling it would only darken the one place with weather over it.
 const WHITE_POINT_SCALE_OVERRIDE = Object.freeze({
-  [ZONE.dock]:1,[ZONE.street]:1,[ZONE.civicCourt]:1,[ZONE.serviceYard]:1,
+  [ZONE.dock]:1,[ZONE.street]:1,[ZONE.civicCourt]:1,[ZONE.serviceYard]:1,[ZONE.academicRoof]:1,
 });
 
 export function zoneWhitePointScale(zone) {
@@ -171,7 +172,7 @@ export function zoneWhitePointScale(zone) {
 // bounce would only flatten the one place with real light in it.
 export const ZONE_BOUNCE_K = 3.0;
 const BOUNCE_OVERRIDE = Object.freeze({
-  [ZONE.dock]:0,[ZONE.street]:0,[ZONE.civicCourt]:0,[ZONE.serviceYard]:0,
+  [ZONE.dock]:0,[ZONE.street]:0,[ZONE.civicCourt]:0,[ZONE.serviceYard]:0,[ZONE.academicRoof]:0,
 });
 
 export function zoneBounce(zone) {
@@ -287,37 +288,45 @@ export const CONSERVATORY_LIGHTS = Object.freeze([
     { groups:['ground'], zones:[ZONE.dock], flutter:{ amount:.04, steady:.90 } }),
 
   // THE INHABITED BLOCK. Road-owned sodium, shop spill and ordinary domestic
-  // windows stay warm and limited. They belong to the town and stop resolving
-  // as soon as the player leaves its street and pavement zones for Ellery.
+  // windows stay warm and limited. The same real fittings illuminate the town
+  // from the roof and escape; changing observer floors must not extinguish
+  // the streets below. Each fitting is authored once, shared by both rigs.
   L('district-west-lamp-north', LIGHT_KIND.FITTING, -7, 18, 6.1, [1,.61,.28], .92, 20,
-    {groups:['ground'],zones:[ZONE.street,ZONE.civicCourt]}),
+    {groups:['ground','academicRoof'],zones:[ZONE.street,ZONE.civicCourt,ZONE.academicRoof]}),
   L('district-west-lamp-south', LIGHT_KIND.FITTING, -7, 78, 6.1, [1,.58,.25], .88, 20,
-    {groups:['ground'],zones:[ZONE.street,ZONE.civicCourt]}),
+    {groups:['ground','academicRoof'],zones:[ZONE.street,ZONE.civicCourt,ZONE.academicRoof]}),
   L('district-north-lamp-west', LIGHT_KIND.FITTING, 28, -7, 6.1, [1,.62,.30], .92, 20,
-    {groups:['ground'],zones:[ZONE.street,ZONE.civicCourt]}),
+    {groups:['ground','academicRoof'],zones:[ZONE.street,ZONE.civicCourt,ZONE.academicRoof]}),
   L('district-north-lamp-east', LIGHT_KIND.FITTING, 98, -7, 6.1, [1,.58,.25], .86, 20,
-    {groups:['ground'],zones:[ZONE.street,ZONE.civicCourt]}),
+    {groups:['ground','academicRoof'],zones:[ZONE.street,ZONE.civicCourt,ZONE.academicRoof]}),
   L('district-east-lamp-north', LIGHT_KIND.FITTING, 135, 20, 6.1, [1,.60,.28], .90, 20,
-    {groups:['ground'],zones:[ZONE.street,ZONE.civicCourt]}),
+    {groups:['ground','academicRoof'],zones:[ZONE.street,ZONE.civicCourt,ZONE.academicRoof]}),
   L('district-east-lamp-south', LIGHT_KIND.FITTING, 135, 78, 6.1, [1,.57,.24], .84, 20,
-    {groups:['ground'],zones:[ZONE.street,ZONE.civicCourt]}),
+    {groups:['ground','academicRoof'],zones:[ZONE.street,ZONE.civicCourt,ZONE.academicRoof]}),
   L('district-south-pub-spill', LIGHT_KIND.FITTING, 18, 99, 2.4, [1,.76,.46], .72, 13,
-    {groups:['ground'],zones:[ZONE.street,ZONE.civicCourt],flutter:{amount:.03,steady:.95}}),
+    {groups:['ground','academicRoof'],zones:[ZONE.street,ZONE.civicCourt,ZONE.academicRoof],flutter:{amount:.03,steady:.95}}),
   L('district-south-lamp-east', LIGHT_KIND.FITTING, 106, 99, 6.1, [1,.60,.27], .88, 20,
-    {groups:['ground'],zones:[ZONE.street,ZONE.civicCourt]}),
+    {groups:['ground','academicRoof'],zones:[ZONE.street,ZONE.civicCourt,ZONE.academicRoof]}),
   // Cold overcast relief on Ellery itself. These reveal cornices and roof depth
   // without suggesting a powered institution; warm sources remain exclusively
   // town windows, the lodge and the impossible stair pane.
   L('district-ellery-west-relief', LIGHT_KIND.SKY, 42, 40, 14, [.44,.52,.67], .56, 42,
-    {groups:['ground'],zones:[ZONE.street,ZONE.civicCourt,ZONE.dock]}),
+    {groups:['ground','academicRoof'],zones:[ZONE.street,ZONE.civicCourt,ZONE.dock,ZONE.academicRoof]}),
   L('district-ellery-east-relief', LIGHT_KIND.SKY, 136, 43, 13, [.43,.51,.66], .54, 40,
-    {groups:['ground'],zones:[ZONE.street,ZONE.civicCourt]}),
+    {groups:['ground','academicRoof'],zones:[ZONE.street,ZONE.civicCourt,ZONE.academicRoof]}),
   L('district-ellery-north-relief', LIGHT_KIND.SKY, 62, -8, 13, [.46,.54,.69], .52, 38,
-    {groups:['ground'],zones:[ZONE.street,ZONE.civicCourt]}),
+    {groups:['ground','academicRoof'],zones:[ZONE.street,ZONE.civicCourt,ZONE.academicRoof]}),
   L('district-ellery-south-relief', LIGHT_KIND.SKY, 67, 101, 13, [.42,.50,.65], .50, 38,
-    {groups:['ground'],zones:[ZONE.street,ZONE.civicCourt]}),
+    {groups:['ground','academicRoof'],zones:[ZONE.street,ZONE.civicCourt,ZONE.academicRoof]}),
   L('district-chapel-tower-relief', LIGHT_KIND.SKY, 105, 74, 23, [.48,.56,.72], .58, 44,
-    {groups:['ground'],zones:[ZONE.street,ZONE.civicCourt]}),
+    {groups:['ground','academicRoof'],zones:[ZONE.street,ZONE.civicCourt,ZONE.academicRoof]}),
+
+  // This maintained lower-storey bulkhead belongs to the north fire escape's
+  // facade mesh. Its small pool reveals a window, curb and drain ten metres
+  // below the door; it must not flatten the high stair or light the gallery.
+  L('roof-north-lower-security', LIGHT_KIND.FITTING, 84.35, 1.32, 3.50,
+    [1,.68,.36], 1.18, 8.4,
+    {groups:['academicRoof'],zones:[ZONE.academicRoof],maintained:true,penetration:.18}),
 
   // Basement and dance wing. The corridors deliberately remain absent.
   L('dance-stair-failing', LIGHT_KIND.EMERGENCY, 45.0, 20.75, -1.32, EMERGENCY_RED, .38, 6.0,
@@ -512,6 +521,10 @@ export function resolveLightingContext(context = {}) {
     ambientColor: [...ambient.color],
     ambientIntensity: ambient.intensity,
     whitePointScale: zoneWhitePointScale(zone),
+    // The roof overlooks the real city sky. The recorder keeps its full
+    // one-bit treatment on Ren and every nearby surface, but lets some of the
+    // far-depth cloud, moon and skyline survive the acquisition.
+    roofSkyRecovery: zone === ZONE.academicRoof ? 0.95 : 0,
     bounce: zoneBounce(zone),
     // The ordinary one-bit acquisition uses exposure before its ink decision;
     // the legacy white-point curve cannot recover an underexposed stone wall.
@@ -712,6 +725,9 @@ export function resolveLocalLights(context, {
   origin = null,
   slots = LOCAL_LIGHT_SLOTS,
   anchorPosition = null,
+  // The apparition renderer may still need a fitting's position after its
+  // circuit loses power. These zero-output entries never enter the light rig.
+  includeDormantEmergency = false,
 } = {}) {
   const group = typeof context === 'string' ? context : String(context?.group || '');
   const zone = typeof context === 'string' ? null : context?.zone;
@@ -725,8 +741,9 @@ export function resolveLocalLights(context, {
     if (Number.isFinite(zone) && light.zones.length && !light.zones.includes(zone)) continue;
     if (light.phase === 'tower' && !towerActive) continue;
     if (light.phase === 'cleared' && !towerCleared) continue;
-    if (!lightHasRuntimePower(light, live)) continue;
     const emergency = light.kind === LIGHT_KIND.EMERGENCY;
+    const powered = lightHasRuntimePower(light, live);
+    if (!powered && !(includeDormantEmergency && emergency)) continue;
     let intensity = emergency
       ? Math.max(EMERGENCY_PRESENTATION_FLOOR.intensity, light.intensity)
       : light.intensity;
@@ -742,7 +759,7 @@ export function resolveLocalLights(context, {
     if (light.flutter && light.kind !== LIGHT_KIND.EMERGENCY) intensity = resolvedEffectsMode !== 'full'
       ? light.flutter.steady
       : Math.min(LIGHT_BANDS[light.kind][1], light.intensity + flutter * light.flutter.amount);
-    if (blink) intensity *= blink.scale;
+    if (blink) intensity *= powered ? blink.scale : 0;
     const anchored = light.anchorPropId && typeof anchorPosition === 'function'
       ? anchorPosition(light.anchorPropId)
       : null;
@@ -770,10 +787,11 @@ export function resolveLocalLights(context, {
       floorY: Number.isFinite(anchored?.floorY) ? anchored.floorY : (light.y - 1.8),
       anchorYaw: Number.isFinite(anchored?.yaw) ? anchored.yaw : null,
       nominalIntensity: light.intensity,
-      emissiveScale: blink?.scale ?? 1,
-      emergencyPulse: blink?.scale ?? null,
-      shadowReveal: blink?.shadowReveal ?? 0,
+      emissiveScale: powered ? (blink?.scale ?? 1) : 0,
+      emergencyPulse: powered ? (blink?.scale ?? null) : 0,
+      shadowReveal: powered ? (blink?.shadowReveal ?? 0) : 0,
       pulseIndex: blink?.pulseIndex ?? null,
+      powered,
       castsShadow: !!light.castsShadow,
       zone: Number.isFinite(zone) ? zone : 0,
     });
@@ -817,7 +835,16 @@ export function resolveLocalLights(context, {
     if (!light.spilling) return emergency ? 0 : 1;
     return emergency ? 2 : 3;
   };
-  if (!origin) return out.sort((a, b) => priority(a) - priority(b)).slice(0, slots);
+  if (!origin) {
+    // Inspection callers may omit the observer. Keep the roof's own service
+    // fittings before shared distant town lights in that fallback. Live views
+    // always supply an origin and continue to select the nearest eight below.
+    const localRoof = group === 'academicRoof'
+      ? new Set(rig.filter(light => !light.groups.includes('ground')).map(light => light.id))
+      : null;
+    return out.sort((a, b) => priority(a) - priority(b)
+      || (localRoof ? Number(localRoof.has(b.id)) - Number(localRoof.has(a.id)) : 0)).slice(0, slots);
+  }
   const near = (light) => {
     const dx = light.x - (Number(origin.x) || 0);
     const dz = light.z - (Number(origin.z ?? origin.y) || 0);

@@ -35,6 +35,10 @@ export const BAG_ITEM_REGISTRY = Object.freeze({
   'plant-spanner': Object.freeze({ role: 'puzzle-tool', automaticUse: BAG_AUTOMATIC_USE['plant-spanner'] }),
   'marble-eyes': Object.freeze({ role: 'puzzle-piece', automaticUse: BAG_AUTOMATIC_USE['marble-eyes'] }),
   keyring: Object.freeze({ role: 'access', automaticUse: BAG_AUTOMATIC_USE.keyring }),
+  // Ren's request remains a thing the player can carry, examine, and decide
+  // whether to return. The reward lives on the existing aggregated keyring.
+  'ren-home-cassette': Object.freeze({ role: 'quest-keepsake', automaticUse: null }),
+  'ren-service-key': Object.freeze({ role: 'access', automaticUse: null }),
   // What the worlds behind the station's doors leave in his hand, and what the
   // way home left him with (docs/plans/door-field-station.md).
   'station-relics': Object.freeze({ role: 'keepsake', automaticUse: null }),
@@ -58,6 +62,8 @@ export const COLLECTED_ITEM_AUDIT = Object.freeze([
   { id: 'marble-eyes', acquired: 'marbleHead.carrying', destination: 'kit' },
   { id: 'chapel-key', acquired: 'chapel_key', destination: 'keyring' },
   { id: 'services-core-key', acquired: 'services_core_key', destination: 'keyring' },
+  { id: 'ren-home-cassette', acquired: 'roofRen.releaseSigned', destination: 'kit' },
+  { id: 'ren-service-key', acquired: 'roofRen.rewardGranted', destination: 'keyring' },
   { id: 'building-pages:1-15', acquired: 'obj.read', destination: 'file' },
   { id: 'battery-cells', acquired: 'pickup', destination: 'battery-resource' },
   { id: 'calibration-pins', acquired: 'pickup', destination: 'skill-resource' },
@@ -86,14 +92,16 @@ export function resolveBagOwnership(context = {}) {
   if (Number(context.sheetsCarried) > 0) kit.push('sheet-music');
   if (Number(context.relicsCarried) > 0) kit.push('station-relics');
   if (context.jumperOwned) kit.push('lyle-jumper');
+  if (context.renCassetteOwned) kit.push('ren-home-cassette');
 
   const keyring = {
     master: !!context.masterKey,
     chapel: !!context.chapelKey,
     chapelIdentified: !!context.chapelKey && !!context.chapelIdentified,
     services: !!context.servicesKey,
+    ren: !!context.renServiceKey,
   };
-  keyring.visible = keyring.master || keyring.chapel || keyring.services;
+  keyring.visible = keyring.master || keyring.chapel || keyring.services || keyring.ren;
 
   return { caseOwned: true, kit, filesAvailable: true, keyring: keyring.visible ? keyring : null };
 }
@@ -197,6 +205,10 @@ export function resolveBagItemAction(itemId, context = {}) {
       return action('inspect-marble-eyes', 'INSPECT', BAG_ACTION_MODE.DIALOG);
     case 'keyring':
       return action('inspect-keyring', 'CHECK KEYS', BAG_ACTION_MODE.DIALOG);
+    case 'ren-home-cassette':
+      return action('inspect-ren-home-cassette', 'LOOK AT TAPE', BAG_ACTION_MODE.DIALOG);
+    case 'ren-service-key':
+      return action('inspect-ren-service-key', 'CHECK KEY', BAG_ACTION_MODE.DIALOG);
     case 'station-relics':
       return action('inspect-station-relics', 'INSPECT', BAG_ACTION_MODE.DIALOG);
     case 'lyle-jumper':
@@ -206,11 +218,12 @@ export function resolveBagItemAction(itemId, context = {}) {
   }
 }
 
-export function bagKeyFacts({ master = false, chapel = false, chapelIdentified = false, services = false } = {}) {
+export function bagKeyFacts({ master = false, chapel = false, chapelIdentified = false, services = false, ren = false } = {}) {
   const facts = [['POSITION', 'CARRIED'], ['FUNCTION', 'AUTOMATIC ACCESS']];
   if (master) facts.push(['MASTER', 'BUILDING MASTER']);
   if (chapel) facts.push(['C-17', chapelIdentified ? 'CHAPEL' : 'UNIDENTIFIED TAG']);
   if (services) facts.push(['PLANT', 'PLANT SERVICES']);
+  if (ren) facts.push(['ROOF', "REN'S SERVICE KEY"]);
   return facts;
 }
 
@@ -249,6 +262,7 @@ export function bagInspectionDialogue(itemId, context = {}) {
   if (context.master) keyLines.push({ who: 'you', text: 'Building master. The one the guard handed over.' });
   if (context.chapel) keyLines.push({ who: 'you', text: context.chapelIdentified ? 'C-seventeen. Chapel.' : 'C-seventeen. Still only a tag.' });
   if (context.services) keyLines.push({ who: 'you', text: 'PLANT SERVICES. Stamped, not written.' });
+  if (context.ren) keyLines.push({ who: 'you', text: "ROOF SERVICE. Ren put this one in my hand. It opens the caged gallery ladder back to the glass." });
 
   const entries = {
     interface: [
@@ -264,8 +278,18 @@ export function bagInspectionDialogue(itemId, context = {}) {
       { who: 'you', text: 'If I put my hand on that header, this is what I use.' },
     ],
     'marble-eyes': [
-      { who: 'direction', text: 'Two marble eyes, joined by the clean bridge of a nose. The break remembers another clean break.' },
+      { who: 'direction', text: 'Two separate mineral eyes. One has a pale diagonal vein and a chip above its iris; the other is nicked low on the opposite edge. Cold stone, still damp in the case.' },
       { who: 'you', text: 'I do not need to guess from here. I need to put them against the blind bust.' },
+    ],
+    'ren-home-cassette': [
+      { who: 'direction', text: 'A small cassette in a cracked clear case. HOME is written on the spine. Around it, a folded note: YOU ASKED US TO KEEP THIS FROM YOU.' },
+      { who: 'you', text: context.renCassetteListened
+        ? 'A voice called Ren in for dinner. They waited for an answer. I heard it; Ren may ask whether I did.'
+        : 'Ren asked me to bring it back. The note makes that sound less simple.' },
+    ],
+    'ren-service-key': [
+      { who: 'direction', text: 'A small roof service key, its tag rubbed smooth except for an R.' },
+      { who: 'you', text: 'Ren says it opens the caged ladder in the gallery: the short way back to the glass roof.' },
     ],
     // The sheets are the one entry that changes with what he is carrying, and
     // the one that MAKES A SOUND — main.js plays the top sheet's figure as this

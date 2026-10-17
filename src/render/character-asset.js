@@ -1,6 +1,8 @@
 // Deliberately bounded character GLB support. Ordinary prop packs keep their
 // stricter, static-only contract in props3d.js.
-export const CHARACTER_LIMITS = Object.freeze({ joints: 48, morphs: 4, nodes: 160, vertices: 50000, primitives: 16, clips: 16, bytes: 64 * 1024 * 1024 });
+// 54 joints leaves room for articulated hands while keeping the palette plus
+// the ordinary material-pass uniforms within WebGL2's 256-vector minimum.
+export const CHARACTER_LIMITS = Object.freeze({ joints: 54, morphs: 4, nodes: 160, vertices: 50000, primitives: 16, clips: 16, bytes: 64 * 1024 * 1024 });
 const TYPES = { 5121: [Uint8Array, 1, 'getUint8'], 5123: [Uint16Array, 2, 'getUint16'], 5125: [Uint32Array, 4, 'getUint32'], 5126: [Float32Array, 4, 'getFloat32'] };
 const WIDTH = { SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4, MAT4: 16 };
 const finite = (v, label) => { if (!Number.isFinite(v)) throw new Error(`character ${label}: non-finite value`); return v; };
@@ -278,7 +280,7 @@ export const CHARACTER_DEFORM_GLSL = `
 layout(location=13) in uvec4 aCharacterJoints;
 layout(location=14) in vec4 aCharacterWeights;
 uniform float uCharacterEnabled;
-uniform mat4 uCharacterBones[48];
+uniform mat4 uCharacterBones[${CHARACTER_LIMITS.joints}];
 uniform highp sampler2D uCharacterMorphTex;
 uniform ivec2 uCharacterMorphSize;
 uniform int uCharacterVertexCount,uCharacterMorphCount;

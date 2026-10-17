@@ -4,7 +4,8 @@
 // this pass never mutates or disposes those shared mesh buffers.
 import { horizonCamera } from './horizon3d.js';
 import { sourceStrataGeometry } from '../data/source-exposed-strata.js';
-import SOURCE_ATLAS from '../../content/chunk-surf/source-atlas.json' with { type: 'json' };
+import { sourcePrintTexture } from './physical-source-print.js';
+import { PRINTED_SURFACE_GLSL, printedSurfaceDescriptor } from './printed-surface.js';
 
 export const SOURCE_SHORE_RANGE = Object.freeze({ near: .05, far: 1600 });
 export const SOURCE_SHORE_AIR = Object.freeze([.73, .79, .80]);
@@ -150,9 +151,12 @@ in float vGrain,vLocalHeight;
 uniform vec3 uEye,uForward,uTorchColour,uEmissive;
 uniform vec4 uTorch; // power, range multiplier, penumbra cosine, hotspot cosine
 uniform float uTorchSpill,uShoulder,uGlow,uMetallic,uRoughness,uUseTex,uClipTop,uRecordingExposure;
+uniform float uPrintedPolarity,uPrintedCoverage;
 uniform vec4 uLights[3];
 uniform sampler2D uTex,uSourceTex;
-out vec4 o;
+layout(location=0) out vec4 o;
+layout(location=1) out vec4 oMark;
+${PRINTED_SURFACE_GLSL}
 void main(){
   // The borrowed catwalk's perimeter rails belong to a belfry. Keep its real
   // grating and underframe; this lift has its own open-ended safety railwork.
@@ -160,15 +164,22 @@ void main(){
   vec3 toEye=uEye-vWorld;float distanceM=length(toEye);
   vec3 facing=normalize(toEye),n=normalize(vNormal);
   n=dot(n,facing)<0.0?-n:n;
-  vec3 base=vBase*mix(vec3(1.0),texture(uTex,vUv).rgb,uUseTex);
+  vec4 texel=texture(uTex,vUv);
+  vec3 base=vBase*mix(vec3(1.0),texel.rgb,uUseTex);
+  float pigment=uPrintedCoverage>1.5?1.0:texel.a;
+  float printPolarity=uPrintedPolarity;
   // Fine, stationary construction marks, confined to actual material. Their
   // projected width suppresses shimmer before any distant facade can alias.
   vec2 plane=abs(n.y)>.6?vWorld.xz:abs(n.x)>.6?vWorld.zy:vWorld.xy;
   // Real source is a low-contrast material grain at a fixed world scale.
   // Close grazing light can find its print; the silhouette carries distance.
   if(vGrain>2.5){
-    vec3 source=texture(uSourceTex,plane/vec2(6.0,4.0)).rgb;
-    base*=mix(vec3(1.0),source,.38);
+    vec3 originalNormal=normalize(vNormal);
+    vec2 sourcePlane=abs(originalNormal.y)>.6?vWorld.xz:
+      vec2(abs(originalNormal.x)>.6?-sign(originalNormal.x)*vWorld.z:sign(originalNormal.z)*vWorld.x,-vWorld.y);
+    vec4 source=texture(uSourceTex,sourcePlane/vec2(6.0,4.0));
+    base*=mix(vec3(1.0),source.rgb,.38);
+    pigment=source.a;printPolarity=1.0;
     float fibres=sin(plane.y*138.0+sin(plane.x*1.7)*.6)*.025;
     base*=1.0+fibres*(1.0-smoothstep(.015,.08,length(fwidth(plane))));
   }
@@ -199,6 +210,7 @@ void main(){
   // material's ratios instead of letting a nearby face become a white plate.
   float receptionShoulder=1.0+max(0.0,uRecordingExposure-1.0)*2.0*dot(colour,vec3(.2126,.7152,.0722));
   o=vec4(colour/receptionShoulder,1.0);
+  oMark=vec4(0.0,.5,.5,printPolarity>.5?printedSurfaceTag(pigment,printPolarity):0.0);
 }`;
 
 const QUAD_VERT=`#version 300 es
@@ -207,11 +219,12 @@ void main(){vec2 p=vec2((gl_VertexID<<1)&2,gl_VertexID&2);gl_Position=vec4(p*2.0
 
 export const SOURCE_SHORE_COMPOSITE_FRAG=`#version 300 es
 precision highp float;
-uniform sampler2D uHull,uHullDepth,uProps,uPropDepth,uEncoded;
+uniform sampler2D uHull,uHullDepth,uHullMarks,uProps,uPropDepth,uPropMarks,uEncoded;
 uniform vec2 uResolution,uHullRange,uPropRange;
 uniform vec3 uAir;
 uniform float uFinal,uWhiteout,uBoundary;
-out vec4 o;
+layout(location=0) out vec4 o;
+layout(location=1) out vec4 oMark;
 float linearDepth(float d,vec2 nf){float z=d*2.0-1.0;return 2.0*nf.x*nf.y/max(.0001,nf.y+nf.x-z*(nf.y-nf.x));}
 vec3 displayColour(vec3 c){return mix(c*12.92,1.055*pow(max(c,vec3(0.0)),vec3(1.0/2.4))-.055,step(vec3(.0031308),c));}
 void main(){
@@ -221,6 +234,9 @@ void main(){
   float pd=linearDepth(texture(uPropDepth,uv).r,uPropRange);
   bool hasHull=hull.a>.01,hasProp=prop.a>.01;
   bool useProp=hasProp&&(!hasHull||pd<hd+.015);
+  // Ordinary P3 mark RGB contains packed depth, not grain. Only its explicit
+  // pigment tag belongs in this world's acquisition mark target.
+  oMark=useProp?vec4(0.0,.5,.5,texture(uPropMarks,uv).a):texture(uHullMarks,uv);
   float coverage=useProp?prop.a:hull.a;
   vec3 material=displayColour(useProp?prop.rgb:hull.rgb);
   // The game's encode remains on architecture. Nothing in the surrounding
@@ -242,7 +258,7 @@ void main(){
 }`;
 
 let gl=null,materialProgram=null,compositeProgram=null,pack=null;
-let hullFbo=null,hullColour=null,hullDepth=null,finalFbo=null,finalColour=null,width=0,height=0;
+let hullFbo=null,hullColour=null,hullDepth=null,hullMarks=null,finalFbo=null,finalColour=null,width=0,height=0;
 let geometryKey='',geometry=null,vao=null,vertexBuffer=null,vertexCount=0;
 let sourceMaterialTexture=null;
 let importedAttributeState=new WeakMap();
@@ -259,25 +275,17 @@ export function sourceShoreInit(context){
   materialUniforms.clear();compositeUniforms.clear();sourceShoreStats.ready=true;return true;
 }
 export function sourceShoreSetHardwarePack(next){pack=next;return !!pack?.catalog;}
-function texture(depth=false){const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.texImage2D(gl.TEXTURE_2D,0,depth?gl.DEPTH_COMPONENT24:gl.RGBA8,width,height,0,depth?gl.DEPTH_COMPONENT:gl.RGBA,depth?gl.UNSIGNED_INT:gl.UNSIGNED_BYTE,null);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,depth?gl.NEAREST:gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,depth?gl.NEAREST:gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);return t;}
+function texture(depth=false,nearest=false){const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.texImage2D(gl.TEXTURE_2D,0,depth?gl.DEPTH_COMPONENT24:gl.RGBA8,width,height,0,depth?gl.DEPTH_COMPONENT:gl.RGBA,depth?gl.UNSIGNED_INT:gl.UNSIGNED_BYTE,null);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,depth||nearest?gl.NEAREST:gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,depth||nearest?gl.NEAREST:gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);return t;}
 function sourceTexture(){
   if(sourceMaterialTexture)return sourceMaterialTexture;
-  const canvas=document.createElement('canvas');canvas.width=canvas.height=512;
-  const context=canvas.getContext('2d');context.fillStyle='#d6d9d0';context.fillRect(0,0,512,512);
-  context.font='13px monospace';context.textBaseline='top';
-  const lines=Object.values(SOURCE_ATLAS.sectors).flatMap(s=>s.sourceLines||[]).map(l=>l.text).filter(t=>t.trim().length>12).slice(0,80);
-  for(let row=0;row<26;row++){context.fillStyle=row%5===0?'#768477':'#a3afa0';context.fillText(lines[row%lines.length]||'',8+row%3*9,row*20+3);}
-  sourceMaterialTexture=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,sourceMaterialTexture);
-  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);gl.texImage2D(gl.TEXTURE_2D,0,gl.SRGB8_ALPHA8,gl.RGBA,gl.UNSIGNED_BYTE,canvas);gl.generateMipmap(gl.TEXTURE_2D);
-  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.REPEAT);return sourceMaterialTexture;
+  sourceMaterialTexture=sourcePrintTexture(gl,'divide');return sourceMaterialTexture;
 }
 function resize(w,h){
   if(width===w&&height===h&&hullFbo)return;
-  for(const t of [hullColour,hullDepth,finalColour])if(t)gl.deleteTexture(t);
+  for(const t of [hullColour,hullDepth,hullMarks,finalColour])if(t)gl.deleteTexture(t);
   for(const f of [hullFbo,finalFbo])if(f)gl.deleteFramebuffer(f);
-  width=w;height=h;hullColour=texture();hullDepth=texture(true);finalColour=texture();
-  hullFbo=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,hullFbo);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,hullColour,0);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.DEPTH_ATTACHMENT,gl.TEXTURE_2D,hullDepth,0);
+  width=w;height=h;hullColour=texture();hullDepth=texture(true);hullMarks=texture(false,true);finalColour=texture();
+  hullFbo=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,hullFbo);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,hullColour,0);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT1,gl.TEXTURE_2D,hullMarks,0);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.DEPTH_ATTACHMENT,gl.TEXTURE_2D,hullDepth,0);
   if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)throw new Error('Source shore hull framebuffer incomplete');
   finalFbo=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,finalFbo);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,finalColour,0);
   if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)throw new Error('Source shore composite framebuffer incomplete');
@@ -333,10 +341,11 @@ export function sourceShoreDraw({frame,camX,camY,camZ,yaw=0,pitch=0,width:w,heig
   resize(w,h);uploadGeometry(frame,boundaryOnly);
   const camera=horizonCamera({camX,camY,camZ,yaw,pitch,aspect:w/h,...SOURCE_SHORE_RANGE});
   const cp=Math.cos(pitch),ty=yaw+(Number(torch.yawOffset)||0),forward=[Math.sin(ty)*cp,Math.sin(pitch),-Math.cos(ty)*cp];
-  gl.bindFramebuffer(gl.FRAMEBUFFER,hullFbo);gl.drawBuffers([gl.COLOR_ATTACHMENT0]);gl.viewport(0,0,w,h);gl.disable(gl.BLEND);gl.enable(gl.DEPTH_TEST);gl.depthMask(true);gl.depthFunc(gl.LEQUAL);gl.disable(gl.CULL_FACE);gl.clearColor(0,0,0,0);gl.clearDepth(1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,hullFbo);gl.drawBuffers([gl.COLOR_ATTACHMENT0,gl.COLOR_ATTACHMENT1]);gl.viewport(0,0,w,h);gl.disable(gl.BLEND);gl.enable(gl.DEPTH_TEST);gl.depthMask(true);gl.depthFunc(gl.LEQUAL);gl.disable(gl.CULL_FACE);gl.clearColor(0,0,0,0);gl.clearDepth(1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
   gl.useProgram(materialProgram);gl.uniformMatrix4fv(mu('uView'),false,camera.view);gl.uniformMatrix4fv(mu('uProjection'),false,camera.projection);gl.uniformMatrix4fv(mu('uModel'),false,IDENTITY);gl.uniform3f(mu('uEye'),camX,camY,camZ);gl.uniform3fv(mu('uForward'),forward);gl.uniform3fv(mu('uTorchColour'),torch.color||[1,.95,.86]);gl.uniform4f(mu('uTorch'),clamp(torch.power),clamp(torch.reach,.35,1.25),clamp(torch.coneInner??.84,.72,.97),clamp(torch.coneOuter??.96,.75,.985));gl.uniform1f(mu('uTorchSpill'),clamp(torch.spill??.08,0,.12));gl.uniform1f(mu('uShoulder'),clamp(torch.shoulder??.75,0,2));gl.uniform1f(mu('uLiftFloor'),Number(frame.lift.floor)||0);gl.uniform1f(mu('uImported'),0);gl.uniform1f(mu('uMoving'),0);gl.uniform1f(mu('uGlow'),0);gl.uniform1f(mu('uUseTex'),0);gl.uniform1f(mu('uMetallic'),.1);gl.uniform1f(mu('uRoughness'),.8);gl.uniform3f(mu('uEmissive'),0,0,0);
   gl.uniform4fv(mu('uLights[0]'),new Float32Array(geometry.lights.flatMap(l=>[l.x,l.y,l.z,l.power])));
   gl.uniform1f(mu('uRecordingExposure'),boundaryOnly?clamp(recordingExposure,1,12):1);
+  gl.uniform1f(mu('uPrintedPolarity'),0);gl.uniform1f(mu('uPrintedCoverage'),0);
   gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,sourceTexture());gl.uniform1i(mu('uSourceTex'),1);gl.activeTexture(gl.TEXTURE0);
   const gate=clamp(((Number(frame.lift.floor)||0)-3.9)/.3);
   gl.uniform1f(mu('uGateOpen'),gate*gate*(3-2*gate));gl.uniform1f(mu('uGateTravel'),(frame.lift.maxX-frame.lift.minX)/2);
@@ -345,19 +354,19 @@ export function sourceShoreDraw({frame,camX,camY,camZ,yaw=0,pitch=0,width:w,heig
   for(const instance of geometry.hardware){
     const entry=pack?.catalog?.get(instance.name);if(!entry)continue;
     gl.uniformMatrix4fv(mu('uModel'),false,model(instance,entry.nodeMatrix));gl.uniform1f(mu('uMoving'),instance.moving?1:0);gl.uniform1f(mu('uGlow'),instance.glow);gl.uniform1f(mu('uClipTop'),instance.name==='tower_catwalk'?.24:0);
-    for(const p of entry.primitives){gl.uniform3fv(mu('uBase'),p.base.slice(0,3));gl.uniform3fv(mu('uEmissive'),p.emissive||[0,0,0]);gl.uniform1f(mu('uMetallic'),p.metallic??.1);gl.uniform1f(mu('uRoughness'),p.roughness??.8);gl.uniform1f(mu('uUseTex'),p.texture?1:0);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,p.texture);gl.uniform1i(mu('uTex'),0);drawImportedPrimitive(p);sourceShoreStats.hardwareDraws++;sourceShoreStats.triangles+=p.count/3;}
+    for(const p of entry.primitives){const print=printedSurfaceDescriptor(p.printedSurface);gl.uniform1f(mu('uPrintedPolarity'),print?.polarity==='dark-on-light'?1:print?2:0);gl.uniform1f(mu('uPrintedCoverage'),print?.coverage==='solid'?2:print?1:0);gl.uniform3fv(mu('uBase'),p.base.slice(0,3));gl.uniform3fv(mu('uEmissive'),p.emissive||[0,0,0]);gl.uniform1f(mu('uMetallic'),p.metallic??.1);gl.uniform1f(mu('uRoughness'),p.roughness??.8);gl.uniform1f(mu('uUseTex'),p.texture?1:0);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,p.texture);gl.uniform1i(mu('uTex'),0);drawImportedPrimitive(p);sourceShoreStats.hardwareDraws++;sourceShoreStats.triangles+=p.count/3;}
   }
   gl.bindVertexArray(null);gl.disable(gl.DEPTH_TEST);sourceShoreStats.active=true;return true;
 }
 
 export function sourceShoreComposite({target,props,encoded=null,frame,boundaryOnly=false,reduceFlash=false}={}){
   if(!hullFbo||!props?.ready)return null;
-  const final=!!encoded;gl.bindFramebuffer(gl.FRAMEBUFFER,final?finalFbo:target);gl.drawBuffers([gl.COLOR_ATTACHMENT0]);gl.viewport(0,0,width,height);gl.disable(gl.DEPTH_TEST);gl.disable(gl.BLEND);gl.bindVertexArray(null);gl.useProgram(compositeProgram);
-  for(const [unit,name,t]of [[0,'uHull',hullColour],[1,'uHullDepth',hullDepth],[2,'uProps',props.color],[3,'uPropDepth',props.depth],[4,'uEncoded',encoded||hullColour]]){gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,t);gl.uniform1i(cu(name),unit);}
+  const final=!!encoded;gl.bindFramebuffer(gl.FRAMEBUFFER,final?finalFbo:target);gl.drawBuffers(final?[gl.COLOR_ATTACHMENT0]:[gl.COLOR_ATTACHMENT0,gl.COLOR_ATTACHMENT1]);gl.viewport(0,0,width,height);gl.disable(gl.DEPTH_TEST);gl.disable(gl.BLEND);gl.bindVertexArray(null);gl.useProgram(compositeProgram);
+  for(const [unit,name,t]of [[0,'uHull',hullColour],[1,'uHullDepth',hullDepth],[2,'uProps',props.color],[3,'uPropDepth',props.depth],[4,'uEncoded',encoded||hullColour],[5,'uHullMarks',hullMarks],[6,'uPropMarks',props.marks||props.color]]){gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,t);gl.uniform1i(cu(name),unit);}
   gl.uniform2f(cu('uResolution'),width,height);gl.uniform2f(cu('uHullRange'),SOURCE_SHORE_RANGE.near,SOURCE_SHORE_RANGE.far);gl.uniform2f(cu('uPropRange'),props.near,props.far);gl.uniform3fv(cu('uAir'),SOURCE_SHORE_AIR);gl.uniform1f(cu('uFinal'),final?1:0);gl.uniform1f(cu('uBoundary'),boundaryOnly?1:0);gl.uniform1f(cu('uWhiteout'),sourceShoreWhiteout(frame,{reduceFlash}));gl.drawArrays(gl.TRIANGLES,0,3);return final?finalColour:null;
 }
 
 export function sourceShoreDebug(){return {...sourceShoreStats,air:[...SOURCE_SHORE_AIR],bounds:geometry?geometry.boxes.filter(b=>['room-back','room-underside','receiving-ledge'].includes(b.id)):[],strata:geometry?.pieces.map(p=>({id:p.id,triangles:p.i.length/3}))||[]};}
 // Source proper can acquire a visible return wall through the same recording
 // pass as nearby props, selecting real linear depth across the two cameras.
-export function sourceShoreTargets(){return {color:hullColour,depth:hullDepth,near:SOURCE_SHORE_RANGE.near,far:SOURCE_SHORE_RANGE.far,ready:!!hullFbo};}
+export function sourceShoreTargets(){return {color:hullColour,depth:hullDepth,marks:hullMarks,marksReady:!!hullMarks,near:SOURCE_SHORE_RANGE.near,far:SOURCE_SHORE_RANGE.far,ready:!!hullFbo};}

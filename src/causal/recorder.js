@@ -36,7 +36,8 @@ function moving(a, b) {
     || Math.abs(finite(a.yaw) - finite(b.yaw)) > 0.01
     || Math.abs(finite(a.pitch) - finite(b.pitch)) > 0.01
     || Math.abs(finite(a.outskirtsCharacters?.clock) - finite(b.outskirtsCharacters?.clock)) > .001
-    || Math.abs(finite(a.pressurePresentation?.clock) - finite(b.pressurePresentation?.clock)) > .001;
+    || Math.abs(finite(a.pressurePresentation?.clock) - finite(b.pressurePresentation?.clock)) > .001
+    || Math.abs(finite(a.busWomanYardTime) - finite(b.busWomanYardTime)) > .001;
 }
 
 export class CausalRecorder {
@@ -143,6 +144,7 @@ export class CausalRecorder {
       renderGroup: typeof frame.renderGroup === 'string' ? frame.renderGroup : '',
       spaceId: typeof frame.spaceId === 'string' ? frame.spaceId : '',
       ...(frame.pressurePresentation ? { pressurePresentation: normalizePressurePresentation(frame.pressurePresentation) } : {}),
+      ...(Number.isFinite(frame.busWomanYardTime) ? { busWomanYardTime: frame.busWomanYardTime } : {}),
     }));
   }
 

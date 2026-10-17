@@ -1,0 +1,16 @@
+{
+  "design": "The Vacant Dog",
+  "coordinates": "metres, Y up, front -Z",
+  "source": "tools/chunk_surfer/characters/build-outskirts-vacant-dog.py",
+  "meshes": [
+    "outskirts_vacant_dog",
+    "outskirts_slack_lead"
+  ],
+  "dogVertices": 68231,
+  "dogTriangles": 135970,
+  "leadVertices": 790,
+  "bytes": 4885424,
+  "sha256": "913d79a7116428acc76a2edcc50536b9f2bb7e77a71fb62fdc206bb076b05597",
+  "construction": "two Boolean through-cavities in a continuous anatomical hide, with dark raw cut surfaces; no opacity holes",
+  "anatomicalScale": 0.58
+}

@@ -1,159 +1,101 @@
-// SIGNS HAVE TO READ.
-//
-// Every mesh in this pack faces LOCAL -Z — the prop matrix turns that into
-// (sin yaw, -cos yaw), which is why a placed figure looks at you and a van's
-// windscreen points down the road. A reader standing in front of that face is
-// looking toward +Z, and for them local +X runs to the LEFT.
-//
-// So a line of type laid out with its first character at the most negative x and
-// each one after it further along +X arrives MIRRORED, and every placard, banner
-// and dock sign in the game was mirror-written for exactly that reason. It is
-// not a bug anybody catches by reading the layout code: the arithmetic looks
-// like ordinary left-to-right text and the error lives entirely in which way the
-// reader is facing.
-//
-// This decodes the ink straight out of the built GLB and reads it back. If the
-// layout is ever flipped again, this fails with the reversed string in the
-// message rather than with a coordinate.
-
+// Production print: exact copy, forward UVs, real pigment masks and opaque depth.
+// This verifies the built carriers. Human reading through the final shader is a
+// separate acceptance gate; matching metadata is never presented as OCR proof.
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-
-const bytes = readFileSync('public/assets/conservatory-props.glb');
-assert.equal(bytes.subarray(0, 4).toString('ascii'), 'glTF');
-const jsonLength = bytes.readUInt32LE(12);
-const gltf = JSON.parse(bytes.subarray(20, 20 + jsonLength).toString('utf8'));
-const binStart = 20 + jsonLength + 8;
-
-const componentBytes = { 5121: 1, 5123: 2, 5125: 4, 5126: 4 };
-function accessorValues(index) {
-  const accessor = gltf.accessors[index], view = gltf.bufferViews[accessor.bufferView];
-  const width = accessor.type === 'VEC3' ? 3 : 1;
-  const size = componentBytes[accessor.componentType];
-  const stride = view.byteStride || size * width;
-  const offset = binStart + (view.byteOffset || 0) + (accessor.byteOffset || 0);
-  const out = [];
-  for (let i = 0; i < accessor.count; i += 1) {
-    const at = offset + i * stride, row = [];
-    for (let c = 0; c < width; c += 1) {
-      const p = at + c * size;
-      row.push(accessor.componentType === 5126 ? bytes.readFloatLE(p)
-        : accessor.componentType === 5125 ? bytes.readUInt32LE(p)
-          : accessor.componentType === 5123 ? bytes.readUInt16LE(p) : bytes.readUInt8(p));
-    }
-    out.push(width === 1 ? row[0] : row);
-  }
-  return out;
-}
-
-// The five-by-seven stock the pack sets type in. Duplicated here on purpose:
-// a decoder that shared the encoder's table could not detect a mirrored table.
-const GLYPHS = {
-  A: ['01110', '10001', '10001', '11111', '10001', '10001', '10001'],
-  C: ['01111', '10000', '10000', '10000', '10000', '10000', '01111'],
-  D: ['11110', '10001', '10001', '10001', '10001', '10001', '11110'],
-  E: ['11111', '10000', '10000', '11110', '10000', '10000', '11111'],
-  F: ['11111', '10000', '10000', '11110', '10000', '10000', '10000'],
-  G: ['01111', '10000', '10000', '10111', '10001', '10001', '01111'],
-  H: ['10001', '10001', '10001', '11111', '10001', '10001', '10001'],
-  I: ['11111', '00100', '00100', '00100', '00100', '00100', '11111'],
-  K: ['10001', '10010', '10100', '11000', '10100', '10010', '10001'],
-  L: ['10000', '10000', '10000', '10000', '10000', '10000', '11111'],
-  M: ['10001', '11011', '10101', '10101', '10001', '10001', '10001'],
-  N: ['10001', '11001', '10101', '10011', '10001', '10001', '10001'],
-  O: ['01110', '10001', '10001', '10001', '10001', '10001', '01110'],
-  P: ['11110', '10001', '10001', '11110', '10000', '10000', '10000'],
-  R: ['11110', '10001', '10001', '11110', '10100', '10010', '10001'],
-  S: ['01111', '10000', '10000', '01110', '00001', '00001', '11110'],
-  T: ['11111', '00100', '00100', '00100', '00100', '00100', '00100'],
-  U: ['10001', '10001', '10001', '10001', '10001', '10001', '01110'],
-  V: ['10001', '10001', '10001', '10001', '10001', '01010', '00100'],
-  W: ['10001', '10001', '10001', '10101', '10101', '11011', '10001'],
-  Y: ['10001', '10001', '01010', '00100', '00100', '00100', '00100'],
-  '0': ['01110', '10011', '10101', '10101', '11001', '10001', '01110'],
-  '1': ['00100', '01100', '00100', '00100', '00100', '00100', '01110'],
-  '6': ['00110', '01000', '10000', '11110', '10001', '10001', '01110'],
-  '8': ['01110', '10001', '10001', '01110', '10001', '10001', '01110'],
-  '9': ['01110', '10001', '10001', '01111', '00001', '00010', '11100'],
-  ':': ['00000', '00100', '00100', '00000', '00100', '00100', '00000'],
-  '?': ['01110', '10001', '00001', '00010', '00100', '00000', '00100'],
+import fs from 'node:fs';
+import path from 'node:path';
+import {createHash} from 'node:crypto';
+import sharp from 'sharp';
+import {printedFaceGeometry} from '../tools/chunk_surfer/lettering/face-geometry.mjs';
+import {WORLD_INSCRIPTIONS} from '../src/data/world-inscriptions.js';
+const dir=process.env.CHUNK_SURFER_PROPS_TEST_DIR||'public/assets';
+const bytes=fs.readFileSync(path.join(dir,'conservatory-props.glb'));
+const jsonLength=bytes.readUInt32LE(12),gltf=JSON.parse(bytes.subarray(20,20+jsonLength)),bin=bytes.subarray(28+jsonLength);
+const manifest=JSON.parse(fs.readFileSync(path.join(dir,'conservatory-props.lettering.json')));
+assert.equal(createHash('sha256').update(bytes).digest('hex'),manifest.packSha256);
+// A narrow atlas revision records its producer inputs separately; the original
+// full-bake input hashes remain historical provenance for the retained faces.
+for(const[file,hash]of Object.entries(manifest.sourceHashes))assert.equal(createHash('sha256').update(fs.readFileSync(file)).digest('hex'),manifest.giltRevision?.sourceHashes?.[file]||hash,'Production lettering generator changed without rebuilding: '+file);
+if(manifest.giltRevision)for(const[file,hash]of Object.entries(manifest.giltRevision.sourceHashes))assert.equal(createHash('sha256').update(fs.readFileSync(file)).digest('hex'),hash,'Narrow gilt producer changed after revision: '+file);
+const expected={
+ tower_rope_mat_tenor:['8/\nTENOR'],ending_returned_ledger:['','ALAN'],
+ scene_dock_sign_foh:['FRONT OF HOUSE'],scene_dock_sign_services:['STUDIOS / PLANT'],
+ vigil_part_sign_save:['SAVE ELLERY'],vigil_part_sign_strike:['NO FIRST\nSTRIKE\n06:00'],
+ vigil_part_sign_chapel:['SAVE THE\n1908 CHAPEL'],vigil_part_sign_record:['OUR ROOMS\nOUR RECORD'],
+ vigil_part_sign_signed:['WHO SIGNED\nTHIS OFF?'],vigil_part_banner:['KEEP ELLERY\nSTANDING'],
+ city_phone_box:Array(4).fill('TELEPHONE'),city_phone_box_apparatus:['PAY ON ANSWER','POST OFFICE','1','2','3','4','5','6','7','8','9','0','999','100'],
+ outskirts_bus:['ELLERY','J 063'],outskirts_car:['J 063'],outskirts_lodge:['PORTER'],
+ outskirts_shelter_timetable:['ELLERY\nLAST BUS\n23:10\n23:40\n00:10'],
+ outskirts_lodge_ledger:['VISITORS',''],outskirts_ledger_signed:['VISITORS',''],outskirts_ticket:['ELLERY','063'],
+ door_stencil_b1:['B1'],door_stencil_b2:['B2'],door_stencil_b3:['B3'],door_stencil_b5:['B5'],source_hall_number_17:['17'],
+ hymn_board:['17 · 44 · 91'],tower_peal_board:['ELLERY COLLEGIATE CHAPEL — STEDMAN TRIPLES — 1908'],
+ rekey_ledger:['REPLACEMENT LOCK — CHAPEL — CABINET C-17'],
+ chapel_key_ring_ch04:['CH-04\nCHAPEL — MAIN'],chapel_key_ring_c17:['C-17'],chapel_key_ring_fohm:['FOH-M\nFRONT OF HOUSE — MASTER'],
 };
-const BLANK = '0000000000000000000000000000000000000'.slice(0, 35);
-const flat = (rows) => rows.join('');
-const BY_PATTERN = new Map(Object.entries(GLYPHS).map(([ch, rows]) => [flat(rows), ch]));
-BY_PATTERN.set(BLANK, ' ');
-
-// Read one line of type off a sign mesh and return what a person standing in
-// front of it would see.
-function readSign(name) {
-  const mesh = gltf.meshes.find((entry) => entry.name === name);
-  assert.ok(mesh, `${name} is missing from the prop pack`);
-  // The ink is the one primitive that is a flat sheet of plates: every vertex on
-  // a single plane, four per plate. The board, its edging and its accent strips
-  // are boxes and span a depth, so they cannot be confused with it.
-  let ink = null;
-  for (const primitive of mesh.primitives) {
-    const pos = accessorValues(primitive.attributes.POSITION);
-    if (pos.length < 40 || pos.length % 4) continue;
-    const z0 = pos[0][2];
-    if (!pos.every((q) => Math.abs(q[2] - z0) < 1e-5)) continue;
-    if (!ink || pos.length > ink.length) ink = pos;
-  }
-  assert.ok(ink, `${name} carries no rasterised lettering`);
-
-  // Four consecutive vertices are one plate (see addPlate); its centre is their
-  // mean. Working from centres rather than corners keeps the grid independent of
-  // how much smaller than its cell each plate is drawn.
-  const centres = [];
-  for (let i = 0; i < ink.length; i += 4) {
-    let x = 0, y = 0;
-    for (let c = 0; c < 4; c += 1) { x += ink[i + c][0]; y += ink[i + c][1]; }
-    centres.push([x / 4, y / 4]);
-  }
-  const uniq = (values) => [...new Set(values.map((v) => Math.round(v * 10000) / 10000))].sort((a, b) => a - b);
-  const xs = uniq(centres.map((c) => c[0])), ys = uniq(centres.map((c) => c[1]));
-  const gap = (list) => Math.min(...list.slice(1).map((v, i) => v - list[i]).filter((d) => d > 1e-5));
-  const dot = Math.min(gap(xs), gap(ys));
-  const cell = (v, base) => Math.round((v - base) / dot);
-  const lit = new Set(centres.map(([x, y]) => `${cell(x, xs[0])},${cell(y, ys[0])}`));
-  const maxX = cell(xs[xs.length - 1], xs[0]), maxY = cell(ys[ys.length - 1], ys[0]);
-
-  // READER'S ORDER. Their right is local -X, so the screen column runs from the
-  // largest x downward; the screen row runs from the largest y downward.
-  const rows = [];
-  for (let row = 0; row <= maxY; row += 1) {
-    let line = '';
-    for (let col = 0; col <= maxX; col += 1) line += lit.has(`${maxX - col},${maxY - row}`) ? '1' : '0';
-    rows.push(line);
-  }
-  assert.equal(rows.length, 7, `${name} is not set in the five-by-seven stock`);
-  const width = rows[0].length;
-  let text = '';
-  for (let at = 0; at + 5 <= width; at += 6) {
-    text += BY_PATTERN.get(rows.map((line) => line.slice(at, at + 5)).join('')) ?? '\u00bf';
-  }
-  return text.trimEnd();
+for(const spec of WORLD_INSCRIPTIONS)(expected[spec.mesh]||=[]).push(spec.copy);
+assert.equal(manifest.entries.length,Object.values(expected).reduce((n,a)=>n+a.length,0));
+assert.equal(new Set(manifest.entries.map(e=>e.mesh)).size,Object.keys(expected).length);
+for(const [mesh,copies]of Object.entries(expected))assert.deepEqual(manifest.entries.filter(e=>e.mesh===mesh).map(e=>e.copy).sort(),copies.sort(),mesh+' authored content changed');
+const read=index=>{const a=gltf.accessors[index],v=gltf.bufferViews[a.bufferView],size={5125:4,5126:4}[a.componentType],width={SCALAR:1,VEC2:2,VEC3:3}[a.type];return Array.from({length:a.count*width},(_,i)=>a.componentType===5126?bin.readFloatLE((v.byteOffset||0)+(a.byteOffset||0)+i*size):bin.readUInt32LE((v.byteOffset||0)+(a.byteOffset||0)+i*size));};
+const dot=(a,b)=>a.reduce((s,v,k)=>s+v*b[k],0),sub=(a,b)=>a.map((v,k)=>v-b[k]);
+const imageCache=new Map();async function image(index){if(imageCache.has(index))return imageCache.get(index);const def=gltf.images[gltf.textures[index].source],view=gltf.bufferViews[def.bufferView];assert.equal(def.mimeType,'image/png');const value=await sharp(bin.subarray(view.byteOffset,view.byteOffset+view.byteLength)).ensureAlpha().raw().toBuffer({resolveWithObject:true});imageCache.set(index,value);return value;}
+let faceTriangles=0;
+for(const entry of manifest.entries){
+ const mesh=gltf.meshes.find(m=>m.name===entry.mesh),meta=mesh.extras.lettering.find(e=>e.id===entry.id),primitive=mesh.primitives.find(p=>p.material===meta.material),material=gltf.materials[meta.material];
+ assert.equal(material.alphaMode,'OPAQUE');assert.equal(material.extras.printedSurface.coverage,'baseColorAlpha');
+ assert.equal(material.extras.printedSurface.polarity,entry.polarity);assert.equal(material.extras.printedSurface.process,entry.process);
+ assert.equal(material.extras.printedSurface.emission,entry.emission);
+ assert.equal(Boolean(material.emissiveFactor),entry.emission==='substrate','Ordinary pigment must not glow');
+ assert.ok(entry.metrics.coverage>.003&&entry.metrics.coverage<.65,entry.id+' empty or flooded mask');
+ assert.equal(entry.metrics.glyphs.map(g=>g.character).join(''),entry.copy.replace(/\s/g,''),entry.id+' missing codepoints');
+ assert.ok(entry.metrics.stemWidthM>0&&entry.metrics.stemWidthM<entry.heightM*.25);
+ const p=read(primitive.attributes.POSITION),uv=read(primitive.attributes.TEXCOORD_0),n=read(primitive.attributes.NORMAL),indices=read(primitive.indices),lo=meta.firstVertex,hi=lo+meta.vertexCount;
+ const vertex=i=>p.slice(i*3,i*3+3),points=Array.from({length:meta.vertexCount},(_,i)=>vertex(lo+i));
+ for(let i=lo;i<hi;i++){
+  assert.ok(uv[i*2]>=entry.uvRect[0]-1e-6&&uv[i*2]<=entry.uvRect[2]+1e-6);
+  assert.ok(uv[i*2+1]>=entry.uvRect[1]-1e-6&&uv[i*2+1]<=entry.uvRect[3]+1e-6);
+  assert.ok(dot(n.slice(i*3,i*3+3),meta.normal)>.98,'Print normals point away from the reader');
+ }
+ for(let at=meta.firstIndex;at<meta.firstIndex+meta.indexCount;at+=3){
+  const [a,b,c]=indices.slice(at,at+3).map(vertex),u=sub(b,a),v=sub(c,a),cross=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]];
+  assert.ok(dot(cross,meta.normal)>0,entry.id+' reversed physical winding');
+ }
+ // Independently recover image direction from geometry: increasing U must
+ // travel to the reader's right; increasing V must travel down the surface.
+ const extremes=points.map((point,i)=>({point,u:uv[(lo+i)*2],v:uv[(lo+i)*2+1]}));
+ const left=extremes.reduce((a,b)=>a.u<b.u?a:b),right=extremes.reduce((a,b)=>a.u>b.u?a:b);
+ const top=extremes.reduce((a,b)=>a.v<b.v?a:b),bottom=extremes.reduce((a,b)=>a.v>b.v?a:b);
+ assert.ok(dot(sub(right.point,left.point),meta.readerRight)>entry.widthM*.95,entry.id+' mirrored U');
+ assert.ok(dot(sub(top.point,bottom.point),meta.up)>entry.heightM*.95,entry.id+' upside-down V');
+ const {data,info}=await image(material.pbrMetallicRoughness.baseColorTexture.index);
+ let ground=0,pigment=0,substrateRgb=0;const x0=Math.round(entry.uvRect[0]*info.width),x1=Math.round(entry.uvRect[2]*info.width),y0=Math.round(entry.uvRect[1]*info.height),y1=Math.round(entry.uvRect[3]*info.height);
+ for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){const at=(y*info.width+x)*4;if(data[at+3]===0){ground++;if(data[at]+data[at+1]+data[at+2]>12)substrateRgb++;}if(data[at+3]>200)pigment++;}
+ assert.ok(ground>20&&pigment>10,entry.id+' mask is not a real two-region carrier');
+ if(!entry.substrate)assert.equal(substrateRgb,ground,entry.id+' transparent PNG processing destroyed substrate RGB');
+ faceTriangles+=meta.indexCount/3;
 }
-
-for (const [mesh, expected] of [
-  ['vigil_part_sign_save', 'SAVE ELLERY'],
-  ['scene_dock_sign_foh', 'FRONT OF HOUSE'],
-]) {
-  const read = readSign(mesh);
-  assert.equal(read, expected,
-    `${mesh} reads "${read}" to somebody standing in front of it — type is laid out toward the reader's left`);
+for(const name of manifest.blankSurfacesPreserved)assert.ok(!manifest.entries.some(e=>e.mesh===name),name+' gained invented copy');
+for(const family of ['city_phone_box','city_phone_box_apparatus','outskirts_lodge_ledger','outskirts_ledger_signed'])assert.ok(manifest.entries.some(e=>e.mesh===family));
+const opal=manifest.entries.filter(e=>e.mesh==='city_phone_box');assert.equal(new Set(opal.map(e=>e.page+':'+e.uvRect.join(','))).size,1,'Identical opal printing lost atlas sharing');
+assert.deepEqual(opal.map(e=>e.geometry.normal),[[0,0,1],[1,0,0],[0,0,-1],[-1,0,0]]);
+const baseBytes=manifest.pages.reduce((s,p)=>s+p.rgbaBaseLevelBytes,0);assert.ok(baseBytes<40*1024*1024,'Whole-game print atlas residency exceeds declared production budget');
+// Paper uses its existing flipped-Y runtime atlas. Geometry is unchanged; only
+// upward faces receive real page UVs. No reversed text is put on the underside.
+assert.equal(manifest.runtimePaperUvs.length,2);
+for(const paper of manifest.runtimePaperUvs){
+ const mesh=gltf.meshes.find(m=>m.name===paper.mesh);let spread=0;
+ if(paper.mesh==='loose_note_page6'){
+  assert.equal(paper.removedLegacyTextProxyBoxes,4,'Paper must identify the retired raised text placeholders');
+  assert.equal(mesh.primitives.length,2,'Only the physical sheet and folded corners should remain');
+  assert.ok(mesh.primitives.every(p=>gltf.materials[p.material].name!=='dark wood'),'Primitive bars must not obscure the real document');
+ }
+ for(const primitive of mesh.primitives){const uv=read(primitive.attributes.TEXCOORD_0),normal=read(primitive.attributes.NORMAL),p=read(primitive.attributes.POSITION);
+  for(let i=0;i<normal.length;i+=3){const u=uv[i/3*2],v=uv[i/3*2+1];assert.ok(u>=0&&u<=1&&v>=0&&v<=1);if(normal[i+1]<-.5)assert.deepEqual([u,v],[0,0]);if(normal[i+1]>.5&&u>.05&&v>.05)spread++;}
+  const top=[];for(let i=0;i<Math.min(72,p.length);i+=3)if(normal[i+1]>.9)top.push([p[i],p[i+2],uv[i/3*2],uv[i/3*2+1]]);
+  assert.ok(top.length>=4);const a=top.reduce((a,b)=>a[0]<b[0]?a:b),b=top.reduce((a,b)=>a[0]>b[0]?a:b);assert.ok(b[2]>a[2],'Paper U reverses reader-right');
+ }
+ assert.ok(spread>=4,paper.mesh+' still has a degenerate world-paper map');
 }
-
-// And the ink is PRINTED, not built. One flat plate per lit pixel, two
-// triangles: a box would be twelve, five faces of which are never seen and all
-// six of which are lit, so raised type reads as embossed pigment rather than as
-// print — and a two-word placard cost four thousand triangles.
-{
-  const stats = JSON.parse(readFileSync('public/assets/conservatory-props.stats.json', 'utf8'));
-  for (const name of ['vigil_part_sign_save', 'vigil_part_banner', 'scene_dock_sign_foh']) {
-    assert.ok(stats.meshes[name].triangles < 1200,
-      `${name} is ${stats.meshes[name].triangles} triangles — the lettering has gone back to solid geometry`);
-  }
-}
-
-console.log('sign lettering specs passed (type reads forward and is rasterised)');
+// Explicitly check the reusable geometry carrier against adversarial axes.
+for(const readerRight of [[1,0,0],[-1,0,0],[0,0,1],[0,0,-1]]){const g=printedFaceGeometry({center:[2,3,4],readerRight,up:[0,1,0],widthM:2,heightM:1});assert.equal(g.positions.length,12);assert.equal(g.indices.length,6);}
+console.log(JSON.stringify({surfaces:manifest.entries.length,meshes:Object.keys(expected).length,runtimePaperMeshes:manifest.runtimePaperUvs.length,faceTriangles,atlasPages:manifest.pages.length,textureBaseLevelBytes:baseBytes,estimatedMipBytes:Math.ceil(baseBytes*4/3),codepoints:'complete authored copy',readerCorrectUv:true,opaqueCoverage:true,humanReading:'separate acceptance gate'}));

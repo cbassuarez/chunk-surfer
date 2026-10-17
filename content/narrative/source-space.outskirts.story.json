@@ -42,6 +42,7 @@
     "woman",
     "woman-again",
     "woman-return",
+    "woman-after-early",
     "woman-after",
     "van-ticket",
     "van-phone-off",
@@ -149,6 +150,7 @@
         "woman-again",
         "woman-return",
         "woman-given",
+        "woman-after-early",
         "woman-after",
         "van-ticket",
         "van-phone-off",
@@ -680,12 +682,12 @@
         {
           "id": "dog.1",
           "who": "direction",
-          "text": "A man walking a dog, stopped under the lamp. The dog will not look at him. The man will not look away."
+          "text": "A man and a dog under the lamp. The dog faces the verge. Through its side, I can still see the far rail."
         },
         {
           "id": "dog.3",
           "who": "direction",
-          "text": "Nothing back. The lead is slack."
+          "text": "The lead hangs slack. He is watching me. He has not looked at the dog."
         }
       ]
     },
@@ -697,7 +699,7 @@
         {
           "id": "dog-again.1",
           "who": "you",
-          "text": "He has turned round to keep watching me. The dog has not."
+          "text": "His shoes have not moved. His face has followed me. The dog is still looking down the verge."
         }
       ]
     },
@@ -907,6 +909,18 @@
           "id": "woman-given.2",
           "who": "direction",
           "text": "\"Thank you. It's a long way back.\""
+        }
+      ]
+    },
+    "woman-after-early": {
+      "id": "woman-after-early",
+      "type": "dialogue",
+      "speaker": "THE SHELTER",
+      "lines": [
+        {
+          "id": "woman-after-early.1",
+          "who": "direction",
+          "text": "The return half is hers now. She is still waiting to be taken somewhere."
         }
       ]
     },

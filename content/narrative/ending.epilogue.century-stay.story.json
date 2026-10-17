@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "ending.epilogue.century-stay",
+  "title": "Coda · The Years It Bought",
+  "status": "active",
+  "entry": "start",
+  "entries": ["start"],
+  "tags": ["ending", "epilogue", "sacrifice", "century-stay"],
+  "notes": "The century stay remains supernatural. Ordinary institutional failures defer the immediate strike, while later human labour keeps the school open. The seal does not make the spirits harmless, the city safe, or the player's lost outside life painless.",
+  "regions": [{"id":"ending.epilogue.century-stay.region","title":"The Years It Bought","kind":"ending","color":"#c6b8a1","nodeIds":["start"]}],
+  "nodes": {
+    "start": {
+      "id": "start",
+      "type": "ending",
+      "speaker": "THE ROOF · THE GATE · THE YEARS",
+      "lines": [
+        {"id":"start.line.1","who":"direction","text":"At the gate, the surveyor will not sign off on the foundation drawings. The driver parks the machine. The guard writes POSTPONED beside the six o'clock order. Nobody can say for how long."},
+        {"id":"start.line.2","who":"client","text":"Find the drawing, then. Get another survey."},
+        {"id":"start.line.3","who":"direction","text":"They do. Each answer leads to something else that must be checked before stone can be struck. In later years there will be appeals, budgets and weather. The reasons are real. None is the reason the building is still here."},
+        {"id":"start.line.4","who":"direction","text":"The RETURNED column still has a line for you. The guard leaves it empty. He does not strike it out."},
+        {"id":"start.line.5","who":"direction","text":"That autumn the school opens a room at a time. Somebody fixes a roof leak. Somebody argues for a teacher's wages. Students come back because people keep doing that work; the seal does not do it for them."},
+        {"id":"start.line.6","who":"direction","text":"In a practice room, the living player of a phrase waits for a pause they cannot explain. The older presence beside them waits too. The room still knows both. The loose score in the cleared room remains turned toward the breach. Ren never calls that a vote for staying."},
+        {"id":"start.line.7","who":"direction","text":"The first time a funeral notice comes through the gate, you read the address twice. You can reach the bars. You cannot cross them. Ren comes to stand there and offers no account of why this was worth it."},
+        {"id":"start.line.8","who":"direction","text":"Outside, terraces are replaced and buses change colour. Children in the flats across the road grow up without meeting whatever might have left the school. You cannot prove that the seal spared them. You remember that they were there."},
+        {"id":"start.line.9","who":"direction","text":"More than once Ren asks whether you want to hear the HOME cassette. Sometimes you do. Sometimes the answer is no. Ren lets the answer remain yours."},
+        {"id":"start.line.10","who":"direction","text":"Years later the glass is replaced inside its old iron ribs. A new student sits where you sat and looks at a city neither of you recognises from that first morning. Somewhere below, another class begins."},
+        {"id":"start.line.11","who":"direction","text":"You and Ren remain. The people who kept the school alive came and went. The people who had nowhere else to go still have rooms. The ones who wanted to try the door have no answer yet. No one has promised what will happen when the hundred years end."}
+      ]
+    }
+  }
+}

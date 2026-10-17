@@ -34,7 +34,7 @@
 // That is a real constraint of the grammar, not a preference.
 
 import { buildRunSummary } from '../progression/report.js';
-import { ENDING_ARRIVAL, endingManifest } from '../data/endings.js';
+import { ENDING_ARRIVAL, ENDING_VARIANT, endingManifest, normalizeEndingVariant } from '../data/endings.js';
 
 const EMPTY_SUMMARY = Object.freeze({
   takes: { completed: 0, spoiled: 0, aborted: 0, rooms: [], contaminated: [], places: {} },
@@ -93,7 +93,7 @@ export function buildEndingDossier({
   live = {},
   now = Date.now(),
 } = {}) {
-  const summary = safeSummary({ endingId, save, meta, authoritative, now });
+  const summary = safeSummary({ endingId, save, meta, authoritative: { ...authoritative, endingArrival: arrival }, now });
   const takes = summary.takes || EMPTY_SUMMARY.takes;
   const equipment = summary.equipment || EMPTY_SUMMARY.equipment;
   const battles = summary.battles || EMPTY_SUMMARY.battles;
@@ -109,6 +109,7 @@ export function buildEndingDossier({
   return {
     ending: endingId,
     arrival,
+    variant: normalizeEndingVariant(endingId, authoritative.endingVariant, arrival),
     coffee: !!live.drankCoffee,
 
     // WHAT HE SAID. The whole answer, not a boolean about one name.
@@ -194,6 +195,7 @@ export function projectDossierFlags(dossier) {
   const set = (name, value) => { flags[`ending.${name}`] = value; };
 
   set('id', dossier.ending);
+  set('variant.centuryStay', dossier.variant === ENDING_VARIANT.CENTURY_STAY);
   for (const arrival of Object.values(ENDING_ARRIVAL)) {
     set(`arrival.${flagKey(arrival)}`, dossier.arrival === arrival);
   }
@@ -292,7 +294,7 @@ export function dueTimelineSteps(steps, fromSeconds, toSeconds) {
 // one, and then the ending itself. The passage is where a defeat stops being a
 // silent handoff.
 export function endingDocuments(endingId, arrival, dossier = null) {
-  const manifest = endingManifest(endingId);
+  const manifest = endingManifest(endingId, { variant: dossier?.variant || dossier?.summary?.endingVariant, arrival });
   if (!manifest) return [];
   const out = [];
   const passage = manifest.passage?.[arrival];

@@ -1,0 +1,35 @@
+{
+  "schema": "battle-window-player-trial-v1",
+  "exportedAt": "2026-10-17T07:39:57.330Z",
+  "humanOutcome": "pending-or-incomplete",
+  "nativeAcceptance": "pending-evidence-review",
+  "responses": {
+    "participant": "",
+    "session-date": "",
+    "order": "",
+    "previous-experience": "",
+    "manifest": "",
+    "recording": "",
+    "trace": "",
+    "visit-1-rule": "",
+    "visit-1-miss": "",
+    "visit-1-control": "",
+    "visit-1-frustration": "",
+    "visit-1-notes": "",
+    "visit-2-rule": "",
+    "visit-2-miss": "",
+    "visit-2-control": "",
+    "visit-2-frustration": "",
+    "visit-2-notes": "",
+    "comparison-verbatim": "",
+    "comparison-choice": "",
+    "moderator-interventions": "",
+    "analysis-record": ""
+  },
+  "limits": [
+    "Prepared pilot protocol; no native telemetry is collected by this sheet.",
+    "One participant is descriptive evidence; repeated casts are not independent people.",
+    "Do not classify valid-click delivery failure as player error.",
+    "No outcome, diagnosis, or platform acceptance is inferred automatically."
+  ]
+}

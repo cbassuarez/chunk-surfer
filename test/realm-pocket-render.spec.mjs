@@ -6,6 +6,7 @@ import { REALM_POCKETS } from '../src/data/realm-pockets.js';
 import { stationRealmFloor, stationRealmCanOccupy } from '../src/game/station-realms.js';
 import { HOME_WINDOW, realmCameraPosition, realmPocketBoxes, homeRealmAcquisition } from '../src/render/realm-pocket-geometry.js';
 import { createRealmEyeInterpolator } from '../src/render/realm-eye.js';
+import { cameraBasis } from '../src/render/camera-basis.js';
 
 test('realm eye heights follow the same authored support tops as body collision', () => {
   for (const pocket of REALM_POCKETS) {
@@ -56,9 +57,9 @@ test('home acquisition uses the physical realm eye and matching mirrored ray con
   const realm={variant:5,stage:'inside',pose:{x:.4,z:69.2,yaw:.2,pitch:-.1,floorY:0},home:{eligible:true},decoherence:0};
   const a=homeRealmAcquisition({realm,reveal:1});
   assert.deepEqual(a.cameraMetres,[-.4,1.62,69.2]);
-  const f=[Math.sin(a.yaw),a.pitch,-Math.cos(a.yaw)],length=Math.hypot(...f);
+  const f=cameraBasis(a.yaw,a.pitch).forward;
   const expected=[-Math.sin(.2)*Math.cos(.1),-Math.sin(.1),Math.cos(.2)*Math.cos(.1)];
-  f.forEach((v,i)=>assert.ok(Math.abs(v/length-expected[i])<1e-12));
+  f.forEach((v,i)=>assert.ok(Math.abs(v-expected[i])<1e-12));
   assert.equal(homeRealmAcquisition({realm:{...realm,home:{eligible:false}},reveal:1}),null);
 });
 

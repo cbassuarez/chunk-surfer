@@ -553,11 +553,18 @@ console.log('stair axis ok');
     assert.equal(FP.isSolid(bx, by), true, `${prop.id} hangs on masonry rather than on air`);
   }
 
-  // B3 is one of these rooms, so it carries the wing's surface and its furniture
-  // rather than a treatment nothing else in the building has.
+  // B3 is the treated room on the wing's corridor, and is what its text says it
+  // is: foam on three walls, carpet down, a patchbay, a chair, a music stand.
+  // It spent a while as one more maple dance studio, which every line written
+  // about it contradicted.
   const b3 = rt(15, 12);
-  assert.equal(FP.materialAt(b3.x, b3.y), MATERIAL.woodVelvet, 'B3 is sprung maple like the rest of the wing');
-  assert.equal(FP.zoneAt(b3.x, b3.y), ZONE.studio, 'and still the only one of them with a take on it');
-  assert.ok(byId['b3-barre-east'] && byId['b3-mirror-north-a'], 'B3 keeps a barre and a mirror');
+  assert.equal(FP.materialAt(b3.x, b3.y), MATERIAL.acousticFoam, 'B3 is the treated room');
+  assert.equal(FP.zoneAt(b3.x, b3.y), ZONE.studio, 'and still the only room on the corridor with a take on it');
+  const foam = placed.filter((prop) => prop.mesh === 'acoustic_foam_panel' && /^b3-/.test(prop.id));
+  const walls = new Set(foam.map((prop) => prop.id.replace(/^b3-foam-(\w+)-\d+$/, '$1')));
+  assert.deepEqual([...walls].sort(), ['east', 'north', 'west'], 'foam on three walls, the way in left bare');
+  assert.ok(placed.some((prop) => /^b3-carpet-/.test(prop.id)) && PROPS.softFloorPropAt(b3.x, b3.y) > 0, 'carpet underfoot');
+  for (const id of ['b3-patchbay', 'b3-chair', 'b3-music-stand']) assert.ok(byId[id], `B3 has ${id}`);
+  assert.ok(!placed.some((prop) => /^b3-/.test(prop.id) && /dance_(mirror|barre)/.test(prop.mesh)), 'the mirrors and the barre are gone');
 }
 console.log('dance wing furnishing ok');

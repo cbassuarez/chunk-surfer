@@ -1,8 +1,7 @@
 // The eyes from the fountain, and what they are owed.
 //
-// Two of the six busts in the academic gallery are a plinth and the bottom third
-// of a face — jaw, part of a mouth, no eyes. The break is old and clean and
-// somebody swept up after it. What they swept up is not the piece: the eyes have
+// One gallery head survives with damaged, empty sockets; another is a fragment.
+// The damage is old and somebody swept up after it. What they swept up is not the piece: the eyes have
 // been lying in a municipal fountain in the park across the yard, among the
 // pennies, which is not where a thing ends up by being dropped. Somebody carried
 // them out there and put them in the water, and you do that to a face you do not
@@ -22,7 +21,7 @@ export const MARBLE_HEAD_PHASE = Object.freeze({
   IN_THE_WATER: 'in-the-water',
   // In the bag. Heavier than anything else in there.
   CARRIED: 'carried',
-  // Back on its plinth. The bust talks once this is true.
+  // Both eyes seated in the gallery face. The bust talks once this is true.
   RETURNED: 'returned',
   // Found, understood, and left in the water on purpose.
   //
@@ -35,11 +34,15 @@ export const MARBLE_HEAD_PHASE = Object.freeze({
   DECLINED: 'declined',
 });
 
-// The station it belongs to. Two gallery busts are fragments; this is the one
-// whose break matches. See BUST_TREES in main.js.
+// The legacy prop ID stays stable in saves and authored dialogue. Its complete,
+// damaged head now survives around actual empty eye sockets.
 export const MARBLE_HEAD_BUST = 'academic-bust-fragment-3';
+export const GALLERY_TURN_BUST = 'academic-bust-2';
+const GALLERY_BUST_IDS = new Set(['academic-bust-1', GALLERY_TURN_BUST,
+  MARBLE_HEAD_BUST, 'academic-bust-4', 'academic-bust-5', 'academic-bust-fragment-6']);
 
-const fresh = () => ({ schema: 1, phase: MARBLE_HEAD_PHASE.IN_THE_WATER, toldWhereTheKeyIs: false });
+const fresh = () => ({ schema: 2, phase: MARBLE_HEAD_PHASE.IN_THE_WATER,
+  toldWhereTheKeyIs: false, gallery: { spoken: [], turned: false } });
 
 let state = fresh();
 
@@ -49,18 +52,23 @@ export function normalizeMarbleHead(saved = {}) {
     ? source.phase
     : MARBLE_HEAD_PHASE.IN_THE_WATER;
   return {
-    schema: 1,
+    schema: 2,
     phase,
     // Whether the bust has already said where the key went. It says it once, and
     // then it will repeat it, because it is the only useful thing it knows and
     // it would be cruel to make somebody find the park twice.
     toldWhereTheKeyIs: !!source.toldWhereTheKeyIs || phase === MARBLE_HEAD_PHASE.RETURNED,
+    gallery: {
+      spoken: [...new Set((Array.isArray(source.gallery?.spoken) ? source.gallery.spoken : [])
+        .filter((id) => GALLERY_BUST_IDS.has(id)))],
+      turned: source.gallery?.turned === true,
+    },
   };
 }
 
 export function loadMarbleHead(saved = {}) { state = normalizeMarbleHead(saved); return marbleHeadState(); }
 export function resetMarbleHead() { state = fresh(); return marbleHeadState(); }
-export function marbleHeadState() { return { ...state }; }
+export function marbleHeadState() { return { ...state, gallery: { ...state.gallery, spoken: [...state.gallery.spoken] } }; }
 export function saveMarbleHead() { return marbleHeadState(); }
 
 export function marbleHeadInWater() { return state.phase === MARBLE_HEAD_PHASE.IN_THE_WATER; }
@@ -69,6 +77,31 @@ export function marbleHeadSettled() { return state.phase !== MARBLE_HEAD_PHASE.I
 export function marbleHeadDeclined() { return state.phase === MARBLE_HEAD_PHASE.DECLINED; }
 export function carryingMarbleHead() { return state.phase === MARBLE_HEAD_PHASE.CARRIED; }
 export function marbleHeadReturned() { return state.phase === MARBLE_HEAD_PHASE.RETURNED; }
+
+// Geometry is reconstructed from the decision, including after reload. Returning
+// two eyes fills two sockets; it never replaces a jaw fragment with a new head.
+export function marbleGalleryAppearance() {
+  return { mesh: marbleHeadReturned() ? 'academic_bust_socketed_returned' : 'academic_bust_socketed',
+    yaw: -.12, elevation: 1.10, eyes: marbleHeadReturned() ? 'seated' : 'empty' };
+}
+
+export function noteGalleryBustSpoken(propId) {
+  if (!GALLERY_BUST_IDS.has(propId) || state.gallery.spoken.includes(propId)) return false;
+  state.gallery.spoken.push(propId);
+  return true;
+}
+
+export function galleryBustTurnPending() {
+  return !state.gallery.turned && state.gallery.spoken.includes(GALLERY_TURN_BUST);
+}
+
+// The caller applies this only while the head is outside the player's sight.
+// Saving the receipt ensures its authored, once-only turn survives rebuilding.
+export function completeGalleryBustTurn() {
+  if (!galleryBustTurnPending()) return false;
+  state.gallery.turned = true;
+  return true;
+}
 
 export function collectMarbleHead() {
   if (state.phase !== MARBLE_HEAD_PHASE.IN_THE_WATER) return false;
@@ -83,8 +116,8 @@ export function declineMarbleHead() {
   return true;
 }
 
-// Whether this bust is the one the head fits. The other fragment is a different
-// break and a different face, and offering it the wrong piece should say so.
+// Only this face has the corresponding empty sockets. The other broken station
+// has lost its upper face, so there is nowhere to seat the pair.
 export function marbleHeadFits(propId) {
   return propId === MARBLE_HEAD_BUST;
 }

@@ -67,11 +67,20 @@ export const OUTSKIRT_FOLD_ENCOUNTER = freeze({
   trigger: freeze([0, -0.10]), reach: 1.65,
   forceStart: 1.1, forceDuration: 1.45, foldDuration: 12, writheDuration: 24,
 });
+// One authored sighting, under the third sodium lamp of the last intact road
+// pass. The bus and lodge are gone by then, leaving the pair a bare stage. Separate
+// roots keep the dog's averted gaze and four planted feet independent of the
+// handler's later look-back. The lead is decorative, not a crossing barrier.
+export const OUTSKIRT_DOG_ENCOUNTER = freeze({
+  pass: 20, handlerKey: 'dog-walker-handler', dogKey: 'dog-walker-dog', leadKey: 'dog-walker-lead',
+  handlerAcross: 1.4, dogAcross: 3.4, along: 21.8,
+  handlerYaw: Math.PI, dogYaw: -Math.PI / 2,
+});
 // Deliberate lifetimes replace independent disappearance rolls. An inspection
 // must still have its physical place when its late node becomes available.
 export const OUTSKIRT_LIFECYCLE = freeze({
-  fence: 8, booth: 18, shelter: 20, busWoman: 12, bus: 19,
-  postbox: 19, bin: 21, bench: 22, car: 22, gate: 19,
+  fence: 8, booth: 18, shelter: 19, busWoman: 12, bus: 19,
+  postbox: 19, bin: 19, bench: 19, car: 22, gate: 19,
   road: 20, boundary: 20, van: 25, phone: 26,
 });
 
@@ -189,7 +198,7 @@ export const outskirtWear = (k) => Math.max(0, Math.min(1, k / LAST));
 const QUIET_PASSES = freeze([0, 1, 13, 28]);
 // Breaks the road must have at least once, whatever the hash says, on a pass it
 // leaves unbroken: somebody walking the road a moment ahead of him.
-const PINNED_BREAKS = freeze({ 7: 'blocked', 17: 'already-walked', 21: 'no-road', 23: 'unfinished', 26: 'emptied', 27: 'stutter' });
+const PINNED_BREAKS = freeze({ 7: 'blocked', 17: 'already-walked', 20: 'stranger', 21: 'no-road', 23: 'unfinished', 26: 'emptied', 27: 'stutter' });
 export const outskirtBreakChance = (k) => (k < 2 ? 0 : 0.06 + 0.7 * outskirtWear(k) ** 2);
 
 // THE ROAD GOES. Where along it (by wear, 0 to 1) each kind of thing starts to
@@ -244,7 +253,10 @@ function vanished(k, piece) {
 
 export const OUTSKIRT_PASSES = freeze(Array.from({ length: OUTSKIRT_STRETCH_COUNT }, (_, k) => {
   const broken = !QUIET_PASSES.includes(k) && hash(k, 'break', 1) < outskirtBreakChance(k);
-  const kind = PINNED_BREAKS[k] || (broken ? OUTSKIRT_BREAKS[Math.floor(hash(k, 'break-kind', 2) * OUTSKIRT_BREAKS.length) % OUTSKIRT_BREAKS.length] : null);
+  // Keep every prior hash outcome except an incidental second stranger. The
+  // chosen pair is a singular encounter, not a repeatable late-road variant.
+  const sampled = OUTSKIRT_BREAKS[Math.floor(hash(k, 'break-kind', 2) * OUTSKIRT_BREAKS.length) % OUTSKIRT_BREAKS.length];
+  const kind = PINNED_BREAKS[k] || (broken ? (sampled === 'stranger' ? 'silent' : sampled) : null);
   return freeze({ k, wear: outskirtWear(k), breakChance: outskirtBreakChance(k), break: kind });
 }));
 
@@ -297,7 +309,10 @@ function passPieces(pass) {
   }
   if (kept('fence')) pieces.push(off(base.fence, 0.5));
   for (let j = 0; j < 4; j += 1) {
-    pieces.push(freeze({ ...off(base[`lamp-${j}`], 0.2), dark: hash(k, `lamp-${j}`, 3) < wear * 0.55 }));
+    pieces.push(freeze({ ...off(base[`lamp-${j}`], 0.2),
+      // The pair is first read in a real sodium pool. The regular wear roll
+      // otherwise extinguishes this very lamp on their only authored pass.
+      dark: k === OUTSKIRT_DOG_ENCOUNTER.pass && j === 2 ? false : hash(k, `lamp-${j}`, 3) < wear * 0.55 }));
   }
   if (kept('booth')) {
     const lodge = off(base.booth, 0.4);
@@ -439,7 +454,33 @@ function passPieces(pass) {
         .map((piece) => (piece.lamp ? freeze({ ...piece, dark: piece.id !== 'lamp-0' }) : piece));
       break;
     case 'stranger':
-      pieces = pieces.concat(put('dog-walker', 'outskirts_stranger', 0.6, 20, { yaw: Math.PI, watcher: true, inspect: 'dog', closeReach: 1.6 }));
+      pieces = pieces.concat(
+        put(OUTSKIRT_DOG_ENCOUNTER.handlerKey, 'outskirts_dog_handler',
+          OUTSKIRT_DOG_ENCOUNTER.handlerAcross, OUTSKIRT_DOG_ENCOUNTER.along, {
+            yaw: OUTSKIRT_DOG_ENCOUNTER.handlerYaw, watcher: true, inspect: 'dog',
+            interact: [.65, 0], closeReach: 2.2,
+            // A small sodium bounce holds the silhouette in this sparse pool;
+            // both it and the ordinary flashlight still pass through dither.
+            glow: [1, .72, .43, .005],
+            character: freeze({ clip: 'idle', time: 0, loop: true }),
+            collision: [freeze({ minX: -.23, maxX: .23, minZ: -.19, maxZ: .19 })],
+          }),
+        put(OUTSKIRT_DOG_ENCOUNTER.dogKey, 'outskirts_vacant_dog',
+          OUTSKIRT_DOG_ENCOUNTER.dogAcross, OUTSKIRT_DOG_ENCOUNTER.along, {
+            yaw: OUTSKIRT_DOG_ENCOUNTER.dogYaw,
+            glow: [1, .72, .43, .005],
+            // The raised trunk is open under the two true voids. Only feet and
+            // lower limbs stop the player; the road remains passable around it.
+            collision: freeze([-1, 1].flatMap((side) => [
+              freeze({ minX: side * .22 - .10, maxX: side * .22 + .10, minZ: -.59, maxZ: -.39 }),
+              freeze({ minX: side * .24 - .10, maxX: side * .24 + .10, minZ: .69, maxZ: .89 }),
+            ])),
+          }),
+        put(OUTSKIRT_DOG_ENCOUNTER.leadKey, 'outskirts_slack_lead',
+          OUTSKIRT_DOG_ENCOUNTER.handlerAcross, OUTSKIRT_DOG_ENCOUNTER.along, {
+            yaw: 0, collision: 'none',
+          }),
+      );
       break;
     case 'unfinished':
       // A set nobody finished: most things are only their timber frame

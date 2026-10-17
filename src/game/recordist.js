@@ -152,8 +152,12 @@ function handleRecordingNoise(level, reason, meta = {}) {
   //
   // The near band is the beat the game wants: you made a sound, the building
   // heard it, and the minute is STILL RUNNING with something on its way.
+  //
+  // `armsTakeHunter: false` is a noise the take already accounted for — the
+  // sound of it breaking, or of the hunter arriving — and must not send a second
+  // thing after him on the way out of the take it ended.
   const worldThreshold = ROOM_TONE.spoilNoise * Math.max(.25, Number(difficultyRules.spoilNoiseScale) || 1);
-  if (level > worldThreshold * .25) loudNoiseSink?.(level, reason, meta, inputLevel > threshold);
+  if (level > worldThreshold * .25 && meta.armsTakeHunter !== false) loudNoiseSink?.(level, reason, meta, inputLevel > threshold);
   if (inputLevel <= threshold) return;
   if (difficultyRules.minorNoise === 'pause' && inputLevel <= threshold * 1.35) {
     state.assistPause = Math.max(state.assistPause, Number(difficultyRules.pauseSeconds) || 0.7);
@@ -375,6 +379,9 @@ export function emitNoise(level, x, y, reason = 'something moved', options = {})
     sampleId = null,
     audibleToHush = true,
     audibleToMonitor = true,
+    // Whether this noise may fetch the take hunter. It follows audibleToHush
+    // unless said otherwise: what the building cannot hear cannot answer.
+    armsTakeHunter = audibleToHush,
   } = options || {};
   // Preserve the pre-acoustic-system gameplay envelope exactly. Noise-floor
   // injury is a property of the operator/take, not of semantic source labels.
@@ -391,6 +398,7 @@ export function emitNoise(level, x, y, reason = 'something moved', options = {})
   if (x != null) state.lastNoiseAt = { x, y, t: performance.now() };
   if (spoils) handleRecordingNoise(state.noise, reason, {
     sourceKind,sourceId,playerGenerated,deliberate,kind:kind || inferAcousticKind(reason, heard),
+    audibleToHush,armsTakeHunter,
   });
   reportAcoustic({
     kind: kind || inferAcousticKind(reason, heard),

@@ -8,6 +8,7 @@
 import { ROOM_CELLS, TARGETS } from './conservatory-script.js';
 import { BELL_CHAMBER_ANCHOR, ORGAN_LOFT_ANCHOR, RINGING_ROOM_ANCHOR } from './bell-tower-layout.js';
 import { SCENE_DOCK_LABEL } from './space-labels.js';
+import { ACADEMIC_ROOF, roofPointToPhysical } from './academic-roof.js';
 
 const freezePoint = (point) => Object.freeze({ x: Number(point.x), y: Number(point.y) });
 const S = (id, label, logical, extra = {}) => Object.freeze({
@@ -77,6 +78,8 @@ export const FACILITY_SPACES = Object.freeze([
   A('faculty-office-east','FACULTY OFFICE EAST',{x:9,y:274},{shortLabel:'FOE',doorIds:['academic-office-locked-2']}),
   A('academic-reception','ACADEMIC RECEPTION',{x:15,y:274},{shortLabel:'RECEP'}),
   A('stripped-office','STRIPPED OFFICE',{x:22,y:274},{shortLabel:'OFF'}),
+  S('academic-roof','GLASS ROOF',ACADEMIC_ROOF.entry,{shortLabel:'ROOF',floorId:'academicRoof',
+    visibility:'discovered',mapPosition:freezePoint(roofPointToPhysical(ACADEMIC_ROOF.entry)),currentRadius:16}),
 ]);
 
 const TARGET_DOORS = Object.freeze({
@@ -95,7 +98,10 @@ export const BUILDING_MAP = Object.freeze({
 
   floors: Object.freeze([
     Object.freeze({
-      id: 'b1', order: -1, label: 'BASEMENT', shortLabel: 'B1',
+      // 'B', not 'B1': the basement has a room called Studio B1 on it, and a
+      // floor tab and a room that print the same two characters is a map that
+      // contradicts itself.
+      id: 'b1', order: -1, label: 'BASEMENT', shortLabel: 'B',
       minHeight: -Infinity, maxHeight: -2.75, visibility: 'always',
     }),
     Object.freeze({
@@ -120,6 +126,11 @@ export const BUILDING_MAP = Object.freeze({
     Object.freeze({
       id: 'tower', order: 3, label: 'TOWER', shortLabel: 'TWR',
       minHeight: 6.25, maxHeight: Infinity, visibility: 'always',
+    }),
+    Object.freeze({
+      id:'academicRoof',order:4,label:'GLASS ROOF',shortLabel:'ROOF',
+      minHeight:11.5,maxHeight:Infinity,visibility:'discovered',
+      renderGroups:Object.freeze(['academicRoof']),
     }),
   ]),
 

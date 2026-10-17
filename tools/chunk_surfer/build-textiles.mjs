@@ -187,6 +187,12 @@ function rolled(m, { length = 2.4, radius = 0.19, lean = 0.10, segments = 18 }) 
   const m = mesh('textile_rolled', 'worn_carpet');
   rolled(m, {});
 }
+{
+  // STUDIO B3. Laid wall to wall in widths when the room was treated for
+  // recording, under the foam; nine of these cover it. No fringe: fitted carpet.
+  const m = mesh('textile_studio_carpet', 'worn_carpet');
+  slab(m, { w: 6.20, d: 4.60, h: 0.016, bevel: 0.02 });
+}
 
 // ── the pack ─────────────────────────────────────────────────────────────────
 const images = [];

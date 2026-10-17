@@ -1,4 +1,4 @@
-// Transparent orthographic performers enter the same acquisition shader as the
+// Transparent performers enter the same acquisition shader as the
 // world. Coverage is transported separately from the encoded acquisition depth.
 import { PIXEL_MESH_FRAG } from './shader.js';
 import { getLookProfile } from '../look-profiles.js';
@@ -79,14 +79,16 @@ export function createTransparentPixelMesh(THREE, renderer, {
   // the original directly rendered canvas used, exactly once before recording.
   const acquisitionUniforms = {
     source: { value: sceneTarget.texture }, depth: { value: sceneTarget.depthTexture },
-    resolution: { value: new THREE.Vector2() }, nearFar: { value: new THREE.Vector2() },
+    resolution: { value: new THREE.Vector2() },
+    projectionInverse: { value: new THREE.Matrix4() },
     toneMappingExposure: { value: renderer.toneMappingExposure },
   };
   const acquisitionMaterial = new THREE.RawShaderMaterial({
     glslVersion: THREE.GLSL3, vertexShader: VERTEX,
     fragmentShader: `precision highp float;
       uniform sampler2D source,depth;
-      uniform vec2 resolution,nearFar;
+      uniform vec2 resolution;
+      uniform mat4 projectionInverse;
       out vec4 result;
       ${THREE.ShaderChunk.tonemapping_pars_fragment}
       ${THREE.ShaderChunk.colorspace_pars_fragment}
@@ -96,7 +98,11 @@ export function createTransparentPixelMesh(THREE, renderer, {
         if(raw.a<=0.0){result=vec4(0.0);return;}
         vec3 linear=raw.rgb/max(raw.a,1e-6);
         vec3 display=sRGBTransferOETF(vec4(ACESFilmicToneMapping(linear),1.0)).rgb;
-        float viewDepth=mix(nearFar.x,nearFar.y,texture(depth,uv).r);
+        // Perspective depth is hyperbolic. Reconstruct with the real camera
+        // projection so a close human face cannot acquire far-plane marks.
+        // The same equation also preserves orthographic hand/desktop depth.
+        vec4 view=projectionInverse*vec4(uv*2.0-1.0,texture(depth,uv).r*2.0-1.0,1.0);
+        float viewDepth=max(0.0,-view.z/view.w);
         result=vec4(display,1.0/(1.0+.14*viewDepth));
       }`, uniforms: acquisitionUniforms,
     depthTest: false, depthWrite: false, blending: THREE.NoBlending, toneMapped: false,
@@ -179,7 +185,7 @@ export function createTransparentPixelMesh(THREE, renderer, {
       uniforms.uReduceFlash.value = snapshot.reduceFlash ? 1 : 0;
       uniforms.uAudio.value = Math.max(0, Math.min(1, Number(snapshot.audio) || 0));
       uniforms.uFear.value = Math.max(0, Math.min(1, Number(snapshot.fear) || 0));
-      acquisitionUniforms.nearFar.value.set(camera.near, camera.far);
+      acquisitionUniforms.projectionInverse.value.copy(camera.projectionMatrixInverse);
       acquisitionUniforms.toneMappingExposure.value = renderer.toneMappingExposure;
       const targetBefore = renderer.getRenderTarget(), autoClearBefore = renderer.autoClear;
       const scissorBefore = renderer.getScissorTest(), clearAlphaBefore = renderer.getClearAlpha();
@@ -203,7 +209,7 @@ export function createTransparentPixelMesh(THREE, renderer, {
       }
     },
     debug: () => ({ shader: 'pixel-mesh', profile: profile.id, screen: screenId,
-      renderCount, noiseReady, orthoDepth: true, coveragePreserved: true,
+      renderCount, noiseReady, depthReconstruction: 'inverse-projection', coveragePreserved: true,
       temporalMemory: false, width: bufferWidth, height: bufferHeight,
       sourceWidth, sourceHeight, cellPx: uniforms.uCellPx.value, screenPeriodPx: uniforms.uScreenPeriodPx.value, disposed }),
     dispose() {

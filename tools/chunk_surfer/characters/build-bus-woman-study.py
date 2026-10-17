@@ -153,7 +153,7 @@ def shoe_envelopes(kind,foot,faces,rest):
 
 
 MATERIALS=[
- dict(name='warm deep-brown skin',baseColor=[.27,.133,.079,1],role='skin',roughness=.79),
+ dict(name='warm deep-brown skin',baseColor=[.12,.043,.022,1],role='skin',roughness=.79),
  dict(name='weathered navy wool',baseColor=[.041,.066,.095,1],role='coat',roughness=.96),
  dict(name='washed dark denim',baseColor=[.065,.075,.081,1],role='trousers',roughness=.94),
  dict(name='worn dark leather',baseColor=[.040,.033,.029,1],role='shoe',roughness=.75),
@@ -241,11 +241,11 @@ hc=rest['head'][0];vv=[];ff=[];seg=40
 for j in range(13):
  u=j/12;a=u*math.pi/2
  for k in range(seg):
-  t=k*math.pi*2/seg;wave=1+.015*math.sin(t*13);vv.append([math.cos(t)*.094*math.cos(a)*wave,1.616+math.sin(a)*.096, hc[2]+.022+math.sin(t)*.107*math.cos(a)*wave])
+  t=k*math.pi*2/seg;wave=1+.015*math.sin(t*13);vv.append([math.cos(t)*.105*math.cos(a)*wave,1.624+math.sin(a)*.112, hc[2]+.022+math.sin(t)*.126*math.cos(a)*wave])
  if j:
   for k in range(seg):ff.append([(j-1)*seg+k,(j-1)*seg+(k+1)%seg,j*seg+(k+1)%seg,j*seg+k])
 add('woman-soft-wool-cap',vv,[list(reversed(f))for f in ff],weighted('head',len(vv)),7)
-ring=[[math.cos(t)*.095,1.624,hc[2]+.022+math.sin(t)*.108]for t in np.linspace(0,2*math.pi,49)]
+ring=[[math.cos(t)*.106,1.630,hc[2]+.022+math.sin(t)*.127]for t in np.linspace(0,2*math.pi,49)]
 tube('woman-cap-turned-rim',ring,.010,'head',7,8)
 # Shoes use closed lasts, soles and instep seams, never naked anatomical feet.
 for side in ['L','R']:
@@ -268,7 +268,7 @@ for option,name,hem,width,scarf_length in [(1,'The Familiar Wait',.61,1,.24),(2,
  RESULT=[]
  # Folded coat body, fitted from a series of torso cross sections. Deliberate hem profiles
  # make the options structurally distinct without changing the woman beneath them.
- sections=[(hem,.22*width,.147),(hem+.10,.232*width,.151),(.88,.221*width,.147),(1.02,.19*width,.140),(1.14,.183*width,.143),(1.29,.212*width,.169),(1.38,.208*width,.146),(1.44,.151,.109),(1.478,.073,.073)]
+ sections=[(hem,(.27 if option==3 else .245)*width,.27 if option==3 else .23),(hem+.10,(.27 if option==3 else .248)*width,.27 if option==3 else .23),(.88,.25*width,.238),(1.02,.225*width,.223),(1.14,.208*width,.219),(1.29,.217*width,.216),(1.38,.212*width,.161),(1.44,.151,.109),(1.478,.073,.073)]
  sections=sorted(sections);rows=[]
  for (ya,xa,za),(yb,xb,zb) in zip(sections,sections[1:]):
   for j in range(4):
@@ -278,61 +278,70 @@ for option,name,hem,width,scarf_length in [(1,'The Familiar Wait',.61,1,.24),(2,
   for k in range(seg):
    a=k*2*math.pi/seg;x=math.sin(a)*rx;front=math.cos(a);fold=.006*math.sin(a*9+(y-hem)*5)*max(0,min(1,(1.30-y)/.3))
    # Button2 cloth pulls diagonally from a misplaced closure and raises one front hem.
-   skew=(.040*math.sin(a)*max(0,(1.42-y)/(.9)) + .055*math.exp(-((a-.5)/.55)**2)*max(0,(.98-y)/(.98-hem)))if option==2 else 0
+   skew=(.040*math.sin(a)*max(0,(1.42-y)/(.9)) + .11*math.exp(-((a-.5)/.55)**2)*max(0,(.98-y)/(.98-hem)))*(1 if option==2 else .25)
    xx=x+(.009*math.sin(y*19)if option==2 else 0);zz=.024-front*(rz+fold)
    vv.append([xx,y+skew,zz]);ww.append(core_weights(y,x))
   if j:
    for k in range(seg):ff.append([(j-1)*seg+k,(j-1)*seg+(k+1)%seg,j*seg+(k+1)%seg,j*seg+k])
  add('option'+str(option)+'-continuous-tailored-coat',vv,[list(reversed(f))for f in ff],ww,1)
- # Sleeve anatomy uses the female-fitted clothing source, with a little added wool ease.
- arms=[]
- for f in cf:
-  ar=sum(cw[f][:,NAMES.index(n)].mean()for n in ['upperarm_L','upperarm_R','forearm_L','forearm_R'])
-  if ar>.14 and cv[f,1].mean()>1.0:arms.append(f)
- sleeve=cv.copy()
- for i,p in enumerate(sleeve):
-  side='L'if p[0]<0 else'R';a,b=rest['upperarm_'+side];c=rest['forearm_'+side][1];near=a+(c-a)*max(0,min(1,float(np.dot(p-a,c-a)/np.dot(c-a,c-a))))
-  d=p-near;d/=np.linalg.norm(d)or 1;sleeve[i]+=d*(.010 if option!=2 else .019)
- add('option'+str(option)+'-anatomical-sleeves',sleeve,arms,cw,1,.42,True)
+ # Continuous tailored sleeves follow the anatomical shoulder, elbow and wrist, with no cut proxy boundaries.
  for side in ['L','R']:
-  a,b=rest['forearm_'+side];axis=b-a;axis/=np.linalg.norm(axis);center=a+(b-a)*.9;cross=np.cross(axis,[0,0,1]);cross/=np.linalg.norm(cross);up=np.cross(axis,cross)
-  pts=[center+(cross*math.cos(t)+up*math.sin(t))*(.035 if option!=2 else .041)for t in np.linspace(0,2*math.pi,25)]
+  a,elbow=rest['upperarm_'+side];wrist=rest['forearm_'+side][1];vv=[];ff=[];ww=[];count=29;segs=24
+  for j in range(count):
+   u=max(0,(j-4)/24);t=min(1,u*2);q=max(0,u*2-1)
+   center=a*(1-t)+elbow*t if u<=.5 else elbow*(1-q)+wrist*q
+   if j<4:center=a+np.array([.06 if side=='L'else-.06,.058,.003])*(1-j/4)
+   axis=elbow-a if u<.5 else wrist-elbow;axis/=np.linalg.norm(axis);cross=np.cross(axis,[0,0,1]);cross/=np.linalg.norm(cross);up=np.cross(axis,cross)
+   radius=(.088*(1-t)+.066*t)if u<=.5 else(.066*(1-q)+.039*q)
+   if j<4:radius=.04+.048*j/4
+   radius*=1.13 if option==2 else 1
+   row=weighted('upperarm_'+side,1)[0]*(1-min(1,max(0,(u-.42)/.16)))+weighted('forearm_'+side,1)[0]*min(1,max(0,(u-.42)/.16))
+   if j<8:row=core_weights(center[1],center[0])*(1-j/8)+row*(j/8)
+   for k in range(segs):
+    ang=k*2*math.pi/segs;fold=1+.055*math.sin(u*34+ang*3)*math.exp(-((u-.53)/.25)**2);vv.append(center+(cross*math.cos(ang)+up*math.sin(ang))*radius*fold);ww.append(row)
+   if j:
+    for k in range(segs):ff.append([(j-1)*segs+k,(j-1)*segs+(k+1)%segs,j*segs+(k+1)%segs,j*segs+k])
+  ff.append(list(range(segs-1,-1,-1)))
+  add('option'+str(option)+'-continuous-sleeve-'+side,vv,ff,ww,1)
+  axis=wrist-elbow;axis/=np.linalg.norm(axis);center=wrist-axis*.012;cross=np.cross(axis,[0,0,1]);cross/=np.linalg.norm(cross);up=np.cross(axis,cross)
+  pts=[center+(cross*math.cos(t)+up*math.sin(t))*(.04 if option!=2 else .046)for t in np.linspace(0,2*math.pi,25)]
   tube('option'+str(option)+'-cuff-'+side,pts,.006,'forearm_'+side,8,7)
  # Broad lapels on 3; soft small collar on1; shallow storm yoke on2.
  for sign in [-1,1]:
   inner=.046;outer=.154 if option==3 else .105
-  pts=[[sign*inner,1.455,-.062],[sign*outer,1.399,-.095],[sign*(.093 if option==3 else .063),1.31 if option==3 else 1.365,-.160],[sign*.036,1.413,-.13]]
+  pts=[[sign*inner,1.455,-.062],[sign*outer,1.399,-.095],[sign*(.093 if option==3 else .063),1.31 if option==3 else 1.365,-.205],[sign*.036,1.413,-.137]]
   add('option'+str(option)+'-folded-collar-'+str(sign),pts,[[0,1,2,3]],np.array([core_weights(p[1],p[0])for p in pts]),1)
   tube('option'+str(option)+'-collar-binding-'+str(sign),pts+[pts[0]],.0025,[core_weights(p[1],p[0])for p in pts+[pts[0]]],8,6)
  # Collar scarf is a physically separate loop plus a hanging, softly ribbed panel.
- pts=[[math.sin(t)*.077,1.43+.010*math.cos(t),.015-math.cos(t)*.079]for t in np.linspace(0,2*math.pi,33)]
+ pts=[[math.sin(t)*.079,1.477+.006*math.cos(t),-.022-math.cos(t)*.086]for t in np.linspace(0,2*math.pi,33)]
  tube('option'+str(option)+'-mustard-neck-scarf',pts,.018,'chest',6,8)
  vv=[];ff=[];ww=[]
  for j in range(16):
-  u=j/15;y=1.427-u*scarf_length
+  u=j/15;y=1.475-u*scarf_length
+  zz=(-.12-(1.475-y)/.035*.045)if y>1.44 else(-.165-(1.44-y)/.06*.055)if y>1.38 else-.22
   for k in range(9):
-   v=k/8;vv.append([.031+(v-.5)*.061+math.sin(u*3)*.013,y,-.161-.004*math.cos(v*math.pi*10)+u*.02]);ww.append(core_weights(y))
+   v=k/8;vv.append([.031+(v-.5)*.061+math.sin(u*3)*.013,y,zz-.004*math.cos(v*math.pi*10)]);ww.append(core_weights(y))
   if j:
    for k in range(8):ff.append([(j-1)*9+k,(j-1)*9+k+1,j*9+k+1,j*9+k])
  add('option'+str(option)+'-ribbed-scarf-end',vv,ff,ww,6)
  # Placket and four real buttons. The second proposal's offset is physically visible.
  placket=[]
  for j in range(15):
-  y=hem+.07+(1.34-hem-.07)*j/14;x=.013 if option!=2 else .057*(1.33-y)/(.77)+.008
-  z=-.122 if y<1.17 else-.145;placket.append([x,y,z-.009])
+  y=hem+.07+(1.34-hem-.07)*j/14;x=.013+.014*(1.33-y)/.77 if option!=2 else .057*(1.33-y)/(.77)+.008
+  z=-.210 if y<1.17 else-.195;placket.append([x,y,z-.009])
  tube('option'+str(option)+'-front-closure',placket,.004,[core_weights(p[1],p[0])for p in placket],8,6)
  for j in range(4):
-  y=.89+j*.118;x=.019 if option!=2 else .057*(1.33-y)/.77+.008
-  ellipsoid('option'+str(option)+'-coat-button-'+str(j),[x,y,-(.157 if y>1.17 else .131)],[.007,.007,.003], 'spine_lower'if y<1.12 else'spine_mid',8,10,6)
+  y=.89+j*.118;x=.019+.014*(1.33-y)/.77 if option!=2 else .057*(1.33-y)/.77+.008
+  ellipsoid('option'+str(option)+'-coat-button-'+str(j),[x,y,-(.209 if y>1.17 else .221)],[.007,.007,.003], 'spine_lower'if y<1.12 else'spine_mid',8,10,6)
  # Pocket mouths, front-facing and angled for actual hand insertion in the performance.
  for sign in [-1,1]:
-  pts=[[sign*(.123+k*.015),1.035-k*.018,-.126+k*.008]for k in range(5)]
+  pts=[[sign*(.123+k*.015),1.035-k*.018,-.193+k*.008]for k in range(5)]
   tube('option'+str(option)+'-pocket-welt-'+str(sign),pts,.005,[core_weights(p[1],p[0])for p in pts],8,7)
  # Yoke and skirt seam retain form in dither without decorative excess.
  hemline=vv # local reference deliberately not used as topological source
  pts=[]
  for k in range(49):
-  a=k*2*math.pi/48;pts.append([math.sin(a)*.22*width,hem+.01,.024-math.cos(a)*.147])
+  a=k*2*math.pi/48;skew=(.040*math.sin(a)*max(0,(1.42-hem)/.9)+.11*math.exp(-((a-.5)/.55)**2))*(1 if option==2 else .25);pts.append([math.sin(a)*(.27 if option==3 else .245)*width,hem+.01+skew,.024-math.cos(a)*(.27 if option==3 else .23)])
  tube('option'+str(option)+'-hem-binding',pts,.003,[core_weights(p[1],p[0])for p in pts],8,6)
  VARIANTS.append(dict(id=option,name=name,meshes=RESULT))
 

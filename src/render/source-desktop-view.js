@@ -6,6 +6,8 @@ import { normalizePressurePresentation } from '../game/pressure-performance.js';
 import { pressureInstances } from './pressure-volume.js';
 import { assetUrl } from '../platform/paths.js';
 import { createSourceDesktopDither } from './source-desktop-dither.js';
+import { ensureWorldLetteringFonts } from './world-lettering-fonts.js';
+import { fitWorldLetteringLine } from './world-lettering-layout.js';
 
 export const SOURCE_DESKTOP_PROTOCOL = 1;
 export const SOURCE_DESKTOP_DISSOLVE_SECONDS = 2.4;
@@ -18,6 +20,23 @@ const intents = new Set(['broadcast', 'conceal', 'overload', 'loop', 'silence'])
 export function sourceDesktopGlyphLines(limit = 48) {
   return Object.values(SOURCE_ATLAS.sectors || {}).flatMap(s => s.sourceLines || [])
     .map(line => String(line.text || '')).filter(line => line.trim().length > 12).slice(0, limit);
+}
+
+export function paintSourceDesktopGlyphCanvas(ctx, { width = 1024, height = 512, lines = sourceDesktopGlyphLines() } = {}) {
+  ctx.fillStyle = '#25312c'; ctx.fillRect(0, 0, width, height);
+  if (!lines.length) return [];
+  const rows = 26, margin = 8, pitch = (height - margin * 2) / rows, report = [];
+  for (let row = 0; row < rows; row++) {
+    const x = margin + row % 3 * 9;
+    const layout = fitWorldLetteringLine(ctx, lines[row % lines.length], {
+      width: width - margin - x, height: pitch - 2, maxFont: 13, role: 'mono',
+    });
+    if (!layout.fits) throw new Error(`Source desktop ink cannot fit row ${row}`);
+    ctx.fillStyle = row % 5 === 0 ? '#73816f' : '#9ca992';
+    ctx.fillText(layout.text, x + layout.left, margin + row * pitch + layout.ascent);
+    report.push({ text: layout.text, x, top: margin + row * pitch, pitch, ...layout });
+  }
+  return report;
 }
 
 export function normalizeSourceDesktopSnapshot(input = {}, previous = null) {
@@ -147,10 +166,7 @@ export function createSourceDesktopView({ canvas = null, container = null, asset
   }
   function glyphTexture() {
     const bitmap = document.createElement('canvas'); bitmap.width = 1024; bitmap.height = 512;
-    const ctx = bitmap.getContext('2d'), lines = sourceDesktopGlyphLines();
-    ctx.fillStyle = '#25312c'; ctx.fillRect(0, 0, 1024, 512);
-    ctx.font = '13px monospace'; ctx.textBaseline = 'top';
-    for (let y = 0; y < 26; y++) { ctx.fillStyle = y % 5 === 0 ? '#73816f' : '#9ca992'; ctx.fillText(lines[y % lines.length], 8 + y % 3 * 9, y * 20 + 3); }
+    paintSourceDesktopGlyphCanvas(bitmap.getContext('2d'));
     const texture = new THREE.CanvasTexture(bitmap); texture.colorSpace = THREE.SRGBColorSpace;
     texture.wrapS = texture.wrapT = THREE.RepeatWrapping; texture.repeat.set(2.4, .8); textures.add(texture); return texture;
   }
@@ -251,6 +267,7 @@ export function createSourceDesktopView({ canvas = null, container = null, asset
     return true;
   }
   const ready = (async () => {
+    await ensureWorldLetteringFonts({ assetUrl: path });
     THREE = await import('three');
     const [{ GLTFLoader }, { clone: cloneRig }] = await Promise.all([import('three/addons/loaders/GLTFLoader.js'), import('three/addons/utils/SkeletonUtils.js')]);
     if (disposed) return false;

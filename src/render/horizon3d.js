@@ -1,3 +1,6 @@
+import { parseCharacterAsset, sampleCharacterPose, CHARACTER_DEFORM_GLSL, CHARACTER_LIMITS } from './character-asset.js';
+import { BUST_RELIQUARY_RIG } from '../data/bust-reliquary-rig.js';
+
 // The telephone street unravels into the recorded tape. Its baked slices are
 // transformed into physical world metres and use the street's actual camera.
 // Surviving real props occlude the splats; fixed missing sectors and settling
@@ -47,6 +50,15 @@ export function horizonWorldPoint(point, transform) {
   return point.map((value, axis) => value * transform.scale[axis] + transform.offset[axis]);
 }
 
+// Metres are signed from the physical seam. The first step into it is mostly
+// absence; the image gathers through a long walk instead of presenting its
+// entire forty-slice stack as a wall at the roadside. The first image stays
+// local to the walker; the full recording only arrives near the bust.
+export function horizonEntryDiffusion(metres) {
+  const t = Math.max(0, Math.min(1, ((Number(metres) || 0) + 12) / 172));
+  return t * t * (3 - 2 * t);
+}
+
 const VERT = `#version 300 es
 precision highp float;
 layout(location=0) in vec2 aQuad;      // unit quad, -0.5..0.5
@@ -61,6 +73,7 @@ uniform vec2 uUnravelling; // durable amount, cumulative loss
 uniform float uWorldActive;
 uniform float uPosScale, uSizeScale;
 uniform float uSliceFade;   // per-slice opacity, distance + collapse
+uniform float uEntryReveal; // threshold mist gives way to image in lived metres
 uniform float uBoil;        // sub-pixel unrest, so a still frame is not dead
 // Where the ground is. Everything below it belongs to the floor, not to the
 // picture, and fades out over the last two metres so the tape rises out of the
@@ -119,6 +132,12 @@ void main(){
   keep*=mix(1.0,1.0-sectorLoss*(1.0-step(.92,sector)),uWorldActive);
   float detached = smoothstep(.12,.66,uUnravelling.x)*uWorldActive;
   float packet = unravelHash(floor(center.xz/vec2(4.0,8.0)));
+  // The entrance is a cloud volume, not the first frame of a giant flat
+  // recording. Neighbouring depths drift out of register, then gradually find
+  // their recorded positions as the body goes farther in.
+  float fogPacket=unravelHash(vec2(floor(center.z/6.0),floor(center.y/5.0)));
+  center.x+=(fogPacket-.5)*40.0*(1.0-uEntryReveal)*uWorldActive;
+  center.y+=(fogPacket-.5)*3.0*(1.0-uEntryReveal)*uWorldActive;
   // Fragments separate and settle once. They do not orbit like aurora curtains.
   center.x += (packet-.5)*detached*5.0;
   center.y -= packet*detached*3.0;
@@ -157,7 +176,12 @@ void main(){
   viewPos.xy += aQuad * size * uWorldScale.xy;
   vViewDepth = -viewPos.z;
   vQuad = aQuad;
-  float buried = smoothstep(uFloorCut - 1.1, uFloorCut + 0.3, world.y);
+  float floorFray=sin(anchored.x*.19+anchored.z*.071)
+    *sin(anchored.z*.11-anchored.x*.04)*2.5;
+  float buried=mix(
+    smoothstep(uFloorCut-1.1,uFloorCut+.3,world.y),
+    smoothstep(uFloorCut-8.0+floorFray,uFloorCut+6.0+floorFray,world.y),
+    uWorldActive);
   // Where the tube is at this splat's depth.
   float along = clamp((uBoreZ - center.z) / max(1.0, uBoreAheadZ), 0.0, 1.0);
   float axisX = mix(uBoreCentre.x, uBoreCentre.y, along);
@@ -173,7 +197,13 @@ void main(){
   // Soft-walled, not a hole punched in a poster: the tape thins toward the axis
   // over the last third of the radius, so the corridor has haze in it.
   float bore = mix(1.0 - uBoreAmount, 1.0, smoothstep(0.58, 1.20, r));
-  vColor = vec4(aColor.rgb, aColor.a * uSliceFade * buried * bore * keep);
+  // Stable cohorts of splats emerge as patches, rather than all forty slices
+  // fading up together into a rectangular screen. The early patches are thin
+  // enough to see the black between them.
+  float cloudSeed=unravelHash(floor(anchored.xy/vec2(8.0,5.5))+vec2(floor(anchored.z/13.0),0.0));
+  float cloud=smoothstep(cloudSeed*.72-.03,cloudSeed*.72+.25,uEntryReveal);
+  float entry=pow(uEntryReveal,1.35)*cloud;
+  vColor = vec4(aColor.rgb, aColor.a * uSliceFade * buried * bore * keep * entry);
   vKind = kind;
   vSeed = aTrim.x;
   gl_Position = uProj * viewPos;
@@ -204,6 +234,8 @@ layout(location=0) out vec4 o;
 layout(location=1) out vec4 oMark;
 // How opaque a flat field is allowed to get. See the veil note below.
 uniform float uVeil;
+uniform float uEntryReveal;
+uniform float uCloudTime;
 uniform sampler2D uStreet, uStreetDepth;
 uniform vec2 uSceneRes, uStreetNearFar;
 uniform float uWorldActive, uStreetRetention;
@@ -257,6 +289,22 @@ void main(){
     // front, gently at first, so the same telephone street remains legible.
     a*=vViewDepth>streetDepth-.035?1.0-coverage:1.0-coverage*uStreetRetention*.88;
   }
+  if(uEntryReveal<.999){
+    // The same low-frequency gap applies to every stacked slice at this ray.
+    // Per-splat fades alone let dozens of layers fill one another's holes and
+    // rebuild the exact rectangular wall the entry is meant to dissolve.
+    vec2 p=(gl_FragCoord.xy-uSceneRes*.5)/uSceneRes.y;
+    float cloud=vnoise(p*3.3+vec2(uCloudTime*.005,-.4))*.58
+      +vnoise(p*7.1+vec2(-.8,uCloudTime*.003))*.29
+      +vnoise(p*14.7+vec2(.3,-.7))*.13;
+    float open=smoothstep(.50-.10*uEntryReveal,.70-.10*uEntryReveal,cloud);
+    open=mix(pow(open,2.0),1.0,smoothstep(.95,1.0,uEntryReveal));
+    // Reveal nearby suspended fragments before the distant slices. Without
+    // this distance veil the first visible material is a plane 80m away.
+    float reach=mix(10.0,90.0,pow(uEntryReveal,2.7));
+    float nearCloud=1.0-smoothstep(reach*.62,reach,vViewDepth);
+    a*=open*nearCloud;
+  }
   if (a < 0.004) discard;
 
   // Sub-splat break-up, keyed off the per-splat seed so it is stable frame to
@@ -265,6 +313,11 @@ void main(){
   vec2 np = vQuad * 7.0 + vSeed * 12.7;
   float grain = vnoise(np) * 0.62 + vnoise(np * 2.7) * 0.38;
   vec3 rgb = vColor.rgb * (0.90 + grain * 0.20);
+  // Colour arrives after form: first the recording looks like suspended ash,
+  // then its familiar impossible palette slowly stains the separate clouds.
+  float chroma=smoothstep(.65,1.0,uEntryReveal);
+  float luminance=dot(rgb,vec3(.30,.59,.11));
+  rgb=mix(vec3(.24,.27,.29)*luminance,rgb,chroma);
 
   o = vec4(rgb * a, a);   // premultiplied
   oMark = vec4(0.0);
@@ -433,12 +486,16 @@ uniform mat4 uView, uProj;
 uniform vec3 uOrigin;
 uniform float uScale;
 uniform vec3 uWorldScale, uWorldOffset;
+uniform vec3 uModelToTape;
+${CHARACTER_DEFORM_GLSL}
 out vec3 vNormal;
 out vec3 vPosition;
 void main(){
-  vec3 world = aPosition * uScale + uOrigin;
+  vec3 position=aPosition, normal=aNormal;
+  deformCharacter(position,normal);
+  vec3 world = position * uModelToTape * uScale + uOrigin;
   vPosition = world*uWorldScale+uWorldOffset;
-  vNormal = normalize(aNormal/uWorldScale);
+  vNormal = normalize(normal/(uModelToTape*uWorldScale));
   gl_Position = uProj * uView * vec4(vPosition, 1.0);
 }`;
 
@@ -448,31 +505,54 @@ in vec3 vNormal;
 in vec3 vPosition;
 layout(location=0) out vec4 o;
 layout(location=1) out vec4 oMark;
+uniform mat4 uView;
 uniform vec4 uBaseColor;
 uniform vec3 uEmissive;
-uniform float uRole;
-uniform float uRecognized;
-uniform float uReturned;
-uniform float uExposure;
-
-float hash31(vec3 p){ return fract(sin(dot(p, vec3(41.3, 289.1, 113.7))) * 43758.5453); }
+uniform float uRole, uMetallic, uRoughness;
+uniform float uRecognized, uReturned, uCeremony, uExposure, uAlpha;
+float hash31(vec3 p){return fract(sin(dot(p,vec3(41.3,289.1,113.7)))*43758.5453);}
 void main(){
-  vec3 n = normalize(vNormal);
-  vec3 key = normalize(vec3(-0.42, 0.76, 0.49));
-  float diffuse = max(0.0, dot(n, key));
-  float underside = max(0.0, dot(n, normalize(vec3(0.36, -0.18, -0.91))));
-  float grain = hash31(floor(vPosition * 9.0));
-  vec3 base = uBaseColor.rgb;
-  // The seal is bronze until recognition. Once the returned or carried eyes
-  // answer it, the metal holds a restrained cold/warm votive light.
-  vec3 recognition = mix(vec3(0.76, 0.50, 0.20), vec3(0.28, 0.84, 0.78), uReturned);
-  if (uRole > 1.5) base = mix(base, recognition, uRecognized * 0.38);
-  vec3 colour = base * (0.23 + diffuse * 0.72 + underside * 0.12);
-  colour *= 0.93 + grain * 0.12;
-  colour += uEmissive;
-  if (uRole > 1.5) colour += recognition * uRecognized * 0.28;
-  o = vec4(colour * uExposure, 1.0);
-  oMark = vec4(0.0);
+  vec3 n=normalize(vNormal);
+  if(!gl_FrontFacing)n=-n;
+  vec3 key=normalize(vec3(-.76,.53,.42));
+  vec3 camera=-transpose(mat3(uView))*uView[3].xyz;
+  vec3 viewDir=normalize(camera-vPosition),halfway=normalize(key+viewDir);
+  float diffuse=max(0.,dot(n,key));
+  float fill=max(0.,dot(n,normalize(vec3(.65,.13,-.61))));
+  float grain=hash31(floor(vPosition*85.));
+  float veins=sin(vPosition.x*7.+sin(vPosition.y*3.+vPosition.z*5.)*.8);
+  vec3 base=uBaseColor.rgb;
+  if(uRole<.5)base*=.96+.04*smoothstep(-.94,-.7,veins);
+  float spec=pow(max(0.,dot(n,halfway)),mix(100.,13.,uRoughness));
+  vec3 f0=mix(vec3(.045),base,uMetallic);
+  float fresnel=pow(1.-max(0.,dot(n,viewDir)),5.);
+  float ambient=uRole<.5?.35:(uRole<1.5?.53:.39);
+  vec3 colour=base*(ambient+diffuse*(uRole<.5?1.02:.67)+fill*(uRole<.5?.07:.14))*(1.-uMetallic*.28);
+  // The projector supplies the fine screen texture. Micro-noise on every
+  // marble triangle turns eyelids and the mineral irises into static once the
+  // figure enters that pass, so keep only a trace of material grain here.
+  colour*=uRole<.5?.985+grain*.025:.975+grain*.045;
+  colour+=mix(f0,vec3(.63,.69,.61),fresnel)*spec*(.28+uMetallic*.9);
+  colour+=base*fresnel*.075+uEmissive;
+  // The recording is a bright, near-surrounding light source. A small diffuse
+  // return from it lets the charcoal plinth and the repaired metal keep their
+  // relief against the luminous tape without turning the seal into a lamp.
+  float tapeBounce=.55+.45*max(0.,dot(n,viewDir));
+  if(uRole<.5)colour+=vec3(.095,.100,.090)*tapeBounce;
+  if(uRole>.5&&uRole<1.5)colour+=vec3(.15,.15,.12)*tapeBounce;
+  if(uRole>1.5&&uRole<2.5||uRole>5.5)colour+=vec3(.035,.030,.019)*tapeBounce;
+  if(uRole>4.5&&uRole<5.5)colour+=vec3(.050,.050,.046)*tapeBounce;
+  if(uRole>4.5&&uRole<5.5)colour+=vec3(.045,.040,.032)*uCeremony;
+  // A quietly darker stone body keeps the face and the hand cut readable
+  // against the broad white fields of the recording. Its weathering varies in
+  // world space, not along the screen's diagonal hatch.
+  if(uRole>.5&&uRole<1.5){
+    float strata=sin(vPosition.y*2.1+sin(vPosition.x*.9+vPosition.z*1.3)*.75)
+                *sin(vPosition.x*2.4-vPosition.z*1.1);
+    colour*=.82+strata*.025;
+  }
+  o=vec4(colour*uExposure,uAlpha);
+  oMark=vec4(0.);
 }`;
 
 let gl = null;
@@ -488,7 +568,12 @@ let manifest = null;
 let ready = false;
 let uniforms = new Map();
 let bustPrimitives = [];
-let bustHeight = 1;
+let bustLevels=[];
+let bustLastLod=0;
+let bustHeight = BUST_RELIQUARY_RIG.assetWorldHeight*2;
+let bustAsset=null;
+let bustMorphTexture=null;
+let bustPose=null;
 let bustPlacement = null;
 let markerSlice = 0;
 
@@ -555,88 +640,54 @@ export function horizonInit(context) {
   return true;
 }
 
-const COMPONENT = Object.freeze({ 5120: Int8Array, 5121: Uint8Array, 5122: Int16Array, 5123: Uint16Array, 5125: Uint32Array, 5126: Float32Array });
-const COMPONENT_BYTES = Object.freeze({ 5120: 1, 5121: 1, 5122: 2, 5123: 2, 5125: 4, 5126: 4 });
-const COMPONENT_GET = Object.freeze({ 5120: 'getInt8', 5121: 'getUint8', 5122: 'getInt16', 5123: 'getUint16', 5125: 'getUint32', 5126: 'getFloat32' });
-const ELEMENTS = Object.freeze({ SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4 });
-
-function parseGlb(arrayBuffer) {
-  const data = new DataView(arrayBuffer);
-  if (data.getUint32(0, true) !== 0x46546c67 || data.getUint32(4, true) !== 2) throw new Error('horizon bust is not GLB 2');
-  let cursor = 12, json = null, bin = null;
-  while (cursor + 8 <= arrayBuffer.byteLength) {
-    const length = data.getUint32(cursor, true), type = data.getUint32(cursor + 4, true);
-    if (type === 0x4e4f534a) json = JSON.parse(new TextDecoder().decode(new Uint8Array(arrayBuffer, cursor + 8, length)));
-    if (type === 0x004e4942) bin = new Uint8Array(arrayBuffer, cursor + 8, length);
-    cursor += 8 + length;
-  }
-  if (!json || !bin) throw new Error('horizon bust GLB is missing JSON or BIN');
-  if (json.animations || json.skins || json.extensionsUsed?.length || json.extensionsRequired?.length) {
-    throw new Error('horizon bust GLB contains unsupported animation, skin, or extension data');
-  }
-  return { json, bin };
-}
-
-function glbAccessor(json, bin, index) {
-  const accessor = json.accessors?.[index], view = json.bufferViews?.[accessor?.bufferView];
-  const Ctor = COMPONENT[accessor?.componentType], components = ELEMENTS[accessor?.type];
-  if (!accessor || !view || !Ctor || !components || accessor.sparse) throw new Error(`unsupported horizon bust accessor ${index}`);
-  const componentBytes = COMPONENT_BYTES[accessor.componentType];
-  const stride = view.byteStride || componentBytes * components;
-  const offset = (view.byteOffset || 0) + (accessor.byteOffset || 0);
-  const source = new DataView(bin.buffer, bin.byteOffset, bin.byteLength);
-  const output = new Ctor(accessor.count * components), getter = COMPONENT_GET[accessor.componentType];
-  for (let row = 0; row < accessor.count; row += 1) for (let column = 0; column < components; column += 1) {
-    output[row * components + column] = source[getter](offset + row * stride + column * componentBytes, true);
-  }
-  return output;
-}
-
-async function loadHorizonBust(url) {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`horizon bust ${response.status}`);
-  const { json, bin } = parseGlb(await response.arrayBuffer());
-  const required = new Set(['horizon_bust_portrait', 'horizon_bust_pedestal', 'horizon_bust_seal']);
-  const primitives = [];
-  let minY = Infinity, maxY = -Infinity;
-  for (const mesh of json.meshes || []) {
-    required.delete(mesh.name);
-    const role = mesh.name === 'horizon_bust_portrait' ? 0 : mesh.name === 'horizon_bust_pedestal' ? 1 : 2;
-    for (const primitive of mesh.primitives || []) {
-      if (primitive.mode != null && primitive.mode !== 4) throw new Error(`${mesh.name}: triangles required`);
-      const positions = glbAccessor(json, bin, primitive.attributes?.POSITION);
-      const normals = glbAccessor(json, bin, primitive.attributes?.NORMAL);
-      const indices = glbAccessor(json, bin, primitive.indices);
-      if (!(positions instanceof Float32Array) || !(normals instanceof Float32Array)) throw new Error(`${mesh.name}: float position/normal required`);
-      for (let index = 1; index < positions.length; index += 3) { minY = Math.min(minY, positions[index]); maxY = Math.max(maxY, positions[index]); }
-      const vao = gl.createVertexArray();
+async function loadHorizonBust(url,lod=0) {
+  const response=await fetch(url);
+  if(!response.ok)throw new Error(`horizon bust ${response.status}`);
+  const asset=parseCharacterAsset(await response.arrayBuffer());
+  const required=new Set(['horizon_bust_portrait','horizon_bust_pedestal','horizon_bust_seal']);
+  const roles={marble:0,stone:1,bronze:2,eye:3,shutter:4,seal:5,linkage:6};
+  const primitives=[];
+  for(const entry of asset.entries){
+    required.delete(entry.name);
+    const role=roles[entry.extras.reliquaryRole]??(entry.name.includes('portrait')?0:entry.name.includes('pedestal')?1:2);
+    for(const primitive of entry.primitives){
+      const vao=gl.createVertexArray(),buffers=[];
       gl.bindVertexArray(vao);
-      const bind = (location, values) => {
-        const buffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffer); gl.bufferData(gl.ARRAY_BUFFER, values, gl.STATIC_DRAW);
-        gl.enableVertexAttribArray(location); gl.vertexAttribPointer(location, 3, gl.FLOAT, false, 0, 0);
-        return buffer;
+      const bind=(location,values,size,integer=false)=>{
+        const buffer=gl.createBuffer();buffers.push(buffer);
+        gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,values,gl.STATIC_DRAW);
+        gl.enableVertexAttribArray(location);
+        if(integer)gl.vertexAttribIPointer(location,size,gl.UNSIGNED_SHORT,0,0);
+        else gl.vertexAttribPointer(location,size,gl.FLOAT,false,0,0);
       };
-      const positionBuffer = bind(0, positions), normalBuffer = bind(1, normals);
-      const indexBuffer = gl.createBuffer();
-      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
-      const material = json.materials?.[primitive.material || 0] || {};
-      const pbr = material.pbrMetallicRoughness || {};
-      primitives.push({
-        vao, positionBuffer, normalBuffer, indexBuffer, count: indices.length,
-        indexType: indices instanceof Uint32Array ? gl.UNSIGNED_INT : indices instanceof Uint16Array ? gl.UNSIGNED_SHORT : gl.UNSIGNED_BYTE,
-        base: pbr.baseColorFactor || [1, 1, 1, 1], emissive: material.emissiveFactor || [0, 0, 0], role,
-      });
+      bind(0,primitive.positions,3);bind(1,primitive.normals,3);
+      bind(13,Uint16Array.from(primitive.joints),4,true);bind(14,primitive.weights,4);
+      const indexBuffer=gl.createBuffer();buffers.push(indexBuffer);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,indexBuffer);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,primitive.indices,gl.STATIC_DRAW);
+      const material=asset.json.materials?.[primitive.material]||{},pbr=material.pbrMetallicRoughness||{};
+      primitives.push({vao,buffers,entry,count:primitive.indices.length,indexType:primitive.indexType,
+        base:pbr.baseColorFactor||[1,1,1,1],emissive:material.emissiveFactor||[0,0,0],
+        metallic:pbr.metallicFactor??0,roughness:pbr.roughnessFactor??.75,role});
     }
   }
-  gl.bindVertexArray(null); gl.bindBuffer(gl.ARRAY_BUFFER, null); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-  if (required.size) throw new Error(`horizon bust GLB missing ${[...required].join(', ')}`);
-  bustPrimitives = primitives;
-  bustHeight = Math.max(0.001, maxY - minY);
+  gl.bindVertexArray(null);gl.bindBuffer(gl.ARRAY_BUFFER,null);gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,null);
+  if(required.size)throw new Error(`horizon bust GLB missing ${[...required].join(', ')}`);
+  // A complete sampler binding is required even for this rigid, zero-morph rig.
+  if(!bustMorphTexture){
+    bustMorphTexture=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,bustMorphTexture);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA32F,1,1,0,gl.RGBA,gl.FLOAT,new Float32Array(4));
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);
+    gl.bindTexture(gl.TEXTURE_2D,null);
+  }
+  bustLevels[lod]={asset,primitives};
+  if(lod===0){
+    bustAsset=asset;bustPrimitives=primitives;
+    bustHeight=BUST_RELIQUARY_RIG.assetWorldHeight*BUST_RELIQUARY_RIG.worldToTapeScale[1];
+  }
   return true;
 }
 
-export async function horizonLoad({ bin = 'assets/horizon-tape.bin', json = 'assets/horizon-tape.json', bust = 'assets/horizon-bust.glb' } = {}) {
+export async function horizonLoad({ bin = 'assets/horizon-tape.bin', json = 'assets/horizon-tape.json', bust = 'assets/horizon-bust.glb', bustLod1 = 'assets/horizon-bust-lod1.glb', bustLod2 = 'assets/horizon-bust-lod2.glb' } = {}) {
   if (!gl || !program) return false;
   const [meta, bytes] = await Promise.all([
     fetch(json).then((r) => (r.ok ? r.json() : Promise.reject(new Error(`horizon manifest ${r.status}`)))),
@@ -653,18 +704,30 @@ export async function horizonLoad({ bin = 'assets/horizon-tape.bin', json = 'ass
   gl.bufferData(gl.ARRAY_BUFFER, bytes, gl.STATIC_DRAW);
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
   ready = true;
+  // Detail tiers are optional and arrive after the main scene is playable.
+  // A missing derivative leaves the original rig active at every distance.
+  void Promise.allSettled([loadHorizonBust(bustLod1,1),loadHorizonBust(bustLod2,2)]);
   return true;
 }
 
-export function horizonSetBust({ x = 0, depth = 0, height = 12, centreY = null, eyes = false, eyeMode = 'untouched' } = {}) {
+export function horizonSetBust({ x = 0, depth = 0, height = 6.5, centreY = null, eyes = false, eyeMode = 'untouched', performance = null } = {}) {
   if (!gl || !program || !manifest || !bustPrimitives.length) return false;
   const floor = (centreY == null ? Number(manifest.floor) || 0 : centreY) - height * 0.5;
-  bustPlacement = { x, z: -depth, floor, height, scale: height / bustHeight, eyes: !!eyes, eyeMode: String(eyeMode) };
+  bustPlacement = { x, z: -depth, floor, height, scale: height / bustHeight, eyes: !!eyes, eyeMode: String(eyeMode), performance };
   markerSlice = depth / (Number(manifest.sliceMetres) || 2);
   return true;
 }
 
+export function horizonBustRigDebug(){return bustAsset?{design:BUST_RELIQUARY_RIG.design,joints:bustAsset.entries[0]?.skin.joints.length,clips:[...bustAsset.clips.keys()],primitives:bustPrimitives.length,lods:bustLevels.map((level,index)=>level?{index,primitives:level.primitives.length,triangles:level.primitives.reduce((n,primitive)=>n+primitive.count/3,0)}:null).filter(Boolean),drawLod:bustLastLod,pose:bustPose?{clip:bustPose.clip,time:bustPose.time,bones:Array.from(bustPose.bones.slice(0,BUST_RELIQUARY_RIG.joints.length*16))}:null}:null;}
+
 export function horizonBustPresent() { return !!bustPlacement && bustPrimitives.length > 0; }
+
+// The two defeat returns stage the same physical sculpture, rather than a
+// transcript over whichever cathedral frame happened to be last rendered.
+export function horizonRenderBust({view,projection,exposure=1,collapse=0,worldTransform=null,alpha=1}={}) {
+  if(!view||!projection)return false;
+  return drawHorizonBust(view,projection,exposure,collapse,worldTransform,alpha);
+}
 
 export function horizonReady() { return ready; }
 // Per-frame draw accounting, for the probe. "It went black" has too many
@@ -676,30 +739,48 @@ export function horizonManifest() { return manifest; }
 export function horizonDispose() {
   if (!gl) return;
   if (splatBuffer) gl.deleteBuffer(splatBuffer);
-  for (const primitive of bustPrimitives) {
-    gl.deleteVertexArray(primitive.vao); gl.deleteBuffer(primitive.positionBuffer);
-    gl.deleteBuffer(primitive.normalBuffer); gl.deleteBuffer(primitive.indexBuffer);
+  for(const level of bustLevels)for(const primitive of level?.primitives||[]){
+    gl.deleteVertexArray(primitive.vao);for(const buffer of primitive.buffers)gl.deleteBuffer(buffer);
   }
-  splatBuffer = null; bustPrimitives = []; bustPlacement = null;
+  if(bustMorphTexture)gl.deleteTexture(bustMorphTexture);
+  splatBuffer = null; bustPrimitives = []; bustLevels=[];bustLastLod=0;bustPlacement = null;bustAsset=null;bustPose=null;bustMorphTexture=null;
   manifest = null; ready = false;
 }
 
-function drawHorizonBust(view, projection, exposure, collapse, worldTransform = null) {
+function drawHorizonBust(view, projection, exposure, collapse, worldTransform = null, alpha = 1) {
   if (!horizonBustPresent()) return false;
+  const cameraX=-(view[0]*view[12]+view[1]*view[13]+view[2]*view[14]);
+  const cameraZ=-(view[8]*view[12]+view[9]*view[13]+view[10]*view[14]);
+  const range=Math.hypot(cameraX-bustPlacement.x,cameraZ-bustPlacement.z);
+  const targetLod=worldTransform||range<23?0:range<52?1:2;
+  const level=bustLevels[targetLod]||bustLevels[1]||bustLevels[0];
+  bustLastLod=bustLevels.indexOf(level);
   gl.useProgram(modelProgram);
   gl.uniformMatrix4fv(MU('uView'), false, view); gl.uniformMatrix4fv(MU('uProj'), false, projection);
   gl.uniform3f(MU('uOrigin'),bustPlacement.x,worldTransform?(Number(manifest.floor)||0):bustPlacement.floor,bustPlacement.z);
   gl.uniform1f(MU('uScale'), bustPlacement.scale);
+  gl.uniform3fv(MU('uModelToTape'),BUST_RELIQUARY_RIG.worldToTapeScale);
+  const descriptor=bustPlacement.performance||{clip:bustPlacement.eyes?'settled':'blind',time:1,loop:false};
+  bustPose=sampleCharacterPose(level.asset,level.asset.entries[0],descriptor);
+  gl.uniform1f(MU('uCharacterEnabled'),1);gl.uniformMatrix4fv(MU('uCharacterBones[0]'),false,bustPose.bones);
+  gl.activeTexture(gl.TEXTURE7);gl.bindTexture(gl.TEXTURE_2D,bustMorphTexture);gl.uniform1i(MU('uCharacterMorphTex'),7);
+  gl.uniform2i(MU('uCharacterMorphSize'),1,1);gl.uniform1i(MU('uCharacterVertexCount'),0);gl.uniform1i(MU('uCharacterMorphCount'),0);
+  gl.uniform4fv(MU('uCharacterMorphWeights'),new Float32Array(4));
+  gl.uniform1f(MU('uCeremony'),descriptor.routeOpen?1:0);
   gl.uniform3fv(MU('uWorldScale'),worldTransform?.scale||[1,1,1]);
   gl.uniform3fv(MU('uWorldOffset'),worldTransform?.offset||[0,0,0]);
   gl.uniform1f(MU('uRecognized'), bustPlacement.eyes ? 1 : 0);
   gl.uniform1f(MU('uReturned'), bustPlacement.eyeMode === 'returned' ? 1 : 0);
   gl.uniform1f(MU('uExposure'),worldTransform?Math.max(.40,exposure):Math.max(0.08,exposure*(1-collapse*.92)));
-  gl.disable(gl.BLEND); gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(true);
-  for (const primitive of bustPrimitives) {
+  gl.uniform1f(MU('uAlpha'),Math.max(0,Math.min(1,alpha)));
+  if(alpha<.999){gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA)}else gl.disable(gl.BLEND);
+  gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(true);
+  for (const primitive of level.primitives) {
+    if(primitive.role===3&&!(bustPlacement.eyeMode==='returned'&&bustPlacement.eyes))continue;
     gl.bindVertexArray(primitive.vao);
     gl.uniform4fv(MU('uBaseColor'), primitive.base); gl.uniform3fv(MU('uEmissive'), primitive.emissive);
     gl.uniform1f(MU('uRole'), primitive.role);
+    gl.uniform1f(MU('uMetallic'),primitive.metallic);gl.uniform1f(MU('uRoughness'),primitive.roughness);
     gl.drawElements(gl.TRIANGLES, primitive.count, primitive.indexType, 0);
     horizonStats.draws += 1; horizonStats.instances += primitive.count / 3;
   }
@@ -794,7 +875,8 @@ export function horizonRender({
   view, projection, slice = 0, reach = 44, behind = reach,
   collapse = 0, boil = 0, exposure = 1, nearFade = 9, floorCut = -1e9,
   mosh = 1, curtain = 1, shimmer = 0, veil = 1.7, bore = null, dream = 0,
-  worldTransform = null, unravelling = null, street = null,
+  worldTransform = null, unravelling = null, street = null, entryReveal = 1,
+  bustExposure = exposure, bustAlpha = 1,
 } = {}) {
   bore = {
     centre: 0, centreAhead: 0, reach: 24, reachAhead: 24,
@@ -814,6 +896,8 @@ export function horizonRender({
 
   gl.useProgram(program);
   gl.uniform1f(U('uDream'),Math.max(0,Math.min(1,dream)));
+  gl.uniform1f(U('uEntryReveal'),Math.max(0,Math.min(1,entryReveal)));
+  gl.uniform1f(U('uCloudTime'),boil);
   gl.bindVertexArray(vao);
   gl.uniformMatrix4fv(U('uView'), false, view);
   gl.uniformMatrix4fv(U('uProj'), false, projection);
@@ -870,7 +954,7 @@ export function horizonRender({
   const drawBust = () => {
     if (bustDrawn) return;
     bustDrawn = true;
-    drawHorizonBust(view, projection, exposure, collapse, worldTransform);
+    if (bustAlpha > 0.001) drawHorizonBust(view, projection, bustExposure, collapse, worldTransform, bustAlpha);
   };
 
   for (const index of drawOrder) {

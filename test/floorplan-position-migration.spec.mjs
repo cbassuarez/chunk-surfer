@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { conservatory, MAIN_STAIR_LAYOUT } from '../src/data/floorplan/conservatory.js';
 import { migrateFloorplanPosition } from '../src/game/floorplan-position-migration.js';
+import { ACADEMIC_ROOF } from '../src/data/academic-roof.js';
 import * as FP from '../src/world/floorplan.js';
 
 FP.compile(conservatory.levels,{
@@ -36,6 +37,24 @@ const current=migrateFloorplanPosition(FP,conservatory,{
 });
 assert.deepEqual({x:current.x,y:current.y},unchanged,'current-revision positions are not moved');
 assert.equal(current.migrated,false);
+
+const priorWalk=runtime({x:59.5,y:51.5});
+assert.equal(FP.isSolid(priorWalk.x,priorWalk.y),false);
+const retained=migrateFloorplanPosition(FP,conservatory,{
+  px:priorWalk.x,py:priorWalk.y,layoutRevision:3,facing:0,
+});
+assert.deepEqual({x:retained.x,y:retained.y},priorWalk,
+  'the roof revision does not replay an older stair migration on a valid revision-3 save');
+assert.equal(retained.migrated,false);
+
+const retiredRoof=runtime({x:161,y:288});
+const roofRestore=migrateFloorplanPosition(FP,conservatory,{
+  px:retiredRoof.x,py:retiredRoof.y,layoutRevision:3,facing:0,
+});
+assert.equal(roofRestore.migration,'old-roof-east-escape');
+assert.deepEqual({x:roofRestore.x,y:roofRestore.y},runtime(ACADEMIC_ROOF.entry));
+assert.equal(FP.floorAt(roofRestore.x,roofRestore.y),17,
+  'an old escape save retains rooftop progress instead of returning to the front door');
 
 const retired=runtime({x:58,y:30});
 const nearest=migrateFloorplanPosition(FP,conservatory,{

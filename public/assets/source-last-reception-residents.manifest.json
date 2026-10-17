@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "bytes": 5831268,
+  "sha256": "2f2cfcc33080bbcb2cad5a9df689ea5dbc8c091a3e495935394343af6a8c693f",
+  "source": "MakeHuman CC0 retained anatomical masters, facial identity erased",
+  "sourceSha256": {
+    "tools/chunk_surfer/characters/build-source-last-reception-residents.mjs": "df75bde7bcc9da581e231f8cbe36f59fc145b07d51c3c8501d0c90e028c146ce",
+    "tools/chunk_surfer/characters/vigil-tailoring.mjs": "00d6da1da44f2f83dad33704218c2acf9a95064513c549b889fe40be30203c92",
+    "src/data/source-last-reception-resident-design.js": "09587ba81bd92a1228b6c2ed6a8dcaf3cc3217101e49841e884e6a908961fbaa",
+    "public/assets/recordist-characters/contractor.json": "9d80535407f009bfd36f56548d6e1b6031fdafafa06e3d238c4eb3413a9d8a8d",
+    "artifacts/bus-woman-production/anatomy.json": "d9ac02ce3b2c05ff74fbb8ab0f3608181f7484527982d430b7a0a49ecf2967bf",
+    "artifacts/bus-woman-design/anatomy/woman.json": "552cd928d90da5d831e7e9fbec47a8dac98672e371d00d41079b887d745d5245"
+  },
+  "characters": [
+    {
+      "id": "host",
+      "mesh": "source_reception_host",
+      "source": "male",
+      "vertices": 17278,
+      "triangles": 32842,
+      "joints": 54
+    },
+    {
+      "id": "guest-a",
+      "mesh": "source_reception_guest_a",
+      "source": "female",
+      "vertices": 12407,
+      "triangles": 23814,
+      "joints": 54
+    },
+    {
+      "id": "guest-b",
+      "mesh": "source_reception_guest_b",
+      "source": "male",
+      "vertices": 16106,
+      "triangles": 30910,
+      "joints": 54
+    },
+    {
+      "id": "window",
+      "mesh": "source_reception_window",
+      "source": "female",
+      "vertices": 12407,
+      "triangles": 23814,
+      "joints": 54
+    },
+    {
+      "id": "warning",
+      "mesh": "source_reception_warning",
+      "source": "male",
+      "vertices": 16106,
+      "triangles": 30910,
+      "joints": 54
+    },
+    {
+      "id": "gallery",
+      "mesh": "source_reception_gallery",
+      "source": "female",
+      "vertices": 12407,
+      "triangles": 23814,
+      "joints": 54
+    },
+    {
+      "id": "imprint",
+      "mesh": "source_reception_imprint",
+      "source": "male",
+      "vertices": 17278,
+      "triangles": 32842,
+      "joints": 54
+    }
+  ]
+}

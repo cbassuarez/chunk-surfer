@@ -2,7 +2,7 @@
 // flashlight shadows and acquisition are shared with the actual GLB models.
 // Geometry is recentered per piece so distance culling follows its real extent.
 import { sourceDivideGeometry } from '../data/source-braided-divide.js';
-import SOURCE_ATLAS from '../../content/chunk-surf/source-atlas.json' with { type: 'json' };
+import { sourcePrintTexture, sourcePrintUV, SOURCE_PRINT_SURFACE } from './physical-source-print.js';
 
 export function divideMeshName(id) { return `source-divide-${id}`; }
 export function dividePieceBounds(piece) {
@@ -12,15 +12,7 @@ export function dividePieceBounds(piece) {
 }
 
 function sourceTexture(gl) {
-  const canvas=document.createElement('canvas');canvas.width=512;canvas.height=512;
-  const context=canvas.getContext('2d');context.fillStyle='#d6d9d0';context.fillRect(0,0,512,512);
-  context.font='13px monospace';context.textBaseline='top';
-  const lines=Object.values(SOURCE_ATLAS.sectors).flatMap(sector=>sector.sourceLines||[]).map(line=>line.text).filter(text=>text.trim().length>12).slice(0,80);
-  for(let row=0;row<26;row++){context.fillStyle=row%5===0?'#768477':'#a3afa0';context.fillText(lines[row%lines.length],8+(row%3)*9,row*20+3);}
-  const texture=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,texture);
-  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);gl.texImage2D(gl.TEXTURE_2D,0,gl.SRGB8_ALPHA8,gl.RGBA,gl.UNSIGNED_BYTE,canvas);gl.generateMipmap(gl.TEXTURE_2D);
-  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.REPEAT);return texture;
+  return sourcePrintTexture(gl,'divide');
 }
 
 export function installDivideMeshes(gl,pack) {
@@ -36,8 +28,7 @@ export function installDivideMeshes(gl,pack) {
       const a=points[1].map((v,k)=>v-points[0][k]),b=points[2].map((v,k)=>v-points[0][k]);
       const n=[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],length=Math.hypot(...n)||1;
       for(let k=0;k<3;k++)n[k]/=length;
-      const axis=n.map(Math.abs).indexOf(Math.max(...n.map(Math.abs)));
-      for(const point of points){positions.push(...point.map((v,k)=>v-bounds.center[k]));normals.push(...n);uvs.push((axis===0?point[2]:point[0])/8,(axis===1?point[2]:point[1])/8);}
+      for(const point of points){positions.push(...point.map((v,k)=>v-bounds.center[k]));normals.push(...n);uvs.push(...sourcePrintUV(point,n,8));}
     }
     const vao=gl.createVertexArray(),instanceBuffer=gl.createBuffer();gl.bindVertexArray(vao);
     const bind=(location,data,size)=>{gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(data),gl.STATIC_DRAW);gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,size,gl.FLOAT,false,0,0);};
@@ -48,7 +39,7 @@ export function installDivideMeshes(gl,pack) {
     for(const [location,size,offset]of [[3,4,0],[4,4,4],[5,4,8],[6,4,12],[7,1,16],[8,1,17],[9,1,18],[10,4,19],[11,1,23],[12,4,24],[15,1,28]]){
       gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,size,gl.FLOAT,false,stride,offset*4);gl.vertexAttribDivisor(location,1);
     }
-    pack.catalog.set(name,{name,nodeMatrix:identity,instanceBuffer,extras:{sourceDivide:true},primitives:[{vao,count:indices.length,indexType:gl.UNSIGNED_INT,base:[...(piece.color||[.68,.70,.64]).slice(0,3),1],emissive:[0,0,0],texture,metallic:0,roughness:.94,aoStrength:0,portrait:false,alphaCut:0,materialName:'source masonry',materialRole:'source-divide'}]});
+    pack.catalog.set(name,{name,nodeMatrix:identity,instanceBuffer,extras:{sourceDivide:true},primitives:[{vao,count:indices.length,indexType:gl.UNSIGNED_INT,base:[...(piece.color||[.68,.70,.64]).slice(0,3),1],emissive:[0,0,0],texture,metallic:0,roughness:.94,aoStrength:0,portrait:false,alphaCut:0,materialName:'source masonry',materialRole:'source-divide',printedSurface:SOURCE_PRINT_SURFACE}]});
   }
   gl.bindVertexArray(null);return names;
 }

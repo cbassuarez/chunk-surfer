@@ -34,6 +34,8 @@ import { ENDING_IDS, POWER_CIRCUIT_IDS } from '../progression/schema.js';
 import { endingCutsceneErrors } from '../game/ending-cutscene.js';
 import { ENDING_FINAL_ACTION_MODE, endingEmbodimentErrors } from '../game/ending-embodiment.js';
 import { VIGIL_ENDING_ACTIONS, VIGIL_ENDING_INSERTS, VIGIL_ENDING_OMISSIONS } from './exterior-vigil.js';
+import { ENDING_VARIANT, normalizeEndingVariant } from './ending-variants.js';
+export { ENDING_VARIANT, normalizeEndingVariant } from './ending-variants.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ⚠ EVERY SOUND IN EVERY ENDING IS A PLACEHOLDER. ⚠
@@ -143,9 +145,10 @@ function withVigil(steps, endingId) {
 
 const dialogueSource = (documentId, lineId) => `${documentId}#${lineId}`;
 const cutsceneBeat = (id, trigger, fields = {}) => Object.freeze({ id, trigger, ...fields });
-const cutscene = ({ endingId, worldAnchors, interactionMode, beats, actors, camera, finalAction, finalHold, reducedMotion }) => Object.freeze({
+const cutscene = ({ endingId, variant = null, worldAnchors, interactionMode, beats, actors, camera, finalAction, finalHold, reducedMotion }) => Object.freeze({
   schema: 1,
   endingId,
+  ...(variant ? { variant } : {}),
   worldAnchors: Object.freeze(worldAnchors),
   interactionMode,
   beats: Object.freeze(beats),
@@ -590,14 +593,73 @@ export const ENDING_MANIFEST = Object.freeze({
   }),
 });
 
-export function endingManifest(id) {
+// This is still The Seal. Its authored roof ritual changes the world image and
+// the filed account, while ENDING_IDS and the ordinary sacrifice remain intact.
+// The player has already explicitly consented in Ren's earned conversation;
+// the ending never infers that consent from a completed errand or a loss.
+// The conversation happens on the metal service deck. For the rite, both
+// people cross to the supported glazing over the atrium; these are ending-only
+// positions, not a change to Ren's ordinary roof encounter or the floorplan.
+export const CENTURY_STAY_STAGING = Object.freeze({
+  player: Object.freeze({ x: 204, y: 278 }),
+  ren: Object.freeze({ x: 203, y: 276 }),
+  camera: Object.freeze({ x: 202, y: 281 }),
+});
+export const CENTURY_STAY_CUTSCENE = cutscene({
+  endingId: 'sacrifice', variant: ENDING_VARIANT.CENTURY_STAY, interactionMode: 'directed',
+  worldAnchors: {
+    ren: Object.freeze({ kind: 'prop', id: 'roof-ren' }),
+    glass: Object.freeze({ kind: 'prop', id: 'academic-roof-glazing' }),
+  },
+  actors: { player: 'willing-living-guarantor', ren: 'intact-hand-at-player-chest', building: 'century-stay', city: 'demolition-stayed-risk-unresolved' },
+  camera: { treatment: 'first-person-roof-contact-to-held-city', allowsLook: true, pullback: false },
+  finalAction: { id: 'keep-palm-on-roof-glass', label: 'KEEP YOUR PALM ON THE GLASS', mode: ENDING_FINAL_ACTION_MODE.HOLD, input: 'interact', holdMs: 1400 },
+  reducedMotion: { treatment: 'held-contact-poses-and-stepped-shadow-seam' },
+  finalHold: { image: 'Ren beside your reflection, and the school still standing above the city', ms: 4200 },
+  beats: [
+    cutsceneBeat('ren-takes-one-step', 'time', { atMs: 0, effect: 'ren-seal-approach', dialogue: [dialogueSource('ending.sacrifice.century-stay', 'start.line.approach')] }),
+    cutsceneBeat('ren-intact-hand-contact', 'dialogue', { dialogueId: dialogueSource('ending.sacrifice.century-stay', 'start.line.contact'), effect: 'ren-seal-contact', dialogue: [dialogueSource('ending.sacrifice.century-stay', 'start.line.contact')] }),
+    cutsceneBeat('living-shadow-bound', 'dialogue', { dialogueId: dialogueSource('ending.sacrifice.century-stay', 'start.line.bind'), effect: 'ren-seal-bind', dialogue: [dialogueSource('ending.sacrifice.century-stay', 'start.line.bind')] }),
+    cutsceneBeat('hundred-year-stay', 'dialogue', { dialogueId: dialogueSource('ending.sacrifice.century-stay', 'start.line.stay'), effect: 'ren-seal-stay', dialogue: [dialogueSource('ending.sacrifice.century-stay', 'start.line.stay')] }),
+    cutsceneBeat('ren-releases-body-keeps-shadow', 'dialogue', { dialogueId: dialogueSource('ending.sacrifice.century-stay', 'start.line.release'), effect: 'ren-seal-release', dialogue: [dialogueSource('ending.sacrifice.century-stay', 'start.line.release')] }),
+  ],
+});
+
+export const CENTURY_STAY_MANIFEST = Object.freeze({
+  ...ENDING_MANIFEST.sacrifice,
+  variant: ENDING_VARIANT.CENTURY_STAY,
+  variantTitle: 'A Hundred More Years',
+  arrivals: Object.freeze([ENDING_ARRIVAL.AGREED]),
+  passage: Object.freeze({}),
+  objective: null,
+  tree: 'ending.sacrifice.century-stay',
+  hush: 'absent',
+  companion: 'ren',
+  // No first strike, collapse, blackout, chapel presence or vigil choreography.
+  // The ritual remains on the roof and the lights remain the player's to keep.
+  environment: Object.freeze([Object.freeze({ at: 0, kind: ENDING_EVENT.LENS, value: 'calm' })]),
+  // The roof's wind, the city and Ren's voice hold the ritual; the ordinary
+  // Seal's temporary title-theme bed would make this a second collapse scene.
+  audio: Object.freeze({ bed: null }),
+  image: CENTURY_STAY_CUTSCENE.finalHold.image,
+  coda: 'century-stay',
+  residue: 'century-guarantor',
+  tail: Object.freeze([]),
+  referenceTail: false,
+  dockTail: false,
+  cutscene: CENTURY_STAY_CUTSCENE,
+});
+
+export function endingManifest(id, context = {}) {
+  const variant = normalizeEndingVariant(id, context?.variant || context?.endingVariant, context?.arrival);
+  if (variant === ENDING_VARIANT.CENTURY_STAY) return CENTURY_STAY_MANIFEST;
   return ENDING_MANIFEST[id] || null;
 }
 
 // Which gate epilogue closes this ending. Kept here rather than in main.js so the
 // ending owns its own last page.
 export function endingCodaVariant(id, dossier = null) {
-  const manifest = endingManifest(id);
+  const manifest = endingManifest(id, { variant: dossier?.variant || dossier?.summary?.endingVariant, arrival: dossier?.arrival });
   if (!manifest) return 'out';
   return typeof manifest.coda === 'function' ? manifest.coda(dossier) : String(manifest.coda || 'out');
 }
@@ -665,5 +727,7 @@ export function endingContractErrors() {
     if (!decided) errors.push(`${id} says nothing about the vigil and is not on the omission list`);
   }
   errors.push(...endingEmbodimentErrors(ENDING_CUTSCENES));
+  errors.push(...endingCutsceneErrors(CENTURY_STAY_CUTSCENE));
+  errors.push(...endingEmbodimentErrors({ 'century-stay': CENTURY_STAY_CUTSCENE }));
   return errors;
 }

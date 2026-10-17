@@ -4,10 +4,10 @@
     "author": "Chunk Surfer project (geometry) + Poly Haven (surfaces)",
     "source": "tools/chunk_surfer/build-textiles.mjs",
     "license": "project source (geometry); CC0-1.0 (surfaces)",
-    "sha256": "23905b320fb35ddcc6b43bde01a111fd83f6ce2e9ceb581205517c7a3a435da0",
+    "sha256": "9d3faf09b3a1373da5f50eed63ad95f64825a8159812ca25d79767be6a770380",
     "modifications": "Handrolled slab, chamfer, fringe and roll geometry in metres, Y-up, floor-anchored. Poly Haven surfaces resized to 512px and re-encoded as JPEG; arm maps used as both metallicRoughness and occlusion.",
-    "triangles": 774,
-    "bytes": 540520
+    "triangles": 784,
+    "bytes": 542120
   },
   "surfaces": [
     {
@@ -98,6 +98,11 @@
       "name": "textile_rolled",
       "surface": "worn_carpet",
       "triangles": 72
+    },
+    {
+      "name": "textile_studio_carpet",
+      "surface": "worn_carpet",
+      "triangles": 10
     }
   ]
 }

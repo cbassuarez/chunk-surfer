@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { buildEmergencyShadowFrame } from '../src/game/emergency-light-runtime.js';
+import { APPARITION_LIGHT_STATE, APPARITION_RENDER_VARIANT, buildEmergencyShadowFrame } from '../src/game/emergency-light-runtime.js';
 import { EMERGENCY_CADENCE, emergencyWanderClock } from '../src/data/conservatory-lights.js';
 
 const lights=[
@@ -16,12 +16,13 @@ assert.ok(Number.isFinite(frame.lightOverride.shadowYaw));
 assert.equal(frame.instance.poseId,'neutral');
 assert.equal(frame.instance.mesh,'apparition_pose_neutral');
 assert.equal(frame.instance.shadowOnly,false,'the human form occupies world depth in the colour pass');
-assert.deepEqual(frame.instance.emissive,[1,.985,1,.82],'ordinary apparitions stay shadow-dominant');
+assert.deepEqual(frame.instance.emissive,[.65,.78,.82,.18],'the normal body carries only restrained edge charge');
+assert.equal(frame.lightingState,APPARITION_LIGHT_STATE.ON);
+assert.equal(frame.instance.apparitionVariant,APPARITION_RENDER_VARIANT[APPARITION_LIGHT_STATE.ON]);
 assert.equal(frame.instance.y,.5,'the body stands on the authored room floor');
 assert.equal(frame.instances.length,3,'one red snap projects a small impossible crowd, not a mild single shadow');
 assert.equal(new Set(frame.instances.map((instance)=>instance.id)).size,3);
-assert.equal(frame.apparitionLights.length,3,'each body emits a compact white field into the room');
-assert.ok(frame.apparitionLights.every((light)=>light.kind==='apparition'&&light.intensity>0&&light.radius>=3.5));
+assert.deepEqual(frame.apparitionLights,[],'apparitions cannot illuminate their own off beat');
 assert.ok(frame.instances.every((instance)=>instance.scaleX>=.88&&instance.scaleX<=1.04&&instance.scaleY>=.96&&instance.scaleY<=1.08),
   'the crowd keeps recognisably human proportions');
 assert.ok(frame.lightOverride.shadowPitch<0,'the practical aims down through the floor-standing figures');
@@ -57,7 +58,38 @@ assert.deepEqual(buildEmergencyShadowFrame(lights,{listener:{x:2,z:1}}),frame,'t
     'an unmarked cross-zone source still cannot stage apparitions outside its owning zone');
 }
 assert.equal(buildEmergencyShadowFrame(lights,{listener:{x:2,z:1},enabled:false}),null);
-assert.equal(buildEmergencyShadowFrame([{...lights[1],shadowReveal:0}],{listener:{x:2,z:1}}),null);
+assert.equal(buildEmergencyShadowFrame([{...lights[1],shadowReveal:0}],{listener:{x:2,z:1}}),null,
+  'an arbitrary dark fitting is not an apparition anchor');
+{
+  const anchor={...lights[1],kind:'emergency',zone:5,sourceZone:5};
+  const listener={x:2,z:1};
+  const on=buildEmergencyShadowFrame([anchor],{listener,timeSec:1});
+  const off=buildEmergencyShadowFrame([{...anchor,intensity:0,shadowReveal:0}],{
+    listener,torchOn:true,timeSec:1,
+  });
+  const unlit=buildEmergencyShadowFrame([{...anchor,intensity:0,shadowReveal:0}],{
+    listener,torchOn:false,timeSec:1,
+  });
+  assert.equal(off.lightingState,APPARITION_LIGHT_STATE.OFF);
+  assert.equal(unlit.lightingState,APPARITION_LIGHT_STATE.UNLIT);
+  assert.deepEqual([off.instances.map(({x,z})=>[x,z]),unlit.instances.map(({x,z})=>[x,z])],
+    [on.instances.map(({x,z})=>[x,z]),on.instances.map(({x,z})=>[x,z])],
+    'light state changes the presentation, never the stations');
+  assert.equal(off.lightOverride,null,'the dark beat cannot cast a red practical shadow');
+  assert.equal(unlit.lightOverride,null);
+  assert.ok(off.instances.every((instance)=>instance.noShadow&&instance.apparitionVariant===11));
+  assert.ok(unlit.instances.every((instance)=>instance.noShadow&&instance.apparitionVariant===12));
+  assert.deepEqual(off.contacts,[],'the monitor cannot track residual charge');
+  assert.deepEqual(unlit.contacts,[],'the pressure trace cannot become a contact');
+  assert.deepEqual(off.apparitionLights,[]);
+  assert.deepEqual(unlit.apparitionLights,[]);
+  const litByRoom=buildEmergencyShadowFrame([
+    {...anchor,intensity:0,shadowReveal:0},
+    {id:'work-light',kind:'fitting',x:3,z:1,intensity:.7,radius:5},
+  ],{listener});
+  assert.equal(litByRoom.lightingState,APPARITION_LIGHT_STATE.OFF,
+    'an ordinary nearby lamp makes the emergency-off trace legible without adding a ghost lamp');
+}
 assert.ok(buildEmergencyShadowFrame([{...lights[1],x:50}],{listener:{x:0,z:1}}),'the apparition remains eligible across the concert hall');
 
 // THE CROWD IS STAGED IN SECTORS, NOT WELDED TO THE CAMERA.
@@ -165,13 +197,17 @@ const props=readFileSync(new URL('../src/render/props3d.js',import.meta.url),'ut
 const minimap=readFileSync(new URL('../src/render/minimap.js',import.meta.url),'utf8');
 assert.match(main,/viewYaw:R3\.r3dWorldYaw/,'the apparition receives the actual camera direction');
 assert.match(main,/shadow\?shadow\.instances:\[\]/,'all three authored figures reach the shadow pass');
-assert.match(main,/\.\.\.\(shadow\.apparitionLights\|\|\[\]\)/,'the bodies feed their white practicals into the world-light pass');
+assert.match(main,/includeDormantEmergency:true/,'a dark or unpowered emergency fitting remains a staging anchor');
+assert.match(main,/torchOn:REC\.lightOn\(\)/,'the torch distinguishes the off beat from a genuinely unlit room');
 assert.match(main,/noteEmergencyApparitions\(shadow/,'the red beat is offered to the navigator');
 assert.match(main,/apparitions:recentApparitions\(\)/,'and the navigator draws it');
 assert.match(main,/age>APPARITION_RETURN_MS/,'the return dies with the beat that made it');
 assert.match(renderer,/uLocalLightPenetration/,'the raymarched architecture receives emergency penetration');
 assert.match(props,/emergencyOnly:\!\!practical&&emergencyShadowInstances\.length>0/,'ordinary prop shadows cannot bury the apparition crowd');
 assert.match(props,/practical\?\.color\?/,'the visible fixture glass takes the resolved emergency red');
+assert.match(props,/vPortrait==10/,'the light states are drawn by the world prop shader');
+assert.match(props,/vPortrait==11/);
+assert.match(props,/vPortrait>=10&&vPortrait<=12/);
 assert.match(renderer,/return mix\(shaded, vec3\(grey\), claim \* \(1\.0 - backing\)\);/,
   'raymarched surfaces cannot retain unbacked emergency red');
 assert.match(props,/return mix\(shaded,vec3\(grey\),claim\*\(1\.0-backing\)\);/,

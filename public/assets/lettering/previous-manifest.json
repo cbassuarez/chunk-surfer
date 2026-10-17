@@ -1,0 +1,480 @@
+{
+  "version": 3,
+  "source": "artifacts/lettering-production/baseline/public/assets/conservatory-props.glb",
+  "sourcePackSha256": "077059b14188d7f691cefef4891185ebb926f6b3713ab581319a7b4e5fb0065b",
+  "productionPackSha256": "089bcb11ebab4e00fb697732b61d2eb2627aa945331a8a575231f99638292917",
+  "packSha256": "eac31c5e86e0a6c752c080df31706df69299aa8987bd32bb0515e56e5ddf6908",
+  "bytes": 1987828,
+  "meshes": [
+    {
+      "production": "vigil_part_banner",
+      "source": "vigil_part_banner",
+      "review": "lettering_before_vigil_part_banner",
+      "geometryAndMaterialsExact": true
+    },
+    {
+      "production": "outskirts_shelter_timetable",
+      "source": "outskirts_shelter_timetable",
+      "review": "lettering_before_outskirts_shelter_timetable",
+      "geometryAndMaterialsExact": true
+    },
+    {
+      "production": "rekey_ledger",
+      "source": "rekey_ledger",
+      "review": "lettering_before_rekey_ledger",
+      "geometryAndMaterialsExact": true
+    },
+    {
+      "production": "city_phone_box_apparatus",
+      "source": "city_phone_box_apparatus",
+      "review": "lettering_before_city_phone_box_apparatus",
+      "geometryAndMaterialsExact": true
+    },
+    {
+      "production": "outskirts_ledger_signed",
+      "source": "outskirts_ledger_signed",
+      "review": "lettering_before_outskirts_ledger_signed",
+      "geometryAndMaterialsExact": true
+    },
+    {
+      "production": "outskirts_car",
+      "source": "outskirts_car",
+      "review": "lettering_before_outskirts_car",
+      "geometryAndMaterialsExact": true
+    },
+    {
+      "production": "door_stencil_b1",
+      "source": "door_stencil",
+      "review": "lettering_before_door_stencil_b1",
+      "geometryAndMaterialsExact": true
+    },
+    {
+      "production": "door_stencil_b2",
+      "source": "door_stencil",
+      "review": "lettering_before_door_stencil_b2",
+      "geometryAndMaterialsExact": true
+    },
+    {
+      "production": "door_stencil_b3",
+      "source": "door_stencil",
+      "review": "lettering_before_door_stencil_b3",
+      "geometryAndMaterialsExact": true
+    },
+    {
+      "production": "outskirts_ticket",
+      "source": "outskirts_ticket",
+      "review": "lettering_before_outskirts_ticket",
+      "geometryAndMaterialsExact": true
+    },
+    {
+      "production": "vigil_part_sign_strike",
+      "source": "vigil_part_sign_strike",
+      "review": "lettering_before_vigil_part_sign_strike",
+      "geometryAndMaterialsExact": true
+    },
+    {
+      "production": "vigil_part_sign_record",
+      "source": "vigil_part_sign_record",
+      "review": "lettering_before_vigil_part_sign_record",
+      "geometryAndMaterialsExact": true
+    },
+    {
+      "production": "vigil_part_sign_save",
+      "source": "vigil_part_sign_save",
+      "review": "lettering_before_vigil_part_sign_save",
+      "geometryAndMaterialsExact": true
+    },
+    {
+      "production": "outskirts_lodge_ledger",
+      "source": "outskirts_lodge_ledger",
+      "review": "lettering_before_outskirts_lodge_ledger",
+      "geometryAndMaterialsExact": true
+    },
+    {
+      "production": "vigil_part_sign_chapel",
+      "source": "vigil_part_sign_chapel",
+      "review": "lettering_before_vigil_part_sign_chapel",
+      "geometryAndMaterialsExact": true
+    },
+    {
+      "production": "ending_returned_ledger",
+      "source": "ending_returned_ledger",
+      "review": "lettering_before_ending_returned_ledger",
+      "geometryAndMaterialsExact": true
+    },
+    {
+      "production": "scene_dock_sign_services",
+      "source": "scene_dock_sign_services",
+      "review": "lettering_before_scene_dock_sign_services",
+      "geometryAndMaterialsExact": true
+    },
+    {
+      "production": "vigil_part_sign_signed",
+      "source": "vigil_part_sign_signed",
+      "review": "lettering_before_vigil_part_sign_signed",
+      "geometryAndMaterialsExact": true
+    },
+    {
+      "production": "chapel_key_ring_c17",
+      "source": "chapel_key_ring_c17",
+      "review": "lettering_before_chapel_key_ring_c17",
+      "geometryAndMaterialsExact": true
+    },
+    {
+      "production": "chapel_key_ring_ch04",
+      "source": "chapel_key_ring_ch04",
+      "review": "lettering_before_chapel_key_ring_ch04",
+      "geometryAndMaterialsExact": true
+    },
+    {
+      "production": "chapel_key_ring_fohm",
+      "source": "chapel_key_ring_fohm",
+      "review": "lettering_before_chapel_key_ring_fohm",
+      "geometryAndMaterialsExact": true
+    },
+    {
+      "production": "door_stencil_b5",
+      "source": "door_stencil",
+      "review": "lettering_before_door_stencil_b5",
+      "geometryAndMaterialsExact": true
+    },
+    {
+      "production": "scene_dock_sign_foh",
+      "source": "scene_dock_sign_foh",
+      "review": "lettering_before_scene_dock_sign_foh",
+      "geometryAndMaterialsExact": true
+    },
+    {
+      "production": "outskirts_bus",
+      "source": "outskirts_bus",
+      "review": "lettering_before_outskirts_bus",
+      "geometryAndMaterialsExact": true
+    },
+    {
+      "production": "city_phone_box",
+      "source": "city_phone_box",
+      "review": "lettering_before_city_phone_box",
+      "geometryAndMaterialsExact": true
+    },
+    {
+      "production": "tower_peal_board",
+      "source": "tower_peal_board",
+      "review": "lettering_before_tower_peal_board",
+      "geometryAndMaterialsExact": true
+    },
+    {
+      "production": "hymn_board",
+      "source": "hymn_board",
+      "review": "lettering_before_hymn_board",
+      "geometryAndMaterialsExact": true
+    },
+    {
+      "production": "tower_rope_mat_tenor",
+      "source": "tower_rope_mat_tenor",
+      "review": "lettering_before_tower_rope_mat_tenor",
+      "geometryAndMaterialsExact": true
+    },
+    {
+      "production": "outskirts_lodge",
+      "source": "outskirts_lodge",
+      "review": "lettering_before_outskirts_lodge",
+      "geometryAndMaterialsExact": true
+    },
+    {
+      "production": "loose_note",
+      "source": "loose_note",
+      "review": "loose_note__lettering_before",
+      "geometryAndMaterialsExact": true
+    },
+    {
+      "production": "loose_note_page6",
+      "source": "loose_note_page6",
+      "review": "loose_note_page6__lettering_before",
+      "geometryAndMaterialsExact": true
+    },
+    {
+      "production": "hall_entrance_sign",
+      "source": "hall_entrance_sign",
+      "review": "lettering_before_hall_entrance_sign",
+      "geometryAndMaterialsExact": true
+    },
+    {
+      "production": "public_exit_sign",
+      "source": "public_exit_sign",
+      "review": "lettering_before_public_exit_sign",
+      "geometryAndMaterialsExact": true
+    },
+    {
+      "production": "exterior_story_plaque",
+      "source": "exterior_story_plaque",
+      "review": "lettering_before_exterior_story_plaque",
+      "geometryAndMaterialsExact": true
+    },
+    {
+      "production": "yard_sign",
+      "source": "yard_sign",
+      "review": "lettering_before_yard_sign",
+      "geometryAndMaterialsExact": true
+    }
+  ],
+  "newOnly": [
+    {
+      "production": "lettering_overlay_tower-history-plaque",
+      "hostMesh": "tower_plaque",
+      "hostUnchangedFromArchive": true,
+      "comparison": "Hide the new overlay on the byte-equivalent existing host; do not show an empty void."
+    },
+    {
+      "production": "lettering_overlay_acq-foyer-armchair-01",
+      "hostMesh": "arm_chair_01",
+      "separateUnchangedHostAsset": "public/assets/conservatory-acquisitions.glb",
+      "hostAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+      "comparison": "Hide the new overlay on its original separately loaded acquisition host. The rollout does not rebuild that source pack."
+    },
+    {
+      "production": "lettering_overlay_atrium-public-directory",
+      "hostMesh": "notice_board",
+      "hostUnchangedFromArchive": true,
+      "comparison": "Hide the new overlay on the byte-equivalent existing host; do not show an empty void."
+    },
+    {
+      "production": "lettering_overlay_plant-header-card",
+      "hostMesh": "notice_board",
+      "hostUnchangedFromArchive": true,
+      "comparison": "Hide the new overlay on the byte-equivalent existing host; do not show an empty void."
+    },
+    {
+      "production": "lettering_overlay_yard-sign",
+      "hostMesh": "yard_sign",
+      "archivedHost": true,
+      "comparison": "Hide the new overlay and substitute the archived carrier including its original proxy inscription bars."
+    },
+    {
+      "production": "lettering_overlay_tower-sign-belfry",
+      "hostMesh": "tower_plaque",
+      "hostUnchangedFromArchive": true,
+      "comparison": "Hide the new overlay on the byte-equivalent existing host; do not show an empty void."
+    },
+    {
+      "production": "lettering_overlay_exterior-hall-stone",
+      "hostMesh": "exterior_story_plaque",
+      "archivedHost": true,
+      "comparison": "Hide the new overlay and substitute the archived carrier including its original proxy inscription bars."
+    },
+    {
+      "production": "lettering_overlay_exterior-chapel-plaque",
+      "hostMesh": "exterior_story_plaque",
+      "archivedHost": true,
+      "comparison": "Hide the new overlay and substitute the archived carrier including its original proxy inscription bars."
+    },
+    {
+      "production": "lettering_overlay_exterior-foundation-stone",
+      "hostMesh": "exterior_story_plaque",
+      "archivedHost": true,
+      "comparison": "Hide the new overlay and substitute the archived carrier including its original proxy inscription bars."
+    },
+    {
+      "production": "lettering_overlay_acq-foyer-horse-head",
+      "hostMesh": "horse_head",
+      "separateUnchangedHostAsset": "public/assets/conservatory-acquisitions.glb",
+      "hostAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+      "comparison": "Hide the new overlay on its original separately loaded acquisition host. The rollout does not rebuild that source pack."
+    },
+    {
+      "production": "lettering_overlay_acq-practice-chair-3",
+      "hostMesh": "green_chair_01",
+      "separateUnchangedHostAsset": "public/assets/conservatory-acquisitions.glb",
+      "hostAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+      "comparison": "Hide the new overlay on its original separately loaded acquisition host. The rollout does not rebuild that source pack."
+    },
+    {
+      "production": "lettering_overlay_acq-practice-chair-4",
+      "hostMesh": "green_chair_01",
+      "separateUnchangedHostAsset": "public/assets/conservatory-acquisitions.glb",
+      "hostAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+      "comparison": "Hide the new overlay on its original separately loaded acquisition host. The rollout does not rebuild that source pack."
+    },
+    {
+      "production": "lettering_overlay_acq-practice-chair-5",
+      "hostMesh": "green_chair_01",
+      "separateUnchangedHostAsset": "public/assets/conservatory-acquisitions.glb",
+      "hostAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+      "comparison": "Hide the new overlay on its original separately loaded acquisition host. The rollout does not rebuild that source pack."
+    },
+    {
+      "production": "lettering_overlay_acq-services-panel-academic",
+      "hostMesh": "power_box_01",
+      "separateUnchangedHostAsset": "public/assets/conservatory-acquisitions.glb",
+      "hostAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+      "comparison": "Hide the new overlay on its original separately loaded acquisition host. The rollout does not rebuild that source pack."
+    },
+    {
+      "production": "source_hall_number_17",
+      "baselineUnavailable": true,
+      "comparison": "No one-to-one archived mesh. Source 17 previously used runtime set_beam strokes. Use a labelled acquisition-only control."
+    },
+    {
+      "production": "lettering_overlay_brendan-visitor-till",
+      "hostMesh": "cash_terminal",
+      "hostUnchangedFromArchive": true,
+      "comparison": "Hide the new overlay on the byte-equivalent existing host; do not show an empty void."
+    },
+    {
+      "production": "lettering_overlay_exterior-baths-mosaic",
+      "hostMesh": "exterior_story_plaque",
+      "archivedHost": true,
+      "comparison": "Hide the new overlay and substitute the archived carrier including its original proxy inscription bars."
+    },
+    {
+      "production": "lettering_overlay_box-office-returns-tray",
+      "hostMesh": "open_score",
+      "hostUnchangedFromArchive": true,
+      "comparison": "Hide the new overlay on the byte-equivalent existing host; do not show an empty void."
+    },
+    {
+      "production": "lettering_overlay_acq-foyer-sofa-01",
+      "hostMesh": "sofa_01",
+      "separateUnchangedHostAsset": "public/assets/conservatory-acquisitions.glb",
+      "hostAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+      "comparison": "Hide the new overlay on its original separately loaded acquisition host. The rollout does not rebuild that source pack."
+    },
+    {
+      "production": "lettering_overlay_deadend-ground-armchair",
+      "hostMesh": "arm_chair_01",
+      "separateUnchangedHostAsset": "public/assets/conservatory-acquisitions.glb",
+      "hostAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+      "comparison": "Hide the new overlay on its original separately loaded acquisition host. The rollout does not rebuild that source pack."
+    },
+    {
+      "production": "lettering_overlay_acq-practice-chair-1",
+      "hostMesh": "green_chair_01",
+      "separateUnchangedHostAsset": "public/assets/conservatory-acquisitions.glb",
+      "hostAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+      "comparison": "Hide the new overlay on its original separately loaded acquisition host. The rollout does not rebuild that source pack."
+    },
+    {
+      "production": "lettering_overlay_acq-practice-chair-2",
+      "hostMesh": "green_chair_01",
+      "separateUnchangedHostAsset": "public/assets/conservatory-acquisitions.glb",
+      "hostAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+      "comparison": "Hide the new overlay on its original separately loaded acquisition host. The rollout does not rebuild that source pack."
+    },
+    {
+      "production": "lettering_overlay_tower-hammer-isolator",
+      "hostMesh": "equipment_rack",
+      "hostUnchangedFromArchive": true,
+      "comparison": "Hide the new overlay on the byte-equivalent existing host; do not show an empty void."
+    },
+    {
+      "production": "lettering_overlay_tower-sign-nave-exit",
+      "hostMesh": "tower_plaque",
+      "hostUnchangedFromArchive": true,
+      "comparison": "Hide the new overlay on the byte-equivalent existing host; do not show an empty void."
+    },
+    {
+      "production": "lettering_overlay_tower-sign-organ-exit",
+      "hostMesh": "tower_plaque",
+      "hostUnchangedFromArchive": true,
+      "comparison": "Hide the new overlay on the byte-equivalent existing host; do not show an empty void."
+    },
+    {
+      "production": "lettering_overlay_tower-sign-ringing",
+      "hostMesh": "tower_plaque",
+      "hostUnchangedFromArchive": true,
+      "comparison": "Hide the new overlay on the byte-equivalent existing host; do not show an empty void."
+    },
+    {
+      "production": "lettering_overlay_acq-hall-chesterfield-west",
+      "hostMesh": "sofa_02",
+      "separateUnchangedHostAsset": "public/assets/conservatory-acquisitions.glb",
+      "hostAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+      "comparison": "Hide the new overlay on its original separately loaded acquisition host. The rollout does not rebuild that source pack."
+    },
+    {
+      "production": "lettering_overlay_acq-services-panel-pool",
+      "hostMesh": "power_box_01",
+      "separateUnchangedHostAsset": "public/assets/conservatory-acquisitions.glb",
+      "hostAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+      "comparison": "Hide the new overlay on its original separately loaded acquisition host. The rollout does not rebuild that source pack."
+    },
+    {
+      "production": "lettering_overlay_acq-services-panel-practice",
+      "hostMesh": "power_box_01",
+      "separateUnchangedHostAsset": "public/assets/conservatory-acquisitions.glb",
+      "hostAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+      "comparison": "Hide the new overlay on its original separately loaded acquisition host. The rollout does not rebuild that source pack."
+    },
+    {
+      "production": "lettering_overlay_foyer-pew-1",
+      "hostMesh": "pew",
+      "hostUnchangedFromArchive": true,
+      "comparison": "Hide the new overlay on the byte-equivalent existing host; do not show an empty void."
+    },
+    {
+      "production": "lettering_overlay_acq-foyer-console-01",
+      "hostMesh": "classic_console_01",
+      "separateUnchangedHostAsset": "public/assets/conservatory-acquisitions.glb",
+      "hostAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+      "comparison": "Hide the new overlay on its original separately loaded acquisition host. The rollout does not rebuild that source pack."
+    },
+    {
+      "production": "lettering_overlay_acq-practice-chair-6",
+      "hostMesh": "green_chair_01",
+      "separateUnchangedHostAsset": "public/assets/conservatory-acquisitions.glb",
+      "hostAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+      "comparison": "Hide the new overlay on its original separately loaded acquisition host. The rollout does not rebuild that source pack."
+    },
+    {
+      "production": "lettering_overlay_acq-practice-chair-7",
+      "hostMesh": "green_chair_01",
+      "separateUnchangedHostAsset": "public/assets/conservatory-acquisitions.glb",
+      "hostAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+      "comparison": "Hide the new overlay on its original separately loaded acquisition host. The rollout does not rebuild that source pack."
+    },
+    {
+      "production": "lettering_overlay_acq-practice-chair-8",
+      "hostMesh": "green_chair_01",
+      "separateUnchangedHostAsset": "public/assets/conservatory-acquisitions.glb",
+      "hostAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+      "comparison": "Hide the new overlay on its original separately loaded acquisition host. The rollout does not rebuild that source pack."
+    },
+    {
+      "production": "lettering_overlay_acq-services-panel-foh",
+      "hostMesh": "power_box_01",
+      "separateUnchangedHostAsset": "public/assets/conservatory-acquisitions.glb",
+      "hostAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+      "comparison": "Hide the new overlay on its original separately loaded acquisition host. The rollout does not rebuild that source pack."
+    },
+    {
+      "production": "lettering_overlay_acq-services-panel-plant",
+      "hostMesh": "power_box_01",
+      "separateUnchangedHostAsset": "public/assets/conservatory-acquisitions.glb",
+      "hostAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+      "comparison": "Hide the new overlay on its original separately loaded acquisition host. The rollout does not rebuild that source pack."
+    },
+    {
+      "production": "lettering_overlay_atrium-sign-main-exit",
+      "hostMesh": "public_exit_sign",
+      "archivedHost": true,
+      "comparison": "Hide the new overlay and substitute the archived carrier including its original proxy inscription bars."
+    },
+    {
+      "production": "lettering_overlay_chapel-stair-sign-nave",
+      "hostMesh": "public_exit_sign",
+      "archivedHost": true,
+      "comparison": "Hide the new overlay and substitute the archived carrier including its original proxy inscription bars."
+    },
+    {
+      "production": "lettering_overlay_hall-entrance-sign",
+      "hostMesh": "hall_entrance_sign",
+      "archivedHost": true,
+      "comparison": "Hide the new overlay and substitute the archived carrier including its original proxy inscription bars."
+    }
+  ],
+  "prune": {
+    "keepAttributes": true,
+    "keepExtras": true,
+    "keepSolidTextures": true
+  },
+  "note": "Every retained primitive numeric attribute, index and full material definition was independently compared to the archived source. B-code variants compare to their original blank shared stencil. Runtime-paper control names preserve the paper semantic prefix. Overlay controls retain their actual host, with archived proxy-bearing carriers substituted where altered. Separate imported hosts retain their original pack SHA; no duplicate imported geometry is loaded."
+}

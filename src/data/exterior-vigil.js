@@ -22,8 +22,8 @@ const facing=(yaw)=>({x:Math.sin(yaw),y:-Math.cos(yaw)});
 export function vigilFacePoint({x,y,yaw}){
   const f=facing(yaw);return{x:+(x+f.x*FACE_OFFSET).toFixed(3),y:+(y+f.y*FACE_OFFSET).toFixed(3)};
 }
-export function vigilApproachPoint({x,y,yaw}){
-  const f=facing(yaw);return{x:+(x+f.x*APPROACH_OFFSET).toFixed(3),y:+(y+f.y*APPROACH_OFFSET).toFixed(3)};
+export function vigilApproachPoint({x,y,yaw,approachOffset=APPROACH_OFFSET}){
+  const f=facing(yaw);return{x:+(x+f.x*approachOffset).toFixed(3),y:+(y+f.y*approachOffset).toFixed(3)};
 }
 
 export const VIGIL_MIN_CORRIDOR=4;
@@ -40,12 +40,12 @@ export const VIGIL_CLEARANCES=deepFreeze([
 // Bodies collide. Linked parts never do; the body's envelope includes the
 // accessory at rest and visual action offsets never move either collider.
 export const VIGIL_MESHES=deepFreeze({
-  vigil_ruth_mallory:{w:.90,d:.76,h:1.74,blocks:true},
-  vigil_leila_hart:{w:.86,d:.76,h:1.76,blocks:true},
+  vigil_ruth_mallory:{w:.90,d:1.14,h:1.74,blocks:true},
+  vigil_leila_hart:{w:.86,d:.84,h:1.76,blocks:true},
   vigil_owen_pryce:{w:1.06,d:.98,h:2.00,blocks:true},
-  vigil_denise_okafor:{w:.88,d:.76,h:1.72,blocks:true},
-  vigil_malcolm_vey:{w:.92,d:.76,h:1.88,blocks:true},
-  vigil_kit_renshaw:{w:.96,d:.82,h:1.76,blocks:true},
+  vigil_denise_okafor:{w:.88,d:1.00,h:1.72,blocks:true},
+  vigil_malcolm_vey:{w:.92,d:1.12,h:1.88,blocks:true},
+  vigil_kit_renshaw:{w:.96,d:1.34,h:1.80,blocks:true},
   vigil_figure_umbrella_a:{w:1.06,d:.98,h:2.02,blocks:true},
   vigil_figure_umbrella_b:{w:1.06,d:.98,h:1.96,blocks:true},
   vigil_figure_placard_a:{w:1.42,d:.76,h:2.32,blocks:true},
@@ -84,7 +84,7 @@ export const VIGIL_VOICES=deepFreeze({
     slate:'CATHEDRAL FORECOURT / THE FOLDER',speaker:'THE WOMAN WITH THE FOLDER',
     art:plate('vigilRuth','Rain on the rota'),detailArt:plate('vigilRuthNotice','The corrected notice','06:00 THURSDAY'),
     mesh:'vigil_ruth_mallory',parts:[part('vigil_part_ruth_binder','binder')],cluster:'forecourt-east',
-    actionSet:['binder-page','weight-shift'],place:freeze({x:28,y:52,yaw:.15}),voice:freeze({pitch:.96,rate:1.02,grain:'level'}),
+    actionSet:['binder-page','weight-shift'],place:freeze({x:28,y:51.92,yaw:.15}),voice:freeze({pitch:.96,rate:1.02,grain:'level'}),
     tree:{
       start:{speaker:'THE WOMAN WITH THE FOLDER',art:plate('vigilRuth','Rain on the rota'),lines:lines(
         {who:'THE WOMAN WITH THE FOLDER',text:'Mind the gap by the west doors. We promised the fire officer four metres and he brought a tape.'},
@@ -272,7 +272,7 @@ export const VIGIL_VOICES=deepFreeze({
     slate:'EAST FLANK / FIELD RECORDING',speaker:'THE PERSON AT THE MICROPHONE',
     art:plate('vigilKit','Rain-dark microphone and cable'),detailArt:plate('vigilKitMeter','Gain log after plant shutdown','22:30'),
     mesh:'vigil_kit_renshaw',parts:[part('vigil_part_kit_microphone','microphone')],cluster:'east-flank',
-    actionSet:['camera-check','weight-shift'],place:freeze({x:25.6,y:58,yaw:-1.30}),voice:freeze({pitch:1.04,rate:1.08,grain:'close'}),
+    actionSet:['camera-check','weight-shift'],place:freeze({x:25.6,y:58,yaw:-1.30,approachOffset:2.10}),voice:freeze({pitch:1.04,rate:1.08,grain:'close'}),
     tree:{
       start:{speaker:'THE PERSON AT THE MICROPHONE',art:plate('vigilKit','Rain-dark microphone and cable'),lines:lines(
         {who:'THE PERSON AT THE MICROPHONE',text:'Mind the cable. The black one is mine; the orange one belongs to somebody who left before dinner.'},
@@ -364,14 +364,14 @@ const insert=(at,who,text)=>freeze({at,who,text});
 export const VIGIL_ENDING_INSERTS=deepFreeze({
   drugged:[insert(6,'direction','Through the windscreen: nine coats, one folded chair, the banner still tied to the railing.')],
   surfaced:[insert(22,'direction','The people at the gate make room. A chair opens; a dry coat appears from somewhere behind it.')],
-  'tower-won':[insert(9,'direction','At the west doors, three people come under the weight when you tell them where to put their hands.')],
 });
 export const VIGIL_ENDING_ACTIONS=deepFreeze({
   drugged:[{at:5.5,action:'fold-chair',cluster:'forecourt-east'}],
   surfaced:[{at:21.5,action:'open-chair',cluster:'forecourt-east'},{at:22,action:'offer-coat',cluster:'forecourt-east'}],
-  'tower-won':[{at:8.5,action:'take-weight',cluster:'forecourt-east'}],
 });
-export const VIGIL_ENDING_OMISSIONS=freeze(['sacrifice','helped','inversion','contact-won','contact-lost','tower-lost']);
+// Ordinary weight ends with the two extracted bodies. It does not silently
+// acquire the abandoned helper-led handoff from the earlier Tower design.
+export const VIGIL_ENDING_OMISSIONS=freeze(['sacrifice','helped','inversion','contact-won','contact-lost','tower-won','tower-lost']);
 
 export function vigilEndingInserts(endingId){return VIGIL_ENDING_INSERTS[String(endingId||'')]||null;}
 export function vigilVoice(id){return VIGIL_VOICES[String(id||'')]||null;}

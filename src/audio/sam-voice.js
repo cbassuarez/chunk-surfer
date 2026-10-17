@@ -270,6 +270,9 @@ export const VOICE_PROFILES = {
   line: { rate: 0.92, gain: 1.0, hp: 240, lp: 3600 },
   operator: { rate: 1.06, gain: 1.0, hp: 220, lp: 3600 },
   lyle: { rate: 0.9, gain: 1.05, hp: 160, lp: 3600, smear: { time: 0.07, feedback: 0.22, mix: 0.24 } },
+  // Ren speaks in the roof air; the recording is a private, ordinary voice.
+  ren: { rate: .96, gain: .96, hp: 135, lp: 3900, smear: { time: .055, feedback: .13, mix: .12 } },
+  'mother on tape': { rate: 1.06, gain: .88, hp: 230, lp: 3300, hiss: .012, wobble: .004 },
   // The voice that asks him a question in an empty building, eleven seconds in.
   // It is the surfer, and it must not be named yet — so it sounds like the surfer
   // heard through a wall: same transposition and smear, quieter, and with the top
@@ -613,5 +616,6 @@ export const VOICED = new Set([
   // directory enquiries, and whoever is waiting on the line on the loop pass.
   'student','man','enquiries','caller',
   'woman at the shelter','man under the awning','driver by the pub yard',
+  'ren','mother on tape',
 ]);
 export const isVoiced = (who) => VOICED.has(who);

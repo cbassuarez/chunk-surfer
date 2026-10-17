@@ -81,10 +81,10 @@ export const EXTERIOR_AMBIENT_NODES = freeze([
 ]);
 
 export const EXTERIOR_INSPECTABLES = freeze([
-  freeze({id:'exterior-foundation-stone',physical:{x:67,y:-1},label:'the foundation stone',text:'ELLERY MUNICIPAL SCHOOL OF MUSIC · OPENED 1888. The older name is cut deeper than the current one.'}),
-  freeze({id:'exterior-chapel-plaque',physical:{x:103,y:93},label:'the chapel plaque',text:'ELLERY COLLEGIATE CHAPEL · 1908. The tower came after the school and has spent a century pretending otherwise.'}),
-  freeze({id:'exterior-baths-mosaic',physical:{x:129,y:77},label:'the baths mosaic',text:'MUNICIPAL BATHS · 1912. Blue tesserae survive under the paint. The pool was public before it belonged to the conservatoire.'}),
-  freeze({id:'exterior-hall-stone',physical:{x:129,y:34},label:'the hall dedication',text:'CONCERT HALL · 1936. The fly tower is eight metres behind this low range, where a stage tower belongs.'}),
+  freeze({id:'exterior-foundation-stone',physical:{x:67,y:-1},mountNormal:{nx:0,ny:-1},label:'the foundation stone',text:'ELLERY MUNICIPAL SCHOOL OF MUSIC · OPENED 1888. The older name is cut deeper than the current one.'}),
+  freeze({id:'exterior-chapel-plaque',physical:{x:103,y:93},mountNormal:{nx:0,ny:1},label:'the chapel plaque',text:'ELLERY COLLEGIATE CHAPEL · 1908. The tower came after the school and has spent a century pretending otherwise.'}),
+  freeze({id:'exterior-baths-mosaic',physical:{x:129,y:77},mountNormal:{nx:1,ny:0},label:'the baths mosaic',text:'MUNICIPAL BATHS · 1912. Blue tesserae survive under the paint. The pool was public before it belonged to the conservatoire.'}),
+  freeze({id:'exterior-hall-stone',physical:{x:129,y:34},mountNormal:{nx:1,ny:0},label:'the hall dedication',text:'CONCERT HALL · 1936. The fly tower is eight metres behind this low range, where a stage tower belongs.'}),
 ]);
 
 export const YARD_SERVICE_RANGES = freeze([

@@ -60,7 +60,7 @@ test('speech and an embodied choice allow world decay, while pause, a world bloc
       horizonFrame:()=>({active:true,generation,unravelling:{active:true}}),
       tickHorizon(dt){elapsed.push(dt);generation++;order.push('world');},
     },
-    R3:{r3dFacing:()=>0},endSourceHaystackMosh(){},endSourceBracketPresence(){},
+    R3:{r3dFacing:()=>0},endSourceHaystackMosh(){},endSourceBracketPresence(){},tickTowerPersonal:()=>false,
     PRES:{isActive:()=>false},sourceFearFloor:0,
     tickHorizonScore(frame){mixed.push(frame.generation);order.push('score');},
     speakHorizonMarker(){},syncOutskirtsNight(){order.push('street');},tickPayphone(){},syncSourceRender(){order.push('render');},
@@ -78,7 +78,9 @@ test('speech and an embodied choice allow world decay, while pause, a world bloc
 
 test('both portrait conversations are presented with the embodied street visible',()=>{
   const shown=[];
-  const sandbox={chunkSurfRuntime:{},horizonBustRefusalTree:()=>({refusal:true}),horizonBustProposition:()=>({offer:true}),presentFinale:(tree,options)=>shown.push({tree,options})};
+  const sandbox={chunkSurfRuntime:{},horizonBustRefusalTree:()=>({refusal:true}),
+    horizonBustProposition:()=>({accepted:{lines:[]},declined:{lines:[]},questions:{choices:[]},decision:{choices:[]}}),
+    presentFinale:(tree,options)=>shown.push({tree,options})};
   const api=execute(productionSection('function openHorizonBustRefusal(){','\n// THREADING THE TRANSPORT.'),sandbox,'{openHorizonBustRefusal,openHorizonBustChoice}');
   assert.equal(api.openHorizonBustRefusal(),true);assert.equal(api.openHorizonBustChoice(),true);
   assert.equal(shown.length,2);

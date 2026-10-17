@@ -181,11 +181,10 @@ def impact_text(layer, xy, txt, font, fill, tracking, anchor, process, seed):
     layer.alpha_composite(ink,(left,top))
 
 
-def render(svg_path:Path,out_path:Path,width:int,height:int,material_path:Path|None=None):
+def render_layers(svg_path:Path,width:int,height:int,pigment_only=False):
     raw=svg_path.read_bytes(); seed=int.from_bytes(hashlib.sha256(raw).digest()[:8],'big')
     tree=ET.fromstring(raw); vb=[float(x) for x in (tree.get('viewBox') or '0 0 210 297').split()]
     sx=width/vb[2]; sy=height/vb[3]
-    base=Image.new('RGB',(width,height),(244,243,238))
     layers={k:rgba_layer((width,height)) for k in ('generic','stationery','impact','toner','manual','handling','defects')}
 
     def process_layer(process):
@@ -201,6 +200,8 @@ def render(svg_path:Path,out_path:Path,width:int,height:int,material_path:Path|N
         tag=el.tag.split('}')[-1]
         if tag=='defs': return
         process=el.get('data-process') or inherited
+        if pigment_only and (el.get('id') in ('paper-stock','process-handling','reproduction-defects') or process_layer(process)=='handling'):
+            return
         if tag=='g':
             for c in el: walk(c,process)
             return
@@ -253,6 +254,25 @@ def render(svg_path:Path,out_path:Path,width:int,height:int,material_path:Path|N
     # Toner is a surface deposit; a tiny optical spread distinguishes it from
     # ribbon impact and preprinted stationery without turning it into blur.
     layers['toner']=layers['toner'].filter(ImageFilter.GaussianBlur(.20))
+    return seed,layers
+
+
+def render_pigment(svg_path:Path,width:int,height:int):
+    """Authored print coverage only, independent of rendered RGB/illumination.
+
+    Use the canonical page raster scale, then downsample for the world atlas.
+    Stock fibres, moisture, folds and reproduction speckle are not lettering.
+    """
+    _,layers=render_layers(svg_path,width,height,pigment_only=True)
+    coverage=Image.new('L',(width,height),0)
+    for name in ('generic','stationery','impact','toner','manual'):
+        coverage=ImageChops.screen(coverage,alpha_from(layers[name]))
+    return coverage
+
+
+def render(svg_path:Path,out_path:Path,width:int,height:int,material_path:Path|None=None):
+    seed,layers=render_layers(svg_path,width,height)
+    base=Image.new('RGB',(width,height),(244,243,238))
 
     # Compose stock first, then production layers in causal order.
     for name in ('generic','stationery','impact','toner','manual','handling','defects'):

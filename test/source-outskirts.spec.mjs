@@ -34,6 +34,10 @@ import { DOOR_FRAME_OPENINGS, DOOR_FIELD_PLANTING_MESHES } from '../src/data/sou
       if (piece.id === 'r6-booth-guard') assert.equal(piece.encounter, 'wrong-fold');
       else assert.equal(piece.character?.clip, 'idle');
       assert.ok(piece.collision?.length, 'the character has no explicit footprint');
+    } else if (['outskirts_overprint_body', 'outskirts_dog_handler', 'outskirts_vacant_dog'].includes(piece.mesh)) {
+      assert.ok(piece.collision?.length, `${piece.id} has no authored foot and lower-leg clearance`);
+    } else if (piece.mesh === 'outskirts_slack_lead') {
+      assert.equal(piece.collision, 'none', 'the loose lead blocks the road');
     } else assert.ok(PROP_BOUNDS[piece.mesh], `${piece.id} names ${piece.mesh}, which the prop pack does not build`);
   }
   assert.equal(new Set(layout.map((piece) => piece.id)).size, layout.length, 'a piece stands twice');
@@ -103,7 +107,7 @@ import { DOOR_FRAME_OPENINGS, DOOR_FIELD_PLANTING_MESHES } from '../src/data/sou
   assert.ok(OUTSKIRT_BEATS.every((beat) => ['reach', 'lookBack', 'unseen'].includes(beat.trigger)));
 }
 
-const packMeshes = new Set(['vegetation', 'conservatory-doors', 'conservatory-acquisitions', 'source-structures', 'conservatory-props', 'outskirts-characters'].flatMap((name) => {
+const packMeshes = new Set(['vegetation', 'conservatory-doors', 'conservatory-acquisitions', 'source-structures', 'conservatory-props', 'outskirts-characters', 'outskirts-dog-handler', 'bus-woman-character', 'outskirts-bus-woman-wrong-origin', 'outskirts-vacant-dog'].flatMap((name) => {
   const bytes = readFileSync(new URL(`../public/assets/${name}.glb`, import.meta.url));
   return JSON.parse(bytes.subarray(20, 20 + bytes.readUInt32LE(12)).toString('utf8')).meshes.map((mesh) => mesh.name);
 }));
@@ -406,15 +410,16 @@ const outFrom = (door, cells) => { const m = middleOf(door); return { x: m.x + d
   const { runtime } = at(4417, (options) => buildPreTapeGodPreset(40, options));
   assert.equal(runtime.sourceFlashlightFrame({ time: 1 }).mode, 'normal', 'the outskirts torch is not the ordinary beam');
   assert.equal(runtime.sourceFlashlightFrame({ time: 1 }).xray, false);
-  let dimmed = 0, steadyMost = 0;
+  let dimmed = 0, blackedOut = 0;
   const samples = 60000;
   for (let i = 0; i < samples; i += 1) {
     const value = torchFlickerAt(i / 1000, 4417);
-    assert.ok(value > 0 && value <= 1, 'the flicker leaves the torch range');
-    if (value < 1) dimmed += 1;
+    assert.ok(value >= 0 && value <= 1, 'the voltage leaves the torch range');
+    if (value < .5) dimmed += 1;
+    if (value === 0) blackedOut += 1;
   }
-  assert.ok(dimmed / samples > .01, 'the torch never flickers');
-  assert.ok(dimmed / samples < .12, 'the torch is flickering more than it is on');
+  assert.ok(dimmed / samples > .2, 'the outskirts torch is almost always bright');
+  assert.ok(blackedOut / samples > .06 && blackedOut / samples < .25, 'the torch has no bounded blackouts');
   for (let t = 0; t < 60; t += .013) {
     assert.equal(runtime.sourceFlashlightFrame({ time: t, flashMode: 'off' }).flicker, 1, 'reduced flashing still flickers the torch');
   }

@@ -1,0 +1,40 @@
+{
+  "purpose": "Renderer operator ablation, not production replacement",
+  "faces": [
+    {
+      "pack": "signs",
+      "material": "services type-flat physical print",
+      "rgbIdentical": true,
+      "polarity": "light-on-dark",
+      "maskSha256": "404535ab6fb0357e70568c5dae69346f99986dc6d994c9449c26ba08f85449b6"
+    },
+    {
+      "pack": "signs",
+      "material": "services fabricated physical print",
+      "rgbIdentical": true,
+      "polarity": "light-on-dark",
+      "maskSha256": "404535ab6fb0357e70568c5dae69346f99986dc6d994c9449c26ba08f85449b6"
+    },
+    {
+      "pack": "signs",
+      "material": "placard type-flat physical print",
+      "rgbIdentical": true,
+      "polarity": "dark-on-light",
+      "maskSha256": "6c5077ae11d920fb35870b116548de99c2206369fb6c7052c754df4b2a1ea8b7"
+    },
+    {
+      "pack": "signs",
+      "material": "placard fabricated physical print",
+      "rgbIdentical": true,
+      "polarity": "dark-on-light",
+      "maskSha256": "6c5077ae11d920fb35870b116548de99c2206369fb6c7052c754df4b2a1ea8b7"
+    },
+    {
+      "pack": "polarity",
+      "material": "services light enamel physical print",
+      "rgbIdentical": true,
+      "polarity": "dark-on-light",
+      "maskSha256": "404535ab6fb0357e70568c5dae69346f99986dc6d994c9449c26ba08f85449b6"
+    }
+  ]
+}

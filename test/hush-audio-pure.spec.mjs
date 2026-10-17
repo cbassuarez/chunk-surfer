@@ -74,11 +74,12 @@ assert.equal(immediate, null);
   const wingOnly = ['mischief.sprung-answer', 'mischief.mirror-return'];
   const unzoned = HUSH_MISCHIEF_CUES.filter((cue) => !cue.requirements?.zones).map((cue) => cue.id);
 
-  for (const zone of [ZONE.danceStudio, ZONE.studio]) {
+  for (const zone of [ZONE.danceStudio]) {
     const here = reachable(zone);
     for (const id of wingOnly) assert.ok(here.has(id), `${id} plays in the wing (zone ${zone})`);
   }
-  for (const zone of [ZONE.hall, ZONE.natatorium, ZONE.chapel, ZONE.practice]) {
+  // B3 (ZONE.studio) is carpeted and has no mirrors: neither wing cue belongs there.
+  for (const zone of [ZONE.studio, ZONE.hall, ZONE.natatorium, ZONE.chapel, ZONE.practice]) {
     const here = reachable(zone);
     for (const id of wingOnly) assert.ok(!here.has(id), `${id} stays out of zone ${zone}`);
     for (const id of unzoned) assert.ok(here.has(id), `${id} still plays in zone ${zone}`);

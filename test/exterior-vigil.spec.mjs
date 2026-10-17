@@ -123,6 +123,30 @@ assert.equal(freshSave().exteriorVigil,null,'old saves do not require migration'
 // conversation, held reduced-motion pose and identical timing/collision.
 assert.equal(VIGIL_ACTION_CONCURRENCY,2);assert.equal(VIGIL_ACTION_MIN_WAIT_MS,9_000);assert.equal(VIGIL_ACTION_MAX_WAIT_MS,24_000);
 let actionState={...freshVigilActionState('run-a'),waitMs:0};
+
+// Execute the actual main-loop integration with a named actor and no crowd
+// drift. The scheduler removes terminal frames, so completion/cancellation
+// needs a final renderer refresh even when its new active list is empty.
+const mainSource=readFileSync('src/main.js','utf8');
+const tickSource=mainSource.slice(mainSource.indexOf('function tickVigilActions('),mainSource.indexOf('function restoreExteriorVigil('));
+function namedActionRefresh({elapsedMs=1990,dt=.016,locked=false,active=true}={}){
+  const actor=named[0],initial={...freshVigilActionState('run-a'),serial:1,waitMs:9000,active:active?[{actorId:actor.id,action:'binder-page',elapsedMs,durationMs:2000}]:[]};
+  const run=new Function('scheduleVigilActions','initial','actor',`
+    let vigilActionState=initial,vigilActionCueSerial=1,refreshes=0;
+    const VIGIL_ACTORS=[actor],vigilConversationActorId=${locked?'actor.id':'null'},vigilPosedPropIds=new Set(),RENDERER='3d';
+    const PROPS={propById:id=>id===actor.id?actor:null,allProps:()=>[],setPropDrift:()=>{throw Error('named actor used primitive prop drift')}};
+    const vigilCharacterIdForMesh=mesh=>mesh===actor.mesh?'ruth':null;
+    const vigilAmbientBlocked=()=>false,getSave=()=>({settings:{shake:'full'},run:{id:'run-a'}});
+    const clearVigilActionPoses=()=>false,refreshWorldProps=()=>{refreshes++};
+    ${tickSource}
+    tickVigilActions({x:actor.x,y:actor.y},${dt});return{refreshes,active:vigilActionState.active.length};
+  `);
+  return run(scheduleVigilActions,initial,actor);
+}
+assert.deepEqual(namedActionRefresh(),{refreshes:1,active:0},'completed named action left its last gesture in the renderer');
+assert.deepEqual(namedActionRefresh({elapsedMs:500,dt:0,locked:true}),{refreshes:1,active:0},'conversation lock did not clear a named gesture');
+assert.deepEqual(namedActionRefresh({elapsedMs:500}),{refreshes:1,active:1},'active named gesture did not reach renderer');
+assert.deepEqual(namedActionRefresh({active:false,dt:0}),{refreshes:0,active:0},'idle named cast needlessly refreshed every frame');
 let actionStep=scheduleVigilActions(actionState,{actors:figures,listener:{x:28.8,y:52.8},dtMs:0,runId:'run-a'});assert.equal(actionStep.state.active.length,1);
 const firstActor=actionStep.state.active[0].actorId;
 actionStep=scheduleVigilActions({...actionStep.state,waitMs:0},{actors:figures,listener:{x:28.8,y:52.8},dtMs:0,runId:'run-a'});assert.equal(actionStep.state.active.length,2);assert.equal(new Set(actionStep.state.active.map(({actorId})=>actorId)).size,2);
@@ -130,14 +154,20 @@ actionStep=scheduleVigilActions(actionStep.state,{actors:figures,listener:{x:28.
 const action={action:'placard-lower',durationMs:2400};const animated=vigilActionFrame(action,1200),reduced=vigilActionFrame(action,1200,{reducedMotion:true});assert.equal(animated.done,reduced.done);assert.ok(reduced.part&&Math.abs(reduced.part.dy)>.1);assert.equal(vigilActionFrame(action,2400).done,true);
 for(const figure of figures){const before={x:figure.x,y:figure.y};vigilActionFrame({action:figure.actionSet[0],durationMs:2000},1000);assert.deepEqual({x:figure.x,y:figure.y},before,'action changed collision placement');}
 
-// Only three visible endings mention or move the gathering.
+// Only the two authored vigil viewpoints mention or move the gathering.
 assert.deepEqual(endingContractErrors(),[]);
-assert.deepEqual(Object.keys(VIGIL_ENDING_INSERTS).sort(),['drugged','surfaced','tower-won']);
-assert.deepEqual(Object.keys(VIGIL_ENDING_ACTIONS).sort(),['drugged','surfaced','tower-won']);
-assert.deepEqual([...VIGIL_ENDING_OMISSIONS].sort(),['contact-lost','contact-won','helped','inversion','sacrifice','tower-lost']);
+assert.deepEqual(Object.keys(VIGIL_ENDING_INSERTS).sort(),['drugged','surfaced']);
+assert.deepEqual(Object.keys(VIGIL_ENDING_ACTIONS).sort(),['drugged','surfaced']);
+assert.deepEqual([...VIGIL_ENDING_OMISSIONS].sort(),['contact-lost','contact-won','helped','inversion','sacrifice','tower-lost','tower-won']);
 for(const id of ENDING_IDS)assert.ok(VIGIL_ENDING_INSERTS[id]||VIGIL_ENDING_OMISSIONS.includes(id),`${id} has no viewpoint decision`);
 for(const [id,actions] of Object.entries(VIGIL_ENDING_ACTIONS))for(const action of actions)assert.ok(ENDING_MANIFEST[id].environment.some((step)=>step.kind==='vigil'&&step.action===action.action&&step.cluster===action.cluster));
 for(const id of VIGIL_ENDING_OMISSIONS){const prose=JSON.stringify(ENDING_MANIFEST[id]).toLowerCase();assert.doesNotMatch(prose,/quiet vigil|the protesters|the protestors|the crowd outside/,`${id} narrates an unseen vigil`);}
+const ordinaryWeight=ENDING_MANIFEST['tower-won'];
+assert.ok(ordinaryWeight.cutscene.beats.some(beat=>beat.id==='ordinary-weight'),'the selected Tower ending retains its ordinary-weight beat');
+assert.equal(ordinaryWeight.environment.some(step=>step.kind==='vigil'||step.action==='take-weight'),false,
+  'the two-body extraction does not request a helper handoff');
+assert.equal(ordinaryWeight.cutscene.beats.some(beat=>beat.action==='take-weight'||beat.effect==='threshold-regrip'),false,
+  'the selected carry does not force a helper action or threshold regrip');
 
 assert.deepEqual(vigilYardPhysical(50,200),{x:0,y:0});
 assert.equal(CONSERVATORY_PROPS.filter(({action})=>action==='exterior-lore').length,3,'ordinary exterior dialogue changed');

@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Hall encounter study</title>
+  <style>
+    :root { color-scheme: dark; font: 16px/1.5 system-ui, sans-serif; background: #16191b; color: #eef0e9; }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    main { max-width: 1440px; margin: auto; padding: 24px; }
+    header { display: flex; align-items: baseline; justify-content: space-between; gap: 24px; }
+    h1 { font-size: 1.3rem; font-weight: 550; margin: 0 0 16px; }
+    h2 { font-size: 1.2rem; font-weight: 550; margin-top: 0; }
+    p { max-width: 76ch; }
+    .muted { color: #aeb6b9; font-size: .9rem; }
+    .panel { border: 1px solid #42494c; background: #202528; border-radius: 8px; padding: 22px; margin-bottom: 20px; }
+    .fields { display: grid; gap: 14px; max-width: 720px; }
+    label { display: block; }
+    input[type=checkbox] { margin: 0 9px 0 0; width: 17px; height: 17px; vertical-align: -3px; }
+    select, textarea, button { font: inherit; }
+    select, textarea { display: block; width: 100%; background: #14191b; color: inherit; border: 1px solid #697377; padding: 10px; border-radius: 4px; }
+    textarea { min-height: 140px; resize: vertical; }
+    button { cursor: pointer; background: #d1dacd; color: #182019; border: 0; border-radius: 4px; padding: 11px 18px; }
+    button:disabled { opacity: .55; cursor: wait; }
+    button.secondary { background: #343d41; color: #eef0e9; border: 1px solid #697377; }
+    :focus-visible { outline: 3px solid #d9c381; outline-offset: 3px; }
+    .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
+    iframe { display: block; width: 100%; height: 68vh; min-height: 420px; background: #050606; border: 1px solid #42494c; border-radius: 6px; }
+    #status { min-height: 24px; color: #efd698; }
+    details { margin-top: 22px; }
+    summary { cursor: pointer; color: #aeb6b9; }
+    [hidden] { display: none !important; }
+    @media (max-width: 650px) { main { padding: 14px; } header { display: block; } iframe { min-height: 340px; } }
+  </style>
+</head>
+<body>
+<main>
+  <header><h1>Hall encounter study</h1><span class="muted">Local prototype check</span></header>
+  <section id="panel" class="panel" aria-live="polite"></section>
+  <p id="status" role="status"></p>
+  <iframe id="game" title="Game" allow="autoplay; fullscreen" src="./index.html?nomic=1"></iframe>
+  <details id="facilitator"><summary>Facilitator controls</summary>
+    <p class="muted">Responses stay in this browser. Exporting creates a local JSON file; this page sends no study data anywhere.</p>
+    <div class="actions"><button id="export" class="secondary" type="button">Export local JSON</button>
+      <button id="next" class="secondary" type="button" hidden>Next participant</button></div>
+  </details>
+</main>
+<script type="module">
+  import { HALL_STUDY, HALL_STUDY_QUESTIONS, reserveHallStudyParticipant, startHallStudyTrial,
+    interruptHallStudyTrial, finishHallStudyTrial, answerHallStudyQuestion,
+    nextHallStudyParticipant, readHallStudyStorage, exportHallStudy } from './src/game/apparition-applause-study.js';
+
+  const panel = document.querySelector('#panel'), frame = document.querySelector('#game');
+  const status = document.querySelector('#status'), next = document.querySelector('#next');
+  let raw = null, state = null, busy = false;
+  const now = () => Date.now();
+  const notify = (text = '') => { status.textContent = text; };
+  const make = (tag, text, attributes = {}) => {
+    const node = document.createElement(tag);
+    if (text != null) node.textContent = text;
+    for (const [name, value] of Object.entries(attributes)) node.setAttribute(name, value);
+    return node;
+  };
+  const persist = (candidate) => {
+    const serialized = JSON.stringify(candidate);
+    localStorage.setItem(HALL_STUDY.storageKey, serialized);
+    raw = serialized; state = candidate;
+  };
+  const probe = () => frame.contentWindow?.__probe;
+  const random = () => crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296;
+  const showFailure = (error) => notify(String(error?.message || error));
+  // Full frame traces can exceed localStorage's small quota after a few people.
+  // Keep them losslessly in local IndexedDB; the assignment/answer lock remains
+  // a small synchronous receipt, and JSON export restores every stored trace.
+  let traceDatabase;
+  function openTraceDatabase() {
+    traceDatabase ||= new Promise((resolve, reject) => {
+      const request = indexedDB.open('chunk-surfer-hall-study-traces-v1', 1);
+      request.onupgradeneeded = () => request.result.createObjectStore('traces');
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error || new Error('Local trace storage is unavailable.'));
+    });
+    return traceDatabase;
+  }
+  async function storeTrace(key, trace) {
+    const database = await openTraceDatabase();
+    await new Promise((resolve, reject) => {
+      const transaction = database.transaction('traces', 'readwrite');
+      transaction.objectStore('traces').put(trace, key);
+      transaction.oncomplete = resolve;
+      transaction.onerror = transaction.onabort = () => reject(transaction.error || new Error('Local trace could not be saved.'));
+    });
+  }
+  async function readTrace(key) {
+    const database = await openTraceDatabase();
+    return new Promise((resolve, reject) => {
+      const request = database.transaction('traces', 'readonly').objectStore('traces').get(key);
+      request.onsuccess = () => resolve(request.result ?? { unavailable: true, localTraceKey: key });
+      request.onerror = () => reject(request.error || new Error('Local trace could not be read.'));
+    });
+  }
+
+  try {
+    raw = localStorage.getItem(HALL_STUDY.storageKey);
+    const loaded = readHallStudyStorage(raw, { nowMs: now() });
+    if (!loaded.ok) throw new Error(loaded.error);
+    persist(loaded.state);
+  } catch (error) { showFailure(error); }
+
+  function intro() {
+    panel.append(make('h2', 'Before you begin'));
+    panel.append(make('p', 'In the game below, complete any opening notices yourself. Set a comfortable listening volume, then return to this panel.'));
+    panel.append(make('p', 'Please do not include names or identifying details in your answers.', { class: 'muted' }));
+    const form = make('form'), fields = make('div', null, { class: 'fields' });
+    const fresh = make('input', null, { type: 'checkbox', required: '', name: 'fresh' });
+    const freshLabel = make('label'); freshLabel.append(fresh, document.createTextNode('I have not played or watched this encounter before.'));
+    const deviceLabel = make('label', 'Playback device');
+    const device = make('select', null, { required: '', name: 'device', 'aria-label': 'Playback device' });
+    device.append(make('option', 'Choose a device', { value: '' }), make('option', 'Headphones', { value: 'headphones' }), make('option', 'Speakers', { value: 'speakers' }));
+    deviceLabel.append(device);
+    const volume = make('input', null, { type: 'checkbox', required: '', name: 'volume' });
+    const volumeLabel = make('label'); volumeLabel.append(volume, document.createTextNode('The listening volume is comfortable.'));
+    fields.append(freshLabel, deviceLabel, volumeLabel);
+    const actions = make('div', null, { class: 'actions' }), begin = make('button', 'Begin', { type: 'submit' });
+    actions.append(begin); form.append(fields, actions); panel.append(form);
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault(); if (busy || !form.reportValidity()) return;
+      const game = probe();
+      if (typeof game?.apparitionApplauseStudyStart !== 'function') {
+        notify('Complete the opening screens in the game below, then choose Begin.'); return;
+      }
+      busy = true; begin.disabled = true; notify('Preparing the encounter…');
+      try {
+        persist(reserveHallStudyParticipant(state, { participantId: `hall-${crypto.randomUUID()}`,
+          freshParticipant: fresh.checked, device: device.value, comfortableVolume: volume.checked, nowMs: now(), random }));
+        const trial = state.current;
+        const configuration = await game.apparitionApplauseStudyStart({ condition: trial.condition,
+          seed: trial.visualSeed, participantId: trial.participantId });
+        persist(startHallStudyTrial(state, { configuration, nowMs: now() }));
+        notify(''); render(); frame.focus(); frame.contentWindow?.focus();
+      } catch (error) {
+        if (state?.current?.phase === 'reserved') {
+          persist(interruptHallStudyTrial(state, { reason: 'startup-incomplete', nowMs: now() }));
+          try { game.apparitionApplauseStudyFinish?.(); } catch (_) {}
+        }
+        showFailure(error); render();
+      } finally { busy = false; begin.disabled = false; }
+    });
+  }
+
+  function playing(trial) {
+    const interrupted = trial.phase === 'interrupted';
+    panel.append(make('h2', interrupted ? 'Encounter interrupted' : 'Explore the hall'));
+    panel.append(make('p', interrupted
+      ? 'This exposure cannot be restarted. Continue with what you experienced; an incomplete encounter is a valid response.'
+      : 'Explore freely using the normal game controls. When you are ready, return here and choose End encounter.'));
+    const end = make('button', interrupted ? 'Continue to questions' : 'End encounter', { type: 'button' });
+    panel.append(end);
+    end.addEventListener('click', async () => {
+      if (busy) return; busy = true; end.disabled = true;
+      let trace = null;
+      try { trace = await probe()?.apparitionApplauseStudyFinish?.(); }
+      catch (error) { trace = { captureError: String(error?.message || error) }; }
+      try {
+        const key = `trace:${state.current.participantId}`;
+        await storeTrace(key, trace);
+        persist(finishHallStudyTrial(state, { trace: { localTraceKey: key }, nowMs: now() }));
+        notify(''); render();
+      }
+      catch (error) { showFailure(error); }
+      finally { busy = false; end.disabled = false; }
+    });
+  }
+
+  function question(trial) {
+    const item = HALL_STUDY_QUESTIONS[trial.questionIndex];
+    panel.append(make('h2', item.label));
+    panel.append(make('p', 'Your answer is locked when you continue. There is no preferred answer.', { class: 'muted' }));
+    if (item.hint) panel.append(make('p', item.hint));
+    const form = make('form');
+    const answer = item.type === 'text'
+      ? make('textarea', null, { required: '', maxlength: '10000', 'aria-label': item.label })
+      : make('select', null, { required: '', 'aria-label': item.label });
+    if (item.type !== 'text') {
+      answer.append(make('option', 'Choose a response', { value: '' }));
+      for (const entry of item.choices) answer.append(make('option', entry.label, { value: entry.value }));
+    }
+    const actions = make('div', null, { class: 'actions' }); actions.append(make('button', 'Lock answer and continue', { type: 'submit' }));
+    form.append(answer, actions); panel.append(form); answer.focus();
+    form.addEventListener('submit', (event) => {
+      event.preventDefault(); if (!form.reportValidity()) return;
+      try { persist(answerHallStudyQuestion(state, { questionId: item.id, value: answer.value, nowMs: now() })); notify(''); render(); }
+      catch (error) { showFailure(error); }
+    });
+  }
+
+  function render() {
+    panel.replaceChildren(); next.hidden = state?.current?.phase !== 'complete';
+    const trial = state?.current;
+    frame.hidden = ['questions', 'complete'].includes(trial?.phase);
+    if (!state) {
+      panel.append(make('h2', 'Study unavailable'), make('p', 'Local storage needs facilitator review before another exposure. Existing data has not been replaced.'));
+    } else if (!trial) intro();
+    else if (trial.phase === 'reserved') panel.append(make('p', 'Preparing the encounter…'));
+    else if (['playing', 'interrupted'].includes(trial.phase)) playing(trial);
+    else if (trial.phase === 'questions') question(trial);
+    else panel.append(make('h2', 'Response saved'), make('p', 'Your response is stored locally. Please hand the device back to the facilitator.'));
+  }
+
+  next.addEventListener('click', () => {
+    try {
+      persist(nextHallStudyParticipant(state)); notify(''); render();
+      frame.src = new URL('./index.html?nomic=1', location.href).href;
+    } catch (error) { showFailure(error); }
+  });
+  document.querySelector('#export').addEventListener('click', async () => {
+    try {
+      const payload = state ? exportHallStudy(state, { nowMs: now() }) : { format: 'hall-encounter-study-recovery', raw };
+      await Promise.all((payload.trials || []).map(async (trial) => {
+        if (trial.trace?.localTraceKey) trial.trace = await readTrace(trial.trace.localTraceKey);
+      }));
+      const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
+      const link = make('a', null, { href: url, download: `hall-encounter-study-${new Date().toISOString().slice(0, 10)}.json` });
+      link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (error) { showFailure(error); }
+  });
+  function interrupt(reason) {
+    if (!['reserved', 'playing'].includes(state?.current?.phase)) return;
+    try {
+      probe()?.apparitionApplauseStudyFinish?.();
+      persist(interruptHallStudyTrial(state, { reason, nowMs: now() }));
+    } catch (_) {}
+  }
+  frame.addEventListener('load', () => {
+    if (['reserved', 'playing'].includes(state?.current?.phase)) { interrupt('game-reloaded'); render(); }
+  });
+  window.addEventListener('pagehide', () => interrupt('study-page-left'));
+  render();
+</script>
+</body>
+</html>

@@ -9,6 +9,8 @@ import { drawRecorderReadoutCanvas } from './recorder-instrument.js';
 import { applyWitnessModelAppearance } from './witness-model.js';
 import { workbenchCatalog, workbenchFocusKey, workbenchTargetMetadata, WORKBENCH_TRAYS } from '../data/workbench-catalog.js';
 import { FLASHLIGHT_HOUSING_COLORS } from '../game/field-kit.js';
+import { ensureWorldLetteringFonts } from './world-lettering-fonts.js';
+import { fitWorldLetteringLine } from './world-lettering-layout.js';
 
 export function vanWorkbenchModelIds(kit = {}) {
   return { case: 'field-case', headphones: `headphones-${kit.headphones || 'reference'}`,
@@ -85,7 +87,9 @@ export function createVanWorkbenchStage() {
       for (const side of [-1, 1]) mesh(new THREE.BoxGeometry(.035, .05, tray.d), paint, [tray.x + side * tray.w / 2, .007, tray.z]);
       const name = texture(512, 64, ctx => {
         ctx.fillStyle = '#d2c4a0'; ctx.fillRect(0, 0, 512, 64); ctx.fillStyle = '#27352c';
-        ctx.font = 'bold 30px Arial'; ctx.textAlign = 'center'; ctx.fillText(tray.label, 256, 44, 476);
+        const ink = fitWorldLetteringLine(ctx, tray.label, { width: 476, height: 48, maxFont: 30, role: 'sansBold' });
+        if (!ink.fits) throw new Error(`Workbench tray label does not fit: ${tray.label}`);
+        ctx.fillText(ink.text, (512 - ink.width) / 2 + ink.left, 44);
       });
       mesh(new THREE.PlaneGeometry(tray.w - .12, .24), mat({ map: name, roughness: .86 }), [tray.x, .018, tray.z + tray.d / 2 - .17], [-Math.PI / 2, 0, 0]);
     }
@@ -97,6 +101,7 @@ export function createVanWorkbenchStage() {
   async function init() {
     if (initializing || disposed || typeof document === 'undefined') return initializing;
     initializing = (async () => {
+      await ensureWorldLetteringFonts({ assetUrl });
       THREE = await import('three'); const { GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js');
       const { RoomEnvironment } = await import('three/addons/environments/RoomEnvironment.js');
       if (disposed) return;
@@ -236,13 +241,19 @@ export function createVanWorkbenchStage() {
     const map = texture(512, 512, (ctx, w, h) => {
       ctx.fillStyle = '#d6ccb3'; ctx.fillRect(0, 0, w, h);
       ctx.strokeStyle = '#756f5b'; ctx.lineWidth = 2; ctx.strokeRect(26, 28, w - 52, h - 56);
-      ctx.fillStyle = '#29362f'; ctx.font = 'bold 31px Arial'; ctx.fillText('AUDIOCORP', 48, 91);
-      ctx.font = '23px Arial'; ctx.fillText('NIGHT SHIFT ORDER', 48, 136);
-      ctx.fillRect(48, 159, 410, 2); ctx.font = 'bold 38px Arial';
+      ctx.fillStyle = '#29362f';
+      const ink = (text, y, maxFont, role = 'sans') => {
+        const line = fitWorldLetteringLine(ctx, text, { width: 410, height: 48, maxFont, role });
+        if (!line.fits) throw new Error(`Workbench order text does not fit: ${text}`);
+        ctx.fillText(line.text, 48 + line.left, y);
+      };
+      ink('AUDIOCORP', 91, 31, 'sansBold');
+      ink('NIGHT SHIFT ORDER', 136, 23);
+      ctx.fillRect(48, 159, 410, 2);
       const label = state.difficultyConfirmed ? state.difficultyLabel : 'CHOOSE SHIFT';
-      ctx.fillText(label || 'CONTRACT', 48, 247, 410);
-      ctx.font = '20px Arial'; ctx.fillText('FIELD OPERATOR / 01', 48, 316);
-      ctx.fillText(state.difficultyConfirmed ? 'SIGNED · REVISE IF NEEDED' : 'SIGN BEFORE DEPARTURE', 48, 405, 410);
+      ink(label || 'CONTRACT', 247, 38, 'sansBold');
+      ink('FIELD OPERATOR / 01', 316, 20);
+      ink(state.difficultyConfirmed ? 'SIGNED · REVISE IF NEEDED' : 'SIGN BEFORE DEPARTURE', 405, 20);
       ctx.strokeStyle = '#6e7866'; ctx.beginPath(); ctx.moveTo(48, 376); ctx.lineTo(454, 376); ctx.stroke();
     });
     paper.material.map = map; paper.material.needsUpdate = true;

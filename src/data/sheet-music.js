@@ -51,10 +51,19 @@ const motif = (notes, beats = null) => Object.freeze({
   beats: Object.freeze(notes.map((_, i) => (beats ? beats[i] : 1))),
 });
 
+// WHERE THEY LIE. `at` is an AUTHORED cell (the metres the plan is drawn in),
+// converted with FP.toRuntimePoint exactly as a page's is. These used to be
+// read as runtime cells, which put three of the five in the dance wing, one on
+// the dock and the chapel's inside solid rock; test/composure-pool.spec.mjs now
+// checks each one lands in the room it names. `host` is a prop the sheet is
+// clipped to instead of lying loose: it is taken by inspecting that prop.
 export const SHEET_MUSIC = Object.freeze([
   Object.freeze({
     id: 'sheet-goldberg-aria',
-    at: { x: 63, y: 15 }, room: 'main_b3',
+    // Clipped to the folded music stand in B3's corner — the sheet the
+    // first-take tree describes, and the one its "take it" puts in the bag.
+    // `hostMesh` is what is drawn on the stand until then.
+    at: { x: 6.5, y: 18 }, room: 'main_b3', host: 'b3-music-stand', hostMesh: 'music_stand_folded_sheet',
     composer: 'J. S. BACH', title: 'ARIA', work: 'GOLDBERG VARIATIONS BWV 988',
     audio: 'sheet-goldberg-aria', performer: 'KIMIKO ISHIZAKA',
     licence: 'CC0 — OPEN GOLDBERG', attribution: null,
@@ -68,7 +77,7 @@ export const SHEET_MUSIC = Object.freeze([
   }),
   Object.freeze({
     id: 'sheet-lamento-ninfa',
-    at: { x: 88, y: 27 }, room: 'the_tub',
+    at: { x: 92, y: 30 }, room: 'the_tub',
     composer: 'C. MONTEVERDI', title: 'LAMENTO DELLA NINFA', work: 'MADRIGALS BOOK VIII, 1638',
     audio: 'sheet-lamento-ninfa', performer: null,
     licence: 'CC BY 2.5',
@@ -82,7 +91,7 @@ export const SHEET_MUSIC = Object.freeze([
   }),
   Object.freeze({
     id: 'sheet-flow-my-tears',
-    at: { x: 71, y: 25 }, room: 'amplifications',
+    at: { x: 100, y: 9.5 }, room: 'amplifications',
     composer: 'J. DOWLAND', title: 'FLOW, MY TEARS', work: 'THE SECOND BOOKE OF SONGS, 1600',
     audio: 'sheet-flow-my-tears', performer: 'SOPRANO AND LUTE',
     licence: 'CC BY 2.5',
@@ -97,7 +106,7 @@ export const SHEET_MUSIC = Object.freeze([
   }),
   Object.freeze({
     id: 'sheet-couperin-clavecin',
-    at: { x: 95, y: 71 }, room: 'lux_nova',
+    at: { x: 92.5, y: 84 }, room: 'lux_nova',
     composer: 'F. COUPERIN', title: "L'ART DE TOUCHER LE CLAVECIN", work: '1716',
     audio: 'sheet-couperin-clavecin', performer: 'DAVID JOSEPH',
     licence: 'CC0', attribution: null,
@@ -111,7 +120,7 @@ export const SHEET_MUSIC = Object.freeze([
   }),
   Object.freeze({
     id: 'sheet-gymnopedie',
-    at: { x: 106, y: 18 }, room: 'soundnoisemusic',
+    at: { x: 56, y: 76 }, room: 'soundnoisemusic',
     composer: 'E. SATIE', title: 'GYMNOPEDIE NO. 1', work: '1888',
     audio: 'sheet-gymnopedie', performer: 'MICHAEL LAUCKE, GUITAR',
     licence: 'PUBLIC DOMAIN', attribution: null,

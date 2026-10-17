@@ -2,8 +2,8 @@ use serde::{Deserialize, Serialize};
 use std::sync::{Mutex, OnceLock};
 use std::time::{Duration, Instant};
 use tauri::{
-    AppHandle, LogicalSize, Manager, PhysicalPosition, PhysicalRect, PhysicalSize, WebviewWindow,
-    WindowEvent,
+    AppHandle, Emitter, LogicalSize, Manager, PhysicalPosition, PhysicalRect, PhysicalSize,
+    WebviewWindow, WindowEvent,
 };
 
 const FIREBALL_LABELS: [&str; 4] = [
@@ -947,13 +947,7 @@ fn hide_media(app: &AppHandle) -> bool {
 // them out of the user's next application without changing visibility.
 #[tauri::command]
 pub fn chunk_window_surfaces_sync_app_activation(app: AppHandle) -> bool {
-    let focused = std::iter::once("main")
-        .chain(FIREBALL_LABELS)
-        .chain(MEDIA_LABELS)
-        .any(|label| {
-            app.get_webview_window(label)
-                .is_some_and(|window| window.is_focused().unwrap_or(false))
-        });
+    let focused = game_owns_keyboard(&app);
     for label in FIREBALL_LABELS.iter().chain(MEDIA_LABELS.iter()) {
         if let Some(window) = app.get_webview_window(label) {
             if window.is_visible().unwrap_or(false) {
@@ -964,19 +958,23 @@ pub fn chunk_window_surfaces_sync_app_activation(app: AppHandle) -> bool {
     focused
 }
 
+fn game_owns_keyboard(app: &AppHandle) -> bool {
+    std::iter::once("main")
+        .chain(FIREBALL_LABELS)
+        .chain(MEDIA_LABELS)
+        .any(|label| {
+            app.get_webview_window(label)
+                .is_some_and(|window| window.is_focused().unwrap_or(false))
+        })
+}
+
 fn allowed(label: &str, index: u8, count: u8) -> bool {
     count > 0 && count <= 4 && index < count && FIREBALL_LABELS.get(index as usize) == Some(&label)
 }
 
 fn logical_size(_index: u8) -> f64 {
-    128.0
+    240.0
 }
-
-// How much closer it gets, and the hard ceiling on that. A comet ends its
-// flight a little over twice the size it left at -- enough to read as bearing
-// down, nowhere near enough to be furniture.
-const APPROACH_GROWTH: f64 = 1.25;
-const APPROACH_MAX_LOGICAL: f64 = 160.0;
 
 fn contains(rect: &PhysicalRect<i32, u32>, x: f64, y: f64) -> bool {
     x >= rect.position.x as f64
@@ -1004,162 +1002,221 @@ fn clamped_square(
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[allow(dead_code)] // Legacy pose fields remain accepted; only the webview animates them.
 pub struct CastStep {
     label: String,
     index: u8,
     count: u8,
     ray: FireballRay,
     #[serde(default)]
+    seed: u32,
+    #[serde(default)]
     progress: f64,
+    #[serde(default)]
+    dodge: Option<f64>,
+    #[serde(default, alias = "formation_progress")]
+    formation_progress: Option<f64>,
 }
 
-// WHAT THE SHOAL IS DOING THIS FRAME.
-//
-// Every number is decided on the game side -- see fireball-choreography.js --
-// because the escalation belongs to the fight, not to the compositor. What
-// happens in here is only the geometry the game cannot do: where the authored
-// formation belongs on the desktop. The cursor is deliberately not sampled.
+// Retain the older command envelope while pose animation moves entirely into
+// the fixed input carrier's webview. Native geometry does not consume it.
 #[derive(Debug, Clone, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
 pub struct Choreography {
-    // Break strength this frame, already eased and already zero during a
-    // settle. One number, so a settled shoal costs nothing to draw.
     #[serde(default)]
     dodge: f64,
-    // How far they will go, as a multiple of a surface's own width.
     #[serde(default)]
     reach: f64,
-    // 1 is one body moving; 0 is four windows each looking after itself.
     #[serde(default)]
     cohesion: f64,
     #[serde(default)]
     gesture: String,
-    #[serde(default)]
+    #[serde(default, alias = "formation_progress")]
     formation_progress: f64,
 }
 
-// ONE CALL PER FRAME FOR THE WHOLE CAST, NOT ONE PER SURFACE.
-//
-// The comet is meant to cross the desktop, and a window only crosses anything
-// if something moves it. The frame clock lives on the game side -- it is the
-// same clock the player can pause, and the same one that decides the comet has
-// landed -- so the movement is driven from there rather than by a timer in here
-// that would keep flying through authored dialogue. Batched because four
-// surfaces at sixty frames a second is otherwise four times the IPC for one
-// event that is always about all of them at once.
+const CARRIER_GAP_LOGICAL: f64 = 16.0;
+
+// The visible tile moves inside this fixed transparent input carrier. Previous
+// target positions remain game-owned, so a near miss cannot reach the desktop
+// while the visible fireball still has room to feint and commit elsewhere.
+fn peripheral_carrier_slot(
+    client: &PhysicalRect<i32, u32>,
+    work: &PhysicalRect<i32, u32>,
+    scale: f64,
+    index: u8,
+    count: u8,
+    seed: u32,
+) -> Option<PhysicalPosition<i32>> {
+    if count == 0 || count > 4 || index >= count || !scale.is_finite() || scale <= 0.0 {
+        return None;
+    }
+    let side = (logical_size(index) * scale).round();
+    let gap = (CARRIER_GAP_LOGICAL * scale).round();
+    let left = work.position.x as f64;
+    let top = work.position.y as f64;
+    let right = left + work.size.width as f64;
+    let bottom = top + work.size.height as f64;
+    if side > work.size.width as f64 || side > work.size.height as f64 {
+        return None;
+    }
+    let client_left = client.position.x as f64;
+    let client_right = client_left + client.size.width as f64;
+    let outside_left = client_left - gap - side;
+    let outside_right = client_right + gap;
+    let mut left_column = if outside_left >= left && outside_left + side <= right {
+        outside_left
+    } else {
+        client_left + gap
+    }
+    .clamp(left, right - side);
+    let mut right_column = if outside_right >= left && outside_right + side <= right {
+        outside_right
+    } else {
+        client_right - gap - side
+    }
+    .clamp(left, right - side);
+    let variation = if seed == 0 {
+        0.0
+    } else {
+        let mixed = seed.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
+        ((mixed >> 8) % 121) as f64 - 60.0
+    } * scale;
+    let anchor_y = client.position.y as f64 + client.size.height as f64 * 0.5 + variation;
+    let max_side_count = count.div_ceil(2) as f64;
+    let column_height = max_side_count * side + (max_side_count - 1.0) * gap;
+    if count > 1
+        && right_column - left_column < side + gap
+        && side * 2.0 + gap <= work.size.width as f64
+    {
+        // A mostly offscreen main window can collapse both preferred columns
+        // onto one edge. Recover the reserved pair as one formation.
+        let width = side * 2.0 + gap;
+        let pair_left =
+            (client_left + client.size.width as f64 * 0.5 - width * 0.5).clamp(left, right - width);
+        left_column = pair_left;
+        right_column = pair_left + side + gap;
+    }
+    if (count == 1 || right_column - left_column >= side + gap)
+        && column_height <= work.size.height as f64
+    {
+        // Original right/left membership and rank are immutable for this cast;
+        // arriving, caught, and absent siblings all keep their reserved slot.
+        let right_side = index % 2 == 0;
+        let side_count = if right_side {
+            count.div_ceil(2)
+        } else {
+            count / 2
+        } as f64;
+        let height = side_count * side + (side_count - 1.0) * gap;
+        let column_top = (anchor_y - height * 0.5).clamp(top, bottom - height);
+        return Some(PhysicalPosition::new(
+            if right_side {
+                right_column
+            } else {
+                left_column
+            }
+            .round() as i32,
+            (column_top + (index / 2) as f64 * (side + gap)).round() as i32,
+        ));
+    }
+    // A shallow or obstructed desktop uses a complete reserved row. If that
+    // cannot fit either, decline the native cast rather than overlap carriers.
+    let width = count as f64 * side + count.saturating_sub(1) as f64 * gap;
+    if width > work.size.width as f64 {
+        return None;
+    }
+    let anchor_x = client_left + client.size.width as f64 * 0.5;
+    let row_left = (anchor_x - width * 0.5).clamp(left, right - width);
+    let rank = if index % 2 == 0 {
+        count - 1 - index / 2
+    } else {
+        index / 2
+    };
+    Some(PhysicalPosition::new(
+        (row_left + rank as f64 * (side + gap)).round() as i32,
+        (anchor_y - side * 0.5).clamp(top, bottom - side).round() as i32,
+    ))
+}
+
+fn carrier_slot_for_cast(
+    client: &PhysicalRect<i32, u32>,
+    work: &PhysicalRect<i32, u32>,
+    scale: f64,
+    cast: &CastStep,
+) -> Option<PhysicalPosition<i32>> {
+    peripheral_carrier_slot(client, work, scale, cast.index, cast.count, cast.seed)
+}
+
+struct CarrierPlacement {
+    position: PhysicalPosition<i32>,
+    size: PhysicalSize<u32>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+struct CarrierPointer {
+    seed: u32,
+    index: u8,
+    x: f64,
+    y: f64,
+    active: bool,
+}
+
+fn carrier_pointer_sample(
+    placement: &CarrierPlacement,
+    cursor: PhysicalPosition<f64>,
+    seed: u32,
+    index: u8,
+    active: bool,
+) -> Option<CarrierPointer> {
+    let scale = placement.size.width as f64 / logical_size(index);
+    if scale <= 0.0 || !cursor.x.is_finite() || !cursor.y.is_finite() {
+        return None;
+    }
+    let x = (cursor.x - placement.position.x as f64) / scale;
+    let y = (cursor.y - placement.position.y as f64) / scale;
+    if !x.is_finite() || !y.is_finite() {
+        return None;
+    }
+    Some(CarrierPointer {
+        seed,
+        index,
+        x,
+        y,
+        active,
+    })
+}
+
+// One fixed native input carrier per original ray. All visible movement and
+// offer variation happen inside it; phase, pointer and live membership cannot
+// move the native window out from under a click.
 #[tauri::command]
 pub fn chunk_fireball_cast_step(
     app: AppHandle,
     casts: Vec<CastStep>,
-    #[allow(unused_mut)] mut choreography: Option<Choreography>,
+    #[allow(unused_variables)] choreography: Option<Choreography>,
 ) -> Result<u8, String> {
     if casts.len() > 4 {
         return Ok(0);
     }
-    let dance = choreography.take().unwrap_or_default();
-    // Where every surface would be if nothing were chasing it.
-    let mut bases = Vec::with_capacity(casts.len());
-    for cast in &casts {
-        match base_center(
-            &app,
-            &cast.label,
-            cast.index,
-            cast.count,
-            &cast.ray,
-            cast.progress,
-        ) {
-            Ok(Some(base)) => bases.push(Some(base)),
-            _ => bases.push(None),
-        }
-    }
-    let live: Vec<&BaseCenter> = bases.iter().flatten().collect();
-    if live.is_empty() {
-        return Ok(0);
-    }
-
-    // ONE BODY. The offset is computed from the formation's centre and applied
-    // to all of it, so they break together instead of each solving its own
-    // little problem -- which is the whole difference between a shoal and four
-    // windows being annoying in parallel.
-    let centre = (
-        live.iter().map(|base| base.center.0).sum::<f64>() / live.len() as f64,
-        live.iter().map(|base| base.center.1).sum::<f64>() / live.len() as f64,
-    );
-    let span = live
-        .iter()
-        .map(|base| base.side)
-        .fold(0.0_f64, f64::max)
-        .max(1.0);
-    let dodge = dance.dodge.clamp(0.0, 1.0);
-    let mut shared = (0.0_f64, 0.0_f64);
-    let mut fan = (0.0_f64, 0.0_f64);
-    if dodge > 0.001 {
-        // An authored tease, not a reaction to the player's hand. Each
-        // encounter has a stable bearing, the dodge envelope carries it out
-        // and back, and settled input is exactly zero.
-        let direction: (f64, f64) = match dance.gesture.as_str() {
-            "rise-drift" => (0.58, -0.82),
-            "seat-align" => (0.98, 0.18),
-            "retake-loop" => (-1.0, 0.0),
-            "orbit" => (0.68, 0.73),
-            "swarm-recombine" => (-0.72, 0.69),
-            _ => (0.8, -0.6),
-        };
-        let length = direction.0.hypot(direction.1).max(0.001_f64);
-        let reach = dance.reach.max(0.0) * span * dodge;
-        shared = (direction.0 / length * reach, direction.1 / length * reach);
-        // Perpendicular, so the outer panes fan without ever responding to the
-        // cursor. Higher-pressure formations hold together more tightly.
-        let loose = 1.0 - dance.cohesion.clamp(0.0, 1.0);
-        fan = (
-            -direction.1 / length * reach * loose * 0.55,
-            direction.0 / length * reach * loose * 0.55,
-        );
-    }
-
+    // One desktop sample serves the batch. The child also uses local pointer
+    // events to acquire immediately when the hand reaches its painted tile.
+    let cursor = app.cursor_position().ok();
+    let active = game_owns_keyboard(&app);
     let mut moved = 0u8;
-    let middle = (live.len() as f64 - 1.0) * 0.5;
-    let mut rank = 0.0_f64;
-    for (cast, base) in casts.iter().zip(bases.iter()) {
-        let Some(base) = base else { continue };
-        let offset = (rank - middle) * 1.0;
-        let p = dance.formation_progress.clamp(0.0, 1.0);
-        let formation = match dance.gesture.as_str() {
-            // Bodies reaching the surface: one legible upward drift which
-            // remains in place for the stationary catch.
-            "rise-drift" => (offset * span * 0.12 * p, -span * 0.52 * p),
-            // A row taking its seats. They finish level and evenly spaced.
-            "seat-align" => (
-                centre.0 + offset * span * 0.72 - base.center.0,
-                centre.1 - base.center.1,
-            ),
-            // One obsessive rewind loop, back on its mark at the count.
-            "retake-loop" => {
-                let looped = (p * std::f64::consts::PI).sin();
-                (-span * 0.44 * looped, offset * span * 0.14 * looped)
-            }
-            // One complete orbit before commitment; no motion during catch.
-            "orbit" => {
-                let angle = (offset / (live.len().max(1) as f64)) * std::f64::consts::TAU
-                    + p * std::f64::consts::TAU;
-                (angle.cos() * span * 0.42, angle.sin() * span * 0.42)
-            }
-            // Expand, exchange places, then recombine before commitment.
-            "swarm-recombine" => {
-                let spread = (p * std::f64::consts::PI).sin();
-                (
-                    offset * span * 0.58 * spread,
-                    (offset * 2.1).sin() * span * 0.34 * spread,
-                )
-            }
-            _ => (0.0, 0.0),
+    for cast in &casts {
+        let Ok(Some(placement)) = base_center(&app, cast) else {
+            continue;
         };
-        rank += 1.0;
-        let center = (
-            base.center.0 + formation.0 + shared.0 + fan.0 * offset,
-            base.center.1 + formation.1 + shared.1 + fan.1 * offset,
-        );
-        if apply_placement(&app, &cast.label, base, center).unwrap_or(false) {
+        if apply_placement(&app, &cast.label, &placement).unwrap_or(false) {
             moved = moved.saturating_add(1);
+            if let Some(pointer) = cursor.and_then(|cursor| {
+                carrier_pointer_sample(&placement, cursor, cast.seed, cast.index, active)
+            }) {
+                let _ = app.emit_to(&cast.label, "fireball-cast-pointer", pointer);
+            }
         }
     }
     Ok(moved)
@@ -1176,32 +1233,16 @@ pub fn chunk_fireball_cast_place(
     place_one(&app, &label, index, count, &ray, 0.0)
 }
 
-// Where a surface would be with nothing chasing it, kept separate from the act
-// of putting it there so the shoal can be moved as a group afterwards.
-struct BaseCenter {
-    center: (f64, f64),
-    side: f64,
-    work: PhysicalRect<i32, u32>,
-    scale: f64,
-}
-
-fn base_center(
-    app: &AppHandle,
-    label: &str,
-    index: u8,
-    count: u8,
-    ray: &FireballRay,
-    progress: f64,
-) -> Result<Option<BaseCenter>, String> {
-    let progress = if progress.is_finite() {
-        progress.clamp(0.0, 1.0)
-    } else {
-        0.0
-    };
-    if !allowed(label, index, count)
-        || ![ray.direction.x, ray.direction.y, ray.exit.x, ray.exit.y]
-            .iter()
-            .all(|v| v.is_finite())
+fn base_center(app: &AppHandle, cast: &CastStep) -> Result<Option<CarrierPlacement>, String> {
+    if !allowed(&cast.label, cast.index, cast.count)
+        || ![
+            cast.ray.direction.x,
+            cast.ray.direction.y,
+            cast.ray.exit.x,
+            cast.ray.exit.y,
+        ]
+        .iter()
+        .all(|value| value.is_finite())
     {
         return Ok(None);
     }
@@ -1209,120 +1250,113 @@ fn base_center(
     if main.is_fullscreen().unwrap_or(false) {
         return Ok(None);
     }
-    if app.get_webview_window(label).is_none() {
+    if app.get_webview_window(&cast.label).is_none() {
         return Ok(None);
     }
-    let position = main.outer_position().map_err(|e| e.to_string())?;
-    let size = main.outer_size().map_err(|e| e.to_string())?;
-    let logical = logical_size(index);
-    // ONE LINE, FROM THE STAGE TO THE DESKTOP, AND THEN BACK AT YOU.
-    //
-    // The stage the comet crosses is a band inside the combat panel, so leaving
-    // it is not yet leaving the window. Follow the same line from the stage exit
-    // out to the window's own edge -- and from there it is coming at the player:
-    // in toward the middle of the game window, growing the whole way until it
-    // covers it. Squared, because an object approaching at a constant speed does
-    // not grow at a constant rate; it hangs small and far off, and then it is on
-    // you.
-    let (w, h) = (size.width as f64, size.height as f64);
-    let anchor = (ray.exit.x * w, ray.exit.y * h);
-    let (mut dx, mut dy) = (ray.direction.x * w, ray.direction.y * h);
-    let length = dx.hypot(dy);
-    if length > f64::EPSILON {
-        dx /= length;
-        dy /= length;
-    } else {
-        dx = 1.0;
-        dy = 0.0;
-    }
-    let mut edge = f64::MAX;
-    if dx > 1e-6 {
-        edge = edge.min((w - anchor.0) / dx);
-    } else if dx < -1e-6 {
-        edge = edge.min(-anchor.0 / dx);
-    }
-    if dy > 1e-6 {
-        edge = edge.min((h - anchor.1) / dy);
-    } else if dy < -1e-6 {
-        edge = edge.min(-anchor.1 / dy);
-    }
-    if !edge.is_finite() || edge < 0.0 {
-        edge = 0.0;
-    }
-
-    let monitors = app.available_monitors().map_err(|e| e.to_string())?;
-    let origin = (position.x as f64 + anchor.0, position.y as f64 + anchor.1);
-    let near = (
-        origin.0 + dx * (edge + logical),
-        origin.1 + dy * (edge + logical),
+    let client = PhysicalRect {
+        position: main.inner_position().map_err(|error| error.to_string())?,
+        size: main.inner_size().map_err(|error| error.to_string())?,
+    };
+    let anchor = (
+        client.position.x as f64 + client.size.width as f64 * 0.5,
+        client.position.y as f64 + client.size.height as f64 * 0.5,
     );
-    let monitor = monitors
+    let monitors = app
+        .available_monitors()
+        .map_err(|error| error.to_string())?;
+    let Some(monitor) = monitors
         .iter()
-        .find(|monitor| contains(monitor.work_area(), near.0, near.1))
-        .or_else(|| {
-            monitors.iter().find(|monitor| {
-                contains(
-                    monitor.work_area(),
-                    position.x as f64 + w * 0.5,
-                    position.y as f64 + h * 0.5,
-                )
-            })
-        })
-        .ok_or_else(|| "monitor not found".to_string())?;
+        .find(|monitor| contains(monitor.work_area(), anchor.0, anchor.1))
+    else {
+        return Ok(None);
+    };
     let scale = monitor.scale_factor().max(0.1);
-    let clearance = logical * scale * 0.85;
-    let near = (
-        origin.0 + dx * (edge + clearance),
-        origin.1 + dy * (edge + clearance),
-    );
-    let looming = progress * progress;
-    let target = (position.x as f64 + w * 0.5, position.y as f64 + h * 0.5);
-    let center = (
-        near.0 + (target.0 - near.0) * looming,
-        near.1 + (target.1 - near.1) * looming,
-    );
-    // IT GETS BIGGER BECAUSE IT IS GETTING CLOSER. IT DOES NOT BECOME THE
-    // SCREEN.
-    //
-    // Growing this to the size of the game window took "engulf" literally and
-    // put a screen-sized always-on-top surface over everything, which is not a
-    // fireball arriving -- it is the desktop being replaced by one. Worse, it
-    // is an opaque click target the size of the display sitting between the
-    // player and their own game. The engulfing happens INSIDE the window, drawn
-    // by the renderer that owns that frame; what belongs out here is a comet
-    // that reads as close, and a comet is fist-sized.
-    let engulfed = (logical * APPROACH_GROWTH).min(APPROACH_MAX_LOGICAL);
-    let side = logical + (engulfed - logical).max(0.0) * looming;
-    Ok(Some(BaseCenter {
-        center,
-        side,
-        work: *monitor.work_area(),
-        scale,
-    }))
+    Ok(
+        carrier_slot_for_cast(&client, monitor.work_area(), scale, cast).map(|position| {
+            CarrierPlacement {
+                position,
+                size: PhysicalSize::new(
+                    (logical_size(cast.index) * scale).round() as u32,
+                    (logical_size(cast.index) * scale).round() as u32,
+                ),
+            }
+        }),
+    )
 }
 
 fn apply_placement(
     app: &AppHandle,
     label: &str,
-    base: &BaseCenter,
-    center: (f64, f64),
+    placement: &CarrierPlacement,
 ) -> Result<bool, String> {
     let surface = app
         .get_webview_window(label)
         .ok_or_else(|| "fireball surface not found".to_string())?;
-    let placed = clamped_square(center, base.side, &base.work, base.scale);
-    surface
-        .set_size(LogicalSize::new(base.side, base.side))
-        .map_err(|e| e.to_string())?;
-    surface.set_position(placed).map_err(|e| e.to_string())?;
-    let _ = surface.set_always_on_top(true);
-    // Click-through was why a fireball outside the frame could not be returned
-    // and why clicking one landed on the desktop behind it -- the game's own
-    // projectile handing the player's click to the Finder.
+    let main = main_window(app)?;
+    let owned_keyboard = game_owns_keyboard(app);
+    if surface.inner_size().ok() != Some(placement.size) {
+        surface
+            .set_size(placement.size)
+            .map_err(|error| error.to_string())?;
+    }
+    if surface.outer_position().ok() != Some(placement.position) {
+        surface
+            .set_position(placement.position)
+            .map_err(|error| error.to_string())?;
+    }
+    let _ = surface.set_always_on_top(owned_keyboard);
+    // The target receives clicks, but revealing or repositioning it must never
+    // make it key. Tauri's ordinary macOS show calls makeKeyAndOrderFront.
     let _ = surface.set_focusable(true);
     let _ = surface.set_ignore_cursor_events(false);
-    let _ = surface.show();
+    if !surface.is_visible().unwrap_or(false) {
+        show_cast_without_focus(&surface)?;
+        // Platforms using the generic reveal may focus the shown surface.
+        // Restore only focus that the game owned before this reveal.
+        if owned_keyboard && surface.is_focused().unwrap_or(false) {
+            let _ = main.set_focus();
+        }
+    }
     Ok(true)
+}
+
+#[cfg(target_os = "macos")]
+fn show_cast_without_focus(surface: &WebviewWindow) -> Result<(), String> {
+    let window = surface.clone();
+    surface
+        .run_on_main_thread(move || {
+            use std::ffi::{c_char, c_void};
+            #[link(name = "objc")]
+            extern "C" {
+                fn sel_registerName(name: *const c_char) -> *mut c_void;
+                fn objc_msgSend();
+            }
+            let Ok(handle) = window.ns_window() else {
+                return;
+            };
+            unsafe {
+                let order_front: unsafe extern "C" fn(*mut c_void, *mut c_void, *mut c_void) =
+                    std::mem::transmute(objc_msgSend as *const ());
+                order_front(
+                    handle,
+                    sel_registerName(b"orderFront:\0".as_ptr().cast()),
+                    std::ptr::null_mut(),
+                );
+            }
+        })
+        .map_err(|error| error.to_string())
+}
+
+#[cfg(not(target_os = "macos"))]
+fn show_cast_without_focus(surface: &WebviewWindow) -> Result<(), String> {
+    surface
+        .set_focusable(false)
+        .map_err(|error| error.to_string())?;
+    let shown = surface.show().map_err(|error| error.to_string());
+    let focusable = surface
+        .set_focusable(true)
+        .map_err(|error| error.to_string());
+    shown.and(focusable)
 }
 
 fn place_one(
@@ -1333,9 +1367,21 @@ fn place_one(
     ray: &FireballRay,
     progress: f64,
 ) -> Result<bool, String> {
-    if crate::source_desktop::active() { return Ok(false); }
-    match base_center(app, label, index, count, ray, progress)? {
-        Some(base) => apply_placement(app, label, &base, base.center),
+    if crate::source_desktop::active() {
+        return Ok(false);
+    }
+    let cast = CastStep {
+        label: label.into(),
+        index,
+        count,
+        ray: ray.clone(),
+        seed: 0,
+        progress,
+        dodge: None,
+        formation_progress: None,
+    };
+    match base_center(app, &cast)? {
+        Some(placement) => apply_placement(app, label, &placement),
         None => Ok(false),
     }
 }
@@ -1376,7 +1422,11 @@ pub fn restore_on_exit(app: &AppHandle) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{allowed, clamped_square, eased, logical_size, valid_media_label};
+    use super::{
+        allowed, carrier_pointer_sample, carrier_slot_for_cast, clamped_square, eased, logical_size,
+        peripheral_carrier_slot, valid_media_label, CarrierPlacement, CastStep, Choreography,
+        FireballRay, RayPoint,
+    };
     use tauri::{PhysicalPosition, PhysicalRect, PhysicalSize};
 
     #[test]
@@ -1396,129 +1446,244 @@ mod tests {
         assert!(!valid_media_label("window-media-8", 6));
     }
 
-    // The comet leaves the STAGE inside the window and the WINDOW after that,
-    // and only then turns and comes back at the player. A surface placed at the
-    // stage exit would sit on top of the game it just left.
     #[test]
-    fn the_approach_starts_outside_the_bezel_and_ends_as_a_clickable_target() {
-        let (w, h) = (1000.0_f64, 800.0_f64);
-        let (pos_x, pos_y) = (120.0_f64, 60.0_f64);
-        let anchor = (0.95 * w, 0.5 * h);
-        let (mut dx, mut dy) = (0.94_f64, -0.34_f64);
-        let length = dx.hypot(dy);
-        dx /= length;
-        dy /= length;
-        let mut edge = f64::MAX;
-        if dx > 1e-6 {
-            edge = edge.min((w - anchor.0) / dx);
+    fn native_pointer_samples_convert_desktop_coordinates_to_carrier_css_pixels() {
+        for scale in [1.0, 2.0] {
+            let placement = CarrierPlacement {
+                position: PhysicalPosition::new(-3000, -160),
+                size: PhysicalSize::new((240.0 * scale) as u32, (240.0 * scale) as u32),
+            };
+            let cursor = PhysicalPosition::new(-3000.0 + 123.5 * scale, -160.0 + 72.25 * scale);
+            let sample = carrier_pointer_sample(&placement, cursor, 0x12345678, 2, true).unwrap();
+            assert_eq!(sample.x, 123.5);
+            assert_eq!(sample.y, 72.25);
+            assert_eq!(sample.seed, 0x12345678);
+            assert_eq!(sample.index, 2);
+            assert!(sample.active);
         }
-        if dy < -1e-6 {
-            edge = edge.min(-anchor.1 / dy);
-        }
-        let logical = 128.0_f64;
-        let near = (
-            pos_x + anchor.0 + dx * (edge + logical * 0.85),
-            pos_y + anchor.1 + dy * (edge + logical * 0.85),
-        );
-        assert!(near.0 > pos_x + w, "it starts outside the window it left");
-
-        let target = (pos_x + w * 0.5, pos_y + h * 0.5);
-        let at = |p: f64| {
-            let l = p * p;
-            (
-                (
-                    near.0 + (target.0 - near.0) * l,
-                    near.1 + (target.1 - near.1) * l,
-                ),
-                logical + ((160.0) - logical) * l,
-            )
-        };
-        let (early, small) = at(0.25);
-        let (late, large) = at(1.0);
-        assert!(small < large, "and grows the whole way in");
-        assert!(
-            (late.0 - target.0).abs() < 0.5 && (late.1 - target.1).abs() < 0.5,
-            "ending on the window's centre"
-        );
-        assert_eq!(
-            large, 160.0,
-            "approach growth is capped at the authored click target"
-        );
-        // Squared easing: a quarter of the way through the flight it has not yet
-        // covered a quarter of the distance.
-        let span = (target.0 - near.0).abs();
-        assert!(
-            (early.0 - near.0).abs() < span * 0.25,
-            "hanging small and far off before it looms"
-        );
     }
 
     #[test]
-    fn the_ray_is_carried_to_the_window_edge_before_it_steps_outside() {
-        // A stage band exiting right at the middle of a 1000x800 window, on a
-        // line 20 degrees above horizontal.
-        let (w, h) = (1000.0_f64, 800.0_f64);
-        let anchor = (0.95 * w, 0.5 * h);
-        let (mut dx, mut dy) = (0.94_f64, -0.34_f64);
-        let length = dx.hypot(dy);
-        dx /= length;
-        dy /= length;
-        let mut edge = f64::MAX;
-        if dx > 1e-6 {
-            edge = edge.min((w - anchor.0) / dx);
-        }
-        if dy < -1e-6 {
-            edge = edge.min(-anchor.1 / dy);
-        }
-        assert!(edge > 0.0 && edge.is_finite());
-        let at = (anchor.0 + dx * edge, anchor.1 + dy * edge);
+    fn native_pointer_samples_keep_approach_distance_and_reject_invalid_coordinates() {
+        let placement = CarrierPlacement {
+            position: PhysicalPosition::new(-3000, -160),
+            size: PhysicalSize::new(480, 480),
+        };
+        let outside = carrier_pointer_sample(
+            &placement,
+            PhysicalPosition::new(-3050.0, 360.0),
+            77,
+            1,
+            false,
+        )
+        .unwrap();
+        assert_eq!((outside.x, outside.y), (-25.0, 260.0));
         assert!(
-            (at.0 - w).abs() < 0.5 || (at.1).abs() < 0.5,
-            "the line must land on a window edge"
+            !outside.active,
+            "a different application owning focus disables reaction"
         );
-        let step = edge + 160.0 * 0.85;
-        let outside = (anchor.0 + dx * step, anchor.1 + dy * step);
+        for cursor in [
+            PhysicalPosition::new(f64::NAN, 0.0),
+            PhysicalPosition::new(0.0, f64::INFINITY),
+        ] {
+            assert!(carrier_pointer_sample(&placement, cursor, 77, 1, true).is_none());
+        }
+        let invalid = CarrierPlacement {
+            position: placement.position,
+            size: PhysicalSize::new(0, 0),
+        };
         assert!(
-            outside.0 > w,
-            "and one surface further puts it past the bezel"
+            carrier_pointer_sample(&invalid, PhysicalPosition::new(0.0, 0.0), 77, 1, true)
+                .is_none()
         );
     }
 
-    // THEY MOVE AS ONE AUTHORED BODY, NEVER AS A REACTION TO THE HAND.
-    //
-    // The bearing belongs to the encounter and the same inputs always produce
-    // the same offset. The per-surface fan is scaled by the INVERSE of
-    // cohesion, so late in the night they hold formation instead of scattering.
+    fn cast_step(index: u8, count: u8) -> CastStep {
+        CastStep {
+            label: format!("fireball-cast-{}", index + 1),
+            index,
+            count,
+            seed: 0x12345678,
+            ray: FireballRay {
+                direction: RayPoint {
+                    x: if index % 2 == 0 { 1.0 } else { -1.0 },
+                    y: 0.0,
+                },
+                exit: RayPoint {
+                    x: if index % 2 == 0 { 1.0 } else { 0.0 },
+                    y: 0.5,
+                },
+            },
+            progress: 0.0,
+            dodge: Some(0.0),
+            formation_progress: Some(0.0),
+        }
+    }
+
+    fn rect(x: f64, y: f64, width: f64, height: f64, scale: f64) -> PhysicalRect<i32, u32> {
+        PhysicalRect {
+            position: PhysicalPosition::new((x * scale).round() as i32, (y * scale).round() as i32),
+            size: PhysicalSize::new(
+                (width * scale).round() as u32,
+                (height * scale).round() as u32,
+            ),
+        }
+    }
+
+    fn assert_carriers_fit(
+        client: &PhysicalRect<i32, u32>,
+        work: &PhysicalRect<i32, u32>,
+        scale: f64,
+        count: u8,
+    ) {
+        let side = (logical_size(0) * scale).round() as i32;
+        let positions: Vec<_> = (0..count)
+            .map(|index| peripheral_carrier_slot(client, work, scale, index, count, 1543).unwrap())
+            .collect();
+        for (index, position) in positions.iter().enumerate() {
+            assert!(position.x >= work.position.x && position.y >= work.position.y);
+            assert!(position.x + side <= work.position.x + work.size.width as i32);
+            assert!(position.y + side <= work.position.y + work.size.height as i32);
+            for other in positions.iter().skip(index + 1) {
+                assert!(
+                    position.x + side <= other.x
+                        || other.x + side <= position.x
+                        || position.y + side <= other.y
+                        || other.y + side <= position.y
+                );
+            }
+        }
+    }
+
     #[test]
-    fn the_shoal_breaks_together_on_an_authored_bearing() {
-        let span = 200.0_f64;
-        let shove = |direction: (f64, f64), dodge: f64, reach: f64| {
-            let length = direction.0.hypot(direction.1).max(0.001_f64);
-            let out = reach * span * dodge;
-            (direction.0 / length * out, direction.1 / length * out)
-        };
+    fn native_cast_accepts_seed_and_legacy_pose_without_using_it_for_placement() {
+        let cast: CastStep = serde_json::from_value(serde_json::json!({
+            "label": "fireball-cast-2", "index": 1, "count": 4, "seed": 4294967295u32,
+            "ray": { "direction": { "x": -1, "y": 0 }, "exit": { "x": 0, "y": 0.5 } },
+            "progress": 0.72, "formationProgress": 1, "dodge": 0
+        }))
+        .unwrap();
+        assert_eq!(cast.seed, u32::MAX);
+        assert_eq!(cast.formation_progress, Some(1.0));
+        let no_seed: CastStep = serde_json::from_value(serde_json::json!({
+            "label": "fireball-cast-1", "index": 0, "count": 1,
+            "ray": { "direction": { "x": 1, "y": 0 }, "exit": { "x": 1, "y": 0.5 } }
+        }))
+        .unwrap();
+        assert_eq!(no_seed.seed, 0);
+        let dance: Choreography =
+            serde_json::from_value(serde_json::json!({ "formationProgress": 0.65 })).unwrap();
+        assert_eq!(dance.formation_progress, 0.65);
+    }
 
-        let rise = shove((0.58, -0.82), 1.0, 0.9);
-        assert!(
-            rise.0 > 0.0 && rise.1 < 0.0,
-            "Natatorium rises on its fixed diagonal"
-        );
-        assert_eq!(rise, shove((0.58, -0.82), 1.0, 0.9), "it is deterministic");
-        assert_eq!(
-            shove((0.58, -0.82), 0.0, 0.9),
-            (0.0, 0.0),
-            "a settle is perfectly still"
-        );
-        assert!(
-            rise.0.hypot(rise.1) <= span,
-            "the tease stays within one pane width"
-        );
+    #[test]
+    fn carriers_are_separate_and_onscreen_at_all_counts_scales_and_negative_origins() {
+        for scale in [1.0, 1.25, 2.0] {
+            for origin in [0.0, -1920.0] {
+                let work = rect(origin, -120.0, 1920.0, 1080.0, scale);
+                for client_x in [origin - 400.0, origin + 320.0, origin + 1400.0] {
+                    let client = rect(client_x, 100.0, 960.0, 600.0, scale);
+                    for count in 1..=4 {
+                        assert_carriers_fit(&client, &work, scale, count);
+                    }
+                }
+            }
+        }
+    }
 
-        // Cohesion decides how much of the movement is the formation and how
-        // much is each surface fanning off it.
-        let loose_fan = 1.0 - 0.0_f64;
-        let tight_fan = 1.0 - 1.0_f64;
-        assert!(loose_fan > tight_fan, "the last fight holds formation");
+    #[test]
+    fn carriers_prefer_the_original_launch_side_outside_the_main_frame() {
+        let client = rect(320.0, 100.0, 960.0, 600.0, 1.0);
+        let work = rect(0.0, 24.0, 1920.0, 1080.0, 1.0);
+        for count in 1..=4 {
+            for index in 0..count {
+                let position =
+                    peripheral_carrier_slot(&client, &work, 1.0, index, count, 0).unwrap();
+                if index % 2 == 0 {
+                    assert_eq!(position.x, 1296);
+                } else {
+                    assert_eq!(position.x + 240, 304);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn unavailable_outer_space_uses_edge_hugging_carriers_away_from_the_command_deck() {
+        let client = rect(0.0, 24.0, 1280.0, 760.0, 1.0);
+        let work = rect(0.0, 24.0, 1280.0, 800.0, 1.0);
+        assert_carriers_fit(&client, &work, 1.0, 4);
+        for index in 0..4 {
+            let position = peripheral_carrier_slot(&client, &work, 1.0, index, 4, 0).unwrap();
+            if index % 2 == 0 {
+                assert_eq!(position.x + 240, 1264);
+                assert!(position.x > 800);
+            } else {
+                assert_eq!(position.x, 16);
+                assert!(position.x + 240 < 480);
+            }
+        }
+    }
+
+    #[test]
+    fn shallow_desktops_use_a_complete_reserved_row_and_impossible_layouts_are_declined() {
+        let client = rect(320.0, 0.0, 960.0, 300.0, 1.0);
+        let work = rect(0.0, 0.0, 1920.0, 320.0, 1.0);
+        assert_carriers_fit(&client, &work, 1.0, 4);
+        let positions: Vec<_> = (0..4)
+            .map(|index| peripheral_carrier_slot(&client, &work, 1.0, index, 4, 0).unwrap())
+            .collect();
+        assert!(positions
+            .iter()
+            .all(|position| position.y == positions[0].y));
+        let narrow = rect(0.0, 0.0, 500.0, 800.0, 1.0);
+        assert_carriers_fit(&client, &narrow, 1.0, 4);
+        let impossible = rect(0.0, 0.0, 500.0, 300.0, 1.0);
+        assert!(peripheral_carrier_slot(&client, &impossible, 1.0, 0, 4, 0).is_none());
+    }
+
+    #[test]
+    fn one_cast_keeps_its_carriers_while_visible_pose_and_sibling_membership_change() {
+        let client = rect(320.0, 100.0, 960.0, 600.0, 1.0);
+        let work = rect(0.0, 24.0, 1920.0, 1080.0, 1.0);
+        let casts: Vec<_> = (0..4).map(|index| cast_step(index, 4)).collect();
+        let original: Vec<_> = casts
+            .iter()
+            .map(|cast| carrier_slot_for_cast(&client, &work, 1.0, cast))
+            .collect();
+        for removed in 0..4 {
+            for cast in casts.iter().filter(|cast| cast.index != removed) {
+                for phase in [0.0, 0.4, 1.0, 0.4, 0.0] {
+                    let mut animated = cast.clone();
+                    animated.progress = phase;
+                    animated.dodge = Some(1.0 - phase);
+                    animated.formation_progress = Some(phase);
+                    assert_eq!(
+                        carrier_slot_for_cast(&client, &work, 1.0, &animated),
+                        original[cast.index as usize]
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn cast_seed_varies_peripheral_height_within_sixty_logical_pixels_and_is_repeatable() {
+        let client = rect(320.0, 100.0, 960.0, 600.0, 1.0);
+        let work = rect(0.0, 24.0, 1920.0, 1080.0, 1.0);
+        let baseline = peripheral_carrier_slot(&client, &work, 1.0, 0, 1, 0).unwrap();
+        let mut positions = std::collections::HashSet::new();
+        for seed in 1..=32 {
+            let position = peripheral_carrier_slot(&client, &work, 1.0, 0, 1, seed).unwrap();
+            assert_eq!(position.x, baseline.x);
+            assert!((position.y - baseline.y).abs() <= 60);
+            assert_eq!(
+                Some(position),
+                peripheral_carrier_slot(&client, &work, 1.0, 0, 1, seed)
+            );
+            positions.insert(position.y);
+        }
+        assert!(positions.len() > 8);
     }
 
     #[test]

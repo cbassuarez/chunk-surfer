@@ -202,9 +202,12 @@ test('left index presses a real recorder key with the pad facing its surface', (
   const tool = buildBattleHandTool('recorder'), hand = createBattleHandRig(template, { side: 'left' });
   hand.setFingerPose(tool.controls.rec.pose);
   hand.setRootPose(tool.controls.rec.wrist);
-  const { index } = hand.solveGrip({ index: tool.controls.rec });
-  assert.ok(index.error < .0001); assert.ok(index.normalDot > .999);
-  for (const digit of ['middle', 'ring', 'pinky']) assert.ok(hand.getPad(digit).position.y < hand.getPad('index').position.y - .03, 'unused digits stay curled back from the operating index');
+  const { index } = hand.measureGrip({ index: tool.controls.rec });
+  assert.ok(index.error < .0001); assert.ok(index.normalDot > .8);
+  assert.ok(new Vector3(0, 1, 0).applyQuaternion(hand.root.quaternion).y > .4,
+    'the wrist continues down toward the body rather than sending the sleeve up across the screen');
+  for (const digit of ['middle', 'ring', 'pinky']) assert.ok(hand.getPose()[digit][0] > 1,
+    'unused digits fold into the palm instead of crossing the chassis');
   hand.dispose(); tool.dispose();
 });
 

@@ -21,8 +21,9 @@ export function migrateFloorplanPosition(floorplan,data,saved){
   if(revision>=targetRevision)return finish({x:sx,y:sy},{migrated:false});
 
   const authored={x:floorplan.toAuthoredCoord(sx),y:floorplan.toAuthoredCoord(sy)};
-  const migration=(data.positionMigrations||[]).find(({bounds})=>
-    authored.x>=bounds.x0&&authored.x<=bounds.x1&&authored.y>=bounds.y0&&authored.y<=bounds.y1);
+  const migration=(data.positionMigrations||[]).find(({bounds,beforeRevision=targetRevision})=>
+    revision<beforeRevision&&authored.x>=bounds.x0&&authored.x<=bounds.x1
+      &&authored.y>=bounds.y0&&authored.y<=bounds.y1);
   if(migration){
     const anchor=floorplan.toRuntimePoint(migration.to);
     const safe=floorplan.isSolid(anchor.x,anchor.y)

@@ -45,6 +45,19 @@ test('one continuous tape strand covers the hall without floor-spanning geometry
   }
 });
 
+test('the roof guarantor is a complete living contractor installed in the ordinary prop pack', () => {
+  const body=towerPersonalGeometry().find(piece=>piece.name==='ending_roof_guarantor');
+  assert.ok(body.bounds.max[1]>1.7&&body.bounds.max[1]<1.9);
+  assert.ok(body.bounds.max[0]-body.bounds.min[0]>.7,'attached arms separate from the rounded torso');
+  for(const material of ['skin','hair','cloth','navy','black'])
+    assert.ok(body.groups.some(group=>group.material===material),`ordinary ${material} surface exists`);
+  const skin=body.groups.find(group=>group.material==='skin');
+  const hands=[];
+  for(let i=0;i<skin.positions.length;i+=3)if(skin.positions[i+1]<1)
+    hands.push(skin.positions[i]);
+  assert.ok(hands.some(x=>x<-.25)&&hands.some(x=>x>.25),'both complete hands belong to the body');
+});
+
 test('snow and ash are tiny physical double-sided facets', () => {
   for(const name of ['tower_personal_snowflake','tower_personal_ashflake']) {
     const p=towerPersonalGeometry().find(piece=>piece.name===name);
@@ -101,7 +114,7 @@ test('personal props install once into the shared pack with the normal instance 
   const names=installTowerPersonalMeshes(gl,pack),firstBuffers=buffers;
   assert.equal(names.length,towerPersonalGeometry().length);
   assert.equal(pack.catalog.size,names.length);
-  for(const name of ['tower_personal_boy_body','tower_personal_hand_support','tower_personal_hall_roof','tower_personal_portal_leaf'])assert.ok(pack.catalog.has(name));
+  for(const name of ['tower_personal_boy_body','tower_personal_hand_support','tower_personal_hall_roof','tower_personal_portal_leaf','ending_roof_guarantor'])assert.ok(pack.catalog.has(name));
   installTowerPersonalMeshes(gl,pack);
   assert.equal(buffers,firstBuffers);
   assert.ok(strides.includes(29*4));

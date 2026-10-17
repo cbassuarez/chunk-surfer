@@ -68,11 +68,18 @@ if (await top() === 'eula') {
 await wait(() => window.__scenes?.top?.()?.id === 'opening-credits');
 await page.evaluate(() => window.__scenes.top().update(30));
 await wait(() => window.__scenes?.top?.()?.id === 'title', 60000);
-await page.keyboard.press('Enter');
-await page.keyboard.press('Enter');
-await wait(() => window.__scenes?.top?.()?.id === 'difficulty-select', 60000);
-await page.keyboard.press('Enter');
-await wait(() => window.__scenes?.top?.()?.id === 'warning', 60000);
+for (let attempt = 0; attempt < 12 && await top() === 'title'; attempt++) {
+  await page.keyboard.press('Enter');
+  await sleep(450);
+}
+if (await top() === 'difficulty-select') {
+  await page.keyboard.press('Enter');
+  await wait(() => window.__scenes?.top?.()?.id === 'warning', 60000);
+} else if (await top() !== 'warning') {
+  const scene = await top();
+  await page.screenshot({ path: path.join(OUT, 'startup-failure.png') });
+  throw new Error(`Cannot reach warning from title (scene: ${scene})`);
+}
 await page.keyboard.press('Enter');
 await page.keyboard.press('n');
 await wait(() => window.__chunkParity?.().screen === 'game', 240000);
@@ -98,7 +105,9 @@ async function warp(location) {
     if (tower?.phase !== 'tower_active') throw new Error(`Could not establish live tower state for ${location.id}`);
     await sleep(500);
   }
-  const landed = location.door
+  const landed = location.hook
+    ? await page.evaluate((hook) => window.__probe.godWarpHook(hook), location.hook)
+    : location.door
     ? await page.evaluate((door) => window.__probe.godWarpDoor(door), location.door)
     : location.cell
       ? await page.evaluate(([x, y]) => window.__probe.warpCell(x, y), location.cell)
@@ -150,6 +159,7 @@ async function waitForSubmission(expected = {}, timeout = 16000) {
     if (!submitted) return false;
     if (match.active === false) return submitted.active === false;
     if (!submitted.active) return false;
+    if (match.lightingState && submitted.lightingState !== match.lightingState) return false;
     if (match.card && submitted.card !== match.card) return false;
     if (match.phase && submitted.cardPhase !== match.phase) return false;
     if (match.presentation && submitted.presentation !== match.presentation) return false;
@@ -170,33 +180,44 @@ async function aimAt(index = 1) {
 
 const results = [];
 async function capture(id, authored = {}, { submission = { active: true } } = {}) {
-  await waitForSubmission(submission, submission.active === false ? 6000 : 16000);
-  if (submission.active !== false) {
-    await wait(() => {
-      const gate = window.__probe.apparitionGate();
-      const light = gate?.candidates?.find((candidate) => candidate.id === gate?.submitted?.lightId);
-      return Number(light?.intensity) > .12;
-    }, 16000);
+  const png = path.join(OUT, `${id}.png`);
+  let snapshot = null;
+  for (let attempt = 0; attempt < 12; attempt++) {
+    await waitForSubmission(submission, submission.active === false ? 6000 : 16000);
+    if (submission.active !== false && !submission.lightingState) {
+      await wait(() => {
+        const gate = window.__probe.apparitionGate();
+        const light = gate?.candidates?.find((candidate) => candidate.id === gate?.submitted?.lightId);
+        return Number(light?.intensity) > .12;
+      }, 16000);
+    }
+    const candidate = await page.evaluate(() => ({
+      gate: window.__probe.apparitionGate(),
+      apparitions: window.__probe.apparitions(),
+      scene: window.__probe.sceneStats(128),
+      sceneImage: window.__probe.sceneImage(384),
+      shadow: window.__probe.props()?.pack?.shadow || null,
+      effects: window.__probe.light()?.effectsMode || null,
+    }));
+    if (submission.active !== false && !candidate.gate?.submitted?.active) continue;
+    if (submission.lightingState && candidate.gate?.submitted?.lightingState !== submission.lightingState) continue;
+    await page.screenshot({ path: png });
+    const after = await page.evaluate(() => window.__probe.apparitionGate()?.submitted);
+    if (submission.lightingState && after?.lightingState !== submission.lightingState) continue;
+    snapshot = candidate;
+    break;
   }
-  const snapshot = await page.evaluate(() => ({
-    gate: window.__probe.apparitionGate(),
-    apparitions: window.__probe.apparitions(),
-    scene: window.__probe.sceneStats(128),
-    shadow: window.__probe.props()?.pack?.shadow || null,
-    effects: window.__probe.light()?.effectsMode || null,
-  }));
-  if (submission.active !== false && !snapshot.gate?.submitted?.active) {
-    throw new Error(`${id} lost its active apparition submission before capture`);
-  }
+  if (!snapshot) throw new Error(`${id} could not hold the requested light state through capture`);
+  const sceneImage=snapshot.sceneImage;
+  delete snapshot.sceneImage;
+  if(sceneImage)fs.writeFileSync(path.join(OUT,`${id}-scene.png`),Buffer.from(sceneImage.split(',')[1],'base64'));
   const record = {
     id,
     ...authored,
     capturedAt: new Date().toISOString(),
     ...snapshot,
   };
-  const png = path.join(OUT, `${id}.png`);
   const json = path.join(OUT, `${id}.json`);
-  await page.screenshot({ path: png });
   fs.writeFileSync(json, `${JSON.stringify(record, null, 2)}\n`);
   results.push(record);
   process.stdout.write(`  ${id}: ${snapshot.gate?.submitted?.compositionId || 'none'} · `
@@ -206,7 +227,7 @@ async function capture(id, authored = {}, { submission = { active: true } } = {}
 
 const LOCATIONS = Object.freeze({
   foyer: Object.freeze({ id: 'foyer', door: 'hall-acoustic-pair' }),
-  hall: Object.freeze({ id: 'hall', zone: ZONE.hall }),
+  hall: Object.freeze({ id: 'hall', hook: 'concert-hall' }),
   // East deck, just north of the basin's service corner. The standard doorway
   // hook is intentionally close to its bulkhead and therefore exercises the
   // far-side safety fallback; this plate needs to review the authored pool-edge
@@ -219,6 +240,8 @@ const LOCATIONS = Object.freeze({
   tower: Object.freeze({ id: 'tower', towerPreset: 'tower-arrival', door: 'tower-service-single' }),
 });
 
+const statesOnly = process.env.APPARITION_STATES_ONLY === '1';
+if (!statesOnly) {
 process.stdout.write('POSES\n');
 await setScene({ location: LOCATIONS.hall, seed: 'review:poses', effects: 'reduced', renderScale: 1 });
 await waitForSubmission({ active: true });
@@ -275,8 +298,22 @@ await waitForSubmission({ active: true, presentation: 'hard' });
 await capture('continuity-hard-reveal', {
   family: 'continuity', event: 'hard_reveal', seed: 'review:continuity:hard',
 }, { submission: { active: true, presentation: 'hard' } });
+}
 
 process.stdout.write('ACCESSIBILITY AND LIGHTING\n');
+await setScene({ location: LOCATIONS.hall, seed: 'review:light-states', effects: 'full', torch: false });
+await waitForSubmission({ active: true, lightingState: 'emergency-on' });
+await capture('state-emergency-on', { family: 'light-state', state: 'emergency-on' }, {
+  submission: { active: true, lightingState: 'emergency-on' },
+});
+await capture('state-unlit', { family: 'light-state', state: 'unlit' }, {
+  submission: { active: true, lightingState: 'unlit' },
+});
+await page.evaluate(() => window.__probe.setTorch(true));
+await capture('state-emergency-off', { family: 'light-state', state: 'emergency-off' }, {
+  submission: { active: true, lightingState: 'emergency-off' },
+});
+if (!statesOnly) {
 for (const kind of ['reorientation', 'stillness']) {
   const seed = `review:reduced:${kind}`;
   await setScene({ location: LOCATIONS.hall, seed, effects: 'reduced' });
@@ -305,6 +342,7 @@ for (const [id, torch, renderScale] of [
   const seed = `review:${id}`;
   await setScene({ location: LOCATIONS.hall, seed, effects: 'full', torch, renderScale });
   await capture(id, { family: 'lighting', torch, renderScale, seed });
+}
 }
 
 const summary = {

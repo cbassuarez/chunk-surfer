@@ -8,6 +8,9 @@ import { createEndingCutsceneState, endingCutsceneCompletionId } from './ending-
 export const CATHEDRAL_GROUND_LOGICAL_OFFSET = Object.freeze({ x: 112, y: 125 });
 const westExitLeaf = CHURCH.doors.find(entry => entry.id === CHURCH_TOWER_ENDING_EXIT_DOOR_ID);
 export const CATHEDRAL_WEST_EXIT_PLANE_METRES = Object.freeze({ x: westExitLeaf.x, z: westExitLeaf.y });
+// Covers the rotated footprint of the rendered prone body, including its
+// trailing feet. A cleared centre alone can leave him inside the west leaf.
+export const CATHEDRAL_BODY_EXIT_CLEARANCE_METRES = 1.1;
 const spec = ENDING_CUTSCENES['tower-won'];
 const finite = (value) => typeof value === 'number' && Number.isFinite(value);
 const point = (value) => finite(value?.x) && finite(value?.y)
@@ -37,10 +40,11 @@ export function cathedralBodiesOutsideWest(floorplan, player, body, { clearance 
   // the authored church metre coordinate, a quarter metre farther outside.
   const planeX=floorplan.toRuntimeDistance(CATHEDRAL_WEST_EXIT_PLANE_METRES.x);
   const planeZ=floorplan.toRuntimeDistance(CATHEDRAL_WEST_EXIT_PLANE_METRES.z);
-  const margin=floorplan.toRuntimeDistance(clearance),halfWidth=floorplan.toRuntimeDistance(1.5);
-  return [player,body].every(at=>{
+  const halfWidth=floorplan.toRuntimeDistance(1.5);
+  return [player,body].every((at,index)=>{
+    const margin=floorplan.toRuntimeDistance(index===0?clearance:Math.max(clearance,CATHEDRAL_BODY_EXIT_CLEARANCE_METRES));
     const p=floorplan.logicalToPhysical(at.x,at.y);
-    return p.z<=planeZ-margin&&Math.abs(p.x-planeX)<=halfWidth&&Math.abs(p.y-plane.y)<.25;
+    return p.z<=planeZ-margin+1e-9&&Math.abs(p.x-planeX)<=halfWidth&&Math.abs(p.y-plane.y)<.25;
   });
 }
 

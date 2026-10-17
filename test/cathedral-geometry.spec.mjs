@@ -58,8 +58,8 @@ for(const stair of CHURCH_TURRETS){
   assert.ok(FP.canStep(run.logical1[0],y,run.logical1[0]+1,y).ok,`${stair.id} head mouth`);
 }
 
-// The west door's exterior apron must fit both centres, not merely report a
-// non-church door cell while the dragged body is still inside its real plane.
+// The west door's exterior apron must fit the whole prone body, not merely
+// report a non-church centre while its head still crosses the real leaf.
 FP.setAllDoorsOpen(true);
 let player=at('ground',16,73),payload=gripDraggedPayload(createDraggedPayloadState({position:player,spacing:2.3}),player);
 const westPlane=CHURCH.doors.find(d=>d.id==='brendan-west-door').y;
@@ -67,14 +67,36 @@ let cleared=false;
 for(let i=0;i<48;i++){
   const step=FP.canStep(player.x,player.y,player.x,player.y-1,{keys:new Set()});
   assert.ok(step.ok,'the open west spine continues far enough to pull the body out');
+  assert.equal(step.redirect,undefined,'the body clears the leaf before the yard seam redirects the player');
   const next={x:step.redirect?.x??player.x,y:step.redirect?.y??player.y-1};
   const moved=draggedPayloadStep(payload,player,next,{canOccupy:p=>!FP.isSolid(p.x,p.y)&&PROPS.propCanOccupy(p.x,p.y)});
   assert.ok(moved.allowed,'the real church props admit the trailing body');
   player=next;payload=moved.state;
   const a=FP.logicalToPhysical(player.x,player.y),b=FP.logicalToPhysical(payload.position.x,payload.position.y);
-  if(a.z*CELL<westPlane-.15&&b.z*CELL<westPlane-.15){cleared=true;break;}
+  if(a.z*CELL<=westPlane-.25&&b.z*CELL<=westPlane-1.1){
+    assert.ok(a.z*CELL<=52.8,'the extended apron gives the player the required room beyond the leaf');
+    assert.ok(b.z*CELL<=53.9,'the trailing body clears the leaf by its full prone extent');
+    assert.equal(payload.gripped,true,'clearing the whole body needs no drop or regrip');
+    cleared=true;break;
+  }
 }
-assert.ok(cleared,'both player and body centres clear the actual west door plane');
+assert.ok(cleared,'the whole dragged body clears the actual west door plane');
+// The added metre keeps older threshold coordinates in place and joins the
+// yard at its new outer edge rather than redirecting inside the carry apron.
+for(const [authoredY,z]of[[177,52],[178,53],[179,54]]){
+  const point=FP.toRuntimePoint({x:128,y:authoredY},{center:false});
+  const physical=FP.logicalToPhysical(point.x,point.y);
+  assert.equal(physical.z*CELL,z,'threshold logical coordinates keep their physical placement');
+  assert.equal(FP.isSolid(point.x,point.y),false,'all three apron metres are walkable');
+}
+const apronEdge=FP.toRuntimePoint({x:128,y:177},{center:false});
+const yardEdge=FP.toRuntimePoint({x:66,y:252},{center:false});
+assert.deepEqual(FP.connectorDestination(apronEdge.x,apronEdge.y),yardEdge,'the outer apron joins the matching yard cell');
+assert.deepEqual(FP.connectorDestination(yardEdge.x,yardEdge.y),apronEdge,'the yard seam remains reversible');
+const apronPhysical=FP.logicalToPhysical(apronEdge.x,apronEdge.y),yardPhysical=FP.logicalToPhysical(yardEdge.x,yardEdge.y);
+assert.equal(apronPhysical.x,yardPhysical.x);assert.equal(apronPhysical.z,yardPhysical.z);
+assert.deepEqual(FP.canStep(apronEdge.x,apronEdge.y+1,apronEdge.x,apronEdge.y,{keys:new Set()}).redirect,yardEdge,
+  'an ordinary outward step crosses the correctly aligned yard seam');
 FP.setAllDoorsOpen(false);
 
 // Read the delivered GLB bytes. Ray/triangle checks catch an obsolete roof,

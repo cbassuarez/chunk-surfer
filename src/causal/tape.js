@@ -68,6 +68,7 @@ function normalizeFrame(frame = {}) {
     renderGroup: typeof frame.renderGroup === 'string' ? frame.renderGroup : '',
     spaceId: typeof frame.spaceId === 'string' && frame.spaceId ? frame.spaceId : 'conservatory',
     perceived: !!frame.perceived,
+    ...(Number.isFinite(frame.busWomanYardTime) ? { busWomanYardTime: Math.max(0, rounded(frame.busWomanYardTime)) } : {}),
     ...(characters ? { outskirtsCharacters: characters } : {}),
     ...(pressure ? { pressurePresentation: pressure } : {}),
   };
@@ -88,6 +89,7 @@ function deltaFrame(previous, current) {
   if (canonicalJson(previous.pressurePresentation || null) !== canonicalJson(current.pressurePresentation || null)) {
     delta.pressurePresentation = current.pressurePresentation || null;
   }
+  if (previous.busWomanYardTime !== current.busWomanYardTime) delta.busWomanYardTime = current.busWomanYardTime ?? null;
   return delta;
 }
 
@@ -128,6 +130,7 @@ export function unpackShadowFrames(segments) {
       }
       if (Object.hasOwn(raw, 'outskirtsCharacters')) next.outskirtsCharacters = raw.outskirtsCharacters;
       if (Object.hasOwn(raw, 'pressurePresentation')) next.pressurePresentation = raw.pressurePresentation;
+      if (Object.hasOwn(raw, 'busWomanYardTime')) next.busWomanYardTime = raw.busWomanYardTime;
       previous = normalizeFrame(next);
       out.push(previous);
     }
@@ -255,6 +258,9 @@ export function shadowFrameAt(tape, at) {
   if (right.t <= left.t || t <= left.t) return { ...left };
   const mix = Math.min(1, Math.max(0, (t - left.t) / (right.t - left.t)));
   const result = { ...left, t: Math.round(t) };
+  if (Number.isFinite(left.busWomanYardTime) && Number.isFinite(right.busWomanYardTime) && left.spaceId === right.spaceId) {
+    result.busWomanYardTime = rounded(left.busWomanYardTime + (right.busWomanYardTime - left.busWomanYardTime) * mix);
+  }
   for (const key of ['x', 'y', 'floorH', 'yaw', 'pitch']) result[key] = rounded(left[key] + (right[key] - left[key]) * mix);
   if (mix >= 0.5) {
     result.roomId = right.roomId;

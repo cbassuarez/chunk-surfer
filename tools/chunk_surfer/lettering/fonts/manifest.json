@@ -1,0 +1,11 @@
+{
+  "family": "Nimbus Sans Narrow",
+  "face": "Bold",
+  "file": "NimbusSansNarrow-Bold.otf",
+  "sha256": "6d7cec07f5a9035e208532dab35a51312aef4a7f26eb524dd614c9fcd97c3264",
+  "source": "https://github.com/ArtifexSoftware/urw-base35-fonts/blob/master/fonts/NimbusSansNarrow-Bold.otf",
+  "downloadUrl": "https://raw.githubusercontent.com/ArtifexSoftware/urw-base35-fonts/master/fonts/NimbusSansNarrow-Bold.otf",
+  "retrieved": "2026-10-17",
+  "license": "AGPL-3.0, with the upstream stated PostScript/PDF document exception; see LICENSE and COPYING",
+  "note": "Pinned production stock outlines, with process-specific optical sizing. No claim of a bespoke or historically exact signwriter alphabet."
+}

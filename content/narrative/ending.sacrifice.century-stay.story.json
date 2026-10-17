@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "id": "ending.sacrifice.century-stay",
+  "title": "The Seal · A Hundred More Years",
+  "status": "active",
+  "entry": "start",
+  "entries": ["start"],
+  "tags": ["ending", "sacrifice", "roof", "ren", "century-stay"],
+  "notes": "A variant of the existing sacrifice return, reached only after Ren's personal errand, earned dialogue disclosures, and explicit informed consent. Ren performs the ritual on the roof; the school does not collapse. Physical beats are gated by these line IDs. There is no claim that the spirits are harmless or that Ren can guarantee the contractor's welfare.",
+  "regions": [{"id":"ending.sacrifice.century-stay.region","title":"A Hundred More Years","kind":"ending","color":"#c6b8a1","nodeIds":["start"]}],
+  "nodes": {
+    "start": {
+      "id": "start",
+      "type": "ending",
+      "speaker": "REN · THE ROOF",
+      "lines": [
+        {"id":"start.line.approach","who":"direction","text":"You follow Ren from the metal deck onto the supported glass. They take one step closer. The intact foot makes a small, ordinary noise. The other side arrives without a step."},
+        {"id":"start.line.answer","who":"ren","text":"You understood me. A hundred years. Your place in the world held here, with ours. I heard you say yes. I wish I were better than someone who needed to hear it."},
+        {"id":"start.line.contact","who":"direction","text":"Ren lays the whole hand flat against your chest. Warm. The palm has the dry crease of a person who used to carry books against their body. Nothing shines."},
+        {"id":"start.line.breath","who":"ren","text":"Keep breathing. It needs someone who is still doing that."},
+        {"id":"start.line.flesh","who":"direction","text":"The missing half does not grow back. Its flesh folds inward, one broad fold inside another, as though a corridor has been made in the thickness of a person. At the far end, something holds its breath with you."},
+        {"id":"start.line.bind","who":"direction","text":"A black crease moves from Ren's wrist into the shadow beneath your feet. Your reflection stays seated on the glass when you shift your weight. You feel the school take the weight it has been asking somebody to carry."},
+        {"id":"start.line.name","who":"ren","text":"There. That is the seal. Not the recordings. A living person, giving the place another hundred years to be a place."},
+        {"id":"start.line.money","who":"ren","text":"How else do you think music schools stay alive? It is not the money. There is none. Someone keeps saying: not yet. After tonight, that someone will be you."},
+        {"id":"start.line.city","who":"direction","text":"Beyond the parapet, the municipal baths, the terraces and the church stand in the same rain. There are windows you have looked past all night. For a moment, every one seems occupied."},
+        {"id":"start.line.stay","who":"ren","text":"Not yet. Not for a hundred years. This school will not be taken down. Those who call it home still have rooms. I know that is not what everyone asked for. Whatever might have followed the broken rooms into the city has no broken rooms to follow tonight."},
+        {"id":"start.line.rooms","who":"direction","text":"A practice-room door closes below you. Another answers. In the cleared room the loose score lifts toward the breach and falls flat. You cannot tell whether the person who spoke there has found a door, or whether you have given them another century of looking for one."},
+        {"id":"start.line.cost","who":"direction","text":"Your shadow runs along a glazing bar and down into the atrium. You know, with the certainty of feeling a hand on a latch, that you will not be walking through the gate in the morning."},
+        {"id":"start.line.sorry","who":"ren","text":"I wanted my little thing back. Then I wanted this. Both were true. Being grateful doesn't make me innocent."},
+        {"id":"start.line.release","who":"direction","text":"Ren takes the hand away. The crease does not open. Your chest is whole. The held part of you is somewhere below the glass, and it is yours, and you cannot call it back."},
+        {"id":"start.line.six","who":"direction","text":"At six, a warning horn sounds once beyond the yard. The machine lifts its arm. A surveyor at the fence is still turning over the foundation drawings. The driver waits for an order that does not come."},
+        {"id":"start.line.no-strike","who":"direction","text":"There is no first strike. No masonry coming through the rooms. The city carries on beyond the school, and the school carries on around you. It will need work tomorrow. There will be a tomorrow."},
+        {"id":"start.line.company","who":"ren","text":"I wanted my home, and I asked you to give up yours. I will sit here if you want company. You do not owe me forgiveness."},
+        {"id":"start.line.palm","who":"direction","text":"The glass under your palm is warm now. Beneath it, far below, someone turns a page before beginning again."}
+      ]
+    }
+  }
+}

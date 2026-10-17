@@ -33,6 +33,11 @@ export const ENDING_EMBODIMENT_EFFECTS = Object.freeze([
   'sync-voice',
   'sync-step',
   'final-wide',
+  'ren-seal-approach',
+  'ren-seal-contact',
+  'ren-seal-bind',
+  'ren-seal-stay',
+  'ren-seal-release',
 ]);
 
 export const ENDING_FINAL_ACTION_MODE = Object.freeze({
@@ -64,6 +69,8 @@ export function createEndingEmbodimentState(endingId = '') {
     sourceStage: 0,
     bodyStage: 0,
     syncStage: 0,
+    roofSealStage: 0,
+    cityStayed: false,
     cameraDetached: false,
     thresholdRegripped: false,
     finalActionId: null,
@@ -94,6 +101,8 @@ export function reduceEndingEmbodiment(state, event = {}) {
   let sourceStage = previous.sourceStage;
   let bodyStage = previous.bodyStage;
   let syncStage = previous.syncStage;
+  let roofSealStage = previous.roofSealStage || 0;
+  let cityStayed = previous.cityStayed === true;
   let cameraDetached = previous.cameraDetached;
   let thresholdRegripped = previous.thresholdRegripped;
 
@@ -112,6 +121,11 @@ export function reduceEndingEmbodiment(state, event = {}) {
   else if (effect === 'body-still') bodyStage = Math.max(bodyStage, 2);
   else if (effect === 'camera-detach') cameraDetached = true;
   else if (effect === 'threshold-regrip') thresholdRegripped = true;
+  else if (effect === 'ren-seal-approach') roofSealStage = Math.max(roofSealStage, 1);
+  else if (effect === 'ren-seal-contact') roofSealStage = Math.max(roofSealStage, 2);
+  else if (effect === 'ren-seal-bind') roofSealStage = Math.max(roofSealStage, 3);
+  else if (effect === 'ren-seal-stay') { roofSealStage = Math.max(roofSealStage, 4); cityStayed = true; }
+  else if (effect === 'ren-seal-release') roofSealStage = Math.max(roofSealStage, 5);
   if (SYNC_STAGE[effect]) syncStage = Math.max(syncStage, SYNC_STAGE[effect]);
 
   return Object.freeze({
@@ -124,6 +138,8 @@ export function reduceEndingEmbodiment(state, event = {}) {
     sourceStage,
     bodyStage,
     syncStage,
+    roofSealStage,
+    cityStayed,
     cameraDetached,
     thresholdRegripped,
   });

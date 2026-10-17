@@ -34,7 +34,7 @@ assert.match(draw, /gl\.drawBuffers\(\[gl\.COLOR_ATTACHMENT0\]\)/, 'single-outpu
 assert.match(draw, /gl\.drawBuffers\(\[gl\.COLOR_ATTACHMENT0,gl\.COLOR_ATTACHMENT1\]\)/, 'restore the ordinary MRT state');
 // The game's own look out there too (2026-09-13): the pixel mesh and the post
 // upscale present the physical pass, as they present the building.
-assert.match(draw, /presentThroughPost\(runPixelMeshPass\(voidState,now\)/, 'the outskirts skip the game\'s own look');
+assert.match(draw, /presentThroughPost\(runPixelMeshPass\(voidState,now,\{physicalAcquisitionWeight\}\)/, 'the outskirts must use the shared recorder with their physical acquisition weight');
 assert.doesNotMatch(draw, /presentTexture\(sceneTex\)/, 'the physical pass is copied straight to the screen again');
 assert.doesNotMatch(draw, /runDatamoshPass\(|runSourceFaultPass\(|drawTextSpace\(/, 'no destructive colour or glitch filter follows the physical pass');
 assert.match(shader, /clamp\(body\.a,0\.0,1\.0\)/, 'black metal remains opaque: colour is not a coverage test');

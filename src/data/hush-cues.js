@@ -47,7 +47,8 @@ export const HUSH_MISCHIEF_CUES = Object.freeze([
   // footfall you did not make is the room telling you the weight is not yours.
   Object.freeze({
     id: 'mischief.sprung-answer', family: 'floor', delivery: 'world', sourcePolicy: 'behind-player',
-    requirements: { zones: [ZONE.danceStudio, ZONE.studio], minInterest: .32, maxAgitation: .78, minCertainty: .14 },
+    // The dance studios only: B3 is carpeted and has no mirrors left to answer.
+    requirements: { zones: [ZONE.danceStudio], minInterest: .32, maxAgitation: .78, minCertainty: .14 },
     selection: { baseWeight: 1.05, repeatPenalty: .58, familyCooldownMs: 24000, cueCooldownMs: 56000, maxPerRun: 3 },
     audio: { sound: 'equipment', gain: .19, pitchRange: [.62, .80] },
     caption: { text: 'THE FLOOR GIVES UNDER A WEIGHT THAT IS NOT YOURS', spatial: true },
@@ -57,7 +58,7 @@ export const HUSH_MISCHIEF_CUES = Object.freeze([
   // room is telling you about a reflection you cannot go and check.
   Object.freeze({
     id: 'mischief.mirror-return', family: 'negative', delivery: 'world', sourcePolicy: 'adjacent-bearing',
-    requirements: { zones: [ZONE.danceStudio, ZONE.studio], minInterest: .38, maxAgitation: .82, minCertainty: .22 },
+    requirements: { zones: [ZONE.danceStudio], minInterest: .38, maxAgitation: .82, minCertainty: .22 },
     selection: { baseWeight: .84, repeatPenalty: .54, familyCooldownMs: 28000, cueCooldownMs: 64000, maxPerRun: 2 },
     audio: { sound: 'negative', gain: .17, pitchRange: [.94, 1.06] },
     caption: { text: 'SOMETHING SETTLES AGAINST THE GLASS', spatial: true },

@@ -118,12 +118,35 @@ export function settleAfterAway(awayMs = 0) {
 export function expectation() { return state.expectation; }
 export function enteredRoom() { state.roomCount = 0; }
 
-function eligible(now) {
+function sharedBudgetReady(now) {
+  if (!Number.isFinite(now)) return false;
   if (!dreadAllowed()) return false;                       // accessibility
-  if (state.pool.length === 0) return false;
   if ((now - state.startedAt) / 60000 < STABS.quietMinutes) return false;
   if ((now - state.lastStabAt) / 1000 < STABS.cooldownSec) return false;
   if (state.roomCount >= STABS.maxPerRoom) return false;
+  return true;
+}
+
+// Authored scares with their own material share this director's restraint.
+// Silent experimental controls reserve the same moment too, so the comparison
+// cannot accidentally receive an ordinary stab in place of its missing cue.
+// A reservation is accounting only: it teaches no TRUE/FALSE lesson and calls
+// no sound callback. Ordinary stabs keep their existing recording/pool rules.
+export function externalScareBudgetReady({ nowMs = performance.now() } = {}) {
+  return !REC.isRecording() && sharedBudgetReady(nowMs);
+}
+
+export function reserveExternalScare({ nowMs = performance.now() } = {}) {
+  if (!externalScareBudgetReady({ nowMs })) return false;
+  state.lastStabAt = nowMs;
+  state.roomCount += 1;
+  state.expectation = 0;
+  return true;
+}
+
+function eligible(now) {
+  if (!sharedBudgetReady(now)) return false;
+  if (state.pool.length === 0) return false;
   if (REC.isRecording() && REC.takeProgress() > 0.85) return false;  // not at the finish line. that is cruelty, not dread
   return true;
 }

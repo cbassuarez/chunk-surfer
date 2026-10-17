@@ -42,7 +42,8 @@ test('every collected-object family has exactly one audited destination', () => 
 test('the action resolver exposes the full semantic descriptor contract', () => {
   assert.deepEqual(Object.keys(BAG_ITEM_REGISTRY).sort(), [
     'coffee', 'interface', 'keyring', 'light', 'lyle-jumper', 'map', 'marble-eyes',
-    'plant-spanner', 'radio', 'recorder', 'sheet-music', 'station-relics', 'tuning-fork',
+    'plant-spanner', 'radio', 'recorder', 'ren-home-cassette', 'ren-service-key',
+    'sheet-music', 'station-relics', 'tuning-fork',
   ]);
   const cases = [
     ['light', {}, 'light-toggle', 'TURN ON', BAG_ACTION_MODE.COMMAND],
@@ -126,7 +127,7 @@ test('ownership transitions keep each acquisition in one truthful case home', ()
     'plant-spanner', 'marble-eyes', 'coffee',
   ]);
   assert.deepEqual(acquired.keyring, {
-    master: true, chapel: true, chapelIdentified: false, services: true, visible: true,
+    master: true, chapel: true, chapelIdentified: false, services: true, ren: false, visible: true,
   });
   assert.ok(!acquired.kit.includes('plant-stillson'));
 

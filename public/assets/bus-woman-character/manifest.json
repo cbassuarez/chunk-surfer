@@ -1,0 +1,35 @@
+{
+  "version": 2,
+  "design": "The Button Out of Place",
+  "canonicalAliases": [
+    "exterior_bus_woman",
+    "outskirts_bus_woman"
+  ],
+  "accessories": [
+    "bus_woman_bag",
+    "bus_woman_ticket"
+  ],
+  "bytes": 2794020,
+  "sha256": "48cc9e6680daa90dcd0a0e4beae2c8683558e906ba990b95da3591c2230fd030",
+  "body": {
+    "vertices": 17864,
+    "triangles": 34832,
+    "bones": 54,
+    "pockets": "two boolean-cut slanted mouths through solidified shell with separate open linings"
+  },
+  "materialCount": 15,
+  "bodyPrimitiveCount": 11,
+  "clips": {
+    "bus_woman_wait": 4,
+    "bus_woman_search": 6,
+    "bus_woman_receive": 4,
+    "bus_woman_ticket_wait": 4,
+    "bus_woman_acknowledge": 2.4,
+    "bus_woman_acknowledge_ticket": 2.4,
+    "bus_woman_step": 0.8,
+    "bus_woman_step_ticket": 0.8,
+    "bus_woman_ready": 2
+  },
+  "coordinateSystem": "metres, Y up, forward -Z",
+  "newScenePlacements": 0
+}

@@ -257,7 +257,7 @@
         },
         {
           "who": "direction",
-          "text": "There is a sheet still clipped to it. Two bars of something, in pencil, in a hand you cannot read.",
+          "text": "There is a sheet still clipped to it. Printed, and two bars pencilled across the top in a hand you cannot read.",
           "id": "stand.line.3"
         }
       ],
@@ -265,6 +265,7 @@
         {
           "text": "take it",
           "goto": "stand.take",
+          "set": ["b3.stand.sheet"],
           "id": "stand.choice.1"
         },
         {

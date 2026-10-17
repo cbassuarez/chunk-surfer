@@ -463,9 +463,9 @@ async function run(reduced) {
       check(s.cathedral?.finale?.stage === 'resolved' && s.cathedral.finale.result === 'won', 'both bodies crossing the actual west door resolves the tower route', { finale: s.cathedral?.finale, pos: s.pos, cutscene: s.cutscene });
       const physical = s.cathedral?.physical;
       check(physical?.bothOutside && physical.player.z <= physical.westPlane.z - .25 + 1e-6
-        && physical.body.z <= physical.westPlane.z - .25 + 1e-6
-        && physical.player.z <= 54.75 + 1e-6 && physical.body.z <= 54.75 + 1e-6,
-      'both physical body centres clear the actual west plane by at least 0.25 metres', physical);
+        && physical.body.z <= physical.westPlane.z - 1.1 + 1e-6
+        && physical.player.z <= 54.75 + 1e-6 && physical.body.z <= 53.9 + 1e-6,
+      'the player and complete prone-body footprint clear the actual west leaf', physical);
       check(s.storedExtraction?.drag?.gripped === true && s.cutscene?.embodiment?.thresholdRegripped === false,
         'the ordinary grip stays continuous through the west threshold', { drag: s.storedExtraction?.drag, embodiment: s.cutscene?.embodiment });
       await finishReturn('tower-won');

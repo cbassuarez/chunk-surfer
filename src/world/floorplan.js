@@ -1460,6 +1460,8 @@ export function physicalRenderPlanFor(x,y){
   // The same predicate prop-visibility asks, so the walls and the skin can
   // never disagree about which side of the envelope you are on.
   const exteriorObserver=isOutdoorZone(observerZone);
+  const northRoofGateSightline=!exteriorObserver&&group==='academic'&&here.y>=9.5&&here.y<=10.5
+    &&x>=84&&x<=94&&y>=480&&y<=492;
   const band=Math.round(here.y/HEIGHT_BAND);
   // The single height this slice is built for. Everything below uses it — key,
   // filter and choice — so the cached slice always matches what it was keyed on.
@@ -1475,7 +1477,7 @@ export function physicalRenderPlanFor(x,y){
   // to hand its slice to the other. That is how the pool came back solid even
   // after the retention rule was right: the cached foyer slice had no basin in
   // it. Same shape of bug as the rounded band the note above describes.
-  const cacheKey=`${group}:${here.layer}:${here.spaceId||''}:${band}:${exteriorObserver?'exterior':'enclosed'}`;
+  const cacheKey=`${group}:${here.layer}:${here.spaceId||''}:${band}:${exteriorObserver?'exterior':'enclosed'}:${northRoofGateSightline?'north-roof-aperture':'ordinary'}`;
   if(plan.physical.renderCache.has(cacheKey))return plan.physical.renderCache.get(cacheKey);
   const w=plan.physical.width,h=plan.physical.height,originX=plan.physical.originX||0,originY=plan.physical.originY||0,solid=new Uint8Array(w*h).fill(1),floor=new Float32Array(w*h),ceil=new Float32Array(w*h),flags=new Uint8Array(w*h),zone=new Uint8Array(w*h),material=new Uint8Array(w*h),rgba=new Uint8Array(w*h*4);
   // Cells where a church contributes its ground to an outdoor slice. Their
@@ -1507,7 +1509,7 @@ export function physicalRenderPlanFor(x,y){
     // how Ellery does the same thing.
     const sceneSpans=exteriorObserver?all.filter((span)=>
       span.zone===ZONE.street||span.zone===ZONE.civicCourt||span.zone===ZONE.serviceYard
-      ||span.zone===ZONE.dock||span.zone===ZONE.church):all;
+      ||span.zone===ZONE.dock||span.zone===ZONE.church||span.zone===ZONE.academicRoof):all;
     if(!sceneSpans.length)continue;
     const hallSpans=sceneSpans.filter((s)=>s.spaceId==='hall');
     const hallEnvelope=here.spaceId==='hall'&&here.layer!=='hall_stair'&&hallSpans.length;
@@ -1577,6 +1579,18 @@ export function physicalRenderPlanFor(x,y){
       }
       const s=pool.reduce((best,v)=>Math.abs(v.floor-hy)<Math.abs(best.floor-hy)?v:best,pool[0]);
       floor[i]=s.floor;ceil[i]=s.ceil;flags[i]=s.flags;zone[i]=s.zone;material[i]=s.material;
+      if(s.zone===ZONE.academicRoof&&(s.flags&F.STAIR)){
+        // The doorway must open onto air and a grated emergency landing,
+        // even while the camera still stands inside the gallery. The logical
+        // floor stays at the safe tread height; only the depth-rendered floor
+        // recedes to the TRUE north-street grade, letting the matte bar
+        // geometry show the drop below it. A lower interior hall span is not
+        // a ground plane and must never be substituted here. WALLED keeps
+        // the building-side height finite without capping the open sky.
+        floor[i]=0;
+        material[i]=MATERIAL.wetTarmac;
+        flags[i]|=F.SKY|F.WALLED;
+      }
       // OUTDOORS THE CHURCH IS GROUND AND NOTHING ELSE.
       //
       // Keeping its span stops the footprint falling to the fill's −8m, but
@@ -1593,6 +1607,43 @@ export function physicalRenderPlanFor(x,y){
         // right granularity to read a church's roofline off.
         if(s.zone===ZONE.dock)yardCeilByRow[localY]=Math.max(yardCeilByRow[localY]||0,s.ceil);
         if(s.zone===ZONE.church){churchGround.push(i);flags[i]=F.SKY;}
+        // The occupied glass roof has a low collision parapet. Its real 18.1m
+        // ceiling must not cut a 5.9m-high wall out of the outdoor slice's
+        // 24m sky volume; the roof mesh draws the visible 1.1m parapet.
+        if(s.zone===ZONE.academicRoof){
+          ceil[i]=24;
+          if(group==='academicRoof')flags[i]|=F.SKY;
+        }
+      }
+    }
+  }
+  if(exteriorObserver&&observerZone===ZONE.academicRoof){
+    // The generic outdoor fill lies eight metres below grade to avoid an
+    // invented landscape under distant scenery. The relocated escape hangs
+    // over the actual north street. Use grade zero only in this north-facing
+    // local band; all elevated navigation spans retain collision heights.
+    for(let px=Math.max(152,originX);px<Math.min(202,originX+w);px++)for(let pz=originY;pz<Math.min(4,originY+h);pz++){
+      const i=(pz-originY)*w+(px-originX);
+      if(zone[i]===ZONE.street&&floor[i]<-7)floor[i]=0;
+    }
+  }
+  if(northRoofGateSightline){
+    // While the player still stands in the dark gallery, the physically
+    // exterior fire escape must look into the same open night it reveals one
+    // keyboard step later. The enclosed academic slice otherwise loads the
+    // older hall/rock volume just north of the escape and paints an apparent
+    // opposite wall across the opened service door. Carve only the outward
+    // view wedge beyond the threshold; the stair's real GLB grating and all
+    // logical collision cells remain authoritative.
+    // Carry the wedge to the render plan's north edge. The street stays at
+    // grade, so looking through the bars never reveals a false elevated slab.
+    for(let pz=3;pz>=originY;pz--){
+      const half=3+Math.floor((3-pz)*.68);
+      for(let px=Math.max(originX,188-half);px<Math.min(originX+w,189+half);px++){
+        const i=(pz-originY)*w+(px-originX);
+        if(zone[i]===ZONE.academicRoof)continue;
+        solid[i]=0;floor[i]=0;ceil[i]=24;flags[i]=F.SKY|F.WALLED;
+        zone[i]=ZONE.street;material[i]=MATERIAL.wetTarmac;
       }
     }
   }

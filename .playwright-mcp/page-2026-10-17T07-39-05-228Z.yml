@@ -1,0 +1,24 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e4]: Local study sheet · native desktop required
+    - heading "Battle window pilot" [level=1] [ref=e5]
+    - generic [ref=e6]: 10–12 minutes
+    - generic [ref=e7]: Two matched visits
+    - generic [ref=e8]: No network access
+    - paragraph [ref=e9]:
+      - text: Prepared protocol and response sheet.
+      - strong [ref=e10]: "Participant outcome: pending."
+      - text: This sheet does not launch a battle or collect pointer telemetry. Use the separate native fixture and full-display recording.
+  - navigation "Study views" [ref=e11]:
+    - button "Player instructions" [ref=e12] [cursor=pointer]
+    - button "Record responses" [ref=e13] [cursor=pointer]
+    - button "Moderator protocol" [ref=e14] [cursor=pointer]
+  - generic [ref=e15]:
+    - generic [ref=e16]: Read aloud before Visit 1
+    - heading "Two short battle sequences" [level=2] [ref=e17]
+    - paragraph [ref=e18]: “You will try two short versions of the same battle-window interaction. Click incoming fireballs to deflect them. Use the same mouse and keyboard throughout.
+    - paragraph [ref=e19]: “I will not give advice while you play. You do not need to explain your thinking during the sequence. After each visit, I will ask a few questions. There is no need to favour either version. You can stop at any time.”
+    - generic [ref=e20]: Do not show the moderator protocol to the player. Do not explain motion, colours, brackets, timing, second offers, or the expected improvement.
+    - heading "Before Visit 2" [level=3] [ref=e21]
+    - paragraph [ref=e22]: “Here is the second version. The task and controls are the same. Play it as you think best.”
+    - paragraph [ref=e23]: Allow a 20-second rest between visits. Do not discuss the first visit’s answers before the second visit ends.

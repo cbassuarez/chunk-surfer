@@ -1,0 +1,40 @@
+{
+  "id": "acq-foyer-sofa-01",
+  "sourceAsset": "/Users/seb/chunk-surfer/public/assets/conservatory-acquisitions.glb",
+  "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+  "mesh": "sofa_01",
+  "width": 233,
+  "height": 131,
+  "orientation": {
+    "readerRight": [
+      1,
+      0,
+      0
+    ],
+    "up": [
+      0,
+      0,
+      1
+    ],
+    "normal": [
+      0,
+      -1,
+      0
+    ],
+    "center": [
+      0,
+      0.1119,
+      0.289
+    ]
+  },
+  "projectedTriangles": 2,
+  "missingTexels": 0,
+  "minimumSeparationM": 0.0008728201534386954,
+  "maximumSeparationM": 0.0018898139550096553,
+  "method": "Actual host triangles, barycentric TEXCOORD_0, bilinear source images; linear baseColorFactor composition; tangent-space normal reprojection; exact rough/metal/AO factors.",
+  "outputs": {
+    "albedo": "70b4cbe52f30fcf8c16f171571361bf4e9a0c23a14b7f0fa93cd1d403fa0340c",
+    "normal": "85f87f5f223bfb219ed6c9287e57629b846d80d30b69b7bcb202d4d64ac28d6c",
+    "orm": "491720cb686347bdf87089729c6c588a7d28fe1a91e38eab8435127a21745e31"
+  }
+}

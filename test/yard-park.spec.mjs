@@ -161,9 +161,9 @@ test('rain on a lawn under four trees is not rain on fifty metres of tarmac', ()
 // ── what stands on it ───────────────────────────────────────────────────────
 
 test('the park is furnished out of the catalogue that was already there', () => {
-  // Only the fountain and the head use park-specific gameplay meshes. The hero
+  // Only the fountain, eyes and their separated coins use park meshes. The hero
   // vegetation variants belong to the shared world catalogue.
-  const novel = ['park_fountain', 'park_marble_eyes'];
+  const novel = ['park_fountain', 'park_marble_eyes', 'park_fountain_coins'];
   const used = [...new Set(YARD_PARK_PROPS.map((prop) => prop.mesh))];
   for (const mesh of used) {
     assert.ok(PROP_MESH[mesh], `${mesh} has a footprint contract`);

@@ -4,6 +4,7 @@ import {
   FIREBALL_BATTLE_ORDER, fireballBattleOrdinal, fireballChoreography,
   fireballCyclePhase, fireballPressure,
 } from '../src/game/fireball-choreography.js';
+import { FIREBALL_OUTSIDE_SECONDS } from '../src/game/fireball-exchange.js';
 
 // A STAIRCASE OF S-CURVES.
 //
@@ -40,17 +41,22 @@ test('it is an S, not a ramp: the middle of the night is where it turns', () => 
   assert.ok(middle > late, 'and a bigger jump than the last, which is already near the ceiling');
 });
 
-// The settle is not a mercy that shrinks. The harder the break is to read, the
-// longer the player is owed to act on having read it.
-test('difficulty grows in an authored feint while every committed catch keeps at least 1.57 seconds', () => {
+test('a short feint earns a bounded catch budget that grows with the original target count', () => {
   const first = fireballChoreography({ battleId: 'natatorium', turn: 0 });
   const last = fireballChoreography({ battleId: 'source-final', turn: 12 });
   for (const key of ['evasion', 'reach', 'breakMs', 'cohesion']) {
     assert.ok(last[key] > first[key], `${key} climbs`);
   }
   assert.equal('senseMs' in first,false,'cursor prediction is not part of the choreography contract');
-  assert.ok(first.settleMs>=1570&&last.settleMs>=1570,'the stationary catch floor never shrinks');
-  assert.ok(first.breakMs+first.settleMs<=2050&&last.breakMs+last.settleMs<=2050,'one feint fits the outside flight');
+  for(const battleId of FIREBALL_BATTLE_ORDER)for(let turn=0;turn<=12;turn+=1){
+    const single=fireballChoreography({battleId,turn,rayCount:1});
+    const volley=fireballChoreography({battleId,turn,rayCount:4});
+    assert.ok(single.breakMs>=550&&single.breakMs<=700,'there is one readable movement');
+    assert.ok(single.settleMs>=1450&&single.settleMs<=1550,'single threats do not loiter');
+    assert.ok(volley.settleMs>=2350&&volley.settleMs<=2450,'four targets retain a usable acquisition budget');
+    assert.ok(volley.settleMs-single.settleMs>=899,'additional targets earn time rather than becoming a faster click test');
+  }
+  assert.equal(first.breakMs+first.settleMs,FIREBALL_OUTSIDE_SECONDS*1000);
   assert.equal(first.gesture,'rise-drift');
   assert.equal(last.gesture,'swarm-recombine');
 });
@@ -60,7 +66,7 @@ test('reduced motion opts out of the whole dance', () => {
   assert.equal(still.pressure, 0);
   assert.equal(still.evasion, 0, 'nothing darts');
   assert.equal(still.breakMs,0);
-  assert.ok(still.settleMs>=2050);
+  assert.equal(still.settleMs,FIREBALL_OUTSIDE_SECONDS*1000);
 });
 
 // One count for the whole cast: they break together and settle together, which

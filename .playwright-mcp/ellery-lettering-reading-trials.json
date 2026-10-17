@@ -1,0 +1,70 @@
+[
+  {
+    "caseId": "services",
+    "variant": "fabricated",
+    "light": "torch",
+    "distance": 3,
+    "acquisition": [
+      960,
+      600
+    ],
+    "packSha": "80411d242be71d2026f1cffdfe3ef4005107571df09c0ef36e9e667ba3349cbd",
+    "readerId": "82c8d40e-a1f1-4873-ac29-a3da8991a414",
+    "transcription": "studio wing",
+    "exposureMs": 3021,
+    "elapsedMs": 8975,
+    "timestamp": "2026-10-17T07:01:55.112Z",
+    "freshness": "Reader self-declared; no prior study exposure; each inscription shown once."
+  },
+  {
+    "caseId": "placard",
+    "variant": "fabricated",
+    "light": "torch",
+    "distance": 3,
+    "acquisition": [
+      960,
+      600
+    ],
+    "packSha": "80411d242be71d2026f1cffdfe3ef4005107571df09c0ef36e9e667ba3349cbd",
+    "readerId": "82c8d40e-a1f1-4873-ac29-a3da8991a414",
+    "transcription": "SAVE ELLERY",
+    "exposureMs": 3002,
+    "elapsedMs": 6036,
+    "timestamp": "2026-10-17T07:02:08.534Z",
+    "freshness": "Reader self-declared; no prior study exposure; each inscription shown once."
+  },
+  {
+    "caseId": "services",
+    "variant": "fabricated",
+    "light": "torch",
+    "distance": 3,
+    "acquisition": [
+      960,
+      600
+    ],
+    "packSha": "80411d242be71d2026f1cffdfe3ef4005107571df09c0ef36e9e667ba3349cbd",
+    "readerId": "bdc71ee8-8326-4178-bc17-e5cb4ded4ccb",
+    "transcription": "STUDIO WING",
+    "exposureMs": 3001,
+    "elapsedMs": 17842,
+    "timestamp": "2026-10-17T07:05:05.944Z",
+    "freshness": "Reader self-declared; no prior study exposure; each inscription shown once."
+  },
+  {
+    "caseId": "placard",
+    "variant": "fabricated",
+    "light": "torch",
+    "distance": 3,
+    "acquisition": [
+      960,
+      600
+    ],
+    "packSha": "80411d242be71d2026f1cffdfe3ef4005107571df09c0ef36e9e667ba3349cbd",
+    "readerId": "bdc71ee8-8326-4178-bc17-e5cb4ded4ccb",
+    "transcription": "SAVE ELLERY",
+    "exposureMs": 3002,
+    "elapsedMs": 6296,
+    "timestamp": "2026-10-17T07:05:18.611Z",
+    "freshness": "Reader self-declared; no prior study exposure; each inscription shown once."
+  }
+]

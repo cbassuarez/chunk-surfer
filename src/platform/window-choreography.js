@@ -3,6 +3,7 @@ import { logWarn } from './diagnostics/diagnostics.js';
 import { sectorErrorPhases } from '../render/sector-error.js';
 import { sourceWarningFrames } from '../render/source-warning.js';
 import { drawPracticeRebus } from '../render/practice-rebus.js';
+import { ensureWorldLetteringFonts } from '../render/world-lettering-fonts.js';
 import {
   apertureCompositionPlan,
   compilePaneScore,
@@ -1005,6 +1006,14 @@ export function createWindowChoreographyDirector({
     const ready=await safe(()=>effects?.prepareMedia?.({count:4}));
     if(!current())return null;
     if(!ready)return{native:false,unavailable:true};
+    // A snapshot is permanent: do not cache a substituted browser face while
+    // the pinned clue alphabet is still loading. Headless document probes have
+    // no FontFaceSet and do not rasterize real glyphs.
+    if(documentApi?.fonts){
+      const fonts=await safe(()=>ensureWorldLetteringFonts({ownerDocument:documentApi}));
+      if(!current())return null;
+      if(!fonts)return{native:false,unavailable:true,reason:'lettering-fonts'};
+    }
     const clueTokens=[];
     for(const part of cue.parts||[]){
       if(!practiceClueTokens.has(part)){

@@ -15,20 +15,19 @@ export const FIREBALL_RETURN_THRESHOLD = 3;
 export const FIREBALL_RETURN_DAMAGE = 1;
 export const FIREBALL_FIRST_CAST_SECONDS = 0.7;
 export const FIREBALL_CAST_INTERVAL_SECONDS = 1.8;
-// What an uncontested comet costs. Small next to a RETURN's ten, because the
-// player is meant to be able to ignore one while doing something else and feel
-// it — not to be punished for looking away from the desktop for a beat.
+// What an uncontested comet costs. The player may choose to ignore one while
+// doing something else and feel it without losing the whole fight.
 export const FIREBALL_IMPACT_DAMAGE = 3;
-// The flight does not end at the bezel. It leaves the stage, crosses the rest
-// of the screen, and only then lands — and it is clickable for every second of
-// that, which is the entire reason there is a window out there at all.
-export const FIREBALL_OUTSIDE_SECONDS = 2.05;
+// A native target leaves the stage and feints inside a fixed peripheral input
+// envelope, then holds its own catch mark. The envelope protects near misses.
+export const FIREBALL_OUTSIDE_SECONDS = 2.1;
 // The first missed commitment is information, not damage. It retreats to the
 // bezel and comes back once, visibly on the same ray. Only the second complete
 // offer may land.
 export const FIREBALL_REBOUND_SECONDS = .48;
 export const FIREBALL_CATCH_PROGRESS = .72;
 export const FIREBALL_OFFERS = 2;
+export const FIREBALL_ACQUIRE_GRACE_SECONDS = .75;
 // SIBLINGS DO NOT ARRIVE TOGETHER.
 //
 // Four comets leaving on the same frame is one event with four sprites in it --
@@ -100,7 +99,7 @@ export function createFireballExchange({
   // is what makes a staggered cast an arpeggio and a volley a chord.
   onLaunch = () => {},
   impactDamage = FIREBALL_IMPACT_DAMAGE,
-  outsideSeconds = FIREBALL_OUTSIDE_SECONDS,
+  outsideSeconds = null,
   staggerSeconds = FIREBALL_STAGGER_SECONDS,
   // Read at spawn, not at construction: the stage band moves with the window.
   getStage = null,
@@ -111,7 +110,7 @@ export function createFireballExchange({
   const threshold = Math.max(1, Math.floor(Number(returnThreshold) || FIREBALL_RETURN_THRESHOLD));
   const rangedDamage = Math.max(1, Math.floor(Number(returnDamage) || FIREBALL_RETURN_DAMAGE));
   const landing = Math.max(0, Math.floor(Number(impactDamage) || 0));
-  const outside = Math.max(.05, Number(outsideSeconds) || FIREBALL_OUTSIDE_SECONDS);
+  const outsideOverride = outsideSeconds == null ? null : Math.max(.05, Number(outsideSeconds) || FIREBALL_OUTSIDE_SECONDS);
   const stagger = Math.max(0, Number(staggerSeconds) || 0);
   let movement = { id:'', index:0, title:'' };
   let sequence = 0;
@@ -149,12 +148,14 @@ export function createFireballExchange({
     // other cast is a phrase: the second comet leaves while the first is still
     // crossing, and they can be answered in the order they were thrown.
     const together = !!plan.volley;
+    const dance=fireballChoreography({ reducedMotion:!!reducedMotion, ...(getPressure?.() || {}), rayCount:plan.rayCount });
     active = {
       plan,
       duration,
-      // Shared by every comet in the cast. Swimmers keep one count.
+      // Cast-wide inspector summary; each ray owns its presentation phase.
       shoalSeconds:0,
-      dance:fireballChoreography({ reducedMotion:!!reducedMotion, ...(getPressure?.() || {}) }),
+      dance,
+      outsideSeconds:outsideOverride ?? (dance.breakMs+dance.settleMs)/1000,
       rays: plan.rays.map((ray, index) => ({
         id:ray.id,
         index,
@@ -168,6 +169,8 @@ export function createFireballExchange({
         rebound:0,
         offers:0,
         catchReady:false,
+        acquired:false,
+        offerDeadline:0,
         canvasProgress:.86,
         dwell:0,
         damage:null,
@@ -185,6 +188,9 @@ export function createFireballExchange({
   }
 
   function finish(ray, state, damage = null) {
+    // A resolved surface keeps the pose the player actually answered. Its
+    // short feedback tail must not complete a feint or restart an approach.
+    ray.resolvedPose = Object.freeze(outsidePose(ray));
     ray.state = state;
     ray.dwell = RAY_DWELL[state] || .3;
     ray.damage = Number.isFinite(Number(damage)) ? Math.max(0, Math.floor(Number(damage))) : null;
@@ -234,14 +240,49 @@ export function createFireballExchange({
     if (stopped || !active) return { hit:false, returned:false, charge, threshold };
     if (castId && String(castId) !== active.plan.castId) return { hit:false, returned:false, charge, threshold };
     const live = liveRays();
-    return register(live.find((ray) => ray.id === rayId) || live[0]);
+    // An explicitly addressed ray is never permission to strike a sibling.
+    // Retain the unaddressed entry point for older in-canvas callers only.
+    return register(rayId == null ? live[0] : live.find((ray) => ray.id === rayId));
+  }
+
+  // Reaching a native tile earns a stationary click opportunity, not charge.
+  // Extend only once, so hovering cannot indefinitely postpone a projectile.
+  function acquire({castId='',rayId=null,offer=1}={}){
+    const rejected={acquired:false,charge,threshold};
+    if(stopped||!active||String(castId)!==active.plan.castId||!Number.isInteger(offer))return rejected;
+    const ray=active.rays.find(ray=>ray.id===rayId&&['approach','rebound'].includes(ray.state));
+    if(!ray||offer!==Math.min(FIREBALL_OFFERS,ray.offers+1))return rejected;
+    if(ray.acquired)return{acquired:true,duplicate:true,castId,rayId,offer,charge,threshold};
+    ray.acquired=true;
+    ray.offerDeadline=Math.max(active.outsideSeconds,(ray.state==='approach'?ray.outside:0)+FIREBALL_ACQUIRE_GRACE_SECONDS);
+    last={type:'acquired',castId,rayId,offer};
+    sync();
+    return{acquired:true,duplicate:false,castId,rayId,offer,charge,threshold};
+  }
+
+  function outsidePose(ray) {
+    if (ray.resolvedPose) return { ...ray.resolvedPose };
+    const phase = fireballCyclePhase(ray.outside, active.dance);
+    // The retreat retraces this ray's own offer. Its next approach starts a
+    // fresh phase even though the cast's inspector clock has already settled.
+    const formationProgress = ray.state === 'rebound'
+      ? 1 - clamp(ray.rebound / FIREBALL_REBOUND_SECONDS, 0, 1)
+      : phase.settled ? 1 : phase.formationProgress;
+    const travel = ray.state === 'rebound'
+      ? Math.sin(formationProgress * Math.PI)
+      : phase.travel;
+    return {
+      rebounding:ray.state==='rebound',
+      progress: FIREBALL_CATCH_PROGRESS * formationProgress,
+      dodge: formationProgress >= 1 ? 0 : active.dance.evasion * travel,
+      formationProgress,
+    };
   }
 
   // What is outside the frame right now, one entry per comet. Everything drawn
   // out there is drawn from this and nothing else.
   function outsideFrame() {
     if (!active) return [];
-    const breakSeconds=Math.max(0,Number(active.dance?.breakMs)||0)/1000;
     return active.rays
       .filter((ray) => ray.state !== 'waiting' && ray.state !== 'inflight' && ray.state !== 'gone')
       .map((ray) => ({
@@ -250,10 +291,9 @@ export function createFireballExchange({
         state:['approach','rebound'].includes(ray.state) ? 'outbound' : ray.state,
         // The target reaches its catch mark during the authored feint and then
         // stays there. A rebound visibly retraces the same segment to the edge.
-        progress:ray.state==='rebound'
-          ? FIREBALL_CATCH_PROGRESS*(1-clamp(ray.rebound/FIREBALL_REBOUND_SECONDS,0,1))
-          : FIREBALL_CATCH_PROGRESS*clamp(ray.outside/Math.max(.001,breakSeconds),0,1),
+        ...outsidePose(ray),
         catchReady:!!ray.catchReady,
+        acquired:!!ray.acquired,
         offer:Math.min(FIREBALL_OFFERS,ray.offers+1),
         damage:ray.damage,
       }));
@@ -267,9 +307,8 @@ export function createFireballExchange({
     const presented=onSync({
       castId:active.plan.castId,
       rays,
-      // One dance for the whole cast: they break on the same count and settle
-      // on the same count, which is the difference between a formation and
-      // four windows each dodging on their own.
+      // The cast-wide phase remains an inspector summary. Native movement and
+      // commitment cues use each ray's own presentation phase above.
       choreography:{
         dodge:dance.evasion * cycle.travel,
         reach:dance.reach,
@@ -297,7 +336,7 @@ export function createFireballExchange({
       if (spawnIn <= 0) spawn();
       return snapshot();
     }
-    // The count the shoal keeps, started by the first comet to leave the frame.
+    // Retain the inspector's cast-wide count from the first outside arrival.
     if (active.rays.some((ray) => ray.state !== 'waiting' && ray.state !== 'inflight' && ray.state !== 'gone')) {
       active.shoalSeconds += seconds;
     }
@@ -325,12 +364,14 @@ export function createFireballExchange({
         const cycle=fireballCyclePhase(ray.outside,active.dance);
         ray.catchReady=cycle.settled;
         ray.canvasProgress=.86-cycle.travel*.08;
-        if (ray.outside < outside) continue;
+        if (ray.outside < Math.max(active.outsideSeconds,ray.offerDeadline)) continue;
         ray.offers += 1;
         if(ray.offers<FIREBALL_OFFERS){
           ray.state='rebound';
           ray.rebound=0;
           ray.catchReady=false;
+          ray.acquired=false;
+          ray.offerDeadline=0;
           last={type:'reoffered',castId:active.plan.castId,rayId:ray.id,offer:ray.offers+1};
           continue;
         }
@@ -380,6 +421,7 @@ export function createFireballExchange({
       active:active ? {
         plan:active.plan,
         duration:active.duration,
+        outsideSeconds:active.outsideSeconds,
         externalPresented:!!active.externalPresented,
         rays:active.rays.map((ray) => ({ ...ray })),
         // The leader, for anything that still wants one number: the furthest
@@ -411,5 +453,5 @@ export function createFireballExchange({
     return spawn(context);
   }
 
-  return { setMovement, update, click, strike, castNow, cancel, snapshot, stop };
+  return { setMovement, update, click, strike, acquire, castNow, cancel, snapshot, stop };
 }

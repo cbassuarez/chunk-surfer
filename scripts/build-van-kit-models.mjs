@@ -57,6 +57,7 @@ const glyphs={
  6:[[[.6,1],[.2,1],[0,.7],[0,.15],[.15,0],[.45,0],[.6,.15],[.6,.4],[.45,.55],[0,.55]]],7:[[[0,1],[.6,1],[.15,0]]],
  8:[[[.15,.5],[0,.65],[0,.85],[.15,1],[.45,1],[.6,.85],[.6,.65],[.15,.5],[0,.35],[0,.15],[.15,0],[.45,0],[.6,.15],[.6,.35],[.45,.5],[.15,.5]]],
  9:[[[.6,.45],[.15,.45],[0,.6],[0,.85],[.15,1],[.45,1],[.6,.85],[.6,.15],[.45,0],[0,0]]],'-':[[[.06,.5],[.54,.5]]],
+ '/':[[[0,0],[.6,1]]],
 };
 function roundedRect(w,h,r=.05){
  const s=new THREE.Shape(),x=-w/2,y=-h/2;r=Math.min(r,w/2,h/2);
@@ -127,11 +128,13 @@ async function build(id,make){
  function label(value,p,size=.035,m='ink',r=[0,0,0]){
   group(p,r,`etched-legend:${value}`,()=>{
    const strokes=[];
-   for(const [i,char]of[...value].entries())for(const line of glyphs[char]||[]){
+   for(const [i,char]of[...value].entries()){
+    if(!glyphs[char]&&!/\s/.test(char))throw new Error(`Unsupported field-kit legend character ${JSON.stringify(char)} in ${value}`);
+    for(const line of glyphs[char]||[]){
     const points=line.map(([x,y])=>new THREE.Vector2((i*.84+x)*size,y*size));
     const geom=SVGLoader.pointsToStroke(points,SVGLoader.getStrokeStyle(size*.075,'#fff','round','round'),2);
     if(geom)strokes.push(geom);
-   }
+   }}
    if(strokes.length)add(mergeGeometries(strokes),m,undefined,undefined,'continuous-etched-lettering');
   });
  }

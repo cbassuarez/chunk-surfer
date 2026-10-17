@@ -1,0 +1,18 @@
+- generic [active] [ref=f99e1]:
+  - banner [ref=f99e2]:
+    - heading "The vigil / production cast" [level=1] [ref=f99e3]
+    - paragraph [ref=f99e4]: Loading anatomy, wardrobe and grasp contacts…
+  - complementary [ref=f99e5]:
+    - generic [ref=f99e6]:
+      - button "FINAL DITHER" [pressed] [ref=f99e7] [cursor=pointer]
+      - button "MATERIAL INSPECTION" [ref=f99e8] [cursor=pointer]
+    - generic [ref=f99e9]:
+      - button "FRONT" [ref=f99e10] [cursor=pointer]
+      - button "SIDE" [ref=f99e11] [cursor=pointer]
+      - button "BACK" [ref=f99e12] [cursor=pointer]
+      - button "GRIPS" [ref=f99e13] [cursor=pointer]
+    - button "PLAY GESTURE" [ref=f99e15] [cursor=pointer]
+    - generic [ref=f99e16]:
+      - text: PHASE
+      - slider "PHASE" [ref=f99e17]: "0"
+  - navigation [ref=f99e18]

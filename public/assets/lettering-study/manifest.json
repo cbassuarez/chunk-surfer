@@ -1,0 +1,472 @@
+{
+  "version": 1,
+  "sourcePackSha256": "077059b14188d7f691cefef4891185ebb926f6b3713ab581319a7b4e5fb0065b",
+  "generatorSha256": "01000beee790d3d861c8c1bffa3efaece41ddfb3ed254920bec9e2a22dd009d7",
+  "sourceModuleSha256": "5dcba507c810de70245f7bef94b470a22aa73526b15480dc49aa9c918be5c99c",
+  "fontsLicense": "tools/chunk_surfer/lettering-study/fonts/LICENSE; AGPL-3.0 with the stated PostScript/PDF exception",
+  "cases": {
+    "services": {
+      "copy": "STUDIOS / PLANT",
+      "baselineInkTriangles": 354,
+      "boardDimensionsM": [
+        2.62,
+        0.78
+      ],
+      "variants": {
+        "type-flat": {
+          "font": "NimbusSansNarrow-Bold.otf",
+          "fontSha256": "6d7cec07f5a9035e208532dab35a51312aef4a7f26eb524dd614c9fcd97c3264",
+          "fontSizePx": 131,
+          "capHeightPx": 94,
+          "capHeightM": 0.24050781250000003,
+          "stemWidthPx": 16,
+          "stemWidthM": 0.0409375,
+          "boundsPx": [
+            44,
+            102,
+            982,
+            201
+          ],
+          "glyphs": [
+            {
+              "character": "S",
+              "xPx": 40.420000000000016,
+              "advancePx": 72.94
+            },
+            {
+              "character": "T",
+              "xPx": 113.36000000000001,
+              "advancePx": 66.94
+            },
+            {
+              "character": "U",
+              "xPx": 180.3,
+              "advancePx": 78.94
+            },
+            {
+              "character": "D",
+              "xPx": 259.24,
+              "advancePx": 78.94
+            },
+            {
+              "character": "I",
+              "xPx": 338.18,
+              "advancePx": 30.94
+            },
+            {
+              "character": "O",
+              "xPx": 369.12,
+              "advancePx": 84.94
+            },
+            {
+              "character": "S",
+              "xPx": 454.06,
+              "advancePx": 72.94
+            },
+            {
+              "character": " ",
+              "xPx": 527.0,
+              "advancePx": 30.94
+            },
+            {
+              "character": "/",
+              "xPx": 557.94,
+              "advancePx": 30.94
+            },
+            {
+              "character": " ",
+              "xPx": 588.8800000000001,
+              "advancePx": 30.94
+            },
+            {
+              "character": "P",
+              "xPx": 619.8200000000002,
+              "advancePx": 72.94
+            },
+            {
+              "character": "L",
+              "xPx": 692.7600000000002,
+              "advancePx": 66.94
+            },
+            {
+              "character": "A",
+              "xPx": 759.7000000000003,
+              "advancePx": 78.94
+            },
+            {
+              "character": "N",
+              "xPx": 838.6400000000003,
+              "advancePx": 78.94
+            },
+            {
+              "character": "T",
+              "xPx": 917.5800000000004,
+              "advancePx": 66.94
+            }
+          ],
+          "trackingPx": 0.9400000000000001,
+          "inkCoverage": 0.12035490337171052,
+          "surfaceWearCoverage": 0.0,
+          "textureSize": [
+            1024,
+            304
+          ],
+          "maxPigmentHeightM": 0,
+          "textureSizes": {
+            "albedo": [
+              1024,
+              304
+            ],
+            "orm": [
+              512,
+              152
+            ]
+          },
+          "triangleDelta": -352,
+          "faceTriangles": 2,
+          "drawCallDelta": 0,
+          "textureBytes": 21011,
+          "baseLevelGpuBytes": 1556480,
+          "mipGpuBytes": 2075307
+        },
+        "fabricated": {
+          "font": "NimbusSansNarrow-Bold.otf",
+          "fontSha256": "6d7cec07f5a9035e208532dab35a51312aef4a7f26eb524dd614c9fcd97c3264",
+          "fontSizePx": 131,
+          "capHeightPx": 94,
+          "capHeightM": 0.24050781250000003,
+          "stemWidthPx": 16,
+          "stemWidthM": 0.0409375,
+          "boundsPx": [
+            44,
+            102,
+            982,
+            201
+          ],
+          "glyphs": [
+            {
+              "character": "S",
+              "xPx": 40.420000000000016,
+              "advancePx": 72.94
+            },
+            {
+              "character": "T",
+              "xPx": 113.36000000000001,
+              "advancePx": 66.94
+            },
+            {
+              "character": "U",
+              "xPx": 180.3,
+              "advancePx": 78.94
+            },
+            {
+              "character": "D",
+              "xPx": 259.24,
+              "advancePx": 78.94
+            },
+            {
+              "character": "I",
+              "xPx": 338.18,
+              "advancePx": 30.94
+            },
+            {
+              "character": "O",
+              "xPx": 369.12,
+              "advancePx": 84.94
+            },
+            {
+              "character": "S",
+              "xPx": 454.06,
+              "advancePx": 72.94
+            },
+            {
+              "character": " ",
+              "xPx": 527.0,
+              "advancePx": 30.94
+            },
+            {
+              "character": "/",
+              "xPx": 557.94,
+              "advancePx": 30.94
+            },
+            {
+              "character": " ",
+              "xPx": 588.8800000000001,
+              "advancePx": 30.94
+            },
+            {
+              "character": "P",
+              "xPx": 619.8200000000002,
+              "advancePx": 72.94
+            },
+            {
+              "character": "L",
+              "xPx": 692.7600000000002,
+              "advancePx": 66.94
+            },
+            {
+              "character": "A",
+              "xPx": 759.7000000000003,
+              "advancePx": 78.94
+            },
+            {
+              "character": "N",
+              "xPx": 838.6400000000003,
+              "advancePx": 78.94
+            },
+            {
+              "character": "T",
+              "xPx": 917.5800000000004,
+              "advancePx": 66.94
+            }
+          ],
+          "trackingPx": 0.9400000000000001,
+          "inkCoverage": 0.12035490337171052,
+          "surfaceWearCoverage": 0.010796797902960526,
+          "textureSize": [
+            1024,
+            304
+          ],
+          "maxPigmentHeightM": 1.2e-05,
+          "textureSizes": {
+            "albedo": [
+              1024,
+              304
+            ],
+            "orm": [
+              512,
+              152
+            ],
+            "normal": [
+              256,
+              76
+            ]
+          },
+          "triangleDelta": -352,
+          "faceTriangles": 2,
+          "drawCallDelta": 0,
+          "textureBytes": 124958,
+          "baseLevelGpuBytes": 1634304,
+          "mipGpuBytes": 2179072
+        }
+      }
+    },
+    "placard": {
+      "copy": "SAVE ELLERY",
+      "baselineInkTriangles": 300,
+      "boardDimensionsM": [
+        1.32,
+        0.84
+      ],
+      "variants": {
+        "type-flat": {
+          "font": "authored brush trajectories",
+          "fontSha256": null,
+          "fontSizePx": null,
+          "capHeightPx": 63.0,
+          "capHeightM": 0.16242187500000002,
+          "stemWidthPx": 8,
+          "stemWidthM": 0.020625,
+          "boundsPx": [
+            47,
+            132,
+            466,
+            195
+          ],
+          "glyphs": [
+            {
+              "character": "S",
+              "xPx": 47.11369696969703,
+              "advancePx": 40.48290909090908
+            },
+            {
+              "character": "A",
+              "xPx": 87.59660606060612,
+              "advancePx": 43.78763636363635
+            },
+            {
+              "character": "V",
+              "xPx": 131.38424242424247,
+              "advancePx": 42.68606060606059
+            },
+            {
+              "character": "E",
+              "xPx": 174.07030303030308,
+              "advancePx": 37.72896969696969
+            },
+            {
+              "character": " ",
+              "xPx": 211.79927272727278,
+              "advancePx": 23.683878787878783
+            },
+            {
+              "character": "E",
+              "xPx": 235.48315151515158,
+              "advancePx": 37.72896969696969
+            },
+            {
+              "character": "L",
+              "xPx": 273.21212121212125,
+              "advancePx": 36.62739393939393
+            },
+            {
+              "character": "L",
+              "xPx": 309.8395151515152,
+              "advancePx": 36.62739393939393
+            },
+            {
+              "character": "E",
+              "xPx": 346.4669090909091,
+              "advancePx": 37.72896969696969
+            },
+            {
+              "character": "R",
+              "xPx": 384.19587878787877,
+              "advancePx": 42.135272727272714
+            },
+            {
+              "character": "Y",
+              "xPx": 426.3311515151515,
+              "advancePx": 42.68606060606059
+            }
+          ],
+          "trackingPx": 4.13090909090909,
+          "construction": "broad-nib sweeps of independent S A V E L R Y trajectories; identical layout in both variants",
+          "inkCoverage": 0.0625059911809816,
+          "surfaceWearCoverage": 0.0,
+          "textureSize": [
+            512,
+            326
+          ],
+          "maxPigmentHeightM": 0,
+          "textureSizes": {
+            "albedo": [
+              512,
+              326
+            ],
+            "orm": [
+              256,
+              163
+            ]
+          },
+          "triangleDelta": -298,
+          "faceTriangles": 2,
+          "drawCallDelta": 0,
+          "textureBytes": 25360,
+          "baseLevelGpuBytes": 834560,
+          "mipGpuBytes": 1112747
+        },
+        "fabricated": {
+          "font": "authored brush trajectories",
+          "fontSha256": null,
+          "fontSizePx": null,
+          "capHeightPx": 63.0,
+          "capHeightM": 0.16242187500000002,
+          "stemWidthPx": 8,
+          "stemWidthM": 0.020625,
+          "boundsPx": [
+            47,
+            132,
+            466,
+            195
+          ],
+          "glyphs": [
+            {
+              "character": "S",
+              "xPx": 47.11369696969703,
+              "advancePx": 40.48290909090908
+            },
+            {
+              "character": "A",
+              "xPx": 87.59660606060612,
+              "advancePx": 43.78763636363635
+            },
+            {
+              "character": "V",
+              "xPx": 131.38424242424247,
+              "advancePx": 42.68606060606059
+            },
+            {
+              "character": "E",
+              "xPx": 174.07030303030308,
+              "advancePx": 37.72896969696969
+            },
+            {
+              "character": " ",
+              "xPx": 211.79927272727278,
+              "advancePx": 23.683878787878783
+            },
+            {
+              "character": "E",
+              "xPx": 235.48315151515158,
+              "advancePx": 37.72896969696969
+            },
+            {
+              "character": "L",
+              "xPx": 273.21212121212125,
+              "advancePx": 36.62739393939393
+            },
+            {
+              "character": "L",
+              "xPx": 309.8395151515152,
+              "advancePx": 36.62739393939393
+            },
+            {
+              "character": "E",
+              "xPx": 346.4669090909091,
+              "advancePx": 37.72896969696969
+            },
+            {
+              "character": "R",
+              "xPx": 384.19587878787877,
+              "advancePx": 42.135272727272714
+            },
+            {
+              "character": "Y",
+              "xPx": 426.3311515151515,
+              "advancePx": 42.68606060606059
+            }
+          ],
+          "trackingPx": 4.13090909090909,
+          "construction": "broad-nib sweeps of independent S A V E L R Y trajectories; identical layout in both variants",
+          "inkCoverage": 0.0625059911809816,
+          "surfaceWearCoverage": 0.004984662576687116,
+          "textureSize": [
+            512,
+            326
+          ],
+          "maxPigmentHeightM": 5e-06,
+          "textureSizes": {
+            "albedo": [
+              512,
+              326
+            ],
+            "orm": [
+              256,
+              163
+            ],
+            "normal": [
+              128,
+              81
+            ]
+          },
+          "triangleDelta": -298,
+          "faceTriangles": 2,
+          "drawCallDelta": 0,
+          "textureBytes": 83116,
+          "baseLevelGpuBytes": 876032,
+          "mipGpuBytes": 1168043
+        }
+      }
+    }
+  },
+  "limitations": [
+    "Pixel sampling criteria are planning thresholds, not unbriefed human reading results.",
+    "Nimbus Sans is a deterministic institutional prototype stock; the placard uses authored brush sweeps. Historical authenticity requires the selected owner/process reference.",
+    "No production placement or content is replaced. Only two representative cases are prototyped."
+  ],
+  "glbBytes": 336412,
+  "glbSha256": "80411d242be71d2026f1cffdfe3ef4005107571df09c0ef36e9e667ba3349cbd",
+  "totalMeshes": 6,
+  "totalTextures": 10
+}

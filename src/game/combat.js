@@ -516,6 +516,7 @@ export function makeCombatScene({
   let reactionRect = null;
   let fireballRect = null;
   let onSurfaceHit = null;
+  let onSurfaceAcquire = null;
   let onSurfaceForgive = null;
   // Where and when a comet last landed on the frame. The engulf is drawn over
   // the whole panel from the bearing it came in on -- see drawFireballEngulf.
@@ -647,6 +648,7 @@ export function makeCombatScene({
         maxComposure: visibleState.maxComposure, injuries: state.injuries }),
       snr: state.snr,
       hurt: hurt ?? (impactFx?.received > 0 ? Math.max(0, 1 - (now - impactFx.at) / .35) : 0),
+      hurtAge: impactFx?.received > 0 ? Math.max(0, now - impactFx.at) : null,
       parry: reaction,
       reducedMotion: shakeMode() !== 'full',
       wet: submersionSnapshot.enabled ? submersionSnapshot.wetMix : 0,
@@ -1630,6 +1632,11 @@ export function makeCombatScene({
           if (result.hit) announceFireballHit(result);
         };
         window.addEventListener('chunk-surfer:fireball-hit', onSurfaceHit);
+        onSurfaceAcquire=(event)=>{
+          if(!sceneEntered||state.result||!['tool','move','resolve'].includes(phase))return;
+          fireballExchange.acquire(event?.detail||{});
+        };
+        window.addEventListener('chunk-surfer:fireball-acquire',onSurfaceAcquire);
         onSurfaceForgive = (event) => {
           if(!sceneEntered)return;
           fireballExchange.cancel(event?.detail?.reason||'emergency-restore');
@@ -1664,6 +1671,10 @@ export function makeCombatScene({
       if(onSurfaceForgive&&typeof window!=='undefined'){
         window.removeEventListener('chunk-surfer:fireball-forgive',onSurfaceForgive);
         onSurfaceForgive=null;
+      }
+      if(onSurfaceAcquire&&typeof window!=='undefined'){
+        window.removeEventListener('chunk-surfer:fireball-acquire',onSurfaceAcquire);
+        onSurfaceAcquire=null;
       }
       stopVoice();
       audio?.stopTyping?.();

@@ -1,0 +1,6993 @@
+{
+  "version": 1,
+  "pageSize": 1024,
+  "jobs": [
+    {
+      "id": "rekey_ledger:0",
+      "copy": "REPLACEMENT LOCK — CHAPEL — CABINET C-17",
+      "lines": [
+        "REPLACEMENT LOCK —",
+        "CHAPEL —",
+        "CABINET C-17"
+      ],
+      "widthM": 1.08,
+      "heightM": 0.82,
+      "category": "record",
+      "process": "typed rekey entry on clipped ledger paper",
+      "palette": {
+        "ground": [
+          0.64,
+          0.6,
+          0.48
+        ],
+        "ink": [
+          0.025,
+          0.028,
+          0.03
+        ]
+      },
+      "capHeightM": 0.067,
+      "lineCentres": [
+        0.39,
+        0.61,
+        0.81
+      ],
+      "emission": "none",
+      "font": "NimbusMonoPS-Bold.otf",
+      "reliefM": 0.000007,
+      "seed": "rekey_ledger:0",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          0.48,
+          -0.083
+        ]
+      }
+    },
+    {
+      "id": "chapel_key_ring_ch04:0",
+      "copy": "CH-04\nCHAPEL — MAIN",
+      "lines": [
+        "CH-04",
+        "CHAPEL — MAIN"
+      ],
+      "widthM": 0.16,
+      "heightM": 0.075,
+      "category": "institution",
+      "process": "oxidised die-stamped brass key tag",
+      "palette": {
+        "ground": [
+          0.49,
+          0.31,
+          0.08
+        ],
+        "ink": [
+          0.025,
+          0.028,
+          0.03
+        ]
+      },
+      "capHeightM": 0.023,
+      "lineCentres": [
+        0.33,
+        0.8
+      ],
+      "lineScale": [
+        1,
+        0.39
+      ],
+      "emission": "none",
+      "marks": [],
+      "reliefM": 0.000007,
+      "seed": "chapel_key_ring_ch04:0",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "center": [
+          0,
+          0.055,
+          0.238
+        ]
+      }
+    },
+    {
+      "id": "chapel_key_ring_c17:0",
+      "copy": "C-17",
+      "lines": [
+        "C-17"
+      ],
+      "widthM": 0.16,
+      "heightM": 0.075,
+      "category": "institution",
+      "process": "biro correction on ivory key tag",
+      "palette": {
+        "ground": [
+          0.82,
+          0.8,
+          0.69
+        ],
+        "ink": [
+          0.025,
+          0.028,
+          0.03
+        ]
+      },
+      "capHeightM": 0.023,
+      "lineCentres": [
+        0.63
+      ],
+      "lineScale": [
+        1
+      ],
+      "emission": "none",
+      "marks": [
+        {
+          "points": [
+            [
+              0.17,
+              0.18
+            ],
+            [
+              0.72,
+              0.24
+            ]
+          ],
+          "width": 0.012
+        },
+        {
+          "points": [
+            [
+              0.2,
+              0.26
+            ],
+            [
+              0.77,
+              0.13
+            ]
+          ],
+          "width": 0.01
+        },
+        {
+          "points": [
+            [
+              0.16,
+              0.2
+            ],
+            [
+              0.31,
+              0.16
+            ],
+            [
+              0.4,
+              0.25
+            ],
+            [
+              0.57,
+              0.15
+            ],
+            [
+              0.74,
+              0.22
+            ]
+          ],
+          "width": 0.005
+        }
+      ],
+      "reliefM": 0.000007,
+      "seed": "chapel_key_ring_c17:0",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "center": [
+          0,
+          0.055,
+          0.238
+        ]
+      }
+    },
+    {
+      "id": "chapel_key_ring_fohm:0",
+      "copy": "FOH-M\nFRONT OF HOUSE — MASTER",
+      "lines": [
+        "FOH-M",
+        "FRONT OF HOUSE — MASTER"
+      ],
+      "widthM": 0.16,
+      "heightM": 0.075,
+      "category": "institution",
+      "process": "worn stamped master-key tag",
+      "palette": {
+        "ground": [
+          0.49,
+          0.31,
+          0.08
+        ],
+        "ink": [
+          0.025,
+          0.028,
+          0.03
+        ]
+      },
+      "capHeightM": 0.023,
+      "lineCentres": [
+        0.33,
+        0.8
+      ],
+      "lineScale": [
+        1,
+        0.39
+      ],
+      "emission": "none",
+      "marks": [],
+      "reliefM": 0.000007,
+      "seed": "chapel_key_ring_fohm:0",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "center": [
+          0,
+          0.055,
+          0.238
+        ]
+      }
+    },
+    {
+      "id": "door_stencil_b1:0",
+      "copy": "B1",
+      "widthM": 0.46,
+      "heightM": 0.32,
+      "category": "maintenance",
+      "process": "bridged maintenance stencil on a blockwork repair patch",
+      "palette": {
+        "ground": [
+          0.36,
+          0.37,
+          0.34
+        ],
+        "ink": [
+          0.025,
+          0.028,
+          0.03
+        ]
+      },
+      "capHeightM": 0.18,
+      "emission": "none",
+      "reliefM": 0.000007,
+      "seed": "door_stencil_b1:0",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          0.16,
+          -0.018
+        ]
+      }
+    },
+    {
+      "id": "door_stencil_b2:0",
+      "copy": "B2",
+      "widthM": 0.46,
+      "heightM": 0.32,
+      "category": "maintenance",
+      "process": "bridged maintenance stencil on a blockwork repair patch",
+      "palette": {
+        "ground": [
+          0.36,
+          0.37,
+          0.34
+        ],
+        "ink": [
+          0.025,
+          0.028,
+          0.03
+        ]
+      },
+      "capHeightM": 0.18,
+      "emission": "none",
+      "reliefM": 0.000007,
+      "seed": "door_stencil_b2:0",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          0.16,
+          -0.018
+        ]
+      }
+    },
+    {
+      "id": "door_stencil_b3:0",
+      "copy": "B3",
+      "widthM": 0.46,
+      "heightM": 0.32,
+      "category": "maintenance",
+      "process": "bridged maintenance stencil on a blockwork repair patch",
+      "palette": {
+        "ground": [
+          0.36,
+          0.37,
+          0.34
+        ],
+        "ink": [
+          0.025,
+          0.028,
+          0.03
+        ]
+      },
+      "capHeightM": 0.18,
+      "emission": "none",
+      "reliefM": 0.000007,
+      "seed": "door_stencil_b3:0",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          0.16,
+          -0.018
+        ]
+      }
+    },
+    {
+      "id": "door_stencil_b5:0",
+      "copy": "B5",
+      "widthM": 0.46,
+      "heightM": 0.32,
+      "category": "maintenance",
+      "process": "bridged maintenance stencil on a blockwork repair patch",
+      "palette": {
+        "ground": [
+          0.36,
+          0.37,
+          0.34
+        ],
+        "ink": [
+          0.025,
+          0.028,
+          0.03
+        ]
+      },
+      "capHeightM": 0.18,
+      "emission": "none",
+      "reliefM": 0.000007,
+      "seed": "door_stencil_b5:0",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          0.16,
+          -0.018
+        ]
+      }
+    },
+    {
+      "id": "source_hall_number_17:0",
+      "copy": "17",
+      "widthM": 0.33,
+      "heightM": 0.24,
+      "category": "maintenance",
+      "process": "bridged maintenance stencil on concrete",
+      "palette": {
+        "ground": [
+          0.36,
+          0.37,
+          0.34
+        ],
+        "ink": [
+          0.025,
+          0.028,
+          0.03
+        ]
+      },
+      "capHeightM": 0.18,
+      "emission": "none",
+      "reliefM": 0.000007,
+      "seed": "source_hall_number_17:0",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          0,
+          0,
+          -1
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          1,
+          0,
+          0
+        ],
+        "center": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "id": "hymn_board:0",
+      "copy": "17 · 44 · 91",
+      "widthM": 0.72,
+      "heightM": 0.84,
+      "category": "institution",
+      "process": "removable hymn-board numeral print",
+      "palette": {
+        "ground": [
+          0.16,
+          0.095,
+          0.052
+        ],
+        "ink": [
+          0.82,
+          0.8,
+          0.69
+        ]
+      },
+      "capHeightM": 0.1,
+      "lineCentres": [
+        0.09
+      ],
+      "emission": "none",
+      "reliefM": 0.000007,
+      "seed": "hymn_board:0",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          0.48,
+          -0.0305
+        ]
+      }
+    },
+    {
+      "id": "tower_rope_mat_tenor:0",
+      "copy": "8/\nTENOR",
+      "lines": [
+        "8/",
+        "TENOR"
+      ],
+      "widthM": 1.28,
+      "heightM": 1.28,
+      "category": "maintenance",
+      "process": "bridged paint stencil on woven rope mat",
+      "palette": {
+        "ground": [
+          0.12,
+          0.13,
+          0.12
+        ],
+        "ink": [
+          0.82,
+          0.8,
+          0.69
+        ]
+      },
+      "capHeightM": 0.25,
+      "lineCentres": [
+        0.36,
+        0.76
+      ],
+      "emission": "none",
+      "reliefM": 0.000007,
+      "seed": "tower_rope_mat_tenor:0",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          0,
+          -1
+        ],
+        "normal": [
+          0,
+          1,
+          0
+        ],
+        "center": [
+          0,
+          0.0505,
+          0
+        ]
+      }
+    },
+    {
+      "id": "tower_peal_board:0",
+      "copy": "ELLERY COLLEGIATE CHAPEL — STEDMAN TRIPLES — 1908",
+      "lines": [
+        "ELLERY COLLEGIATE CHAPEL —",
+        "STEDMAN TRIPLES —",
+        "1908"
+      ],
+      "widthM": 1.62,
+      "heightM": 1.06,
+      "category": "institution",
+      "process": "aged gilt peal-board lettering",
+      "palette": {
+        "ground": [
+          0.025,
+          0.028,
+          0.03
+        ],
+        "ink": [
+          0.3,
+          0.19,
+          0.055
+        ]
+      },
+      "capHeightM": 0.13,
+      "lineCentres": [
+        0.12,
+        0.34,
+        0.62
+      ],
+      "lineScale": [
+        0.62,
+        0.85,
+        1
+      ],
+      "emission": "none",
+      "font": "NimbusRoman-Bold.otf",
+      "reliefM": 0.000007,
+      "seed": "tower_peal_board:0",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          0.62,
+          -0.058
+        ]
+      }
+    },
+    {
+      "id": "ending_returned_ledger:unnamed-signature",
+      "copy": "",
+      "widthM": 0.3,
+      "heightM": 0.12,
+      "category": "record",
+      "process": "fresh pen signature on ledger paper",
+      "palette": {
+        "ground": [
+          0.64,
+          0.6,
+          0.48
+        ],
+        "ink": [
+          0.025,
+          0.028,
+          0.03
+        ]
+      },
+      "emission": "none",
+      "marks": [
+        {
+          "points": [
+            [
+              0.06666666666666668,
+              0.7083333333333333
+            ],
+            [
+              0.13333333333333336,
+              0.12499999999999989
+            ],
+            [
+              0.2,
+              0.7083333333333333
+            ],
+            [
+              0.3,
+              0.2083333333333333
+            ],
+            [
+              0.2666666666666667,
+              0.875
+            ],
+            [
+              0.4,
+              0.375
+            ],
+            [
+              0.5,
+              0.7083333333333333
+            ],
+            [
+              0.6000000000000001,
+              0.4583333333333333
+            ],
+            [
+              0.7,
+              0.7083333333333333
+            ],
+            [
+              0.8333333333333334,
+              0.375
+            ],
+            [
+              0.9333333333333335,
+              0.5416666666666667
+            ]
+          ],
+          "width": 0.012
+        }
+      ],
+      "reliefM": 0.000007,
+      "seed": "ending_returned_ledger:unnamed-signature",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          0.034992854604336196,
+          -0.9993875625234886
+        ],
+        "normal": [
+          0,
+          0.9993875625234886,
+          0.034992854604336196
+        ],
+        "center": [
+          0.24,
+          0.047,
+          -0.095
+        ]
+      }
+    },
+    {
+      "id": "ending_returned_ledger:1",
+      "copy": "ALAN",
+      "widthM": 0.25,
+      "heightM": 0.078,
+      "category": "record",
+      "process": "fresh pen name on ledger paper",
+      "palette": {
+        "ground": [
+          0.64,
+          0.6,
+          0.48
+        ],
+        "ink": [
+          0.025,
+          0.028,
+          0.03
+        ]
+      },
+      "capHeightM": 0.056,
+      "emission": "none",
+      "font": "NimbusRoman-Italic.otf",
+      "reliefM": 0.000007,
+      "seed": "ending_returned_ledger:1",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          0.034992854604336196,
+          -0.9993875625234886
+        ],
+        "normal": [
+          0,
+          0.9993875625234886,
+          0.034992854604336196
+        ],
+        "center": [
+          0.215,
+          0.039,
+          0.112
+        ]
+      }
+    },
+    {
+      "id": "scene_dock_sign_foh:0",
+      "copy": "FRONT OF HOUSE",
+      "lines": [
+        "FRONT OF HOUSE"
+      ],
+      "widthM": 2.2199999999999998,
+      "heightM": 0.49999999999999994,
+      "category": "institution",
+      "process": "vitreous-enamel screen print",
+      "palette": {
+        "ground": [
+          0.7083758,
+          0.6938718,
+          0.5332764
+        ],
+        "ink": [
+          0.0091341,
+          0.0137021,
+          0.0109601
+        ]
+      },
+      "capHeightM": 0.245,
+      "emission": "none",
+      "reliefM": 0.000007,
+      "seed": "scene_dock_sign_foh:0",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          0,
+          -0.0475
+        ]
+      }
+    },
+    {
+      "id": "scene_dock_sign_services:0",
+      "copy": "STUDIOS / PLANT",
+      "lines": [
+        "STUDIOS / PLANT"
+      ],
+      "widthM": 2.62,
+      "heightM": 0.78,
+      "category": "institution",
+      "process": "vitreous-enamel screen print",
+      "palette": {
+        "ground": [
+          0.7083758,
+          0.6938718,
+          0.5332764
+        ],
+        "ink": [
+          0.0091341,
+          0.0137021,
+          0.0109601
+        ]
+      },
+      "capHeightM": 0.245,
+      "emission": "none",
+      "reliefM": 0.000007,
+      "seed": "scene_dock_sign_services:0",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          0,
+          -0.0475
+        ]
+      }
+    },
+    {
+      "id": "vigil_part_sign_save:0",
+      "copy": "SAVE ELLERY",
+      "lines": [
+        "SAVE ELLERY"
+      ],
+      "widthM": 1.32,
+      "heightM": 0.84,
+      "category": "personal",
+      "process": "volunteer broad-nib paint on card",
+      "palette": {
+        "ground": [
+          0.69,
+          0.72,
+          0.66
+        ],
+        "ink": [
+          0.025,
+          0.028,
+          0.03
+        ]
+      },
+      "capHeightM": 0.27,
+      "emission": "none",
+      "reliefM": 0.000035,
+      "seed": "vigil_part_sign_save:0",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          1.78,
+          -0.248
+        ]
+      }
+    },
+    {
+      "id": "vigil_part_sign_strike:0",
+      "copy": "NO FIRST\nSTRIKE\n06:00",
+      "lines": [
+        "NO FIRST",
+        "STRIKE",
+        "06:00"
+      ],
+      "widthM": 1.34,
+      "heightM": 0.84,
+      "category": "personal",
+      "process": "volunteer broad-nib paint on card",
+      "palette": {
+        "ground": [
+          0.69,
+          0.72,
+          0.66
+        ],
+        "ink": [
+          0.025,
+          0.028,
+          0.03
+        ]
+      },
+      "capHeightM": 0.16470588235294117,
+      "emission": "none",
+      "reliefM": 0.000035,
+      "seed": "vigil_part_sign_strike:0",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          1.78,
+          -0.248
+        ]
+      }
+    },
+    {
+      "id": "vigil_part_sign_chapel:0",
+      "copy": "SAVE THE\n1908 CHAPEL",
+      "lines": [
+        "SAVE THE",
+        "1908 CHAPEL"
+      ],
+      "widthM": 1.34,
+      "heightM": 0.84,
+      "category": "personal",
+      "process": "volunteer broad-nib paint on card",
+      "palette": {
+        "ground": [
+          0.69,
+          0.72,
+          0.66
+        ],
+        "ink": [
+          0.025,
+          0.028,
+          0.03
+        ]
+      },
+      "capHeightM": 0.24705882352941178,
+      "emission": "none",
+      "reliefM": 0.000035,
+      "seed": "vigil_part_sign_chapel:0",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          1.78,
+          -0.248
+        ]
+      }
+    },
+    {
+      "id": "vigil_part_sign_record:0",
+      "copy": "OUR ROOMS\nOUR RECORD",
+      "lines": [
+        "OUR ROOMS",
+        "OUR RECORD"
+      ],
+      "widthM": 1.34,
+      "heightM": 0.84,
+      "category": "personal",
+      "process": "volunteer broad-nib paint on card",
+      "palette": {
+        "ground": [
+          0.69,
+          0.72,
+          0.66
+        ],
+        "ink": [
+          0.025,
+          0.028,
+          0.03
+        ]
+      },
+      "capHeightM": 0.24705882352941178,
+      "emission": "none",
+      "reliefM": 0.000035,
+      "seed": "vigil_part_sign_record:0",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          0.9758974493306055,
+          -0.21822962308086932
+        ],
+        "normal": [
+          0,
+          -0.21822962308086932,
+          -0.9758974493306055
+        ],
+        "center": [
+          0,
+          0.9138895705537357,
+          -0.24732512858125696
+        ]
+      }
+    },
+    {
+      "id": "vigil_part_sign_signed:0",
+      "copy": "WHO SIGNED\nTHIS OFF?",
+      "lines": [
+        "WHO SIGNED",
+        "THIS OFF?"
+      ],
+      "widthM": 1.34,
+      "heightM": 0.84,
+      "category": "personal",
+      "process": "volunteer broad-nib paint on card",
+      "palette": {
+        "ground": [
+          0.69,
+          0.72,
+          0.66
+        ],
+        "ink": [
+          0.025,
+          0.028,
+          0.03
+        ]
+      },
+      "capHeightM": 0.24705882352941178,
+      "emission": "none",
+      "reliefM": 0.000035,
+      "seed": "vigil_part_sign_signed:0",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          0.9758974493306055,
+          -0.21822962308086932
+        ],
+        "normal": [
+          0,
+          -0.21822962308086932,
+          -0.9758974493306055
+        ],
+        "center": [
+          0,
+          0.9138895705537357,
+          -0.24732512858125696
+        ]
+      }
+    },
+    {
+      "id": "vigil_part_banner:0",
+      "copy": "KEEP ELLERY\nSTANDING",
+      "lines": [
+        "KEEP ELLERY",
+        "STANDING"
+      ],
+      "widthM": 3.8,
+      "heightM": 1.02,
+      "category": "personal",
+      "process": "volunteer brush paint on tensioned cloth",
+      "palette": {
+        "ground": [
+          0.69,
+          0.72,
+          0.66
+        ],
+        "ink": [
+          0.025,
+          0.028,
+          0.03
+        ]
+      },
+      "capHeightM": 0.27,
+      "emission": "none",
+      "reliefM": 0.000035,
+      "seed": "vigil_part_banner:0",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          0.56,
+          -0.248
+        ]
+      }
+    },
+    {
+      "id": "city_phone_box:0",
+      "copy": "TELEPHONE",
+      "widthM": 0.753,
+      "heightM": 0.104,
+      "category": "phone",
+      "process": "black screen print on opal telephone glass",
+      "palette": {
+        "ground": [
+          0.38,
+          0.25,
+          0.1
+        ],
+        "ink": [
+          0.018,
+          0.022,
+          0.021
+        ]
+      },
+      "capHeightM": 0.07872,
+      "emission": "substrate",
+      "emissiveFactor": [
+        0.86,
+        0.53,
+        0.2
+      ],
+      "reliefM": 0.000007,
+      "seed": "city_phone_box:0",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "center": [
+          0,
+          2.385,
+          0.507
+        ]
+      }
+    },
+    {
+      "id": "city_phone_box:1",
+      "copy": "TELEPHONE",
+      "widthM": 0.753,
+      "heightM": 0.104,
+      "category": "phone",
+      "process": "black screen print on opal telephone glass",
+      "palette": {
+        "ground": [
+          0.38,
+          0.25,
+          0.1
+        ],
+        "ink": [
+          0.018,
+          0.022,
+          0.021
+        ]
+      },
+      "capHeightM": 0.07872,
+      "emission": "substrate",
+      "emissiveFactor": [
+        0.86,
+        0.53,
+        0.2
+      ],
+      "reliefM": 0.000007,
+      "seed": "city_phone_box:1",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          0,
+          0,
+          -1
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          1,
+          0,
+          0
+        ],
+        "center": [
+          0.507,
+          2.385,
+          0
+        ]
+      }
+    },
+    {
+      "id": "city_phone_box:2",
+      "copy": "TELEPHONE",
+      "widthM": 0.753,
+      "heightM": 0.104,
+      "category": "phone",
+      "process": "black screen print on opal telephone glass",
+      "palette": {
+        "ground": [
+          0.38,
+          0.25,
+          0.1
+        ],
+        "ink": [
+          0.018,
+          0.022,
+          0.021
+        ]
+      },
+      "capHeightM": 0.07872,
+      "emission": "substrate",
+      "emissiveFactor": [
+        0.86,
+        0.53,
+        0.2
+      ],
+      "reliefM": 0.000007,
+      "seed": "city_phone_box:2",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          2.385,
+          -0.507
+        ]
+      }
+    },
+    {
+      "id": "city_phone_box:3",
+      "copy": "TELEPHONE",
+      "widthM": 0.753,
+      "heightM": 0.104,
+      "category": "phone",
+      "process": "black screen print on opal telephone glass",
+      "palette": {
+        "ground": [
+          0.38,
+          0.25,
+          0.1
+        ],
+        "ink": [
+          0.018,
+          0.022,
+          0.021
+        ]
+      },
+      "capHeightM": 0.07872,
+      "emission": "substrate",
+      "emissiveFactor": [
+        0.86,
+        0.53,
+        0.2
+      ],
+      "reliefM": 0.000007,
+      "seed": "city_phone_box:3",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          0,
+          0,
+          1
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          -1,
+          0,
+          0
+        ],
+        "center": [
+          -0.507,
+          2.385,
+          0
+        ]
+      }
+    },
+    {
+      "id": "city_phone_box_apparatus:0",
+      "copy": "PAY ON ANSWER",
+      "widthM": 0.31199999999999994,
+      "heightM": 0.03399107142857143,
+      "category": "phone",
+      "process": "telephone instruction-card screen print",
+      "palette": {
+        "ground": [
+          0.035,
+          0.075,
+          0.12
+        ],
+        "ink": [
+          0.82,
+          0.8,
+          0.69
+        ]
+      },
+      "capHeightM": 0.020884114285714288,
+      "emission": "none",
+      "glyphLayout": {
+        "widthM": 0.28512,
+        "heightM": 0.02436480000000001
+      },
+      "reliefM": 0.000007,
+      "seed": "city_phone_box_apparatus:0",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "center": [
+          0.024020000000000014,
+          1.6117544642857142,
+          -0.289
+        ]
+      }
+    },
+    {
+      "id": "city_phone_box_apparatus:1",
+      "copy": "POST OFFICE",
+      "widthM": 0.38,
+      "heightM": 0.028000000000000004,
+      "category": "phone",
+      "process": "telephone apparatus printed enamel and paper",
+      "palette": {
+        "ground": [
+          0.47,
+          0.5,
+          0.46
+        ],
+        "ink": [
+          0.018,
+          0.022,
+          0.021
+        ]
+      },
+      "capHeightM": 0.024,
+      "emission": "none",
+      "reliefM": 0.000007,
+      "seed": "city_phone_box_apparatus:1",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "center": [
+          0.12902,
+          1.6721428571428572,
+          -0.293
+        ]
+      }
+    },
+    {
+      "id": "city_phone_box_apparatus:2",
+      "copy": "1",
+      "widthM": 0.016,
+      "heightM": 0.02016,
+      "category": "phone",
+      "process": "telephone apparatus printed enamel and paper",
+      "palette": {
+        "ground": [
+          0.82,
+          0.8,
+          0.69
+        ],
+        "ink": [
+          0.018,
+          0.022,
+          0.021
+        ]
+      },
+      "capHeightM": 0.017279999999999997,
+      "emission": "none",
+      "reliefM": 0.000007,
+      "seed": "city_phone_box_apparatus:2",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "center": [
+          0.14425488953235532,
+          1.3292983640514475,
+          -0.2925
+        ]
+      }
+    },
+    {
+      "id": "city_phone_box_apparatus:3",
+      "copy": "2",
+      "widthM": 0.016,
+      "heightM": 0.02016,
+      "category": "phone",
+      "process": "telephone apparatus printed enamel and paper",
+      "palette": {
+        "ground": [
+          0.82,
+          0.8,
+          0.69
+        ],
+        "ink": [
+          0.018,
+          0.022,
+          0.021
+        ]
+      },
+      "capHeightM": 0.017279999999999997,
+      "emission": "none",
+      "reliefM": 0.000007,
+      "seed": "city_phone_box_apparatus:3",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "center": [
+          0.13429569067697622,
+          1.3840324150577215,
+          -0.2925
+        ]
+      }
+    },
+    {
+      "id": "city_phone_box_apparatus:4",
+      "copy": "3",
+      "widthM": 0.016,
+      "heightM": 0.02016,
+      "category": "phone",
+      "process": "telephone apparatus printed enamel and paper",
+      "palette": {
+        "ground": [
+          0.82,
+          0.8,
+          0.69
+        ],
+        "ink": [
+          0.018,
+          0.022,
+          0.021
+        ]
+      },
+      "capHeightM": 0.017279999999999997,
+      "emission": "none",
+      "reliefM": 0.000007,
+      "seed": "city_phone_box_apparatus:4",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "center": [
+          0.09971100839291835,
+          1.4276088046822548,
+          -0.2925
+        ]
+      }
+    },
+    {
+      "id": "city_phone_box_apparatus:5",
+      "copy": "4",
+      "widthM": 0.016,
+      "heightM": 0.02016,
+      "category": "phone",
+      "process": "telephone apparatus printed enamel and paper",
+      "palette": {
+        "ground": [
+          0.82,
+          0.8,
+          0.69
+        ],
+        "ink": [
+          0.018,
+          0.022,
+          0.021
+        ]
+      },
+      "capHeightM": 0.017279999999999997,
+      "emission": "none",
+      "reliefM": 0.000007,
+      "seed": "city_phone_box_apparatus:5",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "center": [
+          0.04866827379421253,
+          1.4497366429427911,
+          -0.2925
+        ]
+      }
+    },
+    {
+      "id": "city_phone_box_apparatus:6",
+      "copy": "5",
+      "widthM": 0.016,
+      "heightM": 0.02016,
+      "category": "phone",
+      "process": "telephone apparatus printed enamel and paper",
+      "palette": {
+        "ground": [
+          0.82,
+          0.8,
+          0.69
+        ],
+        "ink": [
+          0.018,
+          0.022,
+          0.021
+        ]
+      },
+      "capHeightM": 0.017279999999999997,
+      "emission": "none",
+      "reliefM": 0.000007,
+      "seed": "city_phone_box_apparatus:6",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "center": [
+          -0.006778389987905892,
+          1.4451902755103139,
+          -0.2925
+        ]
+      }
+    },
+    {
+      "id": "city_phone_box_apparatus:7",
+      "copy": "6",
+      "widthM": 0.016,
+      "heightM": 0.02016,
+      "category": "phone",
+      "process": "telephone apparatus printed enamel and paper",
+      "palette": {
+        "ground": [
+          0.82,
+          0.8,
+          0.69
+        ],
+        "ink": [
+          0.018,
+          0.022,
+          0.021
+        ]
+      },
+      "capHeightM": 0.017279999999999997,
+      "emission": "none",
+      "reliefM": 0.000007,
+      "seed": "city_phone_box_apparatus:7",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "center": [
+          -0.05353483904244821,
+          1.4150433610212925,
+          -0.2925
+        ]
+      }
+    },
+    {
+      "id": "city_phone_box_apparatus:8",
+      "copy": "7",
+      "widthM": 0.016,
+      "heightM": 0.02016,
+      "category": "phone",
+      "process": "telephone apparatus printed enamel and paper",
+      "palette": {
+        "ground": [
+          0.82,
+          0.8,
+          0.69
+        ],
+        "ink": [
+          0.018,
+          0.022,
+          0.021
+        ]
+      },
+      "capHeightM": 0.017279999999999997,
+      "emission": "none",
+      "reliefM": 0.000007,
+      "seed": "city_phone_box_apparatus:8",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "center": [
+          -0.08055918859357251,
+          1.3664153185690509,
+          -0.2925
+        ]
+      }
+    },
+    {
+      "id": "city_phone_box_apparatus:9",
+      "copy": "8",
+      "widthM": 0.016,
+      "heightM": 0.02016,
+      "category": "phone",
+      "process": "telephone apparatus printed enamel and paper",
+      "palette": {
+        "ground": [
+          0.82,
+          0.8,
+          0.69
+        ],
+        "ink": [
+          0.018,
+          0.022,
+          0.021
+        ]
+      },
+      "capHeightM": 0.017279999999999997,
+      "emission": "none",
+      "reliefM": 0.000007,
+      "seed": "city_phone_box_apparatus:9",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "center": [
+          -0.08146943658766913,
+          1.3107900236935393,
+          -0.2925
+        ]
+      }
+    },
+    {
+      "id": "city_phone_box_apparatus:10",
+      "copy": "9",
+      "widthM": 0.016,
+      "heightM": 0.02016,
+      "category": "phone",
+      "process": "telephone apparatus printed enamel and paper",
+      "palette": {
+        "ground": [
+          0.82,
+          0.8,
+          0.69
+        ],
+        "ink": [
+          0.018,
+          0.022,
+          0.021
+        ]
+      },
+      "capHeightM": 0.017279999999999997,
+      "emission": "none",
+      "reliefM": 0.000007,
+      "seed": "city_phone_box_apparatus:10",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "center": [
+          -0.056050621160193284,
+          1.2613038053730583,
+          -0.2925
+        ]
+      }
+    },
+    {
+      "id": "city_phone_box_apparatus:11",
+      "copy": "0",
+      "widthM": 0.016,
+      "heightM": 0.02016,
+      "category": "phone",
+      "process": "telephone apparatus printed enamel and paper",
+      "palette": {
+        "ground": [
+          0.82,
+          0.8,
+          0.69
+        ],
+        "ink": [
+          0.018,
+          0.022,
+          0.021
+        ]
+      },
+      "capHeightM": 0.017279999999999997,
+      "emission": "none",
+      "reliefM": 0.000007,
+      "seed": "city_phone_box_apparatus:11",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "center": [
+          -0.010305585486022749,
+          1.2296432037905356,
+          -0.2925
+        ]
+      }
+    },
+    {
+      "id": "city_phone_box_apparatus:12",
+      "copy": "999",
+      "widthM": 0.06,
+      "heightM": 0.019040000000000005,
+      "category": "phone",
+      "process": "telephone apparatus printed enamel and paper",
+      "palette": {
+        "ground": [
+          0.64,
+          0.6,
+          0.48
+        ],
+        "ink": [
+          0.018,
+          0.022,
+          0.021
+        ]
+      },
+      "capHeightM": 0.01632,
+      "emission": "none",
+      "reliefM": 0.000007,
+      "seed": "city_phone_box_apparatus:12",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "center": [
+          0.03002000000000002,
+          1.3457857142857141,
+          -0.26299999999999996
+        ]
+      }
+    },
+    {
+      "id": "city_phone_box_apparatus:13",
+      "copy": "100",
+      "widthM": 0.06,
+      "heightM": 0.015680000000000003,
+      "category": "phone",
+      "process": "telephone apparatus printed enamel and paper",
+      "palette": {
+        "ground": [
+          0.64,
+          0.6,
+          0.48
+        ],
+        "ink": [
+          0.018,
+          0.022,
+          0.021
+        ]
+      },
+      "capHeightM": 0.01344,
+      "emission": "none",
+      "reliefM": 0.000007,
+      "seed": "city_phone_box_apparatus:13",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "center": [
+          0.03002000000000002,
+          1.3227857142857142,
+          -0.26299999999999996
+        ]
+      }
+    },
+    {
+      "id": "outskirts_bus:0",
+      "copy": "ELLERY",
+      "widthM": 1.65,
+      "heightM": 0.27,
+      "category": "vehicle",
+      "process": "opaque linen destination-roll print",
+      "palette": {
+        "ground": [
+          0.027,
+          0.035,
+          0.032
+        ],
+        "ink": [
+          0.69,
+          0.7,
+          0.61
+        ]
+      },
+      "capHeightM": 0.17,
+      "emission": "none",
+      "reliefM": 0.000007,
+      "seed": "outskirts_bus:0",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          2.73,
+          -4.623
+        ]
+      }
+    },
+    {
+      "id": "outskirts_bus:1",
+      "copy": "J 063",
+      "widthM": 0.6,
+      "heightM": 0.13,
+      "category": "vehicle",
+      "process": "registration enamel screen print",
+      "palette": {
+        "ground": [
+          0.69,
+          0.7,
+          0.61
+        ],
+        "ink": [
+          0.027,
+          0.035,
+          0.032
+        ]
+      },
+      "capHeightM": 0.075,
+      "emission": "none",
+      "reliefM": 0.000007,
+      "seed": "outskirts_bus:1",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          0.48,
+          -4.693
+        ]
+      }
+    },
+    {
+      "id": "outskirts_shelter_timetable:0",
+      "copy": "ELLERY\nLAST BUS\n23:10\n23:40\n00:10",
+      "lines": [
+        "ELLERY",
+        "LAST BUS",
+        "23:10",
+        "23:40",
+        "00:10"
+      ],
+      "widthM": 0.57,
+      "heightM": 0.93,
+      "category": "vehicle",
+      "process": "transport timetable letterpress on paper",
+      "palette": {
+        "ground": [
+          0.69,
+          0.7,
+          0.61
+        ],
+        "ink": [
+          0.027,
+          0.035,
+          0.032
+        ]
+      },
+      "capHeightM": 0.075,
+      "lineCentres": [
+        0.13440860215053763,
+        0.26344086021505364,
+        0.43548387096774194,
+        0.586021505376344,
+        0.7365591397849462
+      ],
+      "emission": "none",
+      "reliefM": 0.000007,
+      "seed": "outskirts_shelter_timetable:0",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          1.6,
+          -0.0585
+        ]
+      }
+    },
+    {
+      "id": "outskirts_lodge:0",
+      "copy": "PORTER",
+      "widthM": 1.52,
+      "heightM": 0.2,
+      "category": "institution",
+      "process": "gatehouse painted timber lettering",
+      "palette": {
+        "ground": [
+          0.027,
+          0.035,
+          0.032
+        ],
+        "ink": [
+          0.69,
+          0.7,
+          0.61
+        ]
+      },
+      "capHeightM": 0.13,
+      "emission": "none",
+      "reliefM": 0.000007,
+      "seed": "outskirts_lodge:0",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          2.81,
+          -1.321
+        ]
+      }
+    },
+    {
+      "id": "outskirts_lodge_ledger:page-left",
+      "copy": "",
+      "widthM": 0.224,
+      "heightM": 0.327,
+      "category": "record",
+      "process": "printed visitors form with earlier pen entries",
+      "palette": {
+        "ground": [
+          0.69,
+          0.7,
+          0.61
+        ],
+        "ink": [
+          0.027,
+          0.035,
+          0.032
+        ]
+      },
+      "capHeightM": 0.02,
+      "lineCentres": [
+        0.1758409785932722
+      ],
+      "emission": "none",
+      "marks": [
+        {
+          "points": [
+            [
+              0.9174107142857144,
+              0.8486238532110092
+            ],
+            [
+              0.046875000000000056,
+              0.8486238532110092
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              0.9174107142857144,
+              0.7048929663608563
+            ],
+            [
+              0.046875000000000056,
+              0.7048929663608563
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              0.9174107142857144,
+              0.5611620795107034
+            ],
+            [
+              0.046875000000000056,
+              0.5611620795107034
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              0.9174107142857144,
+              0.41743119266055045
+            ],
+            [
+              0.046875000000000056,
+              0.41743119266055045
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              0.9174107142857144,
+              0.2737003058103976
+            ],
+            [
+              0.046875000000000056,
+              0.2737003058103976
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              0.6919642857142858,
+              0.9143730886850153
+            ],
+            [
+              0.6919642857142858,
+              0.20795107033639143
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              -0.11830357142857151,
+              0.8486238532110092
+            ],
+            [
+              -0.9888392857142858,
+              0.8486238532110092
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              -0.11830357142857151,
+              0.7048929663608563
+            ],
+            [
+              -0.9888392857142858,
+              0.7048929663608563
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              -0.11830357142857151,
+              0.5611620795107034
+            ],
+            [
+              -0.9888392857142858,
+              0.5611620795107034
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              -0.11830357142857151,
+              0.41743119266055045
+            ],
+            [
+              -0.9888392857142858,
+              0.41743119266055045
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              -0.11830357142857151,
+              0.2737003058103976
+            ],
+            [
+              -0.9888392857142858,
+              0.2737003058103976
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              -0.34375,
+              0.9143730886850153
+            ],
+            [
+              -0.34375,
+              0.20795107033639143
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              0.5446428571428572,
+              0.2981651376146789
+            ],
+            [
+              0.47321428571428575,
+              0.28593272171253825
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.4241071428571429,
+              0.2981651376146789
+            ],
+            [
+              0.3526785714285715,
+              0.3103975535168195
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.30357142857142866,
+              0.2981651376146789
+            ],
+            [
+              0.2321428571428572,
+              0.28593272171253825
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.1830357142857143,
+              0.2981651376146789
+            ],
+            [
+              0.1116071428571429,
+              0.3103975535168195
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              -0.4910714285714286,
+              0.2981651376146789
+            ],
+            [
+              -0.5625,
+              0.28593272171253825
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              -0.6116071428571428,
+              0.2981651376146789
+            ],
+            [
+              -0.6830357142857144,
+              0.3103975535168195
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              -0.7321428571428572,
+              0.2981651376146789
+            ],
+            [
+              -0.8035714285714284,
+              0.28593272171253825
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              -0.8526785714285714,
+              0.2981651376146789
+            ],
+            [
+              -0.9241071428571428,
+              0.3103975535168195
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.5446428571428572,
+              0.4418960244648318
+            ],
+            [
+              0.47321428571428575,
+              0.42966360856269115
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.4241071428571429,
+              0.4418960244648318
+            ],
+            [
+              0.3526785714285715,
+              0.4541284403669725
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.30357142857142866,
+              0.4418960244648318
+            ],
+            [
+              0.2321428571428572,
+              0.42966360856269115
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.1830357142857143,
+              0.4418960244648318
+            ],
+            [
+              0.1116071428571429,
+              0.4541284403669725
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              -0.4910714285714286,
+              0.4418960244648318
+            ],
+            [
+              -0.5625,
+              0.42966360856269115
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              -0.6116071428571428,
+              0.4418960244648318
+            ],
+            [
+              -0.6830357142857144,
+              0.4541284403669725
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              -0.7321428571428572,
+              0.4418960244648318
+            ],
+            [
+              -0.8035714285714284,
+              0.42966360856269115
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              -0.8526785714285714,
+              0.4418960244648318
+            ],
+            [
+              -0.9241071428571428,
+              0.4541284403669725
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.5446428571428572,
+              0.5856269113149847
+            ],
+            [
+              0.47321428571428575,
+              0.573394495412844
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.4241071428571429,
+              0.5856269113149847
+            ],
+            [
+              0.3526785714285715,
+              0.5978593272171254
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.30357142857142866,
+              0.5856269113149847
+            ],
+            [
+              0.2321428571428572,
+              0.573394495412844
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.1830357142857143,
+              0.5856269113149847
+            ],
+            [
+              0.1116071428571429,
+              0.5978593272171254
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              -0.4910714285714286,
+              0.5856269113149847
+            ],
+            [
+              -0.5625,
+              0.573394495412844
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              -0.6116071428571428,
+              0.5856269113149847
+            ],
+            [
+              -0.6830357142857144,
+              0.5978593272171254
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              -0.7321428571428572,
+              0.5856269113149847
+            ],
+            [
+              -0.8035714285714284,
+              0.573394495412844
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              -0.8526785714285714,
+              0.5856269113149847
+            ],
+            [
+              -0.9241071428571428,
+              0.5978593272171254
+            ]
+          ],
+          "width": 0.007589285714285713
+        }
+      ],
+      "font": "NimbusRoman-Bold.otf",
+      "texelCapPx": 24,
+      "reliefM": 0.000007,
+      "seed": "outskirts_lodge_ledger:page-left",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          0.013999542671148512,
+          0.9999020016006562
+        ],
+        "normal": [
+          0,
+          0.9999020016006562,
+          -0.013999542671148512
+        ],
+        "center": [
+          -0.8,
+          1.4997,
+          -1.4
+        ]
+      }
+    },
+    {
+      "id": "outskirts_lodge_ledger:page-right",
+      "copy": "VISITORS",
+      "widthM": 0.224,
+      "heightM": 0.327,
+      "category": "record",
+      "process": "printed visitors form with earlier pen entries",
+      "palette": {
+        "ground": [
+          0.69,
+          0.7,
+          0.61
+        ],
+        "ink": [
+          0.027,
+          0.035,
+          0.032
+        ]
+      },
+      "capHeightM": 0.02,
+      "lineCentres": [
+        0.1758409785932722
+      ],
+      "emission": "none",
+      "marks": [
+        {
+          "points": [
+            [
+              1.9888392857142858,
+              0.8486238532110092
+            ],
+            [
+              1.1183035714285716,
+              0.8486238532110092
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              1.9888392857142858,
+              0.7048929663608563
+            ],
+            [
+              1.1183035714285716,
+              0.7048929663608563
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              1.9888392857142858,
+              0.5611620795107034
+            ],
+            [
+              1.1183035714285716,
+              0.5611620795107034
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              1.9888392857142858,
+              0.41743119266055045
+            ],
+            [
+              1.1183035714285716,
+              0.41743119266055045
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              1.9888392857142858,
+              0.2737003058103976
+            ],
+            [
+              1.1183035714285716,
+              0.2737003058103976
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              1.7633928571428572,
+              0.9143730886850153
+            ],
+            [
+              1.7633928571428572,
+              0.20795107033639143
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              0.953125,
+              0.8486238532110092
+            ],
+            [
+              0.08258928571428559,
+              0.8486238532110092
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              0.953125,
+              0.7048929663608563
+            ],
+            [
+              0.08258928571428559,
+              0.7048929663608563
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              0.953125,
+              0.5611620795107034
+            ],
+            [
+              0.08258928571428559,
+              0.5611620795107034
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              0.953125,
+              0.41743119266055045
+            ],
+            [
+              0.08258928571428559,
+              0.41743119266055045
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              0.953125,
+              0.2737003058103976
+            ],
+            [
+              0.08258928571428559,
+              0.2737003058103976
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              0.7276785714285714,
+              0.9143730886850153
+            ],
+            [
+              0.7276785714285714,
+              0.20795107033639143
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              1.6160714285714286,
+              0.2981651376146789
+            ],
+            [
+              1.544642857142857,
+              0.28593272171253825
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              1.4955357142857144,
+              0.2981651376146789
+            ],
+            [
+              1.4241071428571428,
+              0.3103975535168195
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              1.375,
+              0.2981651376146789
+            ],
+            [
+              1.3035714285714284,
+              0.28593272171253825
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              1.2544642857142856,
+              0.2981651376146789
+            ],
+            [
+              1.1830357142857144,
+              0.3103975535168195
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.5803571428571428,
+              0.2981651376146789
+            ],
+            [
+              0.5089285714285714,
+              0.28593272171253825
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.45982142857142855,
+              0.2981651376146789
+            ],
+            [
+              0.38839285714285704,
+              0.3103975535168195
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.3392857142857143,
+              0.2981651376146789
+            ],
+            [
+              0.2678571428571429,
+              0.28593272171253825
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.21875,
+              0.2981651376146789
+            ],
+            [
+              0.1473214285714285,
+              0.3103975535168195
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              1.6160714285714286,
+              0.4418960244648318
+            ],
+            [
+              1.544642857142857,
+              0.42966360856269115
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              1.4955357142857144,
+              0.4418960244648318
+            ],
+            [
+              1.4241071428571428,
+              0.4541284403669725
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              1.375,
+              0.4418960244648318
+            ],
+            [
+              1.3035714285714284,
+              0.42966360856269115
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              1.2544642857142856,
+              0.4418960244648318
+            ],
+            [
+              1.1830357142857144,
+              0.4541284403669725
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.5803571428571428,
+              0.4418960244648318
+            ],
+            [
+              0.5089285714285714,
+              0.42966360856269115
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.45982142857142855,
+              0.4418960244648318
+            ],
+            [
+              0.38839285714285704,
+              0.4541284403669725
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.3392857142857143,
+              0.4418960244648318
+            ],
+            [
+              0.2678571428571429,
+              0.42966360856269115
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.21875,
+              0.4418960244648318
+            ],
+            [
+              0.1473214285714285,
+              0.4541284403669725
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              1.6160714285714286,
+              0.5856269113149847
+            ],
+            [
+              1.544642857142857,
+              0.573394495412844
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              1.4955357142857144,
+              0.5856269113149847
+            ],
+            [
+              1.4241071428571428,
+              0.5978593272171254
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              1.375,
+              0.5856269113149847
+            ],
+            [
+              1.3035714285714284,
+              0.573394495412844
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              1.2544642857142856,
+              0.5856269113149847
+            ],
+            [
+              1.1830357142857144,
+              0.5978593272171254
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.5803571428571428,
+              0.5856269113149847
+            ],
+            [
+              0.5089285714285714,
+              0.573394495412844
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.45982142857142855,
+              0.5856269113149847
+            ],
+            [
+              0.38839285714285704,
+              0.5978593272171254
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.3392857142857143,
+              0.5856269113149847
+            ],
+            [
+              0.2678571428571429,
+              0.573394495412844
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.21875,
+              0.5856269113149847
+            ],
+            [
+              0.1473214285714285,
+              0.5978593272171254
+            ]
+          ],
+          "width": 0.007589285714285713
+        }
+      ],
+      "font": "NimbusRoman-Bold.otf",
+      "texelCapPx": 24,
+      "reliefM": 0.000007,
+      "seed": "outskirts_lodge_ledger:page-right",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          -0.013999542671148512,
+          0.9999020016006562
+        ],
+        "normal": [
+          0,
+          0.9999020016006562,
+          0.013999542671148512
+        ],
+        "center": [
+          -0.56,
+          1.4997,
+          -1.4
+        ]
+      }
+    },
+    {
+      "id": "outskirts_ledger_signed:page-left",
+      "copy": "",
+      "widthM": 0.224,
+      "heightM": 0.327,
+      "category": "record",
+      "process": "printed visitors form with fresh biro signature",
+      "palette": {
+        "ground": [
+          0.69,
+          0.7,
+          0.61
+        ],
+        "ink": [
+          0.027,
+          0.035,
+          0.032
+        ]
+      },
+      "capHeightM": 0.02,
+      "lineCentres": [
+        0.1758409785932722
+      ],
+      "emission": "none",
+      "marks": [
+        {
+          "points": [
+            [
+              0.9174107142857144,
+              0.8486238532110092
+            ],
+            [
+              0.046875000000000056,
+              0.8486238532110092
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              0.9174107142857144,
+              0.7048929663608563
+            ],
+            [
+              0.046875000000000056,
+              0.7048929663608563
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              0.9174107142857144,
+              0.5611620795107034
+            ],
+            [
+              0.046875000000000056,
+              0.5611620795107034
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              0.9174107142857144,
+              0.41743119266055045
+            ],
+            [
+              0.046875000000000056,
+              0.41743119266055045
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              0.9174107142857144,
+              0.2737003058103976
+            ],
+            [
+              0.046875000000000056,
+              0.2737003058103976
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              0.6919642857142858,
+              0.9143730886850153
+            ],
+            [
+              0.6919642857142858,
+              0.20795107033639143
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              -0.11830357142857151,
+              0.8486238532110092
+            ],
+            [
+              -0.9888392857142858,
+              0.8486238532110092
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              -0.11830357142857151,
+              0.7048929663608563
+            ],
+            [
+              -0.9888392857142858,
+              0.7048929663608563
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              -0.11830357142857151,
+              0.5611620795107034
+            ],
+            [
+              -0.9888392857142858,
+              0.5611620795107034
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              -0.11830357142857151,
+              0.41743119266055045
+            ],
+            [
+              -0.9888392857142858,
+              0.41743119266055045
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              -0.11830357142857151,
+              0.2737003058103976
+            ],
+            [
+              -0.9888392857142858,
+              0.2737003058103976
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              -0.34375,
+              0.9143730886850153
+            ],
+            [
+              -0.34375,
+              0.20795107033639143
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              0.5446428571428572,
+              0.2981651376146789
+            ],
+            [
+              0.47321428571428575,
+              0.28593272171253825
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.4241071428571429,
+              0.2981651376146789
+            ],
+            [
+              0.3526785714285715,
+              0.3103975535168195
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.30357142857142866,
+              0.2981651376146789
+            ],
+            [
+              0.2321428571428572,
+              0.28593272171253825
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.1830357142857143,
+              0.2981651376146789
+            ],
+            [
+              0.1116071428571429,
+              0.3103975535168195
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              -0.4910714285714286,
+              0.2981651376146789
+            ],
+            [
+              -0.5625,
+              0.28593272171253825
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              -0.6116071428571428,
+              0.2981651376146789
+            ],
+            [
+              -0.6830357142857144,
+              0.3103975535168195
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              -0.7321428571428572,
+              0.2981651376146789
+            ],
+            [
+              -0.8035714285714284,
+              0.28593272171253825
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              -0.8526785714285714,
+              0.2981651376146789
+            ],
+            [
+              -0.9241071428571428,
+              0.3103975535168195
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.5446428571428572,
+              0.4418960244648318
+            ],
+            [
+              0.47321428571428575,
+              0.42966360856269115
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.4241071428571429,
+              0.4418960244648318
+            ],
+            [
+              0.3526785714285715,
+              0.4541284403669725
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.30357142857142866,
+              0.4418960244648318
+            ],
+            [
+              0.2321428571428572,
+              0.42966360856269115
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.1830357142857143,
+              0.4418960244648318
+            ],
+            [
+              0.1116071428571429,
+              0.4541284403669725
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              -0.4910714285714286,
+              0.4418960244648318
+            ],
+            [
+              -0.5625,
+              0.42966360856269115
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              -0.6116071428571428,
+              0.4418960244648318
+            ],
+            [
+              -0.6830357142857144,
+              0.4541284403669725
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              -0.7321428571428572,
+              0.4418960244648318
+            ],
+            [
+              -0.8035714285714284,
+              0.42966360856269115
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              -0.8526785714285714,
+              0.4418960244648318
+            ],
+            [
+              -0.9241071428571428,
+              0.4541284403669725
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.5446428571428572,
+              0.5856269113149847
+            ],
+            [
+              0.47321428571428575,
+              0.573394495412844
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.4241071428571429,
+              0.5856269113149847
+            ],
+            [
+              0.3526785714285715,
+              0.5978593272171254
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.30357142857142866,
+              0.5856269113149847
+            ],
+            [
+              0.2321428571428572,
+              0.573394495412844
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.1830357142857143,
+              0.5856269113149847
+            ],
+            [
+              0.1116071428571429,
+              0.5978593272171254
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              -0.4910714285714286,
+              0.5856269113149847
+            ],
+            [
+              -0.5625,
+              0.573394495412844
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              -0.6116071428571428,
+              0.5856269113149847
+            ],
+            [
+              -0.6830357142857144,
+              0.5978593272171254
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              -0.7321428571428572,
+              0.5856269113149847
+            ],
+            [
+              -0.8035714285714284,
+              0.573394495412844
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              -0.8526785714285714,
+              0.5856269113149847
+            ],
+            [
+              -0.9241071428571428,
+              0.5978593272171254
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.008928571428571452,
+              0.8211009174311926
+            ],
+            [
+              -0.0758928571428571,
+              0.7660550458715596
+            ],
+            [
+              -0.1071428571428572,
+              0.8700305810397553
+            ],
+            [
+              -0.1741071428571428,
+              0.790519877675841
+            ],
+            [
+              -0.2142857142857143,
+              0.8394495412844036
+            ],
+            [
+              -0.3080357142857142,
+              0.7844036697247706
+            ],
+            [
+              -0.3482142857142857,
+              0.845565749235474
+            ],
+            [
+              -0.4241071428571428,
+              0.8119266055045871
+            ],
+            [
+              -0.4910714285714285,
+              0.8333333333333333
+            ],
+            [
+              -0.5669642857142856,
+              0.7935779816513762
+            ],
+            [
+              -0.6696428571428572,
+              0.8363914373088686
+            ],
+            [
+              -0.767857142857143,
+              0.8180428134556574
+            ],
+            [
+              -0.9107142857142858,
+              0.8333333333333333
+            ]
+          ],
+          "width": 0.011607142857142856
+        },
+        {
+          "points": [
+            [
+              -0.0669642857142857,
+              0.8883792048929664
+            ],
+            [
+              -0.9151785714285714,
+              0.8639143730886849
+            ]
+          ],
+          "width": 0.007142857142857143
+        }
+      ],
+      "font": "NimbusRoman-Bold.otf",
+      "texelCapPx": 24,
+      "reliefM": 0.000007,
+      "seed": "outskirts_ledger_signed:page-left",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          0.013999542671148512,
+          0.9999020016006562
+        ],
+        "normal": [
+          0,
+          0.9999020016006562,
+          -0.013999542671148512
+        ],
+        "center": [
+          -0.8,
+          1.4997,
+          -1.4
+        ]
+      }
+    },
+    {
+      "id": "outskirts_ledger_signed:page-right",
+      "copy": "VISITORS",
+      "widthM": 0.224,
+      "heightM": 0.327,
+      "category": "record",
+      "process": "printed visitors form with fresh biro signature",
+      "palette": {
+        "ground": [
+          0.69,
+          0.7,
+          0.61
+        ],
+        "ink": [
+          0.027,
+          0.035,
+          0.032
+        ]
+      },
+      "capHeightM": 0.02,
+      "lineCentres": [
+        0.1758409785932722
+      ],
+      "emission": "none",
+      "marks": [
+        {
+          "points": [
+            [
+              1.9888392857142858,
+              0.8486238532110092
+            ],
+            [
+              1.1183035714285716,
+              0.8486238532110092
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              1.9888392857142858,
+              0.7048929663608563
+            ],
+            [
+              1.1183035714285716,
+              0.7048929663608563
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              1.9888392857142858,
+              0.5611620795107034
+            ],
+            [
+              1.1183035714285716,
+              0.5611620795107034
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              1.9888392857142858,
+              0.41743119266055045
+            ],
+            [
+              1.1183035714285716,
+              0.41743119266055045
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              1.9888392857142858,
+              0.2737003058103976
+            ],
+            [
+              1.1183035714285716,
+              0.2737003058103976
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              1.7633928571428572,
+              0.9143730886850153
+            ],
+            [
+              1.7633928571428572,
+              0.20795107033639143
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              0.953125,
+              0.8486238532110092
+            ],
+            [
+              0.08258928571428559,
+              0.8486238532110092
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              0.953125,
+              0.7048929663608563
+            ],
+            [
+              0.08258928571428559,
+              0.7048929663608563
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              0.953125,
+              0.5611620795107034
+            ],
+            [
+              0.08258928571428559,
+              0.5611620795107034
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              0.953125,
+              0.41743119266055045
+            ],
+            [
+              0.08258928571428559,
+              0.41743119266055045
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              0.953125,
+              0.2737003058103976
+            ],
+            [
+              0.08258928571428559,
+              0.2737003058103976
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              0.7276785714285714,
+              0.9143730886850153
+            ],
+            [
+              0.7276785714285714,
+              0.20795107033639143
+            ]
+          ],
+          "width": 0.007142857142857143
+        },
+        {
+          "points": [
+            [
+              1.6160714285714286,
+              0.2981651376146789
+            ],
+            [
+              1.544642857142857,
+              0.28593272171253825
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              1.4955357142857144,
+              0.2981651376146789
+            ],
+            [
+              1.4241071428571428,
+              0.3103975535168195
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              1.375,
+              0.2981651376146789
+            ],
+            [
+              1.3035714285714284,
+              0.28593272171253825
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              1.2544642857142856,
+              0.2981651376146789
+            ],
+            [
+              1.1830357142857144,
+              0.3103975535168195
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.5803571428571428,
+              0.2981651376146789
+            ],
+            [
+              0.5089285714285714,
+              0.28593272171253825
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.45982142857142855,
+              0.2981651376146789
+            ],
+            [
+              0.38839285714285704,
+              0.3103975535168195
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.3392857142857143,
+              0.2981651376146789
+            ],
+            [
+              0.2678571428571429,
+              0.28593272171253825
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.21875,
+              0.2981651376146789
+            ],
+            [
+              0.1473214285714285,
+              0.3103975535168195
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              1.6160714285714286,
+              0.4418960244648318
+            ],
+            [
+              1.544642857142857,
+              0.42966360856269115
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              1.4955357142857144,
+              0.4418960244648318
+            ],
+            [
+              1.4241071428571428,
+              0.4541284403669725
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              1.375,
+              0.4418960244648318
+            ],
+            [
+              1.3035714285714284,
+              0.42966360856269115
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              1.2544642857142856,
+              0.4418960244648318
+            ],
+            [
+              1.1830357142857144,
+              0.4541284403669725
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.5803571428571428,
+              0.4418960244648318
+            ],
+            [
+              0.5089285714285714,
+              0.42966360856269115
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.45982142857142855,
+              0.4418960244648318
+            ],
+            [
+              0.38839285714285704,
+              0.4541284403669725
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.3392857142857143,
+              0.4418960244648318
+            ],
+            [
+              0.2678571428571429,
+              0.42966360856269115
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.21875,
+              0.4418960244648318
+            ],
+            [
+              0.1473214285714285,
+              0.4541284403669725
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              1.6160714285714286,
+              0.5856269113149847
+            ],
+            [
+              1.544642857142857,
+              0.573394495412844
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              1.4955357142857144,
+              0.5856269113149847
+            ],
+            [
+              1.4241071428571428,
+              0.5978593272171254
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              1.375,
+              0.5856269113149847
+            ],
+            [
+              1.3035714285714284,
+              0.573394495412844
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              1.2544642857142856,
+              0.5856269113149847
+            ],
+            [
+              1.1830357142857144,
+              0.5978593272171254
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.5803571428571428,
+              0.5856269113149847
+            ],
+            [
+              0.5089285714285714,
+              0.573394495412844
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.45982142857142855,
+              0.5856269113149847
+            ],
+            [
+              0.38839285714285704,
+              0.5978593272171254
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.3392857142857143,
+              0.5856269113149847
+            ],
+            [
+              0.2678571428571429,
+              0.573394495412844
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              0.21875,
+              0.5856269113149847
+            ],
+            [
+              0.1473214285714285,
+              0.5978593272171254
+            ]
+          ],
+          "width": 0.007589285714285713
+        },
+        {
+          "points": [
+            [
+              1.0803571428571428,
+              0.8211009174311926
+            ],
+            [
+              0.9955357142857143,
+              0.7660550458715596
+            ],
+            [
+              0.9642857142857142,
+              0.8700305810397553
+            ],
+            [
+              0.8973214285714286,
+              0.790519877675841
+            ],
+            [
+              0.8571428571428571,
+              0.8394495412844036
+            ],
+            [
+              0.7633928571428572,
+              0.7844036697247706
+            ],
+            [
+              0.7232142857142857,
+              0.845565749235474
+            ],
+            [
+              0.6473214285714286,
+              0.8119266055045871
+            ],
+            [
+              0.5803571428571429,
+              0.8333333333333333
+            ],
+            [
+              0.5044642857142857,
+              0.7935779816513762
+            ],
+            [
+              0.4017857142857143,
+              0.8363914373088686
+            ],
+            [
+              0.3035714285714285,
+              0.8180428134556574
+            ],
+            [
+              0.16071428571428564,
+              0.8333333333333333
+            ]
+          ],
+          "width": 0.011607142857142856
+        },
+        {
+          "points": [
+            [
+              1.0044642857142856,
+              0.8883792048929664
+            ],
+            [
+              0.15624999999999994,
+              0.8639143730886849
+            ]
+          ],
+          "width": 0.007142857142857143
+        }
+      ],
+      "font": "NimbusRoman-Bold.otf",
+      "texelCapPx": 24,
+      "reliefM": 0.000007,
+      "seed": "outskirts_ledger_signed:page-right",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          -0.013999542671148512,
+          0.9999020016006562
+        ],
+        "normal": [
+          0,
+          0.9999020016006562,
+          0.013999542671148512
+        ],
+        "center": [
+          -0.56,
+          1.4997,
+          -1.4
+        ]
+      }
+    },
+    {
+      "id": "outskirts_ticket:0",
+      "copy": "ELLERY",
+      "widthM": 0.053000000000000005,
+      "heightM": 0.0128,
+      "category": "record",
+      "process": "carbon ink on paper",
+      "palette": {
+        "ground": [
+          0.69,
+          0.7,
+          0.61
+        ],
+        "ink": [
+          0.027,
+          0.035,
+          0.032
+        ]
+      },
+      "capHeightM": 0.01,
+      "emission": "none",
+      "font": "NimbusSansNarrow-Bold.otf",
+      "reliefM": 0.000007,
+      "seed": "outskirts_ticket:0",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          0,
+          1
+        ],
+        "normal": [
+          0,
+          1,
+          0
+        ],
+        "center": [
+          0,
+          0.0045,
+          0.046
+        ]
+      }
+    },
+    {
+      "id": "outskirts_ticket:1",
+      "copy": "063",
+      "widthM": 0.054060000000000004,
+      "heightM": 0.02688,
+      "category": "record",
+      "process": "carbon ink on paper",
+      "palette": {
+        "ground": [
+          0.69,
+          0.7,
+          0.61
+        ],
+        "ink": [
+          0.027,
+          0.035,
+          0.032
+        ]
+      },
+      "capHeightM": 0.021,
+      "emission": "none",
+      "font": "NimbusSansNarrow-Bold.otf",
+      "reliefM": 0.000007,
+      "seed": "outskirts_ticket:1",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          0,
+          1
+        ],
+        "normal": [
+          0,
+          1,
+          0
+        ],
+        "center": [
+          0,
+          0.0045,
+          0.01
+        ]
+      }
+    },
+    {
+      "id": "outskirts_car:0",
+      "copy": "J 063",
+      "widthM": 0.56,
+      "heightM": 0.12,
+      "category": "vehicle",
+      "process": "registration enamel screen print",
+      "palette": {
+        "ground": [
+          0.69,
+          0.7,
+          0.61
+        ],
+        "ink": [
+          0.027,
+          0.035,
+          0.032
+        ]
+      },
+      "capHeightM": 0.072,
+      "emission": "none",
+      "reliefM": 0.000007,
+      "seed": "outskirts_car:0",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          -1.2246467991473532e-16
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          1.2246467991473532e-16,
+          0,
+          1
+        ],
+        "center": [
+          0,
+          0.58,
+          2.2315
+        ]
+      }
+    },
+    {
+      "id": "yard-sign",
+      "copy": "DEMOLITION NOTICE\nWorks commence 06:00 Thursday.\nW. ELLERY HOLDINGS",
+      "lines": [
+        "DEMOLITION NOTICE",
+        "Works commence 06:00 Thursday.",
+        "W. ELLERY HOLDINGS"
+      ],
+      "widthM": 1.76,
+      "heightM": 1.06,
+      "category": "record",
+      "process": "contractor notice print on weathered board",
+      "palette": {
+        "ground": [
+          0.66,
+          0.61,
+          0.47
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.135,
+      "lineCentres": [
+        0.2,
+        0.48,
+        0.78
+      ],
+      "lineScale": [
+        1,
+        0.47,
+        0.6
+      ],
+      "emission": "none",
+      "font": "NimbusSans-Bold.otf",
+      "texelCapPx": 32,
+      "reliefM": 0.000007,
+      "seed": "yard-sign",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "center": [
+          0,
+          1.86,
+          0.0756
+        ]
+      }
+    },
+    {
+      "id": "exterior-foundation-stone",
+      "copy": "ELLERY MUNICIPAL SCHOOL OF MUSIC · OPENED 1888",
+      "lines": [
+        "ELLERY MUNICIPAL",
+        "SCHOOL OF MUSIC ·",
+        "OPENED 1888"
+      ],
+      "widthM": 1.04,
+      "heightM": 0.46,
+      "category": "institution",
+      "process": "cut civic inscription on mineral face",
+      "palette": {
+        "ground": [
+          0.39,
+          0.37,
+          0.29
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.052,
+      "emission": "none",
+      "font": "NimbusRoman-Bold.otf",
+      "texelCapPx": 32,
+      "reliefM": -0.0015,
+      "seed": "exterior-foundation-stone",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          0.48,
+          -0.1856
+        ]
+      }
+    },
+    {
+      "id": "exterior-chapel-plaque",
+      "copy": "ELLERY COLLEGIATE CHAPEL · 1908",
+      "lines": [
+        "ELLERY COLLEGIATE",
+        "CHAPEL ·",
+        "1908"
+      ],
+      "widthM": 1.04,
+      "heightM": 0.46,
+      "category": "institution",
+      "process": "cut civic inscription on mineral face",
+      "palette": {
+        "ground": [
+          0.39,
+          0.37,
+          0.29
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.052,
+      "emission": "none",
+      "font": "NimbusRoman-Bold.otf",
+      "texelCapPx": 32,
+      "reliefM": -0.0015,
+      "seed": "exterior-chapel-plaque",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          0.48,
+          -0.1856
+        ]
+      }
+    },
+    {
+      "id": "exterior-baths-mosaic",
+      "copy": "MUNICIPAL BATHS · 1912",
+      "lines": [
+        "MUNICIPAL BATHS ·",
+        "1912"
+      ],
+      "widthM": 1.04,
+      "heightM": 0.46,
+      "category": "institution",
+      "process": "ceramic mosaic inscription",
+      "palette": {
+        "ground": [
+          0.56,
+          0.54,
+          0.44
+        ],
+        "ink": [
+          0.028,
+          0.055,
+          0.082
+        ]
+      },
+      "capHeightM": 0.075,
+      "emission": "none",
+      "font": "NimbusRoman-Bold.otf",
+      "texelCapPx": 32,
+      "reliefM": 0.000007,
+      "seed": "exterior-baths-mosaic",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          0.48,
+          -0.1856
+        ]
+      }
+    },
+    {
+      "id": "exterior-hall-stone",
+      "copy": "CONCERT HALL · 1936",
+      "lines": [
+        "CONCERT HALL ·",
+        "1936"
+      ],
+      "widthM": 1.04,
+      "heightM": 0.46,
+      "category": "institution",
+      "process": "cut civic inscription on mineral face",
+      "palette": {
+        "ground": [
+          0.39,
+          0.37,
+          0.29
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.085,
+      "emission": "none",
+      "font": "NimbusRoman-Bold.otf",
+      "texelCapPx": 32,
+      "reliefM": -0.0015,
+      "seed": "exterior-hall-stone",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          0.48,
+          -0.1856
+        ]
+      }
+    },
+    {
+      "id": "atrium-sign-main-exit",
+      "copy": "PUBLIC ENTRANCE — CLOSED",
+      "lines": [
+        "PUBLIC ENTRANCE",
+        "— CLOSED"
+      ],
+      "widthM": 1.8,
+      "heightM": 0.25,
+      "category": "institution",
+      "process": "institutional enamel lettering",
+      "palette": {
+        "ground": [
+          0.024,
+          0.06,
+          0.043
+        ],
+        "ink": [
+          0.71,
+          0.68,
+          0.52
+        ]
+      },
+      "capHeightM": 0.07,
+      "lineCentres": [
+        0.31,
+        0.77
+      ],
+      "lineScale": [
+        1,
+        0.47
+      ],
+      "emission": "none",
+      "texelCapPx": 32,
+      "reliefM": 0.000007,
+      "seed": "atrium-sign-main-exit",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "center": [
+          0,
+          0.31,
+          0.0956
+        ]
+      }
+    },
+    {
+      "id": "atrium-public-directory",
+      "copy": "PUBLIC ROOMS: HALL, BATHS, CHAPEL, PRACTICE WING",
+      "lines": [
+        "PUBLIC ROOMS:",
+        "HALL,",
+        "BATHS,",
+        "CHAPEL,",
+        "PRACTICE WING"
+      ],
+      "widthM": 1.03,
+      "heightM": 0.73,
+      "category": "record",
+      "process": "institutional directory print on paper",
+      "palette": {
+        "ground": [
+          0.66,
+          0.61,
+          0.47
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.06,
+      "lineCentres": [
+        0.11,
+        0.34,
+        0.51,
+        0.68,
+        0.85
+      ],
+      "lineScale": [
+        0.9,
+        1,
+        1,
+        1,
+        0.9
+      ],
+      "emission": "none",
+      "font": "NimbusSans-Bold.otf",
+      "texelCapPx": 32,
+      "reliefM": 0.000007,
+      "seed": "atrium-public-directory",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          0.45,
+          -0.0456
+        ]
+      }
+    },
+    {
+      "id": "hall-entrance-sign",
+      "copy": "CONCERT HALL — STALLS / GALLERIES",
+      "lines": [
+        "CONCERT HALL",
+        "— STALLS / GALLERIES"
+      ],
+      "widthM": 2.15,
+      "heightM": 0.175,
+      "category": "institution",
+      "process": "gilt house lettering on dark enamel",
+      "palette": {
+        "ground": [
+          0.018,
+          0.02,
+          0.017
+        ],
+        "ink": [
+          0.29,
+          0.2,
+          0.071
+        ]
+      },
+      "capHeightM": 0.048,
+      "lineCentres": [
+        0.3,
+        0.78
+      ],
+      "lineScale": [
+        1,
+        0.63
+      ],
+      "emission": "none",
+      "font": "NimbusRoman-Bold.otf",
+      "texelCapPx": 32,
+      "reliefM": 0.000007,
+      "seed": "hall-entrance-sign",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "center": [
+          0,
+          0.24,
+          0.0956
+        ]
+      }
+    },
+    {
+      "id": "chapel-stair-sign-nave",
+      "copy": "TOWER — RINGING CHAMBER — NO ADMITTANCE TO THE PUBLIC\nBELLS UP",
+      "lines": [
+        "TOWER — RINGING CHAMBER",
+        "— NO ADMITTANCE TO THE PUBLIC",
+        "BELLS UP"
+      ],
+      "widthM": 1.8,
+      "heightM": 0.25,
+      "category": "institution",
+      "process": "institutional sign with later hand-painted addition",
+      "palette": {
+        "ground": [
+          0.024,
+          0.06,
+          0.043
+        ],
+        "ink": [
+          0.71,
+          0.68,
+          0.52
+        ]
+      },
+      "capHeightM": 0.042,
+      "lineCentres": [
+        0.18,
+        0.51,
+        0.84
+      ],
+      "lineScale": [
+        1,
+        0.72,
+        0.63
+      ],
+      "emission": "none",
+      "texelCapPx": 32,
+      "reliefM": 0.000007,
+      "seed": "chapel-stair-sign-nave",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "center": [
+          0,
+          0.31,
+          0.0956
+        ]
+      }
+    },
+    {
+      "id": "tower-sign-ringing",
+      "copy": "RINGING ROOM",
+      "lines": [
+        "RINGING",
+        "ROOM"
+      ],
+      "widthM": 1.14,
+      "heightM": 0.55,
+      "category": "institution",
+      "process": "institutional enamel lettering",
+      "palette": {
+        "ground": [
+          0.7,
+          0.68,
+          0.55
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.1,
+      "emission": "none",
+      "texelCapPx": 32,
+      "reliefM": 0.000007,
+      "seed": "tower-sign-ringing",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "center": [
+          0,
+          0.38,
+          0.0801
+        ]
+      }
+    },
+    {
+      "id": "tower-sign-belfry",
+      "copy": "BELLS — AUTHORISED ACCESS",
+      "lines": [
+        "BELLS",
+        "— AUTHORISED ACCESS"
+      ],
+      "widthM": 1.14,
+      "heightM": 0.55,
+      "category": "institution",
+      "process": "institutional enamel lettering",
+      "palette": {
+        "ground": [
+          0.7,
+          0.68,
+          0.55
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.092,
+      "emission": "none",
+      "marks": [
+        {
+          "points": [
+            [
+              0.6,
+              0.83
+            ],
+            [
+              0.88,
+              0.82
+            ]
+          ],
+          "width": 0.006
+        }
+      ],
+      "texelCapPx": 32,
+      "reliefM": 0.000007,
+      "seed": "tower-sign-belfry",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "center": [
+          0,
+          0.38,
+          0.0801
+        ]
+      }
+    },
+    {
+      "id": "tower-sign-organ-exit",
+      "copy": "ORGAN LOFT / NAVE",
+      "lines": [
+        "ORGAN LOFT",
+        "/ NAVE"
+      ],
+      "widthM": 1.14,
+      "heightM": 0.55,
+      "category": "institution",
+      "process": "institutional enamel lettering",
+      "palette": {
+        "ground": [
+          0.7,
+          0.68,
+          0.55
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.094,
+      "emission": "none",
+      "texelCapPx": 32,
+      "reliefM": 0.000007,
+      "seed": "tower-sign-organ-exit",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "center": [
+          0,
+          0.38,
+          0.0801
+        ]
+      }
+    },
+    {
+      "id": "tower-sign-nave-exit",
+      "copy": "NAVE / CHAPEL EXIT",
+      "lines": [
+        "NAVE",
+        "/ CHAPEL EXIT"
+      ],
+      "widthM": 1.14,
+      "heightM": 0.55,
+      "category": "institution",
+      "process": "institutional enamel lettering",
+      "palette": {
+        "ground": [
+          0.7,
+          0.68,
+          0.55
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.094,
+      "emission": "none",
+      "texelCapPx": 32,
+      "reliefM": 0.000007,
+      "seed": "tower-sign-nave-exit",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "center": [
+          0,
+          0.38,
+          0.0801
+        ]
+      }
+    },
+    {
+      "id": "tower-history-plaque",
+      "copy": "J. VALE & SONS — CAST FOR ELLERY COLLEGIATE CHAPEL — 1908. Eight bells. Tenor: 2,200 kg.",
+      "lines": [
+        "J. VALE & SONS —",
+        "CAST FOR",
+        "ELLERY COLLEGIATE CHAPEL —",
+        "1908.",
+        "Eight bells. Tenor: 2,200 kg."
+      ],
+      "widthM": 1.14,
+      "heightM": 0.55,
+      "category": "record",
+      "process": "foundry commemorative plaque lettering",
+      "palette": {
+        "ground": [
+          0.29,
+          0.2,
+          0.071
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.045,
+      "lineCentres": [
+        0.12,
+        0.29,
+        0.46,
+        0.66,
+        0.87
+      ],
+      "lineScale": [
+        1,
+        0.65,
+        0.78,
+        1,
+        0.65
+      ],
+      "emission": "none",
+      "font": "NimbusRoman-Bold.otf",
+      "texelCapPx": 32,
+      "reliefM": 0.000007,
+      "seed": "tower-history-plaque",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "center": [
+          0,
+          0.38,
+          0.0801
+        ]
+      }
+    },
+    {
+      "id": "tower-hammer-isolator",
+      "copy": "CLOCK HAMMER ISOLATOR\nISOLATE / SERVICE",
+      "lines": [
+        "CLOCK HAMMER ISOLATOR",
+        "ISOLATE / SERVICE"
+      ],
+      "widthM": 0.37,
+      "heightM": 0.105,
+      "category": "record",
+      "process": "engraved equipment legend",
+      "palette": {
+        "ground": [
+          0.22,
+          0.23,
+          0.21
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.018,
+      "lineCentres": [
+        0.28,
+        0.76
+      ],
+      "lineScale": [
+        1,
+        0.82
+      ],
+      "emission": "none",
+      "font": "NimbusSans-Bold.otf",
+      "texelCapPx": 32,
+      "reliefM": 0.000007,
+      "seed": "tower-hammer-isolator",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          -0.045,
+          1.38,
+          -0.3151
+        ]
+      }
+    },
+    {
+      "id": "brendan-visitor-till",
+      "copy": "THANK YOU FOR HELPING US KEEP THE BELLS SOUNDING",
+      "lines": [
+        "THANK YOU FOR",
+        "HELPING US KEEP",
+        "THE BELLS SOUNDING"
+      ],
+      "widthM": 0.188,
+      "heightM": 0.088,
+      "category": "record",
+      "process": "thermal receipt print on existing uncut paper",
+      "palette": {
+        "ground": [
+          0.66,
+          0.61,
+          0.47
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.009,
+      "emission": "none",
+      "font": "NimbusMonoPS-Regular.otf",
+      "texelCapPx": 32,
+      "reliefM": 0.000007,
+      "seed": "brendan-visitor-till",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          0.9838436927881214,
+          0,
+          -0.17902957342582418
+        ],
+        "up": [
+          -0.17902957342582418,
+          0,
+          -0.9838436927881214
+        ],
+        "normal": [
+          0,
+          1,
+          0
+        ],
+        "center": [
+          0,
+          0.2581,
+          -0.07
+        ]
+      }
+    },
+    {
+      "id": "foyer-pew-1",
+      "copy": "RETURN TO CHAPEL",
+      "lines": [
+        "RETURN TO CHAPEL"
+      ],
+      "widthM": 0.3,
+      "heightM": 0.067,
+      "category": "record",
+      "process": "removal-tag ink on paper",
+      "palette": {
+        "ground": [
+          0.66,
+          0.61,
+          0.47
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.018,
+      "emission": "none",
+      "font": "NimbusMonoPS-Bold.otf",
+      "texelCapPx": 32,
+      "reliefM": 0.000007,
+      "seed": "foyer-pew-1",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "center": [
+          -0.89,
+          0.48,
+          0.2406
+        ]
+      }
+    },
+    {
+      "id": "box-office-returns-tray",
+      "copy": "RETURNS",
+      "lines": [
+        "RETURNS"
+      ],
+      "widthM": 0.26,
+      "heightM": 0.12,
+      "category": "maintenance",
+      "process": "existing returns-tray stencil",
+      "palette": {
+        "ground": [
+          0.66,
+          0.61,
+          0.47
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.032,
+      "emission": "none",
+      "texelCapPx": 32,
+      "reliefM": 0.000007,
+      "seed": "box-office-returns-tray",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          0.9968017063026194,
+          0,
+          -0.0799146939691727
+        ],
+        "up": [
+          -0.0799146939691727,
+          0,
+          -0.9968017063026194
+        ],
+        "normal": [
+          0,
+          1.0000000000000002,
+          0
+        ],
+        "center": [
+          -0.155,
+          0.0216,
+          0
+        ]
+      }
+    },
+    {
+      "id": "plant-header-card",
+      "copy": "HEADER 3 — ISOLATION\nBack nut, then gland, then handwheel, in that order, all three home before the line is dead. Clockwise to close.\nthe bypass cock feeds the return and is NOT part of this header.",
+      "lines": [
+        "HEADER 3 — ISOLATION",
+        "Back nut, then gland, then handwheel,",
+        "in that order, all three home before",
+        "the line is dead. Clockwise to close.",
+        "the bypass cock feeds the return and",
+        "is NOT part of this header."
+      ],
+      "widthM": 1.03,
+      "heightM": 0.73,
+      "category": "record",
+      "process": "typed isolation card with later annotation",
+      "palette": {
+        "ground": [
+          0.66,
+          0.61,
+          0.47
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.028,
+      "lineCentres": [
+        0.1,
+        0.31,
+        0.42,
+        0.53,
+        0.75,
+        0.86
+      ],
+      "lineScale": [
+        1,
+        0.66,
+        0.66,
+        0.66,
+        0.66,
+        0.66
+      ],
+      "emission": "none",
+      "font": "NimbusMonoPS-Regular.otf",
+      "texelCapPx": 32,
+      "reliefM": 0.000007,
+      "seed": "plant-header-card",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          0.45,
+          -0.0456
+        ]
+      }
+    },
+    {
+      "id": "acq-services-panel-pool",
+      "copy": "S/P-02",
+      "lines": [
+        "S/P-02"
+      ],
+      "widthM": 0.205,
+      "heightM": 0.06,
+      "category": "maintenance",
+      "process": "service-panel identification stencil",
+      "palette": {
+        "ground": [
+          0.31,
+          0.32,
+          0.27
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.029,
+      "emission": "none",
+      "texelCapPx": 24,
+      "substrate": {
+        "asset": "conservatory-acquisitions.glb",
+        "mesh": "power_box_01",
+        "albedoPath": "/tmp/lettering-final-batch/lettering/substrates/dda0321fbf1d1cec0197-albedo.png",
+        "normalPath": "/tmp/lettering-final-batch/lettering/substrates/dda0321fbf1d1cec0197-normal.png",
+        "ormPath": "/tmp/lettering-final-batch/lettering/substrates/dda0321fbf1d1cec0197-orm.png",
+        "roughnessFactor": 1,
+        "metallicFactor": 1,
+        "normalScale": 1,
+        "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+        "projectionReport": "/tmp/lettering-final-batch/lettering/substrates/dda0321fbf1d1cec0197-report.json"
+      },
+      "reliefM": 0.000007,
+      "seed": "acq-services-panel-pool",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "center": [
+          0,
+          0.183,
+          0.0623
+        ]
+      }
+    },
+    {
+      "id": "acq-services-panel-foh",
+      "copy": "S/P-03",
+      "lines": [
+        "S/P-03"
+      ],
+      "widthM": 0.205,
+      "heightM": 0.06,
+      "category": "maintenance",
+      "process": "service-panel identification stencil",
+      "palette": {
+        "ground": [
+          0.31,
+          0.32,
+          0.27
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.029,
+      "emission": "none",
+      "texelCapPx": 24,
+      "substrate": {
+        "asset": "conservatory-acquisitions.glb",
+        "mesh": "power_box_01",
+        "albedoPath": "/tmp/lettering-final-batch/lettering/substrates/dda0321fbf1d1cec0197-albedo.png",
+        "normalPath": "/tmp/lettering-final-batch/lettering/substrates/dda0321fbf1d1cec0197-normal.png",
+        "ormPath": "/tmp/lettering-final-batch/lettering/substrates/dda0321fbf1d1cec0197-orm.png",
+        "roughnessFactor": 1,
+        "metallicFactor": 1,
+        "normalScale": 1,
+        "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+        "projectionReport": "/tmp/lettering-final-batch/lettering/substrates/dda0321fbf1d1cec0197-report.json"
+      },
+      "reliefM": 0.000007,
+      "seed": "acq-services-panel-foh",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "center": [
+          0,
+          0.183,
+          0.0623
+        ]
+      }
+    },
+    {
+      "id": "acq-services-panel-practice",
+      "copy": "S/P-04",
+      "lines": [
+        "S/P-04"
+      ],
+      "widthM": 0.205,
+      "heightM": 0.06,
+      "category": "maintenance",
+      "process": "service-panel identification stencil",
+      "palette": {
+        "ground": [
+          0.31,
+          0.32,
+          0.27
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.029,
+      "emission": "none",
+      "texelCapPx": 24,
+      "substrate": {
+        "asset": "conservatory-acquisitions.glb",
+        "mesh": "power_box_01",
+        "albedoPath": "/tmp/lettering-final-batch/lettering/substrates/dda0321fbf1d1cec0197-albedo.png",
+        "normalPath": "/tmp/lettering-final-batch/lettering/substrates/dda0321fbf1d1cec0197-normal.png",
+        "ormPath": "/tmp/lettering-final-batch/lettering/substrates/dda0321fbf1d1cec0197-orm.png",
+        "roughnessFactor": 1,
+        "metallicFactor": 1,
+        "normalScale": 1,
+        "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+        "projectionReport": "/tmp/lettering-final-batch/lettering/substrates/dda0321fbf1d1cec0197-report.json"
+      },
+      "reliefM": 0.000007,
+      "seed": "acq-services-panel-practice",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "center": [
+          0,
+          0.183,
+          0.0623
+        ]
+      }
+    },
+    {
+      "id": "acq-services-panel-academic",
+      "copy": "S/P-05",
+      "lines": [
+        "S/P-05"
+      ],
+      "widthM": 0.205,
+      "heightM": 0.06,
+      "category": "maintenance",
+      "process": "service-panel identification stencil",
+      "palette": {
+        "ground": [
+          0.31,
+          0.32,
+          0.27
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.029,
+      "emission": "none",
+      "texelCapPx": 24,
+      "substrate": {
+        "asset": "conservatory-acquisitions.glb",
+        "mesh": "power_box_01",
+        "albedoPath": "/tmp/lettering-final-batch/lettering/substrates/dda0321fbf1d1cec0197-albedo.png",
+        "normalPath": "/tmp/lettering-final-batch/lettering/substrates/dda0321fbf1d1cec0197-normal.png",
+        "ormPath": "/tmp/lettering-final-batch/lettering/substrates/dda0321fbf1d1cec0197-orm.png",
+        "roughnessFactor": 1,
+        "metallicFactor": 1,
+        "normalScale": 1,
+        "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+        "projectionReport": "/tmp/lettering-final-batch/lettering/substrates/dda0321fbf1d1cec0197-report.json"
+      },
+      "reliefM": 0.000007,
+      "seed": "acq-services-panel-academic",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "center": [
+          0,
+          0.183,
+          0.0623
+        ]
+      }
+    },
+    {
+      "id": "acq-services-panel-plant",
+      "copy": "S/P-01",
+      "lines": [
+        "S/P-01"
+      ],
+      "widthM": 0.205,
+      "heightM": 0.06,
+      "category": "maintenance",
+      "process": "service-panel identification stencil",
+      "palette": {
+        "ground": [
+          0.31,
+          0.32,
+          0.27
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.029,
+      "emission": "none",
+      "texelCapPx": 24,
+      "substrate": {
+        "asset": "conservatory-acquisitions.glb",
+        "mesh": "power_box_01",
+        "albedoPath": "/tmp/lettering-final-batch/lettering/substrates/dda0321fbf1d1cec0197-albedo.png",
+        "normalPath": "/tmp/lettering-final-batch/lettering/substrates/dda0321fbf1d1cec0197-normal.png",
+        "ormPath": "/tmp/lettering-final-batch/lettering/substrates/dda0321fbf1d1cec0197-orm.png",
+        "roughnessFactor": 1,
+        "metallicFactor": 1,
+        "normalScale": 1,
+        "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+        "projectionReport": "/tmp/lettering-final-batch/lettering/substrates/dda0321fbf1d1cec0197-report.json"
+      },
+      "reliefM": 0.000007,
+      "seed": "acq-services-panel-plant",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "center": [
+          0,
+          0.183,
+          0.0623
+        ]
+      }
+    },
+    {
+      "id": "acq-foyer-sofa-01",
+      "copy": "FOH/F-01",
+      "lines": [
+        "FOH/F-01"
+      ],
+      "widthM": 0.032,
+      "heightM": 0.018,
+      "category": "record",
+      "process": "old inventory ink stamp on original wood",
+      "palette": {
+        "ground": [
+          0.1,
+          0.065,
+          0.035
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.0033,
+      "emission": "none",
+      "font": "NimbusMonoPS-Bold.otf",
+      "texelCapPx": 24,
+      "substrate": {
+        "asset": "conservatory-acquisitions.glb",
+        "mesh": "sofa_01",
+        "albedoPath": "/tmp/lettering-final-batch/lettering/substrates/216882b703a68a61f6a4-albedo.png",
+        "normalPath": "/tmp/lettering-final-batch/lettering/substrates/216882b703a68a61f6a4-normal.png",
+        "ormPath": "/tmp/lettering-final-batch/lettering/substrates/216882b703a68a61f6a4-orm.png",
+        "roughnessFactor": 1,
+        "metallicFactor": 1,
+        "normalScale": 1,
+        "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+        "projectionReport": "/tmp/lettering-final-batch/lettering/substrates/216882b703a68a61f6a4-report.json"
+      },
+      "reliefM": 0.000007,
+      "seed": "acq-foyer-sofa-01",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          0,
+          1
+        ],
+        "normal": [
+          0,
+          -1,
+          0
+        ],
+        "center": [
+          0,
+          0.1119,
+          0.289
+        ]
+      }
+    },
+    {
+      "id": "deadend-ground-armchair",
+      "copy": "FOH/F-06",
+      "lines": [
+        "FOH/F-06"
+      ],
+      "widthM": 0.06,
+      "heightM": 0.018,
+      "category": "record",
+      "process": "old inventory ink stamp on original wood",
+      "palette": {
+        "ground": [
+          0.1,
+          0.065,
+          0.035
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.0058,
+      "emission": "none",
+      "font": "NimbusMonoPS-Bold.otf",
+      "texelCapPx": 24,
+      "substrate": {
+        "asset": "conservatory-acquisitions.glb",
+        "mesh": "arm_chair_01",
+        "albedoPath": "/tmp/lettering-final-batch/lettering/substrates/2dc386db3b7ebb3ad776-albedo.png",
+        "normalPath": "/tmp/lettering-final-batch/lettering/substrates/2dc386db3b7ebb3ad776-normal.png",
+        "ormPath": "/tmp/lettering-final-batch/lettering/substrates/2dc386db3b7ebb3ad776-orm.png",
+        "roughnessFactor": 1,
+        "metallicFactor": 1,
+        "normalScale": 1,
+        "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+        "projectionReport": "/tmp/lettering-final-batch/lettering/substrates/2dc386db3b7ebb3ad776-report.json"
+      },
+      "reliefM": 0.000007,
+      "seed": "deadend-ground-armchair",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -0.9988736,
+          0,
+          -0.0474506
+        ],
+        "up": [
+          0.001637,
+          0.9994045,
+          -0.0344594
+        ],
+        "normal": [
+          0.047422343167700005,
+          -0.034498261564040004,
+          -0.9982787707712001
+        ],
+        "center": [
+          0.072355,
+          0.400889,
+          -0.35657
+        ]
+      }
+    },
+    {
+      "id": "acq-foyer-armchair-01",
+      "copy": "FOH/F-02",
+      "lines": [
+        "FOH/F-02"
+      ],
+      "widthM": 0.06,
+      "heightM": 0.018,
+      "category": "record",
+      "process": "old inventory ink stamp on original wood",
+      "palette": {
+        "ground": [
+          0.1,
+          0.065,
+          0.035
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.0058,
+      "emission": "none",
+      "font": "NimbusMonoPS-Bold.otf",
+      "texelCapPx": 24,
+      "substrate": {
+        "asset": "conservatory-acquisitions.glb",
+        "mesh": "arm_chair_01",
+        "albedoPath": "/tmp/lettering-final-batch/lettering/substrates/2dc386db3b7ebb3ad776-albedo.png",
+        "normalPath": "/tmp/lettering-final-batch/lettering/substrates/2dc386db3b7ebb3ad776-normal.png",
+        "ormPath": "/tmp/lettering-final-batch/lettering/substrates/2dc386db3b7ebb3ad776-orm.png",
+        "roughnessFactor": 1,
+        "metallicFactor": 1,
+        "normalScale": 1,
+        "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+        "projectionReport": "/tmp/lettering-final-batch/lettering/substrates/2dc386db3b7ebb3ad776-report.json"
+      },
+      "reliefM": 0.000007,
+      "seed": "acq-foyer-armchair-01",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -0.9988736,
+          0,
+          -0.0474506
+        ],
+        "up": [
+          0.001637,
+          0.9994045,
+          -0.0344594
+        ],
+        "normal": [
+          0.047422343167700005,
+          -0.034498261564040004,
+          -0.9982787707712001
+        ],
+        "center": [
+          0.072355,
+          0.400889,
+          -0.35657
+        ]
+      }
+    },
+    {
+      "id": "acq-foyer-console-01",
+      "copy": "FOH/F-04",
+      "lines": [
+        "FOH/F-04"
+      ],
+      "widthM": 0.15,
+      "heightM": 0.029,
+      "category": "record",
+      "process": "old inventory ink stamp on original wood",
+      "palette": {
+        "ground": [
+          0.1,
+          0.065,
+          0.035
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.007,
+      "emission": "none",
+      "font": "NimbusMonoPS-Bold.otf",
+      "texelCapPx": 24,
+      "substrate": {
+        "asset": "conservatory-acquisitions.glb",
+        "mesh": "classic_console_01",
+        "albedoPath": "/tmp/lettering-final-batch/lettering/substrates/e3d5344354716afb74a5-albedo.png",
+        "normalPath": "/tmp/lettering-final-batch/lettering/substrates/e3d5344354716afb74a5-normal.png",
+        "ormPath": "/tmp/lettering-final-batch/lettering/substrates/e3d5344354716afb74a5-orm.png",
+        "roughnessFactor": 1,
+        "metallicFactor": 1,
+        "normalScale": 1,
+        "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+        "projectionReport": "/tmp/lettering-final-batch/lettering/substrates/e3d5344354716afb74a5-report.json"
+      },
+      "reliefM": 0.000007,
+      "seed": "acq-foyer-console-01",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          0,
+          1
+        ],
+        "normal": [
+          0,
+          -1,
+          0
+        ],
+        "center": [
+          0,
+          0.90257,
+          0
+        ]
+      }
+    },
+    {
+      "id": "acq-foyer-horse-head",
+      "copy": "ACC-41",
+      "lines": [
+        "ACC-41"
+      ],
+      "widthM": 0.135,
+      "heightM": 0.038,
+      "category": "record",
+      "process": "accession ink on existing paper label",
+      "palette": {
+        "ground": [
+          0.66,
+          0.61,
+          0.47
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.012,
+      "emission": "none",
+      "font": "NimbusMonoPS-Regular.otf",
+      "texelCapPx": 32,
+      "reliefM": 0.000007,
+      "seed": "acq-foyer-horse-head",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "center": [
+          0,
+          0.0297,
+          0.0521
+        ]
+      }
+    },
+    {
+      "id": "acq-hall-chesterfield-west",
+      "copy": "H/S-01",
+      "lines": [
+        "H/S-01"
+      ],
+      "widthM": 0.13,
+      "heightM": 0.036,
+      "category": "record",
+      "process": "machine-stamped inventory plate",
+      "palette": {
+        "ground": [
+          0.21,
+          0.22,
+          0.21
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.01,
+      "emission": "none",
+      "font": "NimbusMonoPS-Bold.otf",
+      "texelCapPx": 32,
+      "reliefM": 0.000007,
+      "seed": "acq-hall-chesterfield-west",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "center": [
+          0,
+          0.145,
+          0.40223
+        ]
+      }
+    },
+    {
+      "id": "acq-practice-chair-1",
+      "copy": "P/CH-01",
+      "lines": [
+        "P/CH-01"
+      ],
+      "widthM": 0.04,
+      "heightM": 0.012,
+      "category": "record",
+      "process": "old inventory ink stamp on original wood",
+      "palette": {
+        "ground": [
+          0.1,
+          0.065,
+          0.035
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.0045,
+      "emission": "none",
+      "font": "NimbusMonoPS-Bold.otf",
+      "texelCapPx": 24,
+      "substrate": {
+        "asset": "conservatory-acquisitions.glb",
+        "mesh": "green_chair_01",
+        "albedoPath": "/tmp/lettering-final-batch/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
+        "normalPath": "/tmp/lettering-final-batch/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
+        "ormPath": "/tmp/lettering-final-batch/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
+        "roughnessFactor": 1,
+        "metallicFactor": 1,
+        "normalScale": 1,
+        "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+        "projectionReport": "/tmp/lettering-final-batch/lettering/substrates/748cfa6311eb1e56f3df-report.json"
+      },
+      "reliefM": 0.000007,
+      "seed": "acq-practice-chair-1",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          0.999329,
+          -0.036626,
+          0
+        ],
+        "up": [
+          -0.0000696,
+          -0.0018987,
+          0.9999982
+        ],
+        "normal": [
+          -0.036625934073199994,
+          -0.9993272012077999,
+          -0.0018999751419
+        ],
+        "center": [
+          -0.10602,
+          0.29523,
+          0.294
+        ]
+      }
+    },
+    {
+      "id": "acq-practice-chair-2",
+      "copy": "P/CH-02",
+      "lines": [
+        "P/CH-02"
+      ],
+      "widthM": 0.04,
+      "heightM": 0.012,
+      "category": "record",
+      "process": "old inventory ink stamp on original wood",
+      "palette": {
+        "ground": [
+          0.1,
+          0.065,
+          0.035
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.0045,
+      "emission": "none",
+      "font": "NimbusMonoPS-Bold.otf",
+      "texelCapPx": 24,
+      "substrate": {
+        "asset": "conservatory-acquisitions.glb",
+        "mesh": "green_chair_01",
+        "albedoPath": "/tmp/lettering-final-batch/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
+        "normalPath": "/tmp/lettering-final-batch/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
+        "ormPath": "/tmp/lettering-final-batch/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
+        "roughnessFactor": 1,
+        "metallicFactor": 1,
+        "normalScale": 1,
+        "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+        "projectionReport": "/tmp/lettering-final-batch/lettering/substrates/748cfa6311eb1e56f3df-report.json"
+      },
+      "reliefM": 0.000007,
+      "seed": "acq-practice-chair-2",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          0.999329,
+          -0.036626,
+          0
+        ],
+        "up": [
+          -0.0000696,
+          -0.0018987,
+          0.9999982
+        ],
+        "normal": [
+          -0.036625934073199994,
+          -0.9993272012077999,
+          -0.0018999751419
+        ],
+        "center": [
+          -0.10602,
+          0.29523,
+          0.294
+        ]
+      }
+    },
+    {
+      "id": "acq-practice-chair-3",
+      "copy": "P/CH-03",
+      "lines": [
+        "P/CH-03"
+      ],
+      "widthM": 0.04,
+      "heightM": 0.012,
+      "category": "record",
+      "process": "old inventory ink stamp on original wood",
+      "palette": {
+        "ground": [
+          0.1,
+          0.065,
+          0.035
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.0045,
+      "emission": "none",
+      "font": "NimbusMonoPS-Bold.otf",
+      "texelCapPx": 24,
+      "substrate": {
+        "asset": "conservatory-acquisitions.glb",
+        "mesh": "green_chair_01",
+        "albedoPath": "/tmp/lettering-final-batch/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
+        "normalPath": "/tmp/lettering-final-batch/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
+        "ormPath": "/tmp/lettering-final-batch/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
+        "roughnessFactor": 1,
+        "metallicFactor": 1,
+        "normalScale": 1,
+        "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+        "projectionReport": "/tmp/lettering-final-batch/lettering/substrates/748cfa6311eb1e56f3df-report.json"
+      },
+      "reliefM": 0.000007,
+      "seed": "acq-practice-chair-3",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          0.999329,
+          -0.036626,
+          0
+        ],
+        "up": [
+          -0.0000696,
+          -0.0018987,
+          0.9999982
+        ],
+        "normal": [
+          -0.036625934073199994,
+          -0.9993272012077999,
+          -0.0018999751419
+        ],
+        "center": [
+          -0.10602,
+          0.29523,
+          0.294
+        ]
+      }
+    },
+    {
+      "id": "acq-practice-chair-4",
+      "copy": "P/CH-04",
+      "lines": [
+        "P/CH-04"
+      ],
+      "widthM": 0.04,
+      "heightM": 0.012,
+      "category": "record",
+      "process": "old inventory ink stamp on original wood",
+      "palette": {
+        "ground": [
+          0.1,
+          0.065,
+          0.035
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.0045,
+      "emission": "none",
+      "font": "NimbusMonoPS-Bold.otf",
+      "texelCapPx": 24,
+      "substrate": {
+        "asset": "conservatory-acquisitions.glb",
+        "mesh": "green_chair_01",
+        "albedoPath": "/tmp/lettering-final-batch/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
+        "normalPath": "/tmp/lettering-final-batch/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
+        "ormPath": "/tmp/lettering-final-batch/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
+        "roughnessFactor": 1,
+        "metallicFactor": 1,
+        "normalScale": 1,
+        "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+        "projectionReport": "/tmp/lettering-final-batch/lettering/substrates/748cfa6311eb1e56f3df-report.json"
+      },
+      "reliefM": 0.000007,
+      "seed": "acq-practice-chair-4",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          0.999329,
+          -0.036626,
+          0
+        ],
+        "up": [
+          -0.0000696,
+          -0.0018987,
+          0.9999982
+        ],
+        "normal": [
+          -0.036625934073199994,
+          -0.9993272012077999,
+          -0.0018999751419
+        ],
+        "center": [
+          -0.10602,
+          0.29523,
+          0.294
+        ]
+      }
+    },
+    {
+      "id": "acq-practice-chair-5",
+      "copy": "P/CH-05",
+      "lines": [
+        "P/CH-05"
+      ],
+      "widthM": 0.04,
+      "heightM": 0.012,
+      "category": "record",
+      "process": "old inventory ink stamp on original wood",
+      "palette": {
+        "ground": [
+          0.1,
+          0.065,
+          0.035
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.0045,
+      "emission": "none",
+      "font": "NimbusMonoPS-Bold.otf",
+      "texelCapPx": 24,
+      "substrate": {
+        "asset": "conservatory-acquisitions.glb",
+        "mesh": "green_chair_01",
+        "albedoPath": "/tmp/lettering-final-batch/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
+        "normalPath": "/tmp/lettering-final-batch/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
+        "ormPath": "/tmp/lettering-final-batch/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
+        "roughnessFactor": 1,
+        "metallicFactor": 1,
+        "normalScale": 1,
+        "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+        "projectionReport": "/tmp/lettering-final-batch/lettering/substrates/748cfa6311eb1e56f3df-report.json"
+      },
+      "reliefM": 0.000007,
+      "seed": "acq-practice-chair-5",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          0.999329,
+          -0.036626,
+          0
+        ],
+        "up": [
+          -0.0000696,
+          -0.0018987,
+          0.9999982
+        ],
+        "normal": [
+          -0.036625934073199994,
+          -0.9993272012077999,
+          -0.0018999751419
+        ],
+        "center": [
+          -0.10602,
+          0.29523,
+          0.294
+        ]
+      }
+    },
+    {
+      "id": "acq-practice-chair-6",
+      "copy": "P/CH-06",
+      "lines": [
+        "P/CH-06"
+      ],
+      "widthM": 0.04,
+      "heightM": 0.012,
+      "category": "record",
+      "process": "old inventory ink stamp on original wood",
+      "palette": {
+        "ground": [
+          0.1,
+          0.065,
+          0.035
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.0045,
+      "emission": "none",
+      "font": "NimbusMonoPS-Bold.otf",
+      "texelCapPx": 24,
+      "substrate": {
+        "asset": "conservatory-acquisitions.glb",
+        "mesh": "green_chair_01",
+        "albedoPath": "/tmp/lettering-final-batch/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
+        "normalPath": "/tmp/lettering-final-batch/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
+        "ormPath": "/tmp/lettering-final-batch/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
+        "roughnessFactor": 1,
+        "metallicFactor": 1,
+        "normalScale": 1,
+        "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+        "projectionReport": "/tmp/lettering-final-batch/lettering/substrates/748cfa6311eb1e56f3df-report.json"
+      },
+      "reliefM": 0.000007,
+      "seed": "acq-practice-chair-6",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          0.999329,
+          -0.036626,
+          0
+        ],
+        "up": [
+          -0.0000696,
+          -0.0018987,
+          0.9999982
+        ],
+        "normal": [
+          -0.036625934073199994,
+          -0.9993272012077999,
+          -0.0018999751419
+        ],
+        "center": [
+          -0.10602,
+          0.29523,
+          0.294
+        ]
+      }
+    },
+    {
+      "id": "acq-practice-chair-7",
+      "copy": "P/CH-07",
+      "lines": [
+        "P/CH-07"
+      ],
+      "widthM": 0.04,
+      "heightM": 0.012,
+      "category": "record",
+      "process": "old inventory ink stamp on original wood",
+      "palette": {
+        "ground": [
+          0.1,
+          0.065,
+          0.035
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.0045,
+      "emission": "none",
+      "font": "NimbusMonoPS-Bold.otf",
+      "texelCapPx": 24,
+      "substrate": {
+        "asset": "conservatory-acquisitions.glb",
+        "mesh": "green_chair_01",
+        "albedoPath": "/tmp/lettering-final-batch/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
+        "normalPath": "/tmp/lettering-final-batch/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
+        "ormPath": "/tmp/lettering-final-batch/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
+        "roughnessFactor": 1,
+        "metallicFactor": 1,
+        "normalScale": 1,
+        "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+        "projectionReport": "/tmp/lettering-final-batch/lettering/substrates/748cfa6311eb1e56f3df-report.json"
+      },
+      "reliefM": 0.000007,
+      "seed": "acq-practice-chair-7",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          0.999329,
+          -0.036626,
+          0
+        ],
+        "up": [
+          -0.0000696,
+          -0.0018987,
+          0.9999982
+        ],
+        "normal": [
+          -0.036625934073199994,
+          -0.9993272012077999,
+          -0.0018999751419
+        ],
+        "center": [
+          -0.10602,
+          0.29523,
+          0.294
+        ]
+      }
+    },
+    {
+      "id": "acq-practice-chair-8",
+      "copy": "P/CH-08",
+      "lines": [
+        "P/CH-08"
+      ],
+      "widthM": 0.04,
+      "heightM": 0.012,
+      "category": "record",
+      "process": "old inventory ink stamp on original wood",
+      "palette": {
+        "ground": [
+          0.1,
+          0.065,
+          0.035
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.0045,
+      "emission": "none",
+      "font": "NimbusMonoPS-Bold.otf",
+      "texelCapPx": 24,
+      "substrate": {
+        "asset": "conservatory-acquisitions.glb",
+        "mesh": "green_chair_01",
+        "albedoPath": "/tmp/lettering-final-batch/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
+        "normalPath": "/tmp/lettering-final-batch/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
+        "ormPath": "/tmp/lettering-final-batch/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
+        "roughnessFactor": 1,
+        "metallicFactor": 1,
+        "normalScale": 1,
+        "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+        "projectionReport": "/tmp/lettering-final-batch/lettering/substrates/748cfa6311eb1e56f3df-report.json"
+      },
+      "reliefM": 0.000007,
+      "seed": "acq-practice-chair-8",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          0.999329,
+          -0.036626,
+          0
+        ],
+        "up": [
+          -0.0000696,
+          -0.0018987,
+          0.9999982
+        ],
+        "normal": [
+          -0.036625934073199994,
+          -0.9993272012077999,
+          -0.0018999751419
+        ],
+        "center": [
+          -0.10602,
+          0.29523,
+          0.294
+        ]
+      }
+    }
+  ]
+}

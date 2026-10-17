@@ -1,5 +1,6 @@
 import { ENDING_IDS, POWER_CIRCUIT_IDS } from './schema.js';
 import { EVENT_TYPES } from './events.js';
+import { ENDING_VARIANT } from '../data/ending-variants.js';
 
 const endingDef = (id, name) => ({
   id: `ACH_END_${id.toUpperCase()}`,
@@ -86,6 +87,14 @@ export const ACHIEVEMENT_DEFS = Object.freeze([
       .every((id) => run?.ledger?.disclosures?.includes(id)),
   },
   endingDef('sacrifice', 'The Seal'),
+  {
+    id: 'ACH_CENTURY_STAY', name: 'A Hundred More Years',
+    description: 'Willingly become the living seal that stays the school from destruction for a century.',
+    category: 'returns', hidden: true,
+    events: [EVENT_TYPES.RUN_FINISHED],
+    test: ({ summary }) => summary?.endingId === 'sacrifice'
+      && summary?.endingVariant === ENDING_VARIANT.CENTURY_STAY,
+  },
   endingDef('helped', 'He Tried to Help'),
   endingDef('inversion', 'The Other Door'),
   endingDef('drugged', 'Cold, Bitter, Gone'),

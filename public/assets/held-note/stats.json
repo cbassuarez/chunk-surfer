@@ -1,0 +1,32 @@
+{
+  "source": "tools/chunk_surfer/characters/build-conservatory-adversaries.py",
+  "kind": "held",
+  "blender": "4.5.3 LTS",
+  "base": "retained CC0 MakeHuman hm08 anatomy and source rig",
+  "sha256": "6f03f9611dca96f120d5e0b281aa559db2009dadee3c93d13307077f07a3e0fa",
+  "bytes": 4617476,
+  "meshes": [
+    "held_note_anatomy",
+    "held_note_body",
+    "held_note_faces"
+  ],
+  "clips": [
+    "fold",
+    "writhe",
+    "idle",
+    "walk",
+    "turn"
+  ],
+  "materials": [
+    "anatomical_eyes",
+    "held ash feathers",
+    "held chalk feathers",
+    "held opened fascia",
+    "held exposed ribs",
+    "held tarnished bronze",
+    "held enamel sclera",
+    "held inset pupils",
+    "skin_guard"
+  ],
+  "vertices": 44995
+}

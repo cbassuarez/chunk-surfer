@@ -43,7 +43,7 @@ export function homeRealmAcquisition({ realm = null, variant = realm?.variant, r
     || !(reveal >= .999) || Number(realm.decoherence) > 0) return null;
   const [x, y, z] = realmCameraPosition(realm);
   return { cameraMetres: [-x, y, z], yaw: Math.PI + (Number(realm.pose?.yaw) || 0),
-    pitch: Math.tan(Number(realm.pose?.pitch) || 0) };
+    pitch: Number(realm.pose?.pitch) || 0 };
 }
 
 export const REALM_POCKET_GLSL = `

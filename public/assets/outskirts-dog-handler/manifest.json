@@ -1,0 +1,22 @@
+{
+  "source": "tools/chunk_surfer/characters/build-outskirts-dog-handler.py",
+  "anatomicalSource": "assets/source/outskirts-characters.blend",
+  "mesh": "outskirts_dog_handler",
+  "bytes": 5550900,
+  "sha256": "fb3919629dbca24adb06464f564dbc4e647474639a31d4b0cf6e33a5f28221c6",
+  "materials": [
+    "handler skin exposure",
+    "handler eyes",
+    "handler dark hair exposure",
+    "handler worn road coat",
+    "handler worn boots",
+    "handler dark inner layer"
+  ],
+  "clips": [
+    "fold",
+    "writhe",
+    "idle",
+    "walk",
+    "turn"
+  ]
+}

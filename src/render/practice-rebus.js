@@ -1,5 +1,6 @@
 // Authored picture-subtraction rebuses, rendered only into desktop clue windows.
 // The letter counts disambiguate each picture without printing its name.
+import { worldLetteringFont } from './world-lettering-fonts.js';
 export const PRACTICE_REBUSES = Object.freeze({
   hold: Object.freeze([{ picture:'house', word:'HOUSE', remove:['USE'] }, { picture:'gold', word:'GOLD', remove:['GO'] }]),
   expose: Object.freeze([{ picture:'hexagon', word:'HEXAGON', remove:['H','AGON'] }, { picture:'prose', word:'PROSE', remove:['R'] }]),
@@ -18,7 +19,7 @@ export function drawPracticeRebus(ctx, x, y, w, h, id) {
   ctx.strokeStyle=ink; ctx.fillStyle=ink; ctx.lineWidth=2;
   ctx.strokeRect(9,9,262,262);
   ctx.textAlign='center'; ctx.textBaseline='middle';
-  const text=(value,px,py,size=16)=>{ctx.font=`bold ${size}px monospace`;ctx.fillText(value,px,py);};
+  const text=(value,px,py,size=16)=>{ctx.font=worldLetteringFont(size,'monoBold');ctx.fillText(value,px,py);};
   const path=(points,close=false)=>{ctx.beginPath();points.forEach(([px,py],i)=>i?ctx.lineTo(px,py):ctx.moveTo(px,py));if(close)ctx.closePath();ctx.stroke();};
   const circle=(px,py,r)=>{ctx.beginPath();ctx.arc(px,py,r,0,Math.PI*2);ctx.stroke();};
   text(side==='left'?'01 / FIRST PART':'02 / SECOND PART',140,30,13);

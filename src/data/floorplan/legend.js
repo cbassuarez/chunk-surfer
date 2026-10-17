@@ -64,10 +64,11 @@ export const ZONE = {
   chapelOuter: 11,
   bellTower: 12,
   academic: 13,
-  danceStudio: 14,  // the sub-basement dance wing. B3 is one of these rooms — it
-                    // is simply the one with a take on it, which is why it alone
-                    // keeps ZONE.studio and its place in ZONE_RECORDING_ROOM.
-                    // The rest are rooms you walk, not takes you roll.
+  danceStudio: 14,  // the sub-basement dance wing: B1, B2, B5. B3 stands on the
+                    // same corridor but is not one of these any more — it was
+                    // treated for recording (foam, carpet) and keeps ZONE.studio
+                    // and its place in ZONE_RECORDING_ROOM. The rest are rooms
+                    // you walk, not takes you roll.
   store: 15,        // the costume and prop store at the corridor's dead end
   // THE GET-IN. What used to be called the loading dock, which it never was: a
   // sealed room with no way for a lorry into it. It is the room a loading bay
@@ -97,6 +98,7 @@ export const ZONE = {
   //
   // So it gets its own acoustic identity without becoming a recording target.
   church: 20,
+  academicRoof: 21, // the occupied glass roof, open to the city and weather
 };
 
 // Which world (audio + prompt) a zone belongs to. Corridors borrow the room
@@ -130,6 +132,7 @@ export const ZONE_WORLD = {
   // A room tone, not a take target, and nothing that any chapel or tower logic
   // reads. Its manifest reuses the lux_nova material without reusing its id.
   [ZONE.church]: 'st_brendans',
+  [ZONE.academicRoof]: 'amplifications',
 };
 
 // OUTDOORS IS A PROPERTY OF THE ZONE, NOT OF WHERE YOU ARE STANDING.
@@ -149,7 +152,7 @@ export const ZONE_WORLD = {
 //
 // So there is one predicate now and everything asks it.
 export const OUTDOOR_ZONES = Object.freeze([
-  ZONE.dock, ZONE.street, ZONE.civicCourt, ZONE.serviceYard,
+  ZONE.dock, ZONE.street, ZONE.civicCourt, ZONE.serviceYard, ZONE.academicRoof,
 ]);
 export const isOutdoorZone = (zone) => OUTDOOR_ZONES.includes(zone);
 
@@ -158,10 +161,11 @@ export const isOutdoorZone = (zone) => OUTDOOR_ZONES.includes(zone);
 export const MATERIAL = {
   none: 0,
   serviceConcrete: 1,
-  // NOT AUTHORED ANYWHERE. Studio B3 was its only user until B3 was resolved as
-  // one of the dance studios and took their sprung maple. The id stays reserved
-  // and r3d.js keeps its branches — a treated room may want them again — but no
-  // glyph and no zone currently reaches them.
+  // Studio B3's surface. B3 was briefly one of the dance studios on sprung
+  // maple; it is the treated room again, because everything the game says about
+  // it (the first-take tree, the B3 listen, page 2) is foam, carpet and -61 dB.
+  // The foam and the carpet themselves are props (acoustic_foam_panel,
+  // textile_studio_carpet); this is what shows between them.
   acousticFoam: 2,
   poolTile: 3,
   wetTile: 4,
@@ -192,6 +196,7 @@ export const MATERIAL = {
   // material rather than a zone prevents the approach from acquiring a room,
   // an acoustic identity, or a second set of collision semantics.
   sourceVoid: 19,
+  roofGlass: 20, // supported roof glazing; ordinary walkable collision
 };
 
 export function materialForZone(zone) {
@@ -200,11 +205,10 @@ export function materialForZone(zone) {
     case ZONE.street: return MATERIAL.wetTarmac;
     case ZONE.civicCourt: return MATERIAL.wetPaving;
     case ZONE.serviceYard: return MATERIAL.wetSetts;
-    // B3 is a dance studio that happens to carry the take, so it is the same
-    // sprung maple as the rest of the wing. It used to be acousticFoam, which
-    // drew dark concrete cladding over a terrazzo floor and contradicted both
-    // the room tone and the wing it stands in.
-    case ZONE.studio: return MATERIAL.woodVelvet;
+    // B3 is the treated room on the dance-wing corridor: acousticFoam, under
+    // the foam panels and carpet its props lay over it. (It spent a while as
+    // sprung maple, which contradicted every line written about it.)
+    case ZONE.studio: return MATERIAL.acousticFoam;
     case ZONE.natatorium: return MATERIAL.poolTile;
     case ZONE.hall: return MATERIAL.woodVelvet;
     case ZONE.practice: return MATERIAL.practiceFoam;
@@ -213,9 +217,10 @@ export function materialForZone(zone) {
     case ZONE.bellTower: return MATERIAL.chapelStone;
     case ZONE.church: return MATERIAL.chapelStone;
     case ZONE.academic: return MATERIAL.academicPlaster;
+    case ZONE.academicRoof: return MATERIAL.metalPlant;
     case ZONE.plant: return MATERIAL.metalPlant;
-    // Sprung maple and a mirrored wall — the same surface B3 has, because B3 is
-    // one of these rooms.
+    // Sprung maple and a mirrored wall. B3, along the same corridor, is the
+    // one room that was treated instead (see ZONE.studio).
     case ZONE.danceStudio: return MATERIAL.woodVelvet;
     case ZONE.sourceSpace: return MATERIAL.sourceField;
     default: return MATERIAL.serviceConcrete;
@@ -331,7 +336,7 @@ export const GLYPHS = {
   's': { floor: 0.025,ceil: 16.0, sky: true, walled: true, zone: 'street', material: 'wetSetts' },
   'F': { floor: 0.0, ceil: 6.5, zone: 'foyer', material: 'serviceConcrete' },
   'A': { floor: 0.0, ceil: 11.5, zone: 'foyer', material: 'serviceConcrete' },
-  'B': { floor: 0.0, ceil: 3.2, zone: 'studio', material: 'woodVelvet' },
+  'B': { floor: 0.0, ceil: 3.2, zone: 'studio', material: 'acousticFoam' },
   'T': { floor: 0.0, ceil: 9.5, zone: 'natatorium', material: 'poolTile' },
   'W': { floor: -2.0, ceil: 9.5, zone: 'natatorium', material: 'wetTile' },
   'H': { floor: 0.0, ceil: 15.5, zone: 'hall', material: 'woodVelvet' },

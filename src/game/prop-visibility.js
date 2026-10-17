@@ -1,4 +1,4 @@
-import { isOutdoorZone } from '../data/floorplan/legend.js';
+import { isOutdoorZone, ZONE } from '../data/floorplan/legend.js';
 
 // Cross-envelope visibility for the authored Ellery prop pack.
 //
@@ -44,6 +44,13 @@ export function shouldHideCrossEnvelopeProp(instance,{observerZone=null}={}){
     return INTERIOR_HIDDEN_EXTERIOR_MESHES.has(instance?.mesh);
   }
   if(EXTERIOR_ELLERY_MESHES.has(instance?.mesh))return false;
+  // Roof actors and steel sit inside Ellery's X/Z envelope but above it.
+  // Their own depth-writing geometry must survive the exterior shell filter.
+  if(observerZone===ZONE.academicRoof&&(
+    String(instance?.id||'').startsWith('roof-')
+    ||String(instance?.id||'').startsWith('academic-roof-')
+    ||Number(instance?.y)>=16.7
+  ))return false;
   if(isLoadingBaySightlineProp(instance))return false;
   // The exterior hero mesh is the complete visible envelope of Ellery. Large
   // interior structures must not substitute for an exterior elevation through

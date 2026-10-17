@@ -101,7 +101,10 @@ assert.equal(CONSERVATORY_PROPS.find((prop)=>prop.id==='main-open-well-stair')?.
 assert.equal(CONSERVATORY_PROPS.find((prop)=>prop.id==='tower-light-ringing')?.mesh,'stair_pendant_opal',
   'the ringing-room ceiling pendant is the sole deliberate exception');
 
-const academicProps=CONSERVATORY_PROPS.filter((prop)=>prop.id.startsWith('academic-'));
+// The roof's service route and office errand are separate from the gallery's
+// original six bust stations and do not change this room's interaction audit.
+const academicProps=CONSERVATORY_PROPS.filter((prop)=>prop.id.startsWith('academic-')
+  &&!prop.id.startsWith('academic-roof-')&&!String(prop.action||'').startsWith('roof-'));
 assert.ok(academicProps.length>=100);
 // The gallery is mute, with TWO sanctioned kinds of exception and no others.
 //

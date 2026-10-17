@@ -21,8 +21,49 @@ assert.doesNotMatch(capability,/allow-set-(?:position|size|fullscreen|title)/);
 assert.match(capability,/allow-set-focus/);
 assert.match(rust,/set_ignore_cursor_events\(false\)/);assert.match(rust,/set_ignore_cursor_events\(true\)/);assert.match(rust,/count > 0 && count <= 4/);
 assert.match(rust,/chunk_fireball_cast_focus_main/);
-assert.doesNotMatch(rust,/predicted_cursor|cursor_position\(\)/,'fireballs never inspect or chase the pointer');
-assert.match(rust,/An authored tease, not a reaction to the player's hand/);
+assert.doesNotMatch(rust,/predicted_cursor|set_cursor_position\(/,
+  'reactive targets may observe the hand but never warp or predict the pointer');
+const nativeCastStep=rust.slice(rust.indexOf('pub fn chunk_fireball_cast_step('),rust.indexOf('pub fn chunk_fireball_cast_place('));
+assert.equal((nativeCastStep.match(/app\.cursor_position\(\)/g)||[]).length,1,
+  'one desktop cursor sample serves the entire native batch');
+assert.match(nativeCastStep,/active = game_owns_keyboard\(&app\)/,
+  'global pointer reaction carries whether the game owns keyboard focus');
+assert.ok(nativeCastStep.indexOf('apply_placement(')<nativeCastStep.indexOf('app.emit_to('),
+  'the carrier is placed before its relative pointer sample is delivered');
+assert.match(nativeCastStep,/app\.emit_to\(&cast\.label, "fireball-cast-pointer", pointer\)/,
+  'pointer samples are targeted to their fixed carrier');
+assert.match(nativeCastStep,/Result<u8, String>/,'pointer delivery preserves the existing batched placement response');
+const castGeometry=rust.slice(rust.indexOf('fn base_center('),rust.indexOf('fn apply_placement('));
+assert.match(castGeometry,/main\.inner_position\(\)/,'carrier placement anchors to the actual client rectangle');
+assert.match(castGeometry,/main\.inner_size\(\)/);
+assert.doesNotMatch(castGeometry,/main\.outer_(?:position|size)\(\)/);
+assert.match(castGeometry,/carrier_slot_for_cast\(&client,\s*monitor\.work_area\(\),\s*scale,\s*cast\)/,
+  'peripheral placement receives the main client anchor and complete monitor work area');
+assert.match(rust,/fn logical_size\([^)]*\)\s*->\s*f64\s*\{\s*240\.0\s*\}/,
+  'the native input carrier has a fixed 240 logical pixel extent');
+const carrierSlot=rust.slice(rust.indexOf('fn carrier_slot_for_cast('),rust.indexOf('struct CarrierPlacement'));
+assert.match(carrierSlot,/peripheral_carrier_slot\(client,\s*work,\s*scale,\s*cast\.index,\s*cast\.count,\s*cast\.seed\)/,
+  'each original ray keeps its reserved peripheral slot for the complete cast');
+assert.doesNotMatch(carrierSlot,/progress|dodge|formation_progress|cursor|casts\.len/,
+  'visible feints and changing live membership cannot move native input coverage');
+const carrierLayout=rust.slice(rust.indexOf('fn peripheral_carrier_slot('),rust.indexOf('fn carrier_slot_for_cast('));
+assert.match(carrierLayout,/\.clamp\(left,\s*right - side\)/,'peripheral columns remain within monitor work area');
+assert.match(carrierLayout,/\.clamp\(top,\s*bottom - height\)/,'each reserved column is clamped as a whole');
+assert.match(carrierLayout,/\.clamp\(left,\s*right - width\)/,'the fallback row is clamped as a whole');
+const castPlacement=rust.slice(rust.indexOf('fn apply_placement('),rust.indexOf('#[cfg(target_os = "macos")]\nfn show_cast_without_focus'));
+assert.match(castPlacement,/if surface\.inner_size\(\)\.ok\(\) != Some\(placement\.size\)/,
+  'a settled carrier cannot repeatedly resize its webview');
+assert.match(castPlacement,/if surface\.outer_position\(\)\.ok\(\) != Some\(placement\.position\)/,
+  'an unchanged carrier cannot repeatedly move its native window');
+assert.match(castPlacement,/if !surface\.is_visible\(\)\.unwrap_or\(false\)\s*\{\s*show_cast_without_focus/,
+  'moving a visible attack window cannot repeatedly reactivate it');
+assert.doesNotMatch(castPlacement,/surface\.show\(\)/);
+assert.match(castPlacement,/if owned_keyboard && surface\.is_focused\(\)/,
+  'revealing a cast can restore only keyboard focus already owned by the game');
+const macCastReveal=rust.slice(rust.indexOf('#[cfg(target_os = "macos")]\nfn show_cast_without_focus'),rust.indexOf('#[cfg(not(target_os = "macos"))]\nfn show_cast_without_focus'));
+assert.match(macCastReveal,/run_on_main_thread/);
+assert.match(macCastReveal,/orderFront:/,'macOS cast reveal orders the window without making it key');
+assert.doesNotMatch(macCastReveal,/\.show\(\)|makeKeyAndOrderFront|\.set_focus\(\)/);
 const mediaPlacement=rust.slice(rust.indexOf('fn media_placement'),rust.indexOf('fn place_media'));
 assert.match(mediaPlacement,/x: position\.x as f64,/,'shader origin remains in physical framebuffer coordinates');
 assert.doesNotMatch(mediaPlacement,/x: position\.x as f64 \/ scale/);
@@ -43,7 +84,7 @@ assert.doesNotMatch(activation,/\.hide\(\)|hide_media/,
   'task switching cannot erase the native visibility state that must survive Alt-Tab');
 assert.doesNotMatch(effects,/chunk_window_media_hide_if_unfocused/);
 assert.match(effects,/ownsPointerTransfer:\(\)=>!!current&&/);
-assert.match(effects,/const size=128/);
+assert.match(effects,/const size=240/,'the webview pool agrees with the native carrier extent');
 assert.match(effects,/let surface=await api\.WebviewWindow\.getByLabel\(label\)/);
 assert.match(effects,/surface=new api\.WebviewWindow\(label/);
 const mediaSurface=readFileSync(new URL('../src/window-media-surface.js',import.meta.url),'utf8');
@@ -76,7 +117,10 @@ const mediaDocument=readFileSync(new URL('../window-media.html',import.meta.url)
 assert.doesNotMatch(mediaDocument,/image-rendering:(?:pixelated|crisp-edges)/,
   'CSS cannot re-pixelate the full-resolution WebGL or fallback surface');
 const cast=readFileSync(new URL('../src/fireball-cast.js',import.meta.url),'utf8');
-assert.match(cast,/pointerdown[\s\S]{0,220}strike\(\)/);
+assert.match(cast,/pointerdown[\s\S]{0,220}strike\(event\)/,
+  'the physical press coordinates reach tile hit testing inside the input carrier');
+assert.doesNotMatch(cast,/addEventListener\(['"]focus['"]/,
+  'window activation alone cannot report a player catch');
 assert.match(cast,/emit\('fireball-cast-hit',payload\)/);
 assert.match(cast,/if\(cast\.catchReady\)/,'the stationary catch is visually identified');
 const main=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');

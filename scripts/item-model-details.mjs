@@ -62,6 +62,7 @@ export async function buildDetailedItems(model){
    D:[[[0,0],[0,1],[.36,1],[.6,.78],[.6,.22],[.36,0],[0,0]]],
    E:[[[.6,1],[0,1],[0,0],[.6,0]],[[0,.5],[.46,.5]]],
    F:[[[0,0],[0,1],[.6,1]],[[0,.5],[.46,.5]]],
+   G:[[[.6,.8],[.45,1],[.15,1],[0,.85],[0,.15],[.15,0],[.6,0],[.6,.48],[.3,.48]]],
    I:[[[.3,0],[.3,1]]],
    K:[[[0,0],[0,1]],[[.6,1],[0,.47],[.6,0]]],
    L:[[[0,1],[0,0],[.6,0]]],
@@ -79,7 +80,9 @@ export async function buildDetailedItems(model){
    '-':[[[.07,.5],[.53,.5]]],
   };
   const legend=(value,x,y,z,size=.033,material='dark')=>{
-   [...value].forEach((char,i)=>{for(const path of glyphs[char]||[]){
+   [...value].forEach((char,i)=>{
+    if(!glyphs[char]&&!/\s/.test(char))throw new Error(`Unsupported Survey Indicator legend character ${JSON.stringify(char)} in ${value}`);
+    for(const path of glyphs[char]||[]){
     const points=path.map(([xx,yy])=>new THREE.Vector2(x+(i*.86+xx)*size,y+yy*size));
     const geometry=SVGLoader.pointsToStroke(points,SVGLoader.getStrokeStyle(size*.075,'#000','round','round'),3);
     if(geometry)mark(add(geometry,material,[0,0,z]),`legend-${value}`);

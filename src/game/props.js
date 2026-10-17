@@ -5,7 +5,10 @@
 import { CELL, F, PLAN_SCALE } from '../data/floorplan/legend.js';
 import { CONSERVATORY_PROPS, PROP_MESH, STRUCTURAL_COLLIDERS } from '../data/conservatory-props.js';
 import { MESH_SURFACE, PROP_BOUNDS } from '../data/generated/prop-geometry.js';
-import { WALL_CONTACT, snapToWall, wallContactAt } from '../world/wall-contact.js';
+import { WALL_CONTACT, wallContactAt } from '../world/wall-contact.js';
+import { propWallPose } from '../world/prop-wall-pose.js';
+import { propInscriptionAttachments } from '../world/prop-inscriptions.js';
+import { WORLD_INSCRIPTIONS } from '../data/world-inscriptions.js';
 import { CONSERVATORY_FLIGHTS, CONSERVATORY_LANDINGS } from '../data/floorplan/conservatory.js';
 import { corridorDressing } from '../world/corridor-dressing.js';
 
@@ -72,25 +75,6 @@ export function restoreAuthoredProp(id){
   instances.push(restored);resolveContacts(floorplan,[restored]);return restored;
 }
 
-// THE HALF-DEPTH OF A PROP, from the geometry rather than from a typed number.
-// Meshes are floor-centred, so the back is whichever of min/max z is furthest
-// from the origin.
-// HOW FAR THE PROP REACHES BEHIND ITS OWN ORIGIN — which is the only thing the
-// wall needs to know. This used to return the greater of |min z| and |max z|,
-// i.e. the half-depth of a CENTRE-origin mesh. Two conventions live in this
-// pack: centre-origin furniture, and wall assets authored with "the origin is
-// the back plane and +Z is the visible front" (see the note beside
-// tower_bulkhead in build-props.mjs). For the second kind min z is 0, so the old
-// rule backed the prop off by its full depth and stood it proud of the wall.
-//
-// Reaching backwards by nothing means the back plane IS the wall, which is
-// exactly right for a wall asset and still correct for a centred one.
-function halfDepthOf(p){
-  const b=PROP_BOUNDS[p.mesh];
-  if(!b)return 0;
-  return Math.max(0,-b.min[2])*(p.scale||1);
-}
-
 // WHAT WAS BEING DONE BY TYPING COORDINATES.
 //
 // Two placements in this building were hand-solved against geometry nobody can
@@ -129,7 +113,7 @@ function resolveContacts(fp,selected=instances){
       // it exactly where it was rather than dragging it across the room; the
       // contact report lists it.
       if(contact){
-        const snapped=snapToWall(contact,{halfDepth:halfDepthOf(p)});
+        const snapped=propWallPose(p,PROP_BOUNDS[p.mesh],contact);
         // MEASURE FROM WHERE THE RENDERER STARTS. renderInstances places a prop
         // at `at.x*CELL` — the cell's own coordinate, which for an authored metre
         // round-trips back to that metre. Measuring the offset from `p.rx+.5`
@@ -200,7 +184,20 @@ export function setLooseProp(id, placement=null){
   const prop={...mesh,...placement,id,rx,ry,x,y,interactionX,interactionY,interactionRx:rt(interactionX),interactionRy:rt(interactionY),floor,zone:floorplan.zoneAt(rx,ry),renderGroup,renderGroups,blocks:false};
   instances.push(prop);return prop;
 }
-export function renderInstances({group=null}={}){return instances.filter((p)=>!group||(p.renderGroups||[p.renderGroup]).includes(group)).map((p)=>{const at=floorplan.logicalToPhysical?.(p.rx,p.ry),waterlineOffset=(p.elevation||0)+(p.renderOffsetY||0);return{id:p.id,mesh:p.mesh,fallbackMesh:p.fallbackMesh||null,x:(at?at.x*CELL:p.x)+(p.renderOffsetX||0),y:(p.floor??0)+waterlineOffset,z:(at?at.z*CELL:p.y)+(p.renderOffsetZ||0),yaw:(p.yaw||0)+(at?floorplan.arcYawOffset?.(p.rx,p.ry,at.x+.5,at.z+.5)||0:0),scale:p.scale||1,scaleX:p.scaleX,scaleY:p.scaleY,scaleZ:p.scaleZ,zone:p.zone||0,portraitIndex:p.portraitIndex||0,structural:!!p.structural,waterlineBody:p.waterlineBody||null,waterlineOffset};});}
+export function attachInscriptions(finalHosts){return propInscriptionAttachments(finalHosts,WORLD_INSCRIPTIONS);}
+export function renderInstances({group=null,inscriptions=true}={}){
+  const hosts=instances.filter((p)=>!group||(p.renderGroups||[p.renderGroup]).includes(group)).map((p)=>{
+    const at=floorplan.logicalToPhysical?.(p.rx,p.ry),waterlineOffset=(p.elevation||0)+(p.renderOffsetY||0);
+    return{id:p.id,mesh:p.mesh,fallbackMesh:p.fallbackMesh||null,
+      x:(at?at.x*CELL:p.x)+(p.renderOffsetX||0),y:(p.floor??0)+waterlineOffset,
+      z:(at?at.z*CELL:p.y)+(p.renderOffsetZ||0),
+      yaw:(p.yaw||0)+(at?floorplan.arcYawOffset?.(p.rx,p.ry,at.x+.5,at.z+.5)||0:0),
+      scale:p.scale||1,scaleX:p.scaleX,scaleY:p.scaleY,scaleZ:p.scaleZ,zone:p.zone||0,
+      portraitIndex:p.portraitIndex||0,structural:!!p.structural,
+      waterlineBody:p.waterlineBody||null,waterlineOffset};
+  });
+  return inscriptions?attachInscriptions(hosts):hosts;
+}
 
 function pointInProp(mx,mz,p,pad=.20){
   const dx=mx-p.x,dz=mz-p.y,c=Math.cos(-(p.yaw||0)),s=Math.sin(-(p.yaw||0));
@@ -290,6 +287,20 @@ function clearLine(ax,ay,bx,by){
   for(let i=1;i<steps;i++){const t=i/steps;if(floorplan.isSolid(rt(ax+(bx-ax)*t),rt(ay+(by-ay)*t)))return false;}
   return true;
 }
+// A look ray can pass through a rendered floor, especially where two logical
+// levels share a physical footprint. Interaction cannot: a prop on the level
+// below must not take the reticle from a person standing on the roof. Allow a
+// couple of metres for stair treads and landings, and let a deliberately
+// reachable cross-level fixture opt into a larger span when authored.
+const DEFAULT_INTERACTION_FLOOR_REACH=2.6;
+export function propWithinVerticalReach(px,py,p){
+  if(!p)return false;
+  const playerFloor=floorplan?.floorAt?.(px,py);
+  if(!Number.isFinite(playerFloor)||!Number.isFinite(p.floor))return true;
+  const reach=Number.isFinite(p.interactionFloorReach)
+    ?Math.max(0,p.interactionFloorReach):DEFAULT_INTERACTION_FLOOR_REACH;
+  return Math.abs(playerFloor-p.floor)<=reach;
+}
 export function pickProp(px,py,facing,maxMeters=2,{yaw=null,pitch=null,eyeHeight=1.58}={}){
   const mx=meters(px+.5),mz=meters(py+.5);
   // `facing` is deliberately still accepted for the deterministic suites and
@@ -302,6 +313,7 @@ export function pickProp(px,py,facing,maxMeters=2,{yaw=null,pitch=null,eyeHeight
   let best=null,bestScore=Infinity;
   for(const p of instances){
     if(p.interactive===false)continue;
+    if(!propWithinVerticalReach(px,py,p))continue;
     const interactionX=p.interactionX??p.x,interactionY=p.interactionY??p.y;
     const dx=interactionX-mx,dz=interactionY-mz,d=Math.hypot(dx,dz);if(d>maxMeters+(Math.max(p.w,p.d)||0)/2)continue;
     const dot=(dx*f[0]+dz*f[1])/Math.max(.001,d);if(dot<.72)continue;

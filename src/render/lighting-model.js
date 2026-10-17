@@ -118,8 +118,14 @@ export function applySourceEmergencyTorch(torch = {}, {
   };
   if (!active) return {
     ...torch,
-    // The outskirts' tired torch: same beam, power dipping in bursts.
-    ...(flicker !== 1 ? { power: clamp((Number(torch.power) || 0) * clamp(flicker, 0, 1), 0, 1) } : {}),
+    // A sagging supply loses throw and runs amber before it goes black. Keep
+    // the fitted cone and the player's switch state; only the lamp fails.
+    ...(flicker !== 1 ? {
+      power: clamp((Number(torch.power) || 0) * clamp(flicker, 0, 1), 0, 1),
+      reach: (Number(torch.reach) || 1) * (.58 + .42 * Math.sqrt(clamp(flicker, 0, 1))),
+      color: (Array.isArray(torch.color) ? torch.color : [1, .94, .82])
+        .map((channel, index) => mix(channel, [1, .56, .24][index], (1 - clamp(flicker, 0, 1)) * .72)),
+    } : {}),
     sourceEmergencyTorch: SOURCE_TORCH_MODE.NONE,
     sourceTorchMode: SOURCE_TORCH_MODE.NONE,
   };

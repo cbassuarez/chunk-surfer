@@ -375,26 +375,33 @@ function mainFunction(name, globals) {
 }
 
 test('the actual playback entry refuses recording and switches an explicit chosen take after stopping the old one', () => {
-  const log = [], state = { recording: true, playing: true };
+  const log = [], state = { recording: true, playing: true, hasTake: true, lowerCalls: 0 };
   const play = mainFunction('playTakeFrom', {
     REC: { isRecording: () => state.recording },
-    PB: { hasTake: () => true, tapeTake: roomId => ({roomId,status:'accepted'}), isPlaying: () => state.playing,
+    PB: { hasTake: () => state.hasTake, tapeTake: roomId => ({roomId,status:'accepted'}), isPlaying: () => state.playing,
       stopPlayback: () => { log.push('stop'); state.playing = false; },
       playbackInit: () => log.push('init'), playTake: room => { log.push(['play', room]); state.playing = true; return true; } },
     currentWorld: () => 'main_b3', playbackRoom: 'main_b3',
     ensureTapeAudio: () => { log.push('audio');log.push('init'); }, pendingTapeRoll:false, actx: {}, sfxGain: {}, master: {},
     roomToneCharacter: () => ({}), framedLine: key => key, LINES: {},
     SPEECH: { say: line => log.push(['say', line]) },
+    lowerTowerPersonalRecorder: () => { state.lowerCalls++; },
   });
   assert.equal(play('the_tub'), false);
   assert.equal(play(), false);
   assert.deepEqual(log, [], 'a live take does not even stop the other subsystem or emit refusal speech');
+  assert.equal(state.lowerCalls, 0, 'refused playback cannot lower the physical recorder');
   state.recording = false;
   assert.equal(play('the_tub'), true);
   assert.deepEqual(log.slice(0, 4), ['stop', 'audio', 'init', ['play', 'the_tub']]);
+  assert.equal(state.lowerCalls, 1, 'accepted playback lowers the held recorder once');
   log.length = 0;
   assert.equal(play(), false);
   assert.deepEqual(log, ['stop'], 'monitor audition retains its toggle-to-stop behavior');
+  assert.equal(state.lowerCalls, 2, 'the valid monitor toggle also releases the held recorder');
+  state.hasTake = false;
+  assert.equal(play('missing_room'), false);
+  assert.equal(state.lowerCalls, 2, 'a missing take does not lower the recorder');
 });
 
 test('the real live-overlay TAKES route opens the list without invoking a record/stop verb', () => {

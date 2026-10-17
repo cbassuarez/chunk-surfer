@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
+import { parseCharacterAsset, sampleCharacterPose } from '../src/render/character-asset.js';
+import { BUS_WOMAN_RIG, BUS_WOMAN_CONTACTS } from '../src/data/bus-woman-rig.js';
 import { CELL } from '../src/data/floorplan/legend.js';
 import { outskirtsArrivalLayout, outskirtsPassLayout } from '../src/data/source-outskirts-arrival.js';
 import { outskirtsCollisionBoxes, outskirtsPointBlocked } from '../src/game/outskirts-geometry.js';
@@ -22,18 +24,29 @@ const stand = (runtime, x, z) => {
   return position;
 };
 const instances = (runtime, position, viewYaw = 0) => runtime.propInstances(position.x, position.y, { viewYaw });
+const bytes = readFileSync(new URL('../public/assets/bus-woman-character.glb', import.meta.url));
+const asset = parseCharacterAsset(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
+const alteredBytes = readFileSync(new URL('../public/assets/outskirts-bus-woman-wrong-origin.glb', import.meta.url));
+const alteredAsset = parseCharacterAsset(alteredBytes.buffer.slice(alteredBytes.byteOffset, alteredBytes.byteOffset + alteredBytes.byteLength));
+const point = (matrix, p) => [0,1,2].map(axis=>matrix[12+axis]+p.reduce((n,v,k)=>n+matrix[k*4+axis]*v,0));
 const ticketFollows = (frame, id) => {
-  const parent = frame.find((instance) => instance.id === id);
-  const ticket = frame.find((instance) => instance.id === `${id}:return-half`);
+  const parent = frame.find(instance=>instance.id===id), ticket = frame.find(instance=>instance.id===`${id}:return-half`);
   assert.ok(parent && ticket, `${id} lost its return half`);
-  const matrix = parent.matrix;
-  const contact = [.28, .98, -.12];
-  const expected = [0, 1, 2].map((axis) => matrix[12 + axis] + contact.reduce((n, v, k) => n + matrix[k * 4 + axis] * v, 0));
-  expected.forEach((value, axis) => assert.ok(Math.abs(ticket.matrix[12 + axis] - value) < .0001, `${id} paper left its hand on axis ${axis}`));
+  assert.equal(ticket.mesh,'bus_woman_ticket');
+  assert.deepEqual([...ticket.matrix],[...parent.matrix],'accessory left its authoritative body transform');
+  assert.deepEqual(ticket.character,parent.character,'paper and hand use different saved animation samples');
+  const bodyAsset=parent.mesh.includes('_wrong_origin_')?alteredAsset:asset;
+  const bodyEntry=bodyAsset.entries.find(e=>e.name===parent.mesh),ticketEntry=asset.entries.find(e=>e.name===ticket.mesh);
+  const bodyPose=sampleCharacterPose(bodyAsset,bodyEntry,parent.character),paperPose=sampleCharacterPose(asset,ticketEntry,ticket.character);
+  const finger=bodyEntry.skin.joints.findIndex(i=>bodyAsset.nodes[i].name==='bus_woman_index_tip_R');
+  const fingerRest=BUS_WOMAN_RIG.find(b=>b.name==='index_tip_R');
+  const fingertip=point(bodyPose.bones.subarray(finger*16,finger*16+16),fingerRest.tail);
+  const paperGrip=point(paperPose.bones.subarray(0,16),BUS_WOMAN_CONTACTS.ticketGrip);
+  assert.ok(Math.hypot(...fingertip.map((v,i)=>v-paperGrip[i]))<.004,`${id}: exported ticket loses its actual finger pinch`);
   return parent;
 };
 
-test('all thirteen current recurrences and the authored duplicate variants retain one woman asset', () => {
+test('all thirteen scheduled recurrences and authored duplicate variants retain their canonical source aliases', () => {
   assert.equal(women.length, 13);
   assert.deepEqual([...new Set(women.map((piece) => piece.mesh))], ['outskirts_bus_woman']);
   for (const kind of ['crowd', 'stutter', 'mirrored', 'turned']) {
@@ -54,7 +67,7 @@ test('the aboard recurrence stands on the bus floor in the aisle, clear of all s
   assert.equal(outskirtsPointBlocked(outskirtsCollisionBoxes(bus), x, z, .25), false, 'her legs are inside a seat');
 });
 
-test('every current recurrence carries returned paper at the rendered right hand, including aboard', () => {
+test('every recurrence carries returned paper at its rendered right hand, including altered bodies and aboard', () => {
   const runtime = fixture();
   runtime.setOutskirtsWorldState({ ticketReturned: true });
   for (const woman of women) {
@@ -83,21 +96,22 @@ test('an unseen watcher turns her front toward the remembered player and carries
   assert.ok(facingDot > .999, 'her back faces the player');
 });
 
-test('the bus-gap acknowledgement faces the player and keeps paper attached through its retained step', () => {
-  const runtime = fixture();
-  runtime.setOutskirtsWorldState({ ticketReturned: true });
-  const p = runtime.outskirtsPiece('r7-bus-woman');
-  for (const [dx, dz, minimumStage] of [[1.33, 1, 2], [1.33, -3, 3]]) {
-    const eye = { x: p.x + dx, z: p.z + dz };
-    const position = stand(runtime, eye.x, eye.z);
-    const viewYaw = Math.atan2(p.x - eye.x, -(p.z - eye.z));
-    assert.ok(runtime.outskirtsStreetFrame({ viewYaw }).encounter.stage >= minimumStage);
-    const parent = ticketFollows(instances(runtime, position, viewYaw), p.id);
-    const direction = [eye.x - parent.matrix[12], eye.z - parent.matrix[14]], distance = Math.hypot(...direction);
-    const facingDot = (-parent.matrix[8] * direction[0] - parent.matrix[10] * direction[1]) / distance;
-    assert.ok(facingDot > .999, 'the close acknowledgement shows her back');
-    if (minimumStage >= 3) assert.ok(Math.abs(parent.matrix[14] - (p.z - .18)) < .0001);
-  }
+test('the bus-gap acknowledges with the rig and retains its one animated 18cm step', () => {
+  const runtime=fixture();runtime.setOutskirtsWorldState({ticketReturned:true});
+  const p=runtime.outskirtsPiece('r7-bus-woman');
+  let position=stand(runtime,p.x+1.33,p.z+1),viewYaw=Math.atan2(p.x-(p.x+1.33),-(p.z-(p.z+1)));
+  assert.ok(runtime.outskirtsStreetFrame({viewYaw}).encounter.stage>=2);
+  const first=ticketFollows(instances(runtime,position,viewYaw),p.id);
+  assert.equal(first.character.clip,'bus_woman_acknowledge_ticket');
+  assert.ok(Math.abs(first.matrix[8]-Math.sin(p.yaw))<.0001,'acknowledgement rotates the planted whole body');
+  position=stand(runtime,p.x+1.33,p.z-3);viewYaw=Math.atan2(-1.33,-3);
+  assert.ok(runtime.outskirtsStreetFrame({viewYaw}).encounter.stage>=3);
+  const start=ticketFollows(instances(runtime,position,viewYaw),p.id);
+  assert.equal(start.character.clip,'bus_woman_step_ticket');
+  assert.ok(Math.abs(start.matrix[14]-p.z)<.0001,'step teleported before the foot lifted');
+  for(let i=0;i<4;i++)runtime.tickOutskirtsCharacters(.25,{viewYaw});
+  const end=ticketFollows(instances(runtime,position,viewYaw),p.id);
+  assert.ok(Math.abs(end.matrix[14]-(p.z-.18))<.0001,'the saved crossing step lost its original distance');
 });
 
 test('the crowd inspection uses its physical woman anchor for the ticket action', () => {
@@ -114,7 +128,8 @@ test('the crowd inspection uses its physical woman anchor for the ticket action'
     streetAnchor: (piece) => piece,
     outskirtsEye: () => ({ x: 5.0, z: -12.2 }),
     outskirtsSightClear: () => true,
-    streetExperience: { action: (...args) => { called.push(args); return true; } },
+    streetExperience: { action: (...args) => { called.push(args); return true; }, womanState:()=>{} },
+    state:{},setState:()=>{},
     streetActionAt: new Map(), edgeDoorClock: () => 12,
   };
   vm.createContext(sandbox);

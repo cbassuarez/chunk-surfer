@@ -1,0 +1,40 @@
+{
+  "id": "deadend-ground-armchair",
+  "sourceAsset": "/Users/seb/chunk-surfer/public/assets/conservatory-acquisitions.glb",
+  "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+  "mesh": "arm_chair_01",
+  "width": 248,
+  "height": 74,
+  "orientation": {
+    "readerRight": [
+      -0.9988736,
+      0,
+      -0.0474506
+    ],
+    "up": [
+      0.001637,
+      0.9994045,
+      -0.0344594
+    ],
+    "normal": [
+      0.047422343167700005,
+      -0.034498261564040004,
+      -0.9982787707712001
+    ],
+    "center": [
+      0.072355,
+      0.400889,
+      -0.35657
+    ]
+  },
+  "projectedTriangles": 2,
+  "missingTexels": 0,
+  "minimumSeparationM": 0.0005974126763209144,
+  "maximumSeparationM": 0.0006008348248415849,
+  "method": "Actual host triangles, barycentric TEXCOORD_0, bilinear source images; linear baseColorFactor composition; tangent-space normal reprojection; exact rough/metal/AO factors.",
+  "outputs": {
+    "albedo": "7efb4cb78b0db7cec2a9959b39ec5ca538454422af0785ed0947eb1203825919",
+    "normal": "5e062836db420f1d2ab362b886d0041051f0e6c08f6d8eb410ca5d2ddf8a83bc",
+    "orm": "91faa26986253d17146c154946d6d9450df790626e47c5909c8f725d50925d6f"
+  }
+}

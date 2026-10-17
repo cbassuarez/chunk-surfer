@@ -1,8 +1,18 @@
+import { createBustPerformanceState, beginBustRecognition, beginBustRitual, advanceBustPerformance, describeBustPerformance, settleBustPerformance } from './bust-performance.js';
+import { BUST_RELIQUARY_RIG } from '../data/bust-reliquary-rig.js';
 import { SOURCE_HANGING_SHORE, SOURCE_SHORE_DIRECT_SECONDS, sourceShoreBounds, sourceShoreContains, sourceShoreDistance } from '../data/source-hanging-shore.js';
+import { busWomanInstances, busWomanPerformance } from './bus-woman-presentation.js';
+import { busWomanStepProgress } from '../render/bus-woman-performance.js';
+import { busWomanWrongOriginReturn } from '../data/bus-woman-wrong-origin.js';
 import { sourceStrataCollisionAt, sourceStrataEntryAt } from '../data/source-exposed-strata.js';
 import { createSourceHangingShore } from './source-hanging-shore.js';
 import { SOURCE_BRAIDED_DIVIDE, sourceDivideFloorAt, sourceDivideSupportAt, sourceDivideCollisionAt, sourceDivideGeometry, sourceDividePropPlacements, sourceDivideProbe } from '../data/source-braided-divide.js';
 import { divideMeshName, dividePieceBounds } from '../render/source-divide-meshes.js';
+import { SOURCE_LAST_RECEPTION, sourceReceptionContains, sourceReceptionRoomAt, sourceReceptionSupportAt, sourceReceptionCollisionAt, sourceReceptionGeometry, sourceReceptionPropPlacements, sourceReceptionLineOfSight } from '../data/source-last-reception.js';
+import { receptionMeshName } from '../render/source-last-reception-meshes.js';
+import { createLastReceptionState, serializeLastReceptionState, updateLastReception, getLastReceptionConversation, finishLastReceptionConversation, closeLastReceptionDialogue, getLastReceptionPresentation } from './source-last-reception.js';
+import { sourceLastReceptionResidentInstances } from '../render/source-last-reception-residents.js';
+import { sourceLastReceptionCelestialInstances } from '../render/source-last-reception-celestials.js';
 import SOURCE_ATLAS from '../../content/chunk-surf/source-atlas.json' with { type: 'json' };
 import { MOVE_MS } from '../config.js';
 import { createSourceDockDoor, sourceDockDoorBlocks, SOURCE_DOCK_DOOR_OPEN_SECONDS } from './source-dock-door.js';
@@ -364,17 +374,37 @@ export function outskirtsGaitAt(timeSec = 0, seed = 1, { reducedMotion = false }
   };
 }
 
-// A tired torch. Most of the time it is simply on. Now and then, a burst: short
-// dips inside half a second, then steady again. Never a regular strobe.
-export function torchFlickerAt(timeSec = 0, seed = 1) {
-  const t = Math.max(0, Number(timeSec) || 0), windowSec = 2.4;
-  const window = Math.floor(t / windowSec);
-  const noise = (a, b) => { const x = Math.sin(a * 12.9898 + b * 78.233 + (Number(seed) || 1) * 0.0137) * 43758.5453; return x - Math.floor(x); };
-  if (noise(window, 1) > 0.42) return 1;
-  const local = t - window * windowSec - noise(window, 2) * 1.8;
-  if (local < 0 || local > 0.55) return 1;
-  const dip = noise(window * 3.1, Math.floor(local / 0.07) + 17);
-  return dip < 0.55 ? 0.12 + dip * 0.5 : 1;
+// The outskirts torch has a failing supply rather than an unreliable switch.
+// Slow, seeded voltage wander never holds one level for long. A fault begins
+// with a few sputters, drops the filament entirely, then returns unevenly.
+// Absolute time keeps the behavior continuous across frames and deterministic
+// across reloads; the renderer still obeys the player's on/off state directly.
+export function torchFlickerAt(timeSec = 0, seed = 1, severity = 0) {
+  const t = Math.max(0, Number(timeSec) || 0);
+  const s = Number(seed) || 1, loss = Math.max(0, Math.min(1, Number(severity) || 0));
+  const hash = (a, b) => { const x = Math.sin(a * 12.9898 + b * 78.233 + s * .0137) * 43758.5453; return x - Math.floor(x); };
+  const drift = (x, channel) => {
+    const i = Math.floor(x), f = x - i, ease = f * f * (3 - 2 * f);
+    return hash(i, channel) * (1 - ease) + hash(i + 1, channel) * ease;
+  };
+  const voltage = Math.min(1, .25 + .73 * (
+    drift(t * .13, 41) * .46 + drift(t * .47, 42) * .34 + drift(t * 1.5, 43) * .20
+  )) * (1 - loss * .18);
+  const windowSec = 7.6, window = Math.floor(t / windowSec);
+  if (hash(window, 1) > .86 + loss * .10) return voltage;
+  const local = t - window * windowSec;
+  const start = .45 + hash(window, 2) * 2.35;
+  const deadAt = start + .28 + hash(window, 3) * .38;
+  const deadFor = .48 + hash(window, 4) * 1.02
+    + (hash(window, 5) < .18 ? .72 : 0) + loss * .28;
+  if (local < start || local >= deadAt + deadFor + .55) return voltage;
+  if (local < deadAt) {
+    const sputter = hash(window * 17 + Math.floor((local - start) / .11), 6);
+    return voltage * (sputter < .35 ? .015 : .07 + sputter * .47);
+  }
+  if (local < deadAt + deadFor) return 0;
+  const recovery = (local - deadAt - deadFor) / .55;
+  return voltage * Math.min(1, (.08 + .92 * recovery) * (.6 + .4 * drift(t * 7, 44)));
 }
 
 const SOURCE_OUTSKIRT_MESHES = Object.freeze([
@@ -866,7 +896,7 @@ import {
   OUTSKIRT_BEATS, OUTSKIRT_ELEVATION, OUTSKIRT_LAMP_OFF_BEHIND, OUTSKIRT_ROAD_END, OUTSKIRT_WALKABLE_MESHES,
   OUTSKIRT_STRETCH_COUNT, OUTSKIRT_STRETCH_METRES, OUTSKIRT_STRETCH_START,
   OUTSKIRT_LAST_LIGHT, OUTSKIRT_LAST_MARK, OUTSKIRT_PASSES,
-  OUTSKIRT_BUS_ENCOUNTER, OUTSKIRT_FOLD_ENCOUNTER, OUTSKIRT_CORRIDOR,
+  OUTSKIRT_BUS_ENCOUNTER, OUTSKIRT_FOLD_ENCOUNTER, OUTSKIRT_DOG_ENCOUNTER, OUTSKIRT_CORRIDOR,
   outskirtBeatAlong, outskirtsArrivalLayout,
 } from '../data/source-outskirts-arrival.js';
 import { PROP_BOUNDS } from '../data/generated/prop-geometry.js';
@@ -888,6 +918,10 @@ export function createSourceSpaceRuntime({
   onScare = () => {},
 } = {}) {
   let state = normalizeChunkSurfState(initialState);
+  state={...state,finale:{...state.finale,bust:{...state.finale.bust,
+    performance:createBustPerformanceState(state.finale.bust.performance,{recognized:state.finale.bust.recognized,committed:state.finale.bust.decision==='accepted',evidence:state.profile?.marbleEyes})}}};
+  let bustCueQueue=[];
+  let bustSavedSecond=-1;
   let stationClockSeconds = state.station.time;
   let stationEntries = state.station.entries;
   let stationWalk = state.station.walk;
@@ -904,6 +938,8 @@ export function createSourceSpaceRuntime({
   let stationSavedSecond = Math.floor(stationClockSeconds);
   const shore = createSourceHangingShore(state.sourceShore);
   let divide = normalizeSourceDivide(state.sourceDivide);
+  let lastReception = createLastReceptionState(state.lastReception);
+  let receptionSavedElapsed = 0;
   let dividePositionEstablished = false;
   const streetExperience = createOutskirtsExperience(state.outskirtsExperience);
   const bellField = createSourceBellField({initialState:state.bellField,difficulty});
@@ -990,7 +1026,7 @@ export function createSourceSpaceRuntime({
       amount: Math.max(persistedUnravelling.amount, horizonUnravelling.amount),
       markers: [...persistedUnravelling.markers, ...horizonUnravelling.markers],
     });
-    state = normalizeChunkSurfState({ ...next, sourceDivide:divide, horizon: { ...next.horizon, unravelling: horizonUnravelling }, outskirtsExperience: outskirtsExperienceSnapshot(), hallExperience: {
+    state = normalizeChunkSurfState({ ...next, sourceDivide:divide, lastReception:serializeLastReceptionState(lastReception), horizon: { ...next.horizon, unravelling: horizonUnravelling }, outskirtsExperience: outskirtsExperienceSnapshot(), hallExperience: {
       searchElapsed, pressure: standingPressure, rainLatched,
     } });
     if (state.landingWeatherSpent) landingRainRemaining = 0;
@@ -1031,7 +1067,56 @@ export function createSourceSpaceRuntime({
   }
   function divideSupport(x=player.x,y=player.y) {
     const o=landscapeOrigin(),mx=(x-o.x)*CELL,mz=(y-o.y)*CELL;
-    return sourceDivideSupportAt(mx,mz,{feet:divide?.feet??sourceDivideFloorAt(mx,mz),maxStep:.45});
+    return receptionSupport(mx,mz,divide?.feet??sourceDivideFloorAt(mx,mz));
+  }
+  function receptionSupport(x,z,feet) {
+    return sourceReceptionSupportAt(x,z,{feet,maxStep:.45}) || sourceDivideSupportAt(x,z,{feet,maxStep:.45});
+  }
+  function receptionLocalPlayer() {
+    const o=landscapeOrigin();
+    return {x:(player.x-o.x)*CELL,z:(player.y-o.y)*CELL,y:divide?.feet??SOURCE_LAST_RECEPTION.floor};
+  }
+  function lastReceptionFrame() {
+    const local=receptionLocalPlayer(),active=divideActiveAt();
+    return {...getLastReceptionPresentation(lastReception),active,
+      inside:active&&sourceReceptionContains(local.x,local.z),
+      near:active&&sourceReceptionContains(local.x,local.z,-4),player:local};
+  }
+  function tickLastReception(dt=0,{paused=false,dialogueOpen=false}={}) {
+    const result=updateLastReception(lastReception,{dt,player:receptionLocalPlayer(),active:divideActiveAt(),paused,dialogueOpen});
+    state={...state,lastReception:serializeLastReceptionState(lastReception)};
+    if(!paused&&!dialogueOpen&&lastReceptionFrame().inside)receptionSavedElapsed+=Math.max(0,Number(dt)||0);
+    const saveDue=result.events.some(event=>!['footstep','plea','brush'].includes(event.type))||receptionSavedElapsed>=1;
+    if(saveDue)receptionSavedElapsed=0;
+    return {...result,saveDue};
+  }
+  function finishReceptionConversation(id) {
+    const result=finishLastReceptionConversation(lastReception,id);
+    setState({...state,lastReception:serializeLastReceptionState(lastReception)},{immediate:true});
+    return result;
+  }
+  function applyReceptionRelocation(position) {
+    if(!position||!sourceReceptionContains(position.x,position.z)||!Number.isFinite(position.y))return null;
+    const o=landscapeOrigin();
+    // This authored transfer stays on the occupied bank. The generic review
+    // warp normalizer deliberately selects underlying terrain (4.2m), which
+    // would put a captured visitor beneath this room's actual 9m floor.
+    player={...player,x:o.x+position.x/CELL,y:o.y+position.z/CELL};
+    divide={version:1,feet:position.y,fallVelocity:0,falling:false};
+    dividePositionEstablished=true;
+    updateDivideBody();
+    return {...player};
+  }
+  function receptionFocus(px,py) {
+    if(!divideActiveAt(px,py))return [];
+    const frame=lastReceptionFrame();
+    if(!frame.inside||['converging','held','captured'].includes(frame.phase))return [];
+    const o=landscapeOrigin();
+    return (frame.residents||[]).filter(resident=>Math.abs(resident.y-(divide?.feet??9))<1.6)
+      .filter(resident=>getLastReceptionConversation(lastReception,resident.id))
+      .filter(resident=>sourceReceptionLineOfSight(frame.player,resident,{targetHeight:resident.mode==='seated'?1.05:1.45}))
+      .map(resident=>({kind:'reception-resident',id:resident.id,
+        x:o.x+resident.x/CELL,y:o.y+resident.z/CELL,focusPriority:14,focusRadius:2.8/CELL}));
   }
   function updateDivideBody(dt=0) {
     if(!divideActiveAt())return;
@@ -1419,8 +1504,10 @@ export function createSourceSpaceRuntime({
       sourceVoid: true,
     };
     if(divideLocation(lx*CELL,ly*CELL)) {
-      const support=renderOnly?null:sourceDivideSupportAt(lx*CELL,ly*CELL,{feet:divide?.feet??sourceDivideFloorAt(lx*CELL,ly*CELL),maxStep:.45});
-      const floor=renderOnly?sourceDivideFloorAt(lx*CELL,ly*CELL):(typeof support==='number'?support:(support?.floor??support?.height??sourceDivideFloorAt(lx*CELL,ly*CELL)));
+      const mx=lx*CELL,mz=ly*CELL,room=sourceReceptionRoomAt(mx,mz,{feet:divide?.feet});
+      const support=renderOnly?null:receptionSupport(mx,mz,divide?.feet??sourceDivideFloorAt(mx,mz));
+      const floor=renderOnly?(room?SOURCE_LAST_RECEPTION.floor:sourceDivideFloorAt(mx,mz)):(typeof support==='number'?support:(support?.floor??support?.height??sourceDivideFloorAt(mx,mz)));
+      if(room)return {floor,ceil:renderOnly?floor+64:(room.ceil??floor+6),flags:F.SKY,zone:ZONE.sourceSpace,material:MATERIAL.sourceField,sourceDivide:true,lastReception:room.id};
       return {floor,ceil:floor+64,flags:F.SKY,zone:ZONE.sourceSpace,material:MATERIAL.sourceField,sourceDivide:true};
     }
     const floor = sourceLandscapeFloorAt(lx, ly);
@@ -1580,11 +1667,11 @@ export function createSourceSpaceRuntime({
           let height=feet;
           for(let step=1;step<=steps;step++) {
             const x=ax+(bx-ax)*step/steps,z=az+(bz-az)*step/steps;
-            const support=sourceDivideSupportAt(x,z,{feet:height,maxStep:.45});
+            const support=receptionSupport(x,z,height);
             const floor=typeof support==='number'?support:(support?.floor??support?.height??sourceDivideFloorAt(x,z));
             if(floor>height+.45)return {ok:false,why:'source bank',floor};
             const joined=sourceStrataEntryAt(x,z)&&Math.abs(height-SOURCE_HANGING_SHORE.ledge.floor)<=.45;
-            const collision=sourceDivideCollisionAt(x,z,{feet:Math.max(height,floor),height:EYE,radius:.22,
+            const collision=sourceReceptionCollisionAt(x,z,{feet:Math.max(height,floor),height:EYE,radius:.22}) || sourceDivideCollisionAt(x,z,{feet:Math.max(height,floor),height:EYE,radius:.22,
               frontSupport:joined?(sx,sz)=>sourceShoreContains(SOURCE_HANGING_SHORE.ledge,sx,sz):null});
             if(collision)return {ok:false,why:'source structure',id:collision.id};
             // Falling belongs to the vertical clock, never to this planar query.
@@ -2094,7 +2181,7 @@ export function createSourceSpaceRuntime({
     // authored tableau control and the forward body is render-only. Neither is
     // allowed to resolve contact. Conventional Source pursuits remain available
     // later in the landscape through the serialized pursuitBeat.
-    const meeting = state.firstLiftCompleted && !state.finale.route && sourceBossAvailable(state)
+    const meeting = !lastReceptionFrame().inside && state.firstLiftCompleted && !state.finale.route && sourceBossAvailable(state)
       && [CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL].includes(state.phase);
     const laterPursuit = false;
     const present = bracket.active || landing.active || meeting;
@@ -2431,6 +2518,7 @@ export function createSourceSpaceRuntime({
       depth: HORIZON_BUST_DEPTH,
       eyes: !!state.finale?.bust?.recognized && evidence.eligible,
       eyeMode: evidence.mode,
+      performance:describeBustPerformance(state.finale.bust.performance,{evidence:evidence.mode}),
     };
   }
 
@@ -2440,6 +2528,40 @@ export function createSourceSpaceRuntime({
       x: o.x + horizonBustLateral(),
       y: o.y + SOURCE_HORIZON.from - HORIZON_BUST_DEPTH,
     };
+  }
+
+  function horizonBustSealPoint(){
+    const at=horizonBustPoint(),seal=BUST_RELIQUARY_RIG.sealCenter;
+    return {x:at.x+seal[0]/CELL,y:at.y+seal[2]/CELL,elevation:seal[1]};
+  }
+  function horizonBustAtSeal(x=player.x,y=player.y){
+    const seal=horizonBustSealPoint();
+    return Math.hypot((x-seal.x)*CELL,(y-seal.y)*CELL)<=.78&&y>horizonBustPoint().y;
+  }
+  function prepareHorizonBustSeal(){
+    if(state.phase!==CHUNK_SURF_PHASE.HORIZON||!state.finale.bust.recognized||state.finale.bust.decision)return false;
+    setState({...state,finale:{...state.finale,bust:{...state.finale.bust,sealReady:true}}},{immediate:true});return true;
+  }
+  function takeHorizonBustCues(){const cues=bustCueQueue;bustCueQueue=[];return cues;}
+  function tickHorizonBust(dt=0,{paused=false,hidden=false,reducedMotion=false}={}){
+    const at=horizonBustPoint(),eyes=BUST_RELIQUARY_RIG.eyeCenters;
+    const center={x:(eyes.L[0]+eyes.R[0])*.5,y:(eyes.L[1]+eyes.R[1])*.5,z:(eyes.L[2]+eyes.R[2])*.5};
+    const x=(player.x-at.x)*CELL-center.x,z=(player.y-at.y)*CELL-center.z,distance=Math.hypot(x,z);
+    const active=state.phase===CHUNK_SURF_PHASE.HORIZON;
+    const evidence=horizonBustEyeEvidence(state.profile?.marbleEyes).mode;
+    const gaze={yaw:Math.atan2(x,z),pitch:Math.atan2(center.y-1.62,distance),distance};
+    const bag={...gaze,pitch:Math.atan2(center.y-.9,distance)};
+    const result=advanceBustPerformance(state.finale.bust.performance,dt,{paused:paused||!active,hidden,reducedMotion,evidence,
+      inAudience:active&&z>0&&distance<13,gaze,bag});
+    state={...state,finale:{...state.finale,bust:{...state.finale.bust,performance:result.state}}};
+    bustCueQueue.push(...result.cues);
+    const second=Math.floor(result.state.sceneTime);
+    if(result.changed&&second!==bustSavedSecond){bustSavedSecond=second;onState(state,{immediate:false,recordCausal:false});}
+    return {...result.frame,sealPoint:horizonBustSealPoint(),atSeal:horizonBustAtSeal(),pendingCues:bustCueQueue.length};
+  }
+  function skipHorizonBustPerformance(){
+    state={...state,finale:{...state.finale,bust:{...state.finale.bust,performance:settleBustPerformance(state.finale.bust.performance)}}};
+    bustCueQueue=[];onState(state,{immediate:true,recordCausal:false});return describeBustPerformance(state.finale.bust.performance);
   }
 
   function horizonBustBlocks(x, y) {
@@ -2516,6 +2638,8 @@ export function createSourceSpaceRuntime({
         line: null, offers: false, offersRefusal: false,
       };
     }
+    const recognition=beginBustRecognition(state.finale.bust.performance,evidence.mode);
+    state={...state,finale:{...state.finale,bust:{...state.finale.bust,performance:recognition.state}}};
     dispatch({ type: 'HORIZON_BUST_RECOGNIZED', eligible: true }, { immediate: true });
     const lines = horizonBustAudience(evidence.mode);
     horizonBustBeat = Math.min(lines.length, horizonBustBeat + 1);
@@ -2535,6 +2659,11 @@ export function createSourceSpaceRuntime({
     if (state.phase !== CHUNK_SURF_PHASE.HORIZON || state.finale?.bust?.decision) return { handled: false, state };
     dispatch({ type: 'HORIZON_BUST_DECIDED', decision: accept ? 'accepted' : 'declined' }, { immediate: true });
     const decision = state.finale?.bust?.decision;
+    if(decision==='accepted'){
+      const ritual=beginBustRitual(state.finale.bust.performance,{evidence:horizonBustEyeEvidence(state.profile?.marbleEyes).mode});
+      state={...state,finale:{...state.finale,bust:{...state.finale.bust,performance:ritual.state}}};
+      onState(state,{immediate:true,recordCausal:false});
+    }
     return { handled: !!decision, accepted: decision === 'accepted', decision, state };
   }
 
@@ -2661,6 +2790,8 @@ export function createSourceSpaceRuntime({
     if ([CHUNK_SURF_PHASE.HALL, CHUNK_SURF_PHASE.HAYSTACK].includes(state.phase)) return HALL_AMBIENT;
     if (sourceVoidFrame().sceneDock) return DOCK_AMBIENT;
     if (sourceShoreFrame().outside) return {color:[.60,.66,.74],intensity:.085,whitePointScale:.24,captureExposure:2.2};
+    const receptionPoint=receptionLocalPlayer();
+    if(divideActiveAt()&&sourceReceptionContains(receptionPoint.x,receptionPoint.z,-3))return {color:[.57,.61,.56],intensity:.075,whitePointScale:.65,captureExposure:2.2};
     if (sourceRoomMemoryActive()) return PROPER_AMBIENT;
     if (state.phase === CHUNK_SURF_PHASE.BELLS || state.phase === CHUNK_SURF_PHASE.CHAPEL_OUTSKIRTS) return BELLS_AMBIENT;
     if (state.phase === CHUNK_SURF_PHASE.HORIZON) {
@@ -2718,7 +2849,7 @@ export function createSourceSpaceRuntime({
     // happy about it. Steady whenever flashing is reduced.
     if (inDarkOutskirts()) return Object.freeze({
       mode: 'normal', active: false, xray: false, cycle: 1,
-      flicker: reducedMotion || flashMode !== 'full' ? 1 : torchFlickerAt(time, state.seed),
+      flicker: reducedMotion || flashMode !== 'full' ? 1 : torchFlickerAt(time, state.seed, outskirtsLosing()),
     });
     if (sourceRoomMemoryActive()) return Object.freeze({ mode: 'normal', profile: 'proper', active: false, xray: false, cycle: 1, flicker: 1 });
     return Object.freeze({ mode: 'xray', active: false, xray: true, cycle: 1, flicker: 1 });
@@ -3078,6 +3209,7 @@ export function createSourceSpaceRuntime({
     candidates.push(...readablePages());
     candidates.push(...outskirtDoorFocus(), ...doorExtraFocus(), ...doorScarFocus(), ...stationEdgeFocus(px, py), ...stationServiceFocus(), ...towerLandFocus());
     candidates.push(...edgeDoorFocus());
+    candidates.push(...receptionFocus(px,py));
     candidates.push(...phoneBoxFocus(), ...flurryFocus());
     candidates.push(...outskirtInspectFocus());
     if (state.phase === CHUNK_SURF_PHASE.HORIZON) {
@@ -3086,6 +3218,7 @@ export function createSourceSpaceRuntime({
           // needing to be within eight cells of a thing that size to notice it is
           // a reticle problem, not a staging one.
           candidates.push({ kind: 'horizon-bust', id: 'horizon-bust', ...bust, focusPriority: 9, focusRadius: 20 });
+      if(state.finale.bust.sealReady&&!state.finale.bust.decision&&horizonBustAtSeal(px,py))candidates.push({kind:'horizon-bust-seal',id:'horizon-bust-seal',...horizonBustSealPoint(),focusPriority:20,focusRadius:2});
       return (lastFocus = focusedCandidate(px, py, facing, candidates, 8));
     }
     if ([CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL].includes(state.phase) && !sourceShoreFrame().outside) {
@@ -3305,6 +3438,7 @@ export function createSourceSpaceRuntime({
     // fourth argument produced a visible SPEAK prompt whose key did nothing.
     const focus = focusAt(px, py, facing, presence);
     if (!focus) return { handled: false };
+    if(focus.kind==='reception-resident')return {handled:true,event:'reception-talk',conversation:getLastReceptionConversation(lastReception,focus.id)};
     if (focus.kind === 'source-landing-door') {
       if (state.landingDoorSealed) {
         return { handled: true, event: 'landing-door-locked', text: '' };
@@ -3356,7 +3490,9 @@ export function createSourceSpaceRuntime({
       const room = chunkSurfRoom(focus.id);
       return { handled: true, text: room.inspect, source: exactLine(focus.sector, 0) };
     }
+    if(focus.kind==='horizon-bust-seal')return{handled:true,event:'horizon-bust-seal',text:''};
     if (focus.kind === 'horizon-bust') {
+      if(state.finale.bust.decision)return{handled:true,event:'horizon-bust',line:{who:'bust',text:state.finale.bust.decision==='accepted'?'The path is open. There. Walk it.':'The chapel is still ahead.'},text:''};
       const talk = talkToHorizonBust();
       return {
         handled: true,
@@ -4295,6 +4431,19 @@ export function createSourceSpaceRuntime({
       out.push({id:divideMeshName(piece.id),mesh:divideMeshName(piece.id),matrix:sourceMatrix({x:o.x*CELL+center[0],y:center[1],z:o.y*CELL+center[2]}),
         cullRadius:radius,zone:ZONE.sourceSpace,structural:true,sourceDivide:piece.id});
     }
+    for(const piece of sourceReceptionGeometry()) {
+      const {center,radius}=dividePieceBounds(piece);
+      out.push({id:receptionMeshName(piece.id),mesh:receptionMeshName(piece.id),
+        matrix:sourceMatrix({x:o.x*CELL+center[0],y:center[1],z:o.y*CELL+center[2]}),
+        cullRadius:radius,zone:ZONE.sourceSpace,structural:true,lastReception:piece.id});
+    }
+    for(const prop of sourceReceptionPropPlacements())out.push({
+      ...prop,id:`source-reception:${prop.id}`,x:o.x*CELL+prop.x,z:o.y*CELL+prop.z,
+      matrix:sourceMatrix({x:o.x*CELL+prop.x,y:prop.y,z:o.y*CELL+prop.z,
+        yaw:prop.yaw||0,pitch:prop.pitch||0,roll:prop.roll||0,
+        scaleX:prop.scaleX??prop.scale??1,scaleY:prop.scaleY??prop.scale??1,scaleZ:prop.scaleZ??prop.scale??1}),
+      zone:ZONE.sourceSpace,structural:true,lastReception:true,
+    });
     out.push(...structurePropInstances(px, py, { all }));
     out.push(...sourceRoomFixtureInstances(out, sourceMatrix));
     return out;
@@ -4595,14 +4744,17 @@ export function createSourceSpaceRuntime({
         vehicles.get(k).push(entry);
       }
     }
-    // The last street leaves familiar pieces across the physical seam. They
-    // belong to this same world and disappear by retained decay thresholds.
+    // One last practical light takes over after the recording lamp dies. The
+    // other remnants are only road: five lit columns here made the threshold
+    // look like a regularly furnished avenue rather than an end to the world.
     const seamZ = (o.y + SOURCE_HORIZON.from + .5) * CELL;
     const lamp = pieces.find(p => p.id === 'r28-lamp-0');
     const road = pieces.find(p => p.id === 'r0-road');
+    const thresholdLampAlong = SOURCE_PRE_TAPE.roadLength * CELL - 12;
     const remnants = [
-      ...[-32, -12, 10, 32, 48].map((metres, i) => ({ ...lamp, id: `source-street-remnant:lamp:${i}`, key: 'remnant-lamp',
-        x: axisX + (i % 2 ? -6.4 : 6.4), z: seamZ - metres, dark: i === 4, faulty: false, inspect: null, remnant: true })),
+      { ...lamp, id: 'source-street-remnant:lamp:threshold', key: 'remnant-lamp',
+        x: axisX + 4.8, z: seamZ + 12, along: thresholdLampAlong,
+        yaw: Math.PI, dark: false, faulty: false, inspect: null, remnant: true },
       ...[-110, -80, -50, -24, 8, 40].map((metres, i) => ({ ...road, id: `source-street-remnant:road:${i}`, key: 'remnant-road',
         x: axisX, z: seamZ - metres, inspect: null, remnant: true })),
     ];
@@ -4644,6 +4796,7 @@ export function createSourceSpaceRuntime({
   function outskirtMatrix(piece, { px, py, viewYaw = null, reducedMotion = false }) {
     const eye = outskirtsEye(px, py);
     let x = piece.x, z = piece.z, yaw = piece.yaw;
+    const dogHandler = piece.key === OUTSKIRT_DOG_ENCOUNTER.handlerKey;
     // `visible` starts unknown, not true: a watcher that is out of view on the
     // first frame has not been looked away from, and must not turn to face a
     // body it was never seen by.
@@ -4656,22 +4809,22 @@ export function createSourceSpaceRuntime({
       if (visible && distance < 40) memo.seen = true;
       if (memo.visible && !visible) {
         memo.epoch += 1;
-        if (piece.watcher) memo.face = Math.atan2(eye.x - x, eye.z - z) + (/^bus-woman/.test(piece.key) ? Math.PI : 0);
+        if (piece.watcher) memo.face = Math.atan2(eye.x - x, eye.z - z) + (/^bus-woman/.test(piece.key) || dogHandler ? Math.PI : 0);
         if (piece.unwatched === 'vanish' && memo.seen) memo.gone = true;
       }
       memo.visible = visible;
       outskirtUnseen.set(piece.id, memo);
     }
-    if (piece.watcher && memo.epoch) {
+    if (piece.watcher && memo.epoch && !dogHandler) {
       if (memo.face != null) yaw = memo.face;
     }
     if (piece.stretch === OUTSKIRT_BUS_ENCOUNTER.pass && piece.key === OUTSKIRT_BUS_ENCOUNTER.womanKey) {
       const stage = streetExperience.busStage();
       // A small, retained movement inside the bus, never a collision mismatch.
-      if (stage >= 3) z -= .18;
-      // The shared woman's face is local -Z. Facing +Z at the player made the
-      // intended acknowledgement turn her back toward the gap instead.
-      if (stage >= 2) yaw = Math.atan2(eye.x - x, eye.z - z) + Math.PI;
+      const frame = streetExperience.characterFrame();
+      if (stage >= 3) z -= .18 * (reducedMotion || frame.woman.stepAt == null ? 1 : busWomanStepProgress(frame.clock - frame.woman.stepAt));
+      // Her feet retain the authored heading. Head, neck and shoulders perform
+      // the acknowledgement rather than rotating the entire standing mesh.
     }
     return sourceMatrix({ x, y: outskirtsHeight() + (Number(piece.y) || 0), z, yaw });
   }
@@ -4689,13 +4842,35 @@ export function createSourceSpaceRuntime({
         // A set nobody finished building: the thing is only its timber frame.
         if (piece.unfinished) return unfinishedFrame(piece, matrix);
         const level = piece.faulty ? faultyLightLevel() : 1;
-        const lamp = piece.lamp && !piece.dark && !outskirtLampsOff.has(piece.id) && level > 0.02;
-        return [{
+        const lamp = piece.lamp && !piece.dark && !outskirtLampsOff.has(piece.id) && level > 0.02
+          && (piece.key !== 'remnant-lamp' || lastLightOut);
+        let character = piece.character;
+        if (piece.key === OUTSKIRT_DOG_ENCOUNTER.handlerKey) {
+          const face = outskirtUnseen.get(piece.id)?.face;
+          const turn = face == null ? 0 : Math.atan2(Math.sin(face - piece.yaw), Math.cos(face - piece.yaw));
+          const aroundY = (angle) => [0, Math.sin(angle / 2), 0, Math.cos(angle / 2)];
+          // His soles and the hand holding the loose lead do not orbit the dog.
+          // The turn travels upward through the actual skinned spine and neck.
+          character = { ...piece.character, joints: {
+            spine_upper: { rotation: aroundY(turn * .17) },
+            chest: { rotation: aroundY(turn * .20) },
+            neck: { rotation: aroundY(turn * .27) },
+            head: { rotation: aroundY(turn * .31) },
+          } };
+        }
+        const instance = {
           id: piece.id, mesh: piece.key === 'booth-ledger' && (streetWorld.ledgerSigned || piece.stretch >= 15) ? 'outskirts_ledger_signed' : piece.mesh, matrix,
-          ...(piece.glow ? { emissive: [...piece.glow] } : lamp ? { emissive: [1, 0.72, 0.42, piece.faulty ? 0.2 * level : 0.06] } : {}),
+          ...(piece.glow ? { emissive: [...piece.glow] } : lamp ? { emissive: [1, 0.72, 0.42,
+            piece.key === 'remnant-lamp' ? 1.35 : piece.faulty ? 0.2 * level : 0.06] } : {}),
           zone: ZONE.sourceSpace, structural: !piece.character && piece.encounter !== 'wrong-fold', sourceStructure: piece.remnant ? 'street-remnant' : 'outskirts',
-          ...(piece.encounter === 'wrong-fold' ? { character: foldCharacterFrame(options.reducedMotion) } : piece.character ? { character: piece.character } : {}),
-        }];
+          ...(piece.encounter === 'wrong-fold' ? { character: foldCharacterFrame(options.reducedMotion) } : character ? { character } : {}),
+        };
+        return /^bus-woman/.test(piece.key) ? busWomanInstances(instance, busWomanPerformance({
+          clock: streetExperience.characterFrame().clock, woman: streetExperience.characterFrame().woman,
+          stretch: piece.stretch,
+          id: piece.id, aboard: piece.key === 'bus-woman-aboard', closeEncounter: piece.encounter === 'bus-close',
+          reducedMotion: !!options.reducedMotion,
+        })) : [instance];
       });
     // The building, off to the west, never nearer.
     const along = outskirtsAlong(py);
@@ -4734,6 +4909,13 @@ export function createSourceSpaceRuntime({
       if (!reducedMotion && outskirtUnseen.get(piece.id)?.visible) continue;
       outskirtLampsOff.add(piece.id);
       events.push({ id: `lamp-off:${piece.id}`, cue: 'lamp-off', position: { x: piece.x, z: piece.z } });
+    }
+    // The threshold light fails just after it passes the shoulder, while the
+    // road ahead is still visible for one step. Its off state survives reload.
+    const threshold = outskirtCache.remnants.find(piece => piece.key === 'remnant-lamp');
+    if (threshold && lastLightOut && along >= threshold.along + 1.6 && !outskirtLampsOff.has(threshold.id)) {
+      outskirtLampsOff.add(threshold.id);
+      events.push({ id: `lamp-off:${threshold.id}`, cue: 'lamp-off', position: { x: threshold.x, z: threshold.z } });
     }
     return { events, along };
   }
@@ -4816,7 +4998,12 @@ export function createSourceSpaceRuntime({
   const streetActionAt = new Map();
   let characterCheckpointClock = streetExperience.characterFrame().clock;
   let characterCheckpointPass = streetExperience.characterFrame().locomotion?.pass ?? null;
-  function setOutskirtsWorldState(value = {}) { streetWorld = { ...value }; }
+  function setOutskirtsWorldState(value = {}) {
+    streetWorld = { ...value };
+    // A loaded completion is already complete; only the physical give verb
+    // starts a receipt. Rendering and flag synchronization never replay it.
+    if (!recordedCharacterPresentation) streetExperience.womanState({ ticketReturned: !!value.ticketReturned });
+  }
   function streetAnchor(piece, lx = 0, lz = 0) {
     const c = Math.cos(piece.yaw), s = Math.sin(piece.yaw);
     return { x: piece.x + lx * c + lz * s, z: piece.z - lx * s + lz * c };
@@ -4843,6 +5030,7 @@ export function createSourceSpaceRuntime({
   function tickOutskirtsCharacters(dt, { viewYaw = 0, pitch = 0, reducedMotion = false, suspended = false, moving, speed } = {}) {
     // A resumed live simulation takes its own position back. Suspended replay
     // ticks never replace the recorded operator with the observer's position.
+    const replayed = !!recordedCharacterPresentation;
     if (!suspended && dt > 0) recordedCharacterPresentation = null;
     if (!inOutskirtsView()) return null;
     const eye = outskirtsEye(), along = outskirtsAlong(), pass = outskirtsPassAt(), axisX = (landscapeOrigin().x + .5) * CELL;
@@ -4861,14 +5049,29 @@ export function createSourceSpaceRuntime({
       structuralChange = streetExperience.action('r6:hatch-impact', 'hatch-impact', at);
       if (structuralChange) streetActionAt.set('r6:hatch-impact', result.frame.clock);
     }
+    const women = outskirtPieces().filter(piece => piece.stretch === pass && /^bus-woman/.test(piece.key));
+    let womanCue = false;
+    for (const woman of women) {
+      const performance = busWomanPerformance({ clock: result.frame.clock, woman: result.frame.woman, id: woman.id,
+        stretch: woman.stretch, aboard: woman.key === 'bus-woman-aboard', closeEncounter: woman.encounter === 'bus-close', reducedMotion });
+      const at = streetAnchor(woman), distance = Math.hypot(eye.x - at.x, eye.z - at.z);
+      const bearing = Math.atan2(at.x - eye.x, -(at.z - eye.z));
+      const visible = Math.abs(Math.atan2(Math.sin(bearing - viewYaw), Math.cos(bearing - viewYaw))) < .95
+        && outskirtsSightClear(eye, woman);
+      if (streetExperience.womanWrongOrigin({ actorId: woman.id, mode: performance.mode, seconds: performance.seconds,
+        stage: busWomanWrongOriginReturn(woman.stretch).stage, position: at, near: distance < 2.6, visible,
+        suspended: suspended || !(dt > 0), replayed, reducedMotion, clock: result.frame.clock })) womanCue = true;
+    }
     const passCheckpoint = !suspended && dt > 0 && pass >= 0 && along <= OUTSKIRT_ROAD_END && pass !== characterCheckpointPass;
     if (passCheckpoint) characterCheckpointPass = pass;
     const foldActive = ['force', 'pain'].includes(result.frame.fold.phase);
-    const checkpoint = !suspended && dt > 0 && foldActive && lodge && Math.hypot(eye.x - lodge.x, eye.z - lodge.z) < 18
+    const womanActive = (result.frame.woman.receivedAt != null && result.frame.clock - result.frame.woman.receivedAt < 12)
+      || (result.frame.woman.acknowledgedAt != null && result.frame.clock - result.frame.woman.acknowledgedAt < 3.5);
+    const checkpoint = !suspended && dt > 0 && (womanActive || (foldActive && lodge && Math.hypot(eye.x - lodge.x, eye.z - lodge.z) < 18))
       && result.frame.clock - characterCheckpointClock >= 2;
-    if (result.transition || checkpoint || passCheckpoint) {
+    if (result.transition || checkpoint || passCheckpoint || womanCue) {
       characterCheckpointClock = result.frame.clock;
-      setState(state, { immediate: true, recordCausal: passCheckpoint || structuralChange });
+      setState(state, { immediate: true, recordCausal: passCheckpoint || structuralChange || womanCue });
     }
     streetReducedMotion = reducedMotion;
     return result.frame;
@@ -4885,13 +5088,17 @@ export function createSourceSpaceRuntime({
     const id = `r${pass}:${action}`;
     const handled = streetExperience.action(id, cue, at);
     if (handled) streetActionAt.set(id, edgeDoorClock());
+    if (handled && action === 'ticket') {
+      streetExperience.womanState({ receiveId: piece.id });
+      setState(state, { immediate: true });
+    }
     return { handled };
   }
   function outskirtsStreetFrame({ time = edgeDoorClock(), viewYaw = 0, reducedMotion = false } = {}) {
     if (inStreetRemnantView() && horizonUnravelling.active) {
       const eye = outskirtsEye(), decay = sourceUnravellingFrame(horizonUnravelling);
       outskirtPieces();
-      const anchors = [outskirtCache.remnants[1], outskirtCache.remnants[2]];
+      const anchors = outskirtCache.remnants.filter(piece => piece.key === 'remnant-lamp');
       return { beds: anchors.filter(streetPieceVisible).map(piece => ({
         id: `${piece.id}:hum`, kind: 'lodge', x: piece.x, z: piece.z,
         distance: Math.hypot(piece.x - eye.x, piece.z - eye.z),
@@ -4905,12 +5112,16 @@ export function createSourceSpaceRuntime({
     const woman = outskirtPieces().find(p => p.stretch === OUTSKIRT_BUS_ENCOUNTER.pass && p.key === OUTSKIRT_BUS_ENCOUNTER.womanKey);
     const bus = outskirtPieces().find(p => p.stretch === OUTSKIRT_BUS_ENCOUNTER.pass && p.key === OUTSKIRT_BUS_ENCOUNTER.busKey);
     if (woman && bus) {
+      const beforeStage = streetExperience.busStage();
       const bearing = Math.atan2(woman.x - eye.x, -(woman.z - eye.z)), away = Math.atan2(Math.sin(bearing - viewYaw), Math.cos(bearing - viewYaw));
       streetExperience.bus({ active: pass === OUTSKIRT_BUS_ENCOUNTER.pass,
         along: local, across: eye.x - axisX,
         visible: Math.abs(away) < .85 && Math.hypot(woman.x - eye.x, woman.z - eye.z) < 20 && outskirtsSightClear(eye, woman),
         near: Math.hypot(eye.x - axisX - (OUTSKIRT_BUS_ENCOUNTER.laneMinAcross + OUTSKIRT_BUS_ENCOUNTER.laneMaxAcross) / 2, local - OUTSKIRT_BUS_ENCOUNTER.along) < 2.25,
-        crossed: local >= OUTSKIRT_BUS_ENCOUNTER.crossedAlong, position: { x: woman.x, z: woman.z } });
+        crossed: local >= OUTSKIRT_BUS_ENCOUNTER.crossedAlong, position: { x: woman.x, z: woman.z },
+        acknowledgeYaw: Math.atan2(Math.sin(Math.atan2(eye.x-woman.x,eye.z-woman.z)+Math.PI-woman.yaw),
+          Math.cos(Math.atan2(eye.x-woman.x,eye.z-woman.z)+Math.PI-woman.yaw)) });
+      if (streetExperience.busStage() !== beforeStage) setState(state, { immediate: true });
       if (streetExperience.busStage() >= 2 && streetBusDoorAt == null) streetBusDoorAt = time;
     }
     // The seventh lodge's hatch moves at reaching distance, after the guard has
@@ -4969,12 +5180,6 @@ export function createSourceSpaceRuntime({
         if (!streetWorld.letterFound && p.stretch >= 6) part(p, 'letter', 'outskirts_letter', .25, 1.12, 1.5);
         if (streetWorld.letterPosted && p.stretch > Number(streetWorld.letterPostedAt || 0) + 1) part(p, 'returned-letter', 'outskirts_letter', .1, 1.13, .8, { yaw: .2 });
         if (streetWorld.ticketAsked && !streetWorld.ticketFound && p.stretch >= 8) part(p, 'ticket', 'outskirts_ticket', -.5, 1.33, 1.5);
-      }
-      if (/^bus-woman/.test(p.key) && streetWorld.ticketReturned && parentMatrices.has(p.id)) {
-        // Carry the return half on the shared model's right glove. The actual
-        // rendered parent includes aboard height, unseen turns and the small
-        // close-encounter step, so neither duplicates nor turning lose it.
-        part(p, 'return-half', 'outskirts_ticket', .28, .98, -.12, { yaw: .4, parentMatrix: parentMatrices.get(p.id) });
       }
       if (p.key === 'bin' && Math.floor(p.stretch / 5) === 1 && streetWorld.ticketAsked && !streetWorld.ticketFound) part(p, 'return-half', 'outskirts_ticket', 0, .95, 0);
     }
@@ -5091,6 +5296,16 @@ export function createSourceSpaceRuntime({
   // decides how bad it is (0 to 1); stepping onto the tape is the only way out.
   let outskirtsFlurry = 0;
   function setOutskirtsFlurry(level) { outskirtsFlurry = Math.max(0, Math.min(1, Number(level) || 0)); return outskirtsFlurry; }
+  function outskirtsDogQuietZone() {
+    if (!inOutskirtsView()) return 0;
+    const handler = outskirtPieces().find((piece) => piece.stretch === OUTSKIRT_DOG_ENCOUNTER.pass
+      && piece.key === OUTSKIRT_DOG_ENCOUNTER.handlerKey);
+    if (!handler) return 0;
+    const eye = outskirtsEye();
+    const distance = Math.hypot(eye.x - handler.x, eye.z - handler.z);
+    const t = clamp01((distance - 8) / 6);
+    return 1 - t * t * (3 - 2 * t);
+  }
   function flurryInstances(px, py, { reducedMotion = false } = {}) {
     if (outskirtsFlurry <= 0.01 || !inOutskirtsView()) return [];
     const eye = outskirtsEye(px, py), time = phoneBoxClock();
@@ -5392,13 +5607,16 @@ export function createSourceSpaceRuntime({
     if (!inStreetRemnantView()) return [];
     const eye = outskirtsEye(px, py), height = outskirtsHeight();
     const lamps = streetRenderPieces()
-      .filter((piece) => streetPieceVisible(piece) && piece.lamp && !piece.dark && !outskirtLampsOff.has(piece.id))
+      .filter((piece) => streetPieceVisible(piece) && piece.lamp && !piece.dark && !outskirtLampsOff.has(piece.id)
+        && (piece.key !== 'remnant-lamp' || lastLightOut))
       .map((piece) => {
         // The column's arm reaches out over the road.
         const x = piece.x + Math.cos(piece.yaw) * 1.6, z = piece.z - Math.sin(piece.yaw) * 1.6;
         return {
-          id: piece.id, x, y: height, z, forward: [0, 1], width: piece.faulty ? 4.5 : 6.5, colour: [1, 0.68, 0.36],
-          strength: piece.faulty ? 1.1 * faultyLightLevel() : 0.9,
+          id: piece.id, x, y: height, z, forward: [0, 1],
+          width: piece.key === 'remnant-lamp' ? 8 : piece.faulty ? 4.5 : 6.5,
+          colour: [1, 0.68, 0.36],
+          strength: piece.key === 'remnant-lamp' ? 1.35 : piece.faulty ? 1.1 * faultyLightLevel() : 0.9,
           open: true, pool: true, variant: -1, key: false, lightAt: [x, height + 6.9, z],
           distanceM: Math.hypot(x - eye.x, z - eye.z),
         };
@@ -6807,7 +7025,13 @@ export function createSourceSpaceRuntime({
           emissive: [...(light?.color || prop.lightColor || [0, 0, 0]), prop.lightMaintained ? .22 : .28],
           practicalEmissiveScale: light?.emissiveScale ?? 0,
         };
-      }), ...edgeDoorInstances(px, py, options)];
+      }), ...edgeDoorInstances(px, py, options), ...(state.firstLiftCompleted?sourceLastReceptionResidentInstances(lastReceptionFrame(),{
+        origin:{x:landscapeOrigin().x*CELL,z:landscapeOrigin().y*CELL},zone:ZONE.sourceSpace,
+        reducedMotion:!!options.reducedMotion,timeSec:options.time||0,
+      }):[]), ...(state.firstLiftCompleted?sourceLastReceptionCelestialInstances(lastReceptionFrame(),{
+        origin:{x:landscapeOrigin().x*CELL,z:landscapeOrigin().y*CELL},zone:ZONE.sourceSpace,
+        reducedMotion:!!options.reducedMotion,
+      }):[])];
       // The aperture is the hinge. Retain the authored hall behind its rear
       // plane, with enough clearance for complete prop bounds outside the dock.
       const rear = hallRenderableInPhase()
@@ -7274,7 +7498,7 @@ export function createSourceSpaceRuntime({
     preTape: Object.freeze({ radius: 40, intensity: 3.6 }),
   });
 
-  function voidLamp() {
+  function voidLamp({ time = phaseElapsed, reducedMotion = false, flashMode = 'full', torchOn = true, torchBattery = 1 } = {}) {
     const bells = state.phase === CHUNK_SURF_PHASE.BELLS || state.phase === CHUNK_SURF_PHASE.CHAPEL_OUTSKIRTS;
     const local = player.y - landscapeOrigin().y;
     const preTape = state.phase === CHUNK_SURF_PHASE.HORIZON && local > SOURCE_HORIZON.from;
@@ -7282,6 +7506,13 @@ export function createSourceSpaceRuntime({
     const tuning = bells ? VOID_LAMP.bells : VOID_LAMP.preTape;
     // Across the walk out it falls away with the structures it is there to show.
     const fade = preTape ? 1 - 0.45 * sourcePreTapeProgress(local) : 1;
+    // The pre-tape camera fill made every voltage failure visually moot. It is
+    // a readability stand-in for the carried beam there, so let it fail with
+    // the beam. The bell passage retains its own authored visibility level.
+    const supply = !preTape ? 1 : torchOn
+      ? Math.max(0, Math.min(1, Number(torchBattery) || 0))
+        * sourceFlashlightFrame({ time, reducedMotion, flashMode }).flicker
+      : 0;
     return {
       id: 'source-void-lamp',
       kind: LIGHT_KIND.FITTING,
@@ -7289,7 +7520,7 @@ export function createSourceSpaceRuntime({
       y: (bells ? (SOURCE_TIER_BY_ID.bells?.height ?? 15.2) : (SOURCE_TIER_BY_ID.outskirts?.height ?? 15.2)) + 2.4,
       z: player.y * CELL,
       color: [0.74, 0.79, 0.88],
-      intensity: tuning.intensity * fade,
+      intensity: tuning.intensity * fade * (.16 + .84 * supply),
       radius: tuning.radius,
       // It is not in a building and there is nothing for it to be occluded by.
       penetration: 1,
@@ -7297,8 +7528,13 @@ export function createSourceSpaceRuntime({
     };
   }
 
-  function localLights({ time = phaseElapsed, reducedMotion = false, flashMode = 'full', liveCircuits = null } = {}) {
+  function localLights({ time = phaseElapsed, reducedMotion = false, flashMode = 'full', liveCircuits = null, torchOn = true, torchBattery = 1 } = {}) {
     if ([CHUNK_SURF_PHASE.HALL, CHUNK_SURF_PHASE.HAYSTACK].includes(state.phase)) return sourceHallLightPlacements(-player.y * CELL);
+    if(divideActiveAt()){
+      const o=landscapeOrigin(),near=Math.hypot(receptionLocalPlayer().x+64,receptionLocalPlayer().z+455)<32;
+      if(near)return SOURCE_LAST_RECEPTION.lighting.map(light=>({...light,kind:LIGHT_KIND.FITTING,
+        x:o.x*CELL+light.x,z:o.y*CELL+light.z,penetration:.35,castsShadow:true}));
+    }
     if (towerPersonal.active) {
       const height = SOURCE_TIER_BY_ID.bells?.height ?? 15.2;
       return towerPersonalWorldLights(towerPersonal.stage).filter(light => light.permanent || towerLandPresent(light)).map(light => {
@@ -7309,13 +7545,26 @@ export function createSourceSpaceRuntime({
       });
     }
 
-    const voidLight = voidLamp();
+    // The Outskirts pools used to illuminate only the road's void surface.
+    // The dog-walker was standing beneath a visibly live lamp while both
+    // figures remained unlit props, so the encounter collapsed into two black
+    // cutouts. Give that one authored pool a matching, bounded mesh light.
+    const dogLamp = inStreetRemnantView() ? streetRenderPieces().find((piece) =>
+      piece.stretch === OUTSKIRT_DOG_ENCOUNTER.pass && piece.key === 'lamp-2'
+      && streetPieceVisible(piece) && !piece.dark && !outskirtLampsOff.has(piece.id)) : null;
+    const dogEncounterLight = dogLamp && Math.hypot(dogLamp.x - player.x * CELL, dogLamp.z - player.y * CELL) < 18
+      ? { id: 'outskirts-dog-walker-sodium', kind: LIGHT_KIND.FITTING,
+          x: dogLamp.x + Math.cos(dogLamp.yaw) * 1.6, y: outskirtsHeight() + 4.8,
+          z: dogLamp.z - Math.sin(dogLamp.yaw) * 1.6,
+          color: [1, .68, .36], intensity: 12, radius: 14,
+          penetration: 1, castsShadow: false } : null;
+    const voidLight = voidLamp({ time, reducedMotion, flashMode, torchOn, torchBattery });
     if (voidLight) {
       const o = landscapeOrigin(), recess = { x: (o.x + 8) * CELL, z: (o.y + SOURCE_BELLS.room.threshold + 12) * CELL };
       const inRecess = state.phase === CHUNK_SURF_PHASE.BELLS && Math.hypot(recess.x - player.x * CELL, recess.z - player.y * CELL) < 24;
       return inRecess ? [voidLight, { id: 'tower-ring-recess-lamp', kind: LIGHT_KIND.FITTING,
         ...recess, y: (SOURCE_TIER_BY_ID.bells?.height ?? 15.2) + 1.5,
-        color: [1, .78, .48], intensity: 1.8, radius: 9, penetration: .8, castsShadow: true }] : [voidLight];
+        color: [1, .78, .48], intensity: 1.8, radius: 9, penetration: .8, castsShadow: true }] : [voidLight, ...(dogEncounterLight ? [dogEncounterLight] : [])];
     }
     const understood=normalizeSourceContactState(state.sourceContacts).insights.length;
     const emergency=sourceEmergencyLightingFrame({time,reducedMotion,flashMode});
@@ -7360,14 +7609,14 @@ export function createSourceSpaceRuntime({
       });
     const approach = lamps.filter((light)=>String(light.id).startsWith('source-approach-emergency-'));
     const roomLights = sourceRoomMemoryFrame({ time, reducedMotion, flashMode, liveCircuits }).lights;
-    if (approach.length <= SOURCE_APPROACH_LAMPS_LIT) return [...lamps, ...roomLights];
+    if (approach.length <= SOURCE_APPROACH_LAMPS_LIT) return [...lamps, ...roomLights, ...(dogEncounterLight ? [dogEncounterLight] : [])];
     const px = player.x * CELL, pz = player.y * CELL;
     const nearest = new Set(approach
       .map((light)=>({ id: light.id, d: Math.hypot(light.x - px, light.z - pz) }))
       .sort((a, b) => a.d - b.d)
       .slice(0, SOURCE_APPROACH_LAMPS_LIT)
       .map((entry) => entry.id));
-    return [...lamps.filter((light)=>!String(light.id).startsWith('source-approach-emergency-') || nearest.has(light.id)), ...roomLights];
+    return [...lamps.filter((light)=>!String(light.id).startsWith('source-approach-emergency-') || nearest.has(light.id)), ...roomLights, ...(dogEncounterLight ? [dogEncounterLight] : [])];
   }
 
   // Saves predating the entry journal still know which doors were consumed.
@@ -7415,7 +7664,13 @@ export function createSourceSpaceRuntime({
   return {
     geometry,
     active: () => !!state.active,
-    state: () => ({ ...state, sourceDivide:divide?{...divide}:null, station:stationSnapshot(), sourceShore:shore.snapshot(), horizon: { ...state.horizon, unravelling: normalizeSourceUnravelling(horizonUnravelling) }, outskirtsExperience: outskirtsExperienceSnapshot() }),
+    state: () => ({ ...state, sourceDivide:divide?{...divide}:null,lastReception:serializeLastReceptionState(lastReception), station:stationSnapshot(), sourceShore:shore.snapshot(), horizon: { ...state.horizon, unravelling: normalizeSourceUnravelling(horizonUnravelling) }, outskirtsExperience: outskirtsExperienceSnapshot() }),
+    lastReceptionFrame,
+    tickLastReception,
+    finishReceptionConversation,
+    applyReceptionRelocation,
+    closeReceptionDialogue:()=>closeLastReceptionDialogue(lastReception),
+    persistLastReception:()=>setState({...state,lastReception:serializeLastReceptionState(lastReception)},{immediate:true}),
     setPlayerPosition,
     textSpaceActive,
     localLights,
@@ -7481,6 +7736,7 @@ export function createSourceSpaceRuntime({
     chooseHorizonExit,
     horizonBustPoint,
     horizonBustPlacement,
+    horizonBustSealPoint,horizonBustAtSeal,prepareHorizonBustSeal,tickHorizonBust,takeHorizonBustCues,skipHorizonBustPerformance,
     horizonBand,
     horizonEdge,
     takeHorizonMarker,
@@ -7514,7 +7770,7 @@ export function createSourceSpaceRuntime({
     outskirtLampPools,
     outskirtsPiece,
     phoneBoxPose, setPhoneBoxDoor, setPhoneBoxInside, setPhoneBoxHandset, outskirtsPassAt, outskirtsPassStart,
-    setOutskirtsFlurry, outskirtsFlurryLevel: () => outskirtsFlurry,
+    setOutskirtsFlurry, outskirtsFlurryLevel: () => outskirtsFlurry, outskirtsDogQuietZone,
     outskirtsLastLight, setLastLightOut, setLastLightHold, setLastLightPlayback, outskirtsTapeHead, outskirtsPassBreak, relightPassLamps,
     outskirtsReflection, outskirtsLosing, setTorchPhantom,
     crossesRouteDoor,

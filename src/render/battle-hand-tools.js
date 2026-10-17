@@ -2,12 +2,16 @@
 // face toward the player. The hand solver owns the hand and the caller moves
 // tool + contact targets together. This module never advances a game clock.
 import * as THREE from 'three';
-import { BOX_CRADLE, FRONT_CONTROL } from './battle-hand-box-grips.js';
+import { BOX_CRADLE } from './battle-hand-box-grips.js';
+import { FRONT_CONTROL, CONTROL_APPROACH_ANGLES, CONTROL_CONTACT_POSES } from './battle-hand-controls.js';
+import { HANDLE_GRIPS, TORCH_SWITCH } from './battle-hand-grips.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { normalizeFieldKit, FLASHLIGHT_HOUSING_COLORS } from '../game/field-kit.js';
 import { drawInstrumentPlate, drawInstrumentWell, drawInstrumentGlass } from './instrument-material.js';
 import { drawRecorderReadoutCanvas, recorderDisplayPalette } from './recorder-instrument.js';
 import { drawWitnessChassis } from './witness-material.js';
+import { ensureWorldLetteringFonts, worldLetteringFontsStatus } from './world-lettering-fonts.js';
+import { fitWorldLetteringLine } from './world-lettering-layout.js';
 
 const finite = (n, fallback = 0) => Number.isFinite(Number(n)) ? Number(n) : fallback;
 const clamp = (n, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, finite(n, lo)));
@@ -15,22 +19,31 @@ const target = (position, normal = [0, 0, 1]) => ({ position, normal });
 const COLORS = Object.freeze({ steel: '#92988e', edge: '#c5c8bb', rubber: '#242a25', dark: '#171e1a', brass: '#9e8653' });
 const BUTTONS = Object.freeze({ classic: ['#bc6b57', '#bcbda9', '#c9a151'], signal: ['#bc6b57', '#729aa9', '#d0bc64'], 'sea-glass': ['#d09179', '#a7bda0', '#bcbda9'] });
 const FACE = Object.freeze({ aluminum: '#b0b3a5', black: '#232c27', olive: '#5e6645', witness: '#454b36' });
-const CONTROL_WRIST_OFFSET = new THREE.Vector3(...FRONT_CONTROL.offset);
-const CONTROL_WRIST_QUATERNION = new THREE.Quaternion(...FRONT_CONTROL.quaternion);
-const CONTROL_POSE = FRONT_CONTROL.pose;
-
-function calibrateControls(controls) {
-  for (const control of Object.values(controls)) {
+const lettering = new WeakMap();
+export const warmBattleHandToolLettering = options => ensureWorldLetteringFonts(options);
+function pinnedBake(group, draw) {
+  const state = lettering.get(group);
+  const paint = () => { if (!state.disposed) { draw(); state.bakes++; } };
+  if (worldLetteringFontsStatus().ready) { paint(); return; }
+  // Direct model-review callers also use the synchronous builder. Leave its
+  // label blank until the exact face loads, then invalidate that same texture.
+  // A system-font first bake must never become a permanently cached label.
+  state.jobs.push(ensureWorldLetteringFonts().then(paint).catch(error => { state.error = String(error?.message || error); }));
+}
+function calibrateControls(controls, id) {
+  for (const [key, control] of Object.entries(controls)) {
     if (control.hand === 'right') continue;
     const normal = new THREE.Vector3(...control.normal).normalize();
     const orientation = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
     // Rotate the wrist around a fixed pad contact, preserving its facing.
     // Each box control leaves clearance from the supporting hand.
-    if (control.approachAngle) orientation.premultiply(new THREE.Quaternion().setFromAxisAngle(normal, control.approachAngle));
-    const offset = CONTROL_WRIST_OFFSET.clone().applyQuaternion(orientation);
+    const angle = CONTROL_APPROACH_ANGLES[id]?.[key] ?? control.approachAngle ?? 0;
+    if (angle) orientation.premultiply(new THREE.Quaternion().setFromAxisAngle(normal, angle));
+    const bake = CONTROL_CONTACT_POSES[id]?.[key] || FRONT_CONTROL;
+    const offset = new THREE.Vector3(...bake.offset).applyQuaternion(orientation);
     control.hand = 'left'; control.digit = 'index';
-    control.wrist = { position: offset.add(new THREE.Vector3(...control.position)).toArray(), quaternion: orientation.multiply(CONTROL_WRIST_QUATERNION).toArray() };
-    control.pose = CONTROL_POSE;
+    control.wrist = { position: offset.add(new THREE.Vector3(...control.position)).toArray(), quaternion: orientation.multiply(new THREE.Quaternion(...bake.quaternion)).toArray() };
+    control.pose = bake.pose;
   }
 }
 
@@ -87,12 +100,18 @@ function cable(group, points, radius, material) {
 function label(group, value, width, height, position, { color = '#d2d4bd', background = null, size = 32 } = {}) {
   const source = canvas(512, Math.max(48, Math.round(512 * height / width)));
   if (!source) return null;
-  const ctx = source.getContext('2d');
-  if (background) { ctx.fillStyle = background; ctx.fillRect(0, 0, source.width, source.height); }
-  ctx.fillStyle = color; ctx.font = `500 ${size}px Arial,Helvetica,sans-serif`;
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(value, source.width / 2, source.height / 2, source.width - 12);
-  return add(group, new THREE.PlaneGeometry(width, height), new THREE.MeshBasicMaterial({ map: texture(source), transparent: true, depthWrite: false, toneMapped: false }), position);
+  const ctx = source.getContext('2d'), map = texture(source);
+  pinnedBake(group, () => {
+    ctx.clearRect(0, 0, source.width, source.height);
+    if (background) { ctx.fillStyle = background; ctx.fillRect(0, 0, source.width, source.height); }
+    ctx.fillStyle = color;
+    const ink = fitWorldLetteringLine(ctx, value, { width: source.width - 12, height: source.height - 8, maxFont: size, role: 'sans' });
+    if (!ink.fits) throw new Error(`Physical tool label does not fit: ${value}`);
+    ctx.fillText(ink.text, (source.width - ink.width) / 2 + ink.left,
+      (source.height - ink.ascent - ink.descent) / 2 + ink.ascent);
+    map.needsUpdate = true;
+  });
+  return add(group, new THREE.PlaneGeometry(width, height), new THREE.MeshBasicMaterial({ map, transparent: true, depthWrite: false, toneMapped: false }), position);
 }
 function screw(group, x, y, z, material, radius = .0023) {
   cylinder(group, radius, .0018, material, [x, y, z], [Math.PI / 2, 0, 0]);
@@ -105,49 +124,8 @@ function recorderCradle(offset = [0, 0, 0]) {
   }
   return contacts;
 }
-// Collision-calibrated against every skinned finger vertex, not only the pads.
-const HANDLE_GRIPS = {
-  torch: {
-    wrist: {"position":[0.04,-0.025,-0.075],"quaternion":[-0.5,0.5,0.5,-0.5]},
-    index: target([-0.01548656,0,0.02211711], [-0.57357644,0,0.81915204]),
-    middle: target([-0.02211711,-0.025,0.01548656], [-0.81915204,0,0.57357644]),
-    ring: target([-0.00698811,-0.052,0.02608], [-0.25881905,0,0.96592583]),
-    pinky: target([0.01225593,-0.073,0.02628293], [0.42261826,0,0.90630779]),
-    thumb: target([0.02338269,0.01,0.0135], [0.8660254,0,0.5]),
-    pose: {"spread":{"index":0.25041104,"middle":0.04780773,"ring":0.02462821,"pinky":0.25803963},"index":[1.12392358,0.74994482,0.63721394],"middle":[1.168287,1.01750919,0.35612822],"ring":[0.75314876,1.18306903,0.47831342],"pinky":[0.56799044,0.87605286,0.3066185],"thumb":{"opposition":0.93406644,"abduction":0.56096332,"mcp":0.82951069,"ip":0}},
-  },
-  fork: {
-    wrist: {"position":[0.025,-0.059,-0.085],"quaternion":[-0.5,0.5,0.5,-0.5]},
-    index: target([-0.01062518,-0.034,0.00284701], [-0.96592583,0,0.25881905]),
-    middle: target([-0.01448889,-0.059,0.00388229], [-0.96592583,0,0.25881905]),
-    ring: target([-0.00860365,-0.086,0.01228728], [-0.57357644,0,0.81915204]),
-    pinky: target([0.00113302,-0.107,0.01295053], [0.08715574,0,0.9961947]),
-    thumb: target([0.01125833,-0.024,0.0065], [0.8660254,0,0.5]),
-    pose: {"spread":{"index":-0.17595379,"middle":0.23799309,"ring":-0.24859774,"pinky":0.1919203},"index":[1.03348226,1.62253506,0.72597148],"middle":[1.03347311,1.7476168,0.66248478],"ring":[0.59307913,1.63535048,0.66629337],"pinky":[0.50741253,1.05089131,0.47950613],"thumb":{"opposition":0.90837784,"abduction":0.51766169,"mcp":0.77335954,"ip":0.01293983}},
-  },
-  coffee: {
-    wrist: {"position":[0.045,-0.018,-0.09],"quaternion":[-0.5,0.5,0.5,-0.5]},
-    index: target([0.00331924,0.007,0.03793908], [0.08715574,0,0.9961947]),
-    middle: target([-0.0098051,-0.018,0.03659313], [-0.25881905,0,0.96592583]),
-    ring: target([0.00309473,-0.045,0.03537288], [0.08715574,0,0.9961947]),
-    pinky: target([0.022387,-0.066,0.022387], [0.70710678,0,0.70710678]),
-    thumb: target([0.04034166,0.017,0.00711332], [0.98480775,0,0.17364818]),
-    pose: {"spread":{"index":0.05878894,"middle":0.11197479,"ring":0.16035024,"pinky":0.22523928},"index":[0.51654943,0.90764565,0.38297916],"middle":[0.63918035,0.92291895,0.32302163],"ring":[0.45992836,0.93771971,0.3282019],"pinky":[0.43436849,0.65583795,0.32965929],"thumb":{"opposition":0.85858897,"abduction":0.33594844,"mcp":0.72760069,"ip":0}},
-  },
-  spanner: {
-    wrist: {"position":[0.03,-0.059,-0.085],"quaternion":[-0.5,0.5,0.5,-0.5]},
-    index: target([-0.01393185,-0.034,0.00373303], [-1,0,0]),
-    middle: target([-0.0158637,-0.059,0.00425067], [-1,0,0]),
-    ring: target([-0.0134838,-0.086,0.00944146], [0,0,1]),
-    pinky: target([0.00533356,-0.107,0.01143785], [0,0,1]),
-    thumb: target([0.01558846,-0.024,0.009], [0,0,1]),
-    pose: {"spread":{"index":-0.15401854,"middle":0.1903629,"ring":-0.27,"pinky":0.194871},"index":[1.08379042,1.2888432,0.74283879],"middle":[1.03765979,1.56174449,0.54661057],"ring":[0.77830388,1.36245687,0.52117155],"pinky":[0.53174835,1.08663579,0.42044012],"thumb":{"opposition":0.89461205,"abduction":0.63385774,"mcp":0.57614912,"ip":0.12908305}},
-  },
-};
 function handleGrip(id) {
-  // A modest wrist deviation brings the forearm down into the player's body;
-  // its neutral rig axis would point straight into the camera's depth axis.
-  return { ...structuredClone(HANDLE_GRIPS[id]), forearmRotation: [0, 0, .6] };
+  return structuredClone(HANDLE_GRIPS[id]);
 }
 
 function recorder(group, cosmetics) {
@@ -162,18 +140,31 @@ function recorder(group, cosmetics) {
   const explicitView = { finish: cosmetics.faceplate, buttonSet: cosmetics.buttons, phosphor: cosmetics.vfd };
   const colors = recorderDisplayPalette(explicitView);
   if (faceCanvas) {
-    const ctx = faceCanvas.getContext('2d'); ctx.scale(2, 2);
-    if (cosmetics.faceplate === 'witness') drawWitnessChassis(ctx, { w: 736, h: 405, buttonSlots: designSlots, keys: [], endings: cosmetics.witnessEndings || [], phosphor: colors.label, illumination: 0 });
-    else drawInstrumentPlate(ctx, { x: 12, y: 15, w: 712, h: 370, seed: 'approved-recorder', finish: cosmetics.faceplate, screwRadius: 7, screwInset: 13, fasteners: false });
-    drawInstrumentWell(ctx, { x: 35, y: 76, w: 666, h: 239 });
-    if (cosmetics.faceplate !== 'witness') {
-      const dark = cosmetics.faceplate !== 'aluminum'; ctx.fillStyle = dark ? '#d7d9bd' : '#333830';
-      ctx.textBaseline = 'alphabetic'; ctx.font = '14px Arial,Helvetica,sans-serif'; ctx.textAlign = 'left'; ctx.fillText('AUDIOCORP', 35, 48);
-      ctx.font = '11px Arial,Helvetica,sans-serif'; ctx.textAlign = 'center'; ctx.fillText('DA–1000', 368, 48);
-      ctx.textAlign = 'right'; ctx.fillText('FIELD RECORDER', 700, 48);
-      ctx.font = '10px Arial,Helvetica,sans-serif'; ctx.textAlign = 'left';
-      ctx.fillText('RECORD / MONITOR', 35, 350); ctx.fillText('VACUUM FLUORESCENT', 35, 366);
-    }
+    const ctx = faceCanvas.getContext('2d');
+    pinnedBake(group, () => {
+      ctx.clearRect(0, 0, faceCanvas.width, faceCanvas.height); ctx.save(); ctx.scale(2, 2);
+      if (cosmetics.faceplate === 'witness') drawWitnessChassis(ctx, { w: 736, h: 405, buttonSlots: designSlots, keys: [], endings: cosmetics.witnessEndings || [], phosphor: colors.label, illumination: 0 });
+      else drawInstrumentPlate(ctx, { x: 12, y: 15, w: 712, h: 370, seed: 'approved-recorder', finish: cosmetics.faceplate, screwRadius: 7, screwInset: 13, fasteners: false });
+      drawInstrumentWell(ctx, { x: 35, y: 76, w: 666, h: 239 });
+      if (cosmetics.faceplate !== 'witness') {
+        const dark = cosmetics.faceplate !== 'aluminum'; ctx.fillStyle = dark ? '#d7d9bd' : '#333830';
+        const ink = (copy, x, y, width, size, align = 'left') => {
+          const line = fitWorldLetteringLine(ctx, copy, { width, height: size * 1.3, maxFont: size, role: 'sans' });
+          if (!line.fits) throw new Error(`Physical recorder label does not fit: ${copy}`);
+          const start = align === 'right' ? x - line.width : align === 'center' ? x - line.width / 2 : x;
+          ctx.fillText(line.text, start + line.left, y);
+        };
+        ink('AUDIOCORP', 35, 48, 180, 14);
+        ink('DA–1000', 368, 48, 180, 11, 'center');
+        ink('FIELD RECORDER', 700, 48, 180, 11, 'right');
+        ink('RECORD / MONITOR', 35, 350, 300, 10);
+        ink('VACUUM FLUORESCENT', 35, 366, 300, 10);
+      }
+      ctx.restore();
+      // The map exists by the time a deferred font load resolves.
+      const map = group.getObjectByName('approved DA-1000 face')?.material?.map;
+      if (map) map.needsUpdate = true;
+    });
   }
   const faceMaterial = new THREE.MeshStandardMaterial({ color: faceCanvas ? '#ffffff' : FACE[cosmetics.faceplate], map: texture(faceCanvas), roughness: .4, metalness: .34, transparent: true });
   add(group, new THREE.PlaneGeometry(w, h), faceMaterial, [0, 0, .0238], null, 'approved DA-1000 face');
@@ -202,7 +193,7 @@ function recorder(group, cosmetics) {
   let previousReading = '';
   // Leave the right half of the front keys free for the operating left index.
   // This offset also clears both posed hand surfaces throughout key travel.
-  return { bounds: { width: w, height: h, depth: d }, contacts: { right: recorderCradle() }, controls,
+  return { bounds: { width: w, height: h, depth: d }, contacts: { right: recorderCradle([.06, 0, 0]) }, controls,
     update(frame) {
       const view = { ...(frame.readout || {}), ...explicitView };
       const signature = JSON.stringify(view);
@@ -238,15 +229,17 @@ function torch(group, cosmetics) {
   cylinder(group, .036, .004, physical('#151f1a', .11, .5), [0, .121, 0]);
   cylinder(group, .028, .002, new THREE.MeshStandardMaterial({ color: '#b9c8ba', roughness: .12, metalness: .65, emissive: '#bddac0', emissiveIntensity: 0 }), [0, .123, 0], null, .028, 'torch lens');
   for (let y = -.078; y < .040; y += .008) torus(group, .0233, .0008, rubber, [0, y, 0], [Math.PI / 2, 0, 0]);
-  const switchNormal = [Math.sqrt(3) / 2, 0, .5];
-  const cap = box(group, [.012, .024, .0035], rubber, [switchNormal[0] * .0245, .010, switchNormal[2] * .0245], .003, 'torch switch');
-  cap.rotation.y = Math.PI / 3;
+  const switchNormal = TORCH_SWITCH.normal;
+  const switchPosition = TORCH_SWITCH.position;
+  const switchNormalLength = Math.hypot(...switchNormal);
+  const switchAxis = switchNormal.map(value => value / switchNormalLength);
+  const capRest = switchPosition.map((value, i) => value - switchAxis[i] * .00175);
+  const cap = box(group, [.009, .016, .0035], rubber, capRest, .003, 'torch switch');
+  cap.rotation.y = Math.atan2(switchNormal[0], switchNormal[2]);
   cylinder(group, .0236, .007, steel, [0, -.097, 0]);
   label(group, 'FIELD TORCH', .032, .007, [0, -.062, .024]);
   const lens = group.getObjectByName('torch lens');
-  const controls = { trigger: { ...target([switchNormal[0] * .027, .010, switchNormal[2] * .027], switchNormal), hand: 'right', digit: 'thumb' } };
-  controls.trigger.pressedPosition = [switchNormal[0] * .0258, .010, switchNormal[2] * .0258];
-  controls.trigger.pressedPose = { thumb: { opposition: .9416246785, abduction: .5900631989, mcp: .8236408307, ip: 0 } };
+  const controls = { trigger: { ...target([...switchPosition], [...switchNormal]), hand: 'right', digit: 'thumb', pressedPosition: [...TORCH_SWITCH.pressedPosition], pressedPose: structuredClone(TORCH_SWITCH.pressedPose) } };
   return { bounds: { width: .084, height: .228, depth: .084 }, contacts: { right: handleGrip('torch') }, controls,
     update(frame) {
       const lit = frame.action === 'expose' || frame.action === 'whiteout';
@@ -255,8 +248,8 @@ function torch(group, cosmetics) {
         ? clamp(frame.controlPressure) : frame.impactFired !== false && p >= .28 && p < .72 ? 1 : 0;
       lens.material.emissiveIntensity = playerAction && frame.impactFired === true ? .08 + (frame.action === 'whiteout' ? 1.25 : .38) * Math.sin(Math.PI * p) : 0;
       const travel = playerAction ? .0012 * pressure : 0;
-      cap.position.x = switchNormal[0] * (.0245 - travel); cap.position.z = switchNormal[2] * (.0245 - travel);
-      controls.trigger.position[0] = switchNormal[0] * (.027 - travel); controls.trigger.position[2] = switchNormal[2] * (.027 - travel);
+      cap.position.x = capRest[0] - switchAxis[0] * travel; cap.position.z = capRest[2] - switchAxis[2] * travel;
+      controls.trigger.position[0] = switchPosition[0] - switchNormal[0] * travel; controls.trigger.position[2] = switchPosition[2] - switchNormal[2] * travel;
     },
   };
 }
@@ -383,9 +376,10 @@ export function buildBattleHandTool(tool = 'self', cosmetics = {}) {
   const id = typeof tool === 'string' ? tool : tool?.id || 'self';
   const appearance = { ...normalizeFieldKit({ cosmetics: cosmetics.cosmetics || cosmetics }).cosmetics, witnessEndings: cosmetics.witnessEndings || [] };
   const group = new THREE.Group(); group.name = `battle tool: ${id}`;
+  const letters = { disposed: false, bakes: 0, jobs: [], error: '' }; lettering.set(group, letters);
   const builders = { recorder, torch, fork, radio, rig, coffee, spanner };
   const detail = builders[id]?.(group, appearance) || { bounds: { width: 0, height: 0, depth: 0 }, contacts: { right: null }, controls: {}, update() {} };
-  calibrateControls(detail.controls);
+  calibrateControls(detail.controls, id);
   // A second alias prevents old callers confusing the little finger with a
   // sixth digit; both names refer to the exact same supported pad target.
   if (detail.contacts.right?.pinky) detail.contacts.right.little = detail.contacts.right.pinky;
@@ -394,14 +388,16 @@ export function buildBattleHandTool(tool = 'self', cosmetics = {}) {
   const resources = ownedResources(group);
   let disposed = false;
   return { id, group, contacts: detail.contacts, controls: detail.controls, bounds: detail.bounds,
+    letteringReady: Promise.all(letters.jobs).then(() => ({ ready: !letters.disposed && !letters.error, bakes: letters.bakes, error: letters.error })),
+    letteringStatus: () => ({ ready: !letters.disposed && !letters.error && (!letters.jobs.length || worldLetteringFontsStatus().ready), bakes: letters.bakes, error: letters.error }),
     update(actionOrFrame = {}, progress = 0, extras = {}) {
       if (disposed) return;
       const frame = typeof actionOrFrame === 'string' ? { ...extras, action: actionOrFrame, progress } : actionOrFrame || {};
       detail.update({ ...frame, progress: clamp(frame.progress ?? frame.resolveProgress) });
-      calibrateControls(detail.controls);
+      calibrateControls(detail.controls, id);
     },
     dispose() {
-      if (disposed) return; disposed = true;
+      if (disposed) return; disposed = true; letters.disposed = true;
       for (const item of resources.geometries) item.dispose();
       for (const item of resources.maps) item.dispose();
       for (const item of resources.materials) item.dispose();

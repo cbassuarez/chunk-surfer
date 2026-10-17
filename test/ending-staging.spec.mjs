@@ -46,11 +46,11 @@ const section=(start,end)=>{
   FP.compile(conservatory.levels, conservatory);
   const crossing=cathedralGroundRuntimePoint(FP,{x:16,y:73});
   const player={x:256,y:357},body={x:256,y:359.3};
-  let now=7700,saved={player,drag:{position:body},dragVector:{x:0,y:-1}};
+  let now=7700,saved={player,drag:{position:body},dragVector:{x:0,y:-1},cutscene:{complete:true}};
   const sandbox={
     FP,CELL:.5,D:m=>m/.5,px:player.x,py:player.y,
     usingSpecialSpace:()=>false,usingSourceSpace:()=>false,
-    performance:{now:()=>now},getSave:()=>({chunkSurf:{finale:{cathedral:{extraction:saved}}}}),
+    performance:{now:()=>now},getSave:()=>({chunkSurf:{finale:{stage:'resolved',result:'won',cathedral:{extraction:saved}}}}),
     normalizeChunkSurfState:v=>v,cathedralBodiesOutsideWest,
     activeEndingCutscene:{spec:{endingId:'tower-won'},origin:{...crossing,yaw:Math.PI/2,forward:[1,0]},
       state:{reducedMotion:false},startedMs:0,embodiment:{finalHold:true}},
@@ -73,10 +73,16 @@ const section=(start,end)=>{
     assert.ok(Math.abs(frames[0].x-frames[1].x)>.08,'two bodies remain separately readable in horizontal projection');
   };
   const props=staging.props(),view=staging.view();
+  assert.equal(cathedralBodiesOutsideWest(FP,player,body),false,
+    'this completed legacy extraction predates the tighter full-body live gate');
+  assert.equal(view.suppressActors,true,'the held rescue suppresses unrelated gameplay apparitions while retaining its two ending bodies');
   assert.ok(near(props[0],metres(body))&&near(props[1],metres(player)),'the held bodies stay at their earned physical exit positions');
-  assert.ok(near(metres(view),{x:13.3,z:51.1}),'the exterior camera does not fall back into a remote logical island');
+  assert.ok(near(metres(view),{x:13.3,z:53.3}),'the exterior camera does not fall back into a remote logical island');
   assert.ok(metres(view).z<53.5,'the camera is on the exterior side of both bodies and the west wall');
   assertVisiblePair(props,view);
+  const wonProjection=props.map(prop=>projected(prop,view));
+  assert.ok(Math.abs(wonProjection[0].x-wonProjection[1].x)>.3,
+    'the side view separates the prone companion from the seated player');
   sandbox.activeEndingCutscene.towerExterior={player,body,dragVector:{x:0,y:-1}};
   saved=null;
   assert.ok(near(staging.props()[0],metres(body)),'the live seam snapshot preserves the extraction before save reconciliation');
@@ -85,6 +91,7 @@ const section=(start,end)=>{
   for(now of [7700,8412.5,9125,9837.5,10550]){
     const pair=staging.props().filter(prop=>prop.id==='tower-lost-surfer'||prop.id==='tower-lost-player');
     const shot=staging.view(),camera=metres(shot);
+    assert.equal(shot.suppressActors,true,'the terminal wide suppresses unrelated gameplay apparitions');
     assertVisiblePair(pair,shot);
     for(const pier of CHURCH_COLLIDERS.filter(c=>c.id.startsWith('cathedral-crossing-pier-'))){
       assert.ok(Math.hypot(camera.x-pier.x,camera.z-pier.y)>pier.radius+.32,

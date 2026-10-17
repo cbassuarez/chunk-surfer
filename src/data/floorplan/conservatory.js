@@ -32,6 +32,7 @@ import {
   elleryMassingAt,
 } from '../exterior-district.js';
 import { mainStairFloorplanFlights, mainStairFloorplanLandings } from '../main-stair-geometry.js';
+import { ACADEMIC_ROOF, ACADEMIC_ROOF_LEVELS, ACADEMIC_ROOF_PORTALS } from '../academic-roof.js';
 
 // The engine holds no geometry — edit these maps freely. To find a building
 // that has quietly sealed itself:
@@ -404,6 +405,10 @@ function academicFloorRows(){
       // No authored cell occupies the centre. Collision sees an edge; the
       // academic render slice sees the garden volume ten metres below.
       if(x>=29&&x<=38&&y>=8&&y<=20)c=' ';
+      // The north service threshold opens over the real street grade, clear
+      // of the concert hall's occupied mass. It is a real door-sized opening;
+      // the roof-access runtime holds it shut until the staff/recorder check.
+      if(y===2&&x>=44&&x<=45)c='Q';
       row+=c;
     }
     rows.push(row);
@@ -846,6 +851,7 @@ function exteriorDistrictProfile(rx,ry,cell){
 }
 
 const EUCLIDEAN_ADDITIONS=[
+  ...ACADEMIC_ROOF_LEVELS,
   // A complete walkable street ring around Ellery. Its logical address sits
   // beyond every existing floor so no save address moves; physicalOrigin is
   // allowed to be negative and the physical slice now carries its own origin.
@@ -861,10 +867,11 @@ const EUCLIDEAN_ADDITIONS=[
    space:'cathedral_ground',renderGroup:CHURCH_LEVELS.ground.renderGroup,
    origin:CATHEDRAL_GROUND_ORIGIN,physicalOrigin:{x:CHURCH_BOUNDS.x0,y:CHURCH_BOUNDS.y0},base:0,
    rows:churchGroundRows('Y'),profile:cathedralGroundProfile},
-  // Two metres beyond the west leaf let the player pull the trailing body fully
+  // Three metres beyond the west leaf let the player pull the whole prone body
   // across its plane before the physical seam hands movement back to the yard.
+  // Extend outward without moving the existing threshold's logical addresses.
   {id:'cathedral_west_threshold',physicalReplace:true,layer:'cathedral_threshold',space:'cathedral_threshold',renderGroup:'ground',
-   origin:{x:128,y:178},physicalOrigin:{x:16,y:53},base:0,rows:['Y','Y'],profile:(_x,y,cell)=>({...cell,ceil:yardCeilAt(53+y)})},
+   origin:{x:128,y:177},physicalOrigin:{x:16,y:52},base:0,rows:['Y','Y','Y'],profile:(_x,y,cell)=>({...cell,ceil:yardCeilAt(52+y)})},
   {id:'cathedral_south_threshold',physicalReplace:true,layer:'cathedral_threshold',space:'cathedral_threshold',renderGroup:'ground',
    origin:{x:137,y:198},physicalOrigin:{x:25,y:73},base:0,rows:['Y'],profile:(_x,_y,cell)=>({...cell,ceil:yardCeilAt(73)})},
   {id:CHURCH_LEVELS.loft.id,physicalReplace:true,physicalStack:true,layer:'cathedral_loft',
@@ -1026,23 +1033,27 @@ const EUCLIDEAN_ADDITIONS=[
 export const conservatory = {
   width: 240,
   height: 480,
-  layoutRevision: 3,
+  layoutRevision: 4,
   positionMigrations:[
-    {id:'old-upper-coil',bounds:{x0:62,x1:64,y0:38,y1:47},to:MAIN_STAIR_LAYOUT.upperLanding,floor:4.8},
-    {id:'old-lower-coil',bounds:{x0:60,x1:62,y0:38,y1:47},to:MAIN_STAIR_LAYOUT.groundLanding,floor:0},
-    {id:'old-practice-gallery',bounds:{x0:58,x1:67,y0:46,y1:53},to:MAIN_STAIR_LAYOUT.upperLanding,floor:4.8},
-    {id:'old-upper-stem',bounds:{x0:58,x1:66,y0:44,y1:52},to:MAIN_STAIR_LAYOUT.upperLanding,floor:4.8},
-    {id:'old-ground-stem',bounds:{x0:58,x1:66,y0:25,y1:39},to:MAIN_STAIR_LAYOUT.groundHall,floor:0},
-    {id:'old-academic-seam',bounds:{x0:12,x1:15,y0:277,y1:280},to:MAIN_STAIR_LAYOUT.academicLanding,floor:10},
+    {id:'old-upper-coil',beforeRevision:3,bounds:{x0:62,x1:64,y0:38,y1:47},to:MAIN_STAIR_LAYOUT.upperLanding,floor:4.8},
+    {id:'old-lower-coil',beforeRevision:3,bounds:{x0:60,x1:62,y0:38,y1:47},to:MAIN_STAIR_LAYOUT.groundLanding,floor:0},
+    {id:'old-practice-gallery',beforeRevision:3,bounds:{x0:58,x1:67,y0:46,y1:53},to:MAIN_STAIR_LAYOUT.upperLanding,floor:4.8},
+    {id:'old-upper-stem',beforeRevision:3,bounds:{x0:58,x1:66,y0:44,y1:52},to:MAIN_STAIR_LAYOUT.upperLanding,floor:4.8},
+    {id:'old-ground-stem',beforeRevision:3,bounds:{x0:58,x1:66,y0:25,y1:39},to:MAIN_STAIR_LAYOUT.groundHall,floor:0},
+    {id:'old-academic-seam',beforeRevision:3,bounds:{x0:12,x1:15,y0:277,y1:280},to:MAIN_STAIR_LAYOUT.academicLanding,floor:10},
     // Revision 3 inserts real low ranges into the previously empty yard. A save
     // made inside one of those footprints returns to the clear arrival spine.
-    {id:'yard-former-stables',bounds:{x0:80,x1:92,y0:214,y1:222},to:{x:79,y:207},floor:0},
-    {id:'yard-rehearsal-annex',bounds:{x0:82,x1:96,y0:229,y1:239},to:{x:79,y:207},floor:0},
-    {id:'yard-baths-plant',bounds:{x0:82.5,x1:95.5,y0:249,y1:261},to:{x:79,y:207},floor:0},
-    {id:'yard-covered-stores',bounds:{x0:84,x1:96,y0:270.5,y1:283.5},to:{x:79,y:207},floor:0},
+    {id:'yard-former-stables',beforeRevision:3,bounds:{x0:80,x1:92,y0:214,y1:222},to:{x:79,y:207},floor:0},
+    {id:'yard-rehearsal-annex',beforeRevision:3,bounds:{x0:82,x1:96,y0:229,y1:239},to:{x:79,y:207},floor:0},
+    {id:'yard-baths-plant',beforeRevision:3,bounds:{x0:82.5,x1:95.5,y0:249,y1:261},to:{x:79,y:207},floor:0},
+    {id:'yard-covered-stores',beforeRevision:3,bounds:{x0:84,x1:96,y0:270.5,y1:283.5},to:{x:79,y:207},floor:0},
+    // Revision 4 moves the escape onto the real north facade. Keep a save on
+    // the retired east flights safely on the roof, preserving earned access.
+    {id:'old-roof-east-escape',beforeRevision:4,bounds:{x0:158,x1:166,y0:280,y1:297},to:ACADEMIC_ROOF.entry,floor:17},
   ],
   widenCorridors: true,
   edgePortals:[
+    ...ACADEMIC_ROOF_PORTALS,
     // The yard and apron are two stable logical components occupying adjacent
     // physical cells. These directional seams own the COMPLETE stair heads,
     // not one lucky half-metre tile. Width is authored metres and expands to
@@ -1134,7 +1145,7 @@ export const conservatory = {
     {from:CHURCH_TURRETS[2].logicalTo,to:cathedralBelfryLogical(22,71)},
     // The north belfry mouth remains boarded: no seam through the louvres.
     {from:CHURCH_TURRETS[3].logicalTo,to:cathedralLoftLogical(11,71)},
-    {from:{x:128,y:178},to:{x:66,y:253}},
+    {from:{x:128,y:177},to:{x:66,y:252}},
     {from:{x:137,y:198},to:{x:75,y:273}},
     // The old yard keeps every logical address. Three broad seams join its west,
     // north and south edges to the new perimeter ring at the same physical

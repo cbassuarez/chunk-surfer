@@ -5,7 +5,7 @@ import { assetUrl } from '../platform/paths.js';
 
 const clamp=(value,low,high)=>Math.max(low,Math.min(high,Number(value)||0));
 const BED_KINDS=new Set(['bus','lodge','car']);
-const EVENT_KINDS=new Set(['bus-air','coat-rustle','footstep','hatch-impact','glass-knock','phone-ring','paper','pen','post-letter','ticket','fold-cloth','fold-pressure','fold-contact','fold-strain','fold-effort']);
+const EVENT_KINDS=new Set(['bus-air','coat-rustle','footstep','hatch-impact','glass-knock','phone-ring','paper','pen','post-letter','ticket','fold-cloth','fold-pressure','fold-contact','fold-strain','fold-effort','woman-traction']);
 export const FOLD_SAMPLE_IDS=Object.freeze(['fold-effort-a','fold-effort-b','fold-effort-c','fold-effort-d','fold-catch','fold-cloth-a','fold-cloth-b','fold-cloth-c']);
 async function loadFoldSample(id,context){
   const response=await fetch(assetUrl(`assets/audio/outskirts/${id}.wav`));
@@ -154,6 +154,14 @@ export function createOutskirtsStreetAudio({getAudio=()=>null,loadSample=loadFol
   function event(spec){
     if(!EVENT_KINDS.has(spec.cue))return false;
     const level=clamp(spec.strength??1,0,1)*.13;
+    if(spec.cue==='woman-traction'){
+      // The woman has no borrowed effort voice. This is a quiet recorded
+      // sleeve/body-weight movement, spatially attached to her actual action.
+      const pull=spec.variant===1;
+      return recorded(spec,level,pull?'fold-cloth-c':'fold-cloth-b',{
+        rate:pull?.88:.96,lowpass:pull?2500:3200,
+      });
+    }
     if(spec.cue.startsWith('fold-'))return foldSound(spec,level);
     const burst=(frequency,seconds,gain=1,delay=0)=>({frequency,seconds,level:gain,delay,attack:.003});
     const tone=(hz,seconds,gain=1,delay=0)=>({tone:hz,frequency:2200,seconds,level:gain,delay,attack:.004});

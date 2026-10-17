@@ -21,7 +21,7 @@ export const HORIZON_BUST_AUDIENCE = Object.freeze({
     ...SHARED_AUDIENCE,
   ]),
   returned: freezeLines([
-    { who: 'direction', text: "The portrait’s pupils slip into the bust's sockets and roll into place. They instantly take the Horizon’s wet colour." },
+    { who: 'direction', text: "The eyes you returned are still in the gallery. Here, bronze shutters withdraw from a matching pair of sockets. Mineral pupils settle behind the rims and take the Horizon’s wet colour." },
     { who: 'bust', text: "There we are. My. Your eyes—they've seen quite the folly. I have respite for them, a safer path, if you'd like." },
     ...SHARED_AUDIENCE,
   ]),
@@ -159,14 +159,14 @@ export function horizonBustProposition(lastLine = null, { defeats = 0 } = {}) {
       speaker: 'THE PORTRAIT',
       lines: returning ? [
         ...(lastLine ? [lastLine] : []),
-        { who: 'direction', text: 'The bevel is warm. Your own hand did that, and not long ago.' },
+        { who: 'direction', text: 'The hand-shaped hollow is warm. Your own hand did that, and not long ago.' },
         { who: 'bust', text: 'The same phase. I will give you your breath and enough battery to answer. The damage stays. Two returns, then the full peal.' },
         again === 1
           ? { who: 'bust', text: 'There you are. I did say.' }
           : { who: 'bust', text: 'Again. I am starting to feel responsible for you, which is new, and I do not care for it.' },
       ] : [
         ...(lastLine ? [lastLine] : []),
-        { who: 'direction', text: 'A palm-shaped bevel shines on the pedestal. The skull above it has lost its name; the crossed bones below have been worn nearly flat by other hands.' },
+        { who: 'direction', text: 'An open hand is cut low in the stone. Its dark palm and fingertips have been worn smooth.' },
         { who: 'bust', text: 'There. That is the other way.' },
       ],
       goto: returning ? 'decision' : 'questions',
@@ -234,7 +234,7 @@ export function horizonBustProposition(lastLine = null, { defeats = 0 } = {}) {
         again === 1
           ? { who: 'bust', text: 'No. I told you that part before you agreed, which is more than most get.' }
           : { who: 'bust', text: 'You know the answer. Ask me something you do not know.' },
-        { who: 'direction', text: 'There is one bevel, and it is the one your hand already knows.' },
+        { who: 'direction', text: 'There is one hand-shaped hollow, and it is the one your hand already knows.' },
         { who: 'bust', text: again === 1 ? 'Two attempts remain. The third defeat is final.' : 'This is your last attempt. A third defeat is final.' },
       ] : [
         { who: 'bust', text: 'So. Keep going to the chapel, or take my path. Agree, and it is the tower: no going back to the lift, no choosing the nave later.' },
@@ -243,9 +243,9 @@ export function horizonBustProposition(lastLine = null, { defeats = 0 } = {}) {
       // The chapel is simply not here on a return. "No choice but to continue"
       // is one row, not two rows with one of them dimmed.
       choices: returning ? [
-        { text: 'Set your hand in the bevel. Again.', goto: 'accepted', sourceFinaleChoice: 'tower' },
+        { text: 'Set your hand in the hollow. Again.', goto: 'accepted', sourceFinaleChoice: 'tower' },
       ] : [
-        { text: "Set your hand in the bevel. Commit to the tower.", goto: 'accepted', sourceFinaleChoice: 'tower' },
+        { text: "Set your hand in the hollow. Commit to the tower.", goto: 'accepted', sourceFinaleChoice: 'tower' },
         { text: "Leave the way you were going.", goto: 'declined', sourceFinaleChoice: 'chapel' },
       ],
     },
@@ -259,7 +259,7 @@ export function horizonBustProposition(lastLine = null, { defeats = 0 } = {}) {
       ] : [
         { who: 'you', text: 'All that, and it is a button?' },
         { who: 'bust', text: "You've already agreed. The button is ceremonial. Call it user experience." },
-        { who: 'direction', text: 'The bronze warms under your palm. A narrow path opens beside the pedestal and bends out of the picture. Bells hang beyond it.' },
+        { who: 'direction', text: 'The dark inlay warms under your palm. A narrow path opens beside the pedestal and bends out of the picture. Bells hang beyond it.' },
         { who: 'bust', text: "There. Walk it. Most of the bells are silent; not all. Make enough noise and you'll have to walk that bit again, from the last quiet clearing. Reach the next clearing and the noise settles. They know you're coming. No need to announce yourself." },
         { who: 'you', text: 'Fun.' },
       ],

@@ -576,7 +576,7 @@ export function roomListen(room, label) {
 export const PLANT_RIG_CELL = { x: 38, y: 32 };
 
 // ── the busts ────────────────────────────────────────────────────────────────
-// Six plinths in the gallery. Four still have a head on them, and none of them
+// Six plinths in the gallery. Five retain a face, one with empty sockets, and none
 // has a name, a plaque or an accession mark — nobody in this building ever
 // recorded who they were supposed to be.
 //
@@ -666,8 +666,8 @@ export const BUST_TALK = {
   },
 };
 
-// A head that is not there any more. Two of the six plinths hold only the bottom
-// of a face, and he talks to those too, which is worse.
+// A head that is not there any more. The sixth plinth holds only the bottom
+// of a face, and he talks to that too, which is worse.
 export const BUST_FRAGMENT = {
   start: {
     speaker: 'THE GALLERY',
@@ -680,9 +680,22 @@ export const BUST_FRAGMENT = {
   },
 };
 
+// The other damaged station retains its face around two actual empty sockets.
+export const BUST_SOCKETED = {
+  start: {
+    speaker: 'THE GALLERY',
+    lines: [
+      { who: 'direction', text: 'The face is still here. The eyes are not. Two dark sockets, clean around the edges; an old bronze repair takes the weight under the neck.' },
+      { who: 'you', text: 'Somebody did that carefully.' },
+      { who: 'direction', text: 'Nothing fell out. The stone around each socket is polished by a hand that knew where to hold it.' },
+      { who: 'you', text: 'They did not want you looking at something.' },
+    ],
+  },
+};
+
 // THE ONE THAT GETS ITS EYES BACK.
 //
-// Half of this face has been in a fountain in the park across the yard since
+// Both eyes have been in a fountain in the park across the yard since
 // before tonight. Put it back and the bust is the only thing in the building
 // that has been in one place the whole time and was facing the right way — so
 // what it has to offer is not a secret, it is an eyewitness account. It watched
@@ -695,7 +708,7 @@ export const BUST_RESTORED = {
   start: {
     speaker: 'THE GALLERY',
     lines: [
-      { who: 'direction', text: 'The break takes first time. Old stone finds old stone and there is a sound like a door closing somewhere else in the building.' },
+      { who: 'direction', text: 'Each eye seats in its own socket. Two small stone contacts, then the bronze underneath takes the weight with a click.' },
       { who: 'you', text: 'There. That is the most I can do for you.' },
       { who: 'direction', text: 'Two eyes, wet from the fountain, pointing at the doorway rather than at him.' },
       { who: 'unknown', text: 'Thirty-one years of the same corridor.' },
@@ -1231,7 +1244,10 @@ export const PAGES = [
     ],
   },
   {
-    id: 'page-8', at: { x: 35, y: 9 }, room: null, decay: 0.50,
+    // In the passage out of the get-in: the one corridor on the way down that
+    // does change where it has not been heard (its cells are MUTABLE). Read it
+    // going down to B3; the way back up is where it can come true.
+    id: 'page-8', at: { x: 65.5, y: 19 }, room: null, decay: 0.50,
     title: 'log — ??:??', byline: 'sheet 8',
     body: [
       'Test. Stood in the plant room with the light off and the recorder running and did not move for six minutes.',
@@ -1245,7 +1261,7 @@ export const PAGES = [
       { raw: 'It moves where it has not been heard. It moves where it has not been heard. It moves where' },
       { raw: 'it has not been heard.' },
       '',
-      'So make noise, and it stands still, and the noise brings the other thing. Or hold still, and it rearranges, and the other thing does not know where you are.',
+      'So make noise, and it stands still, and the noise brings the other thing. Or keep still, and it rearranges, and the other thing does not know where you are.',
       '',
       'That is not a trap. That is a price list.',
     ],

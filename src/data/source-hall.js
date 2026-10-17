@@ -141,19 +141,13 @@ const placement = (id, mesh, x, y, z, extra = {}) => ({
   structural: true, solid: false, ...extra,
 });
 
-// The existing set_beam is exactly a centred one-metre cube. Use its narrow
-// offcuts for a repeated painted-looking '17', rather than a new text atlas or
-// an unreadable blank door_stencil. Its complete bounds remain against the wall.
+// The repeated number is physical stencil pigment on the service wall. Its
+// carrier keeps the previous strokes' Y/Z footprint and bay addresses; its
+// pigment sits 0.6 mm inside the six-metre hall, against the actual wall plane.
 function bayNumber(bay) {
-  const origin = { x: -2.925, y: 1.65, z: -bay.depthMetres - 0.84 };
-  const strokes = [
-    { z: -0.12, y: 0, width: 0.025, height: 0.24 },
-    { z: 0.105, y: 0.108, width: 0.19, height: 0.025 },
-    { z: 0.185, y: 0, width: 0.025, height: 0.24 },
-  ];
-  return strokes.map((stroke, index) => placement(`${bay.id}:number-${index}`, 'set_beam',
-    origin.x, origin.y + stroke.y, origin.z + stroke.z,
-    { scaleX: 0.018, scaleY: stroke.height, scaleZ: stroke.width, semantic: 'hall-bay-number', bayId: bay.id }));
+  return [placement(`${bay.id}:number`, 'source_hall_number_17',
+    -2.9994,1.65,-bay.depthMetres-.8075,
+    { semantic:'hall-bay-number',bayId:bay.id })];
 }
 
 export function sourceHallPropPlacements() {

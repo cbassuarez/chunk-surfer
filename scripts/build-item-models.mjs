@@ -7,6 +7,8 @@ import {Document,NodeIO} from '@gltf-transform/core';
 import * as THREE from 'three';
 import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js';
 import {buildDetailedItems} from './item-model-details.mjs';
+import {createCanonicalEyeGeometry,RELIQUARY_MATERIALS} from '../tools/chunk_surfer/reliquary-geometry.mjs';
+import {CANONICAL_EYE_RADIUS} from '../tools/chunk_surfer/reliquary-prop-geometry.mjs';
 const out='public/assets/items';await mkdir(out,{recursive:true});
 const io=new NodeIO(),stats=[];
 const onlyArg=process.argv.find(arg=>arg.startsWith('--only='));
@@ -83,7 +85,23 @@ async function extract(id,source,parts,rotation=[0,0,0]){
 }
 const props='public/assets/conservatory-props.glb';
 await extract('light','public/assets/conservatory-acquisitions.glb',[{mesh:'portable_searchlight'}],[0,Math.PI*.7,0]);
-await extract('marble-eyes',props,[{mesh:'park_marble_eyes',filter:p=>p[1]>.0101}],[.55,0,.12]);
+// The bag shows the same canonical pair side by side, turned toward the
+// inspection camera. The world pair keeps its separate, face-up water pose.
+if(wants('marble-eyes')){
+ const doc=new Document(),buffer=doc.createBuffer(),scene=doc.createScene('marble-eyes'),root=doc.createNode('portrait-pose').setRotation(new THREE.Quaternion().setFromEuler(new THREE.Euler(-.6,.32,0)).toArray());scene.addChild(root);
+ const materials=Object.fromEntries(Object.entries(RELIQUARY_MATERIALS).map(([name,m])=>[name,doc.createMaterial(name).setBaseColorFactor(m.color).setRoughnessFactor(m.roughness).setMetallicFactor(m.metallic)]));
+ let triangles=0;
+ for(const [side,x,y] of [['L',-.023,.004],['R',.023,-.004]]){
+  const groups=createCanonicalEyeGeometry({center:[x,y,0],radius:CANONICAL_EYE_RADIUS,side,detail:32});
+  for(const [part,g] of Object.entries(groups)){
+   const primitive=doc.createPrimitive().setAttribute('POSITION',doc.createAccessor().setType('VEC3').setArray(Float32Array.from(g.positions)).setBuffer(buffer)).setAttribute('NORMAL',doc.createAccessor().setType('VEC3').setArray(Float32Array.from(g.normals)).setBuffer(buffer)).setIndices(doc.createAccessor().setType('SCALAR').setArray(Uint32Array.from(g.indices)).setBuffer(buffer)).setMaterial(materials[part==='stone'?'eye':part]);
+   root.addChild(doc.createNode(`${side}-${part}`).setMesh(doc.createMesh(`${side}-${part}`).addPrimitive(primitive)));
+   triangles+=g.indices.length/3;
+  }
+ }
+ await io.write(`${out}/marble-eyes.glb`,doc);
+ stats.push({id:'marble-eyes',origin:'authored',source:'tools/chunk_surfer/reliquary-geometry.mjs',triangles});
+}
 await extract('sheet-music',props,[{mesh:'open_score'}],[.85,0,.08]);
 const forkSource='public/assets/tuning-fork.glb';
 if(wants('tuning-fork')){

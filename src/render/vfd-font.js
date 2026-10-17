@@ -68,6 +68,16 @@ const G = {
   '<': [0b00010, 0b00100, 0b01000, 0b10000, 0b01000, 0b00100, 0b00010],
   '>': [0b01000, 0b00100, 0b00010, 0b00001, 0b00010, 0b00100, 0b01000],
   '#': [0b01010, 0b01010, 0b11111, 0b01010, 0b11111, 0b01010, 0b01010],
+  // Printable source/technical notation must not silently become a tofu cell.
+  // Existing approved glyphs retain their shapes; these fill the eight holes.
+  '$': [0b00100, 0b01111, 0b10100, 0b01110, 0b00101, 0b11110, 0b00100],
+  '@': [0b01110, 0b10001, 0b10111, 0b10101, 0b10111, 0b10000, 0b01110],
+  '\\': [0b10000, 0b01000, 0b00100, 0b00100, 0b00010, 0b00001, 0b00001],
+  '^': [0b00100, 0b01010, 0b10001, 0, 0, 0, 0],
+  '{': [0b00010, 0b00100, 0b00100, 0b01000, 0b00100, 0b00100, 0b00010],
+  '|': [0b00100, 0b00100, 0b00100, 0b00100, 0b00100, 0b00100, 0b00100],
+  '}': [0b01000, 0b00100, 0b00100, 0b00010, 0b00100, 0b00100, 0b01000],
+  '~': [0, 0, 0b01001, 0b10110, 0, 0, 0],
   // Missing until the return form printed "ACHIEVEMENTS & RUN HISTORY" as a
   // tofu box on a screen the player actually reads. It slipped through
   // vfd-glyph-coverage because that spec only scans NON-ASCII literals.
