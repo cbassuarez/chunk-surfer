@@ -215,10 +215,17 @@ test('the aboard second return physically tests its hand, feels the shoulder pul
   }
 });
 
+// Quantised to 1e-9 before hashing: the CI runner's libm (Linux x64) differs
+// from a developer Mac in the last place of sin/cos, which an exact digest
+// cannot survive. Any real change to a pose still moves the digest, and a
+// non-finite value is hashed as it is rather than rounded away.
+const poseDigest=value=>createHash('sha256').update(JSON.stringify(value,
+  (_,v)=>typeof v==='number'&&Number.isFinite(v)?(Math.round(v*1e9)/1e9)||0:v)).digest('hex');
+
 test('ordinary sampled poses remain exactly equivalent to the accepted canonical sampler',()=>{
   const poses=Object.entries(BUS_WOMAN_CLIPS).flatMap(([mode,duration])=>[0,.13,.43,.77,1].map(part=>busWomanPose(mode,duration*part,{acknowledgeYaw:-.42})));
   // Digest captured from checkpoint B before the narrow authored-search hook.
-  assert.equal(createHash('sha256').update(JSON.stringify(poses)).digest('hex'),'b676a0ba6b6e8fab8b864ad500a9fc508417478e1beb6c3b5680d32b8f50b795');
+  assert.equal(poseDigest(poses),'e89474cc9fe85b07e0ea20ba3b093fa925c1085517f5c0ae0da29fce15f4a3a1');
 });
 
 test('late search physically stops, withdraws, counterbraces and chooses a smaller retry',()=>{
@@ -279,5 +286,5 @@ test('a held ticket ends the search and reduces effort without repairing the ter
 test('the first seven measured returns retain the accepted B contact performances exactly',()=>{
   const descriptors=[];
   for(let stretch=0;stretch<=6;stretch++)for(const [mode,duration]of Object.entries(BUS_WOMAN_CLIPS))for(const fraction of [0,.13,.43,.77,1])descriptors.push(busWomanWrongOriginDescriptor(mode,duration*fraction,{stretch,aboard:stretch===1,acknowledgeYaw:-.42}));
-  assert.equal(createHash('sha256').update(JSON.stringify(descriptors)).digest('hex'),'cb6db23fc2e0d6b7c428fad3e1610036eb45e370472f0b7629efae0e2255eeea');
+  assert.equal(poseDigest(descriptors),'e0d31dc2f820c0aff2809e5c814ac42425b142b523a2d9e04d3794a4ad741cc1');
 });
