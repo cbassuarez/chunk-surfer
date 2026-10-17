@@ -30,12 +30,14 @@ jobs:
           node-version: lts/*
           cache: npm
 
-      # The paper rasteriser's spec renders through Pillow. Same repo-local venv
-      # the paper tools look for first, so nothing installs into system python.
-      - name: Install Pillow for the paper rasteriser
+      # The paper and lettering rasterisers' specs render through Pillow and
+      # numpy. Same repo-local venv the paper tools look for first, so nothing
+      # installs into system python; the lettering tools are pointed at it.
+      - name: Install Pillow and numpy for the rasterisers
         run: |
           python3 -m venv .paper-venv
-          .paper-venv/bin/pip install Pillow==12.3.0
+          .paper-venv/bin/pip install Pillow==12.3.0 numpy==2.3.5
+          echo "CHUNK_SURFER_LETTERING_PYTHON=$PWD/.paper-venv/bin/python" >> "$GITHUB_ENV"
 
       - run: npm install
       - run: npm test
