@@ -2,7 +2,8 @@
 // flashlight shadows and acquisition are shared with the actual GLB models.
 // Geometry is recentered per piece so distance culling follows its real extent.
 import { sourceDivideGeometry } from '../data/source-braided-divide.js';
-import { sourcePrintTexture, sourcePrintUV, SOURCE_PRINT_SURFACE } from './physical-source-print.js';
+import { sourcePrintMaps, sourcePrintUV, SOURCE_PRINT_SURFACE } from './physical-source-print.js';
+import { PROP_INSTANCE_FLOATS, PROP_INSTANCE_BINDINGS } from './prop-instance-layout.js';
 
 export function divideMeshName(id) { return `source-divide-${id}`; }
 export function dividePieceBounds(piece) {
@@ -12,14 +13,14 @@ export function dividePieceBounds(piece) {
 }
 
 function sourceTexture(gl) {
-  return sourcePrintTexture(gl,'divide');
+  return sourcePrintMaps(gl,'divide');
 }
 
 export function installDivideMeshes(gl,pack) {
   if(!gl||!pack?.catalog)return [];
   const geometry=sourceDivideGeometry(),names=geometry.map(p=>divideMeshName(p.id));
   if(names.every(name=>pack.catalog.has(name)))return names;
-  const texture=sourceTexture(gl),identity=new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);
+  const maps=sourceTexture(gl),identity=new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);
   for(const piece of geometry){
     const name=divideMeshName(piece.id);if(pack.catalog.has(name))continue;
     const bounds=dividePieceBounds(piece),positions=[],normals=[],uvs=[];
@@ -35,11 +36,15 @@ export function installDivideMeshes(gl,pack) {
     bind(0,positions,3);bind(1,normals,3);bind(2,uvs,2);
     const indices=new Uint32Array(positions.length/3);for(let i=0;i<indices.length;i++)indices[i]=i;
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,indices,gl.STATIC_DRAW);
-    gl.bindBuffer(gl.ARRAY_BUFFER,instanceBuffer);const stride=29*4;
-    for(const [location,size,offset]of [[3,4,0],[4,4,4],[5,4,8],[6,4,12],[7,1,16],[8,1,17],[9,1,18],[10,4,19],[11,1,23],[12,4,24],[15,1,28]]){
-      gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,size,gl.FLOAT,false,stride,offset*4);gl.vertexAttribDivisor(location,1);
+    gl.bindBuffer(gl.ARRAY_BUFFER,instanceBuffer);const stride=PROP_INSTANCE_FLOATS*4;
+    for(let column=0;column<4;column++){
+      const location=3+column;gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,4,gl.FLOAT,false,stride,column*16);gl.vertexAttribDivisor(location,1);
     }
-    pack.catalog.set(name,{name,nodeMatrix:identity,instanceBuffer,extras:{sourceDivide:true},primitives:[{vao,count:indices.length,indexType:gl.UNSIGNED_INT,base:[...(piece.color||[.68,.70,.64]).slice(0,3),1],emissive:[0,0,0],texture,metallic:0,roughness:.94,aoStrength:0,portrait:false,alphaCut:0,materialName:'source masonry',materialRole:'source-divide',printedSurface:SOURCE_PRINT_SURFACE}]});
+    for(const [location,size,offset]of PROP_INSTANCE_BINDINGS){
+      gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,size,gl.FLOAT,false,stride,offset);gl.vertexAttribDivisor(location,1);
+    }
+    gl.disableVertexAttribArray(8);gl.vertexAttrib1f(8,0);
+    pack.catalog.set(name,{name,nodeMatrix:identity,instanceBuffer,extras:{sourceDivide:true},primitives:[{vao,count:indices.length,indexType:gl.UNSIGNED_INT,base:[...(piece.color||[.68,.70,.64]).slice(0,3),1],emissive:[0,0,0],texture:maps.texture,normalTexture:maps.normalTexture,ormTexture:maps.ormTexture,letteringFinish:maps.letteringFinish,materialFactors:'gltf',metallic:1,roughness:1,aoStrength:0,portrait:false,alphaCut:0,materialName:'source masonry',materialRole:'source-divide',printedSurface:SOURCE_PRINT_SURFACE}]});
   }
   gl.bindVertexArray(null);return names;
 }

@@ -8,6 +8,14 @@ import * as PROPS from '../src/game/props.js';
 FP.compile(conservatory.levels,{width:conservatory.width,height:conservatory.height,widenCorridors:conservatory.widenCorridors,connectors:conservatory.connectors||[],edgePortals:conservatory.edgePortals||[],doors:conservatory.doors||[]});
 PROPS.propsInit(FP);
 
+test('Hall hook creates the physical render plan used by live study entry',()=>{
+  const at=FP.toRuntimePoint(GOD_LOCATION_HOOKS['concert-hall'].at);
+  const plan=FP.physicalRenderPlanFor(at.x,at.y);
+  assert.equal(plan.group,'hall');
+  assert.ok(plan.w>0&&plan.h>0);
+  assert.equal(plan.rgba.length,plan.w*plan.h*4);
+});
+
 test('every God location is one authored scale conversion with its exact facing and context',()=>{
   assert.equal(Object.keys(GOD_LOCATION_HOOKS).length,22);
   for(const[id,hook]of Object.entries(GOD_LOCATION_HOOKS)){

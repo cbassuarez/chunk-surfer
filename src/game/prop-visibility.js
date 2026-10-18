@@ -1,4 +1,5 @@
 import { isOutdoorZone, ZONE } from '../data/floorplan/legend.js';
+import { isPubMeshEnvelopeZone } from '../data/exterior-pub.js';
 
 // Cross-envelope visibility for the authored Ellery prop pack.
 //
@@ -31,7 +32,7 @@ const INTERIOR_HIDDEN_EXTERIOR_MESHES=new Set([
 // and between the two answers the walls and the skin both disappeared. See
 // OUTDOOR_ZONES in floorplan/legend.js for the whole account.
 export function isExteriorObserver({zone=null}={}){
-  return isOutdoorZone(zone);
+  return isOutdoorZone(zone)||isPubMeshEnvelopeZone(zone);
 }
 
 export function isLoadingBaySightlineProp(instance){
@@ -40,6 +41,8 @@ export function isLoadingBaySightlineProp(instance){
 }
 
 export function shouldHideCrossEnvelopeProp(instance,{observerZone=null}={}){
+  if(['occupation-baths-service-entry','occupation-baths-rainwater'].includes(instance?.id))return false;
+  if(String(instance?.id||'').startsWith('building-window-unit-')||instance?.id==='natatorium-end-window')return false;
   if(!isExteriorObserver({zone:observerZone})){
     return INTERIOR_HIDDEN_EXTERIOR_MESHES.has(instance?.mesh);
   }

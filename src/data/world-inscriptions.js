@@ -4,6 +4,7 @@
 // Small accession marks stay on rear/underside surfaces. They are not clues
 // relocated to face the camera. No contractor, room number or direction has
 // been supplied where the existing writing leaves it unspecified.
+import {CORRIDOR_SPACE_BY_DOOR_ID,LANDING_FITTINGS,CORRIDOR_LETTERING_FACES} from './corridor-lettering.js';
 const STOCK = Object.freeze({
   paper:[.66,.61,.47], ink:[.012,.014,.011], enamel:[.70,.68,.55],
   green:[.024,.060,.043], ivory:[.71,.68,.52], stone:[.39,.37,.29],
@@ -61,7 +62,7 @@ export const WORLD_INSCRIPTIONS = Object.freeze([
     {...FRONT,center:[0,.24,.0956],widthM:2.15,heightM:.175},
     {lines:['CONCERT HALL — STALLS / GALLERIES'],font:'NimbusRoman-Bold.otf',
       process:'gilt house lettering on dark enamel',ground:STOCK.dark,
-      capHeightM:.125,lineCentres:[.5],lineScale:[1],typeWidthScale:.62,opticalWeightM:.0015,kerned:true,
+      capHeightM:.125,lineCentres:[.5],lineScale:[1],typeWidthScale:.62,opticalWeightM:.003,kerned:true,
       ink:[.83,.58,.20],inkMetallic:.9,inkRoughness:.48,rasterWidthPx:768,rasterHeightPx:63}),
   job('chapel-stair-sign-nave','public_exit_sign',
     'TOWER — RINGING CHAMBER — NO ADMITTANCE TO THE PUBLIC\nBELLS UP',
@@ -147,3 +148,42 @@ export const WORLD_INSCRIPTIONS = Object.freeze([
       center:[-.10602,.29523,.294],widthM:.040,heightM:.012},
     {capHeightM:.0045})),
 ]);
+
+function roomLabelLines(copy){
+  const lines=[];let line='';
+  for(const word of copy.split(/\s+/)){
+    if(line&&(line+' '+word).length>12){lines.push(line);line=word;}
+    else line=line?line+' '+word:word;
+  }
+  if(line)lines.push(line);return lines;
+}
+const landingByHost=new Map(Object.entries(LANDING_FITTINGS).map(([key,spec])=>[
+  'landing-'+key.split('/')[1],spec]));
+
+// The corridor is generated from a compiled plan. Never guess its population
+// from every door in the source map: most doors have no corridor-side plate.
+// Use the final existing hosts at both bake time and the render boundary. Ink
+// therefore inherits the exact visibility, transform and mesh guard of its host.
+export function corridorInscriptionsForHosts(hosts){
+  return hosts.flatMap(host=>{
+    const doorId=host.id?.startsWith('plate-')?host.id.slice(6):null;
+    const space=doorId&&CORRIDOR_SPACE_BY_DOOR_ID[doorId];
+    if(space&&host.mesh==='door_stencil'){
+      const lines=roomLabelLines(space.label),face=CORRIDOR_LETTERING_FACES.door;
+      const capHeightM=Math.min(.067,face.heightM/(lines.length*1.55),face.widthM/(Math.max(...lines.map(l=>l.length))*.66));
+      return[job(host.id,host.mesh,space.label,face,{lines,font:'NimbusSans-Bold.otf',
+        process:'institutional opaque room-name stencil on existing paper-faced label plate',
+        ground:[.64,.60,.48],ink:STOCK.ink,capHeightM,texelCapPx:20,
+        finishSupport:{kind:'carrier',edgeWear:false,contact:'none',exposure:'interior'},
+        provenance:{kind:'corridor-door',doorId,spaceId:space.id,source:'FACILITY_SPACES first door owner'}})];
+    }
+    const landing=landingByHost.get(host.id);
+    if(landing&&host.mesh===landing.mesh)return[job(host.id,host.mesh,landing.label,CORRIDOR_LETTERING_FACES.landing,
+      {font:'NimbusSans-Bold.otf',process:'institutional enamel landing lettering',
+        ground:[.025,.028,.03],ink:STOCK.ivory,capHeightM:.105,
+        rasterWidthPx:384,rasterHeightPx:44,
+        finishSupport:{kind:'carrier',edgeWear:false,contact:'none',exposure:'interior'},
+        provenance:{kind:'landing',source:'LANDING_FITTINGS literal label'}})];
+    return[];
+  });
+}

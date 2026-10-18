@@ -20,7 +20,8 @@ import crypto from 'node:crypto';
 import * as FP from '../src/world/floorplan.js';
 import { conservatory } from '../src/data/floorplan/conservatory.js';
 import { wallRuns, wallRunsDigest } from '../src/world/wall-contact.js';
-import { BASEBOARDS, PLAN_HASH } from '../src/data/generated/prop-geometry.js';
+import { BASEBOARDS, PLAN_HASH, PROP_BOUNDS } from '../src/data/generated/prop-geometry.js';
+import * as PROPS from '../src/game/props.js';
 
 FP.compile(conservatory.levels, {
   width: conservatory.width, height: conservatory.height,
@@ -49,5 +50,20 @@ for (const g of groups) {
   assert.ok(BASEBOARDS[g], `render group '${g}' has wall runs but no baked skirting`);
 }
 assert.ok(groups.size >= 5, 'suspiciously few render groups carry walls');
+
+// A baked group is relative to the FIRST host's full physical transform,
+// including its floor. W3 makes the current ground anchor a1.05m sill; that
+// is safe only because builder vertices subtract that same height and runtime
+// restores it. A blanket floorOverride0 would lower the whole group instead.
+PROPS.propsInit(FP);
+for(const [group,baked]of Object.entries(BASEBOARDS)){
+  const prop=PROPS.propById(`baseboard-${group}`),anchorFloor=FP.floorAt(baked.anchor.x,baked.anchor.y);
+  assert.ok(prop,`${group}: baked skirting has a runtime instance`);
+  assert.ok(Math.abs(prop.floor+(prop.elevation||0)-anchorFloor)<1e-6,`${group}: runtime restores the exact baked anchor-height basis`);
+  const lowestFloor=Math.min(...runs.filter(run=>run.renderGroup===group).map(run=>run.floor));
+  const lowestVertexWorld=PROP_BOUNDS[baked.mesh].min[1]+prop.floor+(prop.elevation||0);
+  assert.ok(Math.abs(lowestVertexWorld-lowestFloor)<=.0011,
+    `${group}: actual packed low vertex${lowestVertexWorld} meets its floor${lowestFloor}, including a raised sill anchor`);
+}
 
 console.log(`baseboard freshness ok — ${runs.length} runs across ${groups.size} render groups`);

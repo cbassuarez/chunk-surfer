@@ -8,13 +8,24 @@ import { MESH_SURFACE, PROP_BOUNDS } from '../data/generated/prop-geometry.js';
 import { WALL_CONTACT, wallContactAt } from '../world/wall-contact.js';
 import { propWallPose } from '../world/prop-wall-pose.js';
 import { propInscriptionAttachments } from '../world/prop-inscriptions.js';
-import { WORLD_INSCRIPTIONS } from '../data/world-inscriptions.js';
+import { WORLD_INSCRIPTIONS, corridorInscriptionsForHosts } from '../data/world-inscriptions.js';
 import { CONSERVATORY_FLIGHTS, CONSERVATORY_LANDINGS } from '../data/floorplan/conservatory.js';
 import { corridorDressing } from '../world/corridor-dressing.js';
+import { architectureFittings } from '../world/architecture-fittings.js';
+import * as PROP_GEOMETRY from '../data/generated/prop-geometry.js';
+import { batchBuildingDressingInstances } from '../world/building-dressing-batches.js';
 
 let floorplan=null;
 let instances=[];
 let colliders=[];
+// Optional render packs activate their physical fittings only after loading.
+// This avoids invisible poles when the isolated street proof is unavailable.
+const disabledColliderGroups=new Set(['street-pilot']);
+export function setColliderGroupEnabled(group,enabled){
+  if(enabled)disabledColliderGroups.delete(group);else disabledColliderGroups.add(group);
+}
+const colliderActive=c=>!c.colliderGroup||!disabledColliderGroups.has(c.colliderGroup);
+let contactBounds=PROP_BOUNDS,contactSurfaces=MESH_SURFACE;
 const state={ inspected:new Set(), auditioned:new Set(), cycles:{}, hushSeed:0x43535552, hushCount:0 };
 
 const rt=(m)=>Math.round(m*PLAN_SCALE);
@@ -27,7 +38,7 @@ const wrapAngle=(a)=>{while(a>Math.PI)a-=Math.PI*2;while(a<-Math.PI)a+=Math.PI*2
 // lint, and every one of them drifted the moment the argument list grew: adding
 // landings broke all three counts at once. One call, one answer.
 export function derivedDressing(fp){
-  return corridorDressing(fp,{doors:fp.doorState?.()||[],landings:CONSERVATORY_LANDINGS,flights:CONSERVATORY_FLIGHTS});
+  return [...corridorDressing(fp,{doors:fp.doorState?.()||[],landings:CONSERVATORY_LANDINGS,flights:CONSERVATORY_FLIGHTS}),...architectureFittings(fp)];
 }
 
 // THE CORRIDORS ARE DRESSED FROM THE PLAN, NOT FROM THE ARRAY.
@@ -41,8 +52,9 @@ export function derivedDressing(fp){
 // Only the real building gets it. A caller that hands in its own placements
 // wants exactly those and nothing else: every test harness in the suite relies
 // on that to isolate one prop from the production dressing.
-export function propsInit(fp, placements=CONSERVATORY_PROPS){
+export function propsInit(fp, placements=CONSERVATORY_PROPS, {bounds=PROP_BOUNDS,surfaces=MESH_SURFACE}={}){
   floorplan=fp;
+  contactBounds=bounds;contactSurfaces=surfaces;
   if(placements===CONSERVATORY_PROPS){
     placements=[...placements,...derivedDressing(fp)];
   }
@@ -108,12 +120,12 @@ function resolveContacts(fp,selected=instances){
       // far side, facing backwards. Anything computed from the plan knows its own
       // normal, so it says so and the search is filtered to that face. Authored
       // props pass nothing and keep the nearest-wall behaviour they have always had.
-      const contact=wallContactAt(plan,p.rx+.5,p.ry+.5,p.mountNormal?{prefer:p.mountNormal}:undefined);
+      const contact=wallContactAt(plan,p.rx+.5,p.ry+.5,{prefer:p.mountNormal||null,searchCells:p.mountSearchCells});
       // No wall within reach means the authoring is wrong about something. Leave
       // it exactly where it was rather than dragging it across the room; the
       // contact report lists it.
       if(contact){
-        const snapped=propWallPose(p,PROP_BOUNDS[p.mesh],contact);
+        const snapped=propWallPose(p,contactBounds[p.mesh],contact);
         // MEASURE FROM WHERE THE RENDERER STARTS. renderInstances places a prop
         // at `at.x*CELL` — the cell's own coordinate, which for an authored metre
         // round-trips back to that metre. Measuring the offset from `p.rx+.5`
@@ -147,7 +159,7 @@ function resolveContacts(fp,selected=instances){
       // The measured WORK SURFACE, not the bounding box: a ticket counter's box
       // tops out at its grille and a school desk's at its back, and standing a
       // clipboard on either is worse than the typed number it replaces.
-      const top=MESH_SURFACE[host.mesh];
+      const top=contactSurfaces[host.mesh];
       if(!Number.isFinite(top))throw new Error(`prop ${p.id}: host ${host.id} (${host.mesh}) has no measured work surface — it may have no flat face big enough to stand anything on`);
       p.elevation=top*(host.scale||1)+(host.elevation||0);
       p.restsOn=host.id;
@@ -184,8 +196,8 @@ export function setLooseProp(id, placement=null){
   const prop={...mesh,...placement,id,rx,ry,x,y,interactionX,interactionY,interactionRx:rt(interactionX),interactionRy:rt(interactionY),floor,zone:floorplan.zoneAt(rx,ry),renderGroup,renderGroups,blocks:false};
   instances.push(prop);return prop;
 }
-export function attachInscriptions(finalHosts){return propInscriptionAttachments(finalHosts,WORLD_INSCRIPTIONS);}
-export function renderInstances({group=null,inscriptions=true}={}){
+export function attachInscriptions(finalHosts){return propInscriptionAttachments(finalHosts,[...WORLD_INSCRIPTIONS,...corridorInscriptionsForHosts(finalHosts)]);}
+export function renderInstances({group=null,inscriptions=true,batchDressing=false}={}){
   const hosts=instances.filter((p)=>!group||(p.renderGroups||[p.renderGroup]).includes(group)).map((p)=>{
     const at=floorplan.logicalToPhysical?.(p.rx,p.ry),waterlineOffset=(p.elevation||0)+(p.renderOffsetY||0);
     return{id:p.id,mesh:p.mesh,fallbackMesh:p.fallbackMesh||null,
@@ -196,7 +208,8 @@ export function renderInstances({group=null,inscriptions=true}={}){
       portraitIndex:p.portraitIndex||0,structural:!!p.structural,
       waterlineBody:p.waterlineBody||null,waterlineOffset};
   });
-  return inscriptions?attachInscriptions(hosts):hosts;
+  const rendered=batchDressing&&group?batchBuildingDressingInstances(hosts,group,PROP_GEOMETRY.DRESSING_BATCHES):hosts;
+  return inscriptions?attachInscriptions(rendered):rendered;
 }
 
 function pointInProp(mx,mz,p,pad=.20){
@@ -207,7 +220,7 @@ function pointInProp(mx,mz,p,pad=.20){
 export function propCanOccupy(toX,toY,{ignoreId=null}={}){
   const mx=meters(toX+.5),mz=meters(toY+.5);
   const floor=floorplan?.floorAt?.(toX,toY)??0;
-  if(colliders.some((c)=>floor>=c.minElevation-.05&&floor<=c.maxElevation+.05&&pointInProp(mx,mz,{...c,w:c.width,d:c.depth},0)))return false;
+  if(colliders.some((c)=>colliderActive(c)&&floor>=c.minElevation-.05&&floor<=c.maxElevation+.05&&pointInProp(mx,mz,{...c,w:c.width,d:c.depth},0)))return false;
   return !instances.some((p)=>{
     if(p.id===ignoreId)return false;
     if(p.collisionMask==='hall-seating'){
@@ -248,7 +261,7 @@ export function propCanOccupy(toX,toY,{ignoreId=null}={}){
 export function tallBlockingPropAt(cx,cy,minHeight=0.95){
   const mx=meters(cx+.5),mz=meters(cy+.5);
   const floor=floorplan?.floorAt?.(cx,cy)??0;
-  if(colliders.some((c)=>floor>=c.minElevation-.05&&floor<=c.maxElevation+.05
+  if(colliders.some((c)=>colliderActive(c)&&floor>=c.minElevation-.05&&floor<=c.maxElevation+.05
       &&(c.maxElevation-floor)>=minHeight
       &&pointInProp(mx,mz,{...c,w:c.width,d:c.depth},0)))return true;
   return instances.some((p)=>{
@@ -284,7 +297,13 @@ export function structuralColliders(){return colliders.map(c=>({...c}));}
 
 function clearLine(ax,ay,bx,by){
   const d=Math.hypot(bx-ax,by-ay),steps=Math.max(1,Math.ceil(d*4));
-  for(let i=1;i<steps;i++){const t=i/steps;if(floorplan.isSolid(rt(ax+(bx-ax)*t),rt(ay+(by-ay)*t)))return false;}
+  for(let i=1;i<steps;i++){
+    const t=i/steps,x=rt(ax+(bx-ax)*t),y=rt(ay+(by-ay)*t);
+    // A glazed leaf can reveal the room while its logical CLOSED throat still
+    // refuses a hand. Door cells stay air so the mesh supplies their shape;
+    // isSolid alone therefore permits picking through every closed door.
+    if(floorplan.isSolid(x,y)||floorplan.isCollisionOnly?.(x,y)||floorplan.hasFlag?.(x,y,F.CLOSED))return false;
+  }
   return true;
 }
 // A look ray can pass through a rendered floor, especially where two logical

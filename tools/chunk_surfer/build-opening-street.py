@@ -200,18 +200,15 @@ def build_receivers(materials: dict[str, bpy.types.Material], sources: dict[str,
     objects: list[bpy.types.Object] = []
 
     ground = MeshBuilder("opening_street_ground", materials, sources)
-    # The carriageway remains the dominant first read, but the previously blank
-    # north apron is now a small municipal park. Its cross paths use the same
-    # ordinary asphalt as the street; four separated grass panels make the park
-    # legible without turning the opening into a meadow.
+    # Physical anchor is (8,7.5). Match EXTERIOR_FOREGROUND.arrival:
+    # lawns X12..18 and20..26,Z0..3; the full X18..20 path stays asphalt.
+    # The old negative-Z lawn/cross-path panels overlaid the north street.
+    # Leave that independently authored street to its existing ground owner.
     ground.horizontal("asphalt", 0, 2.0, 44.0, 11.0, .035)
-    ground.horizontal("asphalt", 11.0, -8.25, 1.6, 7.5, .045)
-    ground.horizontal("asphalt", 7.1, -8.25, 6.2, 1.4, .045)
-    ground.horizontal("asphalt", 14.9, -8.25, 6.2, 1.4, .045)
+    ground.horizontal("asphalt", 11.0, -6.0, 2.0, 3.0, .045)
     ground.horizontal("cobbles", 22.0, 13.5, 4.0, 9.0, .045)
-    for x in (7.1, 14.9):
-        for z in (-10.475, -6.025):
-            ground.horizontal("grass", x, z, 6.2, 3.05, .04)
+    for x in (7.0, 15.0):
+        ground.horizontal("grass", x, -6.0, 6.0, 3.0, .04)
     ground.horizontal("grass", 23.9, 8.25, 1.2, 2.2, .04)
     ground.horizontal("grass", 24.0, 19.25, 1.0, 2.0, .04)
     obj, report = ground.finish(); objects.append(obj); reports[obj.name] = report

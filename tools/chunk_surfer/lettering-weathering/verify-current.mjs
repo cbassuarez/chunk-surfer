@@ -1,0 +1,25 @@
+// Independent compatibility check after another task regenerates the shared pack.
+// Compare actual printed primitive bytes/materials and all fabricated carriers,
+// rather than relabeling older saved scene images as a new package.
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
+const root='artifacts/lettering-weathering',sha=b=>crypto.createHash('sha256').update(b).digest('hex');
+function open(dir){const bytes=fs.readFileSync(dir+'/conservatory-props.glb'),length=bytes.readUInt32LE(12),json=JSON.parse(bytes.subarray(20,20+length));return{dir,bytes,json,bin:bytes.subarray(28+length),meta:JSON.parse(fs.readFileSync(dir+'/conservatory-props.lettering.json'))};}
+const reviewed=open(root+'/production'),current=open('public/assets');
+for(const p of [reviewed,current])assert.equal(sha(p.bytes),p.meta.packSha256);
+function image(p,index){const image=p.json.images[index],v=p.json.bufferViews[image.bufferView];return sha(p.bin.subarray(v.byteOffset||0,(v.byteOffset||0)+v.byteLength));}
+function tex(p,info){if(!info)return null;const t=p.json.textures[info.index];return{...info,index:undefined,image:image(p,t.source),sampler:p.json.samplers?.[t.sampler]||null};}
+function material(p,index){const m=structuredClone(p.json.materials[index]);for(const key of ['normalTexture','occlusionTexture','emissiveTexture'])if(m[key])m[key]=tex(p,m[key]);for(const key of ['baseColorTexture','metallicRoughnessTexture'])if(m.pbrMetallicRoughness?.[key])m.pbrMetallicRoughness[key]=tex(p,m.pbrMetallicRoughness[key]);return m;}
+function accessor(p,index){const a=p.json.accessors[index],v=p.json.bufferViews[a.bufferView],components={SCALAR:1,VEC2:2,VEC3:3,VEC4:4,MAT4:16}[a.type],size={5120:1,5121:1,5122:2,5123:2,5125:4,5126:4}[a.componentType],width=components*size,stride=v.byteStride||width,start=(v.byteOffset||0)+(a.byteOffset||0);assert.ok(width);assert.ok(!a.sparse);const bytes=Buffer.alloc(a.count*width);for(let i=0;i<a.count;i++)p.bin.copy(bytes,i*width,start+i*stride,start+i*stride+width);return{type:a.type,componentType:a.componentType,count:a.count,normalized:a.normalized||false,sha256:sha(bytes)};}
+function primitive(p,q){return{mode:q.mode??4,attributes:Object.fromEntries(Object.keys(q.attributes).sort().map(k=>[k,accessor(p,q.attributes[k])])),indices:q.indices===undefined?null:accessor(p,q.indices),material:material(p,q.material)};}
+const stripMaterial=value=>{if(Array.isArray(value))return value.map(stripMaterial);if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).filter(([key])=>key!=='material').map(([key,v])=>[key,stripMaterial(v)]));return value;};
+assert.deepEqual(stripMaterial(current.meta.entries),stripMaterial(reviewed.meta.entries),'Printed face metadata changed');
+assert.deepEqual(stripMaterial(current.meta.carrierAssemblies),stripMaterial(reviewed.meta.carrierAssemblies),'Fabricated carrier records changed');
+const names=[...new Set(reviewed.meta.entries.map(e=>e.mesh))];let printedPrimitives=0;
+for(const name of names){const a=reviewed.json.meshes.find(m=>m.name===name),b=current.json.meshes.find(m=>m.name===name);assert.ok(a&&b,name);const prints=(p,m)=>m.primitives.filter(q=>p.json.materials[q.material]?.extras?.printedSurface).map(q=>primitive(p,q));const x=prints(reviewed,a),y=prints(current,b);assert.ok(x.length,'Missing print primitive '+name);assert.deepEqual(y,x,'Printed primitive changed: '+name);printedPrimitives+=x.length;}
+const carriers=[...new Set(reviewed.meta.carrierAssemblies.records.map(r=>r.mesh))];
+for(const name of carriers){const a=reviewed.json.meshes.find(m=>m.name===name),b=current.json.meshes.find(m=>m.name===name);assert.ok(a&&b,name);assert.deepEqual(b.primitives.map(q=>primitive(current,q)),a.primitives.map(q=>primitive(reviewed,q)),'Carrier geometry or material changed: '+name);}
+const gate=JSON.parse(fs.readFileSync(root+'/production-gates.json'));assert.equal(gate.afterPackSha256,current.meta.packSha256,'Installed gate must be rerun first');assert.equal(gate.surfaces,110);
+const r={kind:'current-lettering-installation',at:new Date().toISOString(),reviewedPackSha256:reviewed.meta.packSha256,currentPackSha256:current.meta.packSha256,compatible:true,faces:current.meta.entries.length,printedMeshes:names.length,printedPrimitives,carrierMeshes:carriers.length,carrierMembers:current.meta.carrierAssemblies.records.length,unchanged:['Exact printed primitive geometry/accessor bytes','Decoded material definitions and embedded texture bytes','All fabricated carrier geometry and material bytes','Literal face copy, pigment/layout and nominal datums'],gatePackSha256:gate.afterPackSha256,limits:['Compatibility preserves the installed lettering system, not old whole-scene pixels or performance measurements.','The live inspector uses the current renderer; saved scene comparisons remain bound to their recorded package/source hashes.']};
+fs.writeFileSync(root+'/current-installation.json',JSON.stringify(r,null,2)+'\n');console.log(JSON.stringify(r));

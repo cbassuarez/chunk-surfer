@@ -58,13 +58,14 @@ test('the park is ground, not a picture of one', () => {
   // Grass did not exist as a floorplan material before this. Without it the
   // lawn falls through surfaceSlot's general case and a park is drawn as ash
   // floorboards — and, worse, it sounds like tarmac underfoot.
-  const lawn = at(5, 40);
+  const lawn = at(5, 45);
   assert.equal(FP.materialAt(lawn.x, lawn.y), MATERIAL.wetGrass);
   assert.equal(FP.zoneAt(lawn.x, lawn.y), ZONE.dock, 'the yard lights it, and the yard has weather over it');
 
-  // The paths are the same ordinary tarmac as the yard they were cut into.
+  // The cultivated garden uses worn civic flags underfoot; the drive outside
+  // remains tarmac and the basin keeps its separate wetTile address.
   const path = at(10, 30);
-  assert.equal(FP.materialAt(path.x, path.y), MATERIAL.wetTarmac);
+  assert.equal(FP.materialAt(path.x, path.y), MATERIAL.wetPaving);
 
   // The basin is wetTile, which is the address a water body is looked up by.
   const basin = at(10, 36);

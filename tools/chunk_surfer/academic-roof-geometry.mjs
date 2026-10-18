@@ -3,6 +3,11 @@
 import { buildRoofFormalPromenades } from './roof-formal-promenade.mjs';
 import { buildRoofGrotesques } from './roof-grotesques.mjs';
 import { buildRoofGardenFlora } from './roof-garden-flora.mjs';
+import { buildRoofCitySeatGeometry } from './roof-city-seat-geometry.mjs';
+import { buildRoofPalatialIronwork } from './roof-palatial-ironwork.mjs';
+import { buildRoofConservatoryGarden } from './roof-conservatory-garden.mjs';
+import { buildRoofPalatialStonework } from './roof-palatial-stonework.mjs';
+import { buildRoofWatchersGeometry } from './roof-watchers-geometry.mjs';
 export const ACADEMIC_ROOF_ORNAMENT_CONTRACT=Object.freeze({
   // Structure-local coordinates. The south wall's existing collision occupies
   // z=12.5..13.5; all new standing masonry remains inside that strip.
@@ -264,8 +269,12 @@ export function buildAcademicRoof({mesh,materials,MAT,addBox,addBeam,addEllipsoi
     // Roof marker at the return. The city remains dominant above this low curb.
     addBox(m,[8.3,.035,-9.0],[1.4,.07,1.05],roofStone);
     buildRoofFormalPromenades({m,materials,addQuad});
-    buildRoofGrotesques({m,materials,carvedStone,addBox,addBeam,addEllipsoid,addCylinder,addQuad});
+    buildRoofPalatialStonework({m,materials,carvedStone,oldBronze,quietIron:roofQuietIron,addBox,addBeam,addEllipsoid,addCylinder,addQuad});
+    buildRoofGrotesques({m,materials,carvedStone,addBox,addBeam,addEllipsoid,addCylinder,addQuad,splitWatchers:true});
+    buildRoofWatchersGeometry({mesh,materials,carvedStone,addBox,addBeam,addEllipsoid,addCylinder,addQuad});
     buildRoofGardenFlora({m,materials,addQuad,addBeam,addCylinder});
+    buildRoofConservatoryGarden({m,materials,addQuad,addBeam});
+    buildRoofPalatialIronwork({m,roofQuietIron,oldBronze,addBeam,addQuad});
   }
   {
     const m=mesh('academic_roof_glazing');
@@ -541,6 +550,7 @@ export function buildAcademicRoof({mesh,materials,MAT,addBox,addBeam,addEllipsoi
     addBox(m,[0,-.15,0],[1.84,.12,.14],roofQuietIron);
     addBox(m,[.62,.071,-.49],[.28,.018,.18],MAT.brass);
   }
+  buildRoofCitySeatGeometry({mesh,materials,carvedStone,oldBronze,addBox,addBeam,addEllipsoid,addCylinder,addQuad});
 
   // Ren has a recognisably ordinary half, including face, sleeve, trouser and
   // worn shoe. Their other half folds *in depth* from cheek to foot. The rent

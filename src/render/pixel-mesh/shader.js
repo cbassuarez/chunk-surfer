@@ -445,6 +445,10 @@ vec2 printedSurfaceTexel(ivec2 pixel){
   float tag=texelFetch(uMarks,clamp(pixel,ivec2(0),limit),0).a;
   return vec2(printedSurfaceKind(tag),printedSurfaceCoverage(tag));
 }
+float printedSurfaceAreaTexel(ivec2 pixel){
+  ivec2 limit=textureSize(uMarks,0)-1;
+  return printedSurfaceArea(texelFetch(uMarks,clamp(pixel,ivec2(0),limit),0).a);
+}
 float absorptivePigmentTone(float tone,float kind){
   // The generic hatch has thresholds arbitrarily close to zero. That cuts
   // bright diagonal slits through measured dark paint. Reserve a coherent
@@ -572,6 +576,8 @@ void main(){
   float y = luma(srcCell.rgb);
   vec2 printed=printedSurfaceTexel(ivec2(frag))*(1.0-printedOccluded);
   float printedSampling=step(1.5,uPrintedSurfaceMode)*step(.5,printed.x);
+  float areaPaper=printedSurfaceAreaTexel(ivec2(frag))*(1.0-printedOccluded)*printedSampling;
+  float printSpanMinimum=areaPaper>.5?.03:.08;
   // Mode 5 preserves the approved paint resolve as a gilt comparison control.
   // Mode 4 retains the older outlined operator; gameplay always uses mode 3.
   float solidPigment=printedSampling*step(2.5,uPrintedSurfaceMode)*max(1.0-step(3.5,uPrintedSurfaceMode),step(4.5,uPrintedSurfaceMode));
@@ -630,10 +636,11 @@ void main(){
       ivec2 offset=i==0?ivec2(-1,0):i==1?ivec2(1,0):i==2?ivec2(0,-1):ivec2(0,1);
       vec2 next=printedSurfaceTexel(ivec2(frag)+offset);
       float same=1.0-step(.5,abs(next.x-printed.x));
+      if(areaPaper>.5)same*=printedSurfaceAreaTexel(ivec2(frag)+offset);
       pigmentEdge=max(pigmentEdge,abs(next.y-printed.y)*same);
       float coverageDelta=next.y-printed.y;
       float span=abs(coverageDelta)*same;
-      if(printedSampling>.5&&span>max(.08,printCoverageSpan)&&uGrade.x<.001){
+      if(printedSampling>.5&&span>max(printSpanMinimum,printCoverageSpan)&&uGrade.x<.001){
         ivec2 sourcePixel=clamp(ivec2(frag)+offset,ivec2(0),textureSize(uSrc,0)-1);
         vec4 adjacent=texelFetch(uSrc,sourcePixel,0);
         // Reconstruct the two locally lit materials before exposure. Exposing
@@ -648,6 +655,27 @@ void main(){
           printCoverageSpan=span;
         }
       }
+    }
+    if(uPrintedSurfaceMode>2.5&&uPrintedSurfaceMode<3.5&&printed.x>1.5&&printed.y<.5&&printCoverageSpan>.08){
+      // Metallic leaf changes the BRDF as coverage changes. Extrapolating two
+      // mixed ORM samples can invent a bright enamel reflection in a counter.
+      // Prefer measured clear stock of the same material and continuous depth.
+      float stockSum=0.0,stockWeight=0.0;
+      for(int i=0;i<32;i++){
+        int axis=i&7;int radius=2+(i>>3);
+        ivec2 direction=axis==0?ivec2(-1,0):axis==1?ivec2(1,0):axis==2?ivec2(0,-1):axis==3?ivec2(0,1):axis==4?ivec2(-1,-1):axis==5?ivec2(1,-1):axis==6?ivec2(-1,1):ivec2(1,1);
+        ivec2 pixel=clamp(ivec2(frag)+direction*radius,ivec2(0),textureSize(uSrc,0)-1);
+        vec2 material=printedSurfaceTexel(pixel);
+        if(abs(material.x-printed.x)<.5&&material.y<.001){
+          vec4 stockSample=texelFetch(uSrc,pixel,0);
+          if(abs(stockSample.a-srcFull.a)<.003){
+            float weight=1.0/length(vec2(direction));
+            stockSum+=luma(stockSample.rgb)*weight;stockWeight+=weight;
+          }
+        }
+        if(axis==7&&stockWeight>0.0)break;
+      }
+      if(stockWeight>0.0)printLumaEndpoints.x=stockSum/stockWeight;
     }
     pigmentEdge=smoothstep(.025,.30,pigmentEdge)*(1.0-smoothstep(.003,.014,depthEdge));
   }
@@ -895,7 +923,7 @@ void main(){
   formTone = clamp(formTone + materialRelief, 0.0, 1.0);
   vec2 printEndpointTone=vec2(0.0);
   float printEndpointsReady=0.0;
-  if(printCoverageSpan>.08){
+  if(printCoverageSpan>printSpanMinimum){
     vec2 endpointSignal=max(printLumaEndpoints-vec2(blackFloor),vec2(0.0));
     float brightSignal=max(endpointSignal.x,endpointSignal.y);
     float brightExposure=clamp(brightSignal*captureExposure/max(.001,1.0-blackFloor),0.0,1.0);
@@ -907,11 +935,15 @@ void main(){
     vec2 endpointTone=pow(endpointSignal/max(.000001,brightSignal),vec2(densityGamma))*pow(brightExposure,densityGamma);
     printEndpointTone=vec2(endpointTone.x,absorptivePigmentTone(endpointTone.y,printed.x));
     // Reversed lettering has an absorptive ground rather than dark pigment.
-    // Give that measured black enamel the same coherent shadow range as
-    // black paint. The gilding keeps its actual lit metallic response; this
-    // does not brighten it, emit light or remove the final tonal screen.
-    if(uPrintedSurfaceMode<3.5&&printed.x>1.5)
+    // Give measured black enamel the same coherent shadow range as black
+    // paint. The matching highlight shoulder protects lit reversed pigment;
+    // both still earn their signal from actual light and use the final screen.
+    if(uPrintedSurfaceMode<3.5&&printed.x>1.5){
       printEndpointTone.x=clamp((endpointTone.x-.25)/.75,0.0,1.0);
+      // Reserve the matching coherent highlight range for reversed pigment.
+      // Real low illumination still screens and exact darkness stays dark.
+      printEndpointTone.y=clamp(endpointTone.y/.75,0.0,1.0);
+    }
     printEndpointsReady=1.0;
     float printedTone=mix(endpointTone.x,endpointTone.y,printed.y);
     float confidence=smoothstep(.08,.24,printCoverageSpan)*(1.0-smoothstep(.003,.014,depthEdge));
@@ -921,6 +953,8 @@ void main(){
     formTone=absorptivePigmentTone(formTone,printed.x);
   if(solidPigment>.5&&uPrintedSurfaceMode<3.5&&printed.x>1.5&&printed.y<.5&&printEndpointsReady<.5)
     formTone=clamp((formTone-.25)/.75,0.0,1.0);
+  if(solidPigment>.5&&uPrintedSurfaceMode<3.5&&printed.x>1.5&&printed.y>=.5&&printEndpointsReady<.5)
+    formTone=clamp(formTone/.75,0.0,1.0);
   float captureBlackProtect = smoothstep(blackFloor, blackFloor + 0.024 / sensitivity, sourceLuma);
   float hasCapturedLight = step(0.18, captureBlackProtect);
 
@@ -959,6 +993,19 @@ void main(){
     // screen above. Paint interiors and counters choose one material; their
     // actual illumination still passes through the same dither.
     float pigmentSample=step(.5,printed.y);
+    if(areaPaper>.5){
+      // A downsampled document texel records occupied ink area, not the
+      // geometric edge of a large painted letter. Keep its measured RGB and
+      // coverage untouched and resolve that fraction with this same screen.
+      // Manufacturing area is linear: the light screen's density curve and
+      // extra highlight hatch directions must not curve the area a second time.
+      float areaThreshold=stippleThreshold;
+      if(uScreenKind!=0){
+        float jitter=recordingHash3(floor(worldMetres*3.1));
+        areaThreshold=strokeDistance(plateFrag,rotateDir(screenDir,uScreenAngles.x),uScreenPeriodPx,(jitter-.5)*uScreenJitter);
+      }
+      pigmentSample=printedAreaPigmentSample(printed.y,areaThreshold);
+    }
     captureBit=mix(endpointBit.x,endpointBit.y,pigmentSample);
   }
 

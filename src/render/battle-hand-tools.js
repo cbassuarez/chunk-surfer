@@ -12,6 +12,8 @@ import { drawRecorderReadoutCanvas, recorderDisplayPalette } from './recorder-in
 import { drawWitnessChassis } from './witness-material.js';
 import { ensureWorldLetteringFonts, worldLetteringFontsStatus } from './world-lettering-fonts.js';
 import { fitWorldLetteringLine } from './world-lettering-layout.js';
+import { createThreePhysicalPrint } from './three-physical-print.js';
+import {FIELD_WRAPPED_PRINT,facetedWrappedPrintGeometry,torchGripRingYs} from './wrapped-tool-print.js';
 
 const finite = (n, fallback = 0) => Number.isFinite(Number(n)) ? Number(n) : fallback;
 const clamp = (n, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, finite(n, lo)));
@@ -97,21 +99,33 @@ function cable(group, points, radius, material) {
   const curve = new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(...p)));
   return add(group, new THREE.TubeGeometry(curve, 36, radius, 8, false), material);
 }
-function label(group, value, width, height, position, { color = '#d2d4bd', background = null, size = 32 } = {}) {
+function label(group, value, width, height, position, { color = '#d2d4bd', background = null, size = 32,profile='painted-metal',wrappedSurface=null } = {}) {
   const source = canvas(512, Math.max(48, Math.round(512 * height / width)));
   if (!source) return null;
-  const ctx = source.getContext('2d'), map = texture(source);
+  const mask=canvas(source.width,source.height),ctx=source.getContext('2d'),m=mask.getContext('2d');
+  const print=createThreePhysicalPrint(THREE,{width:source.width,height:source.height,widthM:width,heightM:height,
+    profile,seed:`field-tool:${value}`,opaque:!!background});
   pinnedBake(group, () => {
-    ctx.clearRect(0, 0, source.width, source.height);
+    ctx.clearRect(0, 0, source.width, source.height);m.clearRect(0,0,source.width,source.height);
     if (background) { ctx.fillStyle = background; ctx.fillRect(0, 0, source.width, source.height); }
     ctx.fillStyle = color;
     const ink = fitWorldLetteringLine(ctx, value, { width: source.width - 12, height: source.height - 8, maxFont: size, role: 'sans' });
     if (!ink.fits) throw new Error(`Physical tool label does not fit: ${value}`);
-    ctx.fillText(ink.text, (source.width - ink.width) / 2 + ink.left,
-      (source.height - ink.ascent - ink.descent) / 2 + ink.ascent);
-    map.needsUpdate = true;
+    const x=(source.width-ink.width)/2+ink.left,y=(source.height-ink.ascent-ink.descent)/2+ink.ascent;
+    ctx.fillText(ink.text,x,y);m.font=ink.font;m.fontKerning=ctx.fontKerning;m.textAlign=ctx.textAlign;m.textBaseline=ctx.textBaseline;
+    m.fillStyle='#fff';m.fillText(ink.text,x,y);print.update(source,mask);
   });
-  return add(group, new THREE.PlaneGeometry(width, height), new THREE.MeshBasicMaterial({ map, transparent: true, depthWrite: false, toneMapped: false }), position);
+  let geometry,placement=position,contact=null;
+  if(wrappedSurface){
+    const data=facetedWrappedPrintGeometry({centerY:position[1],widthM:width,heightM:height,surface:wrappedSurface});geometry=new THREE.BufferGeometry();
+    geometry.setAttribute('position',new THREE.Float32BufferAttribute(data.positions,3));geometry.setAttribute('normal',new THREE.Float32BufferAttribute(data.normals,3));
+    geometry.setAttribute('uv',new THREE.Float32BufferAttribute(data.uvs,2));geometry.setIndex(data.indices);geometry.computeBoundingSphere();placement=[0,0,0];contact=data.contact;
+  }else geometry=new THREE.PlaneGeometry(width,height);
+  const mesh=add(group,geometry,print.material,placement,null,`physical tool legend: ${value}`);
+  if(contact)mesh.userData.physicalLabelContact=contact;
+  // The carrier already casts the silhouette; an applied micron paint layer
+  // receives that lighting without casting a second text-shaped shadow.
+  mesh.castShadow=false;return mesh;
 }
 function screw(group, x, y, z, material, radius = .0023) {
   cylinder(group, radius, .0018, material, [x, y, z], [Math.PI / 2, 0, 0]);
@@ -221,14 +235,15 @@ function recorder(group, cosmetics) {
 }
 
 function torch(group, cosmetics) {
+  const printFit=FIELD_WRAPPED_PRINT.torch,surface=printFit.surface;
   const shell = physical(FLASHLIGHT_HOUSING_COLORS[cosmetics.flashlightHousing], .5, .24);
   const rubber = physical(COLORS.rubber, .8), steel = physical(COLORS.steel, .3, .8);
-  cylinder(group, .023, .158, shell, [0, -.015, 0], null, .023, 'torch handle');
+  cylinder(group,surface.radiusBottomM,surface.heightM,shell,[0,surface.centerY,0],null,surface.radiusTopM,'torch handle');
   cylinder(group, .035, .052, shell, [0, .088, 0], null, .041);
   cylinder(group, .041, .006, steel, [0, .117, 0]);
   cylinder(group, .036, .004, physical('#151f1a', .11, .5), [0, .121, 0]);
   cylinder(group, .028, .002, new THREE.MeshStandardMaterial({ color: '#b9c8ba', roughness: .12, metalness: .65, emissive: '#bddac0', emissiveIntensity: 0 }), [0, .123, 0], null, .028, 'torch lens');
-  for (let y = -.078; y < .040; y += .008) torus(group, .0233, .0008, rubber, [0, y, 0], [Math.PI / 2, 0, 0]);
+  for(const y of torchGripRingYs())torus(group,.0233,.0008,rubber,[0,y,0],[Math.PI/2,0,0]);
   const switchNormal = TORCH_SWITCH.normal;
   const switchPosition = TORCH_SWITCH.position;
   const switchNormalLength = Math.hypot(...switchNormal);
@@ -237,7 +252,7 @@ function torch(group, cosmetics) {
   const cap = box(group, [.009, .016, .0035], rubber, capRest, .003, 'torch switch');
   cap.rotation.y = Math.atan2(switchNormal[0], switchNormal[2]);
   cylinder(group, .0236, .007, steel, [0, -.097, 0]);
-  label(group, 'FIELD TORCH', .032, .007, [0, -.062, .024]);
+  label(group,'FIELD TORCH',printFit.widthM,printFit.heightM,[0,printFit.centerY,0],{wrappedSurface:surface});
   const lens = group.getObjectByName('torch lens');
   const controls = { trigger: { ...target([...switchPosition], [...switchNormal]), hand: 'right', digit: 'thumb', pressedPosition: [...TORCH_SWITCH.pressedPosition], pressedPose: structuredClone(TORCH_SWITCH.pressedPose) } };
   return { bounds: { width: .084, height: .228, depth: .084 }, contacts: { right: handleGrip('torch') }, controls,
@@ -263,7 +278,7 @@ function fork(group) {
   shoulders.lineTo(.031, -.012); shoulders.quadraticCurveTo(.027, -.037, 0, -.039); shoulders.quadraticCurveTo(-.027, -.037, -.031, -.012);
   add(group, new THREE.ExtrudeGeometry(shoulders, { depth: .012, bevelEnabled: true, bevelSegments: 3, steps: 1, bevelSize: .002, bevelThickness: .002 }), steel, [0, .018, -.006]);
   const prongs = [-1, 1].map(side => box(group, [.012, .127, .016], steel, [side * .031, .087, 0], .004, 'fork prong'));
-  label(group, 'A 440', .024, .009, [0, -.043, .0096], { color: '#242c25', size: 72 });
+  label(group, 'A 440', .024, .009, [0, -.043, .0096], { color: '#242c25', size: 72,profile:'satin-metal' });
   return { bounds: { width: .078, height: .273, depth: .020 }, contacts: { right: handleGrip('fork') }, controls: { strike: target([-.037, .113, 0], [-1, 0, 0]) },
     update(frame) {
       // Ring only after the authored strike. No vibration in selection/idle.
@@ -341,13 +356,14 @@ function rig(group) {
 }
 
 function coffee(group) {
+  const printFit=FIELD_WRAPPED_PRINT.coffee,surface=printFit.surface;
   const paper = physical('#c5b791', .94), rim = physical('#d9d1b3', .8), dark = physical('#443525', .45);
-  cylinder(group, .027, .125, paper, [0, -.011, 0], null, .038, 'coffee cup');
+  cylinder(group,surface.radiusBottomM,surface.heightM,paper,[0,surface.centerY,0],null,surface.radiusTopM,'coffee cup');
   cylinder(group, .0375, .006, dark, [0, .054, 0]);
   torus(group, .038, .0022, rim, [0, .055, 0], [Math.PI / 2, 0, 0]);
   cylinder(group, .036, .002, physical('#291d12', .22), [0, .0545, 0]);
   for (let i = 0; i < 4; i++) torus(group, .0317 + i * .001, .0005, dark, [0, -.015 + i * .009, 0], [Math.PI / 2, 0, 0]);
-  label(group, 'NIGHT SHIFT', .043, .013, [0, .014, .036], { color: '#5b4931', size: 54 });
+  label(group,'NIGHT SHIFT',printFit.widthM,printFit.heightM,[0,printFit.centerY,0],{color:'#5b4931',size:54,profile:'paper',wrappedSurface:surface});
   return { bounds: { width: .081, height: .133, depth: .081 }, contacts: { right: handleGrip('coffee') }, controls: { drink: target([0, .057, .035], [0, 1, 0]) }, update() {} };
 }
 
@@ -363,7 +379,7 @@ function spanner(group) {
   cylinder(group, .008, .031, dark, [-.004, .077, .010], [0, 0, Math.PI / 2]);
   for (let x = -.018; x <= .010; x += .004) torus(group, .008, .00065, steel, [x, .077, .010], [0, Math.PI / 2, 0]);
   torus(group, .0048, .0022, dark, [0, -.132, .007]);
-  label(group, 'VAN / 10″', .016, .036, [0, -.042, .0081], { color: '#e1e0c8', size: 65 });
+  label(group, 'VAN / 10″', .016, .036, [0, -.042, .0081], { color: '#e1e0c8', size: 65,profile:'satin-metal' });
   return { bounds: { width: .078, height: .279, depth: .029 }, contacts: { right: handleGrip('spanner') }, controls: {}, update() {} };
 }
 

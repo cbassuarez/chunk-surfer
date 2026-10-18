@@ -15,17 +15,22 @@
 // (0, 0), so a prop at physical (10, 36) is written here as (60, 236).
 
 import { VEGETATION_FALLBACKS } from './vegetation.js';
+import { EXTERIOR_FOREGROUND, foregroundYardLogicalPoint } from './exterior-foreground.js';
 
 const freeze = (value) => Object.freeze(value);
 
-// Physical metres, matching YARD_PARK in floorplan/conservatory.js. Kept here
-// as well because the runtime asks the park where it is and should not have to
-// import the floorplan to find out.
+// Stable logical addresses derive from the shared physical garden contract.
+// The floorplan and new geometry consume that same contract.
 export const YARD_PARK = freeze({
   id: 'ellery-yard-park',
-  bounds: freeze({ x0: 51, x1: 69, y0: 222, y1: 250 }),
+  bounds: freeze({
+    x0: EXTERIOR_FOREGROUND.garden.cellBounds.x0 + EXTERIOR_FOREGROUND.yardOrigin.x,
+    x1: EXTERIOR_FOREGROUND.garden.cellBounds.x1 + EXTERIOR_FOREGROUND.yardOrigin.x,
+    y0: EXTERIOR_FOREGROUND.garden.cellBounds.z0 + EXTERIOR_FOREGROUND.yardOrigin.y,
+    y1: EXTERIOR_FOREGROUND.garden.cellBounds.z1 + EXTERIOR_FOREGROUND.yardOrigin.y,
+  }),
   // The way in: the head of the north-south path, off the yard's tarmac.
-  entrance: freeze({ x: 60, y: 222 }),
+  entrance: freeze(foregroundYardLogicalPoint(EXTERIOR_FOREGROUND.garden.entrance)),
   fountainId: 'yard-park-fountain',
   headId: 'yard-park-eyes',
 });
@@ -36,7 +41,7 @@ export const YARD_PARK_MESHES = freeze({
   // pass looks a body up by — so a basin modelled here as well would put a
   // stone lid over the water. Everything above that surface is the mesh's:
   // kerb, two bowls, and the water in the air between them.
-  park_fountain: freeze({ w: 7.0, d: 7.0, h: 4.4, blocks: false }),
+  park_fountain: freeze({ w: 7.71, d: 7.71, h: 5.05, blocks: false }),
   // Two marble eyes. Coins are their own mesh, and stay when the eyes leave.
   park_marble_eyes: freeze({ w: .19, d: .15, h: .06, blocks: false }),
   park_fountain_coins: freeze({ w: .80, d: .80, h: .01, blocks: false }),
@@ -48,11 +53,12 @@ export const YARD_PARK_PROPS = freeze([
   // to lean over a rim.
   freeze({ id: 'yard-park-fountain', mesh: 'park_fountain', x: 60.5, y: 236.5, yaw: 0, scale: 1, interactive: false, structural: true, blocks: false }),
 
-  // Benches, flanking the fountain on the east-west path and turned to face it.
-  // Pushed back when the basin went from three metres to seven — they used to
-  // sit where the kerb now is.
-  freeze({ id: 'yard-park-bench-west', mesh: 'district_bench', x: 55.0, y: 234.4, yaw: 0, scale: 1, interactive: false, structural: true, blocks: false }),
-  freeze({ id: 'yard-park-bench-east', mesh: 'district_bench', x: 65.6, y: 238.0, yaw: Math.PI, scale: 1, interactive: false, structural: true, blocks: false }),
+  // The back slats occupy local +Z, so the seats face local -Z. Recess both
+  // benches beyond the fountain apron, with their open faces toward the water.
+  ...EXTERIOR_FOREGROUND.garden.benches.map(({id,x,z,yaw})=>freeze({
+    id, mesh:'district_bench', ...foregroundYardLogicalPoint({x,z}), yaw,
+    scale:1, interactive:false, structural:true, blocks:false,
+  })),
 
   // One tree in each lawn quarter, off the paths by more than their own spread.
   freeze({ id: 'yard-park-tree-nw', mesh: 'opening_street_tree_small', x: 54.5, y: 227, yaw: .31, scale: .94, interactive: false, structural: true, blocks: false }),

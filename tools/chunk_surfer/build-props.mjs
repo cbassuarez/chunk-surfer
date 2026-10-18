@@ -9,11 +9,25 @@ import crypto from 'node:crypto';
 import { bakeLetteringAtlases, printedSurfaceMetadata } from './lettering/physical-lettering.mjs';
 import { printedFaceGeometry, cross } from './lettering/face-geometry.mjs';
 import { prepareWorldInscriptionSubstrates } from './lettering/world-inscription-substrates.mjs';
-import { WORLD_INSCRIPTIONS } from '../../src/data/world-inscriptions.js';
+import { createSignAssemblies } from './lettering/sign-assemblies.mjs';
+import { WORLD_INSCRIPTIONS, corridorInscriptionsForHosts } from '../../src/data/world-inscriptions.js';
+import { CORRIDOR_LETTERING_FACES } from '../../src/data/corridor-lettering.js';
 import { importPropMesh } from './lib/glb-import.mjs';
 import { createReliquaryPropGeometry, RELIQUARY_PROP_MATERIALS } from './reliquary-prop-geometry.mjs';
 import { buildAcademicRoof } from './academic-roof-geometry.mjs';
+import { buildExteriorForeground } from './exterior-foreground-geometry.mjs';
+import { addBourgeoisPubFrontage, buildForegroundShelters } from './exterior-frontage-geometry.mjs';
+import { addSouthShopDeed } from './exterior-shop-massing.mjs';
+import { buildPubInterior } from './pub-interior-geometry.mjs';
 import { buildAcademicRoofDressing } from './academic-roof-dressing.mjs';
+import { buildArchitectureFittings } from './architecture-fittings-geometry.mjs';
+import { buildInstitutionOccupation } from './institution-occupation-geometry.mjs';
+import { buildBuildingAmenities } from './building-amenities-geometry.mjs';
+import { buildBuildingWindows, subtractBuildingWindowBoxes, BUILDING_WINDOW_HOST_ORIGINS } from './building-window-geometry.mjs';
+import { buildBuildingDressingBatches } from './building-dressing-batch-geometry.mjs';
+import { isBuildingDressingMesh } from '../../src/world/building-dressing-batches.js';
+import { propsInit, allProps, renderInstances } from '../../src/game/props.js';
+import { PROP_BOUNDS } from '../../src/data/generated/prop-geometry.js';
 import { buildDistrictSceneryRoads } from './district-scenery-roads.mjs';
 import {
   MARIMBA_ACCIDENTAL_AFTER,
@@ -34,10 +48,14 @@ import * as FP from '../../src/world/floorplan.js';
 import { wallRuns, wallRunsDigest } from '../../src/world/wall-contact.js';
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
-const LETTERING_INPUTS=['tools/chunk_surfer/build-props.mjs','tools/chunk_surfer/lettering/physical-lettering.mjs',
+const LETTERING_INPUTS=['tools/chunk_surfer/build-props.mjs','tools/chunk_surfer/exterior-foreground-geometry.mjs','tools/chunk_surfer/exterior-frontage-geometry.mjs','tools/chunk_surfer/exterior-shop-massing.mjs','tools/chunk_surfer/pub-interior-geometry.mjs','src/data/exterior-pub.js','src/data/exterior-pub-furnishings.js','src/data/exterior-foreground.js','src/data/exterior-district.js','tools/chunk_surfer/lettering/physical-lettering.mjs',
   'tools/chunk_surfer/lettering/rasterize.py','tools/chunk_surfer/lettering/face-geometry.mjs',
   'tools/chunk_surfer/lettering/world-inscription-substrates.mjs','tools/chunk_surfer/lettering/sample-host-substrate.py',
-  'src/data/world-inscriptions.js','public/assets/conservatory-acquisitions.glb'];
+  'tools/chunk_surfer/lettering/sign-assemblies.mjs','tools/chunk_surfer/lettering/finish-profiles.mjs','tools/chunk_surfer/lettering/finish.py',
+  'src/data/world-inscriptions.js','src/data/corridor-lettering.js','src/data/building-map.js',
+  'src/world/corridor-dressing.js','src/world/floorplan.js','src/world/wall-contact.js','src/world/prop-wall-pose.js',
+  'src/game/props.js','src/data/conservatory-props.js','src/data/floorplan/conservatory.js','src/data/conservatory-doors.js',
+  'public/assets/conservatory-acquisitions.glb'];
 const sourceHash=file=>crypto.createHash('sha256').update(fs.readFileSync(path.join(ROOT,file))).digest('hex');
 const letteringBuildInputHashes=Object.fromEntries(LETTERING_INPUTS.map(file=>[file,sourceHash(file)]));
 const OUT_DIR = process.env.CHUNK_SURFER_PROPS_OUT_DIR ? path.resolve(process.env.CHUNK_SURFER_PROPS_OUT_DIR) : path.join(ROOT, 'public/assets');
@@ -143,17 +161,20 @@ const group = (m, mat) => {
   if(!m.groups.has(mat)) m.groups.set(mat,{positions:[],normals:[],indices:[],uvs:[]});
   return m.groups.get(mat);
 };
+const signAssemblies=createSignAssemblies({materials,group,MAT});
 
 // Queue exact authored copy until every physical face can share a packed atlas.
 // RGB is opaque substrate; alpha carries pigment coverage only (never cutout).
 const letteringJobs=[],letteringFaces=[];
 const materialRgb=mat=>materials[mat].pbrMetallicRoughness.baseColorFactor.slice(0,3);
-function lettering(m,copy,{id,center,widthM,heightM,readerRight=[-1,0,0],up=[0,1,0],category='institution',process,ground=MAT.paper,ink=MAT.black,capHeightM,lines,lineCentres,lineScale,emission='none',emissiveFactor,shape,drapeM=0,marks,font,glyphLayout,texelCapPx,substrate,reliefM,typeWidthScale,opticalWeightM,kerned,inkMetallic,inkRoughness,rasterWidthPx,rasterHeightPx}={}){
+function lettering(m,copy,{id,center,widthM,heightM,readerRight=[-1,0,0],up=[0,1,0],category='institution',process,ground=MAT.paper,ink=MAT.black,capHeightM,lines,lineCentres,lineScale,emission='none',emissiveFactor,shape,drapeM=0,marks,font,glyphLayout,texelCapPx,substrate,reliefM,typeWidthScale,opticalWeightM,kerned,inkMetallic,inkRoughness,rasterWidthPx,rasterHeightPx,finishSupport}={}){
   id=id||`${m.name}:${letteringFaces.filter(face=>face.mesh===m).length}`;
+  if(!finishSupport&&m.name.startsWith('chapel_key_ring_'))finishSupport={kind:'carrier',edgeWear:false,contact:'handled',exposure:'interior'};
+  if(!finishSupport&&['tower_peal_board','outskirts_shelter_timetable'].includes(m.name))finishSupport={kind:'carrier',edgeWear:false,contact:'none',exposure:m.name==='tower_peal_board'?'interior':'sheltered'};
   const normal=cross(readerRight,up),job={id,copy,lines,widthM,heightM,category,process,
     palette:{ground:Array.isArray(ground)?ground:materialRgb(ground),ink:Array.isArray(ink)?ink:materialRgb(ink)},
     capHeightM,lineCentres,lineScale,emission,emissiveFactor,marks,font,glyphLayout,texelCapPx:texelCapPx??(substrate?24:undefined),substrate,
-    typeWidthScale,opticalWeightM,kerned,inkMetallic,inkRoughness,rasterWidthPx,rasterHeightPx,
+    typeWidthScale,opticalWeightM,kerned,inkMetallic,inkRoughness,rasterWidthPx,rasterHeightPx,finishSupport,
     reliefM:reliefM??(process?.startsWith('cut civic inscription')?-.0015:category==='personal'?.000035:.000007),seed:id,source:'tools/chunk_surfer/build-props.mjs',
     orientation:{readerRight,up,normal,center}};
   letteringJobs.push(job);letteringFaces.push({mesh:m,job,center,readerRight,up,widthM,heightM,shape,drapeM});
@@ -165,6 +186,11 @@ function lettering(m,copy,{id,center,widthM,heightM,readerRight=[-1,0,0],up=[0,1
 // tuning fork lying "across" it was modelled passing straight through it.
 // Anything that leans needs this: a propped lid, a tilted sign, a fallen chair.
 function addBox(m, c, s, mat, yaw=0, pitch=0){
+  if(signAssemblies.isCarrier(m.name))return signAssemblies.box(m,c,s,mat,yaw,pitch);
+  if(BUILDING_WINDOW_HOST_ORIGINS[m.name]&&!yaw&&!pitch){
+    const pieces=subtractBuildingWindowBoxes(c,s,{origin:BUILDING_WINDOW_HOST_ORIGINS[m.name]});
+    if(pieces.length!==1||pieces[0].center.some((v,i)=>Math.abs(v-c[i])>1e-7)||pieces[0].size.some((v,i)=>Math.abs(v-s[i])>1e-7)){for(const p of pieces)addBox(m,p.center,p.size,mat);return;}
+  }
   const g=group(m,mat), base=g.positions.length/3;
   const [cx,cy,cz]=c,[sx,sy,sz]=s, hx=sx/2,hy=sy/2,hz=sz/2;
   const cyaw=Math.cos(yaw), syaw=Math.sin(yaw);
@@ -387,6 +413,10 @@ function addWallPilaster(m,{axis,plane,inside,along,y=0,height,width=.38,depth=.
 }
 
 function addWallArch(m,{axis,plane,inside,along,spring,radius,depth=.31,section=.10,mat,segments=10}){
+  // The approved north outlook replaces these blind-arch fragments. Retaining
+  // a diagonal spring across its clear opening reads as broken window framing.
+  if(m.name==='front_atrium_perimeter_relief'&&axis==='x'&&plane===-11.5
+    &&along+radius>84-85.5&&along-radius<88-85.5&&spring<3.45)return;
   const normal=plane+inside*depth;
   let previous=null;
   for(let i=0;i<=segments;i++){
@@ -833,7 +863,16 @@ function alongFoldedStand(s,out=0){
 {
   const m=mesh('key_cabinet');addBox(m,[0,.58,0],[.9,1.16,.22],MAT.steel);addBox(m,[0,.58,-.12],[.82,1.08,.025],MAT.dark);for(let y=.28;y<.98;y+=.22)for(let x=-.28;x<=.28;x+=.28)addCylinder(m,[x,y,-.15],.012,.04,MAT.brass,8);
 }
-{const m=mesh('notice_board');addBox(m,[0,.45,0],[1.2,.9,.06],MAT.dark);addBox(m,[0,.45,-.035],[1.08,.78,.02],MAT.paper);}
+{const m=mesh('notice_board');
+  // Actual rails and stiles surround the recessed paper; a single wood cuboid
+  // would put horizontal grain through every member and leave no seated edge.
+  addBox(m,[0,.45,.021],[1.20,.90,.018],MAT.dark);
+  for(const x of[-.57,.57])addBox(m,[x,.45,-.009],[.06,.90,.042],MAT.dark);
+  for(const y of[.03,.87])addBox(m,[0,y,-.009],[1.08,.06,.042],MAT.dark);
+  addBox(m,[0,.45,-.037],[1.08,.78,.016],MAT.dark);
+  addBox(m,[0,.45,-.04465],[1.08,.78,.0007],MAT.paper);
+  for(const x of[-.57,.57])for(const y of[.07,.83])signAssemblies.fixing(m,{center:[x,y,-.0302],readerRight:[-1,0,0],radiusM:.0035});
+}
 {
   const m=mesh('rekey_ledger');
   addBox(m,[0,.48,0],[1.22,.96,.10],MAT.dark);
@@ -889,16 +928,28 @@ function alongFoldedStand(s,out=0){
 // Wall-mounted, so all three are authored against z=0 with their depth running
 // into -z. The barre is the double height a teaching room has rather than the
 // single a company studio has: 0.82 for children, 1.06 for adults.
-{
-  const m=mesh('dance_barre');
-  for(const y of [.82,1.06]) addCylinder(m,[0,y,-.11],.024,2.9,MAT.wood,10);
+function buildDanceBarre(name,{drop=0}={}){
+  const m=mesh(name),angle=Math.atan2(-drop,2.9),c=Math.cos(angle),s=Math.sin(angle);
+  for(const y of [.82,1.06]){
+    const g=group(m,MAT.wood),first=g.positions.length,cy=y-drop/2;
+    addCylinderX(m,[0,cy,-.11],.024,Math.hypot(2.9,drop),MAT.wood,10);
+    // Only the damaged B1 rails fall away from their surviving left support.
+    // Rotate the new vertices/normals together; brackets stay on the masonry.
+    if(drop)for(let i=first;i<g.positions.length;i+=3){
+      const x=g.positions[i],dy=g.positions[i+1]-cy,nx=g.normals[i],ny=g.normals[i+1];
+      g.positions[i]=c*x-s*dy;g.positions[i+1]=cy+s*x+c*dy;
+      g.normals[i]=c*nx-s*ny;g.normals[i+1]=s*nx+c*ny;
+    }
+  }
   // Brackets. The end pair sit in from the ends the way a real run does, so the
   // rail overhangs and reads as a rail rather than as a rung between two posts.
   for(const x of [-1.28,0,1.28]){
-    addBox(m,[x,.94,-.045],[.05,.30,.09],MAT.steel);
+    if(!drop||x===-1.28)addBox(m,[x,.94,-.045],[.05,.30,.09],MAT.steel);
     addBox(m,[x,.94,-.005],[.07,.34,.02],MAT.steel);
   }
 }
+buildDanceBarre('dance_barre');
+buildDanceBarre('dance_barre_dismantled',{drop:.22});
 // A mirrored wall in sections, because that is how it is delivered and because
 // the seams are the only thing that tells you it is a mirror: the renderer has
 // no reflections, so this reads as a slightly brighter, flatter plane than the
@@ -937,7 +988,7 @@ function alongFoldedStand(s,out=0){
   for(const x of [-3.07,3.07])addBox(m,[x,.012,0],[.06,.018,4.60],MAT.dark);
 }
 // A painted door number. Stencilled, not signed: the wing has no plaques.
-{const m=mesh('door_stencil');addBox(m,[0,.16,-.01],[.46,.32,.015],MAT.paper);}
+{const m=mesh('door_stencil');signAssemblies.box(m,[0,.16,-.01],[.46,.32,.015],MAT.paper);}
 for(const code of ['B1','B2','B3','B5']){
   const m=mesh('door_stencil_'+code.toLowerCase());addBox(m,[0,.16,-.01],[.46,.32,.015],MAT.concrete);
   lettering(m,code,{center:[0,.16,-.018],widthM:.46,heightM:.32,category:'maintenance',process:'bridged maintenance stencil on a blockwork repair patch',
@@ -1702,9 +1753,12 @@ for(const[index,angle]of[-.55,-.05,.42].entries()){
 }
 {
   const m=mesh('hall_entrance_sign');
-  addBox(m,[0,.24,.03],[2.75,.48,.06],MAT.dark);
+  addBox(m,[0,.24,.009],[2.75,.48,.018],MAT.dark);
+  for(const x of[-1.32,1.32])addBox(m,[x,.24,.039],[.11,.48,.042],MAT.dark);
+  for(const y of[.055,.425])addBox(m,[0,y,.039],[2.53,.11,.042],MAT.dark);
   addBox(m,[0,.24,.068],[2.52,.32,.025],MAT.brass);
   addBox(m,[0,.24,.086],[2.20,.18,.018],MAT.dark);
+  for(const x of[-1.32,1.32])signAssemblies.fixing(m,{center:[x,.24,.0602],radiusM:.0045});
 }
 {
   // Front-of-house lamps are an inherited civic fitting, not the emergency
@@ -1868,6 +1922,9 @@ for(const[index,angle]of[-.55,-.05,.42].entries()){
 }
 buildAcademicRoof({mesh,materials,MAT,addBox,addBeam,addEllipsoid,addCylinder,addQuad});
 buildAcademicRoofDressing({mesh,materials,MAT,addBox,addBeam,addEllipsoid,addCylinder,addQuad});
+const exteriorApi={mesh,materials,addBox,addBeam,addCylinder,addQuad};
+buildExteriorForeground(exteriorApi);
+for(const build of [buildArchitectureFittings,buildInstitutionOccupation,buildBuildingAmenities,buildBuildingWindows])build({mesh,materials,MAT,addBox,addBeam,addEllipsoid,addCylinder,addQuad});
 {
   const m=mesh('academic_frieze');
   addBox(m,[0,.42,0],[5.2,.84,.12],MAT.plaster);
@@ -2127,8 +2184,12 @@ addMainStairDressing('academic_stair_dressing',{rise:5.2,run:10,steps:26,runner:
     addCylinder(m,[x,.18,-.35],.14,.30,MAT.ivory,16);
     addCylinder(m,[x,.36,-.35],.075,.06,MAT.brass,12);
   }
-  addBox(m,[1.42,-.30,.01],[.34,.17,.035],MAT.dark);
-  for(const x of[1.34,1.42,1.50])addBox(m,[x,-.30,-.015],[.018,.10,.018],MAT.brass);
+  // A continuous enamel plate fits the clear interval between the original
+  // lamps. Literal per-landing copy is attached after actual plan placement.
+  const panel=CORRIDOR_LETTERING_FACES.landing;
+  signAssemblies.box(m,panel.panelCenter,panel.panelSize,MAT.black);
+  for(const x of[-1.155,1.155])for(const y of[-.17,.09])
+    signAssemblies.fixing(m,{center:[x,y,-.0530],readerRight:panel.readerRight,up:panel.up,radiusM:.004});
 }
 {
   const m=mesh('stair_bulkhead_pair');
@@ -2137,8 +2198,12 @@ addMainStairDressing('academic_stair_dressing',{rise:5.2,run:10,steps:26,runner:
     addCylinder(m,[x,0,-.08],.14,.10,MAT.ivory,16);
     for(let i=0;i<6;i++){const a=i*Math.PI/3;addBeam(m,[x+Math.cos(a)*.16,-.16+Math.sin(a)*.16,-.15],[x+Math.cos(a)*.16,.16+Math.sin(a)*.16,-.15],.018,MAT.steel);}
   }
-  addBox(m,[1.42,-.31,.01],[.34,.17,.035],MAT.dark);
-  for(const x of[1.34,1.42,1.50])addBox(m,[x,-.31,-.015],[.018,.10,.018],MAT.ivory);
+  // A continuous enamel plate fits the clear interval between the original
+  // lamps. Literal per-landing copy is attached after actual plan placement.
+  const panel=CORRIDOR_LETTERING_FACES.landing;
+  signAssemblies.box(m,panel.panelCenter,panel.panelSize,MAT.black);
+  for(const x of[-1.155,1.155])for(const y of[-.17,.09])
+    signAssemblies.fixing(m,{center:[x,y,-.0530],readerRight:panel.readerRight,up:panel.up,radiusM:.004});
 }
 {
   const m=mesh('stair_pendant_opal');
@@ -2450,6 +2515,7 @@ apparitionFigure('apparition_pose_symmetric',{
   const m=mesh('tower_plaque');
   addBox(m,[0,.38,.03],[1.35,.76,.06],MAT.brass);
   addBox(m,[0,.38,.067],[1.18,.59,.025],MAT.dark);
+  for(const x of[-.63,.63])for(const y of[.055,.705])signAssemblies.fixing(m,{center:[x,y,.0602],radiusM:.004});
 }
 {
   // A public-entrance enamel sign is deliberately not the tower's brass plate.
@@ -2459,6 +2525,7 @@ apparitionFigure('apparition_pose_symmetric',{
   addBox(m,[0,.31,.03],[2.30,.62,.06],MAT.pubGreen);
   addBox(m,[0,.31,.068],[2.12,.46,.025],MAT.ivory);
   addBox(m,[0,.31,.086],[1.84,.26,.018],MAT.pubGreen);
+  for(const x of[-1.105,1.105])for(const y of[.075,.545])signAssemblies.fixing(m,{center:[x,y,.0602],radiusM:.004});
 }
 
 // Real source models replace (or add) named meshes. Each overwrites the
@@ -2646,6 +2713,19 @@ function buildDistrictFrontage(name,variant){
       :[11.2,11.2,12.4,12.4,10.8,10.8,13.0,13.0];
   for(let i=0;i<count;i++){
     const z=-32+unitW*(i+.5),h=heights[i],depth=variant==='workshop'?6.8:5.4;
+    if(variant==='civic'){
+      if(i>=2)addSouthShopDeed(exteriorApi,m,{deed:i,z,h,unitW,depth});
+      else{
+        const report=addBourgeoisPubFrontage(exteriorApi,m,{z,h,unitW,depth});
+        for(const face of report.signFaces)lettering(m,face.copy,{
+          ...face,category:'institution',font:'NimbusRoman-Bold.otf',
+          process:'aged gilt pub fascia lettering',ground:MAT.pubGreen,ink:MAT.brass,
+          inkMetallic:.78,inkRoughness:.28,finishSupport:{kind:'carrier',edgeWear:true,contact:'none',exposure:'sheltered'},
+        });
+      }
+      continue;
+    }
+
     if(variant==='passage'&&i===4){
       // A real court mouth through the row: party walls, a shallow bridge and
       // open floor below. The floorplan continues behind it, so this can never
@@ -2662,11 +2742,7 @@ function buildDistrictFrontage(name,variant){
     addBox(m,[.06,.55,z],[.16,1.10,unitW-.18],MAT.stone);                 // plinth
     addBox(m,[.08,h-.55,z],[.20,.24,unitW-.08],MAT.stone);               // cornice
     // The corner pub is ordinary, open and warm. It is not another threat.
-    if(variant==='civic'&&i<2){
-      addBox(m,[.13,2.1,z],[.18,2.45,unitW-1.0],MAT.pubGreen);
-      for(const dz of[-2.35,0,2.35])addBox(m,[.25,2.15,z+dz],[.08,1.55,1.35],MAT.warmWindow);
-      addBox(m,[.26,3.65,z],[.09,.46,unitW-1.1],MAT.ivory);
-    }else if(variant==='workshop'&&h<9){
+    if(variant==='workshop'&&h<9){
       addBox(m,[.14,2.0,z],[.22,3.25,4.8],MAT.steel);
       for(let y=.55;y<3.45;y+=.28)addBox(m,[.27,y,z],[.08,.08,4.6],MAT.black);
       addBox(m,[.18,5.0,z],[.12,1.18,2.0],i%2?MAT.black:MAT.warmWindow);
@@ -2706,6 +2782,7 @@ buildDistrictFrontage('district_terrace_frontage','terrace');
 buildDistrictFrontage('district_civic_frontage','civic');
 buildDistrictFrontage('district_workshop_frontage','workshop');
 buildDistrictFrontage('district_passage_frontage','passage');
+const pubInteriorGeometry=buildPubInterior(exteriorApi);
 
 {
   // Side walls and a closed occupied threshold for a short street court. Local
@@ -3550,13 +3627,41 @@ function vigilKit(m,{
 function buildVigilSign(name,words,{w=1.34,boardY=1.78,lean=0,banner=false}={}){
   const m=mesh(name),lines=[...words],h=banner?1.02:.84,z=-.22;
   if(!banner)addBeam(m,[0,.58,-.10],[0,boardY+.34,z],.035,MAT.wood);
-  addBox(m,[0,boardY,z],[w,h,.055],MAT.agedWhite,0,lean);
-  addBox(m,[-w*.34,boardY+h*.34,z-.035],[w*.22,.055,.022],MAT.terracotta,-.04,lean);
-  addBox(m,[w*.39,boardY-h*.37,z-.035],[w*.16,.05,.022],MAT.slate,.05,lean);
   const normal=[0,Math.sin(lean),-Math.cos(lean)],up=[0,Math.cos(lean),Math.sin(lean)];
+  const printCenter=[0,boardY+normal[1]*.028,z+normal[2]*.028];
+  if(banner){
+    // Every layer uses the same gravity/tension cloth surface: paint, reverse,
+    // closed perimeter, folded hems and repaired hems. The four corner datums
+    // still belong to the existing park railing placement.
+    signAssemblies.railingBanner(m,{center:printCenter,readerRight:[-1,0,0],up,widthM:w,heightM:h,source:MAT.agedWhite});
+  }else{
+    const front=[0,boardY,z].map((v,k)=>v+normal[k]*(.0275-.00175));
+    addBox(m,front,[w,h,.0035],MAT.agedWhite,0,lean);
+    addBox(m,[0,boardY+.12,z+.014],[.24,.38,.025],MAT.wood,0,lean);
+  }
+  // Existing contrasting repair tabs remain, as thin adhered tape rather
+  // than 22mm blocks suspended in front of a card. Their copy stays untouched.
+  for(const [tx,ty,tw,th,mat,yaw]of(banner?[]:[[-w*.34,h*.34,w*.22,.055,MAT.terracotta,-.04],[w*.39,-h*.37,w*.16,.05,MAT.slate,.05]])){
+    // Tape rotates in the board plane and follows the same global drape at
+    // every vertex. A world-Y yaw would drive half the tab through the card.
+    const right=[-1,0,0],cs=Math.cos(yaw),sn=Math.sin(yaw),nx=banner?6:1,ny=banner?2:1;
+    const patch={positions:[],normals:[],uvs:[],indices:[]};
+    for(let j=0;j<=ny;j++)for(let i=0;i<=nx;i++){
+      const u=i/nx,v=j/ny,px=(u-.5)*tw,py=(.5-v)*th,bx=-tx+px*cs-py*sn,by=ty+px*sn+py*cs;
+      const a=Math.PI*(.5+bx/w),b=Math.PI*(.5-by/h),drape=banner?.010*Math.sin(a)*Math.sin(b):0;
+      const dx=banner?.010*Math.PI/w*Math.cos(a)*Math.sin(b):0,dy=banner?-.010*Math.PI/h*Math.sin(a)*Math.cos(b):0;
+      const nn=normal.map((q,k)=>q-right[k]*dx-up[k]*dy),l=Math.hypot(...nn);
+      patch.positions.push(...printCenter.map((q,k)=>q+right[k]*bx+up[k]*by+normal[k]*(drape+.00045)));
+      patch.normals.push(...nn.map(q=>q/l));patch.uvs.push(u,v);
+    }
+    for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){const a=j*(nx+1)+i,b=a+1,c=a+nx+1,d=c+1;patch.indices.push(a,c,b,b,c,d);}
+    const g=group(m,mat),base=g.positions.length/3;while(g.uvs.length<base*2)g.uvs.push(0,0);
+    g.positions.push(...patch.positions);g.normals.push(...patch.normals);g.uvs.push(...patch.uvs);g.indices.push(...patch.indices.map(i=>i+base));
+  }
   lettering(m,lines.join('\n'),{lines,center:[0,boardY+normal[1]*.028,z+normal[2]*.028],
     widthM:w,heightM:h,up,category:'personal',ground:MAT.agedWhite,ink:MAT.black,
-    capHeightM:Math.min(.27,h/(lines.length*1.7)),process:banner?'volunteer brush paint on tensioned cloth':'volunteer broad-nib paint on card',drapeM:banner?-.010:0});
+    capHeightM:Math.min(.27,h/(lines.length*1.7)),process:banner?'volunteer brush paint on tensioned cloth':'volunteer broad-nib paint on card',drapeM:banner?-.010:0,shape:banner?'railing-banner':undefined,
+    finishSupport:{kind:'carrier',edgeWear:true,contact:'lower',exposure:'exterior'}});
 }
 
 function buildSceneDockSign(name,lines,{w=2.30,h=.58}={}){
@@ -3565,12 +3670,14 @@ function buildSceneDockSign(name,lines,{w=2.30,h=.58}={}){
   addBox(m,[0,0,-.038],[w-.08,h-.08,.018],MAT.dark);
   lettering(m,lines.join('\n'),{lines,center:[0,0,-.0475],widthM:w-.08,heightM:h-.08,
     category:'institution',process:'vitreous-enamel screen print',capHeightM:Math.min(.245,(h-.12)*.62),
-    ground:[.7083758,.6938718,.5332764],ink:[.0091341,.0137021,.0109601]});
+    ground:[.7083758,.6938718,.5332764],ink:[.0091341,.0137021,.0109601],
+    finishSupport:{kind:'carrier',edgeWear:true,contact:'none',exposure:'sheltered'}});
   // Dirty ivory surround and two phosphor corner tabs make the sign readable
   // on emergency light or torch alone; it never depends on restored S/P-03.
   addBox(m,[0,h/2-.025,-.06],[w,.05,.025],MAT.ivory);
   addBox(m,[0,-h/2+.025,-.06],[w,.05,.025],MAT.ivory);
   for(const x of[-w/2+.06,w/2-.06])addBox(m,[x,0,-.06],[.05,h,.025],MAT.ivory);
+  for(const x of[-w/2+.075,w/2-.075])signAssemblies.fixing(m,{center:[x,0,-.0727],readerRight:[-1,0,0],radiusM:.004});
 }
 
 buildSceneDockSign('scene_dock_sign_foh',['FRONT OF HOUSE']);
@@ -4391,6 +4498,7 @@ const addBoothGuard=(m,{x=0,z=-.15,lean=0,arm='rest'}={})=>{
   addBox(m,[0,1.06,.05],[1.10,.44,.05],MAT.safetyRed);               // hazard plate
   addBox(m,[0,1.06,.09],[.94,.10,.03],MAT.agedWhite);
   addBox(m,[.62,.62,.05],[.46,.46,.04],MAT.brass,Math.PI*.25);       // warning diamond
+  for(const x of[-.885,.885])for(const y of[1.335,2.385])signAssemblies.fixing(m,{center:[x,y,.0752],radiusM:.0045});
 }
 
 {
@@ -4775,21 +4883,9 @@ const addBoothGuard=(m,{x=0,z=-.15,lean=0,arm='rest'}={})=>{
   addBeam(m,[-.31,1.18,-1.50],[-.31,1.18,1.50],.055,MAT.steel);
   addBeam(m,[.33,.60,-1.50],[.33,.60,1.50],.045,MAT.steel);
 }
-{
-  // THE BUS SHELTER, on the near pavement, with one tube alive in it. It is the
-  // last thing between the gate and the rest of the world, and if he had missed
-  // the last one this is where he would be standing.
-  const m=mesh('city_bus_shelter');
-  addBox(m,[0,.07,0],[2.60,.14,4.60],MAT.stone);
-  for(const [dx,dz] of[[-1.20,-2.20],[-1.20,2.20],[1.20,-2.20],[1.20,2.20]]){
-    addBox(m,[dx,1.24,dz],[.12,2.48,.12],MAT.steel);
-  }
-  addBox(m,[-1.22,1.35,0],[.10,2.20,4.40],MAT.roofGlass);            // back panel
-  for(const dz of[-2.24,2.24]) addBox(m,[0,1.35,dz],[2.40,2.20,.10],MAT.roofGlass);
-  addBox(m,[0,2.56,0],[2.90,.14,5.00],MAT.steel);                    // canopy
-  addBox(m,[0,2.40,0],[2.40,.10,4.20],MAT.ivory);                    // the tube in it
-  addBox(m,[1.28,1.45,-1.20],[.10,1.30,1.10],MAT.agedWhite);         // the timetable case
-}
+// Clear screen interiors preserve the road view from the actual low seat.
+// The compact district version sits wholly behind the walking route.
+buildForegroundShelters(exteriorApi);
 {
   // BEGIN PAYPHONE RED BOX GEOMETRY
   // Selected Red Box: cast K6 enclosure, genuinely curved roof and broad grey
@@ -4797,7 +4893,8 @@ const addBoothGuard=(m,{x=0,z=-.15,lean=0,arm='rest'}={})=>{
   // are the production contracts in source-space-runtime phoneBoxInstances.
   const phoneMaterial=(name,baseColorFactor,metallicFactor,roughnessFactor,role)=>{
     const i=materials.length;
-    materials.push({name,pbrMetallicRoughness:{baseColorFactor:[...baseColorFactor,1],metallicFactor,roughnessFactor},extras:{payphoneRole:role}});
+    materials.push({name,pbrMetallicRoughness:{baseColorFactor:[...baseColorFactor,1],metallicFactor:role==='fittings'?metallicFactor:0,roughnessFactor},
+      extras:{payphoneRole:role,materialFactors:'gltf',letteringFinish:{version:1,profile:role==='fittings'?'bare-metal':'apparatus-print',localSpecular:true}}});
     return i;
   };
   const P={
@@ -4854,6 +4951,7 @@ const addBoothGuard=(m,{x=0,z=-.15,lean=0,arm='rest'}={})=>{
       ground:lamp?MAT.warmWindow:instruction?MAT.navy:header?P.grey:/^[0-9]$/.test(text)?MAT.ivory:MAT.paper,
       ink:mat,process:lamp?'black screen print on opal telephone glass':instruction?'telephone instruction-card screen print':'telephone apparatus printed enamel and paper',
       emission:lamp?'substrate':'none',emissiveFactor:lamp?materials[MAT.warmWindow].emissiveFactor:undefined,
+      finishSupport:lamp?{kind:'carrier',edgeWear:false,contact:'none',exposure:'sheltered'}:undefined,
       glyphLayout:instruction?{widthM:w,heightM:h*1.12}:undefined});
   };
   addBox(m,[0,.05,0],[1.02,.10,1.02],MAT.concrete);
@@ -6371,9 +6469,15 @@ for(const [name,parts] of createReliquaryPropGeometry()) {
   }
 }
 
+// Resolve the same generated room/landing hosts the runtime will actually
+// expose. A door named on a map but lacking a placed corridor plate is not a
+// print job. The data import remains pure and does not compile a hidden plan.
+propsInit(FP);
+const corridorWorldInscriptions=corridorInscriptionsForHosts(renderInstances({inscriptions:false}));
+const activeWorldInscriptions=[...WORLD_INSCRIPTIONS,...corridorWorldInscriptions];
 // Per-placement inscriptions share host geometry. Their physical print meshes
 // carry host-local coordinates and are attached by the ordinary prop runtime.
-for(const spec of WORLD_INSCRIPTIONS){
+for(const spec of activeWorldInscriptions){
   const m=mesh(spec.mesh);lettering(m,spec.copy,{texelCapPx:spec.substrate?24:32,...spec,id:spec.id});
 }
 const preparedLetteringJobs=await prepareWorldInscriptionSubstrates(letteringJobs,{root:ROOT,outputDir:path.join(OUT_DIR,'lettering/substrates')});
@@ -6382,12 +6486,13 @@ for(const [file,hash]of Object.entries(letteringBuildInputHashes))if(sourceHash(
   throw new Error(`Build input changed while generating props: ${file}; rerun to retain the latest work`);
 const letteringMaterials=new Map();
 for(const face of letteringFaces){
-  const entry=letteringBake.entries.get(face.job.id),page=letteringBake.pages[entry.page],key=`${entry.page}:${entry.category}:${entry.process}`;
+  const entry=letteringBake.entries.get(face.job.id),page=letteringBake.pages[entry.page],key=`${entry.page}:${entry.category}:${entry.process}:${entry.finish.profile}`;
   if(!letteringMaterials.has(key)){
     letteringMaterials.set(key,{index:materials.length,page:entry.page});
     materials.push({name:`physical print: ${entry.category}: ${entry.process}`,alphaMode:'OPAQUE',
       pbrMetallicRoughness:{baseColorFactor:[1,1,1,1],metallicFactor:1,roughnessFactor:1},
-      extras:{printedSurface:printedSurfaceMetadata(entry)},
+      extras:{printedSurface:printedSurfaceMetadata(entry),materialFactors:'gltf',
+        letteringFinish:{version:1,profile:entry.finish.profile,localSpecular:true}},
       ...(page.emission!=='none'?{emissiveFactor:page.emissiveFactor}:{})});
   }
   const material=letteringMaterials.get(key).index;
@@ -6402,6 +6507,26 @@ for(const face of letteringFaces){
   Object.assign(entry,{mesh:face.mesh.name,geometry:description});
 }
 
+// Resolve this small static kit through the gameplay's own wall/table/floor
+// placement, using current source geometry rather than yesterday's generated
+// bounds. Individual gameplay props remain present; the main pass can opt in
+// to these exact-pose assemblies after loading the rebuilt pack.
+const meshSurfaces=workSurfaces();
+const dressingContactBounds={...PROP_BOUNDS};
+for(const m of meshes.values())if(isBuildingDressingMesh(m.name)){
+  const min=[Infinity,Infinity,Infinity],max=[-Infinity,-Infinity,-Infinity];
+  for(const g of m.groups.values())for(let i=0;i<g.positions.length;i++){
+    const k=i%3;min[k]=Math.min(min[k],g.positions[i]);max[k]=Math.max(max[k],g.positions[i]);
+  }
+  // Runtime PROP_BOUNDS is deliberately millimetre-rounded below. Use that
+  // exact same table here so wall-contact poses and freshness digests agree.
+  dressingContactBounds[m.name]={min:min.map(v=>+v.toFixed(3)),max:max.map(v=>+v.toFixed(3))};
+}
+propsInit(FP,undefined,{bounds:dressingContactBounds,surfaces:meshSurfaces});
+const dressingGroups=[...new Set(allProps().filter(p=>isBuildingDressingMesh(p.mesh)).flatMap(p=>p.renderGroups||[p.renderGroup]))].filter(Boolean);
+const buildingDressingBatches=buildBuildingDressingBatches({meshes,mesh,groups:Object.fromEntries(
+  dressingGroups.map(name=>[name,renderInstances({group:name,inscriptions:false})]))});
+
 const chunks=[]; let byteOffset=0;
 const bufferViews=[], accessors=[], gltfMeshes=[];
 const images=[],textures=[],samplers=[{magFilter:9729,minFilter:9987,wrapS:33071,wrapT:33071}];
@@ -6413,6 +6538,22 @@ function append(typed,target){
 }
 function bounds(a){const lo=[Infinity,Infinity,Infinity],hi=[-Infinity,-Infinity,-Infinity];for(let i=0;i<a.length;i+=3)for(let k=0;k<3;k++){lo[k]=Math.min(lo[k],a[i+k]);hi[k]=Math.max(hi[k],a[i+k]);}return[lo,hi];}
 function accessor(view,componentType,count,type,min,max){const a={bufferView:view,componentType,count,type};if(min)a.min=min;if(max)a.max=max;const i=accessors.length;accessors.push(a);return i;}
+// Tiny seamless carrier finishes are shared by all assemblies. The print
+// atlases keep clamp sampling; physically scaled member UVs repeat explicitly.
+const carrierSampler=samplers.length;samplers.push({magFilter:9729,minFilter:9987,wrapS:10497,wrapT:10497});
+for(const [profile,page]of signAssemblies.finishTiles){
+  const ids={};
+  for(const role of['albedo','normal','orm']){
+    const image=images.length;images.push({name:`sign-carrier-${profile}-${role}`,bufferView:append(page[role]),mimeType:'image/png'});
+    ids[role]=textures.length;textures.push({source:image,sampler:carrierSampler});
+  }
+  for(const material of signAssemblies.materialCache.values()){
+    const mat=materials[material];if(mat.extras.letteringFinish.profile!==profile)continue;
+    mat.pbrMetallicRoughness.baseColorTexture={index:ids.albedo};
+    mat.pbrMetallicRoughness.metallicRoughnessTexture={index:ids.orm};mat.normalTexture={index:ids.normal};
+    mat.occlusionTexture={index:ids.orm,strength:1};
+  }
+}
 for(let pageIndex=0;pageIndex<letteringBake.pages.length;pageIndex++){
   const page=letteringBake.pages[pageIndex],ids={};
   for(const role of ['albedo','normal','orm']){
@@ -6434,9 +6575,14 @@ for(const m of meshes.values()){
     const na=accessor(append(n,34962),5126,n.length/3,'VEC3');
     const ua=accessor(append(uv,34962),5126,uv.length/2,'VEC2');
     const ia=accessor(append(ix,34963),5125,ix.length,'SCALAR',[0],[p.length/3-1]);
-    primitives.push({attributes:{POSITION:pa,NORMAL:na,TEXCOORD_0:ua},indices:ia,material:mat,mode:4});
+    const attributes={POSITION:pa,NORMAL:na,TEXCOORD_0:ua};
+    if(g.dressingZones){
+      if(g.dressingZones.length!==p.length/3)throw new Error(`${m.name}: incomplete dressing-zone attributes`);
+      attributes._DRESSING_ZONE=accessor(append(new Float32Array(g.dressingZones),34962),5126,g.dressingZones.length,'SCALAR');
+    }
+    primitives.push({attributes,indices:ia,material:mat,mode:4});
   }
-  gltfMeshes.push({name:m.name,primitives,...(m.lettering?{extras:{lettering:m.lettering}}:{})});
+  gltfMeshes.push({name:m.name,primitives,...((m.extras||m.lettering)?{extras:{...m.extras,...(m.lettering?{lettering:m.lettering}:{})}}:{})});
 }
 const nodes=gltfMeshes.map((_,i)=>({name:gltfMeshes[i].name,mesh:i}));
 const bin=Buffer.concat(chunks,byteOffset);
@@ -6450,9 +6596,12 @@ fs.mkdirSync(OUT_DIR,{recursive:true});fs.writeFileSync(OUT,Buffer.concat([head,
 fs.writeFileSync(path.join(OUT_DIR,'conservatory-props.lettering.json'),JSON.stringify({
   ...letteringBake.manifest,packSha256:crypto.createHash('sha256').update(fs.readFileSync(OUT)).digest('hex'),
   sourceHashes:letteringBuildInputHashes,
+  carrierAssemblies:{version:1,records:signAssemblies.records,sharedFinishTiles:[...signAssemblies.finishTiles.values()].map(({profile,width,height,physicalTileM,rgbaBaseLevelBytes})=>({profile,width,height,physicalTileM,rgbaBaseLevelBytes})),
+    preserved:'Exact authored copy, print face centres/axes and external panel planes; chamfers recede inside the existing envelope.',
+    limit:'Restrained inferred finish, not a measured object history. No invented wall leaks, iron rust on brass, missing corners or cracks.'},
   runtimePaperUvs,
   carrierProxyChanges:['hall_entrance_sign','public_exit_sign','exterior_story_plaque','yard_sign'],
-  worldInscriptionAttachments:WORLD_INSCRIPTIONS,
+  worldInscriptionAttachments:activeWorldInscriptions,corridorInscriptionAttachments:corridorWorldInscriptions,
   fontSources:['assets/fonts/manifest.json','tools/chunk_surfer/lettering/fonts/manifest.json'],
   blankSurfacesPreserved:['door_stencil','atrium_formal_banner','yard_markings'],
 },null,2)+'\n');
@@ -6473,13 +6622,16 @@ for(const m of meshes.values()){
 // desk to stand a clipboard on it (see `on:` in game/props.js).
 // workSurfaces() is a function declaration below, so it hoists; the const does
 // not, which is why it is bound here rather than beside its definition.
-const meshSurfaces=workSurfaces();
 stats.bounds=Object.fromEntries(Object.entries(meshBounds).map(([k,v])=>[k,{min:v.min,max:v.max}]));
 stats.baseboards={planHash:baseboardPlanHash,groups:baseboardAnchors};
+stats.buildingDressingBatches=buildingDressingBatches;
 stats.surfaces=meshSurfaces;
 stats.lettering={surfaces:letteringFaces.length,pages:letteringBake.pages.length,
   textureBaseLevelBytes:letteringBake.manifest.pages.reduce((sum,page)=>sum+page.rgbaBaseLevelBytes,0),
-  atlasInputSha256:letteringBake.inputSha256};
+  atlasInputSha256:letteringBake.inputSha256,
+  carrierAssemblies:{meshes:signAssemblies.records.length?new Set(signAssemblies.records.map(r=>r.mesh)).size:0,
+    members:signAssemblies.records.length,sharedFinishFamilies:[...signAssemblies.finishTiles.keys()],
+    textureBaseLevelBytes:[...signAssemblies.finishTiles.values()].reduce((n,p)=>n+p.rgbaBaseLevelBytes,0)}};
 fs.writeFileSync(STATS,JSON.stringify(stats,null,2)+'\n');
 
 // THE WORK SURFACE, which is not the top of the bounding box.
@@ -6539,6 +6691,7 @@ fs.writeFileSync(process.env.CHUNK_SURFER_PROPS_OUT_DIR?path.join(OUT_DIR,'prop-
 // moved on and the pack has not been rebuilt.
 export const PLAN_HASH = ${JSON.stringify(baseboardPlanHash)};
 export const BASEBOARDS = Object.freeze(${JSON.stringify(baseboardAnchors)});
+export const DRESSING_BATCHES = Object.freeze(${JSON.stringify(buildingDressingBatches)});
 export const PROP_BOUNDS = Object.freeze(${JSON.stringify(
   Object.fromEntries(Object.entries(meshBounds).map(([k,v])=>[k,{min:v.min,max:v.max}])))});
 export const MESH_TOP = Object.freeze(${JSON.stringify(

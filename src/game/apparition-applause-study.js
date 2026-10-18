@@ -1,8 +1,8 @@
 // Local experimental accounting, independent of the game's audio and geometry.
 // An assignment is committed before exposure, and answers advance only forward.
 export const HALL_STUDY = Object.freeze({
-  version: 1,
-  storageKey: 'chunk-surfer:hall-encounter-study:v1',
+  version: 2,
+  storageKey: 'chunk-surfer:hall-encounter-study:v2',
   visualSeed: 'hall-applause-study-v1',
   conditions: Object.freeze(['silent', 'ordinary', 'treatment']),
 });
@@ -16,6 +16,9 @@ export const HALL_STUDY_QUESTIONS = Object.freeze([
     choice('nothing', 'Nothing distinct'), choice('applause', 'Applause or handclaps'), choice('impact', 'A click or impact'),
     choice('mechanical', 'A mechanical sound'), choice('voice-music', 'A voice or music'), choice('other', 'Something else'), choice('unsure', 'Unsure'),
   ]) }),
+  Object.freeze({ id: 'contingency', label: 'Did what happened seem connected to anything you did?', type: 'choice',
+    hint: '0 = no connection; 6 = a direct response', choices: Object.freeze([...rating,
+      choice('nothing', 'I did not notice anything distinct'), choice('unsure', 'Unsure')]) }),
   Object.freeze({ id: 'presence', label: 'How strongly did you sense another presence in the room?', type: 'choice',
     hint: '0 = not at all; 6 = very strongly', choices: rating }),
   Object.freeze({ id: 'startle', label: 'How startled were you?', type: 'choice', hint: '0 = not at all; 6 = extremely', choices: rating }),
@@ -37,7 +40,7 @@ const timestamp = (value) => {
 };
 
 export function freshHallStudy() {
-  return { version: HALL_STUDY.version, block: 0, queue: [], current: null, trials: [] };
+  return { version: HALL_STUDY.version, block: 0, queue: [], current: null, trials: [], baselineHash: null, baseline: null };
 }
 
 function shuffledBlock(random) {
@@ -75,7 +78,15 @@ export function reserveHallStudyParticipant(state, {
 
 export function startHallStudyTrial(state, { configuration = null, nowMs } = {}) {
   if (state.current?.phase !== 'reserved') throw new Error('This exposure cannot be started again.');
+  if (typeof configuration?.baselineHash !== 'string' || configuration.baselineHash.length < 8 || !configuration.baseline) {
+    throw new Error('A recorded game baseline is required before this exposure.');
+  }
+  if (state.baselineHash && state.baselineHash !== configuration.baselineHash) {
+    throw new Error('The game context differs from the first study baseline. Ask the facilitator to restore the same prepared game state.');
+  }
   const next = clone(state);
+  next.baselineHash = configuration.baselineHash;
+  next.baseline = clone(configuration.baseline);
   Object.assign(next.current, { phase: 'playing', startedAtMs: timestamp(nowMs), configuration: clone(configuration) });
   return next;
 }
@@ -146,7 +157,8 @@ export function exportHallStudy(state, { nowMs } = {}) {
     evidenceScope: 'Participant answers and runtime traces. Scheduling does not establish audibility, presence or spatial impossibility.',
     protocol: { assignment: 'randomized balanced blocks of three; between participants',
       visualSeed: HALL_STUDY.visualSeed, freshExposureRequired: true, freeRecallLockedBeforeRecognition: true,
+      standardizedBaselineRequired: true, baselineHash: state.baselineHash || null,
       repeatsAllowed: false, storage: 'this browser only; no external submission' },
     trials: clone([...state.trials, ...(state.current ? [state.current] : [])]),
-    assignmentState: { block: state.block, queue: [...state.queue] } };
+    baseline: clone(state.baseline), assignmentState: { block: state.block, queue: [...state.queue] } };
 }

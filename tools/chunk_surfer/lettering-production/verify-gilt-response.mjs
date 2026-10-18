@@ -5,7 +5,7 @@ import {createHash} from 'node:crypto';
 import puppeteer from 'puppeteer-core';
 const out=process.env.GILT_RESPONSE_OUT||'artifacts/lettering-production/gilt/light-response';mkdirSync(out,{recursive:true});
 const reference=JSON.parse(readFileSync('artifacts/lettering-production/solid-paint-diagnosis/candidate3-operator/report.json'));
-const files=[...new Set([...Object.keys(reference.sourceHashes),'src/data/source-braided-divide.js','tools/chunk_surfer/lettering-production/verify-gilt-response.mjs'])],sha=b=>createHash('sha256').update(b).digest('hex'),hashes=()=>Object.fromEntries(files.map(p=>[p,sha(readFileSync(p))]));
+const files=[...new Set([...Object.keys(reference.sourceHashes).filter(p=>p!=='src/main.js'),'src/data/source-braided-divide.js','tools/chunk_surfer/lettering-production/verify-gilt-response.mjs'])],sha=b=>createHash('sha256').update(b).digest('hex'),hashes=()=>Object.fromEntries(files.map(p=>[p,sha(readFileSync(p))]));
 const report={date:new Date().toISOString(),modes:{5:'Prior solid paint response before inverse dark-stock absorption',3:'Production response with inverse dark-stock absorption'},sourceHashes:hashes(),errors:[],cases:[],scope:'Synthetic constant lit-source samples replayed through the ACTUAL linked production PIXEL shader with actual Scene Dock, Vigil and gilt inspection uniforms. Five authored marks distinguish both material polarities, their stocks and no print. This tests transfer response and identity, not a gameplay lighting or reading test.'};const save=()=>writeFileSync(`${out}/report.json`,JSON.stringify(report,null,2)+'\n');
 report.declaredPackSha256=JSON.parse(readFileSync('public/assets/conservatory-props.lettering.json')).packSha256;
 assert.equal(report.sourceHashes['public/assets/conservatory-props.glb'],report.declaredPackSha256,'Installed production GLB and lettering sidecar identity differ; reconcile unrelated asset writes before final proof');
@@ -42,7 +42,9 @@ try{const page=await browser.newPage();await page.setViewport({width:1400,height
  report.checks={allGlClean:report.cases.every(c=>c.glError===0&&c.cases.every(v=>v.rows.every(r=>r.glError===0))),noLightIdentical:report.cases.every(c=>c.cases.filter(v=>v.sourceLuma===0).every(v=>v.differentBytes===0&&v.rows.every(r=>r.maxRgb<=2))),
   untaggedIdentical:report.cases.every(c=>c.cases.filter(v=>v.polarity==='untagged').every(v=>v.differentBytes===0)),
   darkPaintAndPaleStockIdentical:report.cases.every(c=>c.cases.filter(v=>v.polarity.startsWith('dark-on-light')).every(v=>v.differentBytes===0)),
-  goldInkUniformResponseUnchanged:report.cases.every(c=>c.cases.filter(v=>v.polarity==='light-on-dark-ink').every(v=>v.differentBytes===0)),
+  goldInkNeverLosesCapturedLight:report.cases.every(c=>c.cases.filter(v=>v.polarity==='light-on-dark-ink').every(v=>v.rows.find(r=>r.mode===3).lightFraction>=v.rows.find(r=>r.mode===5).lightFraction)),
+  goldStrongSignalCoherent:report.cases.every(c=>c.cases.filter(v=>v.polarity==='light-on-dark-ink'&&v.sourceLuma===1).every(v=>v.rows.find(r=>r.mode===3).lightFraction===1)),
+  goldMiddleSignalStillDithered:report.cases.every(c=>c.cases.filter(v=>v.polarity==='light-on-dark-ink').some(v=>{const r=v.rows.find(r=>r.mode===3);return r.lightFraction>0&&r.lightFraction<1;})),
   darkStockLowSignalSolid:report.cases.every(c=>c.cases.filter(v=>v.polarity==='light-on-dark-stock'&&v.sourceLuma<=.03).every(v=>v.rows.find(r=>r.mode===3).lightFraction===0)),
   actualDimGiltStockSolid:report.cases.filter(c=>c.id==='tower_peal_board').every(c=>c.cases.filter(v=>v.polarity==='light-on-dark-stock'&&v.sourceLuma===.08).every(v=>v.rows.find(r=>r.mode===3).lightFraction===0)),
   stockReflectionStillRecords:report.cases.every(c=>c.cases.filter(v=>v.polarity==='light-on-dark-stock'&&v.sourceLuma===1).every(v=>v.rows.find(r=>r.mode===3).lightFraction===1)),

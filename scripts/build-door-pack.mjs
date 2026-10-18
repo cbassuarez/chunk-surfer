@@ -1,3 +1,5 @@
+import { enhanceDoorOccupation } from '../tools/chunk_surfer/door-occupation-geometry.mjs';
+import { doorLeafCore } from '../tools/chunk_surfer/door-glazing-geometry.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -75,7 +77,7 @@ mesh('door_debug_aperture',[box(0,1.7,.14,1.06,.025,.025,MAT.debug),box(0,.02,.1
 mesh('door_debug_hinge',[box(-.5,1.05,-.16,.055,2.10,.055,MAT.debug)]);
 mesh('door_debug_swing',[box(0,.025,-.5,1,.025,1,MAT.debug)]);
 
-function leaf(name,w,h,d,mat,parts=[]){mesh(name,[box(w/2,h/2,0,w,h,d,mat),...parts]);}
+function leaf(name,w,h,d,mat,parts=[]){const glazing=doorLeafCore({name,width:w,height:h,depth:d,mat,parts,MAT,box});mesh(name,[...glazing.coreParts,...enhanceDoorOccupation({name,width:w,height:h,depth:d,parts:glazing.parts,MAT,box})]);}
 leaf('door_leaf_service',1,2.10,.045,MAT.green,[box(.50,.19,-.035,.92,.26,.025,MAT.kick),box(.79,1.03,-.055,.30,.045,.035,MAT.iron)]);
 leaf('door_leaf_practice',.95,2.15,.065,MAT.oak,[box(.475,.22,-.05,.87,.28,.025,MAT.kick),box(.475,1.58,-.05,.24,.36,.025,MAT.glass),box(.84,1.08,-.06,.13,.04,.04,MAT.brass),box(.025,1.075,0,.035,2.05,.08,MAT.rubber)]);
 leaf('door_leaf_staff',.95,2.15,.05,MAT.oak,[box(.475,1.55,-.042,.76,.86,.028,MAT.glass),box(.84,1.05,-.055,.13,.04,.04,MAT.brass)]);

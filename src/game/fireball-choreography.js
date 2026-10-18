@@ -1,33 +1,7 @@
-// SYNCHRONISED SWIMMERS.
-//
-// A cast surface that only sits still is a click test. Four of them that break
-// together, show you a formation, and reform are a thing you have to read --
-// but they never read the cursor back. The player's hand is not an input to the
-// feint. Once a target commits, it is a target rather than a practical joke.
-//
-// TWO RULES MAKE IT FAIR RATHER THAN CRUEL.
-//
-// The first is that the break is authored. Cursor prediction made a target
-// instinctively dodge the exact hand trying to catch it, which made speed and
-// desktop focus determine the outcome instead of the encounter's readable
-// movement. The formation now performs the same move no matter where the
-// pointer is.
-//
-// The second is that the dodge always ends. Every cycle is a break followed by
-// a settle, and during the settle they hold perfectly still and can simply be
-// clicked. Each target keeps a short readable commitment, with more time for
-// larger volleys. What escalates is the movement and formation. Missing that
-// first commitment is not damage: the exchange
-// controller bounces the comet back to the bezel and offers it once more.
-//
-// THE CURVE IS A STAIRCASE OF S-CURVES.
-//
-// Difficulty is sampled once per turn, so within a turn the choreography never
-// changes under the player's hand -- that is the step. Across turns it follows a
-// logistic rather than a line: the first fight is nearly still, the middle of
-// the night is where it actually turns, and the last fight approaches its
-// ceiling without ever quite reaching it, so there is no turn at which it stops
-// getting worse.
+// Encounter timing and progression for the ranged exchange. Native targets
+// use continuous cursor-responsive physics, freeze at first pointer contact,
+// and leave charge/damage ownership with the exchange controller. These phase
+// clocks still bound each offer and support the in-canvas fallback.
 
 // The night, in the order the fights are met. A fight's position in this list
 // is most of what decides how hard its windows are to catch.

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { createApparitionApplauseAudio } from '../src/audio/apparition-applause-audio.js';
+import { createSelfAudioMask } from '../src/audio/self-audio-mask.js';
 
 function mockContext() {
   const nodes = [], decodes = [], listenerWrites = [];
@@ -38,6 +39,7 @@ function setup({ context = mockContext(), failures = [], ...overrides } = {}) {
     },
     setTimer: (callback, delay) => { const id = ++sequence; timers.set(id, { callback, delay }); return id; },
     clearTimer: id => { cleared.push(id); timers.delete(id); },
+    clockMs: () => 1000,
     ...overrides,
   });
   return { engine, context, fetched, emitted, timers, cleared, setContext: next => { currentContext = next; } };
@@ -78,7 +80,7 @@ assert.equal(run.emitted.length, 1, 'the whole composition has one acoustic enve
 assert.deepEqual(run.emitted[0].semantics, { playerGenerated: false, deliberate: false, audibleToHush: false, audibleToMonitor: false,
   audibleInWorld: true, canBeMimicked: false, canSpoilTake: false, family: 'apparition', tags: ['apparition-applause', 'treatment'] });
 assert.equal(run.emitted[0].spatial.floorId, 'third');
-assert.ok(run.emitted[0].acoustic.durationMs >= 3332 && run.emitted[0].acoustic.durationMs <= 3333, 'the semantic envelope includes predelay and the complete measured tail');
+assert.ok(run.emitted[0].acoustic.durationMs >= 3320 && run.emitted[0].acoustic.durationMs <= 3321, 'the semantic envelope includes predelay and the complete measured tail, measured from scheduled onset');
 assert.equal(run.engine.inspect().voices[0].pan, 1);
 run.engine.updateListener({ yaw: Math.PI });
 assert.ok(Math.abs(run.engine.inspect().voices[0].pan + 1) < 1e-9, 'turning reverses pan around a fixed world source');
@@ -102,6 +104,27 @@ assert.equal(silent.context.nodes.length, 0, 'the silent control is actual silen
 assert.equal(silent.emitted.length, 0, 'the silent control cannot register world noise');
 assert.equal(silent.engine.inspect().history[0].condition, 'silent');
 assert.equal(silent.engine.inspect().history[0].voiceCount, 0);
+
+const responseClock = setup(); await responseClock.engine.preload(manifest);
+assert.equal(responseClock.engine.play({ id: 'audio-clock-response' }, { leadTime: .065,
+  score: { ...score, events: [{ ...score.events[0], time: 0 }] } }), true);
+const responseSource = responseClock.context.nodes.find(node => node.kind === 'source');
+assert.deepEqual(responseSource.starts, [[10.065, .1, .2]], 'the first contact is scheduled65ms ahead on the existing AudioContext');
+assert.ok(Math.abs(responseClock.emitted[0].emittedAt - 1065) < 1e-6, 'the microphone reference begins at scheduled onset, not graph queue time');
+assert.ok(Math.abs(responseClock.emitted[0].acoustic.durationMs - 3240) <= 1, 'the65ms lead is excluded from the onset-aligned reference duration');
+const responseMask = createSelfAudioMask({latencyMs:0});
+responseMask.observe(responseClock.emitted[0],1000);
+assert.equal(responseMask.sample(1064).count,0,'a queued clap cannot mask player voice before it is scheduled to sound');
+assert.equal(responseMask.sample(1100).count,1,'the reference becomes active only after scheduled onset');
+const beforeOnset = setup();await beforeOnset.engine.preload(manifest);
+assert.equal(beforeOnset.engine.play({id:'cancel-before-onset'},{score,leadTime:.065}),true);
+beforeOnset.engine.cancel('recording-before-onset');
+assert.ok(beforeOnset.context.nodes.filter(n=>n.kind==='source').every(n=>n.stops.length===2),'recording cancellation stops contacts even before their first scheduled sample');
+assert.equal(beforeOnset.engine.inspect().activeVoices,0);
+responseClock.context.currentTime += .212;
+assert.equal(responseClock.engine.inspect().played, 1, 'a212ms visual gap requires no delayed JavaScript playback callback');
+responseClock.engine.cancel('pause-before-tail');
+assert.equal(responseClock.engine.inspect().activeVoices, 0, 'ordinary lifecycle cancellation still stops the scheduled graph');
 
 const ordinary = setup(); await ordinary.engine.preload(manifest);
 assert.equal(ordinary.engine.play({ id: 'ordinary' }, { condition: 'ordinary', score }), true);

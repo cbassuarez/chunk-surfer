@@ -1,15 +1,13 @@
 // THE LONG STARE.
 //
-// The yard is the only place in this game with a sky over it, and the sky moves
-// now: a deck lit from underneath by a city, running west, with a moon behind it
-// (see nightSky in render/r3d.js). A player who stops walking and watches it is
-// doing the one thing the arrival was rebuilt to make possible.
+// The old arrival vigil now belongs to the city seat at the far end of the
+// school roof. The view is allowed to last: forty-five seated seconds, with
+// ordinary head control and no countdown or announcement.
 //
 // So something notices.
 //
-// Stand still out there for three quarters of a minute — looking around is
-// allowed and is rather the point; only your feet have to stop — and when you
-// next turn round there is a chair in the middle of the yard, in the rain,
+// Sit there for three quarters of a minute — looking around is allowed and is
+// rather the point — and when you next turn round there is a chair on the roof,
 // facing the way you were facing. Nothing happens. It is not interactive, it
 // makes no sound, there is no prompt and no notice. It is simply there, and it
 // was not there before.
@@ -27,16 +25,19 @@
 // SOMEBODY LEAVES IT. The person at the microphone has already said "mind the
 // cable — the black one is mine; the orange one belongs to somebody who left
 // before dinner" (data/exterior-vigil.js). The orange one is still there, and a
-// man who has been standing still for forty-five seconds is the only man who
-// ever looks down and sees it.
+// man who has spent forty-five seconds looking at the city notices its absence.
 //
 // It arrives with no announcement at all: the next time the case is opened
 // there is one more lead on the back of the recorder than there was, and
 // working out where it came from is the player's problem.
 
 export const VIGIL = Object.freeze({
+  SCHEMA: 2,
+  LOCATION: 'roof-city-seat',
+  RENDER_GROUP: 'academicRoof',
+  FLOOR: 17,
   // Long enough that it cannot be reached by pausing to read a prompt, short
-  // enough that somebody who is genuinely watching the weather will reach it.
+  // enough that somebody watching the city will reach it.
   HOLD_SECONDS: 45,
   // A step, in cells, that counts as having moved. The player's position is
   // integral, so anything above zero is "a step was taken".
@@ -47,7 +48,7 @@ export const VIGIL = Object.freeze({
   SEE_RANGE_M: 12,
   SEE_COS: 0.72,                 // ~44 degrees off the view axis
   // Behind, and far enough back that it cannot appear inside the frame. The
-  // yard is fifty metres wide; this is a walk, not a jump scare.
+  // chair stays behind a shoulder on supported roof, never over the drop.
   PLACE_MIN_M: 5.5,
   PLACE_MAX_M: 9.0,
   PROP_ID: 'yard-vigil-chair',
@@ -56,14 +57,14 @@ export const VIGIL = Object.freeze({
 });
 
 export function freshVigilState() {
-  return { held: 0, placed: false, seen: false, at: null };
+  return { schema: VIGIL.SCHEMA, location: VIGIL.LOCATION, held: 0, placed: false, seen: false, at: null };
 }
 
 // Reduce one frame of standing about. Pure: everything it needs is passed in,
 // which is what makes it testable without a browser.
 //
 //   dt        seconds since the last frame
-//   eligible  is the player outdoors, in story, with nothing over the world
+//   eligible  is the city-seat scene settled, active and unobscured
 //   moved     did the player's cell change this frame
 //   see       { dist, cos } from the player to the chair, or null
 //
@@ -71,6 +72,7 @@ export function freshVigilState() {
 // the hold completes, and `earn` on the frame the chair is first seen.
 export function reduceVigil(state, { dt = 0, eligible = false, moved = false, see = null } = {}) {
   const next = { ...state };
+  if (next.seen) return { state: next, place: false, earn: false };
   if (!next.placed) {
     if (!eligible || moved) {
       next.held = 0;
@@ -82,7 +84,7 @@ export function reduceVigil(state, { dt = 0, eligible = false, moved = false, se
     next.held = VIGIL.HOLD_SECONDS;
     return { state: next, place: true, earn: false };
   }
-  if (next.seen || !see) return { state: next, place: false, earn: false };
+  if (!see) return { state: next, place: false, earn: false };
   const inSight = see.dist <= VIGIL.SEE_RANGE_M && see.cos >= VIGIL.SEE_COS;
   if (!inSight) return { state: next, place: false, earn: false };
   next.seen = true;
@@ -101,17 +103,10 @@ export function vigilSeat({ x, y, forwardX, forwardY, cellsPerMetre = 1 }) {
 
 // THE SEAT, AND ITS SECOND CHOICES.
 //
-// There used to be exactly one candidate, and if the arithmetic put it in a
-// fence the vigil simply did not happen. That was the right call when the yard
-// was bare and the player could be standing anywhere: better nothing than a
-// chair inside a skip. It stops being the right call the moment there is a
-// SHELTER out there inviting people to stand in a particular spot — because
-// "behind the player" is then reliably the shelter's own back wall, and the one
-// player who did exactly what the scene asked is the one who gets nothing.
-//
-// So the ideal seat is still first and still preferred; these are only consulted
-// when it will not stand up. Ordered by how close each is to the shot the vigil
-// wants: dead behind, then the other shoulder, then nearer, then wider.
+// Either shoulder may be occupied by the roof's planted architecture. Keep the
+// original distances and both sides, testing the entire footprint against the
+// compiled roof before choosing. A failed placement is another quiet visit,
+// never a chair over the edge. Order: ideal shoulder, opposite, nearer, wider.
 export function vigilSeatCandidates({ x, y, forwardX, forwardY, cellsPerMetre = 1 }) {
   const len = Math.hypot(forwardX, forwardY) || 1;
   const fx = forwardX / len, fy = forwardY / len;
@@ -135,11 +130,8 @@ export function vigilSeatCandidates({ x, y, forwardX, forwardY, cellsPerMetre = 
 
 // WHICH SHOULDER IT IS OVER, as a stereo pan in -1..1.
 //
-// The pin is granted when the chair is SEEN, and nothing ever made anybody turn
-// round — a player who held still with their back to it and walked off had
-// genuinely seen nothing, which is correct, and also meant the whole beat could
-// pass unnoticed. A sound behind the correct shoulder is the smallest thing that
-// makes someone look, and it tells no lies: the chair really is over there.
+// Retained for callers measuring the authored shoulder. The roof event itself
+// has no placement sound: the city hold is quiet, and noticing stays voluntary.
 export function vigilPan({ seatX, seatY, x, y, forwardX, forwardY }) {
   const len = Math.hypot(forwardX, forwardY) || 1;
   const fx = forwardX / len, fy = forwardY / len;
@@ -152,14 +144,23 @@ export function vigilPan({ seatX, seatY, x, y, forwardX, forwardY }) {
   return Math.max(-1, Math.min(1, cross));
 }
 
-export function normalizeVigilState(value) {
+export function normalizeVigilState(value, { rewarded = false } = {}) {
   const v = value && typeof value === 'object' ? value : {};
+  // Old saves keep their earned lead, including the build's folded reward.
+  // Their unearned yard coordinates and partial wait cannot seed a roof event.
+  const seen = !!rewarded || !!v.seen;
+  if (v.schema !== VIGIL.SCHEMA || v.location !== VIGIL.LOCATION) {
+    return { ...freshVigilState(), seen };
+  }
+  const at = v.at && Number.isFinite(Number(v.at.x)) && Number.isFinite(Number(v.at.y))
+    ? { x: Number(v.at.x), y: Number(v.at.y), yaw: Number(v.at.yaw) || 0 }
+    : null;
   return {
+    schema: VIGIL.SCHEMA,
+    location: VIGIL.LOCATION,
     held: Math.max(0, Math.min(VIGIL.HOLD_SECONDS, Number(v.held) || 0)),
-    placed: !!v.placed,
-    seen: !!v.seen,
-    at: v.at && Number.isFinite(Number(v.at.x)) && Number.isFinite(Number(v.at.y))
-      ? { x: Number(v.at.x), y: Number(v.at.y), yaw: Number(v.at.yaw) || 0 }
-      : null,
+    placed: !!v.placed && !!at,
+    seen,
+    at: v.placed ? at : null,
   };
 }

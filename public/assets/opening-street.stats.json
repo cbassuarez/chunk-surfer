@@ -1,26 +1,26 @@
 {
   "file": "opening-street.glb",
-  "bytes": 15033528,
-  "sha256": "64639979fe4c7d3b13295714d299d851f36294f4e02098030fcb3801deef0641",
-  "totalTriangles": 8118,
+  "bytes": 15036304,
+  "sha256": "74e9841e0505b612e43f9e953cbcab411d0a8fbcda91dea10a8f62ae9f73630d",
+  "totalTriangles": 8110,
   "textureCount": 42,
   "estimatedMipmappedTextureBytes": 117440512,
   "meshes": [
     {
       "index": 0,
       "name": "opening_street_ground",
-      "triangles": 22,
-      "vertices": 44,
+      "triangles": 14,
+      "vertices": 28,
       "primitives": 3,
       "bounds": {
         "min": [
           -22,
-          0.03500000014901161,
-          -12
+          0.035,
+          -7.5
         ],
         "max": [
           24.5,
-          0.04500000178813934,
+          0.045,
           20.25
         ]
       }
@@ -492,9 +492,9 @@
   },
   "materialAreas": {
     "opening_street_ground": {
-      "asphalt": 513.36,
+      "asphalt": 490,
       "cobbles": 36,
-      "grass": 80.28
+      "grass": 40.64
     },
     "opening_street_frontage": {
       "roughStone": 83.66,
@@ -540,5 +540,62 @@
         4.47817
       ]
     }
+  },
+  "groundReceiver": {
+    "revision": 1,
+    "generator": "tools/chunk_surfer/rebuild-opening-ground.mjs",
+    "originalInputSha256": "64639979fe4c7d3b13295714d299d851f36294f4e02098030fcb3801deef0641",
+    "unchangedMeshes": {
+      "opening_street_frontage": "11d6fb8e0008767d0338a2d430f646f19fcbe67473df2d175b7c523af7e56a7c",
+      "opening_street_service_history": "2bce53f4f2c60f15ef798e2432a729c501b759ff7871e0d8118b086604ed4d55",
+      "opening_street_review_plate": "a26f7303bc9cbaa98420dead619b5f4ca5b8f3ef1bde1c81d6317e340a248bf0",
+      "opening_street_tree_small": "cdb61a88e61f2e9256361ea50ec72a839de49bfe257e9f50e5f0086b7b3569be"
+    },
+    "embeddedImageHashes": [
+      "c5b0f1364d0824ee0540570d8883ee90a923c8961ad9d3a0987ddf433fa756c0",
+      "cb007f32367af83db4d2fed668abbabdb47d66b68c9142ab4dcf73d330e155a5",
+      "b062db2d0f5f1e9467b2f58f9d0aca88ef082a3b1e9a3f5717f547ab9747fb6f",
+      "8e4c42eb8c764554c0c9be8a9d8cb9383ae6195cabb9fed2646c1d4051c63aa4",
+      "a8204cf3f83e6b1cf5faa5ffb59e913257ed37a8b173acb1b3b82a2f1a372256",
+      "c9e0951ed6d4f1dbfbe25de3d91ccd67c0ce95d24d6c0b0e8b3895c560025a20",
+      "a852484495c61066290efea0160f5c004c9e5a5f1b47be0f9fc7eff13b71fab0",
+      "b57b7d144aba96977d6eb4719a110a1ae83cbbbe84172dc9f10a47119d202da3",
+      "a2cb538efed5c821bc659be89075cfc5a2b851629fc140de56900cf1a8e29e39",
+      "111bfbd830239b0ef8ac8715308d474351a5369b0a0ba6c89463f9ff91b26342",
+      "073e1deb11aa2c10706de48e02e2ffa7ee00f005c9d8bd2c2fc3e3f871333ce6",
+      "ad86cc0d9e49ad8689903276ad393ac50a09971ed8c503895e8c19a6598e0293",
+      "96e3cd355ab0a440ac64a932a50c8f359f6aa5562c57b5853a6533847e8059a4",
+      "3061fea02147906dd8ec0e1c48f49a8353e74de96db2498c8fd2d4522cf82b94",
+      "20fa1956723c7a790f5e649ea7c0cd332a2f9a8e2159dfe291558af242712ae0",
+      "3cb651e7793fe9f167b906ddd337b7da1ba950a7574e866faef9365e92f8f57b",
+      "4129028337e34dc5d4455983ac5c6988b06089b383d028ba92fc8df1732e364b",
+      "9766a1d353c8ae66cb105c8136137c3e2654d7ce3eb8edd61bf2736cf6a36ba5",
+      "cd1c63ce92b93f67c8bc10c4822b42f56d71eae6a9b8c140bc893f0cbb303887",
+      "5a9ea200bb538af5eafc0476191df00bcf6bc63ed028c95b2226abda3b09f509",
+      "7c639bf393b4012c128867f7f3aeaef91dbd1d91dfa98080c689436d033825b7",
+      "3e6558eabe5415065af133c8eac730751080b89534565d880e5bdee78a01c70d",
+      "2023ebfdd27d703bd833b950deebdf20ebfff68bf23e9b9c451ab724c5a7e0b7",
+      "9dbb79cd71398a7b97a9a94bebfd97d26f71858fd2d70d8da4d0c1661e32a644",
+      "2b79c689bc58778e63f5c622036961ef050b601057b189cbc6b954dd6a59143f",
+      "7a3a21f92c092d0f82d2a86b5525d5bdf586d66bd2e71f358a5d94bb277ac315",
+      "9dbb79cd71398a7b97a9a94bebfd97d26f71858fd2d70d8da4d0c1661e32a644",
+      "cb2196133bb72dc4600c903f06b96a05eb1bc5ddfecef2e83ac5affb710f3c96",
+      "9917ea292aad65b6d47d855d7e245cd2c4ad0b22db9edd98d0f23d11d5cf9b58",
+      "9dbb79cd71398a7b97a9a94bebfd97d26f71858fd2d70d8da4d0c1661e32a644",
+      "4fd5a7b4758c649d7087f96d6cb6221b92310e21cd0e330d0acac44ad6d657bb",
+      "fe22058a843ea197d98d5648f1dd081d9ca6c0e898f2b401f71e1747db602c4c",
+      "9dbb79cd71398a7b97a9a94bebfd97d26f71858fd2d70d8da4d0c1661e32a644",
+      "4ac63228d4b2b77927d7efc86ce6e2bcdc83f5c1e07f83247e0c5fcd63abbb54",
+      "646230fcf5f264237ca7c22864adfc506df64c5126e0cc8b1f04346401d95403",
+      "9dbb79cd71398a7b97a9a94bebfd97d26f71858fd2d70d8da4d0c1661e32a644",
+      "0480b0315e359953cf3b22f395d2acc509c302f477ec7923c50d1ae5f19062f7",
+      "cbd35d07a9fdf740ea2ab46d66b1ee45d074ed46a087387e5612182d9f5e84e7",
+      "2bc7da6deb6380cd7a254b33cb5bd32e558af9e7cd42d6a3b598166a8a171230",
+      "04bc029e1f93fa7b85d86228c4944cfb2eacc4ff5697619f9a3c8b5fcfcef5ad",
+      "6b48e7a5fe47ad35bd96027d7135c692612ec89a70f724a776e4956be12583c5",
+      "073e4087489d11e4a7b76a2eb232699b925a233d306e8c4eaa77cc89613f9336"
+    ],
+    "materialsUnchanged": true,
+    "nodesUnchanged": true
   }
 }

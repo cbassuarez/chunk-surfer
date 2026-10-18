@@ -109,9 +109,9 @@ export const freshSave = ({ settings = DEFAULT_SETTINGS, run = null } = {}) => (
   // The head from the fountain in the park, and whether the gallery has it back.
   // Normalised on read by game/marble-head.js, same as plantIncident above.
   marbleHead: null,
-  // The chair in the yard, and whether it has been looked at. Normalised on
-  // read by game/yard-vigil.js rather than here, because the whole rule lives
-  // in that module and this file has no business knowing what a vigil is.
+  // Roof city-seat vigil, retaining the old key so earned arrival leads survive.
+  // game/yard-vigil.js normalises the location/version and retires unearned
+  // legacy yard coordinates; this file does not own the vigil's rule.
   yardVigil: null,
   // The exterior gathering's observation ledger is optional and normalised by
   // game/exterior-vigil.js. Old saves therefore begin with a fresh seeded deal.

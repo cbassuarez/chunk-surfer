@@ -57,15 +57,15 @@ def summary(frames,key):
 
 def analyze(folder):
  folder=Path(folder);clip=json.loads((folder/'frames.json').read_text());alpha=np.asarray(Image.open(folder/'expected-mask.png').convert('RGBA'))[:,:,3]/255
- ink=alpha>=.5;inkDist=np.maximum(0,distance(ink)-.5);stockDist=np.maximum(0,distance(~ink)-.5);holes,nHoles=counters(ink);wordBand=word_bands(ink);h,w=ink.shape
+ lightInk=clip['setup']['polarity']=='light-on-dark';ink=alpha>=.5;inkDist=np.maximum(0,distance(ink)-.5);stockDist=np.maximum(0,distance(~ink)-.5);holes,nHoles=counters(ink);wordBand=word_bands(ink);h,w=ink.shape
  N=np.zeros((h,w));total=np.zeros((h,w));square=np.zeros((h,w));normalizedTotal=np.zeros((h,w));normalizedSquare=np.zeros((h,w));flips=np.zeros((h,w));transitions=np.zeros((h,w));previous=None;previousValid=None;frames=[]
  for metadata in clip['frames']:
   i=metadata['index'];a=np.asarray(Image.open(folder/'uv'/f'{i:03}-witness.png').convert('RGBA'));f=np.asarray(Image.open(folder/'uv'/f'{i:03}-final.png').convert('RGBA'));s=np.asarray(Image.open(folder/'uv'/f'{i:03}-scene.png').convert('RGBA'))
   visible=(a[:,:,3]>0)&(f[:,:,3]>0);final=luma(f);scene=luma(s);px=metadata['minAcquisitionPixelsPerCanonicalPixel']
   core=visible&(alpha>=.94)&(inkDist*px>=.75);stock=visible&wordBand&(alpha<=.05)&(stockDist*px>=.75)&(holes==0);counter=visible&(holes>0)&(alpha<=.05)&(stockDist*px>=.35)
   inkVisible=visible&ink
-  low=float(np.quantile(final[inkVisible],.05)) if np.any(inkVisible) else 0;high=float(np.quantile(final[stock],.75)) if np.any(stock) else 0;contrast=high-low;valid=contrast>=.03
-  threshold=(high+low)/2;dark=final<threshold;norm=(final-low)/max(.03,contrast)
+  inkAnchor=float(np.quantile(final[inkVisible],.95 if lightInk else .05)) if np.any(inkVisible) else 0;stockAnchor=float(np.quantile(final[stock],.25 if lightInk else .75)) if np.any(stock) else 0;contrast=(inkAnchor-stockAnchor) if lightInk else (stockAnchor-inkAnchor);valid=contrast>=.03
+  threshold=(inkAnchor+stockAnchor)/2;dark=(final>threshold) if lightInk else (final<threshold);norm=(inkAnchor-final)/max(.03,contrast) if lightInk else (final-inkAnchor)/max(.03,contrast)
   eligible=visible&(core|stock|counter)&valid
   N+=eligible;total+=final*eligible;square+=final*final*eligible;normalizedTotal+=norm*eligible;normalizedSquare+=norm*norm*eligible
   if previous is not None:
@@ -80,15 +80,15 @@ def analyze(folder):
   frames.append(dict(index=i,time=metadata['simulatedSeconds'],distance=metadata['distance'],offset=metadata['offset'],
    visibleCanonicalSamples=int(visible.sum()),projectedInkCanonicalSamples=int(inkVisible.sum()),thickCoreSamples=int(core.sum()),stockSamples=int(stock.sum()),counterSamples=int(counter.sum()),
    minAcquisitionPixelsPerCanonicalPixel=px,sourceCounterComponents=nHoles,evaluatedCounterComponents=evaluated,
-   finalPaletteAnchors=dict(inkLowQuantile=low,stockHighQuantile=high,threshold=threshold,contrast=contrast,classificationValid=valid),
+   finalPaletteAnchors=dict(polarity=clip['setup']['polarity'],inkAnchor=inkAnchor,stockAnchor=stockAnchor,threshold=threshold,contrast=contrast,classificationValid=valid),
    sceneStockMean=mean(scene,stock),sceneInkMean=mean(scene,inkVisible),
    p3ExpectedInkCoverageMean=mean(p3,inside),composedExpectedInkCoverageMean=mean(composed,inside),
    p3InteriorCoverageLoss=mean((p3<.9).astype(float),core),composedInteriorCoverageLoss=mean((composed<.9).astype(float),core),
    expectedMaskMae=mean(np.abs(p3-alpha),visible),composedMaskMae=mean(np.abs(composed-alpha),visible),
    thickCoreSolidOccupancy=mean(dark.astype(float),core) if valid else None,
    openStockSolidOccupancy=mean((~dark).astype(float),stock) if valid else None,
-   counterDarkIntrusion=mean(dark.astype(float),counter) if valid else None,
-   fullyDarkCounterFraction=closed/evaluated if evaluated and valid else None,
+   counterInkIntrusion=mean(dark.astype(float),counter) if valid else None,
+   fullyInkCounterFraction=closed/evaluated if evaluated and valid else None,
    actualDepthVisible=metadata['visible'],p3Occluded=metadata['p3Occluded'],worldOccluded=metadata['worldOccluded'],offscreen=metadata['offscreen']))
  have=N>=3;rawSd=np.sqrt(np.maximum(0,square/np.maximum(N,1)-(total/np.maximum(N,1))**2));normalizedSd=np.sqrt(np.maximum(0,normalizedSquare/np.maximum(N,1)-(normalizedTotal/np.maximum(N,1))**2));flip=flips/np.maximum(transitions,1)
  def temporal(region):
@@ -96,7 +96,7 @@ def analyze(folder):
   return dict(canonicalSamples=int(mask.sum()),rawLumaStdMedian=scalar(np.median(rawSd[mask])) if np.any(mask) else None,
    paletteNormalizedStdMedian=scalar(np.median(normalizedSd[mask])) if np.any(mask) else None,
    classificationFlipFraction=mean(flip,mask))
- metrics=['thickCoreSolidOccupancy','openStockSolidOccupancy','counterDarkIntrusion','fullyDarkCounterFraction','p3InteriorCoverageLoss','composedInteriorCoverageLoss','expectedMaskMae','composedMaskMae']
+ metrics=['thickCoreSolidOccupancy','openStockSolidOccupancy','counterInkIntrusion','fullyInkCounterFraction','p3InteriorCoverageLoss','composedInteriorCoverageLoss','expectedMaskMae','composedMaskMae']
  result={k:clip[k] for k in ['id','scene','motion','scale','setup','clock','simulatedSpanSeconds','encodedDurationSeconds','elapsedCaptureAndEncodeWallMs']}
  result.update(dict(frames=frames,aggregate={key:summary(frames,key) for key in metrics},
   atThreeMetres={key:summary([f for f in frames if abs(f['distance']-3)<1e-6],key) for key in metrics},
@@ -105,8 +105,8 @@ def analyze(folder):
   noQualifyingThickCoreFrames=sum(f['thickCoreSamples']==0 for f in frames),
   criteria=dict(inkMask='Actual source atlas alpha >=.94',thickCore='8-neighbour chamfer distance minus half a source pixel, interior radius >=.75 actual acquisition pixels; minimum physical stroke width approximately1.5pixels',
    openStock='Only within each authored line\'s exact ink bounding word-band, excluding enclosed counters; incidental border chips and mounting labels are outside this diagnostic',
-   finalClassification='Midpoint of actual final ink-region5th percentile and word-band open-stock75th percentile; contrast below.03 is separately unclassifiable',
-   counters='Enclosed source-mask background components; projected component area>=1.5 acquisition pixels, >=3 canonical core samples, >=85% visible; >=85% dark is counted fully closed'),
+   finalClassification='Polarity-aware midpoint: bright ink95th/stock25th percentile for gilt, ink5th/stock75th for dark paint; contrast below.03 separately unclassifiable',
+   counters='Enclosed source-mask background components; projected component area>=1.5 acquisition pixels, >=3 canonical core samples, >=85% visible; >=85% pigment is counted fully closed'),
   limits=['Canonical UV samples are area samples and are not independent raster pixels.','Palette classification measures pixel occupancy and counter intrusion; it does not infer reading or identify words.','Sparse/subpixel strokes and counters may have no qualifying thick interior and must not be reported as a pass.','Temporal motion variance includes real lighting and sampling changes; normalized variance removes only scalar palette drift.','This is an isolated authored encounter reconstruction, not a full route playtest or real-time60fps claim.']))
  (folder/'metrics.json').write_text(json.dumps(result,indent=2)+'\n');return result
 
@@ -140,4 +140,4 @@ if other.is_file():
   for key,value in old['aggregate'].items():
    v=new['aggregate'][key];deltas[key]=v['mean']-value['mean'] if v and value else None
   comparisons.append(dict(id=old['id'],timestampsCamerasEyesAndDimensionsExactlyMatched=True,meanCandidateMinusBaseline=deltas,baseline=old,candidate=new))
- (root.parent/'comparison.json').write_text(json.dumps(dict(cases=comparisons,interpretation='Matched simulated timestamps/cameras; acquisition shader substitution only. Metrics are occupancy/coverage, not reading.'),indent=2)+'\n')
+ (root.parent/'comparison.json').write_text(json.dumps(dict(cases=comparisons,interpretation='Matched simulated timestamps/cameras; saved pre-gilt assets and shader versus final gilt, identical corrected mounting and camera. Metrics are occupancy/coverage, not reading.'),indent=2)+'\n')

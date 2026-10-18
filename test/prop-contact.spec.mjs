@@ -24,6 +24,7 @@ import { MESH_SURFACE, PROP_BOUNDS } from '../src/data/generated/prop-geometry.j
 import { wallContactAt } from '../src/world/wall-contact.js';
 import { CELL } from '../src/data/floorplan/legend.js';
 import { TENOR_ROPE_AUTHORED } from '../src/data/bell-tower-layout.js';
+import { BUILDING_WINDOWS } from '../src/data/building-windows.js';
 
 FP.compile(conservatory.levels, {
   width: conservatory.width, height: conservatory.height,
@@ -73,6 +74,91 @@ const plan = {
     assert.ok(Math.abs(p.elevation - surface) < 1e-6,
       `${p.id} is not standing on ${host.id}'s measured surface`);
   }
+}
+
+// A frame's decorated +Z face must point into its own room while its measured
+// rear plane touches masonry. Merely finding a nearby solid cell missed both
+// the six frames buried by 2.75cm and the dead-end canvas facing through a wall.
+{
+  const portraits = [
+    ['foyer-portrait-titian',0,1], ['foyer-portrait-greco',0,1],
+    ['hall-portrait-bronzino',0,1], ['hall-portrait-florentine',0,1],
+    ['chapel-portrait-pollaiuolo',0,1], ['chapel-portrait-netherlandish',0,1],
+    ['deadend-ground-painting',-1,0],
+  ];
+  const renderedById = new Map(PROPS.renderInstances({inscriptions:false}).map((p)=>[p.id,p]));
+  for (const [id,nx,ny] of portraits) {
+    const p = instances.find((prop)=>prop.id===id);
+    assert.ok(p,`${id} is missing`);
+    assert.equal(p.mount,'wall',`${id} bypasses measured mounting`);
+    assert.deepEqual(p.mountNormal,{nx,ny},`${id} names the wrong room-facing wall normal`);
+    const rendered = renderedById.get(id);
+    assert.ok(rendered,`${id} is not rendered`);
+    const contact = wallContactAt(plan,p.rx+.5,p.ry+.5,{prefer:{nx,ny}});
+    assert.ok(contact,`${id} has no wall with its authored room-facing normal`);
+    const front = {x:-Math.sin(rendered.yaw),z:Math.cos(rendered.yaw)};
+    assert.ok(Math.abs(front.x-nx)<1e-9&&Math.abs(front.z-ny)<1e-9,
+      `${id} shows its back to the room`);
+    const depth = PROP_BOUNDS[p.mesh].min[2]*rendered.scale*(rendered.scaleZ??1);
+    const rear = {x:rendered.x+front.x*depth,z:rendered.z+front.z*depth};
+    const wallCell = FP.logicalToPhysical(contact.cell.x,contact.cell.y);
+    if (contact.planeX!==null) {
+      const planeX = (wallCell.x+contact.planeX-contact.cell.x)*CELL;
+      assert.ok(Math.abs(rear.x-planeX)<1e-6,`${id} rear floats off or penetrates its physical wall`);
+    }
+    if (contact.planeY!==null) {
+      const planeZ = (wallCell.z+contact.planeY-contact.cell.y)*CELL;
+      assert.ok(Math.abs(rear.z-planeZ)<1e-6,`${id} rear floats off or penetrates its physical wall`);
+    }
+  }
+}
+
+// Real window openings also need their occupied wall faces kept clear. Test
+// resolved render poses and packed geometry, rather than just the paper anchor:
+// Greco previously crossed the foyer jamb and the pool light occupied glazing.
+{
+  const renderedById=new Map(PROPS.renderInstances({inscriptions:false}).map(p=>[p.id,p]));
+  const worldBounds=id=>{
+    const p=renderedById.get(id);
+    assert.ok(p,`${id} is not rendered`);
+    const bounds=PROP_BOUNDS[p.mesh];
+    assert.ok(bounds,`${id} has no measured geometry`);
+    const min=[Infinity,Infinity,Infinity],max=[-Infinity,-Infinity,-Infinity];
+    const c=Math.cos(p.yaw||0),s=Math.sin(p.yaw||0),scale=p.scale??1;
+    for(const x0 of [bounds.min[0],bounds.max[0]])
+      for(const y0 of [bounds.min[1],bounds.max[1]])
+        for(const z0 of [bounds.min[2],bounds.max[2]]){
+          const x=x0*scale*(p.scaleX??1),y=y0*scale*(p.scaleY??1),z=z0*scale*(p.scaleZ??1);
+          const point=[c*x-s*z+p.x,y+p.y,s*x+c*z+p.z];
+          for(let axis=0;axis<3;axis++){
+            min[axis]=Math.min(min[axis],point[axis]);max[axis]=Math.max(max[axis],point[axis]);
+          }
+        }
+    return {min,max};
+  };
+  const foyer=BUILDING_WINDOWS.find(w=>w.id==='W3-foyer-north');
+  const greco=worldBounds('foyer-portrait-greco'),titian=worldBounds('foyer-portrait-titian');
+  const foyerFrame=worldBounds(`building-window-unit-${foyer.id}`);
+  assert.ok(greco.max[1]>foyer.sill&&greco.min[1]<foyer.head,'portrait clearance must be checked at the actual aperture height');
+  assert.ok(greco.max[0]<=foyer.physical.x0-.08,'Greco crosses the real foyer aperture');
+  assert.ok(greco.max[0]<=foyerFrame.min[0]-.08,'Greco overlaps the finished foyer jamb or curtain assembly');
+  assert.ok(greco.min[0]>=titian.max[0]+.20,'clearing the window must retain separation from Titian');
+
+  const pool=BUILDING_WINDOWS.find(w=>w.id==='W4-pool-south');
+  const light=instances.find(p=>p.id==='natatorium-light-emergency-far');
+  assert.ok(light,'the far pool emergency light is missing');
+  const rendered=renderedById.get(light.id),lightBox=worldBounds(light.id),poolFrame=worldBounds('natatorium-end-window');
+  assert.equal(light.mount,'wall','the far pool light bypasses measured wall mounting');
+  assert.deepEqual(light.mountNormal,{nx:0,ny:-1},'the pool light must face into the room from the south wall');
+  assert.deepEqual({nx:light.wallContact?.nx,ny:light.wallContact?.ny},{nx:0,ny:-1},'the authored south-wall contact did not resolve');
+  assert.ok(lightBox.max[1]>pool.sill&&lightBox.min[1]<pool.head,'light clearance must be checked at the actual aperture height');
+  assert.ok(lightBox.min[0]>=pool.physical.x1+.08,'the pool light occupies a clear pane');
+  assert.ok(lightBox.min[0]>=poolFrame.max[0]+.08,'the pool light overlaps the finished window frame');
+  const rearZ=rendered.z+Math.cos(rendered.yaw)*PROP_BOUNDS[light.mesh].min[2]*rendered.scale*(rendered.scaleZ??1);
+  assert.ok(Math.abs(rearZ-pool.physical.z0)<1e-6,'the pool light rear floats off or penetrates the actual south masonry face');
+  assert.ok(Math.abs(-Math.sin(rendered.yaw))<1e-9&&Math.abs(Math.cos(rendered.yaw)+1)<1e-9,'the pool light decorated face points away from the room');
+  assert.equal(light.lightCircuit,'sp02');
+  assert.deepEqual(light.lightColor,[1,.018,.008]);
 }
 
 // The cabinet is authored with its decorated +Z face into the room and its

@@ -6,6 +6,7 @@ import { buildBellsGodPreset } from '../src/game/chunk-surf-god.js';
 import { PROP_BOUNDS } from '../src/data/generated/prop-geometry.js';
 import { towerPersonalWorldPieces } from '../src/render/tower-personal-worlds.js';
 import { normalizeTowerPersonalJourney } from '../src/game/tower-personal-journey.js';
+import { PROP_INSTANCE_FLOATS, PROP_INSTANCE_BINDINGS } from '../src/render/prop-instance-layout.js';
 
 test('the recordist circuit has finite grounded geometry with complete surface attributes', () => {
   const pieces=towerPersonalGeometry();
@@ -105,11 +106,12 @@ test('the physical level bar moves on the actual recorder panel, including the s
 
 test('personal props install once into the shared pack with the normal instance layout and useful cull bounds', () => {
   let id=0,buffers=0;
-  const divisors=[],strides=[];
+  const divisors=[],strides=[],pointers=[],disabled=[],constants=[];
   const gl={ARRAY_BUFFER:1,ELEMENT_ARRAY_BUFFER:2,STATIC_DRAW:3,FLOAT:4,UNSIGNED_INT:5,
     createBuffer:()=>{buffers++;return ++id;},createVertexArray:()=>++id,
     bindVertexArray:()=>{},bindBuffer:()=>{},bufferData:()=>{},enableVertexAttribArray:()=>{},
-    vertexAttribPointer:(_location,_size,_type,_normalized,stride)=>strides.push(stride),
+    disableVertexAttribArray:(location)=>disabled.push(location),vertexAttrib1f:(location,value)=>constants.push([location,value]),
+    vertexAttribPointer:(location,size,_type,_normalized,stride,offset)=>{strides.push(stride);pointers.push([location,size,stride,offset]);},
     vertexAttribDivisor:(location,divisor)=>divisors.push([location,divisor]),
   };
   const pack={catalog:new Map()};
@@ -119,8 +121,13 @@ test('personal props install once into the shared pack with the normal instance 
   for(const name of ['tower_personal_boy_body','tower_personal_hand_support','tower_personal_hall_roof','tower_personal_portal_leaf','ending_roof_guarantor'])assert.ok(pack.catalog.has(name));
   installTowerPersonalMeshes(gl,pack);
   assert.equal(buffers,firstBuffers);
-  assert.ok(strides.includes(29*4));
-  assert.ok(divisors.some(([location,divisor])=>location===15&&divisor===1));
+  assert.ok(strides.includes(PROP_INSTANCE_FLOATS*4));
+  for(const [location,size,offset]of PROP_INSTANCE_BINDINGS)
+    assert.ok(pointers.some(([at,width,stride,byteOffset])=>at===location&&width===size&&stride===PROP_INSTANCE_FLOATS*4&&byteOffset===offset),`shared instance binding ${location}`);
+  for(let column=0;column<4;column++)
+    assert.ok(pointers.some(([at,width,stride,byteOffset])=>at===3+column&&width===4&&stride===PROP_INSTANCE_FLOATS*4&&byteOffset===column*16),'four matrix columns retain byte offsets');
+  assert.ok(divisors.every(([location,divisor])=>divisor===1&&![8,9,15].includes(location)),'old scalar flag/attribute15 bindings stay absent');
+  assert.ok(disabled.includes(8)&&constants.some(([location,value])=>location===8&&value===0),'ordinary tower meshes leave the dressing-zone override disabled at zero');
   for(const mesh of pack.catalog.values()) {
     assert.ok(mesh.extras.bounds);
     assert.ok(mesh.primitives.every(p=>p.materialRole==='tower-personal-prop'));

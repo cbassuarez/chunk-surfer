@@ -1,9 +1,9 @@
 {
   "file": "opening-street.glb",
   "pack": {
-    "sha256": "64639979fe4c7d3b13295714d299d851f36294f4e02098030fcb3801deef0641",
-    "bytes": 15033528,
-    "triangles": 8118
+    "sha256": "74e9841e0505b612e43f9e953cbcab411d0a8fbcda91dea10a8f62ae9f73630d",
+    "bytes": 15036304,
+    "triangles": 8110
   },
   "license": {
     "id": "CC0-1.0",
@@ -429,5 +429,9 @@
         "height": "textures/rusty_painted_metal_disp_4k.png"
       }
     }
-  ]
+  ],
+  "groundReceiver": {
+    "revision": 1,
+    "generator": "tools/chunk_surfer/rebuild-opening-ground.mjs"
+  }
 }

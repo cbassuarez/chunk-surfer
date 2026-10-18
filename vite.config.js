@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { PAPER_WORLD_MATERIAL } from './src/data/paper-world-material.js';
 
 const host = process.env.TAURI_DEV_HOST;
 const appVersion = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version;
@@ -15,7 +16,7 @@ function physicalPaperRuntimeAssets() {
     apply: 'build',
     generateBundle() {
       const catalog = JSON.parse(readFileSync(new URL('./assets/paper/catalog.json', import.meta.url), 'utf8'));
-      const paths = new Set(['assets/paper/world-atlas.webp', 'assets/paper/world-pigment.png']);
+      const paths = new Set(['assets/paper/world-atlas.webp', 'assets/paper/world-pigment.png', PAPER_WORLD_MATERIAL.path]);
       for (const document of Object.values(catalog.documents)) for (const page of document.pages) {
         paths.add(page.path);
         if (page.materialPath) paths.add(page.materialPath);

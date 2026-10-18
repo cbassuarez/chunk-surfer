@@ -148,10 +148,14 @@ for(const id of MUTE_EXCEPTIONS){
   const prop=academicProps.find((entry)=>entry.id===id);
   assert.ok(prop?.inspect?.first,`${id} is inspectable, which is the whole point of the exception`);
 }
-for(const id of ['academic-atrium-structure','academic-skylight','academic-garden-basin','atrium-perimeter-relief']){
+for(const id of ['academic-atrium-structure','academic-garden-basin','atrium-perimeter-relief']){
   const prop=CONSERVATORY_PROPS.find((entry)=>entry.id===id);
   assert.deepEqual(prop?.renderGroups,['ground','academic']);
 }
+assert.deepEqual(CONSERVATORY_PROPS.find(prop=>prop.id==='academic-skylight')?.renderGroups,['ground'],
+  'the oversized legacy grid remains below rather than drawing a second gallery roof');
+assert.deepEqual(CONSERVATORY_PROPS.find(prop=>prop.id==='academic-roof-glazing')?.renderGroups,['academicRoof','academic'],
+  'the real supported roof supplies the gallery underside without moving its roof instance');
 
 const project=(point)=>{
   const p=FP.logicalToPhysical(...Object.values(runtime(point)));

@@ -57,8 +57,8 @@ const PIN_PLACES = Object.freeze({
     cite: at('src/main.js', "'tower-ringing-bench-west': {"),
   },
   'pin.yard': {
-    where: 'Nowhere. It is not picked up.',
-    why: 'Granted for standing still in the yard long enough to watch the weather, and then noticing what was put behind you while you did. Nothing announces it — the only pin a player can be handed without being told.',
+    where: 'At the outward-facing city seat in the last east arcade bay of the school roof. It is not picked up.',
+    why: 'After forty-five uninterrupted seated seconds, a chair appears behind a shoulder. Only seeing it grants the lead. Nothing announces it; the saved flag keeps its old name so an already earned lead survives.',
     cite: at('src/game/yard-vigil.js', "FLAG: 'pin.yard'"),
   },
 });

@@ -3,6 +3,7 @@
 // furniture. They do not introduce a separate apparition or screen overlay.
 import { physicalPrintPixels, uploadPhysicalPrint } from './physical-source-print.js';
 import { worldLetteringFont } from './world-lettering-fonts.js';
+import { PROP_INSTANCE_FLOATS, PROP_INSTANCE_BINDINGS } from './prop-instance-layout.js';
 
 export const TOWER_RECORDER_PRINT = Object.freeze({copy:'DA1000',frontAxis:'-z',
   printedSurface:Object.freeze({version:1,coverage:'baseColorAlpha',polarity:'light-on-dark',
@@ -12,7 +13,7 @@ const recorderPrintTextures=new WeakMap();
 function recorderPrintTexture(gl){
   if(typeof document==='undefined')return null;
   if(recorderPrintTextures.has(gl))return recorderPrintTextures.get(gl);
-  const bitmap=physicalPrintPixels({width:256,height:48,ground:'rgb(129,134,132)',draw(c,m){
+  const bitmap=physicalPrintPixels({width:256,height:48,ground:'rgb(129,134,132)',finish:{profile:'satin-metal',widthM:.159,heightM:.018,seed:'DA1000-fascia'},draw(c,m){
     c.textAlign=m.textAlign='center';c.textBaseline=m.textBaseline='alphabetic';
     c.font=m.font=worldLetteringFont(48,'sansBold');
     const cap=c.measureText('H').actualBoundingBoxAscent||34;
@@ -20,12 +21,8 @@ function recorderPrintTexture(gl){
     c.fillStyle='rgb(209,204,184)';m.fillStyle='#fff';
     c.fillText(TOWER_RECORDER_PRINT.copy,128,42);m.fillText(TOWER_RECORDER_PRINT.copy,128,42);
   }});
-  const texture=uploadPhysicalPrint(gl,bitmap,{repeat:false}),ormPixels=new Uint8Array(bitmap.pixels.length);
-  for(let i=0;i<ormPixels.length;i+=4){const paint=bitmap.pixels[i+3]/255;
-    ormPixels[i]=255;ormPixels[i+1]=Math.round((.64+(.91-.64)*paint)*255);
-    ormPixels[i+2]=Math.round(.7*(1-paint)*255);ormPixels[i+3]=255;}
-  const ormTexture=uploadPhysicalPrint(gl,{...bitmap,pixels:ormPixels},{repeat:false,srgb:false});
-  const maps={texture,ormTexture};recorderPrintTextures.set(gl,maps);return maps;
+  const texture=uploadPhysicalPrint(gl,bitmap,{repeat:false}),normalTexture=uploadPhysicalPrint(gl,{...bitmap,pixels:bitmap.normalPixels},{repeat:false,srgb:false}),ormTexture=uploadPhysicalPrint(gl,{...bitmap,pixels:bitmap.ormPixels},{repeat:false,srgb:false});
+  const maps={texture,normalTexture,ormTexture,letteringFinish:bitmap.finish};recorderPrintTextures.set(gl,maps);return maps;
 }
 
 const MATERIALS = {
@@ -580,12 +577,17 @@ export function installTowerPersonalMeshes(gl,pack) {
       bind(0,source.positions,3);bind(1,source.normals,3);bind(2,source.uvs,2);
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,new Uint32Array(source.indices),gl.STATIC_DRAW);
       gl.bindBuffer(gl.ARRAY_BUFFER,instanceBuffer);
-      for(const [location,size,offset]of [[3,4,0],[4,4,4],[5,4,8],[6,4,12],[7,1,16],[8,1,17],[9,1,18],[10,4,19],[11,1,23],[12,4,24],[15,1,28]]) {
-        gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,size,gl.FLOAT,false,29*4,offset*4);gl.vertexAttribDivisor(location,1);
+      const stride=PROP_INSTANCE_FLOATS*4;
+      for(let column=0;column<4;column++){
+        const location=3+column;gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,4,gl.FLOAT,false,stride,column*16);gl.vertexAttribDivisor(location,1);
       }
+      for(const [location,size,offset]of PROP_INSTANCE_BINDINGS){
+        gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,size,gl.FLOAT,false,stride,offset);gl.vertexAttribDivisor(location,1);
+      }
+      gl.disableVertexAttribArray(8);gl.vertexAttrib1f(8,0);
       const material=MATERIALS[source.material];
       const printMaps=source.material==='recorder-print'?recorderPrintTexture(gl):null;
-      primitives.push({vao,count:source.indices.length,indexType:gl.UNSIGNED_INT,base:material.base,emissive:material.emissive||[0,0,0],texture:printMaps?.texture||null,ormTexture:printMaps?.ormTexture||null,metallic:material.metallic||0,roughness:material.roughness,aoStrength:0,portrait:false,alphaCut:0,materialName:material.name,materialRole:'tower-personal-prop',printedSurface:source.material==='recorder-print'?TOWER_RECORDER_PRINT.printedSurface:null});
+      primitives.push({vao,count:source.indices.length,indexType:gl.UNSIGNED_INT,base:material.base,emissive:material.emissive||[0,0,0],texture:printMaps?.texture||null,normalTexture:printMaps?.normalTexture||null,letteringFinish:printMaps?.letteringFinish||null,materialFactors:printMaps?'gltf':undefined,ormTexture:printMaps?.ormTexture||null,metallic:material.metallic||0,roughness:material.roughness,aoStrength:0,portrait:false,alphaCut:0,materialName:material.name,materialRole:'tower-personal-prop',printedSurface:source.material==='recorder-print'?TOWER_RECORDER_PRINT.printedSurface:null});
     }
     pack.catalog.set(piece.name,{name:piece.name,nodeMatrix:identity,instanceBuffer,extras:{towerPersonal:true,bounds:piece.bounds},primitives});
   }

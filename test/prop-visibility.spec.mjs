@@ -32,6 +32,10 @@ assert.equal(shouldHideCrossEnvelopeProp({id:'bay-getin-sightline',mesh:'getin_s
   'the aligned Get-In shell closes the room through the exterior aperture');
 assert.equal(shouldHideCrossEnvelopeProp({id:'main-open-well-stair',mesh:'main_open_well_stair',x:63,z:37},outside),true,'deep interior structure cannot leak through exterior courts');
 assert.equal(shouldHideCrossEnvelopeProp({id:'yard-van',mesh:'yard_van',x:16,z:4.8},outside),false);
+for(const id of ['occupation-baths-service-entry','occupation-baths-rainwater']){
+  assert.equal(shouldHideCrossEnvelopeProp({id,mesh:'occupation_service_glands',x:69,z:48},outside),false,'outdoor service attachments survive the civic envelope filter');
+}
+assert.equal(shouldHideCrossEnvelopeProp({id:'occupation-cloak-rail',mesh:'occupation_cloak_rail',x:84,z:6},outside),true,'indoor occupation remains hidden from the street');
 assert.equal(shouldHideCrossEnvelopeProp({id:'bay-west-elevation',mesh:'conservatory_west_elevation',x:50,z:7.5},inside),true,'exterior facade cannot cross the interior camera');
 assert.equal(shouldHideCrossEnvelopeProp({id:'dock-chandelier-frame',mesh:'tower_frame',x:69,z:6.25},inside),false);
 assert.equal(shouldHideCrossEnvelopeProp({id:'bay-getin-sightline',mesh:'getin_sightline_shell',x:53,z:7.5},inside),true,

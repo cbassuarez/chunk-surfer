@@ -1,3 +1,5 @@
+import { BUILDING_AMENITY_DOORS } from './building-amenities.js';
+import { PUB_DOORS } from './exterior-pub.js';
 // Explicit door schedule for Ellery Conservatory. Door geometry, behaviour,
 // locks and acoustic loss are authored here; portal width never infers leaves.
 
@@ -114,6 +116,8 @@ const D = (id, archetype, legacyId, options = {}) => {
 };
 
 export const CONSERVATORY_DOORS = Object.freeze([
+  ...BUILDING_AMENITY_DOORS,
+  ...PUB_DOORS,
   // The public front was sealed when Ellery closed. It is still an architectural
   // entrance—not an open portal into an unbuilt outside—and the closure key is
   // deliberately absent from the recordist's ring.

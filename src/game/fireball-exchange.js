@@ -170,6 +170,7 @@ export function createFireballExchange({
         offers:0,
         catchReady:false,
         acquired:false,
+        acquiredOffers:0,
         offerDeadline:0,
         canvasProgress:.86,
         dwell:0,
@@ -251,9 +252,17 @@ export function createFireballExchange({
     const rejected={acquired:false,charge,threshold};
     if(stopped||!active||String(castId)!==active.plan.castId||!Number.isInteger(offer))return rejected;
     const ray=active.rays.find(ray=>ray.id===rayId&&['approach','rebound'].includes(ray.state));
-    if(!ray||offer!==Math.min(FIREBALL_OFFERS,ray.offers+1))return rejected;
-    if(ray.acquired)return{acquired:true,duplicate:true,castId,rayId,offer,charge,threshold};
+    if(!ray||offer!==Math.min(FIREBALL_OFFERS,ray.state==='rebound'?ray.offers:ray.offers+1))return rejected;
+    if(ray.acquiredOffers&(1<<offer))return ray.state==='approach'
+      ?{acquired:true,duplicate:true,castId,rayId,offer,charge,threshold}:rejected;
+    if(ray.state==='rebound'){
+      // Contact with the still-visible old offer cancels its retreat once.
+      ray.state='approach';ray.offers=Math.max(0,ray.offers-1);
+      ray.outside=active.outsideSeconds;ray.rebound=0;
+    }
     ray.acquired=true;
+    ray.acquiredOffers|=1<<offer;
+    ray.catchReady=true;
     ray.offerDeadline=Math.max(active.outsideSeconds,(ray.state==='approach'?ray.outside:0)+FIREBALL_ACQUIRE_GRACE_SECONDS);
     last={type:'acquired',castId,rayId,offer};
     sync();

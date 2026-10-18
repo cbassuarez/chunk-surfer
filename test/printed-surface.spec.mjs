@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {printedSurfaceDescriptor,encodePrintedSurface,decodePrintedSurface,packPropWorldDepth,unpackPropWorldDepth} from '../src/render/printed-surface.js';
+import {printedSurfaceDescriptor,encodePrintedSurface,encodePrintedAreaSurface,decodePrintedSurface,packPropWorldDepth,unpackPropWorldDepth} from '../src/render/printed-surface.js';
 import {FIRE_ESCAPE_INK_BYTE} from '../src/render/fire-escape-ink.js';
 import {ROOF_SURFACE_INK_BYTE,ROOF_GLASS_INK_BYTE} from '../src/render/roof-surface-ink.js';
 
@@ -20,6 +20,27 @@ test('authored pigment remains opaque and cannot claim unrelated material tags',
   assert.throws(()=>printedSurfaceDescriptor(contract,{alphaMode:'MASK'}),/OPAQUE/);
   assert.throws(()=>printedSurfaceDescriptor(contract,{hasTexture:false}),/texture/);
   assert.throws(()=>printedSurfaceDescriptor({...contract,polarity:'guess-from-luma'}),/contract/);
+});
+
+test('area-averaged dark paper is explicit and cannot alias solid paint or structured marks',()=>{
+  const reserved=new Set();
+  for(let i=0;i<16;i++){
+    const tag=encodePrintedAreaSurface(i/15),byte=Math.round(tag*255);reserved.add(byte);
+    assert.deepEqual(decodePrintedSurface(byte/255),{kind:1,coverage:i/15,area:true});
+    assert.ok(byte>=112&&byte<=127);
+    for(const kind of[1,2])assert.notEqual(tag,encodePrintedSurface(i/15,kind));
+  }
+  for(let byte=0;byte<256;byte++){
+    const decoded=decodePrintedSurface(byte/255),solid=(byte>=136&&byte<=151)||(byte>=156&&byte<=171);
+    assert.equal(decoded.kind>0,reserved.has(byte)||solid,`byte ${byte} falsely classified`);
+    assert.equal(decoded.area===true,reserved.has(byte));
+  }
+  const base={version:1,coverage:'baseColorAlpha',polarity:'dark-on-light'};
+  assert.equal(printedSurfaceDescriptor({...base,sampling:'area'}).sampling,'area');
+  assert.deepEqual(Object.keys(printedSurfaceDescriptor(base)),['version','coverage','polarity','process','emission']);
+  assert.throws(()=>printedSurfaceDescriptor({...base,sampling:'area',coverage:'solid'}),/Area print/);
+  assert.throws(()=>printedSurfaceDescriptor({...base,sampling:'area',polarity:'light-on-dark'}),/Area print/);
+  assert.throws(()=>printedSurfaceDescriptor({...base,sampling:'guessed'}),/sampling/);
 });
 
 test('reusing the depth slot preserves the hardware depth quantization',()=>{

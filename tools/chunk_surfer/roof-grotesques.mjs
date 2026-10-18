@@ -2,6 +2,7 @@
 // Their jaws, paws and folded wings are broad negative-space silhouettes;
 // neither tiny surface noise nor emissive eyes carries their expression.
 // These are ornamental beasts. No functioning rainwater drain is claimed.
+import {buildRoofWatcherPart} from './roof-watchers-geometry.mjs';
 export const ROOF_GROTESQUES=Object.freeze([
   {id:'rain-hound',kind:'hound',x:-11.5,z:-3,base:4.34,yaw:-Math.PI/2},
   {id:'squinting-lion',kind:'lion',x:11.5,z:-3,base:4.34,yaw:Math.PI/2},
@@ -24,7 +25,8 @@ export const ROOF_FOLIATE_HEAD=Object.freeze({
 });
 
 export function buildRoofGrotesques({m,materials,carvedStone,addBox,addBeam,
-  addEllipsoid,addCylinder,addQuad,placements=ROOF_GROTESQUES,foliateHead=ROOF_FOLIATE_HEAD}){
+  addEllipsoid,addCylinder,addQuad,placements=ROOF_GROTESQUES,foliateHead=ROOF_FOLIATE_HEAD,
+  splitWatchers=false}){
   const material=(name,rgb)=>{
     const id=materials.length;
     materials.push({name,pbrMetallicRoughness:{baseColorFactor:[...rgb,1],
@@ -33,6 +35,9 @@ export function buildRoofGrotesques({m,materials,carvedStone,addBox,addBeam,
   };
   const stone=carvedStone??material('roof grotesque rain-worn limestone',[.355,.320,.255]);
   const recess=material('roof grotesque deeply cut stone',[.055,.057,.050]);
+  // The loaded asset advertises whether its static stone has already been
+  // partitioned. Runtime must not draw another set over older complete packs.
+  if(splitWatchers)m.extras={...m.extras,roofWatchers:1};
 
   for(const at of placements){
     const c=Math.cos(at.yaw),s=Math.sin(at.yaw);
@@ -67,6 +72,12 @@ export function buildRoofGrotesques({m,materials,carvedStone,addBox,addBeam,
         beam([x,.64,.17],[x,.76,.21],.070);
       box([0,.698,.184],[width*.60,.10,.025],recess);
     };
+    const attachHead=(kind,pivot)=>{
+      const anchor=p(pivot);
+      buildRoofWatcherPart({m,materials,kind,carvedStone:stone,recessStone:recess,
+        addBox,addBeam,addEllipsoid,addCylinder,addQuad,
+        at:{x:anchor[0],y:anchor[1],z:anchor[2],yaw:at.yaw}});
+    };
 
     // A whole carved stool, not a statue hovering above a narrow cornice.
     box([0,.035,0],[.76,.07,.76]);
@@ -77,15 +88,9 @@ export function buildRoofGrotesques({m,materials,carvedStone,addBox,addBeam,
       // to a stone yard dog watching a rehearsal than a heraldic monster.
       ell([0,.43,-.10],[.255,.28,.28]);
       ell([0,.67,.055],[.18,.29,.18]);
-      ell([0,.93,.12],[.205,.205,.18]);
-      jaw(.34);paw(-.20);paw(.20);
-      for(const sign of[-1,1]){
-        face([sign*.15,1.08,.06],[sign*.28,1.03,.07],
-          [sign*.26,.65,.14],[sign*.18,.72,.20]);
-        beam([sign*.22,1.00,.11],[sign*.235,.73,.15],.075);
-      }
-      eye(-.10,.96,.275,-.020);eye(.10,.96,.275,.020);
-      box([0,.842,.465],[.16,.075,.035],recess);
+      if(splitWatchers)addCylinder(m,p([0,.72,.12]),.19,.22,stone,12);
+      else attachHead('hound',[0,.72,.12]);
+      paw(-.20);paw(.20);
       beam([-.12,.21,-.29],[.13,.18,-.40],.10);
       beam([.13,.18,-.40],[.25,.28,-.32],.09);
     }else if(at.kind==='lion'){
@@ -121,19 +126,16 @@ export function buildRoofGrotesques({m,materials,carvedStone,addBox,addBeam,
       face([-.13,.30,-.22],[.13,.30,-.22],[.10,.12,-.46],[-.10,.12,-.46]);
     }else if(at.kind==='owl'){
       ell([0,.43,-.04],[.255,.30,.24]);
-      ell([0,.88,.025],[.31,.275,.235]);
+      if(splitWatchers)ell([0,.72,.025],[.235,.115,.205]);
+      else attachHead('owl',[0,.73,.025]);
       // Two broad facial discs surround small deeply recessed eyes. A heavy
       // joined brow is readable before the pupil or feather incisions are.
       for(const sign of[-1,1]){
-        ell([sign*.135,.91,.217],[.132,.153,.055]);
-        ell([sign*.135,.925,.267],[.063,.064,.018],recess,6,8);
-        beam([sign*.03,1.025,.247],[sign*.25,1.065,.19],.075);
         face([sign*.17,.65,.05],[sign*.32,.52,-.09],
           [sign*.23,.19,-.27],[sign*.15,.30,.03]);
         beam([sign*.27,.49,-.11],[sign*.21,.22,-.23],.075);
         box([sign*.12,.12,.16],[.16,.10,.23]);
       }
-      face([-.08,.92,.262],[.08,.92,.262],[.035,.755,.325],[-.035,.755,.325]);
       face([-.07,.27,-.17],[.07,.27,-.17],[.075,.13,-.35],[-.075,.13,-.35]);
     }else throw new Error(`Unknown roof grotesque kind: ${at.kind}`);
   }
@@ -141,32 +143,13 @@ export function buildRoofGrotesques({m,materials,carvedStone,addBox,addBeam,
   if(foliateHead){
     // A single large foliate head joins the stone order to the terrace's
     // living growth. It is a keystone relief, not another freestanding beast.
-    const at=foliateHead,c=Math.cos(at.yaw),s=Math.sin(at.yaw);
-    const p=([x,y,z])=>[at.x+x*c-z*s,at.y+y,at.z+x*s+z*c];
-    const box=(centre,size,mat=stone)=>addBox(m,p(centre),size,mat,at.yaw);
-    const beam=(a,b,w,mat=stone)=>addBeam(m,p(a),p(b),w,mat);
-    const face=(a,b,c,d)=>{
-      addQuad(m,p(a),p(b),p(c),p(d),stone);
-      addQuad(m,p(d),p(c),p(b),p(a),stone);
-    };
-    addEllipsoid(m,p([0,0,.035]),[.10,.27,.22],stone,6,8);
-    for(const sign of[-1,1]){
-      box([sign*.105,.035,.142],[.080,.055,.023],recess);
-      beam([sign*.025,.105,.158],[sign*.185,.155,.10],.065);
-      // Each broad leaf has a folded central ridge and a deeply scalloped
-      // outline. The dark gaps between leaves carry more than fine veins.
-      for(const [root,tip,edge]of[
-        [[.14,.13,.07],[.48,.37,.045],[.34,.04,.11]],
-        [[.17,-.035,.07],[.50,-.11,.025],[.32,-.30,.09]],
-        [[.09,-.18,.065],[.27,-.45,.035],[.02,-.32,.11]],
-      ]){
-        const a=[sign*root[0],root[1],root[2]],b=[sign*tip[0],tip[1],tip[2]],
-          d=[sign*edge[0],edge[1],edge[2]],ridge=[sign*(root[0]+tip[0])*.54,(root[1]+tip[1])*.5,.15],
-          shoulder=[sign*(root[0]+edge[0])*.55,(root[1]+tip[1])*.5+.07,.07];
-        face(a,shoulder,b,ridge);face(b,d,a,ridge);
-      }
-    }
-    face([-.065,.08,.16],[.065,.08,.16],[.045,-.09,.245],[-.045,-.09,.245]);
-    box([0,-.15,.145],[.13,.055,.02],recess);
+    const at=foliateHead;
+    if(splitWatchers){
+      const c=Math.cos(at.yaw),s=Math.sin(at.yaw);
+      addEllipsoid(m,[at.x+.035*s,at.y,at.z-.035*c],
+        Math.abs(s)>.5?[.10,.28,.27]:[.27,.28,.10],stone,8,12);
+    }else buildRoofWatcherPart({m,materials,kind:'foliate',carvedStone:stone,recessStone:recess,
+      addBox,addBeam,addEllipsoid,addCylinder,addQuad,at});
   }
+  return{recessStone:recess};
 }

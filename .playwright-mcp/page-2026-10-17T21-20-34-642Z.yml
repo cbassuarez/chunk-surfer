@@ -1,0 +1,214 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - paragraph [ref=e4]: Chunk Surfer · one existing Hall encounter · 17 October 2026
+    - heading "A slow hand becomes an audience." [level=1] [ref=e5]
+    - paragraph [ref=e6]: One applause cue for the existing Hall apparition formation. A witnessed held arrangement changes; human contacts become a short real ensemble at the same fixed station, then one isolated hand remains.
+    - generic "Current evidence" [ref=e7]:
+      - generic [ref=e8]:
+        - strong [ref=e9]: Source recognition
+        - text: "Confirmed by the author: “Yes, these read as claps.”"
+      - generic [ref=e10]:
+        - strong [ref=e11]: Completed cue listening
+        - text: Pending · source approval does not approve the composite.
+      - generic [ref=e12]:
+        - strong [ref=e13]: Fresh participants
+        - text: 0 · no perceptual efficacy claim.
+  - region [ref=e14]:
+    - heading "Listen to the current version" [level=2] [ref=e15]
+    - paragraph [ref=e16]: Five-second centre-listener reference renders. Same four isolated contacts and one ensemble excerpt in both audible arms; score timing and measured response differ. No autoplay. These files do not include movement-dependent game acoustics.
+    - generic [ref=e17]:
+      - article [ref=e18]:
+        - generic [ref=e19]: V2
+        - heading "Treatment" [level=3] [ref=e20]
+        - paragraph [ref=e21]: Opening hands at 0 / 0.52 / 1.00 s; ensemble at 1.08 s; late hand at 3.38 s.
+        - generic "Treatment reference audio" [ref=e22]
+        - link "Download WAV" [ref=e23] [cursor=pointer]:
+          - /url: renders/treatment-full.wav
+        - paragraph [ref=e24]: −27.00 LUFS · −11.56 dBTP
+      - article [ref=e25]:
+        - heading "Ordinary applause control" [level=3] [ref=e26]
+        - paragraph [ref=e27]: Same source excerpts and counts; opening hands at 0 / 0.36 / 0.72 s; ensemble at 0.80 s.
+        - generic "Ordinary applause reference audio" [ref=e28]
+        - link "Download WAV" [ref=e29] [cursor=pointer]:
+          - /url: renders/ordinary-full.wav
+        - paragraph [ref=e30]: −26.99 LUFS · −10.95 dBTP
+      - article [ref=e31]:
+        - heading "Silence control" [level=3] [ref=e32]
+        - paragraph [ref=e33]: Reserves the same encounter and scare opportunity. No applause is played.
+        - generic "Five-second silent control" [ref=e34]
+        - link "Download WAV" [ref=e35] [cursor=pointer]:
+          - /url: renders/silent-full.wav
+        - paragraph [ref=e36]: Five seconds of digital silence
+    - paragraph [ref=e37]:
+      - text: Constant gain matches the reference-window integrated levels.
+      - strong [ref=e38]: Perceived loudness, comfort, recognition and spatial effect still require listening.
+      - text: No dynamic normalization, limiter, time stretching or pitch change is used.
+      - link "Render report" [ref=e39] [cursor=pointer]:
+        - /url: renders/render-report.json
+      - text: ·
+      - link "Browser audio comparison" [ref=e40] [cursor=pointer]:
+        - /url: renders/offline-browser-report.json
+  - region [ref=e41]:
+    - heading "What would make it work?" [level=2] [ref=e42]
+    - paragraph [ref=e43]: Each claim needs its own evidence. A loud reaction alone cannot establish recognition, presence or an impossible space.
+    - table [ref=e45]:
+      - rowgroup [ref=e46]:
+        - row [ref=e47]:
+          - columnheader "Claim" [ref=e48]
+          - columnheader "What supports it" [ref=e49]
+          - columnheader "What contradicts it" [ref=e50]
+      - rowgroup [ref=e51]:
+        - row [ref=e52]:
+          - cell "Applause recognition" [ref=e53]
+          - cell "Fresh players spontaneously describe clapping or applause in the locked response to “What happened?”" [ref=e54]
+          - cell "Popcorn, clicks, gunshots, electricity or music; recognition arrives only after prompting." [ref=e55]
+        - row [ref=e56]:
+          - cell "Startle" [ref=e57]
+          - cell "A capture-synchronized interruption of movement or looking, plus a separately reported startle." [ref=e58]
+          - cell "No interruption, or only frustration/discomfort. Telemetry alone is not a physiological startle measurement." [ref=e59]
+        - row [ref=e60]:
+          - cell "Presence" [ref=e61]
+          - cell "Unprompted reference to people acting in the room; checking the origin or looking back, with stronger evidence than ordinary applause and silence." [ref=e62]
+          - cell "Players hear soundtrack, UI feedback, a recording or arbitrary spooky audio. Recognition or a head turn alone is insufficient." [ref=e63]
+        - row [ref=e64]:
+          - cell "Spatial impossibility" [ref=e65]
+          - cell "Unprompted mismatch descriptions and location reports, then separate spatial-fit/confidence answers." [ref=e66]
+          - cell "The room plausibly contains the applause, a conventional loudspeaker explains it, or the mismatch disappears during movement." [ref=e67]
+    - paragraph [ref=e68]:
+      - strong [ref=e69]: Spatial impossibility is the weakest hypothesis.
+      - text: Neither imported response proves a vast room; the Hall can plausibly contain applause. Three observed lit pulses, 3.5 seconds of observed illumination and 65 ms scheduling after the dark edge are authoring hypotheses. Device latency and the actual source attack also affect audible timing.
+    - generic [ref=e70]:
+      - link "Experience and falsification criteria" [ref=e71] [cursor=pointer]:
+        - /url: evidence/experience-criteria.json
+      - link "Local first-encounter study fixture" [ref=e72] [cursor=pointer]:
+        - /url: ../../hall-encounter-study.html
+  - region [ref=e73]:
+    - heading "Editable session and source material" [level=2] [ref=e74]
+    - generic [ref=e75]:
+      - generic [ref=e76]:
+        - heading "Native Live 12 Intro sets" [level=3] [ref=e77]
+        - paragraph [ref=e78]: "Eight tracks: three hand lanes, one ensemble lane, two printed wet alternatives and two muted IR references. Five individually editable dry clips. Complete tails; unwarped playback; no overlapping clips on one lane. Preserve the project folder and its collected media."
+        - list [ref=e79]:
+          - listitem [ref=e80]:
+            - link "V2 treatment .als" [ref=e81] [cursor=pointer]:
+              - /url: live-session/Apparition%20Applause%20V2%20-%20Treatment.als
+          - listitem [ref=e82]:
+            - link "V2 ordinary control .als" [ref=e83] [cursor=pointer]:
+              - /url: live-session/Apparition%20Applause%20V2%20-%20Ordinary%20Control.als
+          - listitem [ref=e84]:
+            - link "Project instructions and rebuild commands" [ref=e85] [cursor=pointer]:
+              - /url: live-session/README.md
+          - listitem [ref=e86]:
+            - link "Independent native-XML verification" [ref=e87] [cursor=pointer]:
+              - /url: live-session/final-session-structural-validation.json
+        - paragraph [ref=e88]:
+          - strong [ref=e89]: "Native check:"
+          - text: both V2 sets opened in Live 12 and their transports played without a missing-media warning. Arrangement waveforms were visible; the ordinary lead, wet and Main meters were active. Both views were fitted and saved. Independent checks passed again on those native-saved files.
+          - link "Native observations and hashes" [ref=e90] [cursor=pointer]:
+            - /url: live-session/native-v2-verification.json
+          - text: . This confirms application behavior, not an auditory judgment.
+      - generic [ref=e91]:
+        - heading "Source listening and limits" [level=3] [ref=e92]
+        - paragraph [ref=e93]: The full-tail FreePats audition was recognized by the author. These are released, edited samples from one named contributor; the tracks do not imply multiple documented recording performers. The ensemble is a real published recording with an undocumented master chain.
+        - generic "Recognized full-tail FreePats source audition" [ref=e94]
+        - generic [ref=e95]:
+          - link "Hand-source provenance" [ref=e96] [cursor=pointer]:
+            - /url: materials-v2/freepats/provenance.json
+          - link "Ensemble provenance" [ref=e97] [cursor=pointer]:
+            - /url: materials/v2/dorian-clair-2363-provenance.json
+          - link "Credits and rights" [ref=e98] [cursor=pointer]:
+            - /url: materials/CREDITS.md
+        - paragraph [ref=e99]: Untouched continuous microphone masters are still missing. The retained original releases and disclosed edits do not replace those recordings.
+    - table [ref=e101]:
+      - rowgroup [ref=e102]:
+        - row [ref=e103]:
+          - columnheader "Material" [ref=e104]
+          - columnheader "Retained source / permissions" [ref=e105]
+          - columnheader "What is known and unknown" [ref=e106]
+      - rowgroup [ref=e107]:
+        - row [ref=e108]:
+          - cell "Isolated human hands" [ref=e109]
+          - cell [ref=e110]:
+            - link "FreePats / Roberto" [ref=e111] [cursor=pointer]:
+              - /url: https://github.com/freepats/world-percussion
+            - text: · CC0
+            - link "A" [ref=e112] [cursor=pointer]:
+              - /url: materials-v2/freepats/01_02.flac
+            - text: ·
+            - link "B" [ref=e113] [cursor=pointer]:
+              - /url: materials-v2/freepats/01_03.flac
+            - text: ·
+            - link "C" [ref=e114] [cursor=pointer]:
+              - /url: materials-v2/freepats/01_05.flac
+            - text: ·
+            - link "Late" [ref=e115] [cursor=pointer]:
+              - /url: materials-v2/freepats/01_06.flac
+          - cell "Recorded June 2019 with an AKG condenser microphone; creator cropped, edited and processed the release. Full released tails retained; no attack edit in V2." [ref=e116]
+        - row [ref=e117]:
+          - cell "Real ensemble" [ref=e118]
+          - cell [ref=e119]:
+            - 'link "Dorian CLAIR, Applause #1" [ref=e120] [cursor=pointer]':
+              - /url: https://bigsoundbank.com/applause-1-s2363.html
+            - text: ·
+            - link "CC0" [ref=e121] [cursor=pointer]:
+              - /url: https://bigsoundbank.com/licenses.html
+            - link "Published original WAV" [ref=e122] [cursor=pointer]:
+              - /url: materials/v2/dorian-clair-applause-2363-original.wav
+          - cell "Several people indoors; original is mono 48 kHz / 24-bit, 7.2 s. V2 uses 0.35–2.45 s with 80 ms cosine edge fades and constant gain. Performer count, microphone and master processing are unknown." [ref=e123]
+        - row [ref=e124]:
+          - cell "Measured responses" [ref=e125]
+          - cell [ref=e126]:
+            - link "Aalto meeting-room measurement" [ref=e127] [cursor=pointer]:
+              - /url: https://doi.org/10.5281/zenodo.4636068
+            - text: · CC BY 4.0
+            - link "York Hoffmann kiln, position 2" [ref=e128] [cursor=pointer]:
+              - /url: https://www.openair.hosted.york.ac.uk/?page_id=518
+            - text: · CC BY 4.0
+          - cell [ref=e129]:
+            - text: Real measurements with creator deconvolution/windowing. V2 selects scalar channel 0, retains 0.52 / 0.88 s and applies a short end fade. These do not measure the fictional Hall.
+            - link "Response analysis" [ref=e130] [cursor=pointer]:
+              - /url: materials/room-response-analysis.json
+            - text: ·
+            - link "Original provenance" [ref=e131] [cursor=pointer]:
+              - /url: materials/provenance.json
+  - region [ref=e132]:
+    - heading "Technical evidence and the actual encounter" [level=2] [ref=e133]
+    - paragraph [ref=e134]: The cue observes the existing Hall formation. Held poses, world anchoring, current lights, movement, dither and game punishment remain under their existing systems. The four-minute opening quiet, shared 150-second cooldown, room cap and recording protections remain. Pause, focus loss, recorder activity and other protected states cancel scheduled contacts and wet tails.
+    - generic [ref=e135]:
+      - link "Independent integration audit · 64 / 64 focused checks" [ref=e136] [cursor=pointer]:
+        - /url: final-independent-audit.json
+      - link "Independent V2 source / score audit" [ref=e137] [cursor=pointer]:
+        - /url: independent-v2-score-audit.json
+      - link "Study UI checks" [ref=e138] [cursor=pointer]:
+        - /url: study-ui/report.json
+      - link "Study response persistence" [ref=e139] [cursor=pointer]:
+        - /url: study-ui/storage-report.json
+      - link "Production code build" [ref=e140] [cursor=pointer]:
+        - /url: evidence/code-build.json
+    - generic [ref=e141]:
+      - strong [ref=e142]: "Hall engineering capture: recorded."
+      - text: The cue fired once, 246.46 seconds after trial start, after the original four-minute quiet. This fixture used probe-directed aiming, a pinned existing lamp, stable test focus and a forced existing absence card. All five sources stayed at the changed figure’s fixed world station; no new actor or light was added. The saved video includes program output and synchronized light/card/clock logs. This proves the engineering path under these conditions; it is not a natural first exposure or participant result. The optional local diffusion service was offline, so the game retained its procedural fallback.
+    - generic "Hall synchronized engineering capture" [ref=e143]
+    - generic [ref=e144]:
+      - link "Synchronized Hall output" [ref=e145] [cursor=pointer]:
+        - /url: evidence/hall-treatment-synchronized.webm
+      - link "Hall runtime trace" [ref=e146] [cursor=pointer]:
+        - /url: evidence/hall-runtime.json
+    - paragraph [ref=e147]: "Physical speaker-to-microphone check: pending. Routing and mask regressions cannot establish real hardware echo rejection. No model audio listening is available."
+  - region [ref=e148]:
+    - heading "What remains before a perceptual verdict" [level=2] [ref=e149]
+    - generic [ref=e150]:
+      - generic [ref=e151]:
+        - heading "Fresh first encounters" [level=3] [ref=e152]
+        - paragraph [ref=e153]: Use randomized, balanced between-player assignments to silence, ordinary applause and treatment. Normal movement; matched prepared game state. Begin with “What happened?”, then “Where did anything seem to happen?” Lock spontaneous answers before asking about recognition, presence, startle or spatial fit. Preserve exact responses and code them blind to condition. Retain no-cue trials as acquisition failures.
+      - generic [ref=e154]:
+        - heading "Current judgment" [level=3] [ref=e155]
+        - paragraph [ref=e156]: The original dry scientific claps were heard as clicks and too synthetic; the first composed cue was heard as popcorn. That treatment failed recognition and is retained as negative evidence. The longer source samples were recognized. The V2 composite, perceived level match and four perceptual claims remain untested; there are zero fresh participants.
+        - generic [ref=e157]:
+          - link "Rejected V1 evidence" [ref=e158] [cursor=pointer]:
+            - /url: rejected-v1/README.md
+          - link "Archived V1 session hashes" [ref=e159] [cursor=pointer]:
+            - /url: live-session/archive-v1-popcorn-rejected/v1-archive-manifest.json
+          - link "Research and missing recordings" [ref=e160] [cursor=pointer]:
+            - /url: materials/RESEARCH.md
+  - paragraph [ref=e161]: Technical proof, author feedback and participant evidence are reported separately. No fresh-player validation, impossible acoustic scale or untouched raw recording is claimed.

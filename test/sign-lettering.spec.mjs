@@ -7,7 +7,10 @@ import path from 'node:path';
 import {createHash} from 'node:crypto';
 import sharp from 'sharp';
 import {printedFaceGeometry} from '../tools/chunk_surfer/lettering/face-geometry.mjs';
-import {WORLD_INSCRIPTIONS} from '../src/data/world-inscriptions.js';
+import {WORLD_INSCRIPTIONS,corridorInscriptionsForHosts} from '../src/data/world-inscriptions.js';
+import * as FP from '../src/world/floorplan.js';
+import * as PROPS from '../src/game/props.js';
+import {conservatory} from '../src/data/floorplan/conservatory.js';
 const dir=process.env.CHUNK_SURFER_PROPS_TEST_DIR||'public/assets';
 const bytes=fs.readFileSync(path.join(dir,'conservatory-props.glb'));
 const jsonLength=bytes.readUInt32LE(12),gltf=JSON.parse(bytes.subarray(20,20+jsonLength)),bin=bytes.subarray(28+jsonLength);
@@ -15,8 +18,8 @@ const manifest=JSON.parse(fs.readFileSync(path.join(dir,'conservatory-props.lett
 assert.equal(createHash('sha256').update(bytes).digest('hex'),manifest.packSha256);
 // A narrow atlas revision records its producer inputs separately; the original
 // full-bake input hashes remain historical provenance for the retained faces.
-for(const[file,hash]of Object.entries(manifest.sourceHashes))assert.equal(createHash('sha256').update(fs.readFileSync(file)).digest('hex'),manifest.giltRevision?.sourceHashes?.[file]||hash,'Production lettering generator changed without rebuilding: '+file);
-if(manifest.giltRevision)for(const[file,hash]of Object.entries(manifest.giltRevision.sourceHashes))assert.equal(createHash('sha256').update(fs.readFileSync(file)).digest('hex'),hash,'Narrow gilt producer changed after revision: '+file);
+for(const[file,hash]of Object.entries(manifest.sourceHashes))assert.equal(createHash('sha256').update(fs.readFileSync(file)).digest('hex'),manifest.currentAssetReconciliation?.sourceHashes?.[file]||manifest.giltRevision?.sourceHashes?.[file]||hash,'Production lettering generator changed without rebuilding: '+file);
+if(manifest.giltRevision)for(const[file,hash]of Object.entries(manifest.giltRevision.sourceHashes))assert.equal(createHash('sha256').update(fs.readFileSync(file)).digest('hex'),manifest.currentAssetReconciliation?.sourceHashes?.[file]||hash,'Narrow gilt producer changed after revision: '+file);
 const expected={
  tower_rope_mat_tenor:['8/\nTENOR'],ending_returned_ledger:['','ALAN'],
  scene_dock_sign_foh:['FRONT OF HOUSE'],scene_dock_sign_services:['STUDIOS / PLANT'],
@@ -32,7 +35,15 @@ const expected={
  rekey_ledger:['REPLACEMENT LOCK — CHAPEL — CABINET C-17'],
  chapel_key_ring_ch04:['CH-04\nCHAPEL — MAIN'],chapel_key_ring_c17:['C-17'],chapel_key_ring_fohm:['FOH-M\nFRONT OF HOUSE — MASTER'],
 };
-for(const spec of WORLD_INSCRIPTIONS)(expected[spec.mesh]||=[]).push(spec.copy);
+FP.compile(conservatory.levels,{width:conservatory.width,height:conservatory.height,
+ widenCorridors:conservatory.widenCorridors,connectors:conservatory.connectors||[],
+ edgePortals:conservatory.edgePortals||[],doors:conservatory.doors||[]});
+PROPS.propsInit(FP);
+const corridorInscriptions=corridorInscriptionsForHosts(PROPS.renderInstances({inscriptions:false}));
+for(const spec of [...WORLD_INSCRIPTIONS,...corridorInscriptions])(expected[spec.mesh]||=[]).push(spec.copy);
+assert.deepEqual(manifest.corridorInscriptionAttachments.map(({id,hostId,hostMesh,copy})=>({id,hostId,hostMesh,copy})),
+ corridorInscriptions.map(({id,hostId,hostMesh,copy})=>({id,hostId,hostMesh,copy})),
+ 'Baked corridor labels must match only actual compiled hosts and their exact current literal names');
 assert.equal(manifest.entries.length,Object.values(expected).reduce((n,a)=>n+a.length,0));
 assert.equal(new Set(manifest.entries.map(e=>e.mesh)).size,Object.keys(expected).length);
 for(const [mesh,copies]of Object.entries(expected))assert.deepEqual(manifest.entries.filter(e=>e.mesh===mesh).map(e=>e.copy).sort(),copies.sort(),mesh+' authored content changed');
@@ -54,11 +65,17 @@ for(const entry of manifest.entries){
  for(let i=lo;i<hi;i++){
   assert.ok(uv[i*2]>=entry.uvRect[0]-1e-6&&uv[i*2]<=entry.uvRect[2]+1e-6);
   assert.ok(uv[i*2+1]>=entry.uvRect[1]-1e-6&&uv[i*2+1]<=entry.uvRect[3]+1e-6);
-  assert.ok(dot(n.slice(i*3,i*3+3),meta.normal)>.98,'Print normals point away from the reader');
+  const normal=n.slice(i*3,i*3+3);
+  assert.ok(Math.abs(Math.hypot(...normal)-1)<1e-5,'Print surface normals must remain unit length');
+  assert.ok(dot(normal,meta.normal)>(meta.shape==='railing-banner'?.85:.98),'Print normals point away from the reader');
  }
  for(let at=meta.firstIndex;at<meta.firstIndex+meta.indexCount;at+=3){
   const [a,b,c]=indices.slice(at,at+3).map(vertex),u=sub(b,a),v=sub(c,a),cross=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]];
   assert.ok(dot(cross,meta.normal)>0,entry.id+' reversed physical winding');
+  if(meta.shape==='railing-banner'){
+   const length=Math.hypot(...cross),faceNormal=cross.map(q=>q/length);
+   for(const index of indices.slice(at,at+3))assert.ok(dot(faceNormal,n.slice(index*3,index*3+3))>.98,entry.id+' cloth normals disagree with their actual curved triangles');
+  }
  }
  // Independently recover image direction from geometry: increasing U must
  // travel to the reader's right; increasing V must travel down the surface.

@@ -1,217 +1,902 @@
 {
-  "generatedAt": "2026-10-12T17:01:40.930Z",
-  "snapshot": "/private/tmp/tower-route-snapshot-WxlkWE",
-  "bundle": "main-DkLgvrx-.js",
+  "generatedAt": "2026-10-13T05:34:29.242Z",
+  "snapshot": "/private/tmp/tower-route-snapshot-Ir6DB2",
+  "bundle": "main-B9Bu8U7a.js",
   "manifest": "artifacts/tower-route-implementation/verification-source.json",
-  "method": "Recomputed SHA-256 for all 30 primary production files and compared complete frozen/shared src/main.js bytes.",
+  "method": "Recomputed current/frozen/capture-time SHA-256 for all primary and frozen-source files. Compared accepted-8b main function-span hashes preserved by the earlier complete-file reconstruction proof. Reversed only the added apron from the latest floorplan and matched the complete result to the archived 8b hash. Compared current lost-pose GLB accessor bytes/materials and builder definitions to committed base. Production read only.",
+  "bundleEvidence": {
+    "path": "/private/tmp/tower-route-snapshot-Ir6DB2/dist/assets/main-B9Bu8U7a.js",
+    "sha256": "5b9ba9d8557016cfffecb8aadcd9e78aae3f9fe4eaa9731388fd1b76ce85f9a7",
+    "bytes": 4976999
+  },
   "primaryFiles": {
-    "exactMatches": 30,
+    "exactMatches": 29,
     "total": 30,
     "comparisons": [
       {
         "path": "src/main.js",
-        "frozen": "5d177f1747b8373c72fd6ab81d1de6963c833c227d16eeab950bb519b4cfe4fd",
-        "current": "5d177f1747b8373c72fd6ab81d1de6963c833c227d16eeab950bb519b4cfe4fd",
-        "matches": true
+        "recorded": "118e5261ebb6df3b82f8bbebe8a75e069548b379ac7ec98f8ebd8429c80e61ae",
+        "frozen": "118e5261ebb6df3b82f8bbebe8a75e069548b379ac7ec98f8ebd8429c80e61ae",
+        "current": "0f36acb59b03fc75bd39584bfb1f3e3a34d53867f31d664a3d2cddf69715ca69",
+        "matches": false,
+        "frozenMatchesRecorded": true,
+        "storage": "Frozen source copy"
       },
       {
         "path": "src/game/chunk-surf-state.js",
+        "recorded": "c93626cc52dcb3133adfb5bc2293f2199d1b8b9352ab5f268496bccdbeaaff23",
         "frozen": "c93626cc52dcb3133adfb5bc2293f2199d1b8b9352ab5f268496bccdbeaaff23",
         "current": "c93626cc52dcb3133adfb5bc2293f2199d1b8b9352ab5f268496bccdbeaaff23",
-        "matches": true
+        "matches": true,
+        "frozenMatchesRecorded": true,
+        "storage": "Frozen source copy"
       },
       {
         "path": "src/game/combat.js",
-        "frozen": "ed52427667dcc222dbdad602efba20f8c52fe8e84d4bad10f703fc578cb9678c",
-        "current": "ed52427667dcc222dbdad602efba20f8c52fe8e84d4bad10f703fc578cb9678c",
-        "matches": true
+        "recorded": "14d0d7e6e24bbe0bf673ca42244218803cf0733c3b32d20b132e4a014a0184bc",
+        "frozen": "14d0d7e6e24bbe0bf673ca42244218803cf0733c3b32d20b132e4a014a0184bc",
+        "current": "14d0d7e6e24bbe0bf673ca42244218803cf0733c3b32d20b132e4a014a0184bc",
+        "matches": true,
+        "frozenMatchesRecorded": true,
+        "storage": "Frozen source copy"
       },
       {
         "path": "src/game/combat-state.js",
+        "recorded": "9342660df50516e164d3fda28f7dc4cc6fbe6ab08d307de1665b5ec7ec32f243",
         "frozen": "9342660df50516e164d3fda28f7dc4cc6fbe6ab08d307de1665b5ec7ec32f243",
         "current": "9342660df50516e164d3fda28f7dc4cc6fbe6ab08d307de1665b5ec7ec32f243",
-        "matches": true
+        "matches": true,
+        "frozenMatchesRecorded": true,
+        "storage": "Frozen source copy"
       },
       {
         "path": "src/game/combat-checkpoint.js",
+        "recorded": "5e9162bfb8dbf891921cb520d7feb118934f8e57b6f94207a6e24e6610370e5f",
         "frozen": "5e9162bfb8dbf891921cb520d7feb118934f8e57b6f94207a6e24e6610370e5f",
         "current": "5e9162bfb8dbf891921cb520d7feb118934f8e57b6f94207a6e24e6610370e5f",
-        "matches": true
+        "matches": true,
+        "frozenMatchesRecorded": true,
+        "storage": "Frozen source copy"
       },
       {
         "path": "src/game/cathedral-extraction.js",
-        "frozen": "a1fe7d3c54de9be1a11f6e86e5241192a4f821e88705abe659572f8c8fd8abab",
-        "current": "a1fe7d3c54de9be1a11f6e86e5241192a4f821e88705abe659572f8c8fd8abab",
-        "matches": true
+        "recorded": "43100c356d7a77481b819261574008bd187cd358906fc641952ad9d2c93f851e",
+        "frozen": "43100c356d7a77481b819261574008bd187cd358906fc641952ad9d2c93f851e",
+        "current": "43100c356d7a77481b819261574008bd187cd358906fc641952ad9d2c93f851e",
+        "matches": true,
+        "frozenMatchesRecorded": true,
+        "storage": "Frozen source copy"
       },
       {
         "path": "src/game/cathedral-descent.js",
+        "recorded": "3d8269855a2b67c469f9d2fbe52726b058168ddac28749ef315e75353cd3e38b",
         "frozen": "3d8269855a2b67c469f9d2fbe52726b058168ddac28749ef315e75353cd3e38b",
         "current": "3d8269855a2b67c469f9d2fbe52726b058168ddac28749ef315e75353cd3e38b",
-        "matches": true
+        "matches": true,
+        "frozenMatchesRecorded": true,
+        "storage": "Frozen source copy"
       },
       {
         "path": "src/data/st-brendans.js",
+        "recorded": "33a7f595f5f57d44f37a555e47bfd2b8be85a207807b914ec6324af064e593dd",
         "frozen": "33a7f595f5f57d44f37a555e47bfd2b8be85a207807b914ec6324af064e593dd",
         "current": "33a7f595f5f57d44f37a555e47bfd2b8be85a207807b914ec6324af064e593dd",
-        "matches": true
+        "matches": true,
+        "frozenMatchesRecorded": true,
+        "storage": "Frozen source copy"
       },
       {
         "path": "src/data/floorplan/conservatory.js",
-        "frozen": "61ab4cf9937f43fad79ccf38e1dc5dfd960e36dcd6ed9621d713b697a367d1c5",
-        "current": "61ab4cf9937f43fad79ccf38e1dc5dfd960e36dcd6ed9621d713b697a367d1c5",
-        "matches": true
+        "recorded": "6cd29c1b5666316b9792ba51510db010302e17e378a49c8b9299b9367e695e9e",
+        "frozen": "6cd29c1b5666316b9792ba51510db010302e17e378a49c8b9299b9367e695e9e",
+        "current": "6cd29c1b5666316b9792ba51510db010302e17e378a49c8b9299b9367e695e9e",
+        "matches": true,
+        "frozenMatchesRecorded": true,
+        "storage": "Frozen source copy"
       },
       {
         "path": "src/data/combat-definitions.js",
+        "recorded": "c8194e54f2936ea29304bdb248bd4567496fb4a27bd62598b1bc2e8eb1ad74b1",
         "frozen": "c8194e54f2936ea29304bdb248bd4567496fb4a27bd62598b1bc2e8eb1ad74b1",
         "current": "c8194e54f2936ea29304bdb248bd4567496fb4a27bd62598b1bc2e8eb1ad74b1",
-        "matches": true
+        "matches": true,
+        "frozenMatchesRecorded": true,
+        "storage": "Frozen source copy"
       },
       {
         "path": "src/data/endings.js",
+        "recorded": "ef7fba5773ba2e44850a623934f8f595debb635e6a5d3e52522e4aa8a36ab209",
         "frozen": "ef7fba5773ba2e44850a623934f8f595debb635e6a5d3e52522e4aa8a36ab209",
         "current": "ef7fba5773ba2e44850a623934f8f595debb635e6a5d3e52522e4aa8a36ab209",
-        "matches": true
+        "matches": true,
+        "frozenMatchesRecorded": true,
+        "storage": "Frozen source copy"
       },
       {
         "path": "src/data/conservatory-lights.js",
+        "recorded": "2485ee2b2e54c439c12fd4199077c05c70ff9cd3f0386c61f8bf23457959b0cb",
         "frozen": "2485ee2b2e54c439c12fd4199077c05c70ff9cd3f0386c61f8bf23457959b0cb",
         "current": "2485ee2b2e54c439c12fd4199077c05c70ff9cd3f0386c61f8bf23457959b0cb",
-        "matches": true
+        "matches": true,
+        "frozenMatchesRecorded": true,
+        "storage": "Frozen source copy"
       },
       {
         "path": "src/game/ending-embodiment.js",
+        "recorded": "c86660793f5df921978776328a9cd8b4bbb00e0aeaa12f237a671007128f629b",
         "frozen": "c86660793f5df921978776328a9cd8b4bbb00e0aeaa12f237a671007128f629b",
         "current": "c86660793f5df921978776328a9cd8b4bbb00e0aeaa12f237a671007128f629b",
-        "matches": true
+        "matches": true,
+        "frozenMatchesRecorded": true,
+        "storage": "Frozen source copy"
       },
       {
         "path": "src/game/credits.js",
+        "recorded": "94331c6e6e2891a83c1b8a59fcfdd92d6f5a189e8edaa863b96d2a2009f026e2",
         "frozen": "94331c6e6e2891a83c1b8a59fcfdd92d6f5a189e8edaa863b96d2a2009f026e2",
         "current": "94331c6e6e2891a83c1b8a59fcfdd92d6f5a189e8edaa863b96d2a2009f026e2",
-        "matches": true
+        "matches": true,
+        "frozenMatchesRecorded": true,
+        "storage": "Frozen source copy"
       },
       {
         "path": "src/platform/window-composition.js",
+        "recorded": "05f11e97a7351479dca3a41fd3dc37977605afb83f24e0330a3e8054741db206",
         "frozen": "05f11e97a7351479dca3a41fd3dc37977605afb83f24e0330a3e8054741db206",
         "current": "05f11e97a7351479dca3a41fd3dc37977605afb83f24e0330a3e8054741db206",
-        "matches": true
+        "matches": true,
+        "frozenMatchesRecorded": true,
+        "storage": "Frozen source copy"
       },
       {
         "path": "content/narrative/ending.tower-won.story.json",
+        "recorded": "d15633f017883c4e3aa22aee5f3f14d8f5eb5c137ebc32af41a3d8065ca8fd7d",
         "frozen": "d15633f017883c4e3aa22aee5f3f14d8f5eb5c137ebc32af41a3d8065ca8fd7d",
         "current": "d15633f017883c4e3aa22aee5f3f14d8f5eb5c137ebc32af41a3d8065ca8fd7d",
-        "matches": true
+        "matches": true,
+        "frozenMatchesRecorded": true,
+        "storage": "Frozen source copy"
       },
       {
         "path": "content/narrative/ending.tower-lost.story.json",
+        "recorded": "d984018e55a86da2a426565f31067fbf73548c11a86919e06a090e8ec210f78b",
         "frozen": "d984018e55a86da2a426565f31067fbf73548c11a86919e06a090e8ec210f78b",
         "current": "d984018e55a86da2a426565f31067fbf73548c11a86919e06a090e8ec210f78b",
-        "matches": true
+        "matches": true,
+        "frozenMatchesRecorded": true,
+        "storage": "Frozen source copy"
       },
       {
         "path": "public/assets/conservatory-props.glb",
-        "frozen": "4ed5fc979c5f1b1f3d254b2e5e3c045d35ad98163ea111a729e675adb4dbf32a",
-        "current": "4ed5fc979c5f1b1f3d254b2e5e3c045d35ad98163ea111a729e675adb4dbf32a",
-        "matches": true
+        "recorded": "95b4648d939f248e2fd1cd32e63c0a92a694927a77609ca021c3c5fa169849f4",
+        "frozen": "95b4648d939f248e2fd1cd32e63c0a92a694927a77609ca021c3c5fa169849f4",
+        "current": "95b4648d939f248e2fd1cd32e63c0a92a694927a77609ca021c3c5fa169849f4",
+        "matches": true,
+        "frozenMatchesRecorded": true,
+        "storage": "Shared static asset; compared against capture-time manifest digest"
       },
       {
         "path": "src/data/bell-tower-layout.js",
+        "recorded": "4ae8887562f3af4cd6d2cc883d1170f81b9451f94a2bb451e7dcf3c3545b93c9",
         "frozen": "4ae8887562f3af4cd6d2cc883d1170f81b9451f94a2bb451e7dcf3c3545b93c9",
         "current": "4ae8887562f3af4cd6d2cc883d1170f81b9451f94a2bb451e7dcf3c3545b93c9",
-        "matches": true
+        "matches": true,
+        "frozenMatchesRecorded": true,
+        "storage": "Frozen source copy"
       },
       {
         "path": "src/data/conservatory-props.js",
-        "frozen": "1ed739654f4a2899f8deba9bc543324b6c5cbe15578f51d62b266bab507bb0bd",
-        "current": "1ed739654f4a2899f8deba9bc543324b6c5cbe15578f51d62b266bab507bb0bd",
-        "matches": true
+        "recorded": "365a0febf233b2b74a0d42dde7642dae7969aa593e73b4d17a74f0962bc11894",
+        "frozen": "365a0febf233b2b74a0d42dde7642dae7969aa593e73b4d17a74f0962bc11894",
+        "current": "365a0febf233b2b74a0d42dde7642dae7969aa593e73b4d17a74f0962bc11894",
+        "matches": true,
+        "frozenMatchesRecorded": true,
+        "storage": "Frozen source copy"
       },
       {
         "path": "src/data/floorplan/legend.js",
-        "frozen": "3f509a6a5beed53443b6d58fe91d86871f67ac09e1876156b3d19b02d0cbb461",
-        "current": "3f509a6a5beed53443b6d58fe91d86871f67ac09e1876156b3d19b02d0cbb461",
-        "matches": true
+        "recorded": "ce099350e466c2454d93baf458f5b5e53202873a330c091528a935565ffdcf8c",
+        "frozen": "ce099350e466c2454d93baf458f5b5e53202873a330c091528a935565ffdcf8c",
+        "current": "ce099350e466c2454d93baf458f5b5e53202873a330c091528a935565ffdcf8c",
+        "matches": true,
+        "frozenMatchesRecorded": true,
+        "storage": "Frozen source copy"
       },
       {
         "path": "src/data/ending-gates.js",
+        "recorded": "9a46423844ebfb8d8c434c1a1da613ecf7f1d5a55e63e6decdaeeaa5f10ccfeb",
         "frozen": "9a46423844ebfb8d8c434c1a1da613ecf7f1d5a55e63e6decdaeeaa5f10ccfeb",
         "current": "9a46423844ebfb8d8c434c1a1da613ecf7f1d5a55e63e6decdaeeaa5f10ccfeb",
-        "matches": true
+        "matches": true,
+        "frozenMatchesRecorded": true,
+        "storage": "Frozen source copy"
       },
       {
         "path": "src/data/ending-archive.js",
+        "recorded": "672dfb56d92ed822ca11b65134e48fd2e63bae87363ed6962cc05ffdbe100d44",
         "frozen": "672dfb56d92ed822ca11b65134e48fd2e63bae87363ed6962cc05ffdbe100d44",
         "current": "672dfb56d92ed822ca11b65134e48fd2e63bae87363ed6962cc05ffdbe100d44",
-        "matches": true
+        "matches": true,
+        "frozenMatchesRecorded": true,
+        "storage": "Frozen source copy"
       },
       {
         "path": "src/game/horizon-bust.js",
+        "recorded": "8464a6a3581081261053bd36c75c304d4c2710afde8f6de91549d9c17321393e",
         "frozen": "8464a6a3581081261053bd36c75c304d4c2710afde8f6de91549d9c17321393e",
         "current": "8464a6a3581081261053bd36c75c304d4c2710afde8f6de91549d9c17321393e",
-        "matches": true
+        "matches": true,
+        "frozenMatchesRecorded": true,
+        "storage": "Frozen source copy"
       },
       {
         "path": "src/audio/tower-personal-recording.js",
+        "recorded": "db0af38840b4a6aeaa78ab0404edc744b91f862d2234a9e1dd731a0895cccdff",
         "frozen": "db0af38840b4a6aeaa78ab0404edc744b91f862d2234a9e1dd731a0895cccdff",
         "current": "db0af38840b4a6aeaa78ab0404edc744b91f862d2234a9e1dd731a0895cccdff",
-        "matches": true
+        "matches": true,
+        "frozenMatchesRecorded": true,
+        "storage": "Frozen source copy"
       },
       {
         "path": "content/narrative/ending.epilogue.tower-won.story.json",
+        "recorded": "2ce1b3e9d621502d1e9e61127f8b76870591319768059a25f820d772c4cd3b0a",
         "frozen": "2ce1b3e9d621502d1e9e61127f8b76870591319768059a25f820d772c4cd3b0a",
         "current": "2ce1b3e9d621502d1e9e61127f8b76870591319768059a25f820d772c4cd3b0a",
-        "matches": true
+        "matches": true,
+        "frozenMatchesRecorded": true,
+        "storage": "Frozen source copy"
       },
       {
         "path": "content/narrative/ending.epilogue.tower-lost.story.json",
+        "recorded": "94fdc9a94b9813feaa75a46b68a5c9d632434884fd015ca39ea7a63e7fa69e10",
         "frozen": "94fdc9a94b9813feaa75a46b68a5c9d632434884fd015ca39ea7a63e7fa69e10",
         "current": "94fdc9a94b9813feaa75a46b68a5c9d632434884fd015ca39ea7a63e7fa69e10",
-        "matches": true
+        "matches": true,
+        "frozenMatchesRecorded": true,
+        "storage": "Frozen source copy"
       },
       {
         "path": "public/assets/conservatory-props.stats.json",
-        "frozen": "11caa9b21701abd1e3473d34865302e973fb6f4a6c382b83b373ad0509a04d7c",
-        "current": "11caa9b21701abd1e3473d34865302e973fb6f4a6c382b83b373ad0509a04d7c",
-        "matches": true
+        "recorded": "fd21d407fdc5cbc169d6f74e606a7c33c2045332a18927d2b5c5b33c68e1a843",
+        "frozen": "fd21d407fdc5cbc169d6f74e606a7c33c2045332a18927d2b5c5b33c68e1a843",
+        "current": "fd21d407fdc5cbc169d6f74e606a7c33c2045332a18927d2b5c5b33c68e1a843",
+        "matches": true,
+        "frozenMatchesRecorded": true,
+        "storage": "Shared static asset; compared against capture-time manifest digest"
       },
       {
         "path": "public/assets/conservatory-props.credits.json",
-        "frozen": "adad4343889b7d842350a6ab6beec56e548bcb8a68b1acc608d8768d109769d1",
-        "current": "adad4343889b7d842350a6ab6beec56e548bcb8a68b1acc608d8768d109769d1",
-        "matches": true
+        "recorded": "c43d63c1e42eb8bad03b3e3d4122ba9ba279022c8c46c209cee84766a3c2b771",
+        "frozen": "c43d63c1e42eb8bad03b3e3d4122ba9ba279022c8c46c209cee84766a3c2b771",
+        "current": "c43d63c1e42eb8bad03b3e3d4122ba9ba279022c8c46c209cee84766a3c2b771",
+        "matches": true,
+        "frozenMatchesRecorded": true,
+        "storage": "Shared static asset; compared against capture-time manifest digest"
       },
       {
         "path": "src/render/lighting-model.js",
+        "recorded": "76a2fa8d7d183b5a2fc36977b7f6dcbd3d132ac5ec857bd13bd0d57f2666736c",
         "frozen": "76a2fa8d7d183b5a2fc36977b7f6dcbd3d132ac5ec857bd13bd0d57f2666736c",
         "current": "76a2fa8d7d183b5a2fc36977b7f6dcbd3d132ac5ec857bd13bd0d57f2666736c",
-        "matches": true
+        "matches": true,
+        "frozenMatchesRecorded": true,
+        "storage": "Frozen source copy"
       }
     ]
   },
-  "sourceDrift": [],
+  "fullFrozenSource": {
+    "exactMatches": 706,
+    "total": 720,
+    "sourceCopyMatchesManifest": true
+  },
+  "additionalRenderFiles": [
+    {
+      "path": "src/render/r3d.js",
+      "recorded": "e0ee7d9c7019d68515c06a193f9f26928affb774756ab33c014ab11a41ce8f90",
+      "frozen": "e0ee7d9c7019d68515c06a193f9f26928affb774756ab33c014ab11a41ce8f90",
+      "current": "e0ee7d9c7019d68515c06a193f9f26928affb774756ab33c014ab11a41ce8f90",
+      "matches": true,
+      "frozenMatchesRecorded": true,
+      "storage": "Frozen source copy"
+    },
+    {
+      "path": "src/render/props3d.js",
+      "recorded": "ef3fec4f391de7e9eac6290c85a4c775b7aa4ef63b0c93dbf05bb76740f49500",
+      "frozen": "ef3fec4f391de7e9eac6290c85a4c775b7aa4ef63b0c93dbf05bb76740f49500",
+      "current": "ef3fec4f391de7e9eac6290c85a4c775b7aa4ef63b0c93dbf05bb76740f49500",
+      "matches": true,
+      "frozenMatchesRecorded": true,
+      "storage": "Frozen source copy"
+    },
+    {
+      "path": "src/render/pixel-mesh/shader.js",
+      "recorded": "0293c1394d88886b709fcb6b8b5d31b863502620acbdc70a0ba5866d26527431",
+      "frozen": "0293c1394d88886b709fcb6b8b5d31b863502620acbdc70a0ba5866d26527431",
+      "current": "0293c1394d88886b709fcb6b8b5d31b863502620acbdc70a0ba5866d26527431",
+      "matches": true,
+      "frozenMatchesRecorded": true,
+      "storage": "Frozen source copy"
+    }
+  ],
+  "propGeometry": {
+    "mesh": "ending_body_prone",
+    "glb": {
+      "path": "public/assets/conservatory-props.glb",
+      "recorded": "95b4648d939f248e2fd1cd32e63c0a92a694927a77609ca021c3c5fa169849f4",
+      "frozen": "95b4648d939f248e2fd1cd32e63c0a92a694927a77609ca021c3c5fa169849f4",
+      "current": "95b4648d939f248e2fd1cd32e63c0a92a694927a77609ca021c3c5fa169849f4",
+      "matches": true,
+      "frozenMatchesRecorded": true,
+      "storage": "Shared static asset; compared against capture-time manifest digest"
+    },
+    "stats": {
+      "path": "public/assets/conservatory-props.stats.json",
+      "recorded": "fd21d407fdc5cbc169d6f74e606a7c33c2045332a18927d2b5c5b33c68e1a843",
+      "frozen": "fd21d407fdc5cbc169d6f74e606a7c33c2045332a18927d2b5c5b33c68e1a843",
+      "current": "fd21d407fdc5cbc169d6f74e606a7c33c2045332a18927d2b5c5b33c68e1a843",
+      "matches": true,
+      "frozenMatchesRecorded": true,
+      "storage": "Shared static asset; compared against capture-time manifest digest"
+    },
+    "credits": {
+      "path": "public/assets/conservatory-props.credits.json",
+      "recorded": "c43d63c1e42eb8bad03b3e3d4122ba9ba279022c8c46c209cee84766a3c2b771",
+      "frozen": "c43d63c1e42eb8bad03b3e3d4122ba9ba279022c8c46c209cee84766a3c2b771",
+      "current": "c43d63c1e42eb8bad03b3e3d4122ba9ba279022c8c46c209cee84766a3c2b771",
+      "matches": true,
+      "frozenMatchesRecorded": true,
+      "storage": "Shared static asset; compared against capture-time manifest digest"
+    },
+    "buildTool": {
+      "path": "tools/chunk_surfer/build-props.mjs",
+      "currentSha256": "4f05891a1425c9f0e71ab06a00bc2a45f02edb831c97afcd9fe684b3b7e0b8b6",
+      "scope": "Build tool is outside frozen src/content/LEGAL copy; source dimensions inspected directly."
+    },
+    "boundsFromActualGlbPositionAccessors": {
+      "min": [
+        -0.49369335174560547,
+        0.03999999910593033,
+        -0.9399999976158142
+      ],
+      "max": [
+        0.47407111525535583,
+        0.3400000035762787,
+        0.7334362864494324
+      ]
+    },
+    "boundsFromGeneratedStats": {
+      "min": [
+        -0.494,
+        0.04,
+        -0.94
+      ],
+      "max": [
+        0.474,
+        0.34,
+        0.733
+      ]
+    },
+    "assessment": "Prone body is horizontal: generated GLB Y bounds approximately 0.04–0.34 m; Z bounds approximately -0.94–0.733 m. Torso dimensions are 0.50 m wide, 0.27 m high, 0.84 m long. Bounds prove the generated orientation, not perceptual quality."
+  },
+  "sourceDrift": [
+    {
+      "path": "content/narrative/conservatory.bust_restored.story.json",
+      "recorded": "d7a547c4890f30056d1681a2474a77e0a8c26fdb5523cbed7b6fd0ba456be97a",
+      "frozen": "d7a547c4890f30056d1681a2474a77e0a8c26fdb5523cbed7b6fd0ba456be97a",
+      "current": "ca9765dde39d130b28e492bd167b488dcb36a658c71281b0b0ea31c2172c4307",
+      "matches": false,
+      "frozenMatchesRecorded": true,
+      "storage": "Frozen source copy"
+    },
+    {
+      "path": "src/causal/recorder.js",
+      "recorded": "1b873ce5a8cb02a0d964b82bb888ff223155e648c49fe39b0ec3d6c6393660e9",
+      "frozen": "1b873ce5a8cb02a0d964b82bb888ff223155e648c49fe39b0ec3d6c6393660e9",
+      "current": "3e0acac76f28c0132481cc993820652d441190ae7e6f668dd84771c8440ff72a",
+      "matches": false,
+      "frozenMatchesRecorded": true,
+      "storage": "Frozen source copy"
+    },
+    {
+      "path": "src/causal/tape.js",
+      "recorded": "c1ae9dac1d5b748a1e95259bb749cc3e4b5c5bc8d290a848984a51898eb6ee49",
+      "frozen": "c1ae9dac1d5b748a1e95259bb749cc3e4b5c5bc8d290a848984a51898eb6ee49",
+      "current": "f3fa002ea3ca8e328218aedb4c38f43fa7368349a93168944a83e2ee3c22a14a",
+      "matches": false,
+      "frozenMatchesRecorded": true,
+      "storage": "Frozen source copy"
+    },
+    {
+      "path": "src/data/bus-woman-rig.js",
+      "recorded": "61630d829a3ec9f9730b29ba8b48300f693c0f08e0e0fdc3e18504d0208e8861",
+      "frozen": "61630d829a3ec9f9730b29ba8b48300f693c0f08e0e0fdc3e18504d0208e8861",
+      "current": "7557911c308bab7cc1aeb8c90aca3a753b16ee07eea4e54b16440d87fa639729",
+      "matches": false,
+      "frozenMatchesRecorded": true,
+      "storage": "Frozen source copy"
+    },
+    {
+      "path": "src/data/conservatory-script.js",
+      "recorded": "c7026a9a765953c7505742c196e0ba9683b80576285d455cc4e0a789bf86f47a",
+      "frozen": "c7026a9a765953c7505742c196e0ba9683b80576285d455cc4e0a789bf86f47a",
+      "current": "2126feb3babdc09a24fd82f4f0ff89d69c65a85f3823222fdb729096a1acc4f6",
+      "matches": false,
+      "frozenMatchesRecorded": true,
+      "storage": "Frozen source copy"
+    },
+    {
+      "path": "src/game/marble-head.js",
+      "recorded": "766c6bd5a4a19fa365c27806a8b1ba8b5284b1174039af41b10fb6f493f1ebc0",
+      "frozen": "766c6bd5a4a19fa365c27806a8b1ba8b5284b1174039af41b10fb6f493f1ebc0",
+      "current": "76965e748b6b9ee4006ae08a8a4a66fc3e2c224028300c74c2c51522fee30588",
+      "matches": false,
+      "frozenMatchesRecorded": true,
+      "storage": "Frozen source copy"
+    },
+    {
+      "path": "src/game/outskirts-experience.js",
+      "recorded": "9a1d845991daf03bbeb7cb5959886ffea21d1466e4ef0dadebe23e6bf3512f16",
+      "frozen": "9a1d845991daf03bbeb7cb5959886ffea21d1466e4ef0dadebe23e6bf3512f16",
+      "current": "318d2300b8f5e0c511e62b0cc7b17c1216890111192ac64d444bde78069605a5",
+      "matches": false,
+      "frozenMatchesRecorded": true,
+      "storage": "Frozen source copy"
+    },
+    {
+      "path": "src/game/source-reprise-scene.js",
+      "recorded": "f36e9e7d5dd9eda6a4f09b72a25fd44b914a1ec725c715a0ee4585cb3b42554b",
+      "frozen": "f36e9e7d5dd9eda6a4f09b72a25fd44b914a1ec725c715a0ee4585cb3b42554b",
+      "current": "d9a9ad8dc5be609a671b221e1fb14bf3045dd2312d93ce690a0b9e9378abf1e3",
+      "matches": false,
+      "frozenMatchesRecorded": true,
+      "storage": "Frozen source copy"
+    },
+    {
+      "path": "src/game/source-space-runtime.js",
+      "recorded": "a63b38e1f6af22d761a28d2192863a2e9eb24e83c5ac6157f369e6c4a0db6a52",
+      "frozen": "a63b38e1f6af22d761a28d2192863a2e9eb24e83c5ac6157f369e6c4a0db6a52",
+      "current": "76357d0c4d01cc6c6199b2f06db148aefdd9e58bc23f7e8e83aa72404f6cb437",
+      "matches": false,
+      "frozenMatchesRecorded": true,
+      "storage": "Frozen source copy"
+    },
+    {
+      "path": "src/main.js",
+      "recorded": "118e5261ebb6df3b82f8bbebe8a75e069548b379ac7ec98f8ebd8429c80e61ae",
+      "frozen": "118e5261ebb6df3b82f8bbebe8a75e069548b379ac7ec98f8ebd8429c80e61ae",
+      "current": "0f36acb59b03fc75bd39584bfb1f3e3a34d53867f31d664a3d2cddf69715ca69",
+      "matches": false,
+      "frozenMatchesRecorded": true,
+      "storage": "Frozen source copy"
+    },
+    {
+      "path": "src/render/battle-hand-box-grips.js",
+      "recorded": "5fe16180c123da4ed780e125d1063d679f6b3676fe45c6745063ee4180b1d827",
+      "frozen": "5fe16180c123da4ed780e125d1063d679f6b3676fe45c6745063ee4180b1d827",
+      "current": "7cff0128f21c0d599fc0a635fef39edc6936ecc5a92d8414d040018f670a4f3b",
+      "matches": false,
+      "frozenMatchesRecorded": true,
+      "storage": "Frozen source copy"
+    },
+    {
+      "path": "src/render/battle-hand-performance.js",
+      "recorded": "11ff3da7ac1ba810b8cb75f7f15af74cc13c1c6bc1e12959c83c4b3c659e50a1",
+      "frozen": "11ff3da7ac1ba810b8cb75f7f15af74cc13c1c6bc1e12959c83c4b3c659e50a1",
+      "current": "b341180d080cdde22401e75d4e2bcda146accb17c0c6eb62d5a714901b7b32d0",
+      "matches": false,
+      "frozenMatchesRecorded": true,
+      "storage": "Frozen source copy"
+    },
+    {
+      "path": "src/render/battle-hand-tools.js",
+      "recorded": "fa2b6c877e449b1f7e1babf54dbe21689eb7f762d7deb24a6604816e66d1d636",
+      "frozen": "fa2b6c877e449b1f7e1babf54dbe21689eb7f762d7deb24a6604816e66d1d636",
+      "current": "cf4330bb690d532fa2516b6494f4556a1ad74e9c517f9b0cb5047fa80fa4de76",
+      "matches": false,
+      "frozenMatchesRecorded": true,
+      "storage": "Frozen source copy"
+    },
+    {
+      "path": "src/render/battle-hands.js",
+      "recorded": "9ea20880b28d492d0400e52b2f9286d113ee5f11bc316db00d16fa83248292a4",
+      "frozen": "9ea20880b28d492d0400e52b2f9286d113ee5f11bc316db00d16fa83248292a4",
+      "current": "6732f26d97e4358cdf91862755929c2efdd73806a23fccb4f1cd12144cd5ff85",
+      "matches": false,
+      "frozenMatchesRecorded": true,
+      "storage": "Frozen source copy"
+    }
+  ],
   "captureValidity": {
-    "affected": false,
-    "scope": "All 30 listed primary files, including the complete main.js, exactly match the frozen capture bundle. Tower combat, extraction, terminal ending lighting and cameras, ending resume, progression and saves therefore have no drift in these files. This is not a full source-tree equivalence claim."
+    "affected": true,
+    "primaryFilesExact": false,
+    "terminalRendererFilesExact": true,
+    "fullTreeEquivalence": false,
+    "scope": "Final Ir6DB2 bundle equality is current only at this review timestamp. File equivalence is not perceptual acceptance.",
+    "driftScope": "Current main.js includes independent bus-woman presentation work and other explicitly listed shared Source/battle-hand changes. All19 reviewed Tower functions remain byte-identical to the frozen final capture bundle. Current full-tree equivalence is not claimed."
   },
   "focusedProductionReview": {
-    "scope": "Read-only review of terminal Tower light-slot priority and detached-camera torch suppression.",
+    "scope": "Read-only terminal Tower actor suppression, local-light priority, detached-camera torch, shared prop depth-composite material-mark correction and generated prone orientation.",
     "findings": [],
     "checks": [
-      "The renderer caps ordinary local-light uniforms at the first 12 entries; putting the terminal Tower key first prevents it being dropped behind the practical rig.",
-      "Light priority changes only when endingTowerTableauLighting resolves the Tower-won final hold or Tower-lost eighth strike. Other endings retain their existing light ordering.",
-      "Torch suppression requires worldView.endingShot and the same final Tower stage conditions; playable extraction and strikes one through seven retain their normal torch.",
-      "Torch suppression is render-only and does not mutate recorder battery or lamp state. The field-kit, HUSH and physical-profile transformations preserve its zero power."
+      "Terminal actor suppression is gated to Tower-won finalHold or Tower-lost syncStage >=8. Ending body props are submitted independently, so the authored pair remains present while unrelated gameplay actors are suppressed.",
+      "The renderer consumes the first 12 local-light entries. The terminal key is first only when the Tower tableau helper resolves, preventing its silent eviction behind the practical rig.",
+      "Torch suppression is render-only, requires endingShot and the same final Tower stage conditions, and does not mutate recorder battery or light state.",
+      "gMark, gMarkBlend and gMarkPlane are reset only when the visible prop wins the existing architecture depth test. Hidden-wall material grain cannot be applied to that front prop.",
+      "Output marks are neutral (R=0; G/B=.5). The downstream acquisition kernel treats R=0 as density .22 and zero grain, preserving ordinary procedural stipple.",
+      "This shared renderer correction applies to all depth-winning ordinary props. The Source room-memory path uses its separate current-prop-material-mark adapter. No global visual acceptance is claimed."
     ],
-    "visualAcceptance": "Pending independent inspection of the new WxlkWE held-image captures; functional correctness does not establish visual acceptance."
+    "visualAcceptance": "Won: independent normal/reduced Ir6DB2 direct frame review accepts whole prone exterior visibility and distinct seated/prone postures, with fine-limb/floor-hatch limit recorded. Lost: accepted8b frames retained; all reviewed loss main spans, shared renderer and internal church source remain unchanged, with pose geometry/base comparison and old-binary limit explicit."
+  },
+  "checks": {
+    "command": "node --test test/ending-staging.spec.mjs test/source-room-memory-renderer.spec.mjs test/pressure-main-integration.spec.mjs",
+    "passed": 11,
+    "total": 12,
+    "towerStaging": "passed",
+    "pressureIntegration": "7/7 passed",
+    "sourceRoomAdapter": "3/4 passed",
+    "knownUnrelatedMismatch": {
+      "file": "test/source-room-memory-renderer.spec.mjs",
+      "line": 26,
+      "test": "Source identities resolve after the complete shared recording chain",
+      "assertion": "assert.match(identity, /sourcePressureMask\\(uv,bodyInk,bodyHalo,bodyEdge\\)/)",
+      "reason": "The test expects the older sourcePressureMask call in SOURCE_IDENTITY_FRAG; current Source identity shader uses depth-tested physical Pressure coverage instead. The identity shader is unchanged by the 7-line Tower prop-mark correction.",
+      "identityShaderUnchangedFromHead": true,
+      "identityShaderSha256": "30b4dae6af062ee7dab4445f26472ce2e20be76adc8558067f54b70250ae2df1",
+      "classification": "Known unrelated Source shader/test mismatch, not a Tower failure. No Source code or test was edited."
+    }
   },
   "previousReview": {
-    "snapshot": "/private/tmp/tower-route-snapshot-7OORqQ",
-    "bundle": "main-DZ1Ey1un.js",
-    "generatedAt": "2026-10-12T16:53:20.879Z",
-    "exactMatches": 29,
+    "snapshot": "/private/tmp/tower-route-snapshot-i5a5FN",
+    "bundle": "main-Dc5XJmGX.js",
+    "generatedAt": "2026-10-13T05:17:49.988Z",
+    "exactMatches": 30,
     "total": 30,
-    "note": "Prior 7OORqQ differed only in the personal-walk handover sound/caption line. Its 40 lifecycle checks passed, but its held-image visual set was subsequently rejected for inadequate body/background separation."
+    "note": "Previous i5a5FN source review retained as historical camera-only proof. Final Ir6DB2 additionally tightens the live whole-body extraction gate, preserves committed legacy tableau positions, extends the apron, regenerates props and removes stale vigil helper data."
+  },
+  "rescueCameraOnlyDelta": {
+    "previousManifest": "artifacts/tower-route-implementation/verification-source-before-rescue-camera-8bUvjN.json",
+    "previousSnapshot": "/private/tmp/tower-route-snapshot-8bUvjN",
+    "previousBundle": "main-3IPMJsGG.js",
+    "latestSnapshot": "/private/tmp/tower-route-snapshot-i5a5FN",
+    "latestBundle": "main-Dc5XJmGX.js",
+    "previousSnapshotAvailable": false,
+    "method": "The old snapshot was already cleaned. Reversed exactly one camera literal in the latest frozen main.js; its complete SHA-256 matches the archived previous manifest. This proves every other main.js byte, including lost lighting/props/camera, is unchanged.",
+    "literalBefore": "camera:endingLogicalOffset(active,2.4,-2.7,westward)",
+    "literalAfter": "camera:endingLogicalOffset(active,.2,-2.7,westward)",
+    "replacementCount": 1,
+    "reconstructedPreviousSha256": "dc40a173b5426c118036529a58c1c0936c3cdd243d92ef89875c3a87648ec26f",
+    "recordedPreviousSha256": "dc40a173b5426c118036529a58c1c0936c3cdd243d92ef89875c3a87648ec26f",
+    "entirePreviousMainMatches": true,
+    "physicalCameraBefore": {
+      "x": 13.3,
+      "z": 51.1
+    },
+    "physicalCameraAfter": {
+      "x": 13.3,
+      "z": 53.3
+    },
+    "actorPositionsAndPosesChanged": false,
+    "primaryFilesChangedBetweenSnapshots": [
+      "src/main.js"
+    ],
+    "sourceFilesChangedBetweenSnapshots": [
+      "src/main.js",
+      "src/render/battle-hand-box-grips.js",
+      "src/render/battle-hand-performance.js",
+      "src/render/battle-hand-tools.js",
+      "src/render/battle-hands.js",
+      "src/render/battle-hand-grips.js"
+    ],
+    "unchangedTowerSpans": [
+      {
+        "name": "endingTowerTableauLighting",
+        "previousSha256": "e73129a354ba82d9f9269c23f83b08691f4d7ca62ad965e8c7eafa3d916014ec",
+        "latestSha256": "e73129a354ba82d9f9269c23f83b08691f4d7ca62ad965e8c7eafa3d916014ec",
+        "matches": true
+      },
+      {
+        "name": "syncArchitecturalLocalLights",
+        "previousSha256": "dead2f60a8c3c604072acf1382fdf54546f5bab23513880f183e7c797e533e3a",
+        "latestSha256": "dead2f60a8c3c604072acf1382fdf54546f5bab23513880f183e7c797e533e3a",
+        "matches": true
+      },
+      {
+        "name": "endingLogicalOffset",
+        "previousSha256": "6e48d451d7e85e694accb2cfda6259ae0c8b533958071ed1f113ea73ec7acfd4",
+        "latestSha256": "6e48d451d7e85e694accb2cfda6259ae0c8b533958071ed1f113ea73ec7acfd4",
+        "matches": true
+      },
+      {
+        "name": "endingPropInstance",
+        "previousSha256": "f6f8a946db584e379717ff1889d10f7257d92cd0cdd39b1eddbb9e85b270e71e",
+        "latestSha256": "f6f8a946db584e379717ff1889d10f7257d92cd0cdd39b1eddbb9e85b270e71e",
+        "matches": true
+      },
+      {
+        "name": "endingViewToward",
+        "previousSha256": "8bd61f84630a4d0c0e34138524c6e26e243f2511ff53090b488edb0b3a33ae27",
+        "latestSha256": "8bd61f84630a4d0c0e34138524c6e26e243f2511ff53090b488edb0b3a33ae27",
+        "matches": true
+      },
+      {
+        "name": "endingWorldPropInstances",
+        "previousSha256": "7d603a6883a8bc3ab3c37ac7bfe99f6518b7f639c3327f0b96447ed7e73c1da0",
+        "latestSha256": "7d603a6883a8bc3ab3c37ac7bfe99f6518b7f639c3327f0b96447ed7e73c1da0",
+        "matches": true
+      },
+      {
+        "name": "endingCutsceneWorldView",
+        "previousSha256": "f046ea4945c92c3693064968361e8744b9372a4dae832d92bef36157dd825652",
+        "latestSha256": "f046ea4945c92c3693064968361e8744b9372a4dae832d92bef36157dd825652",
+        "matches": true
+      },
+      {
+        "name": "render3d",
+        "previousSha256": "a7c01967433754f80c6a326506de5ef70ebefde2e103098ed7660c9a5de5a809",
+        "latestSha256": "a7c01967433754f80c6a326506de5ef70ebefde2e103098ed7660c9a5de5a809",
+        "matches": true
+      }
+    ],
+    "sharedRendererUnchanged": true,
+    "staticPropGeometryUnchanged": true,
+    "lostAcceptedEvidence": "artifacts/tower-route-implementation/lost-held-visual-review.json",
+    "lostAcceptanceTransferScope": "The accepted 8bUvjN normal/reduced loss images retain unchanged lost lighting, props, camera, shared renderer and static prop geometry in i5a5FN. Won capture acceptance is independent."
+  },
+  "finalRescueCameraTests": {
+    "path": "artifacts/tower-route-implementation/final-rescue-camera-tests.tap",
+    "passed": 4,
+    "total": 4,
+    "failed": 0,
+    "note": "Compiled-atlas actor separation, exterior camera position, held image lifecycle and earned ending reload; no production edits by this review."
+  },
+  "lostPresentationContinuity": {
+    "acceptedReview": "artifacts/tower-route-implementation/lost-held-visual-review.json",
+    "acceptedManifest": "artifacts/tower-route-implementation/verification-source-before-rescue-camera-8bUvjN.json",
+    "acceptedSnapshot": "/private/tmp/tower-route-snapshot-8bUvjN",
+    "latestSnapshot": "/private/tmp/tower-route-snapshot-Ir6DB2",
+    "unchangedSpans": [
+      {
+        "name": "endingTowerTableauLighting",
+        "accepted8bSha256": "e73129a354ba82d9f9269c23f83b08691f4d7ca62ad965e8c7eafa3d916014ec",
+        "latestSha256": "e73129a354ba82d9f9269c23f83b08691f4d7ca62ad965e8c7eafa3d916014ec",
+        "matches": true
+      },
+      {
+        "name": "syncArchitecturalLocalLights",
+        "accepted8bSha256": "dead2f60a8c3c604072acf1382fdf54546f5bab23513880f183e7c797e533e3a",
+        "latestSha256": "dead2f60a8c3c604072acf1382fdf54546f5bab23513880f183e7c797e533e3a",
+        "matches": true
+      },
+      {
+        "name": "endingLogicalOffset",
+        "accepted8bSha256": "6e48d451d7e85e694accb2cfda6259ae0c8b533958071ed1f113ea73ec7acfd4",
+        "latestSha256": "6e48d451d7e85e694accb2cfda6259ae0c8b533958071ed1f113ea73ec7acfd4",
+        "matches": true
+      },
+      {
+        "name": "endingPropInstance",
+        "accepted8bSha256": "f6f8a946db584e379717ff1889d10f7257d92cd0cdd39b1eddbb9e85b270e71e",
+        "latestSha256": "f6f8a946db584e379717ff1889d10f7257d92cd0cdd39b1eddbb9e85b270e71e",
+        "matches": true
+      },
+      {
+        "name": "endingViewToward",
+        "accepted8bSha256": "8bd61f84630a4d0c0e34138524c6e26e243f2511ff53090b488edb0b3a33ae27",
+        "latestSha256": "8bd61f84630a4d0c0e34138524c6e26e243f2511ff53090b488edb0b3a33ae27",
+        "matches": true
+      },
+      {
+        "name": "endingWorldPropInstances",
+        "accepted8bSha256": "7d603a6883a8bc3ab3c37ac7bfe99f6518b7f639c3327f0b96447ed7e73c1da0",
+        "latestSha256": "7d603a6883a8bc3ab3c37ac7bfe99f6518b7f639c3327f0b96447ed7e73c1da0",
+        "matches": true
+      },
+      {
+        "name": "endingCutsceneWorldView",
+        "accepted8bSha256": "f046ea4945c92c3693064968361e8744b9372a4dae832d92bef36157dd825652",
+        "latestSha256": "f046ea4945c92c3693064968361e8744b9372a4dae832d92bef36157dd825652",
+        "matches": true
+      },
+      {
+        "name": "render3d",
+        "accepted8bSha256": "a7c01967433754f80c6a326506de5ef70ebefde2e103098ed7660c9a5de5a809",
+        "latestSha256": "a7c01967433754f80c6a326506de5ef70ebefde2e103098ed7660c9a5de5a809",
+        "matches": true
+      }
+    ],
+    "allReviewedMainSpansUnchanged": true,
+    "sharedRendererUnchanged": false,
+    "churchSourceUnchanged": true,
+    "churchFloorplanOnlyApronDelta": {
+      "entirePreviousPlanReconstructionMatches": true,
+      "reconstructedPreviousSha256": "61ab4cf9937f43fad79ccf38e1dc5dfd960e36dcd6ed9621d713b697a367d1c5",
+      "recordedPreviousSha256": "61ab4cf9937f43fad79ccf38e1dc5dfd960e36dcd6ed9621d713b697a367d1c5",
+      "delta": "Only west extraction apron grows from2m to3m and its matching yard connector moves out1m. All internal cathedral floorplan bytes are otherwise identical."
+    },
+    "lostPoseGeometry": {
+      "method": "Canonical actual GLB primitive/accessor bytes and material objects, excluding buffer locations; current shipped pack compared with committed base. All six lost pose source definitions also compared.",
+      "meshes": [
+        {
+          "name": "apparition_pose_neutral",
+          "currentGeometryAndMaterialSha256": "5daafe113ccc86fb74cbe70d0197de41958e07f4010a3089d91f82a37eb90ad0",
+          "committedBaseGeometryAndMaterialSha256": "5daafe113ccc86fb74cbe70d0197de41958e07f4010a3089d91f82a37eb90ad0",
+          "matchesCommittedBase": true,
+          "sourceDefinitionMatchesCommittedBase": true
+        },
+        {
+          "name": "apparition_pose_arm_out",
+          "currentGeometryAndMaterialSha256": "6e45e6881175139bef287a88aa40d77de43cf66afd193bdfae9bf72089238fbe",
+          "committedBaseGeometryAndMaterialSha256": "6e45e6881175139bef287a88aa40d77de43cf66afd193bdfae9bf72089238fbe",
+          "matchesCommittedBase": true,
+          "sourceDefinitionMatchesCommittedBase": true
+        },
+        {
+          "name": "apparition_pose_stoop",
+          "currentGeometryAndMaterialSha256": "d8ee80bc32785e5909cc6c5b58a9121c2d30140d65bc1693852e198f535f8df8",
+          "committedBaseGeometryAndMaterialSha256": "d8ee80bc32785e5909cc6c5b58a9121c2d30140d65bc1693852e198f535f8df8",
+          "matchesCommittedBase": true,
+          "sourceDefinitionMatchesCommittedBase": true
+        },
+        {
+          "name": "apparition_pose_head_turn",
+          "currentGeometryAndMaterialSha256": "de67b77e60c871954945a8169947f7c05af05d6c8cdcba39c47a38c24dfa6938",
+          "committedBaseGeometryAndMaterialSha256": "de67b77e60c871954945a8169947f7c05af05d6c8cdcba39c47a38c24dfa6938",
+          "matchesCommittedBase": true,
+          "sourceDefinitionMatchesCommittedBase": true
+        },
+        {
+          "name": "apparition_pose_weight_shift",
+          "currentGeometryAndMaterialSha256": "4163100810088a9931bf6ac6313ac1ef6578c55d3ab92cd7e6e439b72a7bb0d4",
+          "committedBaseGeometryAndMaterialSha256": "4163100810088a9931bf6ac6313ac1ef6578c55d3ab92cd7e6e439b72a7bb0d4",
+          "matchesCommittedBase": true,
+          "sourceDefinitionMatchesCommittedBase": true
+        },
+        {
+          "name": "apparition_pose_symmetric",
+          "currentGeometryAndMaterialSha256": "733b2c8df8d395d06ca06a718831c912d34041f2c5f0433a772c3fd066501c80",
+          "committedBaseGeometryAndMaterialSha256": "733b2c8df8d395d06ca06a718831c912d34041f2c5f0433a772c3fd066501c80",
+          "matchesCommittedBase": true,
+          "sourceDefinitionMatchesCommittedBase": true
+        }
+      ],
+      "allMatchCommittedBase": true,
+      "archived8bGlbAvailable": false,
+      "limit": "Full prop pack changed when regenerating apron baseboards and retaining concurrent bus work. The old8b binary was not retained, so exact per-mesh comparison directly to8b is unavailable. Current lost poses exactly match committed baseline geometry/materials and their unchanged source definitions; no full-pack byte equality is claimed."
+    }
+  },
+  "finalWonVisualReview": "artifacts/tower-route-implementation/won-held-visual-review.json",
+  "apronAndVigilTests": {
+    "review": "artifacts/tower-route-implementation/final-apron-vigil-review.json",
+    "path": "artifacts/tower-route-implementation/final-apron-vigil-tests.tap",
+    "passed": 4,
+    "total": 4,
+    "failed": 0
+  },
+  "currentTowerFunctionEquality": {
+    "generatedAt": "2026-10-13T05:34:29.241Z",
+    "frozenSnapshot": "/private/tmp/tower-route-snapshot-Ir6DB2",
+    "spans": [
+      {
+        "name": "endingTowerTableauLighting",
+        "frozenSha256": "e73129a354ba82d9f9269c23f83b08691f4d7ca62ad965e8c7eafa3d916014ec",
+        "currentSha256": "e73129a354ba82d9f9269c23f83b08691f4d7ca62ad965e8c7eafa3d916014ec",
+        "matches": true
+      },
+      {
+        "name": "syncArchitecturalLocalLights",
+        "frozenSha256": "dead2f60a8c3c604072acf1382fdf54546f5bab23513880f183e7c797e533e3a",
+        "currentSha256": "dead2f60a8c3c604072acf1382fdf54546f5bab23513880f183e7c797e533e3a",
+        "matches": true
+      },
+      {
+        "name": "endingLogicalOffset",
+        "frozenSha256": "6e48d451d7e85e694accb2cfda6259ae0c8b533958071ed1f113ea73ec7acfd4",
+        "currentSha256": "6e48d451d7e85e694accb2cfda6259ae0c8b533958071ed1f113ea73ec7acfd4",
+        "matches": true
+      },
+      {
+        "name": "endingPropInstance",
+        "frozenSha256": "f6f8a946db584e379717ff1889d10f7257d92cd0cdd39b1eddbb9e85b270e71e",
+        "currentSha256": "f6f8a946db584e379717ff1889d10f7257d92cd0cdd39b1eddbb9e85b270e71e",
+        "matches": true
+      },
+      {
+        "name": "endingViewToward",
+        "frozenSha256": "8bd61f84630a4d0c0e34138524c6e26e243f2511ff53090b488edb0b3a33ae27",
+        "currentSha256": "8bd61f84630a4d0c0e34138524c6e26e243f2511ff53090b488edb0b3a33ae27",
+        "matches": true
+      },
+      {
+        "name": "endingTowerWonTableau",
+        "frozenSha256": "be1b4328df61f925013147f59fa1846b9604af47ccbc22a068ca9418402e3d04",
+        "currentSha256": "be1b4328df61f925013147f59fa1846b9604af47ccbc22a068ca9418402e3d04",
+        "matches": true
+      },
+      {
+        "name": "endingWorldPropInstances",
+        "frozenSha256": "7d603a6883a8bc3ab3c37ac7bfe99f6518b7f639c3327f0b96447ed7e73c1da0",
+        "currentSha256": "7d603a6883a8bc3ab3c37ac7bfe99f6518b7f639c3327f0b96447ed7e73c1da0",
+        "matches": true
+      },
+      {
+        "name": "endingCutsceneWorldView",
+        "frozenSha256": "f046ea4945c92c3693064968361e8744b9372a4dae832d92bef36157dd825652",
+        "currentSha256": "f046ea4945c92c3693064968361e8744b9372a4dae832d92bef36157dd825652",
+        "matches": true
+      },
+      {
+        "name": "resumeEndingCutsceneFromSave",
+        "frozenSha256": "dbab7594841d716d6a19616a2ca8709ee819feb52be99ec39d889622c49630e2",
+        "currentSha256": "dbab7594841d716d6a19616a2ca8709ee819feb52be99ec39d889622c49630e2",
+        "matches": true
+      },
+      {
+        "name": "saveCathedralExtraction",
+        "frozenSha256": "27521150139db9078072977a1f2158dc12245d62c6cba752503bea4997960c61",
+        "currentSha256": "27521150139db9078072977a1f2158dc12245d62c6cba752503bea4997960c61",
+        "matches": true
+      },
+      {
+        "name": "startCathedralCarry",
+        "frozenSha256": "dc1e9c90ba8d7da2e200280e47e3e190fa6303babb76e1ebd6d640117191ffa4",
+        "currentSha256": "dc1e9c90ba8d7da2e200280e47e3e190fa6303babb76e1ebd6d640117191ffa4",
+        "matches": true
+      },
+      {
+        "name": "resolveCathedralLoss",
+        "frozenSha256": "e93373f11995ad569bb6c7031a21cf2e0bb8385bd31b380e6b5bb9a327893e71",
+        "currentSha256": "e93373f11995ad569bb6c7031a21cf2e0bb8385bd31b380e6b5bb9a327893e71",
+        "matches": true
+      },
+      {
+        "name": "saveCathedralFight",
+        "frozenSha256": "1e435f2cc8e020743399e0ac87219acb0d60f4bc1470b7cdfd3693332ad57e92",
+        "currentSha256": "1e435f2cc8e020743399e0ac87219acb0d60f4bc1470b7cdfd3693332ad57e92",
+        "matches": true
+      },
+      {
+        "name": "cathedralFightCheckpoint",
+        "frozenSha256": "4aeba37b69075242bf4fd2f00c1d2405868a7e9b4d446c67449bf667be42326b",
+        "currentSha256": "4aeba37b69075242bf4fd2f00c1d2405868a7e9b4d446c67449bf667be42326b",
+        "matches": true
+      },
+      {
+        "name": "prepareCathedralRetry",
+        "frozenSha256": "820faac80c1d56b0b7bb256b6bdfa9a1a420675d81ecde43281b811ca13fee1f",
+        "currentSha256": "820faac80c1d56b0b7bb256b6bdfa9a1a420675d81ecde43281b811ca13fee1f",
+        "matches": true
+      },
+      {
+        "name": "openCathedralSecondPhase",
+        "frozenSha256": "1b52993a75be0aa3c27d5f5261a3bd815ddd10a6e94ad82efbce8aec8cd96af3",
+        "currentSha256": "1b52993a75be0aa3c27d5f5261a3bd815ddd10a6e94ad82efbce8aec8cd96af3",
+        "matches": true
+      },
+      {
+        "name": "openCathedralFirstPhase",
+        "frozenSha256": "1f0c092656a2c749c6fc89c94045a9dff7371623807e3c309c879d57c7033585",
+        "currentSha256": "1f0c092656a2c749c6fc89c94045a9dff7371623807e3c309c879d57c7033585",
+        "matches": true
+      },
+      {
+        "name": "tickCathedralFinale",
+        "frozenSha256": "1efa0a754e17542dd81642f48a6a0b71cd5056369967535eeebdb0bdeb33ab1b",
+        "currentSha256": "1efa0a754e17542dd81642f48a6a0b71cd5056369967535eeebdb0bdeb33ab1b",
+        "matches": true
+      },
+      {
+        "name": "render3d",
+        "frozenSha256": "a7c01967433754f80c6a326506de5ef70ebefde2e103098ed7660c9a5de5a809",
+        "currentSha256": "a7c01967433754f80c6a326506de5ef70ebefde2e103098ed7660c9a5de5a809",
+        "matches": true
+      }
+    ],
+    "matched": 19,
+    "total": 19,
+    "mainCurrentSha256": "0f36acb59b03fc75bd39584bfb1f3e3a34d53867f31d664a3d2cddf69715ca69",
+    "mainFrozenSha256": "118e5261ebb6df3b82f8bbebe8a75e069548b379ac7ec98f8ebd8429c80e61ae",
+    "concurrentDelta": "artifacts/tower-route-implementation/concurrent-main-delta-Ir6DB2.diff",
+    "deltaAssessment": "Current main.js changes since freeze add the optional yard bus-woman animation clock, dynamic articulated prop submission, matching static prop suppression and tape replay clock. The 19 scoped Tower combat/extraction/ending/rendering functions remain exact. Optional bus-woman background presentation is outside these Tower capture claims."
   }
 }

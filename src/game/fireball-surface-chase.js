@@ -18,97 +18,85 @@ function sweptContact(pose,from,to){
   return near<=far&&far>=0&&near<=1;
 }
 
-// The target spends at most 35% of an approaching pointer's forward distance,
-// along one finite authored path. Reaching its painted body ends pursuit.
+// Continuous semi-implicit dynamics, substepped at 120 Hz. Pointer approach
+// supplies a repulsive force with a tangential component; collisions reflect
+// velocity. Arrival wins over every force and cancels momentum immediately.
 export function createFireballSurfaceChase({width=240,height=240}={}){
   let state=null;
   const pointers=new Map();
-
-  function pathPose(progress){
-    const pose=fireballSurfacePose({...state.cast,offer:state.offer,reducedMotion:false,motion:{
-      ...state.cast.motion,rebounding:false,formationProgress:progress,
-      dodge:(Number(state.cast.motion?.pressure)||0)*Math.sin(progress*Math.PI),
-    }},{width,height});
-    const ease=progress**2*(3-2*progress);
-    const limitX=Math.min(40,(width-pose.size)/2-8),limitY=(height-pose.size)/2-8;
-    const offsetX=clamp(pose.offsetX+state.startOffset.x*(1-ease),-limitX,limitX);
-    const offsetY=clamp(pose.offsetY+state.startOffset.y*(1-ease),-limitY,limitY);
-    const x=(width-pose.size)/2+offsetX,y=(height-pose.size)/2+offsetY;
-    return {...pose,x,y,offsetX,offsetY,centerX:x+pose.size/2,centerY:y+pose.size/2};
-  }
-
+  const bounds=pose=>({left:8,right:width-pose.size-8,top:8,bottom:height-pose.size-8});
   function snapshot(){
-    if(!state)return {cast:null,pose:null,acquired:false,progress:0,key:null,offer:0};
-    const cast={...state.cast,catchReady:state.acquired,motion:{...state.cast.motion,
-      formationProgress:state.progress,dodge:(Number(state.cast.motion?.pressure)||0)*Math.sin(state.progress*Math.PI),
-    }};
-    return {cast,pose:{...state.pose},acquired:state.acquired,progress:state.progress,key:state.key,offer:state.offer};
+    if(!state)return{cast:null,pose:null,acquired:false,progress:0,key:null,offer:0};
+    return{cast:{...state.cast,catchReady:state.acquired,motion:{...state.cast.motion,formationProgress:state.progress}},
+      pose:{...state.pose},acquired:state.acquired,progress:state.progress,key:state.key,offer:state.offer,
+      velocity:{x:state.vx,y:state.vy},bounces:state.bounces};
   }
-
-  function latch(pose){state.pose={...pose};state.acquired=true;}
-
-  function pointer(sample,{paintedPose=null}={}){
+  function latch(pose){state.pose={...pose};state.acquired=true;state.vx=0;state.vy=0;}
+  function resize(next){
+    width=Math.max(116,Number(next?.width)||width);height=Math.max(116,Number(next?.height)||height);
+    if(state){const b=bounds(state.pose);const x=clamp(state.pose.x,b.left,b.right),y=clamp(state.pose.y,b.top,b.bottom);
+      state.pose={...state.pose,x,y,centerX:x+state.pose.size/2,centerY:y+state.pose.size/2,width,height};}
+    return snapshot();
+  }
+  function pointer(sample,{paintedPose=null,now=null}={}){
     if(!state||!Number.isFinite(sample?.x)||!Number.isFinite(sample?.y))return snapshot();
-    const point={x:sample.x,y:sample.y};
-    if(sample.active===false){state.previous=null;return snapshot();}
-    const before=state.previous;state.previous=point;
+    now=Number.isFinite(now)?now:(state.lastNow??-16)+16;
+    const point={x:sample.x,y:sample.y},before=state.previous;
+    const dt=state.lastNow==null?0:clamp((now-state.lastNow)/1000,0,.05);
+    state.lastNow=now;state.previous=point;
+    if(state.simTime==null)state.simTime=now;
+    if(sample.active===false){state.previous=null;state.vx=0;state.vy=0;state.intentUntil=0;state.accumulator=0;state.simTime=now;return snapshot();}
     if(state.cast.state!=='outbound'||state.acquired)return snapshot();
     const visible=paintedPose||state.pose;
     if(sweptContact(visible,before,point)){latch(visible);return snapshot();}
-    if(state.cast.motion?.rebounding||state.cast.reducedMotion||!before||state.progress>=1)return snapshot();
-    const priorDistance=Math.hypot(before.x-visible.centerX,before.y-visible.centerY);
+    if(state.cast.motion?.rebounding||state.cast.reducedMotion||!before||dt<=0)return snapshot();
     const distance=Math.hypot(point.x-visible.centerX,point.y-visible.centerY);
-    const forward=priorDistance-distance;
-    if(distance>420||forward<=0)return snapshot();
-    let budget=Math.min(8,forward*.35),progress=state.progress,pose=state.pose;
-    // Small arc-length steps keep curved movement within the pointer budget.
-    while(budget>1e-7&&progress<1){
-      const nextProgress=Math.min(1,progress+.002),next=pathPose(nextProgress);
-      const distance=Math.hypot(next.centerX-pose.centerX,next.centerY-pose.centerY);
-      if(distance>budget){
-        let low=progress,high=nextProgress;
-        for(let step=0;step<18;step++){
-          const middle=(low+high)/2,candidate=pathPose(middle);
-          if(Math.hypot(candidate.centerX-pose.centerX,candidate.centerY-pose.centerY)<=budget)low=middle;else high=middle;
-        }
-        progress=low;pose=pathPose(progress);break;
-      }
-      progress=nextProgress;pose=next;budget-=distance;
+    const forward=(Math.hypot(before.x-visible.centerX,before.y-visible.centerY)-distance)/dt;
+    if(forward>12){state.intentUntil=now+140;state.drive=Math.min(1,forward/500);}
+    state.accumulator+=dt;
+    const h=1/120,steps=Math.floor((state.accumulator+1e-10)/h);
+    state.accumulator-=steps*h;
+    let pose={...visible};const b=bounds(pose),turn=(seedOf(state.cast)+state.offer+state.cast.surfaceIndex)%2?1:-1;
+    for(let i=0;i<steps;i++){
+      state.simTime+=h*1000;const tickAt=state.simTime;
+      const drive=tickAt<=state.intentUntil?state.drive:0;
+      const length=Math.max(1,Math.hypot(pose.centerX-point.x,pose.centerY-point.y));
+      const ux=(pose.centerX-point.x)/length,uy=(pose.centerY-point.y)/length;
+      let ax=(ux*.8-uy*.6*turn)*4800*drive,ay=(uy*.8+ux*.6*turn)*4800*drive;
+      if(tickAt<state.blockXUntil&&ax*state.blockXSign>0)ax=0;
+      if(tickAt<state.blockYUntil&&ay*state.blockYSign>0)ay=0;
+      state.vx+=(ax-state.vx*1.5)*h;state.vy+=(ay-state.vy*1.5)*h;
+      const speed=Math.hypot(state.vx,state.vy),ceiling=620+Math.max(0,Math.min(1,Number(state.cast.motion?.pressure)||0))*180;
+      if(speed>ceiling){state.vx*=ceiling/speed;state.vy*=ceiling/speed;}
+      let x=pose.x+state.vx*h,y=pose.y+state.vy*h;
+      if(x<b.left||x>b.right){const sign=x<b.left?-1:1;const wall=sign<0?b.left:b.right;x=2*wall-x;state.vx=-sign*Math.abs(state.vx)*.94;state.blockXUntil=tickAt+220;state.blockXSign=sign;state.bounces++;}
+      if(y<b.top||y>b.bottom){const sign=y<b.top?-1:1;const wall=sign<0?b.top:b.bottom;y=2*wall-y;state.vy=-sign*Math.abs(state.vy)*.94;state.blockYUntil=tickAt+220;state.blockYSign=sign;state.bounces++;}
+      x=clamp(x,b.left,b.right);y=clamp(y,b.top,b.bottom);
+      state.travel+=Math.hypot(x-pose.x,y-pose.y);
+      pose={...pose,x,y,centerX:x+pose.size/2,centerY:y+pose.size/2,offsetX:x+pose.size/2-width/2,offsetY:y+pose.size/2-height/2,width,height};
+      if(fireballSurfaceContains(pose,point)){latch(pose);return snapshot();}
     }
-    state.progress=progress;state.pose=pose;
-    if(fireballSurfaceContains(pose,point))latch(pose);
-    return snapshot();
+    state.progress=Math.min(1,state.travel/400);state.pose=pose;return snapshot();
   }
-
   function setCast(cast){
     if(!cast){state=null;return snapshot();}
     const same=state&&identity(state.cast)===identity(cast);
-    const announcedOffer=Math.max(1,Number(cast.offer)||1);
-    const offer=cast.motion?.rebounding?Math.max(1,announcedOffer-1):announcedOffer;
-    if(same&&(state.offer===offer||cast.state!=='outbound')){
-      state.cast=cast;
-      return snapshot();
-    }
+    const announced=Math.max(1,Number(cast.offer)||1),offer=cast.motion?.rebounding?Math.max(1,announced-1):announced;
+    if(same&&(state.offer===offer||cast.state!=='outbound')){state.cast=cast;if(cast.state!=='outbound'){state.vx=0;state.vy=0;}return snapshot();}
     const previous=same?state.pose:null;
-    const progress=cast.reducedMotion?1:0;
-    state={cast,offer,progress,acquired:false,key:`${identity(cast)}:${offer}`,pose:null,startOffset:{x:0,y:0},previous:null};
-    const start=pathPose(0);
-    if(previous)state.startOffset={x:previous.centerX-start.centerX,y:previous.centerY-start.centerY};
-    state.pose=pathPose(progress);
+    state={cast,offer,pose:null,acquired:false,key:`${identity(cast)}:${offer}`,progress:0,travel:0,previous:null,lastNow:null,
+      vx:0,vy:0,bounces:0,accumulator:0,simTime:null,intentUntil:0,drive:0,blockXUntil:0,blockYUntil:0,blockXSign:0,blockYSign:0};
+    state.pose=previous?{...previous}:fireballSurfacePose({...cast,offer,motion:{...cast.motion,rebounding:false,formationProgress:cast.reducedMotion?1:0}},{width,height});
     const cached=pointers.get(cast.surfaceIndex);
-    if(cached&&cached.seed===seedOf(cast)){
-      state.previous={x:cached.x,y:cached.y};
-      if(cached.active!==false&&cast.state==='outbound'&&fireballSurfaceContains(state.pose,cached))latch(state.pose);
-    }
+    if(cached&&cached.seed===seedOf(cast)){state.previous={x:cached.x,y:cached.y};state.lastNow=cached.now;
+      if(cached.active!==false&&cast.state==='outbound'&&fireballSurfaceContains(state.pose,cached))latch(state.pose);}
     return snapshot();
   }
-
   function nativePointer(sample,options={}){
     if(!Number.isInteger(sample?.index)||!Number.isFinite(sample?.seed)||!Number.isFinite(sample?.x)||!Number.isFinite(sample?.y))return snapshot();
-    pointers.set(sample.index,{...sample});
+    pointers.set(sample.index,{...sample,now:options.now});
     if(!state||sample.index!==state.cast.surfaceIndex||sample.seed!==seedOf(state.cast))return snapshot();
     return pointer(sample,options);
   }
-
-  return {setCast,pointer,nativePointer,snapshot};
+  return{setCast,pointer,nativePointer,snapshot,resize};
 }

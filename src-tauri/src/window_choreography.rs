@@ -1037,6 +1037,11 @@ pub struct Choreography {
     formation_progress: f64,
 }
 
+fn carrier_height(count:u8, work:&PhysicalRect<i32,u32>, scale:f64)->f64 {
+    let desired:f64=if count<=2 {560.0}else{240.0};
+    desired.min(work.size.height as f64/scale.max(0.1))
+}
+
 const CARRIER_GAP_LOGICAL: f64 = 16.0;
 
 // The visible tile moves inside this fixed transparent input carrier. Previous
@@ -1054,6 +1059,7 @@ fn peripheral_carrier_slot(
         return None;
     }
     let side = (logical_size(index) * scale).round();
+    let tile_height=(carrier_height(count,work,scale)*scale).round();
     let gap = (CARRIER_GAP_LOGICAL * scale).round();
     let left = work.position.x as f64;
     let top = work.position.y as f64;
@@ -1086,7 +1092,7 @@ fn peripheral_carrier_slot(
     } * scale;
     let anchor_y = client.position.y as f64 + client.size.height as f64 * 0.5 + variation;
     let max_side_count = count.div_ceil(2) as f64;
-    let column_height = max_side_count * side + (max_side_count - 1.0) * gap;
+    let column_height = max_side_count * tile_height + (max_side_count - 1.0) * gap;
     if count > 1
         && right_column - left_column < side + gap
         && side * 2.0 + gap <= work.size.width as f64
@@ -1110,7 +1116,7 @@ fn peripheral_carrier_slot(
         } else {
             count / 2
         } as f64;
-        let height = side_count * side + (side_count - 1.0) * gap;
+        let height = side_count * tile_height + (side_count - 1.0) * gap;
         let column_top = (anchor_y - height * 0.5).clamp(top, bottom - height);
         return Some(PhysicalPosition::new(
             if right_side {
@@ -1119,7 +1125,7 @@ fn peripheral_carrier_slot(
                 left_column
             }
             .round() as i32,
-            (column_top + (index / 2) as f64 * (side + gap)).round() as i32,
+            (column_top + (index / 2) as f64 * (tile_height + gap)).round() as i32,
         ));
     }
     // A shallow or obstructed desktop uses a complete reserved row. If that
@@ -1136,8 +1142,8 @@ fn peripheral_carrier_slot(
         index / 2
     };
     Some(PhysicalPosition::new(
-        (row_left + rank as f64 * (side + gap)).round() as i32,
-        (anchor_y - side * 0.5).clamp(top, bottom - side).round() as i32,
+        (row_left + rank as f64 * (tile_height + gap)).round() as i32,
+        (anchor_y - tile_height * 0.5).clamp(top, bottom - tile_height).round() as i32,
     ))
 }
 
@@ -1162,6 +1168,8 @@ struct CarrierPointer {
     x: f64,
     y: f64,
     active: bool,
+    width:f64,
+    height:f64,
 }
 
 fn carrier_pointer_sample(
@@ -1186,6 +1194,8 @@ fn carrier_pointer_sample(
         x,
         y,
         active,
+        width:placement.size.width as f64/scale,
+        height:placement.size.height as f64/scale,
     })
 }
 
@@ -1277,7 +1287,7 @@ fn base_center(app: &AppHandle, cast: &CastStep) -> Result<Option<CarrierPlaceme
                 position,
                 size: PhysicalSize::new(
                     (logical_size(cast.index) * scale).round() as u32,
-                    (logical_size(cast.index) * scale).round() as u32,
+                    (carrier_height(cast.count, monitor.work_area(), scale) * scale).round() as u32,
                 ),
             }
         }),
@@ -1423,7 +1433,7 @@ pub fn restore_on_exit(app: &AppHandle) -> bool {
 #[cfg(test)]
 mod tests {
     use super::{
-        allowed, carrier_pointer_sample, carrier_slot_for_cast, clamped_square, eased, logical_size,
+        allowed, carrier_height, carrier_pointer_sample, carrier_slot_for_cast, clamped_square, eased, logical_size,
         peripheral_carrier_slot, valid_media_label, CarrierPlacement, CastStep, Choreography,
         FireballRay, RayPoint,
     };
@@ -1537,19 +1547,20 @@ mod tests {
         count: u8,
     ) {
         let side = (logical_size(0) * scale).round() as i32;
+        let height=(carrier_height(count,work,scale)*scale).round() as i32;
         let positions: Vec<_> = (0..count)
             .map(|index| peripheral_carrier_slot(client, work, scale, index, count, 1543).unwrap())
             .collect();
         for (index, position) in positions.iter().enumerate() {
             assert!(position.x >= work.position.x && position.y >= work.position.y);
             assert!(position.x + side <= work.position.x + work.size.width as i32);
-            assert!(position.y + side <= work.position.y + work.size.height as i32);
+            assert!(position.y + height <= work.position.y + work.size.height as i32);
             for other in positions.iter().skip(index + 1) {
                 assert!(
                     position.x + side <= other.x
                         || other.x + side <= position.x
-                        || position.y + side <= other.y
-                        || other.y + side <= position.y
+                        || position.y + height <= other.y
+                        || other.y + height <= position.y
                 );
             }
         }

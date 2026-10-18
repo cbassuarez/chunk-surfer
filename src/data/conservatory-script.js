@@ -29,6 +29,8 @@
 // (handled original / copy generation); runtime code never erodes or rewrites
 // these strings. It is production history, and it says nothing about his mind.
 
+import { TUNING_FORK_ENGRAVING_LINE } from './tuning-fork-discovery.js';
+
 export const WORK_ORDER = {
   id: 'work-order',
   title: 'Work Order 4417-C',
@@ -914,9 +916,8 @@ export const TALISMAN = {
   read: {
     speaker: 'THE PRACTICE WING',
     lines: [
-      { who: 'direction', text: 'It is engraved, badly, by hand, with a knife rather than a tool: A=440. And under that, smaller: AND NOTHING ELSE.' },
-      { who: 'you', text: '"And nothing else."' },
-      { who: 'you', text: 'That is not a joke a tuner makes. That is a joke a man makes at three in the morning about the only thing he still believes.' },
+      { who: 'direction', text: TUNING_FORK_ENGRAVING_LINE },
+      { who: 'you', text: '"444." At least it\'s not one of those spiritual healing A432 forks.' },
     ],
     choices: [
       { text: 'strike it', goto: 'strike' },

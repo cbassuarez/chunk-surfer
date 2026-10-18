@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
 import { strikeFireballSurface } from '../src/game/fireball-surface-hit.js';
 import { fireballSurfacePose } from '../src/game/fireball-surface-pose.js';
+import { createFireballSurfaceChase } from '../src/game/fireball-surface-chase.js';
 
 function eventBus(){
   const listeners=[];
@@ -22,23 +23,23 @@ const outbound=(surfaceIndex=0)=>({castId:'cast-0123abcd',surfaceIndex,state:'ou
 
 async function surface({label='fireball-cast-1',bus=eventBus()}={}){
   const source=(await readFile(new URL('../src/fireball-cast.js',import.meta.url),'utf8')).replace(/^import .*;\n/gm,'').replace(/^export /gm,'');
-  const events=new Map(),emitted=[];
+  const events=new Map(),emitted=[],acquisitions=[];
   const painted=[];let nextFrame,now=0,rafRequests=0;
   const drawing=new Proxy({}, {get:(target,name)=>target[name]??((...args)=>{painted.push({name,args,fillStyle:target.fillStyle});return name==='measureText'?{width:20}:undefined;}),set:(target,name,value)=>{target[name]=value;return true;}});
   let contextOptions;
   const canvas={getContext:(_kind,options)=>{contextOptions=options;return drawing;},getBoundingClientRect:()=>({left:0,top:0,width:240,height:240})};
-  const context={strikeFireballSurface,fireballSurfacePose,structuredClone,Image:class{},document:{getElementById:()=>canvas},performance:{now:()=>now,timeOrigin:1000},
+  const context={strikeFireballSurface,fireballSurfacePose,createFireballSurfaceChase,structuredClone,Image:class{},document:{getElementById:()=>canvas},performance:{now:()=>now,timeOrigin:1000},
     innerWidth:240,innerHeight:240,devicePixelRatio:1,
     requestAnimationFrame:(handler)=>{nextFrame=handler;rafRequests+=1;return rafRequests;},cancelAnimationFrame:()=>{},
     addEventListener:(name,fn)=>{const handlers=events.get(name)||[];handlers.push(fn);events.set(name,handlers);},
     getCurrentWindow:()=>({label,listen:(name,handler)=>bus.listen(label,name,handler),setFocus:()=>{throw Error('surface must not move OS focus directly');}}),
     listen:(name,handler)=>bus.listen('Any',name,handler),
-    emit:async(name,payload)=>emitted.push({name,payload})};
+    emit:async(name,payload)=>(name==='fireball-cast-acquire'?acquisitions:emitted).push({name,payload})};
   vm.runInNewContext(source,context);
-  for(let i=0;i<5;i++)await Promise.resolve();
+  for(let i=0;i<10;i++)await Promise.resolve();
   bus.emitTo(label,'fireball-cast',outbound(Number(label.at(-1))-1));
   const initialPose=fireballSurfacePose(outbound(Number(label.at(-1))-1));
-  return{emitted,painted,contextOptions,readFrame:()=>context.readFireballSurfaceFrame(),
+  return{emitted,acquisitions,painted,contextOptions,readFrame:()=>context.readFireballSurfaceFrame(),
     setNow:value=>{now=value;},rafRequests:()=>rafRequests,
     paint:(at=16)=>{painted.length=0;nextFrame(at);return painted;},
     fire:async(name,{x=initialPose.centerX,y=initialPose.centerY}={})=>{for(const handler of events.get(name)||[])handler({clientX:x,clientY:y,preventDefault(){},stopPropagation(){}});await Promise.resolve();}};
@@ -93,10 +94,10 @@ test('a padding press emits an opaque miss, keeps the target available, and neve
 
 test('rendering clears transparent padding and draws only the helper pose tile; frame telemetry follows completed paint',async()=>{
   const bus=eventBus(),harness=await surface({bus});
-  const cast={...outbound(),catchReady:true,motion:{seed:500,formationProgress:1,dodge:0,pressure:1}};
+  const cast={...outbound(),castId:'cast-00000500',catchReady:true,motion:{seed:500,formationProgress:1,dodge:0,pressure:1}};
   harness.painted.length=0;harness.setNow(32);
   bus.emitTo('fireball-cast-1','fireball-cast',cast);
-  const calls=harness.painted,pose=fireballSurfacePose(cast);
+  const calls=harness.painted,pose=fireballSurfacePose({...cast,motion:{...cast.motion,formationProgress:0}});
   assert.equal(harness.contextOptions.alpha,true);
   assert.equal(calls[0].name,'clearRect');
   assert.deepEqual(calls[0].args,[0,0,240,240]);
@@ -123,19 +124,25 @@ test('native delivery paints every interaction phase while background requestAni
     {...outbound(),catchReady:true,offer:1,motion:{seed:70,formationProgress:1,dodge:0,pressure:1}},
     {...outbound(),catchReady:false,offer:2,motion:{seed:70,formationProgress:.5,dodge:1,pressure:1,rebounding:true}},
     {...outbound(),catchReady:false,offer:2,motion:{seed:70,formationProgress:.4,dodge:.8,pressure:1}},
-    {...outbound(),state:'deflected',catchReady:false,offer:2,motion:{seed:70,formationProgress:.4,dodge:.8,pressure:1}},
   ];
   assert.equal(harness.rafRequests(),1);
+  const initial=harness.readFrame().pose;
   for(const [index,cast] of phases.entries()){
     const at=100+index*500;harness.setNow(at);
     bus.emitTo('fireball-cast-1','fireball-cast',cast);
     const frame=harness.readFrame();
     assert.equal(frame.at,1000+at,'delivery completes a new canvas paint without executing the rAF callback');
     assert.equal(frame.cast.surfaceIndex,0);assert.equal(frame.cast.state,cast.state);
-    assert.equal(frame.cast.catchReady,cast.catchReady);assert.equal(frame.cast.offer,cast.offer);
-    assert.deepEqual(frame.pose,fireballSurfacePose(cast));
+    assert.equal(frame.cast.catchReady,false,'a timer cue cannot substitute for reaching the target');assert.equal(frame.cast.offer,cast.offer);
+    assert.equal(frame.pose.centerX,initial.centerX);assert.equal(frame.pose.centerY,initial.centerY,'idle cursor causes no flight');
     assert.equal(harness.rafRequests(),1,'event paints never create another animation loop');
   }
+  harness.setNow(2200);
+  bus.emitTo('fireball-cast-1','fireball-cast-pointer',{seed:70,index:0,x:initial.centerX,y:initial.centerY,active:true});
+  assert.equal(harness.readFrame().cast.catchReady,true,'actual pointer arrival paints its cue even without rAF');
+  assert.equal(harness.acquisitions.length,1);
+  harness.setNow(2300);bus.emitTo('fireball-cast-1','fireball-cast',{...phases.at(-1),state:'deflected'});
+  assert.equal(harness.readFrame().cast.state,'deflected');
   harness.paint(3000);assert.equal(harness.rafRequests(),2,'the one cosmetic loop schedules exactly its next frame');
   bus.emitTo('fireball-cast-1','fireball-cast',null);assert.equal(harness.readFrame(),null);
   assert.equal(harness.rafRequests(),2);
@@ -148,6 +155,21 @@ test('an accepted press paints local feedback immediately without waiting for a 
   assert.equal(painted.at,1500);assert.equal(painted.cast.state,'deflected');
   assert.equal(harness.rafRequests(),1);
   assert.equal(harness.emitted.filter(({name})=>name==='fireball-cast-hit').length,1);
+});
+
+test('hover freezes the exact painted target before clicking and cannot restart under pointer leave or queued motion',async()=>{
+  const bus=eventBus(),harness=await surface({bus});
+  const pose=harness.readFrame().pose;
+  harness.setNow(100);await harness.fire('pointermove',{x:pose.centerX,y:pose.centerY});
+  assert.equal(harness.acquisitions.length,1);assert.equal(harness.emitted.length,0,'hover is not a catch');
+  assert.equal(harness.readFrame().cast.catchReady,true);
+  assert.deepEqual(harness.readFrame().pose,pose);
+  harness.setNow(150);await harness.fire('pointermove',{x:-300,y:300});
+  bus.emitTo('fireball-cast-1','fireball-cast',{...outbound(),catchReady:true,motion:{formationProgress:1,pressure:1}});
+  assert.deepEqual(harness.readFrame().pose,pose);assert.equal(harness.acquisitions.length,1);
+  harness.setNow(200);await harness.fire('pointerdown',{x:pose.centerX,y:pose.centerY});
+  assert.equal(harness.emitted.filter(event=>event.name==='fireball-cast-hit').length,1);
+  assert.deepEqual(harness.readFrame().pose,pose,'feedback uses the exact acquired pose');
 });
 
 test('a late outbound motion delivery cannot reopen an already clicked local target',async()=>{

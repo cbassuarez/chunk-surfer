@@ -27,7 +27,9 @@ export function createApparitionApplauseCapture({canvas,audioContext,output,snap
     const ended=new Promise(resolve=>recorder.onstop=resolve);recorder.stop();await ended;
     try{output.disconnect(tap);}catch(_){}
     for(const track of stream.getTracks())track.stop();
-    const blob=new Blob(chunks,{type:recorder.mimeType});
+    // A codecs list may contain a comma, which is also the data-URL delimiter.
+    // Keep the container MIME here; the recorder metadata retains the codecs.
+    const blob=new Blob(chunks,{type:recorder.mimeType.split(';')[0]});
     const dataUrl=await new Promise(resolve=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.readAsDataURL(blob);});
     return{dataUrl,mime:recorder.mimeType,bytes:blob.size,startedAtMs,startedAudioTime,endedAtMs:now(),frames};
   }

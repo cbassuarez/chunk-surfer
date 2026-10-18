@@ -33,11 +33,15 @@ Pillow and NumPy can be selected with `CHUNK_SURFER_LETTERING_PYTHON`.
 
 `WORLD_INSCRIPTIONS` declares existing per-placement copy in canonical host-local
 metres. Imported direct stamps reproject that host's actual UVs, albedo factors,
-normal basis and ORM into the print face. At zero pigment the baker adds no
-procedural grain or edge wear; original stock RGB is retained exactly. Normal
+normal basis and ORM into the print face. At zero pigment, imported word-sized patches retain their sampled host stock
+exactly; authored complete carriers receive process-specific substrate finish.
+No word-sized patch gains an invented distressed border. Normal
 and ORM atlases are deliberately lower frequency than the pigment atlas.
-`reliefM` is normal-map relief: cut civic stone uses −1.5 mm, broad-nib paint
-uses +35 µm, ordinary print +7 µm. It does not change silhouettes or shadows.
+`reliefM` is normal-map relief. The manufacturing registry in
+`finish-profiles.mjs` is authoritative: cut mineral uses bounded negative relief
+(−0.35 to −0.8 mm), while ordinary deposited pigment uses thin positive relief.
+It does not change silhouettes or shadows. `sign-assemblies.mjs` owns real
+carrier shape, edges, fixing depth and cloth drape.
 
 Small record faces use up to 512 texels across / 32 texels per requested cap;
 new attached signs use 32 cap texels and small direct stamps 24. Existing hero

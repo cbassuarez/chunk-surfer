@@ -6,6 +6,8 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
+import {letteringFinishProfile} from './finish-profiles.mjs';
+export {letteringFinishProfile,LETTERING_FINISH_PROFILES} from './finish-profiles.mjs';
 const HERE=path.dirname(fileURLToPath(import.meta.url));
 const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 export function printedSurfaceMetadata(page,{coverage='baseColorAlpha'}={}){
@@ -15,6 +17,7 @@ export async function bakeLetteringAtlases(jobs,{outputDir,pageSize=1024}={}){
  if(!outputDir)throw new TypeError('A task-owned atlas output directory is required');
  if(!Array.isArray(jobs)||new Set(jobs.map(j=>j.id)).size!==jobs.length)throw new TypeError('Lettering jobs need unique ids');
  for(const job of jobs){if(!job.id||!Number.isFinite(job.widthM)||!Number.isFinite(job.heightM)||job.widthM<=0||job.heightM<=0)throw new TypeError(`Invalid physical lettering surface ${job.id}`);}
+ jobs=jobs.map(job=>{const finish=letteringFinishProfile(job);return{...job,finish,reliefM:finish.fabricationReliefM};});
  fs.mkdirSync(outputDir,{recursive:true});
  const input=path.join(outputDir,'lettering-jobs.json');fs.writeFileSync(input,JSON.stringify({version:1,pageSize,jobs},null,2)+'\n');
  const bundled='/Users/seb/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3';

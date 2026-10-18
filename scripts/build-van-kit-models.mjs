@@ -10,6 +10,7 @@ import {mergeVertices,mergeGeometries} from 'three/addons/utils/BufferGeometryUt
 import {vanKitModel} from '../src/data/van-kit-models.js';
 import {witnessModelInternals,witnessReplacementPlate} from './witness-model-details.mjs';
 import {benchAmplifier,benchFlashlight,benchFaceplate} from './bench-model-details.mjs';
+import {conformVectorLettering} from './curved-item-lettering.mjs';
 
 const out='public/assets/items',io=new NodeIO().registerExtensions([KHRMaterialsTransmission,KHRMaterialsIOR,KHRMaterialsVolume]);await mkdir(out,{recursive:true});
 const selected=process.argv.find(arg=>arg.startsWith('--only='))?.slice(7).split(',');
@@ -125,8 +126,9 @@ async function build(id,make){
   cylinder([0,0,0],r*1.18,.008,'rubber',[Math.PI/2,0,0],20);cylinder([0,0,.006],r,.012,'steel',[Math.PI/2,0,0],20);
   box([0,0,.013],[r*1.45,r*.2,.003],'darkInk',[0,0,.54],.002,'screw-slot');
  });}
- function label(value,p,size=.035,m='ink',r=[0,0,0]){
-  group(p,r,`etched-legend:${value}`,()=>{
+ function label(value,p,size=.035,m='ink',r=[0,0,0],surface=null){
+  let contact=null;
+  const labelNode=group(p,r,`etched-legend:${value}`,()=>{
    const strokes=[];
    for(const [i,char]of[...value].entries()){
     if(!glyphs[char]&&!/\s/.test(char))throw new Error(`Unsupported field-kit legend character ${JSON.stringify(char)} in ${value}`);
@@ -135,8 +137,22 @@ async function build(id,make){
     const geom=SVGLoader.pointsToStroke(points,SVGLoader.getStrokeStyle(size*.075,'#fff','round','round'),2);
     if(geom)strokes.push(geom);
    }}
-   if(strokes.length)add(mergeGeometries(strokes),m,undefined,undefined,'continuous-etched-lettering');
+   if(strokes.length){
+    const original=mergeGeometries(strokes);
+    if(surface){
+     if(r.some(v=>v!==0))throw new Error('Conformed item print must use the housing frame');
+     // Preserve exactly the packed vector glyph vertices the previous exporter
+     // shipped, then split only those triangles at the real barrel facets.
+     const packed=original.index?original:mergeVertices(original,1e-6);
+     const data=conformVectorLettering({positions:packed.attributes.position.array,indices:packed.index?.array,origin:p,surface});
+     const conformed=new THREE.BufferGeometry();conformed.setAttribute('position',new THREE.Float32BufferAttribute(data.positions,3));
+     conformed.setAttribute('normal',new THREE.Float32BufferAttribute(data.normals,3));conformed.setIndex(data.indices);
+     add(conformed,m,undefined,undefined,'continuous-etched-lettering');contact=data.contact;
+    }else add(original,m,undefined,undefined,'continuous-etched-lettering');
+   }
   });
+  if(contact)labelNode.setExtras({physicalPrintContact:contact});
+  return labelNode;
  }
  function jack(p,r=.055,rot=[0,0,0]){group(p,rot,'open-cable-receptacle',()=>{
   const s=ellipse(r,r);s.holes.push(ovalHole(r*.55,r*.55));plate(s,.025,[0,0,0],'steel',undefined,.004,'jack-mouth-aperture');
@@ -251,8 +267,9 @@ function microphone(variant,g){
   group([0,-.24-stemH/2-.018,0],[Math.PI/2,0,0],'recessed-XLR-base',()=>{
    jack([0,0,0],stemR*.67);for(const[x,y]of[[-.020,.012],[.020,.012],[0,-.022]])cylinder([x,y,.003],.006,.028,'brass',[Math.PI/2,0,0],12,undefined,'XLR-contact-pin');
   });
-  label('AUDIOCORP',[-stemR*.74,-.29,stemR*.94],reference?.023:.016,'ink');
-  label(reference?'CM-1':directional?'CM-2':'CM-3',[-stemR*.40,-.35,stemR*.974],reference?.022:.017,'ink');
+  const printHost={centerY:-.24,heightM:stemH,radiusTopM:stemR,radiusBottomM:stemR*.86,segments:40,hostName:'tapered-microphone-body'};
+  label('AUDIOCORP',[-stemR*.74,-.29,stemR*.94],reference?.023:.016,'ink',undefined,printHost);
+  label(reference?'CM-1':directional?'CM-2':'CM-3',[-stemR*.40,-.35,stemR*.974],reference?.022:.017,'ink',undefined,printHost);
   box([0,-.39,stemR*.97],[stemR*.55,.008,.004],reference?'blue':directional?'amber':'red',undefined,.002,'pattern-color-index');
   if(reference){
    cylinder([0,.12,0],.166,.13,'steel',undefined,40,.118,'formed-capsule-shoulder');

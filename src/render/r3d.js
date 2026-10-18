@@ -15,7 +15,7 @@
 
 import { assetUrl } from '../platform/paths.js';
 import { FRONT_END_PLATE_PRESETS, normalizeFrontEndPlate } from './front-end-plate.js';
-import { AMBIENT_PLACE_SCALE, CELL, EYE as EYE_METERS, MATERIAL, PLAN_SCALE } from '../data/floorplan/legend.js';
+import { ZONE, AMBIENT_PLACE_SCALE, CELL, EYE as EYE_METERS, MATERIAL, PLAN_SCALE } from '../data/floorplan/legend.js';
 import * as P3 from './props3d.js';
 import * as HZ from './horizon3d.js';
 import * as SHORE from './source-shore3d.js';
@@ -34,6 +34,7 @@ import { LIGHT_KIND } from '../data/conservatory-lights.js';
 import { visualEffectsEnabled } from '../game/access.js';
 import { PAPER_ATLAS } from '../generated/paper-catalog.js';
 import { PAPER_PIGMENT_PATH } from '../data/paper-pigment.js';
+import { PAPER_WORLD_MATERIAL } from '../data/paper-world-material.js';
 import { hushPoseAt, isHushBodyCue } from './hush-pose.js';
 import { pressureInstances } from './pressure-volume.js';
 import { PRESSURE_FINISH_FRAG, PRESSURE_SCENE_GLSL, PRESSURE_IDENTITY_GLSL } from './pressure-composite.js';
@@ -150,6 +151,7 @@ const ZONE_TINTS = new Float32Array([
   0.36, 0.39, 0.43,   // service courts: old setts and patched channels
   0.78, 0.80, 0.84,   // st brendan's: limewashed stone, colder than Ellery's chapel
   0.64, 0.77, 0.80,   // roof: wet zinc and supported glass under the same city sky
+  0.86, 0.73, 0.54,   // the occupied pub: timber, gilt and ordinary warm practicals
 ]);
 
 const WORLD_RGB = {
@@ -428,6 +430,7 @@ uniform float uEndingWorldLook;
 // The occupied academic roof can see over the local terraces. Other exterior
 // cells keep the original street-level skyline from the same nightSky().
 uniform float uRoofView;
+uniform float uGalleryTreatment;
 uniform int uLocalLightCount;
 uniform int uLocalShadowIndex;
 uniform vec4 uLocalLightPos[${MAX_LOCAL_LIGHTS}];
@@ -520,7 +523,7 @@ uniform vec2  uPlanSize;
 uniform vec2  uPlanOrigin;
 uniform float uPlanHeightOffset;
 uniform float uUsePlan;      // 0 = procedural sample-field lattice, 1 = the conservatory
-uniform vec3  uZoneTint[22];
+uniform vec3  uZoneTint[${Math.max(...Object.values(ZONE))+1}];
 uniform float uSourceReady;
 uniform vec4  uWaterBounds;  // min x, min z, max x, max z in runtime cells
 uniform vec4  uWaterParams;  // active, level metres, murk, reduce motion
@@ -933,10 +936,9 @@ void surfaceSlot(int mat,int surf,vec2 uv,out int slot,out float tileM,out float
     else if(mat==MAT_TARMAC){slot=9;tileM=0.42;blend=.52;}      // carriageway → wet aggregate
     else if(mat==MAT_PAVING){slot=3;tileM=1.10;blend=.72;}      // pavement → worn civic flags
     else if(mat==MAT_SETTS){slot=1;tileM=.46;blend=.68;}        // gutter and courts → small stone setts
-    // The park. Rammed earth, tiled at blade scale and blended hard enough to
-    // read: at .44 over 0.70m the bank was a suggestion under a flat colour,
-    // which is a lawn with no grain in it.
-    else if(mat==MAT_GRASS){slot=8;tileM=.42;blend=.66;}
+    // Turf is evaluated from world metres in architecturalSurface. It has no
+    // masonry-bank contribution, including while a material bank is loading.
+    else if(mat==MAT_GRASS){slot=8;tileM=.42;blend=0.0;}
     else {slot=2;tileM=1.8;blend=.84;}                          // general → ash wood
   }
 }
@@ -965,7 +967,24 @@ float sourceLayerAt(vec2 worldCell){
   if(local.x<0||local.y<0||local.x>=int(uPlanSize.x)||local.y>=int(uPlanSize.y))return 0.0;
   return texelFetch(uSourceLayer,local,0).r*255.0;
 }
+// Botanical turf: broad uneven growth plus filtered short blade grain. The
+// positions are physical metres; derivatives suppress subpixel grass instead
+// of making a repeating earth texture sparkle during a walk.
+vec3 foregroundTurf(vec2 uv){
+  float growth=.5+.5*vnoise(uv,.68,71.0);
+  float clumps=.5+.5*vnoise(uv,4.8,93.0);
+  vec2 bladeUv=vec2(uv.x+uv.y*.27,uv.y)*vec2(29.0,10.0);
+  float grain=.5+.5*vnoise(bladeUv,1.0,117.0);
+  float footprint=max(length(dFdx(bladeUv)),length(dFdy(bladeUv)));
+  grain=mix(grain,.5,smoothstep(.40,1.7,footprint));
+  vec3 turf=mix(vec3(.085,.144,.083),vec3(.173,.257,.122),growth);
+  return turf*(.84+.23*clumps+.19*grain);
+}
 vec3 architecturalSurface(int mat,int surf,vec3 p,vec3 n,vec3 fallback){
+  if(mat==MAT_GRASS&&surf==2){
+    gMark=vec4(0.0);gMarkBlend=0.0;gMarkPlane=0.0;
+    return foregroundTurf(p.xz);
+  }
   if(uSurfacesReady<.001||surf==3)return fallback;
   vec2 uv=surfaceUv(surf,p,n);
   int slot; float tileM; float blend; surfaceSlot(mat,surf,uv,slot,tileM,blend);
@@ -1634,7 +1653,8 @@ void main(){
   // player is standing in the weather. It gates full-frame rain to the road,
   // yard and open apron without leaking it into the chapel's broken pane or an
   // interior skylight merely because this particular ray happens to see sky.
-  bool cameraInWeather=uUsePlan>.5&&(eyeCell.flags&FLAG_SKY)!=0;
+  // Pub SKY belongs only to its mesh render underlay; its actual room is dry.
+  bool cameraInWeather=uUsePlan>.5&&(eyeCell.flags&FLAG_SKY)!=0&&eyeCell.zone!=${ZONE.pub};
   vec2 drd = 1.0 / max(abs(rd.xz), vec2(1e-5));
   ivec2 stp = ivec2(rd.x < 0.0 ? -1 : 1, rd.z < 0.0 ? -1 : 1);
   vec2 sideT = (vec2(cell) + max(vec2(stp), 0.0) - ro.xz) / (rd.xz + 1e-9);
@@ -2170,7 +2190,7 @@ void main(){
         float descent=1.0/max(0.23,-rd.y);
         vec2 atGallery=posM.xz+rd.xz*(6.4*descent);
         vec2 atGarden=posM.xz+rd.xz*(16.5*descent);
-        vec2 galleryLocal=atGallery-vec2(84.25,14.5);
+        vec2 galleryLocal=atGallery-mix(vec2(84.25,14.5),vec2(84.0,14.5),uGalleryTreatment);
         vec2 gardenLocal=atGarden-vec2(84.25,14.5);
         float gardenInside=(1.0-smoothstep(4.7,5.6,abs(gardenLocal.x)))
                           *(1.0-smoothstep(5.8,6.7,abs(gardenLocal.y)));
@@ -2178,9 +2198,9 @@ void main(){
         // lamps rise above the recorder's one-bit threshold, making the eye
         // read a space below the zinc instead of an illuminated flat panel.
         vec3 beneath=mix(vec3(.008,.018,.027),vec3(.09,.12,.13),gardenInside*.75);
-        float galleryX=(1.0-smoothstep(.04,.22,abs(abs(galleryLocal.x)-5.75)))
+        float galleryX=(1.0-smoothstep(.04,.22,abs(abs(galleryLocal.x)-mix(5.75,5.16,uGalleryTreatment))))
                        *(1.0-smoothstep(6.35,6.65,abs(galleryLocal.y)));
-        float galleryZ=(1.0-smoothstep(.04,.22,abs(abs(galleryLocal.y)-6.50)))
+        float galleryZ=(1.0-smoothstep(.04,.22,abs(abs(galleryLocal.y)-mix(6.50,6.66,uGalleryTreatment))))
                        *(1.0-smoothstep(5.55,5.85,abs(galleryLocal.x)));
         beneath+=vec3(.55,.67,.62)*max(galleryX,galleryZ)*.94;
         float walkwayX=smoothstep(5.05,5.75,abs(galleryLocal.x))
@@ -3516,6 +3536,8 @@ let markLiveBase=0;               // which half the shader reads as live
 const markReady=new Uint8Array(SURFACE_LAYERS);
 const markStageReady=new Uint8Array(SURFACE_LAYERS);
 let hushBodyReady=false,hushBodyLoadError=null;
+let streetPilotReady=false;
+let academicGalleryReady=false,academicGalleryError=null;
 let progPressureFinish=null,pressureFinishTex=null,pressureFinishFbo=null;
 let pressureSceneDepthReady=false;
 const pressureFinishUniformCache=new Map();
@@ -5732,10 +5754,18 @@ export function r3dInit(mapEl) {
     .then(()=>P3.addPropPack(assetUrl('assets/conservatory-adversary-scenery.glb'))
       .catch((err)=>console.warn('adversary room dressing unavailable; retaining original prop store',err)))
     .then(()=>P3.addPropPack(assetUrl('assets/opening-street.glb')))
+    // One optional north-street proof. Unique mesh names keep the wider fleet
+    // and arrival street unchanged if this small pack is unavailable.
+    .then(()=>P3.addPropPack(assetUrl('assets/street-pilot.glb'))
+      .then(()=>{streetPilotReady=true;})
+      .catch((err)=>console.warn('street pilot unavailable; retaining legacy traffic',err)))
     // Hero vegetation deliberately overrides the conservative tree, hedge and
     // ruined-garden meshes. A missing optional pack falls back to those names
     // without preventing later structural packs from loading.
     .then(()=>P3.addPropPack(assetUrl('assets/vegetation.glb')).catch((err)=>console.warn('vegetation pack unavailable; retaining procedural fallbacks',err)))
+    .then(()=>P3.addPropPack(assetUrl('assets/academic-gallery.glb'))
+      .then(()=>{academicGalleryReady=true;academicGalleryError=null;})
+      .catch((err)=>{academicGalleryReady=false;academicGalleryError=String(err?.message||err);console.warn('academic gallery unavailable; retaining existing assemblies',err);}))
     .then(()=>P3.addPropPack(assetUrl('assets/source-structures.glb')))
     .then(()=>{
       // Pressure decoding is optional and must not delay the doors or stairs.
@@ -5748,7 +5778,8 @@ export function r3dInit(mapEl) {
     .catch((err)=>console.warn('prop pack unavailable',err));
   P3.loadPortraitAtlas(assetUrl('assets/portraits/portrait-atlas.webp'))
     .catch((err)=>console.warn('portrait atlas unavailable',err));
-  P3.loadPaperAtlas(assetUrl(PAPER_PIGMENT_PATH),{columns:PAPER_ATLAS.columns,rows:PAPER_ATLAS.rows,pigmentCoverage:true})
+  P3.loadPaperAtlas(assetUrl(PAPER_PIGMENT_PATH),{columns:PAPER_ATLAS.columns,rows:PAPER_ATLAS.rows,pigmentCoverage:true,
+    materialUrl:assetUrl(PAPER_WORLD_MATERIAL.path),heightRangeM:PAPER_WORLD_MATERIAL.heightRangeM})
     .catch((err)=>console.warn('paper atlas unavailable; sheets retain stock material',err));
   Promise.all([
     loadTextureArray(assetUrl('assets/surfaces/surface-albedo.jpg'),{srgb:true}),
@@ -5989,6 +6020,7 @@ export function r3dSetPlan(rgba, w, h, material = null, options = {}) {
 
 export function r3dSetProps(instances) { P3.setPropInstances(instances); }
 export function r3dSetDynamicProps(instances) { P3.setDynamicPropInstances(instances); }
+export function r3dRoofWatcherPresentation() { return P3.roofWatcherPresentation(); }
 export function r3dSetDiagnosticProps(instances) { P3.setDiagnosticPropInstances(instances); }
 export function r3dSetPropDiagnostics(enabled,options=null) { return P3.setPropDiagnostics(enabled,options); }
 export function r3dSetEmergencyShadows(instances) { P3.setEmergencyShadowInstances(instances); }
@@ -6138,6 +6170,8 @@ export function r3dSetSourceWhiteout(value = 0) {
 }
 export function r3dSetHushProp(id) { P3.setHushProp(id); }
 export function r3dPropStats() { return P3.propPackStats(); }
+export function r3dStreetPilotReady() { return streetPilotReady; }
+export function r3dAcademicGalleryStatus() { return {ready:academicGalleryReady,error:academicGalleryError}; }
 export function r3dPropInstanceIds() { return P3.propInstanceIds(); }
 
 // Rasterise only exact corpus lines into the material atlas. The texture is a
@@ -6568,6 +6602,7 @@ export function r3dFrame(state) {
   gl.uniform1f(U('uNightSeed'),nightSeed);
   gl.uniform1f(U('uEndingWorldLook'),endingWorldLook);
   gl.uniform1f(U('uRoofView'),lightingRoofSkyRecovery>0?1:0);
+  gl.uniform1f(U('uGalleryTreatment'),academicGalleryReady?1:0);
   gl.uniform1f(U('uHushSense'),hushSense);
   gl.uniform1f(U('uOpticalEffects'),opticalEffects);
   gl.uniform1f(U('uReduceMotionOptical'),pixelMeshSettings.reduceMotion?1:0);

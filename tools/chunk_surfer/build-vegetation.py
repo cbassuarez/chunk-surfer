@@ -547,16 +547,14 @@ def academic_litter(name: str, materials: dict[str, bpy.types.Material], lod: in
     return join_parts(parts, name)
 
 
-def build_scene(manifest: dict, work_dir: Path, tree_path: Path) -> tuple[list[bpy.types.Object], dict]:
+def build_scene(manifest: dict, work_dir: Path, tree_recipe: Path) -> tuple[list[bpy.types.Object], dict]:
     bpy.ops.wm.read_factory_settings(use_empty=True)
     materials = build_materials(work_dir / "textures")
 
-    tree_objects = import_gltf(tree_path)
-    tree_source = tree_objects[0]
-    for slot in tree_source.material_slots:
-        slot.material = materials["live"] if slot.material and slot.material.name.startswith("__tree_leaf__") else materials["branch"]
-    transform_uvs(tree_source, {"vegetation.live"}, (0, 0))
-    tree_source.name = "tree-prototype"
+    # Living trees use the original deterministic crown recipe shared with
+    # the archive-free tree-only rebuilder. Never thin the source's tiny leaf
+    # faces: that kept triangle counts while deleting virtually all canopy.
+    tree_crowns = json.loads(tree_recipe.read_text())
 
     source_prototypes: dict[str, list[bpy.types.Object]] = {}
     cell_by_role = {"shrub": (1, 0), "nettle": (0, 1), "weed": (1, 1)}
@@ -585,14 +583,27 @@ def build_scene(manifest: dict, work_dir: Path, tree_path: Path) -> tuple[list[b
         name = "opening_park_laurel" if lod == 0 else f"opening_park_laurel_lod{lod}"
         outputs.append(laurel_mesh(name, shrub_lods[lod], materials, lod))
 
-    for base, seed, shape in (
-        ("opening_street_tree_small", 11, (.96, 1.03, -.06)),
-        ("opening_street_tree_small_b", 23, (1.10, .88, .20)),
-        ("opening_street_tree_small_c", 37, (.84, 1.05, -.22)),
-    ):
-        for lod, budget in enumerate((7600, 3400, 1050)):
-            name = base if lod == 0 else f"{base}_lod{lod}"
-            outputs.append(tree_variant(name, tree_source, budget, seed + lod * 17, shape))
+    for crown in tree_crowns:
+        parts = []
+        for primitive in crown["primitives"]:
+            values = primitive["positions"]
+            # Recipe is runtime Y-up; Blender exports (x,z,-y).
+            vertices = [(values[i], -values[i + 2], values[i + 1]) for i in range(0, len(values), 3)]
+            ids = primitive["indices"]
+            faces = [ids[i:i + 3] for i in range(0, len(ids), 3)]
+            data = bpy.data.meshes.new(crown["name"] + "-" + primitive["role"])
+            data.from_pydata(vertices, [], faces)
+            data.update()
+            uv = data.uv_layers.new(name="UVMap")
+            for polygon in data.polygons:
+                for loop in polygon.loop_indices:
+                    vertex = data.loops[loop].vertex_index
+                    uv.data[loop].uv = primitive["uvs"][vertex * 2:vertex * 2 + 2]
+            obj = bpy.data.objects.new(data.name, data)
+            bpy.context.scene.collection.objects.link(obj)
+            obj.data.materials.append(materials["blade" if primitive["role"] == "leaf" else "stem"])
+            parts.append(obj)
+        outputs.append(join_parts(parts, crown["name"]))
 
     for base, role, seed, horizontal_scale, vertical_scale, spread_scale in (
         ("vegetation_nettle_cluster", "nettle", 5, 1.0, 1.0, 1.0),
@@ -637,10 +648,11 @@ def main() -> None:
     args = parse_args()
     manifest = json.loads(Path(args.manifest).read_text())
     work_dir = Path(args.work_dir)
-    tree_source = next(source for source in manifest["sources"] if source["role"] == "smallTree")
-    tree_path, tree_report = prepare_tree_source(tree_source, work_dir)
-    outputs, report = build_scene(manifest, work_dir, tree_path)
-    report["treeSource"] = tree_report
+    tree_recipe = work_dir / "tree-crowns.json"
+    if not tree_recipe.exists():
+        raise RuntimeError("Missing deterministic tree recipe; run build-vegetation.mjs")
+    outputs, report = build_scene(manifest, work_dir, tree_recipe)
+    report["treeSource"] = {"kind": "original deterministic clustered crowns", "recipe": "tree-crown-geometry.mjs", "destructiveLeafThinning": False}
     export_glb(Path(args.output), outputs)
     Path(args.report).write_text(json.dumps(report, indent=2) + "\n")
     print(f"VEGETATION PACK: {args.output}")

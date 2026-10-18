@@ -3,6 +3,7 @@
 // names, while the existing floorplan remains the sole collision authority.
 
 import { VEGETATION_FALLBACKS } from './vegetation.js';
+import { EXTERIOR_FOREGROUND } from './exterior-foreground.js';
 
 const freeze = (value) => Object.freeze(value);
 
@@ -23,7 +24,7 @@ export const OPENING_STREET_ASSETS = freeze({
 });
 
 export const OPENING_STREET_MESHES = freeze({
-  opening_street_ground:freeze({w:46.5,d:32.25,h:.04,blocks:false}),
+  opening_street_ground:freeze({w:46.5,d:27.75,h:.04,blocks:false}),
   opening_street_frontage:freeze({w:1,d:92,h:18,blocks:false}),
   opening_street_service_history:freeze({w:24,d:72,h:9,blocks:false}),
   opening_street_tree_small:freeze({w:4.8,d:4.8,h:4.6,blocks:false}),
@@ -35,7 +36,12 @@ export const OPENING_STREET_MESHES = freeze({
 // material draw; the furniture reuses the established district catalog.
 export const OPENING_STREET_PARK = freeze({
   id:'ellery-pocket-park',
-  bounds:freeze({x0:62,x1:76,y0:195.5,y1:203}),
+  bounds:freeze({
+    x0:EXTERIOR_FOREGROUND.arrival.bounds.x0+EXTERIOR_FOREGROUND.yardOrigin.x,
+    x1:EXTERIOR_FOREGROUND.arrival.bounds.x1+EXTERIOR_FOREGROUND.yardOrigin.x,
+    y0:EXTERIOR_FOREGROUND.arrival.bounds.z0+EXTERIOR_FOREGROUND.yardOrigin.y,
+    y1:EXTERIOR_FOREGROUND.arrival.bounds.z1+EXTERIOR_FOREGROUND.yardOrigin.y,
+  }),
   entrance:freeze({x:69,y:203}),
   treeId:'opening-street-municipal-tree',
   furnitureIds:freeze(['opening-street-park-bench-west','opening-street-park-bench-east','opening-street-park-laurel']),

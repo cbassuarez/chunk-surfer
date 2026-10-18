@@ -23,7 +23,7 @@ const report={condition,url,method:'QA placements with actual ordinary E seat en
 const sourceReads=[];
 const pendingGlb=new Set(),finishedGlb=new Set();
 let browser,server,profile,page,stage='boot';
-async function state(){return page.evaluate(()=>{const gl=document.querySelector('canvas.r3d')?.getContext('webgl2');return{pos:window.__probe.pos(),floor:window.__probe.floorH(),look:window.__probe.lookAngles(),world:window.__probe.world?.(),eye:window.__probe.sourceShoreView?.()?.eye,scene:window.__scenes.top()?.id,sceneView:window.__scenes.top()?.view?.(),focus:window.__probe.interactionFocus?.(),lighting:window.__probe.r3dLighting?.(),torch:window.__probe.torch(),seed:window.__probe.nightSeed(),display:window.__chunkSurferPixelMesh?.status?.(),pointer:window.__chunkSurferPointer?.status?.(),motion:window.__chunkSurferMotion?.status?.(),glError:gl?.getError(),shaderClock:window.__roofGrandeurClock};});}
+async function state(){return page.evaluate(()=>{const gl=document.querySelector('canvas.r3d')?.getContext('webgl2');return{pos:window.__probe.pos(),floor:window.__probe.floorH(),look:window.__probe.lookAngles(),world:window.__probe.world?.(),eye:window.__probe.sourceShoreView?.()?.eye,scene:window.__scenes.top()?.id,sceneView:window.__scenes.top()?.view?.(),focus:window.__probe.interactionFocus?.(),lighting:window.__probe.r3dLighting?.(),torch:window.__probe.torch(),seed:window.__probe.nightSeed(),display:window.__chunkSurferPixelMesh?.status?.(),pointer:window.__chunkSurferPointer?.status?.(),motion:window.__chunkSurferMotion?.status?.(),glError:gl?.getError(),roofWatchers:window.__probe.roofWatcherPresentation?.()??null,shaderClock:window.__roofGrandeurClock};});}
 async function capture(name){
  stage=name;
  await page.evaluate(()=>{window.__probe.setTorchBattery(1);window.__probe.setTorch(true);window.__roofR3.r3dResetVfdMemory();});
@@ -48,8 +48,44 @@ async function capture(name){
  await writeFile(join(out,'report.json'),JSON.stringify(report,null,2));
  console.log('CAPTURE',name,JSON.stringify({pos:pose.pos,eye:pose.eye,look:pose.look,scene:pose.scene,gl:pose.glError,stormFlash:frame.renderStormFlash}));
 }
-async function place(name,x,y,yaw,pitch){await page.evaluate(({x,y,yaw,pitch})=>{window.__probe.warpCell(x,y);window.__probe.lookAtWorld(yaw,pitch);},{x,y,yaw,pitch});await capture(name);}
+async function place(name,x,y,yaw,pitch){
+ const eyeOffset=Number(process.env.ROOF_GRANDEUR_QA_EYE_OFFSET||0);
+ const runtimeShift=(process.env.ROOF_GRANDEUR_QA_RUNTIME_SHIFT||'0,0').split(',').map(Number);
+ if(!Number.isFinite(eyeOffset))throw Error('Invalid QA eye offset');
+ if(runtimeShift.length!==2||!runtimeShift.every(Number.isFinite))throw Error('Invalid QA runtime shift');
+ await page.evaluate(({x,y,yaw,pitch,eyeOffset,runtimeShift})=>{
+   window.__scenes.remove('qa-roof-eye-offset');window.__probe.warpCell(x,y);if(runtimeShift.some(Boolean)){const pos=window.__probe.pos();window.__probe.warpRuntime(pos.x+runtimeShift[0],pos.y+runtimeShift[1]);}window.__probe.lookAtWorld(yaw,pitch);
+   if(eyeOffset){const pos=window.__probe.pos(),floorH=window.__probe.floorH()+eyeOffset;window.__scenes.push({id:'qa-roof-eye-offset',blocksInput:false,blocksWorld:false,allowsLook:true,worldView:()=>({x:pos.x,y:pos.y,floorH,suppressActors:false}),view:()=>({diagnostic:true,eyeOffset,pose:pos,floorH})});}
+ },{x,y,yaw,pitch,eyeOffset,runtimeShift});await capture(name);
+}
 async function seat(id,x,y){stage=id;await page.evaluate(({x,y,id})=>{window.__probe.warpCell(x,y);const p=window.__probe.pos(),bay=window.__probe.props().instances.find(p=>p.id===id);window.__probe.lookAtWorld(Math.atan2(bay.x*2+1-p.x,-(bay.y*2+1-p.y)),0);},{x,y,id});await wait(700);const focus=await page.evaluate(()=>window.__probe.interactionFocus());if(focus?.propId!==id)throw Error(`${id}: actual E focus is ${focus?.propId}`);await page.keyboard.press('e');await page.waitForFunction(()=>window.__scenes.top()?.id==='academic-roof-sit'&&window.__scenes.top().view?.().phase==='seated',{timeout:20000});await capture(id);await page.keyboard.press('e');await page.waitForFunction(()=>window.__scenes.top()?.id!=='academic-roof-sit',{timeout:20000});report.smoke.push({name:`${id}: ordinary E entry and exit`,pass:true,state:await state()});}
+async function watcherMotion(){
+ stage='watcher-motion';
+ const kind=process.env.ROOF_GRANDEUR_WATCHER_KIND==='foliate'?'foliate':'hound';
+ const fixture={x:193.5,y:kind==='foliate'?276.5:280.5,yaw:-Math.PI/2,pitch:.62};
+ await page.evaluate(fixture=>{if(typeof window.__probe.roofWatcherPresentation!=='function')throw Error('Read-only roofWatcherPresentation probe is unavailable');window.__probe.warpCell(fixture.x,fixture.y);window.__probe.lookAtWorld(fixture.yaw,fixture.pitch);},fixture);
+ await wait(2500);await capture('13-watcher-motion-start');
+ const initial=await state(),events=[];
+ await page.evaluate(()=>{
+   const canvas=document.querySelector('canvas.r3d');if(!canvas?.captureStream)throw Error('Native renderer canvas cannot be recorded');
+   const mimeType=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(type=>MediaRecorder.isTypeSupported(type));
+   const stream=canvas.captureStream(30),chunks=[],recorder=new MediaRecorder(stream,{mimeType,videoBitsPerSecond:2000000});
+   const qa=window.__roofWatcherCapture={stream,recorder,mimeType,chunks,samples:[],startedAt:performance.now()};
+   const sample=()=>qa.samples.push(structuredClone({at:performance.now(),pos:window.__probe.pos(),floor:window.__probe.floorH(),look:window.__probe.lookAngles(),presentation:window.__probe.roofWatcherPresentation()}));
+   sample();qa.timer=setInterval(sample,50);recorder.ondataavailable=event=>{if(event.data.size)chunks.push(event.data);};recorder.start(250);
+ });
+ const mark=async(name)=>events.push({name,...await page.evaluate(()=>({at:performance.now(),pos:window.__probe.pos(),look:window.__probe.lookAngles(),presentation:window.__probe.roofWatcherPresentation()}))});
+ await mark('recording-start');await wait(800);
+ for(const action of [{key:'a',ms:200,name:'ordinary-lateral-left'},{key:'d',ms:400,name:'ordinary-lateral-right'},{key:'a',ms:200,name:'ordinary-return'}]){
+   await mark(`${action.name}:before`);await page.keyboard.down(action.key);await wait(action.ms);await page.keyboard.up(action.key);await mark(`${action.name}:released`);await wait(kind==='foliate'?2500:1800);await mark(`${action.name}:settled`);
+ }
+ if(kind!=='foliate'){await page.keyboard.press('ArrowRight');await mark('ordinary-arrow-right');await wait(800);await page.keyboard.press('ArrowLeft');await mark('ordinary-arrow-left');await wait(1400);}
+ const saved=await page.evaluate(()=>new Promise(resolve=>{const qa=window.__roofWatcherCapture;clearInterval(qa.timer);qa.recorder.onstop=async()=>{const blob=new Blob(qa.chunks,{type:qa.mimeType}),data=await new Promise(done=>{const reader=new FileReader();reader.onload=()=>done(reader.result);reader.readAsDataURL(blob);});qa.stream.getTracks().forEach(track=>track.stop());resolve({data,mimeType:qa.mimeType,bytes:blob.size,startedAt:qa.startedAt,finishedAt:performance.now(),samples:qa.samples});};qa.recorder.stop();}));
+ const video=join(out,'watcher-ordinary-motion.webm');await writeFile(video,Buffer.from(saved.data.split(',')[1],'base64'));delete saved.data;
+ await capture('14-watcher-motion-return');
+ report.watcherMotion={method:`One initial diagnostic placement near the west ${kind}; thereafter ordinary A/D lateral steps${kind==='foliate'?'':' and ArrowRight/ArrowLeft input'} with live game clocks. Uncut native renderer canvas video without audio, plus timestamped read-only submitted-transform samples at a nominal50ms interval. This is focused scripted QA, not human acceptance. Inspect recorded look values before claiming camera yaw changed.`,kind,fixture,initial,final:await state(),events,...saved,video};
+ await writeFile(join(out,'report.json'),JSON.stringify(report,null,2));console.log('WATCHER_MOTION_COMPLETE',JSON.stringify({samples:saved.samples.length,bytes:saved.bytes,mimeType:saved.mimeType}));
+}
 try{
  const overridePlugin={name:'roof-native-capture-asset-override',enforce:'pre',configureServer(vite){if(!assetOverride)return;vite.middlewares.use(async(req,res,next)=>{if(req.url?.split('?')[0]!=='/assets/conservatory-props.glb'||!['GET','HEAD'].includes(req.method))return next();try{const meta=await stat(servedAssetFile);report.assetOverrideRequests.push({url:req.url,method:req.method,path:servedAssetFile,bytes:meta.size});res.statusCode=200;res.setHeader('Content-Type','model/gltf-binary');res.setHeader('Content-Length',String(meta.size));res.setHeader('Cache-Control','no-store');if(req.method==='HEAD')return res.end();const stream=createReadStream(servedAssetFile);stream.on('error',error=>{report.errors.push({stage:'asset-override',message:String(error)});res.destroy(error);});stream.pipe(res);}catch(error){next(error);}});}};
  server=await createServer({configFile:'vite.config.js',plugins:[overridePlugin],optimizeDeps:{noDiscovery:true},server:{host:'127.0.0.1',port,strictPort:true,hmr:false,watch:null}});await server.listen();console.log('SERVER_READY',url);
@@ -83,6 +119,12 @@ try{
    if(!Array.isArray(views))throw Error('Extra view fixture must be an array');
    for(const view of views){if(!/^[a-z0-9-]+$/.test(view.name)||!['x','y','yaw','pitch'].every(key=>Number.isFinite(view[key])))throw Error('Invalid extra view fixture');await place(view.name,view.x,view.y,view.yaw,view.pitch);}
  }
+ if(process.env.ROOF_GRANDEUR_SEAT_INSPECTION){
+   const selected=process.env.ROOF_GRANDEUR_SEAT_INSPECTION;
+   if(selected==='west'||selected==='both')await seat('roof-sit-west',200,289);
+   if(selected==='east'||selected==='both')await seat('roof-sit-east',205,286);
+ }
+ if(process.env.ROOF_GRANDEUR_WATCHER_MOTION==='1')await watcherMotion();
  if(process.env.ROOF_GRANDEUR_SMOKE==='1'){
    // Small ordinary-control collision samples around two seats, Ren and return
    // entry. Each starts at an explicit QA placement; this is not route proof.
@@ -95,7 +137,7 @@ try{
    report.performance=await page.evaluate(()=>new Promise(resolve=>{const intervals=[];let last=null;const start=performance.now();function frame(at){if(last!==null&&at>last)intervals.push(at-last);last=at;if(intervals.length>=120||performance.now()-start>15000){const sorted=intervals.toSorted((a,b)=>a-b),percentile=p=>sorted[Math.min(sorted.length-1,Math.floor(sorted.length*p))]??null;resolve({method:'Recorder off; shader clock restored live; 120 positive requestAnimationFrame intervals or 15 second cap at south forecourt north. Host load uncontrolled; no matched BEFORE sample, no causal performance conclusion.',intervalsMs:intervals,samples:intervals.length,medianMs:percentile(.5),p95Ms:percentile(.95),p99Ms:percentile(.99),shaderClockEnabled:window.__roofGrandeurClock.enabled,display:window.__chunkSurferPixelMesh.status(),lighting:window.__probe.r3dLighting()});}else requestAnimationFrame(frame);}requestAnimationFrame(frame);}));
  }
 }catch(e){report.errors.push({stage,message:String(e.stack||e)});console.error('FAIL',stage,e);try{await page?.screenshot({path:join(out,'failure.webp'),type:'webp'});}catch{}}
-finally{await Promise.all(sourceReads);report.assetHashAfter=await hash(servedAssetFile);report.liveCanonicalAssetHashAfter=await hash('public/assets/conservatory-props.glb');report.assetStable=report.assetHashBefore===report.assetHashAfter;report.sourceHashesAfter=await hashes();report.sourcesStable=Object.entries(report.sourceHashes).every(([file,sha])=>report.sourceHashesAfter[file]===sha);report.finishedAt=new Date().toISOString();await writeFile(join(out,'report.json'),JSON.stringify(report,null,2));await browser?.close();await server?.close();if(profile)await rm(profile,{recursive:true,force:true});console.log('CLOSED_NATIVE',JSON.stringify({captures:report.captures.length,errors:report.errors.length,assetStable:report.assetStable,sourcesStable:report.sourcesStable}));}
+finally{await Promise.all(sourceReads);report.assetHashAfter=await hash(servedAssetFile);report.liveCanonicalAssetHashAfter=await hash('public/assets/conservatory-props.glb');report.assetStable=report.assetHashBefore===report.assetHashAfter;report.sourceHashesAfter=await hashes();report.sourcesStable=Object.entries(report.sourceHashes).every(([file,sha])=>report.sourceHashesAfter[file]===sha);report.finishedAt=new Date().toISOString();await writeFile(join(out,'report.json'),JSON.stringify(report,null,2));await browser?.close();await server?.close();if(profile)await rm(profile,{recursive:true,force:true,maxRetries:5,retryDelay:250});console.log('CLOSED_NATIVE',JSON.stringify({captures:report.captures.length,errors:report.errors.length,assetStable:report.assetStable,sourcesStable:report.sourcesStable}));}
 if(condition==='after'){
  try{
    const before=JSON.parse(await readFile(baselineManifest,'utf8')),priorViews=before.views||before.captures;

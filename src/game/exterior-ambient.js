@@ -3,6 +3,7 @@
 
 import { EXTERIOR_AMBIENT_NODES } from '../data/exterior-district.js';
 import { ZONE } from '../data/floorplan/legend.js';
+import { streetPilotVehicleInstances, streetPilotHeadlightLights } from './street-pilot.js';
 
 const clamp01=(value)=>Math.max(0,Math.min(1,Number(value)||0));
 const smoothstep=(value)=>{
@@ -24,8 +25,9 @@ function routeProgress(timeSec,period,{vehicle=false}={}){
   return vehicle?travel:smoothstep(travel);
 }
 
-export function exteriorAmbientInstances({timeSec=0,reducedMotion=false}={}){
-  return EXTERIOR_AMBIENT_NODES.map((node)=>{
+export function exteriorAmbientInstances({timeSec=0,reducedMotion=false,pilotTimeSec=null}={}){
+  const pilot=typeof pilotTimeSec==='number'&&Number.isFinite(pilotTimeSec);
+  const ordinary=EXTERIOR_AMBIENT_NODES.filter(node=>!pilot||!['late-bus','north-night-car'].includes(node.id)).map((node)=>{
     const moving=node.route!=='still';
     const t=moving
       ?routeProgress(((Number(timeSec)||0)+Number(node.phase||0)*node.period)*(reducedMotion?.55:1),node.period,{vehicle:node.kind==='vehicle'})
@@ -48,6 +50,7 @@ export function exteriorAmbientInstances({timeSec=0,reducedMotion=false}={}){
       headlights:!!node.headlights,
     };
   });
+  return pilot?[...ordinary,...streetPilotVehicleInstances({timeSec:pilotTimeSec})]:ordinary;
 }
 
 // The lamps are not metadata. The warm-glass primitives make the two lenses
@@ -61,15 +64,19 @@ export function exteriorHeadlightLights({
   origin={x:0,z:0},
   maxVehicles=2,
   maxDistance=48,
+  pilotTimeSec=null,
 }={}){
   const ox=Number(origin?.x)||0,oz=Number(origin?.z)||0;
-  const vehicles=exteriorAmbientInstances({timeSec,reducedMotion})
+  const vehicles=exteriorAmbientInstances({timeSec,reducedMotion,pilotTimeSec})
     .filter(({headlights})=>headlights)
     .map((vehicle)=>({...vehicle,distance:Math.hypot(vehicle.x-ox,vehicle.z-oz)}))
     .filter(({distance})=>distance<=Math.max(1,Number(maxDistance)||48))
     .sort((a,b)=>a.distance-b.distance)
     .slice(0,Math.max(0,Number(maxVehicles)||0));
+  const pilotLights=typeof pilotTimeSec==='number'&&Number.isFinite(pilotTimeSec)
+    ?streetPilotHeadlightLights({timeSec:pilotTimeSec,origin,maxVehicles:2,maxDistance}):[];
   return vehicles.flatMap((vehicle)=>{
+    if(vehicle.sourceId)return pilotLights.filter(light=>light.headlightOf===vehicle.id);
     const forwardX=Math.sin(vehicle.yaw),forwardZ=-Math.cos(vehicle.yaw);
     const rightX=Math.cos(vehicle.yaw),rightZ=Math.sin(vehicle.yaw);
     return[-.62,.62].map((side,index)=>({

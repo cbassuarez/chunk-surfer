@@ -23,7 +23,7 @@ export function buildRoofFormalPromenades({m,materials,addQuad}){
   const rect=(x0,z0,x1,z1,mat)=>addQuad(m,[x0,y,z0],[x0,y,z1],[x1,y,z1],[x1,y,z0],mat);
   for(const p of ROOF_FORMAL_PROMENADES){
     const x0=p.x-p.w/2,x1=p.x+p.w/2,z0=p.z-p.d/2,z1=p.z+p.d/2;
-    const edge=.16,inner=.09;
+    const edge=.16,inner=p.along==='x'?.16:.09;
     // Non-overlapping tessellation, rather than coplanar decals: depth remains
     // stable through the prop pass and the shared acquisition/dither stack.
     rect(x0,z0,x1,z0+edge,slate);rect(x0,z1-edge,x1,z1,slate);
@@ -37,6 +37,23 @@ export function buildRoofFormalPromenades({m,materials,addQuad}){
       const lo=span*i/p.panels,hi=span*(i+1)/p.panels;
       const q=p.along==='x'?{x0:ax+lo,x1:ax+hi,z0:az,z1:bz}:{x0:ax,x1:bx,z0:az+lo,z1:az+hi};
       const cx=(q.x0+q.x1)/2,cz=(q.z0+q.z1)/2;
+      if(p.along==='x'&&i%2===1){
+        // An eight-point opus-sectile rosette punctuates each broad forecourt.
+        // Its pieces tessellate the complete panel without coplanar decals.
+        const rx=(q.x1-q.x0)/2,rz=(q.z1-q.z0)/2;
+        const rings=Array.from({length:16},(_,k)=>{
+          const a=k*Math.PI/8,c=Math.cos(a),s=-Math.sin(a),square=1/Math.max(Math.abs(c),Math.abs(s));
+          const radius=k%2?.34:.78;
+          return{outer:[cx+c*rx*square,y,cz+s*rz*square],inner:[cx+c*rx*radius,y,cz+s*rz*radius]};
+        });
+        for(let k=0;k<16;k++){
+          const a=rings[k],b=rings[(k+1)%16];
+          addQuad(m,a.inner,a.outer,b.outer,b.inner,limestone);
+        }
+        for(let k=0;k<16;k+=2)
+          addQuad(m,[cx,y,cz],rings[k].inner,rings[k+1].inner,rings[(k+2)%16].inner,k%4===0?slate:border);
+        continue;
+      }
       const rx=(q.x1-q.x0)*.29,rz=(q.z1-q.z0)*.31;
       const north=[cx,y,cz-rz],west=[cx-rx,y,cz],south=[cx,y,cz+rz],east=[cx+rx,y,cz];
       // Four surrounding quadrants meet the same dark diamond exactly. The

@@ -11,6 +11,7 @@ import { workbenchCatalog, workbenchFocusKey, workbenchTargetMetadata, WORKBENCH
 import { FLASHLIGHT_HOUSING_COLORS } from '../game/field-kit.js';
 import { ensureWorldLetteringFonts } from './world-lettering-fonts.js';
 import { fitWorldLetteringLine } from './world-lettering-layout.js';
+import { createThreePhysicalPrint } from './three-physical-print.js';
 
 export function vanWorkbenchModelIds(kit = {}) {
   return { case: 'field-case', headphones: `headphones-${kit.headphones || 'reference'}`,
@@ -24,6 +25,11 @@ export function vanWorkbenchSelectedObject(group) {
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
 // The authored field-recorder plane retains Three's top=v1 UV convention.
 export const VAN_RECORDER_CANVAS_FLIP_Y = true;
+// The fitting stage uses enlarged layout units, rather than world metres.
+// 8 units per metre gives its 18-unit shelf a plausible 2.25m van width and
+// keeps a 2-unit recorder close to the carried 274mm chassis. This is an
+// authored scale convention for finish sampling, not a new model transform.
+export const WORKBENCH_PRINT_METRES_PER_UNIT=.125;
 export function clipStageTarget(rect, viewport) {
   const x = clamp(rect.x, viewport.x, viewport.x + viewport.w), y = clamp(rect.y, viewport.y, viewport.y + viewport.h);
   return { x, y, w: Math.max(0, Math.min(rect.x + rect.w, viewport.x + viewport.w) - x),
@@ -64,6 +70,14 @@ export function createVanWorkbenchStage() {
     const value = new THREE.CanvasTexture(canvas); value.colorSpace = THREE.SRGBColorSpace;
     value.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy()); ownedTextures.add(value); return value;
   }
+  function printedMaterial({width,height,widthUnits,heightUnits,profile='paper',seed,draw}){
+    const colour=document.createElement('canvas'),mask=document.createElement('canvas');
+    colour.width=mask.width=width;colour.height=mask.height=height;
+    const c=colour.getContext('2d'),m=mask.getContext('2d');m.fillStyle=m.strokeStyle='#fff';draw(c,m,width,height);
+    const print=createThreePhysicalPrint(THREE,{width,height,widthM:widthUnits*WORKBENCH_PRINT_METRES_PER_UNIT,
+      heightM:heightUnits*WORKBENCH_PRINT_METRES_PER_UNIT,profile,seed,opaque:true,anisotropy:Math.min(4,renderer.capabilities.getMaxAnisotropy())});
+    print.update(colour,mask);for(const map of print.textures)ownedTextures.add(map);ownedMaterials.add(print.material);return print.material;
+  }
   function setupShelf() {
     const wood = texture(512, 256, (ctx, w, h) => {
       ctx.fillStyle = '#514438'; ctx.fillRect(0, 0, w, h);
@@ -85,13 +99,14 @@ export function createVanWorkbenchStage() {
     for (const tray of WORKBENCH_TRAYS) {
       mesh(new THREE.BoxGeometry(tray.w, .05, tray.d), trayMaterial, [tray.x, -.028, tray.z]);
       for (const side of [-1, 1]) mesh(new THREE.BoxGeometry(.035, .05, tray.d), paint, [tray.x + side * tray.w / 2, .007, tray.z]);
-      const name = texture(512, 64, ctx => {
+      const name=printedMaterial({width:512,height:64,widthUnits:tray.w-.12,heightUnits:.24,seed:`workbench-tray:${tray.label}`,draw(ctx,m){
         ctx.fillStyle = '#d2c4a0'; ctx.fillRect(0, 0, 512, 64); ctx.fillStyle = '#27352c';
         const ink = fitWorldLetteringLine(ctx, tray.label, { width: 476, height: 48, maxFont: 30, role: 'sansBold' });
         if (!ink.fits) throw new Error(`Workbench tray label does not fit: ${tray.label}`);
-        ctx.fillText(ink.text, (512 - ink.width) / 2 + ink.left, 44);
-      });
-      mesh(new THREE.PlaneGeometry(tray.w - .12, .24), mat({ map: name, roughness: .86 }), [tray.x, .018, tray.z + tray.d / 2 - .17], [-Math.PI / 2, 0, 0]);
+        const x=(512-ink.width)/2+ink.left;ctx.fillText(ink.text,x,44);
+        m.font=ink.font;m.fontKerning=ctx.fontKerning;m.textBaseline=ctx.textBaseline;m.textAlign=ctx.textAlign;m.fillText(ink.text,x,44);
+      }});
+      const legend=mesh(new THREE.PlaneGeometry(tray.w-.12,.24),name,[tray.x,.018,tray.z+tray.d/2-.17],[-Math.PI/2,0,0]);legend.name=`physical tray legend: ${tray.label}`;
     }
     // The form remains a physical paper surface, not a glowing readout.
     paper = mesh(new THREE.BoxGeometry(1.65, .025, 1.75), mat({ color: '#c9bea3', roughness: .98 }), [-4.05, .02, 4.4], [0, -.08, 0]);
@@ -237,27 +252,27 @@ export function createVanWorkbenchStage() {
   function updatePaper(state) {
     const key = `${state.difficultyLabel}|${state.difficultyConfirmed}`;
     if (!paper || key === shiftKey) return; shiftKey = key;
-    const old = paper.material.map;
-    const map = texture(512, 512, (ctx, w, h) => {
+    const old=paper.material;
+    const material=printedMaterial({width:512,height:512,widthUnits:1.65,heightUnits:1.75,seed:'workbench-night-shift-order',draw(ctx,m,w,h){
       ctx.fillStyle = '#d6ccb3'; ctx.fillRect(0, 0, w, h);
-      ctx.strokeStyle = '#756f5b'; ctx.lineWidth = 2; ctx.strokeRect(26, 28, w - 52, h - 56);
+      ctx.strokeStyle = '#756f5b';ctx.lineWidth=m.lineWidth=2;ctx.strokeRect(26,28,w-52,h-56);m.strokeRect(26,28,w-52,h-56);
       ctx.fillStyle = '#29362f';
       const ink = (text, y, maxFont, role = 'sans') => {
         const line = fitWorldLetteringLine(ctx, text, { width: 410, height: 48, maxFont, role });
         if (!line.fits) throw new Error(`Workbench order text does not fit: ${text}`);
-        ctx.fillText(line.text, 48 + line.left, y);
+        ctx.fillText(line.text,48+line.left,y);m.font=line.font;m.fontKerning=ctx.fontKerning;m.textBaseline=ctx.textBaseline;m.textAlign=ctx.textAlign;m.fillText(line.text,48+line.left,y);
       };
       ink('AUDIOCORP', 91, 31, 'sansBold');
       ink('NIGHT SHIFT ORDER', 136, 23);
-      ctx.fillRect(48, 159, 410, 2);
+      ctx.fillRect(48,159,410,2);m.fillRect(48,159,410,2);
       const label = state.difficultyConfirmed ? state.difficultyLabel : 'CHOOSE SHIFT';
       ink(label || 'CONTRACT', 247, 38, 'sansBold');
       ink('FIELD OPERATOR / 01', 316, 20);
       ink(state.difficultyConfirmed ? 'SIGNED · REVISE IF NEEDED' : 'SIGN BEFORE DEPARTURE', 405, 20);
-      ctx.strokeStyle = '#6e7866'; ctx.beginPath(); ctx.moveTo(48, 376); ctx.lineTo(454, 376); ctx.stroke();
-    });
-    paper.material.map = map; paper.material.needsUpdate = true;
-    if (old) { old.dispose(); ownedTextures.delete(old); } dirty = true;
+      ctx.strokeStyle='#6e7866';for(const c of[ctx,m]){c.beginPath();c.moveTo(48,376);c.lineTo(454,376);c.stroke();}
+    }});
+    paper.material=material;
+    if(old){for(const map of new Set(Object.values(old).filter(value=>value?.isTexture))){map.dispose();ownedTextures.delete(map);}old.dispose();ownedMaterials.delete(old);}dirty=true;
   }
   function updateHalos(state, now) {
     const candidates = catalogue.filter(object => object.glow && placed.has(object.key)).map(object => {

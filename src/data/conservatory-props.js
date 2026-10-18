@@ -16,6 +16,16 @@ import { VEGETATION_FALLBACKS, VEGETATION_MESHES } from './vegetation.js';
 import { ACADEMIC_ROOF_MESHES, ACADEMIC_ROOF_PROPS } from './academic-roof.js';
 import { ACADEMIC_ROOF_DRESSING_MESHES, ACADEMIC_ROOF_DRESSING_PROPS } from './academic-roof-dressing.js';
 
+import { ARCHITECTURE_FITTING_MESHES } from './architecture-fittings.js';
+import { INSTITUTION_OCCUPATION_MESHES, INSTITUTION_OCCUPATION_PROPS } from './institution-occupation.js';
+import { BUILDING_AMENITY_MESHES, BUILDING_AMENITY_PROPS, BUILDING_AMENITY_COLLIDERS } from './building-amenities.js';
+import { BUILDING_WINDOW_MESHES, BUILDING_WINDOW_PROPS } from './building-window-fittings.js';
+import { STREET_PILOT, STREET_PILOT_BASELINE } from './street-pilot.js';
+import { EXTERIOR_FOREGROUND, foregroundYardLogicalPoint } from './exterior-foreground.js';
+import { EXTERIOR_PUB, PUB_COLLIDERS, pubWorldFromLocal } from './exterior-pub.js';
+import { PUB_INTERIOR_LAYOUT, PUB_FURNITURE_COLLIDERS } from './exterior-pub-furnishings.js';
+import { ACADEMIC_GALLERY_MESHES, ACADEMIC_GALLERY_PROPS, academicGalleryPlacement } from './academic-gallery-treatment.js';
+
 const P = (id, mesh, x, y, yaw = 0, extra = {}) => ({ id, mesh, x, y, yaw, scale:1, ...extra });
 
 // The swimmable centre of the natatorium, and the five lane centres on it.
@@ -96,6 +106,8 @@ const DOCK_REEL = [{worldId:'dock_reel',fileLabel:'01'}];
 const DOCK_SHUTTER = [{worldId:'dock_shutter',fileLabel:'01'}];
 
 export const PROP_MESH = Object.freeze({
+  ...ACADEMIC_GALLERY_MESHES,
+  ...ARCHITECTURE_FITTING_MESHES, ...INSTITUTION_OCCUPATION_MESHES, ...BUILDING_AMENITY_MESHES, ...BUILDING_WINDOW_MESHES,
   ...ACADEMIC_ROOF_MESHES,
   ...ACADEMIC_ROOF_DRESSING_MESHES,
   ...OPENING_STREET_MESHES,
@@ -168,6 +180,7 @@ export const PROP_MESH = Object.freeze({
   // The dance wing. The barre, the mirror and the stencil are wall furniture and
   // must face away from masonry; the rail and the lino rolls stand on the floor.
   dance_barre:{w:2.9,d:.22,h:1.14,blocks:false,mount:'wall'},
+  dance_barre_dismantled:{w:2.92,d:.22,h:1.14,blocks:false,mount:'wall'},
   dance_mirror:{w:3.96,d:.10,h:2.60,blocks:false,mount:'wall'},
   // Studio B3's treatment: wedge foam on boards (build-props.mjs), and carpet
   // (build-textiles.mjs, worn_carpet; build-props.mjs keeps a flat fallback).
@@ -215,11 +228,16 @@ export const PROP_MESH = Object.freeze({
   // block, and nothing on the far side of the boundary is reachable.
   city_frontage:{w:70.0,d:80.0,blocks:false},
   city_bus_shelter:{w:2.9,d:5.0,blocks:false},
+  city_bus_shelter_compact:{w:EXTERIOR_FOREGROUND.busStop.shelter.width,d:EXTERIOR_FOREGROUND.busStop.shelter.length,h:EXTERIOR_FOREGROUND.busStop.shelter.height,blocks:false},
+  exterior_garden_hardscape:{w:17,d:25,h:.44,blocks:false},
+  exterior_garden_planting:{w:17,d:25,h:.72,blocks:false},
+  exterior_arrival_planting:{w:14,d:3,h:.55,blocks:false},
   yard_look_bench:{w:.78,d:3.4,h:1.12,blocks:false},
   city_parked_car:{w:1.8,d:4.3,blocks:false},
   city_moving_car:{w:1.9,d:4.5,h:1.5,blocks:false},
   district_terrace_frontage:{w:5.5,d:64.0,blocks:false},
   district_civic_frontage:{w:6.5,d:64.0,blocks:false},
+  exterior_pub_interior:{w:5.4,d:16,h:3.4,blocks:false},
   district_workshop_frontage:{w:7.0,d:64.0,blocks:false},
   district_passage_frontage:{w:5.5,d:64.0,blocks:false},
   district_court_walls:{w:9.2,d:16.5,h:9.5,blocks:false},
@@ -342,6 +360,24 @@ export const PROP_MESH = Object.freeze({
 // Visible structure has matching height-aware collision. Coordinates are
 // authored logical metres; elevation is absolute world height.
 export const STRUCTURAL_COLLIDERS = Object.freeze([
+  // Four physical poles, including the two double-faced vehicle posts.
+  // The envelope includes a pedestrian body's clearance on the .5m grid.
+  ...[...STREET_PILOT.vehicleSignals,...STREET_PILOT.pedestrianSignals]
+    .filter((node,index,list)=>list.findIndex(other=>other.x===node.x&&other.z===node.z)===index)
+    .map(node=>({id:`street-pilot:${node.id}:post`,kind:'obb',...districtLogicalAt(node.x,node.z),
+      width:.55,depth:.55,yaw:0,minElevation:0,maxElevation:4,
+      spaceId:'exterior_civic_block',colliderGroup:'street-pilot'})),
+  ...BUILDING_AMENITY_COLLIDERS,
+  ...PUB_COLLIDERS,
+  ...PUB_FURNITURE_COLLIDERS.map(c=>{
+    const local={x:(c.min[0]+c.max[0])/2,z:(c.min[2]+c.max[2])/2},world=pubWorldFromLocal(local);
+    const at=districtLogicalAt(world.x,world.z),margin=EXTERIOR_PUB.collisionBodyMargin;
+    return{id:c.id,kind:'obb',x:at.x,y:at.y,yaw:0,
+      width:c.max[2]-c.min[2]+2*margin,depth:c.max[0]-c.min[0]+2*margin,
+      minElevation:EXTERIOR_PUB.floor+c.min[1],maxElevation:EXTERIOR_PUB.floor+c.max[1],
+      spaceId:'exterior_pub',bodyMargin:margin};
+  }),
+
   {id:'hall-proscenium-left',kind:'obb',x:102.7,y:12.2,width:3.2,depth:.9,yaw:0,minElevation:-2.5,maxElevation:9,spaceId:'hall'},
   {id:'hall-proscenium-right',kind:'obb',x:123.3,y:12.2,width:3.2,depth:.9,yaw:0,minElevation:-2.5,maxElevation:9,spaceId:'hall'},
   {id:'hall-lower-left-rail',kind:'obb',x:4.7,y:61,width:.18,depth:27,yaw:0,minElevation:4,maxElevation:5.3,spaceId:'hall'},
@@ -392,10 +428,26 @@ const BASEBOARD_PROPS = Object.entries(BASEBOARDS).map(([group, b]) =>
   }));
 
 export const CONSERVATORY_PROPS = [
+  ...ACADEMIC_GALLERY_PROPS,
+  ...INSTITUTION_OCCUPATION_PROPS, ...BUILDING_AMENITY_PROPS,
+  ...BUILDING_WINDOW_PROPS.map(p=>p.windowId==='W4-pool-south'?{...p,id:'natatorium-end-window'}:p),
   ...ACADEMIC_ROOF_PROPS,
   ...ACADEMIC_ROOF_DRESSING_PROPS,
   ...OPENING_STREET_PROPS,
   ...YARD_PARK_PROPS,
+  // Three ordinary opaque owners, sharing the physical garden/arrival anchors
+  // with their source builder. Their shapes never replace ground or water.
+  ...[
+    ['exterior-garden-hardscape','exterior_garden_hardscape',EXTERIOR_FOREGROUND.garden.fountain],
+    ['exterior-garden-planting','exterior_garden_planting',EXTERIOR_FOREGROUND.garden.fountain],
+    ['exterior-arrival-planting','exterior_arrival_planting',{
+      x:(EXTERIOR_FOREGROUND.arrival.bounds.x0+EXTERIOR_FOREGROUND.arrival.bounds.x1)/2,
+      z:(EXTERIOR_FOREGROUND.arrival.bounds.z0+EXTERIOR_FOREGROUND.arrival.bounds.z1)/2,
+    }],
+  ].map(([id,mesh,at])=>{
+    const logical=foregroundYardLogicalPoint(at);
+    return P(id,mesh,logical.x,logical.y,0,{interactive:false,structural:true,blocks:false,floorOverride:0});
+  }),
 
   // ── behind the plant-services door ────────────────────────────────────────
   // The substation has been drawn into the sub-basement plan since the spur was
@@ -640,16 +692,9 @@ export const CONSERVATORY_PROPS = [
   //
   // The other one (city-bus-shelter) is a hundred and fifty metres away in the
   // district, which is the right place for it and no use here. This one exists
-  // because of the long stare: standing still for three quarters of a minute is
-  // the one thing the arrival was rebuilt to make possible, and there was
-  // NOTHING out here telling anybody the yard was a place to stop. A shelter
-  // says stand here and wait without a prompt, a notice or a line — which
-  // matters, because the vigil's whole doctrine is that the reward is the
-  // noticing (see game/yard-vigil.js).
-  //
-  // It does not gate anything. vigilEligible is still the whole of ZONE.dock
-  // south of y=400; a player who stops three metres short of it is not punished
-  // for standing in the wrong square. It only invites.
+  // as an ordinary place to stop and look at the arrival street. The long-stare
+  // lead now belongs to the roof city seat; this shelter remains optional
+  // furniture, with no reward or progression gate.
   //
   // Open side east, onto the road: yaw maps local +x to (cos yaw, sin yaw), so 0
   // faces the way he walks in from. Runtime cell (107,410) — clear for its
@@ -657,9 +702,8 @@ export const CONSERVATORY_PROPS = [
   P('yard-bus-shelter','city_bus_shelter',53.5,205.0,0,{
     interactive:false,structural:true,blocks:true,label:'the shelter',
   }),
-  // The shelter seat is its own addressable object. The first arrival guide
-  // lights the bench itself after the kit is shouldered; interacting with it
-  // holds the body still while leaving first-person look free for the vigil.
+  // The shelter seat remains addressable. Interacting holds the body still
+  // while leaving first-person look free; arrival guidance goes to the lodge.
   P('yard-look-bench','yard_look_bench',52.5,205.0,0,{
     structural:true,blocks:false,action:'yard-vigil-bench',label:'the shelter bench',
     inspectAt:{x:53.25,y:205.0},interactionPriority:2,
@@ -687,6 +731,12 @@ export const CONSERVATORY_PROPS = [
   DP('district-north-row-b','district_passage_frontage',82,-14,Math.PI/2,{interactive:false,structural:true,renderOffsetZ:-1.05}),
   DP('district-north-row-c','district_terrace_frontage',138,-14,Math.PI/2,{interactive:false,structural:true,renderOffsetZ:-1.05}),
   DP('district-south-row-a','district_civic_frontage',18,106,-Math.PI/2,{interactive:false,structural:true,renderOffsetZ:1.05}),
+  DP('pub-complete-interior','exterior_pub_interior',EXTERIOR_PUB.interiorAnchor.x,EXTERIOR_PUB.interiorAnchor.z,-Math.PI/2,{
+    interactive:false,structural:true,blocks:false,floorOverride:EXTERIOR_PUB.floor,
+    renderOffsetZ:EXTERIOR_PUB.interiorAnchor.z-Math.round(EXTERIOR_PUB.interiorAnchor.z*2)/2,
+    renderGroups:['ground'],label:'The Lyric public house',
+  }),
+
   DP('district-south-row-b','district_passage_frontage',82,106,-Math.PI/2,{interactive:false,structural:true,renderOffsetZ:1.05}),
   DP('district-south-row-c','district_workshop_frontage',138,106,-Math.PI/2,{interactive:false,structural:true,renderOffsetZ:1.05}),
   // The playable courts end at real closed thresholds, while the roofscape and
@@ -707,8 +757,14 @@ export const CONSERVATORY_PROPS = [
   DP('district-east-court-bollards','district_bollard_pair',144,16,Math.PI/2,{interactive:false,structural:true}),
   DP('district-north-court-bollards','district_bollard_pair',78,-16,0,{interactive:false,structural:true}),
   DP('district-south-court-bollards','district_bollard_pair',86,108,0,{interactive:false,structural:true}),
-  DP('city-bus-shelter','city_bus_shelter',-11,16,0,{structural:true,blocks:true,label:'the bus shelter'}),
-  DP('city-bus-shelter-bench','yard_look_bench',-12,16,0,{interactive:false,structural:true,blocks:false}),
+  // The compact shelter is an open waiting area. A solid bounding box would
+  // close its seat and eat the protected walking strip beside the roof edge.
+  DP('city-bus-shelter','city_bus_shelter_compact',EXTERIOR_FOREGROUND.busStop.shelter.x,EXTERIOR_FOREGROUND.busStop.shelter.z,0,{
+    structural:true,blocks:false,label:'the bus shelter',renderOffsetX:.2,
+  }),
+  DP('city-bus-shelter-bench','yard_look_bench',EXTERIOR_FOREGROUND.busStop.bench.x,EXTERIOR_FOREGROUND.busStop.bench.z,0,{
+    interactive:false,structural:true,blocks:false,renderOffsetX:-.1,
+  }),
   // Ordinary locals stay put so they remain genuinely talkable. Moving traffic
   // and passers-by remain presentation-only ambient instances.
   DP('district-mews-neighbor','exterior_mews_neighbor',-13,26,Math.PI/2,{
@@ -720,7 +776,9 @@ export const CONSERVATORY_PROPS = [
     label:'the driver by the pub yard',interactionPriority:3,
   }),
   ...[
-    ['north-car-west',15,-5,Math.PI/2],['north-car-mid',42,-5,Math.PI/2],['north-car-east',110,-5,Math.PI/2],
+    // North-street pilot: keep the westbound lane clear, using the existing
+    // southern sett parking margin rather than the moving carriageway.
+    ['north-car-west',15,STREET_PILOT_BASELINE?-5:-3.5,Math.PI/2],['north-car-mid',42,STREET_PILOT_BASELINE?-5:-3.5,Math.PI/2],['north-car-east',110,STREET_PILOT_BASELINE?-5:-3.5,Math.PI/2],
     ['south-car-west',42,97,Math.PI/2],['south-car-east',116,97,Math.PI/2],
     ['west-car-north',-5,43,0],['west-car-south',-5,75,0],
     ['east-car-north',132,46,0],['east-car-south',132,84,0],
@@ -935,8 +993,8 @@ export const CONSERVATORY_PROPS = [
   // Loading dock / foyer: work furniture, not a showroom.
   P('foyer-pew-1','pew',83.0,5.5,0,{inspect:inspect('One chapel pew never made it upstairs. A paper removal tag is still tied to it.','The tag says RETURN TO CHAPEL.')}),
   P('foyer-cart-1','equipment_cart',95.2,15.4,Math.PI/2,{inspect:inspect('A percussion cart with one wheel wired straight.','It will only travel in a circle.')}),
-  P('foyer-portrait-titian','portrait_frame',80.5,4.0,0,{elevation:1.35,portraitIndex:0,inspect:inspect('Titian. Portrait of a Man. A Met Open Access reproduction in an inexpensive gilt frame.','The sitter keeps looking past the entrance.')}),
-  P('foyer-portrait-greco','portrait_frame',84.0,4.0,0,{elevation:1.35,portraitIndex:1,inspect:inspect('El Greco. Portrait of an Old Man. Someone has polished the glass more often than the frame.','His eyes catch the corridor light first.')}),
+  P('foyer-portrait-titian','portrait_frame',80.5,4.0,0,{mount:'wall',mountNormal:{nx:0,ny:1},elevation:1.35,portraitIndex:0,inspect:inspect('Titian. Portrait of a Man. A Met Open Access reproduction in an inexpensive gilt frame.','The sitter keeps looking past the entrance.')}),
+  P('foyer-portrait-greco','portrait_frame',82.5,4.0,0,{mount:'wall',mountNormal:{nx:0,ny:1},elevation:1.35,portraitIndex:1,inspect:inspect('El Greco. Portrait of an Old Man. Someone has polished the glass more often than the frame.','His eyes catch the corridor light first.')}),
   P('atrium-sign-main-exit','public_exit_sign',77.5,4.0,0,{
     elevation:.7,renderOffsetZ:-.25,
     inspect:inspect('PUBLIC ENTRANCE. The glazed pair is chained under the closure order; the service entrance is around the block.','PUBLIC ENTRANCE — CLOSED.'),
@@ -1195,10 +1253,10 @@ export const CONSERVATORY_PROPS = [
   }),
   // Hung on the picture rail the atrium relief puts through this wall, which is
   // the only reason a painting can touch a wall in a service corridor and look
-  // like it was always meant to. props.mjs checks a solid cell sits behind every
-  // portrait_frame: at authored x74.0 the wall is runtime x149.
-  P('deadend-ground-painting','portrait_frame',74.0,23.5,-Math.PI/2,{
-    elevation:1.55,scale:2.2,portraitIndex:1,renderOffsetX:.25,
+  // like it was always meant to. Its measured rear meets the wall's west face;
+  // the painted +Z face looks west into the room rather than through the wall.
+  P('deadend-ground-painting','portrait_frame',74.0,23.5,Math.PI/2,{
+    mount:'wall',mountNormal:{nx:-1,ny:0},elevation:1.55,scale:2.2,portraitIndex:1,
     inspect:inspect('A large canvas, hung high on a picture rail that has no business being in a service corridor. It is the atrium\'s rail — the panelling comes through the wall here, half a metre of plaster between this room and the public one. The painting has been given the better half.','Too big for the room and hung too high, on somebody else\'s rail.'),
   }),
   P('deadend-ground-chandelier','chandelier_03',73.0,23.5,0,{
@@ -1249,22 +1307,24 @@ export const CONSERVATORY_PROPS = [
   // runner, programme cases and two maintained lamps make the destination read
   // from the atrium instead of materialising at arm's length. It is shared by
   // both render groups because the threshold is literally where they meet.
+  // Register the public face with the compiled outer wall at x97.0. The
+  // acoustic pair is recessed at x98.25; its centre is not the casing face.
   P('hall-entrance-portal','hall_entrance_portal',98.5,25.5,Math.PI/2,{
-    renderOffsetX:-.25,renderOffsetZ:-.75,renderGroups:['ground','hall'],interactive:false,structural:true,
+    renderOffsetX:-1.20,renderOffsetZ:-.75,renderGroups:['ground','hall'],interactive:false,structural:true,
   }),
   P('hall-entrance-sign','hall_entrance_sign',98.5,25.5,Math.PI/2,{
-    mount:'portal',elevation:3.08,renderOffsetX:-.47,renderOffsetZ:-.75,renderGroups:['ground','hall'],inspectAt:{x:96.4,y:25.5},
+    mount:'portal',elevation:3.08,renderOffsetX:-1.42,renderOffsetZ:-.75,renderGroups:['ground','hall'],inspectAt:{x:95.2,y:24.75},
     inspect:inspect('CONCERT HALL — STALLS / GALLERIES. The gilt house lettering survives above the acoustic pair.','CONCERT HALL.'),
   }),
   P('hall-entrance-program-north','notice_board',98.5,25.5,Math.PI/2,{
-    mount:'portal',elevation:1.22,renderOffsetX:-.45,renderOffsetZ:-2.30,renderGroups:['ground','hall'],inspectAt:{x:96.5,y:24.0},
+    mount:'portal',elevation:1.22,renderOffsetX:-1.40,renderOffsetZ:-2.30,renderGroups:['ground','hall'],inspectAt:{x:95.3,y:23.25},
     inspect:inspect('A glazed programme case: winter concerts, municipal orchestras, school prize nights. The last season is crossed through in red pencil.','The last season never opened.'),
   }),
   P('hall-entrance-program-south','notice_board',98.5,25.5,Math.PI/2,{
-    mount:'portal',elevation:1.22,renderOffsetX:-.45,renderOffsetZ:.80,renderGroups:['ground','hall'],interactive:false,
+    mount:'portal',elevation:1.22,renderOffsetX:-1.40,renderOffsetZ:.80,renderGroups:['ground','hall'],interactive:false,
   }),
   ...[-1.42,1.42].map((offset,index)=>P(`hall-entrance-light-${index+1}`,'hall_entry_sconce',98.5,25.5,Math.PI/2,{
-    mount:'portal',elevation:2.18,renderOffsetX:-.51,renderOffsetZ:offset-.75,renderGroups:['ground','hall'],interactive:false,structural:true,
+    mount:'portal',elevation:2.18,renderOffsetX:-1.46,renderOffsetZ:offset-.75,renderGroups:['ground','hall'],interactive:false,structural:true,
     lightMaintained:true,lightColor:[1,.018,.008],
   })),
   // The one piece of the ruined garden you may put a hand in. Everything else
@@ -1459,7 +1519,7 @@ export const CONSERVATORY_PROPS = [
   P('b2-mirror-north-a','dance_mirror',28.0,6.0,0,{inspect:inspect('The mirrored wall, and the room in it is not quite the room. The sections are out of plane by a degree or so, so the far corner arrives twice.','Two corners. One of them is the real one.')}),
   P('b2-mirror-north-b','dance_mirror',32.0,6.0,0,{interactive:false}),
   P('b2-mirror-north-c','dance_mirror',36.0,6.0,0,{interactive:false}),
-  P('b2-barre-south','dance_barre',34.0,16.5,Math.PI,{inspect:inspect('The long barre. Somebody has wound gaffer round a cracked bracket rather than replace it.','The tape is older than the crack.')}),
+  P('b2-barre-south','dance_barre',36.5,16.5,Math.PI,{inspect:inspect('The long barre. Somebody has wound gaffer round a cracked bracket rather than replace it.','The tape is older than the crack.')}),
   P('b2-barre-east','dance_barre',38.5,11.0,-Math.PI/2,{interactive:false}),
   P('b2-piano','upright_piano',26.0,14.0,Math.PI/2,{...play(PIANO,'The rehearsal upright, lid down, castors sunk into the sprung floor where it has stood long enough to leave four dents.','It has not been tuned to anything in this building for a long time.')}),
   P('b2-piano-stool','piano_bench',27.2,14.0,Math.PI/2,{inspect:inspect('A stool at the height somebody left it.','Still at their height.')}),
@@ -1471,11 +1531,11 @@ export const CONSERVATORY_PROPS = [
 
   // Studio B1: nearest the stair, and the first room the wing shows you.
   P('b1-mirror-east','dance_mirror',48.5,16.0,-Math.PI/2,{inspect:inspect('A mirrored wall with a long diagonal crack across two sections, taped on the back so it holds together.','Taped, and holding.')}),
-  P('b1-barre-south','dance_barre',44.0,20.5,Math.PI,{inspect:inspect('The barre here has been taken down at one end and left hanging, so it runs at an angle no dancer could use.','Somebody started taking this room apart and stopped.')}),
+  P('b1-barre-south','dance_barre_dismantled',46.5,20.5,Math.PI,{inspect:inspect('The barre here has been taken down at one end and left hanging, so it runs at an angle no dancer could use.','Somebody started taking this room apart and stopped.')}),
   P('b1-lino','rolled_lino',41.0,13.0,0,{inspect:inspect('Rolls of sprung-floor vinyl stood on end in the corner, taller than you, taped at the top and furred with dust.','Enough floor for a room nobody is going to lay it in.')}),
 
   // Studio B5, across the corridor. There is no B4.
-  P('b5-barre-north','dance_barre',13.0,26.0,0,{inspect:inspect('A barre along the whole north wall, and the wall behind it is scuffed to shoulder height in one continuous band.','The band is exactly where a hand steadies itself.')}),
+  P('b5-barre-north','dance_barre',19.5,26.0,0,{inspect:inspect('A barre along the whole north wall, and the wall behind it is scuffed to shoulder height in one continuous band.','The band is exactly where a hand steadies itself.')}),
   P('b5-mirror-south','dance_mirror',15.0,32.5,Math.PI,{inspect:inspect('The mirror in here has been taken off the wall and stood facing it, so what is hung on the room is four feet of grey backing board.','Somebody turned the mirror around. That is a decision, and it was made in here.')}),
   P('b5-chairs','chair',21.0,30.0,0,{inspect:inspect('Chairs, stacked, in a room with the mirror facing the wall.','Stacked, and waiting on a room that has been turned off.')}),
 
@@ -1507,8 +1567,8 @@ export const CONSERVATORY_PROPS = [
   P('hall-marimba-overflow','marimba',125.0,12.0,0,{...play(MARIMBA,'A second marimba parked where the hall narrows. It did not fit wherever it was meant to go.','It is still in everybody’s way.')}),
   P('hall-timpani-1','timpani',121.0,8.0,0,{...play(PERCUSSION,'A timpano with the pedal tied down for transport.','The head gives under one finger.')}),
   P('hall-timpani-2','timpani',122.2,9.0,0,{...play(PERCUSSION,'The larger drum. Dust has settled evenly except where a mallet once lay.','The clean line is mallet-shaped.')}),
-  P('hall-portrait-bronzino','portrait_frame',99.0,5.0,0,{elevation:1.45,portraitIndex:2,inspect:inspect('A Bronzino study, silverpoint and chalk. It looks unfinished because it is.','The paper is paler than the wall.')}),
-  P('hall-portrait-florentine','portrait_frame',104.0,5.0,0,{elevation:1.45,portraitIndex:3,inspect:inspect('Portrait of a Woman, Florentine, mid-sixteenth century. The brass plate gives no donor.','No donor, only accession numbers.')}),
+  P('hall-portrait-bronzino','portrait_frame',99.0,5.0,0,{mount:'wall',mountNormal:{nx:0,ny:1},elevation:1.45,portraitIndex:2,inspect:inspect('A Bronzino study, silverpoint and chalk. It looks unfinished because it is.','The paper is paler than the wall.')}),
+  P('hall-portrait-florentine','portrait_frame',104.0,5.0,0,{mount:'wall',mountNormal:{nx:0,ny:1},elevation:1.45,portraitIndex:3,inspect:inspect('Portrait of a Woman, Florentine, mid-sixteenth century. The brass plate gives no donor.','No donor, only accession numbers.')}),
   P('acq-hall-chandelier-west','chandelier_03',108.5,23.0,0,{
     scale:3,elevation:7.4,
     provenance:provenance('hall_lighting_refit','H/L-01','west fitting; lower chain replaced'),
@@ -1600,7 +1660,7 @@ export const CONSERVATORY_PROPS = [
   // Exam preparation.
   P('practice-bench-exam','piano_bench',53.55,58.35,1.43,{interactive:false,blocks:false,roomHistory:'exam-preparation'}),
   P('practice-score-exam','open_score',52.80,58.15,1.51,{interactive:false,blocks:false,elevation:.94,roomHistory:'exam-preparation'}),
-  P('practice-metronome-exam','metronome',52.30,59.85,1.51,{interactive:false,blocks:false,elevation:.94,roomHistory:'exam-preparation'}),
+  P('practice-metronome-exam','metronome',52.30,58.25,1.51,{interactive:false,blocks:false,on:'practice-piano-1',roomHistory:'exam-preparation'}),
   P('practice-pages-exam','loose_pages',54.45,61.15,-.16,{interactive:false,blocks:false,elevation:.012,roomHistory:'exam-preparation'}),
 
   // Cello lesson, stopped mid-correction.
@@ -1699,8 +1759,8 @@ export const CONSERVATORY_PROPS = [
   P('chapel-lectern','lectern',88.2,88.5,.15,{inspect:inspect('A lectern with the service book removed and the ribbon left behind.','The ribbon marks nothing.')}),
   // Measured at 1.6m off the nearest wall before `mount` did anything.
   P('chapel-hymn-board','hymn_board',97.4,87.8,0,{mount:'wall',elevation:1.4,inspect:inspect('The hymn board still reads 17 · 44 · 91. Nobody cleared the last service.','17 · 44 · 91.')}),
-  P('chapel-portrait-pollaiuolo','portrait_frame',88.0,59.0,0,{elevation:1.55,portraitIndex:4,inspect:inspect('Piero del Pollaiuolo. Portrait of a Woman. Profile in tempera; gold remains along the edge.','Her profile is exact and unreachable.')}),
-  P('chapel-portrait-netherlandish','portrait_frame',96.0,59.0,0,{elevation:1.55,portraitIndex:5,inspect:inspect('Portrait of a Woman, Netherlandish or French. The old label cannot decide.','The frame can decide nothing either.')}),
+  P('chapel-portrait-pollaiuolo','portrait_frame',88.0,59.0,0,{mount:'wall',mountNormal:{nx:0,ny:1},elevation:1.55,portraitIndex:4,inspect:inspect('Piero del Pollaiuolo. Portrait of a Woman. Profile in tempera; gold remains along the edge.','Her profile is exact and unreachable.')}),
+  P('chapel-portrait-netherlandish','portrait_frame',96.0,59.0,0,{mount:'wall',mountNormal:{nx:0,ny:1},elevation:1.55,portraitIndex:5,inspect:inspect('Portrait of a Woman, Netherlandish or French. The old label cannot decide.','The frame can decide nothing either.')}),
   P('acq-chapel-lantern-narthex-north','lantern_chandelier_01',92.5,61.0,0,{
     scale:1.15,elevation:3.15,
     provenance:provenance('chapel_foundation_1908','EC/C-01','north narthex lantern; glass replaced in one face'),
@@ -1788,7 +1848,11 @@ export const CONSERVATORY_PROPS = [
     lightMaintained:true,lightColor:[1,.74,.43],
   }),
 
-  P('tower-organ-case','tower_organ_case',94.0,152.0,0,{interactive:false,structural:true}),
+  // This case's pipes and carved front are local-Z, with its solid backbox
+  // extending toward +Z. Turn the front south toward the console and leave
+  // the measured back .30m clear of the existing north wall. Its 4.60m crown
+  // fits the real 4.20m loft only with a vertical fit; width and depth stay put.
+  P('tower-organ-case','tower_organ_case',94.0,152.0,Math.PI,{interactive:false,structural:true,scaleY:.9}),
   P('tower-organ-console','organ_console',94.0,154.5,Math.PI,{...play(CHAPEL,'The loft console faces east over the nave. The blower remains isolated.','No wind. The descent door is beside it.')}),
   P('acq-chapel-score-cabinet-west','gothic_cabinet_01',89.5,153.5,Math.PI/2,{
     provenance:provenance('chapel_foundation_1908','EC/C-04','west score cabinet; replacement lock'),
@@ -1833,7 +1897,7 @@ export const CONSERVATORY_PROPS = [
   // drains, glazed control screens and a clear accessible lane before the pool
   // reveals itself. It is dressing, not a second collision envelope.
   P('natatorium-entrance-fixtures','natatorium_entrance_fixtures',84.0,30.0,0,{interactive:false,structural:true}),
-  P('pool-entry-rules','notice_board',75.0,28.0,Math.PI,{
+  P('pool-entry-rules','notice_board',78.0,28.0,Math.PI,{
     mount:'wall',elevation:1.28,inspectAt:{x:75,y:28.4},
     inspect:inspect('Municipal baths rules under wired glass: shower first, no outdoor shoes beyond the blue line, children accompanied. Closing time has been pasted over three times.','Shower first. Outdoor shoes stop at the blue line.'),
   }),
@@ -1843,7 +1907,6 @@ export const CONSERVATORY_PROPS = [
   }),
   P('natatorium-cubicles-west','natatorium_cubicle_bank',71.4,40.5,-Math.PI/2,{interactive:false,structural:true}),
   P('natatorium-cubicles-east','natatorium_cubicle_bank',94.6,40.5,Math.PI/2,{interactive:false,structural:true}),
-  P('natatorium-end-window','natatorium_end_window',84.0,49.25,0,{interactive:false,structural:true,elevation:.55}),
   P('natatorium-clock','natatorium_clock',92.0,49.25,0,{
     elevation:5.25,inspectAt:{x:92,y:48.2},
     inspect:inspect('The pool clock stopped at twenty-seven past. Chlorine has greened the screws but not moved the hands.','Still twenty-seven past.'),
@@ -1906,8 +1969,8 @@ export const CONSERVATORY_PROPS = [
     elevation:1.62,renderOffsetX:.25,interactive:false,structural:true,
     lightCircuit:'sp02',lightColor:[1,.018,.008],
   }),
-  P('natatorium-light-emergency-far','tower_bulkhead',84.0,49.5,Math.PI,{
-    elevation:1.62,renderOffsetZ:.25,interactive:false,structural:true,
+  P('natatorium-light-emergency-far','tower_bulkhead',89.0,49.5,Math.PI,{
+    elevation:1.62,mount:'wall',mountNormal:{nx:0,ny:-1},interactive:false,structural:true,
     lightCircuit:'sp02',lightColor:[1,.018,.008],
   }),
   P('acq-services-panel-foh','power_box_01',96.5,16.0,Math.PI/2,{
@@ -2058,4 +2121,4 @@ export const CONSERVATORY_PROPS = [
     entry.id,entry.mesh,50+entry.x,200+entry.y,entry.yaw,
     {interactive:false,structural:true,blocks:false,vigilActorId:entry.actorId||null,vigilCluster:entry.cluster},
   )),
-];
+].map(academicGalleryPlacement);

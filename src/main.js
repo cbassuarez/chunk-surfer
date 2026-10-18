@@ -42,7 +42,7 @@ import {
   shouldSnapProgress,
 } from './game/whisper-tide.js';
 import * as FP from './world/floorplan.js';
-import { F as CELL_FLAGS, ZONE, CELL, MATERIAL, EYE as BODY_EYE_M } from './data/floorplan/legend.js';
+import { F as CELL_FLAGS, ZONE, CELL, MATERIAL, EYE as BODY_EYE_M, isOutdoorZone } from './data/floorplan/legend.js';
 import { BUST_RELIQUARY_RIG } from './data/bust-reliquary-rig.js';
 import * as MUT from './world/mutate.js';
 import * as scenes from './game/scenes.js';
@@ -98,11 +98,14 @@ import {
   updateHushNoisePerception,
 } from './game/hush-noise-perception.js';
 import * as PROPS from './game/props.js';
-import { ACADEMIC_ROOF, ACADEMIC_ROOF_SEAT_LOOK, academicRoofYawDelta } from './data/academic-roof.js';
+import { ACADEMIC_ROOF, ACADEMIC_ROOF_SEAT_LOOK, ROOF_CITY_SEAT, academicRoofYawDelta } from './data/academic-roof.js';
+import { makeRoofCitySeatScene } from './game/roof-city-seat.js';
 import { ACADEMIC_ROOF_DRESSING_OBSERVATIONS } from './data/academic-roof-dressing.js';
 import { roofGateEligibility } from './game/roof-access.js';
 import { normalizeRoofRenState, reduceRoofRen, roofRenDialogue, roofRenOfficeDialogue, roofRenEvidenceDialogue, roofRenStatus } from './game/roof-ren.js';
 import { exteriorAmbientInstances, exteriorHeadlightLights } from './game/exterior-ambient.js';
+import { createStreetPilotClock, streetPilotStaticInstances, streetPilotSignalInstances, streetPilotSafetyFrame } from './game/street-pilot.js';
+import { STREET_PILOT_BASELINE } from './data/street-pilot.js';
 import { exteriorLoreConversation } from './data/exterior-lore.js';
 import { VIGIL_LINKED_CHAPELS_FLAG, vigilConversation, vigilFigures } from './data/exterior-vigil.js';
 import { vigilCharacterDescriptor, vigilCharacterIdForMesh } from './render/vigil-character-performance.js';
@@ -211,6 +214,7 @@ import { connectorById, resolveMapRoute } from './game/map-routing.js';
 import { resolveStoryGuidanceTarget, storyTargetRuntimePoint, storyTargetSharesRenderSpace } from './game/story-guidance.js';
 import { createObjectGuidanceTracker } from './game/waypoint-beacon.js';
 import { shouldHideCrossEnvelopeProp } from './game/prop-visibility.js';
+import { buildingWindowForObserver, buildingWindowExteriorPlane, buildingWindowPortal, isBuildingWindowScenery } from './world/building-window-views.js';
 import { boothCameraFrame, boothPoseForSourceId, boothGuardRenderInstance } from './game/booth-presentation.js';
 import { busWomanInstances } from './game/bus-woman-presentation.js';
 import { outskirtsChoiceId, outskirtsPhysicalAction } from './game/outskirts-choice.js';
@@ -270,7 +274,7 @@ import {
   shouldNoticeGardenShift,
   tickGardenWatch,
 } from './game/garden-drift.js';
-import { VIGIL, freshVigilState, normalizeVigilState, reduceVigil, vigilPan, vigilSeatCandidates } from './game/yard-vigil.js';
+import { VIGIL, freshVigilState, normalizeVigilState, reduceVigil, vigilSeatCandidates } from './game/yard-vigil.js';
 import { YARD_BENCH_ACTION, yardBenchSeatPose, yardBenchSitFrame, yardBenchStandFrame, yardBenchTracksMotion } from './game/yard-bench-action.js';
 import { GET_IN_DOOR_ENTRY, getInDoorEntryFrame, getInDoorEntryPose } from './game/get-in-door-entry.js';
 import {
@@ -465,6 +469,7 @@ import { createMetronomeFieldRuntime } from './audio/metronome-field.js';
 import { createStudentWall } from './audio/student-wall.js';
 import { METRONOME_RESTART, METRONOME_SETTLE, PRACTICE_METRONOMES, advanceMetronomesSilently, coincidentTicks, freshMetronomeState, metronomeRestartChance, metronomeSettleEase, metronomeTempo, metronomeTickLevel, metronomeVoiceAt, practiceMetronomeById, stepMetronomes } from './game/practice-metronomes.js';
 import { PRACTICE_TRACES, practiceTraceByHost, practiceTraceNode, seamAt } from './game/practice-seams.js';
+import { TUNING_FORK_DETAIL, TUNING_FORK_ENGRAVING } from './data/tuning-fork-discovery.js';
 import { createPlantPipeRuntime, plantPipeAt } from './audio/plant-pipe.js';
 import {
   PLANT_FITTINGS,
@@ -6154,6 +6159,8 @@ function loop(){
         tickHushMischief();
         tickGarden();
         if (!paused && !document.hidden && document.hasFocus() && !usingSpecialSpace()) yardBusWomanClock += dt;
+        streetPilotClock.advance(dt,{paused,hidden:document.hidden||!document.hasFocus(),
+          reducedMotion:shakeMode()!=='full',enabled:!usingSpecialSpace()&&R3.r3dStreetPilotReady?.()});
         tickYardVigil(dt);
         tickGalleryBustTurn();
         tickPracticeHaunts();
@@ -6856,7 +6863,16 @@ function tickStorm(timeSec){
 }
 
 let yardBusWomanClock=0,yardBusWomanReplayTime=null;
+const streetPilotClock=createStreetPilotClock();
+// Developer-only controlled comparisons use the same geometry/camera pipeline.
+// Null resumes the ordinary clock; baseline retains the old north traffic.
+let streetPilotComparison={condition:STREET_PILOT_BASELINE?'baseline':'final',timeSec:null};
+function streetPilotTime(){
+  return streetPilotComparison.condition==='baseline'||!R3.r3dStreetPilotReady?.()?null:
+    (Number.isFinite(streetPilotComparison.timeSec)?streetPilotComparison.timeSec:streetPilotClock.time());
+}
 function syncDoorDynamicProps({logicalX=px,logicalY=py,timeSec=performance.now()/1000}={}){
+  PROPS.setColliderGroupEnabled('street-pilot',streetPilotTime()!==null);
   if(usingSourceSpace()||usingStairAnomaly()||!FP.isLoaded()){R3.r3dSetDynamicProps([]);return;}
   const group=FP.logicalToPhysical(logicalX,logicalY).renderGroup;
   const guidance=currentStoryGuidanceFrame({logicalX,logicalY,nowMs:timeSec*1000,trackHighlight:true});
@@ -6951,7 +6967,12 @@ function syncDoorDynamicProps({logicalX=px,logicalY=py,timeSec=performance.now()
   const exteriorVisible=zone===ZONE.street||zone===ZONE.civicCourt||zone===ZONE.academicRoof||(zone===ZONE.dock&&logicalY>=400);
   if(exteriorVisible){
     const reducedMotion=(getSave().settings?.shake||'full')!=='full';
-    for(const life of exteriorAmbientInstances({timeSec,reducedMotion}))doorDynamicCombined[count++]=life;
+    const pilotTimeSec=streetPilotTime();
+    for(const life of exteriorAmbientInstances({timeSec,reducedMotion,pilotTimeSec}))doorDynamicCombined[count++]=life;
+    if(pilotTimeSec!==null){
+      for(const part of streetPilotStaticInstances())doorDynamicCombined[count++]=part;
+      for(const part of streetPilotSignalInstances({timeSec:pilotTimeSec}))doorDynamicCombined[count++]=part;
+    }
   }
   // Animate only the existing optional local. Its authored interaction and
   // collision placement remain in PROPS; the renderer gets the same body here.
@@ -7040,6 +7061,7 @@ const apparitionDirector=createApparitionDirector({
 // it never supplies a pose, light state, camera move, actor or visual card.
 const apparitionApplause=createApparitionApplauseDirector();
 let apparitionApplauseAudio=null,apparitionApplauseRun=null,apparitionApplauseLoad=null;
+let apparitionApplauseRetryAt=0;
 let apparitionApplauseStudy=null,apparitionApplauseLastTraceAt=0;
 let apparitionApplauseLastSeenAt=-Infinity,apparitionApplauseOpportunityUntil=0,apparitionApplauseOpportunityUsed=false;
 const apparitionApplauseTrace=[];
@@ -7048,7 +7070,10 @@ let apparitionApplauseCapture=null;
 function cancelApparitionApplause(reason){
   apparitionApplause.cancel(reason);
   apparitionApplauseOpportunityUntil=0;
-  if(apparitionApplauseAudio?.inspect().activeVoices)apparitionApplauseAudio.cancel(reason);
+  if(apparitionApplauseAudio?.inspect().activeVoices){
+    apparitionApplauseAudio.cancel(reason);
+  }
+  selfAudioMask.forgetSource('hall-apparition-audience');
 }
 
 function prepareApparitionApplause(){
@@ -7058,7 +7083,10 @@ function prepareApparitionApplause(){
     emitAcoustic:emitAcousticEvent,
   });
   if(apparitionApplauseAudio.inspect().ready)return Promise.resolve({ready:true});
-  apparitionApplauseLoad ||= apparitionApplauseAudio.preload(APPLAUSE_ASSETS);
+  if(performance.now()<apparitionApplauseRetryAt)return Promise.resolve({ready:false});
+  apparitionApplauseLoad ||= apparitionApplauseAudio.preload(APPLAUSE_ASSETS)
+    .then(result=>{if(!result.ready)apparitionApplauseRetryAt=performance.now()+30000;return result;})
+    .finally(()=>{apparitionApplauseLoad=null;});
   return apparitionApplauseLoad;
 }
 
@@ -7070,18 +7098,22 @@ function apparitionApplauseBlocked(){
     ||(settings.flash||'full')!=='full'||apparitionApplauseStudy?.finished;
 }
 
+function apparitionApplausePointVisible(origin,sourceHeight,physical){
+  if(!origin)return false;
+  // Test the actual eased camera and masonry even when the witnessed body has
+  // disappeared. Seeing a neighbour alone cannot establish that absence.
+  const chest={x:origin.x,y:origin.y+sourceHeight,z:origin.z};
+  const projected=R3.r3dProjectWorld?.(chest);
+  if(!projected?.visible||projected.x<.08||projected.x>.92||projected.y<.08||projected.y>.92)return false;
+  const logical=FP.logicalAtPhysical(origin.x/CELL,origin.z/CELL,{group:physical.renderGroup,floor:origin.y});
+  return !!logical&&pointInSight(logical.x,logical.y,{maxDistance:D(26)})&&!sightCrossesClosedDoor(logical.x,logical.y);
+}
+
 function observedApparitionStation(frame,physical){
   if(frame?.lightingState!=='emergency-on')return [];
-  // Projection uses the eased renderer camera, including pitch. A submitted
-  // body behind a wall/closed door or outside the image earns no observation.
-  return frame.instances.filter(instance=>{
-    if(instance.shadowOnly)return false;
-    const chest={x:instance.x,y:instance.y+1.1*(instance.scaleY||1),z:instance.z};
-    const projected=R3.r3dProjectWorld?.(chest);
-    if(!projected?.visible||projected.x<.08||projected.x>.92||projected.y<.08||projected.y>.92)return false;
-    const logical=FP.logicalAtPhysical(instance.x/CELL,instance.z/CELL,{group:physical.renderGroup,floor:instance.y});
-    return !!logical&&pointInSight(logical.x,logical.y,{maxDistance:D(26)})&&!sightCrossesClosedDoor(logical.x,logical.y);
-  }).map(instance=>instance.apparitionIndex);
+  return frame.instances.filter(instance=>!instance.shadowOnly
+    &&apparitionApplausePointVisible(instance,1.1*(instance.scaleY||1),physical))
+    .map(instance=>instance.apparitionIndex);
 }
 
 function syncApparitionApplause(frame,physical,nowMs){
@@ -7093,37 +7125,58 @@ function syncApparitionApplause(frame,physical,nowMs){
     apparitionApplause.reset({runId,condition:apparitionApplauseStudy?.condition||'treatment'});
   }
   const target=frame?.composition?.id===APPARITION_APPLAUSE.compositionId;
+  const inEncounter=physical.renderGroup==='hall'&&FP.zoneAt(px,py)===ZONE.hall;
   const blocked=apparitionApplauseBlocked();
-  if(blocked||!target){cancelApparitionApplause(blocked?'blocked':'other-encounter');return;}
+  if(blocked||!inEncounter){cancelApparitionApplause(blocked?'blocked':'other-encounter');return;}
   void prepareApparitionApplause();
   const listener={x:physical.x*CELL,y:physical.z*CELL,yaw:R3.r3dWorldYaw?.()||0};
   apparitionApplauseAudio?.updateListener(listener);
-  const observedIndices=observedApparitionStation(frame,physical),observed=observedIndices.length>0;
+  const observedIndices=target?observedApparitionStation(frame,physical):[],observed=observedIndices.length>0;
   if(observed)apparitionApplauseLastSeenAt=nowMs;
+  const before=apparitionApplause.inspect();
+  const cueIndex=frame?.director?.card?.index??frame?.director?.hardRevealIndex;
+  const oldStation=before.witnessedStations?.find(station=>station.index===cueIndex);
+  const witnessPointVisible=target&&frame?.lightingState==='emergency-on'
+    &&!!oldStation&&apparitionApplausePointVisible(oldStation.origin,oldStation.sourceHeight,physical);
+  const input=motionInput.snapshot();
+  const pointerAge=nowMs-motionInput.lastPointerDeltaAt;
+  const voluntaryLook=(pointerAge>=0&&pointerAge<=250&&Math.abs(motionInput.lastPointerDeltaSource?.dx||0)>0)
+    ||Math.abs(input.turnX)>.15;
+  const voluntaryMove=Math.max(Math.abs(input.moveX),Math.abs(input.moveY))>.15;
   const ready=apparitionApplauseAudio?.inspect().ready===true&&actx?.state==='running';
-  const event=apparitionApplause.observe({frame,nowMs,observed,observedIndices,
+  const event=apparitionApplause.observe({frame,nowMs,observed,observedIndices,listener,
+    inEncounter,witnessPointVisible,voluntaryLook,voluntaryMove,
     budgetReady:ready&&(!flagTest('hall.apparition-applause.heard')||!!apparitionApplauseStudy)
       &&hushPressureAt()<=.25&&STAB.externalScareBudgetReady({nowMs}),active:true,effectsMode:'full'});
-  if(event&&STAB.reserveExternalScare({nowMs})){
+  if(event){
     const logical=FP.logicalAtPhysical(event.origin.x/CELL,event.origin.z/CELL,{group:physical.renderGroup,floor:event.origin.y});
     const spatial=acousticSpatialAt(logical?.x??px,logical?.y??py);
-    const score=makeApparitionApplauseScore(event.variant,{origin:event.origin,yaw:frame.composition?.stageYaw||0});
-    // Acoustic event coordinates use logical cells; the audio score uses fixed
-    // physical metres. Passing the floor height as an audio Y would move it.
-    const played=apparitionApplauseAudio.play({...event,spatial,at:spatial.position,
-      sourceId:'hall-apparition-audience',acoustic:{levelDb:-24},
-      provenance:{encounter:APPARITION_APPLAUSE.compositionId,card:event.cause}},
-      {listener,condition:event.variant,score});
-    apparitionApplauseTrace.push({type:'cue',nowMs,audioTime:actx.currentTime,event,played,scoreId:score.id});
-    // Consumption survives save/reload; recording never inherits this sound.
-    if(played&&!apparitionApplauseStudy){flagSet('hall.apparition-applause.heard',true);saveCommit({flags:getSave().flags});}
+    const score=makeApparitionApplauseScore(event.variant,{origin:event.origin,yaw:frame?.composition?.stageYaw||0});
+    const handoffAtMs=performance.now();
+    if(handoffAtMs-event.dueAtMs>APPARITION_APPLAUSE.maximumLateMs){
+      apparitionApplause.cancel('handoff-late');
+      apparitionApplauseTrace.push({type:'handoff-rejected',reason:'late',nowMs,handoffAtMs,event});
+    }else if(STAB.reserveExternalScare({nowMs:handoffAtMs})){
+      const leadTime=Math.max(0,(event.dueAtMs-handoffAtMs)/1000);
+      // Acoustic event coordinates use logical cells; the audio score uses fixed
+      // physical metres. Passing the floor height as an audio Y would move it.
+      const played=apparitionApplauseAudio.play({...event,spatial,at:spatial.position,
+        sourceId:'hall-apparition-audience',acoustic:{levelDb:-24},
+        provenance:{encounter:APPARITION_APPLAUSE.compositionId,card:event.cause,response:event.reaction?.kind||null}},
+        {listener,condition:event.variant,score,leadTime});
+      apparitionApplauseTrace.push({type:'cue',nowMs,handoffAtMs,leadTime,audioTime:actx.currentTime,event,played,scoreId:score.id});
+      // Consumption survives save/reload; recording never inherits this sound.
+      if(played&&!apparitionApplauseStudy){flagSet('hall.apparition-applause.heard',true);saveCommit({flags:getSave().flags});}
+    }
   }
   if(nowMs-apparitionApplauseLastTraceAt>=100||event){
     apparitionApplauseLastTraceAt=nowMs;
+    const after=apparitionApplause.inspect();
     apparitionApplauseTrace.push({type:'frame',nowMs,audioTime:actx?.currentTime??null,
-      composition:frame.composition.id,lightId:frame.lightId,lightingState:frame.lightingState,
-      pulse:frame.contract?.pulseIndex,card:frame.director?.card||null,observed,observedIndices,
-      player:{...listener},bodies:frame.instances.map(p=>({index:p.apparitionIndex,x:p.x,y:p.y,z:p.z,pose:p.poseId,shadowOnly:!!p.shadowOnly}))});
+      composition:frame?.composition?.id||null,lightId:frame?.lightId||null,lightingState:frame?.lightingState||null,
+      pulse:frame?.contract?.pulseIndex,card:frame?.director?.card||null,observed,observedIndices,
+      witnessPointVisible,voluntaryLook,voluntaryMove,pending:after.pending,lastCancellation:after.lastCancellation,
+      player:{...listener},bodies:(frame?.instances||[]).map(p=>({index:p.apparitionIndex,x:p.x,y:p.y,z:p.z,pose:p.poseId,shadowOnly:!!p.shadowOnly}))});
     if(apparitionApplauseTrace.length>6000)apparitionApplauseTrace.splice(0,apparitionApplauseTrace.length-6000);
   }
 }
@@ -7135,13 +7188,53 @@ function apparitionApplauseSnapshot(){
     trace:apparitionApplauseTrace.map(entry=>({...entry})),study:apparitionApplauseStudy?{...apparitionApplauseStudy}:null};
 }
 
-async function startApparitionApplauseStudy({condition='treatment',seed='hall-first-encounter-v1',participantId='technical'}={}){
+async function apparitionApplauseStudyBaseline(){
+  const save=getSave(),rec=REC.recState(),presence=PRES.publicSnapshot();
+  const physical=FP.logicalToPhysical(px,py);
+  const settingKeys=['volume','sfx','dialog','music','monitorGain','flash','reduceDread','shake',
+    'controlMode','mouseSensitivity','backgroundAudio','pauseOnBlur','micMode'];
+  const settings=Object.fromEntries(settingKeys.filter(key=>Object.hasOwn(save.settings||{},key)).map(key=>[key,save.settings[key]]));
+  settings.micMode=save.settings?.mic??save.settings?.micMode??null;
+  const snapshot={
+    schema:3,cueVersion:APPARITION_APPLAUSE_MIX.id,triggerSchedulingVersion:APPARITION_APPLAUSE.schedulingVersion,
+    settings,power:{schema:save.power?.schema??null,live:[...(save.power?.live||[])].sort()},
+    doors:FP.doorState().map(door=>({id:door.id,state:door.state,openFraction:door.openFraction,
+      wedge:door.wedge,closerArmed:door.closerArmed})).sort((a,b)=>a.id.localeCompare(b.id)),
+    recorder:{phase:rec.phase,light:rec.light,battery:rec.battery,injuries:rec.injuries,
+      composure:REC.composure(),takes:[...(rec.takes||[])].sort(),sheets:[...(rec.sheets||[])].sort(),hidden:rec.hidden},
+    presence:{active:presence.active,position:presence.active?presence.position:null,hasTarget:presence.hasTarget,
+      awareness:presence.awareness,motionMode:presence.motionMode,behaviorMode:presence.behaviorMode,tableau:presence.tableau},
+    pressure:hushPressureAt(),flags:save.flags,
+    room:{x:px,y:py,group:physical.renderGroup,floor:physical.y,look:R3.r3dLookAngles?.()||null},
+    difficulty:save.run?.difficulty||null,
+  };
+  // Canonical context excludes participant, arm, run identity, clocks and scare
+  // cooldowns. Matching this fixture is necessary, not perceptual validation.
+  const canonical=value=>Array.isArray(value)?value.map(canonical):value&&typeof value==='object'
+    ?Object.fromEntries(Object.keys(value).sort().map(key=>[key,canonical(value[key])])):value;
+  const serialized=JSON.stringify(canonical(snapshot));
+  const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(serialized));
+  const baselineHash=[...new Uint8Array(digest)].map(byte=>byte.toString(16).padStart(2,'0')).join('');
+  const baseline=JSON.parse(serialized),key='chunk-surfer:hall-study-baseline:v3:'+APPARITION_APPLAUSE.schedulingVersion;
+  const stored=sessionStorage.getItem(key);
+  if(stored){
+    let previous;try{previous=JSON.parse(stored);}catch{throw new Error('The saved study baseline needs facilitator review.');}
+    if(previous.baselineHash!==baselineHash)throw new Error('The game context differs from the first study baseline. Ask the facilitator to restore the same prepared game state.');
+  }else sessionStorage.setItem(key,JSON.stringify({baselineHash,baseline}));
+  return{baselineHash,baseline};
+}
+
+async function startApparitionApplauseStudy({condition='treatment',seed='hall-first-encounter-v1',participantId='technical',expectedBaselineHash=null}={}){
   if(!APPARITION_APPLAUSE.conditions.includes(condition))throw new Error('Unknown study condition');
   if(!eulaAccepted(getMeta(),EULA_TEXT))throw new Error('Complete the game entry screens before starting.');
   if(apparitionApplauseStudy&&!apparitionApplauseStudy.finished)throw new Error('Trial already started.');
+  cancelApparitionApplause('study-setup');
   if(!await godWarpToHook('concert-hall'))throw new Error('Hall is not ready.');
+  setGameplayPaused(true,{announce:false});
   ensureCtx();if(actx?.state==='suspended')await actx.resume();
   const loaded=await prepareApparitionApplause();if(!loaded.ready)throw new Error('Recorded hand assets unavailable.');
+  const fixture=await apparitionApplauseStudyBaseline();
+  if(expectedBaselineHash&&expectedBaselineHash!==fixture.baselineHash)throw new Error('Restore the prepared game baseline before starting another participant.');
   cancelApparitionApplause('study-start');
   apparitionApplauseStudy={condition,seed,participantId,startedAtMs:performance.now(),finished:false};
   apparitionApplauseRun=String(getSave().run?.id||'legacy-run');
@@ -7152,7 +7245,8 @@ async function startApparitionApplauseStudy({condition='treatment',seed='hall-fi
   // Same restraint and ordinary navigation as the real encounter. No forced
   // card, lamp pin, camera turn, shortened quiet period or budget override.
   STAB.stabsInit({onStab:playStab});STAB.enteredRoom();
-  return{ready:true,quietPeriodMs:STAB.STABS.quietMinutes*60000,settings:{...getSave().settings},seed};
+  setGameplayPaused(false,{announce:false});
+  return{ready:true,quietPeriodMs:STAB.STABS.quietMinutes*60000,settings:{...fixture.baseline.settings},seed,...fixture};
 }
 const recordingHallucinations=createRecordingHallucinationDirector({
   seed:`recording-hallucination:${Math.floor(Number(performance.timeOrigin)||Date.now())}`,
@@ -7230,7 +7324,7 @@ function syncArchitecturalLocalLights(group,{logicalX=px,logicalY=py,suppressAct
   }:null;
   const exteriorVisible=context.zone===ZONE.street||context.zone===ZONE.civicCourt||context.zone===ZONE.academicRoof||(context.zone===ZONE.dock&&logicalY>=400);
   const trafficLights=exteriorVisible?exteriorHeadlightLights({
-    timeSec,reducedMotion:effectsMode!=='full',origin:{x:physical.x*CELL,z:physical.z*CELL},
+    timeSec,reducedMotion:effectsMode!=='full',pilotTimeSec:streetPilotTime(),origin:{x:physical.x*CELL,z:physical.z*CELL},
   }):[];
   const ordinaryWithIncident=brendanLightPresentation([...ordinaryLights,...(plantIncidentLight?[plantIncidentLight]:[]),...trafficLights],timeSec);
   const dockHauntingLightPoint=dockHauntingStagingPoint?(()=>{
@@ -7427,7 +7521,7 @@ function worldRenderInstances(group=null){
   const liveRopes=tower.phase===CHAPEL_TOWER_PHASE.TOWER_ACTIVE&&!!bellTowerRuntime;
   const run=currentNatatoriumWaterRun();
   const renderGroups=group==='academicRoof'?['academicRoof','ground']:[group];
-  const props=renderGroups.flatMap((renderGroup)=>PROPS.renderInstances({group:renderGroup,inscriptions:false})).filter((instance,index,list)=>{
+  const props=renderGroups.flatMap((renderGroup)=>PROPS.renderInstances({group:renderGroup,inscriptions:false,batchDressing:!isOutdoorZone(FP.zoneAt(px,py))})).filter((instance,index,list)=>{
     if(list.findIndex((candidate)=>candidate.id===instance.id)!==index)return false;
     if(instance.id==='yard-bus-waiter')return false; // same placement is animated in the dynamic prop pass
     if(instance.id==='roof-ren'&&roofRenMemoryFoldActive)return false;
@@ -7460,6 +7554,17 @@ function worldRenderInstances(group=null){
     const vigilCharacter=vigilId?vigilCharacterDescriptor(door.mesh,vigilFrame,{reducedMotion:(getSave().settings?.shake||'full')!=='full'}):null;
     return {...boothGuardRenderInstance(door),...(vigilCharacter?{character:vigilCharacter}:{}),paperIndex:worldPaperIndex(door),emissive:storyGuidanceEmissive(door,propEmissive(door))};
   });
+  const windowPosition=FP.logicalToPhysical(px,py);
+  const windowOutlook=buildingWindowForObserver({x:windowPosition.x*CELL,z:windowPosition.z*CELL,y:windowPosition.y,spaceId:windowPosition.spaceId,renderGroup:windowPosition.renderGroup});
+  if(windowOutlook){
+    // The same real town/yard meshes seen outdoors, behind the real aperture.
+    // The civic shell is clipped to the outward half-space so its old scenic
+    // masses cannot project into an occupied room.
+    for(const instance of PROPS.renderInstances({group:'ground',inscriptions:false}).filter(instance=>isBuildingWindowScenery(instance,windowOutlook))){
+      if(props.some(p=>p.id===instance.id))continue;
+      props.push({...instance,exteriorClipPlane:buildingWindowExteriorPlane(windowOutlook),exteriorPortal:buildingWindowPortal(windowOutlook),noShadow:true});
+    }
+  }
   const architecture=doorRenderInstances().map((instance)=>{
     const emissive=storyGuidanceEmissive(instance,null);return emissive?{...instance,emissive}:instance;
   });
@@ -13485,6 +13590,9 @@ function playStab(ev){
 function tickStabs(dt){
   if(!storyMode || !STAB.poolSize()) return;
   if(sourceShoreOutside(chunkSurfRuntime?.sourceShoreFrame?.()))return;
+  // This lookout holds the city's weather and distance. An incidental hall
+  // stab must not interrupt it; the slow vigil has its own visible consequence.
+  if(roofCitySeatScene)return;
   // Not while the tape rolls. A take is only hiss.
   if(REC.isRecording()) return;
   const pressure = hushPressureAt();
@@ -13494,11 +13602,11 @@ function tickStabs(dt){
   // budget limits and ends on loss of observation, threat, exit or cancellation.
   const now=performance.now(),observation=apparitionApplause.inspect();
   const hallOpportunity=!apparitionApplauseBlocked()&&pressure<=.25
-    &&lastEmergencyShadowFrame?.composition?.id===APPARITION_APPLAUSE.compositionId
+    &&(lastEmergencyShadowFrame?.composition?.id===APPARITION_APPLAUSE.compositionId||!!observation.pending)
     &&apparitionApplauseAudio?.inspect().ready&&observation.emitted===0
     &&(!flagTest('hall.apparition-applause.heard')||!!apparitionApplauseStudy)
-    &&observation.observedPulses>=3&&observation.observedLitMs>=3500
-    &&now-apparitionApplauseLastSeenAt<2000&&STAB.externalScareBudgetReady({nowMs:now});
+    &&(!!observation.pending||(observation.observedPulses>=3&&observation.observedLitMs>=3500
+      &&now-apparitionApplauseLastSeenAt<2000))&&STAB.externalScareBudgetReady({nowMs:now});
   if(hallOpportunity&&!apparitionApplauseOpportunityUsed){
     apparitionApplauseOpportunityUsed=true;apparitionApplauseOpportunityUntil=now+90000;
   }
@@ -13678,6 +13786,7 @@ function interactAcademicRoofProp(hit){
     return true;
   }
   if(hit.action==='roof-contrary-account'||hit.action==='roof-guarantor-trace')return inspectRoofEvidence(hit.id);
+  if(hit.action==='roof-city-seat')return sitAtRoofCitySeat();
   if(hit.action==='roof-sit-west'||hit.action==='roof-sit-east')return sitAtAcademicRoofGlass(hit.id);
   if(hit.action==='roof-shortcut')return useRoofShortcut(hit.id);
   if(hit.action==='roof-effects-index'||hit.action==='roof-effects-trace'||hit.action==='roof-cabinet'||hit.action==='roof-home-cassette'){
@@ -14504,10 +14613,7 @@ function interact(){
     }
     if(hit.action==='story-tuning-fork'){
       openObjectDetail({
-        id:'tuning-fork',
-        title:'TUNING FORK',
-        source:'A=440',
-        body:'A thin steel fork lies across the desk of a music stand. The stamp is old. The hand-cut engraving below it reads: A=440. AND NOTHING ELSE.',
+        ...TUNING_FORK_DETAIL,
         onContinue:()=>interactTalisman(true),
       });
       return;
@@ -15294,7 +15400,7 @@ function syncStoryObjectProps(){
     action:'story-tuning-fork',
     inspect:{
       first:'A tuning fork lying across the desk of a music stand, where the part should be. The steel catches the torch as a thin line.',
-      again:'A=440. And nothing else.',
+      again:`${TUNING_FORK_ENGRAVING}. The cut letters have not changed.`,
     },
   });
 }
@@ -19178,6 +19284,7 @@ function tickGarden(){
 let yardVigil=freshVigilState();
 let yardLookBenchScene=null;
 let academicRoofSitScene=null;
+let roofCitySeatScene=null;
 let academicRoofClimbScene=null;
 
 function useRoofShortcut(id){
@@ -19224,6 +19331,39 @@ function useRoofShortcut(id){
     },
   };
   academicRoofClimbScene=scene;scenes.push(scene);return true;
+}
+
+function sitAtRoofCitySeat(){
+  if(roofCitySeatScene)return true;
+  if(FP.logicalToPhysical(px,py).renderGroup!==ACADEMIC_ROOF.renderGroup)return false;
+  const bench=PROPS.propById(ROOF_CITY_SEAT.id);
+  if(!bench||FP.isSolid(px,py)||!PROPS.propCanOccupy(px,py))return false;
+  const seat={x:bench.rx,y:bench.ry},origin={x:px,y:py};
+  const look=R3.r3dLookAngles?.()||{yaw:mapHeading(),pitch:0};
+  const scene=makeRoofCitySeatScene({origin,seat,look,floor:FP.floorAt(px,py),
+    yaw:ROOF_CITY_SEAT.yaw,pitch:ROOF_CITY_SEAT.pitch,eyeDrop:ROOF_CITY_SEAT.eyeDrop,
+    onEnter(){resetMotionInput('roof-city-seat',{stopRenderMove:true});},
+    onSeated(angles){
+      R3.r3dSetLookAngles?.({...angles,immediate:true});
+      flagApply(['roof.sat','roof.city.sat']);
+      // The saved body remains on the clear approach, also when title/quit
+      // takes a checkpoint while the eye is still on the bench.
+      saveCommit({px,py,flags:getSave().flags});
+    },
+    onFinish(){trail=[];renderMove=null;motionRig=null;scenes.remove(scene);},
+    onExit(){if(roofCitySeatScene===scene)roofCitySeatScene=null;},
+    render({phase,showStandHint}){
+      const{cols,rows}=uiSize();
+      if(showStandHint){
+        const parts=[{action:'interact',label:'STAND UP'}];
+        drawPromptParts(Math.max(2,Math.floor((cols-promptPartsWidth(parts))/2)),rows-2,parts,{role:'ui-secondary',cols});
+      }else if(phase==='lowering'||phase==='rising'){
+        const label=phase==='lowering'?'SITTING':'STANDING';
+        uiText(Math.max(2,Math.floor((cols-label.length)/2)),rows-2,label,'ui-secondary',.7);
+      }
+    },
+  });
+  roofCitySeatScene=scene;scenes.push(scene);return true;
 }
 
 function sitAtAcademicRoofGlass(id){
@@ -19382,29 +19522,63 @@ function sitAtYardLookBench(){
   scenes.push(scene);
   return true;
 }
-// The yard is the only outdoor place in the game, and this only means anything
-// before he has gone inside — once the title has landed the sky is somebody
-// else's problem.
-function vigilEligible(){
-  if(planName!=='conservatory'||usingSpecialSpace())return false;
-  const seated=scenes.top({includeOverlay:true})===yardLookBenchScene;
-  if(!storyMode||((scenes.blocksInput()||scenes.blocksWorld())&&!seated))return false;
-  if(flagTest('title.shown'))return false;
-  // ZONE.dock is also the apron, which is under a canopy with a roof over most
-  // of it. y>=400 is the yard proper — the same test the arrival thoughts use.
-  return FP.zoneAt(px,py)===ZONE.dock&&py>=400;
+// The optional lead moved from arrival to the roof's city seat. The serialized
+// name stays yardVigil/pin.yard so an old earned lead remains exactly one lead.
+function vigilRoofCell(x,y){
+  if(FP.isSolid(x,y)||FP.zoneAt(x,y)!==ZONE.academicRoof)return false;
+  const at=FP.logicalToPhysical(x,y);
+  return at.renderGroup===VIGIL.RENDER_GROUP&&at.owner==='academic_roof'
+    &&Math.abs(FP.floorAt(x,y)-VIGIL.FLOOR)<.05
+    &&FP.ceilAt(x,y)-FP.floorAt(x,y)>=2.35;
 }
-// The chair, in the player's own runtime cell space, and how far off the eye
-// axis it is. Null until it has been placed.
+function vigilChairSupported(at){
+  // The 69x66cm chair needs its whole footprint on the promenade, with enough
+  // headroom for its tall back. A clear centre alone can straddle the parapet.
+  for(const dx of[-.8,0,.8])for(const dy of[-.8,0,.8]){
+    if(!vigilRoofCell(at.x+.5+dx,at.y+.5+dy)
+      ||!PROPS.propCanOccupy(at.x+dx,at.y+dy))return false;
+  }
+  return true;
+}
+function vigilObserverPoint(){
+  const active=roofCitySeatScene&&scenes.top({includeOverlay:true})===roofCitySeatScene;
+  return active?(roofCitySeatScene.view?.().seat||{x:px,y:py}):{x:px,y:py};
+}
+function vigilEligible(){
+  if(planName!=='conservatory'||usingSpecialSpace()||!storyMode||scenes.blocksWorld())return false;
+  if(!roofCitySeatScene||scenes.top({includeOverlay:true})!==roofCitySeatScene
+    ||roofCitySeatScene.view?.().phase!=='seated')return false;
+  const at=vigilObserverPoint();
+  return vigilRoofCell(at.x,at.y);
+}
+// The chair must be on this physical roof and actually visible along a clear
+// collision ray. A logical bearing alone could award it from another floor.
 function vigilSight(){
   const seat=yardVigil.at;
-  if(!seat)return null;
-  const dx=seat.x-px, dy=seat.y-py;
+  if(!seat||yardVigil.seen||planName!=='conservatory'||usingSpecialSpace()||!storyMode)return null;
+  if(scenes.blocksInput()&&scenes.top({includeOverlay:true})!==roofCitySeatScene)return null;
+  if(roofCitySeatScene&&scenes.top({includeOverlay:true})===roofCitySeatScene
+    &&roofCitySeatScene.view?.().phase!=='seated')return null;
+  const observer=vigilObserverPoint();
+  if(!vigilRoofCell(observer.x,observer.y)||!vigilRoofCell(seat.x,seat.y))return null;
+  const dx=seat.x-observer.x, dy=seat.y-observer.y;
   const dist=Math.hypot(dx,dy)*CELL;
+  if(dist>VIGIL.SEE_RANGE_M)return null;
   if(dist<0.2)return {dist,cos:1};
-  const yaw=mapHeading();
-  const fx=Math.sin(yaw), fy=-Math.cos(yaw);
-  return {dist,cos:(dx*fx+dy*fy)/Math.hypot(dx,dy)};
+  const yaw=mapHeading(),pitch=R3.r3dLookAngles?.()?.pitch||0;
+  const eye=R3.r3dEyePoint?.(),eyeHeight=Number.isFinite(eye?.y)?eye.y*CELL:VIGIL.FLOOR+1.62;
+  const targetHeight=VIGIL.FLOOR+1.0,vertical=targetHeight-eyeHeight;
+  const cos=((dx*Math.sin(yaw)-dy*Math.cos(yaw))*CELL*Math.cos(pitch)
+    +vertical*Math.sin(pitch))/Math.hypot(dist,vertical);
+  if(cos<VIGIL.SEE_COS)return{dist,cos};
+  const steps=Math.max(1,Math.ceil(Math.hypot(dx,dy)*2));
+  for(let i=1;i<steps;i++){
+    const t=i/steps,x=observer.x+.5+dx*t,y=observer.y+.5+dy*t;
+    const height=eyeHeight+vertical*t,floor=FP.floorAt(x,y);
+    if(FP.isSolid(x,y)||height<=floor+.02||height>=FP.ceilAt(x,y)-.02
+      ||PROPS.tallBlockingPropAt(x-.5,y-.5,Math.max(.1,height-floor)))return null;
+  }
+  return{dist,cos};
 }
 function tickYardVigil(dt){
   const before=yardVigil;
@@ -19414,17 +19588,12 @@ function tickYardVigil(dt){
   yardVigil=step.state;
   if(step.place){
     const [fx,fy]=R3.r3dDelta(1);
-    // px/py are runtime cells and the module's distances are metres.
-    // It has to land somewhere a chair could stand. If NONE of the candidates
-    // will stand up the vigil simply did not happen — better a player who saw
-    // nothing than a chair inside a skip — but there is more than one candidate
-    // now, because the shelter invites people to stand where the first choice is
-    // reliably its own back wall.
-    const seats=vigilSeatCandidates({x:px,y:py,forwardX:fx,forwardY:fy,cellsPerMetre:1/CELL});
+    const observer=vigilObserverPoint();
+    const seats=vigilSeatCandidates({x:observer.x,y:observer.y,forwardX:fx,forwardY:fy,cellsPerMetre:1/CELL});
     let seat=null,cell=null;
     for(const s of seats){
       const c={x:Math.round(s.x),y:Math.round(s.y)};
-      if(FP.isSolid(c.x,c.y)||FP.zoneAt(c.x,c.y)!==ZONE.dock||!PROPS.propCanOccupy(c.x,c.y))continue;
+      if(!vigilChairSupported(c))continue;
       seat=s;cell=c;break;
     }
     if(!seat){
@@ -19434,18 +19603,12 @@ function tickYardVigil(dt){
     yardVigil.at={x:cell.x,y:cell.y,yaw:seat.yaw};
     PROPS.setLooseProp(VIGIL.PROP_ID,{
       mesh:VIGIL.MESH,rx:cell.x,ry:cell.y,yaw:seat.yaw,
-      interactive:false,structural:false,
+      interactive:false,structural:false,renderGroups:[VIGIL.RENDER_GROUP],floorOverride:VIGIL.FLOOR,
     });
     refreshWorldProps();
     saveCommit({yardVigil});
-    // SOMETHING BEHIND THE CORRECT SHOULDER. Not a scare — the chair is five to
-    // nine metres back precisely so this is a walk — just enough of a sound in
-    // the right place that a man turns his head. The pin is only granted when
-    // the chair is actually SEEN, and until now nothing ever made anybody look.
-    fireCue('vigil-chair',{
-      pan:vigilPan({seatX:cell.x,seatY:cell.y,x:px,y:py,forwardX:fx,forwardY:fy}),
-      causalActor:'building',
-    });
+    // Nothing punctures the city hold. It is there if the player turns, and
+    // only noticing it earns anything; no door slam or reward announcement.
   }
   if(step.earn&&!flagTest(VIGIL.FLAG)){
     // No cue, no notice, no line. He has seen a chair, and there is an orange
@@ -19458,12 +19621,18 @@ const vigilLastCell={x:-1,y:-1};
 // A reload puts the chair back where it was left. It does not come back a second
 // time and the pin is not granted twice.
 function restoreYardVigil(){
-  yardVigil=normalizeVigilState(getSave().yardVigil);
+  const save=getSave(),rewarded=flagTest(VIGIL.FLAG)||save.combatBuild?.rewardedFlags?.includes(VIGIL.FLAG);
+  yardVigil=normalizeVigilState(save.yardVigil,{rewarded});
   vigilLastCell.x=px; vigilLastCell.y=py;
+  PROPS.setLooseProp(VIGIL.PROP_ID,null);
   if(!yardVigil.at)return;
+  if(!vigilChairSupported(yardVigil.at)){
+    yardVigil={...freshVigilState(),seen:yardVigil.seen};
+    return;
+  }
   PROPS.setLooseProp(VIGIL.PROP_ID,{
     mesh:VIGIL.MESH,rx:yardVigil.at.x,ry:yardVigil.at.y,yaw:yardVigil.at.yaw,
-    interactive:false,structural:false,
+    interactive:false,structural:false,renderGroups:[VIGIL.RENDER_GROUP],floorOverride:VIGIL.FLOOR,
   });
 }
 
@@ -19519,7 +19688,8 @@ function hypoxiaSourceHere(){
   const zone=FP.zoneAt(px,py);
   const physical=FP.logicalToPhysical(px,py);
   if(physical?.spaceId==='plant'||physical?.spaceId==='plant_room')return 1;
-  if(zone===ZONE.street||zone===ZONE.dock||zone===ZONE.civicCourt||zone===ZONE.serviceYard)return 0;
+  if(zone===ZONE.street||zone===ZONE.dock||zone===ZONE.civicCourt||zone===ZONE.serviceYard
+    ||zone===ZONE.academicRoof||physical?.renderGroup===ACADEMIC_ROOF.renderGroup)return 0;
   return physical&&physical.y<0?.75:.35;
 }
 
@@ -23573,7 +23743,7 @@ const ZONE_RECORDING_ROOM={ [ZONE.studio]:'main_b3', [ZONE.natatorium]:'the_tub'
                   [ZONE.practice]:'soundnoisemusic', [ZONE.chapel]:'lux_nova' };
 const ZONE_ACOUSTIC_ROOM={...ZONE_RECORDING_ROOM,[ZONE.chapelOuter]:'chapel_outer',[ZONE.bellTower]:'bell_tower',[ZONE.church]:'st_brendans'};
 const ZONE_AREA={ [ZONE.dock]:'the loading bay', [ZONE.getIn]:`the ${SCENE_DOCK_NAME}`, [ZONE.foyer]:'front atrium', [ZONE.studio]:'studio B3',
-  [ZONE.street]:'Ellery west road', [ZONE.civicCourt]:'municipal park', [ZONE.serviceYard]:'service yard',
+  [ZONE.street]:'Ellery west road', [ZONE.civicCourt]:'municipal park', [ZONE.serviceYard]:'service yard', [ZONE.pub]:'The Lyric public house',
   [ZONE.natatorium]:'the natatorium', [ZONE.hall]:'the concert hall', [ZONE.practice]:'the practice wing',
   [ZONE.chapel]:'chapel nave', [ZONE.chapelOuter]:'outer chapel', [ZONE.bellTower]:'bell tower', [ZONE.academic]:'academic gallery', [ZONE.plant]:'plant room', [ZONE.stair]:'building stair',
   // The dance wing reads as one area on purpose: the recordist has no work order
@@ -27353,6 +27523,7 @@ function drawStoryHud(){
       :propHit.action==='tower-tenor-rope'?'TAKE'
       :propHit.action==='chapel-key-ring'?'TAKE'
       :propHit.action==='yard-vigil-bench'?'TURN AND SIT ON'
+      :propHit.action==='roof-city-seat'?'SIT AND LOOK OUT FROM'
       :propHit.action==='roof-sit-west'||propHit.action==='roof-sit-east'?'SIT ON'
       :propHit.action==='roof-ren'?'TALK TO'
       :propHit.action==='roof-contrary-account'||propHit.action==='roof-guarantor-trace'?'READ'
@@ -28178,6 +28349,7 @@ function installProbe(){
     materialAt:(x,y)=>activeGeometry()?.materialAt(x,y),
     canStep:(ax,ay,bx,by)=>usingSpecialSpace()?activeGeometry()?.canStep(ax,ay,bx,by):FP.canStep(ax,ay,bx,by,{keys:playerKeys}),
     props:()=>({pack:R3.r3dPropStats(),renderedIds:R3.r3dPropInstanceIds?.()||[],instances:PROPS.allProps().map((p)=>({id:p.id,mesh:p.mesh,x:p.x,y:p.y,zone:p.zone,blocks:p.blocks,renderGroup:p.renderGroup,renderGroups:p.renderGroups})),learned:PROPS.learnedPlayable().map((p)=>p.id)}),
+    roofWatcherPresentation:()=>R3.r3dRoofWatcherPresentation(),
     propDiagnostics:(enabled=null,instances=null,options=null)=>{
       if(enabled==null)return R3.r3dPropStats()?.diagnostics||null;
       R3.r3dSetPropDiagnostics?.(!!enabled,options);
@@ -28190,6 +28362,32 @@ function installProbe(){
       }):[];
       R3.r3dSetDiagnosticProps?.(diagnosticProps);
       return R3.r3dPropStats();
+    },
+    streetPilotStudyStart:async()=>{
+      if(!import.meta.env?.DEV)throw new Error('Street study is local development only');
+      if(!eulaAccepted(getMeta(),EULA_TEXT))throw new Error('Complete the game entry screens before starting.');
+      await window.__probe.godWarpHook('loading-bay');
+      window.__probe.clearDiagnosticScenes();
+      // A study warp has completed legal entry and begins ordinary gameplay.
+      // Late title-session setup must not reapply the negative title plate.
+      window.__probe.frontEndGrade(false);
+      window.__probe.warpCell(126,336,0);window.__probe.lookAtWorld(0,0);
+      streetPilotComparison={condition:STREET_PILOT_BASELINE?'baseline':'final',timeSec:null};
+      streetPilotClock.reset(0);syncDoorDynamicProps();
+      return{condition:streetPilotComparison.condition,ready:R3.r3dStreetPilotReady?.(),
+        participantValidation:'pending',at:window.__probe.whereAmI()};
+    },
+    streetPilot:(options=null)=>{
+      if(import.meta.env?.DEV&&options){
+        if(['baseline','final'].includes(options.condition))streetPilotComparison.condition=options.condition;
+        if(Object.hasOwn(options,'timeSec'))streetPilotComparison.timeSec=typeof options.timeSec==='number'&&Number.isFinite(options.timeSec)?Math.max(0,options.timeSec):null;
+        if(typeof options.resetClock==='number')streetPilotClock.reset(options.resetClock);
+        syncDoorDynamicProps();
+      }
+      const timeSec=streetPilotTime();
+      return{ready:R3.r3dStreetPilotReady?.(),comparison:{...streetPilotComparison},clock:streetPilotClock.inspect(),
+        frame:timeSec===null?null:streetPilotSafetyFrame(timeSec),
+        instances:doorDynamicCombined.filter(p=>p.id?.startsWith('street-pilot:')||p.sourceId||p.wheelOf)};
     },
     performance:()=>perfMeter.snapshot(),
     performanceReset:()=>{perfMeter.reset();return true;},

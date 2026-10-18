@@ -6,7 +6,7 @@ bpy.ops.wm.open_mainfile(filepath=str(out/'bus-woman-study.blend'))
 scene=bpy.context.scene
 scene.render.engine='CYCLES';scene.cycles.samples=24
 scene.render.resolution_x=960;scene.render.resolution_y=960;scene.render.resolution_percentage=100
-scene.world.color=(.11,.11,.11)
+scene.world=bpy.data.worlds.new('study world');scene.world.color=(.11,.11,.11)
 scene.view_settings.view_transform='AgX'
 def look(obj,point):
  forward=(Vector(point)-obj.location).normalized();right=forward.cross(Vector((0,1,0))).normalized();up=right.cross(forward).normalized();obj.matrix_world=Matrix(((right.x,up.x,-forward.x,obj.location.x),(right.y,up.y,-forward.y,obj.location.y),(right.z,up.z,-forward.z,obj.location.z),(0,0,0,1)))

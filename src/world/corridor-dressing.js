@@ -34,7 +34,7 @@
 
 import { F, ZONE } from '../data/floorplan/legend.js';
 import { wallFaces, yawFromNormal } from './wall-contact.js';
-import { FACILITY_SPACES } from '../data/building-map.js';
+import { CORRIDOR_SPACE_BY_DOOR_ID, LANDING_FITTINGS } from '../data/corridor-lettering.js';
 
 // Runtime cells per authored metre. Props are authored in metres; the plan and
 // its wall runs are in cells. Matches PLAN_SCALE in floorplan/legend.js.
@@ -324,13 +324,10 @@ export function wallFixtures(plan, cells = corridorCells(plan)) {
 
 // ── THE PLATE BESIDE THE DOOR ────────────────────────────────────────────────
 //
-// door_stencil is a blank plate — the mesh is one paper-material box, and the
-// "B3" the dance wing reads by lives entirely in that prop's inspect text. This
-// keeps that convention rather than inventing a second one: the plate is the
-// institutional motif you see from down the corridor, and the room's name is
-// what you get for walking up to it. Real lettering would need the 5x7
-// rasteriser in build-props.mjs and a 25MB pack rebuild; the text already does
-// the work, so it stays text.
+// The existing room-name plate is now physically printed as well as described.
+// Its literal name comes from the same first-owned door record used below.
+// Only placements that survive the compiled plan receive a print job; the
+// shared generator/runtime helper cannot leave a label at an absent doorway.
 //
 // Names come from FACILITY_SPACES, which has known which doorIds belong to which
 // room since the map was authored, and has never reached the world. Nothing here
@@ -339,16 +336,9 @@ export function wallFixtures(plan, cells = corridorCells(plan)) {
 // Placed against a real corridor wall face rather than by stepping off the door,
 // because beside an opening is masonry and the arithmetic that says otherwise
 // lands the plate inside the wall.
-function spaceByDoorId() {
-  const out = new Map();
-  for (const space of FACILITY_SPACES) {
-    for (const id of space.doorIds || []) if (!out.has(id)) out.set(id, space);
-  }
-  return out;
-}
 
 export function doorPlates(plan, doors = [], cells = corridorCells(plan)) {
-  const byDoor = spaceByDoorId();
+  const byDoor = CORRIDOR_SPACE_BY_DOOR_ID;
   const faces = [];
   for (const run of corridorWallRuns(plan, cells)) {
     for (let at = run.from; at < run.to; at += 1) {
@@ -362,7 +352,7 @@ export function doorPlates(plan, doors = [], cells = corridorCells(plan)) {
   const out = [];
   const taken = new Set();
   for (const door of doors) {
-    const space = byDoor.get(door.id);
+    const space = byDoor[door.id];
     if (!space) continue;
     const cx = Number(door.cx), cy = Number(door.cy);
     if (!Number.isFinite(cx) || !Number.isFinite(cy)) continue;
@@ -416,28 +406,7 @@ export function doorPlates(plan, doors = [], cells = corridorCells(plan)) {
 // stair here is 3m wide — they were built for this and have sat in the pack
 // unused. Both carry an integral sign plate, which is why the light and the
 // wayfinding are one placement rather than two.
-export const LANDING_FITTINGS = Object.freeze({
-  'main-basement-stair/ground-landing': {
-    mesh: 'stair_bulkhead_pair', label: 'GROUND',
-    first: 'A caged bulkhead pair over the head of the basement stair, with a sign plate between them reading GROUND.',
-    again: 'Ground. The way back up, if the stair is still where you left it.',
-  },
-  'main-basement-stair/b3-landing': {
-    mesh: 'stair_bulkhead_pair', label: 'DANCE WING / B1-B5',
-    first: 'A bulkhead pair at the foot of the stair. The plate lists the dance wing and the studios on it, B1 to B5.',
-    again: 'B4 is not on the plate. It is not on the plan either.',
-  },
-  'main-open-well/upper-floor-landing': {
-    mesh: 'stair_sconce_pair_opal', label: 'PRACTICE WING',
-    first: 'A pair of opal sconces on the landing wall, with a small dark plate between them: THE PRACTICE WING.',
-    again: 'The plate has an arrow on it. It points along a corridor that is not quite where it says.',
-  },
-  'main-open-well/academic-floor-landing': {
-    mesh: 'stair_sconce_pair_opal', label: 'VOCAL STUDIES',
-    first: 'Opal sconces and a plate at the top of the well: VOCAL STUDIES, and a list of studios.',
-    again: 'The list is longer than the number of doors on this floor.',
-  },
-});
+export {LANDING_FITTINGS};
 
 // The landing's longest wall, as a direction and a cell to stand on. A landing is
 // a small rectangle, so this is a count over its own cells rather than anything
@@ -486,6 +455,7 @@ export function landingFittings(plan, landings = []) {
     out.push({
       id: `landing-${landing.key.split('/')[1]}`,
       mesh: spec.mesh,
+      frontAxis: '-z',
       x: m(wall.cell.x),
       y: m(wall.cell.y),
       yaw: yawFromNormal(wall.nx, wall.ny),

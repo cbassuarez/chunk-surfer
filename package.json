@@ -75,12 +75,13 @@
     "test:haystack": "node --test test/source-hall-boundary.spec.mjs test/source-haystack.spec.mjs test/source-page-presentation.spec.mjs test/source-corridor.spec.mjs test/source-space-chapter.spec.mjs",
     "test:horizon": "node tools/chunk_surfer/tests/horizon.mjs",
     "test:source-dialogue": "node --test test/source-dialogue-corpus.spec.mjs test/source-dialogue-director.spec.mjs test/source-dialogue-simulation.spec.mjs test/source-dialogue-real-page.spec.mjs test/chunk-surf-state.spec.mjs",
-    "paper:build": "node scripts/build-paper-assets.mjs",
-    "paper:validate": "node scripts/validate-paper-assets.mjs",
+    "paper:build": "node scripts/build-paper-assets.mjs && npm run paper:world-material",
+    "paper:validate": "node scripts/validate-paper-assets.mjs && node test/world-paper-material.spec.mjs",
     "test:paper": "node --test test/paper-system.spec.mjs test/paper3d.spec.mjs test/paper-typography.spec.mjs",
     "assets:horizon-profile": "node tools/chunk_surfer/build-horizon-profile.mjs",
     "assets:plant-header": "node tools/chunk_surfer/build-plant-header.mjs",
-    "assets:textiles": "node tools/chunk_surfer/build-textiles.mjs"
+    "assets:textiles": "node tools/chunk_surfer/build-textiles.mjs",
+    "paper:world-material": "node tools/chunk_surfer/lettering/build-world-paper-material.mjs"
   },
   "devDependencies": {
     "@gltf-transform/core": "^4.4.1",

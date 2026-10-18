@@ -32,7 +32,7 @@ function adoptChase(frame){
 function trackPointer(event){
   if(pane)return;
   const bounds=canvas.getBoundingClientRect();
-  adoptChase(chase.pointer({x:event.clientX-bounds.left,y:event.clientY-bounds.top,active:true},{paintedPose:lastPainted?.pose}));
+  adoptChase(chase.pointer({x:event.clientX-bounds.left,y:event.clientY-bounds.top,active:true},{paintedPose:lastPainted?.pose,now:performance.now()}));
   paint(performance.now());
 }
 
@@ -138,14 +138,15 @@ function paint(at){
   if(pane){drawPane(w,h,at);return;}
   if(cast){
     const paintedCast=cast;
-    const pose=chase.snapshot().pose||fireballSurfacePose(cast,{width:w/dpr,height:h/dpr});
+    const interaction=chase.snapshot();
+    const pose=interaction.pose||fireballSurfacePose(cast,{width:w/dpr,height:h/dpr});
     const tileW=pose.size*dpr;
     ctx.save();ctx.translate(pose.x*dpr,pose.y*dpr);
     ctx.beginPath();ctx.rect(0,0,tileW,tileW);ctx.clip();
     ctx.fillStyle='#000';ctx.fillRect(0,0,tileW,tileW);
     drawFireballTile(tileW,tileW,dpr,at);
     ctx.restore();
-    lastPainted={cast:paintedCast,pose,at:performance.timeOrigin+at,width:w/dpr,height:h/dpr};
+    lastPainted={cast:paintedCast,pose,interaction:{acquired:interaction.acquired,progress:interaction.progress,key:interaction.key,velocity:interaction.velocity,bounces:interaction.bounces},at:performance.timeOrigin+at,width:w/dpr,height:h/dpr};
   }
 }
 
@@ -302,7 +303,8 @@ async function boot(){
     chase.setCast(null);cast=null;pane=payload||null;startedAt=performance.now();paint(startedAt);
   });
   await surfaceWindow.listen('fireball-cast-pointer',({payload})=>{
-    const frame=chase.nativePointer(payload,{paintedPose:lastPainted?.pose});
+    if(payload?.width&&payload?.height)chase.resize(payload);
+    const frame=chase.nativePointer(payload,{paintedPose:lastPainted?.pose,now:performance.now()});
     if(pane)return;
     adoptChase(frame);paint(performance.now());
   });

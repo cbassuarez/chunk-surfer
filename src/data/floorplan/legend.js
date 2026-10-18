@@ -99,6 +99,7 @@ export const ZONE = {
   // So it gets its own acoustic identity without becoming a recording target.
   church: 20,
   academicRoof: 21, // the occupied glass roof, open to the city and weather
+  pub: 22, // an ordinary indoor public house; civic mesh envelope, no outdoor weather
 };
 
 // Which world (audio + prompt) a zone belongs to. Corridors borrow the room
@@ -133,6 +134,7 @@ export const ZONE_WORLD = {
   // reads. Its manifest reuses the lux_nova material without reusing its id.
   [ZONE.church]: 'st_brendans',
   [ZONE.academicRoof]: 'amplifications',
+  [ZONE.pub]: 'main_b3',
 };
 
 // OUTDOORS IS A PROPERTY OF THE ZONE, NOT OF WHERE YOU ARE STANDING.

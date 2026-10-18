@@ -421,3 +421,16 @@ test('acquisition validates the exact live cast, ray and offer, then a click sti
   assert.equal(exchange.strike({castId,rayId:'ray-1'}).hit,false);
   assert.equal(exchange.snapshot().charge,1);
 });
+
+test('first contact during retry preserves the reached offer and earns its click grace once',()=>{
+  const {exchange}=harness();exchange.update(.71);exchange.update(2.21);
+  const active=exchange.snapshot().active;exchange.update(active.outsideSeconds+.01);
+  assert.equal(exchange.snapshot().active.rays[0].state,'rebound');
+  const request={castId:active.plan.castId,rayId:'ray-1',offer:1};
+  assert.equal(exchange.acquire(request).acquired,true);
+  assert.equal(exchange.snapshot().active.outsideFrame[0].offer,1);
+  exchange.update(.74);assert.equal(exchange.snapshot().active.rays[0].state,'approach');
+  exchange.update(.02);assert.equal(exchange.snapshot().active.rays[0].state,'rebound');
+  assert.equal(exchange.acquire(request).acquired,false,'a repeated visit cannot extend the same retry forever');
+  assert.equal(exchange.snapshot().charge,0);
+});

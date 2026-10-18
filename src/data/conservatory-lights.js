@@ -7,6 +7,8 @@
 
 import { ZONE } from './floorplan/legend.js';
 import { CHURCH_LIGHTS } from './st-brendans.js';
+import { EXTERIOR_PUB, pubWorldFromLocal } from './exterior-pub.js';
+import { PUB_LIGHT_ANCHORS } from './exterior-pub-furnishings.js';
 
 export const LIGHT_KIND = Object.freeze({
   SKY: 'sky',
@@ -118,6 +120,7 @@ const AMBIENT = Object.freeze({
   [ZONE.bellTower]: { color: [.58, .45, .30], intensity: .025 },
   [ZONE.academic]: { color: [.62, .69, .70], intensity: .036 },
   [ZONE.academicRoof]: { color: [.46, .56, .70], intensity: .155 },
+  [ZONE.pub]: { color: [1,.75,.49], intensity: .092 },
   [ZONE.danceStudio]: { color: [.38, .34, .27], intensity: .014 },
   [ZONE.store]: { color: [.42, .43, .40], intensity: .016 },
   // The get-in keeps the sodium and rust the old dock room had.
@@ -237,6 +240,21 @@ const L = freezeLight;
 // emitted light. The fallback coordinates keep deterministic tests and early
 // asset-load frames stable.
 export const CONSERVATORY_LIGHTS = Object.freeze([
+  // The Lyric is supplied independently of the closed institution. These are
+  // the actual pendant/WC sockets from the shared furnishing contract; retain
+  // their output when seen through the pub's open window joinery.
+  ...PUB_LIGHT_ANCHORS.map(a=>{
+    const p=pubWorldFromLocal(a);
+    return L(a.id,LIGHT_KIND.FITTING,p.x,p.z,EXTERIOR_PUB.floor+a.y,a.color,a.intensity,a.radius,
+      {groups:['ground'],zones:[ZONE.pub,ZONE.street,ZONE.civicCourt],powerMode:LIGHT_POWER_MODE.EXTERNAL,
+       castsShadow:a.id==='pub-bar-light'});
+  }),
+  ...[-28,-20].flatMap(z=>[-1.57,3.63].map(dz=>{
+    const p=pubWorldFromLocal({x:.79,z:z+dz});
+    return L(`pub-front-lantern-${z}-${dz}`,LIGHT_KIND.FITTING,p.x,p.z,EXTERIOR_PUB.floor+2.80,
+      [1,.72,.40],.85,3.5,{groups:['ground'],zones:[ZONE.pub,ZONE.street,ZONE.civicCourt],powerMode:LIGHT_POWER_MODE.EXTERNAL});
+  })),
+
   // The get-in: only the sodium seam under the grey door. The freight-frame
   // chandelier is disconnected and is exclusively controlled by the haunting
   // override.
@@ -529,6 +547,7 @@ export function resolveLightingContext(context = {}) {
     // The ordinary one-bit acquisition uses exposure before its ink decision;
     // the legacy white-point curve cannot recover an underexposed stone wall.
     ...(zone === ZONE.church ? { captureExposure: 4.5 } : {}),
+    ...(zone === ZONE.pub ? { captureExposure: 1.65 } : {}),
   };
 }
 

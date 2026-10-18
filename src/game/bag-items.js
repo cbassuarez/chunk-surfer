@@ -6,6 +6,7 @@
 
 import { mapAcquired } from './map-ownership.js';
 import { runtimeTree } from '../narrative/runtime-content.js';
+import { TUNING_FORK_BAG_LINE } from '../data/tuning-fork-discovery.js';
 
 export const BAG_ACTION_MODE = Object.freeze({
   COMMAND: 'command',
@@ -270,7 +271,7 @@ export function bagInspectionDialogue(itemId, context = {}) {
       { who: 'you', text: 'Bent, working, and only useful when something in the signal needs sending back.' },
     ],
     'tuning-fork': [
-      { who: 'direction', text: 'Steel. A=440, cut by hand. AND NOTHING ELSE beneath it.' },
+      { who: 'direction', text: TUNING_FORK_BAG_LINE },
       { who: 'you', text: 'A reference, not a weapon. If the Source gives me a target, I can ask whether it agrees.' },
     ],
     'plant-spanner': [

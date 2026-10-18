@@ -80,7 +80,8 @@ export function benchFlashlight(variant,g){
   box([0,.31,-r-.024],[.084,.085,.075],'steel',undefined,.012,'flashlight-pocket-clip-root');
   tube([[0,-.22,-r-.06],[0,-.30,-r-.07],[0,-.32,-r-.018]],.014,'steel','flashlight-clip-return',12);
   ring([0,-.62,-r-.033],.044,.009,'steel',[Math.PI/2,0,0],28,'flashlight-lanyard-eye');
-  label(`FL-${flood?'3':thrower?'2':'1'}`,[-.052,.34,r+.004],.030,'ink');
+  label(`FL-${flood?'3':thrower?'2':'1'}`,[-.052,.34,r+.004],.030,'ink',undefined,
+   {centerY:0,heightM:1.16,radiusTopM:r,radiusBottomM:r,segments:48,hostName:'flashlight-main-barrel'});
   const opticalHead=({radius,depth,front,position,rotation})=>{
    group(position,rotation,'flashlight-optical-head',()=>{
     const profile=[new THREE.Vector2(radius*.19,-depth),new THREE.Vector2(radius*.34,-depth*.79),new THREE.Vector2(radius*.63,-depth*.48),new THREE.Vector2(radius*.87,-depth*.16),new THREE.Vector2(radius,0)];

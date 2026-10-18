@@ -94,10 +94,17 @@ const hold = (state, seconds, opts = {}) => {
 
 // ── it survives a reload, and it is the fourth pin ──────────────────────────
 {
-  const restored = normalizeVigilState({ held: 999, placed: true, seen: false, at: { x: 4, y: 5, yaw: 1 } });
+  const restored = normalizeVigilState({ ...freshVigilState(), held: 999, placed: true, seen: false, at: { x: 4, y: 5, yaw: 1 } });
   assert.equal(restored.held, VIGIL.HOLD_SECONDS, 'a nonsense hold is clamped, not trusted');
   assert.deepEqual(restored.at, { x: 4, y: 5, yaw: 1 }, 'the chair comes back where it was left');
   assert.deepEqual(normalizeVigilState(null), freshVigilState(), 'no save reads as no vigil');
+  assert.deepEqual(normalizeVigilState({held:44,placed:true,seen:false,at:{x:107,y:410,yaw:1}}),freshVigilState(),
+    'an unearned arrival vigil cannot seed a roof wait or chair');
+  const legacyEarned=normalizeVigilState({held:45,placed:true,seen:true,at:{x:107,y:410,yaw:1}});
+  assert.equal(legacyEarned.seen,true,'an old noticed chair remains complete');
+  assert.equal(legacyEarned.at,null,'old yard coordinates never restore on the roof');
+  assert.equal(hold(legacyEarned,60).place,false,'an old completed reward cannot produce another chair');
+  assert.equal(normalizeVigilState(null,{rewarded:true}).seen,true,'a folded build reward remains complete without a vigil checkpoint');
 
   assert.ok(PIN_SOURCES.flags.includes(VIGIL.FLAG),
     'the flag the vigil sets is actually a pin source, or the reward is decorative');

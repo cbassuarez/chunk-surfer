@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-17T15:14:17.223Z",
-  "bytes": 42576916,
-  "totalTriangles": 557572,
+  "generatedAt": "2026-10-18T02:55:44.118Z",
+  "bytes": 59033276,
+  "totalTriangles": 817998,
   "meshes": {
     "school_desk": {
       "triangles": 176,
@@ -140,32 +140,36 @@
       "vertices": 504
     },
     "notice_board": {
-      "triangles": 24,
-      "vertices": 48
+      "triangles": 324,
+      "vertices": 672
     },
     "rekey_ledger": {
-      "triangles": 50,
-      "vertices": 100
+      "triangles": 146,
+      "vertices": 316
     },
     "chapel_key_cabinet": {
       "triangles": 180,
       "vertices": 360
     },
     "chapel_key_ring_ch04": {
-      "triangles": 194,
-      "vertices": 388
+      "triangles": 258,
+      "vertices": 532
     },
     "chapel_key_ring_c17": {
-      "triangles": 194,
-      "vertices": 388
+      "triangles": 258,
+      "vertices": 532
     },
     "chapel_key_ring_fohm": {
-      "triangles": 194,
-      "vertices": 388
+      "triangles": 258,
+      "vertices": 532
     },
     "dance_barre": {
       "triangles": 152,
       "vertices": 236
+    },
+    "dance_barre_dismantled": {
+      "triangles": 128,
+      "vertices": 188
     },
     "dance_mirror": {
       "triangles": 60,
@@ -182,6 +186,26 @@
     "door_stencil": {
       "triangles": 12,
       "vertices": 24
+    },
+    "door_stencil_b1": {
+      "triangles": 14,
+      "vertices": 28
+    },
+    "door_stencil_b2": {
+      "triangles": 14,
+      "vertices": 28
+    },
+    "door_stencil_b3": {
+      "triangles": 14,
+      "vertices": 28
+    },
+    "door_stencil_b5": {
+      "triangles": 14,
+      "vertices": 28
+    },
+    "source_hall_number_17": {
+      "triangles": 2,
+      "vertices": 4
     },
     "costume_rail": {
       "triangles": 180,
@@ -360,8 +384,8 @@
       "vertices": 72
     },
     "hymn_board": {
-      "triangles": 50,
-      "vertices": 100
+      "triangles": 178,
+      "vertices": 388
     },
     "portrait_frame": {
       "triangles": 62,
@@ -388,16 +412,16 @@
       "vertices": 1152
     },
     "hall_entrance_sign": {
-      "triangles": 36,
-      "vertices": 72
+      "triangles": 332,
+      "vertices": 708
     },
     "hall_entry_sconce": {
       "triangles": 84,
       "vertices": 168
     },
     "front_atrium_perimeter_relief": {
-      "triangles": 2772,
-      "vertices": 5544
+      "triangles": 2532,
+      "vertices": 5064
     },
     "atrium_public_fittings": {
       "triangles": 1020,
@@ -424,8 +448,20 @@
       "vertices": 576
     },
     "academic_roof_structure": {
-      "triangles": 24780,
-      "vertices": 42303
+      "triangles": 44352,
+      "vertices": 79773
+    },
+    "academic_roof_watcher_foliate": {
+      "triangles": 208,
+      "vertices": 287
+    },
+    "academic_roof_watcher_hound": {
+      "triangles": 512,
+      "vertices": 499
+    },
+    "academic_roof_watcher_owl": {
+      "triangles": 796,
+      "vertices": 533
     },
     "academic_roof_glazing": {
       "triangles": 1920,
@@ -446,6 +482,10 @@
     "academic_roof_seat": {
       "triangles": 84,
       "vertices": 168
+    },
+    "academic_roof_city_seat": {
+      "triangles": 936,
+      "vertices": 1220
     },
     "academic_roof_ren": {
       "triangles": 4886,
@@ -482,6 +522,282 @@
     "academic_roof_weatherwork": {
       "triangles": 438,
       "vertices": 876
+    },
+    "exterior_garden_hardscape": {
+      "triangles": 1120,
+      "vertices": 2032
+    },
+    "exterior_garden_planting": {
+      "triangles": 5904,
+      "vertices": 10742
+    },
+    "exterior_arrival_planting": {
+      "triangles": 1584,
+      "vertices": 2882
+    },
+    "arch_switch_public": {
+      "triangles": 156,
+      "vertices": 190
+    },
+    "arch_socket_public": {
+      "triangles": 228,
+      "vertices": 334
+    },
+    "arch_switch_staff": {
+      "triangles": 156,
+      "vertices": 190
+    },
+    "arch_socket_staff": {
+      "triangles": 228,
+      "vertices": 334
+    },
+    "arch_switch_service": {
+      "triangles": 216,
+      "vertices": 310
+    },
+    "arch_socket_service": {
+      "triangles": 228,
+      "vertices": 334
+    },
+    "arch_fire_callpoint": {
+      "triangles": 192,
+      "vertices": 262
+    },
+    "arch_alarm_sounder": {
+      "triangles": 228,
+      "vertices": 334
+    },
+    "arch_smoke_detector": {
+      "triangles": 348,
+      "vertices": 522
+    },
+    "arch_radiator_public": {
+      "triangles": 1572,
+      "vertices": 1476
+    },
+    "arch_radiator_staff": {
+      "triangles": 1572,
+      "vertices": 1476
+    },
+    "arch_vent_grille": {
+      "triangles": 468,
+      "vertices": 570
+    },
+    "arch_access_hatch": {
+      "triangles": 192,
+      "vertices": 262
+    },
+    "arch_dado_public": {
+      "triangles": 72,
+      "vertices": 144
+    },
+    "arch_dado_public_fountain_clearance": {
+      "triangles": 36,
+      "vertices": 72
+    },
+    "arch_dado_staff": {
+      "triangles": 24,
+      "vertices": 48
+    },
+    "arch_rubbing_strip_service": {
+      "triangles": 24,
+      "vertices": 48
+    },
+    "arch_coving_public": {
+      "triangles": 48,
+      "vertices": 96
+    },
+    "arch_coving_staff": {
+      "triangles": 24,
+      "vertices": 48
+    },
+    "arch_wall_wear_public": {
+      "triangles": 60,
+      "vertices": 120
+    },
+    "arch_wall_wear_staff": {
+      "triangles": 60,
+      "vertices": 120
+    },
+    "arch_wall_repair_service": {
+      "triangles": 84,
+      "vertices": 168
+    },
+    "arch_threshold_public": {
+      "triangles": 36,
+      "vertices": 72
+    },
+    "arch_threshold_staff": {
+      "triangles": 36,
+      "vertices": 72
+    },
+    "arch_threshold_service": {
+      "triangles": 36,
+      "vertices": 72
+    },
+    "occupation_cleaning_cupboard": {
+      "triangles": 732,
+      "vertices": 1422
+    },
+    "occupation_maintenance_shelf": {
+      "triangles": 1224,
+      "vertices": 2244
+    },
+    "occupation_cloak_rail": {
+      "triangles": 780,
+      "vertices": 1560
+    },
+    "occupation_arrival_book": {
+      "triangles": 616,
+      "vertices": 730
+    },
+    "occupation_umbrella_contents": {
+      "triangles": 780,
+      "vertices": 984
+    },
+    "occupation_entry_mat": {
+      "triangles": 276,
+      "vertices": 552
+    },
+    "occupation_desk_phone": {
+      "triangles": 672,
+      "vertices": 1086
+    },
+    "occupation_pigeonholes": {
+      "triangles": 180,
+      "vertices": 360
+    },
+    "occupation_key_hooks": {
+      "triangles": 588,
+      "vertices": 1176
+    },
+    "occupation_wall_clock": {
+      "triangles": 1128,
+      "vertices": 886
+    },
+    "occupation_instrument_dolly": {
+      "triangles": 856,
+      "vertices": 728
+    },
+    "occupation_case_cradle": {
+      "triangles": 968,
+      "vertices": 960
+    },
+    "occupation_corner_guard": {
+      "triangles": 216,
+      "vertices": 183
+    },
+    "occupation_vocal_mirror": {
+      "triangles": 72,
+      "vertices": 144
+    },
+    "occupation_water_shelf": {
+      "triangles": 240,
+      "vertices": 396
+    },
+    "occupation_theory_tools": {
+      "triangles": 72,
+      "vertices": 144
+    },
+    "occupation_string_tools": {
+      "triangles": 138,
+      "vertices": 142
+    },
+    "occupation_reed_tools": {
+      "triangles": 132,
+      "vertices": 264
+    },
+    "occupation_caster_wear": {
+      "triangles": 696,
+      "vertices": 1392
+    },
+    "occupation_refit_patch": {
+      "triangles": 304,
+      "vertices": 276
+    },
+    "occupation_service_glands": {
+      "triangles": 400,
+      "vertices": 422
+    },
+    "occupation_baths_rainwater_completion": {
+      "triangles": 952,
+      "vertices": 1862
+    },
+    "amenity_public_core_shell": {
+      "triangles": 1296,
+      "vertices": 2592
+    },
+    "amenity_pool_wash_screens": {
+      "triangles": 320,
+      "vertices": 536
+    },
+    "amenity_toilet": {
+      "triangles": 332,
+      "vertices": 537
+    },
+    "amenity_washbasin": {
+      "triangles": 328,
+      "vertices": 528
+    },
+    "amenity_mirror_soap": {
+      "triangles": 96,
+      "vertices": 192
+    },
+    "amenity_grab_rail": {
+      "triangles": 72,
+      "vertices": 144
+    },
+    "amenity_paper_holder": {
+      "triangles": 60,
+      "vertices": 120
+    },
+    "amenity_hook_rail": {
+      "triangles": 84,
+      "vertices": 168
+    },
+    "amenity_floor_drain": {
+      "triangles": 84,
+      "vertices": 168
+    },
+    "amenity_shower_column": {
+      "triangles": 304,
+      "vertices": 377
+    },
+    "amenity_cleaner_cupboard": {
+      "triangles": 620,
+      "vertices": 1122
+    },
+    "amenity_staff_counter": {
+      "triangles": 892,
+      "vertices": 1315
+    },
+    "amenity_staff_service_connections": {
+      "triangles": 240,
+      "vertices": 480
+    },
+    "amenity_public_drinking_fountain": {
+      "triangles": 252,
+      "vertices": 470
+    },
+    "amenity_staff_coat_lockers": {
+      "triangles": 264,
+      "vertices": 528
+    },
+    "building_window_chamber": {
+      "triangles": 1284,
+      "vertices": 1818
+    },
+    "building_window_faculty": {
+      "triangles": 1284,
+      "vertices": 1818
+    },
+    "building_window_foyer": {
+      "triangles": 1284,
+      "vertices": 1818
+    },
+    "building_window_baths": {
+      "triangles": 852,
+      "vertices": 1704
     },
     "academic_frieze": {
       "triangles": 480,
@@ -752,8 +1068,8 @@
       "vertices": 408
     },
     "tower_peal_board": {
-      "triangles": 50,
-      "vertices": 100
+      "triangles": 178,
+      "vertices": 388
     },
     "tower_organ_case": {
       "triangles": 1140,
@@ -804,12 +1120,12 @@
       "vertices": 382
     },
     "stair_sconce_pair_opal": {
-      "triangles": 320,
-      "vertices": 440
+      "triangles": 364,
+      "vertices": 512
     },
     "stair_bulkhead_pair": {
-      "triangles": 344,
-      "vertices": 572
+      "triangles": 388,
+      "vertices": 644
     },
     "stair_pendant_opal": {
       "triangles": 232,
@@ -924,12 +1240,12 @@
       "vertices": 96
     },
     "tower_plaque": {
-      "triangles": 24,
-      "vertices": 48
+      "triangles": 136,
+      "vertices": 264
     },
     "public_exit_sign": {
-      "triangles": 36,
-      "vertices": 72
+      "triangles": 180,
+      "vertices": 360
     },
     "bay_canopy": {
       "triangles": 772,
@@ -952,8 +1268,8 @@
       "vertices": 6680
     },
     "district_civic_frontage": {
-      "triangles": 3288,
-      "vertices": 6056
+      "triangles": 5592,
+      "vertices": 10664
     },
     "district_workshop_frontage": {
       "triangles": 2724,
@@ -1012,8 +1328,8 @@
       "vertices": 288
     },
     "exterior_story_plaque": {
-      "triangles": 24,
-      "vertices": 48
+      "triangles": 88,
+      "vertices": 192
     },
     "district_post_box": {
       "triangles": 148,
@@ -1060,12 +1376,12 @@
       "vertices": 996
     },
     "scene_dock_sign_foh": {
-      "triangles": 74,
-      "vertices": 148
+      "triangles": 290,
+      "vertices": 616
     },
     "scene_dock_sign_services": {
-      "triangles": 74,
-      "vertices": 148
+      "triangles": 290,
+      "vertices": 616
     },
     "vigil_ruth_mallory": {
       "triangles": 540,
@@ -1164,28 +1480,28 @@
       "vertices": 1146
     },
     "vigil_part_sign_save": {
-      "triangles": 50,
-      "vertices": 100
+      "triangles": 74,
+      "vertices": 156
     },
     "vigil_part_sign_strike": {
-      "triangles": 50,
-      "vertices": 100
+      "triangles": 74,
+      "vertices": 156
     },
     "vigil_part_sign_chapel": {
-      "triangles": 50,
-      "vertices": 100
+      "triangles": 74,
+      "vertices": 156
     },
     "vigil_part_sign_record": {
-      "triangles": 50,
-      "vertices": 100
+      "triangles": 74,
+      "vertices": 156
     },
     "vigil_part_sign_signed": {
-      "triangles": 50,
-      "vertices": 100
+      "triangles": 74,
+      "vertices": 156
     },
     "vigil_part_banner": {
-      "triangles": 276,
-      "vertices": 219
+      "triangles": 18984,
+      "vertices": 13035
     },
     "conservatory_west_elevation": {
       "triangles": 17856,
@@ -1268,8 +1584,8 @@
       "vertices": 744
     },
     "yard_sign": {
-      "triangles": 72,
-      "vertices": 144
+      "triangles": 312,
+      "vertices": 648
     },
     "yard_road": {
       "triangles": 340,
@@ -1308,8 +1624,12 @@
       "vertices": 408
     },
     "city_bus_shelter": {
-      "triangles": 132,
-      "vertices": 264
+      "triangles": 240,
+      "vertices": 480
+    },
+    "city_bus_shelter_compact": {
+      "triangles": 228,
+      "vertices": 456
     },
     "city_phone_box": {
       "triangles": 2264,
@@ -1600,8 +1920,8 @@
       "vertices": 2086
     },
     "outskirts_shelter_timetable": {
-      "triangles": 230,
-      "vertices": 460
+      "triangles": 838,
+      "vertices": 1828
     },
     "outskirts_lodge": {
       "triangles": 402,
@@ -1680,8 +2000,8 @@
       "vertices": 1419
     },
     "baseboard_ground": {
-      "triangles": 7824,
-      "vertices": 15648
+      "triangles": 8088,
+      "vertices": 16176
     },
     "baseboard_hall": {
       "triangles": 2400,
@@ -1692,12 +2012,12 @@
       "vertices": 4296
     },
     "baseboard_upper": {
-      "triangles": 3420,
-      "vertices": 6840
+      "triangles": 3468,
+      "vertices": 6936
     },
     "baseboard_academic": {
-      "triangles": 2460,
-      "vertices": 4920
+      "triangles": 2532,
+      "vertices": 5064
     },
     "baseboard_tower": {
       "triangles": 4644,
@@ -1727,47 +2047,7 @@
       "triangles": 13274,
       "vertices": 39822
     },
-    "lettering_overlay_tower-history-plaque": {
-      "triangles": 2,
-      "vertices": 4
-    },
-    "lettering_overlay_acq-foyer-armchair-01": {
-      "triangles": 2,
-      "vertices": 4
-    },
-    "lettering_overlay_atrium-public-directory": {
-      "triangles": 2,
-      "vertices": 4
-    },
-    "lettering_overlay_plant-header-card": {
-      "triangles": 2,
-      "vertices": 4
-    },
     "lettering_overlay_yard-sign": {
-      "triangles": 2,
-      "vertices": 4
-    },
-    "lettering_overlay_tower-sign-belfry": {
-      "triangles": 2,
-      "vertices": 4
-    },
-    "lettering_overlay_exterior-hall-stone": {
-      "triangles": 2,
-      "vertices": 4
-    },
-    "door_stencil_b1": {
-      "triangles": 14,
-      "vertices": 28
-    },
-    "door_stencil_b2": {
-      "triangles": 14,
-      "vertices": 28
-    },
-    "door_stencil_b3": {
-      "triangles": 14,
-      "vertices": 28
-    },
-    "lettering_overlay_exterior-chapel-plaque": {
       "triangles": 2,
       "vertices": 4
     },
@@ -1775,7 +2055,123 @@
       "triangles": 2,
       "vertices": 4
     },
+    "lettering_overlay_exterior-chapel-plaque": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_exterior-baths-mosaic": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_exterior-hall-stone": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_atrium-sign-main-exit": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_atrium-public-directory": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_hall-entrance-sign": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_chapel-stair-sign-nave": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_tower-sign-ringing": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_tower-sign-belfry": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_tower-sign-organ-exit": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_tower-sign-nave-exit": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_tower-history-plaque": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_tower-hammer-isolator": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_brendan-visitor-till": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_foyer-pew-1": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_box-office-returns-tray": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_plant-header-card": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_acq-services-panel-pool": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_acq-services-panel-foh": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_acq-services-panel-practice": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_acq-services-panel-academic": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_acq-services-panel-plant": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_acq-foyer-sofa-01": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_deadend-ground-armchair": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_acq-foyer-armchair-01": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_acq-foyer-console-01": {
+      "triangles": 2,
+      "vertices": 4
+    },
     "lettering_overlay_acq-foyer-horse-head": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_acq-hall-chesterfield-west": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_acq-practice-chair-1": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_acq-practice-chair-2": {
       "triangles": 2,
       "vertices": 4
     },
@@ -1791,82 +2187,6 @@
       "triangles": 2,
       "vertices": 4
     },
-    "lettering_overlay_acq-services-panel-academic": {
-      "triangles": 2,
-      "vertices": 4
-    },
-    "source_hall_number_17": {
-      "triangles": 2,
-      "vertices": 4
-    },
-    "lettering_overlay_brendan-visitor-till": {
-      "triangles": 2,
-      "vertices": 4
-    },
-    "lettering_overlay_exterior-baths-mosaic": {
-      "triangles": 2,
-      "vertices": 4
-    },
-    "lettering_overlay_box-office-returns-tray": {
-      "triangles": 2,
-      "vertices": 4
-    },
-    "lettering_overlay_acq-foyer-sofa-01": {
-      "triangles": 2,
-      "vertices": 4
-    },
-    "lettering_overlay_deadend-ground-armchair": {
-      "triangles": 2,
-      "vertices": 4
-    },
-    "lettering_overlay_acq-practice-chair-1": {
-      "triangles": 2,
-      "vertices": 4
-    },
-    "lettering_overlay_acq-practice-chair-2": {
-      "triangles": 2,
-      "vertices": 4
-    },
-    "lettering_overlay_tower-hammer-isolator": {
-      "triangles": 2,
-      "vertices": 4
-    },
-    "lettering_overlay_tower-sign-nave-exit": {
-      "triangles": 2,
-      "vertices": 4
-    },
-    "lettering_overlay_tower-sign-organ-exit": {
-      "triangles": 2,
-      "vertices": 4
-    },
-    "lettering_overlay_tower-sign-ringing": {
-      "triangles": 2,
-      "vertices": 4
-    },
-    "lettering_overlay_acq-hall-chesterfield-west": {
-      "triangles": 2,
-      "vertices": 4
-    },
-    "door_stencil_b5": {
-      "triangles": 14,
-      "vertices": 28
-    },
-    "lettering_overlay_acq-services-panel-pool": {
-      "triangles": 2,
-      "vertices": 4
-    },
-    "lettering_overlay_acq-services-panel-practice": {
-      "triangles": 2,
-      "vertices": 4
-    },
-    "lettering_overlay_foyer-pew-1": {
-      "triangles": 2,
-      "vertices": 4
-    },
-    "lettering_overlay_acq-foyer-console-01": {
-      "triangles": 2,
-      "vertices": 4
-    },
     "lettering_overlay_acq-practice-chair-6": {
       "triangles": 2,
       "vertices": 4
@@ -1879,25 +2199,109 @@
       "triangles": 2,
       "vertices": 4
     },
-    "lettering_overlay_acq-services-panel-foh": {
+    "lettering_overlay_plate-store-corridor": {
       "triangles": 2,
       "vertices": 4
     },
-    "lettering_overlay_acq-services-panel-plant": {
+    "lettering_overlay_plate-spur-substation": {
       "triangles": 2,
       "vertices": 4
     },
-    "lettering_overlay_atrium-sign-main-exit": {
+    "lettering_overlay_plate-spur-tank": {
       "triangles": 2,
       "vertices": 4
     },
-    "lettering_overlay_chapel-stair-sign-nave": {
+    "lettering_overlay_plate-practice-west-1": {
       "triangles": 2,
       "vertices": 4
     },
-    "lettering_overlay_hall-entrance-sign": {
+    "lettering_overlay_plate-practice-east-1": {
       "triangles": 2,
       "vertices": 4
+    },
+    "lettering_overlay_plate-practice-west-2": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_plate-practice-east-2": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_plate-practice-west-3": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_plate-practice-east-3": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_plate-practice-west-4": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_plate-practice-east-4": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_plate-academic-studio-2": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_plate-academic-store": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_plate-academic-studio-3": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_plate-academic-studio-4": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_plate-academic-office-locked-1": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_plate-academic-office-locked-2": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_landing-ground-landing": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_landing-b3-landing": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_landing-upper-floor-landing": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "lettering_overlay_landing-academic-floor-landing": {
+      "triangles": 2,
+      "vertices": 4
+    },
+    "building_dressing_batch_basement": {
+      "triangles": 28024,
+      "vertices": 39755
+    },
+    "building_dressing_batch_ground": {
+      "triangles": 33148,
+      "vertices": 50792
+    },
+    "building_dressing_batch_academic": {
+      "triangles": 63896,
+      "vertices": 82823
+    },
+    "building_dressing_batch_upper": {
+      "triangles": 42234,
+      "vertices": 55043
+    },
+    "building_dressing_batch_hall": {
+      "triangles": 9588,
+      "vertices": 16358
     }
   },
   "bounds": {
@@ -2383,13 +2787,25 @@
     },
     "dance_barre": {
       "min": [
-        -1.315,
-        -0.63,
+        -1.45,
+        0.77,
         -0.133
       ],
       "max": [
-        1.315,
-        2.51,
+        1.45,
+        1.11,
+        0.005
+      ]
+    },
+    "dance_barre_dismantled": {
+      "min": [
+        -1.452,
+        0.576,
+        -0.133
+      ],
+      "max": [
+        1.452,
+        1.11,
         0.005
       ]
     },
@@ -2439,6 +2855,66 @@
         0.23,
         0.32,
         -0.003
+      ]
+    },
+    "door_stencil_b1": {
+      "min": [
+        -0.23,
+        0,
+        -0.018
+      ],
+      "max": [
+        0.23,
+        0.32,
+        -0.003
+      ]
+    },
+    "door_stencil_b2": {
+      "min": [
+        -0.23,
+        0,
+        -0.018
+      ],
+      "max": [
+        0.23,
+        0.32,
+        -0.003
+      ]
+    },
+    "door_stencil_b3": {
+      "min": [
+        -0.23,
+        0,
+        -0.018
+      ],
+      "max": [
+        0.23,
+        0.32,
+        -0.003
+      ]
+    },
+    "door_stencil_b5": {
+      "min": [
+        -0.23,
+        0,
+        -0.018
+      ],
+      "max": [
+        0.23,
+        0.32,
+        -0.003
+      ]
+    },
+    "source_hall_number_17": {
+      "min": [
+        0,
+        -0.12,
+        -0.165
+      ],
+      "max": [
+        0,
+        0.12,
+        0.165
       ]
     },
     "costume_rail": {
@@ -3173,6 +3649,42 @@
         13.54
       ]
     },
+    "academic_roof_watcher_foliate": {
+      "min": [
+        -0.5,
+        -0.45,
+        -0.065
+      ],
+      "max": [
+        0.5,
+        0.37,
+        0.245
+      ]
+    },
+    "academic_roof_watcher_hound": {
+      "min": [
+        -0.28,
+        -0.17,
+        -0.18
+      ],
+      "max": [
+        0.28,
+        0.415,
+        0.363
+      ]
+    },
+    "academic_roof_watcher_owl": {
+      "min": [
+        -0.31,
+        -0.125,
+        -0.235
+      ],
+      "max": [
+        0.31,
+        0.425,
+        0.3
+      ]
+    },
     "academic_roof_glazing": {
       "min": [
         -5.125,
@@ -3231,6 +3743,18 @@
         0.92,
         0.11,
         0.75
+      ]
+    },
+    "academic_roof_city_seat": {
+      "min": [
+        -0.95,
+        0,
+        -0.345
+      ],
+      "max": [
+        0.95,
+        1.03,
+        0.44
       ]
     },
     "academic_roof_ren": {
@@ -3339,6 +3863,834 @@
         11.42,
         0.052,
         10.5
+      ]
+    },
+    "exterior_garden_hardscape": {
+      "min": [
+        -8.5,
+        -0.015,
+        -12.5
+      ],
+      "max": [
+        8,
+        0.44,
+        12.5
+      ]
+    },
+    "exterior_garden_planting": {
+      "min": [
+        -8.303,
+        0.019,
+        -12.262
+      ],
+      "max": [
+        7.039,
+        0.648,
+        11.853
+      ]
+    },
+    "exterior_arrival_planting": {
+      "min": [
+        -5.904,
+        0.019,
+        -1.064
+      ],
+      "max": [
+        6.355,
+        0.503,
+        -0.233
+      ]
+    },
+    "arch_switch_public": {
+      "min": [
+        -0.056,
+        0,
+        0
+      ],
+      "max": [
+        0.056,
+        0.165,
+        0.057
+      ]
+    },
+    "arch_socket_public": {
+      "min": [
+        -0.113,
+        0,
+        0
+      ],
+      "max": [
+        0.113,
+        0.135,
+        0.034
+      ]
+    },
+    "arch_switch_staff": {
+      "min": [
+        -0.056,
+        0,
+        0
+      ],
+      "max": [
+        0.056,
+        0.165,
+        0.057
+      ]
+    },
+    "arch_socket_staff": {
+      "min": [
+        -0.113,
+        0,
+        0
+      ],
+      "max": [
+        0.113,
+        0.135,
+        0.034
+      ]
+    },
+    "arch_switch_service": {
+      "min": [
+        -0.069,
+        0,
+        0
+      ],
+      "max": [
+        0.069,
+        1.1,
+        0.057
+      ]
+    },
+    "arch_socket_service": {
+      "min": [
+        -0.122,
+        0,
+        0
+      ],
+      "max": [
+        0.122,
+        0.135,
+        0.057
+      ]
+    },
+    "arch_fire_callpoint": {
+      "min": [
+        -0.082,
+        0,
+        0
+      ],
+      "max": [
+        0.082,
+        0.195,
+        0.05
+      ]
+    },
+    "arch_alarm_sounder": {
+      "min": [
+        -0.117,
+        0,
+        0
+      ],
+      "max": [
+        0.117,
+        0.245,
+        0.088
+      ]
+    },
+    "arch_smoke_detector": {
+      "min": [
+        -0.122,
+        0.006,
+        -0.122
+      ],
+      "max": [
+        0.122,
+        0.083,
+        0.122
+      ]
+    },
+    "arch_radiator_public": {
+      "min": [
+        -0.609,
+        0.025,
+        0
+      ],
+      "max": [
+        0.609,
+        0.768,
+        0.159
+      ]
+    },
+    "arch_radiator_staff": {
+      "min": [
+        -0.609,
+        0.025,
+        0
+      ],
+      "max": [
+        0.609,
+        0.768,
+        0.159
+      ]
+    },
+    "arch_vent_grille": {
+      "min": [
+        -0.355,
+        0,
+        0
+      ],
+      "max": [
+        0.355,
+        0.33,
+        0.076
+      ]
+    },
+    "arch_access_hatch": {
+      "min": [
+        -0.245,
+        0,
+        0
+      ],
+      "max": [
+        0.245,
+        0.53,
+        0.041
+      ]
+    },
+    "arch_dado_public": {
+      "min": [
+        -0.5,
+        0.198,
+        0
+      ],
+      "max": [
+        0.5,
+        2.131,
+        0.059
+      ]
+    },
+    "arch_dado_public_fountain_clearance": {
+      "min": [
+        -0.5,
+        0.198,
+        0
+      ],
+      "max": [
+        0.5,
+        2.131,
+        0.057
+      ]
+    },
+    "arch_dado_staff": {
+      "min": [
+        -0.5,
+        0.912,
+        0
+      ],
+      "max": [
+        0.5,
+        0.989,
+        0.045
+      ]
+    },
+    "arch_rubbing_strip_service": {
+      "min": [
+        -0.5,
+        0.005,
+        0
+      ],
+      "max": [
+        0.5,
+        0.125,
+        0.023
+      ]
+    },
+    "arch_coving_public": {
+      "min": [
+        -0.5,
+        0,
+        0
+      ],
+      "max": [
+        0.5,
+        0.18,
+        0.12
+      ]
+    },
+    "arch_coving_staff": {
+      "min": [
+        -0.5,
+        0,
+        0
+      ],
+      "max": [
+        0.5,
+        0.09,
+        0.06
+      ]
+    },
+    "arch_wall_wear_public": {
+      "min": [
+        -0.315,
+        0.082,
+        0
+      ],
+      "max": [
+        0.32,
+        0.458,
+        0.007
+      ]
+    },
+    "arch_wall_wear_staff": {
+      "min": [
+        -0.315,
+        0.082,
+        0
+      ],
+      "max": [
+        0.32,
+        0.458,
+        0.007
+      ]
+    },
+    "arch_wall_repair_service": {
+      "min": [
+        -0.3,
+        0.025,
+        0
+      ],
+      "max": [
+        0.3,
+        0.515,
+        0.012
+      ]
+    },
+    "arch_threshold_public": {
+      "min": [
+        -0.5,
+        0,
+        -0.085
+      ],
+      "max": [
+        0.5,
+        0.014,
+        0.085
+      ]
+    },
+    "arch_threshold_staff": {
+      "min": [
+        -0.5,
+        0,
+        -0.085
+      ],
+      "max": [
+        0.5,
+        0.014,
+        0.085
+      ]
+    },
+    "arch_threshold_service": {
+      "min": [
+        -0.5,
+        0,
+        -0.085
+      ],
+      "max": [
+        0.5,
+        0.014,
+        0.085
+      ]
+    },
+    "occupation_cleaning_cupboard": {
+      "min": [
+        -0.458,
+        0,
+        -0.27
+      ],
+      "max": [
+        0.458,
+        1.82,
+        0.291
+      ]
+    },
+    "occupation_maintenance_shelf": {
+      "min": [
+        -0.54,
+        0,
+        -0.22
+      ],
+      "max": [
+        0.54,
+        1.48,
+        0.22
+      ]
+    },
+    "occupation_cloak_rail": {
+      "min": [
+        -0.64,
+        0.006,
+        -0.2
+      ],
+      "max": [
+        0.64,
+        1.589,
+        0.2
+      ]
+    },
+    "occupation_arrival_book": {
+      "min": [
+        -0.3,
+        0,
+        -0.15
+      ],
+      "max": [
+        0.282,
+        0.144,
+        0.15
+      ]
+    },
+    "occupation_umbrella_contents": {
+      "min": [
+        -0.105,
+        0.19,
+        -0.088
+      ],
+      "max": [
+        0.132,
+        0.997,
+        0.073
+      ]
+    },
+    "occupation_entry_mat": {
+      "min": [
+        -1.05,
+        0,
+        -0.5
+      ],
+      "max": [
+        1.05,
+        0.018,
+        0.5
+      ]
+    },
+    "occupation_desk_phone": {
+      "min": [
+        -0.148,
+        0.001,
+        -0.112
+      ],
+      "max": [
+        0.148,
+        0.135,
+        0.112
+      ]
+    },
+    "occupation_pigeonholes": {
+      "min": [
+        -0.54,
+        0,
+        -0.09
+      ],
+      "max": [
+        0.54,
+        0.56,
+        0.09
+      ]
+    },
+    "occupation_key_hooks": {
+      "min": [
+        -0.32,
+        0,
+        -0.045
+      ],
+      "max": [
+        0.32,
+        0.28,
+        0.041
+      ]
+    },
+    "occupation_wall_clock": {
+      "min": [
+        -0.17,
+        0,
+        -0.032
+      ],
+      "max": [
+        0.17,
+        0.34,
+        0.033
+      ]
+    },
+    "occupation_instrument_dolly": {
+      "min": [
+        -0.404,
+        0.002,
+        -0.301
+      ],
+      "max": [
+        0.4,
+        0.666,
+        0.301
+      ]
+    },
+    "occupation_case_cradle": {
+      "min": [
+        -0.53,
+        0.015,
+        -0.2
+      ],
+      "max": [
+        0.53,
+        1.19,
+        0.2
+      ]
+    },
+    "occupation_corner_guard": {
+      "min": [
+        -0.059,
+        0,
+        -0.028
+      ],
+      "max": [
+        0.058,
+        1.12,
+        0.029
+      ]
+    },
+    "occupation_vocal_mirror": {
+      "min": [
+        -0.27,
+        0,
+        -0.022
+      ],
+      "max": [
+        0.27,
+        1.34,
+        0.021
+      ]
+    },
+    "occupation_water_shelf": {
+      "min": [
+        -0.2,
+        0,
+        -0.09
+      ],
+      "max": [
+        0.2,
+        0.188,
+        0.09
+      ]
+    },
+    "occupation_theory_tools": {
+      "min": [
+        -0.15,
+        0,
+        -0.088
+      ],
+      "max": [
+        0.145,
+        0.042,
+        0.05
+      ]
+    },
+    "occupation_string_tools": {
+      "min": [
+        -0.105,
+        0,
+        -0.06
+      ],
+      "max": [
+        0.115,
+        0.048,
+        0.075
+      ]
+    },
+    "occupation_reed_tools": {
+      "min": [
+        -0.12,
+        0,
+        -0.075
+      ],
+      "max": [
+        0.086,
+        0.037,
+        0.081
+      ]
+    },
+    "occupation_caster_wear": {
+      "min": [
+        -0.687,
+        -0.001,
+        -0.2
+      ],
+      "max": [
+        0.785,
+        0.007,
+        0.145
+      ]
+    },
+    "occupation_refit_patch": {
+      "min": [
+        -0.32,
+        0,
+        -0.009
+      ],
+      "max": [
+        0.32,
+        1.02,
+        0.01
+      ]
+    },
+    "occupation_service_glands": {
+      "min": [
+        -0.27,
+        0.01,
+        -0.07
+      ],
+      "max": [
+        0.27,
+        1.1,
+        0.064
+      ]
+    },
+    "occupation_baths_rainwater_completion": {
+      "min": [
+        -1.02,
+        0.004,
+        -0.448
+      ],
+      "max": [
+        1.02,
+        7.196,
+        0.16
+      ]
+    },
+    "amenity_public_core_shell": {
+      "min": [
+        -3.509,
+        0,
+        -1.759
+      ],
+      "max": [
+        3.509,
+        3.5,
+        1.759
+      ]
+    },
+    "amenity_pool_wash_screens": {
+      "min": [
+        -1.285,
+        0,
+        -0.84
+      ],
+      "max": [
+        1.285,
+        2.237,
+        0.84
+      ]
+    },
+    "amenity_toilet": {
+      "min": [
+        -0.245,
+        0,
+        -0.375
+      ],
+      "max": [
+        0.263,
+        0.983,
+        0.37
+      ]
+    },
+    "amenity_washbasin": {
+      "min": [
+        -0.283,
+        0.486,
+        -0.218
+      ],
+      "max": [
+        0.283,
+        1.041,
+        0.218
+      ]
+    },
+    "amenity_mirror_soap": {
+      "min": [
+        -0.31,
+        -0.054,
+        -0.014
+      ],
+      "max": [
+        0.31,
+        0.81,
+        0.105
+      ]
+    },
+    "amenity_grab_rail": {
+      "min": [
+        -0.378,
+        0.432,
+        -0.017
+      ],
+      "max": [
+        0.378,
+        0.84,
+        0.077
+      ]
+    },
+    "amenity_paper_holder": {
+      "min": [
+        -0.095,
+        -0.083,
+        -0.009
+      ],
+      "max": [
+        0.095,
+        0.075,
+        0.098
+      ]
+    },
+    "amenity_hook_rail": {
+      "min": [
+        -0.36,
+        -0.045,
+        -0.013
+      ],
+      "max": [
+        0.36,
+        0.045,
+        0.102
+      ]
+    },
+    "amenity_floor_drain": {
+      "min": [
+        -0.12,
+        0,
+        -0.12
+      ],
+      "max": [
+        0.12,
+        0.024,
+        0.12
+      ]
+    },
+    "amenity_shower_column": {
+      "min": [
+        -0.085,
+        0,
+        -0.018
+      ],
+      "max": [
+        0.185,
+        2.14,
+        0.415
+      ]
+    },
+    "amenity_cleaner_cupboard": {
+      "min": [
+        -0.43,
+        0,
+        -0.24
+      ],
+      "max": [
+        0.475,
+        2.042,
+        0.45
+      ]
+    },
+    "amenity_staff_counter": {
+      "min": [
+        -1,
+        0,
+        -0.3
+      ],
+      "max": [
+        1,
+        1.33,
+        0.3
+      ]
+    },
+    "amenity_staff_service_connections": {
+      "min": [
+        -0.01,
+        0.07,
+        -0.328
+      ],
+      "max": [
+        0.52,
+        1.42,
+        0.81
+      ]
+    },
+    "amenity_public_drinking_fountain": {
+      "min": [
+        -0.28,
+        0.427,
+        -0.5
+      ],
+      "max": [
+        0.28,
+        1.22,
+        -0.057
+      ]
+    },
+    "amenity_staff_coat_lockers": {
+      "min": [
+        -0.7,
+        0.06,
+        -0.5
+      ],
+      "max": [
+        0.7,
+        1.98,
+        -0.096
+      ]
+    },
+    "building_window_chamber": {
+      "min": [
+        -2.465,
+        -0.09,
+        -1.07
+      ],
+      "max": [
+        2.465,
+        2.215,
+        0.263
+      ]
+    },
+    "building_window_faculty": {
+      "min": [
+        -1.965,
+        -0.09,
+        -1.07
+      ],
+      "max": [
+        1.965,
+        2.415,
+        0.263
+      ]
+    },
+    "building_window_foyer": {
+      "min": [
+        -2.465,
+        -0.09,
+        -1.07
+      ],
+      "max": [
+        2.465,
+        2.615,
+        0.263
+      ]
+    },
+    "building_window_baths": {
+      "min": [
+        -4.15,
+        -0.09,
+        -1.07
+      ],
+      "max": [
+        4.15,
+        3.48,
+        0.242
       ]
     },
     "academic_frieze": {
@@ -4304,11 +5656,11 @@
     "stair_sconce_pair_opal": {
       "min": [
         -1.56,
-        -0.385,
+        -0.2,
         -0.49
       ],
       "max": [
-        1.59,
+        1.56,
         0.39,
         0.17
       ]
@@ -4316,7 +5668,7 @@
     "stair_bulkhead_pair": {
       "min": [
         -1.59,
-        -0.395,
+        -0.299,
         -0.22
       ],
       "max": [
@@ -5073,7 +6425,7 @@
       "min": [
         -1.15,
         -0.29,
-        -0.072
+        -0.073
       ],
       "max": [
         1.15,
@@ -5085,7 +6437,7 @@
       "min": [
         -1.35,
         -0.43,
-        -0.072
+        -0.073
       ],
       "max": [
         1.35,
@@ -5385,7 +6737,7 @@
       "min": [
         -0.66,
         0.579,
-        -0.272
+        -0.248
       ],
       "max": [
         0.66,
@@ -5397,7 +6749,7 @@
       "min": [
         -0.67,
         0.579,
-        -0.272
+        -0.248
       ],
       "max": [
         0.67,
@@ -5409,7 +6761,7 @@
       "min": [
         -0.67,
         0.579,
-        -0.272
+        -0.248
       ],
       "max": [
         0.67,
@@ -5425,7 +6777,7 @@
       ],
       "max": [
         0.67,
-        1.336,
+        1.325,
         -0.083
       ]
     },
@@ -5437,20 +6789,20 @@
       ],
       "max": [
         0.67,
-        1.336,
+        1.325,
         -0.083
       ]
     },
     "vigil_part_banner": {
       "min": [
         -1.9,
-        0.05,
-        -0.283
+        0.035,
+        -0.317
       ],
       "max": [
         1.9,
         1.07,
-        -0.193
+        -0.245
       ]
     },
     "conservatory_west_elevation": {
@@ -5697,12 +7049,12 @@
       "min": [
         -0.93,
         0,
-        -0.127
+        -0.126
       ],
       "max": [
         0.93,
         2.44,
-        0.227
+        0.226
       ]
     },
     "yard_road": {
@@ -5821,6 +7173,18 @@
       ],
       "max": [
         1.45,
+        2.63,
+        2.5
+      ]
+    },
+    "city_bus_shelter_compact": {
+      "min": [
+        -0.7,
+        0,
+        -2.5
+      ],
+      "max": [
+        0.7,
         2.63,
         2.5
       ]
@@ -6931,14 +8295,14 @@
     },
     "baseboard_ground": {
       "min": [
-        -80,
-        -2,
-        -32
+        -114,
+        -3.05,
+        -31
       ],
       "max": [
-        114,
-        3.544,
-        120
+        80,
+        2.494,
+        121
       ]
     },
     "baseboard_hall": {
@@ -6979,13 +8343,13 @@
     },
     "baseboard_academic": {
       "min": [
-        -11.101,
+        -12.101,
         -1.213,
-        -35.031
+        -36.031
       ],
       "max": [
         34.899,
-        2.888,
+        3.938,
         4.469
       ]
     },
@@ -7073,54 +8437,6 @@
         0.15
       ]
     },
-    "lettering_overlay_tower-history-plaque": {
-      "min": [
-        -0.57,
-        0.105,
-        0.08
-      ],
-      "max": [
-        0.57,
-        0.655,
-        0.08
-      ]
-    },
-    "lettering_overlay_acq-foyer-armchair-01": {
-      "min": [
-        0.042,
-        0.392,
-        -0.358
-      ],
-      "max": [
-        0.102,
-        0.41,
-        -0.355
-      ]
-    },
-    "lettering_overlay_atrium-public-directory": {
-      "min": [
-        -0.515,
-        0.085,
-        -0.046
-      ],
-      "max": [
-        0.515,
-        0.815,
-        -0.046
-      ]
-    },
-    "lettering_overlay_plant-header-card": {
-      "min": [
-        -0.515,
-        0.085,
-        -0.046
-      ],
-      "max": [
-        0.515,
-        0.815,
-        -0.046
-      ]
-    },
     "lettering_overlay_yard-sign": {
       "min": [
         -0.88,
@@ -7131,78 +8447,6 @@
         0.88,
         2.39,
         0.076
-      ]
-    },
-    "lettering_overlay_tower-sign-belfry": {
-      "min": [
-        -0.57,
-        0.105,
-        0.08
-      ],
-      "max": [
-        0.57,
-        0.655,
-        0.08
-      ]
-    },
-    "lettering_overlay_exterior-hall-stone": {
-      "min": [
-        -0.52,
-        0.25,
-        -0.186
-      ],
-      "max": [
-        0.52,
-        0.71,
-        -0.186
-      ]
-    },
-    "door_stencil_b1": {
-      "min": [
-        -0.23,
-        0,
-        -0.018
-      ],
-      "max": [
-        0.23,
-        0.32,
-        -0.003
-      ]
-    },
-    "door_stencil_b2": {
-      "min": [
-        -0.23,
-        0,
-        -0.018
-      ],
-      "max": [
-        0.23,
-        0.32,
-        -0.003
-      ]
-    },
-    "door_stencil_b3": {
-      "min": [
-        -0.23,
-        0,
-        -0.018
-      ],
-      "max": [
-        0.23,
-        0.32,
-        -0.003
-      ]
-    },
-    "lettering_overlay_exterior-chapel-plaque": {
-      "min": [
-        -0.52,
-        0.25,
-        -0.186
-      ],
-      "max": [
-        0.52,
-        0.71,
-        -0.186
       ]
     },
     "lettering_overlay_exterior-foundation-stone": {
@@ -7217,6 +8461,318 @@
         -0.186
       ]
     },
+    "lettering_overlay_exterior-chapel-plaque": {
+      "min": [
+        -0.52,
+        0.25,
+        -0.186
+      ],
+      "max": [
+        0.52,
+        0.71,
+        -0.186
+      ]
+    },
+    "lettering_overlay_exterior-baths-mosaic": {
+      "min": [
+        -0.52,
+        0.25,
+        -0.186
+      ],
+      "max": [
+        0.52,
+        0.71,
+        -0.186
+      ]
+    },
+    "lettering_overlay_exterior-hall-stone": {
+      "min": [
+        -0.52,
+        0.25,
+        -0.186
+      ],
+      "max": [
+        0.52,
+        0.71,
+        -0.186
+      ]
+    },
+    "lettering_overlay_atrium-sign-main-exit": {
+      "min": [
+        -0.9,
+        0.185,
+        0.096
+      ],
+      "max": [
+        0.9,
+        0.435,
+        0.096
+      ]
+    },
+    "lettering_overlay_atrium-public-directory": {
+      "min": [
+        -0.515,
+        0.085,
+        -0.046
+      ],
+      "max": [
+        0.515,
+        0.815,
+        -0.046
+      ]
+    },
+    "lettering_overlay_hall-entrance-sign": {
+      "min": [
+        -1.075,
+        0.152,
+        0.096
+      ],
+      "max": [
+        1.075,
+        0.328,
+        0.096
+      ]
+    },
+    "lettering_overlay_chapel-stair-sign-nave": {
+      "min": [
+        -0.9,
+        0.185,
+        0.096
+      ],
+      "max": [
+        0.9,
+        0.435,
+        0.096
+      ]
+    },
+    "lettering_overlay_tower-sign-ringing": {
+      "min": [
+        -0.57,
+        0.105,
+        0.08
+      ],
+      "max": [
+        0.57,
+        0.655,
+        0.08
+      ]
+    },
+    "lettering_overlay_tower-sign-belfry": {
+      "min": [
+        -0.57,
+        0.105,
+        0.08
+      ],
+      "max": [
+        0.57,
+        0.655,
+        0.08
+      ]
+    },
+    "lettering_overlay_tower-sign-organ-exit": {
+      "min": [
+        -0.57,
+        0.105,
+        0.08
+      ],
+      "max": [
+        0.57,
+        0.655,
+        0.08
+      ]
+    },
+    "lettering_overlay_tower-sign-nave-exit": {
+      "min": [
+        -0.57,
+        0.105,
+        0.08
+      ],
+      "max": [
+        0.57,
+        0.655,
+        0.08
+      ]
+    },
+    "lettering_overlay_tower-history-plaque": {
+      "min": [
+        -0.57,
+        0.105,
+        0.08
+      ],
+      "max": [
+        0.57,
+        0.655,
+        0.08
+      ]
+    },
+    "lettering_overlay_tower-hammer-isolator": {
+      "min": [
+        -0.23,
+        1.327,
+        -0.315
+      ],
+      "max": [
+        0.14,
+        1.432,
+        -0.315
+      ]
+    },
+    "lettering_overlay_brendan-visitor-till": {
+      "min": [
+        -0.1,
+        0.258,
+        -0.13
+      ],
+      "max": [
+        0.1,
+        0.258,
+        -0.01
+      ]
+    },
+    "lettering_overlay_foyer-pew-1": {
+      "min": [
+        -1.04,
+        0.447,
+        0.241
+      ],
+      "max": [
+        -0.74,
+        0.513,
+        0.241
+      ]
+    },
+    "lettering_overlay_box-office-returns-tray": {
+      "min": [
+        -0.289,
+        0.022,
+        -0.07
+      ],
+      "max": [
+        -0.021,
+        0.022,
+        0.07
+      ]
+    },
+    "lettering_overlay_plant-header-card": {
+      "min": [
+        -0.515,
+        0.085,
+        -0.046
+      ],
+      "max": [
+        0.515,
+        0.815,
+        -0.046
+      ]
+    },
+    "lettering_overlay_acq-services-panel-pool": {
+      "min": [
+        -0.102,
+        0.153,
+        0.062
+      ],
+      "max": [
+        0.102,
+        0.213,
+        0.062
+      ]
+    },
+    "lettering_overlay_acq-services-panel-foh": {
+      "min": [
+        -0.102,
+        0.153,
+        0.062
+      ],
+      "max": [
+        0.102,
+        0.213,
+        0.062
+      ]
+    },
+    "lettering_overlay_acq-services-panel-practice": {
+      "min": [
+        -0.102,
+        0.153,
+        0.062
+      ],
+      "max": [
+        0.102,
+        0.213,
+        0.062
+      ]
+    },
+    "lettering_overlay_acq-services-panel-academic": {
+      "min": [
+        -0.102,
+        0.153,
+        0.062
+      ],
+      "max": [
+        0.102,
+        0.213,
+        0.062
+      ]
+    },
+    "lettering_overlay_acq-services-panel-plant": {
+      "min": [
+        -0.102,
+        0.153,
+        0.062
+      ],
+      "max": [
+        0.102,
+        0.213,
+        0.062
+      ]
+    },
+    "lettering_overlay_acq-foyer-sofa-01": {
+      "min": [
+        -0.016,
+        0.112,
+        0.28
+      ],
+      "max": [
+        0.016,
+        0.112,
+        0.298
+      ]
+    },
+    "lettering_overlay_deadend-ground-armchair": {
+      "min": [
+        0.042,
+        0.392,
+        -0.358
+      ],
+      "max": [
+        0.102,
+        0.41,
+        -0.355
+      ]
+    },
+    "lettering_overlay_acq-foyer-armchair-01": {
+      "min": [
+        0.042,
+        0.392,
+        -0.358
+      ],
+      "max": [
+        0.102,
+        0.41,
+        -0.355
+      ]
+    },
+    "lettering_overlay_acq-foyer-console-01": {
+      "min": [
+        -0.075,
+        0.903,
+        -0.015
+      ],
+      "max": [
+        0.075,
+        0.903,
+        0.015
+      ]
+    },
     "lettering_overlay_acq-foyer-horse-head": {
       "min": [
         -0.068,
@@ -7227,6 +8783,42 @@
         0.068,
         0.049,
         0.052
+      ]
+    },
+    "lettering_overlay_acq-hall-chesterfield-west": {
+      "min": [
+        -0.065,
+        0.127,
+        0.402
+      ],
+      "max": [
+        0.065,
+        0.163,
+        0.402
+      ]
+    },
+    "lettering_overlay_acq-practice-chair-1": {
+      "min": [
+        -0.126,
+        0.294,
+        0.288
+      ],
+      "max": [
+        -0.086,
+        0.296,
+        0.3
+      ]
+    },
+    "lettering_overlay_acq-practice-chair-2": {
+      "min": [
+        -0.126,
+        0.294,
+        0.288
+      ],
+      "max": [
+        -0.086,
+        0.296,
+        0.3
       ]
     },
     "lettering_overlay_acq-practice-chair-3": {
@@ -7265,234 +8857,6 @@
         0.3
       ]
     },
-    "lettering_overlay_acq-services-panel-academic": {
-      "min": [
-        -0.102,
-        0.153,
-        0.062
-      ],
-      "max": [
-        0.102,
-        0.213,
-        0.062
-      ]
-    },
-    "source_hall_number_17": {
-      "min": [
-        0,
-        -0.12,
-        -0.165
-      ],
-      "max": [
-        0,
-        0.12,
-        0.165
-      ]
-    },
-    "lettering_overlay_brendan-visitor-till": {
-      "min": [
-        -0.1,
-        0.258,
-        -0.13
-      ],
-      "max": [
-        0.1,
-        0.258,
-        -0.01
-      ]
-    },
-    "lettering_overlay_exterior-baths-mosaic": {
-      "min": [
-        -0.52,
-        0.25,
-        -0.186
-      ],
-      "max": [
-        0.52,
-        0.71,
-        -0.186
-      ]
-    },
-    "lettering_overlay_box-office-returns-tray": {
-      "min": [
-        -0.289,
-        0.022,
-        -0.07
-      ],
-      "max": [
-        -0.021,
-        0.022,
-        0.07
-      ]
-    },
-    "lettering_overlay_acq-foyer-sofa-01": {
-      "min": [
-        -0.016,
-        0.112,
-        0.28
-      ],
-      "max": [
-        0.016,
-        0.112,
-        0.298
-      ]
-    },
-    "lettering_overlay_deadend-ground-armchair": {
-      "min": [
-        0.042,
-        0.392,
-        -0.358
-      ],
-      "max": [
-        0.102,
-        0.41,
-        -0.355
-      ]
-    },
-    "lettering_overlay_acq-practice-chair-1": {
-      "min": [
-        -0.126,
-        0.294,
-        0.288
-      ],
-      "max": [
-        -0.086,
-        0.296,
-        0.3
-      ]
-    },
-    "lettering_overlay_acq-practice-chair-2": {
-      "min": [
-        -0.126,
-        0.294,
-        0.288
-      ],
-      "max": [
-        -0.086,
-        0.296,
-        0.3
-      ]
-    },
-    "lettering_overlay_tower-hammer-isolator": {
-      "min": [
-        -0.23,
-        1.327,
-        -0.315
-      ],
-      "max": [
-        0.14,
-        1.432,
-        -0.315
-      ]
-    },
-    "lettering_overlay_tower-sign-nave-exit": {
-      "min": [
-        -0.57,
-        0.105,
-        0.08
-      ],
-      "max": [
-        0.57,
-        0.655,
-        0.08
-      ]
-    },
-    "lettering_overlay_tower-sign-organ-exit": {
-      "min": [
-        -0.57,
-        0.105,
-        0.08
-      ],
-      "max": [
-        0.57,
-        0.655,
-        0.08
-      ]
-    },
-    "lettering_overlay_tower-sign-ringing": {
-      "min": [
-        -0.57,
-        0.105,
-        0.08
-      ],
-      "max": [
-        0.57,
-        0.655,
-        0.08
-      ]
-    },
-    "lettering_overlay_acq-hall-chesterfield-west": {
-      "min": [
-        -0.065,
-        0.127,
-        0.402
-      ],
-      "max": [
-        0.065,
-        0.163,
-        0.402
-      ]
-    },
-    "door_stencil_b5": {
-      "min": [
-        -0.23,
-        0,
-        -0.018
-      ],
-      "max": [
-        0.23,
-        0.32,
-        -0.003
-      ]
-    },
-    "lettering_overlay_acq-services-panel-pool": {
-      "min": [
-        -0.102,
-        0.153,
-        0.062
-      ],
-      "max": [
-        0.102,
-        0.213,
-        0.062
-      ]
-    },
-    "lettering_overlay_acq-services-panel-practice": {
-      "min": [
-        -0.102,
-        0.153,
-        0.062
-      ],
-      "max": [
-        0.102,
-        0.213,
-        0.062
-      ]
-    },
-    "lettering_overlay_foyer-pew-1": {
-      "min": [
-        -1.04,
-        0.447,
-        0.241
-      ],
-      "max": [
-        -0.74,
-        0.513,
-        0.241
-      ]
-    },
-    "lettering_overlay_acq-foyer-console-01": {
-      "min": [
-        -0.075,
-        0.903,
-        -0.015
-      ],
-      "max": [
-        0.075,
-        0.903,
-        0.015
-      ]
-    },
     "lettering_overlay_acq-practice-chair-6": {
       "min": [
         -0.126,
@@ -7529,75 +8893,327 @@
         0.3
       ]
     },
-    "lettering_overlay_acq-services-panel-foh": {
+    "lettering_overlay_plate-store-corridor": {
       "min": [
-        -0.102,
-        0.153,
-        0.062
+        -0.22,
+        0.018,
+        -0.018
       ],
       "max": [
-        0.102,
-        0.213,
-        0.062
+        0.22,
+        0.302,
+        -0.018
       ]
     },
-    "lettering_overlay_acq-services-panel-plant": {
+    "lettering_overlay_plate-spur-substation": {
       "min": [
-        -0.102,
-        0.153,
-        0.062
+        -0.22,
+        0.018,
+        -0.018
       ],
       "max": [
-        0.102,
-        0.213,
-        0.062
+        0.22,
+        0.302,
+        -0.018
       ]
     },
-    "lettering_overlay_atrium-sign-main-exit": {
+    "lettering_overlay_plate-spur-tank": {
       "min": [
-        -0.9,
-        0.185,
-        0.096
+        -0.22,
+        0.018,
+        -0.018
       ],
       "max": [
-        0.9,
-        0.435,
-        0.096
+        0.22,
+        0.302,
+        -0.018
       ]
     },
-    "lettering_overlay_chapel-stair-sign-nave": {
+    "lettering_overlay_plate-practice-west-1": {
       "min": [
-        -0.9,
-        0.185,
-        0.096
+        -0.22,
+        0.018,
+        -0.018
       ],
       "max": [
-        0.9,
-        0.435,
-        0.096
+        0.22,
+        0.302,
+        -0.018
       ]
     },
-    "lettering_overlay_hall-entrance-sign": {
+    "lettering_overlay_plate-practice-east-1": {
       "min": [
-        -1.075,
-        0.152,
-        0.096
+        -0.22,
+        0.018,
+        -0.018
       ],
       "max": [
-        1.075,
-        0.328,
-        0.096
+        0.22,
+        0.302,
+        -0.018
+      ]
+    },
+    "lettering_overlay_plate-practice-west-2": {
+      "min": [
+        -0.22,
+        0.018,
+        -0.018
+      ],
+      "max": [
+        0.22,
+        0.302,
+        -0.018
+      ]
+    },
+    "lettering_overlay_plate-practice-east-2": {
+      "min": [
+        -0.22,
+        0.018,
+        -0.018
+      ],
+      "max": [
+        0.22,
+        0.302,
+        -0.018
+      ]
+    },
+    "lettering_overlay_plate-practice-west-3": {
+      "min": [
+        -0.22,
+        0.018,
+        -0.018
+      ],
+      "max": [
+        0.22,
+        0.302,
+        -0.018
+      ]
+    },
+    "lettering_overlay_plate-practice-east-3": {
+      "min": [
+        -0.22,
+        0.018,
+        -0.018
+      ],
+      "max": [
+        0.22,
+        0.302,
+        -0.018
+      ]
+    },
+    "lettering_overlay_plate-practice-west-4": {
+      "min": [
+        -0.22,
+        0.018,
+        -0.018
+      ],
+      "max": [
+        0.22,
+        0.302,
+        -0.018
+      ]
+    },
+    "lettering_overlay_plate-practice-east-4": {
+      "min": [
+        -0.22,
+        0.018,
+        -0.018
+      ],
+      "max": [
+        0.22,
+        0.302,
+        -0.018
+      ]
+    },
+    "lettering_overlay_plate-academic-studio-2": {
+      "min": [
+        -0.22,
+        0.018,
+        -0.018
+      ],
+      "max": [
+        0.22,
+        0.302,
+        -0.018
+      ]
+    },
+    "lettering_overlay_plate-academic-store": {
+      "min": [
+        -0.22,
+        0.018,
+        -0.018
+      ],
+      "max": [
+        0.22,
+        0.302,
+        -0.018
+      ]
+    },
+    "lettering_overlay_plate-academic-studio-3": {
+      "min": [
+        -0.22,
+        0.018,
+        -0.018
+      ],
+      "max": [
+        0.22,
+        0.302,
+        -0.018
+      ]
+    },
+    "lettering_overlay_plate-academic-studio-4": {
+      "min": [
+        -0.22,
+        0.018,
+        -0.018
+      ],
+      "max": [
+        0.22,
+        0.302,
+        -0.018
+      ]
+    },
+    "lettering_overlay_plate-academic-office-locked-1": {
+      "min": [
+        -0.22,
+        0.018,
+        -0.018
+      ],
+      "max": [
+        0.22,
+        0.302,
+        -0.018
+      ]
+    },
+    "lettering_overlay_plate-academic-office-locked-2": {
+      "min": [
+        -0.22,
+        0.018,
+        -0.018
+      ],
+      "max": [
+        0.22,
+        0.302,
+        -0.018
+      ]
+    },
+    "lettering_overlay_landing-ground-landing": {
+      "min": [
+        -1.14,
+        -0.17,
+        -0.053
+      ],
+      "max": [
+        1.14,
+        0.09,
+        -0.053
+      ]
+    },
+    "lettering_overlay_landing-b3-landing": {
+      "min": [
+        -1.14,
+        -0.17,
+        -0.053
+      ],
+      "max": [
+        1.14,
+        0.09,
+        -0.053
+      ]
+    },
+    "lettering_overlay_landing-upper-floor-landing": {
+      "min": [
+        -1.14,
+        -0.17,
+        -0.053
+      ],
+      "max": [
+        1.14,
+        0.09,
+        -0.053
+      ]
+    },
+    "lettering_overlay_landing-academic-floor-landing": {
+      "min": [
+        -1.14,
+        -0.17,
+        -0.053
+      ],
+      "max": [
+        1.14,
+        0.09,
+        -0.053
+      ]
+    },
+    "building_dressing_batch_basement": {
+      "min": [
+        -0.98,
+        0,
+        -2.85
+      ],
+      "max": [
+        47.52,
+        4.15,
+        30.15
+      ]
+    },
+    "building_dressing_batch_ground": {
+      "min": [
+        -79.1,
+        -0.949,
+        -4.57
+      ],
+      "max": [
+        8.9,
+        16.051,
+        80.5
+      ]
+    },
+    "building_dressing_batch_academic": {
+      "min": [
+        -12.07,
+        -1.36,
+        -33.72
+      ],
+      "max": [
+        35,
+        5.64,
+        6.35
+      ]
+    },
+    "building_dressing_batch_upper": {
+      "min": [
+        -14.15,
+        0,
+        -14.35
+      ],
+      "max": [
+        34.185,
+        13,
+        35.65
+      ]
+    },
+    "building_dressing_batch_hall": {
+      "min": [
+        -18.98,
+        0.065,
+        0
+      ],
+      "max": [
+        14,
+        17,
+        36
       ]
     }
   },
   "baseboards": {
-    "planHash": "f4541699f2e230cd480f2f7b2e23ca8cfdebe3c1ebaacdee04e32ebc6de176c1",
+    "planHash": "10cf69c5e84a6d024a81a38e97bccd222aa7d69576543ec949c4fbcffdcb09a0",
     "groups": {
       "ground": {
         "mesh": "baseboard_ground",
         "anchor": {
-          "x": 100,
-          "y": 8
+          "x": 168,
+          "y": 6
         }
       },
       "hall": {
@@ -7647,6 +9263,693 @@
         "anchor": {
           "x": 380,
           "y": 540
+        }
+      }
+    }
+  },
+  "buildingDressingBatches": {
+    "version": 1,
+    "groups": {
+      "basement": {
+        "mesh": "building_dressing_batch_basement",
+        "anchor": [
+          1.48,
+          -4.349999904632568,
+          8.85
+        ],
+        "count": 193,
+        "poseDigest": "cf06e390",
+        "materialCount": 20,
+        "triangles": 28024,
+        "bounds": {
+          "min": [
+            -0.9800000000000002,
+            0,
+            -2.8499999999999996
+          ],
+          "max": [
+            47.52,
+            4.149999901652336,
+            30.15
+          ]
+        },
+        "sources": {
+          "occupation_cleaning_cupboard": {
+            "count": 1,
+            "trianglesPerInstance": 732
+          },
+          "occupation_maintenance_shelf": {
+            "count": 2,
+            "trianglesPerInstance": 1224
+          },
+          "occupation_key_hooks": {
+            "count": 1,
+            "trianglesPerInstance": 588
+          },
+          "occupation_corner_guard": {
+            "count": 1,
+            "trianglesPerInstance": 216
+          },
+          "occupation_refit_patch": {
+            "count": 1,
+            "trianglesPerInstance": 304
+          },
+          "arch_rubbing_strip_service": {
+            "count": 24,
+            "trianglesPerInstance": 24
+          },
+          "arch_dado_staff": {
+            "count": 46,
+            "trianglesPerInstance": 24
+          },
+          "arch_coving_staff": {
+            "count": 46,
+            "trianglesPerInstance": 24
+          },
+          "arch_switch_staff": {
+            "count": 5,
+            "trianglesPerInstance": 156
+          },
+          "arch_socket_staff": {
+            "count": 9,
+            "trianglesPerInstance": 228
+          },
+          "arch_fire_callpoint": {
+            "count": 1,
+            "trianglesPerInstance": 192
+          },
+          "arch_alarm_sounder": {
+            "count": 1,
+            "trianglesPerInstance": 228
+          },
+          "arch_vent_grille": {
+            "count": 9,
+            "trianglesPerInstance": 468
+          },
+          "arch_wall_wear_staff": {
+            "count": 5,
+            "trianglesPerInstance": 60
+          },
+          "arch_switch_service": {
+            "count": 4,
+            "trianglesPerInstance": 216
+          },
+          "arch_socket_service": {
+            "count": 8,
+            "trianglesPerInstance": 228
+          },
+          "arch_smoke_detector": {
+            "count": 8,
+            "trianglesPerInstance": 348
+          },
+          "arch_access_hatch": {
+            "count": 4,
+            "trianglesPerInstance": 192
+          },
+          "arch_wall_repair_service": {
+            "count": 4,
+            "trianglesPerInstance": 84
+          },
+          "arch_radiator_staff": {
+            "count": 4,
+            "trianglesPerInstance": 1572
+          },
+          "arch_threshold_service": {
+            "count": 6,
+            "trianglesPerInstance": 36
+          },
+          "arch_threshold_staff": {
+            "count": 3,
+            "trianglesPerInstance": 36
+          }
+        }
+      },
+      "ground": {
+        "mesh": "building_dressing_batch_ground",
+        "anchor": [
+          88.1,
+          0.949,
+          4.5
+        ],
+        "count": 204,
+        "poseDigest": "e806becb",
+        "materialCount": 38,
+        "triangles": 33148,
+        "bounds": {
+          "min": [
+            -79.1,
+            -0.949,
+            -4.57
+          ],
+          "max": [
+            8.900000000000006,
+            16.051,
+            80.5
+          ]
+        },
+        "sources": {
+          "occupation_arrival_book": {
+            "count": 1,
+            "trianglesPerInstance": 616
+          },
+          "occupation_umbrella_contents": {
+            "count": 1,
+            "trianglesPerInstance": 780
+          },
+          "occupation_entry_mat": {
+            "count": 1,
+            "trianglesPerInstance": 276
+          },
+          "occupation_cloak_rail": {
+            "count": 1,
+            "trianglesPerInstance": 780
+          },
+          "occupation_desk_phone": {
+            "count": 1,
+            "trianglesPerInstance": 672
+          },
+          "occupation_pigeonholes": {
+            "count": 1,
+            "trianglesPerInstance": 180
+          },
+          "occupation_wall_clock": {
+            "count": 1,
+            "trianglesPerInstance": 1128
+          },
+          "occupation_service_glands": {
+            "count": 1,
+            "trianglesPerInstance": 400
+          },
+          "occupation_baths_rainwater_completion": {
+            "count": 1,
+            "trianglesPerInstance": 952
+          },
+          "amenity_public_core_shell": {
+            "count": 1,
+            "trianglesPerInstance": 1296
+          },
+          "arch_smoke_detector": {
+            "count": 6,
+            "trianglesPerInstance": 348
+          },
+          "amenity_pool_wash_screens": {
+            "count": 1,
+            "trianglesPerInstance": 320
+          },
+          "amenity_toilet": {
+            "count": 2,
+            "trianglesPerInstance": 332
+          },
+          "amenity_washbasin": {
+            "count": 3,
+            "trianglesPerInstance": 328
+          },
+          "amenity_mirror_soap": {
+            "count": 3,
+            "trianglesPerInstance": 96
+          },
+          "amenity_grab_rail": {
+            "count": 1,
+            "trianglesPerInstance": 72
+          },
+          "amenity_paper_holder": {
+            "count": 2,
+            "trianglesPerInstance": 60
+          },
+          "amenity_hook_rail": {
+            "count": 3,
+            "trianglesPerInstance": 84
+          },
+          "amenity_floor_drain": {
+            "count": 4,
+            "trianglesPerInstance": 84
+          },
+          "amenity_cleaner_cupboard": {
+            "count": 1,
+            "trianglesPerInstance": 620
+          },
+          "amenity_shower_column": {
+            "count": 2,
+            "trianglesPerInstance": 304
+          },
+          "amenity_public_drinking_fountain": {
+            "count": 1,
+            "trianglesPerInstance": 252
+          },
+          "building_window_chamber": {
+            "count": 1,
+            "trianglesPerInstance": 1284
+          },
+          "building_window_faculty": {
+            "count": 1,
+            "trianglesPerInstance": 1284
+          },
+          "building_window_foyer": {
+            "count": 1,
+            "trianglesPerInstance": 1284
+          },
+          "building_window_baths": {
+            "count": 1,
+            "trianglesPerInstance": 852
+          },
+          "arch_rubbing_strip_service": {
+            "count": 6,
+            "trianglesPerInstance": 24
+          },
+          "arch_dado_public": {
+            "count": 19,
+            "trianglesPerInstance": 72
+          },
+          "arch_coving_public": {
+            "count": 18,
+            "trianglesPerInstance": 48
+          },
+          "arch_dado_staff": {
+            "count": 37,
+            "trianglesPerInstance": 24
+          },
+          "arch_coving_staff": {
+            "count": 37,
+            "trianglesPerInstance": 24
+          },
+          "arch_dado_public_fountain_clearance": {
+            "count": 1,
+            "trianglesPerInstance": 36
+          },
+          "arch_switch_service": {
+            "count": 2,
+            "trianglesPerInstance": 216
+          },
+          "arch_socket_service": {
+            "count": 4,
+            "trianglesPerInstance": 228
+          },
+          "arch_vent_grille": {
+            "count": 5,
+            "trianglesPerInstance": 468
+          },
+          "arch_access_hatch": {
+            "count": 1,
+            "trianglesPerInstance": 192
+          },
+          "arch_wall_repair_service": {
+            "count": 1,
+            "trianglesPerInstance": 84
+          },
+          "arch_switch_public": {
+            "count": 1,
+            "trianglesPerInstance": 156
+          },
+          "arch_socket_public": {
+            "count": 2,
+            "trianglesPerInstance": 228
+          },
+          "arch_fire_callpoint": {
+            "count": 3,
+            "trianglesPerInstance": 192
+          },
+          "arch_alarm_sounder": {
+            "count": 3,
+            "trianglesPerInstance": 228
+          },
+          "arch_radiator_public": {
+            "count": 1,
+            "trianglesPerInstance": 1572
+          },
+          "arch_wall_wear_public": {
+            "count": 2,
+            "trianglesPerInstance": 60
+          },
+          "arch_switch_staff": {
+            "count": 2,
+            "trianglesPerInstance": 156
+          },
+          "arch_socket_staff": {
+            "count": 3,
+            "trianglesPerInstance": 228
+          },
+          "arch_radiator_staff": {
+            "count": 1,
+            "trianglesPerInstance": 1572
+          },
+          "arch_wall_wear_staff": {
+            "count": 2,
+            "trianglesPerInstance": 60
+          },
+          "arch_threshold_public": {
+            "count": 4,
+            "trianglesPerInstance": 36
+          },
+          "arch_threshold_service": {
+            "count": 4,
+            "trianglesPerInstance": 36
+          },
+          "arch_threshold_staff": {
+            "count": 2,
+            "trianglesPerInstance": 36
+          }
+        }
+      },
+      "academic": {
+        "mesh": "building_dressing_batch_academic",
+        "anchor": [
+          62,
+          11.36,
+          33.64999999999998
+        ],
+        "count": 321,
+        "poseDigest": "32474345",
+        "materialCount": 36,
+        "triangles": 63896,
+        "bounds": {
+          "min": [
+            -12.07,
+            -1.3599999999999994,
+            -33.71999999999998
+          ],
+          "max": [
+            35,
+            5.640000000000001,
+            6.350000000000023
+          ]
+        },
+        "sources": {
+          "occupation_desk_phone": {
+            "count": 3,
+            "trianglesPerInstance": 672
+          },
+          "occupation_pigeonholes": {
+            "count": 1,
+            "trianglesPerInstance": 180
+          },
+          "occupation_wall_clock": {
+            "count": 1,
+            "trianglesPerInstance": 1128
+          },
+          "occupation_vocal_mirror": {
+            "count": 1,
+            "trianglesPerInstance": 72
+          },
+          "occupation_water_shelf": {
+            "count": 1,
+            "trianglesPerInstance": 240
+          },
+          "occupation_theory_tools": {
+            "count": 1,
+            "trianglesPerInstance": 72
+          },
+          "occupation_refit_patch": {
+            "count": 1,
+            "trianglesPerInstance": 304
+          },
+          "amenity_staff_counter": {
+            "count": 1,
+            "trianglesPerInstance": 892
+          },
+          "amenity_staff_service_connections": {
+            "count": 1,
+            "trianglesPerInstance": 240
+          },
+          "amenity_staff_coat_lockers": {
+            "count": 1,
+            "trianglesPerInstance": 264
+          },
+          "building_window_chamber": {
+            "count": 1,
+            "trianglesPerInstance": 1284
+          },
+          "building_window_faculty": {
+            "count": 1,
+            "trianglesPerInstance": 1284
+          },
+          "arch_dado_public": {
+            "count": 33,
+            "trianglesPerInstance": 72
+          },
+          "arch_coving_public": {
+            "count": 33,
+            "trianglesPerInstance": 48
+          },
+          "arch_dado_staff": {
+            "count": 56,
+            "trianglesPerInstance": 24
+          },
+          "arch_coving_staff": {
+            "count": 56,
+            "trianglesPerInstance": 24
+          },
+          "arch_switch_public": {
+            "count": 7,
+            "trianglesPerInstance": 156
+          },
+          "arch_socket_public": {
+            "count": 14,
+            "trianglesPerInstance": 228
+          },
+          "arch_smoke_detector": {
+            "count": 15,
+            "trianglesPerInstance": 348
+          },
+          "arch_fire_callpoint": {
+            "count": 5,
+            "trianglesPerInstance": 192
+          },
+          "arch_alarm_sounder": {
+            "count": 5,
+            "trianglesPerInstance": 228
+          },
+          "arch_radiator_public": {
+            "count": 7,
+            "trianglesPerInstance": 1572
+          },
+          "arch_vent_grille": {
+            "count": 16,
+            "trianglesPerInstance": 468
+          },
+          "arch_wall_wear_public": {
+            "count": 7,
+            "trianglesPerInstance": 60
+          },
+          "arch_switch_staff": {
+            "count": 9,
+            "trianglesPerInstance": 156
+          },
+          "arch_socket_staff": {
+            "count": 17,
+            "trianglesPerInstance": 228
+          },
+          "arch_wall_wear_staff": {
+            "count": 9,
+            "trianglesPerInstance": 60
+          },
+          "arch_radiator_staff": {
+            "count": 8,
+            "trianglesPerInstance": 1572
+          },
+          "arch_threshold_staff": {
+            "count": 10,
+            "trianglesPerInstance": 36
+          }
+        }
+      },
+      "upper": {
+        "mesh": "building_dressing_batch_upper",
+        "anchor": [
+          66.15,
+          4.800000190734863,
+          47.85
+        ],
+        "count": 280,
+        "poseDigest": "561e6d6c",
+        "materialCount": 17,
+        "triangles": 42234,
+        "bounds": {
+          "min": [
+            -14.150000000000006,
+            -0.0004999999999997229,
+            -14.350000000000001
+          ],
+          "max": [
+            34.18499999999999,
+            12.999999046325684,
+            35.65
+          ]
+        },
+        "sources": {
+          "occupation_case_cradle": {
+            "count": 1,
+            "trianglesPerInstance": 968
+          },
+          "occupation_instrument_dolly": {
+            "count": 1,
+            "trianglesPerInstance": 856
+          },
+          "occupation_corner_guard": {
+            "count": 1,
+            "trianglesPerInstance": 216
+          },
+          "occupation_string_tools": {
+            "count": 1,
+            "trianglesPerInstance": 138
+          },
+          "occupation_reed_tools": {
+            "count": 1,
+            "trianglesPerInstance": 132
+          },
+          "occupation_caster_wear": {
+            "count": 1,
+            "trianglesPerInstance": 696
+          },
+          "arch_dado_staff": {
+            "count": 68,
+            "trianglesPerInstance": 24
+          },
+          "arch_coving_staff": {
+            "count": 68,
+            "trianglesPerInstance": 24
+          },
+          "arch_dado_public": {
+            "count": 23,
+            "trianglesPerInstance": 72
+          },
+          "arch_coving_public": {
+            "count": 23,
+            "trianglesPerInstance": 48
+          },
+          "arch_switch_staff": {
+            "count": 9,
+            "trianglesPerInstance": 156
+          },
+          "arch_socket_staff": {
+            "count": 17,
+            "trianglesPerInstance": 228
+          },
+          "arch_fire_callpoint": {
+            "count": 3,
+            "trianglesPerInstance": 192
+          },
+          "arch_alarm_sounder": {
+            "count": 3,
+            "trianglesPerInstance": 228
+          },
+          "arch_vent_grille": {
+            "count": 11,
+            "trianglesPerInstance": 468
+          },
+          "arch_wall_wear_staff": {
+            "count": 9,
+            "trianglesPerInstance": 60
+          },
+          "arch_smoke_detector": {
+            "count": 10,
+            "trianglesPerInstance": 348
+          },
+          "arch_radiator_staff": {
+            "count": 8,
+            "trianglesPerInstance": 1572
+          },
+          "arch_switch_public": {
+            "count": 2,
+            "trianglesPerInstance": 156
+          },
+          "arch_socket_public": {
+            "count": 4,
+            "trianglesPerInstance": 228
+          },
+          "arch_radiator_public": {
+            "count": 2,
+            "trianglesPerInstance": 1572
+          },
+          "arch_wall_wear_public": {
+            "count": 2,
+            "trianglesPerInstance": 60
+          },
+          "arch_threshold_service": {
+            "count": 2,
+            "trianglesPerInstance": 36
+          },
+          "arch_threshold_public": {
+            "count": 1,
+            "trianglesPerInstance": 36
+          },
+          "arch_threshold_staff": {
+            "count": 9,
+            "trianglesPerInstance": 36
+          }
+        }
+      },
+      "hall": {
+        "mesh": "building_dressing_batch_hall",
+        "anchor": [
+          113,
+          -1.5,
+          5
+        ],
+        "count": 112,
+        "poseDigest": "314eebef",
+        "materialCount": 8,
+        "triangles": 9588,
+        "bounds": {
+          "min": [
+            -18.980000000000004,
+            0.06499999999999995,
+            0
+          ],
+          "max": [
+            14,
+            17,
+            36
+          ]
+        },
+        "sources": {
+          "arch_dado_public": {
+            "count": 50,
+            "trianglesPerInstance": 72
+          },
+          "arch_coving_public": {
+            "count": 50,
+            "trianglesPerInstance": 48
+          },
+          "arch_switch_public": {
+            "count": 1,
+            "trianglesPerInstance": 156
+          },
+          "arch_socket_public": {
+            "count": 2,
+            "trianglesPerInstance": 228
+          },
+          "arch_smoke_detector": {
+            "count": 1,
+            "trianglesPerInstance": 348
+          },
+          "arch_fire_callpoint": {
+            "count": 1,
+            "trianglesPerInstance": 192
+          },
+          "arch_alarm_sounder": {
+            "count": 1,
+            "trianglesPerInstance": 228
+          },
+          "arch_radiator_public": {
+            "count": 1,
+            "trianglesPerInstance": 1572
+          },
+          "arch_vent_grille": {
+            "count": 1,
+            "trianglesPerInstance": 468
+          },
+          "arch_wall_wear_public": {
+            "count": 1,
+            "trianglesPerInstance": 60
+          },
+          "arch_threshold_service": {
+            "count": 2,
+            "trianglesPerInstance": 36
+          },
+          "arch_threshold_public": {
+            "count": 1,
+            "trianglesPerInstance": 36
+          }
         }
       }
     }
@@ -7733,16 +10036,49 @@
     "atrium_waiting_rug": 0.05,
     "academic_skylight": 6.75,
     "academic_roof_structure": 0,
+    "academic_roof_watcher_hound": 0.13,
     "academic_roof_glazing": 0,
     "academic_roof_service_stair": -9.96,
     "academic_roof_gate": 2.18,
     "academic_roof_service_ladder": 7.38,
     "academic_roof_seat": 0.02,
+    "academic_roof_city_seat": 0.41,
     "academic_roof_school_bell": 0.32,
     "academic_roof_listening_vent": 0.76,
     "academic_roof_guarantor_marks": 1.42,
     "academic_roof_rehearsal_rest": 0.38,
     "academic_roof_weatherwork": 0,
+    "exterior_garden_hardscape": 0.07,
+    "exterior_garden_planting": 0.03,
+    "exterior_arrival_planting": 0.03,
+    "arch_coving_public": 0.05,
+    "arch_coving_staff": 0.05,
+    "arch_threshold_public": 0.01,
+    "arch_threshold_staff": 0.01,
+    "arch_threshold_service": 0.01,
+    "occupation_cleaning_cupboard": 1.82,
+    "occupation_maintenance_shelf": 0.57,
+    "occupation_arrival_book": 0.03,
+    "occupation_entry_mat": 0.01,
+    "occupation_desk_phone": 0.07,
+    "occupation_pigeonholes": 0.56,
+    "occupation_instrument_dolly": 0.22,
+    "occupation_water_shelf": 0.04,
+    "occupation_baths_rainwater_completion": 0.03,
+    "amenity_public_core_shell": 3.5,
+    "amenity_pool_wash_screens": 2.24,
+    "amenity_toilet": 0.45,
+    "amenity_washbasin": 0.88,
+    "amenity_floor_drain": 0.02,
+    "amenity_cleaner_cupboard": 2.04,
+    "amenity_staff_counter": 0.94,
+    "amenity_staff_service_connections": 0.95,
+    "amenity_public_drinking_fountain": 0.93,
+    "amenity_staff_coat_lockers": 1.98,
+    "building_window_chamber": 0,
+    "building_window_faculty": 0,
+    "building_window_foyer": 0,
+    "building_window_baths": 0,
     "academic_frieze": 0.84,
     "academic_bust_plinth": 0.16,
     "academic_bust_fragment": 0.38,
@@ -7861,12 +10197,6 @@
     "vigil_figure_pamphlets_b": 0.04,
     "vigil_figure_camera_a": 0.04,
     "vigil_figure_camera_b": 0.04,
-    "vigil_part_sign_save": 2.2,
-    "vigil_part_sign_strike": 2.2,
-    "vigil_part_sign_chapel": 2.2,
-    "vigil_part_sign_record": 1.34,
-    "vigil_part_sign_signed": 1.34,
-    "vigil_part_banner": 1.07,
     "conservatory_west_elevation": 8.4,
     "conservatory_stair_window": 1.04,
     "yard_booth": 0.2,
@@ -7898,6 +10228,7 @@
     "yard_van_lamp": 0.1,
     "yard_look_bench": 0.61,
     "city_bus_shelter": 2.63,
+    "city_bus_shelter_compact": 2.63,
     "city_phone_box": 2.51,
     "city_phone_box_apparatus": 1.69,
     "door_threshold_slab": 0.1,
@@ -7957,7 +10288,7 @@
     "outskirts_bus_woman": 0.02,
     "outskirts_guard": 0.02,
     "outskirts_stranger": 0.02,
-    "baseboard_ground": 0.12,
+    "baseboard_ground": -0.93,
     "baseboard_hall": 9.11,
     "baseboard_basement": 0.12,
     "baseboard_upper": 0.29,
@@ -7967,9 +10298,23 @@
     "baseboard_academicRoof": 0.12
   },
   "lettering": {
-    "surfaces": 89,
-    "pages": 9,
-    "textureBaseLevelBytes": 41631744,
-    "atlasInputSha256": "b9b9671c482134fd6f110f4329e36a2f6220a00d77b85b84485fe6092fe21ddd"
+    "surfaces": 110,
+    "pages": 10,
+    "textureBaseLevelBytes": 41333088,
+    "atlasInputSha256": "9d06e30c747ac629fd925b1489aae216a8fa2e63fac4f47da680ab0446e31c44",
+    "carrierAssemblies": {
+      "meshes": 24,
+      "members": 127,
+      "sharedFinishFamilies": [
+        "timber-frame",
+        "paper-stock",
+        "brass-plate",
+        "enamel",
+        "mineral-carrier",
+        "painted-card",
+        "cloth-reverse"
+      ],
+      "textureBaseLevelBytes": 1376256
+    }
   }
 }

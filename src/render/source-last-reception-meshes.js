@@ -3,12 +3,13 @@
 // with the native foyer furniture and the residents, rather than a screen layer.
 import { sourceReceptionGeometry } from '../data/source-last-reception.js';
 import { dividePieceBounds } from './source-divide-meshes.js';
-import { sourcePrintTexture, sourcePrintUV, SOURCE_PRINT_SURFACE } from './physical-source-print.js';
+import { sourcePrintMaps, sourcePrintUV, SOURCE_PRINT_SURFACE } from './physical-source-print.js';
+import { PROP_INSTANCE_FLOATS, PROP_INSTANCE_BINDINGS } from './prop-instance-layout.js';
 
 export function receptionMeshName(id) { return `source-reception-${id}`; }
 
 function materialTexture(gl, material) {
-  if(material==='source')return sourcePrintTexture(gl,'reception');
+  if(material==='source')return sourcePrintMaps(gl,'reception').texture;
   const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 512;
   const c = canvas.getContext('2d');
   c.fillStyle = material === 'source' ? '#d7decf' : material === 'wood' ? '#b2a18c' : '#c7c9bd';
@@ -51,7 +52,7 @@ export function installReceptionMeshes(gl, pack) {
   if (!gl || !pack?.catalog) return [];
   const geometry = sourceReceptionGeometry(), names = geometry.map(piece => receptionMeshName(piece.id));
   if (names.every(name => pack.catalog.has(name))) return names;
-  const textures = new Map();
+  const sourceMaps=sourcePrintMaps(gl,'reception'),textures = new Map();
   const textureFor = material => {
     const key = material === 'source' ? 'source' : material === 'wood' ? 'wood' : 'plaster';
     if (!textures.has(key)) textures.set(key, materialTexture(gl, key));
@@ -81,14 +82,19 @@ export function installReceptionMeshes(gl, pack) {
     bind(0, positions, 3); bind(1, normals, 3); bind(2, uvs, 2);
     const indices = Uint32Array.from({ length: positions.length / 3 }, (_, i) => i);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl.createBuffer()); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
-    gl.bindBuffer(gl.ARRAY_BUFFER, instanceBuffer); const stride = 29 * 4;
-    for (const [location, size, offset] of [[3,4,0],[4,4,4],[5,4,8],[6,4,12],[7,1,16],[8,1,17],[9,1,18],[10,4,19],[11,1,23],[12,4,24],[15,1,28]]) {
-      gl.enableVertexAttribArray(location); gl.vertexAttribPointer(location, size, gl.FLOAT, false, stride, offset * 4);
+    gl.bindBuffer(gl.ARRAY_BUFFER, instanceBuffer); const stride = PROP_INSTANCE_FLOATS * 4;
+    for (let column = 0; column < 4; column++) {
+      const location = 3 + column; gl.enableVertexAttribArray(location); gl.vertexAttribPointer(location, 4, gl.FLOAT, false, stride, column * 16);
       gl.vertexAttribDivisor(location, 1);
     }
+    for (const [location, size, offset] of PROP_INSTANCE_BINDINGS) {
+      gl.enableVertexAttribArray(location); gl.vertexAttribPointer(location, size, gl.FLOAT, false, stride, offset);
+      gl.vertexAttribDivisor(location, 1);
+    }
+    gl.disableVertexAttribArray(8); gl.vertexAttrib1f(8, 0);
     pack.catalog.set(name, { name, nodeMatrix: identity, instanceBuffer, extras: { sourceReception: true },
       primitives: [{ vao, count: indices.length, indexType: gl.UNSIGNED_INT, base: [...piece.color, 1], emissive: [0,0,0],
-        texture: textureFor(piece.material), metallic: piece.material === 'metal' ? .45 : 0, roughness: .92,
+        texture: textureFor(piece.material),normalTexture:piece.material==='source'?sourceMaps.normalTexture:null,ormTexture:piece.material==='source'?sourceMaps.ormTexture:null,letteringFinish:piece.material==='source'?sourceMaps.letteringFinish:null,materialFactors:piece.material==='source'?'gltf':undefined,metallic:piece.material==='source'?1:piece.material === 'metal' ? .45 : 0,roughness:piece.material==='source'?1:.92,
         aoStrength: 0, portrait: false, alphaCut: 0, materialName: `reception ${piece.material}`, materialRole: 'source-reception',printedSurface:piece.material==='source'?SOURCE_PRINT_SURFACE:null }] });
   }
   gl.bindVertexArray(null); return names;

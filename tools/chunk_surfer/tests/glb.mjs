@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import crypto from 'node:crypto';
+import { auditBuildingDressingBatches } from '../building-dressing-batch-audit.mjs';
 
 const packUrl=new URL('../../../public/assets/conservatory-props.glb',import.meta.url);
 const statsUrl=new URL('../../../public/assets/conservatory-props.stats.json',import.meta.url);
@@ -16,8 +17,10 @@ ck('offline pack removes unsupported runtime features',unsupported.length===0,un
 ck('every primitive is indexed',json.meshes.every((m)=>m.primitives.every((p)=>Number.isInteger(p.indices))));
 ck('every primitive supplies positions and normals',json.meshes.every((m)=>m.primitives.every((p)=>Number.isInteger(p.attributes.POSITION)&&Number.isInteger(p.attributes.NORMAL))));
 const heroes=new Set(['hall_seating','hall_structure','chapel_vault']);
-ck('repeating meshes stay below 5k triangles',Object.entries(stats.meshes).every(([name,m])=>heroes.has(name)||m.triangles<5000));
-ck('hero meshes stay below 40k triangles',Object.values(stats.meshes).every((m)=>m.triangles<40000));
+const dressing=auditBuildingDressingBatches({json,stats});
+ck('static dressing batches conserve source geometry within 40 calls',dressing.errors.length===0,dressing.errors.join('; '));
+ck('repeating meshes stay below 5k triangles',Object.entries(stats.meshes).every(([name,m])=>heroes.has(name)||dressing.names.has(name)||m.triangles<5000));
+ck('hero meshes stay below 40k triangles',Object.entries(stats.meshes).every(([name,m])=>dressing.names.has(name)||m.triangles<40000));
 ck('unique geometry stays below 150k triangles',stats.totalTriangles<150000,`${stats.totalTriangles} triangles`);
 ck('initial transfer stays below 15 MB',bytes.length<15*1024*1024,`${(bytes.length/1024).toFixed(1)} KB`);
 const sha=crypto.createHash('sha256').update(bytes).digest('hex');

@@ -25,6 +25,7 @@ export function createApparitionApplauseAudio({
   fetchAsset = (...args) => globalThis.fetch(...args),
   setTimer = (callback, delay) => setTimeout(callback, delay),
   clearTimer = timer => clearTimeout(timer),
+  clockMs = () => globalThis.performance?.now?.() ?? Date.now(),
 } = {}) {
   const sources = new Map(), impulses = new Map(), live = new Set(), receipts = new Set(), history = [];
   let listener = point(), ready = false, loading = false, disposed = false, generation = 0, lastContext = null;
@@ -210,7 +211,8 @@ export function createApparitionApplauseAudio({
     catch (_) { errors++; return false; }
     if (condition !== 'silent' && prepared.length === 0) return false;
     const begin = ctx.currentTime + clamp(options.leadTime, 0, 1, .012);
-    const record = { receipt: receipt || null, score: String(score.id || 'unlabelled'), condition, startsAt: begin, voiceCount: condition === 'silent' ? 0 : prepared.length, events: [] };
+    const scheduledOnsetMs = clockMs() + Math.max(0, begin - ctx.currentTime) * 1000;
+    const record = { receipt: receipt || null, score: String(score.id || 'unlabelled'), condition, startsAt: begin, scheduledOnsetMs, voiceCount: condition === 'silent' ? 0 : prepared.length, events: [] };
     const performance = { ctx, destination, voices: new Set(), bus: null };
     if (condition !== 'silent') {
       try {
@@ -233,10 +235,11 @@ export function createApparitionApplauseAudio({
     if (receipt) { receipts.add(receipt); if (receipts.size > 128) receipts.delete(receipts.values().next().value); }
     history.push(record); if (history.length > 32) history.shift(); played++;
     if (condition !== 'silent') {
-      const durationMs = Math.max(1, Math.ceil((Math.max(...record.events.map(voice => voice.endsAt)) - ctx.currentTime) * 1000));
+      const durationMs = Math.max(1, Math.ceil((Math.max(...record.events.map(voice => voice.endsAt)) - begin) * 1000));
       try {
         emitAcoustic({
-          kind: 'apparition_applause', source: { kind: 'environment', id: event.sourceId || 'apparition-audience' },
+          kind: 'apparition_applause', emittedAt: scheduledOnsetMs,
+          source: { kind: 'environment', id: event.sourceId || 'apparition-audience' },
           spatial: { ...(event.spatial || {}), position: point(event.at || event.position || prepared[0].position) },
           acoustic: { ...(event.acoustic || {}), levelDb: finite(event.acoustic?.levelDb, -30), durationMs },
           semantics: { playerGenerated: false, deliberate: false, audibleToHush: false, audibleToMonitor: false, audibleInWorld: true,

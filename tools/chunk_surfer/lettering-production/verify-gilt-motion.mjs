@@ -8,7 +8,7 @@ assert.ok(['baseline','candidate'].includes(arm));
 const base=process.env.CHUNK_SURFER_TEST_URL||'http://127.0.0.1:5334',out=path.resolve(`artifacts/lettering-production/gilt/motion-proof/${run}/${arm}`);
 const baseline='artifacts/lettering-production/gilt/baseline/shader.js',shader='src/render/pixel-mesh/shader.js',sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 const sources=['src/render/r3d.js','src/render/props3d.js',shader,'src/render/printed-surface.js','public/assets/conservatory-props.glb',
- 'public/assets/conservatory-props.lettering.json','artifacts/lettering-production/review.js','artifacts/lettering-study/encounters.js','artifacts/lettering-production/gilt/encounter.js','artifacts/lettering-production/gilt/motion-probe.js','src/data/conservatory-props.js','src/data/world-inscriptions.js','src/data/conservatory-lights.js'];
+ 'public/assets/conservatory-props.lettering.json','artifacts/lettering-production/review.js','artifacts/lettering-study/encounters.js','artifacts/lettering-production/gilt/encounter.js','artifacts/lettering-production/gilt/motion-probe.js','src/data/conservatory-props.js','src/data/world-inscriptions.js','src/data/conservatory-lights.js','src/data/floorplan/conservatory.js','src/data/floorplan/legend.js','src/world/floorplan.js','src/game/props.js','src/render/camera-basis.js'];
 const hashes=()=>Object.fromEntries(sources.map(f=>[f,sha(fs.readFileSync(f))]));
 assert.ok(!fs.existsSync(path.join(out,'report.json')),'Frozen motion evidence already exists; select a fresh --run name rather than relabeling captured frames');
 fs.mkdirSync(out,{recursive:true});const report={date:new Date().toISOString(),arm,sourceHashes:hashes(),servedAcquisitionShaderSha256:sha(fs.readFileSync(arm==='baseline'?baseline:shader)),
@@ -31,6 +31,9 @@ try{
  browser=await puppeteer.launch({executablePath:process.env.CHROME_PATH||'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:'new',timeout:90000,protocolTimeout:180000,
   args:['--use-angle=metal','--no-sandbox','--disable-background-networking']});
  const page=await browser.newPage();await page.setViewport({width:1400,height:1000,deviceScaleFactor:1});
+ // The frozen GLB is 43 MB. Retain its actual received body long enough to
+ // hash it alongside the smaller control pack and texture responses.
+ await page._client().send('Network.enable',{maxTotalBufferSize:536870912,maxResourceBufferSize:134217728});
  page.on('pageerror',e=>report.errors.push(e.message));
  const responseProofs=[];await page.setRequestInterception(true);page.on('request',request=>{const resource=resourceMap.get(new URL(request.url()).pathname);if(resource){resource.requests++;request.respond({status:200,contentType:resource.type,body:resource.bytes});}else request.continue();});
  page.on('response',response=>{const url=new URL(response.url()).pathname,resource=resourceMap.get(url);if(resource)responseProofs.push(response.buffer().then(bytes=>{assert.equal(sha(bytes),resource.sha256,`Received frozen resource differs: ${url}`);return{url,bytes:bytes.length,sha256:sha(bytes),receivedBrowserBodyMatchesFrozenBytes:true};}));});
@@ -43,8 +46,8 @@ try{
  for(const url of['/src/render/pixel-mesh/shader.js','/assets/conservatory-props.glb','/assets/conservatory-props.lettering.json'])assert.ok(resourceMap.get(url).requests>0,`Frozen resource not actually requested: ${url}`);
  report.receivedResourceBodies=await Promise.all(responseProofs);
  report.realTimeRaf=await page.evaluate(()=>window.printMotion.realRafThroughput({scene:'gilt-peal',motion:'approach',scale:1}));save();
- const cases=['gilt-peal','gilt-hall'].flatMap(scene=>['approach','walkby-turn','stationary'].map(motion=>({scene,motion,scale:1,id:`${scene}-${motion}-s1`})))
-  .map((test,sequence)=>({...test,sequence})).filter(test=>!args.get('case')||test.id===args.get('case'));
+ const cases=['gilt-peal','gilt-hall'].flatMap(scene=>['approach','walkby-turn','stationary'].map(motion=>({scene,motion,scale:1,...(scene==='gilt-hall'?{headPitchDeg:Number(args.get('glance')||30)}:{}),id:`${scene}-${motion}-s1`})))
+  .map((test,sequence)=>({...test,sequence})).filter(test=>!args.get('motions')||args.get('motions').split(',').includes(test.motion)).filter(test=>!args.get('case')||test.id===args.get('case'));
  assert.ok(cases.length,'Unknown requested motion case');
  for(const test of cases){
   const folder=path.join(out,test.id);fs.mkdirSync(`${folder}/uv`,{recursive:true});fs.mkdirSync(`${folder}/stills`,{recursive:true});
@@ -82,10 +85,19 @@ try{
   fs.writeFileSync(`${folder}/frames.json`,JSON.stringify(clip,null,2)+'\n');report.clips.push({id:test.id,folder,video,...Object.fromEntries(Object.entries(clip).filter(([key])=>!['frames','folder'].includes(key)))});save();
   console.log(JSON.stringify({arm,case:test.id,frames:61,simulationSeconds:1,offlineEncodedFps:60,wallSeconds:clip.elapsedCaptureAndEncodeWallMs/1000}));
  }
- report.sourceHashesAfter=hashes();assert.deepEqual(report.sourceHashesAfter,report.sourceHashes,'Concurrent source/asset mutation invalidates matched motion evidence');
+ report.sourceHashesAfter=hashes();
+ const frozenPaths=new Set([shader,'public/assets/conservatory-props.glb','public/assets/conservatory-props.lettering.json']);
+ report.diskSourceChanges=Object.keys(report.sourceHashes).filter(p=>report.sourceHashes[p]!==report.sourceHashesAfter[p]);
+ report.unfrozenSourceChanges=report.diskSourceChanges.filter(p=>!frozenPaths.has(p));
+ report.sourceStabilityScope='Unintercepted renderer/data files must remain byte-identical. Shader/GLB/sidecar are immutable in-memory request responses whose actual browser bodies are verified separately; later disk writes cannot alter those captured resources.';
+ assert.deepEqual(report.unfrozenSourceChanges,[],'Concurrent change to an unfrozen renderer input invalidates motion evidence');
  assert.deepEqual(report.errors,[]);report.sourcesUnchanged=true;save();
  report.receivedResourceBodies=await Promise.all(responseProofs);save();
  execFileSync('/Users/seb/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3',['tools/chunk_surfer/lettering-production/analyze-gilt-motion.py',out],{stdio:'inherit'});
 }catch(error){report.failure=error.message;save();throw error;}finally{
  if(browser){const child=browser.process();let timer;await Promise.race([browser.close(),new Promise(resolve=>{timer=setTimeout(()=>{child?.kill('SIGTERM');resolve();},10000);})]);clearTimeout(timer);}
 }
+
+// All proof and encoder writes above are synchronous or awaited. Release any
+// retained inspector transport after the bounded browser shutdown.
+process.exit(0);

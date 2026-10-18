@@ -1,0 +1,18 @@
+{
+  "asset": "street-pilot.glb",
+  "scope": "One Borough Passage street proof; no global vehicle replacement",
+  "authorship": "Project-authored mesh geometry and material atlases, generated from the editable Blender source",
+  "source": "tools/chunk_surfer/build-street-pilot.py",
+  "build": "tools/chunk_surfer/build-street-pilot.mjs",
+  "provenance": "artifacts/street-realignment/references.json",
+  "embeddedExternalAssets": [],
+  "referenceOnly": [
+    "Ford EU Focus dimensions; anonymous five-door design, no Ford branding or mesh copied",
+    "SWARCO FUTURA UK construction sheet; no manufacturer artwork embedded",
+    "Department for Transport crossing and signal drawings; project-authored geometry",
+    "Stephen Craven, Street Lane Leeds photograph, CC BY-SA 2.0; reference only",
+    "DieselFordMondeo, 2011 Focus front/rear photographs, CC BY-SA 4.0; reference only",
+    "Marnanel, Cyclist-controlled traffic light phases, CC BY 4.0; reference only"
+  ],
+  "notes": "Published reference photos are processed JPEGs, not established untouched camera masters. Loaded tyre radius and traffic cycle remain disclosed game assumptions. Player validation pending."
+}

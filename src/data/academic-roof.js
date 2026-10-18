@@ -3,6 +3,12 @@
 import { F, MATERIAL, ZONE } from './floorplan/legend.js';
 
 const point=(x,y)=>Object.freeze({x,y});
+export const ROOF_CITY_SEAT=Object.freeze({
+  id:'roof-city-seat',at:point(212,290),approach:point(210,290),
+  // Prop +Z faces east with -PI/2; camera forward uses the opposite yaw
+  // convention. A slight northward rake avoids the existing guard upright.
+  yaw:1.50,pitch:-.21,eyeDrop:.46,propYaw:-Math.PI/2,
+});
 export const ACADEMIC_ROOF=Object.freeze({
   revision:1,base:17,width:24,depth:27,renderGroup:'academicRoof',
   origin:point(190,270),physicalOrigin:point(73,2),
@@ -79,8 +85,8 @@ export const ACADEMIC_ROOF_LEVELS=Object.freeze([
 ]);
 export const ACADEMIC_ROOF_PORTALS=Object.freeze([
   {id:'academic-loggia-to-roof-service',width:1.5,
-    from:{at:point(44,242),along:point(1,0),exit:point(0,-1)},
-    to:{at:point(174,286.5),along:point(1,0),exit:point(0,1)},tolerance:2.1},
+    from:{at:point(43.5,242),along:point(1,0),exit:point(0,-1)},
+    to:{at:point(173.5,286.5),along:point(1,0),exit:point(0,1)},tolerance:2.1},
   {id:'academic-roof-service-switchback',width:1.5,
     from:{at:point(159.5,281),along:point(0,1),exit:point(1,0)},
     to:{at:point(180,281),along:point(0,1),exit:point(-1,0)},tolerance:1.1},
@@ -98,6 +104,7 @@ export const ACADEMIC_ROOF_MESHES=Object.freeze({
   academic_roof_service_ladder:{w:1.15,d:.9,h:8,blocks:false},
   academic_roof_gate:{w:.3,d:2,blocks:false},
   academic_roof_seat:{w:1.8,d:1.4,blocks:false},
+  academic_roof_city_seat:{w:1.92,d:.90,h:1.04,blocks:true},
   academic_roof_ren:{w:1.05,d:.52,h:1.85,blocks:false},
   academic_roof_ren_ritual:{w:1.2,d:1.0,h:1.85,blocks:false},
   academic_roof_seal_imprint:{w:.38,d:.08,h:.48,blocks:false},
@@ -117,6 +124,9 @@ export const ACADEMIC_ROOF_PROPS=Object.freeze([
     {action:'roof-sit-west',yaw:Math.PI/2,label:'Supported glass bay'}),
   roofProp('roof-sit-east','academic_roof_seat',ACADEMIC_ROOF.sitEast,
     {action:'roof-sit-east',yaw:-Math.PI/2,label:'Supported glass bay'}),
+  roofProp(ROOF_CITY_SEAT.id,'academic_roof_city_seat',ROOF_CITY_SEAT.at,
+    {action:'roof-city-seat',yaw:ROOF_CITY_SEAT.propYaw,blocks:true,
+      inspectAt:point(211,290),label:'Stone city seat'}),
   roofProp('roof-shortcut-bottom','academic_roof_service_ladder',ACADEMIC_ROOF.ladderBottom,
     {action:'roof-shortcut',requiresKey:'ren-service',label:'Caged service ladder',
       renderGroups:['academic','academicRoof'],floorOverride:10,inspectAt:point(44,265)}),

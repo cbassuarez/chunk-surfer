@@ -1,0 +1,352 @@
+- generic [active] [ref=e1]:
+  - navigation "Evidence sections" [ref=e2]:
+    - strong [ref=e3]: CHUNK SURFER / FIELD STUDY 01
+    - link "Compare" [ref=e4] [cursor=pointer]:
+      - /url: "#comparison"
+    - link "Evidence" [ref=e5] [cursor=pointer]:
+      - /url: "#evidence"
+    - link "Sources" [ref=e6] [cursor=pointer]:
+      - /url: "#sources"
+    - link "Editable work" [ref=e7] [cursor=pointer]:
+      - /url: "#assets"
+    - link "Player checks" [ref=e8] [cursor=pointer]:
+      - /url: "#players"
+  - main [ref=e9]:
+    - generic [ref=e10]:
+      - generic [ref=e11]: Borough Passage · 17 October 2026
+      - heading "A street whose parts agree." [level=1] [ref=e12]
+      - paragraph [ref=e13]: Cars, road edges, materials and signals developed together on one existing north-street segment. The proof is their behavior and appearance at the player's actual viewpoint.
+      - generic "Evidence status" [ref=e14]:
+        - generic [ref=e15]: Implemented · visual refinement pending
+        - generic [ref=e16]: 21 checks passed · performance acceptance pending
+        - generic [ref=e17]: 0 participants · validation pending
+        - generic [ref=e18]: Qualified independent review pending
+      - generic [ref=e19]:
+        - link "Inspect the comparison" [ref=e20] [cursor=pointer]:
+          - /url: "#comparison"
+        - link "Read the research" [ref=e21] [cursor=pointer]:
+          - /url: research.md
+        - link "Acceptance criteria" [ref=e22] [cursor=pointer]:
+          - /url: acceptance.md
+      - paragraph [ref=e24]:
+        - strong [ref=e25]: A local prototype.
+        - text: The baseline had no crossing or traffic-signal system here. This proof adds one automatic crossing serving the existing Borough Passage and makes the two existing north-street vehicles obey it. Moving traffic remains presentation-only. Broader rollout awaits this proof's evidence.
+    - region [ref=e26]:
+      - generic [ref=e27]:
+        - heading "The resolved treatment" [level=2] [ref=e28]
+        - paragraph [ref=e29]: Contemporary Yorkshire, with municipal construction and repairs accumulated over time. Ordinary infrastructure supports the game's existing atmosphere.
+      - generic [ref=e30]:
+        - article [ref=e31]:
+          - generic [ref=e32]: 01 / Shape and contact
+          - heading "A continuous five-door compact" [level=3] [ref=e33]
+          - paragraph [ref=e34]: A coherent cabin, inward-sloping glass, real wheel openings and grounded tires replace stacked body blocks. Rotation follows traveled distance. Published dimensions anchor an original anonymous vehicle.
+        - article [ref=e35]:
+          - generic [ref=e36]: 02 / Construction and wear
+          - heading "A road built in layers" [level=3] [ref=e37]
+          - paragraph [ref=e38]: Asphalt, retained sett margins, kerbs and paving form a readable section. Broad, low-contrast repairs and sparse gutter wear carry maintenance history through the final dither.
+        - article [ref=e39]:
+          - generic [ref=e40]: 03 / Information and behavior
+          - heading "Signals with authority" [level=3] [ref=e41]
+          - paragraph [ref=e42]: Recessed optics, visors, physical mounts and pedestrian silhouettes provide depth and meaning. The crossing and vehicles share one state; vertical lamp position must remain clear in monochrome.
+    - region [ref=e43]:
+      - generic [ref=e44]:
+        - heading "Matched route, actual game" [level=2] [ref=e45]
+        - paragraph [ref=e46]: Approach, wait, cross and look back. The fresh reconstructed baseline and final pilot share the current renderer. The historical pre-edit capture is retained below with separate provenance.
+      - generic [ref=e47]:
+        - article [ref=e48]:
+          - generic [ref=e49]:
+            - strong [ref=e50]: Reconstructed baseline
+            - generic [ref=e51]: A / reconstruction
+          - generic "Fresh reconstructed baseline matched route" [ref=e52]
+          - generic [ref=e53]:
+            - text: Reconstructed old street through unchanged current renderer files; separate from the historical pre-edit build.
+            - link "Video" [ref=e54] [cursor=pointer]:
+              - /url: baseline-reconstructed-matched-route.webm
+            - text: ·
+            - link "Capture trace" [ref=e55] [cursor=pointer]:
+              - /url: baseline-reconstructed-matched-route.json
+        - article [ref=e56]:
+          - generic [ref=e57]:
+            - strong [ref=e58]: Pilot treatment
+            - generic [ref=e59]: B / final output
+          - generic "Final matched route" [ref=e60]
+          - generic [ref=e61]:
+            - text: Saved final game capture.
+            - link "Video" [ref=e62] [cursor=pointer]:
+              - /url: final-matched-route.webm
+            - text: ·
+            - link "Capture trace" [ref=e63] [cursor=pointer]:
+              - /url: final-matched-route.json
+      - generic "Shared video transport" [ref=e64]:
+        - generic [ref=e65]:
+          - button "Play both" [ref=e66] [cursor=pointer]
+          - button "Reset" [ref=e67] [cursor=pointer]
+          - status [ref=e68]: Both files ready · shared time
+          - generic [ref=e69]:
+            - text: Recording
+            - combobox "Recording" [disabled] [ref=e70]:
+              - option "Image only · no audio" [selected]
+        - generic [ref=e71]:
+          - generic [ref=e72]: Shared timeline
+          - slider "Shared timeline" [ref=e73]: "0"
+          - status [ref=e74]: 00:00 / 00:26
+      - paragraph [ref=e75]: Shared playback aligns file time and corrects visible drift; it is a review aid, not proof of frame-perfect synchronization. The adjacent clock/camera traces quantify route differences; shared playback does not correct cell-position or input-timing differences. The pilot introduces a crossing, so the two versions' vehicle phases and crossing opportunities are deliberately different. No player validation is inferred from these authoring captures.
+      - group [ref=e76]:
+        - generic "Capture fixture and comparison limits" [ref=e77] [cursor=pointer]
+      - group [ref=e78]:
+        - 'generic "Retained failed iteration: outdoor sky contribution" [ref=e79] [cursor=pointer]'
+      - group [ref=e80]:
+        - generic "Normal gameplay grade and the rejected title-grade capture" [ref=e81] [cursor=pointer]
+      - group [ref=e82]:
+        - 'generic "Retained failed iteration: albedo encoding" [ref=e83] [cursor=pointer]'
+      - group [ref=e84]:
+        - generic "Renderer continuity and the replaced partial route" [ref=e85] [cursor=pointer]
+    - region [ref=e86]:
+      - generic [ref=e87]:
+        - heading "What is established" [level=2] [ref=e88]
+        - paragraph [ref=e89]: Source, exported-asset, runtime, perceptual and participant evidence answer different questions. Pending fields remain pending until their evidence exists.
+      - generic [ref=e90]:
+        - generic [ref=e91]:
+          - generic [ref=e92]: Exported GLB
+          - generic [ref=e93]: 0.83 MiB
+          - paragraph [ref=e94]: Four MiB provisional ceiling. Asset bytes are not a visual-quality score.
+        - generic [ref=e95]:
+          - generic [ref=e96]: Complete instanced car
+          - generic [ref=e97]: 7,942
+          - paragraph [ref=e98]: Body plus four wheels; compare projected silhouette, contact and motion separately.
+        - generic [ref=e99]:
+          - generic [ref=e100]: Estimated texture allocation
+          - generic [ref=e101]: 4.00 MiB
+          - paragraph [ref=e102]: RGBA mip allocation from actual texture descriptors. Twelve MiB ceiling; not measured total GPU memory.
+      - table "Measured results" [ref=e104]:
+        - rowgroup [ref=e105]:
+          - row [ref=e106]:
+            - columnheader "Check" [ref=e107]
+            - columnheader "Baseline" [ref=e108]
+            - columnheader "Pilot" [ref=e109]
+            - columnheader "Evidence / result" [ref=e110]
+        - rowgroup [ref=e111]:
+          - row [ref=e112]:
+            - cell "Saved route recordings" [ref=e113]
+            - cell "960×600 · 26.865 s" [ref=e114]
+            - cell "960×600 · 26.895 s" [ref=e115]
+            - cell "Five decoded, varied-content samples per video; image-only. Historical and 54.933 s cycle files also decode. Pixel variation is not visual acceptance." [ref=e116]
+          - row [ref=e117]:
+            - cell "Actual route and view" [ref=e118]
+            - cell "(253,673) → (253,649), yaw π" [ref=e119]
+            - cell "(253,673) → (253,649), yaw π" [ref=e120]
+            - cell "266 timestamp pairs; four positions differ by 1 logical unit; yaw/pitch deltas 0. Nearest-time alignment, not frame-perfect synchronization." [ref=e121]
+          - row [ref=e122]:
+            - cell "Recorded display fixture" [ref=e123]
+            - cell "1024×640 · DPR .75 · scale .5" [ref=e124]
+            - cell "1024×640 · DPR .75 · scale .5" [ref=e125]
+            - cell "All recorded compared fields equal, including 960×600 canvas, 24 fps, torch off and normal grade." [ref=e126]
+          - row [ref=e127]:
+            - cell "Median reported rolling mean" [ref=e128]
+            - cell "22.456 ms · n=266" [ref=e129]
+            - cell "26.340 ms · n=269" [ref=e130]
+            - cell "+17.3%; concurrent jobs and recording confound attribution. Performance acceptance pending." [ref=e131]
+          - row [ref=e132]:
+            - cell "Median reported rolling p95" [ref=e133]
+            - cell "40.6 ms" [ref=e134]
+            - cell "46.2 ms" [ref=e135]
+            - cell "Median of overlapping window p95 reports, not whole-run frame p95 or GPU timing. Historical pre-edit medians were 8.857 / 10.650 ms for rolling mean / rolling p95; conditions differ." [ref=e136]
+          - row [ref=e137]:
+            - cell "Held phase-0 main prop draws" [ref=e138]
+            - cell "660 at matched control camera" [ref=e139]
+            - cell "670 at matched control camera" [ref=e140]
+            - cell "+10 measured main draws; torch-on shadow delta +8, torch-off +0. Red+amber worst case is unmeasured and may reach +11; 10-draw target not accepted." [ref=e141]
+          - row [ref=e142]:
+            - cell "Isolated car prop draws" [ref=e143]
+            - cell "8 draws · 784 triangles" [ref=e144]
+            - cell "4 draws · 7,942 triangles" [ref=e145]
+            - cell "Actual isolated geometry control; reduced batches with more geometry. Separate from live whole-scene incremental cost." [ref=e146]
+          - row [ref=e147]:
+            - cell "Crossing cycle sample coverage" [ref=e148]
+            - cell "No crossing system" [ref=e149]
+            - cell "550 samples · 54.913 s span" [ref=e150]
+            - cell "All 7 phases, 1 wrap; max sample gap 141.9 ms; no sampled pedestrian/clearance conflict flags. Does not prove continuous safety, visibility or collision." [ref=e151]
+          - row [ref=e152]:
+            - cell "Export and texture budgets" [ref=e153]
+            - cell "Historical catalog retained" [ref=e154]
+            - cell "870,444-byte GLB · 4,194,300 estimated texture bytes" [ref=e155]
+            - cell "Below 4 MiB GLB and 12 MiB texture ceilings. Texture count is descriptor-derived RGBA mip allocation, not queried GPU memory." [ref=e156]
+          - row [ref=e157]:
+            - cell "Exported color/data contract" [ref=e158]
+            - cell "Unencoded linear palette defect archived" [ref=e159]
+            - cell "28 albedo / 28 ORM / 29 normal samples passed" [ref=e160]
+            - cell "Independent PNG-byte regression, zero failures. Confirms specific color/data encoding; visual material acceptance remains separate." [ref=e161]
+          - row [ref=e162]:
+            - cell "Recorded technical checks" [ref=e163]
+            - cell "Source baseline and failures retained" [ref=e164]
+            - cell "21 focused checks passed; browser bundle succeeded" [ref=e165]
+            - cell "Recorded checks cover local state, motion, matrices, crossing envelopes, compiled walkability and fallback; no human perception or broad hardware acceptance." [ref=e166]
+          - row [ref=e167]:
+            - cell "Capture input continuity" [ref=e168]
+            - cell "646 tracked source/asset inputs" [ref=e169]
+            - cell "Renderers and 4 GLBs unchanged" [ref=e170]
+            - cell "institution-occupation.js changed between controls and baseline. Final-retake-before versus after has no hash differences. No identical-whole-build claim." [ref=e171]
+          - row [ref=e172]:
+            - cell "Authoring judgment" [ref=e173]
+            - cell "Stacked car bodies and incomplete street relationships" [ref=e174]
+            - cell "Car and road materially improved" [ref=e175]
+            - cell "Signal icons, crossing/tactile legibility, surface join and uncontrolled performance remain refinement/acceptance concerns. Qualified human and player validation pending." [ref=e176]
+          - row [ref=e177]:
+            - cell "Projected car coverage" [ref=e178]
+            - cell "2,548 nonzero-alpha pixels" [ref=e179]
+            - cell "2,329 nonzero-alpha pixels" [ref=e180]
+            - cell "Actual 480×300 masks, baseline left/pilot right. Gray-on-white coverage analysis only; no neutral-material or occluded-scene claim." [ref=e181]
+          - row [ref=e182]:
+            - cell "Recorded route JavaScript errors" [ref=e183]
+            - cell "0 errors in trace" [ref=e184]
+            - cell "0 errors in trace" [ref=e185]
+            - cell "Recorded errors only; separate from participant outcomes and platform-wide stability." [ref=e186]
+      - paragraph [ref=e187]: "Performance acceptance remains pending: concurrent jobs, browser recording and shared-workspace activity confound attribution. The pilot median reported rolling mean is 17.3% above the reconstructed baseline; these are overlapping browser windows, not raw-frame p95 or GPU timing. Phase-0 controls add 10 main prop draws; red+amber may add another batch and has not been measured, so the 10-draw target is not accepted. Byte and estimated texture budgets pass; broader rollout remains deferred."
+      - generic [ref=e188]:
+        - link "Source baseline and ownership Geometry, collision, traffic, rendering and concrete failure hypotheses" [ref=e189] [cursor=pointer]:
+          - /url: audit-baseline.md
+          - strong [ref=e190]: Source baseline and ownership
+          - generic [ref=e191]: Geometry, collision, traffic, rendering and concrete failure hypotheses
+        - link "Acceptance and provisional budgets What would support or contradict the intended experience" [ref=e192] [cursor=pointer]:
+          - /url: acceptance.md
+          - strong [ref=e193]: Acceptance and provisional budgets
+          - generic [ref=e194]: What would support or contradict the intended experience
+        - link "Asset inspection Existing source and model pipeline findings" [ref=e195] [cursor=pointer]:
+          - /url: asset-audit.md
+          - strong [ref=e196]: Asset inspection
+          - generic [ref=e197]: Existing source and model pipeline findings
+        - link "Independent exported-asset contract pass A separate source/byte review; not independent human or player validation" [ref=e198] [cursor=pointer]:
+          - /url: asset-contract-review.md
+          - strong [ref=e199]: Independent exported-asset contract pass
+          - generic [ref=e200]: A separate source/byte review; not independent human or player validation
+        - link "Saved actual-game image review Improved car form, verified color repair and unresolved final-view legibility/integration" [ref=e201] [cursor=pointer]:
+          - /url: final-authoring-review.md
+          - strong [ref=e202]: Saved actual-game image review
+          - generic [ref=e203]: Improved car form, verified color repair and unresolved final-view legibility/integration
+        - link "Decoded capture and technical analysis Chosen baseline provenance, real video pixels, fixture differences and measured prop-draw deltas" [ref=e204] [cursor=pointer]:
+          - /url: technical-summary.md
+          - strong [ref=e205]: Decoded capture and technical analysis
+          - generic [ref=e206]: Chosen baseline provenance, real video pixels, fixture differences and measured prop-draw deltas
+        - link "Machine-readable evidence Exact samples, limitations and pending fields" [ref=e207] [cursor=pointer]:
+          - /url: technical-summary.json
+          - strong [ref=e208]: Machine-readable evidence
+          - generic [ref=e209]: Exact samples, limitations and pending fields
+        - link "Final source snapshot Exact named source/export hashes; shared-file attribution remains separate" [ref=e210] [cursor=pointer]:
+          - /url: source-snapshot.json
+          - strong [ref=e211]: Final source snapshot
+          - generic [ref=e212]: Exact named source/export hashes; shared-file attribution remains separate
+        - link "Video container provenance Original MediaRecorder hashes and stream-copy remux history; no re-encoding" [ref=e213] [cursor=pointer]:
+          - /url: video-container-provenance.json
+          - strong [ref=e214]: Video container provenance
+          - generic [ref=e215]: Original MediaRecorder hashes and stream-copy remux history; no re-encoding
+      - group [ref=e216]:
+        - generic "Actual-game lighting and pipeline controls" [ref=e217] [cursor=pointer]
+      - group [ref=e218]:
+        - generic "Crossing cycle recording and sampled safety state" [ref=e219] [cursor=pointer]
+      - paragraph [ref=e221]:
+        - strong [ref=e222]: Visual uncertainties remain explicit.
+        - text: The saved-image authoring review finds a materially improved hatchback and verified color repair. It also records a visible surface-patch boundary, substantial loss of cabin/wheel detail in the final dither, and insufficient evidence for complete crossing, signal, dropped-kerb and tactile legibility. The review concerns its recorded images and renderer state. The current full-route recording adds ordinary movement evidence while these interpretation and integration concerns remain open. Perceived weight, temporal stability and first-time interpretation remain unvalidated.
+      - group [ref=e223]:
+        - generic "Known limits to carry into judgment" [ref=e224] [cursor=pointer]
+    - region [ref=e225]:
+      - generic [ref=e226]:
+        - heading "Start with the physical evidence" [level=2] [ref=e227]
+        - paragraph [ref=e228]: Manufacturer dimensions, original construction drawings, named-photographer street records and an actual published signal sequence. Inspection status and rights remain explicit.
+      - generic [ref=e229]:
+        - link "Research and visual observations Place/period evidence, form priorities, crossing constraints and missing raw material" [ref=e230] [cursor=pointer]:
+          - /url: research.md
+          - strong [ref=e231]: Research and visual observations
+          - generic [ref=e232]: Place/period evidence, form priorities, crossing constraints and missing raw material
+        - link "Reference provenance and licenses Exact URLs, creators, inspection limits and production-use distinctions" [ref=e233] [cursor=pointer]:
+          - /url: references.json
+          - strong [ref=e234]: Reference provenance and licenses
+          - generic [ref=e235]: Exact URLs, creators, inspection limits and production-use distinctions
+      - generic [ref=e236]:
+        - figure [ref=e237]:
+          - link [ref=e238] [cursor=pointer]:
+            - /url: reference-inspection/focus-primary-front.jpg
+            - img "Actual front three-quarter photograph of a compact hatchback showing continuous hood, raked glasshouse and open wheel arches" [ref=e239]
+          - generic [ref=e240]:
+            - strong [ref=e241]: Body continuity and ground contact
+            - text: DieselFordMondeo · 26 October 2022 ·
+            - link "Original published photograph" [ref=e242] [cursor=pointer]:
+              - /url: https://commons.wikimedia.org/wiki/File:2011_Ford_Focus_Titanium_1.6_125_(Front).jpg
+            - text: ·
+            - link "CC BY-SA 4.0" [ref=e243] [cursor=pointer]:
+              - /url: https://creativecommons.org/licenses/by-sa/4.0/
+            - text: . Internal reference; image pixels are not game textures. Published processing is documented.
+        - figure [ref=e244]:
+          - link [ref=e245] [cursor=pointer]:
+            - /url: reference-inspection/geograph-street-lane-7841773.jpg
+            - img "Daylight Street Lane, Leeds photograph with restrained road repairs, pale kerb units, narrow zig-zag markings and signal heads" [ref=e246]
+          - generic [ref=e247]:
+            - strong [ref=e248]: Construction and restrained wear
+            - text: Stephen Craven · Street Lane, Roundhay, Leeds · 27 July 2024 ·
+            - link "Original photograph" [ref=e249] [cursor=pointer]:
+              - /url: https://www.geograph.org.uk/photo/7841773
+            - text: ·
+            - link "CC BY-SA 2.0" [ref=e250] [cursor=pointer]:
+              - /url: https://creativecommons.org/licenses/by-sa/2.0/
+            - text: . Daylight still; it cannot establish night exposure or wet reflectance.
+      - group [ref=e251]:
+        - generic "Measured hardware and the real signal sequence" [ref=e252] [cursor=pointer]
+      - paragraph [ref=e253]: Retrieved manufacturer and government pages are internal reference copies, not production assets licensed merely by being public. The pilot mesh and atlas are project-authored. Existing Poly Haven asset licensing is recorded separately as CC0. No raw Oxford RobotCar traversal was downloaded or watched; its noncommercial restrictions remain a reference lead.
+    - region [ref=e254]:
+      - generic [ref=e255]:
+        - heading "Editable work and exact sources" [level=2] [ref=e256]
+        - paragraph [ref=e257]: The saved Blender scene, reproducible source and exported catalog remain inspectable. The live source audit determines which changes are confined to the pilot.
+      - generic [ref=e258]:
+        - link "Editable Blender scene Original scene geometry, material atlas and named export parts" [ref=e259] [cursor=pointer]:
+          - /url: street-pilot.blend
+          - strong [ref=e260]: Editable Blender scene
+          - generic [ref=e261]: Original scene geometry, material atlas and named export parts
+        - link "Deterministic Blender authoring source Shape, road section, markings, hardware and project-authored atlas" [ref=e262] [cursor=pointer]:
+          - /url: ../../tools/chunk_surfer/build-street-pilot.py
+          - strong [ref=e263]: Deterministic Blender authoring source
+          - generic [ref=e264]: Shape, road section, markings, hardware and project-authored atlas
+        - link "Build and normalization wrapper Core GLB normalization, allocation accounting and byte hashes" [ref=e265] [cursor=pointer]:
+          - /url: ../../tools/chunk_surfer/build-street-pilot.mjs
+          - strong [ref=e266]: Build and normalization wrapper
+          - generic [ref=e267]: Core GLB normalization, allocation accounting and byte hashes
+        - link "Exported static GLB catalog Flat mesh nodes for the existing runtime loader" [ref=e268] [cursor=pointer]:
+          - /url: ../../assets/street-pilot.glb
+          - strong [ref=e269]: Exported static GLB catalog
+          - generic [ref=e270]: Flat mesh nodes for the existing runtime loader
+        - link "Current build manifest Actual mesh counts, bounds, embedded assets and validation status" [ref=e271] [cursor=pointer]:
+          - /url: street-pilot-build.json
+          - strong [ref=e272]: Current build manifest
+          - generic [ref=e273]: Actual mesh counts, bounds, embedded assets and validation status
+        - link "Authored segment contract One physical anchor, model roles and local crossing parameters" [ref=e274] [cursor=pointer]:
+          - /url: ../../src/data/street-pilot.js
+          - strong [ref=e275]: Authored segment contract
+          - generic [ref=e276]: One physical anchor, model roles and local crossing parameters
+        - link "Local runtime and shared clock Signals, two existing vehicle routes and lifecycle behavior" [ref=e277] [cursor=pointer]:
+          - /url: ../../src/game/street-pilot.js
+          - strong [ref=e278]: Local runtime and shared clock
+          - generic [ref=e279]: Signals, two existing vehicle routes and lifecycle behavior
+        - link "Bounded reference-inspection script Retrieved source copies, raster pages and sampled frame provenance" [ref=e280] [cursor=pointer]:
+          - /url: reference-inspect.py
+          - strong [ref=e281]: Bounded reference-inspection script
+          - generic [ref=e282]: Retrieved source copies, raster pages and sampled frame provenance
+      - paragraph [ref=e283]: "Current GLB SHA-256: a58f5fb49ab1c511a201282e4ec9dc1c122e60d03f989c7d00d1b75ad4c1e1b2"
+    - region [ref=e284]:
+      - generic [ref=e285]:
+        - heading "The perception test is still ahead" [level=2] [ref=e286]
+        - paragraph [ref=e287]: Zero participant sessions. Neither technical checks nor an attractive authoring capture can stand in for fresh first exposures.
+      - generic [ref=e288]:
+        - article [ref=e289]:
+          - heading "One uninformed first exposure" [level=3] [ref=e290]
+          - paragraph [ref=e291]:
+            - text: Randomize baseline or pilot before enrollment. Keep normal movement and a matched fixture. Begin with
+            - strong [ref=e292]: “What happened?”
+            - text: and preserve the spontaneous account before targeted questions about navigation, signals, motion or atmosphere.
+          - paragraph [ref=e293]:
+            - link "Open the neutral playable test launcher →" [ref=e294] [cursor=pointer]:
+              - /url: player-test.html
+          - link "Read the pre-specified protocol →" [ref=e295] [cursor=pointer]:
+            - /url: player-checks.md
+        - article [ref=e296]:
+          - heading "Distinct judgments" [level=3] [ref=e297]
+          - paragraph [ref=e298]: Track perceived vehicle scale/weight, construction coherence, navigational clarity, signal/vehicle expectations and atmosphere separately. Preserve uncertain and contradictory responses. Reference review by a qualified independent human remains its own pending evidence stream.
+          - paragraph [ref=e299]: Participant validation pending. No recruitment count or statistical power is asserted.
+    - generic [ref=e300]: Chunk Surfer · Borough Passage street proof · One existing segment. Evidence is dated and scoped. Original source material and known limitations are retained; broader rollout is deferred.

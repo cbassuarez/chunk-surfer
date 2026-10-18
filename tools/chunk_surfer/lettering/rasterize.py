@@ -9,6 +9,7 @@ from pathlib import Path
 from PIL import Image,ImageDraw,ImageFont,ImageFilter
 import numpy as np
 import hashlib,json,math,sys
+from finish import finish_surface
 ROOT=Path(__file__).resolve().parents[3]
 HERE=Path(__file__).resolve().parent
 def sha(b):return hashlib.sha256(b).hexdigest()
@@ -151,15 +152,18 @@ def coverage(job,w,h):
    lineCap=-lf.getbbox('H',anchor='ls')[1];start=(workWidth-width)/2;x=start;baseline=centre*h+lineCap/2
    for ci,c in enumerate(line):
     if job.get('kerned'):x=start+lf.getlength(line[:ci+1])-lf.getlength(c)+tracking*ci
-    draw.text((x,baseline),c,font=lf,fill=255,anchor='ls',stroke_width=stroke,stroke_fill=255)
+    # Reversed, optically weighted dashes need the same minimum ink depth as
+    # the upright stems; their typeface hairline otherwise falls below a pixel.
+    glyphStroke=stroke+(1 if stroke and c in '—–' else 0)
+    draw.text((x,baseline),c,font=lf,fill=255,anchor='ls',stroke_width=glyphStroke,stroke_fill=255)
     if category=='maintenance' and c in 'ABDOPQR0689':
      # Real stencil islands retain a narrow unpainted bridge at the crown.
      gw=lf.getlength(c);bridge=max(1,round(lineCap*.040));draw.rectangle((x+gw*.49-bridge/2,baseline-lineCap-1,x+gw*.49+bridge/2,baseline-lineCap*.56),fill=0)
     if c!=' ':
      glyph=dict(character=c,line=li,xPx=x*actualWidthScale,advancePx=(lf.getlength(c)+tracking)*actualWidthScale)
      if widthScale!=1 or stroke:
-      box=lf.getbbox(c,anchor='ls',stroke_width=stroke)
-      glyph.update(baselinePx=baseline,boundsPx=[(x+box[0])*actualWidthScale,baseline+box[1],(x+box[2])*actualWidthScale,baseline+box[3]])
+      box=lf.getbbox(c,anchor='ls',stroke_width=glyphStroke)
+      glyph.update(baselinePx=baseline,opticalStrokePx=glyphStroke,boundsPx=[(x+box[0])*actualWidthScale,baseline+box[1],(x+box[2])*actualWidthScale,baseline+box[3]])
      glyphs.append(glyph)
     x+=lf.getlength(c)+tracking
    if widthScale!=1 or stroke:
@@ -203,29 +207,20 @@ def tile(job):
  else:mask,metrics=coverage(job,w,h)
  a=np.asarray(mask,dtype=float)/255;metrics['coverage']=float(np.mean(a>.5));rng=np.random.default_rng(seeded(job.get('seed',job['id'])))
  ground=rgb(job['palette']['ground']);ink=rgb(job['palette']['ink']);process=job.get('process') or {'institution':'vitreous-enamel screen print','maintenance':'bridged maintenance stencil','personal':'broad-nib volunteer brush paint','vehicle':'transport sign print','phone':'telephone instruction print','record':'paper ink'}[category]
- broad=noise(rng,(w,h),(max(3,w//50),max(3,h//35)));fine=noise(rng,(w,h),(max(3,w//3),max(3,h//3)))
  substrate=job.get('substrate') or {};sampled=bool(substrate.get('albedoPath'))
  load=lambda key:np.asarray(Image.open(substrate[key]).convert('RGB').resize((w,h),Image.Resampling.BICUBIC),dtype=float)
  colors=load('albedoPath') if sampled else np.broadcast_to(ground,(h,w,3)).copy()
- rough=np.full((h,w),substrate.get('roughnessFactor',.86 if category in ['personal','record','maintenance'] else .40),dtype=float);metal=np.full((h,w),substrate.get('metallicFactor',0),dtype=float);ao=np.ones((h,w));height=np.zeros((h,w));baseNormal=None
+ profile=job['finish']
+ rough=np.full((h,w),substrate.get('roughnessFactor',profile['roughness']),dtype=float);metal=np.full((h,w),substrate.get('metallicFactor',profile.get('metallic',0)),dtype=float);ao=np.ones((h,w));baseNormal=None
  if sampled:
   if substrate.get('ormPath'):
    hostOrm=load('ormPath')/255;ao=hostOrm[...,0];rough=hostOrm[...,1];metal=hostOrm[...,2]
   if substrate.get('normalPath'):baseNormal=load('normalPath')/127.5-1
- else:
-  colors+=broad[...,None]*(7 if category in ['personal','record'] else 3)+fine[...,None]*1.2
-  rough+=broad*.025;height+=noise(rng,(w,h),(max(3,w//15),max(3,h//20)),.00008)
-  if category=='personal':
-   drag=noise(rng,(w,h),(max(4,w//2),8));colors+=drag[...,None]*3;rough+=drag*.02
-  if category=='maintenance':colors+=noise(rng,(w,h),(18,6))[...,None]*3
- yy,xx=np.mgrid[0:h,0:w];edge=np.minimum.reduce([xx,w-1-xx,yy,h-1-yy])
- # Only actual board/paper perimeters wear. A word-sized patch on a ledger or
- # an apparatus must never acquire a fictitious distressed rectangular border.
- edgeWear=job.get('edgeWear',category in ['institution','personal','vehicle'])
- chips=(edge<max(.5,min(w/job['widthM'],h/job['heightM'])*.0007))&(noise(rng,(w,h),(max(3,w//7),max(3,h//7)))>.20)&edgeWear&(not sampled)
- colors[chips]=ground*.72;rough[chips]=.9
- colors=colors*(1-a[...,None])+ink*a[...,None];rough=rough*(1-a)+job.get('inkRoughness',.80 if category in ['personal','record','maintenance'] else .48)*a;metal=metal*(1-a)+job.get('inkMetallic',0)*a
- height+=a*job.get('reliefM',.000007);dx=job['widthM']/w;dy=job['heightM']/h;gx=np.gradient(height,axis=1)/dx;gy=np.gradient(height,axis=0)/dy
+ coverageSha=sha(mask.tobytes())
+ colors,rough,metal,height,finishEvidence=finish_surface({**job,'_inkSrgb':ink,'_groundSrgb':ground,'_coverageSha256':coverageSha},profile,a,colors,rough,metal,sampled,rng)
+ if not np.array_equal(a,np.asarray(mask,dtype=float)/255):raise ValueError('Finish changed authored pigment coverage '+job['id'])
+ metrics['coverageSha256']=coverageSha
+ dx=job['widthM']/w;dy=job['heightM']/h;gx=np.gradient(height,axis=1)/dx;gy=np.gradient(height,axis=0)/dy
  normal=np.stack([-gx,-gy,np.ones_like(gx)],axis=-1) if baseNormal is None else baseNormal+np.stack([-gx,-gy,np.zeros_like(gx)],axis=-1);normal/=np.maximum(1e-8,np.linalg.norm(normal,axis=-1)[...,None])
  color=Image.fromarray(np.uint8(np.clip(colors,0,255)),mode='RGB');normalBytes=np.uint8(np.clip(normal*.5+.5,0,1)*255)
  if sampled and substrate.get('normalPath'):
@@ -233,10 +228,75 @@ def tile(job):
   # encoded normal. Normalizing the decoded 8-bit vector causes needless drift.
   clear=a==0;normalBytes[clear]=np.uint8(load('normalPath'))[clear]
  normal=Image.fromarray(normalBytes,mode='RGB')
- orm=Image.fromarray(np.uint8(np.stack([ao,np.clip(rough,.08,1),np.clip(metal,0,1)],axis=-1)*255),mode='RGB')
+ ormBytes=np.uint8(np.stack([ao,np.clip(rough,.08,1),np.clip(metal,0,1)],axis=-1)*255)
+ if sampled and substrate.get('ormPath'):ormBytes[a==0]=np.uint8(load('ormPath'))[a==0]
+ orm=Image.fromarray(ormBytes,mode='RGB')
  luminance=lambda c:float(np.dot(c,[.2126,.7152,.0722]))
  polarity='dark-on-light' if luminance(ink)<luminance(ground) else 'light-on-dark'
- return dict(job=job,width=w,height=h,color=color,mask=mask,normal=normal,orm=orm,metrics=metrics,process=process,polarity=polarity,emission=job.get('emission','none'))
+ return dict(job=job,width=w,height=h,color=color,mask=mask,normal=normal,orm=orm,metrics=metrics,process=process,polarity=polarity,emission=job.get('emission','none'),finish=profile,finishEvidence=finishEvidence)
+
+def pack_tiles(tiles,size,gutter):
+ """Deterministic MaxRects placement without rotations or resampling.
+
+ The former single-width guillotine split stranded thin sampled stamps around
+ a nearly full square. Those maps need all three channels at native size, so
+ their unused bounding rectangle is especially expensive. Search four stable
+ orders and every legal 8px bin width, then minimize actual cropped page area.
+ """
+ align=lambda n:min(size,max(64,math.ceil(n/8)*8))
+ items=[dict(tile=t,width=t['width']+gutter*2,height=t['height']+gutter*2) for t in tiles]
+ for t in items:
+  if t['width']>size or t['height']>size:raise ValueError('Atlas tile exceeds page '+t['tile']['job']['id'])
+ def place(ordered,width):
+  bins=[]
+  for t in ordered:
+   candidates=[];tw=t['width'];th=t['height']
+   for bi,bin in enumerate(bins):
+    for fx,fy,fw,fh in bin['free']:
+     if tw<=fw and th<=fh:candidates.append((min(fw-tw,fh-th),max(fw-tw,fh-th),bi,fy,fx))
+   if candidates:
+    _,_,bi,fy,fx=min(candidates)
+   else:
+    bins.append(dict(free=[(0,0,width,size)],tiles=[]));bi=len(bins)-1;fx=fy=0
+   bin=bins[bi];free=[]
+   for x,y,w,h in bin['free']:
+    if fx>=x+w or fx+tw<=x or fy>=y+h or fy+th<=y:
+     free.append((x,y,w,h));continue
+    if fx>x:free.append((x,y,fx-x,h))
+    if fx+tw<x+w:free.append((fx+tw,y,x+w-fx-tw,h))
+    if fy>y:free.append((x,y,w,fy-y))
+    if fy+th<y+h:free.append((x,fy+th,w,y+h-fy-th))
+   # MaxRects free regions may overlap each other, but never a placed tile.
+   # Remove duplicates and wholly contained regions with stable tie handling.
+   pruned=[]
+   for i,a in enumerate(free):
+    x,y,w,h=a
+    contained=any(i!=j and x>=b[0] and y>=b[1] and x+w<=b[0]+b[2] and y+h<=b[1]+b[3] and (a!=b or i>j) for j,b in enumerate(free))
+    if not contained:pruned.append(a)
+   bin['free']=pruned;bin['tiles'].append(dict(tile=t['tile'],x=fx+gutter,y=fy+gutter))
+  for bin in bins:
+   bin['width']=align(max(p['x']+p['tile']['width']+gutter for p in bin['tiles']))
+   bin['height']=align(max(p['y']+p['tile']['height']+gutter for p in bin['tiles']))
+  return bins
+ orders=[lambda t:t['width']*t['height'],lambda t:t['height'],lambda t:t['width'],lambda t:max(t['width'],t['height'])]
+ widths=list(range(align(max(t['width'] for t in items)),size+1,8))
+ if not widths or widths[-1]!=size:widths.append(size)
+ best=None;bestBins=None
+ for oi,order in enumerate(orders):
+  ordered=sorted(items,key=lambda t:(-order(t),-t['width']*t['height'],t['tile']['job']['id']))
+  for width in widths:
+   bins=place(ordered,width);score=(sum(b['width']*b['height'] for b in bins),len(bins),oi,width)
+   if best is None or score<best:best=score;bestBins=bins
+ for bin in bestBins:
+  # Independently check the selected candidate, including every full gutter.
+  for i,p in enumerate(bin['tiles']):
+   t=p['tile'];left=p['x']-gutter;top=p['y']-gutter;right=p['x']+t['width']+gutter;bottom=p['y']+t['height']+gutter
+   if left<0 or top<0 or right>bin['width'] or bottom>bin['height']:raise ValueError('Packed tile exceeds cropped atlas')
+   for q in bin['tiles'][i+1:]:
+    u=q['tile'];overlap=left<q['x']+u['width']+gutter and right>q['x']-gutter and top<q['y']+u['height']+gutter and bottom>q['y']-gutter
+    if overlap:raise ValueError('Packed print gutters overlap')
+   t['x']=p['x'];t['y']=p['y']
+ return [[p['tile'] for p in b['tiles']] for b in bestBins]
 
 def main():
  source=Path(sys.argv[1]);out=Path(sys.argv[2]);data=json.loads(source.read_text());size=data.get('pageSize',1024);out.mkdir(parents=True,exist_ok=True)
@@ -247,7 +307,7 @@ def main():
   if job.get('category')!='personal' and fingerprint in shared:
    shared[fingerprint]['jobs'].append(job);continue
   t=tile(job);t['jobs']=[job];tiles.append(t);shared[fingerprint]=t
- for t in tiles:groups.setdefault((t['polarity'],t['emission'],tuple(t['job'].get('emissiveFactor',[0,0,0]))),[]).append(t)
+ for t in tiles:groups.setdefault((t['polarity'],t['emission'],tuple(t['job'].get('emissiveFactor',[0,0,0])),bool((t['job'].get('substrate') or {}).get('albedoPath'))),[]).append(t)
  pages=[];entries=[];gutter=16
  for key,group in sorted(groups.items()):
   shelves=[];pageTiles=[];x=y=rowH=0
@@ -255,7 +315,9 @@ def main():
    nonlocal pageTiles,x,y,rowH
    if not pageTiles:return
    usedW=max(t['x']+t['width']+gutter for t in pageTiles);usedH=max(t['y']+t['height']+gutter for t in pageTiles)
-   pw=min(size,2**math.ceil(math.log2(max(64,usedW))));ph=min(size,2**math.ceil(math.log2(max(64,usedH))))
+   # WebGL2 supports mipmapped NPOT images. Retain every glyph texel and the
+   # 16px gutters; 8px alignment keeps reduced channel dimensions integral.
+   pw=min(size,max(64,math.ceil(usedW/8)*8));ph=min(size,max(64,math.ceil(usedH/8)*8))
    rgbPage=Image.new('RGB',(pw,ph));maskPage=Image.new('L',(pw,ph));normalPage=Image.new('RGB',(pw,ph),(128,128,255));ormPage=Image.new('RGB',(pw,ph),(255,220,0))
    pageIndex=len(pages);name='lettering-'+str(pageIndex).zfill(2)
    for t in pageTiles:
@@ -264,32 +326,21 @@ def main():
      expanded.paste(image.crop((0,0,1,image.height)).resize((gutter,image.height)),(0,gutter));expanded.paste(image.crop((image.width-1,0,image.width,image.height)).resize((gutter,image.height)),(gutter+image.width,gutter))
      expanded.paste(expanded.crop((0,gutter,expanded.width,gutter+1)).resize((expanded.width,gutter)),(0,0));expanded.paste(expanded.crop((0,gutter+image.height-1,expanded.width,gutter+image.height)).resize((expanded.width,gutter)),(0,gutter+image.height));target.paste(expanded,(t['x']-gutter,t['y']-gutter))
     for job in t['jobs']:
-     entries.append(dict(id=job['id'],page=pageIndex,uvRect=[t['x']/pw,t['y']/ph,(t['x']+t['width'])/pw,(t['y']+t['height'])/ph],copy=job.get('copy','\n'.join(job.get('lines',[]))),lines=job.get('lines') or str(job.get('copy','')).split('\n'),widthM=job['widthM'],heightM=job['heightM'],metrics=t['metrics'],category=job.get('category'),process=t['process'],polarity=t['polarity'],emission=t['emission'],reliefM=job.get('reliefM',.000007),source=job.get('source'),orientation=job.get('orientation'),bounds=job.get('bounds'),substrate={k:v for k,v in (job.get('substrate') or {}).items() if k in ['asset','mesh','sourceAssetSha256','roughnessFactor','metallicFactor','normalScale']} or None))
+     entries.append(dict(id=job['id'],page=pageIndex,uvRect=[t['x']/pw,t['y']/ph,(t['x']+t['width'])/pw,(t['y']+t['height'])/ph],copy=job.get('copy','\n'.join(job.get('lines',[]))),lines=job.get('lines') or str(job.get('copy','')).split('\n'),widthM=job['widthM'],heightM=job['heightM'],metrics=t['metrics'],category=job.get('category'),process=t['process'],polarity=t['polarity'],emission=t['emission'],reliefM=job.get('reliefM',.000007),finish=t['finish'],finishEvidence=t['finishEvidence'],source=job.get('source'),orientation=job.get('orientation'),bounds=job.get('bounds'),substrate={k:v for k,v in (job.get('substrate') or {}).items() if k in ['asset','mesh','sourceAssetSha256','roughnessFactor','metallicFactor','normalScale']} or None))
    rgba=rgbPage.copy();rgba.putalpha(maskPage);rgba.save(out/(name+'-albedo.png'))
-   normalPage.resize((max(16,pw//4),max(16,ph//4)),Image.Resampling.LANCZOS).save(out/(name+'-normal.png'))
-   ormPage.resize((max(16,pw//2),max(16,ph//2)),Image.Resampling.LANCZOS).save(out/(name+'-orm.png'))
-   pages.append(dict(name=name,width=pw,height=ph,albedo=name+'-albedo.png',normal=name+'-normal.png',orm=name+'-orm.png',category='shared compatible print',process='per-material fabrication; see entries',polarity=key[0],emission=key[1],emissiveFactor=list(key[2]),sharedTiles=len(pageTiles),rgbaBaseLevelBytes=pw*ph*4+max(16,pw//2)*max(16,ph//2)*4+max(16,pw//4)*max(16,ph//4)*4))
+   # Sampled hosts are preprojected from exact production channels. Reducing
+   # their normal/ORM here would change original clear stock and blur the
+   # border of the new ink independently of the source. Keep these maps at
+   # native resolution; other process sheets retain their prior residency.
+   nw,nh=(pw,ph) if key[3] else (max(16,pw//4),max(16,ph//4))
+   ow,oh=(pw,ph) if key[3] else (max(16,pw//2),max(16,ph//2))
+   normalPage.resize((nw,nh),Image.Resampling.LANCZOS).save(out/(name+'-normal.png'))
+   ormPage.resize((ow,oh),Image.Resampling.LANCZOS).save(out/(name+'-orm.png'))
+   pages.append(dict(name=name,width=pw,height=ph,normalWidth=nw,normalHeight=nh,ormWidth=ow,ormHeight=oh,albedo=name+'-albedo.png',normal=name+'-normal.png',orm=name+'-orm.png',category='shared compatible print',process='per-material fabrication; see entries',polarity=key[0],emission=key[1],emissiveFactor=list(key[2]),sharedTiles=len(pageTiles),preservesSampledStockChannels=key[3],rgbaBaseLevelBytes=(pw*ph+ow*oh+nw*nh)*4))
    pageTiles=[];x=y=rowH=0
-  bins=[]
-  for t in sorted(group,key=lambda t:(-t['width']*t['height'],-max(t['width'],t['height']),t['job']['id'])):
-   tw=t['width']+gutter*2;th=t['height']+gutter*2
-   if tw>size or th>size:raise ValueError('Atlas tile exceeds page '+t['job']['id'])
-   candidates=[]
-   for bi,bin in enumerate(bins):
-    for fi,(fx,fy,fw,fh) in enumerate(bin['free']):
-     if tw<=fw and th<=fh:candidates.append((min(fw-tw,fh-th),fw*fh-tw*th,bi,fi))
-   if not candidates:
-    bins.append(dict(free=[(0,0,size,size)],tiles=[]));candidates=[(0,0,len(bins)-1,0)]
-   _,_,bi,fi=min(candidates);bin=bins[bi];fx,fy,fw,fh=bin['free'].pop(fi)
-   if fw-tw>fh-th:
-    remaining=[(fx+tw,fy,fw-tw,fh),(fx,fy+th,tw,fh-th)]
-   else:
-    remaining=[(fx+tw,fy,fw-tw,th),(fx,fy+th,fw,fh-th)]
-   bin['free'].extend(r for r in remaining if r[2]>0 and r[3]>0)
-   t['x']=fx+gutter;t['y']=fy+gutter;bin['tiles'].append(t)
-  for bin in bins:pageTiles=bin['tiles'];finish()
+  for packed in pack_tiles(group,size,gutter):pageTiles=packed;finish()
 
- manifest=dict(version=1,inputSha256=sha(source.read_bytes()),generatorSha256=sha(Path(__file__).read_bytes()),pages=pages,entries=entries,coverageChannel='baseColorAlpha',alphaMode='OPAQUE',rgbPremultiplied=False,gutterPx=gutter,
+ manifest=dict(version=1,inputSha256=sha(source.read_bytes()),generatorSha256=sha(Path(__file__).read_bytes()),finishAuthoringSha256=sha((HERE/'finish.py').read_bytes()),pages=pages,entries=entries,coverageChannel='baseColorAlpha',alphaMode='OPAQUE',rgbPremultiplied=False,gutterPx=gutter,packing='MaxRects BSSF; four stable orders; 8px bin-width search and tight NPOT envelope; no rotation/resampling',
   note='Atlas RGB remains authored substrate color when alpha pigment coverage is zero. Normal and ORM are filtered independently. Empty or missing authored glyphs fail the bake.')
  (out/'atlas-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n');print(json.dumps(dict(jobs=len(jobs),pages=len(pages),baseLevelBytes=sum(p['rgbaBaseLevelBytes'] for p in pages))))
 if __name__=='__main__':main()

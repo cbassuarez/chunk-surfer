@@ -217,9 +217,18 @@ export function createSelfAudioMask({
 
   function clear() { events = []; lastProgram = null; lastProgramAtMs = -Infinity; }
 
+  // Cancelling a scheduled world cue also cancels its envelope reference. Keep
+  // other sources and the measured final-program reference intact.
+  function forgetSource(sourceId) {
+    if (typeof sourceId !== 'string' || !sourceId.length) return 0;
+    const previous = events.length;
+    events = events.filter(event => event.source.id !== sourceId);
+    return previous - events.length;
+  }
+
   function inspect(atMs = nowMs()) {
     return { events: events.length, sample: sample(atMs), config: { ...config } };
   }
 
-  return { observe, sample, effective, clear, inspect };
+  return { observe, sample, effective, clear, forgetSource, inspect };
 }

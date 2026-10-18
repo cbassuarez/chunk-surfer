@@ -10,7 +10,8 @@ const reserve = (state, extra = {}) => reserveHallStudyParticipant(state, {
   participantId: `hall-anonymous-${++serial}`, freshParticipant: true, comfortableVolume: true,
   device: 'headphones', nowMs: 1000 + serial, random: () => .41, ...extra,
 });
-const launch = (state) => startHallStudyTrial(state, { configuration: { visualSeed: HALL_STUDY.visualSeed }, nowMs: 2000 });
+const launch = (state) => startHallStudyTrial(state, { configuration: { visualSeed: HALL_STUDY.visualSeed,
+  baselineHash: 'condition-independent-fixture-v1', baseline: { power: [], doors: [], pressure: 0 } }, nowMs: 2000 });
 const finish = (state) => finishHallStudyTrial(state, { trace: { audio: { played: 0 }, director: { emitted: 0 } }, nowMs: 3000 });
 function complete(state) {
   let next = state;
@@ -81,17 +82,29 @@ test('free recall and location are exact, sequential and permanently locked befo
   assert.throws(() => answerHallStudyQuestion(recovered, { questionId: 'recall', value: 'Another edit', nowMs: 4300 }));
 });
 
-test('presence, startle, spatial fit, confidence and recording metadata remain distinct measures', () => {
+test('contingency, presence, startle, spatial fit, confidence and recording metadata remain distinct measures', () => {
   assert.deepEqual(HALL_STUDY_QUESTIONS.slice(2).map((question) => question.id), [
-    'recognition', 'presence', 'startle', 'spatialFit', 'confidence', 'recordingDevice',
+    'recognition', 'contingency', 'presence', 'startle', 'spatialFit', 'confidence', 'recordingDevice',
   ]);
   const fit = HALL_STUDY_QUESTIONS.find((question) => question.id === 'spatialFit');
   assert.ok(fit.choices.some((entry) => entry.value === 'nothing'));
   assert.ok(fit.choices.some((entry) => entry.value === 'unsure'));
   const state = complete(finish(launch(reserve(freshHallStudy()))));
   assert.equal(state.current.phase, 'complete');
-  assert.equal(Object.keys(state.current.answers).length, 8);
+  assert.equal(Object.keys(state.current.answers).length, 9);
   assert.throws(() => launch(state));
+});
+
+test('every participant must match a recorded, condition independent game baseline', () => {
+  const reserved = reserve(freshHallStudy());
+  assert.throws(() => startHallStudyTrial(reserved, { configuration: { ready: true }, nowMs: 2000 }), /baseline/);
+  const first = nextHallStudyParticipant(complete(finish(launch(reserved))));
+  const second = reserve(first);
+  assert.throws(() => startHallStudyTrial(second, { configuration: {
+    baselineHash: 'changed-power-or-presence-v1', baseline: { power: ['sp03'] },
+  }, nowMs: 3000 }), /differs/);
+  assert.equal(second.current.phase, 'reserved', 'a mismatch cannot consume another arm or mutate the assignment');
+  assert.equal(launch(second).current.phase, 'playing');
 });
 
 test('incomplete data cannot be replaced by a new participant; completed data is retained', () => {
@@ -130,7 +143,7 @@ test('corrupt, incompatible or unavailable stored state fails closed instead of 
 });
 
 test('the participant page embeds the actual game and invokes only the study bridge, without automatic legal acceptance or camera control', () => {
-  const html = readFileSync(new URL('../apparition-applause-study.html', import.meta.url), 'utf8');
+  const html = readFileSync(new URL('../hall-encounter-study.html', import.meta.url), 'utf8');
   assert.match(html, /<title>Hall encounter study<\/title>/);
   assert.match(html, /<iframe[^>]+src="\.\/index\.html\?nomic=1"/);
   assert.doesNotMatch(html, /allow="[^\"]*microphone/);

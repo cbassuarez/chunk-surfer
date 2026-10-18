@@ -22,7 +22,7 @@ assert.deepEqual(OPENING_STREET_CAPTURE_PRESETS.map((preset)=>preset.id),[
 ]);
 assert.ok(OPENING_STREET_PROPS.every((prop)=>prop.blocks===false&&prop.interactive===false));
 assert.equal(OPENING_STREET_PROPS.filter((prop)=>prop.mesh==='opening_street_tree_small').length,1);
-assert.deepEqual(OPENING_STREET_PARK.bounds,{x0:62,x1:76,y0:195.5,y1:203});
+assert.deepEqual(OPENING_STREET_PARK.bounds,{x0:62,x1:76,y0:200,y1:203});
 assert.equal(OPENING_STREET_PARK.blocks,false);
 assert.equal(OPENING_STREET_PARK.treeId,'opening-street-municipal-tree');
 for(const id of OPENING_STREET_PARK.furnitureIds){
@@ -47,7 +47,7 @@ assert.equal(OPENING_STREET_MESHES.opening_street_ground.w,groundStats.bounds.ma
 assert.equal(OPENING_STREET_MESHES.opening_street_ground.d,groundStats.bounds.max[2]-groundStats.bounds.min[2]);
 assert.ok(ground.asphalt/groundArea>=.80,'at least 80 percent of the new ground is asphalt');
 assert.ok(ground.cobbles<ground.asphalt*.2,'cobble remains a narrow service treatment');
-assert.ok(ground.grass>=70&&ground.grass<=90,'the pocket park lawn stays bounded rather than becoming a meadow');
+assert.ok(ground.grass>=40&&ground.grass<=41,'the two mapped arrival lawns and retained service seams own all grass receivers');
 
 const frontage=stats.materialAreas.opening_street_frontage;
 const frontageArea=Object.values(frontage).reduce((sum,value)=>sum+value,0);

@@ -19,8 +19,9 @@
 // A cell that is `solid` is rock: no floor, no ceiling, you cannot be in it.
 // A cell that is VOID (outside the building) is also solid, but reads as sky.
 
+import { applyBuildingWindowView, buildingWindowForObserver } from './building-window-views.js';
 import {
-  F, ZONE, ZONE_WORLD, MATERIAL, cellFor, materialForZone,
+  F, ZONE, ZONE_WORLD, MATERIAL, CELL, cellFor, materialForZone,
   EYE, STEP_UP, HEADROOM, PLAN_SCALE, AMBIENT_PLACE_SCALE, isOutdoorZone
 } from '../data/floorplan/legend.js';
 import {
@@ -37,6 +38,7 @@ import {
   stableDoorEndpoint,
 } from '../game/door-runtime.js';
 import { doorDefinitionWithArchetype } from '../data/conservatory-doors.js';
+import { EXTERIOR_PUB, isPubMeshEnvelopeZone } from '../data/exterior-pub.js';
 
 export const H_MIN = -8;
 export const H_MAX = 24;
@@ -895,6 +897,11 @@ export function isSolid(x, y) {
   return !!plan.solid[idx(cx, cy)];
 }
 
+export function isCollisionOnly(x,y){
+  const cx=Math.floor(x),cy=Math.floor(y);
+  return inside(cx,cy)&&!!plan.collisionOnly?.[idx(cx,cy)];
+}
+
 export function floorAt(x, y) { const c = cellAt(x, y); return c ? c.floor : 0; }
 export function ceilAt(x, y) { const c = cellAt(x, y); return c ? c.ceil : 0; }
 export function zoneAt(x, y) { const c = cellAt(x, y); return c ? c.zone : ZONE.none; }
@@ -1459,7 +1466,10 @@ export function physicalRenderPlanFor(x,y){
   const observerZone=zoneAt(x,y);
   // The same predicate prop-visibility asks, so the walls and the skin can
   // never disagree about which side of the envelope you are on.
-  const exteriorObserver=isOutdoorZone(observerZone);
+  // The pub is indoors but its thin, windowed envelope is mesh-owned.
+  // Keep the ordinary city slice through its real doors and window openings.
+  const exteriorObserver=isOutdoorZone(observerZone)||isPubMeshEnvelopeZone(observerZone);
+  const architecturalWindow=exteriorObserver?null:buildingWindowForObserver({x:here.x*CELL,z:here.z*CELL,y:here.y,spaceId:here.spaceId,renderGroup:here.renderGroup});
   const northRoofGateSightline=!exteriorObserver&&group==='academic'&&here.y>=9.5&&here.y<=10.5
     &&x>=84&&x<=94&&y>=480&&y<=492;
   const band=Math.round(here.y/HEIGHT_BAND);
@@ -1477,7 +1487,7 @@ export function physicalRenderPlanFor(x,y){
   // to hand its slice to the other. That is how the pool came back solid even
   // after the retention rule was right: the cached foyer slice had no basin in
   // it. Same shape of bug as the rounded band the note above describes.
-  const cacheKey=`${group}:${here.layer}:${here.spaceId||''}:${band}:${exteriorObserver?'exterior':'enclosed'}:${northRoofGateSightline?'north-roof-aperture':'ordinary'}`;
+  const cacheKey=`${group}:${here.layer}:${here.spaceId||''}:${band}:${exteriorObserver?'exterior':'enclosed'}:${northRoofGateSightline?'north-roof-aperture':'ordinary'}:${architecturalWindow?.id||'no-window'}`;
   if(plan.physical.renderCache.has(cacheKey))return plan.physical.renderCache.get(cacheKey);
   const w=plan.physical.width,h=plan.physical.height,originX=plan.physical.originX||0,originY=plan.physical.originY||0,solid=new Uint8Array(w*h).fill(1),floor=new Float32Array(w*h),ceil=new Float32Array(w*h),flags=new Uint8Array(w*h),zone=new Uint8Array(w*h),material=new Uint8Array(w*h),rgba=new Uint8Array(w*h*4);
   // Cells where a church contributes its ground to an outdoor slice. Their
@@ -1509,7 +1519,7 @@ export function physicalRenderPlanFor(x,y){
     // how Ellery does the same thing.
     const sceneSpans=exteriorObserver?all.filter((span)=>
       span.zone===ZONE.street||span.zone===ZONE.civicCourt||span.zone===ZONE.serviceYard
-      ||span.zone===ZONE.dock||span.zone===ZONE.church||span.zone===ZONE.academicRoof):all;
+      ||span.zone===ZONE.dock||span.zone===ZONE.church||span.zone===ZONE.academicRoof||isPubMeshEnvelopeZone(span.zone)):all;
     if(!sceneSpans.length)continue;
     const hallSpans=sceneSpans.filter((s)=>s.spaceId==='hall');
     const hallEnvelope=here.spaceId==='hall'&&here.layer!=='hall_stair'&&hallSpans.length;
@@ -1545,7 +1555,7 @@ export function physicalRenderPlanFor(x,y){
     // from the eye, so it can never become the nearest span and never changes
     // what an already-drawn cell draws.
     const sameRoom=here.spaceId?(s)=>s.spaceId===here.spaceId:()=>false;
-    let list=hallEnvelope?sceneSpans.filter((s)=>s.spaceId==='hall'||s.spaceId==='front_atrium'):sceneSpans.filter((s)=>(s.flags&F.STAIR)||Math.abs(s.floor-hy)<=SPAN_WINDOW||sameRoom(s)||landingVisible(s)||(here.spaceId==='hall'&&s.spaceId==='front_atrium')||academicAtriumVoid);
+    let list=hallEnvelope?sceneSpans.filter((s)=>s.spaceId==='hall'||s.spaceId==='front_atrium'):sceneSpans.filter((s)=>(s.flags&F.STAIR)||Math.abs(s.floor-hy)<=SPAN_WINDOW||sameRoom(s)||landingVisible(s)||(here.spaceId==='hall'&&s.spaceId==='front_atrium')||(academicAtriumVoid&&s.spaceId==='front_atrium'));
     if(!list.length)continue;const localX=px-originX,localY=py-originY;if(localX<0||localY<0||localX>=w||localY>=h)continue;const i=localY*w+localX;solid[i]=0;
     // Hall decks are structural meshes. The sector envelope remains the full
     // air volume so orchestra and both balconies retain reciprocal sightlines.
@@ -1607,6 +1617,15 @@ export function physicalRenderPlanFor(x,y){
         // right granularity to read a church's roofline off.
         if(s.zone===ZONE.dock)yardCeilByRow[localY]=Math.max(yardCeilByRow[localY]||0,s.ceil);
         if(s.zone===ZONE.church){churchGround.push(i);flags[i]=F.SKY;}
+        if(isPubMeshEnvelopeZone(s.zone)){
+          // Logical floor/ceiling/weather remain .12/3.52/indoors. The real
+          // ceiling and walls are depth-writing meshes. Lower ONLY the render
+          // underlay so the 125mm height-texture quantum cannot bury the 12mm
+          // parquet finish; the source floor and walking height never move.
+          floor[i]=s.floor-EXTERIOR_PUB.renderUnderlayDrop;
+          ceil[i]=24;flags[i]=F.SKY;
+        }
+
         // The occupied glass roof has a low collision parapet. Its real 18.1m
         // ceiling must not cut a 5.9m-high wall out of the outdoor slice's
         // 24m sky volume; the roof mesh draws the visible 1.1m parapet.
@@ -1665,6 +1684,7 @@ export function physicalRenderPlanFor(x,y){
     const cy=(i-(i%w))/w;
     ceil[i]=yardCeilByRow[cy]||24;
   }
+  if(architecturalWindow)applyBuildingWindowView({w,h,originX,originY,solid,floor,ceil,flags,zone,material},{x:here.x*CELL,z:here.z*CELL,y:here.y,spaceId:here.spaceId,renderGroup:here.renderGroup});
   for(let i=0;i<w*h;i++){rgba[i*4]=solid[i]?0:encodeH(floor[i]);rgba[i*4+1]=solid[i]?0:encodeH(ceil[i]);rgba[i*4+2]=solid[i]?F.SOLID:flags[i];rgba[i*4+3]=solid[i]?0:zone[i];}
   const ambient=bakeAmbientField({w,h,solid,flags,floor,ceil});
   const out={rgba,material,ambient,solid,floor,ceil,flags,zone,w,h,originX,originY,group,key:cacheKey};plan.physical.renderCache.set(cacheKey,out);return out;

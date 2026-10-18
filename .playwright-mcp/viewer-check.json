@@ -1,0 +1,44 @@
+{
+  "before": {
+    "title": "Borough Passage · Street proof",
+    "head": "A street whose parts agree.",
+    "badges": [
+      "Implemented · visual refinement pending",
+      "21 checks passed · performance acceptance pending",
+      "0 participants · validation pending",
+      "Qualified independent review pending"
+    ],
+    "measurementRows": 15,
+    "videos": [
+      {
+        "src": "http://127.0.0.1:5355/artifacts/street-realignment/baseline-reconstructed-matched-route.webm",
+        "duration": 26.865,
+        "width": 960,
+        "height": 600,
+        "error": null
+      },
+      {
+        "src": "http://127.0.0.1:5355/artifacts/street-realignment/final-matched-route.webm",
+        "duration": 26.895,
+        "width": 960,
+        "height": 600,
+        "error": null
+      }
+    ],
+    "glb": "0.83 MiB"
+  },
+  "playing": [
+    {
+      "paused": false,
+      "time": 1.783929,
+      "ready": 4
+    },
+    {
+      "paused": false,
+      "time": 1.783046,
+      "ready": 4
+    }
+  ],
+  "participants": 0,
+  "meaning": "Synthetic report-player smoke check; no participant or game-perception claim."
+}

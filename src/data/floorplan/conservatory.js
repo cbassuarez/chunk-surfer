@@ -17,8 +17,10 @@
 // the old staff door onto the concert hall is bricked up, and the chapel is
 // locked with a replacement key retained by front of house.
 //
-import { F, ZONE } from './legend.js';
+import { F, ZONE, MATERIAL } from './legend.js';
 import { CONSERVATORY_DOORS } from '../conservatory-doors.js';
+import { BUILDING_AMENITY_LEVELS } from '../building-amenities.js';
+import { BUILDING_WINDOW_LEVELS } from '../building-windows.js';
 import {
   CHURCH_BOUNDS, CHURCH_LEVELS, CHURCH_BELFRY, CHURCH_TURRETS, churchGroundRows,
   churchDoorAt, churchRoomAt, churchVolumeAt, churchWallAt,
@@ -33,6 +35,9 @@ import {
 } from '../exterior-district.js';
 import { mainStairFloorplanFlights, mainStairFloorplanLandings } from '../main-stair-geometry.js';
 import { ACADEMIC_ROOF, ACADEMIC_ROOF_LEVELS, ACADEMIC_ROOF_PORTALS } from '../academic-roof.js';
+import { streetPilotFloorAt } from '../street-pilot.js';
+import { EXTERIOR_FOREGROUND, foregroundGardenGlyphAt, foregroundArrivalGlyphAt, foregroundCathedralGlyphAt } from '../exterior-foreground.js';
+import { PUB_LEVELS } from '../exterior-pub.js';
 
 // The engine holds no geometry — edit these maps freely. To find a building
 // that has quietly sealed itself:
@@ -408,7 +413,9 @@ function academicFloorRows(){
       // The north service threshold opens over the real street grade, clear
       // of the concert hall's occupied mass. It is a real door-sized opening;
       // the roof-access runtime holds it shut until the staff/recorder check.
-      if(y===2&&x>=44&&x<=45)c='Q';
+      // Register the walkable aperture with the existing fixed frame/leaf,
+      // centred at physical x94. The portal's three lanes sit inside it.
+      if(y===2&&x>=43&&x<=44)c='Q';
       row+=c;
     }
     rows.push(row);
@@ -607,9 +614,7 @@ const YARD_STAIR_HEAD={x0:13,x1:17,y0:18,y1:21};
 // basement stair's grade break behind it, structural, and not something to lay
 // a lawn over. And `yard-fence-west` runs out at z22.2, so starting here lets
 // the fence be the park's north-east boundary instead of a thing standing in it.
-const YARD_PARK={x0:1,x1:19,y0:22,y1:50};
-const YARD_PARK_SPINE=10;          // the north-south path, and the way in
-const YARD_PARK_CROSS=36;          // the east-west path
+// Dry garden paths and apron are shared with foreground mesh generation.
 // The fountain, at the crossing. The glyph is not decoration: `n` is wetTile in
 // `dock`, and that zone-and-material pair is the ADDRESS the water body is found
 // by (game/water-bodies.js). Widening the basin widens the water.
@@ -622,8 +627,8 @@ const YARD_PARK_CROSS=36;          // the east-west path
 // at 3.2m on a one-metre grid that is rows of 3/5/7/7/7/5/3, which is the same
 // octagon. The corners it gives back become lawn, so the grass now runs right up
 // to the coping.
-const YARD_PARK_BASIN_CENTRE={x:10.5,y:36.5};
-const YARD_PARK_BASIN_R=3.2;
+const YARD_PARK_BASIN_CENTRE={x:EXTERIOR_FOREGROUND.garden.fountain.x,y:EXTERIOR_FOREGROUND.garden.fountain.z};
+const YARD_PARK_BASIN_R=EXTERIOR_FOREGROUND.garden.fountain.basinRadius;
 const YARD_PARK_BASIN={x0:7,x1:13,y0:33,y1:39};
 const inYardParkBasin=(x,y)=>Math.hypot(
   x+.5-YARD_PARK_BASIN_CENTRE.x,
@@ -784,6 +789,10 @@ function yardProfile(rx,ry,cell){
   // Kerbs (the outer bound and the stair head) keep their authored floor; they
   // are clearing real spans and must not be dragged down with the yard.
   if(cell.floor!==0) return {ceil};
+  // The cultivated garden's dry paths and fountain apron are worn civic
+  // flags. This changes the native floor material only: water and kerbs above
+  // keep their authored depths, and the arrival drive remains ordinary tarmac.
+  if(foregroundGardenGlyphAt(rx,ry)==='Y')return{floor:0,material:MATERIAL.wetPaving,ceil};
   return {floor:yardFloorAt(rx,ry),ceil};
 }
 function cathedralGroundProfile(_rx,ry,cell){
@@ -817,17 +826,16 @@ function yardRows(){
       // exterior threshold cells live just beyond this mask, so an interior
       // player can still emerge into the yard.
       if(churchGlyphAt(x,y)!==null){ row+='#'; continue; }
-      const inPark=x>=YARD_PARK.x0&&x<=YARD_PARK.x1&&y>=YARD_PARK.y0&&y<=YARD_PARK.y1;
-      if(inPark){
-        const basin=inYardParkBasin(x,y);
-        // The paths are the same ordinary tarmac as the yard they were cut
-        // into — a municipal park is not paved in anything nicer than the road
-        // outside it.
-        const path=x===YARD_PARK_SPINE||y===YARD_PARK_CROSS;
-        row+=basin?'n':path?'Y':'g';
+      const garden=foregroundGardenGlyphAt(x,y);
+      if(garden){
+        // Preserve the basin's exact wetTile octagon and 0.30m step. Only its
+        // dry approach and bypass widen; water/coins keep the same addresses.
+        row+=inYardParkBasin(x,y)?'n':garden;
         continue;
       }
-      row+='Y';
+      // Grass is real underfoot, with the existing dock zone and rain. These
+      // strips cannot overwrite the kerb, stair head or cathedral mask above.
+      row+=foregroundArrivalGlyphAt(x,y)||foregroundCathedralGlyphAt(x,y)||'Y';
     }
     out.push(row);
   }
@@ -847,7 +855,15 @@ function basementProfile(_x,_y,cell){
 function exteriorDistrictProfile(rx,ry,cell){
   if(cell.solid)return null;
   const x=DISTRICT_BOUNDS.x0+rx,y=DISTRICT_BOUNDS.y0+ry;
-  return{ceil:districtFacadeHeightAt(x,y)};
+  const footway=EXTERIOR_FOREGROUND.busStop.footway;
+  // Extend only this stop's pavement into one existing sett column. The road
+  // keeps its carriageway and gutter; the authored grid retains 95mm steps at
+  // the two longitudinal ends rather than pretending to express a smooth ramp.
+  if(x>=footway.x0&&x<footway.x1&&y>=footway.z0&&y<footway.z1){
+    return{ceil:districtFacadeHeightAt(x,y),floor:footway.floor,material:MATERIAL.wetPaving,zone:ZONE.civicCourt};
+  }
+  const pilotFloor=streetPilotFloorAt(x,y);
+  return{ceil:districtFacadeHeightAt(x,y),...(pilotFloor===null?{}:{floor:pilotFloor})};
 }
 
 const EUCLIDEAN_ADDITIONS=[
@@ -858,6 +874,7 @@ const EUCLIDEAN_ADDITIONS=[
   {id:'exterior_civic_block',layer:'ground',space:'exterior_civic_block',renderGroup:'ground',
    origin:DISTRICT_LOGICAL_ORIGIN,physicalOrigin:{x:DISTRICT_BOUNDS.x0,y:DISTRICT_BOUNDS.y0},base:0,
    rows:buildExteriorDistrictRows(),profile:exteriorDistrictProfile},
+  ...PUB_LEVELS,
   {id:'loading_bay_yard',layer:'ground',space:'loading_bay',renderGroup:'ground',
    origin:{x:50,y:200},physicalOrigin:{x:0,y:0},base:0,rows:yardRows(),profile:yardProfile},
   // St Brendan's owns its plan instead of borrowing the yard component. The
@@ -1028,6 +1045,8 @@ const EUCLIDEAN_ADDITIONS=[
       {id:'nave',at:{x:104,y:154},size:{x:3,y:1},physicalAt:{x:99,z:upperWingZ(82)},height:4.8},
     ],
   }]},
+  ...BUILDING_AMENITY_LEVELS,
+  ...BUILDING_WINDOW_LEVELS,
 ];
 
 export const conservatory = {

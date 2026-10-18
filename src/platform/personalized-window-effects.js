@@ -12,7 +12,7 @@ export const FIREBALL_SURFACE_LABELS=Object.freeze([
 ]);
 
 const safe=(task)=>Promise.resolve().then(task).catch(()=>null);
-const STEP_INTERVAL_MS=33;
+const STEP_INTERVAL_MS=16;
 
 // Only the four numbers the native side actually uses to move a window. The
 // escalation, the cycle and the reasoning behind them stay on this side.

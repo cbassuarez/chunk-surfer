@@ -75,9 +75,9 @@ export const PIN_SOURCES = Object.freeze({
   // the patchbay uses it. One lead per act: atrium, gallery, tower.
   //
   // `pin.yard` is the fourth and the odd one out: it is not inside a piece of
-  // furniture and it is not picked up. It is granted for standing still in the
-  // yard long enough to watch the weather, and then noticing what was put behind
-  // you while you did (see game/yard-vigil.js). Somebody at the microphone has
+  // furniture and it is not picked up. The saved id survives its move from the
+  // arrival yard to the roof city seat: sit with the view, then notice the chair
+  // left behind your shoulder (see game/yard-vigil.js). Somebody at the microphone has
   // already mentioned an orange cable belonging to a man who left before dinner.
   // Nothing announces it. It is the only lead in the game a player can be handed
   // without being told they have been handed anything.

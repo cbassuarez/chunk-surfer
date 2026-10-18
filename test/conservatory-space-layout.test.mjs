@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { conservatory } from '../src/data/floorplan/conservatory.js';
 import { CONSERVATORY_PROPS, PROP_MESH } from '../src/data/conservatory-props.js';
 import { MATERIAL, PLAN_SCALE, ZONE } from '../src/data/floorplan/legend.js';
+import { PROP_BOUNDS } from '../src/data/generated/prop-geometry.js';
 import * as FP from '../src/world/floorplan.js';
 import * as PROPS from '../src/game/props.js';
 
@@ -194,10 +195,32 @@ for(const prop of cabinetRings){
 // approach; a decorative prop may occupy its visible footprint, but it may not
 // create an invisible no-space cell in the advertised promenade.
 const atriumPublicStart=rt(80,5);
-for(const [x,y] of [[77,7],[77,15],[78,23],[90,14],[94,18],[96,22],[90,6]]){
+for(const [x,y] of [[77,7],[77,15],[90,14],[94,18],[96,22],[90,6]]){
   const point=rt(x,y);
   assert.ok(PROPS.propCanOccupy(point.x,point.y),`atrium circulation point ${x},${y} is visibly open and occupiable`);
   assert.ok(reachable(atriumPublicStart,point),`atrium circulation point ${x},${y} remains connected to the public entrance`);
+}
+// Approved rear cross aisle: x75–96, z21–23.5. Sample EVERY half-metre
+// body-centre lane with a 200mm edge margin, not rt(78,23): toRuntimePoint's
+// authored-cell offset plus propCanOccupy's body-centre offset puts that old
+// assertion at z23.75, inside the approved WC's north partition.
+const rearAisle={x0:75,x1:96,z0:21,z1:23.5,bodyMargin:.20};
+const aisleCells={
+  x0:Math.ceil((rearAisle.x0+rearAisle.bodyMargin)*PLAN_SCALE-.5),
+  x1:Math.floor((rearAisle.x1-rearAisle.bodyMargin)*PLAN_SCALE-.5),
+  y0:Math.ceil((rearAisle.z0+rearAisle.bodyMargin)*PLAN_SCALE-.5),
+  y1:Math.floor((rearAisle.z1-rearAisle.bodyMargin)*PLAN_SCALE-.5),
+};
+assert.ok(reachable(atriumPublicStart,{x:aisleCells.x0,y:aisleCells.y0}),'protected rear aisle connects to the public entrance');
+for(let y=aisleCells.y0;y<=aisleCells.y1;y++)for(let x=aisleCells.x0;x<=aisleCells.x1;x++){
+  const bodyX=(x+.5)/PLAN_SCALE,bodyZ=(y+.5)/PLAN_SCALE;
+  assert.ok(!FP.isSolid(x,y)&&PROPS.propCanOccupy(x,y),`approved rear aisle body-centre ${bodyX},${bodyZ} remains open`);
+  assert.equal(FP.floorAt(x,y),0,'rear aisle retains ordinary ground level');
+  for(const [dx,dy]of [[-1,0],[0,-1]]){
+    const nx=x+dx,ny=y+dy;if(nx<aisleCells.x0||ny<aisleCells.y0)continue;
+    assert.ok(FP.canStep(x,y,nx,ny,{keys:KEYRING}).ok&&FP.canStep(nx,ny,x,y,{keys:KEYRING}).ok,
+      `rear aisle stays continuously bidirectional at ${bodyX},${bodyZ}`);
+  }
 }
 assert.ok(byId['atrium-public-fittings']&&!byId['atrium-public-fittings'].blocks,'wall fittings fill the atrium without claiming garden or circulation cells');
 assert.ok(!placed.some((prop)=>prop.id.startsWith('atrium-public-')&&prop.blocks&&prop.x>=79&&prop.x<=88&&prop.y>=8&&prop.y<=20),'new public furniture stays out of the ruined garden');
@@ -312,7 +335,46 @@ assert.ok(byId['pool-lane-ropes']?.structural&&!byId['pool-lane-ropes']?.blocks,
 assert.equal(placed.filter((prop)=>prop.mesh==='pool_ladder').length,2,'steel ladders explain entering and leaving the basin from either deck');
 assert.equal(placed.filter((prop)=>prop.mesh==='changing_bench').length,2,'purpose-built slatted benches replace chapel furniture in the pool hall');
 const entranceDressing=new Set(['natatorium-entrance-fixtures','pool-entry-rules','pool-entry-first-aid','natatorium-light-emergency-entry']);
-assert.ok(placed.filter((prop)=>prop.zone===ZONE.natatorium&&!entranceDressing.has(prop.id)).every((prop)=>prop.id==='pool-lane-markings'||prop.y>=32.4),'only wall-backed admission dressing occupies the dry lead-in');
+const approvedPoolWash=new Map([
+  ['amenity-pool-wash-screens','amenity_pool_wash_screens'],
+  ['amenity-pool-shower-1','amenity_shower_column'],['amenity-pool-shower-2','amenity_shower_column'],
+  ['amenity-pool-drain-1','amenity_floor_drain'],['amenity-pool-drain-2','amenity_floor_drain'],
+  ['amenity-pool-washbasin','amenity_washbasin'],['amenity-pool-mirror-soap','amenity_mirror_soap'],
+  ['amenity-pool-hooks','amenity_hook_rail'],
+]);
+for(const [id,mesh]of approvedPoolWash){
+  const prop=byId[id];assert.ok(prop,`${id}: approved wash installation is present`);assert.equal(prop.mesh,mesh);
+  const b=PROP_BOUNDS[mesh],yaw=prop.yaw||0,c=Math.cos(yaw),s=Math.sin(yaw),points=[];
+  const x=prop.rx/PLAN_SCALE+(prop.renderOffsetX||0),z=prop.ry/PLAN_SCALE+(prop.renderOffsetZ||0);
+  for(const lx of[b.min[0],b.max[0]])for(const lz of[b.min[2],b.max[2]])points.push([x+c*lx-s*lz,z+s*lx+c*lz]);
+  // Only shallow cap/trim can enter the existing wall by up to40mm; the
+  // approved washing programme remains inside x71–76,z28–32.
+  assert.ok(points.every(([px,pz])=>px>=70.96&&px<=76&&pz>=27.96&&pz<=32),`${id}: actual rendered footprint stays in the approved wash bay`);
+  const minX=Math.min(...points.map(p=>p[0])),maxX=Math.max(...points.map(p=>p[0]));
+  const minZ=Math.min(...points.map(p=>p[1])),maxZ=Math.max(...points.map(p=>p[1]));
+  // Existing attendant counter/ledge/grille union from its actual authored
+  // parts: x74.92–78.38,z29.10–30.16. New wash furniture keeps200mm clear.
+  assert.ok(maxX<=74.72||minX>=78.58||maxZ<=28.90||minZ>=30.36,`${id}: wash installation cannot occupy the existing attendant hatch`);
+}
+const unexpectedLeadIn=placed.filter(prop=>prop.zone===ZONE.natatorium&&!entranceDressing.has(prop.id)
+  &&!approvedPoolWash.has(prop.id)&&prop.id!=='pool-lane-markings'&&prop.y<32.4);
+assert.deepEqual(unexpectedLeadIn.map(prop=>prop.id),[],'dry lead-in admits only its original admission dressing and the eight approved wash installations');
+// Use explicit body centres; rt() adds an authored-cell offset. The narrow
+// west lane separates screen tips atx73.535 from the hatch ledge atx74.92.
+function clearPoolBodySegment(from,to){
+  const steps=Math.ceil(Math.hypot(to[0]-from[0],to[1]-from[1])/.25);
+  let previous=null;
+  for(let i=0;i<=steps;i++){
+    const t=i/steps,mx=from[0]+(to[0]-from[0])*t,mz=from[1]+(to[1]-from[1])*t;
+    const point={x:Math.round(mx*PLAN_SCALE-.5),y:Math.round(mz*PLAN_SCALE-.5)};
+    assert.ok(!FP.isSolid(point.x,point.y)&&PROPS.propCanOccupy(point.x,point.y),`pool hatch/passage body lane stays clear at${mx},${mz}`);
+    if(previous&&(point.x!==previous.x||point.y!==previous.y))assert.ok(FP.canStep(previous.x,previous.y,point.x,point.y,{keys:KEYRING}).ok,'pool hatch/passage lane stays continuous');
+    previous=point;
+  }
+}
+clearPoolBodySegment([74.25,28.75],[74.25,31.75]);
+clearPoolBodySegment([74.25,28.75],[78.75,28.75]);
+for(const x of[83.75,84.25])clearPoolBodySegment([x,28.25],[x,31.25]);
 assert.ok(reachable(rt(84, 27), rt(84, 37)), 'natatorium lobby crosses the lead deck and enters the pool');
 assert.ok(reachable(rt(84, 27), rt(75, 45)), 'natatorium west deck perimeter remains walkable');
 assert.ok(reachable(rt(84, 27), rt(91, 34)), 'natatorium east deck and lane storage remain walkable');

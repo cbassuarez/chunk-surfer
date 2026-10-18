@@ -58,6 +58,39 @@
           0.48,
           -0.083
         ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -94,7 +127,13 @@
       ],
       "emission": "none",
       "marks": [],
-      "reliefM": 0.000007,
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": false,
+        "contact": "handled",
+        "exposure": "interior"
+      },
+      "reliefM": -0.00012,
       "seed": "chapel_key_ring_ch04:0",
       "source": "tools/chunk_surfer/build-props.mjs",
       "orientation": {
@@ -118,6 +157,40 @@
           0.055,
           0.238
         ]
+      },
+      "finish": {
+        "substrate": "copper-alloy plate or key tag",
+        "coating": "die-stamped or engraved dark legend",
+        "roughness": 0.48,
+        "inkRoughness": 0.76,
+        "metallic": 0.78,
+        "fieldM": 0.035,
+        "variation": 0.055,
+        "roughnessVariation": 0.12,
+        "microReliefM": 0.000003,
+        "deposit": 0.035,
+        "edgeLoss": 0,
+        "sequence": [
+          "copper alloy darkens unevenly in recesses",
+          "handled high regions become smoother",
+          "die impression retains dark nonmetallic fill"
+        ],
+        "limits": [
+          "no iron rust or new deep loss; alloy and lacquer composition remain unspecified"
+        ],
+        "version": 1,
+        "profile": "brass-plate",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "handled",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": -0.00012,
+        "fabricationReliefAssumption": "Negative 0.12 mm impressed legend normal relief; conservative authoring assumption, not measured depth",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -203,6 +276,12 @@
           "width": 0.005
         }
       ],
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": false,
+        "contact": "handled",
+        "exposure": "interior"
+      },
       "reliefM": 0.000007,
       "seed": "chapel_key_ring_c17:0",
       "source": "tools/chunk_surfer/build-props.mjs",
@@ -227,6 +306,39 @@
           0.055,
           0.238
         ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "handled",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -263,7 +375,13 @@
       ],
       "emission": "none",
       "marks": [],
-      "reliefM": 0.000007,
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": false,
+        "contact": "handled",
+        "exposure": "interior"
+      },
+      "reliefM": -0.00012,
       "seed": "chapel_key_ring_fohm:0",
       "source": "tools/chunk_surfer/build-props.mjs",
       "orientation": {
@@ -287,6 +405,40 @@
           0.055,
           0.238
         ]
+      },
+      "finish": {
+        "substrate": "copper-alloy plate or key tag",
+        "coating": "die-stamped or engraved dark legend",
+        "roughness": 0.48,
+        "inkRoughness": 0.76,
+        "metallic": 0.78,
+        "fieldM": 0.035,
+        "variation": 0.055,
+        "roughnessVariation": 0.12,
+        "microReliefM": 0.000003,
+        "deposit": 0.035,
+        "edgeLoss": 0,
+        "sequence": [
+          "copper alloy darkens unevenly in recesses",
+          "handled high regions become smoother",
+          "die impression retains dark nonmetallic fill"
+        ],
+        "limits": [
+          "no iron rust or new deep loss; alloy and lacquer composition remain unspecified"
+        ],
+        "version": 1,
+        "profile": "brass-plate",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "handled",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": -0.00012,
+        "fabricationReliefAssumption": "Negative 0.12 mm impressed legend normal relief; conservative authoring assumption, not measured depth",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -334,6 +486,39 @@
           0.16,
           -0.018
         ]
+      },
+      "finish": {
+        "substrate": "concrete or blockwork repair finish",
+        "coating": "bridged opaque maintenance paint",
+        "roughness": 0.89,
+        "inkRoughness": 0.77,
+        "fieldM": 0.12,
+        "variation": 0.035,
+        "roughnessVariation": 0.06,
+        "microReliefM": 0.000012,
+        "deposit": 0.04,
+        "edgeLoss": 0,
+        "sequence": [
+          "porous original face supports a solid paint layer",
+          "spray/brush load varies without deleting stencil cores",
+          "recess deposit is independent of pigment"
+        ],
+        "limits": [
+          "word patch perimeter is never treated as a physical object edge"
+        ],
+        "version": 1,
+        "profile": "mineral-stencil",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -381,6 +566,39 @@
           0.16,
           -0.018
         ]
+      },
+      "finish": {
+        "substrate": "concrete or blockwork repair finish",
+        "coating": "bridged opaque maintenance paint",
+        "roughness": 0.89,
+        "inkRoughness": 0.77,
+        "fieldM": 0.12,
+        "variation": 0.035,
+        "roughnessVariation": 0.06,
+        "microReliefM": 0.000012,
+        "deposit": 0.04,
+        "edgeLoss": 0,
+        "sequence": [
+          "porous original face supports a solid paint layer",
+          "spray/brush load varies without deleting stencil cores",
+          "recess deposit is independent of pigment"
+        ],
+        "limits": [
+          "word patch perimeter is never treated as a physical object edge"
+        ],
+        "version": 1,
+        "profile": "mineral-stencil",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -428,6 +646,39 @@
           0.16,
           -0.018
         ]
+      },
+      "finish": {
+        "substrate": "concrete or blockwork repair finish",
+        "coating": "bridged opaque maintenance paint",
+        "roughness": 0.89,
+        "inkRoughness": 0.77,
+        "fieldM": 0.12,
+        "variation": 0.035,
+        "roughnessVariation": 0.06,
+        "microReliefM": 0.000012,
+        "deposit": 0.04,
+        "edgeLoss": 0,
+        "sequence": [
+          "porous original face supports a solid paint layer",
+          "spray/brush load varies without deleting stencil cores",
+          "recess deposit is independent of pigment"
+        ],
+        "limits": [
+          "word patch perimeter is never treated as a physical object edge"
+        ],
+        "version": 1,
+        "profile": "mineral-stencil",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -475,6 +726,39 @@
           0.16,
           -0.018
         ]
+      },
+      "finish": {
+        "substrate": "concrete or blockwork repair finish",
+        "coating": "bridged opaque maintenance paint",
+        "roughness": 0.89,
+        "inkRoughness": 0.77,
+        "fieldM": 0.12,
+        "variation": 0.035,
+        "roughnessVariation": 0.06,
+        "microReliefM": 0.000012,
+        "deposit": 0.04,
+        "edgeLoss": 0,
+        "sequence": [
+          "porous original face supports a solid paint layer",
+          "spray/brush load varies without deleting stencil cores",
+          "recess deposit is independent of pigment"
+        ],
+        "limits": [
+          "word patch perimeter is never treated as a physical object edge"
+        ],
+        "version": 1,
+        "profile": "mineral-stencil",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -522,6 +806,39 @@
           0,
           0
         ]
+      },
+      "finish": {
+        "substrate": "concrete or blockwork repair finish",
+        "coating": "bridged opaque maintenance paint",
+        "roughness": 0.89,
+        "inkRoughness": 0.77,
+        "fieldM": 0.12,
+        "variation": 0.035,
+        "roughnessVariation": 0.06,
+        "microReliefM": 0.000012,
+        "deposit": 0.04,
+        "edgeLoss": 0,
+        "sequence": [
+          "porous original face supports a solid paint layer",
+          "spray/brush load varies without deleting stencil cores",
+          "recess deposit is independent of pigment"
+        ],
+        "limits": [
+          "word patch perimeter is never treated as a physical object edge"
+        ],
+        "version": 1,
+        "profile": "mineral-stencil",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -572,6 +889,39 @@
           0.48,
           -0.0305
         ]
+      },
+      "finish": {
+        "substrate": "metal support with fired vitreous-enamel face",
+        "coating": "screen-fired dielectric lettering",
+        "roughness": 0.32,
+        "inkRoughness": 0.44,
+        "fieldM": 0.16,
+        "variation": 0.024,
+        "roughnessVariation": 0.055,
+        "microReliefM": 0.000006,
+        "deposit": 0.055,
+        "edgeLoss": 0.1,
+        "sequence": [
+          "fired face remains largely intact",
+          "sheltered ledge accumulates a thin deposit",
+          "isolated actual perimeter impact exposes dull support"
+        ],
+        "limits": [
+          "support alloy is not established; exposed support is neutral, never invented iron rust"
+        ],
+        "version": 1,
+        "profile": "enamel",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -627,6 +977,39 @@
           0.0505,
           0
         ]
+      },
+      "finish": {
+        "substrate": "woven rope mat",
+        "coating": "opaque paint on raised fibres",
+        "roughness": 0.94,
+        "inkRoughness": 0.86,
+        "fieldM": 0.08,
+        "variation": 0.035,
+        "roughnessVariation": 0.055,
+        "microReliefM": 0.000025,
+        "deposit": 0.04,
+        "edgeLoss": 0,
+        "sequence": [
+          "warp and weft orient the fibre texture",
+          "paint covers raised fibres without erasing character cores",
+          "contact polishes a broad actual walking region"
+        ],
+        "limits": [
+          "no procedural tear or replacement of host silhouette"
+        ],
+        "version": 1,
+        "profile": "rope-stencil",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -669,6 +1052,19 @@
       ],
       "emission": "none",
       "font": "NimbusRoman-Bold.otf",
+      "typeWidthScale": 0.68,
+      "opticalWeightM": 0.0015,
+      "kerned": true,
+      "inkMetallic": 0.9,
+      "inkRoughness": 0.48,
+      "rasterWidthPx": 598,
+      "rasterHeightPx": 391,
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": false,
+        "contact": "none",
+        "exposure": "interior"
+      },
       "reliefM": 0.000007,
       "seed": "tower_peal_board:0",
       "source": "tools/chunk_surfer/build-props.mjs",
@@ -694,13 +1090,40 @@
           -0.058
         ]
       },
-      "typeWidthScale": 0.68,
-      "opticalWeightM": 0.0015,
-      "kerned": true,
-      "inkMetallic": 0.9,
-      "inkRoughness": 0.48,
-      "rasterWidthPx": 598,
-      "rasterHeightPx": 391
+      "finish": {
+        "substrate": "dark enamel or painted board",
+        "coating": "solid gold-coloured leaf or metallic house lettering",
+        "roughness": 0.38,
+        "inkRoughness": 0.48,
+        "inkMetallic": 0.9,
+        "fieldM": 0.16,
+        "variation": 0.018,
+        "roughnessVariation": 0.065,
+        "microReliefM": 0.000004,
+        "deposit": 0.035,
+        "edgeLoss": 0.018,
+        "sequence": [
+          "dark face remains continuous",
+          "solid gilt varies gently in burnish direction",
+          "sheltered surround holds neutral deposits"
+        ],
+        "limits": [
+          "gilt is preserved solid; no orange iron corrosion, green archaeological copper crust or missing character cores"
+        ],
+        "version": 1,
+        "profile": "gilt-enamel",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      }
     },
     {
       "id": "ending_returned_ledger:unnamed-signature",
@@ -797,6 +1220,39 @@
           0.047,
           -0.095
         ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -845,6 +1301,39 @@
           0.039,
           0.112
         ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -871,6 +1360,12 @@
       },
       "capHeightM": 0.245,
       "emission": "none",
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": true,
+        "contact": "none",
+        "exposure": "sheltered"
+      },
       "reliefM": 0.000007,
       "seed": "scene_dock_sign_foh:0",
       "source": "tools/chunk_surfer/build-props.mjs",
@@ -895,6 +1390,39 @@
           0,
           -0.0475
         ]
+      },
+      "finish": {
+        "substrate": "metal support with fired vitreous-enamel face",
+        "coating": "screen-fired dielectric lettering",
+        "roughness": 0.32,
+        "inkRoughness": 0.44,
+        "fieldM": 0.16,
+        "variation": 0.024,
+        "roughnessVariation": 0.055,
+        "microReliefM": 0.000006,
+        "deposit": 0.055,
+        "edgeLoss": 0.1,
+        "sequence": [
+          "fired face remains largely intact",
+          "sheltered ledge accumulates a thin deposit",
+          "isolated actual perimeter impact exposes dull support"
+        ],
+        "limits": [
+          "support alloy is not established; exposed support is neutral, never invented iron rust"
+        ],
+        "version": 1,
+        "profile": "enamel",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": true,
+          "contact": "none",
+          "exposure": "sheltered"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -921,6 +1449,12 @@
       },
       "capHeightM": 0.245,
       "emission": "none",
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": true,
+        "contact": "none",
+        "exposure": "sheltered"
+      },
       "reliefM": 0.000007,
       "seed": "scene_dock_sign_services:0",
       "source": "tools/chunk_surfer/build-props.mjs",
@@ -945,6 +1479,39 @@
           0,
           -0.0475
         ]
+      },
+      "finish": {
+        "substrate": "metal support with fired vitreous-enamel face",
+        "coating": "screen-fired dielectric lettering",
+        "roughness": 0.32,
+        "inkRoughness": 0.44,
+        "fieldM": 0.16,
+        "variation": 0.024,
+        "roughnessVariation": 0.055,
+        "microReliefM": 0.000006,
+        "deposit": 0.055,
+        "edgeLoss": 0.1,
+        "sequence": [
+          "fired face remains largely intact",
+          "sheltered ledge accumulates a thin deposit",
+          "isolated actual perimeter impact exposes dull support"
+        ],
+        "limits": [
+          "support alloy is not established; exposed support is neutral, never invented iron rust"
+        ],
+        "version": 1,
+        "profile": "enamel",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": true,
+          "contact": "none",
+          "exposure": "sheltered"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -971,6 +1538,12 @@
       },
       "capHeightM": 0.27,
       "emission": "none",
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": true,
+        "contact": "lower",
+        "exposure": "exterior"
+      },
       "reliefM": 0.000035,
       "seed": "vigil_part_sign_save:0",
       "source": "tools/chunk_surfer/build-props.mjs",
@@ -995,6 +1568,39 @@
           1.78,
           -0.248
         ]
+      },
+      "finish": {
+        "substrate": "uncoated card",
+        "coating": "opaque volunteer brush paint",
+        "roughness": 0.87,
+        "inkRoughness": 0.79,
+        "fieldM": 0.13,
+        "variation": 0.045,
+        "roughnessVariation": 0.065,
+        "microReliefM": 0.000015,
+        "deposit": 0.045,
+        "edgeLoss": 0.045,
+        "sequence": [
+          "fibrous stock is painted with overlapping broad-nib strokes",
+          "open stock changes tone in broad irregular handling areas",
+          "exposed physical edge is lightly abraded"
+        ],
+        "limits": [
+          "no torn perimeter or invented water tide without geometry/evidence"
+        ],
+        "version": 1,
+        "profile": "painted-card",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": true,
+          "contact": "lower",
+          "exposure": "exterior"
+        },
+        "fabricationReliefM": 0.000035,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -1023,6 +1629,12 @@
       },
       "capHeightM": 0.16470588235294117,
       "emission": "none",
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": true,
+        "contact": "lower",
+        "exposure": "exterior"
+      },
       "reliefM": 0.000035,
       "seed": "vigil_part_sign_strike:0",
       "source": "tools/chunk_surfer/build-props.mjs",
@@ -1047,6 +1659,39 @@
           1.78,
           -0.248
         ]
+      },
+      "finish": {
+        "substrate": "uncoated card",
+        "coating": "opaque volunteer brush paint",
+        "roughness": 0.87,
+        "inkRoughness": 0.79,
+        "fieldM": 0.13,
+        "variation": 0.045,
+        "roughnessVariation": 0.065,
+        "microReliefM": 0.000015,
+        "deposit": 0.045,
+        "edgeLoss": 0.045,
+        "sequence": [
+          "fibrous stock is painted with overlapping broad-nib strokes",
+          "open stock changes tone in broad irregular handling areas",
+          "exposed physical edge is lightly abraded"
+        ],
+        "limits": [
+          "no torn perimeter or invented water tide without geometry/evidence"
+        ],
+        "version": 1,
+        "profile": "painted-card",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": true,
+          "contact": "lower",
+          "exposure": "exterior"
+        },
+        "fabricationReliefM": 0.000035,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -1074,6 +1719,12 @@
       },
       "capHeightM": 0.24705882352941178,
       "emission": "none",
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": true,
+        "contact": "lower",
+        "exposure": "exterior"
+      },
       "reliefM": 0.000035,
       "seed": "vigil_part_sign_chapel:0",
       "source": "tools/chunk_surfer/build-props.mjs",
@@ -1098,6 +1749,39 @@
           1.78,
           -0.248
         ]
+      },
+      "finish": {
+        "substrate": "uncoated card",
+        "coating": "opaque volunteer brush paint",
+        "roughness": 0.87,
+        "inkRoughness": 0.79,
+        "fieldM": 0.13,
+        "variation": 0.045,
+        "roughnessVariation": 0.065,
+        "microReliefM": 0.000015,
+        "deposit": 0.045,
+        "edgeLoss": 0.045,
+        "sequence": [
+          "fibrous stock is painted with overlapping broad-nib strokes",
+          "open stock changes tone in broad irregular handling areas",
+          "exposed physical edge is lightly abraded"
+        ],
+        "limits": [
+          "no torn perimeter or invented water tide without geometry/evidence"
+        ],
+        "version": 1,
+        "profile": "painted-card",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": true,
+          "contact": "lower",
+          "exposure": "exterior"
+        },
+        "fabricationReliefM": 0.000035,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -1125,6 +1809,12 @@
       },
       "capHeightM": 0.24705882352941178,
       "emission": "none",
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": true,
+        "contact": "lower",
+        "exposure": "exterior"
+      },
       "reliefM": 0.000035,
       "seed": "vigil_part_sign_record:0",
       "source": "tools/chunk_surfer/build-props.mjs",
@@ -1149,6 +1839,39 @@
           0.9138895705537357,
           -0.24732512858125696
         ]
+      },
+      "finish": {
+        "substrate": "uncoated card",
+        "coating": "opaque volunteer brush paint",
+        "roughness": 0.87,
+        "inkRoughness": 0.79,
+        "fieldM": 0.13,
+        "variation": 0.045,
+        "roughnessVariation": 0.065,
+        "microReliefM": 0.000015,
+        "deposit": 0.045,
+        "edgeLoss": 0.045,
+        "sequence": [
+          "fibrous stock is painted with overlapping broad-nib strokes",
+          "open stock changes tone in broad irregular handling areas",
+          "exposed physical edge is lightly abraded"
+        ],
+        "limits": [
+          "no torn perimeter or invented water tide without geometry/evidence"
+        ],
+        "version": 1,
+        "profile": "painted-card",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": true,
+          "contact": "lower",
+          "exposure": "exterior"
+        },
+        "fabricationReliefM": 0.000035,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -1176,6 +1899,12 @@
       },
       "capHeightM": 0.24705882352941178,
       "emission": "none",
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": true,
+        "contact": "lower",
+        "exposure": "exterior"
+      },
       "reliefM": 0.000035,
       "seed": "vigil_part_sign_signed:0",
       "source": "tools/chunk_surfer/build-props.mjs",
@@ -1200,6 +1929,39 @@
           0.9138895705537357,
           -0.24732512858125696
         ]
+      },
+      "finish": {
+        "substrate": "uncoated card",
+        "coating": "opaque volunteer brush paint",
+        "roughness": 0.87,
+        "inkRoughness": 0.79,
+        "fieldM": 0.13,
+        "variation": 0.045,
+        "roughnessVariation": 0.065,
+        "microReliefM": 0.000015,
+        "deposit": 0.045,
+        "edgeLoss": 0.045,
+        "sequence": [
+          "fibrous stock is painted with overlapping broad-nib strokes",
+          "open stock changes tone in broad irregular handling areas",
+          "exposed physical edge is lightly abraded"
+        ],
+        "limits": [
+          "no torn perimeter or invented water tide without geometry/evidence"
+        ],
+        "version": 1,
+        "profile": "painted-card",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": true,
+          "contact": "lower",
+          "exposure": "exterior"
+        },
+        "fabricationReliefM": 0.000035,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -1227,6 +1989,12 @@
       },
       "capHeightM": 0.27,
       "emission": "none",
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": true,
+        "contact": "lower",
+        "exposure": "exterior"
+      },
       "reliefM": 0.000035,
       "seed": "vigil_part_banner:0",
       "source": "tools/chunk_surfer/build-props.mjs",
@@ -1251,6 +2019,39 @@
           0.56,
           -0.248
         ]
+      },
+      "finish": {
+        "substrate": "woven banner cloth",
+        "coating": "absorbed opaque brush paint",
+        "roughness": 0.91,
+        "inkRoughness": 0.85,
+        "fieldM": 0.21,
+        "variation": 0.04,
+        "roughnessVariation": 0.06,
+        "microReliefM": 0.000018,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "warp and weft remain under a pigment film",
+          "brush loading varies within solid strokes",
+          "broad exposed folds retain slightly more dust"
+        ],
+        "limits": [
+          "atlas cannot supply cloth silhouette, sag or torn fibres"
+        ],
+        "version": 1,
+        "profile": "painted-cloth",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": true,
+          "contact": "lower",
+          "exposure": "exterior"
+        },
+        "fabricationReliefM": 0.000035,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -1279,6 +2080,12 @@
         0.53,
         0.2
       ],
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": false,
+        "contact": "none",
+        "exposure": "sheltered"
+      },
       "reliefM": 0.000007,
       "seed": "city_phone_box:0",
       "source": "tools/chunk_surfer/build-props.mjs",
@@ -1303,6 +2110,39 @@
           2.385,
           0.507
         ]
+      },
+      "finish": {
+        "substrate": "opal telephone glass",
+        "coating": "black fired or screen-printed legend",
+        "roughness": 0.24,
+        "inkRoughness": 0.42,
+        "fieldM": 0.08,
+        "variation": 0.008,
+        "roughnessVariation": 0.03,
+        "microReliefM": 0.000002,
+        "deposit": 0.012,
+        "edgeLoss": 0,
+        "sequence": [
+          "glass remains continuous behind solid opaque ink",
+          "sheltered deposit is restrained",
+          "existing illumination stays authored separately"
+        ],
+        "limits": [
+          "no metal response, fabricated glass breakage or extra emission"
+        ],
+        "version": 1,
+        "profile": "opal-glass",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "sheltered"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -1331,6 +2171,12 @@
         0.53,
         0.2
       ],
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": false,
+        "contact": "none",
+        "exposure": "sheltered"
+      },
       "reliefM": 0.000007,
       "seed": "city_phone_box:1",
       "source": "tools/chunk_surfer/build-props.mjs",
@@ -1355,6 +2201,39 @@
           2.385,
           0
         ]
+      },
+      "finish": {
+        "substrate": "opal telephone glass",
+        "coating": "black fired or screen-printed legend",
+        "roughness": 0.24,
+        "inkRoughness": 0.42,
+        "fieldM": 0.08,
+        "variation": 0.008,
+        "roughnessVariation": 0.03,
+        "microReliefM": 0.000002,
+        "deposit": 0.012,
+        "edgeLoss": 0,
+        "sequence": [
+          "glass remains continuous behind solid opaque ink",
+          "sheltered deposit is restrained",
+          "existing illumination stays authored separately"
+        ],
+        "limits": [
+          "no metal response, fabricated glass breakage or extra emission"
+        ],
+        "version": 1,
+        "profile": "opal-glass",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "sheltered"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -1383,6 +2262,12 @@
         0.53,
         0.2
       ],
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": false,
+        "contact": "none",
+        "exposure": "sheltered"
+      },
       "reliefM": 0.000007,
       "seed": "city_phone_box:2",
       "source": "tools/chunk_surfer/build-props.mjs",
@@ -1407,6 +2292,39 @@
           2.385,
           -0.507
         ]
+      },
+      "finish": {
+        "substrate": "opal telephone glass",
+        "coating": "black fired or screen-printed legend",
+        "roughness": 0.24,
+        "inkRoughness": 0.42,
+        "fieldM": 0.08,
+        "variation": 0.008,
+        "roughnessVariation": 0.03,
+        "microReliefM": 0.000002,
+        "deposit": 0.012,
+        "edgeLoss": 0,
+        "sequence": [
+          "glass remains continuous behind solid opaque ink",
+          "sheltered deposit is restrained",
+          "existing illumination stays authored separately"
+        ],
+        "limits": [
+          "no metal response, fabricated glass breakage or extra emission"
+        ],
+        "version": 1,
+        "profile": "opal-glass",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "sheltered"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -1435,6 +2353,12 @@
         0.53,
         0.2
       ],
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": false,
+        "contact": "none",
+        "exposure": "sheltered"
+      },
       "reliefM": 0.000007,
       "seed": "city_phone_box:3",
       "source": "tools/chunk_surfer/build-props.mjs",
@@ -1459,6 +2383,39 @@
           2.385,
           0
         ]
+      },
+      "finish": {
+        "substrate": "opal telephone glass",
+        "coating": "black fired or screen-printed legend",
+        "roughness": 0.24,
+        "inkRoughness": 0.42,
+        "fieldM": 0.08,
+        "variation": 0.008,
+        "roughnessVariation": 0.03,
+        "microReliefM": 0.000002,
+        "deposit": 0.012,
+        "edgeLoss": 0,
+        "sequence": [
+          "glass remains continuous behind solid opaque ink",
+          "sheltered deposit is restrained",
+          "existing illumination stays authored separately"
+        ],
+        "limits": [
+          "no metal response, fabricated glass breakage or extra emission"
+        ],
+        "version": 1,
+        "profile": "opal-glass",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "sheltered"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -1510,6 +2467,39 @@
           1.6117544642857142,
           -0.289
         ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -1557,6 +2547,39 @@
           1.6721428571428572,
           -0.293
         ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -1604,6 +2627,39 @@
           1.3292983640514475,
           -0.2925
         ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -1651,6 +2707,39 @@
           1.3840324150577215,
           -0.2925
         ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -1698,6 +2787,39 @@
           1.4276088046822548,
           -0.2925
         ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -1745,6 +2867,39 @@
           1.4497366429427911,
           -0.2925
         ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -1792,6 +2947,39 @@
           1.4451902755103139,
           -0.2925
         ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -1839,6 +3027,39 @@
           1.4150433610212925,
           -0.2925
         ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -1886,6 +3107,39 @@
           1.3664153185690509,
           -0.2925
         ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -1933,6 +3187,39 @@
           1.3107900236935393,
           -0.2925
         ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -1980,6 +3267,39 @@
           1.2613038053730583,
           -0.2925
         ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -2027,6 +3347,39 @@
           1.2296432037905356,
           -0.2925
         ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -2074,6 +3427,39 @@
           1.3457857142857141,
           -0.26299999999999996
         ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -2121,6 +3507,39 @@
           1.3227857142857142,
           -0.26299999999999996
         ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -2168,6 +3587,39 @@
           2.73,
           -4.623
         ]
+      },
+      "finish": {
+        "substrate": "painted transport board or glazed paper destination",
+        "coating": "opaque transport sign print",
+        "roughness": 0.45,
+        "inkRoughness": 0.49,
+        "fieldM": 0.14,
+        "variation": 0.024,
+        "roughnessVariation": 0.055,
+        "microReliefM": 0.000005,
+        "deposit": 0.04,
+        "edgeLoss": 0.04,
+        "sequence": [
+          "printed stock is continuous",
+          "broad exposure changes gloss more than colour",
+          "only a genuine carrier edge can lose coating"
+        ],
+        "limits": [
+          "no ungrounded leak or severe outdoor corrosion"
+        ],
+        "version": 1,
+        "profile": "transport-print",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -2215,6 +3667,39 @@
           0.48,
           -4.693
         ]
+      },
+      "finish": {
+        "substrate": "painted transport board or glazed paper destination",
+        "coating": "opaque transport sign print",
+        "roughness": 0.45,
+        "inkRoughness": 0.49,
+        "fieldM": 0.14,
+        "variation": 0.024,
+        "roughnessVariation": 0.055,
+        "microReliefM": 0.000005,
+        "deposit": 0.04,
+        "edgeLoss": 0.04,
+        "sequence": [
+          "printed stock is continuous",
+          "broad exposure changes gloss more than colour",
+          "only a genuine carrier edge can lose coating"
+        ],
+        "limits": [
+          "no ungrounded leak or severe outdoor corrosion"
+        ],
+        "version": 1,
+        "profile": "transport-print",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -2252,6 +3737,12 @@
         0.7365591397849462
       ],
       "emission": "none",
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": false,
+        "contact": "none",
+        "exposure": "sheltered"
+      },
       "reliefM": 0.000007,
       "seed": "outskirts_shelter_timetable:0",
       "source": "tools/chunk_surfer/build-props.mjs",
@@ -2276,6 +3767,39 @@
           1.6,
           -0.0585
         ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "sheltered"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -2323,6 +3847,39 @@
           2.81,
           -1.321
         ]
+      },
+      "finish": {
+        "substrate": "metal support with fired vitreous-enamel face",
+        "coating": "screen-fired dielectric lettering",
+        "roughness": 0.32,
+        "inkRoughness": 0.44,
+        "fieldM": 0.16,
+        "variation": 0.024,
+        "roughnessVariation": 0.055,
+        "microReliefM": 0.000006,
+        "deposit": 0.055,
+        "edgeLoss": 0.1,
+        "sequence": [
+          "fired face remains largely intact",
+          "sheltered ledge accumulates a thin deposit",
+          "isolated actual perimeter impact exposes dull support"
+        ],
+        "limits": [
+          "support alloy is not established; exposed support is neutral, never invented iron rust"
+        ],
+        "version": 1,
+        "profile": "enamel",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -2845,6 +4402,39 @@
           1.4997,
           -1.4
         ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -3367,6 +4957,39 @@
           1.4997,
           -1.4
         ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -3959,6 +5582,39 @@
           1.4997,
           -1.4
         ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -4551,6 +6207,39 @@
           1.4997,
           -1.4
         ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -4599,6 +6288,39 @@
           0.0045,
           0.046
         ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -4647,6 +6369,39 @@
           0.0045,
           0.01
         ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -4694,6 +6449,39 @@
           0.58,
           2.2315
         ]
+      },
+      "finish": {
+        "substrate": "painted transport board or glazed paper destination",
+        "coating": "opaque transport sign print",
+        "roughness": 0.45,
+        "inkRoughness": 0.49,
+        "fieldM": 0.14,
+        "variation": 0.024,
+        "roughnessVariation": 0.055,
+        "microReliefM": 0.000005,
+        "deposit": 0.04,
+        "edgeLoss": 0.04,
+        "sequence": [
+          "printed stock is continuous",
+          "broad exposure changes gloss more than colour",
+          "only a genuine carrier edge can lose coating"
+        ],
+        "limits": [
+          "no ungrounded leak or severe outdoor corrosion"
+        ],
+        "version": 1,
+        "profile": "transport-print",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -4758,6 +6546,39 @@
           1.86,
           0.0756
         ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -4788,7 +6609,7 @@
       "emission": "none",
       "font": "NimbusRoman-Bold.otf",
       "texelCapPx": 32,
-      "reliefM": -0.0015,
+      "reliefM": -0.0008,
       "seed": "exterior-foundation-stone",
       "source": "tools/chunk_surfer/build-props.mjs",
       "orientation": {
@@ -4812,6 +6633,39 @@
           0.48,
           -0.1856
         ]
+      },
+      "finish": {
+        "substrate": "existing mineral inscription face",
+        "coating": "dark inset cut lettering",
+        "roughness": 0.84,
+        "inkRoughness": 0.89,
+        "fieldM": 0.23,
+        "variation": 0.035,
+        "roughnessVariation": 0.05,
+        "microReliefM": 0.00001,
+        "deposit": 0.045,
+        "edgeLoss": 0,
+        "sequence": [
+          "mineral face stays largely intact",
+          "thin sheltered deposits vary at the assembly scale",
+          "existing cut depth is retained"
+        ],
+        "limits": [
+          "no invented stone species, gypsum crust, leak, missing corner or geometry crack"
+        ],
+        "version": 1,
+        "profile": "cut-mineral",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": -0.0008,
+        "fabricationReliefAssumption": "Negative 0.35–0.8 mm cut-face normal relief; conservative authoring assumption, not measured or silhouette geometry",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -4842,7 +6696,7 @@
       "emission": "none",
       "font": "NimbusRoman-Bold.otf",
       "texelCapPx": 32,
-      "reliefM": -0.0015,
+      "reliefM": -0.0008,
       "seed": "exterior-chapel-plaque",
       "source": "tools/chunk_surfer/build-props.mjs",
       "orientation": {
@@ -4866,6 +6720,39 @@
           0.48,
           -0.1856
         ]
+      },
+      "finish": {
+        "substrate": "existing mineral inscription face",
+        "coating": "dark inset cut lettering",
+        "roughness": 0.84,
+        "inkRoughness": 0.89,
+        "fieldM": 0.23,
+        "variation": 0.035,
+        "roughnessVariation": 0.05,
+        "microReliefM": 0.00001,
+        "deposit": 0.045,
+        "edgeLoss": 0,
+        "sequence": [
+          "mineral face stays largely intact",
+          "thin sheltered deposits vary at the assembly scale",
+          "existing cut depth is retained"
+        ],
+        "limits": [
+          "no invented stone species, gypsum crust, leak, missing corner or geometry crack"
+        ],
+        "version": 1,
+        "profile": "cut-mineral",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": -0.0008,
+        "fabricationReliefAssumption": "Negative 0.35–0.8 mm cut-face normal relief; conservative authoring assumption, not measured or silhouette geometry",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -4919,6 +6806,39 @@
           0.48,
           -0.1856
         ]
+      },
+      "finish": {
+        "substrate": "small ceramic tesserae and mineral joints",
+        "coating": "fired solid ceramic lettering",
+        "roughness": 0.46,
+        "inkRoughness": 0.49,
+        "fieldM": 0.17,
+        "variation": 0.025,
+        "roughnessVariation": 0.065,
+        "microReliefM": 0.000005,
+        "deposit": 0.03,
+        "edgeLoss": 0,
+        "sequence": [
+          "fired tesserae have discrete restrained finish differences",
+          "thin joints remain more matte than ceramic",
+          "required letter bodies remain solid"
+        ],
+        "limits": [
+          "a material-only tile pattern does not establish broken tessera depth or silhouette"
+        ],
+        "version": 1,
+        "profile": "ceramic-mosaic",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -4948,7 +6868,7 @@
       "emission": "none",
       "font": "NimbusRoman-Bold.otf",
       "texelCapPx": 32,
-      "reliefM": -0.0015,
+      "reliefM": -0.0008,
       "seed": "exterior-hall-stone",
       "source": "tools/chunk_surfer/build-props.mjs",
       "orientation": {
@@ -4972,6 +6892,39 @@
           0.48,
           -0.1856
         ]
+      },
+      "finish": {
+        "substrate": "existing mineral inscription face",
+        "coating": "dark inset cut lettering",
+        "roughness": 0.84,
+        "inkRoughness": 0.89,
+        "fieldM": 0.23,
+        "variation": 0.035,
+        "roughnessVariation": 0.05,
+        "microReliefM": 0.00001,
+        "deposit": 0.045,
+        "edgeLoss": 0,
+        "sequence": [
+          "mineral face stays largely intact",
+          "thin sheltered deposits vary at the assembly scale",
+          "existing cut depth is retained"
+        ],
+        "limits": [
+          "no invented stone species, gypsum crust, leak, missing corner or geometry crack"
+        ],
+        "version": 1,
+        "profile": "cut-mineral",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": -0.0008,
+        "fabricationReliefAssumption": "Negative 0.35–0.8 mm cut-face normal relief; conservative authoring assumption, not measured or silhouette geometry",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -5032,6 +6985,39 @@
           0.31,
           0.0956
         ]
+      },
+      "finish": {
+        "substrate": "metal support with fired vitreous-enamel face",
+        "coating": "screen-fired dielectric lettering",
+        "roughness": 0.32,
+        "inkRoughness": 0.44,
+        "fieldM": 0.16,
+        "variation": 0.024,
+        "roughnessVariation": 0.055,
+        "microReliefM": 0.000006,
+        "deposit": 0.055,
+        "edgeLoss": 0.1,
+        "sequence": [
+          "fired face remains largely intact",
+          "sheltered ledge accumulates a thin deposit",
+          "isolated actual perimeter impact exposes dull support"
+        ],
+        "limits": [
+          "support alloy is not established; exposed support is neutral, never invented iron rust"
+        ],
+        "version": 1,
+        "profile": "enamel",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -5102,6 +7088,39 @@
           0.45,
           -0.0456
         ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -5136,6 +7155,13 @@
       "emission": "none",
       "font": "NimbusRoman-Bold.otf",
       "texelCapPx": 32,
+      "typeWidthScale": 0.62,
+      "opticalWeightM": 0.003,
+      "kerned": true,
+      "inkMetallic": 0.9,
+      "inkRoughness": 0.48,
+      "rasterWidthPx": 768,
+      "rasterHeightPx": 63,
       "reliefM": 0.000007,
       "seed": "hall-entrance-sign",
       "source": "tools/chunk_surfer/build-props.mjs",
@@ -5161,13 +7187,40 @@
           0.0956
         ]
       },
-      "typeWidthScale": 0.62,
-      "opticalWeightM": 0.0015,
-      "kerned": true,
-      "inkMetallic": 0.9,
-      "inkRoughness": 0.48,
-      "rasterWidthPx": 768,
-      "rasterHeightPx": 63
+      "finish": {
+        "substrate": "dark enamel or painted board",
+        "coating": "solid gold-coloured leaf or metallic house lettering",
+        "roughness": 0.38,
+        "inkRoughness": 0.48,
+        "inkMetallic": 0.9,
+        "fieldM": 0.16,
+        "variation": 0.018,
+        "roughnessVariation": 0.065,
+        "microReliefM": 0.000004,
+        "deposit": 0.035,
+        "edgeLoss": 0.018,
+        "sequence": [
+          "dark face remains continuous",
+          "solid gilt varies gently in burnish direction",
+          "sheltered surround holds neutral deposits"
+        ],
+        "limits": [
+          "gilt is preserved solid; no orange iron corrosion, green archaeological copper crust or missing character cores"
+        ],
+        "version": 1,
+        "profile": "gilt-enamel",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      }
     },
     {
       "id": "chapel-stair-sign-nave",
@@ -5230,6 +7283,39 @@
           0.31,
           0.0956
         ]
+      },
+      "finish": {
+        "substrate": "metal support with fired vitreous-enamel face",
+        "coating": "screen-fired dielectric lettering",
+        "roughness": 0.32,
+        "inkRoughness": 0.44,
+        "fieldM": 0.16,
+        "variation": 0.024,
+        "roughnessVariation": 0.055,
+        "microReliefM": 0.000006,
+        "deposit": 0.055,
+        "edgeLoss": 0.1,
+        "sequence": [
+          "fired face remains largely intact",
+          "sheltered ledge accumulates a thin deposit",
+          "isolated actual perimeter impact exposes dull support"
+        ],
+        "limits": [
+          "support alloy is not established; exposed support is neutral, never invented iron rust"
+        ],
+        "version": 1,
+        "profile": "enamel",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -5282,6 +7368,39 @@
           0.38,
           0.0801
         ]
+      },
+      "finish": {
+        "substrate": "metal support with fired vitreous-enamel face",
+        "coating": "screen-fired dielectric lettering",
+        "roughness": 0.32,
+        "inkRoughness": 0.44,
+        "fieldM": 0.16,
+        "variation": 0.024,
+        "roughnessVariation": 0.055,
+        "microReliefM": 0.000006,
+        "deposit": 0.055,
+        "edgeLoss": 0.1,
+        "sequence": [
+          "fired face remains largely intact",
+          "sheltered ledge accumulates a thin deposit",
+          "isolated actual perimeter impact exposes dull support"
+        ],
+        "limits": [
+          "support alloy is not established; exposed support is neutral, never invented iron rust"
+        ],
+        "version": 1,
+        "profile": "enamel",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -5349,6 +7468,39 @@
           0.38,
           0.0801
         ]
+      },
+      "finish": {
+        "substrate": "metal support with fired vitreous-enamel face",
+        "coating": "screen-fired dielectric lettering",
+        "roughness": 0.32,
+        "inkRoughness": 0.44,
+        "fieldM": 0.16,
+        "variation": 0.024,
+        "roughnessVariation": 0.055,
+        "microReliefM": 0.000006,
+        "deposit": 0.055,
+        "edgeLoss": 0.1,
+        "sequence": [
+          "fired face remains largely intact",
+          "sheltered ledge accumulates a thin deposit",
+          "isolated actual perimeter impact exposes dull support"
+        ],
+        "limits": [
+          "support alloy is not established; exposed support is neutral, never invented iron rust"
+        ],
+        "version": 1,
+        "profile": "enamel",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -5401,6 +7553,39 @@
           0.38,
           0.0801
         ]
+      },
+      "finish": {
+        "substrate": "metal support with fired vitreous-enamel face",
+        "coating": "screen-fired dielectric lettering",
+        "roughness": 0.32,
+        "inkRoughness": 0.44,
+        "fieldM": 0.16,
+        "variation": 0.024,
+        "roughnessVariation": 0.055,
+        "microReliefM": 0.000006,
+        "deposit": 0.055,
+        "edgeLoss": 0.1,
+        "sequence": [
+          "fired face remains largely intact",
+          "sheltered ledge accumulates a thin deposit",
+          "isolated actual perimeter impact exposes dull support"
+        ],
+        "limits": [
+          "support alloy is not established; exposed support is neutral, never invented iron rust"
+        ],
+        "version": 1,
+        "profile": "enamel",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -5453,6 +7638,39 @@
           0.38,
           0.0801
         ]
+      },
+      "finish": {
+        "substrate": "metal support with fired vitreous-enamel face",
+        "coating": "screen-fired dielectric lettering",
+        "roughness": 0.32,
+        "inkRoughness": 0.44,
+        "fieldM": 0.16,
+        "variation": 0.024,
+        "roughnessVariation": 0.055,
+        "microReliefM": 0.000006,
+        "deposit": 0.055,
+        "edgeLoss": 0.1,
+        "sequence": [
+          "fired face remains largely intact",
+          "sheltered ledge accumulates a thin deposit",
+          "isolated actual perimeter impact exposes dull support"
+        ],
+        "limits": [
+          "support alloy is not established; exposed support is neutral, never invented iron rust"
+        ],
+        "version": 1,
+        "profile": "enamel",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -5523,6 +7741,40 @@
           0.38,
           0.0801
         ]
+      },
+      "finish": {
+        "substrate": "copper-alloy plate or key tag",
+        "coating": "die-stamped or engraved dark legend",
+        "roughness": 0.48,
+        "inkRoughness": 0.76,
+        "metallic": 0.78,
+        "fieldM": 0.035,
+        "variation": 0.055,
+        "roughnessVariation": 0.12,
+        "microReliefM": 0.000003,
+        "deposit": 0.035,
+        "edgeLoss": 0,
+        "sequence": [
+          "copper alloy darkens unevenly in recesses",
+          "handled high regions become smoother",
+          "die impression retains dark nonmetallic fill"
+        ],
+        "limits": [
+          "no iron rust or new deep loss; alloy and lacquer composition remain unspecified"
+        ],
+        "version": 1,
+        "profile": "brass-plate",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -5560,7 +7812,7 @@
       "emission": "none",
       "font": "NimbusSans-Bold.otf",
       "texelCapPx": 32,
-      "reliefM": 0.000007,
+      "reliefM": -0.00012,
       "seed": "tower-hammer-isolator",
       "source": "tools/chunk_surfer/build-props.mjs",
       "orientation": {
@@ -5584,6 +7836,39 @@
           1.38,
           -0.3151
         ]
+      },
+      "finish": {
+        "substrate": "enamel apparatus face",
+        "coating": "telephone or equipment print",
+        "roughness": 0.43,
+        "inkRoughness": 0.5,
+        "fieldM": 0.055,
+        "variation": 0.018,
+        "roughnessVariation": 0.045,
+        "microReliefM": 0.000003,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "hard dielectric finish supports solid legends",
+          "accessible contact changes roughness",
+          "sheltered residue remains distinct from applied ink"
+        ],
+        "limits": [
+          "no arbitrary rusty border at instruction-card bounds"
+        ],
+        "version": 1,
+        "profile": "apparatus-print",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": -0.00012,
+        "fabricationReliefAssumption": "Negative 0.12 mm impressed legend normal relief; conservative authoring assumption, not measured depth",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -5638,6 +7923,39 @@
           0.2581,
           -0.07
         ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -5690,6 +8008,39 @@
           0.48,
           0.2406
         ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -5741,6 +8092,39 @@
           0.0216,
           0
         ]
+      },
+      "finish": {
+        "substrate": "original equipment finish",
+        "coating": "maintenance stencil paint",
+        "roughness": 0.62,
+        "inkRoughness": 0.74,
+        "fieldM": 0.045,
+        "variation": 0.018,
+        "roughnessVariation": 0.055,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "original apparatus finish remains outside pigment",
+          "thin dielectric stencil sits over that finish",
+          "accessible contact may smooth the finish"
+        ],
+        "limits": [
+          "no artificial weathered rectangle around an applied equipment legend"
+        ],
+        "version": 1,
+        "profile": "apparatus-stencil",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -5814,6 +8198,39 @@
           0.45,
           -0.0456
         ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -5877,6 +8294,39 @@
           0.183,
           0.0623
         ]
+      },
+      "finish": {
+        "substrate": "original equipment finish",
+        "coating": "maintenance stencil paint",
+        "roughness": 0.62,
+        "inkRoughness": 0.74,
+        "fieldM": 0.045,
+        "variation": 0.018,
+        "roughnessVariation": 0.055,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "original apparatus finish remains outside pigment",
+          "thin dielectric stencil sits over that finish",
+          "accessible contact may smooth the finish"
+        ],
+        "limits": [
+          "no artificial weathered rectangle around an applied equipment legend"
+        ],
+        "version": 1,
+        "profile": "apparatus-stencil",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -5940,6 +8390,39 @@
           0.183,
           0.0623
         ]
+      },
+      "finish": {
+        "substrate": "original equipment finish",
+        "coating": "maintenance stencil paint",
+        "roughness": 0.62,
+        "inkRoughness": 0.74,
+        "fieldM": 0.045,
+        "variation": 0.018,
+        "roughnessVariation": 0.055,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "original apparatus finish remains outside pigment",
+          "thin dielectric stencil sits over that finish",
+          "accessible contact may smooth the finish"
+        ],
+        "limits": [
+          "no artificial weathered rectangle around an applied equipment legend"
+        ],
+        "version": 1,
+        "profile": "apparatus-stencil",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -6003,6 +8486,39 @@
           0.183,
           0.0623
         ]
+      },
+      "finish": {
+        "substrate": "original equipment finish",
+        "coating": "maintenance stencil paint",
+        "roughness": 0.62,
+        "inkRoughness": 0.74,
+        "fieldM": 0.045,
+        "variation": 0.018,
+        "roughnessVariation": 0.055,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "original apparatus finish remains outside pigment",
+          "thin dielectric stencil sits over that finish",
+          "accessible contact may smooth the finish"
+        ],
+        "limits": [
+          "no artificial weathered rectangle around an applied equipment legend"
+        ],
+        "version": 1,
+        "profile": "apparatus-stencil",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -6066,6 +8582,39 @@
           0.183,
           0.0623
         ]
+      },
+      "finish": {
+        "substrate": "original equipment finish",
+        "coating": "maintenance stencil paint",
+        "roughness": 0.62,
+        "inkRoughness": 0.74,
+        "fieldM": 0.045,
+        "variation": 0.018,
+        "roughnessVariation": 0.055,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "original apparatus finish remains outside pigment",
+          "thin dielectric stencil sits over that finish",
+          "accessible contact may smooth the finish"
+        ],
+        "limits": [
+          "no artificial weathered rectangle around an applied equipment legend"
+        ],
+        "version": 1,
+        "profile": "apparatus-stencil",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -6129,6 +8678,39 @@
           0.183,
           0.0623
         ]
+      },
+      "finish": {
+        "substrate": "original equipment finish",
+        "coating": "maintenance stencil paint",
+        "roughness": 0.62,
+        "inkRoughness": 0.74,
+        "fieldM": 0.045,
+        "variation": 0.018,
+        "roughnessVariation": 0.055,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "original apparatus finish remains outside pigment",
+          "thin dielectric stencil sits over that finish",
+          "accessible contact may smooth the finish"
+        ],
+        "limits": [
+          "no artificial weathered rectangle around an applied equipment legend"
+        ],
+        "version": 1,
+        "profile": "apparatus-stencil",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -6193,6 +8775,38 @@
           0.1119,
           0.289
         ]
+      },
+      "finish": {
+        "substrate": "original sampled finished wood",
+        "coating": "thin inventory ink",
+        "roughness": 0.73,
+        "inkRoughness": 0.82,
+        "fieldM": 0.035,
+        "variation": 0.015,
+        "roughnessVariation": 0.03,
+        "microReliefM": 0.000002,
+        "deposit": 0,
+        "edgeLoss": 0,
+        "sequence": [
+          "sampled original finish is retained",
+          "thin applied ink follows the original normal"
+        ],
+        "limits": [
+          "all original stock channels outside pigment are immutable"
+        ],
+        "version": 1,
+        "profile": "wood-ink",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -6257,6 +8871,38 @@
           0.400889,
           -0.35657
         ]
+      },
+      "finish": {
+        "substrate": "original sampled finished wood",
+        "coating": "thin inventory ink",
+        "roughness": 0.73,
+        "inkRoughness": 0.82,
+        "fieldM": 0.035,
+        "variation": 0.015,
+        "roughnessVariation": 0.03,
+        "microReliefM": 0.000002,
+        "deposit": 0,
+        "edgeLoss": 0,
+        "sequence": [
+          "sampled original finish is retained",
+          "thin applied ink follows the original normal"
+        ],
+        "limits": [
+          "all original stock channels outside pigment are immutable"
+        ],
+        "version": 1,
+        "profile": "wood-ink",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -6321,6 +8967,38 @@
           0.400889,
           -0.35657
         ]
+      },
+      "finish": {
+        "substrate": "original sampled finished wood",
+        "coating": "thin inventory ink",
+        "roughness": 0.73,
+        "inkRoughness": 0.82,
+        "fieldM": 0.035,
+        "variation": 0.015,
+        "roughnessVariation": 0.03,
+        "microReliefM": 0.000002,
+        "deposit": 0,
+        "edgeLoss": 0,
+        "sequence": [
+          "sampled original finish is retained",
+          "thin applied ink follows the original normal"
+        ],
+        "limits": [
+          "all original stock channels outside pigment are immutable"
+        ],
+        "version": 1,
+        "profile": "wood-ink",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -6385,6 +9063,38 @@
           0.90257,
           0
         ]
+      },
+      "finish": {
+        "substrate": "original sampled finished wood",
+        "coating": "thin inventory ink",
+        "roughness": 0.73,
+        "inkRoughness": 0.82,
+        "fieldM": 0.035,
+        "variation": 0.015,
+        "roughnessVariation": 0.03,
+        "microReliefM": 0.000002,
+        "deposit": 0,
+        "edgeLoss": 0,
+        "sequence": [
+          "sampled original finish is retained",
+          "thin applied ink follows the original normal"
+        ],
+        "limits": [
+          "all original stock channels outside pigment are immutable"
+        ],
+        "version": 1,
+        "profile": "wood-ink",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -6437,6 +9147,39 @@
           0.0297,
           0.0521
         ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -6465,7 +9208,7 @@
       "emission": "none",
       "font": "NimbusMonoPS-Bold.otf",
       "texelCapPx": 32,
-      "reliefM": 0.000007,
+      "reliefM": -0.00012,
       "seed": "acq-hall-chesterfield-west",
       "source": "tools/chunk_surfer/build-props.mjs",
       "orientation": {
@@ -6489,6 +9232,39 @@
           0.145,
           0.40223
         ]
+      },
+      "finish": {
+        "substrate": "enamel apparatus face",
+        "coating": "telephone or equipment print",
+        "roughness": 0.43,
+        "inkRoughness": 0.5,
+        "fieldM": 0.055,
+        "variation": 0.018,
+        "roughnessVariation": 0.045,
+        "microReliefM": 0.000003,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "hard dielectric finish supports solid legends",
+          "accessible contact changes roughness",
+          "sheltered residue remains distinct from applied ink"
+        ],
+        "limits": [
+          "no arbitrary rusty border at instruction-card bounds"
+        ],
+        "version": 1,
+        "profile": "apparatus-print",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": -0.00012,
+        "fabricationReliefAssumption": "Negative 0.12 mm impressed legend normal relief; conservative authoring assumption, not measured depth",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -6553,6 +9329,38 @@
           0.29523,
           0.294
         ]
+      },
+      "finish": {
+        "substrate": "original sampled finished wood",
+        "coating": "thin inventory ink",
+        "roughness": 0.73,
+        "inkRoughness": 0.82,
+        "fieldM": 0.035,
+        "variation": 0.015,
+        "roughnessVariation": 0.03,
+        "microReliefM": 0.000002,
+        "deposit": 0,
+        "edgeLoss": 0,
+        "sequence": [
+          "sampled original finish is retained",
+          "thin applied ink follows the original normal"
+        ],
+        "limits": [
+          "all original stock channels outside pigment are immutable"
+        ],
+        "version": 1,
+        "profile": "wood-ink",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -6617,6 +9425,38 @@
           0.29523,
           0.294
         ]
+      },
+      "finish": {
+        "substrate": "original sampled finished wood",
+        "coating": "thin inventory ink",
+        "roughness": 0.73,
+        "inkRoughness": 0.82,
+        "fieldM": 0.035,
+        "variation": 0.015,
+        "roughnessVariation": 0.03,
+        "microReliefM": 0.000002,
+        "deposit": 0,
+        "edgeLoss": 0,
+        "sequence": [
+          "sampled original finish is retained",
+          "thin applied ink follows the original normal"
+        ],
+        "limits": [
+          "all original stock channels outside pigment are immutable"
+        ],
+        "version": 1,
+        "profile": "wood-ink",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -6681,6 +9521,38 @@
           0.29523,
           0.294
         ]
+      },
+      "finish": {
+        "substrate": "original sampled finished wood",
+        "coating": "thin inventory ink",
+        "roughness": 0.73,
+        "inkRoughness": 0.82,
+        "fieldM": 0.035,
+        "variation": 0.015,
+        "roughnessVariation": 0.03,
+        "microReliefM": 0.000002,
+        "deposit": 0,
+        "edgeLoss": 0,
+        "sequence": [
+          "sampled original finish is retained",
+          "thin applied ink follows the original normal"
+        ],
+        "limits": [
+          "all original stock channels outside pigment are immutable"
+        ],
+        "version": 1,
+        "profile": "wood-ink",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -6745,6 +9617,38 @@
           0.29523,
           0.294
         ]
+      },
+      "finish": {
+        "substrate": "original sampled finished wood",
+        "coating": "thin inventory ink",
+        "roughness": 0.73,
+        "inkRoughness": 0.82,
+        "fieldM": 0.035,
+        "variation": 0.015,
+        "roughnessVariation": 0.03,
+        "microReliefM": 0.000002,
+        "deposit": 0,
+        "edgeLoss": 0,
+        "sequence": [
+          "sampled original finish is retained",
+          "thin applied ink follows the original normal"
+        ],
+        "limits": [
+          "all original stock channels outside pigment are immutable"
+        ],
+        "version": 1,
+        "profile": "wood-ink",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -6809,6 +9713,38 @@
           0.29523,
           0.294
         ]
+      },
+      "finish": {
+        "substrate": "original sampled finished wood",
+        "coating": "thin inventory ink",
+        "roughness": 0.73,
+        "inkRoughness": 0.82,
+        "fieldM": 0.035,
+        "variation": 0.015,
+        "roughnessVariation": 0.03,
+        "microReliefM": 0.000002,
+        "deposit": 0,
+        "edgeLoss": 0,
+        "sequence": [
+          "sampled original finish is retained",
+          "thin applied ink follows the original normal"
+        ],
+        "limits": [
+          "all original stock channels outside pigment are immutable"
+        ],
+        "version": 1,
+        "profile": "wood-ink",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -6873,6 +9809,38 @@
           0.29523,
           0.294
         ]
+      },
+      "finish": {
+        "substrate": "original sampled finished wood",
+        "coating": "thin inventory ink",
+        "roughness": 0.73,
+        "inkRoughness": 0.82,
+        "fieldM": 0.035,
+        "variation": 0.015,
+        "roughnessVariation": 0.03,
+        "microReliefM": 0.000002,
+        "deposit": 0,
+        "edgeLoss": 0,
+        "sequence": [
+          "sampled original finish is retained",
+          "thin applied ink follows the original normal"
+        ],
+        "limits": [
+          "all original stock channels outside pigment are immutable"
+        ],
+        "version": 1,
+        "profile": "wood-ink",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -6937,6 +9905,38 @@
           0.29523,
           0.294
         ]
+      },
+      "finish": {
+        "substrate": "original sampled finished wood",
+        "coating": "thin inventory ink",
+        "roughness": 0.73,
+        "inkRoughness": 0.82,
+        "fieldM": 0.035,
+        "variation": 0.015,
+        "roughnessVariation": 0.03,
+        "microReliefM": 0.000002,
+        "deposit": 0,
+        "edgeLoss": 0,
+        "sequence": [
+          "sampled original finish is retained",
+          "thin applied ink follows the original normal"
+        ],
+        "limits": [
+          "all original stock channels outside pigment are immutable"
+        ],
+        "version": 1,
+        "profile": "wood-ink",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     },
     {
@@ -7001,6 +10001,1972 @@
           0.29523,
           0.294
         ]
+      },
+      "finish": {
+        "substrate": "original sampled finished wood",
+        "coating": "thin inventory ink",
+        "roughness": 0.73,
+        "inkRoughness": 0.82,
+        "fieldM": 0.035,
+        "variation": 0.015,
+        "roughnessVariation": 0.03,
+        "microReliefM": 0.000002,
+        "deposit": 0,
+        "edgeLoss": 0,
+        "sequence": [
+          "sampled original finish is retained",
+          "thin applied ink follows the original normal"
+        ],
+        "limits": [
+          "all original stock channels outside pigment are immutable"
+        ],
+        "version": 1,
+        "profile": "wood-ink",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      }
+    },
+    {
+      "id": "plate-store-corridor",
+      "copy": "PROP STORE",
+      "lines": [
+        "PROP STORE"
+      ],
+      "widthM": 0.44,
+      "heightM": 0.285,
+      "category": "institution",
+      "process": "institutional opaque room-name stencil on existing paper-faced label plate",
+      "palette": {
+        "ground": [
+          0.64,
+          0.6,
+          0.48
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.06666666666666667,
+      "emission": "none",
+      "font": "NimbusSans-Bold.otf",
+      "texelCapPx": 20,
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": false,
+        "contact": "none",
+        "exposure": "interior"
+      },
+      "reliefM": 0.000007,
+      "seed": "plate-store-corridor",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          0.16,
+          -0.0181
+        ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      }
+    },
+    {
+      "id": "plate-spur-substation",
+      "copy": "SERVICES SUBSTATION",
+      "lines": [
+        "SERVICES",
+        "SUBSTATION"
+      ],
+      "widthM": 0.44,
+      "heightM": 0.285,
+      "category": "institution",
+      "process": "institutional opaque room-name stencil on existing paper-faced label plate",
+      "palette": {
+        "ground": [
+          0.64,
+          0.6,
+          0.48
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.06666666666666667,
+      "emission": "none",
+      "font": "NimbusSans-Bold.otf",
+      "texelCapPx": 20,
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": false,
+        "contact": "none",
+        "exposure": "interior"
+      },
+      "reliefM": 0.000007,
+      "seed": "plate-spur-substation",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          0.16,
+          -0.0181
+        ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      }
+    },
+    {
+      "id": "plate-spur-tank",
+      "copy": "TANK ANNEX",
+      "lines": [
+        "TANK ANNEX"
+      ],
+      "widthM": 0.44,
+      "heightM": 0.285,
+      "category": "institution",
+      "process": "institutional opaque room-name stencil on existing paper-faced label plate",
+      "palette": {
+        "ground": [
+          0.64,
+          0.6,
+          0.48
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.06666666666666667,
+      "emission": "none",
+      "font": "NimbusSans-Bold.otf",
+      "texelCapPx": 20,
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": false,
+        "contact": "none",
+        "exposure": "interior"
+      },
+      "reliefM": 0.000007,
+      "seed": "plate-spur-tank",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          0.16,
+          -0.0181
+        ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      }
+    },
+    {
+      "id": "plate-practice-west-1",
+      "copy": "PRACTICE ROOM 1",
+      "lines": [
+        "PRACTICE",
+        "ROOM 1"
+      ],
+      "widthM": 0.44,
+      "heightM": 0.285,
+      "category": "institution",
+      "process": "institutional opaque room-name stencil on existing paper-faced label plate",
+      "palette": {
+        "ground": [
+          0.64,
+          0.6,
+          0.48
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.067,
+      "emission": "none",
+      "font": "NimbusSans-Bold.otf",
+      "texelCapPx": 20,
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": false,
+        "contact": "none",
+        "exposure": "interior"
+      },
+      "reliefM": 0.000007,
+      "seed": "plate-practice-west-1",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          0.16,
+          -0.0181
+        ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      }
+    },
+    {
+      "id": "plate-practice-east-1",
+      "copy": "PRACTICE ROOM 2",
+      "lines": [
+        "PRACTICE",
+        "ROOM 2"
+      ],
+      "widthM": 0.44,
+      "heightM": 0.285,
+      "category": "institution",
+      "process": "institutional opaque room-name stencil on existing paper-faced label plate",
+      "palette": {
+        "ground": [
+          0.64,
+          0.6,
+          0.48
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.067,
+      "emission": "none",
+      "font": "NimbusSans-Bold.otf",
+      "texelCapPx": 20,
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": false,
+        "contact": "none",
+        "exposure": "interior"
+      },
+      "reliefM": 0.000007,
+      "seed": "plate-practice-east-1",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          0.16,
+          -0.0181
+        ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      }
+    },
+    {
+      "id": "plate-practice-west-2",
+      "copy": "PRACTICE ROOM 3",
+      "lines": [
+        "PRACTICE",
+        "ROOM 3"
+      ],
+      "widthM": 0.44,
+      "heightM": 0.285,
+      "category": "institution",
+      "process": "institutional opaque room-name stencil on existing paper-faced label plate",
+      "palette": {
+        "ground": [
+          0.64,
+          0.6,
+          0.48
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.067,
+      "emission": "none",
+      "font": "NimbusSans-Bold.otf",
+      "texelCapPx": 20,
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": false,
+        "contact": "none",
+        "exposure": "interior"
+      },
+      "reliefM": 0.000007,
+      "seed": "plate-practice-west-2",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          0.16,
+          -0.0181
+        ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      }
+    },
+    {
+      "id": "plate-practice-east-2",
+      "copy": "PRACTICE ROOM 4",
+      "lines": [
+        "PRACTICE",
+        "ROOM 4"
+      ],
+      "widthM": 0.44,
+      "heightM": 0.285,
+      "category": "institution",
+      "process": "institutional opaque room-name stencil on existing paper-faced label plate",
+      "palette": {
+        "ground": [
+          0.64,
+          0.6,
+          0.48
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.067,
+      "emission": "none",
+      "font": "NimbusSans-Bold.otf",
+      "texelCapPx": 20,
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": false,
+        "contact": "none",
+        "exposure": "interior"
+      },
+      "reliefM": 0.000007,
+      "seed": "plate-practice-east-2",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          0.16,
+          -0.0181
+        ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      }
+    },
+    {
+      "id": "plate-practice-west-3",
+      "copy": "PRACTICE ROOM 5",
+      "lines": [
+        "PRACTICE",
+        "ROOM 5"
+      ],
+      "widthM": 0.44,
+      "heightM": 0.285,
+      "category": "institution",
+      "process": "institutional opaque room-name stencil on existing paper-faced label plate",
+      "palette": {
+        "ground": [
+          0.64,
+          0.6,
+          0.48
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.067,
+      "emission": "none",
+      "font": "NimbusSans-Bold.otf",
+      "texelCapPx": 20,
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": false,
+        "contact": "none",
+        "exposure": "interior"
+      },
+      "reliefM": 0.000007,
+      "seed": "plate-practice-west-3",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          0.16,
+          -0.0181
+        ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      }
+    },
+    {
+      "id": "plate-practice-east-3",
+      "copy": "PRACTICE ROOM 6",
+      "lines": [
+        "PRACTICE",
+        "ROOM 6"
+      ],
+      "widthM": 0.44,
+      "heightM": 0.285,
+      "category": "institution",
+      "process": "institutional opaque room-name stencil on existing paper-faced label plate",
+      "palette": {
+        "ground": [
+          0.64,
+          0.6,
+          0.48
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.067,
+      "emission": "none",
+      "font": "NimbusSans-Bold.otf",
+      "texelCapPx": 20,
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": false,
+        "contact": "none",
+        "exposure": "interior"
+      },
+      "reliefM": 0.000007,
+      "seed": "plate-practice-east-3",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          0.16,
+          -0.0181
+        ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      }
+    },
+    {
+      "id": "plate-practice-west-4",
+      "copy": "PRACTICE ROOM 7",
+      "lines": [
+        "PRACTICE",
+        "ROOM 7"
+      ],
+      "widthM": 0.44,
+      "heightM": 0.285,
+      "category": "institution",
+      "process": "institutional opaque room-name stencil on existing paper-faced label plate",
+      "palette": {
+        "ground": [
+          0.64,
+          0.6,
+          0.48
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.067,
+      "emission": "none",
+      "font": "NimbusSans-Bold.otf",
+      "texelCapPx": 20,
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": false,
+        "contact": "none",
+        "exposure": "interior"
+      },
+      "reliefM": 0.000007,
+      "seed": "plate-practice-west-4",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          0.16,
+          -0.0181
+        ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      }
+    },
+    {
+      "id": "plate-practice-east-4",
+      "copy": "PRACTICE ROOM 8",
+      "lines": [
+        "PRACTICE",
+        "ROOM 8"
+      ],
+      "widthM": 0.44,
+      "heightM": 0.285,
+      "category": "institution",
+      "process": "institutional opaque room-name stencil on existing paper-faced label plate",
+      "palette": {
+        "ground": [
+          0.64,
+          0.6,
+          0.48
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.067,
+      "emission": "none",
+      "font": "NimbusSans-Bold.otf",
+      "texelCapPx": 20,
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": false,
+        "contact": "none",
+        "exposure": "interior"
+      },
+      "reliefM": 0.000007,
+      "seed": "plate-practice-east-4",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          0.16,
+          -0.0181
+        ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      }
+    },
+    {
+      "id": "plate-academic-studio-2",
+      "copy": "VOCAL STUDIO 2",
+      "lines": [
+        "VOCAL STUDIO",
+        "2"
+      ],
+      "widthM": 0.44,
+      "heightM": 0.285,
+      "category": "institution",
+      "process": "institutional opaque room-name stencil on existing paper-faced label plate",
+      "palette": {
+        "ground": [
+          0.64,
+          0.6,
+          0.48
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.05555555555555556,
+      "emission": "none",
+      "font": "NimbusSans-Bold.otf",
+      "texelCapPx": 20,
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": false,
+        "contact": "none",
+        "exposure": "interior"
+      },
+      "reliefM": 0.000007,
+      "seed": "plate-academic-studio-2",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          0.16,
+          -0.0181
+        ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      }
+    },
+    {
+      "id": "plate-academic-store",
+      "copy": "ACADEMIC STORE",
+      "lines": [
+        "ACADEMIC",
+        "STORE"
+      ],
+      "widthM": 0.44,
+      "heightM": 0.285,
+      "category": "institution",
+      "process": "institutional opaque room-name stencil on existing paper-faced label plate",
+      "palette": {
+        "ground": [
+          0.64,
+          0.6,
+          0.48
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.067,
+      "emission": "none",
+      "font": "NimbusSans-Bold.otf",
+      "texelCapPx": 20,
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": false,
+        "contact": "none",
+        "exposure": "interior"
+      },
+      "reliefM": 0.000007,
+      "seed": "plate-academic-store",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          0.16,
+          -0.0181
+        ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      }
+    },
+    {
+      "id": "plate-academic-studio-3",
+      "copy": "VOCAL STUDIO 3",
+      "lines": [
+        "VOCAL STUDIO",
+        "3"
+      ],
+      "widthM": 0.44,
+      "heightM": 0.285,
+      "category": "institution",
+      "process": "institutional opaque room-name stencil on existing paper-faced label plate",
+      "palette": {
+        "ground": [
+          0.64,
+          0.6,
+          0.48
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.05555555555555556,
+      "emission": "none",
+      "font": "NimbusSans-Bold.otf",
+      "texelCapPx": 20,
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": false,
+        "contact": "none",
+        "exposure": "interior"
+      },
+      "reliefM": 0.000007,
+      "seed": "plate-academic-studio-3",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          0.16,
+          -0.0181
+        ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      }
+    },
+    {
+      "id": "plate-academic-studio-4",
+      "copy": "VOCAL STUDIO 4",
+      "lines": [
+        "VOCAL STUDIO",
+        "4"
+      ],
+      "widthM": 0.44,
+      "heightM": 0.285,
+      "category": "institution",
+      "process": "institutional opaque room-name stencil on existing paper-faced label plate",
+      "palette": {
+        "ground": [
+          0.64,
+          0.6,
+          0.48
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.05555555555555556,
+      "emission": "none",
+      "font": "NimbusSans-Bold.otf",
+      "texelCapPx": 20,
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": false,
+        "contact": "none",
+        "exposure": "interior"
+      },
+      "reliefM": 0.000007,
+      "seed": "plate-academic-studio-4",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          0.16,
+          -0.0181
+        ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      }
+    },
+    {
+      "id": "plate-academic-office-locked-1",
+      "copy": "FACULTY OFFICE WEST",
+      "lines": [
+        "FACULTY",
+        "OFFICE WEST"
+      ],
+      "widthM": 0.44,
+      "heightM": 0.285,
+      "category": "institution",
+      "process": "institutional opaque room-name stencil on existing paper-faced label plate",
+      "palette": {
+        "ground": [
+          0.64,
+          0.6,
+          0.48
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.0606060606060606,
+      "emission": "none",
+      "font": "NimbusSans-Bold.otf",
+      "texelCapPx": 20,
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": false,
+        "contact": "none",
+        "exposure": "interior"
+      },
+      "reliefM": 0.000007,
+      "seed": "plate-academic-office-locked-1",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          0.16,
+          -0.0181
+        ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      }
+    },
+    {
+      "id": "plate-academic-office-locked-2",
+      "copy": "FACULTY OFFICE EAST",
+      "lines": [
+        "FACULTY",
+        "OFFICE EAST"
+      ],
+      "widthM": 0.44,
+      "heightM": 0.285,
+      "category": "institution",
+      "process": "institutional opaque room-name stencil on existing paper-faced label plate",
+      "palette": {
+        "ground": [
+          0.64,
+          0.6,
+          0.48
+        ],
+        "ink": [
+          0.012,
+          0.014,
+          0.011
+        ]
+      },
+      "capHeightM": 0.0606060606060606,
+      "emission": "none",
+      "font": "NimbusSans-Bold.otf",
+      "texelCapPx": 20,
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": false,
+        "contact": "none",
+        "exposure": "interior"
+      },
+      "reliefM": 0.000007,
+      "seed": "plate-academic-office-locked-2",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          0.16,
+          -0.0181
+        ]
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      }
+    },
+    {
+      "id": "landing-ground-landing",
+      "copy": "GROUND",
+      "lines": [
+        "GROUND"
+      ],
+      "widthM": 2.28,
+      "heightM": 0.26,
+      "category": "institution",
+      "process": "institutional enamel landing lettering",
+      "palette": {
+        "ground": [
+          0.025,
+          0.028,
+          0.03
+        ],
+        "ink": [
+          0.71,
+          0.68,
+          0.52
+        ]
+      },
+      "capHeightM": 0.105,
+      "emission": "none",
+      "font": "NimbusSans-Bold.otf",
+      "texelCapPx": 32,
+      "rasterWidthPx": 384,
+      "rasterHeightPx": 44,
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": false,
+        "contact": "none",
+        "exposure": "interior"
+      },
+      "reliefM": 0.000007,
+      "seed": "landing-ground-landing",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          -0.04,
+          -0.0526
+        ]
+      },
+      "finish": {
+        "substrate": "metal support with fired vitreous-enamel face",
+        "coating": "screen-fired dielectric lettering",
+        "roughness": 0.32,
+        "inkRoughness": 0.44,
+        "fieldM": 0.16,
+        "variation": 0.024,
+        "roughnessVariation": 0.055,
+        "microReliefM": 0.000006,
+        "deposit": 0.055,
+        "edgeLoss": 0.1,
+        "sequence": [
+          "fired face remains largely intact",
+          "sheltered ledge accumulates a thin deposit",
+          "isolated actual perimeter impact exposes dull support"
+        ],
+        "limits": [
+          "support alloy is not established; exposed support is neutral, never invented iron rust"
+        ],
+        "version": 1,
+        "profile": "enamel",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      }
+    },
+    {
+      "id": "landing-b3-landing",
+      "copy": "DANCE WING / B1-B5",
+      "lines": [
+        "DANCE WING / B1-B5"
+      ],
+      "widthM": 2.28,
+      "heightM": 0.26,
+      "category": "institution",
+      "process": "institutional enamel landing lettering",
+      "palette": {
+        "ground": [
+          0.025,
+          0.028,
+          0.03
+        ],
+        "ink": [
+          0.71,
+          0.68,
+          0.52
+        ]
+      },
+      "capHeightM": 0.105,
+      "emission": "none",
+      "font": "NimbusSans-Bold.otf",
+      "texelCapPx": 32,
+      "rasterWidthPx": 384,
+      "rasterHeightPx": 44,
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": false,
+        "contact": "none",
+        "exposure": "interior"
+      },
+      "reliefM": 0.000007,
+      "seed": "landing-b3-landing",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          -0.04,
+          -0.0526
+        ]
+      },
+      "finish": {
+        "substrate": "metal support with fired vitreous-enamel face",
+        "coating": "screen-fired dielectric lettering",
+        "roughness": 0.32,
+        "inkRoughness": 0.44,
+        "fieldM": 0.16,
+        "variation": 0.024,
+        "roughnessVariation": 0.055,
+        "microReliefM": 0.000006,
+        "deposit": 0.055,
+        "edgeLoss": 0.1,
+        "sequence": [
+          "fired face remains largely intact",
+          "sheltered ledge accumulates a thin deposit",
+          "isolated actual perimeter impact exposes dull support"
+        ],
+        "limits": [
+          "support alloy is not established; exposed support is neutral, never invented iron rust"
+        ],
+        "version": 1,
+        "profile": "enamel",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      }
+    },
+    {
+      "id": "landing-upper-floor-landing",
+      "copy": "PRACTICE WING",
+      "lines": [
+        "PRACTICE WING"
+      ],
+      "widthM": 2.28,
+      "heightM": 0.26,
+      "category": "institution",
+      "process": "institutional enamel landing lettering",
+      "palette": {
+        "ground": [
+          0.025,
+          0.028,
+          0.03
+        ],
+        "ink": [
+          0.71,
+          0.68,
+          0.52
+        ]
+      },
+      "capHeightM": 0.105,
+      "emission": "none",
+      "font": "NimbusSans-Bold.otf",
+      "texelCapPx": 32,
+      "rasterWidthPx": 384,
+      "rasterHeightPx": 44,
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": false,
+        "contact": "none",
+        "exposure": "interior"
+      },
+      "reliefM": 0.000007,
+      "seed": "landing-upper-floor-landing",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          -0.04,
+          -0.0526
+        ]
+      },
+      "finish": {
+        "substrate": "metal support with fired vitreous-enamel face",
+        "coating": "screen-fired dielectric lettering",
+        "roughness": 0.32,
+        "inkRoughness": 0.44,
+        "fieldM": 0.16,
+        "variation": 0.024,
+        "roughnessVariation": 0.055,
+        "microReliefM": 0.000006,
+        "deposit": 0.055,
+        "edgeLoss": 0.1,
+        "sequence": [
+          "fired face remains largely intact",
+          "sheltered ledge accumulates a thin deposit",
+          "isolated actual perimeter impact exposes dull support"
+        ],
+        "limits": [
+          "support alloy is not established; exposed support is neutral, never invented iron rust"
+        ],
+        "version": 1,
+        "profile": "enamel",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      }
+    },
+    {
+      "id": "landing-academic-floor-landing",
+      "copy": "VOCAL STUDIES",
+      "lines": [
+        "VOCAL STUDIES"
+      ],
+      "widthM": 2.28,
+      "heightM": 0.26,
+      "category": "institution",
+      "process": "institutional enamel landing lettering",
+      "palette": {
+        "ground": [
+          0.025,
+          0.028,
+          0.03
+        ],
+        "ink": [
+          0.71,
+          0.68,
+          0.52
+        ]
+      },
+      "capHeightM": 0.105,
+      "emission": "none",
+      "font": "NimbusSans-Bold.otf",
+      "texelCapPx": 32,
+      "rasterWidthPx": 384,
+      "rasterHeightPx": 44,
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": false,
+        "contact": "none",
+        "exposure": "interior"
+      },
+      "reliefM": 0.000007,
+      "seed": "landing-academic-floor-landing",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          -0.04,
+          -0.0526
+        ]
+      },
+      "finish": {
+        "substrate": "metal support with fired vitreous-enamel face",
+        "coating": "screen-fired dielectric lettering",
+        "roughness": 0.32,
+        "inkRoughness": 0.44,
+        "fieldM": 0.16,
+        "variation": 0.024,
+        "roughnessVariation": 0.055,
+        "microReliefM": 0.000006,
+        "deposit": 0.055,
+        "edgeLoss": 0.1,
+        "sequence": [
+          "fired face remains largely intact",
+          "sheltered ledge accumulates a thin deposit",
+          "isolated actual perimeter impact exposes dull support"
+        ],
+        "limits": [
+          "support alloy is not established; exposed support is neutral, never invented iron rust"
+        ],
+        "version": 1,
+        "profile": "enamel",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
       }
     }
   ]

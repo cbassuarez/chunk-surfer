@@ -8,6 +8,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import sharp from 'sharp';
+import {patchTreeCrowns} from './rebuild-tree-crowns.mjs';
+import {buildTreeCrown,TREE_CROWN_NAMES,TREE_CROWN_REVISION} from './tree-crown-geometry.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
 const MANIFEST_PATH = path.join(import.meta.dirname, 'vegetation-sources.json');
@@ -324,6 +326,8 @@ async function main() {
     }
     await buildTextures(workDir, sourceRoots);
     fs.mkdirSync(path.dirname(output), { recursive: true });
+    const treeRecipes=TREE_CROWN_NAMES.flatMap((base,variant)=>[0,1,2].map(lod=>({name:base+(lod?`_lod${lod}`:''),...buildTreeCrown(variant,lod)})));
+    fs.writeFileSync(path.join(workDir,'tree-crowns.json'),JSON.stringify(treeRecipes));
     const blenderReportPath = path.join(workDir, 'blender-report.json');
     const result = childProcess.spawnSync(blender, [
       '--background', '--factory-startup', '--python', BLENDER_SCRIPT, '--',
@@ -333,17 +337,19 @@ async function main() {
     if (result.status !== 0) fail(`Blender exited ${result.status}`);
     if (!fs.existsSync(output) || !fs.existsSync(blenderReportPath)) fail('Blender did not produce output/report');
     const first = findChunks(fs.readFileSync(output)); sanitise(first.json);
-    const sanitised = buildGlb(first.json, first.bin); fs.writeFileSync(output, sanitised);
+    const crowns = patchTreeCrowns(first);
+    const sanitised = buildGlb(crowns.json, crowns.bin); fs.writeFileSync(output, sanitised);
     const final = findChunks(sanitised), stats = collectStats(sanitised, final.json, final.bin); assertOutput(stats, final.json);
     const blenderReport = JSON.parse(fs.readFileSync(blenderReportPath, 'utf8'));
-    const fullStats = { file: path.basename(output), ...stats, limits: manifest.limits, lod: manifest.lod, build: blenderReport };
+    const treeCrown={revision:TREE_CROWN_REVISION,generator:'tools/chunk_surfer/tree-crown-geometry.mjs',source:'original deterministic clustered crowns'};
+    const fullStats = { file: path.basename(output), ...stats, treeCrown, limits: manifest.limits, lod: manifest.lod, build: blenderReport };
     const sources = manifest.sources.map((source) => ({
       role: source.role, sourceName: source.source, sourceUrl: source.url, authors: source.authors,
       license: source.license, licenseUrl: source.licenseUrl,
       archive: source.archive || null, archiveSha256: source.sha256 || null,
       files: source.files?.map(({ path: file, url, sha256: digest }) => ({ file, url, sha256: digest })) || null,
     }));
-    const credits = { file: path.basename(output), pack: { sha256: stats.sha256, bytes: stats.bytes, triangles: stats.totalTriangles }, license: manifest.license, sources };
+    const credits = { file: path.basename(output), pack: { sha256: stats.sha256, bytes: stats.bytes, triangles: stats.totalTriangles }, license: manifest.license, sources, treeCrown };
     const artifact = { generatedAt: new Date().toISOString(), file: path.basename(output), build: fullStats, ingestion: sourceReports, credits: sources };
     fs.writeFileSync(statsPath, `${JSON.stringify(fullStats, null, 2)}\n`);
     fs.writeFileSync(creditsPath, `${JSON.stringify(credits, null, 2)}\n`);

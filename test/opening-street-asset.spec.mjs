@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import {propTextureWrap} from '../src/render/prop-material-contract.js';
 
 const manifest=JSON.parse(fs.readFileSync('tools/chunk_surfer/opening-street-sources.json','utf8'));
 const stats=JSON.parse(fs.readFileSync('public/assets/opening-street.stats.json','utf8'));
@@ -156,7 +157,13 @@ assert.match(builder,/path\.posix\.isAbsolute\(member\).*normal\.startsWith\('\.
 assert.match(builder,/fs\.mkdtempSync/);
 assert.match(renderer,/srgb\?textureGl\.SRGB8_ALPHA8:textureGl\.RGBA8/);
 assert.match(renderer,/TEXTURE_MIN_FILTER,textureGl\.LINEAR_MIPMAP_LINEAR/);
-assert.match(renderer,/TEXTURE_WRAP_S,textureGl\.REPEAT/);
+// Terrain repeat is a glTF sampler contract, not a renderer-wide override.
+for(const texture of gltf.textures){
+  assert.deepEqual(propTextureWrap(gltf.samplers?.[texture.sampler]||{}),
+    {wrapS:10497,wrapT:10497},'opening terrain textures retain repeat in both axes');
+}
+assert.match(renderer,/TEXTURE_WRAP_S,wrap\.wrapS/);
+assert.match(renderer,/TEXTURE_WRAP_T,wrap\.wrapT/);
 assert.match(renderer,/occlusionTexture\?\.strength/);
 assert.match(renderer,/setPropDiagnostics/);
 assert.match(worldRenderer,/assets\/opening-street\.glb/);

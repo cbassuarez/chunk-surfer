@@ -24,17 +24,19 @@ export function worldLetteringFont(size, role = 'mono') {
   return `${Number(size)}px "${family}"`;
 }
 export function worldLetteringFontsStatus(owner = globalThis.document) {
-  const state = owner?.fonts && states.get(owner.fonts);
+  const state = owner?.fonts && states.get(owner);
   return { ready: !!state?.ready, pending: !!state?.promise && !state?.ready && !state?.error,
     error: state?.error || '', key: WORLD_LETTERING_FONT_KEY };
 }
 export function ensureWorldLetteringFonts({ assetUrl = defaultAssetUrl, ownerDocument = globalThis.document, FontFaceClass = globalThis.FontFace } = {}) {
   const set = ownerDocument?.fonts;
   if (!set || typeof FontFaceClass !== 'function') return Promise.reject(new Error('World lettering requires the Canvas font-loading API'));
-  const existing = states.get(set);
+  // Keep readiness on the document. Native DOM FontFaceSet wrappers can be
+  // collected/recreated between an asynchronous load and a later material bake.
+  const existing = states.get(ownerDocument);
   if (existing) return existing.promise;
   const state = { ready: false, error: '', promise: null };
-  states.set(set, state);
+  states.set(ownerDocument, state);
   state.promise = Promise.all(WORLD_LETTERING_FONT_FILES.map(async face => {
     const url = String(assetUrl(`assets/fonts/${face.file}`));
     // Each explicit role is a separate family at normal weight. Callers choose

@@ -1,9 +1,9 @@
 {
   "file": "conservatory-doors.glb",
-  "bytes": 511148,
-  "sha256": "6f03b74fd3cb2a427f86ab4be439fd6ea5e8ccec0b4164e41194d47bb23e14c7",
+  "bytes": 787504,
+  "sha256": "18df9aafd56f0078bbe42261c79a48c1adfef5a56131d858c76e80badcd5eb32",
   "meshes": 26,
-  "triangles": 1032,
-  "maxLeafTriangles": 84,
+  "triangles": 5586,
+  "maxLeafTriangles": 572,
   "textureAtlas": "1536x512 diffuse + normal + ARM"
 }

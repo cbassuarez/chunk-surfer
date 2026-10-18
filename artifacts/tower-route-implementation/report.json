@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-10-12T17:03:36.786Z",
-  "status": "Implemented; final held-ending rendered acceptance pending.",
+  "generatedAt": "2026-10-13T05:38:46.554044Z",
+  "status": "Selected Tower route implemented and verified in the recorded Chromium/Metal scope.",
   "selected": {
     "geometry": "Protected service bays",
     "level": "The walk teaches the duel",
@@ -23,11 +23,11 @@
     },
     {
       "beat": "Extraction",
-      "behavior": "An actual regrippable body follows the player through the nave and west doors. There is no timed-reset gauntlet. Saves preserve player/body trail, grip and camera. Both centres must clear the authored west leaf by 0.25 m within the actual 1.5 m half-width lane."
+      "behavior": "An actual regrippable body follows the player through the nave and west doors. There is no timed-reset gauntlet. Saves preserve player/body trail, grip and camera. The player must clear the authored leaf by0.25m and the prone body centre by1.1m, covering its entire rotated shipped footprint. A three-metre apron permits continuous grip before the yard seam."
     },
     {
       "beat": "Endings",
-      "behavior": "Rescue is earned by moving both bodies outside. Loss is caused by the third defeat and uses eight real strikes and progressive body control. Resistance expresses agency without gating completion. Both have a unique held world image, epilogue, credits and persisted return. Reloading an already-earned rescue retains its completed spatial score."
+      "behavior": "Rescue is earned by moving both bodies outside. Loss is caused by the third defeat and uses eight real strikes and progressive body control. Resistance expresses agency without gating completion. Both have a unique held world image, epilogue, credits and persisted return. Reloading an already-earned rescue retains its completed spatial score. Terminal shots reserve their actor light, detach the gameplay torch, suppress unrelated apparitions, and retain correct foreground material boundaries. The prone torso now lies entirely above its authored floor."
     },
     {
       "beat": "Personal recording",
@@ -59,6 +59,24 @@
       "passed": 11,
       "total": 11,
       "note": "Latest terminal tableau geometry, ordinary church torch and Source torch boundary checks after reserving the terminal light slot and disabling the detached camera torch."
+    },
+    {
+      "path": "artifacts/tower-route-implementation/final-render-surface-tests.tap",
+      "passed": 11,
+      "total": 11,
+      "note": "Latest generated GLB prone bounds, terminal camera isolation, ending staging, pixel-mesh contract and real render-buffer readback checks."
+    },
+    {
+      "path": "artifacts/tower-route-implementation/final-whole-body-tests.tap",
+      "passed": 5,
+      "total": 5,
+      "note": "Whole rotated prone footprint, exact gate boundary, completed legacy rescue positions, and actual ending resume."
+    },
+    {
+      "path": "artifacts/tower-route-implementation/final-apron-vigil-tests.tap",
+      "passed": 4,
+      "total": 4,
+      "note": "Compiled held follower clears the full body before the yard seam; fresh baseboards/GLB bounds and no abandoned helper handoff."
     }
   ],
   "evidence": {
@@ -87,7 +105,8 @@
       "errors": [],
       "artifactErrorCount": 0,
       "scope": "Frozen production page in actual Chromium/Metal. When selected, a diagnostic won-fight checkpoint establishes the collapsed body; ordinary E/W performs extraction and actual reload + title Continue verifies persistence. An isolated terminal review establishes the defeat-ending presenter precondition; ordinary Enter completes it without E/resistance. A separate fourth-strike E tests optional expression. No served source, shader or module substitution. This does not prove a whole campaign, three earned combat defeats or perceptual headphone acceptance.",
-      "visualAssessment": null
+      "visualAssessment": null,
+      "note": "Retained for earlier audio, resistance, credits and save-lifecycle coverage. Its former 0.25 m body-centre exit criterion is superseded by finalWholeBodyExtraction; it is not full prone-footprint clearance evidence."
     },
     "finalTorch": {
       "path": "artifacts/tower-route-implementation/live-descent/torch-views/report.json",
@@ -115,18 +134,74 @@
       "errors": [],
       "scope": "Frozen production page in actual Chromium/Metal. Bounded presentation follow-up: when an earned-position fixture is selected, its real completed extraction plus pending Tower-won ending is loaded through an actual page reload and native Continue; otherwise the existing God review supplies the won boundary. The isolated God ending review establishes the lost crossing boundary. Ordinary Enter reaches the actual authored held image, credits and return. Default choreography remains enabled; no exposure override is used unless a separately labeled diagnostic A/B is selected. Whole-route earning is not re-proved here. No served source, shader or module substitution.",
       "note": "Functional40/40 result is retained. Held-image contrast from this build was rejected and superseded by the terminal light-slot correction."
+    },
+    "finalWholeBodyExtraction": {
+      "path": "artifacts/tower-route-implementation/live-endings/final-Ir6DB2-extraction/report.json",
+      "passed": 86,
+      "total": 86,
+      "errors": [],
+      "captureCount": 30,
+      "captureErrors": 0,
+      "scope": "Frozen production page in Chromium/Metal, normal and reduced motion. A diagnostic won-fight checkpoint establishes the collapsed body; ordinary E/W drops, regrips and carries it through the nave and actual west leaf. Actual reload and title Continue preserve player position, body trail, grip, pose and progress. The player clears the authored leaf by 0.25 m and the prone body centre by 1.1 m, clearing the entire rotated shipped footprint before the yard seam while the grip stays continuous. Both runs reach the actual held world image, credits and persisted return. No served source, shader or module substitution. This does not prove whole-campaign earning, native acceptance or human play feel.",
+      "visualAssessment": {
+        "accepted": true,
+        "review": "artifacts/tower-route-implementation/won-held-visual-review.json",
+        "scope": "At the tested desktop capture size, the seated upright player and low prone companion are separately visible outside the doorway in both motion modes; the held frame has no dialogue overlay.",
+        "limit": "Floor hatch competes with fine limbs; no detailed anatomical readability or human emotional-impact claim."
+      }
+    },
+    "finalLossPresentation": {
+      "path": "artifacts/tower-route-implementation/live-endings/final-Ir6DB2-loss/report.json",
+      "passed": 30,
+      "total": 30,
+      "errors": [],
+      "captureCount": 20,
+      "captureErrors": 0,
+      "scope": "The same frozen production bundle as finalWholeBodyExtraction, in Chromium/Metal, normal and reduced motion. Isolated terminal review establishes the third-defeat presenter precondition. The actual eight bell audio callbacks fire in order; optional ordinary E expresses resistance at the fourth strike and does not gate the ending. Ordinary narrative input reaches the held world frame, credits and persisted return. No served source, shader or module substitution. This is not proof of three losses earned from the start of a campaign or human play feel.",
+      "visualAssessment": {
+        "accepted": true,
+        "review": "artifacts/tower-route-implementation/lost-held-visual-review-final.json",
+        "scope": "Direct inspection of both held frames shows two distinct upright silhouettes beneath the bells, with an unobstructed camera and no prose overlay.",
+        "limit": "Stylized silhouettes do not establish detailed anatomy or emotional impact."
+      }
     }
   },
   "finalEndingPresentation": {
-    "path": "artifacts/tower-route-implementation/live-endings/final-WxlkWE-held/report.json",
-    "status": "Running"
+    "status": "Accepted within the recorded desktop Chromium/Metal visual scope",
+    "loss": {
+      "path": "artifacts/tower-route-implementation/live-endings/final-Ir6DB2-loss/report.json",
+      "passed": 30,
+      "total": 30,
+      "captures": 20,
+      "accepted": true,
+      "review": "artifacts/tower-route-implementation/lost-held-visual-review-final.json"
+    },
+    "rescue": {
+      "path": "artifacts/tower-route-implementation/live-endings/final-Ir6DB2-extraction/report.json",
+      "passed": 86,
+      "total": 86,
+      "captures": 30,
+      "accepted": true,
+      "review": "artifacts/tower-route-implementation/won-held-visual-review.json"
+    }
   },
   "limits": [
     "Chromium/Metal automation uses explicit route checkpoints; it is not a complete campaign or a human difficulty/play-feel review.",
     "Native Tauri behavior and headphone perception have not been accepted by these checks.",
     "Dedicated Tower soundtrack beds remain explicit placeholders; actual bell cues and the earned personal recording are implemented.",
-    "The broad descent behavior run passed44/44 but11 captures encountered storage errors. The later targeted torch run saved all34 actual frames without storage errors."
+    "The broad descent behavior run passed44/44 but11 captures encountered storage errors. The later targeted torch run saved all34 actual frames without storage errors.",
+    "The shared depth composite now clears hidden architectural grain where an ordinary GLB prop wins depth. Tower images are checked here; this is not a global visual acceptance of every prop/scene.",
+    "The full prop pack remains above its four existing size budgets; its structural/provenance checks pass. The prone correction did not increase its triangle count.",
+    "Independent review records an unchanged Source identity shader/test mismatch in test/source-room-memory-renderer.spec.mjs:26."
   ],
   "workspace": "Unrelated shared-workspace edits are preserved. No commit, staging, push or deployment was performed.",
-  "workspaceReview": "artifacts/tower-route-implementation/final-shared-workspace-review.json"
+  "workspaceReview": "artifacts/tower-route-implementation/final-shared-workspace-review.json",
+  "provenance": {
+    "manifest": "artifacts/tower-route-implementation/verification-source.json",
+    "review": "artifacts/tower-route-implementation/final-shared-workspace-review.json",
+    "frozenProductionBundle": "main-B9Bu8U7a.js",
+    "bundleSha256": "5b9ba9d8557016cfffecb8aadcd9e78aae3f9fe4eaa9731388fd1b76ce85f9a7",
+    "currentTowerFunctionMatches": "19/19",
+    "sharedWorkspaceScope": "Other concurrent Source, bus-woman and battle-hand edits are preserved and listed in the review; current main.js differs outside the 19 inspected Tower functions."
+  }
 }

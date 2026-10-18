@@ -1,9 +1,9 @@
 {
   "file": "vegetation.glb",
   "pack": {
-    "sha256": "92fdc3b0df63614271136b536c7f18ea99c6b83b5657761f857c2b89d5bad53b",
-    "bytes": 19066928,
-    "triangles": 100369
+    "sha256": "956c95e445cddedfde4946cb3535e6bb5fa5cd2ef837f3e56abeb3241816d9d2",
+    "bytes": 18008924,
+    "triangles": 93375
   },
   "license": {
     "id": "CC0-1.0",
@@ -157,5 +157,10 @@
         }
       ]
     }
-  ]
+  ],
+  "treeCrown": {
+    "revision": 1,
+    "generator": "tools/chunk_surfer/tree-crown-geometry.mjs",
+    "source": "original deterministic geometry; existing non-tree plants, materials and texture data retained"
+  }
 }
