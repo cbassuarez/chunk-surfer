@@ -60,9 +60,10 @@ test('production player climbs and descends the gallery while the underlying lou
   assert.equal(runtime.lastReceptionFrame().phase, 'exploring');
 });
 
-test('the large central field remains a complete bypass of the optional jail', () => {
+test('the central lane remains a complete bypass of the optional jail', () => {
   const { runtime, walk, place } = reception({ sourceDivide: { version: 1, feet: 4.2, fallVelocity: 0, falling: false } });
-  place({ x: 0, z: -430, y: 4.2 });
+  // On the lane, past the break in the floor short of the case crossing.
+  place({ x: 0, z: -442, y: 4.2 });
   for (const z of [-450, -465, -480]) walk({ x: 0, z, y: 4.2 });
   assert.equal(runtime.lastReceptionFrame().inside, false);
   assert.equal(runtime.state().lastReception.entered, false);

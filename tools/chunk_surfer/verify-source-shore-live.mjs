@@ -55,7 +55,7 @@ async function evidence(name, capture = true) {
   const shore = snapshot.source.landing?.shore;
   console.log('EVIDENCE', name, JSON.stringify({ position: snapshot.position, floor: snapshot.floor,
     shore: shore && { active: shore.active, outside: shore.outside, proper: shore.proper,
-      whiteout: shore.whiteout, remainingMetres: shore.distanceToLiftMetres,
+      remainingMetres: shore.distanceToLiftMetres,
       lift: shore.lift.phase, liftFloor: shore.lift.floor, bodyFloor: shore.bodyFloor } }));
   if (capture) {
     await page.screenshot({ path: join(out, `${name}.png`) });
@@ -137,7 +137,7 @@ try {
   await page.keyboard.down('w');
   await page.waitForFunction(() => window.__shoreSamples.started !== null, { timeout: 15000 });
   await page.keyboard.up('w');
-  await sleep(2600); await evidence('03-whiteout');
+  await sleep(2600); await evidence('03-threshold');
   const displayedPNG=await page.screenshot({encoding:'base64'});
   const blindPixels=await page.evaluate(async png=>{
     const picture=new Image();picture.src=`data:image/png;base64,${png}`;await picture.decode();
@@ -147,10 +147,9 @@ try {
     for(let i=0;i<pixels.length;i+=4){if(pixels[i]>253&&pixels[i+1]>253&&pixels[i+2]>253)white++;sum+=(pixels[i]+pixels[i+1]+pixels[i+2])/3;}
     return {whiteFraction:white/(pixels.length/4),mean:sum/(pixels.length/4)};
   },displayedPNG);
-  check(reduced?blindPixels.whiteFraction<.95:blindPixels.whiteFraction>.999,
-    reduced?'reduced effects retain the scene during exposure':'normal exposure becomes uninterrupted full white',blindPixels);
-  await aim(Math.PI, .06); await evidence('04-whiteout-look-back');
-  await sleep(12000); await evidence('05-adapted-room');
+  check(blindPixels.whiteFraction<.95,'stepping through the open leaf does not replay the white as a full-frame exposure',blindPixels);
+  await aim(Math.PI, .06); await evidence('04-threshold-look-back');
+  await sleep(1000); await evidence('05-room-behind');
   await aim(Math.PI / 2, 0); await torch(false); const emptyOff = await evidence('06-empty-torch-off');
   await torch(true); const emptyOn = await evidence('07-empty-torch-on');
   check(emptyOff.source.landing.flashlight.mode === 'normal' && emptyOn.source.landing.flashlight.xray === false, 'the crossing keeps the ordinary flashlight');

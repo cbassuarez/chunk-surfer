@@ -195,7 +195,7 @@ const radioTimeline=authoringProject.timeline.find((group)=>group.id==='radio');
 assert.equal(radioTimeline.title,'Radio guidance and failures');
 assert.equal(radioTimeline.kind,'sequence');
 assert.deepEqual(radioTimeline.documents,[
-  'radio.initial_checkin','radio.missed_checkin','radio.guidance','radio.post_second_take_warning','radio.hush_help_rupture','radio.pre_third_room_breakdown','conservatory.radio_dead',
+  'radio.initial_checkin','radio.light_checkin','radio.missed_checkin','radio.guidance','radio.post_second_take_warning','radio.hush_help_rupture','radio.pre_third_room_breakdown','conservatory.radio_dead',
 ]);
 for(const id of radioTimeline.documents)assert.ok(authoringProject.runtimeEntrypoints.includes(id),`${id} is an explicit runtime entrypoint`);
 assert.match(JSON.stringify(runtimeTree('radio.guidance',{TARGET:'STUDIO B3',ROUTEFIRST:'Studio B3 first.',ROUTEREPEAT:'Take the main basement stair.'})),/main basement stair/i);

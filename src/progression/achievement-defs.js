@@ -75,6 +75,15 @@ export const ACHIEVEMENT_DEFS = Object.freeze([
     test: ({ event, run }) => event.type === EVENT_TYPES.RUN_FINISHED && (run?.ledger?.propsInspected?.length || 0) >= 8,
   },
   {
+    // The figure in the get-in dream walks up the beam. Torch on when it gets
+    // there and the drill opens with it; torch off and it goes straight through.
+    // See game/dream-figure.js.
+    id: 'ACH_LIGHT_OFF', name: 'Whatever That Was',
+    description: 'Put your light out before the figure in the dream reaches you.', category: 'method', hidden: true,
+    events: [EVENT_TYPES.DREAM_RESOLVED],
+    test: ({ event }) => event.payload?.outcome === 'spared',
+  },
+  {
     id: 'ACH_RELEASE_RECORD', name: 'Release Record',
     description: 'Open the release record.', category: 'method', hidden: false,
     events: [EVENT_TYPES.CREDITS_VIEWED], test: () => true,

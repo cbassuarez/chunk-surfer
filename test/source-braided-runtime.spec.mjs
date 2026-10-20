@@ -12,7 +12,7 @@ function field() {
   const o=built.state.landscapeOrigin;
   let position={x:o.x+8,y:o.y-798,facing:0};
   runtime.setPlayerPosition(position);
-  const walk=(x,z)=>{
+  const walk=(x,z,{settle=true}={})=>{
     const target={x:o.x+x/.5,y:o.y+z/.5,facing:0};
     const distance=Math.hypot(target.x-position.x,target.y-position.y),steps=Math.max(1,Math.ceil(distance/.2));
     const start={...position};
@@ -22,6 +22,8 @@ function field() {
       assert.ok(step.ok,JSON.stringify({from:position,next,step,divide:runtime.probe().divide}));
       runtime.onStep(position,next);position=next;runtime.tick(1/48,{px:next.x,py:next.y,facing:0});
     }
+    // A drop is the vertical clock's: let the body come down before reading it.
+    for(let n=0;settle&&n<240&&runtime.state().sourceDivide?.falling;n++)runtime.tick(1/48,{px:position.x,py:position.y,facing:0});
     return runtime.geometry.renderedFloorAt();
   };
   return {runtime,o,walk,position:()=>position};
@@ -69,7 +71,7 @@ test('native model transforms include every authored axis and Source masonry ret
 test('dropping from a crossing costs elevation and retains that body height through reload',()=>{
   const {runtime,walk,position}=field();
   for(const point of SOURCE_BRAIDED_REVIEW_WALK){walk(point.x,point.z);if(point.id==='case-over')break;}
-  walk(0,-445);
+  walk(0,-445,{settle:false});
   const p=position();
   assert.ok(runtime.state().sourceDivide.falling);
   const saved=runtime.state(),feet=saved.sourceDivide.feet;

@@ -392,12 +392,28 @@ export function trainingCombatDefinition() {
   };
 }
 
-export function trainingCombatBattle() {
+// The figure from the dream (game/dream-figure.js) reached him with his torch
+// still on. Same drill, same bar, same lessons; only who it is changes, because
+// he is fighting the thing that walked up his beam rather than the one he joked
+// about.
+const DREAM_FIGURE_TRAINING = Object.freeze({
+  enemy: 'THE THING IN THE LIGHT',
+  intro: Object.freeze([
+    Object.freeze({ who: 'direction', text: 'It walks up the last of the beam and into you. Not past you. Into.' }),
+    Object.freeze({ who: 'you', text: "Oh, that's not fair. I was joking. I was making a joke." }),
+  ]),
+  win: Object.freeze([Object.freeze({ who: 'direction', text: 'You blink. The get-in, the meter still under sixty, your feet exactly where you left them, and the torch still on in your hand. Whatever that was, it came up the light to find you.' })]),
+  lose: Object.freeze([Object.freeze({ who: 'direction', text: 'You blink, and lose the thread of it, and it is only the get-in again. Six good seconds, a level, the torch still on in your hand, and a slightly stupid feeling. Whatever that was, it came up the light to find you.' })]),
+});
+
+export function trainingCombatBattle({ cause = null } = {}) {
   // Separate from the legacy training profile used by reducer labs. A single
   // honest coherence bar contains the taught setup and a short choice-based
   // finish; no second health bar waits after graduation.
+  const figure = cause === 'dream-figure' ? DREAM_FIGURE_TRAINING : null;
   const combat = {
     ...trainingCombatDefinition(),
+    ...(figure ? { enemy: figure.enemy } : {}),
     rehearsal: 'bench-drill-v2',
     movements: [pinned('bench-rehearsal', 'THE THING YOU JUST INVENTED', 85, [
       B('training:brace', 'ITS SHOULDERS DRAW BACK. A BLOW IS COMING.', 4, { takeLabel: 'BENCH TONE', playbackDamage: 10 }),
@@ -428,6 +444,7 @@ export function trainingCombatBattle() {
     ],
     win: [{ who: 'direction', text: 'You blink. The dock, the dark, the meter still under sixty, your feet exactly where you left them. Six seconds, and you held every one of them. Whatever that was, you already know what you do about it.' }],
     lose: [{ who: 'direction', text: 'You blink, and lose the thread of it, and it is only the dock again. Six seconds, a good level, and a slightly stupid feeling. Nothing touched you. Nothing has started yet — and you have already told it what you are frightened of.' }],
+    ...(figure ? { intro: [...figure.intro], win: [...figure.win], lose: [...figure.lose] } : {}),
   };
 }
 

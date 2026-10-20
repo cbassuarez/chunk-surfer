@@ -8,7 +8,9 @@ function firstMeeting(options = {}, { talks = 0, edgeDoorOpen = false } = {}) {
   const built = buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.FIRST_CONTACT, {
     seed: 4417, injuries: 0, hasRig: false, ...options,
   });
-  const initialState = { ...built.state, edgeDoorOpen, sourceContacts: { ...built.state.sourceContacts, talks } };
+  // HUSH followed you here and stands within reach, where the court trace stood.
+  const initialState = { ...built.state, edgeDoorOpen, sourceContacts: { ...built.state.sourceContacts, talks },
+    sourceHushFollow: { active: true, x: -12, z: -463.5, floor: 4.2, heading: 0 } };
   const runtime = createSourceSpaceRuntime({ initialState });
   const origin = initialState.landscapeOrigin;
   const position = { x: origin.x - 24, y: origin.y - 922, facing: 0 };
@@ -16,28 +18,29 @@ function firstMeeting(options = {}, { talks = 0, edgeDoorOpen = false } = {}) {
   return { runtime, position };
 }
 
-test('the human trace waits at the service court, never pursues, and offers contact only within speaking range', () => {
+test('HUSH within reach offers contact; walk off and he follows but never closes back in on his own', () => {
   const { runtime, position } = firstMeeting();
+  const tick = (at, seconds) => { for (let i = 0; i < seconds * 60; i++) runtime.tick(1 / 60, { px: at.x, py: at.y, facing: 0 }); };
   const initial = runtime.hushApproachFrame(0);
   assert.equal(initial.active, true);
   assert.equal(initial.safe, true);
-  assert.equal(initial.rear.x, position.x);
-  assert.equal(initial.rear.y, position.y - 8);
-  let frame = initial;
-  for (let step = 0; step < 160; step++) frame = runtime.hushApproachFrame(.05);
-  assert.deepEqual(frame.rear, initial.rear, 'the human trace does not close the distance');
   assert.equal(runtime.hushMode().colliding, false);
   assert.equal(runtime.hushMode().contactAvailable, true);
-  runtime.setPlayerPosition({ ...position, y: position.y + 12 });
-  for (let step = 0; step < 160; step++) frame = runtime.hushApproachFrame(.05);
-  assert.deepEqual(frame.rear, initial.rear, 'walking away never starts a pursuit');
+  // Twenty metres along the court, standing still: he does not come for you.
+  const away = { ...position, x: position.x + 40 };
+  runtime.setPlayerPosition(away); tick(away, 6);
   assert.equal(runtime.hushMode().contactAvailable, false);
   assert.equal(runtime.beginHushContact(), null, 'contact cannot be opened remotely');
-  runtime.setPlayerPosition(position);
-  const parked = frame.rear;
+  assert.ok(runtime.hushFollowFrame().distanceMetres > 15, 'he closed the distance on his own');
+  assert.equal(runtime.hushMode().colliding, false, 'walking away never starts a pursuit');
+  // Go to him and he is there to speak to; in dialogue, he does not drift.
+  const at = runtime.hushFollowFrame(), beside = { x: at.x, y: at.y + 5, facing: 0 };
+  runtime.setPlayerPosition(beside); tick(beside, .1);
   assert.ok(runtime.beginHushContact());
-  for (let step = 0; step < 20; step++) frame = runtime.hushApproachFrame(.05);
-  assert.deepEqual(frame.rear, parked, 'the speaker does not drift while the body is held for dialogue');
+  const parked = runtime.hushApproachFrame(0).rear;
+  tick(beside, 2);
+  const after = runtime.hushApproachFrame(0).rear;
+  assert.deepEqual({ x: after.x, y: after.y }, { x: parked.x, y: parked.y }, 'the speaker drifted during the dialogue');
 });
 
 test('a saved elevated body cannot speak through the ground into the service court', () => {
@@ -54,7 +57,7 @@ test('a saved elevated body cannot speak through the ground into the service cou
 });
 
 for (const origin of [{ x: 0, y: -252 }, { x: 115, y: 1000 }]) {
-  test(`the open strata cleft releases exploration without forcing court contact at origin ${origin.x},${origin.y}`, () => {
+  test(`the open strata cleft releases exploration without forcing contact at origin ${origin.x},${origin.y}`, () => {
     const built = buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.FIRST_LIFT, { seed: 4417 });
     const runtime = createSourceSpaceRuntime({ initialState: { ...built.state, landscapeOrigin: origin } });
     const top = { x: origin.x+8, y: origin.y-792, facing: 0 };
@@ -69,15 +72,14 @@ for (const origin of [{ x: 0, y: -252 }, { x: 115, y: 1000 }]) {
     }
     assert.equal(runtime.state().firstLiftCompleted, true, 'the walked inner cleft did not release Source proper');
     assert.equal(runtime.sourceSensoryFrame().mix, 0, 'pressure/audio returns after the inner release');
+    // The release brings HUSH in behind you, back in the strata, not ahead.
+    for (let step = 0; step < 4 * 60; step++) runtime.tick(1 / 60, { px: top.x, py: top.y, facing: 0 });
     const body = runtime.hushApproachFrame(0).rear;
-    assert.ok(body.visible, 'the optional human trace is absent from its court');
-    assert.deepEqual({ x: body.x, y: body.y }, { x: origin.x - 24, y: origin.y - 930 });
-    assert.ok(Math.hypot(body.x - top.x, body.y - top.y) > 120, 'the court intrudes on the arrival forecourt');
-    assert.ok(runtime.geometry.cellAt(body.x,body.y), 'the human trace waits outside traversable Source');
+    assert.ok(body.visible, 'HUSH did not follow you into Source proper');
+    assert.ok(body.y > top.y, 'he is ahead of you rather than behind');
     assert.equal(runtime.hushMode().contactAvailable, false);
     assert.equal(runtime.beginHushContact(), null, 'arriving at the opaque turn must not open remote dialogue');
-    for (let step = 0; step < 240; step++) runtime.hushApproachFrame(.05);
-    assert.deepEqual(runtime.hushApproachFrame(0).rear, body, 'the trace walks into the arrival sightline');
+    assert.ok(runtime.hushFollowFrame().distanceMetres > 3.6, 'standing still, he came into reach on his own');
     assert.equal(runtime.hushMode().colliding, false, 'releasing Source introduces a catch');
   });
 }

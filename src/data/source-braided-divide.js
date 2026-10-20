@@ -28,6 +28,37 @@ export function sourceDivideFloorAt(x, z) {
   return S.lower + (S.upper - S.lower) * clamp((d - S.finalRise.from) / (S.finalRise.to - S.finalRise.from), 0, 1);
 }
 
+// THE FLOOR IS MOSTLY GAP. Ground survives only in the pieces kept here: the
+// forecourt out of the strata, a lane that stops short of the case crossing and
+// starts again beneath it, the court, a narrowed rise, the far strip that joins
+// both upper banks to the grey doors, and the pads under the models that stand
+// on it. Banks, ramps and both crossings hang over the drop. Nothing goes
+// straight from the strata to the doors on the floor alone. A fall is caught by
+// the runtime and cut back to the forecourt.
+export const SOURCE_DIVIDE_GROUND = freeze([
+  freeze({ id: 'forecourt', minX: -46, maxX: 46, from: 0, to: 30 }),
+  freeze({ id: 'lane-front', minX: -4, maxX: 4, from: 30, to: 40 }),
+  freeze({ id: 'lane', minX: -4, maxX: 4, from: 50, to: 118 }),
+  freeze({ id: 'court', minX: -26, maxX: 12, from: 64, to: 86 }),
+  freeze({ id: 'strings-pad', minX: -76, maxX: -50, from: 21, to: 43 }),
+  freeze({ id: 'piano-pad', minX: 54, maxX: 74, from: 26, to: 49 }),
+  freeze({ id: 'marimba-pad', minX: 17, maxX: 30, from: 59, to: 85 }),
+  freeze({ id: 'bust-pad', minX: -32, maxX: -15, from: 100, to: 114 }),
+  freeze({ id: 'rise', minX: -10, maxX: 10, from: 118, to: 146 }),
+  freeze({ id: 'far-strip', minX: -32, maxX: 20, from: 146, to: 150 }),
+]);
+// What a gap supports: far enough down that only the fall cut ever meets it.
+export const SOURCE_DIVIDE_GAP_FLOOR = S.underside - 60;
+// Where Source proper begins: just past the strata's inner turn, facing in. A
+// fall through the floor is cut back to here.
+export const SOURCE_DIVIDE_ARRIVAL = freeze({ x: 4, z: -399, floor: S.lower, yaw: 0 });
+export function sourceDivideGroundAt(x, z) {
+  const floor = sourceDivideFloorAt(x, z);
+  if (floor === null) return null;
+  const d = sourceDivideDepth(z);
+  return SOURCE_DIVIDE_GROUND.some(g => x >= g.minX && x <= g.maxX && d >= g.from && d <= g.to) ? floor : null;
+}
+
 const rectangle = (minX, maxX, from, to) => [[minX, sourceDivideZ(from)], [maxX, sourceDivideZ(from)], [maxX, sourceDivideZ(to)], [minX, sourceDivideZ(to)]];
 const colour = freeze({ bank: [.24, .27, .25], ramp: [.31, .34, .30], crossing: [.27, .29, .25], court: [.32, .33, .29], ground: [.19, .22, .20], support: [.23, .25, .23] });
 const solids = [];
@@ -191,12 +222,15 @@ function occupiedIntervals(hits) {
 }
 
 export function sourceDivideSupportAt(x, z, { feet = sourceDivideFloorAt(x, z), maxStep = .45 } = {}) {
-  const ground = sourceDivideFloorAt(x, z); if (ground === null) return null;
-  const limit = Number.isFinite(feet) ? feet + maxStep + EPS : ground + maxStep;
-  let result = { id: 'divide-ground', floor: ground, kind: 'ground' };
+  const terrain = sourceDivideFloorAt(x, z); if (terrain === null) return null;
+  const ground = sourceDivideGroundAt(x, z);
+  const limit = Number.isFinite(feet) ? feet + maxStep + EPS : terrain + maxStep;
+  let result = ground === null
+    ? { id: 'divide-gap', floor: SOURCE_DIVIDE_GAP_FLOOR, kind: 'gap' }
+    : { id: 'divide-ground', floor: ground, kind: 'ground' };
   // The continuous final rise is terrain. It cannot be entered through its side
   // by suppressing its height when the observer happens to be lower.
-  if (ground > limit) return { ...result, blockedRise: true };
+  if (ground !== null && ground > limit) return { ...result, blockedRise: true };
   for (const part of solids) {
     if (!polygonContains(part.polygon, x, z)) continue;
     const floor = part.top(x, z);
@@ -217,7 +251,7 @@ export function sourceDivideCollisionAt(x, z, { feet = sourceDivideFloorAt(x, z)
     if (!sourceDivideContains(sx, sz) &&
       !(sz>S.frontZ&&typeof frontSupport==='function'&&frontSupport(sx,sz)))
       return { id: 'divide-edge', kind: 'boundary' };
-    if (sourceDivideFloorAt(sx, sz) > feet + .45 + EPS) return { id: 'divide-ground', kind: 'ground' };
+    if ((sourceDivideGroundAt(sx, sz) ?? -Infinity) > feet + .45 + EPS) return { id: 'divide-ground', kind: 'ground' };
     // Neighbouring capsule samples can be slightly above the centre on a ramp.
     // The same step allowance used by support selection keeps that toe walkable.
     for (const part of solids) {
@@ -232,14 +266,19 @@ export function sourceDivideCollisionAt(x, z, { feet = sourceDivideFloorAt(x, z)
 }
 
 export function sourceDivideCanStep(from, to, { maxStep = .45, height = 1.8, radius = .22 } = {}) {
-  let feet = Number.isFinite(from.floor) ? from.floor : sourceDivideFloorAt(from.x, from.z);
+  // Stepping off an edge is allowed. The body crosses the rest of the step at
+  // the height it left from; the fall itself belongs to the vertical clock, and
+  // the result reports the floor it will come down on.
+  let carried = Number.isFinite(from.floor) ? from.floor : sourceDivideFloorAt(from.x, from.z), feet = carried;
   const length = Math.hypot(to.x - from.x, to.z - from.z), count = Math.max(1, Math.ceil(length / .2));
   for (let i = 1; i <= count; i++) {
     const t = i / count, x = from.x + (to.x - from.x) * t, z = from.z + (to.z - from.z) * t;
-    const support = sourceDivideSupportAt(x, z, { feet, maxStep });
+    const support = sourceDivideSupportAt(x, z, { feet: carried, maxStep });
     if (!support || support.blockedRise) return { ok: false, why: 'rise', at: { x, z }, support };
-    const collision = sourceDivideCollisionAt(x, z, { feet: support.floor, height, radius });
+    const drop = support.floor < carried - maxStep - EPS;
+    const collision = sourceDivideCollisionAt(x, z, { feet: drop ? carried : support.floor, height, radius });
     if (collision) return { ok: false, why: 'solid', at: { x, z }, collision };
+    if (!drop) carried = support.floor;
     feet = support.floor;
   }
   return { ok: true, floor: feet };
@@ -273,8 +312,9 @@ function hullGeometry(part) {
 let geometryCache = null;
 export function sourceDivideGeometry() {
   if (geometryCache) return geometryCache;
-  const ground = [];
-  for (const [index, from, to] of [[0, 0, 118], [1, 118, 146], [2, 146, 150]]) ground.push(hullGeometry({ id: `divide-ground-${index}`, polygon: rectangle(S.minX, S.maxX, from, to), bottom: S.underside, top: sourceDivideFloorAt, color: colour.ground, kind: 'ground' }));
+  // Each kept piece lies within one linear stretch of the terrain, so its
+  // corners alone describe its top.
+  const ground = SOURCE_DIVIDE_GROUND.map(g => hullGeometry({ id: `divide-ground-${g.id}`, polygon: rectangle(g.minX, g.maxX, g.from, g.to), bottom: S.underside, top: sourceDivideFloorAt, color: colour.ground, kind: 'ground' }));
   return geometryCache = [...ground, ...solids.map(hullGeometry)];
 }
 export function sourceDivideProbe(x, z, feet = sourceDivideFloorAt(x, z)) {
@@ -283,9 +323,11 @@ export function sourceDivideProbe(x, z, feet = sourceDivideFloorAt(x, z)) {
 // These points exercise lateral travel, reverse travel, both reachable model
 // crossings and their SAME x/z underpasses. They are review aids, not waypoints
 // or an imposed route in the game. All coordinates remain Source-local metres.
+// The floor breaks short of the case crossing, so the walk reaches the lane by
+// going up and over and dropping off the crossing's south edge.
 export const SOURCE_BRAIDED_REVIEW_WALK = freeze([
   { id: 'reveal', x: 4, z: -399, floor: 4.2, role: 'reveal' },
-  { id: 'forecourt-lateral', x: -80, z: -410, floor: 4.2 },
+  { id: 'forecourt-lateral', x: -44, z: -410, floor: 4.2 },
   { id: 'west-ramp-foot', x: -34, z: -412, floor: 4.2, role: 'ascent-foot' },
   { id: 'west-ramp-head', x: -34, z: -432, floor: 9, role: 'ascent-top' },
   { id: 'case-west', x: -28, z: -440, floor: 9 },
@@ -294,7 +336,7 @@ export const SOURCE_BRAIDED_REVIEW_WALK = freeze([
   { id: 'east-ramp-head', x: 34, z: -437, floor: 9 },
   { id: 'east-ramp-foot', x: 34, z: -417, floor: 4.2 },
   { id: 'lower-street-entry', x: 0, z: -417, floor: 4.2 },
-  { id: 'case-under', x: 0, z: -440, floor: 4.2, role: 'crossing-under' },
+  { id: 'lane-front-end', x: 0, z: -429.5, floor: 4.2, role: 'lane-break' },
   { id: 'return-north', x: 0, z: -412, floor: 4.2 },
   { id: 'return-west-ramp-foot', x: -34, z: -412, floor: 4.2 },
   { id: 'return-west-ramp-head', x: -34, z: -432, floor: 9 },
@@ -312,10 +354,13 @@ export const SOURCE_BRAIDED_REVIEW_WALK = freeze([
   { id: 'east-upper-ramp-foot', x: 44, z: -472, floor: 9 },
   { id: 'east-middle-street', x: 34, z: -472, floor: 9 },
   { id: 'east-front-ramp-return', x: 34, z: -437, floor: 9 },
-  { id: 'east-front-ramp-descent', x: 34, z: -417, floor: 4.2 },
-  { id: 'lower-street-return', x: 0, z: -417, floor: 4.2 },
+  { id: 'case-east-return', x: 28, z: -440, floor: 9 },
+  { id: 'case-south-edge', x: 0, z: -442.2, floor: 9 },
+  { id: 'case-drop', x: 0, z: -444, floor: 4.2, role: 'drop' },
+  { id: 'case-under', x: 0, z: -440, floor: 4.2, role: 'crossing-under' },
   { id: 'court-center', x: 0, z: -465, floor: 4.2 },
   { id: 'listening-court', x: -12, z: -465, floor: 4.2 },
+  { id: 'court-return', x: 0, z: -465, floor: 4.2 },
   { id: 'piano-under', x: 0, z: -498, floor: 4.2, role: 'crossing-under' },
   { id: 'final-rise-foot', x: 0, z: -508, floor: 4.2 },
   { id: 'final-rise-head', x: 0, z: -536, floor: 15.2 },

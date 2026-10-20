@@ -1,13 +1,35 @@
 import { sourceShoreSensoryFrame } from '../game/source-sensory.js';
 
 // A small graph for things that physically exist at the first void's edges.
-// There is no void bed, score, voice, or recorder route. The caller supplies the
+// There is no score, voice, or recorder route. The caller supplies the
 // ordinary SFX bus; mute and foreground ownership remain the game's policy.
+
+// The keynote: the shore's own air, a dry pressure in the ears, very low, from
+// the door to the cleft. It is there to stop being noticed.
+const SHORE_AIR = Object.freeze({ frequency: 85, q: .7, gain: .0038 });
+// Each piece of the building carries its room, heard only close by.
+export const SOURCE_SHORE_PIECE_TONES = Object.freeze({
+  // The practice floor's fork: 440 against the engraved 444, beating.
+  practice: Object.freeze([{ tone: true, frequency: 440, gain: .0026 }, { tone: true, frequency: 444, gain: .0022 }, { frequency: 520, q: .8, gain: .004 }]),
+  // A corridor radiator: a thin hiss of water and the pipe's low body.
+  radiator: Object.freeze([{ frequency: 2300, q: 2.6, gain: .0035 }, { frequency: 105, q: 1.4, gain: .006 }]),
+  // The hall: a large room's air, low and wide.
+  hall: Object.freeze([{ frequency: 140, q: .55, gain: .009 }]),
+  // A speaker cabinet left on: the building's 50 Hz and its harmonic, and hiss.
+  speaker: Object.freeze([{ tone: true, frequency: 50, gain: .006 }, { tone: true, frequency: 100, gain: .0028 }, { frequency: 3200, q: 1.2, gain: .0018 }]),
+});
+// Full inside `near` metres, gone by `far`.
+const PIECE_REACH = Object.freeze({ near: 1.2, far: 9 });
+export function sourceShorePieceLevel(distance) {
+  const t = Math.max(0, Math.min(1, (Number(distance) - PIECE_REACH.near) / (PIECE_REACH.far - PIECE_REACH.near)));
+  return Number.isFinite(Number(distance)) ? (1 - t) * (1 - t) * (1 + 2 * t) : 0;
+}
+
 export function createSourceShoreAudio({ getAudio = () => null } = {}) {
   let context = null, destination = null, buffer = null, disposed = false;
   let previous = null, current = sourceShoreSensoryFrame(), room = null, motor = null;
-  let roomPan = 0, liftPan = 0, suspended = false, audible = false;
-  const voices = new Set();
+  let roomPan = 0, liftPan = 0, suspended = false, audible = false, air = null;
+  const voices = new Set(), pieceVoices = new Map();
   const bound = (value, limit = 1) => Math.max(-limit, Math.min(limit, Number(value) || 0));
 
   function detach(voice) {
@@ -30,7 +52,7 @@ export function createSourceShoreAudio({ getAudio = () => null } = {}) {
   }
   function clear() {
     for (const voice of [...voices]) end(voice, true);
-    room = null; motor = null;
+    room = null; motor = null; air = null; pieceVoices.clear();
   }
   function audio() {
     const next = getAudio();
@@ -90,7 +112,19 @@ export function createSourceShoreAudio({ getAudio = () => null } = {}) {
     voice({ tone: true, frequency: 680, gain: gain * .65, duration: .12, pan: liftPan });
     voice({ frequency: 1450, q: 4.5, gain: gain * .35, duration: .075, pan: liftPan });
   }
-  function update(frame, { roomPan: nextRoomPan = 0, liftPan: nextLiftPan = 0, suspended: nextSuspended = false } = {}) {
+  function updatePieces(pieces) {
+    const heard = new Set();
+    for (const piece of pieces) {
+      const recipe = SOURCE_SHORE_PIECE_TONES[piece.tone], level = sourceShorePieceLevel(piece.distance);
+      if (!recipe || level <= .002) continue;
+      heard.add(piece.id);
+      let parts = pieceVoices.get(piece.id);
+      if (!parts) { parts = recipe.map((part) => voice({ ...part, gain: 0, pan: piece.pan })); pieceVoices.set(piece.id, parts); }
+      parts.forEach((part, index) => set(part, recipe[index].gain * level, piece.pan));
+    }
+    for (const [id, parts] of pieceVoices) if (!heard.has(id)) { parts.forEach((part) => end(part)); pieceVoices.delete(id); }
+  }
+  function update(frame, { roomPan: nextRoomPan = 0, liftPan: nextLiftPan = 0, pieces = [], suspended: nextSuspended = false } = {}) {
     if (disposed) return false;
     const next = sourceShoreSensoryFrame(frame), before = previous;
     previous = next; current = next;
@@ -104,6 +138,8 @@ export function createSourceShoreAudio({ getAudio = () => null } = {}) {
       room ||= voice({ frequency: 180, gain: .006 * next.roomLeak, pan: roomPan });
       set(room, .006 * next.roomLeak, roomPan);
     } else { end(room); room = null; }
+    air ||= voice({ frequency: SHORE_AIR.frequency, q: SHORE_AIR.q, gain: SHORE_AIR.gain });
+    updatePieces(Array.isArray(pieces) ? pieces : []);
     if (next.liftMoving && next.liftGain > .001) {
       motor ||= voice({ frequency: 205, q: 2.2, gain: .014 * next.liftGain, pan: liftPan });
       set(motor, .014 * next.liftGain, liftPan);
@@ -125,7 +161,7 @@ export function createSourceShoreAudio({ getAudio = () => null } = {}) {
   function stop() { if (disposed) return; clear(); disposed = true; previous = null; buffer = null; }
   return {
     update, footstep, pause, stop,
-    snapshot: () => ({ disposed, suspended, voices: voices.size, room: !!room, motor: !!motor,
+    snapshot: () => ({ disposed, suspended, voices: voices.size, room: !!room, motor: !!motor, air: !!air, pieces: [...pieceVoices.keys()],
       roomLeak: current.roomLeak, metalReturn: current.metalReturn }),
   };
 }

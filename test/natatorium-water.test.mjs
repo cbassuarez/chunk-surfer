@@ -254,7 +254,8 @@ const mainSource = readFileSync(new URL('../src/main.js', import.meta.url), 'utf
 assert.match(rendererSource, /const WATER_FRAG/);
 assert.match(rendererSource, /uWaterHeight/);
 assert.match(rendererSource, /uWaterBounds/);
-assert.match(rendererSource, /cur\.mat == MAT_WET/);
+assert.match(rendererSource, /cellIsWet\(cell, cur\)/);
+assert.match(rendererSource, /return c\.mat == MAT_WET/);
 assert.match(rendererSource, /surf = 4/);
 assert.match(rendererSource, /DEPTH RIDES IN THE ALPHA CHANNEL/);
 assert.match(rendererSource, /uWaterCamera/);

@@ -1,12 +1,13 @@
 import { createBustPerformanceState, beginBustRecognition, beginBustRitual, advanceBustPerformance, describeBustPerformance, settleBustPerformance } from './bust-performance.js';
 import { BUST_RELIQUARY_RIG } from '../data/bust-reliquary-rig.js';
-import { SOURCE_HANGING_SHORE, SOURCE_SHORE_DIRECT_SECONDS, sourceShoreBounds, sourceShoreContains, sourceShoreDistance } from '../data/source-hanging-shore.js';
+import { SOURCE_HANGING_SHORE, SOURCE_SHORE_DIRECT_SECONDS, sourceShoreBounds, sourceShoreContains, sourceShoreDistance, sourceShorePieceAt } from '../data/source-hanging-shore.js';
 import { busWomanInstances, busWomanPerformance } from './bus-woman-presentation.js';
 import { busWomanStepProgress } from '../render/bus-woman-performance.js';
 import { busWomanWrongOriginReturn } from '../data/bus-woman-wrong-origin.js';
-import { sourceStrataCollisionAt, sourceStrataEntryAt } from '../data/source-exposed-strata.js';
+import { SOURCE_EXPOSED_STRATA, sourceStrataCollisionAt, sourceStrataEntryAt } from '../data/source-exposed-strata.js';
 import { createSourceHangingShore } from './source-hanging-shore.js';
-import { SOURCE_BRAIDED_DIVIDE, sourceDivideFloorAt, sourceDivideSupportAt, sourceDivideCollisionAt, sourceDivideGeometry, sourceDividePropPlacements, sourceDivideProbe } from '../data/source-braided-divide.js';
+import { createSourceHushFollow } from './source-hush-follow.js';
+import { SOURCE_BRAIDED_DIVIDE, SOURCE_DIVIDE_ARRIVAL, SOURCE_DIVIDE_GAP_FLOOR, sourceDivideFloorAt, sourceDivideGroundAt, sourceDivideSupportAt, sourceDivideCollisionAt, sourceDivideGeometry, sourceDividePropPlacements, sourceDivideProbe } from '../data/source-braided-divide.js';
 import { divideMeshName, dividePieceBounds } from '../render/source-divide-meshes.js';
 import { SOURCE_LAST_RECEPTION, sourceReceptionContains, sourceReceptionRoomAt, sourceReceptionSupportAt, sourceReceptionCollisionAt, sourceReceptionGeometry, sourceReceptionPropPlacements, sourceReceptionLineOfSight } from '../data/source-last-reception.js';
 import { receptionMeshName } from '../render/source-last-reception-meshes.js';
@@ -937,10 +938,13 @@ export function createSourceSpaceRuntime({
   let doorTakenAt = new Map(state.station.takeBacks.map(({ id, at }) => [id, at]));
   let stationSavedSecond = Math.floor(stationClockSeconds);
   const shore = createSourceHangingShore(state.sourceShore);
+  const hushFollow = createSourceHushFollow(state.sourceHushFollow, { seed: state.seed, lineClear: hushFollowLineClear });
   let divide = normalizeSourceDivide(state.sourceDivide);
   let lastReception = createLastReceptionState(state.lastReception);
   let receptionSavedElapsed = 0;
   let dividePositionEstablished = false;
+  const DIVIDE_FALL_CUT_METRES = 8;
+  let pendingFallCut = null;
   const streetExperience = createOutskirtsExperience(state.outskirtsExperience);
   const bellField = createSourceBellField({initialState:state.bellField,difficulty});
   let sourceDialogue = normalizeSourceDialogueState(state.haystackDialogue, {
@@ -969,7 +973,6 @@ export function createSourceSpaceRuntime({
   let captureMovementAnchor = null;
   let traversal = null;
   let pendingContact = null;
-  let hushMeetingPosition = null;
   let horizonUnravelling = normalizeSourceUnravelling(state.horizon.unravelling);
   // A committed Contact resumes at the fight, never at the warning. Exact turns
   // are deliberately not persisted; the branch commitment is.
@@ -1132,8 +1135,22 @@ export function createSourceSpaceRuntime({
       while(remaining>0){const step=Math.min(remaining,1/60);divide.fallVelocity=Math.min(40,divide.fallVelocity+12*step);divide.feet=Math.max(floor,divide.feet-divide.fallVelocity*step);remaining-=step;}
       if(divide.feet<=floor+.001)divide={version:1,feet:floor,fallVelocity:0,falling:false};
     }
+    if(divide.falling&&divide.feet<SOURCE_BRAIDED_DIVIDE.lower-DIVIDE_FALL_CUT_METRES)cutFallToForecourt();
     state={...state,sourceDivide:{...divide}};
   }
+
+  // A FALL THROUGH THE FLOOR IS CUT, NOT LANDED. Most of the field is open drop.
+  // Once he is a few storeys under the lower street the picture cuts and he is
+  // standing where Source proper begins, at the mouth of the strata, facing in.
+  function cutFallToForecourt() {
+    const o=landscapeOrigin(),arrival=SOURCE_DIVIDE_ARRIVAL;
+    player={...player,x:o.x+arrival.x/CELL,y:o.y+arrival.z/CELL,facing:0};
+    divide={version:1,feet:arrival.floor,fallVelocity:0,falling:false};
+    pendingFallCut={x:player.x,y:player.y,facing:0,yaw:arrival.yaw};
+    hushFollowCut();
+  }
+  // Main applies the cut once: position, view and the save.
+  function takeFallCut() { const cut=pendingFallCut; pendingFallCut=null; return cut; }
 
   function landingPortalFrame() {
     const motion = landingDoor.frame();
@@ -1407,7 +1424,8 @@ export function createSourceSpaceRuntime({
     const x=lx*CELL,z=ly*CELL;
     if(!shoreLocation(x,z))return null;
     // Retain the real rear hall, rather than painting void through its mouth.
-    if(ly>=SOURCE_LANDING_REAR_LOCAL.y-1&&Math.abs(lx)<=HALL_HALF_WIDTH)return null;
+    // Once the room is taken back the hall behind it has gone with it.
+    if(!roomGone()&&ly>=SOURCE_LANDING_REAR_LOCAL.y-1&&Math.abs(lx)<=HALL_HALF_WIDTH)return null;
     const floor=renderOnly?0:shoreSurfaceFloor(x,z);
     const b=SOURCE_HANGING_SHORE.bank,l=SOURCE_HANGING_SHORE.lift;
     let ceil=floor+64;
@@ -1416,13 +1434,12 @@ export function createSourceSpaceRuntime({
     return {floor,ceil,flags:F.SKY,zone:ZONE.sourceSpace,material:MATERIAL.sourceVoid,sourceVoid:true,sourceShore:true};
   }
 
-  function updateShorePosition({from=null}={}) {
+  function updateShorePosition() {
     if(!sourcePhaseActive())return;
     const o=landscapeOrigin(),x=(player.x-o.x)*CELL,z=(player.y-o.y)*CELL;
-    const wasRoom=from&&sourceLandingCellAt(from.x-o.x,from.y-o.y,{portalOpen:true})?.owned;
-    const nowRoom=sourceLandingCellAt(x/CELL,z/CELL,{portalOpen:true})?.owned;
-    const firstCrossing=!!wasRoom&&!nowRoom&&z<SOURCE_HANGING_SHORE.portal.z&&Math.abs(x-SOURCE_HANGING_SHORE.portal.x)<1;
-    shore.updatePosition({x,z,surfaceFloor:shoreSurfaceFloor(x,z),outside:shoreLocation(x,z),firstCrossing});
+    // The open leaf already showed the white. Stepping through it is not a
+    // second exposure: what the doorway admitted is simply where he is now.
+    shore.updatePosition({x,z,surfaceFloor:shoreSurfaceFloor(x,z),outside:shoreLocation(x,z)});
     state={...state,sourceShore:shore.snapshot()};
   }
 
@@ -1432,14 +1449,11 @@ export function createSourceSpaceRuntime({
     const location=shoreLocation(x,z);
     const active=phase&&location;
     const cell=sourceLandingCellAt(x/CELL,z/CELL,{portalOpen:true});
-    const room=!!cell?.owned;
-    const hall=z>=SOURCE_LANDING_REAR_LOCAL.y*CELL-.5&&Math.abs(x/CELL)<=HALL_HALF_WIDTH;
+    const gone=roomGone();
+    const room=!gone&&!!cell?.owned;
+    const hall=!gone&&z>=SOURCE_LANDING_REAR_LOCAL.y*CELL-.5&&Math.abs(x/CELL)<=HALL_HALF_WIDTH;
     const outside=active&&!room&&!hall;
     const motion=shore.frame(),bounds=sourceShoreBounds(o);
-    const t=motion.exposureElapsed;
-    const recovery=motion.adapted?smoothstep(SOURCE_HANGING_SHORE.blindSeconds,SOURCE_HANGING_SHORE.adaptationSeconds,t):0;
-    const rise=smoothstep(0,1.3,t);
-    const whiteout=outside&&motion.adapted?rise*(1-recovery):0;
     const surface=room||hall?'room':motion.boarded?'lift':shoreSurfaceFloor(x,z)>3.7?'ledge':'void';
     return Object.freeze({
       ...bounds,active,visible:phase&&(active||sourceShoreDistance(SOURCE_HANGING_SHORE.bank,x,z)<100),outside,proper:phase&&!active,surface,bodyFloor:motion.bodyFloor,
@@ -1448,9 +1462,71 @@ export function createSourceSpaceRuntime({
       distanceFromRoomMetres:sourceShoreDistance(SOURCE_HANGING_SHORE.room,x,z),
       distanceToBankMetres:sourceShoreDistance(SOURCE_HANGING_SHORE.bank,x,z),
       distanceToLiftMetres:sourceShoreDistance(SOURCE_HANGING_SHORE.lift,x,z),
-      whiteout,recovery,adapted:motion.adapted,exposureElapsed:t,
       targetSeconds:SOURCE_APPROACH_TARGET_SECONDS,walkMetresPerSecond:4.8,
+      roomTaken:motion.roomTaken,
+      pieces:shorePieces().map((p)=>({id:p.id,tone:p.tone,x:o.x*CELL+p.x,z:o.y*CELL+p.z})),
     });
+  }
+
+  // WHAT THE BUILDING LEAVES (SOURCE_HANGING_SHORE.pieces): the pieces still
+  // standing, in local metres. One you have passed goes the next time it is out
+  // of view, and does not come back.
+  let lookYaw = null;
+  function shorePieces() {
+    if (!sourcePhaseActive()) return [];
+    const gone = new Set(shore.frame().gone);
+    return SOURCE_HANGING_SHORE.pieces.filter((p) => !gone.has(p.id)).map((p) => ({ ...p, ...sourceShorePieceAt(p) }));
+  }
+  function shorePieceInstances() {
+    const o = landscapeOrigin();
+    return shorePieces().map((p) => ({ id: `source-shore-piece:${p.id}`, mesh: p.mesh, zone: ZONE.sourceSpace, structural: false,
+      matrix: sourceMatrix({ x: o.x * CELL + p.x, y: 0, z: o.y * CELL + p.z, yaw: p.yaw }) }));
+  }
+  function shorePieceBlocks(x, z) {
+    return shorePieces().some((p) => Math.hypot(x - p.x, z - p.z) < p.radius + .25);
+  }
+  function tickShorePieces() {
+    if (!Number.isFinite(lookYaw) || !sourceShoreFrame().outside) return;
+    const me = hushFollowPlayer(), rule = SOURCE_HANGING_SHORE.pieceGone;
+    const fx = Math.sin(lookYaw), fz = -Math.cos(lookYaw);
+    let changed = false;
+    for (const p of shorePieces()) {
+      if (me.z > p.z - rule.pastMetres) continue;
+      const dx = p.x - me.x, dz = p.z - me.z, d = Math.hypot(dx, dz) || 1;
+      if ((dx * fx + dz * fz) / d > rule.viewCos) continue;
+      shore.takePiece(p.id); changed = true;
+    }
+    if (changed) state = { ...state, sourceShore: shore.snapshot() };
+  }
+
+  // THE ROOM IS TAKEN BACK. Walk far enough out of the open door and the Scene
+  // Dock goes, its things first and its door last, with HUSH standing where the
+  // door was. Its cells, hall, lights and furniture go with it, for good.
+  function roomTaken() { return shore.frame().roomTaken; }
+  function roomGone() { return roomTaken() >= 1; }
+  function tickRoomTake(dt) {
+    if (!sourcePhaseActive() || roomGone()) return;
+    const take = SOURCE_HANGING_SHORE.roomTake;
+    // Past the lift nobody is left to watch it go: a save from before the
+    // take existed simply arrives without the room.
+    if (state.firstLiftCompleted) shore.takeRoom(1);
+    else {
+      const f = sourceShoreFrame();
+      // A sealed door was opened and walked through; only the God review seals it.
+      const opened = state.landingDoorOpen || state.landingDoorSealed;
+      if (roomTaken() <= 0 && !(opened && f.outside && f.distanceFromRoomMetres >= take.distance)) return;
+      shore.takeRoom(dt / take.seconds);
+    }
+    state = { ...state, sourceShore: shore.snapshot() };
+    if (roomTaken() >= take.hushFrom && !hushFollow.frame().active) {
+      // He stands where the door was. A body that is somehow behind the door
+      // line (an older save, out on the shore before the dock moved) has him
+      // put behind it instead, never ahead.
+      const portal = SOURCE_HANGING_SHORE.portal, me = hushFollowPlayer();
+      const at = me.z > portal.z ? { x: me.x, z: me.z + 18 } : portal;
+      hushFollow.begin({ x: at.x, z: at.z, floor: SOURCE_HANGING_SHORE.room.floor, player: me });
+      if (state.firstLiftCompleted) hushFollowCut();
+    }
   }
 
   function landscapeCell(x, y, { renderOnly = false } = {}) {
@@ -1461,7 +1537,7 @@ export function createSourceSpaceRuntime({
     // The sheet covers an instantaneous ROOM swap. The wider field may keep its
     // authored reveal clock, but the Scene Dock itself must be complete on the
     // first uncovered frame — especially the rear threshold under the body.
-    const landing = sourceLandingCellAt(lx, ly, { portalOpen: true, renderOnly });
+    const landing = roomGone() ? null : sourceLandingCellAt(lx, ly, { portalOpen: true, renderOnly });
     if (landing?.owned) {
       if (landing.solid) return OWNED_SOLID;
       return {
@@ -1506,7 +1582,7 @@ export function createSourceSpaceRuntime({
     if(divideLocation(lx*CELL,ly*CELL)) {
       const mx=lx*CELL,mz=ly*CELL,room=sourceReceptionRoomAt(mx,mz,{feet:divide?.feet});
       const support=renderOnly?null:receptionSupport(mx,mz,divide?.feet??sourceDivideFloorAt(mx,mz));
-      const floor=renderOnly?(room?SOURCE_LAST_RECEPTION.floor:sourceDivideFloorAt(mx,mz)):(typeof support==='number'?support:(support?.floor??support?.height??sourceDivideFloorAt(mx,mz)));
+      const floor=renderOnly?(room?SOURCE_LAST_RECEPTION.floor:sourceDivideGroundAt(mx,mz)??SOURCE_DIVIDE_GAP_FLOOR):(typeof support==='number'?support:(support?.floor??support?.height??sourceDivideFloorAt(mx,mz)));
       if(room)return {floor,ceil:renderOnly?floor+64:(room.ceil??floor+6),flags:F.SKY,zone:ZONE.sourceSpace,material:MATERIAL.sourceField,sourceDivide:true,lastReception:room.id};
       return {floor,ceil:floor+64,flags:F.SKY,zone:ZONE.sourceSpace,material:MATERIAL.sourceField,sourceDivide:true};
     }
@@ -1535,12 +1611,12 @@ export function createSourceSpaceRuntime({
   function hallRenderableInPhase() {
     if (hallVisibleInPhase()) return true;
     return [CHUNK_SURF_PHASE.TRANSFORMING, CHUNK_SURF_PHASE.LANDSCAPE].includes(state.phase)
-      && !state.firstLiftCompleted;
+      && !state.firstLiftCompleted && !roomGone();
   }
 
   function physicalHallCell(x, y) {
     const backtracking = [CHUNK_SURF_PHASE.TRANSFORMING, CHUNK_SURF_PHASE.LANDSCAPE].includes(state.phase)
-      && !state.firstLiftCompleted && y >= landscapeOrigin().y + SOURCE_LANDING_REAR_LOCAL.y + 1;
+      && !state.firstLiftCompleted && !roomGone() && y >= landscapeOrigin().y + SOURCE_LANDING_REAR_LOCAL.y + 1;
     if (!hallVisibleInPhase() && !backtracking) return null;
     if (Math.abs(x) > HALL_HALF_WIDTH || y > 3) return null;
     if (hallVisibleInPhase() && y < SOURCE_HALL_END_Y) return null;
@@ -1631,7 +1707,7 @@ export function createSourceSpaceRuntime({
           ? 'source-hall-boundary'
           : 'wall',
       };
-      if (sourceVoidFrame().sceneDock || sourceVoidFrame().approach) {
+      if (!roomGone() && (sourceVoidFrame().sceneDock || sourceVoidFrame().approach)) {
         const o = landscapeOrigin();
         const local = { x: toX - o.x, y: toY - o.y };
         const hit = sourceLandingPropCollisionAt(local.x, local.y);
@@ -1658,6 +1734,7 @@ export function createSourceSpaceRuntime({
         const bodyFloor=sourceShoreFrame().active?shore.frame().bodyFloor:(from?.floor??0);
         if (shoreWallHit(ax,az,bx,bz,bodyFloor)) return {ok:false,why:'bank hull'};
         if (shoreLocation(bx,bz)) {
+          if (shorePieceBlocks(bx,bz)) return {ok:false,why:'in the way'};
           const rise=to.floor-bodyFloor;
           return {ok:rise<=.45,floor:to.floor,why:rise>.45?'too high':undefined};
         }
@@ -2130,6 +2207,7 @@ export function createSourceSpaceRuntime({
   function sourceLandingHushFrame() {
     const active = [CHUNK_SURF_PHASE.TRANSFORMING, CHUNK_SURF_PHASE.LANDSCAPE].includes(state.phase)
       && !state.firstLiftCompleted;
+    if (active && hushFollow.frame().active) return { active, safe: true, following: true, rear: hushFollowFrame() };
     const o = landscapeOrigin();
     const point = {
       x: o.x + SOURCE_LANDING_REAR_LOCAL.x,
@@ -2190,8 +2268,9 @@ export function createSourceSpaceRuntime({
       mode: colliding ? 'pursuit' : present ? 'atmospheric' : 'absent',
       colliding,
       meeting,
-      contactAvailable: meeting && Math.hypot((player.x-landscapeOrigin().x)*CELL+12,(player.y-landscapeOrigin().y)*CELL+465)<=5.5
-        && Math.abs((divide?.feet??4.2)-4.2)<1 && !pendingContact && !traversal,
+      // Contact is closing the distance to him, wherever in Source proper he is.
+      contactAvailable: meeting && hushFollow.frame(hushFollowPlayer()).withinContact && !pendingContact && !traversal,
+      following: hushFollowVisible(),
       protected: protectedMoment,
       pursuitBeat: laterPursuit ? state.pursuitBeat : null,
       haystackHunt,
@@ -2206,13 +2285,81 @@ export function createSourceSpaceRuntime({
     };
   }
 
-  // A patient human trace occupies the service edge of the listening court.
-  // HUSH remains the nonverbal pressure of the surrounding space.
+  // In Source proper the outline that followed you from the door is the one you
+  // meet, wherever you close on it. HUSH remains the nonverbal pressure.
   function hushApproachFrame(dt = 0) {
-    if (!hushMode().meeting) return { active: false };
-    const o=landscapeOrigin();
-    hushMeetingPosition={x:o.x-12/CELL,y:o.y-465/CELL};
-    return {active:true,safe:true,meeting:true,rear:{visible:true,...hushMeetingPosition,strength:.96}};
+    if (!hushMode().meeting || !hushFollow.frame().active) return { active: false };
+    return { active: true, safe: true, meeting: true, following: true, rear: hushFollowFrame() };
+  }
+
+  // HUSH, FOLLOWING. The follower works in Source-local metres; the presence
+  // body is placed in runtime cells and faces the way the follower faces.
+  function hushFollowPlayer() {
+    const o = landscapeOrigin();
+    return { x: (player.x - o.x) * CELL, z: (player.y - o.y) * CELL, floor: geometry.renderedFloorAt() };
+  }
+  function hushFollowVisible() {
+    if (!hushFollow.frame().active || !sourcePhaseActive()) return false;
+    if (!state.firstLiftCompleted) return [CHUNK_SURF_PHASE.TRANSFORMING, CHUNK_SURF_PHASE.LANDSCAPE].includes(state.phase);
+    return !lastReceptionFrame().inside && !state.finale.route && sourceBossAvailable(state)
+      && [CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL].includes(state.phase);
+  }
+  function hushFollowFrame() {
+    const me = hushFollowPlayer(), f = hushFollow.frame(me), o = landscapeOrigin(), take = SOURCE_HANGING_SHORE.roomTake;
+    // He comes through as the room goes: thin while its walls still stand.
+    const through = state.firstLiftCompleted ? 1 : smoothstep(take.hushFrom, take.hushTo, roomTaken());
+    return {
+      visible: f.active && hushFollowVisible(), x: o.x + f.x / CELL, y: o.y + f.z / CELL,
+      floorH: f.floor, heading: f.heading, strength: .96 * through, intent: f.intent,
+      distanceMetres: f.distance, gapMetres: f.gap, withinContact: f.withinContact,
+    };
+  }
+  function tickHushFollow(dt) {
+    if (!sourcePhaseActive() || !hushFollow.frame().active) return;
+    const me = hushFollowPlayer();
+    hushFollow.record(me);
+    // Before the lift he only gives ground. After it, the cleft and the ledge
+    // included, he comes to meet whoever comes to meet him.
+    hushFollow.tick(dt, { player: me, proper: !!state.firstLiftCompleted, busy: !!pendingContact || !!traversal || !hushFollowVisible() });
+    state = { ...state, sourceHushFollow: hushFollow.snapshot() };
+  }
+  // A fall through the floor is cut to the forecourt; he is put back in the
+  // strata behind, on the cleft's own path.
+  function hushFollowCut() {
+    if (!hushFollow.frame().active) return;
+    const path = SOURCE_EXPOSED_STRATA.entryWalk.slice(2).map(({ x, z, floor }) => ({ x, z, floor }));
+    hushFollow.relocate(path, hushFollowPlayer());
+    state = { ...state, sourceHushFollow: hushFollow.snapshot() };
+  }
+  // He walks straight only where the ground under the whole line is his own
+  // level; anywhere else he keeps to your footsteps.
+  function hushFollowLineClear(from, to) {
+    const length = Math.hypot(to.x - from.x, to.z - from.z);
+    if (length < .5) return true;
+    if (Math.abs((Number(to.floor) || 0) - from.floor) > .45) return false;
+    const steps = Math.ceil(length / .5);
+    for (let i = 1; i <= steps; i++) {
+      const x = from.x + (to.x - from.x) * i / steps, z = from.z + (to.z - from.z) * i / steps;
+      if (state.firstLiftCompleted && divideLocation(x, z)) {
+        const support = receptionSupport(x, z, from.floor);
+        const floor = typeof support === 'number' ? support : support?.floor;
+        if (!Number.isFinite(floor) || Math.abs(floor - from.floor) > .45) return false;
+        if (sourceDivideCollisionAt(x, z, { feet: from.floor, height: EYE, radius: .3 })) return false;
+      } else {
+        if (sourceStrataCollisionAt(x, z, { feet: from.floor, height: EYE, radius: .3 })) return false;
+        if (Math.abs(shoreSurfaceFloorFor(x, z, from.floor) - from.floor) > .45) return false;
+      }
+    }
+    return true;
+  }
+  // The shore's support at a point for a body at a given height, rather than
+  // the player's own: the follower can stand on the ledge while you are below.
+  function shoreSurfaceFloorFor(x, z, feet) {
+    const b = SOURCE_HANGING_SHORE.bank;
+    if (feet >= b.floor - .45 && (sourceShoreContains(SOURCE_HANGING_SHORE.ledge, x, z)
+      || (x >= b.minX && x <= b.maxX && z <= b.frontZ && z >= b.backZ))) return b.floor;
+    if (sourceShoreContains(SOURCE_HANGING_SHORE.lift, x, z)) return shore.frame().floor;
+    return 0;
   }
 
   function latchedRain(raw, minimum = 0) {
@@ -2742,8 +2889,8 @@ export function createSourceSpaceRuntime({
       // to pressure near the court, rather than hiding the first field view.
       windowIntrusionReady:sourcePhase&&first.proper&&state.firstLiftCompleted&&Math.hypot(localX+12,localZ+465)<26,
       targetDistance:SOURCE_APPROACH_TRAVEL_CELLS,progress:clamp01(distance/SOURCE_APPROACH_TRAVEL_CELLS),
-      elapsedSeconds:first.exposureElapsed,targetSeconds:SOURCE_APPROACH_TARGET_SECONDS,
-      redOnsetSeconds:Infinity,redProgress:0,whiteout:first.whiteout,
+      targetSeconds:SOURCE_APPROACH_TARGET_SECONDS,
+      redOnsetSeconds:Infinity,redProgress:0,
       thresholdLight:first.outside?0:smoothstep(.15,.95,portal.progress),
       horizonDistanceMetres:first.distanceToBankMetres,horizonScale:1,shore:first,
     });
@@ -3221,13 +3368,12 @@ export function createSourceSpaceRuntime({
       if(state.finale.bust.sealReady&&!state.finale.bust.decision&&horizonBustAtSeal(px,py))candidates.push({kind:'horizon-bust-seal',id:'horizon-bust-seal',...horizonBustSealPoint(),focusPriority:20,focusRadius:2});
       return (lastFocus = focusedCandidate(px, py, facing, candidates, 8));
     }
-    if ([CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL].includes(state.phase) && !sourceShoreFrame().outside) {
+    if ([CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL].includes(state.phase) && (state.firstLiftCompleted || !sourceShoreFrame().outside)) {
       // THE BODY IS A THING YOU CAN WALK UP TO.
       //
-      // Contact follows behind at three quarters of the player's walking speed.
+      // He follows from the taken door and never closes the distance himself.
       // It never resolves by collision: the meeting is the player's move. Turn,
-      // acquire the body, and interact. A wider focus radius keeps that readable
-      // while clean forward walking is slowly opening the gap.
+      // walk at him until he comes to meet you, and interact.
       if (hushMode().contactAvailable && presence?.active
           && Number.isFinite(presence.x) && Number.isFinite(presence.y)) {
         candidates.push({
@@ -3302,7 +3448,7 @@ export function createSourceSpaceRuntime({
       return { handled: true, event: 'personal-walk', position: towerLandFrame().pose };
     }
     player = { ...player, ...to };
-    updateShorePosition({from});
+    updateShorePosition();
     updateDivideBody();
     if (!state.firstLiftCompleted && sourcePhaseActive()) {
       const o=landscapeOrigin(), x=(to.x-o.x)*CELL, z=(to.y-o.y)*CELL;
@@ -3571,8 +3717,9 @@ export function createSourceSpaceRuntime({
     return { handled: false };
   }
 
-  function tick(dt, { px = player.x, py = player.y, facing = player.facing } = {}) {
+  function tick(dt, { px = player.x, py = player.y, facing = player.facing, yaw = null } = {}) {
     player = { ...player, x: px, y: py, facing };
+    if (Number.isFinite(Number(yaw)) && yaw !== null) lookYaw = Number(yaw);
     const elapsed = Math.max(0, Number(dt) || 0);
     updateDivideBody(elapsed);
     phaseElapsed += elapsed;
@@ -3581,6 +3728,9 @@ export function createSourceSpaceRuntime({
       shore.tick(elapsed,{x,z,surfaceFloor:shoreSurfaceFloor(x,z),outside:sourceShoreFrame().outside});
       state={...state,sourceShore:shore.snapshot()};
     }
+    tickRoomTake(elapsed);
+    tickHushFollow(elapsed);
+    tickShorePieces();
     const doorPoint = landingWorld(SOURCE_LANDING_PORTAL_LOCAL);
     const bodyClear = Math.hypot((px - doorPoint.x) * CELL - .5, (py - doorPoint.y) * CELL) > 1.2;
     landingDoor.tick(elapsed, { bodyClear });
@@ -4178,8 +4328,19 @@ export function createSourceSpaceRuntime({
 
   function landingPropInstances() {
     const portal = landingPortalFrame();
-    const ordinary = [...sourceLandingPropPlacements(landscapeOrigin()),
-      ...sourceLandingDoorPlacements(landscapeOrigin(), { portalProgress: portal.progress })].map((placement) => rememberedSourceProp({
+    const taken = roomTaken();
+    if (taken >= 1) return [];
+    const doors = sourceLandingDoorPlacements(landscapeOrigin(), { portalProgress: portal.progress });
+    // Things go into the floor first, in order, and the doors last. The hull
+    // around them thins out on the same clock (source-shore3d.js).
+    const things = sourceLandingPropPlacements(landscapeOrigin());
+    const left = (placement, index) => {
+      const door = index >= things.length;
+      const from = door ? .62 + .1 * (index - things.length) / Math.max(1, doors.length) : .04 + .4 * index / Math.max(1, things.length);
+      return 1 - smoothstep(from, from + .18, taken);
+    };
+    const ordinary = [...things, ...doors].map((placement, index) => ({ placement, left: left(placement, index) }))
+      .filter(({ left }) => left > .02).map(({ placement, left }) => rememberedSourceProp({
       id: placement.id,
       mesh: placement.mesh,
       matrix: sourceMatrix({
@@ -4188,7 +4349,7 @@ export function createSourceSpaceRuntime({
         z: placement.z * CELL,
         yaw: placement.yaw,
         scaleX: placement.scaleX ?? placement.scale,
-        scaleY: placement.scaleY ?? placement.scale,
+        scaleY: (placement.scaleY ?? placement.scale ?? 1) * left,
         scaleZ: placement.scaleZ ?? placement.scale,
       }),
       zone: placement.zone ?? ZONE.getIn,
@@ -7013,7 +7174,7 @@ export function createSourceSpaceRuntime({
     if ([CHUNK_SURF_PHASE.TRANSFORMING, CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(state.phase)) {
       // The first nothingness contains only its two fixed shores. Later Source
       // architecture stays behind the bank, including after a return to the void.
-      if (sourceShoreFrame().outside) return landingPropInstances();
+      if (sourceShoreFrame().outside) return [...landingPropInstances(), ...shorePieceInstances()];
       const architecture = surfaceArchitectureInstances(px, py);
       const fixtureLights = new Map(resolveSourceRoomMemoryLights(
         architecture.filter((prop) => prop.sourceMemoryFixture), { ...options, slots: Infinity },
@@ -7264,7 +7425,7 @@ export function createSourceSpaceRuntime({
     if(!choice)return {handled:false};
     if(contact.lastChoiceId!==choice.id)return {handled:false,reason:'warning-required'};
     dispatch({ type: 'SOURCE_CONTACT_RESOLVED', contact }, { immediate: true });
-    if(choice.terminal)pendingContact = null;
+    if(choice.terminal){pendingContact = null;if(!(choice.sourceContactAction==='combat'&&contact.combatCommitted))hushFollow.release();}
     protectionRemaining = Math.max(0, 1.25);
     captureMovementRequired = false;
     captureMovementAnchor = null;
@@ -7582,7 +7743,8 @@ export function createSourceSpaceRuntime({
     // contributing under three percent — it is paying a full raymarch to be
     // invisible. Keeping the nearest few loses nothing that can be seen: at ten
     // metres' spacing the player is always well inside the nearest three.
-    const lamps = sourceLandingLights(landscapeOrigin())
+    const roomLeft = 1 - roomTaken();
+    const lamps = (roomLeft > 0 ? sourceLandingLights(landscapeOrigin()) : [])
       .filter((light)=>!light.sourceDockOnly||voidFrame.sceneDock)
       // No red emitter is submitted while the observer is inside the Scene
       // Dock. This is stricter than hoping a wide-radius source happens to be
@@ -7598,11 +7760,11 @@ export function createSourceSpaceRuntime({
           ...light,
           // The dock's sodium seam is not on the emergency contactor and never
           // pulses or receives Source-insight power boosts.
-          intensity:threshold
+          intensity:(threshold
             ?light.intensity*voidFrame.thresholdLight
             :sourceSide
             ?(light.intensity+understood*.18)*emergency.lightScale
-            :light.intensity,
+            :light.intensity)*roomLeft,
           penetration:sourceSide
             ?Math.min(1,light.penetration+understood*.025)
             :light.penetration,
@@ -7665,11 +7827,12 @@ export function createSourceSpaceRuntime({
   return {
     geometry,
     active: () => !!state.active,
-    state: () => ({ ...state, sourceDivide:divide?{...divide}:null,lastReception:serializeLastReceptionState(lastReception), station:stationSnapshot(), sourceShore:shore.snapshot(), horizon: { ...state.horizon, unravelling: normalizeSourceUnravelling(horizonUnravelling) }, outskirtsExperience: outskirtsExperienceSnapshot() }),
+    state: () => ({ ...state, sourceHushFollow:hushFollow.snapshot(), sourceDivide:divide?{...divide}:null,lastReception:serializeLastReceptionState(lastReception), station:stationSnapshot(), sourceShore:shore.snapshot(), horizon: { ...state.horizon, unravelling: normalizeSourceUnravelling(horizonUnravelling) }, outskirtsExperience: outskirtsExperienceSnapshot() }),
     lastReceptionFrame,
     tickLastReception,
     finishReceptionConversation,
     applyReceptionRelocation,
+    takeFallCut,
     closeReceptionDialogue:()=>closeLastReceptionDialogue(lastReception),
     persistLastReception:()=>setState({...state,lastReception:serializeLastReceptionState(lastReception)},{immediate:true}),
     setPlayerPosition,
@@ -7684,6 +7847,7 @@ export function createSourceSpaceRuntime({
     landingPortalFrame,
     landingContract: sourceLandingContract,
     sourceLandingHushFrame,
+    hushFollowFrame,
     sourceSensoryFrame,
     settleSourceSensory,
     commitStillPageReveal,
@@ -7747,7 +7911,7 @@ export function createSourceSpaceRuntime({
     navigation,
     checkpointPosition,
     beginHushContact,
-    cancelHushContact: () => { pendingContact=null;return true; },
+    cancelHushContact: () => { pendingContact=null;hushFollow.release();return true; },
     recordHushRadioTalk,
     outskirtPortals,
     sourceVoidDawn,
@@ -7814,6 +7978,7 @@ export function createSourceSpaceRuntime({
         ...sourceLandingContract(),
         recognitions: sourceLandingRecognitions(landscapeOrigin()),
         tableau: sourceLandingHushFrame(),
+        hushFollow: hushFollowFrame(),
         portal: landingPortalFrame(),
         void: sourceVoidFrame(),
         shore: sourceShoreFrame(),

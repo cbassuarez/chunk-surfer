@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Merged into the bundle's Info.plist by Tauri. The Dock loads this
+	     plug-in from Contents/PlugIns to draw the tile while the game is
+	     not running; see macos/DockTile. -->
+	<key>NSDockTilePlugIn</key>
+	<string>ChunkSurferDockTile.docktileplugin</string>
+</dict>
+</plist>

@@ -468,10 +468,14 @@ export function decayNoise(dt) {
 
 // LISTEN. Headphones on, the room comes up. Safe: you can move, you can turn,
 // nothing is at stake yet. This is where you actually hear the place.
-export function startListening() {
+//
+// `keepLight` is the get-in level check. The tutorial never puts his light out
+// for him: the player learns to do that by failing to stop the figure in the
+// dream that follows it (see game/dream-figure.js).
+export function startListening({ keepLight = false } = {}) {
   if (state.phase !== 'idle') return false;
   state.phase = 'listening';
-  state.light = false;          // the light goes away. you agreed to this.
+  if (!keepLight) state.light = false;          // the light goes away. you agreed to this.
   return true;
 }
 
@@ -484,11 +488,11 @@ export function stopListening() {
 
 // ROLL. The room drops out, the hiss comes up, and the forty-five seconds
 // begin. Only reachable from LISTEN.
-export function startRecording({ slate = false } = {}) {
+export function startRecording({ slate = false, keepLight = false } = {}) {
   if (state.phase !== 'listening') return false;
   state.takeDurationSeconds = configuredTakeDuration();
   state.phase = 'recording';
-  state.light = false;
+  if (!keepLight) state.light = false;
   state.takeElapsed = 0;
   state.takeTapeElapsed = 0;
   state.slating = !!slate;

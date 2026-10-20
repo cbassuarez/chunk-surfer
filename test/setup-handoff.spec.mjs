@@ -302,6 +302,9 @@ test('the real dream-ripple entry waits for clean tape before exactly one traini
     applyLensPreset(){},CR:{fx:{glitch(){},flash(){}}},CUES:{CUE:{recorder:'recorder'},playCue(){}},
     makeBoothDownbeatHoldScene:(options)=>({id:'booth-downbeat-hold',...options}),
     openTrainingBattle:()=>training++,BINDINGS:{inputPrompt:()=> '[R]'},SPEECH:{say:()=>interruptions++},
+    // The dream figure declining to run is the plain cut into the drill this
+    // test measures; dream-figure.spec covers the figure itself.
+    beginDreamFigure:()=>false,
   };
   const enter=runInNewContext(`(${mainFunction('dreamRippleIntoDrill')})`,context);
   enter();enter();

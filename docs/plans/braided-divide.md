@@ -47,12 +47,27 @@ models. All nineteen models resolve real authored provenance.
 The surviving disk-warning intrusion begins within 26 metres of the listening
 court and withdraws outside that area. It no longer covers the arrival reveal.
 
+## The open floor — 18 October 2026
+
+Most of the 4.2 metre floor is now open drop (`SOURCE_DIVIDE_GROUND` keeps the
+rest). Ground survives as the forecourt out of the strata, a lane stub that ends
+ten metres short of the case crossing, the lane again from beneath the crossing
+to the court and a narrowed final rise, the far strip joining both upper banks
+to the grey doors, and pads under the floor-standing models. Banks, ramps and
+both crossings hang over the drop. Nothing runs straight from the strata to the
+doors on the floor alone: the lane is reached by going up and over, or by
+dropping off the case crossing or the west projection. A fall a few storeys
+below the lane is cut, and the player is standing at the strata mouth facing in
+(`SOURCE_DIVIDE_ARRIVAL`).
+
 ## Listening court and commitment
 
-The partial court occupies the lower street's west service edge. A human trace
-waits at local (-12, -465), off the through route. It does not pursue the player
-or open dialogue remotely or through an upper floor. HUSH remains the nonverbal
-pressure of the surrounding field.
+The partial court occupies the lower street's west service edge. Contact is no
+longer fixed there: the outline that followed the player from the taken Scene
+Dock door is the one met, wherever in Source proper the player closes on it.
+It does not pursue the player or open dialogue remotely or through an upper
+floor. HUSH remains the nonverbal pressure of the surrounding field. The contact
+conversation's slates and some lines still name the service court.
 
 Conversation is available on the first meeting. Questions and radio calls can
 change response history. A warning followed by a separate explicit confirmation
@@ -70,7 +85,7 @@ Walking through the grey doors is available without talking or fighting.
 - The Hanging Shore regression checks retain lift motion, boarding, recovery,
   concealment and reload. Contact checks retain warned commitment and withdrawal.
 - `tools/chunk_surfer/verify-source-braided-live.mjs` reviews the production game
-  with ordinary held keyboard movement and actual E/F interactions. Review
+  with ordinary continuous keyboard movement and actual E/F interactions. Review
   presets only establish the initial lift and separate court test positions.
 
 ### Verified production result

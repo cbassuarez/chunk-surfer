@@ -131,3 +131,12 @@ test('light or accessibility suppression removes an active hallucination immedia
   assert.equal(lit.active, null);
   assert.equal(d.inspect().active, null);
 });
+
+test('Reduce Dread damps spikes and leaves the figures; FLASH / STROBE off removes them', () => {
+  const live = { recording: true, lightOn: false, darkness: 1, takeProgress: .5, hushPressure: .8, effectiveMicRms: 0, spoilThreshold: .06 };
+  assert.deepEqual(
+    recordingHallucinationEligibility({ ...live, reduceDread: true }),
+    recordingHallucinationEligibility(live),
+  );
+  assert.equal(recordingHallucinationEligibility({ ...live, effectsMode: 'off' }).eligible, false);
+});

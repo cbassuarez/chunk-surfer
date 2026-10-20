@@ -116,6 +116,9 @@ export const freshSave = ({ settings = DEFAULT_SETTINGS, run = null } = {}) => (
   // The exterior gathering's observation ledger is optional and normalised by
   // game/exterior-vigil.js. Old saves therefore begin with a fresh seeded deal.
   exteriorVigil: null,
+  // The ear room: which room it became, once he walked into it. Normalised on
+  // read by game/stop-listening.js, same as marbleHead above.
+  stopListening: null,
   settings: normalizeSettings(settings),
   run,
 });

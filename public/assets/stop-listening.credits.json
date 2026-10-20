@@ -1,0 +1,5 @@
+{
+  "pack": "stop-listening",
+  "source": "Modelled procedurally in Blender by tools/chunk_surfer/build-stop-listening.py; no third-party meshes or textures.",
+  "fonts": "Take sheet set in the vendored URW base35 faces (assets/fonts, AGPL-3.0 with the font embedding exception)."
+}

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { SOURCE_HANGING_SHORE } from '../src/data/source-hanging-shore.js';
 import { test } from 'node:test';
 import { CELL, MATERIAL, ZONE } from '../src/data/floorplan/legend.js';
 import {
@@ -21,6 +22,7 @@ import { applySourceEmergencyTorch, resolveTorchLook } from '../src/render/light
 
 // Every runtime fixture enters through the actual still page. A landing warp
 // would skip the covered world swap and conceal a second, different entry.
+const D = SOURCE_HANGING_SHORE.dockZ / CELL;
 function enterDock({ bearing = 0 } = {}) {
   const preset = buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.HAYSTACK, { seed: 4417 });
   const game = createSourceSpaceRuntime({ initialState: preset.state });
@@ -42,7 +44,9 @@ function enterDock({ bearing = 0 } = {}) {
   game.tick(SOURCE_TRANSFORM_SECONDS, { px: at.x, py: at.y, facing: at.facing });
   assert.equal(game.state().phase, 'landscape');
   assert.equal(game.commitStillPageReveal().handled, false, 'a second reveal must not move the room');
-  return { game, at, origin, door: { x: origin.x + SOURCE_LANDING_PORTAL_LOCAL.x, y: origin.y + SOURCE_LANDING_PORTAL_LOCAL.y } };
+  // The dock's centre: it stands DOCK_Z along the walk from the landscape origin.
+  const dock = { x: origin.x, y: origin.y + D };
+  return { game, at, origin, dock, door: { x: origin.x + SOURCE_LANDING_PORTAL_LOCAL.x, y: origin.y + SOURCE_LANDING_PORTAL_LOCAL.y } };
 }
 
 const tickAt = (game, dt, at) => game.tick(dt, { px: at.x, py: at.y, facing: at.facing ?? 0 });
@@ -68,7 +72,7 @@ test('the still-page cover owns the swap from either bearing and preserves its p
 });
 
 test('masonry aperture stays one metre wide with its real lintel while the independent leaf owns collision', () => {
-  const { game, origin, door } = enterDock();
+  const { game, origin, dock, door } = enterDock();
   const local = SOURCE_LANDING_PORTAL_LOCAL;
   const before = game.geometry.renderCellAt(door.x, door.y);
   assert.equal(before.floor, 0);
@@ -89,7 +93,7 @@ test('masonry aperture stays one metre wide with its real lintel while the indep
   assert.equal(game.landingPortalFrame().complete, true);
   assert.equal(game.geometry.canStep(door.x-1,door.y+1,door.x-1,door.y-3).ok,false,'a body cannot squeeze through the jamb at the aperture edge');
   assert.equal(game.geometry.canStep(door.x - .4, door.y + 1, door.x - .4, door.y - 1).ok, true);
-  assert.ok(game.geometry.cellAt(origin.x, origin.y));
+  assert.ok(game.geometry.cellAt(origin.x, origin.y + D), 'the dock is not where it stands');
 });
 
 test('rapid crossing preserves the moving leaf and keeps the original room returnable', () => {
@@ -114,24 +118,24 @@ test('rapid crossing preserves the moving leaf and keeps the original room retur
 });
 
 test('rear HUSH keeps one room address throughout free exploration', () => {
-  const { game, origin } = enterDock();
+  const { game, origin, dock } = enterDock();
   const before = game.sourceLandingHushFrame().rear;
   for (const [x, y] of [[0, 10], [-6, 4], [6, 4], [0, -2], [6, -8], [0, -12], [0, 20]]) {
-    game.setPlayerPosition({ x: origin.x + x, y: origin.y + y, facing: 0 });
-    tickAt(game, .1, { x: origin.x + x, y: origin.y + y });
+    game.setPlayerPosition({ x: dock.x + x, y: dock.y + y, facing: 0 });
+    tickAt(game, .1, { x: dock.x + x, y: dock.y + y });
     assert.deepEqual(game.sourceLandingHushFrame().rear, before, 'the surviving body follows the player');
   }
 });
 
 test('real furniture blocks the body while a broad room grid remains connected', () => {
-  const { game, origin } = enterDock();
+  const { game, origin, dock } = enterDock();
   for (const footprint of sourceLandingPropFootprints()) {
     const x = (footprint.minX + footprint.maxX) / (2 * CELL);
     const y = (footprint.minZ + footprint.maxZ) / (2 * CELL);
-    assert.equal(sourceLandingPropCollisionAt(x, y)?.id, footprint.id);
-    const movement = game.geometry.canStep(origin.x + x + 2, origin.y + y, origin.x + x, origin.y + y);
+    assert.equal(sourceLandingPropCollisionAt(x, y + D)?.id, footprint.id);
+    const movement = game.geometry.canStep(dock.x + x + 2, dock.y + y, dock.x + x, dock.y + y);
     assert.equal(movement.ok, false);
-    assert.equal(movement.why, game.geometry.cellAt(origin.x + x, origin.y + y) ? 'furniture' : 'wall');
+    assert.equal(movement.why, game.geometry.cellAt(dock.x + x, dock.y + y) ? 'furniture' : 'wall');
   }
   const key = (x, y) => `${x},${y}`;
   const seen = new Set([key(0, 0)]), queue = [[0, 0]];
@@ -140,13 +144,13 @@ test('real furniture blocks the body while a broad room grid remains connected',
     for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, -1], [-1, 1]]) {
       const nx = x + dx, ny = y + dy, id = key(nx, ny);
       if (Math.abs(nx) > 9 || ny < -14 || ny > 14 || seen.has(id)) continue;
-      if (!game.geometry.canStep(origin.x + x, origin.y + y, origin.x + nx, origin.y + ny).ok) continue;
+      if (!game.geometry.canStep(dock.x + x, dock.y + y, dock.x + nx, dock.y + ny).ok) continue;
       seen.add(id); queue.push([nx, ny]);
     }
   }
   let targets = 0;
   for (const y of [10, 4, -2, -8, -12]) for (const x of [-6, 0, 6]) {
-    if (!sourceLandingPropCollisionAt(x, y)) {
+    if (!sourceLandingPropCollisionAt(x, y + D)) {
       assert.ok(seen.has(key(x, y)), `free floor at ${x},${y} is disconnected`); targets++;
     }
   }
@@ -157,14 +161,14 @@ test('real furniture blocks the body while a broad room grid remains connected',
   const roof = sourceLandingPropPlacements(origin).find(prop => prop.sourcePropId === 'dock-scene-roof');
   assert.equal(roof.mesh, 'scene_dock_roof_structure', 'the authored roof is missing from the Source copy');
   for (const [x, y] of [[0, 0], [6, 10], [0, -12]]) {
-    const cell = game.geometry.cellAt(origin.x + x, origin.y + y);
+    const cell = game.geometry.cellAt(dock.x + x, dock.y + y);
     assert.equal(cell.floor, 0); assert.equal(cell.ceil, 5.5);
     assert.equal(cell.zone, ZONE.getIn); assert.equal(cell.material, MATERIAL.serviceConcrete);
   }
 });
 
 test('three recognitions are optional, repeat coherently and never become a progression gate', () => {
-  const { game, origin, door } = enterDock();
+  const { game, origin, dock, door } = enterDock();
   const anchors = sourceLandingRecognitions(origin), untouched = snapshot(game);
   assert.deepEqual(anchors.map(anchor => anchor.id), ['source-dock:desk', 'source-dock:case', 'source-dock:chandelier']);
   for (const anchor of anchors) {
@@ -187,8 +191,8 @@ test('three recognitions are optional, repeat coherently and never become a prog
 });
 
 test('remembered-room light is calibrated to real surfaces and releases its profile beyond FOH', () => {
-  const { game, origin, door } = enterDock();
-  const inside = { x: origin.x, y: origin.y, facing: 0 };
+  const { game, origin, dock, door } = enterDock();
+  const inside = { x: dock.x, y: dock.y, facing: 0 };
   game.setPlayerPosition(inside);
   const frame = game.sourceFlashlightFrame();
   assert.equal(frame.mode, 'normal'); assert.equal(frame.profile, 'dock'); assert.equal(frame.xray, false);

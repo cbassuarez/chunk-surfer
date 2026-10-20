@@ -12,9 +12,10 @@ import { buildChunkSurfGodPreset, CHUNK_SURF_GOD_PRESET as P } from '../src/game
 import { applySourceEmergencyTorch, resolveTorchLook } from '../src/render/lighting-model.js';
 assert.equal(SOURCE_APPROACH_CELLS,SHORE.approachCells);
 assert.equal(SOURCE_APPROACH_TRAVEL_CELLS*CELL,SOURCE_SHORE_DIRECT_METRES);
-assert.ok(SOURCE_APPROACH_TARGET_SECONDS>=75&&SOURCE_APPROACH_TARGET_SECONDS<=80);
+// Option B: about 35 seconds from the FOH door to the deck.
+assert.ok(SOURCE_APPROACH_TARGET_SECONDS>=33&&SOURCE_APPROACH_TARGET_SECONDS<=37);
 assert.equal(SOURCE_APPROACH_RED_ONSET_SECONDS,Infinity);
-assert.equal(SOURCE_APPROACH_TRAVEL_CELLS*MOVE_MS*SOURCE_APPROACH_PACE/1000,SOURCE_APPROACH_TARGET_SECONDS);
+assert.ok(Math.abs(SOURCE_APPROACH_TRAVEL_CELLS*MOVE_MS*SOURCE_APPROACH_PACE/1000-SOURCE_APPROACH_TARGET_SECONDS)<1e-9);
 
 // Later tier depths and their contiguous boundaries remain authored Source.
 const depth=id=>Math.abs(SOURCE_TIER_BY_ID[id].from-SOURCE_TIER_BY_ID[id].to);
@@ -33,7 +34,8 @@ assert.equal(SOURCE_LIFTS.length,0,'later Source stairs acquired ride controller
 // square containing both distant shores and every later Source chapter.
 const built=buildChunkSurfGodPreset(P.LANDING,{seed:4417});
 const r=createSourceSpaceRuntime({initialState:built.state}),o=r.state().landscapeOrigin;
-const start={x:o.x+8,y:o.y-20,facing:0},mid={x:o.x+8,y:o.y-400,facing:0};
+const door=SHORE.portal.z/CELL;
+const start={x:o.x+8,y:o.y+door-12,facing:0},mid={x:o.x+8,y:o.y+door-300,facing:0};
 r.setPlayerPosition(start);const a=r.geometry.renderPlanFor(start.x,start.y);
 r.setPlayerPosition(mid);const b=r.geometry.renderPlanFor(mid.x,mid.y);
 assert.ok(a.w<=SOURCE_PLAN_WINDOW&&b.w<=SOURCE_PLAN_WINDOW);

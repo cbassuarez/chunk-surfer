@@ -8,13 +8,14 @@ const make=()=>{const b=buildChunkSurfGodPreset(P.LANDING,{seed:4417});return cr
 const point=(r,x,z)=>({x:r.state().landscapeOrigin.x+x/.5,y:r.state().landscapeOrigin.y+z/.5,facing:0});
 function walk(r,at,to,dt=1/60){const m=r.geometry.canStep(at.x,at.y,to.x,to.y);if(m.ok){const e=r.onStep(at,to);assert.equal(e?.relocate,undefined,'shore must never relocate the body');if(e?.position)assert.equal(e.position.facing,to.facing,'entering Source must preserve the chosen view direction');r.setPlayerPosition(to);at={...to};}r.tick(dt,{px:at.x,py:at.y,facing:at.facing});return {at,move:m};}
 function reach(r,at,x,z){const target=point(r,x,z);for(let i=0;i<1000&&Math.hypot(target.x-at.x,target.y-at.y)>.02;i++){const d=Math.hypot(target.x-at.x,target.y-at.y),step=Math.min(.16,d);const next={...at,x:at.x+(target.x-at.x)/d*step,y:at.y+(target.y-at.y)/d*step};const result=walk(r,at,next);assert.equal(result.move.ok,true,`cleft blocked at ${JSON.stringify(next)}: ${result.move.why}`);at=result.at;assert.equal(r.geometry.renderedFloorAt(),4.2,'the cleft and Source ground must meet without a height snap');}assert.ok(Math.hypot(target.x-at.x,target.y-at.y)<=.02,'the free walk never reached its destination');return at;}
-assert.equal(SOURCE_SHORE_DIRECT_METRES,374);
-assert.ok(SOURCE_SHORE_DIRECT_SECONDS>=75&&SOURCE_SHORE_DIRECT_SECONDS<=80);
+// Option B: the dock moved in; door to deck is 170 m, about 35 s.
+assert.equal(SOURCE_SHORE_DIRECT_METRES,170);
+assert.ok(SOURCE_SHORE_DIRECT_SECONDS>=33&&SOURCE_SHORE_DIRECT_SECONDS<=37);
 assert.ok(Math.abs(.5/(MOVE_MS*SOURCE_APPROACH_PACE/1000)-4.8)<1e-9);
 const bounds=sourceShoreBounds({x:20,y:-252});assert.equal(bounds.lift.minX,10);assert.equal(bounds.bank.frontZ,-516);
 // Real held-W travel reaches the receiving deck without a sideways adjustment.
-const r=make();let at=point(r,4,-7.75);r.setPlayerPosition(at);
-for(let i=0;i<4700;i++)({at}=walk(r,at,{...at,y:at.y-.16}));
+const r=make();let at=point(r,4,S.portal.z+.25);r.setPlayerPosition(at);
+for(let i=0;i<4700&&!r.sourceShoreFrame().lift.boarded;i++)({at}=walk(r,at,{...at,y:at.y-.16}));
 assert.equal(r.sourceShoreFrame().lift.boarded,true,'straight W never boarded the deck');
 assert.equal(r.state().firstLiftCompleted,false,'a walk quota revealed Source');
 assert.equal(r.sourceEmergencyLightingFrame().active,false);
@@ -23,6 +24,7 @@ assert.equal(r.propInstances(at.x,at.y,{reducedMotion:true}).some(p=>p.sourceVoi
 // The rear safety bar keeps held forward on a moving lift, without locking input.
 for(let i=0;i<500;i++)({at}=walk(r,at,{...at,y:at.y-.16}));
 assert.equal(r.sourceShoreFrame().lift.floor,4.2);
+assert.equal(r.state().sourceShore.ridden,true,'arriving on the deck was not recorded');
 assert.equal(r.sourceShoreFrame().surface,'ledge');
 assert.equal(r.state().firstLiftCompleted,false,'the upper ledge itself entered Source');
 assert.equal(r.traversalFrame().locksMovement,false);
@@ -72,17 +74,23 @@ const slabFrom=point(slab,-1,-384),slabTo=point(slab,.5,-384);slab.setPlayerPosi
 assert.equal(slab.geometry.canStep(slabFrom.x,slabFrom.y,slabTo.x,slabTo.y).ok,false,'body walked through a half-lowered deck edge');
 u=point(under,0,-395);under.setPlayerPosition(u);assert.equal(under.geometry.floorAt(u.x,u.y),0);assert.equal(under.state().firstLiftCompleted,false);
 // Walking circles has no credit. Looking back changes neither fixed volume.
-const circle=make();let c=point(circle,4,-30);circle.setPlayerPosition(c);const fixed=circle.sourceShoreFrame().bank;
+const circle=make();let c=point(circle,4,S.portal.z-22);circle.setPlayerPosition(c);const fixed=circle.sourceShoreFrame().bank;
 for(let i=0;i<1200;i++){const next={...c,x:c.x+(i%2?.8:-.8),facing:i%4};({at:c}=walk(circle,c,next));}
 assert.equal(circle.state().firstLiftCompleted,false);assert.deepEqual(circle.sourceShoreFrame().bank,fixed);
-// Exposure recovers while stationary and survives reload; no re-entry flash.
-const e=make();let v=point(e,4,-8.25);e.setPlayerPosition(v);({at:v}=walk(e,v,{...v,y:v.y-2}));
-for(let i=0;i<150;i++)e.tick(1/60,{px:v.x,py:v.y,facing:2});assert.equal(e.sourceShoreFrame().whiteout,1);
-const blindReload=createSourceSpaceRuntime({initialState:normalizeChunkSurfState(JSON.parse(JSON.stringify(e.state())))});blindReload.setPlayerPosition(v);
-assert.equal(blindReload.sourceShoreFrame().whiteout,1);assert.equal(blindReload.sourceShoreFrame().exposureElapsed,e.sourceShoreFrame().exposureElapsed);
-blindReload.tick(30,{px:v.x,py:v.y,facing:2});assert.equal(blindReload.sourceShoreFrame().whiteout,0,'long resumed frame did not recover exposure');
-e.tick(10,{px:v.x,py:v.y,facing:2});e.tick(2,{px:v.x,py:v.y,facing:2});assert.equal(e.sourceShoreFrame().whiteout,0);
-const reload=createSourceSpaceRuntime({initialState:normalizeChunkSurfState(JSON.parse(JSON.stringify(e.state())))});reload.setPlayerPosition(v);assert.equal(reload.sourceShoreFrame().whiteout,0);
+// The open leaf is the reveal. Stepping through it starts no second exposure,
+// and a save from that step reloads into the same plain field.
+const e=make();let v=point(e,4,S.portal.z-.25);e.setPlayerPosition(v);({at:v}=walk(e,v,{...v,y:v.y-2}));
+assert.equal(e.sourceShoreFrame().outside,true,'the step did not leave the room');
+for(let i=0;i<150;i++){e.tick(1/60,{px:v.x,py:v.y,facing:2});assert.ok(!e.sourceShoreFrame().whiteout,'crossing the threshold replayed a whiteout');}
+assert.ok(!e.sourceVoidFrame().whiteout,'the void frame still asks the post pass for white');
+const reload=createSourceSpaceRuntime({initialState:normalizeChunkSurfState(JSON.parse(JSON.stringify(e.state())))});reload.setPlayerPosition(v);
+assert.ok(!reload.sourceShoreFrame().whiteout,'a reload just past the leaf replayed the exposure');
+assert.equal('adapted' in reload.state().sourceShore,false,'the retired adaptation clock is still saved');
+// A state past the first lift that never rode the deck is put on the ledge; a
+// body that rode it and then stepped down to the void floor stays down there.
+assert.equal(normalizeChunkSurfState({firstLiftCompleted:true,sourceShore:{bodyFloor:0}}).sourceShore.bodyFloor,4.2);
+assert.equal(normalizeChunkSurfState({firstLiftCompleted:true,sourceShore:{ridden:true,bodyFloor:0}}).sourceShore.bodyFloor,0);
+assert.equal(normalizeChunkSurfState({firstLiftCompleted:true,sourceShore:{adapted:true,bodyFloor:0}}).sourceShore.bodyFloor,0,'an older walked save lost its body height');
 // Save mid-rise preserves body height, deck height, phase and facing.
 const riding=make();let q=point(riding,4,-381.5);riding.setPlayerPosition(q);riding.tick(7,{px:q.x,py:q.y,facing:3});({at:q}=walk(riding,q,point(riding,4,-383)));
 riding.tick(2,{px:q.x,py:q.y,facing:3});const before=riding.sourceShoreFrame();assert.equal(before.lift.phase,'rising');

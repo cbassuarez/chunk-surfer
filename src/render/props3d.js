@@ -298,8 +298,10 @@ void main(){
   float letteringFinishEnabled=max(uLetteringFinish,(uUsePaperMaterial>.5&&uUsePaperAtlas>.5&&vPaperIndex>=0)?1.0:0.0);
   float lambert=max(dot(n,ldir),0.0);float wrappedLeaf=max((dot(n,ldir)+.34)/1.34,0.0);lambert=mix(lambert,wrappedLeaf,clamp(uVegetation.y,0.0,.42));vec3 fromEye=normalize(vWorld-uEye);float axis=dot(fromEye,uForward);
   float cone=smoothstep(uTorchCone.x,uTorchCone.y,axis);float rim=smoothstep(uTorchCone.x-.04,uTorchCone.x+.015,axis)*.30;float spill=smoothstep(.30,uTorchCone.x-.02,axis)*uTorchSpill;
-  float reach=max(.35,uTorchReach);float falloff=1.0/(1.0+(.10/reach)*dist+(.045/(reach*reach))*dist*dist);float shadow=flashlightShadow(vWorld,n,ldir);
+  float reach=max(.35,uTorchReach);float falloff=1.0/(1.0+(.10/reach)*dist+(.045/(reach*reach))*dist*dist);
   float nearSoft=smoothstep(0.0,1.4,dist)*.55+.45;float beam=(cone+rim+spill)*uLight;
+  // Outside the beam both the lamp and the torch specular are zero, so the map is not read.
+  float shadow=beam>0.0?flashlightShadow(vWorld,n,ldir):1.0;
   vec3 base=uBase*texel.rgb;
   float lamp=lambert*falloff*nearSoft*3.0*beam*(uLocalShadowIndex<0?shadow:1.0);float ambient=uAmbientIntensity*mix(1.0,1.12,uLight);vec3 localLight=vec3(0.0),localFinish=vec3(0.0);vec3 emergencyLight=vec3(0.0);
   lamp=lamp/(1.0+uTorchShoulder*lamp);
@@ -320,6 +322,9 @@ void main(){
     if(li>=uLocalLightCount)break;
     vec3 delta=uLocalLightPos[li].xyz-vWorld;float d=length(delta),r=max(.01,uLocalLightPos[li].w);
     vec3 lightDir=delta/max(d,.00001);float att=pow(clamp(1.0-d/r,0.0,1.0),2.0),ndl=max(dot(n,lightDir),0.0);
+    // Out of reach or behind the face, this lamp adds nothing (the lettering
+    // finish is zero there too), so skip the wall walk it would have paid for.
+    if(att<=0.0||ndl<=0.0)continue;
     float emergency=clamp(uLocalLightEmergency[li],0.0,1.0);
     float localShadow=max(float(li==uLocalShadowIndex),emergency)>.5?heroShadow:1.0;
     float arch=architecturalLightVisibility(vWorld,uLocalLightPos[li].xyz);
@@ -670,6 +675,12 @@ export function props3dInit(context){
   clearRoofWatcherFrame('renderer-initializing');
   disposePressureTargets();if(gl&&pressureProgram)gl.deleteProgram(pressureProgram);
   pressureProgram=null;pressureInstances=[];pressureDraws=0;pressureError=null;pressureUniformCache.clear();
+  // The lazily linked passes below belong to the context they were linked on.
+  // Their guards used to ask gl.isProgram every frame, which is a synchronous
+  // round trip to the GPU process: the first one in a frame waited out the whole
+  // previous frame, so the CPU and GPU took turns instead of overlapping. A new
+  // context forgets them here instead, and the guards only check for loss.
+  if(context!==gl){portalProgram=null;towerViewProgram=null;openingProgram=null;crossingProgram=null;}
   gl=context;
   openingMaskReady=false;
   // Program-local uniform locations cannot survive a renderer re-init/HMR.
@@ -1026,7 +1037,7 @@ function uploadInstances(mesh,list){
   gl.bindBuffer(gl.ARRAY_BUFFER,mesh.instanceBuffer);gl.bufferData(gl.ARRAY_BUFFER,data,gl.DYNAMIC_DRAW);
 }
 function renderShadowPass(eye,yaw,pitch,light,shadowLight=null,{timeSec=0,reducedMotion=false,lodEye=eye}={}){
-  if(!gl||!shadowProgram||!gl.isProgram(shadowProgram))return false;
+  if(!gl||!shadowProgram||gl.isContextLost())return false;
   const practical=shadowLight&&Number.isFinite(shadowLight.x)&&Number.isFinite(shadowLight.y)&&Number.isFinite(shadowLight.z)?shadowLight:null;
   shadowActive=false;if(!shadowReady||!shadowFbo||(!practical&&light<=.001)||!pack)return false;
   const forward=[Math.sin(yaw),0,-Math.cos(yaw)],right=[Math.cos(yaw),0,Math.sin(yaw)];
@@ -1087,7 +1098,7 @@ export function setPressureInstances(next){
 
 export function renderPressurePass({camX,camY,camZ,yaw,pitch=0,timeSec=0,reducedMotion=false,maxDistance=90}={}){
   pressureDraws=0;
-  if(!gl||!pressureReady||!pressureFbo||!pressureProgram||!gl.isProgram(pressureProgram))return false;
+  if(!gl||!pressureReady||!pressureFbo||!pressureProgram||gl.isContextLost())return false;
   const eye=[camX,camY,camZ];if(![...eye,yaw,pitch].every(Number.isFinite))return false;
   if(characterFrameDirty)prepareCharacterFrame(timeSec);
   const cp=Math.cos(pitch),forward=[Math.sin(yaw)*cp,Math.sin(pitch),-Math.cos(yaw)*cp];
@@ -1326,7 +1337,7 @@ export function streetSetForMaterial(materialName){return STREET_SET_FOR_MATERIA
 
 export function renderPropPass({camX,camY,camZ,yaw,pitch=0,light=1,maxDistance=90,timeSec=0,reducedMotion=false,fogTexture,fogOrigin=[0,0],fogSize=256,cellMeters=.5,zoneTints,localLightCount=0,localLightPositions,localLightColors,localLightPenetrations,localLightEmergency=null,localShadowIndex=-1,shadowLight=null,torch={},ambientColor=[.64,.65,.62],ambientIntensity=.022,planTexture=null,planSize=[0,0],planOrigin=[0,0],streetTextures=false,reflection=false,torchYawOffset=0,shadowPrepared=false,sourceRoomLighting=false}){
   if(!reflection){openingMaskReady=false;marksReady=false;}
-  if(!gl||!fbo||!program||!gl.isProgram(program))return false;if(reflection&&!reflFbo)return false;const cp=Math.cos(pitch),eye=[camX,camY,camZ],forward=[Math.sin(yaw)*cp,Math.sin(pitch),-Math.cos(yaw)*cp];
+  if(!gl||!fbo||!program||gl.isContextLost())return false;if(reflection&&!reflFbo)return false;const cp=Math.cos(pitch),eye=[camX,camY,camZ],forward=[Math.sin(yaw)*cp,Math.sin(pitch),-Math.cos(yaw)*cp];
   // uForward is only the torch's axis: a beam that is not quite pointing where he looks.
   const torchForward=torchYawOffset?[Math.sin(yaw+torchYawOffset)*cp,Math.sin(pitch),-Math.cos(yaw+torchYawOffset)*cp]:forward;
   const viewMatrix=view(eye,yaw,pitch),projection=perspective(width/height);
@@ -1475,7 +1486,7 @@ export function sourcePortalProgramReady(){return !!(gl&&portalProgram&&gl.isPro
 const PORTAL_LIMIT=4;
 export function renderSourcePortals({camX,camY,camZ,yaw,pitch=0,portals=[],timeSec=0,reducedMotion=false,stormFlash=0}={}){
   if(!gl||!fbo||!Array.isArray(portals)||!portals.length)return 0;
-  if(!portalProgram||!gl.isProgram(portalProgram)){
+  if(!portalProgram||gl.isContextLost()){
     portalProgram=linkProgram(PORTAL_VERT,PORTAL_FRAG,'source portal');portalUniforms.clear();
     portalVao=gl.createVertexArray();portalBuffer=gl.createBuffer();
     gl.bindVertexArray(portalVao);gl.bindBuffer(gl.ARRAY_BUFFER,portalBuffer);
@@ -1595,7 +1606,7 @@ export function renderSourceTowerView({camX,camY,camZ,yaw,pitch=0,view:tower=nul
   const eye=[camX,camY,camZ],f=tower.forward,o=tower.origin;
   const eyeDepth=(eye[0]-o[0])*f[0]+(eye[2]-o[2])*f[1];
   if(eyeDepth>=0&&!inside)return 0;
-  if(!towerViewProgram||!gl.isProgram(towerViewProgram)){
+  if(!towerViewProgram||gl.isContextLost()){
     towerViewProgram=linkProgram(TOWER_VIEW_VERT,TOWER_VIEW_FRAG,'source tower view');towerViewUniforms.clear();
     towerViewVao=gl.createVertexArray();towerViewBuffer=gl.createBuffer();
     gl.bindVertexArray(towerViewVao);gl.bindBuffer(gl.ARRAY_BUFFER,towerViewBuffer);
@@ -1650,7 +1661,7 @@ void main(){o=vec4(uColour,1.0);absence=vec4(vec3(uAbsorbsLight),1.0);
 let openingProgram=null,openingVao=null,openingBuffer=null;
 export function renderSourceOpenings({camX,camY,camZ,yaw,pitch=0,openings=[]}={}){
   if(!gl||!fbo||!Array.isArray(openings)||!openings.length)return 0;
-  if(!openingProgram||!gl.isProgram(openingProgram)){
+  if(!openingProgram||gl.isContextLost()){
     openingProgram=linkProgram(OPENING_VERT,OPENING_FRAG,'source opening');
     openingVao=gl.createVertexArray();openingBuffer=gl.createBuffer();
     gl.bindVertexArray(openingVao);gl.bindBuffer(gl.ARRAY_BUFFER,openingBuffer);
@@ -1695,7 +1706,7 @@ function CU(name){if(!crossingUniforms.has(name))crossingUniforms.set(name,gl.ge
 // `dir` is where the camera looks in the door's space (x right, z into the world).
 export function renderSourceCrossing({framebuffer=null,width:targetW=1,height:targetH=1,dir=[0,1],pitch=0,reveal=0,variant=0,seed=0,key=0,drift=0,timeSec=0,frameTimeSec=timeSec,reducedMotion=false,stormFlash=0,wayOut=0,realm=null,realmId=null,homePresentation=null,torchPower=0}={}){
   if(!gl||!(reveal>.02))return false;
-  if(!crossingProgram||!gl.isProgram(crossingProgram)){
+  if(!crossingProgram||gl.isContextLost()){
     crossingProgram=linkProgram(CROSSING_VERT,CROSSING_FRAG,'source crossing');crossingUniforms.clear();
     crossingVao=gl.createVertexArray();const buffer=gl.createBuffer();
     gl.bindVertexArray(crossingVao);gl.bindBuffer(gl.ARRAY_BUFFER,buffer);

@@ -49,7 +49,7 @@ function fakeAudio({ panner = true } = {}) {
   return { ctx, destination, nodes, getAudio: () => ({ ctx, destination }) };
 }
 
-test('edge sounds follow physical distance, with no void bed or elapsed-walk trigger', () => {
+test('edge sounds follow physical distance, with no elapsed-walk trigger', () => {
   for (const frame of [null, {}, shore({ outside: false }), shore({ active: false }), shore({ proper: true })]) {
     assert.equal(sourceShoreOutside(frame), false);
     assert.equal(sourceShoreSensoryFrame(frame).roomLeak, 0);
@@ -83,24 +83,46 @@ test('shore light is soft physical light, preserving off, battery, perception an
   assert.equal(applySourceEmergencyTorch(resolveTorchLook(), { xray: true }).sourceTorchMode, 'xray');
 });
 
-test('the open volume stays silent; room leakage ends, even when standing still', () => {
+// Finite sources: everything but the looping beds.
+const finiteSources = (audio) => audio.nodes.filter(node => node.starts && node.loop !== true).length;
+
+test('the open volume carries one constant air keynote; room leakage ends, even when standing still', () => {
   const audio = fakeAudio(), sound = createSourceShoreAudio(audio);
+  sound.update(shore());
+  const keynote = audio.nodes.length;
+  assert.equal(sound.snapshot().air, true); assert.equal(sound.snapshot().voices, 1);
   for (let i = 0; i < 100; i += 1) sound.update(shore());
-  assert.equal(audio.nodes.length, 0, 'elapsed time manufactured a bed');
+  assert.equal(audio.nodes.length, keynote, 'elapsed time manufactured more than the keynote');
+  assert.ok(audio.nodes.filter(node => node.kind === 'gain').every(node => node.gain.calls.every(point => point.value <= .004)), 'the keynote is not very low');
   sound.update(shore({ distanceFromRoomMetres: 1 }), { roomPan: -.8 });
-  assert.equal(sound.snapshot().room, true); assert.equal(sound.snapshot().voices, 1);
-  const roomSource = audio.nodes.find(node => node.kind === 'noise');
+  assert.equal(sound.snapshot().room, true); assert.equal(sound.snapshot().voices, 2);
+  const roomSource = audio.nodes.filter(node => node.kind === 'noise').at(-1);
   assert.equal(roomSource.loop, true);
   sound.update(shore({ distanceFromRoomMetres: 27 }));
   assert.equal(sound.snapshot().room, false); assert.equal(roomSource.stops.length, 1);
-  roomSource.onended(); assert.equal(sound.snapshot().voices, 0);
+  roomSource.onended(); assert.equal(sound.snapshot().voices, 1);
+  sound.stop();
+});
+
+test('each piece of the building carries its room, heard only close by and gone when it is', () => {
+  const audio = fakeAudio(), sound = createSourceShoreAudio(audio);
+  const piece = (distance) => [{ id: 'practice-stand', tone: 'practice', distance, pan: .4 }];
+  sound.update(shore(), { pieces: piece(30) });
+  assert.deepEqual(sound.snapshot().pieces, [], 'a far piece is already audible');
+  sound.update(shore(), { pieces: piece(2) });
+  assert.deepEqual(sound.snapshot().pieces, ['practice-stand']);
+  const parts = audio.nodes.length;
+  for (let i = 0; i < 30; i += 1) sound.update(shore(), { pieces: piece(2 + i * .1) });
+  assert.equal(audio.nodes.length, parts, 'walking past rebuilt the piece');
+  sound.update(shore(), { pieces: [] });
+  assert.deepEqual(sound.snapshot().pieces, [], 'a piece gone behind you is still heard');
   sound.stop();
 });
 
 test('lift motion owns one quiet voice and an observed stop, never a loading or upload transient', () => {
   const audio = fakeAudio(), sound = createSourceShoreAudio(audio);
   const near = { distanceToLiftMetres: 2, distanceToBankMetres: 4 };
-  sound.update(shore(near)); assert.equal(audio.nodes.length, 0);
+  sound.update(shore(near)); assert.equal(finiteSources(audio), 0); assert.equal(sound.snapshot().air, true);
   sound.update(shore({ ...near, lift: { phase: 'lowering', moving: true } }), { liftPan: .6 });
   assert.equal(sound.snapshot().motor, true);
   const nodes = audio.nodes.length;
@@ -129,9 +151,9 @@ test('metal returns require real nearby steps; suspension cancels scheduled retu
     assert.ok(finite.starts[0] > audio.ctx.currentTime, 'metal answer is a physical delayed return');
     audio.ctx.state = 'suspended'; sound.pause();
     assert.equal(sound.snapshot().voices, 0); assert.ok(audio.nodes.every(node => node.disconnected));
-    audio.ctx.state = 'running'; const count = audio.nodes.length;
+    audio.ctx.state = 'running'; const count = finiteSources(audio);
     sound.update(shore({ distanceToBankMetres: 4, distanceToLiftMetres: 4, lift: { phase: 'upper', moving: false } }));
-    assert.equal(audio.nodes.length, count, 'focus return replayed a stop');
+    assert.equal(finiteSources(audio), count, 'focus return replayed a stop');
     sound.update(null); sound.stop(); assert.equal(sound.footstep(), false);
   }
 });
@@ -142,13 +164,13 @@ test('late audio ownership cannot turn an unobserved lift arrival into a contact
   sound.update(shore({ distanceToLiftMetres: 1, lift: { phase: 'rising', moving: true } }));
   available = true;
   sound.update(shore({ distanceToLiftMetres: 1, lift: { phase: 'upper', moving: false } }));
-  assert.equal(audio.nodes.length, 0);
+  assert.equal(finiteSources(audio), 0);
   sound.update(shore({ distanceToLiftMetres: 1, lift: { phase: 'lowering', moving: true } }));
   audio.ctx.state = 'suspended'; sound.update(shore({ distanceToLiftMetres: 1, lift: { phase: 'lowering', moving: true } }));
   assert.equal(sound.snapshot().voices, 0);
-  audio.ctx.state = 'running'; const count = audio.nodes.length;
+  audio.ctx.state = 'running'; const count = finiteSources(audio);
   sound.update(shore({ distanceToLiftMetres: 1, lift: { phase: 'waiting', moving: false } }));
-  assert.equal(audio.nodes.length, count); sound.stop();
+  assert.equal(finiteSources(audio), count); sound.stop();
 });
 
 test('live main renderer guards keep obsolete Source overlays out of the first void', () => {

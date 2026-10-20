@@ -266,7 +266,7 @@ export const LEVEL_CHECK = {
     ],
     choices: [
       { text: 'so what spoils a take?', goto: 'spoils' },
-      { text: 'kill the light and roll', goto: 'roll' },
+      { text: 'roll', goto: 'roll' },
     ],
   },
   spoils: {
@@ -274,11 +274,11 @@ export const LEVEL_CHECK = {
     lines: [
       { who: 'you', text: 'Anything I do. A step. A hand on the torch. The radio, if it ever decides to speak.' },
       { who: 'you', text: 'Their own words: if you can hear yourself on the take, try again.' },
-      { who: 'you', text: 'So: light off, feet still. Aim for sixty seconds; forty-five clean seconds is enough for the job.' },
+      { who: 'you', text: 'So: feet still. Aim for sixty seconds; forty-five clean seconds is enough for the job.' },
     ],
     choices: [
       { text: 'and if I move?', goto: 'move' },
-      { text: 'kill the light and roll sound', goto: 'roll' },
+      { text: 'roll sound', goto: 'roll' },
     ],
   },
   move: {
@@ -292,7 +292,7 @@ export const LEVEL_CHECK = {
   roll: {
     speaker: '',
     lines: [
-      { who: 'you', text: 'Light off. Easier that way.' },
+      { who: 'you', text: 'Right. Feet still.' },
       { who: 'you', text: 'That is the level. Roll, say the room, take number and date out loud, then fall quiet. With no microphone, I will say it for you.' },
       { who: 'direction', text: 'The headphones are on and the monitor is open. Press [r] to roll. Slate first, then hold still. Aim for a minute; after forty-five clean seconds, STOP saves a usable take.' },
     ],
@@ -1416,7 +1416,9 @@ export const LINES = {
   // authored — so pressing [r] anywhere off the order was a silent no-op. It is
   // only reached indoors now: outside, the same press opens the rig hub.
   notARoom: { who: 'you', text: 'Nothing in here worth a minute. The order names five rooms and this is not one of them.' },
-  lightOn: { who: 'you', text: 'On. Anything in here with eyes has me now.' },
+  // The first time is the get-in setup, which teaches ON and nothing else:
+  // what the light costs is learned in the dream, and from Martin after.
+  lightOn: { who: 'you', text: "On. That's better." },
   lightOff: { who: 'you', text: 'Off.' },
   // LISTEN: the room comes up in the cans, and you can still move.
   listen: { who: 'direction', text: 'Headphones on. The room comes up in the cans — the size of it, the drip somewhere, the hum in the walls. [r] again to roll.' },

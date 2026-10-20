@@ -655,7 +655,14 @@ bool hasCeiling(vec2 p){ return !isExpanse(int(floor(p.x)), int(floor(p.y))); }
 // wall cannot disagree. Developer sample-field labs use the procedural lattice.
 struct Cell { bool solid; float f; float c; int flags; int zone; int mat; float place; };
 
-Cell cellAtI(ivec2 p){
+// THE SHAPE OF A CELL, WITHOUT ITS MATERIAL.
+//
+// The march crosses up to 192 cells per pixel and tests only shape on the way:
+// solid, floor, ceiling, flags, zone. The material is a second texture read, and
+// only the cell the ray stops in ever needs it, so the traversal reads shape here
+// and cellMaterialAtI reads the material once, after the loop. Same values as
+// before; half the reads in the yard, where most rays cross the whole plan.
+Cell cellShapeAtI(ivec2 p){
   Cell r;
   r.flags = 0; r.zone = 0; r.mat = MAT_SERVICE; r.place = 1.0;
   if(uUsePlan < 0.5){
@@ -687,13 +694,6 @@ Cell cellAtI(ivec2 p){
   r.f = (t.r * H_RANGE + H_MIN + uPlanHeightOffset) / CELL_METERS;
   r.c = (t.g * H_RANGE + H_MIN + uPlanHeightOffset) / CELL_METERS;
   r.zone = int(t.a * 255.0 + 0.5);
-  vec2 ma = texelFetch(uMat, local, 0).rg;
-  r.mat = int(ma.r * 255.0 + 0.5);
-  // G is the baked per-cell ambient multiplier: how much spill this PLACE gets,
-  // from its distance to an opening and how enclosed it is. AMBIENT_PLACE_SCALE
-  // in world/floorplan.js is the encode; 128 is neutral 1.0.
-  r.place = ma.g * ${AMBIENT_PLACE_SCALE.toFixed(1)};
-  if(r.mat == 0) r.mat = MAT_SERVICE;
   // A sky cell has no ceiling to stop the ray, so its ceiling is pushed out of
   // reach. The number is only ever read by the wall test below (the ceiling and
   // header tests are both gated on FLAG_SKY), which means it is also the height
@@ -705,6 +705,37 @@ Cell cellAtI(ivec2 p){
   // leaves, and the walls stand at the height the glyph authored.
   if((r.flags & FLAG_SKY) != 0 && (r.flags & FLAG_WALLED) == 0) r.c = 90.0 / CELL_METERS;
   return r;
+}
+// Off the plan, and in the procedural lab, a cell is service material at neutral
+// place — the defaults cellShapeAtI already set.
+void cellMaterialAtI(ivec2 p, inout Cell r){
+  if(uUsePlan < 0.5) return;
+  ivec2 local = p - ivec2(uPlanOrigin);
+  if(local.x < 0 || local.y < 0 || local.x >= int(uPlanSize.x) || local.y >= int(uPlanSize.y)) return;
+  vec2 ma = texelFetch(uMat, local, 0).rg;
+  r.mat = int(ma.r * 255.0 + 0.5);
+  // G is the baked per-cell ambient multiplier: how much spill this PLACE gets,
+  // from its distance to an opening and how enclosed it is. AMBIENT_PLACE_SCALE
+  // in world/floorplan.js is the encode; 128 is neutral 1.0.
+  r.place = ma.g * ${AMBIENT_PLACE_SCALE.toFixed(1)};
+  if(r.mat == 0) r.mat = MAT_SERVICE;
+}
+// Only the water test needs a material mid-march, and only inside the basin.
+bool cellIsWet(ivec2 p, Cell c){
+  cellMaterialAtI(p, c);
+  return c.mat == MAT_WET;
+}
+// The open-ground square r3dSetPlan baked into B and A: its radius around this
+// cell, and the highest floor in it, decoded exactly as cellShapeAtI decodes a
+// floor. In the lab there is no promise; off the plan the answer is -1.
+int cellOpenRadiusI(ivec2 p, out float floorMax){
+  floorMax = 0.0;
+  if(uUsePlan < 0.5) return 0;
+  ivec2 local = p - ivec2(uPlanOrigin);
+  if(local.x < 0 || local.y < 0 || local.x >= int(uPlanSize.x) || local.y >= int(uPlanSize.y)) return -1;
+  vec4 open = texelFetch(uMat, local, 0);
+  floorMax = (open.a * H_RANGE + H_MIN + uPlanHeightOffset) / CELL_METERS;
+  return int(open.b * 255.0 + 0.5);
 }
 // THE BAKED AMBIENT, SAMPLED SMOOTHLY.
 //
@@ -1158,7 +1189,7 @@ float architecturalLightVisibility(vec3 fromM,vec3 toM){
   float distanceM=length(toM-fromM);int checks=int(clamp(ceil(distanceM),1.0,8.0));
   for(int i=1;i<8;i++){
     if(i>=checks)break;
-    vec3 q=mix(fromM,toM,float(i)/float(checks));Cell blocker=cellAtI(ivec2(floor(q.xz/CELL_METERS)));
+    vec3 q=mix(fromM,toM,float(i)/float(checks));Cell blocker=cellShapeAtI(ivec2(floor(q.xz/CELL_METERS)));
     float qHeight=q.y/CELL_METERS;
     if(blocker.solid||qHeight<blocker.f-.05||qHeight>blocker.c+.05)return .16;
   }
@@ -1648,7 +1679,7 @@ void main(){
   vec3 n = vec3(0.0, 1.0, 0.0);
 
   ivec2 cell = ivec2(floor(ro.xz));
-  Cell eyeCell=cellAtI(cell);
+  Cell eyeCell=cellShapeAtI(cell);
   // SKY on the camera cell is the floorplan's semantic statement that the
   // player is standing in the weather. It gates full-frame rain to the road,
   // yard and open apron without leaking it into the chapel's broken pane or an
@@ -1661,20 +1692,71 @@ void main(){
 
   Cell cur = eyeCell;
   float tEnter = 0.0;
+  // Where the ray stopped, so its material can be read once after the loop.
+  ivec2 hitCell = cell;
+  bool hitLeaf = false;
 
-  for(int i = 0; i < 192; i++){
-    if(tEnter > MAXD) break;
+  // The step count is explicit because the open-ground walk below spends steps
+  // too: the 192-cell budget, and so the picture, are exactly what they were.
+  int marchStep = 0;
+  ivec2 eyeLocal = cell - ivec2(uPlanOrigin);
+  bool eyeOnPlan = uUsePlan > 0.5 && eyeLocal.x >= 0 && eyeLocal.y >= 0
+    && eyeLocal.x < int(uPlanSize.x) && eyeLocal.y < int(uPlanSize.y);
+  for(int guard = 0; guard < 192; guard++){
+    if(marchStep >= 192 || tEnter > MAXD) break;
+    // ACROSS OPEN GROUND WITHOUT LOOKING.
+    //
+    // Inside an open square (planSkipField), a ray that stays above its highest
+    // floor, and below its ceiling when it has one, can hit nothing: no floor, no
+    // ceiling, no riser, no header, no wall, no water. So it takes those steps
+    // with the very same DDA arithmetic and none of the reads or tests, for as
+    // long as it stays clear, and the cell it stops in is read and tested as
+    // usual. The margin is half a millimetre, far wider than the rounding in
+    // the tests it stands in for. Rays that start near the floor at the feet are
+    // left alone; they stop long before this would pay.
+    float openFloor = 0.0;
+    int openRadius = marchStep >= 2 ? cellOpenRadiusI(cell, openFloor) : 0;
+    // OFF THE PLAN THERE IS NOTHING LEFT TO MEET. A ray that set out on the plan
+    // and has left its rectangle cannot come back, and out there every cell is
+    // open sky over a floor a kilometre down — reachable only by a ray so steep
+    // it could never have crossed a cell to get there inside MAXD.
+    if(openRadius < 0 && eyeOnPlan) break;
+    bool openSky = (cur.flags & FLAG_SKY) != 0;
+    float yNow = ro.y + rd.y * tEnter;
+    if(openRadius > 0 && yNow > openFloor + 1e-3 && (openSky || yNow < cur.c - 1e-3)){
+      ivec2 sqLo = cell - ivec2(openRadius), sqHi = cell + ivec2(openRadius);
+      // Where the ray would come within the margin of this square's floor or
+      // ceiling. A cell is only crossed blind if the ray leaves it before then.
+      float tClear = 1e30;
+      if(rd.y < 0.0) tClear = (openFloor + 1e-3 - ro.y) / rd.y;
+      else if(rd.y > 0.0 && !openSky) tClear = (cur.c - 1e-3 - ro.y) / rd.y;
+      bool walked = false;
+      for(int k = 0; k < 192; k++){
+        bool xs = sideT.x < sideT.y;
+        ivec2 ahead = xs ? ivec2(cell.x + stp.x, cell.y) : ivec2(cell.x, cell.y + stp.y);
+        if(any(lessThan(ahead, sqLo)) || any(greaterThan(ahead, sqHi))) break;
+        if(min(sideT.x, sideT.y) >= tClear) break;
+        tEnter = min(sideT.x, sideT.y);
+        cell = ahead;
+        if(xs) sideT.x += drd.x; else sideT.y += drd.y;
+        walked = true;
+        marchStep++;
+        if(marchStep >= 192 || tEnter > MAXD) break;
+      }
+      if(marchStep >= 192 || tEnter > MAXD) break;
+      if(walked) cur = cellShapeAtI(cell);
+    }
     bool xSide = sideT.x < sideT.y;
     float tExit = min(sideT.x, sideT.y);
 
     if(!cur.solid){
-      if(inWaterBounds(vec2(cell) + 0.5) && cur.mat == MAT_WET && abs(rd.y) > 1e-4){
+      if(inWaterBounds(vec2(cell) + 0.5) && cellIsWet(cell, cur) && abs(rd.y) > 1e-4){
         float waterY = (uWaterParams.y / CELL_METERS) + waterHeightAt(vec2(cell) + 0.5);
         float tw = (waterY - ro.y) / rd.y;
         if(tw >= tEnter && tw <= tExit){
           vec3 wp = ro + rd * tw;
           if(inWaterBounds(wp.xz)){
-            tHit = tw; surf = 4; n = vec3(0.0, ro.y<waterY?-1.0:1.0, 0.0); hitZone = cur.zone; hitMat = MAT_WET; hitPlace = cur.place; hitSky = (cur.flags & FLAG_SKY) != 0; break;
+            tHit = tw; surf = 4; n = vec3(0.0, ro.y<waterY?-1.0:1.0, 0.0); hitZone = cur.zone; hitCell = cell; hitSky = (cur.flags & FLAG_SKY) != 0; break;
           }
         }
       }
@@ -1682,20 +1764,20 @@ void main(){
       if(rd.y < -1e-4){
         float tf = (cur.f - ro.y) / rd.y;
         if(tf >= tEnter && tf <= tExit){
-          tHit = tf; surf = 2; n = vec3(0.0, 1.0, 0.0); hitZone = cur.zone; hitMat = cur.mat; hitPlace = cur.place; hitSky = (cur.flags & FLAG_SKY) != 0; break;
+          tHit = tf; surf = 2; n = vec3(0.0, 1.0, 0.0); hitZone = cur.zone; hitCell = cell; hitSky = (cur.flags & FLAG_SKY) != 0; break;
         }
       }
       // and its ceiling, unless it is open to the dark
       if(rd.y > 1e-4 && (cur.flags & FLAG_SKY) == 0){
         float tc = (cur.c - ro.y) / rd.y;
         if(tc >= tEnter && tc <= tExit){
-          tHit = tc; surf = 3; n = vec3(0.0, -1.0, 0.0); hitZone = cur.zone; hitMat = cur.mat; hitPlace = cur.place; hitSky = (cur.flags & FLAG_SKY) != 0; break;
+          tHit = tc; surf = 3; n = vec3(0.0, -1.0, 0.0); hitZone = cur.zone; hitCell = cell; hitSky = (cur.flags & FLAG_SKY) != 0; break;
         }
       }
     }
 
     ivec2 nxt = xSide ? ivec2(cell.x + stp.x, cell.y) : ivec2(cell.x, cell.y + stp.y);
-    Cell nc = cellAtI(nxt);
+    Cell nc = cellShapeAtI(nxt);
     float yB = ro.y + rd.y * tExit;
     vec3 wn = xSide ? vec3(float(-stp.x), 0.0, 0.0) : vec3(0.0, 0.0, float(-stp.y));
 
@@ -1714,15 +1796,23 @@ void main(){
     if(wall && tExit <= MAXD){
       tHit = tExit; surf = 1; n = wn;
       hitZone = nc.solid ? cur.zone : nc.zone;
-      hitMat = closedLeaf ? MAT_DOOR : (nc.solid ? cur.mat : nc.mat);
       // A wall belongs to the room you are standing in, not the rock behind it.
-      hitPlace = nc.solid ? cur.place : nc.place;
+      hitCell = nc.solid ? cell : nxt;
+      hitLeaf = closedLeaf;
       hitSky = ((nc.solid ? cur.flags : nc.flags) & FLAG_SKY) != 0;
       break;
     }
 
     cell = nxt; cur = nc; tEnter = tExit;
     if(xSide) sideT.x += drd.x; else sideT.y += drd.y;
+    marchStep++;
+  }
+  if(surf != 0){
+    Cell hitCellMaterial = cur;
+    hitCellMaterial.mat = MAT_SERVICE; hitCellMaterial.place = 1.0;
+    cellMaterialAtI(hitCell, hitCellMaterial);
+    hitMat = hitLeaf ? MAT_DOOR : hitCellMaterial.mat;
+    hitPlace = hitCellMaterial.place;
   }
 
   vec3 col;
@@ -1934,7 +2024,9 @@ void main(){
     float lensDirt=texture(uRD,fract(gl_FragCoord.xy/uRes*1.7+vec2(.13,.07))).g;
     float rimMask=clamp(beamRim*3.33*(1.0-cone*.78),0.0,1.0);
     beam*=mix(1.0,mix(.965,1.018,lensDirt),rimMask*uOpticalEffects);
-    float propShadow=propFlashShadow(posM,n,ldir);
+    // Outside the beam the lamp is zero whatever the map says, and under the
+    // hero practical the map is not the torch's to read: no taps in either case.
+    float propShadow=(beam>0.0&&uLocalShadowIndex<0)?propFlashShadow(posM,n,ldir):1.0;
     float lamp = lambert * falloff * nearSoft * 3.0 * beam * propShadow;   // a torch, not a flare
     if(uLocalShadowIndex>=0)lamp=lambert*falloff*nearSoft*3.0*beam;         // the map belongs to the hero practical
     // Compress only the received torch energy. Near paper keeps its print,
@@ -1979,6 +2071,10 @@ void main(){
       float localDistance=length(delta),radius=max(.01,uLocalLightPos[li].w);
       float attenuation=pow(clamp(1.0-localDistance/radius,0.0,1.0),2.0);
       float localLambert=max(dot(n,normalize(delta)),0.0);
+      // A lamp out of reach, or behind the surface, adds exactly nothing here,
+      // so it does not need the walk below that asks whether a wall is in the
+      // way. That walk is up to seven plan reads per lamp per pixel.
+      if(attenuation<=0.0||localLambert<=0.0)continue;
       float emergency=clamp(uLocalLightEmergency[li],0.0,1.0);
       float localShadow=max(float(li==uLocalShadowIndex),emergency)>.5?heroShadow:1.0;
       float architecturalShadow=architecturalLightVisibility(posM,uLocalLightPos[li].xyz);
@@ -2572,7 +2668,6 @@ uniform float uSourceEmergency;
 uniform float uSourceWhiteout;
 uniform float uSourceTorchMode;
 uniform float uSourceTorchPower;
-uniform float uSourceShore;
 uniform float uFrontEndAmount;
 uniform float uFrontEndDetailRetention;
 uniform float uFrontEndChromaRetention;
@@ -2583,9 +2678,6 @@ out vec4 o;
 ${PRESSURE_IDENTITY_GLSL}
 void main(){
   vec2 uv = gl_FragCoord.xy / uRes;
-  // The shore's material has already passed through the game instrument. Its
-  // empty field must stay uniform, including while the torch is switched on.
-  if(uSourceShore>.5){o=vec4(texture(uSrc,uv).rgb,1.0);return;}
   float f = clamp(uFear, 0.0, 1.0);
   float glass=clamp(uGlassStrength,0.0,1.0);
   // Phosphor behind thick instrument glass: restrained RGB separation rather
@@ -4202,6 +4294,7 @@ const postUniformCache = new Map();
 const textSpaceUniformCache = new Map();
 const sourceRoomUniformCache = new Map();
 const sourceIdentityUniformCache = new Map();
+const GL_ERROR_AUDIT_FRAMES = 60;
 const pixelMeshStatus = {
   supported: false,
   shaderReady: false,
@@ -4805,12 +4898,11 @@ function drawSourceShore(now,{voidState,worldYaw,torchPower,torchColor,torchReac
   // marks into these independent world-space hulls.
   gl.bindFramebuffer(gl.FRAMEBUFFER,sceneFbo);gl.drawBuffers([gl.COLOR_ATTACHMENT0,gl.COLOR_ATTACHMENT1]);
   gl.clearBufferfv(gl.COLOR,1,new Float32Array([0,0,0,0]));
-  SHORE.sourceShoreComposite({target:sceneFbo,props,frame:sourceShoreState,reduceFlash:pixelMeshSettings.reduceFlash});
-  const encoded=runPixelMeshPass(voidState,now);
-  const finished=SHORE.sourceShoreComposite({props,encoded,frame:sourceShoreState,reduceFlash:pixelMeshSettings.reduceFlash});
-  // The shore keeps its own empty field and material tint. Only the already
-  // recorded performer is restored where that specialised composite lands.
-  presentThroughPost(finished?finishPressure(finished,{acquired:encoded}):encoded,{sourceShore:true});
+  SHORE.sourceShoreComposite({target:sceneFbo,props});
+  // The nothingness is printed by the same acquisition and post as the room he
+  // just left. Painting smooth colour back over the encode, then skipping post,
+  // is what made the walk the one undithered stretch of the game.
+  presentThroughPost(runPixelMeshPass(voidState,now));
   lastPostSourceFbo=sceneFbo;
 }
 
@@ -5038,8 +5130,7 @@ function drawTextSpace(texture,now,{torchPower=0,sourceTorchMode=0,torchColor,to
       yaw:yaw+planYaw,pitch,width:uniforms.sceneW,height:uniforms.sceneH,boundaryOnly:true,
       torch:{power:torchPower,color:torchColor,reach:torchReach,coneInner:torchConeInner,
         coneOuter:torchConeOuter,spill:torchSpill,shoulder:torchShoulder}});
-    const boundary=SHORE.sourceShoreComposite({props:P3.propTargets(),encoded:resolved,
-      frame:sourceShoreState,boundaryOnly:true});
+    const boundary=SHORE.sourceShoreComposite({props:P3.propTargets(),encoded:resolved,boundaryOnly:true});
     presentTexture(boundary&&acquired?finishPressure(boundary,{acquired}):boundary||resolved);
   }else presentTexture(resolved);
   lastPostSourceFbo = sceneFbo;
@@ -5431,7 +5522,13 @@ function runPixelMeshPass(state, now, { physicalAcquisitionWeight = 0 } = {}) {
 
   // Other passes may leave a WebGL diagnostic behind. Clear before the pixel
   // pass so __chunkSurferPixelMesh.status() reports this layer, not stale GL.
-  clearGlErrors();
+  //
+  // BUT NOT EVERY FRAME. getError is a synchronous round trip to the GPU
+  // process: asking it here made the CPU sit out the whole march before it could
+  // record the rest of the frame. The audit still runs, on one frame in
+  // GL_ERROR_AUDIT_FRAMES, and lastGlError still sticks once it has seen one.
+  const auditGl = pixelMeshStatus.framesRendered % GL_ERROR_AUDIT_FRAMES === 0;
+  if (auditGl) clearGlErrors();
   gl.useProgram(progPixelMesh);
   gl.bindFramebuffer(gl.FRAMEBUFFER, dstFbo);
   gl.viewport(0, 0, uniforms.sceneW, uniforms.sceneH);
@@ -5588,7 +5685,7 @@ function runPixelMeshPass(state, now, { physicalAcquisitionWeight = 0 } = {}) {
   gl.drawArrays(gl.TRIANGLES, 0, 3);
   pixelMeshStatus.framesRendered += 1;
   pixelMeshStatus.lastError = null;
-  reportGlError('pixel mesh pass');
+  if (auditGl) reportGlError('pixel mesh pass');
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   lastPostSourceFbo=dstFbo;
   return dstTex;
@@ -5766,6 +5863,9 @@ export function r3dInit(mapEl) {
     .then(()=>P3.addPropPack(assetUrl('assets/academic-gallery.glb'))
       .then(()=>{academicGalleryReady=true;academicGalleryError=null;})
       .catch((err)=>{academicGalleryReady=false;academicGalleryError=String(err?.message||err);console.warn('academic gallery unavailable; retaining existing assemblies',err);}))
+    // The ear room (data/stop-listening.js). Optional: without it the room is
+    // only its sound and its words, which is less, but not broken.
+    .then(()=>P3.addPropPack(assetUrl('assets/stop-listening.glb')).catch((err)=>console.warn('ear room pack unavailable',err)))
     .then(()=>P3.addPropPack(assetUrl('assets/source-structures.glb')))
     .then(()=>{
       // Pressure decoding is optional and must not delay the doors or stairs.
@@ -5970,6 +6070,71 @@ export function r3dSetFacing(f) {
 // The authored building, as the shader sees it. This is literally the array
 // JS collision reads (world/floorplan.js `rgba`), so there is nothing to keep
 // in sync — the drawn wall IS the solid wall.
+// THE OPEN-GROUND FIELD.
+//
+// Per cell, the radius of the largest square centred on it in which the march
+// can hit nothing for as long as the ray stays clear of a floor and a ceiling,
+// and the highest floor in that square. Two kinds of square qualify:
+//
+//   open sky  — every cell sky, none solid, none wet. There is no ceiling or
+//               header to meet under sky, and a ray above the highest floor
+//               meets no floor or riser either, so the floors may differ: the
+//               yard is road, kerb, pavement and grass at a dozen heights.
+//   roofed    — every cell the same open cell: same floor byte, same ceiling
+//               byte, none solid, none wet.
+//
+// Inside such a square the march steps without reading or testing a cell (see
+// the walk in MARCH_FRAG). Out in the yard most rays cross dozens of these cells
+// before they meet anything; capping the walk at 48 steps took the yard from 28
+// to 18 ms, which is what this buys back without capping anything.
+// Zero radius means "no promise", and is always safe.
+const PLAN_SKIP_RADIUS_MAX = 64;
+function planSkipField(rgba, material, w, h) {
+  const n = w * h, key = new Int32Array(n), side = new Uint16Array(n);
+  const radius = new Uint8Array(n), floorMax = new Uint8Array(n);
+  for (let i = 0; i < n; i++) {
+    const flags = rgba[i * 4 + 2];
+    key[i] = (flags & 1) || material?.[i] === MATERIAL.wetTile ? -1
+      : (flags & 4) ? 0x10000
+      : (rgba[i * 4] << 8) | rgba[i * 4 + 1];
+  }
+  // The largest uniform square with its bottom-right corner on each cell.
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const i = y * w + x, k = key[i];
+    if (k < 0) continue;
+    side[i] = x && y && key[i - 1] === k && key[i - w] === k && key[i - w - 1] === k
+      ? 1 + Math.min(side[i - 1], side[i - w], side[i - w - 1]) : 1;
+  }
+  // The highest floor byte over power-of-two blocks, so any square's highest
+  // floor is the highest of four overlapping blocks.
+  const levels = [new Uint8Array(n)];
+  for (let i = 0; i < n; i++) levels[0][i] = rgba[i * 4];
+  for (let k = 1; (1 << k) <= 2 * PLAN_SKIP_RADIUS_MAX + 1; k++) {
+    const prev = levels[k - 1], next = new Uint8Array(n), half = 1 << (k - 1);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const x2 = Math.min(x + half, w - 1), y2 = Math.min(y + half, h - 1);
+      next[y * w + x] = Math.max(prev[y * w + x], prev[y * w + x2], prev[y2 * w + x], prev[y2 * w + x2]);
+    }
+    levels.push(next);
+  }
+  // Centred on each cell: radius r holds when the corner square reaching
+  // (x+r, y+r) is at least 2r+1 wide. It holds for every smaller r too.
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const i = y * w + x;
+    if (key[i] < 0) continue;
+    let lo = 0, hi = Math.min(PLAN_SKIP_RADIUS_MAX, x, y, w - 1 - x, h - 1 - y);
+    while (lo < hi) {
+      const r = (lo + hi + 1) >> 1;
+      if (side[(y + r) * w + x + r] >= 2 * r + 1) lo = r; else hi = r - 1;
+    }
+    radius[i] = lo;
+    const size = 2 * lo + 1, k = 31 - Math.clz32(size), span = 1 << k, level = levels[k];
+    const x0 = x - lo, y0 = y - lo, x1 = x + lo - span + 1, y1 = y + lo - span + 1;
+    floorMax[i] = Math.max(level[y0 * w + x0], level[y0 * w + x1], level[y1 * w + x0], level[y1 * w + x1]);
+  }
+  return { radius, floorMax };
+}
+
 export function r3dSetPlan(rgba, w, h, material = null, options = {}) {
   if (!gl) return;
   planW = w; planH = h;
@@ -5988,21 +6153,24 @@ export function r3dSetPlan(rgba, w, h, material = null, options = {}) {
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
-  // RG8, not R8: G carries the baked per-cell ambient (world/floorplan.js
-  // bakeAmbientField). It rides here rather than in a texture of its own
-  // because MAX_TEXTURE_IMAGE_UNITS is 16 on the target M4 Pro and all 16 are
-  // bound — adding a sampler to the scene pass costs one that does not exist.
+  // RGBA8, not R8: G carries the baked per-cell ambient (world/floorplan.js
+  // bakeAmbientField), B the open-ground radius and A that square's highest
+  // floor byte (planSkipField). They ride
+  // here rather than in textures of their own because MAX_TEXTURE_IMAGE_UNITS
+  // is 16 on the target M4 Pro and all 16 are bound — adding a sampler to the
+  // scene pass costs one that does not exist.
   // 255/AMBIENT_PLACE_SCALE is the neutral multiplier, so a plan slice with no
   // baked field renders exactly as it did before this existed.
   const mat = material || new Uint8Array(w * h).fill(MATERIAL.serviceConcrete);
   const amb = options.ambient || null;
-  const matAmb = new Uint8Array(w * h * 2);
+  const skip = planSkipField(rgba, mat, w, h);
+  const matAmb = new Uint8Array(w * h * 4);
   const neutral = Math.round(255 / AMBIENT_PLACE_SCALE);   // encodes to exactly 1.0
-  for (let i = 0; i < w * h; i++) { matAmb[i * 2] = mat[i]; matAmb[i * 2 + 1] = amb ? amb[i] : neutral; }
+  for (let i = 0; i < w * h; i++) { matAmb[i * 4] = mat[i]; matAmb[i * 4 + 1] = amb ? amb[i] : neutral; matAmb[i * 4 + 2] = skip.radius[i]; matAmb[i * 4 + 3] = skip.floorMax[i]; }
   planMatAmb = matAmb;
   materialTexture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, materialTexture);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG8, w, h, 0, gl.RG, gl.UNSIGNED_BYTE, matAmb);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, matAmb);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -6217,22 +6385,30 @@ export function r3dPatchPlan(rgba, materialOrX, xOrY, yOrW, wOrH, maybeH) {
   }
   gl.bindTexture(gl.TEXTURE_2D, planTexture);
   gl.texSubImage2D(gl.TEXTURE_2D, 0, x, y, w, h, gl.RGBA, gl.UNSIGNED_BYTE, sub);
-  if (material && materialTexture) {
-    // The texture is RG8 now, so this cannot upload RED — the format has to
+  if (materialTexture && planMatAmb) {
+    // The texture is RGBA8 now, so this cannot upload RED — the format has to
     // match the internal format's base format or the call throws. Patching from
     // the retained packed buffer also keeps the baked ambient in G intact: a
     // mutation moves a wall, it does not relight the building.
-    const mats = new Uint8Array(w * h * 2);
-    for (let ry = 0; ry < h; ry++) {
-      for (let rx = 0; rx < w; rx++) {
-        const src = (y + ry) * planW + x + rx, dst = (ry * w + rx) * 2;
-        mats[dst] = material[src];
-        mats[dst + 1] = planMatAmb ? planMatAmb[src * 2 + 1] : Math.round(255 / AMBIENT_PLACE_SCALE);
-        if (planMatAmb) planMatAmb[src * 2] = material[src];
+    //
+    // The open-ground radius cannot be patched in place: a moved wall breaks
+    // every square that reached it. Every cell whose square could reach the
+    // patch forgets its radius instead (zero is always safe), until the next
+    // full upload measures the field again.
+    const r = PLAN_SKIP_RADIUS_MAX;
+    const ex = Math.max(0, x - r), ey = Math.max(0, y - r);
+    const ew = Math.min(planW, x + w + r) - ex, eh = Math.min(planH, y + h + r) - ey;
+    const mats = new Uint8Array(ew * eh * 4);
+    for (let ry = 0; ry < eh; ry++) {
+      for (let rx = 0; rx < ew; rx++) {
+        const cx = ex + rx, cy = ey + ry, src = cy * planW + cx, dst = (ry * ew + rx) * 4;
+        if (material && cx >= x && cx < x + w && cy >= y && cy < y + h) planMatAmb[src * 4] = material[src];
+        planMatAmb[src * 4 + 2] = 0;
+        mats.set(planMatAmb.subarray(src * 4, src * 4 + 4), dst);
       }
     }
     gl.bindTexture(gl.TEXTURE_2D, materialTexture);
-    gl.texSubImage2D(gl.TEXTURE_2D, 0, x, y, w, h, gl.RG, gl.UNSIGNED_BYTE, mats);
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, ex, ey, ew, eh, gl.RGBA, gl.UNSIGNED_BYTE, mats);
   }
 }
 
@@ -6747,7 +6923,7 @@ function finishPressure(sourceTex,{acquired=null}={}){
   return pressureFinishTex;
 }
 
-function presentThroughPost(sourceTex,{torchPower=0,sourceTorchMode=0,unravellingColour=0,unravellingScene=null,sourceShore=false}={}){
+function presentThroughPost(sourceTex,{torchPower=0,sourceTorchMode=0,unravellingColour=0,unravellingScene=null}={}){
   // post upscale to screen
   gl.useProgram(progPost);
   const presentW=presentTarget?.width||canvas.width,presentH=presentTarget?.height||canvas.height;
@@ -6784,7 +6960,6 @@ function presentThroughPost(sourceTex,{torchPower=0,sourceTorchMode=0,unravellin
   gl.uniform1f(postU('uSourceWhiteout'),sourceWhiteoutStrength);
   gl.uniform1f(postU('uSourceTorchMode'),sourceTorchMode);
   gl.uniform1f(postU('uSourceTorchPower'),torchPower);
-  gl.uniform1f(postU('uSourceShore'),sourceShore?1:0);
   gl.uniform1f(postU('uFrontEndAmount'),frontEndPlate.amount);
   gl.uniform1f(postU('uFrontEndDetailRetention'),frontEndPlate.detailRetention);
   gl.uniform1f(postU('uFrontEndChromaRetention'),frontEndPlate.chromaRetention);

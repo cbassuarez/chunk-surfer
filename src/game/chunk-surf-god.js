@@ -31,7 +31,11 @@ const HAYSTACK_ORIGIN = Object.freeze({ x: 0, y: -224 });
 // The god presets stand the body at authored depths in the field. Every one of
 // these below the arrival tier moved out by SOURCE_APPROACH_CELLS when the red
 // approach was inserted between the Scene Dock and the first staircase.
-const LANDSCAPE_ORIGIN = Object.freeze({ x: 0, y: -252 });
+// The dock stands SOURCE_HANGING_SHORE.dockZ along the walk from the origin, so
+// the origin sits that far behind it: the dock itself stays at y -252, against
+// the hall, and every Source-proper depth below keeps its place in the field.
+const DOCK_CELLS = SOURCE_HANGING_SHORE.dockZ / CELL;
+const LANDSCAPE_ORIGIN = Object.freeze({ x: 0, y: -252 - DOCK_CELLS });
 const localPosition = (x, y, facing = 0) => ({
   x: LANDSCAPE_ORIGIN.x + x,
   y: LANDSCAPE_ORIGIN.y + y,
@@ -88,7 +92,7 @@ export function buildChunkSurfGodPreset(id, options = {}) {
     { type: 'TRANSFORMATION_COMPLETED' },
   );
   if (id === CHUNK_SURF_GOD_PRESET.LANDSCAPE || id === CHUNK_SURF_GOD_PRESET.LANDING) {
-    position = { x: LANDSCAPE_ORIGIN.x + 1, y: LANDSCAPE_ORIGIN.y + 1, facing: 0 };
+    position = { x: LANDSCAPE_ORIGIN.x + 1, y: LANDSCAPE_ORIGIN.y + DOCK_CELLS + 1, facing: 0 };
     return { state, position };
   }
 
@@ -102,8 +106,7 @@ export function buildChunkSurfGodPreset(id, options = {}) {
     );
     state = { ...state, sourceShore: {
       version: 1, phase: 'upper', floor: SOURCE_HANGING_SHORE.lift.top,
-      bodyFloor: SOURCE_HANGING_SHORE.lift.top, adapted: true,
-      exposureElapsed: SOURCE_HANGING_SHORE.adaptationSeconds,
+      bodyFloor: SOURCE_HANGING_SHORE.lift.top,
     } };
     position = localPosition(0, (SOURCE_HANGING_SHORE.ledge.minZ + SOURCE_HANGING_SHORE.ledge.maxZ) / (2 * CELL));
     return { state, position };
@@ -119,9 +122,10 @@ export function buildChunkSurfGodPreset(id, options = {}) {
     return {state,position};
   }
   if (id === CHUNK_SURF_GOD_PRESET.FIRST_CONTACT) {
-    // Face the waiting human trace from four metres away on its actual ground.
-    // This reviews the ordinary SPEAK interaction without a remote contact hook.
-    state = { ...state, sourceDivide: { version: 1, feet: 4.2, fallVelocity: 0, falling: false } };
+    // Face HUSH from three metres away on the court, where the walk would have
+    // brought him. This reviews the ordinary SPEAK interaction, not a remote hook.
+    state = { ...state, sourceDivide: { version: 1, feet: 4.2, fallVelocity: 0, falling: false },
+      sourceHushFollow: hushWithinReach(-12, -464, 4.2) };
     position = localPosition(-24, -922, 0);
     return { state, position };
   }
@@ -141,7 +145,8 @@ export function buildChunkSurfGodPreset(id, options = {}) {
       },
     });
     if (id === CHUNK_SURF_GOD_PRESET.ALL_INSIGHTS) {
-      position = localPosition(0, SOURCE_TIER_BY_ID.trace.from - 8);
+      // On the lane, past the break in the floor.
+      position = localPosition(0, -890);
       return { state, position };
     }
   }
@@ -167,6 +172,8 @@ export function buildChunkSurfGodPreset(id, options = {}) {
     { type: 'PURSUIT_STARTED', id: SOURCE_PURSUIT_BEAT.FINAL_RUN },
   );
   if (id === CHUNK_SURF_GOD_PRESET.FINAL_RUN) {
+    // On the east upper bank: there is no floor out there to stand on.
+    state = { ...state, sourceDivide: { version: 1, feet: 15.2, fallVelocity: 0, falling: false } };
     position = localPosition(44, SOURCE_TIER_BY_ID.return.from - 58);
     return { state, position };
   }
@@ -177,7 +184,17 @@ export function buildChunkSurfGodPreset(id, options = {}) {
   }
   const exitOffset = id === CHUNK_SURF_GOD_PRESET.EXPOSED_BATTLE ? 5 : -5;
   position = localPosition(80 + exitOffset, SOURCE_TIER_BY_ID.return.to + 26);
+  state = { ...state, sourceDivide: { version: 1, feet: 15.2, fallVelocity: 0, falling: false } };
+  if (id === CHUNK_SURF_GOD_PRESET.EXPOSED_BATTLE) {
+    state = { ...state, sourceHushFollow: hushWithinReach((80 + exitOffset) * CELL, (SOURCE_TIER_BY_ID.return.to + 26) * CELL + 3, 15.2) };
+  }
   return { state, position };
+}
+
+// Contact reviews start with HUSH where following would have left him: within
+// reach, at the player's level. Source-local metres.
+function hushWithinReach(x, z, floor) {
+  return { version: 1, active: true, x, z, floor, heading: 0 };
 }
 
 // OUT ON THE TAPE, AT A GIVEN DEPTH.

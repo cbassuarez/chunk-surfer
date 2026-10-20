@@ -162,7 +162,6 @@ export function recordingHallucinationEligibility({
   recording = false,
   stalled = false,
   tutorial = false,
-  reduceDread = false,
   effectsMode = 'full',
   lightOn = false,
   darkness = 1,
@@ -172,7 +171,9 @@ export function recordingHallucinationEligibility({
   spoilThreshold = 0.06,
 } = {}) {
   if (!recording || stalled || tutorial) return { eligible: false, reason: 'inactive' };
-  if (reduceDread || effectsMode === 'off') return { eligible: false, reason: 'reduced' };
+  // Reduce Dread damps spikes, never bodies. FLASH / STROBE off is what removes
+  // these, because their reveal is a glitch.
+  if (effectsMode === 'off') return { eligible: false, reason: 'reduced' };
 
   const dark = !lightOn || Number(darkness) >= 0.45;
   if (!dark) return { eligible: false, reason: 'lit' };

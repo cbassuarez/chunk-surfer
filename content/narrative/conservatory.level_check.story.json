@@ -107,7 +107,7 @@
           "id": "levels.choice.1"
         },
         {
-          "text": "kill the light and roll",
+          "text": "roll",
           "goto": "roll",
           "id": "levels.choice.2"
         }
@@ -130,7 +130,7 @@
         },
         {
           "who": "you",
-          "text": "So: light off, feet still. Aim for sixty seconds; forty-five clean seconds is enough for the job.",
+          "text": "So: feet still. Aim for sixty seconds; forty-five clean seconds is enough for the job.",
           "id": "spoils.line.3"
         }
       ],
@@ -141,7 +141,7 @@
           "id": "spoils.choice.1"
         },
         {
-          "text": "kill the light and roll sound",
+          "text": "roll sound",
           "goto": "roll",
           "id": "spoils.choice.2"
         }
@@ -172,7 +172,7 @@
       "lines": [
         {
           "who": "you",
-          "text": "Light off. Easier that way.",
+          "text": "Right. Feet still.",
           "id": "roll.line.1"
         },
         {

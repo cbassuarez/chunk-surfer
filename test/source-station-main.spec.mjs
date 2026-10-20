@@ -169,7 +169,7 @@ function harness({ time = 0, walk = null, frame = null, realm = null, earned = [
     windowChoreography: null, sourceBellFieldAudio: null, sourceFaultTransitionStartedAt: 0,
     towerBellDirector: null, bellTowerRuntime: null, bellTowerAudio: null,
     electricalHumRuntime: null, fountainWaterRuntime: null, forkToneRuntime: null,
-    metronomeFieldRuntime: null, plantPipeRuntime: null, personalWindowEffects: { end: noOp },
+    metronomeFieldRuntime: null, plantPipeRuntime: null, stopListeningGut: null, stopListeningAudioFrame: null, personalWindowEffects: { end: noOp },
     RT: { footstep: (...args) => steps.push(args), setBed: noOp }, STORY: { stopAll: noOp }, STAB: { reportThreat: noOp },
     mischiefNextAtMs: 0, mischiefQuietUntilMs: 0,
     setupHandoffBlocksMovement: () => false, sourceDoorArrival: null, storyMode: false,

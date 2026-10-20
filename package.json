@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "assets:acquisitions": "node tools/chunk_surfer/build-acquisitions.mjs",
+    "assets:stop-listening": "node tools/chunk_surfer/build-stop-listening.mjs && node tools/chunk_surfer/build-stop-listening-audio.mjs",
     "assets:opening-street": "node tools/chunk_surfer/build-opening-street.mjs",
     "assets:vegetation": "node tools/chunk_surfer/build-vegetation.mjs",
     "assets:main-stair": "node tools/chunk_surfer/build-main-stair.mjs",

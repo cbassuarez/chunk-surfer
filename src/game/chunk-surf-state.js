@@ -1,5 +1,8 @@
 import { normalizeBustPerformanceState } from './bust-performance.js';
 import { normalizeSourceShore } from './source-hanging-shore.js';
+import { SOURCE_HANGING_SHORE } from '../data/source-hanging-shore.js';
+import { CELL } from '../data/floorplan/legend.js';
+import { normalizeSourceHushFollow } from './source-hush-follow.js';
 import { createLastReceptionState } from './source-last-reception.js';
 import { CHUNK_SURF_FLAGS, chunkSurfRouteProfile } from '../data/chunk-surf-script.js';
 import { normalizeOutskirtsExperience } from './outskirts-experience.js';
@@ -261,6 +264,7 @@ export function freshChunkSurfState({
     // a reload cannot restart the cinematic or skip its red onset.
     sourceApproachDistance: 0,
     sourceShore: normalizeSourceShore(),
+    sourceHushFollow: normalizeSourceHushFollow(),
     sourceDivide: null,
     lastReception: createLastReceptionState(),
     sourceApproachComplete: false,
@@ -431,6 +435,13 @@ export function normalizeChunkSurfState(value = null, fallback = {}) {
   const sourceApproachComplete = value.sourceApproachComplete == null
     ? firstLiftCompleted
     : !!value.sourceApproachComplete;
+  // The Scene Dock moved in along the walk (SOURCE_HANGING_SHORE.dockZ). A save
+  // made inside the dock before that moves its origin so the dock is still where
+  // the body is; a save already out on the shore, or past the lift, keeps its
+  // origin, so the bank and Source proper stay where the body left them.
+  const savedOrigin = finitePoint(value.landscapeOrigin);
+  const dockUnderBody = savedOrigin && !value.dockMoved && !firstLiftCompleted && !value.sourceShore?.adapted
+    && [CHUNK_SURF_PHASE.TRANSFORMING, CHUNK_SURF_PHASE.LANDSCAPE].includes(phase);
   let checkpointId = typeof value.checkpoint?.id === 'string' && value.checkpoint.id
     ? value.checkpoint.id
     : typeof value.checkpointId === 'string' && value.checkpointId ? value.checkpointId : 'hall-entry';
@@ -466,7 +477,8 @@ export function normalizeChunkSurfState(value = null, fallback = {}) {
     },
     pageStage: Math.max(pageStageForDistance(hallMaxDistance), Math.min(4, Math.floor(Number(value.pageStage) || 0))),
     haystackOrigin: finitePoint(value.haystackOrigin),
-    landscapeOrigin: finitePoint(value.landscapeOrigin),
+    landscapeOrigin: dockUnderBody ? { x: savedOrigin.x, y: savedOrigin.y - SOURCE_HANGING_SHORE.dockZ / CELL } : savedOrigin,
+    dockMoved: true,
     interactivePageSlot: value.interactivePageSlot == null ? null : Math.max(0, Math.floor(Number(value.interactivePageSlot) || 0)),
     sourceContacts: normalizeSourceContactState(value.sourceContacts),
     bellField: value.bellField && typeof value.bellField === 'object' ? value.bellField : null,
@@ -480,7 +492,8 @@ export function normalizeChunkSurfState(value = null, fallback = {}) {
       .filter((index) => Number.isSafeInteger(index) && index !== 0))],
     outskirtsExperience: normalizeOutskirtsExperience(value.outskirtsExperience),
     sourceApproachDistance: Math.max(0, Number(value.sourceApproachDistance) || 0),
-    sourceShore: normalizeSourceShore(firstLiftCompleted && !value.sourceShore?.adapted ? {...value.sourceShore,adapted:true,exposureElapsed:14,bodyFloor:4.2} : value.sourceShore),
+    sourceShore: normalizeSourceShore(firstLiftCompleted && !value.sourceShore?.ridden && !value.sourceShore?.adapted ? {...value.sourceShore,ridden:true,bodyFloor:4.2} : value.sourceShore),
+    sourceHushFollow: normalizeSourceHushFollow(value.sourceHushFollow),
     sourceDivide: normalizeSourceDivide(value.sourceDivide),
     lastReception: createLastReceptionState(value.lastReception),
     sourceApproachComplete,
@@ -599,6 +612,7 @@ export function reduceChunkSurf(value, event = {}) {
         landscapeOrigin: finitePoint(event.landscapeOrigin) || state.landscapeOrigin,
         sourceApproachDistance: 0,
         sourceShore: normalizeSourceShore(),
+        sourceHushFollow: normalizeSourceHushFollow(),
         sourceDivide: null,
         sourceApproachComplete: false,
         checkpointId: 'landing-arrival',

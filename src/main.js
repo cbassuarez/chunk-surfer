@@ -102,7 +102,7 @@ import { ACADEMIC_ROOF, ACADEMIC_ROOF_SEAT_LOOK, ROOF_CITY_SEAT, academicRoofYaw
 import { makeRoofCitySeatScene } from './game/roof-city-seat.js';
 import { ACADEMIC_ROOF_DRESSING_OBSERVATIONS } from './data/academic-roof-dressing.js';
 import { roofGateEligibility } from './game/roof-access.js';
-import { normalizeRoofRenState, reduceRoofRen, roofRenDialogue, roofRenOfficeDialogue, roofRenEvidenceDialogue, roofRenStatus } from './game/roof-ren.js';
+import { ROOF_REN_STAGES, freshRoofRenState, normalizeRoofRenState, reduceRoofRen, roofRenDialogue, roofRenOfficeDialogue, roofRenEvidenceDialogue, roofRenStatus } from './game/roof-ren.js';
 import { exteriorAmbientInstances, exteriorHeadlightLights } from './game/exterior-ambient.js';
 import { createStreetPilotClock, streetPilotStaticInstances, streetPilotSignalInstances, streetPilotSafetyFrame } from './game/street-pilot.js';
 import { STREET_PILOT_BASELINE } from './data/street-pilot.js';
@@ -160,13 +160,20 @@ import { resolveRenderer } from './render/renderer-policy.js';
 import * as STAB from './game/stabs.js';
 import * as OBJ from './game/objectives.js';
 import * as DOC from './game/document.js';
-import { ambientPaperDocumentId, paperAtlasIndex } from './game/paper-assets.js';
+import { ambientPaperDocumentId, paperAtlasIndex, registerBakedPaper } from './game/paper-assets.js';
 import * as RADIO from './game/radio.js';
 import { makeRadioScene } from './game/radio-scene.js';
 import { createRadioSceneAudio } from './audio/radio-scene-audio.js';
 import * as PLANT from './game/plant-incident.js';
 import * as VANDOORS from './game/van-doors.js';
 import * as HEAD from './game/marble-head.js';
+import {
+  STOP_LISTENING_PREFIX, freshStopListeningState, normalizeStopListeningState, stopListeningBusyWith, stopListeningEnter,
+  stopListeningLoosePlacements, stopListeningPlacements, stopListeningStagedRooms, stopListeningVoices,
+} from './game/stop-listening.js';
+import { STOP_LISTENING_AUDIO_DIR, STOP_LISTENING_COPY, STOP_LISTENING_ROOM_IDS, STOP_LISTENING_SHEET_DOCUMENT } from './data/stop-listening.js';
+import { DREAM_FIGURE_PHASE, advanceDreamFigure, dreamFigurePose, freshDreamFigure, pickDreamFigureSpawn } from './game/dream-figure.js';
+import { STOP_LISTENING_BOUNDS } from './data/generated/stop-listening-geometry.js';
 import * as PB from './game/playback.js';
 import { drawPlaybackOverlay, formatPlaybackTime } from './render/playback-view.js';
 import { RECORDER_SCENE_ID, makeRecorderScene } from './game/recorder-scene.js';
@@ -471,6 +478,7 @@ import { METRONOME_RESTART, METRONOME_SETTLE, PRACTICE_METRONOMES, advanceMetron
 import { PRACTICE_TRACES, practiceTraceByHost, practiceTraceNode, seamAt } from './game/practice-seams.js';
 import { TUNING_FORK_DETAIL, TUNING_FORK_ENGRAVING } from './data/tuning-fork-discovery.js';
 import { createPlantPipeRuntime, plantPipeAt } from './audio/plant-pipe.js';
+import { createStopListeningGutRuntime } from './audio/stop-listening-gut.js';
 import {
   PLANT_FITTINGS,
   PLANT_FITTING_IDS,
@@ -670,6 +678,7 @@ const PRACTICE_TRACE_STORY=runtimeTree('practice-wing.traces');
 const PRACTICE_STUDENT_STORY=runtimeTree('practice-wing.student');
 const roomListen=(room,label)=>WATER.applyNatatoriumWaterTextVariant(runtimeTree(`room-listen.${room}`,{label}), room === 'the_tub' ? getSave()?.run : null);
 const radioDialogue=(cueId,{roomLabel='the next room',...context}={})=>runtimeTree(`radio.${cueId}`,{
+  LIGHTKEY:BINDINGS.inputPrompt('light'),
   ...context,roomLabel,ROOMLABEL:String(context.ROOMLABEL||roomLabel).toUpperCase(),
 });
 const radioGuidanceDialogue=(context={})=>runtimeTree('radio.guidance',context);
@@ -1143,6 +1152,7 @@ let metronomeDoorsOpen=new Map(),metronomeDoorsAt=0;
 let metronomeQuietBefore=null;
 let forkToneFrame={audible:false,gain:0,pan:0};
 let plantPipeRuntime=null;
+let stopListeningGut=null;
 let plantPipeFrame={audible:false,world:0,monitor:0,pan:0};
 let electricalHumFrame={audible:false,gain:0,pan:0,circuits:[],primary:null,sources:[]};
 let hushFieldFrame=inactiveHushField();
@@ -1307,6 +1317,7 @@ function ensureCtx({resume=true}={}){
         // Two destinations: the pipe is a thing in a room AND a thing in the
         // signal. The monitor path goes to the same bus the headphones use.
         plantPipeRuntime=createPlantPipeRuntime({context:actx,worldDestination:sfxGain,monitorDestination:musicGain});
+        stopListeningGut=createStopListeningGutRuntime({context:actx,destination:sfxGain,urlFor:(file)=>assetUrl(`${STOP_LISTENING_AUDIO_DIR}/${file}`)});
         audioRecovery?.bind(actx);
     }catch(err){
       audioInitFailed=true;
@@ -4473,6 +4484,7 @@ function step(dx,dy){
   if(storyMode&&usingPlan()&&!usingSpecialSpace())noteBasementWatcherMovement();
   if(storyMode&&usingPlan()&&!usingSpecialSpace())onPlantHaulStep(stepFrom,{x:px,y:py});
   if(storyMode&&usingPlan()&&!usingSpecialSpace())noteDockTransitStep(stepFrom,{x:px,y:py});
+  if(storyMode&&usingPlan()&&!usingSpecialSpace())noteStopListeningStep();
   // Contact is a spatial threshold, so resolve it on the movement frame that
   // actually crossed the body rather than waiting for the next render tick.
   if(dockHauntingScene) dockHauntingScene.update(0);
@@ -6139,6 +6151,7 @@ function loop(){
       tickKeyCabinetMotion(nowLoopMs);
       tickOpeningSceneBed();
       tickHorizonBustPerformance(dt);
+      tickStopListeningAudio();
       if(!scenes.blocksWorld()){
         maybeSpawnScheduledKey();
         updateHorrorTick();
@@ -6936,6 +6949,8 @@ function syncDoorDynamicProps({logicalX=px,logicalY=py,timeSec=performance.now()
   // remain render-only dynamic props: no collision, shadow contact, local
   // light, HUSH state, save data or map presence.
   for(const apparition of recordingHallucinationPropInstances(timeSec))doorDynamicCombined[count++]=apparition;
+  const dreamBody=dreamFigurePropInstance(group);
+  if(dreamBody)doorDynamicCombined[count++]=dreamBody;
   const zone=FP.zoneAt(logicalX,logicalY);
   // LEAVES, WHEREVER THERE IS SKY OVER YOU. Submitted through this same dynamic
   // pass as the apparitions and the bells, so they inherit the prop pack's
@@ -7347,7 +7362,9 @@ function syncArchitecturalLocalLights(group,{logicalX=px,logicalY=py,suppressAct
   // emergency-light shadows stay out of the room rather than adding a second one.
   // Borrowed rooms own their actor track. The ordinary light rig can still
   // illuminate them, but must not insert new emergency figures into that tape.
-  const apparitionsEnabled=!suppressActors&&!dockHauntingFrame&&!plantIsolationPresentation&&!settings.reduceDread&&effectsMode!=='off';
+  // Reduce Dread damps spikes, never bodies: the figures stay. FLASH / STROBE
+  // off is the one setting that removes them, because the beat is a strobe.
+  const apparitionsEnabled=!suppressActors&&!dockHauntingFrame&&!plantIsolationPresentation&&effectsMode!=='off';
   if(!apparitionsEnabled)apparitionDirector.suspend();
   const apparitionStageKey=[
     context.group||group||'unknown',
@@ -7513,7 +7530,7 @@ function worldRenderInstances(group=null){
     R3.r3dSetLightingContext?.(resolveLightingContext({group:'stair',zone:ZONE.stair,spaceId:'impossible-stair'}));
     R3.r3dSetLocalLights?.(stairAnomalyRuntime.lightRig(performance.now()/1000,{reducedFlash:(settings.flash||'full')!=='full'}));
     R3.r3dSetEmergencyShadows?.([]);
-    return PROPS.attachInscriptions(stairAnomalyRuntime.propInstances({reducedDread:!!settings.reduceDread}));
+    return PROPS.attachInscriptions(stairAnomalyRuntime.propInstances());
   }
   syncArchitecturalLocalLights(group);
   const tower=chapelTowerState();
@@ -7836,7 +7853,7 @@ function stairAnomalyProbePreset(stage=0,reduced=false){
   return{
     active:true,reduced:!!reduced,environment:stairAnomalyRuntime.environment,
     ledger:stairAnomalyRuntime.state(),lights:stairAnomalyRuntime.lightRig(performance.now()/1000,{reducedFlash:!!reduced}),
-    shadowOnly:stairAnomalyRuntime.propInstances({reducedDread:!!reduced}).filter((entry)=>entry.shadowOnly).length,
+    shadowOnly:stairAnomalyRuntime.propInstances().filter((entry)=>entry.shadowOnly).length,
   };
 }
 
@@ -9021,7 +9038,11 @@ function syncSourceShoreAudio(frame){
     if(!Number.isFinite(x)||!Number.isFinite(z))return 0;
     return Math.sin(Math.atan2(x-px*CELL,-(z-py*CELL))-yaw);
   };
-  sourceShoreAudio.update(frame,{roomPan:panFor(frame.room),liftPan:panFor(frame.lift),
+  // The pieces of the building are point sources: their distance and bearing.
+  const pieces=(frame.pieces||[]).map((piece)=>({id:piece.id,tone:piece.tone,
+    distance:Math.hypot(piece.x-px*CELL,piece.z-py*CELL),
+    pan:Math.sin(Math.atan2(piece.x-px*CELL,-(piece.z-py*CELL))-yaw)}));
+  sourceShoreAudio.update(frame,{roomPan:panFor(frame.room),liftPan:panFor(frame.lift),pieces,
     suspended:paused||scenes.blocksWorld()||document.hidden});
 }
 
@@ -9822,6 +9843,7 @@ async function loadBuildingRuntime(){
       syncPlantIncidentProps();
       syncVanProps();
       syncMarbleHeadProps();
+      syncStopListeningProps({refresh:false});
       R3.r3dSetProps(worldRenderInstances(physicalPlan.group));
       const tower=chapelTowerState();
       if([CHAPEL_TOWER_PHASE.SOURCE_READY,CHAPEL_TOWER_PHASE.TRANSITION_READY].includes(tower.phase))ensureTowerBellDirector({mode:tower.transportMode});
@@ -9886,6 +9908,7 @@ function resetRunAudio(reason='run-reset'){
   forkToneRuntime?.update?.({gain:0,pan:0});
   metronomeFieldRuntime?.update?.({active:false,ease:0,voices:[]});
   plantPipeRuntime?.update?.({world:0,monitor:0,pan:0},{monitorOpen:false});
+  stopListeningAudioFrame=stopListeningGut?.update?.({active:false})||stopListeningAudioFrame;
   void personalWindowEffects.end();
   // The dread director and the hush's mischief keep wall-clock schedules; a new
   // run is not owed the last one's timers.
@@ -11596,7 +11619,7 @@ function refuseDockExit({speak=true}={}){
   dockRefuseLockUntilMs=now+2600;
   fireCue('bag');
   if(!flagTest('setup.levels')){
-    SPEECH.say({ who:'you', text:`No. I know this trick: leave the first check till later and later never comes. ${BINDINGS.inputPrompt('recorder')}. Light out. Six quiet seconds. Then the door.` });
+    SPEECH.say({ who:'you', text:`No. I know this trick: leave the first check till later and later never comes. ${BINDINGS.inputPrompt('recorder')}. Six quiet seconds. Then the door.` });
     return true;
   }
   if(!flagTest('combat.trained')){
@@ -11770,7 +11793,9 @@ function onLevelsSet(){
 }
 
 // The dream ripple, and then he is in it. The lens goes soft and wrong for a beat
-// so the cut into the fight reads as falling asleep rather than as a scene change.
+// so the cut reads as falling asleep rather than as a scene change. What he is
+// in is the get-in with his torch on and something walking up the beam (see
+// beginDreamFigure); the straight cut into the drill is the fallback.
 //
 // The hold is a real scene rather than a detached timeout: Escape out of the
 // dream and nothing arrives a second later on top of whatever came next.
@@ -11792,7 +11817,7 @@ function dreamRippleIntoDrill(){
       onInterrupted:()=>{
         scenes.remove(hold);daydreamRunning=false;
         if(REC.isRecording())stopTake();
-        SPEECH.say({who:'you',text:`No clean level yet. ${BINDINGS.inputPrompt('recorder')} to try again; feet still, light out.`},{id:'setup:measurement-retry',replace:true});
+        SPEECH.say({who:'you',text:`No clean level yet. ${BINDINGS.inputPrompt('recorder')} to try again; feet still.`},{id:'setup:measurement-retry',replace:true});
       },
     });
     scenes.push(hold);return;
@@ -11807,7 +11832,7 @@ function dreamRippleIntoDrill(){
   scenes.push(makeBoothDownbeatHoldScene({
     duration:1.1,
     scrim:.55,
-    onDone:()=>{ if(storyMode&&!flagTest('combat.trained'))openTrainingBattle(); },
+    onDone:()=>{ if(storyMode&&!flagTest('combat.trained')&&!beginDreamFigure())openTrainingBattle(); },
   }));
 }
 
@@ -11834,6 +11859,119 @@ function beginDaydream(){
   // still has to happen, or the dock gate can never be cleared.
   if(!opened){ daydreamRunning=false; dreamRippleIntoDrill(); }
   return true;
+}
+
+// ── the dream walks up the beam ─────────────────────────────────────────────
+// See game/dream-figure.js. He comes round in the get-in with his torch still
+// on — the setup taught him to put it on and nothing has put it out — and one
+// figure starts walking up the beam towards him. Light on when it reaches him:
+// the drill opens, and it is what he fights. Light out: it walks through him,
+// the opening carries on with no fight, and an achievement says so. Nothing on
+// screen says which is which; failing it is how the player learns it.
+//
+// The beat never touches the torch. Whatever the player has done with it is
+// what the figure finds.
+//
+// The one fallback to the old cut into the drill is the mechanism suites
+// (?nothink). Reduce Dread is not one: it damps spikes, it does not remove
+// figures.
+let dreamFigure=null;
+// Harness seams only (__probe.dreamFigureFreeze / dreamFigureHide): stop the
+// walk to measure a frame, and draw the same frame without the body.
+let dreamFigureFrozen=false,dreamFigureHidden=false;
+function beginDreamFigure(){
+  if(dreamFigure)return true;
+  if(!storyMode||NO_THINK||!usingPlan()||usingSpecialSpace()||flagTest('combat.trained'))return false;
+  const here=FP.logicalToPhysical(px,py);
+  if(!here)return false;
+  const at=pickDreamFigureSpawn({
+    origin:{x:px,y:py},yaw:R3.r3dWorldYaw?.() ?? mapHeading(),
+    open:(x,y)=>!solidAt(Math.round(x),Math.round(y)),
+    sight:(x,y)=>pointInSight(x,y,{maxDistance:D(24)}),
+    floor:(x,y)=>{const p=FP.logicalToPhysical(x,y);return !!p&&p.renderGroup===here.renderGroup&&Math.abs(p.y-here.y)<=.65;},
+  });
+  if(!at)return false;
+  dreamFigure={state:freshDreamFigure({at,player:{x:px,y:py}}),throughWall:at.throughWall};
+  daydreamRunning=true;
+  applyLensPreset('hush');
+  SPEECH.say(REC.lightOn()
+    ?{who:'direction',text:'Down at the far end of your light, something starts walking up the beam towards you.'}
+    :{who:'direction',text:'Somewhere ahead of you in the dark, something starts walking towards you.'},
+  {id:'dream:figure',replace:true});
+  return true;
+}
+
+function tickDreamFigure(dt=0){
+  if(!dreamFigure)return;
+  if(!storyMode||usingSpecialSpace()||flagTest('combat.trained')){dreamFigure=null;daydreamRunning=false;return;}
+  const before=dreamFigure.state.phase;
+  dreamFigure.state=advanceDreamFigure(dreamFigure.state,{
+    player:{x:px,y:py},lightOn:REC.lightOn(),dtMs:Math.max(0,dt)*1000,paused:paused||dreamFigureFrozen||scenes.blocksWorld(),
+  });
+  const phase=dreamFigure.state.phase;
+  if(phase===before)return;
+  if(phase===DREAM_FIGURE_PHASE.TOUCHED)dreamFigureTouched();
+  else if(phase===DREAM_FIGURE_PHASE.PASSING)CUES.playCue(CUES.CUE.recorder,{gain:.22,rate:.24,lowpassHz:420});
+  else if(phase===DREAM_FIGURE_PHASE.SPARED)dreamFigureSpared();
+}
+
+// Lit at the touch. The light stays exactly as he left it: still on when he
+// wakes, which is the whole of what the drill's last line points at.
+function dreamFigureTouched(){
+  dreamFigure=null;daydreamRunning=false;
+  emitProgress(EVENT_TYPES.DREAM_RESOLVED,{outcome:'touched'},'main.dreamFigure');
+  CR.fx.glitch(.5,520);
+  CR.fx.flash(300,'rgba(10,14,20,0.6)');
+  openTrainingBattle({cause:'dream-figure'});
+}
+
+// Dark at the touch. The rehearsal is behind him exactly as a finished drill
+// would leave it: combat.trained is what the exit, the case handoff and the
+// starter lead all read, and none of them should cost him for getting it right.
+function dreamFigureSpared(){
+  dreamFigure=null;daydreamRunning=false;
+  applyLensPreset('explore');
+  flagSet('combat.trained');flagSet('setup.dream.spared');
+  saveCommit({flags:getSave().flags});
+  emitProgress(EVENT_TYPES.DREAM_RESOLVED,{outcome:'spared'},'main.dreamFigure');
+  // Read at his pace, like the count that started it; the case waits for it.
+  const opened=converse('dream-spared',{start:{lines:[
+    {who:'direction',text:'It walks into you and out the back of you, cold as a cellar step, and keeps going. Whatever it wanted, it wanted the light.'},
+    {who:'direction',text:'You blink. The get-in, the dark, the meter still under sixty, your feet exactly where you left them.'},
+    {who:'you',text:'Right. Whatever the hell that was, the light stays off.'},
+  ]}},{scrim:0,anchor:'bottom',escapable:false,onDone:()=>finishSetupRehearsal()});
+  if(!opened)finishSetupRehearsal();
+}
+
+// A plain prop body, not an apparition state: the ordinary prop lighting decides
+// what is seen, so his torch picks it out and with the torch off it is as dark
+// as anything else in the get-in.
+function dreamFigurePropInstance(group){
+  if(!dreamFigure||dreamFigureHidden)return null;
+  const pose=dreamFigurePose(dreamFigure.state);
+  if(!pose.visible)return null;
+  const at=FP.logicalToPhysical(pose.x,pose.y),floor=FP.logicalToPhysical(px,py);
+  if(!at||!floor||at.renderGroup!==group)return null;
+  return{
+    id:'dream-figure',mesh:meshForApparitionPose(pose.poseId),poseId:pose.poseId,
+    x:at.x*CELL,y:floor.y,z:at.z*CELL,yaw:pose.yaw,
+    noShadow:false,structural:false,zone:FP.zoneAt(px,py),
+  };
+}
+
+function dreamFigureProbe(){
+  if(!dreamFigure)return{active:false,trained:flagTest('combat.trained'),spared:flagTest('setup.dream.spared')};
+  const here=FP.logicalToPhysical(px,py),pose=dreamFigurePose(dreamFigure.state);
+  const at=pose.visible?FP.logicalToPhysical(pose.x,pose.y):null;
+  return{
+    active:true,phase:dreamFigure.state.phase,throughWall:dreamFigure.throughWall,
+    elapsedMs:dreamFigure.state.elapsedMs,speedMps:dreamFigure.state.speedMps,reaching:dreamFigure.state.reaching,
+    distanceM:at&&here?Math.hypot(at.x-here.x,at.z-here.z)*CELL:null,
+    world:at?{x:at.x*CELL,y:here?.y??0,z:at.z*CELL}:null,
+    // Chest height on screen, 0..1 from the top left, for pixel readback.
+    screen:at&&here?R3.r3dProjectWorld?.({x:at.x*CELL,y:here.y+1.24,z:at.z*CELL})||null:null,
+    lightOn:REC.lightOn(),pose,frozen:dreamFigureFrozen,hidden:dreamFigureHidden,
+  };
 }
 
 // Out the other side — win or lose, he has had the daft dream and the setup is
@@ -12451,6 +12589,8 @@ let recorderKitThoughts=0;
 function openRecorder(){
   if(!storyMode) return false;
   if(scenes.has(RECORDER_SCENE_ID)) return false;
+  // The recorder is not in the dream. The light is the only verb in it.
+  if(dreamFigure) return false;
   if(itemLost('recorder')){
     SPEECH.say({ who:'you', text:'No recorder. There is no job until I have it back.' });
     return false;
@@ -12699,7 +12839,7 @@ function emitRecorderTransport(action='transport'){
 // tape (for playback) starts collecting what you can hear. The dialog ends on
 // "roll", and there is no other way out of it: setting a level commits you.
 function openListen(room,{beginGuide=null}={}){
-  if(!REC.startListening()) return;
+  if(!REC.startListening({keepLight:room===LEVEL_CHECK_ROOM})) return;
   ensureCtx();
   takeRoom=room;takePlace=takePlaceAt(px,py);
   PB.beginTake(room, {x:px, y:py}, {durationSeconds:REC.takeDuration()});
@@ -12835,7 +12975,8 @@ function roll(){
     return;
   }
   const takeSlot=REC.recState().takes.length+1;
-  if(!REC.startRecording({slate:takeRoom!==LEVEL_CHECK_ROOM})) return;
+  // The level check keeps his light on: the tutorial never puts it out for him.
+  if(!REC.startRecording({slate:takeRoom!==LEVEL_CHECK_ROOM,keepLight:takeRoom===LEVEL_CHECK_ROOM})) return;
   if(takeRoom!==LEVEL_CHECK_ROOM){
     const slate=makeTakeSlate({room:roomLabel(takeRoom||currentWorld()),ordinal:PB.tapeTakes().length+1,date:getSave().run?.startedAt||Date.now()});
     const take=PB.startTapeTake(takeRoom||currentWorld(),slate);
@@ -12921,6 +13062,8 @@ let firstB3Arrival=false;
 // the dock came to be filed against studio B3.
 function acceptRoomTake(room){
     REC.addTake(room,{contaminated:!!activeTakeContamination,place:takePlace||takePlaceAt(px,py)});
+    // The second take is the one that dresses the next room.
+    syncStopListeningProps();
     if(room==='soundnoisemusic'){
       const at=FP.toRuntimePoint(ROOM_CELLS.soundnoisemusic);
       const propDisplacements=Object.fromEntries(PROPS.allProps()
@@ -13037,7 +13180,7 @@ function beginTakeNow(){
   // setting levels in the dock opened, rolled and aborted a take of STUDIO B3
   // while standing two floors above it. A level check is its own thing now.
   const room=!flagTest('setup.levels')&&levelCheckHere()?LEVEL_CHECK_ROOM:recordableRoomAt(px,py) || LEVEL_CHECK_ROOM;
-  if(!REC.startListening()) return;
+  if(!REC.startListening({keepLight:room===LEVEL_CHECK_ROOM})) return;
   takeRoom=room;takePlace=takePlaceAt(px,py);
   PB.beginTake(room, {x:px, y:py}, {durationSeconds:REC.takeDuration()});
   roll();
@@ -14611,6 +14754,12 @@ function interact(){
       SPEECH.say({who:'you',text:'Two alkaline cells in a sealed maintenance sleeve. Wrong department, right torch. Half a night, if I stop spending it on rooms I already know.'});
       return;
     }
+    if(hit.action==='stop-listening-sheet'){
+      const line=inspectPropTracked(hit.id);
+      if(line)SPEECH.say({who:'you',text:line});
+      readStopListeningSheet();
+      return;
+    }
     if(hit.action==='story-tuning-fork'){
       openObjectDetail({
         ...TUNING_FORK_DETAIL,
@@ -15456,6 +15605,129 @@ function syncMarbleHeadProps(){
   bustTurned=HEAD.marbleHeadState().gallery.turned;
   PROPS.setPropDrift(BUST_THAT_TURNS,bustTurned?{dyaw:BUST_TURN_YAW}:null);
 }
+// ── the ear room ─────────────────────────────────────────────────────────────
+// What it is and why it is whichever room it is: data/stop-listening.js. The
+// rule is game/stop-listening.js; this is where it meets the plan, the props,
+// the save and his voice.
+registerBakedPaper({...STOP_LISTENING_SHEET_DOCUMENT,pages:[{path:STOP_LISTENING_SHEET_DOCUMENT.path}]});
+const STOP_LISTENING_DOC=Object.freeze({id:STOP_LISTENING_SHEET_DOCUMENT.id,title:'ROOM TONE / TAKE SHEET',byline:'W. ELLERY / WORKS'});
+let stopListeningStagedKey='';
+let stopListeningArrivalDueMs=0;
+let stopListeningAudioFrame={audible:false,voices:[]};
+function stopListeningState(){return normalizeStopListeningState(getSave().stopListening);}
+function saveStopListening(state){saveCommit({stopListening:state});}
+// Answered in authored metres. A prop's runtime cell is round(metres*2), so that
+// is the cell asked about: open, in the room it belongs to, out of the water,
+// and clear of anything that blocks.
+function stopListeningCanPlace(roomId){
+  return (x,y)=>{
+    const rx=Math.round(x*2),ry=Math.round(y*2);
+    if(FP.isSolid(rx,ry)||FP.isCollisionOnly(rx,ry))return false;
+    if(ZONE_RECORDING_ROOM[FP.zoneAt(rx,ry)]!==roomId)return false;
+    if(natatoriumWaterBlocksAt(rx,ry))return false;
+    return PROPS.propCanOccupy(rx,ry);
+  };
+}
+// Every untaped candidate is dressed from the moment the second take counts, so
+// the ears are visible from whichever door he comes to first. propsInit drops
+// staged props with everything else on a world build, so presence is checked as
+// well as the room list.
+// What else this room is doing tonight (data/stop-listening.js
+// STOP_LISTENING_TREATMENTS): a flag condition, or an encounter not yet cleared.
+function stopListeningBusy(roomId){
+  return stopListeningBusyWith(roomId,(treatment)=>treatment.while?flagTest(treatment.while)
+    :treatment.encounter?!ENCOUNTERS.encounterCleared(treatment.encounter):false);
+}
+function stopListeningRooms(){
+  return stopListeningStagedRooms(stopListeningState(),REC.recState().takes,{busy:stopListeningBusy});
+}
+function syncStopListeningProps({refresh=true}={}){
+  if(!FP.isLoaded()||planName!=='conservatory')return;
+  const rooms=stopListeningRooms();
+  const key=rooms.join(',');
+  const present=PROPS.allProps().some((p)=>p.id.startsWith(STOP_LISTENING_PREFIX));
+  if(key===stopListeningStagedKey&&present===!!rooms.length)return;
+  stopListeningStagedKey=key;
+  const staged=PROPS.allProps().filter((p)=>p.id.startsWith(STOP_LISTENING_PREFIX)).map((p)=>p.id);
+  for(const id of staged)PROPS.setLooseProp(id,null);
+  const placements=rooms.flatMap((roomId)=>stopListeningPlacements(roomId,{canPlace:stopListeningCanPlace(roomId)}));
+  for(const p of stopListeningLoosePlacements(placements,FP,STOP_LISTENING_BOUNDS))PROPS.setLooseProp(p.id,p);
+  if(refresh)refreshWorldProps();
+}
+// On the step that carries him into a recording room. The first free candidate
+// he enters is the room; the rest are cleared, out of sight, in the same breath.
+// A candidate that is busy with its own set piece when he walks in is passed
+// over for the night, and the ears wait for the next free one.
+function noteStopListeningStep(){
+  if(planName!=='conservatory')return;
+  const roomId=recordableRoomAt(px,py);
+  if(!roomId)return;
+  const state=stopListeningState();
+  if(state.room){
+    if(roomId===state.room&&!state.arrivalSpoken&&!stopListeningArrivalDueMs)stopListeningArrivalDueMs=performance.now()+1800;
+    return;
+  }
+  const entered=stopListeningEnter(state,{roomId,takes:REC.recState().takes,nowMs:Date.now(),busy:stopListeningBusy});
+  if(entered.skipped){saveStopListening(entered.state);syncStopListeningProps();return;}
+  if(!entered.chosen)return;
+  saveStopListening(entered.state);
+  syncStopListeningProps();
+  // A beat, so the torch finds the floor before he says what it is.
+  stopListeningArrivalDueMs=performance.now()+1800;
+}
+// Where each heap is, from where he is standing, in the renderer's metres —
+// resolved through logicalToPhysical, the way the pipe is. A point on another
+// floor is not heard through the slab.
+function stopListeningAudioInput(){
+  const state=stopListeningState();
+  if(!storyMode||!usingPlan()||usingSpecialSpace()||planName!=='conservatory'||!state.room)return{active:false};
+  const here=FP.logicalToPhysical(px,py);
+  const voices=stopListeningVoices(state.room).map((voice)=>{
+    const at=FP.logicalToPhysical(Math.round(voice.x*2),Math.round(voice.y*2));
+    const sameFloor=at.renderGroup===here.renderGroup;
+    return{id:voice.id,dx:(at.x-here.x)*CELL,dz:(at.z-here.z)*CELL,gain:sameFloor?voice.gain:0};
+  });
+  const fighting=!!activeBattleId||String(scenes.top()?.id||'').startsWith('battle:');
+  return{active:true,roomId:state.room,voices,yaw:Number(R3.r3dLookAngles?.().yaw)||0,
+    muted:REC.isListening()||REC.isRecording()||fighting};
+}
+// Every frame, outside the world gate: it has to be able to go quiet in Source
+// and under a menu as well as come up in the room.
+function tickStopListeningAudio(){
+  if(!stopListeningGut)return;
+  const input=stopListeningAudioInput();
+  if(input.active&&scenes.blocksWorld())input.muted=true;
+  stopListeningAudioFrame=stopListeningGut.update(input);
+}
+function tickStopListening(){
+  // A room can come free while he is elsewhere (the pool's encounter cleared,
+  // the wing quietened before B3): dress it then, not on the next world build.
+  if(planName==='conservatory'&&FP.isLoaded()&&!usingSpecialSpace()&&stopListeningRooms().join(',')!==stopListeningStagedKey)syncStopListeningProps();
+  if(!stopListeningArrivalDueMs||performance.now()<stopListeningArrivalDueMs)return;
+  if(scenes.blocksInput()||REC.isRecording())return;
+  const state=stopListeningState();
+  stopListeningArrivalDueMs=0;
+  if(!state.room||state.arrivalSpoken||recordableRoomAt(px,py)!==state.room)return;
+  saveStopListening({...state,arrivalSpoken:true});
+  SPEECH.sayAll(STOP_LISTENING_COPY.arrival.map((line)=>({...line})));
+}
+function readStopListeningSheet(){
+  scenes.push(DOC.makeDocumentScene(STOP_LISTENING_DOC,{onSceneClose:()=>{
+    const state=stopListeningState();
+    if(state.sheetRead)return;
+    saveStopListening({...state,sheetRead:true});
+    SPEECH.sayAll(STOP_LISTENING_COPY.sheetRead.map((line)=>({...line})));
+  }}));
+}
+function stopListeningProbe(){
+  const state=stopListeningState(),staged=stopListeningRooms();
+  const props=PROPS.allProps().filter((p)=>p.id.startsWith(STOP_LISTENING_PREFIX));
+  return{state,staged,takes:[...REC.recState().takes],here:recordableRoomAt(px,py),
+    busy:Object.fromEntries(STOP_LISTENING_ROOM_IDS.map((id)=>[id,stopListeningBusy(id)])),
+    props:props.length,byKind:props.reduce((acc,p)=>{const kind=p.id.split(':')[2];acc[kind]=(acc[kind]||0)+1;return acc;},{}),
+    voices:state.room?stopListeningVoices(state.room):[],audio:stopListeningAudioFrame,arrivalDueMs:stopListeningArrivalDueMs};
+}
+
 function savePlantIncident(){
   saveCommit({plantIncident:PLANT.savePlantIncident()});
   facilityMapCache={key:null,model:null};
@@ -16399,6 +16671,12 @@ function maybeQueueRadioProgressionCue(dt=0){
     queueRadioStoryCue(RADIO.RADIO_CUES.INITIAL,{reason:'work-order-read'});
     return true;
   }
+  // The walk out of the get-in: the cells have started running down. Only on
+  // the way to the first room; a run past that has already found out.
+  if(flagTest('torch.metered')&&context.completedJobTakes===0&&!RADIO.radioCueHandled(RADIO.RADIO_CUES.LIGHT)
+    &&!RADIO.pendingRadioCue()&&!RADIO.activeRadioCue()){
+    return queueRadioStoryCue(RADIO.RADIO_CUES.LIGHT,{reason:'left-get-in'});
+  }
   if(RADIO.shouldQueueConcernCall(context)){
     return queueRadioStoryCue(RADIO.RADIO_CUES.CONCERN,{reason:'missed-checkin'});
   }
@@ -16574,10 +16852,25 @@ function dampFork(){
   }catch{ try{ o.stop(); }catch{} }
 }
 
+// THE SETUP NEVER COUNTS THE BATTERY. The get-in teaches the light ON and the
+// dream teaches what it costs, and neither should be spending cells while it
+// does. The first time he walks out of the get-in with setup done, the cells
+// start running down, and Martin rings to say so (radio.light_checkin).
+//
+// A save already past its first take is simply metered: it was draining
+// before this rule existed, and the call is for the walk out, not for later.
+function tickTorchMetering(){
+  if(flagTest('torch.metered')||!usingPlan()||usingSpecialSpace()||planName!=='conservatory')return;
+  if(!setupComplete()||atHomeThreshold(px,py))return;
+  flagSet('torch.metered');
+  saveCommit({flags:getSave().flags});
+}
+
 // The torch burns only while it is burning, and light is the one thing the dark
 // is also asking for. When it dies, it dies mid-sentence.
 function tickTorch(dt){
   if(!storyMode) return;
+  tickTorchMetering();
   if(flagTest('rig.gutted') && !flagTest('rig.cells')) reconcileRig();
   // It browns out before it dies. Two warnings, once each per run, so that a flat
   // torch is always something you watched happen and chose not to prevent.
@@ -16593,7 +16886,7 @@ function tickTorch(dt){
     SPEECH.say({who:'you',text:"Brown at the edge. I don't know that it will last much longer."});
     saveCommit({flags:getSave().flags});
   }
-  if(REC.drainLight(dt)){
+  if(flagTest('torch.metered')&&REC.drainLight(dt)){
     CUES.playCue(CUES.CUE.light, {gain:0.5, rate:0.72});
     bumpFear(0.35, { stinger:0.7 });
     SPEECH.say({ who:'you', text:'...no. No, no — come on. Come ON!' });
@@ -18725,7 +19018,15 @@ function tickSourceSpace(dt){
     if(event.text)SPEECH.say({who:event.who||'direction',text:event.text},{id:`source-reception:${event.type}`,replace:true});
   }
   if(reception?.saveDue)chunkSurfRuntime.persistLastReception?.();
-  chunkSurfRuntime.tick(dt,{px,py,facing:R3.r3dFacing()});
+  chunkSurfRuntime.tick(dt,{px,py,facing:R3.r3dFacing(),yaw:Number(R3.r3dLookAngles?.()?.yaw)});
+  // A fall through Source proper's floor is cut: he is at the forecourt.
+  const fallCut=chunkSurfRuntime.takeFallCut?.();
+  if(fallCut){
+    px=fallCut.x;py=fallCut.y;renderMove=null;motionRig=null;trail=[];
+    R3.r3dSetLookAngles?.({yaw:fallCut.yaw,pitch:0,immediate:true});
+    saveCommit({px,py,steps:stepCount,area:'source-space',chunkSurf:chunkSurfRuntime.state()});
+    syncSourceRender({force:true});
+  }
   const paper=chunkSurfRuntime.paperTonePoint();
   const now=performance.now();
   // The long hall should tighten toward the still page, not slacken. Feed a
@@ -19777,7 +20078,6 @@ function advanceConservatoryAdversaries(dt,extra={}){
   const result=stepConservatoryAdversaries(conservatoryAdversaries,{
     dt,group,player,yaw:mapHeading(),
     busy:paused||document.hidden||!document.hasFocus()||scenes.blocksInput()||!!activeBattleId,
-    reducedDread:!!getSave().settings?.reduceDread,
     costumeConflict:basementWatcher.roomId==='store'&&!basementWatcher.resolved,
     ...extra,
   });
@@ -19884,7 +20184,7 @@ function basementWatcherStand(){
 }
 
 function basementWatcherRenderInstance(group){
-  if(group!=='basement'||basementWatcher.resolved||getSave().settings?.reduceDread)return null;
+  if(group!=='basement'||basementWatcher.resolved)return null;
   if(scenes.blocksInput()||activeBattleId||usingSpecialSpace())return null;
   const definition=basementWatcherDefinition(),logical=basementWatcherStand();
   if(!definition||!logical)return null;
@@ -19902,7 +20202,7 @@ function basementWatcherRenderInstance(group){
 
 function tickBasementWatcher(){
   if(!storyMode||!usingPlan()||usingSpecialSpace()||basementWatcher.resolved||basementWatcher.armed)return;
-  if(getSave().settings?.reduceDread||scenes.blocksInput()||REC.isRecording()||activeBattleId)return;
+  if(scenes.blocksInput()||REC.isRecording()||activeBattleId)return;
   if(PRES.publicSnapshot().tableau)return;
   const group=FP.logicalToPhysical(px,py).renderGroup;
   if(!basementWatcherRenderInstance(group))return;
@@ -20004,7 +20304,7 @@ function resolveBasementWatcherHunt({roll=null}={}){
 
 function noteBasementWatcherMovement(){
   if(!basementWatcher.armed||basementWatcher.resolved)return false;
-  if(getSave().settings?.reduceDread||scenes.blocksInput()||activeBattleId||PRES.publicSnapshot().tableau)return false;
+  if(scenes.blocksInput()||activeBattleId||PRES.publicSnapshot().tableau)return false;
   return resolveBasementWatcherHunt().changed;
 }
 
@@ -20878,7 +21178,7 @@ function tickRecordingHallucinations(dt){
   const pressure=Math.max(Number(pressureFrame?.overall)||0,Number(pressureFrame?.visualDread)||0,Number(pressureFrame?.monitorHiss)||0);
   const result=recordingHallucinations.tick({
     nowMs:now,recording:REC.isRecording(),stalled:REC.isStalled(),tutorial:TUT.tutorialActive(),
-    reduceDread:!!settings.reduceDread,effectsMode:settings.flash||'full',lightOn:REC.lightOn(),
+    effectsMode:settings.flash||'full',lightOn:REC.lightOn(),
     darkness:REC.lightOn()?0:1,takeProgress:REC.takeProgress(),hushPressure:pressure,
     effectiveMicRms:mic.effective.rms,spoilThreshold:MIC_LEVEL.spoil,
   });
@@ -20927,6 +21227,8 @@ function tickRecorder(dt){
   tickInstrument();
   tickPracticeMetronomes(dt);
   tickPracticeStudent();
+  tickStopListening();
+  tickDreamFigure(dt);
   if(REC.isRecording()){
     const p=REC.takeProgress();
     if(!environmentalTenorFired&&REC.recState().takes.length===1&&p>=.33&&!REC.isStalled()&&!REC.isAssistPaused()){
@@ -21821,13 +22123,13 @@ function openGodBattle(battle,{encounterId=null}={}){
 
 // The bench drill: a scripted training fight that runs once before the first
 // real encounter. Interrupting it cannot claim completion or starter cables.
-function openTrainingBattle({withDirector=true}={}){
+function openTrainingBattle({withDirector=true,cause=null}={}){
   // The FIRST pass is the opening's own drill, and coming out of it is what
   // hands the player the last verb (the bearing). A later drill — opened from
   // the god menu, or a save that already had it — marks the flag and nothing
   // else. A real interruption cannot masquerade as a completed rehearsal.
   const done=()=>{ const first=!flagTest('combat.trained'); flagSet('combat.trained'); saveCommit({flags:getSave().flags}); if(first) finishSetupRehearsal(); };
-  const battle=trainingCombatBattle();
+  const battle=trainingCombatBattle({cause});
   return openBattle(battle,{
     bench:true,
     director:withDirector?createCombatTutorialDirector():null,
@@ -25587,7 +25889,7 @@ function godInventoryChanged(id){
   applyCurrentRunDifficulty();applyAudioSettings();
   if(!FP.isLoaded()||planName!=='conservatory')return;
   syncKeyCabinetProps({refresh:false});syncStoryObjectProps();syncSheetMusicProps();
-  syncPlantIncidentProps();syncMarbleHeadProps();syncDroppedRadioProp();
+  syncPlantIncidentProps();syncMarbleHeadProps();syncDroppedRadioProp();syncStopListeningProps({refresh:false});
   facilityMapCache={key:'',model:null};
   if(usingSourceSpace())syncSourceRender({force:true});
   else if(!usingSpecialSpace())refreshWorldProps();
@@ -25601,6 +25903,51 @@ function godInventory(){
     clearLost:()=>godSetLostItem(null,false),onChange:godInventoryChanged,
     notify:message=>pushEvent(`// god: ${message}.`),
   });
+}
+
+// ── God: the academic roof, and the ear room ────────────────────────────────
+// Each writes through the owner the real game uses (the flag, the keyring and
+// items through godInventory, roofRen's own state), and refreshes the props
+// that read it, as the in-world gate and Ren do.
+function godSetRoofAccess(on){
+  if(godInventoryBlocked()){pushEvent(`// god: ${godInventoryBlocked()}.`);return false;}
+  godSetFlag('roof.access',!!on);
+  facilityMapCache={key:null,model:null};
+  refreshWorldProps();
+  return !!on;
+}
+function godRoofGateCheck(){
+  const check=roofGateEligibility(playerKeys,completedRecordingTakes());
+  if(check.canOpen)return 'WOULD OPEN';
+  return [check.schoolKey?'':'NO MASTER KEY',check.recorderCheck?'':'NO ACCEPTED TAKE'].filter(Boolean).join(' · ');
+}
+function godCycleRenStage(delta=1){
+  if(godInventoryBlocked()){pushEvent(`// god: ${godInventoryBlocked()}.`);return false;}
+  const now=roofRenState(),at=Math.max(0,ROOF_REN_STAGES.indexOf(now.stage));
+  const stage=ROOF_REN_STAGES[(at+Math.sign(delta||1)+ROOF_REN_STAGES.length)%ROOF_REN_STAGES.length];
+  saveCommit({roofRen:normalizeRoofRenState({...now,stage})});
+  refreshWorldProps();
+  return stage;
+}
+function godResetRen(){
+  if(godInventoryBlocked()){pushEvent(`// god: ${godInventoryBlocked()}.`);return false;}
+  saveCommit({roofRen:freshRoofRenState()});
+  refreshWorldProps();
+  pushEvent('// god: Ren\'s conversation reset; items and keys unchanged.');
+  return true;
+}
+function godEarRoomValue(){
+  const p=stopListeningProbe();
+  if(p.state.room)return `IN ${roomLabel(p.state.room).toUpperCase()}`;
+  if(!REC.hasTake('main_b3'))return 'AFTER B3';
+  const skipped=p.state.skipped.length?` · PASSED ${p.state.skipped.map((id)=>roomLabel(id).toUpperCase()).join(', ')}`:'';
+  return p.staged.length?`WAITING IN ${p.staged.length}${skipped}`:`NO FREE ROOM${skipped}`;
+}
+function godResetEarRoom(){
+  saveStopListening(freshStopListeningState());
+  stopListeningArrivalDueMs=0;stopListeningStagedKey='';
+  syncStopListeningProps();
+  return true;
 }
 
 function godReleaseViewForWarp(){
@@ -25688,6 +26035,8 @@ function godSetTakes(ids,on){
   REC.syncTakes();saveCommit({rec:REC.saveRecState()});
   // No story events replay, but the tower's readiness is a fact about the tape.
   reconcileChapelTowerTakes();
+  // So is which rooms the ear room is waiting in.
+  syncStopListeningProps();
   pushEvent(`// god: ${result.changed} take(s) ${on?'granted':'removed'}; no story events replayed.`);
   return true;
 }
@@ -26159,6 +26508,29 @@ function godTabs(){
       warp('cathedral-triforium','TRIFORIUM WALK','cathedral-triforium'),
       warp('cathedral-belfry','BELFRY','cathedral-belfry'),
     ]},
+    {id:'roof',name:'ROOF',rows:[
+      section('Academic roof'),
+      warp('roof-warp-gate','NORTH GALLERY / ROOF GATE','roof-gate'),
+      warp('roof-warp-fire-escape','FIRE ESCAPE / FOOT','roof-fire-escape'),
+      warp('roof-warp-arrival','ROOF / ARRIVAL','academic-roof'),
+      warp('roof-warp-ren','ROOF / REN','roof-ren'),
+      warp('roof-warp-city-seat','ROOF / CITY SEAT','roof-city-seat'),
+      warp('roof-warp-ladder-top','SERVICE LADDER / TOP','roof-ladder-top'),
+      warp('roof-warp-ladder-foot','SERVICE LADDER / FOOT','roof-ladder-foot'),
+      section('Access'),
+      {id:'roof-access',label:'ROOF GATE / OPENED',value:()=>flagTest('roof.access')?'OPEN':'SHUT',
+        adjust:()=>godSetRoofAccess(!flagTest('roof.access')),activate:()=>godSetRoofAccess(!flagTest('roof.access'))},
+      {id:'roof-gate-check',kind:'info',label:'ROOF GATE / IN-WORLD CHECK',value:godRoofGateCheck},
+      godInventory().row('master-key','roof-master-key'),
+      godInventory().row('ren-service-key','roof-ren-service-key'),
+      section('Ren'),
+      {id:'roof-ren-stage',label:'REN / CONVERSATION STAGE',value:()=>roofRenState().stage.toUpperCase(),adjust:godCycleRenStage},
+      {id:'roof-ren-reset',label:'REN / RESET CONVERSATION',value:'[RESET]',danger:true,activate:godResetRen},
+      section('Visits'),
+      toggleFlag('roof-entered','ROOF / ENTERED','roof.entered'),
+      toggleFlag('roof-sat','ROOF / SAT ON THE GLASS','roof.sat'),
+      toggleFlag('roof-city-sat','ROOF / CITY SEAT VIGIL','roof.city.sat'),
+    ]},
     {id:'source-space',name:'SOURCE',rows:[
       section('Infinite Long Hall'),
       {id:'source-hall-entry',label:'LONG HALL / ENTRY',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterSourcePreset(CHUNK_SURF_GOD_PRESET.HALL_ENTRY)},
@@ -26320,6 +26692,9 @@ function godTabs(){
           closeMenu:kind===PRACTICE_HAUNT.HUSH,
           activate:()=>godFirePracticeHaunt(kind),
         })),
+      section('Ear room'),
+      {id:'ear-room-state',kind:'info',label:'EAR ROOM',value:godEarRoomValue},
+      {id:'ear-room-reset',label:'EAR ROOM / FORGET IT',value:'[RESET]',activate:godResetEarRoom},
       {id:'battle-chapel',label:'CHAPEL CONFRONTATION',value:'[OPEN]',closeMenu:true,activate:beginConfrontation},
       {id:'ending-choice',label:'ENDING CHOICE',value:'[OPEN]',closeMenu:true,activate:openEndingChoice},
       // PLAY AN ENDING FROM HERE. Every ending is now the same call — the contract
@@ -28206,7 +28581,7 @@ function installProbe(){
     stairAnomaly:()=>usingStairAnomaly()?{
       active:true,environment:stairAnomalyRuntime.environment,ledger:stairAnomalyRuntime.state(),player:stairAnomalyRuntime.player(),
       lights:stairAnomalyRuntime.lightRig(performance.now()/1000,{reducedFlash:(getSave().settings?.flash||'full')!=='full'}),
-      shadowOnly:stairAnomalyRuntime.propInstances({reducedDread:!!getSave().settings?.reduceDread}).filter((entry)=>entry.shadowOnly).length,
+      shadowOnly:stairAnomalyRuntime.propInstances().filter((entry)=>entry.shadowOnly).length,
     }:{active:false,environment:currentStairAnomalyEnvironment(),ledger:currentStairAnomalyLedger()},
     stairAnomalyPreset:(stage=0,reduced=false)=>stairAnomalyProbePreset(stage,reduced),
     testRun:()=>godEnsureTestRun(),
@@ -28956,6 +29331,17 @@ function installProbe(){
     stopMetronome:(id)=>stopPracticeMetronome(id),
     // Plays the student through the wall now, whatever the metronomes say.
     practiceStudent:()=>openPracticeStudent(),
+    stopListening:()=>stopListeningProbe(),
+    dreamFigure:()=>dreamFigureProbe(),
+    dreamFigureStart:()=>{const started=beginDreamFigure();return{started,...dreamFigureProbe()};},
+    dreamFigureFreeze:(on=true)=>{dreamFigureFrozen=!!on;return dreamFigureProbe();},
+    dreamFigureHide:(on=true)=>{dreamFigureHidden=!!on;return dreamFigureProbe();},
+    // For harnesses: forget which room it became, and run the entry check where
+    // he stands (the same call the step makes) after a warp put him inside.
+    stopListeningReset:()=>{saveStopListening(freshStopListeningState());stopListeningArrivalDueMs=0;stopListeningStagedKey='';syncStopListeningProps();return stopListeningProbe();},
+    stopListeningEnterHere:()=>{noteStopListeningStep();return stopListeningProbe();},
+    // For harnesses that need a room's own set piece finished (the pool's approach).
+    clearEncounter:(id)=>{ENCOUNTERS.clearEncounter(String(id));saveCommit({encounters:ENCOUNTERS.saveEncounterState()});return ENCOUNTERS.encounterState();},
     // Each metronome's tick level at the recorder (or where the body stands),
     // against the take's real spoil threshold.
     metronomeTakeLevels:()=>{
@@ -29700,7 +30086,7 @@ function pressurePresentationInputs(worldView=scenes.worldView()){
   const suppressed=!!worldView?.suppressActors;
   const physicalActor=(point)=>{
     if(!point)return null;
-    if(source)return{...point,floorH:chunkSurfRuntime?.geometry?.floorAt?.(point.x,point.y)??0};
+    if(source)return{...point,floorH:Number.isFinite(point.floorH)?point.floorH:chunkSurfRuntime?.geometry?.floorAt?.(point.x,point.y)??0};
     if(!usingPlan()||usingSpecialSpace())return{...point,floorH:0};
     const at=FP.logicalToPhysical(point.x,point.y);
     const next=FP.logicalToPhysical(point.x+(Number(point.velocityX)||0)*.1,point.y+(Number(point.velocityY)||0)*.1);
@@ -29720,11 +30106,14 @@ function pressurePresentationInputs(worldView=scenes.worldView()){
   };
   const presence=PRES.presenceState();
   const sourceMode=source?chunkSurfRuntime?.hushMode?.():null;
+  // From the taken door onward he is one body that follows: the outline the
+  // conversation addresses, facing the way he walks, standing where he walks.
+  const sourceFollow=sourceMode?.following?chunkSurfRuntime.hushFollowFrame?.():null;
   const presenceVisible=!suppressed&&hushBodySpaceAllowed&&storyMode&&hushActiveForPlayer()
     &&(source||chapelTowerState().phase!==CHAPEL_TOWER_PHASE.TOWER_ACTIVE);
   const absence=presenceVisible?hushAbsenceLook({active:true,field:hushFieldFrame,dread:hushDreadAt(),peek:coverPeekAmount()}):null;
   const dockBodyLook=dockHauntingBodyLook(dockHauntingFrame);
-  const role=source?(sourceMode?.meeting?'court-trace':'source-rear'):dockBodyLook?'dock-tableau':plantHaulSnapshot?'plant-tableau':'live-pressure';
+  const role=source?(sourceMode?.meeting||sourceFollow?'court-trace':'source-rear'):dockBodyLook?'dock-tableau':plantHaulSnapshot?'plant-tableau':'live-pressure';
   const motion=presence.behaviorMode==='chase'?'hunt':['listen','limp','investigate'].includes(presence.behaviorMode)?presence.behaviorMode:'idle';
   const tenantBody=!suppressed&&!usingSpecialSpace()&&storyMode&&practiceTenant;
   const primary=presenceVisible
@@ -29733,8 +30122,9 @@ function pressurePresentationInputs(worldView=scenes.worldView()){
       ...(role==='live-pressure'&&presence.gait?{gait:presence.gait,heading:presence.gait.heading}:{}),
       // Source's rear body faces down its authored lane; the court trace faces
       // the approach. An observer turning around never changes either bearing.
-      ...(source?{heading:sourceMode?.meeting?Math.PI:0}:{}),
-      strength:dockBodyLook?.strength??absence.strength,radiusM:dockBodyLook?.radiusM??absence.radiusM,
+      ...(source?{heading:sourceFollow?sourceFollow.heading:sourceMode?.meeting?Math.PI:0}:{}),
+      ...(sourceFollow?{floorH:sourceFollow.floorH}:{}),
+      strength:sourceFollow?sourceFollow.strength:dockBodyLook?.strength??absence.strength,radiusM:dockBodyLook?.radiusM??absence.radiusM,
       heightM:dockBodyLook?.heightM??(role==='court-trace'?1.83:2.18),widthM:dockBodyLook?.widthM??.68,
       glow:dockBodyLook?.glow,mode:dockBodyLook?.mode})
     :tenantBody?physicalActor({id:`tenant:${practiceTenant.roomId}`,role:'tenant',...practiceTenant,

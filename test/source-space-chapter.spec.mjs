@@ -7,7 +7,7 @@ import {
   reduceChunkSurf,
 } from '../src/game/chunk-surf-state.js';
 import { SOURCE_LANDMARK_OFFSETS, createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
-import { SOURCE_BRAIDED_REVIEW_WALK } from '../src/data/source-braided-divide.js';
+import { SOURCE_BRAIDED_REVIEW_WALK, SOURCE_DIVIDE_GAP_FLOOR } from '../src/data/source-braided-divide.js';
 
 const ORIGIN={x:0,y:-252};
 // Derived from the real landmark table rather than re-hardcoded. These were
@@ -38,6 +38,22 @@ function landscapeState({injuries=0}={}){
   return apply(state,'SOURCE_LANDING_DOOR_OPENED');
 }
 
+// Walk at HUSH until he is within reach; he comes the rest of the way.
+function closeOn(runtime){
+  const o=runtime.state().landscapeOrigin,body=runtime.probe().divide;
+  let at={x:o.x+body.x/.5,y:o.y+body.z/.5,facing:0};
+  for(let n=0;n<900&&!runtime.hushMode().contactAvailable;n++){
+    const him=runtime.hushFollowFrame(),dx=him.x-at.x,dy=him.y-at.y,d=Math.hypot(dx,dy);
+    if(d>9){
+      const to={x:at.x+dx/d*.16,y:at.y+dy/d*.16,facing:0};
+      assert.equal(runtime.geometry.canStep(at.x,at.y,to.x,to.y).ok,true,'the way to him is blocked');
+      runtime.onStep(at,to);runtime.setPlayerPosition(to);at=to;
+    }
+    runtime.tick(1/60,{px:at.x,py:at.y,facing:0});
+  }
+  assert.equal(runtime.hushMode().contactAvailable,true,'walking at him never brought him into reach');
+}
+
 function walk(runtime,points){
   const origin=runtime.state().landscapeOrigin;
   const world=(point)=>({x:origin.x+point.x/.5,y:origin.y+point.z/.5,facing:0});
@@ -58,7 +74,7 @@ function walk(runtime,points){
     }
     // Descending belongs to the vertical clock. Never assign the target floor
     // or ask canStep about distant cells with an unrelated body height.
-    for(let tick=0;tick<10;tick++)runtime.tick(.05,{px:from.x,py:from.y,facing:0});
+    for(let tick=0;tick<60&&(tick<10||runtime.state().sourceDivide?.falling);tick++)runtime.tick(.05,{px:from.x,py:from.y,facing:0});
     const feet=runtime.state().sourceDivide?.feet;
     if(target.floor!=null)assert.ok(Math.abs(feet-target.floor)<.025,`${target.id}: body is at ${feet}, expected ${target.floor}`);
     floors.set(target.id,feet);
@@ -93,10 +109,19 @@ function walk(runtime,points){
   assert.equal(runtime.sourceObjective().label,'REACH THE FINAL HORIZON',
     'the post-lift objective names the destination without an equipment verb');
   walk(runtime,[
-    {id:'forecourt-west',x:-80,z:-410,floor:4.2},
-    {id:'forecourt-east',x:80,z:-410,floor:4.2},
-    {id:'forecourt-return',x:-80,z:-410,floor:4.2},
+    {id:'forecourt-west',x:-44,z:-410,floor:4.2},
+    {id:'forecourt-east',x:44,z:-410,floor:4.2},
+    {id:'forecourt-return',x:-44,z:-410,floor:4.2},
     {id:'lower-street',x:0,z:-410,floor:4.2},
+    {id:'lane-stub-end',x:0,z:-429.5,floor:4.2},
+  ]);
+  // The floor does not run straight on: the stub ends in the drop.
+  const o=runtime.state().landscapeOrigin,end={x:o.x,y:o.y-859},beyond={x:o.x,y:o.y-863};
+  const off=runtime.geometry.canStep(end.x,end.y,beyond.x,beyond.y);
+  assert.equal(off.ok,true,'walking off the end of the stub is refused');
+  assert.equal(runtime.geometry.cellAt(beyond.x,beyond.y).floor,SOURCE_DIVIDE_GAP_FLOOR,'the floor runs on past the stub');
+  // Past the gap, the lane runs to the court, the rise and the grey doors.
+  walk(runtime,[
     {id:'case-under',x:0,z:-440,floor:4.2},
     {id:'court-street',x:0,z:-465,floor:4.2},
     {id:'piano-under',x:0,z:-498,floor:4.2},
@@ -104,7 +129,7 @@ function walk(runtime,points){
     {id:'grey-door-approach',x:0,z:-539,floor:15.2},
     {id:'return-to-lower-ground',x:0,z:-508,floor:4.2},
   ]);
-  assert.equal(runtime.state().sourceContacts.talks,0,'the direct ground route needs no tour or talk count');
+  assert.equal(runtime.state().sourceContacts.talks,0,'the lane route needs no tour or talk count');
   assert.equal(runtime.state().finale.route,null,'the grey-door approach remains reversible');
 }
 
@@ -119,10 +144,13 @@ function walk(runtime,points){
   const active=createSourceSpaceRuntime({initialState:state});
   assert.equal(active.state().pursuitBeat,SOURCE_PURSUIT_BEAT.BODY_RUN);
   assert.equal(active.hushMode().colliding,false,'the meeting is not a damaging pursuit');
-  assert.equal(active.hushMode().meeting,true,'the first lift makes the patient trace present');
+  assert.equal(active.hushMode().meeting,true,'the first lift makes HUSH present');
   assert.equal(active.hushMode().contactAvailable,false,'the first lift cannot open remote dialogue');
-  active.setPlayerPosition({x:ORIGIN.x-24,y:ORIGIN.y-922,facing:0});
-  assert.equal(active.hushMode().contactAvailable,true,'walking into service-court range offers voluntary contact');
+  active.tick(1/60,{px:active.state().landscapeOrigin.x,py:active.state().landscapeOrigin.y-798,facing:0});
+  const him=active.hushFollowFrame();
+  assert.equal(him.visible,true,'HUSH did not follow into Source proper');
+  active.setPlayerPosition({x:him.x,y:him.y+5,facing:0});
+  assert.equal(active.hushMode().contactAvailable,true,'walking into his reach offers voluntary contact');
 }
 
 {
@@ -169,6 +197,8 @@ function walk(runtime,points){
     {id:'court-street-return',x:0,z:-465,floor:4.2},
     {id:'service-court-return',x:-12,z:-465,floor:4.2},
   ]);
+  // He followed you back down. Contact is walking at him until he meets you.
+  closeOn(runtime);
   assert.ok(runtime.beginHushContact());
   assert.equal(runtime.resolveHushContactChoice('contact.warning').combat,false);
   assert.equal(runtime.resolveHushContactChoice('contact.confirm').combat,true);

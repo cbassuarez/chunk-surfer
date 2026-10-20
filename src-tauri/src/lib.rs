@@ -3,6 +3,7 @@ use tauri_plugin_log::{Target, TargetKind};
 
 mod desktop_menu;
 mod display_policy;
+mod dock_tile;
 mod identity;
 mod lens_service;
 mod source_desktop;
@@ -68,6 +69,8 @@ pub fn run() {
             lens_service::chunk_lens_stop,
         ])
         .setup(|app| {
+            // setup runs on the main thread, which AppKit's Dock tile requires.
+            dock_tile::install();
             window_choreography::recover_stale_snapshot(app.handle());
             desktop_menu::install(app)?;
             display_policy::enforce_window_floor(app.handle());

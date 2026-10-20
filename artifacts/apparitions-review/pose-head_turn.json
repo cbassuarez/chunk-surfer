@@ -3,7 +3,7 @@
   "family": "pose",
   "poseId": "head_turn",
   "seed": "review:pose:head_turn",
-  "capturedAt": "2026-08-11T03:53:11.378Z",
+  "capturedAt": "2026-10-20T03:55:51.262Z",
   "gate": {
     "context": {
       "group": "hall",
@@ -16,6 +16,7 @@
       ],
       "ambientIntensity": 0.02,
       "whitePointScale": 0.19565217391304346,
+      "roofSkyRecovery": 0,
       "bounce": {
         "color": [
           0.5,
@@ -42,8 +43,8 @@
         "circuit": null,
         "powerMode": "maintained",
         "maintained": true,
-        "intensity": 3.029,
-        "shadowReveal": 0.932
+        "intensity": 1.742,
+        "shadowReveal": 0.536
       },
       {
         "id": "hall-entrance-maintained-south",
@@ -51,8 +52,8 @@
         "circuit": null,
         "powerMode": "maintained",
         "maintained": true,
-        "intensity": 3.029,
-        "shadowReveal": 0.932
+        "intensity": 1.742,
+        "shadowReveal": 0.536
       },
       {
         "id": "hall-stage-door-maintained",
@@ -60,8 +61,8 @@
         "circuit": null,
         "powerMode": "maintained",
         "maintained": true,
-        "intensity": 3.355,
-        "shadowReveal": 0.932
+        "intensity": 1.93,
+        "shadowReveal": 0.536
       },
       {
         "id": "hall-galleria-west-foot",
@@ -69,8 +70,8 @@
         "circuit": null,
         "powerMode": "maintained",
         "maintained": true,
-        "intensity": 3.215,
-        "shadowReveal": 0.932
+        "intensity": 1.85,
+        "shadowReveal": 0.536
       },
       {
         "id": "hall-galleria-east-foot",
@@ -78,8 +79,8 @@
         "circuit": null,
         "powerMode": "maintained",
         "maintained": true,
-        "intensity": 3.215,
-        "shadowReveal": 0.932
+        "intensity": 1.85,
+        "shadowReveal": 0.536
       }
     ],
     "candidates": [
@@ -88,45 +89,46 @@
         "circuit": null,
         "powerMode": "maintained",
         "maintained": true,
-        "intensity": 3.029,
-        "shadowReveal": 0.932
+        "intensity": 1.742,
+        "shadowReveal": 0.536
       },
       {
         "id": "hall-entrance-maintained-south",
         "circuit": null,
         "powerMode": "maintained",
         "maintained": true,
-        "intensity": 3.029,
-        "shadowReveal": 0.932
+        "intensity": 1.742,
+        "shadowReveal": 0.536
       },
       {
         "id": "hall-stage-door-maintained",
         "circuit": null,
         "powerMode": "maintained",
         "maintained": true,
-        "intensity": 3.355,
-        "shadowReveal": 0.932
+        "intensity": 1.93,
+        "shadowReveal": 0.536
       },
       {
         "id": "hall-galleria-west-foot",
         "circuit": null,
         "powerMode": "maintained",
         "maintained": true,
-        "intensity": 3.215,
-        "shadowReveal": 0.932
+        "intensity": 1.85,
+        "shadowReveal": 0.536
       },
       {
         "id": "hall-galleria-east-foot",
         "circuit": null,
         "powerMode": "maintained",
         "maintained": true,
-        "intensity": 3.215,
-        "shadowReveal": 0.932
+        "intensity": 1.85,
+        "shadowReveal": 0.536
       }
     ],
     "submitted": {
       "active": true,
       "lightId": "hall-galleria-west-foot",
+      "lightingState": "emergency-on",
       "figures": 3,
       "visibleBodies": 3,
       "shadowOnlyFigures": 0,
@@ -139,14 +141,15 @@
       "cardIndex": null,
       "cardPhase": null,
       "exposure": 0,
-      "minimumDistance": 4.011,
+      "minimumDistance": 3.929,
       "stageSector": 2,
-      "pulseIndex": 5
+      "pulseIndex": 6
     }
   },
   "apparitions": {
     "active": true,
     "lightId": "hall-galleria-west-foot",
+    "lightingState": "emergency-on",
     "figures": 3,
     "visibleBodies": 3,
     "shadowOnlyFigures": 0,
@@ -155,81 +158,84 @@
     "compositionSource": "authored",
     "stageYaw": 1.5707963267948966,
     "poseIds": [
-      "head_turn",
-      "head_turn",
-      "head_turn"
+      "stoop",
+      "stoop",
+      "stoop"
     ],
     "bearings": [
-      -2.927,
-      -3.101,
-      -3.004
+      -2.917,
+      -3.106,
+      -2.998
     ],
     "pitches": [
-      0.173,
-      0.134,
-      0.111
+      0.176,
+      0.135,
+      0.109
     ],
     "metres": [
       [
-        101.65,
-        19.42
+        101.63,
+        19.33
       ],
       [
-        102.29,
-        20.71
+        102.32,
+        20.65
       ],
       [
-        101.64,
-        21.74
+        101.58,
+        21.84
       ]
     ],
     "bodies": [
       {
         "id": "emergency-shadow:hall-galleria-west-foot:0",
         "index": 0,
-        "poseId": "head_turn",
+        "poseId": "stoop",
         "shadowOnly": false,
-        "x": 101.647,
+        "lightingState": "emergency-on",
+        "x": 101.626,
         "y": -0.74,
-        "z": 19.419,
-        "yaw": 1.3272,
-        "distance": 4.011,
+        "z": 19.331,
+        "yaw": 1.2471,
+        "distance": 3.929,
         "presentation": "shadow",
         "motion": "milling"
       },
       {
         "id": "emergency-shadow:hall-galleria-west-foot:1",
         "index": 1,
-        "poseId": "head_turn",
+        "poseId": "stoop",
         "shadowOnly": false,
-        "x": 102.291,
+        "lightingState": "emergency-on",
+        "x": 102.316,
         "y": -0.74,
-        "z": 20.706,
-        "yaw": 1.7376,
-        "distance": 5.21,
+        "z": 20.649,
+        "yaw": 1.6908,
+        "distance": 5.152,
         "presentation": "shadow",
         "motion": "milling"
       },
       {
         "id": "emergency-shadow:hall-galleria-west-foot:2",
         "index": 2,
-        "poseId": "head_turn",
+        "poseId": "stoop",
         "shadowOnly": false,
-        "x": 101.638,
+        "lightingState": "emergency-on",
+        "x": 101.581,
         "y": -0.74,
-        "z": 21.743,
-        "yaw": 1.9377,
-        "distance": 6.302,
+        "z": 21.841,
+        "yaw": 2.0481,
+        "distance": 6.407,
         "presentation": "shadow",
         "motion": "milling"
       }
     ]
   },
   "scene": {
-    "luma": 52.57,
-    "litPct": 87.8,
-    "redPct": 92.9,
-    "whitePct": 7.79
+    "luma": 28.74,
+    "litPct": 74.4,
+    "redPct": 85.4,
+    "whitePct": 0
   },
   "shadow": {
     "ready": true,

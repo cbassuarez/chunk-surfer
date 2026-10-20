@@ -17,7 +17,10 @@ export const ROOF_REN_EVIDENCE_PROPS = Object.freeze({
   GUARANTOR: 'academic-roof-guarantor-trace',
 });
 
-const STAGES = new Set(['new', 'offered', 'accepted', 'carrying', 'returned', 'withheld', 'refused']);
+// In the order the conversation reaches them. Exported for the god menu's REN
+// row, so a debug cycle can never offer a stage this reducer would reject.
+export const ROOF_REN_STAGES = Object.freeze(['new', 'offered', 'accepted', 'carrying', 'returned', 'withheld', 'refused']);
+const STAGES = new Set(ROOF_REN_STAGES);
 const HISTORY = Object.freeze([
   'askedWant', 'askedWarning', 'concern', 'boundary', 'spirits', 'city',
   'uncertainty', 'dissent', 'motives', 'previous', 'terms', 'cost', 'freedom',

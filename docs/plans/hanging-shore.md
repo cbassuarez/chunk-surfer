@@ -7,15 +7,17 @@ far may be local constructions within a much larger surrounding absence.
 
 ## Crossing
 
-The direct route takes approximately 75–80 seconds at an ordinary walk. This is
+The direct route takes about 35 seconds at an ordinary walk (170 m; it was
+374 m and 78 s until 18 October 2026, see "What the building leaves"). This is
 real spatial distance. Walking sideways, circling, stopping, returning to the
 room and leaving again do not advance a hidden completion quota. There is no
 relocation at the bank and no correction of the player's view.
 
-The open door admits actual white. Crossing it causes a sustained exposure that
-gradually recovers into a pale blue-grey field. Turning back does not cancel
-adaptation. Body movement and its close sounds continue throughout. Reduced
-flash settings receive a gentler exposure, with the same physical journey.
+The open door admits actual white, and that is the reveal. Stepping through
+it starts no second exposure: the field outside is simply what the doorway
+showed. (Until 18 October 2026 the crossing replayed the white as a sustained
+full-frame exposure; Seb called that cheap, and it is gone.) Body movement and
+its close sounds continue throughout.
 
 There is no visible walking surface, horizon, weather, drifting debris or
 threatening score. Footing remains dependable. The room and bank stay fixed in
@@ -50,7 +52,7 @@ available lift. It does not cause injury, death or a reset.
 
 ## Acceptance
 
-- Verify the full threshold-to-bank route using actual held movement input.
+- Verify the full threshold-to-bank route using actual continuous movement input.
 - Check arbitrary lateral and backward movement and real bank-end views.
 - Verify that circling cannot complete the crossing and that arrival never
   relocates the body or changes the view.
@@ -64,7 +66,7 @@ available lift. It does not cause injury, death or a reset.
 ## Implementation and verification — 11 October 2026
 
 The direct threshold-to-deck span is 374 metres, or 77.9 seconds at the normal
-4.8 m/s pace. Exposure rises for 1.3 seconds, holds fully white for five seconds,
+4.8 m/s pace. Exposure rose for 1.3 seconds, stayed fully white for five seconds,
 then recovers through second fourteen. Reduced flash bounds the exposure to
 0.18 without shortening the walk or changing adaptation progress.
 
@@ -84,7 +86,7 @@ deck height, body height and view direction, including a mid-ride save.
 Production Chromium keyboard traversal passed in normal and reduced effects:
 19 assertions per route, including continuous walking, circling, actual camera
 elevation, look-back, step-off recovery, recall, the opaque turn and finite ends.
-The held approach measured 4.79 m/s in both runs. Diagnostic warps for viewing the
+The continuous approach measured 4.79 m/s in both runs. Diagnostic warps for viewing the
 bank end and room exterior were excluded from the continuous-route proof.
 Repeated production WebGL presentation cycles also passed independent GL checks.
 The final room-side aperture removes old distant terrain while retaining the
@@ -114,3 +116,46 @@ Source appears when the body rounds the actual projecting course; the release
 uses its real eye-height sightline and capsule clearance. Reversing the walk
 restores the shore using the same geometric condition. Details and current
 validation belong to `docs/plans/exposed-strata.md`.
+
+## Printed, taken back, followed — 18 October 2026
+
+The walk is printed by the game's own acquisition and post pass, like the
+Scene Dock behind it. The shore composite used to repaint smooth material colour
+over the encoded frame and skip post, which made this the one undithered stretch
+of the game. The empty field prints as paper because its air is above the shore's
+white point; giving the void itself grain is a tone decision left open.
+
+Walk 16 metres out of the open door and the Scene Dock is taken back over nine
+seconds: its things flatten into the floor first, then its roof, walls, floor,
+and the door last, each part thinning out through fixed cells of its own surface.
+HUSH comes through as it goes and is left standing where the door was. The room,
+its hall, lights, furniture and leak are gone for good, and saves keep it so.
+
+From there HUSH follows (`src/game/source-hush-follow.js`). He walks the
+player's footsteps, is late to every change, keeps his own pace and stops now and
+then, so his movement never answers the player's one for one. He never closes
+the distance on his own. Before the lift he gives ground when walked at, keeping
+about nine metres. In Source proper, walking at him makes him come to meet you;
+the distance closed stays closed, and contact opens within reach. After a talk he
+steps back and gives room.
+
+## What the building leaves (option B) — 18 October 2026
+
+Seb chose option B of `docs/plans/nothingness-walk-options.md`. The Scene Dock
+moved in along the walk (`SOURCE_HANGING_SHORE.dockZ`, −204 m), so the FOH door
+is 170 m from the deck, 35.4 s at the walk. Source proper did not move: the dock
+frame in `source-landing.js` carries the offset, the landscape origin is still
+placed from the dock's rear wall, and the God presets' origin moved by the same
+amount so their dock stays against the hall. A save made inside the dock before
+the move has its origin adjusted once (`dockMoved`); a save already out on the
+shore, or past the lift, keeps its origin.
+
+Four pieces of the building stand on the void floor at their real size, off the
+line and irregularly spaced (`SOURCE_HANGING_SHORE.pieces`): a practice-floor
+music stand at 40 m, a corridor radiator at 82 m, a chair at 118 m, a speaker
+cabinet at 150 m. They block the body. Each carries its room's tone in
+`audio/source-shore.js`, full inside 1.2 m and gone by 9 m: the practice floor's
+440 against 444, a radiator's hiss and pipe, the hall's air, a speaker's 50 Hz.
+A piece you are 6 m past is gone the next time it is out of view, and stays
+gone (`sourceShore.gone`). Nothing is inspected or picked up. Under all of it
+runs one constant, very low keynote: the shore's own air.

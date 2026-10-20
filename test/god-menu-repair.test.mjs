@@ -277,7 +277,7 @@ test('map debug removal beats legacy fallback, but a real pickup reacquires it',
 
 test('keys, fork and coffee edit their own states without consuming or completing other items', () => {
   const f = inventoryFixture();
-  for (const [id, key, item] of [['chapel-key','chapel','chapel_key'], ['services-key','services-core','services_core_key']]) {
+  for (const [id, key, item] of [['chapel-key','chapel','chapel_key'], ['services-key','services-core','services_core_key'], ['ren-service-key','ren-service','ren-service-key']]) {
     assert.equal(f.set(id, true), true); assert.ok(f.keys.has(key)); assert.ok(f.saved().items.includes(item));
     assert.equal(f.set(id, false), true); assert.ok(!f.keys.has(key)); assert.ok(!f.saved().items.includes(item));
   }
@@ -437,13 +437,15 @@ function tabsFixture() {
   const callbacks = ['closeGodMenu','godRearmStairRun','godResetStairGlobal','godSourceTowerCrossing','godToggleFocusedDoor',
     'godRunDoorClosers','godToggleDoorDebug','godResetDoors','godResetFx','beginTaken','godColdOpen','godPostDoorRuntime',
     'godOpenCausalReturnFork','openCredits','godAbortBattle','beginConfrontation','openEndingChoice','restartDesktopAudio',
-    'natatoriumBattle','practiceBattle','hallBattle','godCycleHushBody'];
+    'natatoriumBattle','practiceBattle','hallBattle','godCycleHushBody',
+    'godSetRoofAccess','godCycleRenStage','godResetRen','godResetEarRoom'];
   for (const name of callbacks) ctx[name] = noop;
   Object.assign(ctx, { godActionRow, godStopRows, godLocationValue, GOD_LOCATION_HOOKS, storyMode: true, inRogue: true, FP,
     SCENE_DOCK_LABEL: 'GET-IN', godInventory: () => inventory, LOSABLE: ['recorder','torch','map','radio'],
     TARGETS, roomLabel:id=>id, LOOK_PROFILE_IDS: ['explore','calm','source'], PRACTICE_HAUNT: {CHAIRS:'chairs',HUSH:'hush',TENANT:'tenant'},
     ENDING_ARRIVAL: {AGREED:'agreed',DEFEATED:'defeated',TIMED_OUT:'timed-out',ESCAPED:'escaped',CARRIED:'carried'},
     CHUNK_SURF_ENDING_ID:'surfaced', endingManifest: () => ({cutscene:{beats:[{id:'fixture'}]}}), ENDING_AUDIO_TODO:[],
+    godRoofGateCheck: () => 'WOULD OPEN', godEarRoomValue: () => 'AFTER B3', roofRenState: () => ({ stage: 'new' }),
   });
   vm.runInContext(functionSource('godTabs'), ctx);
   return { ...f, inventory, tabs: () => ctx.godTabs() };
@@ -477,6 +479,7 @@ test('production location rows route a cold click to the requested destination, 
 test('production take row grants both single rooms and the work order through the real deck', () => {
   const f = tabsFixture(); let saved = {};
   Object.assign(f.ctx, { ROOM_CELLS, godInventoryBlocked: () => '', takePlaceAt: (x,y) => `mark ${x},${y}`, reconcileChapelTowerTakes: () => false,
+    syncStopListeningProps: () => {},
     saveCommit: patch => { saved = { ...saved, ...patch }; } });
   vm.runInContext(functionSource('godSetTakes') + '\nfunction godSetAllTakes(on){return godSetTakes(TARGETS,on);}', f.ctx);
   const rows = f.tabs().find(tab => tab.id === 'inventory').rows;
@@ -586,14 +589,14 @@ test('equipment refresh applies actual fitted-kit recording modifiers and refres
     activeDifficulty:null,activeKitEffects:null,PRES:{configurePresence:noop},REC,
     witnessEditionStatus:()=>({endingIds:[]}),setRecorderAppearance:()=>calls.push('appearance'),applyAudioSettings:()=>calls.push('audio'),
     FP,planName:'conservatory',syncKeyCabinetProps:()=>calls.push('keys'),syncStoryObjectProps:()=>calls.push('story'),
-    syncSheetMusicProps:()=>calls.push('sheets'),syncPlantIncidentProps:()=>calls.push('plant'),syncMarbleHeadProps:()=>calls.push('marble'),
+    syncSheetMusicProps:()=>calls.push('sheets'),syncPlantIncidentProps:()=>calls.push('plant'),syncMarbleHeadProps:()=>calls.push('marble'),syncStopListeningProps:()=>calls.push('ear-room'),
     syncDroppedRadioProp:()=>calls.push('radio'),facilityMapCache:{},usingSourceSpace:()=>false,usingSpecialSpace:()=>false,
     refreshWorldProps:()=>calls.push('render'),
   });
   ctx.godInventoryChanged('kit-microphone');
   assert.equal(REC.recordistDifficulty().takeSecondsScale,effects.takeDurationScale);
   assert.equal(REC.recordistDifficulty().recordingNoiseScale,effects.recordingNoiseScale);
-  assert.deepEqual(calls,['appearance','audio','keys','story','sheets','plant','marble','radio','render']);
+  assert.deepEqual(calls,['appearance','audio','keys','story','sheets','plant','marble','radio','ear-room','render']);
   f.set('kit-fitted',false);ctx.godInventoryChanged('kit-fitted');assert.equal(REC.recordistDifficulty().takeSecondsScale,1);
 });
 

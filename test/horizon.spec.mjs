@@ -201,9 +201,8 @@ function onTape({marbleEyes=null,completions=null}={}) {
 {
   const built = buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.EXPOSED_BATTLE, { seed: 4417 });
   const runtime = createSourceSpaceRuntime({ initialState: built.state });
-  const origin = runtime.state().landscapeOrigin;
-  runtime.setPlayerPosition({ x: origin.x - 24, y: origin.y - 930, facing: 0 });
-  assert.ok(runtime.beginHushContact(), 'the service court offers the voluntary conversation');
+  runtime.setPlayerPosition(built.position);
+  assert.ok(runtime.beginHushContact(), 'HUSH within reach offers the voluntary conversation');
   assert.equal(runtime.resolveHushContactChoice('contact.warning').combat, false);
   assert.equal(runtime.resolveHushContactChoice('contact.confirm').combat, true);
   const lost = runtime.failFinalEncounter();

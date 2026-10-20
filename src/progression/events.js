@@ -30,7 +30,7 @@ export const EVENT_TYPES = Object.freeze({
   POWER_CIRCUIT_CHANGED: 'power.circuit.changed',
   CREDITS_VIEWED: 'credits.viewed',
   ENDING_COMMITTED: 'ending.committed',
-  RUN_FINISHED: 'run.finished', CAUSAL_TAPE_PROMOTED: 'causal.tape.promoted',
+  RUN_FINISHED: 'run.finished', CAUSAL_TAPE_PROMOTED: 'causal.tape.promoted', DREAM_RESOLVED: 'dream.resolved',
 });
 
 const known = new Set(Object.values(EVENT_TYPES));
@@ -65,6 +65,7 @@ const validators = Object.freeze({
   [EVENT_TYPES.COFFEE_DRUNK]: () => true,
   [EVENT_TYPES.POWER_CIRCUIT_CHANGED]: (p) => POWER_CIRCUIT_IDS.includes(p?.circuit) && typeof p?.live === 'boolean',
   [EVENT_TYPES.CREDITS_VIEWED]: () => true,
+  [EVENT_TYPES.DREAM_RESOLVED]: (p) => ['spared', 'touched'].includes(p?.outcome),
   [EVENT_TYPES.ENDING_COMMITTED]: (p) => ENDING_IDS.includes(p?.endingId),
   [EVENT_TYPES.CAUSAL_TAPE_PROMOTED]: (p) => typeof p?.contentHash === 'string' && p.contentHash.length > 0,
   [EVENT_TYPES.RUN_FINISHED]: (p) => !!p?.summary && typeof p.summary === 'object',

@@ -1,10 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { sourceShoreBounds } from '../src/data/source-hanging-shore.js';
 import { sourceStrataEntryAt } from '../src/data/source-exposed-strata.js';
 import { horizonCamera } from '../src/render/horizon3d.js';
 import { SOURCE_SHORE_RANGE,SOURCE_SHORE_AIR,SOURCE_SHORE_COMPOSITE_FRAG,SOURCE_SHORE_MATERIAL_FRAG,
-  sourceShoreGeometry,sourceShoreRenderActive,sourceShoreBoundaryVisible,sourceShoreWhiteout,
+  sourceShoreGeometry,sourceShoreRenderActive,sourceShoreBoundaryVisible,
   sourceShoreApertureRay } from '../src/render/source-shore3d.js';
 
 const frame=(extra={})=>({...sourceShoreBounds({x:22,y:-104}),active:true,outside:true,proper:false,...extra});
@@ -103,22 +104,16 @@ test('void optics are scoped outside and boundary geometry can persist independe
   assert.equal(sourceShoreBoundaryVisible(frame({active:false,outside:false,proper:true,visible:false})),false);
   assert.equal(SOURCE_SHORE_AIR.length,3);
   assert.doesNotMatch(SOURCE_SHORE_COMPOSITE_FRAG.replace(/\/\/[^\n]*/g,''),/uTorch|uRain|uPitch|rayY|horizon|sin\(/,'empty pixels have no directional or torch-dependent treatment');
-  assert.match(SOURCE_SHORE_COMPOSITE_FRAG,/mix\(uAir,received,coverage\)/);
+  assert.match(SOURCE_SHORE_COMPOSITE_FRAG,/mix\(uAir,material,coverage\)/);
   assert.match(SOURCE_SHORE_MATERIAL_FRAG,/1\.0-smoothstep\(reach\*\.62,reach,distanceM\)/,'the actual surface beam has a finite range');
 });
 
-test('reduced flash bounds the physical whiteout without changing adaptation progress',()=>{
-  const f=frame({whiteout:1,exposureElapsed:3,recovery:0});
-  const before=structuredClone(f);
-  assert.equal(sourceShoreWhiteout(f),1,'the authored normal crossing can still become fully white');
-  assert.equal(sourceShoreWhiteout(f,{reduceFlash:true}),.18,'the gentler crossing always retains visible geometry');
-  for(const veil of [0,.1,.25,.7,1]){
-    assert.equal(sourceShoreWhiteout({...f,whiteout:veil}),veil);
-    assert.equal(sourceShoreWhiteout({...f,whiteout:veil},{reduceFlash:true}),veil*.18);
-  }
-  assert.deepEqual(f,before,'accessibility never resets the physical adaptation clock or gaze-independent state');
-  assert.equal(sourceShoreWhiteout({...f,whiteout:4},{reduceFlash:true}),.18);
-  assert.equal(sourceShoreWhiteout({...f,whiteout:-1}),0);
+test('the walk is printed by the shared acquisition and post, like the room it leaves',()=>{
+  const r3d=readFileSync(new URL('../src/render/r3d.js',import.meta.url),'utf8');
+  const body=r3d.slice(r3d.indexOf('function drawSourceShore('),r3d.indexOf('function drawSourceVoidPhysical('));
+  assert.match(body,/presentThroughPost\(runPixelMeshPass\(voidState,now\)\)/,'the shore no longer presents its encoded frame through post');
+  assert.doesNotMatch(r3d,/uSourceShore\b/,'the post pass still has a shore bypass');
+  assert.doesNotMatch(SOURCE_SHORE_COMPOSITE_FRAG,/uWhiteout|received/,'the composite still repaints smooth colour or a crossing veil over the encode');
 });
 
 test('the room-side opening hides distant terrain while preserving a leaf, jamb and threshold in front',()=>{

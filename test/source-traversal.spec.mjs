@@ -4,8 +4,12 @@ import { readFile } from 'node:fs/promises';
 import { SOURCE_CHUTES, SOURCE_HORIZON, SOURCE_LIFTS, SOURCE_TIERS } from '../src/data/source-level.js';
 import { buildChunkSurfGodPreset, CHUNK_SURF_GOD_PRESET } from '../src/game/chunk-surf-god.js';
 import { createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
+import { SOURCE_HANGING_SHORE } from '../src/data/source-hanging-shore.js';
+import { CELL } from '../src/data/floorplan/legend.js';
 
-const ORIGIN = { x: 0, y: -252 };
+// The God presets' landscape origin, and the Scene Dock's place along the walk.
+const ORIGIN = buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.FIRST_LIFT, { seed: 4417 }).state.landscapeOrigin;
+const DOCK = SOURCE_HANGING_SHORE.dockZ / CELL;
 
 const runtimeSource=await readFile(new URL('../src/game/source-space-runtime.js',import.meta.url),'utf8');
 const mainSource=await readFile(new URL('../src/main.js',import.meta.url),'utf8');
@@ -146,9 +150,9 @@ assert.doesNotMatch(runtimeSource,/emitNoise|MONITOR\./,'Source weather, contact
   const built = buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.FIRST_LIFT, { seed: 4417 });
   const runtime = createSourceSpaceRuntime({ initialState: built.state });
 
-  // From past the Scene Dock's far wall (the room ends around local -12; its
-  // only way out is the FOH leaf off the centre line) down to the perimeter.
-  for (let y = ORIGIN.y - 22; y >= ORIGIN.y - 330; y -= 1) {
+  // From past the Scene Dock's far wall (the room ends 12 cells before its
+  // centre; its only way out is the FOH leaf off the centre line) to the deck.
+  for (let y = ORIGIN.y + DOCK - 22; y >= ORIGIN.y + DOCK - 330; y -= 1) {
     const move = runtime.geometry.canStep(ORIGIN.x, y, ORIGIN.x, y - 1);
     assert.equal(move.ok, true, `the spine is impassable at ${y - ORIGIN.y}`);
     assert.equal(move.via, undefined, `the spine committed a ride at ${y - ORIGIN.y}`);
@@ -168,12 +172,14 @@ assert.doesNotMatch(runtimeSource,/emitNoise|MONITOR\./,'Source weather, contact
   runtime.setPlayerPosition(built.position);
   runtime.tick(6, { px: built.position.x, py: built.position.y, facing: built.position.facing });
   assert.equal(runtime.hushMode().colliding, false,
-    'meeting the human trace never turns proximity into an involuntary catch');
-  const origin=runtime.state().landscapeOrigin;
-  const contactAt={ x: origin.x - 24, y: origin.y - 922, facing: 0 };
+    'meeting HUSH never turns proximity into an involuntary catch');
+  // He followed you in and waits behind you; stand within reach, facing him.
+  const followed=runtime.hushFollowFrame();
+  assert.equal(followed.visible,true,'HUSH did not follow you into Source proper');
+  const contactAt={ x: followed.x, y: followed.y + 5, facing: 0 };
   runtime.setPlayerPosition(contactAt);
-  assert.equal(runtime.hushMode().contactAvailable,true,'walking into service-court speaking range offers contact');
-  const waitingTrace={active:true,x:contactAt.x,y:contactAt.y-8};
+  assert.equal(runtime.hushMode().contactAvailable,true,'walking into speaking range of him offers contact');
+  const waitingTrace={active:true,x:followed.x,y:followed.y};
   assert.equal(runtime.focusAt(contactAt.x,contactAt.y,contactAt.facing,waitingTrace)?.kind,'hush',
     'facing the waiting trace does not acquire the visible figure');
   assert.equal(runtime.inspectFocused(contactAt.x,contactAt.y,contactAt.facing,waitingTrace)?.event,'hush-contact',
@@ -195,11 +201,10 @@ assert.doesNotMatch(runtimeSource,/emitNoise|MONITOR\./,'Source weather, contact
 {
   const built=buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.EXPOSED_BATTLE,{seed:4417});
   const runtime=createSourceSpaceRuntime({initialState:built.state});
-  const origin=runtime.state().landscapeOrigin;
-  runtime.setPlayerPosition({x:origin.x-24,y:origin.y-930,facing:0});
+  runtime.setPlayerPosition(built.position);
   assert.equal(runtime.finalEncounterRequest().battleAvailable,true);
   const insights=[...runtime.state().sourceContacts.insights];
-  assert.ok(runtime.beginHushContact(),'the service court offers the voluntary conversation');
+  assert.ok(runtime.beginHushContact(),'HUSH within reach offers the voluntary conversation');
   assert.equal(runtime.resolveHushContactChoice('contact.warning').combat,false);
   assert.equal(runtime.resolveHushContactChoice('contact.confirm').combat,true);
   // LOSING CONTACT COSTS THE RUN. It used to drop him one plateau and then put

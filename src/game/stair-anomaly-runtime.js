@@ -213,13 +213,14 @@ export function createStairAnomalyRuntime({
     if (stageChanged) onStage({ stage: nextStage, environment: selected, player: { ...player } });
   }
 
-  function propInstances({ reducedDread = false } = {}) {
+  function propInstances() {
     const out = [];
     // The impossible stair repeats the same deliberately bare circulation
     // language as the real flights. Its practical-light rig remains invisible
     // geometry; decorative rails, doors, pendants, and fixtures would create
     // false collision cues in a space where the traversal itself is uncanny.
-    if (!reducedDread && ledger.stage === STAIR_ANOMALY_STAGE.SHADOW) {
+    // Reduce Dread does not take the figure away; it only quiets the steps.
+    if (ledger.stage === STAIR_ANOMALY_STAGE.SHADOW) {
       const depth = clamp(-player.y + 14, STAGE_DEPTHS[2], STAIR_ANOMALY_TOTAL_CELLS - 4);
       out.push({
         id: 'stair-anomaly-shadow-only', mesh: 'stair_shadow_figure', x: 0,

@@ -50,7 +50,8 @@ function enter(actor,phase){return {...actor,phase,elapsed:0};}
 
 export function stepConservatoryAdversaries(previous,input={}){
   const dt=clamp(input.dt,0,.1),p=input.player||{x:0,y:0},group=input.group||'';
-  const busy=!!input.busy||!!input.reducedDread;
+  // Reduce Dread damps spikes, never bodies: it does not freeze these two.
+  const busy=!!input.busy;
   let costume={...(previous?.costume||freshConservatoryAdversaries().costume)};
   let held={...(previous?.held||freshConservatoryAdversaries().held)};
   const events=[];

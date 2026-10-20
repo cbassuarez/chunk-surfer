@@ -97,7 +97,7 @@ assert.match(main,/function clearSourceRuntime\([^)]*\)[\s\S]*?r3dSetSourceWhite
     'the first nothingness receives an emergency wash');
   assert.ok(runtime.localLights().every((light)=>light.kind!=='emergency'),
     'the first nothingness submits a red emitter');
-  assert.equal(runtime.sourceVoidFrame().whiteout,1,'the threshold has no sustained blinding interval');
+  assert.ok(!runtime.sourceVoidFrame().whiteout,'stepping through the open leaf replayed the white as an exposure');
 
   const onset=createSourceSpaceRuntime({initialState:{
     ...runtime.state(),

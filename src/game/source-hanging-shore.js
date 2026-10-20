@@ -20,8 +20,13 @@ export function normalizeSourceShore(value = null) {
     falling: !!state.falling,
     fallVelocity: clamp(state.fallVelocity, 0, 30),
     boarded: !!state.boarded && !state.falling,
-    adapted: !!state.adapted,
-    exposureElapsed: clamp(state.exposureElapsed, 0, SHORE.adaptationSeconds),
+    // The body has ridden the deck to the ledge. Saves from before this field
+    // carry the retired `adapted` instead, which only a walked shore ever set.
+    ridden: !!state.ridden || !!state.adapted,
+    // How far the Scene Dock has been taken back, 0 to 1. It only goes one way.
+    roomTaken: clamp(state.roomTaken, 0, 1),
+    // The pieces of the building already gone behind you.
+    gone: [...new Set((Array.isArray(state.gone) ? state.gone : []).filter((id) => typeof id === 'string'))],
   };
 }
 
@@ -32,11 +37,7 @@ export function createSourceHangingShore(initial = null) {
   const onDeck = (x, z) => sourceShoreContains(SHORE.lift, x, z, BODY_MARGIN);
   const underneath = (x, z) => sourceShoreContains(SHORE.lift, x, z, -BODY_MARGIN);
 
-  function updatePosition({ x, z, surfaceFloor = 0, firstCrossing = false }) {
-    if (firstCrossing && !state.adapted) {
-      state.adapted = true;
-      state.exposureElapsed = 0;
-    }
+  function updatePosition({ x, z, surfaceFloor = 0 }) {
     const attached = onDeck(x, z) && (state.boarded || Math.abs(state.bodyFloor - state.floor) < .28);
     if (attached && !state.falling) {
       state.boarded = true;
@@ -50,9 +51,6 @@ export function createSourceHangingShore(initial = null) {
 
   function tick(dt, { x, z, surfaceFloor = 0 } = {}) {
     const elapsed = Number.isFinite(Number(dt)) ? Math.max(0, Number(dt)) : 0;
-    // Adaptation follows elapsed time, including a stationary body and a long
-    // resumed frame. It is never a travel quota or a repeated doorway effect.
-    if (state.adapted) state.exposureElapsed = Math.min(SHORE.adaptationSeconds, state.exposureElapsed + elapsed);
     let remaining = Math.min(elapsed, 10);
     while (remaining > 0) {
       const step = Math.min(remaining, 1 / 60);
@@ -101,6 +99,8 @@ export function createSourceHangingShore(initial = null) {
           state.phase = 'upper';
         }
       }
+      // The rear bar lets him step onto the ledge 0.3m short of the top.
+      if (state.boarded && state.floor >= SHORE.lift.top - .3) state.ridden = true;
       if (state.boarded) state.bodyFloor = state.floor;
       else if (!state.falling) state.bodyFloor = surfaceFloor;
     }
@@ -110,5 +110,13 @@ export function createSourceHangingShore(initial = null) {
   function frame() {
     return { ...state, moving: state.phase === 'rising' || state.phase === 'lowering', progress: state.floor / SHORE.lift.top };
   }
-  return { frame, snapshot: () => ({ ...state }), updatePosition, tick };
+  function takeRoom(amount) {
+    state.roomTaken = clamp(state.roomTaken + Math.max(0, Number(amount) || 0), 0, 1);
+    return state.roomTaken;
+  }
+  function takePiece(id) {
+    if (!state.gone.includes(id)) state.gone = [...state.gone, id];
+    return state.gone;
+  }
+  return { frame, snapshot: () => ({ ...state, gone: [...state.gone] }), updatePosition, tick, takeRoom, takePiece };
 }

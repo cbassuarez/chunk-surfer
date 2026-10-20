@@ -12,18 +12,26 @@ export const SOURCE_SHORE_AIR = Object.freeze([.73, .79, .80]);
 const STEEL = [.16, .20, .21], MASONRY = [.29, .30, .28], DARK = [.085, .11, .12];
 const clamp = (n, lo=0, hi=1) => Math.max(lo, Math.min(hi, Number(n)||0));
 
+// THE ROOM IS TAKEN BACK IN ORDER: roof, back, sides, front, floor, and the
+// door last. Each part thins out over TAKE_WINDOW of the take, starting here.
+const TAKE_WINDOW = .22;
+const TAKE_ORDER = [[/^room-roof-seam-/,.10],[/^room-roof$/,.16],[/^room-back$/,.26],[/^room-(west|east)$/,.34],
+  [/^room-corner-/,.40],[/^room-front-/,.48],[/^room-underside$/,.56],[/^room-door-head$/,.62],
+  [/^room-head-lamp$/,.70],[/^room-door-oak-head$/,.74],[/^room-door-jamb-/,.78]];
+export function sourceShoreTakeOrder(id) {
+  for (const [pattern, at] of TAKE_ORDER) if (pattern.test(id)) return at;
+  return -1;
+}
+// Room parts carry 10 + their order in the lift's motion attribute; nothing
+// in the room moves, and the lift's values stay below 4.
+const motionValue = (id, moving) => { const at = sourceShoreTakeOrder(id); return at >= 0 ? 10 + at : Number(moving) || 0; };
+
 export function sourceShoreRenderActive(frame) {
   return !!(frame?.active && frame.outside && !frame.proper && frame.room && frame.bank && frame.lift);
 }
 
 export function sourceShoreBoundaryVisible(frame) {
   return !!(frame?.visible && frame.proper && frame.room && frame.bank && frame.lift);
-}
-
-export function sourceShoreWhiteout(frame,{reduceFlash=false}={}) {
-  // The adaptation clock remains physical and durable in both settings. The
-  // accessibility mode bounds the veil, leaving geometry continuously visible.
-  return clamp(frame?.whiteout)*(reduceFlash?.18:1);
 }
 
 // The ordinary room renders through its own architecture pass. Its doorway
@@ -132,10 +140,12 @@ uniform float uImported,uLiftFloor,uMoving,uGateOpen,uGateTravel;
 uniform vec3 uBase;
 out vec3 vWorld,vNormal,vBase;
 out vec2 vUv;
-out float vGrain,vLocalHeight;
+out float vGrain,vLocalHeight,vTake;
 void main(){
   vec4 world=uModel*vec4(aPosition,1.0);
   float moving=mix(aMoving,uMoving,uImported);
+  vTake=moving>9.5?moving-10.0:-1.0;
+  if(vTake>=0.0)moving=0.0;
   world.y+=uLiftFloor*min(moving,1.0);
   if(moving>1.5)world.x+=(moving<2.5?-1.0:1.0)*uGateOpen*uGateTravel;
   vWorld=world.xyz;vNormal=normalize(transpose(inverse(mat3(uModel)))*aNormal);
@@ -147,7 +157,8 @@ export const SOURCE_SHORE_MATERIAL_FRAG=`#version 300 es
 precision highp float;
 in vec3 vWorld,vNormal,vBase;
 in vec2 vUv;
-in float vGrain,vLocalHeight;
+in float vGrain,vLocalHeight,vTake;
+uniform float uRoomTaken;
 uniform vec3 uEye,uForward,uTorchColour,uEmissive;
 uniform vec4 uTorch; // power, range multiplier, penumbra cosine, hotspot cosine
 uniform float uTorchSpill,uShoulder,uGlow,uMetallic,uRoughness,uUseTex,uClipTop,uRecordingExposure;
@@ -161,6 +172,13 @@ void main(){
   // The borrowed catwalk's perimeter rails belong to a belfry. Keep its real
   // grating and underframe; this lift has its own open-ended safety railwork.
   if(uClipTop>0.0&&vLocalHeight>uClipTop)discard;
+  // A part being taken thins out through fixed 14cm cells of its own surface,
+  // so the print loses it piece by piece and nothing crawls as he moves.
+  if(vTake>=0.0){
+    float going=clamp((uRoomTaken-vTake)/${TAKE_WINDOW.toFixed(2)},0.0,1.0);
+    float cell=fract(sin(dot(floor(vWorld*7.0),vec3(12.9898,78.233,37.719)))*43758.5453);
+    if(cell<going)discard;
+  }
   vec3 toEye=uEye-vWorld;float distanceM=length(toEye);
   vec3 facing=normalize(toEye),n=normalize(vNormal);
   n=dot(n,facing)<0.0?-n:n;
@@ -222,7 +240,7 @@ precision highp float;
 uniform sampler2D uHull,uHullDepth,uHullMarks,uProps,uPropDepth,uPropMarks,uEncoded;
 uniform vec2 uResolution,uHullRange,uPropRange;
 uniform vec3 uAir;
-uniform float uFinal,uWhiteout,uBoundary;
+uniform float uFinal,uBoundary;
 layout(location=0) out vec4 o;
 layout(location=1) out vec4 oMark;
 float linearDepth(float d,vec2 nf){float z=d*2.0-1.0;return 2.0*nf.x*nf.y/max(.0001,nf.y+nf.x-z*(nf.y-nf.x));}
@@ -239,19 +257,9 @@ void main(){
   oMark=useProp?vec4(0.0,.5,.5,texture(uPropMarks,uv).a):texture(uHullMarks,uv);
   float coverage=useProp?prop.a:hull.a;
   vec3 material=displayColour(useProp?prop.rgb:hull.rgb);
-  // The game's encode remains on architecture. Nothing in the surrounding
-  // field receives noise, torch, a floor gradient, weather or a horizon.
+  // Nothing in the surrounding field receives torch, a floor gradient, weather
+  // or a horizon. The game's acquisition then prints field and architecture alike.
   vec3 colour=mix(uAir,material,coverage);
-  if(uFinal>.5){
-    // Preserve the actual material response. A full Source phosphor palette
-    // turns the closed steel bank into a pale green card; here the instrument
-    // supplies its engraved dark detail without replacing the object's colour.
-    float recorded=dot(texture(uEncoded,uv).rgb,vec3(.2126,.7152,.0722));
-    float printed=smoothstep(.055,.48,recorded);
-    vec3 received=material*mix(.64,1.0,printed);
-    colour=mix(uAir,received,coverage);
-    colour=mix(colour,vec3(1.0),uWhiteout);
-  }
   if(uBoundary>.5)colour=mix(texture(uEncoded,uv).rgb,material,hasHull&&!useProp?hull.a:0.0);
   float depth=useProp?pd:hd;
   o=vec4(colour,uFinal>.5?1.0:mix(1.0,1.0/(1.0+depth*.14),coverage));
@@ -303,7 +311,7 @@ function uploadGeometry(frame,boundaryOnly=false){
     geometry.hardware=geometry.hardware.filter(h=>/^(lift-|ledge-)/.test(h.id));
   }
   for(const b of geometry.boxes)for(const [n,...corners]of FACES)for(const k of [0,1,2,0,2,3]){
-    const p=corners[k];vertices.push(b.minX+p[0]*(b.maxX-b.minX),b.minY+p[1]*(b.maxY-b.minY),b.minZ+p[2]*(b.maxZ-b.minZ),...n,...b.colour,b.grain,Number(b.moving)||0);
+    const p=corners[k];vertices.push(b.minX+p[0]*(b.maxX-b.minX),b.minY+p[1]*(b.maxY-b.minY),b.minZ+p[2]*(b.maxZ-b.minZ),...n,...b.colour,b.grain,motionValue(b.id,b.moving));
   }
   for(const piece of geometry.pieces)for(let j=0;j<piece.i.length;j+=3){
     const points=piece.i.slice(j,j+3).map(index=>piece.p.slice(index*3,index*3+3));
@@ -343,7 +351,10 @@ export function sourceShoreDraw({frame,camX,camY,camZ,yaw=0,pitch=0,width:w,heig
   const cp=Math.cos(pitch),ty=yaw+(Number(torch.yawOffset)||0),forward=[Math.sin(ty)*cp,Math.sin(pitch),-Math.cos(ty)*cp];
   gl.bindFramebuffer(gl.FRAMEBUFFER,hullFbo);gl.drawBuffers([gl.COLOR_ATTACHMENT0,gl.COLOR_ATTACHMENT1]);gl.viewport(0,0,w,h);gl.disable(gl.BLEND);gl.enable(gl.DEPTH_TEST);gl.depthMask(true);gl.depthFunc(gl.LEQUAL);gl.disable(gl.CULL_FACE);gl.clearColor(0,0,0,0);gl.clearDepth(1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
   gl.useProgram(materialProgram);gl.uniformMatrix4fv(mu('uView'),false,camera.view);gl.uniformMatrix4fv(mu('uProjection'),false,camera.projection);gl.uniformMatrix4fv(mu('uModel'),false,IDENTITY);gl.uniform3f(mu('uEye'),camX,camY,camZ);gl.uniform3fv(mu('uForward'),forward);gl.uniform3fv(mu('uTorchColour'),torch.color||[1,.95,.86]);gl.uniform4f(mu('uTorch'),clamp(torch.power),clamp(torch.reach,.35,1.25),clamp(torch.coneInner??.84,.72,.97),clamp(torch.coneOuter??.96,.75,.985));gl.uniform1f(mu('uTorchSpill'),clamp(torch.spill??.08,0,.12));gl.uniform1f(mu('uShoulder'),clamp(torch.shoulder??.75,0,2));gl.uniform1f(mu('uLiftFloor'),Number(frame.lift.floor)||0);gl.uniform1f(mu('uImported'),0);gl.uniform1f(mu('uMoving'),0);gl.uniform1f(mu('uGlow'),0);gl.uniform1f(mu('uUseTex'),0);gl.uniform1f(mu('uMetallic'),.1);gl.uniform1f(mu('uRoughness'),.8);gl.uniform3f(mu('uEmissive'),0,0,0);
-  gl.uniform4fv(mu('uLights[0]'),new Float32Array(geometry.lights.flatMap(l=>[l.x,l.y,l.z,l.power])));
+  // The doorway's own lamp goes out with the room.
+  const roomLeft=1-clamp(frame.roomTaken);
+  gl.uniform4fv(mu('uLights[0]'),new Float32Array(geometry.lights.flatMap((l,i)=>[l.x,l.y,l.z,l.power*(i===0?roomLeft:1)])));
+  gl.uniform1f(mu('uRoomTaken'),clamp(frame.roomTaken));
   gl.uniform1f(mu('uRecordingExposure'),boundaryOnly?clamp(recordingExposure,1,12):1);
   gl.uniform1f(mu('uPrintedPolarity'),0);gl.uniform1f(mu('uPrintedCoverage'),0);
   gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,sourceTexture());gl.uniform1i(mu('uSourceTex'),1);gl.activeTexture(gl.TEXTURE0);
@@ -353,17 +364,17 @@ export function sourceShoreDraw({frame,camX,camY,camZ,yaw=0,pitch=0,width:w,heig
   gl.uniform1f(mu('uImported'),1);
   for(const instance of geometry.hardware){
     const entry=pack?.catalog?.get(instance.name);if(!entry)continue;
-    gl.uniformMatrix4fv(mu('uModel'),false,model(instance,entry.nodeMatrix));gl.uniform1f(mu('uMoving'),instance.moving?1:0);gl.uniform1f(mu('uGlow'),instance.glow);gl.uniform1f(mu('uClipTop'),instance.name==='tower_catwalk'?.24:0);
+    gl.uniformMatrix4fv(mu('uModel'),false,model(instance,entry.nodeMatrix));gl.uniform1f(mu('uMoving'),motionValue(instance.id,instance.moving));gl.uniform1f(mu('uGlow'),instance.glow*(sourceShoreTakeOrder(instance.id)>=0?roomLeft:1));gl.uniform1f(mu('uClipTop'),instance.name==='tower_catwalk'?.24:0);
     for(const p of entry.primitives){const print=printedSurfaceDescriptor(p.printedSurface);gl.uniform1f(mu('uPrintedPolarity'),print?.polarity==='dark-on-light'?1:print?2:0);gl.uniform1f(mu('uPrintedCoverage'),print?.coverage==='solid'?2:print?1:0);gl.uniform3fv(mu('uBase'),p.base.slice(0,3));gl.uniform3fv(mu('uEmissive'),p.emissive||[0,0,0]);gl.uniform1f(mu('uMetallic'),p.metallic??.1);gl.uniform1f(mu('uRoughness'),p.roughness??.8);gl.uniform1f(mu('uUseTex'),p.texture?1:0);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,p.texture);gl.uniform1i(mu('uTex'),0);drawImportedPrimitive(p);sourceShoreStats.hardwareDraws++;sourceShoreStats.triangles+=p.count/3;}
   }
   gl.bindVertexArray(null);gl.disable(gl.DEPTH_TEST);sourceShoreStats.active=true;return true;
 }
 
-export function sourceShoreComposite({target,props,encoded=null,frame,boundaryOnly=false,reduceFlash=false}={}){
+export function sourceShoreComposite({target,props,encoded=null,boundaryOnly=false}={}){
   if(!hullFbo||!props?.ready)return null;
   const final=!!encoded;gl.bindFramebuffer(gl.FRAMEBUFFER,final?finalFbo:target);gl.drawBuffers(final?[gl.COLOR_ATTACHMENT0]:[gl.COLOR_ATTACHMENT0,gl.COLOR_ATTACHMENT1]);gl.viewport(0,0,width,height);gl.disable(gl.DEPTH_TEST);gl.disable(gl.BLEND);gl.bindVertexArray(null);gl.useProgram(compositeProgram);
   for(const [unit,name,t]of [[0,'uHull',hullColour],[1,'uHullDepth',hullDepth],[2,'uProps',props.color],[3,'uPropDepth',props.depth],[4,'uEncoded',encoded||hullColour],[5,'uHullMarks',hullMarks],[6,'uPropMarks',props.marks||props.color]]){gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,t);gl.uniform1i(cu(name),unit);}
-  gl.uniform2f(cu('uResolution'),width,height);gl.uniform2f(cu('uHullRange'),SOURCE_SHORE_RANGE.near,SOURCE_SHORE_RANGE.far);gl.uniform2f(cu('uPropRange'),props.near,props.far);gl.uniform3fv(cu('uAir'),SOURCE_SHORE_AIR);gl.uniform1f(cu('uFinal'),final?1:0);gl.uniform1f(cu('uBoundary'),boundaryOnly?1:0);gl.uniform1f(cu('uWhiteout'),sourceShoreWhiteout(frame,{reduceFlash}));gl.drawArrays(gl.TRIANGLES,0,3);return final?finalColour:null;
+  gl.uniform2f(cu('uResolution'),width,height);gl.uniform2f(cu('uHullRange'),SOURCE_SHORE_RANGE.near,SOURCE_SHORE_RANGE.far);gl.uniform2f(cu('uPropRange'),props.near,props.far);gl.uniform3fv(cu('uAir'),SOURCE_SHORE_AIR);gl.uniform1f(cu('uFinal'),final?1:0);gl.uniform1f(cu('uBoundary'),boundaryOnly?1:0);gl.drawArrays(gl.TRIANGLES,0,3);return final?finalColour:null;
 }
 
 export function sourceShoreDebug(){return {...sourceShoreStats,air:[...SOURCE_SHORE_AIR],bounds:geometry?geometry.boxes.filter(b=>['room-back','room-underside','receiving-ledge'].includes(b.id)):[],strata:geometry?.pieces.map(p=>({id:p.id,triangles:p.i.length/3}))||[]};}

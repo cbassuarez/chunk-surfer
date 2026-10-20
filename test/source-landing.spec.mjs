@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { SOURCE_HANGING_SHORE } from '../src/data/source-hanging-shore.js';
 import { readFile } from 'node:fs/promises';
 
 import { CONSERVATORY_PROPS } from '../src/data/conservatory-props.js';
@@ -92,7 +93,7 @@ const rearSolid = sourceLandingLocalFromAuthored({ x: SOURCE_GET_IN_BOUNDS.minX 
 assert.equal(sourceLandingCellAt(rearSolid.x, rearSolid.y).solid, true, 'only the aperture opens');
 assert.ok(SOURCE_LANDING_HUSH_LOCAL.y > SOURCE_LANDING_ENTRY_LOCAL.y);
 assert.ok(SOURCE_LANDING_OPENING_LOCAL.y < SOURCE_LANDING_ENTRY_LOCAL.y);
-assert.equal(SOURCE_LANDING_FIELD_EDGE_LOCAL_Y,-16,'the field begins at the FOH wall, not behind the room');
+assert.equal(SOURCE_LANDING_FIELD_EDGE_LOCAL_Y,-16+SOURCE_HANGING_SHORE.dockZ/CELL,'the field begins at the FOH wall, not behind the room');
 
 assert.deepEqual(sourceEmergencyFrame(1,{reducedEffects:true}),sourceEmergencyFrame(99,{reducedEffects:true}),'reduced effects hold a stable red wash');
 assert.notEqual(sourceEmergencyFrame(.1).cycle,sourceEmergencyFrame(.3).cycle,'the maintained circuit has a visible full-effects cycle');
@@ -115,7 +116,7 @@ assert.equal(light.kind, 'fitting','the Scene Dock seam is not on Source emergen
 assert.deepEqual(light.color,[1,.43,.16],'the Scene Dock seam lost its authored sodium colour');
 assert.equal(light.intensity,.34,'the Scene Dock seam was promoted to an alarm-strength source');
 assert.ok(Math.abs(light.x) < .001, 'the seam light is centred on the rear plane');
-assert.ok(light.z > 6 * CELL, 'the seam light is behind the arrival position');
+assert.ok(light.z - SOURCE_HANGING_SHORE.dockZ > 6 * CELL, 'the seam light is behind the arrival position');
 assert.deepEqual(lights.slice(0,5).map((entry)=>entry.id),[
   'source-landing:getin-grey-door-seam',
   'source-landing:foh-work-light',

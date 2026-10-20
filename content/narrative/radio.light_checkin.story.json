@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "id": "radio.light_checkin",
+  "title": "Radio · the light",
+  "status": "active",
+  "entry": "start",
+  "entries": ["start"],
+  "tags": ["radio"],
+  "notes": "Rings once, the first time he walks out of the get-in with setup done, which is also when the torch cells start running down. The setup only teaches the light ON; the dream teaches what it costs by failure; this is the one place it is said in so many words, with the key.",
+  "regions": [{"id":"radio.light_checkin.region","title":"The light","kind":"scene","color":"#245c62","nodeIds":["start","long","manage","after"]}],
+  "nodes": {
+    "start": {
+      "id": "start",
+      "type": "choice",
+      "lines": [
+        {"id":"light.open","who":"radio","text":"4417-C, Martin again. Before you get going: that torch."},
+        {"id":"light.why","who":"radio","text":"The power's been off in there for months. What's in your hand is the only light you've got, and it won't do the whole night. Keep it off as much as you can."},
+        {"id":"light.key","who":"direction","text":"{LIGHTKEY} puts the light out. {LIGHTKEY} again brings it back."}
+      ],
+      "choices": [
+        {"id":"light.long","text":"How long have I got on it?","goto":"long"},
+        {"id":"light.manage","text":"I'll manage.","goto":"manage"}
+      ]
+    },
+    "long": {
+      "id": "long",
+      "type": "dialogue",
+      "lines": [
+        {"id":"long.answer","who":"me","text":"How long have I got on it?"},
+        {"id":"long.reply","who":"radio","text":"Not as long as the night is. Use it to find your way, and put it out when you get there."}
+      ],
+      "goto": "after"
+    },
+    "manage": {
+      "id": "manage",
+      "type": "dialogue",
+      "lines": [
+        {"id":"manage.answer","who":"me","text":"I'll manage."},
+        {"id":"manage.reply","who":"radio","text":"I know. Off whenever you're standing still, then. That's when it's doing nothing for you."}
+      ],
+      "goto": "after"
+    },
+    "after": {
+      "id": "after",
+      "type": "dialogue",
+      "lines": [
+        {"id":"light.after","who":"direction","text":"The channel closes."}
+      ]
+    }
+  }
+}

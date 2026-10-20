@@ -179,7 +179,9 @@ const doctrine=readFileSync('docs/story-doctrine.md','utf8');
 assert.match(doctrine,/HUSH is older than music/);
 assert.match(doctrine,/synthesized locally beneath those two booth lines/);
 const sourceRuntime=readFileSync('src/game/source-space-runtime.js','utf8');
-assert.doesNotMatch(sourceRuntime,/source-hush-|text-actor:hush|pose:\s*['"]standing['"].*source:\s*['"]hush/i,'Source may not assemble a visible HUSH body');
+// Module paths are not props: the follower drives the existing pressure outline.
+const sourceRuntimeBody=sourceRuntime.replace(/^import [^;]*;$/gm,'');
+assert.doesNotMatch(sourceRuntimeBody,/source-hush-|text-actor:hush|pose:\s*['"]standing['"].*source:\s*['"]hush/i,'Source may not assemble a visible HUSH body');
 assert.match(sourceRuntime,/source-density-wake-/,'Source visualizes displaced architecture around an unseen agency');
 
 console.log('story and HUSH coherence contracts passed');

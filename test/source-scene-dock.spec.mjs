@@ -199,7 +199,7 @@ function haystackRuntime(slot=0){
   assert.equal(beyond?.material,MATERIAL.sourceVoid,'the real FOH leaf still opens into a wall');
   assert.doesNotMatch(runtime,/id: 'source-landing-opening-emergency-casing'/,
     'the brick bulkhead prop still stands behind the open FOH leaf');
-  assert.equal(game.sourceVoidFrame().whiteout,0,'opening the leaf must preserve room exposure');
+  assert.ok(!game.sourceVoidFrame().whiteout,'opening the leaf must preserve room exposure');
 
   const branch=main.slice(main.indexOf("if(result.event==='landing-door-opened')"),main.indexOf("if(result.event==='page-found')"));
   assert.match(branch,/syncSourceRender\(\)/,'the FOH event no longer submits its retained-plan patch');
@@ -214,7 +214,7 @@ function haystackRuntime(slot=0){
 {
   const preset=buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.LANDING,{seed:4417});
   const game=createSourceSpaceRuntime({initialState:preset.state});
-  const o=game.state().landscapeOrigin,door={x:o.x+8,y:o.y-16};
+  const o=game.state().landscapeOrigin,door={x:o.x+SOURCE_LANDING_PORTAL_LOCAL.x,y:o.y+SOURCE_LANDING_PORTAL_LOCAL.y};
   const observer={x:door.x,y:door.y+5,facing:0},outside={x:door.x,y:door.y-3,facing:0};
   game.setPlayerPosition(observer);game.inspectFocused(observer.x,observer.y,0);game.tick(2.3,observer);
   game.onStep(observer,outside);game.setPlayerPosition(outside);game.tick(3,outside);

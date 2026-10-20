@@ -1,5 +1,7 @@
 export const RADIO_CUES = Object.freeze({
   INITIAL: 'initial_checkin',
+  // The first walk out of the get-in: the torch starts costing (see tickTorch).
+  LIGHT: 'light_checkin',
   CONCERN: 'missed_checkin',
   POST_SECOND: 'post_second_take_warning',
   HUSH_RUPTURE: 'hush_help_rupture',

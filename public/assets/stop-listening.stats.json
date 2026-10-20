@@ -1,0 +1,129 @@
+{
+  "bytes": 3454720,
+  "triangles": 118912,
+  "meshes": {
+    "stop_listening_ear_a": {
+      "triangles": 456,
+      "materials": [
+        "stop listening ear skin",
+        "stop listening ear deep",
+        "stop listening ear wound",
+        "stop listening floor wet"
+      ]
+    },
+    "stop_listening_ear_b": {
+      "triangles": 456,
+      "materials": [
+        "stop listening ear skin",
+        "stop listening ear deep",
+        "stop listening ear wound",
+        "stop listening floor wet"
+      ]
+    },
+    "stop_listening_ear_c": {
+      "triangles": 456,
+      "materials": [
+        "stop listening ear skin",
+        "stop listening ear deep",
+        "stop listening ear wound",
+        "stop listening floor wet"
+      ]
+    },
+    "stop_listening_ear_d": {
+      "triangles": 456,
+      "materials": [
+        "stop listening ear skin",
+        "stop listening ear deep",
+        "stop listening ear wound",
+        "stop listening floor wet"
+      ]
+    },
+    "stop_listening_ear_e": {
+      "triangles": 456,
+      "materials": [
+        "stop listening ear skin",
+        "stop listening ear deep",
+        "stop listening ear wound",
+        "stop listening floor wet"
+      ]
+    },
+    "stop_listening_ear_f": {
+      "triangles": 456,
+      "materials": [
+        "stop listening ear skin",
+        "stop listening ear deep",
+        "stop listening ear wound",
+        "stop listening floor wet"
+      ]
+    },
+    "stop_listening_heap_a": {
+      "triangles": 17704,
+      "materials": [
+        "stop listening ear skin",
+        "stop listening ear deep",
+        "stop listening ear wound",
+        "stop listening floor wet"
+      ]
+    },
+    "stop_listening_heap_b": {
+      "triangles": 10984,
+      "materials": [
+        "stop listening ear skin",
+        "stop listening ear deep",
+        "stop listening ear wound",
+        "stop listening floor wet"
+      ]
+    },
+    "stop_listening_heap_c": {
+      "triangles": 14344,
+      "materials": [
+        "stop listening ear skin",
+        "stop listening ear deep",
+        "stop listening ear wound",
+        "stop listening floor wet"
+      ]
+    },
+    "stop_listening_take_sheet": {
+      "triangles": 1256,
+      "materials": [
+        "stop listening take sheet"
+      ]
+    },
+    "stop_listening_writing_block": {
+      "triangles": 15588,
+      "materials": [
+        "stop listening paint dark"
+      ]
+    },
+    "stop_listening_writing_block_pale": {
+      "triangles": 15588,
+      "materials": [
+        "stop listening paint pale"
+      ]
+    },
+    "stop_listening_writing_line": {
+      "triangles": 4836,
+      "materials": [
+        "stop listening paint dark"
+      ]
+    },
+    "stop_listening_writing_line_pale": {
+      "triangles": 4836,
+      "materials": [
+        "stop listening paint pale"
+      ]
+    },
+    "stop_listening_writing_scrawl": {
+      "triangles": 15520,
+      "materials": [
+        "stop listening paint dark"
+      ]
+    },
+    "stop_listening_writing_scrawl_pale": {
+      "triangles": 15520,
+      "materials": [
+        "stop listening paint pale"
+      ]
+    }
+  }
+}

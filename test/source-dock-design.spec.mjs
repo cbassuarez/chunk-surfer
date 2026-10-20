@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { SOURCE_HANGING_SHORE } from '../src/data/source-hanging-shore.js';
 import { readFileSync } from 'node:fs';
 import { CELL, ZONE } from '../src/data/floorplan/legend.js';
 import {
@@ -45,6 +46,8 @@ const meshes = new Map([
   ...readMeshes('../public/assets/conservatory-acquisitions.glb'),
   ...readMeshes('../public/assets/conservatory-doors.glb'),
 ]);
+// Dock metres sit DZ along the walk in the landscape's local frame.
+const DZ = SOURCE_HANGING_SHORE.dockZ;
 function transformedVertices(prop) {
   const vertices = meshes.get(prop.mesh);
   assert.ok(vertices, `unshipped dock mesh ${prop.mesh}`);
@@ -53,7 +56,8 @@ function transformedVertices(prop) {
   return vertices.map(([x, y, z]) => [
     prop.x * CELL + c * x * sx + s * z * sz,
     prop.y + y * sy,
-    prop.z * CELL - s * x * sx + c * z * sz,
+    // Measured in the dock's own metres: the dock stands DOCK_Z along the walk.
+    prop.z * CELL - SOURCE_HANGING_SHORE.dockZ - s * x * sx + c * z * sz,
   ]);
 }
 function bounds(prop) {
@@ -91,7 +95,7 @@ assert.equal(clipboard.on, 'dock-desk-1');
 assert.ok(Math.abs(clipboard.y - .7175) < .012, 'clipboard uses desk-back height instead of its desktop');
 const c = Math.cos(desk.yaw), s = Math.sin(desk.yaw);
 for (const [x, , z] of transformedVertices(clipboard)) {
-  const dx = x - desk.x * CELL, dz = z - desk.z * CELL;
+  const dx = x - desk.x * CELL, dz = z - (desk.z * CELL - SOURCE_HANGING_SHORE.dockZ);
   const localX = c * dx - s * dz, localZ = s * dx + c * dz;
   assert.ok(localX >= -.31 && localX <= .31 && localZ >= -.28 && localZ <= .20,
     'clipboard overhangs the measured desktop');
@@ -114,12 +118,12 @@ for (const footprint of footprints) {
     `body can enter visible depth of ${footprint.sourcePropId}`);
   const x = (footprint.minX + footprint.maxX) / (2 * CELL);
   const y = (footprint.minZ + footprint.maxZ) / (2 * CELL);
-  assert.equal(sourceLandingPropCollisionAt(x, y)?.id, footprint.id);
+  assert.equal(sourceLandingPropCollisionAt(x, y + DZ / CELL)?.id, footprint.id);
   // The authored room has a stepped front-left corner. A rectangle derived
   // from its extrema cannot establish that perimeter freight is inside it.
   for (let px = footprint.minX; px <= footprint.maxX; px += .04) {
     for (let pz = footprint.minZ; pz <= footprint.maxZ; pz += .04) {
-      assert.equal(sourceLandingCellAt(px / CELL, pz / CELL)?.solid, false,
+      assert.equal(sourceLandingCellAt(px / CELL, (pz + DZ) / CELL)?.solid, false,
         `${footprint.sourcePropId} is embedded in the authored room wall at ${px},${pz}`);
     }
   }
@@ -127,9 +131,9 @@ for (const footprint of footprints) {
 const clear = SOURCE_DOCK_DESIGN.clearFloorMetres;
 for (let x = clear.minX; x <= clear.maxX; x += .1) {
   for (let z = clear.minZ; z <= clear.maxZ; z += .1) {
-    assert.equal(sourceLandingCellAt(x / CELL, z / CELL)?.solid, false,
+    assert.equal(sourceLandingCellAt(x / CELL, (z + DZ) / CELL)?.solid, false,
       `authored shell enters the broad free floor at ${x},${z}`);
-    assert.equal(sourceLandingPropCollisionAt(x / CELL, z / CELL), null,
+    assert.equal(sourceLandingPropCollisionAt(x / CELL, (z + DZ) / CELL), null,
       `furniture enters the broad free floor at ${x},${z}`);
   }
 }
@@ -141,9 +145,9 @@ let total = 0;
 for (let ix = 0; ix <= 40; ix += 1) {
   for (let iz = 0; iz <= 60; iz += 1) {
     const x = -5 + ix * step, z = -7.5 + iz * step;
-    if (sourceLandingCellAt(x / CELL, z / CELL)?.solid !== false) continue;
+    if (sourceLandingCellAt(x / CELL, (z + DZ) / CELL)?.solid !== false) continue;
     total += 1;
-    if (!sourceLandingPropCollisionAt(x / CELL, z / CELL)) free.set(`${ix}:${iz}`, { ix, iz });
+    if (!sourceLandingPropCollisionAt(x / CELL, (z + DZ) / CELL)) free.set(`${ix}:${iz}`, { ix, iz });
   }
 }
 assert.ok(free.size / total > .87, 'freight turns the room into a prop maze');
@@ -182,7 +186,7 @@ assert.equal(renderedClosed.ceil, 2.2);
 assert.equal(renderedClosed.zone, ZONE.getIn);
 assert.equal(sourceLandingCellAt(portal.x + 1.01, portal.y, { renderOnly: true }).solid, true,
   'collision tolerance widened the visible door frame');
-assert.equal(sourceLandingCellAt(12, 3, { portalOpen: true }).closure, 'building-services');
+assert.equal(sourceLandingCellAt(12, 3 + DZ / CELL, { portalOpen: true }).closure, 'building-services');
 assert.equal(sourceLandingCellAt(SOURCE_LANDING_REAR_LOCAL.x, SOURCE_LANDING_REAR_LOCAL.y).corridorMouth, true);
 
 const closedLeaf = sourceLandingDoorPlacements().find((p) => p.sourcePortalLeaf);

@@ -27,6 +27,9 @@ export const SOURCE_GET_IN_BOUNDS = Object.freeze({
   minX: Math.min(...xs), maxX: Math.max(...xs),
   minY: Math.min(...ys), maxY: Math.max(...ys),
 });
+// The dock's own metres (DOCK_LAYOUT, footprints, fittings) are measured from
+// its centre; DOCK_Z places that centre along the walk (source-hanging-shore.js).
+const DOCK_Z = SOURCE_HANGING_SHORE.dockZ;
 const CENTRE = Object.freeze({
   x: (SOURCE_GET_IN_BOUNDS.minX + SOURCE_GET_IN_BOUNDS.maxX + 1) / 2,
   y: (SOURCE_GET_IN_BOUNDS.minY + SOURCE_GET_IN_BOUNDS.maxY + 1) / 2,
@@ -42,12 +45,12 @@ function authoredGlyphAt(x, y) {
 export function sourceLandingLocalFromAuthored(point = {}) {
   const sourceMetresX = (Number(point.y) || 0) - CENTRE.y;
   const sourceMetresY = -((Number(point.x) || 0) - CENTRE.x);
-  return { x: sourceMetresX / CELL, y: sourceMetresY / CELL };
+  return { x: sourceMetresX / CELL, y: (sourceMetresY + DOCK_Z) / CELL };
 }
 
 export function sourceLandingAuthoredFromLocal(localX = 0, localY = 0) {
   return {
-    x: CENTRE.x - Number(localY) * CELL,
+    x: CENTRE.x - (Number(localY) * CELL - DOCK_Z),
     y: CENTRE.y + Number(localX) * CELL,
   };
 }
@@ -245,7 +248,7 @@ function dockPlacement(prop, local, origin) {
     ...local,
     id: `source-landing:${prop.id}`, sourcePropId: prop.id, mesh: prop.mesh,
     x: Number(origin.x) + local.x / CELL, y: Number(local.y) || 0,
-    z: Number(origin.y) + local.z / CELL,
+    z: Number(origin.y) + (local.z + DOCK_Z) / CELL,
     yaw: Number(local.yaw) || 0, scale: Number(local.scale) || 1,
     zone: ZONE.getIn, structural: true,
   };
@@ -294,7 +297,7 @@ export function sourceLandingPropFootprints() {
 
 const DOCK_FOOTPRINTS = sourceLandingPropFootprints();
 export function sourceLandingPropCollisionAt(localX, localY, { radiusMetres = .22 } = {}) {
-  const x = Number(localX) * CELL, z = Number(localY) * CELL;
+  const x = Number(localX) * CELL, z = Number(localY) * CELL - DOCK_Z;
   if (!Number.isFinite(x) || !Number.isFinite(z)) return null;
   const radius = Math.max(0, Number(radiusMetres) || 0);
   return DOCK_FOOTPRINTS.find((p) => {
@@ -326,9 +329,9 @@ export function sourceLandingRecognitions(origin = { x: 0, y: 0 }) {
     const footprint = DOCK_FOOTPRINTS.find((candidate) => candidate.sourcePropId === anchor.sourcePropId);
     return {
       ...anchor, optional: true,
-      x: Number(origin.x) + p.x / CELL, y: Number(origin.y) + p.z / CELL,
+      x: Number(origin.x) + p.x / CELL, y: Number(origin.y) + (p.z + DOCK_Z) / CELL,
       standX: Number(origin.x) + anchor.standX / CELL,
-      standY: Number(origin.y) + anchor.standZ / CELL,
+      standY: Number(origin.y) + (anchor.standZ + DOCK_Z) / CELL,
       footprint: { ...footprint },
     };
   });
@@ -495,12 +498,12 @@ export function sourceLandingLights(origin = { x: 0, y: 0 }) {
   },
   {
     id: 'source-landing:desk-light', sourceDockOnly: true, kind: LIGHT_KIND.FITTING,
-    x: Number(origin.x) * CELL - 5.25, y: 2.23, z: Number(origin.y) * CELL + 5.4,
+    x: Number(origin.x) * CELL - 5.25, y: 2.23, z: Number(origin.y) * CELL + 5.4 + DOCK_Z,
     color: [1, .66, .35], intensity: .32, radius: 4.4, penetration: .03,
     castsShadow: true, shadowYaw: Math.PI / 2,
   }, {
     id: 'source-landing:cage-light', sourceDockOnly: true, kind: LIGHT_KIND.FITTING,
-    x: Number(origin.x) * CELL - 5.25, y: 2.98, z: Number(origin.y) * CELL - .7,
+    x: Number(origin.x) * CELL - 5.25, y: 2.98, z: Number(origin.y) * CELL - .7 + DOCK_Z,
     color: [.88, .83, .71], intensity: .28, radius: 5.2, penetration: .03,
     castsShadow: true, shadowYaw: Math.PI / 2,
   },

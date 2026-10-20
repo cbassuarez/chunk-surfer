@@ -1,4 +1,5 @@
 import { SHEET_MUSIC } from './sheet-music.js';
+import { STOP_LISTENING_SOURCES } from './stop-listening.js';
 
 export const CREDIT_RECORD_TITLE = 'RELEASE RECORD';
 
@@ -15,6 +16,13 @@ const sheetMusicCredits = () => SHEET_MUSIC.map((sheet) => {
   const who = sheet.performer ? ` — ${sheet.performer}` : '';
   return `${sheet.composer}, ${sheet.title}${who} (${sheet.licence})`;
 });
+
+// Built the same way, for the same reason: the list the build downloads from is
+// the list the credits print. Licences are checked per file in
+// third_party/licenses/STOP-LISTENING-AUDIO.md, and stop-listening.spec.mjs
+// fails if a source is missing here or carries a share-alike licence.
+const soundEffectCredits = () => STOP_LISTENING_SOURCES.map((source) =>
+  `${source.title} — ${source.author} (${source.licence})`);
 
 export const CREDITS = Object.freeze([
   Object.freeze({
@@ -68,6 +76,13 @@ export const CREDITS = Object.freeze([
     lines: Object.freeze([
       ...sheetMusicCredits(),
       'Excerpted, downmixed and filtered for distance',
+    ]),
+  }),
+  Object.freeze({
+    heading: 'Sound Effect Recordings',
+    lines: Object.freeze([
+      ...soundEffectCredits(),
+      'Excerpted, layered, bitcrushed and placed',
     ]),
   }),
   Object.freeze({

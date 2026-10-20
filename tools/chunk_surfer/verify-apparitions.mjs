@@ -138,7 +138,7 @@ async function setScene({
   await warp(location);
   await page.evaluate((value) => window.__probe.apparitionReset(value), seed);
   await sleep(180);
-  if (effects !== 'off' && !reduceDread) {
+  if (effects !== 'off') {
     // Pin the practical that the live ranking actually selected before turning
     // to inspect one of its bodies. Without that capture-only pin, aiming at a
     // body can legitimately select a different behind-the-shoulder lamp; the
@@ -330,9 +330,10 @@ await capture('accessibility-off', { family: 'accessibility', effects: 'off', se
   submission: { active: false },
 });
 await setScene({ location: LOCATIONS.hall, seed: 'review:reduce-dread', effects: 'full', reduceDread: true });
+// Reduce Dread damps spikes, never bodies: the figures are still submitted.
 await capture('accessibility-reduce-dread', {
   family: 'accessibility', effects: 'full', reduceDread: true, seed: 'review:reduce-dread',
-}, { submission: { active: false } });
+}, { submission: { active: true } });
 
 for (const [id, torch, renderScale] of [
   ['lighting-torch-off-shadow-1024', false, 1],

@@ -89,7 +89,7 @@ export function sourceShoreSensoryFrame(frame = null) {
     active,
     // Nothing is emitted by the volume itself. Even a long pause cannot turn
     // the distant air handler into an ambient bed that follows the player.
-    roomLeak: active ? finiteFalloff(roomDistance, 0, 26) : 0,
+    roomLeak: active ? finiteFalloff(roomDistance, 0, 26) * (1 - clamp01(frame?.roomTaken)) : 0,
     liftGain: active ? finiteFalloff(liftDistance, 2, 30) : 0,
     metalReturn: active ? finiteFalloff(bankDistance, 1, 11) : 0,
     footstepGain: active && surface === 'void' ? .74 : 1,

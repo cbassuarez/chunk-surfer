@@ -15,6 +15,9 @@ const bag=()=>page.evaluate(()=>window.__scenes.top()?.debugState?.());
 const handoff=()=>page.evaluate(()=>window.__probe.setupHandoff());
 const scene=()=>page.evaluate(()=>({id:window.__scenes.top()?.id,battle:window.__scenes.top()?.battleView?.()}));
 async function levelCheck(){
+  // The light step first, as taught. The level check keeps it on, and the figure
+  // in the dream finds it on, which is what opens the drill this harness drives.
+  await page.keyboard.press('f');
   await page.keyboard.press('r');
   let observedSeconds=0,held=false,slowRead=false;
   const deadline=Date.now()+120000;
@@ -107,13 +110,19 @@ try{
   await wait(()=>!!window.__scenes?.top?.()?.id);
   if(await page.evaluate(()=>window.__scenes.top().id==='eula'))await page.keyboard.press('Enter');
   await wait(()=>window.__scenes.top()?.id==='opening-credits');await page.evaluate(()=>window.__scenes.top().update(30));
-  await wait(()=>window.__scenes.top()?.id==='title');await page.keyboard.press('Enter');await page.keyboard.press('Enter');
-  await wait(()=>window.__scenes.top()?.id==='difficulty-select');await page.keyboard.press('Enter');
-  await wait(()=>window.__scenes.top()?.id==='warning');await page.keyboard.press('Enter');await page.keyboard.press('n');
-  await wait(()=>window.__chunkParity?.().screen==='game');
+  // The difficulty screen comes and goes between builds: press through
+  // whichever front end is up rather than waiting on one that may not exist.
+  for(const deadline=Date.now()+120000;;){
+    if(Date.now()>deadline)throw new Error('boot never reached the game');
+    const at=await page.evaluate(()=>({id:window.__scenes.top()?.id,screen:window.__chunkParity?.().screen}));
+    if(at.screen==='game')break;
+    if(at.id==='title'||at.id==='difficulty-select')await page.keyboard.press('Enter');
+    else if(at.id==='warning'){await page.keyboard.press('Enter');await page.keyboard.press('n');}
+    await sleep(400);
+  }
   await page.evaluate(()=>{
     window.__probe.testRun();window.__probe.godWarpGetIn();
-    window.__probe.setFlags(['bag.taken','title.shown'],['setup.levels','combat.trained','setup.waypoint']);
+    window.__probe.setFlags(['bag.taken','title.shown','kit.fitted'],['setup.levels','combat.trained','setup.waypoint']);
     window.__probe.tutSkip();window.__probe.setComposure(40);
   });
   await levelCheck();

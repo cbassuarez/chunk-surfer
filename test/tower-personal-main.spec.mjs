@@ -73,7 +73,7 @@ function personalHarness() {
       r3dSetLookAngles(value) { sandbox.look = { ...sandbox.look, ...value }; } },
     look: { yaw: .8, pitch: .15 },
     scenes: { push: (scene) => scenePushes.push(scene), has: () => false, blocksWorld: () => blocked },
-    RECORDER_SCENE_ID: 'recorder', itemLost: () => recorderLost,
+    RECORDER_SCENE_ID: 'recorder', itemLost: () => recorderLost, dreamFigure: null,
     document: { get hidden() { return hidden; } },
     playTowerPersonalRecording(options) {
       assert.equal(tapePlaying, false, 'the authored monitor must stop tape playback before sounding');

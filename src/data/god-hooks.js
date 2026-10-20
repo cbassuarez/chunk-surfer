@@ -32,6 +32,16 @@ export const GOD_LOCATION_HOOKS = Object.freeze({
   'academic-gallery': Object.freeze({ at:{x:23,y:246}, facing:2, zone:ZONE.academic, group:'academic', floor:10,component:'academic' }),
   chapel: Object.freeze({ at:{x:92,y:74}, facing:0, zone:ZONE.chapel, group:'upper', floor:4.8,component:'chapel' }),
   'plant-room': Object.freeze({ at:{x:31,y:30.5}, facing:1, zone:ZONE.plant, group:'basement', floor:-4,component:'basement' }),
+  // THE ACADEMIC ROOF, end to end (data/academic-roof.js). The gate and the
+  // ladder's foot are on the third floor; the fire escape is its own stair
+  // space; everything else stands on the roof's glass at +17.
+  'roof-gate': Object.freeze({ at:{x:44,y:243}, facing:0, zone:ZONE.academic, group:'academic', floor:10, component:'academic' }),
+  'roof-fire-escape': Object.freeze({ at:{x:174,y:285}, facing:1, zone:ZONE.academicRoof, group:'academicRoof', floor:10, component:'academic_roof_stair' }),
+  'academic-roof': Object.freeze({ at:{x:205,y:273}, facing:2, zone:ZONE.academicRoof, group:'academicRoof', floor:17, component:'academic_roof' }),
+  'roof-ren': Object.freeze({ at:{x:209,y:273}, facing:1, zone:ZONE.academicRoof, group:'academicRoof', floor:17, component:'academic_roof' }),
+  'roof-city-seat': Object.freeze({ at:{x:210,y:290}, facing:1, zone:ZONE.academicRoof, group:'academicRoof', floor:17, component:'academic_roof' }),
+  'roof-ladder-top': Object.freeze({ at:{x:211,y:293}, facing:1, zone:ZONE.academicRoof, group:'academicRoof', floor:17, component:'academic_roof' }),
+  'roof-ladder-foot': Object.freeze({ at:{x:44,y:266}, facing:1, zone:ZONE.academic, group:'academic', floor:10, component:'academic' }),
   ...Object.fromEntries(CHURCH_GOD_HOOKS.map((hook)=>[hook.id,cathedralHook(hook)])),
 });
 

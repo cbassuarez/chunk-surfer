@@ -12,11 +12,11 @@
 // you have, `setup.levels`/`combat.trained` stay unset and the recorder refuses
 // (see main.js recordAction / onLevelsSet).
 //
-// The level check itself is a real take, on the real recorder, in the real dark:
-// light out, feet still, monitor open. Six seconds instead of forty-five, and
-// nothing is hunting you yet. By the time anything is, the player has already
-// learned the posture that makes them prey — and, in the daydream that follows
-// it, the shape of the fight.
+// The level check itself is a real take, on the real recorder: feet still,
+// monitor open, and his light left exactly as he has it, because the setup
+// never puts it out for him. Six seconds instead of forty-five, and nothing is
+// hunting you yet. What the light costs he learns in the daydream that follows
+// it, when something walks up the beam (game/dream-figure.js).
 //
 // Nothing here spawns the presence. The building learns someone is in it at the
 // first REAL take, which is the first one that counts toward the job.
@@ -54,11 +54,17 @@ const STEPS = [
   {
     id: 'light',
     objective: 'TORCH ON',
-    // He is standing in a loading dock with the door shut. There is nothing.
-    line: { who: 'you', text: "Can't see my hand." },
+    // He is standing in the get-in with the door shut. There is nothing. The
+    // thought primes the key; a man who walked in with his torch already on
+    // does not think it.
+    //
+    // Only ON is taught. Nothing in the setup tells him to put the light out
+    // or why: he finds that out when the figure in the dream walks up his beam
+    // (game/dream-figure.js), and Martin says it in so many words on the radio
+    // once he has left the get-in.
+    line: (c) => (c.light ? null : { who: 'you', text: "It's dark in here." }),
     prompt: () => `${inputPrompt('light')}  light`,
     done: (c) => c.light,
-    exit: { who: 'you', text: 'Light attracts. Everything in here that can hear, can see.' },
   },
   {
     id: 'read',
@@ -200,7 +206,8 @@ export function tickTutorial(dt, ctx) {
 
   if (!state.seen.has(step.id)) {
     state.seen.add(step.id);
-    state.say(step.line);
+    const line = typeof step.line === 'function' ? step.line(ctx) : step.line;
+    if (line) state.say(line);
   }
 
   if (ctx.slow) state.slowUsed = true;

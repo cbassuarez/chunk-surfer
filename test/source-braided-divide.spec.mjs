@@ -5,6 +5,7 @@ import test from 'node:test';
 import { SOURCE_HANGING_SHORE, sourceShoreContains } from '../src/data/source-hanging-shore.js';
 import {
   SOURCE_BRAIDED_DIVIDE as S, SOURCE_BRAIDED_CONTACT_ASSETS, SOURCE_BRAIDED_REVIEW_WALK,
+  SOURCE_DIVIDE_GROUND, SOURCE_DIVIDE_GAP_FLOOR, SOURCE_DIVIDE_ARRIVAL, sourceDivideGroundAt,
   sourceDivideDepth, sourceDivideZ, sourceDivideContains, sourceDivideFloorAt,
   sourceDivideSupportAt, sourceDivideCollisionAt, sourceDivideCanStep,
   sourceDivideGeometry, sourceDividePropPlacements,
@@ -38,29 +39,58 @@ test('exact model contacts stay tied to the rendered GLB assets', () => {
   }
 });
 
-test('the whole 180×150m field has finite ground and an open first forecourt', () => {
+test('the 180×150m field is mostly open drop, with ground kept only in its pieces', () => {
   assert.equal(S.maxX - S.minX, 180);
   assert.equal(sourceDivideDepth(S.backZ), 150);
   assert.equal(sourceDivideContains(0, S.frontZ + .1), false);
   assert.equal(sourceDivideFloorAt(90.1, sourceDivideZ(80)), null);
-  for (const x of [-89, -70, -40, 0, 40, 70, 89]) for (const depth of [0, 5, 10, 15, 20]) {
+  // The forecourt out of the strata is solid ground.
+  for (const x of [-40, -20, 0, 20, 40]) for (const depth of [0, 5, 10, 15, 20]) {
     const z = sourceDivideZ(depth);
-    close(sourceDivideFloorAt(x, z), 4.2, 'forecourt ground');
     close(sourceDivideSupportAt(x, z, { feet: 4.2 }).floor, 4.2, 'forecourt support');
-    // At the external northern edge the body radius must stay within the field.
     if (depth > 0) assert.equal(sourceDivideCollisionAt(x, z, { feet: 4.2 }), null);
   }
+  // Beside it and out in the field there is nothing to stand on.
+  for (const [x, depth] of [[-89, 10], [89, 10], [0, 45], [60, 100], [-50, 120], [40, 140]]) {
+    const support = sourceDivideSupportAt(x, sourceDivideZ(depth), { feet: 4.2 });
+    assert.equal(support.kind, 'gap', `${x},${depth} still has floor`);
+    assert.equal(support.floor, SOURCE_DIVIDE_GAP_FLOOR);
+    assert.equal(sourceDivideGroundAt(x, sourceDivideZ(depth)), null);
+  }
+  // Most of the floor that is not under a bank, ramp or court is gone.
+  let open = 0, kept = 0;
+  for (let x = S.minX + .5; x < S.maxX; x += 2) for (let depth = .5; depth < S.length; depth += 2) {
+    const support = sourceDivideSupportAt(x, sourceDivideZ(depth), { feet: 30 });
+    if (support.kind !== 'ground' && support.kind !== 'gap') continue;
+    open++; if (support.kind === 'ground') kept++;
+  }
+  assert.ok(kept / open < .5, `${(kept / open * 100).toFixed(0)}% of the open floor is still ground`);
+  assert.ok(SOURCE_DIVIDE_GROUND.every(g => g.minX < g.maxX && g.from < g.to));
+  // A fall is cut back to where Source proper begins, which is real ground.
+  close(sourceDivideSupportAt(SOURCE_DIVIDE_ARRIVAL.x, SOURCE_DIVIDE_ARRIVAL.z, { feet: 4.2 }).floor, SOURCE_DIVIDE_ARRIVAL.floor, 'arrival');
 });
 
-test('continuous lower street, both outer margins and reverse travel reach the grey doors', () => {
-  for (const x of [-89, 0, 89]) {
-    const route = [at(x, 3), at(x, 118), at(x, 146, 15.2), at(x, 149, 15.2)];
-    close(walkRoute(route), 15.2, 'grey-door height');
-    close(walkRoute([...route].reverse()), 4.2, 'reverse lower route');
-  }
+test('the floor breaks short of the case crossing; the lane, court and narrowed rise reach the grey doors', () => {
+  // Straight on from the forecourt the floor ends before the crossing.
+  close(walkRoute([at(0, 3), at(0, 39.5)]), 4.2, 'lane stub');
+  const edge = sourceDivideCanStep(at(0, 39.5), at(0, 42));
+  assert.equal(edge.ok, true, 'walking off the end of the stub is allowed');
+  assert.equal(edge.floor, SOURCE_DIVIDE_GAP_FLOOR, 'the stub runs on to the crossing');
+  // Past the gap the lane reaches the court, the rise and the doors, both ways.
+  const route = [at(0, 50), at(0, 75), at(0, 118), at(0, 146, 15.2), at(0, 149, 15.2)];
+  close(walkRoute(route), 15.2, 'grey-door height');
+  close(walkRoute([...route].reverse()), 4.2, 'reverse lane');
+  walkRoute([at(0, 75), at(-12, 75)]);
+  // The far strip joins both upper banks to the doors.
+  close(walkRoute([at(-60, 148, 15.2), at(0, 148, 15.2), at(60, 148, 15.2)]), 15.2, 'far strip');
+  // Dropping off the case crossing's south side lands on the lane.
+  const drop = sourceDivideSupportAt(0, sourceDivideZ(54), { feet: 9 });
+  assert.equal(drop.id, 'divide-ground'); assert.equal(drop.drop, true);
   // Entering a final-rise side while still low cannot suppress its real height.
   const blocked = sourceDivideSupportAt(0, sourceDivideZ(145), { feet: 4.2 });
   assert.equal(blocked.blockedRise, true);
+  // The rise has no shoulders: beside it is the drop.
+  assert.equal(sourceDivideSupportAt(-20, sourceDivideZ(130), { feet: 9 }).kind, 'gap');
 });
 
 test('the real receiving ledge supports a capsule across the cleft seam without opening other field edges', () => {

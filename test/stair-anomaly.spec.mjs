@@ -209,7 +209,8 @@ const shadowLedger = { status: 'active', stage: STAIR_ANOMALY_STAGE.SHADOW, prog
 const shadow = createStairAnomalyRuntime({ environment: route('uncertain'), initialLedger: shadowLedger });
 shadow.setPlayerPosition({ x: 0, y: -70, facing: 0 });
 assert.equal(shadow.propInstances().filter((entry) => entry.shadowOnly).length, 1);
-assert.equal(shadow.propInstances({ reducedDread: true }).some((entry) => entry.shadowOnly), false);
+// Reduce Dread damps spikes, never bodies: the figure is the same with it on.
+assert.equal(shadow.propInstances({ reducedDread: true }).filter((entry) => entry.shadowOnly).length, 1);
 assert.deepEqual(shadow.propInstances().filter((entry)=>!entry.shadowOnly),[],'the anomalous stair carries no rails, doors, or visible light fixtures');
 const lights = shadow.lightRig(4);
 assert.ok(lights.length <= 8);

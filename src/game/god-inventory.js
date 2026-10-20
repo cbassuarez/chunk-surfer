@@ -89,13 +89,17 @@ export function createGodInventory({
   flag('film-badge', 'FILM BADGE', 'badge.taken');
   add({ id: 'master-key', label: 'MASTER KEY / DEBUG OVERRIDE', group: 'Access', read: () => keys.has('master'), format: owned,
     write: value => { value ? keys.add('master') : keys.delete('master'); writeFlags({ 'god.master-key': !!value }); return true; } });
-  for (const [id, label, key, item] of [
-    ['chapel-key', 'CHAPEL KEY C-17', 'chapel', 'chapel_key'],
-    ['services-key', 'SERVICES CORE KEY', 'services-core', 'services_core_key'],
+  for (const [id, label, key, item, flag] of [
+    ['chapel-key', 'CHAPEL KEY C-17', 'chapel', 'chapel_key', 'chapel.keyTaken'],
+    ['services-key', 'SERVICES CORE KEY', 'services-core', 'services_core_key', 'key.servicesCore'],
+    // Ren's reward, the caged service ladder off the roof. Owning it is the item
+    // and the keyring and nothing else: the conversation that grants it belongs
+    // to roofRen, and the ROOF tab sets that on its own row.
+    ['ren-service-key', 'REN SERVICE KEY / ROOF LADDER', 'ren-service', 'ren-service-key', null],
   ]) add({ id, label, group: 'Access', read: () => keys.has(key), format: owned, write: value => {
     const items = new Set(getSave().items || []);
     if (value) { items.add(item); keys.add(key); } else { items.delete(item); keys.delete(key); }
-    commit({ items: [...items], flags: { ...flags(), [key === 'chapel' ? 'chapel.keyTaken' : 'key.servicesCore']: !!value } }); return true;
+    commit({ items: [...items], ...(flag ? { flags: { ...flags(), [flag]: !!value } } : {}) }); return true;
   } });
   flag('chapel-key-identified', 'C-17 / EXPLICIT IDENTIFICATION', 'chapel.keyIdentified', 'Access');
   flag('coffee-owned', 'COFFEE / OWNED', 'has.coffee', 'Consumables');
@@ -152,15 +156,25 @@ export function createGodInventory({
     commit({ rec: recorder.saveRecState() });
     onChange('field-ready'); notify('FIELD-READY KIT; QUESTS AND COFFEE UNCHANGED'); return true;
   }
+  function rowFor(entry, rowId = entry.id) {
+    return { id: rowId, label: entry.label, value: () => entry.format?.(entry.read()) ?? String(entry.read()),
+      adjust: delta => set(entry.id, entry.choices ? cycle(entry.choices(), entry.read(), delta) : !entry.read()) };
+  }
   function rows() {
     const result = [{ kind: 'section', label: 'Equipment presets' }, godActionRow({ id: 'field-ready', label: 'FIELD-READY KIT', value: '[GRANT]', activate: fieldReady })];
     let group;
     for (const entry of entries) {
       if (entry.group !== group) { group = entry.group; result.push({ kind: 'section', label: group }); }
-      result.push({ id: entry.id, label: entry.label, value: () => entry.format?.(entry.read()) ?? String(entry.read()),
-        adjust: delta => set(entry.id, entry.choices ? cycle(entry.choices(), entry.read(), delta) : !entry.read()) });
+      result.push(rowFor(entry));
     }
     return result;
   }
-  return { entries, set, rows, fieldReady };
+  // One entry's row, for a tab that wants it beside its own controls. It writes
+  // through the same entry, so the two rows can never disagree. Row ids are
+  // unique per tab, so another tab names its copy.
+  function row(id, rowId = id) {
+    const entry = byId.get(id);
+    return entry ? rowFor(entry, rowId) : null;
+  }
+  return { entries, set, rows, row, fieldReady };
 }

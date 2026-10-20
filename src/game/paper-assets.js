@@ -9,9 +9,22 @@ import { PAPER_ATLAS, PAPER_DOCUMENTS, PAPER_AMBIENT_IDS } from '../generated/pa
 
 const imageCache=new Map();
 
+// SHEETS BAKED SOMEWHERE ELSE. A document whose finished image is made by its
+// own build (the ear room's take sheet is rendered in Blender with the mesh
+// that carries it) has no business in the paper compiler's catalogue, which
+// would re-rasterise it. It registers its record here instead, in the
+// catalogue's shape, and reads exactly like any other sheet.
+const externalDocuments=new Map();
+export function registerBakedPaper(record){
+  if(!record?.id||!Array.isArray(record.pages)||!record.pages.length)throw new Error('baked paper needs an id and pages');
+  if(PAPER_DOCUMENTS[record.id])throw new Error(`baked paper ${record.id} collides with the paper catalogue`);
+  externalDocuments.set(record.id,Object.freeze({...record,pages:record.pages.map((page)=>Object.freeze({atlasIndex:-1,materialPath:null,...page}))}));
+  return externalDocuments.get(record.id);
+}
+
 export function paperRecord(docOrId){
   const id=typeof docOrId==='string'?docOrId:docOrId?.id;
-  return id?PAPER_DOCUMENTS[id]||null:null;
+  return id?PAPER_DOCUMENTS[id]||externalDocuments.get(id)||null:null;
 }
 
 export function paperPageCount(docOrId){return Math.max(1,paperRecord(docOrId)?.pages?.length||1);}

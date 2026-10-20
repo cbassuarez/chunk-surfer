@@ -223,7 +223,7 @@ test('reduced motion preserves authored stages, choices and dwell without mutati
 });
 
 test('all authored radio prose and choices fit the viewport without overlapping at 960/1280 and 1.5 scale',()=>{
-  const docs=[...terminalIds,'radio.initial_checkin','radio.missed_checkin','radio.post_second_take_warning','conservatory.radio_dead','radio.guidance'].map(readStory);
+  const docs=[...terminalIds,'radio.initial_checkin','radio.light_checkin','radio.missed_checkin','radio.post_second_take_warning','conservatory.radio_dead','radio.guidance'].map(readStory);
   for(const [width,height] of [[960,600],[1280,760]])for(const scale of [1,1.5]){
     const size={cols:Math.floor(width/(UI_CELL_W*scale)),rows:Math.floor(height/(UI_CELL_H*scale))};
     for(const doc of docs)for(const node of Object.values(doc.nodes)){
