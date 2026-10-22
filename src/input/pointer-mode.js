@@ -56,6 +56,7 @@ export function createPointerModeController({
   getState = () => ({}),
   input = null,
   onUnexpectedUnlock = () => {},
+  onNativeFocusChanged = () => {},
   allowSoftCaptureFallback = true,
   loadNativeWindowApi = () => import('@tauri-apps/api/window'),
   setTimeoutFn = (fn, ms) => globalThis.setTimeout?.(fn, ms),
@@ -69,6 +70,7 @@ export function createPointerModeController({
   let expectedUnlockReason = null;
   let wasLocked = false;
   let captureGeneration = 0;
+  let disposed = false;
   // Native calls cross IPC. Finish an old release before starting a new grab,
   // and never let a delayed recenter undo a newer capture.
   let nativeOperations = Promise.resolve();
@@ -83,6 +85,7 @@ export function createPointerModeController({
     lastRequestAt: 0,
     lastRequestReason: '',
     lastRequestGesture: false,
+    requestGeneration: 0,
     lastError: null,
     lastErrorAt: 0,
     lastResult: 'idle',
@@ -106,6 +109,13 @@ export function createPointerModeController({
     generation: 0,
     windowApi: null,
     win: null,
+    // Native focus is authoritative in Tauri. WebKit can miss or delay its
+    // DOM blur/focus events while Rust has already released the physical grab.
+    focused: null,
+    unlistenFocus: null,
+    unlistenInvalidation: null,
+    captureInvalidations: 0,
+    lastCaptureInvalidationReason: '',
     error: null,
     errorAt: 0,
     fatalReason: '',
@@ -167,6 +177,8 @@ export function createPointerModeController({
     gain: 3.2,
   };
 
+  const requestWatchdog = { timer: null, generation: 0 };
+
   const retry = {
     timer: null,
     attempts: 0,
@@ -179,13 +191,16 @@ export function createPointerModeController({
 
   function wantsCapture() {
     const s = state();
-    return s.renderer === '3d'
+    return !disposed
+      && s.renderer === '3d'
       && !!s.storyMode
       && !!s.inRogue
       && !s.paused
       && !(s.blocksLook ?? s.blocksInput)
       && documentRef?.visibilityState !== 'hidden'
-      && (typeof documentRef?.hasFocus !== 'function' || documentRef.hasFocus());
+      && (tauriRuntime() && native.focused !== null
+        ? native.focused
+        : typeof documentRef?.hasFocus !== 'function' || documentRef.hasFocus());
   }
 
   function target() { return getTargetElement?.() || null; }
@@ -293,7 +308,29 @@ export function createPointerModeController({
       native.win = typeof getWin === 'function' ? getWin() : getWin;
       native.available = !!native.win;
       if (!native.available) native.fatalReason = 'tauri-window-missing';
-      return !!native.win;
+      if (native.win?.onFocusChanged) {
+        try {
+          const unlisten = await native.win.onFocusChanged(event => handleNativeFocusChange(event.payload));
+          // Loading the API crosses IPC too: disposal may have happened while
+          // listener registration was in flight.
+          if (disposed) { try { unlisten?.(); } catch (_) {} }
+          else native.unlistenFocus = unlisten;
+        } catch (err) {
+          // Event support improves lifecycle recovery; a refused optional
+          // listener must not disable cursor APIs that still work.
+          markNativeError(err, 'native-focus-listener');
+        }
+      }
+      if (!disposed && native.win?.listen) {
+        try {
+          const unlisten = await native.win.listen('chunk-native-capture-invalidated', event => {
+            handleNativeCaptureInvalidated(event.payload?.reason || 'native-cursor-release');
+          });
+          if (disposed) { try { unlisten?.(); } catch (_) {} }
+          else native.unlistenInvalidation = unlisten;
+        } catch (err) { markNativeError(err, 'native-capture-invalidation-listener'); }
+      }
+      return !!native.win && !disposed;
     } catch (err) {
       native.available = false;
       markNativeError(err, 'tauri-import');
@@ -315,6 +352,15 @@ export function createPointerModeController({
     if (!win?.setCursorPosition) throw new Error('setCursorPosition unavailable');
     await win.setCursorPosition(makeCursorPosition(x, y));
     return true;
+  }
+
+  async function readNativeFocus(generation) {
+    const focused = await native.win.isFocused();
+    // No focus event is sent merely because we subscribed while already key.
+    // Seed that initial truth from a confirmed native query. A newer event or
+    // release generation always wins over an IPC reply still in flight.
+    if (focused && generation === captureGeneration && native.focused === null) native.focused = true;
+    return focused;
   }
 
   const currentCapture = generation => generation === captureGeneration && wantsCapture();
@@ -349,7 +395,7 @@ export function createPointerModeController({
     native.recenterCount += 1;
     await setNativeCursorPosition(x, y);
     if (!currentCapture(generation)) return false;
-    if (native.win.isFocused && !await native.win.isFocused()) throw new Error('window not focused');
+    if (native.win.isFocused && !await readNativeFocus(generation)) throw new Error('window not focused');
     if (!currentCapture(generation)) return false;
     await native.win.setCursorGrab(true);
     return currentCapture(generation);
@@ -366,6 +412,7 @@ export function createPointerModeController({
         native.active = false;
         await restoreNativeCursor('recenter-failed');
         if (!lockedToTarget()) { setInputLocked(false, 'recenter-failed'); setBodyClasses('ui'); }
+        scheduleCaptureRetry('recenter-failed');
         return false;
       } finally { native.positionPending = false; }
     });
@@ -390,7 +437,7 @@ export function createPointerModeController({
         if (!native.win?.setCursorVisible) throw new Error('setCursorVisible unavailable');
         if (!native.win?.setCursorGrab) throw new Error('setCursorGrab unavailable');
         // Never focus another OS window from an unattended capture retry.
-        if (native.win.isFocused && !await native.win.isFocused()) throw new Error('window not focused');
+        if (native.win.isFocused && !await readNativeFocus(generation)) throw new Error('window not focused');
         if (!currentCapture(generation)) return false;
         native.cursorOwned = true;
         await native.win.setCursorVisible(false);
@@ -437,6 +484,28 @@ export function createPointerModeController({
     return false;
   }
 
+  function clearRequestWatchdog(generation = null) {
+    if (generation !== null && generation !== requestWatchdog.generation) return;
+    if (requestWatchdog.timer !== null) {
+      try { clearTimeoutFn(requestWatchdog.timer); } catch (_) {}
+    }
+    requestWatchdog.timer = null;
+  }
+
+  function armRequestWatchdog(reason, generation) {
+    if (!tauriRuntime()) return;
+    clearRequestWatchdog();
+    requestWatchdog.generation = generation;
+    requestWatchdog.timer = setTimeoutFn(() => {
+      requestWatchdog.timer = null;
+      if (generation !== captureGeneration || !wantsCapture() || lookBackendActive()) return;
+      // WebKit may leave requestPointerLock's Promise unsettled across a view
+      // lifecycle. A bookkeeping TTL alone cannot start the working native
+      // backend; give the DOM request a bounded deadline to prove ownership.
+      verifyLockOrNativeFallback(`${reason}:request-timeout`, generation);
+    }, CAPTURE_REQUEST_TTL_MS);
+  }
+
   function clearCaptureRetry() {
     if (retry.timer !== null) {
       try { clearTimeoutFn(retry.timer); } catch (_) { /* timer host went away */ }
@@ -466,6 +535,7 @@ export function createPointerModeController({
   }
 
   function fallbackToNativeOrRetry(reason, generation) {
+    clearRequestWatchdog(generation);
     const started = startNativeCapture(reason, generation);
     void Promise.resolve(started).then((ok) => {
       if (ok) { clearCaptureRetry(); return; }
@@ -477,6 +547,7 @@ export function createPointerModeController({
 
   function release(reason = 'release') {
     expectedUnlockReason = reason;
+    clearRequestWatchdog();
     clearCaptureRetry();
     stopDragLook(`${reason}:drag`);
     void stopNativeCapture(`${reason}:native`);
@@ -529,6 +600,10 @@ export function createPointerModeController({
     lastMode = 'gameplay-ready';
     setBodyClasses('ui');
     setInputLocked(false, reason);
+    // Clearing/replacing a scene or a transient native refusal can leave live
+    // gameplay with no backend. Recover through the same bounded retry ladder
+    // as an initial request, without waiting for another click.
+    if (tauriRuntime() && !captureRequestInFlight()) scheduleCaptureRetry(reason);
     return { mode: lastMode, wantsCapture: true, locked: false, softCaptured: false, nativeCaptured: false, dragLook: false };
   }
 
@@ -541,6 +616,12 @@ export function createPointerModeController({
       return;
     }
     if (!wantsCapture()) return;
+    if (nativeCaptured()) {
+      backend.lastResult = 'native-captured';
+      clearRequestWatchdog(generation);
+      clearCaptureRetry();
+      return;
+    }
     backend.lastResult = 'not-locked';
     backend.fallbackReason = backend.lastError || 'request did not lock target';
     fallbackToNativeOrRetry(`${reason}:native-fallback`, generation);
@@ -548,7 +629,9 @@ export function createPointerModeController({
 
   function captureRequestInFlight() {
     if (native.pending) return true;
-    return backend.lastResult === 'requesting' && timeNow() - backend.lastRequestAt < CAPTURE_REQUEST_TTL_MS;
+    return backend.requestGeneration === captureGeneration
+      && backend.lastResult === 'requesting'
+      && timeNow() - backend.lastRequestAt < CAPTURE_REQUEST_TTL_MS;
   }
 
   async function attemptCapture(reason = 'gesture', { gesture = true } = {}) {
@@ -558,13 +641,15 @@ export function createPointerModeController({
     // Key repeat, a click landing on top of a keypress, and the pause-exit path
     // all fire within milliseconds of each other. Let the attempt already in
     // flight finish instead of bumping the generation out from under it.
-    if (captureRequestInFlight() && (!gesture || backend.lastRequestGesture)) {
-      if (gesture) retry.attempts = 0;
-      return false;
-    }
-    if (gesture) retry.attempts = 0;
+    if (captureRequestInFlight() && (!gesture || backend.lastRequestGesture)) return false;
+    // A genuinely new gesture owns a fresh bounded ladder. Do not reset the
+    // count beneath an already-queued timer or every recovery gains an extra
+    // attempt; repeats while an attempt is in flight do not renew its budget.
+    if (gesture) clearCaptureRetry();
 
+    clearRequestWatchdog();
     const generation = ++captureGeneration;
+    backend.requestGeneration = generation;
     const el = target();
     const request = el?.requestPointerLock;
     backend.lastRequestAt = timeNow();
@@ -580,6 +665,7 @@ export function createPointerModeController({
       return false;
     }
 
+    armRequestWatchdog(reason, generation);
     try {
       let result;
       try {
@@ -592,12 +678,14 @@ export function createPointerModeController({
       if (result && typeof result.then === 'function') {
         result.then(
           () => {
+            if (generation !== captureGeneration || !wantsCapture()) return;
+            clearRequestWatchdog(generation);
             backend.lastResult = 'resolved';
             setTimeout(() => verifyLockOrNativeFallback(reason, generation), 0);
           },
           (err) => {
-            markError(err, reason);
             if (generation !== captureGeneration || !wantsCapture()) return;
+            markError(err, reason);
             if (err?.name === 'NotSupportedError' || err?.name === 'TypeError') {
               try {
                 const fallback = request.call(el);
@@ -631,6 +719,7 @@ export function createPointerModeController({
   function handlePointerLockChange() {
     const locked = lockedToTarget();
     if (locked) {
+      clearRequestWatchdog();
       clearCaptureRetry();
       if (!tauriRuntime()) {
         if (native.active || native.pending) void stopNativeCapture('pointerlock-acquired:native');
@@ -660,6 +749,42 @@ export function createPointerModeController({
       return;
     }
     sync(reason);
+  }
+
+  function handleNativeFocusChange(focused) {
+    if (disposed) return;
+    const next = !!focused;
+    if (native.focused === next) return;
+    native.focused = next;
+    const reason = next ? 'native-window-focus' : 'native-window-blur';
+    if (!next) release(reason);
+    // Main owns movement clocks and held-action cleanup. Notify it even when
+    // no corresponding DOM event arrives, before asking for another grab.
+    try { onNativeFocusChanged(next, reason); } catch (_) {}
+    if (next && wantsCapture() && !lookBackendActive()) {
+      void attemptCapture(reason, { gesture: false });
+    }
+  }
+
+  function handleNativeCaptureInvalidated(reason = 'native-cursor-release') {
+    if (disposed) return false;
+    native.captureInvalidations += 1;
+    native.lastCaptureInvalidationReason = String(reason);
+    // Some native presentations release the OS cursor without changing main
+    // window focus. Retire JS ownership too, including an acquisition already
+    // crossing IPC; only live gameplay may enter the bounded recovery ladder.
+    release(`native-capture-invalidated:${reason}`);
+    return scheduleCaptureRetry(`native-capture-invalidated:${reason}`);
+  }
+
+  function dispose(reason = 'dispose') {
+    if (disposed) return;
+    disposed = true;
+    release(reason);
+    try { native.unlistenFocus?.(); } catch (_) {}
+    try { native.unlistenInvalidation?.(); } catch (_) {}
+    native.unlistenFocus = null;
+    native.unlistenInvalidation = null;
   }
 
   function handlePointerLockError(err = null) {
@@ -826,6 +951,8 @@ export function createPointerModeController({
         lastRequestAt: backend.lastRequestAt,
         lastRequestReason: backend.lastRequestReason,
         lastRequestGesture: backend.lastRequestGesture,
+        requestGeneration: backend.requestGeneration,
+        requestWatchdogPending: requestWatchdog.timer !== null,
         lastError: backend.lastError,
         lastErrorAt: backend.lastErrorAt,
         lastResult: backend.lastResult,
@@ -841,6 +968,11 @@ export function createPointerModeController({
         kind: native.kind,
         attempted: native.attempted,
         available: native.available,
+        focused: native.focused,
+        focusListening: !!native.unlistenFocus,
+        captureInvalidationListening: !!native.unlistenInvalidation,
+        captureInvalidations: native.captureInvalidations,
+        lastCaptureInvalidationReason: native.lastCaptureInvalidationReason,
         active: native.active,
         pending: native.pending,
         calibrated: native.calibrated,
@@ -943,6 +1075,9 @@ export function createPointerModeController({
     endDragLook,
     handlePointerLockChange,
     handlePointerLockError,
+    handleNativeFocusChange,
+    handleNativeCaptureInvalidated,
+    dispose,
     handlePointerMove,
     handleMouseMove,
     handleSoftPointerMove,

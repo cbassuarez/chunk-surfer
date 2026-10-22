@@ -10,10 +10,10 @@
 //
 // WHAT IS DONE TO THEM, AND WHY IT IS DONE HERE. Events are cut where the gut
 // actually moves (an energy gate over 20 ms frames), cleaned at the edges and
-// levelled to one loudness. The light bitcrush is baked, the way the applause
-// treatment is: a parallel branch that repeats every third sample (14.7 kHz) and is quantised to 8 bits,
-// mixed in at a third, so the original recording is still most of what you
-// hear. Reverb and placement are the runtime's (audio/stop-listening-gut.js),
+// levelled to one loudness. The dominant crushed branch has its own sample
+// clock: 9-bit/24 kHz gut events, 8-bit/22.05 kHz wet events, 10-bit/32 kHz beds.
+// These are actual held/quantised waveform rates, separate from MP3 encoding.
+// Reverb and placement are the runtime's (audio/stop-listening-gut.js),
 // because they depend on the room and on where he is standing.
 
 import cp from 'node:child_process';
@@ -21,12 +21,16 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { STOP_LISTENING_SOURCES, STOP_LISTENING_AUDIO_DIR } from '../../src/data/stop-listening.js';
+import { STOP_LISTENING_CRUSH, bitcrush, levelMatch, signalStats } from './stop-listening-dsp.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const sourceDir = path.join(root, 'artifacts/stop-listening/sources');
 const outDir = path.join(root, 'public', STOP_LISTENING_AUDIO_DIR);
 const RATE = 44100;
-const CRUSH = Object.freeze({ every: 3, bits: 8, mix: 0.32 });
+const CRUSH = Object.freeze({ ...STOP_LISTENING_CRUSH.gut,
+  method: 'fractional-clock-interpolated-signed-pcm-zero-order-hold',
+  profiles: STOP_LISTENING_CRUSH });
+const receiptDir = path.join(root, 'artifacts/ear-room-refinement');
 
 // How many events each source gives. Long digestion recordings give the most;
 // the one-shot squelches give what they have.
@@ -145,17 +149,6 @@ function fadeEdges(x, inS = 0.008, outS = 0.06) {
   return x;
 }
 
-// The light crush: each sample repeated for CRUSH.every samples, 8-bit, in parallel.
-function crush(x) {
-  const q = 2 ** (CRUSH.bits - 1), out = new Float32Array(x.length);
-  let kept = 0;
-  for (let i = 0; i < x.length; i++) {
-    if (i % CRUSH.every === 0) kept = Math.round(x[i] * q) / q;
-    out[i] = x[i] * (1 - CRUSH.mix) + kept * CRUSH.mix;
-  }
-  return out;
-}
-
 function loopBed(x, seconds) {
   // The steadiest window: the one whose frame energy varies least, with enough
   // in it to be a sound. Then its tail is crossfaded into its head.
@@ -183,6 +176,27 @@ fs.mkdirSync(outDir, { recursive: true });
 for (const f of fs.readdirSync(outDir)) if (f.endsWith('.mp3')) fs.unlinkSync(path.join(outDir, f));
 
 const manifest = { crush: CRUSH, rate: 32000, events: [], beds: [], sources: [] };
+const receipt = { processingSampleRate: RATE, encoding: { codec: 'MP3', rate: 32000, channels: 1, kbps: 80 },
+  profiles: STOP_LISTENING_CRUSH, files: [], sources: manifest.sources,
+  matchReference: 'Previous bank treatment: 8-bit, every-third-sample (14.7 kHz), 32% parallel mix; identical source cuts before MP3 encoding.',
+  runtimeUnchanged: 'Voice positions, cadence, pitch, directional filtering, synthetic room reverb and monitor/recording mute preserved.',
+  validation: 'Technical measurements; human authoring comparison and fresh-player validation remain pending.' };
+function processGrain(input, profile, file) {
+  // Reproduce the previous bank's pre-encoding treatment only as a level
+  // reference. Its parallel hold lost energy on some wet transients: matching
+  // an uncrushed take instead would make the new bank up to 1.5 dB louder.
+  const reference = new Float32Array(input.length);
+  let held = 0;
+  for (let i = 0; i < input.length; i++) {
+    if (i % 3 === 0) held = Math.round(input[i] * 128) / 128;
+    reference[i] = input[i] * .68 + held * .32;
+  }
+  const samples = levelMatch(bitcrush(input, RATE, profile), reference);
+  const before = signalStats(reference), after = signalStats(samples);
+  if (!after.finite || after.peakDb > -2.999) throw new Error(`Invalid processed audio ${file}`);
+  receipt.files.push({ file, profile, source: signalStats(input), before, after, rmsChangeDb: after.rmsDb - before.rmsDb });
+  return samples;
+}
 for (const source of STOP_LISTENING_SOURCES) {
   const { file } = sourceFile(source);
   if (!fs.existsSync(file)) throw new Error(`${source.id}: no source at ${path.relative(root, file)} (run with --fetch)`);
@@ -196,21 +210,32 @@ for (const source of STOP_LISTENING_SOURCES) {
   regions.forEach((r, n) => {
     const pre = Math.round(0.04 * RATE), post = Math.round(0.14 * RATE);
     const cut = x.slice(Math.max(0, r.from - pre), Math.min(x.length, r.to + post));
-    const samples = crush(fadeEdges(level(cut, -20)));
     const name = `${source.id}-${String(n + 1).padStart(2, '0')}.mp3`;
+    const profile = STOP_LISTENING_CRUSH[source.role === 'gut' ? 'gut' : 'wet'];
+    const samples = processGrain(fadeEdges(level(cut, -20)), profile, name);
     encode(samples, path.join(outDir, name));
     manifest.events.push({ id: `${source.id}-${n + 1}`, file: name, source: source.id, role: source.role,
-      seconds: +(samples.length / RATE).toFixed(3), from: +(Math.max(0, r.from - pre) / RATE).toFixed(3) });
+      seconds: +(samples.length / RATE).toFixed(3), from: +(Math.max(0, r.from - pre) / RATE).toFixed(3), crush: profile });
   });
 }
 for (const bed of BEDS) {
   const source = STOP_LISTENING_SOURCES.find((s) => s.id === bed.source);
   const looped = loopBed(highpass(decode(sourceFile(source).file)), bed.seconds);
-  const samples = crush(level(looped.samples, -27));
   const name = `${bed.id}.mp3`;
+  const samples = processGrain(level(looped.samples, -27), STOP_LISTENING_CRUSH.bed, name);
   encode(samples, path.join(outDir, name));
-  manifest.beds.push({ id: bed.id, file: name, source: bed.source, seconds: bed.seconds, from: +looped.from.toFixed(3) });
+  manifest.beds.push({ id: bed.id, file: name, source: bed.source, seconds: bed.seconds, from: +looped.from.toFixed(3), crush: STOP_LISTENING_CRUSH.bed });
+}
+manifest.processingSampleRate = RATE;
+manifest.encoding = receipt.encoding;
+manifest.levelReference = receipt.matchReference;
+for (const entry of [...manifest.events, ...manifest.beds]) {
+  const measurement = receipt.files.find((file) => file.file === entry.file);
+  entry.levels = { beforeRmsDb: measurement.before.rmsDb, rmsDb: measurement.after.rmsDb,
+    peakDb: measurement.after.peakDb, finite: measurement.after.finite, rmsChangeDb: measurement.rmsChangeDb };
 }
 fs.writeFileSync(path.join(outDir, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+fs.mkdirSync(receiptDir, { recursive: true });
+fs.writeFileSync(path.join(receiptDir, 'audio-processing.json'), `${JSON.stringify(receipt, null, 2)}\n`);
 const bytes = fs.readdirSync(outDir).reduce((sum, f) => sum + fs.statSync(path.join(outDir, f)).size, 0);
 console.log(`stop-listening audio: ${manifest.events.length} events, ${manifest.beds.length} beds, ${(bytes / 1024).toFixed(0)} KB`);

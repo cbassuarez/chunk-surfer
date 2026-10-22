@@ -90,7 +90,14 @@ export function makeThoughtScene({
     lensPreset,
 
     enter() { convo.start(); },
-    exit() { convo.stop(); audio?.stopTyping?.(); onExit?.(); },
+    exit() {
+      convo.stop();
+      audio?.stopTyping?.();
+      // Replacement/removal abandons the same interaction as Escape. Owners
+      // must release dialogue leases even when another scene closes this one.
+      if (!completed && !cancelled) { cancelled = true; onCancel?.(); }
+      onExit?.();
+    },
     update(dt) { convo.update(dt); },
     worldView:typeof worldView==='function'?worldView:undefined,
     view() { return convo.view(); },        // for the headless suites
@@ -155,7 +162,7 @@ export function makeThoughtScene({
           panelH,
           {
             label: 'MONITOR',
-            source: transcriptSource(sourceWho),
+            source: (v.pending?.kind !== 'say' && v.line?.sourceLabel) || transcriptSource(sourceWho),
             footer: v.pending?.options?.length
               ? promptLine([{ action: 'select', label: 'SELECT' }, { action: 'confirm', label: 'TRANSMIT' }])
               : promptLine([{ action: 'continue', label: 'CONTINUE' }]),

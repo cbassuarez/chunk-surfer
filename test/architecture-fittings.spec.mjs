@@ -8,6 +8,8 @@ import { buildArchitectureFittings } from '../tools/chunk_surfer/architecture-fi
 import { buildBuildingAmenities } from '../tools/chunk_surfer/building-amenities-geometry.mjs';
 import { propWallPose } from '../src/world/prop-wall-pose.js';
 import { wallContactAt } from '../src/world/wall-contact.js';
+import { physicalWallFaceHasHost } from '../src/world/baseboard-hosting.js';
+import { loadGalleryGeometry } from './helpers/gallery-kit-contact.mjs';
 import { CELL, F, ZONE } from '../src/data/floorplan/legend.js';
 import { conservatory } from '../src/data/floorplan/conservatory.js';
 import * as FP from '../src/world/floorplan.js';
@@ -204,12 +206,14 @@ const boxesOverlap=(a,b,pad=0)=>a.min.every((v,axis)=>v<b.max[axis]+pad)&&a.max.
 
 test('explicit host reservations agree with the actual authored furniture and resolved mounting poses',()=>{
   building();PROPS.propsInit(FP);
+  const gallery=loadGalleryGeometry();
   for(const host of ARCHITECTURE_HOST_RESERVATIONS){
     const actual=PROPS.propById(host.propId);assert.ok(actual,host.propId);assert.equal(actual.mesh,host.mesh);
     const position=[actual.rx*CELL+(actual.renderOffsetX||0),actual.floor+(actual.elevation||0),actual.ry*CELL+(actual.renderOffsetZ||0)];
     position.forEach((v,axis)=>assert.ok(Math.abs(v-host.position[axis])<1e-6,`${host.propId}: reservation follows actual resolved pose`));
     assert.ok(Math.abs((actual.yaw||0)-host.yaw)<1e-6,`${host.propId}: reservation follows actual yaw`);
-    assert.deepEqual(host.bounds,PROP_BOUNDS[host.mesh],`${host.propId}: measured first-build fallback stays current`);
+    const actualBounds=host.geometryPack==='academic-gallery.glb'?gallery.meshes.get(host.mesh).bounds:PROP_BOUNDS[host.mesh];
+    assert.deepEqual(host.bounds,actualBounds,`${host.propId}: measured first-build fallback stays current`);
   }
 });
 
@@ -220,14 +224,22 @@ test('the four proven furniture conflicts move to clear wall hosts without remov
     ['architecture-space-studio-b2-switch','b2-piano'],
     ['architecture-space-faculty-office-east-switch','occupation-academic-post'],
     ['architecture-space-academic-reception-socket-a','amenity-staff-coat-lockers'],
-    ['architecture-space-academic-reception-socket-b','amenity-staff-coat-lockers'],
-    ['architecture-space-academic-reception-radiator','amenity-staff-coat-lockers'],
-    ['architecture-space-stripped-office-socket-b','amenity-staff-service-connections'],
+    // The physical-host repair independently rejects these earlier choices.
+    // Their new unreserved poses must positively fit the real wall and locker.
+    ['architecture-space-academic-reception-socket-b','amenity-staff-coat-lockers',false],
+    ['architecture-space-academic-reception-radiator','amenity-staff-coat-lockers',false],
+    ['architecture-space-stripped-office-socket-b','amenity-staff-service-connections',false],
   ];
-  for(const [id,hostId]of cases){
+  for(const [id,hostId,reservationStillRequired=true]of cases){
     const before=unreserved.placements.find(p=>p.id===id),after=repaired.placements.find(p=>p.id===id),host=hosts.get(hostId);
     assert.ok(before&&after,`${id}: fitting remains in its original room kit`);
-    assert.ok(boxesOverlap(resolvedFixtureBox(before),host),`${id}: regression reconstructs the original host conflict`);
+    if(reservationStillRequired)assert.ok(boxesOverlap(resolvedFixtureBox(before),host),`${id}: regression reconstructs the original host conflict`);
+    else {
+      const x=Math.round(before.x/CELL),y=Math.round(before.y/CELL),spec=ARCHITECTURE_FITTING_MESHES[before.mesh];
+      assert.ok(physicalWallFaceHasHost(FP,{x,y,...before.mountNormal},{bottom:FP.floorAt(x,y)+before.elevation+.001,
+        height:spec.h-.002,halfWidthCells:spec.w/(2*CELL)}),`${id}: the unreserved replacement has a full physical wall host`);
+      assert.ok(!boxesOverlap(resolvedFixtureBox(before),host),`${id}: rejecting the phantom wall also clears the existing host`);
+    }
     assert.ok(!boxesOverlap(resolvedFixtureBox(after),host,host.clearance-.002),`${id}: real mounted geometry clears the existing host`);
   }
   assert.deepEqual(repaired.statistics.unresolvedRooms,[],'no reservation suppresses a required fitting');

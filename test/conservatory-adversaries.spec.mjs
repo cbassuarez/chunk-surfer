@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { NodeIO } from '@gltf-transform/core';
 import { parseCharacterAsset, sampleCharacterPose } from '../src/render/character-asset.js';
-import { freshConservatoryAdversaries, stepConservatoryAdversaries, costumeExchangeFrame, costumeScreamCallsHush, heldNoteFrame } from '../src/game/conservatory-adversaries.js';
+import { COSTUME_EXCHANGE_TIMING, cancelCostumeInspection, costumeInspectionEligible, freshConservatoryAdversaries, stepConservatoryAdversaries, costumeExchangeFrame, costumeScreamCallsHush, heldNoteFrame } from '../src/game/conservatory-adversaries.js';
 import { adversaryWorldMatrix, costumeExchangeParts, heldNoteParts } from '../src/render/conservatory-adversary-performance.js';
 
 const step=(state,values={})=>stepConservatoryAdversaries(state,{dt:.1,group:'basement',player:{x:12,y:23},yaw:0,...values});
@@ -41,15 +41,57 @@ result=step(state,{player:{x:2.5,y:18.2},yaw:0,storeDoorOpen:true});state=result
 assert.equal(state.costume.phase,'work');
 for(let i=0;i<8;i++)state=step(state,{player:{x:2.5,y:17},yaw:0}).state;
 assert.equal(state.costume.phase,'work','proximity alone does not spring the pin trap');
+for(let i=0;i<250;i++){
+  const waiting=step(state,{player:{x:3.7,y:18.5},yaw:.3});state=waiting.state;
+  assert.equal(state.costume.phase,'work');assert.equal(waiting.events.length,0,'waiting at the chair cannot begin the inspection or its scare');
+}
 assert.equal(step(state,{player:{x:9,y:23},reachForPin:true}).state.costume.phase,'work',
   'the figure cannot startle the player from the corridor');
 assert.equal(costumeExchangeFrame({...state.costume,inStore:false}).visible,false,
   'the workroom body is never shown outside the room');
-result=step(state,{player:{x:3.7,y:18.5},reachForPin:true});state=result.state;
-assert.equal(state.costume.phase,'startle');
-assert.equal(result.events[0].kind,'pin-snap');
+assert.deepEqual(COSTUME_EXCHANGE_TIMING,{inspect:1.45,notice:.65,startle:.28,exchange:2.55,threshold:1.25});
+assert.equal(costumeInspectionEligible(state.costume,{player:{x:3.7,y:18.5}}),true);
+assert.equal(costumeInspectionEligible(state.costume,{player:{x:3.7,y:18.5},costumeConflict:true}),false,'a legacy store watcher retains its room');
+assert.equal(costumeInspectionEligible(state.costume,{player:{x:3.7,y:18.5},group:'academic'}),false);
+assert.equal(costumeInspectionEligible(state.costume,{player:{x:9,y:23}}),false,'inspection is local to the actual store');
+const cameraAt={x:3.2,y:18.3},inspectAt={x:3.3,y:18.0},actualPlayer={x:3.7,y:18.5};
+result=step(state,{player:actualPlayer,reachForPin:true,inspectAt,cameraAt});state=result.state;
+assert.equal(state.costume.phase,'inspect');
+assert.deepEqual(result.events.map(e=>e.kind),['seam-pick']);
+assert.deepEqual(state.costume.playerAt,actualPlayer,'a staged view cannot overwrite the real player position');
+assert.deepEqual(state.costume.inspectAt,inspectAt);assert.deepEqual(state.costume.cameraAt,cameraAt);
+assert.equal(state.costume.seen,false);assert.equal(state.costume.committed,false);
+const inspectionStart=structuredClone(state),inspectionFrame=costumeExchangeFrame({...state.costume,elapsed:.8});
+assert.equal(inspectionFrame.stage,'inspect');assert.deepEqual(inspectionFrame.at,{x:2.55,y:16.6});assert.equal(inspectionFrame.crownOpen,0);assert.ok(Math.abs(inspectionFrame.torsoShift)<.013);
+for(let i=0;i<35;i++)state=step(state,{player:actualPlayer,busy:true,reachForPin:true}).state;
+assert.deepEqual(state,inspectionStart,'pause, focus loss or an inactive owning scene cannot silently spend the inspection clock');
+const abandoned=cancelCostumeInspection(state);
+assert.equal(abandoned.state.costume.phase,'work');assert.equal(abandoned.state.costume.committed,false);assert.equal(abandoned.events.length,0);
+assert.equal(cancelCostumeInspection(abandoned.state).events.length,0,'cancellation cleanup is idempotent');
+assert.equal(step(abandoned.state,{player:actualPlayer}).state.costume.phase,'work','cancellation does not restart the scene from proximity');
+assert.equal(step(abandoned.state,{player:actualPlayer,reachForPin:true}).state.costume.phase,'inspect','a fresh deliberate reach can retry an abandoned inspection');
+let clockState=inspectionStart;
+for(let i=0;i<14;i++)clockState=step(clockState,{player:actualPlayer,reachForPin:true}).state;
+assert.equal(clockState.costume.phase,'inspect','repeated reaches cannot bypass the quiet inspection');
+result=step(clockState,{player:actualPlayer,dt:.06});state=result.state;
+assert.equal(state.costume.phase,'notice');assert.deepEqual(result.events.map(e=>e.kind),['head-notice']);
+const noticeEarly=costumeExchangeFrame({...state.costume,elapsed:0}),noticeLate=costumeExchangeFrame({...state.costume,elapsed:.3});
+assert.equal(noticeEarly.headAimStrength,0);assert.equal(noticeLate.headAimStrength,1);assert.deepEqual(noticeLate.headAim,cameraAt);assert.equal(noticeLate.torsoShift,0);assert.equal(noticeLate.crownOpen,0);
+assert.deepEqual(noticeEarly.at,noticeLate.at);assert.equal(noticeEarly.yaw,noticeLate.yaw,'the head notices the camera before the body moves');
+assert.equal(cancelCostumeInspection(state).state.costume.phase,'work','leaving before the lunge does not spend the scare');
+for(let i=0;i<6;i++)state=step(state,{player:actualPlayer}).state;
+result=step(state,{player:actualPlayer,dt:.06});state=result.state;
+assert.equal(state.costume.phase,'startle');assert.equal(state.costume.committed,true);
+assert.deepEqual(result.events.map(e=>e.kind),['costume-revealed','pin-snap'],'persistence commitment coincides with the actual lunge');
+const interrupted=cancelCostumeInspection(state);
+assert.equal(interrupted.committed,true);assert.equal(interrupted.state.costume.phase,'done');assert.deepEqual(interrupted.events.map(e=>e.kind),['costume-done']);
+assert.equal(cancelCostumeInspection(interrupted.state).events.length,0,'quitting after the scare cannot fire completion twice');
+const remnant=costumeExchangeFrame(freshConservatoryAdversaries({costumeComplete:true}).costume);
+assert.equal(remnant.visible,false);assert.equal(remnant.remnant,true);assert.deepEqual(remnant.remnantAt,{x:3.35,y:17.3});
 assert.ok(costumeExchangeFrame({...state.costume,elapsed:.24}).at.y>16.6,
   'the body springs toward the hand and stops short');
+const lungeFrame=costumeExchangeFrame({...state.costume,elapsed:.24}),toCamera={x:cameraAt.x-lungeFrame.at.x,y:cameraAt.y-lungeFrame.at.y};
+assert.ok((-Math.sin(lungeFrame.yaw)*toCamera.x-Math.cos(lungeFrame.yaw)*toCamera.y)/Math.hypot(toCamera.x,toCamera.y)>.99999,'the final adversary matrix faces the selected close camera mark');
 for(let i=0;i<3;i++)state=step(state,{player:{x:3.7,y:18.5}}).state;
 assert.equal(state.costume.phase,'exchange');
 assert.equal(costumeScreamCallsHush(state.costume,{rms:.34,playerNoiseLikely:true,hasB3Take:true}),true,
@@ -83,9 +125,13 @@ assert.equal(state.costume.phase,'threshold');
 assert.ok(costumeExchangeParts({...state.costume,elapsed:.7}).some(p=>p.id==='exchange-cover'),
   'only the empty cover crosses the torch cone');
 const thrown=costumeExchangeParts({...state.costume,elapsed:.45}).find(p=>p.id==='exchange-cover');
-assert.ok(thrown.height>0,'the empty cover enters eye level before it collapses');
+assert.ok(thrown,'the detached cover makes the near miss before it collapses');
 for(let i=0;i<19;i++)result=step(state,{player:{x:2.5,y:17},yaw:0}),state=result.state;
 assert.equal(state.costume.phase,'done');
+assert.equal(costumeExchangeFrame(state.costume).remnant,true,'the spent encounter leaves an inspectable physical aftermath');
+for(let i=0;i<50;i++){const repeat=step(state,{player:actualPlayer,reachForPin:true});assert.equal(repeat.events.length,0);state=repeat.state;}
+assert.equal(state.costume.phase,'done','remaining in the store or pressing E cannot repeat the committed scare');
+assert.equal(freshConservatoryAdversaries({costumeComplete:true}).costume.phase,'done','main-owned commitment restores the aftermath directly after reload');
 
 state=freshConservatoryAdversaries();
 result=step(state,{group:'academic',player:{x:9,y:256}});state=result.state;
@@ -118,6 +164,22 @@ for(const [file,phases,presentation] of [
   const raw=readFileSync(new URL(`../public/assets/${file}.glb`,import.meta.url));
   const asset=parseCharacterAsset(raw.buffer.slice(raw.byteOffset,raw.byteOffset+raw.byteLength));
   if(file==='costume-exchange'){
+    // Rotation changes the cover's support point. Test its actual skinned
+    // cloth in world space; the mesh pivot may sit below the floor while the
+    // visible cloth remains above it and passes beneath the operator's eyes.
+    const cover=asset.entries.find(entry=>entry.name===thrown.mesh),coverPose=sampleCharacterPose(asset,cover,thrown.character);
+    const coverMatrix=adversaryWorldMatrix(0,thrown.height,0,thrown.yaw,thrown.pitch,thrown.scale||1);
+    let clothMin=Infinity,clothMax=-Infinity;
+    for(const primitive of cover.primitives)for(const vertex of new Set(primitive.indices)){
+      const point=[0,0,0];
+      for(let influence=0;influence<4;influence++){
+        const joint=primitive.joints[vertex*4+influence]*16,weight=primitive.weights[vertex*4+influence],x=primitive.positions[vertex*3],y=primitive.positions[vertex*3+1],z=primitive.positions[vertex*3+2];
+        for(let axis=0;axis<3;axis++)point[axis]+=weight*(coverPose.bones[joint+axis]*x+coverPose.bones[joint+axis+4]*y+coverPose.bones[joint+axis+8]*z+coverPose.bones[joint+axis+12]);
+      }
+      const worldY=coverMatrix[1]*point[0]+coverMatrix[5]*point[1]+coverMatrix[9]*point[2]+coverMatrix[13];clothMin=Math.min(clothMin,worldY);clothMax=Math.max(clothMax,worldY);
+    }
+    assert.ok(clothMin>=-.0001,'the rotated cover never passes through the concrete');
+    assert.ok(clothMax<1.62&&clothMax>.35,'the cover crosses the foreground beneath the operator’s eyes');
     const features=asset.entries.find(e=>e.name==='costume_exchange_features');
     const closed=costumeExchangeParts({phase:'work',elapsed:1}).find(p=>p.id==='exchange-features');
     const opened=costumeExchangeParts({phase:'exchange',elapsed:1.5}).find(p=>p.id==='exchange-features');

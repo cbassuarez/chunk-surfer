@@ -8,7 +8,10 @@
 // a bad localStorage value must never brick the game.
 
 import { PLAN_SCALE } from '../data/floorplan/legend.js';
+import {normalizeSourceDriveCheckpoint} from './source-drive-session.js';
+import {normalizeSourcePubCheckpoint} from './source-pub.js';
 import { clearSlateAudio } from '../audio/take-slate.js';
+import { clearSourceDriveAudio } from '../audio/source-drive-recording.js';
 import {
   SAVE_VERSION,
   META_VERSION,
@@ -94,6 +97,8 @@ export const freshSave = ({ settings = DEFAULT_SETTINGS, run = null } = {}) => (
   bagMap: freshBagMapState(),
   hushAudio: null,
   chunkSurf: freshChunkSurfState(),
+  sourceDrive: normalizeSourceDriveCheckpoint(null),
+  sourcePub: normalizeSourcePubCheckpoint(null,{runId:run?.id||''}),
   chapelTower: freshChapelTowerState(),
   power: freshPowerState(),
   dockHaunting: freshDockHauntingState(),
@@ -109,6 +114,14 @@ export const freshSave = ({ settings = DEFAULT_SETTINGS, run = null } = {}) => (
   // The head from the fountain in the park, and whether the gallery has it back.
   // Normalised on read by game/marble-head.js, same as plantIncident above.
   marbleHead: null,
+  // Four third-floor residents; normalised by academic-society.js.
+  academicSociety: null,
+  academicFloorPopulation: null,
+  // Learned interruption and completed third-floor admission; no live clock.
+  academicBouncers: null,
+  // One completed Held Note outcome; its live sweep/warning never persists.
+  academicAdversaries: null,
+  academicCrowdDread: null,
   // Roof city-seat vigil, retaining the old key so earned arrival leads survive.
   // game/yard-vigil.js normalises the location/version and retires unearned
   // legacy yard coordinates; this file does not own the vigil's rule.
@@ -308,6 +321,8 @@ function normalizeSaveV4(data, meta = null) {
     doors: normalizeDoorSave(source.doors),
     hushAudio: normalizeHushAudioSave(source.hushAudio),
     chunkSurf,
+    sourceDrive:normalizeSourceDriveCheckpoint(source.sourceDrive),
+    sourcePub:normalizeSourcePubCheckpoint(source.sourcePub,{runId:run?.id||''}),
     chapelTower,
     power: normalizePowerState(source.power),
     dockHaunting: normalizeDockHauntingState(source.dockHaunting),
@@ -504,6 +519,7 @@ export function metaCommit(patch = {}) {
 }
 
 export function newGame({ preset = null, values = null, now = Date.now(), launchPlan = null, prepareInVan = false } = {}) {
+  if(!transientState())void clearSourceDriveAudio();
   const settings = normalizeSettings(save?.settings);
   const plannedNow = Number.isFinite(Number(launchPlan?.startedAt))
     ? Number(launchPlan.startedAt)
@@ -589,4 +605,5 @@ export function clearAllData() {
   clearSave();
   clearMeta();
   void clearSlateAudio();
+  void clearSourceDriveAudio();
 }

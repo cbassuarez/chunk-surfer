@@ -1,0 +1,170 @@
+- main [ref=f14e2]:
+  - paragraph [ref=f14e3]: Chunk Surfer · Chapel sound implementation · 22 October 2026
+  - heading "The service continues." [level=1] [ref=f14e4]
+  - paragraph [ref=f14e5]: Human prayer at the altar. A small congregation answering from the pews. Enough silence for the room to remain occupied. You arrive partway through; leaving does not give the service a new beginning.
+  - paragraph [ref=f14e6]:
+    - strong [ref=f14e7]: Implemented and captured in the actual browser encounter.
+    - text: 32 focused tests pass; six source-bank checks pass.
+    - strong [ref=f14e8]: The Ear Room gurgles are unchanged.
+    - text: Human listening and player validation remain pending.
+  - figure "Actual game frame during the service capture. Existing congregants, clergy, held poses, lighting and final dither. This sound pass changes none of their appearance or behaviour." [ref=f14e9]:
+    - img "The existing chapel nave and altar through the game's final dither, during the live sound capture" [ref=f14e10]
+  - generic [ref=f14e12]:
+    - heading "Actual encounter output" [level=2] [ref=f14e13]
+    - paragraph [ref=f14e14]: 69 seconds captured from the game's output after its master/limiter. Includes normal aisle movement and looking back, then protected-state and departure/return checks. All game sound is present. No microphone was recorded.
+    - generic [ref=f14e15]: Your browser cannot play this recording.
+    - generic [ref=f14e16]:
+      - link "Stereo WAV" [ref=f14e17] [cursor=pointer]:
+        - /url: actual-encounter.wav
+      - link "Timestamped encounter states" [ref=f14e18] [cursor=pointer]:
+        - /url: live-capture.json
+      - link "Output measurements" [ref=f14e19] [cursor=pointer]:
+        - /url: actual-encounter-measurements.json
+    - paragraph [ref=f14e20]: Decoded duration 68.88 s · 48 kHz stereo · peak −10.46 dBFS · RMS −37.09 dBFS · zero clipped samples. These measurements establish headroom, not perceived loudness or artistic quality. The accompanying states and stills are not a synchronized video.
+  - heading "A ritual that has ceased to finish" [level=2] [ref=f14e21]
+  - paragraph [ref=f14e22]: The officiant speaks complete Latin prayer clauses in their recorded order. A single real congregation recording answers “Amen.” Quiet church occupancy, cloth movement and an old wooden bench carry the gaps. Long pauses belong to the service rather than announcing a scare.
+  - paragraph [ref=f14e23]: The 118-second cycle follows the running audio context, including time spent elsewhere during play. Returning seeks into the current phrase. It does not replay missed creaks, repeat an entrance cue or react to your gaze. The intended discomfort is a ritual continuing without acknowledgement, with the fixed figures already participating. Continuity across application restarts or save/reload is not claimed.
+  - paragraph [ref=f14e24]: The officiant is anchored to the existing celebrant's mouth. Three existing pew stations carry the response, room and material sounds. Distance, head direction, rear filtering and the existing door-occlusion system govern audibility. One recorded group responds at a time; it has not been multiplied into a synthetic choir.
+  - generic [ref=f14e25]:
+    - generic [ref=f14e26]:
+      - heading "What remains protected" [level=3] [ref=f14e27]
+      - paragraph [ref=f14e28]: Recording, monitoring, playback, the chapel confrontation, blocked scenes, pause and lost input focus mute the complete service graph. Other floors and upper rooms stay outside its active area. Ordinary nonblocking speech ducks it. It uses the existing effects bus and settings.
+    - generic [ref=f14e29]:
+      - heading "The Ear Room remains itself" [level=3] [ref=f14e30]
+      - paragraph [ref=f14e31]: All 52 existing Ear audio/runtime/builder files match their pre-service hashes, including the gurgles, crushed bank and processing definitions. The Mass layer is separate; it neither replaces nor reprocesses that sound.
+      - paragraph [ref=f14e32]:
+        - link "Preservation receipt" [ref=f14e33] [cursor=pointer]:
+          - /url: ear-preservation-final.json
+  - heading "What was verified" [level=2] [ref=f14e34]
+  - table [ref=f14e35]:
+    - rowgroup [ref=f14e36]:
+      - row [ref=f14e37]:
+        - columnheader "Check" [ref=f14e38]
+        - columnheader "Observed result" [ref=f14e39]
+        - columnheader "Evidence" [ref=f14e40]
+    - rowgroup [ref=f14e41]:
+      - row [ref=f14e42]:
+        - cell "Real integration" [ref=f14e43]
+        - cell "Regular game entry loads the new service; bank loaded, no runtime failure. Final dither enabled, shader ready, GL error 0. The main version token was refreshed after an old cached entry was discovered." [ref=f14e44]
+        - cell [ref=f14e45]:
+          - link "Normal entry" [ref=f14e46] [cursor=pointer]:
+            - /url: regular-index.json
+      - row [ref=f14e47]:
+        - cell "Movement / placement" [ref=f14e48]
+        - cell "Trusted forward input moves along the existing aisle; voices stay with their fixed bodies. Looking back changes bearing, pan and filtering." [ref=f14e49]
+        - cell [ref=f14e50]:
+          - link "Live states" [ref=f14e51] [cursor=pointer]:
+            - /url: live-capture.json
+          - link "Look-back frame" [ref=f14e52] [cursor=pointer]:
+            - /url: chapel-look-back.png
+      - row [ref=f14e53]:
+        - cell "Absence / return" [ref=f14e54]
+        - 'cell "Other floor: inactive, no playing sources. Return: clock advanced 2.416 seconds, prayer resumed in progress." [ref=f14e55]'
+        - cell [ref=f14e56]:
+          - link "Return check" [ref=f14e57] [cursor=pointer]:
+            - /url: live-reentry.json
+      - row [ref=f14e58]:
+        - cell "Recording / battle" [ref=f14e59]
+        - cell [ref=f14e60]:
+          - text: "REC flag fixture: muted, zero sources. Actual engine scene"
+          - code [ref=f14e61]: battle:chapel
+          - text: ": muted, zero sources. Ordinary chapel REC begins the confrontation, so the separate REC flag check is labelled as a fixture."
+        - cell [ref=f14e62]:
+          - link "REC fixture" [ref=f14e63] [cursor=pointer]:
+            - /url: live-recording-protection.json
+          - link "Battle check" [ref=f14e64] [cursor=pointer]:
+            - /url: live-battle-protection.json
+      - row [ref=f14e65]:
+        - cell "Contracts / bank" [ref=f14e66]
+        - cell "32/32 focused tests, 6/6 independent bank checks. Exact body-mouth parity, floor and protection gates, ordered prayer, phase continuity, no missed-event backlog, bounded sources, credits, Ear regression checks." [ref=f14e67]
+        - cell [ref=f14e68]:
+          - link "Test output" [ref=f14e69] [cursor=pointer]:
+            - /url: focused-final.tap
+          - link "Bank checks" [ref=f14e70] [cursor=pointer]:
+            - /url: audio-bank-check.json
+      - row [ref=f14e71]:
+        - cell "Production code" [ref=f14e72]
+        - cell "Complete production entry graph compiles in memory. No package/release build or shared asset regeneration. Existing source-drive missing-export and ineffective dynamic-import warnings remain." [ref=f14e73]
+        - cell [ref=f14e74]:
+          - link "Build receipt" [ref=f14e75] [cursor=pointer]:
+            - /url: code-build.json
+  - paragraph [ref=f14e76]:
+    - link "Combined verification and source hashes" [ref=f14e77] [cursor=pointer]:
+      - /url: verification.json
+  - group [ref=f14e78]:
+    - generic "Service-only authoring preview" [ref=f14e79]
+  - heading "Recordings and editable sources" [level=2] [ref=f14e80]
+  - paragraph [ref=f14e81]: This is an assembled fictional service, not an archival Mass or a reconstruction of a complete historical rite. The priest material is a contemporary human reading of traditional Latin texts. The response is one field-recorded priest/congregation. The church occupancy is contemporary; its source title dates the building. Cloth and bench are adapted foley.
+  - table [ref=f14e82]:
+    - rowgroup [ref=f14e83]:
+      - row [ref=f14e84]:
+        - columnheader "Source recording" [ref=f14e85]
+        - columnheader "Creator / licence" [ref=f14e86]
+        - columnheader "Use" [ref=f14e87]
+    - rowgroup [ref=f14e88]:
+      - row [ref=f14e89]:
+        - cell [ref=f14e90]:
+          - link "Pater_Noster.wav" [ref=f14e91] [cursor=pointer]:
+            - /url: https://freesound.org/people/cormi/sounds/113654/
+          - link "De_Communione.wav" [ref=f14e92] [cursor=pointer]:
+            - /url: https://freesound.org/people/cormi/sounds/121883/
+        - cell [ref=f14e93]:
+          - text: cormi ·
+          - link "CC0 1.0" [ref=f14e94] [cursor=pointer]:
+            - /url: https://creativecommons.org/publicdomain/zero/1.0/
+        - cell "Five complete clause groups; performer cadence preserved." [ref=f14e95]
+      - row [ref=f14e96]:
+        - cell [ref=f14e97]:
+          - link "amen.wav" [ref=f14e98] [cursor=pointer]:
+            - /url: https://freesound.org/people/ERH/sounds/29933/
+        - cell [ref=f14e99]:
+          - text: ERH ·
+          - link "CC BY 4.0" [ref=f14e100] [cursor=pointer]:
+            - /url: https://creativecommons.org/licenses/by/4.0/
+        - cell "One coherent recorded group with its existing room decay." [ref=f14e101]
+      - row [ref=f14e102]:
+        - cell [ref=f14e103]:
+          - link "1800's Church Silent Prayer During Communion" [ref=f14e104] [cursor=pointer]:
+            - /url: https://freesound.org/people/composingatnight/sounds/697580/
+        - cell "composingatnight · CC0 1.0" [ref=f14e105]
+        - cell "Two quiet occupancy slices." [ref=f14e106]
+      - row [ref=f14e107]:
+        - cell [ref=f14e108]:
+          - link "Blanket Movement 2" [ref=f14e109] [cursor=pointer]:
+            - /url: https://freesound.org/people/OwlStorm/sounds/320138/
+        - cell "OwlStorm / Ashe Kirk · CC0 1.0" [ref=f14e110]
+        - cell "Clothing texture adapted from down-duvet foley." [ref=f14e111]
+      - row [ref=f14e112]:
+        - cell [ref=f14e113]:
+          - link "Bench Creak 2.wav" [ref=f14e114] [cursor=pointer]:
+            - /url: https://freesound.org/people/tbhicba/sounds/148335/
+        - cell [ref=f14e115]:
+          - text: tbhicba ·
+          - link "CC BY 3.0" [ref=f14e116] [cursor=pointer]:
+            - /url: https://creativecommons.org/licenses/by/3.0/
+        - cell "Wooden-bench creak adapted as pew movement." [ref=f14e117]
+  - paragraph [ref=f14e118]: All sources are CC0 or CC BY; required credits and adaptation notices are included in the game. Gentle filtering, levelling and edge fades produce a 10-clip, 1.03 MB bank. Licensed HQ previews are retained with source-page snapshots and hashes; lossless originals were not available through this workflow.
+  - paragraph [ref=f14e119]: A restrained 3.8-second procedural convolution tail and 28 ms predelay connect the altar reading to the room. This is a synthetic response, not a measured chapel impulse. The recorded group receives less added room than the dry reading. No new bitcrushing was applied to these voices; the Ear Room's existing crushed gurgles remain intact.
+  - generic [ref=f14e120]:
+    - link "Full provenance and adaptation notes" [ref=f14e121] [cursor=pointer]:
+      - /url: /third_party/licenses/CHAPEL-SERVICE-AUDIO.md
+    - link "Encoded bank manifest" [ref=f14e122] [cursor=pointer]:
+      - /url: /audio/chapel-service/manifest.json
+    - link "Decoded bank measurements" [ref=f14e123] [cursor=pointer]:
+      - /url: audio-build.json
+  - generic [ref=f14e124]:
+    - link "Source and cut definitions" [ref=f14e125] [cursor=pointer]:
+      - /url: /src/data/chapel-service-audio.js
+    - link "Editable score" [ref=f14e126] [cursor=pointer]:
+      - /url: /src/data/chapel-service-score.js
+    - link "Web Audio runtime" [ref=f14e127] [cursor=pointer]:
+      - /url: /src/audio/chapel-service.js
+    - link "World integration" [ref=f14e128] [cursor=pointer]:
+      - /url: /src/game/chapel-service.js
+    - link "Bank builder" [ref=f14e129] [cursor=pointer]:
+      - /url: /tools/chunk_surfer/build-chapel-service-audio.mjs
+  - heading "What remains uncertain" [level=2] [ref=f14e130]
+  - paragraph [ref=f14e131]: "No claim of auditory or player validation: this environment produced and measured the sound but did not establish through human listening that it feels like a Mass, that the spatial image is convincing, or that the service feels unnaturally prolonged. The supplied capture is the review material."
+  - paragraph [ref=f14e132]: The browser proof uses an authoring run, station warps and explicitly labelled protected-state fixtures. It establishes runtime behaviour, not an uninterrupted campaign, a complete battle victory, or packaged native acceptance. The unavailable local diffusion service produced existing connection errors; no chapel bank or audio runtime failure was reported.
+  - paragraph [ref=f14e133]: "Next listening pass: assess the actual capture before changing levels. With unfamiliar players, allow an ordinary chapel visit without describing the sound. Begin with “What happened?” Preserve spontaneous accounts before asking whether they heard a service, located its participants, felt watched, or thought it was repeating. Include players who fail to identify it. Until then, recognition, unease and fatigue remain hypotheses."
+  - generic [ref=f14e134]: No locations, lore, mechanics, dialogue, scare triggers, progression or apparition poses added. The sound belongs to the existing service. Technical receipts accompany the work; listening and player acceptance remain open.

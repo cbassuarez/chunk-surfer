@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { LOADING_BAY_ACCESS } from '../src/data/loading-bay-access.js';
 
 const bytes=readFileSync('public/assets/conservatory-props.glb');
 assert.equal(bytes.subarray(0,4).toString('ascii'),'glTF');
@@ -99,6 +100,8 @@ const bounds=(axis)=>[Math.min(...accessPositions.map((point)=>point[axis])),Mat
 const [accessMinX,accessMaxX]=bounds(0),[accessMinY,accessMaxY]=bounds(1),[accessMinZ,accessMaxZ]=bounds(2);
 assert.ok(accessMinX<-1.5&&accessMaxX>2.4,'dock access mesh covers the complete four-riser run');
 assert.ok(accessMinY<-.8&&accessMaxY>.9,'dock access mesh rises from yard floor to apron handrail height');
-assert.ok(accessMinZ<-4&&accessMaxZ>4,'dock access mesh visibly owns both pedestrian flights');
+assert.ok(accessMinZ<LOADING_BAY_ACCESS.bays[0].z0-LOADING_BAY_ACCESS.meshOrigin.z
+  &&accessMaxZ>LOADING_BAY_ACCESS.bays[1].z1-LOADING_BAY_ACCESS.meshOrigin.z,
+  'dock access rails frame the collision-owned flight widths');
 
 console.log('loading-bay aperture geometry tests ok');

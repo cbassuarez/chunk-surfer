@@ -44,7 +44,7 @@ function harness({ context = audioContext(), complete = true, replayId = 'guard-
     const noOp=()=>{},ensureCtx=noOp,STORY={},fireCue=noOp,CR={fx:{}},createReplayService=()=>null;
     const endingCutsceneWorldView=noOp,applyStoryChoice=noOp,advanceActiveEndingCutscene=noOp,cancelApparitionApplause=noOp;
     const uiSize=()=>({cols:100,rows:40}),uiText=(...args)=>draws.push(args);
-    const syncPointerMode=noOp,saveSourceShoreView=noOp,outskirtsStreetAudio=null,pauseOutskirtsLastLight=noOp,lowerTowerPersonalRecorder=noOp;
+    const syncPointerMode=noOp,saveSourceView=noOp,outskirtsStreetAudio=null,pauseOutskirtsLastLight=noOp,lowerTowerPersonalRecorder=noOp;
     const bellPealPerformance=null,towerBellDirector=null,personalWindowEffects={},windowChoreography={};
     const resetMotionInput=noOp,stopAllVoices=noOp,stopWorldLayerVoice=noOp,silenceAmbientDrone=noOp,setGainNode=noOp,pushEvent=noOp;
     const applyAudioSettings=noOp,startAmbientDroneAt=noOp,currentAmbientTarget=noOp,updateAudio=noOp,resumeGameplayInput=noOp,stopTowerPersonalWorldSignal=noOp;

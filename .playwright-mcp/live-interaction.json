@@ -1,0 +1,497 @@
+{
+  "initial": {
+    "word": "AAAAAA",
+    "cursor": 0,
+    "phase": "setting",
+    "flag": false,
+    "gpu": {
+      "ready": true,
+      "error": null,
+      "frames": 80,
+      "physicalModel": {
+        "dimensions": {
+          "width": 0.64,
+          "height": 0.27,
+          "drumRadius": 0.1,
+          "drumWidth": 0.052,
+          "drumPitch": 0.069,
+          "drumZ": 0.04,
+          "faceZ": 0.155,
+          "apertureHeight": 0.046
+        },
+        "wheelCentres": [
+          [
+            -0.2625,
+            0,
+            0.04
+          ],
+          [
+            -0.1935,
+            0,
+            0.04
+          ],
+          [
+            -0.1245,
+            0,
+            0.04
+          ],
+          [
+            -0.055499999999999994,
+            0,
+            0.04
+          ],
+          [
+            0.013500000000000012,
+            0,
+            0.04
+          ],
+          [
+            0.08250000000000002,
+            0,
+            0.04
+          ]
+        ],
+        "wheelAxis": "x",
+        "handleAxis": "z",
+        "lettersPerDrum": 26,
+        "atlasSize": [
+          3328,
+          128
+        ],
+        "triangles": 15188,
+        "visibleMeshes": 22,
+        "hitMeshes": 7,
+        "materials": 10,
+        "textures": 3,
+        "aperture": {
+          "height": 0.046,
+          "frontZ": 0.155,
+          "letterFrontZ": 0.14
+        },
+        "doorBounds": {
+          "width": 2.04,
+          "height": 2.2,
+          "frontZ": -0.095
+        }
+      },
+      "dither": {
+        "shader": "pixel-mesh",
+        "profile": "explore",
+        "screen": "hatch",
+        "renderCount": 80,
+        "noiseReady": true,
+        "depthReconstruction": "inverse-projection",
+        "coveragePreserved": true,
+        "temporalMemory": false,
+        "width": 1280,
+        "height": 800,
+        "sourceWidth": 1152,
+        "sourceHeight": 720,
+        "cellPx": 2,
+        "screenPeriodPx": 11,
+        "disposed": false
+      },
+      "disposed": false
+    },
+    "layout": {
+      "width": 1280,
+      "height": 800,
+      "w": 1280,
+      "h": 800,
+      "x": 0,
+      "y": 0,
+      "physical": true,
+      "wheels": [
+        {
+          "x": 251.2726872869075,
+          "y": 367.1740668620572,
+          "w": 64.0881850863035,
+          "h": 81.90759590131239,
+          "index": 0
+        },
+        {
+          "x": 324.37314460935175,
+          "y": 370.6336785090083,
+          "w": 66.98258816576464,
+          "h": 84.43648107532556,
+          "index": 1
+        },
+        {
+          "x": 401.92871588196874,
+          "y": 374.30349409756195,
+          "w": 70.11700634414132,
+          "h": 87.12629455885713,
+          "index": 2
+        },
+        {
+          "x": 484.3594778945837,
+          "y": 378.20327167047157,
+          "w": 73.5203454424082,
+          "h": 89.99288251202614,
+          "index": 3
+        },
+        {
+          "x": 572.1400337857752,
+          "y": 382.35532556310847,
+          "w": 77.30908042678425,
+          "h": 93.0542394526359,
+          "index": 4
+        },
+        {
+          "x": 665.5798800931967,
+          "y": 386.7849536383032,
+          "w": 82.48324041658122,
+          "h": 96.33088464442227,
+          "index": 5
+        }
+      ],
+      "handle": {
+        "x": 809.5187922467751,
+        "y": 259.8545972526176,
+        "w": 239.61402143498412,
+        "h": 431.35955735488506
+      },
+      "close": {
+        "x": 12,
+        "y": 758,
+        "w": 110,
+        "h": 32
+      }
+    }
+  },
+  "scrolled": {
+    "word": "AAEAAA",
+    "cursor": 2,
+    "phase": "setting",
+    "flag": false,
+    "gpu": {
+      "ready": true,
+      "error": null,
+      "frames": 120,
+      "physicalModel": {
+        "dimensions": {
+          "width": 0.64,
+          "height": 0.27,
+          "drumRadius": 0.1,
+          "drumWidth": 0.052,
+          "drumPitch": 0.069,
+          "drumZ": 0.04,
+          "faceZ": 0.155,
+          "apertureHeight": 0.046
+        },
+        "wheelCentres": [
+          [
+            -0.2625,
+            0,
+            0.04
+          ],
+          [
+            -0.1935,
+            0,
+            0.04
+          ],
+          [
+            -0.1245,
+            0,
+            0.04
+          ],
+          [
+            -0.055499999999999994,
+            0,
+            0.04
+          ],
+          [
+            0.013500000000000012,
+            0,
+            0.04
+          ],
+          [
+            0.08250000000000002,
+            0,
+            0.04
+          ]
+        ],
+        "wheelAxis": "x",
+        "handleAxis": "z",
+        "lettersPerDrum": 26,
+        "atlasSize": [
+          3328,
+          128
+        ],
+        "triangles": 15188,
+        "visibleMeshes": 22,
+        "hitMeshes": 7,
+        "materials": 10,
+        "textures": 3,
+        "aperture": {
+          "height": 0.046,
+          "frontZ": 0.155,
+          "letterFrontZ": 0.14
+        },
+        "doorBounds": {
+          "width": 2.04,
+          "height": 2.2,
+          "frontZ": -0.095
+        }
+      },
+      "dither": {
+        "shader": "pixel-mesh",
+        "profile": "explore",
+        "screen": "hatch",
+        "renderCount": 120,
+        "noiseReady": true,
+        "depthReconstruction": "inverse-projection",
+        "coveragePreserved": true,
+        "temporalMemory": false,
+        "width": 1280,
+        "height": 800,
+        "sourceWidth": 1152,
+        "sourceHeight": 720,
+        "cellPx": 2,
+        "screenPeriodPx": 11,
+        "disposed": false
+      },
+      "disposed": false
+    },
+    "layout": {
+      "width": 1280,
+      "height": 800,
+      "w": 1280,
+      "h": 800,
+      "x": 0,
+      "y": 0,
+      "physical": true,
+      "wheels": [
+        {
+          "x": 251.27268586332548,
+          "y": 367.17406665359033,
+          "w": 64.08818523584267,
+          "h": 81.90759623335163,
+          "index": 0
+        },
+        {
+          "x": 324.37314331217635,
+          "y": 370.6336783415893,
+          "w": 66.98258834652688,
+          "h": 84.43648143902385,
+          "index": 1
+        },
+        {
+          "x": 401.9287147562994,
+          "y": 374.30349397544717,
+          "w": 70.11700656079171,
+          "h": 87.12629495763213,
+          "index": 2
+        },
+        {
+          "x": 484.35947699340915,
+          "y": 378.2032715984883,
+          "w": 73.52034570043105,
+          "h": 89.9928829497739,
+          "index": 3
+        },
+        {
+          "x": 572.1400331714849,
+          "y": 382.35532554675166,
+          "w": 77.30908073068429,
+          "h": 93.05423993381663,
+          "index": 4
+        },
+        {
+          "x": 665.5798798395849,
+          "y": 386.78495368385194,
+          "w": 82.48324078811913,
+          "h": 96.33088517416303,
+          "index": 5
+        }
+      ],
+      "handle": {
+        "x": 809.5187923824466,
+        "y": 259.8545966653641,
+        "w": 239.61402314330223,
+        "h": 431.35956022380805
+      },
+      "close": {
+        "x": 12,
+        "y": 758,
+        "w": 110,
+        "h": 32
+      }
+    }
+  },
+  "dragged": {
+    "word": "AAEDAA",
+    "cursor": 3,
+    "phase": "setting",
+    "flag": false,
+    "gpu": {
+      "ready": true,
+      "error": null,
+      "frames": 163,
+      "physicalModel": {
+        "dimensions": {
+          "width": 0.64,
+          "height": 0.27,
+          "drumRadius": 0.1,
+          "drumWidth": 0.052,
+          "drumPitch": 0.069,
+          "drumZ": 0.04,
+          "faceZ": 0.155,
+          "apertureHeight": 0.046
+        },
+        "wheelCentres": [
+          [
+            -0.2625,
+            0,
+            0.04
+          ],
+          [
+            -0.1935,
+            0,
+            0.04
+          ],
+          [
+            -0.1245,
+            0,
+            0.04
+          ],
+          [
+            -0.055499999999999994,
+            0,
+            0.04
+          ],
+          [
+            0.013500000000000012,
+            0,
+            0.04
+          ],
+          [
+            0.08250000000000002,
+            0,
+            0.04
+          ]
+        ],
+        "wheelAxis": "x",
+        "handleAxis": "z",
+        "lettersPerDrum": 26,
+        "atlasSize": [
+          3328,
+          128
+        ],
+        "triangles": 15188,
+        "visibleMeshes": 22,
+        "hitMeshes": 7,
+        "materials": 10,
+        "textures": 3,
+        "aperture": {
+          "height": 0.046,
+          "frontZ": 0.155,
+          "letterFrontZ": 0.14
+        },
+        "doorBounds": {
+          "width": 2.04,
+          "height": 2.2,
+          "frontZ": -0.095
+        }
+      },
+      "dither": {
+        "shader": "pixel-mesh",
+        "profile": "explore",
+        "screen": "hatch",
+        "renderCount": 163,
+        "noiseReady": true,
+        "depthReconstruction": "inverse-projection",
+        "coveragePreserved": true,
+        "temporalMemory": false,
+        "width": 1280,
+        "height": 800,
+        "sourceWidth": 1152,
+        "sourceHeight": 720,
+        "cellPx": 2,
+        "screenPeriodPx": 11,
+        "disposed": false
+      },
+      "disposed": false
+    },
+    "layout": {
+      "width": 1280,
+      "height": 800,
+      "w": 1280,
+      "h": 800,
+      "x": 0,
+      "y": 0,
+      "physical": true,
+      "wheels": [
+        {
+          "x": 251.27268586308048,
+          "y": 367.17406665355446,
+          "w": 64.08818523586831,
+          "h": 81.90759623340881,
+          "index": 0
+        },
+        {
+          "x": 324.3731433119532,
+          "y": 370.6336783415605,
+          "w": 66.98258834655792,
+          "h": 84.43648143908655,
+          "index": 1
+        },
+        {
+          "x": 401.92871475610565,
+          "y": 374.3034939754262,
+          "w": 70.117006560829,
+          "h": 87.12629495770068,
+          "index": 2
+        },
+        {
+          "x": 484.359476993254,
+          "y": 378.20327159847596,
+          "w": 73.52034570047545,
+          "h": 89.99288294984927,
+          "index": 3
+        },
+        {
+          "x": 572.1400331713793,
+          "y": 382.3553255467489,
+          "w": 77.30908073073647,
+          "h": 93.05423993389957,
+          "index": 4
+        },
+        {
+          "x": 665.5798798395414,
+          "y": 386.78495368385984,
+          "w": 82.48324078818314,
+          "h": 96.33088517425426,
+          "index": 5
+        }
+      ],
+      "handle": {
+        "x": 809.51879238247,
+        "y": 259.85459666526305,
+        "w": 239.61402314359668,
+        "h": 431.35956022430224
+      },
+      "close": {
+        "x": 12,
+        "y": 758,
+        "w": 110,
+        "h": 32
+      }
+    }
+  },
+  "cancelled": {
+    "scene": null,
+    "flag": false
+  },
+  "wrong": {
+    "word": "SALMON",
+    "phase": "refused",
+    "flag": false
+  },
+  "opened": {
+    "scene": null,
+    "flag": true,
+    "takes": []
+  },
+  "errors": []
+}

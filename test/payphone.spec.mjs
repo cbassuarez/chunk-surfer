@@ -83,9 +83,12 @@ const allText = JSON.stringify(story) + readFileSync(new URL('../src/game/paypho
 // ── calling himself, by pass ─────────────────────────────────────────────────
 {
   assert.ok(PAYPHONE_PASS.earlyLast < PAYPHONE_PASS.loop && PAYPHONE_PASS.loop < PAYPHONE_PASS.late);
-  assert.equal(payphoneIncoming({ pass: 3, lifting: true }), null, 'an early box is already on the line');
+  const received = { 'phone.key.granted': true, 'phone.sheet.granted': true };
+  assert.equal(payphoneIncoming({ pass: 3, flags: received, lifting: true }), null, 'an early box without a pending story call is already on the line');
   const loop = payphoneIncoming({ pass: PAYPHONE_PASS.loop });
-  assert.equal(loop.node, 'loop');
+  assert.equal(loop.node, 'loop-answer');
+  assert.ok(story.nodes[loop.node]?.lines?.some(line=>line.text==='There you are.'));
+  assert.equal(story.nodes[loop.node]?.choices, undefined, 'an incoming story call still demands a choice');
   assert.ok(payphoneLoopHolds({ pass: PAYPHONE_PASS.loop }));
   assert.ok(!payphoneLoopHolds({ pass: PAYPHONE_PASS.loop, flags: { 'phone.loop.broken': true } }));
   // A conversation applies a CHOICE's flags, not a node's: the loop must break on the choice.
@@ -93,10 +96,10 @@ const allText = JSON.stringify(story) + readFileSync(new URL('../src/game/paypho
   assert.ok(toSpoken.length && toSpoken.every((c) => c.mutations?.set?.includes('phone.loop.broken')), 'speaking does not break the loop');
   assert.ok(story.nodes.loop.choices.filter((c) => c.goto === 'loop-silent').every((c) => !c.mutations), 'silence breaks the loop');
   assert.ok(story.nodes['loop-spoken'].lines.some((line) => /There you are/.test(line.text)));
-  assert.equal(payphoneIncoming({ pass: PAYPHONE_PASS.late, lifting: true }).node, 'self-line');
-  assert.equal(payphoneIncoming({ pass: PAYPHONE_PASS.late, lifting: true, micLive: true }).node, 'self-line-mic');
-  assert.equal(payphoneIncoming({ pass: PAYPHONE_PASS.late, lifting: true }).cost, 'grid');
-  assert.equal(payphoneIncoming({ pass: PAYPHONE_PASS.late, lifting: true, flags: { 'phone.cost.self': true } }).cost, null);
+  assert.equal(payphoneIncoming({ pass: PAYPHONE_PASS.late, flags: received, lifting: true }).node, 'self-line');
+  assert.equal(payphoneIncoming({ pass: PAYPHONE_PASS.late, flags: received, lifting: true, micLive: true }).node, 'self-line-mic');
+  assert.equal(payphoneIncoming({ pass: PAYPHONE_PASS.late, flags: received, lifting: true }).cost, 'grid');
+  assert.equal(payphoneIncoming({ pass: PAYPHONE_PASS.late, lifting: true, flags: { ...received, 'phone.cost.self': true } }).cost, null);
   assert.equal(OUTSKIRT_PASSES[PAYPHONE_PASS.loop].break, null, 'the loop pass is broken, and may have no box to ring');
 }
 

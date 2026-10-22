@@ -105,6 +105,35 @@ function rig(options = {}) {
   assert.deepEqual(r.log.filter(([kind]) => kind === 'pulses').map(([, count]) => count), [9]);
 }
 
+// The projected cabinet owns its own coordinates. A drag can leave that plane
+// and still release the spring; misses cannot operate an invisible set.
+{
+  let hits=true;
+  const offset={x:40,y:20};
+  const r=rig({mapPointer:event=>hits?{...event,cellX:event.cellX-offset.x,cellY:event.cellY-offset.y}:null});
+  const at=digit=>{const p=r.point(rotaryRestAngle(digit));return {cellX:p.cellX+offset.x,cellY:p.cellY+offset.y};};
+  r.pointer('pointerdown',at('9'));
+  assert.equal(r.scene.view().dial.grabbed,'9','screen coordinates were not mapped into the physical cabinet');
+  hits=false;r.pointer('pointerup',{cellX:0,cellY:0});r.step();
+  assert.equal(r.scene.view().dial.grabbed,null,'leaving the cabinet retained the grabbed wheel');
+  assert.equal(r.scene.view().digits,'');
+  r.pointer('pointerdown',at('1'));r.step();
+  assert.equal(r.scene.view().dial.grabbed,null,'a ray that missed the cabinet operated a hole');
+}
+
+// Looking uses the free cursor while a primary drag remains the rotary action.
+{
+  const turns=[],r=rig({onLook:delta=>turns.push(delta)});
+  const p=r.point(rotaryRestAngle('9'));
+  const event=(type,x,y,extra={})=>r.pointer(type,p,{button:2,buttons:type==='pointerup'?0:2,originalEvent:{clientX:x,clientY:y,target:{setPointerCapture(){},releasePointerCapture(){}}},...extra});
+  event('pointerdown',100,80);event('pointermove',140,100);
+  assert.deepEqual(turns,[{yaw:.16,pitch:.08}]);
+  assert.equal(r.scene.view().dial.grabbed,null);assert.equal(r.scene.view().digits,'');
+  event('pointerup',140,100);
+  r.scene.key({key:'ArrowLeft',preventDefault(){}});r.scene.key({key:'ArrowUp',preventDefault(){}});
+  assert.deepEqual(turns.slice(1),[{yaw:-.13,pitch:0},{yaw:0,pitch:-.10}]);
+}
+
 // Cancellation and focus loss release the spring silently: they must not make
 // a dialled number merely because the player had reached the stop.
 for (const cancellation of [{ type: 'pointercancel', pointerId: 11 }, { type: 'pointercancel' }]) {

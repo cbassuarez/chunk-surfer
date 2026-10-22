@@ -1,0 +1,19 @@
+{
+  "license": "Project authored geometry and materials. Canonical pub fittings generated from the retained project geometry contract.",
+  "sourceSha256": {
+    "public/assets/conservatory-props.glb": "489cd975214e67352095158609ec2851ca0c3b96dc5ef6a0942938caa5863b6c",
+    "public/assets/pub-characters.glb": "888f46f97fc5a2bf0f30f7d4cb214abede2e4a5903db0fe4c2bfb8518dc0eef4",
+    "public/assets/pub-quest-props.glb": "8e6f9f5e3c5ec140967c83b4bbbaadf3cbb21c0a6c67940f3277d8049c6ff3b8",
+    "public/assets/pub-hospitality.glb": "516e8420df868bbe6cf5f6da3bc6ead638e9c840378437d142afb63e1c1ba773",
+    "src/data/source-pub-scenography.js": "5343af499dd3bcaddc199e1c176530dffedb7dcb713989c01becbcc99b24e1a4",
+    "tools/chunk_surfer/build-source-pub-scenography.mjs": "73d04b56ade56f898c1bc334c42b9ae9caf08889e130581ba9021865c1cb2663",
+    "tools/chunk_surfer/pub-interior-geometry.mjs": "cbade01cb1520330a45c35e8e007c97015d0a467214e30a78764ec890be35c42"
+  },
+  "packs": [
+    {
+      "file": "public/assets/source-pub-scenography.glb",
+      "bytes": 831696,
+      "sha256": "00dec933482ff502bd7c69f4eac49e6467155954630b1ce588ad34322fd4358b"
+    }
+  ]
+}

@@ -1,0 +1,139 @@
+{
+  "atUTC": "2026-10-21T02:36:22.965Z",
+  "where": {
+    "x": 67,
+    "y": 73,
+    "facing": 0,
+    "look": {
+      "yaw": 0,
+      "pitch": 0,
+      "facing": 0
+    },
+    "zone": 8,
+    "chapelOuter": 11,
+    "source": false
+  },
+  "body": {
+    "ready": true,
+    "mode": "live",
+    "manifestation": 0.9999999999999999,
+    "secondaryManifestation": 0,
+    "asset": "assets/pressure-character.glb",
+    "revision": "pressure-volume-v1",
+    "error": null,
+    "geometry": {
+      "color": {},
+      "depth": {},
+      "ready": true,
+      "width": 640,
+      "height": 400,
+      "near": 0.05,
+      "far": 90,
+      "instances": 1,
+      "draws": 1,
+      "error": null
+    },
+    "body": {
+      "id": "live-pressure:143950.79999999702",
+      "x": 67,
+      "y": 67,
+      "floorH": -4,
+      "strength": 0.9887127129826724,
+      "radiusM": 8.049999999999999,
+      "heightM": 2.18,
+      "widthM": 0.68,
+      "glow": 0.4,
+      "mode": null,
+      "performance": {
+        "version": 1,
+        "role": "live-pressure",
+        "heading": -2.356194490192345,
+        "clip": "pressure_arrest",
+        "time": 1,
+        "loop": false,
+        "seed": 3763011242,
+        "manifestation": 0.9999999999999999,
+        "motion": "limp",
+        "cue": null,
+        "reducedMotion": false,
+        "gait": {
+          "version": 1,
+          "seed": 4417,
+          "cycle": 9,
+          "phase": "arrest",
+          "elapsed": 2.1596250573843716,
+          "duration": 2.1996716185472907,
+          "travelMetres": 0,
+          "progress": 1,
+          "pivot": true,
+          "redirect": false,
+          "heading": -2.356194490192345,
+          "listenTurn": 0,
+          "stepStartX": 67,
+          "stepStartY": 67,
+          "startHeading": 3.141592653589793,
+          "targetHeading": -2.356194490192345,
+          "stepTargetX": 54,
+          "stepTargetY": 74,
+          "stepSpeed": 1.3125,
+          "stepDistanceMetres": 0.42,
+          "blockedElapsed": 0,
+          "recoveryClip": "pressure_advance",
+          "recoveryTime": 0,
+          "recoveryReset": false,
+          "blocked": false
+        }
+      }
+    },
+    "projection": {
+      "x": 0.5,
+      "y": 0.47894738515218094,
+      "w": 0.07387735393529699,
+      "h": 0.37894736842105275,
+      "amount": 0.9999999999999999
+    }
+  },
+  "pixel": {
+    "supported": true,
+    "shaderReady": true,
+    "enabled": true,
+    "framesSeen": 12406,
+    "framesRendered": 12406,
+    "lastProfile": "explore",
+    "lastError": null,
+    "lastGlError": 0,
+    "forceSignalUntil": 0,
+    "sceneWidth": 640,
+    "sceneHeight": 400,
+    "captureExposure": 1,
+    "physicalAcquisition": false,
+    "physicalAcquisitionWeight": 0,
+    "settings": {
+      "cellSize": "auto",
+      "debugSource": "final",
+      "reduceFlash": false,
+      "reduceMotion": false,
+      "memory": true
+    },
+    "forced": false,
+    "bypassedByTextSpace": false,
+    "sourceRoomMemoryActive": false
+  },
+  "stats": {
+    "core": 2292,
+    "rawBlack": 2292,
+    "recordedBlack": 2292,
+    "finalBlack": 2292
+  },
+  "checks": [
+    {
+      "name": "ordinary building live Presence rendered",
+      "passed": true
+    },
+    {
+      "name": "ordinary black core survives full acquisition",
+      "passed": true
+    }
+  ],
+  "method": "Existing plant-room nearby author placement and actual live Presence along a walkable ray. Same-frame actual raw/acquired/final samples, real rig and movement, not a campaign/native/player claim."
+}

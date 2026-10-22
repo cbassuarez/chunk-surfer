@@ -1,0 +1,10 @@
+import {build} from 'vite';
+import {readFile,writeFile} from 'node:fs/promises';
+const base=process.env.SOURCE_DRIVE_REVIEW_DIR||'artifacts/source-drive-study/continuity';
+const frozen=process.env.SOURCE_DRIVE_BUNDLE_FROZEN||'frozen',receiptName=process.env.SOURCE_DRIVE_BUNDLE_RECEIPT||'bundle-validation.json';
+process.env.SOURCE_DRIVE_SNAPSHOT_DIR=base+'/'+frozen+'/sources';
+const result=await build({configFile:'tools/chunk_surfer/source-drive-study/vite-stopping-frozen.config.mjs',logLevel:'warn',build:{write:false,copyPublicDir:false}});
+const outputs=(Array.isArray(result)?result:[result]).flatMap(r=>r.output),modules=new Set(outputs.flatMap(o=>Object.keys(o.modules||{})));
+const manifest=JSON.parse(await readFile(base+'/'+frozen+'/manifest.json'));
+const receipt={kind:'fixed-continuity-production-bundle',passed:true,modules:modules.size,outputFiles:outputs.length,snapshot:frozen+'/manifest.json',files:manifest.files,scope:'Captured production entry and dependency graph, in-memory Vite output. Owned GLB/audio assets are loaded in the actual-game inspection separately. Not a packaged Tauri/release build.'};
+await writeFile(base+'/'+receiptName,JSON.stringify(receipt,null,2)+'\n');console.log(JSON.stringify(receipt));

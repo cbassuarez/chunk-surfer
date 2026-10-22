@@ -27,14 +27,15 @@ import {
   reduceChunkSurf,
 } from '../src/game/chunk-surf-state.js';
 import { createSourceSpaceRuntime, horizonBustEyeEvidence } from '../src/game/source-space-runtime.js';
+import { nextSourceContact, resolveSourceContact } from '../src/game/source-contact.js';
 import { ENDING_IDS } from '../src/progression/schema.js';
 import { RETURN_DEFS } from '../src/progression/report.js';
 
 const dispatch=(state,type,details={})=>reduceChunkSurf(state,{type,...details});
 const finalState=()=>buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.EXPOSED_BATTLE,{seed:4417,hasRig:false}).state;
 
-// Contact is explicit, durable, terminal in either direction, and cannot be
-// converted into Horizon by an old normal-exit call after commitment.
+// Each Contact is explicit and durable. Three separately committed wins finish
+// the route; while a fight is active an old normal-exit call cannot replace it.
 {
   const faultPreset=buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.FIRST_CONTACT,{seed:4417,hasRig:false,injuries:0});
   const ready=faultPreset.state;
@@ -59,8 +60,18 @@ const finalState=()=>buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.EXPOSED_BATTL
   const reloaded=normalizeChunkSurfState(JSON.parse(JSON.stringify(committed)));
   assert.equal(reloaded.finale.stage,SOURCE_FINALE_STAGE.CONTACT_COMMITTED,'reload resumes the committed fight introduction');
 
-  let won=dispatch(reloaded,'FINAL_ENCOUNTER_RESOLVED',{result:{outcome:SOURCE_FINAL_OUTCOME.CONTAIN,won:true}});
-  won=dispatch(won,'SOURCE_COMPLETED');
+  let won=reloaded;
+  for(let cycle=0;cycle<3;cycle++){
+    if(cycle){
+      const encounter=nextSourceContact(won.sourceContacts,{victories:won.finalEncounter.victories});
+      for(const id of ['contact.warning','contact.confirm'])
+        won=dispatch(won,'SOURCE_CONTACT_RESOLVED',{contact:resolveSourceContact(won.sourceContacts,encounter,id)});
+      won=dispatch(won,'CONTACT_COMMITTED');
+    }
+    won=dispatch(won,'FINAL_ENCOUNTER_RESOLVED',{result:{outcome:SOURCE_FINAL_OUTCOME.CONTAIN,won:true,battleAttemptId:won.finalEncounter.activeBattleId}});
+    won=dispatch(won,'SOURCE_COMPLETED');
+    assert.equal(won.completed,cycle===2,'a movement or partial set of wins cannot finish Contact');
+  }
   assert.equal(chunkSurfCompletion(won).endingId,'contact-won');
   assert.equal(chunkSurfCompletion(won).transitionTarget,'ending');
 

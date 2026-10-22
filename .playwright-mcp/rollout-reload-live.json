@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "atUTC": "2026-10-21T02:09:50.927Z",
+  "before": {
+    "linked": true,
+    "trace": 1,
+    "thoughts": {
+      "had": [
+        "bust-talk:academic-bust-2",
+        "talisman.seen",
+        "talisman",
+        "practice-trace.tuning-log.b0",
+        "door-field:door.pool-glazed-pair"
+      ]
+    },
+    "savedThoughts": {
+      "had": [
+        "bust-talk:academic-bust-2",
+        "talisman.seen",
+        "talisman",
+        "practice-trace.tuning-log.b0",
+        "door-field:door.pool-glazed-pair"
+      ]
+    },
+    "noteCount": 1,
+    "savedNoteCount": 1
+  },
+  "after": {
+    "linked": true,
+    "trace": 1,
+    "thoughts": {
+      "had": [
+        "bust-talk:academic-bust-2",
+        "talisman.seen",
+        "talisman",
+        "practice-trace.tuning-log.b0",
+        "door-field:door.pool-glazed-pair"
+      ]
+    },
+    "savedThoughts": {
+      "had": [
+        "bust-talk:academic-bust-2",
+        "talisman.seen",
+        "talisman",
+        "practice-trace.tuning-log.b0",
+        "door-field:door.pool-glazed-pair"
+      ]
+    },
+    "noteCount": 1,
+    "savedNoteCount": 1
+  },
+  "checks": [
+    {
+      "name": "actual completed piano counter survives reload",
+      "passed": true
+    },
+    {
+      "name": "completed piano receipt survives subsystem reload",
+      "passed": true
+    },
+    {
+      "name": "actual presented Malcolm knowledge survives reload",
+      "passed": true
+    },
+    {
+      "name": "hosted note remains single acquired object",
+      "passed": true
+    }
+  ],
+  "method": "Actual document reload with the same isolated save; ordinary required diffusion calibration unavailable, so existing diagnostic startup initializes the real saved subsystems. No flag setter, thought reset or page grant after reload. Not normal production-boot or full-campaign acceptance.",
+  "loadedMain": {
+    "url": "http://127.0.0.1:5363/src/main.js?v=20260907-guided-case-tour-encounter-preparation-radio-field-instrument-stack-v1-item-portraits-v2-vfd-glow-clear-van-kit-3d-hall-applause-v3-audio-clock-v1",
+    "traceCompletionCallback": true,
+    "furnitureRecognition": true,
+    "vigilPresentationHook": true,
+    "sourceSaveGuard": true,
+    "doorReplyGroup": true
+  },
+  "environment": {
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+    "pixel": {
+      "supported": true,
+      "shaderReady": true,
+      "enabled": true,
+      "framesSeen": 33,
+      "framesRendered": 33,
+      "lastProfile": "explore",
+      "lastError": null,
+      "lastGlError": 0,
+      "forceSignalUntil": 0,
+      "sceneWidth": 640,
+      "sceneHeight": 400,
+      "captureExposure": 1,
+      "physicalAcquisition": false,
+      "physicalAcquisitionWeight": 0,
+      "settings": {
+        "cellSize": "auto",
+        "debugSource": "final",
+        "reduceFlash": false,
+        "reduceMotion": false,
+        "memory": true
+      },
+      "forced": false,
+      "bypassedByTextSpace": false,
+      "sourceRoomMemoryActive": false
+    },
+    "viewport": [
+      1280,
+      800
+    ],
+    "devicePixelRatio": 1
+  },
+  "errors": [],
+  "failure": null
+}

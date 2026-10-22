@@ -32,7 +32,7 @@ export const ARCHITECTURE_FITTING_MESHES = Object.freeze({
   arch_threshold_service:Object.freeze({w:1,d:.18,h:.014,blocks:false}),
 });
 
-// Four measured authored hosts whose faces must remain free of new fittings.
+// Measured authored hosts whose faces must remain free of new fittings.
 // These are resolved logical-metre render poses, including wall/table offsets,
 // not a second furniture schedule. Current packed bounds are used when present;
 // the measured fallback also makes a first asset rebuild deterministic.
@@ -45,6 +45,13 @@ export const ARCHITECTURE_HOST_RESERVATIONS = Object.freeze([
     bounds:{min:[-.7,.06,-.5],max:[.7,1.98,-.096]} },
   { propId:'amenity-staff-service-connections', mesh:'amenity_staff_service_connections', group:'academic', position:[18.5,10,271], yaw:0,
     bounds:{min:[-.01,.07,-.328],max:[.52,1.42,.81]} },
+  // These three existing panelled bays cover the underlying masonry plane.
+  // Keep the routine kit on adjacent unpanelled wall, with no furniture edits.
+  // Bounds are measured from the separately loaded academic-gallery pack.
+  ...[1,2,3].map(i=>({propId:`gallery-treatment-west-bay-${i}`,mesh:'gallery_wall_bay',group:'academic',
+    position:[23.06,10,246+i*4],yaw:-Math.PI/2,
+    bounds:{min:[-2,0,-1.4267135766442757e-16],max:[2.3299999237060547,6.985000133514404,.3199999928474426]},
+    geometryPack:'academic-gallery.glb'})),
 ].map(host=>Object.freeze({...host,clearance:.08})));
 
 // The drinking point occupies the narrow real bay between the existing honour

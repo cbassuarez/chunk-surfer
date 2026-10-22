@@ -203,12 +203,31 @@ function walk(runtime,points){
   assert.equal(runtime.resolveHushContactChoice('contact.warning').combat,false);
   assert.equal(runtime.resolveHushContactChoice('contact.confirm').combat,true);
   assert.equal(runtime.finalEncounterRequest().adapter,'combat-v1','accepting NO RETURN opens the shared deterministic combat contract');
-  const result=runtime.resolveFinalEncounter({outcome:SOURCE_FINAL_OUTCOME.RESCUE,won:true,channels:{rescue:4,contain:1,submit:0},turns:9,compatibility:{fightVersion:'signal-combat'}});
-  assert.equal(result.handled,true);
+  const battles=new Set();
+  for(let cycle=0;cycle<3;cycle++){
+    if(cycle){
+      closeOn(runtime);
+      assert.ok(runtime.beginHushContact(),'each new fight requires a separate voluntary return conversation');
+      assert.equal(runtime.resolveHushContactChoice('contact.confirm').handled,false,'the earlier fight cannot supply consent');
+      assert.equal(runtime.resolveHushContactChoice('contact.warning').combat,false);
+      assert.equal(runtime.resolveHushContactChoice('contact.confirm').combat,true);
+    }
+    const request=runtime.finalEncounterRequest();
+    battles.add(request.battleAttemptId);
+    const result=runtime.resolveFinalEncounter({battleAttemptId:request.battleAttemptId,outcome:SOURCE_FINAL_OUTCOME.RESCUE,won:true,channels:{rescue:4,contain:1,submit:0},turns:9,compatibility:{fightVersion:'signal-combat'}});
+    assert.equal(result.handled,true);
+    assert.equal(runtime.state().finalEncounter.victories,cycle+1);
+    assert.equal(runtime.state().completed,cycle===2,'only three separately won battles finish Contact');
+    if(cycle<2){
+      assert.equal(runtime.finalEncounterRequest(),null,'the next fight does not start automatically');
+      assert.equal(runtime.state().finale.route,null,'the field can still be left between fights');
+    }
+  }
+  assert.equal(battles.size,3,'the proof used three independent battle identities');
   assert.equal(runtime.state().completed,true);
   assert.equal(runtime.state().finalEncounter.compatibility.fightVersion,'signal-combat');
   assert.deepEqual(runtime.state().finalEncounter.channels,{rescue:4,contain:1,submit:0});
-  assert.equal(runtime.state().finalEncounter.rescuedRecordist,true,'the qualifying rig enables rescue without a repeated contact quiz');
+  assert.equal(runtime.state().finalEncounter.rescuedRecordist,true,'the qualifying rig enables rescue after three voluntary victories without a contact quiz');
   assert.equal(runtime.sourceLook().roomMemoryActive,true,'the resolved field remains in the building\'s recording medium');
   assert.equal(runtime.sourceLook().sunrise,0,'encounter resolution does not recolour proper with a global sunrise');
   assert.equal(runtime.sourceLook().paper,0,'encounter resolution does not replace the surviving rooms with white paper');

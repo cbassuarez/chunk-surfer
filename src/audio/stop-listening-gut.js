@@ -2,7 +2,7 @@
 //
 // Real recordings (data/stop-listening.js STOP_LISTENING_SOURCES), cut into
 // events and two murmuring beds by tools/chunk_surfer/build-stop-listening-audio.mjs,
-// which also bakes the light bitcrush. This module does the two things that
+// which also bakes the dominant 8–10-bit / 22.05–32 kHz grain. This module does the two things that
 // depend on the night: WHERE it is (each heap is a point; panned by his head,
 // darker behind him and further off, the plant pipe's and the horizon score's
 // rules) and WHAT ROOM it is in (a synthetic tail sized to the room: B3 is

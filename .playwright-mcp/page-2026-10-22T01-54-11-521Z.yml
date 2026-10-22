@@ -1,0 +1,238 @@
+- main [ref=f1e2]:
+  - heading "Ear Room, chapel and Hush" [level=1] [ref=f1e3]
+  - paragraph [ref=f1e4]: Implementation and verification of the three requested repairs. These are captures of the playable renderer and final assets, with editable sources and technical receipts linked below.
+  - paragraph [ref=f1e5]:
+    - strong [ref=f1e6]: 102 focused checks pass.
+    - text: Browser inspection captured the three existing Ear Room variants and the dressed chapel through the final dither shader. All three native desktop contact cycles passed, with 21/21 checks. Player validation remains pending.
+  - navigation "Report sections" [ref=f1e7]:
+    - link "Larger ears" [ref=f1e8] [cursor=pointer]:
+      - /url: "#ears"
+    - link "Chapel" [ref=f1e9] [cursor=pointer]:
+      - /url: "#chapel"
+    - link "Three Hush victories" [ref=f1e10] [cursor=pointer]:
+      - /url: "#hush"
+    - link "Evidence and limits" [ref=f1e11] [cursor=pointer]:
+      - /url: "#evidence"
+    - link "Editable sources" [ref=f1e12] [cursor=pointer]:
+      - /url: "#sources"
+  - generic [ref=f1e13]:
+    - heading "Larger ears in the existing Ear Room" [level=2] [ref=f1e14]
+    - paragraph [ref=f1e15]:
+      - text: The ear anatomy is now
+      - strong [ref=f1e16]: 6.4 times the former authored size
+      - text: . The existing placement variation produces individual ears approximately
+      - strong [ref=f1e17]: 46–72 cm long
+      - text: . Their cartilage, cavities and cut bases remain actual geometry; this enlarges the anatomical object rather than its surrounding stain.
+    - paragraph [ref=f1e18]: The three existing possible rooms retain their selection, busy-room exclusions, entry, take sheet, writing, audio and recording rules. Heaps fit their existing surfaces; none creates collision or a new place for the event.
+    - figure [ref=f1e19]:
+      - link [ref=f1e20] [cursor=pointer]:
+        - /url: ears-the_tub.png
+        - 'img "Final dithered natatorium view: large anatomical ears on the near dry deck beside the pool, with the take sheet still accessible." [ref=f1e21]'
+      - generic [ref=f1e22]:
+        - text: Natatorium,
+        - code [ref=f1e23]: the_tub
+        - text: . The ears occupy the existing dry deck. This is the actual in-game camera and final dither, using an isolated authoring fixture.
+    - generic [ref=f1e24]:
+      - figure [ref=f1e25]:
+        - link [ref=f1e26] [cursor=pointer]:
+          - /url: ears-amplifications.png
+          - img "Final dithered concert hall showing enlarged ears and heaps along the existing stepped side aisle." [ref=f1e27]
+        - generic [ref=f1e28]:
+          - text: Concert hall,
+          - code [ref=f1e29]: amplifications
+          - text: . Heaps retain their own terrace; ears and floor stains remain distinct.
+      - figure [ref=f1e30]:
+        - link [ref=f1e31] [cursor=pointer]:
+          - /url: ears-soundnoisemusic.png
+          - img "Final dithered practice corridor showing enlarged ears in the existing Ear Room appearance." [ref=f1e32]
+        - generic [ref=f1e33]:
+          - text: Practice wing,
+          - code [ref=f1e34]: soundnoisemusic
+          - text: . Its corridor, entry and take-sheet clearance remain usable.
+    - paragraph [ref=f1e35]:
+      - text: "Geometry receipt:"
+      - link "actual anatomical measurements and preservation checks" [ref=f1e36] [cursor=pointer]:
+        - /url: ../ear-room-scale/geometry-receipt.json
+      - text: . The original too-small asset fails the size regression; the replacement passes floor-contact, same-terrace, entry/sheet clearance and collision-parity checks.
+  - generic [ref=f1e37]:
+    - heading "A service that has not ended" [level=2] [ref=f1e38]
+    - paragraph [ref=f1e39]:
+      - strong [ref=f1e40]: 48 anonymous presences
+      - text: "occupy the existing chapel's pew banks: seated, bowed, turned and kneeling human silhouettes with necks, shoulders, hands and bent knees. Deliberately empty places interrupt the pattern. Their stations and poses belong to the room; turning the camera or waiting does not move them toward the player."
+    - paragraph [ref=f1e41]:
+      - strong [ref=f1e42]: 26 dressing placements
+      - text: add wall statements, dragged hand traces, residue confined to the pew banks, and spent tallow with embedded hair near the altar. The three statements are
+      - emphasis [ref=f1e43]: STOP LISTENING TO ME
+      - text: ","
+      - emphasis [ref=f1e44]: NO ONE IS LISTENING
+      - text: and
+      - emphasis [ref=f1e45]: THE ROOM IS EMPTY
+      - text: . They use the Ear Room's original hand-stroke language, drawn as thin physical paint films. They have no click targets or puzzle state.
+    - figure "The existing inner screen, lanterns and circulation retain their purpose. The chapel is dressed within its current architecture; the earlier Ear Room remains a separate event." [ref=f1e46]:
+      - link [ref=f1e47] [cursor=pointer]:
+        - /url: chapel-entry.png
+        - img "Actual dithered chapel approach with the retained inner screen and dark occupied pews to either side of the centre aisle." [ref=f1e48]
+    - figure "Close congregation view. These bodies use the apparition family's existing material states before the shared dither pass. The 18 pews now face the altar; their former orientation put their backs toward it. Body feet and pelvis placement are checked against the packed geometry and existing seats." [ref=f1e50]:
+      - link [ref=f1e51] [cursor=pointer]:
+        - /url: chapel-congregation-close.png
+        - img "Close game-camera view of faceless dark congregation silhouettes around the chapel pews, with final dither and flashlight lighting." [ref=f1e52]
+    - figure "Unlit-state inspection. The same anchored geometry resolves through sparse pressure fragments instead of a bright opaque cutout. This verifies the rendering state, not whether unfamiliar players notice or interpret it as intended." [ref=f1e54]:
+      - link [ref=f1e55] [cursor=pointer]:
+        - /url: chapel-unlit.png
+        - img "Chapel capture in the unlit apparition state, retaining the physical architecture while body fragments become barely visible." [ref=f1e56]
+    - paragraph [ref=f1e58]:
+      - text: In the actual encounter, normal keyboard movement covered
+      - strong [ref=f1e59]: 13 metres of the centre aisle
+      - text: ", from runtime"
+      - code [ref=f1e60]: (185,149)
+      - text: to
+      - code [ref=f1e61]: (185,175)
+      - text: ". The altar retains its existing collision. Recording protection was also exercised: congregation body draws were absent while the painted surfaces remained present."
+    - table [ref=f1e62]:
+      - rowgroup [ref=f1e63]:
+        - row [ref=f1e64]:
+          - columnheader "Chapel pack" [ref=f1e65]
+          - columnheader "Shipped result" [ref=f1e66]
+          - columnheader "Budget" [ref=f1e67]
+      - rowgroup [ref=f1e68]:
+        - row [ref=f1e69]:
+          - cell "Original packed geometry" [ref=f1e70]
+          - cell "14,932 triangles · 10 meshes" [ref=f1e71]
+          - cell "24,000 triangles" [ref=f1e72]
+        - row [ref=f1e73]:
+          - cell "Pack size" [ref=f1e74]
+          - cell "403,956 bytes" [ref=f1e75]
+          - cell "1,800,000 bytes" [ref=f1e76]
+        - row [ref=f1e77]:
+          - cell "Added light sources / shadow maps" [ref=f1e78]
+          - cell "0 / 0" [ref=f1e79]
+          - cell "0 / 0" [ref=f1e80]
+        - row [ref=f1e81]:
+          - cell "World dressing" [ref=f1e82]
+          - cell "48 presences + 26 trace placements" [ref=f1e83]
+          - cell "Same counts; instanced poses" [ref=f1e84]
+    - paragraph [ref=f1e85]:
+      - text: "Technical evidence:"
+      - link "7 focused chapel checks" [ref=f1e86] [cursor=pointer]:
+        - /url: ../chapel-dressing/focused.tap
+      - text: ","
+      - link "implementation and provenance" [ref=f1e87] [cursor=pointer]:
+        - /url: ../chapel-dressing/implementation.json
+      - text: ","
+      - link "shipped pack measurements" [ref=f1e88] [cursor=pointer]:
+        - /url: /assets/chapel-dressing.stats.json
+      - text: . All 10 mesh types were observed in actual browser rendering with dither enabled and no GL errors.
+  - generic [ref=f1e89]:
+    - heading "Three victories, three contact cycles" [level=2] [ref=f1e90]
+    - paragraph [ref=f1e91]: "The requirement is three separately initiated fights: win, return to contact/dialogue, then choose to engage again. Surviving three combat rounds does not count as three victories. The final reward waits for the third win."
+    - paragraph [ref=f1e92]: The desktop handoff is a separate technical boundary. Source/state checks can prove the victory ledger and commitment rules; a browser capture cannot prove that a native desktop window receives the fight.
+    - paragraph [ref=f1e93]:
+      - text: "Verified in the actual native app: three newly warned and committed contacts, three distinct battle attempts, three visible transparent desktop surfaces, and restoration after every fight. Exploration remains available after wins one and two; Source resolves only after win three. Every fight retains its full three authored movements."
+      - 'link "Native receipt: 21/21 checks, no errors" [ref=f1e94] [cursor=pointer]':
+        - /url: native-game-report.json
+      - text: . The wins used explicit engine-terminal fixtures; combat skill, balance and player validation remain untested.
+    - paragraph [ref=f1e95]:
+      - text: The native run exposed a missing
+      - code [ref=f1e96]: uiCellMetrics
+      - text: import that threw during desktop publication and forced fallback. That import is fixed and covered by the actual callback regression. Source now uses confirmed native input focus, so stale WebView DOM focus cannot stall the dissolve; actual blur and hiding still pause it. The earlier interrupted take remains in
+      - link "the evidence record" [ref=f1e97] [cursor=pointer]:
+        - /url: native-first-contact-interrupted.json
+      - text: .
+    - paragraph [ref=f1e98]:
+      - text: "Source regression receipts:"
+      - link "original failure" [ref=f1e99] [cursor=pointer]:
+        - /url: ../source-hush-three-contacts/baseline.json
+      - text: ","
+      - link "original main-path contract failure" [ref=f1e100] [cursor=pointer]:
+        - /url: ../source-hush-three-contacts/main-contract-baseline.tap
+      - text: ","
+      - link "integrated contact checks" [ref=f1e101] [cursor=pointer]:
+        - /url: ../source-hush-three-contacts/integrated-focused.tap
+      - text: ","
+      - link "final main-path checks" [ref=f1e102] [cursor=pointer]:
+        - /url: ../source-hush-three-contacts/main-contract-final.tap
+      - text: .
+  - generic [ref=f1e103]:
+    - heading "Evidence and remaining limits" [level=2] [ref=f1e104]
+    - list [ref=f1e105]:
+      - listitem [ref=f1e106]:
+        - strong [ref=f1e107]: "Focused technical checks:"
+        - link "102 pass, zero fail" [ref=f1e108] [cursor=pointer]:
+          - /url: focused-final.tap
+        - text: . These cover relevant geometry, state, interaction and rendering contracts.
+      - listitem [ref=f1e109]:
+        - strong [ref=f1e110]: "Actual browser rendering:"
+        - text: final generated assets, real camera and dither enabled; chapel mesh submission, keyboard aisle traversal and recording suppression observed. Screenshots above are direct captures.
+      - listitem [ref=f1e111]:
+        - strong [ref=f1e112]: "Direct receipts:"
+        - link "browser state, actual draw submissions and movement endpoints" [ref=f1e113] [cursor=pointer]:
+          - /url: browser-live.json
+        - text: ;
+        - link "complete production code graph compiled in memory" [ref=f1e114] [cursor=pointer]:
+          - /url: code-build.json
+        - text: . The code build is not a packaged release.
+      - listitem [ref=f1e115]:
+        - strong [ref=f1e116]: "Capture setup:"
+        - text: the isolated local game used an authoring fixture because the local diffusion service was offline. Placement and route preconditions were established through diagnostics. This browser setup does not establish an uninterrupted ordinary campaign. The native handoff is independently verified below.
+      - listitem [ref=f1e117]:
+        - strong [ref=f1e118]: "Native desktop:"
+        - text: three actual desktop handoffs and restorations verified in the isolated native app. Placement and win fixtures were used; this does not establish an uninterrupted campaign, human combat performance or packaged release. Native metrics and presented-frame events are retained; no full-desktop raster capture is claimed.
+      - listitem [ref=f1e119]:
+        - strong [ref=f1e120]: "Build limits:"
+        - text: the full code graph compiles; two existing import warnings are retained in the build receipt. A new packaged release was not built.
+      - listitem [ref=f1e121]:
+        - strong [ref=f1e122]: "Human perception:"
+        - text: participant validation remains pending. No claims of measured fear, wall-writing comprehension, spontaneous apparition recognition or improvement in player interpretation are made.
+    - group [ref=f1e123]:
+      - generic "Current machine-readable verification receipt" [ref=f1e124] [cursor=pointer]
+  - generic [ref=f1e125]:
+    - heading "Editable sources" [level=2] [ref=f1e126]
+    - list [ref=f1e127]:
+      - listitem [ref=f1e128]:
+        - text: "Ear Room:"
+        - link "Blender builder" [ref=f1e129] [cursor=pointer]:
+          - /url: ../../tools/chunk_surfer/build-stop-listening.py
+        - text: ","
+        - link "bounded pack pipeline" [ref=f1e130] [cursor=pointer]:
+          - /url: ../../tools/chunk_surfer/build-stop-listening.mjs
+        - text: ","
+        - link "editable Blender project" [ref=f1e131] [cursor=pointer]:
+          - /url: ../stop-listening/stop-listening.blend
+        - text: ","
+        - link "existing placement and event data" [ref=f1e132] [cursor=pointer]:
+          - /url: ../../src/data/stop-listening.js
+        - text: .
+      - listitem [ref=f1e133]:
+        - text: "Chapel:"
+        - link "composition and budgets" [ref=f1e134] [cursor=pointer]:
+          - /url: ../../src/data/chapel-dressing.js
+        - text: ","
+        - link "world projection and apparition state presentation" [ref=f1e135] [cursor=pointer]:
+          - /url: ../../src/game/chapel-dressing.js
+        - text: ","
+        - link "original geometry and brush builder" [ref=f1e136] [cursor=pointer]:
+          - /url: ../../tools/chunk_surfer/build-chapel-dressing.py
+        - text: ","
+        - link "isolated pack pipeline" [ref=f1e137] [cursor=pointer]:
+          - /url: ../../tools/chunk_surfer/build-chapel-dressing.mjs
+        - text: ","
+        - link "editable Blender project" [ref=f1e138] [cursor=pointer]:
+          - /url: ../chapel-dressing/chapel-dressing.blend
+        - text: .
+      - listitem [ref=f1e139]:
+        - text: "Chapel technical specification:"
+        - link "actual-plan, packed-geometry, lighting and protection checks" [ref=f1e140] [cursor=pointer]:
+          - /url: ../../test/chapel-dressing.spec.mjs
+        - text: . New chapel geometry uses no third-party assets; its hand-stroke alphabet and anonymous human proportions continue existing project material.
+      - listitem [ref=f1e141]:
+        - text: "Hush:"
+        - link "contact rules" [ref=f1e142] [cursor=pointer]:
+          - /url: ../../src/game/source-contact.js
+        - text: ","
+        - link "Source encounter runtime" [ref=f1e143] [cursor=pointer]:
+          - /url: ../../src/game/source-space-runtime.js
+        - text: ","
+        - link "game-to-desktop integration" [ref=f1e144] [cursor=pointer]:
+          - /url: ../../src/main.js
+        - text: . Detailed final receipts remain linked above.
+  - generic [ref=f1e145]: Inspection report · 21 October 2026. Screenshots are evidence of submitted/rendered output under the stated fixture. Technical checks and player acceptance remain separate.

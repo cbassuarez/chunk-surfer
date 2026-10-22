@@ -24,7 +24,10 @@ import { STREET_PILOT, STREET_PILOT_BASELINE } from './street-pilot.js';
 import { EXTERIOR_FOREGROUND, foregroundYardLogicalPoint } from './exterior-foreground.js';
 import { EXTERIOR_PUB, PUB_COLLIDERS, pubWorldFromLocal } from './exterior-pub.js';
 import { PUB_INTERIOR_LAYOUT, PUB_FURNITURE_COLLIDERS } from './exterior-pub-furnishings.js';
+import { PUB_NEW_ACTORS, PUB_MESHES, pubActor, pubFacePoint } from './pub-population.js';
+import { PUB_FAVOR_MESHES, PUB_FAVOR_PROPS } from './pub-favors.js';
 import { ACADEMIC_GALLERY_MESHES, ACADEMIC_GALLERY_PROPS, academicGalleryPlacement } from './academic-gallery-treatment.js';
+import { LOADING_BAY_ACCESS } from './loading-bay-access.js';
 
 const P = (id, mesh, x, y, yaw = 0, extra = {}) => ({ id, mesh, x, y, yaw, scale:1, ...extra });
 
@@ -42,6 +45,20 @@ const CPB = (x,y) => ({x:170+x,y:169+y});
 const DP = (id,mesh,physicalX,physicalY,yaw=0,extra={}) => {
   const point=districtLogicalAt(physicalX,physicalY);
   return P(id,mesh,point.x,point.y,yaw,extra);
+};
+// Pub seating is fitted in centimetres. Preserve that authored position across
+// the half-metre navigation projection instead of snapping people off chairs.
+const pubDP = (entry,extra={}) => {
+  const actor=pubActor(entry.pubActorId||entry.id),face=actor?.role==='bartender'
+    ?pubWorldFromLocal({x:-2.65,z:actor.local.z}):actor?pubFacePoint(actor):{x:entry.x,z:entry.y};
+  const target=districtLogicalAt(face.x,face.y??face.z);
+  return DP(entry.id,entry.mesh,entry.x,entry.y,entry.yaw,{
+    structural:true,blocks:false,floorOverride:actor?.floor??EXTERIOR_PUB.floor+.012,
+    renderOffsetX:entry.x-Math.round(entry.x*2)/2,
+    renderOffsetZ:entry.y-Math.round(entry.y*2)/2,
+    renderGroups:['ground'],worldAligned:true,pubActorId:actor?.id||entry.pubActorId||null,
+    pubPosture:actor?.posture||null,inspectAt:{x:target.x,y:target.y},...extra,
+  });
 };
 const inspect = (first, again) => ({ first, again });
 const play = (family, first, again) => ({ interaction:'play', sampleFamily:family, inspect:inspect(first,again) });
@@ -107,6 +124,7 @@ const DOCK_SHUTTER = [{worldId:'dock_shutter',fileLabel:'01'}];
 
 export const PROP_MESH = Object.freeze({
   ...ACADEMIC_GALLERY_MESHES,
+  ...PUB_FAVOR_MESHES,
   ...ARCHITECTURE_FITTING_MESHES, ...INSTITUTION_OCCUPATION_MESHES, ...BUILDING_AMENITY_MESHES, ...BUILDING_WINDOW_MESHES,
   ...ACADEMIC_ROOF_MESHES,
   ...ACADEMIC_ROOF_DRESSING_MESHES,
@@ -158,6 +176,8 @@ export const PROP_MESH = Object.freeze({
   textile_drugget_run:{w:1.30,d:6.40,h:.03,blocks:false,mount:'floor',softFloor:.7},
   textile_drugget_stage:{w:3.60,d:2.40,h:.06,blocks:false,mount:'floor',softFloor:.7},
   textile_stair_runner:{w:.95,d:4.20,h:.03,blocks:false,mount:'floor',softFloor:.9},
+  // Keep the existing acoustic proxy; generated bounds own the fitted visual.
+  textile_stair_runner_fitted:{w:.95,d:4.20,h:10.01,blocks:false,mount:'floor',softFloor:.9},
   textile_corridor_runner:{w:1.15,d:5.60,h:.08,blocks:false,mount:'floor',softFloor:1},
   textile_chapel_runner:{w:1.40,d:7.20,h:.04,blocks:false,mount:'floor',softFloor:1},
   // Rolled and on end: stock, not floor. Nothing to walk on, so no softFloor.
@@ -167,7 +187,7 @@ export const PROP_MESH = Object.freeze({
   // floorplan remains the collision authority; this is the construction layer
   // whose 58 real treads, slab edges and open-well rails must never be reduced
   // to the half-metre navigation raster.
-  main_open_well_stair:{w:6.5,d:6.2,h:14.9,blocks:false},
+  main_open_well_stair:{w:6.5,d:7.1,h:15.1,blocks:false},
   ticket_counter:{w:2.8,d:.75,blocks:true}, key_cabinet:{w:.9,d:.24,blocks:true},
   rekey_ledger:{w:1.22,d:.12,blocks:false,frontAxis:'-z'}, chapel_key_cabinet:{w:1,d:.36,h:1.24,blocks:false},
   chapel_key_ring_ch04:{w:.18,d:.37,h:.28,blocks:false},
@@ -181,7 +201,7 @@ export const PROP_MESH = Object.freeze({
   // must face away from masonry; the rail and the lino rolls stand on the floor.
   dance_barre:{w:2.9,d:.22,h:1.14,blocks:false,mount:'wall'},
   dance_barre_dismantled:{w:2.92,d:.22,h:1.14,blocks:false,mount:'wall'},
-  dance_mirror:{w:3.96,d:.10,h:2.60,blocks:false,mount:'wall'},
+  dance_mirror:{w:3.96,d:.10,h:2.60,blocks:false,mount:'wall',frontAxis:'-z'},
   // Studio B3's treatment: wedge foam on boards (build-props.mjs), and carpet
   // (build-textiles.mjs, worn_carpet; build-props.mjs keeps a flat fallback).
   acoustic_foam_panel:{w:2.40,d:.12,h:2.45,blocks:false,mount:'wall'},
@@ -271,6 +291,7 @@ export const PROP_MESH = Object.freeze({
   // clearances in data/exterior-vigil.js are what keeps them out of the route.
   ...VIGIL_MESHES,
   ...VIGIL_PART_MESHES,
+  ...PUB_MESHES,
   exterior_bus_woman:{w:.85,d:.62,h:1.76,blocks:false},
   exterior_mews_neighbor:{w:.82,d:.60,h:1.82,blocks:false},
   exterior_pub_driver:{w:.88,d:.66,h:1.84,blocks:false},
@@ -294,7 +315,7 @@ export const PROP_MESH = Object.freeze({
   plant_pipe_straight:{w:2.4,d:.16,blocks:false}, plant_pipe_bank:{w:2.8,d:.34,blocks:false},
   plant_pipe_elbow:{w:.92,d:.92,blocks:false}, plant_pipe_valve:{w:.62,d:.32,blocks:false},
   plant_calorifier:{w:1.45,d:1.45,h:2.65,blocks:true}, plant_pump_skid:{w:1.8,d:.88,h:.92,blocks:true},
-  plant_mcc_bank:{w:2.7,d:.42,h:2.18,blocks:false,mount:'wall'}, plant_idf_frame:{w:2.25,d:.24,h:1.76,blocks:false,mount:'wall'},
+  plant_mcc_bank:{w:2.7,d:.42,h:2.18,blocks:false,mount:'wall',frontAxis:'-z'}, plant_idf_frame:{w:2.25,d:.24,h:1.76,blocks:false,mount:'wall',frontAxis:'-z'},
   plant_header_manifold:{w:4.7,d:.68,h:2.35,blocks:false,mount:'wall'}, plant_overhead_header:{w:7.6,d:2.0,h:3.15,blocks:false},
   plant_grated_steps:{w:3.0,d:1.5,h:.42,blocks:false}, plant_steam:{w:1.0,d:.55,h:2.2,blocks:false},
   plant_gauge_needle_0:{w:.3,d:.05,h:2.3,blocks:false},plant_gauge_needle_1:{w:.3,d:.05,h:2.3,blocks:false},plant_gauge_needle_2:{w:.3,d:.05,h:2.3,blocks:false},
@@ -425,9 +446,13 @@ export const STRUCTURAL_COLLIDERS = Object.freeze([
 const BASEBOARD_PROPS = Object.entries(BASEBOARDS).map(([group, b]) =>
   P(`baseboard-${group}`, b.mesh, b.anchor.x / 2, b.anchor.y / 2, 0, {
     interactive: false, structural: true, blocks: false, renderGroups: [group],
+    // Vertices are already baked in physical world axes. A stair-cell anchor
+    // supplies translation and height, never a second tangent rotation.
+    worldAligned: true,
   }));
 
 export const CONSERVATORY_PROPS = [
+  ...PUB_FAVOR_PROPS,
   ...ACADEMIC_GALLERY_PROPS,
   ...INSTITUTION_OCCUPATION_PROPS, ...BUILDING_AMENITY_PROPS,
   ...BUILDING_WINDOW_PROPS.map(p=>p.windowId==='W4-pool-south'?{...p,id:'natatorium-end-window'}:p),
@@ -461,10 +486,12 @@ export const CONSERVATORY_PROPS = [
   // blocking geometry across a route the plant incident depends on.
   // The one piece in here with something to say. It was authored with its line
   // and then switched off, so the late key opened a room that answered nothing.
-  P('spur-substation-mcc','plant_mcc_bank',21.4,35.0,Math.PI/2,{interactive:true,structural:true,blocks:true,
+  P('spur-substation-mcc','plant_mcc_bank',21.5,34.19,Math.PI/2,{interactive:true,structural:true,blocks:true,
     inspect:inspect('Switchgear, dead, with the isolator handles all thrown the same way and a strip of tape across them somebody wrote on in 1994.','Dead switchgear. Tape, and a date, and a hand that is not yours.')}),
-  P('spur-substation-idf','plant_idf_frame',23.4,36.4,0,{interactive:false,structural:true,blocks:true}),
-  P('spur-substation-steps','plant_grated_steps',22.2,34.3,0,{interactive:false,structural:true,blocks:false}),
+  P('spur-substation-idf','plant_idf_frame',23.5,37.7,0,{interactive:false,structural:true,blocks:true}),
+  // A compact instance clears the MCC controls and leaves the west tape racks'
+  // 0.9 m working front open. Quarter-cell offsets retain the measured pose.
+  P('spur-substation-steps','plant_grated_steps',22.5,35.5,0,{renderOffsetX:-.1,renderOffsetZ:-.25,scaleX:.5,interactive:false,structural:true,blocks:false}),
 
   ...BASEBOARD_PROPS,
   // The centre of the new logical ground hall maps to physical (63m, 37m),
@@ -556,8 +583,10 @@ export const CONSERVATORY_PROPS = [
   // paint and handrail construction. Anchor at physical (47.5,7.5), lifted
   // from the -0.85m yard floor to apron datum so its authored negative tread
   // heights sit exactly on the four collision risers.
-  P('yard-dock-access','yard_dock_access',97.0,207.0,0,{
-    elevation:.85,interactive:false,structural:true,blocks:false,
+  P('yard-dock-access','yard_dock_access',
+    LOADING_BAY_ACCESS.yardOrigin.x+LOADING_BAY_ACCESS.meshOrigin.x,
+    LOADING_BAY_ACCESS.yardOrigin.z+LOADING_BAY_ACCESS.meshOrigin.z,0,{
+    elevation:-LOADING_BAY_ACCESS.drop,interactive:false,structural:true,blocks:false,
   }),
   P('yard-fence-west','yard_fence_run',70.0,210.0,0,{interactive:false,structural:true,blocks:true}),
   P('yard-fence-north','yard_fence_run',83.0,201.5,Math.PI/2,{interactive:false,structural:true,blocks:true}),
@@ -737,6 +766,11 @@ export const CONSERVATORY_PROPS = [
     renderGroups:['ground'],label:'The Lyric public house',
   }),
 
+  ...PUB_NEW_ACTORS.map(actor=>pubDP(actor,{
+    action:actor.action||'pub-patron',pubId:actor.id,label:actor.label,knownLabel:actor.name,
+    interactionPriority:3,
+  })),
+
   DP('district-south-row-b','district_passage_frontage',82,106,-Math.PI/2,{interactive:false,structural:true,renderOffsetZ:1.05}),
   DP('district-south-row-c','district_workshop_frontage',138,106,-Math.PI/2,{interactive:false,structural:true,renderOffsetZ:1.05}),
   // The playable courts end at real closed thresholds, while the roofscape and
@@ -846,7 +880,7 @@ export const CONSERVATORY_PROPS = [
   P('brendan-visitor-desk','box_office_desk',CPG(21.45,72).x,CPG(21.45,72).y,Math.PI/2,{renderGroups:['ground'],inspect:inspect('A visitor desk abandoned under dust. Its shallow drawers contain rubber bands, a pencil worn to the ferrule, and no money.','The visitor desk keeps the shape of its last closing.')}),
   P('brendan-visitor-guidebooks','program_stack',CPG(21.45,72).x,CPG(21.45,72).y,Math.PI/2,{on:'brendan-visitor-desk',renderGroups:['ground'],inspect:inspect("Guidebooks to St Brendan's, their tower diagram printed before the bell frame acquired this much dust.",'The same crossing, reduced to a clean black plan.')}),
   P('brendan-visitor-till','cash_terminal',CPG(21.45,72.35).x,CPG(21.45,72.35).y,Math.PI/2,{on:'brendan-visitor-desk',renderGroups:['ground'],inspect:inspect('A dead donation till. The paper roll reads THANK YOU FOR HELPING US KEEP THE BELLS SOUNDING.','No power. The last receipt remains uncut.')}),
-  P('brendan-visitor-postcards','notice_board',CPG(22.45,74.35).x,CPG(22.45,74.35).y,Math.PI,{mount:'wall',elevation:1.15,renderGroups:['ground'],inspect:inspect('Postcards fade in a wire display: west front, crossing tower, six bells, cold glass.','Every card shows an entrance. None shows this way out.')}),
+  P('brendan-visitor-postcards','notice_board',CPG(22.45,74.35).x,CPG(22.45,74.35).y,Math.PI,{mount:'wall',elevation:1.15,renderGroups:['ground'],inspect:inspect('Postcards fade in a wire display: west front, crossing tower, eight bells, cold glass.','Every card shows an entrance. None shows this way out.')}),
 
   // ── The boundary, which stands BETWEEN you and the man in the booth ──
   //
@@ -914,7 +948,7 @@ export const CONSERVATORY_PROPS = [
   // ── Loading dock: LAST LOAD-OUT ──────────────────────────────────────────
   // The room has a three-metre freight spine at x64–66. Everything lives at
   // the perimeter so the setup is dense without becoming a prop maze.
-  P('dock-level-check-box','tower_rope_mat',65.0,10.0,0,{interactive:false,blocks:false,scale:1.45,elevation:.018}),
+  P('dock-level-check-box','tower_rope_mat',65.0,10.0,0,{interactive:false,blocks:false,scale:1.45,elevation:.07}),
   P('dock-sign-studios-plant','scene_dock_sign_services',62.4,14.55,0,{
     mount:'wall',elevation:2.42,interactive:false,structural:true,blocks:false,
   }),
@@ -1010,11 +1044,11 @@ export const CONSERVATORY_PROPS = [
   P('atrium-entry-closure','atrium_entry_closure',78.75,3.25,0,{
     renderOffsetX:-.25,renderOffsetZ:-.25,interactive:false,blocks:false,structural:true,
   }),
-  P('box-office-counter','ticket_counter',90.55,9.35,Math.PI/2,{scale:.75,inspect:inspect('The ticket counter was built to keep a queue outside and cash inside. The grille is still locked down.','Nothing has been sold here for years.')}),
+  P('box-office-counter','ticket_counter',89.65,10.35,Math.PI/2,{scale:.75,renderOffsetX:.2,inspect:inspect('The ticket counter was built to keep a queue outside and cash inside. The grille is still locked down.','Nothing has been sold here for years.')}),
   P('box-office-desk','box_office_desk',93.55,9.2,0,{inspect:inspect('The staff desk is squared to the ticket window. A blotter has been pressed flat by damp.','Front of house, stopped mid-week.')}),
   P('box-office-chair','chair',93.55,10.05,0,{inspect:inspect('A staff chair tucked under the ticket desk, not abandoned in the queue path.','Its casters have made a small grey ring.')}),
-  P('box-office-program-stack','program_stack',90.55,8.92,Math.PI/2,{on:'box-office-counter',inspect:inspect('A stack of folded programmes for a season that never opened.','The top programme has curled at both corners.')}),
-  P('box-office-cash-terminal','cash_terminal',90.55,9.72,Math.PI/2,{on:'box-office-counter',inspect:inspect('A dead card terminal beside a cash drawer. The receipt paper is still threaded.','No signal. No float.')}),
+  P('box-office-program-stack','program_stack',89.65,9.92,Math.PI/2,{on:'box-office-counter',scale:.8,renderOffsetX:.35,renderOffsetY:-.0208,inspect:inspect('A stack of folded programmes for a season that never opened.','The top programme has curled at both corners.')}),
+  P('box-office-cash-terminal','cash_terminal',89.65,10.72,Math.PI/2,{on:'box-office-counter',scale:.6,renderOffsetX:.35,renderOffsetY:-.012,inspect:inspect('A dead card terminal beside a cash drawer. The receipt paper is still threaded.','No signal. No float.')}),
   P('box-office-ledger','rekey_ledger',92.25,12.25,Math.PI,{mount:'wall',elevation:1.1,interaction:'action',action:'rekey-ledger',inspect:inspect('A rekey ledger: REPLACEMENT LOCK — CHAPEL — CABINET C-17.','CHAPEL. REPLACEMENT LOCK. C-17.')}),
   P('box-office-key-cabinet','chapel_key_cabinet',96.25,9.45,Math.PI/2,{
     mount:'wall',elevation:1.0,blocks:false,structural:true,
@@ -1063,8 +1097,9 @@ export const CONSERVATORY_PROPS = [
   }),
   P('box-office-shelf','equipment_rack',95.1,11.3,0,{scale:.82,inspect:inspect('Programmes, float envelopes, and ticket stock boxed by week.','The labels are more orderly than the room.')}),
   P('box-office-notice-board','notice_board',96.2,7.65,Math.PI/2,{mount:'wall',elevation:1.15,inspect:inspect('A notice board with staffing rotas, emergency contacts, and one hand-written refund policy.','The refund policy is underlined twice.')}),
-  ...[[88.9,8.25],[88.9,10.45],[89.9,8.25],[89.9,10.45]].map(([x,y],i)=>
-    P(`box-office-queue-${i+1}`,'queue_stanchion',x,y,0,{inspect:inspect('A brass queue post with its rope still clipped in.','The rope sags towards the ticket window.')})),
+  // Matching rope ends meet between posts; neither rope passes into the grille.
+  ...[[88,9.5],[88,11.5],[89,9.5],[89,11.5]].map(([x,y],i)=>
+    P(`box-office-queue-${i+1}`,'queue_stanchion',x,y,i>=2?Math.PI:0,{renderOffsetX:i>=2?-.16:0,renderOffsetY:-.02,inspect:inspect('A brass queue post with its rope still clipped in.','The rope sags towards the ticket window.')})),
 
   // ── FRONT OF HOUSE EPHEMERA ────────────────────────────────────────────────
   //
@@ -1089,7 +1124,7 @@ export const CONSERVATORY_PROPS = [
   P('foh-bin','district_bin_cluster',88.6,12.6,0,{inspect:inspect('A bin by the doors, lined and never used. Someone put the bag in and that was the last of it.','Clean, which out of everything in here is the strange part.')}),
 
   // On the counter, behind the grille.
-  P('box-office-unsold-roll','loose_pages',90.55,9.9,Math.PI/2,{on:'box-office-counter',inspect:inspect('A roll of unsold tickets, still joined, still numbered. It stops in the middle of a Sunday.','The tear is clean. Nobody hurried at the end of it.')}),
+  P('box-office-unsold-roll','loose_pages',89.65,10.9,Math.PI/2,{on:'box-office-counter',scale:.35,renderOffsetX:.35,renderOffsetY:-.0007,inspect:inspect('A roll of unsold tickets, still joined, still numbered. It stops in the middle of a Sunday.','The tear is clean. Nobody hurried at the end of it.')}),
 
   // The office side: what the staff left on the desk.
   P('box-office-seating-plan','notice_board',94.2,6.85,0,{mount:'wall',elevation:1.52,inspect:inspect('The seating plan, drawn by hand and photocopied until the back rows went to grey.','Two seats in the circle are inked out. No note as to why, and the ink is older than the copy.')}),
@@ -1100,7 +1135,7 @@ export const CONSERVATORY_PROPS = [
   // Public-room fabric stays on the perimeter. It gives the atrium a civic use
   // and a closing-day history without filling the ruined garden or narrowing
   // the broad route from public entrance to concert-hall portal.
-  P('atrium-public-bench-west','pew',75.8,9.7,Math.PI/2,{
+  P('atrium-public-bench-west','pew',75.8,10.5,Math.PI/2,{renderOffsetZ:-.25,
     inspect:inspect('A municipal waiting bench beneath the directory. Its varnish is worn at regular shoulder-width intervals.','People waited here facing the ticket window.'),
   }),
   P('atrium-public-directory','notice_board',74.75,8.1,-Math.PI/2,{mount:'wall',elevation:1.3,
@@ -1171,12 +1206,13 @@ export const CONSERVATORY_PROPS = [
       'The stage boards under it are unmarked. Everything either side of it is not.',
     ),
   }),
-  // Rodded to the treads. Worthless off them, so it is still on them.
-  P('main-stair-runner','textile_stair_runner',139,29,0,{
+  // Fitted to the same physical origin as the analytic open-well stair.
+  P('main-stair-runner','textile_stair_runner_fitted',139,29,0,{
+    renderOffsetX:1,renderOffsetZ:2,renderGroups:['ground','upper','academic'],
     interactive:false,blocks:false,structural:true,
     inspect:inspect(
-      'A worsted stair runner, still on its rods. The brass is gone from three of them and the runner is not.',
-      'Worn through to the backing in a strip up the middle, which is where a century of the same feet went.',
+      'A worsted runner fitted around the curved treads, with bound edges and a thin, compressed strip up the middle. The brass nosings remain exposed either side.',
+      'The same central line of feet has thinned the wool. The edges kept their pile.',
     ),
   }),
   // The academic corridor, between the office doors nobody has unlocked.
@@ -1198,7 +1234,7 @@ export const CONSERVATORY_PROPS = [
   }),
   // Stock rather than furnishing, which is exactly why it survived intact: it
   // was never on a floor to be walked on or sold with the fittings.
-  P('store-rolled-rug','textile_rolled',4,18,-.22,{
+  P('store-rolled-rug','textile_rolled',4.5,19.5,-.22,{
     interactive:false,blocks:false,structural:true,
     inspect:inspect(
       'A rug rolled and stood on end against the wall, tied twice and tagged at the top.',
@@ -1244,12 +1280,12 @@ export const CONSERVATORY_PROPS = [
   }),
   P('deadend-ground-chair','wooden_chair_01',72.4,24.6,Math.PI/2,{
     provenance:provenance('foyer_suite','FOH/F-07','odd chair, never matched'),
-    inspect:inspect('A tall-backed chair that belongs to no set. It is older than the suite and half a head higher, and somebody put it here facing the same way as the armchair, as though the two of them were waiting together.','FOH/F-07. Two chairs, one conversation, nobody in either.'),
+    inspect:inspect('A tall-backed chair with dark green paint worn down to the wood. It belongs to no set: older than the suite and half a head higher, and somebody put it here facing the same way as the armchair, as though the two of them were waiting together.','FOH/F-07. Two chairs, one conversation, nobody in either.'),
   }),
   P('deadend-ground-credenza','classic_console_01',73.6,23.5,-Math.PI/2,{
     provenance:provenance('foyer_suite','FOH/F-08','east table, drawer swollen'),
     inspectAt:{x:72.8,y:23.5},
-    inspect:inspect('The last console of the suite, FOH/F-08, pushed against the atrium wall. The drawer is swollen shut and has been forced before — the lip is bright where somebody worked at it.','FOH/F-08. The drawer is open now.'),
+    inspect:inspect('The last console of the suite, FOH/F-08, pushed against the atrium wall. The drawer is swollen shut and has been forced before — the lip is bright where somebody worked at it.','FOH/F-08. Bright wood where the drawer was forced.'),
   }),
   // Hung on the picture rail the atrium relief puts through this wall, which is
   // the only reason a painting can touch a wall in a service corridor and look
@@ -1417,7 +1453,7 @@ export const CONSERVATORY_PROPS = [
   ...[0,1,2,3].map((i)=>
     P(`academic-store-files-${i+1}`,'academic_filing_bank',13.2+i*2.4,259.7,0,{interactive:false})),
   P('academic-store-desk-1','school_desk',19.4,260.9,.28,{interactive:false}),
-  P('academic-store-desk-2','school_desk',19.7,260.6,-.19,{interactive:false,scale:.98}),
+  P('academic-store-desk-2','school_desk',17.5,261.5,-.19,{renderOffsetX:.25,renderOffsetZ:-.25,interactive:false,scale:.98}),
 
   // THE ROOM THE BREACH OPENS INTO. You can walk in here, and what is in it is
   // the furniture that came out of everywhere else — stacked against a wall by
@@ -1505,7 +1541,7 @@ export const CONSERVATORY_PROPS = [
   // Carpet in widths, three by three, wall to wall. softFloor in the mesh table.
   ...[9.1,15.3,21.5].flatMap((x,col)=>[8.3,12.9,17.5].map((y,row)=>P(`b3-carpet-${col*3+row+1}`,'textile_studio_carpet',x,y,0,{interactive:false,structural:true}))),
   // Between two panel centres: standing in a panel's own cell takes its wall.
-  P('b3-patchbay','legacy_patchbay',24.0,10.8,-Math.PI/2,{inspect:inspect('A patchbay with every cable pulled, coiled and hung beside it. Somebody left this room tidy.','You do not tidy a room you think is being knocked down. You tidy a room you are coming back to.')}),
+  P('b3-patchbay','legacy_patchbay',24.0,10.8,Math.PI/2,{inspect:inspect('A patchbay with every cable pulled, coiled and hung beside it. Somebody left this room tidy.','You do not tidy a room you think is being knocked down. You tidy a room you are coming back to.')}),
   P('b3-cable-coil','cable_coil',21.0,13.2,.4,{interactive:false,blocks:false}),
   P('b3-chair','chair',21.6,10.8,-Math.PI/2,{inspect:inspect('A chair in front of the patchbay, at the height somebody liked it.','Somebody worked in here for a long time, and then one day they did not come back.')}),
   // The stand the first-take tree talks about: folded down and leant into the
@@ -1536,15 +1572,15 @@ export const CONSERVATORY_PROPS = [
 
   // Studio B5, across the corridor. There is no B4.
   P('b5-barre-north','dance_barre',19.5,26.0,0,{inspect:inspect('A barre along the whole north wall, and the wall behind it is scuffed to shoulder height in one continuous band.','The band is exactly where a hand steadies itself.')}),
-  P('b5-mirror-south','dance_mirror',15.0,32.5,Math.PI,{inspect:inspect('The mirror in here has been taken off the wall and stood facing it, so what is hung on the room is four feet of grey backing board.','Somebody turned the mirror around. That is a decision, and it was made in here.')}),
+  P('b5-mirror-south','dance_mirror',15.0,32.5,Math.PI,{frontAxis:'+z',inspect:inspect('The mirror in here has been taken off the wall and stood facing it, so what is hung on the room is four feet of grey backing board.','Somebody turned the mirror around. That is a decision, and it was made in here.')}),
   P('b5-chairs','chair',21.0,30.0,0,{inspect:inspect('Chairs, stacked, in a room with the mirror facing the wall.','Stacked, and waiting on a room that has been turned off.')}),
 
   // The prop store: the dead end opposite the stair.
   P('store-rail-a','costume_rail',3.0,11.0,0,{inspect:inspect('A costume rail under dust sheets. Whatever is on it has kept its shape, which after this long means it was hung properly by somebody who cared.','Hung properly, and left.')}),
   P('store-rail-b','costume_rail',3.8,14.6,0,{interactive:false}),
   P('store-empty-chair','costume_stained_chair',3.85,17.8,Math.PI,{
-    action:'costume-pin',label:'a pin in the work chair',interactionPriority:3,
-    inspect:inspect('A dressmaker\u2019s pin is caught in the chair lining. The seam beneath it is fresh. I am not putting a hand under there again.','The pin is still caught in the lining. I can leave it.'),
+    action:'costume-pin',label:'inspect the freshly pinned lining',interactionPriority:3,
+    inspect:inspect('A dressmaker\u2019s pin is caught in the chair lining. The seam beneath it is fresh.','The pin is still caught in the lining. I am not putting a hand under there again.'),
   }),
   P('store-lino','rolled_lino',2.0,19.0,0,{interactive:false}),
 
@@ -1562,10 +1598,10 @@ export const CONSERVATORY_PROPS = [
   // north (-Z), so yaw zero is the only transform that puts the low stalls at
   // the apron and lets the bowl rise toward the rear cross aisle.
   P('hall-seating','hall_seating',113.0,23.0,0,{interactive:false,structural:true,elevation:-2.5,collisionMask:'hall-seating'}),
-  P('hall-grand-1','grand_piano',113.0,8.0,Math.PI,{...play(PIANO,'A grand piano under a black cover, except the keyboard is exposed.','The keys are colder than the room.')}),
+  P('hall-grand-1','grand_piano',113.0,10.0,Math.PI,{...play(PIANO,'A grand piano under a black cover, except the keyboard is exposed.','The keys are colder than the room.')}),
   P('hall-marimba-1','marimba',103.0,9.0,Math.PI/2,{...play(MARIMBA,'The concert marimba, brakes on, one resonator tube dented flat.','The dent has a pitch of its own.')}),
   P('hall-marimba-overflow','marimba',125.0,12.0,0,{...play(MARIMBA,'A second marimba parked where the hall narrows. It did not fit wherever it was meant to go.','It is still in everybody’s way.')}),
-  P('hall-timpani-1','timpani',121.0,8.0,0,{...play(PERCUSSION,'A timpano with the pedal tied down for transport.','The head gives under one finger.')}),
+  P('hall-timpani-1','timpani',121.5,10.0,0,{...play(PERCUSSION,'A timpano with the pedal tied down for transport.','The head gives under one finger.')}),
   P('hall-timpani-2','timpani',122.2,9.0,0,{...play(PERCUSSION,'The larger drum. Dust has settled evenly except where a mallet once lay.','The clean line is mallet-shaped.')}),
   P('hall-portrait-bronzino','portrait_frame',99.0,5.0,0,{mount:'wall',mountNormal:{nx:0,ny:1},elevation:1.45,portraitIndex:2,inspect:inspect('A Bronzino study, silverpoint and chalk. It looks unfinished because it is.','The paper is paler than the wall.')}),
   P('hall-portrait-florentine','portrait_frame',104.0,5.0,0,{mount:'wall',mountNormal:{nx:0,ny:1},elevation:1.45,portraitIndex:3,inspect:inspect('Portrait of a Woman, Florentine, mid-sixteenth century. The brass plate gives no donor.','No donor, only accession numbers.')}),
@@ -1721,8 +1757,8 @@ export const CONSERVATORY_PROPS = [
 
   // Chapel: two banks leave a central aisle and side circulation clear.
   ...[62.0,65.0,68.0,71.0,74.0,77.0,80.0,83.0,86.0].flatMap((y,i)=>[
-    P(`chapel-pew-l-${i}`,'pew',89.0,y,0,{inspect:inspect('A short pew, polished at the aisle end by hands.','The aisle end is darker.')}),
-    P(`chapel-pew-r-${i}`,'pew',96.0,y,0,{inspect:inspect('A matching pew, one kneeler missing.','The empty brackets remain.')}),
+    P(`chapel-pew-l-${i}`,'pew',89.0,y,Math.PI,{inspect:inspect('A short pew, polished at the aisle end by hands.','The aisle end is darker.')}),
+    P(`chapel-pew-r-${i}`,'pew',96.0,y,Math.PI,{inspect:inspect('A matching pew, one kneeler missing.','The empty brackets remain.')}),
   ]),
   // ── THE WAY UP, SIGNED ─────────────────────────────────────────────────────
   //
@@ -1854,15 +1890,16 @@ export const CONSERVATORY_PROPS = [
   // fits the real 4.20m loft only with a vertical fit; width and depth stay put.
   P('tower-organ-case','tower_organ_case',94.0,152.0,Math.PI,{interactive:false,structural:true,scaleY:.9}),
   P('tower-organ-console','organ_console',94.0,154.5,Math.PI,{...play(CHAPEL,'The loft console faces east over the nave. The blower remains isolated.','No wind. The descent door is beside it.')}),
-  P('acq-chapel-score-cabinet-west','gothic_cabinet_01',89.5,153.5,Math.PI/2,{
+  P('acq-chapel-score-cabinet-west','gothic_cabinet_01',89.5,153.5,-Math.PI/2,{
+    renderOffsetX:.07,
     provenance:provenance('chapel_foundation_1908','EC/C-04','west score cabinet; replacement lock'),
     inspectAt:{x:90.35,y:154.15},
     inspect:inspect('The west score cabinet, EC/C-04. Its replacement lock is square and recent against the 1908 ironwork; the key number is C-17.','EC/C-04. New lock, old cabinet, C-17.'),
   }),
-  P('acq-chapel-score-cabinet-east','gothic_cabinet_01',98.5,153.5,-Math.PI/2,{
+  P('acq-chapel-score-cabinet-east','gothic_cabinet_01',98.5,153.5,Math.PI/2,{
     provenance:provenance('chapel_foundation_1908','EC/C-05','east score cabinet; original lock seized'),
     inspectAt:{x:97.65,y:154.15},
-    inspect:inspect('The matching east score cabinet, EC/C-05. Its original lock has seized open, exposing pencilled shelf letters and no scores.','EC/C-05. The older lock failed in the safer direction.'),
+    inspect:inspect('The matching east score cabinet, EC/C-05. Its original lock has seized shut; the old ironwork is worn bright around the keyhole.','EC/C-05. Original lock, seized shut.'),
   }),
   P('tower-loft-rail','tower_loft_rail',94.0,156.7,0,{interactive:false,structural:true}),
   P('tower-sign-organ-exit','tower_plaque',104.5,151.0,0,{
@@ -1994,7 +2031,7 @@ export const CONSERVATORY_PROPS = [
     interaction:'action',action:'power-panel-sp05',interactionPriority:2,
     inspect:inspect('The academic-floor panel, S/P-05, is fixed to the loggia wall where the stair arrives. Gallery and classroom banks are listed separately; every breaker is open.','S/P-05. Last in the numbered run, nearest the way down.'),
   }),
-  P('plant-rack-1','equipment_rack',38.5,28,Math.PI/2,{interactive:false,structural:true}),
+  P('plant-rack-1','equipment_rack',39.6,34.5,-Math.PI/2,{renderOffsetX:.1,interactive:false,structural:true}),
   P('acq-services-panel-plant','power_box_01',39.5,30,Math.PI/2,{
     scaleX:1.76,scaleY:1.63,elevation:1.45,renderOffsetX:.25,
     provenance:provenance('services_rewire','S/P-01','plant-room panel; hand-corrected labels'),
@@ -2041,10 +2078,10 @@ export const CONSERVATORY_PROPS = [
   // The spur-substation, behind `spur-substation` on the services-core key that
   // bust 5 gives up once the marble head is back (takeServicesKey). These are
   // permanent building history: the old transfer kit, never wired to anything.
-  P('legacy-tape-rack-west-a','legacy_tape_rack',22.15,34.65,Math.PI/2,{interactive:false}),
-  P('legacy-tape-rack-west-b','legacy_tape_rack',22.15,36.15,Math.PI/2,{interactive:false}),
-  P('legacy-patchbay-north','legacy_patchbay',24.15,34.45,0,{interactive:false}),
-  P('legacy-transfer-console','legacy_transfer_deck',22.95,37.15,Math.PI,{interactive:false}),
+  P('legacy-tape-rack-west-a','legacy_tape_rack',20.25,35.95,-Math.PI/2,{renderOffsetX:-.25,renderOffsetZ:-.05,interactive:false}),
+  P('legacy-tape-rack-west-b','legacy_tape_rack',20.25,37.15,-Math.PI/2,{renderOffsetX:-.25,renderOffsetZ:.15,interactive:false}),
+  P('legacy-patchbay-north','legacy_patchbay',24.7,35.55,Math.PI/2,{renderOffsetX:.2,renderOffsetZ:.05,interactive:false}),
+  P('legacy-transfer-console','legacy_transfer_deck',24,34.45,0,{renderOffsetZ:-.05,interactive:false}),
   // Two authored wall systems replace the loose pipe cloud. All origins are
   // in plant-room air, one half-cell from solid masonry, and yaw points the
   // service faces into the room. The lower north run joins edge-to-edge.
@@ -2063,8 +2100,10 @@ export const CONSERVATORY_PROPS = [
   P('plant-calorifier-north','plant_calorifier',34.0,28.0,0,{interactive:false,structural:true}),
   P('plant-calorifier-south','plant_calorifier',34.0,33.0,0,{interactive:false,structural:true}),
   P('plant-pump-north','plant_pump_skid',36.3,28.2,Math.PI/2,{interactive:false,structural:true}),
-  P('plant-pump-south','plant_pump_skid',36.3,32.8,Math.PI/2,{interactive:false,structural:true}),
-  P('plant-mcc-east','plant_mcc_bank',39.45,28.5,-Math.PI/2,{mount:'wall',interactive:false,structural:true}),
+  P('plant-pump-south','plant_pump_skid',35.5,32.8,Math.PI/2,{interactive:false,structural:true}),
+  // The retained identifier is save-stable; the existing south wall separates
+  // switchgear from the east heating runs and keeps its working front clear.
+  P('plant-mcc-east','plant_mcc_bank',37.5,34.5,0,{mount:'wall',interactive:false,structural:true}),
   P('plant-idf-west','plant_idf_frame',30.15,27.9,Math.PI/2,{mount:'wall',interactive:false,structural:true}),
   P('plant-overhead-header','plant_overhead_header',35.0,30.5,0,{elevation:.05,interactive:false,structural:true}),
   P('plant-annex-steps','plant_grated_steps',33.0,35.35,0,{interactive:false,structural:true}),
@@ -2099,26 +2138,28 @@ export const CONSERVATORY_PROPS = [
 
   // ── THE VIGIL ────────────────────────────────────────────────────────────
   //
-  // Twenty-four people who decided to be outside the building until six on
-  // Thursday. Six of them talk; the other eighteen are background with real
-  // collision and no interaction, which is what stops the crowd reading as six
-  // hotspots standing in a photograph.
-  //
-  // Placement, kit and every line they say are authored in
-  // data/exterior-vigil.js in YARD-PHYSICAL metres; the yard island's logical
-  // origin (50, 200) is added here and nowhere else.
-  ...vigilFigures().map((figure)=>P(
-    figure.id,figure.mesh,50+figure.x,200+figure.y,figure.yaw,
-    figure.talkable
-      ? {
-        structural:true,blocks:true,action:'exterior-vigil',vigilId:figure.voiceId,
-        label:figure.label,knownLabel:figure.knownLabel,vigilCluster:figure.cluster,vigilActionSet:figure.actionSet,interactionPriority:3,
-        inspectAt:{x:50+figure.facePoint.x,y:200+figure.facePoint.y},
-      }
-      : {interactive:false,structural:true,blocks:true,vigilCluster:figure.cluster,vigilActionSet:figure.actionSet},
-  )),
-  ...vigilParts().map((entry)=>P(
-    entry.id,entry.mesh,50+entry.x,200+entry.y,entry.yaw,
-    {interactive:false,structural:true,blocks:false,vigilActorId:entry.actorId||null,vigilCluster:entry.cluster},
-  )),
+  // Twenty-two remain outside; Denise and Malcolm have brought their papers
+  // into The Lyric. Their existing IDs, conversations and linked kit migrate
+  // together, so old saves keep the same recognition and replay identities.
+  ...vigilFigures().map((figure)=>{
+    const details=figure.talkable?{
+      structural:true,blocks:true,action:'exterior-vigil',vigilId:figure.voiceId,
+      label:figure.label,knownLabel:figure.knownLabel,vigilCluster:figure.cluster,
+      vigilActionSet:figure.actionSet,interactionPriority:3,
+    }:{interactive:false,structural:true,blocks:true,vigilCluster:figure.cluster,vigilActionSet:figure.actionSet};
+    if(figure.pubActorId)return pubDP(figure,{
+      ...details,blocks:figure.posture!=='seated',
+      // These compact envelopes contain the retained character geometry. A
+      // seated man's stool already supplies his physical obstruction.
+      ...(figure.posture==='standing'?{w:.90,d:.82}:{}),
+    });
+    return P(figure.id,figure.mesh,50+figure.x,200+figure.y,figure.yaw,{
+      ...details,...(figure.talkable?{inspectAt:{x:50+figure.facePoint.x,y:200+figure.facePoint.y}}:{}),
+    });
+  }),
+  ...vigilParts().map((entry)=>entry.pubActorId
+    ?pubDP(entry,{interactive:false,blocks:false,vigilActorId:entry.actorId,vigilCluster:entry.cluster})
+    :P(entry.id,entry.mesh,50+entry.x,200+entry.y,entry.yaw,{
+      interactive:false,structural:true,blocks:false,vigilActorId:entry.actorId||null,vigilCluster:entry.cluster,
+    })),
 ].map(academicGalleryPlacement);

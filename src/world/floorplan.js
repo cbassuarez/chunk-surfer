@@ -1764,9 +1764,11 @@ export function interactDoor(px,py,facing,keys){
   if(portal.definition?.closer!=='none')portal.runtime.closerArmed=true;
   return{ok:true,closed,removedWedge,id:portal.id,keyId:portal.keyId,archetype:portal.definition?.archetype||null,construction:portal.definition?.construction||'steel'};
 }
-export function tickDoors(dt,{playerX=Infinity,playerY=Infinity}={}){
+export function tickDoors(dt,{playerX=Infinity,playerY=Infinity,onlyIds=null}={}){
   const events=doorTickEvents;events.length=0;
+  const selected=onlyIds==null?null:new Set(onlyIds);
   for(const portal of doorPortals){
+    if(selected&&!selected.has(portal.id))continue;
     const sweepOccupied=pointInDoorSweep(portal,playerX,playerY);
     const along=portal.widthAxis==='x'?playerY:playerX,plane=portal.widthAxis==='x'?portal.cy:portal.cx;
     const side=Math.sign(along-plane),cleared=portal.autoCloseSide&&side&&side!==portal.autoCloseSide&&Math.abs(along-plane)>=2.2;
@@ -1792,6 +1794,14 @@ export function setDoorOpen(id,open){
   portal.autoCloseSide=0;return setPortalOpen(portal,open);
 }
 export function setAllDoorsOpen(open){for(const portal of doorPortals)setPortalOpen(portal,open,{preserveWedge:false});return saveDoorState();}
+// Restage one real closer under an authored cover without touching any other
+// portal. The following selected tick owns its physical leaf and closed event.
+export function runDoorCloserCycle(id){
+  const portal=doorPortals.find((p)=>p.id===id);
+  if(!portal||portal.definition?.closer==='none')return false;
+  portal.runtime.wedge=false;portal.runtime.closerArmed=true;setPortalOpen(portal,true,{preserveWedge:false});beginDoorClose(portal.runtime,{removeWedge:false});
+  return true;
+}
 export function runDoorCloserCycles(){
   const started=[];
   for(const portal of doorPortals){

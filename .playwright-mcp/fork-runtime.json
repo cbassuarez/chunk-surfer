@@ -1,0 +1,52 @@
+{
+  "sampleRate": 48000,
+  "channels": 2,
+  "durationSeconds": 4,
+  "format": "PCM16 WAV",
+  "producer": "Actual browser OfflineAudioContext executing unchanged createForkToneRuntime; direct destination without game master bus, ambience, headphones or physical speaker output.",
+  "schedule": [
+    {
+      "timeSeconds": 0,
+      "frame": {
+        "audible": true,
+        "gain": 0.017198545575737988,
+        "pan": -0.8333333333333334,
+        "distance": 5.385164807134505,
+        "seam": 1,
+        "seamGain": 0.011,
+        "seamHz": 444
+      },
+      "rampEnds": 0.35
+    },
+    {
+      "timeSeconds": 1.5013333333333334,
+      "frame": {
+        "audible": true,
+        "gain": 0.023181547996907696,
+        "pan": 0.16666666666666666,
+        "distance": 2.23606797749979,
+        "seam": 1,
+        "seamGain": 0.011,
+        "seamHz": 444
+      },
+      "rampEnds": 1.8513333333333333
+    },
+    {
+      "timeSeconds": 2.501333333333333,
+      "frame": {
+        "gain": 0,
+        "pan": 0,
+        "seamGain": 0,
+        "seamHz": 444
+      },
+      "rampEnds": 2.8513333333333333
+    }
+  ],
+  "expected": {
+    "fundamentalHz": 440,
+    "institutionHz": 444,
+    "octaveDetunedHz": 883.0551386883625,
+    "muteFromSeconds": 2.8513333333333333
+  },
+  "warning": "Offline rendering was suspended at the two update times to exercise real AudioParam progression; suspension times quantize to render blocks. Two representative field positions, not a calibrated recreation of the captured route. No listening judgment."
+}

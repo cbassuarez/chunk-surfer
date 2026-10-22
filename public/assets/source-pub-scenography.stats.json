@@ -1,0 +1,335 @@
+{
+  "meshes": {
+    "source_pub_cold_fittings": {
+      "triangles": 7460,
+      "bounds": {
+        "min": [
+          0.04999999999999999,
+          0,
+          1.01
+        ],
+        "max": [
+          15.76,
+          3.4000000000000004,
+          5.31
+        ]
+      }
+    },
+    "source_pub_deck": {
+      "triangles": 24,
+      "bounds": {
+        "min": [
+          -0.5,
+          -0.16,
+          -0.5
+        ],
+        "max": [
+          0.5,
+          0,
+          0.5
+        ]
+      }
+    },
+    "source_pub_joist": {
+      "triangles": 12,
+      "bounds": {
+        "min": [
+          -0.5,
+          -0.395,
+          -0.5
+        ],
+        "max": [
+          0.5,
+          -0.14500000000000002,
+          0.5
+        ]
+      }
+    },
+    "source_pub_unfinished_bay": {
+      "triangles": 204,
+      "bounds": {
+        "min": [
+          -1.2,
+          0,
+          -0.065
+        ],
+        "max": [
+          1.2,
+          3.4299999999999997,
+          5.4775
+        ]
+      }
+    },
+    "source_pub_loose_panel": {
+      "triangles": 36,
+      "bounds": {
+        "min": [
+          -0.44,
+          -0.67,
+          -0.0325
+        ],
+        "max": [
+          0.44,
+          0.67,
+          0.07
+        ]
+      }
+    },
+    "source_pub_cask": {
+      "triangles": 368,
+      "bounds": {
+        "min": [
+          -0.378,
+          0,
+          -0.378
+        ],
+        "max": [
+          0.378,
+          0.873,
+          0.378
+        ]
+      }
+    },
+    "source_pub_cold_practical": {
+      "triangles": 120,
+      "bounds": {
+        "min": [
+          -0.135,
+          -0.0345,
+          -0.12839262969984575
+        ],
+        "max": [
+          0.135,
+          0.22,
+          0.12839262969984575
+        ]
+      }
+    },
+    "source_pub_bare_tray": {
+      "triangles": 392,
+      "bounds": {
+        "min": [
+          -0.197,
+          0.006,
+          -0.197
+        ],
+        "max": [
+          0.197,
+          0.028,
+          0.197
+        ]
+      }
+    },
+    "source_pub_single_water_tray": {
+      "triangles": 712,
+      "bounds": {
+        "min": [
+          -0.197,
+          0.006,
+          -0.197
+        ],
+        "max": [
+          0.197,
+          0.117,
+          0.197
+        ]
+      }
+    },
+    "source_pub_clean_water_glass": {
+      "triangles": 320,
+      "bounds": {
+        "min": [
+          -0.035,
+          0,
+          -0.035
+        ],
+        "max": [
+          0.035,
+          0.1,
+          0.035
+        ]
+      }
+    }
+  },
+  "sourceSha256": {
+    "public/assets/conservatory-props.glb": "489cd975214e67352095158609ec2851ca0c3b96dc5ef6a0942938caa5863b6c",
+    "public/assets/pub-characters.glb": "888f46f97fc5a2bf0f30f7d4cb214abede2e4a5903db0fe4c2bfb8518dc0eef4",
+    "public/assets/pub-quest-props.glb": "8e6f9f5e3c5ec140967c83b4bbbaadf3cbb21c0a6c67940f3277d8049c6ff3b8",
+    "public/assets/pub-hospitality.glb": "516e8420df868bbe6cf5f6da3bc6ead638e9c840378437d142afb63e1c1ba773"
+  },
+  "retainedFixtures": [
+    {
+      "id": "pub-snug-back-banquette",
+      "kind": "banquette",
+      "triangles": 168
+    },
+    {
+      "id": "pub-snug-return-banquette",
+      "kind": "banquette",
+      "triangles": 120
+    },
+    {
+      "id": "pub-snug-table-0",
+      "kind": "table",
+      "triangles": 164
+    },
+    {
+      "id": "pub-snug-chair-0",
+      "kind": "chair",
+      "triangles": 120
+    },
+    {
+      "id": "pub-snug-table-1",
+      "kind": "table",
+      "triangles": 164
+    },
+    {
+      "id": "pub-snug-chair-1",
+      "kind": "chair",
+      "triangles": 120
+    },
+    {
+      "id": "pub-snug-table-2",
+      "kind": "table",
+      "triangles": 164
+    },
+    {
+      "id": "pub-snug-chair-2",
+      "kind": "chair",
+      "triangles": 120
+    },
+    {
+      "id": "pub-counter",
+      "kind": "counter",
+      "triangles": 528
+    },
+    {
+      "id": "pub-backbar",
+      "kind": "backbar",
+      "triangles": 4200
+    },
+    {
+      "id": "pub-bar-stool-0",
+      "kind": "stool",
+      "triangles": 176
+    },
+    {
+      "id": "pub-bar-stool-1",
+      "kind": "stool",
+      "triangles": 176
+    },
+    {
+      "id": "pub-bar-stool-2",
+      "kind": "stool",
+      "triangles": 176
+    },
+    {
+      "id": "pub-snug-stove",
+      "kind": "stove",
+      "triangles": 172
+    },
+    {
+      "id": "pub-wc-toilet",
+      "kind": "toilet",
+      "triangles": 228
+    },
+    {
+      "id": "pub-wc-basin",
+      "kind": "basin",
+      "triangles": 232
+    },
+    {
+      "id": "pub-wc-partitions",
+      "kind": "wc-wall",
+      "triangles": 84
+    },
+    {
+      "id": "pub-entry-pendant",
+      "kind": "pendant",
+      "triangles": 116
+    },
+    {
+      "id": "pub-snug-pendant",
+      "kind": "pendant",
+      "triangles": 116
+    },
+    {
+      "id": "pub-bar-pendant",
+      "kind": "pendant",
+      "triangles": 116
+    }
+  ],
+  "omittedFixtures": [
+    {
+      "id": "pub-basketweave-parquet",
+      "kind": "floor-finish",
+      "triangles": 788
+    },
+    {
+      "id": "pub-wc-tiled-floor",
+      "kind": "floor-finish",
+      "triangles": 56
+    },
+    {
+      "id": "pub-panelling-skirts-and-rails",
+      "kind": "wall-finish",
+      "triangles": 480
+    },
+    {
+      "id": "pub-ceiling-coving-and-roses",
+      "kind": "ceiling-finish",
+      "triangles": 432
+    },
+    {
+      "id": "pub-wc-ceiling-practical",
+      "kind": "ceiling-practical",
+      "triangles": 144
+    },
+    {
+      "id": "pub-wc-mirror",
+      "kind": "wall-mirror",
+      "triangles": 24
+    },
+    {
+      "id": "pub-snug-picture--30.1",
+      "kind": "wall-picture",
+      "triangles": 96
+    },
+    {
+      "id": "pub-snug-picture--28.3",
+      "kind": "wall-picture",
+      "triangles": 96
+    },
+    {
+      "id": "pub-return-mirror",
+      "kind": "wall-mirror",
+      "triangles": 72
+    }
+  ],
+  "triangles": 9648,
+  "bytes": 831696,
+  "sha256": "00dec933482ff502bd7c69f4eac49e6467155954630b1ce588ad34322fd4358b",
+  "materials": [
+    "Source Lyric / cold stripped timber",
+    "Source Lyric / exposed end grain",
+    "Source Lyric / dull iron",
+    "Source Lyric / unfinished grey plaster",
+    "Source Lyric / unlit recess",
+    "Source Lyric / frosted cold glass",
+    "Source Lyric / tarnished tap brass",
+    "Source Lyric / dark wood",
+    "Source Lyric / worn wood",
+    "Source Lyric / pub green upholstery",
+    "Source Lyric / brass",
+    "Source Lyric / black lacquer",
+    "Source Lyric / ivory",
+    "Source Lyric / oxidised bronze",
+    "Source Lyric / pub green bottle glass",
+    "Source Lyric / pub brown bottle glass",
+    "Source Lyric / pub warm lamp glass",
+    "Source Lyric / dull terracotta",
+    "Source Lyric / academic plaster",
+    "Source Lyric / municipal glazed brick",
+    "Source Lyric / still cold water"
+  ]
+}

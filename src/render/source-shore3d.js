@@ -6,6 +6,7 @@ import { horizonCamera } from './horizon3d.js';
 import { sourceStrataGeometry } from '../data/source-exposed-strata.js';
 import { sourcePrintTexture } from './physical-source-print.js';
 import { PRINTED_SURFACE_GLSL, printedSurfaceDescriptor } from './printed-surface.js';
+import { SOURCE_DEMOLITION_MEDIUM_GLSL, sourceDemolitionMediumUniforms, sourceDemolitionMediumTransmittance } from './source-demolition-medium.js';
 
 export const SOURCE_SHORE_RANGE = Object.freeze({ near: .05, far: 1600 });
 export const SOURCE_SHORE_AIR = Object.freeze([.73, .79, .80]);
@@ -243,6 +244,7 @@ uniform vec3 uAir;
 uniform float uFinal,uBoundary;
 layout(location=0) out vec4 o;
 layout(location=1) out vec4 oMark;
+${SOURCE_DEMOLITION_MEDIUM_GLSL}
 float linearDepth(float d,vec2 nf){float z=d*2.0-1.0;return 2.0*nf.x*nf.y/max(.0001,nf.y+nf.x-z*(nf.y-nf.x));}
 vec3 displayColour(vec3 c){return mix(c*12.92,1.055*pow(max(c,vec3(0.0)),vec3(1.0/2.4))-.055,step(vec3(.0031308),c));}
 void main(){
@@ -262,6 +264,10 @@ void main(){
   vec3 colour=mix(uAir,material,coverage);
   if(uBoundary>.5)colour=mix(texture(uEncoded,uv).rgb,material,hasHull&&!useProp?hull.a:0.0);
   float depth=useProp?pd:hd;
+  // Empty field integrates to the box exit. Real foreground geometry clips it.
+  // This is world absorption before acquisition, never a screen-space veil.
+  float mediumDepth=hasProp&&hasHull?min(pd,hd):hasProp?pd:hasHull?hd:1000000.0;
+  colour*=mediumTransmission(uv,mediumDepth);
   o=vec4(colour,uFinal>.5?1.0:mix(1.0,1.0/(1.0+depth*.14),coverage));
 }`;
 
@@ -270,6 +276,7 @@ let hullFbo=null,hullColour=null,hullDepth=null,hullMarks=null,finalFbo=null,fin
 let geometryKey='',geometry=null,vao=null,vertexBuffer=null,vertexCount=0;
 let sourceMaterialTexture=null;
 let importedAttributeState=new WeakMap();
+let lastMedium=null,lastCompositeTarget=null;
 const materialUniforms=new Map(),compositeUniforms=new Map();
 const IDENTITY=new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);
 export const sourceShoreStats={ready:false,active:false,facade:'exposed-strata',boxCount:0,pieceCount:0,hardwareCount:0,hardwareDraws:0,triangles:0,far:SOURCE_SHORE_RANGE.far};
@@ -370,14 +377,44 @@ export function sourceShoreDraw({frame,camX,camY,camZ,yaw=0,pitch=0,width:w,heig
   gl.bindVertexArray(null);gl.disable(gl.DEPTH_TEST);sourceShoreStats.active=true;return true;
 }
 
-export function sourceShoreComposite({target,props,encoded=null,boundaryOnly=false}={}){
+// medium is a fixed world AABB {min,max,progress}; eye is the actual camera
+// world position. Its ray basis and focal lengths match the shore geometry.
+export function sourceShoreComposite({target,props,encoded=null,boundaryOnly=false,medium=null,eye=[0,0,0],yaw=0,pitch=0}={}){
   if(!hullFbo||!props?.ready)return null;
   const final=!!encoded;gl.bindFramebuffer(gl.FRAMEBUFFER,final?finalFbo:target);gl.drawBuffers(final?[gl.COLOR_ATTACHMENT0]:[gl.COLOR_ATTACHMENT0,gl.COLOR_ATTACHMENT1]);gl.viewport(0,0,width,height);gl.disable(gl.DEPTH_TEST);gl.disable(gl.BLEND);gl.bindVertexArray(null);gl.useProgram(compositeProgram);
   for(const [unit,name,t]of [[0,'uHull',hullColour],[1,'uHullDepth',hullDepth],[2,'uProps',props.color],[3,'uPropDepth',props.depth],[4,'uEncoded',encoded||hullColour],[5,'uHullMarks',hullMarks],[6,'uPropMarks',props.marks||props.color]]){gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,t);gl.uniform1i(cu(name),unit);}
-  gl.uniform2f(cu('uResolution'),width,height);gl.uniform2f(cu('uHullRange'),SOURCE_SHORE_RANGE.near,SOURCE_SHORE_RANGE.far);gl.uniform2f(cu('uPropRange'),props.near,props.far);gl.uniform3fv(cu('uAir'),SOURCE_SHORE_AIR);gl.uniform1f(cu('uFinal'),final?1:0);gl.uniform1f(cu('uBoundary'),boundaryOnly?1:0);gl.drawArrays(gl.TRIANGLES,0,3);return final?finalColour:null;
+  gl.uniform2f(cu('uResolution'),width,height);gl.uniform2f(cu('uHullRange'),SOURCE_SHORE_RANGE.near,SOURCE_SHORE_RANGE.far);gl.uniform2f(cu('uPropRange'),props.near,props.far);gl.uniform3fv(cu('uAir'),SOURCE_SHORE_AIR);gl.uniform1f(cu('uFinal'),final?1:0);gl.uniform1f(cu('uBoundary'),boundaryOnly?1:0);
+  const absorption=boundaryOnly?null:sourceDemolitionMediumUniforms({medium,eye,yaw,pitch,aspect:width/height});
+  lastMedium=absorption;lastCompositeTarget=final?finalFbo:target;
+  gl.uniform1f(cu('uMediumEnabled'),absorption?1:0);
+  if(absorption){
+    for(const [uniformName,key]of [['uMediumMin','min'],['uMediumMax','max'],['uMediumEye','eye'],['uMediumForward','forward'],['uMediumRight','right'],['uMediumUp','up']])gl.uniform3fv(cu(uniformName),absorption[key]);
+    gl.uniform2fv(cu('uMediumInverseFocal'),absorption.inverseFocal);gl.uniform1f(cu('uMediumProgress'),absorption.progress);
+  }
+  gl.drawArrays(gl.TRIANGLES,0,3);return final?finalColour:null;
 }
 
-export function sourceShoreDebug(){return {...sourceShoreStats,air:[...SOURCE_SHORE_AIR],bounds:geometry?geometry.boxes.filter(b=>['room-back','room-underside','receiving-ledge'].includes(b.id)):[],strata:geometry?.pieces.map(p=>({id:p.id,triangles:p.i.length/3}))||[]};}
+// Explicit QA readback only: ordinary status calls never synchronise the GPU.
+export function sourceShoreDebug({readMedium=false,sample=false,uv=[.5,.08]}={}){
+  let mediumReadback=null;
+  if((readMedium||sample)&&lastMedium&&lastCompositeTarget){
+    const previous=gl.getParameter(gl.READ_FRAMEBUFFER_BINDING),buffer=gl.getParameter(gl.READ_BUFFER);
+    const previousError=gl.getError();
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER,lastCompositeTarget);gl.readBuffer(gl.COLOR_ATTACHMENT0);
+    mediumReadback=[];
+    for(const point of sample?[uv]:[[.5,.08],[.5,.2],[.5,.5]]){
+      const uv=point.map(n=>Math.max(.001,Math.min(.999,Number(n)||0)));
+      const rgba=new Float32Array(4);gl.readPixels(Math.floor(uv[0]*width),Math.floor(uv[1]*height),1,1,gl.RGBA,gl.FLOAT,rgba);
+      // Alpha one is the empty-field sentinel, not a surface at the eye.
+      const linearDepthFromAlpha=rgba[3]>0&&rgba[3]<.999999?(1/rgba[3]-1)/.14:null;
+      mediumReadback.push({uv,rgba:[...rgba],linearDepthFromAlpha,
+        cpuTransmission:sourceDemolitionMediumTransmittance({camera:lastMedium,uv,linearDepth:linearDepthFromAlpha??Infinity}),
+        previousError,readError:gl.getError()});
+    }
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER,previous);gl.readBuffer(buffer);
+  }
+  return {...sourceShoreStats,medium:lastMedium,mediumReadback,air:[...SOURCE_SHORE_AIR],bounds:geometry?geometry.boxes.filter(b=>['room-back','room-underside','receiving-ledge'].includes(b.id)):[],strata:geometry?.pieces.map(p=>({id:p.id,triangles:p.i.length/3}))||[]};
+}
 // Source proper can acquire a visible return wall through the same recording
 // pass as nearby props, selecting real linear depth across the two cameras.
 export function sourceShoreTargets(){return {color:hullColour,depth:hullDepth,marks:hullMarks,marksReady:!!hullMarks,near:SOURCE_SHORE_RANGE.near,far:SOURCE_SHORE_RANGE.far,ready:!!hullFbo};}

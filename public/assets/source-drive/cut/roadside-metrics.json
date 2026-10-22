@@ -1,0 +1,18 @@
+{
+  "sha256": "ec7caa8b45b2f78dd77b1737ba1ab6eb1d3d5002498e0ed3e0003885cce70874",
+  "bytes": 160116,
+  "triangles": 552,
+  "railSpan": 3.08,
+  "lampEmitter": [
+    0.335,
+    4.16,
+    0
+  ],
+  "unmarkedPaving": {
+    "source": "drive.glb / drive_road / damp road aggregate",
+    "sourceSha256": "4090887e47657a8224b06464d05d8012f2322926475d603b7ebb6648fa398afa",
+    "textureUnmodified": true,
+    "paintPrimitiveOmitted": true
+  },
+  "role": "stationary formed rail, hooded inspection lamps and unmarked ordinary asphalt; collision is derived from exact visible mesh bounds in route-boundaries.js"
+}

@@ -1,12 +1,15 @@
-// Native browser acceptance for Ren's roof quests. The fixture supplies one
-// accepted take and a read demolition notice; every Ren/office/ending decision
-// below is made through the game's ordinary world and conversation input.
+// Native browser acceptance for Ren's roof quests. The fixture first exercises
+// the service word lock without accepted takes, then supplies two witness takes
+// and a read demolition notice for Ren's separate quest. Every gate, Ren,
+// office and ending decision uses ordinary world and conversation input.
 import puppeteer from 'puppeteer-core';
 import { createServer } from 'vite';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { ACADEMIC_ROOF } from '../../src/data/academic-roof.js';
+import { ROOF_PASSWORD } from '../../src/data/roof-password.js';
+import { TARGETS } from '../../src/data/conservatory-script.js';
 
 const out = resolve(process.env.ROOF_QUEST_OUT || 'artifacts/roof-floor-design/live-quest');
 const port = Number(process.env.ROOF_QUEST_PORT || 5354);
@@ -246,23 +249,44 @@ try {
     check(finished.meta?.achievements?.includes('ACH_CENTURY_STAY'),
       'A Hundred More Years achievement unlocked by committed return', finished.meta?.achievements);
   } else {
-  await page.evaluate(() => {
+  const emptyTakeFixture=await page.evaluate(targets => {
     window.__probe.setFlags(['setup.levels', 'combat.trained', 'setup.waypoint', 'academic.entered'], ['roof.access']);
-  });
+    return window.__probe.setTakes(targets,false);
+  },TARGETS);
+  check(emptyTakeFixture?.ok&&emptyTakeFixture.takes?.length===0,
+    'gate word-lock checks start without accepted takes',emptyTakeFixture);
   const gateTarget = [ACADEMIC_ROOF.gate.x, ACADEMIC_ROOF.gate.y];
-  const gatePositions = [[46,258],[45,258],[46,259],[46,257],[45,259]];
+  const gateApproach=ACADEMIC_ROOF.gateInspect;
+  const gatePositions = [[gateApproach.x,gateApproach.y+1],
+    [gateApproach.x-.5,gateApproach.y+1],[gateApproach.x+.5,gateApproach.y+1],
+    [gateApproach.x,gateApproach.y+1.5]];
   if (await interact('roof-gate', gatePositions, gateTarget)) {
-    const denied = await shot('01-gate-before-take');
-    check(denied.flags.roofAccess === false, 'gate refuses before accepted take', denied.flags);
+    const lock=await snapshot();
+    if(!check(lock.scene==='roof-word-lock','ordinary gate interaction opens the word lock',lock.view))
+      throw new Error('Roof word lock did not open');
+    const wrongWord=(ROOF_PASSWORD[0]==='A'?'B':'A')+ROOF_PASSWORD.slice(1);
+    await page.keyboard.type(wrongWord);await press('Enter');
+    const denied = await shot('01-gate-wrong-service-word');
+    check(denied.flags.roofAccess === false&&denied.scene==='roof-word-lock'&&!!denied.view?.error,
+      'wrong word keeps the gate shut without accepted takes', {flags:denied.flags,view:denied.view});
+    await press('Escape');
+    const cancelled=await snapshot();
+    check(cancelled.flags.roofAccess===false&&cancelled.scene!=='roof-word-lock',
+      'leaving the word lock grants no access', {flags:cancelled.flags,scene:cancelled.scene});
+  }
+  if (await interact('roof-gate', gatePositions, gateTarget)) {
+    const lock=await snapshot();
+    if(!check(lock.scene==='roof-word-lock','retry opens the same word lock',lock.view))
+      throw new Error('Roof word lock did not reopen');
+    await page.keyboard.type(ROOF_PASSWORD);await press('Enter');
+    await page.waitForFunction(()=>window.__probe?.flag?.('roof.access')===true,{timeout:5000});
+    const opened = await shot('02-gate-service-word-open');
+    check(opened.flags.roofAccess === true && opened.keys?.includes('master'),
+      'north-gallery door opens with school key and service word, without a take', {flags:opened.flags,keys:opened.keys});
   }
   const fixture = await page.evaluate(() => window.__probe.setTakes(['main_b3', 'the_tub'], true));
-  check(fixture?.ok && ['main_b3', 'the_tub'].every(id => fixture.takes?.includes(id)), 'two accepted take fixtures installed', fixture);
+  check(fixture?.ok && ['main_b3', 'the_tub'].every(id => fixture.takes?.includes(id)), 'two accepted take fixtures installed for Ren’s witness requirement', fixture);
   check((await noticeFixture()).inspected, 'demolition notice fixture installed');
-  if (await interact('roof-gate', gatePositions, gateTarget)) {
-    const opened = await shot('02-gate-after-take');
-    check(opened.flags.roofAccess === true && opened.keys?.includes('master'),
-      'east-gallery door opens with school key and accepted take', {flags:opened.flags,keys:opened.keys});
-  }
 
   const renTarget = [ACADEMIC_ROOF.ren.x, ACADEMIC_ROOF.ren.y + 1];
   const renPositions = [[210, 275], [209, 275], [211, 275], [210, 276], [209, 276]];

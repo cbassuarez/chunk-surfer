@@ -1,0 +1,218 @@
+{
+  "version": 1,
+  "sampleRate": 48000,
+  "clips": [
+    {
+      "id": "timber-load",
+      "source": "timber",
+      "from": 0,
+      "to": 1.595,
+      "rmsDb": -25,
+      "gain": 0.2,
+      "file": "timber-load.mp3",
+      "kind": "mechanism",
+      "duration": 1.595,
+      "bytes": 23229,
+      "audioSHA": "aeb55a112fae60b8b2f03a4ce5c124666c93018252606e510e08c09386567241",
+      "measured": {
+        "duration": 1.595,
+        "rmsDb": -28.181351202977403,
+        "peakDb": -8.267180813035452,
+        "finite": true
+      }
+    },
+    {
+      "id": "iron-contact",
+      "source": "iron",
+      "from": 0,
+      "to": 0.396,
+      "rmsDb": -27,
+      "gain": 0.12,
+      "file": "iron-contact.mp3",
+      "kind": "mechanism",
+      "duration": 0.396,
+      "bytes": 6429,
+      "audioSHA": "f00fc16612927faa3a9ec9bf2edb545743591d6fae5b284fdaf2bc95c66bb5eb",
+      "measured": {
+        "duration": 0.396,
+        "rmsDb": -28.503541699850956,
+        "peakDb": -10.084715580608128,
+        "finite": true
+      }
+    },
+    {
+      "id": "rope-load-a",
+      "source": "rope",
+      "from": 1.25,
+      "to": 5.35,
+      "rmsDb": -28,
+      "gain": 0.13,
+      "file": "rope-load-a.mp3",
+      "kind": "mechanism",
+      "duration": 4.1,
+      "bytes": 58173,
+      "audioSHA": "273f8f9d619675faa28d897b69052f4eb6e146c05b6d0f7590f2d610aff1dc20",
+      "measured": {
+        "duration": 4.1,
+        "rmsDb": -31.692623125890908,
+        "peakDb": -12.336296139370486,
+        "finite": true
+      }
+    },
+    {
+      "id": "rope-load-b",
+      "source": "rope",
+      "from": 13.65,
+      "to": 18.2,
+      "rmsDb": -29,
+      "gain": 0.12,
+      "file": "rope-load-b.mp3",
+      "kind": "mechanism",
+      "duration": 4.55,
+      "bytes": 64557,
+      "audioSHA": "0991ff79b08cbd774d5824162371fb017a5df5096698d1c5cc8f2b70b71eeb39",
+      "measured": {
+        "duration": 4.55,
+        "rmsDb": -38.54399114852401,
+        "peakDb": -9.200822053448734,
+        "finite": true
+      }
+    },
+    {
+      "id": "louvre-air-a",
+      "source": "window-wind",
+      "from": 16,
+      "to": 40,
+      "rmsDb": -29,
+      "gain": 0.33,
+      "file": "louvre-air-a.mp3",
+      "kind": "air",
+      "duration": 24,
+      "bytes": 336717,
+      "audioSHA": "af690483065eaef09fc2f14f80e6ac10845e4f5d984c59cbb8e12a71c7a01d03",
+      "measured": {
+        "duration": 24,
+        "rmsDb": -29.650287897348704,
+        "peakDb": -9.654937412152929,
+        "finite": true
+      }
+    },
+    {
+      "id": "louvre-air-b",
+      "source": "window-wind",
+      "from": 89,
+      "to": 113,
+      "rmsDb": -29,
+      "gain": 0.33,
+      "file": "louvre-air-b.mp3",
+      "kind": "air",
+      "duration": 24,
+      "bytes": 336717,
+      "audioSHA": "422c0cedfb8b044660eedcf148d1f746b5770c7a55949cfebc0fd45f56a131e8",
+      "measured": {
+        "duration": 24,
+        "rmsDb": -30.37660632881537,
+        "peakDb": -16.269968674031443,
+        "finite": true
+      }
+    },
+    {
+      "id": "stone-break",
+      "source": "stone-field",
+      "from": 0,
+      "to": 2.95,
+      "rmsDb": -24,
+      "gain": 0.48,
+      "file": "stone-break.mp3",
+      "kind": "mechanism",
+      "duration": 2.95,
+      "bytes": 42045,
+      "audioSHA": "3d8c5dc7ce408a0cef7fd226714366648209fe16f42ae2543ab50bfd2dc4f0f4",
+      "measured": {
+        "duration": 2.95,
+        "rmsDb": -32.50537801124432,
+        "peakDb": -7.858407127949372,
+        "finite": true
+      }
+    }
+  ],
+  "sources": [
+    {
+      "id": "timber",
+      "title": "Wood Creak Single V7",
+      "author": "Rudmer_Rotteveel",
+      "url": "https://freesound.org/people/Rudmer_Rotteveel/sounds/506662/",
+      "download": "https://cdn.freesound.org/previews/506/506662_4921277-hq.mp3",
+      "licence": "CC0 1.0",
+      "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "audioSHA": "ca0d99357dec4aee3cbb1a32e0b4ed3d15558fb68c63e8203e52240bf7e5c301",
+      "provenance": "Single wooden floorboard creak; adapted as loaded bell-frame timber. Not a bell frame recording.",
+      "bytes": 35218,
+      "pageSHA": "d32714c4a183f50647c3114708511afdb64b97696c35aee651ad982083121e6c",
+      "encoding": "Freesound HQ MP3 preview; not the uncompressed original upload"
+    },
+    {
+      "id": "rope",
+      "title": "ROPE_GOES_TIGHT.WAV",
+      "author": "dansotak",
+      "url": "https://freesound.org/people/dansotak/sounds/137711/",
+      "download": "https://cdn.freesound.org/previews/137/137711_2507354-hq.mp3",
+      "licence": "CC0 1.0",
+      "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "audioSHA": "061831420016afc712c4d1702a2a2bf27324b20e594f1ea104a69573cafc1d76",
+      "provenance": "Rope being pulled tight; adapted for the existing swinging apparatus, not continuous idle movement.",
+      "bytes": 469632,
+      "pageSHA": "2da35f563e3f0b9814e052681c24108394d36ded56ca80085b134035dcc4a9e8",
+      "encoding": "Freesound HQ MP3 preview; not the uncompressed original upload"
+    },
+    {
+      "id": "iron",
+      "title": "Metallic creak.wav",
+      "author": "Crinkem",
+      "url": "https://freesound.org/people/Crinkem/sounds/481786/",
+      "download": "https://cdn.freesound.org/previews/481/481786_3544425-hq.mp3",
+      "licence": "CC0 1.0",
+      "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "audioSHA": "9b6728d39d6ea0828fc50a78633e6ffae4d0be430b67b135ad117a5e4c3cc8e5",
+      "provenance": "A door latch opening, recorded on Sony PCM-A10; adapted as a short bearing/iron contact. Not a tower bearing recording.",
+      "bytes": 12943,
+      "pageSHA": "10ebd220717d9593682a27a2fb5011ca321094cd460af33d999b6f8b3c85078c",
+      "encoding": "Freesound HQ MP3 preview; not the uncompressed original upload"
+    },
+    {
+      "id": "window-wind",
+      "title": "Window Wind.aif",
+      "author": "vuzz",
+      "url": "https://freesound.org/people/vuzz/sounds/9097/",
+      "download": "https://cdn.freesound.org/previews/9/9097_15898-hq.mp3",
+      "licence": "CC0 1.0",
+      "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "audioSHA": "0ebfb17b903fadf0e2de7d1f1072b08bb320efc15c8d60114893e050b755cb1e",
+      "provenance": "Cold windy night through a small window opening; adapted for the existing belfry louvres. Not a recording of this cathedral.",
+      "bytes": 3912000,
+      "pageSHA": "94bf8a6c56f8c71d07fda08bb9e73f12f76e4ae6310ff4b1e5e4c68b4d18d764",
+      "encoding": "Freesound HQ MP3 preview; not the uncompressed original upload"
+    },
+    {
+      "id": "stone-field",
+      "title": "rockfall2a.wav",
+      "author": "AlanCat",
+      "url": "https://freesound.org/people/AlanCat/sounds/389303/",
+      "download": "https://cdn.freesound.org/previews/389/389303_5486695-hq.mp3",
+      "licence": "CC0 1.0",
+      "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "audioSHA": "db15885029d027756ef2b90114c202f4837f10a128371f493904b4886818ffcd",
+      "provenance": "Rocks cascading down a cliff, recorded with Olympus LS-14; recorder removed background noise in Audacity. Adapted as stone break/debris, not a recorded cathedral demolition.",
+      "bytes": 451196,
+      "pageSHA": "5750af88901d71ea5dc198f9894efa48631da610dcb462ed3a9df9592dd136ce",
+      "encoding": "Freesound HQ MP3 preview; not the uncompressed original upload"
+    }
+  ],
+  "processing": "Mono 48 kHz 112 kbps MP3. Excerpts, level, edge fades and HP/LP only. Original timing and pitch. No reversal, bitcrush, added baked reverb or synthesized mechanism.",
+  "limitations": [
+    "Not a recording or measured IR of St Brendan's.",
+    "Floorboard and door-latch recordings adapted as timber/iron mechanism.",
+    "Existing shared tonal bell bank remains clock-hammer-derived, not eight independently recorded moving bells.",
+    "Author listening and player perceptual validation pending."
+  ]
+}

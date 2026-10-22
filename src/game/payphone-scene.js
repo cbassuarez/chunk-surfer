@@ -49,6 +49,8 @@ export function makePayphoneScene({
   onHandset = () => {},
   onFirstPips = () => {},
   onClose = () => {},
+  mapPointer = (event) => event,
+  onLook = () => {},
   startOnHook = false,
   exchangeSeconds = () => 1.4 + Math.random() * 1.6,
   reducedMotion = () => false,
@@ -72,6 +74,9 @@ export function makePayphoneScene({
   let scene = null;
   let handset = startOnHook ? 'hook' : 'up';
   let incomingWaiting = !!incoming;
+  let incomingBellAt = 0;
+  let looking = null;
+  const waitingCall = () => typeof incoming === 'function' ? incoming() : incomingWaiting ? incoming : null;
 
   // THE RETURN SPRING. The governor brings the dial back at one steady speed; at
   // rest it knocks against its stop and rocks there for a moment before it is
@@ -110,14 +115,15 @@ export function makePayphoneScene({
     onHandset('lifted');
     line?.mechanism?.('lift');
     line?.offHook?.();
-    onLift();
+    const waiting = waitingCall();
+    onLift(waiting);
     // A late-pass call is waiting behind the physical receiver, not a menu.
-    if (incomingWaiting) {
+    if (waiting) {
       incomingWaiting = false;
-      outcome = incoming;
+      outcome = waiting;
       phase = 'connected';
       line?.silence?.();
-      onCall(incoming, { callEnded, incoming: true });
+      onCall(waiting, { callEnded, incoming: true });
     } else dialTone();
     return true;
   }
@@ -287,6 +293,7 @@ export function makePayphoneScene({
     pass,
     view: () => ({
       digits, phase, handset, hover, flap,
+      incoming: handset === 'hook' ? waitingCall()?.id || null : null,
       focusRegion: keyboardRegion,
       slot: slot ? { ...slot } : null,
       window: windowView ? { ...windowView } : null,
@@ -298,6 +305,10 @@ export function makePayphoneScene({
     },
     update() {
       const t = clock();
+      if (handset === 'hook' && waitingCall()?.rings > 0 && t >= incomingBellAt) {
+        incomingBellAt = t + 3;
+        line?.bell?.({ rings: 1, distance01: 0, gain: .65 });
+      }
       settleDial();
       if (windowView?.turning) windowView.angle = (windowView.angle || 0) + 0.06;
       if (phase === 'dialtone' && digits && !dialBusy() && t >= at.interdigit) connect();
@@ -342,6 +353,8 @@ export function makePayphoneScene({
         close({ hanging });
         return true;
       }
+      const look = { ArrowLeft: [-.13, 0], ArrowRight: [.13, 0], ArrowUp: [0, -.10], ArrowDown: [0, .10] }[event.key];
+      if (look) { onLook({ yaw: look[0], pitch: look[1] }); return true; }
       // Keyboard users can reach the same physical parts. The rotary remains
       // a wound mechanism: typing digits never substitutes for pulling it.
       if (event.key === 'Tab') {
@@ -364,11 +377,41 @@ export function makePayphoneScene({
     // A call's thought presenter may pass only these physical interrupt parts
     // through while it owns dialogue input. The rest of its input stays modal.
     receiverPointer(event) {
-      if (!['handset', 'cradle'].includes(regionAt(event))) return false;
+      const mapped = mapPointer(event, layout);
+      if (!mapped || !['handset', 'cradle'].includes(regionAt(mapped))) return false;
+      return scene.pointer(event);
+    },
+    lookPointer(event) {
+      if (!looking && (event.button ?? 0) !== 2) return false;
       return scene.pointer(event);
     },
     pointer(event) {
       if (!layout) return true;
+      const raw = event.originalEvent || event;
+      if (event.type === 'pointerdown' && (event.button ?? 0) === 2 && !grab) {
+        looking = { id: event.pointerId, x: Number(raw.clientX) || 0, y: Number(raw.clientY) || 0, target: raw.target };
+        try { looking.target?.setPointerCapture?.(event.pointerId); } catch (_) {}
+        return true;
+      }
+      if (looking && (event.pointerId == null || looking.id == null || event.pointerId === looking.id)) {
+        if (event.type === 'pointermove') {
+          const x = Number(raw.clientX) || 0, y = Number(raw.clientY) || 0;
+          onLook({ yaw: (x - looking.x) * .004, pitch: (y - looking.y) * .004 });
+          looking.x = x; looking.y = y;
+        } else if (event.type === 'pointerup' || event.type === 'pointercancel') {
+          try { looking.target?.releasePointerCapture?.(looking.id); } catch (_) {}
+          looking = null;
+        }
+        return true;
+      }
+      // Release the owned spring even when the finger has left the projected
+      // cabinet, or the listener has turned away from it.
+      if (event.type === 'pointerup' || event.type === 'pointercancel') {
+        if (grab && (event.pointerId == null || grab.pointerId == null || event.pointerId === grab.pointerId)) release({ cancelled: event.type === 'pointercancel' });
+        return true;
+      }
+      event = mapPointer(event, layout);
+      if (!event) { hover = null; hoverHole = null; return true; }
       const { px, py } = toPixels(event);
       const geometry = dialGeometry(layout);
       if (event.type === 'pointermove') {
@@ -380,10 +423,6 @@ export function makePayphoneScene({
           hoverHole = phase === 'dialtone' && !dialBusy() ? dialHoleAt(geometry, px, py, 0) : null;
           hover = dialHoleAt(geometry, px, py, 0) ? 'dial' : inCentre(geometry, px, py) ? 'card' : regionAt(event);
         }
-        return true;
-      }
-      if (event.type === 'pointerup' || event.type === 'pointercancel') {
-        if (grab && (event.pointerId == null || grab.pointerId == null || event.pointerId === grab.pointerId)) release({ cancelled: event.type === 'pointercancel' });
         return true;
       }
       if (event.type !== 'pointerdown') return true;
@@ -416,12 +455,16 @@ export function makePayphoneScene({
         credit: slot?.credit ?? null, creditFull: slot?.full ?? null,
         time: clock(), reducedMotion: !!reducedMotion(),
       }, size);
-      const hint = phase === 'onhook' ? 'LIFT THE RECEIVER · ESC STEPS OUT'
+      const hint = phase === 'onhook' ? (waitingCall() ? 'THE TELEPHONE IS RINGING · LIFT THE RECEIVER · RIGHT DRAG TO LOOK' : 'LIFT THE RECEIVER · RIGHT DRAG TO LOOK · ESC STEPS OUT')
         : phase === 'pips' ? 'PIPS: SOMEBODY HAS ANSWERED · PAY TO BE HEARD'
-        : 'DRAG A FINGER HOLE ROUND TO THE STOP · THE HOOK HANGS UP · ESC STEPS OUT';
+        : 'DRAG A FINGER HOLE ROUND TO THE STOP · RIGHT DRAG TO LOOK · ESC STEPS OUT';
       uiCenter(Math.min(size.rows - 1, layout.hint.y), hint, phase === 'pips' ? 'ui-amber' : 'ui-label');
     },
-    exit() { clearGrab(); returning = null; line?.stop?.(); releasePayphoneArt(); },
+    exit() {
+      clearGrab(); returning = null;
+      try { looking?.target?.releasePointerCapture?.(looking.id); } catch (_) {}
+      looking = null; line?.stop?.(); releasePayphoneArt();
+    },
     // For probes and specs: a whole pull of each digit, dial return included.
     pull(digit) {
       if (phase !== 'dialtone' || dialBusy()) return false;

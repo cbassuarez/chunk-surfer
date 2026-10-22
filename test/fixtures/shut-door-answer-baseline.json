@@ -1,0 +1,5 @@
+{
+  "status": "captured-before-change",
+  "mainSha256": "eff0c30dfae4a739ef9b3e7ab1d348aeab9ba4c7d01e11f27b0d8476415b2a66",
+  "function": "function answerOutskirtDoor(result){\n  const answer=result?.answer;\n  if(!answer)return;\n  setTimeout(()=>{\n    if(!usingSourceSpace())return;\n    const look=R3.r3dLookAngles?.(),at=result.position;\n    const pan=at?Math.max(-1,Math.min(1,Math.sin(Math.atan2(at.x-px*CELL,-(at.z-py*CELL))-(Number(look?.yaw)||0)))):0;\n    if(answer.kind==='knock')playOutskirtDoorRattle({gain:.42,pan,lowpassHz:650,rate:.55,count:3,spacing:.34});\n    else playOutskirtDoorRattle({gain:.26,pan,lowpassHz:1100,rate:1.55,count:4,spacing:.11});\n    if(answer.line)SPEECH.say({who:'you',text:answer.line});\n  },Math.max(0,Number(answer.delayMs)||0));\n}"
+}

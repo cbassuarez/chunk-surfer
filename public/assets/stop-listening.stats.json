@@ -1,9 +1,11 @@
 {
-  "bytes": 3454720,
-  "triangles": 118912,
+  "bytes": 3334596,
+  "triangles": 93156,
+  "earScale": 6.4,
+  "artRevision": "severed-cartilage-pressure-brush-v3-matte-pigment",
   "meshes": {
     "stop_listening_ear_a": {
-      "triangles": 456,
+      "triangles": 740,
       "materials": [
         "stop listening ear skin",
         "stop listening ear deep",
@@ -12,7 +14,7 @@
       ]
     },
     "stop_listening_ear_b": {
-      "triangles": 456,
+      "triangles": 740,
       "materials": [
         "stop listening ear skin",
         "stop listening ear deep",
@@ -21,7 +23,7 @@
       ]
     },
     "stop_listening_ear_c": {
-      "triangles": 456,
+      "triangles": 740,
       "materials": [
         "stop listening ear skin",
         "stop listening ear deep",
@@ -30,7 +32,7 @@
       ]
     },
     "stop_listening_ear_d": {
-      "triangles": 456,
+      "triangles": 740,
       "materials": [
         "stop listening ear skin",
         "stop listening ear deep",
@@ -39,7 +41,7 @@
       ]
     },
     "stop_listening_ear_e": {
-      "triangles": 456,
+      "triangles": 740,
       "materials": [
         "stop listening ear skin",
         "stop listening ear deep",
@@ -48,7 +50,7 @@
       ]
     },
     "stop_listening_ear_f": {
-      "triangles": 456,
+      "triangles": 740,
       "materials": [
         "stop listening ear skin",
         "stop listening ear deep",
@@ -57,7 +59,7 @@
       ]
     },
     "stop_listening_heap_a": {
-      "triangles": 17704,
+      "triangles": 29632,
       "materials": [
         "stop listening ear skin",
         "stop listening ear deep",
@@ -66,7 +68,7 @@
       ]
     },
     "stop_listening_heap_b": {
-      "triangles": 10984,
+      "triangles": 18368,
       "materials": [
         "stop listening ear skin",
         "stop listening ear deep",
@@ -75,7 +77,7 @@
       ]
     },
     "stop_listening_heap_c": {
-      "triangles": 14344,
+      "triangles": 24000,
       "materials": [
         "stop listening ear skin",
         "stop listening ear deep",
@@ -90,37 +92,37 @@
       ]
     },
     "stop_listening_writing_block": {
-      "triangles": 15588,
+      "triangles": 3362,
       "materials": [
         "stop listening paint dark"
       ]
     },
     "stop_listening_writing_block_pale": {
-      "triangles": 15588,
+      "triangles": 3362,
       "materials": [
         "stop listening paint pale"
       ]
     },
     "stop_listening_writing_line": {
-      "triangles": 4836,
+      "triangles": 968,
       "materials": [
         "stop listening paint dark"
       ]
     },
     "stop_listening_writing_line_pale": {
-      "triangles": 4836,
+      "triangles": 968,
       "materials": [
         "stop listening paint pale"
       ]
     },
     "stop_listening_writing_scrawl": {
-      "triangles": 15520,
+      "triangles": 3400,
       "materials": [
         "stop listening paint dark"
       ]
     },
     "stop_listening_writing_scrawl_pale": {
-      "triangles": 15520,
+      "triangles": 3400,
       "materials": [
         "stop listening paint pale"
       ]

@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "atUTC": "2026-10-20T19:39:32.198Z",
+  "modules": [
+    {
+      "url": "http://127.0.0.1:5363/src/main.js?v=20260907-guided-case-tour-encounter-preparation-radio-field-instrument-stack-v1-item-portraits-v2-vfd-glow-clear-van-kit-3d-hall-applause-v3-audio-clock-v1",
+      "loaded": true,
+      "selectedFunction": "interactTalisman",
+      "excerptSHA256": "96b057dc10a720f9a3c987e1d40cf76bb1ea9106045b2f78d585f34e49aa6a1a",
+      "excerpt": "function interactTalisman(force=false){\n  if(!storyMode || planName!=='conservatory') return false;\n  if(thoughtHad('talisman') || (!force && scenes.blocksInput())) return false;\n  const t=FP.toRuntimePoint(TALISMAN_CELL);\n  if(!force && Math.hypot(t.x-px, t.y-py) > D(1.6)) return false;\n  let declined=false;\n  think('talisman', TALISMAN, {\n    onChoice:(c)=>{\n      if(c?.goto==='leave') declined=true;\n      // It is struck once and it does not stop. The tone is real, it is A, and\n      // it outlives the line that says a struck fork cannot.\n      if(c?.goto==='strike') strikeFork();\n      if(c?.goto==='damp' || c?.goto==='pocket' || c?.goto==='leave') dampFork();\n    },\n    onCancel:()=>{\n      dampFork();\n      loadThoughtState(tuningForkCancellationThoughts(saveThoughtState(), { owned:flagTest('has.fork'), declined }));\n      saveCommit({ flags:getSave().flags, thoughts:saveThoughtState() });\n      syncStoryObjectProps(); refreshWorldProps();\n    },\n    onDone:()=>{ dampFork(); saveCommit({ flags:getSave().flags }); syncStoryObjectProps(); refreshWorldProps(); },\n  });\n  return true;\n}\n\n",
+      "currentFeature": true
+    },
+    {
+      "path": "/src/render/battle-hand-tools.js",
+      "loaded": false,
+      "claim": "Not instantiated in this encounter; label verified only in source/builder regression."
+    }
+  ],
+  "environment": {
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+    "viewport": [
+      1280,
+      800
+    ],
+    "devicePixelRatio": 1,
+    "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)",
+    "pixel": {
+      "supported": true,
+      "shaderReady": true,
+      "enabled": true,
+      "framesSeen": 6407,
+      "framesRendered": 6407,
+      "lastProfile": "explore",
+      "lastError": null,
+      "lastGlError": 0,
+      "forceSignalUntil": 0,
+      "sceneWidth": 640,
+      "sceneHeight": 400,
+      "captureExposure": 1,
+      "physicalAcquisition": false,
+      "physicalAcquisitionWeight": 0,
+      "settings": {
+        "cellSize": "auto",
+        "debugSource": "final",
+        "reduceFlash": false,
+        "reduceMotion": false,
+        "memory": true
+      },
+      "forced": false,
+      "bypassedByTextSpace": false,
+      "sourceRoomMemoryActive": false
+    },
+    "scene": null,
+    "worldFork": false,
+    "where": {
+      "x": 121,
+      "y": 133,
+      "facing": 1,
+      "look": {
+        "yaw": 1.5707963267948966,
+        "pitch": 0,
+        "facing": 1
+      },
+      "zone": 6,
+      "chapelOuter": 11,
+      "source": false
+    },
+    "hasFork": true,
+    "pageErrors": []
+  },
+  "limitations": [
+    "No physical-output audio capture or unfamiliar participants.",
+    "Required local diffusion service unavailable; normal calibration was bypassed using existing diagnostic startup. Pixel mesh/final dither active; full production material-bank/ordinary boot acceptance is not established.",
+    "Immutable entry-script caching gave stale earlier attempts. Final technical runs used a route cache-key suffix; V8 source feature checks are retained here."
+  ],
+  "captureConfiguration": {
+    "renderScale": 0.5,
+    "frontEndGrade": false,
+    "torchOn": true,
+    "torchBattery": 1,
+    "nomic": true,
+    "sam": 0,
+    "oneDiagnosticStart": true
+  }
+}

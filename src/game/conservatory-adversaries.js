@@ -31,6 +31,16 @@ export const CONSERVATORY_ADVERSARY_FLAGS=Object.freeze({
   costume:'adversary.costume.exchange.complete',
   held:'adversary.held.note.complete',
 });
+export const COSTUME_EXCHANGE_TIMING=Object.freeze({inspect:1.45,notice:.65,startle:.28,exchange:2.55,threshold:1.25});
+const COSTUME_INSPECTION_PHASES=Object.freeze(['inspect','notice','startle','exchange','threshold']);
+const COSTUME_COMMITTED_PHASES=Object.freeze(['startle','exchange','threshold','done']);
+const costumeStoreContains=p=>!!p&&Number.isFinite(p.x)&&Number.isFinite(p.y)&&inside(p,1,8,5,21.5);
+const costumeMark=p=>costumeStoreContains(p)?{x:p.x,y:p.y}:null;
+
+export function costumeInspectionEligible(actor,{player,group='basement',costumeConflict=false}={}){
+  return group==='basement'&&!costumeConflict&&actor?.phase==='work'
+    &&costumeStoreContains(player)&&distance(player,3.85,17.8)<3.2;
+}
 
 export function costumeScreamCallsHush(actor,{rms=0,screamRms=.26,playerNoiseLikely=false,hasB3Take=false,presenceActive=false}={}){
   return Number(rms)>=Number(screamRms)&&playerNoiseLikely&&hasB3Take&&!presenceActive
@@ -39,14 +49,27 @@ export function costumeScreamCallsHush(actor,{rms=0,screamRms=.26,playerNoiseLik
 
 export function freshConservatoryAdversaries({costumeComplete=false,heldComplete=false}={}){
   return {
-    costume:{phase:costumeComplete?'done':'dormant',elapsed:0,lastYaw:null,turnAccum:0,seen:false,inStore:false,passLost:false,
-      passStartX:20,passEndX:5,passY:23.9,lookYaw:0,lungeAt:{x:2.55,y:16.6},playerAt:null},
+    costume:{phase:costumeComplete?'done':'dormant',elapsed:0,lastYaw:null,turnAccum:0,seen:costumeComplete,committed:costumeComplete,inStore:false,passLost:false,
+      passStartX:20,passEndX:5,passY:23.9,lookYaw:0,lungeAt:{x:2.55,y:16.6},playerAt:null,inspectAt:null,cameraAt:null},
     held:{phase:heldComplete?'done':'dormant',elapsed:0,lureIndex:0,seen:false},
   };
 }
 
 const cue=(kind,at,caption)=>({kind,at,caption});
 function enter(actor,phase){return {...actor,phase,elapsed:0};}
+
+// A cancelled close look can be tried again. Once the shape has lunged, the
+// encounter is spent even if another scene replaces it or the player leaves.
+// Main owns the persisted flag; this helper only reports the committed result.
+export function cancelCostumeInspection(previous){
+  const base=previous||freshConservatoryAdversaries(),actor={...base.costume},events=[];
+  const committed=!!actor.committed||COSTUME_COMMITTED_PHASES.includes(actor.phase);
+  if(COSTUME_INSPECTION_PHASES.includes(actor.phase)){
+    if(committed){Object.assign(actor,enter({...actor,seen:true,committed:true},'done'));events.push(cue('costume-done',actor.lungeAt||{x:2.55,y:16.6},null));}
+    else Object.assign(actor,enter({...actor,playerAt:null,inspectAt:null,cameraAt:null,seen:false,committed:false},'work'));
+  }
+  return{state:{...base,costume:actor},events,committed};
+}
 
 export function stepConservatoryAdversaries(previous,input={}){
   const dt=clamp(input.dt,0,.1),p=input.player||{x:0,y:0},group=input.group||'';
@@ -88,21 +111,32 @@ export function stepConservatoryAdversaries(previous,input={}){
       }
     }else if(costume.phase==='work'){
       costume.elapsed+=dt;
-      if(store&&input.reachForPin&&distance(p,3.85,17.8)<3.2){
-        const origin={x:2.55,y:16.6},length=distance(p,origin.x,origin.y);
+      if(input.reachForPin&&costumeInspectionEligible(costume,{player:p,group,costumeConflict:input.costumeConflict})){
+        const inspectAt=costumeMark(input.inspectAt)||{x:p.x,y:p.y},cameraAt=costumeMark(input.cameraAt)||null;
+        const origin={x:2.55,y:16.6},length=distance(inspectAt,origin.x,origin.y);
         // A longer root translation passes behind the store's foreground pier
         // in the actual world render. Keep the head in sight, and let the empty
         // cover carry the final near miss to the player's hand.
         const stride=Math.min(1.25,Math.max(0,length-.95));
         const lungeAt=length>.001
-          ?{x:origin.x+(p.x-origin.x)*stride/length,y:origin.y+(p.y-origin.y)*stride/length}
+          ?{x:origin.x+(inspectAt.x-origin.x)*stride/length,y:origin.y+(inspectAt.y-origin.y)*stride/length}
           :origin;
-        costume=enter({...costume,seen:true,lungeAt,playerAt:{x:p.x,y:p.y}},'startle');
-        events.push(cue('pin-snap',{x:lungeAt.x,y:lungeAt.y},'[The lining jerks against your fingertips. Your hand is empty.]'));
+        costume=enter({...costume,lungeAt,playerAt:{x:p.x,y:p.y},inspectAt,cameraAt,committed:false},'inspect');
+        events.push(cue('seam-pick',{x:3.85,y:17.8},'[A pin catches the fresh seam in the chair lining.]'));
+      }
+    }else if(costume.phase==='inspect'){
+      costume.elapsed+=dt;
+      if(costume.elapsed>=COSTUME_EXCHANGE_TIMING.inspect){costume=enter(costume,'notice');events.push(cue('head-notice',{x:2.55,y:16.6},'[It has stopped working. Its head turns toward your hand.]'));}
+    }else if(costume.phase==='notice'){
+      costume.elapsed+=dt;
+      if(costume.elapsed>=COSTUME_EXCHANGE_TIMING.notice){
+        costume=enter({...costume,seen:true,committed:true},'startle');
+        events.push(cue('costume-revealed',costume.lungeAt,null));
+        events.push(cue('pin-snap',costume.lungeAt,'[The lining jerks against your fingertips. Your hand is empty.]'));
       }
     }else if(costume.phase==='startle'){
       costume.elapsed+=dt;
-      if(costume.elapsed>=.28){
+      if(costume.elapsed>=COSTUME_EXCHANGE_TIMING.startle){
         costume=enter(costume,'exchange');
         events.push(cue('seam',costume.lungeAt,'[The feet stop. The shape inside the costume keeps moving.]'));
       }
@@ -112,17 +146,17 @@ export function stepConservatoryAdversaries(previous,input={}){
       if(before<.64&&costume.elapsed>=.64){
         events.push(cue('crown-open',costume.lungeAt,null));
       }
-      if(costume.elapsed>=2.55){
+      if(costume.elapsed>=COSTUME_EXCHANGE_TIMING.exchange){
         costume=enter(costume,'threshold');
         events.push(cue('cover',costume.lungeAt,'[The cover comes loose. Nothing follows it.]'));
       }
     }else if(costume.phase==='threshold'){
       costume.elapsed+=dt;
-      if(costume.elapsed>=1.25){costume=enter(costume,'done');events.push(cue('costume-done',costume.lungeAt,null));}
+      if(costume.elapsed>=COSTUME_EXCHANGE_TIMING.threshold){costume=enter(costume,'done');events.push(cue('costume-done',costume.lungeAt,null));}
     }
   }
 
-  if(group==='academic'&&held.phase!=='done'){
+  if(group==='academic'&&!input.heldManaged&&held.phase!=='done'){
     const approach=inside(p,7.5,249,11,268),chamber=inside(p,1,241,16,248.8);
     if(held.phase==='dormant'&&(approach||chamber)){
       held=enter(held,chamber?'reveal':'lure');
@@ -160,27 +194,38 @@ export function stepConservatoryAdversaries(previous,input={}){
 const ease=t=>{t=clamp(t);return t*t*(3-2*t);};
 export function costumeExchangeFrame(actor){
   const phase=actor?.phase||'dormant',t=actor?.elapsed||0;
-  if(phase==='dormant'||phase==='done'||phase==='store')return {visible:false};
+  const remnant=phase==='done';
+  if(phase==='dormant'||remnant||phase==='store')return {visible:false,stage:phase,remnant,
+    // Dynamic adversary marks acquire the floorplan's cell-centre offset;
+    // this raw mark lands on the authored chair at physical (4,18).
+    remnantAt:{x:3.35,y:17.3},coverProgress:remnant?1:0};
   if(phase==='passing'){
     const at={x:(actor.passStartX??20)+((actor.passEndX??5)-(actor.passStartX??20))*ease(t/.42),y:actor.passY??23.9};
     const player=actor.passPlayer||actor.playerAt;
     const angle=player?eccentricity(player,actor.lookYaw||0,at):.76;
-    return {visible:t<.42&&!actor.passLost&&angle>=.52&&angle<=.88,
+    return {visible:t<.42&&!actor.passLost&&angle>=.52&&angle<=.88,stage:phase,
     at,
     yaw:-Math.PI/2,clip:'walk',clipTime:t*2.2,cover:true,rootLocked:false,torsoShift:0,crownOpen:0};
   }
-  if(actor?.inStore===false)return {visible:false};
+  if(actor?.inStore===false)return {visible:false,stage:phase};
   const shift=phase==='startle' ? .58*ease(t/.20)
     : phase==='exchange' ? .42*Math.sin(Math.PI*ease(t/2.55))*Math.sin(Math.PI*ease(t/2.55)*1.25)
-    : phase==='work' ? .045*Math.sin(t*1.8) : .2;
+    : phase==='work' ? .045*Math.sin(t*1.8)
+    : phase==='inspect' ? .012*Math.sin(t*1.4) : phase==='notice'?0:.2;
   const crownOpen=phase==='exchange'
     ? ease((t-.17)/.76)*(.84+.10*Math.sin(t*11.8)+.055*Math.sin(t*19.1+.6))
     : phase==='threshold' ? 1-ease((t-.52)/.61)
-    : .018+.014*Math.sin(t*1.3);
+    : ['inspect','notice','startle'].includes(phase)?0:.018+.014*Math.sin(t*1.3);
   const origin={x:2.55,y:16.6},end=actor?.lungeAt||origin;
-  const travel=phase==='startle'?ease(t/.20):phase==='work'?0:1;
+  const travel=phase==='startle'?ease(t/.20):['work','inspect','notice'].includes(phase)?0:1;
   const at={x:origin.x+(end.x-origin.x)*travel,y:origin.y+(end.y-origin.y)*travel};
-  return {visible:true,at,yaw:Math.PI+.72,clip:'idle',clipTime:t,cover:phase==='threshold',
+  const headAim=actor?.cameraAt||actor?.inspectAt||actor?.playerAt||null;
+  // adversaryWorldMatrix uses right-handed yaw, unlike the ordinary prop
+  // instances. Local -Z faces world (-sin(yaw),-cos(yaw)).
+  const facing=headAim?Math.atan2(at.x-headAim.x,at.y-headAim.y):Math.PI+.72,yaw=['work','inspect','notice'].includes(phase)?Math.PI+.72:facing;
+  const headAimStrength=phase==='notice'?ease(t/.18):['startle','exchange','threshold'].includes(phase)?1:0;
+  return {visible:true,at,yaw,stage:phase,headAim,headAimStrength,headYaw:headAim?angleDelta(facing,yaw)*headAimStrength:0,inspectAt:actor?.inspectAt||null,playerAt:actor?.playerAt||null,
+    clip:'idle',clipTime:t,cover:phase==='threshold',
     coverProgress:phase==='threshold'?ease(t/.68):0,rootLocked:true,torsoShift:shift,crownOpen:clamp(crownOpen)};
 }
 

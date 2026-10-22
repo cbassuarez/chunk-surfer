@@ -7,6 +7,7 @@
 import { mapAcquired } from './map-ownership.js';
 import { runtimeTree } from '../narrative/runtime-content.js';
 import { TUNING_FORK_BAG_LINE } from '../data/tuning-fork-discovery.js';
+import { pubQuestState } from './pub-quest.js';
 
 export const BAG_ACTION_MODE = Object.freeze({
   COMMAND: 'command',
@@ -40,6 +41,9 @@ export const BAG_ITEM_REGISTRY = Object.freeze({
   // whether to return. The reward lives on the existing aggregated keyring.
   'ren-home-cassette': Object.freeze({ role: 'quest-keepsake', automaticUse: null }),
   'ren-service-key': Object.freeze({ role: 'access', automaticUse: null }),
+  'pub-service-tray': Object.freeze({ role: 'quest-keepsake', automaticUse: null }),
+  'pub-opener': Object.freeze({ role: 'quest-keepsake', automaticUse: null }),
+  'pub-orderbook': Object.freeze({ role: 'quest-keepsake', automaticUse: null }),
   // What the worlds behind the station's doors leave in his hand, and what the
   // way home left him with (docs/plans/door-field-station.md).
   'station-relics': Object.freeze({ role: 'keepsake', automaticUse: null }),
@@ -65,6 +69,9 @@ export const COLLECTED_ITEM_AUDIT = Object.freeze([
   { id: 'services-core-key', acquired: 'services_core_key', destination: 'keyring' },
   { id: 'ren-home-cassette', acquired: 'roofRen.releaseSigned', destination: 'kit' },
   { id: 'ren-service-key', acquired: 'roofRen.rewardGranted', destination: 'keyring' },
+  { id: 'pub-service-tray', acquired: 'pub.help.trayTaken && !pub.help.complete', destination: 'kit' },
+  { id: 'pub-opener', acquired: 'pub.help.opener.carried', destination: 'kit' },
+  { id: 'pub-orderbook', acquired: 'pub.help.orderbook.carried', destination: 'kit' },
   { id: 'building-pages:1-15', acquired: 'obj.read', destination: 'file' },
   { id: 'battery-cells', acquired: 'pickup', destination: 'battery-resource' },
   { id: 'calibration-pins', acquired: 'pickup', destination: 'skill-resource' },
@@ -94,6 +101,10 @@ export function resolveBagOwnership(context = {}) {
   if (Number(context.relicsCarried) > 0) kit.push('station-relics');
   if (context.jumperOwned) kit.push('lyle-jumper');
   if (context.renCassetteOwned) kit.push('ren-home-cassette');
+  const pub = pubQuestState(flags);
+  if (pub.carryingTray) kit.push('pub-service-tray');
+  if (pub.favors.opener.carried) kit.push('pub-opener');
+  if (pub.favors.orderbook.carried) kit.push('pub-orderbook');
 
   const keyring = {
     master: !!context.masterKey,
@@ -210,6 +221,12 @@ export function resolveBagItemAction(itemId, context = {}) {
       return action('inspect-ren-home-cassette', 'LOOK AT TAPE', BAG_ACTION_MODE.DIALOG);
     case 'ren-service-key':
       return action('inspect-ren-service-key', 'CHECK KEY', BAG_ACTION_MODE.DIALOG);
+    case 'pub-service-tray':
+      return action('inspect-pub-tray', 'INSPECT', BAG_ACTION_MODE.DIALOG);
+    case 'pub-opener':
+      return action('inspect-pub-opener', 'INSPECT', BAG_ACTION_MODE.DIALOG);
+    case 'pub-orderbook':
+      return action('inspect-pub-orderbook', 'INSPECT', BAG_ACTION_MODE.DIALOG);
     case 'station-relics':
       return action('inspect-station-relics', 'INSPECT', BAG_ACTION_MODE.DIALOG);
     case 'lyle-jumper':
@@ -259,6 +276,7 @@ function stationInspectionDialogue(itemId, context) {
 
 export function bagInspectionDialogue(itemId, context = {}) {
   if (itemId === 'station-relics' || itemId === 'lyle-jumper') return stationInspectionDialogue(itemId, context);
+  const pub = pubQuestState(context.flags);
   const keyLines = [];
   if (context.master) keyLines.push({ who: 'you', text: 'Building master. The one the guard handed over.' });
   if (context.chapel) keyLines.push({ who: 'you', text: context.chapelIdentified ? 'C-seventeen. Chapel.' : 'C-seventeen. Still only a tag.' });
@@ -291,6 +309,26 @@ export function bagInspectionDialogue(itemId, context = {}) {
     'ren-service-key': [
       { who: 'direction', text: 'A small roof service key, its tag rubbed smooth except for an R.' },
       { who: 'you', text: 'Ren says it opens the caged ladder in the gallery: the short way back to the glass roof.' },
+    ],
+    'pub-service-tray': [
+      { who: 'direction', text: pub.trayLoad === 'waters'
+        ? 'Two glasses of water on Iona’s wooden tray. The folded cloth keeps their bases from sliding.'
+        : pub.trayLoad === 'empties'
+          ? 'The empty glasses from the domino table stand together on Iona’s tray.'
+          : 'Iona’s wooden tray. A folded cloth lies flat on it, damp where the two glasses stood.' },
+      { who: 'you', text: pub.trayLoad === 'waters'
+        ? 'Mavis and Ed, at the table nearest the entrance. These are theirs.'
+        : pub.trayLoad === 'empties'
+          ? 'Back to Iona at the bar. She needs the tray as well as the glasses.'
+          : 'Bert and Farah have the empty glasses at the domino table. Then I take the tray back to Iona.' },
+    ],
+    'pub-opener': [
+      { who: 'direction', text: 'A flat steel bottle opener. LYRIC is stamped beside the hanging hole.' },
+      { who: 'you', text: 'Iona lent it to the staff kitchen. I said I would bring it back to her.' },
+    ],
+    'pub-orderbook': [
+      { who: 'direction', text: 'A brown order book with a red cloth spine. THE LYRIC is written inside the cover.' },
+      { who: 'you', text: 'The box office borrowed this. Iona wants her father’s supplier numbers back; I can leave the book closed until I give it to her.' },
     ],
     // The sheets are the one entry that changes with what he is carrying, and
     // the one that MAKES A SOUND — main.js plays the top sheet's figure as this

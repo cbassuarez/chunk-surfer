@@ -54,11 +54,22 @@ edges, levelled to −20 dBFS RMS under a −3 dBFS peak ceiling. Two 22 s beds 
 taken from the steadiest windows of gurgles2 and Tummy Grumble, levelled to
 −27 dBFS, tail crossfaded into head.
 
-Light bitcrush, baked: a parallel branch that repeats every third sample (14.7 kHz)
-and quantised to 8 bits, mixed in at 32 %, so 68 % of every file is the
-original waveform. Encoded 32 kHz mono MP3, 80 kbps. Reverb (a synthetic tail
+The revised bitcrush is baked with an independent fractional sample clock,
+interpolating each capture before signed-PCM quantisation and holding it until
+the next clock tick. Gut events: **9-bit, 24 kHz, 86 %** processed branch; wet
+foley: **8-bit, 22.05 kHz, 80 %**; beds: **10-bit, 32 kHz, 68 %**. These rates
+describe the held waveform, not the output codec. Each processed file is
+RMS-matched to the previous bank treatment of the identical source cut before
+encoding, under the same −3 dBFS peak ceiling, so
+stronger grain does not gain volume. Source selection, cuts, source hashes,
+timing, pitch and voice positions are preserved. This replaces the previous
+8-bit/14.7 kHz branch at 32 % mix.
+
+Encoded 32 kHz mono MP3, 80 kbps. Reverb (a synthetic tail
 per room) and placement are applied at runtime by
 `src/audio/stop-listening-gut.js`; no measured impulse response is used.
+The processing measurements and matched comparison bank are under
+`artifacts/ear-room-refinement/audio-processing.json` and `audio-before/`.
 
 Original files, with their sha256, are kept under
 `artifacts/stop-listening/sources/` (not committed).

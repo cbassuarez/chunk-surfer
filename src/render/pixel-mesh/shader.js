@@ -5,6 +5,7 @@ import { CAMERA_FORWARD_GLSL } from '../camera-basis.js';
 import { FIRE_ESCAPE_INK_GLSL } from '../fire-escape-ink.js';
 import { ROOF_SURFACE_INK_GLSL, ROOF_GLASS_INK_GLSL } from '../roof-surface-ink.js';
 import { PRINTED_SURFACE_GLSL } from '../printed-surface.js';
+import { PRESSURE_INK_GLSL } from '../pressure-composite.js';
 
 export const PIXEL_MESH_FRAG = `#version 300 es
 precision highp float;
@@ -55,6 +56,8 @@ uniform float uPrintedSurfaceMode;
 uniform vec2 uRes;
 uniform vec3 uCam;
 uniform float uYaw;
+// Zero retains the ordinary lens for transparent instrument hosts.
+uniform float uCameraTanHalfFov;
 uniform float uPitch;
 uniform float uCellMeters;
 uniform float uTime;
@@ -125,14 +128,18 @@ uniform mat4 uSourceProjectionInverse;
 uniform mat4 uSourceCameraWorld;
 uniform vec4 uSourceViewport;
 uniform vec2 uSourceScreenOffset;
+uniform float uSourcePressureFinish;
 #else
 // Physical Pressure supplies its own volume and relief. Engraving on the wall
 // behind that volume must not become print on the figure after acquisition.
 uniform sampler2D uRecordedPressureGeometry;
 uniform vec2 uRecordedPressureNearFar;
 uniform float uRecordedPressureReady;
+uniform sampler2D uRecordedPressureInk;
+uniform float uRecordedPressureInkReady;
 #endif
 out vec4 o;
+${PRESSURE_INK_GLSL}
 
 float hash21(vec2 p){
   p = fract(p * vec2(123.34, 345.45));
@@ -193,7 +200,8 @@ vec3 cameraRay(vec2 frag){
   vec3 fwd = cameraForward(uYaw,uPitch);
   vec3 rgt = normalize(vec3(cy, 0.0, sy));
   vec3 up = normalize(cross(rgt, fwd));
-  return normalize(fwd + uv.x * rgt * 0.95 + uv.y * up * 0.95);
+  float tanHalfFov=uCameraTanHalfFov>0.0?uCameraTanHalfFov:0.95;
+  return normalize(fwd + uv.x * rgt * tanHalfFov + uv.y * up * tanHalfFov);
 }
 
 vec3 reconstructWorldMetres(vec2 frag, float packedDepth){
@@ -1153,6 +1161,20 @@ void main(){
   // material's upper ink bound there too, without touching background pixels.
   finalColor=mix(finalColor,min(finalColor,quietMetalInk),quietMetal);
   finalColor=mix(finalColor,min(finalColor,roofSurfaceInk),roofSurface);
+
+#ifdef SOURCE_DESKTOP_TRANSPARENT
+  if(uSourcePressureFinish>.5){
+    // Only the desktop Pressure view opts into literal black/white material.
+    // Its unlit skin and skinned white hulls supply neutral source RGB; the
+    // existing acquisition still decides the pattern and separate coverage.
+    vec3 raw=texture(uSourceCoverage,fullUv).rgb/max(sourceCoverage,.000001);
+    float hi=max(raw.r,max(raw.g,raw.b)),lo=min(raw.r,min(raw.g,raw.b));
+    float neutral=1.0-step(.0001,hi-lo);
+    finalColor=pressureRecordedInk(finalColor,vec2(neutral*(1.0-step(.000001,hi)),neutral));
+  }
+#else
+  if(uRecordedPressureInkReady>.5)finalColor=pressureRecordedInk(finalColor,texture(uRecordedPressureInk,fullUv).rg);
+#endif
 
   if(uDebugSource == 1.0) finalColor = c;
   if(uDebugSource == 2.0) finalColor = vec3(signalLevel);

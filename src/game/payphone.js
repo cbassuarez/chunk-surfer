@@ -52,7 +52,7 @@ const FREE = new Set(PAYPHONE_FREE);
 export const PAYPHONE_PASS = freeze({
   // Passes 1–9: the box is quiet; calling himself rings the van.
   earlyLast: 8,
-  // Pass 14: the box rings, and the scene repeats until he answers and speaks.
+  // Pass 14: the box rings, and the scene repeats until he answers.
   loop: 13,
   // Pass 22 on: lifting the receiver, he is already on the line with himself.
   late: 21,
@@ -229,14 +229,20 @@ export function payphoneOutcome({ digits = '', flags = {}, hasChapelKey = false,
   }
 }
 
-// A call that comes to the box rather than going out of it. On the loop pass the
-// box rings as he reaches it, until he has answered it and spoken; from the late
-// passes, whenever he lifts the receiver, he is already on the line.
-export function payphoneIncoming({ pass = 0, flags = {}, lifting = false, micLive = false } = {}) {
+// Story calls come to him. The rotary, pay-on-answer and the tape's cost remain
+// available for calls he chooses to make; none of them is a progression gate.
+export function payphoneIncoming({ pass = 0, flags = {}, hasChapelKey = false, hasPhoneSheet = false, lifting = false, micLive = false } = {}) {
   const has = (flag) => !!(typeof flags === 'function' ? flags(flag) : flags?.[flag]);
-  if (pass === PAYPHONE_PASS.loop && !has('phone.loop.broken')) return freeze({ id: 'loop', node: 'loop', rings: Infinity, forced: true });
-  if (pass >= PAYPHONE_PASS.late && lifting) {
-    return freeze({ id: 'self-line', node: micLive ? 'self-line-mic' : 'self-line', rings: 0, forced: false, cost: has('phone.cost.self') ? null : 'grid' });
+  if (pass === PAYPHONE_PASS.loop && !has('phone.loop.broken')) return freeze({ id: 'loop', node: 'loop-answer', rings: Infinity, forced: true });
+  const needsKey = !hasChapelKey && !has('phone.key.granted');
+  const needsSheet = hasChapelKey && !hasPhoneSheet && !has('phone.sheet.granted');
+  if (needsKey || needsSheet) {
+    const id = payphoneKeyCall(flags);
+    const call = payphoneOutcome({ digits: PAYPHONE_NUMBERS[id].digits, flags, hasChapelKey, pass });
+    return outcomeOf(id, { ...call, pays: false, rings: Infinity, forced: false, incoming: true });
+  }
+  if (pass >= PAYPHONE_PASS.late && (lifting || !has('phone.called.self-line'))) {
+    return freeze({ id: 'self-line', node: micLive ? 'self-line-mic' : 'self-line', rings: Infinity, forced: false, cost: has('phone.cost.self') ? null : 'grid' });
   }
   return null;
 }

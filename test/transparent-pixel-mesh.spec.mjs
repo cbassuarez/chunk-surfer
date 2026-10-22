@@ -6,7 +6,7 @@ import { createSourceDesktopDither } from '../src/render/source-desktop-dither.j
 import { getLookProfile } from '../src/render/look-profiles.js';
 import { screenUniforms } from '../src/render/pixel-mesh/screens.js';
 
-function fixture(factory = createTransparentPixelMesh) {
+function fixture(factory = createTransparentPixelMesh, options = {}) {
   const textures = [];
   const THREE = { ...Three, TextureLoader: class {
     loadAsync() { const texture = new Three.Texture(); textures.push(texture); return Promise.resolve(texture); }
@@ -30,7 +30,7 @@ function fixture(factory = createTransparentPixelMesh) {
       viewport: target ? target.viewport.toArray() : viewport.toArray() }); },
   };
   const original = { color: color.clone(), viewport: viewport.clone(), alpha, scissor, autoClear: renderer.autoClear };
-  const pass = factory(THREE, renderer, { assetUrl: value => value });
+  const pass = factory(THREE, renderer, { assetUrl: value => value, ...options });
   const scene = new Three.Scene(); scene.add(new Three.Mesh(new Three.BoxGeometry(), new Three.MeshBasicMaterial()));
   const camera = new Three.OrthographicCamera(-1, 1, .5, -.5, .01, 5);
   camera.position.z = 1.8; camera.updateMatrixWorld();
@@ -103,6 +103,7 @@ test('Source desktop wrapper preserves Hush defaults and restores caller rendere
   const f = fixture(createSourceDesktopDither); await f.pass.ready;
   f.pass.render(f.scene, f.camera, { width: 800, height: 400, dpr: 2 });
   const u = f.calls[2].material.uniforms;
+  assert.equal(u.uSourcePressureFinish.value, 1);
   assert.equal(f.pass.debug().profile, 'hush');
   assert.equal(u.uCellPx.value, getLookProfile('hush').vfd.cellPx * 2);
   assert.equal(u.uScreenPeriodPx.value, screenUniforms('crosshatch').periodPx * 2);
@@ -113,6 +114,30 @@ test('Source desktop wrapper preserves Hush defaults and restores caller rendere
   assert.equal(f.renderer.autoClear, f.original.autoClear);
   assert.equal(f.renderer.getRenderTarget(), null);
   f.pass.dispose();
+});
+
+test('literal Pressure ink is scoped to the desktop wrapper rather than every transparent performer or Hush profile', async () => {
+  const ordinary = fixture(), desktop = fixture(createSourceDesktopDither, { pressureFinish: false });
+  await Promise.all([ordinary.pass.ready, desktop.pass.ready]);
+  try {
+    // Both factories begin with the same Hush acquisition profile. A profile
+    // match must not turn neutral clothes, hands or scenery into Pressure ink.
+    assert.equal(ordinary.pass.debug().profile, 'hush');
+    assert.equal(desktop.pass.debug().profile, 'hush');
+    for (const profile of ['hush', 'battle', 'calm']) {
+      for (const f of [ordinary, desktop]) f.pass.render(f.scene, f.camera, {
+        width: 640, height: 360, profile, snapshot: { clock: 7.25, reduceFlash: true },
+      });
+      const ordinaryUniforms = ordinary.calls.at(-1).material.uniforms;
+      const desktopUniforms = desktop.calls.at(-1).material.uniforms;
+      assert.equal(ordinaryUniforms.uSourcePressureFinish.value, 0,
+        `generic ${profile} performer must retain the ordinary material treatment`);
+      assert.equal(desktopUniforms.uSourcePressureFinish.value, 1,
+        `desktop Pressure must retain its literal ink contract across ${profile} look updates`);
+      assert.notEqual(ordinaryUniforms.uSourcePressureFinish, desktopUniforms.uSourcePressureFinish,
+        'simultaneous surfaces must not share mutable material-identity uniforms');
+    }
+  } finally { ordinary.pass.dispose(); desktop.pass.dispose(); }
 });
 
 test('transparent pass disposes owned targets and materials once and stops rendering', async () => {

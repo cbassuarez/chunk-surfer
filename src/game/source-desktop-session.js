@@ -1,4 +1,5 @@
 import { createSourceDesktopView } from '../render/source-desktop-view.js';
+import { sourceDesktopInputActive } from './source-desktop-focus.js';
 
 // Presentation lease only. The combat scene supplies every clock, decision and
 // outcome; neither this view nor the passive native webview can advance combat.
@@ -6,6 +7,7 @@ export function createSourceDesktopSession({
   director, host = globalThis.document?.getElementById('wrap'),
   pressurePresentation = null, createView = createSourceDesktopView,
   accessibility = () => ({}),
+  hasFocus = null,
 } = {}) {
   let view = null, container = null, ready = false, ended = false;
   let mode = 'fallback', revision = 0, last = null, starting = null;
@@ -83,5 +85,6 @@ export function createSourceDesktopSession({
     await director?.endSourceDesktop?.(outcome);
   }
   return { frame, begin, end, mode:refreshMode,
+    hasFocus:() => typeof hasFocus === 'function' ? hasFocus() : sourceDesktopInputActive(),
     debug:() => ({mode,ready,ended,token,reason,placement,renderer:view?.debug?.() || null}) };
 }

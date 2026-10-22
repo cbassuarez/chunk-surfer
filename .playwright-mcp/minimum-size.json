@@ -1,0 +1,13 @@
+{
+  "minimum": {
+    "css": [
+      960,
+      600
+    ],
+    "before": "AAAABA",
+    "word": "ABAABA",
+    "cursor": 1
+  },
+  "errors": [],
+  "DPR2": "Not verified: isolated test browser retained devicePixelRatio=1 despite CDP emulation request."
+}

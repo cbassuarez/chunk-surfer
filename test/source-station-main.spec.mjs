@@ -174,7 +174,7 @@ function harness({ time = 0, walk = null, frame = null, realm = null, earned = [
     mischiefNextAtMs: 0, mischiefQuietUntilMs: 0,
     setupHandoffBlocksMovement: () => false, sourceDoorArrival: null, storyMode: false,
     stairTriggerCrossed: () => false, performance: { now: () => time * 1000 },
-    sourceShoreCameraPatch: () => ({}), lastMoveAtMs: 0, stepCount: 0,
+    sourceCameraPatch: () => ({}), lastMoveAtMs: 0, stepCount: 0,
     window: {}, movingTimer: null, trail: [], revealAround: noOp,
   };
   for (const name of ['stopOutskirtsStreetAudio', 'resetOutskirtsLastLight', 'stopSourceDockDoorAudio', 'stopSourceShoreAudio',

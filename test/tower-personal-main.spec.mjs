@@ -83,7 +83,7 @@ function personalHarness() {
     },
     createTowerPersonalMonitor: (options) => createTowerPersonalMonitor({ ...options, play: sandbox.playTowerPersonalRecording }),
     createTowerPersonalWorldSignal: () => null, playTowerPersonalContact: () => null,
-    sourceShoreCameraPatch: () => ({}),
+    sourceCameraPatch: () => ({}),
     CUES: { CUE: { recorder: 'recorder', door: 'door' }, playCue: noOp },
     SPEECH: { say: (line) => spoken.push(copy(line)) },
     PB: {

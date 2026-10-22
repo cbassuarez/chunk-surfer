@@ -9,6 +9,7 @@ import { ZONE } from './floorplan/legend.js';
 import { CHURCH_LIGHTS } from './st-brendans.js';
 import { EXTERIOR_PUB, pubWorldFromLocal } from './exterior-pub.js';
 import { PUB_LIGHT_ANCHORS } from './exterior-pub-furnishings.js';
+import {PUB_HOSPITALITY_LIGHTS} from './pub-hospitality.js';
 
 export const LIGHT_KIND = Object.freeze({
   SKY: 'sky',
@@ -120,7 +121,7 @@ const AMBIENT = Object.freeze({
   [ZONE.bellTower]: { color: [.58, .45, .30], intensity: .025 },
   [ZONE.academic]: { color: [.62, .69, .70], intensity: .036 },
   [ZONE.academicRoof]: { color: [.46, .56, .70], intensity: .155 },
-  [ZONE.pub]: { color: [1,.75,.49], intensity: .092 },
+  [ZONE.pub]: { color: [1,.75,.49], intensity: .16 },
   [ZONE.danceStudio]: { color: [.38, .34, .27], intensity: .014 },
   [ZONE.store]: { color: [.42, .43, .40], intensity: .016 },
   // The get-in keeps the sodium and rust the old dock room had.
@@ -244,15 +245,22 @@ export const CONSERVATORY_LIGHTS = Object.freeze([
   // the actual pendant/WC sockets from the shared furnishing contract; retain
   // their output when seen through the pub's open window joinery.
   ...PUB_LIGHT_ANCHORS.map(a=>{
+    const p=pubWorldFromLocal(a),warm=PUB_HOSPITALITY_LIGHTS.find(light=>light.id===a.id),w=warm&&pubWorldFromLocal(warm);
+    return L(a.id,LIGHT_KIND.FITTING,p.x,p.z,EXTERIOR_PUB.floor+a.y,a.color,a.intensity,a.radius,
+      {groups:['ground'],zones:[ZONE.pub,ZONE.street,ZONE.civicCourt],powerMode:LIGHT_POWER_MODE.EXTERNAL,
+       castsShadow:a.id==='pub-bar-light',pubHospitalityReplacement:w?{x:w.x,z:w.z,y:EXTERIOR_PUB.floor+warm.y,color:warm.color,intensity:warm.intensity,radius:warm.radius}:null});
+  }),
+  ...PUB_HOSPITALITY_LIGHTS.filter(a=>!PUB_LIGHT_ANCHORS.some(base=>base.id===a.id)).map(a=>{
     const p=pubWorldFromLocal(a);
     return L(a.id,LIGHT_KIND.FITTING,p.x,p.z,EXTERIOR_PUB.floor+a.y,a.color,a.intensity,a.radius,
       {groups:['ground'],zones:[ZONE.pub,ZONE.street,ZONE.civicCourt],powerMode:LIGHT_POWER_MODE.EXTERNAL,
-       castsShadow:a.id==='pub-bar-light'});
+       penetration:a.penetration||0,pubHospitalityOnly:true,castsShadow:!!a.castsShadow});
   }),
   ...[-28,-20].flatMap(z=>[-1.57,3.63].map(dz=>{
     const p=pubWorldFromLocal({x:.79,z:z+dz});
     return L(`pub-front-lantern-${z}-${dz}`,LIGHT_KIND.FITTING,p.x,p.z,EXTERIOR_PUB.floor+2.80,
-      [1,.72,.40],.85,3.5,{groups:['ground'],zones:[ZONE.pub,ZONE.street,ZONE.civicCourt],powerMode:LIGHT_POWER_MODE.EXTERNAL});
+      [1,.72,.40],1.2,4.3,{groups:['ground'],zones:[ZONE.pub,ZONE.street,ZONE.civicCourt],powerMode:LIGHT_POWER_MODE.EXTERNAL,
+       pubHospitalityReplacement:{radius:6.2,intensity:1.55,penetration:.12}});
   })),
 
   // The get-in: only the sodium seam under the grey door. The freight-frame
@@ -373,6 +381,14 @@ export const CONSERVATORY_LIGHTS = Object.freeze([
   // Ground/atrium and natatorium.
   L('academic-skylight-spill', LIGHT_KIND.SKY, 85, 15, 16.25, [.52, .67, .80], 1.12, 24,
     { groups:['ground','academic'], zones:[ZONE.foyer,ZONE.academic], anchorPropId:'academic-skylight', anchorOffset:[0,6.25,0] }),
+  // The north gallery console already carries a small shaded lamp. Its lower
+  // rim is +1.20m; resolve just below it and clear of the bronze stem. This
+  // maintained pool models the west heads without borrowing the dead circuit.
+  // The authored shade is a capped solid, so it does not own the hero shadow
+  // map; the existing torch/encounter shadow budget stays available.
+  L('academic-gallery-console-north', LIGHT_KIND.FITTING, 74.055, 10.91, 11.195, [1, .80, .55], 1.1, 9,
+    { groups:['academic'], zones:[ZONE.academic], maintained:true, castsShadow:false,
+      anchorPropId:'gallery-treatment-console-north', anchorOffset:[.055,1.195,-.09] }),
   L('academic-emergency-west', LIGHT_KIND.EMERGENCY, 78.75, 8, 11.8, EMERGENCY_RED, .54, 7.2,
     { groups:['academic'], zones:[ZONE.academic], circuit:'sp05', anchorPropId:'academic-light-emergency-west', anchorOffset:[0,.18,0] }),
   L('academic-emergency-east-failing', LIGHT_KIND.EMERGENCY, 96.75, 23, 11.8, EMERGENCY_RED, .22, 6.4,
@@ -547,7 +563,7 @@ export function resolveLightingContext(context = {}) {
     // The ordinary one-bit acquisition uses exposure before its ink decision;
     // the legacy white-point curve cannot recover an underexposed stone wall.
     ...(zone === ZONE.church ? { captureExposure: 4.5 } : {}),
-    ...(zone === ZONE.pub ? { captureExposure: 1.65 } : {}),
+    ...(zone === ZONE.pub ? { captureExposure: 1.85 } : {}),
   };
 }
 
@@ -747,6 +763,7 @@ export function resolveLocalLights(context, {
   // The apparition renderer may still need a fitting's position after its
   // circuit loses power. These zero-output entries never enter the light rig.
   includeDormantEmergency = false,
+  pubHospitalityReady = false,
 } = {}) {
   const group = typeof context === 'string' ? context : String(context?.group || '');
   const zone = typeof context === 'string' ? null : context?.zone;
@@ -756,7 +773,9 @@ export function resolveLocalLights(context, {
   const flutter = .5 + .5 * Math.sin(timeSec * 7.1) * Math.sin(timeSec * 2.37);
   const resolvedEffectsMode = effectsMode || (reducedFlash ? 'reduced' : 'full');
   const out = [];
-  for (const light of rig) {
+  for (const authored of rig) {
+    if(authored.pubHospitalityOnly&&!pubHospitalityReady)continue;
+    const light=pubHospitalityReady&&authored.pubHospitalityReplacement?{...authored,...authored.pubHospitalityReplacement}:authored;
     if (Number.isFinite(zone) && light.zones.length && !light.zones.includes(zone)) continue;
     if (light.phase === 'tower' && !towerActive) continue;
     if (light.phase === 'cleared' && !towerCleared) continue;

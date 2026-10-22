@@ -203,7 +203,7 @@ export function renderInstances({group=null,inscriptions=true,batchDressing=fals
     return{id:p.id,mesh:p.mesh,fallbackMesh:p.fallbackMesh||null,
       x:(at?at.x*CELL:p.x)+(p.renderOffsetX||0),y:(p.floor??0)+waterlineOffset,
       z:(at?at.z*CELL:p.y)+(p.renderOffsetZ||0),
-      yaw:(p.yaw||0)+(at?floorplan.arcYawOffset?.(p.rx,p.ry,at.x+.5,at.z+.5)||0:0),
+      yaw:(p.yaw||0)+(!p.worldAligned&&at?floorplan.arcYawOffset?.(p.rx,p.ry,at.x+.5,at.z+.5)||0:0),
       scale:p.scale||1,scaleX:p.scaleX,scaleY:p.scaleY,scaleZ:p.scaleZ,zone:p.zone||0,
       portraitIndex:p.portraitIndex||0,structural:!!p.structural,
       waterlineBody:p.waterlineBody||null,waterlineOffset};

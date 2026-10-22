@@ -1,0 +1,342 @@
+- main [ref=f36e2]:
+  - generic [ref=f36e3]:
+    - paragraph [ref=f36e4]: Chunk Surfer / Source / one existing late-road encounter
+    - heading "The conservatoire comes apart." [level=1] [ref=f36e5]: The conservatoirecomes apart.
+    - paragraph [ref=f36e6]: A familiar frontage stops receding. Its fabric loses restraint, held human residues escape through the openings, and a finite stretch of the same road becomes black nothingness.
+    - generic [ref=f36e7]:
+      - strong [ref=f36e8]: The final actual-game approach and output are captured.
+      - text: Ordinary walking enters and leaves the black region on the same floor; final dither, media checks and independent still/frame review support the delivered normal route. Remaining settings captures are being completed. Author listening, unfamiliar-player and native-app acceptance remain pending.
+    - navigation "Report sections" [ref=f36e9]:
+      - link "The encounter" [ref=f36e10] [cursor=pointer]:
+        - /url: "#encounter"
+      - link "Physical failure" [ref=f36e11] [cursor=pointer]:
+        - /url: "#fabric"
+      - link "Material sound" [ref=f36e12] [cursor=pointer]:
+        - /url: "#sound"
+      - link "Evidence" [ref=f36e13] [cursor=pointer]:
+        - /url: "#proof"
+      - link "Editable sources" [ref=f36e14] [cursor=pointer]:
+        - /url: "#sources"
+      - link "Uncertainties" [ref=f36e15] [cursor=pointer]:
+        - /url: "#limits"
+  - figure "Actual final treatment, release phase at 5.50 s after commitment. The player has stopped at 874.245 m; failure continues. Isolated production game, 1280 × 800 final dither. One diagnostic initial start preceded ordinary walking and view turns." [ref=f36e16]:
+    - link [ref=f36e17] [cursor=pointer]:
+      - /url: live/final-06-failure.png
+      - img "Actual final-dither game capture at the conservatoire during its release phase" [ref=f36e18]
+  - generic "Delivered asset overview" [ref=f36e20]:
+    - generic [ref=f36e21]:
+      - strong [ref=f36e22]: "58"
+      - generic [ref=f36e23]: individually authored moving fragments
+    - generic [ref=f36e24]:
+      - strong [ref=f36e25]: 18 s
+      - generic [ref=f36e26]: local lived sequence after commitment
+    - generic [ref=f36e27]:
+      - strong [ref=f36e28]: "5"
+      - generic [ref=f36e29]: recorded material cuts / 3 CC0 sources
+    - generic [ref=f36e30]:
+      - strong [ref=f36e31]: Same road
+      - generic [ref=f36e32]: same body, support and onward destination
+  - generic [ref=f36e33]:
+    - paragraph [ref=f36e34]: An approach becomes consequential
+    - heading "First recognise it. Then get close." [level=2] [ref=f36e35]
+    - generic [ref=f36e36]:
+      - generic [ref=f36e37]:
+        - paragraph [ref=f36e38]:
+          - text: The selected host is the existing Outskirts copy of
+          - emphasis [ref=f36e39]: conservatory_west_elevation
+          - text: . Its institutional rhythm, loading-bay mouth and long flytower silhouette belong to the game’s own architecture. The original building remains elsewhere in the game.
+        - paragraph [ref=f36e40]: The copy settles at one world position on the existing late road. A recognisable approach is intended before a restraint disturbance within roughly 45 metres. Ordinary forward body movement within 30 metres commits its local failure clock. Waiting, a diagnostic warp or a nearby loaded save cannot substitute for that movement.
+      - generic [ref=f36e41]:
+        - paragraph [ref=f36e42]: Once begun, the failure continues while the player stops or looks away. The building and release origins remain fixed through a turn. Retreat can outrun the outward front. The bodies use the established anonymous shadow/energy family; their mass must remain human at the onset.
+        - paragraph [ref=f36e43]: The fixed black region is reached physically after the building fills. Crossing the outward wave thirty metres away can make the player a witness within the flow; it does not alone black out the view. Ordinary walking leaves the bounded region and continues toward the existing Last Light.
+        - paragraph [ref=f36e44]: "Thirty-two evenly distributed bodies form the near curtain in normal and reduced presentation. Reduced settings retain forty total bodies: eight in the outward stream and thirty-two in that curtain. Their destinations remain world-fixed."
+    - generic [ref=f36e45]:
+      - 'figure "Matched baseline at 861.245 m: the existing player-relative echo. Same body position, floor and look as the final frame beside it." [ref=f36e46]':
+        - link [ref=f36e47] [cursor=pointer]:
+          - /url: live/baseline-02-recognition.png
+          - img "Baseline at the matched861metre player position, using the original distant conservatoire projection" [ref=f36e48]
+      - figure "Final at the same position and look. The independent review sees the tall bay, loading mouth and lateral fabric; recognising the remembered institution remains a player hypothesis." [ref=f36e50]:
+        - link [ref=f36e51] [cursor=pointer]:
+          - /url: live/final-02-recognition.png
+          - img "Final treatment at the same861metre body position and look, with the fixed illuminated architecture ahead" [ref=f36e52]
+    - generic "Current semantic sequence after commitment" [ref=f36e54]:
+      - generic [ref=f36e55]:
+        - generic [ref=f36e56]: 1.0 s / INFILL
+        - paragraph [ref=f36e57]: Lining begins to peel. Recorded panel material stays at the failed fabric.
+      - generic [ref=f36e58]:
+        - generic [ref=f36e59]: 3.15 s / OPENING
+        - paragraph [ref=f36e60]: Human residues begin at the two verified, vacated recesses.
+      - generic [ref=f36e61]:
+        - generic [ref=f36e62]: 3.2–12 s / LOSS
+        - paragraph [ref=f36e63]: Courses release, then the upper roof bay. Fragments have independent weight and settling.
+      - generic [ref=f36e64]:
+        - generic [ref=f36e65]: 9 s onward / ENTRY
+        - paragraph [ref=f36e66]: The fixed filled region can be entered; a short body fill precedes the opaque world volume.
+    - paragraph [ref=f36e67]:
+      - text: "Current site: frontage along 903 m; floor 15.2 m. The dark region is along 900–944 m and ±36 m across the road. It does not change ground collision, camera pose, health, battery, recording cost or the selected finale route."
+      - link "Intentions and contradictions" [ref=f36e68] [cursor=pointer]:
+        - /url: design-contract.json
+      - text: ·
+      - link "Current authoritative timing" [ref=f36e69] [cursor=pointer]:
+        - /url: ../../src/data/source-demolition.js
+      - text: .
+  - generic [ref=f36e70]:
+    - paragraph [ref=f36e71]: Construction precedes decoration
+    - heading "A building loses particular things." [level=2] [ref=f36e72]
+    - generic [ref=f36e73]:
+      - generic [ref=f36e74]:
+        - paragraph [ref=f36e75]: The delivered pack selectively releases service infill, its backing strip, upper fabric, projected academic bays, window inserts, old brick courses and roof material. Unselected original geometry remains. This produces changing gaps inside a persistent silhouette.
+        - paragraph [ref=f36e76]: Fifty-eight capped fragments have individual object actions authored in Blender. The finite baked motion retains joints before release and grounds each final piece by its lowest transformed vertex. Debris falls behind the frontage, leaving the loading-mouth body corridor clear.
+      - generic [ref=f36e77]:
+        - paragraph [ref=f36e78]: Two spirit origins were checked against actual mesh intersections. Their facing sheets and a second backing strip release before the bodies appear; original deep mass still closes each recess. These are finite failure openings, not an invented new explorable interior.
+        - paragraph [ref=f36e79]: The black region is opaque world geometry on the same road. Its endpoints are spatial. Looking around inside must not reveal an unaffected strip behind an eye-attached overlay. Effects off omits the added bodies and dark volume while the physical building state continues.
+    - paragraph [ref=f36e80]:
+      - text: "Delivered geometry: 1,338,444 B · 18,748 packed triangles · 60 meshes including retained architecture and the dark unit. Motion: 12 s at 12 samples/s, 145 samples per track, with runtime interpolation; the broader semantic sequence lasts 18 s. Asset counts are not a measured frame-rate result."
+      - link "Asset measurements" [ref=f36e81] [cursor=pointer]:
+        - /url: ../../public/assets/source-demolition.stats.json
+      - text: ·
+      - link "Construction roles and openings" [ref=f36e82] [cursor=pointer]:
+        - /url: geometry-metadata.json
+      - text: .
+    - generic [ref=f36e83]:
+      - 'figure "Before commitment: 861.245 m. The restraint state is established, and the recorded stop does not advance it into demolition. Recognition by a fresh player remains untested." [ref=f36e84]':
+        - link [ref=f36e85] [cursor=pointer]:
+          - /url: live/final-02-recognition.png
+          - img "Actual final treatment at the first restraint state before commitment" [ref=f36e86]
+      - figure "0.40 s after ordinary forward movement commits. Existing paper density decreases visually during the first two committed seconds; phone-flurry interactions and their costs remain authoritative." [ref=f36e88]:
+        - link [ref=f36e89] [cursor=pointer]:
+          - /url: live/final-04-commit.png
+          - img "Actual game view just after ordinary walking commits the local failure" [ref=f36e90]
+      - figure "Inside at 906.245 m, floor 15.2 m. The world is black; the ordinary E LOOK prompt remains. Legacy red/green warning scraps are suppressed here." [ref=f36e92]:
+        - link [ref=f36e93] [cursor=pointer]:
+          - /url: live/final-07-inside.png
+          - img "Actual screenshot inside the finite black world region at906metres" [ref=f36e94]
+      - figure "Onward at 947.245 m, still floor 15.2 m. The local encounter is spent and released; body and route continue without a level handoff." [ref=f36e96]:
+        - link [ref=f36e97] [cursor=pointer]:
+          - /url: live/final-10-onward.png
+          - img "Actual game view after ordinary walking exits the dark region on the same road" [ref=f36e98]
+    - paragraph [ref=f36e100]:
+      - text: "Actual reverse and lateral views were also captured from inside:"
+      - link "look back" [ref=f36e101] [cursor=pointer]:
+        - /url: live/final-08-inside-looking-back.png
+      - text: ·
+      - link "look aside" [ref=f36e102] [cursor=pointer]:
+        - /url: live/final-09-inside-looking-aside.png
+      - text: . The local occupancy beat is 0.12 s before the opaque volume.
+      - link "Normal live-run receipt" [ref=f36e103] [cursor=pointer]:
+        - /url: live/final-verification.json
+      - text: .
+    - generic [ref=f36e104]:
+      - 'figure "18.20 s in the actual captured canvas: close human torsos, hands and held limbs fill the passage. CPU-extracted video frame; canvas only, without DOM HUD." [ref=f36e105]':
+        - link [ref=f36e106] [cursor=pointer]:
+          - /url: live/independent-final-video-18.20.png
+          - img "Actual final game-canvas video frame showing close anonymous human masses occupying the player's passage" [ref=f36e107]
+      - 'figure "18.45 s: black world geometry has taken over. Independent samples from 17.80–18.60 s did not show the prior reopened-road interval; sparse frame review is not continuous motion or player acceptance." [ref=f36e109]':
+        - link [ref=f36e110] [cursor=pointer]:
+          - /url: live/independent-final-video-18.45.png
+          - img "Actual game-canvas frame at18.45seconds after the nearby human masses give way to black world geometry" [ref=f36e111]
+    - paragraph [ref=f36e113]:
+      - text: Page screenshots above include ordinary DOM controls. These two extracted frames and the WebM capture contain only the final game canvas.
+      - link "Independent visual review, corrections and limits" [ref=f36e114] [cursor=pointer]:
+        - /url: independent-visual-review.json
+      - text: .
+  - generic [ref=f36e115]:
+    - paragraph [ref=f36e116]: Restraint / fracture / fall / withdrawal
+    - heading "The shell supplies the sound." [level=2] [ref=f36e117]
+    - paragraph [ref=f36e118]: Recorded timber restraint belongs to a loaded joint; the course uses actual stone contact rather than a timber crack. Documentary panel peeling and falling debris provide the low mechanical body. A restrained high band from that same material follows the escaping front. There are no added voices, choir, audience, footsteps or creature track.
+    - table "Source roles and acoustic limits" [ref=f36e119]:
+      - rowgroup [ref=f36e120]:
+        - row [ref=f36e121]:
+          - columnheader "Material" [ref=f36e122]
+          - columnheader "Use and limit" [ref=f36e123]
+      - rowgroup [ref=f36e124]:
+        - row [ref=f36e125]:
+          - cell "Oulu documentary upload" [ref=f36e126]
+          - 'cell "Original own-work video audio: local excavator restraint, panel peeling and falling debris. The curved roof ribs remain standing in inspected source frames; this is not a recording of global structural collapse." [ref=f36e127]'
+        - row [ref=f36e128]:
+          - cell "Discrete timber takes" [ref=f36e129]
+          - cell "Audioninja001’s recorded wood material supplies restraint and joint failure. The available file is a licensed HQ MP3 preview with gaps between takes; its original WAV requires login and is not held." [ref=f36e130]
+        - row [ref=f36e131]:
+          - cell "Stone contact" [ref=f36e132]
+          - cell "AlanCat’s cliff-rockfall recording supplies a separate 4.9–6.9 s contact for local masonry/debris. The source author removed background noise. The tower’s different earlier cut remains unchanged." [ref=f36e133]
+        - row [ref=f36e134]:
+          - cell "World transmission" [ref=f36e135]
+          - cell "Fixed actual 3D anchors, listener yaw and height, distance loss, and a capped authored travel delay. Short facade reflection taps are procedural and unmeasured. The original microphone perspective and delay are unknown." [ref=f36e136]
+        - row [ref=f36e137]:
+          - cell "Consumed" [ref=f36e138]
+          - cell "No extra impact. Existing material tails drain over 1.25 s, then remain silent. Actual pocket entry owns this cue; moving away does not restart it." [ref=f36e139]
+    - paragraph [ref=f36e140]: Recording, monitoring/playback, pause, focus loss and departure close the output gate and discard missed attacks. Convolution memory clears on the hard transition. Returning establishes the current state. Reduced dread lowers the derived residue and short reflections while retaining physical warnings at the same level and placement. Effects off retains meaningful physical failure feedback and omits the derived spirit residue and reflections.
+    - generic [ref=f36e141]:
+      - heading "Actual canvas and program output" [level=3] [ref=f36e142]
+      - generic "Actual final game approach with the captured post-limiter program output" [ref=f36e143]
+      - paragraph [ref=f36e144]: "Original shared-timestamp WebM: 851 decoded VP9 frames, 1280 × 800; decoded audio 29.22 s, stereo 48 kHz. Actual final canvas and whole-game post-limiter output, no microphone. The run starts at an authored diagnostic position, then walks 837.245 → 947.245 m with ordinary stops and turns."
+      - paragraph [ref=f36e145]: The mux retains a 301 ms video startup after audio; their endpoints differ by 38 ms. The startup is before the first cue. No stream has been shifted to hide it. Frame timestamps are monotonic; maximum video packet gap is 102 ms. Shared timestamps do not establish perceptually verified A/V alignment.
+      - paragraph [ref=f36e146]: "Whole-program PCM: peak −7.470 dBFS · RMS −28.200 dBFS · 0 clipped samples · all finite. Each of the six semantic receipts occurs once: five play events and one material-tail drain. Sampled peak is three tracked voices, including at most one residue. Beyond the consumption tail, demolition voices are zero; other existing game sounds continue."
+      - generic [ref=f36e147]:
+        - link "Unshifted decoded WAV" [ref=f36e148] [cursor=pointer]:
+          - /url: live/final-encounter.wav
+        - link "Timestamped encounter probes" [ref=f36e149] [cursor=pointer]:
+          - /url: live/final-capture.json
+        - link "CPU media verification" [ref=f36e150] [cursor=pointer]:
+          - /url: media-verification.json
+        - link "Reproducible verifier" [ref=f36e151] [cursor=pointer]:
+          - /url: verify-media.py
+        - link "Output observer" [ref=f36e152] [cursor=pointer]:
+          - /url: capture-hook.js
+        - link "Proof server" [ref=f36e153] [cursor=pointer]:
+          - /url: serve-proof.mjs
+    - generic [ref=f36e154]:
+      - heading "Original Oulu source, with its captured sound" [level=3] [ref=f36e155]
+      - generic "Original CC0 Oulu documentary source video and audio" [ref=f36e156]
+      - paragraph [ref=f36e157]: Estormiz · original own-work upload · CC0. Lossy stereo Opus in the uploader video, not a microphone PCM master. The synchronized frame review supports local material selection; continuous listening acceptance is pending.
+    - generic [ref=f36e158]:
+      - generic [ref=f36e159]:
+        - heading "Timber source preview" [level=3] [ref=f36e160]
+        - generic "Unedited-by-project timber preview recording" [ref=f36e161]
+        - paragraph [ref=f36e162]: Audioninja001 · CC0 · Zoom H5 / Sennheiser MKE600 according to recorder metadata. HQ preview encoding, unedited by this project.
+      - generic [ref=f36e163]:
+        - heading "Stone field source preview" [level=3] [ref=f36e164]
+        - generic "Field stone source preview, cleaned by its recorder" [ref=f36e165]
+        - paragraph [ref=f36e166]: AlanCat · CC0 · Olympus LS-14; recorder background cleanup in Audacity. The project’s later cut is separate from the tower cue.
+    - paragraph [ref=f36e167]:
+      - text: "Shipped bank: 5 clips / 20.4 s / 289,857 B encoded / 3,916,800 B decoded at 48 kHz. Highest measured decoded clip peak −9.260 dBFS, all finite. These are individual file measurements, not the total-game mix or a listening judgment. At most eight tracked voices; at most two derived residual voices."
+      - link "Build measurements" [ref=f36e168] [cursor=pointer]:
+        - /url: audio-build.json
+      - text: ·
+      - link "Listening and player protocol" [ref=f36e169] [cursor=pointer]:
+        - /url: audio-acceptance.json
+      - text: .
+  - generic [ref=f36e170]:
+    - paragraph [ref=f36e171]: What the evidence establishes
+    - heading "Keep the boundaries visible." [level=2] [ref=f36e172]
+    - table "Verification evidence and limitations" [ref=f36e173]:
+      - rowgroup [ref=f36e174]:
+        - row [ref=f36e175]:
+          - columnheader "Evidence" [ref=f36e176]
+          - columnheader "Established / still separate" [ref=f36e177]
+      - rowgroup [ref=f36e178]:
+        - row [ref=f36e179]:
+          - cell "Existing route contract" [ref=f36e180]
+          - cell [ref=f36e181]:
+            - text: "The saved preservation check passes with no differences: Source route choices, encounter identities, source levels and sampled collision remain equal to the captured baseline. Baseline includes 135 collision samples, 540 step queries and 34 projected route doors."
+            - link "Preservation receipt" [ref=f36e182] [cursor=pointer]:
+              - /url: preservation-verification.json
+            - text: ·
+            - link "Editable verifier" [ref=f36e183] [cursor=pointer]:
+              - /url: preservation-contract.mjs
+            - text: .
+        - row [ref=f36e184]:
+          - cell "Pure state" [ref=f36e185]
+          - cell [ref=f36e186]:
+            - text: The saved 11-test receipt covers ordinary movement commitment, persistence, finite black-pocket occupancy, protected sound receipts, pause/focus time and reload baselines. Current source may include later regressions; final integration acceptance is separate.
+            - link "State receipt" [ref=f36e187] [cursor=pointer]:
+              - /url: state-contract-verification.json
+            - text: ·
+            - link "Portable tests" [ref=f36e188] [cursor=pointer]:
+              - /url: ../../test/source-demolition.spec.mjs
+            - text: .
+        - row [ref=f36e189]:
+          - cell "Physical asset" [ref=f36e190]
+          - cell [ref=f36e191]:
+            - text: Six geometry checks cover bounded finite meshes, intact sightlines, complete baked poses, grounded final debris, clear body corridor and ray-clear declared spirit openings.
+            - link "Geometry tests" [ref=f36e192] [cursor=pointer]:
+              - /url: ../../test/source-demolition-geometry.spec.mjs
+            - text: ·
+            - link "Build and reference record" [ref=f36e193] [cursor=pointer]:
+              - /url: visual-research.json
+            - text: .
+        - row [ref=f36e194]:
+          - cell "Audio runtime" [ref=f36e195]
+          - cell [ref=f36e196]:
+            - text: 13 / 13 checks cover source identity, decoded/encoded budgets, SFX routing, fixed/following anchors, receipt timing, exact hard mute, reduced dread, effects off, bounded voices, finite consumption and bank failure. No protected tower/chapel/Ear hash changed.
+            - link "Audio receipt" [ref=f36e197] [cursor=pointer]:
+              - /url: audio-contract-tests.tap
+            - text: ·
+            - link "Portable tests" [ref=f36e198] [cursor=pointer]:
+              - /url: ../../test/source-demolition-audio.spec.mjs
+            - text: .
+        - row [ref=f36e199]:
+          - cell "Capture observer" [ref=f36e200]
+          - cell [ref=f36e201]:
+            - text: 3 / 3 pure observer tests verify query-flag isolation, one actual video track plus one program-output track, timestamped probes and cleanup. These tests do not prove that a browser capture has run.
+            - link "Observer receipt" [ref=f36e202] [cursor=pointer]:
+              - /url: capture-hook-tests.tap
+            - text: ·
+            - link "Editable tests" [ref=f36e203] [cursor=pointer]:
+              - /url: capture-hook-check.mjs
+            - text: .
+        - row [ref=f36e204]:
+          - cell "Normal live encounter" [ref=f36e205]
+          - cell [ref=f36e206]:
+            - text: "6 / 6 root-owned live checks pass: all sixty meshes loaded, final dither active, stopping after first strain does not commit, ordinary approach enters black geometry, ordinary walking exits on the same floor, no GL/page errors. Actual reverse and lateral views remain black."
+            - link "Normal route and ten frames" [ref=f36e207] [cursor=pointer]:
+              - /url: live/final-verification.json
+            - text: .
+        - row [ref=f36e208]:
+          - cell "Actual video / audio" [ref=f36e209]
+          - cell [ref=f36e210]:
+            - text: "CPU decoding passes: 851 video frames, finite unclipped stereo PCM, monotonic shared timestamps, six unique cue receipts, fixed physical anchors, front-following residual, no demolition voice after the consumed tail. Startup and sampling limits are disclosed."
+            - link "Media verification" [ref=f36e211] [cursor=pointer]:
+              - /url: media-verification.json
+            - text: ·
+            - link "Timed probes" [ref=f36e212] [cursor=pointer]:
+              - /url: live/final-capture.json
+            - text: .
+        - row [ref=f36e213]:
+          - cell "Matched baseline" [ref=f36e214]
+          - cell [ref=f36e215]:
+            - text: 3 / 3 baseline checks pass and ten corresponding screenshots are saved. Recognition, failure and inside checkpoints use the same body position, look and floor as the normal final capture.
+            - link "Baseline route receipt" [ref=f36e216] [cursor=pointer]:
+              - /url: live/baseline-verification.json
+            - text: .
+        - row [ref=f36e217]:
+          - cell "Observed frame pacing" [ref=f36e218]
+          - cell [ref=f36e219]:
+            - text: "Matched post-boot 861 → 906 m window: final 941 RAF intervals, median 16.7 ms / p95 16.7 ms; baseline 945, median 16.7 ms / p95 16.8 ms. Maximum interval is 66.7 ms in each. Root-observed peak final scene triangles: 384,040. These isolated Chromium/Metal measurements include capture overhead and are not native performance or a frame-rate guarantee."
+            - link "Final samples" [ref=f36e220] [cursor=pointer]:
+              - /url: live/final-verification.json
+            - text: ·
+            - link "Baseline samples" [ref=f36e221] [cursor=pointer]:
+              - /url: live/baseline-verification.json
+            - text: .
+        - row [ref=f36e222]:
+          - cell "Independent visual review" [ref=f36e223]
+          - cell [ref=f36e224]:
+            - text: No remaining observed blocker in the captured normal route. Review supports large human anatomy through final dither and the repaired passage into black, while withholding claims of specific building recognition, fine detail, inertial weight or continuous audiovisual causality.
+            - link "Frame/geometry review" [ref=f36e225] [cursor=pointer]:
+              - /url: independent-visual-review.json
+            - text: .
+        - row [ref=f36e226]:
+          - cell "Other settings / protection" [ref=f36e227]
+          - cell [ref=f36e228]:
+            - strong [ref=f36e229]: Pending capture review.
+            - text: Retreat, recording protection and reduced/off settings are being produced separately. The completed normal run does not stand in for them.
+        - row [ref=f36e230]:
+          - cell "Human acceptance" [ref=f36e231]
+          - cell [ref=f36e232]:
+            - strong [ref=f36e233]: Pending.
+            - text: Source listening, independent architectural/sonic judgment and unfamiliar-player observations have not been substituted by geometry or waveform checks. Begin with “What happened?” and preserve spontaneous interpretation before targeted questions.
+            - link "Observation protocol" [ref=f36e234] [cursor=pointer]:
+              - /url: audio-acceptance.json
+            - text: .
+  - generic [ref=f36e235]:
+    - paragraph [ref=f36e236]: Reproducible work
+    - heading "Sources remain editable." [level=2] [ref=f36e237]
+    - group [ref=f36e238]:
+      - generic "Architecture and baked failure" [ref=f36e239] [cursor=pointer]
+    - group [ref=f36e240]:
+      - generic "State, world placement, presentation and protections" [ref=f36e241] [cursor=pointer]
+    - group [ref=f36e242]:
+      - generic "Recorded materials, cuts, licenses and runtime" [ref=f36e243] [cursor=pointer]
+    - group [ref=f36e244]:
+      - generic "Native Live 12 authoring study" [ref=f36e245] [cursor=pointer]
+    - group [ref=f36e246]:
+      - generic "Primary construction and documentary references" [ref=f36e247] [cursor=pointer]
+  - generic [ref=f36e248]:
+    - paragraph [ref=f36e249]: What failed / what remains unproven
+    - heading "Recognition and weight still need witnesses." [level=2] [ref=f36e250]
+    - paragraph [ref=f36e251]: "The original copy could not be approached because it followed the player. A facing sheet also had a second mass behind it: removing only the front skin would have made a false spirit opening. The treatment addresses both structural problems, and their saved technical checks remain inspectable."
+    - paragraph [ref=f36e252]: Initial inspection and the first captured iteration exposed presentation failures, including a road gap during convergence. The final treatment includes the evenly distributed near curtain, the 0.12 s occupancy beat, stronger fixed architectural light, and local paper/warning cleanup. Earlier failed captures remain archived rather than being represented as final evidence.
+    - paragraph [ref=f36e253]: The source recordings are limited. Oulu documents selective panel demolition, the wood source is a preview, and the stone source was cleaned by its recorder. Microphone perspective, original travel delay and absolute scale are unmeasured. Source audition has not occurred in this tool context; provisional composition from synchronized frames and energy analysis does not satisfy listening acceptance.
+    - paragraph [ref=f36e254]: The normal actual route, matched baseline and media are technically verified; an independent frame review supports the corrected normal presentation. Remaining settings/protection runs are separate. Perceived recognition, human release, mass, acoustic placement, threat and orientation still require listening and unfamiliar players. Native-app, actual operating-system window behavior and full-campaign acceptance remain pending. Wider rollout is not established by this single encounter.
+  - generic [ref=f36e255]: Implementation report / 22 October 2026. Current source and saved receipts are linked separately. Static document; no animation, autoplay, microphone or automatic game execution.

@@ -202,7 +202,11 @@ assert.equal(PROPS.allProps().some((p) => p.id.startsWith(STOP_LISTENING_PREFIX)
     assert.ok(fs.existsSync(`public/audio/stop-listening/${entry.file}`), `${entry.file} was not built`);
   }
   assert.ok(manifest.events.filter((e) => e.role === 'gut').length > manifest.events.length / 2, 'it should be mostly gut');
-  assert.ok(manifest.crush.mix > 0 && manifest.crush.mix < .5, 'the crush is light: the original is most of it');
+  assert.ok(manifest.crush.mix >= .65 && manifest.crush.mix <= 1, 'the requested digital grain is dominant');
+  for (const entry of [...manifest.events, ...manifest.beds]) {
+    assert.ok(entry.crush.bits >= 8 && entry.crush.bits <= 12, `${entry.id}: not 8–12-bit grain`);
+    assert.ok(entry.crush.rate >= 20000 && entry.crush.rate <= 36000, `${entry.id}: not a 20–36 kHz held clock`);
+  }
   const licences = fs.readFileSync('third_party/licenses/STOP-LISTENING-AUDIO.md', 'utf8');
   for (const m of manifest.sources) assert.ok(licences.includes(m.sha256), `${m.id}: hash not recorded in the licence table`);
 }

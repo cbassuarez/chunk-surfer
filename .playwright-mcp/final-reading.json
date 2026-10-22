@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "atUTC": "2026-10-20T19:44:55.430Z",
+  "fixture": {
+    "before": {
+      "had": [
+        "bust-talk:academic-bust-2",
+        "talisman.seen"
+      ]
+    },
+    "after": {
+      "had": [
+        "bust-talk:academic-bust-2",
+        "talisman.seen"
+      ]
+    },
+    "meaning": "Separate author screenshot fixture with fork unowned; other thoughts retained. Not a participant save."
+  },
+  "reading": {
+    "mode": "nodes",
+    "nodeId": "read",
+    "finished": false,
+    "speaker": "THE PRACTICE WING",
+    "history": [],
+    "line": {
+      "who": "direction",
+      "text": "It is engraved, badly, by hand, with a knife rather than a tool: A=444.",
+      "signalRole": "unattributed",
+      "sourceId": "read.line.1"
+    },
+    "who": "direction",
+    "typed": 71,
+    "typing": false,
+    "lineAge": 0.06530000001192093,
+    "lineSerial": 3,
+    "lineContentId": "thought:talisman:read:line:0",
+    "seenBeforeRun": false,
+    "accelerating": false,
+    "voice": null,
+    "pending": null,
+    "art": null,
+    "artReason": "none",
+    "lineSourceId": "read.line.1"
+  },
+  "after": {
+    "owned": true,
+    "thoughts": {
+      "had": [
+        "bust-talk:academic-bust-2",
+        "talisman.seen",
+        "talisman"
+      ],
+      "confession": {
+        "kind": null,
+        "value": null
+      },
+      "interface": false,
+      "listened": 0
+    },
+    "scene": null
+  },
+  "method": "Supplementary author screenshot pass through actual E/Enter and canonical pick-up choice. Enter completes the current typewriter line before capture; it does not replace its content. The prior fast lifecycle capture remains an accelerated technical run."
+}

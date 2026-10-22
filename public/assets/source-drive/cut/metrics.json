@@ -1,0 +1,586 @@
+{
+  "schema": 1,
+  "kind": "source-drive-cut-authored-asset",
+  "coordinateContract": {
+    "unit": "metres",
+    "localOrigin": "inner retaining face; mount at road lateral +4.4m",
+    "axes": {
+      "x": "away from right road",
+      "y": "up",
+      "z": "alongroad"
+    },
+    "alongroadSpan": [
+      -12,
+      12
+    ],
+    "safeMinimumMountLateral": 4.4,
+    "staticDoesNotChangeRoadSurface": true
+  },
+  "static": {
+    "url": "./cut/cut-static.glb",
+    "bytes": 4410684,
+    "sha256": "7c26295be0b0b4f21c1789d397057a37a21fb6f73501a658a1444ee979266911",
+    "meshes": [
+      {
+        "name": "cut_geology",
+        "vertices": 3395,
+        "triangles": 6528,
+        "bounds": {
+          "min": [
+            3.6281094356360217,
+            0,
+            -12
+          ],
+          "max": [
+            8.67289261765643,
+            16.763442016172302,
+            12
+          ]
+        },
+        "family": "mineral",
+        "fixedVertices": 0,
+        "morphMaxDisplacementMetres": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "normalDiagnostics": {
+          "minimumLength": 0.9999999658963684,
+          "meanX": -0.9241360638208347
+        }
+      },
+      {
+        "name": "cut_ribs",
+        "vertices": 7094,
+        "triangles": 14156,
+        "bounds": {
+          "min": [
+            1.662583051875168,
+            0.2832090192639922,
+            -12.176887567518108
+          ],
+          "max": [
+            5.0291477924658095,
+            16.51188850333945,
+            12.297831079763052
+          ]
+        },
+        "family": "bone",
+        "fixedVertices": 0,
+        "morphMaxDisplacementMetres": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "normalDiagnostics": {
+          "minimumLength": 0.9999999586179866,
+          "meanX": 0.008774800426955538
+        }
+      },
+      {
+        "name": "cut_retaining",
+        "vertices": 1212,
+        "triangles": 1396,
+        "bounds": {
+          "min": [
+            0.2699999999999999,
+            -0.07499999999999996,
+            -12.055
+          ],
+          "max": [
+            1.54,
+            3.075,
+            11.98
+          ]
+        },
+        "family": "concrete",
+        "fixedVertices": 0,
+        "morphMaxDisplacementMetres": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "normalDiagnostics": {
+          "minimumLength": 0.9999999599516157,
+          "meanX": 0.0005270165833875095
+        }
+      },
+      {
+        "name": "cut_fittings",
+        "vertices": 3344,
+        "triangles": 4460,
+        "bounds": {
+          "min": [
+            0.04386574836102108,
+            0.51,
+            -11.638
+          ],
+          "max": [
+            2.1080126938161987,
+            12.34,
+            11.638
+          ]
+        },
+        "family": "hardware",
+        "fixedVertices": 0,
+        "morphMaxDisplacementMetres": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "normalDiagnostics": {
+          "minimumLength": 0.9999999699035111,
+          "meanX": 0.0010130839662138443
+        }
+      },
+      {
+        "name": "cut_rubble",
+        "vertices": 322,
+        "triangles": 276,
+        "bounds": {
+          "min": [
+            0.5175162646194076,
+            0.07886935505770816,
+            -11.98378812232742
+          ],
+          "max": [
+            3.0662457247185375,
+            0.8808609175219317,
+            12.17870510170014
+          ]
+        },
+        "family": "mineral",
+        "fixedVertices": 0,
+        "morphMaxDisplacementMetres": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "normalDiagnostics": {
+          "minimumLength": 0.9999999661084272,
+          "meanX": -0.030824018178331542
+        }
+      },
+      {
+        "name": "cut_cavity_depth",
+        "vertices": 1626,
+        "triangles": 2988,
+        "bounds": {
+          "min": [
+            5.2615,
+            0.2999999999999998,
+            -11.279954869893928
+          ],
+          "max": [
+            6.17,
+            10.929999999999998,
+            11.279954869893928
+          ]
+        },
+        "family": "cavity",
+        "fixedVertices": 0,
+        "morphMaxDisplacementMetres": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "normalDiagnostics": {
+          "minimumLength": 0.9999999637550885,
+          "meanX": 9.894435589289225e-10
+        }
+      }
+    ]
+  },
+  "living": {
+    "url": "./cut/cut-living.glb",
+    "bytes": 7476648,
+    "sha256": "e89fe09c8cab0c4ce6c8fa0862265eea0739a6206668dbd49bf7ea8074b8459e",
+    "meshes": [
+      {
+        "name": "cut_fascia",
+        "vertices": 15730,
+        "triangles": 27284,
+        "bounds": {
+          "min": [
+            1.3008865658048117,
+            0.32,
+            -12
+          ],
+          "max": [
+            4.129857749181643,
+            14.82,
+            12
+          ]
+        },
+        "family": "fascia",
+        "fixedVertices": 1207,
+        "morphMaxDisplacementMetres": [
+          0.7180144566961945,
+          0.4243543334971618,
+          0.3812662841308673,
+          0.2674093789741317
+        ],
+        "normalDiagnostics": {
+          "minimumLength": 0.9999999594400882,
+          "meanX": -0.556366158573167
+        },
+        "combinedMorphMinX": 0.964145265519619,
+        "combinedMorphMaxDisplacement": 1.2164095800068568
+      },
+      {
+        "name": "cut_membrane",
+        "vertices": 13565,
+        "triangles": 23770,
+        "bounds": {
+          "min": [
+            0.8781073203409665,
+            0.32,
+            -12.4370798466851
+          ],
+          "max": [
+            5.13,
+            16.1,
+            12.232900822788451
+          ]
+        },
+        "family": "membrane",
+        "fixedVertices": 1632,
+        "morphMaxDisplacementMetres": [
+          0.7172512959273287,
+          0.42408669956087625,
+          0.3651979048094929,
+          0.2632652040524598
+        ],
+        "normalDiagnostics": {
+          "minimumLength": 0.9999999587821661,
+          "meanX": -0.42365091678186667
+        },
+        "combinedMorphMinX": 0.49564576521515846,
+        "combinedMorphMaxDisplacement": 1.2164251178874719
+      },
+      {
+        "name": "cut_tethers",
+        "vertices": 10016,
+        "triangles": 19844,
+        "bounds": {
+          "min": [
+            0.27320222630708246,
+            0.9277130804575761,
+            -13.453468177721337
+          ],
+          "max": [
+            3.2922260540712096,
+            10.52556579052056,
+            12.505532694826488
+          ]
+        },
+        "family": "fascia",
+        "fixedVertices": 1179,
+        "morphMaxDisplacementMetres": [
+          0.7028937523298798,
+          0.42407354139237247,
+          0.3824922115975084,
+          0.26755501186823644
+        ],
+        "normalDiagnostics": {
+          "minimumLength": 0.9999999559916164,
+          "meanX": -0.007222145110267993
+        },
+        "combinedMorphMinX": 0.27320224046707153,
+        "combinedMorphMaxDisplacement": 1.2082610805193739
+      }
+    ],
+    "morphNames": [
+      "tension",
+      "shear",
+      "breath",
+      "recoil"
+    ],
+    "skin": "single identity fixed-root palette; all movement comes from spatially varied morph fields",
+    "allowedWeights": [
+      0,
+      1
+    ],
+    "positiveShear": "+Z at lowerfields; varyingX displacement recedes into tissue; root/bolt footprints fixed",
+    "safeCombinations": "all weights 0…1; motion design limits tension/recoil overlap for visual readability; combined envelope checked outside mountplane"
+  },
+  "materials": [
+    {
+      "family": "mineral",
+      "baseLinearTarget": [
+        0.23,
+        0.225,
+        0.196
+      ],
+      "linearMean": [
+        0.22444360864447288,
+        0.21956439976089262,
+        0.1912649882361511
+      ],
+      "roughnessRange": [
+        0.7145063981413841,
+        0.8692944130301475
+      ],
+      "textureSize": [
+        512,
+        512
+      ],
+      "repeatMetres": 3,
+      "normalReliefMetres": 0.008,
+      "albedoSha256": "936e69edc18f4e320618606ec3b7fcfae8a91f7c2dccf4d651b9f6369f7f98ab",
+      "ormSha256": "7043f28358c00d79ae1dfcef553d448335139ff4c52801696e8521cb3f880a0d",
+      "normalSha256": "1957f3f934b92af7d9424a77bfcf30cac9cdca91cb552e454c115a7fa10073cf"
+    },
+    {
+      "family": "bone",
+      "baseLinearTarget": [
+        0.46,
+        0.395,
+        0.29
+      ],
+      "linearMean": [
+        0.45674392788187557,
+        0.3870236893557154,
+        0.28414397446368533
+      ],
+      "roughnessRange": [
+        0.32754510164260864,
+        0.4555759787559509
+      ],
+      "textureSize": [
+        512,
+        512
+      ],
+      "repeatMetres": 3.5,
+      "normalReliefMetres": 0.0035,
+      "albedoSha256": "9622cebf2de2b47fb634f7ee3cdcbee0ff4d7bd0175a9ed589e18ef932710a2a",
+      "ormSha256": "4b7807a2290679f4cb892046d265ef9f77d2f07d21d48b7545b8183fa4ee5848",
+      "normalSha256": "c23a6cd3ed086cbe80852008d23d529bbfb8c0341088050047caf4f3512ed65e"
+    },
+    {
+      "family": "concrete",
+      "baseLinearTarget": [
+        0.083,
+        0.091,
+        0.085
+      ],
+      "linearMean": [
+        0.08099486746735272,
+        0.08880160168107412,
+        0.08294655102078427
+      ],
+      "roughnessRange": [
+        0.6945063981413842,
+        0.8492944130301476
+      ],
+      "textureSize": [
+        512,
+        512
+      ],
+      "repeatMetres": 2,
+      "normalReliefMetres": 0.005,
+      "albedoSha256": "8205452cac9a45e3440de996b60505aefabb806f899c9733ba47b8370f7d3f7e",
+      "ormSha256": "3a5760ab8529614168dbe3ed03c6f66126d4086bf54c82d57c9e9c0c2b757aba",
+      "normalSha256": "0ddbccf300bf7ff58e578b0332b4314dc83586a0c435b7c79b5b489171463701"
+    },
+    {
+      "family": "hardware",
+      "baseLinearTarget": [
+        0.12,
+        0.074,
+        0.039
+      ],
+      "linearMean": [
+        0.11998512432205269,
+        0.07399082666526498,
+        0.03899516540466714
+      ],
+      "roughnessRange": [
+        0.5187359854578972,
+        0.6693630400300026
+      ],
+      "textureSize": [
+        256,
+        256
+      ],
+      "repeatMetres": 0.65,
+      "normalReliefMetres": 0.0015,
+      "albedoSha256": "b51cb251e813ae16194fa32f88ee3a7819b69aacdb26aaa0740aede3ab1bfa9f",
+      "ormSha256": "b9bcbcb60c0573096aa38fc3e67bad3043b642ce558ca84b80e53d342f63b9fa",
+      "normalSha256": "a2ae53f4f57b1baa65580db5de226dff4447d392f1e626e83f9da615c876a3b8"
+    },
+    {
+      "family": "cavity",
+      "baseLinearTarget": [
+        0.019,
+        0.0055,
+        0.005
+      ],
+      "linearMean": [
+        0.019000000000000346,
+        0.0054999999999999615,
+        0.005000000000000028
+      ],
+      "roughnessRange": [
+        0.3823355807363987,
+        0.5072483709454536
+      ],
+      "textureSize": [
+        512,
+        512
+      ],
+      "repeatMetres": 2.6,
+      "normalReliefMetres": 0.003,
+      "albedoSha256": "b85b5d9c1b91e5db6c4b83080bc62a30c92ad34749b67b3d717ed1da81e76c98",
+      "ormSha256": "5ae963175afd10b7344f7183009f62e002a539daa6f9d6b06730c9668f826f81",
+      "normalSha256": "3f3018ba98f2530f74587b13db6ec3f22077dcc8dabb95e7671d361d2d1ab19b"
+    },
+    {
+      "family": "fascia",
+      "baseLinearTarget": [
+        0.205,
+        0.034,
+        0.029
+      ],
+      "linearMean": [
+        0.20499999999999793,
+        0.034000000000000266,
+        0.029000000000000112
+      ],
+      "roughnessRange": [
+        0.16,
+        0.3272483709454536
+      ],
+      "textureSize": [
+        512,
+        512
+      ],
+      "repeatMetres": 2.6,
+      "normalReliefMetres": 0.005,
+      "albedoSha256": "19ef83cf9ec48788dda22363a4300ec387938eedd2e35b13834616aef9e77ac0",
+      "ormSha256": "990882dbdad13a0b455e8b36183320ee3a6d9fe9bc9babd03f2f88ab860494d5",
+      "normalSha256": "9740f046a59a0bca72308036b7e79a4d2809e2852b431ed1e3b51ff38b48df3c"
+    },
+    {
+      "family": "membrane",
+      "baseLinearTarget": [
+        0.36,
+        0.215,
+        0.168
+      ],
+      "linearMean": [
+        0.3574579238668061,
+        0.2106623304076556,
+        0.16461056515574862
+      ],
+      "roughnessRange": [
+        0.19613890409469606,
+        0.36054557219147687
+      ],
+      "textureSize": [
+        512,
+        512
+      ],
+      "repeatMetres": 3,
+      "normalReliefMetres": 0.0028,
+      "albedoSha256": "169554b8c5d8d5b02630802f3730371dd6c26853ce7610a2f01d6fc29014d800",
+      "ormSha256": "38f0d8d0f91c581d9970fde6e16a7aa5214f79e2220fd43e3d663508c72e2eeb",
+      "normalSha256": "d223bc69f236a0a04751de31b10ed5192643233248cb91864f78bc51ce6e60b1"
+    }
+  ],
+  "retention": {
+    "panelTopMetres": [
+      2.9,
+      1.32,
+      1.65,
+      1.22,
+      0,
+      1.34,
+      1.52,
+      2.9
+    ],
+    "eyeHeightMetres": 1.65,
+    "actualConcreteCoverageFractionAtEye": 0.32916666666666666,
+    "lowCavityCentre": [
+      1.3,
+      1.95,
+      1.5
+    ],
+    "fullHeightRemnants": "end abutments and narrow bolt-bearing posts; central panels torn down"
+  },
+  "anchors": {
+    "boltFootprints": [
+      [
+        1.25,
+        4.3,
+        -7.6
+      ],
+      [
+        1.25,
+        8.8,
+        -7.6
+      ],
+      [
+        1.25,
+        12.1,
+        -7.6
+      ],
+      [
+        1.25,
+        4.3,
+        0.2
+      ],
+      [
+        1.25,
+        8.8,
+        0.2
+      ],
+      [
+        1.25,
+        12.1,
+        0.2
+      ],
+      [
+        1.25,
+        4.3,
+        8.3
+      ],
+      [
+        1.25,
+        8.8,
+        8.3
+      ],
+      [
+        1.25,
+        12.1,
+        8.3
+      ]
+    ],
+    "retainingRootBandY": [
+      0,
+      0.38
+    ],
+    "edgeBandsZ": [
+      [
+        -12,
+        -11.15
+      ],
+      [
+        11.15,
+        12
+      ]
+    ]
+  },
+  "notes": [
+    "Original project-authored anatomy from the approved Cut concept; no external model, scan or texture.",
+    "24m module is intended for curated 120m compositions, using finite placements, not uniform infinite repetition.",
+    "Normal, metallic/roughness and basecolour use standard glTF semantics. Base PNG is encoded sRGB; ORM/normal linear.",
+    "Material credibility and match to the concept still require actual final renderer inspection. No human validation claimed."
+  ]
+}

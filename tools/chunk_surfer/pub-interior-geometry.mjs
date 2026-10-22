@@ -147,23 +147,23 @@ export function buildPubInterior({mesh,materials,addBox,addBeam,addCylinder,addQ
     if(f.kind==='counter'){
       box([f.x,.53,f.z],[.68,1.06,f.length-.04],'timber');
       box([f.x,1.095,f.z],[.74,.09,f.length],'wood');
-      box([-3.325,1.025,f.z],[.035,.09,f.length-.08],'brass');
+      box([f.x+0.365,1.025,f.z],[.035,.09,f.length-.08],'brass');
       for(const z of[-23.65,-21.575,-19.50]){
-        box([-3.337,.57,z],[.032,.68,1.80],'wood');
-        for(const dz of[-.90,.90])box([-3.308,.57,z+dz],[.025,.74,.045],'timber');
+        box([f.x+0.353,.57,z],[.032,.68,1.80],'wood');
+        for(const dz of[-.90,.90])box([f.x+0.382,.57,z+dz],[.025,.74,.045],'timber');
       }
-      beam([-3.08,.23,-24.55],[-3.08,.23,-18.55],.045,'brass');
+      beam([f.x+0.610,.23,-24.55],[f.x+0.610,.23,-18.55],.045,'brass');
       for(const z of[-24.3,-22.3,-20.3,-18.65]){
-        beam([-3.36,.12,z],[-3.08,.12,z],.035,'brass');
-        beam([-3.08,.12,z],[-3.08,.23,z],.035,'brass');
+        beam([f.x+0.330,.12,z],[f.x+0.610,.12,z],.035,'brass');
+        beam([f.x+0.610,.12,z],[f.x+0.610,.23,z],.035,'brass');
       }
       for(const z of[-22.10,-21.65,-21.20]){
-        cylinder([-3.66,1.18,z],.065,.08,'brass',8);
-        beam([-3.66,1.20,z],[-3.66,1.43,z],.045,'brass');
-        beam([-3.66,1.43,z],[-3.45,1.43,z],.045,'brass');
-        cylinder([-3.66,1.48,z],.040,.12,'black',8);
+        cylinder([f.x+0.030,1.18,z],.065,.08,'brass',8);
+        beam([f.x+0.030,1.20,z],[f.x+0.030,1.43,z],.045,'brass');
+        beam([f.x+0.030,1.43,z],[f.x+0.240,1.43,z],.045,'brass');
+        cylinder([f.x+0.030,1.48,z],.040,.12,'black',8);
       }
-      box([-3.57,1.151,-21.65],[.24,.022,1.42],'black');
+      box([f.x+0.120,1.151,-21.65],[.24,.022,1.42],'black');
     }
     if(f.kind==='backbar'){
       box([f.x,.48,f.z],[.31,.96,f.length-.02],'timber');

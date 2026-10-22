@@ -235,7 +235,6 @@ layout(location=1) out vec4 oMark;
 // How opaque a flat field is allowed to get. See the veil note below.
 uniform float uVeil;
 uniform float uEntryReveal;
-uniform float uCloudTime;
 uniform sampler2D uStreet, uStreetDepth;
 uniform vec2 uSceneRes, uStreetNearFar;
 uniform float uWorldActive, uStreetRetention;
@@ -290,20 +289,14 @@ void main(){
     a*=vViewDepth>streetDepth-.035?1.0-coverage:1.0-coverage*uStreetRetention*.88;
   }
   if(uEntryReveal<.999){
-    // The same low-frequency gap applies to every stacked slice at this ray.
-    // Per-splat fades alone let dozens of layers fill one another's holes and
-    // rebuild the exact rectangular wall the entry is meant to dissolve.
-    vec2 p=(gl_FragCoord.xy-uSceneRes*.5)/uSceneRes.y;
-    float cloud=vnoise(p*3.3+vec2(uCloudTime*.005,-.4))*.58
-      +vnoise(p*7.1+vec2(-.8,uCloudTime*.003))*.29
-      +vnoise(p*14.7+vec2(.3,-.7))*.13;
-    float open=smoothstep(.50-.10*uEntryReveal,.70-.10*uEntryReveal,cloud);
-    open=mix(pow(open,2.0),1.0,smoothstep(.95,1.0,uEntryReveal));
     // Reveal nearby suspended fragments before the distant slices. Without
     // this distance veil the first visible material is a plane 80m away.
+    // Patch emergence already belongs to world-anchored splats in VERT. A
+    // second mask in screen coordinates kept the same cloud over every depth
+    // while the player turned; it read as an overlay for the entire entry.
     float reach=mix(10.0,90.0,pow(uEntryReveal,2.7));
     float nearCloud=1.0-smoothstep(reach*.62,reach,vViewDepth);
-    a*=open*nearCloud;
+    a*=nearCloud;
   }
   if (a < 0.004) discard;
 
@@ -897,7 +890,6 @@ export function horizonRender({
   gl.useProgram(program);
   gl.uniform1f(U('uDream'),Math.max(0,Math.min(1,dream)));
   gl.uniform1f(U('uEntryReveal'),Math.max(0,Math.min(1,entryReveal)));
-  gl.uniform1f(U('uCloudTime'),boil);
   gl.bindVertexArray(vao);
   gl.uniformMatrix4fv(U('uView'), false, view);
   gl.uniformMatrix4fv(U('uProj'), false, projection);

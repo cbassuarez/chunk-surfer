@@ -23,7 +23,7 @@
 // Node shape:
 //   { speaker, lines:[line], choices:[choice], goto, tape }
 // Line shape:
-//   { who, text, resolveText?, prompt?, cue?, hold?, rate?, shake?, flash?, say?:false }
+//   { who, text, resolveText?, prompt?, cue?, hold?, rate?, voiceSpeaker?, sourceLabel?, shake?, flash?, say?:false }
 // Choice shape:
 //   { text, goto?, set?, clear?, exit? }
 
@@ -157,12 +157,13 @@ export function createConversation({
     deferredUtterance = null;
   }
 
-    function pushHistory(text, who, mask = null) {
+    function pushHistory(text, who, mask = null, sourceLabel = null) {
       if (!text) return;
 
       history.push({
         text,
         who,
+        ...(sourceLabel ? { sourceLabel } : {}),
         // Carried so a line the rain took still looks taken once it has scrolled
         // up into the record. Only the mask's NAME travels; the shape itself is
         // resolved at draw time and never enters the transcript.
@@ -199,7 +200,7 @@ export function createConversation({
     const text = textOf(l);
     if (text) audio?.duckSoundtrack?.();
     if (text && isVoiced(who) && l.voice !== false) {
-      handle = voice.start(text, { speaker: who, rate: l.rate || 1 });
+      handle = voice.start(text, { speaker: l.voiceSpeaker || who, rate: l.rate || 1 });
       audio?.stopTyping?.();
     } else if (text) {
       const bed = TYPE_GAIN * (TYPE_LEVEL[who === 'direction' ? 'direction' : 'thought'] || 1);
@@ -326,7 +327,7 @@ export function createConversation({
   function commitLine() {
     const l = line();
     if (!l) return;
-    pushHistory(textOf(l), whoOf(l), l?.mask || null);
+    pushHistory(textOf(l), whoOf(l), l?.mask || null, l?.sourceLabel || null);
     if (activeLineId) replay?.markLine?.(activeLineId);
   }
 

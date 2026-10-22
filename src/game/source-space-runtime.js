@@ -7,6 +7,12 @@ import { busWomanWrongOriginReturn } from '../data/bus-woman-wrong-origin.js';
 import { SOURCE_EXPOSED_STRATA, sourceStrataCollisionAt, sourceStrataEntryAt } from '../data/source-exposed-strata.js';
 import { createSourceHangingShore } from './source-hanging-shore.js';
 import { createSourceHushFollow } from './source-hush-follow.js';
+import { freshSourceContinuation, normalizeSourceContinuation, resumeSourceContinuation } from './source-continuation.js';
+import { SOURCE_DEMOLITION } from '../data/source-demolition.js';
+import { normalizeSourceDemolition, advanceSourceDemolition, sourceDemolitionFrame } from './source-demolition.js';
+import { SOURCE_DEMOLITION_GEOMETRY } from '../data/generated/source-demolition-geometry.js';
+import { SOURCE_DEMOLITION_MOTION } from '../data/generated/source-demolition-motion.js';
+import { sourceDemolitionInstances, sourceDemolitionLights } from '../render/source-demolition.js';
 import { SOURCE_BRAIDED_DIVIDE, SOURCE_DIVIDE_ARRIVAL, SOURCE_DIVIDE_GAP_FLOOR, sourceDivideFloorAt, sourceDivideGroundAt, sourceDivideSupportAt, sourceDivideCollisionAt, sourceDivideGeometry, sourceDividePropPlacements, sourceDivideProbe } from '../data/source-braided-divide.js';
 import { divideMeshName, dividePieceBounds } from '../render/source-divide-meshes.js';
 import { SOURCE_LAST_RECEPTION, sourceReceptionContains, sourceReceptionRoomAt, sourceReceptionSupportAt, sourceReceptionCollisionAt, sourceReceptionGeometry, sourceReceptionPropPlacements, sourceReceptionLineOfSight } from '../data/source-last-reception.js';
@@ -36,6 +42,7 @@ import {
   SOURCE_FINALE_STAGE,
   SOURCE_FINAL_OUTCOME,
   SOURCE_FINAL_STATUS,
+  SOURCE_HUSH_VICTORIES_REQUIRED,
   SOURCE_PURSUIT_BEAT,
   chunkSurfCompletion,
   chunkSurfProbe,
@@ -974,6 +981,9 @@ export function createSourceSpaceRuntime({
   let traversal = null;
   let pendingContact = null;
   let horizonUnravelling = normalizeSourceUnravelling(state.horizon.unravelling);
+  let demolition = normalizeSourceDemolition(state.sourceDemolition,{pastFirstLift:state.firstLiftCompleted});
+  let demolitionReady=false,demolitionProtected=false,demolitionForwardStep=false;
+  let demolitionRestored=demolition.committed||demolition.receipts.length>0;
   // A committed Contact resumes at the fight, never at the warning. Exact turns
   // are deliberately not persisted; the branch commitment is.
   let bossRequested = state.finale?.route === SOURCE_FINALE_ROUTE.CONTACT
@@ -1029,7 +1039,7 @@ export function createSourceSpaceRuntime({
       amount: Math.max(persistedUnravelling.amount, horizonUnravelling.amount),
       markers: [...persistedUnravelling.markers, ...horizonUnravelling.markers],
     });
-    state = normalizeChunkSurfState({ ...next, sourceDivide:divide, lastReception:serializeLastReceptionState(lastReception), horizon: { ...next.horizon, unravelling: horizonUnravelling }, outskirtsExperience: outskirtsExperienceSnapshot(), hallExperience: {
+    state = normalizeChunkSurfState({ ...next, sourceDivide:divide, lastReception:serializeLastReceptionState(lastReception), sourceDemolition:demolition, horizon: { ...next.horizon, unravelling: horizonUnravelling }, outskirtsExperience: outskirtsExperienceSnapshot(), hallExperience: {
       searchElapsed, pressure: standingPressure, rainLatched,
     } });
     if (state.landingWeatherSpent) landingRainRemaining = 0;
@@ -1093,8 +1103,8 @@ export function createSourceSpaceRuntime({
     if(saveDue)receptionSavedElapsed=0;
     return {...result,saveDue};
   }
-  function finishReceptionConversation(id) {
-    const result=finishLastReceptionConversation(lastReception,id);
+  function finishReceptionConversation(id,choiceId=null) {
+    const result=finishLastReceptionConversation(lastReception,id,choiceId);
     setState({...state,lastReception:serializeLastReceptionState(lastReception)},{immediate:true});
     return result;
   }
@@ -1722,8 +1732,8 @@ export function createSourceSpaceRuntime({
       if (horizonBustBlocks(toX, toY)) return { ok: false, why: 'horizon pedestal' };
       if (outskirtDoorBlocks(toX, toY) || routeDoorThresholdRefuses(fromX, fromY, toX, toY) || edgeDoorRefuses(fromX, fromY, toX, toY)) return { ok: false, why: 'shut door' };
       if (phoneBoxRefuses(fromX, fromY, toX, toY)) return { ok: false, why: 'phone box' };
-      // While the recording under the last light plays, he stays in its light.
-      // Playback has no invisible cage. The recording continues if he retreats.
+      // Only the active recording holds locomotion; completion releases it.
+      if (lastLightHold && !lastLightOut) return { ok: false, why: 'last-light recording' };
       if (outskirtPieceRefuses(toX, toY) || towerLandRefuses(toX, toY)) return { ok: false, why: 'in the way' };
       if (doorCorridorRefuses(toX, toY)) return { ok: false, why: 'hedge' };
       if (to.ceil != null && to.ceil - to.floor < EYE + 0.2) return { ok: false, why: 'headroom' };
@@ -2537,6 +2547,10 @@ export function createSourceSpaceRuntime({
     return {
       schema: 3,
       id: 'source-final',
+      battleAttemptId: state.finalEncounter.activeBattleId,
+      victories: state.finalEncounter.victories,
+      victoriesRequired: SOURCE_HUSH_VICTORIES_REQUIRED,
+      contactCycle: Math.min(SOURCE_HUSH_VICTORIES_REQUIRED, state.finalEncounter.victories + 1),
       adapter: available
         && state.finale?.route === SOURCE_FINALE_ROUTE.CONTACT
         && state.finale?.stage === SOURCE_FINALE_STAGE.CONTACT_COMMITTED
@@ -2588,9 +2602,84 @@ export function createSourceSpaceRuntime({
     return enteredHorizon();
   }
 
+  // The original goods pair remains the first threshold. These rooms borrow
+  // presentation while the original field, people and consent remain intact.
+  function sourceContinuationEntry(direction = 'forward', { runId = String(state.seed) } = {}) {
+    if (!state.active || state.finale?.route === SOURCE_FINALE_ROUTE.CONTACT
+      || state.finale?.bust?.decision
+      || ![CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.HORIZON].includes(state.phase)) return null;
+    const saved = state.sourceContinuation;
+    // Existing saves already out on the road retain their current journey.
+    if (!saved && state.horizon?.entered) return null;
+    if (direction === 'reverse' && !saved?.completed) return null;
+    if (saved?.status === 'active') return { checkpoint: saved, returnPose: saved.returnPose, direction: saved.direction };
+    const approach = edgeDoorApproach();
+    const returnPose = { x: approach.x, y: approach.y, facing: 2, yaw: Math.PI, pitch: 0 };
+    const base = saved || freshSourceContinuation({ runId, returnPose });
+    const resumed = resumeSourceContinuation({ ...base, returnPose }, { reverse: direction === 'reverse' });
+    const checkpoint = normalizeSourceContinuation({ ...resumed,
+      exitReceipt: resumed.exitReceipt ? { ...resumed.exitReceipt, delivered: false } : null });
+    setState({ ...state, sourceContinuation: checkpoint }, { immediate: true });
+    return { checkpoint, returnPose: checkpoint.returnPose, direction };
+  }
+
+  function setContinuationCheckpoint(value) {
+    if (!value || state.finale?.route === SOURCE_FINALE_ROUTE.CONTACT || state.finale?.bust?.decision) return false;
+    const checkpoint = normalizeSourceContinuation(value);
+    if (state.sourceContinuation?.runId && checkpoint.runId !== state.sourceContinuation.runId) return false;
+    setState({ ...state, sourceContinuation: checkpoint }, { immediate: true });
+    return checkpoint;
+  }
+
+  function returnContinuation(value = state.sourceContinuation) {
+    if (!value || state.finale?.route === SOURCE_FINALE_ROUTE.CONTACT || state.finale?.bust?.decision) return { handled: false };
+    const checkpoint = normalizeSourceContinuation({ ...value, status: 'returned' });
+    if (!setContinuationCheckpoint(checkpoint)) return { handled: false };
+    if (state.phase === CHUNK_SURF_PHASE.HORIZON) dispatch({ type: 'SOURCE_FIELD_RETURNED' }, { immediate: true });
+    const at = checkpoint.returnPose || edgeDoorApproach();
+    player = { ...player, ...at };
+    protectMoment(3);
+    return { handled: true, event: 'source-field-returned', position: { ...at } };
+  }
+
+  function completeContinuation(value = state.sourceContinuation) {
+    if (!value?.completed || !value.exitReceipt || state.finale?.route === SOURCE_FINALE_ROUTE.CONTACT
+      || state.finale?.bust?.decision) return { handled: false };
+    if (state.sourceContinuation?.exitReceipt?.delivered && state.sourceContinuation.status === 'completed') return { handled: false };
+    const [doorA,doorB] = edgeDoorPiece().opening.threshold;
+    const exitPose = { x: (doorA.x+doorB.x)/2, y: (doorA.y+doorB.y)/2 - 2, facing: 0, yaw: 0, pitch: 0 };
+    const checkpoint = normalizeSourceContinuation({ ...value, status: 'completed', handoff: true, exitPose,
+      exitReceipt: { ...value.exitReceipt, delivered: false } });
+    if (!setContinuationCheckpoint(checkpoint)) return { handled: false };
+    player = { ...player, ...exitPose };
+    const result = state.phase === CHUNK_SURF_PHASE.HORIZON ? enteredHorizon() : completeNormalExit();
+    if (!result.handled) return result;
+    edgeDoorClosesBehind = true;
+    return { ...result, event: 'horizon', through: 'source-continuation', checkpoint: { ...player },
+      receipt: checkpoint.exitReceipt.id };
+  }
+
+  function acknowledgeContinuationHandoff(receipt) {
+    const checkpoint = state.sourceContinuation;
+    if (!checkpoint?.completed || checkpoint.exitReceipt?.id !== receipt || checkpoint.exitReceipt.delivered) return false;
+    return !!setContinuationCheckpoint({ ...checkpoint, exitReceipt: { ...checkpoint.exitReceipt, delivered: true } });
+  }
+
   function resolveFinalEncounter(result = {}) {
-    bossRequested = false;
+    const before = state.finalEncounter;
+    if (before.status === SOURCE_FINAL_STATUS.RESOLVED) return { handled: false, state };
     dispatch({ type: 'FINAL_ENCOUNTER_RESOLVED', result }, { immediate: true });
+    if (state.finalEncounter.victories === before.victories
+      && state.finalEncounter.status !== SOURCE_FINAL_STATUS.RESOLVED) return { handled: false, state };
+    bossRequested = false;
+    if (state.finalEncounter.victories > before.victories
+      && state.finalEncounter.victories < SOURCE_HUSH_VICTORIES_REQUIRED) {
+      pendingContact = null;
+      hushFollow.release();
+      protectMoment(30);
+      return { handled: true, completed: false, nextContact: true,
+        victories: state.finalEncounter.victories, victoriesRequired: SOURCE_HUSH_VICTORIES_REQUIRED, state };
+    }
     if (state.finalEncounter.status !== SOURCE_FINAL_STATUS.RESOLVED) return { handled: false, state };
     dispatch({ type: 'SOURCE_COMPLETED' }, { immediate: true });
     if (!completionSent) {
@@ -2598,15 +2687,29 @@ export function createSourceSpaceRuntime({
       onComplete(chunkSurfCompletion(state), exitSnapshot());
     }
     protectMoment(30);
-    return { handled: true, state, completion: chunkSurfCompletion(state) };
+    return { handled: true, completed: true, victories: state.finalEncounter.victories,
+      state, completion: chunkSurfCompletion(state) };
+  }
+
+  function cancelFinalEncounter({ battleAttemptId = state.finalEncounter.activeBattleId } = {}) {
+    const active = state.finalEncounter.activeBattleId;
+    if (!active || active !== battleAttemptId) return { handled: false, state };
+    dispatch({ type: 'FINAL_ENCOUNTER_CANCELLED', battleAttemptId }, { immediate: true });
+    bossRequested = false;
+    pendingContact = null;
+    hushFollow.release();
+    protectMoment(30);
+    return { handled: true, completed: false, nextContact: true,
+      victories: state.finalEncounter.victories, state };
   }
 
   // Losing used to cost one tier of altitude and two and a half seconds, which
   // is another way of saying it cost nothing. It costs the chapter now: it
   // submits on your behalf, and the way out of the room you lost in is forward.
-  function failFinalEncounter() {
+  function failFinalEncounter({ battleAttemptId = state.finalEncounter.activeBattleId } = {}) {
+    if (!battleAttemptId || battleAttemptId !== state.finalEncounter.activeBattleId) return { handled: false, state };
     bossRequested = false;
-    dispatch({ type: 'FINAL_ENCOUNTER_LOST' }, { immediate: true });
+    dispatch({ type: 'FINAL_ENCOUNTER_LOST', battleAttemptId }, { immediate: true });
     if (state.finale?.stage !== SOURCE_FINALE_STAGE.RESOLVED) return { handled: false, state };
     if (!completionSent) {
       completionSent = true;
@@ -3423,6 +3526,7 @@ export function createSourceSpaceRuntime({
   }
 
   function onStep(from, to) {
+    demolitionForwardStep=sourcePhaseActive()&&!state.firstLiftCompleted&&to.y<from.y&&Math.hypot(to.x-from.x,to.y-from.y)*CELL<=SOURCE_DEMOLITION.maxAcceptedStep;
     if (towerPersonal.active) {
       const before = { ...towerPersonal.pose, ...towerLandLocal(from.x, from.y) };
       const after = { ...towerPersonal.pose, ...towerLandLocal(to.x, to.y),
@@ -3466,12 +3570,23 @@ export function createSourceSpaceRuntime({
     const localY=to.y-landscapeOrigin().y;
     if ([CHUNK_SURF_PHASE.LANDSCAPE,CHUNK_SURF_PHASE.FINAL].includes(state.phase)
       && localY<=SOURCE_PRE_TAPE.from && state.finale.route!==SOURCE_FINALE_ROUTE.CONTACT) {
-      // Through the grey doors (edgeDoorRefuses let nobody else across).
+      const continuation = sourceContinuationEntry('forward');
+      if (continuation) {
+        // The host scene owns its own metres. Keep the original body's pose on
+        // this side until the added final threshold dispatches the old exit.
+        player = { ...player, ...continuation.returnPose };
+        return { handled: true, event: 'source-continuation', direction: 'forward',
+          checkpoint: continuation.checkpoint, position: { ...player } };
+      }
+      // Legacy already-onward saves keep the same physical goods-door route.
       const result=completeNormalExit();
       edgeDoorClosesBehind=true;
       return {...result,event:'horizon',through:'edge-door'};
     }
     if(state.phase===CHUNK_SURF_PHASE.HORIZON && localY>SOURCE_PRE_TAPE.from && !state.finale.bust.decision){
+      const continuation = sourceContinuationEntry('reverse');
+      if (continuation) return { handled: true, event: 'source-continuation', direction: 'reverse',
+        checkpoint: continuation.checkpoint, position: { ...player } };
       dispatch({type:'SOURCE_FIELD_RETURNED'},{immediate:true});
       edgeDoorClosesBehind=true;
       return {handled:true,event:'source-field-returned'};
@@ -3717,10 +3832,31 @@ export function createSourceSpaceRuntime({
     return { handled: false };
   }
 
-  function tick(dt, { px = player.x, py = player.y, facing = player.facing, yaw = null } = {}) {
+  function tickDemolition(dt,{px=player.x,py=player.y,facing=player.facing,yaw=null,
+    demolitionAssetsReady=false,protectedPresentation=false,suspendedPresentation=false}={}){
+    player={...player,x:px,y:py,facing};
+    if(Number.isFinite(Number(yaw))&&yaw!==null)lookYaw=Number(yaw);
+    const elapsed=Math.max(0,Number(dt)||0);
+    demolitionReady=!!demolitionAssetsReady;demolitionProtected=!!protectedPresentation;
+    const o=landscapeOrigin(),portal=SOURCE_HANGING_SHORE.portal;
+    const along=portal.z-(py-o.y)*CELL,across=(px-o.x)*CELL-portal.x;
+    const demolitionResult=advanceSourceDemolition(demolition,{
+      dt:elapsed,along,across,portalPassable:!!landingPortalFrame().passable,
+      movingForward:demolitionForwardStep,eligible:demolitionReady&&sourcePhaseActive()&&!state.firstLiftCompleted&&sourceShoreFrame().active,
+      protected:demolitionProtected,suspended:!!suspendedPresentation,restored:demolitionRestored,
+    });
+    demolition=demolitionResult.state;demolitionForwardStep=false;demolitionRestored=false;
+    state={...state,sourceDemolition:demolition};
+    if(demolitionResult.saveDue)setState(state,{immediate:demolitionResult.immediate,recordCausal:demolitionResult.immediate});
+    return demolitionWorldFrame(px,py);
+  }
+
+  function tick(dt, { px = player.x, py = player.y, facing = player.facing, yaw = null,
+    demolitionAssetsReady=false,protectedPresentation=false,suspendedPresentation=false,demolitionAlreadyTicked=false } = {}) {
     player = { ...player, x: px, y: py, facing };
     if (Number.isFinite(Number(yaw)) && yaw !== null) lookYaw = Number(yaw);
     const elapsed = Math.max(0, Number(dt) || 0);
+    if(!demolitionAlreadyTicked)tickDemolition(elapsed,{px,py,facing,yaw,demolitionAssetsReady,protectedPresentation,suspendedPresentation});
     updateDivideBody(elapsed);
     phaseElapsed += elapsed;
     if (sourceShoreFrame().active) {
@@ -4888,6 +5024,35 @@ export function createSourceSpaceRuntime({
   // (source-outskirts-arrival.js); the still ground between the doors and the
   // road's first metre is SOURCE_PRE_TAPE.stillLength cells of nothing.
   const roadStartMetres = () => (SOURCE_PRE_TAPE.stillLength || 0) * CELL;
+  function demolitionWorldFrame(px=player.x,py=player.y){
+    const o=landscapeOrigin(),portal=SOURCE_HANGING_SHORE.portal;
+    const along=portal.z-(py-o.y)*CELL,across=(px-o.x)*CELL-portal.x;
+    // A single fixed copy beside the first shore. These are the actual get-in
+    // threshold's world metres, independent of the later Outskirts road.
+    const roadOrigin={x:o.x*CELL+portal.x,z:o.y*CELL+portal.z};
+    const raw=sourceDemolitionFrame(demolition,{along,across});
+    const eligible=sourcePhaseActive()&&!state.firstLiftCompleted&&sourceShoreFrame().active;
+    const world=p=>p?{x:roadOrigin.x+p.x,y:p.y,z:roadOrigin.z+p.z}:null;
+    const origin={x:roadOrigin.x+SOURCE_DEMOLITION.across,y:SOURCE_DEMOLITION.floor,z:roadOrigin.z-SOURCE_DEMOLITION.along};
+    // Use actual released geometry stations, not arbitrary positions in the
+    // clear loading mouth. LocalX is depth into the original frontage.
+    const position=local=>({x:origin.x+local[2],y:origin.y+local[1],z:origin.z-local[0]});
+    const parts=SOURCE_DEMOLITION_GEOMETRY.parts;
+    const course=parts.find(p=>p.role==='string-and-coping');
+    const roof=parts.find(p=>p.role==='roof-panel')||parts.find(p=>p.phase==='roof-loss');
+    const infill=parts.find(p=>p.role==='service-infill');
+    const anchors=Object.fromEntries(Object.entries(raw.anchors).map(([k,v])=>[k,world(v)]));
+    if(course)anchors.course=anchors.strain=position(course.pivot);
+    if(infill)anchors.infill=position(infill.pivot.map((v,i)=>i===1?v+1.2:v));
+    if(roof)anchors.roof=position(roof.pivot);
+    const emitter=SOURCE_DEMOLITION_GEOMETRY.emitters?.[0];
+    if(emitter)anchors.release=position(emitter.center);
+    const preload=eligible&&demolitionReady&&along>=SOURCE_DEMOLITION.preloadFrom&&along<=SOURCE_DEMOLITION.nearTo;
+    const visible=preload&&landingPortalFrame().passable&&raw.anchored&&!raw.released;
+    return{...raw,active:eligible&&demolitionReady&&raw.active,preload,visible,roadOrigin,origin,along,across,
+      protected:demolitionProtected,assetsReady:demolitionReady,anchors,
+      events:raw.events.map(event=>({...event,position:event.type==='consumed'?world(event.position):anchors[event.type]||world(event.position)}))};
+  }
   function outskirtPieces() {
     const o = landscapeOrigin();
     if (outskirtCache && outskirtCache.ox === o.x && outskirtCache.oy === o.y) return outskirtCache.pieces;
@@ -5035,7 +5200,7 @@ export function createSourceSpaceRuntime({
       });
     // The building, off to the west, never nearer.
     const along = outskirtsAlong(py);
-    if (along < OUTSKIRT_ROAD_END + 10 && !horizonUnravelling.active) {
+    if (along < OUTSKIRT_ROAD_END + 10 && !horizonUnravelling.active ) {
       out.push({
         id: 'source-outskirt-elevation', mesh: OUTSKIRT_ELEVATION.mesh,
         matrix: sourceMatrix({ x: (landscapeOrigin().x + 0.5) * CELL + OUTSKIRT_ELEVATION.across, y: outskirtsHeight(), z: eye.z - OUTSKIRT_ELEVATION.ahead, yaw: OUTSKIRT_ELEVATION.yaw }),
@@ -5575,11 +5740,12 @@ export function createSourceSpaceRuntime({
   function phoneBoxPose() {
     const box = phoneBoxPiece();
     if (!box) return null;
-    const inside = phoneBoxLocal(box, 0, 0.08), outside = phoneBoxLocal(box, 0, 1.3);
+    const inside = phoneBoxLocal(box, .09, .23), outside = phoneBoxLocal(box, 0, 1.3);
     const toCell = (point) => ({ x: point.x / CELL - 0.5, y: point.z / CELL - 0.5 });
     const setX = -Math.sin(box.yaw), setZ = -Math.cos(box.yaw);
     return {
       id: box.id, pass: box.stretch, inside: toCell(inside), outside: toCell(outside), insideWorld: inside, outsideWorld: outside,
+      boxWorld: { x: box.x, y: outskirtsHeight() + Number(box.y || 0), z: box.z, yaw: box.yaw },
       faceSet: Math.atan2(setX, -setZ), faceRoad: Math.atan2(-setX, setZ),
       door: phoneBoxDoorFraction(), open: phoneBoxDoorOpen, occupied: phoneBoxInside,
     };
@@ -7172,9 +7338,14 @@ export function createSourceSpaceRuntime({
     if (state.phase === CHUNK_SURF_PHASE.HORIZON) return preTapeInstances(px, py, options);
     if ([CHUNK_SURF_PHASE.HALL, CHUNK_SURF_PHASE.HAYSTACK].includes(state.phase)) return [...hallPropInstances(), ...pageInstances(px, py, options)];
     if ([CHUNK_SURF_PHASE.TRANSFORMING, CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(state.phase)) {
-      // The first nothingness contains only its two fixed shores. Later Source
-      // architecture stays behind the bank, including after a return to the void.
-      if (sourceShoreFrame().outside) return [...landingPropInstances(), ...shorePieceInstances()];
+      // One omen sits beside the beginning of the original crossing. It adds
+      // no floor, wall, destination, or later copy to the route.
+      const omen=sourceDemolitionInstances(demolitionWorldFrame(px,py),{
+        geometry:SOURCE_DEMOLITION_GEOMETRY,motion:SOURCE_DEMOLITION_MOTION,reducedMotion:!!options.reducedMotion,
+        effectsMode:options.flashMode||'full',reducedDread:!!options.reducedDread,suppressActors:!!options.suppressActors,
+      });
+      if(omen.some(p=>p.sourceStructure==='source-demolition-void'))return omen;
+      if (sourceShoreFrame().outside) return [...landingPropInstances(), ...shorePieceInstances(), ...omen];
       const architecture = surfaceArchitectureInstances(px, py);
       const fixtureLights = new Map(resolveSourceRoomMemoryLights(
         architecture.filter((prop) => prop.sourceMemoryFixture), { ...options, slots: Infinity },
@@ -7200,8 +7371,8 @@ export function createSourceSpaceRuntime({
         ? [...hallPropInstances(), ...pageInstances(px, py, options)].filter((prop) =>
           prop.matrix[14] > (landingWorld(SOURCE_LANDING_REAR_LOCAL).y + 1) * CELL + 1.5)
         : [];
-      if (options.reducedMotion || state.phase === CHUNK_SURF_PHASE.COMPLETED) return [...arch, ...rear];
-      return [...arch, ...rear, ...driftInstances(px, py, options.time || 0)];
+      if (options.reducedMotion || state.phase === CHUNK_SURF_PHASE.COMPLETED) return [...arch, ...rear, ...omen];
+      return [...arch, ...rear, ...driftInstances(px, py, options.time || 0), ...omen];
     }
     return [];
   }
@@ -7403,7 +7574,8 @@ export function createSourceSpaceRuntime({
   function beginHushContact(context = null) {
     if (!hushMode().contactAvailable || traversal || pendingContact) return null;
     rememberDialogueFact(SOURCE_DIALOGUE_FACT.HUSH_CONTACT, true, { latencyReads: 0 });
-    pendingContact = nextSourceContact(state.sourceContacts, { seed: state.seed, context });
+    pendingContact = nextSourceContact(state.sourceContacts, { seed: state.seed, context,
+      victories: state.finalEncounter.victories });
     protectionRemaining = Math.max(protectionRemaining, 30);
     return pendingContact;
   }
@@ -7691,6 +7863,7 @@ export function createSourceSpaceRuntime({
   }
 
   function localLights({ time = phaseElapsed, reducedMotion = false, flashMode = 'full', liveCircuits = null, torchOn = true, torchBattery = 1 } = {}) {
+    const demolitionLighting=sourceShoreFrame().outside?sourceDemolitionLights(demolitionWorldFrame()):[];
     if ([CHUNK_SURF_PHASE.HALL, CHUNK_SURF_PHASE.HAYSTACK].includes(state.phase)) return sourceHallLightPlacements(-player.y * CELL);
     if(divideActiveAt()){
       const o=landscapeOrigin(),near=Math.hypot(receptionLocalPlayer().x+64,receptionLocalPlayer().z+455)<32;
@@ -7719,7 +7892,7 @@ export function createSourceSpaceRuntime({
           x: dogLamp.x + Math.cos(dogLamp.yaw) * 1.6, y: outskirtsHeight() + 4.8,
           z: dogLamp.z - Math.sin(dogLamp.yaw) * 1.6,
           color: [1, .68, .36], intensity: 12, radius: 14,
-          penetration: 1, castsShadow: false } : null;
+        penetration: 1, castsShadow: false } : null;
     const voidLight = voidLamp({ time, reducedMotion, flashMode, torchOn, torchBattery });
     if (voidLight) {
       const o = landscapeOrigin(), recess = { x: (o.x + 8) * CELL, z: (o.y + SOURCE_BELLS.room.threshold + 12) * CELL };
@@ -7772,14 +7945,14 @@ export function createSourceSpaceRuntime({
       });
     const approach = lamps.filter((light)=>String(light.id).startsWith('source-approach-emergency-'));
     const roomLights = sourceRoomMemoryFrame({ time, reducedMotion, flashMode, liveCircuits }).lights;
-    if (approach.length <= SOURCE_APPROACH_LAMPS_LIT) return [...lamps, ...roomLights, ...(dogEncounterLight ? [dogEncounterLight] : [])];
+    if (approach.length <= SOURCE_APPROACH_LAMPS_LIT) return [...demolitionLighting, ...lamps, ...roomLights, ...(dogEncounterLight ? [dogEncounterLight] : [])];
     const px = player.x * CELL, pz = player.y * CELL;
     const nearest = new Set(approach
       .map((light)=>({ id: light.id, d: Math.hypot(light.x - px, light.z - pz) }))
       .sort((a, b) => a.d - b.d)
       .slice(0, SOURCE_APPROACH_LAMPS_LIT)
       .map((entry) => entry.id));
-    return [...lamps.filter((light)=>!String(light.id).startsWith('source-approach-emergency-') || nearest.has(light.id)), ...roomLights, ...(dogEncounterLight ? [dogEncounterLight] : [])];
+    return [...demolitionLighting, ...lamps.filter((light)=>!String(light.id).startsWith('source-approach-emergency-') || nearest.has(light.id)), ...roomLights, ...(dogEncounterLight ? [dogEncounterLight] : [])];
   }
 
   // Saves predating the entry journal still know which doors were consumed.
@@ -7827,7 +8000,7 @@ export function createSourceSpaceRuntime({
   return {
     geometry,
     active: () => !!state.active,
-    state: () => ({ ...state, sourceHushFollow:hushFollow.snapshot(), sourceDivide:divide?{...divide}:null,lastReception:serializeLastReceptionState(lastReception), station:stationSnapshot(), sourceShore:shore.snapshot(), horizon: { ...state.horizon, unravelling: normalizeSourceUnravelling(horizonUnravelling) }, outskirtsExperience: outskirtsExperienceSnapshot() }),
+    state: () => ({ ...state, sourceHushFollow:hushFollow.snapshot(), sourceDivide:divide?{...divide}:null,lastReception:serializeLastReceptionState(lastReception), station:stationSnapshot(), sourceShore:shore.snapshot(), sourceDemolition:normalizeSourceDemolition(demolition), horizon: { ...state.horizon, unravelling: normalizeSourceUnravelling(horizonUnravelling) }, outskirtsExperience: outskirtsExperienceSnapshot() }),
     lastReceptionFrame,
     tickLastReception,
     finishReceptionConversation,
@@ -7838,6 +8011,8 @@ export function createSourceSpaceRuntime({
     setPlayerPosition,
     textSpaceActive,
     localLights,
+    demolitionFrame:demolitionWorldFrame,
+    tickDemolition,
     sourceRoomMemoryFrame,
     sourceVoidFrame,
     sourceShoreFrame,
@@ -7873,6 +8048,11 @@ export function createSourceSpaceRuntime({
     requestBossBattle,
     commitContact,
     completeNormalExit,
+    sourceContinuationEntry,
+    setContinuationCheckpoint,
+    returnContinuation,
+    completeContinuation,
+    acknowledgeContinuationHandoff,
     // THE MACHINE. Main owns the slate and the window cue; this owns the dials.
     horizonTransport: () => ({ ...horizonTransport }),
     horizonTransportOptions: () => HORIZON_TRANSPORT_OPTIONS,
@@ -7889,6 +8069,7 @@ export function createSourceSpaceRuntime({
       return { ...result, state: { ...result.state } };
     },
     resolveFinalEncounter,
+    cancelFinalEncounter,
     failFinalEncounter,
     horizonFrame,
     tickHorizon,

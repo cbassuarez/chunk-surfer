@@ -119,6 +119,7 @@ function normalizeEncounter(value) {
     .filter((id) => SOURCE_REPRISE_IDS.includes(id)))];
   const active = SOURCE_REPRISE_IDS.includes(source.active) ? source.active : null;
   return {
+    battleAttemptId: text(source.battleAttemptId),
     completed,
     active,
     movementIndex: Math.max(0, Math.min(2, Math.floor(finite(source.movementIndex)))),
@@ -129,6 +130,19 @@ function normalizeEncounter(value) {
       ? structuredClone(source.continuation)
       : null,
   };
+}
+
+// Combat checkpoints belong to one committed contact. They may resume that
+// fight, but can never turn the next independently committed fight into a
+// replay of the previous terminal result.
+export function beginSourceContactBattle(manifest, battleAttemptId, {preserveLegacy=false} = {}) {
+  const base = normalizeSourceReplayManifest(manifest);
+  const id = text(battleAttemptId);
+  if (!id || base.encounter.battleAttemptId === id) return base;
+  const legacy = preserveLegacy && !base.encounter.battleAttemptId;
+  return normalizeSourceReplayManifest({...base,encounter:legacy
+    ? {...base.encounter,battleAttemptId:id}
+    : {battleAttemptId:id}}, {runId:base.runId});
 }
 
 export function freshSourceReplayManifest({ runId = '' } = {}) {
@@ -214,6 +228,7 @@ export function checkpointSourceReprise(manifest, {
   return normalizeSourceReplayManifest({
     ...base,
     encounter: {
+      ...base.encounter,
       completed: completedIds,
       active: completed ? null : id,
       movementIndex,

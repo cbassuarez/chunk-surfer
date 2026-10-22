@@ -3,5 +3,5 @@
 import { createTransparentPixelMesh } from './pixel-mesh/transparent.js';
 
 export function createSourceDesktopDither(THREE, renderer, options = {}) {
-  return createTransparentPixelMesh(THREE, renderer, { ...options, profile: 'hush' });
+  return createTransparentPixelMesh(THREE, renderer, { ...options, profile: 'hush', pressureFinish: true });
 }

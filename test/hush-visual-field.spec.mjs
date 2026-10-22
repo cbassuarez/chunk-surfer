@@ -148,7 +148,7 @@ test('special spaces suppress live HUSH while recorded Pressure retains explicit
   assert.match(main, /hushBody:\(\)=>R3\.r3dHushBodyStatus/);
 });
 
-test('Pressure material, cold edge and overprints enter acquisition before shared POST, with bounded mesh coverage', async () => {
+test('Pressure black material, white radiance and overprints enter acquisition before shared POST, with bounded mesh coverage', async () => {
   const renderer = await readFile(new URL('../src/render/r3d.js', import.meta.url), 'utf8');
   const present=renderer.slice(renderer.indexOf('function presentThroughPost('),renderer.indexOf('export function r3dSourceIdentityStatus'));
   const acquisition=renderer.slice(renderer.indexOf('function runPixelMeshPass('),renderer.indexOf('function loadImageTexture('));
@@ -164,14 +164,14 @@ test('Pressure material, cold edge and overprints enter acquisition before share
   assert.match(PRESSURE_FINISH_FRAG,/z=min\(z,[\s\S]*?texture\(uScene,uv\)\.a|texture\(uScene,uv\)\.a[\s\S]*?z=min\(z/,'architecture must participate in occlusion');
   assert.match(PRESSURE_FINISH_FRAG,/float z=propDepth\(uv\)/,'prop occlusion must participate independently');
   assert.match(PRESSURE_FINISH_FRAG,/g\.a\*step\(meshDepth\(g\),front\+\.022\)/,'the final volume ignores the nearest composed surface');
-  assert.match(PRESSURE_FINISH_FRAG,/mass\*core\*\.985/,'the core lost its bounded negative mass');
-  assert.match(PRESSURE_FINISH_FRAG,/c=mix\(\(c\*\.10\+fibre\)\/exposure,c,1\.0-mass\*core\*\.985\)/,
-    'the negative material must be exposed once, not amplified into white by Source sensor sensitivity');
+  assert.match(PRESSURE_FINISH_FRAG,/coreMask=step\(\.018,mass\)\*core/,'the core must cover only visible physical triangles');
+  assert.match(PRESSURE_FINISH_FRAG,/c\+=vec3\(glowLight\*1\.45\/exposure\);[\s\S]*?c\*=1\.0-coreMask/,
+    'white radiance must enter acquisition before the covered core is sealed to exact black');
   assert.match(PRESSURE_FINISH_FRAG,/exposure=clamp\(uCaptureExposure,1\.0,12\.0\)/);
   assert.match(renderer,/U\('uCaptureExposure'\),captureExposureOverride\?\?lightingCaptureExposure/);
-  assert.match(PRESSURE_FINISH_FRAG,/vec3 fibre=[^;]*pow\(relief,[0-9.]+\)/,'the actual rig/material relief was reduced to a flat outline');
-  assert.match(PRESSURE_FINISH_FRAG,/coverage\(uv\+d\*px\*3\.0,front\)/,'the cold edge needs finite local support');
-  assert.match(PRESSURE_FINISH_FRAG,/halo=max\(0\.0,wideCover-mass\)\*neighbourGlow/,'the edge can illuminate empty target pixels without a neighbouring triangle');
+  assert.doesNotMatch(PRESSURE_FINISH_FRAG,/vec3 fibre=|pow\(relief,/,'surface-relief data must not relight the requested black silhouette');
+  assert.match(PRESSURE_FINISH_FRAG,/glowCoverage\(uv\+d\*px\*15\.0,front\)/,'white radiance needs finite local support');
+  assert.match(PRESSURE_FINISH_FRAG,/glowLight=[^;]+\*exterior/,'white radiance must remain outside the body');
   assert.match(PRESSURE_FINISH_FRAG,/float depth=mass\*core>\.018\?1\.0\/\(1\.0\+min\(front,meshDepth\(g\)\)\*\.14\):src\.a/,
     'recorded mesh depth must be exact, while transparent glow preserves the underlying world depth');
   assert.doesNotMatch(PRESSURE_FINISH_FRAG,/sdf|billboard|sourcePressureMask/i);
@@ -188,8 +188,8 @@ test('legacy text scenes merge only already acquired Pressure pixels without cha
   assert.match(text,/acquired\?finishPressure\(sceneTex,\{acquired\}\):sceneTex/,
     'scenes without a performer must retain their original text presentation');
   const merge=PRESSURE_FINISH_FRAG.slice(PRESSURE_FINISH_FRAG.indexOf('if(uAcquiredOnly>.5)'),PRESSURE_FINISH_FRAG.indexOf('vec3 c=src.rgb'));
-  assert.match(merge,/support=step\(\.000001,mass\*core\+halo\*\.23\+glowLight\)/,
-    'the merge must include actual core/glow changes, never an unconditional three-pixel band');
+  assert.match(merge,/support=step\(\.000001,coreMask\+glowLight\)/,
+    'the merge must include actual core/glow changes, never an unconditional expanded band');
   assert.match(merge,/mix\(src\.rgb,texture\(uAcquired,uv\)\.rgb,support\)/,
     'the merge must use acquired pixels rather than rebuilding raw fibres');
   assert.match(merge,/return;/,'acquired output must exit before the raw material branch');

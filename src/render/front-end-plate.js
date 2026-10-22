@@ -4,33 +4,49 @@ const finite = (value, fallback) => (
 );
 
 // `negative` is the reference grade: the front end prints the camera behind it
-// rather than dimming it. It is applied in the PIXEL-MESH shader, before the
-// dither, because the reference stack put its colour halftone OVER the invert
-// and this renderer's dither is that halftone -- grading here, in the post
-// pass, would invert the dots instead of screening a negative, which is all
-// the fields below can do and is why they could only ever push the plate back.
-// The curve itself is FRONT_END_GRADE in look-profiles.js.
+// rather than dimming it. `print` says WHERE the negative is taken.
+//
+//   print 0 — in the PIXEL-MESH shader, before the dither, as the reference
+//             stack had it (its colour halftone sat OVER the invert, and this
+//             renderer's dither is that halftone). The curve is FRONT_END_GRADE
+//             in look-profiles.js.
+//   print 1 — in the POST pass, off the finished frame: luminance turns over,
+//             hue stays.
+//
+// The front end prints at 1. Screening the negative put a mostly-white frame
+// into a recording stage built to lift a dark night out of black — its exposure
+// gain, black floor and one-bit threshold — and that stage blew the whole field
+// out to the solid bit. Every contour went with it, and the dimming fields below
+// then pushed the blank field down to a flat, murky grey: neither the street
+// you stopped in nor the room behind the menu could be read. The finished frame
+// already holds the contours, so its negative is paper with the scene in ink.
+//
+// Detail and chroma are retained in full now: those two fields were written to
+// push a lit picture back behind text, and on a print they only smear the ink.
 export const FRONT_END_PLATE_PRESETS = Object.freeze({
   credits: Object.freeze({
     negative: 1,
+    print: 1,
     amount: 1,
-    detailRetention: 0.38,
-    chromaRetention: 0.36,
-    exposureStops: -0.78,
-    shoulder: 0.72,
-    toe: 0.018,
+    detailRetention: 1,
+    chromaRetention: 1,
+    exposureStops: -0.25,
+    shoulder: 0,
+    toe: 0,
   }),
   title: Object.freeze({
     negative: 1,
-    amount: 0.72,
-    detailRetention: 0.48,
-    chromaRetention: 0.44,
-    exposureStops: -0.62,
-    shoulder: 0.61,
-    toe: 0.015,
+    print: 1,
+    amount: 1,
+    detailRetention: 1,
+    chromaRetention: 1,
+    exposureStops: -0.25,
+    shoulder: 0,
+    toe: 0,
   }),
   gameplay: Object.freeze({
     negative: 0,
+    print: 0,
     amount: 0,
     detailRetention: 1,
     chromaRetention: 1,
@@ -40,6 +56,7 @@ export const FRONT_END_PLATE_PRESETS = Object.freeze({
   }),
   fallback: Object.freeze({
     negative: 0,
+    print: 0,
     amount: 0,
     detailRetention: 1,
     chromaRetention: 1,
@@ -56,6 +73,7 @@ export function normalizeFrontEndPlate(value = FRONT_END_PLATE_PRESETS.gameplay)
 
   return {
     negative: clamp01(finite(source.negative, 0)),
+    print: clamp01(finite(source.print, 0)),
     amount: clamp01(source.amount),
     detailRetention: clamp01(finite(source.detailRetention, 1)),
     chromaRetention: clamp01(finite(source.chromaRetention, 1)),
@@ -73,6 +91,7 @@ export function interpolateFrontEndPlate(from, to, t) {
 
   return {
     negative: lerp(a.negative, b.negative),
+    print: lerp(a.print, b.print),
     amount: lerp(a.amount, b.amount),
     detailRetention: lerp(a.detailRetention, b.detailRetention),
     chromaRetention: lerp(a.chromaRetention, b.chromaRetention),

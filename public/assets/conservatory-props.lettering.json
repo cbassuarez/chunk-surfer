@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "inputSha256": "9d06e30c747ac629fd925b1489aae216a8fa2e63fac4f47da680ab0446e31c44",
+  "inputSha256": "a6215937f49f1000618499e1b5726d03efe8d5bb4f8e746c636407c05647adc7",
   "generatorSha256": "25049dfe0566d8a05d1e575338cf4497750f01386896c7d215bacb7ea06cbb2b",
   "finishAuthoringSha256": "7e0cf04028f84bf25d1049ff7ba3caf36e660dfaaf4c5228b8aa4c10c886b0c3",
   "pages": [
@@ -223,11 +223,11 @@
     {
       "name": "lettering-09",
       "width": 800,
-      "height": 456,
+      "height": 600,
       "normalWidth": 200,
-      "normalHeight": 114,
+      "normalHeight": 150,
       "ormWidth": 400,
-      "ormHeight": 228,
+      "ormHeight": 300,
       "albedo": "lettering-09-albedo.png",
       "normal": "lettering-09-normal.png",
       "orm": "lettering-09-orm.png",
@@ -240,9 +240,9 @@
         0,
         0
       ],
-      "sharedTiles": 4,
+      "sharedTiles": 6,
       "preservesSampledStockChannels": false,
-      "rgbaBaseLevelBytes": 1915200
+      "rgbaBaseLevelBytes": 2520000
     }
   ],
   "entries": [
@@ -565,7 +565,7 @@
       "mesh": "outskirts_shelter_timetable",
       "geometry": {
         "id": "outskirts_shelter_timetable:0",
-        "material": 204,
+        "material": 209,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -740,7 +740,7 @@
       "mesh": "outskirts_ledger_signed",
       "geometry": {
         "id": "outskirts_ledger_signed:page-left",
-        "material": 207,
+        "material": 212,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -964,7 +964,7 @@
       "mesh": "outskirts_ledger_signed",
       "geometry": {
         "id": "outskirts_ledger_signed:page-right",
-        "material": 207,
+        "material": 212,
         "firstVertex": 4,
         "vertexCount": 4,
         "firstIndex": 6,
@@ -1139,7 +1139,7 @@
       "mesh": "outskirts_lodge_ledger",
       "geometry": {
         "id": "outskirts_lodge_ledger:page-left",
-        "material": 206,
+        "material": 211,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -1363,7 +1363,7 @@
       "mesh": "outskirts_lodge_ledger",
       "geometry": {
         "id": "outskirts_lodge_ledger:page-right",
-        "material": 206,
+        "material": 211,
         "firstVertex": 4,
         "vertexCount": 4,
         "firstIndex": 6,
@@ -1608,7 +1608,7 @@
       "mesh": "vigil_part_sign_chapel",
       "geometry": {
         "id": "vigil_part_sign_chapel:0",
-        "material": 194,
+        "material": 199,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -1820,7 +1820,7 @@
       "mesh": "lettering_overlay_acq-hall-chesterfield-west",
       "geometry": {
         "id": "acq-hall-chesterfield-west",
-        "material": 230,
+        "material": 235,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -2080,7 +2080,7 @@
       "mesh": "lettering_overlay_foyer-pew-1",
       "geometry": {
         "id": "foyer-pew-1",
-        "material": 224,
+        "material": 229,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -2462,7 +2462,7 @@
       "mesh": "rekey_ledger",
       "geometry": {
         "id": "rekey_ledger:0",
-        "material": 179,
+        "material": 183,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -2894,7 +2894,7 @@
       "mesh": "lettering_overlay_atrium-public-directory",
       "geometry": {
         "id": "atrium-public-directory",
-        "material": 215,
+        "material": 220,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -3426,7 +3426,7 @@
       "mesh": "lettering_overlay_yard-sign",
       "geometry": {
         "id": "yard-sign",
-        "material": 210,
+        "material": 215,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -3671,7 +3671,7 @@
       "mesh": "vigil_part_sign_record",
       "geometry": {
         "id": "vigil_part_sign_record:0",
-        "material": 192,
+        "material": 197,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -3916,7 +3916,7 @@
       "mesh": "vigil_part_sign_signed",
       "geometry": {
         "id": "vigil_part_sign_signed:0",
-        "material": 192,
+        "material": 197,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -4132,7 +4132,7 @@
       "mesh": "vigil_part_sign_save",
       "geometry": {
         "id": "vigil_part_sign_save:0",
-        "material": 192,
+        "material": 197,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -4375,7 +4375,7 @@
       "mesh": "lettering_overlay_tower-sign-ringing",
       "geometry": {
         "id": "tower-sign-ringing",
-        "material": 218,
+        "material": 223,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -4557,7 +4557,7 @@
       "mesh": "city_phone_box_apparatus",
       "geometry": {
         "id": "city_phone_box_apparatus:2",
-        "material": 199,
+        "material": 204,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -4739,7 +4739,7 @@
       "mesh": "city_phone_box_apparatus",
       "geometry": {
         "id": "city_phone_box_apparatus:3",
-        "material": 199,
+        "material": 204,
         "firstVertex": 4,
         "vertexCount": 4,
         "firstIndex": 6,
@@ -4921,7 +4921,7 @@
       "mesh": "city_phone_box_apparatus",
       "geometry": {
         "id": "city_phone_box_apparatus:4",
-        "material": 199,
+        "material": 204,
         "firstVertex": 8,
         "vertexCount": 4,
         "firstIndex": 12,
@@ -5103,7 +5103,7 @@
       "mesh": "city_phone_box_apparatus",
       "geometry": {
         "id": "city_phone_box_apparatus:5",
-        "material": 199,
+        "material": 204,
         "firstVertex": 12,
         "vertexCount": 4,
         "firstIndex": 18,
@@ -5285,7 +5285,7 @@
       "mesh": "city_phone_box_apparatus",
       "geometry": {
         "id": "city_phone_box_apparatus:6",
-        "material": 199,
+        "material": 204,
         "firstVertex": 16,
         "vertexCount": 4,
         "firstIndex": 24,
@@ -5467,7 +5467,7 @@
       "mesh": "city_phone_box_apparatus",
       "geometry": {
         "id": "city_phone_box_apparatus:7",
-        "material": 199,
+        "material": 204,
         "firstVertex": 20,
         "vertexCount": 4,
         "firstIndex": 30,
@@ -6620,7 +6620,7 @@
       "mesh": "lettering_overlay_plant-header-card",
       "geometry": {
         "id": "plant-header-card",
-        "material": 226,
+        "material": 231,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -6870,7 +6870,7 @@
       "mesh": "vigil_part_sign_strike",
       "geometry": {
         "id": "vigil_part_sign_strike:0",
-        "material": 193,
+        "material": 198,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -7483,7 +7483,7 @@
       "mesh": "lettering_overlay_tower-history-plaque",
       "geometry": {
         "id": "tower-history-plaque",
-        "material": 221,
+        "material": 226,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -7776,7 +7776,7 @@
       "mesh": "lettering_overlay_exterior-baths-mosaic",
       "geometry": {
         "id": "exterior-baths-mosaic",
-        "material": 212,
+        "material": 217,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -8085,7 +8085,7 @@
       "mesh": "lettering_overlay_tower-sign-belfry",
       "geometry": {
         "id": "tower-sign-belfry",
-        "material": 219,
+        "material": 224,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -8352,7 +8352,7 @@
       "mesh": "lettering_overlay_tower-sign-nave-exit",
       "geometry": {
         "id": "tower-sign-nave-exit",
-        "material": 219,
+        "material": 224,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -8570,7 +8570,7 @@
       "mesh": "lettering_overlay_box-office-returns-tray",
       "geometry": {
         "id": "box-office-returns-tray",
-        "material": 225,
+        "material": 230,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -8819,7 +8819,7 @@
       "mesh": "lettering_overlay_plate-academic-studio-3",
       "geometry": {
         "id": "plate-academic-studio-3",
-        "material": 232,
+        "material": 237,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -9068,7 +9068,7 @@
       "mesh": "lettering_overlay_plate-academic-studio-4",
       "geometry": {
         "id": "plate-academic-studio-4",
-        "material": 232,
+        "material": 237,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -9353,7 +9353,7 @@
       "mesh": "lettering_overlay_plate-spur-substation",
       "geometry": {
         "id": "plate-spur-substation",
-        "material": 232,
+        "material": 237,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -9535,7 +9535,7 @@
       "mesh": "city_phone_box_apparatus",
       "geometry": {
         "id": "city_phone_box_apparatus:10",
-        "material": 201,
+        "material": 206,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -9717,7 +9717,7 @@
       "mesh": "city_phone_box_apparatus",
       "geometry": {
         "id": "city_phone_box_apparatus:11",
-        "material": 201,
+        "material": 206,
         "firstVertex": 4,
         "vertexCount": 4,
         "firstIndex": 6,
@@ -10057,7 +10057,7 @@
       "mesh": "lettering_overlay_exterior-chapel-plaque",
       "geometry": {
         "id": "exterior-chapel-plaque",
-        "material": 211,
+        "material": 216,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -10469,7 +10469,7 @@
       "mesh": "lettering_overlay_exterior-foundation-stone",
       "geometry": {
         "id": "exterior-foundation-stone",
-        "material": 211,
+        "material": 216,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -10718,7 +10718,7 @@
       "mesh": "vigil_part_banner",
       "geometry": {
         "id": "vigil_part_banner:0",
-        "material": 195,
+        "material": 200,
         "firstVertex": 0,
         "vertexCount": 2425,
         "firstIndex": 0,
@@ -10948,7 +10948,7 @@
       "mesh": "lettering_overlay_plate-spur-tank",
       "geometry": {
         "id": "plate-spur-tank",
-        "material": 231,
+        "material": 236,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -11178,7 +11178,7 @@
       "mesh": "lettering_overlay_plate-store-corridor",
       "geometry": {
         "id": "plate-store-corridor",
-        "material": 231,
+        "material": 236,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -11433,7 +11433,7 @@
       "mesh": "lettering_overlay_plate-academic-store",
       "geometry": {
         "id": "plate-academic-store",
-        "material": 231,
+        "material": 236,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -11688,7 +11688,7 @@
       "mesh": "lettering_overlay_plate-practice-east-1",
       "geometry": {
         "id": "plate-practice-east-1",
-        "material": 231,
+        "material": 236,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -11943,7 +11943,7 @@
       "mesh": "lettering_overlay_plate-practice-east-2",
       "geometry": {
         "id": "plate-practice-east-2",
-        "material": 231,
+        "material": 236,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -12198,7 +12198,7 @@
       "mesh": "lettering_overlay_plate-practice-east-3",
       "geometry": {
         "id": "plate-practice-east-3",
-        "material": 231,
+        "material": 236,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -12453,7 +12453,7 @@
       "mesh": "lettering_overlay_plate-practice-west-1",
       "geometry": {
         "id": "plate-practice-west-1",
-        "material": 231,
+        "material": 236,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -12708,7 +12708,7 @@
       "mesh": "lettering_overlay_plate-practice-west-2",
       "geometry": {
         "id": "plate-practice-west-2",
-        "material": 231,
+        "material": 236,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -12963,7 +12963,7 @@
       "mesh": "lettering_overlay_plate-practice-west-3",
       "geometry": {
         "id": "plate-practice-west-3",
-        "material": 231,
+        "material": 236,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -13218,7 +13218,7 @@
       "mesh": "lettering_overlay_plate-practice-west-4",
       "geometry": {
         "id": "plate-practice-west-4",
-        "material": 231,
+        "material": 236,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -13406,7 +13406,7 @@
       "mesh": "door_stencil_b1",
       "geometry": {
         "id": "door_stencil_b1:0",
-        "material": 183,
+        "material": 187,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -13594,7 +13594,7 @@
       "mesh": "door_stencil_b2",
       "geometry": {
         "id": "door_stencil_b2:0",
-        "material": 183,
+        "material": 187,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -13782,7 +13782,7 @@
       "mesh": "door_stencil_b3",
       "geometry": {
         "id": "door_stencil_b3:0",
-        "material": 183,
+        "material": 187,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -13970,7 +13970,7 @@
       "mesh": "door_stencil_b5",
       "geometry": {
         "id": "door_stencil_b5:0",
-        "material": 183,
+        "material": 187,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -14182,7 +14182,7 @@
       "mesh": "outskirts_ticket",
       "geometry": {
         "id": "outskirts_ticket:0",
-        "material": 208,
+        "material": 213,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -14600,7 +14600,7 @@
       "mesh": "lettering_overlay_brendan-visitor-till",
       "geometry": {
         "id": "brendan-visitor-till",
-        "material": 223,
+        "material": 228,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -14861,7 +14861,7 @@
       "mesh": "lettering_overlay_tower-sign-organ-exit",
       "geometry": {
         "id": "tower-sign-organ-exit",
-        "material": 220,
+        "material": 225,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -15134,7 +15134,7 @@
       "mesh": "lettering_overlay_exterior-hall-stone",
       "geometry": {
         "id": "exterior-hall-stone",
-        "material": 213,
+        "material": 218,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -15334,7 +15334,7 @@
       "mesh": "chapel_key_ring_c17",
       "geometry": {
         "id": "chapel_key_ring_c17:0",
-        "material": 181,
+        "material": 185,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -15608,7 +15608,7 @@
       "mesh": "chapel_key_ring_ch04",
       "geometry": {
         "id": "chapel_key_ring_ch04:0",
-        "material": 180,
+        "material": 184,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -15930,7 +15930,7 @@
       "mesh": "chapel_key_ring_fohm",
       "geometry": {
         "id": "chapel_key_ring_fohm:0",
-        "material": 182,
+        "material": 186,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -16184,7 +16184,7 @@
       "mesh": "scene_dock_sign_services",
       "geometry": {
         "id": "scene_dock_sign_services:0",
-        "material": 191,
+        "material": 196,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -16565,7 +16565,7 @@
       "mesh": "lettering_overlay_tower-hammer-isolator",
       "geometry": {
         "id": "tower-hammer-isolator",
-        "material": 222,
+        "material": 227,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -16814,7 +16814,7 @@
       "mesh": "lettering_overlay_plate-academic-studio-2",
       "geometry": {
         "id": "plate-academic-studio-2",
-        "material": 233,
+        "material": 238,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -17026,7 +17026,7 @@
       "mesh": "lettering_overlay_acq-foyer-horse-head",
       "geometry": {
         "id": "acq-foyer-horse-head",
-        "material": 229,
+        "material": 234,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -17305,7 +17305,7 @@
       "mesh": "lettering_overlay_plate-academic-office-locked-1",
       "geometry": {
         "id": "plate-academic-office-locked-1",
-        "material": 233,
+        "material": 238,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -17584,7 +17584,7 @@
       "mesh": "lettering_overlay_plate-academic-office-locked-2",
       "geometry": {
         "id": "plate-academic-office-locked-2",
-        "material": 233,
+        "material": 238,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -17839,7 +17839,7 @@
       "mesh": "lettering_overlay_plate-practice-east-4",
       "geometry": {
         "id": "plate-practice-east-4",
-        "material": 233,
+        "material": 238,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -18033,7 +18033,7 @@
       "mesh": "city_phone_box_apparatus",
       "geometry": {
         "id": "city_phone_box_apparatus:13",
-        "material": 200,
+        "material": 205,
         "firstVertex": 8,
         "vertexCount": 4,
         "firstIndex": 12,
@@ -18215,7 +18215,7 @@
       "mesh": "city_phone_box_apparatus",
       "geometry": {
         "id": "city_phone_box_apparatus:8",
-        "material": 200,
+        "material": 205,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -18397,7 +18397,7 @@
       "mesh": "city_phone_box_apparatus",
       "geometry": {
         "id": "city_phone_box_apparatus:9",
-        "material": 200,
+        "material": 205,
         "firstVertex": 4,
         "vertexCount": 4,
         "firstIndex": 6,
@@ -18645,7 +18645,7 @@
       "mesh": "scene_dock_sign_foh",
       "geometry": {
         "id": "scene_dock_sign_foh:0",
-        "material": 190,
+        "material": 195,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -18845,7 +18845,7 @@
       "mesh": "outskirts_bus",
       "geometry": {
         "id": "outskirts_bus:1",
-        "material": 203,
+        "material": 208,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -19045,7 +19045,7 @@
       "mesh": "outskirts_car",
       "geometry": {
         "id": "outskirts_car:0",
-        "material": 203,
+        "material": 208,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -19233,7 +19233,7 @@
       "mesh": "source_hall_number_17",
       "geometry": {
         "id": "source_hall_number_17:0",
-        "material": 184,
+        "material": 188,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -19469,7 +19469,7 @@
       "mesh": "city_phone_box_apparatus",
       "geometry": {
         "id": "city_phone_box_apparatus:1",
-        "material": 198,
+        "material": 203,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -19663,7 +19663,7 @@
       "mesh": "city_phone_box_apparatus",
       "geometry": {
         "id": "city_phone_box_apparatus:12",
-        "material": 198,
+        "material": 203,
         "firstVertex": 4,
         "vertexCount": 4,
         "firstIndex": 6,
@@ -19838,7 +19838,7 @@
       "mesh": "ending_returned_ledger",
       "geometry": {
         "id": "ending_returned_ledger:unnamed-signature",
-        "material": 188,
+        "material": 192,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -20038,7 +20038,7 @@
       "mesh": "ending_returned_ledger",
       "geometry": {
         "id": "ending_returned_ledger:1",
-        "material": 189,
+        "material": 193,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -20232,7 +20232,7 @@
       "mesh": "outskirts_ticket",
       "geometry": {
         "id": "outskirts_ticket:1",
-        "material": 209,
+        "material": 214,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -20462,7 +20462,7 @@
       "mesh": "lettering_overlay_acq-foyer-console-01",
       "geometry": {
         "id": "acq-foyer-console-01",
-        "material": 228,
+        "material": 233,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -20692,7 +20692,7 @@
       "mesh": "lettering_overlay_acq-foyer-sofa-01",
       "geometry": {
         "id": "acq-foyer-sofa-01",
-        "material": 228,
+        "material": 233,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -20922,7 +20922,7 @@
       "mesh": "lettering_overlay_acq-foyer-armchair-01",
       "geometry": {
         "id": "acq-foyer-armchair-01",
-        "material": 228,
+        "material": 233,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -21152,7 +21152,7 @@
       "mesh": "lettering_overlay_deadend-ground-armchair",
       "geometry": {
         "id": "deadend-ground-armchair",
-        "material": 228,
+        "material": 233,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -21376,7 +21376,7 @@
       "mesh": "lettering_overlay_acq-practice-chair-1",
       "geometry": {
         "id": "acq-practice-chair-1",
-        "material": 228,
+        "material": 233,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -21600,7 +21600,7 @@
       "mesh": "lettering_overlay_acq-practice-chair-2",
       "geometry": {
         "id": "acq-practice-chair-2",
-        "material": 228,
+        "material": 233,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -21824,7 +21824,7 @@
       "mesh": "lettering_overlay_acq-practice-chair-3",
       "geometry": {
         "id": "acq-practice-chair-3",
-        "material": 228,
+        "material": 233,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -22048,7 +22048,7 @@
       "mesh": "lettering_overlay_acq-practice-chair-4",
       "geometry": {
         "id": "acq-practice-chair-4",
-        "material": 228,
+        "material": 233,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -22272,7 +22272,7 @@
       "mesh": "lettering_overlay_acq-practice-chair-5",
       "geometry": {
         "id": "acq-practice-chair-5",
-        "material": 228,
+        "material": 233,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -22496,7 +22496,7 @@
       "mesh": "lettering_overlay_acq-practice-chair-6",
       "geometry": {
         "id": "acq-practice-chair-6",
-        "material": 228,
+        "material": 233,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -22720,7 +22720,7 @@
       "mesh": "lettering_overlay_acq-practice-chair-7",
       "geometry": {
         "id": "acq-practice-chair-7",
-        "material": 228,
+        "material": 233,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -22944,7 +22944,7 @@
       "mesh": "lettering_overlay_acq-practice-chair-8",
       "geometry": {
         "id": "acq-practice-chair-8",
-        "material": 228,
+        "material": 233,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -23163,7 +23163,7 @@
       "mesh": "lettering_overlay_acq-services-panel-academic",
       "geometry": {
         "id": "acq-services-panel-academic",
-        "material": 227,
+        "material": 232,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -23382,7 +23382,7 @@
       "mesh": "lettering_overlay_acq-services-panel-foh",
       "geometry": {
         "id": "acq-services-panel-foh",
-        "material": 227,
+        "material": 232,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -23601,7 +23601,7 @@
       "mesh": "lettering_overlay_acq-services-panel-plant",
       "geometry": {
         "id": "acq-services-panel-plant",
-        "material": 227,
+        "material": 232,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -23820,7 +23820,7 @@
       "mesh": "lettering_overlay_acq-services-panel-pool",
       "geometry": {
         "id": "acq-services-panel-pool",
-        "material": 227,
+        "material": 232,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -24039,7 +24039,7 @@
       "mesh": "lettering_overlay_acq-services-panel-practice",
       "geometry": {
         "id": "acq-services-panel-practice",
-        "material": 227,
+        "material": 232,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -24269,7 +24269,7 @@
       "mesh": "city_phone_box",
       "geometry": {
         "id": "city_phone_box:0",
-        "material": 196,
+        "material": 201,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -24499,7 +24499,7 @@
       "mesh": "city_phone_box",
       "geometry": {
         "id": "city_phone_box:1",
-        "material": 196,
+        "material": 201,
         "firstVertex": 4,
         "vertexCount": 4,
         "firstIndex": 6,
@@ -24729,7 +24729,7 @@
       "mesh": "city_phone_box",
       "geometry": {
         "id": "city_phone_box:2",
-        "material": 196,
+        "material": 201,
         "firstVertex": 8,
         "vertexCount": 4,
         "firstIndex": 12,
@@ -24959,7 +24959,7 @@
       "mesh": "city_phone_box",
       "geometry": {
         "id": "city_phone_box:3",
-        "material": 196,
+        "material": 201,
         "firstVertex": 12,
         "vertexCount": 4,
         "firstIndex": 18,
@@ -25761,7 +25761,7 @@
       "mesh": "tower_peal_board",
       "geometry": {
         "id": "tower_peal_board:0",
-        "material": 187,
+        "material": 191,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -25985,7 +25985,7 @@
       "mesh": "hymn_board",
       "geometry": {
         "id": "hymn_board:0",
-        "material": 185,
+        "material": 189,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -26288,7 +26288,7 @@
       "mesh": "lettering_overlay_atrium-sign-main-exit",
       "geometry": {
         "id": "atrium-sign-main-exit",
-        "material": 214,
+        "material": 219,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -26507,7 +26507,7 @@
       "mesh": "tower_rope_mat_tenor",
       "geometry": {
         "id": "tower_rope_mat_tenor:0",
-        "material": 186,
+        "material": 190,
         "firstVertex": 0,
         "vertexCount": 50,
         "firstIndex": 0,
@@ -26719,7 +26719,7 @@
       "mesh": "outskirts_bus",
       "geometry": {
         "id": "outskirts_bus:0",
-        "material": 202,
+        "material": 207,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -26967,7 +26967,7 @@
       "mesh": "lettering_overlay_landing-academic-floor-landing",
       "geometry": {
         "id": "landing-academic-floor-landing",
-        "material": 234,
+        "material": 239,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -27233,7 +27233,7 @@
       "mesh": "lettering_overlay_landing-b3-landing",
       "geometry": {
         "id": "landing-b3-landing",
-        "material": 234,
+        "material": 239,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -27445,7 +27445,7 @@
       "mesh": "lettering_overlay_landing-ground-landing",
       "geometry": {
         "id": "landing-ground-landing",
-        "material": 234,
+        "material": 239,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -27693,7 +27693,7 @@
       "mesh": "lettering_overlay_landing-upper-floor-landing",
       "geometry": {
         "id": "landing-upper-floor-landing",
-        "material": 234,
+        "material": 239,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -27727,9 +27727,9 @@
       "page": 9,
       "uvRect": [
         0.02,
-        0.03508771929824561,
+        0.02666666666666667,
         0.98,
-        0.26973684210526316
+        0.205
       ],
       "copy": "TOWER — RINGING CHAMBER — NO ADMITTANCE TO THE PUBLIC\nBELLS UP",
       "lines": [
@@ -28177,7 +28177,7 @@
       "mesh": "lettering_overlay_chapel-stair-sign-nave",
       "geometry": {
         "id": "chapel-stair-sign-nave",
-        "material": 217,
+        "material": 222,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -28211,9 +28211,9 @@
       "page": 9,
       "uvRect": [
         0.02,
-        0.3399122807017544,
+        0.25833333333333336,
         0.91625,
-        0.5109649122807017
+        0.3883333333333333
       ],
       "copy": "PAY ON ANSWER",
       "lines": [
@@ -28423,7 +28423,7 @@
       "mesh": "city_phone_box_apparatus",
       "geometry": {
         "id": "city_phone_box_apparatus:0",
-        "material": 197,
+        "material": 202,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -28457,9 +28457,9 @@
       "page": 9,
       "uvRect": [
         0.02,
-        0.581140350877193,
+        0.44166666666666665,
         0.98,
-        0.7192982456140351
+        0.5466666666666666
       ],
       "copy": "CONCERT HALL — STALLS / GALLERIES",
       "lines": [
@@ -29002,7 +29002,7 @@
       "mesh": "lettering_overlay_hall-entrance-sign",
       "geometry": {
         "id": "hall-entrance-sign",
-        "material": 216,
+        "material": 221,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -29036,9 +29036,9 @@
       "page": 9,
       "uvRect": [
         0.02,
-        0.7894736842105263,
+        0.6,
         0.72125,
-        0.9517543859649122
+        0.7233333333333334
       ],
       "copy": "PORTER",
       "lines": [
@@ -29214,7 +29214,7 @@
       "mesh": "outskirts_lodge",
       "geometry": {
         "id": "outskirts_lodge:0",
-        "material": 205,
+        "material": 210,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -29242,6 +29242,474 @@
         "shape": "rectangle",
         "drapeM": 0
       }
+    },
+    {
+      "id": "pub-lyric-fascia-east",
+      "page": 9,
+      "uvRect": [
+        0.02,
+        0.7766666666666666,
+        0.98,
+        0.8433333333333334
+      ],
+      "copy": "PUBLIC HOUSE",
+      "lines": [
+        "PUBLIC HOUSE"
+      ],
+      "widthM": 6.76,
+      "heightM": 0.35,
+      "metrics": {
+        "font": "NimbusRoman-Bold.otf",
+        "fontSha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
+        "capHeightM": 0.21125000000000002,
+        "stemWidthM": 0.052812500000000005,
+        "coverage": 0.07822265625,
+        "boundsPx": [
+          248,
+          8,
+          520,
+          32
+        ],
+        "glyphs": [
+          {
+            "character": "P",
+            "line": 0,
+            "xPx": 246.916,
+            "advancePx": 22.288
+          },
+          {
+            "character": "U",
+            "line": 0,
+            "xPx": 269.204,
+            "advancePx": 26.288
+          },
+          {
+            "character": "B",
+            "line": 0,
+            "xPx": 295.492,
+            "advancePx": 24.288
+          },
+          {
+            "character": "L",
+            "line": 0,
+            "xPx": 319.78000000000003,
+            "advancePx": 24.288
+          },
+          {
+            "character": "I",
+            "line": 0,
+            "xPx": 344.06800000000004,
+            "advancePx": 14.288
+          },
+          {
+            "character": "C",
+            "line": 0,
+            "xPx": 358.35600000000005,
+            "advancePx": 26.288
+          },
+          {
+            "character": "H",
+            "line": 0,
+            "xPx": 393.9320000000001,
+            "advancePx": 28.288
+          },
+          {
+            "character": "O",
+            "line": 0,
+            "xPx": 422.2200000000001,
+            "advancePx": 28.288
+          },
+          {
+            "character": "U",
+            "line": 0,
+            "xPx": 450.5080000000001,
+            "advancePx": 26.288
+          },
+          {
+            "character": "S",
+            "line": 0,
+            "xPx": 476.7960000000001,
+            "advancePx": 20.288
+          },
+          {
+            "character": "E",
+            "line": 0,
+            "xPx": 497.0840000000001,
+            "advancePx": 24.288
+          }
+        ],
+        "strokeMeasurement": "Pinned I straight stem; brush uses a conservative broad-nib design reference, not a claim about every taper.",
+        "coverageSha256": "55ba9a72dcf0f4002e11e7dbb8e81fc2f64c0bcbd9a1cc0efdd8daa0987a2a22"
+      },
+      "category": "institution",
+      "process": "aged gilt pub fascia lettering",
+      "polarity": "light-on-dark",
+      "emission": "none",
+      "reliefM": 0.000007,
+      "finish": {
+        "substrate": "dark enamel or painted board",
+        "coating": "solid gold-coloured leaf or metallic house lettering",
+        "roughness": 0.38,
+        "inkRoughness": 0.48,
+        "inkMetallic": 0.9,
+        "fieldM": 0.16,
+        "variation": 0.018,
+        "roughnessVariation": 0.065,
+        "microReliefM": 0.000004,
+        "deposit": 0.035,
+        "edgeLoss": 0.018,
+        "sequence": [
+          "dark face remains continuous",
+          "solid gilt varies gently in burnish direction",
+          "sheltered surround holds neutral deposits"
+        ],
+        "limits": [
+          "gilt is preserved solid; no orange iron corrosion, green archaeological copper crust or missing character cores"
+        ],
+        "version": 1,
+        "profile": "gilt-enamel",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": true,
+          "contact": "none",
+          "exposure": "sheltered"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      },
+      "finishEvidence": {
+        "profile": "gilt-enamel",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": true,
+          "contact": "none",
+          "exposure": "sheltered"
+        },
+        "coverageSha256": "55ba9a72dcf0f4002e11e7dbb8e81fc2f64c0bcbd9a1cc0efdd8daa0987a2a22",
+        "immutableCoverage": true,
+        "sampledStockOutsidePigmentImmutable": false,
+        "physicalScalesM": {
+          "field": 0.16,
+          "minimumNormalPeriod": 0.02640625,
+          "inkRelief": 0.000007
+        },
+        "structure": {
+          "kind": "subpixel manufacture",
+          "actualPitchM": null,
+          "resolved": false
+        },
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "conditionRanges": {
+          "deposit": [
+            0,
+            0.020015625000000006
+          ],
+          "contact": [
+            0,
+            0
+          ],
+          "edgeLoss": [
+            0,
+            0.01217757352941173
+          ]
+        },
+        "channelRanges": {
+          "roughness": [
+            0.258875,
+            0.42285808593749996
+          ],
+          "metallic": [
+            0,
+            0.78
+          ]
+        },
+        "bakedLighting": false,
+        "glyphDamage": false
+      },
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          0,
+          0,
+          -1
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          1,
+          0,
+          0
+        ],
+        "center": [
+          0.312,
+          3.65,
+          -20
+        ]
+      },
+      "bounds": null,
+      "substrate": null,
+      "mesh": "district_civic_frontage",
+      "geometry": {
+        "id": "pub-lyric-fascia-east",
+        "material": 194,
+        "firstVertex": 4,
+        "vertexCount": 4,
+        "firstIndex": 6,
+        "indexCount": 6,
+        "center": [
+          0.312,
+          3.65,
+          -20
+        ],
+        "readerRight": [
+          0,
+          0,
+          -1
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          1,
+          0,
+          0
+        ],
+        "shape": "rectangle",
+        "drapeM": 0
+      }
+    },
+    {
+      "id": "pub-lyric-fascia-west",
+      "page": 9,
+      "uvRect": [
+        0.02,
+        0.8966666666666666,
+        0.98,
+        0.9633333333333334
+      ],
+      "copy": "THE LYRIC",
+      "lines": [
+        "THE LYRIC"
+      ],
+      "widthM": 6.76,
+      "heightM": 0.35,
+      "metrics": {
+        "font": "NimbusRoman-Bold.otf",
+        "fontSha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
+        "capHeightM": 0.21125000000000002,
+        "stemWidthM": 0.052812500000000005,
+        "coverage": 0.0587890625,
+        "boundsPx": [
+          283,
+          8,
+          484,
+          32
+        ],
+        "glyphs": [
+          {
+            "character": "T",
+            "line": 0,
+            "xPx": 282.348,
+            "advancePx": 24.288
+          },
+          {
+            "character": "H",
+            "line": 0,
+            "xPx": 306.636,
+            "advancePx": 28.288
+          },
+          {
+            "character": "E",
+            "line": 0,
+            "xPx": 334.92400000000004,
+            "advancePx": 24.288
+          },
+          {
+            "character": "L",
+            "line": 0,
+            "xPx": 368.50000000000006,
+            "advancePx": 24.288
+          },
+          {
+            "character": "Y",
+            "line": 0,
+            "xPx": 392.78800000000007,
+            "advancePx": 26.288
+          },
+          {
+            "character": "R",
+            "line": 0,
+            "xPx": 419.0760000000001,
+            "advancePx": 26.288
+          },
+          {
+            "character": "I",
+            "line": 0,
+            "xPx": 445.3640000000001,
+            "advancePx": 14.288
+          },
+          {
+            "character": "C",
+            "line": 0,
+            "xPx": 459.6520000000001,
+            "advancePx": 26.288
+          }
+        ],
+        "strokeMeasurement": "Pinned I straight stem; brush uses a conservative broad-nib design reference, not a claim about every taper.",
+        "coverageSha256": "eb511fe62e8cf310f9dd6f2c778cc580e886dd8d55a703d2af0984db5f7be28b"
+      },
+      "category": "institution",
+      "process": "aged gilt pub fascia lettering",
+      "polarity": "light-on-dark",
+      "emission": "none",
+      "reliefM": 0.000007,
+      "finish": {
+        "substrate": "dark enamel or painted board",
+        "coating": "solid gold-coloured leaf or metallic house lettering",
+        "roughness": 0.38,
+        "inkRoughness": 0.48,
+        "inkMetallic": 0.9,
+        "fieldM": 0.16,
+        "variation": 0.018,
+        "roughnessVariation": 0.065,
+        "microReliefM": 0.000004,
+        "deposit": 0.035,
+        "edgeLoss": 0.018,
+        "sequence": [
+          "dark face remains continuous",
+          "solid gilt varies gently in burnish direction",
+          "sheltered surround holds neutral deposits"
+        ],
+        "limits": [
+          "gilt is preserved solid; no orange iron corrosion, green archaeological copper crust or missing character cores"
+        ],
+        "version": 1,
+        "profile": "gilt-enamel",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": true,
+          "contact": "none",
+          "exposure": "sheltered"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      },
+      "finishEvidence": {
+        "profile": "gilt-enamel",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": true,
+          "contact": "none",
+          "exposure": "sheltered"
+        },
+        "coverageSha256": "eb511fe62e8cf310f9dd6f2c778cc580e886dd8d55a703d2af0984db5f7be28b",
+        "immutableCoverage": true,
+        "sampledStockOutsidePigmentImmutable": false,
+        "physicalScalesM": {
+          "field": 0.16,
+          "minimumNormalPeriod": 0.02640625,
+          "inkRelief": 0.000007
+        },
+        "structure": {
+          "kind": "subpixel manufacture",
+          "actualPitchM": null,
+          "resolved": false
+        },
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "conditionRanges": {
+          "deposit": [
+            0,
+            0.020015625000000006
+          ],
+          "contact": [
+            0,
+            0
+          ],
+          "edgeLoss": [
+            0,
+            0.012401838235294121
+          ]
+        },
+        "channelRanges": {
+          "roughness": [
+            0.26417696078431374,
+            0.42399711026659237
+          ],
+          "metallic": [
+            0,
+            0.78
+          ]
+        },
+        "bakedLighting": false,
+        "glyphDamage": false
+      },
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          0,
+          0,
+          -1
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          1,
+          0,
+          0
+        ],
+        "center": [
+          0.312,
+          3.65,
+          -28
+        ]
+      },
+      "bounds": null,
+      "substrate": null,
+      "mesh": "district_civic_frontage",
+      "geometry": {
+        "id": "pub-lyric-fascia-west",
+        "material": 194,
+        "firstVertex": 0,
+        "vertexCount": 4,
+        "firstIndex": 0,
+        "indexCount": 6,
+        "center": [
+          0.312,
+          3.65,
+          -28
+        ],
+        "readerRight": [
+          0,
+          0,
+          -1
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          1,
+          0,
+          0
+        ],
+        "shape": "rectangle",
+        "drapeM": 0
+      }
     }
   ],
   "coverageChannel": "baseColorAlpha",
@@ -29250,11 +29718,19 @@
   "gutterPx": 16,
   "packing": "MaxRects BSSF; four stable orders; 8px bin-width search and tight NPOT envelope; no rotation/resampling",
   "note": "Atlas RGB remains authored substrate color when alpha pigment coverage is zero. Normal and ORM are filtered independently. Empty or missing authored glyphs fail the bake.",
-  "packSha256": "553720548062911e17af2811c781697b4074111a9a5f0c5aeba1b8ef3a8132c6",
+  "packSha256": "ba4c4830c9ed4d347227e4ffaaf86596e8d7a43dfdf9c249202b372b0f84a963",
   "sourceHashes": {
-    "tools/chunk_surfer/build-props.mjs": "af8dc0cf8b3c5b9015bd1bfa6bfd34fda55fdb7a914acc6ec7dec77c844c3232",
-    "tools/chunk_surfer/exterior-foreground-geometry.mjs": "73f971df3800dedc088e01d0b693ef56bb96763a950af03699561d8a58d2541d",
-    "tools/chunk_surfer/exterior-frontage-geometry.mjs": "564aa2182d6d6dc975567cf3c0e2f790e33fb924f51d9dafd69174cd65a9fb97",
+    "tools/chunk_surfer/build-props.mjs": "5d05f7e041f6ea4af3a204c059466e21904263ffead001fc2e6f6da17981a7c6",
+    "tools/chunk_surfer/organ-console-geometry.mjs": "4f42bfac8759c6f2e57f61d7b8d52a6c52db263fcd2e271846181814d25aace8",
+    "tools/chunk_surfer/tower-shutter-linkage-geometry.mjs": "f57d5bf63e5b3daa46d625f0a18b9f890a6954ba03b4cedd2bedd8db982734ad",
+    "tools/chunk_surfer/main-stair-use-geometry.mjs": "4025201ac62b411a4d95a9f17c3b78f60c40c1ea6db158153454b16b62efa7c9",
+    "src/data/main-stair-geometry.js": "902ac1340dc1bf319bd4a45da84327491c6502c87daeb6bf44cefe1fb855b1e7",
+    "tools/chunk_surfer/exterior-foreground-geometry.mjs": "124e06205a9f09e0620ebba209bc78924f3da64df67b17e843cfc59d28963166",
+    "tools/chunk_surfer/exterior-frontage-geometry.mjs": "64826e04aa9c5a1398a26565ab92b2eca8781697b9cebc15b155adab0689c545",
+    "tools/chunk_surfer/exterior-shop-massing.mjs": "6edad2c1828526c40f19d316c07c1df1c0963b451a30410b7ab11f1432f45d1c",
+    "tools/chunk_surfer/pub-interior-geometry.mjs": "cbade01cb1520330a45c35e8e007c97015d0a467214e30a78764ec890be35c42",
+    "src/data/exterior-pub.js": "63b7f95dfeb61fd2bb8e7c18aa9205ad1d98182f6b01acf2329d124202b3988a",
+    "src/data/exterior-pub-furnishings.js": "fe4cc445faeb06b9c974c5480387aa635756b67c21ad16d48d1159e42fc6e71e",
     "src/data/exterior-foreground.js": "0ce18cf99db743822f15ba1d33c719a6af72a50e460428e7700a36ef3fa58cc2",
     "src/data/exterior-district.js": "8c51f37f54acaefbf6f8b782ddd88627cc46d601f7526444fec3e11ceaa04706",
     "tools/chunk_surfer/lettering/physical-lettering.mjs": "59256f8316f77d395874843591ad15dc9b9b0894f0e0e886c72fb6660f7adda7",
@@ -29269,13 +29745,14 @@
     "src/data/corridor-lettering.js": "9e26802e3814f8d3355b84612e8ffa491840e7926c65905214354601e62e458d",
     "src/data/building-map.js": "16e0f8494c1a5ec9f0fcea25fe6aeb7cb16e1f6669444f00a679709d1dd6415e",
     "src/world/corridor-dressing.js": "2b6781ffbd594d93a8551a1db2de8af6c0a72842a86f1e9b1adb0f38a67f65c3",
-    "src/world/floorplan.js": "5abec068b6b49a3e951b0827396cea45ca1860475c41b3fa9d8f5cba50ea90a4",
+    "src/world/floorplan.js": "73557bd7cc7f98bd218beb74a30dcf75dd44b6d7569f79b6c8789f49c6f0425c",
     "src/world/wall-contact.js": "d4726b3370695e07e417af3adeda942e7b823fcbf29c71562b595a3e2c69db05",
+    "src/world/baseboard-hosting.js": "7e65032a8e21ec19e7ee1333afce941957e2f0d23ff5b9d282c85485c24d54ac",
     "src/world/prop-wall-pose.js": "b9ac03dd126629ccc7d8014fb9b3ad19add824b25125c95dae0d700fef842e2a",
-    "src/game/props.js": "3c802a1f1fe83f16283a563be11466b537ddce84fb849b2d08999d266026b697",
-    "src/data/conservatory-props.js": "4431c95ee0b240b698d76b540fda37ce91dbeb2c4fdf8734527c7a24a11965a8",
-    "src/data/floorplan/conservatory.js": "b585519914319b3ae08232e536c5e76cddbf0c5a7c112e55902a785b2e5229d8",
-    "src/data/conservatory-doors.js": "4a4ccb07308485269101566c1e061fd14e85516f207a24af9f91139e2b69d70d",
+    "src/game/props.js": "ddfe5d7d8a1ad833e1f1296713c35c4808040a06f823a3f637c659c58fc347cc",
+    "src/data/conservatory-props.js": "fb23f91ba948007ff189ec9c00407bd958121230b6b451e56634c6177862b741",
+    "src/data/floorplan/conservatory.js": "fad420144b18b78a169e9242675803f8e7d6fcbf55f9f9dd96d3e7f8f6ce3cda",
+    "src/data/conservatory-doors.js": "3a0e516210444601d6d33187c110c570ae60eebe75d26384f5bc66481d7e10c4",
     "public/assets/conservatory-acquisitions.glb": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336"
   },
   "carrierAssemblies": {
@@ -30366,7 +30843,7 @@
           0.84,
           0.28
         ],
-        "material": 128,
+        "material": 132,
         "profile": "mineral-carrier",
         "bevelM": 0.0035,
         "grainAxis": 0,
@@ -30385,7 +30862,7 @@
           0.5,
           0.05
         ],
-        "material": 129,
+        "material": 133,
         "profile": "mineral-carrier",
         "bevelM": 0.0035,
         "grainAxis": 0,
@@ -30688,7 +31165,7 @@
           0.84,
           0.0035
         ],
-        "material": 130,
+        "material": 134,
         "profile": "painted-card",
         "bevelM": 0,
         "grainAxis": 0,
@@ -30707,7 +31184,7 @@
           0.38,
           0.025
         ],
-        "material": 131,
+        "material": 135,
         "profile": "timber-frame",
         "bevelM": 0.0023,
         "grainAxis": 1,
@@ -30730,7 +31207,7 @@
           0.84,
           0.0035
         ],
-        "material": 130,
+        "material": 134,
         "profile": "painted-card",
         "bevelM": 0,
         "grainAxis": 0,
@@ -30749,7 +31226,7 @@
           0.38,
           0.025
         ],
-        "material": 131,
+        "material": 135,
         "profile": "timber-frame",
         "bevelM": 0.0023,
         "grainAxis": 1,
@@ -30772,7 +31249,7 @@
           0.84,
           0.0035
         ],
-        "material": 130,
+        "material": 134,
         "profile": "painted-card",
         "bevelM": 0,
         "grainAxis": 0,
@@ -30791,7 +31268,7 @@
           0.38,
           0.025
         ],
-        "material": 131,
+        "material": 135,
         "profile": "timber-frame",
         "bevelM": 0.0023,
         "grainAxis": 1,
@@ -30814,7 +31291,7 @@
           0.84,
           0.0035
         ],
-        "material": 130,
+        "material": 134,
         "profile": "painted-card",
         "bevelM": 0,
         "grainAxis": 0,
@@ -30833,7 +31310,7 @@
           0.38,
           0.025
         ],
-        "material": 131,
+        "material": 135,
         "profile": "timber-frame",
         "bevelM": 0.0023,
         "grainAxis": 1,
@@ -30856,7 +31333,7 @@
           0.84,
           0.0035
         ],
-        "material": 130,
+        "material": 134,
         "profile": "painted-card",
         "bevelM": 0,
         "grainAxis": 0,
@@ -30875,7 +31352,7 @@
           0.38,
           0.025
         ],
-        "material": 131,
+        "material": 135,
         "profile": "timber-frame",
         "bevelM": 0.0023,
         "grainAxis": 1,
@@ -31062,7 +31539,7 @@
           2.1,
           0.09
         ],
-        "material": 135,
+        "material": 139,
         "profile": "enamel",
         "bevelM": 0.0014,
         "grainAxis": 1,
@@ -31081,7 +31558,7 @@
           2.1,
           0.09
         ],
-        "material": 135,
+        "material": 139,
         "profile": "enamel",
         "bevelM": 0.0014,
         "grainAxis": 1,
@@ -31100,7 +31577,7 @@
           1.16,
           0.05
         ],
-        "material": 136,
+        "material": 140,
         "profile": "enamel",
         "bevelM": 0.0014,
         "grainAxis": 0,
@@ -31138,7 +31615,7 @@
           0.1,
           0.03
         ],
-        "material": 136,
+        "material": 140,
         "profile": "enamel",
         "bevelM": 0.0014,
         "grainAxis": 0,
@@ -31224,7 +31701,7 @@
           1.02,
           0.09
         ],
-        "material": 160,
+        "material": 164,
         "profile": "enamel",
         "bevelM": 0.0014,
         "grainAxis": 1,
@@ -31243,7 +31720,7 @@
           0.93,
           0.014
         ],
-        "material": 161,
+        "material": 165,
         "profile": "enamel",
         "bevelM": 0.0014,
         "grainAxis": 1,
@@ -31262,7 +31739,7 @@
           0.008,
           0.002
         ],
-        "material": 162,
+        "material": 166,
         "profile": "enamel",
         "bevelM": 0.0003,
         "grainAxis": 0,
@@ -31281,7 +31758,7 @@
           0.008,
           0.002
         ],
-        "material": 162,
+        "material": 166,
         "profile": "enamel",
         "bevelM": 0.0003,
         "grainAxis": 0,
@@ -31300,7 +31777,7 @@
           0.008,
           0.002
         ],
-        "material": 162,
+        "material": 166,
         "profile": "enamel",
         "bevelM": 0.0003,
         "grainAxis": 0,
@@ -31319,7 +31796,7 @@
           0.035,
           0.012
         ],
-        "material": 135,
+        "material": 139,
         "profile": "enamel",
         "bevelM": 0.0014,
         "grainAxis": 0,
@@ -31338,7 +31815,7 @@
           0.004,
           0.003
         ],
-        "material": 162,
+        "material": 166,
         "profile": "enamel",
         "bevelM": 0.00045,
         "grainAxis": 0,
@@ -31357,7 +31834,7 @@
           0.035,
           0.012
         ],
-        "material": 135,
+        "material": 139,
         "profile": "enamel",
         "bevelM": 0.0014,
         "grainAxis": 0,
@@ -31376,7 +31853,7 @@
           0.004,
           0.003
         ],
-        "material": 162,
+        "material": 166,
         "profile": "enamel",
         "bevelM": 0.00045,
         "grainAxis": 0,
@@ -31395,7 +31872,7 @@
           0.035,
           0.012
         ],
-        "material": 135,
+        "material": 139,
         "profile": "enamel",
         "bevelM": 0.0014,
         "grainAxis": 0,
@@ -31414,7 +31891,7 @@
           0.004,
           0.003
         ],
-        "material": 162,
+        "material": 166,
         "profile": "enamel",
         "bevelM": 0.00045,
         "grainAxis": 0,
@@ -31433,7 +31910,7 @@
           0.035,
           0.012
         ],
-        "material": 135,
+        "material": 139,
         "profile": "enamel",
         "bevelM": 0.0014,
         "grainAxis": 0,
@@ -31452,7 +31929,7 @@
           0.004,
           0.003
         ],
-        "material": 162,
+        "material": 166,
         "profile": "enamel",
         "bevelM": 0.00045,
         "grainAxis": 0,
@@ -31471,7 +31948,7 @@
           0.035,
           0.014
         ],
-        "material": 163,
+        "material": 167,
         "profile": "enamel",
         "bevelM": 0.0014,
         "grainAxis": 0,
@@ -31490,7 +31967,7 @@
           0.132,
           0.006
         ],
-        "material": 164,
+        "material": 168,
         "profile": "enamel",
         "bevelM": 0.0009,
         "grainAxis": 1,
@@ -31509,7 +31986,7 @@
           0.2024,
           0.006
         ],
-        "material": 164,
+        "material": 168,
         "profile": "enamel",
         "bevelM": 0.0009,
         "grainAxis": 1,
@@ -31528,7 +32005,7 @@
           0.2728,
           0.006
         ],
-        "material": 164,
+        "material": 168,
         "profile": "enamel",
         "bevelM": 0.0009,
         "grainAxis": 1,
@@ -31547,7 +32024,7 @@
           0.132,
           0.006
         ],
-        "material": 164,
+        "material": 168,
         "profile": "enamel",
         "bevelM": 0.0009,
         "grainAxis": 1,
@@ -31566,7 +32043,7 @@
           0.2024,
           0.006
         ],
-        "material": 164,
+        "material": 168,
         "profile": "enamel",
         "bevelM": 0.0009,
         "grainAxis": 1,

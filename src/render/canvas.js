@@ -121,6 +121,8 @@ export function canvasSetup(el) {
   persistenceCtx = persistence.getContext('2d');
   resize();
   window.addEventListener('resize', resize);
+  // The stage can change size a frame after the window (platform/viewport-guard.js).
+  window.addEventListener('chunk-surfer:stage-resize', resize);
   return { viewDims };
 }
 

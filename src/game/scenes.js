@@ -120,10 +120,17 @@ export function worldPresentation() {
 }
 export function suppressesHud() { return stack.some((s) => s.suppressesHud); }
 export function tracksMotion() { return !!top()?.tracksMotion; }
-// A tableau may hold the body while leaving the head alone. This is narrower
-// than tracksMotion: it never records locomotion, it only keeps first-person
-// pointer/right-stick look alive. A pause overlay on top revokes the lease.
-export function allowsLook() { return !!top({ includeOverlay:true })?.allowsLook; }
+// The scene holding the body owns the look policy. Passive notices above it
+// do not revoke its lease; a modal menu or an explicit look blocker still does.
+// An allowsLook overlay also cannot lend look to a modal menu beneath it.
+export function allowsLook() {
+  for (let i = stack.length - 1; i >= 0; i--) {
+    const scene = stack[i];
+    if (scene.allowsLook === false) return false;
+    if (scene.blocksInput) return scene.allowsLook === true;
+  }
+  return false;
+}
 export function worldView() { return top()?.worldView?.() || null; }
 
 export function update(dt) {

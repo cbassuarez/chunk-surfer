@@ -1,0 +1,391 @@
+[
+  {
+    "cycle": 2,
+    "before": {
+      "scene": "battle:source-final",
+      "depth": 1,
+      "source": {
+        "phase": "final",
+        "finalEncounter": {
+          "victories": 1,
+          "attempt": 2,
+          "activeBattleId": "source-contact:4417:2",
+          "lastBattleId": "source-contact:4417:1",
+          "status": "ready",
+          "outcome": null,
+          "won": null,
+          "rescuedRecordist": false,
+          "legacyRedaction": null,
+          "compatibility": {},
+          "channels": {
+            "rescue": 0,
+            "contain": 0,
+            "submit": 0
+          },
+          "turns": 0
+        },
+        "contact": {
+          "schema": 2,
+          "captures": 2,
+          "talks": 2,
+          "radioCalls": 0,
+          "lastTalk": "lift",
+          "insights": [],
+          "seenBeats": [
+            "approach",
+            "ask",
+            "warning",
+            "return"
+          ],
+          "lastChoiceId": "contact.confirm",
+          "met": true,
+          "questions": [],
+          "beats": [],
+          "tells": [],
+          "warningSeen": true,
+          "combatCommitted": true
+        }
+      },
+      "battle": {
+        "phase": "tool",
+        "movementIndex": 0,
+        "movementIds": [
+          "call-site",
+          "borrowed-body",
+          "final-clause"
+        ],
+        "result": null,
+        "composure": 40,
+        "sourceDesktop": {
+          "phase": "desktop",
+          "mode": "fallback",
+          "ready": true,
+          "reason": "native-unavailable",
+          "token": "",
+          "ended": false,
+          "waiting": false,
+          "rendererReady": true
+        },
+        "checkpointTerminal": false,
+        "held": true
+      },
+      "replayAttempt": "source-contact:4417:2",
+      "worldDither": 12832,
+      "focus": true,
+      "visible": true
+    },
+    "fixture": {
+      "fixture": "resolveCombatResult on the real live engine state",
+      "before": {
+        "movementIndex": 0,
+        "turns": 0,
+        "definitionId": "source-final"
+      },
+      "terminal": {
+        "version": 1,
+        "definitionId": "source-final",
+        "metrics": {
+          "result": "win",
+          "won": true,
+          "turns": 0,
+          "composure": 40,
+          "maxComposure": 40,
+          "perfectCounters": 0,
+          "missedCounters": 0,
+          "damageTaken": 0,
+          "snr": "signal",
+          "injuries": 0,
+          "signature": {
+            "id": "routing",
+            "label": "THREE RETURNS",
+            "description": "Every perfect response and phase break commits signal to the armed return channel."
+          },
+          "torchSpent": 0,
+          "techniques": [],
+          "toolsUsed": {},
+          "proofs": [],
+          "enemyRead": {
+            "answers": {},
+            "landed": {}
+          },
+          "source": {
+            "outcome": "rescue",
+            "channels": {
+              "rescue": 0,
+              "contain": 0,
+              "submit": 0
+            },
+            "rescuedRecordist": false,
+            "sourceReading": "BODY BORROWED RETURN"
+          },
+          "finale": {
+            "readings": [],
+            "grants": [],
+            "locks": [
+              "route.surfaced",
+              "route.inversion"
+            ],
+            "routeBiases": [],
+            "composure": 40,
+            "sourceReading": {
+              "readingId": "combat:source-you",
+              "meaning": "You leave yourself as the source.",
+              "text": "SOURCE IS YOU"
+            },
+            "pressure": 0,
+            "proofs": []
+          }
+        },
+        "performanceIntrusion": 0,
+        "performanceStage": "MONITOR"
+      }
+    },
+    "after": {
+      "scene": null,
+      "depth": 0,
+      "source": {
+        "phase": "landscape",
+        "finalEncounter": {
+          "victories": 2,
+          "attempt": 2,
+          "activeBattleId": null,
+          "lastBattleId": "source-contact:4417:2",
+          "status": "locked",
+          "outcome": null,
+          "won": null,
+          "rescuedRecordist": false,
+          "legacyRedaction": null,
+          "compatibility": {},
+          "channels": {
+            "rescue": 0,
+            "contain": 0,
+            "submit": 0
+          },
+          "turns": 0
+        },
+        "contact": {
+          "schema": 2,
+          "captures": 2,
+          "talks": 2,
+          "radioCalls": 0,
+          "lastTalk": "lift",
+          "insights": [],
+          "seenBeats": [
+            "approach",
+            "ask",
+            "warning",
+            "return"
+          ],
+          "lastChoiceId": null,
+          "met": true,
+          "questions": [],
+          "beats": [],
+          "tells": [],
+          "warningSeen": false,
+          "combatCommitted": false
+        }
+      },
+      "battle": null,
+      "replayAttempt": null,
+      "worldDither": 12885,
+      "focus": true,
+      "visible": true
+    }
+  },
+  {
+    "cycle": 3,
+    "before": {
+      "scene": "battle:source-final",
+      "depth": 1,
+      "source": {
+        "phase": "final",
+        "finalEncounter": {
+          "victories": 2,
+          "attempt": 3,
+          "activeBattleId": "source-contact:4417:3",
+          "lastBattleId": "source-contact:4417:2",
+          "status": "ready",
+          "outcome": null,
+          "won": null,
+          "rescuedRecordist": false,
+          "legacyRedaction": null,
+          "compatibility": {},
+          "channels": {
+            "rescue": 0,
+            "contain": 0,
+            "submit": 0
+          },
+          "turns": 0
+        },
+        "contact": {
+          "schema": 2,
+          "captures": 3,
+          "talks": 3,
+          "radioCalls": 0,
+          "lastTalk": "lift",
+          "insights": [],
+          "seenBeats": [
+            "approach",
+            "ask",
+            "warning",
+            "return"
+          ],
+          "lastChoiceId": "contact.confirm",
+          "met": true,
+          "questions": [],
+          "beats": [],
+          "tells": [],
+          "warningSeen": true,
+          "combatCommitted": true
+        }
+      },
+      "battle": {
+        "phase": "tool",
+        "movementIndex": 0,
+        "movementIds": [
+          "call-site",
+          "borrowed-body",
+          "final-clause"
+        ],
+        "result": null,
+        "composure": 40,
+        "sourceDesktop": {
+          "phase": "desktop",
+          "mode": "fallback",
+          "ready": true,
+          "reason": "native-unavailable",
+          "token": "",
+          "ended": false,
+          "waiting": false,
+          "rendererReady": true
+        },
+        "checkpointTerminal": false,
+        "held": true
+      },
+      "replayAttempt": "source-contact:4417:3",
+      "worldDither": 14264,
+      "focus": true,
+      "visible": true
+    },
+    "fixture": {
+      "fixture": "resolveCombatResult on the real live engine state",
+      "before": {
+        "movementIndex": 0,
+        "turns": 0,
+        "definitionId": "source-final"
+      },
+      "terminal": {
+        "version": 1,
+        "definitionId": "source-final",
+        "metrics": {
+          "result": "win",
+          "won": true,
+          "turns": 0,
+          "composure": 40,
+          "maxComposure": 40,
+          "perfectCounters": 0,
+          "missedCounters": 0,
+          "damageTaken": 0,
+          "snr": "signal",
+          "injuries": 0,
+          "signature": {
+            "id": "routing",
+            "label": "THREE RETURNS",
+            "description": "Every perfect response and phase break commits signal to the armed return channel."
+          },
+          "torchSpent": 0,
+          "techniques": [],
+          "toolsUsed": {},
+          "proofs": [],
+          "enemyRead": {
+            "answers": {},
+            "landed": {}
+          },
+          "source": {
+            "outcome": "rescue",
+            "channels": {
+              "rescue": 0,
+              "contain": 0,
+              "submit": 0
+            },
+            "rescuedRecordist": false,
+            "sourceReading": "BODY BORROWED RETURN"
+          },
+          "finale": {
+            "readings": [],
+            "grants": [],
+            "locks": [
+              "route.surfaced",
+              "route.inversion"
+            ],
+            "routeBiases": [],
+            "composure": 40,
+            "sourceReading": {
+              "readingId": "combat:source-you",
+              "meaning": "You leave yourself as the source.",
+              "text": "SOURCE IS YOU"
+            },
+            "pressure": 0,
+            "proofs": []
+          }
+        },
+        "performanceIntrusion": 0,
+        "performanceStage": "MONITOR"
+      }
+    },
+    "after": {
+      "scene": "finale",
+      "depth": 1,
+      "source": {
+        "phase": "completed",
+        "finalEncounter": {
+          "victories": 3,
+          "attempt": 3,
+          "activeBattleId": null,
+          "lastBattleId": "source-contact:4417:3",
+          "status": "resolved",
+          "outcome": "rescue",
+          "won": true,
+          "rescuedRecordist": false,
+          "legacyRedaction": "body",
+          "compatibility": {
+            "adapter": "combat-v1",
+            "sourceReading": "BODY BORROWED RETURN"
+          },
+          "channels": {
+            "rescue": 0,
+            "contain": 0,
+            "submit": 0
+          },
+          "turns": 0
+        },
+        "contact": {
+          "schema": 2,
+          "captures": 3,
+          "talks": 3,
+          "radioCalls": 0,
+          "lastTalk": "lift",
+          "insights": [],
+          "seenBeats": [
+            "approach",
+            "ask",
+            "warning",
+            "return"
+          ],
+          "lastChoiceId": "contact.confirm",
+          "met": true,
+          "questions": [],
+          "beats": [],
+          "tells": [],
+          "warningSeen": true,
+          "combatCommitted": true
+        }
+      },
+      "battle": null,
+      "replayAttempt": null,
+      "worldDither": 14313,
+      "focus": true,
+      "visible": true
+    }
+  }
+]

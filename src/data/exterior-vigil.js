@@ -1,9 +1,12 @@
-// THE QUIET VIGIL OUTSIDE ELLERY.
+// THE QUIET VIGIL AROUND ELLERY.
+// Denise and Malcolm have taken their documents into The Lyric to dry.
 //
 // Twenty-four people wait for the 06:00 first strike. They are a preservation
 // protest, but the verb is WAIT: wet signs, numbered cups, a camera, a rota and
 // six people who each know one bounded piece of the night. Nothing here gates
 // the opening route. Malcolm's chapel line buys recognition, never access.
+
+import {pubMigration,pubApproach,pubFacePoint} from './pub-population.js';
 
 const freeze=(value)=>Object.freeze(value);
 function deepFreeze(value){
@@ -52,7 +55,7 @@ export const VIGIL_MESHES=deepFreeze({
   vigil_figure_placard_b:{w:1.42,d:.76,h:2.22,blocks:true},
   vigil_figure_flask_a:{w:.86,d:.76,h:1.74,blocks:true},
   vigil_figure_flask_b:{w:1.42,d:.78,h:1.80,blocks:true},
-  vigil_figure_seated_a:{w:.82,d:.90,h:1.36,blocks:true},
+  vigil_figure_seated_a:{w:.82,d:.90,h:1.42,blocks:true},
   vigil_figure_seated_b:{w:.84,d:.92,h:1.42,blocks:true},
   vigil_figure_pamphlets_a:{w:1.42,d:.78,h:1.76,blocks:true},
   vigil_figure_pamphlets_b:{w:.88,d:.76,h:1.72,blocks:true},
@@ -77,6 +80,7 @@ export const VIGIL_PART_MESHES=deepFreeze({
 const RUTH='Ruth Mallory',LEILA='Leila Hart',OWEN='Owen Pryce';
 const DENISE='Denise Okafor',MALCOLM='Malcolm Vey',KIT='Kit Renshaw';
 export const VIGIL_LINKED_CHAPELS_FLAG='vigil.linkedChapels';
+const MALCOLM_MAP_RECOGNITION_LINE='vigil-malcolm-vey:chapel-line';
 
 export const VIGIL_VOICES=deepFreeze({
   'vigil-ruth-mallory':{
@@ -192,14 +196,14 @@ export const VIGIL_VOICES=deepFreeze({
     },
   },
   'vigil-denise-okafor':{
-    id:'vigil-denise-okafor',name:DENISE,role:'archive volunteer',label:'the woman at the park railing',knownLabel:DENISE,
-    slate:'PARK EDGE / PHOTOGRAPH SLEEVES',speaker:'THE WOMAN WITH THE PHOTOGRAPHS',
+    id:'vigil-denise-okafor',name:DENISE,role:'archive volunteer',label:'the woman with the photograph sleeves',knownLabel:DENISE,
+    slate:'THE LYRIC / PHOTOGRAPH SLEEVES',speaker:'THE WOMAN WITH THE PHOTOGRAPHS',
     art:plate('vigilDenise','Photographs in plastic sleeves'),detailArt:plate('vigilDeniseArchive','The catalogue stops at 1986','BOROUGH ARCHIVE'),
-    mesh:'vigil_denise_okafor',parts:[part('vigil_part_denise_photos','photos')],cluster:'park-railing',
-    actionSet:['photos-sort','weight-shift'],place:freeze({x:17.6,y:27,yaw:1.50}),voice:freeze({pitch:1,rate:1,grain:'level'}),
+    mesh:'vigil_denise_okafor',parts:[part('vigil_part_denise_photos','photos')],cluster:'pub-snug',
+    actionSet:['photos-sort','weight-shift'],place:pubMigration('vigil-denise-okafor'),voice:freeze({pitch:1,rate:1,grain:'level'}),
     tree:{
       start:{speaker:'THE WOMAN WITH THE PHOTOGRAPHS',art:plate('vigilDenise','Photographs in plastic sleeves'),lines:lines(
-        {who:'THE WOMAN WITH THE PHOTOGRAPHS',text:'Hold that corner, would you? The sleeve is waterproof. The hole I punched in it is not.'},
+        {who:'THE WOMAN WITH THE PHOTOGRAPHS',text:'Hold that corner, would you? The sleeve kept the rain out. The hole I punched in it did not.'},
         {who:'direction',text:'The catalogue card beneath her hand reads OKAFOR, D. / LAUNDRY SITE.'},
         {who:'me',prompt:'Ask about the photograph.',text:'Is that this park?'},
         {who:DENISE,text:'Laundry yard, 1912. Same boundary wall. The grass came in 1974 and the caption changed to municipal open space.'},
@@ -215,7 +219,7 @@ export const VIGIL_VOICES=deepFreeze({
         {who:DENISE,text:'I asked for one hour inside with a camera. The answer arrived after the contractor fence did.'},
       ),goto:'start'},
       revisit:{speaker:DENISE,art:plate('vigilDenise','Photographs in plastic sleeves'),lines:lines(
-        {who:DENISE,text:'The rain is getting under the labels now. Pick one before I put them away.'}),
+        {who:DENISE,text:'The labels are drying now. Pick one before I put them away.'}),
         choices:[choice('Ask where the archive stops.','archive'),choice('Ask what is marked for salvage.','after'),leave('Release the sleeve.')]},
       return:{speaker:DENISE,art:plate('vigilDeniseArchive','The catalogue stops at 1986','BOROUGH ARCHIVE'),lines:lines(
         {who:DENISE,text:'You had equipment inside. Did you write the room names down, or only the take numbers?'}),
@@ -224,20 +228,20 @@ export const VIGIL_VOICES=deepFreeze({
         {who:'me',prompt:'Say what is on the tape.',text:'Room names, start times, and whatever came through the walls.'},
         {who:DENISE,text:'Good. Put the names on the case before you hand it over. Take numbers mean nothing once the sheet is separated.'},
         {who:DENISE,text:'Make two copies. One for the client, one somewhere the client does not tidy.'},
-        {who:'direction',text:'She turns the sleeve over and presses water from the punched corner.'},
+        {who:'direction',text:'She turns the sleeve over and presses the damp corner against a folded bar towel.'},
         {who:DENISE,text:'Keep the case label with both.'},
       )},
     },
   },
   'vigil-malcolm-vey':{
     id:'vigil-malcolm-vey',name:MALCOLM,role:'campaign regular',label:'the man with the folded map',knownLabel:MALCOLM,
-    slate:'FORECOURT / THE FOLDED MAP',speaker:'THE MAN WITH THE MAP',
+    slate:'THE LYRIC / THE FOLDED MAP',speaker:'THE MAN WITH THE MAP',
     art:plate('vigilMalcolm','A map folded against the rain'),detailArt:plate('vigilMalcolmLine','Two chapel marks and a pencil line','1:2500'),
-    mesh:'vigil_malcolm_vey',parts:[part('vigil_part_malcolm_map','map')],cluster:'forecourt-west',
-    actionSet:['map-fold','weight-shift'],place:freeze({x:2.22,y:52.53,yaw:1.35}),voice:freeze({pitch:1.02,rate:1.12,grain:'pressed'}),
+    mesh:'vigil_malcolm_vey',parts:[part('vigil_part_malcolm_map','map')],cluster:'pub-bar',
+    actionSet:['map-fold','weight-shift'],place:pubMigration('vigil-malcolm-vey'),voice:freeze({pitch:1.02,rate:1.12,grain:'pressed'}),
     tree:{
       start:{speaker:'THE MAN WITH THE MAP',art:plate('vigilMalcolm','A map folded against the rain'),lines:lines(
-        {who:'THE MAN WITH THE MAP',text:'Hold the lamp there. Not on the plastic—the pencil goes silver when you put it straight on.'},
+        {who:'THE MAN WITH THE MAP',text:'Keep it out of the bar light. On the plastic, the pencil goes silver when it catches straight on.'},
         {who:'direction',text:'M. VEY is printed beneath an old library stamp. Two chapel plans have been taped over the street map.'},
         {who:'me',prompt:'Ask what he measured.',text:'What are the two circles?'},
         {who:MALCOLM,text:'Ellery chapel and St Brendan’s crossing. Different plans, different scales. I copied the centres before the archive shut.'},
@@ -245,21 +249,30 @@ export const VIGIL_VOICES=deepFreeze({
       line:{speaker:MALCOLM,art:plate('vigilMalcolmLine','Two chapel marks and a pencil line','1:2500'),lines:lines(
         {who:'me',prompt:'Point out the alignment.',text:'That runs through both chapels.'},
         {who:MALCOLM,text:'Centre to centre, within what I can do with photocopies. There is no duct or right of way on either plan.'},
-        {who:MALCOLM,text:'It may be nothing. But if you stand in one of them tonight, listen for the other before the machinery arrives.'},
-      ),set:[VIGIL_LINKED_CHAPELS_FLAG],goto:'start'},
+        {who:MALCOLM,sourceId:MALCOLM_MAP_RECOGNITION_LINE,text:'It may be nothing. But if you stand in one of them tonight, listen for the other before the machinery arrives.'},
+      ),goto:'start'},
       theory:{speaker:MALCOLM,art:plate('vigilMalcolm','A map folded against the rain'),lines:lines(
         {who:'me',prompt:'Ask where the idea came from.',text:'Why draw the line in the first place?'},
         {who:MALCOLM,text:'A neighbour said the drain covers answer the tenor. I tried the bearings and found this.'},
         {who:MALCOLM,text:'The neighbour may be wrong. My centres may be wrong. The line is still straighter than I expected.'},
-        {who:'me',text:'And that is enough to stand here all night?'},
+        {who:'me',text:'And that is enough to stay here all night?'},
         {who:MALCOLM,text:'It is enough to keep the map dry until six.'},
       ),goto:'start'},
       revisit:{speaker:MALCOLM,art:plate('vigilMalcolm','A map folded against the rain'),lines:lines(
         {who:MALCOLM,text:'Same line. I checked after you left; the tape has not improved it.'}),
         choices:[choice('Look at the chapel alignment.','line'),choice('Ask where the idea came from.','theory'),leave('Fold the map closed.')]},
       return:{speaker:MALCOLM,art:plate('vigilMalcolmLine','Two chapel marks and a pencil line','1:2500'),lines:lines(
-        {who:MALCOLM,text:'You came back by the long side of the line. I watched which door opened.'}),
-        choices:[choice('Ask what he expects at six.','six'),leave('Give the map back.')]},
+        {who:MALCOLM,text:'You came back by the long side of the line. From this stool I can see the door.'}),
+        choices:[
+          choice('Ask what he expects at six.','six'),
+          choice('Look at the chapel alignment.','line',{
+            if:`!${VIGIL_LINKED_CHAPELS_FLAG}`,hideWhenAsked:false,
+            knowledgeId:'vigil-malcolm-vey:return.alignment',
+          }),
+          // Keep the former leave index as its knowledge identity after the
+          // existing map subject is inserted; old replay state is not a clue.
+          {...leave('Give the map back.'),knowledgeId:'exterior-vigil:vigil-malcolm-vey:return:choice:1'},
+        ]},
       six:{speaker:MALCOLM,art:plate('vigilMalcolmLine','Two chapel marks and a pencil line','1:2500'),lines:lines(
         {who:'me',prompt:'Ask what the first strike changes.',text:'What happens to your line at six?'},
         {who:MALCOLM,text:'One centre disappears. After that nobody can repeat the measurement, including me.'},
@@ -375,11 +388,27 @@ export const VIGIL_ENDING_OMISSIONS=freeze(['sacrifice','helped','inversion','co
 
 export function vigilEndingInserts(endingId){return VIGIL_ENDING_INSERTS[String(endingId||'')]||null;}
 export function vigilVoice(id){return VIGIL_VOICES[String(id||'')]||null;}
+// Repeatable conversations apply choice effects, not node effects. Remember
+// this observation only once its answer is actually presented; choosing the
+// subject and then escaping is not the same as hearing Malcolm's claim.
+export function vigilRecognitionFlags(id,line){
+  return id==='vigil-malcolm-vey'&&line?.sourceId===MALCOLM_MAP_RECOGNITION_LINE
+    ?[VIGIL_LINKED_CHAPELS_FLAG]:[];
+}
+export function vigilBelfryRecognition(linkedChapels=false){
+  return linkedChapels?[
+    {who:'you',text:'His pencil line. Chapel to chapel. I had been standing at the other end.'},
+  ]:[];
+}
 export function vigilConversation(id,{phase='first',revisited=false}={}){
   const entry=vigilVoice(id);if(!entry)return null;
   const requested=revisited&&phase==='first'?'immediate-revisit':phase;
   const startAt=requested==='returned'?'return':requested==='immediate-revisit'?'revisit':'start';
-  return{tree:entry.tree,startAt,phase:requested,slate:entry.slate,speaker:entry.speaker,art:entry.art};
+  // The map is still in his hands on return. An unreceived answer can be
+  // revisited, then return to this night's short hub rather than greet again.
+  const tree=id==='vigil-malcolm-vey'&&startAt==='return'
+    ?{...entry.tree,line:{...entry.tree.line,goto:'return'}}:entry.tree;
+  return{tree,startAt,phase:requested,slate:entry.slate,speaker:entry.speaker,art:entry.art};
 }
 export function vigilObservation(id){return VIGIL_OBSERVATIONS.find((entry)=>entry.id===String(id||''))||null;}
 export function vigilMoment(id){return vigilObservation(id);}
@@ -390,7 +419,10 @@ export function vigilFigures(){
       id:voice.id,mesh:voice.mesh,x:voice.place.x,y:voice.place.y,yaw:voice.place.yaw,
       cluster:voice.cluster,actionSet:voice.actionSet,parts:voice.parts,occupantCount:1,
       talkable:true,label:voice.label,knownLabel:voice.knownLabel,voiceId:voice.id,
-      facePoint:vigilFacePoint(voice.place),approach:vigilApproachPoint(voice.place),
+      coordinateSpace:voice.place.coordinateSpace||'yard-physical-metres',
+      ...(voice.place.migrated?{pubActorId:voice.id,posture:voice.place.posture,seatId:voice.place.seatId}:{}),
+      facePoint:voice.place.migrated?pubFacePoint(voice.place):vigilFacePoint(voice.place),
+      approach:voice.place.migrated?pubApproach(voice.place):vigilApproachPoint(voice.place),
     })),
     ...VIGIL_CROWD.map((figure)=>({
       ...figure,talkable:false,label:null,knownLabel:null,voiceId:null,
@@ -403,6 +435,7 @@ export function vigilParts(){
   const linked=vigilFigures().flatMap((figure)=>(figure.parts||[]).map((entry)=>({
     id:`vigil-part-${figure.id.replace(/^vigil-/,'')}-${entry.id}`,mesh:entry.mesh,
     actorId:figure.id,cluster:figure.cluster,x:figure.x,y:figure.y,yaw:figure.yaw,
+    coordinateSpace:figure.coordinateSpace||'yard-physical-metres',pubActorId:figure.pubActorId||null,
   })));
   return[...linked,...VIGIL_STATIC_PARTS];
 }

@@ -85,7 +85,10 @@ pub(crate) fn open_native_probe(app: &AppHandle) {
     }
     if let Some(main) = app.get_webview_window("main") {
         let _ = main.set_title("Source native lifecycle probe");
-        if let Ok(url) = "http://localhost:5173/test/source-desktop-native-harness.html".parse() {
+        let target = std::env::var("CHUNK_SOURCE_DESKTOP_PROBE_URL")
+            .unwrap_or_else(|_| "http://localhost:5173/test/source-desktop-native-harness.html".into());
+        if let Ok(url) = target.parse::<tauri::Url>() {
+            if !matches!(url.host_str(), Some("localhost" | "127.0.0.1")) || url.scheme() != "http" { return; }
             let _ = main.navigate(url);
         }
     }
@@ -450,6 +453,9 @@ fn begin(app: &AppHandle, request: DesktopRequest) -> Result<DesktopPlacement, S
             .map_err(|error| error.to_string())?;
         main.set_cursor_visible(true)
             .map_err(|error| error.to_string())?;
+        // The presentation can release the OS grab without changing window
+        // focus. Retire the WebView's matching capture generation as well.
+        let _ = main.emit("chunk-native-capture-invalidated", json!({"reason":"source-desktop-begin"}));
         main.set_min_size(Some(LogicalSize::new(200.0, 180.0)))
             .map_err(|error| error.to_string())?;
         main.set_resizable(false)
@@ -619,6 +625,9 @@ pub(crate) fn release_presentation(
                 errors.push(error.to_string());
             }
         }
+        // Abort/restore cleanup may finish after the battle scene has popped.
+        // Notify the current owner instead of silently undoing its newer grab.
+        let _ = main.emit("chunk-native-capture-invalidated", json!({"reason":"source-desktop-end"}));
     }
     if errors.is_empty() {
         Ok(active.is_some())

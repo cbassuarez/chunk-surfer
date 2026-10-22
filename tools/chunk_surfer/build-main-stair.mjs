@@ -100,6 +100,52 @@ function addSphere(m,c,r,mat,rings=6,segments=12){
   }
 }
 
+// A continuous swept profile, rather than a chain of overlapping square boxes.
+// Shared rings give the oak a legible rounded grip and the iron continuous
+// normals. Caps are explicit; opaque construction stays single sided.
+function addProfiledSweep(points,halfWidth,halfHeight,mat,sides=6,radialFrame=false){
+  const g=group(m,mat),rows=[],normals=[];
+  for(let i=0;i<points.length;i++){
+    const a=points[Math.max(0,i-1)],b=points[Math.min(points.length-1,i+1)];
+    const d=b.map((v,k)=>v-a[k]),len=Math.hypot(...d)||1,t=d.map(v=>v/len);
+    const sideLen=Math.hypot(t[0],t[2]);
+    let side=sideLen>1e-7?[-t[2]/sideLen,0,t[0]/sideLen]:[1,0,0];
+    if(radialFrame){
+      const r=Math.hypot(points[i][0],points[i][2])||1,ref=[points[i][0]/r,0,points[i][2]/r];
+      const dot=ref.reduce((v,q,k)=>v+q*t[k],0),v=ref.map((q,k)=>q-dot*t[k]),n=Math.hypot(...v)||1;
+      side=v.map(q=>q/n);
+    }
+    const up=[t[1]*side[2]-t[2]*side[1],t[2]*side[0]-t[0]*side[2],t[0]*side[1]-t[1]*side[0]];
+    const row=[],ns=[];
+    for(let j=0;j<sides;j++){
+      const angle=j/sides*Math.PI*2,c=Math.cos(angle),s=Math.sin(angle);
+      const p=points[i].map((v,k)=>v+side[k]*c*halfWidth+up[k]*s*halfHeight);
+      const n=side.map((v,k)=>v*c/halfWidth+up[k]*s/halfHeight),nl=Math.hypot(...n)||1;
+      row.push(g.positions.length/3);ns.push(n.map(v=>v/nl));g.positions.push(...p);g.normals.push(...ns.at(-1));
+    }
+    rows.push(row);normals.push(ns);
+  }
+  const triangle=(a,b,c,want)=>{
+    const p=[a,b,c].map(i=>g.positions.slice(i*3,i*3+3)),n=normal(p[0],p[1],p[2]);
+    if(n.reduce((v,q,k)=>v+q*want[k],0)<0)g.indices.push(a,c,b);else g.indices.push(a,b,c);
+  };
+  for(let i=0;i<rows.length-1;i++)for(let j=0;j<sides;j++){
+    const k=(j+1)%sides,want=normals[i][j].map((v,d)=>v+normals[i][k][d]+normals[i+1][j][d]+normals[i+1][k][d]);
+    triangle(rows[i][j],rows[i+1][j],rows[i+1][k],want);
+    triangle(rows[i][j],rows[i+1][k],rows[i][k],want);
+  }
+  for(const end of[0,points.length-1]){
+    const neighbour=points[end===0?1:points.length-2],n=points[end].map((v,k)=>v-neighbour[k]),nl=Math.hypot(...n)||1,nn=n.map(v=>v/nl);
+    const ci=g.positions.length/3;g.positions.push(...points[end]);g.normals.push(...nn);
+    for(let j=0;j<sides;j++){
+      const p=g.positions.slice(rows[end][j]*3,rows[end][j]*3+3),ni=g.positions.length/3;
+      g.positions.push(...p);g.normals.push(...nn);
+      const pj=g.positions.slice(rows[end][(j+1)%sides]*3,rows[end][(j+1)%sides]*3+3),nj=g.positions.length/3;
+      g.positions.push(...pj);g.normals.push(...nn);triangle(ci,ni,nj,nn);
+    }
+  }
+}
+
 const STAIR=MAIN_STAIR_GEOMETRY;
 const ORIGIN=STAIR.center;
 const local=(x,y,z)=>[x-ORIGIN.x,y,z-ORIGIN.z];
@@ -126,8 +172,11 @@ function addCurvedFlight({a0,a1,fromH,toH,rises}){
   const da=(a1-a0)/rises,riser=(toH-fromH)/rises,slab=STAIR.slabDepthM;
   for(let i=0;i<rises;i++){
     const start=a0+da*i,end=start+da,top=fromH+riser*i;
-    const under0=fromH-slab+(toH-fromH)*(i/rises);
-    const under1=fromH-slab+(toH-fromH)*((i+1)/rises);
+    // slabDepth is the MINIMUM concrete below the nose, not the thickness at
+    // the high end of the pitched soffit. Previously only 7mm remained beneath
+    // some nosings: the stair read as thin folded wedges instead of a flight.
+    const under0=fromH-slab+riser*(i-1);
+    const under1=fromH-slab+riser*i;
     const slices=Math.max(3,Math.ceil(Math.abs(da)/.04));
     for(let s=0;s<slices;s++){
       const u0=s/slices,u1=(s+1)/slices,b0=start+da*u0,b1=start+da*u1,mid=(b0+b1)/2;
@@ -138,19 +187,35 @@ function addCurvedFlight({a0,a1,fromH,toH,rises}){
       addQuad([point(INNER,b1,low1),point(INNER,b0,low0),point(INNER,b0,top),point(INNER,b1,top)],MAT.concrete,[-Math.sin(mid),0,Math.cos(mid)]);
     }
     addQuad([point(INNER,end,top),point(OUTER,end,top),point(OUTER,end,top+riser),point(INNER,end,top+riser)],MAT.concrete);
-    addBeam(m,point(INNER-.025,end,top+.022),point(OUTER+.04,end,top+.022),.045,MAT.brass);
+    addProfiledSweep([point(INNER-.005,end,top+.007),point(OUTER+.005,end,top+.007)],.014,.006,MAT.brass,6);
   }
-  // 140mm maximum centres at the outer curve retain a sub-112mm clear gap.
-  const posts=Math.ceil(Math.abs(a1-a0)*OUTER/.14);
-  for(let i=0;i<=posts;i++){
-    const t=i/posts,a=a0+(a1-a0)*t,step=Math.min(rises-1,Math.floor(t*rises)),base=fromH+riser*step;
-    for(const r of[INNER,OUTER])addCylinder(m,point(r,a,base+.49),.017,.98,MAT.steel,6);
-  }
-  for(let i=0;i<posts;i++){
-    const t0=i/posts,t1=(i+1)/posts,b0=a0+(a1-a0)*t0,b1=a0+(a1-a0)*t1,h0=fromH+(toH-fromH)*t0,h1=fromH+(toH-fromH)*t1;
-    for(const r of[INNER,OUTER]){
-      addBeam(m,point(r,b0,h0+1.0),point(r,b1,h1+1.0),.075,MAT.oak);
-      addBeam(m,point(r,b0,h0+.72),point(r,b1,h1+.72),.034,MAT.brass);
+  for(const r of[INNER,OUTER]){
+    // Equal physical spacing on each radius avoids the old dense inner cage.
+    const posts=Math.ceil(Math.abs(a1-a0)*r/.134);
+    for(let i=0;i<=posts;i++){
+      const t=i/posts,a=a0+(a1-a0)*t,step=Math.min(rises-1,Math.floor(t*rises)),base=fromH+riser*step;
+      const postTop=fromH+(toH-fromH)*t+STAIR.handrailHeightM-.027;
+      addCylinder(m,point(r,a,(base+postTop)/2),.014,postTop-base,MAT.steel,6);
+    }
+    const divisions=Math.ceil(Math.abs(a1-a0)*r/.12),path=Array.from({length:divisions+1},(_,i)=>{
+      const t=i/divisions;return point(r,a0+(a1-a0)*t,fromH+(toH-fromH)*t+STAIR.handrailHeightM);
+    });
+    addProfiledSweep(path,.048,.033,MAT.oak,8);
+    addProfiledSweep(path.map(p=>[p[0],p[1]-.23,p[2]]),.014,.018,MAT.steel,4);
+    addProfiledSweep(path.map(p=>[p[0],p[1]-1.16,p[2]]),.035,.085,MAT.steel,4);
+    if(r===OUTER){
+      const panels=Math.ceil(Math.abs(a1-a0)*r/.9);
+      for(let i=0;i<panels;i++){
+        // A restrained opposed S, tied into the rails, is one forged motif per
+        // structural panel. It reads at walking distance without screen noise.
+        for(const sign of[-1,1]){
+          const curve=Array.from({length:13},(_,j)=>{
+            const u=j/12,t=(i+.5+.32*Math.sin(u*Math.PI*2)*sign)/panels;
+            return point(r,a0+(a1-a0)*t,fromH+(toH-fromH)*t+.24+u*.51);
+          });
+          addProfiledSweep(curve,.011,.011,MAT.steel,4,true);
+        }
+      }
     }
   }
   for(const [a,h]of[[a0,fromH],[a1,toH]])for(const r of[INNER,OUTER]){
@@ -202,6 +267,46 @@ function addFloor1Apron(){
 }
 addFloor1Apron();
 
+// The final radial edge lands in a real west-going gallery apron. Previously
+// the model stopped on a nose facing the south partition and left the turn to
+// an invisible logical seam. This head has one floor and two returned rails;
+// the two-metre mouth remains visibly and physically open to the loggia.
+function addAcademicHead(){
+  const top=10.008,bottom=9.78,x0=61.4,x1=65.7,z0=37,z1=39.45;
+  addQuad([local(x0,top,z0),local(x1,top,z0),local(x1,top,z1),local(x0,top,z1)],MAT.terrazzo,[0,1,0]);
+  addQuad([local(x0,bottom,z1),local(x1,bottom,z1),local(x1,bottom,z0),local(x0,bottom,z0)],MAT.concrete,[0,-1,0]);
+  addQuad([local(x0,bottom,z1),local(x1,bottom,z1),local(x1,top,z1),local(x0,top,z1)],MAT.concrete,[0,0,1]);
+  const f=STAIR.flights.at(-1),end=f.theta0+f.sweep;
+  const curves=[
+    [point(INNER,end,11),local(63.8,11,36.7),local(63.65,11,37.0),local(63.2,11,37.03),local(61.4,11,37.03)],
+    [point(OUTER,end,11),local(65.7,11,37.1),local(65.7,11,38.6),local(65.45,11,39.3),local(64.7,11,39.45),local(61.4,11,39.45)],
+  ];
+  // Cardinal cubic interpolation keeps the head rails smooth through the turn.
+  const smooth=(points)=>{
+    const out=[];
+    for(let i=0;i<points.length-1;i++){
+      const p0=points[Math.max(0,i-1)],p1=points[i],p2=points[i+1],p3=points[Math.min(points.length-1,i+2)];
+      const n=Math.max(5,Math.ceil(Math.hypot(...p2.map((v,k)=>v-p1[k]))/.12));
+      for(let j=0;j<n;j++){const t=j/n,t2=t*t,t3=t2*t;out.push(p1.map((v,k)=>.5*((2*v)+(-p0[k]+p2[k])*t+(2*p0[k]-5*v+4*p2[k]-p3[k])*t2+(-p0[k]+3*v-3*p2[k]+p3[k])*t3)));}
+    }
+    out.push(points.at(-1));return out;
+  };
+  for(const curve of curves){
+    const path=smooth(curve);addProfiledSweep(path,.048,.033,MAT.oak,8);
+    addProfiledSweep(path.map(p=>[p[0],p[1]-.23,p[2]]),.014,.018,MAT.steel,4);
+    let distance=0;
+    for(let i=1;i<path.length;i++){
+      distance+=Math.hypot(...path[i].map((v,k)=>v-path[i-1][k]));
+      if(distance<.13&&i<path.length-1)continue;distance=0;
+      const p=path[i];addCylinder(m,[p[0],10.49,p[2]],.014,.98,MAT.steel,6);
+    }
+  }
+  // Short fan bridges the radial nose to the level head without a square lip.
+  const a=point(INNER,end,top),b=point(OUTER,end,top);
+  addQuad([a,b,local(65.7,top,37),local(63.65,top,37)],MAT.terrazzo,[0,1,0]);
+}
+addAcademicHead();
+
 // Restrained landing lights sit outside the well instead of plugging its view.
 for(const [y,z] of[[8.85,36],[13.25,35.5]]){
   addCylinder(m,local(66.4,y+.68,z),.025,1.36,MAT.brass,8);
@@ -231,7 +336,7 @@ fs.mkdirSync(OUT_DIR,{recursive:true});fs.writeFileSync(OUT,Buffer.concat([head,
 
 let triangles=0,vertices=0;const[lo,hi]=bounds([...m.groups.values()].flatMap(g=>g.positions));
 for(const g of m.groups.values()){triangles+=g.indices.length/3;vertices+=g.positions.length/3;}
-const stats={generatedAt:new Date().toISOString(),bytes:total,totalTriangles:triangles,design:{geometryRevision:STAIR.revision,curvilinear:true,navigationMode:'analytic-helix',halfTurnFlights:STAIR.flights.length,flightWidthM:STAIR.widthM,openWellWidthM:STAIR.innerRadiusM*2,lowerRisers:STAIR.flights[0].rises+STAIR.flights[1].rises,upperRisers:STAIR.flights[2].rises+STAIR.flights[3].rises,goingM:STAIR.goingM,handrailHeightM:STAIR.handrailHeightM,maximumBalusterClearGapM:STAIR.balusterMaximumClearGapM,coplanarFinishPrisms:0,doubleSidedOpaqueMaterials:0,floor1Aim:[STAIR.floor1Aim.x,STAIR.floor1Aim.z]},meshes:{main_open_well_stair:{triangles,vertices,bounds:{min:lo,max:hi}}}};
+const stats={generatedAt:new Date().toISOString(),bytes:total,totalTriangles:triangles,design:{geometryRevision:STAIR.revision,finishRevision:1,curvilinear:true,navigationMode:'analytic-helix',halfTurnFlights:STAIR.flights.length,flightWidthM:STAIR.widthM,openWellWidthM:STAIR.innerRadiusM*2,lowerRisers:STAIR.flights[0].rises+STAIR.flights[1].rises,upperRisers:STAIR.flights[2].rises+STAIR.flights[3].rises,goingM:STAIR.goingM,handrailHeightM:STAIR.handrailHeightM,maximumBalusterClearGapM:STAIR.balusterMaximumClearGapM,minimumSoffitDepthM:STAIR.slabDepthM,profiledOakRails:true,physicalBalusterSpacing:true,academicHead:{floorM:10,exit:'west',mouthWidthM:2,wellPreserved:true},coplanarFinishPrisms:0,doubleSidedOpaqueMaterials:0,floor1Aim:[STAIR.floor1Aim.x,STAIR.floor1Aim.z]},meshes:{main_open_well_stair:{triangles,vertices,bounds:{min:lo,max:hi}}}};
 fs.writeFileSync(STATS,JSON.stringify(stats,null,2)+'\n');
 const sha256=crypto.createHash('sha256').update(fs.readFileSync(OUT)).digest('hex');
 const credits={pack:{filename:path.basename(OUT),author:'Chunk Surfer project',source:'tools/chunk_surfer/build-main-stair.mjs',license:'project source',sha256,triangles,bytes:total,modifications:'Project-native deterministic geometry; metres, Y-up, centred on the physical main stair hall.'},meshes:[{name:'main_open_well_stair',bounds:{min:lo,max:hi},triangles,provenance:{source:'tools/chunk_surfer/build-main-stair.mjs',origin:'project-native procedural geometry',license:'project source'}}]};

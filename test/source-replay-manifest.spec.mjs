@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import { CausalRecorder } from '../src/causal/recorder.js';
 import {
+  beginSourceContactBattle,
   beginSourceReplayTake,
   buildSourceReprisePlan,
   checkpointSourceReprise,
@@ -14,6 +15,28 @@ import {
   noteSourceReplayEntry,
   sourceReplayFallback,
 } from '../src/game/source-replay-manifest.js';
+
+test('separate Hush contacts cannot resume an earlier victory; the same committed fight can reload',()=>{
+  let manifest=beginSourceContactBattle(freshSourceReplayManifest({runId:'night'}),'contact:1');
+  manifest=normalizeSourceReplayManifest({...manifest,encounter:{...manifest.encounter,movementIndex:2,
+    completed:['call-site','borrowed-body'],continuation:{sourceTerminal:{metrics:{result:'win'}}}}});
+  const reloaded=beginSourceContactBattle(JSON.parse(JSON.stringify(manifest)),'contact:1');
+  assert.equal(reloaded.encounter.movementIndex,2);
+  assert.equal(reloaded.encounter.continuation.sourceTerminal.metrics.result,'win');
+  assert.equal(checkpointSourceReprise(reloaded,{id:'final-clause',movementIndex:2}).encounter.battleAttemptId,'contact:1');
+  const next=beginSourceContactBattle(reloaded,'contact:2');
+  assert.equal(next.encounter.battleAttemptId,'contact:2');
+  assert.equal(next.encounter.movementIndex,0);
+  assert.equal(next.encounter.continuation,null);
+  assert.deepEqual(next.encounter.completed,[]);
+});
+
+test('legacy ongoing checkpoints bind once to their first contact without leaking into later contacts',()=>{
+  const old=normalizeSourceReplayManifest({encounter:{movementIndex:1,continuation:{composure:23}}});
+  const current=beginSourceContactBattle(old,'contact:1',{preserveLegacy:true});
+  assert.equal(current.encounter.continuation.composure,23);
+  assert.equal(beginSourceContactBattle(current,'contact:2',{preserveLegacy:true}).encounter.continuation,null);
+});
 
 test('same-run manifest preserves completed take order and bounded pose provenance', () => {
   let manifest = freshSourceReplayManifest({ runId: 'night-1' });

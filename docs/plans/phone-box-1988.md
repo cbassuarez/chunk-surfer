@@ -3,6 +3,18 @@
 Decided with Seb, 2026-09-13. The phone box on the arrival road is rebuilt
 around one idea: it should hurt. Everything below was chosen, not assumed.
 
+Updated with Seb, 2026-10-21: the rotary remains fully usable, but progression
+never requires dialling or tape payment. The key and hold-music sheet calls ring
+the box when available. Lifting the receiver plays their authored lines; the
+loop pass also releases on pickup, without requiring speech or a dialogue choice.
+Outgoing calls retain the mechanics and costs below.
+
+The booth is the existing three-dimensional K6, viewed from inside. Right-drag
+or the arrow keys turn the head. The cabinet's live controls and the directory
+on the shelf share the world dither; the number clues occupy the book margin.
+The final recording holds movement only for its playback, including after a
+pause or reload, and releases it on completion.
+
 ## The set
 
 - **The network is 1988 GPO/BT, and only the phone box is.** The rest of the game
@@ -34,7 +46,7 @@ around one idea: it should hurt. Everything below was chosen, not assumed.
 - **Sarah's**: 192 refuses her (ex-directory). The chained directory's page with
   her surname is torn out. The page turns up on the road.
 - **Her sister's**: listed in the chained directory, where Sarah's is missing.
-- **Scratched in the paint**: other people's numbers, and a redundant set with
+- **Worked into the book margin**: other people's numbers, and a redundant set with
   missing digits that point to the van and to what is outside.
 - **Lodge and office**: the lodge on the card; the office in its old form.
 
@@ -62,10 +74,9 @@ broken with the rest.
   He can leave the receiver hanging and go and answer it, and hear the box: rain
   on the glass, the receiver swinging.
 - **Pass 14**: the box rings as he reaches it, and the scene repeats — the same
-  pass, again — until he answers **and speaks** (into the mic, or a spoken line
-  without it). On the line, at once: the van's car phone still off the hook
+  pass, again — until he **lifts the receiver**. On the line, at once: the van's car phone still off the hook
   from pass 1 (the cab, the rain on the windscreen, his own breathing) and
-  somebody waiting, who says "there you are" after he speaks, and hangs up.
+  somebody waiting, who says "there you are", and hangs up.
 - **Late passes (22 on)**: lifting the receiver, he is already on the line with
   himself. His choice whether to lift it. With the mic on and consent given,
   what he says comes back delayed and fainter; without it, breathing and this

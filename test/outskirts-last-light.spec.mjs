@@ -10,9 +10,9 @@ assert.ok(begin>0&&end>begin,'test executes the actual last-light lifecycle func
 const lines=JSON.parse(readFileSync(new URL('../content/narrative/source-space.last-light.story.json',import.meta.url),'utf8')).nodes.recording.lines;
 const flush=()=>new Promise(resolve=>setImmediate(resolve));
 
-function harness({elapsed=0,started=false,heard=false,buffer={duration:90},fetcher=null}={}){
+function harness({elapsed=0,started=false,heard=false,playbackDone=false,buffer={duration:90},fetcher=null}={}){
   const sources=[],nodes=[],captions=[],saved=[],positions=[],flags=new Set(heard?['outskirts.lastLight.heard']:[]),timers=new Map();
-  let playback={started,elapsed,done:false},fetches=0;
+  let playback={started,elapsed,done:playbackDone},fetches=0;
   const node=()=>{const n={disconnected:false,connect(){},disconnect(){this.disconnected=true;}};nodes.push(n);return n;};
   const ctx={currentTime:2,decodeAudioData:async()=>buffer,createBufferSource(){const s=node();s.starts=[];s.stops=0;s.start=(...args)=>s.starts.push(args);s.stop=()=>s.stops++;sources.push(s);return s;},
     createBiquadFilter(){return {...node(),frequency:{value:0},Q:{value:0}};},createGain(){return {...node(),gain:{value:0}};}};
@@ -78,4 +78,29 @@ test('an active memory keeps its clock and finishes after the player leaves the 
   h.ctx.currentTime=34;h.api.syncLastLight();
   assert.equal(h.flags.has('outskirts.lastLight.heard'),true);
   assert.equal(h.playback.done,true);assert.equal(h.runtime.out,true);
+});
+
+test('the playback clock releases the body even when the browser omits the audio ended event',async()=>{
+  const h=harness({started:true,elapsed:88});
+  h.api.syncLastLight();await flush();
+  assert.equal(h.runtime.hold,true);
+  h.ctx.currentTime=4.1;h.api.syncLastLight();
+  assert.equal(h.playback.done,true);assert.equal(h.runtime.hold,false);
+  assert.equal(h.sources[0].stops,1);assert.equal(h.api.lastLight.source,null);
+});
+
+for(const completed of [{heard:true},{playbackDone:true}])test(`a restored completion releases an existing recording hold (${Object.keys(completed)[0]})`,()=>{
+  const h=harness(completed);h.runtime.hold=true;
+  h.api.syncLastLight();
+  assert.equal(h.runtime.hold,false);assert.equal(h.runtime.out,true);
+});
+
+test('completion clears the final caption and reset always releases the body',async()=>{
+  const h=harness({started:true,elapsed:88,buffer:null});
+  h.api.syncLastLight();await flush();h.ctx.currentTime=3.1;h.api.syncLastLight();
+  assert.ok(h.captions.length>0);
+  h.ctx.currentTime=6;h.api.syncLastLight();
+  assert.equal(h.captions.at(-1).cancelled,true);
+  h.runtime.hold=true;h.api.resetOutskirtsLastLight();
+  assert.equal(h.runtime.hold,false);
 });

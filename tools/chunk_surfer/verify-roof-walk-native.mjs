@@ -8,6 +8,8 @@ import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { conservatory } from '../../src/data/floorplan/conservatory.js';
 import { ACADEMIC_ROOF } from '../../src/data/academic-roof.js';
+import { ROOF_PASSWORD } from '../../src/data/roof-password.js';
+import { TARGETS } from '../../src/data/conservatory-script.js';
 import * as FP from '../../src/world/floorplan.js';
 import * as PROPS from '../../src/game/props.js';
 
@@ -139,15 +141,15 @@ try{
     for(const canvas of document.querySelectorAll('#map > canvas'))
       if(canvas.style.zIndex==='8')canvas.style.visibility='hidden';
   });
-  const takeFixture=await page.evaluate(({torchOn,galleryStartX,galleryStartY})=>{
+  const takeFixture=await page.evaluate(({torchOn,galleryStartX,galleryStartY,targets})=>{
     window.__probe.setFlags(['setup.levels','combat.trained','setup.waypoint','academic.entered'],['roof.access']);
-    const take=window.__probe.setTakes(['main_b3'],true);
+    const take=window.__probe.setTakes(targets,false);
     window.__probe.setTorch(torchOn);
     window.__probe.warpCell(galleryStartX,galleryStartY);
-    return{take,keys:window.__probe.keys?.(),access:window.__probe.flag?.('roof.access')};
-  },{torchOn,galleryStartX,galleryStartY});
-  log('staff key and one accepted room take are present before gate interaction',
-    takeFixture.keys?.includes('master')&&takeFixture.take?.ok&&takeFixture.access===false,takeFixture);
+    return{take,keys:window.__probe.keys?.(),takes:window.__probe.rec?.().takes,access:window.__probe.flag?.('roof.access')};
+  },{torchOn,galleryStartX,galleryStartY,targets:TARGETS});
+  log('staff key is present and recording is not a gate prerequisite',
+    takeFixture.keys?.includes('master')&&takeFixture.take?.ok&&takeFixture.takes?.length===0&&takeFixture.access===false,takeFixture);
   await page.evaluate(()=>window.__probe.lookAtWorld(0,-.03));
   // The QA fixture has just switched on the torch. Let its exposure settle to
   // the ordinary gameplay state before assessing the gate's material/read.
@@ -157,9 +159,15 @@ try{
   log('gate selected by ordinary reticle',report.start.focus?.propId==='roof-gate',report.start.focus);
   if(report.start.focus?.propId!=='roof-gate')throw Error(`Roof gate not focusable from north gallery: ${JSON.stringify(report.start.focus)}`);
   await page.keyboard.press('e');
+  const lock=await state();
+  log('ordinary interaction opens the six-letter word lock',lock.scene==='roof-word-lock',lock.sceneView);
+  if(lock.scene!=='roof-word-lock')throw Error('Roof word lock did not open');
+  await page.keyboard.type(ROOF_PASSWORD);
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(()=>window.__probe?.flag?.('roof.access')===true,{timeout:5000});
   const opened=await state();
   log('gate opens via ordinary interaction',opened.flags.access===true,{focus:opened.focus,flags:opened.flags});
-  if(!opened.flags.access)throw Error('The accepted take and staff key did not open the gate');
+  if(!opened.flags.access)throw Error('The service word and staff key did not open the gate');
   await capture('01b-north-gallery-gate-open');
   await walkTo('first grated landing directly outside the door',logical(ACADEMIC_ROOF.stairFoot.x,ACADEMIC_ROOF.stairFoot.y));
   const firstStep=await capture('01c-first-step-into-open-sky');

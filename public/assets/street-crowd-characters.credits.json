@@ -1,0 +1,2562 @@
+{
+  "version": 1,
+  "source": "Retained CC0 MakeHuman anatomy and project-authored faces, fitted five-style wardrobe, shared rigs and rounded street kit.",
+  "license": "CC0 anatomical sources: tools/chunk_surfer/character-sources/makehuman/LICENSE.ASSETS.md",
+  "sourceSha256": {
+    "tools/chunk_surfer/build-street-crowd-characters.mjs": "1ae4e8fc992f765f21d7331a44835e1f961fa707c80e56d979ea9356451cf24e",
+    "tools/chunk_surfer/characters/street-crowd-library.mjs": "0bd0e98468367b89ccc452f9d2ccdb2def864a99386ef715072b189fa195a04e",
+    "src/data/street-crowd-characters.js": "abd378d276e00f2089fedff274db576d951351b5984d3a931d4b97b4614f6c01",
+    "src/render/street-crowd-performance.js": "b3a7957042d1e745bbe25e0e3fa2b65919788417381369dfac3ef964463df4ed",
+    "public/assets/academic-society-characters.glb": "4b5ffdf3cd4e89e7862e18189d5f56748814004cd7da02e4e2ccbb8068f9bc2c",
+    "public/assets/recordist-characters/contractor.json": "9d80535407f009bfd36f56548d6e1b6031fdafafa06e3d238c4eb3413a9d8a8d",
+    "artifacts/bus-woman-production/anatomy.json": "d9ac02ce3b2c05ff74fbb8ab0f3608181f7484527982d430b7a0a49ecf2967bf"
+  },
+  "packs": [
+    {
+      "file": "public/assets/street-crowd-characters.glb",
+      "bytes": 4405072,
+      "sha256": "bc1a7e826c11ac58eb2bd258ba5bc347344eec1d87b8fffdb5d88208136d7436"
+    },
+    {
+      "file": "public/assets/street-crowd-props.glb",
+      "bytes": 19464,
+      "sha256": "ef984a9abb519595b97f443bcf4191a71fe8deb96701418083ad2f370ab40c94"
+    }
+  ],
+  "shared": {
+    "rigs": 2,
+    "jointsPerRig": 54,
+    "wardrobeStyles": 5,
+    "uniqueAccessors": 508,
+    "reusedAccessors": 719,
+    "geometryLibraryEntries": 48
+  },
+  "characters": [
+    {
+      "id": "district-mews-neighbor",
+      "mesh": "district_mews_neighbor",
+      "source": "male",
+      "wardrobe": "cardigan",
+      "headwear": "flat-cap",
+      "accessory": null,
+      "posture": "standing",
+      "vertices": 9015,
+      "triangles": 16734,
+      "parts": [
+        "retained emile skin",
+        "retained emile lip",
+        "retained emile eye white",
+        "retained emile iris",
+        "retained emile hair",
+        "contractor-tailored-trousers",
+        "contractor-leather-shoe-L",
+        "contractor-shoe-welt-L",
+        "contractor-shoe-sole-L",
+        "contractor-sock-L",
+        "contractor-leather-shoe-R",
+        "contractor-shoe-welt-R",
+        "contractor-shoe-sole-R",
+        "contractor-sock-R",
+        "option2-continuous-tailored-coat",
+        "option2-continuous-sleeve-L",
+        "option2-cuff-L",
+        "option2-continuous-sleeve-R",
+        "option2-cuff-R",
+        "option2-folded-collar--1",
+        "option2-collar-binding--1",
+        "option2-folded-collar-1",
+        "option2-collar-binding-1",
+        "option2-front-closure",
+        "option2-hem-binding",
+        "contractor-folded-pale-collar",
+        "flat cap soft crown",
+        "flat cap projecting rounded peak",
+        "option2-mustard-neck-scarf",
+        "option2-ribbed-scarf-end"
+      ]
+    },
+    {
+      "id": "district-pub-driver",
+      "mesh": "district_pub_driver",
+      "source": "male",
+      "wardrobe": "work-jacket",
+      "headwear": "flat-cap",
+      "accessory": null,
+      "posture": "standing",
+      "vertices": 9053,
+      "triangles": 16738,
+      "parts": [
+        "retained lucien skin",
+        "retained lucien lip",
+        "retained lucien eye white",
+        "retained lucien iris",
+        "retained lucien hair",
+        "contractor-tailored-trousers",
+        "contractor-leather-shoe-L",
+        "contractor-shoe-welt-L",
+        "contractor-shoe-sole-L",
+        "contractor-sock-L",
+        "contractor-leather-shoe-R",
+        "contractor-shoe-welt-R",
+        "contractor-shoe-sole-R",
+        "contractor-sock-R",
+        "option2-continuous-tailored-coat",
+        "option2-continuous-sleeve-L",
+        "option2-cuff-L",
+        "option2-continuous-sleeve-R",
+        "option2-cuff-R",
+        "option2-folded-collar--1",
+        "option2-collar-binding--1",
+        "option2-folded-collar-1",
+        "option2-collar-binding-1",
+        "option2-front-closure",
+        "option2-hem-binding",
+        "contractor-folded-pale-collar",
+        "work jacket shaped chest pocket",
+        "work jacket shaped chest pocket",
+        "flat cap soft crown",
+        "flat cap projecting rounded peak",
+        "option2-mustard-neck-scarf",
+        "option2-ribbed-scarf-end",
+        "sewn high visibility reflective torso band",
+        "sewn high visibility reflective torso band"
+      ]
+    },
+    {
+      "id": "vigil-crowd-east-1",
+      "mesh": "vigil_crowd_east_1",
+      "source": "female",
+      "wardrobe": "duffle",
+      "headwear": "hood",
+      "accessory": "placard",
+      "posture": "standing",
+      "vertices": 8282,
+      "triangles": 15394,
+      "parts": [
+        "retained odette skin",
+        "retained odette lip",
+        "retained odette eye white",
+        "retained odette iris",
+        "retained odette hair",
+        "woman-denim-trousers",
+        "woman-closed-leather-shoe-L",
+        "woman-shoe-sole-L",
+        "woman-closed-leather-shoe-R",
+        "woman-shoe-sole-R",
+        "option2-continuous-tailored-coat",
+        "option2-continuous-sleeve-L",
+        "option2-cuff-L",
+        "option2-continuous-sleeve-R",
+        "option2-cuff-R",
+        "option2-folded-collar--1",
+        "option2-collar-binding--1",
+        "option2-folded-collar-1",
+        "option2-collar-binding-1",
+        "option2-front-closure",
+        "option2-hem-binding",
+        "contractor-folded-pale-collar",
+        "duffle toggle loop",
+        "rounded duffle horn toggle",
+        "duffle toggle loop",
+        "rounded duffle horn toggle",
+        "duffle toggle loop",
+        "rounded duffle horn toggle",
+        "open rain hood over anatomical head",
+        "hood shaped neck opening",
+        "option2-mustard-neck-scarf",
+        "option2-ribbed-scarf-end"
+      ]
+    },
+    {
+      "id": "vigil-crowd-east-2",
+      "mesh": "vigil_crowd_east_2",
+      "source": "male",
+      "wardrobe": "raincoat",
+      "headwear": null,
+      "accessory": "umbrella",
+      "posture": "standing",
+      "vertices": 9478,
+      "triangles": 17344,
+      "parts": [
+        "retained noe skin",
+        "retained noe lip",
+        "retained noe eye white",
+        "retained noe iris",
+        "retained noe hair",
+        "contractor-tailored-trousers",
+        "contractor-leather-shoe-L",
+        "contractor-shoe-welt-L",
+        "contractor-shoe-sole-L",
+        "contractor-sock-L",
+        "contractor-leather-shoe-R",
+        "contractor-shoe-welt-R",
+        "contractor-shoe-sole-R",
+        "contractor-sock-R",
+        "option2-continuous-tailored-coat",
+        "option2-continuous-sleeve-L",
+        "option2-cuff-L",
+        "option2-continuous-sleeve-R",
+        "option2-cuff-R",
+        "option2-folded-collar--1",
+        "option2-collar-binding--1",
+        "option2-folded-collar-1",
+        "option2-collar-binding-1",
+        "option2-front-closure",
+        "option2-hem-binding",
+        "contractor-folded-pale-collar",
+        "option2-mustard-neck-scarf",
+        "option2-ribbed-scarf-end",
+        "sewn eight panel umbrella canopy",
+        "umbrella radial rib",
+        "umbrella radial rib",
+        "umbrella radial rib",
+        "umbrella radial rib",
+        "umbrella radial rib",
+        "umbrella radial rib",
+        "umbrella radial rib",
+        "umbrella radial rib",
+        "umbrella single steel shaft",
+        "curved umbrella rubber grip"
+      ]
+    },
+    {
+      "id": "vigil-crowd-east-3",
+      "mesh": "vigil_crowd_east_3",
+      "source": "female",
+      "wardrobe": "anorak",
+      "headwear": null,
+      "accessory": "pamphlets",
+      "posture": "standing",
+      "vertices": 8272,
+      "triangles": 15422,
+      "parts": [
+        "retained agathe skin",
+        "retained agathe lip",
+        "retained agathe eye white",
+        "retained agathe iris",
+        "retained agathe hair",
+        "woman-denim-trousers",
+        "woman-closed-leather-shoe-L",
+        "woman-shoe-sole-L",
+        "woman-closed-leather-shoe-R",
+        "woman-shoe-sole-R",
+        "option2-continuous-tailored-coat",
+        "option2-continuous-sleeve-L",
+        "option2-cuff-L",
+        "option2-continuous-sleeve-R",
+        "option2-cuff-R",
+        "option2-folded-collar--1",
+        "option2-collar-binding--1",
+        "option2-folded-collar-1",
+        "option2-collar-binding-1",
+        "option2-front-closure",
+        "option2-hem-binding",
+        "contractor-folded-pale-collar",
+        "anorak breast storm seam",
+        "option2-mustard-neck-scarf",
+        "option2-ribbed-scarf-end",
+        "creased held campaign photocopy",
+        "creased held campaign photocopy",
+        "creased held campaign photocopy",
+        "soft carrier bag front",
+        "soft carrier bag back",
+        "carrier bag oval loop"
+      ]
+    },
+    {
+      "id": "vigil-crowd-east-4",
+      "mesh": "vigil_crowd_east_4",
+      "source": "female",
+      "wardrobe": "cardigan",
+      "headwear": "knit-cap",
+      "accessory": "blanket",
+      "posture": "seated",
+      "vertices": 8875,
+      "triangles": 16674,
+      "parts": [
+        "retained celeste skin",
+        "retained celeste lip",
+        "retained celeste eye white",
+        "retained celeste iris",
+        "retained celeste hair",
+        "woman-denim-trousers",
+        "woman-closed-leather-shoe-L",
+        "woman-shoe-sole-L",
+        "woman-closed-leather-shoe-R",
+        "woman-shoe-sole-R",
+        "option2-continuous-tailored-coat",
+        "option2-continuous-sleeve-L",
+        "option2-cuff-L",
+        "option2-continuous-sleeve-R",
+        "option2-cuff-R",
+        "option2-folded-collar--1",
+        "option2-collar-binding--1",
+        "option2-folded-collar-1",
+        "option2-collar-binding-1",
+        "option2-front-closure",
+        "option2-hem-binding",
+        "contractor-folded-pale-collar",
+        "woman-soft-wool-cap",
+        "woman-cap-turned-rim",
+        "option2-mustard-neck-scarf",
+        "option2-ribbed-scarf-end",
+        "wool blanket fitted over two seated knees"
+      ]
+    },
+    {
+      "id": "vigil-crowd-west-1",
+      "mesh": "vigil_crowd_west_1",
+      "source": "female",
+      "wardrobe": "anorak",
+      "headwear": "hood",
+      "accessory": "umbrella",
+      "posture": "standing",
+      "vertices": 8629,
+      "triangles": 15926,
+      "parts": [
+        "retained sabine skin",
+        "retained sabine lip",
+        "retained sabine eye white",
+        "retained sabine iris",
+        "retained sabine hair",
+        "woman-denim-trousers",
+        "woman-closed-leather-shoe-L",
+        "woman-shoe-sole-L",
+        "woman-closed-leather-shoe-R",
+        "woman-shoe-sole-R",
+        "option2-continuous-tailored-coat",
+        "option2-continuous-sleeve-L",
+        "option2-cuff-L",
+        "option2-continuous-sleeve-R",
+        "option2-cuff-R",
+        "option2-folded-collar--1",
+        "option2-collar-binding--1",
+        "option2-folded-collar-1",
+        "option2-collar-binding-1",
+        "option2-front-closure",
+        "option2-hem-binding",
+        "contractor-folded-pale-collar",
+        "anorak breast storm seam",
+        "open rain hood over anatomical head",
+        "hood shaped neck opening",
+        "option2-mustard-neck-scarf",
+        "option2-ribbed-scarf-end",
+        "sewn eight panel umbrella canopy",
+        "umbrella radial rib",
+        "umbrella radial rib",
+        "umbrella radial rib",
+        "umbrella radial rib",
+        "umbrella radial rib",
+        "umbrella radial rib",
+        "umbrella radial rib",
+        "umbrella radial rib",
+        "umbrella single steel shaft",
+        "curved umbrella rubber grip"
+      ]
+    },
+    {
+      "id": "vigil-crowd-west-2",
+      "mesh": "vigil_crowd_west_2",
+      "source": "male",
+      "wardrobe": "cardigan",
+      "headwear": null,
+      "accessory": "flask",
+      "posture": "standing",
+      "vertices": 9617,
+      "triangles": 17558,
+      "parts": [
+        "retained emile skin",
+        "retained emile lip",
+        "retained emile eye white",
+        "retained emile iris",
+        "retained emile hair",
+        "contractor-tailored-trousers",
+        "contractor-leather-shoe-L",
+        "contractor-shoe-welt-L",
+        "contractor-shoe-sole-L",
+        "contractor-sock-L",
+        "contractor-leather-shoe-R",
+        "contractor-shoe-welt-R",
+        "contractor-shoe-sole-R",
+        "contractor-sock-R",
+        "option2-continuous-tailored-coat",
+        "option2-continuous-sleeve-L",
+        "option2-cuff-L",
+        "option2-continuous-sleeve-R",
+        "option2-cuff-R",
+        "option2-folded-collar--1",
+        "option2-collar-binding--1",
+        "option2-folded-collar-1",
+        "option2-collar-binding-1",
+        "option2-front-closure",
+        "option2-hem-binding",
+        "contractor-folded-pale-collar",
+        "option2-mustard-neck-scarf",
+        "option2-ribbed-scarf-end",
+        "vacuum flask rounded steel body",
+        "vacuum flask metal shoulder and cup lid",
+        "flask broad tartan band",
+        "flask broad tartan band",
+        "flask broad tartan band",
+        "stacked paper cups",
+        "paper cup nested rolled rim",
+        "paper cup nested rolled rim",
+        "paper cup nested rolled rim",
+        "paper cup nested rolled rim"
+      ]
+    },
+    {
+      "id": "vigil-crowd-west-3",
+      "mesh": "vigil_crowd_west_3",
+      "source": "male",
+      "wardrobe": "duffle",
+      "headwear": "hood",
+      "accessory": "blanket",
+      "posture": "seated",
+      "vertices": 9919,
+      "triangles": 18314,
+      "parts": [
+        "retained listener skin",
+        "retained listener lip",
+        "retained listener eye white",
+        "retained listener iris",
+        "retained listener hair",
+        "contractor-tailored-trousers",
+        "contractor-leather-shoe-L",
+        "contractor-shoe-welt-L",
+        "contractor-shoe-sole-L",
+        "contractor-sock-L",
+        "contractor-leather-shoe-R",
+        "contractor-shoe-welt-R",
+        "contractor-shoe-sole-R",
+        "contractor-sock-R",
+        "option2-continuous-tailored-coat",
+        "option2-continuous-sleeve-L",
+        "option2-cuff-L",
+        "option2-continuous-sleeve-R",
+        "option2-cuff-R",
+        "option2-folded-collar--1",
+        "option2-collar-binding--1",
+        "option2-folded-collar-1",
+        "option2-collar-binding-1",
+        "option2-front-closure",
+        "option2-hem-binding",
+        "contractor-folded-pale-collar",
+        "duffle toggle loop",
+        "rounded duffle horn toggle",
+        "duffle toggle loop",
+        "rounded duffle horn toggle",
+        "duffle toggle loop",
+        "rounded duffle horn toggle",
+        "open rain hood over anatomical head",
+        "hood shaped neck opening",
+        "option2-mustard-neck-scarf",
+        "option2-ribbed-scarf-end",
+        "wool blanket fitted over two seated knees"
+      ]
+    },
+    {
+      "id": "vigil-crowd-verge-1",
+      "mesh": "vigil_crowd_verge_1",
+      "source": "male",
+      "wardrobe": "raincoat",
+      "headwear": null,
+      "accessory": "placard",
+      "posture": "standing",
+      "vertices": 8925,
+      "triangles": 16708,
+      "parts": [
+        "retained lucien skin",
+        "retained lucien lip",
+        "retained lucien eye white",
+        "retained lucien iris",
+        "retained lucien hair",
+        "contractor-tailored-trousers",
+        "contractor-leather-shoe-L",
+        "contractor-shoe-welt-L",
+        "contractor-shoe-sole-L",
+        "contractor-sock-L",
+        "contractor-leather-shoe-R",
+        "contractor-shoe-welt-R",
+        "contractor-shoe-sole-R",
+        "contractor-sock-R",
+        "option2-continuous-tailored-coat",
+        "option2-continuous-sleeve-L",
+        "option2-cuff-L",
+        "option2-continuous-sleeve-R",
+        "option2-cuff-R",
+        "option2-folded-collar--1",
+        "option2-collar-binding--1",
+        "option2-folded-collar-1",
+        "option2-collar-binding-1",
+        "option2-front-closure",
+        "option2-hem-binding",
+        "contractor-folded-pale-collar",
+        "option2-mustard-neck-scarf",
+        "option2-ribbed-scarf-end"
+      ]
+    },
+    {
+      "id": "vigil-crowd-verge-2",
+      "mesh": "vigil_crowd_verge_2",
+      "source": "female",
+      "wardrobe": "raincoat",
+      "headwear": "knit-cap",
+      "accessory": "umbrella",
+      "posture": "standing",
+      "vertices": 8929,
+      "triangles": 16656,
+      "parts": [
+        "retained odette skin",
+        "retained odette lip",
+        "retained odette eye white",
+        "retained odette iris",
+        "retained odette hair",
+        "woman-denim-trousers",
+        "woman-closed-leather-shoe-L",
+        "woman-shoe-sole-L",
+        "woman-closed-leather-shoe-R",
+        "woman-shoe-sole-R",
+        "option2-continuous-tailored-coat",
+        "option2-continuous-sleeve-L",
+        "option2-cuff-L",
+        "option2-continuous-sleeve-R",
+        "option2-cuff-R",
+        "option2-folded-collar--1",
+        "option2-collar-binding--1",
+        "option2-folded-collar-1",
+        "option2-collar-binding-1",
+        "option2-front-closure",
+        "option2-hem-binding",
+        "contractor-folded-pale-collar",
+        "woman-soft-wool-cap",
+        "woman-cap-turned-rim",
+        "option2-mustard-neck-scarf",
+        "option2-ribbed-scarf-end",
+        "sewn eight panel umbrella canopy",
+        "umbrella radial rib",
+        "umbrella radial rib",
+        "umbrella radial rib",
+        "umbrella radial rib",
+        "umbrella radial rib",
+        "umbrella radial rib",
+        "umbrella radial rib",
+        "umbrella radial rib",
+        "umbrella single steel shaft",
+        "curved umbrella rubber grip"
+      ]
+    },
+    {
+      "id": "vigil-crowd-verge-3",
+      "mesh": "vigil_crowd_verge_3",
+      "source": "female",
+      "wardrobe": "duffle",
+      "headwear": null,
+      "accessory": "flask",
+      "posture": "standing",
+      "vertices": 9492,
+      "triangles": 17384,
+      "parts": [
+        "retained agathe skin",
+        "retained agathe lip",
+        "retained agathe eye white",
+        "retained agathe iris",
+        "retained agathe hair",
+        "woman-denim-trousers",
+        "woman-closed-leather-shoe-L",
+        "woman-shoe-sole-L",
+        "woman-closed-leather-shoe-R",
+        "woman-shoe-sole-R",
+        "option2-continuous-tailored-coat",
+        "option2-continuous-sleeve-L",
+        "option2-cuff-L",
+        "option2-continuous-sleeve-R",
+        "option2-cuff-R",
+        "option2-folded-collar--1",
+        "option2-collar-binding--1",
+        "option2-folded-collar-1",
+        "option2-collar-binding-1",
+        "option2-front-closure",
+        "option2-hem-binding",
+        "contractor-folded-pale-collar",
+        "duffle toggle loop",
+        "rounded duffle horn toggle",
+        "duffle toggle loop",
+        "rounded duffle horn toggle",
+        "duffle toggle loop",
+        "rounded duffle horn toggle",
+        "option2-mustard-neck-scarf",
+        "option2-ribbed-scarf-end",
+        "vacuum flask rounded steel body",
+        "vacuum flask metal shoulder and cup lid",
+        "flask broad tartan band",
+        "flask broad tartan band",
+        "flask broad tartan band",
+        "stacked paper cups",
+        "paper cup nested rolled rim",
+        "paper cup nested rolled rim",
+        "paper cup nested rolled rim",
+        "paper cup nested rolled rim"
+      ]
+    },
+    {
+      "id": "vigil-crowd-verge-4",
+      "mesh": "vigil_crowd_verge_4",
+      "source": "male",
+      "wardrobe": "anorak",
+      "headwear": "hood",
+      "accessory": "pamphlets",
+      "posture": "standing",
+      "vertices": 9261,
+      "triangles": 16870,
+      "parts": [
+        "retained noe skin",
+        "retained noe lip",
+        "retained noe eye white",
+        "retained noe iris",
+        "retained noe hair",
+        "contractor-tailored-trousers",
+        "contractor-leather-shoe-L",
+        "contractor-shoe-welt-L",
+        "contractor-shoe-sole-L",
+        "contractor-sock-L",
+        "contractor-leather-shoe-R",
+        "contractor-shoe-welt-R",
+        "contractor-shoe-sole-R",
+        "contractor-sock-R",
+        "option2-continuous-tailored-coat",
+        "option2-continuous-sleeve-L",
+        "option2-cuff-L",
+        "option2-continuous-sleeve-R",
+        "option2-cuff-R",
+        "option2-folded-collar--1",
+        "option2-collar-binding--1",
+        "option2-folded-collar-1",
+        "option2-collar-binding-1",
+        "option2-front-closure",
+        "option2-hem-binding",
+        "contractor-folded-pale-collar",
+        "anorak breast storm seam",
+        "open rain hood over anatomical head",
+        "hood shaped neck opening",
+        "option2-mustard-neck-scarf",
+        "option2-ribbed-scarf-end",
+        "creased held campaign photocopy",
+        "creased held campaign photocopy",
+        "creased held campaign photocopy",
+        "soft carrier bag front",
+        "soft carrier bag back",
+        "carrier bag oval loop"
+      ]
+    },
+    {
+      "id": "vigil-crowd-knot-1",
+      "mesh": "vigil_crowd_knot_1",
+      "source": "male",
+      "wardrobe": "work-jacket",
+      "headwear": null,
+      "accessory": "camera",
+      "posture": "standing",
+      "vertices": 9241,
+      "triangles": 17066,
+      "parts": [
+        "retained listener skin",
+        "retained listener lip",
+        "retained listener eye white",
+        "retained listener iris",
+        "retained listener hair",
+        "contractor-tailored-trousers",
+        "contractor-leather-shoe-L",
+        "contractor-shoe-welt-L",
+        "contractor-shoe-sole-L",
+        "contractor-sock-L",
+        "contractor-leather-shoe-R",
+        "contractor-shoe-welt-R",
+        "contractor-shoe-sole-R",
+        "contractor-sock-R",
+        "option2-continuous-tailored-coat",
+        "option2-continuous-sleeve-L",
+        "option2-cuff-L",
+        "option2-continuous-sleeve-R",
+        "option2-cuff-R",
+        "option2-folded-collar--1",
+        "option2-collar-binding--1",
+        "option2-folded-collar-1",
+        "option2-collar-binding-1",
+        "option2-front-closure",
+        "option2-hem-binding",
+        "contractor-folded-pale-collar",
+        "work jacket shaped chest pocket",
+        "work jacket shaped chest pocket",
+        "option2-mustard-neck-scarf",
+        "option2-ribbed-scarf-end",
+        "compact video camera rounded housing",
+        "camera lens barrel",
+        "camera lens glass",
+        "camera top carrying handle",
+        "camera dim red tally lamp"
+      ]
+    },
+    {
+      "id": "vigil-crowd-knot-2",
+      "mesh": "vigil_crowd_knot_2",
+      "source": "male",
+      "wardrobe": "duffle",
+      "headwear": "flat-cap",
+      "accessory": "umbrella",
+      "posture": "standing",
+      "vertices": 10248,
+      "triangles": 18764,
+      "parts": [
+        "retained emile skin",
+        "retained emile lip",
+        "retained emile eye white",
+        "retained emile iris",
+        "retained emile hair",
+        "contractor-tailored-trousers",
+        "contractor-leather-shoe-L",
+        "contractor-shoe-welt-L",
+        "contractor-shoe-sole-L",
+        "contractor-sock-L",
+        "contractor-leather-shoe-R",
+        "contractor-shoe-welt-R",
+        "contractor-shoe-sole-R",
+        "contractor-sock-R",
+        "option2-continuous-tailored-coat",
+        "option2-continuous-sleeve-L",
+        "option2-cuff-L",
+        "option2-continuous-sleeve-R",
+        "option2-cuff-R",
+        "option2-folded-collar--1",
+        "option2-collar-binding--1",
+        "option2-folded-collar-1",
+        "option2-collar-binding-1",
+        "option2-front-closure",
+        "option2-hem-binding",
+        "contractor-folded-pale-collar",
+        "duffle toggle loop",
+        "rounded duffle horn toggle",
+        "duffle toggle loop",
+        "rounded duffle horn toggle",
+        "duffle toggle loop",
+        "rounded duffle horn toggle",
+        "flat cap soft crown",
+        "flat cap projecting rounded peak",
+        "option2-mustard-neck-scarf",
+        "option2-ribbed-scarf-end",
+        "sewn eight panel umbrella canopy",
+        "umbrella radial rib",
+        "umbrella radial rib",
+        "umbrella radial rib",
+        "umbrella radial rib",
+        "umbrella radial rib",
+        "umbrella radial rib",
+        "umbrella radial rib",
+        "umbrella radial rib",
+        "umbrella single steel shaft",
+        "curved umbrella rubber grip"
+      ]
+    },
+    {
+      "id": "vigil-crowd-knot-3",
+      "mesh": "vigil_crowd_knot_3",
+      "source": "female",
+      "wardrobe": "raincoat",
+      "headwear": null,
+      "accessory": "blanket",
+      "posture": "seated",
+      "vertices": 8334,
+      "triangles": 15700,
+      "parts": [
+        "retained sabine skin",
+        "retained sabine lip",
+        "retained sabine eye white",
+        "retained sabine iris",
+        "retained sabine hair",
+        "woman-denim-trousers",
+        "woman-closed-leather-shoe-L",
+        "woman-shoe-sole-L",
+        "woman-closed-leather-shoe-R",
+        "woman-shoe-sole-R",
+        "option2-continuous-tailored-coat",
+        "option2-continuous-sleeve-L",
+        "option2-cuff-L",
+        "option2-continuous-sleeve-R",
+        "option2-cuff-R",
+        "option2-folded-collar--1",
+        "option2-collar-binding--1",
+        "option2-folded-collar-1",
+        "option2-collar-binding-1",
+        "option2-front-closure",
+        "option2-hem-binding",
+        "contractor-folded-pale-collar",
+        "option2-mustard-neck-scarf",
+        "option2-ribbed-scarf-end",
+        "wool blanket fitted over two seated knees"
+      ]
+    },
+    {
+      "id": "vigil-crowd-knot-4",
+      "mesh": "vigil_crowd_knot_4",
+      "source": "female",
+      "wardrobe": "raincoat",
+      "headwear": "knit-cap",
+      "accessory": "placard",
+      "posture": "standing",
+      "vertices": 9096,
+      "triangles": 17180,
+      "parts": [
+        "retained celeste skin",
+        "retained celeste lip",
+        "retained celeste eye white",
+        "retained celeste iris",
+        "retained celeste hair",
+        "woman-denim-trousers",
+        "woman-closed-leather-shoe-L",
+        "woman-shoe-sole-L",
+        "woman-closed-leather-shoe-R",
+        "woman-shoe-sole-R",
+        "option2-continuous-tailored-coat",
+        "option2-continuous-sleeve-L",
+        "option2-cuff-L",
+        "option2-continuous-sleeve-R",
+        "option2-cuff-R",
+        "option2-folded-collar--1",
+        "option2-collar-binding--1",
+        "option2-folded-collar-1",
+        "option2-collar-binding-1",
+        "option2-front-closure",
+        "option2-hem-binding",
+        "contractor-folded-pale-collar",
+        "woman-soft-wool-cap",
+        "woman-cap-turned-rim",
+        "option2-mustard-neck-scarf",
+        "option2-ribbed-scarf-end"
+      ]
+    },
+    {
+      "id": "vigil-crowd-porch-1",
+      "mesh": "vigil_crowd_porch_1",
+      "source": "male",
+      "wardrobe": "anorak",
+      "headwear": "hood",
+      "accessory": "umbrella",
+      "posture": "standing",
+      "vertices": 9343,
+      "triangles": 17108,
+      "parts": [
+        "retained lucien skin",
+        "retained lucien lip",
+        "retained lucien eye white",
+        "retained lucien iris",
+        "retained lucien hair",
+        "contractor-tailored-trousers",
+        "contractor-leather-shoe-L",
+        "contractor-shoe-welt-L",
+        "contractor-shoe-sole-L",
+        "contractor-sock-L",
+        "contractor-leather-shoe-R",
+        "contractor-shoe-welt-R",
+        "contractor-shoe-sole-R",
+        "contractor-sock-R",
+        "option2-continuous-tailored-coat",
+        "option2-continuous-sleeve-L",
+        "option2-cuff-L",
+        "option2-continuous-sleeve-R",
+        "option2-cuff-R",
+        "option2-folded-collar--1",
+        "option2-collar-binding--1",
+        "option2-folded-collar-1",
+        "option2-collar-binding-1",
+        "option2-front-closure",
+        "option2-hem-binding",
+        "contractor-folded-pale-collar",
+        "anorak breast storm seam",
+        "open rain hood over anatomical head",
+        "hood shaped neck opening",
+        "option2-mustard-neck-scarf",
+        "option2-ribbed-scarf-end",
+        "sewn eight panel umbrella canopy",
+        "umbrella radial rib",
+        "umbrella radial rib",
+        "umbrella radial rib",
+        "umbrella radial rib",
+        "umbrella radial rib",
+        "umbrella radial rib",
+        "umbrella radial rib",
+        "umbrella radial rib",
+        "umbrella single steel shaft",
+        "curved umbrella rubber grip"
+      ]
+    },
+    {
+      "id": "vigil-crowd-porch-2",
+      "mesh": "vigil_crowd_porch_2",
+      "source": "male",
+      "wardrobe": "raincoat",
+      "headwear": "flat-cap",
+      "accessory": "flask",
+      "posture": "standing",
+      "vertices": 10253,
+      "triangles": 18572,
+      "parts": [
+        "retained noe skin",
+        "retained noe lip",
+        "retained noe eye white",
+        "retained noe iris",
+        "retained noe hair",
+        "contractor-tailored-trousers",
+        "contractor-leather-shoe-L",
+        "contractor-shoe-welt-L",
+        "contractor-shoe-sole-L",
+        "contractor-sock-L",
+        "contractor-leather-shoe-R",
+        "contractor-shoe-welt-R",
+        "contractor-shoe-sole-R",
+        "contractor-sock-R",
+        "option2-continuous-tailored-coat",
+        "option2-continuous-sleeve-L",
+        "option2-cuff-L",
+        "option2-continuous-sleeve-R",
+        "option2-cuff-R",
+        "option2-folded-collar--1",
+        "option2-collar-binding--1",
+        "option2-folded-collar-1",
+        "option2-collar-binding-1",
+        "option2-front-closure",
+        "option2-hem-binding",
+        "contractor-folded-pale-collar",
+        "flat cap soft crown",
+        "flat cap projecting rounded peak",
+        "option2-mustard-neck-scarf",
+        "option2-ribbed-scarf-end",
+        "vacuum flask rounded steel body",
+        "vacuum flask metal shoulder and cup lid",
+        "flask broad tartan band",
+        "flask broad tartan band",
+        "flask broad tartan band",
+        "stacked paper cups",
+        "paper cup nested rolled rim",
+        "paper cup nested rolled rim",
+        "paper cup nested rolled rim",
+        "paper cup nested rolled rim"
+      ]
+    },
+    {
+      "id": "vigil-crowd-porch-3",
+      "mesh": "vigil_crowd_porch_3",
+      "source": "female",
+      "wardrobe": "work-jacket",
+      "headwear": "knit-cap",
+      "accessory": "camera",
+      "posture": "standing",
+      "vertices": 8595,
+      "triangles": 16022,
+      "parts": [
+        "retained odette skin",
+        "retained odette lip",
+        "retained odette eye white",
+        "retained odette iris",
+        "retained odette hair",
+        "woman-denim-trousers",
+        "woman-closed-leather-shoe-L",
+        "woman-shoe-sole-L",
+        "woman-closed-leather-shoe-R",
+        "woman-shoe-sole-R",
+        "option2-continuous-tailored-coat",
+        "option2-continuous-sleeve-L",
+        "option2-cuff-L",
+        "option2-continuous-sleeve-R",
+        "option2-cuff-R",
+        "option2-folded-collar--1",
+        "option2-collar-binding--1",
+        "option2-folded-collar-1",
+        "option2-collar-binding-1",
+        "option2-front-closure",
+        "option2-hem-binding",
+        "contractor-folded-pale-collar",
+        "work jacket shaped chest pocket",
+        "work jacket shaped chest pocket",
+        "woman-soft-wool-cap",
+        "woman-cap-turned-rim",
+        "option2-mustard-neck-scarf",
+        "option2-ribbed-scarf-end",
+        "compact video camera rounded housing",
+        "camera lens barrel",
+        "camera lens glass",
+        "camera top carrying handle",
+        "camera dim red tally lamp"
+      ]
+    }
+  ],
+  "simplification": [
+    {
+      "name": "retained emile skin",
+      "beforeTriangles": 13067,
+      "triangles": 6395,
+      "vertices": 3392,
+      "error": 0.0024843132123351097
+    },
+    {
+      "name": "retained emile lip",
+      "beforeTriangles": 311,
+      "triangles": 89,
+      "vertices": 85,
+      "error": 0.002905307337641716
+    },
+    {
+      "name": "retained emile eye white",
+      "beforeTriangles": 172,
+      "triangles": 52,
+      "vertices": 36,
+      "error": 0.0028248163871467113
+    },
+    {
+      "name": "retained emile iris",
+      "beforeTriangles": 640,
+      "triangles": 140,
+      "vertices": 83,
+      "error": 0.00041593462810851634
+    },
+    {
+      "name": "retained emile hair",
+      "beforeTriangles": 3984,
+      "triangles": 876,
+      "vertices": 495,
+      "error": 0.001432969351299107
+    },
+    {
+      "name": "contractor-tailored-trousers",
+      "beforeTriangles": 6740,
+      "triangles": 1640,
+      "vertices": 906,
+      "error": 0.003997256979346275
+    },
+    {
+      "name": "contractor-leather-shoe-L",
+      "beforeTriangles": 1036,
+      "triangles": 406,
+      "vertices": 205,
+      "error": 0.001980570377781987
+    },
+    {
+      "name": "contractor-shoe-welt-L",
+      "beforeTriangles": 1036,
+      "triangles": 238,
+      "vertices": 121,
+      "error": 0.0018236422911286354
+    },
+    {
+      "name": "contractor-shoe-sole-L",
+      "beforeTriangles": 1296,
+      "triangles": 466,
+      "vertices": 235,
+      "error": 0.001994137419387698
+    },
+    {
+      "name": "contractor-sock-L",
+      "beforeTriangles": 64,
+      "triangles": 64,
+      "vertices": 64,
+      "error": 0
+    },
+    {
+      "name": "contractor-leather-shoe-R",
+      "beforeTriangles": 1036,
+      "triangles": 410,
+      "vertices": 207,
+      "error": 0.0019971150904893875
+    },
+    {
+      "name": "contractor-shoe-welt-R",
+      "beforeTriangles": 1036,
+      "triangles": 238,
+      "vertices": 121,
+      "error": 0.0018238578923046589
+    },
+    {
+      "name": "contractor-shoe-sole-R",
+      "beforeTriangles": 1296,
+      "triangles": 468,
+      "vertices": 236,
+      "error": 0.0019941371865570545
+    },
+    {
+      "name": "contractor-sock-R",
+      "beforeTriangles": 64,
+      "triangles": 64,
+      "vertices": 64,
+      "error": 0
+    },
+    {
+      "name": "option2-continuous-tailored-coat",
+      "beforeTriangles": 6472,
+      "triangles": 2244,
+      "vertices": 1118,
+      "error": 0.003944695461541414
+    },
+    {
+      "name": "option2-continuous-sleeve-L",
+      "beforeTriangles": 1366,
+      "triangles": 354,
+      "vertices": 190,
+      "error": 0.003975414205342531
+    },
+    {
+      "name": "option2-cuff-L",
+      "beforeTriangles": 346,
+      "triangles": 86,
+      "vertices": 45,
+      "error": 0.003975254017859697
+    },
+    {
+      "name": "option2-continuous-sleeve-R",
+      "beforeTriangles": 1366,
+      "triangles": 362,
+      "vertices": 194,
+      "error": 0.003992725629359484
+    },
+    {
+      "name": "option2-cuff-R",
+      "beforeTriangles": 346,
+      "triangles": 78,
+      "vertices": 41,
+      "error": 0.003989424090832472
+    },
+    {
+      "name": "option2-folded-collar--1",
+      "beforeTriangles": 12,
+      "triangles": 4,
+      "vertices": 4,
+      "error": 0.003244749503210187
+    },
+    {
+      "name": "option2-collar-binding--1",
+      "beforeTriangles": 56,
+      "triangles": 8,
+      "vertices": 8,
+      "error": 0.0033668859396129847
+    },
+    {
+      "name": "option2-folded-collar-1",
+      "beforeTriangles": 12,
+      "triangles": 4,
+      "vertices": 4,
+      "error": 0.0032489942386746407
+    },
+    {
+      "name": "option2-collar-binding-1",
+      "beforeTriangles": 56,
+      "triangles": 10,
+      "vertices": 8,
+      "error": 0.0035152407363057137
+    },
+    {
+      "name": "option2-front-closure",
+      "beforeTriangles": 402,
+      "triangles": 88,
+      "vertices": 46,
+      "error": 0.0027785147540271282
+    },
+    {
+      "name": "option2-hem-binding",
+      "beforeTriangles": 584,
+      "triangles": 64,
+      "vertices": 48,
+      "error": 0.0023086408618837595
+    },
+    {
+      "name": "contractor-folded-pale-collar",
+      "beforeTriangles": 630,
+      "triangles": 438,
+      "vertices": 277,
+      "error": 0.0009896568953990936
+    },
+    {
+      "name": "option2-mustard-neck-scarf",
+      "beforeTriangles": 524,
+      "triangles": 524,
+      "vertices": 264,
+      "error": 0
+    },
+    {
+      "name": "option2-ribbed-scarf-end",
+      "beforeTriangles": 572,
+      "triangles": 388,
+      "vertices": 196,
+      "error": 0.000990787404589355
+    },
+    {
+      "name": "retained lucien skin",
+      "beforeTriangles": 13087,
+      "triangles": 6373,
+      "vertices": 3380,
+      "error": 0.002489041071385145
+    },
+    {
+      "name": "retained lucien lip",
+      "beforeTriangles": 291,
+      "triangles": 81,
+      "vertices": 80,
+      "error": 0.0026850258000195026
+    },
+    {
+      "name": "retained lucien eye white",
+      "beforeTriangles": 172,
+      "triangles": 52,
+      "vertices": 36,
+      "error": 0.0027945477049797773
+    },
+    {
+      "name": "retained lucien iris",
+      "beforeTriangles": 640,
+      "triangles": 140,
+      "vertices": 82,
+      "error": 0.00041187801980413496
+    },
+    {
+      "name": "retained lucien hair",
+      "beforeTriangles": 2112,
+      "triangles": 464,
+      "vertices": 284,
+      "error": 0.0027542980387806892
+    },
+    {
+      "name": "option2-continuous-tailored-coat",
+      "beforeTriangles": 6472,
+      "triangles": 2522,
+      "vertices": 1257,
+      "error": 0.003945783246308565
+    },
+    {
+      "name": "option2-continuous-sleeve-L",
+      "beforeTriangles": 1366,
+      "triangles": 386,
+      "vertices": 206,
+      "error": 0.003992330748587847
+    },
+    {
+      "name": "option2-cuff-L",
+      "beforeTriangles": 346,
+      "triangles": 86,
+      "vertices": 45,
+      "error": 0.003975254017859697
+    },
+    {
+      "name": "option2-continuous-sleeve-R",
+      "beforeTriangles": 1366,
+      "triangles": 384,
+      "vertices": 205,
+      "error": 0.003928818739950657
+    },
+    {
+      "name": "option2-cuff-R",
+      "beforeTriangles": 346,
+      "triangles": 78,
+      "vertices": 41,
+      "error": 0.003989424090832472
+    },
+    {
+      "name": "option2-folded-collar--1",
+      "beforeTriangles": 12,
+      "triangles": 4,
+      "vertices": 4,
+      "error": 0.0033411351032555103
+    },
+    {
+      "name": "option2-collar-binding--1",
+      "beforeTriangles": 56,
+      "triangles": 8,
+      "vertices": 8,
+      "error": 0.0034686916042119265
+    },
+    {
+      "name": "option2-folded-collar-1",
+      "beforeTriangles": 12,
+      "triangles": 4,
+      "vertices": 4,
+      "error": 0.003345504170283675
+    },
+    {
+      "name": "option2-collar-binding-1",
+      "beforeTriangles": 56,
+      "triangles": 10,
+      "vertices": 8,
+      "error": 0.003611492458730936
+    },
+    {
+      "name": "option2-front-closure",
+      "beforeTriangles": 402,
+      "triangles": 88,
+      "vertices": 46,
+      "error": 0.0028095117304474115
+    },
+    {
+      "name": "option2-hem-binding",
+      "beforeTriangles": 584,
+      "triangles": 66,
+      "vertices": 47,
+      "error": 0.00245619541965425
+    },
+    {
+      "name": "contractor-folded-pale-collar",
+      "beforeTriangles": 630,
+      "triangles": 438,
+      "vertices": 277,
+      "error": 0.0009896568953990936
+    },
+    {
+      "name": "retained odette skin",
+      "beforeTriangles": 13240,
+      "triangles": 6440,
+      "vertices": 3378,
+      "error": 0.0024844110012054443
+    },
+    {
+      "name": "retained odette lip",
+      "beforeTriangles": 10,
+      "triangles": 8,
+      "vertices": 10,
+      "error": 0.0005201551248319447
+    },
+    {
+      "name": "retained odette eye white",
+      "beforeTriangles": 136,
+      "triangles": 62,
+      "vertices": 41,
+      "error": 0.0029847165569663048
+    },
+    {
+      "name": "retained odette iris",
+      "beforeTriangles": 448,
+      "triangles": 98,
+      "vertices": 60,
+      "error": 0.00047694321256130934
+    },
+    {
+      "name": "retained odette hair",
+      "beforeTriangles": 556,
+      "triangles": 134,
+      "vertices": 127,
+      "error": 0.0029643848538398743
+    },
+    {
+      "name": "woman-denim-trousers",
+      "beforeTriangles": 2426,
+      "triangles": 1366,
+      "vertices": 756,
+      "error": 0.003998832311481237
+    },
+    {
+      "name": "woman-closed-leather-shoe-L",
+      "beforeTriangles": 500,
+      "triangles": 392,
+      "vertices": 198,
+      "error": 0.0019839031156152487
+    },
+    {
+      "name": "woman-shoe-sole-L",
+      "beforeTriangles": 458,
+      "triangles": 406,
+      "vertices": 205,
+      "error": 0.0019570246804505587
+    },
+    {
+      "name": "woman-closed-leather-shoe-R",
+      "beforeTriangles": 500,
+      "triangles": 392,
+      "vertices": 198,
+      "error": 0.0019838528241962194
+    },
+    {
+      "name": "woman-shoe-sole-R",
+      "beforeTriangles": 458,
+      "triangles": 406,
+      "vertices": 205,
+      "error": 0.00195669149979949
+    },
+    {
+      "name": "option2-continuous-tailored-coat",
+      "beforeTriangles": 6472,
+      "triangles": 2412,
+      "vertices": 1202,
+      "error": 0.003998057916760445
+    },
+    {
+      "name": "option2-continuous-sleeve-L",
+      "beforeTriangles": 1366,
+      "triangles": 380,
+      "vertices": 203,
+      "error": 0.003995551727712154
+    },
+    {
+      "name": "option2-cuff-L",
+      "beforeTriangles": 346,
+      "triangles": 76,
+      "vertices": 40,
+      "error": 0.0037034170236438513
+    },
+    {
+      "name": "option2-continuous-sleeve-R",
+      "beforeTriangles": 1366,
+      "triangles": 388,
+      "vertices": 207,
+      "error": 0.003994483966380358
+    },
+    {
+      "name": "option2-cuff-R",
+      "beforeTriangles": 346,
+      "triangles": 76,
+      "vertices": 40,
+      "error": 0.003653883468359709
+    },
+    {
+      "name": "option2-folded-collar--1",
+      "beforeTriangles": 12,
+      "triangles": 4,
+      "vertices": 4,
+      "error": 0.003080893773585558
+    },
+    {
+      "name": "option2-collar-binding--1",
+      "beforeTriangles": 56,
+      "triangles": 10,
+      "vertices": 8,
+      "error": 0.0033243815414607525
+    },
+    {
+      "name": "option2-folded-collar-1",
+      "beforeTriangles": 12,
+      "triangles": 4,
+      "vertices": 4,
+      "error": 0.0030813836492598057
+    },
+    {
+      "name": "option2-collar-binding-1",
+      "beforeTriangles": 56,
+      "triangles": 10,
+      "vertices": 8,
+      "error": 0.0033435493241995573
+    },
+    {
+      "name": "option2-front-closure",
+      "beforeTriangles": 402,
+      "triangles": 88,
+      "vertices": 46,
+      "error": 0.0030964473262429237
+    },
+    {
+      "name": "option2-hem-binding",
+      "beforeTriangles": 584,
+      "triangles": 64,
+      "vertices": 51,
+      "error": 0.003470776602625847
+    },
+    {
+      "name": "contractor-folded-pale-collar",
+      "beforeTriangles": 630,
+      "triangles": 444,
+      "vertices": 280,
+      "error": 0.0009832190116867423
+    },
+    {
+      "name": "option2-mustard-neck-scarf",
+      "beforeTriangles": 524,
+      "triangles": 524,
+      "vertices": 264,
+      "error": 0
+    },
+    {
+      "name": "option2-ribbed-scarf-end",
+      "beforeTriangles": 572,
+      "triangles": 354,
+      "vertices": 179,
+      "error": 0.0009859921410679817
+    },
+    {
+      "name": "retained noe skin",
+      "beforeTriangles": 13152,
+      "triangles": 6436,
+      "vertices": 3409,
+      "error": 0.0024844573345035315
+    },
+    {
+      "name": "retained noe lip",
+      "beforeTriangles": 226,
+      "triangles": 80,
+      "vertices": 81,
+      "error": 0.0028131515718996525
+    },
+    {
+      "name": "retained noe eye white",
+      "beforeTriangles": 172,
+      "triangles": 54,
+      "vertices": 37,
+      "error": 0.0029850376304239035
+    },
+    {
+      "name": "retained noe iris",
+      "beforeTriangles": 640,
+      "triangles": 140,
+      "vertices": 82,
+      "error": 0.00042767098057083786
+    },
+    {
+      "name": "retained noe hair",
+      "beforeTriangles": 1392,
+      "triangles": 378,
+      "vertices": 336,
+      "error": 0.002996362978592515
+    },
+    {
+      "name": "option2-continuous-tailored-coat",
+      "beforeTriangles": 6472,
+      "triangles": 3054,
+      "vertices": 1523,
+      "error": 0.003962305840104818
+    },
+    {
+      "name": "option2-continuous-sleeve-L",
+      "beforeTriangles": 1366,
+      "triangles": 384,
+      "vertices": 205,
+      "error": 0.003977601416409016
+    },
+    {
+      "name": "option2-cuff-L",
+      "beforeTriangles": 346,
+      "triangles": 86,
+      "vertices": 45,
+      "error": 0.003975254017859697
+    },
+    {
+      "name": "option2-continuous-sleeve-R",
+      "beforeTriangles": 1366,
+      "triangles": 370,
+      "vertices": 198,
+      "error": 0.003986187279224396
+    },
+    {
+      "name": "option2-cuff-R",
+      "beforeTriangles": 346,
+      "triangles": 78,
+      "vertices": 41,
+      "error": 0.003989424090832472
+    },
+    {
+      "name": "option2-folded-collar--1",
+      "beforeTriangles": 12,
+      "triangles": 4,
+      "vertices": 4,
+      "error": 0.003326213452965021
+    },
+    {
+      "name": "option2-collar-binding--1",
+      "beforeTriangles": 56,
+      "triangles": 8,
+      "vertices": 8,
+      "error": 0.003444802248850465
+    },
+    {
+      "name": "option2-folded-collar-1",
+      "beforeTriangles": 12,
+      "triangles": 4,
+      "vertices": 4,
+      "error": 0.0033306963741779327
+    },
+    {
+      "name": "option2-collar-binding-1",
+      "beforeTriangles": 56,
+      "triangles": 10,
+      "vertices": 8,
+      "error": 0.003572812071070075
+    },
+    {
+      "name": "option2-front-closure",
+      "beforeTriangles": 402,
+      "triangles": 88,
+      "vertices": 46,
+      "error": 0.0033713714219629765
+    },
+    {
+      "name": "option2-hem-binding",
+      "beforeTriangles": 584,
+      "triangles": 170,
+      "vertices": 90,
+      "error": 0.003824520157650113
+    },
+    {
+      "name": "contractor-folded-pale-collar",
+      "beforeTriangles": 630,
+      "triangles": 438,
+      "vertices": 277,
+      "error": 0.0009896568953990936
+    },
+    {
+      "name": "retained agathe skin",
+      "beforeTriangles": 13238,
+      "triangles": 6384,
+      "vertices": 3351,
+      "error": 0.0024880492128431797
+    },
+    {
+      "name": "retained agathe lip",
+      "beforeTriangles": 12,
+      "triangles": 10,
+      "vertices": 12,
+      "error": 0.0005211646785028279
+    },
+    {
+      "name": "retained agathe eye white",
+      "beforeTriangles": 136,
+      "triangles": 58,
+      "vertices": 39,
+      "error": 0.002806620905175805
+    },
+    {
+      "name": "retained agathe iris",
+      "beforeTriangles": 448,
+      "triangles": 98,
+      "vertices": 58,
+      "error": 0.0004289966600481421
+    },
+    {
+      "name": "retained agathe hair",
+      "beforeTriangles": 5776,
+      "triangles": 1270,
+      "vertices": 725,
+      "error": 0.0023453610483556986
+    },
+    {
+      "name": "option2-continuous-tailored-coat",
+      "beforeTriangles": 6472,
+      "triangles": 1788,
+      "vertices": 890,
+      "error": 0.003993714228272438
+    },
+    {
+      "name": "option2-continuous-sleeve-L",
+      "beforeTriangles": 1366,
+      "triangles": 354,
+      "vertices": 190,
+      "error": 0.003967511001974344
+    },
+    {
+      "name": "option2-cuff-L",
+      "beforeTriangles": 346,
+      "triangles": 76,
+      "vertices": 40,
+      "error": 0.0037034170236438513
+    },
+    {
+      "name": "option2-continuous-sleeve-R",
+      "beforeTriangles": 1366,
+      "triangles": 360,
+      "vertices": 193,
+      "error": 0.003962785005569458
+    },
+    {
+      "name": "option2-cuff-R",
+      "beforeTriangles": 346,
+      "triangles": 76,
+      "vertices": 40,
+      "error": 0.003653883468359709
+    },
+    {
+      "name": "option2-folded-collar--1",
+      "beforeTriangles": 12,
+      "triangles": 4,
+      "vertices": 4,
+      "error": 0.003034078050404787
+    },
+    {
+      "name": "option2-collar-binding--1",
+      "beforeTriangles": 56,
+      "triangles": 10,
+      "vertices": 8,
+      "error": 0.003220160724595189
+    },
+    {
+      "name": "option2-folded-collar-1",
+      "beforeTriangles": 12,
+      "triangles": 4,
+      "vertices": 4,
+      "error": 0.00303444336168468
+    },
+    {
+      "name": "option2-collar-binding-1",
+      "beforeTriangles": 56,
+      "triangles": 10,
+      "vertices": 8,
+      "error": 0.003204341046512127
+    },
+    {
+      "name": "option2-front-closure",
+      "beforeTriangles": 402,
+      "triangles": 88,
+      "vertices": 46,
+      "error": 0.00247437902726233
+    },
+    {
+      "name": "option2-hem-binding",
+      "beforeTriangles": 584,
+      "triangles": 64,
+      "vertices": 46,
+      "error": 0.002152081811800599
+    },
+    {
+      "name": "contractor-folded-pale-collar",
+      "beforeTriangles": 630,
+      "triangles": 444,
+      "vertices": 280,
+      "error": 0.0009832190116867423
+    },
+    {
+      "name": "retained celeste skin",
+      "beforeTriangles": 14010,
+      "triangles": 6718,
+      "vertices": 3540,
+      "error": 0.002490344690158963
+    },
+    {
+      "name": "retained celeste lip",
+      "beforeTriangles": 8,
+      "triangles": 6,
+      "vertices": 8,
+      "error": 0.0004894886515103281
+    },
+    {
+      "name": "retained celeste eye white",
+      "beforeTriangles": 136,
+      "triangles": 56,
+      "vertices": 38,
+      "error": 0.002990168984979391
+    },
+    {
+      "name": "retained celeste iris",
+      "beforeTriangles": 448,
+      "triangles": 98,
+      "vertices": 59,
+      "error": 0.0004289658972993493
+    },
+    {
+      "name": "retained celeste hair",
+      "beforeTriangles": 4752,
+      "triangles": 1044,
+      "vertices": 603,
+      "error": 0.001828880631364882
+    },
+    {
+      "name": "option2-continuous-tailored-coat",
+      "beforeTriangles": 6472,
+      "triangles": 1628,
+      "vertices": 810,
+      "error": 0.003993423655629158
+    },
+    {
+      "name": "option2-continuous-sleeve-L",
+      "beforeTriangles": 1366,
+      "triangles": 352,
+      "vertices": 189,
+      "error": 0.00395158538594842
+    },
+    {
+      "name": "option2-cuff-L",
+      "beforeTriangles": 346,
+      "triangles": 76,
+      "vertices": 40,
+      "error": 0.0037034170236438513
+    },
+    {
+      "name": "option2-continuous-sleeve-R",
+      "beforeTriangles": 1366,
+      "triangles": 350,
+      "vertices": 188,
+      "error": 0.003964031580835581
+    },
+    {
+      "name": "option2-cuff-R",
+      "beforeTriangles": 346,
+      "triangles": 76,
+      "vertices": 40,
+      "error": 0.003653883468359709
+    },
+    {
+      "name": "option2-folded-collar--1",
+      "beforeTriangles": 12,
+      "triangles": 4,
+      "vertices": 4,
+      "error": 0.0029998256359249353
+    },
+    {
+      "name": "option2-collar-binding--1",
+      "beforeTriangles": 56,
+      "triangles": 10,
+      "vertices": 8,
+      "error": 0.003153635421767831
+    },
+    {
+      "name": "option2-folded-collar-1",
+      "beforeTriangles": 12,
+      "triangles": 4,
+      "vertices": 4,
+      "error": 0.00299991387873888
+    },
+    {
+      "name": "option2-collar-binding-1",
+      "beforeTriangles": 56,
+      "triangles": 10,
+      "vertices": 8,
+      "error": 0.003103654831647873
+    },
+    {
+      "name": "option2-front-closure",
+      "beforeTriangles": 402,
+      "triangles": 88,
+      "vertices": 46,
+      "error": 0.002366033149883151
+    },
+    {
+      "name": "option2-hem-binding",
+      "beforeTriangles": 584,
+      "triangles": 64,
+      "vertices": 48,
+      "error": 0.002049712697044015
+    },
+    {
+      "name": "contractor-folded-pale-collar",
+      "beforeTriangles": 630,
+      "triangles": 444,
+      "vertices": 280,
+      "error": 0.0009832190116867423
+    },
+    {
+      "name": "woman-soft-wool-cap",
+      "beforeTriangles": 960,
+      "triangles": 738,
+      "vertices": 396,
+      "error": 0.000997317023575306
+    },
+    {
+      "name": "woman-cap-turned-rim",
+      "beforeTriangles": 780,
+      "triangles": 780,
+      "vertices": 392,
+      "error": 0
+    },
+    {
+      "name": "retained sabine skin",
+      "beforeTriangles": 13236,
+      "triangles": 6380,
+      "vertices": 3348,
+      "error": 0.0024769511073827744
+    },
+    {
+      "name": "retained sabine lip",
+      "beforeTriangles": 14,
+      "triangles": 8,
+      "vertices": 10,
+      "error": 0.000961119425483048
+    },
+    {
+      "name": "retained sabine eye white",
+      "beforeTriangles": 136,
+      "triangles": 58,
+      "vertices": 39,
+      "error": 0.002995818154886365
+    },
+    {
+      "name": "retained sabine iris",
+      "beforeTriangles": 448,
+      "triangles": 98,
+      "vertices": 58,
+      "error": 0.00042718593613244593
+    },
+    {
+      "name": "retained sabine hair",
+      "beforeTriangles": 5136,
+      "triangles": 1128,
+      "vertices": 645,
+      "error": 0.001769580296240747
+    },
+    {
+      "name": "retained emile skin",
+      "beforeTriangles": 13067,
+      "triangles": 6395,
+      "vertices": 3392,
+      "error": 0.0024843132123351097
+    },
+    {
+      "name": "retained emile lip",
+      "beforeTriangles": 311,
+      "triangles": 89,
+      "vertices": 85,
+      "error": 0.002905307337641716
+    },
+    {
+      "name": "retained emile eye white",
+      "beforeTriangles": 172,
+      "triangles": 52,
+      "vertices": 36,
+      "error": 0.0028248163871467113
+    },
+    {
+      "name": "retained emile iris",
+      "beforeTriangles": 640,
+      "triangles": 140,
+      "vertices": 83,
+      "error": 0.00041593462810851634
+    },
+    {
+      "name": "retained emile hair",
+      "beforeTriangles": 3984,
+      "triangles": 876,
+      "vertices": 495,
+      "error": 0.0015431555220857263
+    },
+    {
+      "name": "retained listener skin",
+      "beforeTriangles": 13119,
+      "triangles": 6405,
+      "vertices": 3398,
+      "error": 0.002499524038285017
+    },
+    {
+      "name": "retained listener lip",
+      "beforeTriangles": 259,
+      "triangles": 87,
+      "vertices": 87,
+      "error": 0.002669545589014888
+    },
+    {
+      "name": "retained listener eye white",
+      "beforeTriangles": 172,
+      "triangles": 50,
+      "vertices": 35,
+      "error": 0.002915456425398588
+    },
+    {
+      "name": "retained listener iris",
+      "beforeTriangles": 640,
+      "triangles": 140,
+      "vertices": 82,
+      "error": 0.0004163736884947866
+    },
+    {
+      "name": "retained listener hair",
+      "beforeTriangles": 3984,
+      "triangles": 876,
+      "vertices": 495,
+      "error": 0.0015962504548951983
+    },
+    {
+      "name": "option2-continuous-tailored-coat",
+      "beforeTriangles": 6472,
+      "triangles": 3110,
+      "vertices": 1551,
+      "error": 0.00399373285472393
+    },
+    {
+      "name": "option2-continuous-sleeve-L",
+      "beforeTriangles": 1366,
+      "triangles": 416,
+      "vertices": 221,
+      "error": 0.0039638071320950985
+    },
+    {
+      "name": "option2-cuff-L",
+      "beforeTriangles": 346,
+      "triangles": 86,
+      "vertices": 45,
+      "error": 0.003975254017859697
+    },
+    {
+      "name": "option2-continuous-sleeve-R",
+      "beforeTriangles": 1366,
+      "triangles": 400,
+      "vertices": 213,
+      "error": 0.0039929538033902645
+    },
+    {
+      "name": "option2-cuff-R",
+      "beforeTriangles": 346,
+      "triangles": 78,
+      "vertices": 41,
+      "error": 0.003989424090832472
+    },
+    {
+      "name": "option2-folded-collar--1",
+      "beforeTriangles": 12,
+      "triangles": 4,
+      "vertices": 4,
+      "error": 0.0034445796627551317
+    },
+    {
+      "name": "option2-collar-binding--1",
+      "beforeTriangles": 56,
+      "triangles": 8,
+      "vertices": 8,
+      "error": 0.003570851171389222
+    },
+    {
+      "name": "option2-folded-collar-1",
+      "beforeTriangles": 12,
+      "triangles": 4,
+      "vertices": 4,
+      "error": 0.0034491249825805426
+    },
+    {
+      "name": "option2-collar-binding-1",
+      "beforeTriangles": 56,
+      "triangles": 10,
+      "vertices": 8,
+      "error": 0.0036891910713166
+    },
+    {
+      "name": "option2-front-closure",
+      "beforeTriangles": 402,
+      "triangles": 88,
+      "vertices": 46,
+      "error": 0.0034289145842194557
+    },
+    {
+      "name": "option2-hem-binding",
+      "beforeTriangles": 584,
+      "triangles": 64,
+      "vertices": 48,
+      "error": 0.003718879073858261
+    },
+    {
+      "name": "contractor-folded-pale-collar",
+      "beforeTriangles": 630,
+      "triangles": 438,
+      "vertices": 277,
+      "error": 0.0009896568953990936
+    },
+    {
+      "name": "retained lucien skin",
+      "beforeTriangles": 13087,
+      "triangles": 6373,
+      "vertices": 3380,
+      "error": 0.002489041071385145
+    },
+    {
+      "name": "retained lucien lip",
+      "beforeTriangles": 291,
+      "triangles": 81,
+      "vertices": 80,
+      "error": 0.0026850258000195026
+    },
+    {
+      "name": "retained lucien eye white",
+      "beforeTriangles": 172,
+      "triangles": 52,
+      "vertices": 36,
+      "error": 0.0027945477049797773
+    },
+    {
+      "name": "retained lucien iris",
+      "beforeTriangles": 640,
+      "triangles": 140,
+      "vertices": 82,
+      "error": 0.00041187801980413496
+    },
+    {
+      "name": "retained lucien hair",
+      "beforeTriangles": 2112,
+      "triangles": 462,
+      "vertices": 279,
+      "error": 0.0027894172817468643
+    },
+    {
+      "name": "retained odette skin",
+      "beforeTriangles": 13240,
+      "triangles": 6440,
+      "vertices": 3378,
+      "error": 0.0024844110012054443
+    },
+    {
+      "name": "retained odette lip",
+      "beforeTriangles": 10,
+      "triangles": 8,
+      "vertices": 10,
+      "error": 0.0005201551248319447
+    },
+    {
+      "name": "retained odette eye white",
+      "beforeTriangles": 136,
+      "triangles": 62,
+      "vertices": 41,
+      "error": 0.0029847165569663048
+    },
+    {
+      "name": "retained odette iris",
+      "beforeTriangles": 448,
+      "triangles": 98,
+      "vertices": 60,
+      "error": 0.00047694321256130934
+    },
+    {
+      "name": "retained odette hair",
+      "beforeTriangles": 556,
+      "triangles": 134,
+      "vertices": 127,
+      "error": 0.0029643848538398743
+    },
+    {
+      "name": "option2-continuous-tailored-coat",
+      "beforeTriangles": 6472,
+      "triangles": 2406,
+      "vertices": 1199,
+      "error": 0.003975589293986559
+    },
+    {
+      "name": "option2-continuous-sleeve-L",
+      "beforeTriangles": 1366,
+      "triangles": 354,
+      "vertices": 190,
+      "error": 0.003967511001974344
+    },
+    {
+      "name": "option2-cuff-L",
+      "beforeTriangles": 346,
+      "triangles": 76,
+      "vertices": 40,
+      "error": 0.0037034170236438513
+    },
+    {
+      "name": "option2-continuous-sleeve-R",
+      "beforeTriangles": 1366,
+      "triangles": 360,
+      "vertices": 193,
+      "error": 0.003962785005569458
+    },
+    {
+      "name": "option2-cuff-R",
+      "beforeTriangles": 346,
+      "triangles": 76,
+      "vertices": 40,
+      "error": 0.003653883468359709
+    },
+    {
+      "name": "option2-folded-collar--1",
+      "beforeTriangles": 12,
+      "triangles": 4,
+      "vertices": 4,
+      "error": 0.003034078050404787
+    },
+    {
+      "name": "option2-collar-binding--1",
+      "beforeTriangles": 56,
+      "triangles": 10,
+      "vertices": 8,
+      "error": 0.003220160724595189
+    },
+    {
+      "name": "option2-folded-collar-1",
+      "beforeTriangles": 12,
+      "triangles": 4,
+      "vertices": 4,
+      "error": 0.00303444336168468
+    },
+    {
+      "name": "option2-collar-binding-1",
+      "beforeTriangles": 56,
+      "triangles": 10,
+      "vertices": 8,
+      "error": 0.003204341046512127
+    },
+    {
+      "name": "option2-front-closure",
+      "beforeTriangles": 402,
+      "triangles": 88,
+      "vertices": 46,
+      "error": 0.003338287817314267
+    },
+    {
+      "name": "option2-hem-binding",
+      "beforeTriangles": 584,
+      "triangles": 68,
+      "vertices": 43,
+      "error": 0.0038274924736469984
+    },
+    {
+      "name": "contractor-folded-pale-collar",
+      "beforeTriangles": 630,
+      "triangles": 444,
+      "vertices": 280,
+      "error": 0.0009832190116867423
+    },
+    {
+      "name": "woman-soft-wool-cap",
+      "beforeTriangles": 960,
+      "triangles": 738,
+      "vertices": 396,
+      "error": 0.000997317023575306
+    },
+    {
+      "name": "woman-cap-turned-rim",
+      "beforeTriangles": 780,
+      "triangles": 780,
+      "vertices": 392,
+      "error": 0
+    },
+    {
+      "name": "retained noe skin",
+      "beforeTriangles": 13152,
+      "triangles": 6436,
+      "vertices": 3409,
+      "error": 0.0024844573345035315
+    },
+    {
+      "name": "retained noe lip",
+      "beforeTriangles": 226,
+      "triangles": 80,
+      "vertices": 81,
+      "error": 0.0028131515718996525
+    },
+    {
+      "name": "retained noe eye white",
+      "beforeTriangles": 172,
+      "triangles": 54,
+      "vertices": 37,
+      "error": 0.0029850376304239035
+    },
+    {
+      "name": "retained noe iris",
+      "beforeTriangles": 640,
+      "triangles": 140,
+      "vertices": 82,
+      "error": 0.00042767098057083786
+    },
+    {
+      "name": "retained noe hair",
+      "beforeTriangles": 1392,
+      "triangles": 366,
+      "vertices": 330,
+      "error": 0.0029931943863630295
+    },
+    {
+      "name": "option2-continuous-tailored-coat",
+      "beforeTriangles": 6472,
+      "triangles": 2422,
+      "vertices": 1207,
+      "error": 0.003993187099695206
+    },
+    {
+      "name": "option2-continuous-sleeve-L",
+      "beforeTriangles": 1366,
+      "triangles": 384,
+      "vertices": 205,
+      "error": 0.003977601416409016
+    },
+    {
+      "name": "option2-cuff-L",
+      "beforeTriangles": 346,
+      "triangles": 86,
+      "vertices": 45,
+      "error": 0.003975254017859697
+    },
+    {
+      "name": "option2-continuous-sleeve-R",
+      "beforeTriangles": 1366,
+      "triangles": 370,
+      "vertices": 198,
+      "error": 0.003986187279224396
+    },
+    {
+      "name": "option2-cuff-R",
+      "beforeTriangles": 346,
+      "triangles": 78,
+      "vertices": 41,
+      "error": 0.003989424090832472
+    },
+    {
+      "name": "option2-folded-collar--1",
+      "beforeTriangles": 12,
+      "triangles": 4,
+      "vertices": 4,
+      "error": 0.003326213452965021
+    },
+    {
+      "name": "option2-collar-binding--1",
+      "beforeTriangles": 56,
+      "triangles": 8,
+      "vertices": 8,
+      "error": 0.003444802248850465
+    },
+    {
+      "name": "option2-folded-collar-1",
+      "beforeTriangles": 12,
+      "triangles": 4,
+      "vertices": 4,
+      "error": 0.0033306963741779327
+    },
+    {
+      "name": "option2-collar-binding-1",
+      "beforeTriangles": 56,
+      "triangles": 10,
+      "vertices": 8,
+      "error": 0.003572812071070075
+    },
+    {
+      "name": "option2-front-closure",
+      "beforeTriangles": 402,
+      "triangles": 88,
+      "vertices": 46,
+      "error": 0.0028402211610227823
+    },
+    {
+      "name": "option2-hem-binding",
+      "beforeTriangles": 584,
+      "triangles": 64,
+      "vertices": 44,
+      "error": 0.002327819587662816
+    },
+    {
+      "name": "contractor-folded-pale-collar",
+      "beforeTriangles": 630,
+      "triangles": 438,
+      "vertices": 277,
+      "error": 0.0009896568953990936
+    },
+    {
+      "name": "retained listener skin",
+      "beforeTriangles": 13119,
+      "triangles": 6405,
+      "vertices": 3398,
+      "error": 0.002499524038285017
+    },
+    {
+      "name": "retained listener lip",
+      "beforeTriangles": 259,
+      "triangles": 87,
+      "vertices": 87,
+      "error": 0.002669545589014888
+    },
+    {
+      "name": "retained listener eye white",
+      "beforeTriangles": 172,
+      "triangles": 50,
+      "vertices": 35,
+      "error": 0.002915456425398588
+    },
+    {
+      "name": "retained listener iris",
+      "beforeTriangles": 640,
+      "triangles": 140,
+      "vertices": 82,
+      "error": 0.0004163736884947866
+    },
+    {
+      "name": "retained listener hair",
+      "beforeTriangles": 3984,
+      "triangles": 876,
+      "vertices": 495,
+      "error": 0.0016833620611578226
+    },
+    {
+      "name": "retained sabine skin",
+      "beforeTriangles": 13236,
+      "triangles": 6380,
+      "vertices": 3348,
+      "error": 0.0024769511073827744
+    },
+    {
+      "name": "retained sabine lip",
+      "beforeTriangles": 14,
+      "triangles": 8,
+      "vertices": 10,
+      "error": 0.000961119425483048
+    },
+    {
+      "name": "retained sabine eye white",
+      "beforeTriangles": 136,
+      "triangles": 58,
+      "vertices": 39,
+      "error": 0.002995818154886365
+    },
+    {
+      "name": "retained sabine iris",
+      "beforeTriangles": 448,
+      "triangles": 98,
+      "vertices": 58,
+      "error": 0.00042718593613244593
+    },
+    {
+      "name": "retained sabine hair",
+      "beforeTriangles": 5136,
+      "triangles": 1128,
+      "vertices": 650,
+      "error": 0.001977090025320649
+    },
+    {
+      "name": "retained lucien skin",
+      "beforeTriangles": 13087,
+      "triangles": 6373,
+      "vertices": 3380,
+      "error": 0.002489041071385145
+    },
+    {
+      "name": "retained lucien lip",
+      "beforeTriangles": 291,
+      "triangles": 81,
+      "vertices": 80,
+      "error": 0.0026850258000195026
+    },
+    {
+      "name": "retained lucien eye white",
+      "beforeTriangles": 172,
+      "triangles": 52,
+      "vertices": 36,
+      "error": 0.0027945477049797773
+    },
+    {
+      "name": "retained lucien iris",
+      "beforeTriangles": 640,
+      "triangles": 140,
+      "vertices": 82,
+      "error": 0.00041187801980413496
+    },
+    {
+      "name": "retained lucien hair",
+      "beforeTriangles": 2112,
+      "triangles": 464,
+      "vertices": 284,
+      "error": 0.0027542980387806892
+    },
+    {
+      "name": "retained noe skin",
+      "beforeTriangles": 13152,
+      "triangles": 6436,
+      "vertices": 3409,
+      "error": 0.0024844573345035315
+    },
+    {
+      "name": "retained noe lip",
+      "beforeTriangles": 226,
+      "triangles": 80,
+      "vertices": 81,
+      "error": 0.0028131515718996525
+    },
+    {
+      "name": "retained noe eye white",
+      "beforeTriangles": 172,
+      "triangles": 54,
+      "vertices": 37,
+      "error": 0.0029850376304239035
+    },
+    {
+      "name": "retained noe iris",
+      "beforeTriangles": 640,
+      "triangles": 140,
+      "vertices": 82,
+      "error": 0.00042767098057083786
+    },
+    {
+      "name": "retained noe hair",
+      "beforeTriangles": 1392,
+      "triangles": 366,
+      "vertices": 330,
+      "error": 0.0029931943863630295
+    },
+    {
+      "name": "option2-continuous-tailored-coat",
+      "beforeTriangles": 6472,
+      "triangles": 1908,
+      "vertices": 950,
+      "error": 0.0039665657095611095
+    },
+    {
+      "name": "option2-continuous-sleeve-L",
+      "beforeTriangles": 1366,
+      "triangles": 354,
+      "vertices": 190,
+      "error": 0.003997849766165018
+    },
+    {
+      "name": "option2-cuff-L",
+      "beforeTriangles": 346,
+      "triangles": 76,
+      "vertices": 40,
+      "error": 0.0037034170236438513
+    },
+    {
+      "name": "option2-continuous-sleeve-R",
+      "beforeTriangles": 1366,
+      "triangles": 356,
+      "vertices": 191,
+      "error": 0.003996661398559809
+    },
+    {
+      "name": "option2-cuff-R",
+      "beforeTriangles": 346,
+      "triangles": 76,
+      "vertices": 40,
+      "error": 0.003653883468359709
+    },
+    {
+      "name": "option2-folded-collar--1",
+      "beforeTriangles": 12,
+      "triangles": 4,
+      "vertices": 4,
+      "error": 0.0030401945114135742
+    },
+    {
+      "name": "option2-collar-binding--1",
+      "beforeTriangles": 56,
+      "triangles": 10,
+      "vertices": 8,
+      "error": 0.0032402933575212955
+    },
+    {
+      "name": "option2-folded-collar-1",
+      "beforeTriangles": 12,
+      "triangles": 4,
+      "vertices": 4,
+      "error": 0.0030407707672566175
+    },
+    {
+      "name": "option2-collar-binding-1",
+      "beforeTriangles": 56,
+      "triangles": 10,
+      "vertices": 8,
+      "error": 0.0031918510794639587
+    },
+    {
+      "name": "option2-front-closure",
+      "beforeTriangles": 402,
+      "triangles": 88,
+      "vertices": 46,
+      "error": 0.002503077033907175
+    },
+    {
+      "name": "option2-hem-binding",
+      "beforeTriangles": 584,
+      "triangles": 64,
+      "vertices": 48,
+      "error": 0.002111830050125718
+    },
+    {
+      "name": "contractor-folded-pale-collar",
+      "beforeTriangles": 630,
+      "triangles": 444,
+      "vertices": 280,
+      "error": 0.0009832190116867423
+    },
+    {
+      "name": "woman-soft-wool-cap",
+      "beforeTriangles": 960,
+      "triangles": 738,
+      "vertices": 396,
+      "error": 0.000997317023575306
+    },
+    {
+      "name": "woman-cap-turned-rim",
+      "beforeTriangles": 780,
+      "triangles": 780,
+      "vertices": 392,
+      "error": 0
+    }
+  ]
+}

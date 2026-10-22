@@ -4,51 +4,104 @@
 import { costumeExchangeFrame, heldNoteFrame } from '../game/conservatory-adversaries.js';
 
 const q=(axis,angle)=>[axis[0]*Math.sin(angle/2),axis[1]*Math.sin(angle/2),axis[2]*Math.sin(angle/2),Math.cos(angle/2)];
+const clamp=(n,a=0,b=1)=>Math.max(a,Math.min(b,Number(n)||0));
+const ease=n=>{n=clamp(n);return n*n*(3-2*n);};
+const mix=(a,b,t)=>a+(b-a)*t;
+const multiply=(a,b)=>[a[3]*b[0]+a[0]*b[3]+a[1]*b[2]-a[2]*b[1],a[3]*b[1]-a[0]*b[2]+a[1]*b[3]+a[2]*b[0],a[3]*b[2]+a[0]*b[1]-a[1]*b[0]+a[2]*b[3],a[3]*b[3]-a[0]*b[0]-a[1]*b[1]-a[2]*b[2]];
+const angleMix=(a,b,t)=>a+Math.atan2(Math.sin(b-a),Math.cos(b-a))*t;
+const COSTUME_ORIGIN=Object.freeze({x:2.55,y:16.6});
+const COSTUME_WORK_YAW=Math.PI+.72;
+const COSTUME_REMNANT_MARK=Object.freeze({x:3.35,y:17.3});
+// Main maps the origin once, then adds metre deltas. This moving endpoint and
+// the independent static mark above both land at the actual chair (4,18).
+const COSTUME_MOVING_REMNANT_MARK=Object.freeze({x:3.55,y:17.6});
 
-function costumePose(frame,shift){
-  const struggle=Math.abs(shift),time=frame.clipTime||0;
-  return {clip:frame.clip,time,loop:true,joints:{
-    spine_lower:{translation:[shift*.14,0,0],rotation:q([1,0,0],-.20)},
-    spine_mid:{translation:[shift*.24,0,-.018*struggle],rotation:q([1,0,0],-.37-.13*struggle)},
-    spine_upper:{translation:[shift*.38,.010*struggle,-.026*struggle],rotation:q([0,1,0],shift*1.18)},
-    chest:{translation:[shift*.23,0,-.021*struggle],rotation:q([0,0,1],-.14-shift*.38)},
-    neck:{translation:[shift*.10,-.018*struggle,-.05]},
-    head:{rotation:q([0,0,1],-.14-.34*struggle+.09*Math.sin(time*6.2))},
-    crown_left:{rotation:q([0,0,1],.92*(frame.crownOpen||0))},
-    crown_right:{rotation:q([0,0,1],-.92*(frame.crownOpen||0))},
-    jaw:{rotation:q([1,0,0],.10+.66*struggle)},
-    upperarm_L:{rotation:q([0,0,1],-1.03-.44*struggle+.08*Math.sin(time*6.1))},
-    upperarm_R:{rotation:q([0,0,1],.33+.38*struggle-.10*Math.sin(time*5.7))},
-    forearm_L:{rotation:q([1,0,0],-.24-.34*struggle)},
+export const COSTUME_INSPECTION_MARKS=Object.freeze({
+  origin:COSTUME_ORIGIN,
+  chairPhysical:Object.freeze({x:4,z:18,pinX:3.955,pinZ:18.235,pinHeight:.491}),
+  cameraPhysical:Object.freeze({x:3.25,z:19.25,inspectEye:1.42,standingEye:1.62}),
+  remnant:COSTUME_REMNANT_MARK,
+});
+
+function costumePose(frame,{fixed=false}={}){
+  const phase=frame.stage,time=Number(frame.clipTime)||0,shift=fixed?0:Number(frame.torsoShift)||0;
+  const active=!fixed&&['startle','exchange','threshold'].includes(phase),struggle=active?Math.abs(shift):0;
+  const headYaw=fixed?0:clamp(frame.headYaw,-1.05,1.05),notice=!fixed&&phase==='notice';
+  const aimed=notice||active,headPitch=aimed?-.035:.17;
+  return {clip:'idle',time:0,loop:false,joints:{
+    // The clip clock is held at zero. Every foot vertex stays planted while
+    // the articulated ribcage moves independently inside its fixed garment.
+    spine_lower:{translation:[shift*.11,0,0],rotation:q([1,0,0],-.055)},
+    spine_mid:{translation:[shift*.19,0,-.015*struggle],rotation:q([1,0,0],-.075-.09*struggle)},
+    spine_upper:{translation:[shift*.27,.010*struggle,-.018*struggle],rotation:q([0,1,0],shift*.90)},
+    chest:{translation:[shift*.17,0,-.018*struggle],rotation:q([0,0,1],-.035-shift*.27)},
+    neck:{translation:[shift*.07,0,0],rotation:q([0,1,0],headYaw*.22)},
+    head:{rotation:multiply(q([0,1,0],headYaw*.78),multiply(q([1,0,0],headPitch),q([0,0,1],active?-.09-.20*struggle:0)))},
+    crown_left:{rotation:q([0,0,1],.92*(fixed?0:frame.crownOpen||0))},
+    crown_right:{rotation:q([0,0,1],-.92*(fixed?0:frame.crownOpen||0))},
+    jaw:{rotation:q([1,0,0],active?.04+.48*struggle:.015)},
+    upperarm_L:{rotation:q([0,0,1],-.10-.20*struggle)},
+    upperarm_R:{rotation:q([0,0,1],.07+.16*struggle)},
+    forearm_L:{rotation:q([1,0,0],-.16-.16*struggle)},
+    forearm_R:{rotation:q([1,0,0],-.10-.11*struggle)},
   }};
+}
+
+function coverPose({peel=0,side=0,forward=0}={}){
+  return{clip:'idle',time:0,loop:false,joints:{
+    pelvis:{translation:[side,0,forward]},
+    // Only the upper seam drops. Moving the whole cover down drove its hem
+    // through the slab in the old fall; this keeps the actual lower seam up.
+    head:{translation:[0,-.52*peel,0]},
+  }};
+}
+
+function collapsedCover(at=COSTUME_REMNANT_MARK){
+  return{id:'exchange-cover-remnant',mesh:'costume_exchange_cover',at,anchorAt:at,
+    height:-.272,pitch:Math.PI/2,yaw:COSTUME_WORK_YAW,shadow:true,
+    character:coverPose(),aftermath:true};
 }
 
 export function costumeExchangeParts(actor){
   const frame=costumeExchangeFrame(actor);
+  if(frame.remnant)return[collapsedCover(frame.remnantAt||COSTUME_REMNANT_MARK)];
   if(!frame.visible)return [];
-  const position=frame.at,common={at:position,height:0,yaw:frame.yaw,pitch:0,shadow:true};
-  const body=costumePose(frame,frame.torsoShift);
-  const fixed=costumePose({...frame,clip:'idle',clipTime:0},0);
+  const position=frame.at,common={at:position,anchorAt:COSTUME_ORIGIN,height:0,yaw:frame.yaw,pitch:0,shadow:true};
+  const body=actor?.phase==='passing'?{clip:'walk',time:frame.clipTime,loop:true}:costumePose(frame);
+  const fixed=costumePose(frame,{fixed:true});
   const parts=[
     {id:'exchange-body',mesh:'costume_exchange_body',...common,character:body},
     {id:'exchange-features',mesh:'costume_exchange_features',...common,character:body},
     {id:'exchange-garments',mesh:'costume_exchange_attachments',...common,character:fixed},
   ];
-  if(frame.cover&&actor?.phase==='passing'){
+  if(actor?.phase==='passing'){
     parts.push({id:'exchange-pass-cover',mesh:'costume_exchange_cover',...common,character:fixed});
+    return parts;
   }
-  if(frame.cover&&frame.coverProgress){
-    // After the first snap the body stops short. Only the bloodied front cover
-    // reaches the place where the player put a hand, then falls.
-    const p=frame.coverProgress;
-    const fall=Math.max(0,Math.min(1,(p-.56)/.44));
-    const target=actor?.playerAt||{x:position.x,y:position.y+2.1};
-    parts.push({id:'exchange-cover',mesh:'costume_exchange_cover',at:{
-      x:position.x+(target.x-position.x)*1.25*p,
-      y:position.y+(target.y-position.y)*1.25*p,
-    },
-      height:.20+.14*Math.sin(Math.PI*p)-1.13*fall*fall,yaw:frame.yaw,pitch:.52*fall,shadow:true,character:fixed});
+  if(actor?.phase!=='threshold'){
+    const notice=actor?.phase==='notice',revealed=['startle','exchange'].includes(actor?.phase);
+    const peel=revealed?1:notice?ease((Number(actor.elapsed)-.045)/.20):0;
+    parts.push({id:'exchange-hanging-cover',mesh:'costume_exchange_cover',...common,
+      character:coverPose({peel,side:-.32*peel,forward:-.30})});
+    return parts;
   }
+  // The empty lining reaches below the lens and stops three quarters of a
+  // metre short of the eye. It then folds onto the chair's actual floor mark.
+  const p=clamp(frame.coverProgress),fall=ease((p-.46)/.54),flight=ease(p/.46);
+  const target=frame.headAim||actor?.cameraAt||actor?.inspectAt||actor?.playerAt||{x:position.x,y:position.y+2.1};
+  const dx=target.x-position.x,dy=target.y-position.y,distance=Math.hypot(dx,dy),travel=Math.min(.95,Math.max(0,distance-.75));
+  const near={x:position.x+(distance?dx/distance:0)*travel,y:position.y+(distance?dy/distance:1)*travel};
+  const at=fall>0?{x:mix(near.x,COSTUME_MOVING_REMNANT_MARK.x,fall),y:mix(near.y,COSTUME_MOVING_REMNANT_MARK.y,fall)}
+    :{x:mix(position.x,near.x,flight),y:mix(position.y,near.y,flight)};
+  const pitch=Math.PI/2*fall,peel=1-fall,forward=-.30*(1-fall);
+  // Exact retained cover envelope: y>=.13, z<=-.27504. Compressing its upper
+  // seam changes the latter by at most .162m. This support plane prevents the
+  // world mesh (including its shadow) from dropping below the concrete.
+  const minBound=.13*Math.cos(pitch)-(-.275+.162*peel+forward)*Math.sin(pitch);
+  const lift=(.14+.055*Math.sin(Math.PI*flight))*(1-fall);
+  parts.push({id:'exchange-cover',mesh:'costume_exchange_cover',at,anchorAt:COSTUME_ORIGIN,
+    height:lift-minBound+.003,pitch,yaw:angleMix(frame.yaw,COSTUME_WORK_YAW,fall),shadow:true,
+    character:coverPose({peel,side:-.32*(1-fall),forward})});
   return parts;
 }
 

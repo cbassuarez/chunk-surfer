@@ -39,6 +39,7 @@ def parse_args():
     p.add_argument('--sheet', required=True)
     p.add_argument('--work', required=True)
     p.add_argument('--blend', default='')
+    p.add_argument('--ear-scale', type=float, default=6.4)
     return p.parse_args(raw)
 
 
@@ -106,12 +107,15 @@ MAT = {}
 
 
 def make_materials():
-    MAT['skin'] = material('stop listening ear skin', hex_linear('#D8BBA9'), 0.30)
-    MAT['deep'] = material('stop listening ear deep', hex_linear('#A06A5E'), 0.26)
-    MAT['wound'] = material('stop listening ear wound', hex_linear('#4A0F0C'), 0.16)
-    MAT['wet'] = material('stop listening floor wet', hex_linear('#24120F'), 0.05)
-    MAT['paint_dark'] = material('stop listening paint dark', hex_linear('#2B0E0B'), 0.14)
-    MAT['paint_pale'] = material('stop listening paint pale', hex_linear('#C9BFA6'), 0.20)
+    MAT['skin'] = material('stop listening ear skin', hex_linear('#AAA69C'), 0.43)
+    MAT['deep'] = material('stop listening ear deep', hex_linear('#514443'), 0.23)
+    MAT['wound'] = material('stop listening ear wound', hex_linear('#2E1211'), 0.14)
+    MAT['wet'] = material('stop listening floor wet', hex_linear('#1C1010'), 0.06)
+    # Loaded ironoxide pigment has dried matte. Giving the whole ribbon the
+    # gloss of a fresh drop makes it a white mirror under the player's torch,
+    # erasing the words precisely where the player tries to read them.
+    MAT['paint_dark'] = material('stop listening paint dark', hex_linear('#2B0E0B'), 0.93)
+    MAT['paint_pale'] = material('stop listening paint pale', hex_linear('#674A3D'), 0.93)
 
 
 # ── the ear ──────────────────────────────────────────────────────────────────
@@ -205,28 +209,32 @@ def build_ear(name, p, target_tris):
     rnd = random.Random(name)
     sx, sy = p['width'], p['height']
     outline = [(x * sx, y * sy) for x, y in EAR_OUTLINE]
-    plate = plate_object(outline, 0.5)
-    concha = ellipsoid((0.25 * sx, 2.6 * sy, 0.62), (1.0 * sx, 1.25 * sy, 0.55))
-    canal = cylinder((-0.25 * sx, 2.35 * sy, 0.4), 0.22, 2.0)
-    for cutter in (concha, canal):
+    plate = plate_object(outline, 0.62)
+    concha = ellipsoid((0.22 * sx, 2.7 * sy, 0.69), (1.12 * sx, 1.40 * sy, 0.66))
+    canal = cylinder((-0.40 * sx, 2.47 * sy, 0.35), 0.42, 2.2)
+    cymba = ellipsoid((-0.15 * sx, 3.75 * sy, 0.64), (0.59 * sx, 0.56 * sy, 0.50))
+    for cutter in (concha, canal, cymba):
         mod = plate.modifiers.new('cut', 'BOOLEAN')
         mod.operation = 'DIFFERENCE'
         mod.solver = 'EXACT'
         mod.object = cutter
     carved = link(bpy.data.objects.new('ear-carved', evaluated_mesh(plate, 'ear-carved')))
-    for obj in (plate, concha, canal):
+    for obj in (plate, concha, canal, cymba):
         remove(obj)
     s = lambda pts: [(x * sx, y * sy) for x, y in pts]
     curl = p['curl']
     parts = [
         carved,
-        tube(s(HELIX), 0.45, 0.33 * curl, radii=[.55, .85, 1, 1, 1, 1, 1, .95, .9, .85, .75]),
-        tube(s(ANTIHELIX), 0.42, 0.26),
-        tube(s(INFERIOR_CRUS), 0.40, 0.21, radii=[1, .95, .8, .6]),
-        tube(s(HELIX_CRUS), 0.40, 0.22, radii=[1, .8, .5]),
-        ellipsoid((-0.85 * sx, 2.15 * sy, 0.55), (0.42, 0.62, 0.35)),            # tragus
-        ellipsoid((0.35 * sx, 1.35 * sy, 0.50), (0.45, 0.32, 0.30)),             # antitragus
-        ellipsoid((0.55 * sx, 0.7 * sy, 0.25), (0.9 * p['lobe'], 0.8 * p['lobe'], 0.32)),  # lobe
+        tube(s(HELIX), 0.53, 0.35 * curl, radii=[.30, .62, .84, 1.25, .88, .54, 1.14, .78, .69, .96, .44]),
+        tube(s(ANTIHELIX), 0.58, 0.29, radii=[.65, 1.20, 1.12, .90, .55]),
+        tube(s(INFERIOR_CRUS), 0.57, 0.26, radii=[1.1, .95, .72, .35]),
+        tube(s(HELIX_CRUS), 0.58, 0.24, radii=[1, .8, .30]),
+        # The tragus overlaps the canal entrance, rather than sitting in the
+        # concha like another round bead. Together these break the bowl outline.
+        ellipsoid((-0.82 * sx, 2.45 * sy, 0.64), (0.37, 0.71, 0.43)),
+        ellipsoid((0.24 * sx, 1.43 * sy, 0.53), (0.48, 0.39, 0.33)),
+        ellipsoid((0.55 * sx, 0.62 * sy, 0.27), (0.88 * p['lobe'], 0.84 * p['lobe'], 0.39)),
+        ellipsoid((-1.06 * sx, 3.12 * sy, 0.26), (0.23, 1.52 * sy, 0.34)),  # severed attachment
     ]
     fused = join(parts, 'ear-fused')
     for obj in parts:
@@ -236,19 +244,37 @@ def build_ear(name, p, target_tris):
     rm.voxel_size = 0.00055
     rm.adaptivity = 0
     sm = fused.modifiers.new('smooth', 'SMOOTH')
-    sm.factor = 0.55
-    sm.iterations = 5
+    sm.factor = 0.40
+    sm.iterations = 3
     tex = bpy.data.textures.new(f'{name}-flesh', 'CLOUDS')
     tex.noise_scale = 0.006
     tex.noise_depth = 2
     dp = fused.modifiers.new('flesh', 'DISPLACE')
     dp.texture = tex
     dp.texture_coords = 'LOCAL'
-    dp.strength = 0.0005
+    dp.strength = 0.00065
     dp.mid_level = 0.5
     dense = evaluated_mesh(fused, 'ear-dense')
     remove(fused)
     bpy.data.textures.remove(tex)
+
+    # Compress one part of the cartilage independently of the other. The
+    # silhouette remains an elongated pinna; the helix is no longer a smooth,
+    # evenly swollen ring. The irregular attachment is torn flesh, not spikes.
+    phase = rnd.uniform(-math.pi, math.pi)
+    collapse = p.get('collapse', .3)
+    for v in dense.vertices:
+        x, y, z = v.co
+        upper = max(0, min(1, (y / CM - 3.7 * sy) / (2.5 * sy)))
+        posterior = max(0, min(1, (x / CM - .85 * sx) / (1.7 * sx)))
+        v.co.x -= CM * collapse * upper * posterior * (.45 + .35 * math.sin(y / CM * 2.8 + phase))
+        v.co.z -= CM * collapse * upper * posterior * .54
+        v.co.z += .00045 * math.sin(x / CM * 3.1 + phase) * math.sin(y / CM * 2.4)
+        if x < -.78 * sx * CM and 1.05 * sy * CM < y < 4.75 * sy * CM:
+            root = max(0, min(1, (-x / CM - .78 * sx) / .45))
+            v.co.x += CM * root * (.10 * math.sin(y / CM * 16 + phase) + .045 * math.sin(y / CM * 31))
+            v.co.z += CM * root * .075 * math.sin(y / CM * 11 + phase)
+    dense.update()
 
     # Materials by where the face is on the ear, decided on the dense surface so
     # the decimation keeps the borders smooth: the anterior edge is where it was
@@ -259,9 +285,10 @@ def build_ear(name, p, target_tris):
     for poly in dense.polygons:
         c = poly.center
         bowl = ((c.x - cx) / (1.0 * sx * CM)) ** 2 + ((c.y - cy) / (1.25 * sy * CM)) ** 2
-        if c.x < -0.95 * sx * CM and 0.9 * sy * CM < c.y < 4.4 * sy * CM:
+        inflamed = math.sin(c.x / CM * 4.6 + phase) * math.sin(c.y / CM * 2.3 - phase)
+        if c.x < -.82 * sx * CM and 1.0 * sy * CM < c.y < 4.7 * sy * CM:
             poly.material_index = 2
-        elif bowl < 0.72 and c.z < 0.40 * CM:
+        elif (bowl < .95 and c.z < .49 * CM) or (inflamed > .50 and c.z > .35 * CM):
             poly.material_index = 1
         else:
             poly.material_index = 0
@@ -274,6 +301,33 @@ def build_ear(name, p, target_tris):
     remove(holder)
     for poly in mesh.polygons:
         poly.use_smooth = True
+
+    # A thin, folded skirt of fascia remains on the cut attachment. It reads as
+    # a torn root at ordinary viewing distance and carries the dark wet edge;
+    # there are no radial spikes or decorative tentacles.
+    bm = bmesh.new()
+    bm.from_mesh(mesh)
+    left, right = [], []
+    for i in range(13):
+        t = i / 12
+        y = (1.20 + t * 3.35) * sy * CM
+        root_x = (-.99 * sx + .11 * math.sin(t * 19 + phase)) * CM
+        z = (.17 + .12 * math.sin(t * 12 + phase)) * CM
+        left.append(bm.verts.new((root_x + .10 * CM, y, z)))
+        edge = .18 + .13 * (.5 + .5 * math.sin(t * 47 + phase))
+        right.append(bm.verts.new((root_x - edge * CM, y + .045 * CM * math.sin(t * 28), z + .15 * CM * math.sin(t * 17))))
+    for i in range(12):
+        for ids in ((left[i], right[i + 1], right[i]), (left[i], left[i + 1], right[i + 1])):
+            f = bm.faces.new(ids)
+            f.material_index = 2 if i % 4 else 1
+            f.smooth = False
+    result = bpy.data.meshes.new(name + '-torn')
+    bm.to_mesh(result)
+    bm.free()
+    for m in mesh.materials:
+        result.materials.append(m)
+    bpy.data.meshes.remove(mesh)
+    mesh = result
 
     # Centre on the footprint, then the variant's own pose.
     xs = [v.co.x for v in mesh.vertices]
@@ -291,12 +345,12 @@ def build_ear(name, p, target_tris):
 
 
 EAR_VARIANTS = {
-    'stop_listening_ear_a': dict(width=1.00, height=1.00, lobe=1.00, curl=1.00, mirror=False, tilt=0),
-    'stop_listening_ear_b': dict(width=0.96, height=0.94, lobe=0.85, curl=0.95, mirror=True, tilt=0),
-    'stop_listening_ear_c': dict(width=1.04, height=1.06, lobe=1.10, curl=1.05, mirror=False, tilt=22),
-    'stop_listening_ear_d': dict(width=0.86, height=0.88, lobe=0.80, curl=0.90, mirror=False, tilt=-8),
-    'stop_listening_ear_e': dict(width=1.00, height=1.02, lobe=0.70, curl=1.10, mirror=True, tilt=-18),
-    'stop_listening_ear_f': dict(width=1.08, height=1.10, lobe=1.20, curl=1.00, mirror=True, tilt=6),
+    'stop_listening_ear_a': dict(width=1.00, height=1.00, lobe=1.00, curl=1.00, mirror=False, tilt=0, collapse=.22),
+    'stop_listening_ear_b': dict(width=0.96, height=0.94, lobe=0.85, curl=0.95, mirror=True, tilt=0, collapse=.48),
+    'stop_listening_ear_c': dict(width=1.04, height=1.06, lobe=1.10, curl=1.05, mirror=False, tilt=22, collapse=.35),
+    'stop_listening_ear_d': dict(width=0.86, height=0.88, lobe=0.80, curl=0.90, mirror=False, tilt=-8, collapse=.12),
+    'stop_listening_ear_e': dict(width=1.00, height=1.02, lobe=0.70, curl=1.10, mirror=True, tilt=-18, collapse=.62),
+    'stop_listening_ear_f': dict(width=1.08, height=1.10, lobe=1.20, curl=1.00, mirror=True, tilt=6, collapse=.30),
 }
 
 
@@ -341,6 +395,21 @@ HEAPS = {
     'stop_listening_heap_a': dict(count=42, radius=0.115, stretch=1.0),
     'stop_listening_heap_b': dict(count=26, radius=0.085, stretch=1.0),
     'stop_listening_heap_c': dict(count=34, radius=0.09, stretch=2.3),
+}
+
+# Approved physical allocations after the 6.4x enlargement, in runtime X/Z.
+# Horror detail is fitted inside these envelopes, so a more convincing root or
+# folded rim cannot intrude on the existing circulation, sheet or entry bubble.
+FLESH_ENVELOPES = {
+    'stop_listening_ear_a': (-.1273, .1273, -.2040, .2040, .1050),
+    'stop_listening_ear_b': (-.1221, .1221, -.1891, .1891, .0980),
+    'stop_listening_ear_c': (-.1174, .1340, -.2171, .2171, .1650),
+    'stop_listening_ear_d': (-.1157, .1062, -.1776, .1776, .1120),
+    'stop_listening_ear_e': (-.1301, .1174, -.2046, .2046, .1500),
+    'stop_listening_ear_f': (-.1318, .1388, -.2255, .2255, .1100),
+    'stop_listening_heap_a': (-.7755, .8725, -.8995, .8634, .4900),
+    'stop_listening_heap_b': (-.6147, .5711, -.6372, .6344, .4600),
+    'stop_listening_heap_c': (-1.2432, 1.4142, -.6975, .6685, .5100),
 }
 
 
@@ -469,56 +538,83 @@ def build_writing(name, spec):
     rnd = random.Random(name)
     strokes, widths = [], []
     for li, text in enumerate(spec['lines']):
-        line, width = hand_strokes(text, spec['h'], rnd, slant=rnd.uniform(.05, .2), wobble=.03,
-                                   drift=rnd.uniform(-.02, .02), rotation=math.radians(rnd.uniform(-2.5, 2.5)))
-        dx = rnd.uniform(-.06, .06) * spec['h'] * 4 - width / 2
-        dy = -li * spec['pitch'] + rnd.uniform(-.2, .2) * spec['pitch'] * .3
+        # The large line is one hard declaration. Subsequent repetitions lose
+        # their line, their starting point and their pressure; they are not four
+        # identical rows of a font. The same skeleton also writes the paper,
+        # whose marks intentionally remain untouched by this wall treatment.
+        h = spec['h'] * rnd.uniform(.88, 1.10)
+        line, width = hand_strokes(text, h, rnd, slant=rnd.uniform(.04, .23), wobble=.026,
+                                   drift=rnd.uniform(-.016, .018), size_jitter=.17,
+                                   rotation=math.radians(rnd.uniform(-3.1, 3.1)), step=.105)
+        dx = rnd.uniform(-.10, .10) * spec['h'] * 6 - width / 2
+        dy = -li * spec['pitch'] + rnd.uniform(-.20, .20) * spec['pitch']
         strokes += [[(x + dx, y + dy) for x, y in st] for st in line]
         widths.append(width)
-    # Painted twice where the brush ran dry: a thinner second pass, a little off.
-    repaint = [[(x + rnd.uniform(.002, .006), y - rnd.uniform(.0, .004)) for x, y in st]
-               for st in strokes if rnd.random() < .3]
-    # Drips run straight down from the low points and from wherever paint pooled.
-    drips = []
-    bottoms = sorted(strokes, key=lambda st: min(p[1] for p in st))
-    for st in rnd.sample(strokes, min(len(strokes), spec['drips'])) + bottoms[:4]:
-        low = min(p[1] for p in st)
-        # Paint runs from where it pooled, which is the bottom of a stroke.
-        candidates = [p for p in st if p[1] <= low + spec['h'] * .45]
-        x, y = min(st, key=lambda p: p[1]) if rnd.random() < .6 else candidates[rnd.randrange(len(candidates))]
-        length = spec['h'] * rnd.uniform(.2, .95)
-        drips.append([(x + rnd.uniform(-.002, .002) * (k / 6), y - length * k / 6) for k in range(7)])
-    taper = lambda si, i, n: 1.0 - 0.25 * abs((i / max(1, n - 1)) * 2 - 1) ** 2
-    drip_taper = lambda si, i, n: 0.95 - 0.55 * (i / max(1, n - 1)) + (0.5 if i == n - 1 else 0)
-    parts = []
-    for label, group, radius, fn in (('main', strokes, spec['brush'], taper), ('repaint', repaint, spec['brush'] * .65, taper),
-                                     ('drips', drips, spec['brush'] * .55, drip_taper)):
-        if not group:
-            continue
-        obj = link(bpy.data.objects.new(f'{name}-{label}', strokes_curve(f'{name}-{label}', group, radius, radii_fn=fn)))
-        parts.append(obj)
-    mesh_objs = [link(bpy.data.objects.new(o.name + '-mesh', evaluated_mesh(o, o.name + '-mesh'))) for o in parts]
-    for o in parts:
-        remove(o)
-    fused = join(mesh_objs, name)
-    for o in mesh_objs:
-        remove(o)
-    mesh = fused.data
-    # Paint is a film, not a pipe: press the strokes flat against the wall (-y is
-    # the room side; the back sits at y = 0 on the wall face).
-    relief = max(0.0025, spec['brush'] * 0.32)
-    ys = [v.co.y for v in mesh.vertices]
-    span = max(1e-6, max(ys) - min(ys))
+    bm = bmesh.new()
+    relief = .0018
+
+    def ribbon(points, half_width, *, drip=False, dry=False):
+        if len(points) < 2:
+            return
+        phase, pulse = rnd.random() * math.tau, rnd.random() * math.tau
+        left, right = [], []
+        for i, (x, z) in enumerate(points):
+            t = i / (len(points) - 1)
+            prev, nex = points[max(0, i - 1)], points[min(len(points) - 1, i + 1)]
+            dx, dz = nex[0] - prev[0], nex[1] - prev[1]
+            length = max(.00001, math.hypot(dx, dz))
+            nx, nz = -dz / length, dx / length
+            if drip:
+                pressure = .66 * (1 - t) + .16 + (.45 if i == len(points) - 1 else 0)
+            else:
+                pressure = (.66 + .33 * math.sin(phase + t * 4.1)
+                            + .13 * math.sin(pulse + t * 17)) * (.48 + .52 * math.sin(math.pi * t) ** .32)
+            w = half_width * max(.22, pressure)
+            # A slightly dragged, serrated edge and local pooling. The main
+            # stroke stays continuous; dry-brush scratches only trail its edge.
+            wl, wr = w * rnd.uniform(.83, 1.15), w * rnd.uniform(.85, 1.14)
+            y = -relief * (.55 + .30 * math.sin(t * 4 + phase))
+            left.append(bm.verts.new((x + nx * wl, y, z + nz * wl)))
+            right.append(bm.verts.new((x - nx * wr, y, z - nz * wr)))
+        for i in range(len(points) - 1):
+            if dry and (i % 5 == 0 or i == len(points) - 2):
+                continue
+            f = bm.faces.new((left[i], right[i], right[i + 1], left[i + 1]))
+            f.smooth = False
+
+    for st in strokes:
+        width = spec['brush'] * rnd.uniform(.85, 1.48)
+        ribbon(st, width)
+        if rnd.random() < .22:
+            tail = st[max(0, len(st) // 2 - 1):]
+            ribbon([(x + width * .8, z + width * .13) for x, z in tail], width * .17, dry=True)
+        if rnd.random() < .18:
+            # A partial second push where the first stroke ran out of pigment.
+            tail = st[max(0, len(st) // 2 - 1):]
+            ribbon([(x - width * .25, z + width * .15) for x, z in tail], width * .43)
+    # Sparse long runs are gravity, not a decorative fringe under every letter.
+    for st in rnd.sample(strokes, min(len(strokes), spec['drips'])):
+        x, z = min(st, key=lambda p: p[1])
+        run = spec['h'] * rnd.uniform(.13, .78)
+        points = [(x + .0015 * math.sin(i * .7), z - run * i / 7) for i in range(8)]
+        ribbon(points, spec['brush'] * rnd.uniform(.15, .33), drip=True)
+    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
+    for f in bm.faces:
+        if f.normal.y > 0:
+            bmesh.ops.reverse_faces(bm, faces=[f])
+    mesh = bpy.data.meshes.new(name)
+    bm.to_mesh(mesh)
+    bm.free()
+    # Same physical wall allocation as before: lettering does not spread onto
+    # openings, ceilings or adjacent fixtures when its hand becomes stronger.
+    envelope = {'stop_listening_writing_line': (4.7078, .5918),
+                'stop_listening_writing_block': (2.6942, 1.0054),
+                'stop_listening_writing_scrawl': (1.3350, .9700)}[name]
+    xs, zs = [v.co.x for v in mesh.vertices], [v.co.z for v in mesh.vertices]
+    xmin, xmax, zmin, zmax = min(xs), max(xs), min(zs), max(zs)
     for v in mesh.vertices:
-        v.co.y = -(v.co.y - min(ys)) / span * relief
-    xs = [v.co.x for v in mesh.vertices]
-    zs = [v.co.z for v in mesh.vertices]
-    mesh.transform(Matrix.Translation((-(min(xs) + max(xs)) / 2, 0, -min(zs))))
-    for poly in mesh.polygons:
-        poly.use_smooth = True
-    fused.data = bpy.data.meshes.new(name)  # detach so the mesh can be named and reused
-    remove(fused)
-    mesh.name = name
+        v.co.x = ((v.co.x - xmin) / (xmax - xmin) - .5) * envelope[0]
+        v.co.z = (v.co.z - zmin) / (zmax - zmin) * envelope[1]
     return mesh
 
 
@@ -853,6 +949,15 @@ def runtime_bounds(mesh):
     return {'min': [round(float(v), 4) for v in rt.min(axis=0)], 'max': [round(float(v), 4) for v in rt.max(axis=0)]}
 
 
+def flesh_bounds(mesh):
+    """Measure anatomy, excluding the much wider dark liquid around it."""
+    ids = {v for p in mesh.polygons if mesh.materials[p.material_index] != MAT['wet'] for v in p.vertices}
+    co = np.array([mesh.vertices[i].co[:] for i in ids], dtype=np.float64)
+    rt = np.stack([co[:, 0], co[:, 2], -co[:, 1]], axis=1)
+    return {'min': [round(float(v), 4) for v in rt.min(axis=0)], 'max': [round(float(v), 4) for v in rt.max(axis=0)]}
+
+
+
 def main():
     a = parse_args()
     work = Path(a.work)
@@ -861,7 +966,7 @@ def main():
     make_materials()
     meshes = {}
     for name, p in EAR_VARIANTS.items():
-        meshes[name] = build_ear(name, p, target_tris=420)
+        meshes[name] = build_ear(name, p, target_tris=680)
     ears = {k: meshes[k] for k in EAR_VARIANTS}
     # A scattered ear lies in its own wet smear. On a lit floor the halftone has
     # nothing to draw between a pale ear and pale tile; the smear is the edge.
@@ -869,6 +974,29 @@ def main():
     meshes.update(singles)
     for name, spec in HEAPS.items():
         meshes[name] = build_heap(name, spec, ears)
+    # Physical anatomy, not a screen-space enlargement. Its cartilage, bowl and
+    # cut surface all grow together, so their self-shadow and wet light response
+    # survive the final dither. Keep the thin liquid against the floor; a scaled
+    # wet plane must not float centimetres above it. Leaning heaps had a few
+    # vertices below floor level; seat their flesh on the actual floor too.
+    anatomy_names = [*EAR_VARIANTS, *HEAPS]
+    for name in anatomy_names:
+        mesh = meshes[name]
+        mesh.transform(Matrix.Scale(a.ear_scale, 4))
+        wet_ids = {v for p in mesh.polygons if mesh.materials[p.material_index] == MAT['wet'] for v in p.vertices}
+        flesh_ids = set(range(len(mesh.vertices))) - wet_ids
+        low = min(mesh.vertices[i].co.z for i in flesh_ids)
+        high = max(mesh.vertices[i].co.z for i in flesh_ids)
+        xmin, xmax = min(mesh.vertices[i].co.x for i in flesh_ids), max(mesh.vertices[i].co.x for i in flesh_ids)
+        ymin, ymax = min(mesh.vertices[i].co.y for i in flesh_ids), max(mesh.vertices[i].co.y for i in flesh_ids)
+        ex0, ex1, ez0, ez1, top = FLESH_ENVELOPES[name]
+        for i in flesh_ids:
+            v = mesh.vertices[i]
+            v.co.x = ex0 + (v.co.x - xmin) / (xmax - xmin) * (ex1 - ex0)
+            v.co.y = -ez1 + (v.co.y - ymin) / (ymax - ymin) * (ez1 - ez0)
+            v.co.z = .002 + (v.co.z - low) / (high - low) * (top - .002)
+        for i in wet_ids:
+            mesh.vertices[i].co.z = 0.0008
     # The heaps were built from the bare ears; the pack ships the smeared ones
     # under the same names, so the bare meshes give their names back.
     for mesh in ears.values():
@@ -900,6 +1028,9 @@ def main():
     report = {
         'meshes': {name: {'triangles': tri_count(mesh), 'bounds': runtime_bounds(mesh),
                           'materials': [m.name for m in mesh.materials]} for name, mesh in meshes.items()},
+        'earScale': a.ear_scale,
+        'artRevision': 'severed-cartilage-pressure-brush-v3-matte-pigment',
+        'fleshBounds': {name: flesh_bounds(meshes[name]) for name in anatomy_names},
     }
     report['triangles'] = sum(m['triangles'] for m in report['meshes'].values())
     if a.blend:

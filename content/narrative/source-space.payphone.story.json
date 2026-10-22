@@ -47,6 +47,7 @@
     "enquiries-sister",
     "enquiries-lyle",
     "enquiries-end",
+    "loop-answer",
     "loop",
     "loop-spoken",
     "loop-silent",
@@ -73,7 +74,7 @@
     "outskirts",
     "payphone"
   ],
-  "notes": "The kiosk on the repeating arrival road, on a 1988 network: a grey pay-on-answer coinbox with a rotary dial (docs/plans/phone-box-1988.md). src/game/payphone.js picks the node. Pay on answer: when the far end picks up he hears rapid pips until the slot is fed; he has no coins, and the tape fits, and the call records over his takes. Numbers are found, never remembered for him: the van's car phone on the dash, Lyle's he still knows (his old hall payphone), Sarah's on the torn directory page, her sister's in the phone book and from 192. Calling himself escalates by pass: the van rings early; on the loop pass the box rings until he answers and speaks; late, he is already on the line. Lines marked here carry weight and are Seb's to revise first: lyle-nobody, sarah, sarah-confessed, loop-spoken, self-line, self-line-mic. THE PAGES (docs/plans/outskirts-losing-himself.md): flurry, flurry.lyle, flurry.them, flurry.him are read by pass, Sarah's first and his last; his worst moments, both sides, everyone's. All drafts for Seb; the lines that have to land are \"there's always another take\" and \"That was all you got.\" The late self-call is his box heard from underwater (sound self-underwater).",
+  "notes": "The kiosk on the repeating arrival road, on a 1988 network: a grey pay-on-answer coinbox with a rotary dial (docs/plans/phone-box-1988.md). src/game/payphone.js picks the node. Important calls (the key, the sheet and the loop) come in and need only receiver pickup. The rotary remains optional. Outgoing calls are pay on answer: when the far end picks up he hears rapid pips until the slot is fed; he has no coins, and the tape fits, and the call records over his takes. Numbers are found, never remembered for him: the van's car phone on the dash, Lyle's he still knows (his old hall payphone), Sarah's on the torn directory page, her sister's in the phone book and from 192. Calling himself escalates by pass: the van rings early; on the loop pass the box rings until he lifts the receiver; late, he is already on the line. Lines marked here carry weight and are Seb's to revise first: lyle-nobody, sarah, sarah-confessed, loop-spoken, self-line, self-line-mic. THE PAGES (docs/plans/outskirts-losing-himself.md): flurry, flurry.lyle, flurry.them, flurry.him are read by pass, Sarah's first and his last; his worst moments, both sides, everyone's. All drafts for Seb; the lines that have to land are \"there's always another take\" and \"That was all you got.\" The late self-call is his box heard from underwater (sound self-underwater).",
   "regions": [
     {
       "id": "source-space.payphone.region",
@@ -123,6 +124,7 @@
         "enquiries-sister",
         "enquiries-lyle",
         "enquiries-end",
+        "loop-answer",
         "loop",
         "loop-spoken",
         "loop-silent",
@@ -626,7 +628,7 @@
         {
           "id": "office-key.1",
           "who": "direction",
-          "text": "[Lifted on the third ring. Nobody speaks.]",
+          "text": "[The receiver lifted. A room, somewhere on the line. Nobody speaks.]",
           "cue": "phone:answer:office-room"
         },
         {
@@ -656,7 +658,7 @@
         {
           "id": "lodge-key.1",
           "who": "direction",
-          "text": "[Lifted on the third ring. Breathing, and the booth radio under it.]",
+          "text": "[The receiver lifted. Breathing, and the booth radio under it.]",
           "cue": "phone:answer:lodge-room"
         },
         {
@@ -1121,6 +1123,30 @@
         }
       ]
     },
+    "loop-answer": {
+      "id": "loop-answer",
+      "type": "dialogue",
+      "speaker": "THE PHONE BOX",
+      "lines": [
+        {
+          "id": "loop-answer.1",
+          "who": "direction",
+          "text": "[Lifted. The van's cab: rain on a windscreen, the dash light, a handset lying on a seat.]",
+          "cue": "phone:answer:van-cab"
+        },
+        {
+          "id": "loop-answer.2",
+          "who": "caller",
+          "text": "There you are."
+        },
+        {
+          "id": "loop-answer.3",
+          "who": "direction",
+          "text": "[Put down. The van's handset stays where it is, on the seat.]",
+          "cue": "phone:hang:far-clear"
+        }
+      ]
+    },
     "loop": {
       "id": "loop",
       "type": "dialogue",
@@ -1325,12 +1351,12 @@
         {
           "id": "look-scratches.1",
           "who": "direction",
-          "text": "[Numbers keyed into the red paint at head height. KAREN. TAXIS. D, in Leeds, the last two digits gone.]"
+          "text": "[Numbers worked into the margin of the phone book. KAREN. TAXIS. D, in Leeds, the last two digits gone.]"
         },
         {
           "id": "look-scratches.2",
           "who": "direction",
-          "text": "[CAR 0836 9_0 4_7. LODGE 0632 96_ 214, SEE CARD. And under them, cut deep: DON'T RING HER.]"
+          "text": "[CAR 0836 9_0 4_7. LODGE 0632 96_ 214, SEE CARD. And under them, pressed hard through the paper: DON'T RING HER.]"
         },
         {
           "id": "look-scratches.3",

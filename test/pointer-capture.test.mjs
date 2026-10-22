@@ -456,3 +456,325 @@ test('background or UI-owned windows cannot acquire native look',async()=>{
     assert.ok(!native.operations.includes('grab:true'));assert.equal(controller.isNativeCaptured(),false);
   });
 });
+
+function nativeFocusWindow() {
+  const native = taoWindow();
+  let focused = true;
+  let focusHandler = null;
+  let unlistened = 0;
+  native.win.isFocused = async () => focused;
+  native.win.onFocusChanged = async handler => {
+    focusHandler = handler;
+    return () => { focusHandler = null; unlistened += 1; };
+  };
+  return {
+    ...native,
+    get grabbed() { return native.grabbed; },
+    get visible() { return native.visible; },
+    get unlistened() { return unlistened; },
+    async focus(value) {
+      focused = value;
+      // Rust releases the physical grab even if WebKit misses its blur event.
+      if (!value) { await native.win.setCursorGrab(false); await native.win.setCursorVisible(true); }
+      focusHandler?.({ payload: value });
+    },
+  };
+}
+
+test('native focus events retire a stale OS grab without relying on WebView blur', async () => {
+  await withTauriWindow(async () => {
+    const native = nativeFocusWindow(), input = new InputManager(), doc = documentStub();
+    const focusChanges = [];
+    const controller = createPointerModeController({ documentRef: doc, getTargetElement: () => targetStub(),
+      getState: playing, input, loadNativeWindowApi: async () => native.api,
+      onNativeFocusChanged: focused => focusChanges.push(focused) });
+    await controller.requestCaptureFromGesture(); await settle(60);
+    assert.equal(native.grabbed, true);
+    await native.focus(false); await settle(60);
+    assert.equal(doc.hasFocus(), true, 'the stale WebView focus is deliberately unchanged');
+    assert.equal(controller.isNativeCaptured(), false, 'JS ownership must follow the native loss');
+    assert.equal(input.pointerLocked, false);
+    await controller.requestCaptureFromGesture('background-key'); await settle(30);
+    assert.equal(native.grabbed, false, 'a stale DOM focus cannot steal the OS cursor');
+    await native.focus(true); await settle(90);
+    assert.equal(controller.isNativeCaptured(), true, 'native app return restores look without a new click');
+    assert.equal(native.grabbed, true);
+    assert.deepEqual(focusChanges, [false, true]);
+    controller.dispose(); await settle(30);
+    assert.equal(native.unlistened, 1, 'disposing releases the native focus listener');
+  });
+});
+
+test('native app return can restore look before WebKit reports document focus', async () => {
+  await withTauriWindow(async () => {
+    const native = nativeFocusWindow(), input = new InputManager(), doc = documentStub();
+    let domFocused = true; doc.hasFocus = () => domFocused;
+    const controller = createPointerModeController({ documentRef: doc, getTargetElement: () => targetStub(),
+      getState: playing, input, loadNativeWindowApi: async () => native.api });
+    await controller.requestCaptureFromGesture(); await settle(60);
+    await native.focus(false); await settle(60); domFocused = false;
+    await native.focus(true); await settle(90);
+    assert.equal(domFocused, false, 'native focus arrives before delayed WebView focus');
+    assert.equal(native.grabbed, true); assert.equal(input.pointerLocked, true);
+    controller.dispose();
+  });
+});
+
+test('a transient native edge-recenter failure retries look while gameplay still owns it', async () => {
+  await withTauriWindow(async () => {
+    const native = taoWindow(), input = new InputManager(), timers = manualTimers(), clock = manualClock();
+    const original = native.win.setCursorPosition; let failed = false;
+    const controller = createPointerModeController({ documentRef: documentStub(), getTargetElement: () => targetStub(),
+      getState: playing, input, loadNativeWindowApi: async () => native.api,
+      setTimeoutFn: timers.setTimeoutFn, clearTimeoutFn: timers.clearTimeoutFn, nowFn: clock.now });
+    await controller.requestCaptureFromGesture(); await settle(60);
+    native.win.setCursorPosition = async p => {
+      if (!failed) { failed = true; throw new Error('temporary native IPC refusal'); }
+      return original(p);
+    };
+    clock.advance(400); move(controller, 1279, 400, 800, 0); await settle(60);
+    assert.equal(controller.isNativeCaptured(), false);
+    assert.ok(timers.pending() > 0, 'a failed recenter must not leave look permanently dead');
+    timers.flush(); await settle(90);
+    assert.equal(controller.isNativeCaptured(), true); assert.equal(native.grabbed, true);
+    controller.release('end');
+  });
+});
+
+test('sync arms bounded native recovery when live gameplay has no look backend', async () => {
+  await withTauriWindow(async () => {
+    const native = taoWindow(), input = new InputManager(), timers = manualTimers();
+    const controller = createPointerModeController({ documentRef: documentStub(), getTargetElement: () => targetStub(),
+      getState: playing, input, loadNativeWindowApi: async () => native.api,
+      setTimeoutFn: timers.setTimeoutFn, clearTimeoutFn: timers.clearTimeoutFn });
+    controller.sync('scene-cleared');
+    assert.ok(timers.pending() > 0, 'live unowned look needs recovery even without another gesture');
+    timers.flush(); await settle(90);
+    assert.equal(controller.isNativeCaptured(), true); assert.equal(native.grabbed, true);
+    controller.release('end');
+  });
+});
+
+test('native focus loss during acquisition cannot finish a stale grab', async () => {
+  await withTauriWindow(async () => {
+    const native = nativeFocusWindow(), input = new InputManager(); let finishHide;
+    native.win.setCursorVisible = value => value ? Promise.resolve() : new Promise(resolve => { finishHide = resolve; });
+    const controller = createPointerModeController({ documentRef: documentStub(), getTargetElement: () => targetStub(),
+      getState: playing, input, loadNativeWindowApi: async () => native.api });
+    await controller.requestCaptureFromGesture(); await settle(60); assert.ok(finishHide);
+    await native.focus(false); finishHide(); await settle(90);
+    assert.equal(native.grabbed, false); assert.equal(controller.isNativeCaptured(), false);
+    assert.equal(input.pointerLocked, false); controller.dispose();
+  });
+});
+
+test('native focus return beneath a menu does not steal the cursor', async () => {
+  await withTauriWindow(async () => {
+    const native = nativeFocusWindow(), input = new InputManager(), timers = manualTimers(); let state = playing();
+    const controller = createPointerModeController({ documentRef: documentStub(), getTargetElement: () => targetStub(),
+      getState: () => state, input, loadNativeWindowApi: async () => native.api,
+      setTimeoutFn: timers.setTimeoutFn, clearTimeoutFn: timers.clearTimeoutFn });
+    await controller.requestCaptureFromGesture(); await settle(60);
+    await native.focus(false); await settle(60); state = { ...state, paused: true };
+    await native.focus(true); await settle(60);
+    assert.equal(native.grabbed, false); assert.equal(timers.pending(), 0);
+    state = playing(); controller.sync('menu-closed'); timers.flush(); await settle(90);
+    assert.equal(native.grabbed, true); controller.dispose();
+  });
+});
+
+test('native recovery stops after its bounded refusal ladder', async () => {
+  await withTauriWindow(async () => {
+    const native = taoWindow(), input = new InputManager(), timers = manualTimers(); let attempts = 0;
+    native.win.setCursorGrab = async value => { if (value) { attempts += 1; throw new Error('temporary refusal'); } };
+    const controller = createPointerModeController({ documentRef: documentStub(), getTargetElement: () => targetStub(),
+      getState: playing, input, loadNativeWindowApi: async () => native.api,
+      setTimeoutFn: timers.setTimeoutFn, clearTimeoutFn: timers.clearTimeoutFn });
+    await controller.requestCaptureFromGesture(); await settle(60);
+    for (let i = 0; i < 10; i += 1) { timers.flush(); await settle(60); }
+    assert.equal(attempts, 3, 'one gesture and exactly two unattended retries');
+    assert.equal(timers.pending(), 0); assert.equal(input.pointerLocked, false); controller.dispose();
+  });
+});
+
+test('disposing while native focus subscription loads retires the eventual listener', async () => {
+  await withTauriWindow(async () => {
+    const native = taoWindow(), input = new InputManager(); let finishSubscription, unlistened = 0;
+    native.win.onFocusChanged = () => new Promise(resolve => { finishSubscription = () => resolve(() => { unlistened += 1; }); });
+    const controller = createPointerModeController({ documentRef: documentStub(), getTargetElement: () => targetStub(),
+      getState: playing, input, loadNativeWindowApi: async () => native.api });
+    await controller.requestCaptureFromGesture(); await settle(60); assert.ok(finishSubscription);
+    controller.dispose(); finishSubscription(); await settle(90);
+    assert.equal(unlistened, 1); assert.equal(native.grabbed, false);
+    assert.equal(controller.isNativeCaptured(), false); assert.equal(controller.wantsCapture(), false);
+  });
+});
+
+test('a failed optional native focus subscription does not disable confirmed cursor capture', async () => {
+  await withTauriWindow(async () => {
+    const native = taoWindow(), input = new InputManager();
+    native.win.onFocusChanged = async () => { throw new Error('event registration unavailable'); };
+    const controller = createPointerModeController({ documentRef: documentStub(), getTargetElement: () => targetStub(),
+      getState: playing, input, loadNativeWindowApi: async () => native.api });
+    await controller.requestCaptureFromGesture(); await settle(90);
+    assert.equal(controller.isNativeCaptured(), true); assert.equal(native.grabbed, true);
+    assert.equal(controller.status().nativeBackend.focusListening, false); controller.dispose();
+  });
+});
+
+test('repeated native focus cycles restore actual motion without duplicate focus callbacks', async () => {
+  await withTauriWindow(async () => {
+    const native = nativeFocusWindow(), input = new InputManager(); let changes = 0;
+    const controller = createPointerModeController({ documentRef: documentStub(), getTargetElement: () => targetStub(),
+      getState: playing, input, loadNativeWindowApi: async () => native.api,
+      onNativeFocusChanged: () => { changes += 1; } });
+    await controller.requestCaptureFromGesture(); await settle(60);
+    for (let i = 0; i < 20; i += 1) {
+      await native.focus(false); await settle(60);
+      await native.focus(true); await settle(90);
+      await native.focus(true); await settle(30);
+      input.clearPointerDeltas(); move(controller, 650, 400, 10, 0);
+      assert.equal(input.pointerDx, 10, `cycle ${i} restores real camera input`);
+      assert.equal(native.grabbed, true);
+    }
+    assert.equal(changes, 40, 'duplicate native focus notifications have no side effects'); controller.dispose();
+  });
+});
+
+test('native capture watchdog replaces a DOM request that never settles', async () => {
+  await withTauriWindow(async () => {
+    const native = taoWindow(), input = new InputManager(), timers = manualTimers(), clock = manualClock();
+    let finishRequest;
+    const el = targetStub({ requestPointerLock: () => new Promise(resolve => { finishRequest = resolve; }) });
+    const controller = createPointerModeController({ documentRef: documentStub(), getTargetElement: () => el,
+      getState: playing, input, loadNativeWindowApi: async () => native.api,
+      setTimeoutFn: timers.setTimeoutFn, clearTimeoutFn: timers.clearTimeoutFn, nowFn: clock.now });
+    await controller.requestCaptureFromGesture('native-stalled-dom-request'); await settle(30);
+    assert.equal(controller.isNativeCaptured(), false);
+    assert.ok(timers.pending() > 0, 'an unsettled DOM Promise must have a native fallback deadline');
+    clock.advance(500); timers.flush(); await settle(90);
+    assert.equal(controller.isNativeCaptured(), true); assert.equal(native.grabbed, true);
+    assert.equal(native.operations.filter(op => op === 'grab:true').length, 1);
+    finishRequest(); await settle(60); await new Promise(resolve => setTimeout(resolve, 5)); await settle(30);
+    assert.equal(controller.isNativeCaptured(), true);
+    assert.equal(native.operations.filter(op => op === 'grab:true').length, 1, 'late DOM completion cannot overlap another native grab');
+    controller.dispose();
+  });
+});
+
+test('a stale DOM Promise cannot alter or revive a newer native capture generation', async () => {
+  await withTauriWindow(async () => {
+    const native = taoWindow(), input = new InputManager(), timers = manualTimers();
+    let finishOldRequest, attempts = 0, state = playing();
+    const el = targetStub({ requestPointerLock: () => {
+      attempts += 1;
+      return attempts === 1 ? new Promise(resolve => { finishOldRequest = resolve; })
+        : Promise.reject(new Error('DOM unavailable; use native'));
+    } });
+    const controller = createPointerModeController({ documentRef: documentStub(), getTargetElement: () => el,
+      getState: () => state, input, loadNativeWindowApi: async () => native.api,
+      setTimeoutFn: timers.setTimeoutFn, clearTimeoutFn: timers.clearTimeoutFn });
+    await controller.requestCaptureFromGesture('old-request'); await settle(30);
+    state = { ...state, paused: true }; controller.release('pause'); await settle(60);
+    state = playing(); await controller.requestCaptureFromGesture('new-request'); await settle(90);
+    assert.equal(controller.isNativeCaptured(), true);
+    const result = controller.status().backend.lastResult, count = native.operations.length;
+    finishOldRequest(); await settle(60); await new Promise(resolve => setTimeout(resolve, 5)); await settle(30);
+    assert.equal(controller.status().backend.lastResult, result, 'stale resolution cannot mutate the new request result');
+    assert.equal(native.operations.length, count, 'stale resolution cannot issue native IPC');
+    state = { ...state, paused: true }; controller.release('pause'); timers.flush(); await settle(60);
+    assert.equal(native.grabbed, false); assert.equal(controller.isNativeCaptured(), false); controller.dispose();
+  });
+});
+
+function nativeInvalidationWindow() {
+  const native = taoWindow(); let listener = null, unlistened = 0;
+  native.win.listen = async (eventName, handler) => {
+    assert.equal(eventName, 'chunk-native-capture-invalidated');
+    listener = handler;
+    return () => { listener = null; unlistened += 1; };
+  };
+  return { ...native, get grabbed() { return native.grabbed; }, get unlistened() { return unlistened; },
+    async invalidate(reason) {
+      await native.win.setCursorGrab(false); await native.win.setCursorVisible(true);
+      listener?.({ payload: { reason } });
+    } };
+}
+
+test('a delayed native Source cleanup invalidates and recovers the live gameplay grab', async () => {
+  await withTauriWindow(async () => {
+    const native = nativeInvalidationWindow(), input = new InputManager(), timers = manualTimers();
+    const controller = createPointerModeController({ documentRef: documentStub(), getTargetElement: () => targetStub(),
+      getState: playing, input, loadNativeWindowApi: async () => native.api,
+      setTimeoutFn: timers.setTimeoutFn, clearTimeoutFn: timers.clearTimeoutFn });
+    await controller.requestCaptureFromGesture(); await settle(60);
+    assert.equal(native.grabbed, true);
+    await native.invalidate('source-desktop-end'); await settle(60);
+    assert.equal(controller.isNativeCaptured(), false, 'Rust ungrab retires the stale JS lease even without focus loss');
+    assert.equal(input.pointerLocked, false); assert.ok(timers.pending() > 0);
+    timers.flush(); await settle(90);
+    assert.equal(native.grabbed, true); assert.equal(controller.isNativeCaptured(), true);
+    const status = controller.status().nativeBackend;
+    assert.equal(status.captureInvalidationListening, true); assert.equal(status.captureInvalidations, 1);
+    assert.equal(status.lastCaptureInvalidationReason, 'source-desktop-end');
+    controller.dispose(); await settle(30); assert.equal(native.unlistened, 1);
+  });
+});
+
+test('native Source cleanup beneath a modal retires capture without reacquiring it', async () => {
+  await withTauriWindow(async () => {
+    const native = nativeInvalidationWindow(), input = new InputManager(), timers = manualTimers(); let state = playing();
+    const controller = createPointerModeController({ documentRef: documentStub(), getTargetElement: () => targetStub(),
+      getState: () => state, input, loadNativeWindowApi: async () => native.api,
+      setTimeoutFn: timers.setTimeoutFn, clearTimeoutFn: timers.clearTimeoutFn });
+    await controller.requestCaptureFromGesture(); await settle(60);
+    state = { ...state, blocksLook: true }; await native.invalidate('source-desktop-begin'); await settle(60);
+    assert.equal(native.grabbed, false); assert.equal(controller.isNativeCaptured(), false);
+    assert.equal(timers.pending(), 0, 'a native presentation still owns its UI cursor');
+    controller.dispose();
+  });
+});
+
+test('disposing while native invalidation listener loads retires the eventual subscription', async () => {
+  await withTauriWindow(async () => {
+    const native = taoWindow(), input = new InputManager(); let finishSubscription, unlistened = 0;
+    native.win.listen = () => new Promise(resolve => { finishSubscription = () => resolve(() => { unlistened += 1; }); });
+    const controller = createPointerModeController({ documentRef: documentStub(), getTargetElement: () => targetStub(),
+      getState: playing, input, loadNativeWindowApi: async () => native.api });
+    await controller.requestCaptureFromGesture(); await settle(60); assert.ok(finishSubscription);
+    controller.dispose(); finishSubscription(); await settle(90);
+    assert.equal(unlistened, 1); assert.equal(native.grabbed, false);
+    assert.equal(controller.isNativeCaptured(), false); assert.equal(controller.wantsCapture(), false);
+  });
+});
+
+test('initial confirmed native focus survives delayed WebKit blur until a native focus loss', async () => {
+  await withTauriWindow(async () => {
+    const native = nativeFocusWindow(), input = new InputManager(), doc = documentStub();
+    let domFocused = true; doc.hasFocus = () => domFocused;
+    const controller = createPointerModeController({ documentRef: doc, getTargetElement: () => targetStub(),
+      getState: playing, input, loadNativeWindowApi: async () => native.api });
+    await controller.requestCaptureFromGesture(); await settle(90);
+    assert.equal(controller.status().nativeBackend.focused, true, 'successful native isFocused seeds initial ownership');
+    domFocused = false; controller.sync('dialogue-WebKit-focus-delay'); await settle(30);
+    assert.equal(controller.isNativeCaptured(), true, 'a stale DOM blur cannot revoke confirmed OS ownership');
+    input.clearPointerDeltas(); move(controller, 650, 400, 10, 0);
+    assert.equal(input.pointerDx, 10);
+    await native.focus(false); await settle(60);
+    assert.equal(controller.isNativeCaptured(), false, 'a delivered native blur still releases immediately');
+    assert.equal(native.grabbed, false); controller.dispose();
+  });
+});
+
+test('an initial native focus query cannot overwrite a delivered native blur', async () => {
+  await withTauriWindow(async () => {
+    const native = nativeFocusWindow(), input = new InputManager(); let finishFocus;
+    native.win.isFocused = () => new Promise(resolve => { finishFocus = () => resolve(true); });
+    const controller = createPointerModeController({ documentRef: documentStub(), getTargetElement: () => targetStub(),
+      getState: playing, input, loadNativeWindowApi: async () => native.api });
+    await controller.requestCaptureFromGesture(); await settle(60); assert.ok(finishFocus);
+    await native.focus(false); finishFocus(); await settle(90);
+    assert.equal(controller.status().nativeBackend.focused, false);
+    assert.equal(controller.isNativeCaptured(), false); assert.equal(native.grabbed, false); controller.dispose();
+  });
+});

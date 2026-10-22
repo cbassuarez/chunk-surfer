@@ -1,0 +1,10 @@
+{
+  "pack": "source-demolition",
+  "sha256": "58cea915ba106bbbed55a25be3563e910aec44aa61d2712184544deecb87e594",
+  "source": "Exact project-native conservatory_west_elevation extracted read-only from conservatory-props.glb. Source layout by build-props.mjs and ELLERY_MASSING. Selected semantic construction components split/capped and animated in Blender by tools/chunk_surfer/build-source-demolition.py; no random triangle explosion or live physics.",
+  "editable": "artifacts/source-demolition/source-demolition.blend",
+  "motion": "public/assets/source-demolition.motion.json",
+  "provenance": "artifacts/source-demolition/visual-research.json",
+  "reference": "HABS DC-349-BB original1899 construction section and Estormiz CC0 Oulu20221216 demolition footage informed materially selective loss and retained primary frame; no reference image geometry copied.",
+  "retained": "Loading-bay mouth and long institutional/flytower silhouette remain; debris goes behind the original façade into localX>1.5. No road/collision/new route authored by this pack."
+}

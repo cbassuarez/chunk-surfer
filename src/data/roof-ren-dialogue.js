@@ -86,12 +86,12 @@ function laterConversation(s, checks) {
     grounded: node([
       r('There is another question. I am not asking it yet.'),
       ...(!checks.noticeRead ? [r('Read the demolition notice downstairs. The date, the hour. Know what is actually coming; do not take it from me.')] : []),
-      ...(!checks.heardSpirits ? [r('One accepted take opened this roof. Go inside and make another in a different room. Listen to what is there when the recording stops. I will not make their lives into a story you only heard from me.')] : []),
+      ...(!checks.heardSpirits ? [r('You found the service word. Before you tell me what these rooms hold, listen in more than one of them. Listen to what is there when the recording stops. I will not make their lives into a story you only heard from me.')] : []),
       r('Then come back if you still want to talk. The key was a thank-you. It was not an advance.'),
     ], [c('grounded-leave', 'I will decide after I have seen for myself.', 'done'), c('grounded-no-promise', 'I am not promising to come back.', 'no-promise')]),
     'no-promise': node([r('Good. Keep that part of yourself.')], null, 'done'),
     witness: node([
-      r('The gate let you through on one take. Now you have listened in more than one room.'),
+      r('A word opened the gate. Now you have listened in more than one room.'),
       r('I call what remains here people. You may not be ready to call them that. They still know where their rooms ought to be.'),
     ], [
       c('witness-human', 'They still have somewhere that belongs to them.', 'witness-habit'),

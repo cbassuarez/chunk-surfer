@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { conservatory } from '../src/data/floorplan/conservatory.js';
 import { ACADEMIC_ROOF } from '../src/data/academic-roof.js';
 import { roofGateEligibility } from '../src/game/roof-access.js';
+import { ROOF_PASSWORD } from '../src/data/roof-password.js';
 import { CELL, F, ZONE } from '../src/data/floorplan/legend.js';
 import * as FP from '../src/world/floorplan.js';
 
@@ -68,11 +69,11 @@ assert.equal(FP.isSolid(roofOverGarden.x, roofOverGarden.y), false);
 assert.equal(FP.floorAt(roofOverGarden.x, roofOverGarden.y), 17,
   'roof glass collision support remains independent of the gallery render choice');
 
-// Architecture does not award or waive school/recording access. Ren's later
+// Architecture does not award or waive school/password access. Ren's later
 // shortcut key must not silently become the first-ascent permission.
-assert.equal(roofGateEligibility(new Set(['master']), 0).canOpen, false);
-assert.equal(roofGateEligibility(new Set(['ren-service']), 1).canOpen, false);
-assert.equal(roofGateEligibility(new Set(['master']), 1).canOpen, true);
+assert.equal(roofGateEligibility(new Set(['master']), '').canOpen, false);
+assert.equal(roofGateEligibility(new Set(['ren-service']), ROOF_PASSWORD).canOpen, false);
+assert.equal(roofGateEligibility(new Set(['master']), ROOF_PASSWORD).canOpen, true);
 
 // Regression: the old academicAtriumVoid exception admitted ALL stacked
 // spans. At gallery height10 the nearest candidate became roof17, not garden0,

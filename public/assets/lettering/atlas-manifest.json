@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "inputSha256": "9d06e30c747ac629fd925b1489aae216a8fa2e63fac4f47da680ab0446e31c44",
+  "inputSha256": "eccf3044d21669c5ca09595af2756617671155f18d90b58ba55134c25cd61b89",
   "generatorSha256": "25049dfe0566d8a05d1e575338cf4497750f01386896c7d215bacb7ea06cbb2b",
   "finishAuthoringSha256": "7e0cf04028f84bf25d1049ff7ba3caf36e660dfaaf4c5228b8aa4c10c886b0c3",
   "pages": [
@@ -223,11 +223,11 @@
     {
       "name": "lettering-09",
       "width": 800,
-      "height": 456,
+      "height": 600,
       "normalWidth": 200,
-      "normalHeight": 114,
+      "normalHeight": 150,
       "ormWidth": 400,
-      "ormHeight": 228,
+      "ormHeight": 300,
       "albedo": "lettering-09-albedo.png",
       "normal": "lettering-09-normal.png",
       "orm": "lettering-09-orm.png",
@@ -240,9 +240,9 @@
         0,
         0
       ],
-      "sharedTiles": 4,
+      "sharedTiles": 6,
       "preservesSampledStockChannels": false,
-      "rgbaBaseLevelBytes": 1915200
+      "rgbaBaseLevelBytes": 2520000
     }
   ],
   "entries": [
@@ -24441,9 +24441,9 @@
       "page": 9,
       "uvRect": [
         0.02,
-        0.03508771929824561,
+        0.02666666666666667,
         0.98,
-        0.26973684210526316
+        0.205
       ],
       "copy": "TOWER \u2014 RINGING CHAMBER \u2014 NO ADMITTANCE TO THE PUBLIC\nBELLS UP",
       "lines": [
@@ -24894,9 +24894,9 @@
       "page": 9,
       "uvRect": [
         0.02,
-        0.3399122807017544,
+        0.25833333333333336,
         0.91625,
-        0.5109649122807017
+        0.3883333333333333
       ],
       "copy": "PAY ON ANSWER",
       "lines": [
@@ -25109,9 +25109,9 @@
       "page": 9,
       "uvRect": [
         0.02,
-        0.581140350877193,
+        0.44166666666666665,
         0.98,
-        0.7192982456140351
+        0.5466666666666666
       ],
       "copy": "CONCERT HALL \u2014 STALLS / GALLERIES",
       "lines": [
@@ -25657,9 +25657,9 @@
       "page": 9,
       "uvRect": [
         0.02,
-        0.7894736842105263,
+        0.6,
         0.72125,
-        0.9517543859649122
+        0.7233333333333334
       ],
       "copy": "PORTER",
       "lines": [
@@ -25828,6 +25828,412 @@
           0,
           2.81,
           -1.321
+        ]
+      },
+      "bounds": null,
+      "substrate": null
+    },
+    {
+      "id": "pub-lyric-fascia-east",
+      "page": 9,
+      "uvRect": [
+        0.02,
+        0.7766666666666666,
+        0.98,
+        0.8433333333333334
+      ],
+      "copy": "PUBLIC HOUSE",
+      "lines": [
+        "PUBLIC HOUSE"
+      ],
+      "widthM": 6.76,
+      "heightM": 0.35,
+      "metrics": {
+        "font": "NimbusRoman-Bold.otf",
+        "fontSha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
+        "capHeightM": 0.21125000000000002,
+        "stemWidthM": 0.052812500000000005,
+        "coverage": 0.07822265625,
+        "boundsPx": [
+          248,
+          8,
+          520,
+          32
+        ],
+        "glyphs": [
+          {
+            "character": "P",
+            "line": 0,
+            "xPx": 246.916,
+            "advancePx": 22.288
+          },
+          {
+            "character": "U",
+            "line": 0,
+            "xPx": 269.204,
+            "advancePx": 26.288
+          },
+          {
+            "character": "B",
+            "line": 0,
+            "xPx": 295.492,
+            "advancePx": 24.288
+          },
+          {
+            "character": "L",
+            "line": 0,
+            "xPx": 319.78000000000003,
+            "advancePx": 24.288
+          },
+          {
+            "character": "I",
+            "line": 0,
+            "xPx": 344.06800000000004,
+            "advancePx": 14.288
+          },
+          {
+            "character": "C",
+            "line": 0,
+            "xPx": 358.35600000000005,
+            "advancePx": 26.288
+          },
+          {
+            "character": "H",
+            "line": 0,
+            "xPx": 393.9320000000001,
+            "advancePx": 28.288
+          },
+          {
+            "character": "O",
+            "line": 0,
+            "xPx": 422.2200000000001,
+            "advancePx": 28.288
+          },
+          {
+            "character": "U",
+            "line": 0,
+            "xPx": 450.5080000000001,
+            "advancePx": 26.288
+          },
+          {
+            "character": "S",
+            "line": 0,
+            "xPx": 476.7960000000001,
+            "advancePx": 20.288
+          },
+          {
+            "character": "E",
+            "line": 0,
+            "xPx": 497.0840000000001,
+            "advancePx": 24.288
+          }
+        ],
+        "strokeMeasurement": "Pinned I straight stem; brush uses a conservative broad-nib design reference, not a claim about every taper.",
+        "coverageSha256": "55ba9a72dcf0f4002e11e7dbb8e81fc2f64c0bcbd9a1cc0efdd8daa0987a2a22"
+      },
+      "category": "institution",
+      "process": "aged gilt pub fascia lettering",
+      "polarity": "light-on-dark",
+      "emission": "none",
+      "reliefM": 7e-06,
+      "finish": {
+        "substrate": "dark enamel or painted board",
+        "coating": "solid gold-coloured leaf or metallic house lettering",
+        "roughness": 0.38,
+        "inkRoughness": 0.48,
+        "inkMetallic": 0.9,
+        "fieldM": 0.16,
+        "variation": 0.018,
+        "roughnessVariation": 0.065,
+        "microReliefM": 4e-06,
+        "deposit": 0.035,
+        "edgeLoss": 0.018,
+        "sequence": [
+          "dark face remains continuous",
+          "solid gilt varies gently in burnish direction",
+          "sheltered surround holds neutral deposits"
+        ],
+        "limits": [
+          "gilt is preserved solid; no orange iron corrosion, green archaeological copper crust or missing character cores"
+        ],
+        "version": 1,
+        "profile": "gilt-enamel",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": true,
+          "contact": "none",
+          "exposure": "sheltered"
+        },
+        "fabricationReliefM": 7e-06,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      },
+      "finishEvidence": {
+        "profile": "gilt-enamel",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": true,
+          "contact": "none",
+          "exposure": "sheltered"
+        },
+        "coverageSha256": "55ba9a72dcf0f4002e11e7dbb8e81fc2f64c0bcbd9a1cc0efdd8daa0987a2a22",
+        "immutableCoverage": true,
+        "sampledStockOutsidePigmentImmutable": false,
+        "physicalScalesM": {
+          "field": 0.16,
+          "minimumNormalPeriod": 0.02640625,
+          "inkRelief": 7e-06
+        },
+        "structure": {
+          "kind": "subpixel manufacture",
+          "actualPitchM": null,
+          "resolved": false
+        },
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "conditionRanges": {
+          "deposit": [
+            0.0,
+            0.020015625000000006
+          ],
+          "contact": [
+            0.0,
+            0.0
+          ],
+          "edgeLoss": [
+            -0.0,
+            0.01217757352941173
+          ]
+        },
+        "channelRanges": {
+          "roughness": [
+            0.258875,
+            0.42285808593749996
+          ],
+          "metallic": [
+            0.0,
+            0.78
+          ]
+        },
+        "bakedLighting": false,
+        "glyphDamage": false
+      },
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          0,
+          0,
+          -1
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          1,
+          0,
+          0
+        ],
+        "center": [
+          0.312,
+          3.65,
+          -20
+        ]
+      },
+      "bounds": null,
+      "substrate": null
+    },
+    {
+      "id": "pub-lyric-fascia-west",
+      "page": 9,
+      "uvRect": [
+        0.02,
+        0.8966666666666666,
+        0.98,
+        0.9633333333333334
+      ],
+      "copy": "THE LYRIC",
+      "lines": [
+        "THE LYRIC"
+      ],
+      "widthM": 6.76,
+      "heightM": 0.35,
+      "metrics": {
+        "font": "NimbusRoman-Bold.otf",
+        "fontSha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
+        "capHeightM": 0.21125000000000002,
+        "stemWidthM": 0.052812500000000005,
+        "coverage": 0.0587890625,
+        "boundsPx": [
+          283,
+          8,
+          484,
+          32
+        ],
+        "glyphs": [
+          {
+            "character": "T",
+            "line": 0,
+            "xPx": 282.348,
+            "advancePx": 24.288
+          },
+          {
+            "character": "H",
+            "line": 0,
+            "xPx": 306.636,
+            "advancePx": 28.288
+          },
+          {
+            "character": "E",
+            "line": 0,
+            "xPx": 334.92400000000004,
+            "advancePx": 24.288
+          },
+          {
+            "character": "L",
+            "line": 0,
+            "xPx": 368.50000000000006,
+            "advancePx": 24.288
+          },
+          {
+            "character": "Y",
+            "line": 0,
+            "xPx": 392.78800000000007,
+            "advancePx": 26.288
+          },
+          {
+            "character": "R",
+            "line": 0,
+            "xPx": 419.0760000000001,
+            "advancePx": 26.288
+          },
+          {
+            "character": "I",
+            "line": 0,
+            "xPx": 445.3640000000001,
+            "advancePx": 14.288
+          },
+          {
+            "character": "C",
+            "line": 0,
+            "xPx": 459.6520000000001,
+            "advancePx": 26.288
+          }
+        ],
+        "strokeMeasurement": "Pinned I straight stem; brush uses a conservative broad-nib design reference, not a claim about every taper.",
+        "coverageSha256": "eb511fe62e8cf310f9dd6f2c778cc580e886dd8d55a703d2af0984db5f7be28b"
+      },
+      "category": "institution",
+      "process": "aged gilt pub fascia lettering",
+      "polarity": "light-on-dark",
+      "emission": "none",
+      "reliefM": 7e-06,
+      "finish": {
+        "substrate": "dark enamel or painted board",
+        "coating": "solid gold-coloured leaf or metallic house lettering",
+        "roughness": 0.38,
+        "inkRoughness": 0.48,
+        "inkMetallic": 0.9,
+        "fieldM": 0.16,
+        "variation": 0.018,
+        "roughnessVariation": 0.065,
+        "microReliefM": 4e-06,
+        "deposit": 0.035,
+        "edgeLoss": 0.018,
+        "sequence": [
+          "dark face remains continuous",
+          "solid gilt varies gently in burnish direction",
+          "sheltered surround holds neutral deposits"
+        ],
+        "limits": [
+          "gilt is preserved solid; no orange iron corrosion, green archaeological copper crust or missing character cores"
+        ],
+        "version": 1,
+        "profile": "gilt-enamel",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": true,
+          "contact": "none",
+          "exposure": "sheltered"
+        },
+        "fabricationReliefM": 7e-06,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      },
+      "finishEvidence": {
+        "profile": "gilt-enamel",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": true,
+          "contact": "none",
+          "exposure": "sheltered"
+        },
+        "coverageSha256": "eb511fe62e8cf310f9dd6f2c778cc580e886dd8d55a703d2af0984db5f7be28b",
+        "immutableCoverage": true,
+        "sampledStockOutsidePigmentImmutable": false,
+        "physicalScalesM": {
+          "field": 0.16,
+          "minimumNormalPeriod": 0.02640625,
+          "inkRelief": 7e-06
+        },
+        "structure": {
+          "kind": "subpixel manufacture",
+          "actualPitchM": null,
+          "resolved": false
+        },
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "conditionRanges": {
+          "deposit": [
+            0.0,
+            0.020015625000000006
+          ],
+          "contact": [
+            0.0,
+            0.0
+          ],
+          "edgeLoss": [
+            -0.0,
+            0.012401838235294121
+          ]
+        },
+        "channelRanges": {
+          "roughness": [
+            0.26417696078431374,
+            0.42399711026659237
+          ],
+          "metallic": [
+            0.0,
+            0.78
+          ]
+        },
+        "bakedLighting": false,
+        "glyphDamage": false
+      },
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          0,
+          0,
+          -1
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          1,
+          0,
+          0
+        ],
+        "center": [
+          0.312,
+          3.65,
+          -28
         ]
       },
       "bounds": null,

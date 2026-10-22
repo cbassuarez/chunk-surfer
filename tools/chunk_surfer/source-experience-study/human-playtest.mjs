@@ -19,6 +19,10 @@ await mkdir(resolve(out,'..'),{recursive:true});await mkdir(out); // Refuse to o
 const experiment=await loadExperiment(id);
 const verifiedPath=resolve(process.env.SOURCE_PLAYTEST_SNAPSHOT||'artifacts/source-experience-study/prototypes/native/verified-snapshot.json');
 let verified;try{verified=JSON.parse(await readFile(verifiedPath,'utf8'));}catch{throw new Error('Verified native snapshot is missing. Run/review the paired comparison and saved-media inspection before preparing this human condition. No browser launched.');}
+if(verified.humanReady!==true){
+  assert.ok(process.env.SOURCE_PLAYTEST_SMOKE==='1'&&participant.startsWith('SMOKE_ONLY'),
+    'This snapshot has not passed the human-readiness gates. Only an explicit technical SMOKE_ONLY trial may launch; no participant condition is advertised as ready. No browser launched.');
+}
 const currentIdentity=await productionIdentity();
 assert.deepEqual(currentIdentity,verified.productionIdentity,'Advertised renderer/source/pack snapshot drifted. Regenerate and review the native comparison; do not silently refresh the human condition. No browser launched.');
 for(const manifest of verified.manifests||[])assert.equal(sha(await readFile(manifest.path)),manifest.sha256,'Approved prototype manifest drifted; regenerate/review the comparison before this trial. No browser launched.');

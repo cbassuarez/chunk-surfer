@@ -1,0 +1,98 @@
+{
+  "schema": 1,
+  "kind": "source-drive-temporary-programme-scratch",
+  "temporary": true,
+  "sourceScript": "artifacts/source-drive-study/narrative/script.json",
+  "clips": [
+    {
+      "id": "service-water",
+      "url": "/assets/source-drive/radio/service-water.wav",
+      "durationSeconds": 4.576553,
+      "text": "A little surface water on the unlit section. Allow a few more minutes.",
+      "speaker": "SERVICE",
+      "voice": "Daniel",
+      "temporary": true,
+      "source": "Local macOS stock system voice; editorial scratch, not a recorded character or finished performance."
+    },
+    {
+      "id": "service-bridge",
+      "url": "/assets/source-drive/radio/service-bridge.wav",
+      "durationSeconds": 3.351701,
+      "text": "The access road is open. Take care on the bridge.",
+      "speaker": "SERVICE",
+      "voice": "Daniel",
+      "temporary": true,
+      "source": "Local macOS stock system voice; editorial scratch, not a recorded character or finished performance."
+    },
+    {
+      "id": "service-change",
+      "url": "/assets/source-drive/radio/service-change.wav",
+      "durationSeconds": 1.917596,
+      "text": "No further change at the moment.",
+      "speaker": "SERVICE",
+      "voice": "Daniel",
+      "temporary": true,
+      "source": "Local macOS stock system voice; editorial scratch, not a recorded character or finished performance."
+    },
+    {
+      "id": "service-open",
+      "url": "/assets/source-drive/radio/service-open.wav",
+      "durationSeconds": 2.039728,
+      "text": "The access road remains open.",
+      "speaker": "SERVICE",
+      "voice": "Daniel",
+      "temporary": true,
+      "source": "Local macOS stock system voice; editorial scratch, not a recorded character or finished performance."
+    },
+    {
+      "id": "service-end",
+      "url": "/assets/source-drive/radio/service-end.wav",
+      "durationSeconds": 1.772381,
+      "text": "That is the end of the bulletin.",
+      "speaker": "SERVICE",
+      "voice": "Daniel",
+      "temporary": true,
+      "source": "Local macOS stock system voice; editorial scratch, not a recorded character or finished performance."
+    },
+    {
+      "id": "company-host",
+      "url": "/assets/source-drive/radio/company-host.wav",
+      "durationSeconds": 3.728617,
+      "text": "Still on the road? All right. Keep us on quietly.",
+      "speaker": "HOST",
+      "voice": "Moira",
+      "temporary": true,
+      "source": "Local macOS stock system voice; editorial scratch, not a recorded character or finished performance."
+    },
+    {
+      "id": "company-caller",
+      "url": "/assets/source-drive/radio/company-caller.wav",
+      "durationSeconds": 2.351474,
+      "text": "I was only going to listen for a bit.",
+      "speaker": "CALLER",
+      "voice": "Samantha",
+      "temporary": true,
+      "source": "Local macOS stock system voice; editorial scratch, not a recorded character or finished performance."
+    },
+    {
+      "id": "company-time",
+      "url": "/assets/source-drive/radio/company-time.wav",
+      "durationSeconds": 2.867438,
+      "text": "You can take your time. We are still here.",
+      "speaker": "HOST",
+      "voice": "Moira",
+      "temporary": true,
+      "source": "Local macOS stock system voice; editorial scratch, not a recorded character or finished performance."
+    },
+    {
+      "id": "music-link",
+      "url": "/assets/source-drive/radio/music-link.wav",
+      "durationSeconds": 2.38127,
+      "text": "We have time for the beginning once more.",
+      "speaker": "MUSIC",
+      "voice": "Daniel",
+      "temporary": true,
+      "source": "Local macOS stock system voice; editorial scratch, not a recorded character or finished performance."
+    }
+  ]
+}

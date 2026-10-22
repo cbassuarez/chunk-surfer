@@ -1,7 +1,7 @@
 // Shared read-only manifest, Vite interception and declared fixture contract.
 // Importing this module never launches a browser or starts a server.
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 
@@ -10,10 +10,17 @@ export const fixtureMainSearch="      drankCoffee:flagTest('drank.coffee'),hasRi
 export const fixtureMainReplace="      drankCoffee:flagTest('drank.coffee'),hasRig:flagTest('has.interface'),marbleEyes:null,";
 export const fixtureSetupFlags=Object.freeze(['bag.taken','setup.levels','setup.waypoint','combat.trained']);
 export async function productionIdentity(){
-  const paths=['src/main.js','src/game/source-space-runtime.js','src/game/chunk-surf-state.js','src/game/source-trace.js','src/game/horizon-bust.js',
-    'src/render/r3d.js','src/render/props3d.js','src/render/pixel-mesh/shader.js','src/render/horizon3d.js','src/render/recorder-view.js',
-    'public/assets/conservatory-props.glb','public/assets/source-structures.glb','public/assets/horizon-tape.bin','public/assets/horizon-tape.json','public/assets/horizon-bust.glb'];
-  return Object.fromEntries(await Promise.all(paths.map(async path=>[path,sha(await readFile(path))])));
+  // A native snapshot is bound to every source and packaged asset, rather than
+  // a handpicked module list that can miss newly introduced imports. This is
+  // deliberately stricter than a visible-asset claim; future unrelated edits
+  // invalidate the participant condition until the comparison is reviewed.
+  const paths=['index.html','fireball-cast.html','source-desktop-surface.html','window-media.html','styles.css','vite.config.js','package.json','package-lock.json'];
+  for(const root of ['src','public','assets','content','LEGAL']){
+    const entries=await readdir(root,{recursive:true,withFileTypes:true});
+    for(const entry of entries)if(entry.isFile())paths.push(`${entry.parentPath||entry.path}/${entry.name}`);
+  }
+  const relative=paths.map(path=>path.startsWith(process.cwd()+'/')?path.slice(process.cwd().length+1):path).sort();
+  return Object.fromEntries(await Promise.all(relative.map(async path=>[path,sha(await readFile(path))])));
 }
 export function exactReplace(source,search,replacement,count=1){
   const actual=source.split(search).length-1;assert.equal(actual,count,`Exact replacement count ${actual} differs from ${count}`);return source.replace(search,replacement);

@@ -4,8 +4,9 @@ import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import vm from 'node:vm';
 import {fileURLToPath,pathToFileURL} from 'node:url';
-import {PRESSURE_IDENTITY_GLSL} from '../../src/render/pressure-composite.js';
+import {PRESSURE_IDENTITY_GLSL,PRESSURE_INK_GLSL} from '../../src/render/pressure-composite.js';
 import {UNRAVELLING_GLSL} from '../../src/render/horizon3d.js';
+import {PRINTED_SURFACE_GLSL} from '../../src/render/printed-surface.js';
 
 const root=new URL('../../',import.meta.url);
 const sha256=value=>createHash('sha256').update(value).digest('hex');
@@ -19,7 +20,7 @@ export function shaderDeclaration(source,name){
   return source.slice(start,end+2);
 }
 export function productionShaderBundle(source){
-  const context=vm.createContext({PRESSURE_IDENTITY_GLSL,HZ:Object.freeze({UNRAVELLING_GLSL})});
+  const context=vm.createContext({PRESSURE_IDENTITY_GLSL,PRESSURE_INK_GLSL,PRINTED_SURFACE_GLSL,HZ:Object.freeze({UNRAVELLING_GLSL})});
   for(const name of['COMMON_GLSL','RAIN_GLSL','GRAIN_GLSL','POST_FRAG','SOURCE_VOID_PHYSICAL_FRAG'])
     vm.runInContext(shaderDeclaration(source,name),context,{timeout:1000});
   const shaders=vm.runInContext('({post:POST_FRAG,sourceVoidPhysical:SOURCE_VOID_PHYSICAL_FRAG})',context,{timeout:1000});

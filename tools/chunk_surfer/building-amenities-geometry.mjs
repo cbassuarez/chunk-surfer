@@ -67,6 +67,77 @@ export function buildStaffCounterKettle({ m, MAT, enamel, nickel, inner, addBox,
   }
 }
 
+// A small later-fit metal sink, seated in the counter's real worktop opening.
+// Keep its old footprint and service junctions, but leave the bowl/drain open
+// and show a continuous return below the exposed underside.
+export function buildStaffCounterSink({ m, MAT, nickel, inner, addBox, addBeam, addCylinder, addQuad }) {
+  for (const z of [-.190, .190]) addBox(m, [-.59, .9475, z], [.60, .010, .050], nickel);
+  for (const x of [-.865, -.315]) addBox(m, [x, .9475, 0], [.050, .010, .330], nickel);
+  const top = [[-.84, .9525, -.165], [-.34, .9525, -.165], [-.34, .9525, .165], [-.84, .9525, .165]];
+  const low = [[-.77, .7825, -.105], [-.41, .7825, -.105], [-.41, .7825, .105], [-.77, .7825, .105]];
+  const outerTop = [[-.842, .9445, -.167], [-.338, .9445, -.167], [-.338, .9445, .167], [-.842, .9445, .167]];
+  const outerLow = [[-.772, .7795, -.107], [-.408, .7795, -.107], [-.408, .7795, .107], [-.772, .7795, .107]];
+  const hole = [[-.608, .7775, -.018], [-.572, .7775, -.018], [-.572, .7775, .018], [-.608, .7775, .018]];
+  const underHole = hole.map(([x, y, z]) => [x, y - .003, z]);
+  for (let i = 0; i < 4; i += 1) {
+    const next = (i + 1) % 4;
+    addQuad(m, top[i], low[i], low[next], top[next], nickel);
+    addQuad(m, outerTop[i], outerTop[next], outerLow[next], outerLow[i], nickel);
+    // The floor falls toward an opening, rather than spanning it with a box.
+    addQuad(m, low[i], hole[i], hole[next], low[next], nickel);
+    addQuad(m, outerLow[i], outerLow[next], underHole[next], underHole[i], nickel);
+  }
+  const drain = (r, y, a) => [-.59 + r * Math.cos(a), y, r * Math.sin(a)];
+  for (let i = 0; i < 16; i += 1) {
+    const a = i * Math.PI / 8, b = (i + 1) * Math.PI / 8;
+    // A rolled circular flange covers the construction opening. The 28mm
+    // centre is a real bore, lined down to the connected tailpiece.
+    addQuad(m, drain(.028, .7805, a), drain(.014, .7805, a), drain(.014, .7805, b), drain(.028, .7805, b), nickel);
+    addQuad(m, drain(.014, .7805, a), drain(.014, .755, a), drain(.014, .755, b), drain(.014, .7805, b), inner);
+    addQuad(m, drain(.028, .7805, a), drain(.028, .7805, b), drain(.028, .7735, b), drain(.028, .7735, a), nickel);
+    addQuad(m, drain(.028, .7735, a), drain(.028, .7735, b), drain(.022, .7735, b), drain(.022, .7735, a), nickel);
+    addQuad(m, drain(.022, .7735, a), drain(.022, .7735, b), drain(.022, .755, b), drain(.022, .755, a), nickel);
+  }
+  // Preserve the existing tap's main stem and reach; its short downturned
+  // outlet and mechanical lever distinguish it from an unexplained pipe.
+  addCylinder(m, [-.59, 1.06, -.20], .018, .22, nickel, 10);
+  addBeam(m, [-.59, 1.16, -.20], [-.59, 1.16, -.06], .029, nickel);
+  addBeam(m, [-.59, 1.16, -.06], [-.59, 1.125, -.06], .029, nickel);
+  addCylinder(m, [-.59, 1.1245, -.06], .0085, .001, inner, 10);
+  addBox(m, [-.55, 1.077, -.20], [.09, .012, .025], nickel);
+  // Round-section P trap. Its low centre is 95mm below the unchanged outlet;
+  // the return rises before turning into the separate wall-service mesh.
+  const path = [[-.59, .755, 0], [-.59, .5425, 0]];
+  for (let i = 1; i <= 8; i += 1) {
+    const a = i * Math.PI / 8;
+    path.push([-.59, .5425 - .0475 * Math.sin(a), -.0475 + .0475 * Math.cos(a)]);
+  }
+  path.push([-.59, .56, -.095]);
+  for (let i = 1; i <= 4; i += 1) {
+    const a = i * Math.PI / 8;
+    path.push([-.59, .56 + .03 * Math.sin(a), -.125 + .03 * Math.cos(a)]);
+  }
+  path.push([-.59, .59, -.19]);
+  const frames = path.map((p, i) => {
+    const before = path[Math.max(0, i - 1)], after = path[Math.min(path.length - 1, i + 1)];
+    const dy = after[1] - before[1], dz = after[2] - before[2], length = Math.hypot(dy, dz);
+    return [-dz / length, dy / length];
+  });
+  const pipe = (i, a) => [path[i][0] + .022 * Math.cos(a), path[i][1] + .022 * frames[i][0] * Math.sin(a), path[i][2] + .022 * frames[i][1] * Math.sin(a)];
+  for (let j = 1; j < path.length; j += 1) for (let i = 0; i < 12; i += 1) {
+    const a = i * Math.PI / 6, b = (i + 1) * Math.PI / 6;
+    addQuad(m, pipe(j - 1, a), pipe(j, a), pipe(j, b), pipe(j - 1, b), nickel);
+  }
+  // These starts match the two actual service mesh pipes after the counter's
+  // +pi/2 placement; they no longer stop short of the underside of the tap.
+  for (const [x, y] of [[-.70, .72], [-.50, .82]]) {
+    addBeam(m, [x, y, -.30], [x, y, -.20], .017, nickel);
+    addBeam(m, [x, y, -.20], [x, .93, -.20], .017, nickel);
+    addBeam(m, [x, .93, -.20], [-.59, .95, -.20], .017, nickel);
+    addBox(m, [x, y + .035, -.20], [.032, .045, .030], nickel);
+  }
+}
+
 // Small project-authored fixtures. Open bowls, plumbing and separate functional
 // parts replace the usual solid-box shorthand; all dimensions are metres.
 export function buildBuildingAmenities({ mesh, materials, MAT, addBox, addBeam, addEllipsoid, addCylinder, addQuad }) {
@@ -286,16 +357,13 @@ export function buildBuildingAmenities({ mesh, materials, MAT, addBox, addBeam, 
     addBox(m, [0, .08, 0], [2, .16, .56], tile);
     addBox(m, [.40, .47, .27], [1.10, .68, .03], MAT.agedWhite);
     for (const x of [.13, .67]) addBox(m, [x, .70, .292], [.16, .025, .014], nickel);
-    addBox(m, [0, .91, 0], [2, .065, .60], MAT.wood);
+    // Four pieces leave the actual .54 x .37m sink cutout. The kettle and all
+    // dry work still rest on the original .9425m top plane.
+    addBox(m, [-.93, .91, 0], [.14, .065, .60], MAT.wood);
+    addBox(m, [.34, .91, 0], [1.32, .065, .60], MAT.wood);
+    for (const z of [-.2425, .2425]) addBox(m, [-.59, .91, z], [.54, .065, .115], MAT.wood);
     addBox(m, [0, 1.13, -.282], [2, .40, .035], tile);
-    // Metal sink rim on the west end, recessed bowl visible from above.
-    addBox(m, [-.59, .95, 0], [.60, .018, .43], nickel);
-    addBox(m, [-.59, .961, 0], [.49, .012, .32], inner);
-    addBox(m, [-.59, .966, 0], [.37, .008, .23], nickel);
-    addCylinder(m, [-.59, 1.06, -.20], .018, .22, nickel, 10);
-    addBeam(m, [-.59, 1.16, -.20], [-.59, 1.16, -.06], .029, nickel);
-    addBeam(m, [-.59, .87, 0], [-.59, .59, 0], .044, nickel);
-    addBeam(m, [-.59, .59, 0], [-.59, .59, -.19], .044, nickel);
+    buildStaffCounterSink({ m, MAT, nickel, inner, addBox, addBeam, addCylinder, addQuad });
     // Kettle and the first length of flex toward the actual wall connection.
     // The outlet belongs to the separate service mesh, on the real partition.
     buildStaffCounterKettle({ m, MAT, enamel, nickel, inner, addBox, addBeam, addEllipsoid, addQuad });

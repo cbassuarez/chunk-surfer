@@ -11,6 +11,7 @@ import {
   speaking,
   speechDispatchSnapshot,
   speechInit,
+  skipSpeech,
   updateSpeech,
 } from '../src/game/speech.js';
 
@@ -22,6 +23,24 @@ test.beforeEach(() => {
   clearSpeech();
   now = 0;
   room = 'get-in';
+});
+
+test('delivery receipt requires every accepted sentence, rather than issuance or a partial cancellation',()=>{
+  const action=createSpeechDispatch({id:'society-delivery'});
+  action.sayAll([{who:'direction',text:'First.'},{who:'direction',text:'Second.'}]);
+  assert.equal(action.result().completed,false);
+  updateSpeech(.016);skipSpeech();skipSpeech();
+  assert.equal(action.result().completedLines,1);assert.equal(action.result().completed,false);
+  action.cancel();assert.equal(action.result().cancelled,true);assert.equal(action.result().completed,false);
+});
+
+test('fully completed delivery reports success, while scene-wide clear and replacement report cancellation',()=>{
+  const action=createSpeechDispatch({id:'society-complete'});action.say({who:'direction',text:'A reply.'});
+  updateSpeech(.016);skipSpeech();skipSpeech();assert.equal(action.result().completed,true);
+  const cleared=createSpeechDispatch({id:'clear'});cleared.say({who:'direction',text:'Unseen.'});clearSpeech();
+  assert.equal(cleared.result().completed,false);assert.equal(cleared.result().cancelled,true);
+  const old=createSpeechDispatch({id:'replace'});old.say({who:'direction',text:'Old.'});
+  createSpeechDispatch({id:'replace'});assert.equal(old.result().completed,false);
 });
 
 test('an escaped action cancels its current line and dependent tail atomically', () => {

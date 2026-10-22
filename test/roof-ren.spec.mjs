@@ -246,16 +246,16 @@ test('the larger quest requires witnessed spirits and a read notice, never gener
   assert.equal(roofRenChecks(informed(), witnessed).offerReady, false, 'independent evidence does not replace the conversation');
 });
 
-test('the gate’s first accepted take does not satisfy Ren’s later witness check', () => {
+test('a single accepted take does not satisfy Ren’s independent witness check', () => {
   const s = returned();
   assert.equal(roofRenChecks(s, roofEntryOnly).heardSpirits, false);
   assert.equal(roofRenChecks(s, witnessed).heardSpirits, true);
   assert.equal(reduceRoofRen(s, 'spirits', roofEntryOnly).state.history.spirits, false);
   assert.equal(reduceRoofRen(s, 'spirits', witnessed).state.history.spirits, true);
   assert.equal(roofRenStatus(apply(s, ['concern', 'boundary']), roofEntryOnly).id, 'witness');
-  assert.match(roofRenStatus(apply(s, ['concern', 'boundary']), roofEntryOnly).text, /first accepted take opened the roof/i);
+  assert.match(roofRenStatus(apply(s, ['concern', 'boundary']), roofEntryOnly).text, /listen in more than one room/i);
   const dialogue = roofRenDialogue(apply(s, ['concern', 'boundary']), roofEntryOnly);
-  assert.match(dialogue.grounded.lines.map(line => line.text).join(' '), /another in a different room/i);
+  assert.match(dialogue.grounded.lines.map(line => line.text).join(' '), /listen in more than one of them/i);
   assert.match(roofRenDialogue(s, witnessed).witness.lines.map(line => line.text).join(' '), /more than one room/i);
 });
 

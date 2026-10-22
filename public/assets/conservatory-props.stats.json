@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-18T02:55:44.118Z",
-  "bytes": 59033276,
-  "totalTriangles": 817998,
+  "generatedAt": "2026-10-20T22:15:41.727Z",
+  "bytes": 60634992,
+  "totalTriangles": 840894,
   "meshes": {
     "school_desk": {
       "triangles": 176,
@@ -104,8 +104,8 @@
       "vertices": 188
     },
     "organ_console": {
-      "triangles": 188,
-      "vertices": 272
+      "triangles": 2784,
+      "vertices": 4136
     },
     "organ_pipes": {
       "triangles": 780,
@@ -424,8 +424,8 @@
       "vertices": 5064
     },
     "atrium_public_fittings": {
-      "triangles": 1020,
-      "vertices": 2040
+      "triangles": 876,
+      "vertices": 1752
     },
     "atrium_entry_closure": {
       "triangles": 324,
@@ -472,8 +472,8 @@
       "vertices": 16200
     },
     "academic_roof_gate": {
-      "triangles": 132,
-      "vertices": 264
+      "triangles": 168,
+      "vertices": 336
     },
     "academic_roof_service_ladder": {
       "triangles": 1248,
@@ -524,16 +524,16 @@
       "vertices": 876
     },
     "exterior_garden_hardscape": {
-      "triangles": 1120,
-      "vertices": 2032
+      "triangles": 1424,
+      "vertices": 2432
     },
     "exterior_garden_planting": {
-      "triangles": 5904,
-      "vertices": 10742
+      "triangles": 11924,
+      "vertices": 23848
     },
     "exterior_arrival_planting": {
-      "triangles": 1584,
-      "vertices": 2882
+      "triangles": 2416,
+      "vertices": 4832
     },
     "arch_switch_public": {
       "triangles": 156,
@@ -768,8 +768,8 @@
       "vertices": 1122
     },
     "amenity_staff_counter": {
-      "triangles": 892,
-      "vertices": 1315
+      "triangles": 3220,
+      "vertices": 5887
     },
     "amenity_staff_service_connections": {
       "triangles": 240,
@@ -1052,8 +1052,8 @@
       "vertices": 86
     },
     "tower_winch": {
-      "triangles": 180,
-      "vertices": 210
+      "triangles": 2116,
+      "vertices": 3256
     },
     "tower_shutters": {
       "triangles": 108,
@@ -1268,8 +1268,8 @@
       "vertices": 6680
     },
     "district_civic_frontage": {
-      "triangles": 5592,
-      "vertices": 10664
+      "triangles": 17176,
+      "vertices": 33696
     },
     "district_workshop_frontage": {
       "triangles": 2724,
@@ -1278,6 +1278,10 @@
     "district_passage_frontage": {
       "triangles": 3200,
       "vertices": 5958
+    },
+    "exterior_pub_interior": {
+      "triangles": 9648,
+      "vertices": 14656
     },
     "district_court_walls": {
       "triangles": 712,
@@ -2000,32 +2004,32 @@
       "vertices": 1419
     },
     "baseboard_ground": {
-      "triangles": 8088,
-      "vertices": 16176
+      "triangles": 3216,
+      "vertices": 6432
     },
     "baseboard_hall": {
-      "triangles": 2400,
-      "vertices": 4800
+      "triangles": 1752,
+      "vertices": 3504
     },
     "baseboard_basement": {
       "triangles": 2148,
       "vertices": 4296
     },
     "baseboard_upper": {
-      "triangles": 3468,
-      "vertices": 6936
+      "triangles": 1356,
+      "vertices": 2712
     },
     "baseboard_academic": {
-      "triangles": 2532,
-      "vertices": 5064
+      "triangles": 1296,
+      "vertices": 2592
     },
     "baseboard_tower": {
-      "triangles": 4644,
-      "vertices": 9288
+      "triangles": 4392,
+      "vertices": 8784
     },
     "baseboard_cathedral": {
-      "triangles": 6792,
-      "vertices": 13584
+      "triangles": 1260,
+      "vertices": 2520
     },
     "baseboard_academicRoof": {
       "triangles": 1404,
@@ -2283,25 +2287,29 @@
       "triangles": 2,
       "vertices": 4
     },
+    "textile_stair_runner_fitted": {
+      "triangles": 4292,
+      "vertices": 8584
+    },
     "building_dressing_batch_basement": {
       "triangles": 28024,
       "vertices": 39755
     },
     "building_dressing_batch_ground": {
-      "triangles": 33148,
-      "vertices": 50792
+      "triangles": 32392,
+      "vertices": 49280
     },
     "building_dressing_batch_academic": {
-      "triangles": 63896,
-      "vertices": 82823
+      "triangles": 65720,
+      "vertices": 86387
     },
     "building_dressing_batch_upper": {
-      "triangles": 42234,
-      "vertices": 55043
+      "triangles": 42282,
+      "vertices": 55139
     },
     "building_dressing_batch_hall": {
-      "triangles": 9588,
-      "vertices": 16358
+      "triangles": 6588,
+      "vertices": 10358
     }
   },
   "bounds": {
@@ -3873,32 +3881,32 @@
       ],
       "max": [
         8,
-        0.44,
+        0.36,
         12.5
       ]
     },
     "exterior_garden_planting": {
       "min": [
-        -8.303,
-        0.019,
-        -12.262
+        -8.324,
+        0.034,
+        -12.387
       ],
       "max": [
-        7.039,
-        0.648,
-        11.853
+        7.904,
+        0.692,
+        11.868
       ]
     },
     "exterior_arrival_planting": {
       "min": [
-        -5.904,
-        0.019,
-        -1.064
+        -6.629,
+        0.034,
+        -1.023
       ],
       "max": [
-        6.355,
-        0.503,
-        -0.233
+        6.327,
+        0.475,
+        -0.287
       ]
     },
     "arch_switch_public": {
@@ -5451,14 +5459,14 @@
     },
     "tower_winch": {
       "min": [
-        -0.42,
-        0.37,
-        -0.414
+        -0.497,
+        0,
+        -6.872
       ],
       "max": [
         0.71,
-        1.33,
-        0.414
+        3.658,
+        0.469
       ]
     },
     "tower_shutters": {
@@ -6077,12 +6085,12 @@
       "min": [
         -1.61,
         -0.85,
-        -4.19
+        -3.69
       ],
       "max": [
         2.527,
         1.007,
-        4.19
+        4.69
       ]
     },
     "district_terrace_frontage": {
@@ -6099,13 +6107,13 @@
     },
     "district_civic_frontage": {
       "min": [
-        -5.4,
+        -5.47,
         0,
-        -32
+        -32.18
       ],
       "max": [
         3.075,
-        18.51,
+        16.95,
         32
       ]
     },
@@ -6131,6 +6139,18 @@
         3.075,
         16.91,
         32
+      ]
+    },
+    "exterior_pub_interior": {
+      "min": [
+        -2.61,
+        0,
+        -7.95
+      ],
+      "max": [
+        2.5,
+        3.4,
+        7.97
       ]
     },
     "district_court_walls": {
@@ -8301,7 +8321,7 @@
       ],
       "max": [
         80,
-        2.494,
+        0.115,
         121
       ]
     },
@@ -8331,26 +8351,26 @@
     },
     "baseboard_upper": {
       "min": [
-        -10.8,
-        -3.429,
-        -2.123
+        -10.5,
+        -3.6,
+        0
       ],
       "max": [
-        37.2,
-        3.926,
-        48.377
+        37.5,
+        0.415,
+        50.5
       ]
     },
     "baseboard_academic": {
       "min": [
-        -12.101,
-        -1.213,
-        -36.031
+        -13.5,
+        0,
+        -40
       ],
       "max": [
-        34.899,
-        3.938,
-        4.469
+        33.5,
+        1.165,
+        0.5
       ]
     },
     "baseboard_tower": {
@@ -8367,7 +8387,7 @@
     },
     "baseboard_cathedral": {
       "min": [
-        -3.667,
+        -3.5,
         -7.9,
         -10
       ],
@@ -9145,6 +9165,18 @@
         -0.053
       ]
     },
+    "textile_stair_runner_fitted": {
+      "min": [
+        -2.125,
+        0.001,
+        -2.125
+      ],
+      "max": [
+        2.125,
+        10.007,
+        2.125
+      ]
+    },
     "building_dressing_batch_basement": {
       "min": [
         -0.98,
@@ -9159,14 +9191,14 @@
     },
     "building_dressing_batch_ground": {
       "min": [
-        -79.1,
+        -101.825,
         -0.949,
         -4.57
       ],
       "max": [
         8.9,
         16.051,
-        80.5
+        105.335
       ]
     },
     "building_dressing_batch_academic": {
@@ -9207,7 +9239,7 @@
     }
   },
   "baseboards": {
-    "planHash": "10cf69c5e84a6d024a81a38e97bccd222aa7d69576543ec949c4fbcffdcb09a0",
+    "planHash": "c2b157cd5940023a4265d6737793957269e572a5c542136c042d4788d3955bb9",
     "groups": {
       "ground": {
         "mesh": "baseboard_ground",
@@ -9233,15 +9265,15 @@
       "upper": {
         "mesh": "baseboard_upper",
         "anchor": {
-          "x": 276,
+          "x": 300,
           "y": 100
         }
       },
       "academic": {
         "mesh": "baseboard_academic",
         "anchor": {
-          "x": 268,
-          "y": 116
+          "x": 300,
+          "y": 135
         }
       },
       "tower": {
@@ -9278,7 +9310,7 @@
           8.85
         ],
         "count": 193,
-        "poseDigest": "cf06e390",
+        "poseDigest": "b7d26f2d",
         "materialCount": 20,
         "triangles": 28024,
         "bounds": {
@@ -9391,20 +9423,20 @@
           0.949,
           4.5
         ],
-        "count": 204,
-        "poseDigest": "e806becb",
+        "count": 177,
+        "poseDigest": "0d9cbb87",
         "materialCount": 38,
-        "triangles": 33148,
+        "triangles": 32392,
         "bounds": {
           "min": [
-            -79.1,
+            -101.82499999999999,
             -0.949,
             -4.57
           ],
           "max": [
             8.900000000000006,
             16.051,
-            80.5
+            105.335
           ]
         },
         "sources": {
@@ -9517,19 +9549,19 @@
             "trianglesPerInstance": 24
           },
           "arch_dado_public": {
-            "count": 19,
+            "count": 17,
             "trianglesPerInstance": 72
           },
           "arch_coving_public": {
-            "count": 18,
+            "count": 16,
             "trianglesPerInstance": 48
           },
           "arch_dado_staff": {
-            "count": 37,
+            "count": 24,
             "trianglesPerInstance": 24
           },
           "arch_coving_staff": {
-            "count": 37,
+            "count": 24,
             "trianglesPerInstance": 24
           },
           "arch_dado_public_fountain_clearance": {
@@ -9597,7 +9629,7 @@
             "trianglesPerInstance": 60
           },
           "arch_threshold_public": {
-            "count": 4,
+            "count": 6,
             "trianglesPerInstance": 36
           },
           "arch_threshold_service": {
@@ -9605,7 +9637,7 @@
             "trianglesPerInstance": 36
           },
           "arch_threshold_staff": {
-            "count": 2,
+            "count": 3,
             "trianglesPerInstance": 36
           }
         }
@@ -9617,10 +9649,10 @@
           11.36,
           33.64999999999998
         ],
-        "count": 321,
-        "poseDigest": "32474345",
+        "count": 309,
+        "poseDigest": "aa6bd029",
         "materialCount": 36,
-        "triangles": 63896,
+        "triangles": 65720,
         "bounds": {
           "min": [
             -12.07,
@@ -9664,7 +9696,7 @@
           },
           "amenity_staff_counter": {
             "count": 1,
-            "trianglesPerInstance": 892
+            "trianglesPerInstance": 3220
           },
           "amenity_staff_service_connections": {
             "count": 1,
@@ -9683,19 +9715,19 @@
             "trianglesPerInstance": 1284
           },
           "arch_dado_public": {
-            "count": 33,
+            "count": 30,
             "trianglesPerInstance": 72
           },
           "arch_coving_public": {
-            "count": 33,
+            "count": 30,
             "trianglesPerInstance": 48
           },
           "arch_dado_staff": {
-            "count": 56,
+            "count": 53,
             "trianglesPerInstance": 24
           },
           "arch_coving_staff": {
-            "count": 56,
+            "count": 53,
             "trianglesPerInstance": 24
           },
           "arch_switch_public": {
@@ -9759,10 +9791,10 @@
           4.800000190734863,
           47.85
         ],
-        "count": 280,
-        "poseDigest": "561e6d6c",
+        "count": 276,
+        "poseDigest": "158d09ed",
         "materialCount": 17,
-        "triangles": 42234,
+        "triangles": 42282,
         "bounds": {
           "min": [
             -14.150000000000006,
@@ -9801,19 +9833,19 @@
             "trianglesPerInstance": 696
           },
           "arch_dado_staff": {
-            "count": 68,
+            "count": 64,
             "trianglesPerInstance": 24
           },
           "arch_coving_staff": {
-            "count": 68,
+            "count": 64,
             "trianglesPerInstance": 24
           },
           "arch_dado_public": {
-            "count": 23,
+            "count": 25,
             "trianglesPerInstance": 72
           },
           "arch_coving_public": {
-            "count": 23,
+            "count": 25,
             "trianglesPerInstance": 48
           },
           "arch_switch_staff": {
@@ -9885,10 +9917,10 @@
           -1.5,
           5
         ],
-        "count": 112,
-        "poseDigest": "314eebef",
+        "count": 62,
+        "poseDigest": "3e5424a9",
         "materialCount": 8,
-        "triangles": 9588,
+        "triangles": 6588,
         "bounds": {
           "min": [
             -18.980000000000004,
@@ -9903,11 +9935,11 @@
         },
         "sources": {
           "arch_dado_public": {
-            "count": 50,
+            "count": 25,
             "trianglesPerInstance": 72
           },
           "arch_coving_public": {
-            "count": 50,
+            "count": 25,
             "trianglesPerInstance": 48
           },
           "arch_switch_public": {
@@ -10048,9 +10080,8 @@
     "academic_roof_guarantor_marks": 1.42,
     "academic_roof_rehearsal_rest": 0.38,
     "academic_roof_weatherwork": 0,
-    "exterior_garden_hardscape": 0.07,
-    "exterior_garden_planting": 0.03,
-    "exterior_arrival_planting": 0.03,
+    "exterior_garden_hardscape": 0.08,
+    "exterior_garden_planting": 0.07,
     "arch_coving_public": 0.05,
     "arch_coving_staff": 0.05,
     "arch_threshold_public": 0.01,
@@ -10071,7 +10102,7 @@
     "amenity_washbasin": 0.88,
     "amenity_floor_drain": 0.02,
     "amenity_cleaner_cupboard": 2.04,
-    "amenity_staff_counter": 0.94,
+    "amenity_staff_counter": 0.16,
     "amenity_staff_service_connections": 0.95,
     "amenity_public_drinking_fountain": 0.93,
     "amenity_staff_coat_lockers": 1.98,
@@ -10148,9 +10179,10 @@
     "scene_dock_roof_structure": 5.5,
     "yard_dock_access": -0.3,
     "district_terrace_frontage": 13,
-    "district_civic_frontage": 12.8,
+    "district_civic_frontage": 13.2,
     "district_workshop_frontage": 7.2,
     "district_passage_frontage": 13,
+    "exterior_pub_interior": 0.01,
     "district_court_walls": 9.2,
     "district_outer_sprawl": 0.96,
     "district_outer_streets": 0,
@@ -10289,19 +10321,20 @@
     "outskirts_guard": 0.02,
     "outskirts_stranger": 0.02,
     "baseboard_ground": -0.93,
-    "baseboard_hall": 9.11,
+    "baseboard_hall": -0.88,
     "baseboard_basement": 0.12,
-    "baseboard_upper": 0.29,
-    "baseboard_academic": 2.89,
+    "baseboard_upper": 0.12,
+    "baseboard_academic": 0.12,
     "baseboard_tower": 3.92,
     "baseboard_cathedral": -5.48,
-    "baseboard_academicRoof": 0.12
+    "baseboard_academicRoof": 0.12,
+    "textile_stair_runner_fitted": 2.06
   },
   "lettering": {
-    "surfaces": 110,
+    "surfaces": 112,
     "pages": 10,
-    "textureBaseLevelBytes": 41333088,
-    "atlasInputSha256": "9d06e30c747ac629fd925b1489aae216a8fa2e63fac4f47da680ab0446e31c44",
+    "textureBaseLevelBytes": 41937888,
+    "atlasInputSha256": "a6215937f49f1000618499e1b5726d03efe8d5bb4f8e746c636407c05647adc7",
     "carrierAssemblies": {
       "meshes": 24,
       "members": 127,
@@ -10316,5 +10349,17 @@
       ],
       "textureBaseLevelBytes": 1376256
     }
+  },
+  "loadingBayAccess": {
+    "revision": 1,
+    "profile": "src/data/loading-bay-access.js",
+    "generator": "tools/chunk_surfer/loading-bay-access-geometry.mjs",
+    "repair": "tools/chunk_surfer/rebuild-loading-bay-access.mjs"
+  },
+  "roofWordLock": {
+    "revision": 1,
+    "wheelCount": 6,
+    "generator": "tools/chunk_surfer/academic-roof-geometry.mjs",
+    "repair": "tools/chunk_surfer/rebuild-roof-word-lock.mjs"
   }
 }

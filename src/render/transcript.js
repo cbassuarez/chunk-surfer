@@ -281,11 +281,15 @@ function laneFor(role, width, explicitLanes = null) {
 
 function normalizeEntry(entry, index, active = false, view = null) {
   const who = entry?.who || 'direction';
+  const role = transcriptRole(who);
+  // Names belong to lines, not interaction roles: two guests may share the
+  // incoming channel while keeping separate captions and transcript groups.
+  const sourceLabel = String(entry?.sourceLabel || '').trim();
 
   return {
     id: entry?.serial ?? `${active ? 'active' : 'history'}:${index}`,
     who,
-    role: transcriptRole(who),
+    role: sourceLabel ? { ...role, speaker: sourceLabel } : role,
     text: String(entry?.text ?? ''),
     // The mask's NAME only. The shape is resolved at draw time from the run's
     // registry, so nothing in the transcript, the history or a saved view ever
@@ -331,6 +335,7 @@ export function transcriptBlocks(view, { keep = 12 } = {}) {
       text: String(view.line?.text ?? view.line ?? '')
         .slice(0, Math.max(0, view.typed)),
       who: view.who,
+      sourceLabel: view.line?.sourceLabel,
       mask: view.line?.mask || null,
       serial: view.lineSerial,
     }, entries.length, true, view));

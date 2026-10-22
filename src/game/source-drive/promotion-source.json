@@ -1,0 +1,70 @@
+{
+  "kind": "source-drive-source-promotion",
+  "sources": [
+    {
+      "source": "artifacts/source-drive-study/drive-state.js",
+      "sha256": "fe179bd76f0aebe825e252015333abc4c8fc7957e37d8e7a96cd4559205feb47",
+      "target": "src/game/source-drive/drive-state.js"
+    },
+    {
+      "source": "artifacts/source-drive-study/vehicle-dynamics.js",
+      "sha256": "6dcd0cd04eb76082d1a902e4e1aade9b998a428fcfb33f103a6584e81c5b4452",
+      "target": "src/game/source-drive/vehicle-dynamics.js"
+    },
+    {
+      "source": "artifacts/source-drive-study/vehicle-contacts.js",
+      "sha256": "71f3a382ba8333cd4e526be8294541ae4642a9d937ca775f6de9de0391be7395",
+      "target": "src/game/source-drive/vehicle-contacts.js"
+    },
+    {
+      "source": "artifacts/source-drive-study/road.js",
+      "sha256": "5edd5c1093035895eb16109d048aa6ac9d2ca3ebf91ee819fc74338ce83ac336",
+      "target": "src/game/source-drive/road.js"
+    },
+    {
+      "source": "artifacts/source-drive-study/route-layout.js",
+      "sha256": "51fb93e7ac809c5e63f48ba503ab52e8bd88d047c3a8bd0bbe7db1e72ab19623",
+      "target": "src/game/source-drive/route-layout.js"
+    },
+    {
+      "source": "artifacts/source-drive-study/road-joints.js",
+      "sha256": "68a01357c17de4f0ede5bb0b557b183e8ec1163d8ae1aafd89740fc4e1663c56",
+      "target": "src/game/source-drive/road-joints.js"
+    },
+    {
+      "source": "artifacts/source-drive-study/scene.js",
+      "sha256": "f9b307a7dd7dfed210ef707639348e2cfb02e7a0882ace42fc2e9dd784af1d54",
+      "target": "src/game/source-drive/scene.js"
+    },
+    {
+      "source": "artifacts/source-drive-study/weather.js",
+      "sha256": "080121d140363b9435822eda53bc42bcfd9eb862d5303cc5b5102463448f92c5",
+      "target": "src/game/source-drive/weather.js"
+    },
+    {
+      "source": "artifacts/source-drive-study/cut/scene.js",
+      "sha256": "13aa857431fcdc0eae3ab674b693f15e9f406906efe9eaa5a007270da5c0d125",
+      "target": "src/game/source-drive/cut/scene.js"
+    },
+    {
+      "source": "artifacts/source-drive-study/cut/motion.js",
+      "sha256": "f9d47ed88712b54ca7622bea16ca9de29cbc29ac81027ccca94412057066502f",
+      "target": "src/game/source-drive/cut/motion.js"
+    },
+    {
+      "source": "artifacts/source-drive-study/cut/foley.js",
+      "sha256": "763396c08937059e1087986b9c188d03d715cc30bba027467a5f03d9c006e45c",
+      "target": "src/game/source-drive/cut/foley.js"
+    },
+    {
+      "source": "artifacts/source-drive-study/geometry/wheel-hands-pose.js",
+      "sha256": "4701d99665dfa7761713d0728d7c57286d93f20e7856e4a2eb82040f49aa1b2f",
+      "target": "src/game/source-drive/geometry/wheel-hands-pose.js"
+    },
+    {
+      "source": "artifacts/source-drive-study/geometry/wheel-reach-contact.js",
+      "sha256": "36c5dc702d298cea1c70d8ec4c5d9bb8fd4a5affd5cbb86aa1a9c64322b4ae89",
+      "target": "src/game/source-drive/geometry/wheel-reach-contact.js"
+    }
+  ]
+}

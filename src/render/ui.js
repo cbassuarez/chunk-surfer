@@ -29,6 +29,8 @@ export function uiInit(hostEl) {
   document.fonts?.load?.('600 14px "Hardware Sans"')?.catch?.(() => {});
   resize();
   window.addEventListener('resize', resize);
+  // The stage can change size a frame after the window (platform/viewport-guard.js).
+  window.addEventListener('chunk-surfer:stage-resize', resize);
   return { cols: () => cols, rows: () => rows };
 }
 

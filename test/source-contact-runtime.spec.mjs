@@ -4,12 +4,12 @@ import { SOURCE_PRE_TAPE, SOURCE_TIER_BY_ID } from '../src/data/source-level.js'
 import { buildChunkSurfGodPreset, CHUNK_SURF_GOD_PRESET } from '../src/game/chunk-surf-god.js';
 import { createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
 
-function firstMeeting(options = {}, { talks = 0, edgeDoorOpen = false } = {}) {
+function firstMeeting(options = {}, { talks = 0, edgeDoorOpen = false, horizon = null } = {}) {
   const built = buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.FIRST_CONTACT, {
     seed: 4417, injuries: 0, hasRig: false, ...options,
   });
   // HUSH followed you here and stands within reach, where the court trace stood.
-  const initialState = { ...built.state, edgeDoorOpen, sourceContacts: { ...built.state.sourceContacts, talks },
+  const initialState = { ...built.state, edgeDoorOpen, ...(horizon?{horizon:{...built.state.horizon,...horizon}}:{}), sourceContacts: { ...built.state.sourceContacts, talks },
     sourceHushFollow: { active: true, x: -12, z: -463.5, floor: 4.2, heading: 0 } };
   const runtime = createSourceSpaceRuntime({ initialState });
   const origin = initialState.landscapeOrigin;
@@ -185,7 +185,9 @@ test('the legacy catch entry safely leaves and never strands a pending question'
 
 for (const accepted of [false, true]) test('the outskirts return stays open until the bust is ' + (accepted ? 'accepted' : 'declined'), () => {
   // Out through the grey doors, which stand open (see source-edge-door.spec).
-  const { runtime } = firstMeeting({ marbleEyes: 'returned' }, { edgeDoorOpen: true });
+  // This downstream fixture already reached the road before the additive
+  // continuation shipped. It must retain its original return/Contact behavior.
+  const { runtime } = firstMeeting({ marbleEyes: 'returned' }, { edgeDoorOpen: true, horizon: { entered: true } });
   const origin = runtime.state().landscapeOrigin;
   const field = { x: origin.x, y: origin.y + SOURCE_PRE_TAPE.from + 1, facing: 0 };
   const outskirts = { x: field.x, y: field.y - 2, facing: 0 };

@@ -34,7 +34,7 @@ const section=(start,end)=>{
     chapelTowerState:()=>({phase:'source-ready'}),bellTowerRuntime:null,towerBellDirector:null,
     hushAudioRuntime:null,getSave:()=>({area:'source-space',playSeconds:0,view:{yaw:1.73,pitch:-.22}}),
     RADIO:{saveRadioState:()=>radioState},
-    sourceShoreCameraPatch:()=>({}),
+    sourceCameraPatch:()=>({}),
     saveCommit:(value)=>calls.push(value),
   };
   const api=vm.runInNewContext(`${section('let sourceRepriseWorldLease=null;','function sourceReplayMovementInterlude')}

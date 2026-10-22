@@ -1,0 +1,1854 @@
+{
+  "entry": [
+    {
+      "name": "north",
+      "initialFixture": {
+        "x": 191,
+        "y": 408.5,
+        "floor": -0.8500000238418579,
+        "physical": {
+          "x": 91,
+          "z": 8.5,
+          "y": -0.8500000238418579,
+          "arcId": 0,
+          "flightId": 0,
+          "owner": "loading_bay_yard",
+          "layer": "ground",
+          "spaceId": "loading_bay",
+          "renderGroup": "ground"
+        },
+        "scene": null
+      },
+      "trace": [
+        {
+          "x": 191,
+          "y": 408.5,
+          "floor": -0.8500000238418579,
+          "physical": {
+            "x": 91,
+            "z": 8.5,
+            "y": -0.8500000238418579,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "loading_bay_yard",
+            "layer": "ground",
+            "spaceId": "loading_bay",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 192,
+          "y": 408.5,
+          "floor": -0.6800000071525574,
+          "physical": {
+            "x": 92,
+            "z": 8.5,
+            "y": -0.6800000071525574,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "loading_bay_yard",
+            "layer": "ground",
+            "spaceId": "loading_bay",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 193,
+          "y": 408.5,
+          "floor": -0.6800000071525574,
+          "physical": {
+            "x": 93,
+            "z": 8.5,
+            "y": -0.6800000071525574,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "loading_bay_yard",
+            "layer": "ground",
+            "spaceId": "loading_bay",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 194,
+          "y": 408.5,
+          "floor": -0.5099999904632568,
+          "physical": {
+            "x": 94,
+            "z": 8.5,
+            "y": -0.5099999904632568,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "loading_bay_yard",
+            "layer": "ground",
+            "spaceId": "loading_bay",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 195,
+          "y": 408.5,
+          "floor": -0.5099999904632568,
+          "physical": {
+            "x": 95,
+            "z": 8.5,
+            "y": -0.5099999904632568,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "loading_bay_yard",
+            "layer": "ground",
+            "spaceId": "loading_bay",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 196,
+          "y": 408.5,
+          "floor": -0.3400000035762787,
+          "physical": {
+            "x": 96,
+            "z": 8.5,
+            "y": -0.3400000035762787,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "loading_bay_yard",
+            "layer": "ground",
+            "spaceId": "loading_bay",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 197,
+          "y": 408.5,
+          "floor": -0.3400000035762787,
+          "physical": {
+            "x": 97,
+            "z": 8.5,
+            "y": -0.3400000035762787,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "loading_bay_yard",
+            "layer": "ground",
+            "spaceId": "loading_bay",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 198,
+          "y": 408.5,
+          "floor": -0.17000000178813934,
+          "physical": {
+            "x": 98,
+            "z": 8.5,
+            "y": -0.17000000178813934,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "loading_bay_yard",
+            "layer": "ground",
+            "spaceId": "loading_bay",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 199,
+          "y": 408.5,
+          "floor": -0.17000000178813934,
+          "physical": {
+            "x": 99,
+            "z": 8.5,
+            "y": -0.17000000178813934,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "loading_bay_yard",
+            "layer": "ground",
+            "spaceId": "loading_bay",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 100,
+          "y": 8,
+          "floor": 0,
+          "physical": {
+            "x": 100,
+            "z": 8,
+            "y": 0,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "ground",
+            "layer": "ground",
+            "spaceId": "ground",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 101,
+          "y": 8,
+          "floor": 0,
+          "physical": {
+            "x": 101,
+            "z": 8,
+            "y": 0,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "ground",
+            "layer": "ground",
+            "spaceId": "ground",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 102,
+          "y": 8,
+          "floor": 0,
+          "physical": {
+            "x": 102,
+            "z": 8,
+            "y": 0,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "ground",
+            "layer": "ground",
+            "spaceId": "ground",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 103,
+          "y": 8,
+          "floor": 0,
+          "physical": {
+            "x": 103,
+            "z": 8,
+            "y": 0,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "ground",
+            "layer": "ground",
+            "spaceId": "ground",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 102,
+          "y": 8,
+          "floor": 0,
+          "physical": {
+            "x": 102,
+            "z": 8,
+            "y": 0,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "ground",
+            "layer": "ground",
+            "spaceId": "ground",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 101,
+          "y": 8,
+          "floor": 0,
+          "physical": {
+            "x": 101,
+            "z": 8,
+            "y": 0,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "ground",
+            "layer": "ground",
+            "spaceId": "ground",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 100,
+          "y": 8,
+          "floor": 0,
+          "physical": {
+            "x": 100,
+            "z": 8,
+            "y": 0,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "ground",
+            "layer": "ground",
+            "spaceId": "ground",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 199,
+          "y": 408,
+          "floor": -0.17000000178813934,
+          "physical": {
+            "x": 99,
+            "z": 8,
+            "y": -0.17000000178813934,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "loading_bay_yard",
+            "layer": "ground",
+            "spaceId": "loading_bay",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 198,
+          "y": 408,
+          "floor": -0.17000000178813934,
+          "physical": {
+            "x": 98,
+            "z": 8,
+            "y": -0.17000000178813934,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "loading_bay_yard",
+            "layer": "ground",
+            "spaceId": "loading_bay",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 197,
+          "y": 408,
+          "floor": -0.3400000035762787,
+          "physical": {
+            "x": 97,
+            "z": 8,
+            "y": -0.3400000035762787,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "loading_bay_yard",
+            "layer": "ground",
+            "spaceId": "loading_bay",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 196,
+          "y": 408,
+          "floor": -0.3400000035762787,
+          "physical": {
+            "x": 96,
+            "z": 8,
+            "y": -0.3400000035762787,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "loading_bay_yard",
+            "layer": "ground",
+            "spaceId": "loading_bay",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 195,
+          "y": 408,
+          "floor": -0.5099999904632568,
+          "physical": {
+            "x": 95,
+            "z": 8,
+            "y": -0.5099999904632568,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "loading_bay_yard",
+            "layer": "ground",
+            "spaceId": "loading_bay",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 194,
+          "y": 408,
+          "floor": -0.5099999904632568,
+          "physical": {
+            "x": 94,
+            "z": 8,
+            "y": -0.5099999904632568,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "loading_bay_yard",
+            "layer": "ground",
+            "spaceId": "loading_bay",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 193,
+          "y": 408,
+          "floor": -0.6800000071525574,
+          "physical": {
+            "x": 93,
+            "z": 8,
+            "y": -0.6800000071525574,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "loading_bay_yard",
+            "layer": "ground",
+            "spaceId": "loading_bay",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 192,
+          "y": 408,
+          "floor": -0.6800000071525574,
+          "physical": {
+            "x": 92,
+            "z": 8,
+            "y": -0.6800000071525574,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "loading_bay_yard",
+            "layer": "ground",
+            "spaceId": "loading_bay",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 191,
+          "y": 408,
+          "floor": -0.8500000238418579,
+          "physical": {
+            "x": 91,
+            "z": 8,
+            "y": -0.8500000238418579,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "loading_bay_yard",
+            "layer": "ground",
+            "spaceId": "loading_bay",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        }
+      ],
+      "blocked": 0
+    },
+    {
+      "name": "goods",
+      "initialFixture": {
+        "x": 191,
+        "y": 419.5,
+        "floor": -0.8500000238418579,
+        "physical": {
+          "x": 91,
+          "z": 19.5,
+          "y": -0.8500000238418579,
+          "arcId": 0,
+          "flightId": 0,
+          "owner": "loading_bay_yard",
+          "layer": "ground",
+          "spaceId": "loading_bay",
+          "renderGroup": "ground"
+        },
+        "scene": null
+      },
+      "trace": [
+        {
+          "x": 191,
+          "y": 419.5,
+          "floor": -0.8500000238418579,
+          "physical": {
+            "x": 91,
+            "z": 19.5,
+            "y": -0.8500000238418579,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "loading_bay_yard",
+            "layer": "ground",
+            "spaceId": "loading_bay",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 192,
+          "y": 419.5,
+          "floor": -0.6800000071525574,
+          "physical": {
+            "x": 92,
+            "z": 19.5,
+            "y": -0.6800000071525574,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "loading_bay_yard",
+            "layer": "ground",
+            "spaceId": "loading_bay",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 193,
+          "y": 419.5,
+          "floor": -0.6800000071525574,
+          "physical": {
+            "x": 93,
+            "z": 19.5,
+            "y": -0.6800000071525574,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "loading_bay_yard",
+            "layer": "ground",
+            "spaceId": "loading_bay",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 194,
+          "y": 419.5,
+          "floor": -0.5099999904632568,
+          "physical": {
+            "x": 94,
+            "z": 19.5,
+            "y": -0.5099999904632568,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "loading_bay_yard",
+            "layer": "ground",
+            "spaceId": "loading_bay",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 195,
+          "y": 419.5,
+          "floor": -0.5099999904632568,
+          "physical": {
+            "x": 95,
+            "z": 19.5,
+            "y": -0.5099999904632568,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "loading_bay_yard",
+            "layer": "ground",
+            "spaceId": "loading_bay",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 196,
+          "y": 419.5,
+          "floor": -0.3400000035762787,
+          "physical": {
+            "x": 96,
+            "z": 19.5,
+            "y": -0.3400000035762787,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "loading_bay_yard",
+            "layer": "ground",
+            "spaceId": "loading_bay",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 197,
+          "y": 419.5,
+          "floor": -0.3400000035762787,
+          "physical": {
+            "x": 97,
+            "z": 19.5,
+            "y": -0.3400000035762787,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "loading_bay_yard",
+            "layer": "ground",
+            "spaceId": "loading_bay",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 198,
+          "y": 419.5,
+          "floor": -0.17000000178813934,
+          "physical": {
+            "x": 98,
+            "z": 19.5,
+            "y": -0.17000000178813934,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "loading_bay_yard",
+            "layer": "ground",
+            "spaceId": "loading_bay",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 199,
+          "y": 419.5,
+          "floor": -0.17000000178813934,
+          "physical": {
+            "x": 99,
+            "z": 19.5,
+            "y": -0.17000000178813934,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "loading_bay_yard",
+            "layer": "ground",
+            "spaceId": "loading_bay",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 100,
+          "y": 19,
+          "floor": 0,
+          "physical": {
+            "x": 100,
+            "z": 19,
+            "y": 0,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "ground",
+            "layer": "ground",
+            "spaceId": "ground",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 101,
+          "y": 19,
+          "floor": 0,
+          "physical": {
+            "x": 101,
+            "z": 19,
+            "y": 0,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "ground",
+            "layer": "ground",
+            "spaceId": "ground",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 102,
+          "y": 19,
+          "floor": 0,
+          "physical": {
+            "x": 102,
+            "z": 19,
+            "y": 0,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "ground",
+            "layer": "ground",
+            "spaceId": "ground",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 103,
+          "y": 19,
+          "floor": 0,
+          "physical": {
+            "x": 103,
+            "z": 19,
+            "y": 0,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "ground",
+            "layer": "ground",
+            "spaceId": "ground",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 102,
+          "y": 19,
+          "floor": 0,
+          "physical": {
+            "x": 102,
+            "z": 19,
+            "y": 0,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "ground",
+            "layer": "ground",
+            "spaceId": "ground",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 101,
+          "y": 19,
+          "floor": 0,
+          "physical": {
+            "x": 101,
+            "z": 19,
+            "y": 0,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "ground",
+            "layer": "ground",
+            "spaceId": "ground",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 100,
+          "y": 19,
+          "floor": 0,
+          "physical": {
+            "x": 100,
+            "z": 19,
+            "y": 0,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "ground",
+            "layer": "ground",
+            "spaceId": "ground",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 199,
+          "y": 419,
+          "floor": -0.17000000178813934,
+          "physical": {
+            "x": 99,
+            "z": 19,
+            "y": -0.17000000178813934,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "loading_bay_yard",
+            "layer": "ground",
+            "spaceId": "loading_bay",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 198,
+          "y": 419,
+          "floor": -0.17000000178813934,
+          "physical": {
+            "x": 98,
+            "z": 19,
+            "y": -0.17000000178813934,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "loading_bay_yard",
+            "layer": "ground",
+            "spaceId": "loading_bay",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 197,
+          "y": 419,
+          "floor": -0.3400000035762787,
+          "physical": {
+            "x": 97,
+            "z": 19,
+            "y": -0.3400000035762787,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "loading_bay_yard",
+            "layer": "ground",
+            "spaceId": "loading_bay",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 196,
+          "y": 419,
+          "floor": -0.3400000035762787,
+          "physical": {
+            "x": 96,
+            "z": 19,
+            "y": -0.3400000035762787,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "loading_bay_yard",
+            "layer": "ground",
+            "spaceId": "loading_bay",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 195,
+          "y": 419,
+          "floor": -0.5099999904632568,
+          "physical": {
+            "x": 95,
+            "z": 19,
+            "y": -0.5099999904632568,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "loading_bay_yard",
+            "layer": "ground",
+            "spaceId": "loading_bay",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 194,
+          "y": 419,
+          "floor": -0.5099999904632568,
+          "physical": {
+            "x": 94,
+            "z": 19,
+            "y": -0.5099999904632568,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "loading_bay_yard",
+            "layer": "ground",
+            "spaceId": "loading_bay",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 193,
+          "y": 419,
+          "floor": -0.6800000071525574,
+          "physical": {
+            "x": 93,
+            "z": 19,
+            "y": -0.6800000071525574,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "loading_bay_yard",
+            "layer": "ground",
+            "spaceId": "loading_bay",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 192,
+          "y": 419,
+          "floor": -0.6800000071525574,
+          "physical": {
+            "x": 92,
+            "z": 19,
+            "y": -0.6800000071525574,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "loading_bay_yard",
+            "layer": "ground",
+            "spaceId": "loading_bay",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        },
+        {
+          "x": 191,
+          "y": 419,
+          "floor": -0.8500000238418579,
+          "physical": {
+            "x": 91,
+            "z": 19,
+            "y": -0.8500000238418579,
+            "arcId": 0,
+            "flightId": 0,
+            "owner": "loading_bay_yard",
+            "layer": "ground",
+            "spaceId": "loading_bay",
+            "renderGroup": "ground"
+          },
+          "scene": null
+        }
+      ],
+      "blocked": 0
+    }
+  ],
+  "spiral": {
+    "initialFixture": {
+      "x": 304,
+      "y": 107
+    },
+    "precedingSteps": 3,
+    "trace": [
+      {
+        "x": 270,
+        "y": 128,
+        "floor": 5.146666526794434,
+        "physical": {
+          "x": 129.15034277570916,
+          "z": 74.12493303318884,
+          "y": 5.146666526794434,
+          "arcId": 7,
+          "flightId": 10,
+          "owner": "main-open-well",
+          "layer": "main_stair",
+          "spaceId": "main_stair",
+          "renderGroup": "upper"
+        },
+        "step": [
+          0,
+          -1
+        ],
+        "scene": null
+      },
+      {
+        "x": 270,
+        "y": 127,
+        "floor": 5.320000171661377,
+        "physical": {
+          "x": 128.6397018077442,
+          "z": 74.73349124128687,
+          "y": 5.320000171661377,
+          "arcId": 7,
+          "flightId": 10,
+          "owner": "main-open-well",
+          "layer": "main_stair",
+          "spaceId": "main_stair",
+          "renderGroup": "upper"
+        },
+        "step": [
+          0,
+          -1
+        ],
+        "scene": null
+      },
+      {
+        "x": 270,
+        "y": 126,
+        "floor": 5.493333339691162,
+        "physical": {
+          "x": 128.01369320408617,
+          "z": 75.22258276539442,
+          "y": 5.493333339691162,
+          "arcId": 7,
+          "flightId": 10,
+          "owner": "main-open-well",
+          "layer": "main_stair",
+          "spaceId": "main_stair",
+          "renderGroup": "upper"
+        },
+        "step": [
+          0,
+          -1
+        ],
+        "scene": null
+      },
+      {
+        "x": 270,
+        "y": 125,
+        "floor": 5.666666507720947,
+        "physical": {
+          "x": 127.29967654463753,
+          "z": 75.57083195898645,
+          "y": 5.666666507720947,
+          "arcId": 7,
+          "flightId": 10,
+          "owner": "main-open-well",
+          "layer": "main_stair",
+          "spaceId": "main_stair",
+          "renderGroup": "upper"
+        },
+        "step": [
+          0,
+          -1
+        ],
+        "scene": null
+      },
+      {
+        "x": 270,
+        "y": 124,
+        "floor": 5.840000152587891,
+        "physical": {
+          "x": 126.52885778364825,
+          "z": 75.76301866121797,
+          "y": 5.840000152587891,
+          "arcId": 7,
+          "flightId": 10,
+          "owner": "main-open-well",
+          "layer": "main_stair",
+          "spaceId": "main_stair",
+          "renderGroup": "upper"
+        },
+        "step": [
+          0,
+          -1
+        ],
+        "scene": null
+      },
+      {
+        "x": 270,
+        "y": 123,
+        "floor": 6.013333320617676,
+        "physical": {
+          "x": 125.73492539977232,
+          "z": 75.79074339098733,
+          "y": 6.013333320617676,
+          "arcId": 7,
+          "flightId": 10,
+          "owner": "main-open-well",
+          "layer": "main_stair",
+          "spaceId": "main_stair",
+          "renderGroup": "academic"
+        },
+        "step": [
+          0,
+          -1
+        ],
+        "scene": null
+      },
+      {
+        "x": 270,
+        "y": 122,
+        "floor": 6.186666488647461,
+        "physical": {
+          "x": 124.9525780478954,
+          "z": 75.65279444456561,
+          "y": 6.186666488647461,
+          "arcId": 7,
+          "flightId": 10,
+          "owner": "main-open-well",
+          "layer": "main_stair",
+          "spaceId": "main_stair",
+          "renderGroup": "academic"
+        },
+        "step": [
+          0,
+          -1
+        ],
+        "scene": null
+      },
+      {
+        "x": 270,
+        "y": 121,
+        "floor": 6.360000133514404,
+        "physical": {
+          "x": 124.21600806141362,
+          "z": 75.35520085286392,
+          "y": 6.360000133514404,
+          "arcId": 7,
+          "flightId": 10,
+          "owner": "main-open-well",
+          "layer": "main_stair",
+          "spaceId": "main_stair",
+          "renderGroup": "academic"
+        },
+        "step": [
+          0,
+          -1
+        ],
+        "scene": null
+      },
+      {
+        "x": 270,
+        "y": 120,
+        "floor": 6.5333333015441895,
+        "physical": {
+          "x": 123.55740708319115,
+          "z": 74.91096888385212,
+          "y": 6.5333333015441895,
+          "arcId": 7,
+          "flightId": 10,
+          "owner": "main-open-well",
+          "layer": "main_stair",
+          "spaceId": "main_stair",
+          "renderGroup": "academic"
+        },
+        "step": [
+          0,
+          -1
+        ],
+        "scene": null
+      },
+      {
+        "x": 270,
+        "y": 119,
+        "floor": 6.706666469573975,
+        "physical": {
+          "x": 123.00555913629447,
+          "z": 74.3395136062375,
+          "y": 6.706666469573975,
+          "arcId": 7,
+          "flightId": 10,
+          "owner": "main-open-well",
+          "layer": "main_stair",
+          "spaceId": "main_stair",
+          "renderGroup": "academic"
+        },
+        "step": [
+          0,
+          -1
+        ],
+        "scene": null
+      },
+      {
+        "x": 270,
+        "y": 118,
+        "floor": 6.880000114440918,
+        "physical": {
+          "x": 122.58458262406316,
+          "z": 73.66581035779849,
+          "y": 6.880000114440918,
+          "arcId": 7,
+          "flightId": 10,
+          "owner": "main-open-well",
+          "layer": "main_stair",
+          "spaceId": "main_stair",
+          "renderGroup": "academic"
+        },
+        "step": [
+          0,
+          -1
+        ],
+        "scene": null
+      },
+      {
+        "x": 270,
+        "y": 117,
+        "floor": 7.053333282470703,
+        "physical": {
+          "x": 122.31287624015121,
+          "z": 72.91930320327874,
+          "y": 7.053333282470703,
+          "arcId": 7,
+          "flightId": 10,
+          "owner": "main-open-well",
+          "layer": "main_stair",
+          "spaceId": "main_stair",
+          "renderGroup": "academic"
+        },
+        "step": [
+          0,
+          -1
+        ],
+        "scene": null
+      },
+      {
+        "x": 270,
+        "y": 116,
+        "floor": 7.226666450500488,
+        "physical": {
+          "x": 122.20231485732744,
+          "z": 72.13261808746951,
+          "y": 7.226666450500488,
+          "arcId": 7,
+          "flightId": 10,
+          "owner": "main-open-well",
+          "layer": "main_stair",
+          "spaceId": "main_stair",
+          "renderGroup": "academic"
+        },
+        "step": [
+          0,
+          -1
+        ],
+        "scene": null
+      },
+      {
+        "x": 278,
+        "y": 116,
+        "floor": 7.400000095367432,
+        "physical": {
+          "x": 122.2577305385536,
+          "z": 71.34013692486566,
+          "y": 7.400000095367432,
+          "arcId": 8,
+          "flightId": 11,
+          "owner": "main-open-well",
+          "layer": "main_stair",
+          "spaceId": "main_stair",
+          "renderGroup": "upper"
+        },
+        "step": [
+          0,
+          1
+        ],
+        "scene": null
+      },
+      {
+        "x": 278,
+        "y": 117,
+        "floor": 7.573333263397217,
+        "physical": {
+          "x": 122.4767013526462,
+          "z": 70.57649494501953,
+          "y": 7.573333263397217,
+          "arcId": 8,
+          "flightId": 11,
+          "owner": "main-open-well",
+          "layer": "main_stair",
+          "spaceId": "main_stair",
+          "renderGroup": "upper"
+        },
+        "step": [
+          0,
+          1
+        ],
+        "scene": null
+      },
+      {
+        "x": 278,
+        "y": 118,
+        "floor": 7.746666431427002,
+        "physical": {
+          "x": 122.84965722429084,
+          "z": 69.87506696681116,
+          "y": 7.746666431427002,
+          "arcId": 8,
+          "flightId": 11,
+          "owner": "main-open-well",
+          "layer": "main_stair",
+          "spaceId": "main_stair",
+          "renderGroup": "upper"
+        },
+        "step": [
+          0,
+          1
+        ],
+        "scene": null
+      },
+      {
+        "x": 278,
+        "y": 119,
+        "floor": 7.920000076293945,
+        "physical": {
+          "x": 123.36029819225581,
+          "z": 69.26650875871313,
+          "y": 7.920000076293945,
+          "arcId": 8,
+          "flightId": 11,
+          "owner": "main-open-well",
+          "layer": "main_stair",
+          "spaceId": "main_stair",
+          "renderGroup": "upper"
+        },
+        "step": [
+          0,
+          1
+        ],
+        "scene": null
+      },
+      {
+        "x": 278,
+        "y": 120,
+        "floor": 8.09333324432373,
+        "physical": {
+          "x": 123.98630679591382,
+          "z": 68.77741723460558,
+          "y": 8.09333324432373,
+          "arcId": 8,
+          "flightId": 11,
+          "owner": "main-open-well",
+          "layer": "main_stair",
+          "spaceId": "main_stair",
+          "renderGroup": "upper"
+        },
+        "step": [
+          0,
+          1
+        ],
+        "scene": null
+      },
+      {
+        "x": 278,
+        "y": 121,
+        "floor": 8.266666412353516,
+        "physical": {
+          "x": 124.70032345536245,
+          "z": 68.42916804101355,
+          "y": 8.266666412353516,
+          "arcId": 8,
+          "flightId": 11,
+          "owner": "main-open-well",
+          "layer": "main_stair",
+          "spaceId": "main_stair",
+          "renderGroup": "upper"
+        },
+        "step": [
+          0,
+          1
+        ],
+        "scene": null
+      },
+      {
+        "x": 278,
+        "y": 122,
+        "floor": 8.4399995803833,
+        "physical": {
+          "x": 125.47114221635175,
+          "z": 68.23698133878203,
+          "y": 8.4399995803833,
+          "arcId": 8,
+          "flightId": 11,
+          "owner": "main-open-well",
+          "layer": "main_stair",
+          "spaceId": "main_stair",
+          "renderGroup": "upper"
+        },
+        "step": [
+          0,
+          1
+        ],
+        "scene": null
+      },
+      {
+        "x": 278,
+        "y": 123,
+        "floor": 8.613333702087402,
+        "physical": {
+          "x": 126.26507460022768,
+          "z": 68.20925660901267,
+          "y": 8.613333702087402,
+          "arcId": 8,
+          "flightId": 11,
+          "owner": "main-open-well",
+          "layer": "main_stair",
+          "spaceId": "main_stair",
+          "renderGroup": "academic"
+        },
+        "step": [
+          0,
+          1
+        ],
+        "scene": null
+      },
+      {
+        "x": 278,
+        "y": 124,
+        "floor": 8.786666870117188,
+        "physical": {
+          "x": 127.0474219521046,
+          "z": 68.34720555543439,
+          "y": 8.786666870117188,
+          "arcId": 8,
+          "flightId": 11,
+          "owner": "main-open-well",
+          "layer": "main_stair",
+          "spaceId": "main_stair",
+          "renderGroup": "academic"
+        },
+        "step": [
+          0,
+          1
+        ],
+        "scene": null
+      },
+      {
+        "x": 278,
+        "y": 125,
+        "floor": 8.960000038146973,
+        "physical": {
+          "x": 127.78399193858638,
+          "z": 68.64479914713607,
+          "y": 8.960000038146973,
+          "arcId": 8,
+          "flightId": 11,
+          "owner": "main-open-well",
+          "layer": "main_stair",
+          "spaceId": "main_stair",
+          "renderGroup": "academic"
+        },
+        "step": [
+          0,
+          1
+        ],
+        "scene": null
+      },
+      {
+        "x": 278,
+        "y": 126,
+        "floor": 9.133333206176758,
+        "physical": {
+          "x": 128.44259291680885,
+          "z": 69.08903111614788,
+          "y": 9.133333206176758,
+          "arcId": 8,
+          "flightId": 11,
+          "owner": "main-open-well",
+          "layer": "main_stair",
+          "spaceId": "main_stair",
+          "renderGroup": "academic"
+        },
+        "step": [
+          0,
+          1
+        ],
+        "scene": null
+      },
+      {
+        "x": 278,
+        "y": 127,
+        "floor": 9.306666374206543,
+        "physical": {
+          "x": 128.99444086370553,
+          "z": 69.6604863937625,
+          "y": 9.306666374206543,
+          "arcId": 8,
+          "flightId": 11,
+          "owner": "main-open-well",
+          "layer": "main_stair",
+          "spaceId": "main_stair",
+          "renderGroup": "academic"
+        },
+        "step": [
+          0,
+          1
+        ],
+        "scene": null
+      },
+      {
+        "x": 278,
+        "y": 128,
+        "floor": 9.479999542236328,
+        "physical": {
+          "x": 129.41541737593684,
+          "z": 70.33418964220151,
+          "y": 9.479999542236328,
+          "arcId": 8,
+          "flightId": 11,
+          "owner": "main-open-well",
+          "layer": "main_stair",
+          "spaceId": "main_stair",
+          "renderGroup": "academic"
+        },
+        "step": [
+          0,
+          1
+        ],
+        "scene": null
+      },
+      {
+        "x": 278,
+        "y": 129,
+        "floor": 9.65333366394043,
+        "physical": {
+          "x": 129.6871237598488,
+          "z": 71.08069679672126,
+          "y": 9.65333366394043,
+          "arcId": 8,
+          "flightId": 11,
+          "owner": "main-open-well",
+          "layer": "main_stair",
+          "spaceId": "main_stair",
+          "renderGroup": "academic"
+        },
+        "step": [
+          0,
+          1
+        ],
+        "scene": null
+      },
+      {
+        "x": 278,
+        "y": 130,
+        "floor": 9.826666831970215,
+        "physical": {
+          "x": 129.79768514267258,
+          "z": 71.86738191253049,
+          "y": 9.826666831970215,
+          "arcId": 8,
+          "flightId": 11,
+          "owner": "main-open-well",
+          "layer": "main_stair",
+          "spaceId": "main_stair",
+          "renderGroup": "academic"
+        },
+        "step": [
+          0,
+          1
+        ],
+        "scene": null
+      },
+      {
+        "x": 302,
+        "y": 128,
+        "floor": 10,
+        "physical": {
+          "x": 129,
+          "z": 73,
+          "y": 10,
+          "arcId": 0,
+          "flightId": 0,
+          "owner": "main-open-well",
+          "layer": "main_stair",
+          "spaceId": "main_stair",
+          "renderGroup": "academic"
+        },
+        "step": [
+          0,
+          1
+        ],
+        "scene": null
+      },
+      {
+        "x": 302,
+        "y": 129,
+        "floor": 10,
+        "physical": {
+          "x": 129,
+          "z": 74,
+          "y": 10,
+          "arcId": 0,
+          "flightId": 0,
+          "owner": "main-open-well",
+          "layer": "main_stair",
+          "spaceId": "main_stair",
+          "renderGroup": "academic"
+        },
+        "step": [
+          0,
+          1
+        ],
+        "scene": null
+      },
+      {
+        "x": 302,
+        "y": 130,
+        "floor": 10,
+        "physical": {
+          "x": 129,
+          "z": 75,
+          "y": 10,
+          "arcId": 0,
+          "flightId": 0,
+          "owner": "main-open-well",
+          "layer": "main_stair",
+          "spaceId": "main_stair",
+          "renderGroup": "academic"
+        },
+        "step": [
+          0,
+          1
+        ],
+        "scene": null
+      },
+      {
+        "x": 301,
+        "y": 130,
+        "floor": 10,
+        "physical": {
+          "x": 128,
+          "z": 75,
+          "y": 10,
+          "arcId": 0,
+          "flightId": 0,
+          "owner": "main-open-well",
+          "layer": "main_stair",
+          "spaceId": "main_stair",
+          "renderGroup": "academic"
+        },
+        "step": [
+          -1,
+          0
+        ],
+        "scene": null
+      },
+      {
+        "x": 300,
+        "y": 130,
+        "floor": 10,
+        "physical": {
+          "x": 127,
+          "z": 75,
+          "y": 10,
+          "arcId": 0,
+          "flightId": 0,
+          "owner": "main-open-well",
+          "layer": "main_stair",
+          "spaceId": "main_stair",
+          "renderGroup": "academic"
+        },
+        "step": [
+          -1,
+          0
+        ],
+        "scene": null
+      },
+      {
+        "x": 27,
+        "y": 555,
+        "floor": 10,
+        "physical": {
+          "x": 127,
+          "z": 75,
+          "y": 10,
+          "arcId": 0,
+          "flightId": 0,
+          "owner": "academic_stair_loggia",
+          "layer": "academic",
+          "spaceId": "academic",
+          "renderGroup": "academic"
+        },
+        "step": [
+          -1,
+          0
+        ],
+        "scene": null
+      },
+      {
+        "x": 26,
+        "y": 555,
+        "floor": 10,
+        "physical": {
+          "x": 126,
+          "z": 75,
+          "y": 10,
+          "arcId": 0,
+          "flightId": 0,
+          "owner": "academic_stair_loggia",
+          "layer": "academic",
+          "spaceId": "academic",
+          "renderGroup": "academic"
+        },
+        "step": [
+          -1,
+          0
+        ],
+        "scene": null
+      },
+      {
+        "x": 25,
+        "y": 555,
+        "floor": 10,
+        "physical": {
+          "x": 125,
+          "z": 75,
+          "y": 10,
+          "arcId": 0,
+          "flightId": 0,
+          "owner": "academic_stair_loggia",
+          "layer": "academic",
+          "spaceId": "academic",
+          "renderGroup": "academic"
+        },
+        "step": [
+          -1,
+          0
+        ],
+        "scene": null
+      },
+      {
+        "x": 24,
+        "y": 555,
+        "floor": 10,
+        "physical": {
+          "x": 124,
+          "z": 75,
+          "y": 10,
+          "arcId": 0,
+          "flightId": 0,
+          "owner": "academic_stair_loggia",
+          "layer": "academic",
+          "spaceId": "academic",
+          "renderGroup": "academic"
+        },
+        "step": [
+          -1,
+          0
+        ],
+        "scene": null
+      },
+      {
+        "x": 23,
+        "y": 555,
+        "floor": 10,
+        "physical": {
+          "x": 123,
+          "z": 75,
+          "y": 10,
+          "arcId": 0,
+          "flightId": 0,
+          "owner": "academic_stair_loggia",
+          "layer": "academic",
+          "spaceId": "academic",
+          "renderGroup": "academic"
+        },
+        "step": [
+          -1,
+          0
+        ],
+        "scene": null
+      },
+      {
+        "x": 22,
+        "y": 555,
+        "floor": 10,
+        "physical": {
+          "x": 122,
+          "z": 75,
+          "y": 10,
+          "arcId": 0,
+          "flightId": 0,
+          "owner": "academic_stair_loggia",
+          "layer": "academic",
+          "spaceId": "academic",
+          "renderGroup": "academic"
+        },
+        "step": [
+          -1,
+          0
+        ],
+        "scene": null
+      },
+      {
+        "x": 21,
+        "y": 555,
+        "floor": 10,
+        "physical": {
+          "x": 121,
+          "z": 75,
+          "y": 10,
+          "arcId": 0,
+          "flightId": 0,
+          "owner": "academic_stair_loggia",
+          "layer": "academic",
+          "spaceId": "academic",
+          "renderGroup": "academic"
+        },
+        "step": [
+          -1,
+          0
+        ],
+        "scene": null
+      },
+      {
+        "x": 20,
+        "y": 555,
+        "floor": 10,
+        "physical": {
+          "x": 120,
+          "z": 75,
+          "y": 10,
+          "arcId": 0,
+          "flightId": 0,
+          "owner": "academic_stair_loggia",
+          "layer": "academic",
+          "spaceId": "academic",
+          "renderGroup": "academic"
+        },
+        "step": [
+          -1,
+          0
+        ],
+        "scene": null
+      },
+      {
+        "x": 19,
+        "y": 555,
+        "floor": 10,
+        "physical": {
+          "x": 119,
+          "z": 75,
+          "y": 10,
+          "arcId": 0,
+          "flightId": 0,
+          "owner": "academic_stair_loggia",
+          "layer": "academic",
+          "spaceId": "academic",
+          "renderGroup": "academic"
+        },
+        "step": [
+          -1,
+          0
+        ],
+        "scene": null
+      },
+      {
+        "x": 18,
+        "y": 555,
+        "floor": 10,
+        "physical": {
+          "x": 118,
+          "z": 75,
+          "y": 10,
+          "arcId": 0,
+          "flightId": 0,
+          "owner": "academic_stair_loggia",
+          "layer": "academic",
+          "spaceId": "academic",
+          "renderGroup": "academic"
+        },
+        "step": [
+          -1,
+          0
+        ],
+        "scene": null
+      },
+      {
+        "x": 17,
+        "y": 555,
+        "floor": 10,
+        "physical": {
+          "x": 117,
+          "z": 75,
+          "y": 10,
+          "arcId": 0,
+          "flightId": 0,
+          "owner": "academic_stair_loggia",
+          "layer": "academic",
+          "spaceId": "academic",
+          "renderGroup": "academic"
+        },
+        "step": [
+          -1,
+          0
+        ],
+        "scene": null
+      },
+      {
+        "x": 16,
+        "y": 555,
+        "floor": 10,
+        "physical": {
+          "x": 116,
+          "z": 75,
+          "y": 10,
+          "arcId": 0,
+          "flightId": 0,
+          "owner": "academic_stair_loggia",
+          "layer": "academic",
+          "spaceId": "academic",
+          "renderGroup": "academic"
+        },
+        "step": [
+          -1,
+          0
+        ],
+        "scene": null
+      }
+    ]
+  }
+}

@@ -30,6 +30,7 @@
 // these strings. It is production history, and it says nothing about his mind.
 
 import { TUNING_FORK_ENGRAVING_LINE } from './tuning-fork-discovery.js';
+import { ROOF_PASSWORD_PAGE } from './roof-password.js';
 
 export const WORK_ORDER = {
   id: 'work-order',
@@ -582,7 +583,9 @@ export const PLANT_RIG_CELL = { x: 38, y: 32 };
 // has a name, a plaque or an accession mark — nobody in this building ever
 // recorded who they were supposed to be.
 //
-// What this is: a man alone in the dark, holding a conversation. Every answer is
+// The first private encounter: a man alone in the dark, holding a conversation.
+// The separately rendered academic society occupies this floor around them;
+// this original self-addressed tree remains his first approach. Every answer is
 // HIS. The trick is not that the marble speaks; it is that a room this dark takes
 // a question the same way a person does, and he keeps going anyway, because the
 // alternative is admitting he is talking to a rock. So the questions are `you`
@@ -1079,6 +1082,7 @@ export const SQUELCH_LINES = [
 // `room` is the waypoint a page grants. `at` is where it lies on the floor.
 
 export const PAGES = [
+  ROOF_PASSWORD_PAGE,
   {
     // In the credenza drawer in the ground-floor dead end. Its `at` is the
     // credenza's own cell: hostedPageFor grants it on inspecting the furniture

@@ -8,6 +8,7 @@ import {
   normalizeDisplaySettings,
   isViewportTooSmall,
   resolveRenderScale,
+  computeStageLayout,
 } from '../src/platform/display-policy.js';
 
 test('designed viewport is at least 1280x800', () => {
@@ -53,4 +54,29 @@ test('finds known window preset', () => {
 test('auto render scale resolves conservatively', () => {
   assert.equal(resolveRenderScale('auto', { devicePixelRatio: 3 }), 0.75);
   assert.equal(resolveRenderScale(1), 1);
+});
+
+test('the stage takes the window\'s shape instead of barring it', () => {
+  const D = DESIGNED_VIEWPORT;
+  const covers = (layout, w, h) => {
+    assert.ok(layout.left <= 0 && layout.top <= 0, `no bar at ${w}x${h}`);
+    assert.ok(layout.renderedWidth >= w - 0.5 && layout.renderedHeight >= h - 0.5, `stage reaches the edges at ${w}x${h}`);
+    assert.ok(layout.stageWidth >= D.width && layout.stageHeight >= D.height, 'the design box is still inside it');
+  };
+  // Exactly 16:10 is the design box, unchanged.
+  const exact = computeStageLayout(D.width, D.height);
+  assert.equal(exact.stageWidth, D.width); assert.equal(exact.stageHeight, D.height); assert.equal(exact.left, 0);
+  // A window with a title bar taken out of 16:10, a 16:9 fullscreen, a Mac's ~14:9 fullscreen.
+  for (const [w, h] of [[1000, 603], [1920, 1080], [1728, 1117]]) {
+    const layout = computeStageLayout(w, h);
+    assert.equal(layout.scale, Math.min(w / D.width, h / D.height), 'the design box still fits exactly as it did');
+    covers(layout, w, h);
+  }
+  // Past 12:5 it stops growing and bars, rather than becoming another camera.
+  const ultra = computeStageLayout(3200, 800);
+  assert.equal(ultra.stageWidth, Math.ceil(800 * 12 / 5));
+  assert.ok(ultra.left > 0);
+  // And the old fitted box is still there to ask for.
+  const fitted = computeStageLayout(1920, 1080, { fill: false });
+  assert.equal(fitted.stageWidth, D.width); assert.ok(fitted.left > 0);
 });

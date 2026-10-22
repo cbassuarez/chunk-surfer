@@ -960,7 +960,7 @@ export function createWindowChoreographyDirector({
     practiceCueGeneration+=1;
     practiceClueTokens.clear();
     if(['source-runtime-exit','source-god-warp','title-exit'].includes(reason))sourceWarningSeen=false;
-    if(['source-runtime-exit','source-god-warp','god-source-preset','title-exit'].includes(reason))decay={stage:0,active:null,done:false};
+    if(['source-runtime-exit','source-god-warp','god-source-preset','title-exit','source-drive'].includes(reason))decay={stage:0,active:null,done:false};
     else if(decay.active)decay={stage:0,active:null,done:true};
     const active=transaction;
     const opening=transactionOpening;
@@ -1295,8 +1295,12 @@ export function createWindowChoreographyDirector({
 
   function leaveSource(reason='source-exit'){
     if(sourceDesktop&&['source-exit','source-runtime-exit'].includes(reason))return Promise.resolve(false);
-    const sourceOwned=source.stage!=='sealed'||composition?.purpose==='puzzle'||String(transaction?.sceneId||'').startsWith('source:');
+    const driveHandoff=reason==='source-drive'&&(sourceDesktop||decay.active||['source-warning','source-decay'].includes(composition?.purpose));
+    const sourceOwned=driveHandoff||source.stage!=='sealed'||composition?.purpose==='puzzle'||String(transaction?.sceneId||'').startsWith('source:');
     if(!sourceOwned)return Promise.resolve(false);
+    // Browser fragments must disappear in this turn, before any asynchronous
+    // native restore. restore() invalidates pending plans before its awaits.
+    if(reason==='source-drive')simulation.hide();
     return restore(reason);
   }
 

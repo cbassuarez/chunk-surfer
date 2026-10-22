@@ -4,6 +4,7 @@ import { CELL, F, PLAN_SCALE, ZONE, isOutdoorZone } from '../data/floorplan/lege
 import { ARCHITECTURE_ROOM_SCHEDULE, ARCHITECTURE_FITTING_MESHES, ARCHITECTURE_HOST_RESERVATIONS, ARCHITECTURE_TRIM_CLEARANCES } from '../data/architecture-fittings.js';
 import { PROP_BOUNDS } from '../data/generated/prop-geometry.js';
 import { wallRuns, yawFromNormal } from './wall-contact.js';
+import { physicalWallFaceHasHost } from './baseboard-hosting.js';
 
 const GROUPS=new Set(['basement','ground','upper','academic','hall']);
 const metres=c=>c/PLAN_SCALE;
@@ -27,7 +28,12 @@ function supportsFittings(fp,c) {
   const p=physical(fp,c.x,c.y),q=physical(fp,c.x+c.nx,c.y+c.ny);
   // World wall-contact offsets assume a translation. Discontinuous mappings
   // and rotated analytic stairs already own separate architectural assemblies.
-  return Math.abs(q.x-p.x-c.nx)<1e-5&&Math.abs(q.z-p.z-c.ny)<1e-5;
+  if(Math.abs(q.x-p.x-c.nx)>=1e-5||Math.abs(q.z-p.z-c.ny)>=1e-5)return false;
+  // Logical walls can lie inside another room or a stair landing's physical
+  // air volume. Fixed profiles need masonry throughout the occupied height,
+  // in the same physical slice that the native renderer actually draws.
+  return physicalWallFaceHasHost(fp,c,{bottom:c.floor+.001,
+    height:ceiling(fp,c.x,c.y)-c.floor-.002,halfWidthCells:.48});
 }
 
 export function architectureWallRuns(fp) {
@@ -110,12 +116,12 @@ export function architectureReservedHostBoxes(reservations=ARCHITECTURE_HOST_RES
   });
 }
 
-function fixtureClearsHosts(run,c,spec,elevation,hosts) {
+function fixtureClearsHosts(run,c,spec,elevation,hosts,centre) {
   const width=spec.w,depth=spec.d,bottom=run.floor+elevation;
   // Kit geometry has its back at localZ=0. Resolve the exact same masonry
   // plane as wallContactAt, then reserve its whole advertised projection.
-  const x=(c.x+(c.nx<0?1:c.nx===0?.5:0))*CELL;
-  const z=(c.y+(c.ny<0?1:c.ny===0?.5:0))*CELL;
+  const x=(c.nx?c.x+(c.nx<0?1:0):centre)*CELL;
+  const z=(c.ny?c.y+(c.ny<0?1:0):centre)*CELL;
   const min=c.nx?[Math.min(x,x+c.nx*depth),bottom,z-width/2]
     :[x-width/2,bottom,Math.min(z,z+c.ny*depth)];
   const max=c.nx?[Math.max(x,x+c.nx*depth),bottom+spec.h,z+width/2]
@@ -191,22 +197,31 @@ export function architectureFittingsPlan(fp,{doors=fp.doorState?.()||[],schedule
     const place=(suffix,mesh,elevation,{nearDoor=false,category='services',height=null}={})=>{
       const spec=ARCHITECTURE_FITTING_MESHES[mesh],width=spec.w,h=height??spec.h;
       let best=null,cost=Infinity;
-      for(const run of roomRuns)for(const c of run.cells) {
-        const centre=(run.axis==='x'?c.x:c.y)+.5;
-        if(!canFit(run,centre,width)||elevation+h>run.ceiling-run.floor-.08)continue;
-        if(!available(run,centre,width,elevation,h)||!lineInRoom(fp,anchor,c))continue;
-        if(!fixtureClearsHosts(run,c,{...spec,h},elevation,reservedHosts))continue;
-        const d=Math.hypot(c.x-anchor.x,c.y-anchor.y);
-        const doorD=roomDoors.length?Math.min(...roomDoors.map(door=>Math.hypot(c.x-door.cx,c.y-door.cy))):d;
-        // Avoid the aperture and complete moving-leaf sweep, not only its cell.
-        if(doors.some(door=>Math.abs((door.floor??fp.floorAt(door.cx,door.cy))-run.floor)<.3
-          &&Math.hypot(c.x+.5-door.cx,c.y+.5-door.cy)*CELL<(door.aperture?.width||1.1)/2+width/2+.65))continue;
-        const score=nearDoor?doorD+d*.20:d;
-        if(score<cost){best={run,c,centre};cost=score;}
+      // Keep existing cell-centred choices where they fit. A quarter-cell
+      // fallback can use a narrow real bay without inventing another host.
+      for(const offsets of [[0],[-.25,.25]]) {
+        if(best)break;
+        for(const run of roomRuns)for(const c of run.cells)for(const offset of offsets) {
+          const centre=(run.axis==='x'?c.x:c.y)+.5+offset;
+          if(!canFit(run,centre,width)||elevation+h>run.ceiling-run.floor-.08)continue;
+          if(!physicalWallFaceHasHost(fp,c,{bottom:run.floor+elevation+.001,
+            height:h-.002,halfWidthCells:width/(2*CELL),
+            alongOffsetCells:offset*(run.nx||-run.ny)}))continue;
+          if(!available(run,centre,width,elevation,h)||!lineInRoom(fp,anchor,c))continue;
+          if(!fixtureClearsHosts(run,c,{...spec,h},elevation,reservedHosts,centre))continue;
+          const dx=run.axis==='x'?offset:0,dy=run.axis==='y'?offset:0;
+          const d=Math.hypot(c.x+dx-anchor.x,c.y+dy-anchor.y);
+          const doorD=roomDoors.length?Math.min(...roomDoors.map(door=>Math.hypot(c.x+dx-door.cx,c.y+dy-door.cy))):d;
+          // Avoid the aperture and complete moving-leaf sweep, not only its cell.
+          if(doors.some(door=>Math.abs((door.floor??fp.floorAt(door.cx,door.cy))-run.floor)<.3
+            &&Math.hypot(c.x+.5+dx-door.cx,c.y+.5+dy-door.cy)*CELL<(door.aperture?.width||1.1)/2+width/2+.65))continue;
+          const score=nearDoor?doorD+d*.20:d;
+          if(score<cost){best={run,c,centre};cost=score;}
+        }
       }
       if(!best){entry.unplaced.push(suffix);return null;}
       const id=`architecture-${room.id.replace(':','-')}-${suffix}`;
-      const p=mounted(id,mesh,best.c,{elevation,roomId:room.id,category,finish:room.finish,power:'isolated'});
+      const p=mounted(id,mesh,best.c,{along:best.centre,elevation,roomId:room.id,category,finish:room.finish,power:'isolated'});
       placements.push(p);entry.placements.push(id);reserve(best.run,best.centre,width,elevation,h);return p;
     };
     const electrical=room.electrical||(room.finish==='service'?'service':room.finish);

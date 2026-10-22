@@ -1,5 +1,8 @@
+import { SOURCE_DEMOLITION_AUDIO_SOURCES } from './source-demolition-audio.js';
 import { SHEET_MUSIC } from './sheet-music.js';
 import { STOP_LISTENING_SOURCES } from './stop-listening.js';
+import { CHAPEL_SERVICE_AUDIO_SOURCES } from './chapel-service-audio.js';
+import { ST_BRENDANS_AUDIO_SOURCES } from './st-brendans-audio.js';
 
 export const CREDIT_RECORD_TITLE = 'RELEASE RECORD';
 
@@ -84,6 +87,35 @@ export const CREDITS = Object.freeze([
       ...soundEffectCredits(),
       'Excerpted, layered, bitcrushed and placed',
     ]),
+  }),
+  Object.freeze({
+    heading: 'Chapel Service Recordings',
+    lines: Object.freeze([
+      ...CHAPEL_SERVICE_AUDIO_SOURCES.flatMap(source=>[
+        `${source.title} — ${source.author} (${source.licence})`,
+        source.url,
+        source.licenceUrl,
+      ]),
+      'Adapted: excerpts, levelling, world placement and procedural room tail',
+      'Latin recitations and a recorded congregation; assembled fictional service',
+    ]),
+  }),
+  Object.freeze({
+    heading: "St Brendan’s — Material Recordings",
+    lines: Object.freeze([
+      ...ST_BRENDANS_AUDIO_SOURCES.flatMap(source=>[
+        `${source.title} — ${source.author} (${source.licence})`,source.url,source.licenceUrl,
+        'Adapted: excerpts, levelling, spatial placement and procedural room response.',
+      ]),
+      'Contemporary material recordings; adapted foley, not a recording of this tower.',
+    ]),
+  }),
+  Object.freeze({
+    heading:'Source — The Conservatoire Copy',
+    lines:Object.freeze(SOURCE_DEMOLITION_AUDIO_SOURCES.flatMap(source=>[
+      `${source.title} — ${source.author} (${source.licence})`,source.url,source.licenceUrl,
+      'Adapted: excerpts, levelling, fixed world placement and short synthetic reflections.',
+    ])),
   }),
   Object.freeze({
     heading: 'Website',

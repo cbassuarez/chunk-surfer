@@ -158,6 +158,8 @@ export function makeDocumentScene(doc,{id=`doc:${doc?.id||'document'}`,onSceneCl
   function next(){if(page<total-1)turnTo(page+1);else if(!embedded)close();}
   return {
     id,blocksInput:true,blocksWorld:!!embedded,lookProfile,lensPreset:lookProfile,sourcePressureLive:!!sourcePressureLive,
+    // Escape must reach the reader before the run-level pause interceptor.
+    handlesEscape:true,
     enter(){void preloadPaperDocument(doc);},
     update(dt){if(turn){turn.t+=Math.max(0,Number(dt)||0);if(turn.t>=TURN_SECONDS)turn=null;}},
     view:()=>({id,page,total,documentId:doc?.id||null,paper:resolved,paper3d:paper3dProbe(),turning:!!turn,reading,scroll,reservedTopRows}),

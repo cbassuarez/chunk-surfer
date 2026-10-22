@@ -259,6 +259,17 @@ export const VOICE_PROFILES = {
   'woman at the shelter': { rate: 1.08, gain: .96, hp: 175, lp: 4400 },
   'man under the awning': { rate: .92, gain: 1.0, hp: 125, lp: 3900 },
   'driver by the pub yard': { rate: 1.02, gain: 1.03, hp: 150, lp: 4200 },
+  // Academic society: intelligible room voices with distinct pitch/pace and
+  // short tails. The recordist's borrowed mouth still selects `me` explicitly.
+  'society-celeste': { rate: 1.06, gain: 1.0, hp: 180, lp: 4700, smear: { time: .045, feedback: .10, mix: .09 } },
+  'society-emile': { rate: .91, gain: 1.03, hp: 100, lp: 3800, smear: { time: .065, feedback: .14, mix: .11 } },
+  'society-odette': { rate: .98, gain: .98, hp: 240, lp: 4200, smear: { time: .085, feedback: .17, mix: .14 } },
+  'society-lucien': { rate: 1.14, gain: .99, hp: 145, lp: 5100, smear: { time: .035, feedback: .08, mix: .07 } },
+  'society-agathe': { rate: .94, gain: 1.0, hp: 310, lp: 4650, smear: { time: .055, feedback: .12, mix: .08 } },
+  'society-noe': { rate: 1.09, gain: .99, hp: 125, lp: 5450, smear: { time: .025, feedback: .07, mix: .05 } },
+  'society-sabine': { rate: 1.02, gain: 1.0, hp: 270, lp: 5900, smear: { time: .033, feedback: .11, mix: .06 } },
+  'academic-attendant': { rate: .99, gain: .98, hp: 220, lp: 4800, smear: { time: .035, feedback: .07, mix: .05 } },
+  'academic-listener': { rate: 1.03, gain: .98, hp: 150, lp: 4400, smear: { time: .045, feedback: .09, mix: .06 } },
   radio: { rate: 0.94, gain: 1.15, hp: 420, lp: 2600, drive: 0.55, squelch: 0.012 },
   recordist: { rate: 0.98, gain: 0.95, hp: 120, lp: 5200, hiss: 0.010, wobble: 0.006 },
   surfer: { rate: 0.80, gain: 1.05, hp: 60, lp: 1500, smear: { time: 0.19, feedback: 0.42, mix: 0.5 } },
@@ -617,5 +628,8 @@ export const VOICED = new Set([
   'student','man','enquiries','caller',
   'woman at the shelter','man under the awning','driver by the pub yard',
   'ren','mother on tape',
+  'society-celeste','society-emile','society-odette','society-lucien',
+  'society-agathe','society-noe','society-sabine',
+  'academic-attendant','academic-listener',
 ]);
 export const isVoiced = (who) => VOICED.has(who);

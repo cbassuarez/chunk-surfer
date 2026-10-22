@@ -27,6 +27,10 @@ import { PUZZLES } from '../puzzles/audit.mjs';
 import { CELL } from '../../../src/data/floorplan/legend.js';
 import { SCENE_DOCK_LABEL } from '../../../src/data/space-labels.js';
 import { SOURCE_SHORE_DIRECT_METRES, SOURCE_SHORE_DIRECT_SECONDS } from '../../../src/data/source-hanging-shore.js';
+import { SOURCE_BRAIDED_DIVIDE } from '../../../src/data/source-braided-divide.js';
+import { SOURCE_LAST_RECEPTION } from '../../../src/data/source-last-reception.js';
+import { SOURCE_CONTINUATION, continuationCatchFloor, continuationSurfaces } from '../../../src/data/source-continuation.js';
+import { SOURCE_PUB } from '../../../src/data/source-pub.js';
 import {
   SOURCE_APPROACH_CELLS, SOURCE_BELLS, SOURCE_BELL_PASSAGE, SOURCE_CHAPEL_OUTSKIRTS, SOURCE_CHUTES,
   SOURCE_FIELD_TIERS, SOURCE_HORIZON, SOURCE_LANDMARK_TIER, SOURCE_NOTHING_LENGTH, SOURCE_OUTSKIRTS_LENGTH,
@@ -36,11 +40,9 @@ import { OUTSKIRT_BEATS, OUTSKIRT_PASSES, OUTSKIRT_REPEAT_COUNT, OUTSKIRT_ROAD_E
 import { CHAPEL_WORLD_SET, ELSEWHERE_CROSSING_SECONDS } from '../../../src/data/elsewhere-worlds.js';
 import { ENDING_FAMILY, ENDING_GATES } from '../../../src/data/ending-gates.js';
 import {
-  CATHEDRAL_ALARM_CEILING, CATHEDRAL_DAMAGE_MARKS, CHUNK_SURF_PHASE, SOURCE_FINALE_STAGE, TOWER_DEFEAT_CEILING,
+  CATHEDRAL_ALARM_CEILING, CATHEDRAL_DAMAGE_MARKS, CHUNK_SURF_PHASE, SOURCE_FINALE_STAGE, SOURCE_HUSH_VICTORIES_REQUIRED, TOWER_DEFEAT_CEILING,
 } from '../../../src/game/chunk-surf-state.js';
 import { CHUNK_SURF_GOD_PRESET } from '../../../src/game/chunk-surf-god.js';
-import { HORIZON_TRANSPORT_DIALS, HORIZON_TRANSPORT_LABELS } from '../../../src/game/horizon-transport.js';
-import { SOURCE_CONTACT_TALKS_REQUIRED } from '../../../src/game/source-contact.js';
 import { SOURCE_HALL_END_METRES, SOURCE_HAYSTACK } from '../../../src/game/source-haystack.js';
 import { SOURCE_TRANSFORM_SECONDS } from '../../../src/game/source-space-runtime.js';
 import { SOURCE_TRACE_OBJECTIVE_IDS, sourceTraceNote } from '../../../src/game/source-trace.js';
@@ -50,6 +52,9 @@ const RUNTIME = 'src/game/source-space-runtime.js';
 const STATE = 'src/game/chunk-surf-state.js';
 const LEVEL = 'src/data/source-level.js';
 const MAIN = 'src/main.js';
+const CONTINUATION = 'src/game/source-continuation.js';
+const CONTINUATION_DATA = 'src/data/source-continuation.js';
+const CONTINUATION_SCENE = 'src/game/source-continuation-scene.js';
 const at = (file, symbol) => ({ file, symbol });
 const P = CHUNK_SURF_PHASE;
 const S = SOURCE_FINALE_STAGE;
@@ -73,9 +78,9 @@ const CODE_CONSTANTS = Object.freeze({
 // The groups the page is read in. `lane` is which road a stage belongs to.
 export const SECTIONS = Object.freeze([
   { id: 'in', title: 'Getting in', blurb: 'From the building to the Hanging Shore. Everyone walks this, in this order.' },
-  { id: 'field', title: 'The field', blurb: 'The tiered landscape, and the page at the top of it where the road forks for the first time.' },
-  { id: 'contact', title: 'The Contact road', blurb: 'Stay and fight at the fault. It ends the run either way and never reaches the tape.' },
-  { id: 'away', title: 'Walking away', blurb: 'Through the grey doors and out to the tape, where the bust forks the road a second time.' },
+  { id: 'field', title: 'The field', blurb: 'The Braided Divide, its optional Last Reception, and the original page and goods pair. Contact remains a voluntary meeting in the field.' },
+  { id: 'contact', title: 'The Contact road', blurb: 'Choose a warned fight with HUSH. The first two wins return to the field; the third win or any loss resolves this road.' },
+  { id: 'away', title: 'Walking away', blurb: 'The original goods pair leads through Wrong Return and the Catch. Its final pair hands back to the existing drive, physical outskirts and tape.' },
   { id: 'tower', title: 'The tower road', blurb: 'The bust’s detour: the bells, a field of doors, and St Brendan’s.' },
   { id: 'chapel', title: 'The chapel road', blurb: 'Straight on past the end of the tape to the chapel’s own door.' },
 ]);
@@ -171,7 +176,7 @@ export const STAGES = Object.freeze([
   {
     id: 'white-walk', section: 'in', lane: 'shared', short: 'Hanging Shore', title: 'The first nothingness and the Hanging Shore',
     where: 'Between the remembered get-in room and a finite receiving bank, both standing without apparent foundations.',
-    happens: 'White exposure recovers into a pale field while the body keeps moving. The room and bank stay fixed; there is no visible walking surface or path lighting. The bank’s deck lowers and waits. Boarding raises the body to its exterior ledge; stepping off loses elevation safely.',
+    happens: 'White exposure recovers into a pale field while the body keeps moving. Crossing the actual FOH threshold commits the nearby demolition and its finite dark pocket; stopping or retreating can preserve a view of it. The room and bank stay fixed. The bank’s deck lowers and waits. Boarding raises the body to its exterior ledge; stepping off loses elevation safely.',
     moveOn: `Walk the direct ${number(SOURCE_SHORE_DIRECT_METRES)} m to the deck, ride up, and turn behind the bank into Source proper.`,
     callouts: [{ kind: 'note', text: 'Sideways movement, circling and returning to the room do not advance a hidden distance quota. The carried torch remains a physical light.' }],
     phases: [P.LANDSCAPE], finale: [S.UNCOMMITTED], objectives: ['shore-walk', 'first-stair'], checkpoints: [],
@@ -180,78 +185,99 @@ export const STAGES = Object.freeze([
     measure: () => [['Length', cells(SOURCE_SHORE_DIRECT_METRES / CELL)], ['Direct ordinary walk', `${number(SOURCE_SHORE_DIRECT_SECONDS)} s`]],
     cites: [
       ['The fixed shores and body elevation', at(RUNTIME, 'function sourceShoreFrame() {')],
+      ['The nearby demolition and finite pocket', at('src/data/source-demolition.js', 'export const SOURCE_DEMOLITION = freeze({')],
       ['What moves you on', at(RUNTIME, "dispatch({type:'SOURCE_APPROACH_COMPLETED'")],
       ['The rule it passes', at(STATE, "case 'SOURCE_APPROACH_COMPLETED':")],
     ],
     presets: [], jump: [], puzzles: [],
-    specs: ['test/source-approach.spec.mjs', 'test/source-hanging-shore.spec.mjs'],
+    specs: ['test/source-approach.spec.mjs', 'test/source-hanging-shore.spec.mjs', 'test/source-demolition-integration.spec.mjs'],
   },
   {
     id: 'field', section: 'field', lane: 'shared', short: 'The field', title: 'The field',
-    where: `${SOURCE_FIELD_TIERS.length} tiers of ground joined by staircases, with the building’s source code standing on them as text.`,
-    happens: 'The HUSH is already out there when you arrive, and starts hunting once you climb the first stair. Talking to it is how the fight at the top becomes possible. The landmarks stand on the tiers; none of them is required.',
-    moveOn: 'Reach the final page, on the top tier.',
+    where: 'The finite Braided Divide beyond the exposed strata: broken lower ground, middle and upper banks, ramps, model crossings and passages beneath them.',
+    happens: 'HUSH follows the trail you leave, but does not close the gap merely because you stand still. Walk back into speaking range to choose a conversation or warned Contact. The west-bank Last Reception is optional. Ground gaps can cause a fall cut back to the forecourt; landmarks and the older tier identifiers remain available.',
+    moveOn: 'Explore the connected banks and crossings, then reach the original final page and grey goods pair.',
     callouts: [
-      { kind: 'gate', text: `The fight at the final page is only offered after ${SOURCE_CONTACT_TALKS_REQUIRED} talks with the HUSH, face to face or on the radio.` },
-      { kind: 'saves', text: 'Every tier you climb onto saves a checkpoint.' },
+      { kind: 'fork', text: 'Approaching HUSH and explicitly confirming the warning starts Contact. Questions, radio history and equipment never grant permission to leave or fight.' },
+      { kind: 'note', text: 'A four-tier compatibility table remains in the level data; the live Divide support and collision decide where the body can actually stand.' },
     ],
     phases: [P.LANDSCAPE], finale: [S.UNCOMMITTED], objectives: ['final-horizon'], checkpoints: [],
-    next: [{ to: 'final-page', when: 'standing at the final page' }],
-    span: () => SOURCE_TIER_BY_ID.arrival.from - SOURCE_TIER_BY_ID.return.to - SOURCE_APPROACH_CELLS,
+    next: [{ to: 'last-reception', when: 'optional: enter the west-bank room', branch: true }, { to: 'contact', when: 'approach HUSH and confirm the separate warning', branch: true }, { to: 'final-page', when: 'reach the original final landmark' }],
+    span: () => SOURCE_BRAIDED_DIVIDE.length / CELL,
     measure: () => [
-      ...SOURCE_FIELD_TIERS.map((tier) => [`Tier: ${tier.id}`, `${cells(tier.from - tier.to)} · ${number(tier.height)} m up`]),
-      ['Staircases', String(SOURCE_CHUTES.length)],
+      ['Length', cells(SOURCE_BRAIDED_DIVIDE.length / CELL)],
+      ['Width', `${number(SOURCE_BRAIDED_DIVIDE.maxX - SOURCE_BRAIDED_DIVIDE.minX)} m`],
+      ['Bank heights', [SOURCE_BRAIDED_DIVIDE.lower, SOURCE_BRAIDED_DIVIDE.middle, SOURCE_BRAIDED_DIVIDE.upper].map(height => `${number(height)} m`).join(' · ')],
       ['Landmarks', Object.entries(SOURCE_LANDMARK_TIER).map(([id, tier]) => `${id} (${tier})`).join(' · ')],
-      ['Talks before the fight', String(SOURCE_CONTACT_TALKS_REQUIRED)],
+      ['Contact knowledge gate', 'none; proximity and an explicit warned commitment'],
     ],
     cites: [
-      ['The first stair', at(RUNTIME, "dispatch({ type: 'SOURCE_LIFT_COMPLETED', id: 'lift-fork', checkpointId }")],
+      ['The actual connected ground and model banks', at('src/data/source-braided-divide.js', 'export const SOURCE_DIVIDE_GROUND = freeze([')],
+      ['The open strata release', at(RUNTIME, "dispatch({type:'SOURCE_LIFT_COMPLETED',id:'lift-fork'")],
       ['What moves you on', at(RUNTIME, "dispatch({ type: 'FINAL_REACHED' }")],
       ['The rule it passes', at(STATE, "case 'FINAL_REACHED':")],
-      ['How many talks', at('src/game/source-contact.js', 'export const SOURCE_CONTACT_TALKS_REQUIRED')],
+      ['The voluntary meeting and fight authority', at(STATE, 'export function sourceBossAvailable(value) {')],
+      ['Waiting does not start pursuit', at('src/game/source-hush-follow.js', "if (intent === 'follow') {")],
     ],
     presets: [G.FIRST_LIFT, G.FIRST_CONTACT, G.ALL_INSIGHTS, G.LANDSCAPE, G.HUNT, G.FINAL_RUN], jump: [], puzzles: ['source-contact'],
-    specs: ['test/source-level.spec.mjs', 'test/source-traversal.spec.mjs', 'test/source-space-chapter.spec.mjs', 'test/source-contact.spec.mjs'],
+    specs: ['test/source-level.spec.mjs', 'test/source-braided-divide.spec.mjs', 'test/source-braided-runtime.spec.mjs', 'test/source-contact-runtime.spec.mjs'],
   },
   {
-    id: 'final-page', section: 'field', lane: 'shared', short: 'Final page', title: 'The final page, and the transport',
-    where: 'The far edge of the top tier, beside the grey doors.',
-    happens: 'The transport has to be threaded before anything else happens. Then the road forks: stay and fight the thing at the fault, or walk away through the grey doors.',
-    moveOn: 'Thread the transport, then choose.',
+    id: 'last-reception', section: 'field', lane: 'shared', short: 'Last Reception', title: 'The optional Last Reception',
+    where: 'A human-sized lounge and return room on the west middle bank, with a service passage and an upper gallery.',
+    happens: 'Residents offer a reception that can turn into convergence and a held-chair encounter. Leaving or being released returns to the same field. This optional room never replaces Contact, the original goods pair or the continuation.',
+    moveOn: 'Leave through the main or service opening and continue exploring Source I.',
+    callouts: [{ kind: 'can-return', text: 'Both architectural openings and the room remain in the original field when the added rooms are visited.' }],
+    phases: [P.LANDSCAPE, P.FINAL], finale: [S.UNCOMMITTED], objectives: [], checkpoints: [],
+    next: [{ to: 'field', when: 'leave or return after the reception', back: true }],
+    span: () => null,
+    measure: () => [['Footprint', `${number(SOURCE_LAST_RECEPTION.bounds.maxX-SOURCE_LAST_RECEPTION.bounds.minX)} m × ${number(SOURCE_LAST_RECEPTION.bounds.maxZ-SOURCE_LAST_RECEPTION.bounds.minZ)} m`], ['Floor / gallery', `${number(SOURCE_LAST_RECEPTION.floor)} m / ${number(SOURCE_LAST_RECEPTION.galleryFloor)} m`]],
+    cites: [
+      ['The finite room and both openings', at('src/data/source-last-reception.js', 'export const SOURCE_LAST_RECEPTION = freeze({')],
+      ['The encounter and release', at('src/game/source-last-reception.js', 'export function updateLastReception(')],
+      ['The real runtime integration', at(RUNTIME, 'function tickLastReception(')],
+    ],
+    presets: [G.LAST_RECEPTION], jump: [], puzzles: [],
+    specs: ['test/source-last-reception-layout.spec.mjs', 'test/source-last-reception-integration.spec.mjs'],
+  },
+  {
+    id: 'final-page', section: 'field', lane: 'shared', short: 'Final page', title: 'The original final page',
+    where: 'The original landmark near the far edge of Source I; the grey goods pair is at the perimeter.',
+    happens: 'Arriving notes the final page. It is a landmark, not a transport menu. The live focus system does not create the older normal-exit or boss-fault pads; no dial, equipment check or required talk stands between the body and the goods pair.',
+    moveOn: 'Walk to the original grey goods doors, open them and cross.',
     callouts: [
-      { kind: 'gate', text: 'The transport is threaded first, on both roads. Until it is, neither road opens.' },
-      { kind: 'fork', text: 'Fight at the fault (Contact), or walk away. Walking away is always open; the fight only when the talks allow it.' },
+      { kind: 'note', text: 'The transport and redaction helpers remain compatibility code. Their puzzle links below do not describe live gates on this route.' },
       { kind: 'saves', text: 'Saved as the final page.' },
     ],
     phases: [P.FINAL], finale: [S.UNCOMMITTED], objectives: ['normal-exit', 'return-paths'], checkpoints: ['final-page'],
     next: [
-      { to: 'contact', when: 'commit to the fight', branch: true },
       { to: 'grey-doors', when: 'walk away' },
     ],
     span: () => null,
-    measure: () => [['Transport dials', HORIZON_TRANSPORT_DIALS.map((dial) => HORIZON_TRANSPORT_LABELS[dial] || dial).join(' · ')]],
+    measure: () => [['Required transport / equipment / talks', 'none']],
     cites: [
-      ['The transport comes first', at(RUNTIME, 'if (!horizonTransport.threaded) {')],
-      ['Choosing the fight', at(RUNTIME, 'function commitContact() {')],
-      ['Choosing to walk away', at(RUNTIME, 'function completeNormalExit() {')],
+      ['The live final-page focus policy', at(RUNTIME, '// The final sheet is a landmark, not a transport puzzle or fight menu.')],
+      ['The landmark arrival', at(RUNTIME, "dispatch({ type: 'FINAL_REACHED' }")],
+      ['The actual walked exit intercept', at(RUNTIME, "const continuation = sourceContinuationEntry('forward');")],
     ],
     presets: [G.FINAL, G.NORMAL_EXIT], jump: [], puzzles: ['horizon-transport', 'redaction'],
     specs: ['test/horizon-transport.spec.mjs', 'test/source-finale-routes.spec.mjs'],
   },
   {
-    id: 'contact', section: 'contact', lane: 'contact', short: 'Contact', title: 'Contact: the fight at the fault',
-    where: 'At the fault by the final page.',
-    happens: 'A fight you commit to before it starts. Win or lose, the run ends here.',
-    moveOn: 'Commit, then win or lose the fight.',
+    id: 'contact', section: 'contact', lane: 'contact', short: 'Contact', title: 'Contact: the voluntary HUSH encounters',
+    where: 'Within speaking range of the actual HUSH body in the field.',
+    happens: 'Each fight requires a separate warning and explicit commitment. The first two wins return to Source I with the route uncommitted, so exploration or walking away is possible again. The third win resolves Contact; any committed loss resolves its losing ending.',
+    moveOn: 'Choose each commitment. Win all three encounters for the Contact victory, or leave the field after a partial win.',
     callouts: [
-      { kind: 'no-return', text: 'Committing is final. This road never reaches the tape, so the chapel and the tower are gone.' },
+      { kind: 'no-return', text: 'A committed bout cannot be exchanged for a safer route. During it, the continuation and normal exit refuse entry.' },
+      { kind: 'can-return', text: 'The first two wins release the commitment; returning to the field does not secretly enroll you in another fight.' },
       { kind: 'note', text: 'Losing here ends the run too. It is not a way back onto the other roads.' },
     ],
     phases: [P.FINAL, P.COMPLETED], finale: [S.CONTACT_COMMITTED, S.RESOLVED], objectives: [], checkpoints: [],
-    next: [{ to: 'ending:contact', when: 'win or lose' }],
+    next: [{ to: 'ending:contact', when: 'third victory or any committed loss' }, { to: 'field', when: 'after either of the first two victories', back: true }],
     road: 'contact',
     span: () => null,
-    measure: () => [['Talks it takes to be offered', String(SOURCE_CONTACT_TALKS_REQUIRED)]],
+    measure: () => [['Victories for the Contact ending', String(SOURCE_HUSH_VICTORIES_REQUIRED)], ['Required prior talks / equipment', 'none']],
     cites: [
       ['The commitment', at(STATE, "case 'CONTACT_COMMITTED':")],
       ['Winning', at(RUNTIME, 'function resolveFinalEncounter(result = {}) {')],
@@ -264,36 +290,110 @@ export const STAGES = Object.freeze([
   {
     id: 'grey-doors', section: 'away', lane: 'away', short: 'Grey doors', title: 'The grey goods doors',
     where: 'The edge of the field. Nothing else at the edge lets you across.',
-    happens: 'You open them and walk through, and they shut behind you once you are clear.',
-    moveOn: 'Walk through the open doors.',
+    happens: 'The real pair keeps its fixed opening and collision. On a fresh normal route, crossing enters the added Wrong Return scene while Source I and its original body remain intact. False echo pairs still erase themselves. Saves already beyond the old handoff retain their existing onward journey.',
+    moveOn: 'Open and walk through the real pair to enter Wrong Return.',
     callouts: [
-      { kind: 'can-return', text: 'Until you have spoken to the bust on the tape, walking back through puts you in the field again.' },
-      { kind: 'saves', text: 'Saved as the landing horizon.' },
+      { kind: 'can-return', text: 'Visible refuge portals return to this original approach with continuation progress intact. Until the bust has an answer, returning from the physical road reopens the final Catch balcony.' },
+      { kind: 'saves', text: 'The new route lives in chunkSurf.sourceContinuation. Source I remains uncommitted until the final Catch door is physically crossed.' },
     ],
-    phases: [P.HORIZON], finale: [S.HORIZON], objectives: [], checkpoints: ['landing-horizon'],
+    phases: [P.LANDSCAPE, P.FINAL, P.HORIZON], finale: [S.UNCOMMITTED, S.HORIZON], objectives: [], checkpoints: [],
     next: [
-      { to: 'nothing', when: 'through the doors' },
-      { to: 'field', when: 'back, until the bust has had its answer', back: true },
+      { to: 'wrong-return', when: 'fresh forward crossing' },
+      { to: 'nothing', when: 'legacy save already beyond the original handoff' },
+      { to: 'catch', when: 'reverse from the road before the bust decision, after completing the added route', back: true },
     ],
     span: () => null,
     measure: (k) => [['Shut behind you after', `${number(k.closeBehind)} cells`]],
     cites: [
       ['Opening them', at(RUNTIME, 'function openEdgeDoor(')],
-      ['Walking through', at(RUNTIME, 'const result=completeNormalExit();')],
-      ['The rule it passes', at(STATE, "case 'SOURCE_NORMAL_EXIT': {")],
-      ['Going back', at(RUNTIME, "dispatch({type:'SOURCE_FIELD_RETURNED'},{immediate:true});")],
+      ['The fresh-route intercept and legacy bypass', at(RUNTIME, "const continuation = sourceContinuationEntry('forward');")],
+      ['Route and Contact authority', at(RUNTIME, "function sourceContinuationEntry(direction = 'forward'")],
+      ['Returning to the original approach', at(RUNTIME, 'function returnContinuation(')],
     ],
     presets: [], jump: [{ probe: 'walkToEdgeDoor', call: '__probe.walkToEdgeDoor()' }, { probe: 'openEdgeDoor', call: '__probe.openEdgeDoor()' }], puzzles: [],
-    specs: ['test/source-edge-door.spec.mjs'],
+    specs: ['test/source-edge-door.spec.mjs', 'test/source-continuation-integration.spec.mjs'],
+  },
+  {
+    id: 'wrong-return', section: 'away', lane: 'away', short: 'Wrong Return', title: 'Source II: Wrong Return',
+    where: 'Beyond the original goods pair, in a separate finite room whose apparent return comes back above the entrance.',
+    happens: 'Walk the west side to the far room, cross to the east ramp and return three metres higher. The upper porch is a false return. A warned closing front advances along that route; the matching seam and refuge remain to the west. Opening the seam door and walking across its bridge enters the Catch.',
+    moveOn: 'Find the upper door with the matching seam, open it and walk west across the transfer.',
+    callouts: [
+      { kind: 'can-return', text: 'The entrance and refuge return portals restore the original Source I goods-door approach. Progress survives leaving, pause, title and reload.' },
+      { kind: 'note', text: 'For a direct test fixture, open the SOURCE god-menu tab below and select SOURCE II / WRONG RETURN. The menu is a developer shortcut; ordinary entry uses the original physical pair.' },
+    ],
+    phases: [P.LANDSCAPE, P.FINAL], finale: [S.UNCOMMITTED], objectives: [], checkpoints: [],
+    next: [{ to: 'catch', when: 'walk across the opened seam-door bridge' }, { to: 'field', when: 'choose a return portal', back: true }],
+    span: () => null,
+    measure: () => { const surfaces=continuationSurfaces('wrong-return');return [
+      ['Finite footprint', `${number(Math.max(...surfaces.map(s=>s.maxX))-Math.min(...surfaces.map(s=>s.minX)))} m × ${number(Math.max(...surfaces.map(s=>s.maxZ))-Math.min(...surfaces.map(s=>s.minZ)))} m`],
+      ['Rise', '3 m'], ['Closure warning', `${number(SOURCE_CONTINUATION.wrongReturn.warningSeconds)} s`], ['Closing front', `${number(SOURCE_CONTINUATION.wrongReturn.closureSpeed)} m/s`],
+    ]; },
+    cites: [
+      ['Shared finite surfaces and the ramp', at(CONTINUATION_DATA, 'const wrongSurfaces = [')],
+      ['The real closing front and physical transfer', at(CONTINUATION, "if (state.phase === 'wrong-return') {")],
+      ['The checkpoint and borrowed-world owner', at(MAIN, 'async function beginSourceContinuation(')],
+      ['Pause, loading and error return', at(CONTINUATION_SCENE, 'export function createSourceContinuationScene(')],
+    ],
+    presets: [], jump: [{probe:'godMenu',call:"__probe.godMenu('source-space')"}], puzzles: [],
+    specs: ['test/source-continuation.spec.mjs', 'test/source-continuation-renderer.spec.mjs', 'test/source-continuation-integration.spec.mjs'],
+  },
+  {
+    id: 'catch', section: 'away', lane: 'away', short: 'The Catch', title: 'Source III: The Catch',
+    where: 'A top-down view of a finite shaft with offset openings and six catch levels.',
+    happens: 'The visible player walks the actual supported shelves. A chosen lip releases the body into a continuous fall; offset openings decide where the next shelf catches it. A warned physical counterweight follows the shaft and can cause a bounded recovery. The lowest ordinary balcony holds the final grey pair.',
+    moveOn: 'Choose successive drops, reach the final balcony, open the pair with E and physically walk through its plane.',
+    callouts: [
+      { kind: 'can-return', text: 'Every shelf and the recovery floor has a visible portal to the original Source I approach. A forward revisit resumes the saved shelf; a reverse visit from the road opens the final balcony. This is not a backwards staircase.' },
+      { kind: 'gate', text: 'Opening the final pair is insufficient. Only the walked crossing creates the exit receipt, dispatches the original normal exit and requests the existing drive handoff.' },
+      { kind: 'note', text: 'For a direct test fixture, open the SOURCE god-menu tab below and select SOURCE III / THE CATCH.' },
+    ],
+    phases: [P.LANDSCAPE, P.FINAL, P.HORIZON], finale: [S.UNCOMMITTED, S.HORIZON], objectives: [], checkpoints: ['landing-horizon'],
+    next: [{ to: 'source-drive', when: 'first final-door crossing, before the existing drive has returned' }, { to: 'nothing', when: 'final crossing after that drive is already complete' }, { to: 'field', when: 'choose any refuge return', back: true }],
+    span: () => null,
+    measure: () => [
+      ['Footprint', `${number(SOURCE_CONTINUATION.catch.outer.maxX-SOURCE_CONTINUATION.catch.outer.minX)} m × ${number(SOURCE_CONTINUATION.catch.outer.maxZ-SOURCE_CONTINUATION.catch.outer.minZ)} m`],
+      ['Catch levels / interval', `${SOURCE_CONTINUATION.catch.levels} / ${number(SOURCE_CONTINUATION.catch.layerDrop)} m`],
+      ['Final balcony / recovery floor', `${number(SOURCE_CONTINUATION.catch.finalApproach.feet)} m / ${number(continuationCatchFloor(SOURCE_CONTINUATION.catch.levels))} m`],
+      ['Counterweight warning / speed', `${number(SOURCE_CONTINUATION.catch.counterweightWarningSeconds)} s / ${number(SOURCE_CONTINUATION.catch.counterweightSpeed)} m/s`],
+      ['Recovery / grace', `${number(SOURCE_CONTINUATION.recoverySeconds)} s / ${number(SOURCE_CONTINUATION.graceSeconds)} s`],
+    ],
+    cites: [
+      ['The actual shelf surfaces and openings', at(CONTINUATION_DATA, 'const catchSurfaces = [];')],
+      ['Supported movement, falls and counterweight', at(CONTINUATION, 'function fallStep(')],
+      ['The final open-then-cross condition', at(CONTINUATION, "state.doorOpen['catch-final']")],
+      ['The original normal exit and one-time receipt', at(RUNTIME, 'function completeContinuation(')],
+      ['The existing drive handoff', at(MAIN, 'async function deliverSourceContinuationHandoff(')],
+    ],
+    presets: [], jump: [{probe:'godMenu',call:"__probe.godMenu('source-space')"}], puzzles: [],
+    specs: ['test/source-continuation.spec.mjs', 'test/source-continuation-renderer.spec.mjs', 'test/source-continuation-integration.spec.mjs'],
+  },
+  {
+    id: 'source-drive', section: 'away', lane: 'away', short: 'The Cut', title: 'The existing Source drive',
+    where: 'The familiar vehicle interior, borrowed after the final Catch door and before the physical still ground.',
+    happens: 'The existing drive, recorder, radio, weather and journey persist as their own session. Its actual parked dismount returns to the original-world goods-door checkpoint. The continuation receipt is acknowledged only after this drive has acquired a resumable checkpoint; a returned drive is never replayed on a revisit.',
+    moveOn: 'Complete the drive, park and choose to leave the van. Then walk the original physical outskirts.',
+    callouts: [{kind:'note',text:'This is the existing drive sequence, preserved in front of the original still ground, recurring street, optional Source pub and tape.'}],
+    phases: [P.HORIZON], finale: [S.HORIZON], objectives: [], checkpoints: [],
+    next: [{to:'nothing',when:'the original drive returns its exterior pose'}],
+    span: () => null,
+    measure: () => [['Persistence', 'sourceDrive, separate from chunkSurf.sourceContinuation']],
+    cites: [
+      ['The preserved drive session', at(MAIN, 'async function beginSourceDriveJourney(')],
+      ['The actual parked dismount and returned receipt', at('src/game/source-drive-session.js', 'function finish() {')],
+      ['Onward handoff and acknowledgement', at(MAIN, 'async function deliverSourceContinuationHandoff(')],
+    ],
+    presets: [], jump: [{probe:'sourceDrive',call:'__probe.sourceDrive.start()'}], puzzles: [],
+    specs: ['test/source-drive-session.test.mjs', 'test/source-drive-window-handoff.test.mjs', 'test/source-continuation-integration.spec.mjs'],
   },
   {
     id: 'nothing', section: 'away', lane: 'away', short: 'Still', title: 'The still ground',
-    where: 'Just past the grey doors: dark, dry ground with nothing standing on it.',
+    where: 'The original exterior checkpoint after the drive returns: dark, dry ground with nothing standing on it.',
     happens: 'Silence, and the doors shutting behind you. The picture on the horizon is a long way off, and the first lamps of a road stand ahead.',
     moveOn: 'Walk on until the road starts under you.',
     callouts: [{ kind: 'note', text: 'The recording has not started. Everything out here plays at second zero of the tape.' }],
     phases: [P.HORIZON], finale: [S.HORIZON], objectives: ['horizon-walk'], checkpoints: [],
-    next: [{ to: 'arrival-night', when: 'where the road starts' }],
+    next: [{ to: 'arrival-night', when: 'where the road starts' }, { to: 'catch', when: 'back through the original pair before the bust decision, after the continuation is complete', back: true }],
     span: () => SOURCE_NOTHING_LENGTH,
     measure: () => [['Length', cells(SOURCE_NOTHING_LENGTH)]],
     cites: [['Its length', at(LEVEL, 'export const SOURCE_NOTHING_LENGTH')]],
@@ -307,7 +407,7 @@ export const STAGES = Object.freeze([
     moveOn: 'Keep walking. The road runs out a short walk from the head of the tape.',
     callouts: [{ kind: 'note', text: 'It rains on the road, and only on the road.' }],
     phases: [P.HORIZON], finale: [S.HORIZON], objectives: ['horizon-walk'], checkpoints: [],
-    next: [{ to: 'tape', when: 'at the head of the tape' }],
+    next: [{ to: 'source-pub', when: 'optional: favors completed, last-light recording heard, and the Lyric threshold chosen', branch: true }, { to: 'tape', when: 'at the head of the tape' }],
     span: () => SOURCE_OUTSKIRTS_LENGTH,
     measure: () => [
       ['Length', cells(SOURCE_OUTSKIRTS_LENGTH)],
@@ -322,6 +422,24 @@ export const STAGES = Object.freeze([
     ],
     presets: [], jump: [{ probe: 'preTapePreset', call: `__probe.preTapePreset(${SOURCE_NOTHING_LENGTH + 12})` }], puzzles: [],
     specs: ['test/source-outskirts.spec.mjs'],
+  },
+  {
+    id: 'source-pub', section: 'away', lane: 'away', short: 'The lower Lyric', title: 'The optional Source pub',
+    where: 'A fixed Lyric entrance near the original last-light point on the physical road, available after Iona’s ordinary-world favors and the recording.',
+    happens: 'Iona is warmly oblivious in a colder unfinished bar. Five rounds ask for increasingly distant work among cask stacks. An empty tray and then a barrel drop through real openings; following either is a chosen descent into a lower room. The final errand leaves one clean glass. The road and tape remain where they were.',
+    moveOn: 'Choose whether to help. Use the room’s explicit exit to restore the exact physical-road pose, then continue to the tape.',
+    callouts: [{kind:'can-return',text:'The room is optional, persists independently and returns to the same road pose. Its falls never move the ordinary Source body or commit Contact or a bust branch.'}],
+    phases: [P.HORIZON], finale: [S.HORIZON], objectives: [], checkpoints: [],
+    next: [{to:'arrival-night',when:'leave the Lyric and resume the original road',back:true}],
+    span: () => null,
+    measure: () => [['Rounds / chosen service actions', `${SOURCE_PUB.rounds.length} / ${SOURCE_PUB.rounds.reduce((n,round)=>n+round.tasks.length,0)}`], ['Layer interval', `${number(SOURCE_PUB.layerDrop)} m`]],
+    cites: [
+      ['The actual prerequisites and fixed entrance', at(MAIN, 'function sourcePubEntranceFrame(){')],
+      ['The five rounds and two chosen descents', at('src/data/source-pub.js', 'export const SOURCE_PUB=freeze({')],
+      ['The borrowed-world and return owner', at(MAIN, 'async function beginSourcePubJourney(')],
+    ],
+    presets: [], jump: [{probe:'sourcePub',call:'__probe.sourcePub.fixture()'}], puzzles: [],
+    specs: ['test/source-pub.spec.mjs', 'test/source-pub-main.spec.mjs', 'test/source-pub-renderer.spec.mjs'],
   },
   {
     id: 'tape', section: 'away', lane: 'away', short: 'The tape', title: 'The tape',
@@ -594,9 +712,10 @@ function layout(stages, k) {
     }
     return x;
   };
-  const forkAt = place(['hall', 'haystack', 'crossing', 'scene-dock', 'white-walk', 'field', 'final-page'], 'shared', 0);
+  const forkAt = place(['hall', 'haystack', 'crossing', 'scene-dock', 'white-walk', 'field'], 'shared', 0);
+  const awayAt = place(['final-page'], 'shared', forkAt);
   const contactEnd = place(['contact'], 'contact', forkAt + MOMENT / 2);
-  const tapeEnd = place(['grey-doors', 'nothing', 'arrival-night', 'tape'], 'shared', forkAt);
+  const tapeEnd = place(['grey-doors', 'wrong-return', 'catch', 'source-drive', 'nothing', 'arrival-night', 'tape'], 'shared', awayAt);
   const tapeStart = tapeEnd - (by.get('tape').length || 0);
   const bustAt = tapeStart + (Number(k.bustDepth) || 0);
   // The home errand is a side trip listed below, not extra distance between the
@@ -607,7 +726,7 @@ function layout(stages, k) {
   return {
     moment: MOMENT,
     segments,
-    forks: [{ id: 'final-page', x: forkAt, to: 'contact', label: 'first fork' }, { id: 'tape', x: bustAt, to: 'tower', label: 'the bust' }],
+    forks: [{ id: 'field', x: forkAt, to: 'contact', label: 'voluntary Contact' }, { id: 'tape', x: bustAt, to: 'tower', label: 'the bust' }],
     towerCut: { x0: bustAt, x1: tapeEnd },
     contactFrom: forkAt,
     ends: [

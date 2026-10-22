@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "atUTC": "2026-10-21T02:12:33.229Z",
+  "failure": null,
+  "checks": [
+    {
+      "name": "four subtle refinement cards",
+      "passed": true
+    },
+    {
+      "name": "current live41 displayed",
+      "passed": true
+    },
+    {
+      "name": "four current AV captures",
+      "passed": true
+    },
+    {
+      "name": "participant pending remains explicit",
+      "passed": true
+    },
+    {
+      "name": "eleven regional recommendations retained",
+      "passed": true
+    },
+    {
+      "name": "empty search works",
+      "passed": true
+    },
+    {
+      "name": "search restores regions",
+      "passed": true
+    },
+    {
+      "name": "saved capture metadata loads",
+      "passed": true
+    },
+    {
+      "name": "no broken images",
+      "passed": true
+    },
+    {
+      "name": "no desktop overflow",
+      "passed": true
+    },
+    {
+      "name": "no mobile overflow",
+      "passed": true
+    },
+    {
+      "name": "report JavaScript no exceptions",
+      "passed": true
+    }
+  ],
+  "media": [
+    {
+      "src": "rollout-furniture.webm",
+      "readyState": 4,
+      "duration": 10.779,
+      "error": null
+    },
+    {
+      "src": "rollout-malcolm.webm",
+      "readyState": 4,
+      "duration": 5.86,
+      "error": null
+    },
+    {
+      "src": "rollout-trace.webm",
+      "readyState": 4,
+      "duration": 1.358,
+      "error": null
+    },
+    {
+      "src": "rollout-door.webm",
+      "readyState": 4,
+      "duration": 4.003,
+      "error": null
+    }
+  ],
+  "brokenImages": [],
+  "errors": [],
+  "records": "Loaded 14 evidence records. Generated on page load; source audit snapshots, retained fork proof and new rollout receipts remain distinct.",
+  "method": "Browser report display and controls only, separate from game encounter checks and player validation."
+}

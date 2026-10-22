@@ -1,0 +1,235 @@
+{
+  "characters": [
+    {
+      "id": "district-mews-neighbor",
+      "mesh": "district_mews_neighbor",
+      "source": "male",
+      "wardrobe": "cardigan",
+      "headwear": "flat-cap",
+      "accessory": null,
+      "posture": "standing",
+      "vertices": 9015,
+      "triangles": 16734
+    },
+    {
+      "id": "district-pub-driver",
+      "mesh": "district_pub_driver",
+      "source": "male",
+      "wardrobe": "work-jacket",
+      "headwear": "flat-cap",
+      "accessory": null,
+      "posture": "standing",
+      "vertices": 9053,
+      "triangles": 16738
+    },
+    {
+      "id": "vigil-crowd-east-1",
+      "mesh": "vigil_crowd_east_1",
+      "source": "female",
+      "wardrobe": "duffle",
+      "headwear": "hood",
+      "accessory": "placard",
+      "posture": "standing",
+      "vertices": 8282,
+      "triangles": 15394
+    },
+    {
+      "id": "vigil-crowd-east-2",
+      "mesh": "vigil_crowd_east_2",
+      "source": "male",
+      "wardrobe": "raincoat",
+      "headwear": null,
+      "accessory": "umbrella",
+      "posture": "standing",
+      "vertices": 9478,
+      "triangles": 17344
+    },
+    {
+      "id": "vigil-crowd-east-3",
+      "mesh": "vigil_crowd_east_3",
+      "source": "female",
+      "wardrobe": "anorak",
+      "headwear": null,
+      "accessory": "pamphlets",
+      "posture": "standing",
+      "vertices": 8272,
+      "triangles": 15422
+    },
+    {
+      "id": "vigil-crowd-east-4",
+      "mesh": "vigil_crowd_east_4",
+      "source": "female",
+      "wardrobe": "cardigan",
+      "headwear": "knit-cap",
+      "accessory": "blanket",
+      "posture": "seated",
+      "vertices": 8875,
+      "triangles": 16674
+    },
+    {
+      "id": "vigil-crowd-west-1",
+      "mesh": "vigil_crowd_west_1",
+      "source": "female",
+      "wardrobe": "anorak",
+      "headwear": "hood",
+      "accessory": "umbrella",
+      "posture": "standing",
+      "vertices": 8629,
+      "triangles": 15926
+    },
+    {
+      "id": "vigil-crowd-west-2",
+      "mesh": "vigil_crowd_west_2",
+      "source": "male",
+      "wardrobe": "cardigan",
+      "headwear": null,
+      "accessory": "flask",
+      "posture": "standing",
+      "vertices": 9617,
+      "triangles": 17558
+    },
+    {
+      "id": "vigil-crowd-west-3",
+      "mesh": "vigil_crowd_west_3",
+      "source": "male",
+      "wardrobe": "duffle",
+      "headwear": "hood",
+      "accessory": "blanket",
+      "posture": "seated",
+      "vertices": 9919,
+      "triangles": 18314
+    },
+    {
+      "id": "vigil-crowd-verge-1",
+      "mesh": "vigil_crowd_verge_1",
+      "source": "male",
+      "wardrobe": "raincoat",
+      "headwear": null,
+      "accessory": "placard",
+      "posture": "standing",
+      "vertices": 8925,
+      "triangles": 16708
+    },
+    {
+      "id": "vigil-crowd-verge-2",
+      "mesh": "vigil_crowd_verge_2",
+      "source": "female",
+      "wardrobe": "raincoat",
+      "headwear": "knit-cap",
+      "accessory": "umbrella",
+      "posture": "standing",
+      "vertices": 8929,
+      "triangles": 16656
+    },
+    {
+      "id": "vigil-crowd-verge-3",
+      "mesh": "vigil_crowd_verge_3",
+      "source": "female",
+      "wardrobe": "duffle",
+      "headwear": null,
+      "accessory": "flask",
+      "posture": "standing",
+      "vertices": 9492,
+      "triangles": 17384
+    },
+    {
+      "id": "vigil-crowd-verge-4",
+      "mesh": "vigil_crowd_verge_4",
+      "source": "male",
+      "wardrobe": "anorak",
+      "headwear": "hood",
+      "accessory": "pamphlets",
+      "posture": "standing",
+      "vertices": 9261,
+      "triangles": 16870
+    },
+    {
+      "id": "vigil-crowd-knot-1",
+      "mesh": "vigil_crowd_knot_1",
+      "source": "male",
+      "wardrobe": "work-jacket",
+      "headwear": null,
+      "accessory": "camera",
+      "posture": "standing",
+      "vertices": 9241,
+      "triangles": 17066
+    },
+    {
+      "id": "vigil-crowd-knot-2",
+      "mesh": "vigil_crowd_knot_2",
+      "source": "male",
+      "wardrobe": "duffle",
+      "headwear": "flat-cap",
+      "accessory": "umbrella",
+      "posture": "standing",
+      "vertices": 10248,
+      "triangles": 18764
+    },
+    {
+      "id": "vigil-crowd-knot-3",
+      "mesh": "vigil_crowd_knot_3",
+      "source": "female",
+      "wardrobe": "raincoat",
+      "headwear": null,
+      "accessory": "blanket",
+      "posture": "seated",
+      "vertices": 8334,
+      "triangles": 15700
+    },
+    {
+      "id": "vigil-crowd-knot-4",
+      "mesh": "vigil_crowd_knot_4",
+      "source": "female",
+      "wardrobe": "raincoat",
+      "headwear": "knit-cap",
+      "accessory": "placard",
+      "posture": "standing",
+      "vertices": 9096,
+      "triangles": 17180
+    },
+    {
+      "id": "vigil-crowd-porch-1",
+      "mesh": "vigil_crowd_porch_1",
+      "source": "male",
+      "wardrobe": "anorak",
+      "headwear": "hood",
+      "accessory": "umbrella",
+      "posture": "standing",
+      "vertices": 9343,
+      "triangles": 17108
+    },
+    {
+      "id": "vigil-crowd-porch-2",
+      "mesh": "vigil_crowd_porch_2",
+      "source": "male",
+      "wardrobe": "raincoat",
+      "headwear": "flat-cap",
+      "accessory": "flask",
+      "posture": "standing",
+      "vertices": 10253,
+      "triangles": 18572
+    },
+    {
+      "id": "vigil-crowd-porch-3",
+      "mesh": "vigil_crowd_porch_3",
+      "source": "female",
+      "wardrobe": "work-jacket",
+      "headwear": "knit-cap",
+      "accessory": "camera",
+      "posture": "standing",
+      "vertices": 8595,
+      "triangles": 16022
+    }
+  ],
+  "shared": {
+    "rigs": 2,
+    "jointsPerRig": 54,
+    "wardrobeStyles": 5,
+    "uniqueAccessors": 508,
+    "reusedAccessors": 719,
+    "geometryLibraryEntries": 48
+  },
+  "characterBytes": 4405072,
+  "propBytes": 19464,
+  "totalTriangles": 338134
+}

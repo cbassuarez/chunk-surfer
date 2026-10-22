@@ -34,6 +34,7 @@ import {
   elleryMassingAt,
 } from '../exterior-district.js';
 import { mainStairFloorplanFlights, mainStairFloorplanLandings } from '../main-stair-geometry.js';
+import { LOADING_BAY_ACCESS, LOADING_BAY_ACCESS_PORTALS, loadingBayStairFloorAt } from '../loading-bay-access.js';
 import { ACADEMIC_ROOF, ACADEMIC_ROOF_LEVELS, ACADEMIC_ROOF_PORTALS } from '../academic-roof.js';
 import { streetPilotFloorAt } from '../street-pilot.js';
 import { EXTERIOR_FOREGROUND, foregroundGardenGlyphAt, foregroundArrivalGlyphAt, foregroundCathedralGlyphAt } from '../exterior-foreground.js';
@@ -412,7 +413,7 @@ function academicFloorRows(){
       if(x>=29&&x<=38&&y>=8&&y<=20)c=' ';
       // The north service threshold opens over the real street grade, clear
       // of the concert hall's occupied mass. It is a real door-sized opening;
-      // the roof-access runtime holds it shut until the staff/recorder check.
+      // the roof-access runtime holds it shut until the staff key / word lock.
       // Register the walkable aperture with the existing fixed frame/leaf,
       // centred at physical x94. The portal's three lanes sit inside it.
       if(y===2&&x>=43&&x<=44)c='Q';
@@ -537,7 +538,11 @@ function academicStairLoggiaProfile(x,y,cell){
   if(cell.solid)return profile;
   const px=54+x+.5,pz=34+y+.5;
   const insideHero=Math.hypot(px-63,pz-36)<=3.35;
-  const onLanding=px>=63&&px<=70&&pz>=36&&pz<=41;
+  // The radial head points south; the academic exit then turns west across a
+  // real two-metre apron. The old east-only allowance made every portal lane
+  // hit the stair's own collision-only exclusion one pace into the loggia.
+  // Stay south of the well and retain its northern clearance cylinder.
+  const onLanding=px>=60&&px<=70&&pz>=37&&pz<=40;
   if(insideHero&&!onLanding)return{...profile,collisionOnly:true,zone:ZONE.stair,flags:cell.flags&~F.MUTABLE};
   return profile;
 }
@@ -737,7 +742,7 @@ const YARD_MOUTH={y0:3,y1:12};
 // walls the dance wing comes back up under everything, so the cut is kept inside
 // the band the mouth can actually see — and the walls, which are solid to 5.5m,
 // hide both ends of it.
-const YARD_DROP=-0.85, YARD_DROP_FROM=45, YARD_RAMP_TO=38;
+const YARD_DROP=LOADING_BAY_ACCESS.drop, YARD_DROP_FROM=45, YARD_RAMP_TO=38;
 const YARD_DROP_BAND={y0:2,y1:11};
 // THE DOCK STEPS. A lorry uses the face; a person uses these.
 //
@@ -760,18 +765,10 @@ const YARD_DROP_BAND={y0:2,y1:11};
 // enough for head-relative/diagonal movement and are paired with directional
 // edge portals below, so crossing a flight never rewrites the player's logical
 // address merely because they walked along the apron.
-const YARD_STEP_RUN={x0:46,x1:49};
-const YARD_STEP_BAYS=Object.freeze([
-  Object.freeze({id:'north',y0:4,y1:5}),
-  Object.freeze({id:'goods',y0:9,y1:11}),
-]);
-const yardStepBayAt=(y)=>YARD_STEP_BAYS.find((bay)=>y>=bay.y0&&y<=bay.y1)||null;
 function yardFloorAt(x,y){
   if(y<YARD_DROP_BAND.y0||y>YARD_DROP_BAND.y1) return 0;
-  if(yardStepBayAt(y)&&x>=YARD_STEP_RUN.x0&&x<=YARD_STEP_RUN.x1){
-    const rise=(x-YARD_STEP_RUN.x0+1)/(YARD_STEP_RUN.x1-YARD_STEP_RUN.x0+2);
-    return YARD_DROP*(1-rise);
-  }
+  const stepFloor=loadingBayStairFloorAt(x,y);
+  if(stepFloor!==null)return stepFloor;
   if(x>=YARD_DROP_FROM) return YARD_DROP;
   if(x<=YARD_RAMP_TO) return 0;
   return YARD_DROP*((x-YARD_RAMP_TO)/(YARD_DROP_FROM-YARD_RAMP_TO));
@@ -1077,12 +1074,7 @@ export const conservatory = {
     // physical cells. These directional seams own the COMPLETE stair heads,
     // not one lucky half-metre tile. Width is authored metres and expands to
     // four north lanes plus six goods-door lanes at runtime.
-    {id:'loading-bay-north-steps',width:2,
-     from:{at:{x:50,y:4},along:{x:0,y:1},exit:{x:-1,y:0}},
-     to:{at:{x:99.5,y:204},along:{x:0,y:1},exit:{x:1,y:0}}},
-    {id:'loading-bay-goods-steps',width:3,
-     from:{at:{x:50,y:9},along:{x:0,y:1},exit:{x:-1,y:0}},
-     to:{at:{x:99.5,y:209},along:{x:0,y:1},exit:{x:1,y:0}}},
+    ...LOADING_BAY_ACCESS_PORTALS,
     {id:'ground-spine-to-stair-hall',width:4,
      from:{at:{x:61,y:24.5},along:{x:1,y:0},exit:{x:0,y:1}},
      to:{at:{x:138,y:20},along:{x:1,y:0},exit:{x:0,y:-1}}},
@@ -1111,8 +1103,8 @@ export const conservatory = {
      from:{at:{x:138,y:65},along:{x:1,y:0},exit:{x:0,y:1}},
      to:{at:{x:150,y:64},along:{x:1,y:0},exit:{x:0,y:-1}},tolerance:1.5},
     {id:'academic-floor-landing-to-loggia',width:2,
-     from:{at:{x:150,y:64},along:{x:0,y:1},exit:{x:-1,y:0}},
-     to:{at:{x:13.5,y:276.5},along:{x:0,y:1},exit:{x:1,y:0}}},
+     from:{at:{x:150,y:65},along:{x:0,y:1},exit:{x:-1,y:0}},
+     to:{at:{x:13.5,y:277.5},along:{x:0,y:1},exit:{x:1,y:0}}},
   ],
   connectors:[
     // Logical seams coincide at identical physical landings. Height changes

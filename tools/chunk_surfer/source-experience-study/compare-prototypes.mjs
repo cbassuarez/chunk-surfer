@@ -13,17 +13,19 @@ const requested=process.argv[2]||'all';assert.ok(['all','guidance','bust'].inclu
 const experiments=requested==='all'?['guidance','bust']:[requested];
 const conditions=(process.env.SOURCE_PROTOTYPE_CONDITIONS||'before,after').split(',');assert.ok(conditions.every(value=>['before','after'].includes(value)));
 const base=process.env.SOURCE_PROTOTYPE_URL||'http://127.0.0.1:5334/';
+const captureStills=process.env.SOURCE_PROTOTYPE_CAPTURE_STILLS!=='0';
 const root=process.cwd(),out=resolve(process.env.SOURCE_PROTOTYPE_OUT||'artifacts/source-experience-study/prototypes/native');
 const sleep=ms=>new Promise(done=>setTimeout(done,ms));
 await mkdir(out,{recursive:true});
 
-function simplifySnapshot(value){return {position:value.position,look:value.look,phase:value.source?.phase,focus:value.source?.focus,objective:value.source?.objective,
-  profile:value.source?.profile,checkpointId:value.source?.checkpointId,finale:value.source?.finale,scene:value.scene,recorder:value.recorder};}
+function simplifySnapshot(value){return {position:value.position,look:value.look,phase:value.source?.phase,focus:value.source?.focus?.kind,
+  objective:value.source?.objective?.id,checkpointId:value.source?.checkpointId,route:value.source?.finale?.route,decision:value.source?.finale?.bust?.decision,
+  scene:value.scene,recorderNote:value.recorder?.note,recorderSignal:value.recorder?.face?.meterLabel};}
 
 async function run(experiment,condition,browser){
   const dir=join(out,experiment.id,condition);await mkdir(dir,{recursive:true});
   const report={experiment:experiment.id,condition,scope:'Declared authored fixture; ordinary inputs after recording starts. Native browser canvas/audio evidence, not an earned or unbriefed chapter playthrough.',
-    manifest:experiment.path,manifestSha256:experiment.manifestSha,productionRuntimeSha256:experiment.sourceSha,
+    manifest:experiment.path,manifestSha256:experiment.manifestSha,productionRuntimeSha256:experiment.sourceSha,captureStills,
     fixtureMainSha256:experiment.mainSha,interceptions:[],snapshots:[],inputs:[],checks:[],errors:[]};
   let context,page,recording=false,failure=null;
   const check=(name,pass,detail)=>{report.checks.push({name,pass:!!pass,detail});if(!pass)throw new Error(`${name}: ${JSON.stringify(detail)}`);};
@@ -44,14 +46,17 @@ async function run(experiment,condition,browser){
     await preparePrototypeFixture(page,experiment.id);
     await sleep(1600);
     const snapshot=async name=>{
+      const began=Date.now();
       const value=await page.evaluate(()=>({at:performance.now(),...window.__sourceExperienceEvidence(),position:window.__probe.pos(),look:window.__probe.lookAngles(),
-        scene:window.__scenes?.top()?.id||null,view:window.__scenes?.top()?.view?.()||null,speech:window.__probe.speech(),recorder:window.__probe.tape?.().machine,
+        scene:window.__scenes?.top()?.id||null,view:window.__scenes?.top()?.view?.()||null,sceneBlocksInput:window.__scenes?.top()?.blocksInput??false,speech:window.__probe.speech(),recorder:window.__probe.tape?.().machine,
         edgeDoor:window.__probe.edgeDoor(),horizon:window.__probe.horizonFrame(),bust:window.__probe.bustReliquary(),audio:window.__probe.audio(),
         settings:window.__probe.settings(),pixelMesh:window.__chunkSurferPixelMesh?.status?.(),roomRender:window.__probe.sourceRoomRender?.(),
         lens:{active:!!window.__diffusion,stats:window.__diffusion?.stats||null},capture:window.__sourceExperienceCapture?.status?.()}));
       value.fixtureSetupFlags=await page.evaluate(()=>Object.fromEntries(['bag.taken','setup.levels','setup.waypoint','combat.trained'].map(flag=>[flag,window.__probe.flagValue(flag)])));
-      report.snapshots.push({name,...value});await page.screenshot({path:join(dir,`${name}.png`)});
-      if(recording){const encoded=await page.evaluate(()=>window.__sourceExperienceCapture.witness());await writeFile(join(dir,`${name}-canvas.png`),Buffer.from(encoded.split(',')[1],'base64'));}
+      report.snapshots.push({name,...value});
+      if(!recording||captureStills)await page.screenshot({path:join(dir,`${name}.png`)});
+      if(recording&&captureStills){const encoded=await page.evaluate(()=>window.__sourceExperienceCapture.witness());await writeFile(join(dir,`${name}-canvas.png`),Buffer.from(encoded.split(',')[1],'base64'));}
+      (report.snapshotInstrumentation||=[]).push({name,milliseconds:Date.now()-began,recording,stills:!recording||captureStills});
       console.log(JSON.stringify({experiment:experiment.id,condition,snapshot:name,...simplifySnapshot(value)}));return value;
     };
     const initial=await snapshot('00-initial-fixture');
@@ -81,7 +86,9 @@ async function run(experiment,condition,browser){
       check('native recorder receives expected source trace',recorder.recorder.note===expected,{expected,actual:recorder.recorder.note,face:recorder.recorder.face});
       const expectedSignal=condition==='after'?'SIGNAL · AHEAD':'SIGNAL · RIGHT';
       check('native recorder signal agrees with the measured controlled bearing',recorder.recorder.face.meterLabel===expectedSignal,{expected:expectedSignal,actual:recorder.recorder.face.meterLabel});
-      await sleep(1800);await press('Escape');await sleep(300);await press('e');await sleep(1500);
+      await sleep(1800);await press('r');await sleep(300);
+      check('R lowers the recorder back to ordinary world controls',await page.evaluate(()=>window.__scenes?.top()?.id==null),await page.evaluate(()=>window.__scenes?.top()?.id||null));
+      await press('e');await sleep(1500);
       const open=await snapshot('03-real-door-open');check('ordinary E opens the actual goods pair',open.edgeDoor.passable,open.edgeDoor);
       await page.keyboard.down('w');report.inputs.push({at:Date.now(),kind:'down',key:'w'});
       try{await waitFor(()=>window.__probe.chunkSurf().phase==='horizon','ordinary body crossing into the walk out',8000);}finally{await page.keyboard.up('w');report.inputs.push({at:Date.now(),kind:'up',key:'w'});}
@@ -101,6 +108,14 @@ async function run(experiment,condition,browser){
       if(condition==='before')check('control reproduces inaccessible existing refusal tree',third.scene!=='finale'&&third.speech?.text==='The chapel is still ahead.',{scene:third.scene,speech:third.speech});
       else{
         check('prototype exposes the existing refusal tree through ordinary E',third.scene==='finale',third.scene);
+        // Availability restores an existing modal conversation. It does not
+        // silently redesign that presenter into a freely escapable world line.
+        await press('Escape');
+        const escapeView=await snapshot('05-escape-control');
+        if(escapeView.scene==='pause')await press('Escape');
+        await hold('w',250);const modal=await snapshot('05-existing-modal-control');
+        report.inheritedAudienceLimit={blocksInput:modal.sceneBlocksInput,escapeTopScene:escapeView.scene,conversationRetainedAfterEscape:modal.scene==='finale',ordinaryMovementStayedInPlace:JSON.stringify(modal.position)===JSON.stringify(third.position)};
+        check('existing audience remains modal; Escape pauses or is consumed without cancelling it',modal.sceneBlocksInput===true&&modal.scene==='finale'&&JSON.stringify(modal.position)===JSON.stringify(third.position),report.inheritedAudienceLimit);
         const lineHistory=[];let chosenKind=false,chosenAccount=false,done=false;
         for(let n=0;n<80;n++){
           const view=await page.evaluate(()=>window.__scenes?.top()?.id==='finale'?window.__scenes.top().view():null);
@@ -131,8 +146,9 @@ async function run(experiment,condition,browser){
     }
     check('no JavaScript, shader or interception errors',report.errors.length===0,report.errors);
     const end=await snapshot('09-final-state');report.finalState=end.source;
-    check('production runtime source remained unchanged',sha(await readFile(experiment.sourcePath))===experiment.sourceSha);
-    check('fixture main source remained unchanged',sha(await readFile('src/main.js'))===experiment.mainSha);
+    const finalRuntimeSha=sha(await readFile(experiment.sourcePath)),finalMainSha=sha(await readFile('src/main.js'));
+    check('production runtime source remained unchanged',finalRuntimeSha===experiment.sourceSha,{expected:experiment.sourceSha,actual:finalRuntimeSha});
+    check('fixture main source remained unchanged',finalMainSha===experiment.mainSha,{expected:experiment.mainSha,actual:finalMainSha});
     report.productionIdentityAfter=await productionIdentity();
     check('production renderer and visible asset identities stayed fixed throughout this condition',JSON.stringify(report.productionIdentityBefore)===JSON.stringify(report.productionIdentityAfter));
   }catch(error){failure=String(error?.stack||error);report.failure=failure;console.error(failure);if(page)await page.screenshot({path:join(dir,'failure.png')}).catch(()=>{});}
@@ -180,7 +196,10 @@ summary.pairedEncounterCameras=experiments.map(id=>{
     return{name,equal:!!a&&!!b&&JSON.stringify(camera(a))===JSON.stringify(camera(b)),before:camera(a),after:camera(b)};}),
     limitation:'Only views whose measured body position and look match exactly are labelled identical cameras. Departure timing/noise are live ordinary input and are not bit-identical controls.'};
 });
-await writeFile(join(out,'summary.json'),JSON.stringify(summary,null,2));console.log(JSON.stringify(summary,null,2));
+await writeFile(join(out,'summary.json'),JSON.stringify(summary,null,2));
+console.log(JSON.stringify({summary:join(out,'summary.json'),results:summary.results.map(result=>({experiment:result.experiment,condition:result.condition,passed:result.passed,failure:result.failure})),
+  pairedInitialConditions:summary.pairedInitialConditions.map(pair=>({experiment:pair.experiment,equal:pair.equal,productionIdentityEqual:pair.productionIdentityEqual})),
+  pairedEncounterCameras:summary.pairedEncounterCameras.map(pair=>({experiment:pair.experiment,equal:pair.views?.every(view=>view.equal)}))},null,2));
 const allPassed=!results.some(report=>!report.passed)&&!summary.pairedInitialConditions.some(pair=>pair.paired&&(!pair.equal||!pair.productionIdentityEqual))&&!summary.pairedEncounterCameras.some(pair=>pair.paired&&pair.views.some(view=>!view.equal));
 if(allPassed&&experiments.length===2&&conditions.length===2){
   await writeFile(join(out,'verified-snapshot.json'),JSON.stringify({schema:1,kind:'source-experience-native-verified-snapshot',verifiedAt:Date.now(),

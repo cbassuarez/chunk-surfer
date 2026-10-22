@@ -14,9 +14,10 @@ import { sourceFocusActionLabel } from '../src/game/source-haystack.js';
 import { CHUNK_SURF_GOD_PRESET, buildChunkSurfGodPreset } from '../src/game/chunk-surf-god.js';
 import { freshChunkSurfState, normalizeChunkSurfState, reduceChunkSurf } from '../src/game/chunk-surf-state.js';
 
-const field = ({ open = false } = {}) => {
+const field = ({ open = false, legacyOnward = false } = {}) => {
   const built = buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.FINAL, { seed: 4417 });
-  const runtime = createSourceSpaceRuntime({ initialState: { ...built.state, edgeDoorOpen: open } });
+  const runtime = createSourceSpaceRuntime({ initialState: { ...built.state, edgeDoorOpen: open,
+    ...(legacyOnward?{horizon:{...built.state.horizon,entered:true}}:{}) } });
   const at = runtime.edgeDoorApproach();
   runtime.setPlayerPosition(at);
   return { runtime, at, origin: runtime.state().landscapeOrigin };
@@ -143,7 +144,9 @@ const field = ({ open = false } = {}) => {
   assert.equal(runtime.state().edgeDoorOpen, true);
   assert.equal(runtime.geometry.canStep(at.x, before, at.x, after).ok, false, 'the doors are walked through before they have swung');
 
-  const open = field({ open: true });
+  // Preserve the original outward/return contract for saves already beyond
+  // this seam. Fresh crossings are covered by source-continuation-integration.
+  const open = field({ open: true, legacyOnward: true });
   const step = (from, to) => open.runtime.geometry.canStep(from.x, from.y, to.x, to.y).ok;
   assert.equal(step({ x: open.at.x, y: before }, { x: open.at.x, y: after }), true, 'the open doors refuse the body');
   for (const dx of [-12, -5, 5, 40]) assert.equal(step({ x: open.at.x + dx, y: before }, { x: open.at.x + dx, y: after }), false, `the edge lets the body across ${dx} cells from the doors`);
@@ -176,11 +179,13 @@ const field = ({ open = false } = {}) => {
   assert.equal(open.runtime.openEdgeDoor().event, 'edge-door-opened');
 }
 
-// Main: the step through is a breath of black; open, the doorway is black from
-// the field; walking onward walks him to the doors rather than over the seam.
+// Main: a new crossing belongs to the moving journey, whose actual black UI
+// and running sound bridge replace the old frozen frame. A walked revisit
+// after returning keeps the earlier short hold. Door cores remain lightless.
 {
   const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
-  assert.match(main, /if\(sourceStep\.through==='edge-door'\)\{CR\.fx\.hold\(/, 'the crossing is not held to black');
+  assert.match(main, /if\(sourceStep\.through==='edge-door'&&getSave\(\)\.sourceDrive\?\.status==='returned'\)\{CR\.fx\.hold\(/, 'only a returned on-foot crossing retains the old frame hold');
+  assert.match(main, /entry:movingEntry\?'moving-cut':null/, 'the fresh crossing does not install its cinematic moving entry');
   assert.match(main, /R3\.r3dSetSourceOpenings\?\.\(chunkSurfRuntime\.edgeDoorOpenings\?\.\(x,y\)/, 'the door row does not submit its black cores');
   const transport = main.slice(main.indexOf('function openHorizonTransport('), main.indexOf('function openHorizonTransport(') + 4000);
   assert.doesNotMatch(transport, /completeNormalExit/, 'threading the transport still puts him over the seam');

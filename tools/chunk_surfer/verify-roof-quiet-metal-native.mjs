@@ -8,6 +8,8 @@ import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { conservatory } from '../../src/data/floorplan/conservatory.js';
 import { ACADEMIC_ROOF } from '../../src/data/academic-roof.js';
+import { ROOF_PASSWORD } from '../../src/data/roof-password.js';
+import { TARGETS } from '../../src/data/conservatory-script.js';
 import * as FP from '../../src/world/floorplan.js';
 import * as PROPS from '../../src/game/props.js';
 
@@ -213,18 +215,26 @@ try{
   try{await page.goto(url,{waitUntil:'domcontentloaded',timeout:120000});}
   catch(error){if(error.name!=='TimeoutError')throw error;console.log('NAVIGATION_DELAY_CONTINUE_SAME_BROWSER',String(error));}
   await page.waitForFunction(()=>window.__probe?.testRun&&window.__scenes?.top?.()?.id,{timeout:120000});
-  await page.evaluate(async()=>{await window.__probe.testRun();window.__probe.tutSkip();window.__probe.hush?.();
+  await page.evaluate(async targets=>{await window.__probe.testRun();window.__probe.tutSkip();window.__probe.hush?.();
     window.__probe.setFlags(['setup.levels','combat.trained','setup.waypoint','academic.entered'],['roof.access']);
-    window.__probe.setTakes(['main_b3'],true);window.__probe.setTorch(true);window.__probe.warpCell(44,243);
+    window.__probe.setTakes(targets,false);window.__probe.setTorch(true);window.__probe.warpCell(44,243);
     for(const canvas of document.querySelectorAll('#map > canvas'))if(canvas.style.zIndex==='8')canvas.style.visibility='hidden';
     window.__probe.lookAtWorld(0,-.03);
-  });
+  },TARGETS);
   await new Promise(r=>setTimeout(r,1800));
   console.log('NATIVE_BROWSER_FROZEN',propPackHashStart);
   report.start=await state();
   log('north gallery roof gate focusable',report.start.focus?.propId==='roof-gate',report.start.focus);
   await page.keyboard.press('e');
-  log('accepted take and master key open gate',(await state()).flags.access===true,(await state()).flags);
+  const lock=await state();
+  log('ordinary interaction opens the six-letter word lock',lock.scene==='roof-word-lock',lock.sceneView);
+  if(lock.scene!=='roof-word-lock')throw Error('Roof word lock did not open');
+  await page.keyboard.type(ROOF_PASSWORD);
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(()=>window.__probe?.flag?.('roof.access')===true,{timeout:5000});
+  const opened=await state();
+  log('service word and master key open gate without a recording prerequisite',opened.flags.access===true,opened.flags);
+  if(!opened.flags.access)throw Error('The service word and staff key did not open the gate');
   await walkTo('first grated landing',logical(ACADEMIC_ROOF.stairFoot.x,ACADEMIC_ROOF.stairFoot.y));
   await viewPair('01-first-foot-school-west-down',Math.PI*1.5,-.75);
   if(process.env.ROOF_QUIET_PRIMARY_ONLY!=='1')await viewPair('02-first-foot-car-and-facade',5.62,-.73);

@@ -1,0 +1,15 @@
+- status [ref=f18e6]:
+  - banner [ref=f18e7]:
+    - generic [ref=f18e8]:
+      - generic [ref=f18e9]: AUDIOCORP
+      - generic [ref=f18e10]: DISPLAY FAULT
+    - generic [ref=f18e11]:
+      - generic [ref=f18e12]: SOURCE
+      - strong [ref=f18e13]: VIEWPORT
+  - generic [ref=f18e14]:
+    - generic [ref=f18e15]: VIEWPORT BELOW SAFE SIZE
+    - generic [ref=f18e16]: MINIMUM SAFE SIGNAL FRAME 960 × 600
+    - generic [ref=f18e17]: USE FULLSCREEN OR A LARGER DISPLAY.
+  - contentinfo [ref=f18e18]:
+    - generic [ref=f18e19]: SIGNAL FRAME HOLD
+    - generic [ref=f18e20]: RESTORES AUTOMATICALLY

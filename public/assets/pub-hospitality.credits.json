@@ -1,0 +1,17 @@
+{
+  "license": "Project authored geometry and materials; cloned canonical pub geometry remains project authored.",
+  "sourceSha256": {
+    "public/assets/conservatory-props.glb": "489cd975214e67352095158609ec2851ca0c3b96dc5ef6a0942938caa5863b6c",
+    "public/assets/pub-characters.glb": "888f46f97fc5a2bf0f30f7d4cb214abede2e4a5903db0fe4c2bfb8518dc0eef4",
+    "public/assets/pub-quest-props.glb": "8e6f9f5e3c5ec140967c83b4bbbaadf3cbb21c0a6c67940f3277d8049c6ff3b8",
+    "src/data/pub-hospitality.js": "8732cd30e76ba9cb46790a4f2ffe59ac4dda09d61cd9ec7c291ad219ecd02ece",
+    "tools/chunk_surfer/build-pub-hospitality.mjs": "d41f58d6b5c3f0fb64ddb5cf22ac49fb30590cb8d1d00c539db412b300104e4d"
+  },
+  "packs": [
+    {
+      "file": "public/assets/pub-hospitality.glb",
+      "bytes": 619116,
+      "sha256": "516e8420df868bbe6cf5f6da3bc6ead638e9c840378437d142afb63e1c1ba773"
+    }
+  ]
+}

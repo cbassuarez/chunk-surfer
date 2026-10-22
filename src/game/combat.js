@@ -1,4 +1,5 @@
 import { makePracticeFightScene } from './practice-fight.js';
+import { sourceDesktopInputActive } from './source-desktop-focus.js';
 import { makeBattlePreparation } from './battle-preparation.js';
 import { combatCheckpointSnapshot, restoreCombatCheckpoint } from './combat-checkpoint.js';
 import { combatHandsSnapshot } from './combat-hands-state.js';
@@ -322,7 +323,7 @@ export function makeCombatScene({
     return { ...frame, active:true, clock:now,
       commandMinHeight:uiCellMetrics().cellH * 24, commandMinWidth:Math.max(960,uiCellMetrics().cellW * 114),
       paused:(!!topScene && topScene !== scene) || (typeof document !== 'undefined' &&
-        (document.hidden || (sourceDesktop?.mode?.()==='native' && !document.hasFocus()))),
+        (document.hidden || (sourceDesktop?.mode?.()==='native' && !sourceDesktopInputActive(sourceDesktop)))),
       phase:phase === 'desktop-breach' ? 'dissolving' : frame.breached || desktopStarted ? 'desktop' : 'contained',
       transition:phase === 'desktop-breach' ? Math.min(1,desktopElapsed / 2.4) : frame.breached ? 1 : 0,
       intent:{kind:intent?.kind || 'broadcast',progress:resolution ? Math.min(1,resolution.elapsed / resolution.duration) : 0},
@@ -361,7 +362,7 @@ export function makeCombatScene({
     else beginToolSelection();
   }
 
-  function beginDesktopBreach({restoring=false,fallbackMovementIndex=state.movementIndex} = {}) {
+  function beginDesktopBreach({restoring=false,fallbackMovementIndex=state.movementIndex,resume=null} = {}) {
     if (!sourceDesktop || phase === 'desktop-breach') return false;
     desktopStarted = true;
     phase = 'desktop-breach';
@@ -375,10 +376,11 @@ export function makeCombatScene({
     barGhost.composure=null;barGhost.coherence=null;
     state.last = {...state.last,desktopBreach:null};
     persistCheckpoint();
-    notice = restoring ? 'SOURCE IS STILL OUTSIDE' : 'SHELTER LOST · THE FIGHT CONTINUES';
+    notice = restoring ? 'SOURCE IS STILL OUTSIDE' : resume ? 'THE SHELL CANNOT HOLD THE CONTACT' : 'SHELTER LOST · THE FIGHT CONTINUES';
     desktopResume = () => {
       phase = 'tool';
-      if (!handleStateEndpoint(fallbackMovementIndex)) resumeDecision();
+      if (resume) resume();
+      else if (!handleStateEndpoint(fallbackMovementIndex)) resumeDecision();
     };
     Promise.resolve(sourceDesktop.begin?.(desktopFrame())).catch(() => null).finally(() => {
       if (sceneEntered) desktopReady = true;
@@ -864,6 +866,12 @@ export function makeCombatScene({
 
   function enterMovement(index = state.movementIndex, { sentBack: sentBackHandoff = false } = {}) {
     const next = movement(index);
+    if (sourceDesktop && battle.combat?.desktopOnCommit && !desktopStarted) {
+      // Presentation is part of the warned commitment, never a reward for
+      // taking damage. This spends no cover, recovery, health or movement.
+      state.sourceDesktop = {...state.sourceDesktop,breached:true};
+      if (beginDesktopBreach({fallbackMovementIndex:index,resume:()=>beginMovement(index)})) return;
+    }
     if (sourceDesktop && !previewSendBackSpent && Number.isInteger(battle.combat?.previewSendBackAt)
       && battle.combat.previewSendBackAt === index) {
       previewSendBackSpent = true;
@@ -950,7 +958,11 @@ export function makeCombatScene({
     }
     // Legacy sentBack-only continuations also retain their lost shelter. They
     // receive the same settled desktop restoration as current partial saves.
-    if (continuation && state.sourceDesktop?.breached && beginDesktopBreach({restoring:true})) return;
+    if (continuation && state.sourceDesktop && (state.sourceDesktop.breached || battle.combat?.desktopOnCommit)) {
+      const restoring=state.sourceDesktop.breached;
+      state.sourceDesktop={...state.sourceDesktop,breached:true};
+      if (beginDesktopBreach({restoring})) return;
+    }
     if (continuation?.sourceCombat) {
       beginMovement(state.movementIndex,{resume:true}); return;
     }
@@ -1760,7 +1772,7 @@ export function makeCombatScene({
     },
 
     update(dt) {
-      if (sourceDesktop?.mode?.() === 'native' && typeof document !== 'undefined' && !document.hasFocus()) {
+      if (sourceDesktop?.mode?.() === 'native' && !sourceDesktopInputActive(sourceDesktop)) {
         sourceDesktop.frame?.({...desktopFrame(),paused:true}); return;
       }
       if (phase === 'desktop-breach') {

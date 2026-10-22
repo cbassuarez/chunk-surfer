@@ -1,0 +1,150 @@
+- main [ref=f5e2]:
+  - 'heading "Ear Room and chapel: a more physical horror" [level=1] [ref=f5e3]'
+  - paragraph [ref=f5e4]: Implemented and checked in the playable final-dither renderer. 29 focused checks pass. Audio output and recording protections verified independently. Human listening and unfamiliar-player validation remain pending.
+  - paragraph [ref=f5e5]: This pass keeps the existing rooms and encounters. It strengthens recognisable ear anatomy and human wall marks, gives the gut recordings a more exposed digital grain, and composes the chapel's apparitions as a Mass held in one moment.
+  - navigation [ref=f5e6]:
+    - link "Ears and writing" [ref=f5e7] [cursor=pointer]:
+      - /url: "#ears"
+    - link "Audio comparison" [ref=f5e8] [cursor=pointer]:
+      - /url: "#audio"
+    - link "Mass" [ref=f5e9] [cursor=pointer]:
+      - /url: "#mass"
+    - link "Evidence and limits" [ref=f5e10] [cursor=pointer]:
+      - /url: "#proof"
+  - generic [ref=f5e11]:
+    - heading "Recognisable cartilage, damaged flesh, human pressure" [level=2] [ref=f5e12]
+    - paragraph [ref=f5e13]: The bright, even rims in the previous version read too readily as bowls. The rebuilt ears keep their approved size but have deeper canals under a heavy tragus, a forked antihelix, compressed sections of rim and a torn attachment. Cool mottling and dark wet recesses replace uniform pale surfaces. There are no added collisions.
+    - generic [ref=f5e14]:
+      - 'figure "Before: uniform rims and shallow centres." [ref=f5e15]':
+        - img "Previous Ear Room floor viewed by torch" [ref=f5e16]
+      - 'figure "After: the same authored position, camera and torch through the final game dither." [ref=f5e18]':
+        - img "Rebuilt ears in the same playable floor view" [ref=f5e19]
+    - paragraph [ref=f5e21]: "The wall text keeps its words and wall allocations. Round tubular lettering has become pressed pigment: broad and narrow strokes, pooled ends, dry trailing edges, repainting and sparse gravity runs. The large statement carries the reading; the repetitions crowd it."
+    - generic [ref=f5e22]:
+      - figure "Before." [ref=f5e23]:
+        - img "Previous wall writing" [ref=f5e24]
+      - figure "After, at the same camera position." [ref=f5e26]:
+        - img "Rebuilt uneven pigment writing on the same wall" [ref=f5e27]
+    - paragraph [ref=f5e29]: "The first flat-ribbon pass failed the torch test: glossy pale pigment became one white highlight and erased the words. The final loaded ironoxide is matte, with roughness 0.93; the centre strokes now remain dark. The words still require the ordinary act of looking along the wall. This correction stays local to the asset."
+    - figure "The large statement from across the aisle; darkness beyond the torch remains part of its reading." [ref=f5e30]:
+      - img "Large wall statement viewed from across the aisle" [ref=f5e31]
+    - generic [ref=f5e33]:
+      - figure "Existing pool-deck candidate." [ref=f5e34]:
+        - img "Rebuilt ears staged on the existing pool deck" [ref=f5e35]
+      - figure "Existing practice-corridor candidate." [ref=f5e37]:
+        - img "Rebuilt ears in the existing practice corridor" [ref=f5e38]
+    - paragraph [ref=f5e40]:
+      - text: Editable
+      - link "Blender project" [ref=f5e41] [cursor=pointer]:
+        - /url: ../stop-listening/stop-listening.blend
+      - text: ·
+      - link "builder" [ref=f5e42] [cursor=pointer]:
+        - /url: ../../tools/chunk_surfer/build-stop-listening.py
+      - text: ·
+      - link "asset measurements" [ref=f5e43] [cursor=pointer]:
+        - /url: ../../public/assets/stop-listening.stats.json
+      - text: ". The pack is 3.33 MB and 93,156 triangles, reduced from 3.45 MB and 118,912 triangles. Material batches remain 43. Instancing changes the cost: richer individual ears raise authored whole-room triangle upper bounds by 11–24%; see the measured limits below."
+  - generic [ref=f5e44]:
+    - heading "Stronger grain, preserved body and placement" [level=2] [ref=f5e45]
+    - table [ref=f5e46]:
+      - rowgroup [ref=f5e47]:
+        - row [ref=f5e48]:
+          - columnheader "Layer" [ref=f5e49]
+          - columnheader "Actual processing" [ref=f5e50]
+          - columnheader "Processed share" [ref=f5e51]
+      - rowgroup [ref=f5e52]:
+        - row [ref=f5e53]:
+          - cell "Gut events" [ref=f5e54]
+          - cell "9-bit / 24 kHz" [ref=f5e55]
+          - cell "86%" [ref=f5e56]
+        - row [ref=f5e57]:
+          - cell "Wet foley" [ref=f5e58]
+          - cell "8-bit / 22.05 kHz" [ref=f5e59]
+          - cell "80%" [ref=f5e60]
+        - row [ref=f5e61]:
+          - cell "Continuous beds" [ref=f5e62]
+          - cell "10-bit / 32 kHz" [ref=f5e63]
+          - cell "68%" [ref=f5e64]
+    - paragraph [ref=f5e65]: These are quantisation and sample-hold rates, independent of the 32 kHz MP3 delivery codec. A fractional capture clock replaces the old integer-skip branch. The same eleven CC0/public-domain sources and cuts are retained; gain is matched to the previous treatment.
+    - generic [ref=f5e66]:
+      - 'figure "Before: dry source selections." [ref=f5e67]'
+      - 'figure "After: identical selections, matched in RMS by attenuation." [ref=f5e70]'
+    - paragraph [ref=f5e73]: The following comparison renders the real game audio runtime with the same seeded event schedule and procedural room-response tail. Its diagnostic listener path moves toward the heap for six seconds, turns for seven, opens the monitor at 13–16 seconds, then closes it. This is an offline runtime render, not a recording of a live playthrough. Use headphones to compare the unchanged placement.
+    - generic [ref=f5e74]:
+      - figure "Previous bank through the actual runtime." [ref=f5e75]
+      - figure "Rebuilt bank through the same runtime." [ref=f5e78]
+    - paragraph [ref=f5e81]:
+      - text: The complete runtime render changes RMS by −0.004 dB, clips no samples and falls below −113 dBFS RMS during the monitor check.
+      - link "Runtime receipt" [ref=f5e82] [cursor=pointer]:
+        - /url: audio-runtime-comparison.json
+      - text: ·
+      - link "DSP measurements" [ref=f5e83] [cursor=pointer]:
+        - /url: audio-processing.json
+      - text: ·
+      - link "48-file decoded audit" [ref=f5e84] [cursor=pointer]:
+        - /url: audio-decoded-measurements.json
+      - text: ·
+      - link "editable DSP" [ref=f5e85] [cursor=pointer]:
+        - /url: ../../tools/chunk_surfer/stop-listening-dsp.mjs
+      - text: ·
+      - link "source provenance" [ref=f5e86] [cursor=pointer]:
+        - /url: ../../third_party/licenses/STOP-LISTENING-AUDIO.md
+      - text: .
+  - generic [ref=f5e87]:
+    - heading "A service that has not ended" [level=2] [ref=f5e88]
+    - paragraph [ref=f5e89]: "The 48 apparitions now have a shared purpose: 45 congregants, one celebrant and two acolytes, oriented toward the existing altar. Thirty-six congregants kneel with joined hands; nine remain seated. Uneven shoulders, height and weight remain, while random idle head-turns are removed."
+    - paragraph [ref=f5e90]: The celebrant has a full alb, gathered chasuble, vested sleeves and raised prayer hands. Two kneeling acolytes flank the sanctuary. Their bodies retain the existing shadow/energy light states, fixed world positions and final dither. The aisle, ritual objects and tower thresholds retain their use.
+    - generic [ref=f5e91]:
+      - 'figure "Before: unrelated held poses." [ref=f5e92]':
+        - img "Previous congregation from the nave" [ref=f5e93]
+      - 'figure "After: one collective prayer from the same nave position." [ref=f5e95]':
+        - img "New congregation oriented toward the altar" [ref=f5e96]
+    - generic [ref=f5e98]:
+      - 'figure "Before: no clergy at the altar." [ref=f5e99]':
+        - img "Previous sanctuary approach" [ref=f5e100]
+      - 'figure "After: the same approach; clergy distinguished by mass, drapery and gesture." [ref=f5e102]':
+        - img "Vested celebrant and acolytes at the existing altar" [ref=f5e103]
+    - generic [ref=f5e105]:
+      - figure "Celebrant from the sanctuary side, in the ordinary apparition presentation." [ref=f5e106]:
+        - img "Celebrant with raised arms beside the existing altar" [ref=f5e107]
+      - figure "Joined prayer hands and shared orientation among the pews." [ref=f5e109]:
+        - img "Congregants kneeling together beside the existing pews" [ref=f5e110]
+    - paragraph [ref=f5e112]:
+      - text: Editable
+      - link "Blender project" [ref=f5e113] [cursor=pointer]:
+        - /url: ../chapel-dressing/chapel-dressing.blend
+      - text: ·
+      - link "builder" [ref=f5e114] [cursor=pointer]:
+        - /url: ../../tools/chunk_surfer/build-chapel-dressing.py
+      - text: ·
+      - link "composition, dimensions, reference provenance and capture positions" [ref=f5e115] [cursor=pointer]:
+        - /url: ../chapel-dressing/mass-implementation.json
+      - text: . Existing British collegiate-chapel evidence informs the composition; no denomination is assigned. The pack is 472 KB / 18,560 triangles, with no new lights or shadow maps.
+  - generic [ref=f5e116]:
+    - heading "Evidence and remaining limits" [level=2] [ref=f5e117]
+    - paragraph [ref=f5e118]:
+      - link "29/29 focused checks pass" [ref=f5e119] [cursor=pointer]:
+        - /url: focused-final.tap
+      - text: .
+      - link "Verification receipt" [ref=f5e120] [cursor=pointer]:
+        - /url: verification.json
+      - text: links the final asset hashes, actual three-room staging, final dither, audio output and recording checks. The rebuilt noise loaded and fired in the actual encounter. During recording it went quiet; the chapel bodies disappeared while its writing remained, then returned afterward. A keyboard walk traversed the central aisle to the sanctuary.
+    - paragraph [ref=f5e121]:
+      - strong [ref=f5e122]: "Measured limitation:"
+      - text: the near-heap view remains around 20 FPS in this browser setup, both before and after; the chapel stays around 30 FPS. These short matched samples do not establish a speed improvement.
+      - link "Matched near-heap sample" [ref=f5e123] [cursor=pointer]:
+        - /url: performance-ear-matched.json
+      - text: ·
+      - link "Chapel sample" [ref=f5e124] [cursor=pointer]:
+        - /url: browser-chapel-performance.json
+      - text: ·
+      - link "Code build and existing warnings" [ref=f5e125] [cursor=pointer]:
+        - /url: code-build.json
+      - text: .
+    - paragraph [ref=f5e126]: Source-level geometry checks establish dimensions, floor and wall contact, circulation, light-state selection and recording suppression. The audio comparison establishes signal behaviour through the real Web Audio runtime. These do not establish human fear, ear recognition, handwriting comprehension, liturgical interpretation or listening preference.
+    - paragraph [ref=f5e127]:
+      - text: Camera review uses an explicit authoring fixture while the local diffusion service is offline; it is not an uninterrupted campaign test. Previous Source/Hush desktop verification remains in its
+      - link "separate report" [ref=f5e128] [cursor=pointer]:
+        - /url: ../source-room-repairs/report.html
+      - text: .
+  - generic [ref=f5e129]: 21 October 2026 · Existing locations and encounter purposes retained. No participant validation claimed.

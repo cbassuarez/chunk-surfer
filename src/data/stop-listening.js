@@ -56,6 +56,10 @@ export const STOP_LISTENING_TREATMENTS = Object.freeze({
 // several lying poses because the prop renderer turns an instance about the
 // vertical only; heaps are single meshes so a pile can actually pile.
 export const STOP_LISTENING_ASSET = 'assets/stop-listening.glb';
+// The anatomy starts as a measured adult ear in the Blender authoring file.
+// Enlarge that anatomy in the pack, before the small per-instance variation:
+// the scattered ears are now roughly half a metre long, not lost as floor grit.
+export const STOP_LISTENING_EAR_SCALE = 6.4;
 export const STOP_LISTENING_MESH = Object.freeze({
   ears: Object.freeze(['stop_listening_ear_a', 'stop_listening_ear_b', 'stop_listening_ear_c',
     'stop_listening_ear_d', 'stop_listening_ear_e', 'stop_listening_ear_f']),
@@ -81,9 +85,10 @@ export const STOP_LISTENING_SHEET_DOCUMENT = Object.freeze({
 });
 
 const field = (x0, x1, y0, y1, count) => Object.freeze({ x0, x1, y0, y1, count });
-// Ears are drawn a little over life size (the scatter at 1.3-1.6, heaps at
-// 1.35): at life size the display's halftone dissolves them into grit.
-const heap = (x, y, mesh, yaw = 0, scale = 1) => Object.freeze({ x, y, mesh, yaw, scale: scale * 1.35 });
+// Heaps use the same enlarged anatomy. A modest reduction of their assembled
+// piles keeps the corridor passable and gives the room genuinely different ear
+// sizes, instead of a metre-wide smear being mistaken for a large ear.
+const heap = (x, y, mesh, yaw = 0, scale = 1) => Object.freeze({ x, y, mesh, yaw, scale: scale * .82 });
 // normal: the room-facing normal of the wall, in plan axes.
 // tone: the paint has to read against the wall it is on. Pale on the hall's
 // dark oak; dark on the pool's tile and the corridor plaster.
@@ -105,8 +110,8 @@ export const STOP_LISTENING_ROOMS = Object.freeze({
       field(90.0, 95.6, 29.0, 41.0, 30),
     ]),
     heaps: Object.freeze([
-      heap(83.4, 30.3, H[0], .2), heap(80.1, 31.5, H[2], -.8), heap(87.2, 30.6, H[1], 1.7),
-      heap(74.6, 35.8, H[1], 2.9, .9), heap(92.7, 35.0, H[0], -1.9, .9),
+      heap(83.4, 30.3, H[0], .2), heap(80.1, 30.6, H[2], -.8), heap(87.2, 30.6, H[1], 1.7),
+      heap(74.6, 35.8, H[1], 2.9, .9), heap(92.7, 35.1, H[0], -1.9, .9),
     ]),
     writing: Object.freeze([
       // The west wall has the showers at its north end and the cubicles at its
@@ -130,7 +135,7 @@ export const STOP_LISTENING_ROOMS = Object.freeze({
       field(99.1, 102.9, 16.2, 33.8, 96),
     ]),
     heaps: Object.freeze([
-      heap(101.2, 23.0, H[0], .6, .9), heap(100.6, 27.0, H[2], -1.3, .9),
+      heap(101.2, 22.8, H[0], .6, .9), heap(100.6, 27.0, H[2], .05, .9),
       heap(101.4, 31.0, H[1], 2.0, .85), heap(100.4, 19.0, H[1], -.4, .85),
     ]),
     writing: Object.freeze([
@@ -154,7 +159,7 @@ export const STOP_LISTENING_ROOMS = Object.freeze({
       field(63.2, 75.8, 53.1, 55.9, 96),
     ]),
     heaps: Object.freeze([
-      heap(72.4, 54.6, H[0], .3, .9), heap(68.6, 53.8, H[2], 1.9, .85), heap(65.2, 55.2, H[1], -2.2, .85),
+      heap(72.4, 55.0, H[0], .05, .9), heap(68.6, 53.65, H[2], .05, .75), heap(65.2, 55.2, H[1], .1, .85),
     ]),
     writing: Object.freeze([
       writing(70.5, 53.5, W.line, 0, 1, { elevation: 1.35 }),

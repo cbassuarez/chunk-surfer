@@ -107,7 +107,8 @@ test('WC planes fit the runtime contract and leave the entire standard dynamic d
   for(const x of[-2.75,-2.7,-2.65])for(const z of[-17.74,-17.25,-16.76])for(const y of[.1,1.6,2.3,3.39]){
     assert.equal(parts.some(s=>{const b=bounds(s);return[x,y,z].every((n,i)=>n>b.min[i]+EPS&&n<b.max[i]-EPS);}),false,'no static leaf, head or custom frame seals the standard opening');
   }
-  assertClear(out,{x0:-3.7,x1:-2.7,z0:-17.75,z1:-16.75},'WC inward door sweep');
+  assert.equal(wc.doorway.swing,'escape');
+  assertClear(out,{x0:-2.7,x1:-1.7,z0:-17.75,z1:-16.75},'WC outward door sweep');
   const room=wc.bounds;
   for(const f of layout.furniture.filter(f=>['toilet','basin'].includes(f.kind))){
     assert.ok(f.bounds.x0>room.x0&&f.bounds.x1<room.x1&&f.bounds.z0>room.z0&&f.bounds.z1<room.z1);
@@ -123,10 +124,11 @@ test('the room contains fitted furniture, sanitary fixtures and complete joined 
   for(const p of layout.pendants){
     const shapes=out.byFixture.get(p.id);assert.ok(shapes.length>8);
     assert.ok(Math.min(...shapes.flatMap(s=>rowPoints(s).map(v=>v[1])))>=layout.minimumPendantY);
-    const light=PUB_LIGHT_ANCHORS.find(l=>l.x===p.x&&l.z===p.z);assert.ok(light,'a real light has a physical fitting');assert.ok(light.intensity>=.9&&light.intensity<=1.1);
+    const light=PUB_LIGHT_ANCHORS.find(l=>l.x===p.x&&l.z===p.z);assert.ok(light,'a real light has a physical fitting');
+    assert.equal(light.intensity,{'pub-entry-light':1.35,'pub-snug-light':1.45,'pub-bar-light':1.50}[light.id],'fitted pendants use the reviewed furniture-readable practical intensities');
   }
   const wcLight=PUB_LIGHT_ANCHORS.find(l=>l.id==='pub-wc-light');
-  assert.deepEqual(wcLight,{id:'pub-wc-light',x:-3.80,y:2.98,z:-16.70,radius:2.4,intensity:.75,color:[1,.83,.61]});
+  assert.deepEqual(wcLight,{id:'pub-wc-light',x:-3.80,y:2.98,z:-16.70,radius:2.4,intensity:1.05,color:[1,.83,.61]});
   for(const p of out.byFixture.get('pub-wc-ceiling-practical').flatMap(rowPoints)){
     assert.ok(p[1]>=2.96&&p[1]<=layout.ceilingLocalY+EPS,'WC practical is above head height and joins the ceiling');
     assert.ok(p[0]>layout.wc.bounds.x0&&p[0]<layout.wc.bounds.x1&&p[2]>layout.wc.bounds.z0&&p[2]<layout.wc.bounds.z1,'WC practical stays inside the private room');

@@ -8,6 +8,7 @@ import {
 } from '../data/stop-listening.js';
 import { wallContactAt } from '../world/wall-contact.js';
 import { propWallPose } from '../world/prop-wall-pose.js';
+import { STOP_LISTENING_FLESH_BOUNDS } from '../data/generated/stop-listening-geometry.js';
 
 export const STOP_LISTENING_PREFIX = 'stop-listening:';
 
@@ -99,18 +100,54 @@ function rng(seed) {
 // so a scatter is not quantised to a half-metre lattice.
 const snap = (m) => Math.round(m * 2) / 2;
 
+// The wet smear is wider than the ear. Only the physical flesh has to fit on
+// one surface; sampling it at less than half a plan cell also keeps an enlarged
+// ear from being cut in half by a wall, pool edge, seat or terrace riser.
+export function stopListeningFootprint({ mesh, x, y, yaw = 0, scale = 1 }) {
+  const b = STOP_LISTENING_FLESH_BOUNDS[mesh];
+  if (!b) return [{ x, y }];
+  const c = Math.cos(yaw), s = Math.sin(yaw), out = [];
+  const dx = (b.max[0] - b.min[0]) * scale, dz = (b.max[2] - b.min[2]) * scale;
+  const nx = Math.max(1, Math.ceil(dx / .20)), nz = Math.max(1, Math.ceil(dz / .20));
+  for (let ix = 0; ix <= nx; ix++) for (let iz = 0; iz <= nz; iz++) {
+    const lx = (b.min[0] + (b.max[0] - b.min[0]) * ix / nx) * scale;
+    const lz = (b.min[2] + (b.max[2] - b.min[2]) * iz / nz) * scale;
+    out.push({ x: x + c * lx - s * lz, y: y + s * lx + c * lz });
+  }
+  return out;
+}
+
 // `canPlace(x, y)` answers in AUTHORED metres: open floor, the right room, no
 // blocking furniture. Supplied by the caller so this module never needs a plan.
-export function stopListeningPlacements(roomId, { canPlace = () => true } = {}) {
+export function stopListeningPlacements(roomId, { canPlace = () => true, floorAt = null } = {}) {
   const room = STOP_LISTENING_ROOMS[roomId];
   if (!room) return [];
   const out = [];
   const id = (kind, n) => `${STOP_LISTENING_PREFIX}${roomId}:${kind}:${n}`;
   const near = room.heaps.map((h) => ({ x: h.x, y: h.y }));
   const draw = rng(`stop-listening:${roomId}`);
+  // The caller resolves authored points to round(metres*2). Large ears sample
+  // several points on each half-metre cell; query its furniture once, rather
+  // than scanning the whole building's props for every sample of every ear.
+  const cells = new Map();
+  const surface = (x, y) => {
+    const key = `${Math.round(x * 2)},${Math.round(y * 2)}`;
+    if (!cells.has(key)) cells.set(key, { open: canPlace(x, y), floor: floorAt?.(x, y) });
+    return cells.get(key);
+  };
+  const fits = (pose) => {
+    const centre = surface(pose.x, pose.y);
+    return centre.open && stopListeningFootprint(pose).every((p) => {
+      const hit = surface(p.x, p.y);
+      return hit.open && (!floorAt || Math.abs(hit.floor - centre.floor) < .025);
+    });
+  };
+  const clearSheetAndDoor = (pose) => stopListeningFootprint(pose).every((p) =>
+    Math.hypot(p.x - room.sheet.x, p.y - room.sheet.y) >= .40
+    && Math.hypot(p.x - room.entry.x, p.y - room.entry.y) >= .70);
 
   room.heaps.forEach((h, n) => {
-    if (!canPlace(h.x, h.y)) return;
+    if (!fits(h) || !clearSheetAndDoor(h)) return;
     out.push({
       id: id('heap', n), mesh: h.mesh, x: snap(h.x), y: snap(h.y),
       renderOffsetX: h.x - snap(h.x), renderOffsetZ: h.y - snap(h.y),
@@ -133,12 +170,13 @@ export function stopListeningPlacements(roomId, { canPlace = () => true } = {}) 
         ...near.map((p) => Math.hypot(x - p.x, y - p.y)));
       const keep = .28 + .72 * Math.exp(-d / 2.2);
       if (draw() > keep) continue;
-      if (!canPlace(x, y)) continue;
       const mesh = STOP_LISTENING_MESH.ears[Math.floor(draw() * STOP_LISTENING_MESH.ears.length)];
+      const yaw = draw() * Math.PI * 2, scale = 1.3 + draw() * .3;
+      if (!fits({ mesh, x, y, yaw, scale }) || !clearSheetAndDoor({ mesh, x, y, yaw, scale })) continue;
       out.push({
         id: id('ear', n++), mesh, x: snap(x), y: snap(y),
         renderOffsetX: x - snap(x), renderOffsetZ: y - snap(y),
-        yaw: draw() * Math.PI * 2, scale: 1.3 + draw() * .3, elevation: 0,
+        yaw, scale, elevation: 0,
         blocks: false, interactive: false,
       });
       placed += 1;

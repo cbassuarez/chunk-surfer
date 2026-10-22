@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict';
 import {existsSync,readFileSync,statSync} from 'node:fs';
 import * as FP from '../src/world/floorplan.js';
+import {districtLogicalAt} from '../src/data/exterior-district.js';
 import {conservatory} from '../src/data/floorplan/conservatory.js';
 import {CONSERVATORY_PROPS,PROP_MESH} from '../src/data/conservatory-props.js';
 import {PROP_BOUNDS} from '../src/data/generated/prop-geometry.js';
@@ -13,7 +14,7 @@ import {ENDING_IDS} from '../src/progression/schema.js';
 import {
   VIGIL_CLEARANCES,VIGIL_CROWD,VIGIL_ENDING_ACTIONS,VIGIL_ENDING_INSERTS,VIGIL_ENDING_OMISSIONS,
   VIGIL_LINKED_CHAPELS_FLAG,VIGIL_MESHES,VIGIL_MIN_CORRIDOR,VIGIL_OBSERVATIONS,VIGIL_PART_MESHES,
-  VIGIL_STATIC_PARTS,VIGIL_VOICES,vigilConversation,vigilFigures,vigilParts,
+  VIGIL_STATIC_PARTS,VIGIL_VOICES,vigilConversation,vigilFigures,vigilParts,vigilRecognitionFlags,
 } from '../src/data/exterior-vigil.js';
 import {
   VIGIL_ACTION_CONCURRENCY,VIGIL_ACTION_MAX_WAIT_MS,VIGIL_ACTION_MIN_WAIT_MS,VIGIL_OBSERVATION_BUDGET,
@@ -55,7 +56,7 @@ for(const part of parts.filter(({actorId})=>actorId)){
 
 const bodyProps=figures.map(({id})=>CONSERVATORY_PROPS.find((prop)=>prop.id===id));
 assert.ok(bodyProps.every(Boolean));assert.equal(bodyProps.filter(({action})=>action==='exterior-vigil').length,6);
-assert.ok(bodyProps.every(({blocks})=>blocks===true));
+assert.ok(bodyProps.every(({id,blocks})=>blocks===(id!=='vigil-malcolm-vey')),'the seated map reader inherits his stool collision; standing vigil people retain solid bodies');
 for(const part of parts){const prop=CONSERVATORY_PROPS.find(({id})=>id===part.id);assert.ok(prop,`${part.id} unplaced`);assert.equal(prop.blocks,false);assert.equal(prop.interactive,false);}
 
 // Authored four-metre lanes, non-overlapping bodies and collision-aware routes.
@@ -67,7 +68,11 @@ function walk(){const start=FP.spawn(),seen=new Set([key(start)]),queue=[start],
 for(const door of FP.doorState())if(!door.keyId||door.keyId==='master')FP.setDoorOpen(door.id,true);
 const reachable=walk();
 for(const [label,x,y] of[['park entrance',10,23],['fountain',10,33],['west apron',16,53],['south porch',26,73],['forecourt',31,53],['yard spine',26,34]])assert.ok(reachable.has(key(yardPoint(x,y))),`${label} unreachable`);
-for(const figure of named)assert.ok(reachable.has(key(yardPoint(figure.approach.x,figure.approach.y))),`${figure.id} cannot be approached`);
+for(const figure of named){
+  const pubAt=figure.pubActorId?districtLogicalAt(figure.approach.x,figure.approach.y):null;
+  const point=pubAt?{x:Math.round((pubAt.x-.25)*2),y:Math.round((pubAt.y-.25)*2)}:yardPoint(figure.approach.x,figure.approach.y);
+  assert.ok(reachable.has(key(point)),`${figure.id} cannot be approached`);
+}
 
 // Six bounded conversations, two subjects, three truthful phases and organic
 // name reveal. Spoken word counts include all authored paths, not directions or
@@ -89,7 +94,10 @@ for(const [id,voice] of Object.entries(VIGIL_VOICES)){
   assert.doesNotMatch(JSON.stringify(voice.tree),/as a (?:historian|recordist|custodian|student)|what witnessing means|evidence gets crushed|one instrument|transmitter|demolition is mercy/i,`${id} self-describes its thematic job`);
 }
 
-const setters=[];for(const [id,voice] of Object.entries(VIGIL_VOICES))for(const [node,nodeData] of Object.entries(voice.tree))if((nodeData.set||[]).includes(VIGIL_LINKED_CHAPELS_FLAG))setters.push({id,node});
+const setters=[];for(const [id,voice] of Object.entries(VIGIL_VOICES))for(const [node,nodeData] of Object.entries(voice.tree)){
+  assert.ok(!(nodeData.set||[]).includes(VIGIL_LINKED_CHAPELS_FLAG),'recognition cannot live on an inert node mutation');
+  for(const line of nodeData.lines||[])if(vigilRecognitionFlags(id,line).includes(VIGIL_LINKED_CHAPELS_FLAG))setters.push({id,node});
+}
 assert.deepEqual(setters,[{id:'vigil-malcolm-vey',node:'line'}]);
 assert.doesNotMatch(readFileSync('src/game/source-space-runtime.js','utf8'),/linkedChapels\s*(&&|\?)[^\n]*HORIZON_EXIT/,'recognition flag became an access gate');
 

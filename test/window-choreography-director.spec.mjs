@@ -459,7 +459,7 @@ test('main samples Source leakage only from the runtime frame after movement cro
     const syncSourceRender=()=>trace.push('render');
     const syncSourceWindowDecay=()=>trace.push('decay');
     const applyTowerPersonalTraversal=()=>false;
-    const sourceShoreCameraPatch=()=>({});
+    const sourceCameraPatch=()=>({});
     const saveCommit=()=>trace.push('save'),updateAudio=()=>trace.push('audio');
     return ()=>{${sourceBranch}};
   `);

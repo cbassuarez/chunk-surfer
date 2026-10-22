@@ -133,6 +133,46 @@ export const SOURCE_DESKTOP_PLATES = Object.freeze([
   { id: 'strata-east-cleft-chip', position: [2.7, 1.55, -1.2], size: [1.5, .55, .7] },
 ]);
 
+// The negative body cannot borrow the shell's coloured lighting or become grey
+// through transparent skin. These finite inverted hulls follow the very same
+// skin and morphs; the opaque core and the scene's depth clip their inner light.
+// Both enter the existing transparent acquisition/dither together.
+export function finishSourceDesktopPressure(THREE, root, { own = value => value } = {}) {
+  const meshes = [], cores = [], glows = [];
+  root.traverse(node => { if (node.isMesh) meshes.push(node); });
+  const bands = [[.012, .72], [.027, .33], [.050, .18], [.082, .10], [.120, .052], [.170, .025]];
+  for (const mesh of meshes) {
+    const core = own(new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true,
+      opacity: 1, side: THREE.DoubleSide, depthTest: true, depthWrite: true, fog: false, toneMapped: false }));
+    // Concave expanded hulls can otherwise cross in front of ribs and collar.
+    // Queue the alpha-one core after their radiance so the complete projected
+    // surface seals black; real foreground scenery still wins the depth test.
+    core.forceSinglePass = true;
+    mesh.material = core; mesh.renderOrder = 2; mesh.frustumCulled = false; cores.push(core);
+    for (const [radius, opacity] of bands) {
+      const material = own(new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.BackSide,
+        transparent: true, opacity, depthTest: true, depthWrite: false, fog: false, toneMapped: false }));
+      material.onBeforeCompile = shader => {
+        shader.uniforms.sourcePressureRadius = { value: radius };
+        shader.vertexShader = shader.vertexShader
+          .replace('#include <common>', '#include <common>\nuniform float sourcePressureRadius;')
+          .replace('#if defined ( USE_ENVMAP ) || defined ( USE_SKINNING )', '#if 1')
+          .replace('#include <project_vertex>', 'transformed += normalize(objectNormal) * sourcePressureRadius;\n#include <project_vertex>');
+      };
+      material.customProgramCacheKey = () => 'source-desktop-white-pressure-hull-v1';
+      const shell = mesh.clone(false);
+      shell.name = `${mesh.name}:white-radiance:${radius}`;
+      shell.material = material; shell.renderOrder = 1; shell.frustumCulled = false;
+      // Sharing the live skeleton and influence array prevents a second pose,
+      // independent animation clock or stale glow when a cue deforms the body.
+      if (mesh.morphTargetInfluences) shell.morphTargetInfluences = mesh.morphTargetInfluences;
+      mesh.parent.add(shell);
+      glows.push({ material, opacity, radius });
+    }
+  }
+  return { cores, glows };
+}
+
 export function createSourceDesktopView({ canvas = null, container = null, assetBase = null, onError = null } = {}) {
   const target = canvas || globalThis.document?.createElement('canvas');
   if (!target) throw new Error('Source desktop view requires a canvas');
@@ -143,7 +183,7 @@ export function createSourceDesktopView({ canvas = null, container = null, asset
   let snapshot = null, frame = null, error = null, renderCount = 0, resourceReady = false;
   let width = 1280, height = 800, dpr = 1, rendererSized = false;
   const owned = new Set(), textures = new Set(), shell = [], covers = [], bones = [], materials = [], echoBones = [], echoMaterials = [];
-  const modelIds = [], animationClips = [], shaderUniforms = [], modelGroups = [];
+  const modelIds = [], animationClips = [], shaderUniforms = [], modelGroups = [], bodyGlows = [], echoGlows = [];
   let guardPlate, rake, ambient, bodyMeshCount = 0;
   const path = p => assetBase ? new URL(p, assetBase).href : assetUrl(p);
   const own = value => { owned.add(value); return value; };
@@ -250,8 +290,9 @@ export function createSourceDesktopView({ canvas = null, container = null, asset
         sampleRig(echoRoot, echoMixer, echoBones, frame.echo.character, Math.max(0, frame.clipTime - (snapshot.reducedMotion ? 0 : .18)));
       }
     }
-    for (const mat of materials) mat.opacity = frame.bodyOpacity;
-    for (const mat of echoMaterials) mat.opacity = .27;
+    // Intent changes the radiance, never washes the black body into grey.
+    for (const { material, opacity } of bodyGlows) material.opacity = opacity * frame.bodyOpacity;
+    for (const { material, opacity } of echoGlows) material.opacity = opacity * .27;
     for (const uniforms of shaderUniforms) { uniforms.openness.value = frame.openness; uniforms.rake.value = frame.rakeVisible ? 1 : 0; }
     shell.forEach((mesh, index) => {
       mesh.material.opacity = frame.shellRetention * .94;
@@ -303,20 +344,16 @@ export function createSourceDesktopView({ canvas = null, container = null, asset
     bodyRoot.traverse(node => {
       if (node.isBone) bones.push({ bone: node, position: node.position.clone(), quaternion: node.quaternion.clone(), scale: node.scale.clone() });
       if (node.isSkinnedMesh) { bodyMeshCount++; node.frustumCulled = false; }
-      if (node.isMesh) for (const mat of [node.material].flat()) {
-        mat.transparent = true; mat.opacity = .98; mat.roughness = Math.max(.65, mat.roughness); mat.metalness = Math.min(.12, mat.metalness);
-        materials.push(mat);
-      }
     });
     echoRoot = cloneRig(bodyRoot); echoRoot.name = 'source-desktop-loop-overprint'; echoRoot.visible = false; scene.add(echoRoot);
     echoMixer = new THREE.AnimationMixer(echoRoot);
     echoRoot.traverse(node => {
       if (node.isBone) echoBones.push({bone:node,position:node.position.clone(),quaternion:node.quaternion.clone(),scale:node.scale.clone()});
-      if (node.isMesh) {
-        const cloned=[node.material].flat().map(mat=>{const copy=own(mat.clone());copy.depthWrite=false;echoMaterials.push(copy);return copy;});
-        node.material=Array.isArray(node.material)?cloned:cloned[0];
-      }
     });
+    const bodyFinish = finishSourceDesktopPressure(THREE, bodyRoot, { own });
+    const echoFinish = finishSourceDesktopPressure(THREE, echoRoot, { own });
+    materials.push(...bodyFinish.cores); bodyGlows.push(...bodyFinish.glows);
+    echoMaterials.push(...echoFinish.cores); echoGlows.push(...echoFinish.glows);
     for (const spec of [
       { id: 'upright_piano', x: -2.05, z: -.8, scale: .65, yaw: Math.PI + .25 },
       { id: 'open_instrument_case', x: 1.65, z: .25, scale: 1.45, yaw: Math.PI - .2 },
@@ -343,6 +380,9 @@ export function createSourceDesktopView({ canvas = null, container = null, asset
     debug: () => ({ ready: resourceReady, disposed, error, renderCount, width, height, dpr,
       dither:dither?.debug(),
       skinnedMeshes: bodyMeshCount, bones: bones.length, animationClips, modelIds,
+      pressureFinish: { core: 'opaque-neutral-black', glow: 'skinned-neutral-white',
+        coreMaterials: materials.length + echoMaterials.length, glowBands: bodyGlows.length,
+        maxGlowRadiusM: Math.max(0, ...bodyGlows.map(band => band.radius)) },
       plates: SOURCE_DESKTOP_PLATES.map(piece => piece.id), glyphLines: sourceDesktopGlyphLines().length,
       frame: frame && { openness: frame.openness, clip: frame.clip, clipTime: frame.clipTime, guardVisible: frame.guardVisible,
         rakeVisible: frame.rakeVisible, state: frame.state },

@@ -247,8 +247,8 @@ test('a real mid-rise save restores exact yaw and pitch without replacing the or
   const before = riding.sourceShoreFrame(); assert.equal(before.lift.phase, 'rising');
   const desired = { yaw: 1.1734, pitch: -.2387 }, ordinary = { yaw: -.81, pitch: .14 };
   const capture = vm.createContext({ chunkSurfRuntime: riding, sourceShoreOutside, R3: { r3dLookAngles: () => desired } });
-  vm.runInContext(mainFunction('sourceShoreCameraPatch'), capture);
-  const patch = capture.sourceShoreCameraPatch();
+  vm.runInContext(mainFunction('sourceCameraPatch'), capture);
+  const patch = capture.sourceCameraPatch();
   assert.equal(patch.sourceView.yaw, desired.yaw); assert.equal(patch.view, undefined);
   await withTransientGameState({ save: freshSave() }, async () => {
     saveCommit({ ...patch, view: ordinary, area: 'source-space', px: body.x, py: body.y, chunkSurf: riding.state() });
@@ -276,4 +276,36 @@ test('a real mid-rise save restores exact yaw and pitch without replacing the or
     assert.equal(restored.sourceShoreFrame().lift.floor, before.lift.floor);
     assert.equal(restored.geometry.renderedFloorAt(), before.bodyFloor);
   });
+});
+
+test('away from the shore a Source save resumes facing the way it was taken, and only at the cell it was taken', async () => {
+  const preset = buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.LANDSCAPE, { seed: 4417 });
+  const body = preset.position;
+  const resume = async (sourceView) => {
+    const runtime = createSourceSpaceRuntime({ initialState: JSON.parse(JSON.stringify(preset.state)) });
+    assert.equal(sourceShoreOutside(runtime.sourceShoreFrame()), false, 'this case has to be off the shore');
+    const look = { yaw: 0, pitch: 0 };
+    await withTransientGameState({ save: { ...freshSave(), sourceView } }, async () => {
+      const context = vm.createContext({
+        CHUNK_SURF_PHASE, CHAPEL_TOWER_PHASE: {}, sourceShoreOutside,
+        stopOutskirtsStreetAudio() {}, resetOutskirtsLastLight() {}, endSourceHaystackMosh() {}, endSourceBracketPresence() {},
+        normalizeChunkSurfState, reduceChunkSurf, chapelTowerState: () => ({ phase: 'none' }), getSave,
+        PRES: { isActive: () => false, despawn() {} }, createSourceSpaceRuntime: () => runtime,
+        R3: { r3dSetIndoorRain() {}, r3dSetFacing(value) { look.yaw = value * Math.PI / 2; look.pitch = 0; },
+          r3dFacing: () => Math.round(look.yaw / (Math.PI / 2)), r3dSetSourceSurface() {},
+          r3dSetLookAngles(value) { look.yaw = value.yaw; look.pitch = value.pitch; } },
+        sourceFearFloor: 0, sourcePresenceWasActive: false, sourceFinalCombatOpen: false, chunkSurfRuntime: null,
+        px: 0, py: 0, renderMove: null, motionRig: null, trail: [],
+        applyLensPreset() {}, syncSourceRender() {}, restoreFromSourceSpace() {}, windowChoreography: { sourceFrame() {} },
+        CR: { fx: { hold() {} } }, saveCommit() {}, SOURCE_ENTRY: { facing: 0 },
+      });
+      vm.runInContext(mainFunction('activateSourceSpace'), context);
+      context.activateSourceSpace(runtime.state(), { position: body, resume: true });
+    });
+    return look;
+  };
+  const taken = { yaw: 1.0561, pitch: -.4760 };
+  assert.deepEqual(await resume({ ...taken, x: body.x, y: body.y }), taken, 'the view taken here was not restored');
+  assert.deepEqual(await resume({ ...taken, x: body.x + 4, y: body.y }), { yaw: 0, pitch: 0 }, 'a view taken elsewhere was applied');
+  assert.deepEqual(await resume({ ...taken }), { yaw: 0, pitch: 0 }, 'an older unstamped shore view was applied off the shore');
 });

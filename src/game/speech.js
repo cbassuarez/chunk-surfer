@@ -55,7 +55,8 @@ export function speechInit({ cue, audio, typing: typingBus, context, now } = {})
   voice.warm?.();
 }
 
-// A line is a string ("just a thought"), or { who, text, cue, rate, hold }.
+// A line is a string ("just a thought"), or { who, text, cue, rate, hold, voiceSpeaker?, sourceLabel? }.
+// Voice/caption overrides do not change the line's interaction or visual role.
 //   who: 'you' | 'radio' | 'direction'
 function normalize(line) {
   const src = typeof line === 'string' ? { text: line } : { ...line };
@@ -82,7 +83,7 @@ function transientByDefault(line) {
 
 function invalidateDispatch(token, { stopCurrent = true } = {}) {
   const state = dispatches.get(token);
-  if (state) state.active = false;
+  if (state) { state.active = false; state.cancelled = true; }
   let changed = !!state;
   for (let i = q.length - 1; i >= 0; i--) {
     if (q[i].__dispatch?.token === token) { q.splice(i, 1); changed = true; }
@@ -108,6 +109,7 @@ function supersedeDispatch(token, { interrupt = false } = {}) {
   // finish, but its dependent tail is gone. Give it a private family so another
   // firing does not keep finding it as the replaceable action.
   if (!interrupt && cur?.__dispatch?.token === token) {
+    state.cancelled = true;
     for (let i = q.length - 1; i >= 0; i--) {
       if (q[i].__dispatch?.token === token) q.splice(i, 1);
     }
@@ -147,6 +149,7 @@ function enqueue(line, state, { delayMs, gapMs } = {}) {
     enumerable: false,
   });
   q.push(next);
+  state.accepted++;
   while (new Set(q.map((entry) => entry.__dispatch?.token)).size > MAX_QUEUED) {
     const oldest = q[0];
     // The cap counts moments, not sentences. One authored six- or seven-line
@@ -174,7 +177,7 @@ export function createSpeechDispatch({
   const token = `${family}:${++dispatchSerial}`;
   const state = {
     token, family, active: true, createdAt: nowMs(), started: false,
-    lastCompletedAt: null,
+    lastCompletedAt: null, accepted:0, completedLines:0, cancelled:false,
     context: context === 'auto' ? contextKey() : (context == null ? null : String(context)),
     maxWaitMs: Number.isFinite(Number(maxWaitMs)) ? Math.max(0, Number(maxWaitMs)) : Infinity,
     valid: typeof valid === 'function' ? valid : null,
@@ -191,6 +194,9 @@ export function createSpeechDispatch({
     },
     cancel() { return invalidateDispatch(token); },
     active() { return !!dispatches.get(token)?.active; },
+    result() { return {active:!!dispatches.get(token)?.active,accepted:state.accepted,
+      completedLines:state.completedLines,cancelled:state.cancelled,
+      completed:!dispatches.has(token)&&!state.cancelled&&state.accepted>0&&state.completedLines===state.accepted}; },
   };
   return Object.freeze(api);
 }
@@ -238,6 +244,7 @@ export function sayAll(lines = [], options = {}) {
 }
 export function clearSpeech() {
   q.length = 0;
+  for(const state of dispatches.values())state.cancelled=true;
   dispatches.clear();
   curVoice?.stop?.();
   curVoice = null;
@@ -258,6 +265,9 @@ export function speechPanelRows() {
   return uiWrap(String(cur.text || ''), Math.max(12, w - 8)).length + 7 + 2;
 }
 export function speaking() { return cur; }
+// A displayed caption can outlive its voice. Character mouths need the audio
+// handle's lifetime, while social staging may still use the visible sentence.
+export function isVoicing() { return !!curVoice && !curVoice.done(); }
 
 // Escape belongs to the visible small shell before it belongs to the run-level
 // pause menu. Cancelling the dispatch, rather than merely hiding its current
@@ -300,7 +310,7 @@ function begin(line) {
   // Only a mouth speaks. A thought and a stage direction are typed, because
   // nobody in the room is saying them.
   if (line.text.trim() && isVoiced(line.who) && line.voice !== false) {
-    curVoice = voice.start(line.text, { speaker: line.who, rate: line.rate || 1 });
+    curVoice = voice.start(line.text, { speaker: line.voiceSpeaker || line.who, rate: line.rate || 1 });
   }
 }
 
@@ -362,6 +372,7 @@ export function updateSpeech(dt) {
     const state = dispatches.get(token);
     if (state) {
       state.lastCompletedAt = at;
+      state.completedLines++;
       if (!q.some((line) => line.__dispatch?.token === token)) dispatches.delete(token);
     }
   }
@@ -386,6 +397,7 @@ export function skipSpeech() {
   cur = null;
   if (state) {
     state.lastCompletedAt = nowMs();
+    state.completedLines++;
     if (!q.some((line) => line.__dispatch?.token === token)) dispatches.delete(token);
   }
   return true;
@@ -430,7 +442,7 @@ export function drawSpeech() {
   const panelH = h + 7;
   const y = rows - panelH - 2;
   withMachinePanel(x - 2, y, w + 4, panelH, {
-    label: 'MONITOR', source: style.tag || 'VOICE', meter: true,
+    label: 'MONITOR', source: cur.sourceLabel || style.tag || 'VOICE', meter: true,
   }, (panel) => {
   const textX = panel.x + 1;
   const textY = Math.max(y + 3, panel.y - 1);

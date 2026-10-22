@@ -3,6 +3,8 @@ import * as receptionGeometry from '../data/source-last-reception.js';
 const ROOM = receptionGeometry.SOURCE_LAST_RECEPTION;
 const PHASES = new Set(['exploring', 'reveal-pending', 'grace', 'converging', 'captured', 'released', 'escaped']);
 const RESOLVED = new Set(['released', 'escaped']);
+const INVITATION_STATES = new Set(['unoffered', 'declined', 'carrying', 'delivered']);
+const COMPANY_ANCHORS = ['lounge', 'suiteNorth', 'returnRoom', 'release', 'westLink', 'serviceLink', 'galleryTop', 'gallery'];
 const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, Number(n) || 0));
 const finite = (n, fallback) => Number.isFinite(Number(n)) ? Number(n) : fallback;
 const dist = (a, b) => Math.hypot(a.x - b.x, a.z - b.z, (a.y - b.y) * 1.5);
@@ -82,6 +84,98 @@ function validPosition(value) {
     && Number(value.y) >= ROOM.floor - .1 && Number(value.y) <= ROOM.galleryFloor + .25;
 }
 
+function normalizeWindowInvitation(saved) {
+  const input = saved && typeof saved === 'object' ? saved : {};
+  const status = INVITATION_STATES.has(input.status) ? input.status : 'unoffered';
+  const delivered = status === 'delivered';
+  return { status,
+    declinedReason: status === 'declined' ? input.declinedReason === 'abandoned' ? 'abandoned' : 'declined' : null,
+    acknowledged: delivered && !!input.acknowledged,
+    settling: delivered && !input.settled && !!input.settling,
+    settled: delivered && !!input.settled,
+    destination: delivered ? COMPANY_ANCHORS.includes(input.destination) ? input.destination : 'suiteNorth' : null };
+}
+
+// This small kindness is offered on a return visit after either resolution.
+// It does not delay, purchase, repeat or bypass the original revelation.
+function windowInvitationConversation(state, residentId) {
+  if (!RESOLVED.has(state.phase)) return null;
+  const task = state.windowInvitation;
+  const make = (id, title, lines, choices = []) => ({ id, residentId, title, lines, choices,
+    speaker: BY_ID.get(residentId).name, facts: [], reveals: false, repeat: true, invitation: true });
+  if (residentId === 'warning' && state.seen.includes('warning-service')) {
+    if (task.status === 'unoffered' || task.status === 'declined') return make('warning-window-invitation', 'A place by the others', [
+      task.declinedReason === 'abandoned' ? 'You need not apologise. A small promise can feel different in this room.'
+        : task.status === 'declined' ? 'The offer stands. You need not explain your answer.'
+          : 'There is one thing you could do, if you are staying a moment.',
+      'The person at the window thinks he is keeping watch for all of us. I have tried asking him to sit down.',
+      'If I call across the room, everyone listens for news. Then they look at you. I will not announce another living visitor.',
+      'You have been outside. Would you tell him quietly: there is room by the others. He can look again later.',
+    ], [
+      { id: 'accept', text: 'I can tell him quietly.', lines: ['Just that. It is an invitation. He need not accept it.'] },
+      { id: 'decline', text: 'I do not want to carry another message.', lines: ['All right. You have already carried enough of this room.'] },
+    ]);
+    if (task.status === 'carrying') return make('warning-window-reminder', 'The invitation', [
+      'The person at the window. There is room by the others, and he can look again later. You do not owe him news from outside.',
+    ], [
+      { id: 'continue', text: 'I still mean to tell him.', lines: ['Take your time. I am not keeping count.'] },
+      { id: 'abandon', text: 'I cannot be the one to tell him.', lines: ['Then leave it with me. I will find a quieter way to ask.'] },
+    ]);
+    if (task.status === 'delivered' && !task.acknowledged) return make('warning-window-thanks', 'Room for one more', [
+      task.settled ? 'He has turned round. I had forgotten what his face looked like from here.'
+        : 'I saw him listen to you. He can take his time turning round.',
+      'Nothing opened. No one got out. But he need not spend every moment looking for the door to change.',
+    ]);
+  }
+  if (residentId === 'window') {
+    if (task.status === 'carrying') return make('window-window-invitation', 'A quiet invitation', [
+      'You have seen the other side of that door. Is there something you wanted to tell me?',
+    ], [
+      { id: 'deliver', text: 'There is room by the others. You can look again later.', lines: [
+        'Did they ask you to say that? No. Do not answer. I would rather think they did.',
+        'I am not giving up the window. Only turning round for a while.',
+      ] },
+      { id: 'leave-unsaid', text: 'No news. I will leave you to it.', lines: ['No news. Yes. I know how to wait for that.'] },
+    ]);
+    if (task.status === 'delivered') return make('window-company', 'Only for a while', [
+      task.settled ? 'They are still arguing about the curtain. I had forgotten there were two versions.'
+        : 'Only for a while. The window will still be there.',
+      'I can listen to them and look again later.',
+    ]);
+  }
+  return null;
+}
+
+function finishWindowInvitation(state, id, choiceId) {
+  if (typeof id !== 'string') return null;
+  const residentId = id.startsWith('warning-') ? 'warning' : id.startsWith('window-') ? 'window' : null;
+  if (!residentId) return null;
+  const conversation = getLastReceptionConversation(state, residentId);
+  if (!conversation?.invitation || conversation.id !== id) return null;
+  const task = state.windowInvitation;
+  const choice = typeof choiceId === 'object' ? choiceId?.id : choiceId;
+  if (id === 'warning-window-invitation') {
+    if (!['accept', 'decline'].includes(choice)) return { changed: false, pendingReveal: false };
+    Object.assign(task, { status: choice === 'accept' ? 'carrying' : 'declined',
+      declinedReason: choice === 'decline' ? 'declined' : null });
+  } else if (id === 'warning-window-reminder') {
+    if (choice !== 'abandon') return { changed: false, pendingReveal: false };
+    Object.assign(task, { status: 'declined', declinedReason: 'abandoned' });
+  } else if (id === 'window-window-invitation') {
+    if (choice !== 'deliver') return { changed: false, pendingReveal: false };
+    const company = state.actors.find(entry => entry.id === 'guest-a');
+    const destination = [...COMPANY_ANCHORS].sort((a, b) => {
+      const score = id => { const distance = dist(anchor(id), company); return distance + Math.max(0, 1.1 - distance) * 10; };
+      return score(a) - score(b);
+    })[0];
+    Object.assign(task, { status: 'delivered', declinedReason: null, acknowledged: false, settling: true, settled: false, destination });
+    const actor = state.actors.find(entry => entry.id === 'window');
+    actor.path = []; actor.repath = 0; actor.boundarySeconds = 0;
+  } else if (id === 'warning-window-thanks') task.acknowledged = true;
+  else return { changed: false, pendingReveal: false };
+  return { changed: true, pendingReveal: false, invitation: task.status };
+}
+
 /** Serializable local custody only. No inventory, injury, recording or ending fields are owned here. */
 export function createLastReceptionState(saved = null) {
   const input = saved && typeof saved === 'object' ? saved : {};
@@ -101,7 +195,7 @@ export function createLastReceptionState(saved = null) {
       mode: ['idle', 'walk', 'reach', 'seated'].includes(found.mode) ? found.mode : 'idle' };
   });
   return {
-    version: 1, phase, seen, knowledge, actors,
+    version: 1, phase, seen, knowledge, actors, windowInvitation: normalizeWindowInvitation(input.windowInvitation),
     elapsed: clamp(input.elapsed, 0, 100000), phaseElapsed: clamp(input.phaseElapsed, 0, 100000),
     graceUsed: !!input.graceUsed || ['converging', 'captured', 'released', 'escaped'].includes(phase),
     hold: phase === 'converging' ? clamp(input.hold, 0, LAST_RECEPTION_HOLD_SECONDS) : 0,
@@ -129,6 +223,8 @@ export function getLastReceptionConversation(state, residentId) {
     && !state.seen.includes(entry.id) && (!entry.requires || state.knowledge[entry.requires]));
   const next = eligible[0];
   if (next) return { ...next, speaker: BY_ID.get(residentId).name, lines: [...next.lines], facts: [...next.facts] };
+  const invitation = windowInvitationConversation(state, residentId);
+  if (invitation) return invitation;
   const lines = state.imprint
     ? ['They are speaking to the chair now. They seem relieved that you have decided to stay.']
     : RESOLVED.has(state.phase)
@@ -138,8 +234,10 @@ export function getLastReceptionConversation(state, residentId) {
     lines, facts: [], reveals: false, repeat: true };
 }
 
-export function finishLastReceptionConversation(state, conversationOrResidentId) {
+export function finishLastReceptionConversation(state, conversationOrResidentId, choiceId = null) {
   const supplied = typeof conversationOrResidentId === 'object' ? conversationOrResidentId?.id : conversationOrResidentId;
+  const invitationResult = finishWindowInvitation(state, supplied || '', choiceId);
+  if (invitationResult) return invitationResult;
   const conversation = CONVERSATION_BY_ID.get(supplied) || (BY_ID.has(supplied) ? getLastReceptionConversation(state, supplied) : null);
   if (!conversation || conversation.repeat || state.seen.includes(conversation.id)) return { changed: false, pendingReveal: false };
   if (conversation.requires && !state.knowledge[conversation.requires]) return { changed: false, pendingReveal: false };
@@ -289,7 +387,31 @@ export function getLastReceptionPresentation(state) {
       : phase === 'converging' ? 'surrounded' : 'free',
     locksMovement: phase === 'captured', movementMultiplier: phase === 'captured' ? 0 : 1,
     cue: phase === 'grace' ? 'public-repetition' : null, subtitle,
-    resolved: RESOLVED.has(phase), residents, imprint: state.imprint };
+    resolved: RESOLVED.has(phase), residents, imprint: state.imprint, windowInvitation: { ...state.windowInvitation } };
+}
+
+function settleWindowInvitation(state, seconds, inside, events) {
+  const task = state.windowInvitation;
+  if (!task.settling || !RESOLVED.has(state.phase) || !inside) return false;
+  const actor = state.actors.find(entry => entry.id === 'window');
+  const target = anchor(task.destination || 'suiteNorth');
+  actor.boundarySeconds = 0;
+  if (dist(actor, target) > .16) {
+    moveActor(actor, target, seconds, BY_ID.get('window'));
+    if (actor.distance - actor.footstepDistance >= 1.18) {
+      actor.footstepDistance = actor.distance;
+      events.push({ type: 'footstep', residentId: 'window', position: point(actor) });
+    }
+  }
+  if (dist(actor, target) <= .16) {
+    const other = state.actors.find(entry => entry.id === 'guest-a');
+    actor.yaw = Math.atan2(other.x - actor.x, other.z - actor.z);
+    actor.mode = 'idle'; actor.speed = 0; actor.path = [];
+    task.settling = false; task.settled = true;
+    events.push({ type: 'invitation-kept', residentId: 'window', who: BY_ID.get('window').name,
+      text: 'Were you still talking about the curtain?', position: point(actor) });
+  }
+  return true;
 }
 
 /** All encounter time stops while paused, unfocused, inactive or reading. */
@@ -348,9 +470,11 @@ export function updateLastReception(state, { dt = 0, player = null, active = tru
       }
       continue;
     }
+    const invitationMoved = settleWindowInvitation(state, step, inside, events);
     if (state.phase === 'escaped') {
       const host = state.actors.find((actor) => actor.id === (state.boundaryActor || 'host'));
       const door = anchor(state.exit || 'mainDoor');
+      if (host?.id === 'window' && (invitationMoved || state.windowInvitation.settled)) continue;
       if (host && dist(host, door) > .3 && state.phaseElapsed < 24) moveActor(host, { ...door, x: door.x - .3 }, step, BY_ID.get(host.id));
       if (host && dist(host, door) < .85) {
         host.boundarySeconds = Math.min(1, host.boundarySeconds + step);

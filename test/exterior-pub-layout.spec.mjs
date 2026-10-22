@@ -6,6 +6,7 @@ import {F,ZONE,ZONE_WORLD,MATERIAL,isOutdoorZone} from '../src/data/floorplan/le
 import {DISTRICT_STREETS,DISTRICT_COURTS,districtLogicalAt} from '../src/data/exterior-district.js';
 import * as PROPS from '../src/game/props.js';
 import {shouldHideCrossEnvelopeProp} from '../src/game/prop-visibility.js';
+import {DOOR_STATE,pointInDoorSweep} from '../src/game/door-runtime.js';
 import {CONSERVATORY_PROPS} from '../src/data/conservatory-props.js';
 import {addBourgeoisPubFrontage} from '../tools/chunk_surfer/exterior-frontage-geometry.mjs';
 import {EXTERIOR_PUB as PUB,PUB_LEVELS,PUB_DOORS,PUB_PHYSICAL_COLLIDERS,PUB_COLLIDERS,
@@ -83,13 +84,53 @@ test('both closed public doors block street entry, and ordinary interaction open
   FP.tickDoors(120);assert.ok(PUB.doors.every(d=>FP.doorState().find(p=>p.id===d.id).open),'no hidden closer shuts either pair');
 });
 
-test('WC oak leaf closes for privacy and reopens from either side without a key',()=>{
-  const door=PUB.wc.door,outside=at(door.x,109.25),plane=at(door.x,109.75),inside=at(door.x,110.25);
-  FP.setDoorOpen(door.id,false);assert.equal(FP.canStep(outside.x,outside.y,plane.x,plane.y).ok,false);
-  assert.equal(FP.interactDoor(outside.x,outside.y,2,new Set()).ok,true);FP.tickDoors(1);
-  assert.ok(FP.canStep(outside.x,outside.y,plane.x,plane.y).ok);assert.ok(FP.canStep(plane.x,plane.y,inside.x,inside.y).ok);
-  FP.setDoorOpen(door.id,false);assert.equal(FP.interactDoor(inside.x,inside.y,0,new Set()).ok,true);FP.tickDoors(1);
-  assert.ok(FP.canStep(inside.x,inside.y,plane.x,plane.y).ok,'the same leaf opens from inside');
+test('WC privacy closes and reopens with the real player present, preserving the public aisle',()=>{
+  PROPS.propsInit(FP,[]);setPublic(true);
+  const id=PUB.wc.door.id,bodyAt=(x,z)=>at(x-.25,z-.25);
+  const outside=bodyAt(.75,108.45),inside=bodyAt(.75,110.45);
+  const portal=()=>FP.doorState().find(d=>d.id===id);
+  const tickAt=p=>FP.tickDoors(1.1,{playerX:p.x,playerY:p.y});
+  const occupy=p=>assert.ok(!FP.isSolid(p.x,p.y)&&PROPS.propCanOccupy(p.x,p.y),'the real player has furniture and wall clearance');
+  assert.equal(portal().swing,'escape','the privacy leaf opens into the clear aisle rather than filling the small WC');
+  occupy(outside);occupy(inside);
+  assert.equal(pointInDoorSweep({...portal(),swing:'room-in'},inside.x,inside.y),true,
+    'the former inward swing occupied the otherwise usable standing place and prevented closure');
+  assert.equal(pointInDoorSweep(portal(),inside.x,inside.y),false,'the WC standing place clears the complete real leaf sweep');
+  assert.equal(pointInDoorSweep(portal(),outside.x,outside.y),false,'the end of the continuous public aisle clears the outward leaf');
+  FP.setDoorOpen(id,false);
+  assert.equal(FP.interactDoor(outside.x,outside.y,[0,1],new Set()).opened,true);
+  tickAt(outside);assert.equal(portal().state,DOOR_STATE.OPEN);assert.equal(portal().openFraction,1);
+  // Ordinary half-metre steps retain one player-grid phase all the way from
+  // the east entry aisle to the usable WC standing place. No fixture moves or
+  // diagnostic offset is required to evade the leaf.
+  const route=Array.from({length:12},(_,i)=>bodyAt(-4.75+i*.5,108.45));
+  route.push(...Array.from({length:4},(_,i)=>bodyAt(.75,108.95+i*.5)));
+  const walk=points=>{for(let i=0;i<points.length;i++){
+    occupy(points[i]);if(i)assert.ok(FP.canStep(points[i-1].x,points[i-1].y,points[i].x,points[i].y,{keys:new Set()}).ok,'ordinary half-metre route crosses the open privacy threshold');
+  }};
+  walk(route);assert.deepEqual(route.at(-1),inside);
+  assert.equal(FP.interactDoor(inside.x,inside.y,[0,-1],new Set()).closed,true);
+  tickAt(inside);assert.equal(portal().state,DOOR_STATE.CLOSED);assert.equal(portal().openFraction,0,'privacy reaches the closed endpoint with actual player occupancy');
+  occupy(inside);
+  assert.equal(FP.interactDoor(inside.x,inside.y,[0,-1],new Set()).opened,true);
+  tickAt(inside);assert.equal(portal().state,DOOR_STATE.OPEN);assert.equal(portal().openFraction,1);
+  walk([...route].reverse());
+  assert.equal(FP.interactDoor(outside.x,outside.y,[0,1],new Set()).closed,true);
+  tickAt(outside);assert.equal(portal().state,DOOR_STATE.CLOSED);assert.equal(portal().openFraction,0);
+  assert.equal(FP.interactDoor(outside.x,outside.y,[0,1],new Set()).opened,true);
+  tickAt(outside);assert.equal(portal().state,DOOR_STATE.OPEN);assert.equal(portal().openFraction,1,'the same leaf reopens from the public aisle');
+  // The ordinary quarter-metre body grid also has a usable privacy pose;
+  // this route uses only half-metre moves after the public entry.
+  const quarterRoute=Array.from({length:12},(_,i)=>bodyAt(-4.75+i*.5,108.25));
+  quarterRoute.push(...Array.from({length:4},(_,i)=>bodyAt(.75,108.75+i*.5)),bodyAt(1.25,110.25),bodyAt(1.25,110.75));
+  const quarterInside=quarterRoute.at(-1);
+  walk(quarterRoute);assert.equal(pointInDoorSweep(portal(),quarterInside.x,quarterInside.y),false);
+  assert.equal(FP.interactDoor(quarterInside.x,quarterInside.y,[0,-1],new Set()).closed,true);
+  tickAt(quarterInside);assert.equal(portal().state,DOOR_STATE.CLOSED);assert.equal(portal().openFraction,0,'normal quarter-grid occupancy permits complete privacy closure');
+  occupy(quarterInside);
+  assert.equal(FP.interactDoor(quarterInside.x,quarterInside.y,[0,-1],new Set()).opened,true);
+  tickAt(quarterInside);assert.equal(portal().state,DOOR_STATE.OPEN);assert.equal(portal().openFraction,1);
+  walk([...quarterRoute].reverse());
 });
 
 test('thin shell collision leaves glazing transparent and makes the rear half-grid excess inaccessible',()=>{
@@ -189,6 +230,15 @@ test('integrated prop collision prevents closed-door bypasses and permits public
     }
   };
   walk([[-12.75,108.25],[-7.4,108.25],[-7.4,111.55],[-1.0,111.55]]);
+  // The complete working aisle must also accept the ordinary player's
+  // quarter-metre body phase; continuous clearance alone missed this before.
+  const staffGrid=Array.from({length:6},(_,i)=>bodyAt(-4.75-i*.5,108.25));
+  staffGrid.push(...Array.from({length:6},(_,i)=>bodyAt(-7.25,108.75+i*.5)),
+    ...Array.from({length:13},(_,i)=>bodyAt(-6.75+i*.5,111.25)));
+  for(let i=0;i<staffGrid.length;i++){
+    const q=staffGrid[i];assert.ok(runtimeOccupancy(q),'normal quarter-grid body fits every return and staff-aisle standing point');
+    if(i)assert.ok(FP.canStep(staffGrid[i-1].x,staffGrid[i-1].y,q.x,q.y,{keys:new Set()}).ok,'ordinary half-metre steps reach the full staff aisle');
+  }
   FP.setDoorOpen(PUB.wc.door.id,true);
   walk([[-4.75,108.25],[.75,108.25],[.75,110.25],[1.05,110.25],[1.05,110.8]]);
   const outside=bodyAt(.75,109.25),inside=bodyAt(.75,110.25);

@@ -1,6 +1,6 @@
 // The selected Red Box: a grey armoured pay-on-answer instrument inside a K6.
-// The wet glazing and cast enclosure pass through the world's final shader;
-// the close apparatus uses the recorder's full-DPR physical material layer.
+// The real glazing and cast enclosure remain in the world. The apparatus face
+// is projected onto its back wall and shares the world's final dither shader.
 // Its fixed number ring sits below a perforated moving finger plate. Geometry
 // is shared with the scene's hit tests: regions in UI cells, rotary in CSS px.
 import { uiCellMetrics, uiDraw, uiSize } from './ui.js';
@@ -555,7 +555,7 @@ function paintVignette(ctx, L, d) {
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
 }
 
-const art = { key: null, back: null, front: null, hardware:null };
+const art = { key: null, back: null, front: null, hardware:null, shelf:null, book:null };
 const surface = (w, h) => {
   if (typeof OffscreenCanvas === 'function') return new OffscreenCanvas(w, h);
   const c = document.createElement('canvas'); c.width = w; c.height = h; return c;
@@ -576,24 +576,29 @@ function ensureArt(L, d, view) {
   paintSlotAndPressings(hardware,L,d);
   paintCradle(hardware,L,d);
   paintDialBase(hardware,L,d);
-  paintShelfAndBook(hardware,L,d,view.directory||{});
-  // The keyed inscription is a readable physical clue, like apparatus ink.
-  // Its cast support stays in the world tableau; the grooves stay full-DPR.
-  paintScratches(hardware,L,d,view.scratches||[]);
+  art.shelf=surface(w,h);
+  paintShelfAndBook(art.shelf.getContext('2d'),L,d,view.directory||{});
+  // The directory has its own horizontal surface on the real shelf. Keeping
+  // it out of the vertical face avoids a second book floating in front of it.
+  const directory=L.px.directory,bw=Math.max(1,Math.ceil(directory.w*d)),bh=Math.max(1,Math.ceil(directory.h*d));
+  art.book=surface(bw,bh);
+  const book=art.book.getContext('2d');
+  book.drawImage(art.shelf,-directory.x*d,-directory.y*d);
+  const notes=(view.scratches||[]).slice(0,5);
+  for(let i=0;i<notes.length;i++)drawHardwarePrint(book,notes[i].text,bw*.075,bh*(.16+i*.13),{
+    width:bw*.34,height:bh*.095,color:'#3c3a2c',finish:'faceplate',dpr:d,darkPanel:false,
+  });
   const f = art.front.getContext('2d');
   paintVignette(f, L, d);
   return art;
 }
-// THROUGH THE GAME'S OWN LOOK. With a sink (main hands r3d's), the booth is
-// painted onto a canvas of its own and given to the renderer, which prints it
-// through the final pixel-mesh/post chain. The close physical apparatus is a
-// full-DPR overlay, like the recorder: metal, plastic and ink never acquire a
-// CRT grille or phosphor glow. Both layers use the same authored geometry.
+// The sink receives a transparent instrument face and its layout, so the world
+// compositor can attach every moving part to the same physical cabinet plane.
 let tableauSink = null, tableau = null;
 export function setPayphoneTableauSink(sink = null) { tableauSink = typeof sink === 'function' ? sink : null; return !!tableauSink; }
 // Let the pictures go when he steps out of the box.
 export function releasePayphoneArt() {
-  art.key = null; art.back = null; art.front = null;art.hardware=null;
+  art.key = null; art.back = null; art.front = null;art.hardware=null;art.shelf=null;art.book=null;
   tableau = null;
   try { tableauSink?.(null); } catch (_) {}
 }
@@ -822,22 +827,22 @@ export function drawPayphone(view = {}, size = uiSize()) {
         if (dip>0) { target.fillStyle=`rgba(0,0,0,${Math.min(.2,dip*.2)})`; target.fillRect(0,0,L.px.FW*d,L.px.FH*d); }
       }
     };
+    const paintInstrument = (target) => {
+      target.drawImage(plates.hardware,0,0);
+      drawDialPlate(target,L,d,Number(view.rotation)||0,view.card||[]);
+      drawSlotLamp(target,L,d,{lit:!!view.slotLit,tape:view.slot==='tape'});
+      drawTapeWindow(target,L,d,view);
+      drawReturn(target,L,d,view.flap||null);
+      drawHandset(target,L,d,view.handset||'up');
+      if(!tableauSink||!['directory','scratches'].includes(view.hover))drawHover(target,L,d,view.hover,view.hoverHole||null);
+    };
     if (tableauSink) {
       const w=Math.max(1,ctx.canvas.width),h=Math.max(1,ctx.canvas.height);
       if (!tableau || tableau.width!==w || tableau.height!==h) tableau=surface(w,h);
       const tctx=tableau.getContext('2d');
       tctx.setTransform(1,0,0,1,0,0);tctx.clearRect(0,0,w,h);
-      paintBooth(tctx);tableauSink(tableau);
-    } else paintBooth(ctx);
-    // Same clear, physical overlay as the recorder: all hardware and its ink
-    // remain together at device resolution rather than only reprinting text.
-    ctx.drawImage(plates.hardware,0,0);
-    drawDialPlate(ctx,L,d,Number(view.rotation)||0,view.card||[]);
-    drawSlotLamp(ctx,L,d,{lit:!!view.slotLit,tape:view.slot==='tape'});
-    drawTapeWindow(ctx,L,d,view);
-    drawReturn(ctx,L,d,view.flap||null);
-    drawHandset(ctx,L,d,view.handset||'up');
-    drawHover(ctx, L, d, view.hover, view.hoverHole || null);
+      paintInstrument(tctx);tableauSink(tableau,{layout:L,book:plates.book});
+    } else {paintBooth(ctx);paintInstrument(ctx);ctx.drawImage(plates.shelf,0,0);paintScratches(ctx,L,d,view.scratches||[]);}
     // A dark band under the one line of instruction, so it can be read.
     const hy = (L.hint.y - 0.4) * L.cellH * d;
     ctx.fillStyle = 'rgba(0,0,0,.62)'; ctx.fillRect(0, hy, L.px.FW * d, L.cellH * 1.8 * d);

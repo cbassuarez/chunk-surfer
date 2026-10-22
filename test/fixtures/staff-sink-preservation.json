@@ -1,0 +1,12 @@
+{
+  "sourceHelperSha256": "f461e738c1c8a9be8504d4e5a71ee425a6a362b9645836f9eef6255e68f62919",
+  "kettleSourceSha256": "d06740f409f02228c3f41ebebb3cf71cf47c9643b52facd8987e423f6d97c177",
+  "materialKeys": ["black", "poolBlue", "steel", "wood", "paper", "ivory", "agedWhite", "cloth", "navy", "stone", "brass", "rust"],
+  "materialsSha256": "75bf7618c012aa8954cb734472a66cbd5e68ffac43991039c7fba4d02653df82",
+  "otherMeshesSha256": "1ebddfb63d32bf0410f32e25061be70620110c6e7983507cfdb610704c6ceb17",
+  "unchangedCounterSha256": "7c9b6dcb4fb8f3be84967931336efbf26a9c5de7620d443f20876486b47113f5",
+  "unchangedCounterPrimitiveCount": 896,
+  "removedCounterPrimitiveCount": 6,
+  "kettlePrimitiveSha256": "6160e88a59483b2a9689c1209289be3f9059b74bc98d7ddefb8f51fdd1fb60c0",
+  "kettlePrimitiveCount": 803
+}

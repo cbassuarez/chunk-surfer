@@ -5,6 +5,7 @@ import { readFile, writeFile, mkdir, appendFile, mkdtemp, rm, statfs } from 'nod
 import { resolve, dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { createHash } from 'node:crypto';
+import { gunzipSync } from 'node:zlib';
 import puppeteer from 'puppeteer-core';
 import { productionIdentity, suppressClientHmr, installEvidenceReader } from './prototype-session-contract.mjs';
 
@@ -12,13 +13,23 @@ const mode=process.argv[2],file=process.argv[3];
 assert.ok(['--prepare','--run'].includes(mode)&&file,'Usage: replay-chapter.mjs --prepare complete-trace.json | --run prepared-plan.json');
 const sha=value=>createHash('sha256').update(value).digest('hex');
 const sleep=ms=>new Promise(done=>setTimeout(done,ms));
-const loaded=await readFile(file,'utf8');
+const encoded=await readFile(file);
+const loaded=(String(file).endsWith('.gz')?gunzipSync(encoded):encoded).toString('utf8');
 if(mode==='--prepare'){
   const input=JSON.parse(loaded),trace=input.report||input;
   assert.equal(trace.kind,'source-experience-continuous-canvas-capture');
   assert.ok(trace.events?.length&&trace.samples?.length,'Complete state/input trace required, not a screenshot witness or controller tail.');
   assert.equal(trace.events[0].type,'record-start');assert.equal(trace.events.at(-1).type,'record-stop','Do not prepare a partial/in-memory status report.');
   assert.ok(!trace.events.some(e=>e.type==='debug-call'),'Source progression/camera/speech debug calls prevent an ordinary-input repeat claim.');
+  // Never attach today's identity to yesterday's input. The Oct17 landscape
+  // has since acquired real gaps, a relocated dock and a following HUSH; its
+  // old controls cannot stand in for a current continuous route. A capture
+  // wrapper must carry the identity measured for that original session.
+  const capturedIdentity=input.productionIdentity||trace.productionIdentity;
+  assert.ok(capturedIdentity&&typeof capturedIdentity==='object',
+    'Original capture source/asset identity receipt missing. A current identity cannot retrospectively certify an older trace.');
+  assert.deepEqual(await productionIdentity(),capturedIdentity,
+    'Original capture graph differs from the current game. Replaying old timed controls would be a new experiment, not a faithful repeat.');
   const initial=trace.samples[0],last=trace.samples.at(-1);
   assert.equal(initial.phase,'hall');assert.ok(Math.hypot(initial.position.x,initial.position.y)<.1,'The trace must include hall entry, not a later fixture.');
   assert.ok(last.phase==='completed'||last.savedCheckpoint?.area==='conservatory','The complete trace must reach its actual building exit.');
@@ -31,9 +42,9 @@ if(mode==='--prepare'){
   const milestones=trace.transitions.filter(t=>t.source?.phase).map(t=>({tMs:t.tMs,phase:t.source.phase,scene:t.scene,
     checkpointId:t.source.checkpointId,route:t.source.finale?.route}));
   const dir=resolve(process.env.SOURCE_CHAPTER_REPEAT_OUT||'artifacts/source-experience-study/route/full-repeat');await mkdir(dir,{recursive:true});
-  const plan={kind:'source-chapter-faithful-input-repeat',status:'prepared-not-run',sourceTrace:resolve(file),sourceTraceSha256:sha(loaded),
+  const plan={kind:'source-chapter-faithful-input-repeat',status:'prepared-not-run',sourceTrace:resolve(file),sourceTraceSha256:sha(encoded),
     originalCaptureHadChunkFailure:!!trace.chunkError,originalCaptureBytes:trace.bytes,originalMovieUnverified:true,
-    productionIdentity:await productionIdentity(),initialFixture:'Exactly one declared hall-entry + chapel readiness + yaw0 fixture via shared helper; no kit/eyes/takes granted.',
+    productionIdentity:capturedIdentity,initialFixture:'Exactly one declared hall-entry + chapel readiness + yaw0 fixture via shared helper; no kit/eyes/takes granted.',
     initial:{position:initial.position,look:initial.look,phase:initial.phase,firstLiftCompleted:initial.firstLiftCompleted,landscapeOrigin:initial.landscapeOrigin,settings:initial.settings},
     expectedTerminal:{phase:last.phase,area:last.savedCheckpoint?.area,route:last.finale?.route,position:last.position},
     durationMs,videoBitsPerSecond:2_000_000,events,milestones,

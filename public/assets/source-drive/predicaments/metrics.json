@@ -1,0 +1,730 @@
+{
+  "schema": 1,
+  "kind": "source-drive-predicament-assets",
+  "revision": "car-nage-whiteout-2",
+  "bytes": 2090512,
+  "sha256": "c0569920213cbd7d7184ce9e47bfde9829f32131283dbc6f55c917e335a5490f",
+  "triangles": 45599,
+  "coordinateContract": {
+    "units": "metres",
+    "axes": {
+      "x": "vehicle right / outboard cliff",
+      "y": "up",
+      "z": "longitudinal; vehicle front is -Z"
+    },
+    "meshOrigins": "Cars sit on local Y≈0; cliff is local crestY=0 with 32m drop; folded highway is authored remote scenery."
+  },
+  "meshes": {
+    "dp_wreck_saloon": {
+      "name": "dp_wreck_saloon",
+      "triangles": 12528,
+      "vertices": 8472,
+      "primitives": 8,
+      "bounds": {
+        "min": [
+          -0.9670000076293945,
+          -0.04200609400868416,
+          -1.8051313161849976
+        ],
+        "max": [
+          1.01344633102417,
+          1.5134042501449585,
+          2.212986946105957
+        ]
+      },
+      "features": {
+        "type": "manufactured-car",
+        "variant": "saloon",
+        "construction": "Separate formed panels and real open apertures, cabin cavity, pillars, radiator and wheel sections.",
+        "bodyOpenings": true,
+        "wheels": 4,
+        "periodClaim": "Generic late twentieth-century saloon/estate forms, no branded model claim."
+      }
+    },
+    "dp_wreck_estate": {
+      "name": "dp_wreck_estate",
+      "triangles": 12424,
+      "vertices": 8411,
+      "primitives": 9,
+      "bounds": {
+        "min": [
+          -0.9670000076293945,
+          0.004000000189989805,
+          -2.379714250564575
+        ],
+        "max": [
+          0.9670000076293945,
+          1.6207048892974854,
+          2.1319918632507324
+        ]
+      },
+      "features": {
+        "type": "manufactured-car",
+        "variant": "estate",
+        "construction": "Separate formed panels and real open apertures, cabin cavity, pillars, radiator and wheel sections.",
+        "bodyOpenings": true,
+        "wheels": 4,
+        "periodClaim": "Generic late twentieth-century saloon/estate forms, no branded model claim."
+      }
+    },
+    "dp_wreck_shell": {
+      "name": "dp_wreck_shell",
+      "triangles": 12049,
+      "vertices": 8131,
+      "primitives": 9,
+      "bounds": {
+        "min": [
+          -0.9670000076293945,
+          0.004000000189989805,
+          -1.959717035293579
+        ],
+        "max": [
+          0.9670000076293945,
+          1.5643703937530518,
+          2.212987184524536
+        ]
+      },
+      "features": {
+        "type": "manufactured-car",
+        "variant": "shell",
+        "construction": "Separate formed panels and real open apertures, cabin cavity, pillars, radiator and wheel sections.",
+        "bodyOpenings": true,
+        "wheels": 4,
+        "periodClaim": "Generic late twentieth-century saloon/estate forms, no branded model claim."
+      }
+    },
+    "dp_detached_wheel": {
+      "name": "dp_detached_wheel",
+      "triangles": 1258,
+      "vertices": 875,
+      "primitives": 3,
+      "bounds": {
+        "min": [
+          -0.15041854977607727,
+          0.004000000189989805,
+          -0.34599998593330383
+        ],
+        "max": [
+          0.16699999570846558,
+          0.6959999799728394,
+          0.34599998593330383
+        ]
+      },
+      "features": {
+        "type": "manufactured-wheel",
+        "torusSection": true
+      }
+    },
+    "dp_torn_panel": {
+      "name": "dp_torn_panel",
+      "triangles": 306,
+      "vertices": 178,
+      "primitives": 2,
+      "bounds": {
+        "min": [
+          -0.4650000035762787,
+          0.023899026215076447,
+          -0.4619923532009125
+        ],
+        "max": [
+          0.4650000035762787,
+          0.25096338987350464,
+          0.38999998569488525
+        ]
+      },
+      "features": {
+        "type": "torn-pressed-steel",
+        "thicknessMetres": 0.018
+      }
+    },
+    "dp_cliff_mass": {
+      "name": "dp_cliff_mass",
+      "triangles": 1572,
+      "vertices": 878,
+      "primitives": 1,
+      "bounds": {
+        "min": [
+          0.25,
+          -32,
+          -16
+        ],
+        "max": [
+          12.25,
+          0,
+          16
+        ]
+      },
+      "features": {
+        "type": "fractured-cliff",
+        "verticalDropMetres": 32,
+        "localContract": "X=0 is the road-side crest; all mass recedes into +X. Mount at outside-edge positive lateral, or rotate PI to face the opposite verge."
+      }
+    },
+    "dp_cliff_shelf": {
+      "name": "dp_cliff_shelf",
+      "triangles": 1080,
+      "vertices": 645,
+      "primitives": 3,
+      "bounds": {
+        "min": [
+          -2.7899608612060547,
+          -0.8283092975616455,
+          -16
+        ],
+        "max": [
+          3.3093183040618896,
+          0.004912324715405703,
+          16
+        ]
+      },
+      "features": {
+        "type": "broken-road-ledge",
+        "minThicknessMetres": 0.45
+      }
+    },
+    "dp_road_fold": {
+      "name": "dp_road_fold",
+      "triangles": 3560,
+      "vertices": 2170,
+      "primitives": 4,
+      "bounds": {
+        "min": [
+          -3.9000000953674316,
+          -0.5799999833106995,
+          -26.24455451965332
+        ],
+        "max": [
+          7.733941078186035,
+          53.80942916870117,
+          23.00591468811035
+        ]
+      },
+      "features": {
+        "type": "impossible-continuation",
+        "drivable": false,
+        "widthMetres": 7.8,
+        "construction": "Continuous asphalt over a thick concrete section, worn lane marks, exposed edge bars. Curves through vertical and turns back above itself."
+      }
+    },
+    "dp_whiteout_pylon": {
+      "name": "dp_whiteout_pylon",
+      "triangles": 348,
+      "vertices": 250,
+      "primitives": 3,
+      "bounds": {
+        "min": [
+          -5.309999942779541,
+          0,
+          -0.6899999976158142
+        ],
+        "max": [
+          5.309999942779541,
+          8.923212051391602,
+          0.6899999976158142
+        ]
+      },
+      "features": {
+        "type": "severed-highway-sentinel",
+        "heightMetres": 8.9
+      }
+    },
+    "dp_snow_paving": {
+      "name": "dp_snow_paving",
+      "triangles": 330,
+      "vertices": 209,
+      "primitives": 2,
+      "bounds": {
+        "min": [
+          -3.25,
+          -0.09000000357627869,
+          -0.5
+        ],
+        "max": [
+          3.25,
+          0.010999999940395355,
+          0.5
+        ]
+      },
+      "features": {
+        "type": "physical-packed-snow-road-slab",
+        "widthMetres": 6.5,
+        "lengthMetres": 1,
+        "substrateBottomMetres": -0.09,
+        "surfaceRiseMetres": [
+          0.005,
+          0.011
+        ],
+        "drivable": true,
+        "placementContract": "Exact existing drive_plain_paving X/Z bounds, opaque retained substrate; use root road width and grade transforms."
+      }
+    },
+    "dp_wreck_broken_lamp": {
+      "name": "dp_wreck_broken_lamp",
+      "triangles": 144,
+      "vertices": 94,
+      "primitives": 3,
+      "bounds": {
+        "min": [
+          -0.1120000034570694,
+          -0.05299999937415123,
+          -0.007499999832361937
+        ],
+        "max": [
+          0.1120000034570694,
+          0.05299999937415123,
+          0.02800000086426735
+        ]
+      },
+      "features": {
+        "type": "powered-broken-car-lamp-inset",
+        "mount": "Generated deformed head/rear lens anchors; local -Z is outward.",
+        "emitterFaceLocalZ": -0.006
+      }
+    }
+  },
+  "materials": [
+    {
+      "key": "enamelIvory",
+      "index": 0,
+      "baseLinear": [
+        0.52,
+        0.485,
+        0.385
+      ],
+      "linearMean": [
+        0.5176575071637407,
+        0.4828151749508001,
+        0.38326565434238635
+      ],
+      "roughnessRange": [
+        0.4455704158544541,
+        0.5342834118008614
+      ],
+      "metallic": 0.22,
+      "repeatMetres": 0.85,
+      "reliefMetres": 0.0004,
+      "mapSize": 128,
+      "albedoSha256": "d1eefbff93d256fe8bc3e9c5ff0c7235486eaf6b2a75df5ceff8a4aa6f68f466",
+      "normalSha256": "62201e69d3b7919d74aa67719417f3d8f3237c3511a4b60cbb8383ead810c701",
+      "ormSha256": "a742170912ebe5fa5d02361f701e0ba73dd486b6e21db356e4d08273be51e984"
+    },
+    {
+      "key": "enamelRed",
+      "index": 1,
+      "baseLinear": [
+        0.19,
+        0.025,
+        0.015
+      ],
+      "linearMean": [
+        0.18914357463698717,
+        0.0248873124522353,
+        0.014932387471341043
+      ],
+      "roughnessRange": [
+        0.34594924762845036,
+        0.43426579028367995
+      ],
+      "metallic": 0.32,
+      "repeatMetres": 0.85,
+      "reliefMetres": 0.0004,
+      "mapSize": 128,
+      "albedoSha256": "f8010f93028aaa2544a8041930ecfa5904944a5d5ada6cdd3e6935ec54e0b8a9",
+      "normalSha256": "880522b1b62f837f1bfb91d980ddfc1c2baf6c36cb0052bb74dc7391eaf4cec8",
+      "ormSha256": "6c321c901665e606c90df0d487ea789c042cd05e3eab5c25f7bb69afdb8b6f47"
+    },
+    {
+      "key": "enamelAsh",
+      "index": 2,
+      "baseLinear": [
+        0.315,
+        0.33,
+        0.31
+      ],
+      "linearMean": [
+        0.31358013689816355,
+        0.32851252436950706,
+        0.30860267440771594
+      ],
+      "roughnessRange": [
+        0.5859492476284505,
+        0.67426579028368
+      ],
+      "metallic": 0.18,
+      "repeatMetres": 0.85,
+      "reliefMetres": 0.0004,
+      "mapSize": 128,
+      "albedoSha256": "9550b80e60a058677d5745fc3a0a9bf4eb9da9ef02208ef7c90ce9b385d86c0f",
+      "normalSha256": "880522b1b62f837f1bfb91d980ddfc1c2baf6c36cb0052bb74dc7391eaf4cec8",
+      "ormSha256": "034c4da0093e4a5f720a7fba9e1960a9458730c2a975a2c8cfd6c563d77fda36"
+    },
+    {
+      "key": "steel",
+      "index": 3,
+      "baseLinear": [
+        0.17,
+        0.18,
+        0.165
+      ],
+      "linearMean": [
+        0.16872651868037525,
+        0.17865160801451613,
+        0.16376397401330703
+      ],
+      "roughnessRange": [
+        0.25922024726867676,
+        0.40902354598045354
+      ],
+      "metallic": 0.79,
+      "repeatMetres": 0.6,
+      "reliefMetres": 0.0007,
+      "mapSize": 128,
+      "albedoSha256": "4182d7e48dc6f3bc9f270d7576d843e2d2184892a1ab21b75b9f3b995ed10e4f",
+      "normalSha256": "39e97d62a1c20650f6ac820becee1c8dcf1934a61ad662b730354fb54a2e4b90",
+      "ormSha256": "154a7d94823ec336de769596212e0b6e536866ba84c98ba402b87fec40b2b607"
+    },
+    {
+      "key": "rust",
+      "index": 4,
+      "baseLinear": [
+        0.105,
+        0.042,
+        0.016
+      ],
+      "linearMean": [
+        0.10486684794759285,
+        0.04194673917903729,
+        0.01597971016344275
+      ],
+      "roughnessRange": [
+        0.8260461008548737,
+        0.9288537936948751
+      ],
+      "metallic": 0.15,
+      "repeatMetres": 0.75,
+      "reliefMetres": 0.002,
+      "mapSize": 128,
+      "albedoSha256": "37353aa8a9bd816c6d010b8b341fac04e457704ba7766057c325d20c019045e9",
+      "normalSha256": "9621251ea93089fca3d259602503f5a57756445f4727522450b6d1fc3b6e2db0",
+      "ormSha256": "013fc81f691216dacca93c70e74fb1c41997673e1f101ae2fced11f55ee879ac"
+    },
+    {
+      "key": "cavity",
+      "index": 5,
+      "baseLinear": [
+        0.012,
+        0.014,
+        0.012
+      ],
+      "linearMean": [
+        0.011910694694591585,
+        0.013895810477023384,
+        0.011910694694591585
+      ],
+      "roughnessRange": [
+        0.738970099389553,
+        0.8894696974754334
+      ],
+      "metallic": 0.03,
+      "repeatMetres": 0.6,
+      "reliefMetres": 0.001,
+      "mapSize": 128,
+      "albedoSha256": "8823bfb73fa57e862cd149b9e256188923c2af63547af8c5c258f563175ae94c",
+      "normalSha256": "e25fa21ce5fa59373e5fc09d318ec7996cd8979826f76b1c82439ca9ae046b1d",
+      "ormSha256": "0e9286453457aa0aed6218661db3307d9a7307ee72e1b4f369e1fe9c28fee0c3"
+    },
+    {
+      "key": "rubber",
+      "index": 6,
+      "baseLinear": [
+        0.018,
+        0.019,
+        0.016
+      ],
+      "linearMean": [
+        0.017866042041887287,
+        0.018858599933103275,
+        0.015880926259455256
+      ],
+      "roughnessRange": [
+        0.718970099389553,
+        0.8694696974754333
+      ],
+      "metallic": 0,
+      "repeatMetres": 0.3,
+      "reliefMetres": 0.0008,
+      "mapSize": 128,
+      "albedoSha256": "3f180dd294233504decea1bea8bf1b53ade3c7425d9ebeb1472234a410e4a627",
+      "normalSha256": "b8f3801a001268bdb85612e88ec3d119414b8c3d6ff77aeb304b229755d5d0fd",
+      "ormSha256": "ea3dd5cbba4d0bbc1b80ea51cb4117d6a4854bc881e4e3c1a14be1858ded14a2"
+    },
+    {
+      "key": "upholstery",
+      "index": 7,
+      "baseLinear": [
+        0.055,
+        0.036,
+        0.024
+      ],
+      "linearMean": [
+        0.054917111424411615,
+        0.03594574565961475,
+        0.02396383043974295
+      ],
+      "roughnessRange": [
+        0.872287178337574,
+        0.9224649667739868
+      ],
+      "metallic": 0,
+      "repeatMetres": 0.35,
+      "reliefMetres": 0.001,
+      "mapSize": 128,
+      "albedoSha256": "3822c6c8fbedff4a02b7b8c35ae9594a267706f0e815e8557b5edc231c37ef28",
+      "normalSha256": "ca4401f688f664bc374eceb5b536fca951ba449117c9527e6ce50ad0d90f4738",
+      "ormSha256": "3672fc1cdb0c8e040de62c1c16fe0be6a3536661cbda9448e4dc30209c43ae94"
+    },
+    {
+      "key": "glazing",
+      "index": 8,
+      "baseLinear": [
+        0.023,
+        0.043,
+        0.043
+      ],
+      "linearMean": [
+        0.022948006186789372,
+        0.04290279417530186,
+        0.04290279417530186
+      ],
+      "roughnessRange": [
+        0.1774749231338501,
+        0.22335595279932022
+      ],
+      "metallic": 0.15,
+      "repeatMetres": 1,
+      "reliefMetres": 0.0001,
+      "mapSize": 128,
+      "albedoSha256": "9eb25e142b9cc84616e7eab4d0f048b1a27ac880a7b77db02a2b263a0e56dbd5",
+      "normalSha256": "919d122a6fdb2822c6386773afd2a8953c196a9783a9cddcef7306f3a22eb526",
+      "ormSha256": "34ba2668a78d55b5c701172923df369df8afed31f2a4f014c7b504d83631e805"
+    },
+    {
+      "key": "reflector",
+      "index": 9,
+      "baseLinear": [
+        0.49,
+        0.41,
+        0.21
+      ],
+      "linearMean": [
+        0.4888923057185531,
+        0.4090731537645052,
+        0.20952527387938344
+      ],
+      "roughnessRange": [
+        0.2774749231338501,
+        0.3233559527993202
+      ],
+      "metallic": 0.45,
+      "repeatMetres": 0.3,
+      "reliefMetres": 0.0001,
+      "mapSize": 128,
+      "albedoSha256": "45951cd90ef3ce24e4b9ae8b387feef339fb049ef6b872d3f99cd199027694ce",
+      "normalSha256": "880522b1b62f837f1bfb91d980ddfc1c2baf6c36cb0052bb74dc7391eaf4cec8",
+      "ormSha256": "409c1a9a994bd75f4f0f59bf1190ce6683dd8173335a94277bcc80cf82fb100f"
+    },
+    {
+      "key": "cliff",
+      "index": 10,
+      "baseLinear": [
+        0.075,
+        0.082,
+        0.074
+      ],
+      "linearMean": [
+        0.07444960595729684,
+        0.08139823584664524,
+        0.07345694454453289
+      ],
+      "roughnessRange": [
+        0.7720595204830171,
+        0.9471539783477784
+      ],
+      "metallic": 0,
+      "repeatMetres": 4,
+      "reliefMetres": 0.015,
+      "mapSize": 128,
+      "albedoSha256": "d19fe7a538df6e999b0d8e8a85b832b4a2eda25b290ab06ddbe90d1815989d4d",
+      "normalSha256": "c17550e0560efdb753ca35e014046734ed22c3506301750ccd796c79bb35e584",
+      "ormSha256": "ad31b970685456214d31840c90f5682e18201eceda5bc701581e9338b8a102af"
+    },
+    {
+      "key": "concrete",
+      "index": 11,
+      "baseLinear": [
+        0.13,
+        0.145,
+        0.14
+      ],
+      "linearMean": [
+        0.12904968343493406,
+        0.14394003152357865,
+        0.13897658216069816
+      ],
+      "roughnessRange": [
+        0.7098155605793,
+        0.8866246843338013
+      ],
+      "metallic": 0,
+      "repeatMetres": 2,
+      "reliefMetres": 0.004,
+      "mapSize": 128,
+      "albedoSha256": "78536110ac31e8682ba825bb7c0eade021ce1ef85f6daac05e0b143dcfa5c335",
+      "normalSha256": "4c052c7bf4523c9a78e9250081a40cc9702a5173bc74e2fad54a01063f697a16",
+      "ormSha256": "49567af05b2dffa88b0663bb785f7826f1b76ae7786e997cafc8a0b40e3e1bec"
+    },
+    {
+      "key": "asphalt",
+      "index": 12,
+      "baseLinear": [
+        0.047,
+        0.053,
+        0.05
+      ],
+      "linearMean": [
+        0.046712031699755026,
+        0.052675269789085336,
+        0.04969365074442004
+      ],
+      "roughnessRange": [
+        0.6746556878089904,
+        0.8495126414299011
+      ],
+      "metallic": 0,
+      "repeatMetres": 2,
+      "reliefMetres": 0.003,
+      "mapSize": 128,
+      "albedoSha256": "3c67c9f8c5e41f34f89585a0f3b37361595a393cfe795e280d06b85799ad8a6d",
+      "normalSha256": "9be79deb2155b4a1d3c67cd6f614ba97b54b1f589e43e28a662944a7f5841a11",
+      "ormSha256": "4d6fc0f34eb93a7a82dea52b62c251f7e0ce509c087832b2c75b1ccbc08f0d9a"
+    },
+    {
+      "key": "marking",
+      "index": 13,
+      "baseLinear": [
+        0.37,
+        0.345,
+        0.25
+      ],
+      "linearMean": [
+        0.36725050750956323,
+        0.34243628402918863,
+        0.2481422348037593
+      ],
+      "roughnessRange": [
+        0.5770732486248016,
+        0.7293994140625
+      ],
+      "metallic": 0,
+      "repeatMetres": 0.7,
+      "reliefMetres": 0.0004,
+      "mapSize": 128,
+      "albedoSha256": "bef806538e0f166398a19dccef19d3dd7b7e6074efd1ea391b61e36d5b245a22",
+      "normalSha256": "a73a5d6520e1884e03bee7106ffb38e98cc4bf840cf88a4aae67bf8fe84ce4e7",
+      "ormSha256": "fd20e76e9cf118f116926235dd96d5130314c1537f9327ddc6e0e40758973f24"
+    },
+    {
+      "key": "snow",
+      "index": 14,
+      "baseLinear": [
+        0.55,
+        0.58,
+        0.56
+      ],
+      "linearMean": [
+        0.5496232947976358,
+        0.5796027472411411,
+        0.5596164456121369
+      ],
+      "roughnessRange": [
+        0.8306639346480369,
+        0.8576409457880061
+      ],
+      "metallic": 0,
+      "repeatMetres": 1.5,
+      "reliefMetres": 0.002,
+      "mapSize": 128,
+      "albedoSha256": "aaac00e04223a858671f60e3add024d56e0ebe5813b9871e3e5d4d03fcfc49b0",
+      "normalSha256": "cade01f54ada8d975c737084ee654e5e7e7340a2a66e54afbf462d5e964b1bbf",
+      "ormSha256": "1676eccc137d210c3223434918947d72758e05712d6886093aec42aa1f2377af"
+    },
+    {
+      "key": "packedSnow",
+      "index": 15,
+      "baseLinear": [
+        0.3,
+        0.325,
+        0.31
+      ],
+      "linearMean": [
+        0.29979300379871643,
+        0.32477575411527576,
+        0.30978610392533956
+      ],
+      "roughnessRange": [
+        0.8106504002213477,
+        0.8375797184658585
+      ],
+      "metallic": 0,
+      "repeatMetres": 1.4,
+      "reliefMetres": 0.002,
+      "mapSize": 128,
+      "albedoSha256": "0a33b3381a96d0f639c2309dc21469aa08faa9050f7a2faec1b165e3af777afa",
+      "normalSha256": "cc40850bd1428c77b3fb060a3c6396f774c497e97de7797406c5bd382bea71f3",
+      "ormSha256": "128fd35032d99d8048e8575e07f79b2a584463a709f9de3720f2cc8284149ccd"
+    },
+    {
+      "key": "headlampOn",
+      "index": 16,
+      "baseLinear": [
+        0.6,
+        0.44,
+        0.25
+      ],
+      "linearMean": [
+        0.5986436396553801,
+        0.439005335747275,
+        0.24943484985640815
+      ],
+      "roughnessRange": [
+        0.2374749231338501,
+        0.28335595279932024
+      ],
+      "metallic": 0.05,
+      "repeatMetres": 0.22,
+      "reliefMetres": 0.0003,
+      "mapSize": 128,
+      "albedoSha256": "eb9472685ebbe3a5418993a6eb6a097f6ea7c8e7655146ddcba6483ef5bc210d",
+      "normalSha256": "5e21e5796986b0ec61acd1b78aac3f7453cc9625d64a6615aafa1aed3cdc34ca",
+      "ormSha256": "a8df9513fef2d22f9d631039dbcaedb629f340d35e3878cbefae0911bc710604",
+      "emissiveFactor": [
+        0.82,
+        0.52,
+        0.23
+      ]
+    }
+  ],
+  "rendering": {
+    "pipeline": "Standard P3 glTF material acquisition and final dither/VFD",
+    "colour": "Base maps are sRGB encoded from linear stocks. Normal/ORM are linear.",
+    "runtimeTextureCount": 51,
+    "mipmapSampler": 9987,
+    "alphaBlending": false,
+    "customShader": false
+  },
+  "notes": [
+    "All models and texture synthesis are original project-authored geometry; no third-party car model, brand or photograph is embedded.",
+    "Three detailed wreck variants use different damage, apertures, roof and cargo silhouettes; runtime instancing supplies a finite authored queue.",
+    "Mesh statistics and finite values prove geometry/export contracts only. Final native perception and gameplay remain separate acceptance gates."
+  ]
+}

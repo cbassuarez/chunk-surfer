@@ -1,0 +1,202 @@
+{
+  "version": 1,
+  "sampleRate": 48000,
+  "clips": [
+    {
+      "id": "restraint",
+      "source": "wood-audioninja",
+      "from": 4.1,
+      "to": 6.35,
+      "rmsDb": -25,
+      "gain": 0.22,
+      "file": "restraint.mp3",
+      "duration": 2.25,
+      "sampleRate": 48000,
+      "channels": 1,
+      "bytes": 32301,
+      "audioSHA": "7460142abc975816349e52b43bddd04e4618a509e7ff2bb1edf7483bae82884e",
+      "measured": {
+        "seconds": 2.25,
+        "rmsDb": -39.46985083726856,
+        "peakDb": -9.572500165905751,
+        "finite": true
+      },
+      "sourceMeasured": {
+        "seconds": 2.25,
+        "rmsDb": -39.08246516049267,
+        "peakDb": -9.390741439195626,
+        "finite": true
+      },
+      "editablePCM": "materials/restraint.wav",
+      "editableSHA": "f8a8a04e2c762b570a3e4c9a9cb1aa02c164271924f4c024558690e5a433672d"
+    },
+    {
+      "id": "joint-fracture",
+      "source": "wood-audioninja",
+      "from": 20,
+      "to": 22.65,
+      "rmsDb": -24,
+      "gain": 0.28,
+      "file": "joint-fracture.mp3",
+      "duration": 2.65,
+      "sampleRate": 48000,
+      "channels": 1,
+      "bytes": 38013,
+      "audioSHA": "d4629389248eed7bdce64c4639167f25f2943bc17989182c77adb089b37be75f",
+      "measured": {
+        "seconds": 2.65,
+        "rmsDb": -38.370809784090824,
+        "peakDb": -9.445539916430773,
+        "finite": true
+      },
+      "sourceMeasured": {
+        "seconds": 2.65,
+        "rmsDb": -37.53174116962028,
+        "peakDb": -9.110675211943757,
+        "finite": true
+      },
+      "editablePCM": "materials/joint-fracture.wav",
+      "editableSHA": "fb87699dc7519b98e56208b8008d21be388732d9944ce05ee8ce9b620752e01d"
+    },
+    {
+      "id": "failure-body",
+      "source": "oulu",
+      "from": 23.35,
+      "to": 28.85,
+      "rmsDb": -26,
+      "gain": 0.92,
+      "contour": "recorded-body",
+      "file": "failure-body.mp3",
+      "duration": 5.5,
+      "sampleRate": 48000,
+      "channels": 1,
+      "bytes": 77997,
+      "audioSHA": "0c7583faefb6c58f48f24b2188b4d3d82cfc0fc2d01cd50145f5ca07cb7f846a",
+      "measured": {
+        "seconds": 5.5,
+        "rmsDb": -29.665329040990596,
+        "peakDb": -9.371103765975512,
+        "finite": true
+      },
+      "sourceMeasured": {
+        "seconds": 5.5,
+        "rmsDb": -27.793672088490467,
+        "peakDb": -3.697340478245254,
+        "finite": true
+      },
+      "editablePCM": "materials/failure-body.wav",
+      "editableSHA": "75caf8c1ad97ae10dfcc123d695f85086a5d4facbb413169b24d6b6552db5551"
+    },
+    {
+      "id": "stone-spall",
+      "source": "stone-field",
+      "from": 4.9,
+      "to": 6.9,
+      "rmsDb": -26,
+      "gain": 0.42,
+      "file": "stone-spall.mp3",
+      "duration": 2,
+      "sampleRate": 48000,
+      "channels": 1,
+      "bytes": 28941,
+      "audioSHA": "a926b22bd2865272bbadcb1bc7d000cf778ad05715943b1a472f3c0d4aaaf808",
+      "measured": {
+        "seconds": 2,
+        "rmsDb": -37.1665993135623,
+        "peakDb": -9.487355498589638,
+        "finite": true
+      },
+      "sourceMeasured": {
+        "seconds": 2,
+        "rmsDb": -28.397728271333772,
+        "peakDb": -0.8313257571466555,
+        "finite": true
+      },
+      "editablePCM": "materials/stone-spall.wav",
+      "editableSHA": "59025030955c0b0aa211b95f5a919dcee2942585c037ff6b42d2f21643f9ffd3"
+    }
+  ],
+  "sources": [
+    {
+      "id": "oulu",
+      "title": "Urheilutalo Oulu 20221216",
+      "author": "Estormiz",
+      "licence": "CC0 1.0",
+      "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "url": "https://commons.wikimedia.org/wiki/File:Urheilutalo_Oulu_20221216.webm",
+      "download": "https://upload.wikimedia.org/wikipedia/commons/f/f4/Urheilutalo_Oulu_20221216.webm",
+      "sourceFile": "source.webm",
+      "sourceSHA": "b5187ee659ab82e7db905a154ec3b0de03a2ee686faa3cc527ddf41325666261",
+      "provenance": "Original own-work documentary upload, 16 December 2022. Stereo 48 kHz Opus audio retained in the original video. An excavator pulls infill/panels while the curved roof frames remain standing; this is local restraint/peel/debris material, not a recorded global structural collapse. Phone processing and camera distance are unspecified.",
+      "bytes": 54030563,
+      "sourcePageSHA": "2d59cda625f945be72b5299c470b6ed86d6b43441865a24f557ed7809d52031c"
+    },
+    {
+      "id": "wood-audioninja",
+      "title": "wood-impacts-breaking-stretching.wav",
+      "author": "audioninja001",
+      "licence": "CC0 1.0",
+      "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "url": "https://freesound.org/people/audioninja001/sounds/455073/",
+      "download": "https://cdn.freesound.org/previews/455/455073_2699264-hq.mp3",
+      "sourceFile": "source-preview.mp3",
+      "sourceSHA": "419ebf314b064615db0cf3790f4518643d1ad65792f0aaec76ee37ac17fdb33f",
+      "provenance": "Uploader records Zoom H5 and Sennheiser MKE600. Licensed HQ MP3 preview; original uncompressed upload requires login and is not held. Discrete wood stress/impact takes with digital gaps; processing history unspecified. Adapted as local timber/fastener failure, not a large building recording.",
+      "bytes": 399154,
+      "sourcePageSHA": "eab4d97f0c131bd62f43db1e7b590e2f71ebdda5db31b41cd39a1072211f1faf"
+    },
+    {
+      "id": "stone-field",
+      "title": "rockfall2a.wav",
+      "author": "AlanCat",
+      "licence": "CC0 1.0",
+      "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "url": "https://freesound.org/people/AlanCat/sounds/389303/",
+      "download": "https://cdn.freesound.org/previews/389/389303_5486695-hq.mp3",
+      "sourceFile": "source-preview.mp3",
+      "sourceSHA": "db15885029d027756ef2b90114c202f4837f10a128371f493904b4886818ffcd",
+      "provenance": "Olympus LS-14 recording of rocks cascading down a cliff; uploader removed background noise in Audacity. Licensed HQ MP3 preview, not an unprocessed microphone master. A later isolated contact is adapted as local masonry/debris, not building-scale fracture evidence. The separate tower cue uses a disjoint earlier interval of this source.",
+      "bytes": 451196,
+      "sourcePageSHA": "5750af88901d71ea5dc198f9894efa48631da610dcb462ed3a9df9592dd136ce"
+    }
+  ],
+  "encounter": {
+    "sequenceId": "source-demolition:first-shore-v2",
+    "site": "First nothingness immediately beyond the Source get-in",
+    "commitment": "Actual outward capsule crossing of the passable doorway throat, not unlatch/first white pixel/loaded pose",
+    "coordinates": "Metres along/across from the actual Source doorway; root maps real physical part anchors",
+    "cues": [
+      {
+        "type": "infill",
+        "at": 1
+      },
+      {
+        "type": "release",
+        "at": 3.15
+      },
+      {
+        "type": "course",
+        "at": 3.2
+      },
+      {
+        "type": "roof",
+        "at": 7.5
+      }
+    ],
+    "validation": "Current first-shore source and technical tests only. Earlier late-Outskirts video is historical; first-shore output/listening and participants pending."
+  },
+  "processing": "Mono48kHz,112kbpsMP3; exact source cuts, peak-limited levelling, edge fades,55Hzhigh-pass/9.5kHzlow-pass. The single Oulu body passage has a2.5dB shelf165Hz and gentle1.7:1 RMS compression(8msattack/160msrelease/threshold.04/knee2.5) before levelling. Original pitch/timing; no added baked reverb, synthetic sub/monster, choir, crowd, generic whoosh or bitcrush. Spirit residue is a filtered send of the same playing passage, not replayed source audio.",
+  "limits": {
+    "encodedBytes": 1000000,
+    "decodedBytes": 8000000,
+    "simultaneousVoices": 8
+  },
+  "limitations": [
+    "Documentary Oulu footage records local panel demolition; roof frames stay standing in inspected samples.",
+    "The wood material is a licensed MP3 preview of discrete takes, not an uncompressed microphone master.",
+    "The stone field preview was background-cleaned by its recorder; this later contact is not the tower cue or a recorded large-scale structural failure.",
+    "Original camera delay, microphone processing and absolute source scale are unmeasured.",
+    "Runtime short reflection model and distance arrival delay are authored approximations, not measured site acoustics.",
+    "Author listening and unfamiliar-player perceptual validation remain pending."
+  ]
+}

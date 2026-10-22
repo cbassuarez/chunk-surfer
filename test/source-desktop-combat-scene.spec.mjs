@@ -18,7 +18,7 @@ const battleFixture = () => ({
   },
 });
 
-async function harness({continuation=null,composure=1,battle=battleFixture(),endTask=null,stacked=false}={}) {
+async function harness({continuation=null,composure=1,battle=battleFixture(),endTask=null,stacked=false,native=false,hasFocus=null}={}) {
   const begins=[],frames=[],ends=[],checkpoints=[],outcomes=[],interferenceCalls=[];
   // The real music session samples its audio clock; combat calls update()
   // without dt. This deterministic clock counts those samples.
@@ -26,7 +26,8 @@ async function harness({continuation=null,composure=1,battle=battleFixture(),end
   const desktop={
     begin(frame){const task=deferred();begins.push({frame:structuredClone(frame),...task});return task.promise;},
     frame(frame){frames.push(structuredClone(frame));},
-    end(result){ends.push(result);return endTask?.promise;},mode:()=> 'simulated',debug:()=>({mode:'simulated'}),
+    end(result){ends.push(result);return endTask?.promise;},mode:()=> native?'native':'simulated',debug:()=>({mode:native?'native':'simulated'}),
+    ...(hasFocus?{hasFocus}:{}),
   };
   const scene=makeCombatScene({
     battle,continuation,sourceDesktop:desktop,musicSession:music,difficulty:'standard',
@@ -64,6 +65,78 @@ async function finishPeel(h) {
   h.begins.at(-1).resolve();await flush();
   until(h.scene,(view)=>view.phase!=='desktop-breach');
 }
+
+test('committed Source contact opens the desktop before any damage and retains the complete fight',async()=>{
+  const battle=battleFixture();battle.combat.desktopOnCommit=true;
+  const h=await harness({battle,composure:40});
+  try{
+    assert.equal(h.scene.battleView().phase,'desktop-breach');
+    assert.equal(h.begins.length,1);
+    const held=h.scene.battleView();
+    assert.equal(held.state.composure,40);
+    assert.equal(held.state.movementIndex,0);
+    assert.equal(held.state.sourceDesktop.breached,true);
+    assert.equal(held.state.sourceDesktop.cover,3);
+    assert.deepEqual(held.state.sentBack,[],'presentation must not spend a damage recovery');
+    const clock=held.sourceDesktop.clock;
+    for(let i=0;i<40;i++)h.scene.update(.05);
+    assert.equal(h.scene.battleView().sourceDesktop.clock,clock,'clock runs while native surface is opening');
+    await finishPeel(h);
+    const opened=h.scene.battleView();
+    assert.equal(opened.phase,'tool');
+    assert.equal(opened.state.definition.movements.length,3);
+    assert.equal(opened.state.movementCoherence,100);
+    assert.equal(opened.state.composure,40);
+    assert.equal(opened.sourceDesktop.phase,'desktop');
+    assert.ok(h.checkpoints.some(value=>value.continuation.sourceDesktop.breached));
+  }finally{h.scene.exit();await flush();}
+});
+
+test('an old contained partial Source save dissolves once without losing its damage, tools or channel votes',async()=>{
+  const battle=battleFixture();battle.combat.desktopOnCommit=true;
+  const old=createCombatState(battle.combat,{composure:27,source:{rescueEligible:true}});
+  old.movementCoherence-=13;old.source.channels.rescue=2;old.turns=4;
+  const h=await harness({battle,continuation:combatContinuationSnapshot(old)});
+  try{
+    const held=h.scene.battleView();
+    assert.equal(held.phase,'desktop-breach');
+    assert.equal(held.sourceDesktop.transition,0,'a save that never saw the peel must receive it');
+    assert.equal(h.begins.length,1);
+    await finishPeel(h);
+    const v=h.scene.battleView();
+    assert.equal(v.phase,'tool');
+    assert.equal(v.state.movementCoherence,87);
+    assert.equal(v.state.composure,27);
+    assert.equal(v.state.source.channels.rescue,2);
+    assert.equal(v.state.turns,4);
+    assert.equal(v.state.sourceDesktop.cover,3);
+    assert.deepEqual(v.state.sentBack,[]);
+  }finally{h.scene.exit();await flush();}
+});
+
+test('confirmed native focus survives stale DOM focus during the dissolve; hidden and actual blur still freeze',async()=>{
+  const previous=globalThis.document;
+  let focused=true;
+  globalThis.document={hidden:false,visibilityState:'visible',hasFocus:()=>false};
+  const battle=battleFixture();battle.combat.desktopOnCommit=true;
+  const h=await harness({battle,native:true,hasFocus:()=>focused,composure:40});
+  try{
+    h.begins[0].resolve();await flush();
+    assert.equal(h.scene.battleView().sourceDesktop.paused,false);
+    h.scene.update(.08);
+    const progress=h.scene.battleView().sourceDesktop.transition;
+    assert.ok(progress>0,'native dissolve stalled on stale document.hasFocus');
+    focused=false;h.scene.update(.08);
+    assert.equal(h.scene.battleView().sourceDesktop.transition,progress);
+    assert.equal(h.scene.battleView().sourceDesktop.paused,true);
+    focused=true;globalThis.document.hidden=true;h.scene.update(.08);
+    assert.equal(h.scene.battleView().sourceDesktop.transition,progress);
+    assert.equal(h.scene.battleView().sourceDesktop.paused,true);
+    globalThis.document.hidden=false;
+    until(h.scene,v=>v.phase!=='desktop-breach');
+    assert.equal(h.scene.battleView().phase,'tool');
+  }finally{h.scene.exit();await flush();if(previous===undefined)delete globalThis.document;else globalThis.document=previous;}
+});
 
 test('timed perfect parry of an otherwise lethal first blow never opens the desktop or spends shelter',async()=>{
   const h=await harness({composure:1});

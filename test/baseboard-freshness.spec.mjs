@@ -19,7 +19,7 @@ import crypto from 'node:crypto';
 
 import * as FP from '../src/world/floorplan.js';
 import { conservatory } from '../src/data/floorplan/conservatory.js';
-import { wallRuns, wallRunsDigest } from '../src/world/wall-contact.js';
+import {baseboardWallRuns,baseboardWallRunsDigest} from '../src/world/baseboard-hosting.js';
 import { BASEBOARDS, PLAN_HASH, PROP_BOUNDS } from '../src/data/generated/prop-geometry.js';
 import * as PROPS from '../src/game/props.js';
 
@@ -33,10 +33,11 @@ FP.compile(conservatory.levels, {
 const plan = {
   size: FP.planSize, isSolid: FP.isSolid, floorAt: FP.floorAt, zoneAt: FP.zoneAt,
   materialAt: FP.materialAt, doorAt: FP.doorAt, logicalToPhysical: FP.logicalToPhysical,
+  physicalRenderPlanFor: FP.physicalRenderPlanFor,
 };
 
-const runs = wallRuns(plan);
-const fresh = crypto.createHash('sha256').update(wallRunsDigest(runs)).digest('hex');
+const runs = baseboardWallRuns(plan);
+const fresh = crypto.createHash('sha256').update(baseboardWallRunsDigest(runs,plan)).digest('hex');
 
 assert.equal(fresh, PLAN_HASH,
   'The floorplan has changed since the prop pack was built, so the baked baseboards '

@@ -107,6 +107,17 @@ export function normalizeDisplaySettings(input = {}, contract = DISPLAY_CONTRACT
   return { displayMode, windowPreset, uiScale, renderScale };
 }
 
+// THE STAGE TAKES THE WINDOW'S SHAPE.
+//
+// The design box is still the guaranteed area and is still scaled to fit, so
+// nothing authored for it moves out of reach. The stage then grows past it in
+// whichever direction the window has room: a window that is not exactly 16:10
+// -- a resized one, or a fullscreen Mac, which is nearer 14:9 -- shows more of
+// the world instead of two bars of the page behind it. It stops growing past
+// 5:4 and 12:5, where a wider view would stop reading as the same camera.
+const STAGE_ASPECT_MIN = 5 / 4;
+const STAGE_ASPECT_MAX = 12 / 5;
+
 export function computeStageLayout(width, height, options = {}) {
   const design = options.design || DESIGNED_VIEWPORT;
   const allowUpscale = options.allowUpscale !== false;
@@ -115,13 +126,23 @@ export function computeStageLayout(width, height, options = {}) {
   const rawScale = Math.min(viewportWidth / design.width, viewportHeight / design.height);
   const scale = allowUpscale ? rawScale : Math.min(1, rawScale);
   const safeScale = Math.max(0.1, Number.isFinite(scale) ? scale : 1);
-  const renderedWidth = design.width * safeScale;
-  const renderedHeight = design.height * safeScale;
+  const fill = options.fill !== false;
+  const roomWidth = viewportWidth / safeScale, roomHeight = viewportHeight / safeScale;
+  const stageWidth = fill
+    ? Math.ceil(Math.max(design.width, Math.min(roomWidth, roomHeight * STAGE_ASPECT_MAX)))
+    : design.width;
+  const stageHeight = fill
+    ? Math.ceil(Math.max(design.height, Math.min(roomHeight, roomWidth / STAGE_ASPECT_MIN)))
+    : design.height;
+  const renderedWidth = stageWidth * safeScale;
+  const renderedHeight = stageHeight * safeScale;
 
   return Object.freeze({
     width: viewportWidth,
     height: viewportHeight,
     scale: safeScale,
+    stageWidth,
+    stageHeight,
     left: Math.round((viewportWidth - renderedWidth) / 2),
     top: Math.round((viewportHeight - renderedHeight) / 2),
     renderedWidth,
@@ -138,6 +159,8 @@ export function applyStageLayout(layout, root = globalThis.document?.documentEle
   root.style.setProperty('--stage-top', `${layout.top}px`);
   root.style.setProperty('--stage-rendered-w', `${layout.renderedWidth}px`);
   root.style.setProperty('--stage-rendered-h', `${layout.renderedHeight}px`);
+  root.style.setProperty('--stage-w', `${layout.stageWidth ?? DESIGNED_VIEWPORT.width}px`);
+  root.style.setProperty('--stage-h', `${layout.stageHeight ?? DESIGNED_VIEWPORT.height}px`);
   root.dataset.stageScale = layout.scale.toFixed(4);
   root.dataset.stageMode = layout.scaledDown ? 'down' : layout.scaledUp ? 'up' : 'native';
   return layout;

@@ -8,6 +8,12 @@ import { bagInspectionDialogue } from '../src/game/bag-items.js';
 import { runtimeTree } from '../src/narrative/runtime-content.js';
 import { FORK_TONE, forkToneAt, createForkToneRuntime } from '../src/audio/fork-tone.js';
 import { SEAM } from '../src/game/practice-seams.js';
+import { tuningForkCancellationThoughts } from '../src/game/tuning-fork-discovery.js';
+import * as scenes from '../src/game/scenes.js';
+import {
+  makeThoughtScene, thoughtHad, markThought, resetThoughts,
+  loadThoughtState, saveThoughtState,
+} from '../src/game/thoughts.js';
 import {
   TUNING_FORK_EVIDENCE, TUNING_FORK_ENGRAVING, TUNING_FORK_ENGRAVING_LINE,
   TUNING_FORK_BAG_LINE, TUNING_FORK_DETAIL,
@@ -64,6 +70,133 @@ test('the real object-detail and loose-prop surfaces consume the facts without r
   assert.match(loose, /again\s*:[^\n]*TUNING_FORK_ENGRAVING/, 'repeat inspect must consume the same physical inscription, whether alone or in its existing sentence');
   assert.doesNotMatch(loose, /again\s*:[^\n]*A=440/, 'repeat inspect must not revert the physical object to 440');
   assert.match(loose, /action\s*:\s*'story-tuning-fork'/);
+});
+
+test('unfinished fork cancellation removes only its consumed thought without mutating the saved input', () => {
+  const had = Object.freeze(['post-door', 'talisman', 'talisman.seen', 'first-take']);
+  const extra = Object.freeze({ retained: true });
+  const state = Object.freeze({ had, extra, version: 7 });
+  const result = tuningForkCancellationThoughts(state);
+  assert.deepEqual(result, { had: ['post-door', 'talisman.seen', 'first-take'], extra, version: 7 });
+  assert.notEqual(result, state);
+  assert.notEqual(result.had, had);
+  assert.equal(result.extra, extra, 'unrelated save fields remain intact');
+  assert.deepEqual(state.had, ['post-door', 'talisman', 'talisman.seen', 'first-take']);
+  assert.deepEqual(tuningForkCancellationThoughts(), { had: [] });
+  assert.deepEqual(tuningForkCancellationThoughts({ had: null, extra }), { had: [], extra });
+  for (const decision of [{ owned: true }, { declined: true }, { owned: true, declined: true }]) {
+    assert.equal(tuningForkCancellationThoughts(state, decision), state, 'ownership or deliberate refusal must not re-arm the encounter');
+  }
+});
+
+test('the real thought serializer preserves other IDs without retaining caller-owned arrays', () => {
+  const original = Object.freeze({ had: Object.freeze(['post-door', 'talisman', 'talisman.seen', 'first-take']) });
+  try {
+    loadThoughtState(original);
+    loadThoughtState(tuningForkCancellationThoughts(saveThoughtState()));
+    markThought('another-existing-thought');
+    const saved = saveThoughtState();
+    assert.deepEqual(saved.had, ['post-door', 'talisman.seen', 'first-take', 'another-existing-thought']);
+    assert.deepEqual(original.had, ['post-door', 'talisman', 'talisman.seen', 'first-take']);
+    saved.had.length = 0;
+    assert.equal(thoughtHad('post-door'), true, 'the saved array must not alias the live thought store');
+    assert.equal(thoughtHad('another-existing-thought'), true);
+    assert.equal(thoughtHad('talisman'), false);
+  } finally { resetThoughts(); }
+});
+
+// Execute the production encounter and generic thought dispatcher against the
+// real thought store and real Escape scene lifecycle. Rendering, audio output,
+// world geometry and durable storage are outside this focused harness.
+function productionFunction(name, endMarker, environment, source = main) {
+  const start = source.indexOf(`function ${name}(`);
+  assert.ok(start >= 0, `production ${name} must exist`);
+  const end = source.indexOf(endMarker, start);
+  assert.ok(end > start, `production ${name} extraction boundary must exist`);
+  return new Function('environment', `with (environment) { return (${source.slice(start, end).trim()}); }`)(environment);
+}
+
+function encounterHarness() {
+  scenes.clear(); resetThoughts();
+  loadThoughtState({ had: ['post-door', 'talisman.seen', 'first-take'] });
+  const flags = {}, commits = [], sound = { strikes: 0, damps: 0 };
+  let thoughtOptions = null;
+  const environment = {
+    storyMode: true, planName: 'conservatory', NO_THINK: false,
+    thoughtHad, markThought, loadThoughtState, saveThoughtState, tuningForkCancellationThoughts,
+    scenes, FP: { toRuntimePoint: point => point }, TALISMAN_CELL: { x: 0, y: 0 }, px: 0, py: 0, D: value => value,
+    TALISMAN: runtimeTree('conservatory.talisman'), ensureCtx() {},
+    saveCommit(patch) { commits.push(structuredClone(patch)); }, getSave: () => ({ flags }),
+    flagTest: id => !!flags[id],
+    syncStoryObjectProps() {}, refreshWorldProps() {},
+    strikeFork() { sound.strikes++; }, dampFork() { sound.damps++; },
+    STORY: null, actx: null, dialogGain: null, master: null, CR: { fx: null }, fireCue() {}, createReplayService: () => null,
+    applyStoryChoice(choice) { for (const id of choice?.set || []) flags[id] = true; },
+    makeThoughtScene(options) { thoughtOptions = options; return makeThoughtScene(options); },
+  };
+  environment.think = productionFunction('think', '\n// A repeatable dialog beat', environment);
+  const interact = productionFunction('interactTalisman', '\n// A=440, held', environment);
+  return { interact, flags, commits, sound,
+    choice(choice) { thoughtOptions.onChoice(choice); },
+    cancel() { assert.ok(scenes.top(), 'the encounter is open'); scenes.top().key({ key: 'Escape' }); },
+    cleanup() { scenes.clear(); resetThoughts(); },
+  };
+}
+
+test('ordinary Escape re-arms the unfinished production fork encounter across thought save/load', () => {
+  const harness = encounterHarness();
+  try {
+    assert.equal(harness.interact(), true);
+    assert.equal(thoughtHad('talisman'), true, 'the real dispatcher consumes its once-per-run thought on opening');
+    harness.choice({ goto: 'strike' });
+    assert.equal(harness.sound.strikes, 1);
+    harness.cancel();
+    assert.equal(scenes.depth(), 0);
+    assert.equal(thoughtHad('talisman'), false, 'Escape must not consume an unowned, unrefused fork');
+    assert.equal(harness.sound.damps, 1, 'cancellation stops the struck tone');
+    const saved = harness.commits.at(-1)?.thoughts;
+    assert.deepEqual(saved, { had: ['post-door', 'talisman.seen', 'first-take'] }, 'the repair must persist the retained unrelated thoughts');
+    loadThoughtState(saved);
+    assert.equal(harness.interact(), true, 'a fresh load permits ordinary reinspection');
+    assert.equal(scenes.depth(), 1);
+    assert.equal(harness.flags['has.fork'], undefined, 'cancellation grants no ownership');
+  } finally { harness.cleanup(); }
+});
+
+test('deliberate refusal and pocket ownership remain consumed when their final lines are cancelled', () => {
+  for (const choice of [{ goto: 'leave' }, { goto: 'pocket', set: ['has.fork'] }]) {
+    const harness = encounterHarness();
+    try {
+      harness.interact();
+      harness.choice(choice);
+      harness.cancel();
+      assert.equal(thoughtHad('talisman'), true, `${choice.goto} is a deliberate decision`);
+      assert.equal(harness.interact(), false, 'a committed decision must not re-arm');
+      assert.deepEqual(saveThoughtState().had, ['post-door', 'talisman.seen', 'first-take', 'talisman']);
+      loadThoughtState(saveThoughtState());
+      assert.equal(thoughtHad('talisman'), true, 'the real thought serializer retains the committed decision');
+      assert.equal(!!harness.flags['has.fork'], choice.goto === 'pocket');
+    } finally { harness.cleanup(); }
+  }
+});
+
+test('the actual held-fork builder applies the canonical physical engraving', () => {
+  const source = readFileSync(new URL('../src/render/battle-hand-tools.js', import.meta.url), 'utf8');
+  const labels = [];
+  class Shape { moveTo() {} lineTo() {} quadraticCurveTo() {} }
+  const environment = {
+    THREE: { Shape, ExtrudeGeometry: class {} }, physical: () => ({}), cylinder() {}, add() {},
+    box: () => ({ position: { x: 0 } }), label: (...args) => labels.push(args),
+    handleGrip: () => ({}), target: () => ({}), clamp: value => value,
+    TUNING_FORK_ENGRAVING,
+  };
+  const buildFork = productionFunction('fork', '\nfunction radio(', environment, source);
+  const group = {};
+  buildFork(group);
+  assert.equal(labels.length, 1, 'the held tool has one physical stamp surface');
+  assert.equal(labels[0][0], group);
+  assert.equal(labels[0][1], TUNING_FORK_ENGRAVING, 'the actual label call must not continue to print the old 440');
+  assert.match(source, /import\s*\{[^}]*TUNING_FORK_ENGRAVING[^}]*\}\s*from\s*['"]\.\.\/data\/tuning-fork-discovery\.js['"]/, 'the builder obtains its physical mark from the shared evidence, rather than a coincidental literal');
 });
 
 // Capture the actual production graph and AudioParam writes. The small renderer

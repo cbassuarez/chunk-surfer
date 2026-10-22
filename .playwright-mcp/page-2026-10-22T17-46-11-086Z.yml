@@ -1,0 +1,24 @@
+- iframe [ref=f11e2]:
+  - generic [ref=f12e2]:
+    - 'heading "St Brendan’s: the weight above you" [level=3] [ref=f12e3]'
+    - group "Position along the existing route" [ref=f12e4]:
+      - button "Belfry" [ref=f12e5] [cursor=pointer]
+      - button "Descent" [ref=f12e6] [cursor=pointer]
+      - button "Nave" [pressed] [ref=f12e7] [cursor=pointer]
+      - button "Return after the fight" [ref=f12e8] [cursor=pointer]
+    - img "Conceptual section of St Brendan's with existing belfry at 10.2 metres, triforium at 4.6 metres and nave at ground level. Selected position Crossing. Proposed direct, structure and room sound paths." [ref=f12e10]:
+      - generic [ref=f12e11]:
+        - generic [ref=f12e34]: Belfry
+        - generic [ref=f12e35]: 10.2 m
+        - generic [ref=f12e36]: Triforium
+        - generic [ref=f12e37]: 4.6 m
+        - generic [ref=f12e38]: Nave
+        - generic [ref=f12e39]: 0 m
+        - generic [ref=f12e41]: Existing descent →
+        - generic [ref=f12e42]: Eight-bell frame
+    - generic "Sound path legend" [ref=f12e43]:
+      - generic [ref=f12e44]: Direct sound
+      - generic [ref=f12e46]: Through structure
+      - generic [ref=f12e48]: Room return
+    - generic [ref=f12e50]: Empty volume, your footsteps, and the weight of the bell frame overhead.
+    - generic [ref=f12e51]: Concept section · existing floor heights · proposed sound paths · schematic, not a new floorplan

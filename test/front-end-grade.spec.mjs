@@ -127,12 +127,23 @@ test('the grade rides the plate the front end already switches', () => {
   }
 });
 
-test('the dimming plate and the negative are different passes, on purpose', () => {
-  // The old plate could only push the background back, because it runs after
-  // the pixel mesh -- grading there would invert the DOTS. The two coexist: the
-  // title still dims to 0.72 while being printed.
-  const title = normalizeFrontEndPlate('title');
-  assert.ok(title.amount > 0 && title.amount < 1, 'the title is still dimmed as it was');
-  assert.ok(title.exposureStops < 0, 'and still pulled down');
-  assert.equal(title.negative, 1, 'as well as printed');
+test('the front end prints the negative of the finished frame, and keeps its ink', () => {
+  // Screened before the dither, a night's negative is a mostly-white frame, and
+  // the recording stage blew it out to the solid bit: no contours survived, and
+  // the dimming fields turned the blank field a murky grey. The print is taken
+  // off the finished frame instead, and the plate no longer smears it.
+  for (const id of ['credits', 'title']) {
+    const plate = normalizeFrontEndPlate(id);
+    assert.equal(plate.negative, 1, `${id} is printed`);
+    assert.equal(plate.print, 1, `${id} is printed off the finished frame`);
+    assert.equal(plate.detailRetention, 1, `${id} keeps its contours`);
+    assert.equal(plate.chromaRetention, 1, `${id} keeps the palette`);
+    assert.ok(plate.exposureStops <= 0 && plate.exposureStops > -0.5, `${id} paper stays near white (${plate.exposureStops})`);
+  }
+  assert.equal(normalizeFrontEndPlate('gameplay').print, 0, 'play is never printed');
+  // Either way the negative crossfades out with the plate, never snapping mid-lift.
+  assert.equal(interpolateFrontEndPlate('title', 'gameplay', 0.5).print, 0.5);
+  const post = readFileSync(new URL('../src/render/r3d.js', import.meta.url), 'utf8');
+  assert.match(post, /uniform1f\(postU\('uFrontEndPrint'\),frontEndPlate\.negative\*frontEndPlate\.print\)/);
+  assert.match(post, /const n = frontEndPlate\.negative \* \(1 - frontEndPlate\.print\);/, 'the screened negative steps aside when printing');
 });

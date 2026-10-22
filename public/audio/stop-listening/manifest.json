@@ -1,8 +1,26 @@
 {
   "crush": {
-    "every": 3,
-    "bits": 8,
-    "mix": 0.32
+    "bits": 9,
+    "rate": 24000,
+    "mix": 0.86,
+    "method": "fractional-clock-interpolated-signed-pcm-zero-order-hold",
+    "profiles": {
+      "gut": {
+        "bits": 9,
+        "rate": 24000,
+        "mix": 0.86
+      },
+      "wet": {
+        "bits": 8,
+        "rate": 22050,
+        "mix": 0.8
+      },
+      "bed": {
+        "bits": 10,
+        "rate": 32000,
+        "mix": 0.68
+      }
+    }
   },
   "rate": 32000,
   "events": [
@@ -12,7 +30,19 @@
       "source": "borygmi-gurgles3",
       "role": "gut",
       "seconds": 0.7,
-      "from": 0
+      "from": 0,
+      "crush": {
+        "bits": 9,
+        "rate": 24000,
+        "mix": 0.86
+      },
+      "levels": {
+        "beforeRmsDb": -20.058271674113342,
+        "rmsDb": -20.058271679253235,
+        "peakDb": -6.8078304427539615,
+        "finite": true,
+        "rmsChangeDb": -5.1398920675183035e-9
+      }
     },
     {
       "id": "borygmi-gurgles3-2",
@@ -20,7 +50,19 @@
       "source": "borygmi-gurgles3",
       "role": "gut",
       "seconds": 3.44,
-      "from": 1.26
+      "from": 1.26,
+      "crush": {
+        "bits": 9,
+        "rate": 24000,
+        "mix": 0.86
+      },
+      "levels": {
+        "beforeRmsDb": -24.851019406840212,
+        "rmsDb": -24.851019406541308,
+        "peakDb": -3.013364759596147,
+        "finite": true,
+        "rmsChangeDb": 2.9890401265220135e-10
+      }
     },
     {
       "id": "borygmi-gurgles3-3",
@@ -28,7 +70,19 @@
       "source": "borygmi-gurgles3",
       "role": "gut",
       "seconds": 0.52,
-      "from": 9.26
+      "from": 9.26,
+      "crush": {
+        "bits": 9,
+        "rate": 24000,
+        "mix": 0.86
+      },
+      "levels": {
+        "beforeRmsDb": -22.04697955678978,
+        "rmsDb": -22.046979553657735,
+        "peakDb": -3.0139741578565804,
+        "finite": true,
+        "rmsChangeDb": 3.1320439575210912e-9
+      }
     },
     {
       "id": "borygmi-gurgles3-4",
@@ -36,7 +90,19 @@
       "source": "borygmi-gurgles3",
       "role": "gut",
       "seconds": 1.44,
-      "from": 9.86
+      "from": 9.86,
+      "crush": {
+        "bits": 9,
+        "rate": 24000,
+        "mix": 0.86
+      },
+      "levels": {
+        "beforeRmsDb": -27.61238963467594,
+        "rmsDb": -27.612389627456075,
+        "peakDb": -3.0206898916197273,
+        "finite": true,
+        "rmsChangeDb": 7.219863817908845e-9
+      }
     },
     {
       "id": "borygmi-gurgles3-5",
@@ -44,7 +110,19 @@
       "source": "borygmi-gurgles3",
       "role": "gut",
       "seconds": 0.56,
-      "from": 11.38
+      "from": 11.38,
+      "crush": {
+        "bits": 9,
+        "rate": 24000,
+        "mix": 0.86
+      },
+      "levels": {
+        "beforeRmsDb": -24.348472258778457,
+        "rmsDb": -24.34847226346192,
+        "peakDb": -3.0106618027097225,
+        "finite": true,
+        "rmsChangeDb": -4.683464283061767e-9
+      }
     },
     {
       "id": "borygmi-gurgles3-6",
@@ -52,7 +130,19 @@
       "source": "borygmi-gurgles3",
       "role": "gut",
       "seconds": 1.4,
-      "from": 16.98
+      "from": 16.98,
+      "crush": {
+        "bits": 9,
+        "rate": 24000,
+        "mix": 0.86
+      },
+      "levels": {
+        "beforeRmsDb": -23.14409132290134,
+        "rmsDb": -23.14409131988586,
+        "peakDb": -3.01129371106023,
+        "finite": true,
+        "rmsChangeDb": 3.0154794217196468e-9
+      }
     },
     {
       "id": "borygmi-gurgles3-7",
@@ -60,7 +150,19 @@
       "source": "borygmi-gurgles3",
       "role": "gut",
       "seconds": 1.54,
-      "from": 37.66
+      "from": 37.66,
+      "crush": {
+        "bits": 9,
+        "rate": 24000,
+        "mix": 0.86
+      },
+      "levels": {
+        "beforeRmsDb": -24.099948529233647,
+        "rmsDb": -24.09994853620402,
+        "peakDb": -3.011104792738176,
+        "finite": true,
+        "rmsChangeDb": -6.97037449981508e-9
+      }
     },
     {
       "id": "borygmi-gurgles3-8",
@@ -68,7 +170,19 @@
       "source": "borygmi-gurgles3",
       "role": "gut",
       "seconds": 1.3,
-      "from": 39.32
+      "from": 39.32,
+      "crush": {
+        "bits": 9,
+        "rate": 24000,
+        "mix": 0.86
+      },
+      "levels": {
+        "beforeRmsDb": -27.68187518352018,
+        "rmsDb": -27.681875188637907,
+        "peakDb": -3.0112995690583775,
+        "finite": true,
+        "rmsChangeDb": -5.117726686876267e-9
+      }
     },
     {
       "id": "borygmi-gurgles3-9",
@@ -76,7 +190,19 @@
       "source": "borygmi-gurgles3",
       "role": "gut",
       "seconds": 0.88,
-      "from": 58.28
+      "from": 58.28,
+      "crush": {
+        "bits": 9,
+        "rate": 24000,
+        "mix": 0.86
+      },
+      "levels": {
+        "beforeRmsDb": -26.12031524577946,
+        "rmsDb": -26.120315254007387,
+        "peakDb": -3.02081744187809,
+        "finite": true,
+        "rmsChangeDb": -8.227928560700093e-9
+      }
     },
     {
       "id": "borygmi-gurgles3-10",
@@ -84,7 +210,19 @@
       "source": "borygmi-gurgles3",
       "role": "gut",
       "seconds": 0.68,
-      "from": 76.74
+      "from": 76.74,
+      "crush": {
+        "bits": 9,
+        "rate": 24000,
+        "mix": 0.86
+      },
+      "levels": {
+        "beforeRmsDb": -21.713941889685557,
+        "rmsDb": -21.713941880557,
+        "peakDb": -3.018800314688061,
+        "finite": true,
+        "rmsChangeDb": 9.128555689130735e-9
+      }
     },
     {
       "id": "borygmi-gurgles2-1",
@@ -92,7 +230,19 @@
       "source": "borygmi-gurgles2",
       "role": "gut",
       "seconds": 0.8,
-      "from": 19.12
+      "from": 19.12,
+      "crush": {
+        "bits": 9,
+        "rate": 24000,
+        "mix": 0.86
+      },
+      "levels": {
+        "beforeRmsDb": -22.715128543629227,
+        "rmsDb": -22.71512854159187,
+        "peakDb": -3.011664237221045,
+        "finite": true,
+        "rmsChangeDb": 2.0373569498133293e-9
+      }
     },
     {
       "id": "borygmi-gurgles2-2",
@@ -100,7 +250,19 @@
       "source": "borygmi-gurgles2",
       "role": "gut",
       "seconds": 1.24,
-      "from": 27.16
+      "from": 27.16,
+      "crush": {
+        "bits": 9,
+        "rate": 24000,
+        "mix": 0.86
+      },
+      "levels": {
+        "beforeRmsDb": -20.005916518116216,
+        "rmsDb": -20.00591652004875,
+        "peakDb": -5.82512493806032,
+        "finite": true,
+        "rmsChangeDb": -1.9325341327203205e-9
+      }
     },
     {
       "id": "borygmi-gurgles2-3",
@@ -108,7 +270,19 @@
       "source": "borygmi-gurgles2",
       "role": "gut",
       "seconds": 0.56,
-      "from": 73.08
+      "from": 73.08,
+      "crush": {
+        "bits": 9,
+        "rate": 24000,
+        "mix": 0.86
+      },
+      "levels": {
+        "beforeRmsDb": -27.834753370841597,
+        "rmsDb": -27.834753393731315,
+        "peakDb": -3.0178102466881773,
+        "finite": true,
+        "rmsChangeDb": -2.2889718565011208e-8
+      }
     },
     {
       "id": "borygmi-gurgles2-4",
@@ -116,7 +290,19 @@
       "source": "borygmi-gurgles2",
       "role": "gut",
       "seconds": 1.78,
-      "from": 77.2
+      "from": 77.2,
+      "crush": {
+        "bits": 9,
+        "rate": 24000,
+        "mix": 0.86
+      },
+      "levels": {
+        "beforeRmsDb": -23.120729718749754,
+        "rmsDb": -23.12072971881979,
+        "peakDb": -3.0138708794212805,
+        "finite": true,
+        "rmsChangeDb": -7.003464475019427e-11
+      }
     },
     {
       "id": "borygmi-gurgles2-5",
@@ -124,7 +310,19 @@
       "source": "borygmi-gurgles2",
       "role": "gut",
       "seconds": 1.28,
-      "from": 80.98
+      "from": 80.98,
+      "crush": {
+        "bits": 9,
+        "rate": 24000,
+        "mix": 0.86
+      },
+      "levels": {
+        "beforeRmsDb": -25.664214477431543,
+        "rmsDb": -25.664214478865134,
+        "peakDb": -3.010010172489708,
+        "finite": true,
+        "rmsChangeDb": -1.4335910236695781e-9
+      }
     },
     {
       "id": "borygmi-gurgles2-6",
@@ -132,7 +330,19 @@
       "source": "borygmi-gurgles2",
       "role": "gut",
       "seconds": 1.12,
-      "from": 91.34
+      "from": 91.34,
+      "crush": {
+        "bits": 9,
+        "rate": 24000,
+        "mix": 0.86
+      },
+      "levels": {
+        "beforeRmsDb": -24.296834249140993,
+        "rmsDb": -24.29683424112202,
+        "peakDb": -3.0105365980531165,
+        "finite": true,
+        "rmsChangeDb": 8.018972152967763e-9
+      }
     },
     {
       "id": "borygmi-gurgles2-7",
@@ -140,7 +350,19 @@
       "source": "borygmi-gurgles2",
       "role": "gut",
       "seconds": 1.1,
-      "from": 105.34
+      "from": 105.34,
+      "crush": {
+        "bits": 9,
+        "rate": 24000,
+        "mix": 0.86
+      },
+      "levels": {
+        "beforeRmsDb": -26.825038568469296,
+        "rmsDb": -26.825038572270543,
+        "peakDb": -3.0131259926087113,
+        "finite": true,
+        "rmsChangeDb": -3.801247316914669e-9
+      }
     },
     {
       "id": "borygmi-gurgles2-8",
@@ -148,7 +370,19 @@
       "source": "borygmi-gurgles2",
       "role": "gut",
       "seconds": 0.7,
-      "from": 108.02
+      "from": 108.02,
+      "crush": {
+        "bits": 9,
+        "rate": 24000,
+        "mix": 0.86
+      },
+      "levels": {
+        "beforeRmsDb": -27.407033458354285,
+        "rmsDb": -27.40703345912056,
+        "peakDb": -3.082148813287209,
+        "finite": true,
+        "rmsChangeDb": -7.662741552394436e-10
+      }
     },
     {
       "id": "borygmi-gurgle1-1",
@@ -156,7 +390,19 @@
       "source": "borygmi-gurgle1",
       "role": "gut",
       "seconds": 1.5,
-      "from": 4.02
+      "from": 4.02,
+      "crush": {
+        "bits": 9,
+        "rate": 24000,
+        "mix": 0.86
+      },
+      "levels": {
+        "beforeRmsDb": -23.991189114949623,
+        "rmsDb": -23.991189124044055,
+        "peakDb": -3.010778222693915,
+        "finite": true,
+        "rmsChangeDb": -9.094431874245856e-9
+      }
     },
     {
       "id": "borygmi-percolating1-1",
@@ -164,7 +410,19 @@
       "source": "borygmi-percolating1",
       "role": "gut",
       "seconds": 1.38,
-      "from": 1.02
+      "from": 1.02,
+      "crush": {
+        "bits": 9,
+        "rate": 24000,
+        "mix": 0.86
+      },
+      "levels": {
+        "beforeRmsDb": -30.802104669083185,
+        "rmsDb": -30.80210464295289,
+        "peakDb": -3.021543927627393,
+        "finite": true,
+        "rmsChangeDb": 2.6130294372705976e-8
+      }
     },
     {
       "id": "borygmi-groaning1-1",
@@ -172,7 +430,19 @@
       "source": "borygmi-groaning1",
       "role": "gut",
       "seconds": 1.7,
-      "from": 0.54
+      "from": 0.54,
+      "crush": {
+        "bits": 9,
+        "rate": 24000,
+        "mix": 0.86
+      },
+      "levels": {
+        "beforeRmsDb": -20.00338861062454,
+        "rmsDb": -20.00338860944927,
+        "peakDb": -5.322367318695996,
+        "finite": true,
+        "rmsChangeDb": 1.175269659370315e-9
+      }
     },
     {
       "id": "borygmi-bubbling1-1",
@@ -180,7 +450,19 @@
       "source": "borygmi-bubbling1",
       "role": "gut",
       "seconds": 0.46,
-      "from": 1.78
+      "from": 1.78,
+      "crush": {
+        "bits": 9,
+        "rate": 24000,
+        "mix": 0.86
+      },
+      "levels": {
+        "beforeRmsDb": -20.73153036352986,
+        "rmsDb": -20.731530379520198,
+        "peakDb": -3.009596522492072,
+        "finite": true,
+        "rmsChangeDb": -1.59903379426396e-8
+      }
     },
     {
       "id": "borygmi-bubbling1-2",
@@ -188,7 +470,19 @@
       "source": "borygmi-bubbling1",
       "role": "gut",
       "seconds": 0.96,
-      "from": 5.06
+      "from": 5.06,
+      "crush": {
+        "bits": 9,
+        "rate": 24000,
+        "mix": 0.86
+      },
+      "levels": {
+        "beforeRmsDb": -23.83494423109437,
+        "rmsDb": -23.834944233605427,
+        "peakDb": -3.0219310205288217,
+        "finite": true,
+        "rmsChangeDb": -2.511058028176194e-9
+      }
     },
     {
       "id": "christo13-squishing-1",
@@ -196,7 +490,19 @@
       "source": "christo13-squishing",
       "role": "wet",
       "seconds": 2.94,
-      "from": 3.46
+      "from": 3.46,
+      "crush": {
+        "bits": 8,
+        "rate": 22050,
+        "mix": 0.8
+      },
+      "levels": {
+        "beforeRmsDb": -35.3947183306726,
+        "rmsDb": -35.394718335614925,
+        "peakDb": -4.491571121670048,
+        "finite": true,
+        "rmsChangeDb": -4.942322107126529e-9
+      }
     },
     {
       "id": "christo13-squishing-2",
@@ -204,7 +510,19 @@
       "source": "christo13-squishing",
       "role": "wet",
       "seconds": 3.14,
-      "from": 6.22
+      "from": 6.22,
+      "crush": {
+        "bits": 8,
+        "rate": 22050,
+        "mix": 0.8
+      },
+      "levels": {
+        "beforeRmsDb": -35.16852380065844,
+        "rmsDb": -35.16852379523827,
+        "peakDb": -3.625520664782158,
+        "finite": true,
+        "rmsChangeDb": 5.420169202352554e-9
+      }
     },
     {
       "id": "christo13-squishing-3",
@@ -212,7 +530,19 @@
       "source": "christo13-squishing",
       "role": "wet",
       "seconds": 3.06,
-      "from": 34.62
+      "from": 34.62,
+      "crush": {
+        "bits": 8,
+        "rate": 22050,
+        "mix": 0.8
+      },
+      "levels": {
+        "beforeRmsDb": -29.33924202568663,
+        "rmsDb": -29.339242026705705,
+        "peakDb": -3.6141113091949735,
+        "finite": true,
+        "rmsChangeDb": -1.0190746024818509e-9
+      }
     },
     {
       "id": "christo13-squishing-4",
@@ -220,7 +550,19 @@
       "source": "christo13-squishing",
       "role": "wet",
       "seconds": 2.92,
-      "from": 43.34
+      "from": 43.34,
+      "crush": {
+        "bits": 8,
+        "rate": 22050,
+        "mix": 0.8
+      },
+      "levels": {
+        "beforeRmsDb": -33.66375309954249,
+        "rmsDb": -33.66375310494667,
+        "peakDb": -3.6412971086514,
+        "finite": true,
+        "rmsChangeDb": -5.4041819907979516e-9
+      }
     },
     {
       "id": "christo13-squishing-5",
@@ -228,7 +570,19 @@
       "source": "christo13-squishing",
       "role": "wet",
       "seconds": 3.56,
-      "from": 51.24
+      "from": 51.24,
+      "crush": {
+        "bits": 8,
+        "rate": 22050,
+        "mix": 0.8
+      },
+      "levels": {
+        "beforeRmsDb": -34.387067925473616,
+        "rmsDb": -34.38706792083346,
+        "peakDb": -5.988934965286515,
+        "finite": true,
+        "rmsChangeDb": 4.640156703317189e-9
+      }
     },
     {
       "id": "christo13-squishing-6",
@@ -236,7 +590,19 @@
       "source": "christo13-squishing",
       "role": "wet",
       "seconds": 2.92,
-      "from": 67
+      "from": 67,
+      "crush": {
+        "bits": 8,
+        "rate": 22050,
+        "mix": 0.8
+      },
+      "levels": {
+        "beforeRmsDb": -34.370912613272715,
+        "rmsDb": -34.3709126181903,
+        "peakDb": -3.8180214400958192,
+        "finite": true,
+        "rmsChangeDb": -4.91758811449472e-9
+      }
     },
     {
       "id": "editor-adp-gooey-squish-1",
@@ -244,7 +610,19 @@
       "source": "editor-adp-gooey-squish",
       "role": "wet",
       "seconds": 0.914,
-      "from": 0
+      "from": 0,
+      "crush": {
+        "bits": 8,
+        "rate": 22050,
+        "mix": 0.8
+      },
+      "levels": {
+        "beforeRmsDb": -35.27411930129371,
+        "rmsDb": -35.2741192930676,
+        "peakDb": -6.454881071844891,
+        "finite": true,
+        "rmsChangeDb": 8.226109571296547e-9
+      }
     },
     {
       "id": "cabled-mess-wet-sponge-1",
@@ -252,7 +630,19 @@
       "source": "cabled-mess-wet-sponge",
       "role": "wet",
       "seconds": 1.64,
-      "from": 8.94
+      "from": 8.94,
+      "crush": {
+        "bits": 8,
+        "rate": 22050,
+        "mix": 0.8
+      },
+      "levels": {
+        "beforeRmsDb": -26.83246838290742,
+        "rmsDb": -26.832468380707255,
+        "peakDb": -3.1736505483818633,
+        "finite": true,
+        "rmsChangeDb": 2.20016715957172e-9
+      }
     },
     {
       "id": "cabled-mess-wet-sponge-2",
@@ -260,7 +650,19 @@
       "source": "cabled-mess-wet-sponge",
       "role": "wet",
       "seconds": 1.48,
-      "from": 36.86
+      "from": 36.86,
+      "crush": {
+        "bits": 8,
+        "rate": 22050,
+        "mix": 0.8
+      },
+      "levels": {
+        "beforeRmsDb": -20.020065122000613,
+        "rmsDb": -20.02006512186216,
+        "peakDb": -5.13209331155967,
+        "finite": true,
+        "rmsChangeDb": 1.3845280477653432e-10
+      }
     },
     {
       "id": "cabled-mess-wet-sponge-3",
@@ -268,7 +670,19 @@
       "source": "cabled-mess-wet-sponge",
       "role": "wet",
       "seconds": 1.46,
-      "from": 48.26
+      "from": 48.26,
+      "crush": {
+        "bits": 8,
+        "rate": 22050,
+        "mix": 0.8
+      },
+      "levels": {
+        "beforeRmsDb": -20.543074977425096,
+        "rmsDb": -20.5430749747506,
+        "peakDb": -3.038363177943995,
+        "finite": true,
+        "rmsChangeDb": 2.6744970682557323e-9
+      }
     },
     {
       "id": "cabled-mess-wet-sponge-4",
@@ -276,7 +690,19 @@
       "source": "cabled-mess-wet-sponge",
       "role": "wet",
       "seconds": 1.7,
-      "from": 59.62
+      "from": 59.62,
+      "crush": {
+        "bits": 8,
+        "rate": 22050,
+        "mix": 0.8
+      },
+      "levels": {
+        "beforeRmsDb": -20.01799413261818,
+        "rmsDb": -20.01799413541969,
+        "peakDb": -3.366595960376782,
+        "finite": true,
+        "rmsChangeDb": -2.801510134986529e-9
+      }
     },
     {
       "id": "cabled-mess-wet-sponge-5",
@@ -284,7 +710,19 @@
       "source": "cabled-mess-wet-sponge",
       "role": "wet",
       "seconds": 2.96,
-      "from": 61.88
+      "from": 61.88,
+      "crush": {
+        "bits": 8,
+        "rate": 22050,
+        "mix": 0.8
+      },
+      "levels": {
+        "beforeRmsDb": -20.52142900874367,
+        "rmsDb": -20.52142900916126,
+        "peakDb": -3.0089149581219377,
+        "finite": true,
+        "rmsChangeDb": -4.175895185198897e-10
+      }
     },
     {
       "id": "starlite-tummy-grumble-1",
@@ -292,7 +730,19 @@
       "source": "starlite-tummy-grumble",
       "role": "gut",
       "seconds": 0.68,
-      "from": 8.3
+      "from": 8.3,
+      "crush": {
+        "bits": 9,
+        "rate": 24000,
+        "mix": 0.86
+      },
+      "levels": {
+        "beforeRmsDb": -24.0415507072926,
+        "rmsDb": -24.04155071326209,
+        "peakDb": -3.01392068730769,
+        "finite": true,
+        "rmsChangeDb": -5.969489791368687e-9
+      }
     },
     {
       "id": "starlite-tummy-grumble-2",
@@ -300,7 +750,19 @@
       "source": "starlite-tummy-grumble",
       "role": "gut",
       "seconds": 0.76,
-      "from": 9.14
+      "from": 9.14,
+      "crush": {
+        "bits": 9,
+        "rate": 24000,
+        "mix": 0.86
+      },
+      "levels": {
+        "beforeRmsDb": -22.681684438148242,
+        "rmsDb": -22.681684433593116,
+        "peakDb": -3.0175295891697407,
+        "finite": true,
+        "rmsChangeDb": 4.5551260541287775e-9
+      }
     },
     {
       "id": "starlite-tummy-grumble-3",
@@ -308,7 +770,19 @@
       "source": "starlite-tummy-grumble",
       "role": "gut",
       "seconds": 1.64,
-      "from": 27.2
+      "from": 27.2,
+      "crush": {
+        "bits": 9,
+        "rate": 24000,
+        "mix": 0.86
+      },
+      "levels": {
+        "beforeRmsDb": -20.015723228495816,
+        "rmsDb": -20.01572323305296,
+        "peakDb": -3.7141673972590072,
+        "finite": true,
+        "rmsChangeDb": -4.557143995498336e-9
+      }
     },
     {
       "id": "starlite-tummy-grumble-4",
@@ -316,7 +790,19 @@
       "source": "starlite-tummy-grumble",
       "role": "gut",
       "seconds": 0.6,
-      "from": 55.22
+      "from": 55.22,
+      "crush": {
+        "bits": 9,
+        "rate": 24000,
+        "mix": 0.86
+      },
+      "levels": {
+        "beforeRmsDb": -20.00926162712284,
+        "rmsDb": -20.0092616260931,
+        "peakDb": -3.1134396118975785,
+        "finite": true,
+        "rmsChangeDb": 1.02973984894561e-9
+      }
     },
     {
       "id": "starlite-tummy-grumble-5",
@@ -324,7 +810,19 @@
       "source": "starlite-tummy-grumble",
       "role": "gut",
       "seconds": 1.54,
-      "from": 59.38
+      "from": 59.38,
+      "crush": {
+        "bits": 9,
+        "rate": 24000,
+        "mix": 0.86
+      },
+      "levels": {
+        "beforeRmsDb": -24.847735509015138,
+        "rmsDb": -24.847735512340172,
+        "peakDb": -3.0159183654801227,
+        "finite": true,
+        "rmsChangeDb": -3.325034469980892e-9
+      }
     },
     {
       "id": "starlite-tummy-grumble-6",
@@ -332,7 +830,19 @@
       "source": "starlite-tummy-grumble",
       "role": "gut",
       "seconds": 1.9,
-      "from": 77.62
+      "from": 77.62,
+      "crush": {
+        "bits": 9,
+        "rate": 24000,
+        "mix": 0.86
+      },
+      "levels": {
+        "beforeRmsDb": -21.805824354767182,
+        "rmsDb": -21.80582434869472,
+        "peakDb": -3.0154670712728193,
+        "finite": true,
+        "rmsChangeDb": 6.072461644635041e-9
+      }
     },
     {
       "id": "starlite-tummy-grumble-7",
@@ -340,7 +850,19 @@
       "source": "starlite-tummy-grumble",
       "role": "gut",
       "seconds": 3.08,
-      "from": 105.08
+      "from": 105.08,
+      "crush": {
+        "bits": 9,
+        "rate": 24000,
+        "mix": 0.86
+      },
+      "levels": {
+        "beforeRmsDb": -26.260927339680297,
+        "rmsDb": -26.260927344332927,
+        "peakDb": -3.0233314438660552,
+        "finite": true,
+        "rmsChangeDb": -4.652630281043457e-9
+      }
     },
     {
       "id": "starlite-tummy-grumble-8",
@@ -348,7 +870,19 @@
       "source": "starlite-tummy-grumble",
       "role": "gut",
       "seconds": 0.8,
-      "from": 117.06
+      "from": 117.06,
+      "crush": {
+        "bits": 9,
+        "rate": 24000,
+        "mix": 0.86
+      },
+      "levels": {
+        "beforeRmsDb": -23.42623903302649,
+        "rmsDb": -23.42623903346844,
+        "peakDb": -3.016066359919749,
+        "finite": true,
+        "rmsChangeDb": -4.419504762154247e-10
+      }
     },
     {
       "id": "stephan-slime-smacking-1",
@@ -356,7 +890,19 @@
       "source": "stephan-slime-smacking",
       "role": "wet",
       "seconds": 0.82,
-      "from": 1.42
+      "from": 1.42,
+      "crush": {
+        "bits": 8,
+        "rate": 22050,
+        "mix": 0.8
+      },
+      "levels": {
+        "beforeRmsDb": -30.36290009926145,
+        "rmsDb": -30.362900085524537,
+        "peakDb": -3.6324236592224586,
+        "finite": true,
+        "rmsChangeDb": 1.373691205230898e-8
+      }
     },
     {
       "id": "stephan-slime-smacking-2",
@@ -364,7 +910,19 @@
       "source": "stephan-slime-smacking",
       "role": "wet",
       "seconds": 1.48,
-      "from": 2.68
+      "from": 2.68,
+      "crush": {
+        "bits": 8,
+        "rate": 22050,
+        "mix": 0.8
+      },
+      "levels": {
+        "beforeRmsDb": -25.601444226840464,
+        "rmsDb": -25.601444230063393,
+        "peakDb": -4.952303334667158,
+        "finite": true,
+        "rmsChangeDb": -3.2229294788521656e-9
+      }
     },
     {
       "id": "stephan-slime-smacking-3",
@@ -372,7 +930,19 @@
       "source": "stephan-slime-smacking",
       "role": "wet",
       "seconds": 0.9,
-      "from": 11.52
+      "from": 11.52,
+      "crush": {
+        "bits": 8,
+        "rate": 22050,
+        "mix": 0.8
+      },
+      "levels": {
+        "beforeRmsDb": -35.96141661172318,
+        "rmsDb": -35.961416594377845,
+        "peakDb": -4.519893643503931,
+        "finite": true,
+        "rmsChangeDb": 1.7345335834306752e-8
+      }
     }
   ],
   "beds": [
@@ -381,14 +951,38 @@
       "file": "bed-a.mp3",
       "source": "borygmi-gurgles2",
       "seconds": 22,
-      "from": 35.6
+      "from": 35.6,
+      "crush": {
+        "bits": 10,
+        "rate": 32000,
+        "mix": 0.68
+      },
+      "levels": {
+        "beforeRmsDb": -31.127482627497823,
+        "rmsDb": -31.127482629351913,
+        "peakDb": -3.0040591704766655,
+        "finite": true,
+        "rmsChangeDb": -1.8540902146924054e-9
+      }
     },
     {
       "id": "bed-b",
       "file": "bed-b.mp3",
       "source": "starlite-tummy-grumble",
       "seconds": 22,
-      "from": 30.4
+      "from": 30.4,
+      "crush": {
+        "bits": 10,
+        "rate": 32000,
+        "mix": 0.68
+      },
+      "levels": {
+        "beforeRmsDb": -33.64158643804844,
+        "rmsDb": -33.641586437244094,
+        "peakDb": -3.0165154871963957,
+        "finite": true,
+        "rmsChangeDb": 8.043485877351486e-10
+      }
     }
   ],
   "sources": [
@@ -436,5 +1030,13 @@
       "id": "stephan-slime-smacking",
       "sha256": "85e19cf8b8eafcf413992412d09b1661939bbaf305df0bcaf44c33765580546d"
     }
-  ]
+  ],
+  "processingSampleRate": 44100,
+  "encoding": {
+    "codec": "MP3",
+    "rate": 32000,
+    "channels": 1,
+    "kbps": 80
+  },
+  "levelReference": "Previous bank treatment: 8-bit, every-third-sample (14.7 kHz), 32% parallel mix; identical source cuts before MP3 encoding."
 }

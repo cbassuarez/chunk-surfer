@@ -1,9 +1,10 @@
 {
-  "generatedAt": "2026-08-31T07:57:06.655Z",
-  "bytes": 1851504,
-  "totalTriangles": 29276,
+  "generatedAt": "2026-10-21T02:50:39.187Z",
+  "bytes": 1564092,
+  "totalTriangles": 38012,
   "design": {
     "geometryRevision": 3,
+    "finishRevision": 1,
     "curvilinear": true,
     "navigationMode": "analytic-helix",
     "halfTurnFlights": 4,
@@ -14,6 +15,15 @@
     "goingM": 0.28,
     "handrailHeightM": 1,
     "maximumBalusterClearGapM": 0.106,
+    "minimumSoffitDepthM": 0.18,
+    "profiledOakRails": true,
+    "physicalBalusterSpacing": true,
+    "academicHead": {
+      "floorM": 10,
+      "exit": "west",
+      "mouthWidthM": 2,
+      "wellPreserved": true
+    },
     "coplanarFinishPrisms": 0,
     "doubleSidedOpaqueMaterials": 0,
     "floor1Aim": [
@@ -23,18 +33,18 @@
   },
   "meshes": {
     "main_open_well_stair": {
-      "triangles": 29276,
-      "vertices": 46700,
+      "triangles": 38012,
+      "vertices": 34442,
       "bounds": {
         "min": [
           -2.7000909145303926,
-          -0.18,
+          -0.3514285714285714,
           -3.3280843974959358
         ],
         "max": [
           3.640000000000006,
           14.61,
-          2.7359283072328084
+          3.5091003492833304
         ]
       }
     }

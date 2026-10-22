@@ -1,0 +1,255 @@
+- main [ref=f34e2]:
+  - generic [ref=f34e3]:
+    - generic [ref=f34e4]: Chunk Surfer · implementation record · 22 October 2026
+    - heading "St Brendan’s" [level=1] [ref=f34e5]
+    - paragraph [ref=f34e6]: Fifty silent figures beneath suspended machinery. Cold stone, worked oak, bronze and aperture wind give the tower its own presence.
+    - paragraph [ref=f34e7]: The existing descent, bell contact, apparatus lessons, fight, destruction and carry remain the encounter. The chapel continues its Mass; attention here is scattered between the floor, the walls and the weight above.
+    - navigation "Report sections" [ref=f34e8]:
+      - link "The figures" [ref=f34e9] [cursor=pointer]:
+        - /url: "#figures"
+      - link "Architecture" [ref=f34e10] [cursor=pointer]:
+        - /url: "#architecture"
+      - link "Listen" [ref=f34e11] [cursor=pointer]:
+        - /url: "#sound"
+      - link "Route & proof" [ref=f34e12] [cursor=pointer]:
+        - /url: "#route"
+      - link "Editable sources" [ref=f34e13] [cursor=pointer]:
+        - /url: "#sources"
+      - link "What remains unproven" [ref=f34e14] [cursor=pointer]:
+        - /url: "#limits"
+  - 'figure "Final populated game output during the ordinary descent: normal motion, 1280 × 800, final dither. All fifty figures and four pose meshes were loaded; machinery and masonry naturally occlude many bodies from this position." [ref=f34e15]':
+    - link [ref=f34e16] [cursor=pointer]:
+      - /url: live-descent/normal-01-working-belfry.webp
+      - img "Actual dithered game view of the two-tier bell frame, hollow bell mouths, wheels, iron supports and the clear perimeter walk" [ref=f34e17]
+  - generic "Implementation overview" [ref=f34e19]:
+    - generic [ref=f34e20]:
+      - strong [ref=f34e21]: "50"
+      - generic [ref=f34e22]: silent, fixed human residues
+    - generic [ref=f34e23]:
+      - strong [ref=f34e24]: "4"
+      - generic [ref=f34e25]: distinct anatomical held poses
+    - generic [ref=f34e26]:
+      - strong [ref=f34e27]: "7"
+      - generic [ref=f34e28]: recorded material clips · 5 CC0 sources
+    - generic [ref=f34e29]:
+      - strong [ref=f34e30]: "196"
+      - generic [ref=f34e31]: ordinary movement steps in the recorded descent
+  - generic [ref=f34e32]:
+    - paragraph [ref=f34e33]: The tower is occupied
+    - heading "Waiting, bracing, sitting, looking up." [level=2] [ref=f34e34]
+    - generic [ref=f34e35]:
+      - generic [ref=f34e36]:
+        - paragraph [ref=f34e37]: Thirty-four figures occupy the ground level, ten the loft and crossing margins, and six the belfry masonry. Their poses and attention vary. The central nave and carry axis, spiral mouths, narrow triforium, lesson recesses, bell sweep, hatch and arrival remain clear.
+        - paragraph [ref=f34e38]: The dedicated models have shoulders, necks, hands, bent joints and uneven weight. Seated bodies meet the existing bench height. The figures are world-anchored shadow and residual energy, held in place through the established illuminated, torch and barely visible unlit states.
+      - generic [ref=f34e39]:
+        - paragraph [ref=f34e40]: "They remain entirely silent. The building carries the sound: wind at an opening, wood taking load, iron making contact, and bronze when an existing contact or combat event actually strikes it."
+        - paragraph [ref=f34e41]: Every figure enters the ordinary depth/material pipeline and final dither. They add no collision, interactions, light slots or shadow maps. Recording, playback, actor suppression, effects-off and ending protections apply; reduced dread preserves the bodies.
+        - paragraph [ref=f34e42]: "Dedicated four-pose pack: 311,784 bytes · 13,264 asset triangles. These figures share four meshes; that asset count is not the total visible triangle cost of fifty instances."
+    - generic [ref=f34e43]:
+      - 'figure "Actual populated nave: anonymous human mass against a lit surface, through the final dither at the saved 0.5 render scale. This close view uses an authoring-established position." [ref=f34e44]':
+        - link [ref=f34e45] [cursor=pointer]:
+          - /url: presence-detail.png
+          - img "Actual final dither view of an anonymous upright human shadow between the nave benches, with other held figures beyond" [ref=f34e46]
+      - figure "The nave population leaves the central movement and carry axis open. Authoring view, actual renderer." [ref=f34e48]:
+        - link [ref=f34e49] [cursor=pointer]:
+          - /url: presence-nave.png
+          - img "Actual dithered view of silent figures distributed amongst the nave benches" [ref=f34e50]
+      - figure "The belfry figures stand along the masonry behind the machinery and are substantially occluded in this view; the submission receipt establishes their presence more clearly than this framing." [ref=f34e52]:
+        - link [ref=f34e53] [cursor=pointer]:
+          - /url: presence-belfry.png
+          - img "Actual dithered belfry view with fixed figures stationed at the outer masonry behind the bell machinery" [ref=f34e54]
+    - paragraph [ref=f34e56]:
+      - text: "Live protection check: 50 submitted / 4 loaded meshes → recording 0 → return 50; effects off 0; reduced effects 50. Final dither remained enabled with no GL error. At this captured view the figures add four instanced main draws and 165,800 submitted triangles; shadow draw/triangle counts are unchanged. These measurements do not establish a frame-rate guarantee."
+      - link "Actual figure and shader receipt" [ref=f34e57] [cursor=pointer]:
+        - /url: presence-proof.json
+      - text: .
+    - paragraph [ref=f34e58]:
+      - text: The final populated descent passed all 24 live checks, with all fifty figures loaded at its start and finish. An independent still review supports the anonymous human silhouette while identifying unresolved fine anatomy and perceived crowd abundance.
+      - link "Final route record" [ref=f34e59] [cursor=pointer]:
+        - /url: live-descent/report.json
+      - text: ·
+      - link "Visual review and limits" [ref=f34e60] [cursor=pointer]:
+        - /url: presence-visual-review.json
+      - text: .
+  - generic [ref=f34e61]:
+    - paragraph [ref=f34e62]: The built treatment
+    - heading "The frame explains the weight." [level=2] [ref=f34e63]
+    - generic [ref=f34e64]:
+      - generic [ref=f34e65]:
+        - heading "Above" [level=3] [ref=f34e66]
+        - paragraph [ref=f34e67]: Eight hollow castings have soundbows, visible wall thickness, canons and headstocks. Grooved wooden wheels, individual clappers, stays and sliders retain their existing articulated motion. Scale-aware bearing housings meet the gudgeons; the supporting timber now sits below those axes.
+        - paragraph [ref=f34e68]: Iron straps, fixings, joint faces and handled surfaces articulate the apparatus. The deck, guard, hatch and perimeter still describe the same physical route. Four legacy beams that crossed the bearing axes were replaced; the rest of the original architectural geometry and normals remain.
+      - generic [ref=f34e69]:
+        - heading "Below" [level=3] [ref=f34e70]
+        - paragraph [ref=f34e71]: Larger paving establishes the floor. Carved pews and choir stalls, a hollow font, a heavy altar, an abraded monument, a recumbent stone tomb and a pierced pulpitum give the church specific mass and construction. Removed-object traces and surviving ornament carry its stripped history.
+        - paragraph [ref=f34e72]: Deep inward stone splays frame cold, closed glazing. These faces remain against the existing solid walls; they create no new openings or through-views. Quieter broad materials let the final dither retain architectural depth while bronze edges and carved forms carry detail.
+    - generic [ref=f34e73]:
+      - figure "Choir furniture and stone mass. An authoring view in the real renderer; not an earned campaign arrival." [ref=f34e74]:
+        - link "Dithered authoring view of the carved choir stalls and heavy stone furnishings":
+          - /url: after-choir.png
+          - img "Dithered authoring view of the carved choir stalls and heavy stone furnishings"
+      - figure "The recumbent effigy through the final acquisition pass. Fine facial and finger detail is not reliably legible at this scale; the head, hands and body are principally sculptural masses." [ref=f34e76]:
+        - link "Dithered close authoring view of the recumbent stone effigy":
+          - /url: after-effigy-detail.png
+          - img "Dithered close authoring view of the recumbent stone effigy"
+    - paragraph [ref=f34e78]: "Architecture/apparatus pack: 3,157,648 bytes · 89,200 packed triangles, including mutually exclusive intact/broken screen assets. Dedicated instance mapping leaves chapel copies and ending bell models on their original assets."
+  - generic [ref=f34e79]:
+    - paragraph [ref=f34e80]: Sound belongs to the apparatus
+    - heading "Listen from inside the building." [level=2] [ref=f34e81]
+    - paragraph [ref=f34e82]: The eight bell paths follow their actual fixed pivots, height, distance, listener orientation and existing wall/door loss. Available HRTF positioning carries direction and elevation; stereo fallback retains direction and height-dependent attenuation. A fallen bell’s sound source moves to its actual ground position.
+    - table "Architectural sound transmission" [ref=f34e83]:
+      - rowgroup [ref=f34e84]:
+        - row [ref=f34e85]:
+          - columnheader "Position" [ref=f34e86]
+          - columnheader "Treatment" [ref=f34e87]
+      - rowgroup [ref=f34e88]:
+        - row [ref=f34e89]:
+          - cell "Belfry" [ref=f34e90]
+          - cell "Close bronze and mechanism, aperture air, shorter reflections." [ref=f34e91]
+        - row [ref=f34e92]:
+          - cell "Turret" [ref=f34e93]
+          - cell "Masonry reduces the direct attack and upper frequencies." [ref=f34e94]
+        - row [ref=f34e95]:
+          - cell "Triforium" [ref=f34e96]
+          - cell "More reflected sound carries the apparatus above the open space." [ref=f34e97]
+        - row [ref=f34e98]:
+          - cell "Nave" [ref=f34e99]
+          - cell "A longer, darker volume returns the overhead sound. The carry lets its energy drain away." [ref=f34e100]
+    - paragraph [ref=f34e101]: Sparse recorded timber and window wind continue on a bounded clock. Rope material accompanies the existing swinging state. Existing damage events produce material-appropriate wood, iron or stone at the actual damaged object. Incidental ambience never strikes a bell or emits a gameplay noise event.
+    - generic [ref=f34e102]:
+      - heading "Actual encounter output" [level=3] [ref=f34e103]
+      - generic "Actual St Brendan’s encounter program output" [ref=f34e104]
+      - paragraph [ref=f34e105]: 60.48 sec · stereo 48 kHz · the existing game output after master/limiter, no microphone. Includes authoring-established positions and explicit event fixtures; it is separate from the uninterrupted ordinary descent. This recording predates the final correction from the open frame centre to its timber bearer.
+      - generic [ref=f34e106]:
+        - link "WAV" [ref=f34e107] [cursor=pointer]:
+          - /url: actual-encounter.wav
+        - link "Measurements" [ref=f34e108] [cursor=pointer]:
+          - /url: actual-encounter-measurements.json
+        - link "Capture states" [ref=f34e109] [cursor=pointer]:
+          - /url: live-capture.json
+        - link "Actual recording-protection check" [ref=f34e110] [cursor=pointer]:
+          - /url: live-protection.json
+      - paragraph [ref=f34e111]: "Measured RMS −43.60 dBFS · peak −14.72 dBFS · 0 clipped samples. Recording protection was separately exercised with active bell sources: the complete tower graph reached zero tracked sources."
+    - generic [ref=f34e112]:
+      - heading "Final bearer anchor and populated tower" [level=3] [ref=f34e113]
+      - generic "Actual output with the final timber bearer anchor and fifty figures" [ref=f34e114]
+      - paragraph [ref=f34e115]: 29.58 sec · final actual post-limiter program output, no microphone. A real timber bearer now owns the wood source and its valid floor projection. Includes an ordinary head turn, authored relocations to the triforium/nave, and existing frame, bell-swing, stone-screen and fallen-bell event fixtures. The fifty figures add no sound. This is an authoring verification, not an earned battle or uninterrupted route.
+      - generic [ref=f34e116]:
+        - link "Final WAV" [ref=f34e117] [cursor=pointer]:
+          - /url: final-anchor.wav
+        - link "Final measurements" [ref=f34e118] [cursor=pointer]:
+          - /url: final-anchor-measurements.json
+        - link "Timed final-anchor states" [ref=f34e119] [cursor=pointer]:
+          - /url: final-anchor-capture.json
+      - paragraph [ref=f34e120]: Measured RMS −43.52 dBFS · peak −18.072 dBFS · 0 clipped samples.
+    - generic [ref=f34e121]:
+      - heading "Apparatus-only runtime study" [level=3] [ref=f34e122]
+      - generic "Offline St Brendan’s apparatus runtime study" [ref=f34e123]
+      - paragraph [ref=f34e124]: "49 sec · actual new runtime and decoded shipped files in OfflineAudioContext, with authored listener positions and explicit strike/damage fixtures. This is a diagnostic composition, not recorded gameplay. The protected window and post-departure window are digitally silent; peak tracked sources: 5."
+      - generic [ref=f34e125]:
+        - link "Offline measurements and frames" [ref=f34e126] [cursor=pointer]:
+          - /url: runtime-preview.json
+        - link "Editable render script" [ref=f34e127] [cursor=pointer]:
+          - /url: render-audio.js
+    - paragraph [ref=f34e128]:
+      - text: The room responses are
+      - strong [ref=f34e129]: procedural approximations, not measured impulse responses
+      - text: . The shared tonal bank remains a documented clock-hammer-derived prototype, pitch-scaled to eight notes; it is not eight independently recorded moving bells. The new bank adds physical recordings without disguising that limitation.
+  - generic [ref=f34e130]:
+    - paragraph [ref=f34e131]: Evidence and boundaries
+    - heading "The long way down still works." [level=2] [ref=f34e132]
+    - 'figure "The remembered axis in the completed populated descent: actual game output, final dither and normal motion." [ref=f34e133]':
+      - link [ref=f34e134] [cursor=pointer]:
+        - /url: live-descent/normal-09-remembered-axis.webp
+        - img "Actual dithered game view looking back along the populated St Brendan’s nave toward the tower and crossing" [ref=f34e135]
+    - table "Verification evidence" [ref=f34e137]:
+      - rowgroup [ref=f34e138]:
+        - row [ref=f34e139]:
+          - columnheader "Evidence" [ref=f34e140]
+          - columnheader "What it establishes" [ref=f34e141]
+      - rowgroup [ref=f34e142]:
+        - row [ref=f34e143]:
+          - cell "24 / 24 final live-route checks" [ref=f34e144]
+          - cell [ref=f34e145]:
+            - text: 196 ordinary movement steps through all three existing E lessons, both spirals, crossing walk, north triforium, nave and duel approach. All fifty figures loaded at start and finish; final dither active, GL error 0, guard alarm 0. Eighteen actual frames saved. One diagnostic belfry start; no warps after that start.
+            - link "Final route record" [ref=f34e146] [cursor=pointer]:
+              - /url: live-descent/report.json
+            - text: .
+        - row [ref=f34e147]:
+          - cell "61 / 61 focused checks" [ref=f34e148]
+          - cell [ref=f34e149]:
+            - text: Current geometry, figure anatomy and placement, integration, sound, route/encounter preservation and existing extraction behavior. Five subsequent guard checks also passed after the final exclusion of special spaces.
+            - link "Final test receipt" [ref=f34e150] [cursor=pointer]:
+              - /url: final-focused.tap
+            - text: ·
+            - link "Final guard regression" [ref=f34e151] [cursor=pointer]:
+              - /url: final-presence-guards.tap
+            - text: .
+        - row [ref=f34e152]:
+          - cell "Independent physical placement" [ref=f34e153]
+          - cell [ref=f34e154]:
+            - text: 119,560 delivered body vertices and 12,124 sole samples checked against actual floors, deck openings, structural colliders, furniture and seat support. No unexpected overlap or carry-spine intrusion; minimum belfry perimeter clearance 1.46 m.
+            - link "Placement audit" [ref=f34e155] [cursor=pointer]:
+              - /url: presence-placement-audit.json
+            - text: .
+        - row [ref=f34e156]:
+          - cell "50 figures through final dither" [ref=f34e157]
+          - cell [ref=f34e158]:
+            - text: Actual loaded models and submitted bodies, recording suppression/return, effects off/reduced, and unchanged shadow counts; no GL error. These authoring fixtures do not establish player perception.
+            - link "Live populated-room proof" [ref=f34e159] [cursor=pointer]:
+              - /url: presence-proof.json
+            - text: .
+        - row [ref=f34e160]:
+          - cell "Recording and source protection" [ref=f34e161]
+          - cell [ref=f34e162]:
+            - text: Actual game recording fixture mutes active tower audio; unit coverage includes monitoring, playback, pause, focus, bank failure, bounded voices, cleared tails, saved damage and no deferred break sounds on return.
+            - link "Live receipt" [ref=f34e163] [cursor=pointer]:
+              - /url: live-protection.json
+            - text: ·
+            - link "Audio contracts" [ref=f34e164] [cursor=pointer]:
+              - /url: ../st-brendans/audio-focused.tap
+            - text: .
+        - row [ref=f34e165]:
+          - cell "Route and encounter identity" [ref=f34e166]
+          - cell [ref=f34e167]:
+            - text: Literal pre-treatment digests cover the shell, floors, collision, exits, lessons, both battle phases, damage marks, ending definitions and carry extraction. Seventy Ear/chapel audio files and implementation sources retain their captured hashes.
+            - link "Baseline" [ref=f34e168] [cursor=pointer]:
+              - /url: baseline-preservation.json
+            - text: ·
+            - link "Portable regression" [ref=f34e169] [cursor=pointer]:
+              - /url: ../../test/st-brendans-preservation.spec.mjs
+            - text: .
+        - row [ref=f34e170]:
+          - cell "Final production code graph" [ref=f34e171]
+          - cell [ref=f34e172]:
+            - text: "The complete production entry graph passed after the fifty-figure integration: 30 chunks, 444 assets, 29,538,553 generated bytes. The receipt retains the existing ineffective dynamic-import warning. This in-memory build does not establish a complete packaged release or native campaign acceptance."
+            - link "Final build method and warning receipt" [ref=f34e173] [cursor=pointer]:
+              - /url: code-build.json
+            - text: .
+    - generic [ref=f34e174]:
+      - link "Consolidated verification" [ref=f34e175] [cursor=pointer]:
+        - /url: verification.json
+      - link "Portable verification script" [ref=f34e176] [cursor=pointer]:
+        - /url: verify-treatment.py
+      - link "Editable placement audit" [ref=f34e177] [cursor=pointer]:
+        - /url: audit-presence-placements.mjs
+      - link "Independent final-dither still review" [ref=f34e178] [cursor=pointer]:
+        - /url: presence-visual-review.json
+      - link "Earlier architectural route archive" [ref=f34e179] [cursor=pointer]:
+        - /url: live-descent-before-presences/report.json
+    - paragraph [ref=f34e180]: The route run exercises normal movement, meaningful apparatus responses and bell-clearance behavior. It does not prove earned access through the preceding game, a completed duel, either ending, the entire carry, or unfamiliar-player comprehension.
+  - generic [ref=f34e181]:
+    - paragraph [ref=f34e182]: Editable work and provenance
+    - heading "The implementation is inspectable." [level=2] [ref=f34e183]
+    - group [ref=f34e184]:
+      - generic "Architecture, apparatus and material treatment" [ref=f34e185] [cursor=pointer]
+    - group [ref=f34e186]:
+      - generic "Fifty figures and four anatomical poses" [ref=f34e187] [cursor=pointer]
+    - group [ref=f34e188]:
+      - generic "Recorded material, exact cuts, licenses and acoustic runtime" [ref=f34e189] [cursor=pointer]
+  - generic [ref=f34e190]:
+    - paragraph [ref=f34e191]: Remaining uncertainty
+    - heading "Technical proof is not player acceptance." [level=2] [ref=f34e192]
+    - paragraph [ref=f34e193]: Author listening and unfamiliar-player validation remain pending. The captures and measurements establish rendered output, source identity, actual movement and technical behavior; they do not establish perceived weight, fear, spatial recognition, or a successful distinction from the chapel in a fresh playthrough.
+    - paragraph [ref=f34e194]: The final populated descent, shader output, anchor recording and production code graph are verified. Whole-campaign access, complete combat/carry/ending acceptance, and packaged native performance remain outside this pass. Fine facial, finger and knee detail fades at ordinary dither distances; fifty submitted stations alone cannot establish that an unfamiliar player perceives a crowded room.
+  - generic [ref=f34e195]: St Brendan’s · local implementation record · actual renderer captures and separate authoring studies · audio requires an explicit play action

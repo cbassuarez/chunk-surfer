@@ -1,0 +1,352 @@
+{
+  "schemaVersion": 1,
+  "atUTC": "2026-10-20T19:46:31.149Z",
+  "scene": "bag",
+  "bag": {
+    "open": true,
+    "blocksWorld": true,
+    "section": "kit",
+    "route": {
+      "type": "item-inspect",
+      "entryId": "gear:tuning-fork",
+      "tree": {
+        "start": {
+          "speaker": "FIELD CASE",
+          "lines": [
+            {
+              "who": "direction",
+              "text": "Steel. A=444, cut by hand below an older stamp."
+            },
+            {
+              "who": "you",
+              "text": "A reference, not a weapon. If the Source gives me a target, I can ask whether it agrees."
+            }
+          ]
+        }
+      },
+      "page": 0,
+      "inspection": {
+        "id": "tuning-fork",
+        "yaw": 0,
+        "pitch": 0,
+        "dragging": false,
+        "ready": true,
+        "failed": false
+      },
+      "reader": null
+    },
+    "selected": {
+      "id": "gear:tuning-fork",
+      "title": "TUNING FORK",
+      "actions": [
+        {
+          "id": "set-slot",
+          "verb": "set",
+          "label": "SET",
+          "enabled": true,
+          "reason": "",
+          "confirm": null,
+          "exitPolicy": "stay",
+          "special": false
+        },
+        {
+          "id": "use-unavailable",
+          "verb": "use",
+          "label": "USE",
+          "enabled": false,
+          "reason": "SET IT IN A QUICK SLOT",
+          "confirm": null,
+          "exitPolicy": "stay",
+          "special": false
+        },
+        {
+          "id": "drop-unavailable",
+          "verb": "drop",
+          "label": "DROP",
+          "enabled": false,
+          "reason": "CAN'T LEAVE THIS ITEM BEHIND",
+          "confirm": null,
+          "exitPolicy": "stay",
+          "special": false
+        },
+        {
+          "id": "inspect-item",
+          "verb": "inspect",
+          "label": "INSPECT",
+          "enabled": true,
+          "reason": "",
+          "confirm": null,
+          "exitPolicy": "stay",
+          "special": false
+        }
+      ]
+    },
+    "mapSelected": {
+      "id": "space:soundnoisemusic",
+      "label": "THE PRACTICE WING",
+      "entrances": [
+        {
+          "id": "practice-west-1",
+          "floorId": "u1",
+          "height": 4.800000190734863,
+          "position": {
+            "x": 59.25,
+            "y": 49.75
+          },
+          "open": true,
+          "keyId": null,
+          "locked": false,
+          "traversable": true,
+          "state": "open",
+          "widthAxis": "y",
+          "apertureWidth": 1
+        },
+        {
+          "id": "practice-east-1",
+          "floorId": "u1",
+          "height": 4.800000190734863,
+          "position": {
+            "x": 63.25,
+            "y": 49.75
+          },
+          "open": true,
+          "keyId": null,
+          "locked": false,
+          "traversable": true,
+          "state": "open",
+          "widthAxis": "y",
+          "apertureWidth": 1
+        },
+        {
+          "id": "practice-west-2",
+          "floorId": "u1",
+          "height": 4.800000190734863,
+          "position": {
+            "x": 59.25,
+            "y": 56.75
+          },
+          "open": true,
+          "keyId": null,
+          "locked": false,
+          "traversable": true,
+          "state": "open",
+          "widthAxis": "y",
+          "apertureWidth": 1
+        },
+        {
+          "id": "practice-east-2",
+          "floorId": "u1",
+          "height": 4.800000190734863,
+          "position": {
+            "x": 63.25,
+            "y": 56.75
+          },
+          "open": true,
+          "keyId": null,
+          "locked": false,
+          "traversable": true,
+          "state": "open",
+          "widthAxis": "y",
+          "apertureWidth": 1
+        },
+        {
+          "id": "practice-side",
+          "floorId": "u1",
+          "height": 4.800000190734863,
+          "position": {
+            "x": 76.25,
+            "y": 58.75
+          },
+          "open": true,
+          "keyId": null,
+          "locked": false,
+          "traversable": true,
+          "state": "open",
+          "widthAxis": "y",
+          "apertureWidth": 1
+        },
+        {
+          "id": "practice-west-3",
+          "floorId": "u1",
+          "height": 4.800000190734863,
+          "position": {
+            "x": 59.25,
+            "y": 63.75
+          },
+          "open": true,
+          "keyId": null,
+          "locked": false,
+          "traversable": true,
+          "state": "open",
+          "widthAxis": "y",
+          "apertureWidth": 1
+        },
+        {
+          "id": "practice-east-3",
+          "floorId": "u1",
+          "height": 4.800000190734863,
+          "position": {
+            "x": 63.25,
+            "y": 63.75
+          },
+          "open": true,
+          "keyId": null,
+          "locked": false,
+          "traversable": true,
+          "state": "open",
+          "widthAxis": "y",
+          "apertureWidth": 1
+        },
+        {
+          "id": "practice-west-4",
+          "floorId": "u1",
+          "height": 4.800000190734863,
+          "position": {
+            "x": 59.25,
+            "y": 70.75
+          },
+          "open": true,
+          "keyId": null,
+          "locked": false,
+          "traversable": true,
+          "state": "open",
+          "widthAxis": "y",
+          "apertureWidth": 1
+        },
+        {
+          "id": "practice-east-4",
+          "floorId": "u1",
+          "height": 4.800000190734863,
+          "position": {
+            "x": 63.25,
+            "y": 70.75
+          },
+          "open": true,
+          "keyId": null,
+          "locked": false,
+          "traversable": true,
+          "state": "open",
+          "widthAxis": "y",
+          "apertureWidth": 1
+        }
+      ],
+      "waypoint": false
+    },
+    "floorId": "u1",
+    "waypoint": null,
+    "guidance": {
+      "id": "story:get-in",
+      "label": "ENTER THE SCENE DOCK",
+      "kind": "door",
+      "playerSelected": false,
+      "roomId": null,
+      "spaceId": null,
+      "propId": null,
+      "doorId": "dock-grey-exterior",
+      "corrupted": false,
+      "glitchPhase": 0,
+      "suppressExactDistance": false,
+      "floorId": "g",
+      "position": {
+        "x": 58,
+        "y": 10.5
+      },
+      "height": 0
+    },
+    "sheetPages": {},
+    "chosenTechniqueIds": [],
+    "pendingSkills": [],
+    "hitRegions": [
+      {
+        "id": "bag:close",
+        "kind": "bag-close",
+        "x": 107,
+        "y": 1,
+        "w": 18,
+        "h": 2,
+        "disabled": false,
+        "selected": false,
+        "danger": false,
+        "label": "CLOSE BAG"
+      },
+      {
+        "id": "bag:tab:kit",
+        "kind": "bag-tab",
+        "x": 34.75,
+        "y": 5,
+        "w": 19,
+        "h": 2.5,
+        "disabled": false,
+        "selected": false,
+        "danger": false,
+        "label": "INVENTORY"
+      },
+      {
+        "id": "bag:tab:map",
+        "kind": "bag-tab",
+        "x": 55.25,
+        "y": 5,
+        "w": 19,
+        "h": 2.5,
+        "disabled": false,
+        "selected": false,
+        "danger": false,
+        "label": "MAP"
+      },
+      {
+        "id": "bag:tab:sheets",
+        "kind": "bag-tab",
+        "x": 75.75,
+        "y": 5,
+        "w": 19,
+        "h": 2.5,
+        "disabled": false,
+        "selected": false,
+        "danger": false,
+        "label": "SHEETS"
+      },
+      {
+        "id": "bag:tab:skills",
+        "kind": "bag-tab",
+        "x": 96.25,
+        "y": 5,
+        "w": 19,
+        "h": 2.5,
+        "disabled": false,
+        "selected": false,
+        "danger": false,
+        "label": "SKILLS"
+      },
+      {
+        "id": "bag:subview-back",
+        "kind": "bag-back",
+        "x": 29.25,
+        "y": 32.8,
+        "w": 14,
+        "h": 1.5,
+        "disabled": false,
+        "selected": false,
+        "danger": false,
+        "label": "BACK"
+      },
+      {
+        "id": "bag:inspection-reset",
+        "kind": "bag-reset",
+        "x": 102.75,
+        "y": 32.8,
+        "w": 18,
+        "h": 1.5,
+        "disabled": false,
+        "selected": false,
+        "danger": false,
+        "label": "RESET VIEW"
+      }
+    ]
+  },
+  "fixture": {
+    "bagTakenBefore": null,
+    "bagTakenForInspection": true,
+    "hasForkAcquiredThroughChoice": true
+  },
+  "method": "Owned fork acquired through existing choice; carried-case prerequisite alone supplied with setFlag in isolated diagnostic save. Ordinary B and actual mouse clicks on inventory item and INSPECT. Static reader text and existing dithered inventory model, not a participant response."
+}

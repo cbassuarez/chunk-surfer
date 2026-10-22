@@ -1,0 +1,18 @@
+{
+  "pack": "chapel-dressing",
+  "sha256": "381b42c8910d2e835792dfe72195014cd5764c5f2427c8451ba7e4d8cca66cee",
+  "source": "Original project-native Blender geometry in tools/chunk_surfer/build-chapel-dressing.py. Anonymous human proportions continue the apparition family in build-props.mjs. Brush paths use the original Ear Room alphabet in build-stop-listening.py. No third-party assets.",
+  "editorial": "One held Mass prayer: 45 congregants, one vested celebrant in orans, two kneeling servers. Hand residue, spent tallow and wall writing retain their existing layout. No interaction, lore key or progression state.",
+  "referenceOnly": [
+    {
+      "url": "https://www.churchofengland.org/holy-communion",
+      "source": "Church of England, Holy Communion",
+      "use": "Kneeling during prayer and a coherent shared posture; does not establish this fictional chapel's denomination."
+    },
+    {
+      "url": "https://www.vatican.va/roman_curia/congregations/ccdds/documents/rc_con_ccdds_doc_20030317_ordinamento-messale_en.html",
+      "source": "General Instruction of the Roman Missal, paragraphs 119, 148, 336-339",
+      "use": "Celebrant's alb/chasuble silhouette, servers' albs and extended/lifted hands. Shared liturgical visual grammar only; no exact rite or historical date asserted."
+    }
+  ]
+}

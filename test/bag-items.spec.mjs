@@ -42,7 +42,8 @@ test('every collected-object family has exactly one audited destination', () => 
 test('the action resolver exposes the full semantic descriptor contract', () => {
   assert.deepEqual(Object.keys(BAG_ITEM_REGISTRY).sort(), [
     'coffee', 'interface', 'keyring', 'light', 'lyle-jumper', 'map', 'marble-eyes',
-    'plant-spanner', 'radio', 'recorder', 'ren-home-cassette', 'ren-service-key',
+    'plant-spanner', 'pub-opener', 'pub-orderbook', 'pub-service-tray',
+    'radio', 'recorder', 'ren-home-cassette', 'ren-service-key',
     'sheet-music', 'station-relics', 'tuning-fork',
   ]);
   const cases = [

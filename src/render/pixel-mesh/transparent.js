@@ -10,7 +10,7 @@ in vec3 position;
 void main(){gl_Position=vec4(position,1.0);}`;
 
 export function createTransparentPixelMesh(THREE, renderer, {
-  assetUrl = defaultAssetUrl, profile: defaultProfile = 'hush',
+  assetUrl = defaultAssetUrl, profile: defaultProfile = 'hush', pressureFinish = false,
 } = {}) {
   const resolveProfile = value => typeof value === 'object' && value?.vfd && value?.recording
     ? value : getLookProfile(value);
@@ -67,6 +67,7 @@ export function createTransparentPixelMesh(THREE, renderer, {
     ['uSourceCoverage', sceneTarget.texture], ['uSourceProjectionInverse', new THREE.Matrix4()],
     ['uSourceCameraWorld', new THREE.Matrix4()], ['uSourceViewport', new THREE.Vector4()],
     ['uSourceScreenOffset', new THREE.Vector2()],
+    ['uSourcePressureFinish', pressureFinish ? 1 : 0],
   ].map(([name, value]) => [name, { value }]));
   const ditherMaterial = new THREE.RawShaderMaterial({
     glslVersion: THREE.GLSL3, vertexShader: VERTEX,

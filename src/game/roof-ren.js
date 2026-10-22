@@ -84,8 +84,8 @@ export function roofRenChecks(value, context = {}) {
   const s = normalizeRoofRenState(value);
   const noticeRead = context.noticeRead === true || context.demolitionNoticeRead === true;
   const acceptedTakes = Math.max(0, Number(context.acceptedTakes) || 0);
-  // The first accepted take admits the player to the roof. Ren asks them to
-  // listen again inside before treating their account as a witness.
+  // Service access is independent of recording. Ren still asks for listening
+  // in more than one room before treating the account as a witness.
   const heardSpirits = acceptedTakes >= 2;
   const trustIntact = !s.locks.deception && !s.locks.cruelty && !s.locks.transaction
     && !s.locks.warningDismissed && !s.locks.dissentDismissed && !s.locks.accountabilityDodged;
@@ -225,7 +225,7 @@ export function roofRenStatus(value, context = {}) {
       id: 'conversation', text: 'Ren has the cassette. Sit with them and ask about the two refusals they signed.',
     };
     if (!checks.noticeRead) return { id: 'notice', text: 'Ren asked you to read the demolition notice before you promise anything.' };
-    if (!checks.heardSpirits) return { id: 'witness', text: 'The first accepted take opened the roof. Ren asked you to make another inside before deciding what these rooms hold.' };
+    if (!checks.heardSpirits) return { id: 'witness', text: 'Ren asked you to listen in more than one room before deciding what these rooms hold.' };
     if (s.history.uncertainty && !s.contraryAccountHeard) return { id: 'contrary', text: 'The cleared room off the breach holds a loose score. Someone there disagrees with Ren about another century.' };
     if (s.history.motives && !s.guarantorTraceRead) return { id: 'guarantor', text: 'A dated slip beneath the chamber piano bench records what a previous guarantor agreed to and lost.' };
     return { id: 'conversation', text: 'Ren has something difficult to ask. Stay and talk if you want to hear it.' };

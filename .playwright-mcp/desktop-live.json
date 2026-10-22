@@ -1,0 +1,118 @@
+{
+  "atUTC": "2026-10-21T02:37:55.237Z",
+  "state": {
+    "view": {
+      "ready": true,
+      "disposed": false,
+      "error": null,
+      "renderCount": 1,
+      "width": 1280,
+      "height": 800,
+      "dpr": 1,
+      "dither": {
+        "shader": "pixel-mesh",
+        "profile": "hush",
+        "screen": "crosshatch",
+        "renderCount": 1,
+        "noiseReady": true,
+        "depthReconstruction": "inverse-projection",
+        "coveragePreserved": true,
+        "temporalMemory": false,
+        "width": 1280,
+        "height": 800,
+        "sourceWidth": 1280,
+        "sourceHeight": 800,
+        "cellPx": 3,
+        "screenPeriodPx": 6.5,
+        "disposed": false
+      },
+      "skinnedMeshes": 1,
+      "bones": 34,
+      "animationClips": [
+        "pressure_hold",
+        "pressure_idle",
+        "pressure_approach",
+        "pressure_limp",
+        "pressure_listen",
+        "pressure_load",
+        "pressure_advance",
+        "pressure_arrest",
+        "pressure_pivot"
+      ],
+      "modelIds": [
+        "upright_piano",
+        "open_instrument_case"
+      ],
+      "pressureFinish": {
+        "core": "opaque-neutral-black",
+        "glow": "skinned-neutral-white",
+        "coreMaterials": 2,
+        "glowBands": 6,
+        "maxGlowRadiusM": 0.17
+      },
+      "plates": [
+        "strata-west-course-0",
+        "strata-west-course-2",
+        "strata-west-cleft-crest",
+        "strata-east-course-0",
+        "strata-east-course-3",
+        "strata-east-cleft-chip"
+      ],
+      "glyphLines": 48,
+      "frame": {
+        "openness": 1,
+        "clip": "pressure_listen",
+        "clipTime": 2,
+        "guardVisible": false,
+        "rakeVisible": false,
+        "state": {
+          "version": 1,
+          "token": "finish-author-review",
+          "revision": 1,
+          "active": true,
+          "mode": "fallback",
+          "phase": "desktop",
+          "transition": 1,
+          "clock": 2,
+          "movementIndex": 0,
+          "tier": 0,
+          "composureRatio": 1,
+          "coherenceRatio": 1,
+          "cover": {
+            "capacity": 3,
+            "count": 2,
+            "guard": 0,
+            "exposed": false
+          },
+          "intent": {
+            "kind": "broadcast",
+            "progress": 0.3
+          },
+          "reaction": {
+            "phase": "",
+            "progress": 0,
+            "tier": "",
+            "armed": false
+          },
+          "toolId": "",
+          "actionId": "",
+          "pressurePresentation": null,
+          "desktop": null,
+          "camera": null,
+          "reducedMotion": false,
+          "reduceFlash": false,
+          "paused": false
+        }
+      },
+      "gpu": {
+        "calls": 35,
+        "triangles": 330430,
+        "geometries": 19,
+        "textures": 9
+      }
+    },
+    "errors": []
+  },
+  "errors": [],
+  "method": "Final corrected source. Actual production Three desktop view, real pressure rig, skinned halo/core and shared transparent dither; direct author snapshot, not native-window/input acceptance."
+}

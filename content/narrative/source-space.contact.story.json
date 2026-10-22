@@ -14,7 +14,7 @@
     "contact",
     "chunk-surfer"
   ],
-  "notes": "An optional conversation at the service court. The visible outlines are an unstable human trace, not a body or speaking identity for HUSH. Movement cues on the lines (hush-pose.js) belong to that trace; HUSH remains nonverbal pressure in the space. The recordist's own faculties speak around it — METER, TAPE, HANDS, EARS, and the recordist (you/me). Two menus: ask (questions) and examine (things you do). Talk two opens the case of the recordist before you (dock clues and papers unlock questions); talk three asks what it agreed to. The warning is an argument between the voices that have earned a side. Checks read what the night already gave you (takes, composure, patch leads) and never gate the fight; one-shot checks are gone once tried. A few actions leave small tells for the Source fight. The warning is available on the first meeting; no conversation count, answer or tour qualifies it. Only the explicit warned confirmation starts battle. Leaving never relocates the player or closes the route back.",
+  "notes": "An optional conversation at the service court. The visible outlines are an unstable human trace, not a body or speaking identity for HUSH. Movement cues on the lines (hush-pose.js) belong to that trace; HUSH remains nonverbal pressure in the space. The recordist's own faculties speak around it — METER, TAPE, HANDS, EARS, and the recordist (you/me). Two menus: ask (questions) and examine (things you do). Talk two opens the case of the recordist before you (dock clues and papers unlock questions); talk three asks what it agreed to. The warning is an argument between the voices that have earned a side. Checks read what the night already gave you (takes, composure, patch leads) and never gate the fight; one-shot checks are gone once tried. A few actions leave small tells for the Source fight. The warning is available on the first meeting; no conversation count, answer or tour qualifies it. Only the explicit warned confirmation starts battle. Leaving never relocates the player or closes the route back. Three separate victories are required for the Contact victory ending. Each partial victory returns to the field and clears consent. The victories condition is the completed-battle ledger, never a movement or round count; return lines change after wins one and two.",
   "regions": [
     {
       "id": "source-space.contact.region",
@@ -116,12 +116,42 @@
       "speaker": "AT THE SERVICE COURT",
       "lines": [
         {
+          "id": "return.victory.1",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "The hand you broke free of is open again. There is no mark where it held you.",
+          "body": "turn",
+          "when": "victories == 1"
+        },
+        {
+          "id": "return.victory.2",
+          "who": "hands",
+          "signalRole": "human",
+          "text": "You beat it. You know that you beat it. That is why this is worse.",
+          "when": "victories == 1"
+        },
+        {
+          "id": "return.victory.3",
+          "who": "direction",
+          "signalRole": "unattributed",
+          "text": "This time the smaller outline stays clear of its arm. The other one waits with its palm up.",
+          "body": "still",
+          "when": "victories == 2"
+        },
+        {
+          "id": "return.victory.4",
+          "who": "meter",
+          "signalRole": "human",
+          "text": "Twice. The needle comes back to the same place. You do not have to put your hand there again.",
+          "when": "victories == 2"
+        },
+        {
           "id": "return.line.1",
           "who": "direction",
           "signalRole": "unattributed",
           "text": "It turns before you speak. The hand is still open.",
           "body": "turn",
-          "when": "talk <= 2"
+          "when": "victories == 0 && talk <= 2"
         },
         {
           "id": "return.line.7",
@@ -129,21 +159,21 @@
           "signalRole": "unattributed",
           "text": "It does not turn this time. It was already facing the way you would come.",
           "body": "still",
-          "when": "talk >= 3"
+          "when": "victories == 0 && talk >= 3"
         },
         {
           "id": "return.line.8",
           "who": "tape",
           "signalRole": "human",
           "text": "Same court, take two. On a job you would slate it that way and pretend the first one never happened.",
-          "when": "talk == 2"
+          "when": "victories == 0 && talk == 2"
         },
         {
           "id": "return.line.9",
           "who": "hands",
           "signalRole": "human",
           "text": "Your body has stopped treating it like a stranger. That is not the same as trusting it.",
-          "when": "talk >= 3"
+          "when": "victories == 0 && talk >= 3"
         },
         {
           "id": "return.line.2",
@@ -1635,7 +1665,7 @@
           "id": "warning.line.2",
           "who": "you",
           "signalRole": "human",
-          "text": "If I touch it, I will have to fight it. I won't be able to retreat. If I lose, I die here."
+          "text": "If I touch it, I will have to fight it. I won't be able to retreat. If I lose, I die here. If I beat it and it returns, touching it again is another choice."
         }
       ],
       "choices": [

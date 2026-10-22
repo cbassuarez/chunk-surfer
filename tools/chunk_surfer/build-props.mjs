@@ -23,6 +23,10 @@ import { buildAcademicRoofDressing } from './academic-roof-dressing.mjs';
 import { buildArchitectureFittings } from './architecture-fittings-geometry.mjs';
 import { buildInstitutionOccupation } from './institution-occupation-geometry.mjs';
 import { buildBuildingAmenities } from './building-amenities-geometry.mjs';
+import { buildOrganConsole } from './organ-console-geometry.mjs';
+import { buildTowerShutterWinch } from './tower-shutter-linkage-geometry.mjs';
+import { buildMainStairUse } from './main-stair-use-geometry.mjs';
+import { buildLoadingBayAccess } from './loading-bay-access-geometry.mjs';
 import { buildBuildingWindows, subtractBuildingWindowBoxes, BUILDING_WINDOW_HOST_ORIGINS } from './building-window-geometry.mjs';
 import { buildBuildingDressingBatches } from './building-dressing-batch-geometry.mjs';
 import { isBuildingDressingMesh } from '../../src/world/building-dressing-batches.js';
@@ -44,16 +48,17 @@ import {
 } from '../../src/data/st-brendans.js';
 import { conservatory } from '../../src/data/floorplan/conservatory.js';
 import { CELL, MATERIAL } from '../../src/data/floorplan/legend.js';
+import {baseboardWallRuns,baseboardWallRunsDigest,baseboardPhysicalNormal} from '../../src/world/baseboard-hosting.js';
 import * as FP from '../../src/world/floorplan.js';
 import { wallRuns, wallRunsDigest } from '../../src/world/wall-contact.js';
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
-const LETTERING_INPUTS=['tools/chunk_surfer/build-props.mjs','tools/chunk_surfer/exterior-foreground-geometry.mjs','tools/chunk_surfer/exterior-frontage-geometry.mjs','tools/chunk_surfer/exterior-shop-massing.mjs','tools/chunk_surfer/pub-interior-geometry.mjs','src/data/exterior-pub.js','src/data/exterior-pub-furnishings.js','src/data/exterior-foreground.js','src/data/exterior-district.js','tools/chunk_surfer/lettering/physical-lettering.mjs',
+const LETTERING_INPUTS=['tools/chunk_surfer/build-props.mjs','tools/chunk_surfer/organ-console-geometry.mjs','tools/chunk_surfer/tower-shutter-linkage-geometry.mjs','tools/chunk_surfer/main-stair-use-geometry.mjs','src/data/main-stair-geometry.js','tools/chunk_surfer/exterior-foreground-geometry.mjs','tools/chunk_surfer/exterior-frontage-geometry.mjs','tools/chunk_surfer/exterior-shop-massing.mjs','tools/chunk_surfer/pub-interior-geometry.mjs','src/data/exterior-pub.js','src/data/exterior-pub-furnishings.js','src/data/exterior-foreground.js','src/data/exterior-district.js','tools/chunk_surfer/lettering/physical-lettering.mjs',
   'tools/chunk_surfer/lettering/rasterize.py','tools/chunk_surfer/lettering/face-geometry.mjs',
   'tools/chunk_surfer/lettering/world-inscription-substrates.mjs','tools/chunk_surfer/lettering/sample-host-substrate.py',
   'tools/chunk_surfer/lettering/sign-assemblies.mjs','tools/chunk_surfer/lettering/finish-profiles.mjs','tools/chunk_surfer/lettering/finish.py',
   'src/data/world-inscriptions.js','src/data/corridor-lettering.js','src/data/building-map.js',
-  'src/world/corridor-dressing.js','src/world/floorplan.js','src/world/wall-contact.js','src/world/prop-wall-pose.js',
+  'src/world/corridor-dressing.js','src/world/floorplan.js','src/world/wall-contact.js','src/world/baseboard-hosting.js','src/world/prop-wall-pose.js',
   'src/game/props.js','src/data/conservatory-props.js','src/data/floorplan/conservatory.js','src/data/conservatory-doors.js',
   'public/assets/conservatory-acquisitions.glb'];
 const sourceHash=file=>crypto.createHash('sha256').update(fs.readFileSync(path.join(ROOT,file))).digest('hex');
@@ -806,9 +811,7 @@ function alongFoldedStand(s,out=0){
 {
   const m=mesh('speaker_cabinet'); addBox(m,[0,.46,0],[.58,.92,.48],MAT.black);addCylinder(m,[0,.52,-.245],.19,.025,MAT.cone,18);addCylinder(m,[0,.76,-.245],.07,.026,MAT.cone,14);addBox(m,[0,.08,.255],[.36,.05,.08],MAT.steel);
 }
-{
-  const m=mesh('organ_console'); addBox(m,[0,.62,.10],[1.55,1.18,.65],MAT.dark);addBox(m,[0,.82,-.39],[1.42,.10,.34],MAT.wood);addBox(m,[0,.88,-.59],[1.30,.045,.30],MAT.ivory);addBox(m,[0,.70,-.55],[1.18,.035,.22],MAT.ivory);addBox(m,[0,.38,-.53],[.92,.055,.35],MAT.dark);addLegs(m,0,-.34,1.25,.30,.02,.54,MAT.dark,.035);
-}
+buildOrganConsole({mesh,MAT,addBox,addLegs,addEllipsoid});
 {
   const m=mesh('organ_pipes'); for(let i=0;i<13;i++){const x=(i-6)*.16,h=1.5+(.95-Math.abs(i-6)*.12);addCylinder(m,[x,h/2,0],.055,h,MAT.steel,12);addBox(m,[x,.16,-.06],[.07,.12,.12],MAT.brass);}
 }
@@ -1824,7 +1827,9 @@ for(const[index,angle]of[-.55,-.05,.42].entries()){
     for(let fin=-.92;fin<=.92;fin+=.23)addBox(m,[x+fin,.49,z-.065],[.095,.84,.055],MAT.agedWhite);
     addBox(m,[x-1.04,.10,z],[.07,.20,.16],MAT.brass);addBox(m,[x+1.04,.10,z],[.07,.20,.16],MAT.brass);
   };
-  radiatorX(-2.6,-11.02);radiatorX(2.6,-11.02);radiatorX(-7.3,11.02);radiatorX(6.4,11.02);
+  radiatorX(-2.6,-11.02);radiatorX(2.6,-11.02);radiatorX(6.4,11.02);
+  // The southwest radiator was removed when the sanitary core occupied this
+  // bay: its old body crossed both the new cubicle divider and the WC bowl.
   // North-wall municipal clock, with a proper deep oak back and brass hands.
   addBox(m,[7.8,3.12,-11.04],[1.38,1.38,.10],MAT.dark);
   addBox(m,[7.8,3.12,-11.105],[1.14,1.14,.035],MAT.ivory);
@@ -2079,7 +2084,7 @@ for(let id=1;id<=8;id++){
     ground:MAT.cloth,ink:MAT.ivory,capHeightM:.25,lineCentres:[.36,.76]});
 }
 {const m=mesh('tower_clock_hammer');addBeam(m,[0,.1,0],[.55,.95,0],.10,MAT.steel);addCylinder(m,[.62,1.02,0],.18,.24,MAT.steel,14);}
-{const m=mesh('tower_winch');addCylinder(m,[0,.72,0],.42,.34,MAT.steel,18);addCylinder(m,[0,.72,0],.10,.70,MAT.brass,12);addBeam(m,[0,.72,-.28],[.58,1.18,-.28],.07,MAT.brass);addCylinder(m,[.62,1.22,-.28],.09,.22,MAT.wood,12);}
+buildTowerShutterWinch({mesh,MAT,addCylinder,addCylinderX,addBox,addBeam});
 {const m=mesh('tower_shutters');for(let i=0;i<9;i++)addBox(m,[0,.25+i*.38,0],[3.4,.12,.16],MAT.wood,-.16);}
 {
   const m=mesh('tower_catwalk');
@@ -2477,9 +2482,9 @@ apparitionFigure('apparition_pose_symmetric',{
   addBox(m,[0,.94,.205],[1.12,1.40,.035],MAT.black);
   for(let row=0;row<8;row++)for(let jack=0;jack<12;jack++){
     const x=-.49+jack*.089,y=.36+row*.145;
-    addBox(m,[x,y,.232],[.035,.035,.025],(row===1&&jack<4)||row===6?MAT.vfd:MAT.brass);
+    addBox(m,[x,y,.232],[.035,.035,.025],MAT.brass);
   }
-  addBox(m,[0,1.61,.225],[.94,.065,.035],MAT.vfd);
+  addBox(m,[0,1.61,.225],[.94,.065,.035],MAT.brass);
   addBox(m,[0,.12,.225],[.86,.06,.035],MAT.paper);
 }
 {
@@ -2490,11 +2495,11 @@ apparitionFigure('apparition_pose_symmetric',{
   addCylinder(m,[.38,1.01,-.05],.24,.075,MAT.steel,20);
   addCylinder(m,[-.38,1.06,-.05],.075,.035,MAT.brass,14);
   addCylinder(m,[.38,1.06,-.05],.075,.035,MAT.brass,14);
-  addBox(m,[0,.70,.405],[.62,.18,.035],MAT.vfd);
+  addBox(m,[0,.70,.405],[.62,.18,.035],MAT.black);
   for(let i=0;i<7;i++)addBox(m,[-.50+i*.16,.48,.41],[.07,.07,.035],i===0?MAT.safetyRed:MAT.brass);
   addBox(m,[.46,.70,.41],[.20,.18,.035],MAT.paper);
   addBox(m,[0,1.15,-.20],[.94,.18,.24],MAT.black);
-  addBox(m,[0,1.15,-.065],[.76,.10,.028],MAT.vfd);
+  addBox(m,[0,1.15,-.065],[.76,.10,.028],MAT.black);
 }
 {const m=mesh('chapel_inner_screen');for(const x of[-2.8,-1.4,0,1.4,2.8])addBox(m,[x,1.8,0],[.16,3.6,.18],MAT.wood);for(const y of[.15,1.8,3.45])addBox(m,[0,y,0],[6,.15,.18],MAT.wood);}
 {
@@ -2662,43 +2667,8 @@ for(const [name,cfg] of Object.entries(SOURCES)){
     addBox(m,[x,2.62,southZ-.12],[.28,5.24,.18],MAT.steel);
   }
 }
-{
-  // TWO HONEST WAYS ONTO THE DOCK.
-  //
-  // Collision and step heights are authored by YARD_STEP_BAYS in the
-  // floorplan. This mesh is their construction and wayfinding layer: inset
-  // steel treads, high-contrast nosings, continuous handrails and end posts.
-  // The centre of the dock face remains raised and clear for a lorry.
-  //
-  // Origin is physical (47.5, 7.5) at apron height. The placed prop lifts this
-  // origin 0.85m above the yard floor, so these negative tread heights land on
-  // the matching floorplan risers rather than floating above them.
-  const m=mesh('yard_dock_access');
-  const flights=[{z:-3.0,width:2.0},{z:2.5,width:3.0}];
-  const runX0=46,originX=47.5,drop=-.85,steps=4;
-  const heightAt=(i)=>drop*(1-(i+1)/(steps+1));
-  for(const {z,width} of flights){
-    for(let i=0;i<steps;i++){
-      const floor=heightAt(i),x=(runX0+i+.5)-originX;
-      addBox(m,[x,floor+.018,z],[.94,.036,width-.10],MAT.dark);
-      addBox(m,[x+.43,floor+.045,z],[.08,.055,width-.04],MAT.cone);
-    }
-    for(const edge of[z-width/2-.08,z+width/2+.08]){
-      addBeam(m,[runX0-originX,.18,edge],[50-originX,.98,edge],.055,MAT.steel);
-      for(const [x,floor] of[[runX0,drop],[48,heightAt(2)],[50,0]]){
-        addBeam(m,[x-originX,floor+.04,edge],[x-originX,floor+.94,edge],.055,MAT.steel);
-      }
-      addBox(m,[runX0-originX,drop+.08,edge],[.22,.16,.22],MAT.cone);
-    }
-  }
-  // The remaining raised loading face gets visible end protection, not an
-  // invisible collision lip. These do not add gameplay collision; the 0.85m
-  // floor rise remains the shared render/collision authority.
-  for(const z of[-1.45,.65]){
-    addCylinder(m,[2.28,.42,z],.13,.84,MAT.safetyRed,10);
-    addBox(m,[2.28,.44,z],[.29,.10,.29],MAT.agedWhite);
-  }
-}
+// One shared metre profile owns the collision, mesh and placed origin.
+buildLoadingBayAccess({mesh,addBox,addBeam,addCylinder,MAT});
 // ── THE ORDINARY CITY AROUND ELLERY ─────────────────────────────────────────
 //
 // A row is built in eight-metre deeds rather than as one extruded wall.  Every
@@ -2719,6 +2689,7 @@ function buildDistrictFrontage(name,variant){
         const report=addBourgeoisPubFrontage(exteriorApi,m,{z,h,unitW,depth});
         for(const face of report.signFaces)lettering(m,face.copy,{
           ...face,category:'institution',font:'NimbusRoman-Bold.otf',
+          rasterWidthPx:768,rasterHeightPx:40, // Match street sampling; preserve all prior print coverage.
           process:'aged gilt pub fascia lettering',ground:MAT.pubGreen,ink:MAT.brass,
           inkMetallic:.78,inkRoughness:.28,finishSupport:{kind:'carrier',edgeWear:true,contact:'none',exposure:'sheltered'},
         });
@@ -6364,7 +6335,8 @@ let baseboardPlanHash = '';
     doors:conservatory.doors||[],
   });
   const plan={size:FP.planSize,isSolid:FP.isSolid,floorAt:FP.floorAt,zoneAt:FP.zoneAt,
-    materialAt:FP.materialAt,doorAt:FP.doorAt,logicalToPhysical:FP.logicalToPhysical};
+    materialAt:FP.materialAt,doorAt:FP.doorAt,logicalToPhysical:FP.logicalToPhysical,
+    physicalRenderPlanFor:FP.physicalRenderPlanFor};
 
   // Skirting takes the room's own material, so a timber hall does not get the
   // chapel's stone. Anything unlisted is painted plaster, which is what most of
@@ -6375,13 +6347,13 @@ let baseboardPlanHash = '';
     :m===MATERIAL.metal||m===MATERIAL.acoustic?MAT.steel
     :MAT.plaster;
 
-  const runs=wallRuns(plan);
+  const runs=baseboardWallRuns(plan);
   // THE STALENESS GUARD. The floorplan is edited constantly, sometimes by
   // somebody else, and baked skirting that no longer matches its wall is the old
   // bug wearing a new hat. Hash the RUNS rather than the source files: they are
   // exactly the input this geometry is a function of, so the hash moves when and
   // only when the baseboards would actually come out different.
-  baseboardPlanHash=crypto.createHash('sha256').update(wallRunsDigest(runs)).digest('hex');
+  baseboardPlanHash=crypto.createHash('sha256').update(baseboardWallRunsDigest(runs,plan)).digest('hex');
   const byGroup=new Map();
   for(const r of runs){
     if(!r.renderGroup)continue;
@@ -6403,15 +6375,7 @@ let baseboardPlanHash = '';
       // logical normal points somewhere else entirely once it is drawn — which
       // put skirting in the middle of the box-office floor the first time.
       // Step one cell INTO the room and see which way that actually went.
-      const physNormal=(c)=>{
-        const inX=c.x+r.nx, inY=c.y+r.ny;
-        if(FP.isSolid(inX,inY))return {nx:r.nx,ny:r.ny};
-        const a=FP.logicalToPhysical(c.x,c.y), b=FP.logicalToPhysical(inX,inY);
-        const dx=b.x-a.x, dz=b.z-a.z;
-        if(Math.abs(dx)+Math.abs(dz)<1e-6)return {nx:r.nx,ny:r.ny};
-        return Math.abs(dx)>=Math.abs(dz)
-          ? {nx:Math.sign(dx),ny:0} : {nx:0,ny:Math.sign(dz)};
-      };
+      const physNormal=(c)=>baseboardPhysicalNormal(FP,c);
       // Merge again in physical space. Two cells only join if their physical
       // positions are exactly one cell apart along the run's axis and identical
       // across it — which is false on an arc and false wherever a space's
@@ -6506,6 +6470,10 @@ for(const face of letteringFaces){
   (face.mesh.lettering||=[]).push(description);
   Object.assign(entry,{mesh:face.mesh.name,geometry:description});
 }
+
+// Append the fitted stair runner after all existing material registrations so
+// unrelated packed materials keep their established indices.
+buildMainStairUse({mesh,materials,addQuad});
 
 // Resolve this small static kit through the gameplay's own wall/table/floor
 // placement, using current source geometry rather than yesterday's generated

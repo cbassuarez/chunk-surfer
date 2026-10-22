@@ -521,7 +521,9 @@ export function buildAcademicRoof({mesh,materials,MAT,addBox,addBeam,addEllipsoi
     addBox(m,[-.088,1.11,.86],[.022,2.02,.034],MAT.brass);
     for(const y of[.25,1.94])addBox(m,[-.06,y,0],[.035,.055,1.75],MAT.steel);
     addBox(m,[-.075,1.65,0],[.025,.36,.72],gatePlate);
-    for(const z of[-.24,0,.24])addBox(m,[-.092,1.65,z],[.01,.085,.085],MAT.black);
+    // The existing plate carries the six physical letter wheels used by the
+    // gallery's service-word lock. Keep their recesses legible in torchlight.
+    for(const z of[-.30,-.18,-.06,.06,.18,.30])addBox(m,[-.092,1.65,z],[.01,.085,.085],MAT.black);
     addBox(m,[-.115,1.02,-.65],[.09,.11,.18],MAT.brass);
   }
   {

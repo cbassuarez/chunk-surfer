@@ -48,15 +48,15 @@ export const PUB_LEVELS=freeze([
   ...EXTERIOR_PUB.doors.map(d=>level(`${d.id}-throat`,d.throat.x,d.throat.z,['++'])),
   level('pub-wc-throat',.5,109.5,['+']),
 ]);
-const door=(spec,archetype,open=false,hinge='left')=>{
+const door=(spec,archetype,open=false,hinge='left',swing='room-in')=>{
   const at=pubLogicalAt(spec.x,spec.z);
   return freeze({id:spec.id,archetype,legacyIds:[],at,x:at.x,y:at.y,hinge,widthAxis:'x',
-    swing:'room-in',key:null,initialState:open?'open':'closed',open,wedged:false,closerArmed:false,
+    swing,key:null,initialState:open?'open':'closed',open,wedged:false,closerArmed:false,
     closer:'none',access:'both',insideSide:1,activeLeaves:archetype==='public-glazed-pair'?[0,1]:[0],renderGroups:['ground']});
 };
 export const PUB_DOORS=freeze([
   ...EXTERIOR_PUB.doors.map(d=>door(d,'public-glazed-pair')),
-  door(EXTERIOR_PUB.wc.door,'practice-acoustic-single',true,'right'),
+  door(EXTERIOR_PUB.wc.door,'practice-acoustic-single',true,'right','escape'),
 ]);
 const physical=[];
 const wall=(id,x,z,width,depth,minHeight=0,maxHeight=3.4,role='wall')=>physical.push({

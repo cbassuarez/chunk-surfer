@@ -4,6 +4,7 @@
 // generated hero mesh, collision, lighting and the God-menu review hooks. Keep
 // authored coordinates here in YARD-LOCAL metres: x runs north/south across the
 // building and y runs from the west door towards the choir.
+import { ST_BRENDANS_EMBRASURES } from './st-brendans-treatment.js';
 
 const freeze = (value) => Object.freeze(value);
 const rect = (id, x0, y0, x1, y1, volume, label) => freeze({
@@ -276,15 +277,25 @@ export const CHURCH_FURNISHINGS = freeze([
   freeze({ id: 'visitor-postcards', kind: 'postcards', x: 22.45, y: 74.35, h: 1.15 }),
 ]);
 
+const recessLight = (id, windowId, radius, intensity) => {
+  const pane = ST_BRENDANS_EMBRASURES.find(window => window.id === windowId);
+  return freeze({id, x:pane.x+pane.normal[0]*pane.depth,
+    y:pane.z+pane.normal[2]*pane.depth, h:pane.y, radius, intensity,
+    color:freeze([.55,.65,.77])});
+};
 export const CHURCH_LIGHTS = freeze([
-  freeze({ id: 'west-window', x: 16, y: 58, h: 5.8, radius: 10, intensity: 0.46 }),
-  freeze({ id: 'crossing-lantern', x: 16, y: 73, h: 10.8, radius: 13, intensity: 0.5 }),
-  freeze({ id: 'east-lancets', x: 16, y: 82.7, h: 5.4, radius: 8, intensity: 0.45 }),
-  freeze({ id: 'side-chapel-window', x: 10, y: 79, h: 3.4, radius: 5, intensity: 0.45 }),
-  freeze({ id:'belfry-service', x:19, y:70, h:12.5, radius:8, intensity:.9, kind:'fitting', color:freeze([.86,.77,.57]) }),
-  freeze({ id:'south-landing', x:21, y:72, h:6.8, radius:5.5, intensity:.78, kind:'fitting', color:freeze([.86,.77,.57]) }),
-  freeze({ id:'north-triforium', x:10, y:68, h:6.8, radius:8, intensity:.7, kind:'fitting', color:freeze([.65,.73,.76]) }),
-  freeze({ id:'west-lower-landing', x:10, y:63, h:2.3, radius:5, intensity:.78, kind:'fitting', color:freeze([.86,.77,.57]) }),
+  // The pane and inward splay are one authored assembly. The source is on
+  // its room side, so glass never implies a navigable or transparent wall.
+  recessLight('west-window','west',11,.52),
+  freeze({ id:'crossing-lantern', x:16, y:73, h:10.8, radius:10.5, intensity:.48, color:freeze([.57,.65,.73]) }),
+  recessLight('east-lancets','east-1',7.4,.49),
+  recessLight('side-chapel-window','side-chapel',4.8,.45),
+  freeze({ id:'belfry-service', x:19, y:70, h:12.5, radius:5.8, intensity:.76, kind:'fitting', color:freeze([.86,.72,.47]) }),
+  freeze({ id:'south-landing', x:21, y:72, h:6.8, radius:4.8, intensity:.76, kind:'fitting', color:freeze([.86,.72,.47]) }),
+  freeze({ id:'north-triforium', x:10, y:68, h:6.8, radius:6.2, intensity:.7, kind:'fitting', color:freeze([.63,.70,.73]) }),
+  freeze({ id:'west-lower-landing', x:10, y:63, h:2.3, radius:4.5, intensity:.76, kind:'fitting', color:freeze([.86,.72,.47]) }),
+  freeze({ id:'belfry-west-louvre', x:12.03, y:70.25, h:13.25, radius:5.2, intensity:.45, color:freeze([.48,.61,.72]),groups:freeze(['cathedral']) }),
+  freeze({ id:'belfry-east-louvre', x:19.97, y:75.45, h:13.25, radius:4.5, intensity:.45, color:freeze([.48,.61,.72]),groups:freeze(['cathedral']) }),
 ]);
 
 export const CHURCH_GOD_HOOKS = freeze([

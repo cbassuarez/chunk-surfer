@@ -1,0 +1,448 @@
+{
+  "schemaVersion": 1,
+  "atUTC": "2026-10-20T19:37:37.246Z",
+  "failure": null,
+  "checks": [
+    {
+      "name": "packs available after reload",
+      "passed": true
+    },
+    {
+      "name": "owned flag survives document reload",
+      "passed": true
+    },
+    {
+      "name": "saved and live thought restored",
+      "passed": true
+    },
+    {
+      "name": "owned fork absent after restored load",
+      "passed": true
+    },
+    {
+      "name": "owned environmental fork and seam muted",
+      "passed": true
+    },
+    {
+      "name": "ordinary route remains walkable after acquisition",
+      "passed": true
+    },
+    {
+      "name": "acquisition does not reopen encounter while leaving",
+      "passed": true
+    }
+  ],
+  "trace": [
+    {
+      "label": "before-real-document-reload",
+      "at": 112140.09999999404,
+      "owned": true,
+      "thoughts": {
+        "had": [
+          "bust-talk:academic-bust-2",
+          "talisman.seen",
+          "talisman"
+        ],
+        "confession": {
+          "kind": null,
+          "value": null
+        },
+        "interface": false,
+        "listened": 0
+      },
+      "savedThoughts": {
+        "had": [
+          "bust-talk:academic-bust-2",
+          "talisman.seen",
+          "talisman"
+        ]
+      },
+      "where": {
+        "x": 120,
+        "y": 134,
+        "facing": 3,
+        "look": {
+          "yaw": -1.2490457723982544,
+          "pitch": 0,
+          "facing": 3
+        },
+        "zone": 6,
+        "chapelOuter": 11,
+        "source": false
+      },
+      "scene": null,
+      "fork": false,
+      "seams": {
+        "audible": false,
+        "gain": 0,
+        "pan": 0,
+        "beatHz": 0
+      }
+    },
+    {
+      "label": "after-real-document-reload-before-run-init",
+      "at": 27303,
+      "owned": true,
+      "thoughts": {
+        "had": [],
+        "confession": {
+          "kind": null,
+          "value": null
+        },
+        "interface": false,
+        "listened": 0
+      },
+      "savedThoughts": {
+        "had": [
+          "bust-talk:academic-bust-2",
+          "talisman.seen",
+          "talisman"
+        ]
+      },
+      "where": {
+        "x": 120,
+        "y": 134,
+        "facing": 3,
+        "look": {
+          "yaw": -1.2490457723982544,
+          "pitch": 0,
+          "facing": 3
+        },
+        "zone": 6,
+        "chapelOuter": 11,
+        "source": false
+      },
+      "scene": "lens-calibration",
+      "fork": false,
+      "seams": {
+        "audible": false,
+        "gain": 0,
+        "pan": 0,
+        "beatHz": 0
+      }
+    },
+    {
+      "label": "after-real-saved-subsystem-load",
+      "at": 31759.29999999702,
+      "owned": true,
+      "thoughts": {
+        "had": [
+          "bust-talk:academic-bust-2",
+          "talisman.seen",
+          "talisman"
+        ],
+        "confession": {
+          "kind": null,
+          "value": null
+        },
+        "interface": false,
+        "listened": 0
+      },
+      "savedThoughts": {
+        "had": [
+          "bust-talk:academic-bust-2",
+          "talisman.seen",
+          "talisman"
+        ]
+      },
+      "where": {
+        "x": 121,
+        "y": 131,
+        "facing": 2,
+        "look": {
+          "yaw": 3.141592653589793,
+          "pitch": 0,
+          "facing": 2
+        },
+        "zone": 6,
+        "chapelOuter": 11,
+        "source": false
+      },
+      "scene": null,
+      "fork": false,
+      "seams": {
+        "audible": false,
+        "gain": 0,
+        "pan": 0,
+        "beatHz": 0
+      }
+    },
+    {
+      "label": "restored-corridor",
+      "at": 32040.29999999702,
+      "owned": true,
+      "thoughts": {
+        "had": [
+          "bust-talk:academic-bust-2",
+          "talisman.seen",
+          "talisman"
+        ],
+        "confession": {
+          "kind": null,
+          "value": null
+        },
+        "interface": false,
+        "listened": 0
+      },
+      "savedThoughts": {
+        "had": [
+          "bust-talk:academic-bust-2",
+          "talisman.seen",
+          "talisman"
+        ]
+      },
+      "where": {
+        "x": 121,
+        "y": 133,
+        "facing": 2,
+        "look": {
+          "yaw": 3.141592653589793,
+          "pitch": 0,
+          "facing": 2
+        },
+        "zone": 6,
+        "chapelOuter": 11,
+        "source": false
+      },
+      "scene": null,
+      "fork": false,
+      "seams": {
+        "audible": false,
+        "gain": 0,
+        "pan": 0,
+        "beatHz": 0
+      }
+    },
+    {
+      "label": "restored-doorway",
+      "at": 32210.59999999404,
+      "owned": true,
+      "thoughts": {
+        "had": [
+          "bust-talk:academic-bust-2",
+          "talisman.seen",
+          "talisman"
+        ],
+        "confession": {
+          "kind": null,
+          "value": null
+        },
+        "interface": false,
+        "listened": 0
+      },
+      "savedThoughts": {
+        "had": [
+          "bust-talk:academic-bust-2",
+          "talisman.seen",
+          "talisman"
+        ]
+      },
+      "where": {
+        "x": 117,
+        "y": 133,
+        "facing": 3,
+        "look": {
+          "yaw": -1.5707963267948966,
+          "pitch": 0,
+          "facing": 3
+        },
+        "zone": 6,
+        "chapelOuter": 11,
+        "source": false
+      },
+      "scene": null,
+      "fork": false,
+      "seams": {
+        "audible": false,
+        "gain": 0,
+        "pan": 0,
+        "beatHz": 0
+      }
+    },
+    {
+      "label": "restored-service-room",
+      "at": 32277.89999999106,
+      "owned": true,
+      "thoughts": {
+        "had": [
+          "bust-talk:academic-bust-2",
+          "talisman.seen",
+          "talisman"
+        ],
+        "confession": {
+          "kind": null,
+          "value": null
+        },
+        "interface": false,
+        "listened": 0
+      },
+      "savedThoughts": {
+        "had": [
+          "bust-talk:academic-bust-2",
+          "talisman.seen",
+          "talisman"
+        ]
+      },
+      "where": {
+        "x": 115,
+        "y": 133,
+        "facing": 3,
+        "look": {
+          "yaw": -1.5707963267948966,
+          "pitch": 0,
+          "facing": 3
+        },
+        "zone": 6,
+        "chapelOuter": 11,
+        "source": false
+      },
+      "scene": null,
+      "fork": false,
+      "seams": {
+        "audible": false,
+        "gain": 0,
+        "pan": 0,
+        "beatHz": 0
+      }
+    },
+    {
+      "label": "ordinary-walk-out-of-service-room",
+      "at": 32452.79999999702,
+      "owned": true,
+      "thoughts": {
+        "had": [
+          "bust-talk:academic-bust-2",
+          "talisman.seen",
+          "talisman"
+        ],
+        "confession": {
+          "kind": null,
+          "value": null
+        },
+        "interface": false,
+        "listened": 0
+      },
+      "savedThoughts": {
+        "had": [
+          "bust-talk:academic-bust-2",
+          "talisman.seen",
+          "talisman"
+        ]
+      },
+      "where": {
+        "x": 121,
+        "y": 133,
+        "facing": 1,
+        "look": {
+          "yaw": 1.5707963267948966,
+          "pitch": 0,
+          "facing": 1
+        },
+        "zone": 6,
+        "chapelOuter": 11,
+        "source": false
+      },
+      "scene": null,
+      "fork": false,
+      "seams": {
+        "audible": false,
+        "gain": 0,
+        "pan": 0,
+        "beatHz": 0
+      }
+    },
+    {
+      "label": "ordinary-walk-back-into-corridor",
+      "at": 32454.29999999702,
+      "owned": true,
+      "thoughts": {
+        "had": [
+          "bust-talk:academic-bust-2",
+          "talisman.seen",
+          "talisman"
+        ],
+        "confession": {
+          "kind": null,
+          "value": null
+        },
+        "interface": false,
+        "listened": 0
+      },
+      "savedThoughts": {
+        "had": [
+          "bust-talk:academic-bust-2",
+          "talisman.seen",
+          "talisman"
+        ]
+      },
+      "where": {
+        "x": 121,
+        "y": 133,
+        "facing": 1,
+        "look": {
+          "yaw": 1.5707963267948966,
+          "pitch": 0,
+          "facing": 1
+        },
+        "zone": 6,
+        "chapelOuter": 11,
+        "source": false
+      },
+      "scene": null,
+      "fork": false,
+      "seams": {
+        "audible": false,
+        "gain": 0,
+        "pan": 0,
+        "beatHz": 0
+      }
+    }
+  ],
+  "preReload": {
+    "label": "before-real-document-reload",
+    "at": 112140.09999999404,
+    "owned": true,
+    "thoughts": {
+      "had": [
+        "bust-talk:academic-bust-2",
+        "talisman.seen",
+        "talisman"
+      ],
+      "confession": {
+        "kind": null,
+        "value": null
+      },
+      "interface": false,
+      "listened": 0
+    },
+    "savedThoughts": {
+      "had": [
+        "bust-talk:academic-bust-2",
+        "talisman.seen",
+        "talisman"
+      ]
+    },
+    "where": {
+      "x": 120,
+      "y": 134,
+      "facing": 3,
+      "look": {
+        "yaw": -1.2490457723982544,
+        "pitch": 0,
+        "facing": 3
+      },
+      "zone": 6,
+      "chapelOuter": 11,
+      "source": false
+    },
+    "scene": null,
+    "fork": false,
+    "seams": {
+      "audible": false,
+      "gain": 0,
+      "pan": 0,
+      "beatHz": 0
+    }
+  },
+  "method": "Real page.reload executed inside this helper. Actual saved flags/thoughts restored via existing diagnostic startup hook because normal calibration requires an unavailable local diffusion runtime. No newGame, flag setter or thought reset was used after reload. One diagnostic pose; subsequent W translation through the service room and out uses normal collision. Not proof of ordinary production boot or complete game progression."
+}

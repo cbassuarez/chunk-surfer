@@ -1,0 +1,3783 @@
+{
+  "schemaVersion": 1,
+  "atUTC": "2026-10-21T02:08:47.458Z",
+  "failure": null,
+  "checks": [
+    {
+      "name": "actual Malcolm focus",
+      "passed": true
+    },
+    {
+      "name": "current return hub opens",
+      "passed": true
+    },
+    {
+      "name": "existing map subject available on return",
+      "passed": true
+    },
+    {
+      "name": "choosing topic alone grants no recognition",
+      "passed": true
+    },
+    {
+      "name": "early cancellation grants no recognition",
+      "passed": true
+    },
+    {
+      "name": "existing map subject available on return",
+      "passed": true
+    },
+    {
+      "name": "actual qualified answer commits existing flag",
+      "passed": true
+    },
+    {
+      "name": "received subject retires without a new reward",
+      "passed": true
+    }
+  ],
+  "trace": [
+    {
+      "label": "focus",
+      "scene": null,
+      "linked": false,
+      "saved": false,
+      "focus": {
+        "propId": "vigil-malcolm-vey",
+        "doorId": null,
+        "doorWins": false
+      },
+      "where": {
+        "x": 108,
+        "y": 506,
+        "facing": 3,
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "zone": 1,
+        "chapelOuter": 11,
+        "source": false
+      }
+    },
+    {
+      "label": "returned-opening",
+      "scene": "thought:exterior-vigil:vigil-malcolm-vey",
+      "view": {
+        "mode": "nodes",
+        "nodeId": "return",
+        "finished": false,
+        "speaker": "Malcolm Vey",
+        "history": [],
+        "line": {
+          "who": "Malcolm Vey",
+          "text": "You came back by the long side of the line. I watched which door opened."
+        },
+        "who": "Malcolm Vey",
+        "typed": 7,
+        "typing": true,
+        "lineAge": 0.1696000000089407,
+        "lineSerial": 1,
+        "lineContentId": "exterior-vigil:vigil-malcolm-vey:return:line:0",
+        "seenBeforeRun": false,
+        "accelerating": false,
+        "voice": null,
+        "pending": null,
+        "art": {
+          "id": "vigilMalcolmLine",
+          "mode": "hero",
+          "caption": "Two chapel marks and a pencil line",
+          "status": "1:2500"
+        },
+        "artReason": "node",
+        "lineSourceId": ""
+      },
+      "linked": false,
+      "saved": false,
+      "focus": {
+        "propId": "vigil-malcolm-vey",
+        "doorId": null,
+        "doorWins": false
+      },
+      "where": {
+        "x": 108,
+        "y": 506,
+        "facing": 3,
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "zone": 1,
+        "chapelOuter": 11,
+        "source": false
+      }
+    },
+    {
+      "label": "topic-selected-before-answer",
+      "scene": "thought:exterior-vigil:vigil-malcolm-vey",
+      "view": {
+        "mode": "nodes",
+        "nodeId": "line",
+        "finished": false,
+        "speaker": "Malcolm Vey",
+        "history": [],
+        "line": {
+          "who": "me",
+          "prompt": "Point out the alignment.",
+          "text": "That runs through both chapels."
+        },
+        "who": "me",
+        "typed": 0,
+        "typing": true,
+        "lineAge": 0,
+        "lineSerial": 2,
+        "lineContentId": "exterior-vigil:vigil-malcolm-vey:line:line:0",
+        "seenBeforeRun": false,
+        "accelerating": false,
+        "voice": null,
+        "pending": {
+          "kind": "say",
+          "options": [
+            {
+              "text": "Point out the alignment.",
+              "say": true
+            }
+          ],
+          "index": 0
+        },
+        "art": {
+          "id": "vigilMalcolmLine",
+          "mode": "hero",
+          "caption": "Two chapel marks and a pencil line",
+          "status": "1:2500"
+        },
+        "artReason": "node",
+        "lineSourceId": ""
+      },
+      "linked": false,
+      "saved": false,
+      "focus": {
+        "propId": "vigil-malcolm-vey",
+        "doorId": null,
+        "doorWins": false
+      },
+      "where": {
+        "x": 108,
+        "y": 506,
+        "facing": 3,
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "zone": 1,
+        "chapelOuter": 11,
+        "source": false
+      }
+    },
+    {
+      "label": "cancel-before-answer",
+      "scene": null,
+      "linked": false,
+      "saved": false,
+      "focus": {
+        "propId": "vigil-malcolm-vey",
+        "doorId": null,
+        "doorWins": false
+      },
+      "where": {
+        "x": 108,
+        "y": 506,
+        "facing": 3,
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "zone": 1,
+        "chapelOuter": 11,
+        "source": false
+      }
+    },
+    {
+      "label": "qualified-answer-presented",
+      "scene": "thought:exterior-vigil:vigil-malcolm-vey",
+      "view": {
+        "mode": "nodes",
+        "nodeId": "line",
+        "finished": false,
+        "speaker": "Malcolm Vey",
+        "history": [
+          {
+            "text": "That runs through both chapels.",
+            "who": "me",
+            "mask": null,
+            "serial": 2
+          },
+          {
+            "text": "Centre to centre, within what I can do with photocopies. There is no duct or right of way on either plan.",
+            "who": "Malcolm Vey",
+            "mask": null,
+            "serial": 3
+          }
+        ],
+        "line": {
+          "who": "Malcolm Vey",
+          "sourceId": "vigil-malcolm-vey:chapel-line",
+          "text": "It may be nothing. But if you stand in one of them tonight, listen for the other before the machinery arrives."
+        },
+        "who": "Malcolm Vey",
+        "typed": 8,
+        "typing": true,
+        "lineAge": 0.20670000000298025,
+        "lineSerial": 4,
+        "lineContentId": "exterior-vigil:vigil-malcolm-vey:line:line:2",
+        "seenBeforeRun": false,
+        "accelerating": false,
+        "voice": null,
+        "pending": null,
+        "art": {
+          "id": "vigilMalcolmLine",
+          "mode": "hero",
+          "caption": "Two chapel marks and a pencil line",
+          "status": "1:2500"
+        },
+        "artReason": "node",
+        "lineSourceId": "vigil-malcolm-vey:chapel-line"
+      },
+      "linked": true,
+      "saved": true,
+      "focus": {
+        "propId": "vigil-malcolm-vey",
+        "doorId": null,
+        "doorWins": false
+      },
+      "where": {
+        "x": 108,
+        "y": 506,
+        "facing": 3,
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "zone": 1,
+        "chapelOuter": 11,
+        "source": false
+      }
+    },
+    {
+      "label": "known-return-options",
+      "options": [
+        {
+          "text": "Ask what he expects at six.",
+          "goto": "six",
+          "hideWhenAsked": true,
+          "contentId": "exterior-vigil:vigil-malcolm-vey:return:choice:0",
+          "__choiceKey": "exterior-vigil:vigil-malcolm-vey:return:choice:0",
+          "replayState": "unseen",
+          "archiveSignal": false
+        },
+        {
+          "text": "Give the map back.",
+          "knowledgeId": "exterior-vigil:vigil-malcolm-vey:return:choice:1",
+          "contentId": "exterior-vigil:vigil-malcolm-vey:return:choice:1",
+          "__choiceKey": "exterior-vigil:vigil-malcolm-vey:return:choice:1",
+          "replayState": "unseen",
+          "archiveSignal": false
+        }
+      ]
+    }
+  ],
+  "fixture": {
+    "meaning": "Returned-player/legacy-missing-knowledge fixture: existing inspected Malcolm and title phase, only linkedChapels cleared. No map/access reward granted. Nearby placement, short ordinary step and fixed head aim."
+  },
+  "capture": {
+    "mime": "video/webm;codecs=vp9,opus",
+    "bytes": 582312,
+    "startedAtMs": 49357.20000000298,
+    "startedAudioTime": 48.10933333333333,
+    "endedAtMs": 55312.79999999702,
+    "frames": [
+      {
+        "captureMs": 0.09999999403953552,
+        "nowMs": 49357.29999999702,
+        "audioTime": 48.112,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 38,
+        "nowMs": 49395.20000000298,
+        "audioTime": 48.144,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 80.5,
+        "nowMs": 49437.70000000298,
+        "audioTime": 48.192,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 119.19999998807907,
+        "nowMs": 49476.39999999106,
+        "audioTime": 48.22933333333334,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 157.09999999403954,
+        "nowMs": 49514.29999999702,
+        "audioTime": 48.266666666666666,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 194.19999998807907,
+        "nowMs": 49551.39999999106,
+        "audioTime": 48.304,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 231.69999998807907,
+        "nowMs": 49588.89999999106,
+        "audioTime": 48.34133333333333,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 274.09999999403954,
+        "nowMs": 49631.29999999702,
+        "audioTime": 48.384,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 312.29999999701977,
+        "nowMs": 49669.5,
+        "audioTime": 48.42133333333334,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 364.29999999701977,
+        "nowMs": 49721.5,
+        "audioTime": 48.474666666666664,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 408.09999999403954,
+        "nowMs": 49765.29999999702,
+        "audioTime": 48.51733333333333,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 446.09999999403954,
+        "nowMs": 49803.29999999702,
+        "audioTime": 48.55466666666667,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 485.19999998807907,
+        "nowMs": 49842.39999999106,
+        "audioTime": 48.592,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 523.3999999910593,
+        "nowMs": 49880.59999999404,
+        "audioTime": 48.63466666666667,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 561.7999999970198,
+        "nowMs": 49919,
+        "audioTime": 48.672,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 599.5999999940395,
+        "nowMs": 49956.79999999702,
+        "audioTime": 48.70933333333333,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 638.0999999940395,
+        "nowMs": 49995.29999999702,
+        "audioTime": 48.74666666666667,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 681,
+        "nowMs": 50038.20000000298,
+        "audioTime": 48.78933333333333,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 719.3999999910593,
+        "nowMs": 50076.59999999404,
+        "audioTime": 48.82666666666667,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 757.5,
+        "nowMs": 50114.70000000298,
+        "audioTime": 48.86933333333333,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 796.3999999910593,
+        "nowMs": 50153.59999999404,
+        "audioTime": 48.906666666666666,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 841,
+        "nowMs": 50198.20000000298,
+        "audioTime": 48.949333333333335,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 880.5,
+        "nowMs": 50237.70000000298,
+        "audioTime": 48.986666666666665,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 919.3999999910593,
+        "nowMs": 50276.59999999404,
+        "audioTime": 49.029333333333334,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 958.3999999910593,
+        "nowMs": 50315.59999999404,
+        "audioTime": 49.06666666666667,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 997.2999999970198,
+        "nowMs": 50354.5,
+        "audioTime": 49.104,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 1038.7999999970198,
+        "nowMs": 50396,
+        "audioTime": 49.14666666666667,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 1078.5999999940395,
+        "nowMs": 50435.79999999702,
+        "audioTime": 49.18933333333333,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 1116.699999988079,
+        "nowMs": 50473.89999999106,
+        "audioTime": 49.22666666666667,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 1155.699999988079,
+        "nowMs": 50512.89999999106,
+        "audioTime": 49.264,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 1194.0999999940395,
+        "nowMs": 50551.29999999702,
+        "audioTime": 49.30133333333333,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 1232.3999999910593,
+        "nowMs": 50589.59999999404,
+        "audioTime": 49.344,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 1271.5,
+        "nowMs": 50628.70000000298,
+        "audioTime": 49.38133333333333,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 1312.0999999940395,
+        "nowMs": 50669.29999999702,
+        "audioTime": 49.41866666666667,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 1350.0999999940395,
+        "nowMs": 50707.29999999702,
+        "audioTime": 49.461333333333336,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 1388.8999999910593,
+        "nowMs": 50746.09999999404,
+        "audioTime": 49.498666666666665,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 1428.2999999970198,
+        "nowMs": 50785.5,
+        "audioTime": 49.536,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 1466.5,
+        "nowMs": 50823.70000000298,
+        "audioTime": 49.57333333333333,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 1505.5999999940395,
+        "nowMs": 50862.79999999702,
+        "audioTime": 49.616,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 1544.699999988079,
+        "nowMs": 50901.89999999106,
+        "audioTime": 49.653333333333336,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 1583.8999999910593,
+        "nowMs": 50941.09999999404,
+        "audioTime": 49.690666666666665,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 1622.0999999940395,
+        "nowMs": 50979.29999999702,
+        "audioTime": 49.728,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 1660.2999999970198,
+        "nowMs": 51017.5,
+        "audioTime": 49.77066666666666,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 1699,
+        "nowMs": 51056.20000000298,
+        "audioTime": 49.808,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 1737.3999999910593,
+        "nowMs": 51094.59999999404,
+        "audioTime": 49.845333333333336,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 1775.699999988079,
+        "nowMs": 51132.89999999106,
+        "audioTime": 49.882666666666665,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 1813.5,
+        "nowMs": 51170.70000000298,
+        "audioTime": 49.92,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 1852.699999988079,
+        "nowMs": 51209.89999999106,
+        "audioTime": 49.962666666666664,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 1895.5999999940395,
+        "nowMs": 51252.79999999702,
+        "audioTime": 50.00533333333333,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 1933.2999999970198,
+        "nowMs": 51290.5,
+        "audioTime": 50.04266666666667,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 1971.199999988079,
+        "nowMs": 51328.39999999106,
+        "audioTime": 50.08,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 2008.8999999910593,
+        "nowMs": 51366.09999999404,
+        "audioTime": 50.117333333333335,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 2046.5999999940395,
+        "nowMs": 51403.79999999702,
+        "audioTime": 50.154666666666664,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 2089.3999999910593,
+        "nowMs": 51446.59999999404,
+        "audioTime": 50.19733333333333,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 2126.7999999970198,
+        "nowMs": 51484,
+        "audioTime": 50.23466666666667,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 2164.3999999910593,
+        "nowMs": 51521.59999999404,
+        "audioTime": 50.272,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 2201.699999988079,
+        "nowMs": 51558.89999999106,
+        "audioTime": 50.309333333333335,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 2240.699999988079,
+        "nowMs": 51597.89999999106,
+        "audioTime": 50.352,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 2280.0999999940395,
+        "nowMs": 51637.29999999702,
+        "audioTime": 50.38933333333333,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 2318.7999999970198,
+        "nowMs": 51676,
+        "audioTime": 50.42666666666667,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 2356.7999999970198,
+        "nowMs": 51714,
+        "audioTime": 50.464,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 2395.7999999970198,
+        "nowMs": 51753,
+        "audioTime": 50.50666666666667,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 2433.699999988079,
+        "nowMs": 51790.89999999106,
+        "audioTime": 50.544,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 2471.699999988079,
+        "nowMs": 51828.89999999106,
+        "audioTime": 50.58133333333333,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 2509.699999988079,
+        "nowMs": 51866.89999999106,
+        "audioTime": 50.61866666666667,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 2548.5999999940395,
+        "nowMs": 51905.79999999702,
+        "audioTime": 50.656,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 2587.199999988079,
+        "nowMs": 51944.39999999106,
+        "audioTime": 50.693333333333335,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 2626.199999988079,
+        "nowMs": 51983.39999999106,
+        "audioTime": 50.736,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 2665.0999999940395,
+        "nowMs": 52022.29999999702,
+        "audioTime": 50.77333333333333,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 2703.199999988079,
+        "nowMs": 52060.39999999106,
+        "audioTime": 50.81066666666667,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 2741.8999999910593,
+        "nowMs": 52099.09999999404,
+        "audioTime": 50.848,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 2780.8999999910593,
+        "nowMs": 52138.09999999404,
+        "audioTime": 50.89066666666667,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 2819.5,
+        "nowMs": 52176.70000000298,
+        "audioTime": 50.928,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 2858.199999988079,
+        "nowMs": 52215.39999999106,
+        "audioTime": 50.965333333333334,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 2896.5999999940395,
+        "nowMs": 52253.79999999702,
+        "audioTime": 51.008,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 2935.0999999940395,
+        "nowMs": 52292.29999999702,
+        "audioTime": 51.04533333333333,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 2973.2999999970198,
+        "nowMs": 52330.5,
+        "audioTime": 51.08266666666667,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 3017.7999999970198,
+        "nowMs": 52375,
+        "audioTime": 51.12533333333333,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 3056.5999999940395,
+        "nowMs": 52413.79999999702,
+        "audioTime": 51.16266666666667,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 3095.2999999970198,
+        "nowMs": 52452.5,
+        "audioTime": 51.205333333333336,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 3133.5999999940395,
+        "nowMs": 52490.79999999702,
+        "audioTime": 51.242666666666665,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 3171.5,
+        "nowMs": 52528.70000000298,
+        "audioTime": 51.28,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 3209.3999999910593,
+        "nowMs": 52566.59999999404,
+        "audioTime": 51.31733333333333,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 3247.699999988079,
+        "nowMs": 52604.89999999106,
+        "audioTime": 51.35466666666667,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 3285.7999999970198,
+        "nowMs": 52643,
+        "audioTime": 51.397333333333336,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 3330.7999999970198,
+        "nowMs": 52688,
+        "audioTime": 51.44,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 3368.7999999970198,
+        "nowMs": 52726,
+        "audioTime": 51.477333333333334,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 3407.3999999910593,
+        "nowMs": 52764.59999999404,
+        "audioTime": 51.51466666666666,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 3446.5,
+        "nowMs": 52803.70000000298,
+        "audioTime": 51.55733333333333,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 3485.0999999940395,
+        "nowMs": 52842.29999999702,
+        "audioTime": 51.59466666666667,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 3523.5999999940395,
+        "nowMs": 52880.79999999702,
+        "audioTime": 51.632,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 3561.7999999970198,
+        "nowMs": 52919,
+        "audioTime": 51.669333333333334,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 3599.7999999970198,
+        "nowMs": 52957,
+        "audioTime": 51.70666666666666,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 3638.199999988079,
+        "nowMs": 52995.39999999106,
+        "audioTime": 51.74933333333333,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 3676.3999999910593,
+        "nowMs": 53033.59999999404,
+        "audioTime": 51.78666666666667,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 3714.5999999940395,
+        "nowMs": 53071.79999999702,
+        "audioTime": 51.824,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 3752.699999988079,
+        "nowMs": 53109.89999999106,
+        "audioTime": 51.861333333333334,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 3790.8999999910593,
+        "nowMs": 53148.09999999404,
+        "audioTime": 51.898666666666664,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 3829.0999999940395,
+        "nowMs": 53186.29999999702,
+        "audioTime": 51.936,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 3867,
+        "nowMs": 53224.20000000298,
+        "audioTime": 51.973333333333336,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 3905.199999988079,
+        "nowMs": 53262.39999999106,
+        "audioTime": 52.016,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 3943,
+        "nowMs": 53300.20000000298,
+        "audioTime": 52.053333333333335,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 3981.3999999910593,
+        "nowMs": 53338.59999999404,
+        "audioTime": 52.090666666666664,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 4019.2999999970198,
+        "nowMs": 53376.5,
+        "audioTime": 52.128,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 4057.3999999910593,
+        "nowMs": 53414.59999999404,
+        "audioTime": 52.165333333333336,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 4096,
+        "nowMs": 53453.20000000298,
+        "audioTime": 52.202666666666666,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 4134,
+        "nowMs": 53491.20000000298,
+        "audioTime": 52.24,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 4172.29999999702,
+        "nowMs": 53529.5,
+        "audioTime": 52.282666666666664,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 4210.699999988079,
+        "nowMs": 53567.89999999106,
+        "audioTime": 52.32,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 4248.79999999702,
+        "nowMs": 53606,
+        "audioTime": 52.35733333333334,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 4287.5999999940395,
+        "nowMs": 53644.79999999702,
+        "audioTime": 52.394666666666666,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 4325.699999988079,
+        "nowMs": 53682.89999999106,
+        "audioTime": 52.432,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 4363.899999991059,
+        "nowMs": 53721.09999999404,
+        "audioTime": 52.474666666666664,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 4402.0999999940395,
+        "nowMs": 53759.29999999702,
+        "audioTime": 52.512,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 4440.5999999940395,
+        "nowMs": 53797.79999999702,
+        "audioTime": 52.54933333333334,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 4478.5999999940395,
+        "nowMs": 53835.79999999702,
+        "audioTime": 52.586666666666666,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 4516.899999991059,
+        "nowMs": 53874.09999999404,
+        "audioTime": 52.624,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 4555.0999999940395,
+        "nowMs": 53912.29999999702,
+        "audioTime": 52.66133333333333,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 4593.199999988079,
+        "nowMs": 53950.39999999106,
+        "audioTime": 52.704,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 4631.899999991059,
+        "nowMs": 53989.09999999404,
+        "audioTime": 52.74133333333333,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 4670.5,
+        "nowMs": 54027.70000000298,
+        "audioTime": 52.778666666666666,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 4708.5999999940395,
+        "nowMs": 54065.79999999702,
+        "audioTime": 52.816,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 4746.899999991059,
+        "nowMs": 54104.09999999404,
+        "audioTime": 52.858666666666664,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 4785,
+        "nowMs": 54142.20000000298,
+        "audioTime": 52.896,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 4823.0999999940395,
+        "nowMs": 54180.29999999702,
+        "audioTime": 52.93333333333333,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 4860.79999999702,
+        "nowMs": 54218,
+        "audioTime": 52.970666666666666,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 4899,
+        "nowMs": 54256.20000000298,
+        "audioTime": 53.008,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 4938.199999988079,
+        "nowMs": 54295.39999999106,
+        "audioTime": 53.04533333333333,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 4977.199999988079,
+        "nowMs": 54334.39999999106,
+        "audioTime": 53.088,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 5016.0999999940395,
+        "nowMs": 54373.29999999702,
+        "audioTime": 53.12533333333333,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 5058.399999991059,
+        "nowMs": 54415.59999999404,
+        "audioTime": 53.168,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 5096.199999988079,
+        "nowMs": 54453.39999999106,
+        "audioTime": 53.205333333333336,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 5133.699999988079,
+        "nowMs": 54490.89999999106,
+        "audioTime": 53.242666666666665,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 5173.0999999940395,
+        "nowMs": 54530.29999999702,
+        "audioTime": 53.28,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 5211.79999999702,
+        "nowMs": 54569,
+        "audioTime": 53.32266666666667,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 5249.79999999702,
+        "nowMs": 54607,
+        "audioTime": 53.36,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 5287.899999991059,
+        "nowMs": 54645.09999999404,
+        "audioTime": 53.397333333333336,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 5331.899999991059,
+        "nowMs": 54689.09999999404,
+        "audioTime": 53.44,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 5370.199999988079,
+        "nowMs": 54727.39999999106,
+        "audioTime": 53.477333333333334,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 5408.5999999940395,
+        "nowMs": 54765.79999999702,
+        "audioTime": 53.51466666666666,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 5447.29999999702,
+        "nowMs": 54804.5,
+        "audioTime": 53.55733333333333,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 5485.899999991059,
+        "nowMs": 54843.09999999404,
+        "audioTime": 53.59466666666667,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 5524.199999988079,
+        "nowMs": 54881.39999999106,
+        "audioTime": 53.632,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 5562.29999999702,
+        "nowMs": 54919.5,
+        "audioTime": 53.669333333333334,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 5600.5,
+        "nowMs": 54957.70000000298,
+        "audioTime": 53.712,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 5639.29999999702,
+        "nowMs": 54996.5,
+        "audioTime": 53.74933333333333,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 5678.0999999940395,
+        "nowMs": 55035.29999999702,
+        "audioTime": 53.78666666666667,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 5716.29999999702,
+        "nowMs": 55073.5,
+        "audioTime": 53.824,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 5758.5999999940395,
+        "nowMs": 55115.79999999702,
+        "audioTime": 53.86666666666667,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 5796.399999991059,
+        "nowMs": 55153.59999999404,
+        "audioTime": 53.904,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      },
+      {
+        "captureMs": 5834.899999991059,
+        "nowMs": 55192.09999999404,
+        "audioTime": 53.94133333333333,
+        "light": null,
+        "card": null,
+        "pulse": null,
+        "cueCount": 0,
+        "player": {
+          "x": 108,
+          "y": 506
+        },
+        "look": {
+          "yaw": -1.2534047249117894,
+          "pitch": -0.1118830303495522,
+          "facing": 3
+        },
+        "recording": false,
+        "listening": false,
+        "paused": false,
+        "focused": true,
+        "hidden": false
+      }
+    ]
+  },
+  "errors": [],
+  "priorErrorCount": 0,
+  "errorWindow": "This execution, beginning before fixture setup. Earlier accumulated errors remain in the retained prior-pause-errors receipt.",
+  "method": "Actual exterior character, ordinary E/Enter/Arrow/Escape in returned context. Accelerated technical dialogue; a presented answer is not proof a person read it. Belfry actual dispatch tested independently; full uninterrupted route/player recognition pending."
+}

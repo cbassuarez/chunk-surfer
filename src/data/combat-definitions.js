@@ -525,8 +525,9 @@ export function sourceCombatDefinition({ bodyReturn = false, tells = [] } = {}) 
     }),
     bodyReturnAssist: !!bodyReturn,
     tells: known,
-    // A first break in each movement loses shelter and opens the persistent
-    // desktop fight. The legacy option name remains save/authoring compatible.
+    // Contact takes the fight outside the shell even when the player never
+    // loses composure. A later break still spends that movement's recovery.
+    desktopOnCommit: true,
     sendBackOnBreak: true,
   };
 }

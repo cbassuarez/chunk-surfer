@@ -11,8 +11,11 @@ test('the Scene Dock crossing owns the title but does not spend the missing-door
   assert.match(body, /makeWorldTitleScene\(/, 'the physical crossing opens the world title');
   assert.match(body, /restore:\(pose\)=>restoreOpeningEntryPose\(pose\)/,
     'the title returns the head to the entered pose instead of forcing the door beat');
-  assert.match(body, /onDone:\(\)=>TUT\.startTutorial\(\)/,
-    'setup begins after the title without waiting for the optional door search');
+  assert.match(body, /onDone:\(\)=>beginGetInDriveTeaser\(\)/,
+    'the outside-door title hands into the authored car teaser before setup');
+  const teaser=main.slice(main.indexOf('function beginGetInDriveTeaser'),start);
+  assert.match(teaser,/onDone=\(\)=>TUT\.startTutorial\(\)/,'setup is the original continuation after the car cut');
+  assert.doesNotMatch(teaser,/beginDoorSearchBeat|postDoorThought|commitSourceDrive\(/,'the short opening vision cannot spend the optional missing-door tree or actual Source trip');
   assert.doesNotMatch(body, /postDoorThought|beginDoorSearchBeat/,
     'crossing alone cannot trigger the missing-door tree');
   assert.doesNotMatch(body, /AFTER_TITLE/, 'the small beat list is no longer in the arrival chain');

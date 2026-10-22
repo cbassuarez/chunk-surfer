@@ -1,0 +1,833 @@
+{
+  "galleryWalk": [
+    {
+      "at": {
+        "x": 51,
+        "y": 503
+      },
+      "expected": {
+        "x": 51,
+        "y": 503
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 51,
+        "y": 502
+      },
+      "expected": {
+        "x": 51,
+        "y": 502
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 51,
+        "y": 501
+      },
+      "expected": {
+        "x": 51,
+        "y": 501
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 51,
+        "y": 500
+      },
+      "expected": {
+        "x": 51,
+        "y": 500
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 51,
+        "y": 499
+      },
+      "expected": {
+        "x": 51,
+        "y": 499
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 51,
+        "y": 498
+      },
+      "expected": {
+        "x": 51,
+        "y": 498
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 51,
+        "y": 497
+      },
+      "expected": {
+        "x": 51,
+        "y": 497
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 51,
+        "y": 496
+      },
+      "expected": {
+        "x": 51,
+        "y": 496
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 51,
+        "y": 495
+      },
+      "expected": {
+        "x": 51,
+        "y": 495
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 51,
+        "y": 494
+      },
+      "expected": {
+        "x": 51,
+        "y": 494
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 51,
+        "y": 493
+      },
+      "expected": {
+        "x": 51,
+        "y": 493
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 51,
+        "y": 492
+      },
+      "expected": {
+        "x": 51,
+        "y": 492
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 51,
+        "y": 491
+      },
+      "expected": {
+        "x": 51,
+        "y": 491
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 51,
+        "y": 490
+      },
+      "expected": {
+        "x": 51,
+        "y": 490
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 51,
+        "y": 489
+      },
+      "expected": {
+        "x": 51,
+        "y": 489
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 51,
+        "y": 488
+      },
+      "expected": {
+        "x": 51,
+        "y": 488
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 51,
+        "y": 487
+      },
+      "expected": {
+        "x": 51,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 52,
+        "y": 487
+      },
+      "expected": {
+        "x": 52,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 53,
+        "y": 487
+      },
+      "expected": {
+        "x": 53,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 54,
+        "y": 487
+      },
+      "expected": {
+        "x": 54,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 55,
+        "y": 487
+      },
+      "expected": {
+        "x": 55,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 56,
+        "y": 487
+      },
+      "expected": {
+        "x": 56,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 57,
+        "y": 487
+      },
+      "expected": {
+        "x": 57,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 58,
+        "y": 487
+      },
+      "expected": {
+        "x": 58,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 59,
+        "y": 487
+      },
+      "expected": {
+        "x": 59,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 60,
+        "y": 487
+      },
+      "expected": {
+        "x": 60,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 61,
+        "y": 487
+      },
+      "expected": {
+        "x": 61,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 62,
+        "y": 487
+      },
+      "expected": {
+        "x": 62,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 63,
+        "y": 487
+      },
+      "expected": {
+        "x": 63,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 64,
+        "y": 487
+      },
+      "expected": {
+        "x": 64,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 65,
+        "y": 487
+      },
+      "expected": {
+        "x": 65,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 66,
+        "y": 487
+      },
+      "expected": {
+        "x": 66,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 67,
+        "y": 487
+      },
+      "expected": {
+        "x": 67,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 68,
+        "y": 487
+      },
+      "expected": {
+        "x": 68,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 69,
+        "y": 487
+      },
+      "expected": {
+        "x": 69,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 70,
+        "y": 487
+      },
+      "expected": {
+        "x": 70,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 71,
+        "y": 487
+      },
+      "expected": {
+        "x": 71,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 72,
+        "y": 487
+      },
+      "expected": {
+        "x": 72,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 73,
+        "y": 487
+      },
+      "expected": {
+        "x": 73,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 74,
+        "y": 487
+      },
+      "expected": {
+        "x": 74,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 75,
+        "y": 487
+      },
+      "expected": {
+        "x": 75,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 76,
+        "y": 487
+      },
+      "expected": {
+        "x": 76,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 77,
+        "y": 487
+      },
+      "expected": {
+        "x": 77,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 78,
+        "y": 487
+      },
+      "expected": {
+        "x": 78,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 79,
+        "y": 487
+      },
+      "expected": {
+        "x": 79,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 80,
+        "y": 487
+      },
+      "expected": {
+        "x": 80,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 81,
+        "y": 487
+      },
+      "expected": {
+        "x": 81,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 82,
+        "y": 487
+      },
+      "expected": {
+        "x": 82,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 83,
+        "y": 487
+      },
+      "expected": {
+        "x": 83,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 84,
+        "y": 487
+      },
+      "expected": {
+        "x": 84,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 85,
+        "y": 487
+      },
+      "expected": {
+        "x": 85,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 86,
+        "y": 487
+      },
+      "expected": {
+        "x": 86,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 87,
+        "y": 487
+      },
+      "expected": {
+        "x": 87,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 88,
+        "y": 487
+      },
+      "expected": {
+        "x": 88,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    },
+    {
+      "at": {
+        "x": 89,
+        "y": 487
+      },
+      "expected": {
+        "x": 89,
+        "y": 487
+      },
+      "floor": 10,
+      "scene": null
+    }
+  ],
+  "clue": {
+    "scene": "doc:north-gallery-service-word",
+    "zeroTakes": true
+  },
+  "lock": [
+    {
+      "label": "open",
+      "at": {
+        "x": 89,
+        "y": 487
+      },
+      "scene": "roof-word-lock",
+      "view": {
+        "letters": [
+          "",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "word": "",
+        "cursor": 0,
+        "error": "",
+        "closed": false
+      },
+      "flag": false,
+      "takes": []
+    },
+    {
+      "label": "cancel",
+      "at": {
+        "x": 89,
+        "y": 487
+      },
+      "scene": null,
+      "flag": false,
+      "takes": []
+    },
+    {
+      "label": "wrong",
+      "at": {
+        "x": 89,
+        "y": 487
+      },
+      "scene": "roof-word-lock",
+      "view": {
+        "letters": [
+          "S",
+          "A",
+          "L",
+          "M",
+          "O",
+          "N"
+        ],
+        "word": "SALMON",
+        "cursor": 5,
+        "error": "The latch stays shut.",
+        "closed": false
+      },
+      "flag": false,
+      "takes": []
+    },
+    {
+      "label": "correct-zero-takes",
+      "at": {
+        "x": 89,
+        "y": 487
+      },
+      "scene": null,
+      "flag": true,
+      "takes": []
+    }
+  ],
+  "firstAscent": [
+    {
+      "before": {
+        "x": 89,
+        "y": 487
+      },
+      "after": {
+        "at": {
+          "x": 89,
+          "y": 486
+        },
+        "floor": 10,
+        "flag": true,
+        "scene": null,
+        "eye": {
+          "x": 189.5,
+          "y": 23.240000000000002,
+          "z": 6.993803546820243,
+          "lean": 0
+        }
+      }
+    },
+    {
+      "before": {
+        "x": 89,
+        "y": 486
+      },
+      "after": {
+        "at": {
+          "x": 89,
+          "y": 485
+        },
+        "floor": 10,
+        "flag": true,
+        "scene": null,
+        "eye": {
+          "x": 189.5,
+          "y": 23.240000000000002,
+          "z": 6.2823466157476755,
+          "lean": 0
+        }
+      }
+    },
+    {
+      "before": {
+        "x": 89,
+        "y": 485
+      },
+      "after": {
+        "at": {
+          "x": 89,
+          "y": 484
+        },
+        "floor": 10,
+        "flag": true,
+        "scene": null,
+        "eye": {
+          "x": 189.5,
+          "y": 23.240000000000002,
+          "z": 5.330508023400369,
+          "lean": 0
+        }
+      }
+    },
+    {
+      "before": {
+        "x": 89,
+        "y": 484
+      },
+      "after": {
+        "at": {
+          "x": 349,
+          "y": 573
+        },
+        "floor": 10,
+        "flag": true,
+        "scene": null,
+        "eye": {
+          "x": 189.5,
+          "y": 23.240000000000002,
+          "z": 4.628018954597887,
+          "lean": 0
+        }
+      }
+    }
+  ],
+  "at": {
+    "pos": {
+      "x": 349,
+      "y": 573
+    },
+    "flag": true,
+    "takes": []
+  },
+  "errors": []
+}

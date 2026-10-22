@@ -9,6 +9,9 @@ import { IS_TAURI } from './paths.js';
 import { applyVfdDomTheme } from '../render/vfd-dom.js';
 import { drawElectronicText, measureElectronicText } from '../render/electronic-text.js';
 
+// Fired when the stage changes size, which can be a frame after the window does.
+export const STAGE_RESIZE_EVENT = 'chunk-surfer:stage-resize';
+
 let styleInstalled = false;
 let lastLayout = null;
 let sourceCommandMinimum = null;
@@ -34,10 +37,10 @@ function installViewportStyle(doc) {
   const style = doc.createElement('style');
   style.dataset.viewportStageStyle = 'true';
   style.textContent = `
-:root{--designed-w:${DESIGNED_VIEWPORT.width}px;--designed-h:${DESIGNED_VIEWPORT.height}px;--minimum-w:${MINIMUM_VIEWPORT.width}px;--minimum-h:${MINIMUM_VIEWPORT.height}px;--ui-scale:1;--stage-scale:1;--stage-left:0px;--stage-top:0px;--stage-rendered-w:var(--designed-w);--stage-rendered-h:var(--designed-h);}
+:root{--designed-w:${DESIGNED_VIEWPORT.width}px;--designed-h:${DESIGNED_VIEWPORT.height}px;--minimum-w:${MINIMUM_VIEWPORT.width}px;--minimum-h:${MINIMUM_VIEWPORT.height}px;--ui-scale:1;--stage-scale:1;--stage-left:0px;--stage-top:0px;--stage-rendered-w:var(--designed-w);--stage-rendered-h:var(--designed-h);--stage-w:var(--designed-w);--stage-h:var(--designed-h);}
 html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#000807;}
 body{min-width:0!important;min-height:0!important;}
-#wrap{position:absolute!important;left:var(--stage-left)!important;top:var(--stage-top)!important;width:var(--designed-w)!important;height:var(--designed-h)!important;min-width:0!important;min-height:0!important;max-width:none!important;max-height:none!important;transform:scale(var(--stage-scale));transform-origin:top left!important;overflow:hidden!important;background:#000807;box-sizing:border-box;}
+#wrap{position:absolute!important;left:var(--stage-left)!important;top:var(--stage-top)!important;width:var(--stage-w)!important;height:var(--stage-h)!important;min-width:0!important;min-height:0!important;max-width:none!important;max-height:none!important;transform:scale(var(--stage-scale));transform-origin:top left!important;overflow:hidden!important;background:#000807;box-sizing:border-box;}
 #map{width:100%!important;height:100%!important;overflow:hidden!important;box-sizing:border-box;}
 body.stage-scaled-down #wrap{image-rendering:auto;}
 body.stage-scaled-up #wrap{image-rendering:auto;}
@@ -169,7 +172,13 @@ export function applyCurrentStageLayout(options = {}) {
   applyStageLayout(layout, doc.documentElement);
   doc.body?.classList?.toggle('stage-scaled-down', layout.scaledDown);
   doc.body?.classList?.toggle('stage-scaled-up', layout.scaledUp);
+  const resized = layout.stageWidth !== lastLayout?.stageWidth || layout.stageHeight !== lastLayout?.stageHeight;
   lastLayout = layout;
+  // The layout lands a frame after the window's own resize event, so anything
+  // that measured the stage then measured the old one. Tell them again.
+  if (resized && typeof win.dispatchEvent === 'function' && typeof win.Event === 'function') {
+    win.dispatchEvent(new win.Event(STAGE_RESIZE_EVENT));
+  }
   return layout;
 }
 

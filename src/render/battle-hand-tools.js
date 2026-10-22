@@ -2,6 +2,7 @@
 // face toward the player. The hand solver owns the hand and the caller moves
 // tool + contact targets together. This module never advances a game clock.
 import * as THREE from 'three';
+import { TUNING_FORK_ENGRAVING } from '../data/tuning-fork-discovery.js';
 import { BOX_CRADLE } from './battle-hand-box-grips.js';
 import { FRONT_CONTROL, CONTROL_APPROACH_ANGLES, CONTROL_CONTACT_POSES } from './battle-hand-controls.js';
 import { HANDLE_GRIPS, TORCH_SWITCH } from './battle-hand-grips.js';
@@ -278,7 +279,7 @@ function fork(group) {
   shoulders.lineTo(.031, -.012); shoulders.quadraticCurveTo(.027, -.037, 0, -.039); shoulders.quadraticCurveTo(-.027, -.037, -.031, -.012);
   add(group, new THREE.ExtrudeGeometry(shoulders, { depth: .012, bevelEnabled: true, bevelSegments: 3, steps: 1, bevelSize: .002, bevelThickness: .002 }), steel, [0, .018, -.006]);
   const prongs = [-1, 1].map(side => box(group, [.012, .127, .016], steel, [side * .031, .087, 0], .004, 'fork prong'));
-  label(group, 'A 440', .024, .009, [0, -.043, .0096], { color: '#242c25', size: 72,profile:'satin-metal' });
+  label(group, TUNING_FORK_ENGRAVING, .024, .009, [0, -.043, .0096], { color: '#242c25', size: 72,profile:'satin-metal' });
   return { bounds: { width: .078, height: .273, depth: .020 }, contacts: { right: handleGrip('fork') }, controls: { strike: target([-.037, .113, 0], [-1, 0, 0]) },
     update(frame) {
       // Ring only after the authored strike. No vibration in selection/idle.

@@ -1,0 +1,380 @@
+{
+  "version": 1,
+  "sampleRate": 44100,
+  "clips": [
+    {
+      "id": "priest-pater-address",
+      "file": "priest-pater-address.mp3",
+      "role": "priest",
+      "source": "cormi-pater-noster",
+      "cutAt": {
+        "from": 0,
+        "to": 15.3
+      },
+      "gain": 0.85,
+      "text": "Pater noster, qui es in coelis, sanctificetur nomen tuum; adveniat regnum tuum; fiat voluntas tua, sicut in coelo et in terra.",
+      "notes": null,
+      "duration": 15.3,
+      "targetRmsDb": -24,
+      "audioSHA": "67a36b47e3ff2c64262de1b4e281870cc77da4d1b2f83f2434d435d934db8dd4",
+      "bytes": 184365,
+      "channels": 1,
+      "sampleRate": 44100,
+      "measured": {
+        "duration": 15.3,
+        "rmsDb": -25.80980479683255,
+        "peakDb": -6.551969495271481,
+        "finite": true
+      },
+      "tail": "Original recitation pause/tail retained; acoustic provenance unspecified by recorder. No added baked reverb."
+    },
+    {
+      "id": "priest-pater-bread",
+      "file": "priest-pater-bread.mp3",
+      "role": "priest",
+      "source": "cormi-pater-noster",
+      "cutAt": {
+        "from": 15.3,
+        "to": 26.4
+      },
+      "gain": 0.85,
+      "text": "Panem nostrum quotidianum da nobis hodie, et dimitte nobis debita nostra, sicut et nos dimittimus debitoribus nostris.",
+      "notes": null,
+      "duration": 11.1,
+      "targetRmsDb": -24,
+      "audioSHA": "0e293415d6a22b58e7df6ce29749e7e6cc5b2f60067f1911c69ef13fb614f279",
+      "bytes": 133896,
+      "channels": 1,
+      "sampleRate": 44100,
+      "measured": {
+        "duration": 11.1,
+        "rmsDb": -25.728613408713578,
+        "peakDb": -6.6183490374944185,
+        "finite": true
+      },
+      "tail": "Original recitation pause/tail retained; acoustic provenance unspecified by recorder. No added baked reverb."
+    },
+    {
+      "id": "priest-pater-deliverance",
+      "file": "priest-pater-deliverance.mp3",
+      "role": "priest",
+      "source": "cormi-pater-noster",
+      "cutAt": {
+        "from": 26.4,
+        "to": 34.160748
+      },
+      "gain": 0.85,
+      "text": "Et ne nos inducas in tentationem; sed libera nos a malo. Amen.",
+      "notes": null,
+      "duration": 7.760748299319728,
+      "targetRmsDb": -24,
+      "audioSHA": "a4dd51eddb209fcb2704c9502260bf1c62e086d2a839c1cab2614d1f3c8a5135",
+      "bytes": 94085,
+      "channels": 1,
+      "sampleRate": 44100,
+      "measured": {
+        "duration": 7.760748299319728,
+        "rmsDb": -26.63758621429161,
+        "peakDb": -6.576589292388925,
+        "finite": true
+      },
+      "tail": "Original recitation pause/tail retained; acoustic provenance unspecified by recorder. No added baked reverb."
+    },
+    {
+      "id": "priest-communion-invitation",
+      "file": "priest-communion-invitation.mp3",
+      "role": "priest",
+      "source": "cormi-communion",
+      "cutAt": {
+        "from": 0,
+        "to": 16.1
+      },
+      "gain": 0.85,
+      "text": "Ecce Agnus Dei, ecce qui tollit peccata mundi. Domine, non sum dignus ut intres sub tectum meum, sed tantum dic verbo, et sanabitur anima mea.",
+      "notes": null,
+      "duration": 16.1,
+      "targetRmsDb": -24,
+      "audioSHA": "936ca9f082cde48a3c92fbd5ad1c260995c65cb09ca5b81a9abbc29be8819f4a",
+      "bytes": 194082,
+      "channels": 1,
+      "sampleRate": 44100,
+      "measured": {
+        "duration": 16.1,
+        "rmsDb": -26.30285756064979,
+        "peakDb": -6.493015145260617,
+        "finite": true
+      },
+      "tail": "Original recitation pause/tail retained; acoustic provenance unspecified by recorder. No added baked reverb."
+    },
+    {
+      "id": "priest-communion-blessing",
+      "file": "priest-communion-blessing.mp3",
+      "role": "priest",
+      "source": "cormi-communion",
+      "cutAt": {
+        "from": 16.1,
+        "to": 24.409048
+      },
+      "gain": 0.85,
+      "text": "Corpus Domini nostri Jesu Christi custodiat animam tuam in vitam aeternam. Amen.",
+      "notes": null,
+      "duration": 8.30904761904762,
+      "targetRmsDb": -24,
+      "audioSHA": "6b738fa38ba3d8a8106264cfaa7676108cdf4fb2221347315767a3d4846dcb72",
+      "bytes": 100668,
+      "channels": 1,
+      "sampleRate": 44100,
+      "measured": {
+        "duration": 8.30904761904762,
+        "rmsDb": -26.46538385816811,
+        "peakDb": -6.525544694417369,
+        "finite": true
+      },
+      "tail": "Original recitation pause/tail retained; acoustic provenance unspecified by recorder. No added baked reverb."
+    },
+    {
+      "id": "response-amen",
+      "file": "response-amen.mp3",
+      "role": "response",
+      "source": "erh-amen",
+      "cutAt": {
+        "from": 0,
+        "to": 5.694694
+      },
+      "gain": 0.65,
+      "text": "Amen.",
+      "notes": "Play as one existing congregation, with the full original decay. Do not multiply or pitch-clone it into fabricated performers.",
+      "duration": 5.69469387755102,
+      "targetRmsDb": -25,
+      "audioSHA": "9bf4effe38ffc9e8d19392f0d89c68e113d4ea4c9256e341d9db5ba2756264d4",
+      "bytes": 69008,
+      "channels": 1,
+      "sampleRate": 44100,
+      "measured": {
+        "duration": 5.69469387755102,
+        "rmsDb": -30.613032336986237,
+        "peakDb": -6.44843123436885,
+        "finite": true
+      },
+      "tail": "Original field-recorded room response retained; no added baked reverb."
+    },
+    {
+      "id": "movement-cloth",
+      "file": "movement-cloth.mp3",
+      "role": "movement",
+      "source": "owlstorm-cloth",
+      "cutAt": {
+        "from": 0,
+        "to": 2.048435
+      },
+      "gain": 0.16,
+      "text": null,
+      "notes": "A single restrained fabric adjustment; its natural envelope is retained.",
+      "duration": 2.0484353741496597,
+      "targetRmsDb": -32,
+      "audioSHA": "66c4802c30ee7d3e63e35a1e7bb9b6ca5be93d722d8e92af8b400c3d39961fbd",
+      "bytes": 25436,
+      "channels": 1,
+      "sampleRate": 44100,
+      "measured": {
+        "duration": 2.0484353741496597,
+        "rmsDb": -36.654111204262925,
+        "peakDb": -6.392272147431951,
+        "finite": true
+      },
+      "tail": "Original foley envelope retained; no added baked reverb."
+    },
+    {
+      "id": "movement-pew",
+      "file": "movement-pew.mp3",
+      "role": "movement",
+      "source": "tbhicba-wood-bench",
+      "cutAt": {
+        "from": 0,
+        "to": 1.900958
+      },
+      "gain": 0.16,
+      "text": null,
+      "notes": "A single old-wood load/creak, not an impact or a scare accent.",
+      "duration": 1.900952380952381,
+      "targetRmsDb": -32,
+      "audioSHA": "dea3b875239d22b23bcc1abec210f449ac86fb20ff8e08cc5229846b95d85c5c",
+      "bytes": 23555,
+      "channels": 1,
+      "sampleRate": 44100,
+      "measured": {
+        "duration": 1.900952380952381,
+        "rmsDb": -34.334059641060676,
+        "peakDb": -6.294083395060122,
+        "finite": true
+      },
+      "tail": "Original foley envelope retained; no added baked reverb."
+    },
+    {
+      "id": "room-a",
+      "file": "room-a.mp3",
+      "role": "room",
+      "source": "communion-room-tone",
+      "cutAt": {
+        "from": 0,
+        "to": 8.2
+      },
+      "gain": 0.18,
+      "text": null,
+      "notes": "First occupied-silence section. Runtime should crossfade at the actual file boundary rather than hard-loop an encoder tail.",
+      "duration": 8.2,
+      "targetRmsDb": -37,
+      "audioSHA": "faf1bf13c80c4cf99ef0ecd631d0f1134d0cd4c021a587e1926db5e9a3cdefda",
+      "bytes": 99101,
+      "channels": 1,
+      "sampleRate": 44100,
+      "measured": {
+        "duration": 8.2,
+        "rmsDb": -37.49835455519819,
+        "peakDb": -18.764520779006126,
+        "finite": true
+      },
+      "tail": "Original field-recorded room response retained; no added baked reverb."
+    },
+    {
+      "id": "room-b",
+      "file": "room-b.mp3",
+      "role": "room",
+      "source": "communion-room-tone",
+      "cutAt": {
+        "from": 8.2,
+        "to": 16.874667
+      },
+      "gain": 0.18,
+      "text": null,
+      "notes": "Second consecutive section of the same quiet congregation. No synthetic breath or added choir.",
+      "duration": 8.674671201814059,
+      "targetRmsDb": -37,
+      "audioSHA": "684dc7902bb08640b0f912cebb15970dd0e2a7e83073a8edf0c747a1f6f5bfab",
+      "bytes": 105057,
+      "channels": 1,
+      "sampleRate": 44100,
+      "measured": {
+        "duration": 8.674671201814059,
+        "rmsDb": -37.541551339152576,
+        "peakDb": -15.567650508445293,
+        "finite": true
+      },
+      "tail": "Original field-recorded room response retained; no added baked reverb."
+    }
+  ],
+  "sources": [
+    {
+      "id": "cormi-communion",
+      "title": "De_Communione.wav",
+      "author": "cormi",
+      "licence": "CC0 1.0",
+      "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "url": "https://freesound.org/people/cormi/sounds/121883/",
+      "download": "https://cdn.freesound.org/previews/121/121883_1267745-hq.mp3",
+      "audioSHA": "853ba2dc14f26e9a64e74724c6e9b0737496c004d38767dd09d0209fd36cb3e1",
+      "note": "Human Latin recitation, uploaded 2011; not represented as a historical recording or a live Mass. Traditional text identified by the author as Rituale Romanum, edition 1847.",
+      "bytes": 580174,
+      "encoding": "Freesound HQ MP3 preview, original source licence retained",
+      "sourcePageSHA": "f04c644619f800b7ba31d1a4909e403157887d1bf7654b7bc817888ab6b65d9f"
+    },
+    {
+      "id": "cormi-pater-noster",
+      "title": "Pater_Noster.wav",
+      "author": "cormi",
+      "licence": "CC0 1.0",
+      "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "url": "https://freesound.org/people/cormi/sounds/113654/",
+      "download": "https://cdn.freesound.org/previews/113/113654_1267745-hq.mp3",
+      "audioSHA": "9746a38a7bbe267153b2bb40d3bf00696d7539f4fa50966760007d3427a023d1",
+      "note": "Human Latin recitation, uploaded 2011, from the same speaker as De_Communione. Traditional prayer, not a copyrighted modern English translation.",
+      "bytes": 808067,
+      "encoding": "Freesound HQ MP3 preview, original source licence retained",
+      "sourcePageSHA": "87cea4271d81c5eefcb3ab05bc3864cdd91ffda381b1c3daaa2c38021c5a754d"
+    },
+    {
+      "id": "erh-amen",
+      "title": "amen.wav",
+      "author": "ERH",
+      "licence": "CC BY 4.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "url": "https://freesound.org/people/ERH/sounds/29933/",
+      "download": "https://cdn.freesound.org/previews/29/29933_215874-hq.mp3",
+      "audioSHA": "87bfac2c74019cc3d6481057ad78a896e916b0d24e2f8ab31160f28cd7babc5e",
+      "note": "The recorder identifies a priest and congregation saying Amen. One coherent field recording with its own room tail, not individually separable singers.",
+      "bytes": 101836,
+      "encoding": "Freesound HQ MP3 preview, original source licence retained",
+      "sourcePageSHA": "d408a901e7b6733158fa5995dce126568754d544f885fbc7c2424b0c063a6f4c"
+    },
+    {
+      "id": "communion-room-tone",
+      "title": "1800's Church Silent Prayer During Communion",
+      "author": "composingatnight",
+      "licence": "CC0 1.0",
+      "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "url": "https://freesound.org/people/composingatnight/sounds/697580/",
+      "download": "https://cdn.freesound.org/previews/697/697580_5557765-hq.mp3",
+      "audioSHA": "36e95259757245830b68985ef1d270d92738ffdf3d11fab1eb3aaf901148327e",
+      "note": "Contemporary recording of occupied church room tone during silent prayer; the 1800s description concerns the building, not the recording date. Individual breath/pew events are not claimed.",
+      "bytes": 379776,
+      "encoding": "Freesound HQ MP3 preview, original source licence retained",
+      "sourcePageSHA": "c31a0e9c0c23a4a72207e1490f232c712b1eec98cd0529620116b22c2012689a"
+    },
+    {
+      "id": "owlstorm-cloth",
+      "title": "Blanket Movement 2",
+      "author": "OwlStorm / Ashe Kirk",
+      "licence": "CC0 1.0",
+      "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "url": "https://freesound.org/people/OwlStorm/sounds/320138/",
+      "download": "https://cdn.freesound.org/previews/320/320138_140737-hq.mp3",
+      "audioSHA": "f8cd975c25318e5c0cf4a96c8c1ee39e1f71ab5a5935fbf6436b129e406c9fa3",
+      "note": "Real down-duvet cloth movement, stereo Zoom H4n recording. Adapted as restrained clothing foley; not claimed to be a recorded vestment.",
+      "bytes": 49986,
+      "encoding": "Freesound HQ MP3 preview, original source licence retained",
+      "sourcePageSHA": "4c6f2538181de49499ca7309fddeafe7fac3b3098312042019f6bd8b63e95bd6"
+    },
+    {
+      "id": "tbhicba-wood-bench",
+      "title": "Bench Creak 2.wav",
+      "author": "tbhicba",
+      "licence": "CC BY 3.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by/3.0/",
+      "url": "https://freesound.org/people/tbhicba/sounds/148335/",
+      "download": "https://cdn.freesound.org/previews/148/148335_1379881-hq.mp3",
+      "audioSHA": "8600c348a070a712f3f91492d1cd7dd6178ebd2026655287038d0438215ffb28",
+      "note": "Actual old wooden bench creak, adapted as subdued pew foley; not a recording made inside this chapel.",
+      "bytes": 36672,
+      "encoding": "Freesound HQ MP3 preview, original source licence retained",
+      "sourcePageSHA": "b648e0112c3f64ef82d21f25e950c3cff58b61acae8299c5233a024e1a79a057"
+    }
+  ],
+  "processing": {
+    "channels": 1,
+    "codec": "MP3",
+    "kbps": 96,
+    "sourceSampleRate": 44100,
+    "highpassHz": "65, or 55 for movement",
+    "lowpassHz": "9000, or 7000 for room",
+    "peakCeilingDb": -6,
+    "preserved": [
+      "Human timing",
+      "Whole clause groups",
+      "Source breathing and pauses",
+      "Natural field-recording tails"
+    ],
+    "absent": [
+      "Bitcrush",
+      "Pitch or time shift",
+      "Reversal",
+      "Synthesized vocals",
+      "Overdubbed clone congregation",
+      "Added baked reverb"
+    ]
+  },
+  "validation": {
+    "technical": "All encoded files decoded and checked finite, duration and peak.",
+    "auditory": "Author listening and in-room review pending; this tool environment does not support audio input.",
+    "player": "Pending participants."
+  }
+}

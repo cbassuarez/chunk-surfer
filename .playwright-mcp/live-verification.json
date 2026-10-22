@@ -1,0 +1,1054 @@
+{
+  "schemaVersion": 1,
+  "atUTC": "2026-10-21T02:33:46.267Z",
+  "failure": null,
+  "checks": [
+    {
+      "name": "real skinned Pressure asset drawn",
+      "passed": true
+    },
+    {
+      "name": "raw core exact black",
+      "passed": true
+    },
+    {
+      "name": "recorded core exact black",
+      "passed": true
+    },
+    {
+      "name": "final glass/post core exact black",
+      "passed": true
+    },
+    {
+      "name": "radiance neutral white with bright marks",
+      "passed": true
+    },
+    {
+      "name": "shared recording active and radiance retains acquired light/dark marks",
+      "passed": true
+    },
+    {
+      "name": "horizon 30 actual world tape active",
+      "passed": true
+    },
+    {
+      "name": "horizon 150 actual world tape active",
+      "passed": true
+    },
+    {
+      "name": "horizon 360 actual world tape active",
+      "passed": true
+    },
+    {
+      "name": "no JavaScript exceptions in this execution",
+      "passed": true
+    }
+  ],
+  "body": {
+    "status": {
+      "ready": true,
+      "mode": "live",
+      "manifestation": 0.999990303639995,
+      "secondaryManifestation": 0,
+      "asset": "assets/pressure-character.glb",
+      "revision": "pressure-volume-v1",
+      "error": null,
+      "geometry": {
+        "color": {},
+        "depth": {},
+        "ready": true,
+        "width": 640,
+        "height": 400,
+        "near": 0.05,
+        "far": 90,
+        "instances": 1,
+        "draws": 1,
+        "error": null
+      },
+      "body": {
+        "id": "court-trace:source",
+        "x": -24,
+        "y": -772,
+        "floorH": 4.2,
+        "strength": 0.96,
+        "radiusM": 8.049999999999999,
+        "heightM": 1.83,
+        "widthM": 0.68,
+        "glow": 0.4,
+        "mode": null,
+        "performance": {
+          "version": 1,
+          "role": "court-trace",
+          "heading": 2.885940000021459,
+          "clip": "pressure_hold",
+          "time": 0,
+          "loop": true,
+          "seed": 3763011242,
+          "manifestation": 0.999990303639995,
+          "motion": "idle",
+          "cue": null,
+          "reducedMotion": false
+        }
+      },
+      "projection": {
+        "x": 0.5,
+        "y": 0.3780701754341712,
+        "w": 0.07374652478190014,
+        "h": 0.31754385964912296,
+        "amount": 0.999990303639995
+      }
+    },
+    "pixel": {
+      "supported": true,
+      "shaderReady": true,
+      "enabled": true,
+      "framesSeen": 415,
+      "framesRendered": 415,
+      "lastProfile": "explore",
+      "lastError": null,
+      "lastGlError": 0,
+      "forceSignalUntil": 0,
+      "sceneWidth": 640,
+      "sceneHeight": 400,
+      "captureExposure": 8,
+      "physicalAcquisition": false,
+      "physicalAcquisitionWeight": 0,
+      "settings": {
+        "cellSize": "auto",
+        "debugSource": "final",
+        "reduceFlash": false,
+        "reduceMotion": false,
+        "memory": true
+      },
+      "forced": false,
+      "bypassedByTextSpace": false,
+      "sourceRoomMemoryActive": true
+    },
+    "stats": {
+      "core": 1388,
+      "blackRaw": 1388,
+      "blackEncoded": 1388,
+      "blackFinal": 1388,
+      "glow": 4563,
+      "neutral": 4563,
+      "bright": 1662,
+      "glowLevels": 2
+    }
+  },
+  "horizons": [
+    {
+      "requestedDepth": 30,
+      "frame": {
+        "active": true,
+        "slice": 15,
+        "lateral": 0,
+        "edge": 0,
+        "collapse": 0,
+        "exposure": 1.0865,
+        "band": {
+          "centre": 0,
+          "reach": 160,
+          "lum": 0.67,
+          "mosh": 0.03
+        },
+        "bandAhead": {
+          "centre": 0,
+          "reach": 160,
+          "lum": 0.5,
+          "mosh": 0.51
+        },
+        "bandLookahead": 110,
+        "towerPath": [],
+        "onTowerPath": false,
+        "dream": 0,
+        "falling": 0,
+        "worldOriginM": [
+          0.25,
+          15.2,
+          -1586.75
+        ],
+        "cellMetres": 0.5,
+        "floorY": 15.2,
+        "unravelling": {
+          "active": true,
+          "amount": 0.105,
+          "furthestMetres": 15,
+          "elapsedSeconds": 0.5456000000089406,
+          "street": 0.9763321759259259,
+          "splats": 0.31640624999999994,
+          "loss": 0,
+          "bodyResidue": 1
+        },
+        "ready": true,
+        "stats": {
+          "calls": 64,
+          "draws": 70,
+          "instances": 28810,
+          "skipped": 2,
+          "bail": null,
+          "glErrors": []
+        },
+        "suppressed": false,
+        "bust": {
+          "x": -6,
+          "depth": 168,
+          "height": 6.5,
+          "eyes": false,
+          "eyeMode": "returned",
+          "performance": {
+            "schema": 1,
+            "phase": "blind",
+            "clip": "blind",
+            "time": 0,
+            "loop": false,
+            "evidence": "returned",
+            "eyesVisible": true,
+            "routeOpen": false,
+            "blocksMovement": false,
+            "joints": {
+              "neck_yaw": {
+                "rotation": [
+                  0,
+                  0,
+                  0,
+                  1
+                ]
+              },
+              "neck_pitch": {
+                "rotation": [
+                  0,
+                  0,
+                  0,
+                  1
+                ]
+              },
+              "eye_L_yaw": {
+                "rotation": [
+                  0,
+                  0,
+                  0,
+                  1
+                ]
+              },
+              "eye_L_pitch": {
+                "rotation": [
+                  0,
+                  0,
+                  0,
+                  1
+                ]
+              },
+              "eye_R_yaw": {
+                "rotation": [
+                  0,
+                  0,
+                  0,
+                  1
+                ]
+              },
+              "eye_R_pitch": {
+                "rotation": [
+                  0,
+                  0,
+                  0,
+                  1
+                ]
+              }
+            }
+          },
+          "rig": {
+            "design": "The Bronze Reliquary",
+            "joints": 16,
+            "clips": [
+              "recognition-returned",
+              "recognition-carried",
+              "ritual",
+              "settled",
+              "blind"
+            ],
+            "primitives": 23,
+            "lods": [
+              {
+                "index": 0,
+                "primitives": 23,
+                "triangles": 19628
+              },
+              {
+                "index": 1,
+                "primitives": 23,
+                "triangles": 15991
+              },
+              {
+                "index": 2,
+                "primitives": 23,
+                "triangles": 13866
+              }
+            ],
+            "drawLod": 0,
+            "pose": null
+          },
+          "present": true,
+          "eyeY": 19.8,
+          "groundY": 18.18
+        },
+        "tape": {
+          "slices": 256,
+          "floor": 15.2,
+          "sliceMetres": 2,
+          "span": {
+            "x": 128,
+            "y": 40
+          }
+        },
+        "cam": {
+          "camX": 0.5,
+          "camY": 33.64,
+          "camZ": -3203.553646560593,
+          "CELL": 0.5,
+          "worldX": 0.25,
+          "worldY": 16.82,
+          "worldZ": -1601.7768232802964,
+          "yaw": 1.5707963267948966,
+          "planYaw": 0,
+          "pitch": 0
+        }
+      },
+      "pixel": {
+        "supported": true,
+        "shaderReady": true,
+        "enabled": true,
+        "framesSeen": 505,
+        "framesRendered": 505,
+        "lastProfile": "explore",
+        "lastError": null,
+        "lastGlError": 0,
+        "forceSignalUntil": 0,
+        "sceneWidth": 640,
+        "sceneHeight": 400,
+        "captureExposure": 1,
+        "physicalAcquisition": false,
+        "physicalAcquisitionWeight": 0,
+        "settings": {
+          "cellSize": "auto",
+          "debugSource": "final",
+          "reduceFlash": false,
+          "reduceMotion": false,
+          "memory": true
+        },
+        "forced": false,
+        "bypassedByTextSpace": false,
+        "sourceRoomMemoryActive": false
+      },
+      "where": {
+        "x": 0,
+        "y": -3204,
+        "facing": 1,
+        "look": {
+          "yaw": 1.5707963267948966,
+          "pitch": 0,
+          "facing": 1
+        },
+        "zone": 0,
+        "chapelOuter": 11,
+        "source": true
+      }
+    },
+    {
+      "requestedDepth": 150,
+      "frame": {
+        "active": true,
+        "slice": 75,
+        "lateral": 0,
+        "edge": 0,
+        "collapse": 0,
+        "exposure": 0.9724999999999999,
+        "band": {
+          "centre": 0,
+          "reach": 160,
+          "lum": 0.55,
+          "mosh": 0.53
+        },
+        "bandAhead": {
+          "centre": 0,
+          "reach": 160,
+          "lum": 0.51,
+          "mosh": 0.66
+        },
+        "bandLookahead": 110,
+        "towerPath": [],
+        "onTowerPath": false,
+        "dream": 1,
+        "falling": 0,
+        "worldOriginM": [
+          0.25,
+          15.2,
+          -1586.75
+        ],
+        "cellMetres": 0.5,
+        "floorY": 15.2,
+        "unravelling": {
+          "active": true,
+          "amount": 0.335,
+          "furthestMetres": 75,
+          "elapsedSeconds": 0.5985,
+          "street": 0.5374687499999999,
+          "splats": 1,
+          "loss": 0,
+          "bodyResidue": 0.27968389125413906
+        },
+        "ready": true,
+        "stats": {
+          "calls": 134,
+          "draws": 110,
+          "instances": 64113,
+          "skipped": 3,
+          "bail": null,
+          "glErrors": []
+        },
+        "suppressed": false,
+        "bust": {
+          "x": -6,
+          "depth": 168,
+          "height": 6.5,
+          "eyes": false,
+          "eyeMode": "returned",
+          "performance": {
+            "schema": 1,
+            "phase": "blind",
+            "clip": "blind",
+            "time": 0,
+            "loop": false,
+            "evidence": "returned",
+            "eyesVisible": true,
+            "routeOpen": false,
+            "blocksMovement": false,
+            "joints": {
+              "neck_yaw": {
+                "rotation": [
+                  0,
+                  0,
+                  0,
+                  1
+                ]
+              },
+              "neck_pitch": {
+                "rotation": [
+                  0,
+                  0,
+                  0,
+                  1
+                ]
+              },
+              "eye_L_yaw": {
+                "rotation": [
+                  0,
+                  0,
+                  0,
+                  1
+                ]
+              },
+              "eye_L_pitch": {
+                "rotation": [
+                  0,
+                  0,
+                  0,
+                  1
+                ]
+              },
+              "eye_R_yaw": {
+                "rotation": [
+                  0,
+                  0,
+                  0,
+                  1
+                ]
+              },
+              "eye_R_pitch": {
+                "rotation": [
+                  0,
+                  0,
+                  0,
+                  1
+                ]
+              }
+            }
+          },
+          "rig": {
+            "design": "The Bronze Reliquary",
+            "joints": 16,
+            "clips": [
+              "recognition-returned",
+              "recognition-carried",
+              "ritual",
+              "settled",
+              "blind"
+            ],
+            "primitives": 23,
+            "lods": [
+              {
+                "index": 0,
+                "primitives": 23,
+                "triangles": 19628
+              },
+              {
+                "index": 1,
+                "primitives": 23,
+                "triangles": 15991
+              },
+              {
+                "index": 2,
+                "primitives": 23,
+                "triangles": 13866
+              }
+            ],
+            "drawLod": 0,
+            "pose": null
+          },
+          "present": true,
+          "eyeY": 19.8,
+          "groundY": 18.18
+        },
+        "tape": {
+          "slices": 256,
+          "floor": 15.2,
+          "sliceMetres": 2,
+          "span": {
+            "x": 128,
+            "y": 40
+          }
+        },
+        "cam": {
+          "camX": 0.5,
+          "camY": 33.64,
+          "camZ": -3323.5071096492584,
+          "CELL": 0.5,
+          "worldX": 0.25,
+          "worldY": 16.82,
+          "worldZ": -1661.7535548246292,
+          "yaw": 1.5707963267948966,
+          "planYaw": 0,
+          "pitch": 0
+        }
+      },
+      "pixel": {
+        "supported": true,
+        "shaderReady": true,
+        "enabled": true,
+        "framesSeen": 575,
+        "framesRendered": 575,
+        "lastProfile": "explore",
+        "lastError": null,
+        "lastGlError": 0,
+        "forceSignalUntil": 0,
+        "sceneWidth": 640,
+        "sceneHeight": 400,
+        "captureExposure": 1,
+        "physicalAcquisition": false,
+        "physicalAcquisitionWeight": 0,
+        "settings": {
+          "cellSize": "auto",
+          "debugSource": "final",
+          "reduceFlash": false,
+          "reduceMotion": false,
+          "memory": true
+        },
+        "forced": false,
+        "bypassedByTextSpace": false,
+        "sourceRoomMemoryActive": false
+      },
+      "where": {
+        "x": 0,
+        "y": -3324,
+        "facing": 1,
+        "look": {
+          "yaw": 1.5707963267948966,
+          "pitch": 0,
+          "facing": 1
+        },
+        "zone": 0,
+        "chapelOuter": 11,
+        "source": true
+      }
+    },
+    {
+      "requestedDepth": 360,
+      "frame": {
+        "active": true,
+        "slice": 180,
+        "lateral": 0,
+        "edge": 0,
+        "collapse": 0.6448667502260214,
+        "exposure": 0.849,
+        "band": {
+          "centre": 0,
+          "reach": 160,
+          "lum": 0.42,
+          "mosh": 0.04
+        },
+        "bandAhead": {
+          "centre": 0,
+          "reach": 160,
+          "lum": 0.44,
+          "mosh": 0
+        },
+        "bandLookahead": 110,
+        "towerPath": [],
+        "onTowerPath": false,
+        "dream": 0.01123046875,
+        "falling": 0,
+        "worldOriginM": [
+          0.25,
+          15.2,
+          -1586.75
+        ],
+        "cellMetres": 0.5,
+        "floorY": 15.2,
+        "unravelling": {
+          "active": true,
+          "amount": 0.775,
+          "furthestMetres": 180,
+          "elapsedSeconds": 0.5889999999999999,
+          "street": 0,
+          "splats": 0.4518632623078819,
+          "loss": 0.6448667502260214,
+          "bodyResidue": 0
+        },
+        "ready": true,
+        "stats": {
+          "calls": 205,
+          "draws": 125,
+          "instances": 61874,
+          "skipped": 3,
+          "bail": null,
+          "glErrors": []
+        },
+        "suppressed": false,
+        "bust": {
+          "x": -6,
+          "depth": 168,
+          "height": 6.5,
+          "eyes": false,
+          "eyeMode": "returned",
+          "performance": {
+            "schema": 1,
+            "phase": "blind",
+            "clip": "blind",
+            "time": 0,
+            "loop": false,
+            "evidence": "returned",
+            "eyesVisible": true,
+            "routeOpen": false,
+            "blocksMovement": false,
+            "joints": {
+              "neck_yaw": {
+                "rotation": [
+                  0,
+                  0,
+                  0,
+                  1
+                ]
+              },
+              "neck_pitch": {
+                "rotation": [
+                  0,
+                  0,
+                  0,
+                  1
+                ]
+              },
+              "eye_L_yaw": {
+                "rotation": [
+                  0,
+                  0,
+                  0,
+                  1
+                ]
+              },
+              "eye_L_pitch": {
+                "rotation": [
+                  0,
+                  0,
+                  0,
+                  1
+                ]
+              },
+              "eye_R_yaw": {
+                "rotation": [
+                  0,
+                  0,
+                  0,
+                  1
+                ]
+              },
+              "eye_R_pitch": {
+                "rotation": [
+                  0,
+                  0,
+                  0,
+                  1
+                ]
+              }
+            }
+          },
+          "rig": {
+            "design": "The Bronze Reliquary",
+            "joints": 16,
+            "clips": [
+              "recognition-returned",
+              "recognition-carried",
+              "ritual",
+              "settled",
+              "blind"
+            ],
+            "primitives": 23,
+            "lods": [
+              {
+                "index": 0,
+                "primitives": 23,
+                "triangles": 19628
+              },
+              {
+                "index": 1,
+                "primitives": 23,
+                "triangles": 15991
+              },
+              {
+                "index": 2,
+                "primitives": 23,
+                "triangles": 13866
+              }
+            ],
+            "drawLod": 0,
+            "pose": {
+              "clip": "blind",
+              "time": 0,
+              "bones": [
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                3.725290298461914e-9,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                3.725290298461914e-9,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                3.725290298461914e-9,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                3.725290298461914e-9,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1
+              ]
+            }
+          },
+          "present": true,
+          "eyeY": 19.8,
+          "groundY": 18.18
+        },
+        "tape": {
+          "slices": 256,
+          "floor": 15.2,
+          "sliceMetres": 2,
+          "span": {
+            "x": 128,
+            "y": 40
+          }
+        },
+        "cam": {
+          "camX": 0.5,
+          "camY": 33.64,
+          "camZ": -3533.5,
+          "CELL": 0.5,
+          "worldX": 0.25,
+          "worldY": 16.82,
+          "worldZ": -1766.75,
+          "yaw": 1.5707963267948966,
+          "planYaw": 0,
+          "pitch": 0
+        }
+      },
+      "pixel": {
+        "supported": true,
+        "shaderReady": true,
+        "enabled": true,
+        "framesSeen": 646,
+        "framesRendered": 646,
+        "lastProfile": "explore",
+        "lastError": null,
+        "lastGlError": 0,
+        "forceSignalUntil": 0,
+        "sceneWidth": 640,
+        "sceneHeight": 400,
+        "captureExposure": 1,
+        "physicalAcquisition": false,
+        "physicalAcquisitionWeight": 0,
+        "settings": {
+          "cellSize": "auto",
+          "debugSource": "final",
+          "reduceFlash": false,
+          "reduceMotion": false,
+          "memory": true
+        },
+        "forced": false,
+        "bypassedByTextSpace": false,
+        "sourceRoomMemoryActive": false
+      },
+      "where": {
+        "x": 0,
+        "y": -3534,
+        "facing": 1,
+        "look": {
+          "yaw": 1.5707963267948966,
+          "pitch": 0,
+          "facing": 1
+        },
+        "zone": 0,
+        "chapelOuter": 11,
+        "source": true
+      }
+    }
+  ],
+  "errors": [],
+  "method": "Actual game final renderer and existing first-contact/horizon diagnostic placements. Same-frame raw material, physical coverage identity, recorded and final canvas pixels; eroded interior samples exclude boundary resampling. Three horizon depths with actual quarter-turn views. No normal campaign/native/participant claim. Local diffusion unavailable, disclosed diagnostic startup."
+}

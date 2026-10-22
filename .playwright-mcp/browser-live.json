@@ -1,0 +1,479 @@
+{
+  "earRooms": [
+    {
+      "ear": {
+        "state": {
+          "room": "amplifications",
+          "enteredAtMs": 1792555117246,
+          "arrivalSpoken": false,
+          "sheetRead": false,
+          "skipped": []
+        },
+        "staged": [
+          "amplifications"
+        ],
+        "takes": [
+          "main_b3"
+        ],
+        "here": "amplifications",
+        "busy": {
+          "the_tub": null,
+          "amplifications": null,
+          "soundnoisemusic": null
+        },
+        "props": 105,
+        "byKind": {
+          "heap": 4,
+          "ear": 96,
+          "writing": 4,
+          "sheet": 1
+        },
+        "voices": [
+          {
+            "id": "amplifications:0",
+            "x": 101.2,
+            "y": 23,
+            "gain": 1
+          },
+          {
+            "id": "amplifications:1",
+            "x": 100.6,
+            "y": 27,
+            "gain": 0.9
+          },
+          {
+            "id": "amplifications:2",
+            "x": 101.4,
+            "y": 31,
+            "gain": 0.7
+          },
+          {
+            "id": "amplifications:3",
+            "x": 100.4,
+            "y": 19,
+            "gain": 0.7
+          }
+        ],
+        "audio": {
+          "audible": true,
+          "muted": false,
+          "roomId": "amplifications",
+          "loaded": false,
+          "failed": null,
+          "fired": 0,
+          "voices": [
+            {
+              "id": "amplifications:0",
+              "gain": 0.93,
+              "pan": 0.509,
+              "rear": 0,
+              "cutoff": 7981
+            },
+            {
+              "id": "amplifications:1",
+              "gain": 0.851,
+              "pan": 0.306,
+              "rear": 0.97,
+              "cutoff": 2578
+            },
+            {
+              "id": "amplifications:2",
+              "gain": 0.41,
+              "pan": 0.371,
+              "rear": 0.97,
+              "cutoff": 2183
+            },
+            {
+              "id": "amplifications:3",
+              "gain": 0.419,
+              "pan": 0.175,
+              "rear": 0,
+              "cutoff": 6852
+            }
+          ]
+        },
+        "arrivalDueMs": 81115.29999999702
+      },
+      "where": {
+        "x": 200,
+        "y": 50,
+        "facing": 0,
+        "look": {
+          "yaw": 0,
+          "pitch": -0.4,
+          "facing": 0
+        },
+        "zone": 5,
+        "chapelOuter": 11,
+        "source": false
+      },
+      "draw": {
+        "stop_listening_heap_a": 4,
+        "stop_listening_heap_c": 4,
+        "stop_listening_heap_b": 4,
+        "stop_listening_ear_b": 4,
+        "stop_listening_ear_c": 4,
+        "stop_listening_ear_e": 4,
+        "stop_listening_ear_d": 4,
+        "stop_listening_ear_f": 4,
+        "stop_listening_ear_a": 4,
+        "stop_listening_writing_line_pale": 1,
+        "stop_listening_writing_block_pale": 1,
+        "stop_listening_writing_scrawl_pale": 1,
+        "stop_listening_take_sheet": 1
+      }
+    },
+    {
+      "ear": {
+        "state": {
+          "room": "the_tub",
+          "enteredAtMs": 1792555118499,
+          "arrivalSpoken": false,
+          "sheetRead": false,
+          "skipped": []
+        },
+        "staged": [
+          "the_tub"
+        ],
+        "takes": [
+          "main_b3"
+        ],
+        "here": "the_tub",
+        "busy": {
+          "the_tub": null,
+          "amplifications": null,
+          "soundnoisemusic": null
+        },
+        "props": 163,
+        "byKind": {
+          "heap": 5,
+          "ear": 152,
+          "writing": 5,
+          "sheet": 1
+        },
+        "voices": [
+          {
+            "id": "the_tub:0",
+            "x": 83.4,
+            "y": 30.3,
+            "gain": 1
+          },
+          {
+            "id": "the_tub:1",
+            "x": 74.6,
+            "y": 35.8,
+            "gain": 0.8
+          },
+          {
+            "id": "the_tub:2",
+            "x": 92.7,
+            "y": 35,
+            "gain": 0.8
+          },
+          {
+            "id": "the_tub:3",
+            "x": 83.5,
+            "y": 40.5,
+            "gain": 0.6
+          }
+        ],
+        "audio": {
+          "audible": true,
+          "muted": false,
+          "roomId": "the_tub",
+          "loaded": false,
+          "failed": null,
+          "fired": 0,
+          "voices": [
+            {
+              "id": "the_tub:0",
+              "gain": 0.971,
+              "pan": 0.477,
+              "rear": 0,
+              "cutoff": 8110
+            },
+            {
+              "id": "the_tub:1",
+              "gain": 0.15,
+              "pan": 0.87,
+              "rear": 0,
+              "cutoff": 5007
+            },
+            {
+              "id": "the_tub:2",
+              "gain": 0.251,
+              "pan": -0.855,
+              "rear": 0,
+              "cutoff": 5665
+            },
+            {
+              "id": "the_tub:3",
+              "gain": 0.134,
+              "pan": 0.18,
+              "rear": 0,
+              "cutoff": 5205
+            }
+          ]
+        },
+        "arrivalDueMs": 82381.19999998808
+      },
+      "where": {
+        "x": 169,
+        "y": 58,
+        "facing": 2,
+        "look": {
+          "yaw": 3.141592653589793,
+          "pitch": -0.35,
+          "facing": 2
+        },
+        "zone": 4,
+        "chapelOuter": 11,
+        "source": false
+      },
+      "draw": {
+        "stop_listening_heap_a": 4,
+        "stop_listening_heap_c": 4,
+        "stop_listening_heap_b": 4,
+        "stop_listening_ear_b": 4,
+        "stop_listening_ear_d": 4,
+        "stop_listening_ear_a": 4,
+        "stop_listening_ear_e": 4,
+        "stop_listening_ear_c": 4,
+        "stop_listening_ear_f": 4,
+        "stop_listening_writing_line": 1,
+        "stop_listening_writing_scrawl": 1,
+        "stop_listening_writing_block": 1,
+        "stop_listening_take_sheet": 1
+      }
+    },
+    {
+      "ear": {
+        "state": {
+          "room": "soundnoisemusic",
+          "enteredAtMs": 1792555120075,
+          "arrivalSpoken": false,
+          "sheetRead": false,
+          "skipped": []
+        },
+        "staged": [
+          "soundnoisemusic"
+        ],
+        "takes": [
+          "main_b3"
+        ],
+        "here": "soundnoisemusic",
+        "busy": {
+          "the_tub": null,
+          "amplifications": null,
+          "soundnoisemusic": null
+        },
+        "props": 104,
+        "byKind": {
+          "heap": 3,
+          "ear": 96,
+          "writing": 4,
+          "sheet": 1
+        },
+        "voices": [
+          {
+            "id": "soundnoisemusic:0",
+            "x": 72.4,
+            "y": 54.6,
+            "gain": 1
+          },
+          {
+            "id": "soundnoisemusic:1",
+            "x": 68.6,
+            "y": 53.8,
+            "gain": 0.9
+          },
+          {
+            "id": "soundnoisemusic:2",
+            "x": 65.2,
+            "y": 55.2,
+            "gain": 0.8
+          }
+        ],
+        "audio": {
+          "audible": true,
+          "muted": false,
+          "roomId": "soundnoisemusic",
+          "loaded": false,
+          "failed": null,
+          "fired": 0,
+          "voices": [
+            {
+              "id": "soundnoisemusic:0",
+              "gain": 0.9,
+              "pan": 0.32,
+              "rear": 0,
+              "cutoff": 7887
+            },
+            {
+              "id": "soundnoisemusic:1",
+              "gain": 0.5,
+              "pan": 0.268,
+              "rear": 0,
+              "cutoff": 6686
+            },
+            {
+              "id": "soundnoisemusic:2",
+              "gain": 0.251,
+              "pan": 0,
+              "rear": 0,
+              "cutoff": 5665
+            }
+          ]
+        },
+        "arrivalDueMs": 83921.59999999404
+      },
+      "where": {
+        "x": 150,
+        "y": 110,
+        "facing": 3,
+        "look": {
+          "yaw": -1.5707963267948966,
+          "pitch": -0.35,
+          "facing": 3
+        },
+        "zone": 6,
+        "chapelOuter": 11,
+        "source": false
+      },
+      "draw": {
+        "stop_listening_heap_a": 4,
+        "stop_listening_heap_c": 4,
+        "stop_listening_heap_b": 4,
+        "stop_listening_ear_b": 4,
+        "stop_listening_ear_d": 4,
+        "stop_listening_ear_c": 4,
+        "stop_listening_ear_a": 4,
+        "stop_listening_ear_e": 4,
+        "stop_listening_ear_f": 4,
+        "stop_listening_writing_line": 1,
+        "stop_listening_writing_scrawl": 1,
+        "stop_listening_writing_block": 1,
+        "stop_listening_take_sheet": 1
+      }
+    }
+  ],
+  "chapel": {
+    "before": {
+      "x": 185,
+      "y": 149,
+      "facing": 2,
+      "look": {
+        "yaw": 3.141592653589793,
+        "pitch": -0.1,
+        "facing": 2
+      },
+      "zone": 7,
+      "chapelOuter": 11,
+      "source": false
+    },
+    "walked": {
+      "x": 185,
+      "y": 175,
+      "facing": 2,
+      "look": {
+        "yaw": 3.141592653589793,
+        "pitch": -0.1,
+        "facing": 2
+      },
+      "zone": 7,
+      "chapelOuter": 11,
+      "source": false
+    },
+    "unlit": {
+      "where": {
+        "x": 185,
+        "y": 175,
+        "facing": 2,
+        "look": {
+          "yaw": 3.141592653589793,
+          "pitch": -0.1,
+          "facing": 2
+        },
+        "zone": 7,
+        "chapelOuter": 11,
+        "source": false
+      },
+      "draw": {
+        "chapel_vault": 2,
+        "chapel_inner_screen": 1,
+        "chapel_writing_stop": 1,
+        "chapel_writing_overwritten": 1,
+        "chapel_writing_empty": 1,
+        "chapel_wall_hand_traces": 1,
+        "chapel_floor_drag": 1,
+        "chapel_wax_hair_votive": 2,
+        "chapel_presence_seated": 1,
+        "chapel_presence_bowed": 1,
+        "chapel_presence_turned": 1,
+        "chapel_presence_kneeling": 1
+      }
+    },
+    "recorded": {
+      "state": {
+        "planName": "conservatory",
+        "recording": true,
+        "monitoring": true,
+        "room": "lux_nova",
+        "audioWorld": "lux_nova",
+        "takes": [
+          "main_b3"
+        ],
+        "progress": 0.004454999999950331,
+        "scene": null,
+        "blocksInput": false
+      },
+      "draw": {
+        "chapel_vault": 2,
+        "chapel_inner_screen": 1,
+        "chapel_writing_stop": 1,
+        "chapel_writing_overwritten": 1,
+        "chapel_writing_empty": 1,
+        "chapel_wall_hand_traces": 1,
+        "chapel_floor_drag": 1,
+        "chapel_wax_hair_votive": 2
+      }
+    }
+  },
+  "render": {
+    "pixel": {
+      "supported": true,
+      "shaderReady": true,
+      "enabled": true,
+      "framesSeen": 6310,
+      "framesRendered": 6310,
+      "lastProfile": "explore",
+      "lastError": null,
+      "lastGlError": 0,
+      "forceSignalUntil": 0,
+      "sceneWidth": 640,
+      "sceneHeight": 400,
+      "captureExposure": 1,
+      "physicalAcquisition": false,
+      "physicalAcquisitionWeight": 0,
+      "settings": {
+        "cellSize": "auto",
+        "debugSource": "final",
+        "reduceFlash": false,
+        "reduceMotion": false,
+        "memory": true
+      },
+      "forced": false,
+      "bypassedByTextSpace": false,
+      "sourceRoomMemoryActive": false
+    },
+    "stage": null,
+    "torch": {
+      "on": true,
+      "battery": 0.956,
+      "soldered": false,
+      "gutted": false,
+      "betrayed": false
+    }
+  },
+  "pageErrors": []
+}

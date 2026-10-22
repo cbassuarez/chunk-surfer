@@ -5,13 +5,13 @@ const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 
 export function createConservatoryAdversaryAudio({getAudio}){
   const live=new Set();
-  function play(event,{listener={x:0,y:0,yaw:0},occluded=false}={}){
+  function play(event,{listener={x:0,y:0,yaw:0},occluded=false,emphasis=1}={}){
     const audio=getAudio?.();if(!audio?.ctx||!audio.destination||!event?.at)return false;
     const {ctx,destination}=audio,t=ctx.currentTime;
     const dx=event.at.x-listener.x,dy=event.at.y-listener.y;
     const distance=Math.hypot(dx,dy),right=dx*Math.cos(listener.yaw)+dy*Math.sin(listener.yaw);
     const pan=clamp(right/Math.max(2,distance),-1,1),attenuation=clamp(1/(1+distance*.16),.08,1)*(occluded?.34:1);
-    const bus=ctx.createGain();bus.gain.value=attenuation*.24;
+    const bus=ctx.createGain();bus.gain.value=attenuation*.24*clamp(emphasis,.4,1.7);
     const panner=ctx.createStereoPanner?.();
     if(panner){panner.pan.value=pan;bus.connect(panner);panner.connect(destination);}
     else bus.connect(destination);
@@ -35,7 +35,29 @@ export function createConservatoryAdversaryAudio({getAudio}){
       connect(source,filter,envelope);source.start(start);source.stop(start+duration+.03);
     };
     const kind=event.kind;
-    if(kind==='lure-studio'||kind==='lure-chamber'){
+    if(kind==='held-reveal'){
+      tone(NOTE_HZ[0]/2,t,.65,{type:'triangle',volume:.07,cutoff:1100});
+      friction(t+.12,.45,{cutoff:330,volume:.06});
+    }else if(kind==='held-warning'){
+      // A-G-F: three separate preparations. The E belongs to the committed
+      // sweep, so silence at the end of this 3.2s warning remains meaningful.
+      NOTE_HZ.slice(0,3).forEach((frequency,index)=>
+        tone(frequency,t+index,index===2?.9:.65,{type:'triangle',volume:.22,cutoff:2100}));
+    }else if(kind==='held-strike'){
+      tone(NOTE_HZ[3],t,.75,{type:'triangle',volume:.25,cutoff:2100});
+      tone(NOTE_HZ[3]*2.006,t+.015,.68,{volume:.035,cutoff:2800});
+      friction(t,.22,{cutoff:520,volume:.20});
+    }else if(kind==='held-release'){
+      // The held pitch cuts into one short low contact, then real silence.
+      tone(NOTE_HZ[3]/2,t,.09,{type:'triangle',volume:.065,cutoff:900});
+      friction(t+.025,.13,{cutoff:260,volume:.055});
+    }else if(kind==='held-clean'){
+      tone(440,t,.06,{volume:.035,cutoff:1100});
+      tone(660,t+.08,.05,{volume:.025,cutoff:1400});
+    }else if(kind==='held-impact'){
+      friction(t,.35,{cutoff:370,volume:.34});
+      tone(82,t+.04,.35,{type:'triangle',volume:.12,cutoff:430});
+    }else if(kind==='lure-studio'||kind==='lure-chamber'){
       const delay=kind==='lure-chamber'?.14:0;
       NOTE_HZ.forEach((frequency,index)=>{
         const begin=t+delay+index*.36;
@@ -57,6 +79,13 @@ export function createConservatoryAdversaryAudio({getAudio}){
       tone(1677,t+.026,.25,{volume:.07,cutoff:3500});
     }else if(kind==='cloth-work'){
       friction(t,.82,{cutoff:430,volume:.2});
+    }else if(kind==='seam-pick'){
+      friction(t,.24,{cutoff:740,volume:.13});
+      tone(1530,t+.08,.055,{type:'triangle',volume:.05,cutoff:2700});
+    }else if(kind==='head-notice'){
+      // The tiny working sounds stop; one dry joint answers at head height.
+      friction(t,.14,{cutoff:360,volume:.16});
+      tone(96,t+.025,.19,{volume:.035,cutoff:390});
     }else if(kind==='pin-snap'){
       // The chair catches first; the body arrives a fraction later. Keep this
       // on the world bus so only the player's own microphone can call HUSH.
@@ -75,7 +104,9 @@ export function createConservatoryAdversaryAudio({getAudio}){
       friction(t,.45,{cutoff:1040,volume:.43});
       tone(68,t+.08,.65,{type:'sawtooth',volume:.12,cutoff:490});
     }else{live.delete(voice);bus.disconnect();panner?.disconnect();return false;}
-    const duration=kind==='held-note'?3.6:kind.startsWith('lure-')?2.4:1.4;
+    const duration=kind==='held-warning'?3.2:kind==='held-strike'?.8:
+      kind==='held-release'?.45:kind==='held-clean'?.25:kind==='held-impact'?.65:
+      kind==='held-reveal'?1.1:kind==='held-note'?3.6:kind.startsWith('lure-')?2.4:1.4;
     setTimeout(()=>{for(const node of voice.nodes)try{node.disconnect();}catch{}live.delete(voice);},(duration+.5)*1000);
     return true;
   }

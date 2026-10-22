@@ -103,15 +103,17 @@ export function sourceHushContext({ leads = {}, composure = null, ceiling = null
 
 // The vocabulary an authored `when` or check `pass` may use:
 //   talk (this talk, from 1), radio (calls made), lastTalk (lift|radio|none),
+//   victories (complete separate battles won, 0..3),
 //   ready (the warning is offered), composure (0..1), takes, rig,
 //   lead.<nerve|recorder|torch|fork|rig>,
 //   evidence.<reference|student_performance|pre_roll|contract|borrowed_body>,
 //   clue.<tallies|voice|chandelier>, now.<beat> (this talk),
 //   ever.<beat> (any talk, this one included), tell.<id>.
-function conditionContext(state, facts, now) {
+function conditionContext(state, facts, now, victories = 0) {
   const flags = (list) => Object.fromEntries(list.map((id) => [id, true]));
   return {
     ...facts,
+    victories: Math.min(3, whole(victories)),
     talk: state.talks + 1,
     radio: state.radioCalls,
     lastTalk: state.lastTalk || 'none',
@@ -128,11 +130,11 @@ function contactDocument() {
   return document;
 }
 
-export function sourceContactDialogue(value = null, { context = null, live = null } = {}) {
+export function sourceContactDialogue(value = null, { context = null, live = null, victories = 0 } = {}) {
   const state = normalizeSourceContactState(value);
   const facts = context?.lead ? context : sourceHushContext(context || {});
   const now = live?.now instanceof Set ? live.now : new Set();
-  const read = () => conditionContext(state, facts, now);
+  const read = () => conditionContext(state, facts, now, victories);
   // The presenter (conversation.js) filters on `if`; a function there is read
   // against this talk's context instead of the save's story flags.
   const gated = (item) => {
@@ -172,15 +174,16 @@ export function sourceContactDialogue(value = null, { context = null, live = nul
   }));
 }
 
-export function nextSourceContact(value = null, { context = null } = {}) {
+export function nextSourceContact(value = null, { context = null, victories = 0 } = {}) {
   const state = normalizeSourceContactState(value);
   const facts = context?.lead ? context : sourceHushContext(context || {});
   const live = { now: new Set() };
-  const nodes = sourceContactDialogue(state, { context: facts, live });
+  const nodes = sourceContactDialogue(state, { context: facts, live, victories });
   const startAt = state.met ? 'return' : 'approach';
   const node = nodes[startAt];
   return {
     id: startAt,
+    contactCycle: Math.min(3, whole(victories) + 1),
     startAt,
     speaker: node.speaker,
     lines: node.lines,

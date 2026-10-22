@@ -1,6 +1,7 @@
 // A single integrated gallery treatment. Existing six encounter IDs and their
 // state-owned meshes stay authoritative; the optional pack changes presentation.
 // Authored metres, gallery base +10m. The atrium remains a real absent floor.
+import { ROOF_PASSWORD_HOST_ID } from './roof-password.js';
 export const ACADEMIC_GALLERY = Object.freeze({
   base:10,ceiling:17,
   void:Object.freeze({x0:79,x1:89,z0:8,z1:21}),
@@ -33,6 +34,13 @@ export const ACADEMIC_GALLERY_PROPS = Object.freeze([
   prop('gallery-treatment-planter-north','gallery_planter',24,249,-.12,{fallbackMesh:'wastebasket'}),
   prop('gallery-treatment-planter-south','gallery_planter',24,259,.32,{scale:.86,fallbackMesh:'wastebasket'}),
   prop('gallery-treatment-console-north','gallery_console_north',24,251,-Math.PI/2,{fallbackMesh:'classic_console_01'}),
+  // The console builder's work surface is +.90m. The slip sits beside the
+  // appointment book, clear of the urn, and uses the real baked paper atlas.
+  prop(ROOF_PASSWORD_HOST_ID,'loose_note',24,251.6,-Math.PI/2+.08,{
+    interactive:true,structural:false,blocks:false,elevation:.904,
+    inspectAt:{x:25,y:251.6},label:'Gallery service slip',
+    inspect:{first:'A caretaker copy left beside the appointment book.',again:'The north gallery service word.'},
+  }),
   prop('gallery-treatment-console-south','gallery_console_south',24,257,-Math.PI/2,{fallbackMesh:'classic_console_01'}),
   prop('gallery-treatment-roof-threshold','gallery_roof_threshold',44,243,0,{renderOffsetZ:-1}),
 ]);

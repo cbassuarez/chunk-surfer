@@ -1,0 +1,33 @@
+{
+  "bytes": 1338444,
+  "triangles": 18748,
+  "meshes": 60,
+  "movingParts": 58,
+  "sourceSha256": "489cd975214e67352095158609ec2851ca0c3b96dc5ef6a0942938caa5863b6c",
+  "sha256": "58cea915ba106bbbed55a25be3563e910aec44aa61d2712184544deecb87e594",
+  "sourceTriangles": 17856,
+  "retainedSourceComponents": 1442,
+  "selectedComponentIds": [
+    "0:5",
+    "0:6",
+    "0:7",
+    "1:0",
+    "1:2",
+    "1:49",
+    "1:51",
+    "1:121",
+    "2:1",
+    "2:2",
+    "2:14",
+    "2:22",
+    "3:0",
+    "3:13",
+    "3:22",
+    "5:1",
+    "5:16",
+    "7:6",
+    "7:7"
+  ],
+  "duration": 12,
+  "sampleHz": 12
+}

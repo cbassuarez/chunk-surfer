@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "source": "artifacts/source-drive-study/drive.glb",
+  "sourceSha256": "4090887e47657a8224b06464d05d8012f2322926475d603b7ebb6648fa398afa",
+  "asset": "assets/source-vehicle-interior.glb",
+  "sha256": "d820b8ca8c8061855d5edea6ad18f7da2b1e8f05aa02e2babfbd4b3ef44be995",
+  "bytes": 1779696,
+  "meshes": [
+    "opening_drive_cabin",
+    "opening_drive_wheel",
+    "opening_drive_radio",
+    "opening_drive_radio_needle",
+    "opening_drive_speed_needle",
+    "opening_drive_wiper",
+    "opening_drive_vehicle_body",
+    "opening_drive_tyre",
+    "opening_drive_cabin_door_r"
+  ],
+  "doorTriangles": 864,
+  "provenance": "Existing project-authored Source driving vehicle. Positions, normals, UVs and materials preserved; lower right door detached without remodeling."
+}
