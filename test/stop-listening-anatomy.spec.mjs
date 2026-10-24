@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 import { STOP_LISTENING_MESH } from '../src/data/stop-listening.js';
+import { propMaterialFactors } from '../src/render/prop-material-contract.js';
 
 const bytes = fs.readFileSync(process.env.CS_EAR_TEST_ASSET || new URL('../public/assets/stop-listening.glb', import.meta.url));
 const length = bytes.readUInt32LE(12), gltf = JSON.parse(bytes.subarray(20, 20 + length)), base = 28 + length;
@@ -58,6 +59,139 @@ test('the actual concha has a deep recess bounded by raised folded cartilage', (
   assert.ok(recessed >= 6, `only ${recessed} cm-grid samples have a 4cm-deep concha under a raised tragus/antihelix`);
 });
 
+test('upper pinna has a recessed triangular fossa and a distinct long scapha', () => {
+  const tris = triangles(mesh('stop_listening_ear_a'));
+  const top = (x, z) => Math.max(0, ...tris.map((t) => heightAt(t, x, z)).filter((v) => v !== null));
+  // Actual shipped surface samples, in metres: the old broad top plate passed
+  // the concha test while erasing both upper-ear landmarks into a flat oval.
+  const fossa = top(-.02, -.10), scapha = top(.06, -.08);
+  assert.ok(fossa < .045, 'the triangular fossa has filled into a flat upper plate');
+  for (const [x, z] of [[-.06, -.10], [.02, -.10], [-.02, -.14], [-.02, -.06]]) {
+    assert.ok(top(x, z) > fossa + .025, 'the fossa is not bounded by the antihelical fork');
+  }
+  assert.ok(scapha < .045 && top(.02, -.08) > scapha + .025 && top(.10, -.08) > scapha + .025,
+    'the inner fork and outer helix need a real separating groove');
+});
+
+test('the pinna web descends beneath a rolled helix instead of filling it into a thick slab', () => {
+  const tris = triangles(mesh('stop_listening_ear_a'));
+  const top = (x, z) => Math.max(0, ...tris.map((t) => heightAt(t, x, z)).filter((v) => v !== null));
+  const web = top(0, -.14), rim = top(-.06, -.14);
+  assert.ok(web < .052, `upper pinna web remains ${(web * 100).toFixed(1)} cm high`);
+  assert.ok(rim > web + .025, 'the helix has no physical curl above the thinner web');
+});
+
+test('raised cartilage keeps a coherent pale surface rather than dark triangular camouflage', () => {
+  let raised = 0, darkRaised = 0;
+  for (const p of mesh('stop_listening_ear_a').primitives) {
+    if (material(p) === 'stop listening floor wet') continue;
+    const positions = read(p.attributes.POSITION), ids = read(p.indices).flat();
+    for (let i = 0; i < ids.length; i += 3) {
+      const y = ids.slice(i, i + 3).reduce((sum, id) => sum + positions[id][1], 0) / 3;
+      if (y > .069) { raised++; if (material(p) === 'stop listening ear deep') darkRaised++; }
+    }
+  }
+  assert.ok(raised > 100, 'the model has lost its raised cartilage');
+  assert.ok(darkRaised / raised < .02, `${darkRaised}/${raised} raised faces carry false cavity patches that break up in dither`);
+});
+
+test('dither-facing tissue uses authored glTF roughness without the legacy squared conversion', () => {
+  for (const name of ['skin', 'deep', 'wound']) {
+    const mat = gltf.materials.find((m) => m.name === `stop listening ear ${name}`), pbr = mat.pbrMetallicRoughness;
+    assert.equal(mat.extras?.materialFactors, 'gltf', `${name}: material semantics were stripped from the pack`);
+    const factors = propMaterialFactors({ roughness: pbr.roughnessFactor, metallic: pbr.metallicFactor, semantics: mat.extras.materialFactors });
+    assert.equal(factors.roughness, pbr.roughnessFactor);
+    assert.equal(factors.legacyUnmapped, false);
+    if (name !== 'wound') assert.ok(factors.roughness >= .55, `${name}: broad wet glare erases the folds`);
+  }
+});
+
+function fleshTopology(m) {
+  const vertices = new Map(), edges = new Map(), parent = [];
+  const faces = triangles(m);
+  const index = (point) => {
+    const key = point.map((n) => Math.round(n * 1e6)).join(',');
+    if (!vertices.has(key)) { vertices.set(key, vertices.size); parent.push(parent.length); }
+    return vertices.get(key);
+  };
+  const root = (n) => { while (parent[n] !== n) { parent[n] = parent[parent[n]]; n = parent[n]; } return n; };
+  for (const tri of faces) {
+    const ids = tri.map(index);
+    if (new Set(ids).size !== 3) continue;
+    for (let i = 0; i < 3; i++) {
+      const a = ids[i], b = ids[(i + 1) % 3], key = `${Math.min(a, b)}:${Math.max(a, b)}`;
+      edges.set(key, (edges.get(key) || 0) + 1); parent[root(a)] = root(b);
+    }
+  }
+  const bodies = new Map();
+  for (const tri of faces) {
+    const id = root(index(tri[0]));
+    if (!bodies.has(id)) bodies.set(id, []);
+    bodies.get(id).push(tri);
+  }
+  return { boundaryEdges: [...edges.values()].filter((n) => n === 1).length,
+    nonmanifoldEdges: [...edges.values()].filter((n) => n > 2).length,
+    bodies: bodies.size, bodyTriangles: [...bodies.values()] };
+}
+
+test('cut attachments and pinnae are actual closed volumes, not open sawtooth ribbons', () => {
+  for (const name of STOP_LISTENING_MESH.ears) {
+    const topology = fleshTopology(mesh(name));
+    assert.equal(topology.boundaryEdges, 0, `${name}: exposed one-sided tissue edge`);
+    assert.equal(topology.nonmanifoldEdges, 0, `${name}: overlapping faces in the cut volume`);
+    assert.equal(topology.bodies, 1, `${name}: the cut root is detached from the pinna`);
+  }
+});
+
+test('heaps keep the real 42, 26 and 34 volumetric ears instead of intersecting open ribbons', () => {
+  for (const [name, count] of [['stop_listening_heap_a', 42], ['stop_listening_heap_b', 26], ['stop_listening_heap_c', 34]]) {
+    const topology = fleshTopology(mesh(name));
+    assert.equal(topology.boundaryEdges, 0, `${name}: open tissue surfaces reappeared`);
+    assert.equal(topology.nonmanifoldEdges, 0, `${name}: non-manifold piled anatomy`);
+    assert.equal(topology.bodies, count, `${name}: anatomy count or actual separateness changed`);
+  }
+});
+
+test('actual exported heap solids do not bury one another under centimetres of guessed support', () => {
+  // Independent of the builder's support receipt: intersect the exported
+  // triangles with vertical columns, then compare the closed solid intervals.
+  // v4 passed counts/bounds while producing 66–76 mm of interpenetration here.
+  const step = .0125;
+  for (const name of STOP_LISTENING_MESH.heaps) {
+    const columns = new Map();
+    const bodies = fleshTopology(mesh(name)).bodyTriangles.filter((body) => body.length >= 150);
+    for (const [bodyId, body] of bodies.entries()) {
+      const hits = new Map();
+      for (const tri of body) {
+        const xmin = Math.ceil(Math.min(...tri.map((p) => p[0])) / step), xmax = Math.floor(Math.max(...tri.map((p) => p[0])) / step);
+        const zmin = Math.ceil(Math.min(...tri.map((p) => p[2])) / step), zmax = Math.floor(Math.max(...tri.map((p) => p[2])) / step);
+        for (let x = xmin; x <= xmax; x++) for (let z = zmin; z <= zmax; z++) {
+          const h = heightAt(tri, x * step, z * step);
+          if (h == null) continue;
+          const key = `${x},${z}`;
+          if (!hits.has(key)) hits.set(key, []);
+          hits.get(key).push(h);
+        }
+      }
+      for (const [key, values] of hits) {
+        values.sort((a, b) => a - b);
+        const clean = values.filter((v, i) => i === 0 || Math.abs(v - values[i - 1]) > 1e-6);
+        if (clean.length % 2) continue; // A sample exactly on a silhouette is not a reliable solid column.
+        for (let i = 0; i < clean.length; i += 2) {
+          if (!columns.has(key)) columns.set(key, []);
+          columns.get(key).push({ bodyId, low: clean[i], high: clean[i + 1] });
+        }
+      }
+    }
+    let maxOverlap = 0;
+    for (const intervals of columns.values()) for (let i = 0; i < intervals.length; i++) for (let j = i + 1; j < intervals.length; j++) {
+      const a = intervals[i], b = intervals[j];
+      if (a.bodyId !== b.bodyId) maxOverlap = Math.max(maxOverlap, Math.min(a.high, b.high) - Math.max(a.low, b.low));
+    }
+    assert.ok(maxOverlap <= .003, `${name}: ${(maxOverlap * 1000).toFixed(1)} mm sampled interpenetration exceeds the 3 mm model tolerance`);
+  }
+});
+
 test('wall lettering is pressed pigment film with an outward-facing surface, not rounded tube letters', () => {
   for (const name of Object.values(STOP_LISTENING_MESH.writing)) {
     const m = mesh(name), normals = m.primitives.flatMap((p) => read(p.attributes.NORMAL));
@@ -85,5 +219,5 @@ test('the horror pass keeps the exact take sheet and lowers the original pack bu
   assert.equal(h.digest('hex'), 'ed47b29c518786ed632b3d71e158923d39c370a6626d30572a8ac08c0392ace4', 'the take sheet changed with the ear/writing treatment');
   const count = gltf.meshes.reduce((sum, m) => sum + m.primitives.reduce((n, p) => n + gltf.accessors[p.indices].count / 3, 0), 0);
   assert.equal(gltf.meshes.length, 16, 'this pass cannot add locations or model dispatches');
-  assert.ok(count < 118912 && bytes.length < 3454564, 'spend saved writing geometry on anatomy without increasing the full pack');
+  assert.ok(count <= 89349 && bytes.length <= 3047268, 'the depth refinement must fit the actual v4 triangle and byte budget');
 });

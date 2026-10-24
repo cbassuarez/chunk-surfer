@@ -12,6 +12,8 @@ import { FLASHLIGHT_HOUSING_COLORS } from '../game/field-kit.js';
 import { ensureWorldLetteringFonts } from './world-lettering-fonts.js';
 import { fitWorldLetteringLine } from './world-lettering-layout.js';
 import { createThreePhysicalPrint } from './three-physical-print.js';
+import { VAN_REAR_PALETTE as FINISH, VAN_REAR_STAGE, VAN_REAR_CASE, vanRearCaseStops,
+  vanRearWorldToStage, VAN_REAR_CARGO_LIGHT, VAN_REAR_STRUCTURE } from '../data/van-rear-design.js';
 
 export function vanWorkbenchModelIds(kit = {}) {
   return { case: 'field-case', headphones: `headphones-${kit.headphones || 'reference'}`,
@@ -26,14 +28,51 @@ const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
 // The authored field-recorder plane retains Three's top=v1 UV convention.
 export const VAN_RECORDER_CANVAS_FLIP_Y = true;
 // The fitting stage uses enlarged layout units, rather than world metres.
-// 8 units per metre gives its 18-unit shelf a plausible 2.25m van width and
-// keeps a 2-unit recorder close to the carried 274mm chassis. This is an
-// authored scale convention for finish sampling, not a new model transform.
-export const WORKBENCH_PRINT_METRES_PER_UNIT=.125;
+// Its 18 x 12 unit shelf corresponds to the parked van's 1.74 x 1.16m worktop.
+// Object, tray and picking coordinates retain their established layout units.
+export const WORKBENCH_PRINT_METRES_PER_UNIT=VAN_REAR_STAGE.metresPerUnit;
 export function clipStageTarget(rect, viewport) {
   const x = clamp(rect.x, viewport.x, viewport.x + viewport.w), y = clamp(rect.y, viewport.y, viewport.y + viewport.h);
   return { x, y, w: Math.max(0, Math.min(rect.x + rect.w, viewport.x + viewport.w) - x),
     h: Math.max(0, Math.min(rect.y + rect.h, viewport.y + viewport.h) - y) };
+}
+
+// Three's Box3.setFromObject includes hidden meshes. The closed case hides its
+// retaining straps, so using that broad box creates empty clickable space and
+// frames an object which is not actually drawn. Measure the rendered hierarchy.
+export function vanWorkbenchVisibleBounds(THREE, root, reference = null) {
+  root.updateWorldMatrix(true, true);
+  reference?.updateWorldMatrix(true, false);
+  const inverse = reference ? reference.matrixWorld.clone().invert() : null;
+  const bounds = new THREE.Box3();
+  root.traverseVisible(node => {
+    if (!node.isMesh) return;
+    if (!node.geometry.boundingBox) node.geometry.computeBoundingBox();
+    const transform = inverse ? inverse.clone().multiply(node.matrixWorld) : node.matrixWorld;
+    bounds.union(node.geometry.boundingBox.clone().applyMatrix4(transform));
+  });
+  return bounds;
+}
+
+// A rigid case keeps one scale and resting point when its lid opens. Fit from
+// the visible closed housing, matching the parked-world copy, then restore the
+// live pose. Open-lid bounds used to shrink the closed shell by about 3 percent.
+export function vanWorkbenchClosedCaseBounds(THREE, model, reference) {
+  const restored = [];
+  model.traverse(node => {
+    if (node.name === 'open-lid-hinge') {
+      const rotation = node.rotation.clone();
+      restored.push(() => node.rotation.copy(rotation));
+      node.rotation.x = node.userData.closedAngle ?? Math.PI / 2;
+    }
+    if (node.name.includes('lid-retaining-strap')) {
+      const visible = node.visible;
+      restored.push(() => { node.visible = visible; });
+      node.visible = false;
+    }
+  });
+  try { return vanWorkbenchVisibleBounds(THREE, model, reference); }
+  finally { for (const restore of restored) restore(); model.updateWorldMatrix(true, true); }
 }
 
 export function createVanWorkbenchStage() {
@@ -80,25 +119,87 @@ export function createVanWorkbenchStage() {
   }
   function setupShelf() {
     const wood = texture(512, 256, (ctx, w, h) => {
-      ctx.fillStyle = '#514438'; ctx.fillRect(0, 0, w, h);
-      for (let i = 0; i < 450; i++) {
-        ctx.strokeStyle = `rgba(${i % 3 ? '12,9,5' : '172,146,103'},${.015 + (i * 37 % 14) / 200})`;
-        ctx.lineWidth = .3 + (i % 5) * .18; ctx.beginPath();
-        ctx.moveTo(0, i * 13.81 % h); ctx.bezierCurveTo(w * .3, i * 13.81 % h + 3, w * .7, i * 13.81 % h - 2, w, i * 13.81 % h + 1); ctx.stroke();
+      ctx.fillStyle = FINISH.plywood; ctx.fillRect(0, 0, w, h);
+      // Broad veneer fibres remain subordinate to equipment silhouettes. Fine
+      // random scratches only turned the former tabletop into visual noise.
+      for (let i = 0; i < 76; i++) {
+        const y = i * 3.73 % h;
+        ctx.strokeStyle = `rgba(${i % 4 ? '33,24,15' : '177,148,103'},${.025 + (i * 19 % 9) / 180})`;
+        ctx.lineWidth = .5 + (i % 4) * .3; ctx.beginPath();
+        ctx.moveTo(0, y); ctx.bezierCurveTo(w * .3, y + 2, w * .7, y - 2, w, y + 1); ctx.stroke();
       }
-    }); wood.wrapS = wood.wrapT = THREE.RepeatWrapping; wood.repeat.set(2, 2);
-    mesh(new THREE.BoxGeometry(18, .26, 12), mat({ map: wood, roughness: .91 }), [0, -.24, 0]);
-    const rubber = mat({ color: '#192423', roughness: .98 });
-    mesh(new THREE.BoxGeometry(7.0, .065, 6.4), rubber, [0, -.075, -.5]);
-    // Shelf lip and the open van wall catch the practical light behind the case.
-    const paint = mat({ color: '#414a43', metalness: .35, roughness: .72 });
-    mesh(new THREE.BoxGeometry(18, .38, .12), paint, [0, -.15, 5.8]);
-    mesh(new THREE.BoxGeometry(18, 1.25, .22), paint, [0, .35, -5.8]);
-    for (const x of [-8, -4, 4, 8]) mesh(new THREE.BoxGeometry(.09, 1.1, .08), paint, [x, .35, -5.64]);
-    const trayMaterial = mat({ color: '#293431', roughness: .95 });
+    }); wood.wrapS = wood.wrapT = THREE.RepeatWrapping; wood.repeat.set(1, 1);
+    const timber = mat({ map: wood, roughness: .88 });
+    const edge = mat({ color: FINISH.plywoodEdge, roughness: .92 });
+    const rubber = mat({ color: FINISH.rubber, roughness: .98 });
+    const paint = mat({ color: FINISH.enamel, metalness: .22, roughness: .74 });
+    const raisedPaint = mat({ color: FINISH.enamelLight, metalness: .18, roughness: .66 });
+    const darkPaint = mat({ color: FINISH.enamelShadow, metalness: .16, roughness: .81 });
+    const steel = mat({ color: FINISH.steel, metalness: .72, roughness: .56 });
+    const zinc = mat({ color: FINISH.zinc, metalness: .72, roughness: .42 });
+    const units = VAN_REAR_STAGE.metresPerUnit, caseSeatTop = vanRearWorldToStage([0, VAN_REAR_CASE.seatTopY, VAN_REAR_CASE.centerZ]);
+    const skin = VAN_REAR_STRUCTURE.worktopSkinThickness / units;
+    mesh(new THREE.BoxGeometry(VAN_REAR_STAGE.width, skin, VAN_REAR_STAGE.depth), timber,
+      [0, VAN_REAR_STAGE.worktopTopY - skin / 2, 0]);
+    const frameHeight = VAN_REAR_STRUCTURE.worktopAssemblyDepth - VAN_REAR_STRUCTURE.worktopSkinThickness;
+    const frameY = VAN_REAR_STRUCTURE.worktopY + VAN_REAR_STRUCTURE.worktopAssemblyDepth / 2
+      - VAN_REAR_STRUCTURE.worktopSkinThickness - frameHeight / 2;
+    for (const x of [-.82, 0, .82]) mesh(new THREE.BoxGeometry(.035 / units, frameHeight / units,
+      (VAN_REAR_STRUCTURE.worktopDepth - .08) / units), steel, vanRearWorldToStage([x, frameY, VAN_REAR_STRUCTURE.worktopCenterZ]));
+    for (const end of [-1, 1]) mesh(new THREE.BoxGeometry(1.675 / units, frameHeight / units, .035 / units), steel,
+      vanRearWorldToStage([0, frameY, VAN_REAR_STRUCTURE.worktopCenterZ + end * (VAN_REAR_STRUCTURE.worktopDepth / 2 - .04)]));
+    mesh(new THREE.BoxGeometry(VAN_REAR_CASE.seatWidth / units, VAN_REAR_CASE.seatThickness / units, VAN_REAR_CASE.seatDepth / units),
+      rubber, [caseSeatTop[0], caseSeatTop[1] - VAN_REAR_CASE.seatThickness / units / 2, caseSeatTop[2]]);
+    for (const stop of vanRearCaseStops()) mesh(new THREE.BoxGeometry(...stop.size.map(n => n / units)),
+      raisedPaint, vanRearWorldToStage(stop.center));
+    // A supported plywood conversion in an overhead worktop cutaway. These
+    // front edge protectors belong to the bench; the actual van threshold is
+    // 570mm farther rearward and is outside this close preparation frame.
+    mesh(new THREE.BoxGeometry(18, .33, .15), edge, [0, -.22, 5.94]);
+    for (const y of [-.33, -.23, -.13]) mesh(new THREE.BoxGeometry(17.9, .018, .016), timber, [0, y, 6.025]);
+    mesh(new THREE.BoxGeometry(18.4, .18, .38), zinc, [0, -.46, 6.13]);
+    mesh(new THREE.BoxGeometry(18.25, .095, .10), rubber, [0, -.34, 5.99]);
+    // Toe board, two honest shelf supports, and the protected cable run below
+    // the load lip give the front an underside instead of a floating slab.
+    mesh(new THREE.BoxGeometry(17.7, 1.02, .18), darkPaint, [0, -1.00, 5.50]);
+    for (const x of [-7.5, 7.5]) mesh(new THREE.BoxGeometry(.38, .92, .65), paint, [x, -.91, 5.33]);
+    mesh(new THREE.BoxGeometry(15.8, .13, .16), steel, [0, -.84, 5.65]);
+
+    // This is a worktop-mounted service upstand, NOT the vehicle bulkhead.
+    // The close cutaway omits the long empty cargo bay behind this worktop.
+    mesh(new THREE.BoxGeometry(18.0, 3.50, .22), darkPaint, [0, 1.53, -5.91]);
+    for (const x of [-6.75, -2.25, 2.25, 6.75]) {
+      mesh(new THREE.BoxGeometry(4.20, 3.10, .12), paint, [x, 1.43, -5.77]);
+      mesh(new THREE.BoxGeometry(.15, 3.28, .22), raisedPaint, [x - 2.18, 1.43, -5.66]);
+    }
+    mesh(new THREE.BoxGeometry(18.2, .15, .28), raisedPaint, [0, 3.28, -5.76]);
+    mesh(new THREE.BoxGeometry(18.15, .19, .22), paint, [0, -.22, -5.81]);
+    for (const side of [-1, 1]) {
+      mesh(new THREE.BoxGeometry(.18, 2.05, 12.05), paint, [side * 9.13, .59, -.02]);
+      mesh(new THREE.BoxGeometry(.20, .12, 12.12), rubber, [side * 9.17, 1.67, -.02]);
+      for (const z of [-4.8, -1.6, 1.6, 4.8]) mesh(new THREE.BoxGeometry(.27, 1.90, .15), raisedPaint, [side * 8.98, .58, z]);
+      // Flush anchor plates sit outside the stock trays and behind their rims.
+      for (const z of [-3.5, 3.5]) {
+        mesh(new THREE.BoxGeometry(.36, .09, .58), steel, [side * 8.55, -.055, z]);
+        const ring = mesh(new THREE.TorusGeometry(.145, .037, 6, 16), zinc, [side * 8.55, .01, z], [-Math.PI / 2, 0, 0]);
+        ring.castShadow = true;
+      }
+    }
+    // The roof/dome fixture is omitted with the overhead cutaway. Its real
+    // source remains above this scene; no invented upstand bulb replaces it.
+    const trayMaterial = mat({ color: '#293a31', roughness: .92 });
     for (const tray of WORKBENCH_TRAYS) {
+      if (tray.vertical) {
+        // Existing faceplate stock stands on a retaining ledge; its rear is
+        // supported by the upstand and the rail never crosses the printed face.
+        mesh(new THREE.BoxGeometry(tray.w, .065, .32), steel, [tray.x, VAN_REAR_STAGE.rackSeatY - .033, tray.z]);
+        mesh(new THREE.BoxGeometry(tray.w, .16, .04), paint, [tray.x, VAN_REAR_STAGE.rackSeatY - .01, tray.z + .18]);
+        continue;
+      }
       mesh(new THREE.BoxGeometry(tray.w, .05, tray.d), trayMaterial, [tray.x, -.028, tray.z]);
-      for (const side of [-1, 1]) mesh(new THREE.BoxGeometry(.035, .05, tray.d), paint, [tray.x + side * tray.w / 2, .007, tray.z]);
+      for (const side of [-1, 1]) mesh(new THREE.BoxGeometry(.035, .05, tray.d), steel, [tray.x + side * tray.w / 2, .007, tray.z]);
+    }
+    for (const tray of WORKBENCH_TRAYS) {
       const name=printedMaterial({width:512,height:64,widthUnits:tray.w-.12,heightUnits:.24,seed:`workbench-tray:${tray.label}`,draw(ctx,m){
         ctx.fillStyle = '#d2c4a0'; ctx.fillRect(0, 0, 512, 64); ctx.fillStyle = '#27352c';
         const ink = fitWorldLetteringLine(ctx, tray.label, { width: 476, height: 48, maxFont: 30, role: 'sansBold' });
@@ -106,12 +207,17 @@ export function createVanWorkbenchStage() {
         const x=(512-ink.width)/2+ink.left;ctx.fillText(ink.text,x,44);
         m.font=ink.font;m.fontKerning=ctx.fontKerning;m.textBaseline=ctx.textBaseline;m.textAlign=ctx.textAlign;m.fillText(ink.text,x,44);
       }});
-      const legend=mesh(new THREE.PlaneGeometry(tray.w-.12,.24),name,[tray.x,.018,tray.z+tray.d/2-.17],[-Math.PI/2,0,0]);legend.name=`physical tray legend: ${tray.label}`;
+      const legend=mesh(new THREE.PlaneGeometry(tray.w-.12,.24),name,
+        tray.vertical ? [tray.x, .61, tray.z + .19] : [tray.x,.018,tray.z+tray.d/2-.17],
+        tray.vertical ? [0,0,0] : [-Math.PI/2,0,0]);legend.name=`physical tray legend: ${tray.label}`;
     }
     // The form remains a physical paper surface, not a glowing readout.
     paper = mesh(new THREE.BoxGeometry(1.65, .025, 1.75), mat({ color: '#c9bea3', roughness: .98 }), [-4.05, .02, 4.4], [0, -.08, 0]);
     const clip = mesh(new THREE.BoxGeometry(.64, .06, .16), mat({ color: '#7b8078', metalness: .9, roughness: .28 }), [-4.11, .082, 3.61], [0, -.08, 0]);
     clip.castShadow = true;
+    // Static cargo fittings occlude the practical as real hardware. Guidance
+    // halos are installed later and deliberately never enter this shadow set.
+    for (const object of scene.children) if (object.isMesh) object.castShadow = true;
   }
   async function init() {
     if (initializing || disposed || typeof document === 'undefined') return initializing;
@@ -124,20 +230,25 @@ export function createVanWorkbenchStage() {
       renderer.setPixelRatio(Math.min(1.5, globalThis.devicePixelRatio || 1));
       renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1.05; renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-      scene = new THREE.Scene(); scene.background = new THREE.Color('#111b1b');
+      scene = new THREE.Scene(); scene.background = new THREE.Color('#0d1719');
       const room = new RoomEnvironment(), pmrem = new THREE.PMREMGenerator(renderer);
-      const environment = pmrem.fromScene(room, .07); scene.environment = environment.texture; scene.environmentIntensity = .95;
+      const environment = pmrem.fromScene(room, .07); scene.environment = environment.texture; scene.environmentIntensity = .38;
       ownedTargets.add(environment); room.dispose(); pmrem.dispose();
       camera = new THREE.OrthographicCamera(-9.4, 9.4, 6.5, -6.5, .1, 70);
       camera.position.set(.1, 21, 15.2); camera.lookAt(0, .2, 0);
-      const ambient = new THREE.HemisphereLight('#b6ccd6', '#332c22', .72); scene.add(ambient);
-      const key = new THREE.DirectionalLight('#ffdfb0', 2.6); key.position.set(-3, 7, 4); key.castShadow = true;
-      key.shadow.mapSize.set(1024, 1024); key.shadow.camera.left = -7; key.shadow.camera.right = 7;
-      key.shadow.camera.left = -10; key.shadow.camera.right = 10;
-      key.shadow.camera.top = 10; key.shadow.camera.bottom = -10; key.shadow.normalBias = .018; key.shadow.bias = -.0003; key.shadow.radius = 3.5;
-      scene.add(key);
-      const rim = new THREE.DirectionalLight('#8bc0dc', 1.5); rim.position.set(4, 4, -5); scene.add(rim);
-      const fill = new THREE.DirectionalLight('#f4d4a5', .5); fill.position.set(0, 1, 6); scene.add(fill);
+      const ambient = new THREE.HemisphereLight(FINISH.outsideBlue, '#362b20', .43); scene.add(ambient);
+      const lamp = VAN_REAR_CARGO_LIGHT, outerAngle = Math.acos(lamp.coneOuterCos), innerAngle = Math.acos(lamp.coneInnerCos);
+      const lampColor = new THREE.Color().setRGB(...lamp.color, THREE.LinearSRGBColorSpace);
+      const key = new THREE.SpotLight(lampColor, 110, lamp.radius / VAN_REAR_STAGE.metresPerUnit,
+        outerAngle, 1 - innerAngle / outerAngle, 1.5);
+      key.position.set(...vanRearWorldToStage(lamp.position));
+      key.target.position.set(...vanRearWorldToStage(lamp.position.map((n, i) => n + lamp.direction[i]))); key.castShadow = true;
+      key.shadow.mapSize.set(1024, 1024); key.shadow.camera.near = .2; key.shadow.camera.far = 34;
+      key.shadow.normalBias = .018; key.shadow.bias = -.0003; key.shadow.radius = 3.5;
+      scene.add(key, key.target);
+      // Weather light enters from the open doors, opposite the rear-mounted
+      // practical. It gives dark cases an edge without a second studio key.
+      const rim = new THREE.DirectionalLight(FINISH.outsideBlue, .78); rim.position.set(3, 4, 8); scene.add(rim);
       loader = new GLTFLoader(); setupShelf(); dirty = true;
       shelfFrame = document.createElement('canvas'); detailFrame = document.createElement('canvas');
       detailScene = new THREE.Scene(); detailScene.background = new THREE.Color('#333e37'); detailScene.environment = scene.environment;
@@ -169,22 +280,25 @@ export function createVanWorkbenchStage() {
   function resetToBench(item) {
     const { object, model, group } = item;
     group.position.set(...object.position); group.rotation.set(0, object.key === 'map' ? -.16 : 0, 0);
-    model.position.set(0, 0, 0); model.rotation.set(object.key === 'case' ? 0 : -Math.PI / 2, 0, 0); model.scale.setScalar(1);
+    model.position.set(0, 0, 0); model.rotation.set(object.key === 'case' || object.upright ? 0 : -Math.PI / 2, 0, 0); model.scale.setScalar(1);
     group.updateMatrixWorld(true);
     // Measure in the item's frame, independent of where its old packing bay was.
-    const box = localBounds(model, group), extent = box.getSize(vec());
+    const box = object.key === 'case' ? vanWorkbenchClosedCaseBounds(THREE, model, group) : localBounds(model, group);
+    const extent = box.getSize(vec());
     const factor = object.width / (object.key === 'case' ? extent.x : Math.max(extent.x, extent.z));
     const center = box.getCenter(vec()); model.scale.setScalar(factor);
     model.position.set(-center.x * factor, -box.min.y * factor, -center.z * factor);
+    // Feet touch the existing rubber seat. Keep the catalogue's anchor and hit
+    // identity while removing the former 6.5mm gap under the physical case.
+    const supportY = object.key === 'case' ? vanRearWorldToStage([0, VAN_REAR_CASE.seatTopY, 0])[1]
+      : object.upright ? VAN_REAR_STAGE.rackSeatY
+      : object.kind === 'variant' && object.group !== 'faceplate' ? VAN_REAR_STAGE.trayTopY : VAN_REAR_STAGE.worktopTopY;
+    model.position.y += supportY - object.position[1];
     item.base = [...object.position]; item.docked = false; item.bay = null; item.lift = 0;
     dirty = true;
   }
   function localBounds(model, group) {
-    group.updateMatrixWorld(true); const inverse = group.matrixWorld.clone().invert(), box = new THREE.Box3();
-    model.traverse(node => { if (!node.isMesh) return;
-      if (!node.geometry.boundingBox) node.geometry.computeBoundingBox();
-      box.union(node.geometry.boundingBox.clone().applyMatrix4(inverse.clone().multiply(node.matrixWorld)));
-    }); return box;
+    return vanWorkbenchVisibleBounds(THREE, model, group);
   }
   function install(object) {
     const slot = object.key, id = object.modelId;
@@ -276,7 +390,7 @@ export function createVanWorkbenchStage() {
   }
   function updateHalos(state, now) {
     const candidates = catalogue.filter(object => object.glow && placed.has(object.key)).map(object => {
-      const box = new THREE.Box3().setFromObject(placed.get(object.key).group), center = box.getCenter(vec()), extent = box.getSize(vec());
+      const box = vanWorkbenchVisibleBounds(THREE, placed.get(object.key).group), center = box.getCenter(vec()), extent = box.getSize(vec());
       return { key: object.key, position: [center.x, .024, center.z], w: (extent.x + .38) / .85, d: (extent.z + .38) / .85 };
     });
     if (!state.difficultyConfirmed) candidates.push({ key: 'difficulty', position: [-4.05, 0, 4.4], w: 2.4, d: 2.6 });
@@ -302,7 +416,7 @@ export function createVanWorkbenchStage() {
     }
   }
   function project(group, rect, inset = 0) {
-    const box = new THREE.Box3().setFromObject(group), points = [];
+    const box = vanWorkbenchVisibleBounds(THREE, group), points = [];
     for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) {
       const point = new THREE.Vector3(x, y, z).project(camera);
       points.push({ x: rect.x + (point.x + 1) * rect.w / 2, y: rect.y + (1 - point.y) * rect.h / 2 });
@@ -407,7 +521,7 @@ export function createVanWorkbenchStage() {
     if (key !== detailKey) {
       detailKey = key; const old = detailScene.getObjectByName('selected-component'); if (old) detailScene.remove(old);
       const object = item.model.clone(true); object.name = 'selected-component'; object.position.set(0, 0, 0); object.scale.setScalar(1); object.rotation.set(0, 0, 0);
-      object.updateMatrixWorld(true); const box = new THREE.Box3().setFromObject(object), size = box.getSize(vec()), center = box.getCenter(vec());
+      object.updateMatrixWorld(true); const box = vanWorkbenchVisibleBounds(THREE, object), size = box.getSize(vec()), center = box.getCenter(vec());
       const scale = 2.1 / Math.max(size.x, size.y, size.z); object.scale.setScalar(scale); object.position.copy(center.multiplyScalar(-scale));
       detailScene.add(object); detailCamera.aspect = w / h; detailCamera.updateProjectionMatrix();
       renderer.setSize(w, h, false); renderer.render(detailScene, detailCamera); renderCount++;

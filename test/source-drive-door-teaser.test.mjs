@@ -1,120 +1,41 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
-import {createDoorDriveTeaser,doorDriveTeaserPoseAt,DOOR_DRIVE_TEASER as C} from '../src/game/source-drive/door-teaser.js';
-import {worldAt} from '../src/game/source-drive/road.js';
+import test from 'node:test';import assert from 'node:assert/strict';import{readFileSync}from'node:fs';
+import{createDoorDriveTeaser,doorDriveTeaserPoseAt,doorDriveCinematicFrame,DOOR_DRIVE_WATER_ENTRY,DOOR_DRIVE_TEASER as C}from'../src/game/source-drive/door-teaser.js';
+import{openingRoadAt,OPENING_ROAD}from'../src/game/source-drive/opening-road.js';
+import{worldAt}from'../src/game/source-drive/road.js';
+import{COASTAL_WORLD_FROM_LOCAL,COASTAL_SETTLED_BODY_WORLD,coastalLocalPoint}from'../src/data/coastal-memory.js';
+const metrics=JSON.parse(readFileSync(new URL('../public/assets/source-drive/geometry/metrics.json',import.meta.url))),near=(a,b,e=2e-5)=>assert.ok(Math.abs(a-b)<e,`${a} != ${b}`),point=(m,p)=>[m[0]*p[0]+m[4]*p[1]+m[8]*p[2]+m[12],m[1]*p[0]+m[5]*p[1]+m[9]*p[2]+m[13],m[2]*p[0]+m[6]*p[1]+m[10]*p[2]+m[14]];
+function advance(c,seconds,{draw=false,input=null}={}){for(let t=0;t<seconds-1e-9;){const h=Math.min(1/60,seconds-t);c.update(h,{input});if(draw)c.frame(metrics);t+=h;}}
+function nearGate(speed=6){const p=worldAt(292);return createDoorDriveTeaser({initialDrive:{x:p.x,z:p.z,heading:p.heading,roadHeight:p.height,speed,furthest:292}});}
+function reachCommit(c){c.start();advance(c,.8);c.input('forward',true);for(let i=0;i<600&&!c.snapshot().commitment;i++)c.update(1/120);assert.ok(c.snapshot().commitment);}
 
-const metrics=JSON.parse(readFileSync(new URL('../public/assets/source-drive/geometry/metrics.json',import.meta.url),'utf8'));
-const point=(m,p)=>[m[0]*p[0]+m[4]*p[1]+m[8]*p[2]+m[12],m[1]*p[0]+m[5]*p[1]+m[9]*p[2]+m[13],m[2]*p[0]+m[6]*p[1]+m[10]*p[2]+m[14]];
-const near=(a,b,e=1e-5)=>assert.ok(Math.abs(a-b)<e,`${a} differs from ${b}`);
-const advance=(teaser,t,dt=1/60)=>{for(let elapsed=0;elapsed<t-1e-9;){const step=Math.min(dt,t-elapsed);teaser.update(step);elapsed+=step;}};
+test('in medias res becomes real driving after a brief entry, with no journey/tape invention',()=>{const c=createDoorDriveTeaser();assert.equal(c.frame(metrics).renderFrame,null);c.start();let f=c.frame(metrics);assert.equal(f.controlsEnabled,false);assert.ok(f.driveState.speed>12);assert.equal(f.renderFrame.radio.cue.id,'service-water');assert.equal(f.driveState.z,600);assert.deepEqual(f.driveState.takes,[]);advance(c,.81);f=c.frame(metrics);assert.equal(f.controlsEnabled,true);assert.equal(f.vehiclePose.controlOwner,'player');assert.equal(f.renderFrame.cinematicLook,false);assert.ok(f.renderFrame.scene.props.some(p=>p.id.startsWith('opening-asphalt-')));assert.ok(f.renderFrame.scene.props.some(p=>p.id==='opening-road-finite-return'),'the return has a real visible boundary');c.dispose();});
 
-test('a fresh teaser owns no journey, opens already moving and hearing an existing service bulletin',()=>{
- const teaser=createDoorDriveTeaser();assert.equal(teaser.snapshot().phase,'idle');assert.equal(teaser.frame(metrics).renderFrame,null);
- assert.equal(teaser.start(),true);assert.equal(teaser.start(),false);
- const first=teaser.frame(metrics);assert.equal(first.phase,'sound-lead');assert.equal(first.coverAlpha,1);assert.equal(first.worldOwner,'drive');
- assert.ok(first.driveState.speed>6);assert.equal(first.renderFrame.radio.audible,true);assert.equal(first.renderFrame.radio.cue.id,'service-water');
- assert.deepEqual(first.driveState.takes,[]);assert.deepEqual(first.driveState.events,[]);assert.equal(first.driveState.activeTake,null);
- assert.equal(first.renderFrame.recording.active,false);assert.equal(first.renderFrame.cinematicLook,true);
- teaser.update(C.soundLeadEnd);near(teaser.snapshot().vehiclePose.distance,258);teaser.dispose();
-});
+test('accelerator, actual steering, brake hold and reverse operate before the cliff',()=>{const c=createDoorDriveTeaser();c.start();advance(c,.81);const start=c.snapshot();assert.equal(c.input('right'),true);c.input('forward');advance(c,.6);let s=c.snapshot();assert.notEqual(s.driveState.heading,start.driveState.heading);assert.notEqual(s.driveState.x,start.driveState.x);c.input('right',false);c.input('forward',false);c.input('brake');advance(c,6);s=c.snapshot();assert.equal(s.driveState.speed,0);assert.equal(s.driveState.brakeHold,true);const stopped=s.driveState.z;c.input('brake',false);advance(c,2);near(c.snapshot().driveState.z,stopped);c.input('reverse');advance(c,2);assert.ok(c.snapshot().driveState.speed<-.1);assert.ok(c.snapshot().driveState.z>stopped);assert.equal(c.snapshot().commitment,null);c.dispose();});
 
-test('the real exposed edge is fixed from the first view while the closed road and world remain present',()=>{
- const teaser=createDoorDriveTeaser();teaser.start();teaser.update(1.1);
- const {scene}=teaser.frame(metrics).renderFrame;
- assert.ok(scene.teaser.removedIds.some(id=>id.startsWith('route-edge-right-')));
- assert.ok(scene.teaser.removedIds.includes('queue-no-road-below'));
- assert.ok(scene.props.some(p=>p.id==='drive_road-298-0'),'retained carriageway has a visible edge');
- assert.ok(scene.props.some(p=>p.id.startsWith('route-edge-left-')),'the opposite rail is still physical');
- assert.ok(scene.props.some(p=>p.id==='queue-standing'),'the existing climbing queue remains');
- teaser.dispose();
-});
+test('waiting and elapsed time cannot consume cliff warnings or force the journey onward',()=>{const a=createDoorDriveTeaser(),b=createDoorDriveTeaser();a.start();b.start();advance(a,.81);advance(b,.81);a.input('brake');b.input('brake');advance(a,6);advance(b,6);const before=a.snapshot();advance(a,110);const after=a.snapshot();assert.equal(after.phase,'free-drive');assert.equal(after.commitment,null);assert.equal(after.driveState.speed,0);for(const k of ['x','y','z'])near(after.vehiclePose.position[k],before.vehiclePose.position[k],1e-8);assert.ok(after.driveState.programTime>before.driveState.programTime+109);const af=a.frame(metrics),bf=b.frame(metrics);assert.deepEqual(af.renderFrame.scene.props.find(p=>p.id==='opening-warning-wheel').matrix,bf.renderFrame.scene.props.find(p=>p.id==='opening-warning-wheel').matrix);assert.equal(af.renderFrame.cinematic.queueLoad,0);a.dispose();b.dispose();});
 
-test('the exposed cliff commits the opening to a loaded forward pull, including attempted brake and reverse input',()=>{
- const teaser=createDoorDriveTeaser();teaser.start();teaser.update(C.departureStart-.01);
- const before=teaser.snapshot();assert.equal(before.vehiclePose.cliffCommitted,false);assert.ok(before.vehiclePose.distance<C.commitDistance);
- teaser.update(.41,{input:{reverse:true,brake:true,forward:false}});
- const committed=teaser.snapshot();assert.equal(committed.vehiclePose.cliffCommitted,true);assert.ok(committed.vehiclePose.distance>C.commitDistance);
- assert.ok(committed.driveState.engineLoad>before.driveState.engineLoad+.4);assert.ok(committed.driveState.throttle>before.driveState.throttle+.3);
- assert.equal(committed.driveState.brakeHold,false);assert.equal(committed.driveState.brakeAmount,0);
- teaser.update(C.fallStart-committed.timeSec+.8,{input:{reverse:true,brake:true}});
- const falling=teaser.snapshot();assert.equal(falling.phase,'fall');assert.equal(falling.vehiclePose.cliffCommitted,true);assert.ok(falling.vehiclePose.position.y<committed.vehiclePose.position.y-3);
- teaser.setPaused(true);const held=teaser.snapshot();teaser.update(99);assert.deepEqual(teaser.snapshot(),held,'the authored commitment still respects the global pause');teaser.dispose();
-});
+test('the player can stop and reverse at the visible cliff without commitment',()=>{const c=nearGate(.2);c.start();advance(c,.81);c.input('brake');advance(c,1);assert.equal(c.snapshot().commitment,null);c.input('brake',false);c.input('reverse');advance(c,1.6);assert.equal(c.snapshot().commitment,null);assert.ok(c.snapshot().vehiclePose.distance<293);c.dispose();});
 
-test('authored motion stays finite and continuous, then falls away from a fixed ground query under gravity',()=>{
- for(let time=0;time<C.duration+.005;time+=.01){
-  const p=doorDriveTeaserPoseAt(time);assert.ok(p.bodyMatrix.every(Number.isFinite));assert.ok(Object.values(p.position).every(Number.isFinite));
-  assert.ok(p.coverAlpha>=0&&p.coverAlpha<=1);assert.ok(p.timeSec>=0&&p.timeSec<=C.duration);
- }
- for(const t of [C.departureStart,C.fallStart,C.impactStart,C.returnStart]){
-  const a=doorDriveTeaserPoseAt(t-1e-6),b=doorDriveTeaserPoseAt(t+1e-6);
-  assert.ok(Math.hypot(...['x','y','z'].map(k=>a.position[k]-b.position[k]))<.001,'a phase change cannot teleport the vehicle');
-  assert.ok(Math.abs(a.pitch-b.pitch)<.001);
- }
- const a=doorDriveTeaserPoseAt(C.fallStart+1),b=doorDriveTeaserPoseAt(C.fallStart+2);
- assert.deepEqual(a.sceneAnchor,b.sceneAnchor);assert.equal(a.distance,C.releaseDistance);
- near(b.verticalVelocity-a.verticalVelocity,-9.81);assert.ok(b.position.y<a.position.y-15);
- assert.ok(b.position.z<a.position.z-5);assert.equal(b.roll,0);
- assert.deepEqual(doorDriveTeaserPoseAt(Infinity),doorDriveTeaserPoseAt(0));
- assert.deepEqual(doorDriveTeaserPoseAt(-1),doorDriveTeaserPoseAt(0));
- near(doorDriveTeaserPoseAt(999).timeSec,C.duration);
-});
+test('a real forward cliff crossing captures reached pose, then rejects controls and respects pause',()=>{const a=nearGate(),b=nearGate();reachCommit(a);reachCommit(b);const at=a.snapshot();assert.equal(at.controlsEnabled,false);assert.equal(at.vehiclePose.controlOwner,'opening-cinematic');assert.ok(at.commitment.capture.distance>=293);assert.equal(a.input('brake'),false);assert.equal(a.setLook({yaw:1,pitch:.4}),false);a.setPaused(true);const frozen=a.snapshot();advance(a,2);assert.deepEqual(a.snapshot(),frozen);a.setPaused(false);advance(a,1);advance(b,1);near(a.snapshot().vehiclePose.position.x,b.snapshot().vehiclePose.position.x);near(a.snapshot().vehiclePose.position.y,b.snapshot().vehiclePose.position.y);assert.ok(a.snapshot().driveState.engineLoad>.8);a.dispose();b.dispose();});
 
-test('falling cabin, eyes, hands, headlamps and accumulated pane share the actual transform without moving fixed scenery',()=>{
- const teaser=createDoorDriveTeaser();teaser.start();teaser.update(C.fallStart+.8);
- const a=teaser.frame(metrics),r=a.renderFrame,scene=r.scene;
- assert.ok(scene.body[13]<worldAt(C.releaseDistance).height-3);
- const expectedEye=point(scene.body,metrics.eye.map((v,i)=>v+metrics.cabinBodyMount[i]));
- scene.eye.forEach((v,i)=>near(v,expectedEye[i],2e-5));
- const glassEye=point(r.weather.worldToCabin,scene.eye);glassEye.forEach((v,i)=>near(v,metrics.eye[i],2e-5));
- assert.ok(scene.teaser.attachedIds.some(id=>id.includes('hand')));
- for(const lamp of scene.lamps.filter(l=>l.id.startsWith('drive-headlamp-'))){const paneLamp=r.weather.headlamps.find(l=>l.x===lamp.x&&l.y===lamp.y&&l.z===lamp.z);assert.ok(paneLamp);}
- near(r.weather.groundY,worldAt(C.releaseDistance).height);
- assert.ok(scene.look.pitch<-.25,'the world view follows the nose down');assert.ok(Math.abs(scene.cameraRoll)<1e-5);
- const standing=scene.props.find(p=>p.id==='queue-standing').matrix.slice();
- teaser.update(.5);const later=teaser.frame(metrics).renderFrame;
- assert.deepEqual(later.scene.props.find(p=>p.id==='queue-standing').matrix,standing);
- assert.ok(later.scene.eye[1]<scene.eye[1]-4);assert.equal(later.weather.groundY,r.weather.groundY);
- assert.ok(later.weather.wetness.revision>r.weather.wetness.revision);teaser.dispose();
-});
+test('the forced plunge is continuous, short, opaque at return and closes exactly once',()=>{const events=[],p=worldAt(292),c=createDoorDriveTeaser({initialDrive:{x:p.x,z:p.z,heading:p.heading,roadHeight:p.height,speed:6,furthest:292},onCoveredReturn:e=>events.push(['covered',e]),onComplete:e=>events.push(['done',e])});reachCommit(c);let last=c.snapshot(),minimumY=Infinity,water=false;const gateTime=last.timeSec;for(let i=0;i<1500&&!c.snapshot().finished;i++){c.update(1/120);const s=c.snapshot();assert.ok(Math.hypot(...['x','y','z'].map(k=>s.vehiclePose.position[k]-last.vehiclePose.position[k]))<.5,'no capture/release/water teleport');if(s.phase==='submerge'){water=true;minimumY=Math.min(minimumY,s.vehiclePose.position.y);}if(s.worldOwner==='return'&&last.worldOwner==='drive')assert.equal(s.coverAlpha,1);last=s;}assert.ok(water&&minimumY<COASTAL_WORLD_FROM_LOCAL[13]+4);assert.ok(last.finished);assert.ok(last.timeSec-gateTime<8.5);assert.deepEqual(events.map(e=>e[0]),['covered','done']);assert.equal(c.frame(metrics).renderFrame,null);c.update(1);assert.equal(events.length,2);c.dispose();});
 
-test('pause freezes camera, programme, water history and blade movement; cadence does not change the local weather history',()=>{
- const a=createDoorDriveTeaser(),b=createDoorDriveTeaser();a.start();b.start();advance(a,3.125,1/24);advance(b,3.125,1/144);
- const af=a.frame(metrics),bf=b.frame(metrics);
- near(af.timeSec,bf.timeSec);assert.deepEqual(af.renderFrame.weather.wetness.data,bf.renderFrame.weather.wetness.data);
- assert.equal(af.weatherRevision,bf.weatherRevision);near(af.wiperPhase,bf.wiperPhase);
- a.setPaused(true);const before=a.snapshot(),pane=a.frame(metrics).renderFrame.weather.wetness.data;
- a.update(500);assert.deepEqual(a.snapshot(),before);assert.deepEqual(a.frame(metrics).renderFrame.weather.wetness.data,pane);
- a.setPaused(false);a.update(99,{paused:true});const hostBefore=a.snapshot();a.update(99,{paused:true});assert.deepEqual(a.snapshot(),hostBefore);
- assert.equal(a.snapshot().driveState.paused,true);a.update(.5,{paused:false});near(a.snapshot().timeSec,3.625);assert.equal(a.snapshot().driveState.paused,false);
- a.dispose();b.dispose();
-});
+test('hull contact and canonical hidden aftermath share the exact coast plane and settled van',()=>{assert.ok(DOOR_DRIVE_WATER_ENTRY>75&&DOOR_DRIVE_WATER_ENTRY<76);const at=doorDriveTeaserPoseAt(DOOR_DRIVE_WATER_ENTRY),before=doorDriveTeaserPoseAt(DOOR_DRIVE_WATER_ENTRY-.01);const lowest=p=>Math.min(...[-1.04,1.04].flatMap(x=>[-3.25,2.55].map(z=>coastalLocalPoint(point(p.bodyMatrix,[x,0,z]))[1])));near(lowest(at),0,1e-4);assert.ok(lowest(before)>0);const settled=doorDriveTeaserPoseAt(88);settled.bodyMatrix.forEach((v,i)=>near(v,COASTAL_SETTLED_BODY_WORLD[i],1e-4));assert.equal(doorDriveTeaserPoseAt(72).position.y>worldAt(302).height-1,true,'no arbitrary metre-long sink through asphalt');});
 
-test('impact returns ownership only beneath opaque cover; return and final callbacks latch once even across a stalled frame',()=>{
- const events=[],teaser=createDoorDriveTeaser({onCoveredReturn:e=>events.push(['covered',e]),onComplete:e=>events.push(['complete',e])});teaser.start();
- teaser.update(C.impactStart-.001);assert.equal(teaser.snapshot().worldOwner,'drive');assert.ok(teaser.snapshot().coverAlpha>.999);
- teaser.update(.001);const covered=teaser.frame(metrics);assert.equal(covered.worldOwner,'return');assert.equal(covered.coverAlpha,1);assert.equal(covered.renderFrame,null);
- assert.deepEqual(events.map(e=>e[0]),['covered']);teaser.update(C.returnStart-C.impactStart+.5);assert.ok(teaser.snapshot().coverAlpha>0&&teaser.snapshot().coverAlpha<1);
- teaser.update(999);teaser.update(999);teaser.start();teaser.skip();assert.deepEqual(events.map(e=>e[0]),['covered','complete']);assert.equal(teaser.snapshot().finished,true);near(teaser.snapshot().timeSec,C.duration);
- const stalled=[],b=createDoorDriveTeaser({onCoveredReturn:e=>stalled.push(['covered',e]),onComplete:e=>stalled.push(['complete',e])});b.start();b.update(999);
- assert.deepEqual(stalled.map(e=>e[0]),['covered','complete']);assert.equal(stalled[0][1].coverAlpha,1);assert.equal(b.snapshot().coverAlpha,0);teaser.dispose();b.dispose();
-});
+test('the complete falling cabin, actual lamps and inverse pane stay attached while scenery stays fixed',()=>{const c=nearGate();reachCommit(c);advance(c,c.snapshot().commitment.lead+.8);const f=c.frame(metrics).renderFrame,s=f.scene;const eye=point(s.body,metrics.eye.map((v,i)=>v+metrics.cabinBodyMount[i]));s.eye.forEach((v,i)=>near(v,eye[i]));const pane=point(f.weather.worldToCabin,s.eye);pane.forEach((v,i)=>near(v,metrics.eye[i]));assert.deepEqual(f.coastalMemory.siteMatrix,COASTAL_WORLD_FROM_LOCAL);assert.equal(f.coastalMemory.lights.length,2);for(let i=0;i<2;i++){const p=point(s.body,metrics.body.headlamps[i]);p.forEach((v,j)=>near(v,f.coastalMemory.lights[i].position[j]));}assert.ok(s.teaser.coastWorldFixed);assert.ok(!s.props.some(p=>p.id==='teaser-exposed-cliff-face'));const coast=s.props.find(p=>p.id==='cm_limestone_coast').matrix.slice();advance(c,.2);assert.deepEqual(c.frame(metrics).renderFrame.scene.props.find(p=>p.id==='cm_limestone_coast').matrix,coast);c.dispose();});
 
-test('skip is an idempotent fade across a covered handoff, preserves pause and never commits a Source take',()=>{
- const events=[],teaser=createDoorDriveTeaser({onCoveredReturn:e=>events.push(['covered',e]),onComplete:e=>events.push(['complete',e])});
- assert.equal(teaser.skip(),false);teaser.start();teaser.update(2);assert.equal(teaser.skip(),true);assert.equal(teaser.skip(),false);
- teaser.setPaused(true);teaser.update(2);assert.equal(teaser.snapshot().coverAlpha,0);assert.equal(events.length,0);
- teaser.setPaused(false);teaser.update(C.skipCoverSeconds/2);const halfway=teaser.snapshot();assert.ok(halfway.coverAlpha>0&&halfway.coverAlpha<1);assert.equal(halfway.worldOwner,'drive');
- teaser.update(C.skipCoverSeconds/2);assert.equal(teaser.snapshot().coverAlpha,1);assert.equal(teaser.snapshot().worldOwner,'return');assert.equal(teaser.frame(metrics).renderFrame,null);
- teaser.update(C.skipReturnSeconds);teaser.update(99);assert.deepEqual(events.map(e=>e[0]),['covered','complete']);assert.equal(events[1][1].skipped,true);
- assert.equal(teaser.snapshot().timeSec,2);assert.deepEqual(teaser.snapshot().driveState.takes,[]);teaser.dispose();
-});
+test('look, physical radio reach and host-owned recording view survive the playable window',()=>{const c=createDoorDriveTeaser();c.start();advance(c,.81,{draw:true});assert.equal(c.lookDelta(90,-50),true);assert.ok(c.snapshot().look.yaw>.2);assert.equal(c.selectStation('music'),true);advance(c,.2,{draw:true});assert.equal(c.snapshot().driveState.station,'service');advance(c,.2,{draw:true});assert.equal(c.snapshot().driveState.station,'music');advance(c,.4,{draw:true});assert.equal(c.power(),true);advance(c,.4,{draw:true});assert.equal(c.snapshot().driveState.radioOn,false);c.setRecordingView({mode:'record',counter:'00:07',level:.31});const f=c.frame(metrics).renderFrame;assert.equal(f.recording.active,true);assert.equal(f.recording.level,.31);assert.equal(f.readout.counter,'00:07');assert.deepEqual(c.snapshot().driveState.takes,[]);c.dispose();});
 
-test('snapshots cannot mutate the controller, and disposal cancels without completion or reactivation',()=>{
- let completed=0,returned=0;const teaser=createDoorDriveTeaser({onComplete:()=>completed++,onCoveredReturn:()=>returned++});teaser.start();teaser.update(1);
- const state=teaser.snapshot();state.driveState.events.push({type:'invented'});state.driveState.x=999;state.vehiclePose.position.y=999;
- assert.deepEqual(teaser.snapshot().driveState.events,[]);assert.notEqual(teaser.snapshot().driveState.x,999);assert.notEqual(teaser.snapshot().vehiclePose.position.y,999);
- assert.equal(teaser.dispose(),true);assert.equal(teaser.dispose(),false);teaser.update(999);assert.equal(teaser.start(),false);assert.equal(teaser.skip(),false);
- assert.equal(teaser.snapshot().driveState.paused,true);assert.equal(teaser.frame(metrics).renderFrame,null);assert.equal(completed,0);assert.equal(returned,0);
-});
+test('pause freezes the actual car, programme, pane history and blade phase',()=>{const c=createDoorDriveTeaser();c.start();advance(c,3.125);c.setPaused(true);const before=c.snapshot(),pane=c.frame(metrics).renderFrame.weather.wetness.data;advance(c,2);assert.deepEqual(c.snapshot(),before);assert.deepEqual(c.frame(metrics).renderFrame.weather.wetness.data,pane);c.setPaused(false);advance(c,.5);near(c.snapshot().timeSec,before.timeSec+.5);c.dispose();});
+
+test('the airborne complete hull clears the same canonical limestone face used by the later bank',async()=>{const{coastalCliffPoint}=await import('../tools/chunk_surfer/source-drive-study/build-coastal-memory.mjs');let smallest=Infinity,inspected=0;for(let t=C.fallStart;t<=DOOR_DRIVE_WATER_ENTRY;t+=.025){const m=doorDriveTeaserPoseAt(t).bodyMatrix;for(const x of[-1.04,0,1.04])for(const y of[0,1.3,2.57])for(const z of[-3.25,-.35,2.55]){const p=coastalLocalPoint(point(m,[x,y,z]));if(p[1]>coastalCliffPoint(p[2],0)[1])continue;let lo=0,hi=1;for(let i=0;i<30;i++){const v=(lo+hi)/2;if(coastalCliffPoint(p[2],v)[1]>p[1])lo=v;else hi=v;}const face=coastalCliffPoint(p[2],(lo+hi)/2);smallest=Math.min(smallest,p[0]-face[0]);inspected++;}}assert.ok(inspected>100);assert.ok(smallest>1,'hull intersects shared bank face; smallest clearance'+smallest);});
+
+test('once the cliff warning is reached, wheel flight and loaded-car strain keep moving during a voluntary stop',()=>{const a=worldAt(287),c=createDoorDriveTeaser({initialDrive:{x:a.x,z:a.z,heading:a.heading,roadHeight:a.height,speed:2,furthest:287}});c.start();advance(c,.81);c.input('brake');advance(c,2);const stopped=c.snapshot();assert.equal(stopped.phase,'free-drive');assert.equal(stopped.driveState.brakeHold,true);assert.ok(stopped.worldMotionClock.warningStartedAt!=null);const before=c.frame(metrics).renderFrame.scene,wheel0=before.props.find(p=>p.id==='opening-warning-wheel'),car0=before.props.find(p=>p.id==='queue-overhead-first');advance(c,.6);const moving=c.frame(metrics).renderFrame.scene,wheel1=moving.props.find(p=>p.id==='opening-warning-wheel'),car1=moving.props.find(p=>p.id==='queue-overhead-first');near(c.snapshot().vehiclePose.distance,stopped.vehiclePose.distance,1e-7);assert.notDeepEqual(wheel0.matrix,wheel1.matrix,'real wheel flight cannot be frozen by holding the brake');assert.ok(wheel1.y<wheel0.y);assert.notDeepEqual(car0.matrix,car1.matrix,'small loaded-body strain keeps its independent physical clock');c.setPaused(true);const held=c.snapshot(),heldWheel=c.frame(metrics).renderFrame.scene.props.find(p=>p.id==='opening-warning-wheel').matrix;advance(c,2);assert.deepEqual(c.snapshot(),held);assert.deepEqual(c.frame(metrics).renderFrame.scene.props.find(p=>p.id==='opening-warning-wheel').matrix,heldWheel);c.dispose();});
+
+test('a legal rear-first crossing cannot bypass the cliff and never spins or pulls back from a distant position',()=>{const a=worldAt(292.8),c=createDoorDriveTeaser({initialDrive:{x:a.x,z:a.z,heading:a.heading+Math.PI,roadHeight:a.height,speed:-3,gear:-1,furthest:292.8}});c.start();for(let i=0;i<240&&!c.snapshot().commitment;i++)c.update(1/120);const initial=c.snapshot(),capture=initial.commitment?.capture;assert.ok(capture);assert.equal(initial.commitment.reason,'forward-road-plane-crossing');assert.equal(initial.commitment.rearFirst,true);assert.ok(capture.distance>=293&&capture.distance<293.05);initial.vehiclePose.bodyMatrix.forEach((v,i)=>near(v,capture.bodyMatrix[i],1e-5));const yaw0=capture.heading;let previous=initial.vehiclePose,sawWater=false,worldReturn=false;for(let i=0;i<1200&&!c.snapshot().finished;i++){c.update(1/120);const s=c.snapshot(),p=s.vehiclePose;assert.ok(Math.abs(Math.atan2(Math.sin(p.heading-yaw0),Math.cos(p.heading-yaw0)))<.04,'rear-first body yaw cannot turn180degrees');assert.ok(Math.hypot(...['x','y','z'].map(k=>p.position[k]-previous.position[k]))<.5);if(s.phase==='submerge'){sawWater=true;const lowest=Math.min(...[-1.04,1.04].flatMap(x=>[-3.25,2.55].map(z=>coastalLocalPoint(point(p.bodyMatrix,[x,0,z]))[1])));assert.ok(lowest<=.001);assert.ok(p.pitch>1,'rear reaches the sea first');const wet=Math.max(0,Math.min(1,p.waterSeconds/4)),flood=wet*wet*(3-2*wet);near(c.frame(metrics).renderFrame.coastalMemory.flood,flood,1e-8);}if(s.worldOwner==='return')worldReturn=true;previous=p;}assert.ok(sawWater&&worldReturn&&c.snapshot().finished);assert.ok(c.snapshot().timeSec-initial.timeSec<8.5);c.dispose();});
+
+test('leaving the actual unsupported side starts from reached pose and velocity instead of following a flat verge',()=>{const a=worldAt(300,2.5),c=createDoorDriveTeaser({initialDrive:{x:a.x,z:a.z,heading:a.heading,roadHeight:a.height,speed:.2,furthest:300}});c.start();c.update(1/120);const at=c.snapshot();assert.equal(at.commitment?.reason,'actual-cliff-support-loss');assert.equal(at.commitment.lead,0);assert.ok(at.commitment.support.lost.length>=2);at.vehiclePose.bodyMatrix.forEach((v,i)=>near(v,at.commitment.capture.bodyMatrix[i],1e-5));const start=at.vehiclePose.position;advance(c,.6);const falling=c.snapshot();near(falling.vehiclePose.position.x,start.x+Math.sin(a.heading)*.2*.6,.06);assert.ok(falling.vehiclePose.position.y<start.y-1.5);assert.ok(falling.vehiclePose.fallSeconds>.59);assert.ok(Math.abs(falling.vehiclePose.roll)<.01,'only the captured suspension roll may decay; no unsupported camera-roll effect is claimed');assert.equal(c.frame(metrics).renderFrame.cameraRoll,0);c.dispose();});
+
+test('creeping over the final plane cannot bypass commitment through a body-speed threshold',()=>{const a=worldAt(292.99999),c=createDoorDriveTeaser({initialDrive:{x:a.x,z:a.z,heading:a.heading,roadHeight:a.height,speed:.08,throttle:0,furthest:292.99999}});c.start();c.update(1/120);assert.equal(c.snapshot().commitment?.reason,'forward-road-plane-crossing');assert.ok(c.snapshot().commitment.capture.speed<.1);c.dispose();});
+
+test('a supported bank approach reaches the real cliff under ordinary input before starting its side fall',async()=>{const{openingCliffSupport,openingRoadSurfaceAt}=await import('../src/game/source-drive/opening-road.js'),a=worldAt(291,5),ground=openingRoadSurfaceAt(a.x,a.z),c=createDoorDriveTeaser({initialDrive:{x:a.x,z:a.z,heading:a.heading+Math.PI/2,roadHeight:ground.height,speed:.5,throttle:0,furthest:291}});c.start();const initial=openingCliffSupport(c.snapshot().driveState);assert.ok(initial.wheels.every(w=>!w.unsupported&&w.supportOwner==='coastal-memory-triangles'));let prior=c.snapshot();for(let i=0;i<1400&&!c.snapshot().commitment;i++){prior=c.snapshot();if(prior.controlsEnabled)c.input('forward');c.update(1/120);}const at=c.snapshot();assert.equal(at.commitment?.reason,'actual-cliff-support-loss');assert.equal(at.commitment.lead,0);assert.ok(at.timeSec>1);assert.ok(at.commitment.support.lost.length>=2);assert.ok(Math.hypot(...['x','y','z'].map(k=>at.vehiclePose.position[k]-prior.vehiclePose.position[k]))<.08,'first falling frame stays at the physically reached cliff');assert.ok(!at.driveState.lastContact,'no invisible former rail can push it off the edge');c.dispose();});

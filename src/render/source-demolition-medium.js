@@ -58,10 +58,12 @@ export function sourceDemolitionMediumTransmittance({camera,uv=[.5,.5],linearDep
     const t=interval[0]+(i+.5)*step;
     density+=sourceDemolitionMediumDensity(camera.eye.map((v,j)=>v+ray[j]*t));
   }
-  // Consumption is already eased by the encounter. A second late steep ramp
-  // left the shortest lower rays lit until one final frame. Grow their optical
-  // depth throughout consumption instead, with no terminal extinction switch.
-  const p=camera.progress,extinction=.035*p+12*p*p;
+  // Consumption is already cubic-eased. The earlier square delayed visible
+  // occupancy until the final fraction of the beat; a linear response instead
+  // extinguishes long sky rays too abruptly at onset. This gentler power opens
+  // the short-floor closure earlier while retaining a bounded sky onset.
+  // Real ray length still controls depth; there is no terminal switch.
+  const p=camera.progress,extinction=.035*p+12*Math.pow(p,1.5);
   return Math.exp(-density*step*extinction);
 }
 
@@ -95,7 +97,7 @@ float mediumTransmission(vec2 uv,float sceneDepth){
     density+=mediumDensity(uMediumEye+ray*t);
   }
   float p=uMediumProgress;
-  float extinction=.035*p+12.0*p*p;
+  float extinction=.035*p+12.0*pow(p,1.5);
   return exp(-density*stepM*extinction);
 }
 `;

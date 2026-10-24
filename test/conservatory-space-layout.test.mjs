@@ -530,6 +530,8 @@ console.log('conservatory space layout tests ok');
   const arcs = FP.floorplan().arcs.filter((arc) => arc.id.startsWith('main-open-well:'));
   assert.equal(arcs.length, 4, 'the main stair has four curving half-coils');
   const [well] = arcs;
+  const shaft = FP.floorplan().stairwells.find((w) => w.owner === 'main-open-well');
+  assert.ok(shaft, 'the main stair stands in a declared stairwell');
   assert.ok(arcs.every((arc) => arc.cx === well.cx && arc.cz === well.cz
     && arc.ri === well.ri && arc.ro === well.ro), 'all four coils share one open well');
 
@@ -542,7 +544,11 @@ console.log('conservatory space layout tests ok');
       const radius = Math.hypot(x + 0.5 - well.cx, z + 0.5 - well.cz);
       if (radius < well.ri) {
         openWellCells += 1;
-        assert.ok(at(x, z).some((span) => span.floor <= -4 && span.ceil >= 14),
+        // Since stair revision 4 the well is part of the stairwell: one column
+        // of air from the ground floor to the roof, the same span as every
+        // other stairwell cell. (The old -4 m bottom was a pit under ground
+        // cells you could walk on.)
+        assert.ok(at(x, z).some((span) => span.floor <= shaft.floor + 1e-6 && span.ceil >= shaft.ceil - 1e-6),
           `the open well remains visible through every floor at ${x},${z}`);
       } else if (radius <= well.ro) {
         treadCells += 1;

@@ -35,14 +35,15 @@ test('inactive/invalid medium is exactly transparent, including reused composite
   assert.equal(transmission({camera:null}),1);
 });
 
-test('absorption grows continuously and reaches black before the opaque handoff',()=>{
+test('absorption grows continuously over the actual eased beat and reaches black before the opaque handoff',()=>{
   let previous=1,maxStep=0;
   for(let i=0;i<=1000;i++){
-    const current=transmission({camera:camera({medium:{...field,progress:i/1000}})});
+    const clock=i/1000,progress=clock*clock*(3-2*clock);
+    const current=transmission({camera:camera({medium:{...field,progress}})});
     assert.ok(current<=previous+1e-12);
     maxStep=Math.max(maxStep,previous-current);previous=current;
   }
-  assert.ok(maxStep<.014,'no one-sample luminance cut in the progress function');
+  assert.ok(maxStep<.014,'no one-sample luminance cut in the real eased consumption beat');
   for(const uv of [[.5,.5],[0,0],[1,0],[0,1],[1,1]]){
     const t=transmission({camera:camera({medium:{...field,progress:.98}}),uv});
     assert.ok(t<.001,`inside-box sky/ground ray ${uv} must already be black: ${t}`);
@@ -67,6 +68,16 @@ test('captured terminal camera and opaque floor cannot leave a bright lower wedg
     assert.ok(transmission({camera:c,uv,linearDepth})<1e-4,
       'physical floor remains well inside the box and must be below acquisition black floor');
   }
+});
+
+test('the captured short floor ray loses substantial radiance before the last half of consumption',()=>{
+  const clock=1/3,progress=clock*clock*(3-2*clock);
+  const c=uniforms({medium:{min:[-14.4,-.4,-172.4],max:[22.4,40.4,-141.6],progress},
+    eye:[4.25,1.62,-156.84],yaw:0,pitch:.02,aspect:1.6});
+  const uv=[.5,.08],direction=ray(c,uv),floorDistance=-c.eye[1]/direction[1];
+  const linearDepth=floorDistance*dot(direction,c.forward);
+  assert.ok(transmission({camera:c,uv,linearDepth})<.2,
+    'the real opaque floor must participate early, rather than remaining clear until the last fraction of the beat');
 });
 
 test('already-eased consumption closes the measured short lower ray for multiple actual frame intervals',()=>{

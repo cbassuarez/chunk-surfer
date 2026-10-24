@@ -2239,6 +2239,411 @@
       }
     },
     {
+      "id": "van-stock-headphones",
+      "copy": "01 / MONITORING",
+      "widthM": 0.18656666666666663,
+      "heightM": 0.0232,
+      "category": "equipment",
+      "process": "printed stock tray legend",
+      "palette": {
+        "ground": [
+          0.82,
+          0.8,
+          0.69
+        ],
+        "ink": [
+          0.025,
+          0.028,
+          0.03
+        ]
+      },
+      "capHeightM": 0.012,
+      "emission": "none",
+      "texelCapPx": 24,
+      "reliefM": 0.000007,
+      "seed": "van-stock-headphones",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          0,
+          -1
+        ],
+        "normal": [
+          0,
+          1,
+          0
+        ],
+        "center": [
+          -0.6379999999999999,
+          1.1129733333333334,
+          1.6080666666666668
+        ]
+      },
+      "finish": {
+        "substrate": "metal support with fired vitreous-enamel face",
+        "coating": "screen-fired dielectric lettering",
+        "roughness": 0.32,
+        "inkRoughness": 0.44,
+        "fieldM": 0.16,
+        "variation": 0.024,
+        "roughnessVariation": 0.055,
+        "microReliefM": 0.000006,
+        "deposit": 0.055,
+        "edgeLoss": 0.1,
+        "sequence": [
+          "fired face remains largely intact",
+          "sheltered ledge accumulates a thin deposit",
+          "isolated actual perimeter impact exposes dull support"
+        ],
+        "limits": [
+          "support alloy is not established; exposed support is neutral, never invented iron rust"
+        ],
+        "version": 1,
+        "profile": "enamel",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      }
+    },
+    {
+      "id": "van-stock-microphone",
+      "copy": "02 / MICROPHONE",
+      "widthM": 0.16240000000000002,
+      "heightM": 0.0232,
+      "category": "equipment",
+      "process": "printed stock tray legend",
+      "palette": {
+        "ground": [
+          0.82,
+          0.8,
+          0.69
+        ],
+        "ink": [
+          0.025,
+          0.028,
+          0.03
+        ]
+      },
+      "capHeightM": 0.012,
+      "emission": "none",
+      "texelCapPx": 24,
+      "reliefM": 0.000007,
+      "seed": "van-stock-microphone",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          0,
+          -1
+        ],
+        "normal": [
+          0,
+          1,
+          0
+        ],
+        "center": [
+          -0.4398333333333333,
+          1.1129733333333334,
+          1.6080666666666668
+        ]
+      },
+      "finish": {
+        "substrate": "metal support with fired vitreous-enamel face",
+        "coating": "screen-fired dielectric lettering",
+        "roughness": 0.32,
+        "inkRoughness": 0.44,
+        "fieldM": 0.16,
+        "variation": 0.024,
+        "roughnessVariation": 0.055,
+        "microReliefM": 0.000006,
+        "deposit": 0.055,
+        "edgeLoss": 0.1,
+        "sequence": [
+          "fired face remains largely intact",
+          "sheltered ledge accumulates a thin deposit",
+          "isolated actual perimeter impact exposes dull support"
+        ],
+        "limits": [
+          "support alloy is not established; exposed support is neutral, never invented iron rust"
+        ],
+        "version": 1,
+        "profile": "enamel",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      }
+    },
+    {
+      "id": "van-stock-recorder",
+      "copy": "03 / AMPLIFIER",
+      "widthM": 0.17206666666666665,
+      "heightM": 0.0232,
+      "category": "equipment",
+      "process": "printed stock tray legend",
+      "palette": {
+        "ground": [
+          0.82,
+          0.8,
+          0.69
+        ],
+        "ink": [
+          0.025,
+          0.028,
+          0.03
+        ]
+      },
+      "capHeightM": 0.012,
+      "emission": "none",
+      "texelCapPx": 24,
+      "reliefM": 0.000007,
+      "seed": "van-stock-recorder",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          0,
+          -1
+        ],
+        "normal": [
+          0,
+          1,
+          0
+        ],
+        "center": [
+          0.4398333333333333,
+          1.1129733333333334,
+          1.6080666666666668
+        ]
+      },
+      "finish": {
+        "substrate": "metal support with fired vitreous-enamel face",
+        "coating": "screen-fired dielectric lettering",
+        "roughness": 0.32,
+        "inkRoughness": 0.44,
+        "fieldM": 0.16,
+        "variation": 0.024,
+        "roughnessVariation": 0.055,
+        "microReliefM": 0.000006,
+        "deposit": 0.055,
+        "edgeLoss": 0.1,
+        "sequence": [
+          "fired face remains largely intact",
+          "sheltered ledge accumulates a thin deposit",
+          "isolated actual perimeter impact exposes dull support"
+        ],
+        "limits": [
+          "support alloy is not established; exposed support is neutral, never invented iron rust"
+        ],
+        "version": 1,
+        "profile": "enamel",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      }
+    },
+    {
+      "id": "van-stock-flashlight",
+      "copy": "04 / LIGHTING",
+      "widthM": 0.18173333333333333,
+      "heightM": 0.0232,
+      "category": "equipment",
+      "process": "printed stock tray legend",
+      "palette": {
+        "ground": [
+          0.82,
+          0.8,
+          0.69
+        ],
+        "ink": [
+          0.025,
+          0.028,
+          0.03
+        ]
+      },
+      "capHeightM": 0.012,
+      "emission": "none",
+      "texelCapPx": 24,
+      "reliefM": 0.000007,
+      "seed": "van-stock-flashlight",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          0,
+          -1
+        ],
+        "normal": [
+          0,
+          1,
+          0
+        ],
+        "center": [
+          0.6428333333333334,
+          1.1129733333333334,
+          1.6080666666666668
+        ]
+      },
+      "finish": {
+        "substrate": "metal support with fired vitreous-enamel face",
+        "coating": "screen-fired dielectric lettering",
+        "roughness": 0.32,
+        "inkRoughness": 0.44,
+        "fieldM": 0.16,
+        "variation": 0.024,
+        "roughnessVariation": 0.055,
+        "microReliefM": 0.000006,
+        "deposit": 0.055,
+        "edgeLoss": 0.1,
+        "sequence": [
+          "fired face remains largely intact",
+          "sheltered ledge accumulates a thin deposit",
+          "isolated actual perimeter impact exposes dull support"
+        ],
+        "limits": [
+          "support alloy is not established; exposed support is neutral, never invented iron rust"
+        ],
+        "version": 1,
+        "profile": "enamel",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      }
+    },
+    {
+      "id": "van-rack-faceplates",
+      "copy": "SERVICE / FACEPLATES",
+      "widthM": 0.6215666666666666,
+      "heightM": 0.0232,
+      "category": "equipment",
+      "process": "printed stock tray legend",
+      "palette": {
+        "ground": [
+          0.82,
+          0.8,
+          0.69
+        ],
+        "ink": [
+          0.025,
+          0.028,
+          0.03
+        ]
+      },
+      "capHeightM": 0.012,
+      "emission": "none",
+      "texelCapPx": 24,
+      "reliefM": 0.000007,
+      "seed": "van-rack-faceplates",
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "center": [
+          0,
+          1.1696,
+          0.8121333333333335
+        ]
+      },
+      "finish": {
+        "substrate": "metal support with fired vitreous-enamel face",
+        "coating": "screen-fired dielectric lettering",
+        "roughness": 0.32,
+        "inkRoughness": 0.44,
+        "fieldM": 0.16,
+        "variation": 0.024,
+        "roughnessVariation": 0.055,
+        "microReliefM": 0.000006,
+        "deposit": 0.055,
+        "edgeLoss": 0.1,
+        "sequence": [
+          "fired face remains largely intact",
+          "sheltered ledge accumulates a thin deposit",
+          "isolated actual perimeter impact exposes dull support"
+        ],
+        "limits": [
+          "support alloy is not established; exposed support is neutral, never invented iron rust"
+        ],
+        "version": 1,
+        "profile": "enamel",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      }
+    },
+    {
       "id": "city_phone_box:0",
       "copy": "TELEPHONE",
       "widthM": 0.753,
@@ -8445,14 +8850,14 @@
       "substrate": {
         "asset": "conservatory-acquisitions.glb",
         "mesh": "power_box_01",
-        "albedoPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/dda0321fbf1d1cec0197-albedo.png",
-        "normalPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/dda0321fbf1d1cec0197-normal.png",
-        "ormPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/dda0321fbf1d1cec0197-orm.png",
+        "albedoPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-albedo.png",
+        "normalPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-normal.png",
+        "ormPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-orm.png",
         "roughnessFactor": 1,
         "metallicFactor": 1,
         "normalScale": 1,
         "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
-        "projectionReport": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/dda0321fbf1d1cec0197-report.json"
+        "projectionReport": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-report.json"
       },
       "reliefM": 0.000007,
       "seed": "acq-services-panel-pool",
@@ -8541,14 +8946,14 @@
       "substrate": {
         "asset": "conservatory-acquisitions.glb",
         "mesh": "power_box_01",
-        "albedoPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/dda0321fbf1d1cec0197-albedo.png",
-        "normalPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/dda0321fbf1d1cec0197-normal.png",
-        "ormPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/dda0321fbf1d1cec0197-orm.png",
+        "albedoPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-albedo.png",
+        "normalPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-normal.png",
+        "ormPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-orm.png",
         "roughnessFactor": 1,
         "metallicFactor": 1,
         "normalScale": 1,
         "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
-        "projectionReport": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/dda0321fbf1d1cec0197-report.json"
+        "projectionReport": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-report.json"
       },
       "reliefM": 0.000007,
       "seed": "acq-services-panel-foh",
@@ -8637,14 +9042,14 @@
       "substrate": {
         "asset": "conservatory-acquisitions.glb",
         "mesh": "power_box_01",
-        "albedoPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/dda0321fbf1d1cec0197-albedo.png",
-        "normalPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/dda0321fbf1d1cec0197-normal.png",
-        "ormPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/dda0321fbf1d1cec0197-orm.png",
+        "albedoPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-albedo.png",
+        "normalPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-normal.png",
+        "ormPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-orm.png",
         "roughnessFactor": 1,
         "metallicFactor": 1,
         "normalScale": 1,
         "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
-        "projectionReport": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/dda0321fbf1d1cec0197-report.json"
+        "projectionReport": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-report.json"
       },
       "reliefM": 0.000007,
       "seed": "acq-services-panel-practice",
@@ -8733,14 +9138,14 @@
       "substrate": {
         "asset": "conservatory-acquisitions.glb",
         "mesh": "power_box_01",
-        "albedoPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/dda0321fbf1d1cec0197-albedo.png",
-        "normalPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/dda0321fbf1d1cec0197-normal.png",
-        "ormPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/dda0321fbf1d1cec0197-orm.png",
+        "albedoPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-albedo.png",
+        "normalPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-normal.png",
+        "ormPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-orm.png",
         "roughnessFactor": 1,
         "metallicFactor": 1,
         "normalScale": 1,
         "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
-        "projectionReport": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/dda0321fbf1d1cec0197-report.json"
+        "projectionReport": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-report.json"
       },
       "reliefM": 0.000007,
       "seed": "acq-services-panel-academic",
@@ -8829,14 +9234,14 @@
       "substrate": {
         "asset": "conservatory-acquisitions.glb",
         "mesh": "power_box_01",
-        "albedoPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/dda0321fbf1d1cec0197-albedo.png",
-        "normalPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/dda0321fbf1d1cec0197-normal.png",
-        "ormPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/dda0321fbf1d1cec0197-orm.png",
+        "albedoPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-albedo.png",
+        "normalPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-normal.png",
+        "ormPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-orm.png",
         "roughnessFactor": 1,
         "metallicFactor": 1,
         "normalScale": 1,
         "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
-        "projectionReport": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/dda0321fbf1d1cec0197-report.json"
+        "projectionReport": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-report.json"
       },
       "reliefM": 0.000007,
       "seed": "acq-services-panel-plant",
@@ -8926,14 +9331,14 @@
       "substrate": {
         "asset": "conservatory-acquisitions.glb",
         "mesh": "sofa_01",
-        "albedoPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/216882b703a68a61f6a4-albedo.png",
-        "normalPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/216882b703a68a61f6a4-normal.png",
-        "ormPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/216882b703a68a61f6a4-orm.png",
+        "albedoPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/216882b703a68a61f6a4-albedo.png",
+        "normalPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/216882b703a68a61f6a4-normal.png",
+        "ormPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/216882b703a68a61f6a4-orm.png",
         "roughnessFactor": 1,
         "metallicFactor": 1,
         "normalScale": 1,
         "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
-        "projectionReport": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/216882b703a68a61f6a4-report.json"
+        "projectionReport": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/216882b703a68a61f6a4-report.json"
       },
       "reliefM": 0.000007,
       "seed": "acq-foyer-sofa-01",
@@ -9022,14 +9427,14 @@
       "substrate": {
         "asset": "conservatory-acquisitions.glb",
         "mesh": "arm_chair_01",
-        "albedoPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/2dc386db3b7ebb3ad776-albedo.png",
-        "normalPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/2dc386db3b7ebb3ad776-normal.png",
-        "ormPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/2dc386db3b7ebb3ad776-orm.png",
+        "albedoPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/2dc386db3b7ebb3ad776-albedo.png",
+        "normalPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/2dc386db3b7ebb3ad776-normal.png",
+        "ormPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/2dc386db3b7ebb3ad776-orm.png",
         "roughnessFactor": 1,
         "metallicFactor": 1,
         "normalScale": 1,
         "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
-        "projectionReport": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/2dc386db3b7ebb3ad776-report.json"
+        "projectionReport": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/2dc386db3b7ebb3ad776-report.json"
       },
       "reliefM": 0.000007,
       "seed": "deadend-ground-armchair",
@@ -9118,14 +9523,14 @@
       "substrate": {
         "asset": "conservatory-acquisitions.glb",
         "mesh": "arm_chair_01",
-        "albedoPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/2dc386db3b7ebb3ad776-albedo.png",
-        "normalPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/2dc386db3b7ebb3ad776-normal.png",
-        "ormPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/2dc386db3b7ebb3ad776-orm.png",
+        "albedoPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/2dc386db3b7ebb3ad776-albedo.png",
+        "normalPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/2dc386db3b7ebb3ad776-normal.png",
+        "ormPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/2dc386db3b7ebb3ad776-orm.png",
         "roughnessFactor": 1,
         "metallicFactor": 1,
         "normalScale": 1,
         "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
-        "projectionReport": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/2dc386db3b7ebb3ad776-report.json"
+        "projectionReport": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/2dc386db3b7ebb3ad776-report.json"
       },
       "reliefM": 0.000007,
       "seed": "acq-foyer-armchair-01",
@@ -9214,14 +9619,14 @@
       "substrate": {
         "asset": "conservatory-acquisitions.glb",
         "mesh": "classic_console_01",
-        "albedoPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/e3d5344354716afb74a5-albedo.png",
-        "normalPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/e3d5344354716afb74a5-normal.png",
-        "ormPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/e3d5344354716afb74a5-orm.png",
+        "albedoPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/e3d5344354716afb74a5-albedo.png",
+        "normalPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/e3d5344354716afb74a5-normal.png",
+        "ormPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/e3d5344354716afb74a5-orm.png",
         "roughnessFactor": 1,
         "metallicFactor": 1,
         "normalScale": 1,
         "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
-        "projectionReport": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/e3d5344354716afb74a5-report.json"
+        "projectionReport": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/e3d5344354716afb74a5-report.json"
       },
       "reliefM": 0.000007,
       "seed": "acq-foyer-console-01",
@@ -9480,14 +9885,14 @@
       "substrate": {
         "asset": "conservatory-acquisitions.glb",
         "mesh": "green_chair_01",
-        "albedoPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
-        "normalPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
-        "ormPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
+        "albedoPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
+        "normalPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
+        "ormPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
         "roughnessFactor": 1,
         "metallicFactor": 1,
         "normalScale": 1,
         "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
-        "projectionReport": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/748cfa6311eb1e56f3df-report.json"
+        "projectionReport": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-report.json"
       },
       "reliefM": 0.000007,
       "seed": "acq-practice-chair-1",
@@ -9576,14 +9981,14 @@
       "substrate": {
         "asset": "conservatory-acquisitions.glb",
         "mesh": "green_chair_01",
-        "albedoPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
-        "normalPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
-        "ormPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
+        "albedoPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
+        "normalPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
+        "ormPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
         "roughnessFactor": 1,
         "metallicFactor": 1,
         "normalScale": 1,
         "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
-        "projectionReport": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/748cfa6311eb1e56f3df-report.json"
+        "projectionReport": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-report.json"
       },
       "reliefM": 0.000007,
       "seed": "acq-practice-chair-2",
@@ -9672,14 +10077,14 @@
       "substrate": {
         "asset": "conservatory-acquisitions.glb",
         "mesh": "green_chair_01",
-        "albedoPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
-        "normalPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
-        "ormPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
+        "albedoPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
+        "normalPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
+        "ormPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
         "roughnessFactor": 1,
         "metallicFactor": 1,
         "normalScale": 1,
         "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
-        "projectionReport": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/748cfa6311eb1e56f3df-report.json"
+        "projectionReport": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-report.json"
       },
       "reliefM": 0.000007,
       "seed": "acq-practice-chair-3",
@@ -9768,14 +10173,14 @@
       "substrate": {
         "asset": "conservatory-acquisitions.glb",
         "mesh": "green_chair_01",
-        "albedoPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
-        "normalPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
-        "ormPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
+        "albedoPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
+        "normalPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
+        "ormPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
         "roughnessFactor": 1,
         "metallicFactor": 1,
         "normalScale": 1,
         "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
-        "projectionReport": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/748cfa6311eb1e56f3df-report.json"
+        "projectionReport": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-report.json"
       },
       "reliefM": 0.000007,
       "seed": "acq-practice-chair-4",
@@ -9864,14 +10269,14 @@
       "substrate": {
         "asset": "conservatory-acquisitions.glb",
         "mesh": "green_chair_01",
-        "albedoPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
-        "normalPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
-        "ormPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
+        "albedoPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
+        "normalPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
+        "ormPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
         "roughnessFactor": 1,
         "metallicFactor": 1,
         "normalScale": 1,
         "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
-        "projectionReport": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/748cfa6311eb1e56f3df-report.json"
+        "projectionReport": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-report.json"
       },
       "reliefM": 0.000007,
       "seed": "acq-practice-chair-5",
@@ -9960,14 +10365,14 @@
       "substrate": {
         "asset": "conservatory-acquisitions.glb",
         "mesh": "green_chair_01",
-        "albedoPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
-        "normalPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
-        "ormPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
+        "albedoPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
+        "normalPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
+        "ormPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
         "roughnessFactor": 1,
         "metallicFactor": 1,
         "normalScale": 1,
         "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
-        "projectionReport": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/748cfa6311eb1e56f3df-report.json"
+        "projectionReport": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-report.json"
       },
       "reliefM": 0.000007,
       "seed": "acq-practice-chair-6",
@@ -10056,14 +10461,14 @@
       "substrate": {
         "asset": "conservatory-acquisitions.glb",
         "mesh": "green_chair_01",
-        "albedoPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
-        "normalPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
-        "ormPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
+        "albedoPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
+        "normalPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
+        "ormPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
         "roughnessFactor": 1,
         "metallicFactor": 1,
         "normalScale": 1,
         "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
-        "projectionReport": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/748cfa6311eb1e56f3df-report.json"
+        "projectionReport": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-report.json"
       },
       "reliefM": 0.000007,
       "seed": "acq-practice-chair-7",
@@ -10152,14 +10557,14 @@
       "substrate": {
         "asset": "conservatory-acquisitions.glb",
         "mesh": "green_chair_01",
-        "albedoPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
-        "normalPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
-        "ormPath": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
+        "albedoPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
+        "normalPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
+        "ormPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
         "roughnessFactor": 1,
         "metallicFactor": 1,
         "normalScale": 1,
         "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
-        "projectionReport": "/Users/seb/Documents/Codex/2026-10-17/kin/work/iteration-2/baked/lettering/substrates/748cfa6311eb1e56f3df-report.json"
+        "projectionReport": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-report.json"
       },
       "reliefM": 0.000007,
       "seed": "acq-practice-chair-8",

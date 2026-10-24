@@ -18,7 +18,8 @@ function production(name) {
 function harness() {
   const h = {
     px: 20, py: -2000, CELL: .5, paused: false, hushRunActive: false,
-    sourceDriveSession: null, sourcePubScene: null, sourceContinuationScene: null,
+    sourceDriveSession: null, sourcePubScene: null, sourceContinuationScene: null, coastalMemoryScene: null,
+    sourceEarthfallAudio: null,
     sourceDemolitionAudio: null, sourceDemolitionAudioRuntime: null, sourceDemolitionComparison: 'final',
     assetLoaded: true, mode: 'full', reducedDread: false, yaw: .37, floor: 15.2,
     recording: false, listening: false, playback: false,

@@ -34,6 +34,7 @@
 
 import { F, ZONE } from '../data/floorplan/legend.js';
 import { wallFaces, yawFromNormal } from './wall-contact.js';
+import { physicalWallFaceHasHost } from './baseboard-hosting.js';
 import { CORRIDOR_SPACE_BY_DOOR_ID, LANDING_FITTINGS } from '../data/corridor-lettering.js';
 
 // Runtime cells per authored metre. Props are authored in metres; the plan and
@@ -306,6 +307,12 @@ export function wallFixtures(plan, cells = corridorCells(plan)) {
       const seen = n.get(run.group) || 0;
       const spec = kit[seen % kit.length];
       n.set(run.group, seen + 1);
+      // A logical atrium void bounds a narrow walk, but supplies no rendered
+      // wall above the railing. Do not suspend service valves/signs in its air.
+      // Keep every other wing's existing dressing and stable kit sequence.
+      if(run.group==='academic'&&!physicalWallFaceHasHost(plan,{
+        x:cx,y:cy,nx:run.nx,ny:run.ny,floor:plan.floorAt(cx,cy),
+      },{bottom:plan.floorAt(cx,cy)+.15,height:2.85,halfWidthCells:.48}))continue;
       out.push({
         id: `corridor-fixture-${run.group}-${run.axis}${run.along}-${at}`,
         yaw: yawFromNormal(run.nx, run.ny),

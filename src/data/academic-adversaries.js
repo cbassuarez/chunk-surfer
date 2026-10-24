@@ -1,4 +1,4 @@
-// The academic floor keeps its guests. Held Note is a separate ceiling body,
+// The reception gradually empties on real returns. Held Note remains a separate ceiling body,
 // using the original harmless lure/reveal before one fixed, avoidable sweep.
 export const ACADEMIC_ADVERSARY_TIMING=Object.freeze({
   maxTick:.1,lureCadence:8.6,reveal:1.4,demonstration:4.3,

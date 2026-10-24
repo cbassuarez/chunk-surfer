@@ -1,11 +1,37 @@
 {
-  "bytes": 3334596,
-  "triangles": 93156,
+  "bytes": 2932272,
+  "triangles": 86724,
   "earScale": 6.4,
-  "artRevision": "severed-cartilage-pressure-brush-v3-matte-pigment",
+  "artRevision": "rolled-pinna-v5-solid-root-supported-crowns",
+  "heapSupport": {
+    "stop_listening_heap_a": {
+      "count": 42,
+      "crowns": 6,
+      "gridStepM": 0.0005,
+      "maxLeanDegrees": 32.3859,
+      "supportedByEar": 33,
+      "maxClearanceM": 0.00005
+    },
+    "stop_listening_heap_b": {
+      "count": 26,
+      "crowns": 6,
+      "gridStepM": 0.0005,
+      "maxLeanDegrees": 31.1528,
+      "supportedByEar": 23,
+      "maxClearanceM": 0.00005
+    },
+    "stop_listening_heap_c": {
+      "count": 34,
+      "crowns": 6,
+      "gridStepM": 0.0005,
+      "maxLeanDegrees": 29.8548,
+      "supportedByEar": 24,
+      "maxClearanceM": 0.00005
+    }
+  },
   "meshes": {
     "stop_listening_ear_a": {
-      "triangles": 740,
+      "triangles": 1936,
       "materials": [
         "stop listening ear skin",
         "stop listening ear deep",
@@ -14,7 +40,7 @@
       ]
     },
     "stop_listening_ear_b": {
-      "triangles": 740,
+      "triangles": 1936,
       "materials": [
         "stop listening ear skin",
         "stop listening ear deep",
@@ -23,7 +49,7 @@
       ]
     },
     "stop_listening_ear_c": {
-      "triangles": 740,
+      "triangles": 1936,
       "materials": [
         "stop listening ear skin",
         "stop listening ear deep",
@@ -32,7 +58,7 @@
       ]
     },
     "stop_listening_ear_d": {
-      "triangles": 740,
+      "triangles": 1936,
       "materials": [
         "stop listening ear skin",
         "stop listening ear deep",
@@ -41,7 +67,7 @@
       ]
     },
     "stop_listening_ear_e": {
-      "triangles": 740,
+      "triangles": 1936,
       "materials": [
         "stop listening ear skin",
         "stop listening ear deep",
@@ -50,7 +76,7 @@
       ]
     },
     "stop_listening_ear_f": {
-      "triangles": 740,
+      "triangles": 1936,
       "materials": [
         "stop listening ear skin",
         "stop listening ear deep",
@@ -59,7 +85,7 @@
       ]
     },
     "stop_listening_heap_a": {
-      "triangles": 29632,
+      "triangles": 23464,
       "materials": [
         "stop listening ear skin",
         "stop listening ear deep",
@@ -68,7 +94,7 @@
       ]
     },
     "stop_listening_heap_b": {
-      "triangles": 18368,
+      "triangles": 15464,
       "materials": [
         "stop listening ear skin",
         "stop listening ear deep",
@@ -77,7 +103,7 @@
       ]
     },
     "stop_listening_heap_c": {
-      "triangles": 24000,
+      "triangles": 19464,
       "materials": [
         "stop listening ear skin",
         "stop listening ear deep",

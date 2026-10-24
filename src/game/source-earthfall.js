@@ -1,4 +1,4 @@
-import { SOURCE_EARTHFALL as C, SOURCE_EARTHFALL_CUES, earthfallContains, earthfallCatchHeight, earthfallCatchVelocity } from '../data/source-earthfall.js';
+import { SOURCE_EARTHFALL as C, SOURCE_EARTHFALL_CUES, SOURCE_EARTHFALL_MATERIAL_CELL, earthfallContains, earthfallCatchHeight, earthfallCatchVelocity, earthfallExitDoorHeight, sourceEarthfallFracturePose } from '../data/source-earthfall.js';
 
 const copy = value => JSON.parse(JSON.stringify(value));
 const finite = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
@@ -67,8 +67,9 @@ export function normalizeSourceEarthfall(value, { runId, returnPose } = {}) {
 
 export function sourceEarthfallSupportAt(x, z, value = {}) {
   const state = normalizeSourceEarthfall(value);
-  if (!earthfallContains(C.earth, x, z)) return null;
-  if (state.phase === 'intact' || state.phase === 'fracturing') return { id: 'earthfall-upper-earth', y: C.upperFloor, material: 'source-earth', kind: 'earth' };
+  const upper = state.phase === 'intact' || state.phase === 'fracturing';
+  if (!earthfallContains(upper ? C.earth : C.catch, x, z)) return null;
+  if (upper) return { id: 'earthfall-upper-earth', y: C.upperFloor, material: 'source-earth', kind: 'earth' };
   const y = state.phase === 'catching' ? earthfallCatchHeight(state.catchElapsed, state.catchVelocity)
     : state.phase === 'landed' ? C.lowerFloor : C.catch.interceptY;
   return { id: 'earthfall-folio-catch', y, material: 'source-folio', kind: 'catch' };
@@ -85,7 +86,7 @@ function receipt(state, type, events) {
 }
 
 const doorFrame = (state, kind) => ({ id: `source-earthfall-${kind}`, kind,
-  x: 0, z: kind === 'entry' ? 0 : C.passage.exitZ, y: kind === 'entry' ? C.upperFloor : C.lowerFloor,
+  x: 0, z: kind === 'entry' ? 0 : C.passage.exitZ, y: kind === 'entry' ? C.upperFloor : earthfallExitDoorHeight(state.elapsed),
   width: C.door.width, height: C.door.height,
   open: !!state[`${kind}Door`].open, progress: state[`${kind}Door`].progress,
   passable: state[`${kind}Door`].progress >= 1 - 1e-8 && (kind === 'entry' ? ['intact', 'fracturing'].includes(state.phase) : state.phase === 'landed'),
@@ -119,11 +120,13 @@ function doorBlocks(state, from, to) {
   for (const kind of ['entry', 'exit']) {
     const door = doorFrame(state, kind);
     if (Math.abs(state.feet - door.y) > .45 || (from.z > door.z) === (to.z > door.z)) continue;
-    if (Math.abs(crossingX(from, to, door.z)) <= C.door.width / 2 + C.bodyRadius && !door.passable) return true;
+    const x = crossingX(from, to, door.z);
+    if (Math.abs(x) <= C.door.width / 2 + C.bodyRadius && (!door.passable || !withinDoor(x))) return true;
   }
   return false;
 }
 function move(state, input, dt, events) {
+  if (input.acceptedStep === false) return;
   const forward = clamp(input.forward ?? 0, -1, 1), side = clamp(input.side ?? 0, -1, 1);
   const length = Math.max(1, Math.hypot(forward, side));
   const grounded = ['intact', 'fracturing', 'landed'].includes(state.phase);
@@ -133,11 +136,10 @@ function move(state, input, dt, events) {
   const from = { x: state.x, z: state.z }, to = { x: state.x + dx, z: state.z + dz };
   // Grounded movement ends at the actual finite sheet, whose edge is rendered.
   // Airborne movement never snaps or clamps to an invisible path/corridor.
-  if (grounded && !earthfallContains(C.earth, to.x, to.z, C.bodyRadius) || doorBlocks(state, from, to)) return;
+  if (grounded && !earthfallContains(state.phase === 'landed' ? C.catch : C.earth, to.x, to.z, C.bodyRadius) || doorBlocks(state, from, to)) return;
   state.x = to.x; state.z = to.z;
-  if (input.acceptedStep === false) return;
   if (!state.committed && from.z > C.commitmentZ && to.z <= C.commitmentZ
-    && to.z < from.z && Math.abs(crossingX(from, to, C.commitmentZ)) <= C.passage.halfWidth - C.bodyRadius) {
+    && to.z < from.z) {
     state.committed = true; state.committedAt = state.clock; state.elapsed = 0; state.phase = 'fracturing';
     receipt(state, 'strain', events);
   }
@@ -199,6 +201,7 @@ export function stepSourceEarthfall(value, input = {}) {
 
 export function sourceEarthfallFrame(value) {
   const state = normalizeSourceEarthfall(value);
+  const material = sourceEarthfallFracturePose(SOURCE_EARTHFALL_MATERIAL_CELL.index, state.elapsed, SOURCE_EARTHFALL_MATERIAL_CELL.center);
   const catchSurfaceY = state.phase === 'landed' ? 0 : state.phase === 'catching'
     ? earthfallCatchHeight(state.catchElapsed, state.catchVelocity) : C.catch.interceptY;
   const lost = !['intact', 'fracturing'].includes(state.phase);
@@ -211,12 +214,12 @@ export function sourceEarthfallFrame(value) {
     geometry: {
       upperEarth: { id: 'earthfall-upper-earth', ...C.earth, y: C.upperFloor, support: !lost, material: 'source-earth' },
       catchSurface: { id: 'earthfall-folio-catch', ...C.catch, y: catchSurfaceY, material: 'source-folio' },
-      lowerApron: { id: 'earthfall-lower-apron', ...C.earth, y: C.lowerFloor, material: 'source-path' },
+      lowerApron: { id: 'earthfall-lower-apron', ...C.catch, y: C.lowerFloor, material: 'source-path' },
       path: { minX: -C.passage.halfWidth, maxX: C.passage.halfWidth, minZ: C.passage.exitZ - 3, maxZ: 3, y: C.lowerFloor },
     },
     anchors: { entry: { x: 0, y: 101.2, z: 0 }, earth: { x: 0, y: 100, z: -14 },
-      front: { x: state.x, y: state.feet + 1, z: state.z }, fallingMaterial: { x: state.x + 2, y: state.feet + 3, z: state.z - 2 },
-      catch: { x: state.x, y: catchSurfaceY, z: state.z }, exit: { x: 0, y: 1.2, z: C.passage.exitZ } },
+      front: { x: state.x, y: state.feet + 1, z: state.z }, fallingMaterial: { x: material.x, y: material.y, z: material.z },
+      catch: { x: state.x, y: catchSurfaceY, z: state.z }, exit: { x: 0, y: earthfallExitDoorHeight(state.elapsed) + 1.2, z: C.passage.exitZ } },
     events: state.receipts.map(item => ({ ...copy(item), age: Math.max(0, state.clock - item.at) })),
   };
 }

@@ -1,7 +1,7 @@
 // Promoted from the verified Source drive study; game lifecycle is source-drive-session.js.
 // Bounded single-track van dynamics, not a calibrated vehicle simulator.
 import {roadAt,roadSurfaceAt} from './road.js';
-export const VEHICLE=Object.freeze({mass:2350,wheelbase:3.1,frontDistance:1.35,rearDistance:1.75,track:1.68,cgHeight:.78,yawInertia:3700,frontStiffness:72000,rearStiffness:90000,driveForce:4300,power:58000,brakeForce:13200,reverseForce:2600,maxSpeed:16,maxReverse:4,maxWheelAngle:.52,steeringRatio:17.5});
+export const VEHICLE=Object.freeze({mass:2350,wheelbase:2.835,frontDistance:1.3,rearDistance:1.535,track:1.66,cgHeight:.78,yawInertia:3700,frontStiffness:72000,rearStiffness:90000,driveForce:4300,power:58000,brakeForce:13200,reverseForce:2600,maxSpeed:16,maxReverse:4,maxWheelAngle:.52,steeringRatio:17.5});
 export const PHYSICS_STEP=1/120;
 const G=9.81,clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),mix=(a,b,t)=>a+(b-a)*t;
 const smooth=(a,b,v)=>{const t=clamp((v-a)/(b-a),0,1);return t*t*(3-2*t);};
@@ -10,7 +10,7 @@ const defaults={lateralSpeed:0,yawRate:0,wheelAngle:0,steeringWheelAngle:0,gear:
 export function ensureVehicle(s){for(const[k,v]of Object.entries(defaults))if(!Number.isFinite(s[k])&&typeof v==='number'||s[k]==null)s[k]=v;s.brakeHold=s.brakeHold===true;return s;}
 export function applyRoadImpulse(s,velocityMps=0){ensureVehicle(s);s.heaveVelocity+=clamp(Number(velocityMps)||0,-.5,.5);return s;}
 function spring(s,key,velocity,target,h,frequency=1.55,damping=.72){const w=Math.PI*2*frequency;s[velocity]+=(w*w*(target-s[key])-2*damping*w*s[velocity])*h;s[key]+=s[velocity]*h;}
-export function stepVehicle(s,h,input={}){
+export function stepVehicle(s,h,input={},roadSampler=roadSurfaceAt){
  ensureVehicle(s);const p=VEHICLE,u=s.speed,v=s.lateralSpeed,abs=Math.abs(u);
  const driveDirection=input.forward&&!input.reverse?1:input.reverse&&!input.forward?-1:0;
  const opposing=driveDirection!==0&&u*driveDirection<-.16;
@@ -36,9 +36,9 @@ export function stepVehicle(s,h,input={}){
  s.steer=s.wheelAngle/p.maxWheelAngle;
  s.steeringWheelAngle=s.wheelAngle*p.steeringRatio;
  const c=Math.cos(s.heading),n=Math.sin(s.heading),wheels=[];
- for(const axle of[p.frontDistance,-p.rearDistance])for(const side of[-p.track/2,p.track/2])wheels.push(roadSurfaceAt(s.x+n*axle+c*side,s.z-c*axle+n*side));
+ for(const axle of[p.frontDistance,-p.rearDistance])for(const side of[-p.track/2,p.track/2])wheels.push(roadSampler(s.x+n*axle+c*side,s.z-c*axle+n*side));
  const grip=wheels.reduce((a,w)=>a+w.grip,0)/4,rolling=wheels.reduce((a,w)=>a+w.rolling,0)/4;
- const road=roadSurfaceAt(s.x,s.z);s.roadOffset=road.offset;s.surface=wheels.some(w=>w.kind==='verge')?'verge':wheels.some(w=>w.kind==='shoulder')?'shoulder':'asphalt';s.surfaceGrip=grip;s.roadHeight=road.height;
+ const road=roadSampler(s.x,s.z);s.roadOffset=road.offset;s.surface=wheels.some(w=>w.kind==='verge')?'verge':wheels.some(w=>w.kind==='shoulder')?'shoulder':'asphalt';s.surfaceGrip=grip;s.roadHeight=road.height;
  const direction=Math.sign(u)||s.gear;
  const taper=s.gear===1?1-smooth(13.2,p.maxSpeed,Math.max(0,u)):1-smooth(2.8,p.maxReverse,Math.max(0,-u));
  let drive=s.throttle*(s.gear===1?Math.min(p.driveForce,p.power/Math.max(5,abs)):p.reverseForce)*s.gear*taper;
@@ -54,7 +54,8 @@ export function stepVehicle(s,h,input={}){
  let fxFront=-brake*.62,fxRear=drive-brake*.38,fyFront=p.frontStiffness*frontSlip,fyRear=p.rearStiffness*rearSlip;
  const frontScale=Math.min(1,frontMu*frontLoad/Math.max(1,Math.hypot(fxFront,fyFront))),rearScale=Math.min(1,rearMu*rearLoad/Math.max(1,Math.hypot(fxRear,fyRear)));
  fxFront*=frontScale;fyFront*=frontScale;fxRear*=rearScale;fyRear*=rearScale;
- let longitudinal=(fxFront+fxRear-resistance)/p.mass-G*road.grade*Math.cos(s.heading-road.heading);
+ const slope=Number.isFinite(road.gradientX)&&Number.isFinite(road.gradientZ)?road.gradientX*n-road.gradientZ*c:road.grade*Math.cos(s.heading-road.heading);
+ let longitudinal=(fxFront+fxRear-resistance)/p.mass-G*slope;
  let nextU=u+(longitudinal+s.yawRate*v)*h;
  // Overlap the just-released service pressure with clutch take-up. A steep
  // new cliff must not roll backwards during the throttle's short physical

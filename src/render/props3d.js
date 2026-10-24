@@ -1,22 +1,26 @@
 import { SOURCE_DEMOLITION_GEOMETRY } from '../data/generated/source-demolition-geometry.js';
 import { createPropRangeController } from './prop-range.js';
+import { LOCAL_LIGHT_CONE_GLSL } from './local-light-cone.js';
+import { PUB_FRONT_SKY_GLSL, PUB_FASCIA_PAINT_GLSL, pubFrontSkyEligible, pubFrontFasciaEligible } from './pub-front-material.js';
 // GLB prop pass for the first-person renderer. Architecture remains the sector
 // raymarcher; meshes render into colour + depth first, and r3d.js composites
 // whichever surface is actually nearer to the camera.
 
 // The one zone that is outdoors. Baked into the fragment shader so a prop
 // standing in the yard is lit by the sky rather than by a lamp that is not there.
-import { PROP_INSTANCE_FLOATS, PROP_INSTANCE_BINDINGS, writePropInstanceFlags } from './prop-instance-layout.js';
+import { PROP_INSTANCE_FLOATS, PROP_INSTANCE_BINDINGS, writePropInstanceFlags, propPoweredMaterialScale } from './prop-instance-layout.js';
 import { ZONE } from '../data/floorplan/legend.js';
 import { PAPER_ATLAS_HANDLING } from '../generated/paper-catalog.js';
 import { PAPER_PIGMENT_SURFACE } from '../data/paper-pigment.js';
 import { PROP_BOUNDS } from '../data/generated/prop-geometry.js';
 import { CHARACTER_LIMITS, CHARACTER_DEFORM_GLSL, parseCharacterAsset, sampleCharacterPose } from './character-asset.js';
 import { installDivideMeshes } from './source-divide-meshes.js';
+import { cameraBasis } from './camera-basis.js';
 import { installReceptionMeshes } from './source-last-reception-meshes.js';
 import { installTowerPersonalMeshes } from './tower-personal-meshes.js';
 import { installAcademicPopulationSocialMeshes } from './academic-society-characters.js';
-import { ACADEMIC_ATRIUM_LIGHT_GLSL } from './academic-atrium-light.js';
+import { installAcademicGalleryPAMeshes } from './academic-gallery-pa.js';
+import { ACADEMIC_ATRIUM_LIGHT_GLSL, academicAtriumHollowKind } from './academic-atrium-light.js';
 import { realmCameraPosition, homeRealmAcquisition } from './realm-pocket-geometry.js';
 import { createRealmEyeInterpolator } from './realm-eye.js';
 import { FIRE_ESCAPE_INK_GLSL } from './fire-escape-ink.js';
@@ -105,6 +109,7 @@ const FRAG=`#version 300 es
 precision highp float;
 in vec3 vWorld,vNormal;in vec2 vUv;in float vLocalHeight;flat in int vZone;flat in int vPortrait;flat in int vStructural;flat in vec4 vEmissive;flat in int vPaperIndex;flat in vec4 vPaperHandling;flat in float vFixturePower;
 uniform vec4 uDriveHeadlight,uDriveInspection[2];uniform float uDriveSurface,uDriveInterior,uDriveWetRoad,uDriveWetSurface,uDriveTissue;
+uniform float uPubFrontSky,uPubFasciaPaint;
 uniform vec3 uEye,uForward,uBase,uMaterialEmissive,uZoneTint[${Math.max(...Object.values(ZONE))+1}];uniform float uLight,uAlphaCut,uBaseAlpha;uniform sampler2D uTex,uNormalTex,uOrmTex,uFogTex;uniform float uUseTex,uUseNormal,uUseOrm,uMetallic,uRoughness,uNormalScale,uAoStrength,uFogSize,uCellMeters;uniform vec2 uFogOrigin;
 // Street surfaces laid onto untextured props by world position (outskirts only):
 // the opening street's own albedo and ORM, blended over three axes.
@@ -118,6 +123,7 @@ uniform int uLocalLightCount,uLocalShadowIndex;uniform vec4 uLocalLightPos[12],u
 // props must reserve it on the same terms as the architecture or a red chair
 // sits in the auditorium glowing like a fitting.
 uniform float uLocalLightEmergency[12];
+${LOCAL_LIGHT_CONE_GLSL}
 vec3 reserveEmergencyRed(vec3 shaded,float emergencyShare){
   float redness=(shaded.r-max(shaded.g,shaded.b))/max(shaded.r,1e-4);
   float claim=smoothstep(.55,.84,redness);
@@ -131,6 +137,7 @@ uniform sampler2D uPaperAtlas;uniform float uUsePaperAtlas;uniform vec2 uPaperAt
 uniform sampler2D uPaperMaterial;uniform float uUsePaperMaterial,uPaperHeightRangeM;uniform vec2 uPaperMaterialTexel;
 uniform sampler2D uShadowTex;uniform mat4 uShadowMatrix;uniform float uShadowReady;uniform vec2 uShadowTexel;
 uniform float uSourceRoomLighting,uRenFold,uQuietFireEscape,uRoofSurface,uRoofGlass;
+uniform float uAcademicHollow;
 // x ink polarity, y solid pigment instead of texture coverage, z lamp mask.
 uniform vec3 uPrintedSurface;
 uniform float uPrintedAreaCoverage;
@@ -146,6 +153,7 @@ ${ROOF_SURFACE_INK_GLSL}
 ${ROOF_GLASS_INK_GLSL}
 ${PRINTED_SURFACE_GLSL}
 ${PROP_MATERIAL_GLSL}
+${PUB_FRONT_SKY_GLSL}
 float flashlightShadow(vec3 world,vec3 normal,vec3 lightDir){
   if(uShadowReady<.5)return 1.0;
   vec4 clip=uShadowMatrix*vec4(world+normal*.008,1.0);if(clip.w<=0.0)return 1.0;
@@ -349,6 +357,7 @@ void main(){
   // Outside the beam both the lamp and the torch specular are zero, so the map is not read.
   float shadow=beam>0.0?flashlightShadow(vWorld,n,ldir):1.0;
   vec3 base=uBase*texel.rgb*(1.0-driveWet*.12);
+${PUB_FASCIA_PAINT_GLSL}
   float lamp=lambert*falloff*nearSoft*3.0*beam*(uLocalShadowIndex<0?shadow:1.0);float ambient=uAmbientIntensity*mix(1.0,1.12,uLight);vec3 localLight=academicAtriumSurfaceLight(vWorld,n),localFinish=vec3(0.0);vec3 emergencyLight=vec3(0.0);
   lamp=lamp/(1.0+uTorchShoulder*lamp);
   // One shadow map, applied to the whole red field — see the long note in
@@ -376,7 +385,7 @@ void main(){
     float localShadow=max(float(li==uLocalShadowIndex),emergency)>.5?heroShadow:1.0;
     float arch=architecturalLightVisibility(vWorld,uLocalLightPos[li].xyz);
     arch=mix(arch,1.0,clamp(uLocalLightPenetration[li],0.0,1.0));
-    float driveBeam=1.0;
+    float driveBeam=localEmitterCone(li,-delta);
     if(uDriveHeadlight.w>.5&&li<2){
       vec3 ray=vWorld-uLocalLightPos[li].xyz;vec3 forward=vec3(sin(uDriveHeadlight.x),0.0,-cos(uDriveHeadlight.x));
       float along=dot(ray,forward);float across=abs(dot(ray,vec3(cos(uDriveHeadlight.x),0.0,sin(uDriveHeadlight.x))));
@@ -421,7 +430,7 @@ void main(){
   // building — so the test is the zone, carried per instance from the cell the
   // prop stands in. Weighted by how much sky the face can see: full for anything
   // looking up, a third for a wall.
-  if(vZone==${ZONE.dock}||vZone==${ZONE.academicRoof}||uSkyExposed>.5){
+  if(vZone==${ZONE.dock}||vZone==${ZONE.academicRoof}||uSkyExposed>.5||pubFrontSkySurface(uPubFrontSky,vWorld,n)){
     float facingSky=.30+.70*clamp(n.y*.5+.5,0.0,1.0);
     col+=base*vec3(.30,.36,.47)*facingSky*(uDriveHeadlight.w>.5?.45:1.0);
     // And the sheen. It has been raining on all of this all night, and a wet
@@ -482,6 +491,11 @@ void main(){
   }
   if(uDriveSurface>.5){vec2 texUv=uDriveSurface<1.5?vec2(1.0-vUv.x,vUv.y):vUv;vec4 reflected=texture(uTex,texUv);col=(uDriveSurface<1.5?mix(vec3(.0035,.0045,.006),reflected.rgb,reflected.a):reflected.rgb)*(uDriveSurface<1.5?.84:1.15);}
   col=col/(1.0+col*.30);
+  // The light uncovers an existing empty neck or unfinished face rather than
+  // spawning a body. Torch inspection also restores the actual material detail;
+  // ordinary guests and named residents never enter this exact-mesh branch.
+  if(uAcademicHollow>.5&&uAcademicAtriumLight>.5)
+    col=academicAtriumHollowColor(vWorld,n,base,col,max(0.0,lamp*uLight*dot(uTorchColor,vec3(.2126,.7152,.0722))));
   o=vec4(col,uQuietFireEscape>.5?FIRE_ESCAPE_INK_TAG:uRoofSurface>.5?ROOF_SURFACE_INK_TAG:uRoofGlass>.5?ROOF_GLASS_INK_TAG:1.0);
   // Reuse this existing MRT and the world's depth sampler slot for 24-bit
   // depth plus material identity. Colour alpha remains ordinary opacity.
@@ -888,7 +902,7 @@ async function parsePropPack(url){
   gl.bindVertexArray(null);return{json,catalog};
 }
 
-export async function loadPropPack(url){await ensureWorldLetteringFonts();pack=await parsePropPack(url);installDivideMeshes(gl,pack);installReceptionMeshes(gl,pack);installTowerPersonalMeshes(gl,pack);installAcademicPopulationSocialMeshes(gl,pack);return pack;}
+export async function loadPropPack(url){await ensureWorldLetteringFonts();pack=await parsePropPack(url);installDivideMeshes(gl,pack);installReceptionMeshes(gl,pack);installTowerPersonalMeshes(gl,pack);installAcademicPopulationSocialMeshes(gl,pack);installAcademicGalleryPAMeshes(gl,pack);return pack;}
 
 // Small authored hero packs can be loaded alongside the conservative shared
 // prop pack without rebuilding or flattening their embedded textures. Catalog
@@ -1041,11 +1055,12 @@ function modelMatrix(i,base=identity()){
 function perspective(aspect){const f=1/(driveMirrorAspect ? .95 : driveStudyFrame ? .65 : .95),n=NEAR,fa=FAR;return new Float32Array([f/aspect,0,0,0,0,f,0,0,0,0,(fa+n)/(n-fa),-1,0,0,(2*fa*n)/(n-fa),0]);}
 function perspectiveFov(fov,aspect,near,far){const f=1/Math.tan(fov/2);return new Float32Array([f/aspect,0,0,0,0,f,0,0,0,0,(far+near)/(near-far),-1,0,0,(2*far*near)/(near-far),0]);}
 function view(eye,yaw,pitch=0){
-  const cp=Math.cos(pitch),f=[Math.sin(yaw)*cp,Math.sin(pitch),-Math.cos(yaw)*cp],z=[-f[0],-f[1],-f[2]];
-  const xl=Math.max(.0001,Math.hypot(z[0],z[2])),x=[z[2]/xl,0,-z[0]/xl];
-  const y=[z[1]*x[2]-z[2]*x[1],z[2]*x[0]-z[0]*x[2],z[0]*x[1]-z[1]*x[0]];
+  // Derive right/up from the authored yaw, not a normalised horizontal
+  // forward projection: that projection vanishes at a vertical camera pole.
+  const {forward:f,right:x,up:y}=cameraBasis(yaw,pitch),z=f.map(v=>-v);
   return new Float32Array([x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,-x[0]*eye[0]-x[1]*eye[1]-x[2]*eye[2],-y[0]*eye[0]-y[1]*eye[1]-y[2]*eye[2],-z[0]*eye[0]-z[1]*eye[1]-z[2]*eye[2],1]);
 }
+export { view as propViewMatrix };
 
 // A PROP IS NOT A POINT, AND THE BIG ONES ARE NOT ANYWHERE NEAR THEIR ORIGIN.
 //
@@ -1131,7 +1146,7 @@ function uploadInstances(mesh,list){
   const data=new Float32Array(list.length*PROP_INSTANCE_FLOATS);
   for(let k=0;k<list.length;k++){
     const at=k*PROP_INSTANCE_FLOATS,authored=Array.isArray(list[k].emissive)?list[k].emissive:[0,0,0,0],practical=practicalLightFrameByPropId.get(list[k].id),emissive=practical?.color?[practical.color[0],practical.color[1],practical.color[2],authored[3]]:authored,lightScale=practical?.scale??list[k].practicalEmissiveScale??1;
-    data.set(modelMatrix(list[k],mesh.nodeMatrix),at);writePropInstanceFlags(data,at,{zone:list[k].zone||0,portrait:list[k].apparitionVariant??list[k].portraitIndex??0,structural:list[k].structural,fixturePower:list[k].sourceMemoryFixture?Math.max(0,Number(lightScale)||0):1});data[at+20]=Number(emissive[0])||0;data[at+21]=Number(emissive[1])||0;data[at+22]=Number(emissive[2])||0;data[at+23]=Math.max(0,(Number(emissive[3])||0)*lightScale);
+    data.set(modelMatrix(list[k],mesh.nodeMatrix),at);writePropInstanceFlags(data,at,{zone:list[k].zone||0,portrait:list[k].apparitionVariant??list[k].portraitIndex??0,structural:list[k].structural,fixturePower:propPoweredMaterialScale(list[k],lightScale)});data[at+20]=Number(emissive[0])||0;data[at+21]=Number(emissive[1])||0;data[at+22]=Number(emissive[2])||0;data[at+23]=Math.max(0,(Number(emissive[3])||0)*lightScale);
     const paperIndex=Number.isFinite(list[k].paperIndex)?Number(list[k].paperIndex):-1;data[at+24]=paperIndex;
     const handling=paperIndex>=0&&Array.isArray(PAPER_ATLAS_HANDLING?.[paperIndex])?PAPER_ATLAS_HANDLING[paperIndex]:[-1,0,0,0];
     data[at+25]=Number(handling[0])||0;if(handling[0]===-1)data[at+25]=-1;data[at+26]=Number(handling[1])||0;data[at+27]=Number(handling[2])||0;data[at+28]=Number(handling[3])||0;
@@ -1165,13 +1180,18 @@ export function preparePropShadowPass({camX,camY,camZ,yaw,pitch=0,light=1,shadow
   return renderShadowPass([camX,camY,camZ],yaw+torchYawOffset,pitch,light,shadowLight,{timeSec,reducedMotion,lodEye:[camX,camY,camZ]});
 }
 
+// The van the camera may be riding in: the one instance that declares a cab
+// volume (the drive body, or the opening's parked body).
+let cabinVolumeInstance=null;
+export function cabinVolume(){const i=cabinVolumeInstance;return i?.matrix&&i.cabinVolume?{matrix:i.matrix,min:i.cabinVolume.min,max:i.cabinVolume.max}:null;}
+function findCabinVolume(){cabinVolumeInstance=staticInstances.find(i=>i?.cabinVolume)||dynamicInstances.find(i=>i?.cabinVolume)||null;}
 export function setPropInstances(next){
-  staticInstances=Array.isArray(next)?next:[];
+  staticInstances=Array.isArray(next)?next:[];findCabinVolume();
   roofWatcherAnchor=staticInstances.find(i=>i.id==='academic-roof-structure'&&i.mesh==='academic_roof_structure')||null;
   if(!roofWatcherAnchor)clearRoofWatcherFrame('no-roof-structure');
   vegetationLodState.clear();characterFrameDirty=true;
 }
-export function setDynamicPropInstances(next){dynamicInstances=Array.isArray(next)?next:[];characterFrameDirty=true;}
+export function setDynamicPropInstances(next){dynamicInstances=Array.isArray(next)?next:[];findCabinVolume();characterFrameDirty=true;}
 
 // Independent from ordinary prop instances: these never enter torch shadows,
 // material lighting or the wet reflection pass. Their simulation stays outside
@@ -1437,7 +1457,8 @@ function streetSetFor(materialName){
 export function streetTextureSetsLoaded(){return [...streetSets.keys()];}
 export function streetSetForMaterial(materialName){return STREET_SET_FOR_MATERIAL[materialName]?.[0]||null;}
 
-export function renderPropPass({camX,camY,camZ,yaw,pitch=0,light=1,maxDistance=90,timeSec=0,reducedMotion=false,fogTexture,fogOrigin=[0,0],fogSize=256,cellMeters=.5,zoneTints,localLightCount=0,localLightPositions,localLightColors,localLightPenetrations,localLightEmergency=null,localShadowIndex=-1,shadowLight=null,torch={},ambientColor=[.64,.65,.62],ambientIntensity=.022,planTexture=null,planSize=[0,0],planOrigin=[0,0],streetTextures=false,reflection=false,torchYawOffset=0,shadowPrepared=false,sourceRoomLighting=false,academicAtriumLight=false}){
+const EMPTY_LIGHT_DIRECTIONS=new Float32Array(48),EMPTY_LIGHT_CONE_INNER=new Float32Array(12).fill(1);
+export function renderPropPass({camX,camY,camZ,yaw,pitch=0,light=1,maxDistance=90,timeSec=0,reducedMotion=false,fogTexture,fogOrigin=[0,0],fogSize=256,cellMeters=.5,zoneTints,localLightCount=0,localLightPositions,localLightColors,localLightPenetrations,localLightEmergency=null,localLightDirections=null,localLightConeInner=null,physicalStudyMaterials=false,localShadowIndex=-1,shadowLight=null,torch={},ambientColor=[.64,.65,.62],ambientIntensity=.022,planTexture=null,planSize=[0,0],planOrigin=[0,0],streetTextures=false,reflection=false,torchYawOffset=0,shadowPrepared=false,sourceRoomLighting=false,academicAtriumLight=false}){
   if(!reflection){openingMaskReady=false;marksReady=false;}
   if(!gl||!fbo||!program||gl.isContextLost())return false;if(reflection&&!reflFbo)return false;const cp=Math.cos(pitch),eye=[camX,camY,camZ],forward=[Math.sin(yaw)*cp,Math.sin(pitch),-Math.cos(yaw)*cp];
   // uForward is only the torch's axis: a beam that is not quite pointing where he looks.
@@ -1447,7 +1468,7 @@ export function renderPropPass({camX,camY,camZ,yaw,pitch=0,light=1,maxDistance=9
   if(!reflection)prepareRoofWatcherFrame(eye,timeSec,reducedMotion);
   if(characterFrameDirty)prepareCharacterFrame(timeSec);
   if(!reflection&&!shadowPrepared)renderShadowPass(eye,yaw,pitch,light,shadowLight,{timeSec,reducedMotion,lodEye:eye});
-  gl.bindFramebuffer(gl.FRAMEBUFFER,reflection?reflFbo:fbo);gl.viewport(0,0,reflection?reflW:width,reflection?reflH:height);gl.enable(gl.DEPTH_TEST);gl.depthMask(true);gl.depthFunc(gl.LEQUAL);gl.disable(gl.BLEND);gl.disable(gl.CULL_FACE);gl.drawBuffers(!reflection?[gl.COLOR_ATTACHMENT0,gl.NONE,gl.COLOR_ATTACHMENT2]:[gl.COLOR_ATTACHMENT0]);gl.clearColor(0,0,0,0);gl.clearDepth(1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.useProgram(program);gl.uniform1f(U('uSourceRoomLighting'),sourceRoomLighting?1:0);gl.uniform1f(U('uAcademicAtriumLight'),academicAtriumLight&&!sourceRoomLighting?1:0);gl.uniform4f(U('uDriveHeadlight'),driveStudyFrame?.heading||0,driveStudyFrame?.lampDip??.02,0,driveStudyFrame?1:0);gl.uniform1f(U('uDriveWetRoad'),driveStudyFrame?.weather?.roadWetness||0);for(let i=0;i<2;i++){const dir=driveStudyFrame?.inspectionLights?.[i]?.direction||[0,0,0];gl.uniform4f(U('uDriveInspection['+i+']'),dir[0],dir[1],dir[2],driveStudyFrame?.inspectionLights?.[i]?1:0);}gl.uniformMatrix4fv(U('uView'),false,viewMatrix);gl.uniformMatrix4fv(U('uProj'),false,projection);gl.uniform3fv(U('uEye'),eye);gl.uniform3fv(U('uForward'),torchForward);gl.uniform1f(U('uLight'),light);gl.uniform1f(U('uTimeSec'),Number(timeSec)||0);gl.uniform1f(U('uReducedMotion'),reducedMotion?1:0);gl.uniform3fv(U('uTorchColor'),torch.color||[1,.94,.82]);gl.uniform1f(U('uTorchReach'),Number(torch.reach)||1);gl.uniform2f(U('uTorchCone'),Number(torch.coneInner)||.88,Number(torch.coneOuter)||.94);gl.uniform1f(U('uTorchSpill'),Number(torch.spill??.05)||0);gl.uniform1f(U('uTorchShoulder'),Math.max(0,Math.min(2,Number(torch.shoulder)||0)));gl.uniform3fv(U('uAmbientColor'),ambientColor);gl.uniform1f(U('uAmbientIntensity'),Number(ambientIntensity)||.022);gl.uniform3fv(U('uZoneTint[0]'),zoneTints);gl.uniform2fv(U('uFogOrigin'),fogOrigin);gl.uniform1f(U('uFogSize'),fogSize);gl.uniform1f(U('uCellMeters'),cellMeters);gl.uniform1i(U('uLocalLightCount'),localLightCount);gl.uniform1i(U('uLocalShadowIndex'),localShadowIndex);if(localLightPositions)gl.uniform4fv(U('uLocalLightPos[0]'),localLightPositions);if(localLightColors)gl.uniform4fv(U('uLocalLightColor[0]'),localLightColors);if(localLightPenetrations)gl.uniform1fv(U('uLocalLightPenetration[0]'),localLightPenetrations);if(localLightEmergency)gl.uniform1fv(U('uLocalLightEmergency[0]'),localLightEmergency);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,fogTexture);gl.uniform1i(U('uFogTex'),1);gl.uniform1f(U('uShadowReady'),shadowActive?1:0);gl.uniformMatrix4fv(U('uShadowMatrix'),false,shadowMatrix);gl.uniform2f(U('uShadowTexel'),1/Math.max(1,shadowSize),1/Math.max(1,shadowSize));gl.activeTexture(gl.TEXTURE6);gl.bindTexture(gl.TEXTURE_2D,shadowDepthTex);gl.uniform1i(U('uShadowTex'),6);gl.uniform1f(U('uPlanReady'),planTexture&&planSize[0]>0&&planSize[1]>0?1:0);gl.uniform2f(U('uPlanSize'),planSize[0]||0,planSize[1]||0);gl.uniform2f(U('uPlanOrigin'),planOrigin[0]||0,planOrigin[1]||0);gl.activeTexture(gl.TEXTURE7);gl.bindTexture(gl.TEXTURE_2D,planTexture);gl.uniform1i(U('uPlanTex'),7);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,reflection?reflFbo:fbo);gl.viewport(0,0,reflection?reflW:width,reflection?reflH:height);gl.enable(gl.DEPTH_TEST);gl.depthMask(true);gl.depthFunc(gl.LEQUAL);gl.disable(gl.BLEND);gl.disable(gl.CULL_FACE);gl.drawBuffers(!reflection?[gl.COLOR_ATTACHMENT0,gl.NONE,gl.COLOR_ATTACHMENT2]:[gl.COLOR_ATTACHMENT0]);gl.clearColor(0,0,0,0);gl.clearDepth(1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.useProgram(program);gl.uniform1f(U('uSourceRoomLighting'),sourceRoomLighting?1:0);gl.uniform1f(U('uAcademicAtriumLight'),academicAtriumLight&&!sourceRoomLighting?1:0);gl.uniform4f(U('uDriveHeadlight'),driveStudyFrame?.heading||0,driveStudyFrame?.lampDip??.02,0,driveStudyFrame?1:0);gl.uniform1f(U('uDriveWetRoad'),driveStudyFrame?.weather?.roadWetness||0);for(let i=0;i<2;i++){const dir=driveStudyFrame?.inspectionLights?.[i]?.direction||[0,0,0];gl.uniform4f(U('uDriveInspection['+i+']'),dir[0],dir[1],dir[2],driveStudyFrame?.inspectionLights?.[i]?1:0);}gl.uniformMatrix4fv(U('uView'),false,viewMatrix);gl.uniformMatrix4fv(U('uProj'),false,projection);gl.uniform3fv(U('uEye'),eye);gl.uniform3fv(U('uForward'),torchForward);gl.uniform1f(U('uLight'),light);gl.uniform1f(U('uTimeSec'),Number(timeSec)||0);gl.uniform1f(U('uReducedMotion'),reducedMotion?1:0);gl.uniform3fv(U('uTorchColor'),torch.color||[1,.94,.82]);gl.uniform1f(U('uTorchReach'),Number(torch.reach)||1);gl.uniform2f(U('uTorchCone'),Number(torch.coneInner)||.88,Number(torch.coneOuter)||.94);gl.uniform1f(U('uTorchSpill'),Number(torch.spill??.05)||0);gl.uniform1f(U('uTorchShoulder'),Math.max(0,Math.min(2,Number(torch.shoulder)||0)));gl.uniform3fv(U('uAmbientColor'),ambientColor);gl.uniform1f(U('uAmbientIntensity'),Number(ambientIntensity)||.022);gl.uniform3fv(U('uZoneTint[0]'),zoneTints);gl.uniform2fv(U('uFogOrigin'),fogOrigin);gl.uniform1f(U('uFogSize'),fogSize);gl.uniform1f(U('uCellMeters'),cellMeters);gl.uniform1i(U('uLocalLightCount'),localLightCount);gl.uniform1i(U('uLocalShadowIndex'),localShadowIndex);if(localLightPositions)gl.uniform4fv(U('uLocalLightPos[0]'),localLightPositions);if(localLightColors)gl.uniform4fv(U('uLocalLightColor[0]'),localLightColors);if(localLightPenetrations)gl.uniform1fv(U('uLocalLightPenetration[0]'),localLightPenetrations);if(localLightEmergency)gl.uniform1fv(U('uLocalLightEmergency[0]'),localLightEmergency);gl.uniform4fv(U('uLocalLightDirection[0]'),localLightDirections||EMPTY_LIGHT_DIRECTIONS);gl.uniform1fv(U('uLocalLightConeInner[0]'),localLightConeInner||EMPTY_LIGHT_CONE_INNER);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,fogTexture);gl.uniform1i(U('uFogTex'),1);gl.uniform1f(U('uShadowReady'),shadowActive?1:0);gl.uniformMatrix4fv(U('uShadowMatrix'),false,shadowMatrix);gl.uniform2f(U('uShadowTexel'),1/Math.max(1,shadowSize),1/Math.max(1,shadowSize));gl.activeTexture(gl.TEXTURE6);gl.bindTexture(gl.TEXTURE_2D,shadowDepthTex);gl.uniform1i(U('uShadowTex'),6);gl.uniform1f(U('uPlanReady'),planTexture&&planSize[0]>0&&planSize[1]>0?1:0);gl.uniform2f(U('uPlanSize'),planSize[0]||0,planSize[1]||0);gl.uniform2f(U('uPlanOrigin'),planOrigin[0]||0,planOrigin[1]||0);gl.activeTexture(gl.TEXTURE7);gl.bindTexture(gl.TEXTURE_2D,planTexture);gl.uniform1i(U('uPlanTex'),7);
   const groups=visibleGroups(eye,maxDistance,{lodEye:eye,reflection,frustum:viewFrustum(viewMatrix,projection)});
   if(!reflection)roofWatcherDrawnIds=[...groups.values()].flatMap(list=>list.filter(i=>ROOF_WATCHERS.some(w=>w.id===i.id)).map(i=>i.id));
   if(!reflection)litApparitionsVisible=[...groups.values()].some((list)=>list.some((instance)=>
@@ -1461,10 +1482,11 @@ export function renderPropPass({camX,camY,camZ,yaw,pitch=0,light=1,maxDistance=9
     // The isolated street proof explicitly shares the existing outdoor sky
     // model. Other street meshes retain their current lighting treatment.
     gl.uniform1f(U('uSkyExposed'),list.every(instance=>instance.skyExposed===true)?1:0);
+    gl.uniform1f(U('uPubFrontSky'),pubFrontSkyEligible(name,list)?1:0);
     if(activePropDiagnostics)activePropDiagnostics.renderedInstances+=list.length;
     gl.uniform4fv(U('uExteriorClipPlane'),list[0].exteriorClipPlane||[0,0,0,0]);
     const portal=list[0].exteriorPortal;gl.uniform4fv(U('uExteriorPortalA'),portal?portal.slice(0,4):[0,0,0,0]);gl.uniform3f(U('uExteriorPortalB'),portal?.[4]||0,portal?.[5]||0,portal?1:0);
-    for(const p of m.primitives){gl.uniform1f(U('uDriveInterior'),/^drive_(cabin|radio|wheel|wiper|speed|recorder|right|left)/.test(name)?1:0);gl.uniform1f(U('uDriveSurface'),driveStudyFrame?(p.driveStudySurface||0):0);gl.uniform1f(U('uDriveWetSurface'),(name==='drive_road'||name==='drive_plain_paving')?1:0);const factors=p.mainFactors||(p.mainFactors=propMaterialFactors({roughness:p.roughness??1,metallic:p.metallic??0,hasOrm:!!p.ormTexture,semantics:p.materialFactors}));bindCharacterMorph(U,p);gl.bindVertexArray(p.vao);gl.uniform1f(U('uRenFold'),p.materialRole==='margin'?2:p.materialRole==='fold'?1:0);gl.uniform1f(U('uQuietFireEscape'),p.materialRole==='quiet-metal'?1:0);gl.uniform1f(U('uRoofSurface'),p.materialRole==='weathered-surface'?1:0);gl.uniform1f(U('uRoofGlass'),(name==='academic_roof_glazing'||name==='academic_roof_seat')&&p.materialName==='wired roof glass'?1:0);gl.uniform1f(U('uPayphoneCast'),p.materialName==='payphone cast iron'?1:0);const print=p.printedSurface||(name.startsWith('loose_note')&&paperAtlasHasPigment?PAPER_PIGMENT_SURFACE:null);gl.uniform3f(U('uPrintedSurface'),PRINTED_SURFACE_POLARITY[print?.polarity]||0,print?.coverage==='solid'?1:0,print?.emission==='substrate'?1:print?.emission==='pigment'?2:0);gl.uniform1f(U('uPrintedAreaCoverage'),print?.sampling==='area'?1:0);gl.uniform3fv(U('uBase'),p.base.slice(0,3));gl.uniform3fv(U('uMaterialEmissive'),p.emissive||[0,0,0]);gl.uniform4f(U('uVegetation'),VEGETATION_CLASS[p.vegetationClass]||0,p.vegetationTransmission||0,p.vegetationWetness||0,0);gl.uniform1f(U('uBaseAlpha'),p.base[3]??1);gl.uniform1f(U('uAlphaCut'),p.alphaCut);const street=streetTextures&&!p.texture?streetSetFor(p.materialName):null;gl.uniform1f(U('uStreetTex'),street?1:0);gl.uniform1f(U('uStreetMix'),street?street.mix:0);gl.uniform1f(U('uStreetScale'),street?street.scale:1);gl.uniform1f(U('uUseTex'),p.texture?1:0);gl.uniform1f(U('uUseNormal'),p.normalTexture?1:0);gl.uniform1f(U('uUseOrm'),p.ormTexture?1:0);gl.uniform1f(U('uNormalScale'),p.normalScale??1);gl.uniform1f(U('uAoStrength'),p.aoStrength??0);gl.uniform1f(U('uMetallic'),factors.metallic);gl.uniform1f(U('uRoughness'),factors.roughness);gl.uniform1f(U('uStreetRoughnessFactor'),factors.streetRoughnessFactor);gl.uniform1f(U('uLetteringFinish'),(p.letteringFinish?.localSpecular||(driveStudyFrame&&p.studyLocalFinish))?1:0);gl.uniform1f(U('uDriveTissue'),driveStudyFrame&&p.cutTissue?1:0);gl.uniform1f(U('uUsePortrait'),p.portrait&&portraitAtlas?1:0);gl.uniform1f(U('uUsePaperAtlas'),name.startsWith('loose_note')&&paperAtlas?1:0);gl.uniform2f(U('uPaperAtlasGrid'),paperAtlasGrid[0],paperAtlasGrid[1]);gl.activeTexture(gl.TEXTURE8);gl.bindTexture(gl.TEXTURE_2D,paperAtlas);gl.uniform1i(U('uPaperAtlas'),8);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,p.texture);gl.uniform1i(U('uTex'),0);gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,portraitAtlas);gl.uniform1i(U('uPortraitAtlas'),2);gl.activeTexture(gl.TEXTURE4);gl.bindTexture(gl.TEXTURE_2D,p.normalTexture);gl.uniform1i(U('uNormalTex'),4);gl.activeTexture(gl.TEXTURE5);gl.bindTexture(gl.TEXTURE_2D,p.ormTexture);gl.uniform1i(U('uOrmTex'),5);gl.drawElementsInstanced(gl.TRIANGLES,p.count,p.indexType,0,list.length);if(activePropDiagnostics){activePropDiagnostics.mainDrawCalls+=1;activePropDiagnostics.mainDrawCallsByMesh[m.name]=(activePropDiagnostics.mainDrawCallsByMesh[m.name]||0)+1;activePropDiagnostics.triangles+=p.count/3*list.length;if(p.materialRole)activePropDiagnostics.visibleMaterialRoles.add(p.materialRole);}}
+    for(const p of m.primitives){gl.uniform1f(U('uPubFasciaPaint'),pubFrontFasciaEligible(name,p,list)?1:0);gl.uniform1f(U('uDriveInterior'),/^drive_(cabin|radio|wheel|wiper|speed|recorder|right|left)/.test(name)?1:0);gl.uniform1f(U('uDriveSurface'),driveStudyFrame?(p.driveStudySurface||0):0);gl.uniform1f(U('uDriveWetSurface'),(name==='drive_road'||name==='drive_plain_paving')?1:0);const factors=p.mainFactors||(p.mainFactors=propMaterialFactors({roughness:p.roughness??1,metallic:p.metallic??0,hasOrm:!!p.ormTexture,semantics:p.materialFactors}));bindCharacterMorph(U,p);gl.bindVertexArray(p.vao);gl.uniform1f(U('uAcademicHollow'),academicAtriumHollowKind(m.name));gl.uniform1f(U('uRenFold'),p.materialRole==='margin'?2:p.materialRole==='fold'?1:0);gl.uniform1f(U('uQuietFireEscape'),p.materialRole==='quiet-metal'?1:0);gl.uniform1f(U('uRoofSurface'),p.materialRole==='weathered-surface'?1:0);gl.uniform1f(U('uRoofGlass'),(name==='academic_roof_glazing'||name==='academic_roof_seat')&&p.materialName==='wired roof glass'?1:0);gl.uniform1f(U('uPayphoneCast'),p.materialName==='payphone cast iron'?1:0);const print=p.printedSurface||(name.startsWith('loose_note')&&paperAtlasHasPigment?PAPER_PIGMENT_SURFACE:null);gl.uniform3f(U('uPrintedSurface'),PRINTED_SURFACE_POLARITY[print?.polarity]||0,print?.coverage==='solid'?1:0,print?.emission==='substrate'?1:print?.emission==='pigment'?2:0);gl.uniform1f(U('uPrintedAreaCoverage'),print?.sampling==='area'?1:0);gl.uniform3fv(U('uBase'),p.base.slice(0,3));gl.uniform3fv(U('uMaterialEmissive'),p.emissive||[0,0,0]);gl.uniform4f(U('uVegetation'),VEGETATION_CLASS[p.vegetationClass]||0,p.vegetationTransmission||0,p.vegetationWetness||0,0);gl.uniform1f(U('uBaseAlpha'),p.base[3]??1);gl.uniform1f(U('uAlphaCut'),p.alphaCut);const street=streetTextures&&!p.texture?streetSetFor(p.materialName):null;gl.uniform1f(U('uStreetTex'),street?1:0);gl.uniform1f(U('uStreetMix'),street?street.mix:0);gl.uniform1f(U('uStreetScale'),street?street.scale:1);gl.uniform1f(U('uUseTex'),p.texture?1:0);gl.uniform1f(U('uUseNormal'),p.normalTexture?1:0);gl.uniform1f(U('uUseOrm'),p.ormTexture?1:0);gl.uniform1f(U('uNormalScale'),p.normalScale??1);gl.uniform1f(U('uAoStrength'),p.aoStrength??0);gl.uniform1f(U('uMetallic'),factors.metallic);gl.uniform1f(U('uRoughness'),factors.roughness);gl.uniform1f(U('uStreetRoughnessFactor'),factors.streetRoughnessFactor);gl.uniform1f(U('uLetteringFinish'),(p.letteringFinish?.localSpecular||((driveStudyFrame||physicalStudyMaterials)&&p.studyLocalFinish))?1:0);gl.uniform1f(U('uDriveTissue'),driveStudyFrame&&p.cutTissue?1:0);gl.uniform1f(U('uUsePortrait'),p.portrait&&portraitAtlas?1:0);gl.uniform1f(U('uUsePaperAtlas'),name.startsWith('loose_note')&&paperAtlas?1:0);gl.uniform2f(U('uPaperAtlasGrid'),paperAtlasGrid[0],paperAtlasGrid[1]);gl.activeTexture(gl.TEXTURE8);gl.bindTexture(gl.TEXTURE_2D,paperAtlas);gl.uniform1i(U('uPaperAtlas'),8);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,p.texture);gl.uniform1i(U('uTex'),0);gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,portraitAtlas);gl.uniform1i(U('uPortraitAtlas'),2);gl.activeTexture(gl.TEXTURE4);gl.bindTexture(gl.TEXTURE_2D,p.normalTexture);gl.uniform1i(U('uNormalTex'),4);gl.activeTexture(gl.TEXTURE5);gl.bindTexture(gl.TEXTURE_2D,p.ormTexture);gl.uniform1i(U('uOrmTex'),5);gl.drawElementsInstanced(gl.TRIANGLES,p.count,p.indexType,0,list.length);if(activePropDiagnostics){activePropDiagnostics.mainDrawCalls+=1;activePropDiagnostics.mainDrawCallsByMesh[m.name]=(activePropDiagnostics.mainDrawCallsByMesh[m.name]||0)+1;activePropDiagnostics.triangles+=p.count/3*list.length;if(p.materialRole)activePropDiagnostics.visibleMaterialRoles.add(p.materialRole);}}
   }
   if(!reflection){renderSourceText(viewMatrix,projection,eye,forward,maxDistance,{sourceRoomLighting,torch,torchForward,light,ambientColor,ambientIntensity,localLightCount,localLightPositions,localLightColors,localLightEmergency});marksReady=!!sourceRoomLighting;}
   gl.drawBuffers([gl.COLOR_ATTACHMENT0]);

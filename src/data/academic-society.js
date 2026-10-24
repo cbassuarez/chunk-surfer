@@ -7,11 +7,11 @@ const actor=(id,x,y,yaw,location,gesture)=>Object.freeze({id,name:DESIGNS[id].na
   x,y,yaw,floor:10,location,gesture,voiceSpeaker:`society-${id}`,sourceLabel:DESIGNS[id].name.toUpperCase(),
   coordinateSpace:'authored-metres',blocks:false});
 export const ACADEMIC_SOCIETY_ACTORS=Object.freeze([
-  actor('odette',14.5,274.5,0,'academic-loggia','quiet'),
+  actor('odette',16.6,276,-.11710874456686671,'academic-loggia','quiet'),
   actor('emile',8.6,250.5,.745,'academic-corridor','argument'),
   actor('celeste',12.2,246.6,-2.396,'academic-chamber','welcome'),
   actor('lucien',25.6,246.2,-Math.PI/2,'academic-gallery','folded'),
-  actor('agathe',16.4,275.5,-1.086,'academic-loggia','register'),
+  actor('agathe',16.4,274.3,3.0244839090229267,'academic-loggia','register'),
   actor('noe',26.6,244.2,-2.678,'academic-gallery','portrait'),
   actor('sabine',11,247.5,-2.467,'academic-chamber','verdict'),
 ]);

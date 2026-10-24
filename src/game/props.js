@@ -14,13 +14,15 @@ import { corridorDressing } from '../world/corridor-dressing.js';
 import { architectureFittings } from '../world/architecture-fittings.js';
 import * as PROP_GEOMETRY from '../data/generated/prop-geometry.js';
 import { batchBuildingDressingInstances } from '../world/building-dressing-batches.js';
+import { isExteriorObserver } from './prop-visibility.js';
+import { EXTERIOR_FACADE_MESHES, exteriorFacadeCanOccupy, exteriorFacadeCanStep } from '../world/exterior-facade-collision.js';
 
 let floorplan=null;
 let instances=[];
 let colliders=[];
 // Optional render packs activate their physical fittings only after loading.
 // This avoids invisible poles when the isolated street proof is unavailable.
-const disabledColliderGroups=new Set(['street-pilot']);
+const disabledColliderGroups=new Set(['street-pilot','opening-street']);
 export function setColliderGroupEnabled(group,enabled){
   if(enabled)disabledColliderGroups.delete(group);else disabledColliderGroups.add(group);
 }
@@ -196,9 +198,20 @@ export function setLooseProp(id, placement=null){
   const prop={...mesh,...placement,id,rx,ry,x,y,interactionX,interactionY,interactionRx:rt(interactionX),interactionRy:rt(interactionY),floor,zone:floorplan.zoneAt(rx,ry),renderGroup,renderGroups,blocks:false};
   instances.push(prop);return prop;
 }
+// Fixed runtime furniture uses the same authored metre anchor and collision
+// contract as initial placements. Loose pickups deliberately stay nonblocking.
+export function setPlacedProp(id,placement=null){
+  instances=instances.filter(p=>p.id!==id);
+  if(!placement||!floorplan)return null;
+  const prop=instantiateProp(floorplan,{...placement,id});
+  if(floorplan.isSolid(prop.rx,prop.ry))return null;
+  instances.push(prop);return prop;
+}
 export function attachInscriptions(finalHosts){return propInscriptionAttachments(finalHosts,[...WORLD_INSCRIPTIONS,...corridorInscriptionsForHosts(finalHosts)]);}
-export function renderInstances({group=null,inscriptions=true,batchDressing=false}={}){
-  const hosts=instances.filter((p)=>!group||(p.renderGroups||[p.renderGroup]).includes(group)).map((p)=>{
+// Both drawing and facade collision consume this pose, including authored
+// offsets and stretched court walls. The collision must not guess at a second
+// placement from the logical footprint.
+function renderInstance(p){
     const at=floorplan.logicalToPhysical?.(p.rx,p.ry),waterlineOffset=(p.elevation||0)+(p.renderOffsetY||0);
     return{id:p.id,mesh:p.mesh,fallbackMesh:p.fallbackMesh||null,
       x:(at?at.x*CELL:p.x)+(p.renderOffsetX||0),y:(p.floor??0)+waterlineOffset,
@@ -207,7 +220,9 @@ export function renderInstances({group=null,inscriptions=true,batchDressing=fals
       scale:p.scale||1,scaleX:p.scaleX,scaleY:p.scaleY,scaleZ:p.scaleZ,zone:p.zone||0,
       portraitIndex:p.portraitIndex||0,structural:!!p.structural,
       waterlineBody:p.waterlineBody||null,waterlineOffset};
-  });
+}
+export function renderInstances({group=null,inscriptions=true,batchDressing=false}={}){
+  const hosts=instances.filter((p)=>!group||(p.renderGroups||[p.renderGroup]).includes(group)).map(renderInstance);
   const rendered=batchDressing&&group?batchBuildingDressingInstances(hosts,group,PROP_GEOMETRY.DRESSING_BATCHES):hosts;
   return inscriptions?attachInscriptions(rendered):rendered;
 }
@@ -217,11 +232,11 @@ function pointInProp(mx,mz,p,pad=.20){
   const lx=dx*c-dz*s,lz=dx*s+dz*c;
   return Math.abs(lx)<=(p.w*(p.scale||1))/2+pad && Math.abs(lz)<=(p.d*(p.scale||1))/2+pad;
 }
-export function propCanOccupy(toX,toY,{ignoreId=null}={}){
+export function propCanOccupy(toX,toY,{ignoreId=null,from=null}={}){
   const mx=meters(toX+.5),mz=meters(toY+.5);
   const floor=floorplan?.floorAt?.(toX,toY)??0;
   if(colliders.some((c)=>colliderActive(c)&&floor>=c.minElevation-.05&&floor<=c.maxElevation+.05&&pointInProp(mx,mz,{...c,w:c.width,d:c.depth},0)))return false;
-  return !instances.some((p)=>{
+  if(instances.some((p)=>{
     if(p.id===ignoreId)return false;
     if(p.collisionMask==='hall-seating'){
       const inside=Math.abs(mx-p.x)<=12.75&&Math.abs(mz-p.y)<=9.25;if(!inside)return false;
@@ -247,7 +262,21 @@ export function propCanOccupy(toX,toY,{ignoreId=null}={}){
       return !(mz<p.y-7.7);
     }
     return p.blocks&&pointInProp(mx,mz,p);
-  });
+  }))return false;
+  const outside=(x,y)=>isExteriorObserver({zone:floorplan?.zoneAt?.(x,y)});
+  if(!outside(toX,toY)&&!(from&&outside(from.x,from.y)))return true;
+  const body=(x,y)=>{
+    const at=floorplan.logicalToPhysical(x,y);
+    // r3dFrame adds half a runtime cell AFTER the physical mapping. Use the
+    // same body centre; the authored prop anchor itself has no such offset.
+    return{x:(at.x+.5)*CELL,z:(at.z+.5)*CELL,feet:floorplan.floorAt(x,y)};
+  };
+  const facadeInstances=instances.filter(p=>p.id!==ignoreId&&EXTERIOR_FACADE_MESHES.includes(p.mesh)
+    &&(!p.mesh.startsWith('opening_street_')||!disabledColliderGroups.has('opening-street'))).map(renderInstance);
+  const to=body(toX,toY);
+  return (from
+    ?exteriorFacadeCanStep({from:body(from.x,from.y),to},facadeInstances)
+    :exteriorFacadeCanOccupy(to,facadeInstances)).ok;
 }
 // IS THERE SOMETHING HERE TALL ENOUGH TO GET BEHIND?
 //
@@ -396,7 +425,7 @@ export function pathToProp(px,py,propId,keys){
     const [x,y]=q[qi];
     const portal=floorplan.connectorDestination?.(x,y);if(portal){const pk=key(portal.x,portal.y);if(!prev.has(pk)){prev.set(pk,key(x,y));q.push([portal.x,portal.y]);if(goals.has(pk)){found=pk;break;}}}
     for(const [dx,dy] of [[0,-1],[1,0],[0,1],[-1,0]]){
-      const tx=x+dx,ty=y+dy;const step=floorplan.canStep(x,y,tx,ty,{keys});if(!step.ok)continue;const nx=step.redirect?.x??tx,ny=step.redirect?.y??ty,k=key(nx,ny);if(prev.has(k)||!propCanOccupy(nx,ny,{ignoreId:p.id}))continue;
+      const tx=x+dx,ty=y+dy;const step=floorplan.canStep(x,y,tx,ty,{keys});if(!step.ok)continue;const nx=step.redirect?.x??tx,ny=step.redirect?.y??ty,k=key(nx,ny);if(prev.has(k)||!propCanOccupy(nx,ny,{ignoreId:p.id,from:{x,y}}))continue;
       prev.set(k,key(x,y));q.push([nx,ny]);if(goals.has(k)){found=k;break;}
     }
   }

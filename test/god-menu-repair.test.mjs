@@ -14,7 +14,7 @@ import * as FP from '../src/world/floorplan.js';
 import * as PROPS from '../src/game/props.js';
 import * as SCENES from '../src/game/scenes.js';
 import { conservatory } from '../src/data/floorplan/conservatory.js';
-import { GOD_LOCATION_HOOKS, GOD_DOOR_HOOKS, godDoorHook } from '../src/data/god-hooks.js';
+import { GOD_LOCATION_HOOKS, GOD_DOOR_HOOKS, GOD_PLACE_SECTIONS, godDoorHook } from '../src/data/god-hooks.js';
 import { FIELD_KIT_OPTIONS, fieldKitEffects, fieldKitInspection, resolveFieldKit } from '../src/game/field-kit.js';
 import { resolveBagOwnership, resolveBagItemAction, BAG_AUTOMATIC_USE, bagKeyFacts } from '../src/game/bag-items.js';
 import { BENCH_PACK_GROUPS, workbenchPackingComplete } from '../src/game/bench-preparation.js';
@@ -438,7 +438,10 @@ function tabsFixture() {
     'godRunDoorClosers','godToggleDoorDebug','godResetDoors','godResetFx','beginTaken','godColdOpen','godPostDoorRuntime',
     'godOpenCausalReturnFork','openCredits','godAbortBattle','beginConfrontation','openEndingChoice','restartDesktopAudio',
     'natatoriumBattle','practiceBattle','hallBattle','godCycleHushBody',
-    'godSetRoofAccess','godCycleRenStage','godResetRen','godResetEarRoom'];
+    'godSetRoofAccess','godCycleRenStage','godResetRen','godResetEarRoom',
+    'godOpeningVehicle','godGetInDriveTeaser','godCoastalMemory','godSourceEarthfall','godPracticeStudent',
+    'godRoofWordLock','godRoofCitySeat','godDaydream','godDreamFigure','godArrivalTitle','openTransferRoom',
+    'nukeStableDiffusion','scanStableDiffusionProcesses'];
   for (const name of callbacks) ctx[name] = noop;
   Object.assign(ctx, { godActionRow, godStopRows, godLocationValue, GOD_LOCATION_HOOKS, storyMode: true, inRogue: true, FP,
     SCENE_DOCK_LABEL: 'GET-IN', godInventory: () => inventory, LOSABLE: ['recorder','torch','map','radio'],
@@ -446,6 +449,9 @@ function tabsFixture() {
     ENDING_ARRIVAL: {AGREED:'agreed',DEFEATED:'defeated',TIMED_OUT:'timed-out',ESCAPED:'escaped',CARRIED:'carried'},
     CHUNK_SURF_ENDING_ID:'surfaced', endingManifest: () => ({cutscene:{beats:[{id:'fixture'}]}}), ENDING_AUDIO_TODO:[],
     godRoofGateCheck: () => 'WOULD OPEN', godEarRoomValue: () => 'AFTER B3', roofRenState: () => ({ stage: 'new' }),
+    GOD_PLACE_SECTIONS, GOD_DEV_ROWS: true, godSourceDriveValue: () => 'NONE SAVED', sdLastNuke: null,
+    BUST_TREES: { 'academic-bust-1': 'talk', 'academic-bust-fragment-6': 'fragment' },
+    stableDiffusionOff: () => false, stableDiffusionReport: () => ({ client: false, textureBytes: 0, jsHeapBytes: null }),
   });
   vm.runInContext(functionSource('godTabs'), ctx);
   return { ...f, inventory, tabs: () => ctx.godTabs() };

@@ -69,12 +69,12 @@ test('visible end returns block reverse escape and both goods-door bypasses with
 });
 
 test('the actual bumper corners contact, rather than clipping through an under-width capsule',()=>{
- const p={x:0,z:0,heading:0},solid={id:'corner',x:1.065,z:-3.24,halfX:.04,halfZ:.04};assert.equal(vehiclePoseIntersects(p,solid),true);
- assert.equal(driveBodyCorners(p).length,4);assert.equal(vehiclePoseIntersects(p,{...solid,x:1.09}),false);
+ const F=DRIVE_BODY_FOOTPRINT,p={x:0,z:0,heading:0},solid={id:'corner',x:F.halfWidth+.025,z:-(F.front-.015),halfX:.04,halfZ:.04};assert.equal(vehiclePoseIntersects(p,solid),true);
+ assert.equal(driveBodyCorners(p).length,4);assert.equal(vehiclePoseIntersects(p,{...solid,x:F.halfWidth+.05}),false);
 });
 
 test('leaning against one visible rail emits a contact episode rather than an event every frame',()=>{
- const s=Object.assign(createDrive(),{x:0,z:0,heading:0,speed:0,lateralSpeed:0,odometer:0,wheelRotation:0}),wall={id:'rail-1',contactGroup:'left-edge',x:-1.15,z:0,halfX:.1,halfZ:10};
+ const s=Object.assign(createDrive(),{x:0,z:0,heading:0,speed:0,lateralSpeed:0,odometer:0,wheelRotation:0}),wall={id:'rail-1',contactGroup:'left-edge',x:-(DRIVE_BODY_FOOTPRINT.halfWidth+.11),z:0,halfX:.1,halfZ:10};
  for(let i=0;i<1000;i++){s.contactStartX=s.x;s.contactStartZ=s.z;s.contactStartHeading=s.heading;s.x-=.03;s.programTime=i/120;resolveVehicleContacts(s,[wall]);}
  assert.equal(s.events.filter(e=>e.type==='vehicle-contact').length,1);assert.ok(s.x>-0.012);
 });

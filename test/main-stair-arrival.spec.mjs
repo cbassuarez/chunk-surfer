@@ -2,11 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {conservatory as C} from '../src/data/floorplan/conservatory.js';
-import {MAIN_STAIR_GEOMETRY as STAIR} from '../src/data/main-stair-geometry.js';
+import {MAIN_STAIR_GEOMETRY as STAIR,mainStairBuiltLandings} from '../src/data/main-stair-geometry.js';
 import * as FP from '../src/world/floorplan.js';
 
 FP.compile(C.levels,{width:C.width,height:C.height,widenCorridors:C.widenCorridors,
   connectors:C.connectors,edgePortals:C.edgePortals,doors:C.doors});
+const inPolygon=([x,z],poly)=>{let c=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const [xi,zi]=poly[i],[xj,zj]=poly[j];if((zi>z)!==(zj>z)&&x<(xj-xi)*(z-zi)/(zj-zi)+xi)c=!c;}return c;};
 
 test('every academic stair exit lane continues into the loggia beyond the portal',()=>{
   const exit=FP.edgePortalState().find(p=>p.id==='academic-floor-landing-to-loggia');
@@ -21,7 +22,15 @@ test('every academic stair exit lane continues into the loggia beyond the portal
       x--;
       const p=FP.logicalToPhysical(x,y),i=(Math.floor(p.z)-slice.originY)*slice.w+Math.floor(p.x)-slice.originX;
       assert.equal(slice.solid[i],0,'the final depth slice must show the same open route');
-      assert.ok(Math.abs(slice.floor[i]-10)<.001,'the visible route has the real landing height');
+      // Inside the stairwell (stair revision 4) the grid draws only the
+      // stairwell floor; the landing you walk on is the GLB's, built at the
+      // height the grid draws 10 m. Outside it the grid draws the floor itself.
+      const mx=(Math.floor(p.x)+.5)/2,mz=(Math.floor(p.z)+.5)/2,W=STAIR.stairwell;
+      if(W&&mx>W.x0&&mx<W.x1&&mz>W.z0&&mz<W.z1){
+        const landing=mainStairBuiltLandings().find((l)=>l.height===10);
+        assert.ok(inPolygon([mx,mz],landing.slab),'inside the stairwell the route is on the built landing');
+        assert.ok(Math.abs(slice.floor[i]-W.floor)<.001,'and the grid there is the stairwell air, not a second floor');
+      }else assert.ok(Math.abs(slice.floor[i]-10)<.001,'the visible route has the real landing height');
     }
   }
 });
@@ -72,10 +81,13 @@ test('packed concrete retains structural depth below every tread centre',()=>{
 });
 
 test('packed academic head has a level westward surface rather than a bare terminal nose',()=>{
+  // Since stair revision 4 the head is the built half landing, made at the
+  // height the plan grid draws 10 m so it meets the loggia floor flush.
+  const head=mainStairBuiltLandings().find((l)=>l.height===10).drawnHeight;
   const floor=surfaces.filter(s=>s.material==='warm terrazzo'&&s.n.every(n=>n[1]>.9));
   for(const x of[-1.3,-.8,0,.8,1.8])for(const z of[1.6,2.1,2.6]){
     const y=Math.max(...floor.map(t=>verticalHit(t,x,z)).filter(y=>y!==null&&y<10.02));
-    assert.ok(Math.abs(y-10.008)<.0001,`turned apron is missing at local (${x},${z}): ${y}`);
+    assert.ok(Math.abs(y-head)<.0001,`turned apron is missing at local (${x},${z}): ${y}`);
   }
 });
 

@@ -214,16 +214,14 @@ def build_receivers(materials: dict[str, bpy.types.Material], sources: dict[str,
     obj, report = ground.finish(); objects.append(obj); reports[obj.name] = report
 
     frontage = MeshBuilder("opening_street_frontage", materials, sources)
-    # The canonical entrance is the three-metre goods pair at world y 8.5..11.5
-    # (local z 1..4). The old personnel leaf at y 7 has been retired into wall;
-    # carrying the former 7.6m mouth through this skin made the loading-dock face
-    # literally transparent because exterior slices intentionally omit interior
-    # collision mass. These opaque receivers now close every part of the façade
-    # except the one real double-door aperture.
-    frontage.wall_x("roughStone", -.24, -7.5, 1.0, .04, .98)
-    frontage.wall_x("roughStone", -.24, 4.0, 84.5, .04, .98)
-    frontage.wall_x("brick", -.25, -4.0, 1.0, .98, 5.55)
-    frontage.wall_x("brick", -.25, 1.0, 4.0, 3.42, 5.55)
+    # This receiver is the outer apron at world X49.75, not the narrower
+    # Get-In goods leaf farther inside. Carry the full outer mouth through
+    # every skin: world Z3.5..12.5 (local -4..5), clear to the 5.5m lintel.
+    # Both existing pedestrian flights must enter real air rather than brick.
+    frontage.wall_x("roughStone", -.24, -7.5, -4.0, .04, .98)
+    frontage.wall_x("roughStone", -.24, 5.0, 84.5, .04, .98)
+    frontage.wall_x("brick", -.25, -7.5, -4.0, .98, 5.55)
+    frontage.wall_x("brick", -.25, -4.0, 5.0, 5.5, 5.55)
     frontage.wall_x("weatheredRender", -.26, 5.0, 12.0, 1.02, 5.45)
     frontage.wall_x("weatheredRender", -.26, 72.0, 76.0, 1.02, 4.05)
     frontage.wall_x("brick", -.27, 44.5, 64.5, 1.02, 8.45)

@@ -62,6 +62,8 @@ export function createAcademicSociety(saved={}){
   let performingKey=null,performanceStartedAt=0,lastPerformanceTime=null;
   const bodyYaws=new Map();
   let pendingAmbient=null,ambientSerial=0,attention=null;
+  let activeActorIds=null;
+  const present=id=>!activeActorIds||activeActorIds.has(id);
   const ambientAttempts=new Map();
   const save=()=>serializeAcademicSociety(state);
   function release(reason){
@@ -74,6 +76,7 @@ export function createAcademicSociety(saved={}){
         :'Your voice is back where your breath is.'}],{reason,stateChanged:true})];
   }
   function eligible(beat,p){
+    if(!beat.lines.every(line=>present(line.actorId)))return false;
     if(!p||academicSocietyArea(p)!==beat.area)return false;
     if(beat.once&&state.issuedBeatIds.includes(beat.id))return false;
     if(state.roundBeatIds.includes(beat.id))return false;
@@ -85,7 +88,7 @@ export function createAcademicSociety(saved={}){
     if(!pendingAmbient||pendingAmbient.id!==id)return[];
     const pending=pendingAmbient;pendingAmbient=null;
     const beat=BEAT_BY_ID.get(pending.beatId);
-    if(completed&&inside&&beat&&academicSocietyArea(listener)===beat.area
+    if(completed&&inside&&beat&&beat.lines.every(line=>present(line.actorId))&&academicSocietyArea(listener)===beat.area
         &&pending.lines.every(line=>BY_ID.has(line.actorId)&&distance(listener,BY_ID.get(line.actorId))<=T.earshot)){
       if(!state.issuedBeatIds.includes(beat.id))state.issuedBeatIds.push(beat.id);
       if(!state.visitBeatIds.includes(beat.id))state.visitBeatIds.push(beat.id);
@@ -99,6 +102,7 @@ export function createAcademicSociety(saved={}){
     return[{type:'ambient-cancelled',id:pending.id,beatId:pending.beatId,reason,stateChanged:false}];
   }
   function tick(dt,context={}){
+    if(Array.isArray(context.activeActorIds)||Object.prototype.toString.call(context.activeActorIds)==='[object Set]')activeActorIds=new Set(context.activeActorIds);
     const onAcademicFloor=context.onAcademicFloor===true;
     listener=point(context.listener)||listener;
     focusedActor=BY_ID.has(context.focusedActor)?context.focusedActor:null;
@@ -125,7 +129,7 @@ export function createAcademicSociety(saved={}){
     }
     if(pendingAmbient){
       const beat=BEAT_BY_ID.get(pendingAmbient.beatId);
-      if(!beat||academicSocietyArea(listener)!==beat.area
+      if(!beat||!beat.lines.every(line=>present(line.actorId))||academicSocietyArea(listener)!==beat.area
           ||!pendingAmbient.lines.every(line=>BY_ID.has(line.actorId)&&distance(listener,BY_ID.get(line.actorId))<=T.earshot))
         events.push(...settleAmbient(pendingAmbient.id,{reason:'left-earshot'}));
       else{
@@ -152,7 +156,7 @@ export function createAcademicSociety(saved={}){
     }
     quiet-=delta;if(quiet>0)return events;
     const area=academicSocietyArea(listener);
-    if(state.visits>1&&!state.returnAcknowledged&&['declined','withdrawn','left','expired'].includes(state.consent)&&area==='loggia'&&distance(listener,BY_ID.get('odette'))<=T.earshot){
+    if(present('odette')&&state.visits>1&&!state.returnAcknowledged&&['declined','withdrawn','left','expired'].includes(state.consent)&&area==='loggia'&&distance(listener,BY_ID.get('odette'))<=T.earshot){
       state.returnAcknowledged=true;quiet=T.quietBetween;
       events.push(spoken('return','society:return',[{
         who:'unknown',actorId:'odette',name:BY_ID.get('odette').name,voiceSpeaker:BY_ID.get('odette').voiceSpeaker,sourceLabel:BY_ID.get('odette').sourceLabel,
@@ -162,6 +166,7 @@ export function createAcademicSociety(saved={}){
     const available=BEATS.filter(beat=>eligible(beat,listener));
     if(!available.length){
       const local=BEATS.filter(beat=>beat.area===area&&!beat.once
+        &&beat.lines.every(line=>present(line.actorId))
         &&beat.lines.every(line=>BY_ID.has(line.actorId)&&distance(listener,BY_ID.get(line.actorId))<=T.earshot));
       const repeatable=local.filter(beat=>(ambientAttempts.get(beat.id)||0)<T.maxAmbientAttempts);
       if(repeatable.length&&repeatable.every(beat=>state.roundBeatIds.includes(beat.id))){
@@ -188,7 +193,7 @@ export function createAcademicSociety(saved={}){
   }
   function dialogue(actorId){return academicSocietyDialogue(actorId,state);}
   function beginDialogue(actorId){
-    if(!BY_ID.has(actorId)||activeDialogue)return null;
+    if(!BY_ID.has(actorId)||!present(actorId)||activeDialogue)return null;
     if(pendingAmbient)settleAmbient(pendingAmbient.id,{reason:'direct-conversation'});
     attention=null;activeDialogue=actorId;focusedActor=actorId;
     return dialogue(actorId);
@@ -221,7 +226,7 @@ export function createAcademicSociety(saved={}){
   function actorFrame(context={}){
     // Door staff remain owned by their admission controller. Their actual
     // local positions let named residents look back and listen when addressed.
-    const allActors=new Map([...ACTORS,...(context.externalActors||[]).filter(actor=>
+    const allActors=new Map([...ACTORS.filter(actor=>present(actor.id)),...(context.externalActors||[]).filter(actor=>
       actor&&typeof actor.id==='string'&&point(actor)&&actor.floor===10)].map(actor=>[actor.id,actor]));
     const p=point(context.listener)||listener;
     const focus=BY_ID.has(context.focusedActor)?context.focusedActor:focusedActor;
@@ -270,7 +275,7 @@ export function createAcademicSociety(saved={}){
         else if(beatTime<2.2&&allActors.has(gazeKey))performance={key:`company:${actor.id}:${Math.floor((clock+index*3.7)/14)}`,
           ambient:true,cue:index%2?'amused':'attend',role:'listener',sourceActorId:gazeKey,targetActorId:actor.id,elapsedSec:beatTime};
       }
-      return{...actor,yaw,bodyYaw,visible:inside,socialAttention:watched,mode:mouth===actor.id?'speaking':performance?.role==='speaker'?'addressing':performance?.role==='listener'||talkingToPlayer?'listening':'idle',
+      return{...actor,yaw,bodyYaw,visible:inside&&present(actor.id),socialAttention:watched,mode:mouth===actor.id?'speaking':performance?.role==='speaker'?'addressing':performance?.role==='listener'||talkingToPlayer?'listening':'idle',
         speaking:mouth===actor.id,talkingToPlayer,gazeKey,gazeAt:target?{x:target.x,y:target.y}:null,
         performance,idleTime,phase:clock+index*1.73};
     });
@@ -279,9 +284,10 @@ export function createAcademicSociety(saved={}){
     state=createAcademicSocietyState(next);inside=false;firstTick=true;quiet=T.firstExchange;
     idleTime=0;listener=null;focusedActor=null;activeDialogue=null;
     performingKey=null;performanceStartedAt=0;lastPerformanceTime=null;bodyYaws.clear();
-    pendingAmbient=null;attention=null;ambientAttempts.clear();return save();
+    pendingAmbient=null;attention=null;ambientAttempts.clear();activeActorIds=null;return save();
   }
   return Object.freeze({tick,dialogue,beginDialogue,endDialogue,actorFrame,save,load,settleAmbient,
+    releaseVoiceOnDeparture:()=>release('leave'),
     view:()=>({...save(),inside,quiet,idleTime,activeDialogue,listener:listener?{...listener}:null,
       pendingAmbient:pendingAmbient?{id:pendingAmbient.id,beatId:pendingAmbient.beatId,area:pendingAmbient.area,attempt:pendingAmbient.attempt,elapsed:pendingAmbient.elapsed}:null,
       attention:attention?copy(attention):null})});

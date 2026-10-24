@@ -1,7 +1,20 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {PROP_INSTANCE_FLOATS,PROP_INSTANCE_BINDINGS,writePropInstanceFlags} from '../src/render/prop-instance-layout.js';
+import {PROP_INSTANCE_FLOATS,PROP_INSTANCE_BINDINGS,writePropInstanceFlags,propPoweredMaterialScale} from '../src/render/prop-instance-layout.js';
+test('a switched emitter can be genuinely dark without changing ordinary material or existing circuit power',()=>{
+ for(const scale of[0,.3,1,2.4]){
+  assert.equal(propPoweredMaterialScale({},scale),1,'ordinary props never inherit a practical switch');
+  assert.equal(propPoweredMaterialScale({sourceMemoryFixture:true},scale),scale,'existing Source circuit response stays exact');
+ }
+ for(const power of[0,.25,1]){
+  assert.equal(propPoweredMaterialScale({fixturePower:power}),power);
+  assert.equal(propPoweredMaterialScale({fixturePower:power,sourceMemoryFixture:true},.6),power*.6);
+ }
+ assert.equal(propPoweredMaterialScale({fixturePower:NaN}),1);
+ assert.equal(propPoweredMaterialScale({fixturePower:-1}),0);
+ assert.equal(propPoweredMaterialScale({fixturePower:8}),1);
+});
 test('instance channels fit the native attribute budget without overlapping paper or emission',()=>{
  const occupied=new Set(Array.from({length:16},(_,i)=>i));
  for(const[,size,bytes]of PROP_INSTANCE_BINDINGS)for(let i=bytes/4;i<bytes/4+size;i++){assert.ok(!occupied.has(i));occupied.add(i);}

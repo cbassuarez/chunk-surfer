@@ -38,13 +38,12 @@ import { ENDING_VARIANT, normalizeEndingVariant } from './ending-variants.js';
 export { ENDING_VARIANT, normalizeEndingVariant } from './ending-variants.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ⚠ EVERY SOUND IN EVERY ENDING IS A PLACEHOLDER. ⚠
+// ⚠ THE GENERIC ENDING BEDS ARE STILL PLACEHOLDERS. ⚠
 //
-// All nine endings currently play the OPENING TITLE THEME as their bed (see
-// STORY_AUDIO in audio/story-audio.js). That is the right stand-in — it is the
-// only music the player already associates with this building — and it is the
-// wrong final answer, because nine endings that sound the same are eight endings
-// that do not land.
+// The generic ending score borrows the OPENING TITLE THEME (STORY_AUDIO in
+// audio/story-audio.js). It is the only music already associated with this
+// building, but sharing it is a production stand-in. Inversion opts out: its
+// physical Source demolition and Source IV own their sound instead.
 //
 // This list is the single source of truth for what is still owed. It is printed
 // by test/ending-contract.spec.mjs on every `npm test` and shown on the god
@@ -54,7 +53,6 @@ export { ENDING_VARIANT, normalizeEndingVariant } from './ending-variants.js';
 export const ENDING_AUDIO_TODO = Object.freeze([
   Object.freeze({ id: 'ending.bed.sacrifice', kind: 'bed', seconds: '60-90', note: 'The Seal. Containment: it closes over you, and the last thing to go is your own torch.' }),
   Object.freeze({ id: 'ending.bed.helped', kind: 'bed', seconds: '60-90', note: 'He Tried to Help. The same closing, but somebody outside it was kind and it was not enough.' }),
-  Object.freeze({ id: 'ending.bed.inversion', kind: 'bed', seconds: '60-90', note: 'The Other Door. A building coming down, and a yard that is not there.' }),
   Object.freeze({ id: 'ending.bed.drugged', kind: 'bed', seconds: '60-90', note: 'Cold, Bitter, Gone. Ordinary. A car park. Nothing wrong with the light, which is the frightening part.' }),
   Object.freeze({ id: 'ending.bed.surfaced', kind: 'bed', seconds: '60-90', note: 'The Other Recordist. Two of them, on a service road, arriving in the morning.' }),
   Object.freeze({ id: 'ending.bed.contact-won', kind: 'bed', seconds: '45-70', note: 'Open Channel. Source ends; the fatal return leaves forty-one seconds of breath on the recorder.' }),
@@ -64,7 +62,7 @@ export const ENDING_AUDIO_TODO = Object.freeze([
   Object.freeze({ id: 'ending.strike.first', kind: 'one-shot', seconds: '4-8', note: 'The 06:00 first strike. The demolition landing on the downbeat — the loudest thing in the game.' }),
   Object.freeze({ id: 'ending.room.silent', kind: 'one-shot', seconds: '6-12', note: 'A room going properly silent: the moment the building stops having a signal in it.' }),
   Object.freeze({ id: 'ending.demolition.bed', kind: 'bed', seconds: '30-60', note: 'Demolition, sustained: plant, hydraulics, masonry, at a distance and then not.' }),
-  Object.freeze({ id: 'ending.demolition.collapse', kind: 'one-shot', seconds: '8-15', note: 'One span letting go. For the inversion collapse, which is currently lens effects and prose.' }),
+  Object.freeze({ id: 'ending.demolition.collapse', kind: 'one-shot', seconds: '8-15', note: 'One span letting go, for the generic Seal/Helped score. Inversion uses its physical Source demolition audio owner instead.' }),
 ]);
 
 // Whether an ending is still using a borrowed bed. Consumed by the god menu and
@@ -197,18 +195,27 @@ export const ENDING_CUTSCENES = Object.freeze({
   }),
   inversion: cutscene({
     endingId: 'inversion', interactionMode: 'walk',
-    worldAnchors: { frontDoors: Object.freeze({ kind: 'door', id: 'front-main' }), forecourt: Object.freeze({ kind: 'zone', id: 'front-atrium-exterior' }) },
-    actors: { player: 'walking-into-morning', staff: 'arriving-behind-heras', bus: 'first-service' },
-    camera: { treatment: 'first-person-door-to-forecourt', allowsLook: true, pullback: false },
-    finalAction: { id: 'cross-into-morning', label: 'STEP THROUGH THE OTHER DOOR', mode: ENDING_FINAL_ACTION_MODE.WORLD },
-    reducedMotion: { treatment: 'continuous-player-look-with-stepped-ambient-traffic' },
-    finalHold: { image: 'wet municipal dawn beyond the conservatoire doors', ms: 2600 },
+    worldAnchors: {
+      otherDoor: Object.freeze({ kind: 'door', id: 'ending-wrong-door-entry' }),
+      demolition: Object.freeze({ kind: 'source', id: 'ending-wrong-door' }),
+      sourceIV: Object.freeze({ kind: 'source', id: 'source-IV' }),
+      farGreyDoor: Object.freeze({ kind: 'door', id: 'source-IV-exit' }),
+    },
+    actors: { player: 'walking-falling-catching-exploring-crossing', helper: 'unidentified-at-threshold', building: 'source-I-and-II-demolition', source: 'IV-remains-walkable' },
+    camera: { treatment: 'first-person-physical-demolition-to-source-IV', allowsLook: true, pullback: false },
+    finalAction: { id: 'cross-source-IV-grey-door', label: 'STEP THROUGH THE GREY DOOR', mode: ENDING_FINAL_ACTION_MODE.WORLD, completionOwner: 'source-IV', receipt: 'source-IV:<runId>:complete' },
+    reducedMotion: { treatment: 'stepped-physical-collapse-black-and-free-look' },
+    finalHold: { image: 'the far grey door, open at the edge of Source IV', ms: 0 },
+    // Physical host milestones, not a second score of scheduled world effects.
+    // main.js bypasses the generic cutscene scheduler for this route. The live
+    // demolition owns I/II, black owns the handoff, and IV owns the final receipt.
     beats: [
-      cutsceneBeat('cross-front-doors', 'position', { anchor: 'frontDoors', radius: 3, worldLook: 'dawn-0600', effect: 'wrong-door-reveal', dialogue: [dialogueSource('ending.inversion', 'start.line.1')] }),
-      cutsceneBeat('sodium-off', 'time', { atMs: 1200, cue: 'ending.dawn.sodium-off', effect: 'sodium-shutdown' }),
-      cutsceneBeat('birds-and-bus', 'time', { atMs: 3100, cue: 'ending.dawn.first-bus', effect: 'birds-bus-arrival' }),
-      cutsceneBeat('demolition-shift-arrives', 'time', { atMs: 5600, effect: 'staff-behind-heras', dialogue: [dialogueSource('ending.inversion', 'out.line.6')] }),
-      cutsceneBeat('ordinary-morning', 'time', { atMs: 8000, dialogue: [dialogueSource('ending.inversion', 'out.line.8')] }),
+      cutsceneBeat('other-door-threshold', 'dialogue', { dialogueId: dialogueSource('ending.inversion', 'out.line.1'), dialogue: [dialogueSource('ending.inversion', 'out.line.1')] }),
+      cutsceneBeat('source-I-collapse', 'interaction', { action: 'ending-wrong-door:source-I-collapse' }),
+      cutsceneBeat('source-II-collapse', 'interaction', { action: 'ending-wrong-door:source-II-collapse' }),
+      cutsceneBeat('black-handoff', 'interaction', { action: 'ending-wrong-door:black' }),
+      cutsceneBeat('source-IV-entry', 'position', { anchor: 'sourceIV', radius: 2 }),
+      cutsceneBeat('far-grey-door-crossing', 'interaction', { action: 'cross-source-IV-grey-door' }),
     ],
   }),
   drugged: cutscene({
@@ -406,8 +413,9 @@ export const ENDING_MANIFEST = Object.freeze({
   }),
 
   // ── THE OTHER DOOR ─────────────────────────────────────────────────────────
-  // Inversion. Two playable legs and a door that is not where the door is. The
-  // most developed ending already; the collapse is what it is missing.
+  // The same two timed escape legs lead to an unidentified helper. Beyond that
+  // threshold the physical demolition and freely explored Source IV own time,
+  // input and completion; the final grey door is a deliberate crossing.
   inversion: Object.freeze({
     id: 'inversion',
     title: 'The Other Door',
@@ -436,17 +444,17 @@ export const ENDING_MANIFEST = Object.freeze({
     tree: 'ending.inversion',
     hush: 'gone',
     companion: null,
-    environment: Object.freeze([
-      Object.freeze({ at: 0.0, kind: ENDING_EVENT.LENS, value: 'rupture' }),
-      Object.freeze({ at: 4.0, kind: ENDING_EVENT.SHAKE, amount: 1.2, ms: 900 }),
-      Object.freeze({ at: 9.0, kind: ENDING_EVENT.SHAKE, amount: 2.0, ms: 1400 }),
-      Object.freeze({ at: 14.0, kind: ENDING_EVENT.FLASH, ms: 220 }),
-      Object.freeze({ at: 20.0, kind: ENDING_EVENT.POSSESS, value: 'rupture', amount: 5 }),
-    ]),
-    audio: Object.freeze(bed('ending.inversion')),
-    image: 'wet municipal dawn beyond the conservatoire doors',
+    // No generic transcript clock can finish, shake or recolour the live route.
+    environment: Object.freeze([]),
+    // The Source I/II demolition audio owner yields to IV's own place. A title
+    // theme on a transcript clock must not run underneath either playable world.
+    audio: Object.freeze({ bed: null, oneShots: Object.freeze([]) }),
+    image: 'the far grey door, open at the edge of Source IV',
     coda: () => 'out',
     residue: 'engineering-appendix',
+    tail: Object.freeze([]),
+    referenceTail: false,
+    dockTail: false,
     cutscene: ENDING_CUTSCENES.inversion,
   }),
 

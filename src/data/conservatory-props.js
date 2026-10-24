@@ -28,6 +28,8 @@ import { PUB_NEW_ACTORS, PUB_MESHES, pubActor, pubFacePoint } from './pub-popula
 import { PUB_FAVOR_MESHES, PUB_FAVOR_PROPS } from './pub-favors.js';
 import { ACADEMIC_GALLERY_MESHES, ACADEMIC_GALLERY_PROPS, academicGalleryPlacement } from './academic-gallery-treatment.js';
 import { LOADING_BAY_ACCESS } from './loading-bay-access.js';
+import { VAN_REAR_STOCK_PARTS } from './van-rear-stock.js';
+import { MAIN_STAIR_WALL_MESHES, MAIN_STAIR_WALL_PROPS } from './main-stair-wall-dressing.js';
 
 const P = (id, mesh, x, y, yaw = 0, extra = {}) => ({ id, mesh, x, y, yaw, scale:1, ...extra });
 
@@ -123,6 +125,8 @@ const DOCK_REEL = [{worldId:'dock_reel',fileLabel:'01'}];
 const DOCK_SHUTTER = [{worldId:'dock_shutter',fileLabel:'01'}];
 
 export const PROP_MESH = Object.freeze({
+  ...Object.fromEntries(VAN_REAR_STOCK_PARTS.map(part=>[part.mesh,{w:2,d:4.5,blocks:false}])),
+  ...MAIN_STAIR_WALL_MESHES,
   ...ACADEMIC_GALLERY_MESHES,
   ...PUB_FAVOR_MESHES,
   ...ARCHITECTURE_FITTING_MESHES, ...INSTITUTION_OCCUPATION_MESHES, ...BUILDING_AMENITY_MESHES, ...BUILDING_WINDOW_MESHES,
@@ -187,7 +191,7 @@ export const PROP_MESH = Object.freeze({
   // floorplan remains the collision authority; this is the construction layer
   // whose 58 real treads, slab edges and open-well rails must never be reduced
   // to the half-metre navigation raster.
-  main_open_well_stair:{w:6.5,d:7.1,h:15.1,blocks:false},
+  main_open_well_stair:{w:6.8,d:7.1,h:15.1,blocks:false},
   ticket_counter:{w:2.8,d:.75,blocks:true}, key_cabinet:{w:.9,d:.24,blocks:true},
   rekey_ledger:{w:1.22,d:.12,blocks:false,frontAxis:'-z'}, chapel_key_cabinet:{w:1,d:.36,h:1.24,blocks:false},
   chapel_key_ring_ch04:{w:.18,d:.37,h:.28,blocks:false},
@@ -296,6 +300,8 @@ export const PROP_MESH = Object.freeze({
   exterior_mews_neighbor:{w:.82,d:.60,h:1.82,blocks:false},
   exterior_pub_driver:{w:.88,d:.66,h:1.84,blocks:false},
   yard_van:{w:2.9,d:6.6,h:2.6,blocks:true},
+  yard_van_field_case_open:{w:.70,d:.90,blocks:false},
+  yard_van_field_case:{w:.8,d:1.8,h:1.8,blocks:false},
   yard_van_lamp:{w:.4,d:.25,blocks:false},
   natatorium_roof_structure:{w:23.2,d:20.5,blocks:false},
   natatorium_perimeter_relief:{w:25.2,d:22.2,blocks:false},
@@ -452,6 +458,7 @@ const BASEBOARD_PROPS = Object.entries(BASEBOARDS).map(([group, b]) =>
   }));
 
 export const CONSERVATORY_PROPS = [
+  ...MAIN_STAIR_WALL_PROPS,
   ...PUB_FAVOR_PROPS,
   ...ACADEMIC_GALLERY_PROPS,
   ...INSTITUTION_OCCUPATION_PROPS, ...BUILDING_AMENITY_PROPS,
@@ -712,7 +719,12 @@ export const CONSERVATORY_PROPS = [
     structural:true,blocks:true,action:'yard-van',label:'the back of the van',
     inspectAt:{x:63.6,y:208.0},
   }),
-  P('yard-van-lamp','yard_van_lamp',65.6,208.0,0,{
+  ...VAN_REAR_STOCK_PARTS.map(part=>P(part.id,part.mesh,66.0,208.0,Math.PI/2,{interactive:false,structural:true,blocks:false})),
+  P('yard-van-field-case-open','yard_van_field_case_open',66.0,208.0,Math.PI/2,{interactive:false,structural:true,blocks:false}),
+  P('yard-van-field-case','yard_van_field_case',66.0,208.0,Math.PI/2,{
+    interactive:false,structural:true,blocks:false,
+  }),
+  P('yard-van-lamp','yard_van_lamp',64.0,208.0,Math.PI/2,{
     interactive:false,structural:true,elevation:2.30,
     lightMaintained:true,lightColor:[1,.86,.60],
   }),

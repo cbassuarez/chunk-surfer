@@ -75,6 +75,16 @@ test('reduced settings retain endpoints and bounded crowds; protected recording 
  for(const out of[off,protectedOutput])assert.ok(out.every(p=>p.sourceStructure==='source-demolition'));
  assert.deepEqual(render({...frame,released:true},options),[]);
 });
+
+test('reduced motion preserves a controlled held-load interval until its authored release',()=>{
+ const part={...G.parts[0],startTime:.1,releaseTime:2.5};
+ const geometry={...G,parts:[part],emitters:[]};
+ const held=render({...frame,elapsed:2.4},{...options,geometry,reducedMotion:true});
+ const intact=render({...frame,elapsed:0},{...options,geometry,reducedMotion:true});
+ assert.deepEqual(held,intact,'a delayed support release must not expose the final opening during held weight');
+ const final=render({...frame,elapsed:3.51},{...options,geometry,reducedMotion:true});
+ assert.notDeepEqual(final[1].matrix,intact[1].matrix);
+});
 test('nothingness is a finite opaque world box on the same floor, not an eye-attached screen fade',()=>{
  const out=render({...frame,blackness:1},options);assert.equal(out.length,1);
  const box=out[0];assert.equal(box.mesh,G.darkMesh);assert.equal(box.apparitionVariant,13);

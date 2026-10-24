@@ -68,7 +68,7 @@ test('actual main routes room sound and diagnostics by physical listener, pause,
   let special=false,focused=true,speaking=false,top=null;
   const environment={
     pubHospitalityInput,EXTERIOR_PUB,ZONE,CELL:.5,px:84,py:894,storyMode:true,inRogue:true,paused:false,
-    sourcePubScene:null,sourceDriveSession:null,activeBattleId:null,pubRoomAudio:null,sourcePubAudio:null,actx:{},sfxGain:{},
+    sourcePubScene:null,sourceDriveSession:null,sourceContinuationScene:null,coastalMemoryScene:null,getInDriveTeaserScene:null,activeBattleId:null,pubRoomAudio:null,sourcePubAudio:null,actx:{},sfxGain:{},
     usingSpecialSpace:()=>special,gameplayInputLifecycleActive:()=>focused,mapHeading:()=>0,
     FP:{isLoaded:()=>true,logicalToPhysical:()=>({x:-12,z:218,y:.12}),zoneAt:()=>ZONE.pub,forEachDoor:visit=>visit({id:'pub-west-entry',runtime:{openFraction:.8}})},
     R3:{r3dWorldYaw:()=>1.25,r3dPubStatus:()=>({hospitality:true})},REC:{isRecording:()=>false},SPEECH:{speaking:()=>speaking},scenes:{top:()=>top},

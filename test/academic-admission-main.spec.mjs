@@ -31,6 +31,7 @@ function fixture(saved={}){
   const c={FP,PROPS,scenes,ACADEMIC_CLUE_HOST_SURFACES,ACADEMIC_BOUNCER_CLUES,ACADEMIC_BOUNCER_CLUE_PROPS,
     ACADEMIC_BOUNCER_SPOKEN_CLUES,ACADEMIC_ROOF_DRESSING_OBSERVATIONS,academicBouncers:createAcademicBouncers(saved),
     academicSociety:{save:()=>({consent:'declined',visits:3})},academicFloorPopulation:{save:()=>({remarks:{kept:2}})},
+    academicFloorReturns:{save:()=>({version:1,visits:1,returns:0,presence:'inside',departureObserved:false,awaySeconds:0,returnArmed:false})},
     academicBouncerScene:null,academicBouncerSocialScene:null,academicBouncerDialogueLine:null,
     academicGhostDispatch:null,academicPopulationDispatch:null,academicBouncerSocialDispatch:null,
     actx:null,dialogGain:null,master:null,paused:false,

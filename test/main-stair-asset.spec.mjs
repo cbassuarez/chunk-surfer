@@ -24,11 +24,20 @@ assert.deepEqual({
   lower:stats.design.lowerRisers,
   upper:stats.design.upperRisers,
   going:stats.design.goingM,
-},{revision:3,curvilinear:true,navigation:'analytic-helix',flights:4,width:2,well:1.3,lower:28,upper:30,going:.28});
+},{revision:4,curvilinear:true,navigation:'analytic-helix',flights:4,width:2,well:1.3,lower:28,upper:30,going:.28});
 assert.equal(stats.design.coplanarFinishPrisms,0,'finish is a surface, not an overlapping solid on every tread');
 assert.equal(stats.design.doubleSidedOpaqueMaterials,0,'opaque stair construction is back-face culled');
-assert.deepEqual(stats.design.floor1Aim,[61.5,31.5],'the Floor 1 apron aims at the immutable hall centre');
-assert.ok(stats.totalTriangles>28000,'rails, continuous soffits, nosings, and treads are construction rather than a block proxy');
+assert.deepEqual(stats.design.floor1Aim,[61.5,31.5],'the contract still names the immutable Floor 1 hall centre');
+// Revision 4 builds the stair in its stairwell: both landings as slabs at the
+// heights the plan grid draws, flush nosings at the front of every tread, and
+// one continuous inner rail. Closedness, seams and normals are measured in
+// test/main-stair-construction.spec.mjs; this pins what the pack claims to be.
+assert.deepEqual(stats.design.stairwell,{x0:60,x1:66,z0:33,z1:39,floor:0,ceil:13.8},'the pack is built for the 6 x 6 m stairwell');
+assert.deepEqual(stats.design.builtLandings.map((l)=>[l.id,l.drawnM]),[['upper-floor-landing',4.8],['academic-floor-landing',9.9451]],
+  'both landings are built, at the heights the grid draws their floors');
+assert.equal(stats.design.nosings.placement,'front edge, flush','nosings mark the edge you step over');
+assert.equal(stats.design.continuousInnerRail,true,'the inner rail runs unbroken round the well');
+assert.ok(stats.totalTriangles>20000,'two closed runs, two slabs, continuous rails and hundreds of balusters are construction rather than a block proxy');
 
 const jsonLength=bytes.readUInt32LE(12);
 const gltf=JSON.parse(bytes.subarray(20,20+jsonLength).toString('utf8').trim());

@@ -9,6 +9,10 @@ function asset(path){const bytes=read(path),length=bytes.readUInt32LE(12);return
 const drive=asset('artifacts/source-drive-study/drive.glb');
 const metrics=JSON.parse(read('artifacts/source-drive-study/geometry/metrics.json'));
 const before=JSON.parse(read('artifacts/source-drive-study/geometry/cabin-v2/preserved-contract.json'));
+// The Transit Mk3 cab. The driver package keeps cabin v2's contract; the van's
+// own shell, body and instruments are pinned here.
+const transit=JSON.parse(read('artifacts/source-drive-study/geometry/transit-mk3/preserved-contract.json'));
+const DRIVER_PACKAGE=['eye','eyePitch','wheel','radioNeedle','radioFace','recorder'];
 function accessor(index){
  const a=drive.doc.accessors[index],v=drive.doc.bufferViews[a.bufferView],width={5126:4,5125:4,5123:2,5121:1}[a.componentType],size={SCALAR:1,VEC2:2,VEC3:3,VEC4:4}[a.type],packed=Buffer.alloc(a.count*size*width);
  for(let row=0;row<a.count;row++)drive.bin.copy(packed,row*size*width,(v.byteOffset||0)+(a.byteOffset||0)+row*(v.byteStride||size*width),(v.byteOffset||0)+(a.byteOffset||0)+row*(v.byteStride||size*width)+size*width);
@@ -35,25 +39,28 @@ function clearance(point){let distance=Infinity;for(const triangle of triangles)
 test('the canonical cabin and geometry receipt identify the same final exported asset',()=>{
  assert.equal(sha(drive.bytes),metrics.sha256);assert.deepEqual(read('public/assets/source-drive/drive.glb'),drive.bytes);
  assert.deepEqual(JSON.parse(read('public/assets/source-drive/geometry/metrics.json')),metrics);
- assert.equal(metrics.cabinRevision,'formed-working-van-v3');
+ assert.equal(metrics.cabinRevision,'transit-mk3');assert.equal(sha(drive.bytes),transit.assetSha256);
  assert.equal(triangles.length,metrics.parts.find(p=>p.mesh==='drive_cabin').triangles);
- assert.equal(cabin.primitives.length,10,'broad material families do not add draw primitives');
+ assert.equal(cabin.primitives.length,transit.cabinPrimitives,'broad material families do not add draw primitives');
  assert.ok(triangles.length<45000&&metrics.triangles<72000,'cabin and receiver construction stay within the bounded pack budget');
 });
 
 test('all control positions, other control meshes, world geometry and textures preserve the approved contracts',()=>{
- for(const[key,value]of Object.entries(before.contract))assert.deepEqual(metrics[key],value,key);
- assert.equal(drive.doc.meshes.length,Object.keys(before.meshes).length+1);
- for(const[name,hash]of Object.entries(before.meshes)){const mesh=drive.doc.meshes.find(m=>m.name===name);assert.ok(mesh,name);if(name!=='drive_radio')assert.equal(meshHash(mesh),hash,name);}
- assert.notEqual(meshHash(drive.doc.meshes.find(m=>m.name==='drive_radio')),before.meshes.drive_radio,'the receiver model is intentionally refined');
+ for(const key of DRIVER_PACKAGE)assert.deepEqual(metrics[key],before.contract[key],`${key} is where the hands and reach targets expect it`);
+ for(const[key,value]of Object.entries(transit.contract))assert.deepEqual(metrics[key],value,key);
+ assert.equal(drive.doc.meshes.length,Object.keys(transit.meshes).length+1);
+ for(const[name,hash]of Object.entries(transit.meshes)){const mesh=drive.doc.meshes.find(m=>m.name===name);assert.ok(mesh,name);assert.equal(meshHash(mesh),hash,name);}
+ // World geometry is byte-for-byte the approved route; only the van changed.
+ for(const[name,hash]of Object.entries(before.meshes))if(!/^drive_(radio|wheel|speed_needle|vehicle_body|tyre)$/.test(name))assert.equal(transit.meshes[name],hash,`${name} is unchanged since cabin v2`);
 });
 
 test('the seated eye has physical head clearance and a clear usable windscreen',()=>{
  assert.ok(clearance(metrics.eye)>.20,'the head is not embedded in trim, seat, roof or a door');
  const w=metrics.windscreenOpening;
- for(const x of[-.65,-.3,0,.3,.65])for(const y of[1.42,1.65,1.95]){
-  const z=w.bottomZ+(y-w.bottomY)/(w.topY-w.bottomY)*(w.topZ-w.bottomZ),target=[x,y,z];
-  assert.ok(firstHit(metrics.eye,target)>norm(sub(target,metrics.eye))+.02,`clear windshield ray ${x}/${y}`);
+ // Low, middle and high across the opening (the heights v3 tested, as fractions).
+ for(const x of[-.65,-.3,0,.3,.65])for(const f of[.14,.41,.76]){
+  const y=w.bottomY+f*(w.topY-w.bottomY),z=w.bottomZ+f*(w.topZ-w.bottomZ),target=[x,y,z];
+  assert.ok(firstHit(metrics.eye,target)>norm(sub(target,metrics.eye))+.02,`clear windshield ray ${x}/${f}`);
  }
 });
 
@@ -65,15 +72,17 @@ test('the wheel rim retains full steering clearance from the new fascia, hood an
 test('the cabin cannot hide the fixed radio, recorder keys or gauge faces from the seated eye',()=>{
  const rc=metrics.recorder,c=Math.cos(rc.tiltX),s=Math.sin(rc.tiltX),points=[[-.065,1.10,-.36],...[-.0198,.025,.0698].map(x=>[x,1.07592,-.379])];
  for(let i=0;i<3;i++){const p=[.0340638587+i*99*.274/736,-.05547011,.0299];points.push([rc.center[0]+p[0],rc.center[1]+c*p[1]-s*p[2],rc.center[2]+s*p[1]+c*p[2]]);}
- points.push(...[.30,.48,.66].map(x=>[x,1.207,-.623]));
+ points.push(...metrics.gauges.map(g=>g.center));
+ for(const m of metrics.mirrors)points.push([m.center[0],m.center[1],m.center[2]+.002]);
  for(const target of points)assert.ok(firstHit(metrics.eye,target)>=norm(sub(target,metrics.eye))-.012,`unobstructed operative face ${target}`);
 });
 
 test('the authored cabin contains dimensional construction rather than surface plaques',()=>{
  const features=metrics.cabinConstruction.features,find=name=>{const feature=features.find(f=>f.name===name);assert.ok(feature,name);return feature.bounds;};
- for(const name of['pressed sloping firewall','engine access doghouse','curved insulated headliner','open instrument hood','equipment shelf','door pocket bottom','shaped vinyl cushion','shaped vinyl back','bulkhead document rack lip'])find(name);
+ for(const name of['pressed toe board','gearbox tunnel','front wheel housing','curved insulated headliner','roof front closing skin','open instrument hood','equipment shelf','door pocket bottom','shaped vinyl cushion','shaped vinyl back','bulkhead document rack lip'])find(name);
  for(const name of['heater control cartridge','heater lever slot','heater slide lever','heater thumb pad','equipment tray contact paint loss'])find(name);
- const hood=find('open instrument hood');assert.ok(hood.max[2]-hood.min[2]>.35,'the instrument hood has actual depth');
+ // A Transit binnacle is shallower than the forward-control hood it replaced.
+ const hood=find('open instrument hood');assert.ok(hood.max[2]-hood.min[2]>.25,'the instrument hood has actual depth');
  const shelf=find('equipment shelf');assert.ok(shelf.max[2]-shelf.min[2]>.32);
  const back=find('shaped vinyl back');assert.ok(back.max[2]-back.min[2]>.15,'back cushion includes recline and side bolsters');
  const liner=find('curved insulated headliner');assert.ok(liner.max[1]-liner.min[1]>.07,'the headlining follows a real cross section');

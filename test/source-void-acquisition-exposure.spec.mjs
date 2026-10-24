@@ -33,3 +33,9 @@ test('authored bright acquisition survives the Source floor and malformed weight
   assert.equal(r3dPhysicalAcquisitionExposure({lightingExposure:1,physicalWeight:-10}),1);
   assert.equal(r3dPhysicalAcquisitionExposure({lightingExposure:1,physicalWeight:10}),3);
 });
+
+test('a calibrated physical camera can retain its highlight headroom without lowering the ordinary street floor',()=>{
+  assert.equal(r3dPhysicalAcquisitionExposure({lightingExposure:2.4,physicalWeight:1,minimumExposure:1}),2.4);
+  assert.equal(r3dPhysicalAcquisitionExposure({lightingExposure:2.4,physicalWeight:1}),3);
+  assert.equal(r3dPhysicalAcquisitionExposure({lightingExposure:2.4,physicalWeight:1,minimumExposure:1,override:4.5}),4.5);
+});

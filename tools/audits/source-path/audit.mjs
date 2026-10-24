@@ -55,6 +55,9 @@ const MAIN = 'src/main.js';
 const CONTINUATION = 'src/game/source-continuation.js';
 const CONTINUATION_DATA = 'src/data/source-continuation.js';
 const CONTINUATION_SCENE = 'src/game/source-continuation-scene.js';
+const FALSE_RETURN = 'src/game/source-false-return.js';
+const FALSE_RETURN_LAYOUT = 'src/game/source-false-return-layout.js';
+const EARTHFALL = 'src/game/source-earthfall.js';
 const at = (file, symbol) => ({ file, symbol });
 const P = CHUNK_SURF_PHASE;
 const S = SOURCE_FINALE_STAGE;
@@ -290,15 +293,17 @@ export const STAGES = Object.freeze([
   {
     id: 'grey-doors', section: 'away', lane: 'away', short: 'Grey doors', title: 'The grey goods doors',
     where: 'The edge of the field. Nothing else at the edge lets you across.',
-    happens: 'The real pair keeps its fixed opening and collision. On a fresh normal route, crossing enters the added Wrong Return scene while Source I and its original body remain intact. False echo pairs still erase themselves. Saves already beyond the old handoff retain their existing onward journey.',
-    moveOn: 'Open and walk through the real pair to enter Wrong Return.',
+    happens: 'The real pair keeps its fixed opening and collision. On a fresh normal route, crossing seems to return to Ellery. The false building and retained descent precede Wrong Return, while Source I and its original body remain intact. False echo pairs still erase themselves. Existing onward journeys retain their position.',
+    moveOn: 'Open and walk through the real pair into the false Ellery return.',
     callouts: [
       { kind: 'can-return', text: 'Visible refuge portals return to this original approach with continuation progress intact. Until the bust has an answer, returning from the physical road reopens the final Catch balcony.' },
       { kind: 'saves', text: 'The new route lives in chunkSurf.sourceContinuation. Source I remains uncommitted until the final Catch door is physically crossed.' },
     ],
     phases: [P.LANDSCAPE, P.FINAL, P.HORIZON], finale: [S.UNCOMMITTED, S.HORIZON], objectives: [], checkpoints: [],
     next: [
-      { to: 'wrong-return', when: 'fresh forward crossing' },
+      { to: 'false-ellery', when: 'fresh forward crossing' },
+      { to: 'earthfall', when: 'existing descent checkpoint resumes' },
+      { to: 'wrong-return', when: 'existing Source II checkpoint resumes' },
       { to: 'nothing', when: 'legacy save already beyond the original handoff' },
       { to: 'catch', when: 'reverse from the road before the bust decision, after completing the added route', back: true },
     ],
@@ -312,6 +317,36 @@ export const STAGES = Object.freeze([
     ],
     presets: [], jump: [{ probe: 'walkToEdgeDoor', call: '__probe.walkToEdgeDoor()' }, { probe: 'openEdgeDoor', call: '__probe.openEdgeDoor()' }], puzzles: [],
     specs: ['test/source-edge-door.spec.mjs', 'test/source-continuation-integration.spec.mjs'],
+  },
+  {
+    id: 'false-ellery', section: 'away', lane: 'away', short: 'Ellery Again', title: 'The false return to Ellery',
+    where: 'A borrowed copy of the existing Ellery floor set, entered through its practice-side door.',
+    happens: 'The first four distinct opened door assemblies lead into familiar rooms. The fifth opens onto Source II, and every later doorway follows it. The chapel approach and attempted outside retreat fold back to the arrival door. This presentation never dispatches ordinary building, chapel or Contact progression.',
+    moveOn: 'Open five different doors, then physically cross an open Source-bound threshold.',
+    callouts: [{kind:'saves',text:'Local door motions, count and body position survive pause and reload. Existing journeys already in the descent or Source II skip this introduction.'}],
+    phases: [P.LANDSCAPE, P.FINAL], finale: [S.UNCOMMITTED], objectives: [], checkpoints: [],
+    next: [{to:'earthfall',when:'the fifth or a subsequent open doorway is physically crossed'}],
+    span: () => null, measure: () => [['Distinct openings','5'],['Door swing','0.45 s']],
+    cites: [
+      ['The fresh forward admission and legacy bypass',at(FALSE_RETURN,'export function sourceFalseReturnNeeded(')],
+      ['Five unique physical openings',at(FALSE_RETURN,'function countDoors(')],
+      ['The actual copied Ellery floor set',at(FALSE_RETURN_LAYOUT,'export function buildSourceFalseReturnLayout(')],
+      ['The local borrowed-world owner',at(MAIN,'async function beginSourceFalseReturn(')],
+    ],
+    presets: [], jump: [{probe:'godMenu',call:"__probe.godMenu('source-space')"}], puzzles: [],
+    specs: ['test/source-false-return.spec.mjs','test/source-false-return-layout.spec.mjs','test/source-false-return-integration.spec.mjs'],
+  },
+  {
+    id: 'earthfall', section: 'away', lane: 'away', short: 'The Descent', title: 'The retained Source II descent',
+    where: 'The original Earthfall threshold, between the false Ellery door and Wrong Return.',
+    happens: 'Walking away from the threshold releases the existing ground and carries the body through the retained descent. Its settled lower door still requires an opening and a real walked crossing.',
+    moveOn: 'Take the descent, open the lower door and walk into Wrong Return.',
+    callouts: [], phases: [P.LANDSCAPE,P.FINAL], finale: [S.UNCOMMITTED], objectives: [], checkpoints: [],
+    next: [{to:'wrong-return',when:'cross the settled lower door'},{to:'field',when:'retreat before footing loss',back:true}],
+    span: () => null, measure: () => [['Retained descent','100 m']],
+    cites: [['The existing physical controller',at(EARTHFALL,'export function stepSourceEarthfall(')],['The existing main owner',at(MAIN,'async function beginSourceEarthfall(')]],
+    presets: [], jump: [{probe:'godMenu',call:"__probe.godMenu('source-space')"}], puzzles: [],
+    specs: ['test/source-earthfall.spec.mjs','test/source-earthfall-integration.spec.mjs'],
   },
   {
     id: 'wrong-return', section: 'away', lane: 'away', short: 'Wrong Return', title: 'Source II: Wrong Return',
@@ -361,7 +396,7 @@ export const STAGES = Object.freeze([
     cites: [
       ['The actual shelf surfaces and openings', at(CONTINUATION_DATA, 'const catchSurfaces = [];')],
       ['Supported movement, falls and counterweight', at(CONTINUATION, 'function fallStep(')],
-      ['The final open-then-cross condition', at(CONTINUATION, "state.doorOpen['catch-final']")],
+      ['The final open-then-cross condition', at(CONTINUATION, "sourceContinuationDoorFraction(state, 'catch-final') >= C.doorPassFraction")],
       ['The original normal exit and one-time receipt', at(RUNTIME, 'function completeContinuation(')],
       ['The existing drive handoff', at(MAIN, 'async function deliverSourceContinuationHandoff(')],
     ],

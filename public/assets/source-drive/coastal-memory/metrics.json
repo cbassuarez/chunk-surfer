@@ -1,0 +1,912 @@
+{
+  "schema": 1,
+  "kind": "shared-coastal-memory-assets",
+  "revision": "coastal-memory-6",
+  "sha256": "29c51302b80687ac4f42fe180a430fa37652cac69396fed6011864ff33e0774d",
+  "bytes": 3121804,
+  "triangles": 35616,
+  "meshes": {
+    "cm_limestone_coast": {
+      "bounds": {
+        "min": [
+          -14.912419319152832,
+          -9.5,
+          -210
+        ],
+        "max": [
+          43.05964279174805,
+          29.30266571044922,
+          300
+        ]
+      },
+      "triangles": 8600,
+      "vertices": 17524,
+      "features": {
+        "type": "folded-limestone-cliff",
+        "nominalRoadLipDropMetres": 37.5,
+        "lowerBenchMaximumDipMetres": 12,
+        "construction": "Inclined bedding, recessed joints, marine undercut, detached toe and a thin soil cap; no cuboid cliff proxy.",
+        "retainedRoadFormation": {
+          "start": 317,
+          "end": 337,
+          "triangles": 324,
+          "mergedOnce": true,
+          "physicalFootprints": "COASTAL_RETAINED_ROAD_BARRIERS"
+        }
+      }
+    },
+    "cm_grass_bank": {
+      "bounds": {
+        "min": [
+          -36,
+          15.769013404846191,
+          -49
+        ],
+        "max": [
+          36.081382751464844,
+          28.382164001464844,
+          119
+        ]
+      },
+      "triangles": 9240,
+      "vertices": 27720,
+      "features": {
+        "type": "actual-walkable-triangles",
+        "collisionSource": "COASTAL_WALKABLE_SURFACE",
+        "trianglesExact": true,
+        "roadFormation": "Actual sampled road-height formation recessed beneath the existing route.",
+        "path": "An irregular 1.1–1.4m worn soil track follows the real coastal path; no luminous or coloured route overlay."
+      }
+    },
+    "cm_soil_cap": {
+      "bounds": {
+        "min": [
+          0.87985759973526,
+          15.376212120056152,
+          -210
+        ],
+        "max": [
+          36.090213775634766,
+          28.32219886779785,
+          300
+        ]
+      },
+      "triangles": 340,
+      "vertices": 680,
+      "features": {
+        "type": "thin-grass-root-soil-cap",
+        "thicknessMetres": 0.46
+      }
+    },
+    "cm_seabed": {
+      "bounds": {
+        "min": [
+          6.14866304397583,
+          -9.529195785522461,
+          -210
+        ],
+        "max": [
+          330,
+          -8.271108627319336,
+          300
+        ]
+      },
+      "triangles": 5568,
+      "vertices": 2891,
+      "features": {
+        "type": "submerged-rock-platform",
+        "waterSurface": false
+      }
+    },
+    "cm_wreck_seat": {
+      "bounds": {
+        "min": [
+          1.5,
+          -8.800000190734863,
+          -31.5
+        ],
+        "max": [
+          21.5,
+          -3.0877606868743896,
+          -9.5
+        ]
+      },
+      "triangles": 1680,
+      "vertices": 899,
+      "features": {
+        "type": "settled-van-seabed",
+        "groundPlane": "Exact canonical bodyY0 contact plane; all four actual tyres rest on it."
+      }
+    },
+    "cm_limestone_block": {
+      "bounds": {
+        "min": [
+          -1.0714185237884521,
+          0,
+          -1.0552433729171753
+        ],
+        "max": [
+          1.1503819227218628,
+          1,
+          1.1586782932281494
+        ]
+      },
+      "triangles": 72,
+      "vertices": 168,
+      "features": {
+        "type": "upstanding-bedding-block",
+        "collision": "All radial footprints contain the unit circle; canonical radius stays inside real stone."
+      }
+    },
+    "cm_limestone_outcrop_0": {
+      "bounds": {
+        "min": [
+          -1.0199999809265137,
+          0,
+          -1.0199999809265137
+        ],
+        "max": [
+          1.0399999618530273,
+          1.1524771451950073,
+          1.0499999523162842
+        ]
+      },
+      "triangles": 108,
+      "vertices": 234,
+      "features": {
+        "type": "fractured-inclined-limestone-outcrop",
+        "variant": 0,
+        "physicalFootprint": [
+          [
+            -0.94,
+            -0.5
+          ],
+          [
+            -0.55,
+            -0.97
+          ],
+          [
+            0.34,
+            -1.02
+          ],
+          [
+            0.86,
+            -0.62
+          ],
+          [
+            1.04,
+            0.12
+          ],
+          [
+            0.57,
+            0.87
+          ],
+          [
+            -0.18,
+            1.05
+          ],
+          [
+            -0.79,
+            0.66
+          ],
+          [
+            -1.02,
+            0.06
+          ]
+        ],
+        "construction": "Irregular bedrock plan, buried heel, inclined fracture planes and recessed bedding. Perimeter/depth UVs retain grain on vertical faces."
+      }
+    },
+    "cm_limestone_outcrop_1": {
+      "bounds": {
+        "min": [
+          -1.0299999713897705,
+          0,
+          -1.059999942779541
+        ],
+        "max": [
+          1.0099999904632568,
+          1.1355539560317993,
+          1.0199999809265137
+        ]
+      },
+      "triangles": 96,
+      "vertices": 208,
+      "features": {
+        "type": "fractured-inclined-limestone-outcrop",
+        "variant": 1,
+        "physicalFootprint": [
+          [
+            -0.87,
+            -0.72
+          ],
+          [
+            -0.22,
+            -1.06
+          ],
+          [
+            0.65,
+            -0.9
+          ],
+          [
+            1.01,
+            -0.24
+          ],
+          [
+            0.83,
+            0.53
+          ],
+          [
+            0.24,
+            1.02
+          ],
+          [
+            -0.54,
+            0.86
+          ],
+          [
+            -1.03,
+            0.22
+          ]
+        ],
+        "construction": "Irregular bedrock plan, buried heel, inclined fracture planes and recessed bedding. Perimeter/depth UVs retain grain on vertical faces."
+      }
+    },
+    "cm_limestone_outcrop_2": {
+      "bounds": {
+        "min": [
+          -0.9700000286102295,
+          0,
+          -1.0299999713897705
+        ],
+        "max": [
+          1.0199999809265137,
+          1.10714852809906,
+          1.0399999618530273
+        ]
+      },
+      "triangles": 96,
+      "vertices": 208,
+      "features": {
+        "type": "fractured-inclined-limestone-outcrop",
+        "variant": 2,
+        "physicalFootprint": [
+          [
+            -0.97,
+            -0.23
+          ],
+          [
+            -0.63,
+            -0.91
+          ],
+          [
+            0.12,
+            -1.03
+          ],
+          [
+            0.82,
+            -0.7
+          ],
+          [
+            1.02,
+            0.03
+          ],
+          [
+            0.73,
+            0.79
+          ],
+          [
+            -0.03,
+            1.04
+          ],
+          [
+            -0.74,
+            0.61
+          ]
+        ],
+        "construction": "Irregular bedrock plan, buried heel, inclined fracture planes and recessed bedding. Perimeter/depth UVs retain grain on vertical faces."
+      }
+    },
+    "cm_limestone_outcrop_3": {
+      "bounds": {
+        "min": [
+          -0.9800000190734863,
+          0,
+          -1.0399999618530273
+        ],
+        "max": [
+          1.0299999713897705,
+          1.130903959274292,
+          1.0299999713897705
+        ]
+      },
+      "triangles": 96,
+      "vertices": 208,
+      "features": {
+        "type": "fractured-inclined-limestone-outcrop",
+        "variant": 3,
+        "physicalFootprint": [
+          [
+            -0.83,
+            -0.78
+          ],
+          [
+            -0.09,
+            -1.04
+          ],
+          [
+            0.59,
+            -0.86
+          ],
+          [
+            1.03,
+            -0.16
+          ],
+          [
+            0.66,
+            0.43
+          ],
+          [
+            0.39,
+            1.03
+          ],
+          [
+            -0.41,
+            0.92
+          ],
+          [
+            -0.98,
+            0.34
+          ]
+        ],
+        "construction": "Irregular bedrock plan, buried heel, inclined fracture planes and recessed bedding. Perimeter/depth UVs retain grain on vertical faces."
+      }
+    },
+    "cm_foam_lace": {
+      "bounds": {
+        "min": [
+          -0.24002082645893097,
+          -0.019844505935907364,
+          -2.4000000953674316
+        ],
+        "max": [
+          0.7910445928573608,
+          0.019999999552965164,
+          2.380000114440918
+        ]
+      },
+      "triangles": 124,
+      "vertices": 248,
+      "features": {
+        "type": "sparse-physical-foam-filaments",
+        "opaqueSea": false
+      }
+    },
+    "cm_music_box_plinth": {
+      "bounds": {
+        "min": [
+          -0.4178532063961029,
+          0,
+          -0.39044004678726196
+        ],
+        "max": [
+          0.44864895939826965,
+          0.6800000071525574,
+          0.4287109971046448
+        ]
+      },
+      "triangles": 72,
+      "vertices": 168,
+      "features": {
+        "type": "upstanding-bedding-block",
+        "collision": "All radial footprints contain the unit circle; canonical radius stays inside real stone."
+      }
+    },
+    "cm_broken_music_box": {
+      "bounds": {
+        "min": [
+          -0.1599999964237213,
+          0,
+          -0.12999999523162842
+        ],
+        "max": [
+          0.1599999964237213,
+          0.2789103388786316,
+          0.12999999523162842
+        ]
+      },
+      "triangles": 572,
+      "vertices": 1278,
+      "features": {
+        "type": "broken-wound-cylinder-music-box",
+        "dimensionsMetres": [
+          0.32,
+          0.22,
+          0.26
+        ],
+        "construction": "Wooden open cavity and fixed bearing/comb assembly; separate rotating pinned cylinder and coaxial broken gear. Fourteen snapped comb teeth leave two sounding tines.",
+        "mechanism": "The two full pins meet the surviving comb tips at the actual audio pluck phases. Broken lid remains inert."
+      }
+    },
+    "cm_music_box_cylinder": {
+      "bounds": {
+        "min": [
+          -0.10400000214576721,
+          -0.029127875342965126,
+          -0.026000000536441803
+        ],
+        "max": [
+          0.10400000214576721,
+          0.029489755630493164,
+          0.026000000536441803
+        ]
+      },
+      "triangles": 660,
+      "vertices": 1650,
+      "features": {
+        "type": "rotating-pinned-brass-cylinder",
+        "pivot": "Own local X axis at the canonical cylinder center",
+        "livePins": [
+          {
+            "x": -0.0664,
+            "releaseSeconds": 2.28,
+            "initialAngle": 0.06492071625424822
+          },
+          {
+            "x": 0.05239999999999999,
+            "releaseSeconds": 7.41,
+            "initialAngle": -3.329983509413942
+          }
+        ],
+        "contactRadius": 0.0295
+      }
+    },
+    "cm_music_box_gear": {
+      "bounds": {
+        "min": [
+          -0.010999999940395355,
+          -0.03280000016093254,
+          -0.032329414039850235
+        ],
+        "max": [
+          0.010999999940395355,
+          0.03280000016093254,
+          0.03280000016093254
+        ]
+      },
+      "triangles": 412,
+      "vertices": 904,
+      "features": {
+        "type": "coaxial-cylinder-gear",
+        "pivot": "Own local X axis, rigidly attached to the actual cylinder",
+        "missingTeeth": 3
+      }
+    },
+    "cm_music_box_live_tine": {
+      "bounds": {
+        "min": [
+          -0.004000000189989805,
+          -0.0008500000112690032,
+          -1
+        ],
+        "max": [
+          0.004000000189989805,
+          0.0008500000112690032,
+          0
+        ]
+      },
+      "triangles": 12,
+      "vertices": 24,
+      "features": {
+        "type": "surviving-steel-comb-tooth",
+        "pivot": "Root at local origin; -Z points toward the cylinder, scale Z is physical tine length",
+        "widthMetres": 0.008,
+        "thicknessMetres": 0.0017
+      }
+    },
+    "cm_damp_note": {
+      "bounds": {
+        "min": [
+          -0.07000000029802322,
+          -0.000699999975040555,
+          -0.05000000074505806
+        ],
+        "max": [
+          0.07000000029802322,
+          0.004999999888241291,
+          0.05000000074505806
+        ]
+      },
+      "triangles": 392,
+      "vertices": 342,
+      "features": {
+        "type": "damp-anonymous-note",
+        "dimensionsMetres": [
+          0.14,
+          0.0007,
+          0.1
+        ],
+        "uvContract": "Independent top-face UV0..1 for root-owned solid-ink paper atlas; no provisional signature baked."
+      }
+    },
+    "cm_distant_pier": {
+      "bounds": {
+        "min": [
+          -2.6549999713897705,
+          -14.899999618530273,
+          -0.23999999463558197
+        ],
+        "max": [
+          2.4000000953674316,
+          3.884999990463257,
+          34.2400016784668
+        ]
+      },
+      "triangles": 7476,
+      "vertices": 18072,
+      "features": {
+        "type": "weathered-iron-pile-pier",
+        "lengthMetres": 34,
+        "walkDestination": false,
+        "deckHeightSeaMetres": 4.6,
+        "pileDiameterMetres": 0.48,
+        "pileBottomSeaMetres": -10.3,
+        "girderDepthMetres": 0.5,
+        "construction": "Timber planks bear on continuous half-metre edge girders and a central joist, resting on transverse caps and iron piles embedded into the seabed. The exposed upper structure carries weathered marine enamel; the lower tide zone retains dark steel and corrosion. Existing footprint, span rhythm, rails and caged marker remain.",
+        "utilityFittings": [
+          {
+            "id": "coastal-pier-near-marker",
+            "aperture": [
+              -2.55,
+              -0.2,
+              3
+            ],
+            "power": 2.4,
+            "range": 14
+          },
+          {
+            "id": "coastal-pier-middle-marker",
+            "aperture": [
+              -2.55,
+              -0.2,
+              17
+            ],
+            "power": 2.4,
+            "range": 14
+          },
+          {
+            "id": "coastal-pier-marker",
+            "aperture": [
+              1.55,
+              3.43,
+              31
+            ],
+            "power": 2.4,
+            "range": 24
+          }
+        ]
+      }
+    }
+  },
+  "materials": [
+    {
+      "key": "limestone",
+      "index": 0,
+      "baseLinear": [
+        0.32,
+        0.335,
+        0.31
+      ],
+      "roughness": 0.9,
+      "metallic": 0,
+      "repeatMetres": 1.8,
+      "reliefMetres": 0.009,
+      "mapSize": 128,
+      "albedoSha256": "997784b43777bd27ecd9e2492440c04ca456b97e8b81e548e11412245876e63e",
+      "normalSha256": "e4b30007a201f1eceda183a43f28cd6301264eac90d8c5cd58335918df760912",
+      "ormSha256": "c31c1d3ad89dd80f5a5b96f976d030b59a5747444c8d21b7c8404a1e86316779"
+    },
+    {
+      "key": "freshLimestone",
+      "index": 1,
+      "baseLinear": [
+        0.19,
+        0.215,
+        0.2
+      ],
+      "roughness": 0.86,
+      "metallic": 0,
+      "repeatMetres": 1.7,
+      "reliefMetres": 0.012,
+      "mapSize": 128,
+      "albedoSha256": "545e9e703030e42e612fcf2a2e48db660e912dfaf37a7a581d132bbfd3300abf",
+      "normalSha256": "da9c93c9cd173041fcca2e3ecf3d195bfe848486a8892e996b9c86eeed748595",
+      "ormSha256": "0d5bb5f24c931ea389bea10441a88fdb0ee8182727175c843a18263c65284d23"
+    },
+    {
+      "key": "marineRock",
+      "index": 2,
+      "baseLinear": [
+        0.045,
+        0.066,
+        0.056
+      ],
+      "roughness": 0.58,
+      "metallic": 0,
+      "repeatMetres": 1.6,
+      "reliefMetres": 0.006,
+      "mapSize": 128,
+      "albedoSha256": "0fb823af346b7ba7c49ef44aa9c873762f34a3a9f4ff8ac969e188866251f0fa",
+      "normalSha256": "d0f18da8e049c93cd493e1bd7a3c55d608510b29f0ebca574fe046cbbb43a6af",
+      "ormSha256": "0e3fa203a370f709d97bd51b367e4d4e46a1c2e7dcbfc1d13f67041b492fd6f0"
+    },
+    {
+      "key": "grass",
+      "index": 3,
+      "baseLinear": [
+        0.047,
+        0.067,
+        0.029
+      ],
+      "roughness": 0.95,
+      "metallic": 0,
+      "repeatMetres": 6.4,
+      "reliefMetres": 0.0012,
+      "mapSize": 256,
+      "albedoSha256": "6eb38f32a8a58513d67d3a21e5b1a1498ba3a527580a5ec944ba9c29f54dda74",
+      "normalSha256": "5ba88e108784204b61d9e4dbafcd1d357455bd08327d5852a6696866e96d2bbc",
+      "ormSha256": "0ca54c91e3487947440c018eea7fbcac21bf17e61b1d58f320d29e93712d6092"
+    },
+    {
+      "key": "soil",
+      "index": 4,
+      "baseLinear": [
+        0.078,
+        0.061,
+        0.038
+      ],
+      "roughness": 0.92,
+      "metallic": 0,
+      "repeatMetres": 3.2,
+      "reliefMetres": 0.0018,
+      "mapSize": 256,
+      "albedoSha256": "7c56b083be284041efae56c35b02389d5f1656145decbe6ed021d7ba38d95e21",
+      "normalSha256": "ded274bd09cf2b371173e87391fe7c70fc5b29e6118cdf66270590783c65bf80",
+      "ormSha256": "3844afb6b5971e1a3ed1bbe384f1059404abde40a03f41be57d42d7a9065388e"
+    },
+    {
+      "key": "foam",
+      "index": 5,
+      "baseLinear": [
+        0.24,
+        0.28,
+        0.26
+      ],
+      "roughness": 0.8,
+      "metallic": 0,
+      "repeatMetres": 0.65,
+      "reliefMetres": 0.001,
+      "mapSize": 128,
+      "albedoSha256": "d39883e0c294351cc3a38c44cea65f50e0ffc9a04c053297769d9c8f95b1f939",
+      "normalSha256": "57b1d8d76a4c0ed5c9ec796b431d666adfca480a3510b9db1b3f04c6a8902da5",
+      "ormSha256": "0e706dabe0af2de9e8b2f12b67785325d6e3eaab69888f45182ba063130df8f3"
+    },
+    {
+      "key": "wood",
+      "index": 6,
+      "baseLinear": [
+        0.09,
+        0.041,
+        0.018
+      ],
+      "roughness": 0.64,
+      "metallic": 0,
+      "repeatMetres": 0.24,
+      "reliefMetres": 0.0005,
+      "mapSize": 128,
+      "albedoSha256": "59f88cc21d1ff6dc9fea63a4c86a3662f70742fda45bb59b932a08e5cd07eb49",
+      "normalSha256": "d1ff8b2ae16105f234e741e124057f3dd2d5af8e381735f90977278cc58967c5",
+      "ormSha256": "7067463c6aceb24f4f58b5aaaeb08f8a0c940cb2cd40af8a580f33d2dc8486f5"
+    },
+    {
+      "key": "pierWood",
+      "index": 7,
+      "baseLinear": [
+        0.075,
+        0.085,
+        0.074
+      ],
+      "roughness": 0.88,
+      "metallic": 0,
+      "repeatMetres": 0.7,
+      "reliefMetres": 0.0015,
+      "mapSize": 128,
+      "albedoSha256": "9e2f47d7131e559715ac586013cbf2c4b86b46aad294d7c329bc8193d4ee8509",
+      "normalSha256": "f352a6c682b8143b124faadb282d0348d9bdba9de045794063ed4d793a9fdee8",
+      "ormSha256": "1f5e7ed1e81e1f9294a46826f34f5de3ee6f9230a90a3bed2dd8dfd1bd5cacd6"
+    },
+    {
+      "key": "brass",
+      "index": 8,
+      "baseLinear": [
+        0.3,
+        0.215,
+        0.075
+      ],
+      "roughness": 0.36,
+      "metallic": 0.84,
+      "repeatMetres": 0.18,
+      "reliefMetres": 0.00015,
+      "mapSize": 128,
+      "albedoSha256": "efd7f2ab814eb874b080094201c78eacfde3f3e4539c9523b0962ff901e883f3",
+      "normalSha256": "d9f9efe25f3d63b0c71f828ec423dbe276acc630dd323a66ce7081bdf90b6792",
+      "ormSha256": "4e52cca033581901bcd05fa059c82d78aa18444808a1306afdd1cad61e947615"
+    },
+    {
+      "key": "steel",
+      "index": 9,
+      "baseLinear": [
+        0.14,
+        0.16,
+        0.15
+      ],
+      "roughness": 0.43,
+      "metallic": 0.85,
+      "repeatMetres": 0.2,
+      "reliefMetres": 0.0002,
+      "mapSize": 128,
+      "albedoSha256": "9515b11788d2fca62fe6abc11d75e01f3cf82106713b17822932cfdc4f0fbe1c",
+      "normalSha256": "d9f9efe25f3d63b0c71f828ec423dbe276acc630dd323a66ce7081bdf90b6792",
+      "ormSha256": "c574065a023f1e108e94155196fff1b29dba9bd77e304658529ba042f01fd021"
+    },
+    {
+      "key": "rust",
+      "index": 10,
+      "baseLinear": [
+        0.09,
+        0.038,
+        0.014
+      ],
+      "roughness": 0.9,
+      "metallic": 0.15,
+      "repeatMetres": 0.5,
+      "reliefMetres": 0.0015,
+      "mapSize": 128,
+      "albedoSha256": "2ac2fad4caa4467711da46dd19e9444b8a62adee73d2c370556643f7e1408186",
+      "normalSha256": "f997a99fa8c5ff3cbee0ba226252d124ff94de89fc6ef1f4538611531eb04c5b",
+      "ormSha256": "13a190a10398690e2983d06e347072dc690b0dd2296f7a647e749d4188edf2b7"
+    },
+    {
+      "key": "paper",
+      "index": 11,
+      "baseLinear": [
+        0.43,
+        0.4,
+        0.31
+      ],
+      "roughness": 0.91,
+      "metallic": 0,
+      "repeatMetres": 0.14,
+      "reliefMetres": 0.0001,
+      "mapSize": 128,
+      "albedoSha256": "b7fefb3b5561d2f7f4d0eeae755d2014865f5992a04a51fb5e7d7d32e26394d0",
+      "normalSha256": "d9f9efe25f3d63b0c71f828ec423dbe276acc630dd323a66ce7081bdf90b6792",
+      "ormSha256": "e7428cfa616b72a644d20ea8aef5ee862b10e08580771e45c15e81951dc80469"
+    },
+    {
+      "key": "lamp",
+      "index": 12,
+      "baseLinear": [
+        0.35,
+        0.24,
+        0.11
+      ],
+      "roughness": 0.3,
+      "metallic": 0,
+      "repeatMetres": 0.1,
+      "reliefMetres": 0.0001,
+      "mapSize": 128,
+      "albedoSha256": "709b07d6d88bf925998722d5e47b94c73d4548cd6a08b16483197422f1349883",
+      "normalSha256": "2b5570da4534b0f6e5c4fb6e0343b6368b76992e7714a074d48f0e544d6521af",
+      "ormSha256": "e47f3145d4fbcac53b228480a50b02b6d171595501cc0698f6355c0bd7fa81d7"
+    },
+    {
+      "key": "marineEnamel",
+      "index": 13,
+      "baseLinear": [
+        0.46,
+        0.48,
+        0.44
+      ],
+      "roughness": 0.76,
+      "metallic": 0.02,
+      "repeatMetres": 0.7,
+      "reliefMetres": 0.00032,
+      "mapSize": 128,
+      "albedoSha256": "20fd8e80bce06f5f13e226e819533b4ab3b356e6a9354574a09d799907b0a411",
+      "normalSha256": "b3319c9140f1f66312cd4f92a398da5e249ae0e261944e51a1823b2f3631976f",
+      "ormSha256": "349325ee0a8a90a7e107990438683dc52c1fca6afb225f1deeaf7050f70bbcb3"
+    }
+  ],
+  "frame": {
+    "units": "metres",
+    "seaY": 0,
+    "roadLipY": 28,
+    "worldFromLocal": [
+      0.9730038039975242,
+      0,
+      0.23078907557843267,
+      0,
+      0,
+      1,
+      0,
+      0,
+      -0.23078907557843267,
+      0,
+      0.9730038039975242,
+      0,
+      24.038104693813246,
+      -19.738923876076306,
+      -272,
+      1
+    ],
+    "settledBodyLocal": [
+      0.9968017063026194,
+      0,
+      0.0799146939691727,
+      0,
+      0.009566764409868155,
+      0.9928086358538663,
+      -0.11932933249084769,
+      0,
+      -0.07933999830421354,
+      0.11971220728891936,
+      0.9896333422511099,
+      0,
+      11.491868250251612,
+      -3.793887340475786,
+      -20.398570067382778,
+      1
+    ],
+    "actualVanDimensions": [
+      2.08,
+      2.57,
+      5.75
+    ]
+  },
+  "rendering": {
+    "pipeline": "Standard P3 glTF material/depth acquisition and final dither/VFD",
+    "customShader": false,
+    "alphaBlending": false,
+    "opaqueSeaMesh": false,
+    "mipmapSampler": 9987,
+    "textureMaps": 42
+  },
+  "references": [
+    {
+      "url": "https://www.pembrokeshirecoast.wales/about-the-national-park/geology/",
+      "supports": "Weathered Carboniferous limestone is pale grey with darker fresh surfaces; folding and cliff-top deposits support layered faces and soil caps.",
+      "limit": "A regional material and process reference, not an exact real-location reconstruction."
+    },
+    {
+      "url": "https://www.pembrokeshirecoast.wales/about-the-national-park/geography/coastal-features/",
+      "supports": "Limestone plateau, solution hollows, marine cavities and irregular headlands inform the bank and undercut.",
+      "limit": "The pier, music box, wreck location and exact geometry remain authored fiction."
+    },
+    {
+      "url": "https://historicengland.org.uk/listing/the-list/list-entry/1129687",
+      "supports": "Paired iron supports, tension bracing, cross-members and a timber deck inform the visible load-bearing hierarchy.",
+      "limit": "A construction reference only; this fictional pier is not a reconstruction of Clevedon and its dimensions remain authored."
+    }
+  ],
+  "notes": [
+    "Original deterministic mesh and texture synthesis; no third-party photograph or model is embedded.",
+    "Bank collision reads the same triangle vertices as the exported visual surface. Irregular rim outcrops share their exact base polygons with physical foot collision; the exposed viewing notch is intentionally open.",
+    "Actual water, refraction, depth extinction and submerged real-headlamp scattering belong to the world compositor; this pack supplies no opaque sea plane.",
+    "The sunk vehicle is instantiated from the unchanged actual van asset in scene.js, with one shared settled body matrix.",
+    "The anonymous note has independent UV0..1 and .14x.10m dimensions; final narrative ink is host-owned.",
+    "Grass and soil use larger physical tiles with band-limited correlated relief, not per-pixel height noise. Albedo bases remain unchanged; lighting is calibrated in the real compositor.",
+    "All coast instances disable the generic outdoor yard branch and use one explicit broad cloud-filtered moon plus actual practicals.",
+    "Geometry/material contracts do not prove final native perception or human fear/comfort."
+  ]
+}

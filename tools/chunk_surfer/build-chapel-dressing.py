@@ -52,16 +52,61 @@ def mesh(name, verts, faces, material, smooth=False):
     return data
 
 
-def make_body(name, kind, material):
-    bm = bmesh.new()
+# A congregant is three rigid parts so the runtime can turn it toward you: the
+# legs stay in the pew, the upper body twists about the pelvis, the head turns
+# about the neck. Each part's mesh origin is its pivot. The celebrant and the
+# servers keep their robes on one body. `part='all'` is the whole figure.
+PARTS = {'all', 'lower', 'upper', 'body', 'head'}
 
-    def ellipsoid(c, radii, segments=10, rings=7):
+
+def body_pivots(kind):
+    celebrant = kind == 'celebrant'
+    kneel = kind in ['kneeling', 'acolyte']
+    bowed = kind == 'bowed'
+    hip_y = .79 if celebrant else .51 if kneel else .57
+    chest_y = hip_y + .39
+    lean = -.17 if bowed else -.075 if kneel else -.045
+    if kind == 'clinging':
+        return {'upper': (0, .17, .22), 'head': (0, .20, -.47), 'headRest': (0, 0, 0)}
+    head = (.015 if kind == 'acolyte' else 0, chest_y+.40-(.095 if bowed else .025 if kneel else 0), lean-.055 if bowed else lean)
+    neck_top = (0, chest_y+.33, lean)
+    # The rest attitude of the head about its pivot: bowed heads look down.
+    rest = (-.42 if bowed else -.16 if kneel else -.05, 0, 0)
+    return {'upper': (0, hip_y+.07, .025), 'head': neck_top, 'headCentre': head, 'headRest': rest}
+
+
+def make_body(name, kind, material, part='all'):
+    bm = bmesh.new()
+    assert part in PARTS
+    pivots = body_pivots(kind)
+    current = {'part': 'all'}
+    # Which part a primitive belongs to, and the origin it is built about.
+    def keep(owner):
+        return part == 'all' or owner == part or (part == 'body' and owner != 'head')
+    def shift():
+        if part == 'upper':
+            return pivots['upper']
+        if part == 'head':
+            return pivots['head']
+        return (0, 0, 0)
+
+    def ellipsoid(c, radii, segments=10, rings=7, owner=None):
+        owner = owner or current['part']
+        if not keep(owner):
+            return
+        o = shift()
+        c = tuple(c[i]-o[i] for i in range(3))
         result = bmesh.ops.create_uvsphere(bm, u_segments=segments, v_segments=rings, radius=1)
         for v in result['verts']:
             # Work in runtime axes, then transform exactly once on completion.
             v.co = Vector(tuple(c[i] + v.co[i] * radii[i] for i in range(3)))
 
-    def limb(a, b, ra, rb):
+    def limb(a, b, ra, rb, owner=None):
+        owner = owner or current['part']
+        if not keep(owner):
+            return
+        o = shift()
+        a = tuple(a[i]-o[i] for i in range(3)); b = tuple(b[i]-o[i] for i in range(3))
         a, b = Vector(a), Vector(b)
         axis = (b-a).normalized()
         ref = Vector((0, 1, 0)) if abs(axis.y) < .88 else Vector((1, 0, 0))
@@ -78,13 +123,15 @@ def make_body(name, kind, material):
         bm.faces.new(tuple(reversed(rows[0])))
         bm.faces.new(tuple(rows[-1]))
 
-    def drape(rings, sides=24, fold=.012):
+    def drape(rings, sides=24, fold=.012, owner='lower'):
         """Closed, weighted cloth surface, as (height, width, depth, centre-z).
 
         Vertical folds flow down from the shoulders and widen toward the hem;
         they are not ribs laid across a rectangular chest. A gently scalloped
         bottom holds a contact shadow without lifting the whole robe.
         """
+        if not keep(owner):
+            return
         rows=[]
         for j,(y,rx,rz,cz) in enumerate(rings):
             row=[]
@@ -108,11 +155,15 @@ def make_body(name, kind, material):
     hip_y = .79 if celebrant else .51 if kneel else .57
     chest_y = hip_y + .39
     lean = -.17 if bowed else -.075 if kneel else -.045
-    ellipsoid((0, chest_y-.04, lean*.5), (.235, .32, .13))
-    ellipsoid((0, hip_y, .025), (.20, .14, .13))
-    ellipsoid((0, chest_y+.27, lean), (.073, .105, .074), 8, 6)
-    ellipsoid((.015 if acolyte else 0, chest_y+.40-(.095 if bowed else .025 if kneel else 0), lean-.055 if bowed else lean), (.142,.183,.125),12,8)
+    if kind == 'clinging':
+        clinging(ellipsoid, limb, current)
+        return finish(bm, name, material)
+    ellipsoid((0, chest_y-.04, lean*.5), (.235, .32, .13), owner='upper')
+    ellipsoid((0, hip_y, .025), (.20, .14, .13), owner='lower')
+    ellipsoid((0, chest_y+.27, lean), (.073, .105, .074), 8, 6, owner='upper')
+    head_parts(ellipsoid, pivots['headCentre'])
     for s in [-1, 1]:
+        current['part'] = 'upper'
         shoulder = (s*.235, chest_y+.18-(.025 if s==1 else 0), lean*.8)
         elbow = (s*.39,chest_y+.14,-.09) if celebrant else (s*.22,chest_y-.04,-.17)
         wrist = (s*.45,chest_y+.34,-.25) if celebrant else (s*.043,chest_y+.09,-.27 if bowed else -.235)
@@ -127,6 +178,7 @@ def make_body(name, kind, material):
         for finger in range(4):
             x = palm[0] + (finger-1.5)*.021
             limb((x,palm[1]+.025,palm[2]),(x+.004*s,palm[1]+.09-(finger==0)*.014,palm[2]-.014),.013,.008)
+        current['part'] = 'lower'
         hip = (s*.125, hip_y-.025, .02)
         knee = (s*.15,.41,-.055) if celebrant else (s*.16,.13 if kneel else .52,-.33 if kneel else -.43)
         ankle = (s*.16,.09,.015 if celebrant else .19 if kneel else -.49)
@@ -155,6 +207,37 @@ def make_body(name, kind, material):
         # through its bent outline rather than becoming a standing cone.
         drape([(1.20,.115,.10,-.035),(1.11,.265,.16,-.025),(.89,.255,.17,-.015),(.59,.25,.20,0),(.30,.275,.32,-.055),(.055,.315,.40,-.035)],24,.012)
         ellipsoid((0,1.20,-.035),(.12,.036,.105),10,5)
+    return finish(bm, name, material)
+
+
+def head_parts(ellipsoid, centre):
+    # The anonymous head, given a jaw: without some front to it a turning
+    # head is a sphere turning, and "looking at you" cannot be seen.
+    x, y, z = centre
+    ellipsoid((x, y, z), (.142, .183, .125), 12, 8, owner='head')
+    ellipsoid((x, y-.085, z-.075), (.085, .062, .068), 8, 5, owner='head')
+
+
+def clinging(ellipsoid, limb, current):
+    """A body flat to a surface, belly down, limbs splayed: built prone on
+    the floor and turned onto the vault by the runtime."""
+    current['part'] = 'upper'
+    ellipsoid((0, .17, -.02), (.235, .13, .36))
+    ellipsoid((0, .16, .36), (.20, .12, .14))
+    ellipsoid((0, .20, -.40), (.073, .074, .105), 8, 6)
+    head_parts(ellipsoid, (0, .24, -.55))
+    for s in [-1, 1]:
+        shoulder = (s*.24, .18, -.25); elbow = (s*.56, .10, -.42); wrist = (s*.64, .035, -.78)
+        ellipsoid(shoulder, (.11, .10, .11), 8, 6)
+        limb(shoulder, elbow, .089, .065); ellipsoid(elbow, (.067, .067, .067), 8, 5)
+        limb(elbow, wrist, .062, .042); ellipsoid((wrist[0], .03, wrist[2]-.05), (.06, .03, .085), 8, 5)
+        hip = (s*.13, .15, .46); knee = (s*.42, .09, .74); ankle = (s*.50, .045, 1.06)
+        ellipsoid(hip, (.115, .12, .105), 8, 6)
+        limb(hip, knee, .108, .080); ellipsoid(knee, (.080, .083, .080), 8, 6)
+        limb(knee, ankle, .075, .049); ellipsoid((ankle[0], .035, ankle[2]+.06), (.06, .035, .13), 8, 5)
+
+
+def finish(bm, name, material):
     for v in bm.verts:
         v.co = rt(v.co)
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
@@ -273,7 +356,14 @@ def main():
     wet=mat('chapel hand residue',(.072,.014,.010,1),.17)
     wax=mat('chapel cold tallow',(.53,.44,.30,1),.46)
     char=mat('chapel embedded char and hair',(.009,.007,.005,1),.92)
-    meshes={f'chapel_presence_{kind}':make_body(f'chapel_presence_{kind}',kind,black) for kind in ['seated','bowed','kneeling','celebrant','acolyte']}
+    meshes={}
+    for kind in ['seated','bowed','kneeling']:
+        for part in ['lower','upper']:
+            meshes[f'chapel_presence_{kind}_{part}']=make_body(f'chapel_presence_{kind}_{part}',kind,black,part)
+    for kind in ['celebrant','acolyte']:
+        meshes[f'chapel_presence_{kind}']=make_body(f'chapel_presence_{kind}',kind,black,'body')
+    meshes['chapel_presence_head']=make_body('chapel_presence_head','seated',black,'head')
+    meshes['chapel_presence_clinging']=make_body('chapel_presence_clinging','clinging',black,'body')
     meshes['chapel_writing_stop']=writing('chapel_writing_stop',['STOP LISTENING TO ME'],.29,0,paint)
     meshes['chapel_writing_overwritten']=writing('chapel_writing_overwritten',['NO ONE IS LISTENING']*3,.135,.19,paint)
     meshes['chapel_writing_empty']=writing('chapel_writing_empty',['THE ROOM IS EMPTY','THE ROOM IS EMPTY'],.205,.28,paint)
@@ -291,6 +381,8 @@ def main():
     bpy.context.view_layer.objects.active=objects[0]
     report={'meshes':{name:{'triangles':ear_hand.tri_count(data),'bounds':ear_hand.runtime_bounds(data),'materials':[m.name for m in data.materials]} for name,data in meshes.items()}}
     report['triangles']=sum(m['triangles'] for m in report['meshes'].values())
+    # Where each part turns: runtime metres in the body's own frame.
+    report['pivots']={kind:{k:list(v) for k,v in body_pivots(kind).items()} for kind in ['seated','bowed','kneeling','celebrant','acolyte','clinging']}
     bpy.ops.wm.save_as_mainfile(filepath=str(Path(args.blend).resolve()))
     bpy.ops.export_scene.gltf(filepath=str(Path(args.output).resolve()),export_format='GLB',use_selection=True,export_apply=True,export_yup=True,
                               export_texcoords=True,export_normals=True,export_tangents=False,export_materials='EXPORT',

@@ -22,7 +22,9 @@ test('VFD compositor combines fine acquisition thresholds with selective phospho
   assert.match(shader, /mix\(c,\s*paletted,\s*clamp\(uPaletteAmount/);
   assert.match(shader, /recordingHash3/);
   assert.match(shader, /formStipple/);
-  assert.match(shader, /formStipple\(worldMetres/);
+  // Marks stay keyed to the surface they land on; inside the van that key is the van's metres.
+  assert.match(shader, /formStipple\(pinMetres/);
+  assert.match(shader, /vec3 pinMetres = worldMetres;/);
   assert.match(shader, /float footprint\s*=\s*max\(length\(dx\),\s*length\(dy\)\)/);
   assert.doesNotMatch(shader, /surfaceScreenCoordinates/);
   assert.match(shader, /broadForm/);

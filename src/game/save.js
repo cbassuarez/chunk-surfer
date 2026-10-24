@@ -64,6 +64,9 @@ import { freshFieldKit, resolveFieldKit, fieldKitForNewRun, normalizeFieldKitOwn
 import { freshVanPreparation, normalizeVanPreparation, prepareVanDifficultyFinalization } from '../progression/van-preparation.js';
 import { freshRoofRenState, normalizeRoofRenState } from './roof-ren.js';
 import { normalizeEndingVariant } from '../data/ending-variants.js';
+import { normalizeAcademicFloorReturns } from './academic-floor-returns.js';
+import { normalizeEndingWrongDoorDemolition } from './ending-wrong-door.js';
+import { normalizeSourceIV } from './source-iv.js';
 
 const SAVE_KEY = 'chunk-surfer:save:v4';
 const LEGACY_SAVE_KEYS = STORAGE_LEGACY_SAVE_KEYS.filter((key) => key !== SAVE_KEY);
@@ -109,14 +112,17 @@ export const freshSave = ({ settings = DEFAULT_SETTINGS, run = null } = {}) => (
   // ending has not committed the return yet. Reload starts this cutscene over;
   // it never tries to restore a half-read line or half-fired effect.
   endingCutscene: null,
+  endingWrongDoor: null,
+  sourceIV: null,
   roofRen: freshRoofRenState(),
   plantIncident: null,
   // The head from the fountain in the park, and whether the gallery has it back.
   // Normalised on read by game/marble-head.js, same as plantIncident above.
   marbleHead: null,
-  // Four third-floor residents; normalised by academic-society.js.
+  // Seven third-floor residents; normalised by academic-society.js.
   academicSociety: null,
   academicFloorPopulation: null,
+  academicFloorReturns: normalizeAcademicFloorReturns(),
   // Learned interruption and completed third-floor admission; no live clock.
   academicBouncers: null,
   // One completed Held Note outcome; its live sweep/warning never persists.
@@ -332,7 +338,12 @@ function normalizeSaveV4(data, meta = null) {
       runId: source.run?.id || '',
     }),
     endingCutscene: normalizeEndingCutsceneCheckpoint(source.endingCutscene),
+    endingWrongDoor: source.endingWrongDoor?.sequenceId==='ending-wrong-door'&&source.endingWrongDoor.runId===(run?.id||'')
+      ?normalizeEndingWrongDoorDemolition(source.endingWrongDoor,{runId:run?.id||''}):null,
+    sourceIV: source.sourceIV?.sequenceId==='source-IV'&&source.sourceIV.runId===(run?.id||'')
+      ?normalizeSourceIV(source.sourceIV,{runId:run?.id||''}):null,
     roofRen: normalizeRoofRenState(source.roofRen),
+    academicFloorReturns: normalizeAcademicFloorReturns(source.academicFloorReturns,{legacyVisited:Number(source.academicSociety?.visits)>0}),
     settings,
     run,
   };

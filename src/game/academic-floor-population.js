@@ -27,6 +27,8 @@ export function createAcademicFloorPopulation(saved={}){
   const initial=()=>new Map(ACTORS.map(actor=>[actor.id,{x:actor.x,y:actor.y,bodyYaw:actor.yaw,
     desiredYaw:actor.yaw,distance:0,speed:0,mode:'idle',next:1,direction:1,pause:actor.socialStop||T.walkPause}]));
   let bodies=initial();
+  let activeActorIds=null;
+  const present=id=>!activeActorIds||activeActorIds.has(id);
   const save=()=>serializeAcademicFloorPopulation(state);
   function cancelAmbient(){pending=null;}
   function partner(actor,body){
@@ -36,6 +38,7 @@ export function createAcademicFloorPopulation(saved={}){
   }
   function animate(delta,context){
     for(const actor of ACTORS){
+      if(!present(actor.id))continue;
       const body=bodies.get(actor.id),route=actor.route;
       if(route?.length>1){
         if(body.pause>0){
@@ -71,6 +74,7 @@ export function createAcademicFloorPopulation(saved={}){
     }
   }
   function tick(dt,context={}){
+    if(Array.isArray(context.activeActorIds)||Object.prototype.toString.call(context.activeActorIds)==='[object Set]')activeActorIds=new Set(context.activeActorIds);
     const wasInside=inside;contextNow={...context};
     inside=context.onAcademicFloor===true;
     if(!inside){activeDialogue=null;cancelAmbient();lineKey=null;return[];}
@@ -82,7 +86,7 @@ export function createAcademicFloorPopulation(saved={}){
     const audible=context.audibleGroupIds instanceof Set?context.audibleGroupIds:new Set(context.audibleGroupIds||[]);
     const delay=ambientStarted?T.quietBetween:T.firstExchange;
     if(pending||ambientElapsed+1e-9<delay)return[];
-    const beat=BEATS.find(beat=>!issued.has(beat.id)&&audible.has(beat.groupId));
+    const beat=BEATS.find(beat=>!issued.has(beat.id)&&audible.has(beat.groupId)&&beat.lines.every(line=>present(line.actorId)));
     if(!beat)return[];
     ambientElapsed=0;ambientStarted=true;pending={id:`academic-population:${visit}:${beat.id}`,beatId:beat.id,groupId:beat.groupId};
     return[{type:'population-exchange',...pending,lines:beat.lines.map(line=>({...line}))}];
@@ -90,12 +94,13 @@ export function createAcademicFloorPopulation(saved={}){
   function settleAmbient(id,{completed=false}={}){
     if(pending?.id!==id)return[];
     const receipt=pending;cancelAmbient();ambientElapsed=0;
-    if(completed&&inside)issued.add(receipt.beatId);
-    return[{type:'population-exchange-settled',...receipt,completed:completed&&inside}];
+    const beat=BEATS.find(beat=>beat.id===receipt.beatId),valid=completed&&inside&&beat?.lines.every(line=>present(line.actorId));
+    if(valid)issued.add(receipt.beatId);
+    return[{type:'population-exchange-settled',...receipt,completed:!!valid}];
   }
   function dialogue(actorId){return academicFloorPopulationDialogue(actorId,state);}
   function beginDialogue(actorId){
-    if(!inside||activeDialogue||!GUEST_IDS.has(actorId))return null;
+    if(!inside||activeDialogue||!GUEST_IDS.has(actorId)||!present(actorId))return null;
     cancelAmbient();activeDialogue=actorId;return dialogue(actorId);
   }
   function endDialogue(actorId,{completed=false}={}){
@@ -143,7 +148,7 @@ export function createAcademicFloorPopulation(saved={}){
       const turn=actor.kind==='hollow'&&actor.groupId&&!actor.dreadVariant&&!actor.regard ? .08*Math.sin(timeSec*.19):0;
       return{...actor,x:body.x,y:body.y,bodyYaw:body.bodyYaw+turn,yaw:desired+turn,
         cohortTurn:turn,
-        visible:inside,phase:actual&&actor.id===speaker?clock:timeSec+index*1.73,
+        visible:inside&&present(actor.id),phase:actual&&actor.id===speaker?clock:timeSec+index*1.73,
         // Main's presentation clock continues during this society's own
         // conversation, and freezes on pause/blur/foreign modal. Roots use
         // controller time; unrelated people may still sip or smoke nearby.
@@ -154,7 +159,7 @@ export function createAcademicFloorPopulation(saved={}){
   }
   function load(next={}){
     state=createAcademicFloorPopulationState(next);inside=false;timeSec=0;activeDialogue=null;
-    contextNow={};visit=0;ambientElapsed=0;ambientStarted=false;pending=null;issued=new Set();lineKey=null;lineStarted=0;bodies=initial();return save();
+    contextNow={};visit=0;ambientElapsed=0;ambientStarted=false;pending=null;issued=new Set();lineKey=null;lineStarted=0;bodies=initial();activeActorIds=null;return save();
   }
   return Object.freeze({tick,dialogue,beginDialogue,endDialogue,settleAmbient,actorFrame,save,load,
     view:()=>({...save(),inside,timeSec,activeDialogue,visit,ambientElapsed,pending:pending?{...pending}:null,issuedBeatIds:[...issued]})});

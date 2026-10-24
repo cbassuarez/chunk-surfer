@@ -9,8 +9,12 @@ import { normalizeOutskirtsExperience } from './outskirts-experience.js';
 import { normalizeSourceUnravelling } from './source-unravelling.js';
 import { normalizeSourceDemolition } from './source-demolition.js';
 import { normalizeSourceContinuation } from './source-continuation.js';
+import { normalizeSourceEarthfall } from './source-earthfall.js';
+import { normalizeSourceFalseReturn } from './source-false-return.js';
 import { normalizeStationRealm } from './station-realms.js';
 import { normalizeTowerPersonalJourney } from './tower-personal-journey.js';
+import { normalizeCoastalMemory } from './coastal-memory.js';
+import { COASTAL_MEMORY_LAYOUT } from '../data/coastal-memory.js';
 import { normalizeCathedralExtractionCheckpoint } from './cathedral-extraction.js';
 import { normalizeCombatCheckpoint } from './combat-checkpoint.js';
 import {
@@ -174,6 +178,7 @@ export function normalizeSourceStation(value = null) {
   return {
     time: seconds(source.time), crossing, walk, realm: normalizeStationRealm(source.realm),
     personal: normalizeTowerPersonalJourney(source.personal),
+    coastalMemory: normalizeCoastalMemory(source.coastalMemory, { layout: COASTAL_MEMORY_LAYOUT }),
     homeDiscovered: !!source.homeDiscovered, homeResolved: !!source.homeResolved,
     lastReturn: source.lastReturn && typeof source.lastReturn.id === 'string' ? {
       id: source.lastReturn.id, world: String(source.lastReturn.world || ''), home: !!source.lastReturn.home,
@@ -270,6 +275,8 @@ export function freshChunkSurfState({
     sourceHushFollow: normalizeSourceHushFollow(),
     sourceDivide: null,
     sourceContinuation: null,
+    sourceEarthfall: null,
+    sourceFalseReturn: null,
     lastReception: createLastReceptionState(),
     sourceApproachComplete: false,
     firstLiftCompleted: false,
@@ -363,6 +370,7 @@ function normalizeCathedral(value = null) {
     fight,
     extraction: normalizeCathedralExtractionCheckpoint(source.extraction),
     ...(source.personalOpening ? { personalOpening: true } : {}),
+    ...(source.coastalOpening ? { coastalOpening: true } : {}),
   };
 }
 
@@ -525,6 +533,8 @@ export function normalizeChunkSurfState(value = null, fallback = {}) {
     sourceHushFollow: normalizeSourceHushFollow(value.sourceHushFollow),
     sourceDivide: normalizeSourceDivide(value.sourceDivide),
     sourceContinuation: value.sourceContinuation ? normalizeSourceContinuation(value.sourceContinuation) : null,
+    sourceEarthfall: value.sourceEarthfall ? normalizeSourceEarthfall(value.sourceEarthfall) : null,
+    sourceFalseReturn: value.sourceFalseReturn ? normalizeSourceFalseReturn(value.sourceFalseReturn) : null,
     lastReception: createLastReceptionState(value.lastReception),
     sourceApproachComplete,
     firstLiftCompleted,
@@ -1084,17 +1094,23 @@ export function reduceChunkSurf(value, event = {}) {
 
     case 'CATHEDRAL_FIGHT_STARTED': {
       if (state.finale.route !== SOURCE_FINALE_ROUTE.TOWER || state.finale.stage !== SOURCE_FINALE_STAGE.CATHEDRAL) return state;
-      const personal = state.station.personal;
+      const personal = state.station.personal, coastal = state.station.coastalMemory;
       const earned = personal.completed && personal.rewardEarned && !personal.rewardConsumed;
+      const coastEarned = coastal.completed && coastal.recordingHeard && coastal.rewardEarned && !coastal.rewardConsumed;
+      // One opening slot: independently earned old/new receipts cannot buy two
+      // quiet retries. Their evidence and provenance remain separate.
       return { ...state,
-        station: earned ? { ...state.station, personal: { ...personal, rewardConsumed: true } } : state.station,
+        station: earned || coastEarned ? { ...state.station,
+          ...(earned ? { personal: { ...personal, rewardConsumed: true } } : {}),
+          ...(coastEarned ? { coastalMemory: { ...coastal, rewardConsumed: true } } : {}) } : state.station,
         finale: { ...state.finale, stage: SOURCE_FINALE_STAGE.CATHEDRAL_FIGHT,
-          cathedral: earned ? { ...state.finale.cathedral, alarm: 0, personalOpening: true } : state.finale.cathedral } };
+          cathedral: earned || coastEarned ? { ...state.finale.cathedral, alarm: 0,
+            ...(earned ? { personalOpening: true } : { coastalOpening: true }) } : state.finale.cathedral } };
     }
 
     case 'CATHEDRAL_FIGHT_WON':
       if (state.finale.route !== SOURCE_FINALE_ROUTE.TOWER || state.finale.stage !== SOURCE_FINALE_STAGE.CATHEDRAL_FIGHT) return state;
-      return { ...state, finale: { ...state.finale, cathedral: normalizeCathedral({ ...state.finale.cathedral, personalOpening: false, fight: null }), stage: SOURCE_FINALE_STAGE.TOWER_ESCAPE, result: SOURCE_FINALE_RESULT.WON } };
+      return { ...state, finale: { ...state.finale, cathedral: normalizeCathedral({ ...state.finale.cathedral, personalOpening: false, coastalOpening: false, fight: null }), stage: SOURCE_FINALE_STAGE.TOWER_ESCAPE, result: SOURCE_FINALE_RESULT.WON } };
 
     case 'CATHEDRAL_FIGHT_CHECKPOINT': {
       if (state.finale.route !== SOURCE_FINALE_ROUTE.TOWER || state.finale.stage !== SOURCE_FINALE_STAGE.CATHEDRAL_FIGHT) return state;
@@ -1133,7 +1149,7 @@ export function reduceChunkSurf(value, event = {}) {
       if (state.finale.route !== SOURCE_FINALE_ROUTE.TOWER || state.finale.stage !== SOURCE_FINALE_STAGE.CATHEDRAL_FIGHT) return state;
       const defeats = Math.max(0, Math.floor(Number(state.finale.bust?.defeats) || 0)) + 1;
       const bust = { ...state.finale.bust, defeats };
-      const cathedral = normalizeCathedral({ ...state.finale.cathedral, personalOpening: false,
+      const cathedral = normalizeCathedral({ ...state.finale.cathedral, personalOpening: false, coastalOpening: false,
         fight: state.finale.cathedral.fight ? { ...state.finale.cathedral.fight, retry: true } : null });
       if (defeats >= TOWER_DEFEAT_CEILING) {
         return { ...state, finale: { ...state.finale, bust, cathedral, stage: SOURCE_FINALE_STAGE.RESOLVED, result: SOURCE_FINALE_RESULT.LOST } };

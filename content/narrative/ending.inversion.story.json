@@ -11,7 +11,7 @@
     "ending",
     "inversion"
   ],
-  "notes": "Replaces ending.rescue.named / .unnamed and ending.inversion-final, which were three lines and four. Two audit fixes. The helper is still ambiguous — that is the point of it — but the ambiguity now MOVES: which candidates he can think of depends on what he did tonight, so a man who rescued somebody in Source and a man who never once looked at his own exit are standing in front of different doors. And the join to the gate scene is named rather than cut: he does not walk to that booth, he is at it, and the game says so instead of hoping nobody notices.",
+  "notes": "The helper's identity stays unresolved and the available readings still depend on what happened tonight. This document ends at the threshold after the existing two-leg escape. It does not resolve into municipal dawn or the gate booth: the actual wrong-door demolition continues through the Source I and II omens, black, and a new freely explorable Source IV. Only deliberately opening and crossing Source IV's far grey door completes this route. The physical sequence owns those events; this transcript does not narrate them in advance.",
   "regions": [
     {
       "id": "ending.inversion.region",
@@ -189,44 +189,8 @@
       "lines": [
         {
           "who": "direction",
-          "text": "You come through the conservatoire's front doors into wet municipal dawn. The yard is exactly where the plans say it is.",
+          "text": "You go through. Your hand leaves the edge of the door.",
           "id": "out.line.1"
-        },
-        {
-          "who": "direction",
-          "text": "The clock over the first bus reads 06:00. Sodium lamps shut down one at a time, each wet circle giving the pavement back to the morning.",
-          "id": "out.line.2"
-        },
-        {
-          "who": "recordist",
-          "text": "Ha.",
-          "id": "out.line.3"
-        },
-        {
-          "who": "direction",
-          "text": "The recordist begins to laugh, low, and it stops when he stops. Birds take the next space in the mix. Somebody held a door; you are the one who crossed it.",
-          "id": "out.line.4"
-        },
-        {
-          "who": "you",
-          "text": "I have five clean rooms on a card in a bag and no idea what building they are of.",
-          "id": "out.line.5",
-          "when": "ending.takes.full"
-        },
-        {
-          "who": "direction",
-          "text": "A bus opens its doors at an empty stop. The join between a building ending and a town beginning is so ordinary you nearly miss it.",
-          "id": "out.line.6"
-        },
-        {
-          "who": "direction",
-          "text": "Behind Heras fencing, demolition staff arrive in clean high-vis and begin the first checks of a morning shift. None of them look at you twice.",
-          "id": "out.line.7"
-        },
-        {
-          "who": "direction",
-          "text": "You walk toward the gate under a sky with nothing hidden in it. The man in the booth is going to be entirely normal about the missing hours, and that is the part you will think about.",
-          "id": "out.line.8"
         }
       ],
       "id": "out"

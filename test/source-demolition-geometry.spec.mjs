@@ -40,7 +40,7 @@ test('a floor-origin panel does not jump to its eventual flat contact height at 
  let checked=0;
  for(const part of G.parts){
   if(part.pivot[1]>.05)continue;
-  const track=M.tracks[part.mesh],j=Math.ceil((part.startTime+.45)*G.sampleHz),points=meshes.get(part.mesh).flat();
+  const track=M.tracks[part.mesh],j=Math.ceil((part.releaseTime??part.startTime+.45)*G.sampleHz),points=meshes.get(part.mesh).flat();
   const required=index=>Math.max(0,.035-Math.min(...points.map(v=>transform(v,[0,0,0],track.rotations[index])[1])));
   const upwardStep=track.translations[j][1]-track.translations[j-1][1];
   assert.ok(upwardStep<=Math.max(0,required(j)-required(j-1))+.012,
@@ -48,6 +48,29 @@ test('a floor-origin panel does not jump to its eventual flat contact height at 
   checked++;
  }
  assert.ok(checked>=6,'exercise the real ground-origin heavy facade panels');
+});
+test('controlled release holds weight after support initiation and follows a construction order',()=>{
+ for(const part of G.parts){
+  assert.ok(Number.isFinite(part.releaseTime)&&part.releaseTime>part.startTime+.3,`${part.mesh} has no held-load interval`);
+  const track=M.tracks[part.mesh],index=Math.floor((part.releaseTime-.1)*G.sampleHz),p=track.translations[index],q=track.rotations[index];
+  assert.ok(Math.hypot(...p.map((v,k)=>v-part.pivot[k]))<.065,`${part.mesh} leaves before its support releases`);
+  assert.ok(2*Math.acos(Math.min(1,Math.abs(q[3])))<.03,'held primary load has already been thrown');
+  if(part.role.startsWith('service-'))assert.ok(part.releaseTime>=1.5&&part.releaseTime<1.9);
+  if(part.role==='old-roof')assert.ok(part.releaseTime>=3&&part.releaseTime<3.7);
+ }
+});
+test('members retain distinct construction attitudes and upper failure falls predominantly downward',()=>{
+ let checked=0;
+ for(const part of G.parts){
+  const track=M.tracks[part.mesh],q=track.rotations.at(-1),angle=2*Math.acos(Math.min(1,Math.abs(q[3])));
+  if(part.role==='string-and-coping')assert.ok(angle<.4,'a horizontal course is being thrown through ninety degrees');
+  if(part.role==='old-roof')assert.ok(angle<.5,'the roof has lost its shallow construction attitude');
+  if(part.pivot[1]<6||!Number.isFinite(part.releaseTime))continue;
+  const a=Math.ceil((part.releaseTime+.1)*G.sampleHz),b=Math.ceil((part.releaseTime+.35)*G.sampleHz),pa=track.translations[a],pb=track.translations[b];
+  const down=pa[1]-pb[1],side=Math.hypot(pb[0]-pa[0],pb[2]-pa[2]);
+  assert.ok(down>.15&&down>side,`${part.mesh} splays sideways rather than dropping: down${down}, side${side}`);checked++;
+ }
+ assert.ok(checked>=10);
 });
 test('every baked moving piece respects ground contact and the original early white-walk corridor',()=>{
  for(const part of G.parts){

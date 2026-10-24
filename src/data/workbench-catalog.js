@@ -1,5 +1,6 @@
 // Physical inventory of the van bench. These are semantic objects, not screen
 // coordinates: both picking and packing use the same authored catalogue.
+import { VAN_REAR_CASE, VAN_REAR_STAGE } from './van-rear-design.js';
 export const WORKBENCH_VARIANTS = Object.freeze({
   headphones: Object.freeze(['reference', 'closed', 'open']),
   microphone: Object.freeze(['reference', 'directional', 'wide']),
@@ -24,7 +25,8 @@ export const WORKBENCH_TRAYS = Object.freeze([
   { group: 'microphone', label: '02 / MICROPHONE', x: -4.55, z: -.35, w: 1.8, d: 7.0 },
   { group: 'recorder', label: '03 / AMPLIFIER', x: 4.55, z: -.35, w: 1.9, d: 7.0 },
   { group: 'flashlight', label: '04 / LIGHTING', x: 6.65, z: -.35, w: 2.0, d: 7.0 },
-  { group: 'faceplate', label: 'SERVICE / FACEPLATES', x: 0, z: 4.4, w: 6.55, d: 1.55 },
+  { group: 'faceplate', label: 'SERVICE / FACEPLATES', x: 0, z: VAN_REAR_STAGE.rackZ, y: .53,
+    w: 6.55, d: .24, h: 1.64, vertical: true },
 ].map(Object.freeze));
 
 export function workbenchSelection(kit = {}, group) {
@@ -35,7 +37,8 @@ export function workbenchCatalog(state = {}) {
   const kit = state.fieldKit || {}, packed = new Set(state.packedGroups || []);
   const faceplate = workbenchSelection(kit, 'faceplate');
   const objects = [
-    { key: 'case', kind: 'case', modelId: 'field-case', label: 'FIELD CASE', position: [0, .025, -.45], width: 6.45, glow: !state.bagTaken },
+    { key: 'case', kind: 'case', modelId: 'field-case', label: 'FIELD CASE', position: [0, .025, VAN_REAR_STAGE.caseZ],
+      width: VAN_REAR_CASE.width / VAN_REAR_STAGE.metresPerUnit, glow: !state.bagTaken },
     { key: 'recorder', kind: 'inspect', item: 'recorder', modelId: faceplate === 'witness' ? 'field-recorder-witness' : 'field-recorder', label: 'FIELD RECORDER', position: [-1.35, .025, -4.4], width: 2.0, bay: 'recorder', destination: state.bagTaken ? 'case' : 'bench' },
     { key: 'radio', kind: 'inspect', item: 'radio', modelId: 'radio', label: 'RADIO', position: [1.25, .025, -4.4], width: 1.3, bay: 'radio', destination: state.bagTaken ? 'case' : 'bench' },
     { key: 'map', kind: 'map', modelId: 'map', item: 'map', label: 'SONIC SURVEY', position: [4.55, .025, 4.4], width: 1.8, bay: 'survey-indicator', destination: state.bagTaken && state.mapTaken ? 'case' : 'bench', glow: !state.mapTaken },
@@ -47,7 +50,8 @@ export function workbenchCatalog(state = {}) {
       const isPlate = group === 'faceplate', column = columns[group];
       objects.push({ key: `variant:${group}:${optionId}`, kind: 'variant', group, optionId,
         modelId: `${group === 'recorder' ? 'amp' : group}-${optionId}`, label: names[group][index],
-        position: isPlate ? [-2.15 + index * 2.15, .045, 4.4] : [column.x, .045, -2.6 + index * 2.35],
+        position: isPlate ? [-2.15 + index * 2.15, VAN_REAR_STAGE.rackSeatY, VAN_REAR_STAGE.rackZ] : [column.x, .045, -2.6 + index * 2.35],
+        ...(isPlate ? { upright: true } : {}),
         width: isPlate ? 1.85 : column.width, selected,
         bay: group === 'recorder' ? 'amp' : group,
         destination: isPlate && selected ? 'device' : selected && packed.has(group) && state.bagTaken ? 'case' : 'bench',

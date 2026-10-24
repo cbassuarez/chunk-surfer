@@ -23,7 +23,6 @@ export const STAIR_ANOMALY_STAGE = Object.freeze({
 export const STAIR_ANOMALY_DARK_ESCAPE_MS = 20_000;
 
 const VALID_STAIRS = new Set(['upper', 'basement']);
-const VALID_TRAVEL = new Set(['up', 'down']);
 const VALID_VARIANTS = new Set(Object.values(STAIR_ANOMALY_VARIANT));
 const VALID_STATUS = new Set(Object.values(STAIR_ANOMALY_STATUS));
 
@@ -97,11 +96,11 @@ export function normalizeStairAnomalyEnvironment(value, fallback = DEFAULT_STAIR
   // decideStairAnomalyEnvironment for why the helix cannot carry this.
   const stored = VALID_STAIRS.has(source.stairId) ? source.stairId : base.stairId;
   const stairId = stored === 'upper' ? 'basement' : stored;
-  const travel = VALID_TRAVEL.has(source.travel) ? source.travel : base.travel;
-  // The anomaly can make a flight impossibly long; it cannot contradict the
-  // direction the player chose at its threshold. This also repairs old saves
-  // whose inversion variants persisted an opposing visual slope.
-  const visualSlope = travel;
+  // Earlier runs could persist a descent or an inverted visual slope. The
+  // event now belongs only to the climb out: migrate the saved direction too,
+  // while retaining its atmosphere, seed and separate progression ledger.
+  const travel = 'up';
+  const visualSlope = 'up';
   const variant = VALID_VARIANTS.has(source.variant) ? source.variant : base.variant;
   const seed = Math.max(1, Math.floor(Number(source.seed) || Number(base.seed) || 4417)) >>> 0;
   return { stairId, travel, visualSlope, variant, seed };
@@ -154,4 +153,19 @@ export function reduceStairAnomaly(value, event = {}) {
 export function stairAnomalyTriggerMatches(environment, { stairId, travel } = {}) {
   const selected = normalizeStairAnomalyEnvironment(environment);
   return selected.stairId === stairId && selected.travel === travel;
+}
+
+// Entry follows the accepted physical crossing, not a compass direction or a
+// saved facing. A flight may be authored in either order, and logical ribbons
+// or portal coordinates may change without changing which way the body climbs.
+// The first real rise above its lower landing is the single commitment point.
+export function stairAnomalyEntryCrossed(environment, crossing, flight) {
+  if (!crossing || !flight) return false;
+  if (crossing.stairId !== 'main-basement-stair' || flight.owner !== crossing.stairId
+    || flight.flight !== crossing.flightId) return false;
+  const from = crossing.fromH, to = crossing.toH;
+  const a = flight.fromH, b = flight.toH;
+  if (![from, to, a, b].every(Number.isFinite)) return false;
+  if (crossing.travel !== 'up' || to - from <= 1e-4 || Math.abs(from - Math.min(a, b)) > 1e-4) return false;
+  return stairAnomalyTriggerMatches(environment, { stairId: 'basement', travel: 'up' });
 }

@@ -44,3 +44,22 @@ export function chapelServiceFrame({ eligible = false, listener = null, sources 
   return { active: voices.some(v => v.gain > 0), muted: !!muted,
     reason: muted ? 'protected-or-blocked' : 'service', voices, yaw, dialogue: !!dialogue };
 }
+
+// The murmur follows the service's reasons for being somewhere else, and its
+// own for being silent: a take and the mic check are what it is for, so they
+// never mute it. Its voices are already heard (game/chapel-apparitions.js).
+export function chapelMurmurFrame({ eligible = false, listener = null, voices = [], yaw = 0,
+  playback = false, paused = false, blocked = false, battle = false, finale = false,
+  suppressActors = false, focused = true, effectsMode = 'full', dialogue = false,
+} = {}) {
+  let reason = null;
+  if (!eligible) reason = 'outside-building-gameplay';
+  else if (!listener || listener.group !== 'upper') reason = 'other-floor';
+  else if (![ZONE.chapel, ZONE.chapelOuter].includes(listener.zone)) reason = 'outside-chapel';
+  else if (effectsMode === 'off') reason = 'effects-off';
+  else if (finale) reason = 'finale';
+  if (reason) return { active: false, muted: true, reason, voices: [], listener, yaw, dialogue: false };
+  const muted = playback || paused || blocked || battle || suppressActors || !focused;
+  return { active: voices.length > 0, muted: !!muted, reason: muted ? 'blocked' : 'murmur',
+    voices, listener, yaw, dialogue: !!dialogue };
+}

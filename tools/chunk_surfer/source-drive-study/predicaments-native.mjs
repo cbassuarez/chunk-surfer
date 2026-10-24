@@ -11,6 +11,7 @@ const baseURL=process.env.SOURCE_DRIVE_BASE_URL;
 const snapshot=process.env.SOURCE_DRIVE_SNAPSHOT_DIR;
 const staticOnly=process.env.SOURCE_DRIVE_STATIC_ONLY==='1';
 const skipWhiteout=staticOnly&&process.env.SOURCE_DRIVE_SKIP_WHITEOUT==='1';
+const staticReviewEntry=staticOnly&&process.env.SOURCE_DRIVE_STATIC_REVIEW_ENTRY==='1';
 const budgetMiB=Number(process.env.SOURCE_DRIVE_NATIVE_BUDGET_MIB??40);
 if(!Number.isFinite(budgetMiB)||budgetMiB<=0)throw Error('Native budget must be a positive MiB value.');
 if(!baseURL||!snapshot)throw Error('Explicit frozen base URL and source directory required; refusing to inspect mutable production.');
@@ -25,7 +26,8 @@ async function filesBelow(dir,accept){const paths=[];for(const e of await readdi
 const paths=[...new Set(['src/main.js','src/game/source-drive-session.js','src/game/source-drive-renderer.js','src/game/playback.js','src/audio/source-drive-recording.js','src/render/r3d.js','src/render/props3d.js','src/render/pixel-mesh/shader.js',...await filesBelow('src/game/source-drive',p=>p.endsWith('.js')),...await filesBelow('public/assets/source-drive',p=>/\.(glb|json|wav)$/.test(p))])].sort();
 const identity=()=>Promise.all(paths.map(async path=>({path,sha256:hash(await readFile(join(snapshot,path)))})));
 const requiredMeshes=['drive_cabin','drive_radio','drive_wheel','dp_wreck_saloon','dp_wreck_estate','dp_wreck_shell','dp_detached_wheel','dp_torn_panel','dp_cliff_mass','dp_cliff_shelf','dp_road_fold','dp_whiteout_pylon','dp_snow_paving','dp_wreck_broken_lamp'];
-const report={kind:'source-drive-predicaments-native',staticOnly,skipWhiteout,attempt,snapshot,baseURL,preflightFreeBytes,scope:staticOnly?'Static-only preview through actual complete game geometry/materials/final shader. Declared Source approach and separate paused car fixtures, one real radio reach. No driving films, complete behavior, full chapter, human fear/comfort or smoothness acceptance.':'Actual complete game controls/rendering/audio in two separately declared car placements. Technical keyboard road-follow reads telemetry and presses ordinary keys; not a human driver, uninterrupted chapter traversal, physical WebView/GPU timing or fear/comfort acceptance. No pose, clock, progression, weather or look assignment inside either movie.',checks:[],errors:[],fixtures:[],inputs:[],films:[],screenshots:[],sourceBefore:await identity(),harnessSha256:hash(await readFile(new URL(import.meta.url)))};
+const report={kind:'source-drive-predicaments-native',staticOnly,skipWhiteout,staticReviewEntry,attempt,snapshot,baseURL,preflightFreeBytes,scope:staticOnly?(staticReviewEntry?'Static-only review start bypasses the real Source route via the explicit sourceDrive.start review API. Separate paused car fixtures and one real radio reach use actual complete game geometry/materials/final shader. No Source entry/continuation, driving films, complete behavior, full chapter, human fear/comfort or smoothness acceptance.':'Static-only preview through actual complete game geometry/materials/final shader. Declared Source approach and separate paused car fixtures, one real radio reach. No driving films, complete behavior, full chapter, human fear/comfort or smoothness acceptance.'):'Actual complete game controls/rendering/audio in two separately declared car placements. Technical keyboard road-follow reads telemetry and presses ordinary keys; not a human driver, uninterrupted chapter traversal, physical WebView/GPU timing or fear/comfort acceptance. No pose, clock, progression, weather or look assignment inside either movie.',checks:[],errors:[],fixtures:[],inputs:[],films:[],screenshots:[],sourceBefore:await identity(),harnessSha256:hash(await readFile(new URL(import.meta.url)))};
+if(staticOnly)report.scope+=' Suspension and integration remainders are explicitly placed at rest. The actual radio reach is held with the owner pause callback at observed control contact for a static inspection. Original lighting-before images inherited moving-entry brake compression and are non-isolated historical references, not matched lighting A/B evidence.';
 let browser,page,filmStarted=false,filmName=null;
 const wait=ms=>new Promise(ok=>setTimeout(ok,ms));
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -109,16 +111,25 @@ async function readiness(){
  const r=await page.evaluate(async required=>{const p=await import('/src/render/props3d.js');return{catalog:p.propMeshCatalog().filter(name=>required.includes(name)),renderer:p.driveStudyRendererStatus(),pixelMesh:window.__chunkSurferPixelMesh.status(),frame:__probe.sourceDrive.frame()};},requiredMeshes);
  const before=r.pixelMesh.framesRendered;await page.waitForFunction(n=>window.__chunkSurferPixelMesh.status().framesRendered>=n+3,{timeout:20000},before);return r;
 }
+async function cameraReceipt(){return page.evaluate(async()=>{
+ const q=__probe.sourceDrive.state();if(!q?.initialized)return null;
+ const R=await import('/src/render/r3d.js'),S=await import('/src/game/source-drive/scene.js');
+ window.__staticDriveMetrics??=await(await fetch('/assets/source-drive/geometry/metrics.json')).json();
+ // showHands:false avoids touching the actual owner's live reach diagnostics.
+ const scene=S.makeDriveScene(q.state,window.__staticDriveMetrics,{showHands:false}),actual=R.r3dViewCamera(),expected={eye:scene.eye,yaw:q.state.heading+q.look.yaw,pitch:q.look.pitch+scene.roadPitch};
+ const eyeErrorM=Math.hypot(actual.eye.x-expected.eye[0],actual.eye.y-expected.eye[1],actual.eye.z-expected.eye[2]);
+ return{at:performance.now(),actual,submittedLook:q.look,expected,eyeErrorM,yawError:actual.yaw-expected.yaw,pitchError:actual.pitch-expected.pitch,paused:q.paused,programmeTime:q.state.programTime,body:Object.fromEntries(['bodyPitch','bodyRoll','bodyHeave','pitchVelocity','rollVelocity','heaveVelocity','physicsRemainder'].map(k=>[k,q.state[k]??0])),qualification:'Read-only actual R3 camera versus exact scene eye and session-submitted look; static fixture suspension is explicitly at rest.'};
+});}
 async function screenshot(name){
- const clip=await page.$eval('#map',e=>{const r=e.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height};}),t0=await page.evaluate(()=>performance.now());
+ const cameraBefore=await cameraReceipt(),clip=await page.$eval('#map',e=>{const r=e.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height};}),t0=await page.evaluate(()=>performance.now());
  const bytes=await page.screenshot({path:join(run,name+'.png'),clip}),t1=await page.evaluate(()=>performance.now());
- report.screenshots.push({name,path:attempt+'/'+name+'.png',sha256:hash(bytes),bytes:bytes.length,t0,t1});console.log('SCREENSHOT',name,join(run,name+'.png'));return{name,bytes,t0,t1};
+ const cameraAfter=await cameraReceipt();report.screenshots.push({name,path:attempt+'/'+name+'.png',sha256:hash(bytes),bytes:bytes.length,t0,t1,cameraBefore,cameraAfter});console.log('SCREENSHOT',name,join(run,name+'.png'));return{name,bytes,t0,t1};
 }
 async function fixture({name,distance,lookYaw=0,lookPitch=-.04,programmeTime=80,furthest=distance,weatherSeconds=18,diagnosticClear=false,station='service'}){
  if(filmStarted)throw Error('Fixture is forbidden during a film.');
  const receipt=await page.evaluate(async q=>{
   const cp=__probe.sourceDrive.checkpoint(),{worldAt}=await import('/src/game/source-drive/road.js'),{driveEvolutionFrame}=await import('/src/game/source-drive/evolution.js'),W=await import('/src/game/source-drive/weather.js'),a=worldAt(q.distance,0);
-  Object.assign(cp.drive,{x:a.x,z:a.z,heading:a.heading,roadHeight:a.height,roadOffset:0,furthest:q.furthest,programTime:q.programmeTime,phase:q.furthest>=1056?4:q.furthest>=768?3:q.furthest>=516?2:q.furthest>=288?1:0,speed:0,lateralSpeed:0,yawRate:0,steer:0,wheelAngle:0,throttle:0,brakeHold:true,brakeAmount:1,arrived:false,inArrivalZone:false,arrivalStopSeconds:0,station:q.station,radioOn:true,finished:false,journey:{schema:1,stationarySeconds:0,returnMetres:0,edgeSeconds:0,maxBacktrackMetres:0,mode:'held'}});
+  Object.assign(cp.drive,{x:a.x,z:a.z,heading:a.heading,roadHeight:a.height,roadOffset:0,furthest:q.furthest,programTime:q.programmeTime,phase:q.furthest>=1056?4:q.furthest>=768?3:q.furthest>=516?2:q.furthest>=288?1:0,speed:0,lateralSpeed:0,yawRate:0,steer:0,wheelAngle:0,steeringWheelAngle:0,throttle:0,brakeHold:true,brakeAmount:1,bodyRoll:0,bodyPitch:0,bodyHeave:0,rollVelocity:0,pitchVelocity:0,heaveVelocity:0,longitudinalAcceleration:0,lateralAcceleration:0,physicsRemainder:0,frontSlip:0,rearSlip:0,engineLoad:0,wheelRotation:0,directionHold:0,hillStartDirection:0,contactStartX:a.x,contactStartZ:a.z,contactStartHeading:a.heading,arrived:false,inArrivalZone:false,arrivalStopSeconds:0,station:q.station,radioOn:true,finished:false,journey:{schema:1,stationarySeconds:0,returnMetres:0,edgeSeconds:0,maxBacktrackMetres:0,mode:'held'}});
   cp.status='active';cp.started=true;cp.look={yaw:q.lookYaw,pitch:q.lookPitch};cp.settings={wipers:true,headlights:true};
   const w=W.createDriveWeather({initialWetness:.18}),e=driveEvolutionFrame(cp.drive),profile=q.diagnosticClear?{...e.weather,rain:0,fog:0,snow:0,whiteout:0,extinction:.001}:e.weather;
   for(let i=0;i<q.weatherSeconds*120;i++)W.stepDriveWeather(w,{dt:1/120,timeSec:q.programmeTime-q.weatherSeconds+(i+1)/120,...profile,wipers:true,speed:0});
@@ -126,7 +137,10 @@ async function fixture({name,distance,lookYaw=0,lookPitch=-.04,programmeTime=80,
   w.timeSec=q.programmeTime;cp.weather=JSON.parse(W.serializeDriveWeather(w));await __probe.sourceDrive.fixture(cp);
   return{...q,position:{x:a.x,z:a.z,heading:a.heading},road:{halfWidth:a.halfWidth,leftWidth:a.leftWidth,rightWidth:a.rightWidth,shoulderWidth:a.shoulderWidth,section:a.treatment.section},profile,weatherRevision:w.revision,returnPose:cp.returnPose,qualification:q.diagnosticClear?'Separately declared diagnostic: actual saved weather controls set clear on paused fixture; scene geometry, road snow cover, lighting, position, clock and final shader retained.':'Separate technical approach fixture before film; not claimed travel from previous section.'};
  },{name,distance,lookYaw,lookPitch,programmeTime,furthest,weatherSeconds,diagnosticClear,station});
- report.fixtures.push(receipt);await readiness();await wait(200);return receipt;
+ report.fixtures.push(receipt);await readiness();await wait(200);await page.evaluate(()=>new Promise(ok=>requestAnimationFrame(()=>requestAnimationFrame(ok))));
+ receipt.camera=await cameraReceipt();
+ check('settled actual camera matches declared fixture '+name,receipt.camera?.paused&&receipt.camera.eyeErrorM<1e-6&&Math.abs(receipt.camera.yawError)<1e-6&&Math.abs(receipt.camera.pitchError)<1e-6&&Object.values(receipt.camera.body).every(v=>v===0),receipt.camera);
+ return receipt;
 }
 async function beginFilm(name){
  filmName=name;const prior=await state(),capture=await page.evaluate(beginCompositeFilm);filmStarted=true;
@@ -181,16 +195,32 @@ try{
  page.on('console',m=>{if(m.type()==='error'&&/LOOP FAULT|source-drive|shader|compile|SyntaxError|ReferenceError|Failed to load module script/i.test(m.text())){report.errors.push(m.text());console.log('RENDERERROR',m.text().slice(0,400));}});
  await page.evaluateOnNewDocument(installBootstrap);
  await page.goto(baseURL+'/?nodisplaynotice=1&skipwarn=1&nomic=1&sam=0&skiptut=1',{waitUntil:'domcontentloaded',timeout:60000});
- await page.waitForFunction(()=>!!window.__probe?.testRun&&!!window.__scenes?.top?.(),{timeout:120000});
- await page.evaluate(async()=>{await __probe.testRun();__probe.tutSkip();__probe.sourcePreset('normal-exit');});
- await page.waitForFunction(()=>!!__probe.edgeDoor(),{timeout:60000});
- report.entryApproach=await page.evaluate(()=>{const door=__probe.edgeDoor(),[a,b]=door.threshold;__probe.sourceWarp((a.x+b.x)/2,(a.y+b.y)/2+6,0);__probe.lookAtWorld(0,0);return{door,position:__probe.pos()};});
- report.fixtures.push({kind:'Source approach before new-section fixtures',distanceFromDoorM:3,entry:report.entryApproach});await wait(700);
- await down('w');await wait(250);await press('e');
- const until=Date.now()+120000;while(Date.now()<until){const q=await state();if(q?.initialized&&q.opening?.phase==='live')break;if(q?.error)throw Error(q.error);await page.keyboard.down('w');await wait(120);}await up('w');
- await page.waitForFunction(()=>__probe.sourceDrive.state()?.initialized&&!__probe.sourceDrive.state().paused,{timeout:15000});await brake();
- report.entry=await sourceBoundary();const returnPose=report.entry.checkpoint.returnPose;
- check('real grey-door entry installs one active Source drive and retains its exact exterior return',await page.evaluate(()=>__scenes.top()?.id==='source-drive')&&!!returnPose&&!report.entry.source.completed,{returnPose,phase:report.entry.source.phase});
+ // The probe is installed before startup calibration/credits finish. Starting
+ // a fixture there lets the still-pending boot callback install a title over
+ // the placed world. Wait for the natural terminal menu before taking over;
+ // this startup wait is outside every declared Source/car fixture and movie.
+ await page.waitForFunction(()=>!!window.__probe?.testRun&&window.__scenes?.top?.()?.id==='title'&&document.body.innerText.includes('START A NEW NIGHT.'),{timeout:120000});
+ report.bootstrap=await page.evaluate(()=>({scene:__scenes.top()?.id,pageMs:performance.now(),help:document.body.innerText,qualification:'Natural startup calibration/credits completed before the diagnostic fixture. This menu is distinct from the in-world title and is outside captured car evidence.'}));
+ const gameplayOwner=await page.evaluate(async()=>{const ready=await __probe.testRun();__probe.tutSkip();return{ready,scene:__scenes.top()?.id||null,plan:__probe.plan(),frontEndNegative:__probe.frontEndGrade()};});
+ check('settled startup yields a loaded gameplay owner before the Source fixture',gameplayOwner.ready&&gameplayOwner.scene!=='title'&&gameplayOwner.plan.loaded&&!gameplayOwner.frontEndNegative,gameplayOwner);
+ await page.evaluate(()=>__probe.sourcePreset('normal-exit'));
+ if(staticReviewEntry){
+  report.fixtures.push({kind:'Explicit static-only review entry',api:'__probe.sourceDrive.start()',qualification:'Bypasses the real Source edge, which now belongs to Source continuation. This placement makes no entry, route, transition or return-continuity claim; subsequent car cameras/weather/clocks are declared separately.'});
+  await page.evaluate(async()=>{await __probe.sourceDrive.start();return true;});
+  await page.waitForFunction(()=>__probe.sourceDrive.state()?.initialized,{timeout:60000});
+  report.entry=await sourceBoundary();
+  check('declared static review installs the actual drive renderer without a Source route claim',await page.evaluate(()=>__scenes.top()?.id==='source-drive')&&!!report.entry.checkpoint,{review:true,phase:report.entry.source.phase,qualification:report.fixtures.at(-1).qualification});
+ }else{
+  await page.waitForFunction(()=>!!__probe.edgeDoor(),{timeout:60000});
+  report.entryApproach=await page.evaluate(()=>{const door=__probe.edgeDoor(),[a,b]=door.threshold;__probe.sourceWarp((a.x+b.x)/2,(a.y+b.y)/2+6,0);__probe.lookAtWorld(0,0);return{door,position:__probe.pos()};});
+  report.fixtures.push({kind:'Source approach before new-section fixtures',distanceFromDoorM:3,entry:report.entryApproach});await wait(700);
+  await down('w');await wait(250);await press('e');
+  const until=Date.now()+120000;while(Date.now()<until){const q=await state();if(q?.initialized&&q.opening?.phase==='live')break;if(q?.error)throw Error(q.error);await page.keyboard.down('w');await wait(120);}await up('w');
+  await page.waitForFunction(()=>__probe.sourceDrive.state()?.initialized&&!__probe.sourceDrive.state().paused,{timeout:15000});await brake();
+  report.entry=await sourceBoundary();
+  check('real grey-door entry installs one active Source drive and retains its exact exterior return',await page.evaluate(()=>__scenes.top()?.id==='source-drive')&&!!report.entry.checkpoint.returnPose&&!report.entry.source.completed,{returnPose:report.entry.checkpoint.returnPose,phase:report.entry.source.phase});
+ }
+ const returnPose=report.entry.checkpoint.returnPose;
  report.assetReadiness=await readiness();
  check('new predicament pack and cabin meshes are loaded, not merely submitted',requiredMeshes.every(n=>report.assetReadiness.catalog.includes(n)),{required:requiredMeshes,catalog:report.assetReadiness.catalog,assetResponses:report.assetResponses.filter(r=>/source-drive\/(drive\.glb|predicaments\/drive-predicaments\.glb)$/.test(r.path))});
  check('shared final acquisition compiles without GL errors',report.assetReadiness.pixelMesh.shaderReady&&!report.assetReadiness.pixelMesh.lastGlError&&!report.assetReadiness.pixelMesh.lastError,report.assetReadiness.pixelMesh);
@@ -200,14 +230,15 @@ try{
  check('the resolved predicament mesh pack matches the frozen asset bytes',report.predicamentAssetSha256===report.sourceBefore.find(r=>r.path==='public/assets/source-drive/predicaments/drive-predicaments.glb')?.sha256,{loaded:report.predicamentAssetSha256,frozen:report.sourceBefore.find(r=>r.path==='public/assets/source-drive/predicaments/drive-predicaments.glb')?.sha256});
 
  await fixture({name:'ordinary-cabin-material-view',distance:55,programmeTime:12,lookYaw:-.23,lookPitch:-.25,weatherSeconds:8});await screenshot('ordinary-cabin');
- await fixture({name:'radio-reach-material-view',distance:55,programmeTime:12,lookYaw:-.42,lookPitch:-.4,weatherSeconds:8});await press('Enter');await press('2');
- await page.waitForFunction(async()=>{const d=await import('/src/game/source-drive/geometry/wheel-hands-pose.js');return d.wheelHandDiagnostics()?.reach?.atContact;},{timeout:15000,polling:25});
- report.radioReach=await page.evaluate(async()=>{const d=await import('/src/game/source-drive/geometry/wheel-hands-pose.js');return d.wheelHandDiagnostics();});await screenshot('radio-contact');
- check('physical radio reach contacts the actual control with an anchored right hand',report.radioReach.reach?.kind==='tune'&&report.radioReach.reach.atContact&&report.radioReach.reach.contactErrorM<.002&&!report.radioReach.hands.right.unreachable,{reach:report.radioReach.reach,right:report.radioReach.hands.right});
- await page.waitForFunction(()=>__probe.sourceDrive.state().state.station==='company',{timeout:15000});
  await fixture({name:'cliff-258-static',distance:258,programmeTime:98,lookPitch:-.015});await screenshot('cliff-258');
  await fixture({name:'cliff-280-static',distance:280,programmeTime:98,lookPitch:-.02});await screenshot('cliff-280');
  await fixture({name:'cliff-350-static',distance:350,programmeTime:114,lookYaw:.08,lookPitch:-.03});await screenshot('cliff-350');
+ await fixture({name:'radio-reach-material-view',distance:55,programmeTime:12,lookYaw:-.42,lookPitch:-.4,weatherSeconds:8});await press('Enter');await press('2');
+ await page.waitForFunction(async()=>{const d=await import('/src/game/source-drive/geometry/wheel-hands-pose.js'),diag=d.wheelHandDiagnostics();if(!diag?.reach?.atContact)return false;window.__staticHeldRadioReach={diagnostics:structuredClone(diag),pageMs:performance.now(),programmeTime:__probe.sourceDrive.state().state.programTime};__scenes.top().blur();return __probe.sourceDrive.state().paused;},{timeout:15000,polling:25});
+ report.radioReachHold=await page.evaluate(()=>({...window.__staticHeldRadioReach,qualification:'Actual ordinary Enter/2 operation; the genuine scene blur/pause callback is invoked in the same atContact predicate. Contact clock is held solely for this static material inspection; no continuous animation or driving claim.'}));
+ report.radioReach=await page.evaluate(async()=>{const d=await import('/src/game/source-drive/geometry/wheel-hands-pose.js');return d.wheelHandDiagnostics();});await screenshot('radio-contact');
+ check('physical radio reach contacts the actual control with an anchored right hand',report.radioReach.reach?.kind==='tune'&&report.radioReach.reach.atContact&&report.radioReach.reach.contactErrorM<.002&&!report.radioReach.hands.right.unreachable,{reach:report.radioReach.reach,right:report.radioReach.hands.right});
+ await page.waitForFunction(()=>__probe.sourceDrive.state().state.station==='company',{timeout:15000});
  if(!skipWhiteout){
  const white=await fixture({name:'white-sea-1030-static',distance:1030,programmeTime:238,lookPitch:-.015,weatherSeconds:25});await screenshot('whiteout-1030');
  const actualWeather=await page.evaluate(()=>__probe.sourceDrive.checkpoint().weather);report.whiteoutStatic={fixture:white,snowMean:actualWeather.snowGrid.reduce((a,b)=>a+b,0)/actualWeather.snowGrid.length,snowMaximum:Math.max(...actualWeather.snowGrid),controls:{fog:actualWeather.fog,snow:actualWeather.snow,whiteout:actualWeather.whiteout}};

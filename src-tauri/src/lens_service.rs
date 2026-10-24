@@ -1168,6 +1168,130 @@ pub fn chunk_lens_stop(state: State<'_, LensServiceState>) -> Result<(), String>
     Ok(())
 }
 
+#[derive(Clone, Debug, Serialize)]
+pub struct LensProcess {
+    pid: u32,
+    path: String,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LensNukeReport {
+    stopped_managed: bool,
+    killed: Vec<LensProcess>,
+    foreign: Vec<LensProcess>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LensScanReport {
+    managed: bool,
+    running: Vec<LensProcess>,
+    foreign: Vec<LensProcess>,
+}
+
+/// NUKE ALL SD INSTANCES (God menu): a baseline without stable diffusion. Stops
+/// the lens this app manages, then ends every other copy of this game's lens:
+/// any `chunk-lens` sidecar, whichever build it came from (orphans from earlier
+/// runs keep a diffusion model resident until they are killed), and the dev
+/// lens server from any checkout. A diffusion server that is not this game's is
+/// reported, not killed.
+#[tauri::command]
+pub fn chunk_lens_nuke(state: State<'_, LensServiceState>) -> Result<LensNukeReport, String> {
+    let stopped_managed = managed_running(&state);
+    state.stop();
+    let (ours, foreign) = lens_processes();
+    let killed = ours.into_iter().filter(|process| terminate(process.pid)).collect();
+    Ok(LensNukeReport {
+        stopped_managed,
+        killed,
+        foreign,
+    })
+}
+
+/// What the nuke would end, without ending anything.
+#[tauri::command]
+pub fn chunk_lens_scan(state: State<'_, LensServiceState>) -> Result<LensScanReport, String> {
+    let (running, foreign) = lens_processes();
+    Ok(LensScanReport {
+        managed: managed_running(&state),
+        running,
+        foreign,
+    })
+}
+
+fn managed_running(state: &LensServiceState) -> bool {
+    state
+        .0
+        .lock()
+        .map(|inner| inner.managed.is_some())
+        .unwrap_or(false)
+}
+
+/// (this game's lens processes, other diffusion servers). Same rule as the dev
+/// server's tools/chunk_surfer/lens-dev-control.mjs.
+fn classify_lens_command(command: &str) -> Option<bool> {
+    let sidecar = command
+        .split_whitespace()
+        .any(|token| Path::new(token).file_name().map(|name| name == "chunk-lens").unwrap_or(false));
+    if sidecar || command.contains("chunk_surfer/diffusion_server/server.py") {
+        Some(true)
+    } else if command.contains("diffusion_server/server.py") {
+        Some(false)
+    } else {
+        None
+    }
+}
+
+#[cfg(unix)]
+fn lens_processes() -> (Vec<LensProcess>, Vec<LensProcess>) {
+    let own = std::process::id();
+    let (mut ours, mut foreign) = (Vec::new(), Vec::new());
+    let Ok(output) = Command::new("ps").args(["-axo", "pid=,command="]).output() else {
+        return (ours, foreign);
+    };
+    for line in String::from_utf8_lossy(&output.stdout).lines() {
+        let Some((pid, command)) = line.trim_start().split_once(char::is_whitespace) else {
+            continue;
+        };
+        let Ok(pid) = pid.parse::<u32>() else { continue };
+        if pid == own {
+            continue;
+        }
+        let command = command.trim();
+        let process = || LensProcess {
+            pid,
+            path: command.chars().take(240).collect(),
+        };
+        match classify_lens_command(command) {
+            Some(true) => ours.push(process()),
+            Some(false) => foreign.push(process()),
+            None => {}
+        }
+    }
+    (ours, foreign)
+}
+
+#[cfg(not(unix))]
+fn lens_processes() -> (Vec<LensProcess>, Vec<LensProcess>) {
+    (Vec::new(), Vec::new())
+}
+
+#[cfg(unix)]
+fn terminate(pid: u32) -> bool {
+    // SIGTERM: the PyInstaller bootloader forwards it and removes its _MEI dir.
+    Command::new("kill")
+        .args(["-TERM", &pid.to_string()])
+        .status()
+        .map(|status| status.success())
+        .unwrap_or(false)
+}
+
+#[cfg(not(unix))]
+fn terminate(_pid: u32) -> bool {
+    false
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1653,5 +1777,20 @@ mod tests {
     #[test]
     fn non_windows_spawn_policy_is_a_no_op() {
         assert_eq!(sidecar_creation_flags(), 0);
+    }
+}
+
+#[cfg(test)]
+mod nuke_tests {
+    use super::classify_lens_command;
+
+    #[test]
+    fn every_chunk_lens_and_every_checkout_lens_server_is_ours() {
+        assert_eq!(classify_lens_command("/Applications/Chunk Surfer.app/Contents/MacOS/chunk-lens --port 9"), Some(true));
+        assert_eq!(classify_lens_command("/Users/x/QA/Other.app/Contents/MacOS/chunk-lens"), Some(true));
+        assert_eq!(classify_lens_command("python3 /tmp/wt/tools/chunk_surfer/diffusion_server/server.py --port 8001"), Some(true));
+        assert_eq!(classify_lens_command("python3 /elsewhere/diffusion_server/server.py"), Some(false));
+        assert_eq!(classify_lens_command("/usr/bin/node vite"), None);
+        assert_eq!(classify_lens_command("/opt/chunk-lens-tools/readme"), None);
     }
 }

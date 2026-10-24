@@ -253,13 +253,19 @@ test('PROGRAM display does not capture the preceding world iris and keeps its au
     onDone: () => completed++,
   });
   scene.enter();
+  assert.equal(scene.worldPresentation, 'visible', 'the real doorway remains visible for the look-back');
+  assert.equal(scene.view().elapsed, 0);
   scene.update(1.5);
   scene.render();
+  assert.equal(scene.worldPresentation, 'visible', 'a partly open iris must retain the world behind it');
   assert.equal(h.panels.length, 0);
   assert.equal(h.events.length, 4);
   assert.ok(h.events.every((event) => event.kind === 'fill'));
   scene.update(.5);
   scene.render();
+  assert.equal(scene.worldPresentation, 'hidden', 'the fully opaque title must release hidden world drawing work');
+  assert.equal(scene.view().opaque, true);
+  assert.equal(scene.view().elapsed, 2, 'the presentation policy does not skip any authored time');
   assert.equal(h.panels.length, 1);
   assert.equal(h.panels[0].options.label, 'PROGRAM');
   assert.deepEqual(h.events.slice(-5).map((event) => event.kind), ['back', 'vfd', 'text', 'text', 'cover']);

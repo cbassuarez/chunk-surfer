@@ -9,6 +9,8 @@ import { createPointerModeController } from '../src/input/pointer-mode.js';
 import { createAcademicSociety } from '../src/game/academic-society.js';
 import { createAcademicBouncers } from '../src/game/academic-bouncers.js';
 import { createAcademicFloorPopulation } from '../src/game/academic-floor-population.js';
+import { createAcademicFloorReturns,academicFloorActorPresent,academicFloorProtectedActorIds } from '../src/game/academic-floor-returns.js';
+import { ACADEMIC_BOUNCER_ACTORS } from '../src/data/academic-bouncers.js';
 import { ACADEMIC_FLOOR_POPULATION, ACADEMIC_FLOOR_GUESTS } from '../src/data/academic-floor-population.js';
 import { ACADEMIC_CHARACTER_PACK_MESHES } from '../src/data/academic-society-character-design.js';
 import {createAcademicSocietyPresentationClock,academicSocietyAmbientAudible} from '../src/game/academic-society-presentation.js';
@@ -132,6 +134,8 @@ function adapter() {
     academicBouncerSocialScene:null,academicBouncerSocialDispatch:null,academicBouncerActors:()=>[],
     academicAmbientDelivery:null,academicPopulationDispatch:null,academicPopulationDelivery:null,
     academicFloorPopulation:createAcademicFloorPopulation(),ACADEMIC_FLOOR_POPULATION,
+    academicFloorReturns:createAcademicFloorReturns(),academicFloorActorPresent,academicFloorProtectedActorIds,
+    ACADEMIC_BOUNCER_ACTORS,academicBouncerScene:null,
     academicBouncers:createAcademicBouncers(),academicAdversaryClaimsQuiet:()=>false,
     // This adapter isolates speech/scene lifecycle; compiled physical audibility
     // is exercised separately in academic-bouncer-audibility.spec.mjs.
@@ -240,7 +244,7 @@ test('pause immediately cancels active gallery audio even though the paused loop
   const a=main.indexOf('function setGameplayPaused('),b=main.indexOf('function togglePause()',a);
   let cancelled=0,saved=0;
   const context={paused:false,storyMode:true,inRogue:true,sourceDriveSession:null,sourcePubScene:null,pubRoomAudio:null,sourcePubAudio:null,getInDriveTeaserScene:null,
-    sourceContinuationAudio:null,sourceContinuationScene:null,
+    sourceContinuationAudio:null,sourceContinuationScene:null,coastalMemoryScene:null,
     academicGhostDispatch:{cancel(){cancelled++;}},saveAcademicGhostClub(){saved++;},
     cancelApparitionApplause(){},pauseTowerEndingRecording(){},saveSourceView(){},
     outskirtsStreetAudio:null,pauseOutskirtsLastLight(){},lowerTowerPersonalRecorder(){},stopTowerPersonalWorldSignal(){},
@@ -260,7 +264,7 @@ test('the regular autosave checkpoints loan time before either normal or anomaly
   const tree=society.beginDialogue('emile');society.endDialogue('emile',{completed:true,choices:[tree.nodes.need.choices.find(c=>c.societyAction==='lend')]});
   for(let n=0;n<12;n++)society.tick(.25,{onAcademicFloor:true,listener:{x:9,y:250}});
   const context={saveAcc:0,saveAcademicGhostClub(){saved=society.save();},usingStairAnomaly:()=>true,
-    saveCommit(){},stepCount:0,storyMode:false,getSave:()=>({}),hushAudioRuntime:null,sourceDriveSession:null,sourcePubScene:null,sourceContinuationScene:null};
+    saveCommit(){},stepCount:0,storyMode:false,getSave:()=>({}),hushAudioRuntime:null,sourceDriveSession:null,sourcePubScene:null,sourceContinuationScene:null,coastalMemoryScene:null};
   vm.createContext(context);vm.runInContext(main.slice(a,b),context);
   context.saveTick(4);assert.equal(saved.loanRemaining,9);assert.equal(saved.loanPulses,1);
 });
@@ -270,6 +274,7 @@ test('spatial society audio uses actual actor positions, metre distances and ren
   const values={};
   const emile=ACADEMIC_SOCIETY_ACTORS.find(actor=>actor.id==='emile');
   const context={SPEECH:{speaking:()=>({academicSociety:true,actorId:'emile'})},academicSocietyDialogueLine:null,academicBouncerDialogueLine:null,ACADEMIC_SOCIETY_ACTORS,ACADEMIC_FLOOR_POPULATION,
+    academicActorPresent:()=>true,
     FP:{logicalToPhysical:(x,y)=>({x,z:y}),toRuntimeDistance:x=>x*2},px:emile.x*2-20,py:emile.y*2,CELL:.5,
     R3:{r3dWorldYaw:()=>0,r3dLookAngles:()=>({yaw:Math.PI})},actx:{currentTime:0},
     academicGhostPanner:{pan:{setTargetAtTime:v=>values.pan=v}},academicGhostGain:{gain:{setTargetAtTime:v=>values.gain=v}},

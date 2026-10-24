@@ -1,0 +1,48 @@
+{
+  "pack": {
+    "filename": "conservatory-stair-walls.glb",
+    "author": "Chunk Surfer project",
+    "source": "tools/chunk_surfer/build-main-stair-walls.mjs",
+    "license": "project source",
+    "origin": "Original deterministic geometry; no downloaded imagery, textures or meshes.",
+    "sha256": "1c45191653a78f5451e58d766dda35ac6d630e036b75a0ca24edea5334084465",
+    "triangles": 48402,
+    "bytes": 2068896
+  },
+  "references": [
+    {
+      "title": "V&A Ceramic Staircase",
+      "role": "reference only; ceramic dado, architectural hierarchy and original construction",
+      "url": "https://www.vam.ac.uk/articles/history-of-the-ceramics-galleries-and-ceramic-staircase",
+      "license": "No source imagery or geometry used"
+    },
+    {
+      "title": "Sir John Soane Museum, Robert Adam drawings, volume 26/149",
+      "role": "reference only; architectural ornament as an integrated order",
+      "url": "https://collections.soane.org/OBJECT1666",
+      "license": "No source imagery or geometry used"
+    }
+  ],
+  "meshes": [
+    {
+      "name": "main_stair_wall_treatment",
+      "bounds": {
+        "min": [
+          -3.9939999999999998,
+          0.16,
+          -5.994091346153848
+        ],
+        "max": [
+          4.994,
+          13.55,
+          3.9939999999999998
+        ]
+      },
+      "triangles": 48402,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-main-stair-walls.mjs",
+        "license": "project source"
+      }
+    }
+  ]
+}

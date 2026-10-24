@@ -87,6 +87,11 @@ async function adapter(run,{saved=freshSave()}={}){
     const device=deviceWorld(),voice=fakeVoice(),messages=[],prompts=[],dialogueOptions=[];let yaw=0;
     const speech=speechAudio(messages);
     const c={FP,PROPS,OBJ,CELL,ZONE,ACADEMIC_BOUNCER_ACTORS,ACADEMIC_CLUE_HOST_SURFACES,
+      // Admission remains a first-visit fixture. Later absence is exercised
+      // with the actual common policy in academic-floor-returns-main.
+      academicActorPresent:()=>true,academicLinesPresent:()=>true,
+      academicActiveActorIds:()=>new Set([...ACADEMIC_BOUNCER_ACTORS,...ACADEMIC_SOCIETY_ACTORS,...ACADEMIC_FLOOR_POPULATION].map(actor=>actor.id)),
+      academicFloorReturns:{save:()=>getSave().academicFloorReturns},
       ACADEMIC_BOUNCER_CLUES,ACADEMIC_BOUNCER_CLUE_PROPS,ACADEMIC_BOUNCER_SPOKEN_CLUES,
       ACADEMIC_SOCIETY_ACTORS,ACADEMIC_BOUNCER_SOCIAL_BEATS,ACADEMIC_FLOOR_POPULATION,
       academicBouncerAccessForMove,academicBouncerPhysicalFocus,academicBouncerInstances,bouncerSocialAudible,academicBouncerSegmentClear,
@@ -203,7 +208,7 @@ test('actual clue staging puts the memo on its measured desk surface and both lo
   assert.equal(c.academicBouncers.view().knowsPhrase,false,'staging and looking at the physical clues do not learn them');
 }));
 
-test('production inspection hook teaches the new full programme and saves the three independent floor systems',async()=>adapter(a=>{
+test('production inspection hook teaches the new full programme and saves the independent floor systems',async()=>adapter(a=>{
   const {c,scope}=a;c.syncAcademicBouncerClueProps();
   const programme=c.inspectPropTracked('box-office-program-stack');assert.ok(programme.includes(ACADEMIC_BOUNCER_PHRASE));
   assert.equal(c.academicBouncers.save().clues.boxOfficeInstructions,true);assert.equal(c.academicBouncers.save().clues.boxOffice,false);
@@ -212,7 +217,7 @@ test('production inspection hook teaches the new full programme and saves the th
   const text=c.inspectPropTracked('academic-admission-note');assert.ok(text.includes(ACADEMIC_BOUNCER_PHRASE));assert.match(text,/Let him finish/);
   assert.equal(c.academicBouncers.save().clues.practice,true);assert.equal(c.academicBouncers.view().knowsPhrase,true);assert.ok(PROPS.savePropState().inspected.includes('academic-admission-note'));
   const patch=scope.writes.filter(write=>write.type==='save'&&write.patch.academicBouncers).at(-1).patch;
-  assert.deepEqual(Object.keys(patch).sort(),['academicBouncers','academicFloorPopulation','academicSociety']);
+  assert.deepEqual(Object.keys(patch).sort(),['academicBouncers','academicFloorPopulation','academicFloorReturns','academicSociety']);
   assert.deepEqual(getSave().academicBouncers,c.academicBouncers.save());assert.deepEqual(getSave().academicSociety,c.academicSociety.save());assert.deepEqual(getSave().academicFloorPopulation,c.academicFloorPopulation.save());
   const count=scope.writes.length;c.inspectPropTracked('academic-admission-note');assert.equal(scope.writes.length,count,'reinspection does not manufacture a new clue receipt');
 }));

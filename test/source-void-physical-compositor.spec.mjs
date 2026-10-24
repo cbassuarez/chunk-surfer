@@ -28,7 +28,8 @@ assert.match(frame, /if\(sourceVoidPhysicalActive\)\{[\s\S]*?drawSourceVoidPhysi
   'the raymarch must not process physical void props');
 assert.match(draw, /P3\.renderPropPass\(/, 'reuse real GLB triangles and their materials');
 assert.ok(draw.indexOf('gl.depthMask(true)') < draw.indexOf('P3.renderPropPass('), 'horizon cannot leave the prop pass without depth writes');
-assert.match(draw, /localLightEmergency:sourceVoidPhysicalLightEmergency,localShadowIndex:-1/, 'Source emergency illumination is not inherited');
+assert.match(draw, /physicalLighting=!!drive\|\|coastal\.active/, 'only explicitly owned physical scenes select their actual practical rig');
+assert.match(draw, /localLightEmergency:physicalLighting\?localLightEmergency:sourceVoidPhysicalLightEmergency,localShadowIndex:physicalLighting\?localShadowIndex:-1/, 'ordinary outskirts keep their neutral emergency and shadow fallback');
 assert.match(draw, /planTexture:null/, 'the old corridor cannot occlude void lighting');
 assert.match(draw, /gl\.drawBuffers\(\[gl\.COLOR_ATTACHMENT0\]\)/, 'single-output shader draws only to colour');
 assert.match(draw, /gl\.drawBuffers\(\[gl\.COLOR_ATTACHMENT0,gl\.COLOR_ATTACHMENT1\]\)/, 'restore the ordinary MRT state');

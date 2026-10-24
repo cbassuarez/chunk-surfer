@@ -36,7 +36,7 @@ export function chapelDressingWorldPlacements(plan, bounds = {}) {
       y: plan.floorAt(rx, ry) + (p.elevation || 0), z: at.z * .5 + offsetZ,
       yaw, scale: p.scale || 1, zone: plan.zoneAt(rx, ry),
       structural: false, noShadow: true,
-      kind: p.kind, role: p.role || null, posture: p.posture || null,
+      kind: p.kind, role: p.role || null, posture: p.posture || null, figure: p.figure || null,
       blocks: false, interactive: false,
     });
   }
@@ -64,19 +64,35 @@ export function chapelDressingRenderInstances(placements, {
   group = null, lights = [], torchOn = false, listener = null,
   // Actor protection matches borrowed/recorded rooms in main.js. Static paint,
   // tallow and traces remain architecture, never hallucinations on a take.
+  // The chapel's own congregation is the exception and is NOT protected from a
+  // take: it is the room's rule (game/chapel-apparitions.js).
   suppressActors = false, effectsMode = 'full',
+  // With a runtime the congregation moves and the ceiling is occupied; without
+  // one the bodies are drawn as authored, still.
+  apparitions = null, ceiling = [], eye = null, timeSec = 0, moving = 0,
+  recording = false, takeProgress = 0, canSee = null, onFrame = null,
 } = {}) {
   if (group !== 'upper') return [];
-  const result = [];
+  const result = [], bodies = [], hidden = suppressActors || effectsMode === 'off';
+  const stateOf = (p) => chapelPresenceLightState(p, { lights, torchOn });
+  // Edge charge belongs to the body itself. It never creates local lights.
+  const charge = (state) => [.65, .78, .82, state === APPARITION_LIGHT_STATE.ON ? .14 : .06];
+  const near = (p) => !listener || Math.hypot(p.x - listener.x, p.z - listener.z) <= CHAPEL_DRESSING_BUDGET.maxPresenceDistance;
   for (const p of placements || []) {
     if (p.kind !== 'presence') { result.push(p); continue; }
-    if (suppressActors || effectsMode === 'off') continue;
-    if (listener && Math.hypot(p.x - listener.x, p.z - listener.z) > CHAPEL_DRESSING_BUDGET.maxPresenceDistance) continue;
-    const state = chapelPresenceLightState(p, { lights, torchOn });
-    result.push({ ...p, apparitionVariant: APPARITION_RENDER_VARIANT[state],
-      // Edge charge belongs to the body itself. It never creates local lights.
-      emissive: [.65, .78, .82, state === APPARITION_LIGHT_STATE.ON ? .14 : .06],
-    });
+    if (hidden || !near(p)) continue;
+    if (apparitions) { bodies.push(p); continue; }
+    const state = stateOf(p);
+    result.push({ ...p, apparitionVariant: APPARITION_RENDER_VARIANT[state], emissive: charge(state) });
   }
+  if (apparitions && !hidden) {
+    const frame = apparitions.frame({
+      congregation: bodies, ceiling: (ceiling || []).filter(near), eye, timeSec, moving, recording,
+      takeProgress, effectsMode, canSee,
+      variantFor: (p) => APPARITION_RENDER_VARIANT[stateOf(p)], emissiveFor: (p) => charge(stateOf(p)),
+    });
+    for (const instance of frame.instances) result.push(instance);
+    onFrame?.(frame);
+  } else onFrame?.(null);
   return result;
 }

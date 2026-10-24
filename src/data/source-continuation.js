@@ -1,18 +1,24 @@
 // Task-local geometry. These exact surfaces are shared by rendering and support.
 export const SOURCE_CONTINUATION = Object.freeze({
   version: 1, encounterId: 'source-wrong-return-catch', walkSpeed: 3.2,
-  eyeHeight: 1.62, bodyRadius: .22, maximumStep: .45, gravity: 9.8,
-  fixedStep: 1 / 120, recoverySeconds: 1.6, graceSeconds: 3,
+  eyeHeight: 1.62, bodyRadius: .22, bodyHeight: 1.9, maximumStep: .45, gravity: 9.8,
+  fixedStep: 1 / 120, doorSwingSeconds: .45, doorPassFraction: .85, recoverySeconds: 1.6, recoveryMaximumSeconds: 8, recoverySpeed: 5, recoveryRise: 1.3, revealSeconds: 1.2, graceSeconds: 3,
   spawn: Object.freeze({ x: 0, z: 2, feet: 0, yaw: 0, pitch: 0 }),
   wrongReturn: Object.freeze({ transferX: -13.2, warningSeconds: 3, closureSpeed: .65, refuge: { x: 0, z: -1, feet: 3 } }),
   catch: Object.freeze({
-    center: { x: -23, z: 0 }, top: 3, layerDrop: 3.6, levels: 6,
+    center: { x: -23, z: 0 }, top: 3, layerDrop: 3.6, levels: 6, ringHalfExtent: 6.3,
     outer: { minX: -32, maxX: -14, minZ: -9, maxZ: 9 },
     centers: [{ x: -23, z: 0 }, { x: -25, z: 0 }, { x: -25, z: 2 }, { x: -23, z: 2 }, { x: -23, z: 0 }, { x: -25, z: 0 }],
     finalApproach: { x: -25.2, z: 0, feet: -15, yaw: Math.PI / 2, pitch: 0 },
     finalDoor: { x: -24, z: 0, y: -15 },
     refuge: { x: -30.5, z: 7.5 }, counterweightRadius: .72,
     counterweightSpeed: 1.2, counterweightWarningSeconds: 3,
+    hoist: {
+      shaft: { x: -23.01, z: 1.99 }, start: { x: -17.7, z: -4.5 },
+      travelY: 5.8, railY: 8.4, drumHeight: 1.451, drumRadius: .73, clearance: .2,
+      returnSpeed: 1.6, upSpeed: 3.6, traverseSpeed: 3.2, downSpeed: 1.6,
+      rewindSeconds: 1.2, loweringWarningSeconds: 2.5,
+    },
   }),
 });
 
@@ -45,17 +51,20 @@ const wrongSurfaces = [
 ];
 const catchSurfaces = [];
 for (let level = 0; level < SOURCE_CONTINUATION.catch.levels; level++) {
-  const c = SOURCE_CONTINUATION.catch.centers[level], y = floor(level), extra = { level, role: 'catch', material: level % 2 ? 'piano-wood' : 'case-lining' };
+  const c = SOURCE_CONTINUATION.catch.centers[level], y = floor(level), h = SOURCE_CONTINUATION.catch.ringHalfExtent, extra = { level, role: 'catch', material: level % 2 ? 'piano-wood' : 'case-lining' };
   catchSurfaces.push(
-    rect(`catch-${level}-west`, 'catch', -32, c.x - 3, -9, 9, y, extra),
-    rect(`catch-${level}-east`, 'catch', c.x + 3, -14, -9, 9, y, extra),
-    rect(`catch-${level}-north`, 'catch', c.x - 3, c.x + 3, -9, c.z - 3, y, extra),
-    rect(`catch-${level}-south`, 'catch', c.x - 3, c.x + 3, c.z + 3, 9, y, extra),
+    rect(`catch-${level}-west`, 'catch', c.x - h, c.x - 3, c.z - h, c.z + h, y, extra),
+    rect(`catch-${level}-east`, 'catch', c.x + 3, c.x + h, c.z - h, c.z + h, y, extra),
+    rect(`catch-${level}-north`, 'catch', c.x - 3, c.x + 3, c.z - h, c.z - 3, y, extra),
+    rect(`catch-${level}-south`, 'catch', c.x - 3, c.x + 3, c.z + 3, c.z + h, y, extra),
+    rect(`catch-${level}-return-arm`, 'catch', -31.5, c.x - 3, c.z + 3.5, c.z + 5, y, { ...extra, role: 'return-arm' }),
+    rect(`catch-${level}-return-stem`, 'catch', -31.5, -29.5, c.z + 3.5, 8.9, y, { ...extra, role: 'return-arm' }),
+    rect(`catch-${level}-return-pad`, 'catch', -31.5, -29.5, 6.5, 8.9, y, { ...extra, role: 'refuge' }),
   );
 }
 catchSurfaces.push(
-  rect('catch-entry-bridge', 'catch', -14, -3, -2, 0, 3, { level: 0, role: 'transfer' }),
-  rect('catch-final-balcony', 'catch', -28.5, -23.5, -.85, .85, -15, { level: 5, role: 'final-balcony', material: 'piano-wood' }),
+  rect('catch-entry-bridge', 'catch', -20, -3, -2, 0, 3, { level: 0, role: 'transfer' }),
+  rect('catch-final-balcony', 'catch', -28.5, -23.5, -1.1, 1.1, -15, { level: 5, role: 'final-balcony', material: 'piano-wood' }),
   rect('catch-recovery-floor', 'catch', -32, -14, -9, 9, floor(6), { level: 6, role: 'recovery', material: 'cold-stone' }),
 );
 // These small, visibly unsupported cloth catches make a missed footprint safe.
@@ -63,7 +72,7 @@ const recoveryPatches = [
   [-23.9, -22.1, -3, -1.2], [-23.8, -22, -.9, .9],
   [-25.9, -24.1, 3.2, 5], [-26, -24.2, 1.1, 2.9], [-21.8, -20, -.9, .9],
 ];
-recoveryPatches.forEach((b, level) => catchSurfaces.push(rect(`catch-${level}-loose-lining`, 'catch', ...b, floor(level) - 1.8, { level, role: 'recovery-shelf', material: 'loose-lining' })));
+recoveryPatches.forEach((b, level) => catchSurfaces.push(rect(`catch-${level}-loose-lining`, 'catch', ...b, floor(level) - 1.4, { level, role: 'recovery-shelf', material: 'loose-lining' })));
 const walls = [
   { id: 'wrong-west-wall', phase: 'wrong-return', minX: -9.3, maxX: -9, minZ: -22.3, maxZ: 4, minY: -.2, maxY: 3, material: 'cold-wall' },
   { id: 'wrong-far-wall', phase: 'wrong-return', minX: -9, maxX: 9.3, minZ: -22.3, maxZ: -22, minY: -.2, maxY: 3.2, material: 'cold-wall' },
@@ -72,7 +81,21 @@ const walls = [
   { id: 'wrong-piano-footprint', phase: 'wrong-return', minX: -.648, maxX: .790, minZ: -21.740, maxZ: -19.661, minY: 0, maxY: .91, material: 'piano-wood', role: 'furniture' },
 ];
 for (let level = 0; level <= 6; level++) {
-  const y = floor(level);
+  const y = floor(level), c = SOURCE_CONTINUATION.catch.centers[level], h = SOURCE_CONTINUATION.catch.ringHalfExtent;
+  if (c) {
+    const edge = { phase: 'catch', minY: y, maxY: y + 1.1, level, material: 'dark-metal', role: 'rail' };
+    walls.push(
+      { ...edge, id: `catch-${level}-west-rail-north`, minX: c.x - h - .2, maxX: c.x - h, minZ: c.z - h - .2, maxZ: c.z + 3.35 },
+      { ...edge, id: `catch-${level}-west-rail-south`, minX: c.x - h - .2, maxX: c.x - h, minZ: c.z + 5.15, maxZ: c.z + h + .2 },
+      { ...edge, id: `catch-${level}-north-rail`, minX: c.x - h, maxX: c.x + h, minZ: c.z - h - .2, maxZ: c.z - h },
+      { ...edge, id: `catch-${level}-south-rail`, minX: Math.max(c.x - h, -29.35), maxX: c.x + h, minZ: c.z + h, maxZ: c.z + h + .2 },
+      ...(level === 0 ? [
+        { ...edge, id: 'catch-0-east-rail-north', minX: c.x + h, maxX: c.x + h + .2, minZ: c.z - h - .2, maxZ: -2.1 },
+        { ...edge, id: 'catch-0-east-rail-south', minX: c.x + h, maxX: c.x + h + .2, minZ: .1, maxZ: c.z + h + .2 },
+      ] : [{ ...edge, id: `catch-${level}-east-rail`, minX: c.x + h, maxX: c.x + h + .2, minZ: c.z - h - .2, maxZ: c.z + h + .2 }]),
+    );
+    continue;
+  }
   walls.push(
     { id: `catch-${level}-west-rail`, phase: 'catch', minX: -32.2, maxX: -32, minZ: -9.2, maxZ: 9.2, minY: y, maxY: y + 1.1, level, material: 'dark-metal', role: 'rail' },
     ...((level === 0) ? [
@@ -121,3 +144,23 @@ export function continuationSupportAt(x, z, value = {}, options = {}) {
 export function continuationDropLip(value = {}) { return CONTINUATION_DROP_LIPS.find(p => p.level === value.level) || null; }
 export function continuationDropLips(value = {}) { return [...CONTINUATION_DROP_LIPS, ...CONTINUATION_ALTERNATE_LIPS].filter(p => p.level === value.level); }
 export function continuationRefugeAt(value = {}) { return value.phase === 'catch' ? { ...SOURCE_CONTINUATION.catch.refuge, feet: floor(value.level ?? 0), level: value.level ?? 0 } : { ...SOURCE_CONTINUATION.wrongReturn.refuge }; }
+
+// Conservative configuration-space boxes for authored cable sweeps. Door
+// apertures count as closed here, so recovery never needs a leaf to be open.
+export function continuationCatchObstacles() {
+  return [
+    ...catchSurfaces.map(s => ({ id: s.id, minX: s.minX, maxX: s.maxX, minZ: s.minZ, maxZ: s.maxZ, minY: s.y - s.thickness, maxY: s.y })),
+    ...walls.filter(s => s.phase === 'catch'),
+    ...doors.filter(d => d.phase === 'catch').map(d => Math.abs(Math.sin(d.yaw)) > .5
+      ? { id: d.id, minX: d.x - .14, maxX: d.x + .14, minZ: d.z - d.width / 2 - .08, maxZ: d.z + d.width / 2 + .08, minY: d.y, maxY: d.y + d.height }
+      : { id: d.id, minX: d.x - d.width / 2 - .08, maxX: d.x + d.width / 2 + .08, minZ: d.z - .14, maxZ: d.z + .14, minY: d.y, maxY: d.y + d.height }),
+  ];
+}
+export function continuationBodyClearAt(point, { radius = .22, height = 1.9, margin = 0, obstacles = continuationCatchObstacles() } = {}) {
+  const y = point.feet ?? point.y, r = radius + margin;
+  return !obstacles.some(s => {
+    if (y >= s.maxY - 1e-7 || y + height <= s.minY + 1e-7) return false;
+    const dx = Math.max(s.minX - point.x, 0, point.x - s.maxX), dz = Math.max(s.minZ - point.z, 0, point.z - s.maxZ);
+    return dx * dx + dz * dz < r * r - 1e-9;
+  });
+}

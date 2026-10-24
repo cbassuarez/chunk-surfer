@@ -1,10 +1,10 @@
 {
   "schema": 1,
   "source": "artifacts/source-drive-study/drive.glb",
-  "sourceSha256": "4090887e47657a8224b06464d05d8012f2322926475d603b7ebb6648fa398afa",
+  "sourceSha256": "59155ba454894283e68ecde1d976996b326221a98930d164a77dd8ab7aab8316",
   "asset": "assets/source-vehicle-interior.glb",
-  "sha256": "d820b8ca8c8061855d5edea6ad18f7da2b1e8f05aa02e2babfbd4b3ef44be995",
-  "bytes": 1779696,
+  "sha256": "2650293ab6ee4a4a776f2915c4b772e23f4af54c0e18333579ed922bdba4bb0d",
+  "bytes": 3144328,
   "meshes": [
     "opening_drive_cabin",
     "opening_drive_wheel",
@@ -16,6 +16,6 @@
     "opening_drive_tyre",
     "opening_drive_cabin_door_r"
   ],
-  "doorTriangles": 864,
-  "provenance": "Existing project-authored Source driving vehicle. Positions, normals, UVs and materials preserved; lower right door detached without remodeling."
+  "doorTriangles": 2968,
+  "provenance": "Project-authored Ford Transit Mk3 cabin from build-drive-cabin.py. Positions, normals, UVs and materials preserved; the driver's door detached without remodeling."
 }

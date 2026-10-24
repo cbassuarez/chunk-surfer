@@ -1,7 +1,7 @@
 {
   "file": "opening-street.glb",
-  "bytes": 15036304,
-  "sha256": "74e9841e0505b612e43f9e953cbcab411d0a8fbcda91dea10a8f62ae9f73630d",
+  "bytes": 15037268,
+  "sha256": "213c8090fe1c7d5665727c0f938a5afe42561f2c9fc46c7c368633c9b1c03b27",
   "totalTriangles": 8110,
   "textureCount": 42,
   "estimatedMipmappedTextureBytes": 117440512,
@@ -33,13 +33,13 @@
       "primitives": 3,
       "bounds": {
         "min": [
-          -0.27000001072883606,
-          0.03999999910593033,
+          -0.27,
+          0.04,
           -7.5
         ],
         "max": [
-          -0.23999999463558197,
-          8.449999809265137,
+          -0.24,
+          8.45,
           84.5
         ]
       }
@@ -497,9 +497,9 @@
       "grass": 40.64
     },
     "opening_street_frontage": {
-      "roughStone": 83.66,
-      "brick": 177.84,
-      "weatheredRender": 43.13
+      "roughStone": 78.02,
+      "brick": 165.045,
+      "weatheredRender": 43.129999999999995
     },
     "opening_street_service_history": {
       "corrugatedIron": 142.44,
@@ -597,5 +597,16 @@
     ],
     "materialsUnchanged": true,
     "nodesUnchanged": true
+  },
+  "loadingApronAperture": {
+    "revision": 1,
+    "repair": "tools/chunk_surfer/repair-loading-apron-aperture.mjs",
+    "mouth": {
+      "worldZ": [
+        3.5,
+        12.5
+      ],
+      "head": 5.5
+    }
   }
 }

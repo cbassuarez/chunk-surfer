@@ -1,4 +1,5 @@
 import { TOWER_PERSONAL_CUE, playTowerPersonalRecording } from '../audio/tower-personal-recording.js';
+import { COASTAL_MEMORY_CUE, playCoastalMemoryRecording } from '../audio/coastal-memory.js';
 import { decodeSourceDriveMedia, normalizeSourceDriveMedia, SOURCE_DRIVE_CAPTURE_KIND, sourceDriveAudioKey } from '../audio/source-drive-recording.js';
 
 // Playback. The take contains what you did not hear.
@@ -693,6 +694,11 @@ export function playTake(roomId, { character = 1, atHead = false, continuousOutp
 
   for(const event of t.discrete||[]){
     const playbackAt=t0+Math.min(playbackSeconds-.01,sourcePosition(event.atSec,t.durationSeconds)*playbackSeconds);
+    if(event.cueId===COASTAL_MEMORY_CUE){
+      const recording=playCoastalMemoryRecording({context:ctx,destination:out,when:playbackAt,gain:event.gain});
+      if(recording)nodes.push(recording);
+      continue;
+    }
     if(event.cueId===TOWER_PERSONAL_CUE){
       const recording=playTowerPersonalRecording({context:ctx,destination:out,when:playbackAt,gain:event.gain});
       if(recording)nodes.push(recording);

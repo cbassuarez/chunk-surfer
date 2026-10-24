@@ -40,6 +40,8 @@ def parse_args():
     p.add_argument('--work', required=True)
     p.add_argument('--blend', default='')
     p.add_argument('--ear-scale', type=float, default=6.4)
+    p.add_argument('--anatomy-only', action='store_true',
+                   help='Build ears/heaps only; the wrapper preserves the current sheet and writing byte for byte.')
     return p.parse_args(raw)
 
 
@@ -107,8 +109,8 @@ MAT = {}
 
 
 def make_materials():
-    MAT['skin'] = material('stop listening ear skin', hex_linear('#AAA69C'), 0.43)
-    MAT['deep'] = material('stop listening ear deep', hex_linear('#514443'), 0.23)
+    MAT['skin'] = material('stop listening ear skin', hex_linear('#AAA69C'), 0.58)
+    MAT['deep'] = material('stop listening ear deep', hex_linear('#514443'), 0.68)
     MAT['wound'] = material('stop listening ear wound', hex_linear('#2E1211'), 0.14)
     MAT['wet'] = material('stop listening floor wet', hex_linear('#1C1010'), 0.06)
     # Loaded ironoxide pigment has dried matte. Giving the whole ribbon the
@@ -125,11 +127,35 @@ def make_materials():
 EAR_OUTLINE = [(-1.0, 4.2), (-0.6, 5.4), (0.2, 6.1), (1.2, 6.2), (2.0, 5.7), (2.5, 4.8), (2.6, 3.6),
                (2.4, 2.4), (2.0, 1.4), (1.4, 0.6), (0.7, 0.1), (0.0, 0.0), (-0.5, 0.4), (-0.7, 1.1),
                (-0.9, 1.8), (-1.2, 2.5), (-1.2, 3.4)]
-HELIX = [(-0.9, 3.9), (-0.75, 4.9), (-0.2, 5.65), (0.6, 5.95), (1.4, 5.85), (2.05, 5.3), (2.35, 4.5),
+HELIX = [(-0.9, 3.9), (-0.55, 4.9), (-0.2, 5.65), (0.6, 5.95), (1.4, 5.85), (2.05, 5.3), (2.35, 4.5),
          (2.4, 3.5), (2.2, 2.5), (1.85, 1.6), (1.45, 1.0)]
-ANTIHELIX = [(0.75, 1.55), (1.2, 2.4), (1.5, 3.3), (1.45, 4.1), (1.15, 4.85)]
-INFERIOR_CRUS = [(1.45, 3.6), (0.9, 4.05), (0.25, 4.25), (-0.25, 4.2)]
+ANTIHELIX = [(0.65, 1.45), (1.03, 2.15), (1.22, 3.0), (1.17, 3.75)]
+SUPERIOR_CRUS = [(1.17, 3.75), (1.08, 4.34), (.80, 4.88), (.43, 5.28)]
+INFERIOR_CRUS = [(1.17, 3.75), (.72, 4.02), (.16, 4.18), (-.30, 4.18)]
 HELIX_CRUS = [(-0.75, 3.9), (-0.2, 3.62), (0.3, 3.45)]
+
+
+def cartilage_path(points, radii=None, steps=6):
+    """Smoothly sampled folds, without the old polygonal bead chain.
+
+    A Catmull-Rom interpolation keeps the authored asymmetry and tapered ends.
+    The voxel union supplies the continuous surface at the Y-shaped antihelix.
+    """
+    result, widths = [], []
+    for i in range(len(points) - 1):
+        p0, p1, p2, p3 = (Vector(points[max(0, min(len(points) - 1, j))]) for j in (i - 1, i, i + 1, i + 2))
+        for k in range(steps):
+            t = k / steps
+            co = .5 * ((2 * p1) + (-p0 + p2) * t
+                       + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t
+                       + (-p0 + 3 * p1 - 3 * p2 + p3) * t * t * t)
+            result.append(tuple(co))
+            if radii:
+                widths.append(radii[i] * (1 - t) + radii[i + 1] * t)
+    result.append(points[-1])
+    if radii:
+        widths.append(radii[-1])
+    return result, widths if radii else None
 
 
 def plate_object(outline, thickness):
@@ -161,6 +187,7 @@ def ellipsoid(center, radii, segments=16, rings=10):
 
 
 def tube(points, z, radius, radii=None, sides=2):
+    points, radii = cartilage_path(points, radii)
     curve = bpy.data.curves.new('ear-tube', 'CURVE')
     curve.dimensions = '3D'
     curve.bevel_depth = radius * CM
@@ -187,6 +214,36 @@ def cylinder(center, radius, depth):
     return link(bpy.data.objects.new('ear-cutter', mesh))
 
 
+def folded_attachment(sx, sy, phase):
+    """A short, closed soft-tissue stump, fused into the cut side of the pinna.
+
+    The old open fascia ribbon had only one surface and a sawtooth silhouette.
+    These rounded folded sections have volume even before their voxel union.
+    """
+    bm = bmesh.new()
+    rows, sides = [], 10
+    for i in range(17):
+        t = i / 16
+        y = (1.16 + t * 3.42) * sy * CM
+        x = (-1.10 * sx - .055 * math.sin(t * math.pi * 3 + phase)) * CM
+        z = (.23 + .045 * math.sin(t * math.pi * 2 + phase)) * CM
+        taper = .42 + .58 * math.sin(math.pi * t) ** .55
+        width = (.21 + .035 * math.sin(t * math.pi * 5 + phase)) * taper * CM
+        thick = .17 * taper * CM
+        rows.append([bm.verts.new((x + width * math.cos(k * math.tau / sides), y,
+                                   z + thick * math.sin(k * math.tau / sides))) for k in range(sides)])
+    for a, b in zip(rows, rows[1:]):
+        for k in range(sides):
+            bm.faces.new((a[k], a[(k + 1) % sides], b[(k + 1) % sides], b[k]))
+    bm.faces.new(tuple(reversed(rows[0])))
+    bm.faces.new(tuple(rows[-1]))
+    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
+    mesh = bpy.data.meshes.new('ear-folded-attachment')
+    bm.to_mesh(mesh)
+    bm.free()
+    return link(bpy.data.objects.new('ear-folded-attachment', mesh))
+
+
 def join(objects, name):
     bm = bmesh.new()
     for obj in objects:
@@ -207,27 +264,37 @@ def join(objects, name):
 def build_ear(name, p, target_tris):
     """One ear, fused from cartilage parts by a voxel remesh, then decimated."""
     rnd = random.Random(name)
+    phase = rnd.uniform(-math.pi, math.pi)
     sx, sy = p['width'], p['height']
-    outline = [(x * sx, y * sy) for x, y in EAR_OUTLINE]
-    plate = plate_object(outline, 0.62)
+    smooth_outline, _ = cartilage_path([*EAR_OUTLINE, EAR_OUTLINE[0]], steps=4)
+    outline = [(x * sx, y * sy) for x, y in smooth_outline[:-1]]
+    # The pinna is a thin sheet folded into ridges, not an ear-shaped 6.2 mm
+    # slab with tubes on top. The rolled helix now overhangs a thinner web.
+    plate = plate_object(outline, 0.38)
     concha = ellipsoid((0.22 * sx, 2.7 * sy, 0.69), (1.12 * sx, 1.40 * sy, 0.66))
     canal = cylinder((-0.40 * sx, 2.47 * sy, 0.35), 0.42, 2.2)
     cymba = ellipsoid((-0.15 * sx, 3.75 * sy, 0.64), (0.59 * sx, 0.56 * sy, 0.50))
-    for cutter in (concha, canal, cymba):
+    triangle = ellipsoid((.37 * sx, 4.70 * sy, .56), (.60 * sx, .52 * sy, .49))
+    # The long scapha separates the outer helix from the inner Y. These are
+    # broad actual hollows: material contrast follows them, never random spots.
+    scapha = ellipsoid((1.77 * sx, 4.12 * sy, .69), (.44 * sx, 1.20 * sy, .45))
+    cutters = (concha, canal, cymba, triangle, scapha)
+    for cutter in cutters:
         mod = plate.modifiers.new('cut', 'BOOLEAN')
         mod.operation = 'DIFFERENCE'
         mod.solver = 'EXACT'
         mod.object = cutter
     carved = link(bpy.data.objects.new('ear-carved', evaluated_mesh(plate, 'ear-carved')))
-    for obj in (plate, concha, canal, cymba):
+    for obj in (plate, *cutters):
         remove(obj)
     s = lambda pts: [(x * sx, y * sy) for x, y in pts]
     curl = p['curl']
     parts = [
         carved,
-        tube(s(HELIX), 0.53, 0.35 * curl, radii=[.30, .62, .84, 1.25, .88, .54, 1.14, .78, .69, .96, .44]),
-        tube(s(ANTIHELIX), 0.58, 0.29, radii=[.65, 1.20, 1.12, .90, .55]),
-        tube(s(INFERIOR_CRUS), 0.57, 0.26, radii=[1.1, .95, .72, .35]),
+        tube(s(HELIX), 0.58, 0.34 * curl, radii=[.75, 1.35, 1.35, 1.08, 1.0, .98, .96, .93, .88, .72, .30]),
+        tube(s(ANTIHELIX), 0.57, 0.28, radii=[.40, 1.0, 1.05, .95]),
+        tube(s(SUPERIOR_CRUS), 0.56, 0.25, radii=[1.05, .98, .90, .65]),
+        tube(s(INFERIOR_CRUS), 0.57, 0.24, radii=[1.1, .95, .72, .25]),
         tube(s(HELIX_CRUS), 0.58, 0.24, radii=[1, .8, .30]),
         # The tragus overlaps the canal entrance, rather than sitting in the
         # concha like another round bead. Together these break the bowl outline.
@@ -235,13 +302,14 @@ def build_ear(name, p, target_tris):
         ellipsoid((0.24 * sx, 1.43 * sy, 0.53), (0.48, 0.39, 0.33)),
         ellipsoid((0.55 * sx, 0.62 * sy, 0.27), (0.88 * p['lobe'], 0.84 * p['lobe'], 0.39)),
         ellipsoid((-1.06 * sx, 3.12 * sy, 0.26), (0.23, 1.52 * sy, 0.34)),  # severed attachment
+        folded_attachment(sx, sy, phase),
     ]
     fused = join(parts, 'ear-fused')
     for obj in parts:
         remove(obj)
     rm = fused.modifiers.new('remesh', 'REMESH')
     rm.mode = 'VOXEL'
-    rm.voxel_size = 0.00055
+    rm.voxel_size = 0.00032
     rm.adaptivity = 0
     sm = fused.modifiers.new('smooth', 'SMOOTH')
     sm.factor = 0.40
@@ -252,7 +320,7 @@ def build_ear(name, p, target_tris):
     dp = fused.modifiers.new('flesh', 'DISPLACE')
     dp.texture = tex
     dp.texture_coords = 'LOCAL'
-    dp.strength = 0.00065
+    dp.strength = 0.00020
     dp.mid_level = 0.5
     dense = evaluated_mesh(fused, 'ear-dense')
     remove(fused)
@@ -261,7 +329,6 @@ def build_ear(name, p, target_tris):
     # Compress one part of the cartilage independently of the other. The
     # silhouette remains an elongated pinna; the helix is no longer a smooth,
     # evenly swollen ring. The irregular attachment is torn flesh, not spikes.
-    phase = rnd.uniform(-math.pi, math.pi)
     collapse = p.get('collapse', .3)
     for v in dense.vertices:
         x, y, z = v.co
@@ -269,11 +336,11 @@ def build_ear(name, p, target_tris):
         posterior = max(0, min(1, (x / CM - .85 * sx) / (1.7 * sx)))
         v.co.x -= CM * collapse * upper * posterior * (.45 + .35 * math.sin(y / CM * 2.8 + phase))
         v.co.z -= CM * collapse * upper * posterior * .54
-        v.co.z += .00045 * math.sin(x / CM * 3.1 + phase) * math.sin(y / CM * 2.4)
+        v.co.z += .00016 * math.sin(x / CM * 3.1 + phase) * math.sin(y / CM * 2.4)
         if x < -.78 * sx * CM and 1.05 * sy * CM < y < 4.75 * sy * CM:
             root = max(0, min(1, (-x / CM - .78 * sx) / .45))
-            v.co.x += CM * root * (.10 * math.sin(y / CM * 16 + phase) + .045 * math.sin(y / CM * 31))
-            v.co.z += CM * root * .075 * math.sin(y / CM * 11 + phase)
+            v.co.x += CM * root * (.035 * math.sin(y / CM * 7 + phase) + .018 * math.sin(y / CM * 13))
+            v.co.z += CM * root * .045 * math.sin(y / CM * 7 + phase)
     dense.update()
 
     # Materials by where the face is on the ear, decided on the dense surface so
@@ -285,10 +352,12 @@ def build_ear(name, p, target_tris):
     for poly in dense.polygons:
         c = poly.center
         bowl = ((c.x - cx) / (1.0 * sx * CM)) ** 2 + ((c.y - cy) / (1.25 * sy * CM)) ** 2
-        inflamed = math.sin(c.x / CM * 4.6 + phase) * math.sin(c.y / CM * 2.3 - phase)
+        triangular_fossa = ((c.x / CM - .37 * sx) / (.63 * sx)) ** 2 + ((c.y / CM - 4.70 * sy) / (.56 * sy)) ** 2
+        scapha = ((c.x / CM - 1.77 * sx) / (.43 * sx)) ** 2 + ((c.y / CM - 4.12 * sy) / (1.25 * sy)) ** 2
+        cymba = ((c.x / CM + .15 * sx) / (.62 * sx)) ** 2 + ((c.y / CM - 3.75 * sy) / (.58 * sy)) ** 2
         if c.x < -.82 * sx * CM and 1.0 * sy * CM < c.y < 4.7 * sy * CM:
             poly.material_index = 2
-        elif (bowl < .95 and c.z < .49 * CM) or (inflamed > .50 and c.z > .35 * CM):
+        elif (bowl < 1.0 and c.z < .50 * CM) or (min(triangular_fossa, scapha, cymba) < 1.0 and c.z < .46 * CM):
             poly.material_index = 1
         else:
             poly.material_index = 0
@@ -302,37 +371,21 @@ def build_ear(name, p, target_tris):
     for poly in mesh.polygons:
         poly.use_smooth = True
 
-    # A thin, folded skirt of fascia remains on the cut attachment. It reads as
-    # a torn root at ordinary viewing distance and carries the dark wet edge;
-    # there are no radial spikes or decorative tentacles.
-    bm = bmesh.new()
-    bm.from_mesh(mesh)
-    left, right = [], []
-    for i in range(13):
-        t = i / 12
-        y = (1.20 + t * 3.35) * sy * CM
-        root_x = (-.99 * sx + .11 * math.sin(t * 19 + phase)) * CM
-        z = (.17 + .12 * math.sin(t * 12 + phase)) * CM
-        left.append(bm.verts.new((root_x + .10 * CM, y, z)))
-        edge = .18 + .13 * (.5 + .5 * math.sin(t * 47 + phase))
-        right.append(bm.verts.new((root_x - edge * CM, y + .045 * CM * math.sin(t * 28), z + .15 * CM * math.sin(t * 17))))
-    for i in range(12):
-        for ids in ((left[i], right[i + 1], right[i]), (left[i], left[i + 1], right[i + 1])):
-            f = bm.faces.new(ids)
-            f.material_index = 2 if i % 4 else 1
-            f.smooth = False
-    result = bpy.data.meshes.new(name + '-torn')
-    bm.to_mesh(result)
-    bm.free()
-    for m in mesh.materials:
-        result.materials.append(m)
-    bpy.data.meshes.remove(mesh)
-    mesh = result
-
     # Centre on the footprint, then the variant's own pose.
     xs = [v.co.x for v in mesh.vertices]
     ys = [v.co.y for v in mesh.vertices]
     mesh.transform(Matrix.Translation((-(min(xs) + max(xs)) / 2, -(min(ys) + max(ys)) / 2, 0)))
+    # Final sculpt of the existing superior-crus border. This is a smooth
+    # vertical warp of the whole thin sheet, not another boolean cut or ridge
+    # pasted onto it. Moving both sides together preserves thickness and the
+    # closed topology; the central fossa and outer envelope lie outside it.
+    span_x, span_y = max(xs) - min(xs), max(ys) - min(ys)
+    for v in mesh.vertices:
+        u, w = v.co.x / span_x + .5, v.co.y / span_y + .5
+        distance2 = ((u - .42) / .085) ** 2 + ((w - .84) / .075) ** 2
+        if distance2 < 1:
+            v.co.z += .00035 * (1 - distance2) ** 2
+    mesh.update()
     if p['mirror']:
         mesh.transform(Matrix.Scale(-1, 4, (1, 0, 0)))
         flip(mesh)
@@ -413,37 +466,135 @@ FLESH_ENVELOPES = {
 }
 
 
-def build_heap(name, spec, ears):
-    """A pile: each ear rests on whatever is already under it, leaning, turned up."""
-    rnd = random.Random(name)
-    bm = bmesh.new()
-    placed = []
-    names = list(ears)
-    for i in range(spec['count']):
+HEAP_SUPPORT_REPORTS = {}
+HEAP_SUPPORT_STEP = .0005
+
+
+def heap_liquid_rng(name, spec):
+    """Keep the existing stain independent of the new supported-ear recipe.
+
+    Replay the v4 placement stream only to recover its final liquid seed. No
+    old ear geometry is built or used; the liquid's exact footprint is retained.
+    """
+    rnd, placed = random.Random(name), []
+    for _ in range(spec['count']):
         for _ in range(40):
             r = spec['radius'] * math.sqrt(rnd.random())
             a = rnd.random() * math.tau
             x, y = math.cos(a) * r * spec['stretch'], math.sin(a) * r
+            if all(math.hypot(x - px, y - py) > .012 for px, py in placed[-4:]):
+                break
+        rnd.uniform(5, 18)  # legacy lean
+        rnd.random()  # legacy axis X
+        rnd.random()  # legacy axis Y
+        rnd.uniform(.9, 1.1)  # legacy scale
+        rnd.random()  # legacy yaw
+        rnd.randrange(len(EAR_VARIANTS))
+        placed.append((x, y))
+    return rnd
+
+
+def vertical_surface_samples(mesh, matrix, step=HEAP_SUPPORT_STEP):
+    """Raster the actual transformed triangles into bottom/top support columns.
+
+    This runs in authoring metres before the common physical-envelope fit.
+    Unlike the old guessed .011 m top height, it includes the ear's real pose,
+    shell, lobe and root. Voids remain voids where no triangle covers a column.
+    """
+    mesh.calc_loop_triangles()
+    points = [matrix @ v.co for v in mesh.vertices]
+    columns = {}
+    for tri in mesh.loop_triangles:
+        a, b, c = [points[i] for i in tri.vertices]
+        den = (b.y - c.y) * (a.x - c.x) + (c.x - b.x) * (a.y - c.y)
+        if abs(den) < 1e-14:
+            continue
+        for ix in range(math.ceil(min(a.x, b.x, c.x) / step), math.floor(max(a.x, b.x, c.x) / step) + 1):
+            x = ix * step
+            for iy in range(math.ceil(min(a.y, b.y, c.y) / step), math.floor(max(a.y, b.y, c.y) / step) + 1):
+                y = iy * step
+                u = ((b.y - c.y) * (x - c.x) + (c.x - b.x) * (y - c.y)) / den
+                v = ((c.y - a.y) * (x - c.x) + (a.x - c.x) * (y - c.y)) / den
+                if min(u, v, 1 - u - v) < -1e-7:
+                    continue
+                z = u * a.z + v * b.z + (1 - u - v) * c.z
+                key = (ix, iy)
+                if key in columns:
+                    columns[key] = (min(columns[key][0], z), max(columns[key][1], z))
+                else:
+                    columns[key] = (z, z)
+    return columns, min(v.z for v in points)
+
+
+def build_heap(name, spec, ears, crowns):
+    """Supported overlapping ears, open upward, with detailed exposed crowns."""
+    rnd = random.Random(name)
+    bm = bmesh.new()
+    placed, surface, contacts = [], {}, []
+    names = list(ears)
+    for i in range(spec['count']):
+        crown = i >= spec['count'] - 6
+        for _ in range(40):
+            # Detailed last-layer ears crown the middle instead of forming
+            # isolated little towers out on the pile's low perimeter.
+            r = spec['radius'] * (.46 if crown else 1.0) * math.sqrt(rnd.random())
+            a = rnd.random() * math.tau
+            x, y = math.cos(a) * r * spec['stretch'], math.sin(a) * r
             if all(math.hypot(x - px, y - py) > 0.012 for px, py, _ in placed[-4:]):
                 break
-        # Rest on what is already there. Nearer the middle the pile is taller.
-        under = [top for px, py, top in placed if math.hypot(x - px, y - py) < 0.03]
-        base = (max(under) * 0.82 if under else 0.0) + (0.002 * len(under) ** .5)
-        # Lower in the pile they lie flatter; higher up they lean on each other.
-        lean = rnd.uniform(5, 18) + (min(60, 900 * base) if under else 0)
-        axis = Vector((math.cos(rnd.random() * math.tau), math.sin(rnd.random() * math.tau), 0)).normalized()
+        # Their openings stay turned up. The former 78-degree possible lean
+        # turned upper ears edge-on, losing the characteristic inner folds.
+        lean = min(38, rnd.uniform(8, 20) + 17 * i / max(1, spec['count'] - 1))
+        if crown:
+            lean *= .48
+        bearing = math.atan2(y, x / max(1, spec['stretch'])) + rnd.uniform(-.5, .5)
+        axis = Vector((-math.sin(bearing), math.cos(bearing), 0))
         scale = rnd.uniform(0.9, 1.1)
-        m = (Matrix.Translation((x, y, base)) @ Matrix.Rotation(math.radians(lean), 4, axis)
-             @ Matrix.Rotation(rnd.random() * math.tau, 4, 'Z') @ Matrix.Scale(scale, 4))
-        add_mesh(bm, ears[names[rnd.randrange(len(names))]], m)
-        placed.append((x, y, base + 0.011 * scale))
-    puddle(bm, spec['radius'] * 1.12 * max(1, spec['stretch'] * .7), rnd)
+        variant = names[rnd.randrange(len(names))]
+        ear = (crowns if crown else ears)[variant]
+        pose = (Matrix.Translation((x, y, 0)) @ Matrix.Rotation(math.radians(lean), 4, axis)
+                @ Matrix.Rotation(rnd.random() * math.tau, 4, 'Z') @ Matrix.Scale(scale, 4))
+        columns, low = vertical_surface_samples(ear, pose)
+        overlaps = [(key, surface[key] - lo) for key, (lo, _) in columns.items() if key in surface]
+        floor_lift = .0004 - low
+        supporting = max(overlaps, key=lambda entry: entry[1], default=None)
+        lift = max(floor_lift, supporting[1] if supporting else floor_lift)
+        # A sub-voxel tolerance avoids numerically coincident surfaces while
+        # retaining a genuine contact at one sampled column or the floor.
+        gap = .00005
+        m = Matrix.Translation((0, 0, lift + gap)) @ pose
+        add_mesh(bm, ear, m)
+        for key, (_, top) in columns.items():
+            surface[key] = max(surface.get(key, -math.inf), top + lift + gap)
+        placed.append((x, y, max(top for _, top in columns.values()) + lift + gap))
+        contacts.append({'index': i, 'variant': variant, 'crown': crown, 'leanDegrees': round(lean, 4),
+                         'support': 'ear' if supporting and supporting[1] >= floor_lift else 'floor',
+                         'overlapColumns': len(overlaps), 'clearanceM': gap,
+                         'liftM': round(lift + gap, 7), 'matrix': [list(row) for row in m]})
+    puddle(bm, spec['radius'] * 1.12 * max(1, spec['stretch'] * .7), heap_liquid_rng(name, spec))
     mesh = bpy.data.meshes.new(name)
     bm.to_mesh(mesh)
     bm.free()
     for m in (MAT['skin'], MAT['deep'], MAT['wound'], MAT['wet']):
         mesh.materials.append(m)
+    HEAP_SUPPORT_REPORTS[name] = {'count': len(contacts), 'crowns': sum(c['crown'] for c in contacts),
+                                  'gridStepM': HEAP_SUPPORT_STEP, 'maxLeanDegrees': max(c['leanDegrees'] for c in contacts),
+                                  'supportedByEar': sum(c['support'] == 'ear' for c in contacts),
+                                  'maxClearanceM': max(c['clearanceM'] for c in contacts), 'contacts': contacts}
     return mesh
+
+
+def heap_ear_copy(mesh, name, target_tris=500):
+    """Keep the recognisable folds in heaps without duplicating hero density 102 times."""
+    holder = link(bpy.data.objects.new(name + '-heap-holder', mesh.copy()))
+    dec = holder.modifiers.new('heap-budget', 'DECIMATE')
+    dec.decimate_type = 'COLLAPSE'
+    dec.ratio = min(1.0, target_tris / max(1, tri_count(mesh)))
+    result = evaluated_mesh(holder, name + '-heap')
+    remove(holder)
+    for poly in result.polygons:
+        poly.use_smooth = True
+    return result
 
 
 # ── the hand ─────────────────────────────────────────────────────────────────
@@ -966,14 +1117,18 @@ def main():
     make_materials()
     meshes = {}
     for name, p in EAR_VARIANTS.items():
-        meshes[name] = build_ear(name, p, target_tris=680)
+        meshes[name] = build_ear(name, p, target_tris=1900)
     ears = {k: meshes[k] for k in EAR_VARIANTS}
+    heap_ears = {name: heap_ear_copy(mesh, name) for name, mesh in ears.items()}
+    crown_ears = {name: heap_ear_copy(mesh, name, target_tris=900) for name, mesh in ears.items()}
     # A scattered ear lies in its own wet smear. On a lit floor the halftone has
     # nothing to draw between a pale ear and pale tile; the smear is the edge.
     singles = {name: smeared(name, mesh) for name, mesh in ears.items()}
     meshes.update(singles)
     for name, spec in HEAPS.items():
-        meshes[name] = build_heap(name, spec, ears)
+        meshes[name] = build_heap(name, spec, heap_ears, crown_ears)
+    for mesh in [*heap_ears.values(), *crown_ears.values()]:
+        bpy.data.meshes.remove(mesh)
     # Physical anatomy, not a screen-space enlargement. Its cartilage, bowl and
     # cut surface all grow together, so their self-shadow and wet light response
     # survive the final dither. Keep the thin liquid against the floor; a scaled
@@ -1001,18 +1156,19 @@ def main():
     # under the same names, so the bare meshes give their names back.
     for mesh in ears.values():
         bpy.data.meshes.remove(mesh)
-    for name, spec in WRITING.items():
-        dark = build_writing(name, spec)
-        dark.materials.clear()
-        dark.materials.append(MAT['paint_dark'])
-        pale = dark.copy()
-        pale.name = f'{name}_pale'
-        pale.materials.clear()
-        pale.materials.append(MAT['paint_pale'])
-        meshes[name] = dark
-        meshes[f'{name}_pale'] = pale
-    texture = render_sheet(Path(a.sheet), work)
-    meshes['stop_listening_take_sheet'] = build_sheet_mesh(texture)
+    if not a.anatomy_only:
+        for name, spec in WRITING.items():
+            dark = build_writing(name, spec)
+            dark.materials.clear()
+            dark.materials.append(MAT['paint_dark'])
+            pale = dark.copy()
+            pale.name = f'{name}_pale'
+            pale.materials.clear()
+            pale.materials.append(MAT['paint_pale'])
+            meshes[name] = dark
+            meshes[f'{name}_pale'] = pale
+        texture = render_sheet(Path(a.sheet), work)
+        meshes['stop_listening_take_sheet'] = build_sheet_mesh(texture)
 
     scene = bpy.context.scene
     objects = []
@@ -1029,7 +1185,8 @@ def main():
         'meshes': {name: {'triangles': tri_count(mesh), 'bounds': runtime_bounds(mesh),
                           'materials': [m.name for m in mesh.materials]} for name, mesh in meshes.items()},
         'earScale': a.ear_scale,
-        'artRevision': 'severed-cartilage-pressure-brush-v3-matte-pigment',
+        'artRevision': 'rolled-pinna-v5-solid-root-supported-crowns',
+        'heapSupport': HEAP_SUPPORT_REPORTS,
         'fleshBounds': {name: flesh_bounds(meshes[name]) for name in anatomy_names},
     }
     report['triangles'] = sum(m['triangles'] for m in report['meshes'].values())

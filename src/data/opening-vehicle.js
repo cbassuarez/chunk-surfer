@@ -2,11 +2,13 @@
 // All positions are in metres, with the cabin 1.6m ahead of the body origin.
 export const OPENING_VEHICLE = Object.freeze({
   asset: 'assets/source-vehicle-interior.glb',
-  sourceSha256: '4090887e47657a8224b06464d05d8012f2322926475d603b7ebb6648fa398afa',
-  cabinMount: Object.freeze([0, 0, -1.6]),
+  sourceSha256: '59155ba454894283e68ecde1d976996b326221a98930d164a77dd8ab7aab8316',
+  cabinMount: Object.freeze([0, 0, -.45]),
+  wheels: Object.freeze({ front: -1.3, rear: 1.535, track: 1.66, radius: .33 }),
+  bodyBox: Object.freeze({ min: Object.freeze([-.985,0,-2.272]), max: Object.freeze([.985,2.024,2.546]) }),
   eye: Object.freeze([.48, 1.65, .20]),
-  exitEye: Object.freeze([1.8, 1.62, .25]),
-  doorHinge: Object.freeze([.905, .64, -.945]),
+  exitEye: Object.freeze([1.8,1.62,-.1]),
+  doorHinge: Object.freeze([.945,.64,-.62]),
   exitSeconds: 1.85,
 });
 const clamp = n => Math.max(0, Math.min(1, Number(n) || 0));
@@ -30,13 +32,15 @@ export function openingVehicleInstances(anchor, { doorOpen = 0 } = {}) {
   }
   part('drive_cabin'); part('drive_radio');
   part('drive_wheel', [.48, 1.20, -.39], -.36);
-  part('drive_speed_needle', [.48, 1.207, -.626], 0, .72*Math.PI);
+  part('drive_speed_needle', [.575,1.207,-.626], 0, .72*Math.PI);
   part('drive_radio_needle', [-.0422, 1.11344, -.396]);
   part('drive_wiper', [-.52, 1.30, -1.17], .435, -1.42, true, 'wiper-left');
   part('drive_wiper', [.45, 1.30, -1.17], .435, 1.42, true, 'wiper-right');
   part('drive_vehicle_body', [0, 0, 0], 0, 0, false);
-  for (const side of [-1, 1]) for (const axle of [-1.35, 1.75])
-    part('drive_tyre', [side*.84, .34, axle], 0, 0, false, `tyre-${side}-${axle}`);
+  instances[instances.length - 1].cabinVolume = OPENING_VEHICLE.bodyBox;
+  const wheels = OPENING_VEHICLE.wheels;
+  for (const side of [-1, 1]) for (const axle of [wheels.front, wheels.rear])
+    part('drive_tyre', [side*wheels.track/2, wheels.radius, axle], 0, 0, false, `tyre-${side}-${axle}`);
   // The detached geometry keeps its original cabin coordinates. Rotate around
   // the real forward edge rather than around the vehicle centre.
   const angle = -clamp(doorOpen)*1.18, hinge = OPENING_VEHICLE.doorHinge;

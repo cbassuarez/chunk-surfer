@@ -67,6 +67,8 @@ pub fn run() {
             lens_service::chunk_lens_bootstrap,
             lens_service::chunk_lens_retry,
             lens_service::chunk_lens_stop,
+            lens_service::chunk_lens_nuke,
+            lens_service::chunk_lens_scan,
         ])
         .setup(|app| {
             // setup runs on the main thread, which AppKit's Dock tile requires.

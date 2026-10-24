@@ -33,7 +33,7 @@ import {
   districtLogicalAt,
   elleryMassingAt,
 } from '../exterior-district.js';
-import { mainStairFloorplanFlights, mainStairFloorplanLandings } from '../main-stair-geometry.js';
+import { mainStairFloorplanFlights, mainStairFloorplanLandings, mainStairStairwell } from '../main-stair-geometry.js';
 import { LOADING_BAY_ACCESS, LOADING_BAY_ACCESS_PORTALS, loadingBayStairFloorAt } from '../loading-bay-access.js';
 import { ACADEMIC_ROOF, ACADEMIC_ROOF_LEVELS, ACADEMIC_ROOF_PORTALS } from '../academic-roof.js';
 import { streetPilotFloorAt } from '../street-pilot.js';
@@ -971,6 +971,7 @@ const EUCLIDEAN_ADDITIONS=[
     id:'main-open-well',zone:'stair',material:'serviceConcrete',head:3.4,physicalReplace:true,
     flights:mainStairFloorplanFlights(),
     landings:mainStairFloorplanLandings(),
+    stairwell:mainStairStairwell(),
   }]},
 
   // U1 is a landing room, not a feeder corridor. The six-metre central void is
@@ -1087,7 +1088,10 @@ export const conservatory = {
     {id:'lower-flight-to-upper-floor-landing',width:2,
      from:{at:{x:138,y:50},along:{x:1,y:0},exit:{x:0,y:-1}},
      to:{at:{x:150,y:52},along:{x:0,y:-1},exit:{x:-1,y:0}},tolerance:1.2},
-    {id:'upper-floor-landing-to-hall',width:4,
+    // The landing's cells sit 0.5 m further east since stair revision 4, so the
+    // two edges of this seam are one cell apart diagonally (1.41) instead of
+    // straight across (1.00). Same seam, same cells.
+    {id:'upper-floor-landing-to-hall',width:4,tolerance:1.42,
      from:{at:{x:155.5,y:50},along:{x:0,y:1},exit:{x:1,y:0}},
      to:{at:{x:154,y:70},along:{x:0,y:1},exit:{x:-1,y:0}}},
     {id:'upper-floor-landing-to-academic-flight',width:2,

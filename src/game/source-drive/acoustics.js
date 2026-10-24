@@ -96,6 +96,14 @@ export function driveExteriorPans(sources=[]){
   return{waterPan,fibrePan,pressurePan:waterPan*.55+fibrePan*.45};
 }
 
+// Present only on the transient opening controller. Ordinary driving has no
+// underwater bus, cue clock, radio failure or mechanical cinematic override.
+export function driveOpeningAcousticFrame(state){
+ const opening=state?.openingCinematic;if(opening?.schema!==1)return null;
+ const a=opening.audio||{},submerged=clamp(a.submerged),timeSec=Math.max(0,Number(opening.timeSec)||0);
+ return{timeSec,phase:opening.phase,submerged,enginePower:clamp(a.enginePower??1),radioPower:clamp(a.radioPower??1),waterImpact:clamp(a.waterImpact),bodyGrind:clamp(a.bodyGrind),metalStrain:clamp(a.metalStrain),windOpen:clamp(a.windOpen),roadContact:['free-drive','sound-lead','departure'].includes(opening.phase)?1:0,filterHz:18000*(1-submerged)+430*submerged,cues:Array.isArray(opening.cues)?opening.cues:[]};
+}
+
 export class SourceDriveAcoustics {
   constructor({ context, destination, gain = .5, fetcher = globalThis.fetch } = {}) {
     if (!context?.createGain || !destination) throw Error('The drive requires the host AudioContext and output bus.');
@@ -259,6 +267,7 @@ export class SourceDriveAcoustics {
     if (this.closed || !this.cabin || this.paused || state.paused) return;
     const c = this.context, now = c.currentTime;
     const target = (param, value, seconds = .08) => param.setTargetAtTime(value, now, seconds);
+    const opening=driveOpeningAcousticFrame(state);if(opening)this.ensureOpeningBus();
     const speed = Math.abs(state.speed), load = clamp(state.engineLoad), throttle = clamp(state.throttle);
     const rpm = clamp(850 + speed * (state.gear < 0 ? 185 : 105) + load * 450 + (speed < .5 ? throttle * 250 : 0), 650, 4800);
     const rough = state.surface === 'verge' ? 1 : state.surface === 'shoulder' ? .55 : 0;
@@ -266,14 +275,14 @@ export class SourceDriveAcoustics {
     this.engineHz = rpm / 30;
     target(this.engine.frequency, this.engineHz, .065); target(this.harmonic.frequency, this.engineHz * 2, .065);
     target(this.engineFilter.frequency, 130 + load * 290 + throttle * 70, .1);
-    target(this.engineGain.gain, .016 + load * .031 + motion * .006 + body * .003);
+    target(this.engineGain.gain, (.016 + load * .031 + motion * .006 + body * .003)*(opening?.enginePower??1));
     const grain = 1 + .035 * Math.sin(state.odometer * 19.7) + .025 * Math.sin(state.odometer * 43.1);
     const wetRoad=clamp(weatherFrame?.roadWetness??.35);
-    target(this.roadGain.gain, (.14 + rough * .085 + wetRoad*.035 + clamp((Math.abs(state.roadOffset) - 2.4)) * .014) * motion * (grain + body * .06));
+    target(this.roadGain.gain, (.14 + rough * .085 + wetRoad*.035 + clamp((Math.abs(state.roadOffset) - 2.4)) * .014) * motion * (grain + body * .06)*(opening?.roadContact??1));
     target(this.roadFilter.frequency, 430 + speed * 25 + rough * 850+wetRoad*speed*12, .1);
     if (this.lastGear != null && this.lastGear !== state.gear) this.click('gear-engagement', .32);
     this.lastGear = state.gear;
-    target(this.radio.gain, state.radioOn ? clamp(state.volume??.65) : 0, .012);
+    target(this.radio.gain, state.radioOn ? clamp(state.volume??.65)*(opening?.radioPower??1) : 0, .012);
     this.fingerprint.gain.setValueAtTime(state.station === 'service' ? 1 : 0, now);
     const wanted=programmeFrame(state,evolution);
     // Same-position phase edits happen only between both versions' utterances.
@@ -315,6 +324,32 @@ export class SourceDriveAcoustics {
     const pans=this.exteriorPans=driveExteriorPans(loadedSources);
     target(this.loadedWater.panner.pan,pans.waterPan,.11);target(this.loadedFibre.panner.pan,pans.fibrePan,.11);target(this.loadedPressure.panner.pan,pans.pressurePan,.14);
     this.foley.sync({ sources: loadedSources, timeSec: state.programTime, engineHz: this.engineHz, enabled: state.cutEnabled !== false });
+    if(opening)this.syncOpening(opening,target);
+  }
+
+  ensureOpeningBus(){
+    if(this.openingFilter)return;
+    const filter=this.context.createBiquadFilter();filter.type='lowpass';filter.frequency.value=18000;filter.Q.value=.55;this.nodes.push(filter);
+    this.cabin.disconnect(this.output);this.cabin.disconnect(this.analyser);
+    this.cabin.connect(filter);filter.connect(this.output);filter.connect(this.analyser);this.openingFilter=filter;
+  }
+
+  recordingBus(){return this.openingFilter||this.cabin;}
+
+  syncOpening(frame,target){
+    target(this.openingFilter.frequency,frame.filterHz,.12);
+    const dry=1-frame.submerged,weather=this.exteriorFrame;
+    target(this.roofRain.gain.gain,weather.roofGain*dry,.08);target(this.glassRain.gain.gain,weather.glassGain*dry,.08);
+    target(this.wind.gain.gain,(weather.windGain+frame.windOpen*.045)*dry,.09);
+    target(this.loadedWater.gain.gain,.065*frame.submerged+.12*frame.waterImpact,.055);target(this.loadedWater.filter.frequency,520,.12);
+    target(this.loadedPressure.gain.gain,.024*frame.submerged,.12);
+    target(this.loadedFibre.gain.gain,.027*frame.bodyGrind+.012*frame.metalStrain,.06);target(this.loadedFibre.filter.frequency,330+frame.metalStrain*470,.08);
+    target(this.loadedRoof.gain.gain,.058*frame.bodyGrind+.022*frame.metalStrain,.06);target(this.loadedRoof.filter.frequency,180+frame.metalStrain*330,.08);
+    for(let i=0;i<this.wreckHorns.length;i++)target(this.wreckHorns[i].gain.gain,(this.hornFrame[i]?.gain||0)*(1-.94*frame.submerged),.07);
+    if(frame.radioPower<.02&&this.currentProgrammeFrame)Object.assign(this.currentProgrammeFrame,{audible:false,caption:null});
+    const previous=this.openingFrame?.timeSec;this.openingCueLog=this.openingCueLog||[];
+    if(previous!=null&&frame.timeSec>=previous)for(const cue of frame.cues){if(cue.time>previous&&cue.time<=frame.timeSec){this.openingCueLog.push({id:cue.id,at:frame.timeSec,scheduled:cue.time,late:frame.timeSec-cue.time});if(cue.id==='sea-impact'&&frame.timeSec-cue.time<.5)this.transient({kind:'opening-water-impact',strength:1});}}
+    this.openingFrame=frame;
   }
 
   syncWeather(state,weatherFrame,evolution,target){
@@ -338,12 +373,13 @@ export class SourceDriveAcoustics {
     if (!this.cabin || this.paused || this.closed) return;
     const c = this.context, t = c.currentTime, source = c.createBufferSource(), filter = c.createBiquadFilter(), gain = c.createGain();
     source.buffer = this.noise;
-    filter.type = kind === 'joint' ? 'lowpass' : 'bandpass';
-    filter.frequency.value = kind === 'gear-engagement' ? 180 : kind==='wiper-return'?720:kind === 'joint' ? (radio ? 780 : 980) : 1500;
-    gain.gain.setValueAtTime(0, t); gain.gain.linearRampToValueAtTime((kind === 'joint' ? .8 : .12) * clamp(strength, 0, 1.5), t + .004);
-    gain.gain.exponentialRampToValueAtTime(.0001, t + (kind === 'joint' ? .11 : .045));
+    const waterImpact=kind==='opening-water-impact';
+    filter.type = kind === 'joint'||waterImpact ? 'lowpass' : 'bandpass';
+    filter.frequency.value = waterImpact?170:kind === 'gear-engagement' ? 180 : kind==='wiper-return'?720:kind === 'joint' ? (radio ? 780 : 980) : 1500;
+    gain.gain.setValueAtTime(0, t); gain.gain.linearRampToValueAtTime((waterImpact?1.15:kind === 'joint' ? .8 : .12) * clamp(strength, 0, 1.5), t + .004);
+    gain.gain.exponentialRampToValueAtTime(.0001, t + (waterImpact?.65:kind === 'joint' ? .11 : .045));
     source.connect(filter); filter.connect(gain); gain.connect(radio ? this.fingerprint : this.cabin);
-    this.transients.add(source); source.start(t, 0, kind === 'joint' ? .15 : .06);
+    this.transients.add(source); source.start(t, 0, waterImpact?.72:kind === 'joint' ? .15 : .06);
     source.onended = () => { this.transients.delete(source); source.disconnect(); filter.disconnect(); gain.disconnect(); };
   }
 
@@ -351,7 +387,7 @@ export class SourceDriveAcoustics {
   click(kind = 'tuning-control', strength = .75) { this.transient({ kind, strength }); }
   programmeFrame(){if(!this.currentProgrammeFrame)return null;return this.paused?{...this.currentProgrammeFrame,audible:false,caption:null}:this.currentProgrammeFrame;}
   level() { if (!this.analyser) return 0; this.analyser.getFloatTimeDomainData(this.samples); return Math.sqrt(this.samples.reduce((n, v) => n + v * v, 0) / this.samples.length); }
-  diagnostics() { return { ready: !!this.cabin, paused: this.paused, level: this.level(), engine:{hz:this.engineHz||0,gain:this.engineGain?.gain.value||0,filterHz:this.engineFilter?.frequency.value||0}, loadedProgrammes: [...this.programmes.keys()],programmeCacheBytes:[...this.programmes.values()].reduce((n,b)=>n+b.length*b.numberOfChannels*4,0),scratchCacheLimitBytes:18432000,temporaryVoiceClips:this.voices.size,assetErrors:[...this.assetErrors],finishedProgrammeMastersPresent:[...this.programmes.keys()].some(k=>!this.scratchKeys.has(k)),finishedVoiceTakesPresent:[...this.programmeOptions.values()].some(o=>!o.temporary&&o.cues?.some(c=>c.speaker)),programme:this.programmeFrame(),weather:this.weatherState||null,wreckHorns:this.hornFrame||[],exterior:this.exteriorFrame?{...this.exteriorFrame,pans:this.exteriorPans||null}:null,physicalSources:(this.loadedSources||[]).map(source=>({id:source.id,position:source.position,kind:source.motion?.kind||source.kind||'anatomy',distance:source.motion?.distance,load:source.motion?.load||null,physiology:source.motion?.physiology||null,physiologyFoley:source.motion?.physiologyFoley||null})),foley: this.foley?.diagnostics(), provenance: 'Temporary local stock-system anonymous programme speech; original synthesized station beds and cabin/weather/foley references. Finished user takes only when explicitly loaded.' }; }
+  diagnostics() { return { ready: !!this.cabin, paused: this.paused, level: this.level(), opening:this.openingFrame?{...this.openingFrame,cues:this.openingCueLog,filterHz:this.openingFilter?.frequency.value}:null,engine:{hz:this.engineHz||0,gain:this.engineGain?.gain.value||0,filterHz:this.engineFilter?.frequency.value||0}, loadedProgrammes: [...this.programmes.keys()],programmeCacheBytes:[...this.programmes.values()].reduce((n,b)=>n+b.length*b.numberOfChannels*4,0),scratchCacheLimitBytes:18432000,temporaryVoiceClips:this.voices.size,assetErrors:[...this.assetErrors],finishedProgrammeMastersPresent:[...this.programmes.keys()].some(k=>!this.scratchKeys.has(k)),finishedVoiceTakesPresent:[...this.programmeOptions.values()].some(o=>!o.temporary&&o.cues?.some(c=>c.speaker)),programme:this.programmeFrame(),weather:this.weatherState||null,wreckHorns:this.hornFrame||[],exterior:this.exteriorFrame?{...this.exteriorFrame,pans:this.exteriorPans||null}:null,physicalSources:(this.loadedSources||[]).map(source=>({id:source.id,position:source.position,kind:source.motion?.kind||source.kind||'anatomy',distance:source.motion?.distance,load:source.motion?.load||null,physiology:source.motion?.physiology||null,physiologyFoley:source.motion?.physiologyFoley||null})),foley: this.foley?.diagnostics(), provenance: 'Temporary local stock-system anonymous programme speech; original synthesized station beds and cabin/weather/foley references. Finished user takes only when explicitly loaded.' }; }
   dispose() {
     if (this.closed) return;
     this.setPaused(true); this.closed = true; this.foley?.dispose();

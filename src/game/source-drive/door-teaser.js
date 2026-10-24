@@ -1,153 +1,122 @@
-// A temporary cinematic owner of the existing drive, never a Source journey.
-// The route is queried on the ground; the released vehicle and every attached
-// surface then share one rigid, analytically falling transform.
-import {createDrive} from './drive-state.js';
+// A playable remembered drive; only the short committed plunge borrows the controls.
+import {createDrive,stepDrive,selectStation as tuneDrive,power as powerDrive} from './drive-state.js';
 import {worldAt,roadSurfaceAt} from './road.js';
 import {makeDriveScene,multiply,rotation} from './scene.js';
 import {driveEvolutionFrame} from './evolution.js';
 import {programmeFrame} from './radio-programmes.js';
 import {createDriveWeather,stepDriveWeather,driveWeatherFrame} from './weather.js';
 import {applyDriveTeaserScene,DRIVE_TEASER_BREAK} from './teaser-scene.js';
-
-export const DOOR_DRIVE_TEASER=Object.freeze({
- duration:13.8,soundLeadEnd:.65,pictureFadeEnd:1.05,departureStart:5.8,
- fallStart:7.1,impactStart:10.4,returnStart:12.8,impactFadeStart:10.02,
- firstVisibleDistance:258,departureDistance:292,releaseDistance:304,
- releaseLateral:4,commitDistance:292,programmeStart:73.8,skipCoverSeconds:.28,skipReturnSeconds:.7,
-});
-const C=DOOR_DRIVE_TEASER,STEP=1/120,clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
-const finite=(v,fallback=0)=>Number.isFinite(v)?v:fallback;
-const smooth=x=>{const t=clamp(x);return t*t*(3-2*t);};
-const ease=x=>{const t=clamp(x);return t*t*t*(10+t*(-15+6*t));};
-const clone=value=>structuredClone(value);
-const approachSpeed=(C.departureDistance-C.firstVisibleDistance)/(C.departureStart-C.soundLeadEnd);
-const approachStart=C.firstVisibleDistance-approachSpeed*C.soundLeadEnd;
-const release=worldAt(C.releaseDistance,C.releaseLateral),releaseYaw=release.heading+.12;
-const releasePitch=release.pitch-.17;
-const phaseAt=t=>t<C.soundLeadEnd?'sound-lead':t<C.departureStart?'approach':t<C.fallStart?'departure':t<C.impactStart?'fall':t<C.returnStart?'impact-black':t<C.duration?'return':'complete';
-
-// Cubic distance preserves the incoming and departing velocities, rather than
-// jumping from one constant speed to another at the loss of the road.
-function departureDistance(u){
- const span=C.fallStart-C.departureStart,a=C.departureDistance,b=C.releaseDistance,m0=approachSpeed*span,m1=9.5*span;
- return (2*u**3-3*u*u+1)*a+(u**3-2*u*u+u)*m0+(-2*u**3+3*u*u)*b+(u**3-u*u)*m1;
-}
-function distanceVelocity(u){
- const span=C.fallStart-C.departureStart,a=C.departureDistance,b=C.releaseDistance,m0=approachSpeed*span,m1=9.5*span;
- return ((6*u*u-6*u)*a+(3*u*u-4*u+1)*m0+(-6*u*u+6*u)*b+(3*u*u-2*u)*m1)/span;
-}
-
-export function doorDriveTeaserPoseAt(timeSec=0){
- const t=clamp(finite(timeSec),0,C.duration),flight=clamp(t-C.fallStart,0,C.impactStart-C.fallStart);
- let distance,position,heading,pitch,speed,lateral=0,verticalVelocity=0;
- if(t<C.departureStart){
-  distance=approachStart+approachSpeed*t;position=worldAt(distance);heading=position.heading;pitch=position.pitch;speed=approachSpeed;
- }else if(t<C.fallStart){
-  const u=(t-C.departureStart)/(C.fallStart-C.departureStart),leave=ease(u);
-  distance=departureDistance(u);lateral=C.releaseLateral*leave;
-  position=worldAt(distance,lateral,-1.05*leave);heading=position.heading+.12*leave;pitch=position.pitch-.17*leave;speed=distanceVelocity(u);
- }else{
-  // Horizontal inertia and gravity continue past the finite ledge. Ground
-  // sampling remains at the launch point; no terrain-height snap follows it.
-  distance=C.releaseDistance;lateral=C.releaseLateral;
-  position={x:release.x+(Math.sin(releaseYaw)*9.5+Math.cos(releaseYaw)*2.7)*flight,
-   z:release.z+(-Math.cos(releaseYaw)*9.5+Math.sin(releaseYaw)*2.7)*flight,
-   y:release.y-1.05-1.15*flight-4.905*flight*flight};
-  heading=releaseYaw+.065*ease(flight/2.7);pitch=releasePitch+(-1.18-releasePitch)*ease(flight/2.6);
-  speed=9.5;verticalVelocity=-1.15-9.81*flight;
+import {COASTAL_MEMORY_LAYOUT,COASTAL_WORLD_FROM_LOCAL,COASTAL_SETTLED_BODY_LOCAL} from '../../data/coastal-memory.js';
+import {makeCoastalMemoryScene} from '../coastal-memory/scene.js';
+import {OPENING_ROAD,openingRoadAt,openingRoadSurfaceAt,openingDriveColliders,openingCliffSupport,applyOpeningRoadScene} from './opening-road.js';
+import {resetWheelHands,wheelHandDiagnostics} from './geometry/wheel-hands-pose.js';
+export const DOOR_DRIVE_TEASER=Object.freeze({duration:96,soundLeadEnd:.65,pictureFadeEnd:1.3,queueStart:16,climbStart:33,loadedStart:49,departureStart:70,fallStart:73,settledStart:88,impactFadeStart:92,impactStart:92.4,returnStart:94.8,startDistance:30,firstVisibleDistance:38,departureDistance:293,releaseDistance:304,releaseLateral:3.35,commitDistance:293,programmeStart:73.8,skipCoverSeconds:.28,skipReturnSeconds:.7});
+const C=DOOR_DRIVE_TEASER,STEP=1/120,PIVOT=.85,clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v)),finite=(v,f=0)=>Number.isFinite(v)?v:f,clone=v=>structuredClone(v),mix=(a,b,t)=>a+(b-a)*t;
+const smooth=x=>{const t=clamp(x);return t*t*(3-2*t);},ease=x=>{const t=clamp(x);return t*t*t*(10+t*(-15+6*t));};
+const point=(m,p)=>[m[0]*p[0]+m[4]*p[1]+m[8]*p[2]+m[12],m[1]*p[0]+m[5]*p[1]+m[9]*p[2]+m[13],m[2]*p[0]+m[6]*p[1]+m[10]*p[2]+m[14]],vector=(m,p)=>[m[0]*p[0]+m[4]*p[1]+m[8]*p[2],m[1]*p[0]+m[5]*p[1]+m[9]*p[2],m[2]*p[0]+m[6]*p[1]+m[10]*p[2]];
+const localPoint=p=>{const m=COASTAL_WORLD_FROM_LOCAL,q=p.map((v,i)=>v-m[12+i]);return[m[0]*q[0]+m[1]*q[1]+m[2]*q[2],m[4]*q[0]+m[5]*q[1]+m[6]*q[2],m[8]*q[0]+m[9]*q[1]+m[10]*q[2]];},anchor=worldAt(C.releaseDistance),siteYaw=anchor.heading;
+export const DOOR_DRIVE_DISTANCE_KEYS=Object.freeze([[0,30,13],[.65,38,12],[3,66,11.5],[16,181,4.8],[33,250,3.2],[49,282,.8],[58,288,.35],[70,293,.3],[73,304,6.5]].map(([time,distance,velocity])=>Object.freeze({time,distance,velocity})));
+function hermite(a,b,va,vb,span,u){return(2*u**3-3*u*u+1)*a+(u**3-2*u*u+u)*va*span+(-2*u**3+3*u*u)*b+(u**3-u*u)*vb*span;}
+function derivative(a,b,va,vb,span,u){return((6*u*u-6*u)*a+(3*u*u-4*u+1)*va*span+(-6*u*u+6*u)*b+(3*u*u-2*u)*vb*span)/span;}
+function distanceAt(t){let i=0;while(i<DOOR_DRIVE_DISTANCE_KEYS.length-2&&t>DOOR_DRIVE_DISTANCE_KEYS[i+1].time)i++;const a=DOOR_DRIVE_DISTANCE_KEYS[i],b=DOOR_DRIVE_DISTANCE_KEYS[i+1],span=b.time-a.time,u=clamp((t-a.time)/span);return{distance:hermite(a.distance,b.distance,a.velocity,b.velocity,span,u),velocity:derivative(a.distance,b.distance,a.velocity,b.velocity,span,u)};}
+function bodyAt(position,heading,pitch,roll=0){const m=multiply(rotation(0,-heading),rotation(pitch,0,roll));m[12]=32+position.x-m[4]*PIVOT;m[13]=position.y+PIVOT-m[5]*PIVOT;m[14]=32+position.z-m[6]*PIVOT;return m;}
+function baseFromBody(m){const p=point(m,[0,PIVOT,0]);return{x:p[0]-32,y:p[1]-PIVOT,z:p[2]-32};}
+function groundedPose(t){const q=distanceAt(t),road=worldAt(q.distance),u=clamp((t-C.departureStart)/3),lateral=hermite(0,C.releaseLateral,0,1.8,3,u),heading=road.heading+.14*ease(u),frontLoss=smooth((lateral-.8)/1.4),position=worldAt(q.distance,lateral),pitch=position.pitch-.10*frontLoss,body=bodyAt(position,heading,pitch);
+ // The rear axle supports the nose until release. No preflight whole-body sink.
+ if(frontLoss>0){let support=0;for(const side of[-1,1]){const p=point(body,[side*.84,0,1.75]),r=roadSurfaceAt(p[0]-32,p[2]-32);support+=r.height-p[1];}body[13]+=support/2;}
+ return{distance:q.distance,lateral,position:baseFromBody(body),heading,pitch,speed:q.velocity*road.longitudinalScale,bodyMatrix:Array.from(body)};}
+const release=groundedPose(C.fallStart),velocityWorld=[Math.sin(release.heading)*6.5+Math.cos(release.heading)*1.8,-.3,-Math.cos(release.heading)*6.5+Math.sin(release.heading)*1.8],velocityLocal=[COASTAL_WORLD_FROM_LOCAL[0]*velocityWorld[0]+COASTAL_WORLD_FROM_LOCAL[2]*velocityWorld[2],-.3,COASTAL_WORLD_FROM_LOCAL[8]*velocityWorld[0]+COASTAL_WORLD_FROM_LOCAL[10]*velocityWorld[2]];
+function airPose(s){const position={x:release.position.x+velocityWorld[0]*s,y:release.position.y-.3*s-4.905*s*s,z:release.position.z+velocityWorld[2]*s},heading=release.heading+.025*ease(s/2.5),pitch=mix(release.pitch,-1.14,ease(s/2.3));return{position,heading,pitch,bodyMatrix:Array.from(bodyAt(position,heading,pitch))};}
+function lowestHullY(body){let y=Infinity;for(const x of[-1.04,1.04])for(const z of[-3.25,2.55])y=Math.min(y,localPoint(point(body,[x,0,z]))[1]);return y;}
+let low=0,high=4;for(let i=0;i<48;i++){const mid=(low+high)/2;if(lowestHullY(airPose(mid).bodyMatrix)>COASTAL_MEMORY_LAYOUT.seaY)low=mid;else high=mid;}
+export const DOOR_DRIVE_WATER_ENTRY=C.fallStart+(low+high)/2;
+const contactFlight=DOOR_DRIVE_WATER_ENTRY-C.fallStart,contact=airPose(contactFlight),contactLocal=localPoint([32+contact.position.x,contact.position.y,32+contact.position.z]),contactVelocity=[velocityLocal[0],-.3-9.81*contactFlight,velocityLocal[2]],hydroSeconds=1.4;
+const wetPosition=s=>contactLocal.map((v,i)=>v+contactVelocity[i]/(i===1?8:2.6)*(1-Math.exp(-(i===1?8:2.6)*s))),wetEnd=wetPosition(hydroSeconds),wetVelocity=contactVelocity.map((v,i)=>v*Math.exp(-(i===1?8:2.6)*hydroSeconds));
+function wheelRotationAt(p){const base=(p.distance-C.startDistance)/.34+6.5/.34*p.fallSeconds;if(!p.waterSeconds)return base;const coast=6.5/.34/2,early=base+coast*Math.min(1,p.waterSeconds),final=Math.ceil((base+coast)/(Math.PI*2))*Math.PI*2;return p.waterSeconds<1?early:mix(early,final,ease((p.waterSeconds-1)/(C.settledStart-DOOR_DRIVE_WATER_ENTRY-1)));}
+function submergedPose(t){const elapsed=t-DOOR_DRIVE_WATER_ENTRY,span=C.settledStart-DOOR_DRIVE_WATER_ENTRY-hydroSeconds,u=clamp((elapsed-hydroSeconds)/span),settled=COASTAL_MEMORY_LAYOUT.settledPose,p=elapsed<hydroSeconds?wetPosition(elapsed):wetEnd.map((v,i)=>hermite(v,settled.position[i],wetVelocity[i],0,span,u)),angle=ease(clamp(elapsed/(C.settledStart-DOOR_DRIVE_WATER_ENTRY))),heading=mix(contact.heading,siteYaw+settled.heading,angle),pitch=mix(contact.pitch,settled.pitch,angle),world=point(COASTAL_WORLD_FROM_LOCAL,p),position={x:world[0]-32,y:world[1],z:world[2]-32};return{position,heading,pitch,bodyMatrix:t>=C.settledStart?Array.from(multiply(COASTAL_WORLD_FROM_LOCAL,COASTAL_SETTLED_BODY_LOCAL)):Array.from(bodyAt(position,heading,pitch))};}
+const phaseAt=t=>t<C.soundLeadEnd?'sound-lead':t<C.queueStart?'approach':t<C.climbStart?'queue':t<C.loadedStart?'climb':t<C.departureStart?'loaded':t<C.fallStart?'departure':t<DOOR_DRIVE_WATER_ENTRY?'fall':t<C.settledStart?'submerge':t<C.impactStart?'submerged-hold':t<C.returnStart?'impact-black':t<C.duration?'return':'complete';
+export function doorDriveTeaserPoseAt(timeSec=0){const t=clamp(finite(timeSec),0,C.duration),flight=clamp(t-C.fallStart,0,contactFlight),wet=Math.max(0,t-DOOR_DRIVE_WATER_ENTRY),p=t<C.fallStart?groundedPose(t):t<DOOR_DRIVE_WATER_ENTRY?{...airPose(flight),distance:C.releaseDistance,lateral:C.releaseLateral,speed:6.5}:{...submergedPose(t),distance:C.releaseDistance,lateral:C.releaseLateral,speed:6.5*Math.exp(-2.6*wet)},lookUp=.18*smooth((t-30)/10)*(1-smooth((t-60)/5)),lookDown=.13*smooth((t-63)/1.4)*(1-smooth((t-68)/1.5)),lookPitchOffset=t>=C.fallStart?-.035:.025+lookUp-lookDown,lookYawOffset=-.10*smooth((t-17)/3)*(1-smooth((t-29)/3))+.15*smooth((t-63)/1.4)*(1-smooth((t-68)/1.5)),coverAlpha=t<C.soundLeadEnd?1:t<C.pictureFadeEnd?1-smooth((t-C.soundLeadEnd)/(C.pictureFadeEnd-C.soundLeadEnd)):t<C.impactFadeStart?0:t<C.impactStart?smooth((t-C.impactFadeStart)/(C.impactStart-C.impactFadeStart)):t<C.returnStart?1:1-smooth((t-C.returnStart)/(C.duration-C.returnStart)),sceneAnchor=worldAt(p.distance);return{...p,timeSec:t,phase:phaseAt(t),coverAlpha,worldOwner:t<C.impactStart?'drive':'return',cliffCommitted:t>=C.departureStart,controlOwner:'opening-cinematic',sceneAnchor:{x:sceneAnchor.x,y:sceneAnchor.y,z:sceneAnchor.z,heading:sceneAnchor.heading},roll:0,verticalVelocity:t<C.fallStart?0:t<DOOR_DRIVE_WATER_ENTRY?-.3-9.81*flight:contactVelocity[1]*Math.exp(-8*wet),fallSeconds:flight,waterSeconds:wet,waterEntryTime:DOOR_DRIVE_WATER_ENTRY,lookPitchOffset,lookYawOffset,breakEdge:{...DRIVE_TEASER_BREAK}};}
+export function doorDriveCinematicFrame(timeSec){const t=clamp(finite(timeSec),0,C.duration),wet=Math.max(0,t-DOOR_DRIVE_WATER_ENTRY),pulse=(at,width=.4)=>Math.exp(-(((t-at)/width)**2)),submerged=smooth(wet/1.8);return{schema:1,timeSec:t,phase:phaseAt(t),controlsLocked:true,waterEntryTime:DOOR_DRIVE_WATER_ENTRY,queueLoad:smooth((t-33)/16)*(1-smooth((t-72)/1)),metalStrain:clamp(pulse(49.6,.65)+pulse(58.8,.85)+pulse(68.1,.55)),wheelRelease:smooth((t-64)/.25),audio:{waterImpact:pulse(DOOR_DRIVE_WATER_ENTRY,.09),bodyGrind:pulse(71.7,.55),metalStrain:clamp(pulse(49.6,.65)+pulse(58.8,.85)+pulse(68.1,.55)),submerged,enginePower:1-smooth(wet/.7),radioPower:1-smooth((wet-1.2)/2.2),windOpen:smooth((t-C.fallStart)/.25)*(1-submerged)},cues:[{id:'first-queue',time:16},{id:'vertical-chain',time:33},{id:'loaded-roof',time:49.6},{id:'second-strain',time:58.8},{id:'wheel-falls',time:64},{id:'last-strain',time:68.1},{id:'body-grind',time:71.7},{id:'sea-impact',time:DOOR_DRIVE_WATER_ENTRY},{id:'settled-van',time:88}],underwater:submerged,rigRollApplied:false,groundReferenceOnly:true};}
+// The reference poses above describe the shared fall/aftermath, not a timer
+// that drives the player. Entry, free driving and cliff commitment are distinct.
+export function createDoorDriveTeaser({onComplete=()=>{},onCoveredReturn=()=>{},initialDrive=null}={}){
+ const drive=createDrive(),weather=createDriveWeather({rain:.62,initialWetness:.38,seed:1947}),seed=openingRoadAt(OPENING_ROAD.spawn),keys=new Set();
+ Object.assign(drive,{x:seed.x,z:seed.z,heading:seed.heading,roadHeight:seed.height,speed:13,throttle:.45,engineLoad:.35,station:'service',radioOn:true,volume:.65,...initialDrive});
+ let started=false,disposed=false,finished=false,paused=false,hostPaused=false,timeSec=0,remainder=0,clippedSeconds=0,force=null,returned=false,notified=false,metricsCache=null,handControl=null,warningStartedAt=null;
+ let look={yaw:0,pitch:-.035},settings={wipers:true,headlights:true},recordView={counter:'00:00',mode:'idle',note:'FIELD TAKE · READY'},skip=null;
+ drive.programTime=C.programmeStart;weather.timeSec=C.programmeStart;
+ const controlsEnabled=()=>started&&!disposed&&!finished&&!paused&&!hostPaused&&!force&&!skip&&timeSec>=.8;
+ function storyAt(d){if(d<=30)return .65*clamp((d-OPENING_ROAD.spawn)/(30-OPENING_ROAD.spawn));let a=.65,b=70;for(let i=0;i<30;i++){const m=(a+b)/2;if(distanceAt(m).distance<d)a=m;else b=m;}return Math.min(70,(a+b)/2);}
+ function livePose(){
+  const r=openingRoadSurfaceAt(drive.x,drive.z),delta=drive.heading-r.heading,n=r.surfaceNormal;
+  const grade=n?-(n[0]*Math.sin(drive.heading)-n[2]*Math.cos(drive.heading))/Math.max(.05,n[1]):r.grade*Math.cos(delta);
+  const crossGrade=n?-(n[0]*Math.cos(drive.heading)+n[2]*Math.sin(drive.heading))/Math.max(.05,n[1]):-r.grade*Math.sin(delta);
+  const pitch=Math.atan(grade)+(drive.bodyPitch||0),roll=Math.atan(crossGrade)+(drive.bodyRoll||0),position={x:drive.x,y:(drive.roadHeight||0)+(drive.bodyHeave||0),z:drive.z},body=bodyAt(position,drive.heading,pitch,roll);
+  return{position:baseFromBody(body),bodyMatrix:Array.from(body),heading:drive.heading,pitch,roll,distance:r.distance,lateral:r.offset,speed:drive.speed,sceneAnchor:{x:drive.x,y:r.height,z:drive.z,heading:drive.heading},fallSeconds:0,waterSeconds:0};
  }
- const sceneAnchor=worldAt(distance),falling=t>=C.fallStart,lookPitchOffset=falling?-.035:.035+.11*smooth((t-1.1)/1.3)*(1-smooth((t-3.5)/1.6));
- const body=multiply(rotation(0,-heading),rotation(pitch,0,0)),pivot=.85;
- body[12]=32+position.x-body[4]*pivot;body[13]=position.y+pivot-body[5]*pivot;body[14]=32+position.z-body[6]*pivot;
- const phase=phaseAt(t),coverAlpha=t<C.soundLeadEnd?1:t<C.pictureFadeEnd?1-smooth((t-C.soundLeadEnd)/(C.pictureFadeEnd-C.soundLeadEnd)):t<C.impactFadeStart?0:t<C.impactStart?smooth((t-C.impactFadeStart)/(C.impactStart-C.impactFadeStart)):t<C.returnStart?1:1-smooth((t-C.returnStart)/(C.duration-C.returnStart));
- return{timeSec:t,phase,coverAlpha,worldOwner:t<C.impactStart?'drive':'return',distance,lateral,
-  cliffCommitted:distance>=C.commitDistance||falling,controlOwner:'opening-cinematic',
-  position:{x:position.x,y:position.y,z:position.z},sceneAnchor:{x:sceneAnchor.x,y:sceneAnchor.y,z:sceneAnchor.z,heading:sceneAnchor.heading},
-  heading,pitch,roll:0,speed,verticalVelocity,fallSeconds:flight,bodyMatrix:Array.from(body),lookPitchOffset,
-  breakEdge:{...DRIVE_TEASER_BREAK}};
-}
-
-export function createDoorDriveTeaser({onComplete=()=>{},onCoveredReturn=()=>{}}={}){
- const drive=createDrive(),weather=createDriveWeather({rain:.71,initialWetness:.38,seed:1947});
- let started=false,disposed=false,finished=false,paused=false,hostPaused=false,timeSec=0,weatherElapsed=0,notified=false,returned=false,skip=null;
- drive.station='service';drive.radioOn=true;drive.volume=.65;weather.timeSec=C.programmeStart;
- function view(){
-  const pose=doorDriveTeaserPoseAt(timeSec);
-  if(!started){pose.phase='idle';pose.coverAlpha=0;pose.worldOwner='return';}
-  if(skip){
-   const local=skip.elapsed,covered=local<C.skipCoverSeconds;
-   pose.phase=covered?'skip-cover':local<C.skipCoverSeconds+C.skipReturnSeconds?'return':'complete';
-   pose.coverAlpha=covered?skip.alpha+(1-skip.alpha)*smooth(local/C.skipCoverSeconds):1-smooth((local-C.skipCoverSeconds)/C.skipReturnSeconds);
-   pose.worldOwner=covered?skip.owner:'return';
+ const angleDelta=(a,b)=>Math.atan2(Math.sin(a-b),Math.cos(a-b));
+ function airborne(f,seconds){
+  const a=f.release,velocity=f.releaseVelocity,position={x:a.position.x+velocity[0]*seconds,y:a.position.y+velocity[1]*seconds-4.905*seconds*seconds,z:a.position.z+velocity[2]*seconds},u=ease(seconds/2.3),pitch=mix(a.pitch,f.airPitch,u),roll=mix(a.roll||0,f.airRoll,u),heading=a.heading+.025*ease(seconds/2.5);
+  return{position,heading,pitch,roll,bodyMatrix:Array.from(bodyAt(position,heading,pitch,roll)),speed:f.travelSign*Math.hypot(velocity[0],velocity[2]),distance:a.distance,lateral:a.lateral,fallSeconds:seconds,waterSeconds:0,verticalVelocity:velocity[1]-9.81*seconds};
+ }
+ function commit({edge=false,support=null}={}){
+  const capture=livePose(),vx=Math.sin(drive.heading)*drive.speed+Math.cos(drive.heading)*drive.lateralSpeed,vz=-Math.cos(drive.heading)*drive.speed+Math.sin(drive.heading)*drive.lateralSpeed,velocity=[vx,(drive.heaveVelocity||0)+Math.sin(capture.pitch)*drive.speed,vz],rearFirst=Math.cos(capture.heading-anchor.heading)<0;
+  const length=Math.hypot(release.position.x-capture.position.x,release.position.z-capture.position.z),lead=edge?0:clamp(2*length/(Math.abs(drive.speed)+6.5),1,3);
+  const endHeading=rearFirst||edge?capture.heading:capture.heading+angleDelta(release.heading,capture.heading),endPitch=edge?capture.pitch:rearFirst?-release.pitch:release.pitch;
+  const end=edge?capture:{...release,heading:endHeading,pitch:endPitch,roll:0,bodyMatrix:Array.from(bodyAt(release.position,endHeading,endPitch))};
+  const f={age:0,lead,capture,velocity,release:end,releaseVelocity:edge?velocity:velocityWorld,travelSign:Math.sign(drive.speed)||1,rearFirst,wheelRate:edge?drive.speed/.34:(rearFirst?-1:1)*6.5/.34,reason:edge?'actual-cliff-support-loss':'forward-road-plane-crossing',support,look:{...look},programmeStart:drive.programTime,wheelStart:drive.wheelRotation,airPitch:rearFirst?1.14:-1.14,airRoll:0};
+  // The camera supports yaw/pitch. Retain a level long axis for a side
+  // departure; do not claim an unapplied camera roll. Rear-first stays rear-first.
+  if(edge){const forward=[Math.sin(capture.heading),-Math.cos(capture.heading)],seaward=[COASTAL_WORLD_FROM_LOCAL[0],COASTAL_WORLD_FROM_LOCAL[2]],fore=forward[0]*seaward[0]+forward[1]*seaward[1];f.airPitch=-fore*1.05;f.airRoll=0;}
+  let lo=0,hi=4;for(let i=0;i<48;i++){const t=(lo+hi)/2;if(lowestHullY(airborne(f,t).bodyMatrix)>COASTAL_MEMORY_LAYOUT.seaY)lo=t;else hi=t;}f.contactFlight=(lo+hi)/2;f.contact=airborne(f,f.contactFlight);f.contactLocal=localPoint([32+f.contact.position.x,f.contact.position.y,32+f.contact.position.z]);f.contactVelocity=[f.releaseVelocity[0],f.releaseVelocity[1]-9.81*f.contactFlight,f.releaseVelocity[2]];f.coveredAt=lead+f.contactFlight+.28;f.finishedAt=f.coveredAt+2.4;force=f;keys.clear();handControl=null;
+ }
+ function forcedPose(){
+  const age=force.age;let p,story;
+  if(age<force.lead){
+   const u=clamp(age/force.lead),pos={};for(const[i,k]of['x','y','z'].entries())pos[k]=hermite(force.capture.position[k],force.release.position[k],force.velocity[i],force.releaseVelocity[i],force.lead,u);
+   const heading=mix(force.capture.heading,force.release.heading,ease(u)),pitch=mix(force.capture.pitch,force.release.pitch,ease(u)),roll=mix(force.capture.roll||0,force.release.roll||0,ease(u));
+   p={position:pos,heading,pitch,roll,bodyMatrix:Array.from(bodyAt(pos,heading,pitch,roll)),distance:mix(force.capture.distance,force.release.distance,u),lateral:mix(force.capture.lateral,force.release.lateral,u),speed:mix(force.capture.speed,force.travelSign*6.5,u),fallSeconds:0,waterSeconds:0};story=70+3*u;
+  }else{
+   const flight=age-force.lead;
+   if(flight<force.contactFlight){p=airborne(force,flight);story=73+flight/force.contactFlight*contactFlight;}
+   else{const wet=flight-force.contactFlight,pos=force.contact.position;const position={x:pos.x+force.contactVelocity[0]/2.6*(1-Math.exp(-2.6*wet)),y:pos.y+force.contactVelocity[1]/8*(1-Math.exp(-8*wet)),z:pos.z+force.contactVelocity[2]/2.6*(1-Math.exp(-2.6*wet))};p={...force.contact,position,bodyMatrix:Array.from(bodyAt(position,force.contact.heading,force.contact.pitch,force.contact.roll)),speed:force.contact.speed*Math.exp(-2.6*wet),fallSeconds:force.contactFlight,waterSeconds:wet,verticalVelocity:force.contactVelocity[1]*Math.exp(-8*wet)};story=DOOR_DRIVE_WATER_ENTRY+wet;}
   }
-  if(finished){pose.phase='complete';pose.coverAlpha=0;pose.worldOwner='return';}
-  return pose;
+  const phase=age<force.lead?'departure':age<force.lead+force.contactFlight?'fall':age<force.coveredAt?'submerge':age<force.coveredAt+1.25?'impact-black':age<force.finishedAt?'return':'complete',alpha=age<force.coveredAt-.14?0:age<force.coveredAt?smooth((age-force.coveredAt+.14)/.14):age<force.coveredAt+1.25?1:1-smooth((age-force.coveredAt-1.25)/1.15),lookMix=ease(age/Math.max(.2,force.lead));
+  return{...p,timeSec,cinematicTime:story,phase,coverAlpha:clamp(alpha),worldOwner:age<force.coveredAt?'drive':'return',cliffCommitted:true,commitReason:force.reason,rearFirst:force.rearFirst,controlOwner:'opening-cinematic',controlsEnabled:false,sceneAnchor:{x:anchor.x,y:anchor.y,z:anchor.z,heading:anchor.heading},lookYawOffset:force.look.yaw*(1-lookMix),lookPitchOffset:mix(force.look.pitch,-.035,lookMix),waterEntryTime:force.lead+force.contactFlight,breakEdge:{...DRIVE_TEASER_BREAK}};
  }
- function synchronize(){
-  const p=doorDriveTeaserPoseAt(timeSec),road=roadSurfaceAt(p.sceneAnchor.x,p.sceneAnchor.z);
-  const pull=smooth((timeSec-C.departureStart)/.38)*(1-smooth((timeSec-C.fallStart)/.25));
-  const before=doorDriveTeaserPoseAt(Math.max(0,timeSec-.005)),after=doorDriveTeaserPoseAt(Math.min(C.duration,timeSec+.005));
-  Object.assign(drive,{x:p.sceneAnchor.x,z:p.sceneAnchor.z,heading:p.sceneAnchor.heading,roadHeight:road.height,
-   speed:p.speed,programTime:C.programmeStart+timeSec,furthest:p.distance,odometer:Math.max(0,p.distance-approachStart),
-   wheelRotation:(p.distance-approachStart)/.34,wheelAngle:clamp(road.curvature*2.8,-.16,.16),
-   steeringWheelAngle:clamp(road.curvature*2.8,-.16,.16)*17,bodyPitch:0,bodyRoll:0,bodyHeave:0,
-   throttle:p.fallSeconds>0?.16:.42+.44*pull,engineLoad:.22+.57*pull,
-   longitudinalAcceleration:(after.speed-before.speed)/Math.max(.001,after.timeSec-before.timeSec),
-   brakeAmount:0,brakeHold:false,cliffCommitted:p.cliffCommitted,
-   paused:paused||hostPaused||disposed||finished||!started||view().worldOwner!=='drive',
-   arrived:false,inArrivalZone:false,arrivalStopSeconds:0});
-  return p;
- }
- function integrateWeather(until){
-  // Fixed samples make pane history independent of host frame cadence. A long
-  // stalled frame advances a bounded13.8s, rather than losing weather time.
-  while(weatherElapsed+STEP<=until+1e-9){
-   const at=weatherElapsed+STEP,p=doorDriveTeaserPoseAt(at),state={...drive,x:p.sceneAnchor.x,z:p.sceneAnchor.z,heading:p.sceneAnchor.heading,furthest:p.distance,programTime:C.programmeStart+at,speed:p.speed};
-   const evolution=driveEvolutionFrame(state);
-   stepDriveWeather(weather,{...evolution.weather,dt:STEP,timeSec:state.programTime,wipers:true,speed:p.speed});weatherElapsed=at;
+ function view(){let p=force?forcedPose():{...livePose(),timeSec,cinematicTime:storyAt(Math.max(drive.furthest,-drive.z)),phase:timeSec<.65?'sound-lead':'free-drive',coverAlpha:timeSec<.65?1:1-smooth((timeSec-.65)/.65),worldOwner:'drive',cliffCommitted:false,controlOwner:controlsEnabled()?'player':'opening-entry',controlsEnabled:controlsEnabled(),lookYawOffset:look.yaw,lookPitchOffset:look.pitch};if(!started){p.phase='idle';p.coverAlpha=0;p.worldOwner='return';}if(skip){p={...p,phase:skip.age<.28?'skip-cover':'return',coverAlpha:skip.age<.28?mix(skip.alpha,1,smooth(skip.age/.28)):1-smooth((skip.age-.28)/.7),worldOwner:skip.age<.28?skip.owner:'return'};}if(finished){p.phase='complete';p.coverAlpha=0;p.worldOwner='return';}return p;}
+ function synchronize(){const p=view();drive.paused=paused||hostPaused||disposed||finished||!started||p.worldOwner!=='drive';if(force){const pull=smooth(force.age/.38),wet=p.waterSeconds||0;Object.assign(drive,{x:anchor.x,z:anchor.z,heading:anchor.heading,roadHeight:anchor.height,speed:p.speed,programTime:force.programmeStart+force.age,furthest:Math.max(drive.furthest,304),throttle:wet>0?0:p.phase==='departure'?.28+.69*pull:.16,engineLoad:wet>0?0:p.phase==='departure'?.20+.75*pull:.33,brakeAmount:0,brakeHold:false,bodyPitch:0,bodyRoll:0,bodyHeave:0,wheelRotation:force.wheelStart+force.age*force.wheelRate});}const cinematic=doorDriveCinematicFrame(p.cinematicTime);cinematic.controlsLocked=!p.controlsEnabled;cinematic.phase=p.phase;cinematic.worldTimeSec=timeSec;cinematic.motionTimeSec=timeSec;cinematic.warningWheelAge=warningStartedAt==null?null:Math.max(0,timeSec-warningStartedAt);drive.openingCinematic=cinematic;return p;}
+ function complete(){if(finished)return;finished=true;synchronize();if(!notified){notified=true;onComplete({skipped:!!skip,timeSec,duration:timeSec});}}
+ function coveredReturn(){if(returned||!started||disposed||view().worldOwner!=='return')return;returned=true;onCoveredReturn({skipped:!!skip,timeSec,phase:'impact-black',coverAlpha:1});}
+ function snapshot(){const p=view();return{phase:p.phase,coverAlpha:p.coverAlpha,worldOwner:p.worldOwner,timeSec,duration:96,variableDuration:true,controlsEnabled:p.controlsEnabled,clippedSeconds,started,paused:paused||hostPaused,finished,disposed,skipped:!!skip,coveredReturn:returned,vehiclePose:clone(p),driveState:clone(drive),look:{...look},settings:{...settings},worldMotionClock:{timeSec,warningStartedAt,warningWheelAge:warningStartedAt==null?null:Math.max(0,timeSec-warningStartedAt)},weatherClock:weather.timeSec,weatherRevision:weather.revision,wiperPhase:weather.wiperPhase,commitment:force?{at:force.programmeStart-C.programmeStart,lead:force.lead,capture:clone(force.capture),reason:force.reason,rearFirst:force.rearFirst,contactFlight:force.contactFlight,release:clone(force.release),support:clone(force.support)}:null};}
+ function start(){if(started||disposed||finished)return false;started=true;resetWheelHands();synchronize();return true;}
+ function setPaused(value){if(disposed||finished)return false;paused=!!value;if(paused)keys.clear();synchronize();return paused;}
+ function step(h){
+  timeSec+=h;
+  if(skip){skip.age+=h;if(skip.age>=.98)complete();}
+  else if(force){force.age+=h;synchronize();if(force.age>=force.finishedAt)complete();}
+  else{
+   const before=openingRoadSurfaceAt(drive.x,drive.z);drive.paused=false;
+   stepDrive(drive,h,timeSec<.8?{}:Object.fromEntries([...keys].map(k=>[k,true])),openingDriveColliders(drive),{roadSampler:openingRoadSurfaceAt});
+   const r=openingRoadSurfaceAt(drive.x,drive.z),support=openingCliffSupport(drive),vx=Math.sin(drive.heading)*drive.speed+Math.cos(drive.heading)*drive.lateralSpeed,vz=-Math.cos(drive.heading)*drive.speed+Math.sin(drive.heading)*drive.lateralSpeed,forwardRoadVelocity=vx*Math.sin(r.heading)-vz*Math.cos(r.heading);
+   if(warningStartedAt==null&&r.distance>=288)warningStartedAt=timeSec;
+   if(support.departed)commit({edge:true,support});
+   else if(before.distance<C.commitDistance&&r.distance>=C.commitDistance&&forwardRoadVelocity>0)commit();
   }
- }
- function complete(){
-  if(finished)return;finished=true;synchronize();
-  if(!notified){notified=true;onComplete({skipped:!!skip,timeSec,duration:C.duration});}
- }
- function coveredReturn(){
-  if(returned||!started||disposed||view().worldOwner!=='return')return;
-  returned=true;onCoveredReturn({skipped:!!skip,timeSec:skip?timeSec:C.impactStart,phase:skip?'return':'impact-black',coverAlpha:1});
- }
- function snapshot(){const pose=view();return{phase:pose.phase,coverAlpha:pose.coverAlpha,worldOwner:pose.worldOwner,timeSec,duration:C.duration,
-  started,paused:paused||hostPaused,finished,disposed,skipped:!!skip,coveredReturn:returned,vehiclePose:clone(pose),driveState:clone(drive),
-  weatherClock:weather.timeSec,weatherRevision:weather.revision,wiperPhase:weather.wiperPhase};}
- function start(){if(started||disposed||finished)return false;started=true;synchronize();return true;}
- function setPaused(value){if(disposed||finished)return false;paused=!!value;synchronize();return paused;}
- function update(dt,{paused:hostIsPaused=false}={}){
-  hostPaused=!!hostIsPaused;synchronize();
-  if(!started||disposed||finished||paused||hostPaused)return snapshot();
-  const elapsed=Math.max(0,finite(dt));if(!elapsed)return snapshot();
-  if(skip){skip.elapsed=Math.min(C.skipCoverSeconds+C.skipReturnSeconds,skip.elapsed+elapsed);synchronize();coveredReturn();if(skip.elapsed>=C.skipCoverSeconds+C.skipReturnSeconds)complete();}
-  else{timeSec=Math.min(C.duration,timeSec+elapsed);integrateWeather(Math.min(timeSec,C.impactStart));synchronize();coveredReturn();if(timeSec>=C.duration)complete();}
-  synchronize();return snapshot();
- }
- function requestSkip(){
-  if(!started||disposed||finished||skip)return false;
-  const current=view();skip={elapsed:0,alpha:current.coverAlpha,owner:current.worldOwner};synchronize();return true;
- }
- function frame(metrics){
-  synchronize();const state=snapshot();
-  if(disposed||!started||finished||state.worldOwner!=='drive')return{...state,renderFrame:null};
-  const p=doorDriveTeaserPoseAt(timeSec),evolution=driveEvolutionFrame(drive),pane=driveWeatherFrame(weather);
-  const base=makeDriveScene(drive,metrics,{headlights:true,wipers:true,showHands:true,weather:pane});
-  const scene=applyDriveTeaserScene(base,{vehicleMatrix:p.bodyMatrix,breakEdge:DRIVE_TEASER_BREAK,look:{yaw:drive.heading,pitch:base.roadPitch+p.lookPitchOffset}});
-  const weatherFrame=driveWeatherFrame(weather,{bodyMatrix:scene.body,cabinMount:metrics.cabinBodyMount,headlamps:scene.lamps.filter(l=>/^drive-headlamp-[01]$/.test(l.id))});
-  // Atmosphere stays with the fixed launch landscape while the glass and its
-  // accumulated water remain attached to the falling cabin.
-  weatherFrame.groundY=worldAt(C.releaseDistance).height;
-  const renderState={...clone(drive),heading:scene.vehicleHeading};
-  return{...state,renderFrame:{active:true,scene,look:scene.look,driveState:renderState,weather:weatherFrame,evolution,
-   radio:programmeFrame(renderState,evolution),recording:{active:false,level:0},
-   readout:{counter:'00:00',mode:'idle',note:'FIELD TAKE · READY'},cinematicLook:true,cameraRoll:0,cameraRig:scene.cameraRig,
-   cinematic:{phase:state.phase,vehiclePose:clone(p),rigRollApplied:false,groundReferenceOnly:true}}};
- }
- function dispose(){if(disposed)return false;disposed=true;drive.paused=true;return true;}
- synchronize();return{start,update,setPaused,skip:requestSkip,snapshot,frame,dispose};
+  if(handControl)handControl.elapsed+=h;
+  const e=driveEvolutionFrame(drive);stepDriveWeather(weather,{...e.weather,rain:.68+.18*smooth(drive.furthest/293),fog:.05+.10*smooth(drive.furthest/293),snow:0,whiteout:0,dt:h,timeSec:drive.programTime,wipers:settings.wipers,speed:drive.speed});synchronize();coveredReturn();}
+ function update(dt,{paused:held=false,input:heldInput=null}={}){hostPaused=!!held;if(heldInput&&controlsEnabled())for(const[k,v]of Object.entries(heldInput))if(['forward','reverse','left','right','brake'].includes(k)){if(v)keys.add(k);else keys.delete(k);}synchronize();if(!started||disposed||finished||paused||hostPaused)return snapshot();const elapsed=Math.max(0,finite(dt));clippedSeconds+=Math.max(0,elapsed-.25);remainder+=Math.min(.25,elapsed);while(remainder+1e-10>=STEP&&!finished){step(STEP);remainder=Math.max(0,remainder-STEP);}synchronize();return snapshot();}
+ function input(action,pressed=true){if(!controlsEnabled())return false;if(!['forward','reverse','left','right','brake'].includes(action))return false;if(pressed)keys.add(action);else keys.delete(action);return true;}
+ function setLook(value){if(!controlsEnabled())return false;look={yaw:clamp(finite(value.yaw),-1.55,1.55),pitch:clamp(finite(value.pitch),-.62,.45)};return true;}
+ function lookDelta(dx=0,dy=0){return setLook({yaw:look.yaw+finite(dx)*.0028,pitch:look.pitch-finite(dy)*.0028});}
+ function operate(kind,callback,preset=null){if(!controlsEnabled()||handControl||!['tune','power','record','play','stop'].includes(kind)||typeof callback!=='function')return false;handControl={kind,preset,callback,elapsed:0,done:false};return true;}
+ function selectStation(id){if(!['service','company','music'].includes(id))return false;return operate('tune',()=>tuneDrive(drive,id),['service','company','music'].indexOf(id));}
+ function power(){return operate('power',()=>powerDrive(drive));}
+ function toggleWipers(){if(!controlsEnabled())return false;return settings.wipers=!settings.wipers;}
+ function toggleHeadlights(){if(!controlsEnabled())return false;return settings.headlights=!settings.headlights;}
+ function setRecordingView(value){recordView={...recordView,...clone(value||{})};return true;}
+ function frame(metrics){metricsCache=metrics;synchronize();const state=snapshot();if(disposed||!started||finished||state.worldOwner!=='drive')return{...state,renderFrame:null};const p=view(),evolution=driveEvolutionFrame(drive),pane=driveWeatherFrame(weather),cinematic=drive.openingCinematic,base=applyOpeningRoadScene(makeDriveScene(drive,metrics,{headlights:settings.headlights,wipers:settings.wipers,showHands:true,weather:pane,handControl}),drive),coast=makeCoastalMemoryScene({timeSec,worldFromLocal:COASTAL_WORLD_FROM_LOCAL,includeWreck:false,mode:'opening',vehicleMetrics:metrics}),scene=applyDriveTeaserScene(base,{vehicleMatrix:p.bodyMatrix,breakEdge:DRIVE_TEASER_BREAK,look:{yaw:drive.heading+p.lookYawOffset,pitch:base.roadPitch+p.lookPitchOffset},cinematic,coastalScene:coast}),weatherFrame=driveWeatherFrame(weather,{bodyMatrix:scene.body,cabinMount:metrics.cabinBodyMount,headlamps:scene.lamps.filter(l=>/^drive-headlamp-[01]$/.test(l.id))});weatherFrame.groundY=force?anchor.height:drive.roadHeight||0;const reach=wheelHandDiagnostics()?.reach;if(handControl&&reach?.kind===handControl.kind){if(!handControl.done&&reach.atContact){handControl.done=true;try{const result=handControl.callback();result?.catch?.(error=>console.error('[opening-drive-control]',error));}catch(error){console.error('[opening-drive-control]',error);}}if(reach.complete)handControl=null;}const renderState={...clone(drive),heading:scene.vehicleHeading},lights=scene.lamps.filter(l=>/^drive-headlamp-[01]$/.test(l.id)).map(l=>{const direction=vector(scene.body,[0,-.02,-1]),length=Math.hypot(...direction);return{position:[l.x,l.y,l.z],direction:direction.map(v=>v/length),intensity:l.intensity||0};}),coastalMemory={active:true,siteMatrix:Array.from(COASTAL_WORLD_FROM_LOCAL),waterY:0,time:timeSec,lights,flood:force?smooth((force.age-force.lead-force.contactFlight)/4):0};return{...state,renderFrame:{active:true,controlsEnabled:state.controlsEnabled,scene,look:scene.look,driveState:renderState,weather:weatherFrame,evolution,coastalMemory,radio:programmeFrame(renderState,evolution),recording:{active:recordView.mode==='record'||!!recordView.recording,level:recordView.level||0},readout:clone(recordView),cinematicLook:!!force,cameraRoll:0,cameraRig:scene.cameraRig,cinematic:{...cinematic,vehiclePose:clone(p),forced:!!force}}};}
+ function requestSkip(){if(!started||disposed||finished||skip)return false;const p=view();skip={age:0,alpha:p.coverAlpha,owner:p.worldOwner};keys.clear();return true;}
+ function dispose(){if(disposed)return false;disposed=true;drive.paused=true;keys.clear();return true;}
+ synchronize();return{start,update,setPaused,skip:requestSkip,snapshot,frame,dispose,input,setLook,lookDelta,operate,selectStation,power,toggleWipers,toggleHeadlights,setRecordingView};
 }

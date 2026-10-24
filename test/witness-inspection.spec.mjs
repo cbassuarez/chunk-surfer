@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { applyWitnessModelAppearance } from '../src/render/witness-model.js';
-import { makeWitnessInspectionScene, witnessInspectionLayout } from '../src/game/witness-inspection.js';
+import { makeWitnessInspectionScene, witnessInspectionLayout, WITNESS_PLATE_CALLOUTS } from '../src/game/witness-inspection.js';
 
 async function model() {
   const bytes = readFileSync(new URL('../public/assets/items/field-recorder-witness.glb', import.meta.url));
@@ -117,4 +117,32 @@ test('all physical inspection controls remain nonoverlapping at supported game c
     }
     for (let i = 1; i < buttons.length; i++) assert.ok(buttons[i].x > buttons[i - 1].x + buttons[i - 1].w);
   }
+});
+
+test('loose-plate annotations identify real screen/key apertures and solid clear acrylic', async () => {
+  const bytes = readFileSync(new URL('../public/assets/items/witness-faceplate.glb', import.meta.url));
+  const root = (await new GLTFLoader().parseAsync(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), '')).scene;
+  const plate = root.getObjectByName('replacement-clear-faceplate'); root.updateMatrixWorld(true);
+  const ray = new THREE.Raycaster(), direction = new THREE.Vector3(0, 0, -1);
+  for (const value of WITNESS_PLATE_CALLOUTS) {
+    const point = plate.localToWorld(new THREE.Vector3(...value.point)); point.z += 1;
+    ray.set(point, direction); const hits = ray.intersectObject(plate);
+    assert.equal(hits.length > 0, value.id === 'cover', `${value.label}: the annotation must match the real exported geometry`);
+  }
+  assert.equal(WITNESS_PLATE_CALLOUTS.length, 3);
+});
+
+test('inspection names the other view and key testing leaves the empty plate to demonstrate the complete recorder', async () => {
+  for (const [mode, expected] of [['recorder', 'LOOSE PLATE'], ['plate', 'FITTED PREVIEW']]) {
+    assert.equal(witnessInspectionLayout(189, 52, true, mode).buttons.find(button => button.id === 'model').label, expected);
+  }
+  const events = [], cosmetics = { buttons: 'signal', vfd: 'ice' };
+  const scene = makeWitnessInspectionScene({ initialMode: 'plate', owned: true, cosmetics, onFit: () => events.push('fit') });
+  await scene.ready; assert.equal(scene.view().mode, 'plate');
+  scene.key({ key: 'k' });
+  assert.equal(scene.view().mode, 'recorder'); assert.equal(scene.view().testing, true);
+  assert.deepEqual(events, [], 'preview key test cannot fit, save or record');
+  for (let index = 0; index < 8; index++) scene.update(.1);
+  assert.equal(scene.view().testing, false); assert.deepEqual(cosmetics, { buttons: 'signal', vfd: 'ice' });
+  scene.exit();
 });

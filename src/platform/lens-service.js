@@ -57,3 +57,22 @@ export async function stopNativeLens() {
   const { invoke } = await import('@tauri-apps/api/core');
   await invoke('chunk_lens_stop');
 }
+
+// The God menu's NUKE ALL SD INSTANCES, on the desktop build: stop the lens this
+// app manages and end every other copy of this game's lens, any chunk-lens
+// sidecar (orphans keep a model in memory for days) and any checkout's dev lens
+// server. Diffusion servers that are not this game's are reported, never
+// touched. Returns { stoppedManaged, killed, foreign }.
+export async function nukeNativeLens() {
+  if (!IS_TAURI) return { stoppedManaged: false, killed: [], foreign: [] };
+  const { invoke } = await import('@tauri-apps/api/core');
+  publishBootstrap({ state: 'stopped', detail: 'nuked from the God menu' });
+  return invoke('chunk_lens_nuke');
+}
+
+// What the nuke would end, without ending anything.
+export async function scanNativeLens() {
+  if (!IS_TAURI) return { managed: false, running: [], foreign: [] };
+  const { invoke } = await import('@tauri-apps/api/core');
+  return invoke('chunk_lens_scan');
+}

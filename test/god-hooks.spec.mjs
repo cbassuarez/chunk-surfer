@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {conservatory} from '../src/data/floorplan/conservatory.js';
-import {GOD_DOOR_HOOKS,GOD_LOCATION_HOOKS} from '../src/data/god-hooks.js';
+import {GOD_DOOR_HOOKS,GOD_LOCATION_HOOKS,GOD_PLACE_HOOKS,GOD_PLACE_SECTIONS} from '../src/data/god-hooks.js';
+import {FACILITY_SPACES} from '../src/data/building-map.js';
 import * as FP from '../src/world/floorplan.js';
 import * as PROPS from '../src/game/props.js';
 
@@ -17,7 +18,7 @@ test('Hall hook creates the physical render plan used by live study entry',()=>{
 });
 
 test('every God location is one authored scale conversion with its exact facing and context',()=>{
-  assert.equal(Object.keys(GOD_LOCATION_HOOKS).length,29);
+  assert.equal(Object.keys(GOD_LOCATION_HOOKS).length,82);
   for(const[id,hook]of Object.entries(GOD_LOCATION_HOOKS)){
     const at=FP.toRuntimePoint(hook.at),physical=FP.logicalToPhysical(at.x,at.y);
     assert.equal(FP.isSolid(at.x,at.y),false,id);
@@ -45,5 +46,21 @@ test('door showcases resolve stable ids on their authored circulation side',()=>
     assert.equal(physical.spaceId,hook.component,hook.doorId);
     assert.equal(PROPS.propCanOccupy(at.x,at.y),true,hook.doorId);
     assert.ok(Math.abs(FP.floorAt(at.x,at.y)-hook.floor)<.12,hook.doorId);
+  }
+});
+
+test('the PLACES tab lists every place hook once, and every room on the map has a warp',()=>{
+  const listed=GOD_PLACE_SECTIONS.flatMap((section)=>section.hooks.map(([id])=>id));
+  assert.deepEqual([...listed].sort(),Object.keys(GOD_PLACE_HOOKS).sort());
+  assert.equal(new Set(listed).size,listed.length);
+  for(const section of GOD_PLACE_SECTIONS)for(const [id,label] of section.hooks){
+    assert.ok(GOD_LOCATION_HOOKS[id],id);assert.ok(label&&label===label.toUpperCase(),id);
+  }
+  // A room the map can name but the menu cannot reach is the gap this closes.
+  for(const space of FACILITY_SPACES){
+    const id=space.id.slice('space:'.length);
+    const covered=GOD_LOCATION_HOOKS[id]||GOD_LOCATION_HOOKS[`place-${id}`]
+      ||['loading-bay','get-in','atrium','academic-gallery','academic-roof','plant-room'].includes(id);
+    assert.ok(covered,`${id} has no God warp`);
   }
 });

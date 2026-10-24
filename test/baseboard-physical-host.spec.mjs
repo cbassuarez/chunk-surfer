@@ -25,7 +25,10 @@ test('the actual academic landing seam is air on both sides and cannot carry a f
   const before=cell(129,72),after=cell(129,73);
   assert.equal(before.solid,0);assert.equal(after.solid,0);
   assert.ok(before.floor<10&&before.ceil>10.115);
-  assert.equal(after.floor,10);assert.ok(after.ceil>10.115);
+  // Both cells are inside the main stairwell since stair revision 4: the grid
+  // there is air to the roof and the landing is the stair GLB's, so the seam
+  // is air on both sides at every height, not a grid floor at 10 m.
+  assert.ok(after.floor<10&&after.ceil>10.115);
   // Native33010/c49: run868 produced box85, a6m line at worldz36.5.
   for(let x=300;x<311;x++)assert.equal(baseboardFaceHasPhysicalHost(FP,face(x,128,0,1)),false,
     `landing north edge ${x},128 is an authored-space join, not a wall`);

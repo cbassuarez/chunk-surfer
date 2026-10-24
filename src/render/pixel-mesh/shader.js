@@ -107,6 +107,16 @@ uniform vec4 uHushBodyPost;
 // which owns the catalogue and the CPU mirror these are tested against.
 // 0 stochastic (the isolated dots this shipped with), 1 hatch, 2 cross-hatch.
 uniform int uScreenKind;
+// The van the camera rides in: world to van metres, the van's box, and how
+// its cab is screened (0 as the world, 1 hatch, 2 contours and lit only).
+uniform float uVehicleActive;
+uniform mat4 uWorldToVehicle;
+uniform vec3 uVehicleBoxMin;
+uniform vec3 uVehicleBoxMax;
+uniform float uCabinScreen;
+int gScreenKind;
+// View metres from the packed depth (the inverse of 1/(1+.14d)).
+float cabViewDepth(float packedDepth){ return max(0.0, (1.0 / max(packedDepth, 1e-6) - 1.0) / 0.14); }
 // Stroke period in SCREEN PIXELS, not world units. That is the whole reason
 // hatching survives distance: a world-space period mips down into the dust it
 // was meant to replace, so the frequency belongs to the plate while the
@@ -314,11 +324,11 @@ vec2 rotateDir(vec2 d, float a){
 // The screen. Mirrored on the CPU in pixel-mesh/screens.js, which is where the
 // stroke morphology is actually tested.
 float screenThreshold(vec2 fragPx, vec2 dir, float tone, float jitterValue, float stochastic){
-  if(uScreenKind == 0) return stochastic;
+  if(gScreenKind == 0) return stochastic;
   float phase = (jitterValue - 0.5) * uScreenJitter;
   float t = pow(strokeDistance(fragPx, rotateDir(dir, uScreenAngles.x), uScreenPeriodPx, phase),
                 max(0.05, uScreenSharpness));
-  if(uScreenKind == 2){
+  if(gScreenKind == 2){
     // White line on a black ground: extra directions are extra LIGHT, so they
     // arrive as the surface brightens. min() because a fragment near any active
     // stroke is lit.
@@ -542,6 +552,21 @@ void main(){
   // crossed with a stipple.
   float packedDepth = texture(uDepth, fullUv).a;
   vec3 worldMetres = reconstructWorldMetres(frag, packedDepth);
+  // THE CAB RIDES WITH THE CAMERA. Every mark below is keyed to the surface it
+  // lands on in world metres, so a fixed wall keeps its marks while the eye
+  // moves. The cab is not fixed in the world: it travels with the eye, so in
+  // world metres its keys change every frame and its marks crawl. Inside the
+  // van's own box the key is the van's metres.
+  vec3 pinMetres = worldMetres;
+  float inCab = 0.0;
+  gScreenKind = uScreenKind;
+  if(uVehicleActive > 0.5){
+    vec3 local = (uWorldToVehicle * vec4(worldMetres, 1.0)).xyz;
+    if(all(greaterThan(local, uVehicleBoxMin)) && all(lessThan(local, uVehicleBoxMax))){
+      pinMetres = local; inCab = 1.0;
+      if(uCabinScreen > 0.5 && uCabinScreen < 1.5) gScreenKind = 1;
+    }
+  }
   vec4 markSample = texture(uMarks, fullUv);
   float quietMetal=quietMetalTexel(ivec2(frag));
   float roofSurface=roofSurfaceTexel(ivec2(frag));
@@ -572,7 +597,7 @@ void main(){
   vec3 markGrain = markSample.r > 0.0 ? markGrainWorld(markSample) : vec3(0.0);
   // A fixed plate angle for anything with no grain of its own, offset per screen
   // cell so an entire untextured wall does not become one continuous comb.
-  vec2 screenDir = grainToScreen(markGrain, worldMetres, 0.6283);
+  vec2 screenDir = grainToScreen(markGrain, pinMetres, 0.6283);
   float cell = max(1.0, uCellPx);
   vec2 cellId = floor(plateFrag / cell);
   vec2 cellCenter = (cellId + 0.5) * cell - plateOffset;
@@ -974,10 +999,10 @@ void main(){
   // than modulating it, because a stroke crossed with a dot field reads as
   // neither. Density still shifts the threshold either way, so a louder bank
   // still earns its extra marks.
-  float stippleThreshold = formStipple(worldMetres, uRecordingIrregularity, markDensity, markGrain);
-  if(uScreenKind != 0){
+  float stippleThreshold = formStipple(pinMetres, uRecordingIrregularity, markDensity, markGrain);
+  if(gScreenKind != 0){
     float hatched = screenThreshold(plateFrag, screenDir, halfTone,
-      recordingHash3(floor(worldMetres * 3.1)), stippleThreshold);
+      recordingHash3(floor(pinMetres * 3.1)), stippleThreshold);
     stippleThreshold = clamp(hatched - (markDensity - 0.22) * uMarkDensityGain, 0.0, 1.0);
   }
   float captureBit = step(stippleThreshold, halfTone) * hasCapturedLight;
@@ -988,8 +1013,8 @@ void main(){
     // Curving their mixture twice erased narrow stems into a white centre.
     vec2 endpointHalfTone=smoothstep(vec2(.14),vec2(.76),printEndpointTone);
     vec2 endpointThreshold=vec2(stippleThreshold);
-    if(uScreenKind!=0){
-      float jitter=recordingHash3(floor(worldMetres*3.1));
+    if(gScreenKind!=0){
+      float jitter=recordingHash3(floor(pinMetres*3.1));
       endpointThreshold=vec2(
         screenThreshold(plateFrag,screenDir,endpointHalfTone.x,jitter,stippleThreshold),
         screenThreshold(plateFrag,screenDir,endpointHalfTone.y,jitter,stippleThreshold));
@@ -1008,8 +1033,8 @@ void main(){
       // Manufacturing area is linear: the light screen's density curve and
       // extra highlight hatch directions must not curve the area a second time.
       float areaThreshold=stippleThreshold;
-      if(uScreenKind!=0){
-        float jitter=recordingHash3(floor(worldMetres*3.1));
+      if(gScreenKind!=0){
+        float jitter=recordingHash3(floor(pinMetres*3.1));
         areaThreshold=strokeDistance(plateFrag,rotateDir(screenDir,uScreenAngles.x),uScreenPeriodPx,(jitter-.5)*uScreenJitter);
       }
       pigmentSample=printedAreaPigmentSample(printed.y,areaThreshold);
@@ -1076,6 +1101,19 @@ void main(){
   vec3 roofSurfaceInk=vec3(.300,.355,.365);
   captureLight=mix(captureLight,roofSurfaceInk,roofSurface);
   captureLight=mix(captureLight,vec3(.55,.66,.69),roofGlass);
+  // Contours only: the cab keeps its outlines and what is actually lit (dials,
+  // a lamp, the radio window) and drops its tone screen. The world's line pass
+  // reads depth normalised to the far plane, which is nearly flat across a cab
+  // a metre away; the cab draws its own: the relative second difference of
+  // view depth, zero on a flat panel, strong at a silhouette or a crease.
+  if(inCab > 0.5 && uCabinScreen > 1.5){
+    vec2 tx = 1.0 / uRes;
+    float dC = cabViewDepth(packedDepth);
+    float dX = cabViewDepth(texture(uDepth, fullUv - vec2(tx.x, 0.0)).a) + cabViewDepth(texture(uDepth, fullUv + vec2(tx.x, 0.0)).a);
+    float dY = cabViewDepth(texture(uDepth, fullUv - vec2(0.0, tx.y)).a) + cabViewDepth(texture(uDepth, fullUv + vec2(0.0, tx.y)).a);
+    float crease = (abs(dX - 2.0 * dC) + abs(dY - 2.0 * dC)) / max(dC, 0.05);
+    captureBit = max(step(0.82, formTone) * hasCapturedLight, max(step(0.35, line), step(0.035, crease)));
+  }
   vec3 oneBitScene = mix(captureDark, captureLight, captureBit);
   finalColor = mix(finalColor, oneBitScene, clamp(uRecordingCaptureMix, 0.0, 1.0));
   // Still engraved glass, with enough of its real wet reflection and the

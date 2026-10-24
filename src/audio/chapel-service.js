@@ -45,7 +45,7 @@ export function createChapelServiceRuntime({ context, destination, urlFor,
 } = {}) {
   const idle = { active: false, audible: false, loaded: false, sourceCount: 0, voices: [] };
   if (!context || !destination || typeof urlFor !== 'function') return {
-    update: () => idle, frame: () => idle, stop() {}, dispose() {}, ready: async () => false,
+    update: () => idle, frame: () => idle, stop() {}, dispose() {}, ready: async () => false, buffer: () => null,
   };
   const master = context.createGain(); master.gain.value = 0;
   master.connect(destination);
@@ -194,5 +194,7 @@ export function createChapelServiceRuntime({ context, destination, urlFor,
     master.disconnect(); convolver.disconnect(); reverbOutput.disconnect();
     stations.clear(); buffers.clear();
   }
-  return { update, frame: () => last, ready: load, stop, dispose };
+  // The murmur (audio/chapel-murmur.js) cuts its grains from these same decoded
+  // clips rather than decoding the recitation a second time.
+  return { update, frame: () => last, ready: load, stop, dispose, buffer: id => buffers.get(id) || null };
 }

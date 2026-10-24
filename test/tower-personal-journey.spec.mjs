@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { buildBellsGodPreset } from '../src/game/chunk-surf-god.js';
+import { COASTAL_MEMORY_LAYOUT } from '../src/data/coastal-memory.js';
 import { TOWER_PERSONAL_JOURNEY as PLAN, TOWER_PERSONAL_STAGE_IDS, TOWER_PERSONAL_WORLD_IDS,
   towerPersonalWorld, towerPersonalSupportAt } from '../src/data/tower-personal-journey.js';
 import { normalizeTowerPersonalJourney, beginTowerPersonalJourney, tickTowerPersonalJourney,
@@ -88,7 +89,7 @@ test('the voluntary invitation remains reachable and ungated across seeded door 
   }
 });
 
-test('runtime entry clears the old crossing and early leave cannot restore the road', async () => {
+test('new invitation borrows the coastal owner without relocating the Source body', async () => {
   const { createSourceSpaceRuntime } = await import('../src/game/source-space-runtime.js');
   const rt = make(createSourceSpaceRuntime, 31), door = rt.doorFieldDoors().find((entry) => entry.personal);
   const [a, b] = door.threshold, [nx, , nz] = door.normal;
@@ -96,32 +97,30 @@ test('runtime entry clears the old crossing and early leave cannot restore the r
     facing: roadPose.facing, yaw: roadPose.yaw, pitch: roadPose.pitch };
   const to = { x: (a.x + b.x) / 2 - nx * 2, y: (a.y + b.y) / 2 - nz * 2 };
   rt.setPlayerPosition(from); rt.openDoorFieldDoor(door.id);
-  assert.equal(rt.onStep(from, to).event, 'personal-entry');
-  const frame = rt.towerLandFrame();
-  assert.equal(frame.active, true); assert.equal(frame.stage, 'school-hall');
+  const entered = rt.onStep(from, to), frame = rt.coastalMemoryState();
+  assert.equal(entered.event, 'coastal-entry'); assert.deepEqual(entered.position, from);
+  assert.equal(frame.active, true); assert.deepEqual(frame.pose, COASTAL_MEMORY_LAYOUT.spawn);
   assert.deepEqual(frame.returnPose, from);
   assert.equal(rt.state().station.crossing, null); assert.equal(rt.state().station.walk, null);
-  assert.ok(rt.geometry.cellAt(frame.pose.x, frame.pose.y));
-  assert.equal(rt.tickBellField(8), null);
-  assert.equal(rt.leaveTowerLand(), null);
-  assert.equal(rt.state().station.personal.rewardEarned, false);
+  assert.equal(rt.state().station.personal.active, false);
+  assert.equal(rt.tickBellField(8), null); assert.equal(rt.finishCoastalMemory(), null);
+  assert.equal(frame.rewardEarned, false);
   const resumed = createSourceSpaceRuntime({ initialState: JSON.parse(JSON.stringify(rt.state())) });
-  assert.deepEqual(resumed.towerLandFrame().localPose, frame.localPose);
-  assert.deepEqual(resumed.towerLandFrame().returnPose, from);
-  assert.equal(resumed.leaveTowerLand(), null);
+  assert.deepEqual(resumed.coastalMemoryState(), frame);
+  assert.deepEqual(resumed.onStep(from, to).position, from);
 });
 
-test('legacy lock-in entry saves recover onto the committed physical hall without a wrong return', async () => {
+test('legacy lock-in crossing recovers to a fresh coastal visit without a wrong-return timer', async () => {
   const { createSourceSpaceRuntime } = await import('../src/game/source-space-runtime.js');
   const built = make(createSourceSpaceRuntime), door = built.doorFieldDoors().find((entry) => entry.personal);
   const rt = make(createSourceSpaceRuntime, 4417, { station: { crossing: { id: door.id, variant: 6,
     world: 'school-hall', lockIn: true, wrong: true, released: true, startedAt: 0, forward: [0,-1] },
     walk: { kind: 'lock-in', progress: 1 } }, routeDoorsErased: [door.id] });
-  const frame = rt.towerLandFrame();
-  assert.equal(frame.active, true); assert.equal(frame.version, 2);
-  assert.ok(rt.geometry.cellAt(frame.pose.x, frame.pose.y));
-  assert.equal(rt.state().station.crossing, null); assert.equal(rt.tickBellField(2), null);
-  assert.equal(rt.leaveTowerLand(), null);
+  const frame = rt.coastalMemoryState();
+  assert.equal(frame.active, true); assert.equal(frame.version, 1); assert.equal(frame.entryDoorId, door.id);
+  assert.deepEqual(frame.pose, COASTAL_MEMORY_LAYOUT.spawn); assert.equal(frame.recordingHeard, false);
+  assert.equal(rt.state().station.personal.active, false); assert.equal(rt.state().station.crossing, null);
+  assert.equal(rt.tickBellField(2), null); assert.equal(rt.finishCoastalMemory(), null);
 });
 
 test('all authored routes, loops, door apertures and arrivals have shared physical footing', () => {

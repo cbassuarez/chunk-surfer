@@ -6,6 +6,27 @@ const outside=(r,x,z)=>Math.max(r.x0-x,x-r.x1,r.z0-z,z-r.z1);
 const atY=(p,y)=>({x:p.x-A.direction.x*(y-p.y),z:p.z-A.direction.z*(y-p.y)});
 const finite=p=>p&&[p.x,p.y,p.z].every(Number.isFinite);
 export const academicAtriumLightEnabled=context=>context?.academicAtriumLight===true&&A.contextGroups.includes(context?.group);
+// Only these two already-rendered hollow bodies change material readability.
+// Exact names prevent a named resident, ordinary guest or Source mesh inheriting
+// a preceding draw's response. Geometry, depth, collision and state stay real.
+export const academicAtriumHollowKind=meshName=>meshName==='academic_population_hollow_coat'?1:meshName==='academic_population_unfinished_visitor'?2:0;
+export const ACADEMIC_ATRIUM_HOLLOW_REVEAL=Object.freeze({silhouette:.25,shaftLow:.08,shaftHigh:.65,torchLow:.10,torchHigh:.55,fillEnergy:.72,paleMix:.35,paleScale:.42,minimumDiffuse:.55});
+export function academicAtriumHollowReadability(point,{enabled=false,meshName='',torchCharge=0}={}){
+  if(!enabled||!academicAtriumHollowKind(meshName))return 1;
+  const H=ACADEMIC_ATRIUM_HOLLOW_REVEAL;
+  const shaft=smooth(H.shaftLow,H.shaftHigh,academicAtriumLightSample(point,{enabled:true}).strength);
+  const torch=smooth(H.torchLow,H.torchHigh,Number.isFinite(torchCharge)?torchCharge:0);
+  return H.silhouette+(1-H.silhouette)*Math.max(shaft,torch);
+}
+export function academicAtriumHollowColor(point,{enabled=false,meshName='',torchCharge=0,normal=[0,1,0],base=[.2,.2,.2],color=[0,0,0]}={}){
+  if(!enabled||!academicAtriumHollowKind(meshName))return [...color];
+  const H=ACADEMIC_ATRIUM_HOLLOW_REVEAL,shaft=smooth(H.shaftLow,H.shaftHigh,academicAtriumLightSample(point,{enabled:true}).strength);
+  const towards=[-A.direction.x,1,-A.direction.z],length=Math.hypot(...towards),lambert=Math.max(0,normal.reduce((sum,v,i)=>sum+v*towards[i]/length,0));
+  const fill=H.fillEnergy*shaft*(H.minimumDiffuse+(1-H.minimumDiffuse)*lambert);
+  const factor=academicAtriumHollowReadability(point,{enabled,meshName,torchCharge});
+  return color.map((v,i)=>v*factor+(base[i]*(1-H.paleMix)+A.color[i]*H.paleScale*H.paleMix)*fill);
+}
+
 export function academicAtriumLightSample(point,{enabled=false}={}){
   if(!enabled||!finite(point)||point.y<A.groundY||point.y>A.roofY)return{strength:0,reason:'inactive-or-outside',roof:null};
   const roof=atY(point,A.roofY);
@@ -105,6 +126,19 @@ float academicAtriumRoofRayEnd(vec3 origin,vec3 direction){
   return (floorY-origin.y)/direction.y;
 }
 vec3 academicAtriumSurfaceLight(vec3 p,vec3 n){return AAL_COLOR*AAL_ENERGY*academicAtriumSkyAt(p)*(.14+.86*max(dot(n,AAL_TOWARDS),0.0));}
+float academicAtriumHollowReadability(vec3 p,float torchCharge){
+  if(uAcademicAtriumLight<.5)return 1.0;
+  float reveal=max(smoothstep(${f(ACADEMIC_ATRIUM_HOLLOW_REVEAL.shaftLow)},${f(ACADEMIC_ATRIUM_HOLLOW_REVEAL.shaftHigh)},academicAtriumSkyAt(p)),smoothstep(${f(ACADEMIC_ATRIUM_HOLLOW_REVEAL.torchLow)},${f(ACADEMIC_ATRIUM_HOLLOW_REVEAL.torchHigh)},torchCharge));
+  return mix(${f(ACADEMIC_ATRIUM_HOLLOW_REVEAL.silhouette)},1.0,reveal);
+}
+vec3 academicAtriumHollowColor(vec3 p,vec3 n,vec3 base,vec3 color,float torchCharge){
+  if(uAcademicAtriumLight<.5)return color;
+  float shaft=smoothstep(${f(ACADEMIC_ATRIUM_HOLLOW_REVEAL.shaftLow)},${f(ACADEMIC_ATRIUM_HOLLOW_REVEAL.shaftHigh)},academicAtriumSkyAt(p));
+  float diffuse=${f(ACADEMIC_ATRIUM_HOLLOW_REVEAL.minimumDiffuse)}+${f(1-ACADEMIC_ATRIUM_HOLLOW_REVEAL.minimumDiffuse)}*max(dot(n,AAL_TOWARDS),0.0);
+  vec3 pale=mix(base,AAL_COLOR*${f(ACADEMIC_ATRIUM_HOLLOW_REVEAL.paleScale)},${f(ACADEMIC_ATRIUM_HOLLOW_REVEAL.paleMix)});
+  return color*academicAtriumHollowReadability(p,torchCharge)+pale*${f(ACADEMIC_ATRIUM_HOLLOW_REVEAL.fillEnergy)}*shaft*diffuse;
+}
+
 float academicAtriumSkyVolume(vec3 origin,vec3 direction,float maxDistance){
   if(uAcademicAtriumLight<.5)return 0.0;
   float near=0.0,far=maxDistance;vec3 minimum=${v(A.bounds.min)},maximum=${v(A.bounds.max)};

@@ -1,6 +1,8 @@
-"""One RHD forward-control cabin, isolated Source driving study.
-Authored generic geometry; not a claim of a specific vehicle make/year.
-Blender: game XYZ metres, forward -Z, converted to glTF Y-up.
+"""One RHD Ford Transit Mk3 (VE6) panel van cabin for the Source drive, the opening
+vehicle scene and the get-in teaser. Blender: game XYZ metres, forward -Z, converted to glTF Y-up.
+The driver package (eye, wheel, receiver, DA-1000, seat cushions) is unchanged from
+cabin v3; shell, dash, wheel spokes, body and tyres are the Mk3's. Sources and the
+measured comparison: the Transit Cab Study (Commercial Motor 13 Dec 1986, 31 Mar 1988).
 Run /Applications/Blender.app/Contents/MacOS/Blender --factory-startup -b --python tools/chunk_surfer/source-drive-study/build-drive-cabin.py
 """
 import bpy,bmesh,math,json,os,hashlib,shutil,struct
@@ -8,6 +10,9 @@ import numpy as np
 from mathutils import Vector,Matrix
 from math import sin,cos,pi
 ROOT=os.path.abspath(os.path.join(os.path.dirname(__file__),'../../..'))
+# The Mk3 package, measured from the 1988 Commercial Motor photographs and published
+# dimensions. Cab-local metres; body-frame z = cab z + MOUNT.
+V={'label': 'Ford Transit Mk3 (VE6) 100 SWB panel van, 2.0 OHC petrol (UK, 1987)', 'wheelbase': 2.835, 'front': 1.3, 'track': 1.66, 'tyreR': 0.33, 'studs': 5, 'hw': 0.97, 'card': 0.84, 'dashHW': 0.84, 'noseHW': 0.965, 'roofOut': 2.02, 'roofIn': 1.93, 'sb': (1.27, -0.98), 'st': (1.79, -0.36), 'swb': 0.87, 'swt': 0.81, 'doorF': -0.62, 'doorB': 0.38, 'bPost': 0.1, 'belt': 1.25, 'winTop': 1.79, 'door': 'hinged', 'fascia': -0.6, 'dashTop': 1.245, 'hood': (0.27, 0.73, 1.355), 'gauges': [('fuel', 0.385, 0.05), ('speed', 0.575, 0.062)], 'speedLabels': [0, 20, 40, 60, 80], 'bulkhead': 0.82, 'pedalZ': -0.66, 'toe': -0.8, 'gear': ((-0.1, 0.8, -0.03), (-0.12, 1.07, -0.13)), 'pedals': [(0.31, -0.6), (0.43, -0.62), (0.55, -0.66)], 'mirror': (1.07, 1.4, -0.7), 'mirrorL': (1.35, -0.65), 'aPost': 0.05, 'headliner': True, 'colours': {'body': (0.5, 0.49, 0.455), 'dash': (0.185, 0.19, 0.195), 'trim': (0.19, 0.195, 0.2), 'cloth': (0.18, 0.19, 0.2), 'felt': (0.25, 0.25, 0.24)}, 'length': 4.616, 'frontOverhang': 0.86, 'height': 2.02, 'bodyHW': 0.965, 'nose': [(0.4, -2.16), (0.9, -2.16), (0.97, -2.09), (1.27, -1.43)], 'lamps': 'flush', 'spokes': [-0.1, 3.241592653589793], 'dish': 0.026, 'hub': (0.14, 0.1)}
 OUT=os.path.join(ROOT,'artifacts/source-drive-study')
 GEO=os.path.join(OUT,'geometry');os.makedirs(GEO,exist_ok=True)
 bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -153,200 +158,282 @@ def upholstered(sx,kind):
   line(kind+' sewn panel join',path,.0023,'seam',6)
  return o
 
-# A complete double-skin lower cabin, with a formed firewall and the actual
-# engine access cover between the two seat pedestals. All dimensions in metres.
-box('cab floor',(0,.615,-.02),(1.81,.065,2.02),'rubber',.012)
-formed('pressed sloping firewall',[(.64,-1.035),(.65,-1.075),(1.15,-1.195),(1.18,-1.155),(1.08,-1.06)],'x',[-.86,.86],'paint',.009)
-formed('engine access doghouse',[(.66,-.61),(.77,-.60),(.865,-.40),(.88,.41),(.72,.57),(.65,.57)],'x',[-.19,.19],'dash',.028)
-line('engine cover lid gasket',[(-.186,.873,-.36),(-.186,.878,.39),(.186,.878,.39),(.186,.873,-.36)],.005,'rubber',8)
-for x in [-.18,.18]:
- box('engine cover captive latch',(x,.815,-.49),(.025,.065,.016),'metal',.006)
+# Transit cab shell, dash and fittings around the fixed driver package.
+# Exec'd inside the drive-cabin builder: box/mesh/cyl/line/formed/hood/upholstered,
+# M, mat and V (the selected variant) are in scope. Cab-local metres.
+def slab(name,quad,t,m):
+ a,b,c,d=[np.array(p,dtype=float)for p in quad];n=np.cross(b-a,d-a);n=n/np.linalg.norm(n)*t
+ vs=[tuple(p)for p in(a,b,c,d)]+[tuple(p+n)for p in(a,b,c,d)]
+ o=mesh(name,vs,[(0,1,2,3),(7,6,5,4),(0,4,5,1),(1,5,6,2),(2,6,7,3),(3,7,4,0)],m)
+ bm=bmesh.new();bm.from_mesh(o.data);bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces));bm.to_mesh(o.data);bm.free();return o
+def lerp(p,q,t):return tuple(p[i]+(q[i]-p[i])*t for i in range(3))
+C=V['colours']
+M['body']=mat('van body enamel / exposed painted steel',C['body'],.12,.52)
+M['trim']=mat('grey moulded vinyl trim',C['trim'],0,.82)
+M['seat']=mat('grey woven seat cloth',C['cloth'],0,.97)
+M['seam']=mat('seat cloth seam',tuple(v*.55 for v in C['cloth']),0,.95)
+M['cabin_dash']=mat('moulded dash polymer',C['dash'],0,.80)
+M['cabin_felt']=mat('cab headlining',C['felt'],0,.97)
+surface_texture('seat',13,.07)
+# Painted steel and moulded vinyl carry their own grain, like every other cab stock.
+surface_texture('body',17,.04);surface_texture('trim',18,.07)
+hw,card,sb,st,swb,swt=V['hw'],V['card'],V['sb'],V['st'],V['swb'],V['swt']
+dF,dB,belt,winTop,roofIn,roofOut=V['doorF'],V['doorB'],V['belt'],V['winTop'],V['roofIn'],V['roofOut']
+rear=V['bulkhead'] if V['bulkhead'] is not None else .80
+AXF=-.85;MOUNT=-V['front']-AXF;AXR=AXF+V['wheelbase'];LOAD_REAR=V['length']-V['frontOverhang']+AXF
+def screen_at(y):t=(y-sb[0])/(st[0]-sb[0]);return sb[1]+t*(st[1]-sb[1])
+# Floor, toe board and a gearbox tunnel. No engine doghouse: the Transit's engine
+# lives under the bonnet; the cab floor carries a tunnel and an offset lever.
+box('cab floor',(0,.615,(V['toe']+rear)/2),(2*card+.04,.065,rear-V['toe']+.04),'rubber',.012)
+formed('pressed toe board',[(.60,V['toe']),(.66,V['toe']),(1.17,sb[1]+.02),(1.17,sb[1]-.06),(.60,sb[1]-.06)],'x',[-card,card],'body',.009)
+formed('gearbox tunnel',[(.645,V['toe']-.02),(.80,V['toe']-.06),(.79,-.30),(.70,.05),(.645,.10)],'x',[-.16,.16],'rubber',.03)
 for side in [-1,1]:
- # The ribbed floor mat sits within a real pressed footwell, with an outer
- # step and a heel pad; it never extends into the pedal travel envelope.
- box('footwell heel mat',(side*.48,.657,-.34),(.47,.017,.60),'rubber',.021,3)
- for j in range(5):box('moulded footwell mat channel',(side*.48-.19+j*.095,.668,-.32),(.011,.004,.49),'dash',.002)
- box('door threshold step',(side*.835,.662,.10),(.12,.055,1.55),'paint',.014,3)
- box('threshold tread insert',(side*.827,.693,.10),(.083,.012,1.32),'rubber',.007)
- for z in [-.47,.65]:cyl('threshold fixing',(side*.827,.7,z),(side*.827,.704,z),.006,'metal',10)
-
+ box('footwell ribbed mat',(side*.48,.657,(V['toe']+.10)/2),(.44,.017,abs(V['toe'])+.06),'rubber',.02,3)
+ for j in range(5):box('footwell mat rib',(side*.48-.18+j*.09,.668,(V['toe']+.10)/2),(.011,.004,abs(V['toe'])-.06),'trim',.002)
+ # The inner front wheel housing intrudes beside the pedals: a Transit trait.
+ formed('front wheel housing',[(.645,V['toe']-.02),(.645,dF+.01),(.80,dF+.01),(.92,(dF+V['toe'])/2),(.96,V['toe']-.02)],'x',sorted([side*(card-.13),side*card]),'body',.02)
+ slab('footwell kick panel',[(side*card,.64,sb[1]+.02),(side*card,.64,dF),(side*card,1.12,dF),(side*card,1.12,sb[1]+.02)],.03*side,'trim')
+ box('door threshold step',(side*(card+.03),.662,(dF+dB)/2),(.12,.055,dB-dF),'body',.014,3)
+ box('threshold tread insert',(side*(card+.025),.693,(dF+dB)/2),(.083,.012,dB-dF-.12),'rubber',.007)
+# Doors. Hinged steel doors with wind-down glass (Mk2/Mk3), or Bedwas sliding
+# doors: a bare panel with an alloy-framed sliding window and bolt heads.
 for side in [-1,1]:
- x=side*.905
- box('outer pressed door shell',(x,.965,-.02),(.055,.65,1.85),'paint',.024,3)
- # The upholstered fibreboard card has a continuous backed edge. Raised
- # painted inner steel around it is visible as a real manufactured assembly.
- box('inner pressed door pan',(side*.865,.995,-.035),(.034,.47,1.61),'paint',.028,4)
- box('door card rolled border',(side*.842,1.007,-.025),(.024,.365,1.36),'dash',.027,4)
- box('door card woven inset',(side*.827,1.015,-.025),(.014,.31,1.28),'felt',.024,4)
- box('door lower kick plate',(side*.848,.79,-.05),(.022,.13,1.45),'rubber',.016,3)
- box('door upper bolster',(side*.857,1.235,-.10),(.072,.095,1.65),'dash',.022,3)
- for z in [-.68,.61]:
-  for y in [.875,1.15]:cyl('recessed door card screw',(side*.812,y,z),(side*.807,y,z),.005,'metal',10)
- # Solid escutcheons back the pull and latch, instead of floating hardware.
- box('door pull escutcheon',(side*.814,1.046,-.10),(.018,.075,.31),'rubber',.017,3)
- line('door pull',[(side*.805,1.045,-.23),(side*.777,1.069,-.18),(side*.777,1.069,.00),(side*.805,1.045,.055)],.016,'dash',12)
- box('door latch recess',(side*.811,1.17,-.53),(.018,.062,.14),'rubber',.014,3)
- line('interior release lever',[(side*.796,1.17,-.575),(side*.783,1.175,-.49)],.009,'edge',12)
- cyl('window winder spindle',(side*.814,1.104,.27),(side*.779,1.104,.27),.024,'metal',20)
- line('window crank',[(side*.776,1.104,.27),(side*.770,1.153,.18)],.012,'edge',12)
- cyl('window crank grip',(side*.770,1.153,.18),(side*.745,1.153,.18),.019,'rubber',16)
- # The map pocket has an open mouth and an actual bottom, not a solid plaque.
- box('door pocket back',(side*.818,.897,.40),(.016,.15,.39),'dash',.012,3)
- box('door pocket front',(side*.763,.87,.40),(.018,.095,.39),'dash',.014,3)
- box('door pocket bottom',(side*.791,.825,.40),(.07,.012,.39),'rubber',.005)
- for z in [.207,.593]:box('door pocket end',(side*.791,.87,z),(.07,.095,.016),'dash',.006)
- box('rear pillar',(x,1.75,.79),(.085,1.03,.10),'paint',.018,3)
- line('front pillar',[(side*.83,1.26,-1.20),(side*.85,2.20,-.79)],.047,'paint',14)
- line('front glazing gasket',[(side*.79,1.30,-1.17),(side*.81,2.16,-.77)],.012,'rubber')
- line('front pillar inner trim',[(side*.852,1.29,-1.174),(side*.872,2.17,-.79)],.025,'dash',12)
- box('side window top',(x,2.205,.08),(.075,.07,1.74),'paint',.018,3)
- box('window sill',(x,1.285,-.10),(.085,.045,1.75),'rubber',.012)
- line('side window aperture seal',[(side*.862,1.313,-1.04),(side*.862,1.313,.725),(side*.862,2.16,.725),(side*.862,2.16,-.76)],.011,'rubber',10)
- line('rear door shut seal',[(side*.852,.72,.735),(side*.852,2.17,.735)],.009,'rubber',10)
- cyl('door lock pin',(side*.868,1.30,.58),(side*.868,1.337,.58),.006,'metal',10)
- cyl('door lock pin cap',(side*.868,1.327,.58),(side*.868,1.342,.58),.009,'rubber',12)
- # External mirrors retain the exact approved housing/face placements.
- line('mirror support',[(x,1.44,-1.05),(side*1.01,1.44,-1.16)],.012,'metal')
- box('mirror housing',(side*1.04,1.47,-1.17),(.16,.24,.10),'rubber',.026,3)
- box('mirror rolled rim',(side*1.04,1.47,-1.115),(.145,.219,.014),'edge',.018,3)
- formed('formed wheel arch interior',[(.64,-.16),(.75,-.16),(.85,.02),(.85,.45),(.74,.64),(.64,.64)],'x',[side*.72,side*.88],'dash',.025)
-
-# Glazing aperture and the wiper plane remain unchanged. Rubber seal sections
-# live outside the pane, with steel thickness behind each return.
-box('windscreen lower steel',(0,1.245,-1.205),(1.72,.055,.10),'paint',.020,3)
-box('windscreen top steel',(0,2.20,-.79),(1.76,.07,.09),'paint',.020,3)
-line('windscreen lower gasket',[(-.79,1.287,-1.182),(.79,1.287,-1.182)],.010,'rubber',12)
-line('windscreen header gasket',[(-.80,2.177,-.773),(.80,2.177,-.773)],.010,'rubber',12)
-box('roof panel',(0,2.255,.09),(1.87,.065,1.80),'paint',.035,3)
-formed('curved insulated headliner',[(-.862,2.168),(-.78,2.202),(-.48,2.218),(0,2.224),(.48,2.218),(.78,2.202),(.862,2.168),(.862,2.188),(.78,2.222),(.48,2.238),(0,2.244),(-.48,2.238),(-.78,2.222),(-.862,2.188)],'z',[-.725,.90],'felt',.007)
+ x=side*(hw-.0275)
+ if V['door']=='hinged':
+  box('outer pressed door shell',(x,(.38+belt)/2,(dF+dB)/2),(.055,belt-.38,dB-dF),'body',.022,3)
+  box('inner pressed door pan',(side*(card+.045),(.72+belt)/2,(dF+dB)/2),(.034,belt-.72,dB-dF-.04),'body',.024,4)
+  box('door card rolled border',(side*(card+.022),(.70+belt-.04)/2,(dF+dB)/2),(.024,belt-.04-.70,dB-dF-.10),'trim',.024,4)
+  box('door card vinyl inset',(side*(card+.008),(.74+belt-.10)/2,(dF+dB)/2),(.014,belt-.10-.74,dB-dF-.20),'trim',.02,4)
+  box('door lower kick plate',(side*(card+.018),.79,(dF+dB)/2),(.022,.13,dB-dF-.10),'rubber',.014,3)
+  box('door upper capping',(side*(card+.03),belt-.02,(dF+dB)/2),(.07,.05,dB-dF-.02),'trim',.02,3)
+  box('door pull escutcheon',(side*(card-.004),1.05,(dF+dB)/2-.05),(.018,.07,.28),'rubber',.016,3)
+  line('door pull',[(side*(card-.012),1.045,(dF+dB)/2-.17),(side*(card-.04),1.07,(dF+dB)/2-.12),(side*(card-.04),1.07,(dF+dB)/2+.04),(side*(card-.012),1.045,(dF+dB)/2+.09)],.015,'trim',12)
+  box('door latch recess',(side*(card-.006),1.17,dB-.12),(.018,.06,.13),'rubber',.013,3)
+  line('interior release lever',[(side*(card-.02),1.17,dB-.17),(side*(card-.034),1.175,dB-.08)],.009,'edge',12)
+  cyl('window winder spindle',(side*(card-.004),1.10,(dF+dB)/2+.20),(side*(card-.04),1.10,(dF+dB)/2+.20),.022,'metal',20)
+  line('window crank',[(side*(card-.042),1.10,(dF+dB)/2+.20),(side*(card-.048),1.15,(dF+dB)/2+.11)],.011,'edge',12)
+  cyl('window crank grip',(side*(card-.048),1.15,(dF+dB)/2+.11),(side*(card-.072),1.15,(dF+dB)/2+.11),.018,'rubber',16)
+  box('door pocket front',(side*(card-.045),.87,(dF+dB)/2+.05),(.018,.09,.40),'trim',.013,3)
+  box('door pocket bottom',(side*(card-.02),.825,(dF+dB)/2+.05),(.06,.012,.40),'rubber',.005)
+  # Window frame: rear upright, top rail and the glass run along the A-pillar.
+  top=[(side*(hw-.05),winTop+.02,screen_at(winTop)+.08),(side*(hw-.05),winTop+.02,dB)]
+  box('door frame rear upright',(side*(hw-.05),(belt+winTop)/2,dB-.02),(.06,winTop-belt+.06,.045),'body',.012,3)
+  line('door frame top rail',top,.022,'body',10)
+  line('side window aperture seal',[(side*(hw-.065),belt+.02,max(screen_at(belt)+.20,dF+.04)),(side*(hw-.065),belt+.02,dB-.05),(side*(hw-.065),winTop-.01,dB-.05),(side*(hw-.065),winTop-.01,max(screen_at(winTop)+.10,dF+.04))],.010,'rubber',10)
+  box('window sill',(side*(hw-.06),belt,(dF+dB)/2),(.075,.04,dB-dF-.04),'rubber',.012)
+  cyl('door lock pin',(side*(card+.03),belt+.01,dB-.08),(side*(card+.03),belt+.045,dB-.08),.006,'metal',10)
+ else:
+  # Bedwas PV400: sliding door on open runners, untrimmed inner panel.
+  # Outer skin framed round the window aperture, not a sheet across it.
+  wz0,wz1,wy0,wy1=dF+.07,dB-.07,belt,winTop
+  box('sliding door outer panel',(x,(.42+wy0)/2,(dF+dB)/2),(.04,wy0-.42,dB-dF),'body',.012,3)
+  box('sliding door top rail panel',(x,(wy1+winTop+.10)/2,(dF+dB)/2),(.04,winTop+.10-wy1,dB-dF),'body',.008,2)
+  for z0,z1 in [(dF,wz0),(wz1,dB)]:box('sliding door window stile',(x,(wy0+wy1)/2,(z0+z1)/2),(.04,wy1-wy0,z1-z0),'body',.008,2)
+  box('sliding door bare inner skin',(side*(card+.03),(.62+belt)/2,(dF+dB)/2),(.025,belt-.62,dB-dF-.06),'body',.006,2)
+  for z in np.linspace(dF+.10,dB-.10,4):box('sliding door inner stiffener',(side*(card+.012),(.62+belt)/2,z),(.02,belt-.66,.05),'body',.006,2)
+  # Alloy-framed two-pane sliding window, door-bolt catch, bolt heads round it.
+  for y in [wy0,wy1]:box('alloy window frame rail',(side*(hw-.06),y,(wz0+wz1)/2),(.045,.04,wz1-wz0+.04),'edge',.006,2)
+  for z in [wz0,wz1,(wz0+wz1)/2]:box('alloy window frame upright',(side*(hw-.06),(wy0+wy1)/2,z),(.045,wy1-wy0,.035 if z!=(wz0+wz1)/2 else .045),'edge',.006,2)
+  box('sliding window bolt catch',(side*(hw-.09),(wy0+wy1)/2,(wz0+wz1)/2+.03),(.02,.05,.03),'metal',.004)
+  for z in np.linspace(wz0,wz1,7):
+   for y in [wy0-.035,wy1+.035]:cyl('window frame bolt head',(side*(card+.045),y,z),(side*(card+.03),y,z),.007,'metal',8)
+  box('sliding door pull channel',(side*(card+.02),1.05,dB-.10),(.03,.20,.04),'rubber',.008,2)
+  for y in [.43,winTop+.12]:box('open door runner channel',(side*(hw+.01),y,(dF+dB)/2+.60),(.03,.04,dB-dF+1.20),'metal',.006,2)
+# Pillars. The A-pillar follows the glass; the lower hinge pillar meets the floor.
 for side in [-1,1]:
- line('headliner edge binding',[(side*.856,2.171,-.71),(side*.856,2.171,.88)],.008,'rubber',10)
- box('padded sun visor',(side*.435,2.12,-.675),(.54,.10,.036),'felt',.017,4)
- line('visor hinge',[(side*.72,2.17,-.69),(side*.69,2.17,-.66),(side*.28,2.17,-.66)],.007,'metal',12)
- box('visor retaining clip',(side*.20,2.166,-.67),(.026,.028,.036),'ivory',.007,3)
- box('upper belt anchor',(side*.818,1.93,.705),(.052,.075,.025),'rubber',.014,3)
- box('belt inertia reel',(side*.795,.99,.71),(.065,.11,.075),'rubber',.014,3)
- box('parked seatbelt webbing',(side*.806,1.46,.705),(.040,.84,.008),'rubber',.002)
- cyl('belt anchor bolt',(side*.818,1.93,.72),(side*.818,1.93,.732),.009,'metal',12)
-box('dome lamp plinth',(0,2.196,.36),(.17,.026,.10),'dash',.016,3)
-box('unpowered dome lamp lens',(0,2.178,.36),(.13,.014,.073),'ivory',.014,3)
-box('rear bulkhead',(0,1.43,.95),(1.82,1.63,.055),'paint',.020,3)
-box('bulkhead lower kick shield',(0,.81,.91),(1.69,.26,.027),'dash',.014,3)
-for x in [-.66,-.22,.22,.66]:
- box('bulkhead pressed panel surround',(x,1.53,.913),(.355,1.04,.028),'edge',.021,3)
- box('bulkhead recessed centre',(x,1.53,.892),(.314,.99,.018),'paint',.020,3)
-for x in [-.70,.70]:
- box('bulkhead coat hook backing',(x,2.07,.878),(.06,.09,.012),'rubber',.012,3)
- line('folded utility hook',[(x,2.085,.87),(x,2.028,.85),(x,2.028,.81),(x,2.052,.80)],.006,'metal',12)
-# A shallow empty document rack is part of the van, not a new story clue.
-box('bulkhead document rack back',(-.44,1.19,.86),(.31,.23,.018),'dash',.013,3)
-box('bulkhead document rack lip',(-.44,1.11,.80),(.31,.075,.022),'dash',.010,3)
-for x in [-.59,-.29]:box('document rack end',(x,1.14,.83),(.015,.13,.08),'dash',.008)
-box('document rack floor',(-.44,1.075,.83),(.31,.015,.08),'rubber',.005)
-
-# A continuously formed dash/cowl creates a broad reading surface. The driver
-# instruments are recessed into a hollow, deep-backed hood, not a solid block
-# intersecting the gauge faces. Gauge centres and moving-needle axes stay fixed.
-formed('dashboard upper moulding',[(1.08,-1.15),(1.20,-1.13),(1.23,-.98),(1.22,-.79),(1.17,-.635),(1.10,-.61),(1.06,-.64),(1.13,-.82),(1.12,-1.05)],'x',[-.85,.85],'dash',.012)
-box('formed painted fascia',(0,1.045,-.675),(1.70,.255,.105),'paint',.018,3)
-box('dashboard padded trailing lip',(0,1.164,-.624),(1.70,.036,.05),'dash',.014,4)
-box('dashboard lower rolled return',(0,.918,-.66),(1.65,.042,.17),'dash',.014,3)
-box('instrument deep backplate',(.48,1.22,-.659),(.59,.245,.025),'rubber',.024,3)
-hood('open instrument hood',[(.166,1.102),(.166,1.274),(.183,1.32),(.222,1.351),(.268,1.36),(.692,1.36),(.738,1.351),(.777,1.32),(.794,1.274),(.794,1.102)],[(.192,1.102),(.192,1.266),(.207,1.299),(.236,1.325),(.271,1.334),(.689,1.334),(.724,1.325),(.753,1.299),(.768,1.266),(.768,1.102)],-.599,-.97,'dash')
-box('instrument lower rolled lip',(.48,1.102,-.637),(.58,.025,.075),'dash',.010,3)
-for x in [-.51,.46]:
- box('demister vent cartridge',(x,1.23,-1.053),(.49,.019,.057),'rubber',.011,3)
- for j in range(7):box('demister vane',(x-.205+j*.068,1.241,-1.053),(.047,.007,.036),'dash',.004)
-for x in [-.75,.79]:
- box('fascia vent recess',(x,1.112,-.613),(.13,.067,.022),'rubber',.011,3)
- for j in range(3):box('fascia air vane',(x,1.092+j*.019,-.598),(.104,.005,.014),'dash',.002)
-box('glovebox gasket',(-.50,1.052,-.616),(.535,.174,.015),'rubber',.018,3)
-box('pressed glovebox lid',(-.50,1.052,-.601),(.512,.15,.018),'paint',.014,3)
-box('glovebox latch recess',(-.50,1.093,-.589),(.096,.031,.007),'rubber',.007)
-box('glovebox finger latch',(-.50,1.096,-.582),(.073,.012,.014),'edge',.004)
-for x in [-.70,-.30]:cyl('glovebox hinge',(x-.025,.971,-.602),(x+.025,.971,-.602),.006,'metal',12)
-# A bolted folded-steel equipment bridge is tied into the fascia. Its tray
-# supports the receiver sleeve and recorder cradle without moving a control.
+ a0=(side*(swb+V['aPost']+.012),sb[0]-.01,sb[1]-.012);a1=(side*(swt+V['aPost']+.008),st[0]+.01,st[1]-.004)
+ line('front pillar',[a0,a1],V['aPost'],'trim' if V['door']=='hinged' else 'body',14)
+ slab('A pillar side flange',[(side*(swb+.01),sb[0]-.01,sb[1]),(side*(hw-.03),sb[0]-.01,sb[1]+.12),(side*(hw-.05),st[0]+.01,st[1]+.07),(side*(swt+.01),st[0]+.01,st[1])],.035*side,'trim' if V['door']=='hinged' else 'body')
+ line('front glazing gasket',[(side*(swb+.006),sb[0]+.01,sb[1]+.006),(side*(swt+.006),st[0]-.01,st[1]+.004)],.011,'rubber')
+ if V['aPost']>.06:
+  # Bedwas box-section A-post with the radio aerial lead taped up the offside one.
+  slab('box section A post inner face',[(side*(swb+.02),sb[0],sb[1]+.07),(side*(card+.03),sb[0],sb[1]+.20),(side*(card+.03),st[0]+.02,st[1]+.16),(side*(swt+.02),st[0]+.02,st[1]+.06)],.03*side,'body')
+  if side>0:
+   line('radio aerial lead up offside A post',[(side*(swb+.03),1.05,sb[1]+.30),(side*(swb+.035),sb[0]+.05,sb[1]+.10),(side*(swt+.04),st[0]-.03,st[1]+.08),(side*.40,st[0]+.035,st[1]+.12)],.004,'rubber',6)
+   box('interior aerial base',(.36,st[0]+.04,st[1]+.12),(.05,.02,.04),'rubber',.004)
+ else:line('front pillar inner trim',[(side*(swb+.04),sb[0]+.02,sb[1]+.03),(side*(swt+.04),st[0]-.01,st[1]+.02)],.022,'trim',12)
+ box('hinge pillar',(side*(hw-.05),(.64+sb[0])/2,dF-.035),(.09,sb[0]-.64,.07),'body',.014,3)
+ box('B pillar',(side*(hw-.045),(.62+roofIn)/2,dB+V['bPost']/2),(.10,roofIn-.62,V['bPost']),'body',.016,3)
+ box('B pillar trim',(side*(card+.01),(.70+belt)/2,dB+V['bPost']/2),(.03,belt-.70,V['bPost']-.03),'trim',.012,3)
+ # Rear quarter between B pillar and the bulkhead line.
+ slab('cab rear quarter panel',[(side*(hw-.01),.40,dB+V['bPost']),(side*(hw-.01),.40,rear+.04),(side*(hw-.01),roofOut-.03,rear+.04),(side*(hw-.01),roofOut-.03,dB+V['bPost'])],-.035*side,'body')
+ box('upper belt anchor',(side*(card+.01),belt+.62,dB+V['bPost']/2),(.05,.075,.025),'rubber',.013,3)
+ box('parked seatbelt webbing',(side*(card-.005),(belt+.60+.95)/2,dB+V['bPost']+.012),(.040,belt+.60-.95,.008),'rubber',.002)
+# Windscreen surround.
+box('windscreen lower steel',(0,sb[0]-.03,sb[1]-.025),(2*swb+.08,.05,.09),'body',.018,3)
+box('windscreen header steel',(0,st[0]+.035,st[1]+.005),(2*swt+.12,.065,.085),'body',.018,3)
+line('windscreen lower gasket',[(-swb,sb[0]+.006,sb[1]+.008),(swb,sb[0]+.006,sb[1]+.008)],.010,'rubber',12)
+line('windscreen header gasket',[(-swt,st[0]-.008,st[1]+.006),(swt,st[0]-.008,st[1]+.006)],.010,'rubber',12)
+# Roof. Trimmed vans carry a curved headlining; the Bedwas cab has none.
+zr0=st[1]+.02;zr1=rear+.04 if V['bulkhead'] is not None else LOAD_REAR
+if V['headliner']:box('roof panel',(0,roofOut-.025,(zr0+zr1)/2),(2*hw-.04,.05,zr1-zr0),'body',.03,3)
+if V['headliner']:
+ hl=[(-card-.04,roofIn-.05),(-card+.06,roofIn-.015),(-.45,roofIn+.005),(0,roofIn+.01),(.45,roofIn+.005),(card-.06,roofIn-.015),(card+.04,roofIn-.05)]
+ formed('curved insulated headliner',hl+[(x,y+.02)for x,y in reversed(hl)],'z',[zr0+.06,zr1-.02],'felt',.006)
+ # A header roll ties the headlining to the screen rail.
+ slab('headliner front roll',[(-swt-.04,st[0]+.07,st[1]+.06),(swt+.04,st[0]+.07,st[1]+.06),(swt+.04,roofIn-.005,zr0+.08),(-swt-.04,roofIn-.005,zr0+.08)],-.02,'felt')
+ for side in [-1,1]:
+  slab('padded sun visor',[(side*.17,roofIn-.04,zr0+.10),(side*.66,roofIn-.04,zr0+.10),(side*.66,roofIn-.045,zr0+.26),(side*.17,roofIn-.045,zr0+.26)],-.03,'felt')
+  line('visor hinge rod',[(side*.70,roofIn-.02,zr0+.12),(side*.66,roofIn-.04,zr0+.12),(side*.20,roofIn-.04,zr0+.12)],.006,'metal',10)
+  box('visor retaining clip',(side*.12,roofIn-.03,zr0+.12),(.025,.026,.034),'ivory',.006,3)
+ box('dome lamp plinth',(0,roofIn-.002,.30),(.17,.024,.10),'trim',.014,3)
+ box('unpowered dome lamp lens',(0,roofIn-.016,.30),(.13,.012,.073),'ivory',.012)
+else:
+ # High box over the cab: bare front wall above the screen, ribbed bare roof,
+ # the crude bolted header/cantrail/B-post join the 1988 test called ugly.
+ slab('bare front wall above screen',[(-hw+.02,st[0]+.07,st[1]+.02),(hw-.02,st[0]+.07,st[1]+.02),(hw-.02,roofIn,st[1]-.05),(-hw+.02,roofIn,st[1]-.05)],.035,'body')
+ for y in np.linspace(st[0]+.25,roofIn-.12,3):box('front wall horizontal stiffener',(0,y,st[1]-.01+(y-st[0])*-.08),(2*hw-.10,.05,.035),'body',.006,2)
+ box('header rail',(0,st[0]+.10,st[1]+.08),(2*hw-.06,.09,.10),'body',.01,2)
+ box('bare cab roof underside',(0,roofIn+.012,(zr0+zr1)/2),(2*hw-.06,.02,zr1-zr0),'body',.004,2)
+ for z in np.arange(zr0+.18,zr1,.42):box('roof bow',(0,roofIn-.02,z),(2*hw-.08,.06,.045),'body',.006,2)
+ for side in [-1,1]:
+  box('cantrail',(side*(hw-.05),roofIn-.06,(zr0+zr1)/2),(.08,.09,zr1-zr0),'body',.008,2)
+  slab('bare upper side panel',[(side*(hw-.02),winTop+.12,st[1]),(side*(hw-.02),winTop+.12,dB+V['bPost']),(side*(hw-.02),roofIn,dB+V['bPost']),(side*(hw-.02),roofIn,st[1])],-.03*side,'body')
+  for i in range(4):cyl('bolted header join',(side*(hw-.09),roofIn-.04-i*.05,dB+V['bPost']/2),(side*(hw-.11),roofIn-.04-i*.05,dB+V['bPost']/2),.009,'metal',6)
+  box('padded sun visor',(side*.42,st[0]+.13,st[1]+.16),(.48,.03,.15),'trim',.01,3)
+# Close the roof shell: the front skin above the header rail and the cantrail
+# panel above each door. Without them the header and door rails leave slits of sky.
+slab('roof front closing skin',[(-hw+.005,st[0]+.05,st[1]-.03),(hw-.005,st[0]+.05,st[1]-.03),(hw-.005,roofOut+.004,st[1]-.03),(-hw+.005,roofOut+.004,st[1]-.03)],.07,'body')
+for side in [-1,1]:
+ zc0=screen_at(winTop)-.02;zc1=(rear+.05) if V['bulkhead'] is not None else LOAD_REAR
+ slab('cantrail outer panel',[(side*(hw-.004),winTop+.015,zc0),(side*(hw-.004),winTop+.015,zc1),(side*(hw-.004),roofOut+.004,zc1),(side*(hw-.004),roofOut+.004,zc0)],-.05*side,'body')
+# Rear: a full steel bulkhead (the 1988 test recommends one); the parcels body
+# instead opens behind the seats into the load space, behind a mesh partition.
+if V['bulkhead'] is not None:
+ z=V['bulkhead']
+ box('rear bulkhead',(0,(.62+roofIn)/2,z+.03),(2*card+.08,roofIn-.62,.05),'body',.02,3)
+ box('bulkhead lower kick shield',(0,.80,z),(2*card-.10,.26,.027),'trim',.013,3)
+ for x in [-.56,-.19,.19,.56]:
+  box('bulkhead pressed panel surround',(x,1.40,z+.002),(.33,.90,.028),'edge',.02,3)
+  box('bulkhead recessed centre',(x,1.40,z-.018),(.29,.85,.018),'body',.019,3)
+ box('bulkhead document rack back',(-.44,1.19,z-.05),(.31,.23,.018),'trim',.012,3)
+ box('bulkhead document rack lip',(-.44,1.11,z-.11),(.31,.075,.022),'trim',.010,3)
+ for x in [-.59,-.29]:box('document rack end',(x,1.14,z-.08),(.015,.13,.08),'trim',.008)
+ box('document rack floor',(-.44,1.075,z-.08),(.31,.015,.08),'rubber',.005)
+else:
+ z=.84
+ for x in [-.88,.88]:box('partition frame post',(x,(.80+roofIn)/2,z),(.04,roofIn-.80,.04),'metal',.006,2)
+ for y in [.84,1.55,roofIn-.04]:box('partition frame rail',(0,y,z),(1.80,.035,.035),'metal',.006,2)
+ for x in np.arange(-.84,.86,.12):box('partition mesh bar',(x,(.84+roofIn)/2,z),(.008,roofIn-.84,.008),'metal',0)
+ for y in np.arange(.90,roofIn-.05,.12):box('partition mesh wire',(0,y,z+.006),(1.76,.006,.006),'metal',0)
+ # Load space (thin walls so it reads from the cab): raised deck, bare walls,
+ # horizontal load rails, rear doors.
+ L=LOAD_REAR
+ box('load deck',(0,V['deck']-.02,(z+L)/2),(2*card+.06,.04,L-z),'rubber',.004,2)
+ box('cab to deck step riser',(0,(.65+V['deck'])/2,z+.03),(2*card,V['deck']-.65,.03),'body',.004,2)
+ for side in [-1,1]:
+  slab('load space bare side wall',[(side*(hw-.02),V['deck'],z),(side*(hw-.02),V['deck'],L),(side*(hw-.02),roofOut-.01,L),(side*(hw-.02),roofOut-.01,z)],-.03*side,'body')
+  for z0,z1 in [(z,AXR-V['tyreR']-.10),(AXR+V['tyreR']+.10,L)]:slab('load body lower skirt',[(side*(hw-.02),.55,z0),(side*(hw-.02),.55,z1),(side*(hw-.02),V['deck']+.01,z1),(side*(hw-.02),V['deck']+.01,z0)],-.03*side,'body')
+  for y in [1.05,1.45,1.85,2.25]:box('load rail',(side*(hw-.06),y,(z+L)/2),(.025,.06,L-z-.10),'edge',.004,2)
+ slab('rear doors inner skin',[(-hw+.02,.55,L),(hw-.02,.55,L),(hw-.02,roofOut-.01,L),(-hw+.02,roofOut-.01,L)],-.03,'body')
+ box('parcels body roof panel',(0,roofOut-.025,(zr0+zr1)/2),(2*hw-.02,.05,zr1-zr0),'body',.02,2)
+ box('translucent GRP roof section',(0,roofIn+.005,(z+L)/2+.2),(1.10,.012,L-z-.9),'ivory',.003,2)
+# Dash. Upper moulding under the raked screen, fascia face, hooded binnacle.
+y0=V['dashTop'];f=V['fascia']
+dh=V['dashHW'];hx0,hx1,hy=V['hood'];hz0=(sb[1]+f)/2-.03
+prof=[(sb[0]-.13,sb[1]+.01),(sb[0]-.005,sb[1]+.012),(y0+.02,(sb[1]+f)/2),(y0,f+.02),(y0-.04,f+.005),(y0-.10,f+.01),(y0-.10,sb[1]+.01)]
+for span in [[-dh-.01,hx0],[hx1,dh+.01]]:formed('dashboard upper moulding',prof,'x',span,'dash',.01)
+formed('binnacle dash span',[(sb[0]-.13,sb[1]+.01),(sb[0]-.005,sb[1]+.012),(y0+.02,(sb[1]+f)/2),(y0+.02,-.665),(1.10,-.665),(1.10,sb[1]+.01)],'x',[hx0,hx1],'dash',.008)
+box('formed painted fascia',(0,1.04,f-.045),(2*dh,.21,.09),'trim',.016,3)
+box('dashboard lower rolled return',(0,.925,f-.03),(2*dh-.06,.04,.14),'dash',.013,3)
+if card>dh+.02:
+ for side in [-1,1]:slab('coachbuilder dash end filler',[(side*dh,.64,sb[1]),(side*dh,.64,f),(side*dh,sb[0]-.02,f),(side*dh,sb[0]-.02,sb[1])],(card+.03-dh)*side,'body')
+hood('open instrument hood',[(hx0,1.10),(hx0,hy-.04),(hx0+.015,hy-.01),(hx0+.045,hy),(hx1-.045,hy),(hx1-.015,hy-.01),(hx1,hy-.04),(hx1,1.10)],[(hx0+.025,1.10),(hx0+.025,hy-.05),(hx0+.035,hy-.032),(hx0+.055,hy-.025),(hx1-.055,hy-.025),(hx1-.035,hy-.032),(hx1-.025,hy-.05),(hx1-.025,1.10)],hz0,f+.045,'dash')
+box('instrument deep backplate',((hx0+hx1)/2,1.215,-.652),(hx1-hx0-.03,.22,.022),'rubber',.02,3)
+box('instrument lower rolled lip',((hx0+hx1)/2,1.10,f+.03),(hx1-hx0,.025,.07),'dash',.010,3)
+for x in [-.46,.44]:
+ box('demister vent cartridge',(x,sb[0]-.02,sb[1]+.06),(.46,.018,.055),'rubber',.010,3)
+ for j in range(7):box('demister vane',(x-.19+j*.063,sb[0]-.008,sb[1]+.06),(.044,.007,.034),'dash',.004)
+for x in [-dh+.07,dh-.07]:
+ cyl('round fascia vent bezel',(x,1.09,f-.005),(x,1.09,f+.012),.045,'dash',24)
+ cyl('round fascia vent throat',(x,1.09,f+.012),(x,1.09,f+.014),.034,'rubber',20)
+ for j in range(3):box('fascia vent vane',(x,1.07+j*.02,f+.016),(.06,.005,.01),'trim',.001)
+box('glovebox gasket',(-.50,1.045,f+.004),(.50,.16,.014),'rubber',.016,3)
+box('pressed glovebox lid',(-.50,1.045,f+.016),(.48,.14,.016),'trim',.012,3)
+box('glovebox finger latch',(-.50,1.09,f+.028),(.07,.012,.012),'edge',.004)
+# The recordist's bolted equipment bridge carries the receiver and the DA-1000.
 box('receiver rear mounting block',(.025,1.10,-.602),(.238,.105,.046),'rubber',.009,3)
-box('equipment shelf',(-.11,1.009,-.462),(.47,.024,.33),'paint',.010,3)
+box('equipment shelf',(-.11,1.009,-.462),(.47,.024,.33),'body',.010,3)
 box('equipment shelf rubber liner',(-.11,1.023,-.455),(.435,.005,.285),'rubber',.007,3)
 for x in [-.315,.095]:
  formed('folded equipment shelf bracket',[(.947,-.64),(1.00,-.64),(1.01,-.32),(.985,-.32)],'x',[x-.010,x+.010],'metal',.006)
  cyl('equipment shelf bolt',(x,1.023,-.585),(x,1.029,-.585),.006,'metal',12)
-# Analog gauges physically face toward the driver (+Z), unchanged in position.
-for cx,rad in [(.48,.091),(.66,.050),(.30,.050)]:
+# Gauges face the driver; positions and radii from the period cluster.
+for kind,cx,rad in V['gauges']:
  cyl('instrument plated bezel',(cx,1.207,-.649),(cx,1.207,-.635),rad,'metal',32)
  cyl('instrument dark dial',(cx,1.207,-.635),(cx,1.207,-.632),rad*.88,'rubber',32)
- for i in range(13):
-  a=(-.72+i/12*1.44)*pi;rr=rad*.76;x=cx+sin(a)*rr;y=1.207+cos(a)*rr
+ n=13 if kind=='speed' else (12 if kind=='clock' else 5)
+ for i in range(n):
+  a=(i/12*2*pi) if kind=='clock' else (-.72+i/(n-1)*1.44)*pi;rr=rad*.76;x=cx+sin(a)*rr;y=1.207+cos(a)*rr
   cyl('dial painted tick',(x,y,-.629),(cx+sin(a)*(rr-.008),1.207+cos(a)*(rr-.008),-.629),.0018,'ivory',6)
- if rad<.08:line('fuel temperature resting needle',[(cx,1.207,-.626),(cx-rad*.48,1.207+rad*.32,-.626)],.0024,'amber',6)
- cyl('needle hub',(cx,1.207,-.629),(cx,1.207,-.623),.008,'metal',12)
-# Proper cushions, reclining backs, exposed runners and belts retain the eye
-# height and useful two-person passenger space. No dummy body fills the seat.
+ if kind!='speed':line('resting gauge needle',[(cx,1.207,-.626),(cx-rad*.48,1.207+rad*.32,-.626)],.0024,'amber',6)
+ if kind=='clock':line('clock minute hand',[(cx,1.207,-.625),(cx+rad*.55,1.207+rad*.30,-.625)],.0018,'ivory',6)
+ cyl('needle hub',(cx,1.207,-.629),(cx,1.207,-.623),.007,'metal',12)
+# Seats on the same cushions and backs as the contract; grey cloth on risers.
 for sx in [-.46,.48]:
- box('seat pedestal',(sx,.75,.39),(.54,.23,.63),'paint',.025,3)
- for dx in [-.19,.19]:
-  box('seat sliding runner',(sx+dx,.876,.34),(.026,.039,.60),'metal',.008)
+ box('seat riser',(sx,.75,.39),(.54,.23,.63),'body' if V['door']=='hinged' else 'trim',.02,3)
+ for dx in [-.19,.19]:box('seat sliding runner',(sx+dx,.876,.34),(.026,.039,.60),'metal',.008)
  upholstered(sx,'cushion');upholstered(sx,'back')
  line('seat adjustment handle',[(sx-.22,.877,.12),(sx-.22,.849,.06),(sx+.15,.849,.06)],.008,'metal',12)
  box('seatbelt buckle stalk',(sx+(.285 if sx<0 else -.285),.965,.43),(.026,.11,.025),'rubber',.008)
  box('seatbelt buckle',(sx+(.285 if sx<0 else -.285),1.022,.43),(.042,.052,.031),'rubber',.010,3)
- box('buckle release pad',(sx+(.285 if sx<0 else -.285),1.047,.43),(.026,.005,.019),'amber',.004)
-# Column, pedal pivots and gear control preserve original contact geometry.
+# Column, three stalks behind the wheel (CM 1981), pendant pedals, offset lever.
 cyl('steering column',(.48,.83,-.63),(.48,1.20,-.39),.027,'rubber',20)
 cyl('column cast shroud',(.48,1.10,-.457),(.48,1.177,-.407),.049,'dash',24)
-line('indicator stalk',[(.45,1.135,-.473),(.345,1.143,-.492)],.006,'metal',12)
-cyl('indicator grip',(.345,1.143,-.492),(.318,1.143,-.498),.012,'rubber',16)
-for x in [.34,.47,.67]:
- cyl('pedal stalk',(x,.68,-.57),(x,.76,-.76),.012,'metal',10)
- box('ribbed pedal',(x,.765,-.76),(.075,.026,.11),'rubber',.009)
- for j in range(3):box('pedal groove',(x-.024+j*.024,.78,-.76),(.003,.003,.085),'edge',.001)
-line('gear lever',[(.02,.67,.03),(.02,.91,-.02),(-.02,1.00,-.06)],.012,'metal',14)
-for i in range(4):box('gear lever gaiter fold',(.02,.885+i*.012,-.015),(.09-i*.014,.012,.085-i*.013),'rubber',.008,3)
-bpy.ops.mesh.primitive_uv_sphere_add(segments=24,ring_count=12,radius=.038,location=B((-.02,1.00,-.06)));add(bpy.context.object,'rubber')
+for y,dx in [(1.135,-1),(1.150,1),(1.118,1)]:
+ line('column stalk',[(.48+dx*.035,y,-.473),(.48+dx*.135,y+.008,-.492)],.006,'metal',12)
+ cyl('stalk grip',(.48+dx*.135,y+.008,-.492),(.48+dx*.162,y+.008,-.498),.012,'rubber',16)
+pedals=V.get('pedals',[(x,V['pedalZ'])for x in(.34,.47,.64)])
+for i,(x,pz) in enumerate(pedals):
+ accel=i==len(pedals)-1
+ line('pendant pedal arm',[(x,1.02,sb[1]+.10),(x,.86,pz-.06),(x,.77,pz)],.011,'metal',10)
+ box('ribbed pedal',(x,.765,pz),(.05 if accel else .07,.022,.13 if accel else .10),'rubber',.008)
+g0,g1=V['gear']
+line('gear lever',[g0,lerp(g0,g1,.6),g1],.011,'metal',14)
+for i in range(4):box('gear lever gaiter fold',(g0[0],g0[1]+.03+i*.012,g0[2]),(.10-i*.015,.012,.10-i*.015),'rubber',.008,3)
+bpy.ops.mesh.primitive_uv_sphere_add(segments=24,ring_count=12,radius=.034,location=B(g1));add(bpy.context.object,'rubber')
 for face in bpy.context.object.data.polygons:face.use_smooth=True
-for x in [-.73,-.10,.77]:cyl('fascia screw',(x,1.078,-.595),(x,1.078,-.581),.006,'metal',10)
-# Backed heater cartridge below the glovebox: channels, lever shafts and solid
-# thumb pads are separate physical pieces; no new interaction is introduced.
-box('heater control cartridge',(-.49,.941,-.585),(.35,.070,.064),'rubber',.009,3)
-for bottom,top in [(.9125,.927),(.935,.947),(.955,.9695)]:
- box('heater control stamped face web',(-.49,(bottom+top)/2,-.550),(.333,top-bottom,.010),'metal',.0015,2)
-for x in [-.635,-.345]:box('heater control aperture end return',(x,.941,-.550),(.043,.057,.010),'metal',.002,2)
+line('handbrake lever',[(.0,.80,.42),(.0,.86,.24),(.0,.88,.15)],.014,'metal',12)
+cyl('handbrake grip',(.0,.88,.15),(.0,.89,.08),.018,'rubber',14)
+# Heater sliders under the glovebox; sparse contact wear on the shelf.
+box('heater control cartridge',(-.49,.941,f+.01),(.35,.070,.064),'rubber',.009,3)
 for row,y in enumerate([.951,.931]):
- box('heater lever slot',(-.49,y,-.551),(.247,.008,.002),'rubber',.001,2)
- x=[-.543,-.430][row]
- cyl('heater slide lever',(x,y,-.552),(x,y,-.526),.003,'edge',10)
- box('heater thumb pad',(x,y,-.521),(.026,.012,.012),'dash',.003,2)
- for tick in range(6):box('heater scale painted block',(-.609+tick*.047,y+.0068,-.544),(.010,.0022,.0012),'ivory',0)
-for x in [-.643,-.337]:cyl('heater cartridge screw',(x,.941,-.544),(x,.941,-.541),.0032,'edge',10)
-# Sparse filled contact wear follows handling and loading. Panel centres remain
-# intact; these marks are substrate exposure, not an all-over grunge overlay.
+ box('heater lever slot',(-.49,y,f+.045),(.247,.008,.002),'rubber',.001,2)
+ xx=[-.543,-.430][row]
+ cyl('heater slide lever',(xx,y,f+.044),(xx,y,f+.07),.003,'edge',10)
+ box('heater thumb pad',(xx,y,f+.075),(.026,.012,.012),'dash',.003,2)
+# Mirror housings and arms around the contract mirror faces.
+def mirror_at(side):
+ mx,my,mz=V['mirror'];yl,zl=V.get('mirrorL',(my,mz));return (side*mx,my if side>0 else yl,mz if side>0 else zl)
 for side in [-1,1]:
- box('polished armrest contact',(side*.819,1.266,-.12),(.018,.004,.23),'edge',.001,2)
- for i in range(3):
-  z=-.12+i*.18
-  mesh('threshold rubbed enamel',[(side*.850,.695,z-.042),(side*.805,.695,z-.024),(side*.815,.695,z+.035),(side*.851,.695,z+.021)],[(0,1,2,3)],'edge')
+ mx,my,mz=mirror_at(side)
+ line('mirror arm',[(side*(hw-.01),my-.17,max(dF+.02,mz+.02)),(mx-side*.02,my-.15,mz-.06),(mx,my-.11,mz-.06)],.012,'metal')
+ box('mirror housing',(mx,my,mz-.05),(.15,.22,.08),'rubber',.022,3)
+ box('mirror rolled rim',(mx,my,mz-.012),(.142,.212,.012),'edge',.016,3)
+
 for x,z in [(-.261,-.405),(-.095,-.377),(.064,-.487)]:
  mesh('equipment tray contact paint loss',[(x-.018,1.026,z-.007),(x+.031,1.026,z-.005),(x+.019,1.026,z+.008),(x-.023,1.026,z+.005)],[(0,1,2,3)],'edge')
-# Opaque painted numerals follow the gauge's actual circular construction.
 def lettering(value,p,size=.008,material='ivory',align='CENTER'):
  curve=bpy.data.curves.new('physical painted legend','FONT');curve.body=value;curve.size=size;curve.align_x=align;curve.align_y='CENTER';curve.extrude=.00012;curve.resolution_u=2
  font='/System/Library/Fonts/Supplemental/Arial Bold.ttf'
  if os.path.exists(font):curve.font=bpy.data.fonts.load(font,check_existing=True)
  ob=bpy.data.objects.new('painted '+value,curve);bpy.context.collection.objects.link(ob);ob.location=B(p);ob.rotation_euler=(pi/2,0,0);bpy.context.view_layer.objects.active=ob;ob.select_set(True);bpy.ops.object.convert(target='MESH');ob=bpy.context.object;ob.data.materials.append(M[material]);part.append(ob);ob.select_set(False);return ob
-for i in range(7):
- a=(-.72+i/6*1.44)*pi;lettering(str(i*30),(.48+sin(a)*.056,1.207+cos(a)*.056,-.625),.0078)
-lettering('km/h',(.48,1.176,-.624),.0067)
-lettering('F',(.66,1.202,-.624),.006);lettering('TEMP',(.30,1.202,-.624),.0054)
-lettering('HEAT',(-.624,.962,-.543),.0046,'ivory',align='LEFT')
-lettering('SCREEN',(-.624,.923,-.543),.0038,'ivory',align='LEFT')
+for kind,cx,rad in V['gauges']:
+ if kind=='speed':
+  for v in V['speedLabels']:
+   a=(-.72+v/90*1.44)*pi;lettering(str(v),(cx+sin(a)*rad*.56,1.207+cos(a)*rad*.56,-.625),rad*.13)
+  lettering('MPH',(cx,1.207-rad*.38,-.624),rad*.11)
+ elif kind=='fuel':
+  lettering('E',(cx-rad*.52,1.207+rad*.12,-.624),rad*.16);lettering('F',(cx+rad*.52,1.207+rad*.12,-.624),rad*.16)
+lettering('HEAT',(-.624,.962,V['fascia']+.047),.0046,'ivory',align='LEFT')
+lettering('SCREEN',(-.624,.923,V['fascia']+.047),.0038,'ivory',align='LEFT')
 join('drive_cabin')
 # Actual speed state belongs to a separate animated material needle. Local +Y at zero rotation.
-line('speed pointer',[(0,-.011,0),(0,.068,0)],.0024,'amber',8)
+line('speed pointer',[(0,-.011,0),(0,[r for k,x,r in V['gauges'] if k=='speed'][0]*.86,0)],.0024,'amber',8)
 cyl('speed pointer cap',(0,0,-.003),(0,0,.003),.006,'metal',12)
 join('drive_speed_needle')
-# Wheel local origin in XY plane: caller mounts at wheelCenter with tiltX −0.36.
+# Ford two-spoke dished wheel. Same rim (r .195, tube .018) the hands are
+# skinned to; spokes and the recessed hub pad follow the period wheel.
 N=80;S=12;r=.195;tube=.018;vs=[];fs=[]
 for i in range(N):
  a=i/N*2*pi
@@ -356,13 +443,19 @@ for i in range(N):
  for j in range(S):fs.append((i*S+j,((i+1)%N)*S+j,((i+1)%N)*S+(j+1)%S,i*S+(j+1)%S))
 o=mesh('wheel formed rim',vs,fs,'rubber')
 for p in o.data.polygons:p.use_smooth=True
-for a in [pi/2,pi*7/6,pi*11/6]:
- line('steering spoke',[(cos(a)*.038,sin(a)*.038,0),(cos(a)*.165,sin(a)*.165,0)],.012,'dash',12)
-cyl('wheel hub',(0,0,-.024),(0,0,.024),.050,'dash',32);cyl('horn cap',(0,0,.024),(0,0,.033),.033,'paint',24)
-# Thumb saddles and subtle moulding seam are contact cues, not decorative rings.
+dish=V['dish'];hx,hy=V['hub']
+for a in V['spokes']:
+ t=np.array([-sin(a),cos(a),0.])
+ p0=np.array([cos(a)*hx*.42,sin(a)*hx*.42-.01,-dish]);p1=np.array([cos(a)*.182,sin(a)*.182,-.002])
+ slab('broad dished spoke',[tuple(p0-t*.030),tuple(p1-t*.021),tuple(p1+t*.021),tuple(p0+t*.030)],.012,'dash')
+box('dished hub pad',(0,-.012,-dish+.006),(hx,hy,.026),'dash',.018,4)
+box('hub pad face',(0,-.012,-dish+.020),(hx-.012,hy-.012,.004),'rubber',.012,3)
+cyl('oval badge',(0,-.004,-dish+.022),(0,-.004,-dish+.025),.014,'metal',20)
+cyl('wheel boss',(0,0,-dish-.03),(0,0,-dish),.040,'dash',24)
 for side in [-1,1]:
  line('rim mould parting seam',[(side*.195*cos(a),.195*sin(a),.0175)for a in np.linspace(-.40,.40,13)],.0007,'seam',6)
 join('drive_wheel')
+
 # Wiper local pivot, blade extends up localY with small leftward curve.
 line('wiper sprung arm',[(0,0,0),(-.026,.23,.013),(-.03,.43,.013)],.007,'metal',10)
 line('wiper blade',[(-.035,.31,.025),(-.035,.58,.025)],.009,'rubber',10)
@@ -539,30 +632,63 @@ mesh('supported upper crossing earth',verts,faces,'grass');join('drive_bridge_ea
 # endcaps faced outward; retaining that defect would falsely blacken the terrain.
 for name in ['drive_bank','drive_retaining_wall','drive_drain_channel','drive_terrain_ridge','drive_terrain_slope','drive_bridge_earthwork']:
  bm=bmesh.new();bm.from_mesh(parts[name].data);bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces));bm.to_mesh(parts[name].data);bm.free();parts[name].data.update()
-# Coherent exterior at vehicle CG: the cabin mounts 1.6m forward.
-cargo=box('cargo main shell',(0,1.46,1.0),(2.01,2.02,3.1),'paint',.10,5)
-# Rear wheel opening is real silhouette depth, not a black circle on a solid side.
-cut=cyl('rear wheel opening cutter',(-1.5,.34,1.75),(1.5,.34,1.75),.415,'metal',48)
-part.remove(cut);bpy.context.view_layer.objects.active=cargo;mod=cargo.modifiers.new('formed rear wheel arch','BOOLEAN');mod.operation='DIFFERENCE';mod.solver='EXACT';mod.object=cut;bpy.ops.object.modifier_apply(modifier=mod.name);bpy.data.objects.remove(cut,do_unlink=True)
-box('cargo high roof',(0,2.49,1.0),(2.04,.11,3.1),'paint',.07,4)
+# Exterior in the BODY frame (origin at the CG between the axles; dynamics own it).
+FA=-V['front'];RA=V['wheelbase']-V['front'];R=V['tyreR'];zf=FA-V['frontOverhang'];zr=zf+V['length']
+hwB=V['bodyHW'];nhw=V['noseHW'];dh=V['dashHW'];sbz=V['sb'][1]+MOUNT;fw=V['sb'][1]-.06+MOUNT;dFb=V['doorF']+MOUNT
+rearCab=(V['bulkhead'] if V['bulkhead'] is not None else .80)+.04+MOUNT
+def arch_cut(o,z,xs):
+ cut=cyl('wheel opening cutter',(xs[0],R,z),(xs[1],R,z),R+.075,'metal',48);part.remove(cut)
+ bpy.context.view_layer.objects.active=o;mod=o.modifiers.new('wheel arch','BOOLEAN');mod.operation='DIFFERENCE';mod.solver='EXACT';mod.object=cut;bpy.ops.object.modifier_apply(modifier=mod.name);bpy.data.objects.remove(cut,do_unlink=True)
+nose=V['nose']
+centre=formed('bonnet and front panel',nose+[(1.17,sbz),(1.17,fw),(.40,fw)],'x',[-dh,dh],'body',.03)
+arch_cut(centre,FA,(.55,1.2));arch_cut(centre,FA,(-1.2,-.55))
 for side in [-1,1]:
- box('cargo belt pressing',(side*1.013,1.16,1.0),(.025,.065,2.95),'edge',.008)
- box('cargo recessed panel',(side*1.017,1.76,1.0),(.012,.99,2.65),'paint',.03,3)
-box('pressed front nose',(0,.99,-2.96),(1.86,.65,.42),'paint',.065,5)
-box('lower front bumper',(0,.51,-3.19),(2.08,.115,.13),'rubber',.028,3)
-box('front grille',(0,.91,-3.177),(.75,.18,.02),'rubber',.018,3)
+ wing=formed('front wing',nose+[(nose[-1][0],dFb),(.40,dFb)],'x',sorted([side*dh,side*nhw]),'body',.03)
+ arch_cut(wing,FA,sorted([side*.5,side*1.2]))
+ line('wing top crease',[(side*(nhw-.03),nose[2][0],nose[2][1]+.02),(side*(nhw-.03),nose[-1][0]-.01,nose[-1][1])],.006,'edge',6)
+line('bonnet shut line',[(-dh+.03,nose[-1][0]+.004,sbz-.05),(dh-.03,nose[-1][0]+.004,sbz-.05)],.004,'rubber',6)
+for side in [-1,1]:line('bonnet shut line',[(side*(dh-.03),nose[-1][0]+.004,sbz-.05),(side*(dh-.03),nose[1][0]+.02,zf+.06)],.004,'rubber',6)
+box('scuttle panel',(0,nose[-1][0]-.005,sbz+.025),(2*dh-.04,.02,.06),'rubber',.006)
+# Front face: slatted grille, lamps, wrap bumper, plate.
+gw=.52 if V['lamps']=='rect' else .48
+box('grille panel',(0,.80,zf-.004),(2*gw,.24,.02),'rubber',.012,3)
+for j in range(5):box('grille slat',(0,.70+j*.048,zf-.016),(2*gw-.03,.012,.012),'edge',.003)
+cyl('grille badge',(0,.80,zf-.026),(0,.80,zf-.032),.035,'metal',20)
 for side in [-1,1]:
- box('headlamp plated rim',(side*.66,1.02,-3.183),(.31,.20,.020),'edge',.022,3)
- box('headlamp face',(side*.66,1.02,-3.196),(.27,.16,.010),'headlamp',.015,3)
- box('rear lamp',(side*.88,1.04,2.56),(.13,.24,.02),'red',.018,3)
+ lx=side*(gw+.15)
+ box('headlamp plated rim',(lx,.84,zf-.010),(.27,.17,.02),'edge',.016,3)
+ box('headlamp face',(lx,.84,zf-.022),(.235,.135,.008),'headlamp',.012,3)
+ box('front indicator',(side*(nhw-.05),.84,zf+.01),(.07,.11,.05),'amber',.01,2)
+ box('rear lamp cluster',(side*(hwB-.05),.72,zr+.012),(.09,.36,.02),'red',.012,3)
+box('front bumper',(0,.42,zf-.045),(2*nhw+.04,.19,.12),'rubber',.03,3)
+box('front number plate',(0,.42,zf-.108),(.52,.11,.008),'ivory',.004)
+box('cab underframe',(0,.47,(fw+rearCab)/2),(2*dh,.30,rearCab-fw),'rubber',.01)
+for side in [-1,1]:box('cab door sill',(side*(V['hw']-.06),.38,(dFb+rearCab)/2),(.12,.10,rearCab-dFb),'body',.02,3)
+if V['bulkhead'] is not None:
+ cargo=box('cargo main shell',(0,(.30+V['height'])/2,(rearCab+zr)/2),(2*hwB,V['height']-.30,zr-rearCab),'body',.07,4)
+ arch_cut(cargo,RA,(-1.2,1.2))
+ for side in [-1,1]:
+  for y in [V['belt'],.80]:box('cargo belt pressing',(side*(hwB+.004),y,(rearCab+zr)/2),(.02,.05,zr-rearCab-.10),'edge',.006)
+ line('rear door centre seam',[(0,.34,zr+.003),(0,V['height']-.06,zr+.003)],.005,'rubber',6)
+ for side in [-1,1]:box('rear door window',(side*.42,V['height']-.38,zr+.004),(.66,.40,.01),'rubber',.02,3)
+ box('rear bumper',(0,.40,zr+.04),(2*hwB+.02,.16,.10),'rubber',.025,3)
+else:
+ # Parcels body sits on the chassis: rails, rear step-bumper at 428 mm.
+ for side in [-1,1]:box('chassis rail',(side*.42,.52,(rearCab+zr)/2),(.08,.16,zr-rearCab),'rubber',.01)
+ box('combined rear step and bumper',(0,.39,zr+.06),(2*hwB-.04,.08,.18),'rubber',.02,3)
+ for side in [-1,1]:box('rear wheel inner box',(side*(V['hw']-.24),.68,RA),(.40,.22,2*R+.30),'rubber',.02,3)
+ # Coachbuilt side rub rails: the outermost hull of the parcels body, so the
+ # body mesh (and the contact footprint taken from it) spans the box.
+ for side in [-1,1]:box('parcels body side rub rail',(side*(V['hw']+.012),.92,(dFb+zr)/2),(.024,.07,zr-dFb),'rubber',.008,2)
 join('drive_vehicle_body')
-cyl('tyre',(-.105,0,0),(.105,0,0),.34,'rubber',40)
+cyl('tyre',(-.098,0,0),(.098,0,0),R,'rubber',40)
 for side in [-1,1]:
- cyl('wheel rim',(side*.105,0,0),(side*.113,0,0),.215,'edge',32)
- cyl('wheel hub',(side*.113,0,0),(side*.132,0,0),.089,'metal',24)
- for i in range(6):
-  a=i/6*2*pi;cyl('wheel fixing',(side*.132,.129*sin(a),.129*cos(a)),(side*.138,.129*sin(a),.129*cos(a)),.010,'metal',10)
+ cyl('wheel rim',(side*.098,0,0),(side*.106,0,0),.19,'edge',32)
+ cyl('wheel hub',(side*.106,0,0),(side*.124,0,0),.075,'metal',24)
+ for i in range(V['studs']):
+  a=i/V['studs']*2*pi;cyl('wheel fixing',(side*.124,.105*sin(a),.105*cos(a)),(side*.130,.105*sin(a),.105*cos(a)),.010,'metal',10)
 join('drive_tyre')
+
 # Retain exact approved payloads for every non-cabin mesh. Blender may change
 # bevel UV roundoff or equivalent triangle diagonals on an untouched rebuild;
 # this pass copies accessor data, not newly authored cabin geometry. Existing
@@ -586,7 +712,7 @@ def preserve_non_cabin_accessors(path):
    target[dest:dest+width]=source[start:start+width]
  preserved=[]
  for mesh in new['meshes']:
-  if mesh['name'] in ['drive_cabin','drive_radio']:continue
+  if mesh['name'] in ['drive_cabin','drive_radio','drive_wheel','drive_vehicle_body','drive_tyre','drive_speed_needle']:continue
   previous=next((m for m in old['meshes']if m['name']==mesh['name']),None)
   if previous is None or len(previous['primitives'])!=len(mesh['primitives']):raise RuntimeError('Non-cabin mesh contract changed: '+mesh['name'])
   for a,b in zip(previous['primitives'],mesh['primitives']):
@@ -611,14 +737,44 @@ rows=[]
 for name,o in parts.items():
  o.data.calc_loop_triangles();pts=[(o.matrix_world@v.co)for v in o.data.vertices];g=[(p.x,p.z,-p.y)for p in pts]
  rows.append({'mesh':name,'triangles':len(o.data.loop_triangles),'vertices':len(o.data.vertices),'materialCount':len(o.data.materials),'bounds':{'min':[min(p[i]for p in g)for i in range(3)],'max':[max(p[i]for p in g)for i in range(3)]}})
-receipt={'schema':1,'kind':'source-drive-isolated-geometry','units':'metres','forward':[0,0,-1],'vehicle':'generic RHD forward-control van proposal; make and year unspecified','cabinBodyMount':[0,0,-1.6],'body':{'width':2.08,'height':2.57,'length':5.75,'min':[-1.04,.0,-3.25],'max':[1.04,2.57,2.55],'frontAxleZ':-1.35,'rearAxleZ':1.75,'track':1.68,'wheelRadius':.34,'headlamps':[[-.66,1.02,-3.215],[.66,1.02,-3.215]]},'eye':[.48,1.65,.20],'eyePitch':-.04,'wheel':{'mesh':'drive_wheel','center':[.48,1.20,-.39],'tiltX':-.36,'radius':.195,'rimTubeRadius':.018},'wiper':{'mesh':'drive_wiper','pivot':[-.52,1.30,-1.17],'normal':[0,-sin(.435),cos(.435)],'tiltX':.435,'sweepRadians':[-.72,.72]},'speedNeedle':{'mesh':'drive_speed_needle','center':[.48,1.207,-.626],'normal':[0,0,1],'localPointerAxis':[0,1,0],'speedKmhRange':[0,180],'rotationZAtMin':.72*pi,'rotationZAtMax':-.72*pi},'radioNeedle':{'mesh':'drive_radio_needle','center':[.05468,1.11344,-.396],'translationAxis':[1,0,0],'xRange':[-.0422,.09332]},'radioFace':{'mesh':'drive_radio','center':[.025,1.10,-.395],'bounds':{'min':[-.08532,1.05632,-.40],'max':[.13532,1.14368,-.36]},'normal':[0,0,1]},'dashboard':{'topY':1.23,'frontZ':-.615},'windscreenOpening':{'left':-.79,'right':.79,'bottomY':1.30,'topY':2.16,'bottomZ':-1.17,'topZ':-.77},'road':{'mesh':'drive_road','length':1,'width':6.5,'shoulderWidth':1.6,'topY':0,'note':'Do not scale cabin or arbitrary world objects along with repeating unit road segment.'},'mirrors':[{'mesh':'drive_mirror_'+side,'center':[sign*1.04,1.47,-1.105],'normal':[0,0,1],'size':[.127,.197],'uv':[0,0,1,1],'rearLookDirection':[0,0,1]}for side,sign in [('left',-1),('right',1)]],'recorder':{'bodyMesh':'drive_recorder_body','cradleMesh':'drive_recorder_cradle','readoutMesh':'drive_recorder_readout','center':[-.18,1.115,-.34],'tiltX':-.55,'dimensions':[W,H,D],'readoutLocalCenter':[0,H/2-195.5*W/736,RECORDER_READOUT_Z],'readoutSize':[666*W/736,239*W/736],'uv':[0,0,1,1],'normal':[0,0,1],'artworkPixels':[666,239]},'parts':rows,'triangles':sum(r['triangles']for r in rows),'materials':len(M),'textures':6,'notes':['All materials opaque. Windscreen/side windows are genuine openings; glass response not proven.','No people or placeholder hands. Camera/seat/steering reach require native review.','Speed needle and radio needle are independent meshes for actual runtime state; fuel/temperature needles remain fixed inspection geometry.','Independent UV mirror faces need actual rearward rendering; silver material alone is not a reflection.'],'sha256':hashlib.sha256(open(path,'rb').read()).hexdigest()}
-receipt['cabinRevision']='formed-working-van-v3'
+# Triangle / bounds receipt in game coordinates, per variant.
+rows=[]
+for name,o in parts.items():
+ o.data.calc_loop_triangles();pts=[(o.matrix_world@v.co)for v in o.data.vertices];g=[(p.x,p.z,-p.y)for p in pts]
+ rows.append({'mesh':name,'triangles':len(o.data.loop_triangles),'vertices':len(o.data.vertices),'materialCount':len(o.data.materials),'bounds':{'min':[min(p[i]for p in g)for i in range(3)],'max':[max(p[i]for p in g)for i in range(3)]}})
+bodyRow=next(r for r in rows if r['mesh']=='drive_vehicle_body');cabRow=next(r for r in rows if r['mesh']=='drive_cabin')
+bmin=[min(bodyRow['bounds']['min'][i],cabRow['bounds']['min'][i]+(MOUNT if i==2 else 0))for i in range(3)]
+bmax=[max(bodyRow['bounds']['max'][i],cabRow['bounds']['max'][i]+(MOUNT if i==2 else 0))for i in range(3)]
+# Mirrors stand proud of the body; the contact footprint is the body itself.
+hwFoot=max(abs(bodyRow['bounds']['min'][0]),abs(bodyRow['bounds']['max'][0]),V['hw'])
+sbY,sbZ=V['sb'];stY,stZ=V['st'];tilt=math.atan2(stZ-sbZ,stY-sbY)
+speed=[(x,r)for k,x,r in V['gauges'] if k=='speed'][0];gw=.52 if V['lamps']=='rect' else .48
+receipt={'schema':1,'kind':'source-drive-isolated-geometry','units':'metres','forward':[0,0,-1],'vehicle':V['label'],'variant':'mk3',
+ 'cabinBodyMount':[0,0,round(MOUNT,4)],
+ 'body':{'width':round(2*hwFoot,4),'height':round(bmax[1],4),'length':round(bmax[2]-bmin[2],4),'min':[round(-hwFoot,4),0,round(bmin[2],4)],'max':[round(hwFoot,4),round(bmax[1],4),round(bmax[2],4)],
+  'frontAxleZ':-V['front'],'rearAxleZ':round(V['wheelbase']-V['front'],4),'track':V['track'],'wheelRadius':V['tyreR'],'headlamps':[[-(gw+.15),.84,round(FA-V['frontOverhang']-.03,4)],[gw+.15,.84,round(FA-V['frontOverhang']-.03,4)]]},
+ 'dynamics':{'wheelbase':V['wheelbase'],'frontDistance':V['front'],'rearDistance':round(V['wheelbase']-V['front'],4),'track':V['track']},
+ 'eye':[.48,1.65,.20],'eyePitch':-.04,'wheel':{'mesh':'drive_wheel','center':[.48,1.20,-.39],'tiltX':-.36,'radius':.195,'rimTubeRadius':.018},
+ 'wiper':{'mesh':'drive_wiper','pivot':[-.52,round(sbY-.015,4),round(sbZ-.035,4)],'normal':[0,-sin(tilt),cos(tilt)],'tiltX':tilt,'sweepRadians':[-.72,.72]},
+ 'speedNeedle':{'mesh':'drive_speed_needle','center':[speed[0],1.207,-.626],'normal':[0,0,1],'localPointerAxis':[0,1,0],'speedKmhRange':[0,144.84],'dialUnits':'mph 0-90','rotationZAtMin':.72*pi,'rotationZAtMax':-.72*pi},
+ 'radioNeedle':{'mesh':'drive_radio_needle','center':[.05468,1.11344,-.396],'translationAxis':[1,0,0],'xRange':[-.0422,.09332]},
+ 'radioFace':{'mesh':'drive_radio','center':[.025,1.10,-.395],'bounds':{'min':[-.08532,1.05632,-.40],'max':[.13532,1.14368,-.36]},'normal':[0,0,1]},
+ 'dashboard':{'topY':V['dashTop'],'frontZ':V['fascia']},
+ 'windscreenOpening':{'left':round(-(V['swb']-.03),4),'right':round(V['swb']-.03,4),'bottomY':sbY,'topY':stY,'bottomZ':sbZ,'topZ':stZ},
+ 'cabinExit':{'min':[round(-(V['hw']-.02),4),.60,round(sbZ-.10,4)],'max':[round(V['hw']-.02,4),round(V['roofOut']-.02,4),round((V['bulkhead']+.08)if V['bulkhead'] is not None else LOAD_REAR,4)]},
+ 'gauges':[{'kind':k,'center':[x,1.207,-.623],'radius':r}for k,x,r in V['gauges']],
+ 'road':{'mesh':'drive_road','length':1,'width':6.5,'shoulderWidth':1.6,'topY':0,'note':'Do not scale cabin or arbitrary world objects along with repeating unit road segment.'},
+ 'mirrors':[{'mesh':'drive_mirror_'+side,'center':list(mirror_at(sign)),'normal':[0,0,1],'size':[.127,.197],'uv':[0,0,1,1],'rearLookDirection':[0,0,1]}for side,sign in [('left',-1),('right',1)]],
+ 'recorder':{'bodyMesh':'drive_recorder_body','cradleMesh':'drive_recorder_cradle','readoutMesh':'drive_recorder_readout','center':[-.18,1.115,-.34],'tiltX':-.55,'dimensions':[W,H,D],'readoutLocalCenter':[0,H/2-195.5*W/736,RECORDER_READOUT_Z],'readoutSize':[666*W/736,239*W/736],'uv':[0,0,1,1],'normal':[0,0,1],'artworkPixels':[666,239]},
+ 'parts':rows,'triangles':sum(r['triangles']for r in rows),'materials':len(M),'textures':7,
+ 'sha256':hashlib.sha256(open(path,'rb').read()).hexdigest()}
+receipt['cabinRevision']='transit-'+'mk3'
 receipt['preservedNonCabin']=preserved_non_cabin
-receipt['cabinConstruction']={'units':'metres','shell':'double-skin lower doors, pressed firewall and threshold; open exact glazing aperture','dashboard':'closed formed upper shell, hollow backed instrument hood and bolted equipment shelf','trim':'backed fibreboard door cards, open pockets, curved insulated headliner, padded visors','seating':'shaped sagging vinyl cushions and reclining backs, separate runners and parked belt hardware','features':cabin_features,'pending':'Actual final-render cabin lighting, moving hand clearance and human material recognition require native inspection.'}
-receipt['radioConstruction']={'units':'metres','case':'backed sleeve overlapping fascia mount, rubber isolation feet on existing equipment shelf, folded support cleats','face':'solid enamel fascia, ivory scale enamel behind independent moving pointer, solid metal perimeter','presets':'three spring sleeves and caps at the exact three operative reach coordinates; rest contact z=-.379, available stem depth .009','power':'solid central contact face at unchanged [-.065,1.10,-.360], shaft and collared grip','features':radio_features,'pending':'Actual moving hand contact, radio scale stability and recognition require native inspection.'}
-receipt['notes']=['All built materials remain opaque; the shared runtime owns the preserved windscreen/side-glass and actual mirror reflection.','Eye, wheel/rim, wiper, speed and radio needle, recorder readout and control locations are unchanged.','All meshes except cabin and radio preserve exact accessor bytes and material channels from the saved before asset.','Broad opaque cabin-only material values establish the fascia and trim hierarchy without altering the final dither or world stocks.']
+receipt['cabinConstruction']={'units':'metres','features':cabin_features}
+receipt['radioConstruction']={'units':'metres','features':radio_features}
 json.dump(receipt,open(os.path.join(GEO,'metrics.json'),'w'),indent=2)
 canonical=os.path.join(ROOT,'public/assets/source-drive');os.makedirs(os.path.join(canonical,'geometry'),exist_ok=True)
 shutil.copy2(path,os.path.join(canonical,'drive.glb'))
 shutil.copy2(os.path.join(GEO,'metrics.json'),os.path.join(canonical,'geometry/metrics.json'))
-print('DRIVE_GEOMETRY '+json.dumps({'path':path,'triangles':receipt['triangles'],'materials':len(M),'parts':len(rows),'sha256':receipt['sha256']}))
+print('DRIVE_GEOMETRY '+json.dumps({'variant':'mk3','path':path,'triangles':receipt['triangles'],'cabinTriangles':cabRow['triangles'],'materials':len(M),'sha256':receipt['sha256'],'mount':MOUNT,'body':receipt['body']}))
+

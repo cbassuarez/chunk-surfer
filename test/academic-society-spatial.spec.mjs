@@ -8,11 +8,20 @@ import {BUILDING_MAP} from '../src/data/building-map.js';
 import {PROP_BOUNDS} from '../src/data/generated/prop-geometry.js';
 import {ACADEMIC_SOCIETY_ACTORS as ACTORS} from '../src/data/academic-society.js';
 import {ACADEMIC_FLOOR_POPULATION as POPULATION,ACADEMIC_POPULATION_RAIL_SUPPORT} from '../src/data/academic-floor-population.js';
+import {ACADEMIC_GALLERY_PA} from '../src/data/academic-gallery-pa.js';
 import {createAcademicFloorPopulation} from '../src/game/academic-floor-population.js';
 import {academicSocietyCharacterInstances,academicFloorPopulationInstances,academicPopulationSocialGeometry} from '../src/render/academic-society-characters.js';
 import {parseCharacterAsset,sampleCharacterPose} from '../src/render/character-asset.js';
 import * as FP from '../src/world/floorplan.js';
 import * as PROPS from '../src/game/props.js';
+
+const geometryFiles=['src/data/main-stair-geometry.js','src/data/floorplan/conservatory.js','src/world/floorplan.js','src/data/academic-gallery-pa.js'];
+const geometryHashes=()=>Object.fromEntries(geometryFiles.map(path=>[path,createHash('sha256').update(fs.readFileSync(new URL('../'+path,import.meta.url))).digest('hex')]));
+const geometrySourceSha256=geometryHashes();
+after(()=>{
+ assert.deepEqual(geometryHashes(),geometrySourceSha256,'compiled geometry changed during spatial proof; rerun against one stable source revision');
+ if(costumeEnvelopeEvidence){costumeEnvelopeEvidence.geometrySourceSha256=geometrySourceSha256;costumeEnvelopeEvidence.paStaging={mainCallSha256:paStagingSourceSha256,placements:ACADEMIC_GALLERY_PA.placements.map(gear=>({id:gear.id,x:gear.x,y:gear.y,w:gear.w,d:gear.d,blocks:gear.blocks})),method:'Actual main syncStoryObjectProps PA loop executed before reachable-floor graph, E picking, all route legs and live carrier occupancy tests.'};}
+});
 
 FP.compile(conservatory.levels,{width:conservatory.width,height:conservatory.height,widenCorridors:conservatory.widenCorridors,connectors:conservatory.connectors||[],edgePortals:conservatory.edgePortals||[],doors:conservatory.doors||[]});
 PROPS.propsInit(FP);
@@ -20,9 +29,17 @@ const scale=FP.toRuntimeDistance(1),runtime=(x,y)=>({x:x*scale,y:y*scale}),physi
 const main=fs.readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
 const ALL_ACTORS=[...ACTORS,...POPULATION];
 function stagingLoop(symbol){const start=main.indexOf(`  for(const person of ${symbol}){`,main.indexOf('function syncStoryObjectProps(){'));assert.ok(start>=0,`main stages ${symbol} in the live story-object path`);let i=main.indexOf('{',start),depth=1;for(i++;i<main.length&&depth;i++){if(main[i]==='{')depth++;if(main[i]==='}')depth--;}return main.slice(start,i);}
+// The live PA loop has a single call body rather than a braced loop body.
+// Balance the entire setPlacedProp call, including any nested calls.
+function stagingCall(symbol){const start=main.indexOf(`  for(const gear of ${symbol})`,main.indexOf('function syncStoryObjectProps(){'));assert.ok(start>=0,`main stages ${symbol} in the live story-object path`);let body=main.indexOf(')',start)+1;while(/\s/.test(main[body]))body++;if(main[body]==='{'){let i=body,depth=1;for(i++;i<main.length&&depth;i++){if(main[i]==='{')depth++;if(main[i]==='}')depth--;}return main.slice(start,i);}const call=main.indexOf('PROPS.setPlacedProp(',start);assert.ok(call>start&&call<main.indexOf('  for(const person of ',start));let i=main.indexOf('(',call),depth=1;for(i++;i<main.length&&depth;i++){if(main[i]==='(')depth++;if(main[i]===')')depth--;}assert.equal(main[i],';','PA staging call ends at its actual statement boundary');return main.slice(start,i+1);}
+const paStagingSource=stagingCall('ACADEMIC_GALLERY_PA.placements');
+const paStagingSourceSha256=createHash('sha256').update(paStagingSource).digest('hex');
 // Execute the actual main staging block. This catches an undefined scale name,
 // half-cell quantisation and missing interaction-height metadata at that boundary.
-Function('FP','PROPS','ACADEMIC_SOCIETY_ACTORS','ACADEMIC_FLOOR_POPULATION',stagingLoop('ACADEMIC_SOCIETY_ACTORS')+'\n'+stagingLoop('ACADEMIC_FLOOR_POPULATION'))(FP,PROPS,ACTORS,POPULATION);
+Function('FP','PROPS','ACADEMIC_SOCIETY_ACTORS','ACADEMIC_FLOOR_POPULATION','ACADEMIC_GALLERY_PA','academicActorPresent',paStagingSource+'\n'+stagingLoop('ACADEMIC_SOCIETY_ACTORS')+'\n'+stagingLoop('ACADEMIC_FLOOR_POPULATION'))(FP,PROPS,ACTORS,POPULATION,ACADEMIC_GALLERY_PA,()=>true);
+Function('FP','PROPS','ACADEMIC_GALLERY_PA',paStagingSource)(FP,PROPS,ACADEMIC_GALLERY_PA);
+assert.equal(PROPS.renderInstances({group:'academic-pa-proxy',inscriptions:false}).length,3,'repeated actual PA staging replaces the same three placed props');
+for(const gear of ACADEMIC_GALLERY_PA.placements){const proxy=PROPS.propById(gear.id);assert.ok(proxy,gear.id+' must participate in every route and E check');assert.equal(proxy.blocks,true,gear.id+' must retain blocking intent');assert.equal(proxy.x,gear.x,gear.id+' collision must share the rendered authored X');assert.equal(proxy.y,gear.y,gear.id+' collision must share the rendered authored Y');assert.equal(proxy.floor,10);assert.equal(PROPS.propCanOccupy(gear.x*scale,gear.y*scale),false,gear.id+' must block actual player occupancy');}
 const doors=FP.doorState().filter(d=>d.id.startsWith('academic-'));
 const routeDoorIds=['academic-chamber-vestibule','academic-gallery-lobby'];
 for(const id of routeDoorIds){const door=doors.find(d=>d.id===id);assert.ok(door&&!door.keyId);FP.setDoorOpen(id,true);}
@@ -81,9 +98,10 @@ test('new local partners and original chamber pair see each other without crossi
  for(const [from,to]of localPairs){const a=ACTORS.find(a=>a.id===from),b=ACTORS.find(a=>a.id===to);assert.ok(a&&b,`${from}/${to} need actual bodies`);assert.ok(clearSegment(a,b),`${from}/${to} must not talk through plaster or a closed leaf`);assert.ok(Math.hypot(a.x-b.x,a.y-b.y)<6,`${from}/${to} stay conversationally close`);}
 });
 
-test('three additions preserve four existing anchors and enough space between every body',()=>{
- const originals={odette:[14.5,274.5],emile:[8.6,250.5],celeste:[12.2,246.6],lucien:[25.6,246.2]};
+test('stair-safe reception preserves every other named anchor and enough space between every body',()=>{
+ const originals={emile:[8.6,250.5],celeste:[12.2,246.6],lucien:[25.6,246.2],noe:[26.6,244.2],sabine:[11,247.5]};
  for(const[id,[x,y]]of Object.entries(originals)){const actor=ACTORS.find(a=>a.id===id);assert.equal(actor?.x,x,id+' moves from existing place');assert.equal(actor?.y,y,id+' moves from existing place');}
+ for(const[id,[x,y]]of Object.entries({odette:[16.6,276],agathe:[16.4,274.3]})){const actor=ACTORS.find(a=>a.id===id);assert.deepEqual([actor.x,actor.y],[x,y],id+' must remain on the verified reception platform');}
  for(let i=0;i<ALL_ACTORS.length;i++)for(let j=i+1;j<ALL_ACTORS.length;j++)assert.ok(Math.hypot(ALL_ACTORS[i].x-ALL_ACTORS[j].x,ALL_ACTORS[i].y-ALL_ACTORS[j].y)>1.1,`${ALL_ACTORS[i].id}/${ALL_ACTORS[j].id} crowd their distinct body and gesture envelopes`);
 });
 
@@ -107,13 +125,13 @@ test('the actual main dynamic-render block puts seven named and twenty-six popul
 test('actual main updates the connecting carrier E proxy to its current rendered body position',()=>{
  const controller=createAcademicFloorPopulation();controller.tick(0,{onAcademicFloor:true});for(let i=0;i<170;i++)controller.tick(.1,{onAcademicFloor:true,canMove:populationCanMove});
  const moving=controller.actorFrame().filter(actor=>actor.route);assert.equal(moving.length,1);
- const sync=Function('FP','PROPS','academicFloorPopulation',functionSource('syncAcademicPopulationProxies')+';return syncAcademicPopulationProxies;')(FP,PROPS,controller);sync();
+ const sync=Function('FP','PROPS','academicFloorPopulation','academicActorPresent',functionSource('syncAcademicPopulationProxies')+';return syncAcademicPopulationProxies;')(FP,PROPS,controller,()=>true);sync();
  for(const actor of moving){const proxy=PROPS.propById(actor.id);assert.equal(proxy.interactionX,actor.x);assert.equal(proxy.interactionY,actor.y);assert.ok(actor.distance>0);
   let selected=false;for(let i=0;i<32&&!selected;i++){const yaw=i*Math.PI/16,at={x:actor.x-Math.sin(yaw)*1.5,y:actor.y+Math.cos(yaw)*1.5},p=runtime(at.x,at.y);if(!traversable(p.x,p.y))continue;
    const pitch=Math.atan2(actor.floor+actor.height*.91-(FP.floorAt(p.x,p.y)+1.58),1.5),picked=PROPS.pickProp(p.x,p.y,0,2,{yaw,pitch,eyeHeight:1.58});selected=picked?.id===actor.id;
   }assert.ok(selected,actor.id+' has no live E approach after ordinary navigation');
  }
- Function('FP','PROPS','ACADEMIC_FLOOR_POPULATION',stagingLoop('ACADEMIC_FLOOR_POPULATION'))(FP,PROPS,POPULATION);
+ Function('FP','PROPS','ACADEMIC_FLOOR_POPULATION','academicActorPresent',stagingLoop('ACADEMIC_FLOOR_POPULATION'))(FP,PROPS,POPULATION,()=>true);
 });
 
 test('the room connector retains45cm static clearance and live doors block it; the apparition group avoids the atrium void',()=>{

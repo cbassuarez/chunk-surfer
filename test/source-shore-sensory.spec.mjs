@@ -246,7 +246,8 @@ test('a real mid-rise save restores exact yaw and pitch without replacing the or
   riding.tick(2, { px: body.x, py: body.y, facing: 0 });
   const before = riding.sourceShoreFrame(); assert.equal(before.lift.phase, 'rising');
   const desired = { yaw: 1.1734, pitch: -.2387 }, ordinary = { yaw: -.81, pitch: .14 };
-  const capture = vm.createContext({ chunkSurfRuntime: riding, sourceShoreOutside, R3: { r3dLookAngles: () => desired } });
+  const capture = vm.createContext({ chunkSurfRuntime: riding, sourceShoreOutside, R3: { r3dLookAngles: () => desired },
+    sourceDriveSession: null, sourcePubScene: null, sourceContinuationScene: null });
   vm.runInContext(mainFunction('sourceCameraPatch'), capture);
   const patch = capture.sourceCameraPatch();
   assert.equal(patch.sourceView.yaw, desired.yaw); assert.equal(patch.view, undefined);

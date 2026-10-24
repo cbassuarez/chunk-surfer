@@ -551,13 +551,13 @@ export function sourceCombatBattle(options = {}) {
   };
 }
 
-export function cathedralBellCombatDefinition({ phase = 1, carriedDamage = 0, alarm = 0, personalOpening = false, openingReference = personalOpening } = {}) {
+export function cathedralBellCombatDefinition({ phase = 1, carriedDamage = 0, alarm = 0, personalOpening = false, coastalOpening = false, openingReference = personalOpening || coastalOpening } = {}) {
   const source = authoredCombatProfile('source');
   const second = Number(phase) >= 2;
   // WHAT THE BELFRY TOLD THE CROSSING. A body that came down without brushing a
   // bell arrives unseen and opens with one more charge; one that rang two or more
   // walks into bells already moving. Small either way, like every tell.
-  const rung = personalOpening && !second ? 0 : Math.max(0, Math.floor(Number(alarm) || 0));
+  const rung = (personalOpening || coastalOpening) && !second ? 0 : Math.max(0, Math.floor(Number(alarm) || 0));
   const movements = second
     ? [
         movement('surfer-return', 'THE SURFER ENTERS THE PEAL', 30, [
@@ -601,8 +601,9 @@ export function cathedralBellCombatDefinition({ phase = 1, carriedDamage = 0, al
     cathedralPhase: second ? 2 : 1,
     alarm: rung,
     personalOpening: !!personalOpening && !second,
+    coastalOpening: !!coastalOpening && !second,
     ...(!second && openingReference ? { openingTake: {
-      id: 'cathedral:contractor-reference', label: 'CONTRACTOR / TWO NOTES',
+      id: coastalOpening ? 'cathedral:coastal-box-reference' : 'cathedral:contractor-reference', label: coastalOpening ? 'MUSIC BOX / TWO NOTES' : 'CONTRACTOR / TWO NOTES',
       damage: 3 * GRID, tag: 'cathedral-reference',
     } } : {}),
     ...(!second && rung === 0 ? { openingCharge: 2 } : {}),
@@ -622,6 +623,10 @@ export function cathedralBellCombatBattle(options = {}) {
       { who: 'direction', text: 'A man drops from the crossing dark and catches the bell return before it can die.' },
       { who: 'surfer', text: 'You brought me a cathedral.' },
       { who: 'direction', text: 'He opens both hands. Every bell answers through him, and the pressure you spent reaching this phase remains spent.' },
+    ] : combat.coastalOpening ? [
+      { who: 'direction', text: 'The two notes from the box answer from the belfry. The full ring holds its breath.' },
+      { who: 'direction', text: 'The music-box reference is already loaded. Play it once to answer any strike safely.' },
+      { who: 'you', text: 'Those two notes.' },
     ] : combat.personalOpening ? [
       { who: 'direction', text: 'The two notes on the old recording answer from the belfry. The full ring holds its breath.' },
       { who: 'direction', text: 'The contractor\'s reference is already loaded. Play it once to answer any strike safely.' },

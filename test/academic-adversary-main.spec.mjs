@@ -46,6 +46,9 @@ async function adapter(run,{saved,demonstrated=true}={}){
     scenes.clear();PROPS.propsInit(FP);PROPS.loadPropState({});REC.recState().phase='idle';REC.loadRecState(getSave().rec||{});
     const calls={audio:[],paint:[],lines:[],messages:[],sight:[]},leases=[];let activeSpeech=null;
     const c={FP,PROPS,REC,CELL,scenes,ACADEMIC_SOCIETY_ACTORS,ACADEMIC_BOUNCER_ACTORS,ACADEMIC_ADVERSARY_SOCIAL_REPLIES,
+      // This original threat fixture is the first, fully populated visit;
+      // academic-floor-returns-main exercises the real depletion policy.
+      academicActorPresent:()=>true,academicLinesPresent:()=>true,
       bouncerSocialAudible,academicBouncerSegmentClear,academicAdversaryParts,adversaryWorldMatrix,costumeExchangeParts,
       createAcademicAdversaries,freshConservatoryAdversaries,stepConservatoryAdversaries,CONSERVATORY_ADVERSARY_FLAGS,
       academicAdversaries:createAcademicAdversaries(getSave().academicAdversaries),conservatoryAdversaries:freshConservatoryAdversaries(),

@@ -1,0 +1,18 @@
+{
+  "source": "/Users/seb/Downloads/06.wav",
+  "sourceSha256": "3e9c24eaada1858d35911bffeddcac9bc2725dae0186ecaa79756b8a71b0fe62",
+  "sourceBytes": 115354200,
+  "sourceFormat": "48000 Hz stereo 24-bit PCM WAV",
+  "output": "academic-inframusic.mp3",
+  "outputSha256": "00ef04da58a1f5f1ccfbb6ec4368b93488121704a7291fc4c181f88f494f0dd9",
+  "outputBytes": 6399405,
+  "durationSec": 399.911271,
+  "outputFormat": "48000 Hz stereo 128 kbit/s MP3",
+  "treatment": "Full uploaded track retained; 20 ms fade at each endpoint to reduce loop-boundary discontinuity. Original WAV untouched. Metadata and chapter labels omitted from playback derivative.",
+  "command": "ffmpeg -hide_banner -loglevel error -nostdin -y -i /Users/seb/Downloads/06.wav -map 0:a:0 -map_metadata -1 -map_chapters -1 -af 'afade=t=in:st=0:d=0.02,afade=t=out:st=399.891270833333:d=0.02' -c:a libmp3lame -b:a 128k -ar 48000 public/audio/academic-inframusic.mp3",
+  "sourceMeanDbFS": -19.5,
+  "sourcePeakDbFS": -0.1,
+  "decodedEndpointJumpFullScale": [0.0003364371841598768, 0.0004612786324287299],
+  "musicalLoopContinuityTested": false,
+  "nativeAuditionTested": false
+}

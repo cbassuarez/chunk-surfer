@@ -4,12 +4,18 @@
 // aisle, inner screen, chancel step and both tower thresholds keep their use.
 export const CHAPEL_DRESSING_ASSET = 'assets/chapel-dressing.glb';
 export const CHAPEL_DRESSING_PREFIX = 'chapel-dressing:';
+// A congregant is drawn in three rigid parts so it can turn toward you: legs
+// that stay in the pew, an upper body that twists about the pelvis, and a head
+// that turns about the neck (see game/chapel-apparitions.js). The celebrant
+// and the servers keep their robes on one body. Ceiling bodies cling.
 export const CHAPEL_DRESSING_MESH = Object.freeze({
-  seated: 'chapel_presence_seated',
-  bowed: 'chapel_presence_bowed',
-  kneeling: 'chapel_presence_kneeling',
+  seatedLower: 'chapel_presence_seated_lower', seatedUpper: 'chapel_presence_seated_upper',
+  bowedLower: 'chapel_presence_bowed_lower', bowedUpper: 'chapel_presence_bowed_upper',
+  kneelingLower: 'chapel_presence_kneeling_lower', kneelingUpper: 'chapel_presence_kneeling_upper',
   celebrant: 'chapel_presence_celebrant',
   acolyte: 'chapel_presence_acolyte',
+  head: 'chapel_presence_head',
+  clinging: 'chapel_presence_clinging',
   writing: 'chapel_writing_stop',
   overwritten: 'chapel_writing_overwritten',
   empty: 'chapel_writing_empty',
@@ -53,23 +59,49 @@ export const CHAPEL_CONGREGATION = freeze(
       const index = row * 6 + bank * 3 + seat;
       if ([4, 12, 23, 31, 42, 51, ...servicePlaces].includes(index)) return [];
       const kneeling = !seatedPlaces.includes(index);
+      const figure = kneeling ? 'kneeling' : (index % 2 ? 'bowed' : 'seated');
       return [freeze({
         id: `${CHAPEL_DRESSING_PREFIX}presence-${index}`,
-        mesh: kneeling ? M.kneeling : (index % 2 ? M.bowed : M.seated),
+        mesh: M[`${figure}Lower`], figure,
         x: x + offset, y: y + (kneeling ? .95 : -.045),
         yaw: Math.PI + ((index % 5) - 2) * .018,
         scale: .95 + (index % 4) * .025,
         kind: 'presence', role: 'congregant', posture: kneeling ? 'kneeling-prayer' : 'seated-prayer', row, bank, seat,
       })];
     }))),
-    freeze({ id: `${CHAPEL_DRESSING_PREFIX}celebrant`, mesh: M.celebrant,
+    freeze({ id: `${CHAPEL_DRESSING_PREFIX}celebrant`, mesh: M.celebrant, figure: 'celebrant',
       ...CHAPEL_MASS.celebrant, scale: 1, kind: 'presence', role: 'celebrant', posture: 'orans' }),
     ...CHAPEL_MASS.acolytes.map((at, index) => freeze({
-      id: `${CHAPEL_DRESSING_PREFIX}acolyte-${index}`, mesh: M.acolyte,
+      id: `${CHAPEL_DRESSING_PREFIX}acolyte-${index}`, mesh: M.acolyte, figure: 'acolyte',
       ...at, scale: index ? .96 : 1.015, kind: 'presence', role: 'acolyte', posture: 'kneeling-prayer',
     })),
   ],
 );
+
+// THE CEILING. Bodies flat to the stone, crawling, heads turned down to you.
+// Most cling to the low ceiling under the west gallery (8.45 m, over the
+// middle pews and the aisle) and two to the narthex ceiling you walk in under;
+// three are up in the vault over the altar, where the nave opens to 17.8 m.
+// AUTHORED metres; `surface` names the kind of ceiling: a `flat` one is read
+// from the plan, the `vault` is the chapel_vault prop's pitched shells.
+const ceiling = (id, x, y, surface, heading) => freeze({
+  id: `${CHAPEL_DRESSING_PREFIX}ceiling-${id}`, mesh: M.clinging, figure: 'clinging',
+  x, y, surface, heading, scale: .97, kind: 'presence', role: 'ceiling', posture: 'clinging',
+});
+export const CHAPEL_CEILING = freeze([
+  ceiling('loft-a', 89.6, 69.5, 'flat', .4), ceiling('loft-b', 95.2, 71.8, 'flat', 2.6),
+  ceiling('loft-c', 91.0, 74.6, 'flat', -1.2), ceiling('loft-d', 94.4, 77.9, 'flat', .9),
+  ceiling('loft-e', 89.2, 79.8, 'flat', -2.4),
+  ceiling('vault-altar-w', 90.4, 83.6, 'vault', 1.7), ceiling('vault-altar-e', 95.0, 86.2, 'vault', -1.4),
+  ceiling('vault-altar', 91.4, 89.9, 'vault', 3.0),
+  ceiling('narthex-e', 94.6, 61.5, 'flat', -.3), ceiling('narthex-w', 90.1, 64.2, 'flat', 2.2),
+]);
+// The vault is the chapel_vault prop's two pitched shells (build-props.mjs):
+// 9.5 m at the walls to 13 m at the ridge, measured from the floor under the
+// prop's own anchor (it does not follow the chancel step), ridge on x 92.5.
+export const CHAPEL_CEILINGS = freeze({
+  vault: freeze({ anchor: freeze({ x: 92.5, y: 75.5 }), ridgeX: 92.5, halfSpan: 6, wall: 9.5, ridge: 13 }),
+});
 
 // Three hands: the large exhausted statement; a patient repetition below it;
 // the institution's "empty room" description worked over until it is a stain.
@@ -109,8 +141,8 @@ export const CHAPEL_DRESSING = freeze([
 ]);
 
 export const CHAPEL_DRESSING_BUDGET = freeze({
-  presences: 48, dressing: 26, meshes: 11,
-  packedTriangles: 24000, packBytes: 1800000,
+  presences: 48, ceiling: 10, dressing: 26, meshes: 16,
+  packedTriangles: 30000, packBytes: 1800000,
   // Instanced anatomical poses, not 48 unique draw calls. No light or shadow
   // map is added by this treatment; all ink belongs to the existing renderer.
   additionalLights: 0, additionalShadowMaps: 0, maxPresenceDistance: 34,

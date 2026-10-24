@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { PAPER_WORLD_MATERIAL } from './src/data/paper-world-material.js';
+import { lensDevControl } from './tools/chunk_surfer/lens-dev-control.mjs';
 
 const host = process.env.TAURI_DEV_HOST;
 const appVersion = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version;
@@ -30,7 +31,7 @@ function physicalPaperRuntimeAssets() {
 }
 
 export default defineConfig({
-  plugins: [physicalPaperRuntimeAssets()],
+  plugins: [physicalPaperRuntimeAssets(), lensDevControl()],
   base: './',
   clearScreen: false,
   server: {

@@ -151,6 +151,7 @@ export function compile(levels, { width, height, widenCorridors = false, connect
   // and the newel void — have real geometry but no address you can stand on.
   // buildPhysicalSpans folds these in; nothing else needs to know.
   plan.stairFill = [];
+  plan.stairwells = [];
 
   for (const level of levels) {
     const { rows, origin, base = 0 } = level;
@@ -202,6 +203,7 @@ export function compile(levels, { width, height, widenCorridors = false, connect
   // It may change the save/pathfinding address, never the player's position or
   // height. Bad level data now fails compilation instead of becoming a
   // one-keypress teleport in the game.
+  applyStairwellCollision(edgePortals);
   connectorMap.clear();
   for(const c of connectors) registerConnector(c);
   edgePortalMap.clear();
@@ -642,7 +644,9 @@ function arcFlight(id,flight,a,b,ctx){
       // The ray-marched floor remains a complete annular tread, but none of its
       // square raster centres dictate player motion. The dedicated GLB draws the
       // real curved polygons over this conservative structural support.
-      for(const c of wedge)plan.stairFill.push({
+      // In a stairwell there is no support to draw: the GLB is the stair, and
+      // half-metre wedges at tread height only ever poked through it.
+      if(!ctx.stairwell)for(const c of wedge)plan.stairFill.push({
         px:c.px,pz:c.pz,floor,ceil,flags:F.STAIR,arcId,
         zone:cellOf.zone?ZONE[cellOf.zone]:ZONE.stair,
         material:cellOf.material?MATERIAL[cellOf.material]:MATERIAL.serviceConcrete,
@@ -705,7 +709,7 @@ function arcFlight(id,flight,a,b,ctx){
   // you can see down it from the top and up it from the bottom. canStep refuses
   // it on the riser (the drop in is far past STEP_UP), so it is a view, not a fall.
   const openWell=arc.openWell||arc.newel; // `newel` remains a compatibility alias.
-  if(openWell)for(const c of inner)plan.stairFill.push({
+  if(openWell&&!ctx.stairwell)for(const c of inner)plan.stairFill.push({
     px:c.px,pz:c.pz,floor:openWell.floor,ceil:openWell.ceil,flags:F.STAIR,arcId,
     zone:ZONE.stair,material:MATERIAL.serviceConcrete,
     layer:flight.layer||ctx.layer,spaceId:flight.space||ctx.space,
@@ -737,12 +741,15 @@ function arcFlight(id,flight,a,b,ctx){
 function compoundStair({
   id='stair',flights=[],landings=[],zone=null,material=null,
   layer='stair',space='stair',renderGroup='ground',head=2.6,physicalReplace=false,physicalStack=false,
+  // A STAIRWELL: the square a hero stair stands in, where its mesh draws
+  // everything. Optional and per stair; only the main open-well stair has one.
+  stairwell=null,
 }){
   const portals=[];
   for(const flight of flights){
     const a=toRuntimePoint(flight.from,{center:false});
     const b=toRuntimePoint(flight.to,{center:false});
-    if(flight.arc){portals.push(arcFlight(id,flight,a,b,{zone,material,layer,space,renderGroup,head,physicalReplace,physicalStack}));continue;}
+    if(flight.arc){portals.push(arcFlight(id,flight,a,b,{zone,material,layer,space,renderGroup,head,physicalReplace,physicalStack,stairwell}));continue;}
     const p0=authoredPhysicalPoint(flight.physicalFrom);
     const p1=authoredPhysicalPoint(flight.physicalTo);
     if(!p0||!p1)throw new Error(`${id}/${flight.id||'flight'} requires physicalFrom and physicalTo`);
@@ -816,7 +823,53 @@ function compoundStair({
       renderGroup:landing.renderGroup||renderGroup,owner:id,physicalReplace,physicalStack,
     });
   }
+  // ONE COLUMN OF AIR PER CELL OF THE STAIRWELL.
+  //
+  // The grid draws the stairwell floor and nothing above it until the roof:
+  // every flight, landing and slab edge in here is the mesh's. The span is a
+  // structural stair span, so it wins the shared air from the halls it cuts
+  // through, and it is lower than this stair's own landing cells, so it wins
+  // those too. Collision is untouched; it lives in the logical cells.
+  if(stairwell){
+    const x0=Math.round(stairwell.x0*PLAN_SCALE),x1=Math.round(stairwell.x1*PLAN_SCALE);
+    const z0=Math.round(stairwell.z0*PLAN_SCALE),z1=Math.round(stairwell.z1*PLAN_SCALE);
+    for(let pz=z0;pz<z1;pz++)for(let px=x0;px<x1;px++)plan.stairFill.push({
+      px,pz,floor:stairwell.floor,ceil:stairwell.ceil,flags:F.STAIR,arcId:0,
+      zone:zone?ZONE[zone]:ZONE.stair,material:material?MATERIAL[material]:MATERIAL.serviceConcrete,
+      layer,spaceId:space,renderGroup,owner:id,flightId:0,physicalReplace,physicalStack,stairwell:1,
+    });
+    plan.stairwells.push({owner:id,...stairwell});
+  }
   return portals;
+}
+
+// Inside a stairwell the walkable floor at a landing level is exactly the built
+// landing. A cell at that level whose centre lies over the void (the open well,
+// a flight's open half, a strip under a flight) stops being somewhere you can
+// stand. Its address, its seams and its room stay as they are.
+//
+// A cell a seam lands on is kept walkable whatever lies under it: closing it
+// would leave that lane of the seam a wall you cannot see. Today that is two
+// lanes where the upper landing meets the third half-turn, whose landing cells
+// sit over that flight's first riser; re-authoring that seam is what fixes it.
+function applyStairwellCollision(edgePortals=[]){
+  const seamCells=new Set();
+  for(const portal of edgePortals)for(const end of[portal.from,portal.to]){
+    const at=toRuntimePoint(end?.at||{},{center:false}),along={x:Math.sign(Number(end?.along?.x)||0),y:Math.sign(Number(end?.along?.y)||0)};
+    const lanes=Math.max(1,Math.round(Number(portal.width||1)*PLAN_SCALE));
+    for(let lane=0;lane<lanes;lane++)seamCells.add(idx(at.x+along.x*lane,at.y+along.y*lane));
+  }
+  const inPolygon=([x,z],poly)=>{let c=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const [xi,zi]=poly[i],[xj,zj]=poly[j];if((zi>z)!==(zj>z)&&x<(xj-xi)*(z-zi)/(zj-zi)+xi)c=!c;}return c;};
+  for(const well of plan.stairwells){
+    for(let i=0;i<plan.w*plan.h;i++){
+      if(plan.solid[i]||plan.physicalX[i]===PHYSICAL_VOID)continue;
+      const run=plan.flightId[i]?plan.stairRuns[plan.flightId[i]-1]:null;if(run?.analyticHelix)continue;
+      const cx=(plan.physicalX[i]+.5)*CELL,cz=(plan.physicalY[i]+.5)*CELL;
+      if(cx<=well.x0||cx>=well.x1||cz<=well.z0||cz>=well.z1)continue;
+      const level=(well.walkable||[]).find((w)=>Math.abs(plan.floor[i]-w.height)<.01);
+      if(level&&!seamCells.has(i)&&!inPolygon([cx,cz],level.polygon))plan.collisionOnly[i]=1;
+    }
+  }
 }
 
 function rampStair(spec) {
@@ -1132,7 +1185,7 @@ function buildPhysicalSpans(){
   for(const f of plan.stairFill){
     const key=`${f.px},${f.pz}`;minX=Math.min(minX,f.px);minY=Math.min(minY,f.pz);maxX=Math.max(maxX,f.px);maxY=Math.max(maxY,f.pz);
     if(!cells.has(key))cells.set(key,[]);
-    cells.get(key).push({floor:f.floor,ceil:f.ceil,flags:f.flags,zone:f.zone,material:f.material,logicalX:-1,logicalY:-1,layer:f.layer,spaceId:f.spaceId,renderGroup:f.renderGroup,owner:f.owner,arcId:f.arcId||0,flightId:f.flightId||0,physicalReplace:!!f.physicalReplace,physicalStack:!!f.physicalStack});
+    cells.get(key).push({floor:f.floor,ceil:f.ceil,flags:f.flags,zone:f.zone,material:f.material,logicalX:-1,logicalY:-1,layer:f.layer,spaceId:f.spaceId,renderGroup:f.renderGroup,owner:f.owner,arcId:f.arcId||0,flightId:f.flightId||0,physicalReplace:!!f.physicalReplace,physicalStack:!!f.physicalStack,stairwell:!!f.stairwell});
   }
   let maxSpans=0,overlaps=[];
   const intersects=(a,b)=>a.floor<b.ceil-.01&&b.floor<a.ceil-.01;

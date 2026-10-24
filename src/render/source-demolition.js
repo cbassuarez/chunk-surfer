@@ -43,7 +43,7 @@ export function sourceDemolitionInstances(frame,{
     // Reduced motion uses the two authored endpoints at staggered release
     // times. It retains the same losses and openings without falling motion.
     const time=!frame.committed?0:reducedMotion||effectsMode==='off'
-      ?frame.elapsed>=part.startTime+1.1?geometry.duration:0:Math.min(geometry.duration,frame.elapsed);
+      ?frame.elapsed>=(part.releaseTime??part.startTime+.45)+1?geometry.duration:0:Math.min(geometry.duration,frame.elapsed);
     const pose=sourceDemolitionPose(motion.tracks[part.mesh],time,geometry.sampleHz);
     if(pose)out.push(placed(`source-demolition:${part.id}`,part.mesh,multiply(parent,quaternionTR(pose.translation,pose.rotation))));
   }

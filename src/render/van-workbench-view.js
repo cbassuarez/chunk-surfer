@@ -8,6 +8,7 @@ import { fitLines } from './fit-text.js';
 import { FIELD_KIT_OPTIONS, normalizeFieldKit, fieldKitEffects, fieldKitOptionAvailability } from '../game/field-kit.js';
 import { vanWorkbenchModelIds, vanWorkbenchSelectedObject } from './van-workbench-stage.js';
 import { vanKitModel } from '../data/van-kit-models.js';
+import { vanWorkbenchProgress,vanWorkbenchOptionPresentation } from './van-workbench-guidance.js';
 
 export const VAN_WORKBENCH_GROUPS = Object.freeze([
   { id: 'headphones', label: 'HEADPHONES', color: 'amber' },
@@ -44,30 +45,48 @@ export function vanWorkbenchEffectRows(kit) {
     `OVERLOAD ${delta(effects.spoilToleranceScale)} / AMP CELL ${delta(effects.torchDrainScale)}`,
     `BEAM ${delta(effects.flashlightReachScale)} / LIGHT CELL ${delta(effects.flashlightDrainScale)}`];
 }
+export function groupModelId(group,id,kit={}) {
+  if(group==='headphones'||group==='microphone'||group==='flashlight')return `${group}-${id}`;
+  if(group==='recorder')return `amp-${id}`;
+  if(group==='flashlightHousing')return `flashlight-${kit.flashlight||'reference'}`;
+  return 'recorder';
+}
+export function vanWorkbenchConsidered(state,group,focusId,regions=[]) {
+  const focused=regions.find(item=>item.id===focusId);
+  return vanWorkbenchOptionPresentation(state,group,focused?.group===group?focused.optionId:null);
+}
 const region = (id, kind, rect, extra = {}) => ({ ...rect, id, kind, ...extra });
 export function vanWorkbenchLayout(size = {}, state = {}, selectedGroup = 'headphones', targets = {}) {
   const cols = Math.max(40, Number(size.cols) || 150), rows = Math.max(16, Number(size.rows) || 38);
   const compact = cols < 110 || rows < 28, margin = compact ? .65 : 1.3;
   const outer = { x: margin, y: .55, w: cols - margin * 2, h: rows - 1.1 };
-  const footerY = rows - 2.5, filmY = footerY - 2.45;
-  const stage = { x: outer.x, y: 2.1, w: outer.w * .675, h: filmY - 2.5 };
-  const fittings = { x: stage.x + stage.w + .65, y: 2.1, w: outer.w - stage.w - .65, h: filmY - 2.5 };
+  const footerY = rows - 2.25, filmY = rows - 5.35;
+  const stepsY = compact ? 1.6 : 1.9, stepsH = compact ? 1.05 : 1.7;
+  const contentY = stepsY + stepsH + (compact ? .35 : .55);
+  const stage = { x: outer.x, y: contentY, w: outer.w * .59, h: filmY - contentY - .3 };
+  const fittings = { x: stage.x + stage.w + .65, y: contentY, w: outer.w - stage.w - .65, h: stage.h };
+  const progress = vanWorkbenchProgress(state), stepGap = .45, stepW = (outer.w - stepGap * 3) / 4;
+  const preparation = ['case','map','difficulty','gear'].map((id,index)=>({id:`van:${id}`,kind:id==='gear'?'group':id,
+    x:outer.x + index*(stepW+stepGap),y:stepsY,w:stepW,h:stepsH,enabled:id==='case'?!state.bagTaken:id==='map'?!state.mapTaken:true,
+    ...(id==='gear'?{group:progress.next?.group||'headphones'}:{})}));
   const selectedObject = vanWorkbenchSelectedObject(selectedGroup), showRecorder = selectedObject === 'recorder';
   const options = vanWorkbenchOptions(selectedGroup, state);
-  const optionH = compact ? 1.02 : 1.42, optionGap = compact ? .19 : .28;
+  const optionH = compact ? .98 : 1.35, optionGap = compact ? .17 : .25;
   // Four finish plates must leave room to explain a locked WITNESS preview.
   // Only the exceptionally short fallback frame needs a two-column bank.
   const variantColumns = options.length > 3 && rows < 20 ? 2 : 1;
   const optionRows = Math.ceil(options.length / variantColumns);
   const bankH = optionRows * optionH + Math.max(0, optionRows - 1) * optionGap;
-  const previewBudget = options.length > 3 ? Math.max(1.1, fittings.h - 1.5 - .8 - bankH - .45 - 1.75 - 1.1) : Infinity;
-  const preview = { x: fittings.x + .65, y: fittings.y + 1.5, w: fittings.w - 1.3,
-    h: Math.min(fittings.h * .39, compact ? 3 : 9.2, previewBudget) };
+  const headingH = compact ? 1.05 : 1.6, captionH = compact ? .45 : .65;
+  const reservedDescription = rows >= 20 ? 3.1 : 1.7;
+  const previewBudget = Math.max(.6, fittings.h - headingH - captionH - bankH - .3 - reservedDescription - .9);
+  const preview = { x: fittings.x + .65, y: fittings.y + headingH, w: fittings.w - 1.3,
+    h: Math.min(fittings.h * .31, compact ? 2.5 : 7.5, previewBudget) };
   const metrics = uiCellMetrics(), aspect = 736 / 405;
   const previewH = Math.min(preview.h, preview.w * metrics.cellW / (aspect * metrics.cellH));
   const recorder = { x: preview.x + (preview.w - previewH * aspect * metrics.cellH / metrics.cellW) / 2,
     y: preview.y, w: previewH * aspect * metrics.cellH / metrics.cellW, h: previewH };
-  const optionY = preview.y + preview.h + .8;
+  const optionY = preview.y + preview.h + captionH;
   const variantGapX = .45, variantW = (fittings.w - 1.6 - variantGapX * (variantColumns - 1)) / variantColumns;
   const variants = options.map((option, index) => {
     const availability = vanWorkbenchOptionStatus(state, selectedGroup, option.id), witness = selectedGroup === 'faceplate' && option.id === 'witness';
@@ -80,19 +99,25 @@ export function vanWorkbenchLayout(size = {}, state = {}, selectedGroup = 'headp
       enabled: witness ? availability.visible : !!state.bagTaken,
       fittable: !!state.bagTaken && availability.available,
       locked: !availability.available,
-      displayLabel: witness && !availability.owned ? `WITNESS · ${availability.count}/${availability.required}` : option.label };
+      item: groupModelId(selectedGroup,option.id,state.fieldKit),
+      displayLabel: witness && !availability.owned ? `INSPECT · WITNESS ${availability.count}/${availability.required}`
+        : `${vanWorkbenchOptionPresentation(state,selectedGroup,option.id).action} · ${option.label}` };
   });
   const descriptionY = optionY + bankH + .45;
   const description = { x: fittings.x + .9, y: descriptionY, w: fittings.w - 1.8,
     h: Math.max(.65, fittings.y + fittings.h - descriptionY - 1.1) };
-  const groupGap = compact ? .3 : .55, groupW = (outer.w - 1.8 - groupGap * (VAN_WORKBENCH_GROUPS.length - 1)) / VAN_WORKBENCH_GROUPS.length;
-  const groups = VAN_WORKBENCH_GROUPS.map((group, index) => ({ ...group,
-    x: outer.x + .9 + index * (groupW + groupGap), y: filmY + .25, w: groupW, h: 1.45,
-    kind: 'group', controlId: `van:group:${group.id}`, id: `van:group:${group.id}`, group: group.id }));
-  const labelY = stage.y + stage.h - 1.05;
-  const caseRect = { x: stage.x + .8, y: labelY, w: stage.w * .43, h: .9 };
-  const mapRect = { x: stage.x + stage.w * .51, y: labelY, w: stage.w * .31, h: .9 };
-  const difficulty = targets.difficulty || { x: stage.x + stage.w * .75, y: stage.y + .8, w: stage.w * .19, h: stage.h * .19 };
+  const groupGap = compact ? .25 : .45;
+  const groups = VAN_WORKBENCH_GROUPS.map((group, index) => {
+    const required = VAN_PACKING_GROUPS.includes(group.id), bank = required ? stage : fittings;
+    const peers = VAN_WORKBENCH_GROUPS.filter(item=>VAN_PACKING_GROUPS.includes(item.id)===required), at=peers.findIndex(item=>item.id===group.id);
+    const groupW = (bank.w - groupGap * 3) / 4;
+    const packed = !!state.bagTaken && (!state.requirePacking || state.packedGroups?.includes(group.id));
+    return {...group,x:bank.x+at*(groupW+groupGap),y:filmY+.62,w:groupW,h:1.15,
+      kind:'group',controlId:`van:group:${group.id}`,id:`van:group:${group.id}`,group:group.id,
+      key:index+1,required,status:required?(packed?'PACKED':'CHOOSE ONE'):'OPTIONAL'};
+  });
+  const labelY = stage.y + stage.h - .9;
+  const caseRect = preparation[0], mapRect = preparation[1], difficulty = preparation[2];
   const close = region('van:close', 'close', { x: outer.x + 1, y: footerY + .15, w: compact ? 9 : 12, h: 1.5 }, { controlId: 'van:close', enabled: true });
   const continueRegion = region('van:continue', 'continue', { x: outer.x + outer.w - (compact ? 22.5 : 28), y: footerY + .15,
     w: compact ? 21.5 : 27, h: 1.5 }, { controlId: 'van:continue', enabled: vanWorkbenchReady(state) });
@@ -111,8 +136,7 @@ export function vanWorkbenchLayout(size = {}, state = {}, selectedGroup = 'headp
     !catalogTargets.some(([, target]) => target.group === slot) ? [
     region(`van:object:${slot}`, 'group', targets[slot], { group: slot, item: ids[slot], enabled: true })] : []);
   const inspectW = compact ? 5 : 6.2;
-  const inspectMap = region('van:inspect:map', 'inspect', { x: stage.x + stage.w - inspectW - .5,
-    y: labelY, w: inspectW, h: .9 }, { item: 'map', enabled: true });
+  const inspectMap = region('van:inspect:map', 'inspect', {x:stage.x+stage.w*.27,y:labelY,w:stage.w*.18,h:.8}, { item: 'map', enabled: true });
   const inspectRecorder = region('van:inspect:recorder', 'inspect', { x: fittings.x + .9, y: fittings.y + fittings.h - .82,
     w: fittings.w - 1.8, h: .75 }, { item: 'recorder', enabled: !!state.bagTaken });
   const selectedInspect = selectedObject !== 'recorder' ? region(`van:inspect:${ids[selectedObject]}`, 'inspect', inspectRecorder,
@@ -124,8 +148,8 @@ export function vanWorkbenchLayout(size = {}, state = {}, selectedGroup = 'headp
     && !catalogTargets.some(([, target]) => target.group === 'faceplate' && target.optionId === 'witness')
     ? region('van:inspect:witness', 'inspect-witness', targets.witness, { item: 'witness', enabled: true, object: true }) : null;
   const spanner = region('van:spanner', state.spannerTaken ? 'inspect' : 'spanner',
-    targets.spanner || { x: stage.x + stage.w * .55, y: labelY - 1.05, w: stage.w * .3, h: .8 },
-    { item: 'plant-spanner', enabled: true, object: !!targets.spanner });
+    {x:stage.x+stage.w*.46,y:labelY,w:stage.w*.35,h:.8},
+    {item:'plant-spanner',enabled:true,object:false});
   const regions = [
     ...(targets.case ? [region('van:object:case', 'case', targets.case, { enabled: !state.bagTaken })] : []), ...objectRegions,
     ...(targets.map ? [region('van:object:map', 'map', targets.map, { enabled: !state.mapTaken })] : []),
@@ -133,11 +157,13 @@ export function vanWorkbenchLayout(size = {}, state = {}, selectedGroup = 'headp
       { item: 'recorder', enabled: true, object: true })] : []),
     ...['radio', 'light'].flatMap(slot => targets[slot]?.w > 0 && !(slot === 'light' && catalogTargets.some(([, target]) => target.group === 'flashlight'))
       ? [region(`van:object:${slot}`, 'inspect', targets[slot], { item: slot, enabled: true, object: true })] : []),
-    ...physicalVariants, spanner,
+    ...physicalVariants,
+    ...(targets.spanner?[region('van:object:spanner',state.spannerTaken?'inspect':'spanner',targets.spanner,{item:'plant-spanner',enabled:true,object:true})]:[]),
+    ...(targets.difficulty?[region('van:object:difficulty','difficulty',targets.difficulty,{enabled:true,object:true})]:[]), spanner,
     region('van:case', 'case', caseRect, { enabled: !state.bagTaken }), region('van:map', 'map', mapRect, { enabled: !state.mapTaken }),
-    region('van:difficulty', 'difficulty', difficulty, { enabled: true }), ...groups, ...variants, inspectMap, inspectRecorder,
+    region('van:difficulty', 'difficulty', difficulty, { enabled: true }), region('van:gear','group',preparation[3],{group:preparation[3].group,enabled:true}), ...groups, ...variants, inspectMap, inspectRecorder,
     ...(selectedInspect ? [selectedInspect] : []),
-    region('van:inspect:field-case', 'inspect', { x: caseRect.x + caseRect.w - 4.2, y: caseRect.y - 1.05, w: 4.2, h: .8 }, { item: 'field-case', enabled: true }),
+    region('van:inspect:field-case', 'inspect', {x:stage.x+stage.w*.82,y:labelY,w:stage.w*.17,h:.8}, { item: 'field-case', enabled: true }),
     ...(witnessInspect ? [witnessInspect] : []), close, continueRegion,
   ];
   const promptW = Math.min(62, cols - 6), promptH = compact ? 7.6 : 8.4;
@@ -147,7 +173,7 @@ export function vanWorkbenchLayout(size = {}, state = {}, selectedGroup = 'headp
       w: promptW / 2 - 3.5, h: 1.45 }, { answer: answer === 'yes', controlId: `van:spanner:${answer}`, enabled: true })) : [];
   return { size: { cols, rows }, outer, stage, compact, caseRect, mapRect, difficulty, fittings, preview, recorder,
     showRecorder, selectedObject, groups, variants, variantColumns, witness, witnessFitted, witnessInspect,
-    description, filmY, footerY, continueRegion, close, spanner, spannerPrompt, spannerChoices,
+    description, preparation, progress, filmY, footerY, continueRegion, close, spanner, spannerPrompt, spannerChoices,
     regions: spannerPrompt ? spannerChoices : regions };
 }
 const plateText = (x, y, value, w, options = {}) => drawPrintedText(x, y, value,
@@ -164,7 +190,7 @@ function drawBacking(layout) {
     for (const [sx, sy] of [[x + 7 * dpr, y + 7 * dpr], [x + w - 7 * dpr, y + 7 * dpr],
       [x + 7 * dpr, y + h - 7 * dpr], [x + w - 7 * dpr, y + h - 7 * dpr]]) drawHardwareScrew(ctx, sx, sy, 2.6 * dpr, { dpr, seed: `${sx}:${sy}` });
     const fy = layout.filmY * cellH * dpr; ctx.fillStyle = '#354038';
-    ctx.fillRect(layout.outer.x * cellW * dpr, fy, layout.outer.w * cellW * dpr, 2 * cellH * dpr);
+    ctx.fillRect(layout.outer.x * cellW * dpr, fy, layout.outer.w * cellW * dpr, 2.65 * cellH * dpr);
     ctx.strokeStyle = '#86928366'; ctx.beginPath(); ctx.moveTo(0, fy); ctx.lineTo(ctx.canvas.width, fy); ctx.stroke();
   });
 }
@@ -179,71 +205,84 @@ function tag(rect, text, color, focus) {
 export function drawVanWorkbench(view = {}, size = {}, stageRenderer = null) {
   const state = { ...view.state, fieldKit: normalizeFieldKit(view.state?.fieldKit) };
   const group = VAN_WORKBENCH_GROUPS.find(entry => entry.id === view.selectedGroup) || VAN_WORKBENCH_GROUPS[0];
-  let layout = vanWorkbenchLayout(size, state, group.id); const kit = state.fieldKit;
-  const witnessFocused = ['van:kit:faceplate:witness', 'van:inspect:witness', 'van:object:witness',
+  let layout = vanWorkbenchLayout(size, state, group.id);
+  let considered = vanWorkbenchConsidered(state,group.id,view.focusId,layout.regions);
+  const witnessFocused = ['van:kit:faceplate:witness','van:inspect:witness','van:object:witness',
     'van:object:variant:faceplate:witness'].includes(view.focusId);
-  drawBacking(layout); stageRenderer?.draw(layout.stage, { state, selected: layout.selectedObject, selectedGroup: group.id,
-    focusId: view.focusId, witnessFocused, now: view.now || 0 });
-  layout = vanWorkbenchLayout(size, state, group.id, stageRenderer?.targets() || {});
-  const { outer, fittings, description } = layout;
-  plateText(outer.x + 1, .85, 'AUDIOCORP  /  NIGHT PREPARATION', outer.w * .55, { h: .85, ink: '#e0d7bb' });
-  plateText(outer.x + outer.w * .58, .89, 'TAKE CASE · PACK EQUIPMENT · SIGN OUT', outer.w * .4, { h: .64, alpha: .75, align: 'right' });
-  const status = stageRenderer?.snapshot();
-  if (!status?.ready) plateText(layout.stage.x + 2, layout.stage.y + 1,
-    status?.error || 'LOADING PHYSICAL EQUIPMENT…', layout.stage.w - 4, { ink: '#e3c997', h: .68 });
-  const packedCount = VAN_PACKING_GROUPS.filter(groupId => state.packedGroups?.includes(groupId)).length;
-  tag(layout.caseRect, state.bagTaken ? state.requirePacking ? `CASE OPEN · ${packedCount}/4 PACKED` : 'FIELD CASE · TAKEN' : 'TAKE FIELD CASE', state.bagTaken ? '#bed0a9' : '#f3da9b', view.focusId === 'van:case');
-  tag(layout.mapRect, state.mapTaken ? 'MAP · TAKEN' : 'TAKE MAP', state.mapTaken ? '#bed0a9' : '#f3da9b', view.focusId === 'van:map');
-  if (!layout.spanner.object) tag(layout.spanner, state.spannerTaken ? 'SPANNER · PACKED' : 'SPANNER · OPTIONAL', '#c2cebb', view.focusId === 'van:spanner');
-  if (!status?.ready || view.focusId === 'van:difficulty') tag({ ...layout.difficulty, y: layout.difficulty.y + layout.difficulty.h - .8, h: .8 },
-    'CHOOSE SHIFT', '#f1dfa6', view.focusId === 'van:difficulty');
-  plateText(fittings.x + .9, fittings.y + .5, group.label, fittings.w - 1.8, { h: .88, ink: '#e5ddc4' });
-  const previewWitness = layout.witness.visible && witnessFocused && layout.showRecorder;
-  const option = vanWorkbenchOptions(group.id).find(entry => entry.id === (previewWitness ? 'witness' : vanWorkbenchSelection(kit, group.id)));
-  if (layout.showRecorder) {
-    const cosmetics = kit.cosmetics;
-    drawRecorderInstrument({ rect: layout.recorder, mode: 'monitor', counter: '00:00', progress: 0,
-      meter: { db: -96 }, source: 'WORKBENCH', label: 'FIELD RECORDER', note: 'SETUP / NO TAKE',
-      finish: previewWitness ? 'witness' : cosmetics.faceplate, witnessEndings: layout.witness.endingIds,
-      buttonSet: cosmetics.buttons, phosphor: cosmetics.vfd,
-      buttons: { keys: [{ id: 'rec', label: 'REC' }, { id: 'stop', label: 'STOP' }, { id: 'takes', label: 'TAKES' }] } });
-  } else stageRenderer?.drawDetail(layout.preview, layout.selectedObject);
-  const modelName = vanKitModel(vanWorkbenchModelIds(kit)[layout.selectedObject])?.name || 'FIELD RECORDER';
-  plateText(fittings.x + .9, layout.preview.y + layout.preview.h + .12,
-    previewWitness ? (layout.witnessFitted ? 'WITNESS / FITTED' : layout.witness.owned ? 'WITNESS / INSPECT THEN FIT' : 'WITNESS / LOCKED PREVIEW')
-      : state.bagTaken ? modelName : 'TAKE THE CASE TO FIT', fittings.w - 1.8, { h: .58, ink: '#b4c6b6' });
-  for (const control of layout.variants) drawLampButton(control.x, control.y, control.w, control.h,
-    { legend: control.displayLabel, color: control.optionId === 'witness' ? 'blue' : group.color, enabled: control.enabled, controlId: control.id,
-      lit: vanWorkbenchSelection(kit, group.id) === control.optionId
-        && (!state.requirePacking || !VAN_PACKING_GROUPS.includes(group.id) || state.packedGroups?.includes(group.id)),
-      latched: false, focused: view.focusId === control.id });
-  const witnessCopy = layout.witness.owned
-    ? layout.witnessFitted ? 'WITNESS EDITION FITTED. APPEARANCE ONLY.' : 'INSPECT AND TURN OVER THE CLEAR ASSEMBLY. FIT FROM INSPECTION.'
-    : `${layout.witness.count}/${layout.witness.required} DISTINCT ENDINGS FILED. INSPECT A PREVIEW; FIT AFTER TWO.`;
-  const lines = fitLines(previewWitness ? witnessCopy : state.bagTaken ? option?.description || '' : 'Take the field case from the shelf. Then fit each component before you go.',
-    Math.max(18, Math.floor(description.w * 1.75)), Math.max(1, Math.floor(description.h / .7)));
-  lines.forEach((line, index) => plateText(description.x, description.y + index * .7, line, description.w,
-    { h: .64, ink: '#d4d9c6' }));
-  const effectLines = vanWorkbenchEffectRows(kit);
-  if (description.h > lines.length * .7 + 3.1) effectLines.forEach((line, index) => plateText(description.x,
-    description.y + lines.length * .7 + .8 + index * .64, line, description.w, { h: .58, ink: '#a5c9b3' }));
-  for (const control of layout.groups) drawLampButton(control.x, control.y, control.w, control.h,
-    { legend: control.label, color: control.color, controlId: control.id,
-      lit: group.id === control.group, latched: false, focused: view.focusId === control.id });
-  for (const control of layout.regions.filter(entry => entry.kind === 'inspect' && !entry.object)) {
-    const label = control.id === 'van:inspect:map' ? 'INSPECT' : control.item === 'field-case' ? 'CASE' :
-      control.id === 'van:inspect:recorder' && !layout.showRecorder ? 'INSPECT RECORDER' : 'INSPECT OBJECT  [I]';
-    tag(control, label, '#c2cebb', view.focusId === control.id);
+  const focusedVariant = considered.option && considered.required ? `van:object:variant:${group.id}:${considered.option.id}` : view.focusId;
+  drawBacking(layout);
+  stageRenderer?.draw(layout.stage,{state,selected:layout.selectedObject,selectedGroup:group.id,
+    focusId:focusedVariant,witnessFocused,now:view.now||0});
+  layout=vanWorkbenchLayout(size,state,group.id,stageRenderer?.targets()||{});
+  considered=vanWorkbenchConsidered(state,group.id,view.focusId,layout.regions);
+  const {outer,fittings,description,progress}=layout;
+  const previewKit=normalizeFieldKit(state.fieldKit);
+  if(group.cosmetic&&considered.option)previewKit.cosmetics[group.id]=considered.option.id;
+  const previewWitness=layout.witness.visible&&witnessFocused&&layout.showRecorder;
+  if(previewWitness)previewKit.cosmetics.faceplate='witness';
+  plateText(outer.x+.5,.65,'AUDIOCORP  /  NIGHT PREPARATION',outer.w*.68,{h:layout.compact?.68:.85,ink:'#e0d7bb'});
+  plateText(outer.x+outer.w*.72,.68,`${progress.complete}/${progress.total} READY`,outer.w*.27,{h:.65,align:'right',ink:progress.ready?'#b9dac1':'#e4bf78'});
+  const stepLabels=[state.bagTaken?'CASE OPEN':'1 · OPEN CASE',state.mapTaken?'SURVEY MAP PACKED':'2 · TAKE SURVEY MAP',
+    state.difficultyConfirmed?`SHIFT · ${state.difficultyLabel||'CONFIRMED'}`:'3 · CHOOSE SHIFT',
+    state.requirePacking?`GEAR · ${progress.packedCount}/4 PACKED`:'GEAR · READY'];
+  for(const [index,step]of layout.preparation.entries()){
+    const done=index===0?state.bagTaken:index===1?state.mapTaken:index===2?state.difficultyConfirmed:!state.requirePacking||progress.packedCount===4;
+    tag(step,stepLabels[index],done?'#b6d6bc':'#f0d39b',view.focusId===step.id);
   }
-  drawLampButton(layout.close.x, layout.close.y, layout.close.w, layout.close.h,
-    { legend: 'BACK', color: 'white', controlId: layout.close.id, focused: view.focusId === layout.close.id });
-  drawLampButton(layout.continueRegion.x, layout.continueRegion.y, layout.continueRegion.w, layout.continueRegion.h,
-    { legend: 'TAKE THE NIGHT', color: 'green', controlId: layout.continueRegion.id,
-      enabled: layout.continueRegion.enabled, lit: layout.continueRegion.enabled, focused: view.focusId === layout.continueRegion.id });
-  const helpX = layout.close.x + layout.close.w + 1, helpW = layout.continueRegion.x - helpX - 1;
-  const help = view.notice || (vanWorkbenchReady(state) ? '1–8 FIT · ARROWS SELECT · ENTER USE' : `FIRST: ${vanWorkbenchRemaining(state).join(' · ')}`);
-  fitLines(help, Math.floor(helpW * 1.65), 2).forEach((line, index) => plateText(helpX, layout.footerY + .2 + index * .67, line, helpW,
-    { h: .62, ink: '#ddd4b9' }));
+  const status=stageRenderer?.snapshot();
+  if(!status?.ready)plateText(layout.stage.x+1,layout.stage.y+.5,status?.error||'LOADING EQUIPMENT…',layout.stage.w-2,{ink:'#e3c997',h:.65});
+  tag(layout.spanner,state.spannerTaken?'SPANNER · PACKED':state.spannerDecided?'SPANNER · LEFT HERE':'SPANNER · OPTIONAL','#bec8b8',view.focusId==='van:spanner');
+  plateText(fittings.x+.8,fittings.y+.25,group.label,fittings.w-1.6,{h:layout.compact?.63:.88,ink:'#ebe1c4'});
+  if(!layout.compact)plateText(fittings.x+.8,fittings.y+1.03,considered.required?'REQUIRED · CHOOSE ONE':'APPEARANCE · OPTIONAL',fittings.w-1.6,{h:.48,ink:considered.required?'#dfc08a':'#abb8af'});
+  if(layout.showRecorder){
+    drawRecorderInstrument({rect:layout.recorder,mode:'monitor',counter:'00:00',progress:0,meter:{db:-96},
+      source:'WORKBENCH',label:'FIELD RECORDER',note:'PREVIEW / NO TAKE',finish:previewKit.cosmetics.faceplate,
+      witnessEndings:layout.witness.endingIds,buttonSet:previewKit.cosmetics.buttons,phosphor:previewKit.cosmetics.vfd,
+      buttons:{keys:[{id:'rec',label:'REC'},{id:'stop',label:'STOP'},{id:'takes',label:'TAKES'}]}});
+  }else{
+    const slot=considered.required?`variant:${group.id}:${considered.option?.id}`:layout.selectedObject;
+    stageRenderer?.drawDetail(layout.preview,slot);
+  }
+  const previewLabel=previewWitness?(layout.witnessFitted?'WITNESS · FITTED':layout.witness.owned?'WITNESS · INSPECT TO FIT':`WITNESS · LOCKED ${layout.witness.count}/${layout.witness.required}`)
+    :considered.required?(considered.packed&&considered.same?'IN YOUR CASE':'PREVIEW · NOT PACKED'):considered.same?'CURRENT FINISH':'PREVIEW · NOT FITTED';
+  plateText(fittings.x+.8,layout.preview.y+layout.preview.h+.08,previewLabel,fittings.w-1.6,{h:layout.compact?.34:.48,ink:considered.packed&&considered.same?'#b5d5bc':'#d2bf95'});
+  for(const control of layout.variants){
+    const selected=vanWorkbenchSelection(state.fieldKit,group.id)===control.optionId;
+    const packed=selected&&(!state.requirePacking||!VAN_PACKING_GROUPS.includes(group.id)||state.packedGroups?.includes(group.id));
+    tag(control,control.displayLabel,packed?'#bce0c2':control.locked?'#a5b5c8':'#e6dbc1',view.focusId===control.id);
+  }
+  const witnessCopy=layout.witness.owned?'Clear cover, visible recorder beneath. Inspect the fitted result and loose plate; fitting changes appearance only.'
+    :`${layout.witness.count}/${layout.witness.required} different endings filed. Inspect now; fit after two. Appearance only.`;
+  const copy=previewWitness?witnessCopy:considered.option?.description||'';
+  const lineH=layout.compact?.61:.72;
+  const maxLines=Math.max(1,Math.floor(description.h/lineH));
+  const lines=fitLines(copy,Math.max(18,Math.floor(description.w*1.75)),maxLines);
+  lines.forEach((line,index)=>plateText(description.x,description.y+index*lineH,line,description.w,{h:layout.compact?.55:.65,ink:'#e0e0ce'}));
+  const used=lines.length*lineH;
+  if(description.h-used>1.35){
+    plateText(description.x,description.y+used+.25,considered.currentLabel,description.w,{h:.5,ink:'#adc4b5'});
+    fitLines(considered.actionHint,Math.max(18,Math.floor(description.w*1.7)),Math.floor((description.h-used-1)/.62)).forEach((line,index)=>
+      plateText(description.x,description.y+used+.98+index*.62,line,description.w,{h:.52,ink:'#c9bd9f'}));
+  }
+  plateText(layout.stage.x,layout.filmY+.08,'EQUIPMENT · ONE OF EACH',layout.stage.w,{h:.43,ink:'#d9bd87'});
+  plateText(fittings.x,layout.filmY+.08,'APPEARANCE · OPTIONAL',fittings.w,{h:.43,ink:'#aebbb3'});
+  for(const control of layout.groups){
+    drawLampButton(control.x,control.y,control.w,control.h,{legend:`${control.key} ${control.label}`,color:control.required?(control.status==='PACKED'?'green':'amber'):'white',
+      controlId:control.id,lit:group.id===control.group,latched:false,focused:view.focusId===control.id});
+    plateText(control.x+.15,control.y+control.h+.15,control.status,control.w-.3,{h:.42,ink:control.status==='PACKED'?'#b5d8bc':control.required?'#dac08f':'#8fa399',align:'center'});
+  }
+  for(const control of layout.regions.filter(entry=>entry.kind==='inspect'&&!entry.object)){
+    const label=control.id==='van:inspect:map'?'MAP INFO':control.item==='field-case'?'CASE INFO':control.id==='van:inspect:recorder'&&!layout.showRecorder?'RECORDER INFO':'INSPECT PREVIEW  [I]';
+    tag(control,label,'#c2cebb',view.focusId===control.id);
+  }
+  drawLampButton(layout.close.x,layout.close.y,layout.close.w,layout.close.h,{legend:'BACK',color:'white',controlId:layout.close.id,focused:view.focusId===layout.close.id});
+  drawLampButton(layout.continueRegion.x,layout.continueRegion.y,layout.continueRegion.w,layout.continueRegion.h,{legend:progress.ready?'READY · TAKE THE NIGHT':'FINISH PREPARATION',
+    color:'green',controlId:layout.continueRegion.id,enabled:layout.continueRegion.enabled,lit:layout.continueRegion.enabled,focused:view.focusId===layout.continueRegion.id});
+  const helpX=layout.close.x+layout.close.w+1,helpW=layout.continueRegion.x-helpX-1;
+  const help=view.notice||(progress.next?`NEXT: ${progress.next.label}.`:'Your kit is saved. Sign out when you are ready.');
+  fitLines(help,Math.max(8,Math.floor(helpW*1.65)),1).forEach(line=>plateText(helpX,layout.footerY+.12,line,helpW,{h:.58,ink:'#f0d9a9'}));
+  plateText(helpX,layout.footerY+.87,'1–8 CATEGORY · TAB / ARROWS FOCUS · ENTER CONFIRM · I INSPECT',helpW,{h:.42,ink:'#a7b9ae'});
+  const effectLines=vanWorkbenchEffectRows(state.fieldKit);
   if (layout.spannerPrompt) {
     const prompt = layout.spannerPrompt;
     uiDraw(({ ctx, dpr, cellW, cellH }) => {
@@ -265,6 +304,6 @@ export function drawVanWorkbench(view = {}, size = {}, stageRenderer = null) {
       { legend: control.answer ? 'YES · TAKE IT' : 'NO · LEAVE IT', color: control.answer ? 'amber' : 'white',
         controlId: control.id, focused: view.focusId === control.id });
   }
-  return { ...layout, previewFinish: previewWitness ? 'witness' : kit.cosmetics.faceplate,
-    effects: fieldKitEffects(kit), descriptionLines: lines, effectLines };
+  return { ...layout, previewFinish: previewKit.cosmetics.faceplate, considered,
+    effects:fieldKitEffects(state.fieldKit),descriptionLines:lines,effectLines };
 }

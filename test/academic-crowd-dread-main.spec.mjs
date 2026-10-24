@@ -44,6 +44,7 @@ async function adapter(run,{saved,heldFresh=false}={}){
     scenes.clear();PROPS.propsInit(FP);PROPS.loadPropState({});REC.recState().phase='idle';REC.loadRecState(getSave().rec||{});
     const calls={paint:[],messages:[],cancelled:[],audio:[]};
     const c={FP,PROPS,REC,CELL,scenes,ACADEMIC_CROWD_DREAD:T,ACADEMIC_SOCIETY_ACTORS,ACADEMIC_BOUNCER_ACTORS,
+      academicActorPresent:()=>true,academicLinesPresent:()=>true,
       ACADEMIC_ADVERSARY_SOCIAL_REPLIES,CONSERVATORY_ADVERSARY_FLAGS,academicBouncerSegmentClear,bouncerSocialAudible,
       academicCrowdDread:createAcademicCrowdDread(getSave().academicCrowdDread),academicCrowdDreadNotice:0,
       academicCrowdDreadResolution:null,academicCrowdDreadHudAt:-Infinity,

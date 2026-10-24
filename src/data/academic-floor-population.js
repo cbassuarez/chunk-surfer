@@ -31,7 +31,7 @@ export const ACADEMIC_FLOOR_GUESTS=Object.freeze([
     ['It is the pause I come for.','When they begin again, I go on listening.'],
     ['You can leave a pause alone.'],
   ],company('chamber','academic-guest-turning-page',social('talk','cup'))),
-  guest('academic-guest-landing','attendant','visitor on the landing',14.5,276.1,0,1.68,'female',[
+  guest('academic-guest-landing','attendant','visitor on the landing',14.5,277,0,1.68,'female',[
     ['They ask whether we are still open.','I keep telling them the stair is.'],
     ['Mind your step. The last turn catches everyone.'],
   ],company('reception','odette',social('drink','cup'))),
@@ -39,7 +39,7 @@ export const ACADEMIC_FLOOR_GUESTS=Object.freeze([
     ['They are discussing the likeness.','I am giving it room to disagree.'],
     ['The rail is steady. That is more than I ask of most company.'],
   ],company('north-gallery','lucien',social('lean','cigarette',{support:ACADEMIC_POPULATION_RAIL_SUPPORT}))),
-  guest('academic-guest-programme','attendant','visitor warming a cup',14.3,272.8,Math.PI,1.68,'female',[
+  guest('academic-guest-programme','attendant','visitor warming a cup',17,272.1,Math.PI,1.68,'female',[
     ['The cup is warm.','I am taking my time with that.'],
     ['You need not finish everything you are given.'],
   ],company('reception','odette',social('drink','cup'))),

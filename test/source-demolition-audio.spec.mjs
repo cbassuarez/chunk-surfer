@@ -104,19 +104,19 @@ test('fixed physical anchors respond to yaw, actual height, distance and finite 
   assert.equal(a.distance, b.distance); assert.ok(a.pan * b.pan < 0); assert.equal(a.localY, 7.35);
   const raised = sourceDemolitionVoiceMix({ ...position, y: 50 }, listener); assert.ok(raised.gain < a.gain && raised.distance > a.distance);
   assert.equal(sourceDemolitionVoiceMix({ x: 1000, y: 0, z: 0 }, listener).arrivalDelay, CONFIG.maxArrivalDelay);
-  const f = fixture(); await f.runtime.ready(); const first = f.runtime.update(frame([cue('course')]), { listener });
-  assert.equal(first.voices[0].id, 'stone-spall', 'masonry loss does not use a timber attack');
+  const f = fixture(); await f.runtime.ready(); const first = f.runtime.update(frame([cue('release')]), { listener });
+  assert.equal(first.voices[0].id, 'failure-body', 'the main release uses the one real recorded fall');
   assert.deepEqual(first.voices[0].position, position); assert.equal(f.sources[0].playbackRate.value, 1);
   assert.ok(Math.abs(f.sources[0].starts[0][0] - (.005 + a.arrivalDelay)) < 1e-8);
-  f.runtime.update({ ...frame([cue('course')]), anchors: { front: { x: 80, y: 2, z: 100 } } }, { listener: { ...listener, yaw: Math.PI } });
+  f.runtime.update({ ...frame([cue('release')]), anchors: { front: { x: 80, y: 2, z: 100 } } }, { listener: { ...listener, yaw: Math.PI } });
   assert.deepEqual(f.runtime.snapshot().voices[0].position, position);
   assert.ok(f.runtime.snapshot().voices[0].mix.pan * a.pan < 0);
 });
 
-test('one source carries the recorded chronology, roof never repeats its tail, and only the derived send follows the front', async () => {
+test('one body carries the recorded fall chronology, roof never repeats its tail, and only its derived send follows the front', async () => {
   const f = fixture(); await f.runtime.ready();
-  const input = frame(['strain', 'infill', 'course', 'roof', 'release'].map(type => cue(type)));
-  const first = f.runtime.update(input, { listener }); assert.equal(first.played, 5); assert.equal(first.sourceCount, 4); assert.equal(first.residualCount, 1);
+  const input = frame(['strain', 'infill', 'release', 'course', 'roof'].map(type => cue(type)));
+  const first = f.runtime.update(input, { listener }); assert.equal(first.played, 5); assert.equal(first.sourceCount, 3); assert.equal(first.residualCount, 1);
   assert.deepEqual(first.voices.find(v => v.kind === 'residual').position, input.anchors.front);
   const count = f.sources.length;
   f.runtime.update({ ...input, anchors: { front: { x: -10, y: 3, z: 19 } } }, { listener });
@@ -124,7 +124,7 @@ test('one source carries the recorded chronology, roof never repeats its tail, a
   assert.deepEqual(f.runtime.snapshot().voices.find(v => v.kind === 'residual').position, { x: -10, y: 3, z: 19 });
   assert.deepEqual(f.runtime.snapshot().voices.find(v => v.id === 'failure-body').position, position);
   assert.equal(f.sources.filter(source => source.buffer.duration === 5.5).length, 1);
-  assert.ok(f.sources.every(source => source.starts[0][1] === 0), 'release never restarts a shifted copy of recorded settling');
+  assert.equal(f.sources.find(source => source.buffer.duration === 5.5).starts[0][1], 0, 'release never restarts a shifted copy of recorded settling');
   assert.equal(f.runtime.snapshot().voices.find(v => v.kind === 'residual').derivedSend, true);
 });
 
@@ -144,22 +144,35 @@ test('stale, restored, protected, absent-context and not-ready events are consum
   absent.runtime.update(frame([cue('course')]), { listener }); assert.equal(absent.sources.length, 0);
 });
 
-test('release splits the current sample chronology without starting or restarting recorded audio', async () => {
+test('brief support initiation clears into held weight; release starts one body/send and progression never adds rubble attacks', async () => {
   const f = fixture(); await f.runtime.ready();
-  f.runtime.update(frame([cue('infill')]), { listener });
-  const source = f.sources[0], initialStarts = JSON.stringify(source.starts), physicalPath = f.gains[3].connections[0];
-  f.context.currentTime = 2.15;
+  f.runtime.update(frame([cue('strain')]), { listener });
+  assert.deepEqual(f.sources[0].starts[0].slice(1), [0, .85]);
+  f.context.currentTime = 1; f.runtime.update(frame([cue('infill')]), { listener });
+  assert.equal(f.sources.length, 2, 'infill earns the next recorded support segment despite independent audio-clock drift');
+  assert.equal(f.sources[0].buffer, f.sources[1].buffer);
+  assert.equal(f.sources[1].starts[0][1], .85);
+  assert.ok(Math.abs(f.sources[1].starts[0][2] - .75) < 1e-12);
+  assert.equal(f.sources[0].starts[0][1] + f.sources[0].starts[0][2], f.sources[1].starts[0][1], 'support intervals are chronologically adjacent with no shared raw samples');
+  assert.deepEqual(f.runtime.snapshot().voices.map(voice => [voice.sourceOffset, voice.sourceDuration]), [[.85, 1.6 - .85]], 'expired first segment is retired, not revived');
+  f.context.currentTime = 2.5; f.runtime.update(frame([]), { listener });
+  assert.equal(f.runtime.snapshot().sourceCount, 0, 'held interval has no main-body loop');
+  f.context.currentTime = 3.15;
   const released = f.runtime.update(frame([cue('release')]), { listener });
-  assert.equal(f.sources.length, 1); assert.equal(JSON.stringify(source.starts), initialStarts);
+  const source = f.sources[2], initialStarts = JSON.stringify(source.starts), level = source.connections[0], physicalPath = level.connections[0];
+  assert.equal(f.sources.length, 3); assert.ok(source.starts[0][0] > 3.15);
   assert.equal(released.residualCount, 1); assert.equal(released.voices.find(v => v.kind === 'residual').derivedSend, true);
+  f.context.currentTime = 3.2; f.runtime.update(frame([cue('course')]), { listener });
+  f.context.currentTime = 7.5; f.runtime.update(frame([cue('roof')]), { listener });
+  assert.equal(f.sources.length, 3); assert.equal(JSON.stringify(source.starts), initialStarts);
   f.runtime.update(frame([]), { listener, effectsMode: 'off' });
   assert.equal(f.runtime.snapshot().sourceCount, 1); assert.equal(f.runtime.snapshot().residualCount, 0);
-  assert.deepEqual(f.gains[3].connections, [physicalPath], 'disabling residue disconnects only that send, retaining physical sound');
-  f.context.currentTime = 8;
-  f.runtime.update(frame([cue('release', { id: 'too-late' })]), { listener });
-  assert.equal(f.sources.length, 1); assert.equal(f.runtime.snapshot().history.at(-1).reason, 'no-playing-material-no-backlog');
-  const absent = fixture(); await absent.runtime.ready(); absent.runtime.update(frame([cue('release')]), { listener });
-  assert.equal(absent.sources.length, 0, 'release cannot substitute an independent sound when its material event was missed');
+  assert.deepEqual(level.connections, [physicalPath], 'disabling residue disconnects only that send, retaining physical sound');
+  f.context.currentTime = 10;
+  f.runtime.update(frame([cue('roof', { id: 'too-late' })]), { listener });
+  assert.equal(f.sources.length, 3); assert.equal(f.runtime.snapshot().history.at(-1).reason, 'no-playing-material-no-backlog');
+  const absent = fixture(); await absent.runtime.ready(); absent.runtime.update(frame([cue('course'), cue('roof')]), { listener });
+  assert.equal(absent.sources.length, 0, 'missing main body cannot be replaced with unrelated later ticks');
 });
 
 test('REC, playback, focus/pause, outside and explicit stop cut all sources and clear saved reflection history only on transitions', async () => {
@@ -171,9 +184,9 @@ test('REC, playback, focus/pause, outside and explicit stop cut all sources and 
   assert.equal(conv.buffers.at(-2), null); assert.equal(conv.buffer, cached);
   const n = conv.buffers.length; f.runtime.update(frame([]), { listener, protected: true }); assert.equal(conv.buffers.length, n);
   f.runtime.update(frame([cue('course')]), { listener }); assert.equal(f.runtime.snapshot().sourceCount, 0);
-  f.runtime.update(frame([cue('roof')]), { listener }); assert.equal(f.runtime.snapshot().sourceCount, 1);
+  f.runtime.update(frame([cue('strain')]), { listener }); assert.equal(f.runtime.snapshot().sourceCount, 1);
   f.runtime.update({ active: false }); assert.equal(f.runtime.snapshot().sourceCount, 0); assert.equal(conv.buffers.at(-2), null);
-  f.runtime.update(frame([cue('roof')]), { listener }); assert.equal(f.runtime.snapshot().sourceCount, 0);
+  f.runtime.update(frame([cue('strain')]), { listener }); assert.equal(f.runtime.snapshot().sourceCount, 0);
   f.runtime.update(frame([cue('strain')]), { listener }); f.runtime.stop(); assert.equal(conv.buffers.at(-2), null);
   f.runtime.update(frame([cue('strain')]), { listener }); assert.equal(f.runtime.snapshot().sourceCount, 0);
 });
@@ -181,14 +194,14 @@ test('REC, playback, focus/pause, outside and explicit stop cut all sources and 
 test('effects off retains physical warnings and failure while removing derived spirit audio and reflections', async () => {
   const f = fixture(); await f.runtime.ready();
   const state = f.runtime.update(frame([cue('strain'), cue('infill'), cue('release')]), { listener, effectsMode: 'off' });
-  assert.equal(state.played, 2); assert.equal(state.sourceCount, 2); assert.equal(state.residualCount, 0);
+  assert.equal(state.played, 3); assert.equal(state.sourceCount, 3); assert.equal(state.residualCount, 0);
   assert.equal(f.gains[1].gain.value, 0); assert.equal(f.gains[2].gain.value, 0);
   f.runtime.update(frame([cue('release')]), { listener, effectsMode: 'normal' }); assert.equal(f.runtime.snapshot().residualCount, 0, 'an omitted residual never returns as a queued attack');
   f.runtime.update(frame([cue('release', { id: 'live-release' })]), { listener }); assert.equal(f.runtime.snapshot().residualCount, 1);
   const n = f.convolvers[0].buffers.length;
   f.runtime.update(frame([]), { listener, effectsMode: 'off' }); assert.equal(f.runtime.snapshot().residualCount, 0); assert.equal(f.convolvers[0].buffers.length, n + 2);
   assert.ok(f.runtime.snapshot().sourceCount > 0, 'material feedback remains');
-  const reduced = fixture(); await reduced.runtime.ready(); reduced.runtime.update(frame([cue('course')]), { listener, effectsMode: 'reduced' }); assert.equal(reduced.runtime.snapshot().sourceCount, 1);
+  const reduced = fixture(); await reduced.runtime.ready(); reduced.runtime.update(frame([cue('release')]), { listener, effectsMode: 'reduced' }); assert.equal(reduced.runtime.snapshot().sourceCount, 1);
 });
 
 test('consumption produces no extra hit, drains to silence, and cannot resurrect on resume or stored-state entry', async () => {
@@ -208,11 +221,11 @@ test('consumption produces no extra hit, drains to silence, and cannot resurrect
 
 test('reduced dread keeps physical warning level and placement while lowering only derived residue and reflections', async () => {
   const normal = fixture(); await normal.runtime.ready();
-  normal.runtime.update(frame([cue('infill'), cue('course'), cue('release')]), { listener });
+  normal.runtime.update(frame([cue('release'), cue('course')]), { listener });
   for (const options of [{ reducedDread: true }, { effectsMode: 'reduced' }]) {
     const reduced = fixture(); await reduced.runtime.ready();
-    const state = reduced.runtime.update(frame([cue('infill'), cue('course'), cue('release')]), { listener, ...options });
-    assert.equal(state.played, 3); assert.equal(state.residualCount, 1); assert.equal(state.reducedDread, true);
+    const state = reduced.runtime.update(frame([cue('release'), cue('course')]), { listener, ...options });
+    assert.equal(state.played, 2); assert.equal(state.residualCount, 1); assert.equal(state.reducedDread, true);
     assert.equal(normal.gains[1].gain.value, 1); assert.equal(reduced.gains[1].gain.value, .45);
     assert.equal(normal.gains[2].gain.value, .6); assert.equal(reduced.gains[2].gain.value, .35);
     assert.deepEqual(state.voices.find(v => v.kind === 'material'), normal.runtime.snapshot().voices.find(v => v.kind === 'material'));
@@ -273,7 +286,7 @@ test('actual pure-state restored and recording-suppressed receipts cannot become
     f.runtime.update(sourceDemolitionFrame(state, here), { listener });
   }
   assert.equal(f.sources.length, 1, 'a later unprotected real course event still sounds');
-  assert.equal(f.runtime.snapshot().voices[0].id, 'stone-spall');
+  assert.equal(f.runtime.snapshot().voices[0].id, 'failure-body');
   f.runtime.reset();
   f.runtime.update({ ...frame([{ type: 'strain', id: 'null-anchor', position: { x: null, y: null, z: null }, age: null, at: 0 }]), elapsed: 10 }, { listener });
   assert.equal(f.runtime.snapshot().sourceCount, 0, 'null age/coordinates do not invent a fresh source at the origin');

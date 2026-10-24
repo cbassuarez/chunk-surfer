@@ -4,9 +4,9 @@
     "author": "Chunk Surfer project",
     "source": "tools/chunk_surfer/build-main-stair.mjs",
     "license": "project source",
-    "sha256": "9ccaaa19a55ad5446e2b70947c66c15efff991f05a706fdbff26cf3dce139138",
-    "triangles": 38012,
-    "bytes": 1564092,
+    "sha256": "b9063ccb1f8abe30c246ebaac57472df215569b3e2dbcc9e423654036c68f86f",
+    "triangles": 34368,
+    "bytes": 1312812,
     "modifications": "Project-native deterministic geometry; metres, Y-up, centred on the physical main stair hall."
   },
   "meshes": [
@@ -14,17 +14,17 @@
       "name": "main_open_well_stair",
       "bounds": {
         "min": [
-          -2.7000909145303926,
+          -3.0486395865571128,
           -0.3514285714285714,
-          -3.3280843974959358
+          -3.0714793070486146
         ],
         "max": [
           3.640000000000006,
           14.61,
-          3.5091003492833304
+          3.077999405966327
         ]
       },
-      "triangles": 38012,
+      "triangles": 34368,
       "provenance": {
         "source": "tools/chunk_surfer/build-main-stair.mjs",
         "origin": "project-native procedural geometry",

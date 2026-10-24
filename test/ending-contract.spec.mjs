@@ -67,6 +67,43 @@ assert.equal(endingCodaVariant('surfaced'), 'surfaced');
 assert.equal(endingCodaVariant('helped'), 'helped');
 assert.equal(endingCodaVariant('drugged'), 'drugged');
 
+// Escaping both legs now reaches a physical demolition and a freely explored
+// Source IV. The old 'out' classification stays stable for archives; it does not
+// authorize a municipal dawn, an extra epilogue or a timed completion.
+{
+  const inversion = endingManifest('inversion');
+  assert.equal(inversion.objective.kind, 'escape');
+  assert.deepEqual(inversion.objective.legs, ['door', 'rescue']);
+  assert.ok(inversion.objective.timeline.length > 0, 'both original timed escape legs retain their pressure');
+  assert.deepEqual(inversion.environment, [], 'the physical host owns post-threshold world events');
+  assert.equal(inversion.audio.bed, null, 'the generic title-theme placeholder does not cover playable Source');
+  assert.deepEqual(inversion.audio.oneShots, []);
+  assert.deepEqual(inversion.tail, []);
+  assert.equal(inversion.referenceTail, false);
+  assert.equal(inversion.dockTail, false);
+  assert.equal(inversion.residue, 'engineering-appendix');
+  assert.ok(!ENDING_AUDIO_TODO.some(entry => entry.id === 'ending.bed.inversion'),
+    'a retired generic bed is not represented as missing route audio');
+
+  const document = JSON.parse(readFileSync('content/narrative/ending.inversion.story.json', 'utf8'));
+  assert.equal(document.nodes.out.type, 'ending');
+  assert.equal(document.nodes.out.lines.length, 1, 'the transcript ends at a brief threshold');
+  assert.equal(document.nodes.out.lines[0].id, 'out.line.1');
+  assert.doesNotMatch(document.nodes.out.lines[0].text, /dawn|bus|sodium|staff|booth|06:00/i);
+  assert.deepEqual(document.nodes.who.choices.map(choice => [choice.goto, choice.when || null]), [
+    ['who.her', 'ending.confession.said.sarah'], ['who.him', null],
+    ['who.it', 'ending.hush.contacts>=2'], ['who.nobody', null],
+  ], 'the unidentified helper retains every prior conditional reading');
+  assert.deepEqual(document.nodes['who.him'].lines.filter(line => line.when).map(line => line.when), [
+    'ending.source.rescue', 'ending.source.entered && !ending.source.rescue', '!ending.source.entered',
+  ]);
+  for (const id of ['who.her', 'who.him', 'who.it', 'who.nobody']) {
+    assert.equal(document.nodes[id].goto, 'out', `${id} still reaches the same physical threshold`);
+  }
+  assert.notEqual(endingManifest('drugged').tree, inversion.tree, 'coffee retains its own resolution');
+  assert.ok(endingArrivalPassage('sacrifice', ENDING_ARRIVAL.TIMED_OUT), 'timeout still has its own arrival passage');
+}
+
 // ── the dossier ─────────────────────────────────────────────────────────────
 // It has to survive having nothing to work with: a god-menu jump reaches an
 // ending with no run on the save, and the ending still has to play.
@@ -227,15 +264,16 @@ assert.ok(dossierFlagNames().includes('ending.takes.clean'));
 
 // ── the audio that is still owed ────────────────────────────────────────────
 //
-// Every ending is currently wearing the opening title theme. That is a decision,
-// not an oversight, and the way it stays a decision is that this prints on every
-// `npm test` until the files land. Assert the list is honest, then say it out loud.
+// Generic ending scores still borrow the opening title theme. The live
+// inversion route opts out; it must not pretend a title bed is finished audio
+// for its playable worlds. Keep the remaining production debt explicit.
 {
   assert.ok(ENDING_AUDIO_TODO.length > 0, 'the outstanding-audio list is the source of truth');
   const beds = new Set(ENDING_AUDIO_TODO.filter((e) => e.kind === 'bed').map((e) => e.id));
   for (const id of ENDING_IDS) {
     const audio = endingManifest(id).audio;
-    assert.ok(audio?.bed, `${id} names a bed`);
+    if (id === 'inversion') assert.equal(audio?.bed, null, 'inversion uses its physical audio owner');
+    else assert.ok(audio?.bed, `${id} names a bed`);
     if (audio.placeholder) {
       assert.ok(beds.has(`ending.bed.${id}`),
         `${id} is on a borrowed bed and must be listed in ENDING_AUDIO_TODO until it is not`);
@@ -361,7 +399,7 @@ console.log('ending contract specs passed');
 console.log('  hall take placement flags ok');
 
 console.log('');
-console.log('  ⚠ ENDING AUDIO OUTSTANDING — all nine endings play the opening title theme.');
+console.log('  ⚠ ENDING AUDIO OUTSTANDING — generic beds still borrow the opening title theme; playable inversion opts out.');
 for (const entry of ENDING_AUDIO_TODO) {
   console.log(`     ${entry.id.padEnd(30)} ${entry.kind.padEnd(9)} ${String(entry.seconds).padStart(6)}s   ${entry.note}`);
 }

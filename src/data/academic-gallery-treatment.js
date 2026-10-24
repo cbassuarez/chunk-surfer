@@ -60,6 +60,11 @@ export function academicGalleryMesh(instance,hasMesh=()=>false){
 // and ribs, with its existing transform. No Ren, roof seating or action is added
 // to the gallery. The older, unrelated oversized grid remains visible below.
 export function academicGalleryPlacement(prop){
+  // These fittings were left over the open rail after the gallery alignment.
+  // Their back planes now meet the actual existing north/east masonry; IDs and
+  // emergency circuit ownership remain the same.
+  if(prop.id==='academic-light-emergency-west')return{...prop,y:243.5,yaw:0,renderOffsetZ:-.5,floorOverride:10};
+  if(prop.id==='academic-light-emergency-east-failing')return{...prop,renderOffsetX:.50,floorOverride:10};
   if(prop.id==='academic-roof-glazing')return{...prop,renderGroups:['academicRoof','academic']};
   if(prop.id==='academic-skylight'||/^academic-frieze-west-[1-3]$/.test(prop.id||''))return{...prop,renderGroups:['ground']};
   if(/^academic-bust-plinth-[1-6]$/.test(prop.id||''))return{...prop,blocks:true,w:.68,d:.68,h:1.11};

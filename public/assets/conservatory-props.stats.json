@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-20T22:15:41.727Z",
-  "bytes": 60634992,
-  "totalTriangles": 840894,
+  "generatedAt": "2026-10-24T02:51:36.705Z",
+  "bytes": 61653700,
+  "totalTriangles": 860777,
   "meshes": {
     "school_desk": {
       "triangles": 176,
@@ -1508,8 +1508,8 @@
       "vertices": 13035
     },
     "conservatory_west_elevation": {
-      "triangles": 17856,
-      "vertices": 34562
+      "triangles": 17784,
+      "vertices": 34418
     },
     "conservatory_stair_window": {
       "triangles": 60,
@@ -1608,16 +1608,84 @@
       "vertices": 6050
     },
     "yard_van": {
-      "triangles": 1188,
-      "vertices": 2030
+      "triangles": 4650,
+      "vertices": 8734
+    },
+    "yard_van_field_case": {
+      "triangles": 4998,
+      "vertices": 2953
+    },
+    "yard_van_field_case_open": {
+      "triangles": 4997,
+      "vertices": 2958
+    },
+    "yard_van_stock_headphones_reference": {
+      "triangles": 373,
+      "vertices": 289
+    },
+    "yard_van_stock_headphones_closed": {
+      "triangles": 371,
+      "vertices": 292
+    },
+    "yard_van_stock_headphones_open": {
+      "triangles": 380,
+      "vertices": 348
+    },
+    "yard_van_stock_microphone_reference": {
+      "triangles": 301,
+      "vertices": 346
+    },
+    "yard_van_stock_microphone_directional": {
+      "triangles": 394,
+      "vertices": 318
+    },
+    "yard_van_stock_microphone_wide": {
+      "triangles": 436,
+      "vertices": 431
+    },
+    "yard_van_stock_recorder_reference": {
+      "triangles": 409,
+      "vertices": 352
+    },
+    "yard_van_stock_recorder_low_draw": {
+      "triangles": 410,
+      "vertices": 364
+    },
+    "yard_van_stock_recorder_headroom": {
+      "triangles": 408,
+      "vertices": 383
+    },
+    "yard_van_stock_flashlight_reference": {
+      "triangles": 387,
+      "vertices": 282
+    },
+    "yard_van_stock_flashlight_throw": {
+      "triangles": 376,
+      "vertices": 281
+    },
+    "yard_van_stock_flashlight_flood": {
+      "triangles": 403,
+      "vertices": 359
+    },
+    "yard_van_stock_faceplate_aluminum": {
+      "triangles": 222,
+      "vertices": 231
+    },
+    "yard_van_stock_faceplate_black": {
+      "triangles": 222,
+      "vertices": 231
+    },
+    "yard_van_stock_faceplate_olive": {
+      "triangles": 222,
+      "vertices": 231
     },
     "yard_van_door_l": {
-      "triangles": 132,
-      "vertices": 264
+      "triangles": 718,
+      "vertices": 1300
     },
     "yard_van_door_r": {
-      "triangles": 120,
-      "vertices": 240
+      "triangles": 706,
+      "vertices": 1276
     },
     "yard_van_lamp": {
       "triangles": 24,
@@ -2016,8 +2084,8 @@
       "vertices": 4296
     },
     "baseboard_upper": {
-      "triangles": 1356,
-      "vertices": 2712
+      "triangles": 1296,
+      "vertices": 2592
     },
     "baseboard_academic": {
       "triangles": 1296,
@@ -2300,8 +2368,8 @@
       "vertices": 49280
     },
     "building_dressing_batch_academic": {
-      "triangles": 65720,
-      "vertices": 86387
+      "triangles": 65792,
+      "vertices": 86531
     },
     "building_dressing_batch_upper": {
       "triangles": 42282,
@@ -7134,14 +7202,218 @@
       "max": [
         1.37,
         2.57,
-        2.55
+        2.598
+      ]
+    },
+    "yard_van_field_case": {
+      "min": [
+        -0.312,
+        1.109,
+        1.26
+      ],
+      "max": [
+        0.312,
+        1.281,
+        1.739
+      ]
+    },
+    "yard_van_field_case_open": {
+      "min": [
+        -0.311,
+        1.109,
+        1.129
+      ],
+      "max": [
+        0.336,
+        1.595,
+        1.739
+      ]
+    },
+    "yard_van_stock_headphones_reference": {
+      "min": [
+        -0.709,
+        1.11,
+        0.982
+      ],
+      "max": [
+        -0.568,
+        1.2,
+        1.155
+      ]
+    },
+    "yard_van_stock_headphones_closed": {
+      "min": [
+        -0.714,
+        1.11,
+        1.21
+      ],
+      "max": [
+        -0.563,
+        1.207,
+        1.382
+      ]
+    },
+    "yard_van_stock_headphones_open": {
+      "min": [
+        -0.711,
+        1.11,
+        1.436
+      ],
+      "max": [
+        -0.565,
+        1.207,
+        1.61
+      ]
+    },
+    "yard_van_stock_microphone_reference": {
+      "min": [
+        -0.47,
+        1.11,
+        0.996
+      ],
+      "max": [
+        -0.418,
+        1.178,
+        1.141
+      ]
+    },
+    "yard_van_stock_microphone_directional": {
+      "min": [
+        -0.448,
+        1.11,
+        1.224
+      ],
+      "max": [
+        -0.431,
+        1.128,
+        1.368
+      ]
+    },
+    "yard_van_stock_microphone_wide": {
+      "min": [
+        -0.481,
+        1.11,
+        1.452
+      ],
+      "max": [
+        -0.399,
+        1.156,
+        1.59
+      ]
+    },
+    "yard_van_stock_recorder_reference": {
+      "min": [
+        0.375,
+        1.11,
+        0.989
+      ],
+      "max": [
+        0.505,
+        1.186,
+        1.148
+      ]
+    },
+    "yard_van_stock_recorder_low_draw": {
+      "min": [
+        0.38,
+        1.11,
+        1.216
+      ],
+      "max": [
+        0.5,
+        1.185,
+        1.376
+      ]
+    },
+    "yard_van_stock_recorder_headroom": {
+      "min": [
+        0.36,
+        1.11,
+        1.444
+      ],
+      "max": [
+        0.519,
+        1.19,
+        1.602
+      ]
+    },
+    "yard_van_stock_flashlight_reference": {
+      "min": [
+        0.615,
+        1.11,
+        0.982
+      ],
+      "max": [
+        0.67,
+        1.165,
+        1.156
+      ]
+    },
+    "yard_van_stock_flashlight_throw": {
+      "min": [
+        0.607,
+        1.11,
+        1.209
+      ],
+      "max": [
+        0.678,
+        1.182,
+        1.383
+      ]
+    },
+    "yard_van_stock_flashlight_flood": {
+      "min": [
+        0.612,
+        1.11,
+        1.436
+      ],
+      "max": [
+        0.674,
+        1.165,
+        1.61
+      ]
+    },
+    "yard_van_stock_faceplate_aluminum": {
+      "min": [
+        -0.297,
+        1.212,
+        0.792
+      ],
+      "max": [
+        -0.119,
+        1.305,
+        0.795
+      ]
+    },
+    "yard_van_stock_faceplate_black": {
+      "min": [
+        -0.089,
+        1.212,
+        0.792
+      ],
+      "max": [
+        0.089,
+        1.305,
+        0.795
+      ]
+    },
+    "yard_van_stock_faceplate_olive": {
+      "min": [
+        0.119,
+        1.212,
+        0.792
+      ],
+      "max": [
+        0.297,
+        1.305,
+        0.795
       ]
     },
     "yard_van_door_l": {
       "min": [
         0,
         0,
-        -0.062
+        -0.154
       ],
       "max": [
         0.9,
@@ -7158,7 +7430,7 @@
       "max": [
         0.9,
         1.86,
-        0.062
+        0.154
       ]
     },
     "yard_van_lamp": {
@@ -8351,12 +8623,12 @@
     },
     "baseboard_upper": {
       "min": [
-        -10.5,
-        -3.6,
+        -11,
+        0,
         0
       ],
       "max": [
-        37.5,
+        37,
         0.415,
         50.5
       ]
@@ -9239,7 +9511,7 @@
     }
   },
   "baseboards": {
-    "planHash": "c2b157cd5940023a4265d6737793957269e572a5c542136c042d4788d3955bb9",
+    "planHash": "c18653ecd641f3b82300dd42e2d8665c5184b113da5f01a003e5a5c7f7297050",
     "groups": {
       "ground": {
         "mesh": "baseboard_ground",
@@ -9650,9 +9922,9 @@
           33.64999999999998
         ],
         "count": 309,
-        "poseDigest": "aa6bd029",
+        "poseDigest": "7233ae84",
         "materialCount": 36,
-        "triangles": 65720,
+        "triangles": 65792,
         "bounds": {
           "min": [
             -12.07,
@@ -9715,19 +9987,19 @@
             "trianglesPerInstance": 1284
           },
           "arch_dado_public": {
-            "count": 30,
+            "count": 31,
             "trianglesPerInstance": 72
           },
           "arch_coving_public": {
-            "count": 30,
+            "count": 31,
             "trianglesPerInstance": 48
           },
           "arch_dado_staff": {
-            "count": 53,
+            "count": 52,
             "trianglesPerInstance": 24
           },
           "arch_coving_staff": {
-            "count": 53,
+            "count": 52,
             "trianglesPerInstance": 24
           },
           "arch_switch_public": {
@@ -9792,7 +10064,7 @@
           47.85
         ],
         "count": 276,
-        "poseDigest": "158d09ed",
+        "poseDigest": "e51b845b",
         "materialCount": 17,
         "triangles": 42282,
         "bounds": {
@@ -10255,6 +10527,8 @@
     "yard_hedge_run": 0.06,
     "city_frontage": 0.03,
     "yard_van": 2.57,
+    "yard_van_field_case": 1.24,
+    "yard_van_field_case_open": 1.14,
     "yard_van_door_l": 1.86,
     "yard_van_door_r": 1.86,
     "yard_van_lamp": 0.1,
@@ -10331,10 +10605,10 @@
     "textile_stair_runner_fitted": 2.06
   },
   "lettering": {
-    "surfaces": 112,
+    "surfaces": 117,
     "pages": 10,
-    "textureBaseLevelBytes": 41937888,
-    "atlasInputSha256": "a6215937f49f1000618499e1b5726d03efe8d5bb4f8e746c636407c05647adc7",
+    "textureBaseLevelBytes": 42864576,
+    "atlasInputSha256": "0ce97c977db89c8c4adb0e6316584c75997511fa5f8d9ba93b73fb14a13db4ab",
     "carrierAssemblies": {
       "meshes": 24,
       "members": 127,
@@ -10349,17 +10623,5 @@
       ],
       "textureBaseLevelBytes": 1376256
     }
-  },
-  "loadingBayAccess": {
-    "revision": 1,
-    "profile": "src/data/loading-bay-access.js",
-    "generator": "tools/chunk_surfer/loading-bay-access-geometry.mjs",
-    "repair": "tools/chunk_surfer/rebuild-loading-bay-access.mjs"
-  },
-  "roofWordLock": {
-    "revision": 1,
-    "wheelCount": 6,
-    "generator": "tools/chunk_surfer/academic-roof-geometry.mjs",
-    "repair": "tools/chunk_surfer/rebuild-roof-word-lock.mjs"
   }
 }

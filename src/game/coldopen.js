@@ -476,6 +476,11 @@ export function makeWorldTitleScene({
     blocksInput: true,
     blocksWorld: false,
     lensPreset: 'calm',
+    // The look-back and closing iris still need the real doorway. Once the
+    // aperture is completely black, drawing the hidden building only competes
+    // with the title and can stretch its capped presentation clock badly.
+    get worldPresentation() { return t >= lead ? 'hidden' : 'visible'; },
+    view() { return { elapsed: t, lead, duration, opaque: t >= lead }; },
 
     // The song leaves before the title does, so the door slams into an empty mix.
     enter() {

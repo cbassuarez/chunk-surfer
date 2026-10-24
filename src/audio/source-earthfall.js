@@ -8,6 +8,8 @@ export const SOURCE_EARTHFALL_AUDIO = Object.freeze({
   maxVoices: 4, maxEncodedBytes: 1000000, maxDecodedBytes: 8000000,
   maxEventAge: .16, arrivalSpeed: 343, maxArrivalDelay: .45,
   masterGain: .62, residualGain: .13, reducedResidualGain: .42,
+  initiationSeconds: 1.1,
+  initiationSplit: .55,
 });
 const CONFIG = SOURCE_EARTHFALL_AUDIO;
 const MATERIALS = new Set(['restraint', 'failure-body', 'stone-spall']);
@@ -42,7 +44,8 @@ function eventInfo(event, frame) {
 export function createSourceEarthfallAudio({ getAudio = () => null,
   urlFor = file => assetUrl(`${SOURCE_DEMOLITION_AUDIO_DIR}/${file}`), fetcher = globalThis.fetch,
 } = {}) {
-  let graph = null, sequenceId = null, disposed = false, enabled = false, effects = true, reduced = false;
+  let graph = null, sequenceId = null, runId = null, disposed = false, enabled = false, effects = true, reduced = false;
+  let observedActive = false;
   let seen = new Set(), seenTypes = new Set(), receipts = [], played = 0, skipped = 0;
   let last = { active: false, muted: true, reason: 'outside-earthfall' };
   const history = [];
@@ -75,7 +78,7 @@ export function createSourceEarthfallAudio({ getAudio = () => null,
     const ctx = pair?.ctx || pair?.context, destination = pair?.destination;
     if (!ctx || !destination || ctx.state === 'closed') return null;
     if (graph?.ctx === ctx && graph.destination === destination) return graph;
-    if (graph) { cut(); graph.master.disconnect?.(); }
+    if (graph) { cut(); graph.master.disconnect?.(); graph.residualBus.disconnect?.(); }
     const master = ctx.createGain(), residualBus = ctx.createGain();
     master.gain.value = 0; residualBus.gain.value = 0;
     master.connect(destination); residualBus.connect(master);
@@ -154,30 +157,35 @@ export function createSourceEarthfallAudio({ getAudio = () => null,
     path.mix = mix; path.position = { ...position };
   }
   function place(voice, frame, options, initial = false) {
-    const position = voice.followMaterial ? point(frame.anchors?.fallingMaterial) || voice.origin : voice.origin;
+    const position = voice.followAnchor ? point(frame.anchors?.[voice.followAnchor]) || voice.origin : voice.origin;
     positionSpatial(voice.path, position, options.listener, { initial });
     if (voice.residual) {
       const front = point(frame.anchors?.presence || frame.anchors?.front) || voice.residual.origin;
       positionSpatial(voice.residual.path, front, options.listener, { residual: true, initial });
     }
   }
-  function material(id, event, frame, options, amplitude) {
+  function material(id, event, frame, options, amplitude, duration = Infinity, offset = 0) {
     const g = graph, clip = g.bank?.clips.get(id), buffer = g.bank?.buffers.get(id);
     if (!buffer || !event.position || g.voices.size >= CONFIG.maxVoices) return false;
     const source = g.ctx.createBufferSource(), level = g.ctx.createGain(), path = spatialNodes(g.ctx);
     source.buffer = buffer; source.playbackRate.value = 1;
-    const firstMix = sourceEarthfallVoiceMix(event.position, options.listener);
+    const origin = id === 'failure-body' ? point(frame.anchors?.fallingMaterial) || event.position : event.position;
+    const firstMix = sourceEarthfallVoiceMix(origin, options.listener);
     const at = g.ctx.currentTime + .005 + (path.delay ? 0 : firstMix.arrivalDelay);
-    const volume = clip.gain * event.gain * amplitude, release = Math.min(.22, buffer.duration * .25);
+    const seconds = Math.min(buffer.duration - offset, duration);
+    if (seconds <= .025) return false;
+    const volume = clip.gain * event.gain * amplitude, release = Math.min(.22, seconds * .25);
     level.gain.setValueAtTime(0, at); level.gain.linearRampToValueAtTime(volume, at + .008);
-    level.gain.setValueAtTime(volume, at + buffer.duration - release); level.gain.linearRampToValueAtTime(0, at + buffer.duration);
+    level.gain.setValueAtTime(volume, at + seconds - release); level.gain.linearRampToValueAtTime(0, at + seconds);
     source.connect(level).connect(path.input); path.output.connect(g.master);
     const voice = { id, type: event.type, eventId: event.id, source, level, path,
-      origin: { ...event.position }, followMaterial: event.type === 'fracture',
-      at, sourceEnd: at + buffer.duration, until: at + buffer.duration + CONFIG.maxArrivalDelay,
+      origin: { ...origin }, followMaterial: id === 'failure-body',
+      followAnchor: id === 'failure-body' ? 'fallingMaterial' : event.type === 'catch' ? 'catch' : null,
+      amplitude: volume, at, sourceEnd: at + seconds, until: at + seconds + CONFIG.maxArrivalDelay,
+      sourceOffset: offset, sourceDuration: seconds,
       sourceEnded: false, residual: null, nodes: [source, level, ...path.nodes] };
     source.onended = () => { voice.sourceEnded = true; };
-    place(voice, frame, options, true); g.voices.add(voice); source.start(at);
+    place(voice, frame, options, true); g.voices.add(voice); source.start(at, offset, seconds);
     return true;
   }
   function addResidual(event, frame, options) {
@@ -205,7 +213,7 @@ export function createSourceEarthfallAudio({ getAudio = () => null,
   }
   function snapshot() {
     const g = graph, voices = g ? [...g.voices] : [];
-    return { ...last, sequenceId, loaded: !!g?.bank?.loaded, failed: g?.bank?.failed || null,
+    return { ...last, sequenceId, runId, loaded: !!g?.bank?.loaded, failed: g?.bank?.failed || null,
       sourceCount: voices.filter(voice => !voice.sourceEnded && voice.sourceEnd > g.ctx.currentTime).length,
       propagationTails: voices.filter(voice => voice.sourceEnded || voice.sourceEnd <= g.ctx.currentTime).length,
       graphVoices: voices.length, residualCount: voices.filter(voice => voice.residual).length,
@@ -215,9 +223,11 @@ export function createSourceEarthfallAudio({ getAudio = () => null,
       sourceBank: `${SOURCE_DEMOLITION_AUDIO_DIR}/manifest.json`,
       bankSubset: [...MATERIALS],
       residualMethod: 'filtered send from the one playing failure source; no replay, synthetic wind or new performance',
+      order: 'disjoint chronological support segments; held interval; main body only at footing-loss',
       voices: voices.flatMap(voice => [{ id: voice.id, eventId: voice.eventId, kind: 'material',
         position: voice.path.position, mix: voice.path.mix, startedAt: voice.at, sourceEnd: voice.sourceEnd,
-        until: voice.until, followsMaterial: voice.followMaterial }, ...(voice.residual ? [{
+        sourceOffset: voice.sourceOffset, sourceDuration: voice.sourceDuration,
+        until: voice.until, followsMaterial: voice.followMaterial, followsAnchor: voice.followAnchor }, ...(voice.residual ? [{
         id: `${voice.id}:residual`, eventId: voice.residual.eventId, kind: 'residual', derivedSend: true,
         position: voice.residual.path.position, mix: voice.residual.path.mix, startedAt: voice.residual.at,
         sourceEnd: voice.sourceEnd, until: voice.until }] : [])]) };
@@ -225,8 +235,17 @@ export function createSourceEarthfallAudio({ getAudio = () => null,
   function update(frame = {}, options = {}) {
     if (disposed) return { ...snapshot(), active: false, muted: true };
     const nextId = String(frame.sequenceId || sequenceId || 'source-earthfall');
-    if (nextId !== sequenceId) { cut(); sequenceId = nextId; seen = new Set(); seenTypes = new Set(); receipts = []; }
+    const nextRun = String(frame.runId ?? runId ?? '');
+    if (nextId !== sequenceId || nextRun !== runId) {
+      cut(); sequenceId = nextId; runId = nextRun;
+      seen = new Set(); seenTypes = new Set(); receipts = []; observedActive = false;
+    }
     const active = !!frame.active, g = active || frame.preload ? ensureGraph() : graph;
+    // The real scene exposes intact, active frames before arming. A controller
+    // first observed already committed is a restored baseline, even when a
+    // frozen save contains a receipt with age zero. No fresh attack is earned.
+    const initialCommitted = active && !observedActive && !!frame.committed;
+    if (active) observedActive = true;
     const contextReady = g && !['suspended', 'interrupted', 'closed'].includes(g.ctx.state);
     enabled = active && !!contextReady && !options.protected && !options.suspended && !options.hidden
       && options.focused !== false && !frame.protected;
@@ -245,14 +264,21 @@ export function createSourceEarthfallAudio({ getAudio = () => null,
     for (const event of (Array.isArray(frame.events) ? frame.events : []).map(item => eventInfo(item, frame)).filter(Boolean)) {
       if (seen.has(event.id) || seenTypes.has(event.type)) continue;
       seen.add(event.id); seenTypes.add(event.type); receipts.push(event.id);
-      let reason = !enabled ? 'protected-or-outside' : frame.restored || frame.replayed || event.suppressed ? 'restored-baseline'
+      let reason = !enabled ? 'protected-or-outside' : initialCommitted || frame.restored || frame.replayed || event.suppressed ? 'restored-baseline'
         : event.age > CONFIG.maxEventAge ? 'stale-no-backlog' : !g?.bank?.loaded ? 'bank-not-ready-no-backlog'
           : !event.position ? 'missing-world-anchor' : event.type === 'footing-loss' && !effects ? 'residual-effects-off' : null;
       let didPlay = false;
       if (!reason) {
-        if (event.type === 'strain') didPlay = material('restraint', event, frame, options, .45);
-        if (event.type === 'fracture') didPlay = material('failure-body', event, frame, options, .76);
-        if (event.type === 'footing-loss') { didPlay = addResidual(event, frame, options); if (!didPlay) reason = 'no-playing-material-no-backlog'; }
+        // Non-overlapping intervals of the same recording remain earned by
+        // their actual event even when render and audio clocks diverge. No raw
+        // interval or tail is replayed, and no explosive pulse is manufactured.
+        if (event.type === 'strain') didPlay = material('restraint', event, frame, options, .45, CONFIG.initiationSplit);
+        if (event.type === 'fracture') didPlay = material('restraint', event, frame, options, .495,
+          CONFIG.initiationSeconds - CONFIG.initiationSplit, CONFIG.initiationSplit);
+        if (event.type === 'footing-loss') {
+          didPlay = material('failure-body', event, frame, options, .76);
+          if (didPlay && effects) addResidual(event, frame, options);
+        }
         if (event.type === 'catch') didPlay = material('stone-spall', event, frame, options, .30);
         if (event.type === 'land') didPlay = material('stone-spall', event, frame, options, .42);
       }
@@ -265,7 +291,7 @@ export function createSourceEarthfallAudio({ getAudio = () => null,
     return snapshot();
   }
   function stop() { cut(); enabled = false; last = { ...last, active: false, muted: true, audible: false, reason: 'stopped' }; }
-  function reset() { stop(); sequenceId = null; seen.clear(); seenTypes.clear(); receipts = []; history.length = 0; played = 0; skipped = 0; }
+  function reset() { stop(); sequenceId = null; runId = null; observedActive = false; seen.clear(); seenTypes.clear(); receipts = []; history.length = 0; played = 0; skipped = 0; }
   function destroy() { stop(); disposed = true; graph?.master.disconnect?.(); graph?.residualBus.disconnect?.(); graph = null; }
   return { update, ready: () => load(), stop, reset, snapshot, destroy };
 }

@@ -3,7 +3,7 @@
 // here. Simulation time, rain/snow profiles and the user wiper switch are
 // owned by the study; stopping the van does not stop rain landing on its glass.
 export const WEATHER_GRID=Object.freeze({width:48,height:32});
-export const DRIVE_PANE=Object.freeze({left:-.79,right:.79,bottomY:1.30,topY:2.16,bottomZ:-1.17,topZ:-.77});
+export const DRIVE_PANE=Object.freeze({left:-.84,right:.84,bottomY:1.27,topY:1.79,bottomZ:-.98,topZ:-.36});
 export const WIPER_TILT_X=Math.atan2(DRIVE_PANE.topZ-DRIVE_PANE.bottomZ,DRIVE_PANE.topY-DRIVE_PANE.bottomY);
 const STEP=1/120,TAU=Math.PI*2,CYCLE=2.62,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const numeric=(v,fallback)=>Number.isFinite(Number(v))?Number(v):fallback;
@@ -11,7 +11,7 @@ const paneLength=Math.hypot(DRIVE_PANE.topY-DRIVE_PANE.bottomY,DRIVE_PANE.topZ-D
 const cellPoints=Array.from({length:WEATHER_GRID.width*WEATHER_GRID.height},(_,i)=>[
  DRIVE_PANE.left+(i%WEATHER_GRID.width+.5)/WEATHER_GRID.width*(DRIVE_PANE.right-DRIVE_PANE.left),
  (Math.floor(i/WEATHER_GRID.width)+.5)/WEATHER_GRID.height*paneLength]);
-const snowLanding=cellPoints.map(p=>.030+.025*Math.pow(Math.abs(p[0])/.79,3)+.045*(1-p[1]/paneLength));
+const snowLanding=cellPoints.map(p=>.030+.025*Math.pow(Math.abs(p[0])/DRIVE_PANE.right,3)+.045*(1-p[1]/paneLength));
 // Fixed pane samples precompute their blade angle/radius. A moving sweep then
 // touches only its thin angular band; no per-frame trig per glass cell.
 const wipeCells=[-.52,.45].map(pivot=>cellPoints.flatMap((p,index)=>{const dx=p[0]-pivot,r=Math.hypot(dx,p[1]);if(r<.285||r>.605)return[];const along=Math.sqrt(Math.max(0,r*r-.035*.035)),angle=Math.atan2(p[1],dx)-Math.atan2(along,-.035),tipDistance=Math.max(.31-along,along-.58,0);return[{index,r,angle,tipDistance,margin:.025/r}];}));

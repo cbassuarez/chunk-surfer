@@ -140,7 +140,8 @@ function handleRecordingNoise(level, reason, meta = {}) {
   // A quarter of the way to spoiling is already worth marking: it is the
   // difference between "the room was silent" and "you kept getting away with
   // it", and only one of those is a lesson.
-  if (inputLevel > threshold * .25) noteTakeEvent(inputLevel > threshold ? 'spoil' : 'near', inputLevel);
+  if (inputLevel > threshold * .25 && (inputLevel > threshold || meta.markNear !== false))
+    noteTakeEvent(inputLevel > threshold ? 'spoil' : 'near', inputLevel);
   // NOISE IS HEARD BY THE BUILDING, not only by the tape — and it is heard well
   // before it ruins anything.
   //
@@ -416,12 +417,25 @@ export function emitNoise(level, x, y, reason = 'something moved', options = {})
 // player-generated, and `audibleToHush: false` tells the loud-noise sink not to
 // send anything after him for it. They land on the ambient channel, which is
 // what the needle already draws for things in the room that are not him.
+// A source that never stops (the chapel's murmur, `continuous: true`) arrives
+// every frame. Its near misses are marked once every few seconds of take, not
+// once a frame, or it would fill the strip in the first second; a spoil is
+// always marked.
+const CONTINUOUS_MARK_SECONDS = 2.5;
+const continuousMarkedAt = new Map();
 export function emitRoomSourceNoise(level, x, y, reason = 'something in the room', options = {}) {
   const heard = Math.max(0, Number(level) || 0);
   if (!(heard > 0)) return;
   state.ambient = Math.max(state.ambient, heard);
   if (x != null) state.lastNoiseAt = { x, y, t: performance.now() };
+  let markNear = true;
+  if (options.continuous && recordingInputLevel(heard) > spoilThreshold() * .25) {
+    const id = options.sourceId || 'room-source', at = continuousMarkedAt.get(id), t = state.takeElapsed;
+    if (at != null && t >= at && t - at < CONTINUOUS_MARK_SECONDS) markNear = false;
+    else continuousMarkedAt.set(id, t);
+  }
   handleRecordingNoise(heard, reason, {
+    markNear,
     sourceKind: 'environment',
     sourceId: options.sourceId || 'room-source',
     playerGenerated: false,

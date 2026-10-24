@@ -23,7 +23,7 @@ export function createDrive({length=1200}={}){return prepareDrive({schema:1,leng
 export function note(s,type,data={}){const e={t:s.programTime,distance:s.furthest,type,...data};s.events.push(e);return e;}
 export function selectStation(s,id){if(!['service','company','music'].includes(id))return false;s.station=id;s.radioOn=true;note(s,'station',{id});return true;}
 export function power(s){s.radioOn=!s.radioOn;note(s,'radio-power',{on:s.radioOn});return s.radioOn;}
-export function stepDrive(s,dt,input={},colliders=[]){
+export function stepDrive(s,dt,input={},colliders=[],{roadSampler=roadSurfaceAt}={}){
  if(s.paused)return s;const elapsed=Number.isFinite(Number(dt))?Math.max(0,Number(dt)):0;s.programTime+=elapsed;
  if(s.finished)return s; // Only an explicit dismount ends the journey; parking never locks the controls.
  const propulsion=!!(input.forward||input.reverse);
@@ -32,7 +32,7 @@ export function stepDrive(s,dt,input={},colliders=[]){
  if(propulsion){s.arrived=false;s.arrivalStopSeconds=0;}
  ensureVehicle(s);s.contactStartX=s.x;s.contactStartZ=s.z;s.contactStartHeading=s.heading;s.physicsRemainder+=elapsed;
  while(s.physicsRemainder>=PHYSICS_STEP-1e-10){
-  stepVehicle(s,PHYSICS_STEP,input);if(colliders.length)resolveVehicleContacts(s,colliders);s.physicsRemainder=Math.max(0,s.physicsRemainder-PHYSICS_STEP);
+  stepVehicle(s,PHYSICS_STEP,input,roadSampler);if(colliders.length)resolveVehicleContacts(s,colliders);s.physicsRemainder=Math.max(0,s.physicsRemainder-PHYSICS_STEP);
   const physicsTime=s.programTime-s.physicsRemainder;
   s.furthest=Math.max(s.furthest,-s.z);const progress=s.furthest/s.length;
   let p=s.phase;for(let i=0;i<BOUNDS.length;i++)if(progress>=BOUNDS[i])p=i;

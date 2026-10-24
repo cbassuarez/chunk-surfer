@@ -8,6 +8,8 @@ import { SOURCE_EXPOSED_STRATA, sourceStrataCollisionAt, sourceStrataEntryAt } f
 import { createSourceHangingShore } from './source-hanging-shore.js';
 import { createSourceHushFollow } from './source-hush-follow.js';
 import { freshSourceContinuation, normalizeSourceContinuation, resumeSourceContinuation } from './source-continuation.js';
+import { normalizeSourceEarthfall } from './source-earthfall.js';
+import { normalizeSourceFalseReturn } from './source-false-return.js';
 import { SOURCE_DEMOLITION } from '../data/source-demolition.js';
 import { normalizeSourceDemolition, advanceSourceDemolition, sourceDemolitionFrame } from './source-demolition.js';
 import { SOURCE_DEMOLITION_GEOMETRY } from '../data/generated/source-demolition-geometry.js';
@@ -144,6 +146,8 @@ import { normalizeTowerPersonalJourney, beginTowerPersonalJourney, towerPersonal
   tickTowerPersonalJourney, leaveTowerPersonalJourney, consumeTowerPersonalReward, crossTowerPersonalJourney } from './tower-personal-journey.js';
 import { towerPersonalWorldPieces, towerPersonalWorldLights, towerPersonalHandoverPieces, TOWER_PERSONAL_WORLD_SOURCES } from '../render/tower-personal-worlds.js';
 import { towerPersonalPiecePresent } from './tower-personal-visibility.js';
+import { COASTAL_MEMORY_LAYOUT } from '../data/coastal-memory.js';
+import { normalizeCoastalMemory, beginCoastalMemory as beginCoastalMemoryVisit, acknowledgeCoastalReturn, consumeCoastalReward } from './coastal-memory.js';
 
 // The anchored plan contains the complete 620-cell-deep Source field plus the
 // 720-cell-wide white sea. One retained upload is still cheaper than rebuilding
@@ -939,6 +943,9 @@ export function createSourceSpaceRuntime({
   let stationHomeResolved = state.station.homeResolved;
   let stationLastReturn = state.station.lastReturn;
   let towerPersonal = normalizeTowerPersonalJourney(state.station.personal);
+  let coastalMemory = normalizeCoastalMemory(state.station.coastalMemory, { layout: COASTAL_MEMORY_LAYOUT });
+  const coastalRunId = coastalMemory.runId || `coastal:${state.seed}`;
+  if (!coastalMemory.visit) coastalMemory = normalizeCoastalMemory(null, { layout: COASTAL_MEMORY_LAYOUT, runId: coastalRunId });
   let towerPersonalMonitorSeconds = 0;
   let towerPersonalMonitorHeld = false;
   let towerPersonalWorldSignal = { world: null, offset: 0, active: false };
@@ -959,7 +966,19 @@ export function createSourceSpaceRuntime({
     facts: state.profile?.sourceMemoryFacts || {},
   });
   let player = { x: SOURCE_ENTRY.x, y: SOURCE_ENTRY.y, facing: SOURCE_ENTRY.facing };
-  if (towerPersonal.active) player = { ...player, ...towerLandWorld(towerPersonal.pose) };
+  if (state.phase === CHUNK_SURF_PHASE.BELLS && towerPersonal.active && !towerPersonal.completed && towerPersonal.returnPose) {
+    // Retire the old occupied pocket without rewriting its earned PCM receipt.
+    // The replacement visit starts fresh and borrows the old exact Source pose.
+    const migrated = beginCoastalMemoryVisit(coastalMemory, { layout: COASTAL_MEMORY_LAYOUT,
+      runId: coastalRunId, entryDoorId: towerPersonal.entryDoorId, returnPose: towerPersonal.returnPose });
+    if (migrated) {
+      coastalMemory = migrated; towerPersonal = normalizeTowerPersonalJourney({ ...towerPersonal, active: false });
+      doorCrossing = null; stationWalk = null;
+      state = { ...state, station: { ...state.station, personal: towerPersonal, coastalMemory, crossing: null, walk: null } };
+    }
+  }
+  if (coastalMemory.active && coastalMemory.returnPose) player = { ...player, ...coastalMemory.returnPose };
+  else if (towerPersonal.active) player = { ...player, ...towerLandWorld(towerPersonal.pose) };
   // The three dials on the machine at the edge of the field. Runtime-local
   // rather than reducer state: it is set and spent inside one visit to the pad,
   // and nothing after the crossing has any use for how it was threaded.
@@ -1059,6 +1078,7 @@ export function createSourceSpaceRuntime({
         }
       }
     }
+    coastalMemory = normalizeCoastalMemory(state.station.coastalMemory, { layout: COASTAL_MEMORY_LAYOUT });
     sourceDialogue = normalizeSourceDialogueState(state.haystackDialogue || sourceDialogue, {
       seed: state.seed,
       facts: state.profile?.sourceMemoryFacts || {},
@@ -2623,6 +2643,24 @@ export function createSourceSpaceRuntime({
     return { checkpoint, returnPose: checkpoint.returnPose, direction };
   }
 
+  function setFalseReturnCheckpoint(value) {
+    if (!value || !state.sourceContinuation || state.finale?.route === SOURCE_FINALE_ROUTE.CONTACT
+      || state.finale?.bust?.decision) return false;
+    const checkpoint=normalizeSourceFalseReturn({...value,returnPose:state.sourceFalseReturn?.returnPose||state.sourceContinuation.returnPose});
+    if(checkpoint.runId!==state.sourceContinuation.runId)return false;
+    setState({...state,sourceFalseReturn:checkpoint},{immediate:true});
+    return checkpoint;
+  }
+
+  function setEarthfallCheckpoint(value) {
+    if (!value || !state.sourceContinuation || state.finale?.route === SOURCE_FINALE_ROUTE.CONTACT
+      || state.finale?.bust?.decision) return false;
+    const checkpoint=normalizeSourceEarthfall(value);
+    if(checkpoint.runId!==state.sourceContinuation.runId)return false;
+    setState({...state,sourceEarthfall:checkpoint},{immediate:true});
+    return checkpoint;
+  }
+
   function setContinuationCheckpoint(value) {
     if (!value || state.finale?.route === SOURCE_FINALE_ROUTE.CONTACT || state.finale?.bust?.decision) return false;
     const checkpoint = normalizeSourceContinuation(value);
@@ -3326,7 +3364,7 @@ export function createSourceSpaceRuntime({
   }
 
   function tickBellField(dt=0,{difficulty:nextDifficulty=difficulty,reducedMotion=false,paused=false}={}) {
-    if(state.phase!==CHUNK_SURF_PHASE.BELLS||paused||towerPersonal.active)return null;
+    if(state.phase!==CHUNK_SURF_PHASE.BELLS||paused||towerPersonal.active||coastalMemory.active)return null;
     const o=landscapeOrigin();
     const result=bellField.step({x:player.x-o.x,y:player.y-o.y,dt,difficulty:nextDifficulty,reducedMotion});
     if(result.moved)player={...player,x:o.x+result.position.x,y:o.y+result.position.y};
@@ -3526,6 +3564,7 @@ export function createSourceSpaceRuntime({
   }
 
   function onStep(from, to) {
+    if (coastalMemory.active) return { handled: true, event: 'coastal-owner', checkpoint: coastalMemoryState(), position: { ...coastalMemory.returnPose } };
     demolitionForwardStep=sourcePhaseActive()&&!state.firstLiftCompleted&&to.y<from.y&&Math.hypot(to.x-from.x,to.y-from.y)*CELL<=SOURCE_DEMOLITION.maxAcceptedStep;
     if (towerPersonal.active) {
       const before = { ...towerPersonal.pose, ...towerLandLocal(from.x, from.y) };
@@ -3632,6 +3671,7 @@ export function createSourceSpaceRuntime({
     }
     if (state.phase === CHUNK_SURF_PHASE.BELLS) {
       eraseCrossedDoors(from, to);
+      if (coastalMemory.active) return { handled: true, event: 'coastal-entry', checkpoint: coastalMemoryState(), position: { ...coastalMemory.returnPose } };
       if (towerPersonal.active) return { handled: true, event: 'personal-entry', position: towerLandFrame().pose };
       // Only through the tower door, and only once it is unlocked.
       if (towerDoorUnlocked() && crossedRouteDoor(from, to)) enterBellsRoom();
@@ -6750,6 +6790,49 @@ export function createSourceSpaceRuntime({
       ringClearing: { x: landscapeOrigin().x, y: landscapeOrigin().y + SOURCE_BELLS.room.threshold + 12 },
     };
   }
+  function coastalMemoryState() { return normalizeCoastalMemory(coastalMemory, { layout: COASTAL_MEMORY_LAYOUT }); }
+  function setCoastalMemoryState(value) {
+    if (value?.kind !== 'coastal-memory' || value.version !== 1 || value.runId !== coastalMemory.runId) return null;
+    const next = normalizeCoastalMemory(value, { layout: COASTAL_MEMORY_LAYOUT, runId: coastalMemory.runId });
+    if (coastalMemory.completed && !next.completed || coastalMemory.returnReceipt?.delivered && !next.returnReceipt?.delivered) return null;
+    // An authored local update cannot change the Source body/door it borrowed.
+    if (coastalMemory.returnPose) next.returnPose = structuredClone(coastalMemory.returnPose);
+    next.entryDoorId = coastalMemory.entryDoorId;
+    next.noteRead ||= coastalMemory.noteRead;
+    if (coastalMemory.rewardConsumed) next.rewardConsumed = true;
+    if (coastalMemory.recordingReceipt?.delivered && next.recordingReceipt) next.recordingReceipt.delivered = true;
+    coastalMemory = next; saveStation(); return coastalMemoryState();
+  }
+  function beginCoastalMemory(options = {}) {
+    if (state.phase !== CHUNK_SURF_PHASE.BELLS || towerPersonal.active || towerPersonal.completed || coastalMemory.completed) return null;
+    if (coastalMemory.active) return coastalMemoryState();
+    const returnPose = options.returnPose || coastalMemory.returnPose || { ...player };
+    const next = beginCoastalMemoryVisit(coastalMemory, { layout: COASTAL_MEMORY_LAYOUT,
+      runId: options.runId || coastalRunId, entryDoorId: options.entryDoorId || doorCrossing?.id, returnPose });
+    if (!next) return null;
+    coastalMemory = next; doorCrossing = null; stationWalk = null;
+    // The borrowed owner has its own local body. Source stays at its exact
+    // captured approach pose for the entire visit and every intermediate save.
+    player = { ...player, ...next.returnPose }; lastPlan = null; saveStation();
+    return coastalMemoryState();
+  }
+  function finishCoastalMemory(value = coastalMemory) {
+    if (!coastalMemory.active || coastalMemory.returnReceipt?.delivered || value?.runId !== coastalMemory.runId || value?.visit !== coastalMemory.visit) return null;
+    const pending = { ...value, returnPose: structuredClone(coastalMemory.returnPose), entryDoorId: coastalMemory.entryDoorId };
+    const next = acknowledgeCoastalReturn(pending, pending.returnReceipt?.id, { layout: COASTAL_MEMORY_LAYOUT, runId: coastalMemory.runId });
+    if (!next) return null;
+    coastalMemory = next; doorCrossing = null; stationWalk = null;
+    player = { ...player, ...next.returnPose }; lastPlan = null;
+    if (next.completed && next.entryDoorId) {
+      doorTakenAt.set(next.entryDoorId, crossingClock());
+      state = { ...state, routeDoorsErased: [...new Set([...(state.routeDoorsErased || []), next.entryDoorId])].slice(-64) };
+    }
+    saveStation(); return { handled: true, position: { ...next.returnPose }, checkpoint: coastalMemoryState() };
+  }
+  function consumeCoastalMemoryRewardNow() {
+    const next = consumeCoastalReward(coastalMemory, { layout: COASTAL_MEMORY_LAYOUT });
+    if (!next) return false; coastalMemory = next; saveStation(); return true;
+  }
   function enterTowerLand(id = 'school-hall', options = {}) {
     if (state.phase !== CHUNK_SURF_PHASE.BELLS || towerPersonal.completed) return null;
     if (towerPersonal.active) return towerLandFrame().pose;
@@ -6947,7 +7030,7 @@ export function createSourceSpaceRuntime({
   function stationSnapshot() {
     return normalizeSourceStation({ time: stationClockSeconds, entries: stationEntries,
       crossing: doorCrossing, walk: stationWalk,
-      personal: towerPersonal,
+      personal: towerPersonal, coastalMemory,
       realm: stationRealm, homeDiscovered: stationHomeDiscovered, homeResolved: stationHomeResolved,
       lastReturn: stationLastReturn,
       takeBacks: [...doorTakenAt].map(([id, at]) => ({ id, at })) });
@@ -6956,7 +7039,7 @@ export function createSourceSpaceRuntime({
     dispatch({ type: 'STATION_SAVED', station: stationSnapshot() }, { immediate: true, recordCausal: false });
   }
   function advanceStationTime(dt = 0) {
-    if (!doorFieldRoute()) return stationClockSeconds;
+    if (coastalMemory.active || !doorFieldRoute()) return stationClockSeconds;
     stationClockSeconds += Number.isFinite(Number(dt)) ? Math.max(0, Number(dt)) : 0;
     const previousCrossing = doorCrossing;
     if (stationRealm?.returnStartedAt != null
@@ -7101,7 +7184,7 @@ export function createSourceSpaceRuntime({
   function eraseCrossedDoors(from, to) {
     const erased = [];
     const route = doorFieldRoute();
-    if (towerPersonal.active || doorCrossingFrame()) return erased;
+    if (coastalMemory.active || towerPersonal.active || doorCrossingFrame()) return erased;
     for (const piece of doorFieldPieces()) {
       if (piece.door.route || piece.door.shut || !doorOpened(piece) || doorErased(piece)) continue;
       const [a, b] = piece.opening.threshold;
@@ -7114,7 +7197,7 @@ export function createSourceSpaceRuntime({
         if (!physicalCellAt(returnPose.x, returnPose.y)) {
           returnPose.x = midpoint.x + n[0] * 2; returnPose.y = midpoint.y + n[2] * 2;
         }
-        enterTowerLand('school-hall', { entryDoorId: piece.id, returnPose });
+        beginCoastalMemory({ entryDoorId: piece.id, returnPose });
         erased.push(piece.id); break;
       }
       const world = ELSEWHERE_WORLDS[piece.door.variant]?.id || null;
@@ -7694,6 +7777,7 @@ export function createSourceSpaceRuntime({
   }
 
   function setPlayerPosition(next) {
+    if (coastalMemory.active) return;
     const candidate = { ...player, ...(next || {}) };
     if (towerPersonal.active) {
       const local = towerLandLocal(candidate.x, candidate.y);
@@ -7972,8 +8056,9 @@ export function createSourceSpaceRuntime({
       const [a, b] = piece.opening.threshold, n = piece.opening.normal;
       const back = { x: (a.x + b.x) / 2 + n[0] * 2, y: (a.y + b.y) / 2 + n[2] * 2,
         facing: 0, yaw: Math.atan2(-n[0], n[2]), pitch: 0 };
-      towerPersonal = beginTowerPersonalJourney(towerPersonal, { entryDoorId: piece.id, returnPose: back });
-      doorCrossing = null; stationWalk = null; player = { ...player, ...towerLandWorld(towerPersonal.pose) };
+      coastalMemory = beginCoastalMemoryVisit(coastalMemory, { layout: COASTAL_MEMORY_LAYOUT,
+        runId: coastalRunId, entryDoorId: piece.id, returnPose: back });
+      doorCrossing = null; stationWalk = null; player = { ...player, ...back };
       state = { ...state, station: stationSnapshot() };
     }
   }
@@ -8050,6 +8135,8 @@ export function createSourceSpaceRuntime({
     completeNormalExit,
     sourceContinuationEntry,
     setContinuationCheckpoint,
+    setEarthfallCheckpoint,
+    setFalseReturnCheckpoint,
     returnContinuation,
     completeContinuation,
     acknowledgeContinuationHandoff,
@@ -8126,6 +8213,8 @@ export function createSourceSpaceRuntime({
     advanceStationTime, stationTime: crossingClock, stationWalkState, setStationWalkState, stationRelicWorlds,
     stationRealmFrame, moveStationRealm, setStationRealmLook,
     stationRealmHomeState, setStationRealmHomeState, markHomeWindowReached, stationLastRealmReturn,
+    coastalMemoryState, setCoastalMemoryState, beginCoastalMemory, finishCoastalMemory,
+    consumeCoastalMemoryReward: consumeCoastalMemoryRewardNow,
     enterTowerLand, leaveTowerLand, towerLandState, advanceTowerLand, towerLandFrame, tickTowerLand,
     consumeTowerPersonalReward: consumeTowerPersonalRewardNow, markTowerPersonalRingAnswered,
     towerLandSpots: () => (towerPersonal.active

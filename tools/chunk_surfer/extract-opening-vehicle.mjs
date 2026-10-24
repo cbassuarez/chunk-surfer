@@ -37,9 +37,11 @@ for (const primitive of cabin.listPrimitives()) {
     for (let c = 0; c < 3; c++) { box.min[c] = Math.min(box.min[c], p[c]); box.max[c] = Math.max(box.max[c], p[c]); }
     bounds.set(r, box);
   }
-  const selected = box => box.max[1] < 1.32 && box.min[1] > .62
-    && box.min[2] > -.97 && box.max[2] < .96
-    && (box.min[0] > .80 || (box.min[0] > .72 && box.min[1] > .83));
+  // The Mk3's driver door: shell, pan, card, frame and glass run between the
+  // hinge pillar (z -.62) and the B pillar (z .38), up to the window frame top.
+  const selected = box => box.max[1] < 1.85 && box.max[1] > .72 && box.min[1] > .37
+    && box.min[2] > -.65 && box.max[2] < .39
+    && box.min[0] > .75 && box.max[0] < .98;
   const fixed = [], moving = [];
   for (let i = 0; i < indices.length; i += 3) {
     const output = selected(bounds.get(root(key(indices[i])))) ? moving : fixed;
@@ -65,7 +67,7 @@ const receipt = {
   asset: 'assets/source-vehicle-interior.glb',
   sha256: createHash('sha256').update(result).digest('hex'), bytes: result.length,
   meshes: [...names, 'drive_cabin_door_r'].map(name=>`opening_${name}`), doorTriangles,
-  provenance: 'Existing project-authored Source driving vehicle. Positions, normals, UVs and materials preserved; lower right door detached without remodeling.',
+  provenance: 'Project-authored Ford Transit Mk3 cabin from build-drive-cabin.py. Positions, normals, UVs and materials preserved; the driver\'s door detached without remodeling.',
 };
 await writeFile(new URL('../../public/assets/source-vehicle-interior.credits.json', import.meta.url), `${JSON.stringify(receipt, null, 2)}\n`);
 console.log(JSON.stringify(receipt));

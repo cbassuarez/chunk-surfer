@@ -21,6 +21,34 @@ for definition in source['materials']+extra:
 cap=len(source['materials'])
 
 def near(a,b,eps=.025):return abs(a-b)<eps
+def controlled_timing(role,lo,hi):
+ column=max(0,min(4,int((((lo[2]+hi[2])/2)+8)/18)))
+ upper=lo[1]>4.5
+ if role in ('service-infill','service-front-substrate'):
+  return .90+.045*column+(.10 if upper else 0),1.55+.055*column+(.14 if upper else 0)
+ if role=='window-infill':return 1.08+.035*column,1.72+.045*column
+ if role=='academic-backing':return 1.18+.04*column,1.95+.055*column+.028*lo[1]
+ if role=='string-and-coping':
+  release=(2.68 if lo[1]>10 else 2.12)+.045*column
+  return release-.42,release
+ if role=='projected-academic-bay':return 1.78+.035*column,2.35+.055*column+.025*lo[1]
+ if role=='upper-fabric':return 1.95+.035*column,2.45+.055*column+.018*lo[1]
+ if role=='old-brick-upper-course':return 2.12+.025*column,2.75+.045*column
+ if role=='old-brick-projection':return 1.95+.025*column,2.45+.045*column+.025*lo[1]
+ if role=='old-roof':return 2.65+.035*column,3.05+.07*column
+ raise RuntimeError('No controlled release for '+role)
+
+def controlled_angle(role,lo,hi):
+ # Members retain their construction: horizontal courses drop as courses,
+ # infill folds into the footprint, roof sections keep a shallow roof attitude.
+ column=max(0,min(4,int((((lo[2]+hi[2])/2)+8)/18)))
+ variation=(column-2)*.018
+ if role=='service-infill':return -math.radians(80)+variation
+ if role=='service-front-substrate':return -math.radians(53)+variation
+ if role=='window-infill':return -math.radians(72)+variation
+ if role=='string-and-coping':return -math.radians(12)+variation
+ if role=='old-roof':return -math.radians(17)+variation
+ return -math.radians(48)+variation
 def selection(c):
  lo,hi=c['bounds']['min'],c['bounds']['max'];size=[hi[k]-lo[k]for k in range(3)];mid=[(lo[k]+hi[k])/2 for k in range(3)];name=c['name']
  if name=='painted steel' and near(lo[0],.275) and near(hi[0],9.725) and near(hi[2],-4.02):
@@ -89,17 +117,18 @@ for c in source['components']:
   pivot=Vector(((lo[0]+hi[0])/2,lo[1],(lo[2]+hi[2])/2));index=len(parts);mesh=f'source_demolition_chunk_{index:02d}'
   for v in bm.verts:v.co-=pivot
   data=bpy.data.meshes.new(mesh);bm.to_mesh(data);bm.free();data.update();[data.materials.append(m)for m in materials];o=bpy.data.objects.new(mesh,data);moving_collection.objects.link(o);o.location=pivot;o.rotation_mode='QUATERNION'
-  count=counts.get(rule['role'],0);counts[rule['role']]=count+1;start=rule['start']+(count%5)*.12
-  o['source_component']=c['id'];o['construction_role']=rule['role'];o['phase']=rule['phase'];o['release_time']=start
-  parts.append({'id':mesh,'mesh':mesh,'sourceComponent':c['id'],'role':rule['role'],'phase':rule['phase'],'startTime':round(start,4),'pivot':list(pivot),'restBounds':{'min':lo,'max':hi},'localBounds':{'min':[lo[k]-pivot[k]for k in range(3)],'max':[hi[k]-pivot[k]for k in range(3)]},'object':o})
+  count=counts.get(rule['role'],0);counts[rule['role']]=count+1;start,release=controlled_timing(rule['role'],lo,hi)
+  o['source_component']=c['id'];o['construction_role']=rule['role'];o['phase']=rule['phase'];o['support_initiation']=start;o['release_time']=release
+  parts.append({'id':mesh,'mesh':mesh,'sourceComponent':c['id'],'role':rule['role'],'phase':rule['phase'],'startTime':round(start,4),'initiationAt':round(start,4),'releaseTime':round(release,4),'pivot':list(pivot),'restBounds':{'min':lo,'max':hi},'localBounds':{'min':[lo[k]-pivot[k]for k in range(3)],'max':[hi[k]-pivot[k]for k in range(3)]},'object':o})
  bm_source.free()
 
 if len(parts)>60:raise RuntimeError(f'Too many semantic fragments: {len(parts)}')
 times=[round(i/12,8)for i in range(145)];tracks={};debris_min_x=1e9
 def smooth(t):return t*t*(3-2*t)
 for index,part in enumerate(parts):
- o=part.pop('object');pivot=Vector(part['pivot']);local=[v.co.copy()for v in o.data.vertices];start=part['startTime'];release=start+.45
- roll=-math.pi/2+(.10 if index%3==0 else -.08 if index%3==1 else .025);yaw=(index%5-2)*.035;pitch=(index%3-1)*.035;final=Euler((pitch,yaw,roll),'XYZ').to_quaternion();rotated=[final@v for v in local];target=Vector((max(2.2-min(v.x for v in rotated),pivot.x+3.2+(index%4)*.5),.035-min(v.y for v in rotated),pivot.z+(index%3-1)*.18));fall=math.sqrt(max(.08,2*(pivot.y-target.y)/9.81));fall=max(.48,min(1.8,fall));translations=[];rotations=[]
+ o=part.pop('object');pivot=Vector(part['pivot']);local=[v.co.copy()for v in o.data.vertices];start=part['startTime'];release=part['releaseTime']
+ column=max(0,min(4,int((pivot.z+8)/18)));roll=controlled_angle(part['role'],part['restBounds']['min'],part['restBounds']['max']);yaw=(column-2)*.007;pitch=(column-2)*.004
+ final=Euler((pitch,yaw,roll),'XYZ').to_quaternion();rotated=[final@v for v in local];target=Vector((max(2.2-min(v.x for v in rotated),pivot.x+1.65+column*.12),.035-min(v.y for v in rotated),pivot.z+(column-2)*.025));fall=math.sqrt(max(.08,2*(pivot.y-target.y)/9.81));fall=max(.55,min(1.8,fall));translations=[];rotations=[]
  # A panel that starts on the ground tips against that ground. Its pivot may
  # rise as the CURRENT rotated thickness demands, never jump to the resting
  # height needed by its future flat pose. Heavy floor-origin pieces take a
@@ -107,17 +136,22 @@ for index,part in enumerate(parts):
  if pivot.y<.05:
   height=part['restBounds']['max'][1]-part['restBounds']['min'][1]
   fall=max(fall,.92+min(.45,height*.055))
- release_q=Euler((0,0,-.065)).to_quaternion()
+ # Thin lining can flex at its fixings; heavy masonry only opens a small
+ # bearing joint. This must not lift a broad ground-supported block early.
+ strain=.020 if part['role'] in ('service-infill','service-front-substrate','window-infill') else .008 if part['role']=='string-and-coping' else .012
+ release_q=Euler((0,0,-strain)).to_quaternion()
  release_y=max(pivot.y,.035-min((release_q@v).y for v in local))
  for t in times:
   if t<=start:loc=pivot.copy();q=Euler((0,0,0)).to_quaternion()
   elif t<release:
-   u=smooth((t-start)/(release-start));q=Euler((0,0,-.065*u)).to_quaternion();loc=pivot+Vector((.015*u,0,0));loc.y=max(pivot.y,.035*u-min((q@v).y for v in local))
+   u=smooth(max(0,min(1,(t-start)/.18)));q=Euler((0,0,-strain*u)).to_quaternion();loc=pivot+Vector((.008*u,0,0));loc.y=max(pivot.y,.035*u-min((q@v).y for v in local))
   else:
-   dt=t-release;u=max(0,min(1,dt/fall));turn=smooth(u);q=Euler((pitch*turn,yaw*turn,-.065+(roll+.065)*turn),'XYZ').to_quaternion();loc=pivot.lerp(target,turn);loc.y=max(.035-min((q@v).y for v in local),release_y-.5*9.81*dt*dt)
-   if dt>=fall:loc=target.copy();q=final;settle=dt-fall;loc.y+=.025*abs(math.sin(settle*18))*math.exp(-settle*8)
+   dt=t-release;u=max(0,min(1,dt/fall));turn=smooth(u);q=Euler((pitch*turn,yaw*turn,-strain+(roll+strain)*turn),'XYZ').to_quaternion();loc=pivot.lerp(target,turn*turn);loc.y=max(.035-min((q@v).y for v in local),release_y-.5*9.81*dt*dt)
+   if dt>=fall:loc=target.copy();q=final
   translations.append([round(v,7)for v in loc]);rotations.append([round(q.x,8),round(q.y,8),round(q.z,8),round(q.w,8)]);o.location=loc;o.rotation_quaternion=q;o.keyframe_insert(data_path='location',frame=1+t*24);o.keyframe_insert(data_path='rotation_quaternion',frame=1+t*24)
- part['settledTime']=round(release+fall+.6,4);part['finalTranslation']=list(target);part['finalRotation']=[final.x,final.y,final.z,final.w];debris_min_x=min(debris_min_x,min((target+v).x for v in rotated));tracks[part['mesh']]={'translations':translations,'rotations':rotations}
+ for curve in o.animation_data.action.fcurves if hasattr(o.animation_data.action,'fcurves') else []:
+  for key in curve.keyframe_points:key.interpolation='LINEAR'
+ part['settledTime']=round(release+fall,4);part['finalTranslation']=list(target);part['finalRotation']=[final.x,final.y,final.z,final.w];part['motionDesign']='ordered-support-held-load-inward-gravity';debris_min_x=min(debris_min_x,min((target+v).x for v in rotated));tracks[part['mesh']]={'translations':translations,'rotations':rotations}
  # Local vertices are static; Blender action is editable and corresponds to the
  # exact sampled runtime pose tracks. Export hard construction normals.
  part['groups']=export_data(o.data)
@@ -126,7 +160,7 @@ scene.frame_set(1)
 # claimed as acceptance of the game's camera or final dither.
 bpy.ops.object.camera_add(location=(-45,18,2));camera=bpy.context.object;camera.name='AUTHORING overview - original loading mouth';direction=Vector((0,7,15))-camera.location;camera.rotation_euler=direction.to_track_quat('-Z','Y').to_euler();scene.camera=camera
 bpy.ops.wm.save_as_mainfile(filepath=args.blend)
-motion={'version':1,'duration':12,'sampleHz':12,'coordinateSpace':'original conservatory_west_elevation local metres; Y-up; rotation quaternion XYZW','times':times,'tracks':tracks};Path(args.motion).write_text(json.dumps(motion,separators=(',',':')))
-audit={'originalMouth':{'minZ':-4,'maxZ':3.6},'debrisSettledMinX':debris_min_x,'selectionByConstructionRole':counts,'authoredIn':'Blender CPU,1thread; selective bmesh plane cuts with capped core; editable sampled rigid-object actions','preserved':'Unselected source triangles including loading aperture and flytower retain exact originals in the runtime retained mesh. No independent building or route introduced.'}
+motion={'version':1,'duration':12,'sampleHz':12,'motionDesign':'ordered support initiation, held load, role-specific inward fold, gravity-dominant fall and finite rest','coordinateSpace':'original conservatory_west_elevation local metres; Y-up; rotation quaternion XYZW','times':times,'tracks':tracks};Path(args.motion).write_text(json.dumps(motion,separators=(',',':')))
+audit={'originalMouth':{'minZ':-4,'maxZ':3.6},'debrisSettledMinX':debris_min_x,'selectionByConstructionRole':counts,'motionDesign':'ordered support initiation; held load; role-specific inward fold; gravity-dominant selective failure; finite rest','authoredIn':'Blender CPU,1thread; selective bmesh plane cuts with capped core; editable sampled rigid-object actions','preserved':'Unselected source triangles including loading aperture and flytower retain exact originals in the runtime retained mesh. This is selective facade failure, not a simulation of whole-building implosion. No independent building or route introduced.'}
 Path(args.output).write_text(json.dumps({'selectedComponentIds':selected,'extraMaterials':extra,'parts':parts,'retainedExtra':retained_extra,'audit':audit},separators=(',',':')))
 print(json.dumps({'movingParts':len(parts),'roles':counts,'settledDebrisMinX':debris_min_x,'blend':args.blend}))

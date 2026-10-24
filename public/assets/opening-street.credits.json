@@ -1,8 +1,8 @@
 {
   "file": "opening-street.glb",
   "pack": {
-    "sha256": "74e9841e0505b612e43f9e953cbcab411d0a8fbcda91dea10a8f62ae9f73630d",
-    "bytes": 15036304,
+    "sha256": "213c8090fe1c7d5665727c0f938a5afe42561f2c9fc46c7c368633c9b1c03b27",
+    "bytes": 15037268,
     "triangles": 8110
   },
   "license": {
@@ -433,5 +433,16 @@
   "groundReceiver": {
     "revision": 1,
     "generator": "tools/chunk_surfer/rebuild-opening-ground.mjs"
+  },
+  "loadingApronAperture": {
+    "revision": 1,
+    "repair": "tools/chunk_surfer/repair-loading-apron-aperture.mjs",
+    "mouth": {
+      "worldZ": [
+        3.5,
+        12.5
+      ],
+      "head": 5.5
+    }
   }
 }

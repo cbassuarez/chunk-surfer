@@ -6,8 +6,9 @@ import * as PROPS from '../src/game/props.js';
 import { conservatory } from '../src/data/floorplan/conservatory.js';
 import { ZONE } from '../src/data/floorplan/legend.js';
 import { CHAPEL_MASS, CHAPEL_CONGREGATION, CHAPEL_DRESSING, CHAPEL_DRESSING_MESH, CHAPEL_DRESSING_BUDGET } from '../src/data/chapel-dressing.js';
-import { CHAPEL_DRESSING_BOUNDS } from '../src/data/generated/chapel-dressing-geometry.js';
+import { CHAPEL_DRESSING_BOUNDS, CHAPEL_PRESENCE_PIVOTS } from '../src/data/generated/chapel-dressing-geometry.js';
 import { chapelDressingWorldPlacements, chapelDressingRenderInstances, chapelPresenceLightState } from '../src/game/chapel-dressing.js';
+import { createChapelApparitions } from '../src/game/chapel-apparitions.js';
 import { parseGlb } from '../tools/chunk_surfer/rebuild-tree-crowns.mjs';
 
 FP.compile(conservatory.levels, conservatory);
@@ -21,6 +22,15 @@ function read(pack,index){
   const size={5126:4,5125:4,5123:2}[a.componentType],method={5126:'readFloatLE',5125:'readUInt32LE',5123:'readUInt16LE'}[a.componentType];
   const off=(v.byteOffset||0)+(a.byteOffset||0);
   return Array.from({length:a.count},(_,i)=>Array.from({length:width},(_,axis)=>pack.bin[method](off+i*(v.byteStride||width*size)+axis*size)));
+}
+// A figure is drawn in parts (lower, upper, head, each about its own pivot); its
+// rest silhouette is the parts put back on their pivots.
+const geometry=name=>pack.json.meshes.find(m=>m.name===name).primitives.flatMap(p=>read(pack,p.attributes.POSITION));
+const at=(points,offset)=>points.map(p=>p.map((v,i)=>v+offset[i]));
+function assembled(kind){
+  const pivots=CHAPEL_PRESENCE_PIVOTS[kind],head=at(geometry(CHAPEL_DRESSING_MESH.head),pivots.head);
+  if(kind==='celebrant'||kind==='acolyte')return[...geometry(CHAPEL_DRESSING_MESH[kind]),...head];
+  return[...geometry(CHAPEL_DRESSING_MESH[`${kind}Lower`]),...at(geometry(CHAPEL_DRESSING_MESH[`${kind}Upper`]),pivots.upper),...head];
 }
 
 test('the entire service occupies the actual chapel; no invisible fixtures in old sealed footprint',()=>{
@@ -58,12 +68,13 @@ test('seated bodies agree with the pew seats and backs; kneeling knees are in th
   assert.ok(pews.every(p=>p.yaw===Math.PI),'the service faces its existing altar');
   for(const p of placed.filter(p=>p.role==='congregant')){
     const a=byId.get(p.id),pew=pews.find(q=>q.id===`chapel-pew-${a.bank?'r':'l'}-${a.row}`);
-    const b=CHAPEL_DRESSING_BOUNDS[p.mesh];
+    const b=CHAPEL_DRESSING_BOUNDS[p.mesh],top=Math.max(...assembled(p.figure).map(q=>q[1]));
+    assert.equal(p.mesh,CHAPEL_DRESSING_MESH[`${p.figure}Lower`],'the placed mesh is the body\'s lower part');
     assert.ok(Math.abs(p.y-pew.y)<.002,'body feet share the pew floor datum');
     assert.ok(b.min[1]*p.scale<.004,'final packed feet meet the actual floor');
-    assert.ok(b.max[1]*p.scale>1.35&&b.max[1]*p.scale<1.7,'human seated/kneeling stature');
+    assert.ok(top*p.scale>1.35&&top*p.scale<1.7,'human seated/kneeling stature');
     assert.ok(Math.abs(p.x-pew.x)<1,'all bodies lie within the existing 2.7m pew banks');
-    if(p.mesh==='chapel_presence_kneeling'){
+    if(p.figure==='kneeling'){
       assert.ok(p.z-pew.z>.9,'kneeler is ahead of its pew, toward the altar');
     }else{
       assert.ok(Math.abs(p.z-pew.z+.045)<.002,'hips occupy the actual seat, not its backrest');
@@ -76,8 +87,11 @@ test('centre aisle, ritual tables and tower threshold remain free; no collision 
   for(const p of placed){
     assert.equal(p.blocks,false);assert.equal(p.interactive,false);assert.equal(p.noShadow,true);
     if(p.role==='congregant'){
-      const b=CHAPEL_DRESSING_BOUNDS[p.mesh];
-      const half=Math.max(Math.abs(b.min[0]),Math.abs(b.max[0]))*p.scale+.04;
+      // The upper body twists in the pew, so its reach is its radius, not its width.
+      const lower=CHAPEL_DRESSING_BOUNDS[p.mesh],upper=CHAPEL_DRESSING_BOUNDS[CHAPEL_DRESSING_MESH[`${p.figure}Upper`]];
+      const reach=Math.max(Math.abs(lower.min[0]),Math.abs(lower.max[0]),
+        Math.hypot(Math.max(Math.abs(upper.min[0]),Math.abs(upper.max[0])),Math.max(Math.abs(upper.min[2]),Math.abs(upper.max[2]))));
+      const half=reach*p.scale+.04;
       assert.ok(p.x+half<91||p.x-half>94,'full three-metre centre aisle remains visually clear');
       assert.ok(byId.get(p.id).y<88,'the congregation remains outside the existing altar/confrontation station');
     }
@@ -93,7 +107,7 @@ test('centre aisle, ritual tables and tower threshold remain free; no collision 
   assert.deepEqual(chapelDressingRenderInstances(placed,{group:'tower'}),[]);
 });
 
-test('light states reuse the apparition family; recording and flash-off remove actors without erasing the room',()=>{
+test('light states reuse the apparition family; protection and flash-off remove actors without erasing the room',()=>{
   const p=placed.find(p=>p.kind==='presence');
   assert.equal(chapelPresenceLightState(p),'unlit');
   assert.equal(chapelPresenceLightState(p,{torchOn:true}),'emergency-off');
@@ -111,13 +125,27 @@ test('light states reuse the apparition family; recording and flash-off remove a
     assert.equal(frame.length,26);assert.equal(frame.some(p=>p.kind==='presence'),false);
   }
   const quiet=chapelDressingRenderInstances(placed,{group:'upper',effectsMode:'reduced'});
-  assert.equal(quiet.length,74,'reduced dread retains the held congregation without adding timed events');
+  assert.equal(quiet.length,74,'reduced dread keeps the whole congregation without adding timed events');
 });
 
-test('turning or waiting never moves the congregation or spends the existing scare budget',()=>{
+test('without a runtime the congregation is drawn as authored; with one it moves, and spends no scare budget',()=>{
   const a=chapelDressingRenderInstances(placed,{group:'upper',listener:{x:92.5,z:65}});
   const b=chapelDressingRenderInstances(placed,{group:'upper',listener:{x:92.5,z:65},timeSec:86400,viewYaw:Math.PI});
   assert.deepEqual(a,b);
+  const apparitions=createChapelApparitions(),eye={x:92.5,y:6.42,z:66};
+  let frames=0;
+  const moving=t=>chapelDressingRenderInstances(placed,{group:'upper',listener:{x:92.5,z:65},apparitions,eye,timeSec:t,onFrame:()=>frames++});
+  const first=moving(0),later=moving(3);
+  assert.equal(frames,2);
+  assert.equal(first.filter(p=>p.kind!=='presence').length,26,'paint, tallow and traces are still architecture');
+  const heads=list=>new Map(list.filter(p=>String(p.id).endsWith(':head')).map(p=>[p.id,p.matrix]));
+  const h0=heads(first),h3=heads(later);
+  assert.ok(h0.size>=48,'every body has a head of its own');
+  assert.ok([...h3].some(([id,m])=>m.some((v,i)=>Math.abs(v-h0.get(id)[i])>1e-3)),'heads have moved by three seconds');
+  for(const options of [{suppressActors:true},{effectsMode:'off'}]){
+    const hidden=chapelDressingRenderInstances(placed,{group:'upper',apparitions,eye,timeSec:4,...options});
+    assert.equal(hidden.some(p=>p.kind==='presence'),false);
+  }
   const source=fs.readFileSync(new URL('../src/game/chapel-dressing.js',import.meta.url),'utf8');
   for(const pattern of ['saveCommit','flagSet','scareBudget','playSound','dialogue','REC.'])assert.equal(source.includes(pattern),false,pattern);
 });
@@ -130,7 +158,7 @@ test('bounded original pack fits the instanced budget and includes every product
   assert.ok(pack.json.nodes.every(n=>!n.matrix&&!n.translation&&!n.rotation&&!n.scale&&!n.children));
   assert.equal(pack.json.animations,undefined);assert.equal(pack.json.skins,undefined);
   for(const m of pack.json.meshes)for(const p of m.primitives)assert.equal(p.mode??4,4);
-  assert.ok(Object.keys(CHAPEL_DRESSING_BOUNDS).length===11);
+  assert.equal(Object.keys(CHAPEL_DRESSING_BOUNDS).length,CHAPEL_DRESSING_BUDGET.meshes);
 });
 
 test('a single held Mass has credible congregation and service roles, not a random crowd',()=>{
@@ -158,8 +186,7 @@ test('a single held Mass has credible congregation and service roles, not a rand
 });
 
 test('packed clergy silhouettes carry full vestments and an orans gesture at human scale',()=>{
-  const geometry=name=>pack.json.meshes.find(m=>m.name===name).primitives.flatMap(p=>read(pack,p.attributes.POSITION));
-  const priest=geometry(CHAPEL_DRESSING_MESH.celebrant);
+  const priest=assembled('celebrant');
   const widthAt=(points,lo,hi)=>{
     const section=points.filter(p=>p[1]>=lo&&p[1]<=hi);
     return Math.max(...section.map(p=>p[0]))-Math.min(...section.map(p=>p[0]));
@@ -170,10 +197,10 @@ test('packed clergy silhouettes carry full vestments and an orans gesture at hum
   for(const side of [-1,1]){
     assert.ok(priest.some(p=>side*p[0]>.43&&p[1]>1.53&&p[2]<-.22),'each hand is lifted beyond the sleeve, not a horizontal T-pose');
   }
-  const server=geometry(CHAPEL_DRESSING_MESH.acolyte);
+  const server=assembled('acolyte');
   assert.ok(widthAt(server,.04,.10)>.59,'the server wears a full kneeling alb, not bare articulated limbs');
   assert.ok(Math.max(...server.map(p=>p[1]))<1.5,'the kneeling server cannot read as a short standing cone');
   assert.ok(server.some(p=>Math.abs(p[0])<.11&&p[1]>1.06&&p[2]<-.22),'the server holds joined prayer hands');
-  const kneeler=geometry(CHAPEL_DRESSING_MESH.kneeling);
+  const kneeler=assembled('kneeling');
   assert.ok(kneeler.some(p=>Math.abs(p[0])<.11&&p[1]>1.06&&p[2]<-.22),'congregant prayer hands are raised from the former slack knee position');
 });

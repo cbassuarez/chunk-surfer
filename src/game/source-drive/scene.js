@@ -28,7 +28,7 @@ export function makeDriveScene(s,metrics,{headlights=true,wipers=false,showHands
  const bodyPoint=p=>transform(body,p),cabPoint=p=>bodyPoint(offset(p,mount));
  const cabMatrix=(p=[0,0,0],rx=0,rz=0)=>{const m=multiply(body,rotation(rx,0,rz)),q=cabPoint(p);m[12]=q[0];m[13]=q[1];m[14]=q[2];return m;};
  const cab=(mesh,p=[0,0,0],rx=0,rz=0,extra={})=>{const instance=placed(mesh,cabMatrix(p,rx,rz),extra);props.push(instance);return instance;};
- cab('drive_cabin');cab('drive_radio');props.push(placed('drive_vehicle_body',body,{skyExposed:true}));
+ cab('drive_cabin');cab('drive_radio');props.push(placed('drive_vehicle_body',body,{skyExposed:true,cabinVolume:{min:metrics.body.min,max:metrics.body.max}}));
  cab('drive_wheel',metrics.wheel.center,metrics.wheel.tiltX,-s.steeringWheelAngle);
  const toWheel=(p,point=true)=>{const a=metrics.wheel.tiltX,c=Math.cos(a),sn=Math.sin(a),d=point?p.map((v,i)=>v-metrics.wheel.center[i]):p;return[d[0],c*d[1]+sn*d[2],-sn*d[1]+c*d[2]];};
  const recorderKeys=Object.fromEntries(['record','play','stop'].map((id,i)=>[id,[.0340638587+i*99*.274/736,-.05547011,.0299]])),rc=metrics.recorder,ct=Math.cos(rc.tiltX),st=Math.sin(rc.tiltX);
@@ -40,10 +40,10 @@ export function makeDriveScene(s,metrics,{headlights=true,wipers=false,showHands
  const wiperPivot=metrics.wiper.pivot.map((v,i)=>v+([0,Math.sin(wiperTilt)*.025,-Math.cos(wiperTilt)*.025][i]));
  cab('drive_wiper',wiperPivot,wiperTilt,wiperAngles[0],{id:'drive-wiper-left'});
  cab('drive_wiper',[.45,wiperPivot[1],wiperPivot[2]],wiperTilt,wiperAngles[1],{id:'drive-wiper-right'});
- if(metrics.speedNeedle)cab('drive_speed_needle',metrics.speedNeedle.center,0,metrics.speedNeedle.rotationZAtMin+(metrics.speedNeedle.rotationZAtMax-metrics.speedNeedle.rotationZAtMin)*Math.abs(s.speed)*3.6/180);
+ if(metrics.speedNeedle)cab('drive_speed_needle',metrics.speedNeedle.center,0,metrics.speedNeedle.rotationZAtMin+(metrics.speedNeedle.rotationZAtMax-metrics.speedNeedle.rotationZAtMin)*Math.abs(s.speed)*3.6/metrics.speedNeedle.speedKmhRange[1]);
  const needle=metrics.radioNeedle,ix=['service','company','music'].indexOf(s.station);cab('drive_radio_needle',[needle.xRange[0]+(needle.xRange[1]-needle.xRange[0])*ix/2,needle.center[1],needle.center[2]]);
  const rec=metrics.recorder,recM=cabMatrix(rec.center,rec.tiltX);props.push(placed(rec.bodyMesh,recM),placed(rec.cradleMesh,recM));const screenM=new Float32Array(recM),screenPos=transform(recM,rec.readoutLocalCenter);screenM[12]=screenPos[0];screenM[13]=screenPos[1];screenM[14]=screenPos[2];props.push(placed(rec.readoutMesh,screenM));
- for(const side of[-1,1])for(const axle of[-1.35,1.75]){const m=multiply(body,rotation(s.wheelRotation,axle<0?-s.wheelAngle:0,0)),q=bodyPoint([side*.84,.34,axle]);m[12]=q[0];m[13]=q[1];m[14]=q[2];props.push(placed('drive_tyre',m,{id:`tyre-${side}-${axle}`}));}
+ const wheels=metrics.body;for(const side of[-1,1])for(const axle of[wheels.frontAxleZ,wheels.rearAxleZ]){const m=multiply(body,rotation(s.wheelRotation,axle<0?-s.wheelAngle:0,0)),q=bodyPoint([side*wheels.track/2,wheels.wheelRadius,axle]);m[12]=q[0];m[13]=q[1];m[14]=q[2];props.push(placed('drive_tyre',m,{id:`tyre-${side}-${axle}`}));}
  const mirrors=metrics.mirrors.map(m=>{cab(m.mesh,m.center);const eye=cabPoint([m.center[0]*1.10,m.center[1],m.center[2]-.12]);return{mesh:m.mesh,eye,yaw:s.heading+Math.PI+(m.center[0]>0?-.12:.12),pitch:-.035,aspect:m.size[0]/m.size[1]};});
  const d=roadSurfaceAt(s.x,s.z).distance,first=Math.max(-16,Math.floor((d-180)/2)),last=Math.min(622,Math.ceil((d+220)/2));
  const worldPart=(mesh,distance,lateral=0,{yaw=0,pitchWithRoad=false,scaleX=1,scaleY=1,scaleZ=1,y=0,id=mesh+'-'+distance+'-'+lateral}={})=>{const a=worldAt(distance,lateral,y),m=rotation(pitchWithRoad?a.pitch:0,-a.heading+yaw);for(let r=0;r<3;r++){m[r]*=scaleX;m[4+r]*=scaleY;m[8+r]*=scaleZ;}m[12]=32+a.x;m[13]=a.y;m[14]=32+a.z;props.push(placed(mesh,m,{id,skyExposed:true}));return{...a,matrix:m};};

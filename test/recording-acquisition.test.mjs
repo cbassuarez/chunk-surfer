@@ -47,7 +47,9 @@ test('VFD selection is destabilised before phosphor encoding', () => {
   assert.match(pixelShader, /mix\(c,\s*paletted/);
   assert.match(pixelShader, /recordingHash3/);
   assert.match(pixelShader, /formStipple/);
-  assert.match(pixelShader, /formStipple\(worldMetres/);
+  // Marks stay keyed to the surface they land on; inside the van that key is the van's metres.
+  assert.match(pixelShader, /formStipple\(pinMetres/);
+  assert.match(pixelShader, /vec3 pinMetres = worldMetres;/);
   assert.doesNotMatch(pixelShader, /surfaceScreenCoordinates/);
   assert.match(pixelShader, /broadForm/);
   assert.match(pixelShader, /brightContour/);

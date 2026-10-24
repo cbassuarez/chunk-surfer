@@ -177,10 +177,10 @@ export const ENDING_GATES = Object.freeze({
   inversion: Object.freeze({
     id: 'inversion',
     family: 'chapel',
-    summary: 'Play the room back to itself, then run for the exit — first the grey door you came in through, then the public door the guard told you about — before the clock runs out.',
+    summary: 'Play the room back to itself and finish both timed escape legs. Beyond the other door, survive the physical Source demolition, explore Source IV, then deliberately open and cross its far grey door.',
     arrivals: Object.freeze({
       [ENDING_ARRIVAL.ESCAPED]: Object.freeze({
-        how: 'Reach the grey door, play the scene there, then reach the main entrance. Sober.',
+        how: 'Reach the grey door, play the scene there, then reach the main entrance sober. Continue through the demolition and complete the far grey-door crossing in Source IV.',
         where: at('src/main.js', "playEnding(flagTest('drank.coffee')?'drugged':'inversion',ENDING_ARRIVAL.ESCAPED)"),
       }),
     }),
@@ -203,7 +203,7 @@ export const ENDING_GATES = Object.freeze({
       Object.freeze({
         label: 'You did not drink the coffee',
         kind: GATE_KIND.CHOICE,
-        detail: 'Sober, the yard is not there when you get out and the night starts again.',
+        detail: 'Sober, the other door leads through the physical collapse into playable Source IV.',
         where: at('src/main.js', "playEnding(flagTest('drank.coffee')?'drugged':'inversion',ENDING_ARRIVAL.ESCAPED)"),
       }),
     ]),

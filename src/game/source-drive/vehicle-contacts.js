@@ -3,7 +3,7 @@
 // metres (the renderer's +32 translation is not part of this contract).
 import {applyRoadImpulse} from './vehicle-dynamics.js';
 // Exact outer visible van bounds from drive.glb: bumper/body corners count.
-export const DRIVE_BODY_FOOTPRINT=Object.freeze({halfWidth:1.04,front:3.255,rear:2.57});
+export const DRIVE_BODY_FOOTPRINT=Object.freeze({halfWidth:.985,front:2.272,rear:2.546});
 const {halfWidth:HW,front:FRONT,rear:REAR}=DRIVE_BODY_FOOTPRINT;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const dot=(a,b)=>a.x*b.x+a.z*b.z;

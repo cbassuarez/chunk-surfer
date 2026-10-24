@@ -34,7 +34,7 @@ export function createSourceEarthfallScene({checkpoint,renderer,audio=null,
     state=result.state;
     const events=result.events||(result.event?[result.event]:[]);
     for(const event of events)onTrace({type:'event',event:copy(event),elapsed:state.elapsed});
-    if(events.some(e=>e.type==='complete'))finish('complete');
+    if(events.some(e=>e.type==='enter-source-II'||e.type==='complete'))finish('complete');
     else if(events.some(e=>e.type==='return'))finish('return');
     else if(events.length)save('event');
   }
@@ -44,7 +44,8 @@ export function createSourceEarthfallScene({checkpoint,renderer,audio=null,
     initialize(){
       if(initializing)return initializing;
       save('loading');
-      initializing=Promise.resolve().then(()=>renderer.initialize?.()).then(ok=>{
+      initializing=Promise.all([Promise.resolve().then(()=>renderer.initialize?.()),
+        Promise.resolve().then(()=>audio?.ready?.()).catch(()=>false)]).then(([ok])=>{
         if(closed)return false;if(ok===false)throw Error('The lower path has not resolved.');
         ready=true;save('entry-or-resume');return true;
       }).catch(reason=>{if(!closed)report(reason);return false;});return initializing;
@@ -94,7 +95,7 @@ export function createSourceEarthfallScene({checkpoint,renderer,audio=null,
       const {rows}=uiSize();
       if(!live()){renderer.clear?.();uiCenter(Math.floor(rows/2),error?'THE FIRST DOOR IS STILL THERE':'THE DOOR OPENS','ui-secondary');return;}
       const focus=sourceEarthfallFocus(state);
-      if(focus)uiCenter(rows-3,`E · ${focus.label||'OPEN'}`,'ui-primary');
+      if(focus)uiCenter(rows-3,`E · ${focus.label||focus.title||'OPEN'}`,'ui-primary');
     },
     exit(){if(closed)return false;closed=true;clear();audio?.stop?.();if(!leaving)save('interrupted');renderer.dispose?.();onExit({checkpoint:snapshot()});return true;},
   };

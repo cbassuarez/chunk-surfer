@@ -1,17 +1,17 @@
 {
-  "bytes": 471940,
+  "bytes": 495416,
   "meshes": {
-    "chapel_presence_seated": {
-      "triangles": 2552,
+    "chapel_presence_seated_lower": {
+      "triangles": 1048,
       "bounds": {
         "min": [
-          -0.345,
+          -0.3015,
           0.0019,
           -0.707
         ],
         "max": [
-          0.345,
-          1.543,
+          0.3006,
+          0.7065,
           0.155
         ]
       },
@@ -19,17 +19,35 @@
         "chapel anonymous pressure"
       ]
     },
-    "chapel_presence_bowed": {
-      "triangles": 2552,
+    "chapel_presence_seated_upper": {
+      "triangles": 1336,
       "bounds": {
         "min": [
           -0.345,
+          -0.032,
+          -0.313
+        ],
+        "max": [
+          0.345,
+          0.695,
+          0.0825
+        ]
+      },
+      "materials": [
+        "chapel anonymous pressure"
+      ]
+    },
+    "chapel_presence_bowed_lower": {
+      "triangles": 1048,
+      "bounds": {
+        "min": [
+          -0.3015,
           0.0019,
           -0.707
         ],
         "max": [
-          0.345,
-          1.448,
+          0.3006,
+          0.7065,
           0.155
         ]
       },
@@ -37,17 +55,35 @@
         "chapel anonymous pressure"
       ]
     },
-    "chapel_presence_kneeling": {
-      "triangles": 2552,
+    "chapel_presence_bowed_upper": {
+      "triangles": 1336,
       "bounds": {
         "min": [
           -0.345,
+          -0.032,
+          -0.348
+        ],
+        "max": [
+          0.345,
+          0.695,
+          0.02
+        ]
+      },
+      "materials": [
+        "chapel anonymous pressure"
+      ]
+    },
+    "chapel_presence_kneeling_lower": {
+      "triangles": 1048,
+      "bounds": {
+        "min": [
+          -0.3015,
           0.0019,
           -0.41
         ],
         "max": [
-          0.345,
-          1.458,
+          0.3006,
+          0.6465,
           0.27
         ]
       },
@@ -55,8 +91,26 @@
         "chapel anonymous pressure"
       ]
     },
+    "chapel_presence_kneeling_upper": {
+      "triangles": 1336,
+      "bounds": {
+        "min": [
+          -0.345,
+          -0.032,
+          -0.313
+        ],
+        "max": [
+          0.345,
+          0.695,
+          0.0675
+        ]
+      },
+      "materials": [
+        "chapel anonymous pressure"
+      ]
+    },
     "chapel_presence_celebrant": {
-      "triangles": 3264,
+      "triangles": 3096,
       "bounds": {
         "min": [
           -0.5027,
@@ -65,7 +119,7 @@
         ],
         "max": [
           0.5027,
-          1.763,
+          1.6567,
           0.2655
         ]
       },
@@ -74,7 +128,7 @@
       ]
     },
     "chapel_presence_acolyte": {
-      "triangles": 2916,
+      "triangles": 2748,
       "bounds": {
         "min": [
           -0.345,
@@ -83,8 +137,44 @@
         ],
         "max": [
           0.345,
-          1.458,
+          1.275,
           0.373
+        ]
+      },
+      "materials": [
+        "chapel anonymous pressure"
+      ]
+    },
+    "chapel_presence_head": {
+      "triangles": 232,
+      "bounds": {
+        "min": [
+          -0.142,
+          -0.113,
+          -0.143
+        ],
+        "max": [
+          0.142,
+          0.253,
+          0.125
+        ]
+      },
+      "materials": [
+        "chapel anonymous pressure"
+      ]
+    },
+    "chapel_presence_clinging": {
+      "triangles": 1664,
+      "bounds": {
+        "min": [
+          -0.6971,
+          -0.0064,
+          -0.915
+        ],
+        "max": [
+          0.6971,
+          0.2967,
+          1.25
         ]
       },
       "materials": [
@@ -201,5 +291,134 @@
       ]
     }
   },
-  "triangles": 18560
+  "triangles": 19616,
+  "pivots": {
+    "seated": {
+      "upper": [
+        0,
+        0.6399999999999999,
+        0.025
+      ],
+      "head": [
+        0,
+        1.29,
+        -0.045
+      ],
+      "headCentre": [
+        0,
+        1.3599999999999999,
+        -0.045
+      ],
+      "headRest": [
+        -0.05,
+        0,
+        0
+      ]
+    },
+    "bowed": {
+      "upper": [
+        0,
+        0.6399999999999999,
+        0.025
+      ],
+      "head": [
+        0,
+        1.29,
+        -0.17
+      ],
+      "headCentre": [
+        0,
+        1.265,
+        -0.225
+      ],
+      "headRest": [
+        -0.42,
+        0,
+        0
+      ]
+    },
+    "kneeling": {
+      "upper": [
+        0,
+        0.5800000000000001,
+        0.025
+      ],
+      "head": [
+        0,
+        1.23,
+        -0.075
+      ],
+      "headCentre": [
+        0,
+        1.2750000000000001,
+        -0.075
+      ],
+      "headRest": [
+        -0.16,
+        0,
+        0
+      ]
+    },
+    "celebrant": {
+      "upper": [
+        0,
+        0.8600000000000001,
+        0.025
+      ],
+      "head": [
+        0,
+        1.5100000000000002,
+        -0.045
+      ],
+      "headCentre": [
+        0,
+        1.58,
+        -0.045
+      ],
+      "headRest": [
+        -0.05,
+        0,
+        0
+      ]
+    },
+    "acolyte": {
+      "upper": [
+        0,
+        0.5800000000000001,
+        0.025
+      ],
+      "head": [
+        0,
+        1.23,
+        -0.075
+      ],
+      "headCentre": [
+        0.015,
+        1.2750000000000001,
+        -0.075
+      ],
+      "headRest": [
+        -0.16,
+        0,
+        0
+      ]
+    },
+    "clinging": {
+      "upper": [
+        0,
+        0.17,
+        0.22
+      ],
+      "head": [
+        0,
+        0.2,
+        -0.47
+      ],
+      "headRest": [
+        0,
+        0,
+        0
+      ]
+    }
+  }
 }

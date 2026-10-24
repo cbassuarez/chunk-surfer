@@ -18,6 +18,7 @@ import sharp from 'sharp';
 import { STOP_LISTENING_MESH, STOP_LISTENING_SHEET_DOCUMENT, STOP_LISTENING_EAR_SCALE } from '../../src/data/stop-listening.js';
 
 const root = path.resolve(import.meta.dirname, '../..');
+const anatomyOnly = process.argv.includes('--anatomy-only');
 const work = path.join(root, 'artifacts/stop-listening');
 const script = path.join(import.meta.dirname, 'build-stop-listening.py');
 const out = path.join(root, 'public/assets/stop-listening.glb');
@@ -26,15 +27,16 @@ const credits = path.join(root, 'public/assets/stop-listening.credits.json');
 const geometry = path.join(root, 'src/data/generated/stop-listening-geometry.js');
 const sheetOut = path.join(root, STOP_LISTENING_SHEET_DOCUMENT.path);
 const working = path.join(work, 'stop-listening.working.glb');
-const report = path.join(work, 'stop-listening-build.json');
+const report = path.join(work, anatomyOnly ? 'stop-listening-anatomy-build.json' : 'stop-listening-build.json');
 const sheetPng = path.join(work, 'take-sheet.png');
 
 fs.mkdirSync(work, { recursive: true });
 const blender = process.env.BLENDER_BIN || (process.platform === 'darwin' ? '/Applications/Blender.app/Contents/MacOS/Blender' : 'blender');
-const run = cp.spawnSync(blender, ['--background', '--factory-startup', '--python', script, '--',
+const run = cp.spawnSync(blender, ['--background', '--factory-startup', '--threads', '2', '--python', script, '--',
   '--output', working, '--report', report, '--sheet', sheetPng, '--work', work,
   '--ear-scale', String(STOP_LISTENING_EAR_SCALE),
-  '--blend', path.join(work, 'stop-listening.blend')], { stdio: ['ignore', 'pipe', 'inherit'] });
+  ...(anatomyOnly ? ['--anatomy-only'] : []),
+  '--blend', path.join(work, anatomyOnly ? 'stop-listening-anatomy.blend' : 'stop-listening.blend')], { stdio: ['ignore', 'pipe', 'inherit'], env: { ...process.env, OMP_NUM_THREADS: process.env.OMP_NUM_THREADS || '2' } });
 if (run.error) throw run.error;
 const log = run.stdout.toString();
 if (run.status !== 0) { process.stdout.write(log); throw new Error(`Blender exited ${run.status}`); }
@@ -54,8 +56,14 @@ function chunks(bytes) {
   return { json, bin };
 }
 const strip = (v) => { if (!v || typeof v !== 'object') return; delete v.extensions; delete v.extras; for (const c of Object.values(v)) strip(c); };
-const { json, bin } = chunks(fs.readFileSync(working));
+let { json, bin } = chunks(fs.readFileSync(working));
 delete json.extensionsUsed; delete json.extensionsRequired; strip(json);
+// Explicit glTF factor semantics opt these newly authored tissue materials out
+// of the legacy unmapped roughness-squaring conversion. No renderer-wide
+// material or post-process setting is changed by this pack.
+for (const mat of json.materials || []) if (/^stop listening (ear |floor wet$)/.test(mat.name || '')) {
+  mat.extras = { materialFactors: 'gltf' };
+}
 if (json.animations || json.skins || json.accessors.some((a) => a.sparse)) throw new Error('unsupported dynamic GLB');
 if (json.nodes.some((n) => n.matrix || n.translation || n.rotation || n.scale || n.children?.length)) throw new Error('identity flat roots required');
 for (const mesh of json.meshes) for (const p of mesh.primitives) {
@@ -64,10 +72,57 @@ for (const mesh of json.meshes) for (const p of mesh.primitives) {
   if (p.targets?.length) throw new Error(`${mesh.name}: morph targets unsupported`);
 }
 for (const m of json.materials || []) if (m.alphaMode && !['OPAQUE', 'MASK'].includes(m.alphaMode)) throw new Error(`${m.name}: ${m.alphaMode}`);
-const expected = [...STOP_LISTENING_MESH.ears, ...STOP_LISTENING_MESH.heaps,
-  ...Object.values(STOP_LISTENING_MESH.writing).flatMap((name) => [name, `${name}_pale`]), STOP_LISTENING_MESH.sheet];
+const anatomyNames = [...STOP_LISTENING_MESH.ears, ...STOP_LISTENING_MESH.heaps];
+const expected = [...anatomyNames, ...(anatomyOnly ? [] : [
+  ...Object.values(STOP_LISTENING_MESH.writing).flatMap((name) => [name, `${name}_pale`]), STOP_LISTENING_MESH.sheet])];
 const names = json.meshes.map((m) => m.name).sort();
 if (JSON.stringify(names) !== JSON.stringify([...expected].sort())) throw new Error(`mesh catalogue mismatch:\n${names}\n${[...expected].sort()}`);
+
+// An ear refinement must not rerender the take sheet or replace wall pigment.
+// Copy the referenced GLB byte ranges, rather than import/re-export those
+// objects through Blender (which can reorder normals, UVs and image encoding).
+// Compact the two sources into one buffer so replacing anatomy cannot leave a
+// full obsolete pack appended underneath the new geometry.
+if (anatomyOnly) {
+  const previous = chunks(fs.readFileSync(out)), fresh = { json, bin };
+  const next = structuredClone(previous.json), pieces = [], views = new Map(), accessors = new Map();
+  let byteLength = 0;
+  next.bufferViews = []; next.accessors = [];
+  const viewFor = (source, id) => {
+    const key = `${source === fresh ? 'new' : 'old'}:${id}`;
+    if (views.has(key)) return views.get(key);
+    const def = source.json.bufferViews[id], padding = (4 - byteLength % 4) % 4;
+    if (padding) { pieces.push(Buffer.alloc(padding)); byteLength += padding; }
+    const body = source.bin.subarray(def.byteOffset || 0, (def.byteOffset || 0) + def.byteLength), index = next.bufferViews.length;
+    next.bufferViews.push({ ...structuredClone(def), buffer: 0, byteOffset: byteLength });
+    pieces.push(body); byteLength += body.length; views.set(key, index); return index;
+  };
+  const accessorFor = (source, id) => {
+    const key = `${source === fresh ? 'new' : 'old'}:${id}`;
+    if (accessors.has(key)) return accessors.get(key);
+    const def = structuredClone(source.json.accessors[id]), index = next.accessors.length;
+    def.bufferView = viewFor(source, def.bufferView); next.accessors.push(def); accessors.set(key, index); return index;
+  };
+  next.materials = structuredClone(previous.json.materials || []);
+  const materialFor = (id) => {
+    const mat = fresh.json.materials[id], existing = next.materials.findIndex((m) => m.name === mat.name);
+    if (existing >= 0) { next.materials[existing] = structuredClone(mat); return existing; }
+    next.materials.push(structuredClone(mat)); return next.materials.length - 1;
+  };
+  next.meshes = previous.json.meshes.map((old) => {
+    const isNew = anatomyNames.includes(old.name), source = isNew ? fresh : previous;
+    const mesh = structuredClone(isNew ? fresh.json.meshes.find((m) => m.name === old.name) : old);
+    if (!mesh) throw new Error(`missing replacement anatomy ${old.name}`);
+    for (const primitive of mesh.primitives) {
+      primitive.indices = accessorFor(source, primitive.indices);
+      primitive.attributes = Object.fromEntries(Object.entries(primitive.attributes).map(([name, id]) => [name, accessorFor(source, id)]));
+      if (isNew) primitive.material = materialFor(primitive.material);
+    }
+    return mesh;
+  });
+  for (const image of next.images || []) if (Number.isInteger(image.bufferView)) image.bufferView = viewFor(previous, image.bufferView);
+  next.buffers = [{ byteLength }]; json = next; bin = Buffer.concat(pieces);
+}
 
 const pad = (buf, fill) => Buffer.concat([buf, Buffer.alloc((4 - (buf.length % 4)) % 4, fill)]);
 const jsonChunk = pad(Buffer.from(JSON.stringify(json)), 0x20);
@@ -79,6 +134,17 @@ fs.writeFileSync(out, Buffer.concat([head, ch(0x4e4f534a, jsonChunk), ch(0x004e4
 
 // ── what the game and the specs read ────────────────────────────────────────
 const built = JSON.parse(fs.readFileSync(report, 'utf8'));
+if (anatomyOnly) {
+  for (const mesh of json.meshes) if (!built.meshes[mesh.name]) {
+    const positions = mesh.primitives.map((p) => json.accessors[p.attributes.POSITION]);
+    built.meshes[mesh.name] = {
+      triangles: mesh.primitives.reduce((n, p) => n + json.accessors[p.indices].count / 3, 0),
+      bounds: { min: [0, 1, 2].map((i) => +Math.min(...positions.map((p) => p.min[i])).toFixed(4)), max: [0, 1, 2].map((i) => +Math.max(...positions.map((p) => p.max[i])).toFixed(4)) },
+      materials: [...new Set(mesh.primitives.map((p) => json.materials[p.material].name))],
+    };
+  }
+  built.triangles = Object.values(built.meshes).reduce((n, m) => n + m.triangles, 0);
+}
 const bounds = Object.fromEntries(Object.entries(built.meshes).sort().map(([name, m]) => [name, m.bounds]));
 fs.writeFileSync(geometry, `// Generated by tools/chunk_surfer/build-stop-listening.mjs. Do not edit.
 // Runtime-axis bounds (metres) of the ear room's meshes, for wall contact and specs.
@@ -88,6 +154,7 @@ export const STOP_LISTENING_FLESH_BOUNDS = Object.freeze(${JSON.stringify(built.
 `);
 fs.writeFileSync(stats, `${JSON.stringify({
   bytes: fs.statSync(out).size, triangles: built.triangles, earScale: built.earScale, artRevision: built.artRevision,
+  ...(built.heapSupport ? {heapSupport: Object.fromEntries(Object.entries(built.heapSupport).map(([name, {contacts, ...summary}]) => [name, summary]))} : {}),
   meshes: Object.fromEntries(Object.entries(built.meshes).sort().map(([name, m]) => [name, { triangles: m.triangles, materials: m.materials }])),
 }, null, 2)}\n`);
 fs.writeFileSync(credits, `${JSON.stringify({
@@ -96,5 +163,5 @@ fs.writeFileSync(credits, `${JSON.stringify({
   fonts: 'Take sheet set in the vendored URW base35 faces (assets/fonts, AGPL-3.0 with the font embedding exception).',
 }, null, 2)}\n`);
 fs.mkdirSync(path.dirname(sheetOut), { recursive: true });
-await sharp(sheetPng).webp({ quality: 88 }).toFile(sheetOut);
-console.log(`wrote ${path.relative(root, out)} (${(fs.statSync(out).size / 1024).toFixed(0)} KB), ${path.relative(root, sheetOut)}`);
+if (!anatomyOnly) await sharp(sheetPng).webp({ quality: 88 }).toFile(sheetOut);
+console.log(`wrote ${path.relative(root, out)} (${(fs.statSync(out).size / 1024).toFixed(0)} KB); ${anatomyOnly ? 'preserved exact existing' : 'wrote'} ${path.relative(root, sheetOut)}`);

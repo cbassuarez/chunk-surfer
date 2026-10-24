@@ -64,6 +64,7 @@ async function walkFinalDoor(scene){
   for(let i=0;i<30&&scene.serialize().status==='active';i++)scene.update(.05);
   scene.keyup({key:'d'});await Promise.resolve();await Promise.resolve();
   assert.equal(scene.serialize().completed,true,'the real scene receives movement through the final door');
+  scene.update(.2);scene.update(.2);await Promise.resolve();await Promise.resolve();
 }
 
 test('the default real grey crossing enters the continuation before the original onward transition',()=>{
@@ -218,8 +219,9 @@ function host({source=initial(),checkpoint=null,initialize=null,driveReady=true,
   let data={...base,chunkSurf:runtime.state(),sourceView:{x:at.x,y:at.y,yaw:.7,pitch:-.04},
     sourceDrive:{...base.sourceDrive,...(driveReturned?{status:'returned'}:{})}},look={yaw:.7,pitch:-.04},focused=true,disposed=0;
   const calls=[],renderers=[],audio={stop:()=>calls.push(['audio-stop']),pause:()=>calls.push(['audio-pause']),event(){},update(){}};
-  const e={sourceContinuationScene:null,sourceContinuationRenderer:null,sourceContinuationAudio:null,sourceContinuationTrace:[],
-    sourcePubScene:null,sourceDriveSession:null,chunkSurfRuntime:runtime,paused:false,actx:null,sfxGain:null,
+  const e={sourceContinuationScene:null,sourceContinuationRenderer:null,sourceContinuationAudio:null,sourceEarthfallAudio:null,sourceContinuationTrace:[],
+    sourceEarthfallNeeded:()=>false,sourceFalseReturnNeeded:()=>false,sourceContinuationStudyRotation:0,
+    sourcePubScene:null,sourceDriveSession:null,coastalMemoryScene:null,chunkSurfRuntime:runtime,paused:false,actx:null,sfxGain:null,
     px:at.x,py:at.y,renderMove:{},motionRig:{},trail:[1],r3dCache:{physicalKey:'source',physicalGroup:'source-space',fogSize:2},
     getSave:()=>data,saveCommit:patch=>{data={...data,...patch};calls.push(['save',copy(patch)]);},scenes,createSourceContinuationScene,
     R3:{r3dLookAngles:()=>({...look}),r3dFacing:()=>2,r3dSetLookAngles:value=>{look={yaw:value.yaw,pitch:value.pitch};},r3dSetFrontEndPlate(){},r3dSnapCameraOnNextFrame(){},r3dResetVfdMemory(){}},
@@ -246,7 +248,7 @@ function host({source=initial(),checkpoint=null,initialize=null,driveReady=true,
   e.gameplayInputLifecycleActive=production('gameplayInputLifecycleActive','\nfunction holdUnavailableGameplayInput(',e);
   e.commitSourceContinuation=production('commitSourceContinuation','\nfunction releaseSourceContinuation(',e);
   e.releaseSourceContinuation=production('releaseSourceContinuation','\nasync function deliverSourceContinuationHandoff(',e);
-  e.deliverSourceContinuationHandoff=production('deliverSourceContinuationHandoff','\nasync function beginSourceContinuation(',e);
+  e.deliverSourceContinuationHandoff=production('deliverSourceContinuationHandoff','\nasync function beginSourceFalseReturn(',e);
   e.beginSourceContinuation=production('beginSourceContinuation','\nfunction sourcePubEntranceFrame(',e);
   e.onBlur=production('onBlur','\n// Focus, capture and a level head',e);
   return{e,runtime,calls,data:()=>data,look:()=>({...look}),focus:value=>{focused=value;},disposed:()=>disposed,renderers,
@@ -264,7 +266,7 @@ test('main entry waits for actual renderer readiness, then real E retreat restor
     await Promise.resolve();resolveLoad(true);assert.equal(await promise,scene);assert.equal(scene.view().ready,true);
     scene.update(.2);assert.equal(scene.view().z,SOURCE_CONTINUATION.spawn.z,'loading dropped held movement instead of queueing it');
     scene.setLook({yaw:Math.PI,pitch:.1});assert.equal(scene.view().focus?.type,'return');
-    const original=scene.serialize().returnPose;scene.key({key:'e'});await Promise.resolve();
+    const original=scene.serialize().returnPose;scene.key({key:'e'});scene.update(.2);scene.update(.2);await Promise.resolve();
     assert.equal(e.sourceContinuationScene,null);assert.equal(scenes.has('source-continuation'),false);
     assert.equal(h.data().chunkSurf.sourceContinuation.status,'returned');
     assert.deepEqual({x:e.px,y:e.py},{x:original.x,y:original.y});assert.deepEqual(h.look(),{yaw:original.yaw,pitch:original.pitch});

@@ -6,6 +6,8 @@ const validNumber = n => n !== null && n !== undefined && Number.isFinite(Number
 const point = p => Array.isArray(p) ? point({ x: p[0], y: p[1], z: p[2] })
   : p && [p.x, p.y, p.z].every(validNumber) ? { x: Number(p.x), y: Number(p.y), z: Number(p.z) } : null;
 const TYPES = new Set(['strain', 'infill', 'course', 'roof', 'release', 'consumed']);
+const INITIATION_SECONDS = 1.6;
+const INITIATION_SPLIT = .85;
 
 export function sourceDemolitionVoiceMix(source, listener = {}) {
   const dx = source.x - (Number(listener.x) || 0), dy = source.y - (Number(listener.y) || 0), dz = source.z - (Number(listener.z) || 0);
@@ -205,18 +207,29 @@ export function createSourceDemolitionAudio({ getAudio = () => null,
     if (panner) distance.connect(panner).connect(target); else if (pan) distance.connect(pan).connect(target); else distance.connect(target);
     distance.connect(send).connect(g.convolver);
     const voice = { id, eventId: event.id, kind: 'material', source, level, distance, lowpass, send, panner, pan,
+      amplitude,
+      sourceOffset: offset, sourceDuration: remain,
       position: { ...event.position }, startedAt: at, until: at + remain,
       nodes: [source, level, distance, lowpass, send, panner, pan].filter(Boolean), residual: null };
     place(voice, options, frame); g.voices.add(voice);
     source.onended = () => { g.voices.delete(voice); for (const node of voice.nodes) { try { node.disconnect?.(); } catch {} } };
     source.start(at, offset, remain); return true;
   }
+  function bodyContinues() {
+    return [...graph.voices].some(voice => voice.id === 'failure-body' && voice.until > graph.ctx.currentTime);
+  }
   function play(event, options, frame) {
-    if (event.type === 'strain') return material('restraint', event, options, frame);
-    if (event.type === 'infill') return material('failure-body', event, options, frame);
-    if (event.type === 'course') return material('stone-spall', event, options, frame);
-    if (event.type === 'roof') return material('joint-fracture', event, options, frame);
-    if (event.type === 'release' && options.effectsMode !== 'off') return residualBranch(event, options, frame);
+    if (event.type === 'strain') return material('restraint', event, options, frame, { duration: INITIATION_SPLIT });
+    if (event.type === 'infill') return material('restraint', event, options, frame,
+      { offset: INITIATION_SPLIT, duration: INITIATION_SECONDS - INITIATION_SPLIT, gain: 1.1 });
+    // The release is the single main recorded downward body. Course and roof
+    // progression are already inside that chronology, never extra random hits.
+    if (event.type === 'release') {
+      const started = material('failure-body', event, options, frame);
+      if (started && options.effectsMode !== 'off') residualBranch(event, options, frame);
+      return started;
+    }
+    if (event.type === 'course' || event.type === 'roof') return bodyContinues();
     return false;
   }
   function update(frame = {}, options = {}) {
@@ -237,8 +250,7 @@ export function createSourceDemolitionAudio({ getAudio = () => null,
       let reason = !enabled ? 'protected-or-outside' : frame.restored || frame.replayed || event.suppressed ? 'restored-baseline'
         : event.age > CONFIG.maxEventAge ? 'stale-no-backlog' : consumedAt != null ? 'after-consumption'
           : !g?.loaded ? 'bank-not-ready-no-backlog' : !event.position ? 'missing-world-anchor'
-            : event.type === 'release' && options.effectsMode === 'off' ? 'residual-effects-off'
-              : event.type === 'release' && ![...g.voices].some(v => v.id === 'failure-body' && v.until > g.ctx.currentTime) ? 'no-playing-material-no-backlog' : null;
+            : (event.type === 'course' || event.type === 'roof') && !bodyContinues() ? 'no-playing-material-no-backlog' : null;
       if (!reason && play(event, options, frame)) { played++; note(event, 'played'); }
       else { skipped++; note(event, reason || 'voice-budget'); }
     }
@@ -269,7 +281,8 @@ export function createSourceDemolitionAudio({ getAudio = () => null,
       consumed: consumedAt != null, reducedDread: !!options.reducedDread || options.effectsMode === 'reduced', receipts: [...receiptOrder], history: [...history],
       positioning: g?.ctx.createPanner ? 'fixed-world HRTF; residual follows visible front' : 'fixed-world stereo; height affects attenuation',
       residualMode: 'filtered send of the same running body source; no replayed tail',
-      voices: g ? [...g.voices].flatMap(v => [{ id: v.id, eventId: v.eventId, kind: v.kind, position: v.currentPosition, startedAt: v.startedAt, until: v.until, mix: v.mix },
+      order: 'disjoint chronological support segments; held interval; main body only at aperture release; course/roof continue that body',
+      voices: g ? [...g.voices].flatMap(v => [{ id: v.id, eventId: v.eventId, kind: v.kind, position: v.currentPosition, startedAt: v.startedAt, until: v.until, sourceOffset: v.sourceOffset, sourceDuration: v.sourceDuration, mix: v.mix },
         ...(v.residual ? [{ id: `${v.id}:residual-send`, eventId: v.residual.eventId, kind: 'residual', derivedSend: true,
           position: v.residual.currentPosition, startedAt: v.residual.startedAt, until: v.until, mix: v.residual.mix }] : [])]) : [] };
     return last;

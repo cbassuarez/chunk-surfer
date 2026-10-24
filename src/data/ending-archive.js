@@ -53,12 +53,12 @@ export const ENDING_ARCHIVE = Object.freeze({
     filedBy: 'CONSULTING ENGINEER',
     body: (s) => list(
       'We were instructed to comment on the partial collapse recorded at the site during the night of the archival capture, prior to the scheduled demolition.',
-      'In our opinion the sequence described is not consistent with the failure of any element we surveyed. The described progression begins below ground and works upward, which is the reverse of what a building of this construction does when it lets go.',
+      'The described support failures occur in an ordered sequence. No corresponding firing plan was supplied to us. The contractor describes a continuous floor beneath the collapse; no such floor appears in the surveyed sections.',
       'We note the contractor was present throughout and that his account is internally consistent. We note also that he is a sound recordist and not an engineer, and that the majority of his account concerns what he could hear.',
       s?.equipment?.missing?.length
         ? 'Equipment left on site was not recovered. Given the demolition, recovery is not proposed.'
         : 'No equipment was left on site.',
-      'We are unable to reconcile the recorded timings. We do not consider this material to the demolition, which has taken place.',
+      'We are unable to reconcile the distance below the site with the depth of any surveyed foundation. The contractor describes leaving by a further grey door. We have not located it.',
     ),
   }),
 

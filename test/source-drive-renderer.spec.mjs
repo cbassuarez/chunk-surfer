@@ -8,6 +8,7 @@ import * as P3 from '../src/render/props3d.js';
 import {r3dFrame,r3dEyePoint,r3dProjectWorld,r3dSetLookAngles} from '../src/render/r3d.js';
 import {PIXEL_MESH_FRAG} from '../src/render/pixel-mesh/shader.js';
 import {CELL} from '../src/data/floorplan/legend.js';
+import {createPropRangeController} from '../src/render/prop-range.js';
 const propSource=readFileSync(new URL('../src/render/props3d.js',import.meta.url),'utf8');
 const rendererSource=readFileSync(new URL('../src/render/r3d.js',import.meta.url),'utf8');
 const close=(a,b,message)=>assert.ok(Math.abs(a-b)<1e-6,`${message}: ${a} != ${b}`);
@@ -62,10 +63,10 @@ test('prop raster projection uses the same selected lens and far depth',()=>{
 test('drive eye follows authored suspension exactly while walking keeps its floor easing',()=>{
  const assignment=rendererSource.match(/^  camY = [^\n]+;/m)?.[0];
  assert.ok(assignment,'the rendered eye assignment exists');
- const evaluateHeight=new Function('authoredCamera','driveFrameActive','snapCamera','camY','floorGoal','dt',assignment+';return camY;');
+ const evaluateHeight=new Function('authoredCamera','driveFrameActive','snapCamera','camY','floorGoal','dt','state',assignment+';return camY;');
  // Unrelated authored-camera hosts may add their own exact-eye branch. The
  // drive supplies no authoredCamera; exercise its real null fallback here.
- const height=(drive,snap,eye,goal,dt)=>evaluateHeight(null,drive,snap,eye,goal,dt);
+ const height=(drive,snap,eye,goal,dt)=>evaluateHeight(null,drive,snap,eye,goal,dt,{});
  // An old elevated Source eye must not ease down through the roof, and the
  // existing suspension/head waveform must not acquire another phase delay.
  let eye=24;
@@ -82,10 +83,12 @@ test('approved acquisition and final dither body are unchanged outside camera ra
  // Snapshot taken from the actual dirty production shader immediately before
  // promotion. Excluding only cameraRay and its new uniform, every acquisition,
  // ink, edge, material and dither byte must remain identical in this change.
+ // Re-pinned 2026-10-24 for the Transit Mk3 cab: marks inside the van are keyed
+ // to the van's metres and the cab takes the hatch screen (approved by Seb).
  const body=PIXEL_MESH_FRAG
   .replace('// Zero retains the ordinary lens for transparent instrument hosts.\nuniform float uCameraTanHalfFov;\n','')
   .replace(/vec3 cameraRay\(vec2 frag\)\{[\s\S]*?\n\}/,'CAMERA_RAY');
- assert.equal(createHash('sha256').update(body).digest('hex'),'618b1f7cfd93836eb5db38df7bb1645034e26424faacb8a124ce5cdfb5bcb90d');
+ assert.equal(createHash('sha256').update(body).digest('hex'),'3c26a7e640a18e3a1af8bdc78e32f7abf25d9de5dd9a659dcd5be46a2b14fd6b');
  assert.match(PIXEL_MESH_FRAG,/uCameraTanHalfFov>0\.0\?uCameraTanHalfFov:0\.95/,
   'transparent instrument hosts without this uniform retain their ordinary lens');
 });
@@ -112,7 +115,7 @@ test('weather resolves against the actual pane and opaque depth before acquisiti
 
 test('renderer reinitialisation disposes context-owned mirror, wetness and canvas resources',()=>{
  const calls=[],gl={deleteTexture:x=>calls.push(['texture',x]),deleteRenderbuffer:x=>calls.push(['depth',x]),deleteFramebuffer:x=>calls.push(['fbo',x])};
- const run=new Function('gl',`
+ const run=new Function('gl','authoredPropRange',`
  let driveStudyFrame={},FAR=260,driveMirrorAt=1,driveMirrorAspect=.7,driveRendererError='old';
  let driveWetTexture='wet',driveWetUploadUnit=5,driveWetRevision=9,driveWetOwner='owner',driveWetSize='48x32';
  const driveTextures=new Map([['canvas','canvas'],['mirror','mirror']]);
@@ -121,7 +124,7 @@ test('renderer reinitialisation disposes context-owned mirror, wetness and canva
  ${functionSource(propSource,'disposeDriveStudyResources')}
  disposeDriveStudyResources();return{driveStudyFrame,FAR,driveMirrorAt,driveWetTexture,driveWetOwner,driveWetSize,
  textures:driveTextures.size,canvases:driveCanvasSizes.size,mirrors:driveMirrorTargets.size};`);
- const result=run(gl);assert.deepEqual(calls,[['texture','canvas'],['texture','mirror'],['texture','wet'],['depth','depth'],['fbo','fbo']]);
+ const result=run(gl,createPropRangeController());assert.deepEqual(calls,[['texture','canvas'],['texture','mirror'],['texture','wet'],['depth','depth'],['fbo','fbo']]);
  assert.deepEqual(result,{driveStudyFrame:null,FAR:90,driveMirrorAt:-1,driveWetTexture:null,driveWetOwner:null,driveWetSize:'',textures:0,canvases:0,mirrors:0});
  assert.match(propSource,/export function props3dInit\(context\)\{\s+disposeDriveStudyResources\(\)/);
 });

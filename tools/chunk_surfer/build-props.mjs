@@ -27,6 +27,10 @@ import { buildOrganConsole } from './organ-console-geometry.mjs';
 import { buildTowerShutterWinch } from './tower-shutter-linkage-geometry.mjs';
 import { buildMainStairUse } from './main-stair-use-geometry.mjs';
 import { buildLoadingBayAccess } from './loading-bay-access-geometry.mjs';
+import { buildVanRearGeometry, addVanRearDoorDetails } from './van-rear-geometry.mjs';
+import { workbenchCatalog } from '../../src/data/workbench-catalog.js';
+import { vanKitModel } from '../../src/data/van-kit-models.js';
+import { buildVanRearKitGeometry, buildVanRearStockGeometry } from './van-rear-kit-geometry.mjs';
 import { buildBuildingWindows, subtractBuildingWindowBoxes, BUILDING_WINDOW_HOST_ORIGINS } from './building-window-geometry.mjs';
 import { buildBuildingDressingBatches } from './building-dressing-batch-geometry.mjs';
 import { isBuildingDressingMesh } from '../../src/world/building-dressing-batches.js';
@@ -53,7 +57,8 @@ import * as FP from '../../src/world/floorplan.js';
 import { wallRuns, wallRunsDigest } from '../../src/world/wall-contact.js';
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
-const LETTERING_INPUTS=['tools/chunk_surfer/build-props.mjs','tools/chunk_surfer/organ-console-geometry.mjs','tools/chunk_surfer/tower-shutter-linkage-geometry.mjs','tools/chunk_surfer/main-stair-use-geometry.mjs','src/data/main-stair-geometry.js','tools/chunk_surfer/exterior-foreground-geometry.mjs','tools/chunk_surfer/exterior-frontage-geometry.mjs','tools/chunk_surfer/exterior-shop-massing.mjs','tools/chunk_surfer/pub-interior-geometry.mjs','src/data/exterior-pub.js','src/data/exterior-pub-furnishings.js','src/data/exterior-foreground.js','src/data/exterior-district.js','tools/chunk_surfer/lettering/physical-lettering.mjs',
+const VAN_REAR_STOCK_SOURCES=workbenchCatalog({}).filter(p=>p.kind==='variant'&&p.optionId!=='witness').map(p=>'public/'+vanKitModel(p.modelId).model);
+const LETTERING_INPUTS=[...VAN_REAR_STOCK_SOURCES,'tools/chunk_surfer/build-props.mjs','tools/chunk_surfer/van-rear-geometry.mjs','tools/chunk_surfer/van-rear-kit-geometry.mjs','src/data/van-rear-design.js','src/data/van-rear-stock.js','src/data/workbench-catalog.js','src/data/van-kit-models.js','public/assets/items/field-case.glb','public/assets/items/field-recorder.glb','public/assets/items/map.glb','public/assets/items/radio.glb','tools/chunk_surfer/organ-console-geometry.mjs','tools/chunk_surfer/tower-shutter-linkage-geometry.mjs','tools/chunk_surfer/main-stair-use-geometry.mjs','src/data/main-stair-geometry.js','tools/chunk_surfer/exterior-foreground-geometry.mjs','tools/chunk_surfer/exterior-frontage-geometry.mjs','tools/chunk_surfer/exterior-shop-massing.mjs','tools/chunk_surfer/pub-interior-geometry.mjs','src/data/exterior-pub.js','src/data/exterior-pub-furnishings.js','src/data/exterior-foreground.js','src/data/exterior-district.js','tools/chunk_surfer/lettering/physical-lettering.mjs',
   'tools/chunk_surfer/lettering/rasterize.py','tools/chunk_surfer/lettering/face-geometry.mjs',
   'tools/chunk_surfer/lettering/world-inscription-substrates.mjs','tools/chunk_surfer/lettering/sample-host-substrate.py',
   'tools/chunk_surfer/lettering/sign-assemblies.mjs','tools/chunk_surfer/lettering/finish-profiles.mjs','tools/chunk_surfer/lettering/finish.py',
@@ -3710,7 +3715,9 @@ buildVigilSign('vigil_part_banner',['KEEP ELLERY','STANDING'],{w:3.80,boardY:.56
   // The mesh stands just in front of that and gives it a building instead.
   //
   // Local X is depth into the wall (thin); local Z runs along the elevation.
-  // The bay mouth is the gap from z -4.0 to +3.6, which every horizontal course
+  // The outer apron mouth is world Z3.5..12.5 (local -4..5). Both
+  // LOADING_BAY_ACCESS flights enter it; the narrower Get-In leaf is farther
+  // inside and does not define this elevation's opening. Every horizontal course
   // has to step around.
   // IT USED TO BE FORTY-SIX METRES OF ONE HEIGHT.
   //
@@ -3725,7 +3732,7 @@ buildVigilSign('vigil_part_banner',['KEEP ELLERY','STANDING'],{w:3.80,boardY:.56
   // changes to the institutional history cannot leave a different black wall
   // behind the authored elevation.
   const m=mesh('conservatory_west_elevation');
-  const zA=-7.5,zB=84.5,mouthA=-4.0,mouthB=3.6;
+  const zA=-7.5,zB=84.5,mouthA=-4.0,mouthB=5.0;
   const plinth=0.95;
   const BANDS=ELLERY_MASSING.map((band)=>({
     ...band,z0:band.y0-7.5,z1:band.y1-7.5,parapet:band.height,
@@ -4780,24 +4787,14 @@ const addBoothGuard=(m,{x=0,z=-.15,lean=0,arm='rest'}={})=>{
     addBox(m,[dx,1.02,2.52],[.12,.34,.06],MAT.safetyRed);            // tail lamp
   }
 
-  // THE LOAD SPACE. The first [E] in the game is shouldering the bag off this
-  // shelf, and takeTheBag() names what comes off it — recorder, torch,
-  // headphones, radio, the order folded twice in the side pocket. It was a shelf
-  // and a blanket, which is not a van somebody works out of.
-  // The shelf is HALF DEPTH and set back. Full depth made the load bay one flat
-  // plane from the doors to the bulkhead, so nothing under it could be seen and
-  // the interior read as a solid box with a lid.
-  const floorTop=floorY+.05;
-  addBox(m,[0,1.06,1.42],[1.70,.06,.96],MAT.wood);                   // the shelf
-  for(const dx of[-.78,.78]) addBox(m,[dx,.86,1.42],[.07,.46,.90],MAT.steel);  // its legs
-  addBox(m,[-.52,1.20,1.60],[.52,.22,.52],MAT.cloth);                // a folded blanket
-  // Where the bag has been sitting long enough to leave a clean rectangle.
-  addBox(m,[.30,1.10,1.34],[.44,.01,.34],MAT.black);
-  // On the floor, in front of the shelf, where they can actually be seen.
-  addCylinder(m,[.50,floorTop+.15,.62],.24,.30,MAT.steel,12);        // a cable drum
-  addBox(m,[-.54,floorTop+.21,.72],[.50,.42,.44],MAT.wood);          // a crate
-  addBox(m,[-.56,floorTop+.13,1.62],[.42,.26,.30],MAT.steel);        // toolbox
-  addBox(m,[.44,floorTop+.05,1.20],[.56,.10,.30],MAT.cloth);         // a coiled strap
+  // One fitted cargo bay shares its dimensions/finishes with the preparation
+  // cutaway. The actual case is separate so finishing the packing removes it.
+  const rear=buildVanRearGeometry({target:m,mesh,group,materials,MAT,addBox,addBeam,addCylinder,addCylinderX,addQuad,addLoft,addRingBeam});
+  for(const label of rear.labelFaces)lettering(m,label.copy,{...label,
+    category:'equipment',process:'printed stock tray legend',ground:MAT.ivory,ink:MAT.black,
+    capHeightM:.012,texelCapPx:24});
+  await buildVanRearKitGeometry({mesh,group,materials,root:ROOT});
+  await buildVanRearStockGeometry({mesh,group,materials,root:ROOT});
 }
 {
   // THE TWO REAR LEAVES, hung so they can be turned.
@@ -4814,16 +4811,7 @@ const addBoothGuard=(m,{x=0,z=-.15,lean=0,arm='rest'}={})=>{
   for(const [side,outer] of[['l',1],['r',-1]]){
     const d=mesh(`yard_van_door_${side}`);
     addBox(d,[leafLen/2,leafH/2,0],[leafLen,leafH,leafT],MAT.agedWhite);
-    // Chevrons on BOTH faces. Outside is where a van carries them and what makes
-    // the shut doors read from the gate; inside is what the player walks up to
-    // while the bag is still in there, and a blank leaf tells them nothing about
-    // what they are looking at. Vans carry reflective strips inboard for exactly
-    // the same reason.
-    for(const face of[1,-1]){
-      for(let i=-1;i<=1;i++){
-        addBox(d,[leafLen/2+i*.26,.93,face*(leafT/2+.012)],[.13,1.24,.02],i?MAT.safetyRed:MAT.ivory);
-      }
-    }
+    addVanRearDoorDetails({MAT,materials,addBox,addBeam,addCylinder,addCylinderX,addQuad,addLoft,addRingBeam},d,{side,outer});
     // The plate goes on one leaf, low, the way a real pair of doors carries it.
     if(side==='l') addBox(d,[leafLen/2,.31,outer*(leafT/2+.012)],[.50,.11,.02],MAT.ivory);
     // A handle on the free edge, which is the thing the player is about to pull.

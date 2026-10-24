@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
+import {vanRearStockState} from '../src/data/van-rear-stock.js';
 import { freshSave } from '../src/game/save.js';
 import { freshMeta, freshRunRecord } from '../src/progression/schema.js';
 import { prepareVanDifficultyFinalization } from '../src/progression/van-preparation.js';
@@ -33,6 +34,7 @@ function fixture({legacy=false}={}){
     getSave:()=>saved,getMeta:()=>meta,metaCommit:patch=>Object.assign(meta,patch),flagTest:(id)=>!!saved.flags[id],
     flagSet:(id)=>{saved.flags[id]=true;},flagApply:(ids)=>{for(const id of ids)saved.flags[id]=true;},
     saveCommit:(patch)=>Object.assign(saved,patch),normalizeFieldKit,mapAcquired,fieldKitInspection,normalizeEquipment,
+    syncVanProps(){},refreshWorldProps(){},
     resolveFieldKit,fieldKitCosmeticSelection,witnessEditionStatus,inspectCarriedWitness:()=>false,inspectWitnessRecorder(){},
     prepareWorkbenchFlags,packedWorkbenchGroups,packWorkbenchGroup,workbenchPackingComplete,
     shakeMode:()=> 'full',
@@ -242,12 +244,30 @@ test('automatic closing still plays the latch only when the physical leaves land
   assert.match(packingSource,/onDone:\(\)=>\{\s*shutTheVan\(\)/);
   assert.match(shut,/vanDoors\.closingAtMs=performance\.now\(\)/);
   assert.doesNotMatch(shut,/fireCue\(['"]door['"]\)/);
-  const calls=[],state={closed:false},vanDoors={closingAtMs:0,landed:false};let now=10,open=1;
+  const calls=[],removed=[],state={closed:false},vanDoors={closingAtMs:0,landed:false};let now=10,open=1;
   const context={vanDoors,flagTest:()=>state.closed,flagSet:()=>state.closed=true,getSave:()=>({flags:{}}),saveCommit(){},
-    performance:{now:()=>now},SPEECH:{say(){}},vanDoorOpenFraction:()=>open,fireCue:(id)=>calls.push(id),syncVanProps(){},refreshWorldProps(){}};
+    performance:{now:()=>now},SPEECH:{say(){}},vanDoorOpenFraction:()=>open,fireCue:(id)=>calls.push(id),syncVanProps(){},refreshWorldProps(){},
+    PROPS:{setLooseProp:(id,value)=>removed.push({id,value})}};
   vm.createContext(context);vm.runInContext(shut+tick,context);
-  context.shutTheVan();assert.deepEqual(calls,[]);context.tickVanDoors();assert.deepEqual(calls,[]);
+  context.shutTheVan();assert.deepEqual(removed,[{id:'yard-van-field-case',value:null}],'the packed case leaves before the doors swing over it');
+  assert.deepEqual(calls,[]);context.tickVanDoors();assert.deepEqual(calls,[]);
   now=2000;open=0;context.tickVanDoors();context.tickVanDoors();assert.deepEqual(calls,['door']);
+});
+
+test('reload derives world case, remaining stock and dome fixture from real packing and closed-door flags',()=>{
+ const sync=section('function syncVanProps(){','// Two instances, hung');
+ for(const [flags,expected] of [[{},['yard-van-field-case-open']],[{'kit.fitted':true},['yard-van-field-case','yard-van-field-case-open']],[{'van.closed':true},['yard-van-lamp','yard-van-field-case','yard-van-field-case-open']]]){
+  const removed=[],restored=[],kit=normalizeFieldKit(),present=new Set();
+  const context={planName:'conservatory',FP:{isLoaded:()=>true},flagTest:id=>!!flags[id],
+   getSave:()=>({flags,fieldKit:kit}),getMeta:()=>freshMeta(),resolveFieldKit,packedWorkbenchGroups,vanRearStockState,
+   vanDoorOpenFraction:()=>flags['van.closed']?0:1,
+   PROPS:{setLooseProp:(id,value)=>{assert.equal(value,null);removed.push(id);},propById:id=>present.has(id),restoreAuthoredProp:id=>{restored.push(id);present.add(id);}}};
+  vm.createContext(context);vm.runInContext(sync,context);context.syncVanProps();
+  assert.deepEqual(removed.filter(id=>!id.startsWith('yard-van-stock-')),expected);
+  const stock=vanRearStockState({closed:!!flags['van.closed'],bagTaken:false,fieldKit:resolveFieldKit(kit,freshMeta()),packedGroups:[]});
+  assert.deepEqual(restored.filter(id=>id.startsWith('yard-van-stock-')).sort(),stock.filter(p=>p.visible).map(p=>p.id).sort());
+  assert.deepEqual(removed.filter(id=>id.startsWith('yard-van-stock-')).sort(),stock.filter(p=>!p.visible).map(p=>p.id).sort());
+ }
 });
 
 test('lodge and world guidance preserve the separate map/fitting firewall',()=>{

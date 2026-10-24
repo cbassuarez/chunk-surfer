@@ -95,15 +95,36 @@ for (const mesh of [
     'the 06:00 sodium shutdown reaches the authored local-light rig');
 }
 
-// The physical reducer turns the authored vocabulary into route-specific world
-// state. In particular, workers and the eight-stage peal cannot regress to prose.
+// Inversion's physical host owns its actual chronology and completion. Its
+// metadata must not put the retired municipal morning on a second timer.
 {
-  let morning = createEndingEmbodimentState('inversion');
-  for (const effect of ['sodium-shutdown', 'birds-bus-arrival', 'staff-behind-heras']) {
-    morning = reduceEndingEmbodiment(morning, { type: 'beat', beat: { id: effect, effect } });
+  const inversion = ENDING_CUTSCENES.inversion;
+  assert.equal(inversion.interactionMode, 'walk');
+  assert.equal(inversion.finalAction.id, 'cross-source-IV-grey-door');
+  assert.equal(inversion.finalAction.mode, ENDING_FINAL_ACTION_MODE.WORLD);
+  assert.equal(inversion.finalAction.completionOwner, 'source-IV');
+  assert.equal(inversion.finalAction.receipt, 'source-IV:<runId>:complete');
+  assert.equal(inversion.finalHold.ms, 0, 'reading does not impose a terminal camera hold');
+  assert.equal(inversion.worldAnchors.sourceIV.id, 'source-IV');
+  assert.equal(inversion.worldAnchors.farGreyDoor.id, 'source-IV-exit');
+  assert.deepEqual(inversion.beats.map(beat => beat.id), [
+    'other-door-threshold', 'source-I-collapse', 'source-II-collapse',
+    'black-handoff', 'source-IV-entry', 'far-grey-door-crossing',
+  ]);
+  for (const beat of inversion.beats) {
+    assert.notEqual(beat.trigger, 'time', 'physical milestones are not elapsed-time endings');
+    assert.equal(beat.atMs, undefined);
+    assert.equal(beat.effect, undefined, 'the generic scheduler does not fake the physical demolition');
+    assert.equal(beat.worldLook, undefined, 'the real host owns the world being rendered');
+    assert.equal(beat.cue, undefined, 'the real physical audio owner scores the event');
   }
-  assert.equal(morning.morningStage, 3, 'inversion reaches bus and demolition staff staging');
+  const waited = advanceEndingCutscene(createEndingCutsceneState(inversion), inversion, { elapsedMs: 1e9 });
+  assert.equal(waited.state.complete, false, 'elapsed time alone cannot complete even the metadata contract');
+  assert.deepEqual(waited.events, []);
+}
 
+// The physical reducer still owns the eight-stage peal for the other ending.
+{
   let peal = createEndingEmbodimentState('tower-lost');
   for (const beat of ENDING_CUTSCENES['tower-lost'].beats) peal = reduceEndingEmbodiment(peal, { type: 'beat', beat });
   assert.equal(peal.syncStage, 8, 'all eight strikes progressively take the two bodies');

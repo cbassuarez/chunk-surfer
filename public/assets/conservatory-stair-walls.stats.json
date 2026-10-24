@@ -1,0 +1,734 @@
+{
+  "version": 2,
+  "architectureRevision": 2,
+  "bytes": 2068896,
+  "totalTriangles": 48402,
+  "vertices": 61260,
+  "materialBatches": 8,
+  "meshes": 1,
+  "origin": [
+    63,
+    0,
+    36
+  ],
+  "bounds": {
+    "min": [
+      -3.9939999999999998,
+      0.16,
+      -5.994091346153848
+    ],
+    "max": [
+      4.994,
+      13.55,
+      3.9939999999999998
+    ]
+  },
+  "maximumProjectionM": 0.15,
+  "minimumProjectionM": 0.006,
+  "belowHeadMaximumProjectionM": 0.025,
+  "shallowUntilLocalHeightM": 2,
+  "fullDepthFromLocalHeightM": 2.3,
+  "sites": [
+    {
+      "id": "ground-west-north",
+      "origin": [
+        59,
+        0.16,
+        34.5
+      ],
+      "normal": [
+        1,
+        0,
+        0
+      ],
+      "tangent": [
+        0,
+        0,
+        -1
+      ],
+      "width": 2.6,
+      "height": 4.22,
+      "kind": "intact",
+      "architecture": {
+        "type": "musical trophy",
+        "anomaly": null,
+        "profileM": "mitered bolection with fluted supports, broad acanthus capitals and gilded festoon",
+        "openingIsUsable": false
+      },
+      "designProjectionM": [
+        0.006,
+        0.15
+      ],
+      "belowHeadMaximumProjectionM": 0.025,
+      "shallowUntilLocalHeightM": 2,
+      "fullDepthFromLocalHeightM": 2.3
+    },
+    {
+      "id": "ground-west-south",
+      "origin": [
+        59,
+        0.16,
+        37.5
+      ],
+      "normal": [
+        1,
+        0,
+        0
+      ],
+      "tangent": [
+        0,
+        0,
+        -1
+      ],
+      "width": 2.6,
+      "height": 4.22,
+      "kind": "overpainted",
+      "architecture": {
+        "type": "blind arched aedicule",
+        "anomaly": "narrowed repair",
+        "baseM": 2.065,
+        "springM": 3.04,
+        "innerRadiusM": 0.56,
+        "outerRadiusM": 0.85,
+        "pairedSupports": true,
+        "profileM": [
+          [
+            0,
+            0.021
+          ],
+          [
+            0,
+            0.08549999999999999
+          ],
+          [
+            0.035,
+            0.08549999999999999
+          ],
+          [
+            0.065,
+            0.12449999999999999
+          ],
+          [
+            0.105,
+            0.141
+          ],
+          [
+            0.145,
+            0.141
+          ],
+          [
+            0.18,
+            0.0975
+          ],
+          [
+            0.205,
+            0.1065
+          ],
+          [
+            0.24,
+            0.1065
+          ],
+          [
+            0.24,
+            0.021
+          ]
+        ],
+        "voussoirs": 13,
+        "keystone": true,
+        "openingIsUsable": false,
+        "construction": "A later offset narrow arch cuts through a broad repair that physically buries the earlier inner moulding.",
+        "infill": {
+          "type": "offset narrow repair",
+          "centreM": 0.17,
+          "originalWidthM": 1.12,
+          "repairedWidthM": 0.65,
+          "coveredOlderMoulding": true
+        }
+      },
+      "designProjectionM": [
+        0.006,
+        0.15
+      ],
+      "belowHeadMaximumProjectionM": 0.025,
+      "shallowUntilLocalHeightM": 2,
+      "fullDepthFromLocalHeightM": 2.3
+    },
+    {
+      "id": "ground-east-north",
+      "origin": [
+        68,
+        0.16,
+        34.5
+      ],
+      "normal": [
+        -1,
+        0,
+        0
+      ],
+      "tangent": [
+        0,
+        0,
+        1
+      ],
+      "width": 2.6,
+      "height": 4.22,
+      "kind": "intact",
+      "architecture": {
+        "type": "blind arched aedicule",
+        "anomaly": null,
+        "baseM": 2.065,
+        "springM": 3.04,
+        "innerRadiusM": 0.56,
+        "outerRadiusM": 0.85,
+        "pairedSupports": true,
+        "profileM": [
+          [
+            0,
+            0.021
+          ],
+          [
+            0,
+            0.08549999999999999
+          ],
+          [
+            0.035,
+            0.08549999999999999
+          ],
+          [
+            0.065,
+            0.12449999999999999
+          ],
+          [
+            0.105,
+            0.141
+          ],
+          [
+            0.145,
+            0.141
+          ],
+          [
+            0.18,
+            0.0975
+          ],
+          [
+            0.205,
+            0.1065
+          ],
+          [
+            0.24,
+            0.1065
+          ],
+          [
+            0.24,
+            0.021
+          ]
+        ],
+        "voussoirs": 13,
+        "keystone": true,
+        "openingIsUsable": false,
+        "construction": "Intact original ornamental blind niche: polished ceramic back, gilded urn, scallop and retained carved order.",
+        "infill": {
+          "type": "original ornamental blind niche",
+          "frontM": 0.037
+        }
+      },
+      "designProjectionM": [
+        0.006,
+        0.15
+      ],
+      "belowHeadMaximumProjectionM": 0.025,
+      "shallowUntilLocalHeightM": 2,
+      "fullDepthFromLocalHeightM": 2.3
+    },
+    {
+      "id": "ground-east-south",
+      "origin": [
+        68,
+        0.16,
+        37.5
+      ],
+      "normal": [
+        -1,
+        0,
+        0
+      ],
+      "tangent": [
+        0,
+        0,
+        1
+      ],
+      "width": 2.6,
+      "height": 4.22,
+      "kind": "intact",
+      "architecture": {
+        "type": "shell and urn trophy",
+        "anomaly": null,
+        "profileM": "mitered bolection with fluted supports, broad acanthus capitals and gilded festoon",
+        "openingIsUsable": false
+      },
+      "designProjectionM": [
+        0.006,
+        0.15
+      ],
+      "belowHeadMaximumProjectionM": 0.025,
+      "shallowUntilLocalHeightM": 2,
+      "fullDepthFromLocalHeightM": 2.3
+    },
+    {
+      "id": "ground-south-west",
+      "origin": [
+        61.5,
+        0.16,
+        40
+      ],
+      "normal": [
+        0,
+        0,
+        -1
+      ],
+      "tangent": [
+        -1,
+        0,
+        0
+      ],
+      "width": 2.6,
+      "height": 4.22,
+      "kind": "overpainted",
+      "architecture": {
+        "type": "musical trophy",
+        "anomaly": null,
+        "profileM": "mitered bolection with fluted supports, broad acanthus capitals and gilded festoon",
+        "openingIsUsable": false
+      },
+      "designProjectionM": [
+        0.006,
+        0.15
+      ],
+      "belowHeadMaximumProjectionM": 0.025,
+      "shallowUntilLocalHeightM": 2,
+      "fullDepthFromLocalHeightM": 2.3
+    },
+    {
+      "id": "ground-south-east",
+      "origin": [
+        64.5,
+        0.16,
+        40
+      ],
+      "normal": [
+        0,
+        0,
+        -1
+      ],
+      "tangent": [
+        -1,
+        0,
+        0
+      ],
+      "width": 2.6,
+      "height": 4.22,
+      "kind": "sealed",
+      "architecture": {
+        "type": "blind arched aedicule",
+        "anomaly": "bricked former window",
+        "baseM": 2.065,
+        "springM": 3.04,
+        "innerRadiusM": 0.56,
+        "outerRadiusM": 0.85,
+        "pairedSupports": true,
+        "profileM": [
+          [
+            0,
+            0.021
+          ],
+          [
+            0,
+            0.08549999999999999
+          ],
+          [
+            0.035,
+            0.08549999999999999
+          ],
+          [
+            0.065,
+            0.12449999999999999
+          ],
+          [
+            0.105,
+            0.141
+          ],
+          [
+            0.145,
+            0.141
+          ],
+          [
+            0.18,
+            0.0975
+          ],
+          [
+            0.205,
+            0.1065
+          ],
+          [
+            0.24,
+            0.1065
+          ],
+          [
+            0.24,
+            0.021
+          ]
+        ],
+        "voussoirs": 13,
+        "keystone": true,
+        "openingIsUsable": false,
+        "construction": "Original arched rebate and glazing stiles remain around individually jointed later masonry.",
+        "infill": {
+          "type": "individual brick courses",
+          "frontM": 0.055,
+          "archRadiusM": 0.515,
+          "jointM": 0.018
+        }
+      },
+      "designProjectionM": [
+        0.006,
+        0.15
+      ],
+      "belowHeadMaximumProjectionM": 0.025,
+      "shallowUntilLocalHeightM": 2,
+      "fullDepthFromLocalHeightM": 2.3
+    },
+    {
+      "id": "upper-west-north",
+      "origin": [
+        60,
+        4.94,
+        34.5
+      ],
+      "normal": [
+        1,
+        0,
+        0
+      ],
+      "tangent": [
+        0,
+        0,
+        -1
+      ],
+      "width": 2.6,
+      "height": 4.61,
+      "kind": "intact",
+      "architecture": {
+        "type": "musical trophy",
+        "anomaly": null,
+        "profileM": "mitered bolection with fluted supports, broad acanthus capitals and gilded festoon",
+        "openingIsUsable": false
+      },
+      "designProjectionM": [
+        0.006,
+        0.11
+      ],
+      "belowHeadMaximumProjectionM": 0.025,
+      "shallowUntilLocalHeightM": 2,
+      "fullDepthFromLocalHeightM": 2.3
+    },
+    {
+      "id": "upper-west-south",
+      "origin": [
+        60,
+        4.94,
+        37.5
+      ],
+      "normal": [
+        1,
+        0,
+        0
+      ],
+      "tangent": [
+        0,
+        0,
+        -1
+      ],
+      "width": 2.6,
+      "height": 4.61,
+      "kind": "sealed",
+      "architecture": {
+        "type": "blind arched aedicule",
+        "anomaly": "inward strain and displaced cornice",
+        "baseM": 2.065,
+        "springM": 3.4300000000000006,
+        "innerRadiusM": 0.56,
+        "outerRadiusM": 0.85,
+        "pairedSupports": true,
+        "profileM": [
+          [
+            0,
+            0.021
+          ],
+          [
+            0,
+            0.06269999999999999
+          ],
+          [
+            0.035,
+            0.06269999999999999
+          ],
+          [
+            0.065,
+            0.09129999999999999
+          ],
+          [
+            0.105,
+            0.10339999999999999
+          ],
+          [
+            0.145,
+            0.10339999999999999
+          ],
+          [
+            0.18,
+            0.07150000000000001
+          ],
+          [
+            0.205,
+            0.0781
+          ],
+          [
+            0.24,
+            0.0781
+          ],
+          [
+            0.24,
+            0.021
+          ]
+        ],
+        "voussoirs": 13,
+        "keystone": true,
+        "openingIsUsable": false,
+        "construction": "An undisturbed outer arch contains inward leaning inner jambs; its cornice enters behind the infill and returns 350 mm lower.",
+        "infill": {
+          "type": "inward strained plug",
+          "baseWidthM": 1.01,
+          "springWidthM": 0.56,
+          "frontM": 0.047
+        },
+        "foldedCornice": {
+          "path": [
+            [
+              -0.49,
+              3.1400000000000006,
+              0.0803
+            ],
+            [
+              -0.29,
+              3.1400000000000006,
+              0.0803
+            ],
+            [
+              -0.1,
+              3.0900000000000007,
+              0.0495
+            ],
+            [
+              0.025,
+              2.9500000000000006,
+              0.027
+            ],
+            [
+              0.145,
+              2.8100000000000005,
+              0.027
+            ],
+            [
+              0.29,
+              2.7900000000000005,
+              0.0704
+            ],
+            [
+              0.49,
+              2.7900000000000005,
+              0.0803
+            ]
+          ],
+          "section": [
+            [
+              -0.075,
+              -0.015
+            ],
+            [
+              -0.075,
+              0.009
+            ],
+            [
+              -0.055,
+              0.018
+            ],
+            [
+              -0.035,
+              0.018
+            ],
+            [
+              -0.017,
+              0.006
+            ],
+            [
+              0.015,
+              0.003
+            ],
+            [
+              0.035,
+              0.012
+            ],
+            [
+              0.06,
+              0.012
+            ],
+            [
+              0.075,
+              -0.006
+            ],
+            [
+              0.075,
+              -0.015
+            ]
+          ],
+          "sectionHeightM": 0.15,
+          "fallM": 0.35,
+          "infillFrontM": 0.047,
+          "hiddenDepthM": 0.027,
+          "reappears": true
+        }
+      },
+      "designProjectionM": [
+        0.006,
+        0.11
+      ],
+      "belowHeadMaximumProjectionM": 0.025,
+      "shallowUntilLocalHeightM": 2,
+      "fullDepthFromLocalHeightM": 2.3
+    },
+    {
+      "id": "upper-north-west",
+      "origin": [
+        61.5,
+        4.94,
+        33
+      ],
+      "normal": [
+        0,
+        0,
+        1
+      ],
+      "tangent": [
+        1,
+        0,
+        0
+      ],
+      "width": 2.6,
+      "height": 4.61,
+      "kind": "overpainted",
+      "architecture": {
+        "type": "musical trophy",
+        "anomaly": null,
+        "profileM": "mitered bolection with fluted supports, broad acanthus capitals and gilded festoon",
+        "openingIsUsable": false
+      },
+      "designProjectionM": [
+        0.006,
+        0.11
+      ],
+      "belowHeadMaximumProjectionM": 0.025,
+      "shallowUntilLocalHeightM": 2,
+      "fullDepthFromLocalHeightM": 2.3
+    },
+    {
+      "id": "upper-north-east",
+      "origin": [
+        64.5,
+        4.94,
+        33
+      ],
+      "normal": [
+        0,
+        0,
+        1
+      ],
+      "tangent": [
+        1,
+        0,
+        0
+      ],
+      "width": 2.6,
+      "height": 4.61,
+      "kind": "intact",
+      "architecture": {
+        "type": "shell and urn trophy",
+        "anomaly": null,
+        "profileM": "mitered bolection with fluted supports, broad acanthus capitals and gilded festoon",
+        "openingIsUsable": false
+      },
+      "designProjectionM": [
+        0.006,
+        0.11
+      ],
+      "belowHeadMaximumProjectionM": 0.025,
+      "shallowUntilLocalHeightM": 2,
+      "fullDepthFromLocalHeightM": 2.3
+    },
+    {
+      "id": "academic-north-west",
+      "origin": [
+        61.5,
+        10.14,
+        30
+      ],
+      "normal": [
+        0,
+        0,
+        1
+      ],
+      "tangent": [
+        1,
+        0,
+        0
+      ],
+      "width": 2.6,
+      "height": 3.41,
+      "kind": "intact",
+      "architecture": {
+        "type": "musical trophy",
+        "anomaly": null,
+        "profileM": "mitered bolection with fluted supports, broad acanthus capitals and gilded festoon",
+        "openingIsUsable": false
+      },
+      "designProjectionM": [
+        0.006,
+        0.11
+      ],
+      "belowHeadMaximumProjectionM": 0.025,
+      "shallowUntilLocalHeightM": 2,
+      "fullDepthFromLocalHeightM": 2.3
+    }
+  ],
+  "faces": [],
+  "features": {
+    "continuousPlasterFields": true,
+    "glazedCeramicDado": true,
+    "polishedWalnutWainscot": true,
+    "waterGilding": true,
+    "flutedPairedSupports": true,
+    "broadAcanthusCapitals": true,
+    "closedProfileCornices": true,
+    "dentilCornices": true,
+    "miteredBolectionFrames": true,
+    "broadLaurelGarlands": true,
+    "shellAndUrnTrophies": true,
+    "musicalTrophies": true,
+    "blindArchedAedicules": 4,
+    "architecturalAnomalies": 3,
+    "continuousHeightfieldMasks": 0,
+    "newLights": 0,
+    "newCollision": false,
+    "worldAnchored": true
+  },
+  "sha256": "1c45191653a78f5451e58d766dda35ac6d630e036b75a0ca24edea5334084465"
+}

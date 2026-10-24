@@ -4,11 +4,22 @@ import { uiDraw, uiCellMetrics, uiSize, uiScrim, uiFill, uiStrokeRect, uiText, u
 import { assetUrl } from '../platform/paths.js';
 import { vanKitModel } from '../data/van-kit-models.js';
 import { applyWitnessModelAppearance } from '../render/witness-model.js';
+import { WITNESS_DESIGN, WITNESS_SWITCHES } from '../data/witness-assembly.js';
 
 const clamp = (value, lo, hi) => Math.max(lo, Math.min(hi, Number(value) || 0));
 const hit = (rect, event) => rect && event.cellX >= rect.x && event.cellY >= rect.y && event.cellX <= rect.x + rect.w && event.cellY <= rect.y + rect.h;
 
-export function witnessInspectionLayout(cols, rows, canFit = false) {
+// These point at the actual authored plate, rather than drawing fictitious
+// electronics inside its empty apertures. Its backing card stays physical.
+const platePoint = (x, y) => [(x - WITNESS_DESIGN.width / 2) / 300,
+  (WITNESS_DESIGN.height / 2 - y) / 300, .02];
+export const WITNESS_PLATE_CALLOUTS = Object.freeze([
+  { id: 'screen', label: 'SCREEN OPENING', point: platePoint(368, 195.5), offset: [0, -1.4] },
+  { id: 'keys', label: 'KEY OPENINGS', point: platePoint(WITNESS_SWITCHES[1].x, WITNESS_SWITCHES[1].y), offset: [0, -2.0] },
+  { id: 'cover', label: 'CLEAR ACRYLIC', point: platePoint(170, 54), offset: [0, -2.0] },
+].map(value => Object.freeze({ ...value, point: Object.freeze(value.point), offset: Object.freeze(value.offset) })));
+
+export function witnessInspectionLayout(cols, rows, canFit = false, mode = 'recorder') {
   const w = Math.max(12, cols - 4), h = Math.max(12, rows - 4), rect = { x: 2, y: 2, w, h };
   const wide = w >= 78, footerY = rect.y + h - 3;
   const portrait = { x: rect.x + 1, y: rect.y + 3, w: wide ? Math.floor(w * .7) - 2 : w - 2,
@@ -16,10 +27,10 @@ export function witnessInspectionLayout(cols, rows, canFit = false) {
   const detail = wide ? { x: portrait.x + portrait.w + 2, y: portrait.y, w: w - portrait.w - 5, h: portrait.h }
     : { x: portrait.x, y: portrait.y + portrait.h + .3, w: portrait.w, h: 2.1 };
   const actions = [{ id: 'close', label: 'BACK', key: 'ESC' }, { id: 'reset', label: 'RESET', key: 'R' },
-    { id: 'turn', label: 'TURN OVER', key: 'T' }, { id: 'model', label: 'PLATE/RIG', key: 'V' },
+    { id: 'turn', label: 'TURN OVER', key: 'T' }, { id: 'model', label: mode === 'plate' ? 'FITTED PREVIEW' : 'LOOSE PLATE', key: 'V' },
     { id: 'test', label: 'TEST KEYS', key: 'K' }, ...(canFit ? [{ id: 'fit', label: 'FIT PLATE', key: 'ENTER' }] : [])];
   const gap = .7, actionW = (w - 2 - (actions.length - 1) * gap) / actions.length;
-  const short = { close: 'BACK', reset: 'RESET', turn: 'TURN', model: 'MODEL', test: 'TEST', fit: 'FIT' };
+  const short = { close: 'BACK', reset: 'RESET', turn: 'TURN', model: mode === 'plate' ? 'FITTED' : 'PLATE', test: 'TEST', fit: 'FIT' };
   const buttons = actions.map((action, index) => ({ ...action, label: actionW < 11 ? short[action.id] : action.label,
     x: rect.x + 1 + index * (actionW + gap), y: footerY, w: actionW, h: 2 }));
   return { rect, portrait, detail, buttons, wide };
@@ -28,6 +39,7 @@ export function witnessInspectionLayout(cols, rows, canFit = false) {
 export function createWitnessInspectionRenderer({ cosmetics = {}, endingIds = [], initialMode = 'recorder' } = {}) {
   let THREE, renderer, scene, camera, loader, environment, disposed = false, lost = false, error = '', renderCount = 0;
   let mode = initialMode === 'plate' ? 'plate' : 'recorder', yaw = -.19, pitch = .12, dirty = true, sizeKey = '', testTime = 0;
+  let callouts = [];
   const assets = new Map(), appearance = new Map(), resources = { geometries: new Set(), materials: new Set(), textures: new Set() };
   function retain(root) {
     root.traverse(node => { if (!node.isMesh) return;
@@ -85,7 +97,7 @@ export function createWitnessInspectionRenderer({ cosmetics = {}, endingIds = []
     ready, orbit, reset,
     turnOver() { yaw += Math.PI; dirty = true; },
     toggleModel() { mode = mode === 'recorder' ? 'plate' : 'recorder'; dirty = true; },
-    testKeys() { if (mode === 'recorder') { testTime = .7; dirty = true; } },
+    testKeys() { mode = 'recorder'; testTime = .7; dirty = true; },
     update(dt) {
       if (testTime > 0) {
         testTime = Math.max(0, testTime - clamp(dt, 0, .1));
@@ -94,7 +106,7 @@ export function createWitnessInspectionRenderer({ cosmetics = {}, endingIds = []
       }
     },
     view: () => ({ mode, yaw, pitch, ready: assets.has(mode) && !disposed && !lost, failed: !!error || lost,
-      error, disposed, contexts: renderer && !disposed ? 1 : 0, renderCount, testing: testTime > 0 }),
+      error, disposed, contexts: renderer && !disposed ? 1 : 0, renderCount, testing: testTime > 0, callouts }),
     draw(rect) {
       if (disposed || !renderer || lost || !assets.has(mode)) return;
       const metrics = uiCellMetrics(), width = Math.max(1, Math.round(rect.w * metrics.cellW)), height = Math.max(1, Math.round(rect.h * metrics.cellH));
@@ -108,11 +120,33 @@ export function createWitnessInspectionRenderer({ cosmetics = {}, endingIds = []
         const tangent = Math.tan(camera.fov * Math.PI / 360);
         const distance = Math.max(extent.y / (2 * tangent), extent.x / (2 * tangent * camera.aspect)) * 1.16 + extent.z / 2;
         camera.position.set(0, 0, distance); camera.lookAt(0, 0, 0);
+        camera.updateMatrixWorld();
+        const plate = mode === 'plate' ? assets.get(mode).getObjectByName('replacement-clear-faceplate') : null;
+        // On the reverse side the opaque sleeve/card obscures these parts.
+        // Do not paint front-face explanations onto that reverse surface.
+        callouts = plate && new THREE.Vector3(0, 0, 1).transformDirection(plate.matrixWorld).z > .35
+          ? WITNESS_PLATE_CALLOUTS.map(value => {
+            const point = plate.localToWorld(new THREE.Vector3(...value.point)).project(camera);
+            return { ...value, x: (point.x + 1) / 2, y: (1 - point.y) / 2 };
+          }).filter(value => value.x > 0 && value.x < 1 && value.y > 0 && value.y < 1) : [];
         renderer.render(scene, camera); dirty = false; renderCount++;
       }
       uiDraw(({ ctx, dpr, cellW, cellH }) => {
         ctx.save(); ctx.beginPath(); ctx.rect(rect.x * cellW * dpr, rect.y * cellH * dpr, rect.w * cellW * dpr, rect.h * cellH * dpr); ctx.clip();
         ctx.drawImage(renderer.domElement, rect.x * cellW * dpr, rect.y * cellH * dpr, rect.w * cellW * dpr, rect.h * cellH * dpr); ctx.restore();
+      });
+      uiWithClip(rect, () => {
+        for (const value of callouts) {
+          const width = value.label.length + 1, x = clamp(rect.x + rect.w * value.x - width / 2, rect.x + .4, rect.x + rect.w - width - .4);
+          const y = clamp(rect.y + rect.h * value.y + value.offset[1], rect.y + .4, rect.y + rect.h - 3.2);
+          uiDraw(({ ctx, dpr, cellW, cellH }) => {
+            ctx.save(); ctx.strokeStyle = '#bfcbb0'; ctx.lineWidth = dpr;
+            ctx.beginPath(); ctx.moveTo((x + width / 2) * cellW * dpr, (y + 1.05) * cellH * dpr);
+            ctx.lineTo((rect.x + rect.w * value.x) * cellW * dpr, (rect.y + rect.h * value.y) * cellH * dpr); ctx.stroke(); ctx.restore();
+          });
+          uiFill(x, y - .1, width, 1.1, '#17271fe8');
+          uiText(x + .5, y, value.label, 'ui-primary', .95, width - 1);
+        }
       });
     },
     dispose() {
@@ -185,8 +219,9 @@ export function makeWitnessInspectionScene({ cosmetics = {}, endingIds = [], own
     },
     render() {
       if (closed) return;
-      const { cols, rows } = uiSize(); layout = witnessInspectionLayout(cols, rows, canFit);
-      const { rect, portrait, detail, buttons, wide } = layout, state = inspection.view();
+      const { cols, rows } = uiSize();
+      const state = inspection.view(); layout = witnessInspectionLayout(cols, rows, canFit, state.mode);
+      const { rect, portrait, detail, buttons, wide } = layout;
       uiScrim(.95); uiFill(rect.x, rect.y, rect.w, rect.h, '#111e19'); uiStrokeRect(rect.x, rect.y, rect.w, rect.h, '#829787', .7, 1);
       uiText(rect.x + 1, rect.y + .7, 'AUDIOCORP / WITNESS EDITION', 'ui-amber', 1);
       uiFill(portrait.x, portrait.y, portrait.w, portrait.h, '#27332d'); inspection.draw(portrait);
@@ -197,15 +232,17 @@ export function makeWitnessInspectionScene({ cosmetics = {}, endingIds = [], own
         });
       }
       uiWithClip(detail, () => {
-        const lines = wide ? [state.mode === 'plate' ? 'SERVICE FACEPLATE' : 'FACTORY SERVICE INSTRUMENT',
+        const lines = wide ? [state.mode === 'plate' ? 'LOOSE REPLACEMENT PLATE' : 'FITTED WITNESS PREVIEW',
           owned ? 'PERMANENT COSMETIC / OWNED' : `${count} / ${required} DISTINCT ENDINGS`,
           ...(fittingNotice ? [fittingNotice] : []),
-          state.mode === 'plate' ? 'Champagne-clear polymer. Separate replacement plate in its protective sleeve.'
-            : 'Clear polymer, copper traces, visible harnesses and mechanical switches. A dark, separate VFD module.',
+          state.mode === 'plate' ? 'Clear acrylic fits over your recorder. The large opening is for its display; the three small openings are for its keys.'
+            : 'See the copper traces, wiring and switches through the clear cover. This is how your recorder will look.',
+          state.mode === 'plate' ? 'The dark surface behind the openings is the protective backing card. [V] shows the complete recorder.'
+            : '[V] examines the loose plate. [K] presses the preview keys; it does not record.',
           `${count} RETURN SERVICE ${count === 1 ? 'MARK' : 'MARKS'}.`,
           'Your button colors and phosphor stay unchanged. No equipment effects.',
           ...(fittingNotice ? [] : [canFit ? 'Fit this plate at the van.' : owned ? 'Fitting is available at the van.' : 'Reach two different endings to fit this plate.'])]
-          : [state.mode === 'plate' ? 'SERVICE FACEPLATE / PROTECTIVE SLEEVE' : 'PHYSICAL RECORDER / IDLE DISPLAY',
+          : [state.mode === 'plate' ? 'LOOSE PLATE / [V] SEE IT FITTED' : 'FITTED PREVIEW / [V] LOOSE PLATE',
             fittingNotice || (owned ? `${count} SERVICE MARKS / COSMETIC ONLY${canFit ? ' / READY TO FIT' : ''}` : `${count} / ${required} DISTINCT ENDINGS / PREVIEW ONLY`)];
         let y = detail.y;
         for (const [index, text] of lines.entries()) {

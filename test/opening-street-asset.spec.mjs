@@ -117,9 +117,11 @@ for(const primitive of groundMesh.primitives){
   const normals=accessorValues(primitive.attributes.NORMAL);
   assert.ok(normals.every((normal)=>normal[1]>.99),'horizontal opening-street receivers face upward for lighting');
 }
-assert.equal(frontageBlocks(2,0),true,'the retired personnel doorway is opaque masonry');
-assert.equal(frontageBlocks(2,2.5),false,'the canonical three-metre goods pair remains the only loading-bay opening');
-assert.equal(frontageBlocks(4.5,2.5),true,'masonry closes the wall above the goods-door head');
+assert.equal(frontageBlocks(2,-5),true,'the outer apron receiver retains its north masonry jamb');
+assert.equal(frontageBlocks(2,-2.5),false,'the existing north stair enters the real outer apron mouth');
+assert.equal(frontageBlocks(2,4.5),false,'the full goods stair width enters real air beside the south jamb');
+assert.equal(frontageBlocks(4.5,2.5),false,'the outer apron retains its 5.5m head independently of the narrower Get-In leaf farther inside');
+assert.equal(frontageBlocks(5.525,2.5),true,'masonry remains above the actual outer apron lintel');
 const materialRoles=[...new Set(gltf.materials.map((material)=>material.extras?.openingStreetRole))].sort();
 assert.deepEqual(materialRoles,roles);
 assert.ok(gltf.materials.every((material)=>{

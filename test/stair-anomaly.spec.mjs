@@ -62,7 +62,7 @@ assert.equal(normalizeStairAnomalyEnvironment({
 }).stairId, 'basement', 'a stored spiral selection is migrated to the west stair');
 assert.equal(normalizeStairAnomalyEnvironment({
   stairId: 'upper', travel: 'down', visualSlope: 'up', variant: 'dry-inversion', seed: 7,
-}).visualSlope, 'down', 'legacy or future descents render downward rather than contradicting travel');
+}).visualSlope, 'up', 'stored descent selections migrate to the climb instead of preserving the reversed event');
 
 // ── LONG ENOUGH TO MEAN SOMETHING, NOT LONGER ────────────────────────────────
 //

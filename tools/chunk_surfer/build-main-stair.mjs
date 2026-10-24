@@ -1,12 +1,18 @@
 // Build the grand open-well main stair as one deterministic, project-native
-// hero mesh. Collision stays in the authored floorplan; this pack supplies the
-// construction a half-metre height field cannot express: real 280mm treads,
-// slab/stringer depth, nosings, balustrades, oak rails and opal fittings.
+// hero mesh, from the contract in src/data/main-stair-geometry.js.
+//
+// Revision 4: the stair stands in a square stairwell where this mesh is the
+// only thing drawn (the plan grid inside it is one column of air). So it builds
+// everything there: two closed runs of curved treads with flush brass nosings
+// and a helicoid soffit, both landings as slabs at the heights the plan grid
+// draws, continuous oak rails eased through every change of pitch, the guards
+// along the stairwell's open floor edges, and the two opal landing lights.
+// Collision stays in the authored floorplan.
 
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { MAIN_STAIR_GEOMETRY } from '../../src/data/main-stair-geometry.js';
+import { MAIN_STAIR_GEOMETRY, mainStairBuiltLandings, mainStairGuards, offsetFromFlights, gridDrawnHeight } from '../../src/data/main-stair-geometry.js';
 
 const ROOT=path.resolve(import.meta.dirname,'../..');
 const OUT_DIR=path.join(ROOT,'public/assets');
@@ -103,7 +109,7 @@ function addSphere(m,c,r,mat,rings=6,segments=12){
 // A continuous swept profile, rather than a chain of overlapping square boxes.
 // Shared rings give the oak a legible rounded grip and the iron continuous
 // normals. Caps are explicit; opaque construction stays single sided.
-function addProfiledSweep(points,halfWidth,halfHeight,mat,sides=6,radialFrame=false){
+function addProfiledSweep(points,halfWidth,halfHeight,mat,sides=6,radialFrame=false,scaleAt=()=>1){
   const g=group(m,mat),rows=[],normals=[];
   for(let i=0;i<points.length;i++){
     const a=points[Math.max(0,i-1)],b=points[Math.min(points.length-1,i+1)];
@@ -116,11 +122,11 @@ function addProfiledSweep(points,halfWidth,halfHeight,mat,sides=6,radialFrame=fa
       side=v.map(q=>q/n);
     }
     const up=[t[1]*side[2]-t[2]*side[1],t[2]*side[0]-t[0]*side[2],t[0]*side[1]-t[1]*side[0]];
-    const row=[],ns=[];
+    const row=[],ns=[],scale=scaleAt(i),width=halfWidth*scale,height=halfHeight*scale;
     for(let j=0;j<sides;j++){
       const angle=j/sides*Math.PI*2,c=Math.cos(angle),s=Math.sin(angle);
-      const p=points[i].map((v,k)=>v+side[k]*c*halfWidth+up[k]*s*halfHeight);
-      const n=side.map((v,k)=>v*c/halfWidth+up[k]*s/halfHeight),nl=Math.hypot(...n)||1;
+      const p=points[i].map((v,k)=>v+side[k]*c*width+up[k]*s*height);
+      const n=side.map((v,k)=>v*c/width+up[k]*s/height),nl=Math.hypot(...n)||1;
       row.push(g.positions.length/3);ns.push(n.map(v=>v/nl));g.positions.push(...p);g.normals.push(...ns.at(-1));
     }
     rows.push(row);normals.push(ns);
@@ -151,161 +157,329 @@ const ORIGIN=STAIR.center;
 const local=(x,y,z)=>[x-ORIGIN.x,y,z-ORIGIN.z];
 const m=mesh('main_open_well_stair');
 
-const CENTRE=STAIR.center,INNER=STAIR.innerRadiusM,OUTER=STAIR.outerRadiusM;
-const point=(r,a,y)=>local(CENTRE.x+Math.sin(a)*r,y,CENTRE.z-Math.cos(a)*r);
+const CENTRE=STAIR.center,INNER=STAIR.innerRadiusM,OUTER=STAIR.outerRadiusM,DEG=Math.PI/180;
+const RAIL=STAIR.handrailHeightM;
+const point=(r,deg,y)=>local(CENTRE.x+Math.sin(deg*DEG)*r,y,CENTRE.z-Math.cos(deg*DEG)*r);
 const normal=(a,b,c)=>{const u=b.map((q,i)=>q-a[i]),v=c.map((q,i)=>q-a[i]),n=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]],d=Math.hypot(...n)||1;return n.map(q=>q/d);};
-function addQuad(points,mat,want=null){
-  const p=[...points],n=normal(p[0],p[1],p[2]);
-  if(want&&n[0]*want[0]+n[1]*want[1]+n[2]*want[2]<0){p.reverse();n.splice(0,3,...normal(p[0],p[1],p[2]));}
-  const g=group(m,mat),base=g.positions.length/3;for(const q of p){g.positions.push(...q);g.normals.push(...n);}g.indices.push(base,base+1,base+2,base,base+2,base+3);
+const unit=(v)=>{const l=Math.hypot(...v)||1;return v.map((q)=>q/l);};
+
+// One triangle with per-corner shading normals. The winding is set from the
+// normals, so every face is front-facing on the side it is shaded for.
+// Corners with the same position and normal share one vertex, so a smooth
+// surface is one indexed sheet and the pack stays inside its byte budget.
+const shared=new Map();
+function sharedVertex(g,mat,p,n){
+  const k=`${mat}|${p.map((v)=>Math.round(v*1e5)).join(',')}|${n.map((v)=>Math.round(v*1e4)).join(',')}`;
+  let i=shared.get(k);
+  if(i==null){i=g.positions.length/3;g.positions.push(...p);g.normals.push(...n);shared.set(k,i);}
+  return i;
 }
-function addTri(points,mat,want=null){
-  const p=[...points],n=normal(p[0],p[1],p[2]);
-  if(want&&n[0]*want[0]+n[1]*want[1]+n[2]*want[2]<0){p.reverse();n.splice(0,3,...normal(p[0],p[1],p[2]));}
-  const g=group(m,mat),base=g.positions.length/3;for(const q of p){g.positions.push(...q);g.normals.push(...n);}g.indices.push(base,base+1,base+2);
+function shadedTri(mat,a,b,c,na,nb,nc){
+  const g=group(m,mat),geo=normal(a,b,c),want=[0,1,2].map((k)=>na[k]+nb[k]+nc[k]);
+  let p=[a,b,c],n=[na,nb,nc];
+  if(geo[0]*want[0]+geo[1]*want[1]+geo[2]*want[2]<0){p=[a,c,b];n=[na,nc,nb];}
+  g.indices.push(...p.map((q,i)=>sharedVertex(g,mat,q,n[i])));
 }
-// A flight is one stepped shell: terrazzo owns only the upward tread faces;
-// concrete owns risers, side faces and a continuous sloping soffit. The previous
-// pair of complete prisms overlapped by five millimetres on every tread and drew
-// two coincident internal surfaces, which is the source of the broken polygons.
-function addCurvedFlight({a0,a1,fromH,toH,rises}){
-  const da=(a1-a0)/rises,riser=(toH-fromH)/rises,slab=STAIR.slabDepthM;
-  for(let i=0;i<rises;i++){
-    const start=a0+da*i,end=start+da,top=fromH+riser*i;
-    // slabDepth is the MINIMUM concrete below the nose, not the thickness at
-    // the high end of the pitched soffit. Previously only 7mm remained beneath
-    // some nosings: the stair read as thin folded wedges instead of a flight.
-    const under0=fromH-slab+riser*(i-1);
-    const under1=fromH-slab+riser*i;
-    const slices=Math.max(3,Math.ceil(Math.abs(da)/.04));
-    for(let s=0;s<slices;s++){
-      const u0=s/slices,u1=(s+1)/slices,b0=start+da*u0,b1=start+da*u1,mid=(b0+b1)/2;
-      const low0=under0+(under1-under0)*u0,low1=under0+(under1-under0)*u1;
-      addQuad([point(INNER,b0,top),point(OUTER,b0,top),point(OUTER,b1,top),point(INNER,b1,top)],MAT.terrazzo,[0,1,0]);
-      addQuad([point(INNER,b1,low1),point(OUTER,b1,low1),point(OUTER,b0,low0),point(INNER,b0,low0)],MAT.concrete,[0,-1,0]);
-      addQuad([point(OUTER,b0,low0),point(OUTER,b1,low1),point(OUTER,b1,top),point(OUTER,b0,top)],MAT.concrete,[Math.sin(mid),0,-Math.cos(mid)]);
-      addQuad([point(INNER,b1,low1),point(INNER,b0,low0),point(INNER,b0,top),point(INNER,b1,top)],MAT.concrete,[-Math.sin(mid),0,Math.cos(mid)]);
-    }
-    addQuad([point(INNER,end,top),point(OUTER,end,top),point(OUTER,end,top+riser),point(INNER,end,top+riser)],MAT.concrete);
-    addProfiledSweep([point(INNER-.005,end,top+.007),point(OUTER+.005,end,top+.007)],.014,.006,MAT.brass,6);
+const shadedQuad=(mat,a,b,c,d,na,nb,nc,nd)=>{shadedTri(mat,a,b,c,na,nb,nc);shadedTri(mat,a,c,d,na,nc,nd);};
+const flat=(mat,pts,n)=>{for(let i=1;i<pts.length-1;i++)shadedTri(mat,pts[0],pts[i],pts[i+1],n,n,n);};
+const UP=[0,1,0],DOWN=[0,-1,0];
+const radialN=(deg,sign=1)=>[Math.sin(deg*DEG)*sign,0,-Math.cos(deg*DEG)*sign];
+const tangentN=(deg,sign=1)=>[Math.cos(deg*DEG)*sign,0,Math.sin(deg*DEG)*sign];
+
+// ── THE TWO RUNS ────────────────────────────────────────────────────────────
+//
+// Each pair of half-turns that meet end to end is one helix and one closed
+// solid: a tread top with a flush brass nosing at its front edge, a riser up
+// to the next, cylindrical sides, and a helicoid soffit parallel to the pitch
+// line with the slab depth under every nose. Every face of the solid is built
+// on one shared lattice (RADIAL rings by the tread's columns), so no vertex
+// ever lands in the middle of a neighbour's edge.
+const RADIAL=4,SLICES=5,NOSING=STAIR.nosingWidthM,SLAB=STAIR.slabDepthM;
+const rings=Array.from({length:RADIAL+1},(_,j)=>INNER+(OUTER-INNER)*j/RADIAL);
+function buildRun(flights){
+  const treads=[];
+  for(const f of flights){
+    const rise=(f.toH-f.fromH)/f.rises,da=f.sweep/f.rises/DEG,a0=f.theta0/DEG;
+    for(let i=0;i<f.rises;i++)treads.push({s:a0+da*i,e:a0+da*(i+1),h:f.fromH+rise*i,f});
   }
-  for(const r of[INNER,OUTER]){
-    // Equal physical spacing on each radius avoids the old dense inner cage.
-    const posts=Math.ceil(Math.abs(a1-a0)*r/.134);
-    for(let i=0;i<=posts;i++){
-      const t=i/posts,a=a0+(a1-a0)*t,step=Math.min(rises-1,Math.floor(t*rises)),base=fromH+riser*step;
-      const postTop=fromH+(toH-fromH)*t+STAIR.handrailHeightM-.027;
-      addCylinder(m,point(r,a,(base+postTop)/2),.014,postTop-base,MAT.steel,6);
+  const flightAt=(deg)=>flights.find((f)=>deg<=f.theta0/DEG+f.sweep/DEG+1e-9)||flights.at(-1);
+  const soffit=(deg)=>{const f=flightAt(deg),rise=(f.toH-f.fromH)/f.rises,da=f.sweep/f.rises/DEG;return f.fromH+(deg-f.theta0/DEG)/da*rise-rise-SLAB;};
+  const soffitN=(r,deg)=>{
+    // S(r,θ) = (r sinθ, soffit(θ), -r cosθ); n = ∂S/∂r × ∂S/∂θ, downward.
+    const f=flightAt(deg),k=(f.toH-f.fromH)/f.sweep,s=Math.sin(deg*DEG),c=Math.cos(deg*DEG);
+    const dr=[s,0,-c],dt=[r*c,k,r*s],n=unit([dr[1]*dt[2]-dr[2]*dt[1],dr[2]*dt[0]-dr[0]*dt[2],dr[0]*dt[1]-dr[1]*dt[0]]);
+    return n[1]>0?n.map((v)=>-v):n;
+  };
+  // Column bearings for tread t on ring j: its nose line, the back of the
+  // nosing strip (a constant 40 mm of arc on every ring), then SLICES columns
+  // to its heel.
+  const cols=(t,j)=>{const b=t.s+NOSING/rings[j]/DEG;return[t.s,...Array.from({length:SLICES+1},(_,i)=>b+(t.e-b)*i/SLICES)];};
+  treads.forEach((t,k)=>{
+    const prev=treads[k-1];
+    for(let j=0;j<RADIAL;j++){
+      const ca=cols(t,j),cb=cols(t,j+1);
+      // Nosing, then the tread.
+      flat(MAT.brass,[point(rings[j],ca[0],t.h),point(rings[j],ca[1],t.h),point(rings[j+1],cb[1],t.h),point(rings[j+1],cb[0],t.h)].reverse(),UP);
+      for(let i=1;i<=SLICES;i++)flat(MAT.terrazzo,[point(rings[j],ca[i],t.h),point(rings[j],ca[i+1],t.h),point(rings[j+1],cb[i+1],t.h),point(rings[j+1],cb[i],t.h)].reverse(),UP);
+      // Soffit, on the same columns, with the helicoid's own normals.
+      for(let i=0;i<=SLICES;i++){
+        const q=[[rings[j],ca[i]],[rings[j],ca[i+1]],[rings[j+1],cb[i+1]],[rings[j+1],cb[i]]];
+        shadedQuad(MAT.concrete,...q.map(([r,d])=>point(r,d,soffit(d))),...q.map(([r,d])=>soffitN(r,d)));
+      }
+      // The riser up from the previous tread, and the run's start and end caps.
+      if(prev)flat(MAT.concrete,[point(rings[j],t.s,prev.h),point(rings[j+1],t.s,prev.h),point(rings[j+1],t.s,t.h),point(rings[j],t.s,t.h)],tangentN(t.s,-1));
+      else flat(MAT.concrete,[point(rings[j],t.s,soffit(t.s)),point(rings[j+1],t.s,soffit(t.s)),point(rings[j+1],t.s,t.h),point(rings[j],t.s,t.h)],tangentN(t.s,-1));
+      if(k===treads.length-1)flat(MAT.concrete,[point(rings[j],t.e,soffit(t.e)),point(rings[j+1],t.e,soffit(t.e)),point(rings[j+1],t.e,t.h),point(rings[j],t.e,t.h)],tangentN(t.e,1));
     }
-    const divisions=Math.ceil(Math.abs(a1-a0)*r/.12),path=Array.from({length:divisions+1},(_,i)=>{
-      const t=i/divisions;return point(r,a0+(a1-a0)*t,fromH+(toH-fromH)*t+STAIR.handrailHeightM);
-    });
-    addProfiledSweep(path,.048,.033,MAT.oak,8);
-    addProfiledSweep(path.map(p=>[p[0],p[1]-.23,p[2]]),.014,.018,MAT.steel,4);
-    addProfiledSweep(path.map(p=>[p[0],p[1]-1.16,p[2]]),.035,.085,MAT.steel,4);
-    if(r===OUTER){
-      const panels=Math.ceil(Math.abs(a1-a0)*r/.9);
-      for(let i=0;i<panels;i++){
-        // A restrained opposed S, tied into the rails, is one forged motif per
-        // structural panel. It reads at walking distance without screen noise.
-        for(const sign of[-1,1]){
-          const curve=Array.from({length:13},(_,j)=>{
-            const u=j/12,t=(i+.5+.32*Math.sin(u*Math.PI*2)*sign)/panels;
-            return point(r,a0+(a1-a0)*t,fromH+(toH-fromH)*t+.24+u*.51);
-          });
-          addProfiledSweep(curve,.011,.011,MAT.steel,4,true);
-        }
+    // The two cylindrical sides. The first column carries the previous tread's
+    // height as a third vertex, where that tread's side and this riser meet.
+    for(const [j,sign] of[[0,-1],[RADIAL,1]]){
+      const r=rings[j],c=cols(t,j);
+      for(let i=0;i<=SLICES;i++){
+        const B0=point(r,c[i],soffit(c[i])),B1=point(r,c[i+1],soffit(c[i+1])),T0=point(r,c[i],t.h),T1=point(r,c[i+1],t.h);
+        const n0=radialN(c[i],sign),n1=radialN(c[i+1],sign);
+        if(i===0&&prev){const M0=point(r,c[0],prev.h);
+          shadedTri(MAT.concrete,B0,B1,T1,n0,n1,n1);shadedTri(MAT.concrete,B0,T1,M0,n0,n1,n0);shadedTri(MAT.concrete,M0,T1,T0,n0,n1,n0);}
+        else shadedQuad(MAT.concrete,B0,B1,T1,T0,n0,n1,n1,n0);
       }
     }
+  });
+  return{treads,soffit};
+}
+const lowerRun=buildRun(STAIR.flights.slice(0,2)),upperRun=buildRun(STAIR.flights.slice(2,4));
+const allTreads=[...lowerRun.treads,...upperRun.treads];
+// The walking surface under a bearing on ONE run: the two runs share bearings
+// from 100° to 360°, so a run has to be named.
+const surfaceAt=(treads,deg)=>{const t=treads.find((q)=>deg>=q.s-1e-9&&deg<q.e-1e-9);return t?t.h:null;};
+
+// ── THE LANDINGS ────────────────────────────────────────────────────────────
+//
+// Slabs made from the contract's outlines at the height the plan grid draws
+// that floor, so they meet the halls flush. Where a slab stands against a
+// flight it keeps a millimetre back, so the slab and the run each stay their
+// own closed solid instead of sharing an edge between four faces.
+const LANDINGS=mainStairBuiltLandings(),GAP=.001;
+const polarOf=([x,z])=>{let a=Math.atan2(x-CENTRE.x,-(z-CENTRE.z))/DEG;if(a<0)a+=360;return{r:Math.hypot(x-CENTRE.x,z-CENTRE.z),a};};
+function slabOutline(landing){
+  let out=offsetFromFlights(landing.slab,landing.flightEdges,GAP);
+  out=out.filter((p,i)=>Math.hypot(p[0]-out[(i+out.length-1)%out.length][0],p[1]-out[(i+out.length-1)%out.length][1])>1e-9);
+  // Drop vertices that lie on a straight run between their neighbours, one at
+  // a time so a removal never changes the test for the next.
+  for(let changed=true;changed;){
+    changed=false;
+    for(let i=0;i<out.length;i++){
+      const a=out[(i+out.length-1)%out.length],p=out[i],b=out[(i+1)%out.length];
+      if(Math.abs((p[0]-a[0])*(b[1]-a[1])-(p[1]-a[1])*(b[0]-a[0]))<1e-10){out.splice(i,1);changed=true;break;}
+    }
   }
-  for(const [a,h]of[[a0,fromH],[a1,toH]])for(const r of[INNER,OUTER]){
-    addCylinder(m,point(r,a,h+.56),.07,1.12,MAT.steel,8);addSphere(m,point(r,a,h+1.16),.095,MAT.brass,5,10);
+  return out;
+}
+function earClip(poly){
+  const area=poly.reduce((s,p,i)=>{const q=poly[(i+1)%poly.length];return s+p[0]*q[1]-q[0]*p[1];},0);
+  const idx=poly.map((_,i)=>i);if(area<0)idx.reverse();
+  const cross=(a,b,c)=>(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]),out=[];
+  const inside=(p,a,b,c)=>cross(a,b,p)>=-1e-12&&cross(b,c,p)>=-1e-12&&cross(c,a,p)>=-1e-12;
+  let guard=0;
+  while(idx.length>3&&guard++<100000){
+    let clipped=false;
+    for(let i=0;i<idx.length;i++){
+      const ia=idx[(i+idx.length-1)%idx.length],ib=idx[i],ic=idx[(i+1)%idx.length];
+      if(cross(poly[ia],poly[ib],poly[ic])<=1e-12)continue;
+      if(idx.some((j)=>j!==ia&&j!==ib&&j!==ic&&inside(poly[j],poly[ia],poly[ib],poly[ic])))continue;
+      out.push([ia,ib,ic]);idx.splice(i,1);clipped=true;break;
+    }
+    if(!clipped)throw new Error('landing outline could not be triangulated');
+  }
+  out.push([...idx]);
+  return out;
+}
+for(const landing of LANDINGS){
+  const outline=slabOutline(landing),top=landing.drawnHeight,bottom=top-STAIR.landingSlabDepthM;
+  for(const [a,b,c] of earClip(outline)){
+    flat(MAT.terrazzo,[local(outline[a][0],top,outline[a][1]),local(outline[b][0],top,outline[b][1]),local(outline[c][0],top,outline[c][1])],UP);
+    flat(MAT.concrete,[local(outline[a][0],bottom,outline[a][1]),local(outline[c][0],bottom,outline[c][1]),local(outline[b][0],bottom,outline[b][1])],DOWN);
+  }
+  const area=outline.reduce((s,p,i)=>{const q=outline[(i+1)%outline.length];return s+p[0]*q[1]-q[0]*p[1];},0);
+  for(let i=0;i<outline.length;i++){
+    const p=outline[i],q=outline[(i+1)%outline.length],dx=q[0]-p[0],dz=q[1]-p[1],len=Math.hypot(dx,dz)||1;
+    const out=area>0?[dz/len,0,-dx/len]:[-dz/len,0,dx/len];
+    // The edge on the open well is a cylinder: shade it as one.
+    const onWell=Math.abs(polarOf(p).r-INNER)<1e-6&&Math.abs(polarOf(q).r-INNER)<1e-6;
+    const np=onWell?radialN(polarOf(p).a,-1):out,nq=onWell?radialN(polarOf(q).a,-1):out;
+    shadedQuad(MAT.concrete,local(p[0],bottom,p[1]),local(q[0],bottom,q[1]),local(q[0],top,q[1]),local(p[0],top,p[1]),np,nq,nq,np);
   }
 }
 
-for(const flight of STAIR.flights)addCurvedFlight({
-  a0:flight.theta0,a1:flight.theta0+flight.sweep,
-  fromH:flight.fromH,toH:flight.toH,rises:flight.rises,
+// The curtail is a rounded enlargement of the existing bottom tread, not an
+// extra riser. It stays outside the 2.65 m walking ribbon, within the existing
+// 3 m collision envelope. Like the landings its finish meets the grid's DRAWN
+// ground (+31 mm); no navigation height, first rise or approach is changed.
+// The one-millimetre seam keeps the extension and original run closed solids.
+const cubic=(a,b,c,d,n=18)=>Array.from({length:n+1},(_,i)=>{
+  const t=i/n,u=1-t;return a.map((v,k)=>u*u*u*v+3*u*u*t*b[k]+3*u*t*t*c[k]+t*t*t*d[k]);
 });
-
-// Floor 1 gets a short stair-owned fan from the first radial edge toward the
-// immutable hall centre. It corrects the visible termination angle without
-// replacing, resizing or cutting a single room cell.
-function addFloor1Apron(){
-  const angle=STAIR.flights[0].theta0;
-  const startInner=[CENTRE.x+Math.sin(angle)*INNER,CENTRE.z-Math.cos(angle)*INNER];
-  const startOuter=[CENTRE.x+Math.sin(angle)*OUTER,CENTRE.z-Math.cos(angle)*OUTER];
-  const startCenter=[(startInner[0]+startOuter[0])/2,(startInner[1]+startOuter[1])/2];
-  let dx=STAIR.floor1Aim.x-startCenter[0],dz=STAIR.floor1Aim.z-startCenter[1];
-  const length=Math.hypot(dx,dz)||1;dx/=length;dz/=length;
-  const apronLength=Math.min(1.35,length),end=[startCenter[0]+dx*apronLength,startCenter[1]+dz*apronLength];
-  const px=-dz,pz=dx,half=STAIR.widthM/2;
-  const endA=[end[0]+px*half,end[1]+pz*half],endB=[end[0]-px*half,end[1]-pz*half];
-  const top=.006,bottom=-STAIR.slabDepthM;
-  const sections=[],slices=6;
-  for(let i=0;i<=slices;i++){
-    const t=i/slices,cx=startCenter[0]+(end[0]-startCenter[0])*t,cz=startCenter[1]+(end[1]-startCenter[1])*t;
-    let sx=(1-t)*0+t*px,sz=(1-t)*-1+t*pz,sl=Math.hypot(sx,sz)||1;sx/=sl;sz/=sl;
-    sections.push({
-      topA:local(cx+sx*half,top,cz+sz*half),topB:local(cx-sx*half,top,cz-sz*half),
-      bottomA:local(cx+sx*half,bottom,cz+sz*half),bottomB:local(cx-sx*half,bottom,cz-sz*half),
-    });
-  }
-  for(let i=0;i<slices;i++){
-    const a=sections[i],b=sections[i+1];
-    addTri([a.topA,b.topA,b.topB],MAT.terrazzo,[0,1,0]);
-    addTri([a.topA,b.topB,a.topB],MAT.terrazzo,[0,1,0]);
-    addTri([a.bottomB,b.bottomB,b.bottomA],MAT.concrete,[0,-1,0]);
-    addTri([a.bottomB,b.bottomA,a.bottomA],MAT.concrete,[0,-1,0]);
-    addQuad([a.bottomA,b.bottomA,b.topA,a.topA],MAT.concrete);
-    addQuad([b.bottomB,a.bottomB,a.topB,b.topB],MAT.concrete);
-  }
-  const first=sections[0],last=sections.at(-1);
-  addQuad([first.bottomB,first.bottomA,first.topA,first.topB],MAT.concrete);
-  addQuad([last.bottomA,last.bottomB,last.topB,last.topA],MAT.concrete);
-  addBeam(m,local(endA[0],top+.018,endA[1]),local(endB[0],top+.018,endB[1]),.04,MAT.brass);
+const firstTread=lowerRun.treads[0],curtailTop=gridDrawnHeight(firstTread.h),curtailBottom=curtailTop-STAIR.slabDepthM;
+const curtailInnerR=OUTER+.001;
+const planAt=(r,a)=>[Math.sin(a*DEG)*r,-Math.cos(a*DEG)*r];
+const ca=planAt(curtailInnerR,firstTread.s),cb=planAt(curtailInnerR,firstTread.e);
+const curtailShoulder=planAt(2.77,firstTread.e);
+const curtailHeelOuter=planAt(2.77,-5),curtailHeelInner=planAt(curtailInnerR,-5);
+const curtailOutline=[
+  ...Array.from({length:13},(_,i)=>planAt(curtailInnerR,firstTread.s+(firstTread.e-firstTread.s)*i/12)),
+  curtailShoulder,
+  ...cubic(curtailShoulder,[.67,-2.78],[.60,-2.82],[.48,-2.84]).slice(1),
+  ...cubic([.48,-2.84],[.25,-3.00],[-.30,-3.01],[-.38,-2.87],24).slice(1),
+  ...cubic([-.38,-2.87],[-.53,-2.78],[-.43,-2.72],curtailHeelOuter).slice(1),
+  curtailHeelInner,
+  ...Array.from({length:9},(_,i)=>planAt(curtailInnerR,-5+5*i/8)).slice(1,-1),
+];
+for(const [a,b,c] of earClip(curtailOutline)){
+  flat(MAT.terrazzo,[a,b,c].map(i=>[curtailOutline[i][0],curtailTop,curtailOutline[i][1]]),UP);
+  flat(MAT.concrete,[c,b,a].map(i=>[curtailOutline[i][0],curtailBottom,curtailOutline[i][1]]),DOWN);
 }
-addFloor1Apron();
+const curtailArea=curtailOutline.reduce((s,p,i)=>{const q=curtailOutline[(i+1)%curtailOutline.length];return s+p[0]*q[1]-q[0]*p[1];},0);
+for(let i=0;i<curtailOutline.length;i++){
+  const p=curtailOutline[i],q=curtailOutline[(i+1)%curtailOutline.length],dx=q[0]-p[0],dz=q[1]-p[1],len=Math.hypot(dx,dz),sign=curtailArea>0?1:-1;
+  const n=[dz/len*sign,0,-dx/len*sign];
+  shadedQuad(MAT.concrete,[p[0],curtailBottom,p[1]],[q[0],curtailBottom,q[1]],[q[0],curtailTop,q[1]],[p[0],curtailTop,p[1]],n,n,n,n);
+}
 
-// The final radial edge lands in a real west-going gallery apron. Previously
-// the model stopped on a nose facing the south partition and left the turn to
-// an invisible logical seam. This head has one floor and two returned rails;
-// the two-metre mouth remains visibly and physically open to the loggia.
-function addAcademicHead(){
-  const top=10.008,bottom=9.78,x0=61.4,x1=65.7,z0=37,z1=39.45;
-  addQuad([local(x0,top,z0),local(x1,top,z0),local(x1,top,z1),local(x0,top,z1)],MAT.terrazzo,[0,1,0]);
-  addQuad([local(x0,bottom,z1),local(x1,bottom,z1),local(x1,bottom,z0),local(x0,bottom,z0)],MAT.concrete,[0,-1,0]);
-  addQuad([local(x0,bottom,z1),local(x1,bottom,z1),local(x1,top,z1),local(x0,top,z1)],MAT.concrete,[0,0,1]);
-  const f=STAIR.flights.at(-1),end=f.theta0+f.sweep;
-  const curves=[
-    [point(INNER,end,11),local(63.8,11,36.7),local(63.65,11,37.0),local(63.2,11,37.03),local(61.4,11,37.03)],
-    [point(OUTER,end,11),local(65.7,11,37.1),local(65.7,11,38.6),local(65.45,11,39.3),local(64.7,11,39.45),local(61.4,11,39.45)],
-  ];
-  // Cardinal cubic interpolation keeps the head rails smooth through the turn.
-  const smooth=(points)=>{
-    const out=[];
-    for(let i=0;i<points.length-1;i++){
-      const p0=points[Math.max(0,i-1)],p1=points[i],p2=points[i+1],p3=points[Math.min(points.length-1,i+2)];
-      const n=Math.max(5,Math.ceil(Math.hypot(...p2.map((v,k)=>v-p1[k]))/.12));
-      for(let j=0;j<n;j++){const t=j/n,t2=t*t,t3=t2*t;out.push(p1.map((v,k)=>.5*((2*v)+(-p0[k]+p2[k])*t+(2*p0[k]-5*v+4*p2[k]-p3[k])*t2+(-p0[k]+3*v-3*p2[k]+p3[k])*t3)));}
-    }
-    out.push(points.at(-1));return out;
-  };
-  for(const curve of curves){
-    const path=smooth(curve);addProfiledSweep(path,.048,.033,MAT.oak,8);
-    addProfiledSweep(path.map(p=>[p[0],p[1]-.23,p[2]]),.014,.018,MAT.steel,4);
-    let distance=0;
-    for(let i=1;i<path.length;i++){
-      distance+=Math.hypot(...path[i].map((v,k)=>v-path[i-1][k]));
-      if(distance<.13&&i<path.length-1)continue;distance=0;
-      const p=path[i];addCylinder(m,[p[0],10.49,p[2]],.014,.98,MAT.steel,6);
+// ── RAILS ───────────────────────────────────────────────────────────────────
+//
+// A handrail is a line one metre over the pitch line on a flight and over the
+// floor on a landing. The inner rail runs unbroken from the foot to the top,
+// round the well across both landings; the outer rails run the length of each
+// pair of half-turns. Every change of pitch is eased over 0.3 m either side.
+const RAIL_INSET=.05,POST_STEP=STAIR.balusterMaximumClearGapM+.028;
+function railPath(r,segments){
+  const step=.12/r/DEG,pts=[];
+  for(const seg of segments)for(let a=seg.from;a<=seg.to+1e-9;a+=step){
+    const at=Math.min(a,seg.to);if(pts.length&&Math.abs(pts.at(-1).a-at)<1e-9)continue;
+    pts.push({a:at,h:seg.rail(at),floor:seg.floor(at)});
+  }
+  const win=Math.round(.3/.12);
+  return pts.map((p,i)=>{let s=0,n=0;for(let k=Math.max(0,i-win);k<=Math.min(pts.length-1,i+win);k++){s+=pts[k].h;n++;}return{...p,h:s/n};});
+}
+const noseRail=(f)=>(a)=>{const rise=(f.toH-f.fromH)/f.rises,da=f.sweep/f.rises/DEG;return f.fromH+(a-f.theta0/DEG)/da*rise+RAIL;};
+const F=STAIR.flights,upperH=LANDINGS[0].drawnHeight,topH=LANDINGS[1].drawnHeight;
+const runSeg=(fs,treads)=>fs.map((f)=>({from:f.theta0/DEG,to:(f.theta0+f.sweep)/DEG,rail:noseRail(f),floor:(a)=>surfaceAt(treads,a)}));
+const f4Arrive=(F[3].theta0+F[3].sweep)/DEG;
+const innerRail=railPath(INNER+RAIL_INSET,[
+  ...runSeg(F.slice(0,2),lowerRun.treads),
+  {from:360,to:360+F[2].theta0/DEG,rail:()=>upperH+RAIL,floor:()=>upperH},
+  ...runSeg(F.slice(2,4),upperRun.treads).map((s)=>({...s,from:s.from+360,to:s.to+360,rail:(a)=>s.rail(a-360),floor:(a)=>s.floor(a-360)})),
+  {from:f4Arrive+360,to:F[3].theta0/DEG+720,rail:()=>topH+RAIL,floor:()=>topH},
+]);
+const outerRails=[railPath(OUTER-RAIL_INSET,runSeg(F.slice(0,2),lowerRun.treads)),railPath(OUTER-RAIL_INSET,runSeg(F.slice(2,4),upperRun.treads))];
+// A real plan volute: one inward coil, a rising neck, then the SAME swept oak
+// handrail. There is no capped joint or disconnected ornament at the first
+// newel. The coil occupies the unused outside strip; only its neck returns to
+// the existing rail line. Two subordinate iron supports stand on the curtail.
+const voluteRailStart=point(OUTER-RAIL_INSET,outerRails[0][0].a,outerRails[0][0].h);
+const voluteCenter=[-.27,-2.81],voluteTurns=1.15,voluteCoil=[];
+for(let i=0;i<=72;i++){
+  const t=i/72,a=Math.PI/2+(1-t)*Math.PI*2*voluteTurns,r=.022+(.11-.022)*t;
+  voluteCoil.push([voluteCenter[0]+Math.cos(a)*r,voluteRailStart[1]-.075*(1-t),voluteCenter[1]+Math.sin(a)*r]);
+}
+const voluteTail=voluteCoil.at(-1),voluteNeck=cubic(voluteTail,[voluteTail[0]+.13,voluteTail[1],voluteTail[2]],
+  [voluteRailStart[0]-.08,voluteRailStart[1]-.006,voluteRailStart[2]-.002],voluteRailStart,14);
+const volutePath=[...voluteCoil,...voluteNeck.slice(1,-1)];
+const scrollPanels=[];
+function buildRail(r,path,{volute=false,scrolls=false}={}){
+  const at=(p,dy=0)=>point(r,p.a,p.h+dy);
+  const oakPath=[...(volute?volutePath:[]),...path.map((p)=>at(p))];
+  addProfiledSweep(oakPath,.048,.033,MAT.oak,8,false,i=>volute&&i<voluteCoil.length?.34+.66*i/(voluteCoil.length-1):1);
+  addProfiledSweep(path.map((p)=>at(p,-.23)),.014,.018,MAT.steel,4);
+  // Balusters at equal physical spacing, never on a riser line.
+  let run=0;const posts=[];
+  for(let i=1;i<path.length;i++){
+    run+=.12;if(run<POST_STEP-1e-9)continue;
+    const p=path[i];let a=p.a%360;const riser=allTreads.some((t)=>Math.abs((t.s%360)-a)*DEG*r<.02);
+    if(riser)continue;run=0;
+    const floor=p.floor;if(floor==null)continue;
+    if(!clearOfNewels(point(r,p.a,0),floor))continue;
+    const topY=p.h-.03;addCylinder(m,point(r,p.a,(floor+topY)/2),.014,topY-floor,MAT.steel,6);posts.push(p);
+  }
+  // Paired C-scrolls form occasional iron panels BETWEEN existing balusters.
+  // Their ends meet those balusters; they carry no added gold or loose props.
+  if(scrolls)for(let i=1;i<posts.length-1;i+=5){
+    const a=posts[i],b=posts[i+1];if((b.a-a.a)*DEG*r>.32)continue;
+    for(const side of[0,1]){
+      const p=side?b:a,other=side?a:b,base=p.floor;
+      const pts=cubic([p.a,base+.22],[p.a+(other.a-p.a)*.90,base+.24],
+        [p.a+(other.a-p.a)*.90,base+.66],[p.a,base+.68],16)
+        .map(([angle,y])=>point(r,angle,y));
+      addProfiledSweep(pts,.008,.008,MAT.steel,4,true);scrollPanels.push({side,fromA:a.a,toA:b.a,floor:base});
     }
   }
-  // Short fan bridges the radial nose to the level head without a square lip.
-  const a=point(INNER,end,top),b=point(OUTER,end,top);
-  addQuad([a,b,local(65.7,top,37),local(63.65,top,37)],MAT.terrazzo,[0,1,0]);
 }
-addAcademicHead();
+// Newels where a rail starts or stops: never two in one place. Balusters and
+// guard posts keep clear of them, so no two posts share a footing.
+const newels=[];
+const newel=(r,a,floor)=>{
+  const p=point(r,a,0);newels.push({x:p[0],z:p[2],floor});
+  // A continuous turned oak post with two inset bronze collars. Its foot has
+  // the same 140 mm diameter and centre as the previous steel newel.
+  const profile=[[0,.07],[.11,.07],[.14,.07],[.17,.056],[.24,.048],[.31,.060],[.36,.052],[.77,.052],[.82,.065],[.86,.065],[.89,.053],[.98,.053],[1.06,.070]];
+  const sides=12;
+  for(let i=0;i<profile.length-1;i++){
+    const [h0,r0]=profile[i],[h1,r1]=profile[i+1],slope=(r1-r0)/(h1-h0),mat=i===1||i===8?MAT.brass:MAT.oak;
+    for(let j=0;j<sides;j++){
+      const a0=j/sides*Math.PI*2,a1=(j+1)/sides*Math.PI*2;
+      const pos=(rad,h,angle)=>[p[0]+Math.cos(angle)*rad,floor+h,p[2]+Math.sin(angle)*rad];
+      const norm=(angle)=>unit([Math.cos(angle),-slope,Math.sin(angle)]),n0=norm(a0),n1=norm(a1);
+      shadedQuad(mat,pos(r0,h0,a0),pos(r0,h0,a1),pos(r1,h1,a1),pos(r1,h1,a0),n0,n1,n1,n0);
+    }
+  }
+  for(const [row,n] of[[profile[0],DOWN],[profile.at(-1),UP]]){
+    const [h,rad]=row,center=[p[0],floor+h,p[2]];
+    for(let j=0;j<sides;j++)flat(MAT.oak,[center,[p[0]+Math.cos(j/sides*Math.PI*2)*rad,floor+h,p[2]+Math.sin(j/sides*Math.PI*2)*rad],
+      [p[0]+Math.cos((j+1)/sides*Math.PI*2)*rad,floor+h,p[2]+Math.sin((j+1)/sides*Math.PI*2)*rad]],n);
+  }
+  addSphere(m,point(r,a,floor+1.12),.075,MAT.brass,6,12);
+};
+const clearOfNewels=(p,floor)=>newels.every((n)=>Math.abs(n.floor-floor)>.05||Math.hypot(n.x-p[0],n.z-p[2])>.12);
+newel(INNER+RAIL_INSET,0,0);newel(OUTER-RAIL_INSET,0,0);
+newel(OUTER-RAIL_INSET,360,upperH);newel(OUTER-RAIL_INSET,F[2].theta0/DEG,upperH);
+newel(OUTER-RAIL_INSET,f4Arrive,topH);newel(INNER+RAIL_INSET,F[3].theta0/DEG,topH);
+buildRail(INNER+RAIL_INSET,innerRail);
+outerRails.forEach((path,i)=>buildRail(OUTER-RAIL_INSET,path,{volute:i===0,scrolls:true}));
+const voluteSupports=[];
+for(const i of[30,56]){
+  const p=voluteCoil[i],t=unit(volutePath[i+1].map((v,k)=>v-volutePath[i-1][k]));
+  const scale=.34+.66*i/(voluteCoil.length-1),top=p[1]-.033*scale*Math.hypot(t[0],t[2])+.002;
+  addCylinder(m,[p[0],(curtailTop+top)/2,p[2]],.014,top-curtailTop,MAT.steel,6);
+  voluteSupports.push({x:p[0],z:p[2],bottom:curtailTop,top});
+}
+
+// ── GUARDS ──────────────────────────────────────────────────────────────────
+//
+// Along every floor edge that meets the stairwell's void. Each runs three
+// centimetres onto the floor it guards, so its posts stand on something.
+const W=STAIR.stairwell;
+const inPolygon=([x,z],poly)=>{let c=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const [xi,zi]=poly[i],[xj,zj]=poly[j];if((zi>z)!==(zj>z)&&x<(xj-xi)*(z-zi)/(zj-zi)+xi)c=!c;}return c;};
+const onFloor=([x,z],height)=>{
+  const slab=LANDINGS.find((l)=>Math.abs(l.drawnHeight-height)<1e-6);
+  return(slab&&inPolygon([x,z],slab.slab))||x<W.x0||x>W.x1||z<W.z0||z>W.z1;
+};
+for(const guard of mainStairGuards()){
+  const pts=[],corners=[];
+  for(let i=0;i<guard.path.length-1;i++){
+    const a=guard.path[i],b=guard.path[i+1],dx=b[0]-a[0],dz=b[1]-a[1],len=Math.hypot(dx,dz);
+    let n=[-dz/len,dx/len];const mid=[(a[0]+b[0])/2,(a[1]+b[1])/2];
+    if(!onFloor([mid[0]+n[0]*.03,mid[1]+n[1]*.03],guard.height))n=n.map((v)=>-v);
+    const count=Math.max(1,Math.ceil(len/POST_STEP));
+    for(let k=0;k<=count;k++){if(k===0&&i>0)continue;const t=k/count;pts.push([a[0]+dx*t+n[0]*.03,a[1]+dz*t+n[1]*.03]);}
+    if(i===0)corners.push([a[0]+n[0]*.03,a[1]+n[1]*.03]);corners.push([b[0]+n[0]*.03,b[1]+n[1]*.03]);
+  }
+  addProfiledSweep(corners.map(([x,z])=>local(x,guard.height+RAIL,z)),.048,.033,MAT.oak,8);
+  addProfiledSweep(corners.map(([x,z])=>local(x,guard.height+.1,z)),.02,.02,MAT.steel,4);
+  pts.forEach(([x,z],i)=>{
+    if(!clearOfNewels(local(x,0,z),guard.height))return;
+    if(i===0||i===pts.length-1){addCylinder(m,local(x,guard.height+.5,z),.035,1,MAT.steel,8);return;}
+    addCylinder(m,local(x,guard.height+.5-.015,z),.014,.97,MAT.steel,6);
+  });
+}
 
 // Restrained landing lights sit outside the well instead of plugging its view.
 for(const [y,z] of[[8.85,36],[13.25,35.5]]){
@@ -336,7 +510,26 @@ fs.mkdirSync(OUT_DIR,{recursive:true});fs.writeFileSync(OUT,Buffer.concat([head,
 
 let triangles=0,vertices=0;const[lo,hi]=bounds([...m.groups.values()].flatMap(g=>g.positions));
 for(const g of m.groups.values()){triangles+=g.indices.length/3;vertices+=g.positions.length/3;}
-const stats={generatedAt:new Date().toISOString(),bytes:total,totalTriangles:triangles,design:{geometryRevision:STAIR.revision,finishRevision:1,curvilinear:true,navigationMode:'analytic-helix',halfTurnFlights:STAIR.flights.length,flightWidthM:STAIR.widthM,openWellWidthM:STAIR.innerRadiusM*2,lowerRisers:STAIR.flights[0].rises+STAIR.flights[1].rises,upperRisers:STAIR.flights[2].rises+STAIR.flights[3].rises,goingM:STAIR.goingM,handrailHeightM:STAIR.handrailHeightM,maximumBalusterClearGapM:STAIR.balusterMaximumClearGapM,minimumSoffitDepthM:STAIR.slabDepthM,profiledOakRails:true,physicalBalusterSpacing:true,academicHead:{floorM:10,exit:'west',mouthWidthM:2,wellPreserved:true},coplanarFinishPrisms:0,doubleSidedOpaqueMaterials:0,floor1Aim:[STAIR.floor1Aim.x,STAIR.floor1Aim.z]},meshes:{main_open_well_stair:{triangles,vertices,bounds:{min:lo,max:hi}}}};
+const stats={generatedAt:new Date().toISOString(),bytes:total,totalTriangles:triangles,design:{
+  geometryRevision:STAIR.revision,finishRevision:3,curvilinear:true,navigationMode:'analytic-helix',
+  halfTurnFlights:STAIR.flights.length,flightWidthM:STAIR.widthM,openWellWidthM:STAIR.innerRadiusM*2,
+  lowerRisers:STAIR.flights[0].rises+STAIR.flights[1].rises,upperRisers:STAIR.flights[2].rises+STAIR.flights[3].rises,
+  goingM:STAIR.goingM,handrailHeightM:STAIR.handrailHeightM,maximumBalusterClearGapM:STAIR.balusterMaximumClearGapM,
+  minimumSoffitDepthM:STAIR.slabDepthM,profiledOakRails:true,physicalBalusterSpacing:true,continuousInnerRail:true,
+  nosings:{placement:'front edge, flush',widthM:STAIR.nosingWidthM},
+  stairwell:{...STAIR.stairwell},
+  builtLandings:LANDINGS.map((l)=>({id:l.id,floorM:l.height,drawnM:+l.drawnHeight.toFixed(4),slabDepthM:STAIR.landingSlabDepthM})),
+  guards:mainStairGuards().map((g)=>g.id),
+  joinery:{
+    style:'restrained bourgeois oak, bronze collars and iron scroll panels',
+    curtail:{firstTreadHeightM:firstTread.h,drawnCapHeightM:curtailTop,slabDepthM:STAIR.slabDepthM,outline:curtailOutline,walkingOuterRadiusM:OUTER,maximumRadiusM:Math.max(...curtailOutline.map(p=>Math.hypot(...p)))},
+    volute:{turns:voluteTurns,tipProfileScale:.34,coil:voluteCoil,neck:voluteNeck,railJoin:voluteRailStart,supports:voluteSupports,continuousSweep:true},
+    newels:newels.map(n=>({...n,maximumFootRadiusM:.07,finish:'turned oak with bronze collars'})),
+    scrollPanels:scrollPanels.length,
+    caracole:'existing open-well winding helix, emphasised by its continuous inner oak rail',
+  },
+  coplanarFinishPrisms:0,doubleSidedOpaqueMaterials:0,floor1Aim:[STAIR.floor1Aim.x,STAIR.floor1Aim.z]},
+  meshes:{main_open_well_stair:{triangles,vertices,bounds:{min:lo,max:hi}}}};
 fs.writeFileSync(STATS,JSON.stringify(stats,null,2)+'\n');
 const sha256=crypto.createHash('sha256').update(fs.readFileSync(OUT)).digest('hex');
 const credits={pack:{filename:path.basename(OUT),author:'Chunk Surfer project',source:'tools/chunk_surfer/build-main-stair.mjs',license:'project source',sha256,triangles,bytes:total,modifications:'Project-native deterministic geometry; metres, Y-up, centred on the physical main stair hall.'},meshes:[{name:'main_open_well_stair',bounds:{min:lo,max:hi},triangles,provenance:{source:'tools/chunk_surfer/build-main-stair.mjs',origin:'project-native procedural geometry',license:'project source'}}]};
