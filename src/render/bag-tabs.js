@@ -1,13 +1,14 @@
-// The field case's four momentary screen selectors. One source of geometry
+// The field case's momentary screen selectors. One source of geometry
 // for rendering and pointer picking; changing screens never latches a key.
 export const BAG_TABS_HEIGHT = 4.8;
 export const BAG_TAB_CAP_HEIGHT = 2.5;
 
 export const BAG_TAB_MATERIALS = Object.freeze({
-  kit: Object.freeze({ label: 'INVENTORY', color: 'amber' }),
+  kit: Object.freeze({ label: 'INVENTORY', shortLabel: 'KIT', color: 'amber' }),
   map: Object.freeze({ label: 'MAP', color: 'blue' }),
   sheets: Object.freeze({ label: 'SHEETS', color: 'red' }),
   skills: Object.freeze({ label: 'SKILLS', color: 'green' }),
+  journal: Object.freeze({ label: 'JOURNAL', shortLabel: 'JOURNAL', color: 'white' }),
 });
 
 export function bagTabRegions(model, layout) {
@@ -26,7 +27,7 @@ export function bagTabRegions(model, layout) {
       id: `bag:tab:${section.id}`,
       controlId: `bag:tab:${section.id}`,
       sectionId: section.id,
-      label: material.label,
+      label: width < 10 ? material.shortLabel || material.label : material.label,
       color: material.color,
       countLabel: String(section.countLabel ?? ''),
       x: left, y: strip.y, w: width, h: strip.compact ? 1.7 : BAG_TAB_CAP_HEIGHT,

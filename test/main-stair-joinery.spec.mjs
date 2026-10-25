@@ -27,7 +27,7 @@ function hit({p:[a,b,c]},x,z){
 const nearest=(material,p)=>Math.min(...(vertices[material]||[]).map(q=>Math.hypot(...q.map((v,i)=>v-p[i]))));
 
 test('bourgeois joinery preserves the four-flight navigation contract and existing newel centre stations',()=>{
-  assert.ok(J,'the asset contains the joinery pass');assert.equal(stats.design.geometryRevision,4);assert.equal(stats.design.finishRevision,3);
+  assert.ok(J,'the asset contains the joinery pass');assert.equal(stats.design.geometryRevision,4);assert.equal(stats.design.finishRevision,4);
   assert.deepEqual([S.widthM,S.innerRadiusM,S.outerRadiusM,S.collisionOuterRadiusM,S.flights.map(f=>f.rises)],[2,.65,2.65,3,[14,14,15,15]]);
   const at=(r,a)=>[Math.sin(a)*r,-Math.cos(a)*r];
   const expected=[[.7,0,0],[2.6,0,0],[2.6,Math.PI*2,gridDrawnHeight(4.8)],
@@ -70,10 +70,10 @@ test('volute is rendered in oak and joins the existing rail as one sweep, with s
   }
 });
 
-test('six oak newels and restrained iron scroll panels are present in one bounded six-material asset',()=>{
+test('six oak newels and restrained iron scroll panels survive the bounded seven-material tread finish',()=>{
   assert.ok(J);assert.ok(J.scrollPanels>=12&&J.scrollPanels<=80);
   for(const n of J.newels)for(const h of[.36,.77])assert.ok(nearest('dark oak',[n.x,n.floor+h,n.z])<.065,'an oak shaft is packed at every original newel station');
-  assert.equal(g.meshes.length,1);assert.equal(g.meshes[0].primitives.length,6);
-  assert.ok(stats.totalTriangles<=40000);assert.ok(bytes.length<1851504);
+  assert.equal(g.meshes.length,1);assert.equal(g.meshes[0].primitives.length,7);
+  assert.ok(stats.totalTriangles<=50000);assert.ok(bytes.length<1851504);
   assert.match(J.caracole,/existing open-well winding helix/);
 });

@@ -15,14 +15,14 @@ const transform=(m,p)=>[m[0]*p[0]+m[4]*p[1]+m[8]*p[2]+m[12]-32,m[1]*p[0]+m[5]*p[
 const state=(d=850,far=d,time=70)=>{const p=worldAt(d,-1.35);return{x:p.x,z:p.z,heading:p.heading,furthest:far,programTime:time};};
 
 test('the canonical and study character pack are identical, finite and use the real four-target pipeline',()=>{
- assert.deepEqual(readFileSync(new URL('../public/assets/source-drive/cut/cut-landscape.glb',import.meta.url)),bytes);assert.equal(createHash('sha256').update(bytes).digest('hex'),metrics.sha256);assert.equal(asset.entries.length,16);assert.ok(bytes.length<12*1024*1024);assert.ok(Object.values(metrics.checks).every(Boolean));
+ assert.deepEqual(readFileSync(new URL('../public/assets/source-drive/cut/cut-landscape.glb',import.meta.url)),bytes);assert.equal(createHash('sha256').update(bytes).digest('hex'),metrics.sha256);assert.equal(asset.entries.length,24);assert.ok(bytes.length<16*1024*1024);assert.ok(Object.values(metrics.checks).every(Boolean));
  for(const entry of asset.entries){assert.deepEqual(entry.morphNames,morphNames);const pose=sampleCharacterPose(asset,entry,{morphs:{tension:1,shear:1,breath:1,recoil:1}});assert.ok([...pose.bones,...pose.morphs].every(Number.isFinite));}
  const jsonLength=bytes.readUInt32LE(12),doc=JSON.parse(bytes.subarray(20,20+jsonLength));for(const material of doc.materials){assert.equal(material.extras.studyLocalFinish,true);assert.equal(material.extras.materialFactors,'gltf');assert.ok(material.normalTexture);assert.ok(material.pbrMetallicRoughness.baseColorTexture);assert.ok(material.pbrMetallicRoughness.metallicRoughnessTexture);assert.equal(material.alphaMode??'OPAQUE','OPAQUE');if(['fascia','membrane','cavity'].includes(material.extras.cutRole))assert.equal(material.extras.cutTissue,true);}
 });
 
 test('all16 authored target corners preserve a generous vehicle and bay opening in the smallest chamber',()=>{
- let lowest=Infinity,vertices=0;for(const entry of asset.entries.filter(e=>!e.name.includes('wave')&&!e.name.includes('littoral')&&!e.name.includes('costal_')))for(const p of entry.primitives)for(let v=0;v<p.vertexCount;v++)for(let bits=0;bits<16;bits++){const q=position(p,v,morphNames.map((_,k)=>(bits>>k)&1));if(Math.abs(q[0])<7.2){lowest=Math.min(lowest,q[1]);vertices++;}}
- assert.ok(vertices>50000);assert.ok(lowest*.74>6.8,`smallest vault clearance ${lowest*.74}m`);assert.ok(CUT_THORAX_CHAMBERS.every(c=>c.height>=.74));
+ let lowest=Infinity,vertices=0;for(const entry of asset.entries.filter(e=>!e.name.includes('wave')&&!e.name.includes('littoral')&&!e.name.includes('costal_')&&!['cut_lungs','cut_heart','cut_great_vessels','cut_coronary_vessels','cut_diaphragm','cut_wet_blood'].includes(e.name)))for(const p of entry.primitives)for(let v=0;v<p.vertexCount;v++)for(let bits=0;bits<16;bits++){const q=position(p,v,morphNames.map((_,k)=>(bits>>k)&1));if(Math.abs(q[0])<7.2){lowest=Math.min(lowest,q[1]);vertices++;}}
+ assert.ok(vertices>10000);assert.ok(lowest*.74>6.8,`smallest vault clearance ${lowest*.74}m`);assert.ok(CUT_THORAX_CHAMBERS.every(c=>c.height>=.74));
  // The entire existing stopping choice remains legal; geometry adds no road
  // collider, trigger, deadline, dismount or precision parking requirement.
  for(let d=839;d<=883;d++){const p=worldAt(d,-4.6);assert.equal(containsDrivePose({x:p.x,z:p.z,heading:p.heading}),true);}
@@ -65,8 +65,8 @@ test('wave strakes and roadside half ribs establish the same anatomy before the 
 });
 
 test('the bilateral structure unfolds from rooted outward halves rather than starting as a complete portal',()=>{
- const entry=asset.entries.find(e=>e.name==='cut_thoracic_bone');let feet=0,moved=0,baseOverRoad=0;
- for(const p of entry.primitives)for(let v=0;v<p.vertexCount;v++){const base=position(p,v,[0,0,0,0]),full=position(p,v,[0,0,1,0]);if(base[1]<1.2){assert.deepEqual(base,full);feet++;}if(Math.hypot(...full.map((x,k)=>x-base[k]))>10)moved++;if(Math.abs(base[0])<7.2)baseOverRoad++;}
+ const entries=asset.entries.filter(e=>['cut_thoracic_bone','cut_costal_cartilage'].includes(e.name));let feet=0,moved=0,baseOverRoad=0;
+ for(const entry of entries)for(const p of entry.primitives)for(let v=0;v<p.vertexCount;v++){const base=position(p,v,[0,0,0,0]),full=position(p,v,[0,0,1,0]);if(base[1]<1.2){assert.deepEqual(base,full);feet++;}if(Math.hypot(...full.map((x,k)=>x-base[k]))>10)moved++;if(Math.abs(base[0])<7.2)baseOverRoad++;}
  assert.ok(feet>100);assert.ok(moved>1500);assert.equal(baseOverRoad,0,'ordinary splayed rib halves leave the centre open');
  const spine=asset.entries.find(e=>e.name==='cut_sternum');for(const p of spine.primitives)for(let v=0;v<p.vertexCount;v++)for(const curl of[0,.25,.5,.75,1])assert.ok(position(p,v,[0,0,curl,0])[1]>9,'the moving axial mass always stays well above the van');
 });

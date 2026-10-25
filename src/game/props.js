@@ -2,7 +2,7 @@
 // reachability. Rendering lives in render/props3d.js; this module stays pure JS
 // so the browser suites can prove gameplay without WebGL.
 
-import { CELL, F, PLAN_SCALE } from '../data/floorplan/legend.js';
+import { CELL, F, PLAN_SCALE, isOutdoorZone } from '../data/floorplan/legend.js';
 import { CONSERVATORY_PROPS, PROP_MESH, STRUCTURAL_COLLIDERS } from '../data/conservatory-props.js';
 import { MESH_SURFACE, PROP_BOUNDS } from '../data/generated/prop-geometry.js';
 import { WALL_CONTACT, wallContactAt } from '../world/wall-contact.js';
@@ -16,6 +16,7 @@ import * as PROP_GEOMETRY from '../data/generated/prop-geometry.js';
 import { batchBuildingDressingInstances } from '../world/building-dressing-batches.js';
 import { isExteriorObserver } from './prop-visibility.js';
 import { EXTERIOR_FACADE_MESHES, exteriorFacadeCanOccupy, exteriorFacadeCanStep } from '../world/exterior-facade-collision.js';
+import { leavesPropOverlap } from '../world/prop-body-contact.js';
 
 let floorplan=null;
 let instances=[];
@@ -235,7 +236,18 @@ function pointInProp(mx,mz,p,pad=.20){
 export function propCanOccupy(toX,toY,{ignoreId=null,from=null}={}){
   const mx=meters(toX+.5),mz=meters(toY+.5);
   const floor=floorplan?.floorAt?.(toX,toY)??0;
-  if(colliders.some((c)=>colliderActive(c)&&floor>=c.minElevation-.05&&floor<=c.maxElevation+.05&&pointInProp(mx,mz,{...c,w:c.width,d:c.depth},0)))return false;
+  const recover=from&&isOutdoorZone(floorplan?.zoneAt?.(from.x,from.y))&&isOutdoorZone(floorplan?.zoneAt?.(toX,toY));
+  const outward=(p,pad)=>recover&&leavesPropOverlap(
+    {x:meters(from.x+.5),z:meters(from.y+.5)},{x:mx,z:mz},p,pad);
+  const blocked=(p,pad)=>{
+    if(recover&&pointInProp(meters(from.x+.5),meters(from.y+.5),p,pad))return !outward(p,pad);
+    return pointInProp(mx,mz,p,pad);
+  };
+  if(colliders.some((c)=>{
+    if(!colliderActive(c)||floor<c.minElevation-.05||floor>c.maxElevation+.05)return false;
+    const box={...c,w:c.width,d:c.depth};
+    return blocked(box,0);
+  }))return false;
   if(instances.some((p)=>{
     if(p.id===ignoreId)return false;
     if(p.collisionMask==='hall-seating'){
@@ -261,7 +273,7 @@ export function propCanOccupy(toX,toY,{ignoreId=null,from=null}={}){
       if(Math.abs(mz-(p.y+1))<.85)return false;
       return !(mz<p.y-7.7);
     }
-    return p.blocks&&pointInProp(mx,mz,p);
+    return p.blocks&&blocked(p,.20);
   }))return false;
   const outside=(x,y)=>isExteriorObserver({zone:floorplan?.zoneAt?.(x,y)});
   if(!outside(toX,toY)&&!(from&&outside(from.x,from.y)))return true;

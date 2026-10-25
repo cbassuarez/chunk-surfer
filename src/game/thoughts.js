@@ -65,7 +65,7 @@ const BAND_W = 86;
 export function makeThoughtScene({
   id = 'thought', nodes, startAt = 'start', onDone, onChoice, onLine, cue, fx, audio, getAudio, replay = null,
   scrim = 0.62, lensPreset = 'calm', anchor = 'center', slate = '', blocksWorld = false, worldView = null, onExit = null,
-  escapable = true, allowsLook = true, onCancel = null,
+  escapable = true, allowsLook = true, onCancel = null, showStoryArt = true,
 } = {}) {
   let completed = false;
   let cancelled = false;
@@ -128,7 +128,10 @@ export function makeThoughtScene({
           Math.max(12, w - 6),
         );
 
-        const art = resolveStoryArt(v.art || null);
+        // A conversation about the person physically in front of us can keep
+        // that body visible. Its authored art remains in the conversation
+        // record; this option only suppresses the illustrated presentation.
+        const art = showStoryArt ? resolveStoryArt(v.art || null) : null;
         const fixedArtPanelH = art
           ? storyArtSideBySidePanelRows({
               choicesRows: 0,

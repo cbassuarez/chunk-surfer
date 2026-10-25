@@ -21,7 +21,8 @@ assert.equal(createHash('sha256').update(bytes).digest('hex'),manifest.packSha25
 for(const[file,hash]of Object.entries(manifest.sourceHashes))assert.equal(createHash('sha256').update(fs.readFileSync(file)).digest('hex'),manifest.currentAssetReconciliation?.sourceHashes?.[file]||manifest.giltRevision?.sourceHashes?.[file]||hash,'Production lettering generator changed without rebuilding: '+file);
 if(manifest.giltRevision)for(const[file,hash]of Object.entries(manifest.giltRevision.sourceHashes))assert.equal(createHash('sha256').update(fs.readFileSync(file)).digest('hex'),manifest.currentAssetReconciliation?.sourceHashes?.[file]||hash,'Narrow gilt producer changed after revision: '+file);
 const expected={
- district_civic_frontage:['PUBLIC HOUSE','THE LYRIC'],
+ exterior_pub_frontage:['PUBLIC HOUSE','THE LYRIC'],
+ yard_van:['04 / LIGHTING','01 / MONITORING','02 / MICROPHONE','03 / AMPLIFIER','SERVICE / FACEPLATES'],
  tower_rope_mat_tenor:['8/\nTENOR'],ending_returned_ledger:['','ALAN'],
  scene_dock_sign_foh:['FRONT OF HOUSE'],scene_dock_sign_services:['STUDIOS / PLANT'],
  vigil_part_sign_save:['SAVE ELLERY'],vigil_part_sign_strike:['NO FIRST\nSTRIKE\n06:00'],
@@ -46,8 +47,8 @@ assert.deepEqual(manifest.corridorInscriptionAttachments.map(({id,hostId,hostMes
  corridorInscriptions.map(({id,hostId,hostMesh,copy})=>({id,hostId,hostMesh,copy})),
  'Baked corridor labels must match only actual compiled hosts and their exact current literal names');
 assert.deepEqual(manifest.entries.filter(e=>e.id.startsWith('pub-lyric-fascia-')).map(({id,mesh,copy})=>({id,mesh,copy})).sort((a,b)=>a.id.localeCompare(b.id)),[
- {id:'pub-lyric-fascia-east',mesh:'district_civic_frontage',copy:'PUBLIC HOUSE'},
- {id:'pub-lyric-fascia-west',mesh:'district_civic_frontage',copy:'THE LYRIC'},
+ {id:'pub-lyric-fascia-east',mesh:'exterior_pub_frontage',copy:'PUBLIC HOUSE'},
+ {id:'pub-lyric-fascia-west',mesh:'exterior_pub_frontage',copy:'THE LYRIC'},
 ],'both authored pub fascia copies occupy their stable exact physical faces');
 assert.equal(manifest.entries.length,Object.values(expected).reduce((n,a)=>n+a.length,0));
 assert.equal(new Set(manifest.entries.map(e=>e.mesh)).size,Object.keys(expected).length);

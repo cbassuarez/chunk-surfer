@@ -3,6 +3,7 @@ import {VIGIL_CHARACTER_DESIGNS} from '../data/vigil-character-design.js';
 import {VIGIL_CHARACTER_RIGS} from '../data/vigil-character-rigs.js';
 import {VIGIL_OBJECT_LAYOUT} from '../data/vigil-object-layout.js';
 import {OWEN_KEY_RING,vigilHandFrame,vigilHandPoint} from '../data/vigil-secondary-object-layout.js';
+import {exteriorPerformanceFrame} from './exterior-conversation-performance.js';
 const add=(a,b)=>a.map((v,i)=>v+b[i]),sub=(a,b)=>a.map((v,i)=>v-b[i]),mul=(a,n)=>a.map(v=>v*n),dot=(a,b)=>a.reduce((n,v,i)=>n+v*b[i],0),len=a=>Math.hypot(...a),unit=a=>mul(a,1/(len(a)||1)),cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],mix=(a,b,t)=>a.map((v,i)=>v+(b[i]-v)*t);
 const I=[0,0,0,1],qa=(a,t)=>[...mul(unit(a),Math.sin(t/2)),Math.cos(t/2)],qm=(a,b)=>[a[3]*b[0]+a[0]*b[3]+a[1]*b[2]-a[2]*b[1],a[3]*b[1]-a[0]*b[2]+a[1]*b[3]+a[2]*b[0],a[3]*b[2]+a[0]*b[1]-a[1]*b[0]+a[2]*b[3],a[3]*b[3]-a[0]*b[0]-a[1]*b[1]-a[2]*b[2]];
 const rot=(v,q)=>{const p=q.slice(0,3),t=mul(cross(p,v),2);return add(v,add(mul(t,q[3]),cross(p,t)));},qmix=(a,b,t)=>unit(mix(a,dot(a,b)<0?mul(b,-1):b,t));
@@ -18,25 +19,33 @@ const freeHands={leila:{R:{wrist:[.23,.88,-.075],axis:[.08,-1,0],normal:[-1,0,0]
 // The bone endpoints sit just outside its surface; actual fingertip pads make
 // contact. Following the head keeps the cup supported through its small nod.
 const kitHeadphoneTips={thumb:[-.118,1.624,-.022],index:[-.118,1.635,-.014],middle:[-.119,1.650,-.027],ring:[-.118,1.666,-.038],little:[-.115,1.660,-.047]};
-export function vigilCharacterPose(id,{action=null,progress=0,reducedMotion=false,rig=null}={}){
+export function vigilCharacterPose(id,{action=null,progress=0,reducedMotion=false,rig=null,timeSec=0,conversation=null}={}){
  const d=VIGIL_CHARACTER_DESIGNS[id],source=rig||VIGIL_CHARACTER_RIGS[id],layout=VIGIL_OBJECT_LAYOUT[id];if(!d||!source||!layout)throw Error('Unknown vigil character '+id);
  const bones=new Map(source.map(b=>[b.name,b])),poses=new Map(),contacts=[],rest=name=>{const b=bones.get(name);if(!b)throw Error('Missing vigil bone '+name);return b;},put=(name,head,rotation=I)=>poses.set(name,{head,rotation}),world=(p,name)=>{const b=rest(name),v=poses.get(name);return add(v.head,rot(sub(p,b.head),v.rotation));},chain=(finger,side)=>['','_mid','_tip'].map(s=>rest(finger+s+'_'+side));
- const pulse=action?(reducedMotion?(progress>0&&progress<1?1:0):Math.sin(Math.max(0,Math.min(1,progress))*Math.PI)):0,shift=[action==='weight-shift'?.012*pulse:0,0,0],pelvis=rest('pelvis').head,bodyQ=qm(qa([0,0,1],d.sideLean),qa([1,0,0],-d.lean));
- const torso=p=>add(add(pelvis,rot(sub(p,pelvis),bodyQ)),add(shift,[d.stance*Math.max(0,Math.min(1,(p[1]-pelvis[1])/.45)),0,0]));
- for(const name of ['pelvis','spine_lower','spine_mid','spine_upper','chest','neck','clavicle_L','clavicle_R'])put(name,torso(rest(name).head),bodyQ);
+ const performance=exteriorPerformanceFrame(id,{timeSec,reducedMotion,conversation}),{attention,talk,gesture,ambient}=performance;
+ const purpose={ruth:{yaw:-.025,pitch:-.045,lean:.004},leila:{yaw:-.065,pitch:.045,lean:.002},owen:{yaw:.035,pitch:-.035,lean:.003},denise:{yaw:.025,pitch:-.055,lean:.005},malcolm:{yaw:-.030,pitch:-.040,lean:.008},kit:{yaw:.045,pitch:.018,lean:.004}}[id];
+ const pulse=action?(reducedMotion?(progress>0&&progress<1?1:0):Math.sin(Math.max(0,Math.min(1,progress))*Math.PI)):0,shift=[action==='weight-shift'?.012*pulse:0,0,0],pelvis=rest('pelvis').head,bodyQ=qm(qa([0,0,1],d.sideLean),qa([1,0,0],-d.lean-purpose.lean*attention));
+ const chestWeight=p=>Math.max(0,Math.min(1,(p[1]-pelvis[1])/.40)),respiration=performance.respiration;
+ const torso=p=>{const posed=add(add(pelvis,rot(sub(p,pelvis),bodyQ)),add(shift,[d.stance*Math.max(0,Math.min(1,(p[1]-pelvis[1])/.45)),0,0]));return respiration?add(posed,[0,.0015*respiration*chestWeight(p),-.0006*respiration*chestWeight(p)]):posed;};
+ for(const name of ['pelvis','spine_lower','spine_mid','spine_upper','chest','neck','clavicle_L','clavicle_R'])put(name,torso(rest(name).head),respiration?qm(bodyQ,qa([1,0,0],.002*respiration*chestWeight(rest(name).head))):bodyQ);
  const windowLook=id==='leila'&&action==='window-look',keyCheck=id==='owen'&&action==='key-check';
- const headYaw=d.headYaw+(windowLook?-.34:keyCheck?.18:0)*pulse,headPitch=(windowLook?.32:keyCheck?-.16:action&&action!=='weight-shift'?.045:0)*pulse;
- const headQ=qm(bodyQ,qm(qa([0,1,0],headYaw),qa([1,0,0],headPitch)));put('head',world(rest('head').head,'neck'),headQ);put('jaw',world(rest('jaw').head,'head'),headQ);
+ const headYaw=d.headYaw+(windowLook?-.34:keyCheck?.18:0)*pulse+performance.headYaw+purpose.yaw*ambient,headPitch=(windowLook?.32:keyCheck?-.16:action&&action!=='weight-shift'?.045:0)*pulse+performance.nod+purpose.pitch*ambient;
+ const headQ=qm(bodyQ,qm(qa([0,1,0],headYaw),qa([1,0,0],headPitch)));put('head',world(rest('head').head,'neck'),headQ);put('jaw',world(rest('jaw').head,'head'),qm(headQ,qa([1,0,0],-performance.jaw)));
  const position=add(layout.position,shift),angles=[...layout.angles];
  if(action==='flask-check'){position[1]+=.045*pulse;angles[0]+=.075*pulse;}
  if(action==='umbrella-settle'){position[1]-=.014*pulse;angles[2]+=.025*pulse;}
  if(action==='map-fold'){angles[0]+=.065*pulse;angles[1]+=.04*pulse;}
  if(action==='camera-check'){position[1]-=.025*pulse;angles[1]-=.08*pulse;}
+ if(id==='ruth'){position[1]+=.009*gesture;angles[0]+=.018*gesture;}
+ if(id==='leila')position[1]+=.006*gesture;
+ if(id==='denise'){position[1]+=.010*gesture;angles[0]+=.012*gesture;}
+ if(id==='malcolm'){position[1]+=.012*gesture;angles[0]+=.016*gesture;}
+ if(id==='kit'){position[1]+=.025*talk;position[2]-=.040*(attention-talk);}
  const objectQ=qm(qa([0,1,0],angles[1]),qm(qa([1,0,0],angles[0]),qa([0,0,1],angles[2]))),objectPoint=p=>add(position,rot(p,objectQ)),hands={};
  for(const [side,sign]of [['L',-1],['R',1]]){
   const hand=rest('hand_'+side),upper=rest('upperarm_'+side),forearm=rest('forearm_'+side),index=chain('index',side),thumb=chain('thumb',side),middle=chain('middle',side),little=chain('little',side),fingerAxis=unit(sub(middle[2].tail,hand.head)),across=sub(little[0].head,index[0].head),palmNormal=unit(mul(cross(fingerAxis,across),sign)),grip=layout.hands[side];let palmQ,wrist,anchor=null;
   if(grip){palmQ=oriented(fingerAxis,palmNormal,rot(grip.axis,objectQ),rot(grip.normal,objectQ));if(grip.kind==='paper'){anchor=[...grip.anchor];if(side==='R'&&action==='binder-page'){anchor[1]+=.030*pulse;}if(side==='R'&&action==='photos-sort'){anchor[0]-=.024*pulse;anchor[1]-=.012*pulse;}const pinchLocal=sub(sub(sub(mul(add(thumb[2].tail,index[2].tail),.5),hand.head),mul(fingerAxis,.028)),mul(palmNormal,.008));wrist=add(sub(objectPoint(anchor),rot(pinchLocal,palmQ)),rot([sign*.018,0,.025],objectQ));}else wrist=objectPoint(grip.wrist);}
-  else{const free=freeHands[id][side];if(id==='kit'&&side==='L'){wrist=world(add(rest('head').head,free.headOffset),'head');palmQ=oriented(fingerAxis,palmNormal,rot(free.axis,headQ),rot(free.normal,headQ));}else{wrist=add(free.wrist,shift);if(id==='owen'&&side==='L'&&keyCheck)wrist=add(wrist,[0,.080*pulse,-.025*pulse]);palmQ=oriented(fingerAxis,palmNormal,free.axis,free.normal);}}
+  else{const free=freeHands[id][side];if(id==='kit'&&side==='L'){wrist=world(add(rest('head').head,free.headOffset),'head');palmQ=oriented(fingerAxis,palmNormal,rot(free.axis,headQ),rot(free.normal,headQ));}else{wrist=add(free.wrist,shift);if(id==='owen'&&side==='L'){if(keyCheck)wrist=add(wrist,[0,.080*pulse,-.025*pulse]);wrist=add(wrist,[0,.014*gesture,-.006*gesture]);}if(id==='leila'&&side==='R')wrist=add(wrist,[.015*gesture,.018*attention+.025*gesture,-.018*gesture]);palmQ=oriented(fingerAxis,palmNormal,free.axis,free.normal);}}
   const pole=id==='kit'&&side==='L'?[-.35,-.65,-.65]:[sign*.55,-.65,.35];
   const shoulder=torso(upper.head),arm=twoBone(shoulder,wrist,len(sub(upper.tail,upper.head)),len(sub(forearm.tail,forearm.head)),pole),fromUpper=sub(upper.tail,upper.head),fromLower=sub(forearm.tail,forearm.head),toUpper=sub(arm.middle,shoulder),toLower=sub(arm.end,arm.middle),restPlane=unit(cross(fromUpper,fromLower)),armPlane=unit(cross(toUpper,toLower));
   put(upper.name,shoulder,oriented(fromUpper,restPlane,toUpper,armPlane));const elbowQ=oriented(fromLower,restPlane,toLower,armPlane),wristQ=oriented(fromLower,palmNormal,toLower,rot(palmNormal,palmQ));put(forearm.name,arm.middle,qmix(elbowQ,wristQ,.60));put(hand.name,arm.end,palmQ);hands[side]=arm.end;contacts.push({kind:'wrist',side,target:wrist,point:arm.end,error:arm.error,shoulder,elbow:arm.middle,palmNormal:rot(palmNormal,palmQ)});
@@ -51,6 +60,23 @@ export function vigilCharacterPose(id,{action=null,progress=0,reducedMotion=fals
  }
  for(const b of source)if(!poses.has(b.name)){const parent=poses.get(b.parent);put(b.name,parent?world(b.head,b.parent):b.head,parent?.rotation||I);}
  const joints=Object.fromEntries([...poses].map(([name,p])=>['vigil_'+id+'_'+name,{translation:sub(p.head,rest(name).head),rotation:p.rotation}]));joints['vigil_'+id+'_object']={translation:position,rotation:objectQ};
- return{joints,hands,contacts,object:{position,rotation:objectQ},objectHand:d.objectHand,objectGrip:hands[d.objectHand],action,pulse};
+ return{joints,hands,contacts,object:{position,rotation:objectQ},objectHand:d.objectHand,objectGrip:hands[d.objectHand],action,pulse,performance};
 }
-export function vigilCharacterDescriptor(mesh,frame=null,{reducedMotion=false}={}){const id=vigilCharacterIdForMesh(mesh);if(!id)return null;return{joints:vigilCharacterPose(id,{action:frame?.action||null,progress:frame?Math.max(0,Math.min(1,frame.elapsedMs/Math.max(1,frame.durationMs))):0,reducedMotion}).joints};}
+// Body and linked object use the same anatomical solve. Cache only the public
+// descriptor, never the exact pose/contact sampler used by tailoring/tests.
+// One latest entry per identity bounds this cache to the six retained people.
+const descriptorCache=new Map();
+export function vigilCharacterDescriptor(mesh,frame=null,options={}){
+ const id=vigilCharacterIdForMesh(mesh);if(!id)return null;
+ const {reducedMotion=false,conversation=null}=options,timeSec=Number.isFinite(options.timeSec)?options.timeSec:0;
+ const raw=Number.isFinite(frame?.progress)?frame.progress:frame?(Number(frame.elapsedMs)||0)/Math.max(1,Number(frame.durationMs)||1):0,progress=Math.max(0,Math.min(1,raw));
+ const clock=Number.isFinite(options.timeSec)?Math.floor(timeSec*30):Math.floor((Number(frame?.elapsedMs)||0)*.03);
+ const endpoint=progress<=0?0:progress>=1?1:null,cv=conversation;
+ const key=JSON.stringify([reducedMotion?0:clock,!!reducedMotion,frame?.action||null,endpoint,reducedMotion?progress:null,
+   cv?.active??null,cv?.speaking??null,cv?.weight===0?0:cv?.weight===1?1:null,
+   cv?.speakingWeight===0?0:cv?.speakingWeight===1?1:null,
+   reducedMotion?cv?.headYaw:Math.round((Number(cv?.headYaw)||0)*64)]);
+ const cached=descriptorCache.get(id);if(cached?.key===key)return cached.value;
+ const value={joints:vigilCharacterPose(id,{action:frame?.action||null,progress,reducedMotion,timeSec:reducedMotion?0:clock/30,conversation}).joints};
+ descriptorCache.set(id,{key,value});return value;
+}

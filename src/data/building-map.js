@@ -10,6 +10,7 @@ import { BELL_CHAMBER_ANCHOR, ORGAN_LOFT_ANCHOR, RINGING_ROOM_ANCHOR } from './b
 import { SCENE_DOCK_LABEL } from './space-labels.js';
 import { ACADEMIC_ROOF, roofPointToPhysical } from './academic-roof.js';
 import { MAIN_STAIR_LAYOUT } from './floorplan/conservatory.js';
+import { EXTERIOR_MAP_SPACE_IDS } from './exterior-map-ids.js';
 
 const freezePoint = (point) => Object.freeze({ x: Number(point.x), y: Number(point.y) });
 const S = (id, label, logical, extra = {}) => Object.freeze({
@@ -166,6 +167,7 @@ export const BUILDING_MAP = Object.freeze({
 
 export const REQUIRED_MAP_TARGETS = Object.freeze([...TARGETS]);
 export const FACILITY_SPACE_IDS = Object.freeze([
+  ...EXTERIOR_MAP_SPACE_IDS,
   ...BUILDING_MAP.targets.map((target) => `space:${target.roomId}`),
   ...BUILDING_MAP.spaces.map((space) => space.id),
   ...BUILDING_MAP.landmarks.map((landmark) => landmark.id),

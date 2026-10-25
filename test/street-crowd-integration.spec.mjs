@@ -14,7 +14,7 @@ const render=new Map(PROPS.renderInstances({inscriptions:false}).map(p=>[p.id,p]
 // vigil coordinates are quantized by the yard plan; district locals are not.
 const baseline={
   'district-mews-neighbor':['exterior_mews_neighbor',-13,26,Math.PI/2,.82,.60,false],
-  'district-pub-driver':['exterior_pub_driver',18,105,Math.PI,.88,.66,false],
+  'district-pub-driver':['exterior_pub_driver',27,82.5,Math.PI,.88,.66,false],
   'vigil-crowd-east-1':['vigil_figure_placard_a',28,53.5,3.05,1.42,.76,true],
   'vigil-crowd-east-2':['vigil_figure_umbrella_a',30,51.5,3,1.06,.98,true],
   'vigil-crowd-east-3':['vigil_figure_pamphlets_a',30.5,53.5,2.75,1.42,.78,true],

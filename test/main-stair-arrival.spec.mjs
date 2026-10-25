@@ -93,8 +93,8 @@ test('packed academic head has a level westward surface rather than a bare termi
 
 test('finished hero stair remains one bounded static pack',()=>{
   assert.equal(gltf.meshes.length,1,'the architectural repair adds no prop dispatches');
-  assert.equal(gltf.meshes[0].primitives.length,6,'material draw batches remain unchanged');
+  assert.equal(gltf.meshes[0].primitives.length,7,'the retained stair adds one bounded ivory riser/cheek finish batch');
   const triangles=gltf.meshes[0].primitives.reduce((n,p)=>n+gltf.accessors[p.indices].count/3,0);
-  assert.ok(triangles<=40000,'the continuous rails and turned head have a fixed triangle budget');
+  assert.ok(triangles<=50000,'modeled tread profiles and continuous cheek moldings have a fixed triangle budget');
   assert.ok(bytes.length<1851504,'the packed repair stays smaller than its original 1.85MB GLB');
 });

@@ -7,6 +7,7 @@ import { applyFieldKitTorchLook } from '../src/render/field-kit-torch.js';
 import { fieldKitEffects } from '../src/game/field-kit.js';
 import { applyHushTorchInterference } from '../src/game/hush-field.js';
 import { ZONE } from '../src/data/floorplan/legend.js';
+import {torchReceiveSample} from '../src/render/torch-optics.js';
 
 test('physical interior beam preserves the real battery, fitted reach and HUSH absorption', () => {
   for (const battery of [0, .08, .3, .8]) for (const on of [false, true])
@@ -31,9 +32,8 @@ test('the actual architecture and prop shaders bound received lamp highlights', 
   const shoulder = applyPhysicalTorchProfile(resolveTorchLook(), { profile }).shoulder;
   for (const file of ['../src/render/r3d.js', '../src/render/props3d.js']) {
     const source = readFileSync(new URL(file, import.meta.url), 'utf8');
-    const expression = source.match(/lamp\s*=\s*(lamp\s*\/\s*\(1\.0\s*\+\s*uTorchShoulder\s*\*\s*lamp\))\s*;/)?.[1];
-    assert.ok(expression, `${file} must consume the shared physical highlight shoulder`);
-    const receive = new Function('lamp', 'uTorchShoulder', `return ${expression};`);
+    assert.ok(/float lamp\s*=\s*torchReceive\([^;]+,uTorchShoulder\)/.test(source),`${file} must consume the shared physical highlight shoulder`);
+    const receive = torchReceiveSample;
     assert.equal(receive(0, shoulder), 0, 'the shoulder adds no light to absence');
     let previous = 0;
     for (const incoming of [.2, 1, 4, 20]) {

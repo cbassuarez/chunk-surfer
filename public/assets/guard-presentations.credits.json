@@ -1,0 +1,19 @@
+{
+  "license": "CC0-1.0",
+  "original": {
+    "path": "public/assets/outskirts-characters.glb",
+    "sha256": "80bfb9ca094946ce6f5d6496caf78a0d99846fd3e8477d09a3363c0bfa6ea114"
+  },
+  "originalCredits": "public/assets/outskirts-characters/CREDITS.md",
+  "apertureReference": {
+    "path": "public/assets/recordist-characters/boy.json",
+    "builder": "tools/chunk_surfer/characters/build-recordist-anatomy.py",
+    "mechanism": "removed facial anatomy, receding rim and closed 80-segment bowl",
+    "sha256": "86a60ae94c2862a702495af1705dffaadbf965854657f4bd4657a89f5c838e91"
+  },
+  "authoredAdditions": [
+    "fitted peaked cap and brim occlusion",
+    "anatomical fitting of the retained Source facial aperture"
+  ],
+  "build": "tools/chunk_surfer/characters/build-guard-presentations.mjs"
+}

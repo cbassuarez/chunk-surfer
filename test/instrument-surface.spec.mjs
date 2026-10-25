@@ -149,6 +149,27 @@ test('withMachinePanel paints the shell before clipped content, then glass and a
   assert.equal(h.palette.activeSurface(),'amber','the caller’s surface theme is restored');
 });
 
+test('a navigator-style smaller aperture moves its well, clip and cover together while hardware stays outside',()=>{
+  const h=harness(),{withMachinePanel,machinePanelAperture}=h.presentation;
+  const standard=machinePanelAperture(2,3,30,19);
+  const aperture={...standard,h:standard.h-2.65};
+  withMachinePanel(2,3,30,19,{...shell,footer:'',apertureBounds:aperture},()=>tag(h.ui,'map'));
+  hardware(h.ui,'lcd');
+  const well=h.commands.find(command=>command.kind==='well');
+  const glass=h.commands.find(command=>command.kind==='glass');
+  for(const command of[well,glass]){
+    assert.equal(command.args[0].x,aperture.x*8.45);
+    assert.equal(command.args[0].y,aperture.y*20);
+    assert.equal(command.args[0].w,aperture.w*8.45);
+    assert.equal(command.args[0].h,aperture.h*20);
+  }
+  const map=h.commands.find(command=>command.kind==='map'),lcd=h.commands.find(command=>command.kind==='lcd');
+  assert.deepEqual(map.state.clips[0],[['rect',aperture.x*8.45,aperture.y*20,aperture.w*8.45,aperture.h*20]]);
+  assert.equal(lcd.state.clips.length,0,'the separate LCD cannot inherit the VFD aperture clip');
+  assert.ok(h.commands.indexOf(lcd)>h.commands.indexOf(glass),'the reflective LCD remains above the finished VFD cover');
+  assert.equal(h.stack.length,0);
+});
+
 test('nested panels restore theme before continuing the parent and all keys remain above the outer cover',()=>{
   const h=harness();
   h.presentation.withMachinePanel(0,0,80,30,{...shell,theme:'green'},()=>{

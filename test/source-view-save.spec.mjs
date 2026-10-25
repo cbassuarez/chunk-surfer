@@ -11,13 +11,15 @@ function productionFunction(name, endMarker, environment) {
   return new Function('environment', `with (environment) { return (${main.slice(start, end).trim()}); }`)(environment);
 }
 
-function harness({ runtime = null, look = { yaw: 1.2, pitch: -.3 }, px = 144, py = -224, drive = null, pub = null, continuation = null } = {}) {
+function harness({ runtime = null, look = { yaw: 1.2, pitch: -.3 }, px = 144, py = -224, drive = null, pub = null, continuation = null, coastal = null } = {}) {
   const commits = [], calls = [];
   const environment = {
-    chunkSurfRuntime: runtime, sourceDriveSession: drive, sourcePubScene: pub, sourceContinuationScene: continuation, px, py,
+    chunkSurfRuntime: runtime, sourceDriveSession: drive, sourcePubScene: pub, sourceContinuationScene: continuation,
+    coastalMemoryScene: coastal, standingTearScene: null, px, py,
     commitSourceDrive(){calls.push('drive-checkpoint');return true;},
     commitSourcePub(){calls.push('pub-checkpoint');return true;},
     commitSourceContinuation(){calls.push('continuation-checkpoint');return true;},
+    commitCoastalMemory(){calls.push('coastal-checkpoint');return true;},
     R3: { r3dLookAngles() { calls.push('look'); return look; } },
     saveCommit(patch) { calls.push('commit'); commits.push(structuredClone(patch)); },
     stationRealmLook() { calls.push('station-look'); },
@@ -90,5 +92,15 @@ test('Source pub saves its local checkpoint while preserving the exterior camera
  const h=harness({runtime:{state(){throw Error('A borrowed bar camera must not rewrite ordinary Source state');}},pub:{serialize:()=>checkpoint},look:{yaw:-2.3,pitch:.4}});
  assert.deepEqual(h.cameraPatch(144,-224),{},'the bar gaze must never be stamped onto its held exterior position');
  assert.equal(h.save(),true);assert.deepEqual(h.calls,['pub-checkpoint']);assert.deepEqual(h.commits,[]);
+ assert.deepEqual(checkpoint.returnPose,{x:144,y:-224,yaw:1.2,pitch:-.3});
+});
+
+test('coastal memory saves its local checkpoint without borrowing the held Source body or camera',()=>{
+ const checkpoint={phase:'shore',returnPose:{x:144,y:-224,yaw:1.2,pitch:-.3}};
+ const h=harness({runtime:{state(){throw Error('A borrowed coastal camera must not rewrite ordinary Source state');}},coastal:{serialize:()=>checkpoint},look:{yaw:-1,pitch:.2}});
+ assert.deepEqual(h.cameraPatch(144,-224),{});
+ assert.equal(h.save(),true);
+ assert.deepEqual(h.calls,['coastal-checkpoint']);
+ assert.deepEqual(h.commits,[]);
  assert.deepEqual(checkpoint.returnPose,{x:144,y:-224,yaw:1.2,pitch:-.3});
 });

@@ -14,6 +14,7 @@ import { mapActionRail } from '../game/map-actions.js';
 import { fitText } from './fit-text.js';
 import { BUILDING_MAP } from '../data/building-map.js';
 import { roomHistoryText } from '../data/room-history.js';
+import { drawExteriorMap } from './exterior-map-view.js';
 
 const clip = (s, w) => fitText(String(s || ''), Math.max(1, Math.floor(w)));
 const deviceRect = (r, {cellW,cellH,dpr}) => ({x:r.x*cellW*dpr,y:r.y*cellH*dpr,w:r.w*cellW*dpr,h:r.h*cellH*dpr,dpr});
@@ -102,13 +103,15 @@ export function drawMapView({model,nav,bagLayout,now=0}) {
       {id:'bag:map:file-next',kind:'map-control',action:'file-next',x:v.x+buttonW,y:v.y+v.h-1,w:buttonW,h:1},
       ...(attached?[{id:'bag:map:file-document',kind:'map-control',action:'file-document',x:v.x+buttonW*2,y:v.y+v.h-1,w:buttonW,h:1}]:[]),
     ]};
-  }else drawing=offline?{hits:[],projectedPoints:{},geometryAvailable:false}:drawArchitecturalMap({model,nav,viewport:layout.mapViewport,now});
+  }else drawing=offline?{hits:[],projectedPoints:{},geometryAvailable:false}:model.context==='exterior'
+    ?drawExteriorMap({model,nav,viewport:layout.mapViewport,now})
+    :drawArchitecturalMap({model,nav,viewport:layout.mapViewport,now});
   const header=layout.progressRail,legend=layout.legendRail;
-  if(!layout.dense)uiText(header.x,header.y,clip('ELLERY / SI–1 SURVEY',header.w*.58),'ui-secondary',.9);
+  if(!layout.dense)uiText(header.x,header.y,clip(model.context==='exterior'?'ELLERY / STREET SURVEY':'ELLERY / SI–1 SURVEY',header.w*.58),'ui-secondary',.9);
   const progress=`${model.progress?.done||0}/${model.progress?.total||0} TAKES`;
   if(!layout.dense&&!offline)uiText(header.x+Math.max(0,header.w-progress.length),header.y,progress,'ui-secondary',.9);
-  if(!layout.dense&&!offline)uiText(legend.x,legend.y,clip(file.length?`ROOM FILE · PAGE ${drawing.filePage+1}/${drawing.filePages}`:'▲ YOU   ◇ ROOM   ◆ TARGET',legend.w),'ui-secondary',.9);
-  if(!file.length&&!layout.dense&&!offline&&legend.w>48)uiText(legend.x+legend.w-20,legend.y,'ORTHO / CUTAWAY','ui-secondary',.8);
+  if(!layout.dense&&!offline)uiText(legend.x,legend.y,clip(file.length?`ROOM FILE · PAGE ${drawing.filePage+1}/${drawing.filePages}`:model.context==='exterior'?'▲ YOU   ◇ LANDMARK   ◆ TARGET':'▲ YOU   ◇ ROOM   ◆ TARGET',legend.w),'ui-secondary',.9);
+  if(!file.length&&!layout.dense&&!offline&&legend.w>48)uiText(legend.x+legend.w-20,legend.y,model.context==='exterior'?'DISTRICT / GROUND':'ORTHO / CUTAWAY','ui-secondary',.8);
   if(offline){
     const v=layout.mapViewport;
     uiText(v.x+1,v.y+1,clip('SURVEY INDICATOR OFFLINE',v.w-2),'ui-amber',.96);

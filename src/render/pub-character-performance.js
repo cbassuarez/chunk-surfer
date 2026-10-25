@@ -70,9 +70,9 @@ export function pubCharacterInstances(actors=[],{timeSec=0,reducedMotion=false,z
 // Malcolm brings his existing face, rainwear and map inside. Only his lower
 // body takes the stool; translating torso, hands and map together preserves
 // the authored fingertip contacts on the folded paper.
-export function pubSeatedVigilPose(mesh,frame=null,{seatY=.8205,reducedMotion=false}={}){
+export function pubSeatedVigilPose(mesh,frame=null,{seatY=.8205,reducedMotion=false,timeSec=0,conversation=null}={}){
   const id=vigilCharacterIdForMesh(mesh);if(!id)return null;
-  const source=VIGIL_CHARACTER_RIGS[id],bones=new Map(source.map(b=>[b.name,b])),base=vigilCharacterPose(id,{action:frame?.action||null,progress:frame?clamp(frame.elapsedMs/Math.max(1,frame.durationMs),0,1):0,reducedMotion}),joints=structuredClone(base.joints),key=name=>`vigil_${id}_${name}`,shift=[0,seatY+.09-bones.get('pelvis').head[1],0];
+  const source=VIGIL_CHARACTER_RIGS[id],bones=new Map(source.map(b=>[b.name,b])),base=vigilCharacterPose(id,{action:frame?.action||null,progress:frame?clamp(frame.elapsedMs/Math.max(1,frame.durationMs),0,1):0,reducedMotion,timeSec,conversation}),joints=structuredClone(base.joints),key=name=>`vigil_${id}_${name}`,shift=[0,seatY+.09-bones.get('pelvis').head[1],0];
   for(const joint of Object.values(joints))joint.translation=add(joint.translation,shift);
   const contacts=base.contacts.map(contact=>{const next={...contact};for(const field of['target','point','shoulder','elbow'])if(Array.isArray(next[field]))next[field]=add(next[field],shift);return next;});
   const put=(bone,head,rotation=identity)=>joints[key(bone.name)]={translation:sub(head,bone.head),rotation};

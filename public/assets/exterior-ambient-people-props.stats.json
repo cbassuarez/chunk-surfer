@@ -1,0 +1,13 @@
+{
+  "bytes": 339192,
+  "triangles": 8664,
+  "sha256": "70523343722d38050f7cc202906a09a5bba558b1c78dfb74490d57b502adc867",
+  "meshes": [
+    "exterior_cycle_equipment",
+    "exterior_cycle_crank",
+    "exterior_walker_dog"
+  ],
+  "source": "tools/chunk_surfer/build-exterior-ambient-people-props.mjs",
+  "license": "original project geometry",
+  "textureBytes": 0
+}

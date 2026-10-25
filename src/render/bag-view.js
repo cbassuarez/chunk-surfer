@@ -775,7 +775,8 @@ export function drawBagView({ model, nav, mapNav = null, layout, hint = '', guid
     const region = layout.mode === 'wide'
       ? { x: layout.list.x, y: layout.list.y, w: (layout.detail.x + layout.detail.w) - layout.list.x, h: layout.list.h }
       : { x: layout.list.x, y: layout.detail.y, w: layout.list.w, h: (layout.list.y + layout.list.h) - layout.detail.y };
-    drawContent(region);
+    const content = drawContent(region);
+    if (content?.actions) actions = content.actions;
   } else if (nav.sectionId === 'map' && model.mapUnavailableReason) {
     mapPresentation=drawMapOffline({bagLayout:layout,reason:model.mapUnavailableReason,now});
     actions=mapPresentation.actions;

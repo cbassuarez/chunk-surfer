@@ -13,21 +13,19 @@ export function fieldDeckLayout({cols=80,rows=45}={}){
   const navigatorW=compact
     ?clamp(Math.floor(safeCols*.36),26,30)
     :clamp(Math.floor(safeCols*.27),30,34);
-  const navigatorH=compact
+  const mapH=compact
     ?clamp(Math.floor(safeRows*.38),13,15)
     :clamp(Math.floor(safeRows*.39),16,18);
   const navigator={
     x:Math.max(2,safeCols-navigatorW-2),
     y:2,
     w:navigatorW,
-    h:navigatorH,
+    h:Math.min(mapH+4,safeRows-6),
   };
   return Object.freeze({
     compact,
     navigator:Object.freeze(navigator),
-    takes:Object.freeze({x:2,y:1,w:Math.max(12,navigator.x-4),h:1}),
     objective:Object.freeze({x:2,y:2,w:Math.max(12,navigator.x-4),h:2}),
-    monitor:Object.freeze({x:2,y:compact?safeRows-5:safeRows-4,w:26,h:1}),
     prompt:Object.freeze({x:2,y:safeRows-2,w:safeCols-4,h:1}),
   });
 }

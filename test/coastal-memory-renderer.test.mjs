@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import {coastalMemoryRenderFrame,createCoastalMemoryRenderer} from '../src/render/coastal-memory-renderer.js';
 import {COASTAL_MEMORY_LAYOUT as L,COASTAL_SETTLED_BODY_WORLD,coastalWorldPoint} from '../src/data/coastal-memory.js';
 import {createPropRangeController} from '../src/render/prop-range.js';
-const metrics={cabinBodyMount:[0,0,-1.6],wheel:{center:[0,1,-.3],tiltX:.2},mirrors:[]};
+const metrics=JSON.parse(fs.readFileSync(new URL('../public/assets/source-drive/geometry/metrics.json',import.meta.url)));
 test('on-foot camera and actual wreck share the opening site frame without moving Source',()=>{
  const state={pose:{...L.spawn,yaw:.7,pitch:-.2},elapsed:8,wreckLightLevel:.5};
  const before=structuredClone(state),f=coastalMemoryRenderFrame(state,{vehicleMetrics:metrics});
@@ -21,10 +21,10 @@ test('unnoticed headlights remain dark; reduced motion freezes sea without freez
  assert.ok(a.scene.lamps.filter(l=>l.fixture==='same van headlamp').every(l=>l.intensity===0));
  assert.ok(a.scene.lamps.filter(l=>l.fixture==='same van headlamp').every(l=>!l.castsShadow),'unpowered lamps cannot take the player torch shadow map');
  assert.equal(a.scene.props.find(p=>p.id==='coastal-sunken-same-van').fixturePower,0,'headlamp glass cannot emit before the glance wakes its supply');
- const b=coastalMemoryRenderFrame({pose:{...L.spawn,x:L.spawn.x+1},elapsed:18},{reducedMotion:true});assert.notDeepEqual(a.eye,b.eye);
+ const b=coastalMemoryRenderFrame({pose:{...L.spawn,x:L.spawn.x+1},elapsed:18},{reducedMotion:true,vehicleMetrics:metrics});assert.notDeepEqual(a.eye,b.eye);
 });
 test('the visible practical owns the single shadow map at the wreck and pier, including a retreat',()=>{
- const render=pose=>coastalMemoryRenderFrame({pose,elapsed:12,wreckLightLevel:1});
+ const render=pose=>coastalMemoryRenderFrame({pose,elapsed:12,wreckLightLevel:1},{vehicleMetrics:metrics});
  const entry=render(L.spawn),pier=render({...L.spawn,x:13.07639,z:86}),retreat=render(L.spawn);
  assert.equal(entry.scene.lamps.find(l=>l.castsShadow)?.id,'coastal-sunken-headlamp-0');
  const practical=pier.scene.lamps.find(l=>l.castsShadow);

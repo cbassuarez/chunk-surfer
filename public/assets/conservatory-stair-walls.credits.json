@@ -5,9 +5,9 @@
     "source": "tools/chunk_surfer/build-main-stair-walls.mjs",
     "license": "project source",
     "origin": "Original deterministic geometry; no downloaded imagery, textures or meshes.",
-    "sha256": "1c45191653a78f5451e58d766dda35ac6d630e036b75a0ca24edea5334084465",
+    "sha256": "ceb01360bab135d4d63ceb005352423e94e3d651ddfe2f4bab59ee0b1e97f838",
     "triangles": 48402,
-    "bytes": 2068896
+    "bytes": 2068892
   },
   "references": [
     {
@@ -30,7 +30,7 @@
         "min": [
           -3.9939999999999998,
           0.16,
-          -5.994091346153848
+          -5.994
         ],
         "max": [
           4.994,

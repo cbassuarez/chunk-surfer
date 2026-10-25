@@ -8,8 +8,8 @@
       "headwear": "flat-cap",
       "accessory": null,
       "posture": "standing",
-      "vertices": 9015,
-      "triangles": 16734
+      "vertices": 12824,
+      "triangles": 20533
     },
     {
       "id": "district-pub-driver",
@@ -19,8 +19,8 @@
       "headwear": "flat-cap",
       "accessory": null,
       "posture": "standing",
-      "vertices": 9053,
-      "triangles": 16738
+      "vertices": 12408,
+      "triangles": 19835
     },
     {
       "id": "vigil-crowd-east-1",
@@ -30,8 +30,8 @@
       "headwear": "hood",
       "accessory": "placard",
       "posture": "standing",
-      "vertices": 8282,
-      "triangles": 15394
+      "vertices": 12505,
+      "triangles": 19493
     },
     {
       "id": "vigil-crowd-east-2",
@@ -41,8 +41,8 @@
       "headwear": null,
       "accessory": "umbrella",
       "posture": "standing",
-      "vertices": 9478,
-      "triangles": 17344
+      "vertices": 13499,
+      "triangles": 21082
     },
     {
       "id": "vigil-crowd-east-3",
@@ -52,8 +52,8 @@
       "headwear": null,
       "accessory": "pamphlets",
       "posture": "standing",
-      "vertices": 8272,
-      "triangles": 15422
+      "vertices": 11542,
+      "triangles": 18605
     },
     {
       "id": "vigil-crowd-east-4",
@@ -63,8 +63,8 @@
       "headwear": "knit-cap",
       "accessory": "blanket",
       "posture": "seated",
-      "vertices": 8875,
-      "triangles": 16674
+      "vertices": 13135,
+      "triangles": 21017
     },
     {
       "id": "vigil-crowd-west-1",
@@ -74,8 +74,8 @@
       "headwear": "hood",
       "accessory": "umbrella",
       "posture": "standing",
-      "vertices": 8629,
-      "triangles": 15926
+      "vertices": 11942,
+      "triangles": 19013
     },
     {
       "id": "vigil-crowd-west-2",
@@ -85,8 +85,8 @@
       "headwear": null,
       "accessory": "flask",
       "posture": "standing",
-      "vertices": 9617,
-      "triangles": 17558
+      "vertices": 13394,
+      "triangles": 21313
     },
     {
       "id": "vigil-crowd-west-3",
@@ -96,8 +96,8 @@
       "headwear": "hood",
       "accessory": "blanket",
       "posture": "seated",
-      "vertices": 9919,
-      "triangles": 18314
+      "vertices": 14184,
+      "triangles": 22048
     },
     {
       "id": "vigil-crowd-verge-1",
@@ -107,8 +107,8 @@
       "headwear": null,
       "accessory": "placard",
       "posture": "standing",
-      "vertices": 8925,
-      "triangles": 16708
+      "vertices": 12955,
+      "triangles": 20458
     },
     {
       "id": "vigil-crowd-verge-2",
@@ -118,8 +118,8 @@
       "headwear": "knit-cap",
       "accessory": "umbrella",
       "posture": "standing",
-      "vertices": 8929,
-      "triangles": 16656
+      "vertices": 13446,
+      "triangles": 21033
     },
     {
       "id": "vigil-crowd-verge-3",
@@ -129,8 +129,8 @@
       "headwear": null,
       "accessory": "flask",
       "posture": "standing",
-      "vertices": 9492,
-      "triangles": 17384
+      "vertices": 13692,
+      "triangles": 21413
     },
     {
       "id": "vigil-crowd-verge-4",
@@ -140,8 +140,8 @@
       "headwear": "hood",
       "accessory": "pamphlets",
       "posture": "standing",
-      "vertices": 9261,
-      "triangles": 16870
+      "vertices": 12272,
+      "triangles": 19476
     },
     {
       "id": "vigil-crowd-knot-1",
@@ -151,8 +151,8 @@
       "headwear": null,
       "accessory": "camera",
       "posture": "standing",
-      "vertices": 9241,
-      "triangles": 17066
+      "vertices": 12260,
+      "triangles": 19751
     },
     {
       "id": "vigil-crowd-knot-2",
@@ -162,8 +162,8 @@
       "headwear": "flat-cap",
       "accessory": "umbrella",
       "posture": "standing",
-      "vertices": 10248,
-      "triangles": 18764
+      "vertices": 14089,
+      "triangles": 21965
     },
     {
       "id": "vigil-crowd-knot-3",
@@ -173,8 +173,8 @@
       "headwear": null,
       "accessory": "blanket",
       "posture": "seated",
-      "vertices": 8334,
-      "triangles": 15700
+      "vertices": 12937,
+      "triangles": 20433
     },
     {
       "id": "vigil-crowd-knot-4",
@@ -184,8 +184,8 @@
       "headwear": "knit-cap",
       "accessory": "placard",
       "posture": "standing",
-      "vertices": 9096,
-      "triangles": 17180
+      "vertices": 13703,
+      "triangles": 21693
     },
     {
       "id": "vigil-crowd-porch-1",
@@ -195,8 +195,8 @@
       "headwear": "hood",
       "accessory": "umbrella",
       "posture": "standing",
-      "vertices": 9343,
-      "triangles": 17108
+      "vertices": 12360,
+      "triangles": 19656
     },
     {
       "id": "vigil-crowd-porch-2",
@@ -206,8 +206,8 @@
       "headwear": "flat-cap",
       "accessory": "flask",
       "posture": "standing",
-      "vertices": 10253,
-      "triangles": 18572
+      "vertices": 14334,
+      "triangles": 22146
     },
     {
       "id": "vigil-crowd-porch-3",
@@ -217,19 +217,19 @@
       "headwear": "knit-cap",
       "accessory": "camera",
       "posture": "standing",
-      "vertices": 8595,
-      "triangles": 16022
+      "vertices": 12099,
+      "triangles": 19192
     }
   ],
   "shared": {
     "rigs": 2,
     "jointsPerRig": 54,
     "wardrobeStyles": 5,
-    "uniqueAccessors": 508,
-    "reusedAccessors": 719,
-    "geometryLibraryEntries": 48
+    "uniqueAccessors": 574,
+    "reusedAccessors": 764,
+    "geometryLibraryEntries": 50
   },
-  "characterBytes": 4405072,
-  "propBytes": 19464,
-  "totalTriangles": 338134
+  "characterBytes": 8484620,
+  "propBytes": 19284,
+  "totalTriangles": 410155
 }

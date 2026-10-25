@@ -1,5 +1,5 @@
 {
-  "bytes": 495416,
+  "bytes": 614556,
   "meshes": {
     "chapel_presence_seated_lower": {
       "triangles": 1048,
@@ -163,6 +163,44 @@
         "chapel anonymous pressure"
       ]
     },
+    "chapel_presence_singing_head": {
+      "triangles": 2254,
+      "bounds": {
+        "min": [
+          -0.142,
+          -0.113,
+          -0.167
+        ],
+        "max": [
+          0.142,
+          0.253,
+          0.125
+        ]
+      },
+      "materials": [
+        "chapel singing ivory pressure",
+        "chapel singing oral cavity"
+      ]
+    },
+    "chapel_presence_singing_jaw": {
+      "triangles": 1184,
+      "bounds": {
+        "min": [
+          -0.087,
+          -0.114,
+          -0.144
+        ],
+        "max": [
+          0.087,
+          -0.02,
+          0.01
+        ]
+      },
+      "materials": [
+        "chapel singing ivory pressure",
+        "chapel singing oral cavity"
+      ]
+    },
     "chapel_presence_clinging": {
       "triangles": 1664,
       "bounds": {
@@ -289,9 +327,66 @@
         "chapel cold tallow",
         "chapel embedded char and hair"
       ]
+    },
+    "chapel_presence_cherub": {
+      "triangles": 3172,
+      "bounds": {
+        "min": [
+          -0.8467,
+          0.0123,
+          -0.491
+        ],
+        "max": [
+          0.7773,
+          0.2702,
+          0.6504
+        ]
+      },
+      "materials": [
+        "chapel singing ivory pressure"
+      ]
     }
   },
-  "triangles": 19616,
+  "singingFace": {
+    "oralRays": [
+      {
+        "x": -0.045,
+        "hit": [
+          -0.04500000178813934,
+          -0.004999999888241291,
+          -0.04579034447669983
+        ],
+        "material": "chapel singing oral cavity"
+      },
+      {
+        "x": 0,
+        "hit": [
+          0,
+          -0.004999999888241291,
+          -0.029046744108200073
+        ],
+        "material": "chapel singing oral cavity"
+      },
+      {
+        "x": 0.045,
+        "hit": [
+          0.04500000178813934,
+          -0.004999999888241291,
+          -0.045790284872055054
+        ],
+        "material": "chapel singing oral cavity"
+      }
+    ],
+    "jawPivotHeadLocal": [
+      0,
+      -0.005,
+      0.005
+    ],
+    "maxOpeningRadians": 0.4,
+    "closedChinMinY": -0.11899998515844346,
+    "openChinMinY": -0.14554390358962174
+  },
+  "triangles": 26226,
   "pivots": {
     "seated": {
       "upper": [
@@ -313,6 +408,11 @@
         -0.05,
         0,
         0
+      ],
+      "jaw": [
+        0,
+        -0.005,
+        0.005
       ]
     },
     "bowed": {
@@ -335,6 +435,11 @@
         -0.42,
         0,
         0
+      ],
+      "jaw": [
+        0,
+        -0.005,
+        0.005
       ]
     },
     "kneeling": {
@@ -357,6 +462,11 @@
         -0.16,
         0,
         0
+      ],
+      "jaw": [
+        0,
+        -0.005,
+        0.005
       ]
     },
     "celebrant": {
@@ -379,6 +489,11 @@
         -0.05,
         0,
         0
+      ],
+      "jaw": [
+        0,
+        -0.005,
+        0.005
       ]
     },
     "acolyte": {
@@ -401,6 +516,11 @@
         -0.16,
         0,
         0
+      ],
+      "jaw": [
+        0,
+        -0.005,
+        0.005
       ]
     },
     "clinging": {
@@ -418,7 +538,39 @@
         0,
         0,
         0
+      ],
+      "jaw": [
+        0,
+        -0.005,
+        0.005
+      ]
+    },
+    "cherub": {
+      "upper": [
+        0,
+        0.17,
+        0.22
+      ],
+      "head": [
+        0,
+        0.2,
+        -0.47
+      ],
+      "headRest": [
+        0,
+        0,
+        0
+      ],
+      "jaw": [
+        0,
+        -0.005,
+        0.005
       ]
     }
+  },
+  "preservedPack": {
+    "sha256": "d94bd6d9ffcc511ac47cf8762e95e1d6008e489c51324e5ba725f6f806fbba49",
+    "meshes": 18,
+    "exactBinaryPrefixBytes": 538044
   }
 }

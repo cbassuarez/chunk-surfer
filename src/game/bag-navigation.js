@@ -42,6 +42,7 @@ export function initialBagState(model, focus = {}) {
     mode: 'browse',
     pendingAction: null,
     map: focus.map || null,
+    journalPinnedId: null,
   };
 }
 
@@ -92,6 +93,8 @@ export function repairBagSelection(state, model) {
     mode: state?.mode || 'browse',
     pendingAction: state?.pendingAction || null,
     map: state?.map || null,
+    journalPinnedId: bagSection(model, 'journal')?.entries?.some((entry) => entry.id === state?.journalPinnedId && entry.state === 'active')
+      ? state.journalPinnedId : null,
   };
 }
 

@@ -17,7 +17,7 @@ export function createTransparentPixelMesh(THREE, renderer, {
   let profile = resolveProfile(defaultProfile), vfd = profile.vfd, recording = profile.recording;
   let screenId = vfd.screen, screen = screenUniforms(screenId);
   let disposed = false, renderCount = 0, bufferWidth = 0, bufferHeight = 0;
-  let sourceWidth = 0, sourceHeight = 0, noiseReady = false;
+  let sourceWidth = 0, sourceHeight = 0, noiseReady = false, sourceUnitScale = 1;
   const positive = (value, fallback = 1) => Number.isFinite(Number(value)) && Number(value) > 0 ? Number(value) : fallback;
   const blank = new THREE.DataTexture(new Uint8Array([0, 0, 0, 0]), 1, 1);
   blank.needsUpdate = true;
@@ -110,6 +110,7 @@ export function createTransparentPixelMesh(THREE, renderer, {
   });
   const quad = new THREE.Mesh(geometry, acquisitionMaterial); quad.frustumCulled = false; postScene.add(quad);
   const savedViewport = new THREE.Vector4(), savedClear = new THREE.Color();
+  const sourceUnitMatrix = new THREE.Matrix4();
   const ready = new THREE.TextureLoader().loadAsync(String(assetUrl('assets/blue-noise-64.png'))).then(texture => {
     if (disposed) { texture.dispose(); return false; }
     texture.colorSpace = THREE.NoColorSpace; texture.minFilter = texture.magFilter = THREE.NearestFilter;
@@ -168,7 +169,7 @@ export function createTransparentPixelMesh(THREE, renderer, {
       width, height, dpr = 1, stageHeight = height, snapshot = {}, sceneScale = 1,
       profile: nextProfile = defaultProfile, screen: nextScreen, cellSize = 'auto',
       cellScale = dpr, screenScale = dpr,
-      screenOffset = [0, 0],
+      screenOffset = [0, 0], worldUnitScale = 1,
     }) {
       if (disposed) return false;
       dpr = positive(dpr);
@@ -178,15 +179,25 @@ export function createTransparentPixelMesh(THREE, renderer, {
       const stagePixels = Math.max(1, Math.min(bufferHeight, Math.round(stageHeight * dpr)));
       const stageBottom = bufferHeight - stagePixels;
       camera.updateMatrixWorld(true);
+      // Geometry and picking may use enlarged layout units. Acquisition depth
+      // and world-pinned marks still use metres: scale camera-space points,
+      // then translate by the camera's physical position without scaling its
+      // orientation a second time. The actual source camera remains untouched.
+      const metresPerUnit = sourceUnitScale = positive(worldUnitScale);
       uniforms.uSourceProjectionInverse.value.copy(camera.projectionMatrixInverse);
       uniforms.uSourceCameraWorld.value.copy(camera.matrixWorld);
+      if (metresPerUnit !== 1) {
+        sourceUnitMatrix.makeScale(metresPerUnit, metresPerUnit, metresPerUnit);
+        uniforms.uSourceProjectionInverse.value.premultiply(sourceUnitMatrix);
+        for (const index of [12, 13, 14]) uniforms.uSourceCameraWorld.value.elements[index] *= metresPerUnit;
+      }
       uniforms.uSourceViewport.value.set(0, stageBottom, bufferWidth, stagePixels);
       uniforms.uTime.value = Math.max(0, Number(snapshot.clock) || 0);
       uniforms.uReduceMotion.value = snapshot.reducedMotion ? 1 : 0;
       uniforms.uReduceFlash.value = snapshot.reduceFlash ? 1 : 0;
       uniforms.uAudio.value = Math.max(0, Math.min(1, Number(snapshot.audio) || 0));
       uniforms.uFear.value = Math.max(0, Math.min(1, Number(snapshot.fear) || 0));
-      acquisitionUniforms.projectionInverse.value.copy(camera.projectionMatrixInverse);
+      acquisitionUniforms.projectionInverse.value.copy(uniforms.uSourceProjectionInverse.value);
       acquisitionUniforms.toneMappingExposure.value = renderer.toneMappingExposure;
       const targetBefore = renderer.getRenderTarget(), autoClearBefore = renderer.autoClear;
       const scissorBefore = renderer.getScissorTest(), clearAlphaBefore = renderer.getClearAlpha();
@@ -211,7 +222,7 @@ export function createTransparentPixelMesh(THREE, renderer, {
     },
     debug: () => ({ shader: 'pixel-mesh', profile: profile.id, screen: screenId,
       renderCount, noiseReady, depthReconstruction: 'inverse-projection', coveragePreserved: true,
-      temporalMemory: false, width: bufferWidth, height: bufferHeight,
+      temporalMemory: false, worldUnitScale: sourceUnitScale, width: bufferWidth, height: bufferHeight,
       sourceWidth, sourceHeight, cellPx: uniforms.uCellPx.value, screenPeriodPx: uniforms.uScreenPeriodPx.value, disposed }),
     dispose() {
       if (disposed) return; disposed = true;

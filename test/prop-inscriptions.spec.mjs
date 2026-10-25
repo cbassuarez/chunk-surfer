@@ -39,6 +39,11 @@ const hosts=[{id:'roof-gate',mesh:'gate',x:2,y:1,z:4,yaw:.2},
 const labels=hosts.map(p=>({id:`${p.id}-ink`,hostId:p.id,hostMesh:p.mesh,mesh:`lettering_overlay_${p.id}`}));
 const calls=[];
 const boundary={usingSourceSpace:()=>false,usingStairAnomaly:()=>false,syncArchitecturalLocalLights:()=>{},
+  renderedWorldPropVisibilityKey:'',worldPropVisibilityKey:({group,zone})=>group+':'+zone,
+  exteriorRooflineInstance:()=>null,exteriorRoofArchitectureInstances:()=>[],pubHospitalityInstance:p=>p,
+  pubHospitalityRendered:[],PUB_NEW_ACTORS:[],STREET_CROWD_ACTOR_IDS:new Set(),streetCrowdRenderReady:false,
+  R3:{},
+  openingVehicleScene:null,VIGIL_ACTORS:[],pubActor:()=>null,
   isOutdoorZone:()=>false,FP:{zoneAt:()=>0,logicalToPhysical:()=>({x:0,z:0,y:0,spaceId:'',renderGroup:'ground'})},
   px:0,py:0,CELL:.5,buildingWindowForObserver:()=>null,
   chapelTowerState:()=>({phase:'other'}),CHAPEL_TOWER_PHASE:{TOWER_CLEARED:'cleared',CHAPEL_FINAL:'final',TOWER_ACTIVE:'active'},
@@ -49,7 +54,7 @@ const boundary={usingSourceSpace:()=>false,usingStairAnomaly:()=>false,syncArchi
   waterBodies:[{id:'basin',active:()=>true,levelM:8.2}],vigilCharacterIdForMesh:()=>null,
   boothGuardRenderInstance:p=>p,worldPaperIndex:()=>-1,storyGuidanceEmissive:()=>null,propEmissive:()=>null,doorRenderInstances:()=>[]};
 const actual=new Function(...Object.keys(boundary),`${main.slice(start,end)}\nreturn worldRenderInstances;`)(...Object.values(boundary));
-const final=actual('ground');assert.deepEqual(calls,[{group:'ground',inscriptions:false,batchDressing:true}]);
+const final=actual('ground');assert.deepEqual(calls,[{group:'ground',inscriptions:false,batchDressing:true},{group:'academicRoof',inscriptions:false}]);
 assert.ok(!final.some(p=>p.id.includes('academic-roof-home-cassette')),'hidden host must not leave floating letters');
 const gate=final.find(p=>p.id==='roof-gate'),gateInk=final.find(p=>p.letteringHostId==='roof-gate');
 assert.deepEqual([gate.x,gate.z,gate.yaw],[3,5,.2+Math.PI/2]);

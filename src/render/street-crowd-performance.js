@@ -2,6 +2,7 @@
 // sampled from the existing saved vigil clock; no animation advances story.
 import {SOURCE_LAST_RECEPTION_RESIDENT_RIGS as RIGS} from '../data/source-last-reception-resident-rigs.js';
 import {STREET_CROWD_DESIGNS,streetCrowdDesign} from '../data/street-crowd-characters.js';
+import {exteriorPerformanceFrame} from './exterior-conversation-performance.js';
 export {STREET_CROWD_CHARACTER_PACK,STREET_CROWD_PROP_PACK} from '../data/street-crowd-characters.js';
 
 const add=(a,b)=>a.map((v,i)=>v+b[i]),sub=(a,b)=>a.map((v,i)=>v-b[i]),mul=(a,n)=>a.map(v=>v*n),dot=(a,b)=>a.reduce((n,v,i)=>n+v*b[i],0),cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],length=a=>Math.hypot(...a),unit=a=>mul(a,1/(length(a)||1)),clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
@@ -29,21 +30,31 @@ function actionState(frame,reducedMotion){
   const pulse=frame?.action?(reducedMotion?(progress>0&&progress<1?1:0):Math.sin(progress*Math.PI)):0;
   return{action:frame?.action||null,progress,pulse};
 }
-export function streetCrowdPose(idOrMesh,{frame=null,timeSec=0,reducedMotion=false,yaw=0}={}){
+export function streetCrowdPose(idOrMesh,{frame=null,timeSec=0,reducedMotion=false,yaw=0,conversation=null}={}){
   const d=streetCrowdDesign(idOrMesh);if(!d)return null;
   const source=RIGS[d.source],bones=new Map(source.map(b=>[b.name,b])),desired=new Map(),contacts=[];
   const scale=[d.width,d.height/sourceHeight(d.source),d.depth],toLocal=p=>p.map((v,i)=>v/scale[i]),toPhysical=p=>p.map((v,i)=>v*scale[i]);
   const {action,progress,pulse}=actionState(frame,reducedMotion),seated=d.posture==='seated',seat=d.seatY;
-  const breath=reducedMotion?0:Math.sin((Number(timeSec)||0)*.78+d.seed)*.0015;
+  const performance=exteriorPerformanceFrame(d.id,{timeSec,reducedMotion,conversation});
+  const {ambient,attention,gesture}=performance,local=d.id.startsWith('district-');
+  const document=['pamphlets','flask','camera'].includes(d.accessory);
+  // Keep the approved rest fit. Respiratory expansion affects only the ribs;
+  // independent, sparse object adjustments carry the larger idle performance.
+  const breath=reducedMotion?0:Math.sin(d.seed)*.0015;
   const pelvis=bones.get('pelvis').head,shift=seated?toLocal([0,seat+.09,0]).map((v,i)=>v-(i===1?pelvis[1]:0)):[0,0,0];
   // Weight stays over the planted shoes. Only the upper torso makes a small
   // lateral correction, avoiding the old whole-prop sliding animation.
-  const bodyQ=multiply(axis([0,0,1],d.sideLean+(action==='weight-shift'?.018*pulse:0)),axis([1,0,0],-d.lean-(action==='chair-settle'?.018*pulse:0)));
-  const upper=p=>add(add(pelvis,rotate(sub(p,pelvis),bodyQ)),add(shift,[0,breath,0]));
+  const bodyQ=multiply(axis([0,0,1],d.sideLean+(action==='weight-shift'?.018*pulse:0)+(local?.008*gesture:0)),axis([1,0,0],-d.lean-(action==='chair-settle'?.018*pulse:0)-(seated?.012*ambient:.008*attention)));
+  const upper=p=>{const posed=add(add(pelvis,rotate(sub(p,pelvis),bodyQ)),add(shift,[0,breath,0])),rib=performance.respiration*clamp((p[1]-pelvis[1])/.40,0,1);return rib?add(posed,[0,.0013*rib,-.0005*rib]):posed;};
   const put=(name,head,tail)=>desired.set(name,{head,rotation:between(sub(bones.get(name).tail,bones.get(name).head),sub(tail,head))});
   for(const name of['pelvis','spine_lower','spine_mid','spine_upper','chest','neck','clavicle_L','clavicle_R']){const b=bones.get(name);put(name,upper(b.head),upper(b.tail));}
-  const headQ=multiply(bodyQ,axis([0,1,0],d.headYaw+(action==='camera-check'?-.08:action==='page-turn'?.06:0)*pulse));
-  for(const name of['head','jaw']){const b=bones.get(name),pivot=upper(bones.get('head').head);desired.set(name,{head:add(pivot,rotate(sub(upper(b.head),pivot),headQ)),rotation:headQ});}
+  const glance=(d.accessory==='placard'?.065:document?-.025:seated?-.045:.055)*ambient;
+  const headPitch=performance.nod-(document?.055:seated?.025:0)*ambient;
+  const headQ=multiply(bodyQ,multiply(axis([0,1,0],d.headYaw+(action==='camera-check'?-.08:action==='page-turn'?.06:0)*pulse+performance.headYaw+glance),axis([1,0,0],headPitch)));
+  for(const name of['head','jaw']){const b=bones.get(name),pivot=upper(bones.get('head').head);
+    const legacyOffset=sub(upper(b.head),pivot),localOffset=sub(b.head,bones.get('head').head),blend=clamp(attention+ambient,0,1);
+    const offset=legacyOffset.map((value,i)=>value+(localOffset[i]-value)*blend);
+    desired.set(name,{head:add(pivot,rotate(offset,headQ)),rotation:name==='jaw'?multiply(headQ,axis([1,0,0],-performance.jaw)):headQ});}
   for(const[side,sign]of[['L',-1],['R',1]]){
     const thigh=bones.get('thigh_'+side),shin=bones.get('shin_'+side),foot=bones.get('foot_'+side),toe=bones.get('toe_'+side);
     if(seated){
@@ -56,17 +67,17 @@ export function streetCrowdPose(idOrMesh,{frame=null,timeSec=0,reducedMotion=fal
   // physical points, then binds the object to the solved holding hand.
   const objects={},grips={};
   const cylinder=(side,center,radius,{horizontal=false}={})=>({kind:'cylinder',side,center,radius,horizontal,axis:[0,-.48,-.8773],normal:horizontal?[0,-1,0]:[side==='L'?1:-1,0,0],wrist:add(center,horizontal?[0,.055,.067]:[side==='L'?-(radius+.001):radius+.001,.055,.055])});
-  if(d.accessory==='umbrella'){objects.umbrella={center:[.19,1.18-(action==='umbrella-settle'?.035*pulse:0),-.17],radius:.012};grips.R=cylinder('R',objects.umbrella.center,.012);}
+  if(d.accessory==='umbrella'){objects.umbrella={center:[.19,1.18-(action==='umbrella-settle'?.035*pulse:0)-.008*ambient,-.17],radius:.012};grips.R=cylinder('R',objects.umbrella.center,.012);}
   if(d.accessory==='flask'){
-    objects.flask={center:[-.18,1.11,-.23],radius:.061};objects.cup={center:add([.17,1.08,-.20],action==='cup-handoff'?[-.06*pulse,.02*pulse,-.05*pulse]:[0,0,0]),radius:.041};
+    objects.flask={center:[-.18,1.11,-.23],radius:.061};objects.cup={center:add(add([.17,1.08,-.20],action==='cup-handoff'?[-.06*pulse,.02*pulse,-.05*pulse]:[0,0,0]),[0,.018*ambient,-.008*ambient]),radius:.041};
     grips.L=cylinder('L',objects.flask.center,.061);grips.R=cylinder('R',objects.cup.center,.041);
   }
   if(d.accessory==='pamphlets'){
-    objects.pamphlets={center:[-.17,1.11+(action==='page-turn'?.012*pulse:0),-.25],width:.19,height:.265};objects.bag={center:[.24,.72,-.075],grip:[.24,.975,-.075]};
+    objects.pamphlets={center:[-.17,1.11+(action==='page-turn'?.012*pulse:0)+.006*ambient,-.25],width:.19,height:.265};objects.bag={center:[.24,.72,-.075],grip:[.24,.975,-.075]};
     grips.L={kind:'paper',side:'L',center:objects.pamphlets.center,anchor:add(objects.pamphlets.center,[-.088,-.025,0]),axis:[.94,-.342,0],normal:[0,0,-1]};grips.R=cylinder('R',objects.bag.grip,.007,{horizontal:true});
   }
   if(d.accessory==='camera'){
-    objects.camera={center:[.20,1.43-(action==='camera-check'?.012*pulse:0),-.22]};
+    objects.camera={center:[.20,1.43-(action==='camera-check'?.012*pulse:0)-.006*ambient,-.22]};
     grips.R=cylinder('R',add(objects.camera.center,[0,.105,0]),.009,{horizontal:true});
     grips.L={kind:'support',side:'L',center:objects.camera.center,axis:[1,0,-.25],normal:[0,1,0],wrist:add(objects.camera.center,[-.14,-.085,.055])};
   }
@@ -83,6 +94,11 @@ export function streetCrowdPose(idOrMesh,{frame=null,timeSec=0,reducedMotion=fal
     if(d.stance==='folded')physicalTarget=side==='L'?[.085,1.10,-.23]:[-.085,1.14,-.25];
     if(d.stance==='belt')physicalTarget=[sign*.17,.98,-.12];
     let palmQ=oriented(fingerAxis,palmNormal,[sign*.10,-.78,-.35],[0,0,1]);
+    if(!grip&&local){
+      const mews=d.stance==='folded',amount=side==='R'?gesture:gesture*.18;
+      physicalTarget=add(physicalTarget,[sign*(mews?.018:.032)*amount,(mews?.025:.055)*amount,-(mews?.034:.050)*amount]);
+      palmQ=multiply(axis([0,0,1],sign*(mews?.08:.13)*amount),palmQ);
+    }
     if(grip){
       palmQ=oriented(fingerAxis,palmNormal,unit(toLocal(grip.axis)),unit(toLocal(grip.normal)));
       if(grip.kind==='paper'){
@@ -96,8 +112,8 @@ export function streetCrowdPose(idOrMesh,{frame=null,timeSec=0,reducedMotion=fal
     contacts.push({kind:'wrist',side,target,point:solve.end,physicalTarget,physicalPoint:toPhysical(solve.end),error:solve.error});
     const cacheKey=d.id+':'+side+':'+(grip?.kind||'relaxed'),cached=fingerPoseCache.get(cacheKey),fingerContactStart=contacts.length;
     if(cached){
-      for(const[name,entry]of cached.joints)desired.set(name,{head:add(solve.end,entry.head),rotation:[...entry.rotation]});
-      for(const entry of cached.contacts){const target=add(solve.end,entry.target),point=add(solve.end,entry.point);contacts.push({...entry,target,point,physicalTarget:toPhysical(target),physicalPoint:toPhysical(point)});}
+      for(const[name,entry]of cached.joints)desired.set(name,{head:add(solve.end,rotate(entry.head,palmQ)),rotation:multiply(palmQ,entry.rotation)});
+      for(const entry of cached.contacts){const target=add(solve.end,rotate(entry.target,palmQ)),point=add(solve.end,rotate(entry.point,palmQ));contacts.push({...entry,target,point,physicalTarget:toPhysical(target),physicalPoint:toPhysical(point)});}
     }else for(const[digitIndex,digit]of digits.entries()){
       const bonesForDigit=links(digit),base=add(solve.end,rotate(sub(bonesForDigit[0].head,hand.head),palmQ)),sizes=bonesForDigit.map(b=>length(sub(b.tail,b.head)));let targetPoint,pole=rotate(palmNormal,palmQ);
       if(grip?.kind==='cylinder'){
@@ -117,7 +133,7 @@ export function streetCrowdPose(idOrMesh,{frame=null,timeSec=0,reducedMotion=fal
       for(let i=0;i<3;i++)desired.set(bonesForDigit[i].name,{head:finger.points[i],rotation:multiply(between(rotate(sub(bonesForDigit[i].tail,bonesForDigit[i].head),palmQ),sub(finger.points[i+1],finger.points[i])),palmQ)});
       contacts.push({kind:'finger',side,finger:digit,gripped:!!grip,target:targetPoint,point:finger.points[3],physicalTarget:toPhysical(targetPoint),physicalPoint:toPhysical(finger.points[3]),error:finger.error,grip:grip?.kind||null,object:grip?.object||null});
     }
-    if(!cached)fingerPoseCache.set(cacheKey,{joints:source.filter(b=>/^(thumb|index|middle|ring|little)(_|$)/.test(b.name)&&b.name.endsWith('_'+side)).map(b=>{const entry=desired.get(b.name);return[b.name,{head:sub(entry.head,solve.end),rotation:[...entry.rotation]}];}),contacts:contacts.slice(fingerContactStart).map(entry=>({...entry,target:sub(entry.target,solve.end),point:sub(entry.point,solve.end)}))});
+    if(!cached){const inverse=[-palmQ[0],-palmQ[1],-palmQ[2],palmQ[3]];fingerPoseCache.set(cacheKey,{joints:source.filter(b=>/^(thumb|index|middle|ring|little)(_|$)/.test(b.name)&&b.name.endsWith('_'+side)).map(b=>{const entry=desired.get(b.name);return[b.name,{head:rotate(sub(entry.head,solve.end),inverse),rotation:multiply(inverse,entry.rotation)}];}),contacts:contacts.slice(fingerContactStart).map(entry=>({...entry,target:rotate(sub(entry.target,solve.end),inverse),point:rotate(sub(entry.point,solve.end),inverse)}))});}
   }
   // Remaining bones follow their already posed parent.
   for(const b of source)if(!desired.has(b.name)){
@@ -126,7 +142,7 @@ export function streetCrowdPose(idOrMesh,{frame=null,timeSec=0,reducedMotion=fal
     desired.set(b.name,parent?{head:add(parent.head,rotate(sub(b.head,rest.head),parent.rotation)),rotation}:{head:b.head,rotation});
   }
   const joints=Object.fromEntries(source.map(b=>{const pose=desired.get(b.name);return[`street_${d.source}_${b.name}`,{translation:sub(pose.head,b.head),rotation:pose.rotation}];}));
-  return{joints,hands,contacts,scale,seatY:seated?seat:null,action,progress,pulse,objects,object:d.accessory?{kind:d.accessory,hand:d.accessory==='flask'||d.accessory==='pamphlets'?'L':'R'}:null};
+  return{joints,hands,contacts,scale,seatY:seated?seat:null,action,progress,pulse,objects,performance,object:d.accessory?{kind:d.accessory,hand:d.accessory==='flask'||d.accessory==='pamphlets'?'L':'R'}:null};
 }
 export function streetCrowdDescriptor(idOrMesh,frame=null,options={}){const pose=streetCrowdPose(idOrMesh,{...options,frame});return pose?{joints:pose.joints}:null;}
 
@@ -135,18 +151,19 @@ function instanceMatrix(instance){
   const yaw=Number(instance.yaw)||0,c=Math.cos(yaw),s=Math.sin(yaw),base=Number(instance.scale)||1,sx=(Number(instance.scaleX)||1)*base,sy=(Number(instance.scaleY)||1)*base,sz=(Number(instance.scaleZ)||1)*base;
   return[c*sx,0,s*sx,0,0,sy,0,0,-s*sz,0,c*sz,0,Number(instance.x)||0,Number(instance.y)||0,Number(instance.z)||0,1];
 }
-export function streetCrowdRenderInstance(instance,{actorId=instance?.id,frame=null,timeSec=0,reducedMotion=false}={}){
+export function streetCrowdRenderInstance(instance,{actorId=instance?.id,frame=null,timeSec=0,reducedMotion=false,conversation=null}={}){
   if(!instance)return instance;
   const d=streetCrowdDesign(actorId)||streetCrowdDesign(instance.mesh);if(!d)return instance;
-  const pose=streetCrowdPose(d.id,{frame,timeSec,reducedMotion,yaw:instance.yaw}),matrix=instanceMatrix(instance);
+  const pose=streetCrowdPose(d.id,{frame,timeSec,reducedMotion,yaw:instance.yaw,conversation}),matrix=instanceMatrix(instance);
   for(let column=0;column<3;column++)for(let row=0;row<3;row++)matrix[column*4+row]*=pose.scale[column];
   return{...instance,mesh:d.mesh,matrix:new Float32Array(matrix),character:{joints:pose.joints}};
 }
-export function streetCrowdInstances(instances=[],{frames=[],timeSec=0,reducedMotion=false}={}){
+export function streetCrowdInstances(instances=[],{frames=[],timeSec=0,reducedMotion=false,conversations=null}={}){
   const frameById=new Map((Array.isArray(frames)?frames:[]).map(frame=>[frame.actorId,frame])),out=[];
   for(const instance of instances){
     const d=streetCrowdDesign(instance.id)||streetCrowdDesign(instance.mesh);if(!d||instance.visible===false)continue;
-    out.push(streetCrowdRenderInstance(instance,{actorId:d.id,frame:frameById.get(instance.id)||null,timeSec,reducedMotion}));
+    const conversation=conversations instanceof Map?conversations.get(instance.id):conversations?.[instance.id];
+    out.push(streetCrowdRenderInstance(instance,{actorId:d.id,frame:frameById.get(instance.id)||null,timeSec,reducedMotion,conversation}));
     if(d.posture==='seated'||d.accessory==='camera'){
       const extra={...instance,id:instance.id+(d.posture==='seated'?'-chair':'-tripod'),mesh:d.posture==='seated'?'street_crowd_folding_chair':'street_crowd_camera_tripod',matrix:new Float32Array(instanceMatrix(instance)),structural:false};
       delete extra.character;out.push(extra);

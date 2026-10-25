@@ -204,8 +204,25 @@ test('reverse road entry offers the completed Catch balcony and a refuge returns
 // Only the renderer/audio devices and the existing onward-drive owner are
 // replaced; boot, canvas creation and game processes never run in this suite.
 const main=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
+function balancedEnd(source,start,open,close){
+  assert.equal(source[start],open);let depth=0,quote='',line=false,block=false;
+  for(let i=start;i<source.length;i++){
+    const ch=source[i],next=source[i+1];
+    if(line){if(ch==='\n')line=false;continue;}
+    if(block){if(ch==='*'&&next==='/'){block=false;i++;}continue;}
+    if(quote){if(ch==='\\'){i++;continue;}if(ch===quote)quote='';continue;}
+    if(ch==='/'&&next==='/'){line=true;i++;continue;}
+    if(ch==='/'&&next==='*'){block=true;i++;continue;}
+    if(ch==='\''||ch==='"'||ch==='`'){quote=ch;continue;}
+    if(ch===open)depth++;else if(ch===close&&--depth===0)return i;
+  }
+  assert.fail(`Production ${open}${close} block has no closing delimiter`);
+}
 const production=(name,next,environment)=>{
-  const at=main.indexOf(`function ${name}(`),end=main.indexOf(next,at);assert.ok(at>=0&&end>at,name);
+  const at=main.indexOf(`function ${name}(`),boundary=main.indexOf(next,at);assert.ok(at>=0&&boundary>at,name);
+  const parameters=main.indexOf('(',at),parametersEnd=balancedEnd(main,parameters,'(',')');
+  const body=main.indexOf('{',parametersEnd),end=balancedEnd(main,body,'{','}')+1;
+  assert.ok(end<=boundary,`${name} closes before its following marker`);
   const start=main.slice(Math.max(0,at-6),at)==='async '?at-6:at;
   return Function('environment',`with(environment){return (${main.slice(start,end).trim()});}`)(environment);
 };
@@ -221,7 +238,7 @@ function host({source=initial(),checkpoint=null,initialize=null,driveReady=true,
   const calls=[],renderers=[],audio={stop:()=>calls.push(['audio-stop']),pause:()=>calls.push(['audio-pause']),event(){},update(){}};
   const e={sourceContinuationScene:null,sourceContinuationRenderer:null,sourceContinuationAudio:null,sourceEarthfallAudio:null,sourceContinuationTrace:[],
     sourceEarthfallNeeded:()=>false,sourceFalseReturnNeeded:()=>false,sourceContinuationStudyRotation:0,
-    sourcePubScene:null,sourceDriveSession:null,coastalMemoryScene:null,chunkSurfRuntime:runtime,paused:false,actx:null,sfxGain:null,
+    sourcePubScene:null,sourceDriveSession:null,coastalMemoryScene:null,standingTearScene:null,chunkSurfRuntime:runtime,paused:false,actx:null,sfxGain:null,
     px:at.x,py:at.y,renderMove:{},motionRig:{},trail:[1],r3dCache:{physicalKey:'source',physicalGroup:'source-space',fogSize:2},
     getSave:()=>data,saveCommit:patch=>{data={...data,...patch};calls.push(['save',copy(patch)]);},scenes,createSourceContinuationScene,
     R3:{r3dLookAngles:()=>({...look}),r3dFacing:()=>2,r3dSetLookAngles:value=>{look={yaw:value.yaw,pitch:value.pitch};},r3dSetFrontEndPlate(){},r3dSnapCameraOnNextFrame(){},r3dResetVfdMemory(){}},
@@ -235,6 +252,8 @@ function host({source=initial(),checkpoint=null,initialize=null,driveReady=true,
     towerBellDirector:{suspend(){},resume:()=>calls.push(['resume-bells'])},bellPealPerformance:{suspend(){},resume(){}},
     windowChoreography:{leaveSource:async()=>{}},frontEndSession:{markLive(){}},frontEndPlateOverride:null,
     ensureCtx(){},resetMotionInput:reason=>calls.push(['reset-input',reason]),pubRoomAudio:{stop(){},pause(){}},sourcePubAudio:null,
+    retireStandingTear(){return false;},
+    resumeStandingTearFromSave(){return false;},
     cancelOutskirtDoorAnswer(){},stopOutskirtsStreetAudio(){},pauseOutskirtsLastLight(){},stopSourceShoreAudio(){},stopSourceDockDoorAudio(){},stopSourceCorridorRain(){},
     syncStationEdgeSound(){},syncElsewhereBeds(){},endHorizonScore(){},stopAllVoices(){},stopWorldLayerVoice(){},silenceAmbientDrone(){},endBootWeather(){},
     pushEvent:value=>calls.push(['error',value]),updateAudio(){},ensureInteractionFocus(){},

@@ -7,6 +7,9 @@ import {VIGIL_VOICES,vigilFigures} from '../src/data/exterior-vigil.js';
 import {vigilCharacterIdForMesh,vigilCharacterDescriptor} from '../src/render/vigil-character-performance.js';
 import {pubActor} from '../src/data/pub-population.js';
 import {pubSeatedVigilDescriptor} from '../src/render/pub-character-performance.js';
+import {exteriorVigilInstances} from '../src/render/exterior-vigil-instances.js';
+import {busWomanExteriorInstances} from '../src/render/bus-woman-exterior-performance.js';
+import {isLiveExteriorPerformer} from '../src/render/exterior-performer-visibility.js';
 import {ZONE} from '../src/data/floorplan/legend.js';
 
 // Execute the actual main render adapters with controlled world/renderer
@@ -20,8 +23,14 @@ let authored=[...originals,...named],ready=false,currentViewGroup='ground',endin
 const submitted={static:[],dynamic:[],groups:[],drifts:[]};
 const context={
   console,Math,Number,Set,Map,Float32Array,performance:{now:()=>12_000},ZONE,
+  renderedWorldPropVisibilityKey:'',worldPropVisibilityKey:({group,zone})=>group+':'+zone,
+  isLiveExteriorPerformer,
+  exteriorRooflineInstance:()=>null,exteriorRoofArchitectureInstances:()=>[],pubHospitalityInstance:v=>v,
+  pubHospitalityReady:()=>false,pubHospitalityRenderReady:false,pubHospitalityRendered:[],
   STREET_CROWD_IDS,STREET_CROWD_DESIGNS,STREET_CROWD_ACTOR_IDS:new Set(STREET_CROWD_IDS),streetCrowdDesign,streetCrowdInstances,streetCrowdRenderInstance,
   vigilCharacterIdForMesh,vigilCharacterDescriptor,VIGIL_ACTORS:vigilFigures(),pubActor,pubSeatedVigilDescriptor,
+  exteriorPeopleClock:4,exteriorConversationFrames:()=>({}),exteriorVigilInstances,busWomanExteriorInstances,
+  exteriorAmbientPeopleInstances:v=>[v],boothGuardHeldInstances:()=>[],boothPreviousPose:"idle",boothPoseStartedAt:0,boothPresentationSourceId:"",
   streetCrowdRenderReady:false,streetCrowdSubmitted:[],vigilPosedPropIds:new Set(),vigilActionState:{active:[]},
   px:0,py:0,CELL:.5,storyMode:true,planName:'conservatory',PUB_NEW_ACTORS:[],
   usingSourceSpace:()=>false,usingStairAnomaly:()=>false,usingSpecialSpace:()=>false,FP:{isLoaded:()=>true,logicalToPhysical:(x)=>({x,z:0,y:0,renderGroup:x===100?'academic':currentViewGroup}),zoneAt:()=>ZONE.street},
@@ -36,10 +45,12 @@ const context={
   streetPilotTime:()=>null,currentStoryGuidanceFrame:()=>({highlight:null,target:null}),storyGuidanceHighlight:{},storyGuidanceHighlightRenderKey:'false:::0.00',
   doorLeafVisualCache:{ready:true,entries:[]},rebuildDoorLeafVisuals:()=>{},doorDynamicCombined:[],inertBellTowerInstances:null,
   bellPealPerformance:null,bellTowerRuntime:null,presentTowerRuntimeInstances:()=>[],basementWatcherRenderInstance:()=>null,heldNoteParts:()=>[],conservatoryAdversaries:{held:null},
+  academicAdversaryParts:()=>[],academicAdversaries:{frame:()=>null},
+  academicGalleryPAInstances:()=>[],academicInframusicLevel:()=>0,academicFloorPopulationActors:()=>[],
   recordingHallucinationPropInstances:()=>[],dreamFigurePropInstance:()=>null,pubCharacterInstances:()=>[],currentLeafFlurryInstances:()=>[],brendanTowerInstances:()=>[],
   escape:null,vanDoorInstances:()=>[],endingApproachPropInstances:()=>[],endingWorldPropInstances:()=>ending,
   exteriorAmbientInstances:()=>[],yardBusWomanReplayTime:null,yardBusWomanClock:0,updateAcademicGhostAudio:()=>{},academicSocietyCharacterInstances:()=>[],academicSocietyActors:()=>[],academicSocietyListener:()=>null,academicFloorPopulationInstances:()=>[],academicFloorPopulation:{actorFrame:()=>[]},academicBouncerInstances:()=>[],academicBouncerActors:()=>[],
-  RADIO:{radioLocation:()=>null},PLANT:{plantHissing:()=>false},
+  RADIO:{radioLocation:()=>null},PLANT:{plantHissing:()=>false},towerWarningReady:false,
 };
 vm.createContext(context);
 vm.runInContext([productionFunction('worldRenderInstances'),productionFunction('refreshWorldProps'),productionFunction('syncDoorDynamicProps')].join('\n'),context);
@@ -47,7 +58,7 @@ vm.runInContext([productionFunction('worldRenderInstances'),productionFunction('
 context.refreshWorldProps();context.syncDoorDynamicProps();
 assert.equal(submitted.static.filter(i=>STREET_CROWD_IDS.includes(i.id)).length,20,'all authored silhouettes remain visible until both optional packs are ready');
 assert.equal(submitted.dynamic.filter(i=>STREET_CROWD_IDS.includes(i.id)).length,0,'a partial load cannot overlap the silhouettes with anatomical bodies');
-const namedBefore=submitted.static.filter(i=>named.some(n=>n.id===i.id));assert.equal(namedBefore.length,6);assert.ok(namedBefore.every(i=>i.character));
+const namedBefore=submitted.dynamic.filter(i=>named.some(n=>n.id===i.id));assert.equal(namedBefore.length,6);assert.ok(namedBefore.every(i=>i.character));
 
 ready=true;context.vigilPosedPropIds.add('vigil-crowd-east-1');context.syncDoorDynamicProps();
 assert.equal(submitted.static.filter(i=>STREET_CROWD_IDS.includes(i.id)).length,0,'readiness refresh retires all twenty static bodies in the same handoff');
@@ -55,7 +66,10 @@ assert.equal(submitted.dynamic.filter(i=>STREET_CROWD_IDS.includes(i.id)).length
 assert.equal(submitted.dynamic.filter(i=>/-(chair|tripod)$/.test(i.id)).length,5);
 assert.equal(context.streetCrowdSubmitted.length,25,'review evidence reports the actual submitted bodies and equipment');
 assert.deepEqual(submitted.drifts,[{id:'vigil-crowd-east-1',drift:null}],'old whole-prop action drift is cleared before skin animation takes ownership');
-const namedAfter=submitted.static.filter(i=>named.some(n=>n.id===i.id));assert.deepEqual(namedAfter,namedBefore,'the established six named performances keep their descriptors');
+const namedAfter=submitted.dynamic.filter(i=>named.some(n=>n.id===i.id));assert.deepEqual(namedAfter,namedBefore,'the established six named performances keep their descriptors');
+context.exteriorPeopleClock=12;context.syncDoorDynamicProps();
+assert.notDeepEqual(submitted.dynamic.find(i=>i.id===named[0].id).character,namedBefore[0].character,'idle named rigs advance through the live dynamic pass without a prop refresh');
+assert.equal(submitted.static.some(i=>named.some(n=>n.id===i.id)),false,'no static duplicate of a live named performer');
 for(const id of STREET_CROWD_IDS)assert.equal([...submitted.static,...submitted.dynamic].filter(i=>i.id===id).length,1,'one body per stable identity: '+id);
 
 authored=authored.filter(i=>i.id!=='vigil-crowd-west-3');context.syncDoorDynamicProps();
@@ -65,7 +79,7 @@ context.syncDoorDynamicProps();const worker=submitted.dynamic.find(i=>i.id==='en
 assert.equal(worker.mesh,'district_pub_driver');assert.ok(worker.character);assert.equal(worker.scale,.9);assert.deepEqual(worker.emissive,ending[0].emissive);assert.equal(worker.noShadow,true);
 
 ready=false;context.syncDoorDynamicProps();
-assert.equal(submitted.dynamic.some(i=>i.character),false,'loss of readiness retires optional dynamic skins');
+assert.equal(submitted.dynamic.some(i=>STREET_CROWD_IDS.includes(i.id)&&i.character),false,'loss of readiness retires optional dynamic skins');
 assert.equal(submitted.static.filter(i=>STREET_CROWD_IDS.includes(i.id)).length,19,'the surviving authored silhouettes are restored on fallback');
 
 // A worldView may render another floor while the saved player stays outside.
@@ -79,6 +93,14 @@ assert.equal(submitted.static.some(i=>STREET_CROWD_IDS.includes(i.id)),false);
 authored=[...originals,...named];ending=[];currentViewGroup='academicRoof';context.refreshWorldProps();context.syncDoorDynamicProps();
 assert.equal(submitted.dynamic.filter(i=>STREET_CROWD_IDS.includes(i.id)).length,20,'all twenty ground bodies remain visible from the academic roof');
 assert.equal(submitted.dynamic.filter(i=>/-(chair|tripod)$/.test(i.id)).length,5,'the roof view retains their five fixed pieces of equipment');
-assert.equal(submitted.static.filter(i=>named.some(n=>n.id===i.id)).length,6,'roof views retain the six original named participants');
+assert.equal(submitted.dynamic.filter(i=>named.some(n=>n.id===i.id)).length,6,'roof views retain the six live named participants');
 for(const id of STREET_CROWD_IDS)assert.equal([...submitted.static,...submitted.dynamic].filter(i=>i.id===id).length,1,'roof views retain exactly one body per identity: '+id);
+// An upper-room window borrows the same live ground actors, rather than
+// reinjecting frozen static bodies on a different performance clock.
+currentViewGroup='academic';context.buildingWindowForObserver=()=>({id:'actual-window-boundary'});
+context.isBuildingWindowScenery=()=>true;context.buildingWindowExteriorPlane=()=>[1,0,0,-1];context.buildingWindowPortal=()=>({id:'actual-window-boundary'});
+context.refreshWorldProps();context.syncDoorDynamicProps();
+assert.equal(submitted.static.some(i=>STREET_CROWD_IDS.includes(i.id)||named.some(n=>n.id===i.id)),false,'window scenery never reinjects a frozen performer');
+assert.equal(submitted.dynamic.filter(i=>STREET_CROWD_IDS.includes(i.id)).length,20,'window has live exterior people despite its different floor group');
+assert.ok(submitted.dynamic.filter(i=>STREET_CROWD_IDS.includes(i.id)).every(i=>i.exteriorPortal?.id==='actual-window-boundary'&&i.noShadow),'window bodies inherit the exact scenery portal');
 console.log(JSON.stringify({ok:true,productionAdapters:3,authoredCharacters:20,sharedRigCharacters:20,fixedEquipment:5,namedPerformersPreserved:6,readinessFallback:true,inactiveRemoval:true,endingWorker:true,remoteViewGroup:true,roofSightline:true}));

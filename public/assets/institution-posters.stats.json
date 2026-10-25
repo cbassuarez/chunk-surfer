@@ -1,0 +1,314 @@
+{
+  "version": 1,
+  "bytes": 3742188,
+  "sha256": "e7c7502bc5efc3e92f83e657e95114764715e9d1e99d79a8b4655ed912e4773e",
+  "triangles": 9792,
+  "estimatedMipmappedTextureBytes": 77099691,
+  "meshes": [
+    "institution_poster_season_flat",
+    "institution_poster_season_taped",
+    "institution_poster_winter_programme_flat",
+    "institution_poster_winter_programme_taped",
+    "institution_poster_winter_flat",
+    "institution_poster_winter_taped",
+    "institution_poster_chamber_flat",
+    "institution_poster_chamber_taped",
+    "institution_poster_piano_flat",
+    "institution_poster_piano_taped",
+    "institution_poster_visiting_flat",
+    "institution_poster_visiting_taped",
+    "institution_poster_chapel_flat",
+    "institution_poster_chapel_taped",
+    "institution_poster_students_flat",
+    "institution_poster_students_taped",
+    "institution_poster_lyric_flat",
+    "institution_poster_lyric_taped",
+    "institution_poster_loudspeakers_flat",
+    "institution_poster_loudspeakers_taped",
+    "institution_poster_live_electronics_flat",
+    "institution_poster_live_electronics_taped",
+    "institution_poster_tape_flat",
+    "institution_poster_tape_taped",
+    "institution_poster_new_works_flat",
+    "institution_poster_new_works_taped",
+    "institution_poster_graphic_score_flat",
+    "institution_poster_graphic_score_taped",
+    "institution_poster_prepared_flat",
+    "institution_poster_prepared_taped",
+    "institution_poster_case"
+  ],
+  "artwork": [
+    {
+      "id": "season",
+      "title": "Music for the city",
+      "kind": "season-programme",
+      "pixels": [
+        1280,
+        896
+      ],
+      "materialPixels": [
+        256,
+        179
+      ],
+      "widthM": 1,
+      "heightM": 0.7,
+      "coverage": 0.2653964241946779,
+      "coverageSha256": "0e9fdca99f40dc835de044f76e7f80a6c4a94771ccbedf954c3f64bc849baf53"
+    },
+    {
+      "id": "winter_programme",
+      "title": "The winter programme",
+      "kind": "season-programme",
+      "pixels": [
+        1280,
+        896
+      ],
+      "materialPixels": [
+        256,
+        179
+      ],
+      "widthM": 1,
+      "heightM": 0.7,
+      "coverage": 0.3120529662060137,
+      "coverageSha256": "f5b826bf550f618c22b15e88deb65611294a419148a6dacc4a0ae62bdaa0b339"
+    },
+    {
+      "id": "winter",
+      "title": "Winter concerts",
+      "kind": "season-promotion",
+      "pixels": [
+        768,
+        1087
+      ],
+      "materialPixels": [
+        256,
+        362
+      ],
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "coverage": 0.47291040486648506,
+      "coverageSha256": "8955eae5d1857058f62838545570ab2ba07c2526f5991b7a7433f64f48effe3d"
+    },
+    {
+      "id": "chamber",
+      "title": "In company",
+      "kind": "chamber-promotion",
+      "pixels": [
+        768,
+        1087
+      ],
+      "materialPixels": [
+        256,
+        362
+      ],
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "coverage": 0.07714395958475387,
+      "coverageSha256": "6ce74b8f96c324f20f7eacc752d408072d47e224904ebbf1e6b66a2f9e1dbbb4"
+    },
+    {
+      "id": "piano",
+      "title": "One piano",
+      "kind": "solo-promotion",
+      "pixels": [
+        768,
+        1087
+      ],
+      "materialPixels": [
+        256,
+        362
+      ],
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "coverage": 0.3754110727439415,
+      "coverageSha256": "275b46a194953d3c3da1d01d7069483398fb90de8828e01772007e9d525f2b33"
+    },
+    {
+      "id": "visiting",
+      "title": "Other voices",
+      "kind": "visiting-ensemble-promotion",
+      "pixels": [
+        768,
+        1087
+      ],
+      "materialPixels": [
+        256,
+        362
+      ],
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "coverage": 0.3659992611733439,
+      "coverageSha256": "d8f280161764e33ab2c58f29bf952b1918097ff0e3b1d75a76867deaf931dd25"
+    },
+    {
+      "id": "chapel",
+      "title": "Sound & stone",
+      "kind": "chapel-promotion",
+      "pixels": [
+        768,
+        1087
+      ],
+      "materialPixels": [
+        256,
+        362
+      ],
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "coverage": 0.1849968723881764,
+      "coverageSha256": "ceda15e134b20a329faad23d306d2232fdefae04898b923a1f90789cff27a8ae"
+    },
+    {
+      "id": "students",
+      "title": "Play together",
+      "kind": "student-notice",
+      "pixels": [
+        768,
+        1087
+      ],
+      "materialPixels": [
+        256,
+        362
+      ],
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "coverage": 0.32095215721599896,
+      "coverageSha256": "b8987afe135496464daaaa5f130d25053d2fda2f25e72d554ec0381451e52dcf"
+    },
+    {
+      "id": "lyric",
+      "title": "After the last note",
+      "kind": "local-music-promotion",
+      "pixels": [
+        768,
+        1087
+      ],
+      "materialPixels": [
+        256,
+        362
+      ],
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "coverage": 0.10300996232209536,
+      "coverageSha256": "bea3f6e6a0e59262e016fda95b18490e0fcdae3317ab99011527770baa97877b"
+    },
+    {
+      "id": "loudspeakers",
+      "title": "Room without players",
+      "kind": "fixed-media-promotion",
+      "pixels": [
+        704,
+        997
+      ],
+      "materialPixels": [
+        192,
+        272
+      ],
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "coverage": 0.07832243946634913,
+      "coverageSha256": "2fda990673cdc5b3df58fcab33fadd32966c0d914852d4b7da43b775382a3baa"
+    },
+    {
+      "id": "live_electronics",
+      "title": "Live wires",
+      "kind": "live-electronics-promotion",
+      "pixels": [
+        704,
+        997
+      ],
+      "materialPixels": [
+        192,
+        272
+      ],
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "coverage": 0.11824864634008979,
+      "coverageSha256": "aa58c4dd3c09507d80963d99761605ae6507360000cf601893499e2286dd17be"
+    },
+    {
+      "id": "tape",
+      "title": "Tape music",
+      "kind": "tape-music-promotion",
+      "pixels": [
+        704,
+        997
+      ],
+      "materialPixels": [
+        192,
+        272
+      ],
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "coverage": 0.08645486928700541,
+      "coverageSha256": "65cd980df7074db8bb2dab1fd36bf304733f163724599800e5dc9c6cf7973d5d"
+    },
+    {
+      "id": "new_works",
+      "title": "Not yet heard",
+      "kind": "new-music-promotion",
+      "pixels": [
+        704,
+        997
+      ],
+      "materialPixels": [
+        192,
+        272
+      ],
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "coverage": 0.13082522411262307,
+      "coverageSha256": "39385c2baaca911cc1227ef561f31b2ca151cff2f70729f5fb52edb32c1bd852"
+    },
+    {
+      "id": "graphic_score",
+      "title": "Read the room",
+      "kind": "graphic-score-workshop",
+      "pixels": [
+        704,
+        997
+      ],
+      "materialPixels": [
+        192,
+        272
+      ],
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "coverage": 0.15769964751652463,
+      "coverageSha256": "3cc3ce35bc12fdd99ace55ecf3677e77c350d97b36b6a03b7ad7ab0effa9e9db"
+    },
+    {
+      "id": "prepared",
+      "title": "Objects for piano",
+      "kind": "prepared-piano-promotion",
+      "pixels": [
+        704,
+        997
+      ],
+      "materialPixels": [
+        192,
+        272
+      ],
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "coverage": 0.2562438038268102,
+      "coverageSha256": "b3307579d9aadb1298062b72ee1cce077bb1366639f6ad6d661a9d0db4f5264c"
+    }
+  ],
+  "inputHashes": {
+    "src/data/institution-posters.js": "b503806c7fa332b579dada82192ce03b4f9ac81a540476ec24ca4d4764a7bca3",
+    "tools/chunk_surfer/build-institution-posters.mjs": "e1eb0b603e7210706324f23d803956c661610d252d89ed1e75157ae1bc9337ca",
+    "tools/chunk_surfer/build-institution-posters.py": "b6476a3c1cdd832dd13b322438d9d2cf7035dbe0a67746bd5ea5492ac0b8d003",
+    "tools/chunk_surfer/lettering/rasterize.py": "25049dfe0566d8a05d1e575338cf4497750f01386896c7d215bacb7ea06cbb2b",
+    "tools/chunk_surfer/lettering/finish.py": "7e0cf04028f84bf25d1049ff7ba3caf36e660dfaaf4c5228b8aa4c10c886b0c3",
+    "tools/chunk_surfer/lettering/finish-profiles.mjs": "19a61bb88d5a81ecb92541baad1683eeae38c0696f9aab880f7392ca866b1c8a"
+  },
+  "fontHashes": {
+    "NimbusRoman-Bold.otf": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
+    "NimbusSans-Bold.otf": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+    "NimbusRoman-Italic.otf": "b7c424e6cb79baddfcdcd9a9d87f9fc4fdd06f0e5160066e2b2e47bcd647c7b9",
+    "NimbusMonoPS-Regular.otf": "4f225ca8e13acb16f733ce741693105e527d5f7a5443901b9ecc190fca4e149b",
+    "NimbusSansNarrow-Bold.otf": "6d7cec07f5a9035e208532dab35a51312aef4a7f26eb524dd614c9fcd97c3264"
+  },
+  "shader": "opaque ordinary prop pass, pigment coverage independent of opacity",
+  "sharedAtlasModified": false
+}

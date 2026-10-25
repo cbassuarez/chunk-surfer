@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "sourceKind": "ensemble-mix",
+  "title": "Kyrie — Missa Sicut lilium inter spinas",
+  "duration": 88,
+  "independentParts": 0,
+  "scoreParts": "SATTB",
+  "tracks": [
+    {
+      "id": "sicut-ensemble",
+      "file": "sicut-kyrie-i.wav",
+      "sha256": "5b2e460ef3172e5cf092f7251a2532f530c6a640026d9f6c5a3d6d7ce2581201",
+      "source": "https://freemusicarchive.org/music/The_Tudor_Consort/Renaissance_influences_-_Pizzetti_Messa_di_Requiem__Palestrina_Missa_Sicut_lilium_inter_spinas/02_Kyrie_-_Missa_Sicut_lilium_inter_spinas/",
+      "licenceUrl": "https://creativecommons.org/licenses/by/3.0/",
+      "anchor": "front",
+      "projectionAnchor": "rear"
+    }
+  ],
+  "control": {
+    "file": "sicut-gain.f32",
+    "sampleRate": 12000,
+    "frames": 1056001,
+    "sha256": "254ecfb6c9a7ab4a66476a38049b3a0b26505beb1f0f076b69177095dc4a55f9"
+  },
+  "originalSHA256": "9aba8d0c204a8c705b5a52c0f056a492df267834349026e57cfc7ef66733dd68",
+  "changes": "First Kyrie section excerpted (0–80.1 s), downmixed to mono, raised 3 dB, boundary fades and 7.9 s quiet; split into continuous and gain-modulated spatial paths with procedural room reflections. No voice separation, pitch shift or copied performers."
+}

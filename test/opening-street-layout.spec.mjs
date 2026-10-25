@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {ARRIVAL_COURT} from '../src/data/arrival-court.js';
 import { ZONE } from '../src/data/floorplan/legend.js';
 import fs from 'node:fs';
 import { CONSERVATORY_PROPS, PROP_MESH } from '../src/data/conservatory-props.js';
@@ -28,7 +29,7 @@ assert.equal(OPENING_STREET_PARK.treeId,'opening-street-municipal-tree');
 for(const id of OPENING_STREET_PARK.furnitureIds){
   assert.ok(OPENING_STREET_PROPS.some((prop)=>prop.id===id&&prop.blocks===false),`${id} is missing from the non-blocking park`);
 }
-assert.equal(OPENING_STREET_PROPS.filter((prop)=>prop.mesh==='district_bench').length,2,'the pocket park has two ordinary municipal benches');
+assert.equal(OPENING_STREET_PROPS.filter((prop)=>prop.mesh===ARRIVAL_COURT.meshes.bench).length,2,'the two original pocket-park seats use the fitted oak and iron bench');
 assert.equal(OPENING_STREET_PROPS.filter((prop)=>prop.mesh.startsWith('vegetation_')).length,4,'groundcover is sparse and authored rather than a lawn-wide scatter');
 assert.equal(OPENING_STREET_PROPS.find((prop)=>prop.id==='opening-street-park-laurel').mesh,'opening_park_laurel','the pocket park uses a compact specimen rather than an eleven-metre hedge');
 assert.equal(OPENING_STREET_REVIEW_INSTANCE.mesh,'opening_street_review_plate');

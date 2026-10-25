@@ -1,3 +1,4 @@
+import {pubExteriorLogicalAt} from './exterior-pub.js';
 import { DOOR_ARCHETYPE } from './conservatory-doors.js';
 import { ZONE } from './floorplan/legend.js';
 import { CHURCH_BOUNDS, CHURCH_GOD_HOOKS, CHURCH_LEVELS } from './st-brendans.js';
@@ -29,8 +30,8 @@ export const GOD_PLACE_HOOKS = Object.freeze({
   'yard-fountain': Object.freeze({at:{x:60.5,y:233},facing:2,zone:ZONE.dock,group:'ground',floor:-0.3,component:'loading_bay',layer:'ground'}),
   'district-civic-court': Object.freeze({at:{x:116.5,y:336.5},facing:1,zone:ZONE.civicCourt,group:'ground',floor:0.12,component:'exterior_civic_block',layer:'ground'}),
   'district-bus-shelter': Object.freeze({at:{x:34,y:357},facing:0,zone:ZONE.civicCourt,group:'ground',floor:0.12,component:'exterior_civic_block',layer:'ground'}),
-  'district-pub-door': Object.freeze({at:{x:42.5,y:443},facing:2,zone:ZONE.street,group:'ground',floor:0,component:'exterior_civic_block',layer:'ground'}),
-  'district-pub-driver': Object.freeze({at:{x:66,y:440},facing:1,zone:ZONE.street,group:'ground',floor:0,component:'exterior_civic_block',layer:'ground'}),
+  'district-pub-door': Object.freeze({at:{x:pubExteriorLogicalAt('pub-east-entry').x-.5,y:pubExteriorLogicalAt('pub-east-entry').y-.5},facing:2,zone:ZONE.dock,group:'ground',floor:0,component:'exterior_pub',layer:'ground'}),
+  'district-pub-driver': Object.freeze({at:{x:77,y:282.5},facing:1,zone:ZONE.dock,group:'ground',floor:0,component:'loading_bay',layer:'ground'}),
   'pub-bar': Object.freeze({at:{x:43,y:446.5},facing:1,zone:ZONE.pub,group:'ground',floor:0.12,component:'exterior_pub',layer:'ground'}),
   'pub-vigil': Object.freeze({at:{x:40,y:447.5},facing:1,zone:ZONE.pub,group:'ground',floor:0.12,component:'exterior_pub',layer:'ground'}),
   'district-chapel-plaque': Object.freeze({at:{x:151,y:431},facing:3,zone:ZONE.civicCourt,group:'ground',floor:0.12,component:'exterior_civic_block',layer:'ground'}),

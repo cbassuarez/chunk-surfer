@@ -11,9 +11,9 @@ const transform=(m,p)=>[m[0]*p[0]+m[4]*p[1]+m[8]*p[2]+m[12],m[1]*p[0]+m[5]*p[1]+
 const scene=(time=8,far=930,evolution={reveal:1,ribcage:1,wave:1})=>makeCutLandscape({z:-829,furthest:far,programTime:time},evolution);
 
 test('the actual bone and axial palette carry broad differential breathing and a stronger one-sided wince',()=>{
- for(const name of['cut_thoracic_bone','cut_sternum']){const row=metrics.meshes.find(m=>m.name===name);assert.ok(row.morphMax[0]>.45&&row.morphMax[0]<.65);assert.ok(row.morphMax[1]>.5&&row.morphMax[1]<.7);assert.ok(row.morphMax[3]>.2);}
+ const rib=metrics.meshes.find(m=>m.name==='cut_thoracic_bone'),axial=metrics.meshes.find(m=>m.name==='cut_sternum');assert.ok(rib.morphMax[0]>1.4&&rib.morphMax[0]<2.3,'broad blades rotate visibly');assert.ok(axial.morphMax[0]<.35,'posterior column stays restrained relative to ribs');for(const row of[rib,axial]){assert.ok(row.morphMax[1]>.5&&row.morphMax[1]<.7);assert.ok(row.morphMax[3]>.2);}
  const bone=asset.entries.find(e=>e.name==='cut_thoracic_bone');let left=0,right=0,nl=0,nr=0,fixed=0;for(const p of bone.primitives)for(let v=0;v<p.vertexCount;v++){const full=pose(p,v,[0,0,1,0]),d=Array.from(p.targets[1].positions.slice(v*3,v*3+3));if(full[1]>12){if(full[0]<-4){left+=Math.hypot(...d);nl++;}if(full[0]>4){right+=Math.hypot(...d);nr++;}}if(full[1]<1.2){for(const t of p.targets)assert.ok(Math.hypot(...t.positions.slice(v*3,v*3+3))<1e-8);fixed++;}}
- assert.ok(left/nl>(right/nr)*3);assert.ok(fixed>250);
+ assert.ok(left/nl>(right/nr)*3);assert.ok(fixed>0,'lowest bone/cartilage transition retains a fixed contact');const cartilage=metrics.meshes.find(m=>m.name==='cut_costal_cartilage');assert.ok(cartilage.fixedVertices>50,'actual anterior bank contacts now belong to cartilage');
 });
 
 test('CPU gland registration is the same structural field as the actual exported bone vertices',()=>{

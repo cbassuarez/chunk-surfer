@@ -37,6 +37,7 @@ export function chapelDressingWorldPlacements(plan, bounds = {}) {
       yaw, scale: p.scale || 1, zone: plan.zoneAt(rx, ry),
       structural: false, noShadow: true,
       kind: p.kind, role: p.role || null, posture: p.posture || null, figure: p.figure || null,
+      row: p.row, bank: p.bank, seat: p.seat, ceilingY: plan.ceilAt(rx, ry),
       blocks: false, interactive: false,
     });
   }
@@ -71,6 +72,7 @@ export function chapelDressingRenderInstances(placements, {
   // one the bodies are drawn as authored, still.
   apparitions = null, ceiling = [], eye = null, timeSec = 0, moving = 0,
   recording = false, takeProgress = 0, canSee = null, onFrame = null,
+  choir = null, reducedMotion = false,
 } = {}) {
   if (group !== 'upper') return [];
   const result = [], bodies = [], hidden = suppressActors || effectsMode === 'off';
@@ -88,7 +90,7 @@ export function chapelDressingRenderInstances(placements, {
   if (apparitions && !hidden) {
     const frame = apparitions.frame({
       congregation: bodies, ceiling: (ceiling || []).filter(near), eye, timeSec, moving, recording,
-      takeProgress, effectsMode, canSee,
+      takeProgress, effectsMode, canSee, choir, reducedMotion,
       variantFor: (p) => APPARITION_RENDER_VARIANT[stateOf(p)], emissiveFor: (p) => charge(stateOf(p)),
     });
     for (const instance of frame.instances) result.push(instance);

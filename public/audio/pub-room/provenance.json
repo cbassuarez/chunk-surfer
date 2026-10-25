@@ -1,0 +1,99 @@
+{
+  "version": 1,
+  "sources": [
+    {
+      "id": "music",
+      "title": "29.wav",
+      "author": "User supplied original work",
+      "source": "/Users/seb/Downloads/29.wav",
+      "rights": "User states this is their own work and explicitly authorizes use as the bar music.",
+      "license": "User-owned; no Creative Commons relicensing implied",
+      "sourceMasterRetained": true,
+      "sourceSha256": "15fe2b2dfeb394f74962d4eee0b59ede9c4b1c339863b382b9a88bc8b8537c1d",
+      "sourceBytes": 95197892,
+      "sourceDuration": 330.103979
+    },
+    {
+      "id": "company",
+      "title": "Wine Bar Ambience, Light Talking, Around 20 People",
+      "author": "rbn_yng",
+      "url": "https://freesound.org/people/rbn_yng/sounds/275639/",
+      "download": "https://cdn.freesound.org/previews/275/275639_3095330-hq.mp3",
+      "source": "/Users/seb/chunk-surfer/artifacts/pub-audio/sources/wine-bar-ambience-preview.mp3",
+      "page": "/Users/seb/chunk-surfer/artifacts/pub-audio/sources/pub-source-page.html",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceMasterRetained": false,
+      "sourceSha256": "33e7b515edd6a03d11b7d51b84cfcda2bb07848ce73f9addd8b9d4dae0b235fd",
+      "sourceBytes": 14279376,
+      "sourceDuration": 629.772,
+      "pageSha256": "58adf7e361eba32e2ff2f2698c7d69736c4eae665241f9e4ffe5be721a9a5de2"
+    },
+    {
+      "id": "rain",
+      "title": "rain - outside window.wav",
+      "author": "Anthousai",
+      "url": "https://freesound.org/people/Anthousai/sounds/398741/",
+      "download": "https://cdn.freesound.org/previews/398/398741_5923045-hq.mp3",
+      "source": "/Users/seb/chunk-surfer/artifacts/pub-audio/sources/rain-outside-window-preview.mp3",
+      "page": "/Users/seb/chunk-surfer/artifacts/pub-audio/sources/rain-source-page.html",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceMasterRetained": false,
+      "sourceSha256": "7345cb8a095163b7188e074160fac0c7b9ca72a534025a97bdb589a6b9ff943d",
+      "sourceBytes": 558000,
+      "sourceDuration": 23.002292,
+      "pageSha256": "1ad3e8aa8d7feac1f8089e0d516e0f9c6f957149ef63a18b249adbc2d7aca408"
+    }
+  ],
+  "outputs": [
+    {
+      "id": "music",
+      "file": "29-bar-radio.mp3",
+      "bytes": 4622733,
+      "sha256": "310a1df6be914ec2aaa7febd2765ffbc11416839e8941073af07bc704a0db94d",
+      "sampleRate": 32000,
+      "channels": 1,
+      "duration": 330.104,
+      "decodedFloat32Bytes": 42253312,
+      "filter": "aformat=channel_layouts=mono,highpass=f=65,lowpass=f=11000,loudnorm=I=-23:LRA=14:TP=-3,afade=t=in:st=0:d=0.03,afade=t=out:st=330.073979:d=0.03",
+      "measured": "Summary:\n\n  Integrated loudness:\n    I:         -25.4 LUFS\n    Threshold: -35.4 LUFS\n\n  Loudness range:\n    LRA:        12.3 LU\n    Threshold: -45.4 LUFS\n    LRA low:   -30.5 LUFS\n    LRA high:  -18.3 LUFS\n\n  True peak:\n    Peak:       -2.8 dBFS\n[out#0/null @ 0x11d706f60] video:0KiB audio:20632KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown\nsize=N/A time=00:05:30.10 bitrate=N/A speed= 520x elapsed=0:00:00.63    \n"
+    },
+    {
+      "id": "company",
+      "file": "company.mp3",
+      "bytes": 985005,
+      "sha256": "916df8ae5aaefa82d8792b76b51e3f81495d1af7eed19c13fcbd00570d708445",
+      "sampleRate": 32000,
+      "channels": 1,
+      "duration": 82,
+      "decodedFloat32Bytes": 10496000,
+      "filter": "[0:a]atrim=start=40:duration=84,asetpts=PTS-STARTPTS,aformat=channel_layouts=mono,highpass=f=130,lowpass=f=4500,loudnorm=I=-25:LRA=10:TP=-6,aresample=32000,asplit=3[tail][head][middle];[tail]atrim=start=82:end=84,asetpts=PTS-STARTPTS[t];[head]atrim=start=0:end=2,asetpts=PTS-STARTPTS[h];[t][h]acrossfade=d=2:c1=tri:c2=tri[seam];[middle]atrim=start=2:end=82,asetpts=PTS-STARTPTS[m];[seam][m]concat=n=2:v=0:a=1[out]",
+      "measured": "Summary:\n\n  Integrated loudness:\n    I:         -25.3 LUFS\n    Threshold: -35.3 LUFS\n\n  Loudness range:\n    LRA:         5.2 LU\n    Threshold: -45.2 LUFS\n    LRA low:   -27.8 LUFS\n    LRA high:  -22.6 LUFS\n\n  True peak:\n    Peak:       -8.0 dBFS\n[out#0/null @ 0x15be1e120] video:0KiB audio:5125KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown\nsize=N/A time=00:01:22.00 bitrate=N/A speed= 523x elapsed=0:00:00.15    \n"
+    },
+    {
+      "id": "rain",
+      "file": "rain-window.mp3",
+      "bytes": 253197,
+      "sha256": "48a8421549d9b0a780437a0bdbad625145f5cf8959d8a7b47acae0b4d7b874c3",
+      "sampleRate": 32000,
+      "channels": 1,
+      "duration": 21,
+      "decodedFloat32Bytes": 2688000,
+      "filter": "[0:a]atrim=start=0:duration=22,asetpts=PTS-STARTPTS,aformat=channel_layouts=mono,highpass=f=75,lowpass=f=9000,loudnorm=I=-25:LRA=10:TP=-6,aresample=32000,asplit=3[tail][head][middle];[tail]atrim=start=21:end=22,asetpts=PTS-STARTPTS[t];[head]atrim=start=0:end=1,asetpts=PTS-STARTPTS[h];[t][h]acrossfade=d=1:c1=tri:c2=tri[seam];[middle]atrim=start=1:end=21,asetpts=PTS-STARTPTS[m];[seam][m]concat=n=2:v=0:a=1[out]",
+      "measured": "Summary:\n\n  Integrated loudness:\n    I:         -25.1 LUFS\n    Threshold: -35.1 LUFS\n\n  Loudness range:\n    LRA:         0.8 LU\n    Threshold: -45.1 LUFS\n    LRA low:   -25.4 LUFS\n    LRA high:  -24.6 LUFS\n\n  True peak:\n    Peak:       -6.4 dBFS\n[out#0/null @ 0x159614ca0] video:0KiB audio:1312KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown\nsize=N/A time=00:00:21.00 bitrate=N/A speed= 522x elapsed=0:00:00.04    \n"
+    }
+  ],
+  "encodedBytes": 5860935,
+  "decodedFloat32Bytes": 55437312,
+  "audition": {
+    "sourceAuditionByAssistant": false,
+    "actualGameMixVerified": false,
+    "reason": "No auditory input available in this tool session. Signal integrity and graph behavior checked independently; root verifies actual encounter mix."
+  },
+  "limits": {
+    "liveFileVoices": 3,
+    "liveTotalWithFurniture": 6
+  },
+  "treatment": "Quiet user track at a backbar loudspeaker; low indistinct room company at the occupied snug; exterior rain transmitted through nearest real glass/open door. Sources never emit game noise events. Recording and dialogue duck the continuous room layers and defer furniture contacts. Pause, blur, Source and disposal immediately disconnect voices."
+}

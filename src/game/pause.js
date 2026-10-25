@@ -6,6 +6,7 @@ import { createHitRegions } from '../render/hit-regions.js';
 import { promptLine } from './bindings.js';
 import * as AUDIO from '../audio/story-audio.js';
 import { fitText } from '../render/fit-text.js';
+import { isMapShortcut } from './map-shortcut.js';
 
 const LOCAL_ESCAPE_SCENES = new Set(['pause', 'settings', 'god-menu', 'bag', 'combat-calibration']);
 
@@ -21,17 +22,23 @@ export function makePauseScene({
   onResume,
   onSettings,
   onObjectives,
+  onJournal,
+  onMap,
   onArchive,
   onRestartRun,
   onReturnToTitle,
   onQuitDesktop,
+  onWithdraw,
   status = () => ({}),
 } = {}) {
   let selected = 0;
   const hits = createHitRegions();
   const items = [
     { id: 'resume', label: 'RESUME', detail: 'Return to live monitoring.', action: onResume },
-    { id: 'objectives', label: 'WORK ORDER / BAG', detail: 'Review the job, map, and carried equipment.', action: onObjectives },
+    ...(onWithdraw?[{id:'withdraw',label:'LEAVE RETAINED VIEW',detail:'Return to where you entered.',action:onWithdraw}]:[]),
+    ...(onJournal ? [{ id: 'journal', label: 'JOURNAL / QUESTS', detail: 'The job, discovered leads, and their outcomes.', action: onJournal }] : []),
+    ...(onMap ? [{ id: 'map', label: 'MAP', detail: 'Open the Survey Indicator.', action: onMap }] : []),
+    { id: 'objectives', label: 'INVENTORY', detail: 'Review carried equipment.', action: onObjectives },
     { id: 'archive', label: 'ARCHIVE / RECORDS', detail: 'Open long-term records.', action: onArchive },
     { id: 'settings', label: 'SETTINGS…', detail: 'Open display, audio, input, and accessibility.', action: onSettings },
     { id: 'restart', label: 'RESTART RUN…', detail: 'Begin setup again.', danger: true, action: onRestartRun },
@@ -63,6 +70,7 @@ export function makePauseScene({
     const raw = e.key || '';
     const k = raw.toLowerCase();
     const code = e.code || '';
+    if (isMapShortcut(e) && onMap) { e.preventDefault?.(); onMap(); return true; }
 
     if (raw === 'Escape' || code === 'Escape') {
       e.preventDefault?.();
@@ -120,9 +128,10 @@ export function makePauseScene({
       uiText(statusX, iy + 9, `LIGHT  ${live.light ? 'ON' : 'OFF'}`, live.light ? 'ui-amber' : 'ui-secondary');
       uiText(statusX, iy + 11, `HUSH   ${live.hush || 'QUIET'}`, live.hush === 'CONTACT' ? 'ui-danger' : 'ui-secondary');
       uiText(statusX, iy + 13, `TIME   ${live.time || '00:00:00'}`, 'ui-secondary');
+      if (live.lead && body.h >= 18) uiText(statusX, iy + 15, `LEAD   ${clip(live.lead, 20)}`, 'ui-amber');
     }
 
-    const maxItems = Math.max(1, body.h - 7);
+    const maxItems = Math.max(1, Math.floor((body.h - 4) / 2));
     const start = selected >= maxItems ? Math.min(selected - maxItems + 1, items.length - maxItems) : 0;
     const visible = items.slice(start, start + maxItems);
     visible.forEach((item, j) => {

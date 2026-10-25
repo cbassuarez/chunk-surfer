@@ -50,7 +50,7 @@ export function resolveMapAction(selected, actionId, api = {}) {
 // and the attached file keeps a separate shortcut rather than owning confirm.
 export function mapActionRail(selected, { floorCount = 1, width = 96, consoleFocused = false, offline = false, roomFile = false } = {}) {
   const controller=activeInputPromptDevice()==='controller';
-  const close=[controller?inputPromptLabel('back'):inputPromptLabel('bag'),controller&&consoleFocused?'ROOMS':'CLOSE'];
+  const close=[controller?inputPromptLabel('back'):'M / B',controller&&consoleFocused?'ROOMS':'CLOSE'];
   if(offline)return[close];
   if(roomFile)return [[controller?inputPromptLabel('select'):'←/→','PAGE'],
     [controller?inputPromptLabel('mapFile'):'R','PLAN'],

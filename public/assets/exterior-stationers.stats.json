@@ -1,0 +1,176 @@
+{
+  "revision": "north-stationers-1",
+  "sha256": "7f01303d881f0724f8071850b120aacd3d78bf371fc5161f08cc8aea99128879",
+  "bytes": 4916596,
+  "triangles": 17478,
+  "meshes": {
+    "district_terrace_frontage_stationer": {
+      "triangles": 15478,
+      "primitives": 16
+    },
+    "exterior_stationers_room": {
+      "triangles": 2000,
+      "primitives": 12,
+      "bounds": {
+        "min": [
+          -3.5,
+          -0.09,
+          -2.5
+        ],
+        "max": [
+          3.5,
+          3.47,
+          3.5
+        ]
+      }
+    }
+  },
+  "sourceFacade": {
+    "file": "public/assets/exterior-frontages.glb",
+    "sha256": "6df5180943f4b7ed451f6fc12cd5556fd4de78ac54900f38f8839a78bb136611",
+    "originalMaterialCount": 16,
+    "originalImageCount": 3,
+    "materialDefinitionsUnchanged": true,
+    "imageDefinitionsUnchanged": true
+  },
+  "clipStats": [
+    {
+      "material": 12,
+      "inputTriangles": 900,
+      "unchangedTriangles": 840,
+      "changedTriangles": 60,
+      "removedTriangles": 60,
+      "clippedTriangles": 0
+    },
+    {
+      "material": 2,
+      "inputTriangles": 2880,
+      "unchangedTriangles": 2742,
+      "changedTriangles": 138,
+      "removedTriangles": 98,
+      "clippedTriangles": 90
+    },
+    {
+      "material": 5,
+      "inputTriangles": 3552,
+      "unchangedTriangles": 3390,
+      "changedTriangles": 162,
+      "removedTriangles": 146,
+      "clippedTriangles": 32
+    },
+    {
+      "material": 4,
+      "inputTriangles": 1464,
+      "unchangedTriangles": 1404,
+      "changedTriangles": 60,
+      "removedTriangles": 60,
+      "clippedTriangles": 0
+    },
+    {
+      "material": 11,
+      "inputTriangles": 360,
+      "unchangedTriangles": 336,
+      "changedTriangles": 24,
+      "removedTriangles": 24,
+      "clippedTriangles": 0
+    },
+    {
+      "material": 7,
+      "inputTriangles": 960,
+      "unchangedTriangles": 912,
+      "changedTriangles": 48,
+      "removedTriangles": 48,
+      "clippedTriangles": 0
+    },
+    {
+      "material": 13,
+      "inputTriangles": 228,
+      "unchangedTriangles": 216,
+      "changedTriangles": 12,
+      "removedTriangles": 12,
+      "clippedTriangles": 0
+    },
+    {
+      "material": 10,
+      "inputTriangles": 1488,
+      "unchangedTriangles": 1440,
+      "changedTriangles": 48,
+      "removedTriangles": 48,
+      "clippedTriangles": 0
+    },
+    {
+      "material": 0,
+      "inputTriangles": 1416,
+      "unchangedTriangles": 1326,
+      "changedTriangles": 90,
+      "removedTriangles": 32,
+      "clippedTriangles": 132
+    },
+    {
+      "material": 9,
+      "inputTriangles": 96,
+      "unchangedTriangles": 84,
+      "changedTriangles": 12,
+      "removedTriangles": 12,
+      "clippedTriangles": 0
+    },
+    {
+      "material": 3,
+      "inputTriangles": 128,
+      "unchangedTriangles": 128,
+      "changedTriangles": 0,
+      "removedTriangles": 0,
+      "clippedTriangles": 0
+    },
+    {
+      "material": 1,
+      "inputTriangles": 1200,
+      "unchangedTriangles": 1200,
+      "changedTriangles": 0,
+      "removedTriangles": 0,
+      "clippedTriangles": 0
+    },
+    {
+      "material": 6,
+      "inputTriangles": 1008,
+      "unchangedTriangles": 1008,
+      "changedTriangles": 0,
+      "removedTriangles": 0,
+      "clippedTriangles": 0
+    },
+    {
+      "material": 8,
+      "inputTriangles": 192,
+      "unchangedTriangles": 158,
+      "changedTriangles": 34,
+      "removedTriangles": 26,
+      "clippedTriangles": 12
+    },
+    {
+      "material": 14,
+      "inputTriangles": 24,
+      "unchangedTriangles": 24,
+      "changedTriangles": 0,
+      "removedTriangles": 0,
+      "clippedTriangles": 0
+    },
+    {
+      "material": 15,
+      "inputTriangles": 4,
+      "unchangedTriangles": 4,
+      "changedTriangles": 0,
+      "removedTriangles": 0,
+      "clippedTriangles": 0
+    }
+  ],
+  "sourceHashes": {
+    "src/data/exterior-stationers.js": "b3a01bffeb580f034740c5087fa15dc5e7be53430c2f72870ebbbe6643c84eec",
+    "tools/chunk_surfer/exterior-stationers-geometry.mjs": "3987e1ea0b8cef4709a79674b184c5d5cafc5b9965f48d0223f512b2fb96b54b",
+    "tools/chunk_surfer/build-exterior-stationers.mjs": "a24a056fe893e0a1eb06e735e0b93a2da6b3e97aea5826cb230801dff9e7428b"
+  },
+  "addedPrintTextureBaseLevelBytes": 772800,
+  "pending": [
+    "native final dither approach, door and room inspection",
+    "uninterrupted ordinary entry and return"
+  ]
+}

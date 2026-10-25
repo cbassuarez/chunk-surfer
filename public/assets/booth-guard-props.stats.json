@@ -1,0 +1,371 @@
+{
+  "revision": "public-window-work-v1",
+  "source": "public/assets/conservatory-props.glb",
+  "sourceSHA256": "52bd50b152dfa68a59e2dd25f305874e140bcd9e3be7d7a603151c215273554f",
+  "sha256": "bf538d8dcfcc62a897b01f19d0ead97fe11470f5622296606c1768430a7dd7eb",
+  "bytes": 217516,
+  "meshes": [
+    {
+      "name": "yard_booth_glazing",
+      "triangles": 384,
+      "primitives": 3
+    },
+    {
+      "name": "yard_booth_interior",
+      "triangles": 1272,
+      "primitives": 9
+    },
+    {
+      "name": "yard_booth_practicals",
+      "triangles": 88,
+      "primitives": 3
+    },
+    {
+      "name": "yard_booth_handoff",
+      "triangles": 12,
+      "primitives": 1
+    },
+    {
+      "name": "booth_guard_pen",
+      "triangles": 236,
+      "primitives": 3
+    },
+    {
+      "name": "booth_guard_key",
+      "triangles": 304,
+      "primitives": 1
+    },
+    {
+      "name": "booth_guard_cup",
+      "triangles": 640,
+      "primitives": 2
+    }
+  ],
+  "originalMaterialEvidence": {
+    "yard_booth_glazing": [
+      {
+        "name": "aged white paint",
+        "baseColor": [
+          0.69,
+          0.72,
+          0.66,
+          1
+        ],
+        "roughness": 0.68,
+        "metallic": 0.03,
+        "emissive": [
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "name": "wired roof glass",
+        "baseColor": [
+          0.29,
+          0.49,
+          0.54,
+          1
+        ],
+        "roughness": 0.24,
+        "metallic": 0,
+        "emissive": [
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "name": "painted steel",
+        "baseColor": [
+          0.22,
+          0.24,
+          0.23,
+          1
+        ],
+        "roughness": 0.46,
+        "metallic": 0.7,
+        "emissive": [
+          0,
+          0,
+          0
+        ]
+      }
+    ],
+    "yard_booth_interior": [
+      {
+        "name": "worn wood",
+        "baseColor": [
+          0.34,
+          0.2,
+          0.095,
+          1
+        ],
+        "roughness": 0.68,
+        "metallic": 0,
+        "emissive": [
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "name": "dark wood",
+        "baseColor": [
+          0.16,
+          0.095,
+          0.052,
+          1
+        ],
+        "roughness": 0.72,
+        "metallic": 0,
+        "emissive": [
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "name": "painted steel",
+        "baseColor": [
+          0.22,
+          0.24,
+          0.23,
+          1
+        ],
+        "roughness": 0.46,
+        "metallic": 0.7,
+        "emissive": [
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "name": "black lacquer",
+        "baseColor": [
+          0.025,
+          0.028,
+          0.03,
+          1
+        ],
+        "roughness": 0.28,
+        "metallic": 0.15,
+        "emissive": [
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "name": "paper label",
+        "baseColor": [
+          0.64,
+          0.6,
+          0.48,
+          1
+        ],
+        "roughness": 0.9,
+        "metallic": 0,
+        "emissive": [
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "name": "safety red",
+        "baseColor": [
+          0.56,
+          0.045,
+          0.025,
+          1
+        ],
+        "roughness": 0.56,
+        "metallic": 0,
+        "emissive": [
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "name": "brass",
+        "baseColor": [
+          0.49,
+          0.31,
+          0.08,
+          1
+        ],
+        "roughness": 0.25,
+        "metallic": 0.8,
+        "emissive": [
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "name": "ivory",
+        "baseColor": [
+          0.82,
+          0.8,
+          0.69,
+          1
+        ],
+        "roughness": 0.58,
+        "metallic": 0,
+        "emissive": [
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "name": "aged white paint",
+        "baseColor": [
+          0.69,
+          0.72,
+          0.66,
+          1
+        ],
+        "roughness": 0.68,
+        "metallic": 0.03,
+        "emissive": [
+          0,
+          0,
+          0
+        ]
+      }
+    ],
+    "yard_booth_practicals": [
+      {
+        "name": "vfd green glass",
+        "baseColor": [
+          0.018,
+          0.12,
+          0.055,
+          1
+        ],
+        "roughness": 0.22,
+        "metallic": 0.12,
+        "emissive": [
+          0.04,
+          0.82,
+          0.2
+        ]
+      },
+      {
+        "name": "occupied warm glass",
+        "baseColor": [
+          0.38,
+          0.25,
+          0.1,
+          1
+        ],
+        "roughness": 0.28,
+        "metallic": 0.02,
+        "emissive": [
+          0.86,
+          0.53,
+          0.2
+        ]
+      },
+      {
+        "name": "safety red",
+        "baseColor": [
+          0.56,
+          0.045,
+          0.025,
+          1
+        ],
+        "roughness": 0.56,
+        "metallic": 0,
+        "emissive": [
+          0,
+          0,
+          0
+        ]
+      }
+    ],
+    "yard_booth_handoff": [
+      {
+        "name": "paper label",
+        "baseColor": [
+          0.64,
+          0.6,
+          0.48,
+          1
+        ],
+        "roughness": 0.9,
+        "metallic": 0,
+        "emissive": [
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "name": "brass",
+        "baseColor": [
+          0.49,
+          0.31,
+          0.08,
+          1
+        ],
+        "roughness": 0.25,
+        "metallic": 0.8,
+        "emissive": [
+          0,
+          0,
+          0
+        ]
+      }
+    ]
+  },
+  "publicFace": "+Z",
+  "windowPassThrough": {
+    "x": [
+      -0.865,
+      -0.07
+    ],
+    "y": [
+      1.57,
+      2.075
+    ],
+    "z": 1.3
+  },
+  "paneParking": {
+    "centres": [
+      [
+        0.55,
+        1.91,
+        1.3
+      ],
+      [
+        0.6,
+        1.91,
+        1.355
+      ]
+    ],
+    "railCentreY": 1.535,
+    "retainedTopology": true
+  },
+  "newAccessories": [
+    {
+      "name": "booth_guard_pen",
+      "triangles": 236
+    },
+    {
+      "name": "booth_guard_key",
+      "triangles": 304
+    },
+    {
+      "name": "booth_guard_cup",
+      "triangles": 640
+    }
+  ],
+  "pending": [
+    "Native final dither and actual animated ledger/handoff inspection"
+  ]
+}

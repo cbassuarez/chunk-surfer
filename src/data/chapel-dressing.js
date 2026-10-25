@@ -15,7 +15,12 @@ export const CHAPEL_DRESSING_MESH = Object.freeze({
   celebrant: 'chapel_presence_celebrant',
   acolyte: 'chapel_presence_acolyte',
   head: 'chapel_presence_head',
+  // Choir-only articulated face; the original pressure head remains the
+  // watcher/ceiling pose when the ordinary service is not audible.
+  singingHead: 'chapel_presence_singing_head',
+  singingJaw: 'chapel_presence_singing_jaw',
   clinging: 'chapel_presence_clinging',
+  cherub: 'chapel_presence_cherub',
   writing: 'chapel_writing_stop',
   overwritten: 'chapel_writing_overwritten',
   empty: 'chapel_writing_empty',
@@ -88,6 +93,12 @@ const ceiling = (id, x, y, surface, heading) => freeze({
   id: `${CHAPEL_DRESSING_PREFIX}ceiling-${id}`, mesh: M.clinging, figure: 'clinging',
   x, y, surface, heading, scale: .97, kind: 'presence', role: 'ceiling', posture: 'clinging',
 });
+const cherub = (id, x, y, surface, heading, scale) => freeze({
+  id: `${CHAPEL_DRESSING_PREFIX}ceiling-${id}`, mesh: M.cherub, figure: 'cherub',
+  x, y, surface, heading, scale, kind: 'presence', role: 'ceiling', posture: 'cramped-winged',
+  // Visual inhabitants, never six additional watchers or recorder-noise sources.
+  presentationOnly: true,
+});
 export const CHAPEL_CEILING = freeze([
   ceiling('loft-a', 89.6, 69.5, 'flat', .4), ceiling('loft-b', 95.2, 71.8, 'flat', 2.6),
   ceiling('loft-c', 91.0, 74.6, 'flat', -1.2), ceiling('loft-d', 94.4, 77.9, 'flat', .9),
@@ -95,6 +106,13 @@ export const CHAPEL_CEILING = freeze([
   ceiling('vault-altar-w', 90.4, 83.6, 'vault', 1.7), ceiling('vault-altar-e', 95.0, 86.2, 'vault', -1.4),
   ceiling('vault-altar', 91.4, 89.9, 'vault', 3.0),
   ceiling('narthex-e', 94.6, 61.5, 'flat', -.3), ceiling('narthex-w', 90.1, 64.2, 'flat', 2.2),
+  // Two unequal nests: just above the arrival, and in the altar vault.
+  cherub('cherub-entry-a', 91.65, 62.35, 'flat', -.55, .93),
+  cherub('cherub-entry-b', 92.95, 63.15, 'flat', 1.85, .81),
+  cherub('cherub-entry-c', 94.10, 62.75, 'flat', -2.5, .88),
+  cherub('cherub-altar-a', 91.65, 85.25, 'vault', .35, 1.02),
+  cherub('cherub-altar-b', 93.20, 85.85, 'vault', -1.65, .90),
+  cherub('cherub-altar-c', 92.70, 87.40, 'vault', 2.65, .83),
 ]);
 // The vault is the chapel_vault prop's two pitched shells (build-props.mjs):
 // 9.5 m at the walls to 13 m at the ridge, measured from the floor under the
@@ -141,7 +159,7 @@ export const CHAPEL_DRESSING = freeze([
 ]);
 
 export const CHAPEL_DRESSING_BUDGET = freeze({
-  presences: 48, ceiling: 10, dressing: 26, meshes: 16,
+  presences: 48, ceiling: 16, dressing: 26, meshes: 19,
   packedTriangles: 30000, packBytes: 1800000,
   // Instanced anatomical poses, not 48 unique draw calls. No light or shadow
   // map is added by this treatment; all ink belongs to the existing renderer.

@@ -39,6 +39,9 @@ import {
 } from '../game/door-runtime.js';
 import { doorDefinitionWithArchetype } from '../data/conservatory-doors.js';
 import { EXTERIOR_PUB, isPubMeshEnvelopeZone } from '../data/exterior-pub.js';
+import { EXTERIOR_STATIONERS, isStationersMeshEnvelopeZone } from '../data/exterior-stationers.js';
+
+const isCivicMeshEnvelopeZone=zone=>isPubMeshEnvelopeZone(zone)||isStationersMeshEnvelopeZone(zone);
 
 export const H_MIN = -8;
 export const H_MAX = 24;
@@ -1519,9 +1522,9 @@ export function physicalRenderPlanFor(x,y){
   const observerZone=zoneAt(x,y);
   // The same predicate prop-visibility asks, so the walls and the skin can
   // never disagree about which side of the envelope you are on.
-  // The pub is indoors but its thin, windowed envelope is mesh-owned.
+  // The pub and stationer's are indoors but their windowed envelopes are mesh-owned.
   // Keep the ordinary city slice through its real doors and window openings.
-  const exteriorObserver=isOutdoorZone(observerZone)||isPubMeshEnvelopeZone(observerZone);
+  const exteriorObserver=isOutdoorZone(observerZone)||isCivicMeshEnvelopeZone(observerZone);
   const architecturalWindow=exteriorObserver?null:buildingWindowForObserver({x:here.x*CELL,z:here.z*CELL,y:here.y,spaceId:here.spaceId,renderGroup:here.renderGroup});
   const northRoofGateSightline=!exteriorObserver&&group==='academic'&&here.y>=9.5&&here.y<=10.5
     &&x>=84&&x<=94&&y>=480&&y<=492;
@@ -1572,7 +1575,7 @@ export function physicalRenderPlanFor(x,y){
     // how Ellery does the same thing.
     const sceneSpans=exteriorObserver?all.filter((span)=>
       span.zone===ZONE.street||span.zone===ZONE.civicCourt||span.zone===ZONE.serviceYard
-      ||span.zone===ZONE.dock||span.zone===ZONE.church||span.zone===ZONE.academicRoof||isPubMeshEnvelopeZone(span.zone)):all;
+      ||span.zone===ZONE.dock||span.zone===ZONE.church||span.zone===ZONE.academicRoof||isCivicMeshEnvelopeZone(span.zone)):all;
     if(!sceneSpans.length)continue;
     const hallSpans=sceneSpans.filter((s)=>s.spaceId==='hall');
     const hallEnvelope=here.spaceId==='hall'&&here.layer!=='hall_stair'&&hallSpans.length;
@@ -1670,12 +1673,12 @@ export function physicalRenderPlanFor(x,y){
         // right granularity to read a church's roofline off.
         if(s.zone===ZONE.dock)yardCeilByRow[localY]=Math.max(yardCeilByRow[localY]||0,s.ceil);
         if(s.zone===ZONE.church){churchGround.push(i);flags[i]=F.SKY;}
-        if(isPubMeshEnvelopeZone(s.zone)){
+        if(isCivicMeshEnvelopeZone(s.zone)){
           // Logical floor/ceiling/weather remain .12/3.52/indoors. The real
           // ceiling and walls are depth-writing meshes. Lower ONLY the render
           // underlay so the 125mm height-texture quantum cannot bury the 12mm
           // parquet finish; the source floor and walking height never move.
-          floor[i]=s.floor-EXTERIOR_PUB.renderUnderlayDrop;
+          floor[i]=s.floor-(isStationersMeshEnvelopeZone(s.zone)?EXTERIOR_STATIONERS.renderUnderlayDrop:EXTERIOR_PUB.renderUnderlayDrop);
           ceil[i]=24;flags[i]=F.SKY;
         }
 

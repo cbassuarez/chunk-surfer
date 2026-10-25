@@ -187,7 +187,10 @@ function lyre(cy,scale,D){
 }
 function dado(site,D){
   const H=1.13,W=site.width;
-  box(MAT.walnut,0,H/2,D*.25,W,H,D*.40);
+  // The upper order is shallower than the ground-floor order. Keep the
+  // wainscot's rear skin on the 6 mm attachment plane in either case;
+  // scaling its original rear depth would put it behind that plane.
+  box(MAT.walnut,0,H/2,Math.max(.006,D*.05)+D*.20,W,H,D*.40);
   const panels=[[-.94,.57],[0,1.06],[.94,.57]];
   for(const[cx,w]of panels){box(MAT.green,cx,.56,D*.31,w,.84,D*.14);rectFrame(cx,.56,w,.84,[[0,D*.39],[.035,D*.39],[.063,D*.57],[.085,D*.57],[.101,D*.37],[.101,D*.30]],MAT.walnut);rectFrame(cx,.56,w-.12,.72,[[0,D*.59],[.012,D*.60],[.022,D*.60],[.022,D*.57]],MAT.gold);}
   horizontalProfile(-W/2,W/2,.025,[[0,.006],[.12,.006],[.12,D*.60],[.08,D*.70],[0,D*.70]],MAT.walnut);

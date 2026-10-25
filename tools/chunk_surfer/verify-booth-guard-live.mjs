@@ -35,14 +35,14 @@ try{
     window.__probe.warpCell(75.6,214,0);
     window.__probe.lookAtWorld(-Math.PI/2,-.02);
   });
-  await page.waitForFunction(()=>window.__boothRenderer.characterStats().poses.some(p=>p.id==='yard-booth-guard-idle'&&p.mesh==='outskirts_fold_guard'),{timeout:90000});
+  await page.waitForFunction(()=>window.__boothRenderer.characterStats().poses.some(p=>p.id==='yard-booth-guard-idle'&&p.mesh==='overworld_booth_guard'),{timeout:90000});
   await sleep(900);
   async function capture(name){
     const state=await page.evaluate(()=>({characters:window.__boothRenderer.characterStats(),
       ids:window.__probe.props().renderedIds,scene:window.__scenes.top()?.id||null,view:window.__scenes.top()?.view?.()||null}));
     const guards=state.characters.poses.filter(p=>p.id?.startsWith('yard-booth-guard-'));
     assert.equal(guards.length,1,'exactly one physical guard is submitted');
-    assert.equal(guards[0].mesh,'outskirts_fold_guard');assert.equal(guards[0].clip,'idle');
+    assert.equal(guards[0].mesh,'overworld_booth_guard');assert.equal(guards[0].clip,null,'the ordinary booth uses its authored working joint pose');
     assert.deepEqual(state.characters.poseErrors,[]);
     frames.push({name,guard:guards[0],scene:state.scene,sourceId:state.view?.line?.sourceId});
     await page.screenshot({path:`${out}/${name}.png`});return state;

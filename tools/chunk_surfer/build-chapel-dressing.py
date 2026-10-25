@@ -15,6 +15,7 @@ from pathlib import Path
 import bmesh
 import bpy
 from mathutils import Matrix, Vector
+from mathutils.bvhtree import BVHTree
 
 ROOT = Path(__file__).resolve().parents[2]
 spec = importlib.util.spec_from_file_location('ear_hand', Path(__file__).with_name('build-stop-listening.py'))
@@ -32,12 +33,15 @@ def rt(p):
     return Vector((p[0], -p[2], p[1]))
 
 
-def mat(name, rgba, roughness=.8):
+def mat(name, rgba, roughness=.8, emission=None):
     m = bpy.data.materials.new(name)
     m.use_nodes = True
     bsdf = m.node_tree.nodes.get('Principled BSDF')
     bsdf.inputs['Base Color'].default_value = rgba
     bsdf.inputs['Roughness'].default_value = roughness
+    if emission is not None:
+        bsdf.inputs['Emission Color'].default_value = (*emission, 1)
+        bsdf.inputs['Emission Strength'].default_value = 1
     m.diffuse_color = rgba
     return m
 
@@ -58,6 +62,10 @@ def mesh(name, verts, faces, material, smooth=False):
 # servers keep their robes on one body. `part='all'` is the whole figure.
 PARTS = {'all', 'lower', 'upper', 'body', 'head'}
 
+# This pivot is in the shared HEAD's local coordinates, not body coordinates.
+# The jaw mesh is authored about it. Runtime: head * T(jaw) * pitch(-opening).
+SINGING_JAW_PIVOT = (0, -.005, .005)
+
 
 def body_pivots(kind):
     celebrant = kind == 'celebrant'
@@ -66,13 +74,13 @@ def body_pivots(kind):
     hip_y = .79 if celebrant else .51 if kneel else .57
     chest_y = hip_y + .39
     lean = -.17 if bowed else -.075 if kneel else -.045
-    if kind == 'clinging':
-        return {'upper': (0, .17, .22), 'head': (0, .20, -.47), 'headRest': (0, 0, 0)}
+    if kind in ['clinging', 'cherub']:
+        return {'upper': (0, .17, .22), 'head': (0, .20, -.47), 'headRest': (0, 0, 0), 'jaw': SINGING_JAW_PIVOT}
     head = (.015 if kind == 'acolyte' else 0, chest_y+.40-(.095 if bowed else .025 if kneel else 0), lean-.055 if bowed else lean)
     neck_top = (0, chest_y+.33, lean)
     # The rest attitude of the head about its pivot: bowed heads look down.
     rest = (-.42 if bowed else -.16 if kneel else -.05, 0, 0)
-    return {'upper': (0, hip_y+.07, .025), 'head': neck_top, 'headCentre': head, 'headRest': rest}
+    return {'upper': (0, hip_y+.07, .025), 'head': neck_top, 'headCentre': head, 'headRest': rest, 'jaw': SINGING_JAW_PIVOT}
 
 
 def make_body(name, kind, material, part='all'):
@@ -155,6 +163,9 @@ def make_body(name, kind, material, part='all'):
     hip_y = .79 if celebrant else .51 if kneel else .57
     chest_y = hip_y + .39
     lean = -.17 if bowed else -.075 if kneel else -.045
+    if kind == 'cherub':
+        cherub_body(ellipsoid, limb, current, bm)
+        return finish(bm, name, material)
     if kind == 'clinging':
         clinging(ellipsoid, limb, current)
         return finish(bm, name, material)
@@ -218,6 +229,101 @@ def head_parts(ellipsoid, centre):
     ellipsoid((x, y-.085, z-.075), (.085, .062, .068), 8, 5, owner='head')
 
 
+def singing_face(material, cavity):
+    """A real recessed oral opening and a separate hinged lower face.
+
+    These are ordinary world materials during singing, not the legacy ghost
+    shader's uniform pressure surface. No texture, billboard, facial light,
+    animation, skinning or modification of the old head is required. The mouth
+    cavity is cut INTO the skull; no solid ellipsoid remains behind its rim.
+    """
+    def ellipsoid_object(name, centre, radii, surface, segments=24, rings=16):
+        bm = bmesh.new()
+        result = bmesh.ops.create_uvsphere(bm, u_segments=segments, v_segments=rings, radius=1)
+        for v in result['verts']:
+            v.co = rt(tuple(centre[i]+v.co[i]*radii[i] for i in range(3)))
+        data = bpy.data.meshes.new(name)
+        bm.to_mesh(data); bm.free()
+        data.materials.append(surface)
+        for face in data.polygons:
+            face.use_smooth = True
+        return ear_hand.link(bpy.data.objects.new(name, data))
+
+    def box_object(name, minimum, maximum, surface):
+        verts = [(x,y,z) for x in [minimum[0],maximum[0]] for y in [minimum[1],maximum[1]] for z in [minimum[2],maximum[2]]]
+        data = mesh(name, verts, [(0,4,6,2),(1,3,7,5),(0,1,5,4),(2,6,7,3),(0,2,3,1),(4,5,7,6)], surface)
+        return ear_hand.link(bpy.data.objects.new(name,data))
+
+    def subtract(obj, cutter):
+        bpy.context.view_layer.objects.active = obj
+        modifier = obj.modifiers.new('actual oral volume', 'BOOLEAN')
+        modifier.operation = 'DIFFERENCE'; modifier.solver = 'EXACT'; modifier.object = cutter
+        bpy.ops.object.modifier_apply(modifier=modifier.name)
+        ear_hand.remove(cutter)
+
+    def join_data(name, objects, offset=(0,0,0)):
+        bpy.ops.object.select_all(action='DESELECT')
+        for obj in objects:
+            obj.select_set(True)
+        bpy.context.view_layer.objects.active=objects[0]
+        bpy.ops.object.join()
+        obj=objects[0]; data=obj.data; data.name=name
+        # A local pivot is baked into every vertex, never an exported GLB node.
+        shift=rt(offset)
+        for vertex in data.vertices:
+            vertex.co-=shift
+        obj.data=bpy.data.meshes.new('detach singing face')
+        ear_hand.remove(obj)
+        return data
+
+    skull=ellipsoid_object('singing skull', (0,.07,0), (.142,.183,.125), material)
+    skull.data.materials.append(cavity)
+    # Remove the lower front, letting the independently moving chin form it.
+    subtract(skull,box_object('jaw articulation clearance',(-.22,-.25,-.25),(.22,-.035,-.018),cavity))
+    # Elliptical opening, 160mm wide and 100mm high, with a 90mm-deep oral
+    # recess. The cutter's material owns the new inward-facing cavity walls.
+    subtract(skull,ellipsoid_object('oral cavity',(0,-.012,-.123),(.080,.050,.095),cavity,32,20))
+    # At this scale the bridge, cheek planes and upper lip must be geometry:
+    # they survive the game's final dither where tiny painted marks disappear.
+    nose=ellipsoid_object('singing nose',(0,.056,-.126),(.025,.047,.041),material,12,10)
+    lip=ellipsoid_object('upper lip',(0,.029,-.119),(.078,.009,.013),material,20,8)
+    cheeks=[ellipsoid_object(f'cheek {side}',(side*.096,.016,-.078),(.025,.049,.029),material,12,10) for side in [-1,1]]
+    head=join_data('chapel_presence_singing_head',[skull,nose,lip,*cheeks])
+
+    chin=ellipsoid_object('hinged chin',(0,-.073,-.062),(.087,.046,.077),material,24,14)
+    lower_lip=ellipsoid_object('lower lip',(0,-.034,-.119),(.077,.009,.015),material,20,8)
+    # The oral floor moves with the mandible. It remains distinct dark tissue
+    # behind the lower lip rather than a grey plate filling the aperture.
+    floor=ellipsoid_object('oral floor',(0,-.034,-.065),(.069,.005,.055),cavity,20,8)
+    jaw=join_data('chapel_presence_singing_jaw',[chin,lower_lip,floor],SINGING_JAW_PIVOT)
+    return head,jaw
+
+
+def singing_face_proof(head, jaw):
+    """CPU acceptance: actual packed geometry, not a screenshot assertion."""
+    tree=BVHTree.FromPolygons([v.co for v in head.vertices],[tuple(p.vertices) for p in head.polygons],all_triangles=False)
+    rays=[]
+    for x in [-.045,0,.045]:
+        origin=rt((x,-.005,-.4)); direction=rt((0,0,1))
+        hit,normal,index,distance=tree.ray_cast(origin,direction,1)
+        if hit is None:
+            raise ValueError(f'Singing mouth has no recessed back wall at {x}')
+        point=(hit.x,hit.z,-hit.y)
+        material=head.materials[head.polygons[index].material_index].name
+        if point[2]<-.075 or 'oral cavity' not in material:
+            raise ValueError(f'Solid face remains behind singing mouth at {x}: {point} / {material}')
+        rays.append({'x':x,'hit':list(point),'material':material})
+    # The hinge rotation is authored about local X; negative angle opens the
+    # forward-facing (-Z) jaw down. Test the actual final jaw vertex cloud.
+    opening=.40; c=math.cos(opening); s=math.sin(opening)
+    jaw_runtime=[(v.co.x,v.co.z,-v.co.y) for v in jaw.vertices]
+    rest_min=min(v[1]+SINGING_JAW_PIVOT[1] for v in jaw_runtime)
+    open_min=min(c*v[1]+s*v[2]+SINGING_JAW_PIVOT[1] for v in jaw_runtime)
+    if open_min>rest_min-.025:
+        raise ValueError(f'Jaw opening does not lower the chin: {rest_min} -> {open_min}')
+    return {'oralRays':rays,'jawPivotHeadLocal':list(SINGING_JAW_PIVOT),'maxOpeningRadians':opening,'closedChinMinY':rest_min,'openChinMinY':open_min}
+
+
 def clinging(ellipsoid, limb, current):
     """A body flat to a surface, belly down, limbs splayed: built prone on
     the floor and turned onto the vault by the runtime."""
@@ -235,6 +341,73 @@ def clinging(ellipsoid, limb, current):
         ellipsoid(hip, (.115, .12, .105), 8, 6)
         limb(hip, knee, .108, .080); ellipsoid(knee, (.080, .083, .080), 8, 6)
         limb(knee, ankle, .075, .049); ellipsoid((ankle[0], .035, ankle[2]+.06), (.06, .035, .13), 8, 5)
+
+
+def cherub_body(ellipsoid, limb, current, bm):
+    """A cramped winged infant-like remnant, deliberately without its head.
+
+    It shares the clinging neck frame so the existing separate head can look
+    down. Thin ribs, tucked limbs and damaged unequal fans avoid a decorative
+    putto silhouette. All feather depth is real mesh, not alpha cards.
+    """
+    current['part']='upper'
+    ellipsoid((0,.16,-.12),(.145,.086,.205),10,7)
+    ellipsoid((0,.15,.14),(.132,.086,.12),10,7)
+    limb((0,.18,-.24),(0,.20,-.405),.052,.043)
+    for side in [-1,1]:
+        shoulder=(side*.135,.18,-.23); elbow=(side*.27,.085,-.11); wrist=(side*.20,.055,-.38)
+        ellipsoid(shoulder,(.060,.056,.060),8,5)
+        limb(shoulder,elbow,.043,.029); limb(elbow,wrist,.030,.020)
+        ellipsoid((wrist[0],.045,wrist[2]-.033),(.035,.026,.055),8,5)
+        for finger in range(3):
+            x=wrist[0]+side*(finger-1)*.018
+            limb((x,.040,-.42),(x+side*.012,.026,-.49+finger*.009),.010,.004)
+        hip=(side*.09,.15,.16); knee=(side*.21,.075,.30); ankle=(side*.14,.045,.46)
+        limb(hip,knee,.060,.036); ellipsoid(knee,(.041,.041,.041),8,5); limb(knee,ankle,.035,.023)
+        ellipsoid((ankle[0],.038,.49),(.033,.027,.065),8,5)
+        # Subtle skeletal ridges under the small ribcage, not a plump belly.
+        for rib in range(3):
+            z=-.22+rib*.068
+            limb((side*.025,.228,z),(side*(.119-rib*.007),.204,z+.014),.010,.006)
+
+    def feather(root, tip, width, seed):
+        a,b=Vector(root),Vector(tip); axis=(b-a).normalized()
+        sideways=Vector((axis.z,0,-axis.x)).normalized()
+        rows=[]
+        for j in range(5):
+            t=j/4
+            centre=a.lerp(b,t)
+            # Individual quills curl toward the body and end raggedly.
+            centre.y+=math.sin(t*math.pi)*.035
+            w=width*(math.sin(math.pi*(.08+.92*t))**.62 if j<4 else .025)
+            rows.append([bm.verts.new(centre-sideways*w),bm.verts.new(centre+Vector((0,.018,0))),bm.verts.new(centre+sideways*w)])
+        for j in range(4):
+            for half in range(2):
+                bm.faces.new((rows[j][half],rows[j+1][half],rows[j+1][half+1],rows[j][half+1]))
+        # A narrow closed underside gives depth and a dark edge on the stone.
+        underside=[]
+        for row in rows:
+            underside.append([bm.verts.new(row[0].co-Vector((0,.012,0))),bm.verts.new(row[2].co-Vector((0,.012,0)))])
+        for j in range(4):
+            bm.faces.new((underside[j][0],underside[j][1],underside[j+1][1],underside[j+1][0]))
+            bm.faces.new((rows[j][0],underside[j][0],underside[j+1][0],rows[j+1][0]))
+            bm.faces.new((rows[j+1][2],underside[j+1][1],underside[j][1],rows[j][2]))
+        bm.faces.new((rows[0][0],rows[0][1],rows[0][2],underside[0][1],underside[0][0]))
+        bm.faces.new((rows[-1][2],rows[-1][1],rows[-1][0],underside[-1][0],underside[-1][1]))
+
+    for side in [-1,1]:
+        root=(side*.10,.205,-.17); elbow=(side*.34,.19,.01); wrist=(side*(.56 if side<0 else .48),.12,.13)
+        limb(root,elbow,.048,.037); limb(elbow,wrist,.036,.023)
+        count=8 if side<0 else 6
+        for k in range(count):
+            t=k/max(1,count-1)
+            start=(side*(.18+.31*t),.17,-.13+.19*t)
+            length=(.73-.22*t)*(1 if side<0 else .86)
+            end=(side*(.35+length*.68),.045+.028*(k%3),.12+.60*t-.07*(k%2))
+            feather(start,end,.038+.010*(k%2),k)
+        # Short broken coverts crowd the root rather than a clean angelic fan.
+        for k in range(3):
+            feather((side*.13,.25,-.19+k*.055),(side*(.40+.075*k),.16,.03+k*.09),.038,k+20)
 
 
 def finish(bm, name, material):
@@ -356,6 +529,8 @@ def main():
     wet=mat('chapel hand residue',(.072,.014,.010,1),.17)
     wax=mat('chapel cold tallow',(.53,.44,.30,1),.46)
     char=mat('chapel embedded char and hair',(.009,.007,.005,1),.92)
+    singing=mat('chapel singing ivory pressure',(.42,.47,.45,1),.90,(.07,.09,.085))
+    oral=mat('chapel singing oral cavity',(.002,.003,.003,1),1.0)
     meshes={}
     for kind in ['seated','bowed','kneeling']:
         for part in ['lower','upper']:
@@ -363,7 +538,10 @@ def main():
     for kind in ['celebrant','acolyte']:
         meshes[f'chapel_presence_{kind}']=make_body(f'chapel_presence_{kind}',kind,black,'body')
     meshes['chapel_presence_head']=make_body('chapel_presence_head','seated',black,'head')
+    meshes['chapel_presence_singing_head'],meshes['chapel_presence_singing_jaw']=singing_face(singing,oral)
+    face_proof=singing_face_proof(meshes['chapel_presence_singing_head'],meshes['chapel_presence_singing_jaw'])
     meshes['chapel_presence_clinging']=make_body('chapel_presence_clinging','clinging',black,'body')
+    meshes['chapel_presence_cherub']=make_body('chapel_presence_cherub','cherub',singing,'body')
     meshes['chapel_writing_stop']=writing('chapel_writing_stop',['STOP LISTENING TO ME'],.29,0,paint)
     meshes['chapel_writing_overwritten']=writing('chapel_writing_overwritten',['NO ONE IS LISTENING']*3,.135,.19,paint)
     meshes['chapel_writing_empty']=writing('chapel_writing_empty',['THE ROOM IS EMPTY','THE ROOM IS EMPTY'],.205,.28,paint)
@@ -380,9 +558,10 @@ def main():
         obj.select_set(True)
     bpy.context.view_layer.objects.active=objects[0]
     report={'meshes':{name:{'triangles':ear_hand.tri_count(data),'bounds':ear_hand.runtime_bounds(data),'materials':[m.name for m in data.materials]} for name,data in meshes.items()}}
+    report['singingFace']=face_proof
     report['triangles']=sum(m['triangles'] for m in report['meshes'].values())
     # Where each part turns: runtime metres in the body's own frame.
-    report['pivots']={kind:{k:list(v) for k,v in body_pivots(kind).items()} for kind in ['seated','bowed','kneeling','celebrant','acolyte','clinging']}
+    report['pivots']={kind:{k:list(v) for k,v in body_pivots(kind).items()} for kind in ['seated','bowed','kneeling','celebrant','acolyte','clinging','cherub']}
     bpy.ops.wm.save_as_mainfile(filepath=str(Path(args.blend).resolve()))
     bpy.ops.export_scene.gltf(filepath=str(Path(args.output).resolve()),export_format='GLB',use_selection=True,export_apply=True,export_yup=True,
                               export_texcoords=True,export_normals=True,export_tangents=False,export_materials='EXPORT',

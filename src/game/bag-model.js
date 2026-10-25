@@ -614,7 +614,7 @@ function buildSkillsSection({ build, settledBuild = null, hasRig }) {
   };
 }
 
-export function buildBagModel({ equipment = [], job = EMPTY_JOB, map = null, mapUnavailableReason = '', loadout = null, build = null, settledBuild = null, hasRig = false, sheetInsights = null } = {}) {
+export function buildBagModel({ equipment = [], job = EMPTY_JOB, journal = [], map = null, mapUnavailableReason = '', loadout = null, build = null, settledBuild = null, hasRig = false, sheetInsights = null } = {}) {
   const safeJob = {
     ...EMPTY_JOB,
     ...(job || {}),
@@ -711,6 +711,19 @@ export function buildBagModel({ equipment = [], job = EMPTY_JOB, map = null, map
   });
   const files = normalizeFiles(safeJob,map,sheetInsights);
   const done = clampInt(safeJob.done, 0, total || Math.max(0, safeJob.done || 0));
+  const quests = (Array.isArray(journal) ? journal : []).map((entry) => {
+    const destination = entry.location;
+    const space = !mapUnavailableReason && destination ? map?.spaces?.find((candidate) =>
+      candidate.selectable !== false && (destination.spaceId ? candidate.id === destination.spaceId
+        : destination.roomId && candidate.roomId === destination.roomId)) : null;
+    return { ...entry, kind: 'quest', mapSpaceId: space?.id || null, mapEnabled: !!space,
+      actions: {
+        primary: { id: 'journal-track', label: 'TRACK', enabled: entry.state === 'active' },
+        secondary: { id: 'journal-map', label: 'SHOW ON MAP', enabled: !!space,
+          reason: mapUnavailableReason || 'NO KNOWN LOCATION ON THIS PLAN' },
+      },
+    };
+  });
 
   return {
     sections: [
@@ -718,6 +731,7 @@ export function buildBagModel({ equipment = [], job = EMPTY_JOB, map = null, map
       { id: 'map', label: 'MAP', countLabel: `${done}/${total}`, entries: mapEntries, map },
       { id: 'sheets', label: 'SHEETS', countLabel: String(files.length).padStart(2, '0'), entries: files },
       buildSkillsSection({ build, settledBuild, hasRig }),
+      { id: 'journal', label: 'JOURNAL', countLabel: `${quests.filter((entry) => entry.state === 'active').length} OPEN`, entries: quests },
     ],
     progress: { done, total },
     loadout: normalizedLoadout,

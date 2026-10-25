@@ -22,14 +22,16 @@ import { BUILDING_AMENITY_MESHES, BUILDING_AMENITY_PROPS, BUILDING_AMENITY_COLLI
 import { BUILDING_WINDOW_MESHES, BUILDING_WINDOW_PROPS } from './building-window-fittings.js';
 import { STREET_PILOT, STREET_PILOT_BASELINE } from './street-pilot.js';
 import { EXTERIOR_FOREGROUND, foregroundYardLogicalPoint } from './exterior-foreground.js';
-import { EXTERIOR_PUB, PUB_COLLIDERS, pubWorldFromLocal } from './exterior-pub.js';
+import { EXTERIOR_PUB, PUB_COLLIDERS, pubWorldFromLocal, pubLogicalAt } from './exterior-pub.js';
 import { PUB_INTERIOR_LAYOUT, PUB_FURNITURE_COLLIDERS } from './exterior-pub-furnishings.js';
 import { PUB_NEW_ACTORS, PUB_MESHES, pubActor, pubFacePoint } from './pub-population.js';
 import { PUB_FAVOR_MESHES, PUB_FAVOR_PROPS } from './pub-favors.js';
 import { ACADEMIC_GALLERY_MESHES, ACADEMIC_GALLERY_PROPS, academicGalleryPlacement } from './academic-gallery-treatment.js';
 import { LOADING_BAY_ACCESS } from './loading-bay-access.js';
 import { VAN_REAR_STOCK_PARTS } from './van-rear-stock.js';
+import { ARRIVAL_COURT, ARRIVAL_COURT_MESHES, ARRIVAL_COURT_COLLIDERS } from './arrival-court.js';
 import { MAIN_STAIR_WALL_MESHES, MAIN_STAIR_WALL_PROPS } from './main-stair-wall-dressing.js';
+import { STATIONERS_MESHES, STATIONERS_PROPS, STATIONERS_COLLIDERS } from './exterior-stationers.js';
 
 const P = (id, mesh, x, y, yaw = 0, extra = {}) => ({ id, mesh, x, y, yaw, scale:1, ...extra });
 
@@ -53,8 +55,8 @@ const DP = (id,mesh,physicalX,physicalY,yaw=0,extra={}) => {
 const pubDP = (entry,extra={}) => {
   const actor=pubActor(entry.pubActorId||entry.id),face=actor?.role==='bartender'
     ?pubWorldFromLocal({x:-2.65,z:actor.local.z}):actor?pubFacePoint(actor):{x:entry.x,z:entry.y};
-  const target=districtLogicalAt(face.x,face.y??face.z);
-  return DP(entry.id,entry.mesh,entry.x,entry.y,entry.yaw,{
+  const target=pubLogicalAt(face.x,face.y??face.z),at=pubLogicalAt(entry.x,entry.y);
+  return P(entry.id,entry.mesh,at.x,at.y,entry.yaw,{
     structural:true,blocks:false,floorOverride:actor?.floor??EXTERIOR_PUB.floor+.012,
     renderOffsetX:entry.x-Math.round(entry.x*2)/2,
     renderOffsetZ:entry.y-Math.round(entry.y*2)/2,
@@ -125,6 +127,8 @@ const DOCK_REEL = [{worldId:'dock_reel',fileLabel:'01'}];
 const DOCK_SHUTTER = [{worldId:'dock_shutter',fileLabel:'01'}];
 
 export const PROP_MESH = Object.freeze({
+  ...STATIONERS_MESHES,
+  ...ARRIVAL_COURT_MESHES,
   ...Object.fromEntries(VAN_REAR_STOCK_PARTS.map(part=>[part.mesh,{w:2,d:4.5,blocks:false}])),
   ...MAIN_STAIR_WALL_MESHES,
   ...ACADEMIC_GALLERY_MESHES,
@@ -262,6 +266,7 @@ export const PROP_MESH = Object.freeze({
   district_terrace_frontage:{w:5.5,d:64.0,blocks:false},
   district_civic_frontage:{w:6.5,d:64.0,blocks:false},
   exterior_pub_interior:{w:5.4,d:16,h:3.4,blocks:false},
+  exterior_pub_frontage:{w:7.1,d:16,h:15,blocks:false},
   district_workshop_frontage:{w:7.0,d:64.0,blocks:false},
   district_passage_frontage:{w:5.5,d:64.0,blocks:false},
   district_court_walls:{w:9.2,d:16.5,h:9.5,blocks:false},
@@ -396,9 +401,11 @@ export const STRUCTURAL_COLLIDERS = Object.freeze([
       spaceId:'exterior_civic_block',colliderGroup:'street-pilot'})),
   ...BUILDING_AMENITY_COLLIDERS,
   ...PUB_COLLIDERS,
+  ...STATIONERS_COLLIDERS,
+  ...ARRIVAL_COURT_COLLIDERS,
   ...PUB_FURNITURE_COLLIDERS.map(c=>{
     const local={x:(c.min[0]+c.max[0])/2,z:(c.min[2]+c.max[2])/2},world=pubWorldFromLocal(local);
-    const at=districtLogicalAt(world.x,world.z),margin=EXTERIOR_PUB.collisionBodyMargin;
+    const at=pubLogicalAt(world.x,world.z),margin=EXTERIOR_PUB.collisionBodyMargin;
     return{id:c.id,kind:'obb',x:at.x,y:at.y,yaw:0,
       width:c.max[2]-c.min[2]+2*margin,depth:c.max[0]-c.min[0]+2*margin,
       minElevation:EXTERIOR_PUB.floor+c.min[1],maxElevation:EXTERIOR_PUB.floor+c.max[1],
@@ -458,6 +465,7 @@ const BASEBOARD_PROPS = Object.entries(BASEBOARDS).map(([group, b]) =>
   }));
 
 export const CONSERVATORY_PROPS = [
+  ...STATIONERS_PROPS,
   ...MAIN_STAIR_WALL_PROPS,
   ...PUB_FAVOR_PROPS,
   ...ACADEMIC_GALLERY_PROPS,
@@ -595,8 +603,8 @@ export const CONSERVATORY_PROPS = [
     LOADING_BAY_ACCESS.yardOrigin.z+LOADING_BAY_ACCESS.meshOrigin.z,0,{
     elevation:-LOADING_BAY_ACCESS.drop,interactive:false,structural:true,blocks:false,
   }),
-  P('yard-fence-west','yard_fence_run',70.0,210.0,0,{interactive:false,structural:true,blocks:true}),
-  P('yard-fence-north','yard_fence_run',83.0,201.5,Math.PI/2,{interactive:false,structural:true,blocks:true}),
+  // The old second wire boundary cut across the drive and through the
+  // east pocket-park bench. The one civic gate below now owns this edge.
   // THE LODGE, which is the only thing in the game you talk to a person through.
   // `inspectAt` is the window rather than the middle of the building, so the
   // reticle and the walk-up both land where his face is.
@@ -768,11 +776,12 @@ export const CONSERVATORY_PROPS = [
   DP('district-west-row-b','district_workshop_frontage',-14,82,0,{interactive:false,structural:true,renderOffsetX:-1.05}),
   DP('district-east-row-a','district_passage_frontage',142,20,Math.PI,{interactive:false,structural:true,renderOffsetX:1.05}),
   DP('district-east-row-b','district_workshop_frontage',142,82,Math.PI,{interactive:false,structural:true,renderOffsetX:1.05}),
-  DP('district-north-row-a','district_terrace_frontage',18,-14,Math.PI/2,{interactive:false,structural:true,renderOffsetZ:-1.05}),
+  DP('district-north-row-a','district_terrace_frontage_stationer',18,-14,Math.PI/2,{fallbackMesh:'district_terrace_frontage',interactive:false,structural:true,renderOffsetZ:-1.05}),
   DP('district-north-row-b','district_passage_frontage',82,-14,Math.PI/2,{interactive:false,structural:true,renderOffsetZ:-1.05}),
   DP('district-north-row-c','district_terrace_frontage',138,-14,Math.PI/2,{interactive:false,structural:true,renderOffsetZ:-1.05}),
   DP('district-south-row-a','district_civic_frontage',18,106,-Math.PI/2,{interactive:false,structural:true,renderOffsetZ:1.05}),
-  DP('pub-complete-interior','exterior_pub_interior',EXTERIOR_PUB.interiorAnchor.x,EXTERIOR_PUB.interiorAnchor.z,-Math.PI/2,{
+  P('pub-complete-frontage','exterior_pub_frontage',pubLogicalAt(EXTERIOR_PUB.facadeAnchor.x,85).x,pubLogicalAt(EXTERIOR_PUB.facadeAnchor.x,85).y,-Math.PI/2,{interactive:false,structural:true,blocks:false,floorOverride:EXTERIOR_PUB.floor,renderOffsetZ:.05,renderGroups:['ground']}),
+  P('pub-complete-interior','exterior_pub_interior',pubLogicalAt(EXTERIOR_PUB.interiorAnchor.x,EXTERIOR_PUB.interiorAnchor.z).x,pubLogicalAt(EXTERIOR_PUB.interiorAnchor.x,EXTERIOR_PUB.interiorAnchor.z).y,-Math.PI/2,{
     interactive:false,structural:true,blocks:false,floorOverride:EXTERIOR_PUB.floor,
     renderOffsetZ:EXTERIOR_PUB.interiorAnchor.z-Math.round(EXTERIOR_PUB.interiorAnchor.z*2)/2,
     renderGroups:['ground'],label:'The Lyric public house',
@@ -817,7 +826,7 @@ export const CONSERVATORY_PROPS = [
     structural:true,blocks:false,action:'exterior-lore',loreId:'district-mews-neighbor',
     label:'the man under the awning',interactionPriority:3,
   }),
-  DP('district-pub-driver','exterior_pub_driver',18,105,Math.PI,{
+  P('district-pub-driver','exterior_pub_driver',77,282.5,Math.PI,{
     structural:true,blocks:false,action:'exterior-lore',loreId:'district-pub-driver',
     label:'the driver by the pub yard',interactionPriority:3,
   }),
@@ -913,8 +922,10 @@ export const CONSERVATORY_PROPS = [
   // Putting the gate on the booth's axis instead (y14) walled the mouth off with
   // hedge, which is the only genuinely unforgivable thing you can do out here.
   // The booth stays north of the opening, so you see it PAST the ironwork.
-  P('yard-gate-piers','yard_gate_piers',77.5,207.5,0,{interactive:false,structural:true}),
-  P('yard-hedge-near','yard_hedge_run',78.4,216.0,0,{interactive:false,structural:true,blocks:true}),
+  P('yard-gate-piers',ARRIVAL_COURT.meshes.boundary,ARRIVAL_COURT.logicalOrigin.x,ARRIVAL_COURT.logicalOrigin.y,0,{interactive:false,structural:true,blocks:false}),
+  // The lodge-side hedge is kept below the caretaker's display sill. The
+  // uncut outer return remains taller; this occupied edge is still tended.
+  P('yard-hedge-near','yard_hedge_run',78.4,216.0,0,{interactive:false,structural:true,blocks:true,scaleY:.43}),
   P('yard-hedge-far','yard_hedge_corner',78.4,227.0,0,{fallbackMesh:VEGETATION_FALLBACKS.yard_hedge_corner,interactive:false,structural:true,blocks:true}),
   P('yard-hedge-near-nettles','vegetation_nettle_cluster',77.75,219.4,.18,{interactive:false,structural:true,blocks:false}),
   P('yard-hedge-far-weeds','vegetation_weed_cluster',79.05,224.4,-.52,{interactive:false,structural:true,blocks:false}),

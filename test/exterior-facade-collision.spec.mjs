@@ -3,16 +3,24 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {performance} from 'node:perf_hooks';
 import {parseGlb,meshFingerprint} from '../tools/chunk_surfer/rebuild-tree-crowns.mjs';
+import {EXTERIOR_COLLISION_ASSETS} from '../tools/chunk_surfer/build-exterior-collision.mjs';
 import {EXTERIOR_COLLISION_GEOMETRY,EXTERIOR_COLLISION_SOURCE} from '../src/data/generated/exterior-collision.js';
 import {exteriorFacadeCanOccupy,exteriorFacadeCanStep} from '../src/world/exterior-facade-collision.js';
 import * as FP from '../src/world/floorplan.js';
 import * as PROPS from '../src/game/props.js';
 import {conservatory} from '../src/data/floorplan/conservatory.js';
 import {districtLogicalAt} from '../src/data/exterior-district.js';
-import {EXTERIOR_PUB} from '../src/data/exterior-pub.js';
+import {EXTERIOR_PUB,pubLogicalAt} from '../src/data/exterior-pub.js';
 
 const pack=parseGlb(fs.readFileSync(new URL('../public/assets/conservatory-props.glb',import.meta.url)));
 const openingPack=parseGlb(fs.readFileSync(new URL('../public/assets/opening-street.glb',import.meta.url)));
+const sourcePacks=new Map([['public/assets/conservatory-props.glb',pack],['public/assets/opening-street.glb',openingPack]]);
+const sourceFor=name=>{
+  const spec=EXTERIOR_COLLISION_ASSETS.find(source=>source.meshes.includes(name));
+  assert.ok(spec,`${name} has an authoritative collision asset source`);
+  if(!sourcePacks.has(spec.asset))sourcePacks.set(spec.asset,parseGlb(fs.readFileSync(new URL(`../${spec.asset}`,import.meta.url))));
+  return sourcePacks.get(spec.asset);
+};
 FP.compile(conservatory.levels,conservatory);PROPS.propsInit(FP);
 const instances=PROPS.renderInstances({inscriptions:false}).filter(p=>EXTERIOR_COLLISION_GEOMETRY[p.mesh]);
 const instance=id=>{const p=instances.find(i=>i.id===id);assert.ok(p,id);return p;};
@@ -24,7 +32,7 @@ const body=p=>{const q=FP.logicalToPhysical(p[0],p[1]);return{x:(q.x+.5)*.5,z:(q
 const originalTriangles=new Map();
 function originalMeshTriangles(name){
   if(originalTriangles.has(name))return originalTriangles.get(name);
-  const source=name.startsWith('opening_street_')?openingPack:pack;
+  const source=sourceFor(name);
   const mesh=source.json.meshes.find(m=>m.name===name),triangles=[];
   const read=id=>{
     const a=source.json.accessors[id],v=source.json.bufferViews[a.bufferView],components=a.type==='SCALAR'?1:3;
@@ -51,9 +59,9 @@ function originalTriangleCrossing(from,to,placed){
 }
 
 test('collision freshness follows exact selected mesh bytes, independently of unrelated props',()=>{
-  assert.equal(EXTERIOR_COLLISION_SOURCE.meshCount,8);
+  assert.equal(EXTERIOR_COLLISION_SOURCE.meshCount,10);
   for(const[name,data]of Object.entries(EXTERIOR_COLLISION_GEOMETRY)){
-    const source=name.startsWith('opening_street_')?openingPack:pack;
+    const source=sourceFor(name);
     assert.equal(data.sha256,meshFingerprint(source,source.json.meshes.find(m=>m.name===name)),`${name}: rebuild exterior collision after changing this actual mesh`);
     assert.ok(data.walls.length+data.triangles.length>0);
     const meshIndex=source.json.meshes.findIndex(m=>m.name===name);
@@ -104,9 +112,9 @@ test('all four court mouths and centre walks remain open through the exact share
 });
 
 test('both actual pub apertures and the loading-bay goods mouth remain clear',()=>{
-  for(const x of[-12.75,-4.75]){
-    const from={x,z:106.75,feet:.12},to={x,z:108.5,feet:.12};
-    assert.equal(originalTriangleCrossing(from,to,instance('district-south-row-a')),false,'the original pub aperture contains no static wall');
+  for(const d of EXTERIOR_PUB.doors){
+    const x=d.x,from={x,z:EXTERIOR_PUB.frontWorldZ-.5,feet:.12},to={x,z:EXTERIOR_PUB.frontWorldZ+1.25,feet:.12};
+    assert.equal(originalTriangleCrossing(from,to,instance('pub-complete-frontage')),false,'the original pub aperture contains no static wall');
     assert.equal(step(from,to).ok,true,'ordinary dynamic doors retain sole ownership of their openings');
   }
   const from={x:48,z:7.5,feet:-.85},to={x:51,z:7.5,feet:0};
@@ -115,10 +123,10 @@ test('both actual pub apertures and the loading-bay goods mouth remain clear',()
 });
 
 test('production body collision retains ordinary movement through both real pub doors',()=>{
-  const at=(x,z)=>{const p=districtLogicalAt(x-.25,z-.25);return{x:p.x*2,y:p.y*2};};
+  const at=(x,z)=>{const p=pubLogicalAt(x-.25,z-.25);return{x:p.x*2,y:p.y*2};};
   for(const door of EXTERIOR_PUB.doors){
     FP.setDoorOpen(door.id,true);
-    const route=Array.from({length:5},(_,i)=>at(door.x,106.75+i*.5));
+    const route=Array.from({length:5},(_,i)=>at(door.x,EXTERIOR_PUB.frontWorldZ-.5+i*.5));
     for(let i=1;i<route.length;i++){
       const previous=route[i-1],next=route[i];
       assert.ok(FP.canStep(previous.x,previous.y,next.x,next.y,{keys:new Set()}).ok,`${door.id}: actual open throat`);

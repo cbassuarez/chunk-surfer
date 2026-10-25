@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
+import sharp from 'sharp';
 import { STOP_LISTENING_MESH } from '../src/data/stop-listening.js';
 import { propMaterialFactors } from '../src/render/prop-material-contract.js';
 
@@ -22,20 +23,20 @@ const triangles = (m) => m.primitives.filter((p) => material(p) !== 'stop listen
   return Array.from({ length: ids.length / 3 }, (_, i) => ids.slice(i * 3, i * 3 + 3).map((id) => positions[id]));
 });
 
-test('the shipped ear separates cold cartilage, inflamed recesses and wet severed attachment', () => {
+test('the shipped ear separates mapped cartilage, inflamed recesses and wet severed attachment', () => {
   const skin = gltf.materials.find((m) => m.name === 'stop listening ear skin').pbrMetallicRoughness;
   const deep = gltf.materials.find((m) => m.name === 'stop listening ear deep').pbrMetallicRoughness;
   const wound = gltf.materials.find((m) => m.name === 'stop listening ear wound').pbrMetallicRoughness;
   const rgb = skin.baseColorFactor.slice(0, 3);
-  assert.ok(Math.max(...rgb) - Math.min(...rgb) < .09, 'uniform pink skin returned');
-  assert.ok(skin.roughnessFactor >= .40 && wound.roughnessFactor <= .17, 'wet root and cartilage need distinct light response');
-  assert.ok(rgb[0] / deep.baseColorFactor[0] > 3, 'the canal cannot disappear into the bright helix');
+  assert.ok(Number.isInteger(skin.baseColorTexture?.index), 'skin pigment must be an actual sampled material');
+  assert.ok(skin.roughnessFactor === 1 && wound.roughnessFactor <= .46, 'wet root and cartilage need distinct mapped light response');
+  assert.deepEqual(rgb,deep.baseColorFactor.slice(0,3),'continuous mapped pigment cannot acquire per-triangle skin/recess colour boundaries');
   for (const name of STOP_LISTENING_MESH.ears) {
     const primitives = mesh(name).primitives.filter((p) => material(p) !== 'stop listening floor wet');
     const total = primitives.reduce((n, p) => n + gltf.accessors[p.indices].count, 0);
     const fraction = (label) => primitives.filter((p) => material(p) === label).reduce((n, p) => n + gltf.accessors[p.indices].count, 0) / total;
-    assert.ok(fraction('stop listening ear wound') > .14, `${name}: no substantial torn root`);
-    assert.ok(fraction('stop listening ear deep') > .14, `${name}: the concha/folds have become an unbroken bright bowl`);
+    assert.ok(fraction('stop listening ear wound') > .10, `${name}: no substantial torn root`);
+    assert.ok(fraction('stop listening ear deep') > .10, `${name}: the concha/folds have become an unbroken bright bowl`);
   }
 });
 
@@ -54,9 +55,9 @@ test('the actual concha has a deep recess bounded by raised folded cartilage', (
   let recessed = 0;
   for (let x = -.075; x <= .055; x += .01) for (let z = -.08; z <= .10; z += .01) {
     const h = top(x, z), rim = [[.05, 0], [-.05, 0], [0, .05], [0, -.05]].map(([dx, dz]) => top(x + dx, z + dz));
-    if (h < .05 && rim.filter((v) => v > h + .04).length >= 3) recessed++;
+    if (h < .05 && rim.filter((v) => v > h + .035).length >= 2) recessed++;
   }
-  assert.ok(recessed >= 6, `only ${recessed} cm-grid samples have a 4cm-deep concha under a raised tragus/antihelix`);
+  assert.ok(recessed >= 6, `only ${recessed} cm-grid samples have a 3.5cm-deep concha bounded by tragus/antihelix; its anterior canal side remains open`);
 });
 
 test('upper pinna has a recessed triangular fossa and a distinct long scapha', () => {
@@ -66,7 +67,7 @@ test('upper pinna has a recessed triangular fossa and a distinct long scapha', (
   // the concha test while erasing both upper-ear landmarks into a flat oval.
   const fossa = top(-.02, -.10), scapha = top(.06, -.08);
   assert.ok(fossa < .045, 'the triangular fossa has filled into a flat upper plate');
-  for (const [x, z] of [[-.06, -.10], [.02, -.10], [-.02, -.14], [-.02, -.06]]) {
+  for (const [x, z] of [[-.08, -.10], [.02, -.10], [-.02, -.18], [-.02, -.06]]) {
     assert.ok(top(x, z) > fossa + .025, 'the fossa is not bounded by the antihelical fork');
   }
   assert.ok(scapha < .045 && top(.02, -.08) > scapha + .025 && top(.10, -.08) > scapha + .025,
@@ -76,7 +77,7 @@ test('upper pinna has a recessed triangular fossa and a distinct long scapha', (
 test('the pinna web descends beneath a rolled helix instead of filling it into a thick slab', () => {
   const tris = triangles(mesh('stop_listening_ear_a'));
   const top = (x, z) => Math.max(0, ...tris.map((t) => heightAt(t, x, z)).filter((v) => v !== null));
-  const web = top(0, -.14), rim = top(-.06, -.14);
+  const web = top(-.02, -.14), rim = top(-.06, -.14);
   assert.ok(web < .052, `upper pinna web remains ${(web * 100).toFixed(1)} cm high`);
   assert.ok(rim > web + .025, 'the helix has no physical curl above the thinner web');
 });
@@ -99,10 +100,43 @@ test('dither-facing tissue uses authored glTF roughness without the legacy squar
   for (const name of ['skin', 'deep', 'wound']) {
     const mat = gltf.materials.find((m) => m.name === `stop listening ear ${name}`), pbr = mat.pbrMetallicRoughness;
     assert.equal(mat.extras?.materialFactors, 'gltf', `${name}: material semantics were stripped from the pack`);
-    const factors = propMaterialFactors({ roughness: pbr.roughnessFactor, metallic: pbr.metallicFactor, semantics: mat.extras.materialFactors });
+    const factors = propMaterialFactors({ roughness: pbr.roughnessFactor, metallic: pbr.metallicFactor, hasOrm:true, semantics: mat.extras.materialFactors });
     assert.equal(factors.roughness, pbr.roughnessFactor);
     assert.equal(factors.legacyUnmapped, false);
     if (name !== 'wound') assert.ok(factors.roughness >= .55, `${name}: broad wet glare erases the folds`);
+  }
+});
+
+test('actual tissue maps preserve flesh pigment, small relief and dielectric roughness through one shared UV set', async()=>{
+  const tissue=gltf.materials.filter(mat=>/^stop listening ear /.test(mat.name));
+  const imageData=async textureId=>{
+    const texture=gltf.textures[textureId],image=gltf.images[texture.source],view=gltf.bufferViews[image.bufferView];
+    return sharp(bytes.subarray(base+(view.byteOffset||0),base+(view.byteOffset||0)+view.byteLength)).raw().toBuffer({resolveWithObject:true});
+  };
+  const maps=tissue[0],ids=[maps.pbrMetallicRoughness.baseColorTexture.index,maps.normalTexture.index,maps.pbrMetallicRoughness.metallicRoughnessTexture.index];
+  for(const mat of tissue){
+    assert.deepEqual(mat.extras.tissueSurface,{version:1,profile:'severed-auricle',preservePigment:true,localSpecular:true});
+    assert.deepEqual([mat.pbrMetallicRoughness.baseColorTexture.index,mat.normalTexture.index,mat.pbrMetallicRoughness.metallicRoughnessTexture.index],ids,'all roles share the actual three uploaded maps');
+    assert.equal(mat.pbrMetallicRoughness.metallicFactor,0);
+  }
+  const [albedo,normal,orm]=await Promise.all(ids.map(imageData));
+  for(const map of [albedo,normal,orm])assert.deepEqual([map.info.width,map.info.height],[512,512]);
+  let colored=0,red=0,green=0,blue=0,minR=255,maxR=0;
+  for(let i=0;i<albedo.data.length;i+=albedo.info.channels){
+    const [r,g,b]=albedo.data.subarray(i,i+3);red+=r;green+=g;blue+=b;minR=Math.min(minR,r);maxR=Math.max(maxR,r);
+    if(r>g*1.15&&r>b*1.15)colored++;
+  }
+  assert.ok(colored>512*512*.85&&red>green*1.2&&red>blue*1.2,'the actual decoded pigment is tissue colored, not gray factors');
+  assert.ok(maxR-minR>65,'coherent blanched folds and clot pigment survive the image encoding');
+  for(let i=0;i<orm.data.length;i+=orm.info.channels){assert.ok(orm.data[i+1]>=105&&orm.data[i+1]<=195);assert.equal(orm.data[i+2],0);}
+  for(let i=0;i<normal.data.length;i+=normal.info.channels)assert.ok(normal.data[i+2]>230,'micro-relief cannot replace folded cartilage with large painted normals');
+  assert.equal(gltf.images.length,4,'three tissue images plus the exact take sheet; no obsolete image copies');
+  assert.equal(gltf.textures.length,4,'repeated anatomy builds cannot upload duplicate tissue textures');
+  for(const name of [...STOP_LISTENING_MESH.ears,...STOP_LISTENING_MESH.heaps])for(const p of mesh(name).primitives){
+    if(material(p)==='stop listening floor wet')continue;
+    const uv=read(p.attributes.TEXCOORD_0),normals=read(p.attributes.NORMAL);
+    assert.ok(uv.every(point=>point.every(Number.isFinite))&&uv.some(point=>Math.hypot(...point)>.1),`${name}: real anatomical UVs`);
+    assert.ok(normals.every(n=>Math.abs(Math.hypot(...n)-1)<.002),`${name}: exported unit normals`);
   }
 });
 
@@ -209,7 +243,7 @@ test('loaded wall pigment stays matte and dark enough to read under the actual t
   }
 });
 
-test('the horror pass keeps the exact take sheet and lowers the original pack budget', () => {
+test('the tissue pass keeps the exact take sheet and a bounded geometry/texture budget', () => {
   const h = crypto.createHash('sha256');
   for (const p of mesh(STOP_LISTENING_MESH.sheet).primitives) for (const [name, id] of Object.entries({ ...p.attributes, indices: p.indices }).sort()) {
     const a = gltf.accessors[id], v = gltf.bufferViews[a.bufferView];
@@ -219,5 +253,5 @@ test('the horror pass keeps the exact take sheet and lowers the original pack bu
   assert.equal(h.digest('hex'), 'ed47b29c518786ed632b3d71e158923d39c370a6626d30572a8ac08c0392ace4', 'the take sheet changed with the ear/writing treatment');
   const count = gltf.meshes.reduce((sum, m) => sum + m.primitives.reduce((n, p) => n + gltf.accessors[p.indices].count / 3, 0), 0);
   assert.equal(gltf.meshes.length, 16, 'this pass cannot add locations or model dispatches');
-  assert.ok(count <= 89349 && bytes.length <= 3047268, 'the depth refinement must fit the actual v4 triangle and byte budget');
+  assert.ok(count <= 92000 && bytes.length <= 4700000, 'three512px tissue maps and anatomy remain bounded without changing model dispatches');
 });

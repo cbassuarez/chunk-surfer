@@ -1,0 +1,12 @@
+{
+  "author": "Chunk Surfer project",
+  "sourceMeshes": [
+    "yard_booth_interior",
+    "yard_booth_glazing",
+    "yard_booth_practicals",
+    "yard_booth_handoff"
+  ],
+  "materials": "Exact existing project material records, UVs and maps copied from the current packed gate lodge.",
+  "newGeometry": "Original hand-sized pen, cut brass key and thick-walled tea cup. No external media.",
+  "sha256": "bf538d8dcfcc62a897b01f19d0ead97fe11470f5622296606c1768430a7dd7eb"
+}

@@ -13,28 +13,41 @@ const dot=(a,b)=>a.reduce((n,v,k)=>n+v*b[k],0),minus=(a,b)=>a.map((v,k)=>v-b[k])
 const primitives=mesh.primitives.map(p=>({...p,positions:accessor(p.attributes.POSITION),normals:accessor(p.attributes.NORMAL),ix:accessor(p.indices)}));
 const pos=(p,i)=>p.positions.slice(i*3,i*3+3);
 function cornersForSite(id){const out=[];for(const p of primitives)for(const r of p.extras.siteIndexRanges)if(r.id===id)for(const i of p.ix.slice(r.firstIndex,r.firstIndex+r.indexCount))out.push(pos(p,i));return out;}
+function localCorners(id,material){const site=MAIN_STAIR_WALL_SITES.find(s=>s.id===id),out=[];for(const p of primitives){if(material&&gltf.materials[p.material].name!==material)continue;for(const r of p.extras.siteIndexRanges)if(r.id===id)for(const i of p.ix.slice(r.firstIndex,r.firstIndex+r.indexCount)){const q=minus(pos(p,i).map((v,k)=>v+MAIN_STAIR_WALL_ORIGIN[k]),site.origin);out.push([dot(q,site.tangent),q[1],dot(q,site.normal)]);}}return out;}
+function hasPoint(points,want,label){assert.ok(points.some(p=>Math.hypot(...minus(p,want))<3e-6),`${label}: packed point ${want} absent`);}
 
 test('stair wall pack is one original project mesh inside explicit draw and byte budgets',()=>{
   assert.equal(gltf.meshes.length,1);assert.equal(mesh.name,'main_stair_wall_treatment');assert.equal(gltf.nodes.length,1);
   assert.deepEqual(mesh.extras.origin,MAIN_STAIR_WALL_ORIGIN);assert.equal(gltf.nodes[0].translation,undefined);
-  assert.ok(bytes.length<2*1024*1024);assert.ok(primitives.length<=8);assert.equal(primitives.length,7);
-  const triangles=primitives.reduce((n,p)=>n+p.ix.length/3,0);assert.ok(triangles<=30000);assert.equal(triangles,stats.totalTriangles);assert.equal(bytes.length,stats.bytes);
+  assert.ok(bytes.length<2*1024*1024);assert.ok(primitives.length<=10);assert.equal(primitives.length,stats.materialBatches);
+  const triangles=primitives.reduce((n,p)=>n+p.ix.length/3,0);assert.ok(triangles<=50000);assert.equal(triangles,stats.totalTriangles);assert.equal(bytes.length,stats.bytes);
   assert.equal(gltf.images,undefined);assert.equal(gltf.textures,undefined);assert.equal(gltf.extensions?.KHR_lights_punctual,undefined);
   for(const m of gltf.materials){assert.notEqual(m.doubleSided,true);assert.equal(m.alphaMode,undefined);assert.equal(m.emissiveFactor,undefined);}
   assert.equal(credits.pack.sha256,crypto.createHash('sha256').update(bytes).digest('hex'));assert.equal(credits.pack.origin,'Original deterministic geometry; no downloaded imagery, textures or meshes.');
 });
 
-test('every actual packed vertex stays on its real bay and within the 6–75 mm relief envelope',()=>{
+test('every actual packed vertex stays on its real bay and within its 6–150 mm architectural envelope',()=>{
   assert.deepEqual(mesh.extras.sites.map(s=>s.id),MAIN_STAIR_WALL_SITES.map(s=>s.id));
   for(const site of MAIN_STAIR_WALL_SITES){const ps=cornersForSite(site.id);assert.ok(ps.length>1000,site.id);
     let min=Infinity,max=-Infinity;
     for(const p of ps){const world=p.map((v,k)=>v+MAIN_STAIR_WALL_ORIGIN[k]),relative=minus(world,site.origin),u=dot(relative,site.tangent),d=dot(relative,site.normal),v=relative[1];
       assert.ok(Math.abs(u)<=site.width/2+2e-6,`${site.id}: bay edge ${u}`);assert.ok(v>=-2e-6&&v<=site.height+2e-6,`${site.id}: elevation ${v}`);
       min=Math.min(min,d);max=Math.max(max,d);
-      assert.ok(d>=.006-2e-6&&d<=.075+2e-6,`${site.id}: actual relief projection ${d}`);
+      assert.ok(d>=.006-2e-6&&d<=site.maxProjection-.01+2e-6,`${site.id}: actual architectural projection ${d}`);
     }
-    assert.ok(min<=.006002&&max>=.074998,`${site.id}: backing/cornice physical depths absent`);
+    assert.ok(min<=.006002&&max>=site.maxProjection-.010002,`${site.id}: backing/cornice physical depths absent`);
   }
+});
+
+test('all clipped lower architectural triangles remain inside the 25 mm body-clearance envelope',()=>{
+  let clippedTriangles=0,max=-Infinity;
+  for(const p of primitives)for(const r of p.extras.siteIndexRanges){const site=MAIN_STAIR_WALL_SITES.find(s=>s.id===r.id);for(let k=r.firstIndex;k<r.firstIndex+r.indexCount;k+=3){
+    const points=p.ix.slice(k,k+3).map(i=>{const q=minus(pos(p,i).map((v,j)=>v+MAIN_STAIR_WALL_ORIGIN[j]),site.origin);return[dot(q,site.tangent),q[1],dot(q,site.normal)];}),below=[];
+    for(let i=0;i<3;i++){const a=points[i],b=points[(i+1)%3],ia=a[1]<=2,ib=b[1]<=2;if(ia)below.push(a);if(ia!==ib){const t=(2-a[1])/(b[1]-a[1]);below.push(a.map((v,j)=>v+(b[j]-v)*t));}}
+    if(below.length)clippedTriangles++;
+    for(const q of below){max=Math.max(max,q[2]);assert.ok(q[2]<=.025+2e-6,`${site.id}: lower triangle intrudes ${q[2]} m`);}
+  }}
+  assert.ok(clippedTriangles>10000);assert.ok(max>.024&&max<=.025+2e-6);
 });
 
 test('triangle winding and finite unit normals agree throughout the shipped single-sided pack',()=>{
@@ -54,36 +67,40 @@ test('architectural profiles and reliefs are closed solids with conforming cap b
       for(let k=0;k<3;k++){const a=keys[k],b=keys[(k+1)%3],key=[a,b].sort().join('|');edges.set(key,(edges.get(key)||0)+(a<b?1:-1));}
     }
   }
-  // An incision pigment can meet the mineral skin on the same closed solid;
-  // material boundaries are not holes and must be welded across primitives.
+  // Gilding and plaster can share a solid. Material boundaries must be
+  // welded across primitives; matching one material alone is insufficient.
   assert.equal([...edges.values()].filter(v=>v!==0).length,0,'unclosed or nonconforming cap edge');
   assert.ok(volume>0,'inward solid orientation');
 });
 
-test('three anonymous faces are broad continuous attached reliefs with real anatomical contour',()=>{
-  assert.equal(mesh.extras.faces.length,3);assert.deepEqual(mesh.extras.faces.map(f=>f.kind).sort(),['intact','overpainted','sealed']);
-  for(const f of mesh.extras.faces){assert.equal(f.construction,'continuous closed heightfield relief attached to plaster field');assert.ok(f.widthM>=.7&&f.heightM>=1.2);assert.equal(f.backingProjectionM,.009);
-    const site=MAIN_STAIR_WALL_SITES.find(s=>s.id===f.site),points=cornersForSite(site.id).map(p=>{const r=minus(p.map((v,k)=>v+MAIN_STAIR_WALL_ORIGIN[k]),site.origin);return[dot(r,site.tangent),r[1],dot(r,site.normal)];});
-    const back=points.filter(([u,v,d])=>Math.abs(d-.009)<2e-6&&Math.abs(u)<.381&&Math.abs(v-f.centre[1])<.621);assert.ok(back.length>=100,`${f.site}: closed attached backing missing`);
-    // Face anatomy is one elliptical grid, not disconnected stacked primitives.
-    const skin=points.filter(([u,v,d])=>(u/.38)**2+((v-f.centre[1])/.62)**2<=1.001&&d>.0159&&d<.074);
-    assert.ok(new Set(skin.map(p=>p.map(v=>v.toFixed(5)).join(','))).size>=600,`${f.site}: continuous curved skin absent`);
-    assert.ok(f.samples.nose>f.samples.leftEye+.009);assert.ok(Math.abs(f.samples.leftEye-f.samples.rightEye)<1e-6);assert.ok(f.samples.nose<=.075);
+test('four high-silled blind aedicules have actual moulded arch depth and retain no figural masks',()=>{
+  assert.equal(mesh.extras.architectureRevision,2);assert.deepEqual(mesh.extras.faces,[]);assert.deepEqual(stats.faces,[]);
+  const aedicules=mesh.extras.sites.filter(s=>s.architecture.type==='blind arched aedicule');assert.equal(aedicules.length,4);
+  assert.equal(aedicules.filter(s=>s.architecture.anomaly).length,3);assert.equal(stats.features.continuousHeightfieldMasks,0);
+  for(const s of aedicules){const a=s.architecture,points=localCorners(s.id,'retained warm lime plaster'),D=MAIN_STAIR_WALL_SITES.find(q=>q.id===s.id).maxProjection-.01;
+    assert.equal(a.openingIsUsable,false);assert.ok(a.baseM>2);assert.equal(a.pairedSupports,true);
+    // Inspect every actual high arch station, rather than trusting the receipt
+    // that calls it moulded: its broad raised bead must exist in the pack.
+    for(let i=0;i<=24;i++){const angle=i/24*Math.PI;hasPoint(points,[Math.cos(angle)*(a.innerRadiusM+.105),a.springM+Math.sin(angle)*(a.innerRadiusM+.105),D*.94],`${s.id} archivolt`);}
   }
-  const intact=mesh.extras.faces.find(f=>f.kind==='intact'),paint=mesh.extras.faces.find(f=>f.kind==='overpainted'),sealed=mesh.extras.faces.find(f=>f.kind==='sealed');
-  assert.ok(intact.samples.nose>paint.samples.nose&&paint.samples.nose>sealed.samples.nose);
 });
 
-test('intact mask has restrained pigment inside its actual closed-eye and lip relief; erased faces stay erased',()=>{
-  const intact=mesh.extras.faces.find(f=>f.kind==='intact');assert.equal(intact.skinMaterial,'exposed ceramic biscuit');assert.equal(intact.recessPigmentMaterial,'dark green moulding undercut');assert.equal(intact.pigmentOnExistingSkinOnly,true);
-  for(const n of Object.values(intact.recessPigmentTriangles))assert.ok(n>=2&&n<35);
-  for(const f of mesh.extras.faces.filter(f=>f.kind!=='intact')){assert.equal(f.recessPigmentMaterial,null);assert.equal(Object.values(f.recessPigmentTriangles).reduce((a,b)=>a+b,0),0);}
-  const p=primitives.find(p=>gltf.materials[p.material].name===intact.recessPigmentMaterial),site=MAIN_STAIR_WALL_SITES.find(s=>s.id===intact.site),range=p.extras.siteIndexRanges.find(r=>r.id===site.id);
-  let actualIncisions=0;
-  for(let k=range.firstIndex;k<range.firstIndex+range.indexCount;k+=3){const q=p.ix.slice(k,k+3).map(i=>{const r=minus(pos(p,i).map((v,j)=>v+MAIN_STAIR_WALL_ORIGIN[j]),site.origin);return[dot(r,site.tangent)/.38,(r[1]-intact.centre[1])/.62,dot(r,site.normal)];});
-    if(q.every(([u,v,d])=>u*u+v*v<1.001&&d>.0159&&d<.074))actualIncisions++;
+test('construction anomalies are modelled plugs and conflicting orders, including a 560 mm pinch and stepped cornice',()=>{
+  const byId=new Map(mesh.extras.sites.map(s=>[s.id,s])),brick=byId.get('ground-south-east').architecture,narrow=byId.get('ground-west-south').architecture,strained=byId.get('upper-west-south').architecture;
+  assert.equal(brick.anomaly,'bricked former window');assert.equal(narrow.anomaly,'narrowed repair');assert.equal(strained.anomaly,'inward strain and displaced cornice');
+  const brickPoints=localCorners('ground-south-east','exposed ceramic biscuit');for(const front of[.047,.051,.055])assert.ok(brickPoints.some(p=>Math.abs(p[2]-front)<2e-6),`individual brick front ${front} absent`);
+  const narrowPoints=localCorners('ground-west-south','later ivory paint'),D=.15;
+  hasPoint(narrowPoints,[-.20,narrow.springM+.13,D*.96],'repair crosses original bead');
+  assert.ok(narrow.infill.repairedWidthM<narrow.infill.originalWidthM);assert.equal(narrow.infill.centreM,.17);
+  const points=localCorners('upper-west-south','later ivory paint');assert.equal(strained.infill.springWidthM,.56);
+  for(const sign of[-1,1])hasPoint(points,[sign*.28,strained.springM,.047],'converging infill spring');
+  const fold=strained.foldedCornice;assert.equal(fold.sectionHeightM,.15);assert.equal(fold.fallM,.35);assert.equal(fold.reappears,true);
+  assert.ok(fold.path.some(p=>p[2]<fold.infillFrontM));assert.ok(fold.path[0][2]>fold.infillFrontM&&fold.path.at(-1)[2]>fold.infillFrontM);
+  assert.ok(Math.abs(fold.path[0][1]-fold.path.at(-1)[1]-.35)<1e-9);
+  const plaster=localCorners('upper-west-south','retained warm lime plaster');
+  for(let i=0;i<fold.path.length;i++){const p=fold.path[i],a=fold.path[Math.max(0,i-1)],b=fold.path[Math.min(fold.path.length-1,i+1)],t=minus(b,a),length=Math.hypot(...t);for(let k=0;k<3;k++)t[k]/=length;const up=[-t[1],t[0],0],ul=Math.hypot(...up);for(let k=0;k<3;k++)up[k]/=ul;const out=cross(t,up),ol=Math.hypot(...out);for(let k=0;k<3;k++)out[k]/=ol;
+    for(const[v,d]of fold.section)hasPoint(plaster,p.map((q,k)=>q+up[k]*v+out[k]*d),'closed stepped cornice section');
   }
-  assert.equal(actualIncisions,Object.values(intact.recessPigmentTriangles).reduce((a,b)=>a+b,0));
 });
 
 test('site index receipts cover every shipped triangle exactly once',()=>{

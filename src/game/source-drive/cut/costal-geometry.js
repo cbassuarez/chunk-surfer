@@ -3,12 +3,14 @@
 const clamp=x=>Math.max(0,Math.min(1,x));
 const smooth=x=>{x=clamp(x);return x*x*(3-2*x);};
 export const COSTAL_GLAND_ANCHORS=Object.freeze([
- {id:'left-low',side:-1,point:[-8.962552119038687,3.446788416735057,-7.435026634389372],scale:[.96,1.04,.91],outward:.82},
- {id:'right-low',side:1,point:[8.139357956299888,4.815040958198657,7.247630244761967],scale:[1.10,.93,1.04],outward:1.04},
+ {id:'left-low',side:-1,point:[-12.302371452431785,3.6595143951268634,-7.828319220984149],scale:[.96,1.04,.91],outward:.82},
+ {id:'right-low',side:1,point:[12.302371452431785,3.6595143951268634,6.971680779015851],scale:[1.10,.93,1.04],outward:1.04},
 ]);
 export const COSTAL_NECK=Object.freeze({outlet:[.16462753863181837,-1.10,.08],extendedMetres:1.15,dripMetres:.12});
 export function costalStructureDelta(p,name){const[x,y,z]=p,root=smooth((y-1.3)/6),roof=smooth((y-8.2)/5.2),left=1-smooth((x+4)/8);if(root===0)return[0,0,0];
- if(name==='tension')return[.40*Math.tanh(x/4.5)*root,.44*root*(.78+.22*roof),.10*Math.sin(z*.12)*root];
+ // Posterior joints stay restrained. Rotation of the bowed rib blades raises
+ // the anterior/lateral chest rather than translating an entire stone arch.
+ if(name==='tension'){const angle=.105*root*smooth(Math.abs(x)/4),dy=y-19.65,c=Math.cos(angle),s=Math.sin(angle),side=Math.sign(x);return[x*(c-1)-side*dy*s,dy*(c-1)+Math.abs(x)*s,.16*Math.sin(z*.10)*root];}
  if(name==='shear')return[.44*left*roof*root,-.43*left*roof*root,.22*left*roof*root];
  if(name==='recoil')return[-.12*left*roof*root,-.08*roof*root,-.24*left*roof*root];
  return[0,0,0];

@@ -15,6 +15,9 @@
 
 import { assetUrl } from '../platform/paths.js';
 import { MAIN_STAIR_WALL_PACK } from '../data/main-stair-wall-dressing.js';
+import { EXTERIOR_FRONTAGE_PACK } from '../data/exterior-frontages.js';
+import { EXTERIOR_ROOFLINE_PACK } from '../data/exterior-roofline.js';
+import { EXTERIOR_STATIONERS_PACK } from '../data/exterior-stationers.js';
 import { ACADEMIC_CHARACTER_PACK_MESHES } from '../data/academic-society-character-design.js';
 import { createStreetCrowdPackLoader } from './street-crowd-packs.js';
 import { FRONT_END_PLATE_PRESETS, normalizeFrontEndPlate } from './front-end-plate.js';
@@ -30,6 +33,7 @@ import { homeRealmAcquisition } from './realm-pocket-geometry.js';
 import { PIXEL_MESH_FRAG } from './pixel-mesh/shader.js';
 import { cameraBasis, DOWNWARD_LOOK_LIMIT, CAMERA_FORWARD_GLSL } from './camera-basis.js';
 import { authoredCameraFrame } from './authored-camera.js';
+import { resolveTorchFrame, normalizeTorchOptics, TORCH_OPTICS_GLSL } from './torch-optics.js';
 import { FIRE_ESCAPE_INK_GLSL } from './fire-escape-ink.js';
 import { ROOF_SURFACE_INK_GLSL, ROOF_GLASS_INK_GLSL } from './roof-surface-ink.js';
 import { PRINTED_SURFACE_GLSL } from './printed-surface.js';
@@ -163,6 +167,7 @@ const ZONE_TINTS = new Float32Array([
   0.78, 0.80, 0.84,   // st brendan's: limewashed stone, colder than Ellery's chapel
   0.64, 0.77, 0.80,   // roof: wet zinc and supported glass under the same city sky
   0.86, 0.73, 0.54,   // the occupied pub: timber, gilt and ordinary warm practicals
+  0.78, 0.75, 0.66,   // the stationer's: paper stock and ordinary task lighting
 ]);
 
 const WORLD_RGB = {
@@ -373,7 +378,7 @@ float rainVolume(vec3 ro, vec3 rd, float surfaceViewM){
 
 `;
 
-const MARCH_FRAG = COMMON_GLSL + `
+const MARCH_FRAG = COMMON_GLSL + TORCH_OPTICS_GLSL + `
 uniform vec2  uRes;
 uniform float uTime;
 uniform vec3  uCam;          // eye (x, height, z=world y)
@@ -388,6 +393,7 @@ uniform vec2  uFogOrigin;
 uniform float uAudio;        // 0..1 field energy
 uniform float uLight;        // 0 = flashlight off, 1 = on
 uniform vec3 uTorchColor;
+uniform vec3 uTorchOrigin,uTorchForward,uTorchRight,uTorchUp;
 uniform float uTorchReach;
 uniform vec2 uTorchCone;
 uniform float uTorchSpill;
@@ -1700,7 +1706,7 @@ void main(){
   // yard and open apron without leaking it into the chapel's broken pane or an
   // interior skylight merely because this particular ray happens to see sky.
   // Pub SKY belongs only to its mesh render underlay; its actual room is dry.
-  bool cameraInWeather=uUsePlan>.5&&(eyeCell.flags&FLAG_SKY)!=0&&eyeCell.zone!=${ZONE.pub};
+  bool cameraInWeather=uUsePlan>.5&&(eyeCell.flags&FLAG_SKY)!=0&&eyeCell.zone!=${ZONE.pub}&&eyeCell.zone!=${ZONE.stationers};
   vec2 drd = 1.0 / max(abs(rd.xz), vec2(1e-5));
   ivec2 stp = ivec2(rd.x < 0.0 ? -1 : 1, rd.z < 0.0 ? -1 : 1);
   vec2 sideT = (vec2(cell) + max(vec2(stp), 0.0) - ro.xz) / (rd.xz + 1e-9);
@@ -2015,44 +2021,17 @@ void main(){
     if(!pbrReady&&!sourceMaterial&&!brendanStone)seam=materialSeam(hitMat,surf,posM,n);
     if(brendanStone)surfRough=.94;
 
-    // Interior lighting: a lamp the player carries. Inverse-square falloff with
-    // Lambert on the true face normal — this is what makes a corridor read as
-    // a corridor (near walls bright, the far end swallowed).
-    float dist = length(toEyeM);
-    vec3 ldir = normalize(toEye);
-    float lambert = clamp(dot(n, ldir), 0.0, 1.0);
-    float torchReach=max(.35,uTorchReach);
-    float falloff = 1.0 / (1.0 + (0.10/torchReach) * dist + (0.045/(torchReach*torchReach)) * dist * dist);
-    // grazing floor right at the feet would otherwise blow out: soften the
-    // near field so the lamp reads as a pool of light, not a flashbulb
-    float nearSoft = smoothstep(0.0, 1.4, dist) * 0.55 + 0.45;
-    // The flashlight is a CONE, not a global dimmer: a circular pool of light
-    // thrown where you are looking, with everything outside it dark. fwd is
-    // the view axis, so the pool sits centred on screen and sweeps as you turn.
-    // Off: no cone at all, and the ambient drops to almost nothing. You are not
-    // blind — the room is still there, you simply cannot see it. Light attracts,
-    // so this is a choice, not a setting.
-    float axis = dot(normalize(-toEye), fwd);            // 1 = dead ahead
-    // A torch throws a defined disc, not a gradient across the room: a hard
-    // edge with just enough diffusion at the rim to read as glass, plus a faint
-    // spill because no lens is perfect.
-    float cone     = smoothstep(uTorchCone.x, uTorchCone.y, axis);        // the disc
-    float beamRim  = smoothstep(uTorchCone.x-.04, uTorchCone.x+.015, axis) * 0.30;
-    float spill    = smoothstep(0.30, uTorchCone.x-.02, axis) * uTorchSpill;
-    float beam = (cone + beamRim + spill) * uLight;
-    // Unevenness belongs to the lens edge, never the whole room. The static RD
-    // sample breaks the perfect circle without becoming moving fog or noise.
-    float lensDirt=texture(uRD,fract(gl_FragCoord.xy/uRes*1.7+vec2(.13,.07))).g;
-    float rimMask=clamp(beamRim*3.33*(1.0-cone*.78),0.0,1.0);
-    beam*=mix(1.0,mix(.965,1.018,lensDirt),rimMask*uOpticalEffects);
-    // Outside the beam the lamp is zero whatever the map says, and under the
-    // hero practical the map is not the torch's to read: no taps in either case.
+    // Distances and view reflection remain camera-relative. Illumination and
+    // shadow projection use the same carried emitter in world metres.
+    float dist=length(toEyeM);
+    vec3 toLamp=uTorchOrigin-posM,ldir=normalize(toLamp);
+    float lambert=max(dot(n,ldir),0.0);
+    float falloff=torchFalloff(length(toLamp),uTorchReach);
+    float axis=dot(normalize(-toLamp),uTorchForward);
+    float cone=smoothstep(uTorchCone.x,uTorchCone.y,axis);
+    float beam=torchAngular(-toLamp,uTorchForward,uTorchRight,uTorchUp,uTorchCone,uTorchSpill)*uLight;
     float propShadow=(beam>0.0&&uLocalShadowIndex<0)?propFlashShadow(posM,n,ldir):1.0;
-    float lamp = lambert * falloff * nearSoft * 3.0 * beam * propShadow;   // a torch, not a flare
-    if(uLocalShadowIndex>=0)lamp=lambert*falloff*nearSoft*3.0*beam;         // the map belongs to the hero practical
-    // Compress only the received torch energy. Near paper keeps its print,
-    // while distance, material normals and actual shadows still own the pool.
-    lamp=lamp/(1.0+uTorchShoulder*lamp);
+    float lamp=torchReceive(lambert*falloff*3.0*beam*propShadow,uTorchShoulder);
     // THE FIGURES MUST BLOCK THE WHOLE RED FIELD, NOT ONE LAMP OF FIVE.
     //
     // The shadow map belongs to a single hero practical, and the silhouette used
@@ -3886,6 +3865,9 @@ export async function r3dBasePropsReady(){
 export function r3dPubStatus(){return {...pubStatus,hospitality:P3.propMeshCatalog().includes('pub_warm_interior'),hospitalityError:pubHospitalityError};}
 const streetCrowdPacks=createStreetCrowdPackLoader({props:P3,resolveAsset:assetUrl,onError:(error,kind)=>console.warn('street crowd '+kind+' unavailable; retaining authored figures',error)});
 export function r3dStreetCrowdStatus(){return streetCrowdPacks.status();}
+let exteriorPeopleLoadGeneration=0;
+let exteriorPeopleStatus={boothProps:false,boothCharacter:false,ambientProps:false,errors:[]};
+export function r3dExteriorPeopleStatus(){return{...exteriorPeopleStatus,errors:[...exteriorPeopleStatus.errors],boothReady:exteriorPeopleStatus.boothProps&&exteriorPeopleStatus.boothCharacter};}
 let costumeExchangeAssetError=null,costumeExchangeLoadGeneration=0;
 let heldNoteAssetError=null,heldNoteLoadGeneration=0;
 export function r3dCostumeExchangeStatus(){
@@ -5165,7 +5147,7 @@ let sourceCrossing = null;
 // colour and scene depth; the Source tower door reprojects them (props3d.js
 // renderSourceTowerView). sourceTowerView is where the door is this frame.
 let towerViewCapture=null,towerViewColorTex=null,towerViewColorFbo=null,towerViewDepthTex=null,towerViewDepthFbo=null,towerViewW=0,towerViewH=0;
-let sourceTowerView=null,sourceTowerViewDrawn=0;
+let sourceTowerView=null,sourceTowerViewDrawn=0,lastBuildingViewState=null,towerCaptureInProgress=false;
 // Doorways that show a flat field of colour, by which side the eye is on: the
 // grey doors at the field's edge are black from the field and paper from outside.
 let sourceOpenings=[];
@@ -5257,7 +5239,7 @@ function drawSourceVoidPhysical(now,{voidState,worldYaw,torchPower,torchColor=[.
   // this frame's shadow before either camera samples the deforming body.
   P3.prepareCharacterFrame(now);
   P3.preparePropShadowPass({camX:eyeX,camY:eyeY,camZ:eyeZ,yaw:worldYaw,pitch,
-    light:drive||(coastal.active&&localShadowLight)?1:voidTorch,shadowLight:physicalLighting?localShadowLight:null,timeSec:now,reducedMotion:pixelMeshSettings.reduceMotion,torchYawOffset});
+    light:drive||(coastal.active&&localShadowLight)?1:voidTorch,shadowLight:physicalLighting?localShadowLight:null,timeSec:now,reducedMotion:pixelMeshSettings.reduceMotion,torchYawOffset,torch:{reach:torchReach,coneInner:torchConeInner,coneOuter:torchConeOuter,spill:torchSpill}});
   // THE WET ROAD, MIRRORED: the scene again from under the road at half size, for
   // the composite's puddles. Drawn before the main pass, into its own target.
   const reflecting=!!(sourceReflection&&!towerInside&&visualEffectsEnabled()&&P3.reflectionTargets);
@@ -5269,7 +5251,8 @@ function drawSourceVoidPhysical(now,{voidState,worldYaw,torchPower,torchColor=[.
       localLightCount:drive?localLightCount:2,localLightPositions:drive?localLightPositions:sourceVoidPhysicalLightPositions,
       localLightColors:drive?localLightColors:sourceVoidPhysicalLightColours,localLightPenetrations:drive?localLightPenetrations:sourceVoidPhysicalLightPenetration,
       localLightEmergency:drive?localLightEmergency:sourceVoidPhysicalLightEmergency,localShadowIndex:drive?localShadowIndex:-1,shadowLight:drive?localShadowLight:null,
-      torch:{power:0,color:[.94,.96,1],reach:1,coneInner:.9,coneOuter:.95,spill:.1},
+      torchYawOffset,lampFrame:resolveTorchFrame({eye:[eyeX,eyeY,eyeZ],yaw:worldYaw,pitch,yawOffset:torchYawOffset}),
+      torch:{power:voidTorch,color:torchColor,reach:coastalFoot?torchReach:Math.min(3,torchReach*2.3),coneInner:torchConeInner,coneOuter:torchConeOuter,spill:Math.max(.08,torchSpill),shoulder:coastalFoot?.9:.65},
       ambientColor:[.66,.73,.80],ambientIntensity:.19*(1+flash*5),
       planTexture:null,planSize:[0,0],planOrigin:[0,0],streetTextures:true,maxDistance:70,reflection:true,
     });
@@ -5422,10 +5405,10 @@ function drawSourceVoidPhysical(now,{voidState,worldYaw,torchPower,torchColor=[.
   lastPostSourceFbo=sceneFbo;
 }
 
-function drawTextSpace(texture,now,{torchPower=0,sourceTorchMode=0,torchColor,torchReach,torchConeInner,torchConeOuter,torchSpill,torchShoulder,worldState=null}={}) {
+function drawTextSpace(texture,now,{torchPower=0,sourceTorchMode=0,torchColor,torchReach,torchConeInner,torchConeOuter,torchSpill,torchShoulder,torchYawOffset=0,worldState=null}={}) {
   if(sourceLook.roomMemoryActive){
     drawSourceRoomMemory(now,{torchPower,sourceTorchMode,torchColor,torchReach,
-      torchConeInner,torchConeOuter,torchSpill,torchShoulder,worldState});
+      torchConeInner,torchConeOuter,torchSpill,torchShoulder,torchYawOffset,worldState});
     return;
   }
   gl.useProgram(progTextSpace);
@@ -5474,7 +5457,7 @@ function drawTextSpace(texture,now,{torchPower=0,sourceTorchMode=0,torchColor,to
     SHORE.sourceShoreDraw({frame:sourceShoreState,camX:camX*CELL,camY:camY*CELL,camZ:camZ*CELL,
       yaw:yaw+planYaw,pitch,width:uniforms.sceneW,height:uniforms.sceneH,boundaryOnly:true,
       torch:{power:torchPower,color:torchColor,reach:torchReach,coneInner:torchConeInner,
-        coneOuter:torchConeOuter,spill:torchSpill,shoulder:torchShoulder}});
+        coneOuter:torchConeOuter,spill:torchSpill,shoulder:torchShoulder,yawOffset:torchYawOffset}});
     const boundary=SHORE.sourceShoreComposite({props:P3.propTargets(),encoded:resolved,boundaryOnly:true});
     presentTexture(boundary&&acquired?finishPressure(boundary,{acquired}):boundary||resolved);
   }else presentTexture(resolved);
@@ -5510,7 +5493,7 @@ function drawSourceIdentity(now){
   gl.disable(gl.BLEND);
 }
 function drawSourceRoomMemory(now,{torchPower=0,sourceTorchMode=0,torchColor,torchReach,
-  torchConeInner,torchConeOuter,torchSpill,torchShoulder,worldState=null}={}){
+  torchConeInner,torchConeOuter,torchSpill,torchShoulder,torchYawOffset=0,worldState=null}={}){
   pressureSceneDepthReady=true;
   const targets=P3.propTargets();
   // The finite first-lift bank remains behind the player after entering the
@@ -5522,7 +5505,7 @@ function drawSourceRoomMemory(now,{torchPower=0,sourceTorchMode=0,torchColor,tor
       yaw:yaw+planYaw,pitch,width:uniforms.sceneW,height:uniforms.sceneH,boundaryOnly:true,
       recordingExposure:captureExposureOverride??lightingCaptureExposure,
       torch:{power:torchPower,color:torchColor,reach:torchReach,coneInner:torchConeInner,
-        coneOuter:torchConeOuter,spill:torchSpill,shoulder:torchShoulder}});
+        coneOuter:torchConeOuter,spill:torchSpill,shoulder:torchShoulder,yawOffset:torchYawOffset}});
     hull=SHORE.sourceShoreTargets?.();
   }
   gl.useProgram(progSourceRoomAcquisition);
@@ -6090,6 +6073,7 @@ function loadDataTexture(url){
 
 export function r3dInit(mapEl) {
   const crowdLoadGeneration=streetCrowdPacks.reset();
+  const peopleGeneration=++exteriorPeopleLoadGeneration;exteriorPeopleStatus={boothProps:false,boothCharacter:false,ambientProps:false,errors:[]};
   const hospitalityGeneration=++pubHospitalityLoadGeneration;pubHospitalityError=null;
   const costumeLoadGeneration=++costumeExchangeLoadGeneration;costumeExchangeAssetError=null;
   sourceSurfaceBaker?.dispose();sourceSurfaceBaker=null;sourceSurfaceDiagnostics=null;
@@ -6184,7 +6168,19 @@ export function r3dInit(mapEl) {
   basePropPackLoad
     .then((pack)=>{
       SHORE.sourceShoreSetHardwarePack(pack);
+      void P3.addPropPack(assetUrl('assets/institution-posters.glb')).catch(err=>console.warn('institution posters unavailable',err));
       void streetCrowdPacks.load(crowdLoadGeneration);
+      for(const[kind,file,names]of[
+        ['boothProps','booth-guard-props.glb',['yard_booth_interior','booth_guard_pen','booth_guard_key','booth_guard_cup']],
+        ['ambientProps','exterior-ambient-people-props.glb',['exterior_cycle_equipment','exterior_cycle_crank','exterior_walker_dog']],
+      ])void P3.addPropPack(assetUrl('assets/'+file)).then(()=>{
+        if(peopleGeneration!==exteriorPeopleLoadGeneration)return;
+        const catalog=new Set(P3.propMeshCatalog());if(!names.every(name=>catalog.has(name)))throw Error('Incomplete exterior performer equipment: '+kind);
+        exteriorPeopleStatus[kind]=true;
+      }).catch(error=>{
+        if(peopleGeneration!==exteriorPeopleLoadGeneration)return;
+        exteriorPeopleStatus.errors.push(String(error?.message||error));console.warn('exterior performer equipment unavailable; retaining original appearance',error);
+      });
       void P3.addCharacterPack(assetUrl('assets/pub-characters.glb')).then(()=>{pubStatus.characters=true;}).catch(err=>{pubStatus.error=String(err?.message||err);console.warn('pub characters unavailable',err);});
       void P3.addPropPack(assetUrl('assets/pub-quest-props.glb')).then(()=>{pubStatus.props=true;}).catch(err=>{pubStatus.error=String(err?.message||err);console.warn('pub service props unavailable',err);});
       void P3.addPropPack(assetUrl('assets/pub-hospitality.glb')).then(()=>{
@@ -6199,7 +6195,10 @@ export function r3dInit(mapEl) {
       // The opening booth and the later Wrong Fold share this actor. Begin its
       // optional decode as soon as the base catalog is installed, so unrelated
       // street/vegetation/Source packs cannot delay his opening appearance.
-      void P3.addCharacterPack(assetUrl('assets/outskirts-characters.glb')).catch((err)=>console.warn('outskirts character pack unavailable',err));
+      void P3.addCharacterPack(assetUrl('assets/outskirts-characters.glb'))
+        .then(()=>P3.addCharacterPack(assetUrl('assets/guard-presentations.glb'),{allowedMeshes:['outskirts_fold_guard','overworld_booth_guard']}))
+        .then(()=>{if(peopleGeneration===exteriorPeopleLoadGeneration)exteriorPeopleStatus.boothCharacter=true;})
+        .catch((err)=>console.warn('outskirts character pack unavailable',err));
       void P3.addCharacterPack(assetUrl('assets/outskirts-dog-handler.glb')).catch((err)=>console.warn('outskirts dog handler unavailable',err));
       void P3.addCharacterPack(assetUrl('assets/recordist-characters.glb')).catch((err)=>console.warn('recordist character pack unavailable',err));
       // The prop-store body and chamber cherub use this same skinned material,
@@ -6243,6 +6242,11 @@ export function r3dInit(mapEl) {
     .then(()=>P3.addPropPack(assetUrl('assets/conservatory-textiles.glb')).catch((err)=>console.warn('textile pack unavailable; retaining procedural rug',err)))
     .then(()=>P3.addPropPack(assetUrl('assets/conservatory-adversary-scenery.glb'))
       .catch((err)=>console.warn('adversary room dressing unavailable; retaining original prop store',err)))
+    .then(()=>P3.addPropPack(assetUrl(EXTERIOR_FRONTAGE_PACK)))
+    .then(()=>P3.addPropPack(assetUrl(EXTERIOR_ROOFLINE_PACK))
+      .catch(err=>console.warn('exterior roof closure unavailable; retaining original elevations',err)))
+    .then(()=>P3.addPropPack(assetUrl(EXTERIOR_STATIONERS_PACK))
+      .catch(err=>console.warn('stationers pack unavailable; retaining original closed frontage',err)))
     .then(()=>P3.addPropPack(assetUrl('assets/opening-street.glb'))
       .then(()=>{openingStreetReady=true;}))
     // One optional north-street proof. Unique mesh names keep the wider fleet
@@ -6657,7 +6661,7 @@ let sourcePortals=[],sourcePortalsDrawn=0;
 // state: an ordinary building r3dFrame state. yaw/planYaw: the camera to take it
 // with. sourceEye (metres) and sourceYaw: where that camera stands in Source,
 // looking through the tower door, so the door can put the picture back.
-export function r3dCaptureTowerView(state,{yaw:captureYaw=0,planYaw:capturePlanYaw=0,sourceEye=[0,0,0],sourceYaw=0,key=''}={}){
+export function r3dCaptureTowerView(state,{yaw:captureYaw=0,pitch:capturePitch=0,planYaw:capturePlanYaw=0,sourceEye=[0,0,0],sourceYaw=0,key='',allowSource=false}={}){
   if(!gl||!uniforms.sceneW||!uniforms.sceneH||!state)return null;
   const w=uniforms.sceneW,h=uniforms.sceneH;
   if(towerViewW!==w||towerViewH!==h){
@@ -6668,10 +6672,11 @@ export function r3dCaptureTowerView(state,{yaw:captureYaw=0,planYaw:capturePlanY
     towerViewW=w;towerViewH=h;
   }
   const saved={camX,camY,camZ,yaw,yawTarget,pitch,pitchTarget,planYaw,planYawTarget,leanEase,lightEase,lastT,vfdPreviousX,vfdPreviousZ,vfdMovement};
-  yaw=yawTarget=captureYaw;pitch=pitchTarget=0;
+  yaw=yawTarget=captureYaw;pitch=pitchTarget=capturePitch;
   cameraSnapPending=true;presentTarget={fbo:towerViewColorFbo,width:w,height:h};
   try{
-    r3dFrame({...state,yawOffset:capturePlanYaw,lean:0,textSpace:false,sourceVoidPhysical:false});
+    towerCaptureInProgress=true;
+    r3dFrame({...state,yawOffset:capturePlanYaw,lean:0,textSpace:allowSource&&!!state.textSpace,sourceVoidPhysical:allowSource&&!!state.sourceVoidPhysical});
     // The march leaves 1/(1+zView*.14) in the scene's alpha: view depth, metres.
     gl.useProgram(progCopy);gl.bindFramebuffer(gl.FRAMEBUFFER,towerViewDepthFbo);gl.viewport(0,0,w,h);
     gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,sceneTex);
@@ -6679,6 +6684,7 @@ export function r3dCaptureTowerView(state,{yaw:captureYaw=0,planYaw:capturePlanY
     gl.drawArrays(gl.TRIANGLES,0,3);
     gl.bindFramebuffer(gl.FRAMEBUFFER,null);
   }finally{
+    towerCaptureInProgress=false;
     presentTarget=null;cameraSnapPending=false;
     ({camX,camY,camZ,yaw,yawTarget,pitch,pitchTarget,planYaw,planYawTarget,leanEase,lightEase,lastT,vfdPreviousX,vfdPreviousZ,vfdMovement}=saved);
     r3dResetVfdMemory();
@@ -6687,6 +6693,13 @@ export function r3dCaptureTowerView(state,{yaw:captureYaw=0,planYaw:capturePlanY
     eye:[...sourceEye].map(Number),yaw:Number(sourceYaw)||0,key:String(key),at:performance.now()};
   if(sourceTowerView)sourceTowerView={...sourceTowerView,capture:towerViewCapture};
   return{width:w,height:h,key:towerViewCapture.key};
+}
+// A retained threshold borrows the actual departing room, with an authored
+// reverse-facing eye. Capturing cannot replace the next ordinary-world frame.
+export function r3dCaptureLastBuildingView({camera,sourceEye,sourceYaw=0,key=''}={}){
+  if(!lastBuildingViewState||!camera)return null;
+  return r3dCaptureTowerView({...lastBuildingViewState,authoredCamera:camera},
+    {yaw:camera.yaw,pitch:camera.pitch||0,sourceEye,sourceYaw,key});
 }
 // Diagnostics: the captured belfry as an image, and what its depth says.
 export function r3dTowerViewImage(){
@@ -6797,6 +6810,7 @@ export function r3dStBrendansTreatmentStats() { return P3.stBrendansTreatmentSta
 export function r3dStBrendansPresenceStats() { return P3.stBrendansPresenceStats(); }
 export function r3dStreetPilotReady() { return streetPilotReady; }
 export function r3dOpeningStreetReady() { return openingStreetReady; }
+export function r3dStationersReady() { return ['district_terrace_frontage_stationer','exterior_stationers_room'].every(name=>P3.propMeshCatalog().includes(name)); }
 export function r3dAcademicGalleryStatus() { return {ready:academicGalleryReady,error:academicGalleryError}; }
 export function r3dPropInstanceIds() { return P3.propInstanceIds(); }
 
@@ -6964,6 +6978,7 @@ function updateWaterField(water, dt) {
 //          chunks:[{x,y,r,act,col}], key:{x,y}|null, door:{x,y}|null,
 //          hush:{x,y,strength}|null, dockHauntingFade:0..1, audio:0..1 }
 export function r3dFrame(state) {
+  if(!towerCaptureInProgress&&!state.textSpace&&!state.sourceVoidPhysical&&!horizonState.active)lastBuildingViewState=state;
   driveFrameActive=state?.driveStudy?.active===true;
   if(!driveFrameActive)P3.setDriveStudyFrame(null);
   if (!gl) return;
@@ -7042,13 +7057,12 @@ export function r3dFrame(state) {
   const torchPower=lightEase*Math.max(0,Math.min(1,Number(torch.power??1)||0));
   const sourceTorchMode=torch.sourceTorchMode==='xray'?1:torch.sourceTorchMode==='emergency'?2:0;
   const torchColor=Array.isArray(torch.color)?torch.color:[1,.94,.82];
-  const torchReach=Math.max(.35,Math.min(1.25,Number(torch.reach)||1));
-  const torchConeInner=Math.max(.72,Math.min(.97,Number(torch.coneInner)||.88));
-  const torchConeOuter=Math.max(torchConeInner+.015,Math.min(.98,Number(torch.coneOuter)||.94));
-  const torchSpill=Math.max(0,Math.min(.12,Number(torch.spill??.05)||0));
-  const torchShoulder=Math.max(0,Math.min(2,Number(torch.shoulder)||0));
+  const {reach:torchReach,coneInner:torchConeInner,coneOuter:torchConeOuter,spill:torchSpill,shoulder:torchShoulder}=normalizeTorchOptics(torch);
+  const torchYawOffset=Math.max(-.4,Math.min(.4,Number(torch.yawOffset)||0));
+  const torchFrame=resolveTorchFrame({eye:[camX*CELL,camY*CELL,camZ*CELL],yaw:worldYaw,pitch,yawOffset:torchYawOffset});
   renderedTorchDiagnostic={power:torchPower,inputPower:Math.max(0,Math.min(1,Number(torch.power??1)||0)),
-    lightEase,color:[...torchColor],reach:torchReach,sourceTorchMode,yawOffset:Number(torch.yawOffset)||0,timeSec:now};
+    lightEase,color:[...torchColor],reach:torchReach,coneInner:torchConeInner,coneOuter:torchConeOuter,spill:torchSpill,shoulder:torchShoulder,
+    origin:[...torchFrame.origin],forward:[...torchFrame.forward],sourceTorchMode,yawOffset:torchYawOffset,timeSec:now};
   const opticalEffects=visualEffectsEnabled()?1:0;
   const sensoryProfile=String(state.sensoryProfile||'story');
   const hushSense=sensoryProfile==='hush-prowl'?1:sensoryProfile==='hush-listen'?.75:0;
@@ -7149,7 +7163,7 @@ export function r3dFrame(state) {
     P3.renderPropPass({
       camX: camX * CELL, camY: camY * CELL, camZ: camZ * CELL,
       maxDistance:authoredCamera?Math.max(90,Math.min(320,Number(state.authoredPropRange)||90)):90,
-      yaw: worldYaw, pitch, light: torchPower, fogTexture, fogOrigin, fogSize: FOG_TEX,
+      yaw: worldYaw, pitch, torchYawOffset, light: torchPower, fogTexture, fogOrigin, fogSize: FOG_TEX,
       timeSec:now,reducedMotion:pixelMeshSettings.reduceMotion,
       sourceRoomLighting:sourceLook.roomMemoryActive===true,
       cellMeters: CELL, zoneTints: ZONE_TINTS,
@@ -7159,9 +7173,11 @@ export function r3dFrame(state) {
       ambientColor:lightingAmbientColor,ambientIntensity:lightingAmbientIntensity,
       planTexture,planSize:[planW,planH],planOrigin:[planOriginX,planOriginY],
     });
+    sourceTowerViewDrawn=sourceTowerView&&P3.renderSourceTowerView
+      ?P3.renderSourceTowerView({camX:camX*CELL,camY:camY*CELL,camZ:camZ*CELL,yaw:worldYaw,pitch,view:sourceTowerView,inside:false}):0;
     if(sourceOpenings.length)P3.renderSourceOpenings?.({camX:camX*CELL,camY:camY*CELL,camZ:camZ*CELL,yaw:worldYaw,pitch,openings:sourceOpenings});
     drawTextSpace(P3.propTargets().color,now,{torchPower,sourceTorchMode,torchColor,torchReach,
-      torchConeInner,torchConeOuter,torchSpill,torchShoulder,worldState:state});
+      torchConeInner,torchConeOuter,torchSpill,torchShoulder,torchYawOffset,worldState:state});
     return;
   }
 
@@ -7204,6 +7220,12 @@ export function r3dFrame(state) {
     academicAtriumLight:lightingAcademicAtriumLight,
   });
 
+  // A physical threshold in the building can borrow the same captured-world
+  // opening as the belfry. The plane writes depth into the ordinary prop pass,
+  // so the wall behind it cannot flatten the receiving world's geometry.
+  sourceTowerViewDrawn=sourceTowerView&&P3.renderSourceTowerView
+    ?P3.renderSourceTowerView({camX:camX*CELL,camY:camY*CELL,camZ:camZ*CELL,yaw:worldYaw,pitch,view:sourceTowerView,inside:false}):0;
+
   // march into low-res scene buffer
   gl.useProgram(progMarch);
   pressureSceneDepthReady=true;
@@ -7228,6 +7250,7 @@ export function r3dFrame(state) {
   gl.uniform1f(U('uAudio'), state.audio);
   gl.uniform1f(U('uLight'), torchPower);
   gl.uniform3fv(U('uTorchColor'),torchColor);
+  gl.uniform3fv(U('uTorchOrigin'),torchFrame.origin);gl.uniform3fv(U('uTorchForward'),torchFrame.forward);gl.uniform3fv(U('uTorchRight'),torchFrame.right);gl.uniform3fv(U('uTorchUp'),torchFrame.up);
   gl.uniform1f(U('uTorchReach'),torchReach);
   gl.uniform2f(U('uTorchCone'),torchConeInner,torchConeOuter);
   gl.uniform1f(U('uTorchSpill'),torchSpill);
@@ -7675,3 +7698,6 @@ export function r3dDepthCanvas(size = 512) {
 export { BIOME_RGB, WORLD_RGB };
 
 export function r3dSourceDemolitionStats(){return P3.sourceDemolitionStats();}
+// Explicit offline frame-review tools can compile the exact production source
+// without booting a second world or changing any gameplay/render state.
+export function r3dLightingShaderSources(){return {vertex:VERT,march:MARCH_FRAG};}

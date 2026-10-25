@@ -295,6 +295,7 @@ test('production main advances the protected clock and submits bodies, aspects a
   const context={streetPilotClock:clock,streetPilotComparison:{condition:'final',timeSec:null},
     R3:{r3dStreetPilotReady:()=>true},document:{hidden:false,hasFocus:()=>true},
     dt:.1,paused:false,usingSpecialSpace:()=>false,shakeMode:()=> 'full',
+    exteriorPeopleClock:71,crowdReady:false,exteriorAmbientPeopleInstances:v=>[v],
     getSave:()=>({settings:{shake:'full'}}),ZONE,CELL,zone:ZONE.street,logicalY:0,
     timeSec:71,context:{zone:ZONE.street},effectsMode:'full',physical:{x:78/CELL,z:-7.5/CELL},
     PROPS:{setColliderGroupEnabled:(group,on)=>calls.colliders.push([group,on])},
@@ -329,6 +330,7 @@ test('actual optional-pack loader rejection and main readiness gate retain legac
   }
   const clock=createStreetPilotClock({timeSec:21}),enabled=[];
   const context={streetPilotComparison:{condition:'final',timeSec:null},streetPilotClock:clock,
+    exteriorPeopleClock:71,crowdReady:false,exteriorAmbientPeopleInstances:v=>[v],
     R3:{r3dStreetPilotReady:()=>false},ZONE,zone:ZONE.street,logicalY:0,timeSec:71,
     getSave:()=>({settings:{shake:'full'}}),exteriorAmbientInstances,
     streetPilotStaticInstances,streetPilotSignalInstances,

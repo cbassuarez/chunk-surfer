@@ -1,13 +1,16 @@
 // Six existing south-row shop houses, in the existing frontage-local frame:
 // +X faces the pavement, -X enters the 5.4m lot, Z follows the eight-metre deeds.
 // Owns each complete deed; caller must omit its old mass, windows and roof.
+import {PLAZA_SHOPFRONTS,PLAZA_SHOP_CLOSURE} from '../../src/data/plaza-shopfronts.js';
+import {addShopDisplay} from './shop-display-geometry.mjs';
+import {addShopLettering} from './plaza-shop-lettering.mjs';
 const freeze=value=>{if(value&&typeof value==='object'){Object.values(value).forEach(freeze);Object.freeze(value);}return value;};
 export const SOUTH_SHOP_MASSING=freeze({
   deeds:[2,3,4,5,6,7],width:8,depth:5.4,frontProjection:.46,
-  maximumTrianglesPerDeed:1900,maximumTriangles:11000,
+  maximumTrianglesPerDeed:4400,maximumTriangles:22000,
   protectedPub:{z0:-32,z1:-16},
   upperWindowCentres:[5.30,8.40,11.50],upperWindowOffsets:[-1.72,1.72],
-  wallDepth:.34,displayDepth:.27,closedDoorWidth:1.10,
+  wallDepth:.34,displayDepth:.95,occupiedFrontDepth:1.05,closedDoorWidth:1.10,
   roofs:['front-gable','long-ridge','long-ridge','front-gable','long-ridge','long-ridge'],
   roofRise:[1.75,1.85,1.45,1.80,1.60,1.35],
 });
@@ -18,25 +21,41 @@ const palette={
   white:['aged white paint',[.69,.72,.66],.03,.68],steel:['painted steel',[.22,.24,.23],.7,.46],
   wood:['dark wood',[.16,.095,.052],0,.72],green:['pub green paint',[.075,.18,.12],0,.66],
   brass:['brass',[.49,.31,.08],.8,.25],warm:['occupied warm glass',[.38,.25,.10],.02,.28,[.86,.53,.20]],
+  paper:['shop ivory stock',[.74,.70,.59],0,.88],
+  litPaper:['shop lit ivory stock',[.74,.70,.59],0,.88,[.16,.125,.078]],
+  litWood:['shop lit dark wood',[.16,.095,.052],0,.72,[.045,.027,.012]],
+  litSteel:['shop lit painted steel',[.22,.24,.23],.7,.46,[.055,.05,.037]],
+  litGreen:['shop lit green stock',[.075,.18,.12],0,.66,[.018,.04,.024]],
+  litTerracotta:['shop lit terracotta stock',[.42,.17,.08],0,.86,[.08,.038,.018]],
+  interior:['shop reflected warm plaster',[.28,.25,.19],0,.94,[.025,.018,.008]],
 };
 const midpoint=(a,b)=>a.map((n,i)=>(n+b[i])/2);
 
-export function addSouthShopDeed(api,m,{deed,z,h,unitW=8,depth=5.4}){
+export function addSouthShopDeed(api,m,{deed,z,h,unitW=8,depth=5.4,useIndex=deed}){
   const C=SOUTH_SHOP_MASSING,index=deed-2;
   if(!C.deeds.includes(deed)||![z,h,unitW,depth].every(Number.isFinite)||Math.abs(unitW-8)>1e-8||Math.abs(depth-C.depth)>1e-8||Math.abs(z-(-28+8*deed))>1e-8||h<11||h>15)
     throw Error('Shop massing requires one existing civic deed 2..7, its original centre and 5.4m lot.');
-  if(!m||!Array.isArray(api.materials)||['addBox','addBeam','addCylinder','addQuad'].some(k=>typeof api[k]!=='function'))throw Error('Shop massing needs the ordinary opaque frontage builder API.');
+  if(!m||!Array.isArray(api.materials)||['addBox','addBeam','addCylinder','addQuad','addTriangle'].some(k=>typeof api[k]!=='function'))throw Error('Shop massing needs the ordinary opaque frontage builder API, including physical paint triangles.');
+  const use=PLAZA_SHOPFRONTS[useIndex];
+  if(!use)throw Error('An existing commercial deed must have a declared use.');
   const initial=api.materials.length,ids={};
   for(const[key,[name,rgb,metallicFactor,roughnessFactor,emissive]]of Object.entries(palette)){
     let i=api.materials.findIndex(p=>p.name===name);
     if(i<0){i=api.materials.length;api.materials.push({name,pbrMetallicRoughness:{baseColorFactor:[...rgb,1],metallicFactor,roughnessFactor},...(emissive?{emissiveFactor:emissive}:{})});}ids[key]=i;
   }
-  const stats={owner:m.name,deed,centreZ:z,height:h,depth,roof:C.roofs[index],triangles:0,newMaterials:api.materials.length-initial,parts:[],apertures:[]};
+  const stats={owner:m.name,deed,useIndex,use:use.id,name:use.name,lit:use.lit,closedForVigil:use.closedForVigil,centreZ:z,height:h,depth,roof:C.roofs[index],triangles:0,newMaterials:api.materials.length-initial,parts:[],apertures:[],lettering:[]};
   const point=([x,y,dz])=>[x,y,z+dz];
   const box=(id,c,size,material)=>{api.addBox(m,point(c),size,ids[material]);stats.parts.push({id,kind:'box',center:point(c),size,material});stats.triangles+=12;};
   const beam=(id,a,b,w,material)=>{api.addBeam(m,point(a),point(b),w,ids[material]);stats.parts.push({id,kind:'beam',a:point(a),b:point(b),width:w,material});stats.triangles+=12;};
   const cylinder=(id,c,r,height,material,sides=8)=>{api.addCylinder(m,point(c),r,height,ids[material],sides);stats.parts.push({id,kind:'cylinder',center:point(c),radius:r,height,sides,material});stats.triangles+=sides*4;};
   const quad=(id,a,b,c,d,material)=>{const points=[a,b,c,d].map(point);api.addQuad(m,...points,ids[material]);stats.parts.push({id,kind:'quad',points,material});stats.triangles+=2;};
+  const paintLetters=(id,text,placement,material)=>{
+    const label=addShopLettering((a,b,c)=>api.addTriangle(m,point(a),point(b),point(c),ids[material]),text,placement,material);
+    // The shared opaque builder emits front and rear faces for a triangle.
+    stats.triangles+=label.triangles*2;
+    stats.parts.push({id,kind:'lettering',points:label.vertices.map(point),material});
+    stats.lettering.push({id,text,width:label.width,capHeight:label.capHeight,normal:label.normal,triangles:label.triangles*2});
+  };
   // Three proper quads fill a triangular gable without degenerate triangles.
   const triangle=(id,a,b,c,material)=>{const ab=midpoint(a,b),bc=midpoint(b,c),ca=midpoint(c,a),o=a.map((v,k)=>(v+b[k]+c[k])/3);quad(id+'-a',a,ab,o,ca,material);quad(id+'-b',b,bc,o,ab,material);quad(id+'-c',c,ca,o,bc,material);};
   const brick=index===1||index===4?'terracotta':index===3?'darkBrick':'brick';
@@ -51,7 +70,7 @@ export function addSouthShopDeed(api,m,{deed,z,h,unitW=8,depth=5.4}){
   // The occupied upper volume has real depth. Only its outer 340mm facade is
   // split around openings; the glazing/display backs sit ahead of the solid
   // interior datum, leaving genuine shallow reveals at every aperture.
-  box('occupied-back-volume',[-(depth+C.wallDepth)/2,h/2,0],[depth-C.wallDepth,h,7.84],brick);
+  box('occupied-back-volume',[-(depth+C.occupiedFrontDepth)/2,h/2,0],[depth-C.occupiedFrontDepth,h,7.84],brick);
   const ys=[...new Set([0,h,...stats.apertures.flatMap(a=>[a.y0,a.y1])])].sort((a,b)=>a-b);
   for(let row=0;row<ys.length-1;row++){
     const y0=ys[row],y1=ys[row+1],middle=(y0+y1)/2;
@@ -70,7 +89,8 @@ export function addSouthShopDeed(api,m,{deed,z,h,unitW=8,depth=5.4}){
   box('shop-stall-riser',[.07,.43,displayZ],[.15,.75,displayW+.12],paint);
   box('continuous-base-course',[.07,.10,0],[.22,.20,7.78],'stone');
   box('shop-frieze',[.11,3.16,0],[.22,.18,7.22],paint);
-  box('plain-unlettered-fascia',[.105,3.45,0],[.20,.40,7.04],paint);
+  box('painted-shop-fascia',[.105,3.45,0],[.20,.40,7.04],paint);
+  paintLetters('physical-fascia-name',use.name,{x:.208,y:3.45,z:0,width:6.4,height:.26,capHeight:.25},'paper');
   box('fascia-top-cornice',[.16,3.73,0],[.36,.15,7.34],'stone');
   box('fascia-shadow-bed',[.15,3.83,0],[.31,.07,7.23],'black');
 
@@ -82,19 +102,20 @@ export function addSouthShopDeed(api,m,{deed,z,h,unitW=8,depth=5.4}){
   for(const y of[.48,1.06])box(`door-raised-panel-${y}`,[-.08,y,doorZ],[.055,.43,.85],paint);
   beam('door-pull',[.045,1.07,doorZ+.36],[.045,1.39,doorZ+.36],.032,'brass');
 
-  box('display-back',[-C.displayDepth,1.96,displayZ],[.035,1.91,displayW-.10],index%3===0?'warm':'black');
   for(const side of[-1,1]){
-    box(`display-reveal-${side}`,[-.135,1.96,displayZ+side*(displayW/2-.025)],[.27,2.03,.05],paint);
+    box(`display-reveal-${side}`,[-C.displayDepth/2,1.96,displayZ+side*(displayW/2-.025)],[C.displayDepth,2.03,.05],paint);
     box(`display-jamb-${side}`,[.055,1.96,displayZ+side*(displayW/2+.045)],[.16,2.10,.12],paint);
   }
   box('display-sill',[.10,.91,displayZ],[.42,.10,displayW+.31],'stone');
   box('display-lintel',[.07,3.015,displayZ],[.23,.12,displayW+.24],paint);
   for(const dz of[-.71,.71])box(`display-mullion-${dz}`,[.065,1.96,displayZ+dz],[.12,1.98,.075],paint);
   box('display-transom',[.065,2.53,displayZ],[.12,.075,displayW+.06],paint);
-  // A few dark, unlabelled objects and an internal shelf break the back plane;
-  // no object becomes a sign, a collectible, or an interaction promise.
-  box('internal-display-shelf',[-.12,1.32,displayZ],[.18,.055,displayW-.23],'wood');
-  for(const[k,dz]of[-1.28,-.27,.83,1.48].entries())box(`display-stock-${k}`,[-.145,1.53+(k%2)*.10,displayZ+dz],[.13,.35+(k%2)*.20,.23+(k%3)*.08],'wood');
+  addShopDisplay({box,beam,cylinder,quad},use,{z:displayZ,width:displayW});
+  for(const[n,dz]of[-1.28,.31,1.43].entries())box(`glazing-reflection-${n}`,[.025,2.18+(n%2)*.12,displayZ+dz],[.009,.47,.013],'white');
+  if(use.closedForVigil){
+    box('early-closure-paper',[.014,2.12,doorZ],[.012,.35,.68],'paper');
+    for(const[n,text]of PLAZA_SHOP_CLOSURE.lines.entries())paintLetters(`early-closure-copy-${n}`,text,{x:.022,y:2.20-n*.13,z:doorZ,width:.60,height:.085,capHeight:.065},'black');
+  }
 
   for(const[floor,y]of upperY.entries())for(const[bay,dz]of C.upperWindowOffsets.entries()){
     const id=`upper-${floor}-${bay}`,lit=(deed+floor*2+bay)%7===0;

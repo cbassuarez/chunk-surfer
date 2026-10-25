@@ -101,23 +101,112 @@ def remove(obj):
 
 
 # ── materials ────────────────────────────────────────────────────────────────
-# Wet: every surface in this room is glossy. The display reserves red for the
-# emergency circuit, so the wound and the floor stain will come out as dark
-# glossy grey, not red; they are authored red anyway, because that is what they
-# are, and because the torch's warmth survives where a reservation does not bite.
+# Thin, dull cartilage skin and a local wet cut have different light response.
+# Pigment, small relief and roughness are authored in actual anatomical UVs;
+# the final dither stays the game's final pass.
 MAT = {}
 
 
 def make_materials():
-    MAT['skin'] = material('stop listening ear skin', hex_linear('#AAA69C'), 0.58)
-    MAT['deep'] = material('stop listening ear deep', hex_linear('#514443'), 0.68)
-    MAT['wound'] = material('stop listening ear wound', hex_linear('#2E1211'), 0.14)
+    MAT['skin'] = material('stop listening ear skin', (1, 1, 1, 1), 1)
+    MAT['deep'] = material('stop listening ear deep', (1, 1, 1, 1), 1)
+    MAT['wound'] = material('stop listening ear wound', (.58, .22, .25, 1), .45)
     MAT['wet'] = material('stop listening floor wet', hex_linear('#1C1010'), 0.06)
     # Loaded ironoxide pigment has dried matte. Giving the whole ribbon the
     # gloss of a fresh drop makes it a white mirror under the player's torch,
     # erasing the words precisely where the player tries to read them.
     MAT['paint_dark'] = material('stop listening paint dark', hex_linear('#2B0E0B'), 0.93)
     MAT['paint_pale'] = material('stop listening paint pale', hex_linear('#674A3D'), 0.93)
+
+
+def make_tissue_maps(work):
+    """One shared 512px anatomical tile, retained by every copied heap ear.
+
+    Wide mottling follows the cartilage; fine skin breaks only the highlight.
+    No painted highlight, shadow, emission, or pixel-scale glitter is baked.
+    """
+    size = 512
+    uv = (np.arange(size, dtype=np.float32) + .5) / size
+    u, v = np.meshgrid(uv, uv)
+    x, y = u * 4.6 - 1.6, v * 7.1 - .4
+    noise = (.48 * np.sin(x * 3.2 + np.sin(y * 2.7)) * np.cos(y * 4.3)
+             + .29 * np.sin(x * 9.7 + y * 6.4) + .15 * np.sin(x * 21.7 - y * 13.8))
+    blush = np.clip(.32 + noise * .22, .08, .64)
+    skin = np.array([.72, .49, .41])[None, None, :]
+    livid = np.array([.42, .29, .33])[None, None, :]
+    rgb = skin * (1 - blush[:, :, None]) + livid * blush[:, :, None]
+    # Raised folds blanch gently; cavities receive no fabricated cast shadow.
+    fold = np.zeros_like(u)
+    for points in [HELIX, ANTIHELIX, SUPERIOR_CRUS, INFERIOR_CRUS]:
+        sampled, _ = cartilage_path(points, steps=10)
+        distance = np.full_like(u, 100)
+        for px, py in sampled:
+            distance = np.minimum(distance, (x - px) ** 2 + (y - py) ** 2)
+        fold = np.maximum(fold, np.exp(-distance / .035))
+    rgb += fold[:, :, None] * np.array([.075, .080, .068])[None, None, :]
+    # Recess tissue is a continuous pigment field, not a hard material colour
+    # assigned to whichever coarse triangle happens to touch a bowl boundary.
+    concha = np.exp(-(((x - .23) / 1.06) ** 2 + ((y - 2.68) / 1.25) ** 2) * 1.25)
+    fossa = np.exp(-(((x - .36) / .59) ** 2 + ((y - 4.70) / .54) ** 2) * 1.5)
+    scapha = np.exp(-(((x - 1.76) / .40) ** 2 + ((y - 4.12) / 1.22) ** 2) * 1.5)
+    recess = np.maximum(concha, np.maximum(fossa, scapha)) * (1 - fold * .8)
+    inflamed = np.array([.43, .26, .29])[None, None, :]
+    rgb = rgb * (1 - recess[:, :, None] * .55) + inflamed * recess[:, :, None] * .55
+    root = np.clip((-.64 - x + .055 * np.sin(y * 8)) / .50, 0, 1)
+    root *= np.exp(-((y - 2.9) / 2.0) ** 8)
+    red = np.array([.36, .10, .12])[None, None, :]
+    rgb = rgb * (1 - root[:, :, None] * .75) + red * root[:, :, None] * .75
+    clot = np.exp(-(((x + .48) / .21) ** 2 + ((y - 2.46) / .33) ** 2) * 2)
+    rgb = rgb * (1 - clot[:, :, None] * .70) + np.array([.16, .075, .09])[None, None, :] * clot[:, :, None] * .70
+    pores = np.sin(x * 170 + np.sin(y * 63)) * np.sin(y * 151 + np.cos(x * 74))
+    rgb *= 1 + pores[:, :, None] * .016
+    # Skin-height slopes are small. Broad folds remain real mesh geometry.
+    height = .000035 * pores + .000045 * np.sin(x * 24 + np.sin(y * 10))
+    dy, dx = np.gradient(height, .4544 / size, .2944 / size)
+    normal = np.stack([-dx, -dy, np.ones_like(dx)], axis=-1)
+    normal /= np.linalg.norm(normal, axis=-1, keepdims=True)
+    normal = normal * .5 + .5
+    rough = np.clip(.60 + noise * .10 - root * .12 + pores * .015, .42, .75)
+    # AO is restrained and coherent. The geometry and actual lamp own shadows.
+    ao = np.clip(.94 + noise * .025 - root * .05, .84, 1)
+    orm = np.stack([ao, rough, np.zeros_like(rough)], axis=-1)
+
+    def image(name, array, color_space):
+        im = bpy.data.images.new(name, width=size, height=size, alpha=False)
+        im.colorspace_settings.name = color_space
+        # Image.pixels writes the PNG samples directly. Albedo arrays are
+        # already sRGB pigment values; the runtime's SRGB8 texture performs
+        # their one linear decode. Manually linearising here darkens twice.
+        rgba = np.concatenate([np.clip(array, 0, 1), np.ones((size, size, 1))], axis=-1).astype(np.float32)
+        im.pixels.foreach_set(rgba.ravel())
+        im.filepath_raw = str(work / f'{name}.png'); im.file_format = 'PNG'
+        im.save()
+        # Reload the encoded file so the CPU diagnostic and exported glTF
+        # consume the same pigment bytes with the same colour-space tag.
+        filename=im.filepath_raw;bpy.data.images.remove(im)
+        im=bpy.data.images.load(filename, check_existing=False)
+        im.name=name;im.colorspace_settings.name=color_space;im.pack()
+        return im
+
+    images = [image('ear-tissue-albedo', rgb, 'sRGB'), image('ear-tissue-normal', normal, 'Non-Color'),
+              image('ear-tissue-orm', orm, 'Non-Color')]
+    for role in ['skin', 'deep', 'wound']:
+        mat = MAT[role]; nodes, links = mat.node_tree.nodes, mat.node_tree.links
+        bsdf = nodes.get('Principled BSDF')
+        color = nodes.new('ShaderNodeTexImage'); color.image = images[0]
+        # Keep the role's factor instead of silently losing it to a texture link.
+        multiply = nodes.new('ShaderNodeMixRGB'); multiply.blend_type = 'MULTIPLY'; multiply.inputs[0].default_value = 1
+        multiply.inputs[2].default_value = bsdf.inputs['Base Color'].default_value[:]
+        links.new(color.outputs['Color'], multiply.inputs[1]); links.new(multiply.outputs[0], bsdf.inputs['Base Color'])
+        normal_tex = nodes.new('ShaderNodeTexImage'); normal_tex.image = images[1]
+        normal_map = nodes.new('ShaderNodeNormalMap'); normal_map.inputs['Strength'].default_value = .55
+        links.new(normal_tex.outputs['Color'], normal_map.inputs['Color']); links.new(normal_map.outputs['Normal'], bsdf.inputs['Normal'])
+        orm_tex = nodes.new('ShaderNodeTexImage'); orm_tex.image = images[2]
+        split = nodes.new('ShaderNodeSeparateColor'); links.new(orm_tex.outputs['Color'], split.inputs[0])
+        rough_mul = nodes.new('ShaderNodeMath'); rough_mul.operation = 'MULTIPLY'
+        rough_mul.inputs[1].default_value = .45 if role == 'wound' else 1
+        links.new(split.outputs['Green'], rough_mul.inputs[0]); links.new(rough_mul.outputs[0], bsdf.inputs['Roughness'])
+        links.new(split.outputs['Blue'], bsdf.inputs['Metallic'])
 
 
 # ── the ear ──────────────────────────────────────────────────────────────────
@@ -128,7 +217,7 @@ EAR_OUTLINE = [(-1.0, 4.2), (-0.6, 5.4), (0.2, 6.1), (1.2, 6.2), (2.0, 5.7), (2.
                (2.4, 2.4), (2.0, 1.4), (1.4, 0.6), (0.7, 0.1), (0.0, 0.0), (-0.5, 0.4), (-0.7, 1.1),
                (-0.9, 1.8), (-1.2, 2.5), (-1.2, 3.4)]
 HELIX = [(-0.9, 3.9), (-0.55, 4.9), (-0.2, 5.65), (0.6, 5.95), (1.4, 5.85), (2.05, 5.3), (2.35, 4.5),
-         (2.4, 3.5), (2.2, 2.5), (1.85, 1.6), (1.45, 1.0)]
+         (2.4, 3.5), (2.2, 2.5), (1.85, 1.6), (1.45, 1.0), (1.12, .67), (.76, .55)]
 ANTIHELIX = [(0.65, 1.45), (1.03, 2.15), (1.22, 3.0), (1.17, 3.75)]
 SUPERIOR_CRUS = [(1.17, 3.75), (1.08, 4.34), (.80, 4.88), (.43, 5.28)]
 INFERIOR_CRUS = [(1.17, 3.75), (.72, 4.02), (.16, 4.18), (-.30, 4.18)]
@@ -173,6 +262,64 @@ def plate_object(outline, thickness):
     bm.to_mesh(mesh)
     bm.free()
     return link(bpy.data.objects.new('ear-plate', mesh))
+
+
+def pinna_sheet(outline, sx, sy):
+    """Closed, gently cupped web with a fleshy underside, not a flat plaque."""
+    def elevation(x, y):
+        x, y = x / sx, y / sy
+        bowl = math.exp(-(((x - .22) / 1.06) ** 2 + ((y - 2.66) / 1.28) ** 2) * 1.5)
+        cymba = math.exp(-(((x + .15) / .62) ** 2 + ((y - 3.78) / .62) ** 2) * 1.8)
+        fossa = math.exp(-(((x - .37) / .60) ** 2 + ((y - 4.73) / .52) ** 2) * 1.8)
+        scapha = math.exp(-(((x - 1.78) / .44) ** 2 + ((y - 4.12) / 1.22) ** 2) * 1.8)
+        canal = math.exp(-(((x + .48) / .31) ** 2 + ((y - 2.46) / .42) ** 2) * 2.1)
+        return max(.025, .25 - .29 * bowl - .15 * cymba - .18 * fossa - .17 * scapha - .22 * canal)
+    bm = bmesh.new(); rings = 13; count = len(outline); centre = (.64 * sx, 3.03 * sy)
+    layers = []
+    for bottom in [False, True]:
+        grid = []
+        for r in range(rings + 1):
+            t = .001 + .999 * r / rings
+            row = []
+            for ox, oy in outline:
+                x = centre[0] + (ox - centre[0]) * t; y = centre[1] + (oy - centre[1]) * t
+                z = elevation(x, y) - (.16 if bottom else 0)
+                row.append(bm.verts.new((x * CM, y * CM, z * CM)))
+            grid.append(row)
+        for a, b in zip(grid, grid[1:]):
+            for k in range(count):
+                face = (a[k], a[(k + 1) % count], b[(k + 1) % count], b[k])
+                bm.faces.new(tuple(reversed(face)) if bottom else face)
+        bm.faces.new(tuple(reversed(grid[0])) if not bottom else tuple(grid[0]))
+        layers.append(grid)
+    for k in range(count):
+        bm.faces.new((layers[0][-1][k], layers[1][-1][k], layers[1][-1][(k + 1) % count], layers[0][-1][(k + 1) % count]))
+    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
+    mesh = bpy.data.meshes.new('ear-cupped-web'); bm.to_mesh(mesh); bm.free()
+    return link(bpy.data.objects.new('ear-cupped-web', mesh))
+
+
+def cartilage_fold(points, z, width, rise, radii=None):
+    """An elliptical fold with a broad base and tapered ends, not a hose."""
+    sampled, weights = cartilage_path(points, radii, steps=8)
+    bm = bmesh.new(); rows = []; sides = 12
+    for i, (x, y) in enumerate(sampled):
+        a = Vector(sampled[max(0, i - 1)]); b = Vector(sampled[min(len(sampled) - 1, i + 1)])
+        tangent = (b - a).normalized(); side = Vector((-tangent.y, tangent.x))
+        radius = weights[i] if weights else 1
+        row = []
+        for k in range(sides):
+            angle = k / sides * math.tau
+            row.append(bm.verts.new(((x + side.x * math.cos(angle) * width * radius) * CM,
+                                     (y + side.y * math.cos(angle) * width * radius) * CM,
+                                     (z + math.sin(angle) * rise * radius) * CM)))
+        rows.append(row)
+    for a, b in zip(rows, rows[1:]):
+        for k in range(sides):bm.faces.new((a[k], a[(k + 1) % sides], b[(k + 1) % sides], b[k]))
+    bm.faces.new(tuple(reversed(rows[0]))); bm.faces.new(tuple(rows[-1]))
+    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
+    mesh = bpy.data.meshes.new('ear-fold'); bm.to_mesh(mesh); bm.free()
+    return link(bpy.data.objects.new('ear-fold', mesh))
 
 
 def ellipsoid(center, radii, segments=16, rings=10):
@@ -261,6 +408,50 @@ def join(objects, name):
     return link(bpy.data.objects.new(name, mesh))
 
 
+def seal_mesh(mesh, tolerance=.0000002, physical_grid=None):
+    """Remove sub-pixel collapse slivers without hiding a genuine open cut."""
+    bm = bmesh.new(); bm.from_mesh(mesh)
+    wet = {i for i, mat in enumerate(mesh.materials) if mat == MAT.get('wet')}
+    flesh_faces = [face for face in bm.faces if face.material_index not in wet]
+    flesh_verts = {vertex for face in flesh_faces for vertex in face.verts}
+    if physical_grid:
+        for vertex in flesh_verts:
+            for axis in range(3):vertex.co[axis] = round(vertex.co[axis] / physical_grid) * physical_grid
+    bmesh.ops.remove_doubles(bm, verts=list(flesh_verts), dist=tolerance)
+    flesh_edges = [edge for edge in bm.edges if any(face.material_index not in wet for face in edge.link_faces)]
+    bmesh.ops.dissolve_degenerate(bm, edges=flesh_edges, dist=tolerance)
+    # A vanishing tapered fold can leave a microscopic disconnected voxel
+    # island. It is not an anatomical fragment: a single ear must be one solid.
+    seen = set(); islands = []
+    for face in list(bm.faces):
+        if face in seen or face.material_index in wet:continue
+        group = []; pending = [face]; seen.add(face)
+        while pending:
+            current = pending.pop();group.append(current)
+            for edge in current.edges:
+                for adjacent in edge.link_faces:
+                    if adjacent not in seen and adjacent.material_index not in wet:
+                        seen.add(adjacent);pending.append(adjacent)
+        if len(group) <= 8:
+            verts = {vertex for item in group for vertex in item.verts}
+            span = max(max(v.co[i] for v in verts)-min(v.co[i] for v in verts) for i in range(3))
+            if span < (.003 if physical_grid else .0005):islands.append(verts)
+    for verts in islands:bmesh.ops.delete(bm, geom=list(verts), context='VERTS')
+    boundary = [edge for edge in bm.edges if edge.is_boundary and edge.link_faces[0].material_index not in wet]
+    if boundary:
+        # Decimation can leave tiny triangular pinholes at a cartilage junction.
+        # A missing anatomical wall is a build failure, never a cap to invent.
+        for edge in boundary:
+            if edge.calc_length() > .0005:
+                raise RuntimeError(f'{mesh.name}: nontrivial open tissue boundary')
+        bmesh.ops.holes_fill(bm, edges=boundary, sides=0)
+    # Export the same explicit triangles that the physical volume checks see;
+    # leaving concave decimation ngons for a second exporter tessellation can
+    # drop a narrow triangle at the tail/lobule transition.
+    bmesh.ops.triangulate(bm, faces=list(bm.faces))
+    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces));bm.to_mesh(mesh);bm.free();mesh.update()
+
+
 def build_ear(name, p, target_tris):
     """One ear, fused from cartilage parts by a voxel remesh, then decimated."""
     rnd = random.Random(name)
@@ -270,15 +461,11 @@ def build_ear(name, p, target_tris):
     outline = [(x * sx, y * sy) for x, y in smooth_outline[:-1]]
     # The pinna is a thin sheet folded into ridges, not an ear-shaped 6.2 mm
     # slab with tubes on top. The rolled helix now overhangs a thinner web.
-    plate = plate_object(outline, 0.38)
-    concha = ellipsoid((0.22 * sx, 2.7 * sy, 0.69), (1.12 * sx, 1.40 * sy, 0.66))
-    canal = cylinder((-0.40 * sx, 2.47 * sy, 0.35), 0.42, 2.2)
-    cymba = ellipsoid((-0.15 * sx, 3.75 * sy, 0.64), (0.59 * sx, 0.56 * sy, 0.50))
-    triangle = ellipsoid((.37 * sx, 4.70 * sy, .56), (.60 * sx, .52 * sy, .49))
-    # The long scapha separates the outer helix from the inner Y. These are
-    # broad actual hollows: material contrast follows them, never random spots.
-    scapha = ellipsoid((1.77 * sx, 4.12 * sy, .69), (.44 * sx, 1.20 * sy, .45))
-    cutters = (concha, canal, cymba, triangle, scapha)
+    plate = pinna_sheet(outline, sx, sy)
+    # The canal is a blind depression behind the tragus, not a window through
+    # to the pale floor. Only the intertragic incisura opens the silhouette.
+    notch = ellipsoid((-.61 * sx, 1.49 * sy, .30), (.30 * sx, .27 * sy, .9))
+    cutters = (notch,)
     for cutter in cutters:
         mod = plate.modifiers.new('cut', 'BOOLEAN')
         mod.operation = 'DIFFERENCE'
@@ -291,16 +478,16 @@ def build_ear(name, p, target_tris):
     curl = p['curl']
     parts = [
         carved,
-        tube(s(HELIX), 0.58, 0.34 * curl, radii=[.75, 1.35, 1.35, 1.08, 1.0, .98, .96, .93, .88, .72, .30]),
-        tube(s(ANTIHELIX), 0.57, 0.28, radii=[.40, 1.0, 1.05, .95]),
-        tube(s(SUPERIOR_CRUS), 0.56, 0.25, radii=[1.05, .98, .90, .65]),
-        tube(s(INFERIOR_CRUS), 0.57, 0.24, radii=[1.1, .95, .72, .25]),
-        tube(s(HELIX_CRUS), 0.58, 0.24, radii=[1, .8, .30]),
+        cartilage_fold(s(HELIX), .53, .22 * curl, .20 * curl, radii=[.72, 1.15, 1.14, 1.06, 1, .96, .92, .85, .77, .62, .25, .14, .025]),
+        cartilage_fold(s(ANTIHELIX), .47, .24, .19, radii=[.35, .95, 1.05, .93]),
+        cartilage_fold(s(SUPERIOR_CRUS), .45, .27, .15, radii=[1.02, .96, .84, .40]),
+        cartilage_fold(s(INFERIOR_CRUS), .48, .25, .19, radii=[1.04, .95, .68, .24]),
+        cartilage_fold(s(HELIX_CRUS), .44, .24, .15, radii=[.92, .78, .25]),
         # The tragus overlaps the canal entrance, rather than sitting in the
         # concha like another round bead. Together these break the bowl outline.
-        ellipsoid((-0.82 * sx, 2.45 * sy, 0.64), (0.37, 0.71, 0.43)),
-        ellipsoid((0.24 * sx, 1.43 * sy, 0.53), (0.48, 0.39, 0.33)),
-        ellipsoid((0.55 * sx, 0.62 * sy, 0.27), (0.88 * p['lobe'], 0.84 * p['lobe'], 0.39)),
+        ellipsoid((-0.77 * sx, 2.48 * sy, 0.51), (0.21, 0.56, 0.31)),
+        cartilage_fold(s([(-.08, 1.32), (.22, 1.45), (.45, 1.64)]), .36, .19, .13, radii=[.35, 1, .4]),
+        ellipsoid((0.45 * sx, 0.66 * sy, 0.14), (0.70 * p['lobe'], 0.77 * p['lobe'], 0.16)),
         ellipsoid((-1.06 * sx, 3.12 * sy, 0.26), (0.23, 1.52 * sy, 0.34)),  # severed attachment
         folded_attachment(sx, sy, phase),
     ]
@@ -357,7 +544,7 @@ def build_ear(name, p, target_tris):
         cymba = ((c.x / CM + .15 * sx) / (.62 * sx)) ** 2 + ((c.y / CM - 3.75 * sy) / (.58 * sy)) ** 2
         if c.x < -.82 * sx * CM and 1.0 * sy * CM < c.y < 4.7 * sy * CM:
             poly.material_index = 2
-        elif (bowl < 1.0 and c.z < .50 * CM) or (min(triangular_fossa, scapha, cymba) < 1.0 and c.z < .46 * CM):
+        elif (bowl < 1.0 and c.z < .30 * CM) or (min(triangular_fossa, scapha, cymba) < 1.0 and c.z < .30 * CM):
             poly.material_index = 1
         else:
             poly.material_index = 0
@@ -368,8 +555,17 @@ def build_ear(name, p, target_tris):
     dec.ratio = min(1.0, target_tris / max(1, tri_count(dense)))
     mesh = evaluated_mesh(holder, name)
     remove(holder)
+    seal_mesh(mesh)
     for poly in mesh.polygons:
         poly.use_smooth = True
+
+    # UVs follow each ear's own anatomical coordinates before any mirroring,
+    # tilting or heap placement. Copying/decimating a heap retains these islands.
+    uv = mesh.uv_layers.new(name='TissueUV')
+    for poly in mesh.polygons:
+        for loop in poly.loop_indices:
+            co = mesh.vertices[mesh.loops[loop].vertex_index].co
+            uv.data[loop].uv = ((co.x / (sx * CM) + 1.6) / 4.6, (co.y / (sy * CM) + .4) / 7.1)
 
     # Centre on the footprint, then the variant's own pose.
     xs = [v.co.x for v in mesh.vertices]
@@ -592,6 +788,7 @@ def heap_ear_copy(mesh, name, target_tris=500):
     dec.ratio = min(1.0, target_tris / max(1, tri_count(mesh)))
     result = evaluated_mesh(holder, name + '-heap')
     remove(holder)
+    seal_mesh(result)
     for poly in result.polygons:
         poly.use_smooth = True
     return result
@@ -1115,9 +1312,10 @@ def main():
     work.mkdir(parents=True, exist_ok=True)
     bpy.ops.wm.read_factory_settings(use_empty=True)
     make_materials()
+    make_tissue_maps(work)
     meshes = {}
     for name, p in EAR_VARIANTS.items():
-        meshes[name] = build_ear(name, p, target_tris=1900)
+        meshes[name] = build_ear(name, p, target_tris=2400)
     ears = {k: meshes[k] for k in EAR_VARIANTS}
     heap_ears = {name: heap_ear_copy(mesh, name) for name, mesh in ears.items()}
     crown_ears = {name: heap_ear_copy(mesh, name, target_tris=900) for name, mesh in ears.items()}
@@ -1152,6 +1350,10 @@ def main():
             v.co.z = .002 + (v.co.z - low) / (high - low) * (top - .002)
         for i in wet_ids:
             mesh.vertices[i].co.z = 0.0008
+        # Export and topology checks operate in physical metres. Quantising
+        # microscopic decimation slivers here prevents a collapsed glTF face
+        # from opening a pinhole after the final nonuniform envelope fit.
+        seal_mesh(mesh, tolerance=.0000001, physical_grid=.000002)
     # The heaps were built from the bare ears; the pack ships the smeared ones
     # under the same names, so the bare meshes give their names back.
     for mesh in ears.values():
@@ -1185,7 +1387,7 @@ def main():
         'meshes': {name: {'triangles': tri_count(mesh), 'bounds': runtime_bounds(mesh),
                           'materials': [m.name for m in mesh.materials]} for name, mesh in meshes.items()},
         'earScale': a.ear_scale,
-        'artRevision': 'rolled-pinna-v5-solid-root-supported-crowns',
+        'artRevision': 'cupped-auricle-v7-single-srgb-pigment',
         'heapSupport': HEAP_SUPPORT_REPORTS,
         'fleshBounds': {name: flesh_bounds(meshes[name]) for name in anatomy_names},
     }

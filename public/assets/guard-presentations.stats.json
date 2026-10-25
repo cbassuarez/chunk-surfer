@@ -1,0 +1,61 @@
+{
+  "original": {
+    "path": "public/assets/outskirts-characters.glb",
+    "sha256": "80bfb9ca094946ce6f5d6496caf78a0d99846fd3e8477d09a3363c0bfa6ea114"
+  },
+  "reference": {
+    "path": "public/assets/recordist-characters/boy.json",
+    "builder": "tools/chunk_surfer/characters/build-recordist-anatomy.py",
+    "mechanism": "removed facial anatomy, receding rim and closed 80-segment bowl",
+    "sha256": "86a60ae94c2862a702495af1705dffaadbf965854657f4bd4657a89f5c838e91"
+  },
+  "variants": {
+    "overworld": {
+      "mesh": "overworld_booth_guard",
+      "faceTrianglesByShade": [
+        9586,
+        1460,
+        1892,
+        2794
+      ],
+      "facialAnatomyRemoved": false
+    },
+    "source": {
+      "mesh": "outskirts_fold_guard",
+      "cap": false,
+      "removedFacialTriangles": 5797,
+      "apertureRadius": [
+        0.062400000000000004,
+        0.08975999999999999
+      ],
+      "closedRear": true,
+      "sourceTopologyReused": true
+    }
+  },
+  "cap": {
+    "frontZ": -0.273,
+    "undersideY": 1.743,
+    "headJoint": 6
+  },
+  "shadow": {
+    "method": "brim occlusion baked into retained skin material, plus actual projecting cap geometry",
+    "overworldFaceRetained": true
+  },
+  "bytes": 8268188,
+  "meshes": [
+    {
+      "mesh": "outskirts_fold_guard",
+      "primitives": 7,
+      "vertices": 25340,
+      "joints": 34,
+      "morphs": 4
+    },
+    {
+      "mesh": "overworld_booth_guard",
+      "primitives": 13,
+      "vertices": 29064,
+      "joints": 34,
+      "morphs": 4
+    }
+  ]
+}

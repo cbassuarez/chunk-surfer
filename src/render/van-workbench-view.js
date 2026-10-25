@@ -1,14 +1,11 @@
 // A physical shelf with a contextual fitting strip, not an equipment dashboard.
-import { uiDraw, uiCellMetrics } from './ui.js';
+import { uiDraw,uiWithClip } from './ui.js';
 import { drawPrintedText } from './keycap.js';
-import { drawLampButton } from './presentation.js';
-import { drawHardwareScrew } from './hardware-faceplate.js';
-import { drawRecorderInstrument } from './recorder-instrument.js';
 import { fitLines } from './fit-text.js';
 import { FIELD_KIT_OPTIONS, normalizeFieldKit, fieldKitEffects, fieldKitOptionAvailability } from '../game/field-kit.js';
-import { vanWorkbenchModelIds, vanWorkbenchSelectedObject } from './van-workbench-stage.js';
+import { vanWorkbenchSelectedObject } from './van-workbench-stage.js';
 import { vanKitModel } from '../data/van-kit-models.js';
-import { vanWorkbenchProgress,vanWorkbenchOptionPresentation } from './van-workbench-guidance.js';
+import { vanWorkbenchProgress,vanWorkbenchOptionPresentation,vanWorkbenchComparison,vanWorkbenchManifest } from './van-workbench-guidance.js';
 
 export const VAN_WORKBENCH_GROUPS = Object.freeze([
   { id: 'headphones', label: 'HEADPHONES', color: 'amber' },
@@ -51,259 +48,99 @@ export function groupModelId(group,id,kit={}) {
   if(group==='flashlightHousing')return `flashlight-${kit.flashlight||'reference'}`;
   return 'recorder';
 }
-export function vanWorkbenchConsidered(state,group,focusId,regions=[]) {
+export function vanWorkbenchConsidered(state,group,focusId,regions=[],consideredOptionId=null) {
   const focused=regions.find(item=>item.id===focusId);
-  return vanWorkbenchOptionPresentation(state,group,focused?.group===group?focused.optionId:null);
+  return vanWorkbenchOptionPresentation(state,group,focused?.group===group?focused.optionId:consideredOptionId);
 }
-const region = (id, kind, rect, extra = {}) => ({ ...rect, id, kind, ...extra });
-export function vanWorkbenchLayout(size = {}, state = {}, selectedGroup = 'headphones', targets = {}) {
-  const cols = Math.max(40, Number(size.cols) || 150), rows = Math.max(16, Number(size.rows) || 38);
-  const compact = cols < 110 || rows < 28, margin = compact ? .65 : 1.3;
-  const outer = { x: margin, y: .55, w: cols - margin * 2, h: rows - 1.1 };
-  const footerY = rows - 2.25, filmY = rows - 5.35;
-  const stepsY = compact ? 1.6 : 1.9, stepsH = compact ? 1.05 : 1.7;
-  const contentY = stepsY + stepsH + (compact ? .35 : .55);
-  const stage = { x: outer.x, y: contentY, w: outer.w * .59, h: filmY - contentY - .3 };
-  const fittings = { x: stage.x + stage.w + .65, y: contentY, w: outer.w - stage.w - .65, h: stage.h };
-  const progress = vanWorkbenchProgress(state), stepGap = .45, stepW = (outer.w - stepGap * 3) / 4;
-  const preparation = ['case','map','difficulty','gear'].map((id,index)=>({id:`van:${id}`,kind:id==='gear'?'group':id,
-    x:outer.x + index*(stepW+stepGap),y:stepsY,w:stepW,h:stepsH,enabled:id==='case'?!state.bagTaken:id==='map'?!state.mapTaken:true,
-    ...(id==='gear'?{group:progress.next?.group||'headphones'}:{})}));
-  const selectedObject = vanWorkbenchSelectedObject(selectedGroup), showRecorder = selectedObject === 'recorder';
-  const options = vanWorkbenchOptions(selectedGroup, state);
-  const optionH = compact ? .98 : 1.35, optionGap = compact ? .17 : .25;
-  // Four finish plates must leave room to explain a locked WITNESS preview.
-  // Only the exceptionally short fallback frame needs a two-column bank.
-  const variantColumns = options.length > 3 && rows < 20 ? 2 : 1;
-  const optionRows = Math.ceil(options.length / variantColumns);
-  const bankH = optionRows * optionH + Math.max(0, optionRows - 1) * optionGap;
-  const headingH = compact ? 1.05 : 1.6, captionH = compact ? .45 : .65;
-  const reservedDescription = rows >= 20 ? 3.1 : 1.7;
-  const previewBudget = Math.max(.6, fittings.h - headingH - captionH - bankH - .3 - reservedDescription - .9);
-  const preview = { x: fittings.x + .65, y: fittings.y + headingH, w: fittings.w - 1.3,
-    h: Math.min(fittings.h * .31, compact ? 2.5 : 7.5, previewBudget) };
-  const metrics = uiCellMetrics(), aspect = 736 / 405;
-  const previewH = Math.min(preview.h, preview.w * metrics.cellW / (aspect * metrics.cellH));
-  const recorder = { x: preview.x + (preview.w - previewH * aspect * metrics.cellH / metrics.cellW) / 2,
-    y: preview.y, w: previewH * aspect * metrics.cellH / metrics.cellW, h: previewH };
-  const optionY = preview.y + preview.h + captionH;
-  const variantGapX = .45, variantW = (fittings.w - 1.6 - variantGapX * (variantColumns - 1)) / variantColumns;
-  const variants = options.map((option, index) => {
-    const availability = vanWorkbenchOptionStatus(state, selectedGroup, option.id), witness = selectedGroup === 'faceplate' && option.id === 'witness';
-    return { ...option, availability,
-      x: fittings.x + .8 + (index % variantColumns) * (variantW + variantGapX),
-      y: optionY + Math.floor(index / variantColumns) * (optionH + optionGap), w: variantW, h: optionH,
-      kind: 'kit', group: selectedGroup, optionId: option.id, id: `van:kit:${selectedGroup}:${option.id}`,
-      controlId: `van:kit:${selectedGroup}:${option.id}`,
-      // A locked edition is a focusable inspection, not a disabled mystery.
-      enabled: witness ? availability.visible : !!state.bagTaken,
-      fittable: !!state.bagTaken && availability.available,
-      locked: !availability.available,
-      item: groupModelId(selectedGroup,option.id,state.fieldKit),
-      displayLabel: witness && !availability.owned ? `INSPECT · WITNESS ${availability.count}/${availability.required}`
-        : `${vanWorkbenchOptionPresentation(state,selectedGroup,option.id).action} · ${option.label}` };
+// Only the object being handled has an action surface. The bench itself is
+// the inventory: there is no parallel category list, checklist or review page.
+const region=(id,kind,rect,extra={})=>({...rect,...extra,id,kind});
+const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+export function vanWorkbenchLayout(size={},state={},selectedGroup='headphones',targets={},view={}){
+  const cols=Math.max(40,Number(size.cols)||150),rows=Math.max(16,Number(size.rows)||38);
+  const compact=cols<85||rows<25,stage={x:0,y:0,w:cols,h:rows},selection=view.selection||null;
+  const close=region('van:close','close',{x:1,y:.65,w:compact?8:10,h:1.2},{enabled:true});
+  const caseTarget=targets.case;
+  const carry=region('van:continue','continue',{x:clamp(caseTarget?caseTarget.x+caseTarget.w/2-8:cols/2-8,1,cols-17),
+    y:clamp(caseTarget?caseTarget.y+caseTarget.h+.2:rows-2.3,2,rows-2.1),w:16,h:1.35},{enabled:!view.pending&&!view.saveFailure});
+  const physical=Object.entries(targets).flatMap(([key,t])=>{
+    if(!(t.w>0&&t.h>0))return[];
+    if(key==='case')return[region('van:object:case',selection?'dismiss':'continue',t,{object:true,keyboard:false,enabled:true,label:'FIELD CASE'})];
+    if(t.kind==='variant'){
+      const availability=vanWorkbenchOptionStatus(state,t.group,t.optionId);if(!availability.visible)return[];
+      return[region(`van:object:${key}`,'object',t,{object:true,group:t.group,optionId:t.optionId,item:t.modelId,label:t.label,key,availability,enabled:true})];
+    }
+    if(key==='difficulty')return[region('van:object:difficulty','order',t,{object:true,key,label:state.difficultyLabel||'CONTRACT',enabled:!state.difficultyLocked,focusable:true})];
+    return[region(`van:object:${key}`,'object',t,{object:true,key,item:t.item||key,label:t.label||key.toUpperCase(),enabled:true})];
   });
-  const descriptionY = optionY + bankH + .45;
-  const description = { x: fittings.x + .9, y: descriptionY, w: fittings.w - 1.8,
-    h: Math.max(.65, fittings.y + fittings.h - descriptionY - 1.1) };
-  const groupGap = compact ? .25 : .45;
-  const groups = VAN_WORKBENCH_GROUPS.map((group, index) => {
-    const required = VAN_PACKING_GROUPS.includes(group.id), bank = required ? stage : fittings;
-    const peers = VAN_WORKBENCH_GROUPS.filter(item=>VAN_PACKING_GROUPS.includes(item.id)===required), at=peers.findIndex(item=>item.id===group.id);
-    const groupW = (bank.w - groupGap * 3) / 4;
-    const packed = !!state.bagTaken && (!state.requirePacking || state.packedGroups?.includes(group.id));
-    return {...group,x:bank.x+at*(groupW+groupGap),y:filmY+.62,w:groupW,h:1.15,
-      kind:'group',controlId:`van:group:${group.id}`,id:`van:group:${group.id}`,group:group.id,
-      key:index+1,required,status:required?(packed?'PACKED':'CHOOSE ONE'):'OPTIONAL'};
-  });
-  const labelY = stage.y + stage.h - .9;
-  const caseRect = preparation[0], mapRect = preparation[1], difficulty = preparation[2];
-  const close = region('van:close', 'close', { x: outer.x + 1, y: footerY + .15, w: compact ? 9 : 12, h: 1.5 }, { controlId: 'van:close', enabled: true });
-  const continueRegion = region('van:continue', 'continue', { x: outer.x + outer.w - (compact ? 22.5 : 28), y: footerY + .15,
-    w: compact ? 21.5 : 27, h: 1.5 }, { controlId: 'van:continue', enabled: vanWorkbenchReady(state) });
-  const ids = vanWorkbenchModelIds(normalizeFieldKit(state.fieldKit));
-  const catalogTargets = Object.entries(targets).filter(([, target]) => target?.kind === 'variant' && target.w > 0 && target.h > 0);
-  const physicalVariants = catalogTargets.flatMap(([key, target]) => {
-    const availability = vanWorkbenchOptionStatus(state, target.group, target.optionId);
-    if (!availability.visible) return [];
-    const witness = target.group === 'faceplate' && target.optionId === 'witness';
-    return [region(`van:object:${key}`, 'kit', target, { group: target.group, optionId: target.optionId,
-      item: target.modelId, packed: !!target.packed, object: true,
-      enabled: witness ? availability.visible : !!state.bagTaken, locked: !availability.available,
-      fittable: !!state.bagTaken && availability.available })];
-  });
-  const objectRegions = ['headphones', 'microphone', 'recorder', 'flashlight'].flatMap(slot => targets[slot]?.w > 0 && targets[slot]?.kind !== 'inspect' &&
-    !catalogTargets.some(([, target]) => target.group === slot) ? [
-    region(`van:object:${slot}`, 'group', targets[slot], { group: slot, item: ids[slot], enabled: true })] : []);
-  const inspectW = compact ? 5 : 6.2;
-  const inspectMap = region('van:inspect:map', 'inspect', {x:stage.x+stage.w*.27,y:labelY,w:stage.w*.18,h:.8}, { item: 'map', enabled: true });
-  const inspectRecorder = region('van:inspect:recorder', 'inspect', { x: fittings.x + .9, y: fittings.y + fittings.h - .82,
-    w: fittings.w - 1.8, h: .75 }, { item: 'recorder', enabled: !!state.bagTaken });
-  const selectedInspect = selectedObject !== 'recorder' ? region(`van:inspect:${ids[selectedObject]}`, 'inspect', inspectRecorder,
-    { item: ids[selectedObject], enabled: true }) : null;
-  if (!showRecorder) Object.assign(inspectRecorder, { x: stage.x + .8, y: labelY - 1.05, w: stage.w * .30, h: .8 });
-  const witness = vanWorkbenchOptionStatus(state, 'faceplate', 'witness');
-  const witnessFitted = state.fieldKit?.cosmetics?.faceplate === 'witness';
-  const witnessInspect = witness.owned && !witnessFitted && targets.witness?.w > 0 && targets.witness?.h > 0
-    && !catalogTargets.some(([, target]) => target.group === 'faceplate' && target.optionId === 'witness')
-    ? region('van:inspect:witness', 'inspect-witness', targets.witness, { item: 'witness', enabled: true, object: true }) : null;
-  const spanner = region('van:spanner', state.spannerTaken ? 'inspect' : 'spanner',
-    {x:stage.x+stage.w*.46,y:labelY,w:stage.w*.35,h:.8},
-    {item:'plant-spanner',enabled:true,object:false});
-  const regions = [
-    ...(targets.case ? [region('van:object:case', 'case', targets.case, { enabled: !state.bagTaken })] : []), ...objectRegions,
-    ...(targets.map ? [region('van:object:map', 'map', targets.map, { enabled: !state.mapTaken })] : []),
-    ...(targets.recorder?.kind === 'inspect' ? [region('van:object:recorder', 'inspect', targets.recorder,
-      { item: 'recorder', enabled: true, object: true })] : []),
-    ...['radio', 'light'].flatMap(slot => targets[slot]?.w > 0 && !(slot === 'light' && catalogTargets.some(([, target]) => target.group === 'flashlight'))
-      ? [region(`van:object:${slot}`, 'inspect', targets[slot], { item: slot, enabled: true, object: true })] : []),
-    ...physicalVariants,
-    ...(targets.spanner?[region('van:object:spanner',state.spannerTaken?'inspect':'spanner',targets.spanner,{item:'plant-spanner',enabled:true,object:true})]:[]),
-    ...(targets.difficulty?[region('van:object:difficulty','difficulty',targets.difficulty,{enabled:true,object:true})]:[]), spanner,
-    region('van:case', 'case', caseRect, { enabled: !state.bagTaken }), region('van:map', 'map', mapRect, { enabled: !state.mapTaken }),
-    region('van:difficulty', 'difficulty', difficulty, { enabled: true }), region('van:gear','group',preparation[3],{group:preparation[3].group,enabled:true}), ...groups, ...variants, inspectMap, inspectRecorder,
-    ...(selectedInspect ? [selectedInspect] : []),
-    region('van:inspect:field-case', 'inspect', {x:stage.x+stage.w*.82,y:labelY,w:stage.w*.17,h:.8}, { item: 'field-case', enabled: true }),
-    ...(witnessInspect ? [witnessInspect] : []), close, continueRegion,
-  ];
-  const promptW = Math.min(62, cols - 6), promptH = compact ? 7.6 : 8.4;
-  const spannerPrompt = state.spannerPrompt ? { x: (cols - promptW) / 2, y: (rows - promptH) / 2, w: promptW, h: promptH } : null;
-  const spannerChoices = spannerPrompt ? ['yes', 'no'].map((answer, index) => region(`van:spanner:${answer}`, 'spanner-choice',
-    { x: spannerPrompt.x + 2 + index * (promptW / 2 - .5), y: spannerPrompt.y + promptH - 2.3,
-      w: promptW / 2 - 3.5, h: 1.45 }, { answer: answer === 'yes', controlId: `van:spanner:${answer}`, enabled: true })) : [];
-  return { size: { cols, rows }, outer, stage, compact, caseRect, mapRect, difficulty, fittings, preview, recorder,
-    showRecorder, selectedObject, groups, variants, variantColumns, witness, witnessFitted, witnessInspect,
-    description, preparation, progress, filmY, footerY, continueRegion, close, spanner, spannerPrompt, spannerChoices,
-    regions: spannerPrompt ? spannerChoices : regions };
+  let context=null,apply=null,inspect=null,dismiss=null,variants=[],customize=[],comparison=[],considered=null;
+  if(selection){
+    const group=selection.group;
+    considered=group?vanWorkbenchOptionPresentation(state,group,selection.optionId):null;
+    comparison=group?vanWorkbenchComparison(state,group,selection.optionId):[];
+    const width=Math.min(compact?cols-2:48,cols-2),h=Math.min(rows-4.5,5.8+comparison.length*.62+(selection.customizing?2.3:0));
+    const target=targets[selection.key],right=target&&target.x+target.w/2<cols/2;
+    context={x:compact?1:right?cols-width-1:1,y:rows-h-1,w:width,h};
+    const actionY=context.y+context.h-1.7;
+    dismiss=region('van:dismiss','dismiss',{x:context.x+context.w-3.4,y:context.y+.35,w:2.6,h:.95},{enabled:true});
+    apply=region('van:apply','apply',{x:context.x+.8,y:actionY,w:context.w*.58-.8,h:1.15},{enabled:!!group&&vanWorkbenchOptionStatus(state,group,selection.optionId).available&&!considered?.same,focusable:true});
+    if(group&&considered?.same)apply.enabled=false;
+    if(selection.key==='spanner')apply={...apply,kind:'spanner',enabled:!state.spannerTaken,label:'PUT IN CASE'};
+    inspect=region('van:inspect','inspect',{x:context.x+context.w*.58+.3,y:actionY,w:context.w*.42-1.1,h:1.15},{item:selection.item||'recorder',enabled:true});
+    if(selection.customizing){
+      const opts=vanWorkbenchOptions(group,state),gap=.25,w=(context.w-1.6-gap*(opts.length-1))/opts.length;
+      variants=opts.map((o,i)=>region(`van:finish:${group}:${o.id}`,'finish',{x:context.x+.8+i*(w+gap),y:context.y+1.5,w,h:1.05},
+        {group,optionId:o.id,item:groupModelId(group,o.id,state.fieldKit),label:o.label,enabled:true}));
+    }
+    const customGroups=selection.item==='recorder'||['buttons','vfd'].includes(group)?['buttons','vfd']:group==='flashlight'||group==='flashlightHousing'?['flashlightHousing']:[];
+    customize=customGroups.map((g,i)=>region(`van:customize:${g}`,'customize',{x:context.x+.8+i*11.5,y:context.y+context.h-3,w:11,h:.85},{group:g,enabled:true,label:g==='buttons'?'BUTTONS':g==='vfd'?'GLOW':'SHELL'}));
+    if(selection.key==='difficulty'){apply={...apply,kind:'difficulty',enabled:!state.difficultyLocked};inspect={...inspect,kind:'notes'};}
+  }
+  const retry=region('van:retry','retry',{...(context&&apply?apply:carry)},{enabled:!view.pending});
+  const objectRegions=physical.filter(r=>r.keyboard!==false),actions=selection?[...(apply?[apply]:[]),...(inspect?[inspect]:[]),...customize,...variants,...(dismiss?[dismiss]:[])]:[];
+  const regions=[...physical,close,...(selection?actions:[]),...(view.saveFailure?[retry]:selection?[]:[carry])];
+  return{size:{cols,rows},mode:'bench',compact,stage,stageBank:stage,outer:stage,selection,context,apply,inspect,variants,customize,dismiss,close,continueRegion:carry,retry,physical,
+    regions,keyboardRegions:[...(view.saveFailure?[retry]:selection?[]:[carry]),...actions,...objectRegions,close],considered,comparison,
+    selectedObject:selection?.key||'case',witness:vanWorkbenchOptionStatus(state,'faceplate','witness')};
 }
-const plateText = (x, y, value, w, options = {}) => drawPrintedText(x, y, value,
-  { w, h: .72, ink: '#d6d0b9', ...options });
-function drawBacking(layout) {
-  uiDraw(({ ctx, dpr, cellW, cellH }) => {
-    ctx.fillStyle = '#111b1b'; ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    const x = layout.fittings.x * cellW * dpr, y = layout.fittings.y * cellH * dpr;
-    const w = layout.fittings.w * cellW * dpr, h = layout.fittings.h * cellH * dpr;
-    const gradient = ctx.createLinearGradient(x, y, x + w, y + h);
-    gradient.addColorStop(0, '#4a5148'); gradient.addColorStop(.35, '#343e37'); gradient.addColorStop(1, '#202b28');
-    ctx.fillStyle = gradient; ctx.beginPath(); ctx.roundRect(x, y, w, h, 5 * dpr); ctx.fill();
-    ctx.strokeStyle = '#aeb5a055'; ctx.lineWidth = dpr; ctx.stroke();
-    for (const [sx, sy] of [[x + 7 * dpr, y + 7 * dpr], [x + w - 7 * dpr, y + 7 * dpr],
-      [x + 7 * dpr, y + h - 7 * dpr], [x + w - 7 * dpr, y + h - 7 * dpr]]) drawHardwareScrew(ctx, sx, sy, 2.6 * dpr, { dpr, seed: `${sx}:${sy}` });
-    const fy = layout.filmY * cellH * dpr; ctx.fillStyle = '#354038';
-    ctx.fillRect(layout.outer.x * cellW * dpr, fy, layout.outer.w * cellW * dpr, 2.65 * cellH * dpr);
-    ctx.strokeStyle = '#86928366'; ctx.beginPath(); ctx.moveTo(0, fy); ctx.lineTo(ctx.canvas.width, fy); ctx.stroke();
-  });
+const ink=(rect,text,{h=.58,color='#e7dfc7',align='left'}={})=>drawPrintedText(rect.x,rect.y,text,{w:rect.w,h,ink:color,align});
+function surface(rect,fill='#d4c8a6'){
+  uiDraw(({ctx,dpr,cellW,cellH})=>{const x=rect.x*cellW*dpr,y=rect.y*cellH*dpr,w=rect.w*cellW*dpr,h=rect.h*cellH*dpr;
+    ctx.shadowColor='#0009';ctx.shadowBlur=12*dpr;ctx.shadowOffsetY=3*dpr;ctx.fillStyle=fill;ctx.fillRect(x,y,w,h);ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+    ctx.strokeStyle='#494c3e';ctx.lineWidth=dpr;ctx.strokeRect(x+.5*dpr,y+.5*dpr,w-dpr,h-dpr);});
 }
-function tag(rect, text, color, focus) {
-  uiDraw(({ ctx, dpr, cellW, cellH }) => {
-    const x = rect.x * cellW * dpr, y = rect.y * cellH * dpr, w = rect.w * cellW * dpr, h = rect.h * cellH * dpr;
-    ctx.fillStyle = focus ? '#363d32eb' : '#151e1ade'; ctx.fillRect(x, y, w, h);
-    ctx.strokeStyle = focus ? '#d2bd87' : '#a9b09855'; ctx.lineWidth = .7 * dpr; ctx.strokeRect(x, y, w, h);
-  });
-  plateText(rect.x + .35, rect.y + .09, text, rect.w - .7, { h: Math.min(.68, rect.h - .1), ink: color });
-}
-export function drawVanWorkbench(view = {}, size = {}, stageRenderer = null) {
-  const state = { ...view.state, fieldKit: normalizeFieldKit(view.state?.fieldKit) };
-  const group = VAN_WORKBENCH_GROUPS.find(entry => entry.id === view.selectedGroup) || VAN_WORKBENCH_GROUPS[0];
-  let layout = vanWorkbenchLayout(size, state, group.id);
-  let considered = vanWorkbenchConsidered(state,group.id,view.focusId,layout.regions);
-  const witnessFocused = ['van:kit:faceplate:witness','van:inspect:witness','van:object:witness',
-    'van:object:variant:faceplate:witness'].includes(view.focusId);
-  const focusedVariant = considered.option && considered.required ? `van:object:variant:${group.id}:${considered.option.id}` : view.focusId;
-  drawBacking(layout);
-  stageRenderer?.draw(layout.stage,{state,selected:layout.selectedObject,selectedGroup:group.id,
-    focusId:focusedVariant,witnessFocused,now:view.now||0});
-  layout=vanWorkbenchLayout(size,state,group.id,stageRenderer?.targets()||{});
-  considered=vanWorkbenchConsidered(state,group.id,view.focusId,layout.regions);
-  const {outer,fittings,description,progress}=layout;
-  const previewKit=normalizeFieldKit(state.fieldKit);
-  if(group.cosmetic&&considered.option)previewKit.cosmetics[group.id]=considered.option.id;
-  const previewWitness=layout.witness.visible&&witnessFocused&&layout.showRecorder;
-  if(previewWitness)previewKit.cosmetics.faceplate='witness';
-  plateText(outer.x+.5,.65,'AUDIOCORP  /  NIGHT PREPARATION',outer.w*.68,{h:layout.compact?.68:.85,ink:'#e0d7bb'});
-  plateText(outer.x+outer.w*.72,.68,`${progress.complete}/${progress.total} READY`,outer.w*.27,{h:.65,align:'right',ink:progress.ready?'#b9dac1':'#e4bf78'});
-  const stepLabels=[state.bagTaken?'CASE OPEN':'1 · OPEN CASE',state.mapTaken?'SURVEY MAP PACKED':'2 · TAKE SURVEY MAP',
-    state.difficultyConfirmed?`SHIFT · ${state.difficultyLabel||'CONFIRMED'}`:'3 · CHOOSE SHIFT',
-    state.requirePacking?`GEAR · ${progress.packedCount}/4 PACKED`:'GEAR · READY'];
-  for(const [index,step]of layout.preparation.entries()){
-    const done=index===0?state.bagTaken:index===1?state.mapTaken:index===2?state.difficultyConfirmed:!state.requirePacking||progress.packedCount===4;
-    tag(step,stepLabels[index],done?'#b6d6bc':'#f0d39b',view.focusId===step.id);
+function action(rect,label,focused,enabled=true){if(!rect)return;surface(rect,focused?'#e8d6a4':enabled?'#bbc2ac':'#9a9d8c');ink({x:rect.x+.35,y:rect.y+.22,w:rect.w-.7},`${focused?'› ':''}${label}`,{h:.58,color:enabled?'#18241f':'#4b5448'});}
+export function drawVanWorkbench(view={},size={},stageRenderer=null){
+  const state={...view.state,fieldKit:normalizeFieldKit(view.state?.fieldKit)},selection=view.selection||null;
+  let layout=vanWorkbenchLayout(size,state,selection?.group||'headphones',{},view);
+  uiDraw(({ctx})=>{ctx.fillStyle='#080e0d';ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);});
+  stageRenderer?.draw(layout.stage,{state,selected:selection?.key||'case',selectedGroup:selection?.group||null,
+    focusId:view.focusId||'',witnessFocused:selection?.optionId==='witness',now:view.now||0});
+  layout=vanWorkbenchLayout(size,state,selection?.group||'headphones',stageRenderer?.targets()||{},view);
+  // Labels and action verbs stay legible above the shared shader. The entire
+  // physical bench, its printed labels and all models are acquired by it.
+  action(layout.close,'YARD',view.focusId===layout.close.id);
+  const forward=view.saveFailure?layout.retry:layout.continueRegion;
+  if(!selection&&!view.saveFailure)action(forward,view.pending?'SAVING…':view.saveFailure?'RETRY SAVE':'TAKE CASE',view.focusId===forward.id,!view.pending);
+  if(selection&&layout.context){
+    const p=layout.context,c=layout.considered;surface(p);
+    const title=selection.key==='difficulty'?`SHIFT / ${state.difficultyLabel||'CONTRACT'}`:c?.option?.label||selection.label||'FIELD RECORDER';
+    ink({x:p.x+.8,y:p.y+.5,w:p.w-4.5},title,{h:.72,color:'#1f3029'});
+    let y=p.y+(selection.customizing?2.95:1.65);
+    if(view.saveFailure){ink({x:p.x+.8,y,w:p.w-1.6},'SAVE FAILED · RETRY TO KEEP THIS CHOICE',{h:.46,color:'#6b3828'});}
+    else if(layout.comparison.length){for(const row of layout.comparison){ink({x:p.x+.8,y,w:p.w-1.6},`${row.label.toUpperCase()}   ${row.current}% → ${row.preview}%`,{h:.48,color:row.current===row.preview?'#526052':'#233e32'});y+=.62;}}
+    else if(selection.group){const status=vanWorkbenchOptionStatus(state,selection.group,selection.optionId);const text=!status.available?status.reason||'LOCKED':c?.same?(c.required?'IN CASE':'FITTED'):c?.option?.description||'';
+      const lines=fitLines(text,Math.floor((p.w-1.6)*1.5),2);lines.forEach((line,i)=>ink({x:p.x+.8,y:y+i*.62,w:p.w-1.6},line,{h:.46,color:'#3e5144'}));}
+    for(const r of layout.variants)action(r,r.label,selection.optionId===r.optionId);
+    for(const r of layout.customize)action(r,r.label,view.focusId===r.id);
+    const cosmetic=VAN_WORKBENCH_GROUPS.find(g=>g.id===selection.group)?.cosmetic;
+    action(layout.dismiss,'×',view.focusId==='van:dismiss');
+    const label=selection.key==='difficulty'?(state.difficultyLocked?'CONFIRMED':'CHANGE SHIFT'):selection.key==='spanner'?(state.spannerTaken?'IN CASE':'PUT IN CASE'):!selection.group?'':c?.same?(cosmetic?'FITTED':'IN CASE'):cosmetic?'FIT':'SWAP';
+    if(!view.saveFailure&&(selection.group||['spanner','difficulty'].includes(selection.key)))action(layout.apply,view.pending?'SAVING…':label,view.focusId==='van:apply',layout.apply.enabled&&!view.pending&&!view.saveFailure);
+    action(layout.inspect,selection.key==='difficulty'?'READ NOTES':'EXAMINE',view.focusId==='van:inspect',!view.pending);
   }
-  const status=stageRenderer?.snapshot();
-  if(!status?.ready)plateText(layout.stage.x+1,layout.stage.y+.5,status?.error||'LOADING EQUIPMENT…',layout.stage.w-2,{ink:'#e3c997',h:.65});
-  tag(layout.spanner,state.spannerTaken?'SPANNER · PACKED':state.spannerDecided?'SPANNER · LEFT HERE':'SPANNER · OPTIONAL','#bec8b8',view.focusId==='van:spanner');
-  plateText(fittings.x+.8,fittings.y+.25,group.label,fittings.w-1.6,{h:layout.compact?.63:.88,ink:'#ebe1c4'});
-  if(!layout.compact)plateText(fittings.x+.8,fittings.y+1.03,considered.required?'REQUIRED · CHOOSE ONE':'APPEARANCE · OPTIONAL',fittings.w-1.6,{h:.48,ink:considered.required?'#dfc08a':'#abb8af'});
-  if(layout.showRecorder){
-    drawRecorderInstrument({rect:layout.recorder,mode:'monitor',counter:'00:00',progress:0,meter:{db:-96},
-      source:'WORKBENCH',label:'FIELD RECORDER',note:'PREVIEW / NO TAKE',finish:previewKit.cosmetics.faceplate,
-      witnessEndings:layout.witness.endingIds,buttonSet:previewKit.cosmetics.buttons,phosphor:previewKit.cosmetics.vfd,
-      buttons:{keys:[{id:'rec',label:'REC'},{id:'stop',label:'STOP'},{id:'takes',label:'TAKES'}]}});
-  }else{
-    const slot=considered.required?`variant:${group.id}:${considered.option?.id}`:layout.selectedObject;
-    stageRenderer?.drawDetail(layout.preview,slot);
-  }
-  const previewLabel=previewWitness?(layout.witnessFitted?'WITNESS · FITTED':layout.witness.owned?'WITNESS · INSPECT TO FIT':`WITNESS · LOCKED ${layout.witness.count}/${layout.witness.required}`)
-    :considered.required?(considered.packed&&considered.same?'IN YOUR CASE':'PREVIEW · NOT PACKED'):considered.same?'CURRENT FINISH':'PREVIEW · NOT FITTED';
-  plateText(fittings.x+.8,layout.preview.y+layout.preview.h+.08,previewLabel,fittings.w-1.6,{h:layout.compact?.34:.48,ink:considered.packed&&considered.same?'#b5d5bc':'#d2bf95'});
-  for(const control of layout.variants){
-    const selected=vanWorkbenchSelection(state.fieldKit,group.id)===control.optionId;
-    const packed=selected&&(!state.requirePacking||!VAN_PACKING_GROUPS.includes(group.id)||state.packedGroups?.includes(group.id));
-    tag(control,control.displayLabel,packed?'#bce0c2':control.locked?'#a5b5c8':'#e6dbc1',view.focusId===control.id);
-  }
-  const witnessCopy=layout.witness.owned?'Clear cover, visible recorder beneath. Inspect the fitted result and loose plate; fitting changes appearance only.'
-    :`${layout.witness.count}/${layout.witness.required} different endings filed. Inspect now; fit after two. Appearance only.`;
-  const copy=previewWitness?witnessCopy:considered.option?.description||'';
-  const lineH=layout.compact?.61:.72;
-  const maxLines=Math.max(1,Math.floor(description.h/lineH));
-  const lines=fitLines(copy,Math.max(18,Math.floor(description.w*1.75)),maxLines);
-  lines.forEach((line,index)=>plateText(description.x,description.y+index*lineH,line,description.w,{h:layout.compact?.55:.65,ink:'#e0e0ce'}));
-  const used=lines.length*lineH;
-  if(description.h-used>1.35){
-    plateText(description.x,description.y+used+.25,considered.currentLabel,description.w,{h:.5,ink:'#adc4b5'});
-    fitLines(considered.actionHint,Math.max(18,Math.floor(description.w*1.7)),Math.floor((description.h-used-1)/.62)).forEach((line,index)=>
-      plateText(description.x,description.y+used+.98+index*.62,line,description.w,{h:.52,ink:'#c9bd9f'}));
-  }
-  plateText(layout.stage.x,layout.filmY+.08,'EQUIPMENT · ONE OF EACH',layout.stage.w,{h:.43,ink:'#d9bd87'});
-  plateText(fittings.x,layout.filmY+.08,'APPEARANCE · OPTIONAL',fittings.w,{h:.43,ink:'#aebbb3'});
-  for(const control of layout.groups){
-    drawLampButton(control.x,control.y,control.w,control.h,{legend:`${control.key} ${control.label}`,color:control.required?(control.status==='PACKED'?'green':'amber'):'white',
-      controlId:control.id,lit:group.id===control.group,latched:false,focused:view.focusId===control.id});
-    plateText(control.x+.15,control.y+control.h+.15,control.status,control.w-.3,{h:.42,ink:control.status==='PACKED'?'#b5d8bc':control.required?'#dac08f':'#8fa399',align:'center'});
-  }
-  for(const control of layout.regions.filter(entry=>entry.kind==='inspect'&&!entry.object)){
-    const label=control.id==='van:inspect:map'?'MAP INFO':control.item==='field-case'?'CASE INFO':control.id==='van:inspect:recorder'&&!layout.showRecorder?'RECORDER INFO':'INSPECT PREVIEW  [I]';
-    tag(control,label,'#c2cebb',view.focusId===control.id);
-  }
-  drawLampButton(layout.close.x,layout.close.y,layout.close.w,layout.close.h,{legend:'BACK',color:'white',controlId:layout.close.id,focused:view.focusId===layout.close.id});
-  drawLampButton(layout.continueRegion.x,layout.continueRegion.y,layout.continueRegion.w,layout.continueRegion.h,{legend:progress.ready?'READY · TAKE THE NIGHT':'FINISH PREPARATION',
-    color:'green',controlId:layout.continueRegion.id,enabled:layout.continueRegion.enabled,lit:layout.continueRegion.enabled,focused:view.focusId===layout.continueRegion.id});
-  const helpX=layout.close.x+layout.close.w+1,helpW=layout.continueRegion.x-helpX-1;
-  const help=view.notice||(progress.next?`NEXT: ${progress.next.label}.`:'Your kit is saved. Sign out when you are ready.');
-  fitLines(help,Math.max(8,Math.floor(helpW*1.65)),1).forEach(line=>plateText(helpX,layout.footerY+.12,line,helpW,{h:.58,ink:'#f0d9a9'}));
-  plateText(helpX,layout.footerY+.87,'1–8 CATEGORY · TAB / ARROWS FOCUS · ENTER CONFIRM · I INSPECT',helpW,{h:.42,ink:'#a7b9ae'});
-  const effectLines=vanWorkbenchEffectRows(state.fieldKit);
-  if (layout.spannerPrompt) {
-    const prompt = layout.spannerPrompt;
-    uiDraw(({ ctx, dpr, cellW, cellH }) => {
-      ctx.fillStyle = '#07100ddd'; ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-      const x = prompt.x * cellW * dpr, y = prompt.y * cellH * dpr, w = prompt.w * cellW * dpr, h = prompt.h * cellH * dpr;
-      ctx.fillStyle = '#42483b'; ctx.fillRect(x, y, w, h);
-      ctx.strokeStyle = '#c6b98a'; ctx.lineWidth = dpr; ctx.strokeRect(x, y, w, h);
-      for (const dx of [8, w / dpr - 8]) for (const dy of [8, h / dpr - 8])
-        drawHardwareScrew(ctx, x + dx * dpr, y + dy * dpr, 2.6 * dpr, { dpr, seed: `${dx}:${dy}` });
-    });
-    plateText(prompt.x + 2, prompt.y + .65, 'PLANT SPANNER  /  OPTIONAL EQUIPMENT', prompt.w - 4, { h: .85, ink: '#f0dfb4' });
-    const promptLines = fitLines('Not on the work order. You probably will not need it. Take the spanner anyway?',
-      Math.max(26, Math.floor((prompt.w - 4) * 1.55)), 3);
-    promptLines.forEach((line, index) => plateText(prompt.x + 2, prompt.y + 2.1 + index * .85, line, prompt.w - 4,
-      { h: .78, ink: '#ebe2c7' }));
-    if (!state.bagTaken || view.notice) plateText(prompt.x + 2, prompt.y + prompt.h - 3.1,
-      view.notice || 'TAKE THE FIELD CASE TO PACK IT.', prompt.w - 4, { h: .58, ink: '#f0c88c' });
-    for (const control of layout.spannerChoices) drawLampButton(control.x, control.y, control.w, control.h,
-      { legend: control.answer ? 'YES · TAKE IT' : 'NO · LEAVE IT', color: control.answer ? 'amber' : 'white',
-        controlId: control.id, focused: view.focusId === control.id });
-  }
-  return { ...layout, previewFinish: previewKit.cosmetics.faceplate, considered,
-    effects:fieldKitEffects(state.fieldKit),descriptionLines:lines,effectLines };
+  if(view.saveFailure){if(!selection){const p={x:layout.size.cols*.25,y:.65,w:layout.size.cols*.5,h:1.1};surface(p,'#cfa783');ink({x:p.x+.4,y:p.y+.22,w:p.w-.8},'SAVE FAILED',{h:.45,color:'#302720'});}action(layout.retry,view.pending?'SAVING…':'RETRY SAVE',view.focusId==='van:retry',!view.pending);}
+  const hovered=layout.physical.find(r=>r.id===view.focusId);
+  if(hovered&&!selection){const label=hovered.label||'FIELD CASE',w=Math.min(layout.size.cols-2,Math.max(12,label.length*.64));const p={x:clamp(hovered.x+hovered.w/2-w/2,1,layout.size.cols-w-1),y:clamp(hovered.y-.95,2.2,layout.size.rows-3.7),w,h:.85};surface(p,'#c6cbb7');ink({x:p.x+.3,y:p.y+.13,w:p.w-.6},label,{h:.46,color:'#23362a'});}
+  return{...layout,previewFinish:state.fieldKit.cosmetics.faceplate,effects:fieldKitEffects(state.fieldKit)};
 }

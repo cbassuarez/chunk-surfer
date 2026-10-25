@@ -38,7 +38,9 @@ import { LOADING_BAY_ACCESS, LOADING_BAY_ACCESS_PORTALS, loadingBayStairFloorAt 
 import { ACADEMIC_ROOF, ACADEMIC_ROOF_LEVELS, ACADEMIC_ROOF_PORTALS } from '../academic-roof.js';
 import { streetPilotFloorAt } from '../street-pilot.js';
 import { EXTERIOR_FOREGROUND, foregroundGardenGlyphAt, foregroundArrivalGlyphAt, foregroundCathedralGlyphAt } from '../exterior-foreground.js';
-import { PUB_LEVELS } from '../exterior-pub.js';
+import { PUB_LEVELS, PUB_YARD_CONNECTORS, pubYardCellClaimed } from '../exterior-pub.js';
+import { STATIONERS_LEVELS } from '../exterior-stationers.js';
+import { TOWER_WARNING_LEVELS } from '../tower-warning.js';
 
 // The engine holds no geometry — edit these maps freely. To find a building
 // that has quietly sealed itself:
@@ -822,7 +824,7 @@ function yardRows(){
       // rendered stone while remaining, invisibly, in `loading_bay`. The two
       // exterior threshold cells live just beyond this mask, so an interior
       // player can still emerge into the yard.
-      if(churchGlyphAt(x,y)!==null){ row+='#'; continue; }
+      if(churchGlyphAt(x,y)!==null||pubYardCellClaimed(x,y)){ row+='#'; continue; }
       const garden=foregroundGardenGlyphAt(x,y);
       if(garden){
         // Preserve the basin's exact wetTile octagon and 0.30m step. Only its
@@ -872,6 +874,8 @@ const EUCLIDEAN_ADDITIONS=[
    origin:DISTRICT_LOGICAL_ORIGIN,physicalOrigin:{x:DISTRICT_BOUNDS.x0,y:DISTRICT_BOUNDS.y0},base:0,
    rows:buildExteriorDistrictRows(),profile:exteriorDistrictProfile},
   ...PUB_LEVELS,
+  ...STATIONERS_LEVELS,
+  ...TOWER_WARNING_LEVELS,
   {id:'loading_bay_yard',layer:'ground',space:'loading_bay',renderGroup:'ground',
    origin:{x:50,y:200},physicalOrigin:{x:0,y:0},base:0,rows:yardRows(),profile:yardProfile},
   // St Brendan's owns its plan instead of borrowing the yard component. The
@@ -1169,6 +1173,7 @@ export const conservatory = {
     {from:{x:50,y:204},to:districtLogicalAt(-1,4),span:{y:8}},
     {from:{x:54,y:200},to:districtLogicalAt(4,-1),span:{x:10}},
     {from:{x:54,y:292},to:districtLogicalAt(4,93),span:{x:8}},
+    ...PUB_YARD_CONNECTORS,
   ],
   // ON THE ROAD, OUTSIDE THE GATE. He has parked and he is walking in.
   //

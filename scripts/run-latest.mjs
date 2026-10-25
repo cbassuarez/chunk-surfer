@@ -13,6 +13,9 @@ const serviceDir = path.join(root, 'tools/chunk_surfer/diffusion_server');
 const lens = path.join(serviceDir, 'run-local.sh');
 const python = path.join(serviceDir, '.venv-local/bin/python');
 const tauri = path.join(root, 'node_modules/.bin/tauri');
+// The normal game no longer needs a local model runtime. --sd explicitly
+// restores the development lens workflow, including its authenticated service.
+const withStableDiffusion = process.argv.slice(2).includes('--sd');
 function reserveRandomPort() {
   return new Promise((resolve, reject) => {
     const server = net.createServer();
@@ -34,13 +37,13 @@ async function executable(file, help) {
   }
 }
 
-await executable(python, 'Local lens runtime is missing. Run: npm run lens:setup');
+if (withStableDiffusion) await executable(python, 'Local lens runtime is missing. Run: npm run lens:setup');
 await executable(tauri, 'Tauri dependencies are missing. Run: npm install');
 
 const frontendPort=await reserveRandomPort();
-const lensPort=await reserveRandomPort();
-const endpoint=`ws://127.0.0.1:${lensPort}`;
-const lensToken=randomBytes(24).toString('hex');
+const lensPort=withStableDiffusion ? await reserveRandomPort() : null;
+const endpoint=withStableDiffusion ? `ws://127.0.0.1:${lensPort}` : '';
+const lensToken=withStableDiffusion ? randomBytes(24).toString('hex') : '';
 const devConfig=JSON.stringify({
   build:{
     devUrl:`http://127.0.0.1:${frontendPort}`,
@@ -48,18 +51,18 @@ const devConfig=JSON.stringify({
   },
 });
 
-console.log('Starting the current game with the local critical lens.');
+console.log(withStableDiffusion ? 'Starting the current game with the local critical lens.' : 'Starting the current game with Stable Diffusion off by default.');
 console.log(`Build: 0.2.0 · frontend: http://127.0.0.1:${frontendPort}`);
-console.log('The first 10 material textures load before the 22-second opening; the remaining banks continue in the background.');
+if (withStableDiffusion) console.log('The first 10 material textures load before the 22-second opening; the remaining banks continue in the background.');
 
-const lensChild = spawn(lens, [], {
+const lensChild = withStableDiffusion ? spawn(lens, [], {
   cwd: root,
   env: { ...process.env, LENS_EAGER: '0', LENS_PORT:String(lensPort), LENS_TOKEN:lensToken },
   stdio: 'inherit',
-});
+}) : null;
 const tauriChild = spawn(tauri, ['dev','--config',devConfig], {
   cwd: root,
-  env: { ...process.env, VITE_LENS_DEV_URL:endpoint, VITE_LENS_DEV_TOKEN:lensToken },
+  env: { ...process.env, VITE_LENS_DEV_URL:endpoint, VITE_LENS_DEV_TOKEN:lensToken, VITE_STABLE_DIFFUSION:withStableDiffusion ? '1' : '0' },
   stdio: 'inherit',
 });
 
@@ -67,7 +70,7 @@ let stopping = false;
 function stop(code = 0) {
   if (stopping) return;
   stopping = true;
-  if (!lensChild.killed) lensChild.kill('SIGTERM');
+  if (lensChild && !lensChild.killed) lensChild.kill('SIGTERM');
   if (!tauriChild.killed) tauriChild.kill('SIGTERM');
   setTimeout(() => process.exit(code), 100).unref();
 }
@@ -75,9 +78,9 @@ function stop(code = 0) {
 for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
   process.on(signal, () => stop(0));
 }
-lensChild.on('error', (error) => { console.error(`Lens launch failed: ${error.message}`); stop(1); });
+lensChild?.on('error', (error) => { console.error(`Lens launch failed: ${error.message}`); stop(1); });
 tauriChild.on('error', (error) => { console.error(`Tauri launch failed: ${error.message}`); stop(1); });
-lensChild.on('exit', (code, signal) => {
+lensChild?.on('exit', (code, signal) => {
   if (!stopping) {
     console.error(`Lens stopped unexpectedly (${signal || code}).`);
     stop(code || 1);

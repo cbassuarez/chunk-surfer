@@ -1,0 +1,11 @@
+{
+  "license": "Original project compositions, fictional institutional copy and geometry",
+  "fonts": "URW Base35; pinned vendored fonts with existing font embedding exception; assets/fonts/LICENSE.urw-base35.txt",
+  "source": [
+    "src/data/institution-posters.js",
+    "tools/chunk_surfer/build-institution-posters.mjs",
+    "tools/chunk_surfer/build-institution-posters.py"
+  ],
+  "realPerformers": false,
+  "calendarDatesInvented": false
+}

@@ -1,5 +1,6 @@
 // Shared render/runtime contract for The Lyric. Coordinates are explicitly
 // row metres; the prop mesh is recentred only when its vertices are emitted.
+import {EXTERIOR_PUB} from './exterior-pub.js';
 const freeze=value=>{if(value&&typeof value==='object'){Object.values(value).forEach(freeze);Object.freeze(value);}return value;};
 const F=(id,kind,x0,x1,z0,z1,height,extra={})=>({id,kind,bounds:{x0,x1,z0,z1},height,...extra});
 const furniture=[
@@ -19,7 +20,7 @@ const furniture=[
 export const PUB_INTERIOR_LAYOUT=freeze({
   mesh:'exterior_pub_interior',coordinateSpace:'district-civic-row-metres',
   meshOriginInRow:{x:-2.70,y:0,z:-24},
-  worldTransform:{anchorX:-6,anchorZ:109.75,yaw:-Math.PI/2,floorWorldY:.12},
+  worldTransform:{anchorX:EXTERIOR_PUB.interiorAnchor.x,anchorZ:EXTERIOR_PUB.interiorAnchor.z,yaw:-Math.PI/2,floorWorldY:.12},
   floorLocalY:0,ceilingLocalY:3.4,bounds:{x0:-5.4,x1:0,z0:-32,z1:-16},
   publicAisle:{x0:-2,x1:-.5,z0:-31.7,z1:-16.3,clearWidth:1.5},
   doorway:{x:-.20,z:-30.75,width:1.95,clear:{x0:-2,x1:.49,z0:-31.725,z1:-29.775}},

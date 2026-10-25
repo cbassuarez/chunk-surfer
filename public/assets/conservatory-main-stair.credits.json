@@ -4,11 +4,25 @@
     "author": "Chunk Surfer project",
     "source": "tools/chunk_surfer/build-main-stair.mjs",
     "license": "project source",
-    "sha256": "b9063ccb1f8abe30c246ebaac57472df215569b3e2dbcc9e423654036c68f86f",
-    "triangles": 34368,
-    "bytes": 1312812,
-    "modifications": "Project-native deterministic geometry; metres, Y-up, centred on the physical main stair hall."
+    "sha256": "22056cb1ecc2f07fbfc1d697753cffa0ae56e870e707cc9d5ba85096edaab5cd",
+    "triangles": 46752,
+    "bytes": 1825348,
+    "modifications": "Project-native deterministic geometry and physically scaled material channels; metres, Y-up, centred on the physical main stair hall. Authored walking geometry unchanged."
   },
+  "references": [
+    {
+      "url": "https://advanceterrazzo.co.uk/precast-terrazzo/",
+      "supports": "Cast-in nosing inserts and polished precast coved skirting; does not establish an Ellery construction date."
+    },
+    {
+      "url": "https://terrazzco.com/terrazzo-self-supporting-stair-treads/",
+      "supports": "Manufactured terrazzo treads support custom nose profiles; mechanism reference, not a replacement stair design."
+    },
+    {
+      "url": "https://www.nationaltrust.org.uk/visit/somerset/montacute-house/saving-the-staircases",
+      "supports": "Retained shaped stone tread construction and conservation of existing support; no claim that this cast stair is Hamstone."
+    }
+  ],
   "meshes": [
     {
       "name": "main_open_well_stair",
@@ -24,7 +38,7 @@
           3.077999405966327
         ]
       },
-      "triangles": 34368,
+      "triangles": 46752,
       "provenance": {
         "source": "tools/chunk_surfer/build-main-stair.mjs",
         "origin": "project-native procedural geometry",

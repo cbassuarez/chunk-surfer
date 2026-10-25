@@ -27,7 +27,7 @@ const frozenCoast = await import(pathToFileURL(join(snapshot, 'src/data/coastal-
 const frozenCoastScene = await import(pathToFileURL(join(snapshot, 'src/game/coastal-memory/scene.js')));
 const identityMatrix = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
 const acquiredLandTriangles = coastalMeshTriangles(coastalGlbMeshes(await readFile(join(snapshot, 'public/assets/source-drive/coastal-memory/coastal-memory.glb'))),
-  frozenCoastScene.makeCoastalMemoryScene({ worldFromLocal: identityMatrix }).props);
+  frozenCoastScene.makeCoastalMemoryScene({ worldFromLocal: identityMatrix, includeWreck: false }).props);
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 async function filesBelow(dir) { const out = []; for (const item of await readdir(dir, { withFileTypes: true })) { const path = join(dir, item.name); if (item.isDirectory()) out.push(...await filesBelow(path)); else out.push(path); } return out; }
@@ -105,7 +105,7 @@ function beginCompositeFilm() {
   }
   rec.start(250); requestAnimationFrame(draw); return { start: f.start, width: canvas.width, height: canvas.height, mime, tapNodes: tap.nodeNames, contextCount: window.__coastOutputTaps.length };
 }
-async function beginFilm(name) { if (film) throw Error('A film already owns capture.'); film = name; report.films.push({ name, capture: await page.evaluate(beginCompositeFilm), initial: await state(), scope: 'Bounded primary-route subset; no technical pose or clock assignment inside this film.' }); }
+async function beginFilm(name) { if (film) throw Error('A film already owns capture.'); if (report.errors.length) throw Error('Observed runtime/shader fault before encoding: ' + report.errors.join('; ')); film = name; report.films.push({ name, capture: await page.evaluate(beginCompositeFilm), initial: await state(), scope: 'Bounded primary-route subset; no technical pose or clock assignment inside this film.' }); }
 async function endFilm() {
   if (!film) return;
   const name = film, record = report.films.find(row => row.name === name);
@@ -123,8 +123,24 @@ async function endFilm() {
   data.inputs = report.inputs.filter(row => row.film === name);
   await writeFile(join(run, name + '-trace.json'), JSON.stringify(data, null, 2)); record.trace = attempt + '/' + name + '-trace.json';
   if (filmBytes > filmBudget) throw Error('Coastal movie exceeds its explicit storage budget; original bytes and trace were preserved before reporting failure.');
-  const probe = JSON.parse(execFileSync(process.env.FFPROBE_PATH || '/opt/homebrew/bin/ffprobe', ['-v', 'error', '-count_packets', '-show_entries', 'stream=codec_name,codec_type,width,height,sample_rate,channels,nb_read_packets', '-show_entries', 'format=size,duration', '-of', 'json', path], { encoding: 'utf8', timeout: 30000 }));
-  execFileSync(process.env.FFMPEG_PATH || '/opt/homebrew/bin/ffmpeg', ['-v', 'error', '-i', path, '-f', 'null', '-'], { timeout: 60000 });
+  const probe = JSON.parse(execFileSync(process.env.FFPROBE_PATH || '/opt/homebrew/bin/ffprobe', ['-v', 'error', '-count_packets', '-show_entries', 'stream=codec_name,codec_type,width,height,sample_rate,channels,nb_read_packets,time_base', '-show_entries', 'format=size,duration', '-of', 'json', path], { encoding: 'utf8', timeout: 30000 }));
+  execFileSync(process.env.FFMPEG_PATH || '/opt/homebrew/bin/ffmpeg', ['-v', 'error', '-i', path,
+    '-fps_mode', 'passthrough', '-enc_time_base', '1/1000', '-f', 'null', '-'], { timeout: 60000 });
+  const encodedFrames = JSON.parse(execFileSync(process.env.FFPROBE_PATH || '/opt/homebrew/bin/ffprobe',
+    ['-v', 'error', '-select_streams', 'v:0', '-show_frames', '-show_entries', 'frame=best_effort_timestamp_time', '-of', 'json', path],
+    { encoding: 'utf8', timeout: 30000 })).frames || [];
+  const frameTable = encodedFrames.map((row, ordinalZeroBased) => ({ ordinalZeroBased, ptsSeconds: Number(row.best_effort_timestamp_time) }));
+  const frameTablePath = name + '-encoded-frames.json', frameTableBytes = Buffer.from(JSON.stringify(frameTable));
+  await writeFile(join(run, frameTablePath), frameTableBytes);
+  record.encodedVideoTiming = { frames: frameTable.length, ordinalBase: 0, originalTimebase: probe.streams.find(row => row.codec_type === 'video')?.time_base,
+    fullDecodeSinkTimebase: '1/1000',
+    firstPtsSeconds: frameTable[0]?.ptsSeconds, lastPtsSeconds: frameTable.at(-1)?.ptsSeconds,
+    finite: frameTable.every(row => Number.isFinite(row.ptsSeconds)),
+    strictlyIncreasing: frameTable.every((row, i) => i === 0 || row.ptsSeconds > frameTable[i - 1].ptsSeconds),
+    table: attempt + '/' + frameTablePath, tableSha256: hash(frameTableBytes),
+    qualification: 'Actual decoded video PTS from original media. Full-decode sink preserves millisecond timebase and variable cadence; no forced 30 fps timestamp rounding. This is the encoded clock, separate from requested RAF telemetry.' };
+  check('original encoded video timestamps are finite and strictly increasing ' + name,
+    frameTable.length > 0 && record.encodedVideoTiming.finite && record.encodedVideoTiming.strictlyIncreasing, record.encodedVideoTiming);
   const cadence = data.frames.slice(1).map((row, i) => row.t - data.frames[i].t).sort((a, b) => a - b), percentile = p => cadence[Math.floor((cadence.length - 1) * p)];
   Object.assign(record, { path: attempt + '/' + name + '.webm', sha256: hash(bytes), bytes: bytes.length, probe, fullDecode: true,
     final: await state(), wallSeconds: (data.end - data.start) / 1000, maximumOutputRms: Math.max(0, ...data.frames.map(row => row.outputRms)),
@@ -147,12 +163,25 @@ async function endFilm() {
 }
 async function extractMovieStill(record, capturedFrame, name) {
   if (!capturedFrame) throw Error('No recorded native frame available for ' + name);
-  const path = join(run, name + '.png');
-  execFileSync(process.env.FFMPEG_PATH || '/opt/homebrew/bin/ffmpeg', ['-v', 'error', '-ss', String(capturedFrame.ms / 1000), '-i', join(run, record.name + '.webm'), '-frames:v', '1', '-y', path], { timeout: 30000 });
+  const path = join(run, name + '.png'), movie = join(run, record.name + '.webm');
+  // Input-side seeking can decode the next frame. Bind the still to a probed,
+  // zero-based decoded ordinal instead; keep the RAF clock visibly separate.
+  const frameTablePath = record.encodedVideoTiming?.table?.split('/').at(-1);
+  if (!frameTablePath) throw Error('No encoded video frame timestamps for ' + name);
+  const frameTableBytes = await readFile(join(run, frameTablePath)), frameTable = JSON.parse(frameTableBytes);
+  if (!frameTable.every((row, i) => Number.isFinite(row.ptsSeconds) && (i === 0 || row.ptsSeconds >= frameTable[i - 1].ptsSeconds)))
+    throw Error('Encoded video timestamps are invalid or nonmonotonic for ' + name);
+  const selected = frameTable.reduce((best, row) => Math.abs(row.ptsSeconds * 1000 - capturedFrame.ms) < Math.abs(best.ptsSeconds * 1000 - capturedFrame.ms) ? row : best);
+  execFileSync(process.env.FFMPEG_PATH || '/opt/homebrew/bin/ffmpeg', ['-v', 'error', '-i', movie,
+    '-vf', 'select=eq(n\\,' + selected.ordinalZeroBased + ')', '-frames:v', '1', '-fps_mode', 'passthrough', '-y', path], { timeout: 30000 });
   const bytes = await readFile(path);
   const row = { name, path: attempt + '/' + name + '.png', sha256: hash(bytes), bytes: bytes.length,
     fromMovieMs: capturedFrame.ms, sourceMovie: record.path, sourceMovieSha256: record.sha256, capturedFrame,
-    qualification: 'Decoded from original intact ordinary-input movie; no PNG readback, camera fixture or pose reset during motion.' };
+    encodedFrame: { ...selected, ptsMs: selected.ptsSeconds * 1000, requestedRafMs: capturedFrame.ms,
+      encodedMinusRequestedMs: selected.ptsSeconds * 1000 - capturedFrame.ms,
+      table: attempt + '/' + frameTablePath, tableSha256: hash(frameTableBytes),
+      extraction: 'Full original decode with select=eq(n,ordinalZeroBased); no input-side seek.' },
+    qualification: 'Exact decoded ordinal from original intact ordinary-input movie. capturedFrame and fromMovieMs describe the requested RAF sample; encodedFrame gives the independently probed video clock. MediaRecorder may drop or coalesce requests, so those clocks are not asserted identical. No PNG readback, camera fixture or pose reset during motion.' };
   report.screenshots.push(row); console.log('SCREENSHOT', name); return row;
 }
 
@@ -331,7 +360,8 @@ async function drawingStudy() {
       await wait(180); await screenshot(label);
       const diagnostics = await page.evaluate(async () => {
         const P = await import('/src/render/props3d.js'), R = await import('/src/render/r3d.js'), C = await import('/src/render/coastal-memory-renderer.js');
-        const q = __probe.coastalMemory.state(), camera = R.r3dViewCamera(), frame = C.coastalMemoryRenderFrame(q), targets = P.propTargets();
+        const q = __probe.coastalMemory.state(), camera = R.r3dViewCamera(), vehicleMetrics = await (await fetch('/assets/source-drive/geometry/metrics.json')).json(),
+          frame = C.coastalMemoryRenderFrame(q, { vehicleMetrics }), targets = P.propTargets();
         return { state: q, pack: P.propPackStats(), catalog: P.propMeshCatalog(), submittedIds: P.propInstanceIds(),
           rangeVisibleIds: frame.scene.props.filter(p => P.propInstanceVisible(p, [camera.eye.x, camera.eye.y, camera.eye.z], 320)).map(p => p.id),
           camera, pixelMesh: window.__chunkSurferPixelMesh?.status?.(), targets: { ready: targets.ready, near: targets.near, far: targets.far },
@@ -508,7 +538,8 @@ async function finalAppearanceStudy() {
   await lookAtLocal(pier);
   report.finalDrawing = await page.evaluate(async () => {
     const P = await import('/src/render/props3d.js'), R = await import('/src/render/r3d.js'), C = await import('/src/render/coastal-memory-renderer.js'), t = P.propTargets();
-    const submitted = C.coastalMemoryRenderFrame(__probe.coastalMemory.state()).scene.lamps;
+    const vehicleMetrics = await (await fetch('/assets/source-drive/geometry/metrics.json')).json(),
+      submitted = C.coastalMemoryRenderFrame(__probe.coastalMemory.state(), { vehicleMetrics }).scene.lamps;
     return { pack: P.propPackStats(), catalog: P.propMeshCatalog(), submittedIds: P.propInstanceIds(), camera: R.r3dViewCamera(),
       targets: { ready: t.ready, near: t.near, far: t.far }, lighting: R.r3dLightingDebug(), pixelMesh: window.__chunkSurferPixelMesh?.status?.(),
       shadow: { ready: t.shadowReady, size: t.shadowSize, matrix: Array.from(t.shadowMatrix) },
@@ -615,7 +646,7 @@ try {
   report.bootstrap = await page.evaluate(() => ({ scene: __scenes.top()?.id, title: document.getElementById('title-a11y-status')?.textContent,
     lens: window.__diffusion?.stats || null, qualification: 'Natural material calibration and terminal menu completed before diagnostic entry.' }));
   const initial = await enterFixture(nativeMode === 'drawing' ? 'separate-draw-inspection-fixture' : nativeMode === 'reload' ? 'separate-native-reload-fixture' : nativeMode === 'appearance' ? 'bounded-appearance-fixture' : 'primary-on-foot-route');
-  report.loadedAssets = await page.evaluate(async () => { const out = []; for (const path of ['/assets/source-drive/drive.glb', '/assets/source-drive/coastal-memory/coastal-memory.glb']) { const r = await fetch(path), bytes = await r.arrayBuffer(), digest = await crypto.subtle.digest('SHA-256', bytes); out.push({ path, status: r.status, sha256: [...new Uint8Array(digest)].map(n => n.toString(16).padStart(2, '0')).join('') }); } return out; });
+  report.loadedAssets = await page.evaluate(async () => { const out = []; for (const path of ['/assets/source-drive/drive.glb', '/assets/source-drive/geometry/metrics.json', '/assets/source-drive/coastal-memory/coastal-memory.glb']) { const r = await fetch(path), bytes = await r.arrayBuffer(), digest = await crypto.subtle.digest('SHA-256', bytes); out.push({ path, status: r.status, sha256: [...new Uint8Array(digest)].map(n => n.toString(16).padStart(2, '0')).join('') }); } return out; });
   for (const item of report.loadedAssets) check('loaded asset matches snapshot ' + item.path, item.status === 200 && item.sha256 === report.sourceBefore.find(row => row.path === 'public' + item.path)?.sha256, item);
   report.pixelMesh = await page.evaluate(() => window.__chunkSurferPixelMesh?.status?.());
   check('actual final dither shader is acquired without a GL fault', report.pixelMesh?.enabled && report.pixelMesh.shaderReady && !report.pixelMesh.lastError && !report.pixelMesh.lastGlError, report.pixelMesh);

@@ -1,0 +1,35 @@
+{
+  "pack": {
+    "filename": "exterior-frontages.glb",
+    "author": "Chunk Surfer project",
+    "source": "tools/chunk_surfer/build-exterior-frontages.mjs",
+    "license": "project source; stock font terms below",
+    "sha256": "6df5180943f4b7ed451f6fc12cd5556fd4de78ac54900f38f8839a78bb136611",
+    "triangles": 43828,
+    "bytes": 3495580
+  },
+  "geometry": {
+    "origin": "Original project-native opaque geometry",
+    "units": "metres",
+    "axis": "Y-up",
+    "sources": [
+      "src/data/exterior-frontages.js",
+      "tools/chunk_surfer/exterior-neighborhood-geometry.mjs",
+      "tools/chunk_surfer/build-exterior-frontages.mjs"
+    ],
+    "historicalBasis": "Existing authored Ellery district dates, footprints, uses and roof envelopes; no claim of measured real-world buildings."
+  },
+  "lettering": {
+    "process": "Existing solid-pigment paper printing and finish pipeline",
+    "font": "NimbusSans-Bold.otf",
+    "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+    "source": "https://github.com/ArtifexSoftware/urw-base35-fonts",
+    "license": "AGPL-3.0 with the upstream stated PostScript/PDF document exception; see vendored LICENSE and COPYING",
+    "manifest": "assets/fonts/manifest.json",
+    "pipelineManifest": "exterior-frontage-lettering/atlas-manifest.json"
+  },
+  "materials": {
+    "source": "Original project palette; established masonry names participate in existing street material sampling",
+    "noNewExternalTexture": true
+  }
+}

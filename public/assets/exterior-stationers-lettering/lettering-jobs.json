@@ -1,0 +1,176 @@
+{
+  "version": 1,
+  "pageSize": 1024,
+  "jobs": [
+    {
+      "id": "stationers-fascia",
+      "text": "STATIONERS",
+      "widthM": 5.7,
+      "heightM": 0.34,
+      "capHeightM": 0.235,
+      "center": [
+        21.9,
+        3.31,
+        -15.005
+      ],
+      "readerRight": [
+        1,
+        0,
+        0
+      ],
+      "up": [
+        0,
+        1,
+        0
+      ],
+      "font": "NimbusSansNarrow-Bold.otf",
+      "category": "institution",
+      "process": "solid painted stationers fascia lettering",
+      "palette": {
+        "ground": [
+          0.055,
+          0.075,
+          0.062
+        ],
+        "ink": [
+          0.76,
+          0.71,
+          0.58
+        ]
+      },
+      "lines": [
+        "STATIONERS"
+      ],
+      "rasterWidthPx": 768,
+      "rasterHeightPx": 56,
+      "polarity": "light-on-dark",
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": false,
+        "contact": "none",
+        "exposure": "sheltered"
+      },
+      "inkRoughness": 0.86,
+      "baseRoughness": 0.87,
+      "finish": {
+        "substrate": "metal support with fired vitreous-enamel face",
+        "coating": "screen-fired dielectric lettering",
+        "roughness": 0.32,
+        "inkRoughness": 0.44,
+        "fieldM": 0.16,
+        "variation": 0.024,
+        "roughnessVariation": 0.055,
+        "microReliefM": 0.000006,
+        "deposit": 0.055,
+        "edgeLoss": 0.1,
+        "sequence": [
+          "fired face remains largely intact",
+          "sheltered ledge accumulates a thin deposit",
+          "isolated actual perimeter impact exposes dull support"
+        ],
+        "limits": [
+          "support alloy is not established; exposed support is neutral, never invented iron rust"
+        ],
+        "version": 1,
+        "profile": "enamel",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "sheltered"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      },
+      "reliefM": 0.000007
+    },
+    {
+      "id": "stationers-counter-copy",
+      "text": "PAPER · PENS · COPYING",
+      "widthM": 2.7,
+      "heightM": 0.21,
+      "capHeightM": 0.1,
+      "center": [
+        21.55,
+        0.69,
+        -18.788
+      ],
+      "readerRight": [
+        1,
+        0,
+        0
+      ],
+      "up": [
+        0,
+        1,
+        0
+      ],
+      "font": "NimbusSans-Bold.otf",
+      "category": "institution",
+      "process": "solid printed stationers counter lettering",
+      "palette": {
+        "ground": [
+          0.18,
+          0.105,
+          0.05
+        ],
+        "ink": [
+          0.67,
+          0.61,
+          0.46
+        ]
+      },
+      "lines": [
+        "PAPER · PENS · COPYING"
+      ],
+      "rasterWidthPx": 768,
+      "rasterHeightPx": 60,
+      "polarity": "light-on-dark",
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": false,
+        "contact": "none",
+        "exposure": "sheltered"
+      },
+      "inkRoughness": 0.86,
+      "baseRoughness": 0.87,
+      "finish": {
+        "substrate": "metal support with fired vitreous-enamel face",
+        "coating": "screen-fired dielectric lettering",
+        "roughness": 0.32,
+        "inkRoughness": 0.44,
+        "fieldM": 0.16,
+        "variation": 0.024,
+        "roughnessVariation": 0.055,
+        "microReliefM": 0.000006,
+        "deposit": 0.055,
+        "edgeLoss": 0.1,
+        "sequence": [
+          "fired face remains largely intact",
+          "sheltered ledge accumulates a thin deposit",
+          "isolated actual perimeter impact exposes dull support"
+        ],
+        "limits": [
+          "support alloy is not established; exposed support is neutral, never invented iron rust"
+        ],
+        "version": 1,
+        "profile": "enamel",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "sheltered"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      },
+      "reliefM": 0.000007
+    }
+  ]
+}

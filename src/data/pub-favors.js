@@ -1,7 +1,6 @@
 // The ordinary objects Iona asks about have authored homes. Removing one for
 // a favor and restoring it after loading uses the same prop id and exact pose.
-import { districtLogicalAt } from './exterior-district.js';
-import { EXTERIOR_PUB } from './exterior-pub.js';
+import { EXTERIOR_PUB, pubLogicalAt } from './exterior-pub.js';
 import { PUB_SERVICE_TRAY } from './pub-population.js';
 
 function freeze(value) {
@@ -23,9 +22,9 @@ const prop = (id, mesh, x, y, extra) => ({
   renderOffsetZ: y - Math.round(y * 2) / 2,
   interactionPriority: 6, ...extra,
 });
-const trayAt = districtLogicalAt(PUB_SERVICE_TRAY.x, PUB_SERVICE_TRAY.y);
-const trayInspect = districtLogicalAt(PUB_SERVICE_TRAY.inspectAt.x, PUB_SERVICE_TRAY.inspectAt.y);
-const trayApproach = districtLogicalAt(PUB_SERVICE_TRAY.approach.x, PUB_SERVICE_TRAY.approach.y);
+const trayAt = pubLogicalAt(PUB_SERVICE_TRAY.x, PUB_SERVICE_TRAY.y);
+const trayInspect = pubLogicalAt(PUB_SERVICE_TRAY.inspectAt.x, PUB_SERVICE_TRAY.inspectAt.y);
+const trayApproach = pubLogicalAt(PUB_SERVICE_TRAY.approach.x, PUB_SERVICE_TRAY.approach.y);
 
 export const PUB_FAVOR_PROPS = freeze([
   prop('pub-service-tray', 'pub_service_tray_loaded', trayAt.x, trayAt.y, {

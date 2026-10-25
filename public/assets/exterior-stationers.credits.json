@@ -1,0 +1,29 @@
+{
+  "pack": {
+    "filename": "exterior-stationers.glb",
+    "author": "Chunk Surfer project",
+    "license": "project geometry; existing stock font terms retained",
+    "sha256": "7f01303d881f0724f8071850b120aacd3d78bf371fc5161f08cc8aea99128879",
+    "triangles": 17478,
+    "bytes": 4916596
+  },
+  "sourceFacade": {
+    "file": "public/assets/exterior-frontages.glb",
+    "sha256": "6df5180943f4b7ed451f6fc12cd5556fd4de78ac54900f38f8839a78bb136611",
+    "originalMaterialCount": 16,
+    "originalImageCount": 3,
+    "materialDefinitionsUnchanged": true,
+    "imageDefinitionsUnchanged": true
+  },
+  "geometry": [
+    "src/data/exterior-stationers.js",
+    "tools/chunk_surfer/exterior-stationers-geometry.mjs",
+    "tools/chunk_surfer/build-exterior-stationers.mjs"
+  ],
+  "lettering": {
+    "source": "Existing pinned URW stock fonts and physical lettering pipeline",
+    "manifest": "assets/fonts/manifest.json",
+    "license": "AGPL-3.0 with the upstream stated PostScript/PDF document exception; see vendored LICENSE and COPYING"
+  },
+  "scope": "One existing deed ground floor; original upper floors, roof, other deeds and embedded material/map bytes retained."
+}

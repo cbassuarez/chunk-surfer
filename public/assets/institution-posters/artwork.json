@@ -1,0 +1,2818 @@
+{
+  "version": 1,
+  "source": "authored fictional Ellery publicity",
+  "fonts": {
+    "NimbusRoman-Bold.otf": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
+    "NimbusSans-Bold.otf": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+    "NimbusRoman-Italic.otf": "b7c424e6cb79baddfcdcd9a9d87f9fc4fdd06f0e5160066e2b2e47bcd647c7b9",
+    "NimbusMonoPS-Regular.otf": "4f225ca8e13acb16f733ce741693105e527d5f7a5443901b9ecc190fca4e149b",
+    "NimbusSansNarrow-Bold.otf": "6d7cec07f5a9035e208532dab35a51312aef4a7f26eb524dd614c9fcd97c3264"
+  },
+  "designs": [
+    {
+      "id": "season",
+      "title": "Music for the city",
+      "kind": "season-programme",
+      "widthM": 1,
+      "heightM": 0.7,
+      "mesh": "institution_poster_season",
+      "flatMesh": "institution_poster_season_flat",
+      "tapedMesh": "institution_poster_season_taped",
+      "pixels": [
+        1280,
+        896
+      ],
+      "materialPixels": [
+        256,
+        179
+      ],
+      "regions": [
+        {
+          "copy": "ELLERY",
+          "font": "NimbusRoman-Bold.otf",
+          "fontSha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
+          "box": [
+            0.07,
+            0.025,
+            0.56,
+            0.055
+          ],
+          "capHeightM": 0.0203125
+        },
+        {
+          "copy": "MUNICIPAL SCHOOL OF MUSIC",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.07,
+            0.057,
+            0.94,
+            0.082
+          ],
+          "capHeightM": 0.01171875
+        },
+        {
+          "copy": "MUSIC",
+          "font": "NimbusRoman-Bold.otf",
+          "fontSha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
+          "box": [
+            0.34,
+            0.145,
+            0.95,
+            0.295
+          ],
+          "capHeightM": 0.09921875
+        },
+        {
+          "copy": "FOR THE CITY",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.34,
+            0.3,
+            0.95,
+            0.39
+          ],
+          "capHeightM": 0.05546875
+        },
+        {
+          "copy": "THE SEASON PROGRAMME",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.345,
+            0.43,
+            0.94,
+            0.48
+          ],
+          "capHeightM": 0.021875
+        },
+        {
+          "copy": "ORCHESTRAL",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.345,
+            0.515,
+            0.595,
+            0.547
+          ],
+          "capHeightM": 0.01796875
+        },
+        {
+          "copy": "The municipal orchestra",
+          "font": "NimbusRoman-Italic.otf",
+          "fontSha256": "b7c424e6cb79baddfcdcd9a9d87f9fc4fdd06f0e5160066e2b2e47bcd647c7b9",
+          "box": [
+            0.61,
+            0.515,
+            0.94,
+            0.547
+          ],
+          "capHeightM": 0.01328125
+        },
+        {
+          "copy": "CHAMBER",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.345,
+            0.5760000000000001,
+            0.595,
+            0.6080000000000001
+          ],
+          "capHeightM": 0.01796875
+        },
+        {
+          "copy": "Small groups, close listening",
+          "font": "NimbusRoman-Italic.otf",
+          "fontSha256": "b7c424e6cb79baddfcdcd9a9d87f9fc4fdd06f0e5160066e2b2e47bcd647c7b9",
+          "box": [
+            0.61,
+            0.5760000000000001,
+            0.94,
+            0.6080000000000001
+          ],
+          "capHeightM": 0.01328125
+        },
+        {
+          "copy": "VOICES",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.345,
+            0.637,
+            0.595,
+            0.669
+          ],
+          "capHeightM": 0.01796875
+        },
+        {
+          "copy": "Choirs and visiting singers",
+          "font": "NimbusRoman-Italic.otf",
+          "fontSha256": "b7c424e6cb79baddfcdcd9a9d87f9fc4fdd06f0e5160066e2b2e47bcd647c7b9",
+          "box": [
+            0.61,
+            0.637,
+            0.94,
+            0.669
+          ],
+          "capHeightM": 0.01328125
+        },
+        {
+          "copy": "SOLO",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.345,
+            0.698,
+            0.595,
+            0.73
+          ],
+          "capHeightM": 0.01796875
+        },
+        {
+          "copy": "The recital series",
+          "font": "NimbusRoman-Italic.otf",
+          "fontSha256": "b7c424e6cb79baddfcdcd9a9d87f9fc4fdd06f0e5160066e2b2e47bcd647c7b9",
+          "box": [
+            0.61,
+            0.698,
+            0.94,
+            0.73
+          ],
+          "capHeightM": 0.01328125
+        },
+        {
+          "copy": "LATE MUSIC",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.345,
+            0.759,
+            0.595,
+            0.791
+          ],
+          "capHeightM": 0.01796875
+        },
+        {
+          "copy": "New work after hours",
+          "font": "NimbusRoman-Italic.otf",
+          "fontSha256": "b7c424e6cb79baddfcdcd9a9d87f9fc4fdd06f0e5160066e2b2e47bcd647c7b9",
+          "box": [
+            0.61,
+            0.759,
+            0.94,
+            0.791
+          ],
+          "capHeightM": 0.01328125
+        },
+        {
+          "copy": "WINTER / SPRING",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.075,
+            0.787,
+            0.28,
+            0.827
+          ],
+          "capHeightM": 0.015625
+        },
+        {
+          "copy": "THE CONCERT HALL  \u00b7  RECITAL ROOM  \u00b7  COLLEGIATE CHAPEL",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.07,
+            0.925,
+            0.93,
+            0.951
+          ],
+          "capHeightM": 0.0125
+        },
+        {
+          "copy": "ELLERY / MUSIC FOR EVERYONE",
+          "font": "NimbusMonoPS-Regular.otf",
+          "fontSha256": "4f225ca8e13acb16f733ce741693105e527d5f7a5443901b9ecc190fca4e149b",
+          "box": [
+            0.07,
+            0.963,
+            0.93,
+            0.98
+          ],
+          "capHeightM": 0.00703125
+        }
+      ],
+      "coverage": 0.2653964241946779,
+      "coverageSha256": "0e9fdca99f40dc835de044f76e7f80a6c4a94771ccbedf954c3f64bc849baf53",
+      "paperFinish": {
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "coverageSha256": "",
+        "immutableCoverage": true,
+        "sampledStockOutsidePigmentImmutable": false,
+        "physicalScalesM": {
+          "field": 0.095,
+          "minimumNormalPeriod": 0.0023437500000000003,
+          "inkRelief": 7e-06
+        },
+        "structure": {
+          "kind": "subpixel manufacture",
+          "actualPitchM": null,
+          "resolved": false
+        },
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "conditionRanges": {
+          "deposit": [
+            0.0,
+            0.0
+          ],
+          "contact": [
+            0.0,
+            0.0
+          ],
+          "edgeLoss": [
+            0.0,
+            0.0
+          ]
+        },
+        "channelRanges": {
+          "roughness": [
+            0.8528921568627451,
+            0.9068921568627452
+          ],
+          "metallic": [
+            0.0,
+            0.0
+          ]
+        },
+        "bakedLighting": false,
+        "glyphDamage": false
+      },
+      "lightingBaked": false,
+      "fontSubstitution": false
+    },
+    {
+      "id": "winter_programme",
+      "title": "The winter programme",
+      "kind": "season-programme",
+      "widthM": 1,
+      "heightM": 0.7,
+      "mesh": "institution_poster_winter_programme",
+      "flatMesh": "institution_poster_winter_programme_flat",
+      "tapedMesh": "institution_poster_winter_programme_taped",
+      "pixels": [
+        1280,
+        896
+      ],
+      "materialPixels": [
+        256,
+        179
+      ],
+      "regions": [
+        {
+          "copy": "ELLERY",
+          "font": "NimbusRoman-Bold.otf",
+          "fontSha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
+          "box": [
+            0.07,
+            0.025,
+            0.56,
+            0.055
+          ],
+          "capHeightM": 0.0203125
+        },
+        {
+          "copy": "MUNICIPAL SCHOOL OF MUSIC",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.07,
+            0.057,
+            0.94,
+            0.082
+          ],
+          "capHeightM": 0.01171875
+        },
+        {
+          "copy": "WINTER",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.43,
+            0.14,
+            0.94,
+            0.28
+          ],
+          "capHeightM": 0.09375
+        },
+        {
+          "copy": "CONCERTS",
+          "font": "NimbusSansNarrow-Bold.otf",
+          "fontSha256": "6d7cec07f5a9035e208532dab35a51312aef4a7f26eb524dd614c9fcd97c3264",
+          "box": [
+            0.43,
+            0.28,
+            0.94,
+            0.38
+          ],
+          "capHeightM": 0.06640625
+        },
+        {
+          "copy": "THE MUNICIPAL SERIES",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.43,
+            0.44,
+            0.94,
+            0.485
+          ],
+          "capHeightM": 0.0234375
+        },
+        {
+          "copy": "ORCHESTRA",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.43,
+            0.54,
+            0.94,
+            0.5710000000000001
+          ],
+          "capHeightM": 0.01796875
+        },
+        {
+          "copy": "Sundays in the concert hall",
+          "font": "NimbusRoman-Italic.otf",
+          "fontSha256": "b7c424e6cb79baddfcdcd9a9d87f9fc4fdd06f0e5160066e2b2e47bcd647c7b9",
+          "box": [
+            0.43,
+            0.5730000000000001,
+            0.94,
+            0.6020000000000001
+          ],
+          "capHeightM": 0.0140625
+        },
+        {
+          "copy": "RECITALS",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.43,
+            0.617,
+            0.94,
+            0.648
+          ],
+          "capHeightM": 0.01796875
+        },
+        {
+          "copy": "Soloists of the school",
+          "font": "NimbusRoman-Italic.otf",
+          "fontSha256": "b7c424e6cb79baddfcdcd9a9d87f9fc4fdd06f0e5160066e2b2e47bcd647c7b9",
+          "box": [
+            0.43,
+            0.65,
+            0.94,
+            0.679
+          ],
+          "capHeightM": 0.0140625
+        },
+        {
+          "copy": "CHAMBER MUSIC",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.43,
+            0.6940000000000001,
+            0.94,
+            0.7250000000000001
+          ],
+          "capHeightM": 0.01796875
+        },
+        {
+          "copy": "Thursdays at seven",
+          "font": "NimbusRoman-Italic.otf",
+          "fontSha256": "b7c424e6cb79baddfcdcd9a9d87f9fc4fdd06f0e5160066e2b2e47bcd647c7b9",
+          "box": [
+            0.43,
+            0.7270000000000001,
+            0.94,
+            0.756
+          ],
+          "capHeightM": 0.0140625
+        },
+        {
+          "copy": "CHOIRS",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.43,
+            0.771,
+            0.94,
+            0.802
+          ],
+          "capHeightM": 0.01796875
+        },
+        {
+          "copy": "Voices in the chapel",
+          "font": "NimbusRoman-Italic.otf",
+          "fontSha256": "b7c424e6cb79baddfcdcd9a9d87f9fc4fdd06f0e5160066e2b2e47bcd647c7b9",
+          "box": [
+            0.43,
+            0.804,
+            0.94,
+            0.833
+          ],
+          "capHeightM": 0.0140625
+        },
+        {
+          "copy": "THE WINTER PROGRAMME  \u00b7  ELLERY MUNICIPAL SCHOOL OF MUSIC",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.07,
+            0.925,
+            0.93,
+            0.951
+          ],
+          "capHeightM": 0.0125
+        },
+        {
+          "copy": "ELLERY / MUSIC FOR EVERYONE",
+          "font": "NimbusMonoPS-Regular.otf",
+          "fontSha256": "4f225ca8e13acb16f733ce741693105e527d5f7a5443901b9ecc190fca4e149b",
+          "box": [
+            0.07,
+            0.963,
+            0.93,
+            0.98
+          ],
+          "capHeightM": 0.00703125
+        }
+      ],
+      "coverage": 0.3120529662060137,
+      "coverageSha256": "f5b826bf550f618c22b15e88deb65611294a419148a6dacc4a0ae62bdaa0b339",
+      "paperFinish": {
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "coverageSha256": "",
+        "immutableCoverage": true,
+        "sampledStockOutsidePigmentImmutable": false,
+        "physicalScalesM": {
+          "field": 0.095,
+          "minimumNormalPeriod": 0.0023437500000000003,
+          "inkRelief": 7e-06
+        },
+        "structure": {
+          "kind": "subpixel manufacture",
+          "actualPitchM": null,
+          "resolved": false
+        },
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "conditionRanges": {
+          "deposit": [
+            0.0,
+            0.0
+          ],
+          "contact": [
+            0.0,
+            0.0
+          ],
+          "edgeLoss": [
+            0.0,
+            0.0
+          ]
+        },
+        "channelRanges": {
+          "roughness": [
+            0.8532843137254902,
+            0.9065196078431372
+          ],
+          "metallic": [
+            0.0,
+            0.0
+          ]
+        },
+        "bakedLighting": false,
+        "glyphDamage": false
+      },
+      "lightingBaked": false,
+      "fontSubstitution": false
+    },
+    {
+      "id": "winter",
+      "title": "Winter concerts",
+      "kind": "season-promotion",
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "mesh": "institution_poster_winter",
+      "flatMesh": "institution_poster_winter_flat",
+      "tapedMesh": "institution_poster_winter_taped",
+      "pixels": [
+        768,
+        1087
+      ],
+      "materialPixels": [
+        256,
+        362
+      ],
+      "regions": [
+        {
+          "copy": "ELLERY",
+          "font": "NimbusRoman-Bold.otf",
+          "fontSha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
+          "box": [
+            0.07,
+            0.025,
+            0.56,
+            0.055
+          ],
+          "capHeightM": 0.013921875
+        },
+        {
+          "copy": "MUNICIPAL SCHOOL OF MUSIC",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.07,
+            0.057,
+            0.94,
+            0.082
+          ],
+          "capHeightM": 0.0069609375
+        },
+        {
+          "copy": "WINTER",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.064,
+            0.115,
+            0.94,
+            0.205
+          ],
+          "capHeightM": 0.0750234375
+        },
+        {
+          "copy": "CONCERTS",
+          "font": "NimbusSansNarrow-Bold.otf",
+          "fontSha256": "6d7cec07f5a9035e208532dab35a51312aef4a7f26eb524dd614c9fcd97c3264",
+          "box": [
+            0.064,
+            0.205,
+            0.94,
+            0.29
+          ],
+          "capHeightM": 0.056460937499999996
+        },
+        {
+          "copy": "ORCHESTRA \u00b7 CHAMBER MUSIC \u00b7 CHOIRS",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.07,
+            0.798,
+            0.93,
+            0.83
+          ],
+          "capHeightM": 0.0100546875
+        },
+        {
+          "copy": "A season at Ellery",
+          "font": "NimbusRoman-Italic.otf",
+          "fontSha256": "b7c424e6cb79baddfcdcd9a9d87f9fc4fdd06f0e5160066e2b2e47bcd647c7b9",
+          "box": [
+            0.07,
+            0.843,
+            0.93,
+            0.88
+          ],
+          "capHeightM": 0.013921875
+        },
+        {
+          "copy": "PUBLIC CONCERTS  \u00b7  BOX OFFICE",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.07,
+            0.925,
+            0.93,
+            0.951
+          ],
+          "capHeightM": 0.007734374999999999
+        },
+        {
+          "copy": "ELLERY / MUSIC FOR EVERYONE",
+          "font": "NimbusMonoPS-Regular.otf",
+          "fontSha256": "4f225ca8e13acb16f733ce741693105e527d5f7a5443901b9ecc190fca4e149b",
+          "box": [
+            0.07,
+            0.963,
+            0.93,
+            0.98
+          ],
+          "capHeightM": 0.004640625
+        }
+      ],
+      "coverage": 0.47291040486648506,
+      "coverageSha256": "8955eae5d1857058f62838545570ab2ba07c2526f5991b7a7433f64f48effe3d",
+      "paperFinish": {
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "coverageSha256": "",
+        "immutableCoverage": true,
+        "sampledStockOutsidePigmentImmutable": false,
+        "physicalScalesM": {
+          "field": 0.095,
+          "minimumNormalPeriod": 0.0023210671573137076,
+          "inkRelief": 7e-06
+        },
+        "structure": {
+          "kind": "subpixel manufacture",
+          "actualPitchM": null,
+          "resolved": false
+        },
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "conditionRanges": {
+          "deposit": [
+            0.0,
+            0.0
+          ],
+          "contact": [
+            0.0,
+            0.0
+          ],
+          "edgeLoss": [
+            0.0,
+            0.0
+          ]
+        },
+        "channelRanges": {
+          "roughness": [
+            0.8525,
+            0.9069117647058823
+          ],
+          "metallic": [
+            0.0,
+            0.0
+          ]
+        },
+        "bakedLighting": false,
+        "glyphDamage": false
+      },
+      "lightingBaked": false,
+      "fontSubstitution": false
+    },
+    {
+      "id": "chamber",
+      "title": "In company",
+      "kind": "chamber-promotion",
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "mesh": "institution_poster_chamber",
+      "flatMesh": "institution_poster_chamber_flat",
+      "tapedMesh": "institution_poster_chamber_taped",
+      "pixels": [
+        768,
+        1087
+      ],
+      "materialPixels": [
+        256,
+        362
+      ],
+      "regions": [
+        {
+          "copy": "ELLERY",
+          "font": "NimbusRoman-Bold.otf",
+          "fontSha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
+          "box": [
+            0.07,
+            0.025,
+            0.56,
+            0.055
+          ],
+          "capHeightM": 0.013921875
+        },
+        {
+          "copy": "MUNICIPAL SCHOOL OF MUSIC",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.07,
+            0.057,
+            0.94,
+            0.082
+          ],
+          "capHeightM": 0.0069609375
+        },
+        {
+          "copy": "IN",
+          "font": "NimbusRoman-Bold.otf",
+          "fontSha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
+          "box": [
+            0.07,
+            0.13,
+            0.93,
+            0.25
+          ],
+          "capHeightM": 0.09435937500000001
+        },
+        {
+          "copy": "COMPANY",
+          "font": "NimbusRoman-Bold.otf",
+          "fontSha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
+          "box": [
+            0.07,
+            0.25,
+            0.94,
+            0.34
+          ],
+          "capHeightM": 0.04795312499999999
+        },
+        {
+          "copy": "CHAMBER MUSIC",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.07,
+            0.785,
+            0.93,
+            0.823
+          ],
+          "capHeightM": 0.017789062499999998
+        },
+        {
+          "copy": "String players & friends",
+          "font": "NimbusRoman-Italic.otf",
+          "fontSha256": "b7c424e6cb79baddfcdcd9a9d87f9fc4fdd06f0e5160066e2b2e47bcd647c7b9",
+          "box": [
+            0.07,
+            0.834,
+            0.93,
+            0.87
+          ],
+          "capHeightM": 0.0146953125
+        },
+        {
+          "copy": "THURSDAYS AT SEVEN  \u00b7  RECITAL ROOM",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.07,
+            0.925,
+            0.93,
+            0.951
+          ],
+          "capHeightM": 0.007734374999999999
+        },
+        {
+          "copy": "ELLERY / MUSIC FOR EVERYONE",
+          "font": "NimbusMonoPS-Regular.otf",
+          "fontSha256": "4f225ca8e13acb16f733ce741693105e527d5f7a5443901b9ecc190fca4e149b",
+          "box": [
+            0.07,
+            0.963,
+            0.93,
+            0.98
+          ],
+          "capHeightM": 0.004640625
+        }
+      ],
+      "coverage": 0.07714395958475387,
+      "coverageSha256": "6ce74b8f96c324f20f7eacc752d408072d47e224904ebbf1e6b66a2f9e1dbbb4",
+      "paperFinish": {
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "coverageSha256": "",
+        "immutableCoverage": true,
+        "sampledStockOutsidePigmentImmutable": false,
+        "physicalScalesM": {
+          "field": 0.095,
+          "minimumNormalPeriod": 0.0023210671573137076,
+          "inkRelief": 7e-06
+        },
+        "structure": {
+          "kind": "subpixel manufacture",
+          "actualPitchM": null,
+          "resolved": false
+        },
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "conditionRanges": {
+          "deposit": [
+            0.0,
+            0.0
+          ],
+          "contact": [
+            0.0,
+            0.0
+          ],
+          "edgeLoss": [
+            0.0,
+            0.0
+          ]
+        },
+        "channelRanges": {
+          "roughness": [
+            0.8550490196078432,
+            0.9051666666666667
+          ],
+          "metallic": [
+            0.0,
+            0.0
+          ]
+        },
+        "bakedLighting": false,
+        "glyphDamage": false
+      },
+      "lightingBaked": false,
+      "fontSubstitution": false
+    },
+    {
+      "id": "piano",
+      "title": "One piano",
+      "kind": "solo-promotion",
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "mesh": "institution_poster_piano",
+      "flatMesh": "institution_poster_piano_flat",
+      "tapedMesh": "institution_poster_piano_taped",
+      "pixels": [
+        768,
+        1087
+      ],
+      "materialPixels": [
+        256,
+        362
+      ],
+      "regions": [
+        {
+          "copy": "ELLERY",
+          "font": "NimbusRoman-Bold.otf",
+          "fontSha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
+          "box": [
+            0.07,
+            0.025,
+            0.56,
+            0.055
+          ],
+          "capHeightM": 0.013921875
+        },
+        {
+          "copy": "MUNICIPAL SCHOOL OF MUSIC",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.07,
+            0.057,
+            0.94,
+            0.082
+          ],
+          "capHeightM": 0.0069609375
+        },
+        {
+          "copy": "ONE",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.07,
+            0.13,
+            0.93,
+            0.27
+          ],
+          "capHeightM": 0.11214843749999999
+        },
+        {
+          "copy": "PIANO",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.07,
+            0.265,
+            0.93,
+            0.36
+          ],
+          "capHeightM": 0.0750234375
+        },
+        {
+          "copy": "THE SOLO RECITALS",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.07,
+            0.808,
+            0.93,
+            0.845
+          ],
+          "capHeightM": 0.0162421875
+        },
+        {
+          "copy": "An evening in the recital room",
+          "font": "NimbusRoman-Italic.otf",
+          "fontSha256": "b7c424e6cb79baddfcdcd9a9d87f9fc4fdd06f0e5160066e2b2e47bcd647c7b9",
+          "box": [
+            0.07,
+            0.853,
+            0.93,
+            0.885
+          ],
+          "capHeightM": 0.013148437499999999
+        },
+        {
+          "copy": "SELECTED SUNDAYS  \u00b7  SEVEN O\u2019CLOCK",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.07,
+            0.925,
+            0.93,
+            0.951
+          ],
+          "capHeightM": 0.007734374999999999
+        },
+        {
+          "copy": "ELLERY / MUSIC FOR EVERYONE",
+          "font": "NimbusMonoPS-Regular.otf",
+          "fontSha256": "4f225ca8e13acb16f733ce741693105e527d5f7a5443901b9ecc190fca4e149b",
+          "box": [
+            0.07,
+            0.963,
+            0.93,
+            0.98
+          ],
+          "capHeightM": 0.004640625
+        }
+      ],
+      "coverage": 0.3754110727439415,
+      "coverageSha256": "275b46a194953d3c3da1d01d7069483398fb90de8828e01772007e9d525f2b33",
+      "paperFinish": {
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "coverageSha256": "",
+        "immutableCoverage": true,
+        "sampledStockOutsidePigmentImmutable": false,
+        "physicalScalesM": {
+          "field": 0.095,
+          "minimumNormalPeriod": 0.0023210671573137076,
+          "inkRelief": 7e-06
+        },
+        "structure": {
+          "kind": "subpixel manufacture",
+          "actualPitchM": null,
+          "resolved": false
+        },
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "conditionRanges": {
+          "deposit": [
+            0.0,
+            0.0
+          ],
+          "contact": [
+            0.0,
+            0.0
+          ],
+          "edgeLoss": [
+            0.0,
+            0.0
+          ]
+        },
+        "channelRanges": {
+          "roughness": [
+            0.8531274509803922,
+            0.9064019607843138
+          ],
+          "metallic": [
+            0.0,
+            0.0
+          ]
+        },
+        "bakedLighting": false,
+        "glyphDamage": false
+      },
+      "lightingBaked": false,
+      "fontSubstitution": false
+    },
+    {
+      "id": "visiting",
+      "title": "Other voices",
+      "kind": "visiting-ensemble-promotion",
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "mesh": "institution_poster_visiting",
+      "flatMesh": "institution_poster_visiting_flat",
+      "tapedMesh": "institution_poster_visiting_taped",
+      "pixels": [
+        768,
+        1087
+      ],
+      "materialPixels": [
+        256,
+        362
+      ],
+      "regions": [
+        {
+          "copy": "ELLERY",
+          "font": "NimbusRoman-Bold.otf",
+          "fontSha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
+          "box": [
+            0.07,
+            0.025,
+            0.56,
+            0.055
+          ],
+          "capHeightM": 0.013921875
+        },
+        {
+          "copy": "MUNICIPAL SCHOOL OF MUSIC",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.07,
+            0.057,
+            0.94,
+            0.082
+          ],
+          "capHeightM": 0.0069609375
+        },
+        {
+          "copy": "OTHER",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.07,
+            0.12,
+            0.93,
+            0.23
+          ],
+          "capHeightM": 0.085078125
+        },
+        {
+          "copy": "VOICES",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.07,
+            0.23,
+            0.93,
+            0.34
+          ],
+          "capHeightM": 0.085078125
+        },
+        {
+          "copy": "VISITING ENSEMBLES",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.07,
+            0.756,
+            0.93,
+            0.802
+          ],
+          "capHeightM": 0.017789062499999998
+        },
+        {
+          "copy": "New and remembered music",
+          "font": "NimbusRoman-Italic.otf",
+          "fontSha256": "b7c424e6cb79baddfcdcd9a9d87f9fc4fdd06f0e5160066e2b2e47bcd647c7b9",
+          "box": [
+            0.07,
+            0.816,
+            0.93,
+            0.85
+          ],
+          "capHeightM": 0.013921875
+        },
+        {
+          "copy": "THE CONCERT HALL",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.07,
+            0.855,
+            0.93,
+            0.887
+          ],
+          "capHeightM": 0.010828125
+        },
+        {
+          "copy": "PUBLIC CONCERTS  \u00b7  BOX OFFICE",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.07,
+            0.925,
+            0.93,
+            0.951
+          ],
+          "capHeightM": 0.007734374999999999
+        },
+        {
+          "copy": "ELLERY / MUSIC FOR EVERYONE",
+          "font": "NimbusMonoPS-Regular.otf",
+          "fontSha256": "4f225ca8e13acb16f733ce741693105e527d5f7a5443901b9ecc190fca4e149b",
+          "box": [
+            0.07,
+            0.963,
+            0.93,
+            0.98
+          ],
+          "capHeightM": 0.004640625
+        }
+      ],
+      "coverage": 0.3659992611733439,
+      "coverageSha256": "d8f280161764e33ab2c58f29bf952b1918097ff0e3b1d75a76867deaf931dd25",
+      "paperFinish": {
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "coverageSha256": "",
+        "immutableCoverage": true,
+        "sampledStockOutsidePigmentImmutable": false,
+        "physicalScalesM": {
+          "field": 0.095,
+          "minimumNormalPeriod": 0.0023210671573137076,
+          "inkRelief": 7e-06
+        },
+        "structure": {
+          "kind": "subpixel manufacture",
+          "actualPitchM": null,
+          "resolved": false
+        },
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "conditionRanges": {
+          "deposit": [
+            0.0,
+            0.0
+          ],
+          "contact": [
+            0.0,
+            0.0
+          ],
+          "edgeLoss": [
+            0.0,
+            0.0
+          ]
+        },
+        "channelRanges": {
+          "roughness": [
+            0.8542254901960784,
+            0.9068333333333333
+          ],
+          "metallic": [
+            0.0,
+            0.0
+          ]
+        },
+        "bakedLighting": false,
+        "glyphDamage": false
+      },
+      "lightingBaked": false,
+      "fontSubstitution": false
+    },
+    {
+      "id": "chapel",
+      "title": "Sound & stone",
+      "kind": "chapel-promotion",
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "mesh": "institution_poster_chapel",
+      "flatMesh": "institution_poster_chapel_flat",
+      "tapedMesh": "institution_poster_chapel_taped",
+      "pixels": [
+        768,
+        1087
+      ],
+      "materialPixels": [
+        256,
+        362
+      ],
+      "regions": [
+        {
+          "copy": "ELLERY",
+          "font": "NimbusRoman-Bold.otf",
+          "fontSha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
+          "box": [
+            0.07,
+            0.025,
+            0.56,
+            0.055
+          ],
+          "capHeightM": 0.013921875
+        },
+        {
+          "copy": "MUNICIPAL SCHOOL OF MUSIC",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.07,
+            0.057,
+            0.94,
+            0.082
+          ],
+          "capHeightM": 0.0069609375
+        },
+        {
+          "copy": "SOUND",
+          "font": "NimbusRoman-Bold.otf",
+          "fontSha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
+          "box": [
+            0.07,
+            0.13,
+            0.93,
+            0.235
+          ],
+          "capHeightM": 0.0781171875
+        },
+        {
+          "copy": "& STONE",
+          "font": "NimbusRoman-Bold.otf",
+          "fontSha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
+          "box": [
+            0.07,
+            0.235,
+            0.93,
+            0.33
+          ],
+          "capHeightM": 0.06110156249999999
+        },
+        {
+          "copy": "ORGAN \u00b7 CHOIR \u00b7 EVENING MUSIC",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.07,
+            0.798,
+            0.93,
+            0.836
+          ],
+          "capHeightM": 0.013921875
+        },
+        {
+          "copy": "Ellery Collegiate Chapel",
+          "font": "NimbusRoman-Italic.otf",
+          "fontSha256": "b7c424e6cb79baddfcdcd9a9d87f9fc4fdd06f0e5160066e2b2e47bcd647c7b9",
+          "box": [
+            0.07,
+            0.846,
+            0.93,
+            0.884
+          ],
+          "capHeightM": 0.0146953125
+        },
+        {
+          "copy": "SATURDAYS  \u00b7  DOORS AT SIX",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.07,
+            0.925,
+            0.93,
+            0.951
+          ],
+          "capHeightM": 0.007734374999999999
+        },
+        {
+          "copy": "ELLERY / MUSIC FOR EVERYONE",
+          "font": "NimbusMonoPS-Regular.otf",
+          "fontSha256": "4f225ca8e13acb16f733ce741693105e527d5f7a5443901b9ecc190fca4e149b",
+          "box": [
+            0.07,
+            0.963,
+            0.93,
+            0.98
+          ],
+          "capHeightM": 0.004640625
+        }
+      ],
+      "coverage": 0.1849968723881764,
+      "coverageSha256": "ceda15e134b20a329faad23d306d2232fdefae04898b923a1f90789cff27a8ae",
+      "paperFinish": {
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "coverageSha256": "",
+        "immutableCoverage": true,
+        "sampledStockOutsidePigmentImmutable": false,
+        "physicalScalesM": {
+          "field": 0.095,
+          "minimumNormalPeriod": 0.0023210671573137076,
+          "inkRelief": 7e-06
+        },
+        "structure": {
+          "kind": "subpixel manufacture",
+          "actualPitchM": null,
+          "resolved": false
+        },
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "conditionRanges": {
+          "deposit": [
+            0.0,
+            0.0
+          ],
+          "contact": [
+            0.0,
+            0.0
+          ],
+          "edgeLoss": [
+            0.0,
+            0.0
+          ]
+        },
+        "channelRanges": {
+          "roughness": [
+            0.8527745098039217,
+            0.9050294117647059
+          ],
+          "metallic": [
+            0.0,
+            0.0
+          ]
+        },
+        "bakedLighting": false,
+        "glyphDamage": false
+      },
+      "lightingBaked": false,
+      "fontSubstitution": false
+    },
+    {
+      "id": "students",
+      "title": "Play together",
+      "kind": "student-notice",
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "mesh": "institution_poster_students",
+      "flatMesh": "institution_poster_students_flat",
+      "tapedMesh": "institution_poster_students_taped",
+      "pixels": [
+        768,
+        1087
+      ],
+      "materialPixels": [
+        256,
+        362
+      ],
+      "regions": [
+        {
+          "copy": "ELLERY",
+          "font": "NimbusRoman-Bold.otf",
+          "fontSha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
+          "box": [
+            0.07,
+            0.025,
+            0.56,
+            0.055
+          ],
+          "capHeightM": 0.013921875
+        },
+        {
+          "copy": "MUNICIPAL SCHOOL OF MUSIC",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.07,
+            0.057,
+            0.94,
+            0.082
+          ],
+          "capHeightM": 0.0069609375
+        },
+        {
+          "copy": "PLAY",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.1,
+            0.14,
+            0.9,
+            0.25
+          ],
+          "capHeightM": 0.09049218749999999
+        },
+        {
+          "copy": "TOGETHER",
+          "font": "NimbusSansNarrow-Bold.otf",
+          "fontSha256": "6d7cec07f5a9035e208532dab35a51312aef4a7f26eb524dd614c9fcd97c3264",
+          "box": [
+            0.1,
+            0.255,
+            0.9,
+            0.355
+          ],
+          "capHeightM": 0.0595546875
+        },
+        {
+          "copy": "ROOM FOR ONE MORE",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.07,
+            0.61,
+            0.93,
+            0.655
+          ],
+          "capHeightM": 0.0208828125
+        },
+        {
+          "copy": "STUDENT ENSEMBLES",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.07,
+            0.675,
+            0.93,
+            0.715
+          ],
+          "capHeightM": 0.017789062499999998
+        },
+        {
+          "copy": "STRINGS \u00b7 WIND \u00b7 BRASS",
+          "font": "NimbusMonoPS-Regular.otf",
+          "fontSha256": "4f225ca8e13acb16f733ce741693105e527d5f7a5443901b9ecc190fca4e149b",
+          "box": [
+            0.07,
+            0.735,
+            0.93,
+            0.77
+          ],
+          "capHeightM": 0.0100546875
+        },
+        {
+          "copy": "Sign-up sheets in the practice wing",
+          "font": "NimbusRoman-Italic.otf",
+          "fontSha256": "b7c424e6cb79baddfcdcd9a9d87f9fc4fdd06f0e5160066e2b2e47bcd647c7b9",
+          "box": [
+            0.07,
+            0.8,
+            0.93,
+            0.845
+          ],
+          "capHeightM": 0.013148437499999999
+        },
+        {
+          "copy": "MUSIC SOCIETY  \u00b7  ALL STUDENTS WELCOME",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.07,
+            0.925,
+            0.93,
+            0.951
+          ],
+          "capHeightM": 0.007734374999999999
+        },
+        {
+          "copy": "ELLERY / MUSIC FOR EVERYONE",
+          "font": "NimbusMonoPS-Regular.otf",
+          "fontSha256": "4f225ca8e13acb16f733ce741693105e527d5f7a5443901b9ecc190fca4e149b",
+          "box": [
+            0.07,
+            0.963,
+            0.93,
+            0.98
+          ],
+          "capHeightM": 0.004640625
+        }
+      ],
+      "coverage": 0.32095215721599896,
+      "coverageSha256": "b8987afe135496464daaaa5f130d25053d2fda2f25e72d554ec0381451e52dcf",
+      "paperFinish": {
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "coverageSha256": "",
+        "immutableCoverage": true,
+        "sampledStockOutsidePigmentImmutable": false,
+        "physicalScalesM": {
+          "field": 0.095,
+          "minimumNormalPeriod": 0.0023210671573137076,
+          "inkRelief": 7e-06
+        },
+        "structure": {
+          "kind": "subpixel manufacture",
+          "actualPitchM": null,
+          "resolved": false
+        },
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "conditionRanges": {
+          "deposit": [
+            0.0,
+            0.0
+          ],
+          "contact": [
+            0.0,
+            0.0
+          ],
+          "edgeLoss": [
+            0.0,
+            0.0
+          ]
+        },
+        "channelRanges": {
+          "roughness": [
+            0.8529705882352941,
+            0.9056960784313726
+          ],
+          "metallic": [
+            0.0,
+            0.0
+          ]
+        },
+        "bakedLighting": false,
+        "glyphDamage": false
+      },
+      "lightingBaked": false,
+      "fontSubstitution": false
+    },
+    {
+      "id": "lyric",
+      "title": "After the last note",
+      "kind": "local-music-promotion",
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "mesh": "institution_poster_lyric",
+      "flatMesh": "institution_poster_lyric_flat",
+      "tapedMesh": "institution_poster_lyric_taped",
+      "pixels": [
+        768,
+        1087
+      ],
+      "materialPixels": [
+        256,
+        362
+      ],
+      "regions": [
+        {
+          "copy": "THE",
+          "font": "NimbusRoman-Bold.otf",
+          "fontSha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
+          "box": [
+            0.13,
+            0.1,
+            0.87,
+            0.15
+          ],
+          "capHeightM": 0.024749999999999998
+        },
+        {
+          "copy": "LYRIC",
+          "font": "NimbusRoman-Bold.otf",
+          "fontSha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
+          "box": [
+            0.1,
+            0.15,
+            0.9,
+            0.29
+          ],
+          "capHeightM": 0.09435937500000001
+        },
+        {
+          "copy": "AFTER",
+          "font": "NimbusRoman-Bold.otf",
+          "fontSha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
+          "box": [
+            0.12,
+            0.42,
+            0.88,
+            0.5
+          ],
+          "capHeightM": 0.0502734375
+        },
+        {
+          "copy": "THE LAST",
+          "font": "NimbusRoman-Bold.otf",
+          "fontSha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
+          "box": [
+            0.12,
+            0.51,
+            0.88,
+            0.58
+          ],
+          "capHeightM": 0.0440859375
+        },
+        {
+          "copy": "NOTE",
+          "font": "NimbusRoman-Bold.otf",
+          "fontSha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
+          "box": [
+            0.12,
+            0.59,
+            0.88,
+            0.69
+          ],
+          "capHeightM": 0.0781171875
+        },
+        {
+          "copy": "Music in the snug",
+          "font": "NimbusRoman-Italic.otf",
+          "fontSha256": "b7c424e6cb79baddfcdcd9a9d87f9fc4fdd06f0e5160066e2b2e47bcd647c7b9",
+          "box": [
+            0.12,
+            0.735,
+            0.88,
+            0.78
+          ],
+          "capHeightM": 0.017789062499999998
+        },
+        {
+          "copy": "FRIDAY EVENINGS",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.12,
+            0.812,
+            0.88,
+            0.845
+          ],
+          "capHeightM": 0.0146953125
+        },
+        {
+          "copy": "No tickets. A place by the fire.",
+          "font": "NimbusRoman-Italic.otf",
+          "fontSha256": "b7c424e6cb79baddfcdcd9a9d87f9fc4fdd06f0e5160066e2b2e47bcd647c7b9",
+          "box": [
+            0.12,
+            0.868,
+            0.88,
+            0.901
+          ],
+          "capHeightM": 0.013148437499999999
+        }
+      ],
+      "coverage": 0.10300996232209536,
+      "coverageSha256": "bea3f6e6a0e59262e016fda95b18490e0fcdae3317ab99011527770baa97877b",
+      "paperFinish": {
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "coverageSha256": "",
+        "immutableCoverage": true,
+        "sampledStockOutsidePigmentImmutable": false,
+        "physicalScalesM": {
+          "field": 0.095,
+          "minimumNormalPeriod": 0.0023210671573137076,
+          "inkRelief": 7e-06
+        },
+        "structure": {
+          "kind": "subpixel manufacture",
+          "actualPitchM": null,
+          "resolved": false
+        },
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "conditionRanges": {
+          "deposit": [
+            0.0,
+            0.0
+          ],
+          "contact": [
+            0.0,
+            0.0
+          ],
+          "edgeLoss": [
+            0.0,
+            0.0
+          ]
+        },
+        "channelRanges": {
+          "roughness": [
+            0.8525,
+            0.9071862745098039
+          ],
+          "metallic": [
+            0.0,
+            0.0
+          ]
+        },
+        "bakedLighting": false,
+        "glyphDamage": false
+      },
+      "lightingBaked": false,
+      "fontSubstitution": false
+    },
+    {
+      "id": "loudspeakers",
+      "title": "Room without players",
+      "kind": "fixed-media-promotion",
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "mesh": "institution_poster_loudspeakers",
+      "flatMesh": "institution_poster_loudspeakers_flat",
+      "tapedMesh": "institution_poster_loudspeakers_taped",
+      "experimental": true,
+      "rasterWidthPx": 704,
+      "materialWidthPx": 192,
+      "paperSegments": [
+        12,
+        8
+      ],
+      "pixels": [
+        704,
+        997
+      ],
+      "materialPixels": [
+        192,
+        272
+      ],
+      "regions": [
+        {
+          "copy": "ELLERY",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.065,
+            0.035,
+            0.4,
+            0.065
+          ],
+          "capHeightM": 0.0135
+        },
+        {
+          "copy": "EXPERIMENTAL MUSIC",
+          "font": "NimbusMonoPS-Regular.otf",
+          "fontSha256": "4f225ca8e13acb16f733ce741693105e527d5f7a5443901b9ecc190fca4e149b",
+          "box": [
+            0.52,
+            0.035,
+            0.935,
+            0.065
+          ],
+          "capHeightM": 0.00675
+        },
+        {
+          "copy": "ROOM",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.065,
+            0.105,
+            0.93,
+            0.19
+          ],
+          "capHeightM": 0.06665624999999999
+        },
+        {
+          "copy": "WITHOUT PLAYERS",
+          "font": "NimbusSansNarrow-Bold.otf",
+          "fontSha256": "6d7cec07f5a9035e208532dab35a51312aef4a7f26eb524dd614c9fcd97c3264",
+          "box": [
+            0.065,
+            0.195,
+            0.93,
+            0.255
+          ],
+          "capHeightM": 0.033749999999999995
+        },
+        {
+          "copy": "ELECTROACOUSTIC",
+          "font": "NimbusSansNarrow-Bold.otf",
+          "fontSha256": "6d7cec07f5a9035e208532dab35a51312aef4a7f26eb524dd614c9fcd97c3264",
+          "box": [
+            0.065,
+            0.775,
+            0.935,
+            0.832
+          ],
+          "capHeightM": 0.03459375
+        },
+        {
+          "copy": "LOUDSPEAKER ORCHESTRA",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.065,
+            0.846,
+            0.935,
+            0.884
+          ],
+          "capHeightM": 0.01940625
+        },
+        {
+          "copy": "FIXED MEDIA / SPATIAL SOUND",
+          "font": "NimbusMonoPS-Regular.otf",
+          "fontSha256": "4f225ca8e13acb16f733ce741693105e527d5f7a5443901b9ecc190fca4e149b",
+          "box": [
+            0.065,
+            0.925,
+            0.935,
+            0.95
+          ],
+          "capHeightM": 0.00759375
+        },
+        {
+          "copy": "AN EVENING IN THE CONCERT HALL",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.065,
+            0.96,
+            0.935,
+            0.98
+          ],
+          "capHeightM": 0.00759375
+        }
+      ],
+      "coverage": 0.07832243946634913,
+      "coverageSha256": "2fda990673cdc5b3df58fcab33fadd32966c0d914852d4b7da43b775382a3baa",
+      "paperFinish": {
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "coverageSha256": "",
+        "immutableCoverage": true,
+        "sampledStockOutsidePigmentImmutable": false,
+        "physicalScalesM": {
+          "field": 0.095,
+          "minimumNormalPeriod": 0.00253125,
+          "inkRelief": 7e-06
+        },
+        "structure": {
+          "kind": "subpixel manufacture",
+          "actualPitchM": null,
+          "resolved": false
+        },
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "conditionRanges": {
+          "deposit": [
+            0.0,
+            0.0
+          ],
+          "contact": [
+            0.0,
+            0.0
+          ],
+          "edgeLoss": [
+            0.0,
+            0.0
+          ]
+        },
+        "channelRanges": {
+          "roughness": [
+            0.8525,
+            0.9064019607843137
+          ],
+          "metallic": [
+            0.0,
+            0.0
+          ]
+        },
+        "bakedLighting": false,
+        "glyphDamage": false
+      },
+      "lightingBaked": false,
+      "fontSubstitution": false
+    },
+    {
+      "id": "live_electronics",
+      "title": "Live wires",
+      "kind": "live-electronics-promotion",
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "mesh": "institution_poster_live_electronics",
+      "flatMesh": "institution_poster_live_electronics_flat",
+      "tapedMesh": "institution_poster_live_electronics_taped",
+      "experimental": true,
+      "rasterWidthPx": 704,
+      "materialWidthPx": 192,
+      "paperSegments": [
+        12,
+        8
+      ],
+      "pixels": [
+        704,
+        997
+      ],
+      "materialPixels": [
+        192,
+        272
+      ],
+      "regions": [
+        {
+          "copy": "ELLERY",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.065,
+            0.035,
+            0.4,
+            0.065
+          ],
+          "capHeightM": 0.0135
+        },
+        {
+          "copy": "EXPERIMENTAL MUSIC",
+          "font": "NimbusMonoPS-Regular.otf",
+          "fontSha256": "4f225ca8e13acb16f733ce741693105e527d5f7a5443901b9ecc190fca4e149b",
+          "box": [
+            0.52,
+            0.035,
+            0.935,
+            0.065
+          ],
+          "capHeightM": 0.00675
+        },
+        {
+          "copy": "LIVE",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.065,
+            0.11,
+            0.935,
+            0.245
+          ],
+          "capHeightM": 0.11306249999999998
+        },
+        {
+          "copy": "WIRES",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.065,
+            0.25,
+            0.935,
+            0.38
+          ],
+          "capHeightM": 0.10378124999999999
+        },
+        {
+          "copy": "INSTRUMENTS",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.065,
+            0.77,
+            0.935,
+            0.81
+          ],
+          "capHeightM": 0.0253125
+        },
+        {
+          "copy": "+ LIVE ELECTRONICS",
+          "font": "NimbusSansNarrow-Bold.otf",
+          "fontSha256": "6d7cec07f5a9035e208532dab35a51312aef4a7f26eb524dd614c9fcd97c3264",
+          "box": [
+            0.065,
+            0.815,
+            0.935,
+            0.858
+          ],
+          "capHeightM": 0.02278125
+        },
+        {
+          "copy": "The instrument listens back",
+          "font": "NimbusRoman-Italic.otf",
+          "fontSha256": "b7c424e6cb79baddfcdcd9a9d87f9fc4fdd06f0e5160066e2b2e47bcd647c7b9",
+          "box": [
+            0.065,
+            0.875,
+            0.935,
+            0.907
+          ],
+          "capHeightM": 0.0135
+        },
+        {
+          "copy": "ELLERY / CONCERT HALL",
+          "font": "NimbusMonoPS-Regular.otf",
+          "fontSha256": "4f225ca8e13acb16f733ce741693105e527d5f7a5443901b9ecc190fca4e149b",
+          "box": [
+            0.065,
+            0.95,
+            0.935,
+            0.978
+          ],
+          "capHeightM": 0.00675
+        }
+      ],
+      "coverage": 0.11824864634008979,
+      "coverageSha256": "aa58c4dd3c09507d80963d99761605ae6507360000cf601893499e2286dd17be",
+      "paperFinish": {
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "coverageSha256": "",
+        "immutableCoverage": true,
+        "sampledStockOutsidePigmentImmutable": false,
+        "physicalScalesM": {
+          "field": 0.095,
+          "minimumNormalPeriod": 0.00253125,
+          "inkRelief": 7e-06
+        },
+        "structure": {
+          "kind": "subpixel manufacture",
+          "actualPitchM": null,
+          "resolved": false
+        },
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "conditionRanges": {
+          "deposit": [
+            0.0,
+            0.0
+          ],
+          "contact": [
+            0.0,
+            0.0
+          ],
+          "edgeLoss": [
+            0.0,
+            0.0
+          ]
+        },
+        "channelRanges": {
+          "roughness": [
+            0.8529313725490196,
+            0.9066372549019608
+          ],
+          "metallic": [
+            0.0,
+            0.0
+          ]
+        },
+        "bakedLighting": false,
+        "glyphDamage": false
+      },
+      "lightingBaked": false,
+      "fontSubstitution": false
+    },
+    {
+      "id": "tape",
+      "title": "Tape music",
+      "kind": "tape-music-promotion",
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "mesh": "institution_poster_tape",
+      "flatMesh": "institution_poster_tape_flat",
+      "tapedMesh": "institution_poster_tape_taped",
+      "experimental": true,
+      "rasterWidthPx": 704,
+      "materialWidthPx": 192,
+      "paperSegments": [
+        12,
+        8
+      ],
+      "pixels": [
+        704,
+        997
+      ],
+      "materialPixels": [
+        192,
+        272
+      ],
+      "regions": [
+        {
+          "copy": "ELLERY",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.065,
+            0.035,
+            0.4,
+            0.065
+          ],
+          "capHeightM": 0.0135
+        },
+        {
+          "copy": "EXPERIMENTAL MUSIC",
+          "font": "NimbusMonoPS-Regular.otf",
+          "fontSha256": "4f225ca8e13acb16f733ce741693105e527d5f7a5443901b9ecc190fca4e149b",
+          "box": [
+            0.52,
+            0.035,
+            0.935,
+            0.065
+          ],
+          "capHeightM": 0.00675
+        },
+        {
+          "copy": "TAPE",
+          "font": "NimbusMonoPS-Regular.otf",
+          "fontSha256": "4f225ca8e13acb16f733ce741693105e527d5f7a5443901b9ecc190fca4e149b",
+          "box": [
+            0.065,
+            0.1,
+            0.935,
+            0.25
+          ],
+          "capHeightM": 0.09703125
+        },
+        {
+          "copy": "MUSIC",
+          "font": "NimbusMonoPS-Regular.otf",
+          "fontSha256": "4f225ca8e13acb16f733ce741693105e527d5f7a5443901b9ecc190fca4e149b",
+          "box": [
+            0.065,
+            0.25,
+            0.935,
+            0.345
+          ],
+          "capHeightM": 0.06075
+        },
+        {
+          "copy": "FIXED MEDIA",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.065,
+            0.81,
+            0.935,
+            0.85
+          ],
+          "capHeightM": 0.021093749999999998
+        },
+        {
+          "copy": "Reel-to-reel / Archive / New work",
+          "font": "NimbusRoman-Italic.otf",
+          "fontSha256": "b7c424e6cb79baddfcdcd9a9d87f9fc4fdd06f0e5160066e2b2e47bcd647c7b9",
+          "box": [
+            0.065,
+            0.865,
+            0.935,
+            0.9
+          ],
+          "capHeightM": 0.01265625
+        },
+        {
+          "copy": "LISTENING SESSIONS AT ELLERY",
+          "font": "NimbusMonoPS-Regular.otf",
+          "fontSha256": "4f225ca8e13acb16f733ce741693105e527d5f7a5443901b9ecc190fca4e149b",
+          "box": [
+            0.065,
+            0.95,
+            0.935,
+            0.978
+          ],
+          "capHeightM": 0.00675
+        }
+      ],
+      "coverage": 0.08645486928700541,
+      "coverageSha256": "65cd980df7074db8bb2dab1fd36bf304733f163724599800e5dc9c6cf7973d5d",
+      "paperFinish": {
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "coverageSha256": "",
+        "immutableCoverage": true,
+        "sampledStockOutsidePigmentImmutable": false,
+        "physicalScalesM": {
+          "field": 0.095,
+          "minimumNormalPeriod": 0.00253125,
+          "inkRelief": 7e-06
+        },
+        "structure": {
+          "kind": "subpixel manufacture",
+          "actualPitchM": null,
+          "resolved": false
+        },
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "conditionRanges": {
+          "deposit": [
+            0.0,
+            0.0
+          ],
+          "contact": [
+            0.0,
+            0.0
+          ],
+          "edgeLoss": [
+            0.0,
+            0.0
+          ]
+        },
+        "channelRanges": {
+          "roughness": [
+            0.8565784313725491,
+            0.9070686274509804
+          ],
+          "metallic": [
+            0.0,
+            0.0
+          ]
+        },
+        "bakedLighting": false,
+        "glyphDamage": false
+      },
+      "lightingBaked": false,
+      "fontSubstitution": false
+    },
+    {
+      "id": "new_works",
+      "title": "Not yet heard",
+      "kind": "new-music-promotion",
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "mesh": "institution_poster_new_works",
+      "flatMesh": "institution_poster_new_works_flat",
+      "tapedMesh": "institution_poster_new_works_taped",
+      "experimental": true,
+      "rasterWidthPx": 704,
+      "materialWidthPx": 192,
+      "paperSegments": [
+        12,
+        8
+      ],
+      "pixels": [
+        704,
+        997
+      ],
+      "materialPixels": [
+        192,
+        272
+      ],
+      "regions": [
+        {
+          "copy": "ELLERY",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.065,
+            0.035,
+            0.4,
+            0.065
+          ],
+          "capHeightM": 0.0135
+        },
+        {
+          "copy": "EXPERIMENTAL MUSIC",
+          "font": "NimbusMonoPS-Regular.otf",
+          "fontSha256": "4f225ca8e13acb16f733ce741693105e527d5f7a5443901b9ecc190fca4e149b",
+          "box": [
+            0.52,
+            0.035,
+            0.935,
+            0.065
+          ],
+          "capHeightM": 0.00675
+        },
+        {
+          "copy": "NOT",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.065,
+            0.115,
+            0.59,
+            0.235
+          ],
+          "capHeightM": 0.09534375
+        },
+        {
+          "copy": "YET",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.065,
+            0.255,
+            0.63,
+            0.375
+          ],
+          "capHeightM": 0.10040624999999999
+        },
+        {
+          "copy": "HEARD",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.065,
+            0.395,
+            0.935,
+            0.515
+          ],
+          "capHeightM": 0.10040624999999999
+        },
+        {
+          "copy": "NEW MUSIC",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.065,
+            0.77,
+            0.935,
+            0.825
+          ],
+          "capHeightM": 0.03965625
+        },
+        {
+          "copy": "COMPOSERS\u2019 FORUM",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.065,
+            0.837,
+            0.935,
+            0.872
+          ],
+          "capHeightM": 0.0151875
+        },
+        {
+          "copy": "First performances / Open rehearsal",
+          "font": "NimbusRoman-Italic.otf",
+          "fontSha256": "b7c424e6cb79baddfcdcd9a9d87f9fc4fdd06f0e5160066e2b2e47bcd647c7b9",
+          "box": [
+            0.065,
+            0.881,
+            0.935,
+            0.913
+          ],
+          "capHeightM": 0.01096875
+        },
+        {
+          "copy": "NEW WORKS FROM THE SCHOOL / RECITAL ROOM",
+          "font": "NimbusMonoPS-Regular.otf",
+          "fontSha256": "4f225ca8e13acb16f733ce741693105e527d5f7a5443901b9ecc190fca4e149b",
+          "box": [
+            0.065,
+            0.951,
+            0.935,
+            0.98
+          ],
+          "capHeightM": 0.00675
+        }
+      ],
+      "coverage": 0.13082522411262307,
+      "coverageSha256": "39385c2baaca911cc1227ef561f31b2ca151cff2f70729f5fb52edb32c1bd852",
+      "paperFinish": {
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "coverageSha256": "",
+        "immutableCoverage": true,
+        "sampledStockOutsidePigmentImmutable": false,
+        "physicalScalesM": {
+          "field": 0.095,
+          "minimumNormalPeriod": 0.00253125,
+          "inkRelief": 7e-06
+        },
+        "structure": {
+          "kind": "subpixel manufacture",
+          "actualPitchM": null,
+          "resolved": false
+        },
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "conditionRanges": {
+          "deposit": [
+            0.0,
+            0.0
+          ],
+          "contact": [
+            0.0,
+            0.0
+          ],
+          "edgeLoss": [
+            0.0,
+            0.0
+          ]
+        },
+        "channelRanges": {
+          "roughness": [
+            0.8547941176470588,
+            0.9061078431372549
+          ],
+          "metallic": [
+            0.0,
+            0.0
+          ]
+        },
+        "bakedLighting": false,
+        "glyphDamage": false
+      },
+      "lightingBaked": false,
+      "fontSubstitution": false
+    },
+    {
+      "id": "graphic_score",
+      "title": "Read the room",
+      "kind": "graphic-score-workshop",
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "mesh": "institution_poster_graphic_score",
+      "flatMesh": "institution_poster_graphic_score_flat",
+      "tapedMesh": "institution_poster_graphic_score_taped",
+      "experimental": true,
+      "rasterWidthPx": 704,
+      "materialWidthPx": 192,
+      "paperSegments": [
+        12,
+        8
+      ],
+      "pixels": [
+        704,
+        997
+      ],
+      "materialPixels": [
+        192,
+        272
+      ],
+      "regions": [
+        {
+          "copy": "ELLERY",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.065,
+            0.035,
+            0.4,
+            0.065
+          ],
+          "capHeightM": 0.0135
+        },
+        {
+          "copy": "EXPERIMENTAL MUSIC",
+          "font": "NimbusMonoPS-Regular.otf",
+          "fontSha256": "4f225ca8e13acb16f733ce741693105e527d5f7a5443901b9ecc190fca4e149b",
+          "box": [
+            0.52,
+            0.035,
+            0.935,
+            0.065
+          ],
+          "capHeightM": 0.00675
+        },
+        {
+          "copy": "READ",
+          "font": "NimbusRoman-Bold.otf",
+          "fontSha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
+          "box": [
+            0.065,
+            0.11,
+            0.935,
+            0.225
+          ],
+          "capHeightM": 0.09449999999999999
+        },
+        {
+          "copy": "THE ROOM",
+          "font": "NimbusRoman-Bold.otf",
+          "fontSha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
+          "box": [
+            0.065,
+            0.23,
+            0.935,
+            0.31
+          ],
+          "capHeightM": 0.04978125
+        },
+        {
+          "copy": "GRAPHIC SCORES",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.065,
+            0.765,
+            0.935,
+            0.81
+          ],
+          "capHeightM": 0.0219375
+        },
+        {
+          "copy": "OPEN WORKSHOP",
+          "font": "NimbusMonoPS-Regular.otf",
+          "fontSha256": "4f225ca8e13acb16f733ce741693105e527d5f7a5443901b9ecc190fca4e149b",
+          "box": [
+            0.065,
+            0.815,
+            0.935,
+            0.85
+          ],
+          "capHeightM": 0.0135
+        },
+        {
+          "copy": "Marks, gestures, listening",
+          "font": "NimbusRoman-Italic.otf",
+          "fontSha256": "b7c424e6cb79baddfcdcd9a9d87f9fc4fdd06f0e5160066e2b2e47bcd647c7b9",
+          "box": [
+            0.065,
+            0.87,
+            0.935,
+            0.907
+          ],
+          "capHeightM": 0.014343749999999999
+        },
+        {
+          "copy": "MUSIC SOCIETY / VOICES + INSTRUMENTS",
+          "font": "NimbusMonoPS-Regular.otf",
+          "fontSha256": "4f225ca8e13acb16f733ce741693105e527d5f7a5443901b9ecc190fca4e149b",
+          "box": [
+            0.065,
+            0.95,
+            0.935,
+            0.98
+          ],
+          "capHeightM": 0.00675
+        }
+      ],
+      "coverage": 0.15769964751652463,
+      "coverageSha256": "3cc3ce35bc12fdd99ace55ecf3677e77c350d97b36b6a03b7ad7ab0effa9e9db",
+      "paperFinish": {
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "coverageSha256": "",
+        "immutableCoverage": true,
+        "sampledStockOutsidePigmentImmutable": false,
+        "physicalScalesM": {
+          "field": 0.095,
+          "minimumNormalPeriod": 0.00253125,
+          "inkRelief": 7e-06
+        },
+        "structure": {
+          "kind": "subpixel manufacture",
+          "actualPitchM": null,
+          "resolved": false
+        },
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "conditionRanges": {
+          "deposit": [
+            0.0,
+            0.0
+          ],
+          "contact": [
+            0.0,
+            0.0
+          ],
+          "edgeLoss": [
+            0.0,
+            0.0
+          ]
+        },
+        "channelRanges": {
+          "roughness": [
+            0.8534803921568628,
+            0.9071078431372549
+          ],
+          "metallic": [
+            0.0,
+            0.0
+          ]
+        },
+        "bakedLighting": false,
+        "glyphDamage": false
+      },
+      "lightingBaked": false,
+      "fontSubstitution": false
+    },
+    {
+      "id": "prepared",
+      "title": "Objects for piano",
+      "kind": "prepared-piano-promotion",
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "mesh": "institution_poster_prepared",
+      "flatMesh": "institution_poster_prepared_flat",
+      "tapedMesh": "institution_poster_prepared_taped",
+      "experimental": true,
+      "rasterWidthPx": 704,
+      "materialWidthPx": 192,
+      "paperSegments": [
+        12,
+        8
+      ],
+      "pixels": [
+        704,
+        997
+      ],
+      "materialPixels": [
+        192,
+        272
+      ],
+      "regions": [
+        {
+          "copy": "ELLERY",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.065,
+            0.035,
+            0.4,
+            0.065
+          ],
+          "capHeightM": 0.0135
+        },
+        {
+          "copy": "EXPERIMENTAL MUSIC",
+          "font": "NimbusMonoPS-Regular.otf",
+          "fontSha256": "4f225ca8e13acb16f733ce741693105e527d5f7a5443901b9ecc190fca4e149b",
+          "box": [
+            0.52,
+            0.035,
+            0.935,
+            0.065
+          ],
+          "capHeightM": 0.00675
+        },
+        {
+          "copy": "OBJECTS",
+          "font": "NimbusSansNarrow-Bold.otf",
+          "fontSha256": "6d7cec07f5a9035e208532dab35a51312aef4a7f26eb524dd614c9fcd97c3264",
+          "box": [
+            0.065,
+            0.115,
+            0.935,
+            0.235
+          ],
+          "capHeightM": 0.08606249999999999
+        },
+        {
+          "copy": "FOR PIANO",
+          "font": "NimbusSansNarrow-Bold.otf",
+          "fontSha256": "6d7cec07f5a9035e208532dab35a51312aef4a7f26eb524dd614c9fcd97c3264",
+          "box": [
+            0.065,
+            0.245,
+            0.935,
+            0.32
+          ],
+          "capHeightM": 0.053156249999999995
+        },
+        {
+          "copy": "PREPARED PIANO + TAPE",
+          "font": "NimbusSans-Bold.otf",
+          "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+          "box": [
+            0.065,
+            0.795,
+            0.935,
+            0.838
+          ],
+          "capHeightM": 0.021093749999999998
+        },
+        {
+          "copy": "Metal, felt, wood and recorded sound",
+          "font": "NimbusRoman-Italic.otf",
+          "fontSha256": "b7c424e6cb79baddfcdcd9a9d87f9fc4fdd06f0e5160066e2b2e47bcd647c7b9",
+          "box": [
+            0.065,
+            0.852,
+            0.935,
+            0.892
+          ],
+          "capHeightM": 0.01265625
+        },
+        {
+          "copy": "THE SOLO RECITAL SERIES / ELLERY",
+          "font": "NimbusMonoPS-Regular.otf",
+          "fontSha256": "4f225ca8e13acb16f733ce741693105e527d5f7a5443901b9ecc190fca4e149b",
+          "box": [
+            0.065,
+            0.95,
+            0.935,
+            0.98
+          ],
+          "capHeightM": 0.00675
+        }
+      ],
+      "coverage": 0.2562438038268102,
+      "coverageSha256": "b3307579d9aadb1298062b72ee1cce077bb1366639f6ad6d661a9d0db4f5264c",
+      "paperFinish": {
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "coverageSha256": "",
+        "immutableCoverage": true,
+        "sampledStockOutsidePigmentImmutable": false,
+        "physicalScalesM": {
+          "field": 0.095,
+          "minimumNormalPeriod": 0.00253125,
+          "inkRelief": 7e-06
+        },
+        "structure": {
+          "kind": "subpixel manufacture",
+          "actualPitchM": null,
+          "resolved": false
+        },
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "conditionRanges": {
+          "deposit": [
+            0.0,
+            0.0
+          ],
+          "contact": [
+            0.0,
+            0.0
+          ],
+          "edgeLoss": [
+            0.0,
+            0.0
+          ]
+        },
+        "channelRanges": {
+          "roughness": [
+            0.8530686274509803,
+            0.9073039215686274
+          ],
+          "metallic": [
+            0.0,
+            0.0
+          ]
+        },
+        "bakedLighting": false,
+        "glyphDamage": false
+      },
+      "lightingBaked": false,
+      "fontSubstitution": false
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 // Geometry owns the motion envelope and fixed roots. This controller only
 // drives the four authored morph targets from the saved simulation clock.
 import {driveLoadAt} from '../deterioration.js';
-import {cagePhysiologyAt} from './physiology.js';
+import {cagePhysiologyAt,COSTAL_PHYSIOLOGY} from './physiology.js';
 const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
 const smooth=v=>{const t=clamp(v);return t*t*t*(10+t*(-15+6*t));};
 function value(frame,key,fallback){return Number.isFinite(frame?.[key])?clamp(frame[key]):fallback;}
@@ -24,7 +24,22 @@ export function ribPose({timeSec=0,furthest=0,distance=850,id='cut-rib',evolutio
  return{joints:{},morphs:{tension:clamp(tension),shear:clamp(shear),breath:clamp(breath),recoil:clamp(recoil)},
   // Optional scalar hints never translate a root or close the driveable gap.
   ribOpening:clamp(ribs*(.64+.22*load.value)),waveCurl:clamp(wave*(.57+.31*load.value)),sheetShear:clamp(shear),
-  motion:{clock:'programTime',timeSec,furthest,distance,id,rootTranslation:[0,0,0],load,physiology,phases:{outer:load.phase,inner:load.innerPhase,wave:load.phase,organ:physiology.phase}}};
+  motion:{clock:'programTime',timeSec,furthest,distance,id,activation,rootTranslation:[0,0,0],load,physiology,phases:{outer:load.phase,inner:load.innerPhase,wave:load.phase,organ:physiology.phase}}};
+}
+
+// Organs share the cage's saved clock and irreversible unfolding. Cardiac
+// contraction uses the existing tension target on the heart and its attached
+// coronary tree; their shear target is a small respiratory ride authored into
+// the asset. Other tissues keep the cage's respiratory/wince target meanings.
+export const COSTAL_CARDIAC=Object.freeze({periodSeconds:1.22,contractionSeconds:.11,releaseSeconds:.36,secondaryStartSeconds:.34,secondaryPeakSeconds:.40,secondaryEndSeconds:.60});
+export function anatomyOrganPose(mesh,options={}){
+ const pose=ribPose(options),cardiac=mesh==='cut_heart'||mesh==='cut_coronary_vessels';
+ if(!cardiac)return{...pose,motion:{...pose.motion,anatomyRole:'respiratory'}};
+ const phase=((pose.motion.timeSec-(pose.motion.distance-COSTAL_PHYSIOLOGY.originMetres)*COSTAL_PHYSIOLOGY.secondsPerMetre)%COSTAL_CARDIAC.periodSeconds+COSTAL_CARDIAC.periodSeconds)%COSTAL_CARDIAC.periodSeconds;
+ const main=smooth(phase/COSTAL_CARDIAC.contractionSeconds)*(1-smooth((phase-COSTAL_CARDIAC.contractionSeconds)/(COSTAL_CARDIAC.releaseSeconds-COSTAL_CARDIAC.contractionSeconds)));
+ const secondary=.24*smooth((phase-COSTAL_CARDIAC.secondaryStartSeconds)/(COSTAL_CARDIAC.secondaryPeakSeconds-COSTAL_CARDIAC.secondaryStartSeconds))*(1-smooth((phase-COSTAL_CARDIAC.secondaryPeakSeconds)/(COSTAL_CARDIAC.secondaryEndSeconds-COSTAL_CARDIAC.secondaryPeakSeconds)));
+ const pulse=clamp(main+secondary),activation=pose.motion.activation;
+ return{...pose,morphs:{...pose.morphs,tension:activation*(.06+.88*pulse),shear:activation*(.08+.78*pose.motion.physiology.respiration)},motion:{...pose.motion,anatomyRole:'cardiac',cardiac:{phase,pulse,periodSeconds:COSTAL_CARDIAC.periodSeconds}}};
 }
 
 // Wave breath is its authored, irreversible macro deformation from rolling

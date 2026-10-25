@@ -18,7 +18,8 @@ import sharp from 'sharp';
 import { STOP_LISTENING_MESH, STOP_LISTENING_SHEET_DOCUMENT, STOP_LISTENING_EAR_SCALE } from '../../src/data/stop-listening.js';
 
 const root = path.resolve(import.meta.dirname, '../..');
-const anatomyOnly = process.argv.includes('--anatomy-only');
+const surfaceOnly = process.argv.includes('--surface-only');
+const anatomyOnly = process.argv.includes('--anatomy-only') || surfaceOnly;
 const work = path.join(root, 'artifacts/stop-listening');
 const script = path.join(import.meta.dirname, 'build-stop-listening.py');
 const out = path.join(root, 'public/assets/stop-listening.glb');
@@ -62,7 +63,15 @@ delete json.extensionsUsed; delete json.extensionsRequired; strip(json);
 // of the legacy unmapped roughness-squaring conversion. No renderer-wide
 // material or post-process setting is changed by this pack.
 for (const mat of json.materials || []) if (/^stop listening (ear |floor wet$)/.test(mat.name || '')) {
-  mat.extras = { materialFactors: 'gltf' };
+  mat.extras = { materialFactors: 'gltf', ...(/^stop listening ear /.test(mat.name)
+    ? {tissueSurface:{version:1,profile:'severed-auricle',preservePigment:true,localSpecular:true}} : {}) };
+  if(/^stop listening ear /.test(mat.name)){
+    const role=mat.name.split(' ').at(-1);
+    mat.pbrMetallicRoughness.baseColorFactor={skin:[1,1,1,1],deep:[1,1,1,1],wound:[.58,.22,.25,1]}[role];
+    mat.pbrMetallicRoughness.metallicFactor=0;
+    mat.pbrMetallicRoughness.roughnessFactor=role==='wound'?.45:1;
+    mat.occlusionTexture={index:mat.pbrMetallicRoughness.metallicRoughnessTexture.index,strength:.5};
+  }
 }
 if (json.animations || json.skins || json.accessors.some((a) => a.sparse)) throw new Error('unsupported dynamic GLB');
 if (json.nodes.some((n) => n.matrix || n.translation || n.rotation || n.scale || n.children?.length)) throw new Error('identity flat roots required');
@@ -104,23 +113,69 @@ if (anatomyOnly) {
     def.bufferView = viewFor(source, def.bufferView); next.accessors.push(def); accessors.set(key, index); return index;
   };
   next.materials = structuredClone(previous.json.materials || []);
+  next.images=structuredClone(previous.json.images||[]);
+  next.textures=structuredClone(previous.json.textures||[]);
+  next.samplers=structuredClone(previous.json.samplers||[]);
+  const imageSources=next.images.map(()=>previous),freshImages=new Map(),freshTextures=new Map(),freshSamplers=new Map();
+  const imageFor=id=>{
+    if(freshImages.has(id))return freshImages.get(id);
+    const copy=structuredClone(fresh.json.images[id]);
+    if(!Number.isInteger(copy.bufferView))throw Error('Ear tissue images must be embedded in the standalone pack');
+    let index=copy.name?next.images.findIndex(image=>image.name===copy.name):-1;
+    if(index<0){index=next.images.length;next.images.push(copy);imageSources.push(fresh);}
+    else{next.images[index]=copy;imageSources[index]=fresh;}
+    freshImages.set(id,index);return index;
+  };
+  const textureFor=id=>{
+    if(freshTextures.has(id))return freshTextures.get(id);
+    const copy=structuredClone(fresh.json.textures[id]);copy.source=imageFor(copy.source);
+    if(Number.isInteger(copy.sampler)){
+      if(!freshSamplers.has(copy.sampler)){
+        const sampler=fresh.json.samplers[copy.sampler];let index=next.samplers.findIndex(s=>JSON.stringify(s)===JSON.stringify(sampler));
+        if(index<0){index=next.samplers.length;next.samplers.push(structuredClone(sampler));}
+        freshSamplers.set(copy.sampler,index);
+      }
+      copy.sampler=freshSamplers.get(copy.sampler);
+    }
+    let index=next.textures.findIndex(t=>JSON.stringify(t)===JSON.stringify(copy));
+    if(index<0){index=next.textures.length;next.textures.push(copy);}
+    freshTextures.set(id,index);return index;
+  };
   const materialFor = (id) => {
-    const mat = fresh.json.materials[id], existing = next.materials.findIndex((m) => m.name === mat.name);
+    const mat=structuredClone(fresh.json.materials[id]);
+    for(const ref of [mat.pbrMetallicRoughness?.baseColorTexture,mat.pbrMetallicRoughness?.metallicRoughnessTexture,mat.normalTexture,mat.occlusionTexture,mat.emissiveTexture])
+      if(ref)ref.index=textureFor(ref.index);
+    const existing = next.materials.findIndex((m) => m.name === mat.name);
     if (existing >= 0) { next.materials[existing] = structuredClone(mat); return existing; }
     next.materials.push(structuredClone(mat)); return next.materials.length - 1;
   };
   next.meshes = previous.json.meshes.map((old) => {
-    const isNew = anatomyNames.includes(old.name), source = isNew ? fresh : previous;
+    const isNew = !surfaceOnly && anatomyNames.includes(old.name), source = isNew ? fresh : previous;
     const mesh = structuredClone(isNew ? fresh.json.meshes.find((m) => m.name === old.name) : old);
     if (!mesh) throw new Error(`missing replacement anatomy ${old.name}`);
     for (const primitive of mesh.primitives) {
       primitive.indices = accessorFor(source, primitive.indices);
       primitive.attributes = Object.fromEntries(Object.entries(primitive.attributes).map(([name, id]) => [name, accessorFor(source, id)]));
       if (isNew) primitive.material = materialFor(primitive.material);
+      else if(surfaceOnly&&/^stop listening ear /.test(previous.json.materials[primitive.material]?.name||'')){
+        const name=previous.json.materials[primitive.material].name;
+        primitive.material=materialFor(fresh.json.materials.findIndex(mat=>mat.name===name));
+      }
     }
     return mesh;
   });
-  for (const image of next.images || []) if (Number.isInteger(image.bufferView)) image.bufferView = viewFor(previous, image.bufferView);
+  // Repeated anatomy-only builds must replace the tissue maps, not retain
+  // unreachable old textures which the runtime would still upload to the GPU.
+  const refs=next.materials.flatMap(mat=>[mat.pbrMetallicRoughness?.baseColorTexture,
+    mat.pbrMetallicRoughness?.metallicRoughnessTexture,mat.normalTexture,mat.occlusionTexture,mat.emissiveTexture].filter(Boolean));
+  const textureIds=[...new Set(refs.map(ref=>ref.index))],textureMap=new Map(textureIds.map((id,i)=>[id,i]));
+  next.textures=textureIds.map(id=>next.textures[id]);for(const ref of refs)ref.index=textureMap.get(ref.index);
+  const imageIds=[...new Set(next.textures.map(texture=>texture.source))],imageMap=new Map(imageIds.map((id,i)=>[id,i]));
+  next.images=imageIds.map(id=>next.images[id]);const keptImageSources=imageIds.map(id=>imageSources[id]);
+  for(const texture of next.textures)texture.source=imageMap.get(texture.source);
+  const samplerIds=[...new Set(next.textures.map(texture=>texture.sampler).filter(Number.isInteger))],samplerMap=new Map(samplerIds.map((id,i)=>[id,i]));
+  next.samplers=samplerIds.map(id=>next.samplers[id]);for(const texture of next.textures)if(Number.isInteger(texture.sampler))texture.sampler=samplerMap.get(texture.sampler);
+  for (const [i,image] of next.images.entries()) if (Number.isInteger(image.bufferView)) image.bufferView = viewFor(keptImageSources[i], image.bufferView);
   next.buffers = [{ byteLength }]; json = next; bin = Buffer.concat(pieces);
 }
 
@@ -135,7 +190,7 @@ fs.writeFileSync(out, Buffer.concat([head, ch(0x4e4f534a, jsonChunk), ch(0x004e4
 // ── what the game and the specs read ────────────────────────────────────────
 const built = JSON.parse(fs.readFileSync(report, 'utf8'));
 if (anatomyOnly) {
-  for (const mesh of json.meshes) if (!built.meshes[mesh.name]) {
+  for (const mesh of json.meshes) if (surfaceOnly || !built.meshes[mesh.name]) {
     const positions = mesh.primitives.map((p) => json.accessors[p.attributes.POSITION]);
     built.meshes[mesh.name] = {
       triangles: mesh.primitives.reduce((n, p) => n + json.accessors[p.indices].count / 3, 0),
@@ -154,12 +209,15 @@ export const STOP_LISTENING_FLESH_BOUNDS = Object.freeze(${JSON.stringify(built.
 `);
 fs.writeFileSync(stats, `${JSON.stringify({
   bytes: fs.statSync(out).size, triangles: built.triangles, earScale: built.earScale, artRevision: built.artRevision,
+  tissueMaps:{width:512,height:512,uniqueTextures:3,channels:['sRGB pigment','tangent normal','R occlusion, G roughness, B metallic'],
+    approximateRgba8ResidencyWithMipmaps:3*512*512*4*4/3},
   ...(built.heapSupport ? {heapSupport: Object.fromEntries(Object.entries(built.heapSupport).map(([name, {contacts, ...summary}]) => [name, summary]))} : {}),
   meshes: Object.fromEntries(Object.entries(built.meshes).sort().map(([name, m]) => [name, { triangles: m.triangles, materials: m.materials }])),
 }, null, 2)}\n`);
 fs.writeFileSync(credits, `${JSON.stringify({
   pack: 'stop-listening',
   source: 'Modelled procedurally in Blender by tools/chunk_surfer/build-stop-listening.py; no third-party meshes or textures.',
+  anatomyReference:'https://elementsofmorphology.nih.gov/anatomy-ear.shtml (landmark reference only; no reference pixels or meshes copied)',
   fonts: 'Take sheet set in the vendored URW base35 faces (assets/fonts, AGPL-3.0 with the font embedding exception).',
 }, null, 2)}\n`);
 fs.mkdirSync(path.dirname(sheetOut), { recursive: true });

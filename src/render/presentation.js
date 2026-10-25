@@ -85,13 +85,22 @@ export function drawMachinePanel(x, y, w, h, {
   // keyboard. Takes precedence over `footer` when both are given, so a caller
   // can migrate one surface at a time.
   footerParts = null,
-  finish = 'aluminum', glass = {}, aperture: hasAperture = true, drawContent = null,
+  finish = 'aluminum', glass = {}, aperture: hasAperture = true, apertureBounds = null, drawContent = null,
 } = {}) {
   // Same guard. god-menu.js asks for theme:'red' for the whole developer panel
   // and has always drawn amber.
   if (THEMES[theme]) setActiveSurface(theme);
   if (scrim) uiFill(0, 0, 999, 999, 'rgba(2,2,3,0.74)');
-  const aperture = machinePanelAperture(x, y, w, h);
+  const standardAperture = machinePanelAperture(x, y, w, h);
+  // A multi-display instrument may machine a smaller main opening while
+  // retaining its established external faceplate. Other panels keep exactly
+  // their standard aperture; a custom cutout cannot escape that footprint.
+  const customAperture = apertureBounds && ['x','y','w','h'].every(key=>Number.isFinite(apertureBounds[key]))
+    && apertureBounds.w>0 && apertureBounds.h>0
+    && apertureBounds.x>=standardAperture.x && apertureBounds.y>=standardAperture.y
+    && apertureBounds.x+apertureBounds.w<=standardAperture.x+standardAperture.w+1e-7
+    && apertureBounds.y+apertureBounds.h<=standardAperture.y+standardAperture.h+1e-7;
+  const aperture = customAperture ? {...apertureBounds} : standardAperture;
   const optical = glass && typeof glass === 'object' ? glass : {};
   uiDraw(({ ctx, dpr, cellW, cellH }) => {
     const px = x * cellW * dpr, py = y * cellH * dpr;

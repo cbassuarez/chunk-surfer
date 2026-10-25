@@ -1,7 +1,9 @@
 // One scene-local renderer for the entire shelf. The objects are independent
 // GLBs, not portraits or painted placeholders. No animation loop is installed:
 // the owning scene supplies time and releases every GPU resource on exit.
-import { uiDraw, uiCellMetrics } from './ui.js';
+import { uiDraw, uiCellMetrics, uiCanvasSize } from './ui.js';
+import { atlasDpr } from './atlas.js';
+import { createTransparentPixelMesh } from './pixel-mesh/transparent.js';
 import { assetUrl } from '../platform/paths.js';
 import { vanKitModel } from '../data/van-kit-models.js';
 import { itemPortrait } from '../data/item-portraits.js';
@@ -14,6 +16,38 @@ import { fitWorldLetteringLine } from './world-lettering-layout.js';
 import { createThreePhysicalPrint } from './three-physical-print.js';
 import { VAN_REAR_PALETTE as FINISH, VAN_REAR_STAGE, VAN_REAR_CASE, vanRearCaseStops,
   vanRearWorldToStage, VAN_REAR_CARGO_LIGHT, VAN_REAR_STRUCTURE } from '../data/van-rear-design.js';
+
+let displaySource = null;
+// The game supplies its existing look/settings authority, as it does for the
+// embodied battle tools. The shelf never imports or starts the world renderer.
+export function setVanWorkbenchDisplaySource(source) {
+  displaySource = typeof source === 'function' ? source : null;
+}
+
+// Source geometry may be capped, but acquired marks are drawn at the actual
+// overlay resolution. Upscaling an already-screened shelf softened its dots
+// and made DPR2 windows acquire a different plate from the surrounding world.
+export function vanWorkbenchDitherFrame(rect, { cellW = 8.45, cellH = 20, dpr = 1,
+  canvasHeight = 0, display = {}, state = {}, now = 0, detail = false } = {}) {
+  const ratio = Math.max(1, Number(dpr) || 1);
+  const width = Math.max(1, Math.round(rect.w * cellW * ratio));
+  const height = Math.max(1, Math.round(rect.h * cellH * ratio));
+  const x = Math.round(rect.x * cellW * ratio), y = Math.round(rect.y * cellH * ratio);
+  const settings = display.settings || {};
+  return { width, height, dpr: 1, worldUnitScale: VAN_REAR_STAGE.metresPerUnit,
+    sceneScale: Math.min(1, 1280 / width, 800 / height),
+    profile: display.profile || 'calm', screen: display.screen,
+    cellSize: settings.cellSize || 'auto', cellScale: ratio,
+    screenScale: display.screenScale ?? ratio,
+    screenOffset: [x, Math.max(0, Number(canvasHeight) - y - height)],
+    snapshot: { clock: Math.max(0, Number(now) || 0),
+      reducedMotion: !!(state.reduceMotion || settings.reduceMotion),
+      reduceFlash: !!(state.reduceFlash || settings.reduceFlash) },
+    // Exposure is applied once by the shared linear-light acquisition. Broad
+    // plywood and enamel keep halftones while lit steel/glass still catch light.
+    exposure: detail ? .78 : .92,
+  };
+}
 
 export function vanWorkbenchModelIds(kit = {}) {
   return { case: 'field-case', headphones: `headphones-${kit.headphones || 'reference'}`,
@@ -77,6 +111,7 @@ export function vanWorkbenchClosedCaseBounds(THREE, model, reference) {
 
 export function createVanWorkbenchStage() {
   let THREE, renderer, camera, scene, loader, disposed = false, initializing = null, lastRender = -Infinity;
+  let dither = null, ditherReady = false, displayOverride = null, presentationKey = '';
   let viewport = null, frameKey = '', dirty = true, suspended = false, error = '', renderCount = 0;
   let shelfFrame = null, detailFrame = null, detailKey = '', detailScene = null, detailCamera = null;
   let currentIds = {}, currentSelected = '', appearance = '', shiftKey = '', paper = null, liveState = {}, catalogue = [];
@@ -227,9 +262,11 @@ export function createVanWorkbenchStage() {
       const { RoomEnvironment } = await import('three/addons/environments/RoomEnvironment.js');
       if (disposed) return;
       renderer = new THREE.WebGLRenderer({ alpha: false, antialias: true, preserveDrawingBuffer: true, powerPreference: 'low-power' });
-      renderer.setPixelRatio(Math.min(1.5, globalThis.devicePixelRatio || 1));
+      // All dimensions below are physical output pixels. The shared shader
+      // handles logical cell/screen scaling explicitly; do not apply DPR twice.
+      renderer.setPixelRatio(1);
       renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.05; renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.toneMappingExposure = .92; renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       scene = new THREE.Scene(); scene.background = new THREE.Color('#0d1719');
       const room = new RoomEnvironment(), pmrem = new THREE.PMREMGenerator(renderer);
       const environment = pmrem.fromScene(room, .07); scene.environment = environment.texture; scene.environmentIntensity = .38;
@@ -257,6 +294,10 @@ export function createVanWorkbenchStage() {
       const detailKeyLight = new THREE.DirectionalLight('#ffe5bc', 2.6); detailKeyLight.position.set(-3, 4, 5); detailScene.add(detailKeyLight);
       const detailRim = new THREE.DirectionalLight('#a2d1ee', 1.5); detailRim.position.set(3, 3, -3); detailScene.add(detailRim);
       detailCamera = new THREE.PerspectiveCamera(32, 1, .1, 40); detailCamera.position.set(2.2, 1.2, 4.5); detailCamera.lookAt(0, 0, 0);
+      dither = createTransparentPixelMesh(THREE, renderer, { assetUrl, profile: 'calm', pressureFinish: false });
+      await dither.ready;
+      if (disposed) return;
+      ditherReady = true; dirty = true;
     })().catch(reason => { error = `3D shelf unavailable: ${reason.message || reason}`; });
     return initializing;
   }
@@ -473,8 +514,14 @@ export function createVanWorkbenchStage() {
     }); dirty = true;
   }
   function frame(rect, state, selected, now) {
-    if (!renderer || disposed || suspended) return;
-    const metrics = uiCellMetrics(), w = Math.max(1, Math.round(rect.w * metrics.cellW)), h = Math.max(1, Math.round(rect.h * metrics.cellH));
+    if (!renderer || !ditherReady || disposed || suspended) return;
+    const display = displayOverride || displaySource?.() || {};
+    const acquisition = vanWorkbenchDitherFrame(rect, { ...uiCellMetrics(), dpr: atlasDpr(),
+      canvasHeight: uiCanvasSize().height, display, state, now });
+    const { width: w, height: h } = acquisition;
+    const nextPresentationKey = JSON.stringify([rect, acquisition.profile, acquisition.screen, acquisition.cellSize,
+      acquisition.cellScale, acquisition.screenScale, acquisition.screenOffset, acquisition.snapshot.reducedMotion, acquisition.snapshot.reduceFlash]);
+    if (nextPresentationKey !== presentationKey) { presentationKey = nextPresentationKey; dirty = true; }
     const key = `${w}:${h}`;
     if (key !== frameKey) {
       frameKey = key; renderer.setSize(w, h, false); const aspect = w / h;
@@ -501,7 +548,8 @@ export function createVanWorkbenchStage() {
     }
     if (dirty && (!moving || now - lastRender >= 1 / 30)) {
       renderer.setSize(w, h, false);
-      renderer.render(scene, camera); lastRender = now; renderCount++; dirty = moving;
+      renderer.toneMappingExposure = acquisition.exposure;
+      dither.render(scene, camera, acquisition); lastRender = now; renderCount++; dirty = moving;
       shelfFrame.width = renderer.domElement.width; shelfFrame.height = renderer.domElement.height;
       shelfFrame.getContext('2d').drawImage(renderer.domElement, 0, 0);
       projected.clear(); for (const [slot, item] of placed) if (item.group.visible) projected.set(slot,
@@ -510,30 +558,37 @@ export function createVanWorkbenchStage() {
     }
     uiDraw(({ ctx, dpr, cellW, cellH }) => {
       ctx.save(); ctx.beginPath(); ctx.rect(rect.x * cellW * dpr, rect.y * cellH * dpr, rect.w * cellW * dpr, rect.h * cellH * dpr); ctx.clip();
-      if (shelfFrame.width > 0) ctx.drawImage(shelfFrame, rect.x * cellW * dpr, rect.y * cellH * dpr, rect.w * cellW * dpr, rect.h * cellH * dpr); ctx.restore();
+      ctx.imageSmoothingEnabled = false;
+      if (shelfFrame.width > 0) ctx.drawImage(shelfFrame, Math.round(rect.x * cellW * dpr), Math.round(rect.y * cellH * dpr), w, h); ctx.restore();
     });
   }
   function detail(rect, slot) {
     if (!placed.has(slot)) slot = workbenchFocusKey(slot, liveState);
-    const item = placed.get(slot); if (!item || !renderer || !detailScene || disposed || suspended) return;
-    const metrics = uiCellMetrics(), w = Math.max(1, Math.round(rect.w * metrics.cellW)), h = Math.max(1, Math.round(rect.h * metrics.cellH));
-    const key = `${item.id}:${appearance}:${w}:${h}`;
+    const item = placed.get(slot); if (!item || !renderer || !ditherReady || !detailScene || disposed || suspended) return;
+    const display = displayOverride || displaySource?.() || {};
+    const acquisition = vanWorkbenchDitherFrame(rect, { ...uiCellMetrics(), dpr: atlasDpr(),
+      canvasHeight: uiCanvasSize().height, display, state: liveState, now: lastRender, detail: true });
+    const { width: w, height: h } = acquisition;
+    const key = `${item.id}:${appearance}:${JSON.stringify([rect, acquisition.profile, acquisition.screen, acquisition.cellSize,
+      acquisition.cellScale, acquisition.screenScale, acquisition.snapshot.reducedMotion, acquisition.snapshot.reduceFlash])}`;
     if (key !== detailKey) {
       detailKey = key; const old = detailScene.getObjectByName('selected-component'); if (old) detailScene.remove(old);
       const object = item.model.clone(true); object.name = 'selected-component'; object.position.set(0, 0, 0); object.scale.setScalar(1); object.rotation.set(0, 0, 0);
       object.updateMatrixWorld(true); const box = vanWorkbenchVisibleBounds(THREE, object), size = box.getSize(vec()), center = box.getCenter(vec());
       const scale = 2.1 / Math.max(size.x, size.y, size.z); object.scale.setScalar(scale); object.position.copy(center.multiplyScalar(-scale));
       detailScene.add(object); detailCamera.aspect = w / h; detailCamera.updateProjectionMatrix();
-      renderer.setSize(w, h, false); renderer.render(detailScene, detailCamera); renderCount++;
+      renderer.setSize(w, h, false); renderer.toneMappingExposure = acquisition.exposure;
+      dither.render(detailScene, detailCamera, acquisition); renderCount++;
       detailFrame.width = renderer.domElement.width; detailFrame.height = renderer.domElement.height;
       detailFrame.getContext('2d').drawImage(renderer.domElement, 0, 0);
     }
-    uiDraw(({ ctx, dpr, cellW, cellH }) => { if (detailFrame.width > 0) ctx.drawImage(detailFrame,
-      rect.x * cellW * dpr, rect.y * cellH * dpr, rect.w * cellW * dpr, rect.h * cellH * dpr); });
+    uiDraw(({ ctx, dpr, cellW, cellH }) => { ctx.imageSmoothingEnabled = false; if (detailFrame.width > 0) ctx.drawImage(detailFrame,
+      Math.round(rect.x * cellW * dpr), Math.round(rect.y * cellH * dpr), w, h); });
   }
   return {
-    draw(rect, { state = {}, selected = 'headphones', selectedGroup = null, focusId = '', witnessFocused=false, now = 0 } = {}) {
+    draw(rect, { state = {}, selected = 'headphones', selectedGroup = null, focusId = '', witnessFocused=false, now = 0, display = null } = {}) {
       init();
+      displayOverride = display;
       const picked = focusId.startsWith('van:object:') ? focusId.slice('van:object:'.length) : null;
       const focused = witnessFocused ? 'witness' : picked || (selectedGroup ? workbenchFocusKey(selectedGroup, state) :
         selected === 'recorder' ? 'recorder' : workbenchFocusKey(selected, state));
@@ -546,17 +601,19 @@ export function createVanWorkbenchStage() {
       recorder?.model.traverse(node => { if (node.isMesh) for (const material of [node.material].flat()) {
         if (node.name === 'recorder-display-substrate') readoutTexture = !!material.map;
         if (material.name.startsWith('recorder-')) materials[material.name] = { color: `#${material.color.getHexString()}`, textured: !!material.map }; } });
-      return { ready: !!renderer && catalogue.length >= 20 && Object.values(currentIds).every(id => assets.has(id)),
+      return { ready: !!renderer && ditherReady && catalogue.length >= 20 && Object.values(currentIds).every(id => assets.has(id)),
       models: Object.fromEntries([...placed].map(([slot, value]) => [slot, value.id])), loading: [...pending.keys()], failed: [...failed], error,
       docked: Object.fromEntries([...placed].filter(([, value]) => value.docked).map(([slot, value]) => [slot, value.bay])),
       materials, readoutTexture, caseOpen, glowing: [...halos].filter(([,value])=>value.visible).map(([key])=>key),
       destinations: Object.fromEntries([...placed].map(([slot, value]) => [slot, value.destination])),
       detailModel: detailKey.split(':')[0] || null, lifts: Object.fromEntries([...placed].map(([slot, value]) => [slot, value.lift])),
-      rendererCount: renderer ? 1 : 0, renderCount, suspended, disposed, selected: currentSelected, targets: this.targets() }; },
+      rendererCount: renderer ? 1 : 0, renderCount, dither: dither?.debug() || null,
+      acquisition: ditherReady ? 'shared-pixel-mesh' : null, suspended, disposed, selected: currentSelected, targets: this.targets() }; },
     suspend() { suspended = true; }, resume() { suspended = false; dirty = true; },
     dispose() {
       if (disposed) return; disposed = true; suspended = true;
       for(const adapter of witnessAppearances.values())adapter.dispose();witnessAppearances.clear();
+      dither?.dispose(); dither = null; ditherReady = false;
       for (const geometry of ownedGeometries) geometry.dispose();
       for (const material of ownedMaterials) material.dispose();
       for (const texture of ownedTextures) texture.dispose();

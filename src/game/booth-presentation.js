@@ -1,20 +1,25 @@
+import {BOOTH_GUARD_STAGE} from '../data/booth-guard-rig.js';
+import {boothGuardDescriptor} from '../render/booth-guard-performance.js';
+
 export const BOOTH_POSE=Object.freeze({IDLE:'idle',LEDGER:'ledger',HANDOFF:'handoff'});
 
 // The man later seen in Wrong Fold, before anything has happened to him.
 // The idle clip is upright with relaxed arms; even frame zero of fold is
 // already seated and braced. Stand on the lodge plinth beside the chair,
-// facing the public approach through the clear window light.
-const GUARD_AT=Object.freeze({x:-.38,y:.20,z:.22});
-export function boothGuardRenderInstance(instance){
+// facing the public approach through the clear window light. The retained
+// facial anatomy sits under a real projecting cap and its baked brim shade;
+// only his Source counterpart has the physical facial absence.
+const GUARD_AT=Object.freeze({x:BOOTH_GUARD_STAGE.origin[0],y:BOOTH_GUARD_STAGE.origin[1],z:BOOTH_GUARD_STAGE.origin[2]});
+export function boothGuardRenderInstance(instance,options={}){
   if(!/^yard-booth-guard-(idle|ledger|handoff)$/.test(instance?.id||''))return instance;
   const yaw=instance.yaw||0,c=Math.cos(yaw),s=Math.sin(yaw),scale=instance.scale||1;
-  return{...instance,mesh:'outskirts_fold_guard',fallbackMesh:instance.mesh,
+  return{...instance,mesh:'overworld_booth_guard',fallbackMesh:instance.mesh,
     fallbackTransform:{x:instance.x,y:instance.y,z:instance.z,yaw:instance.yaw},
     x:instance.x+(GUARD_AT.x*c-GUARD_AT.z*s)*scale,
     y:instance.y+GUARD_AT.y*scale,
     z:instance.z+(GUARD_AT.x*s+GUARD_AT.z*c)*scale,
     yaw:yaw+Math.PI,
-    character:{clip:'idle',time:0,loop:true},
+    character:boothGuardDescriptor({pose:instance.id.slice('yard-booth-guard-'.length),...options}),
   };
 }
 

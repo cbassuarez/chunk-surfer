@@ -25,7 +25,7 @@ test('character upgrades retain their established scene boundaries', () => {
   assert.deepEqual(figures(towerPersonalHandoverPieces(.5)), [['land-boy', 'recordist_boy'], ['land-handover-contractor', 'recordist_contractor']]);
   const boothIds = ['yard-booth-guard-idle', 'yard-booth-guard-ledger', 'yard-booth-guard-handoff'];
   const mapped = CONSERVATORY_PROPS.map(piece => boothGuardRenderInstance({ ...piece, z: piece.y, y: 0 }));
-  assert.deepEqual(mapped.filter(piece => piece.mesh === 'outskirts_fold_guard').map(piece => piece.id), boothIds, 'the upright guard was placed beyond the existing opening-booth states');
+  assert.deepEqual(mapped.filter(piece => piece.mesh === 'overworld_booth_guard').map(piece => piece.id), boothIds, 'the upright guard was placed beyond the existing opening-booth states');
   const unrelated = { id: 'ordinary-prop', mesh: 'chair', x: 0, y: 0, z: 0 };
   assert.equal(boothGuardRenderInstance(unrelated), unrelated, 'the booth replacement is no longer restricted to its existing IDs');
   assert.deepEqual(outskirtsArrivalLayout().filter(piece => piece.mesh === 'outskirts_fold_guard').map(piece => piece.id),

@@ -22,6 +22,16 @@ export function letteringFinishDescriptor(value){
   return Object.freeze({version:1,profile:value.profile,localSpecular:value.localSpecular});
 }
 
+// Authored tissue keeps its pigment under the emergency-colour reservation.
+// This is a material contract, never inferred from a red colour or room name.
+export function tissueSurfaceDescriptor(value){
+  if(value==null)return null;
+  if(value.version!==1||value.profile!=='severed-auricle'||
+    value.preservePigment!==true||value.localSpecular!==true)
+    throw new Error('Invalid tissue surface material contract');
+  return Object.freeze({version:1,profile:value.profile,preservePigment:true,localSpecular:true});
+}
+
 export function propTextureWrap(sampler={}){
   const wrapS=sampler.wrapS??10497,wrapT=sampler.wrapT??10497;
   if(![33071,33648,10497].includes(wrapS)||![33071,33648,10497].includes(wrapT))
@@ -65,8 +75,8 @@ vec3 propMappedNormal(vec3 world,vec3 geometricNormal,vec2 uv,vec3 mapped){
   return result2>1e-20?result*inversesqrt(result2):n;
 }
 
-// Core isotropic metallic/roughness response for explicitly authored lettering
-// assemblies only. Fresnel separates dielectric paint/enamel from conductor
+// Core isotropic metallic/roughness response for explicitly authored finishes.
+// Fresnel separates dielectric paint/enamel/tissue from conductor
 // pigment/metal; no independent bright rim, emission or screen-space resolve.
 // GGX/Smith/Schlick definitions follow Khronos' core material model:
 // https://github.com/KhronosGroup/glTF-Sample-Renderer/blob/main/source/Renderer/shaders/brdf.glsl

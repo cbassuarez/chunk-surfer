@@ -3,6 +3,58 @@
 // Runtime positions are half-metre plan cells. The floorplan door describes
 // which axis its leaves span and which side is indoors; this module turns that
 // into one deterministic camera/body path shared by the runtime and tests.
+import { ZONE,CELL } from '../data/floorplan/legend.js';
+
+export const GET_IN_GOODS_DOOR_ID='dock-grey-exterior';
+
+export function getInEntryHasHappened({flags={},setupComplete=false,hasRealTake=false}={}){
+  return !!(flags['title.shown']||flags['setup.levels']||flags['combat.trained']||setupComplete||hasRealTake);
+}
+
+// Aim at the three-metre leaf surface, not a narrow cone around its centre.
+// At arm's reach either leaf fills the view while the centre can lie far off
+// axis. The ray must still meet the real width and face the door plane.
+export function getInGoodsDoorAim(portal,position,direction,maxCells=5){
+  if(portal?.id!==GET_IN_GOODS_DOOR_ID)return null;
+  const normal=portal.widthAxis==='x'?'y':'x',along=normal==='x'?'y':'x';
+  const plane=normal==='x'?portal.cx:portal.cy,centre=along==='x'?portal.cx:portal.cy;
+  const dn=normal==='x'?direction?.[0]:direction?.[1],da=along==='x'?direction?.[0]:direction?.[1];
+  if(![plane,centre,position?.[normal],position?.[along],dn,da].every(Number.isFinite)||Math.abs(dn)<.12)return null;
+  const distance=(plane-position[normal])/dn;
+  if(distance< -1e-6||distance>maxCells)return null;
+  const lateral=position[along]+da*Math.max(0,distance)-centre;
+  const halfWidth=(Number(portal.aperture?.width)||3)/(2*CELL);
+  if(Math.abs(lateral)>halfWidth+.08)return null;
+  return{aimAngle:0,aimScore:Math.max(0,distance)*.012+Math.abs(lateral)/halfWidth*.08};
+}
+
+// The aperture itself is deliberately unzoned. Room membership alone cannot
+// own entry: a player can focus either goods leaf while standing on its outer
+// threshold cells. The real focus supplies reach/aim/floor; the portal normal
+// distinguishes arrival from the later interaction on the indoor side.
+export function canBeginGetInDoorEntry({
+  portal,position,zone,storyMode=false,inPlan=false,inSpecialSpace=false,
+  active=false,retired=false,flags={},setupComplete=false,hasRealTake=false,
+}={}){
+  if(!storyMode||!inPlan||inSpecialSpace||active||retired||setupComplete
+    ||getInEntryHasHappened({flags,setupComplete,hasRealTake})||!flags.prologueDone||portal?.id!==GET_IN_GOODS_DOOR_ID)return false;
+  if(zone!==ZONE.dock&&zone!==ZONE.none)return false;
+  const normal=portal.widthAxis==='x'?'y':'x';
+  const centre=normal==='x'?portal.cx:portal.cy;
+  const inside=(portal.insideSide??portal.definition?.insideSide)===-1?-1:1;
+  return Number.isFinite(position?.[normal])&&Number.isFinite(centre)
+    &&(position[normal]-centre)*inside<=1e-6;
+}
+
+// Continuing outside after the lodge is still the exterior lesson. Only the
+// actual Get-In landing can resume the recorder setup or its pending memory.
+export function getInSessionAction({atGetIn=false,flags={},setupComplete=false,handoffStarted=false,hasRealTake=false}={}){
+  if(!atGetIn)return 'outside';
+  if(flags['title.shown']&&flags['opening.driveTeaser.pending']&&!flags['opening.driveTeaser.consumed'])return 'drive';
+  if(handoffStarted||setupComplete)return 'complete';
+  if(flags.prologueDone&&!getInEntryHasHappened({flags,setupComplete,hasRealTake}))return 'title';
+  return flags.prologueDone?'tutorial':'outside';
+}
 
 export const GET_IN_DOOR_ENTRY=Object.freeze({
   duration:2.85,

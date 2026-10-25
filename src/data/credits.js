@@ -2,7 +2,9 @@ import { SOURCE_DEMOLITION_AUDIO_SOURCES } from './source-demolition-audio.js';
 import { SHEET_MUSIC } from './sheet-music.js';
 import { STOP_LISTENING_SOURCES } from './stop-listening.js';
 import { CHAPEL_SERVICE_AUDIO_SOURCES } from './chapel-service-audio.js';
+import { CHAPEL_CHOIR_SOURCE } from './chapel-choir.js';
 import { ST_BRENDANS_AUDIO_SOURCES } from './st-brendans-audio.js';
+import { STANDING_TEAR_REPERTOIRE } from './standing-tear-memory-score.js';
 
 export const CREDIT_RECORD_TITLE = 'RELEASE RECORD';
 
@@ -82,6 +84,14 @@ export const CREDITS = Object.freeze([
     ]),
   }),
   Object.freeze({
+    heading: 'Standing Tear — Retained Music',
+    lines: Object.freeze(STANDING_TEAR_REPERTOIRE.flatMap(source=>[
+      source.attribution||`${source.composer} — ${source.title} — ${source.performer} (${source.licence})`,
+      ...(source.kind==='recording'?[source.source,source.licenceUrl]:[]),
+      `Adapted: ${source.changes}`,
+    ])),
+  }),
+  Object.freeze({
     heading: 'Sound Effect Recordings',
     lines: Object.freeze([
       ...soundEffectCredits(),
@@ -98,6 +108,15 @@ export const CREDITS = Object.freeze([
       ]),
       'Adapted: excerpts, levelling, world placement and procedural room tail',
       'Latin recitations and a recorded congregation; assembled fictional service',
+    ]),
+  }),
+  Object.freeze({
+    heading: 'Chapel Choir — Provisional Ensemble Treatment',
+    lines: Object.freeze([
+      `${CHAPEL_CHOIR_SOURCE.composer}, ${CHAPEL_CHOIR_SOURCE.title} — ${CHAPEL_CHOIR_SOURCE.performer} (${CHAPEL_CHOIR_SOURCE.licence})`,
+      CHAPEL_CHOIR_SOURCE.url, CHAPEL_CHOIR_SOURCE.licenceUrl,
+      `Adapted: ${CHAPEL_CHOIR_SOURCE.changes}`,
+      'Five-part recorded ensemble mix; independent six-part recording pending. Original gain treatment; not a performance or reproduction of Marcoll’s Amproprifications.',
     ]),
   }),
   Object.freeze({

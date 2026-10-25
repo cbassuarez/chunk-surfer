@@ -1,3 +1,4 @@
+import { resolveTorchFrame, normalizeTorchOptics, TORCH_OPTICS_GLSL } from './torch-optics.js';
 // The first nothingness is finite architecture in an unlit, horizonless field.
 // Its geometry is fixed in world metres. Only the receiving deck moves. The
 // existing prop pack lends its real grating, rails and lift hardware;
@@ -160,7 +161,7 @@ in vec3 vWorld,vNormal,vBase;
 in vec2 vUv;
 in float vGrain,vLocalHeight,vTake;
 uniform float uRoomTaken;
-uniform vec3 uEye,uForward,uTorchColour,uEmissive;
+uniform vec3 uEye,uForward,uTorchOrigin,uTorchRight,uTorchUp,uTorchColour,uEmissive;
 uniform vec4 uTorch; // power, range multiplier, penumbra cosine, hotspot cosine
 uniform float uTorchSpill,uShoulder,uGlow,uMetallic,uRoughness,uUseTex,uClipTop,uRecordingExposure;
 uniform float uPrintedPolarity,uPrintedCoverage;
@@ -169,6 +170,7 @@ uniform sampler2D uTex,uSourceTex;
 layout(location=0) out vec4 o;
 layout(location=1) out vec4 oMark;
 ${PRINTED_SURFACE_GLSL}
+${TORCH_OPTICS_GLSL}
 void main(){
   // The borrowed catwalk's perimeter rails belong to a belfry. Keep its real
   // grating and underframe; this lift has its own open-ended safety railwork.
@@ -208,21 +210,19 @@ void main(){
   base*=1.0+grain*(1.0-smoothstep(.02,.12,length(fwidth(plane))))*step(.5,vGrain)-seam*.055*step(.5,vGrain);
   float hemisphere=.22+.16*max(n.y,0.0)+.11*max(dot(n,normalize(vec3(-.4,.7,.55))),0.0);
   vec3 incident=vec3(.67,.74,.77)*hemisphere;
-  float reach=10.0*max(.35,uTorch.y);
-  float finite=1.0-smoothstep(reach*.62,reach,distanceM);
-  float axis=dot(-facing,uForward);
-  float cone=smoothstep(uTorch.z,uTorch.w,axis);
-  float spill=smoothstep(.35,uTorch.z,axis)*uTorchSpill;
-  float fall=1.0/(1.0+.10*distanceM+.045*distanceM*distanceM);
-  float lamp=(cone+spill)*uTorch.x*finite*fall*max(dot(n,facing),0.0)*2.4;
-  lamp=lamp/(1.0+max(.6,uShoulder)*lamp);
+  vec3 toLamp=uTorchOrigin-vWorld;float lampDistance=length(toLamp);vec3 lampDirection=normalize(toLamp);
+  float reach=10.0*max(.01,uTorch.y);
+  float finite=1.0-smoothstep(reach*.62,reach,lampDistance);
+  float cone=torchAngular(-toLamp,uForward,uTorchRight,uTorchUp,uTorch.zw,uTorchSpill);
+  float fall=torchFalloff(lampDistance,uTorch.y);
+  float lamp=torchReceive(cone*uTorch.x*finite*fall*max(dot(n,lampDirection),0.0)*3.0,uShoulder);
   incident+=uTorchColour*lamp;
   for(int i=0;i<3;i++){
     vec3 delta=uLights[i].xyz-vWorld;float d=length(delta);
     float attenuation=pow(clamp(1.0-d/(i==0?5.5:5.2),0.0,1.0),2.0);
     incident+=vec3(1.0,.69,.36)*attenuation*max(dot(n,normalize(delta)),.12)*uLights[i].w;
   }
-  float spec=pow(max(dot(n,facing),0.0),mix(48.0,8.0,uRoughness))*cone*fall*finite*uTorch.x*mix(.018,.10,uMetallic);
+  float spec=pow(max(dot(n,normalize(lampDirection+facing)),0.0),mix(48.0,8.0,uRoughness))*cone*fall*finite*uTorch.x*mix(.018,.10,uMetallic);
   vec3 colour=base*incident+uTorchColour*spec/(1.0+spec)+uEmissive+vec3(1.0,.63,.26)*uGlow;
   // Source records this boundary at a higher exposure than the pale shore.
   // Compress received highlights before that acquisition, retaining the cut
@@ -355,9 +355,10 @@ export function sourceShoreDraw({frame,camX,camY,camZ,yaw=0,pitch=0,width:w,heig
   if(!(boundaryOnly?sourceShoreBoundaryVisible(frame):sourceShoreRenderActive(frame))||!materialProgram)return false;
   resize(w,h);uploadGeometry(frame,boundaryOnly);
   const camera=horizonCamera({camX,camY,camZ,yaw,pitch,aspect:w/h,...SOURCE_SHORE_RANGE});
-  const cp=Math.cos(pitch),ty=yaw+(Number(torch.yawOffset)||0),forward=[Math.sin(ty)*cp,Math.sin(pitch),-Math.cos(ty)*cp];
+  const lamp=resolveTorchFrame({eye:[camX,camY,camZ],yaw,pitch,yawOffset:Number(torch.yawOffset)||0}),forward=lamp.forward;
+  torch={...torch,...normalizeTorchOptics(torch)};
   gl.bindFramebuffer(gl.FRAMEBUFFER,hullFbo);gl.drawBuffers([gl.COLOR_ATTACHMENT0,gl.COLOR_ATTACHMENT1]);gl.viewport(0,0,w,h);gl.disable(gl.BLEND);gl.enable(gl.DEPTH_TEST);gl.depthMask(true);gl.depthFunc(gl.LEQUAL);gl.disable(gl.CULL_FACE);gl.clearColor(0,0,0,0);gl.clearDepth(1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
-  gl.useProgram(materialProgram);gl.uniformMatrix4fv(mu('uView'),false,camera.view);gl.uniformMatrix4fv(mu('uProjection'),false,camera.projection);gl.uniformMatrix4fv(mu('uModel'),false,IDENTITY);gl.uniform3f(mu('uEye'),camX,camY,camZ);gl.uniform3fv(mu('uForward'),forward);gl.uniform3fv(mu('uTorchColour'),torch.color||[1,.95,.86]);gl.uniform4f(mu('uTorch'),clamp(torch.power),clamp(torch.reach,.35,1.25),clamp(torch.coneInner??.84,.72,.97),clamp(torch.coneOuter??.96,.75,.985));gl.uniform1f(mu('uTorchSpill'),clamp(torch.spill??.08,0,.12));gl.uniform1f(mu('uShoulder'),clamp(torch.shoulder??.75,0,2));gl.uniform1f(mu('uLiftFloor'),Number(frame.lift.floor)||0);gl.uniform1f(mu('uImported'),0);gl.uniform1f(mu('uMoving'),0);gl.uniform1f(mu('uGlow'),0);gl.uniform1f(mu('uUseTex'),0);gl.uniform1f(mu('uMetallic'),.1);gl.uniform1f(mu('uRoughness'),.8);gl.uniform3f(mu('uEmissive'),0,0,0);
+  gl.useProgram(materialProgram);gl.uniformMatrix4fv(mu('uView'),false,camera.view);gl.uniformMatrix4fv(mu('uProjection'),false,camera.projection);gl.uniformMatrix4fv(mu('uModel'),false,IDENTITY);gl.uniform3f(mu('uEye'),camX,camY,camZ);gl.uniform3fv(mu('uForward'),forward);gl.uniform3fv(mu('uTorchOrigin'),lamp.origin);gl.uniform3fv(mu('uTorchRight'),lamp.right);gl.uniform3fv(mu('uTorchUp'),lamp.up);gl.uniform3fv(mu('uTorchColour'),torch.color||[1,.95,.86]);gl.uniform4f(mu('uTorch'),clamp(torch.power),torch.reach,torch.coneInner,torch.coneOuter);gl.uniform1f(mu('uTorchSpill'),clamp(torch.spill??.08,0,.12));gl.uniform1f(mu('uShoulder'),clamp(torch.shoulder??.75,0,2));gl.uniform1f(mu('uLiftFloor'),Number(frame.lift.floor)||0);gl.uniform1f(mu('uImported'),0);gl.uniform1f(mu('uMoving'),0);gl.uniform1f(mu('uGlow'),0);gl.uniform1f(mu('uUseTex'),0);gl.uniform1f(mu('uMetallic'),.1);gl.uniform1f(mu('uRoughness'),.8);gl.uniform3f(mu('uEmissive'),0,0,0);
   // The doorway's own lamp goes out with the room.
   const roomLeft=1-clamp(frame.roomTaken);
   gl.uniform4fv(mu('uLights[0]'),new Float32Array(geometry.lights.flatMap((l,i)=>[l.x,l.y,l.z,l.power*(i===0?roomLeft:1)])));

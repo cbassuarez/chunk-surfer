@@ -6,7 +6,10 @@
 // while the player can already see the manifestation in the world.
 
 import { uiCellMetrics, uiDraw, uiFill, uiGlyph, uiText, uiSize } from './ui.js';
-import { withMachinePanel } from './presentation.js';
+import { withMachinePanel, machinePanelAperture } from './presentation.js';
+import { navigatorDisplayLayout } from './navigator-layout.js';
+import { drawNavigatorTelemetry } from './navigator-telemetry.js';
+import { drawExteriorMapCommand } from './exterior-map-view.js';
 import { themeRoleColor, UI_COLOR } from './palette.js';
 import { buildMinimapCommands } from './map-commands.js';
 import { drawAnomalyMarker, drawEquipmentMarker, drawHushAwareness, drawHushMarker, drawPlayerMarker, drawTargetLozenge, drawWaypointMarker } from './map-icons.js';
@@ -420,7 +423,7 @@ function drawLocalRoute(command){
 }
 
 const COMMAND_LAYER=Object.freeze({
-  'local-topology':0,sight:10,'route-local':20,'door-local':30,'connector-local':32,
+  'local-topology':0,'district-footprint':2,'district-boundary':3,sight:10,'route-local':20,'door-local':30,'connector-local':32,'district-landmark':35,
   waypoint:40,'waypoint-edge':40,'connector-target':40,'connector-edge':40,
   equipment:50,'equipment-edge':50,'anomaly-contact':60,'anomaly-edge':60,
   'hush-awareness':70,player:80,'hush-visible':90,'hush-visible-edge':90,
@@ -431,6 +434,7 @@ function drawCommands(commands, now) {
   const hasSight=commands.some((command)=>command.kind==='sight');
   for (const command of ordered) {
     if (command.kind === 'local-topology') drawLocalTopology(command);
+    else if(['district-footprint','district-boundary','district-landmark'].includes(command.kind))drawExteriorMapCommand(command);
     else if (command.kind === 'sight') drawSight(command);
     else if(command.kind==='route-local')drawLocalRoute(command);
     else if(command.kind==='door-local')uiGlyph(Math.round(command.point.x),Math.round(command.point.y),command.state==='locked'?'╫':command.state==='closed'?'┼':'·',command.state==='locked'?'ui-danger':'ui-label',command.state==='open' ? .34 : .62);
@@ -549,24 +553,21 @@ export function drawMinimap(model, opts = {}) {
   const here = currentLabel(model);
   const hush = hushStatus(model, now);
   const floor=model.floors.find((candidate)=>candidate.id===model.player.floorId);
-  const targetReadout=minimapTargetReadout(model);
+  const navigationVisible=opts.navigationVisible!==false;
+  const targetReadout=navigationVisible?minimapTargetReadout(model):null;
+  const layout=navigatorDisplayLayout(machinePanelAperture(x0,y0,width,height),{telemetry:!!opts.telemetry});
   withMachinePanel(x0, y0, width, height, {
     label: 'FIELD NAV',model:'FN-12',
     source:opts.source||'',
     meter: false,
+    apertureBounds:layout.aperture,
     theme: hush.cls === 'ui-danger' ? 'amber' : 'green',
-  }, (panel) => {
+  }, () => {
+  const {panel,viewport}=layout;
   const panelPulse = hushStatusPulse(hush, now);
   const targetPulse = targetStatusPulse(model.waypoint, now);
   if (targetPulse > 0) uiFill(panel.x, panel.y, panel.w, panel.h, `rgba(80,174,255,${targetPulse})`);
   if (panelPulse > 0) uiFill(panel.x, panel.y, panel.w, panel.h, `rgba(255,118,65,${panelPulse})`);
-  const viewport = {
-    x:panel.x,
-    y:panel.y+1,
-    w:Math.max(8,panel.w),
-    h:Math.max(5,panel.h-3),
-  };
-
   const floorTag=String(floor?.shortLabel||floor?.label||'--').toUpperCase();
   if(targetReadout){
     const range=targetReadout.sameFloor
@@ -583,12 +584,13 @@ export function drawMinimap(model, opts = {}) {
     drawTargetLozenge(panel.x,panel.y,.9);
     uiText(panel.x+2,panel.y,room,'ui-blue',.9);
     uiText(panel.x+Math.max(0,panel.w-range.length),panel.y,range,'ui-blue',.74);
-  }else{
+  }else if(navigationVisible){
     uiText(panel.x+Math.max(0,panel.w-floorTag.length),panel.y,floorTag,'ui-label',.5);
   }
   if(!targetReadout)drawConfidenceTicks(panel, model);
 
-  const commands = buildMinimapCommands({ model, viewport, radius: opts.radius || 18, now, aspect: uiCellMetrics().aspect });
+  const commands = navigationVisible?buildMinimapCommands({ model, viewport, radius: opts.radius || 18, now, aspect: uiCellMetrics().aspect }):[];
+  if(!navigationVisible)uiText(panel.x,panel.y,clip(opts.mapStatus||'NAVIGATION UNAVAILABLE',panel.w),'ui-secondary',.72);
   drawTelemetryCrumbs(model, commands, viewport, now);
   drawMischiefBlink(commands, opts.mischief, viewport);
   drawApparitionReturns(commands, opts.apparitions, viewport);
@@ -603,10 +605,14 @@ export function drawMinimap(model, opts = {}) {
   else if (floorTarget?.delta) footer = `TARGET ${floorTarget.delta > 0 ? '+' : ''}${floorTarget.delta} FLOOR`;
   else if(hushHasSignal){footer=`HUSH · ${hush.label}${hush.detail?` · ${hush.detail}`:''}`;footerCls=hush.cls;}
   if(floorTarget?.delta||anomalyFloor?.delta)footerCls='ui-blue';
-  uiText(panel.x,panel.y+panel.h-1,clip(footer,panel.w),footerCls,.72);
-  drawFloorDeltaLed(panel, anomalyFloor?.delta || floorTarget?.delta || 0);
+  if(opts.telemetry?.notice){footer=opts.telemetry.notice;footerCls='ui-danger';}
+  uiText(layout.footer.x,layout.footer.y,clip(footer,panel.w),footerCls,.72);
+  drawFloorDeltaLed({...panel,h:layout.footer.y-panel.y+1}, anomalyFloor?.delta || floorTarget?.delta || 0);
   if (opts.expanded) uiText(panel.x, panel.y + panel.h, '[GREEN] YOU · [BLUE] TARGET · [RED ?] HUSH (SEEN)', 'ui-secondary', .66);
   });
+  // The LCD is physical hardware beside the VFD, outside its aperture clip and
+  // after its smoked cover. Map glow and target pulses never repaint its ink.
+  if(opts.telemetry)drawNavigatorTelemetry(layout.lcd,opts.telemetry);
 }
 
 // Small explicit marker used only for recorder playback origin. It is not part

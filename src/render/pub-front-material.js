@@ -5,8 +5,8 @@ import { EXTERIOR_PUB } from '../data/exterior-pub.js';
 import { ZONE } from '../data/floorplan/legend.js';
 
 export const PUB_FRONT_SKY = Object.freeze({
-  mesh: 'district_civic_frontage',
-  zones: Object.freeze([ZONE.street, ZONE.civicCourt, ZONE.pub]),
+  mesh: 'exterior_pub_frontage',
+  zones: Object.freeze([ZONE.street, ZONE.civicCourt, ZONE.dock, ZONE.pub]),
   x0: EXTERIOR_PUB.bounds.x0 - .25,
   x1: EXTERIOR_PUB.bounds.x1 + .25,
   z0: EXTERIOR_PUB.frontWorldZ - 1.90,

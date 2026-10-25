@@ -1,0 +1,97 @@
+{
+  "revision": "ellery-roof-closure-1",
+  "pack": "ellery-exterior-roofline.glb",
+  "sha256": "6ef7591d074c83124e5065f5250e137a63b374f9a581aaac6bbef3f788dba9d7",
+  "bytes": 362476,
+  "triangles": 4698,
+  "primitives": 5,
+  "bounds": {
+    "min": [
+      -1.03,
+      8.1,
+      -7.5
+    ],
+    "max": [
+      6.5,
+      14.020000000000001,
+      85.5
+    ]
+  },
+  "bands": [
+    {
+      "id": "service",
+      "year": 1986,
+      "z0": -7.5,
+      "z1": 4.5,
+      "height": 8.6,
+      "finish": "zinc",
+      "roofX0": -0.72,
+      "roofX1": 6.5,
+      "roofTopRange": [
+        8.635,
+        8.695
+      ],
+      "minimumStockY": 8.1,
+      "maximumStockY": 8.82
+    },
+    {
+      "id": "academic",
+      "year": 1967,
+      "z0": 4.5,
+      "z1": 22.5,
+      "height": 13.8,
+      "finish": "asphalt",
+      "roofX0": -0.72,
+      "roofX1": 6.5,
+      "roofTopRange": [
+        13.835,
+        13.895000000000001
+      ],
+      "minimumStockY": 13.3,
+      "maximumStockY": 14.020000000000001
+    },
+    {
+      "id": "school",
+      "year": 1888,
+      "z0": 44.5,
+      "z1": 64.5,
+      "height": 10.8,
+      "finish": "lead",
+      "roofX0": -0.72,
+      "roofX1": 6.5,
+      "roofTopRange": [
+        10.835,
+        10.895000000000001
+      ],
+      "minimumStockY": 10.3,
+      "maximumStockY": 11.020000000000001
+    },
+    {
+      "id": "baths",
+      "year": 1912,
+      "z0": 64.5,
+      "z1": 85.5,
+      "height": 9.6,
+      "finish": "lead",
+      "roofX0": -0.72,
+      "roofX1": 6.5,
+      "roofTopRange": [
+        9.635,
+        9.695
+      ],
+      "minimumStockY": 9.1,
+      "maximumStockY": 9.82
+    }
+  ],
+  "textureBytes": 0,
+  "sourceHashes": {
+    "src/data/exterior-district.js": "8c51f37f54acaefbf6f8b782ddd88627cc46d601f7526444fec3e11ceaa04706",
+    "src/data/exterior-roofline.js": "03b5aea3c30f8ce81aa4f9a379df31e8b5086a5cb1bda862a25baa61847019c7",
+    "tools/chunk_surfer/exterior-roofline-geometry.mjs": "42611e8b4b300c39211032f0e3710c6b4385555359393b67da1ac08f9afb3025",
+    "tools/chunk_surfer/build-exterior-roofline.mjs": "55a2e63a1c5420216b2534b5242dc0f87de75e514197c759152807673d5cf2f3"
+  },
+  "pending": [
+    "final native outdoor roofline inspection",
+    "ordinary ground/roof transition inspection"
+  ]
+}

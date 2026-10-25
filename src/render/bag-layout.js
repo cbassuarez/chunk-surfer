@@ -14,8 +14,9 @@ const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 export function bagPanelBounds({ cols, rows, sectionId = null }) {
   const maxW = Math.max(20, cols - 4);
   const maxH = Math.max(14, rows - 3);
-  const w = Math.min(sectionId === 'map' ? 128 : 100, maxW);
-  const h = Math.min(sectionId === 'map' ? 46 : 38, maxH);
+  const large = sectionId === 'map' || sectionId === 'journal';
+  const w = Math.min(large ? 128 : 100, maxW);
+  const h = Math.min(large ? 46 : 38, maxH);
 
   return {
     x: Math.max(0, Math.floor((cols - w) / 2)),
@@ -33,7 +34,8 @@ export function bagLayout({ body, forceMode = null, guideRows = 0, sectionId = n
   const compact = forceMode === 'compact' || (forceMode !== 'wide' && (b.w < 68 || b.h < 20));
 
   const shortMap = sectionId === 'map' && b.h < 30;
-  const tabs = { x: b.x, y: b.y, w: b.w, h: shortMap ? 2 : sectionId==='map'?3.6:BAG_TABS_HEIGHT, compact:shortMap };
+  const shortJournal = sectionId === 'journal' && b.h < 16;
+  const tabs = { x: b.x, y: b.y, w: b.w, h: shortMap ? 2 : shortJournal ? 1.7 : sectionId==='map'?3.6:BAG_TABS_HEIGHT, compact:shortMap||shortJournal };
   const actionRail = { x: b.x, y: b.y + b.h - 1, w: b.w, h: 1 };
   const guideH = Math.max(0, Math.min(Math.floor(b.h / 3), Math.floor(guideRows), Math.floor(b.h - tabs.h - 6)));
   const guide = guideH ? { x: b.x, y: actionRail.y - 1 - guideH, w: b.w, h: guideH } : null;

@@ -139,10 +139,10 @@ assert.match(renderer,/col\*=1\.0-clamp\(uDockHauntingFade[\s\S]*?compositePress
   'the room fades before the HUSH body is composited, so the approached body remains visible');
 assert.match(main,/drawFearOverlay[\s\S]*?applyDockHauntingHudFade\(\)[\s\S]*?scenes\.render/,
   'all ordinary HUD and fear chrome is attenuated before the contact instruction is redrawn');
-const dockRuntime=main.slice(
-  main.indexOf('// ── the get-in: LAST LOAD-OUT / impossible return'),
-  main.indexOf("const GREY_DOOR_ID='dock-grey-exterior'"),
-);
+const dockStart=main.indexOf('// ── the get-in: LAST LOAD-OUT / impossible return');
+const dockEnd=main.indexOf('const GREY_DOOR_ID=',dockStart);
+assert.ok(dockStart>=0&&dockEnd>dockStart,'the scan is bounded to the integrated dock runtime');
+const dockRuntime=main.slice(dockStart,dockEnd);
 for(const retired of ["applyLensPreset('rupture')","possess('rupture'",'dock-surfer-reflection','dock-surfer-literal','stopAllCues']){
   assert.equal(dockRuntime.includes(retired),false,`the integrated get-in runtime no longer requests ${retired}`);
 }

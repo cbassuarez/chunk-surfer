@@ -504,6 +504,7 @@ export function audioState() {
       : null,
     openingBedLoaded: buffers.has(STORY_AUDIO.openingBed),
     booth: booth ? +booth.gain.gain.value.toFixed(4) : null,
+    rain: { active: !!rainBed, level: rainLevel, roomScale: rainRoomScale, gain: rainBed?.gain.gain.value ?? 0 },
     tape: +tapeHissGain().toFixed(4),
     tapeLoaded: buffers.has(STORY_AUDIO.tape),
     typing: typingState(),
@@ -578,6 +579,7 @@ let rainWanted = false;
 // How much of the rain there is (0–1), on top of its authored gain: out on the
 // outskirts road it thins as his own sound takes its place.
 let rainLevel = 1;
+let rainRoomScale = 1;
 export function startRain({ gain = RAIN_GAIN, fade = 2.4 } = {}) {
   rainWanted = true;
   if (!ctx || !bus || rainBed) return;
@@ -586,7 +588,7 @@ export function startRain({ gain = RAIN_GAIN, fade = 2.4 } = {}) {
     return;
   }
   const out = ctx.createGain();
-  out.gain.setValueAtTime(rainLevel, ctx.currentTime);
+  out.gain.setValueAtTime(rainLevel * rainRoomScale, ctx.currentTime);
   out.connect(outBus('sfx'));
   const nodes = [out];
   // Looped seamless: the mp3's own head and tail do not meet, and every
@@ -618,8 +620,19 @@ export function startRain({ gain = RAIN_GAIN, fade = 2.4 } = {}) {
 
 export function setRainLevel(level = 1, { fade = 1 } = {}) {
   rainLevel = Math.max(0, Math.min(1, Number(level) || 0));
-  if (rainBed) setGain(rainBed.gain, rainLevel, fade);
+  if (rainBed) setGain(rainBed.gain, rainLevel * rainRoomScale, fade);
   return rainLevel;
+}
+
+// The pub supplies its own rain through actual windows and open doors. Keep
+// the outdoor weather's intent/transport intact while its direct bed is hidden
+// behind those walls; leaving the room restores that same outside bed.
+export function setRainRoomScale(scale = 1, { fade = .45 } = {}) {
+  const next = Math.max(0, Math.min(1, Number(scale) || 0));
+  if (next === rainRoomScale) return next;
+  rainRoomScale = next;
+  if (rainBed) setGain(rainBed.gain, rainLevel * rainRoomScale, fade);
+  return rainRoomScale;
 }
 
 export function setRainSurfaceMix(mix={}, {fade=.35,force=false}={}){

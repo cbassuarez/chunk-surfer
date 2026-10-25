@@ -164,7 +164,9 @@ export function applyHushTorchInterference(torch = {}, field = null) {
   return {
     ...torch,
     power: clamp01((Number(torch.power) || 0) * powerScale),
-    reach: Math.max(.35, (Number(torch.reach) || 1) * reachScale),
+    // Interference can only remove reach. A warm flood already falls below
+    // .35; the old renderer floor could make that weak lamp reach farther.
+    reach: Math.max(0, Number.isFinite(Number(torch.reach)) ? Number(torch.reach) : 1) * reachScale,
     color: baseColor.map((channel, index) => lerp(channel, ashen[index], absorption * .58)),
     coneInner: Math.min(.965, coneInner),
     coneOuter: Math.min(.985, coneOuter),

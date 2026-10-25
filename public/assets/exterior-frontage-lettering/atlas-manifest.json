@@ -1,0 +1,370 @@
+{
+  "version": 1,
+  "inputSha256": "ffcb920be4c478f81a8e77b83b603e2c8a04371e2b4f8b379bb4551f0c0737f2",
+  "generatorSha256": "25049dfe0566d8a05d1e575338cf4497750f01386896c7d215bacb7ea06cbb2b",
+  "finishAuthoringSha256": "7e0cf04028f84bf25d1049ff7ba3caf36e660dfaaf4c5228b8aa4c10c886b0c3",
+  "pages": [
+    {
+      "name": "lettering-00",
+      "width": 416,
+      "height": 536,
+      "normalWidth": 104,
+      "normalHeight": 134,
+      "ormWidth": 208,
+      "ormHeight": 268,
+      "albedo": "lettering-00-albedo.png",
+      "normal": "lettering-00-normal.png",
+      "orm": "lettering-00-orm.png",
+      "category": "shared compatible print",
+      "process": "per-material fabrication; see entries",
+      "polarity": "dark-on-light",
+      "emission": "none",
+      "emissiveFactor": [
+        0,
+        0,
+        0
+      ],
+      "sharedTiles": 1,
+      "preservesSampledStockChannels": false,
+      "rgbaBaseLevelBytes": 1170624
+    }
+  ],
+  "entries": [
+    {
+      "id": "neighbourhood-early-closure",
+      "page": 0,
+      "uvRect": [
+        0.038461538461538464,
+        0.029850746268656716,
+        0.9615384615384616,
+        0.9701492537313433
+      ],
+      "copy": "CLOSED EARLY\nFOR THE VIGIL\nBACK TOMORROW",
+      "lines": [
+        "CLOSED EARLY",
+        "FOR THE VIGIL",
+        "BACK TOMORROW"
+      ],
+      "widthM": 0.32,
+      "heightM": 0.42,
+      "metrics": {
+        "font": "NimbusSans-Bold.otf",
+        "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+        "capHeightM": 0.021666666666666667,
+        "stemWidthM": 0.005,
+        "coverage": 0.05149946263227513,
+        "boundsPx": [
+          27,
+          88,
+          359,
+          416
+        ],
+        "glyphs": [
+          {
+            "character": "C",
+            "line": 0,
+            "xPx": 51.0,
+            "advancePx": 26.0
+          },
+          {
+            "character": "L",
+            "line": 0,
+            "xPx": 77.0,
+            "advancePx": 22.0
+          },
+          {
+            "character": "O",
+            "line": 0,
+            "xPx": 99.0,
+            "advancePx": 28.0
+          },
+          {
+            "character": "S",
+            "line": 0,
+            "xPx": 127.0,
+            "advancePx": 24.0
+          },
+          {
+            "character": "E",
+            "line": 0,
+            "xPx": 151.0,
+            "advancePx": 24.0
+          },
+          {
+            "character": "D",
+            "line": 0,
+            "xPx": 175.0,
+            "advancePx": 26.0
+          },
+          {
+            "character": "E",
+            "line": 0,
+            "xPx": 211.0,
+            "advancePx": 24.0
+          },
+          {
+            "character": "A",
+            "line": 0,
+            "xPx": 235.0,
+            "advancePx": 26.0
+          },
+          {
+            "character": "R",
+            "line": 0,
+            "xPx": 261.0,
+            "advancePx": 26.0
+          },
+          {
+            "character": "L",
+            "line": 0,
+            "xPx": 287.0,
+            "advancePx": 22.0
+          },
+          {
+            "character": "Y",
+            "line": 0,
+            "xPx": 309.0,
+            "advancePx": 24.0
+          },
+          {
+            "character": "F",
+            "line": 1,
+            "xPx": 61.0,
+            "advancePx": 22.0
+          },
+          {
+            "character": "O",
+            "line": 1,
+            "xPx": 83.0,
+            "advancePx": 28.0
+          },
+          {
+            "character": "R",
+            "line": 1,
+            "xPx": 111.0,
+            "advancePx": 26.0
+          },
+          {
+            "character": "T",
+            "line": 1,
+            "xPx": 147.0,
+            "advancePx": 22.0
+          },
+          {
+            "character": "H",
+            "line": 1,
+            "xPx": 169.0,
+            "advancePx": 26.0
+          },
+          {
+            "character": "E",
+            "line": 1,
+            "xPx": 195.0,
+            "advancePx": 24.0
+          },
+          {
+            "character": "V",
+            "line": 1,
+            "xPx": 229.0,
+            "advancePx": 24.0
+          },
+          {
+            "character": "I",
+            "line": 1,
+            "xPx": 253.0,
+            "advancePx": 10.0
+          },
+          {
+            "character": "G",
+            "line": 1,
+            "xPx": 263.0,
+            "advancePx": 28.0
+          },
+          {
+            "character": "I",
+            "line": 1,
+            "xPx": 291.0,
+            "advancePx": 10.0
+          },
+          {
+            "character": "L",
+            "line": 1,
+            "xPx": 301.0,
+            "advancePx": 22.0
+          },
+          {
+            "character": "B",
+            "line": 2,
+            "xPx": 24.0,
+            "advancePx": 26.0
+          },
+          {
+            "character": "A",
+            "line": 2,
+            "xPx": 50.0,
+            "advancePx": 26.0
+          },
+          {
+            "character": "C",
+            "line": 2,
+            "xPx": 76.0,
+            "advancePx": 26.0
+          },
+          {
+            "character": "K",
+            "line": 2,
+            "xPx": 102.0,
+            "advancePx": 26.0
+          },
+          {
+            "character": "T",
+            "line": 2,
+            "xPx": 138.0,
+            "advancePx": 22.0
+          },
+          {
+            "character": "O",
+            "line": 2,
+            "xPx": 160.0,
+            "advancePx": 28.0
+          },
+          {
+            "character": "M",
+            "line": 2,
+            "xPx": 188.0,
+            "advancePx": 30.0
+          },
+          {
+            "character": "O",
+            "line": 2,
+            "xPx": 218.0,
+            "advancePx": 28.0
+          },
+          {
+            "character": "R",
+            "line": 2,
+            "xPx": 246.0,
+            "advancePx": 26.0
+          },
+          {
+            "character": "R",
+            "line": 2,
+            "xPx": 272.0,
+            "advancePx": 26.0
+          },
+          {
+            "character": "O",
+            "line": 2,
+            "xPx": 298.0,
+            "advancePx": 28.0
+          },
+          {
+            "character": "W",
+            "line": 2,
+            "xPx": 326.0,
+            "advancePx": 34.0
+          }
+        ],
+        "strokeMeasurement": "Pinned I straight stem; brush uses a conservative broad-nib design reference, not a claim about every taper.",
+        "coverageSha256": "e4a472d728cc2607dd3f00ee99d42cddd0500135a19f2e54618097c7d022d03b"
+      },
+      "category": "record",
+      "process": "home-printed early closure paper",
+      "polarity": "dark-on-light",
+      "emission": "none",
+      "reliefM": 7e-06,
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 4e-06,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "sheltered"
+        },
+        "fabricationReliefM": 7e-06,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      },
+      "finishEvidence": {
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "sheltered"
+        },
+        "coverageSha256": "e4a472d728cc2607dd3f00ee99d42cddd0500135a19f2e54618097c7d022d03b",
+        "immutableCoverage": true,
+        "sampledStockOutsidePigmentImmutable": false,
+        "physicalScalesM": {
+          "field": 0.095,
+          "minimumNormalPeriod": 0.0025,
+          "inkRelief": 7e-06
+        },
+        "structure": {
+          "kind": "subpixel manufacture",
+          "actualPitchM": null,
+          "resolved": false
+        },
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "conditionRanges": {
+          "deposit": [
+            0.0,
+            0.0
+          ],
+          "contact": [
+            0.0,
+            0.0
+          ],
+          "edgeLoss": [
+            0.0,
+            0.0
+          ]
+        },
+        "channelRanges": {
+          "roughness": [
+            0.855735294117647,
+            0.940661274509804
+          ],
+          "metallic": [
+            0.0,
+            0.0
+          ]
+        },
+        "bakedLighting": false,
+        "glyphDamage": false
+      },
+      "source": null,
+      "orientation": null,
+      "bounds": null,
+      "substrate": null
+    }
+  ],
+  "coverageChannel": "baseColorAlpha",
+  "alphaMode": "OPAQUE",
+  "rgbPremultiplied": false,
+  "gutterPx": 16,
+  "packing": "MaxRects BSSF; four stable orders; 8px bin-width search and tight NPOT envelope; no rotation/resampling",
+  "note": "Atlas RGB remains authored substrate color when alpha pigment coverage is zero. Normal and ORM are filtered independently. Empty or missing authored glyphs fail the bake."
+}

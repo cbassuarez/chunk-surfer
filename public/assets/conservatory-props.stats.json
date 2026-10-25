@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-24T02:51:36.705Z",
-  "bytes": 61653700,
-  "totalTriangles": 860777,
+  "generatedAt": "2026-10-25T17:40:12.065Z",
+  "bytes": 64409288,
+  "totalTriangles": 893349,
   "meshes": {
     "school_desk": {
       "triangles": 176,
@@ -1268,8 +1268,8 @@
       "vertices": 6680
     },
     "district_civic_frontage": {
-      "triangles": 17176,
-      "vertices": 33696
+      "triangles": 24104,
+      "vertices": 52726
     },
     "district_workshop_frontage": {
       "triangles": 2724,
@@ -1278,6 +1278,10 @@
     "district_passage_frontage": {
       "triangles": 3200,
       "vertices": 5958
+    },
+    "exterior_pub_frontage": {
+      "triangles": 8120,
+      "vertices": 16000
     },
     "exterior_pub_interior": {
       "triangles": 9648,
@@ -1296,20 +1300,20 @@
       "vertices": 832
     },
     "yard_stable_range": {
-      "triangles": 488,
-      "vertices": 876
+      "triangles": 1700,
+      "vertices": 3300
     },
     "yard_rehearsal_range": {
-      "triangles": 488,
-      "vertices": 876
+      "triangles": 908,
+      "vertices": 1716
     },
     "yard_baths_plant": {
-      "triangles": 648,
-      "vertices": 1196
+      "triangles": 2312,
+      "vertices": 4456
     },
     "yard_covered_stores": {
-      "triangles": 776,
-      "vertices": 1452
+      "triangles": 1232,
+      "vertices": 2364
     },
     "st_brendan_church": {
       "triangles": 39204,
@@ -1702,6 +1706,14 @@
     "city_bus_shelter_compact": {
       "triangles": 228,
       "vertices": 456
+    },
+    "arrival_civic_boundary": {
+      "triangles": 12288,
+      "vertices": 24576
+    },
+    "arrival_civic_bench": {
+      "triangles": 1448,
+      "vertices": 2896
     },
     "city_phone_box": {
       "triangles": 2264,
@@ -2364,8 +2376,8 @@
       "vertices": 39755
     },
     "building_dressing_batch_ground": {
-      "triangles": 32392,
-      "vertices": 49280
+      "triangles": 32428,
+      "vertices": 49352
     },
     "building_dressing_batch_academic": {
       "triangles": 65792,
@@ -6175,9 +6187,9 @@
     },
     "district_civic_frontage": {
       "min": [
-        -5.47,
+        -5.4,
         0,
-        -32.18
+        -32
       ],
       "max": [
         3.075,
@@ -6207,6 +6219,18 @@
         3.075,
         16.91,
         32
+      ]
+    },
+    "exterior_pub_frontage": {
+      "min": [
+        -5.47,
+        0,
+        -8.18
+      ],
+      "max": [
+        1.52,
+        16.23,
+        8.045
       ]
     },
     "exterior_pub_interior": {
@@ -6295,7 +6319,7 @@
     },
     "yard_covered_stores": {
       "min": [
-        -6.345,
+        -6.38,
         0,
         -7.23
       ],
@@ -7479,6 +7503,30 @@
         0.7,
         2.63,
         2.5
+      ]
+    },
+    "arrival_civic_boundary": {
+      "min": [
+        -0.52,
+        0,
+        -6.375
+      ],
+      "max": [
+        17.875,
+        3.195,
+        14.875
+      ]
+    },
+    "arrival_civic_bench": {
+      "min": [
+        -1.116,
+        -0.026,
+        -0.47
+      ],
+      "max": [
+        1.116,
+        1.041,
+        0.47
       ]
     },
     "city_phone_box": {
@@ -9463,14 +9511,14 @@
     },
     "building_dressing_batch_ground": {
       "min": [
-        -101.825,
+        -79.1,
         -0.949,
-        -4.57
+        -19.835
       ],
       "max": [
         8.9,
         16.051,
-        105.335
+        83.335
       ]
     },
     "building_dressing_batch_academic": {
@@ -9695,20 +9743,20 @@
           0.949,
           4.5
         ],
-        "count": 177,
-        "poseDigest": "0d9cbb87",
+        "count": 178,
+        "poseDigest": "32143750",
         "materialCount": 38,
-        "triangles": 32392,
+        "triangles": 32428,
         "bounds": {
           "min": [
-            -101.82499999999999,
+            -79.1,
             -0.949,
-            -4.57
+            -19.835
           ],
           "max": [
             8.900000000000006,
             16.051,
-            105.335
+            83.335
           ]
         },
         "sources": {
@@ -9909,7 +9957,7 @@
             "trianglesPerInstance": 36
           },
           "arch_threshold_staff": {
-            "count": 3,
+            "count": 4,
             "trianglesPerInstance": 36
           }
         }
@@ -10451,9 +10499,10 @@
     "scene_dock_roof_structure": 5.5,
     "yard_dock_access": -0.3,
     "district_terrace_frontage": 13,
-    "district_civic_frontage": 13.2,
+    "district_civic_frontage": 14.6,
     "district_workshop_frontage": 7.2,
     "district_passage_frontage": 13,
+    "exterior_pub_frontage": 3.54,
     "exterior_pub_interior": 0.01,
     "district_court_walls": 9.2,
     "district_outer_sprawl": 0.96,
@@ -10535,6 +10584,8 @@
     "yard_look_bench": 0.61,
     "city_bus_shelter": 2.63,
     "city_bus_shelter_compact": 2.63,
+    "arrival_civic_boundary": 0.49,
+    "arrival_civic_bench": 0.01,
     "city_phone_box": 2.51,
     "city_phone_box_apparatus": 1.69,
     "door_threshold_slab": 0.1,
@@ -10608,7 +10659,7 @@
     "surfaces": 117,
     "pages": 10,
     "textureBaseLevelBytes": 42864576,
-    "atlasInputSha256": "0ce97c977db89c8c4adb0e6316584c75997511fa5f8d9ba93b73fb14a13db4ab",
+    "atlasInputSha256": "eb998f83c50e19cd687bf437000d8b18d7b304f72267bacf2822e9278a25f079",
     "carrierAssemblies": {
       "meshes": 24,
       "members": 127,

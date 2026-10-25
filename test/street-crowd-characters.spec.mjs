@@ -9,7 +9,7 @@ import {VIGIL_MESHES} from '../src/data/exterior-vigil.js';
 const read=file=>fs.readFileSync(new URL('../'+file,import.meta.url)),sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const receipt=JSON.parse(read('public/assets/street-crowd-characters.credits.json')),bytes=read('public/assets/street-crowd-characters.glb'),asset=parseCharacterAsset(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.length));
 assert.equal(asset.entries.length,20);assert.deepEqual(asset.entries.map(e=>e.name),STREET_CROWD_CHARACTER_MESHES);
-assert.equal(asset.nodes.length,128,'twenty bodies share two full anatomical rigs');assert.equal(asset.json.skins.length,2);assert.ok(bytes.length<6*1024*1024,'the complete cast stays a modest isolated download');
+assert.equal(asset.nodes.length,128,'twenty bodies share two full anatomical rigs');assert.equal(asset.json.skins.length,2);assert.ok(bytes.length<9*1024*1024,'twenty anatomically fitted and normal-mapped people stay within the isolated 9 MiB pack budget');
 assert.equal(receipt.shared.wardrobeStyles,5);assert.ok(receipt.shared.reusedAccessors>700,'exact shared wardrobe/body surfaces reuse their geometry accessors');
 for(const pack of receipt.packs){const actual=read(pack.file);assert.equal(actual.length,pack.bytes);assert.equal(sha(actual),pack.sha256);}
 for(const[file,digest]of Object.entries(receipt.sourceSha256))assert.equal(sha(read(file)),digest,'rebuild street crowd after source change: '+file);
@@ -62,9 +62,9 @@ for(const[id,d]of Object.entries(DESIGNS)){
   if(d.accessory==='camera')assert.ok(meta.parts.some(n=>/camera rounded housing/.test(n))&&meta.parts.some(n=>/camera lens barrel/.test(n)));
   if(d.highVis)assert.equal(meta.parts.filter(n=>/high visibility reflective torso band/.test(n)).length,2,'delivery and demolition worker keeps two actual reflective bands');
   if(d.id==='district-mews-neighbor')assert.ok(meta.parts.some(n=>/flat cap/.test(n))&&meta.parts.some(n=>/scarf/.test(n)),'mews neighbour keeps his cap and scarf');
-  const triangles=entry.primitives.reduce((n,p)=>n+p.indices.length/3,0);assert.ok(triangles<22000,'per person geometry stays within the crowd budget');totalTriangles+=triangles;summaries.push({id,triangles,...merged});
+  const triangles=entry.primitives.reduce((n,p)=>n+p.indices.length/3,0);assert.ok(triangles<25000,'per person geometry stays within the crowd budget');totalTriangles+=triangles;summaries.push({id,triangles,...merged});
 }
-assert.equal(new Set(silhouettes).size,20,'twenty front-and-side actual triangle masks retain different silhouettes');assert.ok(totalTriangles<350000,'shared crowd geometry stays within its complete-cast triangle budget');
+assert.equal(new Set(silhouettes).size,20,'twenty front-and-side actual triangle masks retain different silhouettes');assert.ok(totalTriangles<420000,'shared crowd geometry stays within its complete-cast triangle budget');
 assert.ok(grippedFingerSamples>=800,'held kit uses solved finger contacts rather than raised open palms');
 const propsBytes=read('public/assets/street-crowd-props.glb'),view=new DataView(propsBytes.buffer,propsBytes.byteOffset,propsBytes.byteLength),json=JSON.parse(new TextDecoder().decode(propsBytes.subarray(20,20+view.getUint32(12,true)))),binStart=20+view.getUint32(12,true)+8;
 assert.deepEqual(json.meshes.map(m=>m.name),['street_crowd_folding_chair','street_crowd_camera_tripod']);assert.equal(json.skins,undefined);

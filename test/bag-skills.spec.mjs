@@ -39,7 +39,7 @@ const find = (tree, id) => flat(tree).find((entry) => entry.techniqueId === id);
 
 // ── it is a section of the case, like KIT and MAP ────────────────────────────
 const fresh = buildBagModel({});
-assert.deepEqual(fresh.sections.map((s) => s.id), ['kit', 'map', 'sheets', 'skills'],
+assert.deepEqual(fresh.sections.map((s) => s.id), ['kit', 'map', 'sheets', 'skills', 'journal'],
   'SKILLS is a fourth tab, not a separate screen');
 assert.ok(skillsOf(fresh).entries.length === TECHNIQUE_DEFS.length,
   'every technique is an addressable entry, so the shared nav can select it');

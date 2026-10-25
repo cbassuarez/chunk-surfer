@@ -33,7 +33,9 @@ test('one exterior interact opens the goods doors and performs the physical cros
   assert.match(body,/beginGetInArrivalTitle\(\)/,'the title begins only after the body is inside');
   assert.ok(main.indexOf('tryGetInDoorEntry(focus)')<main.indexOf('const doorHit=focus.doorWins?FP.interactDoor'),
     'the authored arrival consumes E before the generic open/close path');
-  assert.match(main,/\? `ENTER \$\{SCENE_DOCK_LABEL\}`/,'the HUD advertises the complete Scene Dock action rather than OPEN DOOR');
+  const doorHud=main.slice(main.indexOf('const getInArrival=!!getInDoorEntryPortal'),main.indexOf('} else if(propHit){',main.indexOf('const getInArrival=!!getInDoorEntryPortal')));
+  assert.match(doorHud,/UNLOCK AND ENTER ELLERY/,'the HUD advertises the complete commitment rather than an ordinary door toggle');
+  assert.match(doorHud,/ASK AT THE LODGE FOR THE KEY/,'an unearned key still directs the player to the real handover');
 });
 
 test('the crossing plays the full cinematic title beat, in the world', () => {

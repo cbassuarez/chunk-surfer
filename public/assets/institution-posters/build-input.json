@@ -1,0 +1,229 @@
+{
+  "designs": [
+    {
+      "id": "season",
+      "title": "Music for the city",
+      "kind": "season-programme",
+      "widthM": 1,
+      "heightM": 0.7,
+      "mesh": "institution_poster_season",
+      "flatMesh": "institution_poster_season_flat",
+      "tapedMesh": "institution_poster_season_taped"
+    },
+    {
+      "id": "winter_programme",
+      "title": "The winter programme",
+      "kind": "season-programme",
+      "widthM": 1,
+      "heightM": 0.7,
+      "mesh": "institution_poster_winter_programme",
+      "flatMesh": "institution_poster_winter_programme_flat",
+      "tapedMesh": "institution_poster_winter_programme_taped"
+    },
+    {
+      "id": "winter",
+      "title": "Winter concerts",
+      "kind": "season-promotion",
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "mesh": "institution_poster_winter",
+      "flatMesh": "institution_poster_winter_flat",
+      "tapedMesh": "institution_poster_winter_taped"
+    },
+    {
+      "id": "chamber",
+      "title": "In company",
+      "kind": "chamber-promotion",
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "mesh": "institution_poster_chamber",
+      "flatMesh": "institution_poster_chamber_flat",
+      "tapedMesh": "institution_poster_chamber_taped"
+    },
+    {
+      "id": "piano",
+      "title": "One piano",
+      "kind": "solo-promotion",
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "mesh": "institution_poster_piano",
+      "flatMesh": "institution_poster_piano_flat",
+      "tapedMesh": "institution_poster_piano_taped"
+    },
+    {
+      "id": "visiting",
+      "title": "Other voices",
+      "kind": "visiting-ensemble-promotion",
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "mesh": "institution_poster_visiting",
+      "flatMesh": "institution_poster_visiting_flat",
+      "tapedMesh": "institution_poster_visiting_taped"
+    },
+    {
+      "id": "chapel",
+      "title": "Sound & stone",
+      "kind": "chapel-promotion",
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "mesh": "institution_poster_chapel",
+      "flatMesh": "institution_poster_chapel_flat",
+      "tapedMesh": "institution_poster_chapel_taped"
+    },
+    {
+      "id": "students",
+      "title": "Play together",
+      "kind": "student-notice",
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "mesh": "institution_poster_students",
+      "flatMesh": "institution_poster_students_flat",
+      "tapedMesh": "institution_poster_students_taped"
+    },
+    {
+      "id": "lyric",
+      "title": "After the last note",
+      "kind": "local-music-promotion",
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "mesh": "institution_poster_lyric",
+      "flatMesh": "institution_poster_lyric_flat",
+      "tapedMesh": "institution_poster_lyric_taped"
+    },
+    {
+      "id": "loudspeakers",
+      "title": "Room without players",
+      "kind": "fixed-media-promotion",
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "mesh": "institution_poster_loudspeakers",
+      "flatMesh": "institution_poster_loudspeakers_flat",
+      "tapedMesh": "institution_poster_loudspeakers_taped",
+      "experimental": true,
+      "rasterWidthPx": 704,
+      "materialWidthPx": 192,
+      "paperSegments": [
+        12,
+        8
+      ]
+    },
+    {
+      "id": "live_electronics",
+      "title": "Live wires",
+      "kind": "live-electronics-promotion",
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "mesh": "institution_poster_live_electronics",
+      "flatMesh": "institution_poster_live_electronics_flat",
+      "tapedMesh": "institution_poster_live_electronics_taped",
+      "experimental": true,
+      "rasterWidthPx": 704,
+      "materialWidthPx": 192,
+      "paperSegments": [
+        12,
+        8
+      ]
+    },
+    {
+      "id": "tape",
+      "title": "Tape music",
+      "kind": "tape-music-promotion",
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "mesh": "institution_poster_tape",
+      "flatMesh": "institution_poster_tape_flat",
+      "tapedMesh": "institution_poster_tape_taped",
+      "experimental": true,
+      "rasterWidthPx": 704,
+      "materialWidthPx": 192,
+      "paperSegments": [
+        12,
+        8
+      ]
+    },
+    {
+      "id": "new_works",
+      "title": "Not yet heard",
+      "kind": "new-music-promotion",
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "mesh": "institution_poster_new_works",
+      "flatMesh": "institution_poster_new_works_flat",
+      "tapedMesh": "institution_poster_new_works_taped",
+      "experimental": true,
+      "rasterWidthPx": 704,
+      "materialWidthPx": 192,
+      "paperSegments": [
+        12,
+        8
+      ]
+    },
+    {
+      "id": "graphic_score",
+      "title": "Read the room",
+      "kind": "graphic-score-workshop",
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "mesh": "institution_poster_graphic_score",
+      "flatMesh": "institution_poster_graphic_score_flat",
+      "tapedMesh": "institution_poster_graphic_score_taped",
+      "experimental": true,
+      "rasterWidthPx": 704,
+      "materialWidthPx": 192,
+      "paperSegments": [
+        12,
+        8
+      ]
+    },
+    {
+      "id": "prepared",
+      "title": "Objects for piano",
+      "kind": "prepared-piano-promotion",
+      "widthM": 0.594,
+      "heightM": 0.841,
+      "mesh": "institution_poster_prepared",
+      "flatMesh": "institution_poster_prepared_flat",
+      "tapedMesh": "institution_poster_prepared_taped",
+      "experimental": true,
+      "rasterWidthPx": 704,
+      "materialWidthPx": 192,
+      "paperSegments": [
+        12,
+        8
+      ]
+    }
+  ],
+  "finish": {
+    "substrate": "paper stock",
+    "coating": "absorbed print or pen ink",
+    "roughness": 0.88,
+    "inkRoughness": 0.82,
+    "fieldM": 0.095,
+    "variation": 0.027,
+    "roughnessVariation": 0.035,
+    "microReliefM": 0.000004,
+    "deposit": 0.025,
+    "edgeLoss": 0,
+    "sequence": [
+      "paper fibre direction survives printing",
+      "gentle stock tone varies across the sheet",
+      "actual handled lower region has restrained contact polishing"
+    ],
+    "limits": [
+      "no added foxing, water damage or yellow vignette without a supported cause"
+    ],
+    "version": 1,
+    "profile": "paper-print",
+    "support": {
+      "kind": "carrier",
+      "edgeWear": false,
+      "contact": "none",
+      "exposure": "interior"
+    },
+    "fabricationReliefM": 0.000007,
+    "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+    "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+    "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+    "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+  }
+}

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {buildPubInterior,PUB_INTERIOR_LAYOUT as layout,PUB_FURNITURE_COLLIDERS,PUB_LIGHT_ANCHORS} from '../tools/chunk_surfer/pub-interior-geometry.mjs';
+import {EXTERIOR_PUB} from '../src/data/exterior-pub.js';
 import {PUB_INTERIOR_LAYOUT as runtimeLayout,PUB_FURNITURE_COLLIDERS as runtimeColliders,PUB_LIGHT_ANCHORS as runtimeLights} from '../src/data/exterior-pub-furnishings.js';
 
 const EPS=1e-8;
@@ -55,8 +56,8 @@ test('runtime and render consume one frozen row-coordinate furnishings contract'
   // The installed prop origin and row transform agree at several asymmetric points.
   for(const[x,z]of[[-5.2,-31.2],[-.2,-22.75],[-2.7,-17.25]]){
     const lx=x-layout.meshOriginInRow.x,lz=z-layout.meshOriginInRow.z,co=Math.cos(layout.worldTransform.yaw),si=Math.sin(layout.worldTransform.yaw);
-    assert.ok(Math.abs(layout.worldTransform.anchorX+lx*co-lz*si-(18+z))<EPS);
-    assert.ok(Math.abs(layout.worldTransform.anchorZ+lx*si+lz*co-(107.05-x))<EPS);
+    assert.ok(Math.abs(layout.worldTransform.anchorX+lx*co-lz*si-(EXTERIOR_PUB.rowAnchor.x+z))<EPS);
+    assert.ok(Math.abs(layout.worldTransform.anchorZ+lx*si+lz*co-(EXTERIOR_PUB.rowAnchor.z-x))<EPS);
   }
 });
 

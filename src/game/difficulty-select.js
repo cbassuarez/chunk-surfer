@@ -1,6 +1,7 @@
 import * as scenes from './scenes.js';
 import { uiCenter, uiLine, uiScrim, uiSize, uiText, uiWrap } from '../render/ui.js';
-import { drawLocationIndicator, withMachinePanel, drawVfdText } from '../render/presentation.js';
+import { drawLocationIndicator, withMachinePanel, drawVfdText, drawLampButton } from '../render/presentation.js';
+import { drawPrintedText } from '../render/keycap.js';
 import { createHitRegions } from '../render/hit-regions.js';
 import { UI_COLOR } from '../render/palette.js';
 import {
@@ -40,6 +41,7 @@ export function makeDifficultySelectScene({
   meta,
   initialPreset = 'contract',
   initialCustomValues = null,
+  preparation = false,
   onConfirm = () => {},
   onCancel = () => {},
 } = {}) {
@@ -55,11 +57,13 @@ export function makeDifficultySelectScene({
   let ruleSel = 0;
   let customValues = normalizeRuleValues(initialCustomValues || {});
   let t = 0;
+  let pending = false, error = '', active = true, generation = 0, settled = Promise.resolve();
   const hits = createHitRegions();
 
   const selectedPreset = () => presets[sel] || presets[0];
 
   function selectPreset(index, { sound = true } = {}) {
+    if (preparation && (pending || error)) return false;
     if (index < 0 || index >= presets.length || index === sel) return false;
     sel = index;
     if (sound) AUDIO.menuMove();
@@ -67,6 +71,7 @@ export function makeDifficultySelectScene({
   }
 
   function selectRule(index, { sound = true } = {}) {
+    if (preparation && (pending || error)) return false;
     if (index < 0 || index >= RULE_ORDER.length || index === ruleSel) return false;
     ruleSel = index;
     if (sound) AUDIO.menuMove();
@@ -74,6 +79,7 @@ export function makeDifficultySelectScene({
   }
 
   function cycleCustomRule(index, delta) {
+    if (preparation && (pending || error)) return false;
     selectRule(index, { sound: false });
     const key = RULE_ORDER[index];
     customValues = {
@@ -84,6 +90,7 @@ export function makeDifficultySelectScene({
   }
 
   function confirmPreset() {
+    if (preparation && (pending || !active)) return false;
     const preset = selectedPreset();
     if (!preset) return;
     if (preset.locked) {
@@ -96,16 +103,88 @@ export function makeDifficultySelectScene({
       AUDIO.menuConfirm();
       return;
     }
-    AUDIO.menuConfirm();
-    scenes.pop();
-    onConfirm({
+    const selection = {
       preset: preset.id,
       values: preset.id === 'custom' ? { ...customValues } : { ...preset.values },
       custom: preset.id === 'custom',
+    };
+    AUDIO.menuConfirm();
+    if (!preparation) {
+      scenes.pop();
+      onConfirm(selection);
+      return;
+    }
+    pending = true; error = '';
+    const token = ++generation;
+    const finish = result => {
+      if (!active || generation !== token) return false;
+      pending = false;
+      if (result !== true && result?.ok !== true) {
+        error = 'Shift could not be saved. Retry confirmation, or Back to preparation.';
+        return false;
+      }
+      scenes.remove(scene);
+      return true;
+    };
+    try { settled = Promise.resolve(onConfirm(selection)).then(finish, () => finish(false)); }
+    catch { settled = Promise.resolve(finish(false)); }
+    return true;
+  }
+
+  function cancelPreparation() {
+    if (pending || !active) return false;
+    if (mode === 'custom' && !error) { mode = 'select'; AUDIO.menuBack(); return true; }
+    AUDIO.menuBack(); scenes.remove(scene); onCancel(); return true;
+  }
+
+  function renderPreparation() {
+    const { cols, rows } = uiSize(), compact = rows < 28 || cols < 100;
+    const w = Math.max(30, Math.min(106, cols - 3)), h = Math.max(13, Math.min(36, rows - 2));
+    const x = (cols - w) / 2, y = (rows - h) / 2;
+    const ink = '#c5d3bd', muted = '#97b29c', amber = '#ecd29a';
+    const text = (tx,ty,value,width,{height=.55,color=ink}={}) => drawPrintedText(tx,ty,String(value),{w:width,h:height,ink:color});
+    uiScrim(.4);
+    withMachinePanel(x,y,w,h,{wordmark:'AUDIOCORP',label:mode==='custom'?'CUSTOM SHIFT':'CHOOSE SHIFT',source:'VAN',footer:'',meter:false},body=>{
+      // The optical aperture ends above machinePanelBody's nominal footer.
+      // Keep both actuators and their save status inside that visible opening.
+      const buttonY = y + h - 2.35 - 2.4;
+      const listW = Math.max(12, Math.floor(body.w * .32)), detailX = body.x + listW + 2, detailW = body.x + body.w - detailX;
+      const rowY = body.y + (compact ? .7 : 1.3), rowStep = Math.min(compact ? 1.3 : 2.6, Math.max(.8,(buttonY-rowY-1)/presets.length));
+      uiLine(body.x+listW+.6,body.y+.1,body.x+listW+.6,buttonY-.45,UI_COLOR.frame,.65);
+      presets.forEach((preset,index)=>{
+        const on = index === sel, ry = rowY + index * rowStep;
+        text(body.x,ry,`${on?'› ':''}${preset.name}${preset.locked?' ◇':''}`,listW,{height:compact?.58:.75,color:preset.locked?muted:on?amber:ink});
+        if(!compact)text(body.x+.7,ry+1,preset.locked?'COMPLETE AN ENDING':preset.subtitle,listW-.7,{height:.43,color:muted});
+        hits.add({id:`difficulty:${preset.id}`,kind:'difficulty-preset',x:body.x,y:ry-.15,w:listW,h:rowStep-.1,selected:on,disabled:pending||!!error,label:preset.name,
+          onHover:()=>{if(mode==='select')selectPreset(index);},
+          onClick:()=>{if(mode==='custom'&&index!==sel)mode='select';selectPreset(index);}});
+      });
+      const preset=selectedPreset(),values=preset.id==='custom'?customValues:preset.values;
+      text(detailX,body.y,preset.name,detailW,{height:compact?.68:1,color:amber});
+      const explanation=mode==='custom'?RULE_HELP[RULE_ORDER[ruleSel]]:preset.locked?'Complete an ending to unlock this shift.':preset.intended?'Recommended for a first visit.':preset.description;
+      const summaryLines=uiWrap(explanation,Math.floor(detailW*1.45)).slice(0,compact?2:3);
+      summaryLines.forEach((value,index)=>text(detailX,body.y+(compact?1.05:1.6)+index*(compact?.65:.85),value,detailW,{height:compact?.45:.6,color:muted}));
+      const rulesY=body.y+(compact?2.65:4.5), ruleStep=Math.max(.65,Math.min(compact?.8:1.65,(buttonY-rulesY-.6)/RULE_ORDER.length));
+      RULE_ORDER.forEach((key,index)=>{
+        const ry=rulesY+index*ruleStep,selected=mode==='custom'&&index===ruleSel,value=VALUE_LABELS[values[key]]||String(values[key]).toUpperCase();
+        text(detailX,ry,`${selected?'› ':''}${RULE_LABELS[key]}`,detailW*.61,{height:compact?.42:.58,color:selected?amber:muted});
+        text(detailX+detailW*.63,ry,selected?`‹ ${value} ›`:value,detailW*.37,{height:compact?.42:.58,color:ink});
+        if(mode==='custom')hits.add({id:`difficulty-rule:${key}`,kind:'difficulty-rule',x:detailX,y:ry-.1,w:detailW,h:ruleStep,disabled:pending||!!error,selected,label:RULE_LABELS[key],
+          onHover:()=>selectRule(index),onClick:(_,event)=>cycleCustomRule(index,Number(event.cellX)<detailX+detailW*.63?-1:1)});
+      });
+      const back={x:body.x,y:buttonY,w:Math.min(18,body.w*.27),h:1.25};
+      const confirm={x:body.x+body.w-Math.min(30,body.w*.48),y:buttonY,w:Math.min(30,body.w*.48),h:1.25};
+      const label=pending?'SAVING SHIFT…':error?'RETRY CONFIRMATION':preset.id==='custom'&&mode==='select'?'EDIT CUSTOM SHIFT':'CONFIRM SHIFT';
+      drawLampButton(back.x,back.y,back.w,back.h,{legend:mode==='custom'&&!error?'BACK TO SHIFTS':'BACK',enabled:!pending,color:'white'});
+      drawLampButton(confirm.x,confirm.y,confirm.w,confirm.h,{legend:label,enabled:!pending&&!preset.locked,color:error?'red':'amber',lit:!pending&&!preset.locked});
+      hits.add({id:'difficulty:back',kind:'back',...back,label:'BACK',disabled:pending,onClick:cancelPreparation});
+      hits.add({id:'difficulty:confirm',kind:'confirm',...confirm,label,disabled:pending||!!preset.locked,onClick:confirmPreset});
+      const message=error||(pending?'Saving your shift. Please wait.':'Selecting a row previews it. Confirm saves a draft; finishing the case starts the shift.');
+      text(body.x,buttonY+1.5,message,body.w,{height:compact?.38:.48,color:error?'#e2a080':muted});
     });
   }
 
-  return {
+  const scene = {
     id: 'difficulty-select',
     handlesEscape: true,
     blocksInput: true,
@@ -113,18 +192,29 @@ export function makeDifficultySelectScene({
     worldPresentation: 'visible',
     lensPreset: 'calm',
 
-    enter() { AUDIO.startMenuHiss(); },
-    exit() { AUDIO.stopMenuHiss(); },
+    enter() { active = true; AUDIO.startMenuHiss(); },
+    exit() { active = false; generation++; AUDIO.stopMenuHiss(); },
     update(dt) { t += dt; },
 
     pointer(e) {
+      if (preparation && pending) return true;
+      if (preparation && e.type === 'pointerdown' && (e.button ?? e.originalEvent?.button ?? 0) !== 0) return true;
       if (e.type === 'pointermove') hits.handle(e, { click: false });
       else if (e.type === 'pointerdown') hits.handle(e);
       return true;
     },
 
     key(e) {
-      const k = String(e.key || '').toLowerCase();
+      let k = String(e.key || '').toLowerCase();
+      if(preparation){
+        const action=e.controllerAction;
+        if(pending)return true;
+        if(e.repeat&&(['enter',' ','z','escape','b'].includes(k)||['confirm','back'].includes(action)))return true;
+        if(action==='back'||k==='escape'||k==='b'){cancelPreparation();return true;}
+        if(action==='confirm'){confirmPreset();return true;}
+        if(error){if(['enter',' ','z'].includes(k))confirmPreset();return true;}
+        if(action==='move_up')k='w';else if(action==='move_down')k='s';else if(action==='move_left')k='a';else if(action==='move_right')k='d';
+      }
 
       if (mode === 'custom') {
         if (e.key === 'ArrowUp' || k === 'w') {
@@ -184,6 +274,7 @@ export function makeDifficultySelectScene({
 
     render() {
       hits.reset();
+      if(preparation){renderPreparation();return;}
       const { cols, rows } = uiSize();
       uiScrim(0.28);
       const w = Math.min(96, cols - 4);
@@ -308,10 +399,15 @@ export function makeDifficultySelectScene({
     view() {
       return {
         mode,
+        preparation,
+        pending,
+        error,
         selected: selectedPreset()?.id || null,
         selectedRule: mode === 'custom' ? RULE_ORDER[ruleSel] : null,
         hitRegions: hits.view(),
       };
     },
+    whenSettled: () => settled,
   };
+  return scene;
 }

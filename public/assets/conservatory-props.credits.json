@@ -20,10 +20,10 @@
     "author": "Chunk Surfer project",
     "source": "tools/chunk_surfer/build-props.mjs",
     "license": "project source (mixed: see meshes)",
-    "sha256": "d7b948f2fefb0c16b6fa99c38cfc238708baccaf33caa5581b4f78ae11258979",
+    "sha256": "52bd50b152dfa68a59e2dd25f305874e140bcd9e3be7d7a603151c215273554f",
     "modifications": "Metres, Y-up, ground-centred. Procedural fallback geometry, project-authored Blender meshes, and user-supplied source meshes (unverified provenance) baked, re-axised, height-scaled, and vertex-cluster decimated under budget. Per-mesh provenance below says which is which.",
-    "triangles": 860777,
-    "bytes": 61653700
+    "triangles": 893349,
+    "bytes": 64409288
   },
   "meshes": [
     {
@@ -6668,9 +6668,9 @@
       "name": "district_civic_frontage",
       "bounds": {
         "min": [
-          -5.47,
+          -5.4,
           0,
-          -32.18
+          -32
         ],
         "max": [
           3.075,
@@ -6678,7 +6678,7 @@
           32
         ]
       },
-      "triangles": 17176,
+      "triangles": 24104,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -6721,6 +6721,27 @@
         ]
       },
       "triangles": 3200,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "exterior_pub_frontage",
+      "bounds": {
+        "min": [
+          -5.47,
+          0,
+          -8.18
+        ],
+        "max": [
+          1.52,
+          16.23,
+          8.045
+        ]
+      },
+      "triangles": 8120,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -6825,7 +6846,7 @@
           4.3
         ]
       },
-      "triangles": 488,
+      "triangles": 1700,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -6846,7 +6867,7 @@
           5.3
         ]
       },
-      "triangles": 488,
+      "triangles": 908,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -6867,7 +6888,7 @@
           6.3
         ]
       },
-      "triangles": 648,
+      "triangles": 2312,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -6878,7 +6899,7 @@
       "name": "yard_covered_stores",
       "bounds": {
         "min": [
-          -6.345,
+          -6.38,
           0,
           -7.23
         ],
@@ -6888,7 +6909,7 @@
           6.8
         ]
       },
-      "triangles": 776,
+      "triangles": 1232,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -8947,6 +8968,48 @@
         ]
       },
       "triangles": 228,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "arrival_civic_boundary",
+      "bounds": {
+        "min": [
+          -0.52,
+          0,
+          -6.375
+        ],
+        "max": [
+          17.875,
+          3.195,
+          14.875
+        ]
+      },
+      "triangles": 12288,
+      "provenance": {
+        "source": "tools/chunk_surfer/build-props.mjs",
+        "origin": "project-native procedural geometry",
+        "license": "project source"
+      }
+    },
+    {
+      "name": "arrival_civic_bench",
+      "bounds": {
+        "min": [
+          -1.116,
+          -0.026,
+          -0.47
+        ],
+        "max": [
+          1.116,
+          1.041,
+          0.47
+        ]
+      },
+      "triangles": 1448,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -12424,17 +12487,17 @@
       "name": "building_dressing_batch_ground",
       "bounds": {
         "min": [
-          -101.825,
+          -79.1,
           -0.949,
-          -4.57
+          -19.835
         ],
         "max": [
           8.9,
           16.051,
-          105.335
+          83.335
         ]
       },
-      "triangles": 32392,
+      "triangles": 32428,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",

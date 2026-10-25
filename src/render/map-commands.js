@@ -161,6 +161,15 @@ export function buildMinimapCommands({ model, viewport, radius = 18, now = 0, as
 
   if (policy.minimapMode !== 'compass' && policy.showMapTopology !== false) {
     commands.push(localTopology(floor, transform, viewport, model.player.position, radius));
+    if(model.context==='exterior')for(const footprint of model.district?.footprints||[]){
+      const points=footprint.points.map(transform.point),xs=points.map(p=>p.x),ys=points.map(p=>p.y);
+      if(Math.max(...xs)<viewport.x||Math.min(...xs)>viewport.x+viewport.w||Math.max(...ys)<viewport.y||Math.min(...ys)>viewport.y+viewport.h)continue;
+      commands.push({kind:'district-footprint',id:footprint.id,points,role:footprint.role,viewport});
+    }
+    if(model.context==='exterior')for(const edge of model.district?.institutionEdges||[]){
+      const points=edge.map(transform.point);if(points.every(p=>p.x<viewport.x)||points.every(p=>p.x>viewport.x+viewport.w)||points.every(p=>p.y<viewport.y)||points.every(p=>p.y>viewport.y+viewport.h))continue;
+      commands.push({kind:'district-boundary',points,viewport});
+    }
   }
   // What he can actually SEE, as a wedge the geometry cuts into. The old facing
   // hint was a 0.75-cell tick on the player dot, which told you which way you
@@ -200,6 +209,15 @@ export function buildMinimapCommands({ model, viewport, radius = 18, now = 0, as
     if(!endpoint?.position)continue;
     const point=transform.point(endpoint.position);
     if(insideRect(point,viewport,.2))commands.push({kind:'connector-local',id:connector.id,point,selected:model.route?.nextConnectorId===connector.id});
+  }
+
+  if(model.context==='exterior'&&policy.minimapMode!=='compass'&&policy.showMapTopology!==false){
+    for(const space of model.spaces||[]){
+      if(space.floorId!==floor.id||!space.position||space.waypoint)continue;
+      const point=transform.point(space.position);if(!insideRect(point,viewport,.5))continue;
+      commands.push({kind:'district-landmark',id:space.id,point,label:space.shortLabel||space.label,
+        showLabel:policy.showRoom!==false,viewport});
+    }
   }
 
   const playerPoint=transform.point(model.player.position);

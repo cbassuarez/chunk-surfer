@@ -2,6 +2,7 @@
 // source names stop at the build manifest; gameplay owns stable role and mesh
 // names, while the existing floorplan remains the sole collision authority.
 
+import { ARRIVAL_COURT } from './arrival-court.js';
 import { VEGETATION_FALLBACKS } from './vegetation.js';
 import { EXTERIOR_FOREGROUND } from './exterior-foreground.js';
 
@@ -53,9 +54,9 @@ export const OPENING_STREET_PROPS = freeze([
   freeze({id:'opening-street-frontage',mesh:'opening_street_frontage',x:50,y:7.5,yaw:0,scale:1,interactive:false,structural:true,blocks:false}),
   freeze({id:'opening-street-service-history',mesh:'opening_street_service_history',x:86,y:218,yaw:0,scale:1,interactive:false,structural:true,blocks:false}),
   freeze({id:'opening-street-municipal-tree',mesh:'opening_street_tree_small',x:74,y:201,yaw:-.24,scale:1,interactive:false,structural:true,blocks:false}),
-  freeze({id:'opening-street-park-bench-west',mesh:'district_bench',x:66.5,y:201.5,yaw:Math.PI/2,scale:1,interactive:false,structural:true,blocks:false}),
-  freeze({id:'opening-street-park-bench-east',mesh:'district_bench',x:71.5,y:201.5,yaw:-Math.PI/2,scale:1,interactive:false,structural:true,blocks:false}),
-  freeze({id:'opening-street-park-laurel',mesh:'opening_park_laurel',fallbackMesh:VEGETATION_FALLBACKS.opening_park_laurel,x:69,y:200,yaw:Math.PI/2,scale:1,interactive:false,structural:true,blocks:false}),
+  freeze({id:'opening-street-park-bench-west',mesh:ARRIVAL_COURT.meshes.bench,x:66.5,y:201.5,yaw:Math.PI/2,scale:1,interactive:false,structural:true,blocks:false}),
+  freeze({id:'opening-street-park-bench-east',mesh:ARRIVAL_COURT.meshes.bench,x:71.5,y:201.5,yaw:-Math.PI/2,scale:1,interactive:false,structural:true,blocks:false}),
+  freeze({id:'opening-street-park-laurel',mesh:'opening_park_laurel',fallbackMesh:VEGETATION_FALLBACKS.opening_park_laurel,x:50+ARRIVAL_COURT.planting.laurel.x,y:200+ARRIVAL_COURT.planting.laurel.z,renderOffsetX:ARRIVAL_COURT.planting.laurel.x-Math.round(ARRIVAL_COURT.planting.laurel.x*2)/2,renderOffsetZ:ARRIVAL_COURT.planting.laurel.z-Math.round(ARRIVAL_COURT.planting.laurel.z*2)/2,yaw:Math.PI/2,scale:1,interactive:false,structural:true,blocks:false}),
   // A few deliberate seams, not a procedural carpet. They thicken the lawn
   // edge while keeping the entrance, benches and service approach open.
   //

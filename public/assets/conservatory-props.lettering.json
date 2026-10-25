@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "inputSha256": "0ce97c977db89c8c4adb0e6316584c75997511fa5f8d9ba93b73fb14a13db4ab",
+  "inputSha256": "eb998f83c50e19cd687bf437000d8b18d7b304f72267bacf2822e9278a25f079",
   "generatorSha256": "25049dfe0566d8a05d1e575338cf4497750f01386896c7d215bacb7ea06cbb2b",
   "finishAuthoringSha256": "7e0cf04028f84bf25d1049ff7ba3caf36e660dfaaf4c5228b8aa4c10c886b0c3",
   "pages": [
@@ -565,7 +565,7 @@
       "mesh": "outskirts_shelter_timetable",
       "geometry": {
         "id": "outskirts_shelter_timetable:0",
-        "material": 254,
+        "material": 282,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -740,7 +740,7 @@
       "mesh": "outskirts_ledger_signed",
       "geometry": {
         "id": "outskirts_ledger_signed:page-left",
-        "material": 257,
+        "material": 285,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -964,7 +964,7 @@
       "mesh": "outskirts_ledger_signed",
       "geometry": {
         "id": "outskirts_ledger_signed:page-right",
-        "material": 257,
+        "material": 285,
         "firstVertex": 4,
         "vertexCount": 4,
         "firstIndex": 6,
@@ -1139,7 +1139,7 @@
       "mesh": "outskirts_lodge_ledger",
       "geometry": {
         "id": "outskirts_lodge_ledger:page-left",
-        "material": 256,
+        "material": 284,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -1363,7 +1363,7 @@
       "mesh": "outskirts_lodge_ledger",
       "geometry": {
         "id": "outskirts_lodge_ledger:page-right",
-        "material": 256,
+        "material": 284,
         "firstVertex": 4,
         "vertexCount": 4,
         "firstIndex": 6,
@@ -1608,7 +1608,7 @@
       "mesh": "vigil_part_sign_chapel",
       "geometry": {
         "id": "vigil_part_sign_chapel:0",
-        "material": 242,
+        "material": 270,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -1826,7 +1826,7 @@
       "mesh": "lettering_overlay_box-office-returns-tray",
       "geometry": {
         "id": "box-office-returns-tray",
-        "material": 273,
+        "material": 301,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -2075,7 +2075,7 @@
       "mesh": "lettering_overlay_plate-academic-studio-4",
       "geometry": {
         "id": "plate-academic-studio-4",
-        "material": 282,
+        "material": 310,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -2354,7 +2354,7 @@
       "mesh": "lettering_overlay_plate-academic-office-locked-1",
       "geometry": {
         "id": "plate-academic-office-locked-1",
-        "material": 282,
+        "material": 310,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -2633,7 +2633,7 @@
       "mesh": "lettering_overlay_plate-academic-office-locked-2",
       "geometry": {
         "id": "plate-academic-office-locked-2",
-        "material": 282,
+        "material": 310,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -2821,7 +2821,7 @@
       "mesh": "door_stencil_b1",
       "geometry": {
         "id": "door_stencil_b1:0",
-        "material": 229,
+        "material": 257,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -3203,7 +3203,7 @@
       "mesh": "rekey_ledger",
       "geometry": {
         "id": "rekey_ledger:0",
-        "material": 225,
+        "material": 253,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -3635,7 +3635,7 @@
       "mesh": "lettering_overlay_atrium-public-directory",
       "geometry": {
         "id": "atrium-public-directory",
-        "material": 265,
+        "material": 293,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -3851,7 +3851,7 @@
       "mesh": "vigil_part_sign_save",
       "geometry": {
         "id": "vigil_part_sign_save:0",
-        "material": 240,
+        "material": 268,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -4160,7 +4160,7 @@
       "mesh": "lettering_overlay_tower-sign-belfry",
       "geometry": {
         "id": "tower-sign-belfry",
-        "material": 268,
+        "material": 296,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -4427,7 +4427,7 @@
       "mesh": "lettering_overlay_tower-sign-nave-exit",
       "geometry": {
         "id": "tower-sign-nave-exit",
-        "material": 268,
+        "material": 296,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -4688,7 +4688,7 @@
       "mesh": "lettering_overlay_tower-sign-organ-exit",
       "geometry": {
         "id": "tower-sign-organ-exit",
-        "material": 268,
+        "material": 296,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -4931,7 +4931,7 @@
       "mesh": "lettering_overlay_tower-sign-ringing",
       "geometry": {
         "id": "tower-sign-ringing",
-        "material": 268,
+        "material": 296,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -5179,7 +5179,7 @@
       "mesh": "scene_dock_sign_foh",
       "geometry": {
         "id": "scene_dock_sign_foh:0",
-        "material": 238,
+        "material": 266,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -5373,7 +5373,7 @@
       "mesh": "outskirts_ticket",
       "geometry": {
         "id": "outskirts_ticket:1",
-        "material": 259,
+        "material": 287,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -6526,7 +6526,7 @@
       "mesh": "lettering_overlay_plant-header-card",
       "geometry": {
         "id": "plant-header-card",
-        "material": 274,
+        "material": 302,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -6776,7 +6776,7 @@
       "mesh": "vigil_part_sign_strike",
       "geometry": {
         "id": "vigil_part_sign_strike:0",
-        "material": 241,
+        "material": 269,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -7308,7 +7308,7 @@
       "mesh": "lettering_overlay_yard-sign",
       "geometry": {
         "id": "yard-sign",
-        "material": 260,
+        "material": 288,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -7921,7 +7921,7 @@
       "mesh": "lettering_overlay_tower-history-plaque",
       "geometry": {
         "id": "tower-history-plaque",
-        "material": 269,
+        "material": 297,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -8166,7 +8166,7 @@
       "mesh": "vigil_part_sign_record",
       "geometry": {
         "id": "vigil_part_sign_record:0",
-        "material": 241,
+        "material": 269,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -8411,7 +8411,7 @@
       "mesh": "vigil_part_sign_signed",
       "geometry": {
         "id": "vigil_part_sign_signed:0",
-        "material": 241,
+        "material": 269,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -8660,7 +8660,7 @@
       "mesh": "lettering_overlay_plate-academic-studio-2",
       "geometry": {
         "id": "plate-academic-studio-2",
-        "material": 281,
+        "material": 309,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -8909,7 +8909,7 @@
       "mesh": "lettering_overlay_plate-academic-studio-3",
       "geometry": {
         "id": "plate-academic-studio-3",
-        "material": 281,
+        "material": 309,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -9091,7 +9091,7 @@
       "mesh": "city_phone_box_apparatus",
       "geometry": {
         "id": "city_phone_box_apparatus:10",
-        "material": 250,
+        "material": 278,
         "firstVertex": 12,
         "vertexCount": 4,
         "firstIndex": 18,
@@ -9273,7 +9273,7 @@
       "mesh": "city_phone_box_apparatus",
       "geometry": {
         "id": "city_phone_box_apparatus:11",
-        "material": 250,
+        "material": 278,
         "firstVertex": 16,
         "vertexCount": 4,
         "firstIndex": 24,
@@ -9455,7 +9455,7 @@
       "mesh": "city_phone_box_apparatus",
       "geometry": {
         "id": "city_phone_box_apparatus:2",
-        "material": 250,
+        "material": 278,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -9637,7 +9637,7 @@
       "mesh": "city_phone_box_apparatus",
       "geometry": {
         "id": "city_phone_box_apparatus:3",
-        "material": 250,
+        "material": 278,
         "firstVertex": 4,
         "vertexCount": 4,
         "firstIndex": 6,
@@ -9819,7 +9819,7 @@
       "mesh": "city_phone_box_apparatus",
       "geometry": {
         "id": "city_phone_box_apparatus:4",
-        "material": 250,
+        "material": 278,
         "firstVertex": 8,
         "vertexCount": 4,
         "firstIndex": 12,
@@ -10061,7 +10061,7 @@
       "mesh": "yard_van",
       "geometry": {
         "id": "van-stock-flashlight",
-        "material": 246,
+        "material": 274,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -10401,7 +10401,7 @@
       "mesh": "lettering_overlay_exterior-chapel-plaque",
       "geometry": {
         "id": "exterior-chapel-plaque",
-        "material": 261,
+        "material": 289,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -10813,7 +10813,7 @@
       "mesh": "lettering_overlay_exterior-foundation-stone",
       "geometry": {
         "id": "exterior-foundation-stone",
-        "material": 261,
+        "material": 289,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -11062,7 +11062,7 @@
       "mesh": "vigil_part_banner",
       "geometry": {
         "id": "vigil_part_banner:0",
-        "material": 243,
+        "material": 271,
         "firstVertex": 0,
         "vertexCount": 2425,
         "firstIndex": 0,
@@ -11292,7 +11292,7 @@
       "mesh": "lettering_overlay_plate-spur-tank",
       "geometry": {
         "id": "plate-spur-tank",
-        "material": 279,
+        "material": 307,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -11522,7 +11522,7 @@
       "mesh": "lettering_overlay_plate-store-corridor",
       "geometry": {
         "id": "plate-store-corridor",
-        "material": 279,
+        "material": 307,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -11777,7 +11777,7 @@
       "mesh": "lettering_overlay_plate-academic-store",
       "geometry": {
         "id": "plate-academic-store",
-        "material": 279,
+        "material": 307,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -12032,7 +12032,7 @@
       "mesh": "lettering_overlay_plate-practice-east-1",
       "geometry": {
         "id": "plate-practice-east-1",
-        "material": 279,
+        "material": 307,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -12287,7 +12287,7 @@
       "mesh": "lettering_overlay_plate-practice-east-2",
       "geometry": {
         "id": "plate-practice-east-2",
-        "material": 279,
+        "material": 307,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -12542,7 +12542,7 @@
       "mesh": "lettering_overlay_plate-practice-east-3",
       "geometry": {
         "id": "plate-practice-east-3",
-        "material": 279,
+        "material": 307,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -12797,7 +12797,7 @@
       "mesh": "lettering_overlay_plate-practice-east-4",
       "geometry": {
         "id": "plate-practice-east-4",
-        "material": 279,
+        "material": 307,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -13052,7 +13052,7 @@
       "mesh": "lettering_overlay_plate-practice-west-1",
       "geometry": {
         "id": "plate-practice-west-1",
-        "material": 279,
+        "material": 307,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -13307,7 +13307,7 @@
       "mesh": "lettering_overlay_plate-practice-west-2",
       "geometry": {
         "id": "plate-practice-west-2",
-        "material": 279,
+        "material": 307,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -13562,7 +13562,7 @@
       "mesh": "lettering_overlay_plate-practice-west-3",
       "geometry": {
         "id": "plate-practice-west-3",
-        "material": 279,
+        "material": 307,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -13817,7 +13817,7 @@
       "mesh": "lettering_overlay_plate-practice-west-4",
       "geometry": {
         "id": "plate-practice-west-4",
-        "material": 279,
+        "material": 307,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -14005,7 +14005,7 @@
       "mesh": "door_stencil_b2",
       "geometry": {
         "id": "door_stencil_b2:0",
-        "material": 230,
+        "material": 258,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -14193,7 +14193,7 @@
       "mesh": "door_stencil_b3",
       "geometry": {
         "id": "door_stencil_b3:0",
-        "material": 230,
+        "material": 258,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -14381,7 +14381,7 @@
       "mesh": "door_stencil_b5",
       "geometry": {
         "id": "door_stencil_b5:0",
-        "material": 230,
+        "material": 258,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -14581,7 +14581,7 @@
       "mesh": "ending_returned_ledger",
       "geometry": {
         "id": "ending_returned_ledger:1",
-        "material": 236,
+        "material": 264,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -14793,7 +14793,7 @@
       "mesh": "outskirts_ticket",
       "geometry": {
         "id": "outskirts_ticket:0",
-        "material": 258,
+        "material": 286,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -15211,7 +15211,7 @@
       "mesh": "lettering_overlay_brendan-visitor-till",
       "geometry": {
         "id": "brendan-visitor-till",
-        "material": 271,
+        "material": 299,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -15504,7 +15504,7 @@
       "mesh": "lettering_overlay_exterior-baths-mosaic",
       "geometry": {
         "id": "exterior-baths-mosaic",
-        "material": 262,
+        "material": 290,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -15777,7 +15777,7 @@
       "mesh": "lettering_overlay_exterior-hall-stone",
       "geometry": {
         "id": "exterior-hall-stone",
-        "material": 263,
+        "material": 291,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -15977,7 +15977,7 @@
       "mesh": "chapel_key_ring_c17",
       "geometry": {
         "id": "chapel_key_ring_c17:0",
-        "material": 227,
+        "material": 255,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -16251,7 +16251,7 @@
       "mesh": "chapel_key_ring_ch04",
       "geometry": {
         "id": "chapel_key_ring_ch04:0",
-        "material": 226,
+        "material": 254,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -16573,7 +16573,7 @@
       "mesh": "chapel_key_ring_fohm",
       "geometry": {
         "id": "chapel_key_ring_fohm:0",
-        "material": 228,
+        "material": 256,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -16827,7 +16827,7 @@
       "mesh": "scene_dock_sign_services",
       "geometry": {
         "id": "scene_dock_sign_services:0",
-        "material": 239,
+        "material": 267,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -17208,7 +17208,7 @@
       "mesh": "lettering_overlay_tower-hammer-isolator",
       "geometry": {
         "id": "tower-hammer-isolator",
-        "material": 270,
+        "material": 298,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -17420,7 +17420,7 @@
       "mesh": "lettering_overlay_acq-hall-chesterfield-west",
       "geometry": {
         "id": "acq-hall-chesterfield-west",
-        "material": 278,
+        "material": 306,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -17705,7 +17705,7 @@
       "mesh": "lettering_overlay_plate-spur-substation",
       "geometry": {
         "id": "plate-spur-substation",
-        "material": 280,
+        "material": 308,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -17893,7 +17893,7 @@
       "mesh": "source_hall_number_17",
       "geometry": {
         "id": "source_hall_number_17:0",
-        "material": 231,
+        "material": 259,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -18087,7 +18087,7 @@
       "mesh": "city_phone_box_apparatus",
       "geometry": {
         "id": "city_phone_box_apparatus:13",
-        "material": 251,
+        "material": 279,
         "firstVertex": 20,
         "vertexCount": 4,
         "firstIndex": 30,
@@ -18269,7 +18269,7 @@
       "mesh": "city_phone_box_apparatus",
       "geometry": {
         "id": "city_phone_box_apparatus:5",
-        "material": 251,
+        "material": 279,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -18451,7 +18451,7 @@
       "mesh": "city_phone_box_apparatus",
       "geometry": {
         "id": "city_phone_box_apparatus:6",
-        "material": 251,
+        "material": 279,
         "firstVertex": 4,
         "vertexCount": 4,
         "firstIndex": 6,
@@ -18633,7 +18633,7 @@
       "mesh": "city_phone_box_apparatus",
       "geometry": {
         "id": "city_phone_box_apparatus:7",
-        "material": 251,
+        "material": 279,
         "firstVertex": 8,
         "vertexCount": 4,
         "firstIndex": 12,
@@ -18815,7 +18815,7 @@
       "mesh": "city_phone_box_apparatus",
       "geometry": {
         "id": "city_phone_box_apparatus:8",
-        "material": 251,
+        "material": 279,
         "firstVertex": 12,
         "vertexCount": 4,
         "firstIndex": 18,
@@ -18997,7 +18997,7 @@
       "mesh": "city_phone_box_apparatus",
       "geometry": {
         "id": "city_phone_box_apparatus:9",
-        "material": 251,
+        "material": 279,
         "firstVertex": 16,
         "vertexCount": 4,
         "firstIndex": 24,
@@ -19251,7 +19251,7 @@
       "mesh": "yard_van",
       "geometry": {
         "id": "van-stock-headphones",
-        "material": 244,
+        "material": 272,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -19505,7 +19505,7 @@
       "mesh": "yard_van",
       "geometry": {
         "id": "van-stock-microphone",
-        "material": 244,
+        "material": 272,
         "firstVertex": 4,
         "vertexCount": 4,
         "firstIndex": 6,
@@ -19765,7 +19765,7 @@
       "mesh": "lettering_overlay_foyer-pew-1",
       "geometry": {
         "id": "foyer-pew-1",
-        "material": 272,
+        "material": 300,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -19977,7 +19977,7 @@
       "mesh": "lettering_overlay_acq-foyer-horse-head",
       "geometry": {
         "id": "acq-foyer-horse-head",
-        "material": 277,
+        "material": 305,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -20177,7 +20177,7 @@
       "mesh": "outskirts_bus",
       "geometry": {
         "id": "outskirts_bus:1",
-        "material": 253,
+        "material": 281,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -20377,7 +20377,7 @@
       "mesh": "outskirts_car",
       "geometry": {
         "id": "outskirts_car:0",
-        "material": 253,
+        "material": 281,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -20613,7 +20613,7 @@
       "mesh": "city_phone_box_apparatus",
       "geometry": {
         "id": "city_phone_box_apparatus:1",
-        "material": 249,
+        "material": 277,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -20807,7 +20807,7 @@
       "mesh": "city_phone_box_apparatus",
       "geometry": {
         "id": "city_phone_box_apparatus:12",
-        "material": 249,
+        "material": 277,
         "firstVertex": 4,
         "vertexCount": 4,
         "firstIndex": 6,
@@ -20982,7 +20982,7 @@
       "mesh": "ending_returned_ledger",
       "geometry": {
         "id": "ending_returned_ledger:unnamed-signature",
-        "material": 235,
+        "material": 263,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -21230,7 +21230,7 @@
       "mesh": "yard_van",
       "geometry": {
         "id": "van-stock-recorder",
-        "material": 245,
+        "material": 273,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -21514,7 +21514,7 @@
       "mesh": "yard_van",
       "geometry": {
         "id": "van-rack-faceplates",
-        "material": 245,
+        "material": 273,
         "firstVertex": 4,
         "vertexCount": 4,
         "firstIndex": 6,
@@ -21744,7 +21744,7 @@
       "mesh": "lettering_overlay_acq-foyer-console-01",
       "geometry": {
         "id": "acq-foyer-console-01",
-        "material": 276,
+        "material": 304,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -21974,7 +21974,7 @@
       "mesh": "lettering_overlay_acq-foyer-sofa-01",
       "geometry": {
         "id": "acq-foyer-sofa-01",
-        "material": 276,
+        "material": 304,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -22204,7 +22204,7 @@
       "mesh": "lettering_overlay_acq-foyer-armchair-01",
       "geometry": {
         "id": "acq-foyer-armchair-01",
-        "material": 276,
+        "material": 304,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -22434,7 +22434,7 @@
       "mesh": "lettering_overlay_deadend-ground-armchair",
       "geometry": {
         "id": "deadend-ground-armchair",
-        "material": 276,
+        "material": 304,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -22658,7 +22658,7 @@
       "mesh": "lettering_overlay_acq-practice-chair-1",
       "geometry": {
         "id": "acq-practice-chair-1",
-        "material": 276,
+        "material": 304,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -22882,7 +22882,7 @@
       "mesh": "lettering_overlay_acq-practice-chair-2",
       "geometry": {
         "id": "acq-practice-chair-2",
-        "material": 276,
+        "material": 304,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -23106,7 +23106,7 @@
       "mesh": "lettering_overlay_acq-practice-chair-3",
       "geometry": {
         "id": "acq-practice-chair-3",
-        "material": 276,
+        "material": 304,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -23330,7 +23330,7 @@
       "mesh": "lettering_overlay_acq-practice-chair-4",
       "geometry": {
         "id": "acq-practice-chair-4",
-        "material": 276,
+        "material": 304,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -23554,7 +23554,7 @@
       "mesh": "lettering_overlay_acq-practice-chair-5",
       "geometry": {
         "id": "acq-practice-chair-5",
-        "material": 276,
+        "material": 304,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -23778,7 +23778,7 @@
       "mesh": "lettering_overlay_acq-practice-chair-6",
       "geometry": {
         "id": "acq-practice-chair-6",
-        "material": 276,
+        "material": 304,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -24002,7 +24002,7 @@
       "mesh": "lettering_overlay_acq-practice-chair-7",
       "geometry": {
         "id": "acq-practice-chair-7",
-        "material": 276,
+        "material": 304,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -24226,7 +24226,7 @@
       "mesh": "lettering_overlay_acq-practice-chair-8",
       "geometry": {
         "id": "acq-practice-chair-8",
-        "material": 276,
+        "material": 304,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -24445,7 +24445,7 @@
       "mesh": "lettering_overlay_acq-services-panel-academic",
       "geometry": {
         "id": "acq-services-panel-academic",
-        "material": 275,
+        "material": 303,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -24664,7 +24664,7 @@
       "mesh": "lettering_overlay_acq-services-panel-foh",
       "geometry": {
         "id": "acq-services-panel-foh",
-        "material": 275,
+        "material": 303,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -24883,7 +24883,7 @@
       "mesh": "lettering_overlay_acq-services-panel-plant",
       "geometry": {
         "id": "acq-services-panel-plant",
-        "material": 275,
+        "material": 303,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -25102,7 +25102,7 @@
       "mesh": "lettering_overlay_acq-services-panel-pool",
       "geometry": {
         "id": "acq-services-panel-pool",
-        "material": 275,
+        "material": 303,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -25321,7 +25321,7 @@
       "mesh": "lettering_overlay_acq-services-panel-practice",
       "geometry": {
         "id": "acq-services-panel-practice",
-        "material": 275,
+        "material": 303,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -25551,7 +25551,7 @@
       "mesh": "city_phone_box",
       "geometry": {
         "id": "city_phone_box:0",
-        "material": 247,
+        "material": 275,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -25781,7 +25781,7 @@
       "mesh": "city_phone_box",
       "geometry": {
         "id": "city_phone_box:1",
-        "material": 247,
+        "material": 275,
         "firstVertex": 4,
         "vertexCount": 4,
         "firstIndex": 6,
@@ -26011,7 +26011,7 @@
       "mesh": "city_phone_box",
       "geometry": {
         "id": "city_phone_box:2",
-        "material": 247,
+        "material": 275,
         "firstVertex": 8,
         "vertexCount": 4,
         "firstIndex": 12,
@@ -26241,7 +26241,7 @@
       "mesh": "city_phone_box",
       "geometry": {
         "id": "city_phone_box:3",
-        "material": 247,
+        "material": 275,
         "firstVertex": 12,
         "vertexCount": 4,
         "firstIndex": 18,
@@ -27043,7 +27043,7 @@
       "mesh": "tower_peal_board",
       "geometry": {
         "id": "tower_peal_board:0",
-        "material": 234,
+        "material": 262,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -27267,7 +27267,7 @@
       "mesh": "hymn_board",
       "geometry": {
         "id": "hymn_board:0",
-        "material": 232,
+        "material": 260,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -27570,7 +27570,7 @@
       "mesh": "lettering_overlay_atrium-sign-main-exit",
       "geometry": {
         "id": "atrium-sign-main-exit",
-        "material": 264,
+        "material": 292,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -27789,7 +27789,7 @@
       "mesh": "tower_rope_mat_tenor",
       "geometry": {
         "id": "tower_rope_mat_tenor:0",
-        "material": 233,
+        "material": 261,
         "firstVertex": 0,
         "vertexCount": 50,
         "firstIndex": 0,
@@ -28001,7 +28001,7 @@
       "mesh": "outskirts_bus",
       "geometry": {
         "id": "outskirts_bus:0",
-        "material": 252,
+        "material": 280,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -28249,7 +28249,7 @@
       "mesh": "lettering_overlay_landing-academic-floor-landing",
       "geometry": {
         "id": "landing-academic-floor-landing",
-        "material": 283,
+        "material": 311,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -28515,7 +28515,7 @@
       "mesh": "lettering_overlay_landing-b3-landing",
       "geometry": {
         "id": "landing-b3-landing",
-        "material": 283,
+        "material": 311,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -28727,7 +28727,7 @@
       "mesh": "lettering_overlay_landing-ground-landing",
       "geometry": {
         "id": "landing-ground-landing",
-        "material": 283,
+        "material": 311,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -28975,7 +28975,7 @@
       "mesh": "lettering_overlay_landing-upper-floor-landing",
       "geometry": {
         "id": "landing-upper-floor-landing",
-        "material": 283,
+        "material": 311,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -29459,7 +29459,7 @@
       "mesh": "lettering_overlay_chapel-stair-sign-nave",
       "geometry": {
         "id": "chapel-stair-sign-nave",
-        "material": 267,
+        "material": 295,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -29705,7 +29705,7 @@
       "mesh": "city_phone_box_apparatus",
       "geometry": {
         "id": "city_phone_box_apparatus:0",
-        "material": 248,
+        "material": 276,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -30284,7 +30284,7 @@
       "mesh": "lettering_overlay_hall-entrance-sign",
       "geometry": {
         "id": "hall-entrance-sign",
-        "material": 266,
+        "material": 294,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -30496,7 +30496,7 @@
       "mesh": "outskirts_lodge",
       "geometry": {
         "id": "outskirts_lodge:0",
-        "material": 255,
+        "material": 283,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -30731,15 +30731,15 @@
         "center": [
           0.312,
           3.65,
-          -20
+          4
         ]
       },
       "bounds": null,
       "substrate": null,
-      "mesh": "district_civic_frontage",
+      "mesh": "exterior_pub_frontage",
       "geometry": {
         "id": "pub-lyric-fascia-east",
-        "material": 237,
+        "material": 265,
         "firstVertex": 4,
         "vertexCount": 4,
         "firstIndex": 6,
@@ -30747,7 +30747,7 @@
         "center": [
           0.312,
           3.65,
-          -20
+          4
         ],
         "readerRight": [
           0,
@@ -30956,15 +30956,15 @@
         "center": [
           0.312,
           3.65,
-          -28
+          -4
         ]
       },
       "bounds": null,
       "substrate": null,
-      "mesh": "district_civic_frontage",
+      "mesh": "exterior_pub_frontage",
       "geometry": {
         "id": "pub-lyric-fascia-west",
-        "material": 237,
+        "material": 265,
         "firstVertex": 0,
         "vertexCount": 4,
         "firstIndex": 0,
@@ -30972,7 +30972,7 @@
         "center": [
           0.312,
           3.65,
-          -28
+          -4
         ],
         "readerRight": [
           0,
@@ -31000,7 +31000,7 @@
   "gutterPx": 16,
   "packing": "MaxRects BSSF; four stable orders; 8px bin-width search and tight NPOT envelope; no rotation/resampling",
   "note": "Atlas RGB remains authored substrate color when alpha pigment coverage is zero. Normal and ORM are filtered independently. Empty or missing authored glyphs fail the bake.",
-  "packSha256": "d7b948f2fefb0c16b6fa99c38cfc238708baccaf33caa5581b4f78ae11258979",
+  "packSha256": "52bd50b152dfa68a59e2dd25f305874e140bcd9e3be7d7a603151c215273554f",
   "sourceHashes": {
     "public/assets/items/headphones-reference.glb": "ac4b5e54bf5489980ac071b5ffcf7bcb142b1936786d4d8ccae425fde89ee86c",
     "public/assets/items/headphones-closed.glb": "f8d07a880c7109cd9d7a5aec8aadc56f2bedad4cb926abbebd95ce63fa21efb1",
@@ -31017,7 +31017,7 @@
     "public/assets/items/faceplate-aluminum.glb": "18b3c4a4157b040103dc67e540d1db44f63f6d3393cc99009ed655ff73427f5f",
     "public/assets/items/faceplate-black.glb": "19d17265806bdf9f0ab01c9541790f43aa316c7693ffc8a50c3b153d7d52a61c",
     "public/assets/items/faceplate-olive.glb": "147bac7bea500e25ebf91c3fa7d469157f42d473dfeed5dae69231b1ec461668",
-    "tools/chunk_surfer/build-props.mjs": "e3c7f6d8fd125df43afd877b947f08b929705ec3b29c996f292e34597b7942c9",
+    "tools/chunk_surfer/build-props.mjs": "3e461c9d854c42a7a76700224d3c40384df75efc3bbfce12c23d6847745b10ee",
     "tools/chunk_surfer/van-rear-geometry.mjs": "5a4ed0bebed2565e27c39daa3e6881f1f9dfa15f93126272dbfa3a112cbe763e",
     "tools/chunk_surfer/van-rear-kit-geometry.mjs": "bd9c643cddb5c5ce1fc21b9fa9dfda63bc92b45bf1caea3f4af610ac002f0b66",
     "src/data/van-rear-design.js": "17c69f769b94890e42c9df9c4ba32030905fc3d682bb437f5bb627c1fea32c07",
@@ -31033,11 +31033,13 @@
     "tools/chunk_surfer/main-stair-use-geometry.mjs": "4025201ac62b411a4d95a9f17c3b78f60c40c1ea6db158153454b16b62efa7c9",
     "src/data/main-stair-geometry.js": "e5594ac5681c0b55afa49cf2b7c2f2f74d852b4d3b3e36b1a60370e6ac50d0d3",
     "tools/chunk_surfer/exterior-foreground-geometry.mjs": "124e06205a9f09e0620ebba209bc78924f3da64df67b17e843cfc59d28963166",
-    "tools/chunk_surfer/exterior-frontage-geometry.mjs": "64826e04aa9c5a1398a26565ab92b2eca8781697b9cebc15b155adab0689c545",
-    "tools/chunk_surfer/exterior-shop-massing.mjs": "6edad2c1828526c40f19d316c07c1df1c0963b451a30410b7ab11f1432f45d1c",
+    "tools/chunk_surfer/exterior-frontage-geometry.mjs": "29d9c74d60faef80a8a08103e4400b664bebe4fc4dc27a23215881d2e17a71c0",
+    "tools/chunk_surfer/arrival-court-geometry.mjs": "1ed61e48c8171b9df7461817464967f61968450042c11b8a235b42926fac5caf",
+    "src/data/arrival-court.js": "caee0bb5b384b90d7c4938f2009e2f49099ad9904b74e60ed889cc151e85b3ba",
+    "tools/chunk_surfer/exterior-shop-massing.mjs": "2668af7b4a44224821ed5f1b7c86c0a15936b87240b4665b3ce0735a99fea840",
     "tools/chunk_surfer/pub-interior-geometry.mjs": "cbade01cb1520330a45c35e8e007c97015d0a467214e30a78764ec890be35c42",
-    "src/data/exterior-pub.js": "63b7f95dfeb61fd2bb8e7c18aa9205ad1d98182f6b01acf2329d124202b3988a",
-    "src/data/exterior-pub-furnishings.js": "fe4cc445faeb06b9c974c5480387aa635756b67c21ad16d48d1159e42fc6e71e",
+    "src/data/exterior-pub.js": "b5f0d2b8d5a602cae594689c91cd2acb2e82f7d2813623236466c51f2ca588b6",
+    "src/data/exterior-pub-furnishings.js": "0ea8564a3e7079aad6578d35a7f895b08cd8386c1d0329c67b8315286de2158b",
     "src/data/exterior-foreground.js": "0ce18cf99db743822f15ba1d33c719a6af72a50e460428e7700a36ef3fa58cc2",
     "src/data/exterior-district.js": "8c51f37f54acaefbf6f8b782ddd88627cc46d601f7526444fec3e11ceaa04706",
     "tools/chunk_surfer/lettering/physical-lettering.mjs": "59256f8316f77d395874843591ad15dc9b9b0894f0e0e886c72fb6660f7adda7",
@@ -31050,17 +31052,23 @@
     "tools/chunk_surfer/lettering/finish.py": "7e0cf04028f84bf25d1049ff7ba3caf36e660dfaaf4c5228b8aa4c10c886b0c3",
     "src/data/world-inscriptions.js": "730d342987fa5d2566fd443911308c147b30f53fcea75c94916584469d7a9417",
     "src/data/corridor-lettering.js": "9e26802e3814f8d3355b84612e8ffa491840e7926c65905214354601e62e458d",
-    "src/data/building-map.js": "16e0f8494c1a5ec9f0fcea25fe6aeb7cb16e1f6669444f00a679709d1dd6415e",
+    "src/data/building-map.js": "0f40f9c64173dfce401ccc199728d8996ba7a082784c6170ee8ccedf9ef468cc",
     "src/world/corridor-dressing.js": "78b68aa2b1eba6bcd285adf21d219c99434fe62f1b665df53018e94fe7443ad7",
-    "src/world/floorplan.js": "3085f8495790fa8478e3ab3e9e7af63263194fb9ea4e7f7e893b2d8a1f6965f4",
+    "src/world/floorplan.js": "6f883440b1c126fbc00731d16f899e011e0899b2a5d5ea5b2260663dbafad0cc",
     "src/world/wall-contact.js": "d4726b3370695e07e417af3adeda942e7b823fcbf29c71562b595a3e2c69db05",
     "src/world/baseboard-hosting.js": "7e65032a8e21ec19e7ee1333afce941957e2f0d23ff5b9d282c85485c24d54ac",
     "src/world/prop-wall-pose.js": "b9ac03dd126629ccc7d8014fb9b3ad19add824b25125c95dae0d700fef842e2a",
-    "src/game/props.js": "619d3f2726aa72211c94a7b5b472f7b16cb9e652c3ca47df7bb347f17fbb8b92",
-    "src/data/conservatory-props.js": "12c055b51d131149a948a4f8ae8840fe97efa49debb72fe2d801d194d371a302",
-    "src/data/floorplan/conservatory.js": "119bcaaae3a3f840b357efe125829dc02a2cabc32d6ef11f0505b19550063e91",
-    "src/data/conservatory-doors.js": "3a0e516210444601d6d33187c110c570ae60eebe75d26384f5bc66481d7e10c4",
-    "public/assets/conservatory-acquisitions.glb": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336"
+    "src/game/props.js": "3109e7352ae45b4cf5c0b9faa71f6b5e6c476922a144ae33ace7f9cd6b081ee3",
+    "src/data/conservatory-props.js": "0ffca2825b439500cf6ff6c29aeb386dc12d35a200f522e1cc3f56bc87766d52",
+    "src/data/floorplan/conservatory.js": "5d4b17fb3eaf13723c68fa4f7b4aa62ffe02e7df80a151197f1cfbc84826589c",
+    "src/data/conservatory-doors.js": "faf3f0faf714b522e4517eb240160f1ce7e0a80869ce8b38a1787281dd71b4d5",
+    "public/assets/conservatory-acquisitions.glb": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+    "src/data/plaza-shopfronts.js": "f6bdbed73ba3093508641707a62faff3bc51fe7d502a039af076e3cfd4792b28",
+    "tools/chunk_surfer/shop-display-geometry.mjs": "33b3d6d916addab894a5b1f0444f8ddf0987cd75f78d5441d4b27c863c42f8cb",
+    "tools/chunk_surfer/plaza-shop-lettering.mjs": "198686793db6a48f81bd2a2d6010edcb7f05e1df6e9ec4b54f5fe4892ea5af90",
+    "tools/chunk_surfer/generated/plaza-shop-lettering.json": "c90d1d1598c30a7783fcd880420a2b23d8477dc0037bec0de4fa267c7f5ea57e",
+    "src/data/yard-range-frontages.js": "571cb4bfd874efe0817bce2f22bc895b179677af944db95f3251734d59394dd8",
+    "tools/chunk_surfer/yard-range-frontage-geometry.mjs": "90f80ef953503c56638ffd15129f6606e2abf85b697522178d4a3c51bf5ef68c"
   },
   "carrierAssemblies": {
     "version": 1,
@@ -32150,7 +32158,7 @@
           0.84,
           0.28
         ],
-        "material": 132,
+        "material": 152,
         "profile": "mineral-carrier",
         "bevelM": 0.0035,
         "grainAxis": 0,
@@ -32169,7 +32177,7 @@
           0.5,
           0.05
         ],
-        "material": 133,
+        "material": 153,
         "profile": "mineral-carrier",
         "bevelM": 0.0035,
         "grainAxis": 0,
@@ -32472,7 +32480,7 @@
           0.84,
           0.0035
         ],
-        "material": 134,
+        "material": 154,
         "profile": "painted-card",
         "bevelM": 0,
         "grainAxis": 0,
@@ -32491,7 +32499,7 @@
           0.38,
           0.025
         ],
-        "material": 135,
+        "material": 155,
         "profile": "timber-frame",
         "bevelM": 0.0023,
         "grainAxis": 1,
@@ -32514,7 +32522,7 @@
           0.84,
           0.0035
         ],
-        "material": 134,
+        "material": 154,
         "profile": "painted-card",
         "bevelM": 0,
         "grainAxis": 0,
@@ -32533,7 +32541,7 @@
           0.38,
           0.025
         ],
-        "material": 135,
+        "material": 155,
         "profile": "timber-frame",
         "bevelM": 0.0023,
         "grainAxis": 1,
@@ -32556,7 +32564,7 @@
           0.84,
           0.0035
         ],
-        "material": 134,
+        "material": 154,
         "profile": "painted-card",
         "bevelM": 0,
         "grainAxis": 0,
@@ -32575,7 +32583,7 @@
           0.38,
           0.025
         ],
-        "material": 135,
+        "material": 155,
         "profile": "timber-frame",
         "bevelM": 0.0023,
         "grainAxis": 1,
@@ -32598,7 +32606,7 @@
           0.84,
           0.0035
         ],
-        "material": 134,
+        "material": 154,
         "profile": "painted-card",
         "bevelM": 0,
         "grainAxis": 0,
@@ -32617,7 +32625,7 @@
           0.38,
           0.025
         ],
-        "material": 135,
+        "material": 155,
         "profile": "timber-frame",
         "bevelM": 0.0023,
         "grainAxis": 1,
@@ -32640,7 +32648,7 @@
           0.84,
           0.0035
         ],
-        "material": 134,
+        "material": 154,
         "profile": "painted-card",
         "bevelM": 0,
         "grainAxis": 0,
@@ -32659,7 +32667,7 @@
           0.38,
           0.025
         ],
-        "material": 135,
+        "material": 155,
         "profile": "timber-frame",
         "bevelM": 0.0023,
         "grainAxis": 1,
@@ -32846,7 +32854,7 @@
           2.1,
           0.09
         ],
-        "material": 139,
+        "material": 159,
         "profile": "enamel",
         "bevelM": 0.0014,
         "grainAxis": 1,
@@ -32865,7 +32873,7 @@
           2.1,
           0.09
         ],
-        "material": 139,
+        "material": 159,
         "profile": "enamel",
         "bevelM": 0.0014,
         "grainAxis": 1,
@@ -32884,7 +32892,7 @@
           1.16,
           0.05
         ],
-        "material": 140,
+        "material": 160,
         "profile": "enamel",
         "bevelM": 0.0014,
         "grainAxis": 0,
@@ -32922,7 +32930,7 @@
           0.1,
           0.03
         ],
-        "material": 140,
+        "material": 160,
         "profile": "enamel",
         "bevelM": 0.0014,
         "grainAxis": 0,
@@ -33008,7 +33016,7 @@
           1.02,
           0.09
         ],
-        "material": 206,
+        "material": 234,
         "profile": "enamel",
         "bevelM": 0.0014,
         "grainAxis": 1,
@@ -33027,7 +33035,7 @@
           0.93,
           0.014
         ],
-        "material": 207,
+        "material": 235,
         "profile": "enamel",
         "bevelM": 0.0014,
         "grainAxis": 1,
@@ -33046,7 +33054,7 @@
           0.008,
           0.002
         ],
-        "material": 208,
+        "material": 236,
         "profile": "enamel",
         "bevelM": 0.0003,
         "grainAxis": 0,
@@ -33065,7 +33073,7 @@
           0.008,
           0.002
         ],
-        "material": 208,
+        "material": 236,
         "profile": "enamel",
         "bevelM": 0.0003,
         "grainAxis": 0,
@@ -33084,7 +33092,7 @@
           0.008,
           0.002
         ],
-        "material": 208,
+        "material": 236,
         "profile": "enamel",
         "bevelM": 0.0003,
         "grainAxis": 0,
@@ -33103,7 +33111,7 @@
           0.035,
           0.012
         ],
-        "material": 139,
+        "material": 159,
         "profile": "enamel",
         "bevelM": 0.0014,
         "grainAxis": 0,
@@ -33122,7 +33130,7 @@
           0.004,
           0.003
         ],
-        "material": 208,
+        "material": 236,
         "profile": "enamel",
         "bevelM": 0.00045,
         "grainAxis": 0,
@@ -33141,7 +33149,7 @@
           0.035,
           0.012
         ],
-        "material": 139,
+        "material": 159,
         "profile": "enamel",
         "bevelM": 0.0014,
         "grainAxis": 0,
@@ -33160,7 +33168,7 @@
           0.004,
           0.003
         ],
-        "material": 208,
+        "material": 236,
         "profile": "enamel",
         "bevelM": 0.00045,
         "grainAxis": 0,
@@ -33179,7 +33187,7 @@
           0.035,
           0.012
         ],
-        "material": 139,
+        "material": 159,
         "profile": "enamel",
         "bevelM": 0.0014,
         "grainAxis": 0,
@@ -33198,7 +33206,7 @@
           0.004,
           0.003
         ],
-        "material": 208,
+        "material": 236,
         "profile": "enamel",
         "bevelM": 0.00045,
         "grainAxis": 0,
@@ -33217,7 +33225,7 @@
           0.035,
           0.012
         ],
-        "material": 139,
+        "material": 159,
         "profile": "enamel",
         "bevelM": 0.0014,
         "grainAxis": 0,
@@ -33236,7 +33244,7 @@
           0.004,
           0.003
         ],
-        "material": 208,
+        "material": 236,
         "profile": "enamel",
         "bevelM": 0.00045,
         "grainAxis": 0,
@@ -33255,7 +33263,7 @@
           0.035,
           0.014
         ],
-        "material": 209,
+        "material": 237,
         "profile": "enamel",
         "bevelM": 0.0014,
         "grainAxis": 0,
@@ -33274,7 +33282,7 @@
           0.132,
           0.006
         ],
-        "material": 210,
+        "material": 238,
         "profile": "enamel",
         "bevelM": 0.0009,
         "grainAxis": 1,
@@ -33293,7 +33301,7 @@
           0.2024,
           0.006
         ],
-        "material": 210,
+        "material": 238,
         "profile": "enamel",
         "bevelM": 0.0009,
         "grainAxis": 1,
@@ -33312,7 +33320,7 @@
           0.2728,
           0.006
         ],
-        "material": 210,
+        "material": 238,
         "profile": "enamel",
         "bevelM": 0.0009,
         "grainAxis": 1,
@@ -33331,7 +33339,7 @@
           0.132,
           0.006
         ],
-        "material": 210,
+        "material": 238,
         "profile": "enamel",
         "bevelM": 0.0009,
         "grainAxis": 1,
@@ -33350,7 +33358,7 @@
           0.2024,
           0.006
         ],
-        "material": 210,
+        "material": 238,
         "profile": "enamel",
         "bevelM": 0.0009,
         "grainAxis": 1,

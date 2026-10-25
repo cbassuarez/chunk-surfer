@@ -10,6 +10,7 @@ import { CHURCH_LIGHTS } from './st-brendans.js';
 import { EXTERIOR_PUB, pubWorldFromLocal } from './exterior-pub.js';
 import { PUB_LIGHT_ANCHORS } from './exterior-pub-furnishings.js';
 import {PUB_HOSPITALITY_LIGHTS} from './pub-hospitality.js';
+import { STATIONERS_LIGHTS } from './exterior-stationers.js';
 
 export const LIGHT_KIND = Object.freeze({
   SKY: 'sky',
@@ -122,6 +123,7 @@ const AMBIENT = Object.freeze({
   [ZONE.academic]: { color: [.62, .69, .70], intensity: .036 },
   [ZONE.academicRoof]: { color: [.46, .56, .70], intensity: .155 },
   [ZONE.pub]: { color: [1,.75,.49], intensity: .16 },
+  [ZONE.stationers]: { color: [.92,.78,.57], intensity: .13 },
   [ZONE.danceStudio]: { color: [.38, .34, .27], intensity: .014 },
   [ZONE.store]: { color: [.42, .43, .40], intensity: .016 },
   // The get-in keeps the sodium and rust the old dock room had.
@@ -241,6 +243,8 @@ const L = freezeLight;
 // emitted light. The fallback coordinates keep deterministic tests and early
 // asset-load frames stable.
 export const CONSERVATORY_LIGHTS = Object.freeze([
+  ...STATIONERS_LIGHTS.map(a=>L(a.id,LIGHT_KIND.FITTING,a.x,a.z,a.y,a.color,a.intensity,a.radius,
+    {groups:['ground'],zones:[ZONE.stationers,ZONE.street,ZONE.civicCourt],powerMode:LIGHT_POWER_MODE.EXTERNAL})),
   // The Lyric is supplied independently of the closed institution. These are
   // the actual pendant/WC sockets from the shared furnishing contract; retain
   // their output when seen through the pub's open window joinery.
@@ -329,8 +333,8 @@ export const CONSERVATORY_LIGHTS = Object.freeze([
     {groups:['ground','academicRoof'],zones:[ZONE.street,ZONE.civicCourt,ZONE.academicRoof]}),
   L('district-east-lamp-south', LIGHT_KIND.FITTING, 135, 78, 6.1, [1,.57,.24], .84, 20,
     {groups:['ground','academicRoof'],zones:[ZONE.street,ZONE.civicCourt,ZONE.academicRoof]}),
-  L('district-south-pub-spill', LIGHT_KIND.FITTING, 18, 99, 2.4, [1,.76,.46], .72, 13,
-    {groups:['ground','academicRoof'],zones:[ZONE.street,ZONE.civicCourt,ZONE.academicRoof],flutter:{amount:.03,steady:.95}}),
+  L('district-south-pub-spill', LIGHT_KIND.FITTING, EXTERIOR_PUB.interiorAnchor.x, EXTERIOR_PUB.frontWorldZ-2, 2.4, [1,.76,.46], .72, 13,
+    {groups:['ground','academicRoof'],zones:[ZONE.dock,ZONE.pub,ZONE.academicRoof],flutter:{amount:.03,steady:.95}}),
   L('district-south-lamp-east', LIGHT_KIND.FITTING, 106, 99, 6.1, [1,.60,.27], .88, 20,
     {groups:['ground','academicRoof'],zones:[ZONE.street,ZONE.civicCourt,ZONE.academicRoof]}),
   // Cold overcast relief on Ellery itself. These reveal cornices and roof depth
@@ -564,6 +568,7 @@ export function resolveLightingContext(context = {}) {
     // the legacy white-point curve cannot recover an underexposed stone wall.
     ...(zone === ZONE.church ? { captureExposure: 4.5 } : {}),
     ...(zone === ZONE.pub ? { captureExposure: 1.85 } : {}),
+    ...(zone === ZONE.stationers ? { captureExposure: 1.5 } : {}),
   };
 }
 

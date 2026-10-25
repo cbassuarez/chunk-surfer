@@ -20,7 +20,7 @@ test('visible warm practicals replace the ordinary lamps only after the isolated
   assert.equal(JSON.stringify(PUB_LIGHT_ANCHORS),shared,'Source shared anchors retain their original contract');
 });
 test('the actual nearest-light budget admits face-height practicals at the snug and the bar',()=>{
-  for(const[point,expected]of[[{x:-9.7,z:108.3},'pub-table-lamp-0'],[{x:-2.8,z:108.3},'pub-counter-lamp']]){
+  for(const[point,expected]of[[{x:29.3,z:86.3},'pub-table-lamp-0'],[{x:36.2,z:86.3},'pub-counter-lamp']]){
     const lights=resolveLocalLights(context,{origin:point,pubHospitalityReady:true});assert.ok(lights.length<=8);
     assert.ok(lights.some(l=>l.id===expected),`${expected} survives the eight-light limit`);
   }

@@ -1,7 +1,7 @@
 {
   "version": 2,
   "architectureRevision": 2,
-  "bytes": 2068896,
+  "bytes": 2068892,
   "totalTriangles": 48402,
   "vertices": 61260,
   "materialBatches": 8,
@@ -15,7 +15,7 @@
     "min": [
       -3.9939999999999998,
       0.16,
-      -5.994091346153848
+      -5.994
     ],
     "max": [
       4.994,
@@ -730,5 +730,5 @@
     "newCollision": false,
     "worldAnchored": true
   },
-  "sha256": "1c45191653a78f5451e58d766dda35ac6d630e036b75a0ca24edea5334084465"
+  "sha256": "ceb01360bab135d4d63ceb005352423e94e3d651ddfe2f4bab59ee0b1e97f838"
 }

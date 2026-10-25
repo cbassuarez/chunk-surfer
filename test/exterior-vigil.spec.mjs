@@ -3,7 +3,8 @@
 import assert from 'node:assert/strict';
 import {existsSync,readFileSync,statSync} from 'node:fs';
 import * as FP from '../src/world/floorplan.js';
-import {districtLogicalAt} from '../src/data/exterior-district.js';
+import {pubLogicalAt} from '../src/data/exterior-pub.js';
+import {CELL,ZONE} from '../src/data/floorplan/legend.js';
 import {conservatory} from '../src/data/floorplan/conservatory.js';
 import {CONSERVATORY_PROPS,PROP_MESH} from '../src/data/conservatory-props.js';
 import {PROP_BOUNDS} from '../src/data/generated/prop-geometry.js';
@@ -64,13 +65,22 @@ const PAD=.20,padded=(figure)=>{const box=VIGIL_MESHES[figure.mesh],c=Math.abs(M
 for(const clearance of VIGIL_CLEARANCES){assert.ok(Math.min(clearance.x1-clearance.x0,clearance.y1-clearance.y0)>=VIGIL_MIN_CORRIDOR);for(const figure of figures){const a=padded(figure),overlap=a.x0<clearance.x1&&a.x1>clearance.x0&&a.y0<clearance.y1&&a.y1>clearance.y0;assert.ok(!overlap,`${figure.id} blocks ${clearance.id}`);}}
 for(let i=0;i<figures.length;i+=1)for(let j=i+1;j<figures.length;j+=1){const a=padded(figures[i]),b=padded(figures[j]);assert.ok(!(a.x0<b.x1&&a.x1>b.x0&&a.y0<b.y1&&a.y1>b.y0),`${figures[i].id} overlaps ${figures[j].id}`);}
 const yardPoint=(x,y)=>FP.toRuntimePoint({x:50+x,y:200+y}),key=({x,y})=>`${x},${y}`;
-function walk(){const start=FP.spawn(),seen=new Set([key(start)]),queue=[start],keys=new Set(['master']);while(queue.length){const here=queue.shift(),connector=FP.connectorDestination(here.x,here.y);if(connector&&!seen.has(key(connector))){seen.add(key(connector));queue.push(connector);}for(const [dx,dy] of[[1,0],[-1,0],[0,1],[0,-1]]){const next={x:here.x+dx,y:here.y+dy};if(seen.has(key(next)))continue;const move=FP.canStep(here.x,here.y,next.x,next.y,{keys});if(!move.ok)continue;const dest=move.redirect||next;if(seen.has(key(dest))||!PROPS.propCanOccupy(dest.x,dest.y))continue;seen.add(key(dest));queue.push(dest);}}return seen;}
+function walk(){const start=FP.spawn(),seen=new Set([key(start)]),queue=[start],keys=new Set(['master']);let cursor=0;while(cursor<queue.length){const here=queue[cursor++],connector=FP.connectorDestination(here.x,here.y);if(connector&&!seen.has(key(connector))){seen.add(key(connector));queue.push(connector);}for(const [dx,dy] of[[1,0],[-1,0],[0,1],[0,-1]]){const next={x:here.x+dx,y:here.y+dy};if(seen.has(key(next)))continue;const move=FP.canStep(here.x,here.y,next.x,next.y,{keys});if(!move.ok)continue;const dest=move.redirect||next;if(seen.has(key(dest))||!PROPS.propCanOccupy(dest.x,dest.y))continue;seen.add(key(dest));queue.push(dest);}}return seen;}
 for(const door of FP.doorState())if(!door.keyId||door.keyId==='master')FP.setDoorOpen(door.id,true);
 const reachable=walk();
 for(const [label,x,y] of[['park entrance',10,23],['fountain',10,33],['west apron',16,53],['south porch',26,73],['forecourt',31,53],['yard spine',26,34]])assert.ok(reachable.has(key(yardPoint(x,y))),`${label} unreachable`);
 for(const figure of named){
-  const pubAt=figure.pubActorId?districtLogicalAt(figure.approach.x,figure.approach.y):null;
-  const point=pubAt?{x:Math.round((pubAt.x-.25)*2),y:Math.round((pubAt.y-.25)*2)}:yardPoint(figure.approach.x,figure.approach.y);
+  // The relocated pub preserves its original logical/save island. Its world
+  // coordinates must go through that owner, not the surrounding district's
+  // unshifted projection. Sample the nearest ordinary player's body centre.
+  const pubAt=figure.pubActorId?pubLogicalAt(figure.approach.x,figure.approach.y):null;
+  const point=pubAt?FP.toRuntimePoint({x:pubAt.x-CELL/2,y:pubAt.y-CELL/2},{center:false}):yardPoint(figure.approach.x,figure.approach.y);
+  if(pubAt){
+    assert.equal(FP.zoneAt(point.x,point.y),ZONE.pub,`${figure.id} approach maps into the actual pub`);
+    const physical=FP.logicalToPhysical(point.x+.5,point.y+.5);
+    assert.ok(Math.hypot(physical.x*CELL-figure.approach.x,physical.z*CELL-figure.approach.y)<=Math.SQRT2*CELL/2+1e-6,`${figure.id} approach resolves beside its actual world placement`);
+    assert.ok(PROPS.propCanOccupy(point.x,point.y),`${figure.id} approach fits the actual player body`);
+  }
   assert.ok(reachable.has(key(point)),`${figure.id} cannot be approached`);
 }
 
@@ -133,8 +143,9 @@ assert.equal(VIGIL_ACTION_CONCURRENCY,2);assert.equal(VIGIL_ACTION_MIN_WAIT_MS,9
 let actionState={...freshVigilActionState('run-a'),waitMs:0};
 
 // Execute the actual main-loop integration with a named actor and no crowd
-// drift. The scheduler removes terminal frames, so completion/cancellation
-// needs a final renderer refresh even when its new active list is empty.
+// drift. Named skins are now sampled in the dynamic pass, including the final
+// return to rest. Updating or clearing their action must not rebuild the static
+// world cache; only independently drifting static signs require that rebuild.
 const mainSource=readFileSync('src/main.js','utf8');
 const tickSource=mainSource.slice(mainSource.indexOf('function tickVigilActions('),mainSource.indexOf('function restoreExteriorVigil('));
 function namedActionRefresh({elapsedMs=1990,dt=.016,locked=false,active=true}={}){
@@ -151,9 +162,9 @@ function namedActionRefresh({elapsedMs=1990,dt=.016,locked=false,active=true}={}
   `);
   return run(scheduleVigilActions,initial,actor);
 }
-assert.deepEqual(namedActionRefresh(),{refreshes:1,active:0},'completed named action left its last gesture in the renderer');
-assert.deepEqual(namedActionRefresh({elapsedMs:500,dt:0,locked:true}),{refreshes:1,active:0},'conversation lock did not clear a named gesture');
-assert.deepEqual(namedActionRefresh({elapsedMs:500}),{refreshes:1,active:1},'active named gesture did not reach renderer');
+assert.deepEqual(namedActionRefresh(),{refreshes:0,active:0},'completed dynamic named action needlessly rebuilt static props');
+assert.deepEqual(namedActionRefresh({elapsedMs:500,dt:0,locked:true}),{refreshes:0,active:0},'conversation lock did not clear a dynamic named gesture without cache churn');
+assert.deepEqual(namedActionRefresh({elapsedMs:500}),{refreshes:0,active:1},'active dynamic named gesture needlessly rebuilt static props');
 assert.deepEqual(namedActionRefresh({active:false,dt:0}),{refreshes:0,active:0},'idle named cast needlessly refreshed every frame');
 let actionStep=scheduleVigilActions(actionState,{actors:figures,listener:{x:28.8,y:52.8},dtMs:0,runId:'run-a'});assert.equal(actionStep.state.active.length,1);
 const firstActor=actionStep.state.active[0].actorId;

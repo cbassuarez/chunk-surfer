@@ -66,7 +66,14 @@ test('an ordinary explicit release preserves progress and cannot contaminate Sou
   assert.deepEqual(h.look(),{yaw:original.yaw,pitch:original.pitch});assert.equal(e.sourcePubScene,null);assert.equal(h.restores(),1);
   assert.match(main,/if\(sourcePubScene\)\{commitSourcePub\(\);releaseSourcePub\(\);\}/,'return to title preserves this resumable side leg before restoring Source');
   assert.match(main,/if\(!paused&&\(sourcePubScene\|\|sourceContinuationScene\)\)SPEECH\.updateSpeech\(dt\)/,'Iona speech keeps its shared owner while Source audio is suspended');
-  assert.match(main,/if\(sourceDriveSession\|\|sourcePubScene\|\|sourceContinuationScene(?:\|\|getInDriveTeaserScene)?\)\{silenceSampleField\(\);return;\}/);
+  const guard=main.match(/function updateAudio\(\)\{\s*if\(([^)]+)\)\{silenceSampleField\(\);return;\}/);
+  assert.ok(guard,'special scenes return before ordinary sample-field playback');
+  const owners=guard[1].split('||');
+  assert.ok(owners.every(id=>/^[A-Za-z_$][\w$]*$/.test(id)),'guard contains only scene owners');
+  assert.ok(owners.includes('sourcePubScene'),'the Source pub owns its audio field');
+  const active=Function(...owners,`return !!(${guard[1]});`);
+  assert.equal(active(...owners.map(id=>id==='sourcePubScene')),true,'Source pub alone suppresses the ordinary sample field');
+  assert.equal(active(...owners.map(()=>false)),false,'an ordinary explicit release restores the ordinary sample field');
 });
 
 test('save v4 persists the resumable bar state defensively and resets it across runs',async()=>{

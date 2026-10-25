@@ -17,7 +17,9 @@ import { createReliquaryPropGeometry, RELIQUARY_PROP_MATERIALS } from './reliqua
 import { buildAcademicRoof } from './academic-roof-geometry.mjs';
 import { buildExteriorForeground } from './exterior-foreground-geometry.mjs';
 import { addBourgeoisPubFrontage, buildForegroundShelters } from './exterior-frontage-geometry.mjs';
+import { buildArrivalCourt } from './arrival-court-geometry.mjs';
 import { addSouthShopDeed } from './exterior-shop-massing.mjs';
+import { buildYardRangeBody, addYardRangeWestFrontage } from './yard-range-frontage-geometry.mjs';
 import { buildPubInterior } from './pub-interior-geometry.mjs';
 import { buildAcademicRoofDressing } from './academic-roof-dressing.mjs';
 import { buildArchitectureFittings } from './architecture-fittings-geometry.mjs';
@@ -58,7 +60,7 @@ import { wallRuns, wallRunsDigest } from '../../src/world/wall-contact.js';
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
 const VAN_REAR_STOCK_SOURCES=workbenchCatalog({}).filter(p=>p.kind==='variant'&&p.optionId!=='witness').map(p=>'public/'+vanKitModel(p.modelId).model);
-const LETTERING_INPUTS=[...VAN_REAR_STOCK_SOURCES,'tools/chunk_surfer/build-props.mjs','tools/chunk_surfer/van-rear-geometry.mjs','tools/chunk_surfer/van-rear-kit-geometry.mjs','src/data/van-rear-design.js','src/data/van-rear-stock.js','src/data/workbench-catalog.js','src/data/van-kit-models.js','public/assets/items/field-case.glb','public/assets/items/field-recorder.glb','public/assets/items/map.glb','public/assets/items/radio.glb','tools/chunk_surfer/organ-console-geometry.mjs','tools/chunk_surfer/tower-shutter-linkage-geometry.mjs','tools/chunk_surfer/main-stair-use-geometry.mjs','src/data/main-stair-geometry.js','tools/chunk_surfer/exterior-foreground-geometry.mjs','tools/chunk_surfer/exterior-frontage-geometry.mjs','tools/chunk_surfer/exterior-shop-massing.mjs','tools/chunk_surfer/pub-interior-geometry.mjs','src/data/exterior-pub.js','src/data/exterior-pub-furnishings.js','src/data/exterior-foreground.js','src/data/exterior-district.js','tools/chunk_surfer/lettering/physical-lettering.mjs',
+const LETTERING_INPUTS=[...VAN_REAR_STOCK_SOURCES,'tools/chunk_surfer/build-props.mjs','tools/chunk_surfer/van-rear-geometry.mjs','tools/chunk_surfer/van-rear-kit-geometry.mjs','src/data/van-rear-design.js','src/data/van-rear-stock.js','src/data/workbench-catalog.js','src/data/van-kit-models.js','public/assets/items/field-case.glb','public/assets/items/field-recorder.glb','public/assets/items/map.glb','public/assets/items/radio.glb','tools/chunk_surfer/organ-console-geometry.mjs','tools/chunk_surfer/tower-shutter-linkage-geometry.mjs','tools/chunk_surfer/main-stair-use-geometry.mjs','src/data/main-stair-geometry.js','tools/chunk_surfer/exterior-foreground-geometry.mjs','tools/chunk_surfer/exterior-frontage-geometry.mjs','tools/chunk_surfer/arrival-court-geometry.mjs','src/data/arrival-court.js','tools/chunk_surfer/exterior-shop-massing.mjs','tools/chunk_surfer/pub-interior-geometry.mjs','src/data/exterior-pub.js','src/data/exterior-pub-furnishings.js','src/data/exterior-foreground.js','src/data/exterior-district.js','tools/chunk_surfer/lettering/physical-lettering.mjs',
   'tools/chunk_surfer/lettering/rasterize.py','tools/chunk_surfer/lettering/face-geometry.mjs',
   'tools/chunk_surfer/lettering/world-inscription-substrates.mjs','tools/chunk_surfer/lettering/sample-host-substrate.py',
   'tools/chunk_surfer/lettering/sign-assemblies.mjs','tools/chunk_surfer/lettering/finish-profiles.mjs','tools/chunk_surfer/lettering/finish.py',
@@ -66,6 +68,9 @@ const LETTERING_INPUTS=[...VAN_REAR_STOCK_SOURCES,'tools/chunk_surfer/build-prop
   'src/world/corridor-dressing.js','src/world/floorplan.js','src/world/wall-contact.js','src/world/baseboard-hosting.js','src/world/prop-wall-pose.js',
   'src/game/props.js','src/data/conservatory-props.js','src/data/floorplan/conservatory.js','src/data/conservatory-doors.js',
   'public/assets/conservatory-acquisitions.glb'];
+LETTERING_INPUTS.push('src/data/plaza-shopfronts.js','tools/chunk_surfer/shop-display-geometry.mjs',
+  'tools/chunk_surfer/plaza-shop-lettering.mjs','tools/chunk_surfer/generated/plaza-shop-lettering.json',
+  'src/data/yard-range-frontages.js','tools/chunk_surfer/yard-range-frontage-geometry.mjs');
 const sourceHash=file=>crypto.createHash('sha256').update(fs.readFileSync(path.join(ROOT,file))).digest('hex');
 const letteringBuildInputHashes=Object.fromEntries(LETTERING_INPUTS.map(file=>[file,sourceHash(file)]));
 const OUT_DIR = process.env.CHUNK_SURFER_PROPS_OUT_DIR ? path.resolve(process.env.CHUNK_SURFER_PROPS_OUT_DIR) : path.join(ROOT, 'public/assets');
@@ -1932,7 +1937,7 @@ for(const[index,angle]of[-.55,-.05,.42].entries()){
 }
 buildAcademicRoof({mesh,materials,MAT,addBox,addBeam,addEllipsoid,addCylinder,addQuad});
 buildAcademicRoofDressing({mesh,materials,MAT,addBox,addBeam,addEllipsoid,addCylinder,addQuad});
-const exteriorApi={mesh,materials,addBox,addBeam,addCylinder,addQuad};
+const exteriorApi={mesh,materials,addBox,addBeam,addCylinder,addQuad,addTriangle};
 buildExteriorForeground(exteriorApi);
 for(const build of [buildArchitectureFittings,buildInstitutionOccupation,buildBuildingAmenities,buildBuildingWindows])build({mesh,materials,MAT,addBox,addBeam,addEllipsoid,addCylinder,addQuad});
 {
@@ -2689,15 +2694,18 @@ function buildDistrictFrontage(name,variant){
   for(let i=0;i<count;i++){
     const z=-32+unitW*(i+.5),h=heights[i],depth=variant==='workshop'?6.8:5.4;
     if(variant==='civic'){
-      if(i>=2)addSouthShopDeed(exteriorApi,m,{deed:i,z,h,unitW,depth});
+      if(i>=2)addSouthShopDeed(exteriorApi,m,{deed:i,z,h,unitW,depth,useIndex:i});
       else{
-        const report=addBourgeoisPubFrontage(exteriorApi,m,{z,h,unitW,depth});
-        for(const face of report.signFaces)lettering(m,face.copy,{
-          ...face,category:'institution',font:'NimbusRoman-Bold.otf',
-          rasterWidthPx:768,rasterHeightPx:40, // Match street sampling; preserve all prior print coverage.
-          process:'aged gilt pub fascia lettering',ground:MAT.pubGreen,ink:MAT.brass,
-          inkMetallic:.78,inkRoughness:.28,finishSupport:{kind:'carrier',edgeWear:true,contact:'none',exposure:'sheltered'},
-        });
+        // The Lyric has moved into the accessible courtyard. Retain two
+        // ordinary, closed street deeds here rather than a second false pub.
+        const shiftedApi={...exteriorApi,
+          addBox:(target,c,...args)=>addBox(target,[c[0],c[1],c[2]-16],...args),
+          addBeam:(target,a,b,...args)=>addBeam(target,[a[0],a[1],a[2]-16],[b[0],b[1],b[2]-16],...args),
+          addCylinder:(target,c,...args)=>addCylinder(target,[c[0],c[1],c[2]-16],...args),
+          addQuad:(target,...args)=>{const points=args.slice(0,4).map(c=>[c[0],c[1],c[2]-16]);return addQuad(target,...points,args[4]);},
+          addTriangle:(target,a,b,c,mat)=>addTriangle(target,[a[0],a[1],a[2]-16],[b[0],b[1],b[2]-16],[c[0],c[1],c[2]-16],mat),
+        };
+        addSouthShopDeed(shiftedApi,m,{deed:i+2,z:z+16,h,unitW,depth,useIndex:i});
       }
       continue;
     }
@@ -2758,6 +2766,20 @@ buildDistrictFrontage('district_terrace_frontage','terrace');
 buildDistrictFrontage('district_civic_frontage','civic');
 buildDistrictFrontage('district_workshop_frontage','workshop');
 buildDistrictFrontage('district_passage_frontage','passage');
+{
+  // Both original pub deeds share one independent anchor at their midpoint.
+  // The saved interior/doors remain in their old logical space; this shell is
+  // now placed at the actual courtyard instead of being baked into the town.
+  const m=mesh('exterior_pub_frontage');
+  for(const deed of[0,1]){
+    const report=addBourgeoisPubFrontage(exteriorApi,m,{z:-4+8*deed,h:12.8,unitW:8,depth:5.4,deed});
+    for(const face of report.signFaces)lettering(m,face.copy,{
+      ...face,category:'institution',font:'NimbusRoman-Bold.otf',rasterWidthPx:768,rasterHeightPx:40,
+      process:'aged gilt pub fascia lettering',ground:MAT.pubGreen,ink:MAT.brass,
+      inkMetallic:.78,inkRoughness:.28,finishSupport:{kind:'carrier',edgeWear:true,contact:'none',exposure:'sheltered'},
+    });
+  }
+}
 const pubInteriorGeometry=buildPubInterior(exteriorApi);
 
 {
@@ -2955,7 +2977,7 @@ buildDistrictSceneryRoads({mesh,materials,addBox,addQuad});
 
 function buildYardRange(name,range,kind){
   const m=mesh(name),w=range.w,d=range.d,h=range.height,service=kind==='stores';
-  addBox(m,[0,h/2,0],[w,h,d],service?MAT.steel:(kind==='baths'?MAT.glazedBrick:MAT.brickRed));
+  const westBody=buildYardRangeBody(exteriorApi,m,{range,kind});
   for(const side of[-1,1]){
     addBox(m,[0,.55,side*(d/2+.03)],[w+.1,1.1,.14],MAT.stone);
     addBox(m,[0,h-.48,side*(d/2+.05)],[w+.2,.26,.16],MAT.stone);
@@ -2978,9 +3000,11 @@ function buildYardRange(name,range,kind){
   }
   for(const side of[-1,1]){
     const face=side*(w/2+.10);
-    addBox(m,[face,4.45,0],[.18,1.55,1.35],service?MAT.steel:MAT.black);
-    addBox(m,[face+side*.03,5.34,0],[.22,.17,1.62],MAT.stone);
-    addCylinder(m,[face+side*.08,h/2,d/2-.30],.075,h-.3,MAT.steel,8);
+    if(side===1){
+      addBox(m,[face,4.45,0],[.18,1.55,1.35],service?MAT.steel:MAT.black);
+      addBox(m,[face+side*.03,5.34,0],[.22,.17,1.62],MAT.stone);
+    }
+    addCylinder(m,[face+side*.005,h/2,d/2-.30],.075,h-.3,MAT.steel,8);
   }
   const rise=service?.65:1.75;
   addPitchedRoof(m,{x:0,z:0,w,d,eaves:h,rise,mat:service?MAT.steel:MAT.slate,gableMat:service?MAT.steel:(kind==='baths'?MAT.glazedBrick:MAT.brickRed),ridge:'z'});
@@ -2991,6 +3015,7 @@ function buildYardRange(name,range,kind){
   if(kind==='baths')for(const x of[-w*.25,w*.25]){
     addRoofLantern(m,{x,z:0,w:2.2,d:d*.55,y:h+rise-.12,rise:.48});       // repaired lanterns
   }
+  addYardRangeWestFrontage(exteriorApi,m,{range,kind,bodyReport:westBody});
 }
 const rangeById=Object.fromEntries(YARD_SERVICE_RANGES.map((range)=>[range.id,range]));
 buildYardRange('yard_stable_range',rangeById['yard-former-stables'],'stable');
@@ -4845,6 +4870,7 @@ const addBoothGuard=(m,{x=0,z=-.15,lean=0,arm='rest'}={})=>{
 // Clear screen interiors preserve the road view from the actual low seat.
 // The compact district version sits wholly behind the walking route.
 buildForegroundShelters(exteriorApi);
+buildArrivalCourt(exteriorApi);
 {
   // BEGIN PAYPHONE RED BOX GEOMETRY
   // Selected Red Box: cast K6 enclosure, genuinely curved roof and broad grey
@@ -6693,6 +6719,12 @@ const credits={
   rejectedIntake:[...Object.entries(SOURCES).filter(([,cfg])=>!cfg.enabled).map(([name,cfg])=>({name,source:cfg.file,license:'unverified',meshName:null,reason:cfg.reject})),{name:'portrait_frame',source:'Gold frame.glb',license:'unverified',meshName:null,reason:'The supplied GLB contains one two-triangle dark plane and no usable frame geometry or texture; project-native brass rail frame used.'}],
 };
 fs.writeFileSync(CREDITS,JSON.stringify(credits,null,2)+'\n');
+
+// The street survey projects the final exterior mesh, never stale room-floor
+// data. Isolated proof bakes keep this derived file beside their own pack.
+const {buildExteriorMapShell}=await import('./build-exterior-map-shell.mjs');
+buildExteriorMapShell({root:ROOT,assetPath:OUT,outputPath:process.env.CHUNK_SURFER_PROPS_OUT_DIR
+  ?path.join(OUT_DIR,'exterior-map-shell.js'):path.join(ROOT,'src/data/generated/exterior-map-shell.js')});
 
 const realCount=Object.keys(imported).length;
 console.log(`wrote ${path.relative(ROOT,OUT)} (${total} bytes, ${stats.totalTriangles} triangles, ${meshes.size} meshes, ${realCount} from real sources)`);

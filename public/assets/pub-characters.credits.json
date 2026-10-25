@@ -4,7 +4,7 @@
   "license": "CC0 anatomical sources: tools/chunk_surfer/character-sources/makehuman/LICENSE.ASSETS.md",
   "sourceSha256": {
     "tools/chunk_surfer/build-pub-characters.mjs": "7e775dce317af073c03cfc0bf3291e9b95520a5aa05e6b1eef1aea149b00b1af",
-    "src/render/pub-character-performance.js": "c0c3375daef2e621badd3e0ca649536b5141bdadaf66676ff75c6490bd785129",
+    "src/render/pub-character-performance.js": "662e442e769fb7bbae6891e487d0cd2c3db714f18ff5c852818d8d110a457718",
     "public/assets/academic-society-characters.glb": "4b5ffdf3cd4e89e7862e18189d5f56748814004cd7da02e4e2ccbb8068f9bc2c",
     "public/assets/recordist-characters/contractor.json": "9d80535407f009bfd36f56548d6e1b6031fdafafa06e3d238c4eb3413a9d8a8d",
     "artifacts/bus-woman-production/anatomy.json": "d9ac02ce3b2c05ff74fbb8ab0f3608181f7484527982d430b7a0a49ecf2967bf"

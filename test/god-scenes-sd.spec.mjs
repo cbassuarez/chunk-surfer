@@ -9,6 +9,7 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { lensDevControl, lensProcesses } from '../tools/chunk_surfer/lens-dev-control.mjs';
 import { GOD_PLACE_SECTIONS } from '../src/data/god-hooks.js';
+import { SD_OFF_KEY, stableDiffusionOffAtStartup, persistStableDiffusionOff } from '../src/platform/stable-diffusion-policy.js';
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
 const main = read('../src/main.js');
@@ -88,6 +89,41 @@ test('the LOOK STACK opens with the stable diffusion switch, the nuke and the re
   assert.match(look, /id:'sd-nuke',label:'NUKE ALL SD INSTANCES',danger:true,activate:nukeStableDiffusion/);
 });
 
+test('Stable Diffusion stays off on a fresh, missing or invalid preference', () => {
+  const query = new URLSearchParams();
+  for (const stored of [null, undefined, '', 'true', 'false', 'garbled']) {
+    assert.equal(stableDiffusionOffAtStartup(query, { storage: { getItem: () => stored } }), true, String(stored));
+  }
+  assert.equal(stableDiffusionOffAtStartup(query, { storage: { getItem() { throw new Error('blocked'); } } }), true);
+  assert.equal(stableDiffusionOffAtStartup(query, { storage: {} }), true);
+});
+
+test('explicit ON and OFF choices survive reload, including the old OFF preference', () => {
+  const values = new Map();
+  const storage = { getItem: (key) => values.get(key), setItem: (key, value) => values.set(key, value) };
+  const query = new URLSearchParams();
+  assert.equal(stableDiffusionOffAtStartup(query, { storage }), true);
+  persistStableDiffusionOff(false, storage);
+  assert.equal(values.get(SD_OFF_KEY), '0');
+  assert.equal(stableDiffusionOffAtStartup(query, { storage }), false);
+  persistStableDiffusionOff(true, storage);
+  assert.equal(values.get(SD_OFF_KEY), '1');
+  assert.equal(stableDiffusionOffAtStartup(query, { storage }), true);
+  assert.doesNotThrow(() => persistStableDiffusionOff(false, { setItem() { throw new Error('blocked'); } }));
+});
+
+test('only deliberate launch opt-ins can change the default, and nosd always wins', () => {
+  const off = { storage: { getItem: () => '1' } };
+  for (const query of ['sd=1', 'lens=1', 'diffusion=ws://127.0.0.1:8000']) {
+    assert.equal(stableDiffusionOffAtStartup(new URLSearchParams(query), off), false, query);
+    assert.equal(stableDiffusionOffAtStartup(new URLSearchParams(`${query}&nosd=1`), off), true, query);
+  }
+  assert.equal(stableDiffusionOffAtStartup(new URLSearchParams('sd=0&lens=0')), true);
+  assert.equal(stableDiffusionOffAtStartup(new URLSearchParams(), { startupOptIn: true }), false);
+  assert.equal(stableDiffusionOffAtStartup(new URLSearchParams(), { ...off, startupOptIn: true }), true);
+  assert.equal(stableDiffusionOffAtStartup(new URLSearchParams('nosd'), { storage: { getItem: () => '0' }, startupOptIn: true }), true);
+});
+
 function sdContext({ off = false, lens = null, storage = new Map(), dev = true, fetchReply = null, survivors = [] } = {}) {
   const events = [], looks = [], local = [];
   const store = { getItem: (k) => storage.get(k) ?? null, setItem: (k, v) => storage.set(k, String(v)), removeItem: (k) => storage.delete(k) };
@@ -100,7 +136,8 @@ function sdContext({ off = false, lens = null, storage = new Map(), dev = true, 
   const window = { __diffusion: lens };
   const ctx = vm.createContext({
     console, Promise, Map, Date, String, Math, window, R3, globalThis: { localStorage: store, performance: { memory: { usedJSHeapSize: 1234 } } },
-    sdOff: off, sdLastNuke: null, sdLastScan: null, lensStarting: null, lensDisabled: false, lensBlockedEulaLogged: false, SD_OFF_KEY: 'chunk-surfer.sd-off',
+    sdOff: off, sdLastNuke: null, sdLastScan: null, lensStarting: null, lensDisabled: false, lensBlockedEulaLogged: false, SD_OFF_KEY,
+    persistStableDiffusionOff: (value) => persistStableDiffusionOff(value, store),
     IS_TAURI: false, DEV: dev, activeLookProfile: 'explore',
     params: () => new URLSearchParams(), pushEvent: (line) => events.push(line), applyLookProfile: (name) => looks.push(name),
     setLocalDiffusionActive: (on) => local.push(on), lensStartBlockedByEula: () => false,
@@ -142,7 +179,7 @@ test('switching SD off stops the client, closes its bitmaps, frees the textures,
 test('switching SD back on restores the textures and starts the lens through the usual gate', async () => {
   const f = sdContext({ off: true, storage: new Map([['chunk-surfer.sd-off', '1']]) });
   assert.equal(f.ctx.switchStableDiffusionOn(), true);
-  assert.equal(f.storage.has('chunk-surfer.sd-off'), false);
+  assert.equal(f.storage.get('chunk-surfer.sd-off'), '0');
   assert.equal(f.R3.restored, 1); assert.deepEqual(f.local, [true]);
   await new Promise((resolve) => setImmediate(resolve));
   assert.deepEqual(f.looks, ['explore']);
@@ -174,7 +211,7 @@ test('the nuke switches SD off first, ends the lens processes, then looks again'
 test('the boot gate and its retry pass straight through with SD off', () => {
   assert.match(main, /const calibrate=async\(\)=>stableDiffusionOff\(\)\?null:activateStartupBank\(await requireLensStarted\(qp\)\);/);
   assert.match(main, /retry:async\(\)=>\{\n\s+if\(stableDiffusionOff\(\)\)return null;/);
-  assert.match(main, /params\(\)\.has\('nosd'\)/);
+  assert.match(main, /let sdOff=stableDiffusionOffAtStartup\(params\(\),/);
   // Booting into the baseline frees the arrays the renderer allocates up front,
   // and nothing that wakes the building turns diffusion back on.
   assert.match(main, /R3\.r3dInit\(MAP_EL\);\n.*\n.*\n\s+if\(stableDiffusionOff\(\)\)R3\.r3dReleaseSurfaceDream\?\.\(\);/);

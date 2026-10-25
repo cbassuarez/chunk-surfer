@@ -53,7 +53,7 @@ const job = {
 
 const model = buildBagModel({ equipment, job, loadout: { top: ['recorder', 'light'] } });
 // SKILLS joins INVENTORY/MAP/SHEETS as a real fourth section (see bag-skills.spec).
-assert.deepEqual(model.sections.map((section) => section.id), ['kit', 'map', 'sheets', 'skills']);
+assert.deepEqual(model.sections.map((section) => section.id), ['kit', 'map', 'sheets', 'skills', 'journal']);
 assert.equal(model.progress.done, 1);
 assert.equal(model.sections[0].entries[0].sourceId, 'light');
 assert.deepEqual(model.sections[0].entries.slice(0, 2).map((entry) => entry.sourceId), ['light', 'recorder']);

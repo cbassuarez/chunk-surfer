@@ -1,0 +1,17 @@
+{
+  "pack": {
+    "filename": "ellery-exterior-roofline.glb",
+    "author": "Chunk Surfer project",
+    "license": "project source",
+    "sha256": "6ef7591d074c83124e5065f5250e137a63b374f9a581aaac6bbef3f788dba9d7",
+    "bytes": 362476,
+    "triangles": 4698
+  },
+  "sourceFiles": [
+    "src/data/exterior-district.js",
+    "src/data/exterior-roofline.js",
+    "tools/chunk_surfer/exterior-roofline-geometry.mjs",
+    "tools/chunk_surfer/build-exterior-roofline.mjs"
+  ],
+  "construction": "Original opaque project geometry in the existing Ellery phase heights. No external media, new skyline, story content or floorplan changes."
+}

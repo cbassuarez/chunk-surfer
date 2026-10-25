@@ -100,6 +100,7 @@ export const ZONE = {
   church: 20,
   academicRoof: 21, // the occupied glass roof, open to the city and weather
   pub: 22, // an ordinary indoor public house; civic mesh envelope, no outdoor weather
+  stationers: 23, // optional working shop; no recording target or story commitment
 };
 
 // Which world (audio + prompt) a zone belongs to. Corridors borrow the room
@@ -135,6 +136,7 @@ export const ZONE_WORLD = {
   [ZONE.church]: 'st_brendans',
   [ZONE.academicRoof]: 'amplifications',
   [ZONE.pub]: 'main_b3',
+  [ZONE.stationers]: 'main_b3',
 };
 
 // OUTDOORS IS A PROPERTY OF THE ZONE, NOT OF WHERE YOU ARE STANDING.

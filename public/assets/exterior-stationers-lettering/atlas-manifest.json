@@ -1,0 +1,456 @@
+{
+  "version": 1,
+  "inputSha256": "5a669f6cfb3298253f8a16b4805c04c4696a4853f75113e9c94c19f53a451504",
+  "generatorSha256": "25049dfe0566d8a05d1e575338cf4497750f01386896c7d215bacb7ea06cbb2b",
+  "finishAuthoringSha256": "7e0cf04028f84bf25d1049ff7ba3caf36e660dfaaf4c5228b8aa4c10c886b0c3",
+  "pages": [
+    {
+      "name": "lettering-00",
+      "width": 800,
+      "height": 184,
+      "normalWidth": 200,
+      "normalHeight": 46,
+      "ormWidth": 400,
+      "ormHeight": 92,
+      "albedo": "lettering-00-albedo.png",
+      "normal": "lettering-00-normal.png",
+      "orm": "lettering-00-orm.png",
+      "category": "shared compatible print",
+      "process": "per-material fabrication; see entries",
+      "polarity": "light-on-dark",
+      "emission": "none",
+      "emissiveFactor": [
+        0,
+        0,
+        0
+      ],
+      "sharedTiles": 2,
+      "preservesSampledStockChannels": false,
+      "rgbaBaseLevelBytes": 772800
+    }
+  ],
+  "entries": [
+    {
+      "id": "stationers-counter-copy",
+      "page": 0,
+      "uvRect": [
+        0.02,
+        0.08695652173913043,
+        0.98,
+        0.41304347826086957
+      ],
+      "copy": "PAPER \u00b7 PENS \u00b7 COPYING",
+      "lines": [
+        "PAPER \u00b7 PENS \u00b7 COPYING"
+      ],
+      "widthM": 2.7,
+      "heightM": 0.21,
+      "metrics": {
+        "font": "NimbusSans-Bold.otf",
+        "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+        "capHeightM": 0.10195312500000002,
+        "stemWidthM": 0.021093750000000005,
+        "coverage": 0.13272569444444443,
+        "boundsPx": [
+          133,
+          14,
+          635,
+          45
+        ],
+        "glyphs": [
+          {
+            "character": "P",
+            "line": 0,
+            "xPx": 130.346,
+            "advancePx": 27.348
+          },
+          {
+            "character": "A",
+            "line": 0,
+            "xPx": 157.69400000000002,
+            "advancePx": 29.348
+          },
+          {
+            "character": "P",
+            "line": 0,
+            "xPx": 187.04200000000003,
+            "advancePx": 27.348
+          },
+          {
+            "character": "E",
+            "line": 0,
+            "xPx": 214.39000000000004,
+            "advancePx": 27.348
+          },
+          {
+            "character": "R",
+            "line": 0,
+            "xPx": 241.73800000000006,
+            "advancePx": 29.348
+          },
+          {
+            "character": "\u00b7",
+            "line": 0,
+            "xPx": 282.4340000000001,
+            "advancePx": 11.348
+          },
+          {
+            "character": "P",
+            "line": 0,
+            "xPx": 305.1300000000001,
+            "advancePx": 27.348
+          },
+          {
+            "character": "E",
+            "line": 0,
+            "xPx": 332.4780000000001,
+            "advancePx": 27.348
+          },
+          {
+            "character": "N",
+            "line": 0,
+            "xPx": 359.82600000000014,
+            "advancePx": 29.348
+          },
+          {
+            "character": "S",
+            "line": 0,
+            "xPx": 389.17400000000015,
+            "advancePx": 27.348
+          },
+          {
+            "character": "\u00b7",
+            "line": 0,
+            "xPx": 427.8700000000002,
+            "advancePx": 11.348
+          },
+          {
+            "character": "C",
+            "line": 0,
+            "xPx": 450.5660000000002,
+            "advancePx": 29.348
+          },
+          {
+            "character": "O",
+            "line": 0,
+            "xPx": 479.9140000000002,
+            "advancePx": 31.348
+          },
+          {
+            "character": "P",
+            "line": 0,
+            "xPx": 511.2620000000002,
+            "advancePx": 27.348
+          },
+          {
+            "character": "Y",
+            "line": 0,
+            "xPx": 538.6100000000002,
+            "advancePx": 27.348
+          },
+          {
+            "character": "I",
+            "line": 0,
+            "xPx": 565.9580000000002,
+            "advancePx": 11.348
+          },
+          {
+            "character": "N",
+            "line": 0,
+            "xPx": 577.3060000000002,
+            "advancePx": 29.348
+          },
+          {
+            "character": "G",
+            "line": 0,
+            "xPx": 606.6540000000001,
+            "advancePx": 31.348
+          }
+        ],
+        "strokeMeasurement": "Pinned I straight stem; brush uses a conservative broad-nib design reference, not a claim about every taper.",
+        "coverageSha256": "36803286e62995bd75534136183822367cf33242af8d32f544a2718ad1901dbd"
+      },
+      "category": "institution",
+      "process": "solid printed stationers counter lettering",
+      "polarity": "light-on-dark",
+      "emission": "none",
+      "reliefM": 7e-06,
+      "finish": {
+        "substrate": "metal support with fired vitreous-enamel face",
+        "coating": "screen-fired dielectric lettering",
+        "roughness": 0.32,
+        "inkRoughness": 0.44,
+        "fieldM": 0.16,
+        "variation": 0.024,
+        "roughnessVariation": 0.055,
+        "microReliefM": 6e-06,
+        "deposit": 0.055,
+        "edgeLoss": 0.1,
+        "sequence": [
+          "fired face remains largely intact",
+          "sheltered ledge accumulates a thin deposit",
+          "isolated actual perimeter impact exposes dull support"
+        ],
+        "limits": [
+          "support alloy is not established; exposed support is neutral, never invented iron rust"
+        ],
+        "version": 1,
+        "profile": "enamel",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "sheltered"
+        },
+        "fabricationReliefM": 7e-06,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      },
+      "finishEvidence": {
+        "profile": "enamel",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "sheltered"
+        },
+        "coverageSha256": "36803286e62995bd75534136183822367cf33242af8d32f544a2718ad1901dbd",
+        "immutableCoverage": true,
+        "sampledStockOutsidePigmentImmutable": false,
+        "physicalScalesM": {
+          "field": 0.16,
+          "minimumNormalPeriod": 0.010546875,
+          "inkRelief": 7e-06
+        },
+        "structure": {
+          "kind": "subpixel manufacture",
+          "actualPitchM": null,
+          "resolved": false
+        },
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "conditionRanges": {
+          "deposit": [
+            0.0,
+            0.0
+          ],
+          "contact": [
+            0.0,
+            0.0
+          ],
+          "edgeLoss": [
+            0.0,
+            0.0
+          ]
+        },
+        "channelRanges": {
+          "roughness": [
+            0.2925,
+            0.8742299019607843
+          ],
+          "metallic": [
+            0.0,
+            0.0
+          ]
+        },
+        "bakedLighting": false,
+        "glyphDamage": false
+      },
+      "source": null,
+      "orientation": null,
+      "bounds": null,
+      "substrate": null
+    },
+    {
+      "id": "stationers-fascia",
+      "page": 0,
+      "uvRect": [
+        0.02,
+        0.5869565217391305,
+        0.98,
+        0.8913043478260869
+      ],
+      "copy": "STATIONERS",
+      "lines": [
+        "STATIONERS"
+      ],
+      "widthM": 5.7,
+      "heightM": 0.34,
+      "metrics": {
+        "font": "NimbusSansNarrow-Bold.otf",
+        "fontSha256": "6d7cec07f5a9035e208532dab35a51312aef4a7f26eb524dd614c9fcd97c3264",
+        "capHeightM": 0.23750000000000002,
+        "stemWidthM": 0.04453125,
+        "coverage": 0.08435639880952381,
+        "boundsPx": [
+          267,
+          11,
+          501,
+          45
+        ],
+        "glyphs": [
+          {
+            "character": "S",
+            "line": 0,
+            "xPx": 266.272,
+            "advancePx": 24.384
+          },
+          {
+            "character": "T",
+            "line": 0,
+            "xPx": 290.656,
+            "advancePx": 22.384
+          },
+          {
+            "character": "A",
+            "line": 0,
+            "xPx": 313.04,
+            "advancePx": 26.384
+          },
+          {
+            "character": "T",
+            "line": 0,
+            "xPx": 339.42400000000004,
+            "advancePx": 22.384
+          },
+          {
+            "character": "I",
+            "line": 0,
+            "xPx": 361.80800000000005,
+            "advancePx": 10.384
+          },
+          {
+            "character": "O",
+            "line": 0,
+            "xPx": 372.19200000000006,
+            "advancePx": 28.384
+          },
+          {
+            "character": "N",
+            "line": 0,
+            "xPx": 400.5760000000001,
+            "advancePx": 26.384
+          },
+          {
+            "character": "E",
+            "line": 0,
+            "xPx": 426.9600000000001,
+            "advancePx": 24.384
+          },
+          {
+            "character": "R",
+            "line": 0,
+            "xPx": 451.3440000000001,
+            "advancePx": 26.384
+          },
+          {
+            "character": "S",
+            "line": 0,
+            "xPx": 477.7280000000001,
+            "advancePx": 24.384
+          }
+        ],
+        "strokeMeasurement": "Pinned I straight stem; brush uses a conservative broad-nib design reference, not a claim about every taper.",
+        "coverageSha256": "ad2c86630490b80a87f0a046e202c96e3a740dbdd53e842a9c850fec85e47dec"
+      },
+      "category": "institution",
+      "process": "solid painted stationers fascia lettering",
+      "polarity": "light-on-dark",
+      "emission": "none",
+      "reliefM": 7e-06,
+      "finish": {
+        "substrate": "metal support with fired vitreous-enamel face",
+        "coating": "screen-fired dielectric lettering",
+        "roughness": 0.32,
+        "inkRoughness": 0.44,
+        "fieldM": 0.16,
+        "variation": 0.024,
+        "roughnessVariation": 0.055,
+        "microReliefM": 6e-06,
+        "deposit": 0.055,
+        "edgeLoss": 0.1,
+        "sequence": [
+          "fired face remains largely intact",
+          "sheltered ledge accumulates a thin deposit",
+          "isolated actual perimeter impact exposes dull support"
+        ],
+        "limits": [
+          "support alloy is not established; exposed support is neutral, never invented iron rust"
+        ],
+        "version": 1,
+        "profile": "enamel",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "sheltered"
+        },
+        "fabricationReliefM": 7e-06,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      },
+      "finishEvidence": {
+        "profile": "enamel",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "sheltered"
+        },
+        "coverageSha256": "ad2c86630490b80a87f0a046e202c96e3a740dbdd53e842a9c850fec85e47dec",
+        "immutableCoverage": true,
+        "sampledStockOutsidePigmentImmutable": false,
+        "physicalScalesM": {
+          "field": 0.16,
+          "minimumNormalPeriod": 0.022265625,
+          "inkRelief": 7e-06
+        },
+        "structure": {
+          "kind": "subpixel manufacture",
+          "actualPitchM": null,
+          "resolved": false
+        },
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "conditionRanges": {
+          "deposit": [
+            0.0,
+            0.0
+          ],
+          "contact": [
+            0.0,
+            0.0
+          ],
+          "edgeLoss": [
+            0.0,
+            0.0
+          ]
+        },
+        "channelRanges": {
+          "roughness": [
+            0.2925,
+            0.8771740196078431
+          ],
+          "metallic": [
+            0.0,
+            0.0
+          ]
+        },
+        "bakedLighting": false,
+        "glyphDamage": false
+      },
+      "source": null,
+      "orientation": null,
+      "bounds": null,
+      "substrate": null
+    }
+  ],
+  "coverageChannel": "baseColorAlpha",
+  "alphaMode": "OPAQUE",
+  "rgbPremultiplied": false,
+  "gutterPx": 16,
+  "packing": "MaxRects BSSF; four stable orders; 8px bin-width search and tight NPOT envelope; no rotation/resampling",
+  "note": "Atlas RGB remains authored substrate color when alpha pigment coverage is zero. Normal and ORM are filtered independently. Empty or missing authored glyphs fail the bake."
+}

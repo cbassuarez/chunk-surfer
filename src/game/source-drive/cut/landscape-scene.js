@@ -3,7 +3,7 @@
 import {worldAt,roadAt,roadSurfaceAt} from '../road.js';
 import {cageSecretionAt} from './physiology.js';
 import {COSTAL_GLAND_ANCHORS,COSTAL_NECK,costalPointPose,costalNeckPoint} from './costal-geometry.js';
-import {ribPose,heldWavePose} from './landscape-motion.js';
+import {ribPose,heldWavePose,anatomyOrganPose} from './landscape-motion.js';
 export const CUT_THORAX_CHAMBERS=Object.freeze([
  {id:'thorax-emergence',d:768,height:.74,width:1.02},
  {id:'thorax-first-vault',d:798,height:.86,width:1.06},
@@ -27,7 +27,8 @@ export const CUT_COASTAL_TRANSITIONS=Object.freeze([
  {id:'coast-dissolving-after',d:1083,lateral:-10,height:.26,width:1.05,length:.48,flip:true,phase:'aftermath'},
 ]);
 export const CUT_WAVE_LAYOUT=Object.freeze({d:760,lateral:-28,lengthScale:1.8,heightScale:1,authoredSpan:[-91.4,90.44],height:[-4,36.5],maximumCullRadius:195});
-const thoraxMeshes=['cut_thoracic_bone','cut_sternum','cut_intercostal_depth','cut_intercostal_sheet','cut_periosteum'];
+const thoraxMeshes=['cut_thoracic_bone','cut_sternum','cut_intercostal_depth','cut_intercostal_sheet','cut_periosteum','cut_costal_cartilage','cut_intercostal_vessels'];
+export const CUT_THORAX_ORGANS=Object.freeze({id:'thorax-organ-chamber',d:829,meshes:Object.freeze(['cut_lungs','cut_heart','cut_great_vessels','cut_coronary_vessels','cut_diaphragm','cut_wet_blood'])});
 const waveMeshes=['cut_wave_surface','cut_wave_foam','cut_wave_spindrift','cut_wave_strakes'];
 const littoralMeshes=['cut_littoral_rib','cut_littoral_water','cut_littoral_tissue'];
 // Samples of the actual authored water barrel, exported by the geometry bake.
@@ -50,10 +51,13 @@ function addCostalSecretion(props,chamber,s,evolution,pose){if(Math.abs(chamber.
  }return sites;
 }
 export function makeCutLandscape(s,evolution=null){const props=[],sources=[],glandSites=[],d=-s.z,timeSec=s.programTime||0,furthest=s.furthest||0;
- for(const chamber of CUT_THORAX_CHAMBERS){if(Math.abs(chamber.d-d)>290)continue;const a=worldAt(chamber.d),m=matrix(a,chamber),pose=ribPose({timeSec,furthest,distance:chamber.d,id:chamber.id,evolution});for(const mesh of thoraxMeshes){props.push(prop(mesh,m,chamber.id+'-'+mesh,pose,38));}glandSites.push(...addCostalSecretion(props,chamber,s,evolution,pose));const point=worldAt(chamber.d,-9.4*chamber.width,2.6*chamber.height);sources.push({id:chamber.id,world:[32+point.x,point.y,32+point.z],morphs:pose.morphs,motion:{...pose.motion,kind:'anatomy',distance:chamber.d,timeSec,furthest}});}
+ for(const chamber of CUT_THORAX_CHAMBERS){if(Math.abs(chamber.d-d)>290)continue;const a=worldAt(chamber.d),m=matrix(a,chamber),pose=ribPose({timeSec,furthest,distance:chamber.d,id:chamber.id,evolution});for(const mesh of thoraxMeshes){props.push(prop(mesh,m,chamber.id+'-'+mesh,pose,45));}glandSites.push(...addCostalSecretion(props,chamber,s,evolution,pose));const point=worldAt(chamber.d,-9.4*chamber.width,2.6*chamber.height);sources.push({id:chamber.id,world:[32+point.x,point.y,32+point.z],morphs:pose.morphs,motion:{...pose.motion,kind:'anatomy',distance:chamber.d,timeSec,furthest}});}
+ // One continuous organ cavity belongs to the open central chamber, rather
+ // than repeating a complete heart/lung assembly inside each rib module.
+ const organs=CUT_THORAX_ORGANS;if(Math.abs(organs.d-d)<=290){const m=matrix(worldAt(organs.d));for(const mesh of organs.meshes){const pose=anatomyOrganPose(mesh,{timeSec,furthest,distance:organs.d,id:organs.id+'-'+mesh,evolution});props.push(prop(mesh,m,organs.id+'-'+mesh,pose,45));}}
  const w=CUT_WAVE_LAYOUT;if(Math.abs(w.d-d)<490){const a=worldAt(w.d,w.lateral),m=matrix(a,{height:w.heightScale,length:w.lengthScale,flip:true}),pose=heldWavePose({timeSec,furthest,distance:w.d,id:'cut-held-ocean',evolution});for(const mesh of waveMeshes)props.push(prop(mesh,m,'cut-held-ocean-'+mesh,pose,w.maximumCullRadius));
   const current=worldAt(d),dx=current.x-a.x,dz=current.z-a.z,localZ=(dx*Math.sin(a.heading)-dz*Math.cos(a.heading))/w.lengthScale,v=Math.max(.04,Math.min(.96,(localZ+90)/180)),at=(v-.04)/.92*12,index=Math.min(11,Math.floor(at)),f=at-index,lo=CUT_WAVE_SOUND_ANCHORS[index],hi=CUT_WAVE_SOUND_ANCHORS[index+1],curl=pose.morphs.breath,q=lo.base.map((p,k)=>{const base=p+(hi.base[k]-p)*f,full=lo.full[k]+(hi.full[k]-lo.full[k])*f;return base+(full-base)*curl;}),world=[m[0]*q[0]+m[8]*q[2]+m[12],m[5]*q[1]+m[13],m[2]*q[0]+m[10]*q[2]+m[14]];sources.push({id:'cut-held-ocean',world,morphs:pose.morphs,motion:{...pose.motion,kind:'water',distance:Math.max(598,Math.min(922,d)),timeSec,furthest}});}
  for(const coastal of CUT_COASTAL_TRANSITIONS){if(Math.abs(coastal.d-d)>290)continue;const a=worldAt(coastal.d,coastal.phase==='aftermath'?remnantLateral(coastal.d,coastal.lateral):coastal.lateral),m=matrix(a,coastal),pose=ribPose({timeSec,furthest,distance:coastal.d,id:coastal.id,evolution});for(const mesh of littoralMeshes)props.push(prop(mesh,m,coastal.id+'-'+mesh,pose,38));const q=[2.8*coastal.width,7.1*coastal.height,-3.6*coastal.length],world=[m[0]*(q[0]/coastal.width)+m[8]*(q[2]/coastal.length)+m[12],q[1]+m[13],m[2]*(q[0]/coastal.width)+m[10]*(q[2]/coastal.length)+m[14]];sources.push({id:coastal.id,world,morphs:pose.morphs,motion:{...pose.motion,kind:'anatomy',distance:coastal.d,timeSec,furthest}});}
  for(const remnant of CUT_TRAILING_RIBS){if(Math.abs(remnant.d-d)>290)continue;const a=worldAt(remnant.d,remnantLateral(remnant.d,remnant.lateral)),m=matrix(a,{...remnant,length:.82});props.push(prop('cut_thoracic_remnant',m,remnant.id,{joints:{},morphs:{tension:0,shear:0,breath:0,recoil:0}},30));}
- return{props,sources,diagnostics:{thoraxChambers:CUT_THORAX_CHAMBERS.map(x=>x.d),trailingRibs:CUT_TRAILING_RIBS.map(x=>x.d),wave:CUT_WAVE_LAYOUT,coastalTransitions:CUT_COASTAL_TRANSITIONS.map(x=>({d:x.d,phase:x.phase})),physiology:{glandSites},monumental:true,roadSurfaceChanged:false}};
+ return{props,sources,diagnostics:{thoraxChambers:CUT_THORAX_CHAMBERS.map(x=>x.d),organChamber:CUT_THORAX_ORGANS,trailingRibs:CUT_TRAILING_RIBS.map(x=>x.d),wave:CUT_WAVE_LAYOUT,coastalTransitions:CUT_COASTAL_TRANSITIONS.map(x=>({d:x.d,phase:x.phase})),physiology:{glandSites},monumental:true,roadSurfaceChanged:false}};
 }

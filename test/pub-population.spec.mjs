@@ -10,7 +10,7 @@ import {conservatory} from '../src/data/floorplan/conservatory.js';
 import {ZONE} from '../src/data/floorplan/legend.js';
 import {districtLogicalAt} from '../src/data/exterior-district.js';
 import {CONSERVATORY_PROPS} from '../src/data/conservatory-props.js';
-import {EXTERIOR_PUB,pubLocalFromWorld,pubWorldFromLocal} from '../src/data/exterior-pub.js';
+import {EXTERIOR_PUB,pubLocalFromWorld,pubWorldFromLocal,pubLogicalAt} from '../src/data/exterior-pub.js';
 import {PUB_INTERIOR_LAYOUT as layout} from '../src/data/exterior-pub-furnishings.js';
 import {PUB_ACTORS,PUB_NEW_ACTORS,PUB_MIGRATIONS,PUB_SERVICE_TRAY,pubActor,pubApproach} from '../src/data/pub-population.js';
 import {VIGIL_VOICES,VIGIL_LINKED_CHAPELS_FLAG,vigilFigures,vigilParts,vigilConversation,vigilRecognitionFlags} from '../src/data/exterior-vigil.js';
@@ -18,7 +18,7 @@ import {VIGIL_VOICES,VIGIL_LINKED_CHAPELS_FLAG,vigilFigures,vigilParts,vigilConv
 FP.compile(conservatory.levels,conservatory);
 PROPS.propsInit(FP);
 const rendered=new Map(PROPS.renderInstances({inscriptions:false}).map(p=>[p.id,p]));
-const runtimeAt=(x,z)=>{const at=districtLogicalAt(x,z);return{x:Math.floor((at.x-.25)*2),y:Math.floor((at.y-.25)*2)};};
+const runtimeAt=(x,z)=>{const at=pubLogicalAt(x,z);return{x:Math.floor((at.x-.25)*2),y:Math.floor((at.y-.25)*2)};};
 const key=at=>`${at.x},${at.y}`;
 const worldAt=at=>{const p=FP.logicalToPhysical(at.x,at.y);return{x:p.x*.5,z:p.z*.5};};
 const near=(a,b,message)=>assert.ok(Math.abs(a-b)<1e-7,`${message}: ${a} != ${b}`);
@@ -30,7 +30,7 @@ function flood(start){
     for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){
       const move=FP.canStep(p.x,p.y,p.x+dx,p.y+dy,{keys:new Set()});if(!move.ok)continue;
       const next=move.redirect||{x:p.x+dx,y:p.y+dy},world=worldAt(next);
-      if(world.x< -15||world.x>3||world.z<106||world.z>113||seen.has(key(next))||!PROPS.propCanOccupy(next.x,next.y))continue;
+      if(world.x<EXTERIOR_PUB.bounds.x0-1||world.x>EXTERIOR_PUB.bounds.x1+1||world.z<EXTERIOR_PUB.frontWorldZ-1.25||world.z>EXTERIOR_PUB.bounds.z1+.55||seen.has(key(next))||!PROPS.propCanOccupy(next.x,next.y))continue;
       seen.add(key(next));queue.push(next);
     }
   }
@@ -88,10 +88,10 @@ test('every seated person names an actual seat and faces the table or counter',(
 
 test('both exits, the complete public aisle, WC and staff return stay navigable with all bodies installed',()=>{
   for(const spec of[...EXTERIOR_PUB.doors,EXTERIOR_PUB.wc.door])FP.setDoorOpen(spec.id,true);
-  const seen=flood(runtimeAt(-12.75,106.75));
+  const seen=flood(runtimeAt(EXTERIOR_PUB.doors[0].x,EXTERIOR_PUB.frontWorldZ-.5));
   for(const spec of EXTERIOR_PUB.doors){
-    assert.ok(seen.has(key(runtimeAt(spec.x,106.75))),`${spec.id} reaches street`);
-    assert.ok(seen.has(key(runtimeAt(spec.x,108.25))),`${spec.id} reaches room`);
+    assert.ok(seen.has(key(runtimeAt(spec.x,EXTERIOR_PUB.frontWorldZ-.5))),`${spec.id} reaches courtyard`);
+    assert.ok(seen.has(key(runtimeAt(spec.x,EXTERIOR_PUB.frontWorldZ+1))),`${spec.id} reaches room`);
   }
   // Test actual half-metre movement with the player's same .25m body phase;
   // the authored corridor is a continuous 1.5m, furniture-owned clear strip.
@@ -100,7 +100,7 @@ test('both exits, the complete public aisle, WC and staff return stay navigable 
     const at=pubWorldFromLocal({x:-1.25,z:rowZ});
     assert.ok(reachableBodies.some(body=>Math.hypot(body.x-at.x,body.z-at.z)<.4),`public aisle rowZ=${rowZ}`);
   }
-  for(const world of[{x:.75,z:110.45},{x:-7.25,z:111.25},{x:-7.25,z:110.25}]){
+  for(const world of[{x:39.75,z:88.45},{x:31.75,z:89.25},{x:31.75,z:88.25}]){
     assert.ok(seen.has(key(runtimeAt(world.x,world.z))),`WC / staff return ${world.x},${world.z}`);
   }
   for(const actor of PUB_ACTORS){

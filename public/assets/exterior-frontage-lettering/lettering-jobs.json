@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "pageSize": 1024,
+  "jobs": [
+    {
+      "id": "neighbourhood-early-closure",
+      "lines": [
+        "CLOSED EARLY",
+        "FOR THE VIGIL",
+        "BACK TOMORROW"
+      ],
+      "widthM": 0.32,
+      "heightM": 0.42,
+      "capHeightM": 0.034,
+      "text": "CLOSED EARLY\nFOR THE VIGIL\nBACK TOMORROW",
+      "category": "record",
+      "font": "NimbusSans-Bold.otf",
+      "process": "home-printed early closure paper",
+      "rasterWidthPx": 384,
+      "rasterHeightPx": 504,
+      "lineCentres": [
+        0.2,
+        0.5,
+        0.8
+      ],
+      "palette": {
+        "ground": [
+          0.66,
+          0.64,
+          0.54
+        ],
+        "ink": [
+          0.025,
+          0.028,
+          0.03
+        ]
+      },
+      "polarity": "dark-on-light",
+      "baseRoughness": 0.91,
+      "inkRoughness": 0.93,
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": false,
+        "contact": "none",
+        "exposure": "sheltered"
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "sheltered"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      },
+      "reliefM": 0.000007
+    }
+  ]
+}

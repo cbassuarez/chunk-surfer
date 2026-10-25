@@ -12,7 +12,7 @@
     "tools/chunk_surfer/characters/vigil-tailoring.mjs": "00d6da1da44f2f83dad33704218c2acf9a95064513c549b889fe40be30203c92",
     "src/data/vigil-object-layout.js": "41160e7c1fe5093e067a5284da8b544cbeaebdac1a4eabfce8ac356dab11e390",
     "src/data/vigil-secondary-object-layout.js": "2643c41266c61cd57db4ec6e9e1f40756bc433fadd42e26123c0d5dad4212c24",
-    "src/render/vigil-character-performance.js": "1e3308f4a3ab859a8ed06cce47e5d61ea90dbaaf49b64e145102910c958a3c9e"
+    "src/render/vigil-character-performance.js": "229385dbed753716d597c8dfd8a23ea5b4519fc2f01c1d49751094f7cac22230"
   },
   "packs": [
     {

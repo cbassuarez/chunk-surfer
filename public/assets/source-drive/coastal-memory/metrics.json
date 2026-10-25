@@ -869,10 +869,12 @@
       1
     ],
     "actualVanDimensions": [
-      2.08,
-      2.57,
-      5.75
-    ]
+      1.97,
+      2.024,
+      4.818
+    ],
+    "vehicleDimensionsSource": "src/data/opening-vehicle.js: OPENING_VEHICLE.bodyBox",
+    "runtimeVehicleAnchors": "assets/source-drive/geometry/metrics.json: body and cabinBodyMount"
   },
   "rendering": {
     "pipeline": "Standard P3 glTF material/depth acquisition and final dither/VFD",
@@ -903,7 +905,7 @@
     "Original deterministic mesh and texture synthesis; no third-party photograph or model is embedded.",
     "Bank collision reads the same triangle vertices as the exported visual surface. Irregular rim outcrops share their exact base polygons with physical foot collision; the exposed viewing notch is intentionally open.",
     "Actual water, refraction, depth extinction and submerged real-headlamp scattering belong to the world compositor; this pack supplies no opaque sea plane.",
-    "The sunk vehicle is instantiated from the unchanged actual van asset in scene.js, with one shared settled body matrix.",
+    "The sunk vehicle uses the actual shared driving van asset and its loaded headlamp, tyre and cabin anchors in scene.js, with one shared settled body matrix. No generic-van anchor fallback is retained.",
     "The anonymous note has independent UV0..1 and .14x.10m dimensions; final narrative ink is host-owned.",
     "Grass and soil use larger physical tiles with band-limited correlated relief, not per-pixel height noise. Albedo bases remain unchanged; lighting is calibrated in the real compositor.",
     "All coast instances disable the generic outdoor yard branch and use one explicit broad cloud-filtered moon plus actual practicals.",

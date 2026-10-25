@@ -117,7 +117,12 @@ async function baseline(browser) {
   // A stand-in client shaped like the lens, carrying six banks of real 512px
   // bitmaps, so the switch has something real to close. Only while SD is on.
   await page.evaluateOnNewDocument(() => {
-    try { if (localStorage.getItem('chunk-surfer.sd-off') === '1') return; } catch {}
+    try {
+      // This isolated fixture deliberately opts in once. Missing preferences
+      // now mean OFF; preserve the OFF written by the switch for the reload.
+      if (localStorage.getItem('chunk-surfer.sd-off') == null) localStorage.setItem('chunk-surfer.sd-off', '0');
+      if (localStorage.getItem('chunk-surfer.sd-off') !== '0') return;
+    } catch { return; }
     const banks = new Map(), stats = { criticalBank: 'calm', resident: true, state: 'stand-in', banksReady: 6, framesOut: 0, framesIn: 0 };
     const ready = (async () => {
       const canvas = new OffscreenCanvas(512, 512), g = canvas.getContext('2d');

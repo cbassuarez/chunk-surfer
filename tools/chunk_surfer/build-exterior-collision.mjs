@@ -11,11 +11,17 @@ import {parseGlb,meshFingerprint} from './rebuild-tree-crowns.mjs';
 
 const BASE_MESHES = Object.freeze([
   'conservatory_west_elevation', 'district_terrace_frontage',
-  'district_civic_frontage', 'district_workshop_frontage',
+  'district_civic_frontage', 'exterior_pub_frontage', 'district_workshop_frontage',
   'district_passage_frontage', 'district_court_walls',
 ]);
+const FRONTAGE_MESHES=Object.freeze([
+  'district_terrace_frontage','district_workshop_frontage',
+  'district_passage_frontage','district_court_walls',
+]);
 export const EXTERIOR_COLLISION_ASSETS=Object.freeze([
-  Object.freeze({asset:'public/assets/conservatory-props.glb',meshes:BASE_MESHES}),
+  Object.freeze({asset:'public/assets/conservatory-props.glb',meshes:Object.freeze(BASE_MESHES.filter(name=>!FRONTAGE_MESHES.includes(name)))}),
+  Object.freeze({asset:'public/assets/exterior-frontages.glb',meshes:FRONTAGE_MESHES}),
+  Object.freeze({asset:'public/assets/exterior-stationers.glb',meshes:Object.freeze(['district_terrace_frontage_stationer'])}),
   Object.freeze({asset:'public/assets/opening-street.glb',meshes:Object.freeze(['opening_street_frontage','opening_street_service_history'])}),
 ]);
 export const EXTERIOR_COLLISION_MESHES=Object.freeze(EXTERIOR_COLLISION_ASSETS.flatMap(source=>source.meshes));

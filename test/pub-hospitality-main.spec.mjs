@@ -68,16 +68,16 @@ test('actual main routes room sound and diagnostics by physical listener, pause,
   let special=false,focused=true,speaking=false,top=null;
   const environment={
     pubHospitalityInput,EXTERIOR_PUB,ZONE,CELL:.5,px:84,py:894,storyMode:true,inRogue:true,paused:false,
-    sourcePubScene:null,sourceDriveSession:null,sourceContinuationScene:null,coastalMemoryScene:null,getInDriveTeaserScene:null,activeBattleId:null,pubRoomAudio:null,sourcePubAudio:null,actx:{},sfxGain:{},
+    sourcePubScene:null,sourceDriveSession:null,sourceContinuationScene:null,coastalMemoryScene:null,getInDriveTeaserScene:null,activeBattleId:null,pubRoomAudio:null,sourcePubAudio:null,actx:{},sfxGain:{},musicGain:{},STORY:{setRainRoomScale(){}},
     usingSpecialSpace:()=>special,gameplayInputLifecycleActive:()=>focused,mapHeading:()=>0,
-    FP:{isLoaded:()=>true,logicalToPhysical:()=>({x:-12,z:218,y:.12}),zoneAt:()=>ZONE.pub,forEachDoor:visit=>visit({id:'pub-west-entry',runtime:{openFraction:.8}})},
+    FP:{isLoaded:()=>true,logicalToPhysical:()=>({x:EXTERIOR_PUB.interiorAnchor.x*2,z:EXTERIOR_PUB.interiorAnchor.z*2,y:.12}),zoneAt:()=>ZONE.pub,forEachDoor:visit=>visit({id:'pub-west-entry',runtime:{openFraction:.8}})},
     R3:{r3dWorldYaw:()=>1.25,r3dPubStatus:()=>({hospitality:true})},REC:{isRecording:()=>false},SPEECH:{speaking:()=>speaking},scenes:{top:()=>top},
     createPubRoomAudio:()=>ordinaryOwner,createSourcePubAudio:()=>sourceOwner,
     pubHospitalityRendered:[{id:'pub-complete-interior',mesh:PUB_HOSPITALITY_MESH}],pubHospitalityLocalLightIds:['pub-hearth-light'],
   };
   vm.createContext(environment);for(const name of['currentPubHospitalityInput','tickPubRoomAudio','pubHospitalityProbe'])vm.runInContext(production(name),environment);
   environment.tickPubRoomAudio(.1);assert.equal(ordinary[0].inPub,true);assert.equal(ordinary[0].nearPub,true);assert.equal(ordinary[0].doorOpen,true);assert.equal(ordinary[0].paused,false);
-  assert.deepEqual({...ordinary[0].listener},{x:-6,z:109,yaw:1.25},'runtime cells become actual metre positions once');assert.equal(environment.pubHospitalityProbe().active,true);
+  assert.deepEqual({...ordinary[0].listener},{x:EXTERIOR_PUB.interiorAnchor.x,z:EXTERIOR_PUB.interiorAnchor.z,yaw:1.25},'runtime cells become actual metre positions once');assert.equal(environment.pubHospitalityProbe().active,true);
   top={id:'conversation',blocksWorld:true};speaking=true;environment.tickPubRoomAudio(.1);assert.equal(ordinary.at(-1).busy,true,'a conversation does not strand a previously playing room owner');
   focused=false;environment.tickPubRoomAudio(.1);assert.equal(ordinary.at(-1).paused,true,'blur/hide follows the same input lifecycle gate');focused=true;environment.paused=true;environment.tickPubRoomAudio(.1);assert.equal(ordinary.at(-1).paused,true);environment.paused=false;
   top=null;speaking=false;special=true;environment.tickPubRoomAudio(.1);assert.equal(ordinary.at(-1).inPub,false);assert.equal(ordinary.at(-1).nearPub,false);assert.equal(ordinary.at(-1).paused,true);

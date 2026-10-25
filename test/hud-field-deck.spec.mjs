@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { machinePanelAperture } from '../src/render/presentation.js';
+import { navigatorDisplayLayout } from '../src/render/navigator-layout.js';
 import { takeSlotState } from '../src/render/field-deck.js';
 import {
   controlHudPresentation,
@@ -14,9 +16,9 @@ test('field deck gives navigation a stable, non-overlapping territory', () => {
   assert.equal(deck.compact,false);
   assert.ok(deck.navigator.w>=30&&deck.navigator.h>=16);
   assert.equal(deck.navigator.x+deck.navigator.w,126);
-  assert.ok(deck.takes.x+deck.takes.w<deck.navigator.x);
+  assert.equal(deck.takes,undefined,'takes no longer occupy the world viewport');
   assert.ok(deck.objective.x+deck.objective.w<deck.navigator.x);
-  assert.ok(deck.monitor.y<deck.prompt.y);
+  assert.equal(deck.monitor,undefined,'monitor belongs to the navigator housing rather than the world viewport');
 });
 
 test('field deck composes within a compact viewport instead of clipping', () => {
@@ -24,7 +26,7 @@ test('field deck composes within a compact viewport instead of clipping', () => 
   assert.equal(deck.compact,true);
   assert.ok(deck.navigator.x>=2&&deck.navigator.y>=2);
   assert.ok(deck.navigator.x+deck.navigator.w<=62);
-  assert.ok(deck.navigator.y+deck.navigator.h<deck.monitor.y);
+  assert.ok(deck.navigator.y+deck.navigator.h<deck.prompt.y);
   assert.equal(deck.prompt.y,28);
 });
 
@@ -101,4 +103,18 @@ test('radio HUD yields to scene ownership and reports physical state without pro
   }
   assert.equal(radioHudPresentation({introduced:true,calling:true}).status,'CALLING');
   assert.equal(radioHudPresentation({introduced:true,dead:true,noSignal:true,calling:true}).status,'DEAD');
+});
+
+
+test('the map stays in VFD glass and telemetry occupies a separate LCD in the same housing',()=>{
+  for(const [cols,rows]of[[40,24],[64,30],[80,45],[128,50],[192,70]]){
+    const d=fieldDeckLayout({cols,rows}),n=d.navigator,a=machinePanelAperture(n.x,n.y,n.w,n.h),l=navigatorDisplayLayout(a,{telemetry:true});
+    for(const r of[l.viewport,l.footer]){
+      assert.ok(r.x>=l.aperture.x&&r.y>=l.aperture.y);assert.ok(r.x+r.w<=l.aperture.x+l.aperture.w+1e-8);assert.ok(r.y+r.h<=l.aperture.y+l.aperture.h+1e-8,JSON.stringify({cols,rows,r,a:l.aperture}));
+    }
+    assert.ok(l.viewport.h>=5.5,'moving telemetry out of the VFD returns useful map height');
+    assert.ok(l.aperture.y+l.aperture.h<l.lcd.y,'a real metal band separates the two cutouts');
+    assert.ok(l.lcd.x>=n.x+1&&l.lcd.x+l.lcd.w<=n.x+n.w-1);
+    assert.ok(l.lcd.y+l.lcd.h<=n.y+n.h-1,'the reflective LCD fits inside the retained outer shell');
+  }
 });

@@ -1,5 +1,7 @@
 import { isOutdoorZone, ZONE } from '../data/floorplan/legend.js';
 import { isPubMeshEnvelopeZone } from '../data/exterior-pub.js';
+import { isStationersMeshEnvelopeZone } from '../data/exterior-stationers.js';
+import { EXTERIOR_ROOF_ARCHITECTURE_IDS, EXTERIOR_ROOFLINE_MESH } from '../data/exterior-roofline.js';
 
 // Cross-envelope visibility for the authored Ellery prop pack.
 //
@@ -13,6 +15,7 @@ const EXTERIOR_ELLERY_MESHES=new Set([
   'conservatory_stair_window',
   'bay_canopy',
   'opening_street_frontage',
+  EXTERIOR_ROOFLINE_MESH,
 ]);
 
 const INTERIOR_HIDDEN_EXTERIOR_MESHES=new Set([
@@ -32,7 +35,15 @@ const INTERIOR_HIDDEN_EXTERIOR_MESHES=new Set([
 // and between the two answers the walls and the skin both disappeared. See
 // OUTDOOR_ZONES in floorplan/legend.js for the whole account.
 export function isExteriorObserver({zone=null}={}){
-  return isOutdoorZone(zone)||isPubMeshEnvelopeZone(zone);
+  return isOutdoorZone(zone)||isPubMeshEnvelopeZone(zone)||isStationersMeshEnvelopeZone(zone);
+}
+
+// Static submissions depend on both envelope filtering and the roof import.
+// A pub/shop uses the civic mesh envelope while remaining indoors; a street
+// observer also receives the existing roof architecture. Height-band changes
+// within either context do not change this selection and need no prop rebuild.
+export function worldPropVisibilityKey({group=null,zone=null}={}){
+  return JSON.stringify([group,isExteriorObserver({zone}),isOutdoorZone(zone)]);
 }
 
 export function isLoadingBaySightlineProp(instance){
@@ -47,6 +58,7 @@ export function shouldHideCrossEnvelopeProp(instance,{observerZone=null}={}){
     return INTERIOR_HIDDEN_EXTERIOR_MESHES.has(instance?.mesh);
   }
   if(EXTERIOR_ELLERY_MESHES.has(instance?.mesh))return false;
+  if(EXTERIOR_ROOF_ARCHITECTURE_IDS.includes(instance?.id))return false;
   // Roof actors and steel sit inside Ellery's X/Z envelope but above it.
   // Their own depth-writing geometry must survive the exterior shell filter.
   if(observerZone===ZONE.academicRoof&&(

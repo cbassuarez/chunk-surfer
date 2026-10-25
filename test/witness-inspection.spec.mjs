@@ -146,3 +146,34 @@ test('inspection names the other view and key testing leaves the empty plate to 
   assert.equal(scene.view().testing, false); assert.deepEqual(cosmetics, { buttons: 'signal', vfd: 'ice' });
   scene.exit();
 });
+
+test('failed 3D inspection exposes a labeled flat assembly and retry without awarding or fitting', async () => {
+  const calls = [], scene = makeWitnessInspectionScene({ owned: false, onFit: () => calls.push('fit'), onClose: () => calls.push('close') });
+  await scene.ready;
+  assert.equal(scene.view().ready, false);
+  assert.equal(scene.view().failed, true);
+  assert.equal(scene.view().loading, false);
+  assert.equal(scene.view().presentation, 'flat-fitted-preview');
+  scene.render();
+  assert.ok(scene.view().layout.buttons.some(button => button.id === 'retry' && button.key === 'L'));
+  scene.key({ key: 'l', repeat: true });
+  assert.equal(scene.view().loading, false, 'held retry does not start a new render context');
+  scene.key({ key: 'l' }); await scene.ready;
+  assert.equal(scene.view().presentation, 'flat-fitted-preview');
+  assert.equal(scene.view().ready, false, 'a fallback must never pass the real-model ready gate');
+  assert.deepEqual(calls, []);
+  scene.key({ key: 'Escape' });
+  assert.deepEqual(calls, ['close']);
+});
+
+test('recovery control fits alongside every existing inspector action at supported UI cell sizes', () => {
+  for (const [cols, rows] of [[189, 52], [120, 36], [80, 28], [70, 28], [60, 24]]) for (const canFit of [true, false]) {
+    const { rect, buttons, portrait } = witnessInspectionLayout(cols, rows, canFit, 'recorder', true);
+    assert.equal(buttons.filter(button => button.id === 'retry').length, 1);
+    for (const button of buttons) {
+      assert.ok(button.w > 0 && button.x >= rect.x && button.x + button.w <= rect.x + rect.w + 1e-8);
+      assert.ok(button.y >= portrait.y + portrait.h && button.y + button.h <= rect.y + rect.h);
+    }
+    for (let i = 1; i < buttons.length; i++) assert.ok(buttons[i].x > buttons[i - 1].x + buttons[i - 1].w);
+  }
+});

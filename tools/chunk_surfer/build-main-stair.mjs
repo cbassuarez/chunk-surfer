@@ -1,7 +1,7 @@
 // Build the grand open-well main stair as one deterministic, project-native
 // hero mesh, from the contract in src/data/main-stair-geometry.js.
 //
-// Revision 4: the stair stands in a square stairwell where this mesh is the
+// Geometry revision 4, finish revision 4: the stair stands in a square stairwell where this mesh is the
 // only thing drawn (the plan grid inside it is one column of air). So it builds
 // everything there: two closed runs of curved treads with flush brass nosings
 // and a helicoid soffit, both landings as slabs at the heights the plan grid
@@ -12,7 +12,9 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import sharp from 'sharp';
 import { MAIN_STAIR_GEOMETRY, mainStairBuiltLandings, mainStairGuards, offsetFromFlights, gridDrawnHeight } from '../../src/data/main-stair-geometry.js';
+import { MAIN_STAIR_TREAD_FINISH as FINISH } from '../../src/data/main-stair-tread-finish.js';
 
 const ROOT=path.resolve(import.meta.dirname,'../..');
 const OUT_DIR=path.join(ROOT,'public/assets');
@@ -27,11 +29,12 @@ const materials=[
   ['aged brass',[.48,.29,.075,1],.86,.24],
   ['dark oak',[.16,.075,.035,1],.02,.48],
   ['opal glass',[.88,.84,.69,1],0,.18],
+  ['molded ivory riser stone',[.67,.61,.48,1],.02,.39],
 ].map(([name,baseColorFactor,metallicFactor,roughnessFactor])=>({
   name,...(name==='opal glass'?{doubleSided:true}:{}),pbrMetallicRoughness:{baseColorFactor,metallicFactor,roughnessFactor},
 }));
 materials[5].emissiveFactor=[.52,.39,.21];
-const MAT={terrazzo:0,concrete:1,steel:2,brass:3,oak:4,opal:5};
+const MAT={terrazzo:0,concrete:1,steel:2,brass:3,oak:4,opal:5,riser:6};
 const meshes=new Map();
 const mesh=(name)=>{const value={name,groups:new Map()};meshes.set(name,value);return value;};
 const group=(m,mat)=>{if(!m.groups.has(mat))m.groups.set(mat,{positions:[],normals:[],indices:[],uvs:[]});return m.groups.get(mat);};
@@ -216,6 +219,11 @@ function buildRun(flights){
   const cols=(t,j)=>{const b=t.s+NOSING/rings[j]/DEG;return[t.s,...Array.from({length:SLICES+1},(_,i)=>b+(t.e-b)*i/SLICES)];};
   treads.forEach((t,k)=>{
     const prev=treads[k-1];
+    const bottom=prev?prev.h:soffit(t.s);
+    const profile=[...FINISH.noseProfile.map(([offset,drop])=>[offset,t.h-drop]),
+      [.018,bottom+FINISH.toeCoveHeightM],[0,bottom]];
+    const profilePoint=(r,[offset,y])=>point(r,t.s+offset/r/DEG,y);
+    t.finishProfile=profile.map(([offset,y])=>({offsetM:offset,y}));
     for(let j=0;j<RADIAL;j++){
       const ca=cols(t,j),cb=cols(t,j+1);
       // Nosing, then the tread.
@@ -226,9 +234,17 @@ function buildRun(flights){
         const q=[[rings[j],ca[i]],[rings[j],ca[i+1]],[rings[j+1],cb[i+1]],[rings[j+1],cb[i]]];
         shadedQuad(MAT.concrete,...q.map(([r,d])=>point(r,d,soffit(d))),...q.map(([r,d])=>soffitN(r,d)));
       }
-      // The riser up from the previous tread, and the run's start and end caps.
-      if(prev)flat(MAT.concrete,[point(rings[j],t.s,prev.h),point(rings[j+1],t.s,prev.h),point(rings[j+1],t.s,t.h),point(rings[j],t.s,t.h)],tangentN(t.s,-1));
-      else flat(MAT.concrete,[point(rings[j],t.s,soffit(t.s)),point(rings[j+1],t.s,soffit(t.s)),point(rings[j+1],t.s,t.h),point(rings[j],t.s,t.h)],tangentN(t.s,-1));
+      // The bronze turns down over an eased front edge. The cove and ivory
+      // riser are carved into the old mass, not pasted over a rectangular face.
+      // Top and toe stay on their original lines so adjoining treads still meet.
+      for(let p=0;p<profile.length-1;p++){
+        const points=[profilePoint(rings[j],profile[p]),profilePoint(rings[j+1],profile[p]),
+          profilePoint(rings[j+1],profile[p+1]),profilePoint(rings[j],profile[p+1])];
+        let n=normal(points[0],points[1],points[2]);
+        if(n.reduce((sum,v,i)=>sum+v*tangentN(t.s,-1)[i],0)<0){points.reverse();n=n.map(v=>-v);}
+        const bronze=t.h-profile[p+1][1]<=FINISH.bronzeTurnDownM+1e-8;
+        flat(bronze?MAT.brass:MAT.riser,points,n);
+      }
       if(k===treads.length-1)flat(MAT.concrete,[point(rings[j],t.e,soffit(t.e)),point(rings[j+1],t.e,soffit(t.e)),point(rings[j+1],t.e,t.h),point(rings[j],t.e,t.h)],tangentN(t.e,1));
     }
     // The two cylindrical sides. The first column carries the previous tread's
@@ -238,8 +254,16 @@ function buildRun(flights){
       for(let i=0;i<=SLICES;i++){
         const B0=point(r,c[i],soffit(c[i])),B1=point(r,c[i+1],soffit(c[i+1])),T0=point(r,c[i],t.h),T1=point(r,c[i+1],t.h);
         const n0=radialN(c[i],sign),n1=radialN(c[i+1],sign);
-        if(i===0&&prev){const M0=point(r,c[0],prev.h);
-          shadedTri(MAT.concrete,B0,B1,T1,n0,n1,n1);shadedTri(MAT.concrete,B0,T1,M0,n0,n1,n0);shadedTri(MAT.concrete,M0,T1,T0,n0,n1,n0);}
+        if(i===0){
+          const coords=[[c[i]*DEG*r,soffit(c[i])],[c[i+1]*DEG*r,soffit(c[i+1])],
+            [c[i+1]*DEG*r,t.h],...profile.map(([offset,y])=>[t.s*DEG*r+offset,y])];
+          if(!prev)coords.pop(); // Last profile point is already the first soffit corner.
+          const points=coords.map(([arc,y])=>point(r,arc/r/DEG,y));
+          for(const tri of earClip(coords)){
+            const ps=tri.map(index=>points[index]),ns=tri.map(index=>radialN(coords[index][0]/r/DEG,sign));
+            shadedTri(MAT.concrete,...ps,...ns);
+          }
+        }
         else shadedQuad(MAT.concrete,B0,B1,T1,T0,n0,n1,n1,n0);
       }
     }
@@ -248,6 +272,22 @@ function buildRun(flights){
 }
 const lowerRun=buildRun(STAIR.flights.slice(0,2)),upperRun=buildRun(STAIR.flights.slice(2,4));
 const allTreads=[...lowerRun.treads,...upperRun.treads];
+// The exposed waist is dressed with a broad rounded fascia, bonded eleven
+// millimetres into the existing concrete. Its closed section sits below every
+// tread and outside the walking ribbon; it is visible construction, not a new
+// rail, a foot obstacle or a stack of floating beads.
+const cheekPaths=[];
+for(const run of[lowerRun,upperRun])for(const[r,side]of[[INNER,-1],[OUTER,1]]){
+  const from=run.treads[0].s,to=run.treads.at(-1).e;
+  const count=Math.ceil((to-from)/FINISH.cheek.maximumAngleStepDeg);
+  const radius=r+side*FINISH.cheek.radialCentreOffsetM;
+  const points=Array.from({length:count+1},(_,i)=>{const angle=from+(to-from)*i/count;
+    return point(radius,angle,run.soffit(angle)+FINISH.cheek.aboveSoffitM);});
+  addProfiledSweep(points,FINISH.cheek.radialHalfWidthM,FINISH.cheek.halfHeightM,
+    MAT.riser,FINISH.cheek.sides,true);
+  cheekPaths.push({radius,side,fromDeg:from,toDeg:to,points:points.length,
+    radialHalfWidthM:FINISH.cheek.radialHalfWidthM,halfHeightM:FINISH.cheek.halfHeightM});
+}
 // The walking surface under a bearing on ONE run: the two runs share bearings
 // from 100° to 360°, so a run has to be named.
 const surfaceAt=(treads,deg)=>{const t=treads.find((q)=>deg>=q.s-1e-9&&deg<q.e-1e-9);return t?t.h:null;};
@@ -493,16 +533,84 @@ const pad4=(n)=>(n+3)&~3;
 function append(typed,target){const bytes=Buffer.from(typed.buffer,typed.byteOffset,typed.byteLength),start=byteOffset;chunks.push(bytes);byteOffset+=bytes.length;const pad=pad4(byteOffset)-byteOffset;if(pad){chunks.push(Buffer.alloc(pad));byteOffset+=pad;}const index=bufferViews.length;bufferViews.push({buffer:0,byteOffset:start,byteLength:bytes.length,target});return index;}
 function bounds(values){const lo=[Infinity,Infinity,Infinity],hi=[-Infinity,-Infinity,-Infinity];for(let i=0;i<values.length;i+=3)for(let k=0;k<3;k++){lo[k]=Math.min(lo[k],values[i+k]);hi[k]=Math.max(hi[k],values[i+k]);}return[lo,hi];}
 function accessor(view,componentType,count,type,min,max){const value={bufferView:view,componentType,count,type};if(min)value.min=min;if(max)value.max=max;const index=accessors.length;accessors.push(value);return index;}
+const materialSurfaces=new Map([[MAT.terrazzo,'terrazzo'],[MAT.concrete,'concrete'],[MAT.brass,'brass'],[MAT.riser,'riser']]);
+function surfaceUvs(g,mat){
+  if(!materialSurfaces.has(mat)&&g.uvs.length===g.positions.length/3*2)return g.uvs;
+  const tile=FINISH.materials[materialSurfaces.get(mat)]?.tileM||1,uv=[];
+  for(let i=0;i<g.positions.length;i+=3){
+    const[x,y,z]=g.positions.slice(i,i+3),[nx,ny,nz]=g.normals.slice(i,i+3),r=Math.hypot(x,z)||1;
+    const radial=Math.abs((nx*x+nz*z)/r);
+    // Top/soffit are metre X/Z; curved cheeks use circumference/height;
+    // radial risers use radial length/height, rather than collapsed X/Z UVs.
+    if(Math.abs(ny)>.72)uv.push(x/tile,z/tile);
+    else if(radial>.70)uv.push(Math.atan2(x,-z)*r/tile,y/tile);
+    else uv.push(r/tile,y/tile);
+  }
+  return uv;
+}
 for(const value of meshes.values()){
   const primitives=[];
   for(const [mat,g] of value.groups){
-    const p=new Float32Array(g.positions),n=new Float32Array(g.normals),uv=new Float32Array(g.uvs.length===p.length/3*2?g.uvs:p.length/3*2),ix=new Uint32Array(g.indices),[min,max]=bounds(p);
+    const p=new Float32Array(g.positions),n=new Float32Array(g.normals),uv=new Float32Array(surfaceUvs(g,mat)),ix=new Uint32Array(g.indices),[min,max]=bounds(p);
     primitives.push({attributes:{POSITION:accessor(append(p,34962),5126,p.length/3,'VEC3',min,max),NORMAL:accessor(append(n,34962),5126,n.length/3,'VEC3'),TEXCOORD_0:accessor(append(uv,34962),5126,uv.length/2,'VEC2')},indices:accessor(append(ix,34963),5125,ix.length,'SCALAR',[0],[p.length/3-1]),material:mat,mode:4});
   }
   gltfMeshes.push({name:value.name,primitives});
 }
+// Deterministic physically scaled surface channels. Aggregate is polished
+// flush with its cement matrix; normal amplitude is tens of microns rather
+// than lumpy displacement. Mipmapped repeat images stay subordinate to the
+// broad modeled profiles at ordinary camera distances.
+const images=[],textures=[],samplers=[{magFilter:9729,minFilter:9987,wrapS:10497,wrapT:10497}],surfaceRecords=[];
+const hash=n=>{let v=(Math.imul(n|0,1597334677)^0x5bd1e995)>>>0;v=Math.imul(v^(v>>>13),2246822519)>>>0;return(v^(v>>>16))>>>0;};
+const noise=(x,y,seed)=>hash(x+Math.imul(y,4099)+seed)/4294967295;
+const smooth=t=>t*t*(3-2*t);
+function grain(x,y,n,frequency,seed){
+  const px=x/n*frequency,py=y/n*frequency,ix=Math.floor(px),iy=Math.floor(py),tx=smooth(px-ix),ty=smooth(py-iy);
+  const sample=(a,b)=>noise((a+frequency)%frequency,(b+frequency)%frequency,seed);
+  return(sample(ix,iy)*(1-tx)+sample(ix+1,iy)*tx)*(1-ty)+(sample(ix,iy+1)*(1-tx)+sample(ix+1,iy+1)*tx)*ty;
+}
+for(const[mat,kind]of materialSurfaces){
+  const spec=FINISH.materials[kind],n=spec.size,pixels=n*n,albedo=Buffer.alloc(pixels*3),orm=Buffer.alloc(pixels*3),height=new Float64Array(pixels);
+  const seed={terrazzo:191,riser:283,concrete:331,brass:449}[kind],mean={terrazzo:[194,187,173],riser:[213,205,184],concrete:[152,153,146],brass:[184,146,77]}[kind];
+  for(let y=0;y<n;y++)for(let x=0;x<n;x++){
+    const index=y*n+x,soft=grain(x,y,n,8,seed)-.5,fine=grain(x,y,n,32,seed+31)-.5;
+    let tone=soft*4+fine*2,rough=spec.roughness,relief=soft*.000025;
+    if(kind==='terrazzo'){
+      const cell=8,cx=Math.floor(x/cell),cy=Math.floor(y/cell),rx=x%cell,ry=y%cell;
+      const sx=1.5+noise(cx,cy,seed+3)*5,sy=1.5+noise(cx,cy,seed+4)*5;
+      const radius=.65+noise(cx,cy,seed+5)*2.2;
+      const chip=Math.hypot((rx-sx)*(.75+noise(cx,cy,seed+6)*.6),ry-sy)<radius;
+      if(chip){tone+=(noise(cx,cy,seed+7)-.45)*25;rough-=.11;}
+      relief=fine*.000035;
+    }else if(kind==='concrete'){
+      const pore=noise(x,y,seed)<.016;relief=soft*.00012-(pore?.00023:0);tone=soft*8+fine*3-(pore?8:0);rough+=fine*.05;
+    }else if(kind==='brass'){
+      const brush=grain(x,y,n,64,seed+9)-.5;tone=soft*5+brush*2;relief=brush*.000003;rough+=soft*.08;
+    }else{tone=soft*3+fine;rough+=soft*.035;relief=fine*.000025;}
+    height[index]=relief;
+    for(let k=0;k<3;k++)albedo[index*3+k]=Math.max(0,Math.min(255,Math.round(mean[k]+tone)));
+    orm[index*3]=255;orm[index*3+1]=Math.round(Math.max(0,Math.min(1,rough))*255);orm[index*3+2]=kind==='brass'?219:0;
+  }
+  const normal=Buffer.alloc(pixels*3),metresPerPixel=spec.tileM/n;
+  for(let y=0;y<n;y++)for(let x=0;x<n;x++){
+    const sample=(xx,yy)=>height[((yy+n)%n)*n+(xx+n)%n];
+    const dx=(sample(x+1,y)-sample(x-1,y))/(2*metresPerPixel),dy=(sample(x,y+1)-sample(x,y-1))/(2*metresPerPixel),len=Math.hypot(dx,dy,1);
+    const index=(y*n+x)*3;normal[index]=Math.round((-dx/len*.5+.5)*255);normal[index+1]=Math.round((-dy/len*.5+.5)*255);normal[index+2]=Math.round((1/len*.5+.5)*255);
+  }
+  const textureIndices={};
+  for(const[channel,raw]of[['albedo',albedo],['normal',normal],['orm',orm]]){
+    const png=await sharp(raw,{raw:{width:n,height:n,channels:3}}).png({compressionLevel:9,adaptiveFiltering:true}).toBuffer();
+    const image=images.length;images.push({name:`main-stair-${kind}-${channel}`,mimeType:'image/png',bufferView:append(new Uint8Array(png))});
+    textureIndices[channel]=textures.length;textures.push({source:image,sampler:0});
+    surfaceRecords.push({material:materials[mat].name,channel,width:n,height:n,bytes:png.length,tileM:spec.tileM,sha256:crypto.createHash('sha256').update(png).digest('hex')});
+  }
+  materials[mat].pbrMetallicRoughness={baseColorFactor:[1,1,1,1],metallicFactor:1,roughnessFactor:1,
+    baseColorTexture:{index:textureIndices.albedo},metallicRoughnessTexture:{index:textureIndices.orm}};
+  materials[mat].normalTexture={index:textureIndices.normal,scale:1};
+  materials[mat].extras={materialFactors:'gltf',surfaceMechanism:kind==='terrazzo'?'polished aggregate flush with cement matrix':kind==='riser'?'honed molded ivory cast-stone casing':kind==='brass'?'handled bronze edge with fine longitudinal abrasion':'mineral cast waist behind retained dressed faces'};
+}
 const nodes=gltfMeshes.map((value,index)=>({name:value.name,mesh:index})),bin=Buffer.concat(chunks,byteOffset);
-const gltf={asset:{version:'2.0',generator:'chunk-surfer build-main-stair.mjs'},scene:0,scenes:[{nodes:nodes.map((_,index)=>index)}],nodes,meshes:gltfMeshes,materials,accessors,bufferViews,buffers:[{byteLength:bin.length}]};
+const gltf={asset:{version:'2.0',generator:'chunk-surfer build-main-stair.mjs'},scene:0,scenes:[{nodes:nodes.map((_,index)=>index)}],nodes,meshes:gltfMeshes,materials,images,textures,samplers,accessors,bufferViews,buffers:[{byteLength:bin.length}]};
 const jsonRaw=Buffer.from(JSON.stringify(gltf)),json=Buffer.concat([jsonRaw,Buffer.alloc(pad4(jsonRaw.length)-jsonRaw.length,0x20)]);
 const total=12+8+json.length+8+bin.length,head=Buffer.alloc(12),jh=Buffer.alloc(8),bh=Buffer.alloc(8);
 head.writeUInt32LE(0x46546c67,0);head.writeUInt32LE(2,4);head.writeUInt32LE(total,8);jh.writeUInt32LE(json.length,0);jh.writeUInt32LE(0x4e4f534a,4);bh.writeUInt32LE(bin.length,0);bh.writeUInt32LE(0x004e4942,4);
@@ -511,7 +619,7 @@ fs.mkdirSync(OUT_DIR,{recursive:true});fs.writeFileSync(OUT,Buffer.concat([head,
 let triangles=0,vertices=0;const[lo,hi]=bounds([...m.groups.values()].flatMap(g=>g.positions));
 for(const g of m.groups.values()){triangles+=g.indices.length/3;vertices+=g.positions.length/3;}
 const stats={generatedAt:new Date().toISOString(),bytes:total,totalTriangles:triangles,design:{
-  geometryRevision:STAIR.revision,finishRevision:3,curvilinear:true,navigationMode:'analytic-helix',
+  geometryRevision:STAIR.revision,finishRevision:4,curvilinear:true,navigationMode:'analytic-helix',
   halfTurnFlights:STAIR.flights.length,flightWidthM:STAIR.widthM,openWellWidthM:STAIR.innerRadiusM*2,
   lowerRisers:STAIR.flights[0].rises+STAIR.flights[1].rises,upperRisers:STAIR.flights[2].rises+STAIR.flights[3].rises,
   goingM:STAIR.goingM,handrailHeightM:STAIR.handrailHeightM,maximumBalusterClearGapM:STAIR.balusterMaximumClearGapM,
@@ -520,6 +628,11 @@ const stats={generatedAt:new Date().toISOString(),bytes:total,totalTriangles:tri
   stairwell:{...STAIR.stairwell},
   builtLandings:LANDINGS.map((l)=>({id:l.id,floorM:l.height,drawnM:+l.drawnHeight.toFixed(4),slabDepthM:STAIR.landingSlabDepthM})),
   guards:mainStairGuards().map((g)=>g.id),
+  treadFinish:{revision:FINISH.revision,story:FINISH.story,
+    treads:allTreads.map(t=>({flight:t.f.id,startDeg:t.s,endDeg:t.e,topM:t.h,profile:t.finishProfile})),
+    profileMaximumRecessM:.018,bronzeTurnDownM:FINISH.bronzeTurnDownM,cheeks:cheekPaths,
+    cheekMaximumProjectionM:FINISH.cheek.maximumProjectionM,walkingSurfaceChanged:false,
+    coplanarRiserOverlays:0,channels:surfaceRecords,textureMipBytes:Math.round(surfaceRecords.reduce((sum,r)=>sum+r.width*r.height*4*4/3,0))},
   joinery:{
     style:'restrained bourgeois oak, bronze collars and iron scroll panels',
     curtail:{firstTreadHeightM:firstTread.h,drawnCapHeightM:curtailTop,slabDepthM:STAIR.slabDepthM,outline:curtailOutline,walkingOuterRadiusM:OUTER,maximumRadiusM:Math.max(...curtailOutline.map(p=>Math.hypot(...p)))},
@@ -532,6 +645,6 @@ const stats={generatedAt:new Date().toISOString(),bytes:total,totalTriangles:tri
   meshes:{main_open_well_stair:{triangles,vertices,bounds:{min:lo,max:hi}}}};
 fs.writeFileSync(STATS,JSON.stringify(stats,null,2)+'\n');
 const sha256=crypto.createHash('sha256').update(fs.readFileSync(OUT)).digest('hex');
-const credits={pack:{filename:path.basename(OUT),author:'Chunk Surfer project',source:'tools/chunk_surfer/build-main-stair.mjs',license:'project source',sha256,triangles,bytes:total,modifications:'Project-native deterministic geometry; metres, Y-up, centred on the physical main stair hall.'},meshes:[{name:'main_open_well_stair',bounds:{min:lo,max:hi},triangles,provenance:{source:'tools/chunk_surfer/build-main-stair.mjs',origin:'project-native procedural geometry',license:'project source'}}]};
+const credits={pack:{filename:path.basename(OUT),author:'Chunk Surfer project',source:'tools/chunk_surfer/build-main-stair.mjs',license:'project source',sha256,triangles,bytes:total,modifications:'Project-native deterministic geometry and physically scaled material channels; metres, Y-up, centred on the physical main stair hall. Authored walking geometry unchanged.'},references:FINISH.references,meshes:[{name:'main_open_well_stair',bounds:{min:lo,max:hi},triangles,provenance:{source:'tools/chunk_surfer/build-main-stair.mjs',origin:'project-native procedural geometry',license:'project source'}}]};
 fs.writeFileSync(CREDITS,JSON.stringify(credits,null,2)+'\n');
 console.log(`wrote ${path.relative(ROOT,OUT)} (${total} bytes, ${triangles} triangles)`);

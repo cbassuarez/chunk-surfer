@@ -61,11 +61,11 @@ function builder(api,m){
   return{stats,box,beam,cylinder,quad};
 }
 
-export function addBourgeoisPubFrontage(api,m,{z,h,unitW,depth}){
+export function addBourgeoisPubFrontage(api,m,{z,h,unitW,depth,deed:authoredDeed}){
   if(![z,h,unitW,depth].every(Number.isFinite)||Math.abs(unitW-8)>1e-8||h<12.6||depth!==5.4)
     throw Error('The complete pub occupies the two existing eight-metre deeds, at their original depth.');
   const{stats,box,beam,cylinder,quad}=builder(api,m),C=EXTERIOR_FRONTAGE_CONTRACT.pub;
-  const deed=z<-24?0:1,front=-.20,back=-depth,door=-2.75;
+  const deed=authoredDeed??(z<-24?0:1),front=-.20,back=-depth,door=-2.75;
   const put=(id,x,y,dz,sx,sy,sz,mat)=>box(id,[x,y,z+dz],[sx,sy,sz],mat);
   const line=(id,a,b,w,mat)=>beam(id,[a[0],a[1],z+a[2]],[b[0],b[1],z+b[2]],w,mat);
   const face=(id,a,b,c,d,mat)=>quad(id,...[a,b,c,d].map(p=>[p[0],p[1],z+p[2]]),mat);

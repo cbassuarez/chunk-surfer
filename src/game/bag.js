@@ -36,6 +36,8 @@ import { pressControl, releaseControl, cancelControlScope } from './control-feed
 import {createItemInspection,itemInspectionStats} from './item-inspection.js';
 import {drawItemInspectionView,itemInspectionLayout} from '../render/item-inspection-view.js';
 import {preloadItemPortraits} from '../render/item-portraits.js';
+import { drawJournalView, journalListCapacity } from '../render/journal-view.js';
+import { isMapShortcut } from './map-shortcut.js';
 
 let rememberedNav = null;
 let rememberedSheetPages = {};
@@ -60,6 +62,8 @@ export function makeBagScene({
   assignEquipmentSlot = null,
   reorderEquipment = null,
   getJob = null,
+  journal = [],
+  getJournal = null,
   getMap = null,
   getMapUnavailableReason = null,
   hint = '',
@@ -97,6 +101,7 @@ export function makeBagScene({
   const equipmentSource = typeof getEquipment === 'function' ? getEquipment : () => equipment;
   const loadoutSource = typeof getLoadout === 'function' ? getLoadout : () => loadout;
   const jobSource = typeof getJob === 'function' ? getJob : () => job;
+  const journalSource = typeof getJournal === 'function' ? getJournal : () => journal;
   const mapSource = typeof getMap === 'function' ? getMap : () => map;
   const mapUnavailableSource = typeof getMapUnavailableReason === 'function' ? getMapUnavailableReason : () => '';
   const hintSource = typeof getHint === 'function' ? getHint : () => hint;
@@ -124,7 +129,7 @@ export function makeBagScene({
     return before.size !== after.size || [...after].some((id) => !before.has(id));
   };
   let model = buildBagModel({
-    equipment: equipmentSource(), job: jobSource(), map: mapSource(), loadout: loadoutSource(),
+    equipment: equipmentSource(), job: jobSource(), journal: journalSource(), map: mapSource(), loadout: loadoutSource(),
     mapUnavailableReason: mapUnavailableSource(),
     build: workingBuild, settledBuild, hasRig: rigSource(), sheetInsights:sheetInsightSource(),
   });
@@ -138,6 +143,7 @@ export function makeBagScene({
   const heldControls = new Map();
   let patchDrag = null, patchLayout = null, patchLayoutKey = '';
   let mapPresentation = null, mapDrag = null, locatePending = false, mapViewportKey = '';
+  let journalPresentation = null, journalPage = 0;
   const controlInput = (e = {}) => e.type?.startsWith('pointer') || e.type === 'lostpointercapture'
     ? `pointer:${e.pointerId ?? 'primary'}`
     : e.controllerAction ? `controller:${e.controllerAction}` : `key:${e.code || e.key || ''}`;
@@ -303,7 +309,7 @@ export function makeBagScene({
 
   function refresh() {
     model = buildBagModel({
-      equipment: equipmentSource(), job: jobSource(), map: mapSource(), loadout: loadoutSource(),
+      equipment: equipmentSource(), job: jobSource(), journal: journalSource(), map: mapSource(), loadout: loadoutSource(),
       mapUnavailableReason: mapUnavailableSource(),
       build: workingBuild, settledBuild, hasRig: rigSource(), sheetInsights:sheetInsightSource(),
     });
@@ -422,6 +428,7 @@ export function makeBagScene({
     nav = reduceBagNav(nav, { type: 'SELECT_SECTION', sectionId: normalized }, model);
     if (nav.sectionId === 'map') syncMapSelectionFromBag();
     if (before !== nav.sectionId) {
+      journalPage = 0;
       motion.sectionChangedAt = t;
       motion.selectionChangedAt = t;
       AUDIO.menuMove();
@@ -442,6 +449,7 @@ export function makeBagScene({
     const before = currentBagEntry(nav, model)?.id;
     nav = reduceBagNav(nav, { type: 'MOVE_SELECTION', delta }, model);
     if (currentBagEntry(nav, model)?.id !== before) {
+      journalPage = 0;
       motion.selectionChangedAt = t;
       AUDIO.menuMove();
       remember();
@@ -767,7 +775,17 @@ export function makeBagScene({
     if(descriptor?.confirm&&!confirmed){pushRoute({type:'confirm',entryId:entry.id,actionId,descriptor});AUDIO.menuConfirm?.();return true;}
     let ok = false;
 
-    if (nav.sectionId === 'map') {
+    if (entry.kind === 'quest' && actionId === 'journal-track') {
+      nav = { ...nav, journalPinnedId: nav.journalPinnedId === entry.id ? null : entry.id };
+      remember(); ok = true;
+    } else if (entry.kind === 'quest' && actionId === 'journal-map') {
+      const space = model.map?.spaces?.find((candidate) => candidate.id === entry.mapSpaceId);
+      if (space && setSection('map')) {
+        mapNav = reduceMapNav(mapNav, { type: 'SELECT_FLOOR', floorId: space.floorId }, model.map);
+        mapNav = reduceMapNav(mapNav, { type: 'SELECT_SPACE', spaceId: space.id }, model.map);
+        syncBagSelectionFromMap(); remember(); ok = true;
+      }
+    } else if (nav.sectionId === 'map') {
       const selected = selectedMapSpace(mapNav, model.map);
       if(actionId==='confirm-waypoint')ok=!!selected?.waypoint;
       else if(actionId==='read-attached')ok=selected?.objective?.notes?.[0]||selected?.attached?openSheet(selected.objective?.notes?.[0]||selected.attached):false;
@@ -1066,6 +1084,7 @@ export function makeBagScene({
   }
 
   function selectEntry(sectionId,entryId){
+    if (nav.selected?.[sectionId] !== entryId) journalPage = 0;
     nav=reduceBagNav(nav,{type:'SELECT_ENTRY',sectionId,entryId},model);
     motion.selectionChangedAt=t;remember();
   }
@@ -1086,7 +1105,19 @@ export function makeBagScene({
   }
 
   function registerRootHits(layout){
-    if(nav.sectionId==='kit'){
+    if(nav.sectionId==='journal'){
+      for(const hit of journalPresentation?.hits || []) addHit({ ...hit, disabled: hit.enabled === false,
+        onHover: hit.kind === 'journal-entry' ? () => selectEntry('journal', hit.entryId) : undefined,
+        onClick: () => {
+          if (hit.kind === 'journal-entry') { selectEntry('journal', hit.entryId); return; }
+          if (hit.actionId === 'journal-prev-page' || hit.actionId === 'journal-next-page') {
+            journalPage = Math.max(0, Math.min((journalPresentation?.detailPages || 1) - 1,
+              journalPage + (hit.actionId === 'journal-next-page' ? 1 : -1))); return;
+          }
+          execute(currentBagEntry(nav,model),hit.actionId);
+        },
+      });
+    }else if(nav.sectionId==='kit'){
       const geo=bagInventoryGeometry(model,nav,layout),entries=model.sections.find((section)=>section.id==='kit')?.entries||[];
       const list=bagInventoryListLayout(geo.list),cap=list.capacity,selected=bagEntry(model,'kit',nav.selected?.kit),at=Math.max(0,entries.findIndex((entry)=>entry.id===selected?.id));
       const scroll=Math.max(0,Math.min(at>=cap?at-cap+1:0,Math.max(0,entries.length-cap)));
@@ -1202,6 +1233,7 @@ export function makeBagScene({
         chosenTechniqueIds: [...chosenTechniqueIds], workingBuild: structuredClone(workingBuild),
         route:{...currentRoute(),reader:currentRoute()?.reader?.view?.()||null,inspection:currentRoute()?.inspection?.view()||null},hitRegions:hits.view(),sheetPages:{...sheetPages},guidePresentation,
         mapPresentation:mapPresentation?{hits:mapPresentation.hits,layout:mapPresentation.layout,projectedPoints:mapPresentation.projectedPoints}:null,
+        journalPresentation, journalPage,
         mapDrag:mapDrag?{...mapDrag}:null,
         patchDrag:patchDrag?{from:patchDrag.from,to:patchDrag.to,rerouteId:patchDrag.rerouteId,valid:patchDrag.valid,compatibleIds:patchDrag.compatibleIds}:null,
       };
@@ -1229,6 +1261,12 @@ export function makeBagScene({
       };
       if (bagCloseInput(e)) { close({suppressReopen:true}); return true; }
       if(currentRoute().type!=='root')return handleRouteKey(e);
+      if (isMapShortcut(e)) {
+        e.preventDefault?.();
+        if (nav.sectionId === 'map') close({suppressReopen:true});
+        else momentarySection('map');
+        return true;
+      }
       if(nav.sectionId==='map'&&mapNav.roomFile){
         if(backInput(e)){mapNav={...mapNav,roomFile:null};AUDIO.menuBack?.();return true;}
         if(confirmInput(e)&&!mapNav.focusedControlId){mapAction('file-document');return true;}
@@ -1256,6 +1294,7 @@ export function makeBagScene({
       if (raw === '2' || code === 'Digit2') { momentarySection('map'); return true; }
       if (raw === '3' || code === 'Digit3') { momentarySection('sheets'); return true; }
       if (raw === '4' || code === 'Digit4') { momentarySection('skills'); return true; }
+      if (raw === '5' || code === 'Digit5') { momentarySection('journal'); return true; }
       if (guided && guided.kind!=='skills') {
         // Exactly one action is live, so every activation key opens it. The
         // callout names one of them; a player who reaches for the other should
@@ -1276,6 +1315,18 @@ export function makeBagScene({
       }
 
       if(consoleMapKey(e))return true;
+      if (nav.sectionId === 'journal' && (raw === 'PageUp' || raw === 'PageDown')) {
+        journalPage = Math.max(0, Math.min((journalPresentation?.detailPages || 1) - 1, journalPage + (raw === 'PageDown' ? 1 : -1)));
+        return true;
+      }
+      if (nav.sectionId === 'journal' && (confirmInput(e) || raw === ' ' || code === 'Space' || e.controllerAction === 'mark')) {
+        if (!e.repeat) {
+          const showMap = raw === ' ' || code === 'Space' || e.controllerAction === 'mark';
+          pressBagControl(showMap ? 'bag:journal:map' : 'bag:journal:track', e);
+          execute(currentBagEntry(nav,model), showMap ? 'journal-map' : 'journal-track');
+        }
+        return true;
+      }
 
       if (nav.sectionId === 'skills') {
         const entry = currentBagEntry(nav, model);
@@ -1398,6 +1449,7 @@ export function makeBagScene({
       const skills = nav.sectionId === 'skills';
       const subview=!['root','item-actions'].includes(route.type);
       const mapHardware=nav.sectionId==='map'&&!subview;
+      const journalHardware=nav.sectionId==='journal'&&!subview;
       let layout;
       withMachinePanel(outer.x, outer.y, outer.w, outer.h, {
         label: 'FIELD CASE / 4417-C',
@@ -1405,12 +1457,12 @@ export function makeBagScene({
         footer: '', meter: true, theme: 'amber',
         // Sockets, plugs, cables, and switches are exposed hardware. The case
         // still has its metal faceplate, but never puts a cover over that bay.
-        glass: skills && !subview || mapHardware ? false : {},
-        aperture: !mapHardware,
+        glass: skills && !subview || mapHardware || journalHardware ? false : {},
+        aperture: !(mapHardware || journalHardware),
       }, (body) => {
       layout = bagLayout({
-        body:mapHardware?{x:outer.x+3,y:outer.y+2.6,w:outer.w-6,h:outer.h-3.6}:body,
-        sectionId:mapHardware?'map':null,
+        body:mapHardware||journalHardware?{x:outer.x+3,y:outer.y+2.6,w:outer.w-6,h:outer.h-3.6}:body,
+        sectionId:mapHardware?'map':journalHardware?'journal':null,
         forceMode: typeof forceLayout === 'function' ? forceLayout() : forceLayout,
       });
       if(mapHardware){
@@ -1421,7 +1473,7 @@ export function makeBagScene({
         mapViewportKey=key;
       }
       if (nav.sectionId !== 'map') {
-        nav = ensureBagSelectionVisible(nav, model, bagListCapacity(layout, nav.sectionId));
+        nav = ensureBagSelectionVisible(nav, model, journalHardware ? journalListCapacity(contentRegion(layout)) : bagListCapacity(layout, nav.sectionId));
       }
       if (skills && !subview) {
         const region=contentRegion(layout),section=skillsTree();
@@ -1438,6 +1490,8 @@ export function makeBagScene({
         // characters and was cut at "INSPE…", which hid the very verbs it was
         // trying to advertise. What each verb does is on the item itself.
         ? 'PICK AN ITEM · [ENTER] FOR ITS ACTIONS'
+        : journalHardware
+          ? nav.journalPinnedId ? `FOLLOWING: ${bagEntry(model,'journal',nav.journalPinnedId)?.title || 'NONE'}` : ''
         : skills
           ? 'DRAG OUTPUT TO MATCHING INPUT · RETURN PLUG TO SPARES · ENTER PATCH / SPACE PULL'
           : hintSource()));
@@ -1463,13 +1517,16 @@ export function makeBagScene({
         // and action rail around it stay exactly as they are everywhere else.
         drawContent: subview
           ? (region)=>drawSubview(route,region)
+          : journalHardware
+          ? (region) => { journalPresentation = drawJournalView({ entries: bagSection(model,'journal')?.entries || [],
+            selectedId: nav.selected.journal, pinnedId: nav.journalPinnedId, region, scroll: nav.scroll.journal || 0, now: t, detailPage: journalPage }); return journalPresentation; }
           : skills
           ? (region) => drawSkillsSection({ model, layout: region, selectedId: selectedSkill()?.id || null, now: t, patchDrag })
           : null,
         overrideActions:subview?[['ESC','BACK'],['B','CLOSE BAG']]:null,breadcrumb });
       });
       drawPrintedText(Math.max(outer.x+2,outer.x+outer.w-18),outer.y,
-        guided?.allowClose===false&&guided.kind!=='close'?'SETUP IN PROGRESS':'[B] CLOSE BAG',
+        guided?.allowClose===false&&guided.kind!=='close'?'SETUP IN PROGRESS':mapHardware?'[M] CLOSE MAP':'[B] CLOSE BAG',
         {w:16,ink:'#333830',finish:'etched',darkPanel:false});
       registerCommonHits(outer,layout);
       if(subview)registerSubviewHits(route,layout);else registerRootHits(layout);

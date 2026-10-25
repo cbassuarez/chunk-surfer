@@ -106,6 +106,7 @@ test('actual main wiring uses the world bus, checks finale without REC and ticks
   FP.compile(conservatory.levels, conservatory);
   const here = FP.toRuntimePoint({ x: 92.5, y: 79.5 });
   const context = { storyMode: true, inRogue: true, planName: 'conservatory', sourceDriveSession: null, sourcePubScene: null,
+    sourceContinuationScene: null, coastalMemoryScene: null,
     usingPlan: () => true, usingSpecialSpace: () => false, FP, CELL: .5, BODY_EYE_M: 1.62,
     chapelServiceFrame, chapelServiceWorldSources, chapelServicePlan: null, chapelServiceSources: [],
     chapelServiceOcclusionKey: '', chapelServiceOcclusion: new Map(),

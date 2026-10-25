@@ -25,16 +25,21 @@ function routeProgress(timeSec,period,{vehicle=false}={}){
   return vehicle?travel:smoothstep(travel);
 }
 
-export function exteriorAmbientInstances({timeSec=0,reducedMotion=false,pilotTimeSec=null}={}){
+export function exteriorAmbientInstances({timeSec=0,peopleTimeSec=timeSec,reducedMotion=false,pilotTimeSec=null}={}){
   const pilot=typeof pilotTimeSec==='number'&&Number.isFinite(pilotTimeSec);
   const ordinary=EXTERIOR_AMBIENT_NODES.filter(node=>!pilot||!['late-bus','north-night-car'].includes(node.id)).map((node)=>{
     const moving=node.route!=='still';
+    const people=node.mesh==='ambient_dog_walker'||node.mesh==='ambient_cyclist';
+    const routeTime=people?peopleTimeSec:timeSec;
     const t=moving
-      ?routeProgress(((Number(timeSec)||0)+Number(node.phase||0)*node.period)*(reducedMotion?.55:1),node.period,{vehicle:node.kind==='vehicle'})
+      ?routeProgress(((Number(routeTime)||0)+Number(node.phase||0)*node.period)*(reducedMotion?.55:1),node.period,{vehicle:node.kind==='vehicle'})
       :0;
     const x=node.from.x+(node.to.x-node.from.x)*t;
     const z=node.from.z+(node.to.z-node.from.z)*t;
     const dx=node.to.x-node.from.x,dz=node.to.z-node.from.z;
+    const rate=reducedMotion?.55:1,seconds=((Number(routeTime)||0)+Number(node.phase||0)*node.period)*rate;
+    const phase=((seconds/node.period)%1+1)%1,u=clamp01((phase-.10)/.80);
+    const speedMps=moving&&phase>.10&&phase<.90?Math.hypot(dx,dz)*6*u*(1-u)/(.80*node.period)*rate:0;
     return{
       id:`exterior-ambient:${node.id}`,
       mesh:node.mesh,
@@ -42,12 +47,13 @@ export function exteriorAmbientInstances({timeSec=0,reducedMotion=false,pilotTim
       // Traffic meshes are authored with their lamps/windscreen at local -Z.
       // Under the prop matrix local -Z becomes [sin(yaw), -cos(yaw)], so this
       // angle points the actual front—not merely the instance axis—down-route.
-      yaw:moving?(node.kind==='vehicle'?Math.atan2(dx,-dz):Math.atan2(dx,dz)):0,
+      yaw:moving?(node.kind==='vehicle'?Math.atan2(dx,-dz):Math.atan2(-dx,dz)):0,
       scale:1,
       zone:ZONE.street,
       structural:false,
       ambient:true,
       headlights:!!node.headlights,
+      ...(people?{travelMetres:Math.hypot(dx,dz)*t,speedMps}:{}),
     };
   });
   return pilot?[...ordinary,...streetPilotVehicleInstances({timeSec:pilotTimeSec})]:ordinary;
