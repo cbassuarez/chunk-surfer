@@ -17,22 +17,23 @@ const paperSite=(id,design,position,yaw,widthM,group,support,observer)=>({
   id,design,kind:'wall-paper',position,yaw,widthM,finish:'taped',groups:[group],support,observer,
 });
 
-// Notice-board paper is on local -Z. The two portal cases were oriented as
-// +Z-front fittings and seated behind the wall face. Correct only these two:
-// their back at local +.030 now meets x97.000 and print faces the public west.
+// Notice-board paper is on local -Z. The old two portal positions intersected
+// the portal's projecting side returns. The north case now fits the exposed
+// strip between honours boards and casing; the south case occupies the nearby
+// south wall above its low radiator. Retained IDs and their inspections stay.
 export const INSTITUTION_POSTER_HOST_CORRECTIONS=frozen({
-  'hall-entrance-program-north':{yaw:-Math.PI/2,x:96.970},
-  'hall-entrance-program-south':{yaw:-Math.PI/2,x:96.970},
+  'hall-entrance-program-north':{yaw:-Math.PI/2,x:96.9742,z:22.5,scale:.86},
+  'hall-entrance-program-south':{yaw:0,x:92.6,y:1.12,z:26.970},
 });
 
 export const INSTITUTION_POSTER_SITES=frozen([
   hostSite('hall-season','hall-entrance-program-north','season',[0,.45,-.0462],1,{
     localYaw:Math.PI,aperture:{widthM:1.03,heightM:.73},
-    observer:{position:[94.4,1.62,23.2],yaw:Math.PI/2,pitch:.018},
+    observer:{position:[95.6,1.62,22.5],yaw:Math.PI/2,pitch:.038},
   }),
   hostSite('hall-winter','hall-entrance-program-south','winter_programme',[0,.45,-.0462],1,{
     localYaw:Math.PI,aperture:{widthM:1.03,heightM:.73},
-    observer:{position:[94.4,1.62,26.3],yaw:Math.PI/2,pitch:.018},
+    observer:{position:[92.6,1.62,24.5],yaw:Math.PI,pitch:-.021},
   }),
   // Keep the existing last-night inspection and its gilt holder. The safe ink
   // width stays 10mm inside the stiles, over the old generic portrait plane.
@@ -45,12 +46,12 @@ export const INSTITUTION_POSTER_SITES=frozen([
     paperCenter:[0,0,.027],aperture:{widthM:.62,heightM:.88},
     support:{axis:'z',plane:0,normal:[0,0,-1],logicalAnchor:[122,337],face:'north street / Ellery wall'},
     observer:{position:[74,1.74,-3.4],yaw:Math.PI,pitch:.025}},
-  paperSite('foyer-visiting','visiting',[85.5,1.75,4.006],0,.594,'ground',
-    {axis:'z',plane:4,normal:[0,0,1],logicalAnchor:[85.5,4.5],face:'atrium north wall'},
-    {position:[85.5,1.62,6.5],yaw:0,pitch:.052}),
-  paperSite('atrium-student-notice','students',[96.994,1.66,14.2],Math.PI/2,.297,'ground',
-    {axis:'x',plane:97,normal:[-1,0,0],logicalAnchor:[96.5,14.2],face:'atrium east wall, clear of fountain'},
-    {position:[94.9,1.62,14.2],yaw:Math.PI/2,pitch:.020}),
+  paperSite('foyer-visiting','visiting',[85.5,1.75,3.174],0,.594,'ground',
+    {axis:'z',plane:3.168,normal:[0,0,1],logicalAnchor:[85.5,4.5],windowId:'W3-foyer-north',face:'foyer north window, paper taped onto the inset lower pane'},
+    {position:[85.5,1.62,5.668],yaw:0,pitch:.052}),
+  paperSite('atrium-student-notice','students',[96.994,1.70,16.65],Math.PI/2,.297,'ground',
+    {axis:'x',plane:97,normal:[-1,0,0],logicalAnchor:[96.5,16.65],face:'exposed strip above drinking fountain between the first two honours boards'},
+    {position:[94.9,1.62,16.65],yaw:Math.PI/2,pitch:.038}),
   paperSite('practice-chamber','chamber',[54,6.55,43.506],0,.420,'upper',
     {axis:'z',plane:43.5,normal:[0,0,1],logicalAnchor:[54,53],floor:4.8,face:'practice-wing north wall'},
     {position:[54,6.42,46],yaw:0,pitch:.052}),
@@ -75,18 +76,18 @@ export const INSTITUTION_POSTER_SITES=frozen([
   paperSite('b3-live-electronics','live_electronics',[19.58,-2.22,18.994],Math.PI,.420,'basement',
     {axis:'z',plane:19,normal:[0,0,-1],logicalAnchor:[19.58,18.5],floor:-4,face:'recording studio B3 bare south wall'},
     {position:[19.58,-2.38,16.3],yaw:Math.PI,pitch:.059}),
-  paperSite('academic-composers','new_works',[60.994,11.75,18],Math.PI/2,.420,'academic',
-    {axis:'x',plane:61,normal:[-1,0,0],logicalAnchor:[10.5,258],floor:10,face:'academic corridor east wall between teaching-room doors'},
-    {position:[58.7,11.62,18],yaw:Math.PI/2,pitch:.057}),
-  paperSite('foyer-graphic-score','graphic_score',[86.45,1.66,4.006],0,.297,'ground',
-    {axis:'z',plane:4,normal:[0,0,1],logicalAnchor:[86.45,4.5],face:'atrium north wall beside visiting programme'},
-    {position:[86.45,1.62,6.3],yaw:0,pitch:.017}),
+  paperSite('academic-composers','new_works',[60.994,11.75,16.9],Math.PI/2,.420,'academic',
+    {axis:'x',plane:61,normal:[-1,0,0],logicalAnchor:[10.5,256.9],floor:10,face:'academic corridor exposed east wall, north of retained reading-list frame'},
+    {position:[58.7,11.62,16.9],yaw:Math.PI/2,pitch:.057}),
+  paperSite('foyer-graphic-score','graphic_score',[86.45,1.66,3.174],0,.297,'ground',
+    {axis:'z',plane:3.168,normal:[0,0,1],logicalAnchor:[86.45,4.5],windowId:'W3-foyer-north',face:'foyer north window, smaller workshop paper taped onto the inset lower pane'},
+    {position:[86.45,1.62,5.468],yaw:0,pitch:.017}),
   {id:'hall-prepared-piano-case',design:'prepared',kind:'new-case',finish:'flat',
-    position:[96.998,1.78,20.2],yaw:Math.PI/2,widthM:.420,groups:['ground'],
+    position:[96.998,1.70,19.475],yaw:Math.PI/2,widthM:.420,groups:['ground'],
     caseScale:.420/.594,paperCenter:[0,0,.027],
     aperture:{widthM:.62*.420/.594,heightM:.88*.420/.594},
-    support:{axis:'x',plane:97,normal:[-1,0,0],logicalAnchor:[96.5,20.2],face:'atrium east wall before concert-hall approach'},
-    observer:{position:[94.5,1.62,20.2],yaw:Math.PI/2,pitch:.064}},
+    support:{axis:'x',plane:97,normal:[-1,0,0],logicalAnchor:[96.5,19.475],face:'exposed atrium east wall between honours boards, below picture rail'},
+    observer:{position:[94.5,1.62,19.475],yaw:Math.PI/2,pitch:.032}},
 ]);
 
 // Same handedness as P3.modelMatrix: local +Z -> [-sin(yaw),0,cos(yaw)].

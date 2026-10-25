@@ -9,6 +9,7 @@
 
 import { PLAN_SCALE } from '../data/floorplan/legend.js';
 import {normalizeSourceDriveCheckpoint} from './source-drive-session.js';
+import {normalizeSourceReturnFlashbackCheckpoint} from './source-return-flashback.js';
 import {normalizeSourcePubCheckpoint} from './source-pub.js';
 import { clearSlateAudio } from '../audio/take-slate.js';
 import { clearSourceDriveAudio } from '../audio/source-drive-recording.js';
@@ -101,6 +102,8 @@ export const freshSave = ({ settings = DEFAULT_SETTINGS, run = null } = {}) => (
   hushAudio: null,
   chunkSurf: freshChunkSurfState(),
   sourceDrive: normalizeSourceDriveCheckpoint(null),
+  sourceReturnFlashback: null,
+  sourceReturnFlashbackPending: null,
   sourcePub: normalizeSourcePubCheckpoint(null,{runId:run?.id||''}),
   chapelTower: freshChapelTowerState(),
   power: freshPowerState(),
@@ -167,6 +170,15 @@ export function normalizeEndingCutsceneCheckpoint(value) {
   if (!ENDING_IDS.includes(endingId) || !ENDING_CUTSCENE_ARRIVALS.has(arrival)) return null;
   const variant=normalizeEndingVariant(endingId,value.variant,arrival);
   return { schema: 1, endingId, arrival, ...(variant?{variant}:{}) };
+}
+
+// The destination is already real before the cinematic's metrics can load.
+// Retain that exact arrival if the process closes during this short interval.
+export function normalizeSourceReturnFlashbackPending(value) {
+  const pose=value?.returnPose;
+  if(value?.version!==1||!['chapel','tower'].includes(value.destination)
+    ||!pose||!['x','y','yaw','pitch','facing'].every(key=>Number.isFinite(pose[key])))return null;
+  return{version:1,destination:value.destination,returnPose:Object.fromEntries(['x','y','yaw','pitch','facing'].map(key=>[key,pose[key]]))};
 }
 
 function normalizeHushAudioSave(value) {
@@ -287,6 +299,7 @@ function normalizeSaveV4(data, meta = null) {
   const chunkSurf = source.chunkSurf && typeof source.chunkSurf === 'object'
     ? normalizeChunkSurfState(source.chunkSurf)
     : inferLegacyChunkSurf(source);
+  const sourceReturnFlashback=normalizeSourceReturnFlashbackCheckpoint(source.sourceReturnFlashback);
   let chapelTower = source.chapelTower && typeof source.chapelTower === 'object'
     ? normalizeChapelTowerState(source.chapelTower)
     : inferLegacyChapelTower(source);
@@ -329,6 +342,8 @@ function normalizeSaveV4(data, meta = null) {
     hushAudio: normalizeHushAudioSave(source.hushAudio),
     chunkSurf,
     sourceDrive:normalizeSourceDriveCheckpoint(source.sourceDrive),
+    sourceReturnFlashback:sourceReturnFlashback?.returnPose?sourceReturnFlashback:null,
+    sourceReturnFlashbackPending:sourceReturnFlashback?.returnPose?null:normalizeSourceReturnFlashbackPending(source.sourceReturnFlashbackPending),
     sourcePub:normalizeSourcePubCheckpoint(source.sourcePub,{runId:run?.id||''}),
     chapelTower,
     power: normalizePowerState(source.power),

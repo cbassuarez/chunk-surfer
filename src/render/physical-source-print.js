@@ -4,12 +4,14 @@ import { physicalPrintFinish } from './physical-print-finish.js';
 import SOURCE_ATLAS from '../../content/chunk-surf/source-atlas.json' with { type: 'json' };
 import { worldLetteringFont, worldLetteringFontsStatus } from './world-lettering-fonts.js';
 import { fitWorldLetteringLine } from './world-lettering-layout.js';
+import {SOURCE_BLUEPRINT,sourceBlueprintRegistrationMarks} from './source-blueprint-contract.js';
 
 export const SOURCE_PRINT_SURFACE = Object.freeze({ version:1,coverage:'baseColorAlpha',
   polarity:'dark-on-light',process:'source-fragments',emission:'none' });
 const PROFILE = Object.freeze({
   divide:{rows:26,pitch:20,size:13,ground:'#d6d9d0',ink:['#768477','#a3afa0'],limit:80},
   reception:{rows:33,pitch:(512-4)/33,size:16,ground:'#d7decf',ink:['#445a46','#71836c'],limit:Infinity},
+  blueprint:{rows:26,pitch:20,size:13,ground:SOURCE_BLUEPRINT.stock,ink:SOURCE_BLUEPRINT.ink,limit:80},
 });
 const textureCache = new WeakMap();
 
@@ -70,8 +72,19 @@ export function sourcePrintMaps(gl,profile='divide',{material=true}={}) {
   let cache=textureCache.get(gl);if(!cache){cache=new Map();textureCache.set(gl,cache);}
   if(cache.has(profile)&&(!material||cache.get(profile).normalTexture))return cache.get(profile);
   const p=PROFILE[profile];if(!p)throw new RangeError(`Unknown Source print profile ${profile}`);
-  const metres=profile==='divide'?8:2.8;
+  const metres=profile==='reception'?2.8:8;
   const bitmap=physicalPrintPixels({width:512,height:512,ground:p.ground,finish:{profile:'paper',widthM:metres,heightM:metres,seed:'source-'+profile,repeat:true},draw(c,m){
+    if(profile==='blueprint'){
+      // Metre-scaled registration belongs to this printed stock, not to the
+      // camera. It follows the moving mesh and its existing material UVs.
+      c.save();m.save();c.fillStyle=SOURCE_BLUEPRINT.registration;m.fillStyle='#fff';
+      for(const mark of sourceBlueprintRegistrationMarks()){
+        const at=mark.metres/metres*512,width=Math.max(1,mark.widthM/metres*512);
+        c.globalAlpha=m.globalAlpha=mark.coverage;
+        for(const ctx of[c,m]){ctx.fillRect(at,0,width,512);ctx.fillRect(0,at,512,width);}
+      }
+      c.restore();m.restore();
+    }
     c.textBaseline=m.textBaseline='alphabetic';m.textAlign='left';m.fontKerning='none';m.fillStyle='#fff';
     for(const row of sourcePrintLayout(c,profile)){
       c.font=m.font=row.fit.font;c.fillStyle=row.ink;

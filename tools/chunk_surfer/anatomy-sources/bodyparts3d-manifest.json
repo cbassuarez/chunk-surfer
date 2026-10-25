@@ -1,0 +1,1934 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-10-25T19:51:31.552314+00:00",
+  "source": "BodyParts3D 4.0 original archive / Database Center for Life Science",
+  "license": "CC-BY-4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+  "officialLicenseUrl": "https://dbarchive.biosciencedbc.jp/en/bodyparts3d/lic.html",
+  "officialLicenseUpdated": "2025-02-27",
+  "requiredCredit": "BodyParts3D, © The Database Center for Life Science licensed under CC Attribution 4.0 International",
+  "originalArchiveUrl": "https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/partof_BP3D_4.0_obj_99.zip",
+  "metadata": {
+    "official-license.html": {
+      "url": "https://dbarchive.biosciencedbc.jp/en/bodyparts3d/lic.html",
+      "sha256": "d4a8def7beff232adf27a543284cade6ee183db728383d119ac611c0fb7897e4",
+      "bytes": 14694,
+      "lastModified": null
+    },
+    "partof_element_parts.txt": {
+      "url": "https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/partof_element_parts.txt",
+      "sha256": "3f5f6df1028eb122b30de77c711597b6bb8e5541658e5985859fd228adbf88ea",
+      "bytes": 651179,
+      "lastModified": "Wed, 22 May 2013 05:53:10 GMT"
+    },
+    "partof_parts_list_e.txt": {
+      "url": "https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/partof_parts_list_e.txt",
+      "sha256": "9224080557053e6f1322f1e13ab27f0ecde0db19bb3b505f0631afad230eeebd",
+      "bytes": 59351,
+      "lastModified": "Wed, 22 May 2013 03:15:00 GMT"
+    }
+  },
+  "groups": {
+    "left-lung": [],
+    "right-lung": [],
+    "heart": [
+      "FJ2418",
+      "FJ2419",
+      "FJ2429",
+      "FJ2430",
+      "FJ2432",
+      "FJ2437",
+      "FJ2438",
+      "FJ2439"
+    ],
+    "axis-sternum": [
+      "FJ3153"
+    ],
+    "axis-vertebra": [
+      "FJ3171"
+    ],
+    "axis-left-rib": [
+      "FJ3234"
+    ],
+    "axis-right-rib": [
+      "FJ3346"
+    ],
+    "axis-upper": [
+      "FJ3158"
+    ],
+    "axis-lower": [
+      "FJ3156"
+    ]
+  },
+  "members": [
+    {
+      "element": "FJ2418",
+      "member": "partof_BP3D_4.0_obj_99/FJ2418.obj",
+      "method": 8,
+      "crc32": 2941465069,
+      "compressedBytes": 17985,
+      "uncompressedBytes": 54781,
+      "localHeaderOffset": 30399841,
+      "localPath": "bodyparts3d-obj/FJ2418.obj",
+      "sha256": "e462c4455225f7d99845af95988ca2d9885144fbb3f7567610ca5635ca3a3dbc",
+      "groups": [
+        "heart"
+      ],
+      "officialNames": [
+        {
+          "fma": "FMA7088",
+          "name": "heart"
+        },
+        {
+          "fma": "FMA7101",
+          "name": "left ventricle"
+        },
+        {
+          "fma": "FMA7161",
+          "name": "cardiovascular system"
+        },
+        {
+          "fma": "FMA7166",
+          "name": "left side of heart"
+        },
+        {
+          "fma": "FMA7181",
+          "name": "trunk"
+        },
+        {
+          "fma": "FMA7264",
+          "name": "lateral papillary muscle of left ventricle"
+        },
+        {
+          "fma": "FMA7265",
+          "name": "anterolateral head of lateral papillary muscle of left ventricle"
+        },
+        {
+          "fma": "FMA7563",
+          "name": "body compartment"
+        },
+        {
+          "fma": "FMA9352",
+          "name": "papillary muscle of left ventricle"
+        },
+        {
+          "fma": "FMA9556",
+          "name": "wall of left ventricle"
+        },
+        {
+          "fma": "FMA9558",
+          "name": "myocardium of left ventricle"
+        },
+        {
+          "fma": "FMA9560",
+          "name": "anterior wall of left ventricle"
+        },
+        {
+          "fma": "FMA9563",
+          "name": "lateral wall of left ventricle"
+        },
+        {
+          "fma": "FMA9564",
+          "name": "inflow part of left ventricle"
+        },
+        {
+          "fma": "FMA9576",
+          "name": "thorax"
+        },
+        {
+          "fma": "FMA9826",
+          "name": "mediastinum"
+        },
+        {
+          "fma": "FMA9828",
+          "name": "inferior mediastinum"
+        },
+        {
+          "fma": "FMA9839",
+          "name": "middle mediastinum"
+        },
+        {
+          "fma": "FMA20394",
+          "name": "human body"
+        },
+        {
+          "fma": "FMA24816",
+          "name": "anterior chest"
+        },
+        {
+          "fma": "FMA45623",
+          "name": "systemic arterial system"
+        },
+        {
+          "fma": "FMA49214",
+          "name": "wall of inflow part of left ventricle"
+        },
+        {
+          "fma": "FMA73704",
+          "name": "wall of left side of heart"
+        },
+        {
+          "fma": "FMA79269",
+          "name": "content of thorax"
+        },
+        {
+          "fma": "FMA79273",
+          "name": "content of mediastinum"
+        },
+        {
+          "fma": "FMA79275",
+          "name": "content of inferior mediastinum"
+        },
+        {
+          "fma": "FMA79278",
+          "name": "content of middle mediastinum"
+        },
+        {
+          "fma": "FMA83448",
+          "name": "myocardium of left ventricle proper"
+        },
+        {
+          "fma": "FMA84850",
+          "name": "free wall of left ventricle"
+        },
+        {
+          "fma": "FMA84857",
+          "name": "subendocardial layer of myocardium of left ventricle"
+        },
+        {
+          "fma": "FMA84932",
+          "name": "myocardium of free wall of left ventricle"
+        },
+        {
+          "fma": "FMA85008",
+          "name": "compartment of thorax"
+        },
+        {
+          "fma": "FMA86063",
+          "name": "myocardial zone 11"
+        },
+        {
+          "fma": "FMA86064",
+          "name": "myocardial zone 12"
+        },
+        {
+          "fma": "FMA87178",
+          "name": "myocardium of lateral wall of left ventricle"
+        },
+        {
+          "fma": "FMA231424",
+          "name": "body proper"
+        },
+        {
+          "fma": "FMA259209",
+          "name": "thoracic segment of trunk"
+        },
+        {
+          "fma": "FMA260456",
+          "name": "body cavity content"
+        }
+      ],
+      "acquisition": {
+        "url": "https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/partof_BP3D_4.0_obj_99.zip",
+        "range": [
+          30399904,
+          30417888
+        ],
+        "crc32Verified": true
+      }
+    },
+    {
+      "element": "FJ2419",
+      "member": "partof_BP3D_4.0_obj_99/FJ2419.obj",
+      "method": 8,
+      "crc32": 891233182,
+      "compressedBytes": 19642,
+      "uncompressedBytes": 59579,
+      "localHeaderOffset": 30417889,
+      "localPath": "bodyparts3d-obj/FJ2419.obj",
+      "sha256": "05242b351343b3cce42237dd3e8256a53bb395eaee90e4e8a465578259b58fe8",
+      "groups": [
+        "heart"
+      ],
+      "officialNames": [
+        {
+          "fma": "FMA7088",
+          "name": "heart"
+        },
+        {
+          "fma": "FMA7098",
+          "name": "right ventricle"
+        },
+        {
+          "fma": "FMA7161",
+          "name": "cardiovascular system"
+        },
+        {
+          "fma": "FMA7165",
+          "name": "right side of heart"
+        },
+        {
+          "fma": "FMA7181",
+          "name": "trunk"
+        },
+        {
+          "fma": "FMA7259",
+          "name": "papillary muscle of right ventricle"
+        },
+        {
+          "fma": "FMA7260",
+          "name": "anterior papillary muscle of right ventricle"
+        },
+        {
+          "fma": "FMA7563",
+          "name": "body compartment"
+        },
+        {
+          "fma": "FMA9533",
+          "name": "wall of right ventricle"
+        },
+        {
+          "fma": "FMA9535",
+          "name": "myocardium of right ventricle"
+        },
+        {
+          "fma": "FMA9552",
+          "name": "inflow part of right ventricle"
+        },
+        {
+          "fma": "FMA9553",
+          "name": "anterior wall of right ventricle"
+        },
+        {
+          "fma": "FMA9576",
+          "name": "thorax"
+        },
+        {
+          "fma": "FMA9826",
+          "name": "mediastinum"
+        },
+        {
+          "fma": "FMA9828",
+          "name": "inferior mediastinum"
+        },
+        {
+          "fma": "FMA9839",
+          "name": "middle mediastinum"
+        },
+        {
+          "fma": "FMA20394",
+          "name": "human body"
+        },
+        {
+          "fma": "FMA24816",
+          "name": "anterior chest"
+        },
+        {
+          "fma": "FMA45626",
+          "name": "systemic venous system"
+        },
+        {
+          "fma": "FMA49207",
+          "name": "wall of inflow part of right ventricle"
+        },
+        {
+          "fma": "FMA73703",
+          "name": "wall of right side of heart"
+        },
+        {
+          "fma": "FMA79269",
+          "name": "content of thorax"
+        },
+        {
+          "fma": "FMA79273",
+          "name": "content of mediastinum"
+        },
+        {
+          "fma": "FMA79275",
+          "name": "content of inferior mediastinum"
+        },
+        {
+          "fma": "FMA79278",
+          "name": "content of middle mediastinum"
+        },
+        {
+          "fma": "FMA83447",
+          "name": "myocardium of right ventricle proper"
+        },
+        {
+          "fma": "FMA84842",
+          "name": "free wall of right ventricle"
+        },
+        {
+          "fma": "FMA84856",
+          "name": "subendocardial layer of myocardium of right ventricle"
+        },
+        {
+          "fma": "FMA84931",
+          "name": "myocardium of free wall of right ventricle"
+        },
+        {
+          "fma": "FMA85008",
+          "name": "compartment of thorax"
+        },
+        {
+          "fma": "FMA231424",
+          "name": "body proper"
+        },
+        {
+          "fma": "FMA259209",
+          "name": "thoracic segment of trunk"
+        },
+        {
+          "fma": "FMA260456",
+          "name": "body cavity content"
+        }
+      ],
+      "acquisition": {
+        "url": "https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/partof_BP3D_4.0_obj_99.zip",
+        "range": [
+          30417952,
+          30437593
+        ],
+        "crc32Verified": true
+      }
+    },
+    {
+      "element": "FJ2429",
+      "member": "partof_BP3D_4.0_obj_99/FJ2429.obj",
+      "method": 8,
+      "crc32": 983125922,
+      "compressedBytes": 16901,
+      "uncompressedBytes": 51285,
+      "localHeaderOffset": 30914355,
+      "localPath": "bodyparts3d-obj/FJ2429.obj",
+      "sha256": "83ad99e19bb6105883aa99a86a3c0089385dc5d2de96844c3e9eec6616e571e8",
+      "groups": [
+        "heart"
+      ],
+      "officialNames": [
+        {
+          "fma": "FMA7088",
+          "name": "heart"
+        },
+        {
+          "fma": "FMA7101",
+          "name": "left ventricle"
+        },
+        {
+          "fma": "FMA7161",
+          "name": "cardiovascular system"
+        },
+        {
+          "fma": "FMA7166",
+          "name": "left side of heart"
+        },
+        {
+          "fma": "FMA7181",
+          "name": "trunk"
+        },
+        {
+          "fma": "FMA7264",
+          "name": "lateral papillary muscle of left ventricle"
+        },
+        {
+          "fma": "FMA7563",
+          "name": "body compartment"
+        },
+        {
+          "fma": "FMA9352",
+          "name": "papillary muscle of left ventricle"
+        },
+        {
+          "fma": "FMA9556",
+          "name": "wall of left ventricle"
+        },
+        {
+          "fma": "FMA9558",
+          "name": "myocardium of left ventricle"
+        },
+        {
+          "fma": "FMA9560",
+          "name": "anterior wall of left ventricle"
+        },
+        {
+          "fma": "FMA9563",
+          "name": "lateral wall of left ventricle"
+        },
+        {
+          "fma": "FMA9564",
+          "name": "inflow part of left ventricle"
+        },
+        {
+          "fma": "FMA9576",
+          "name": "thorax"
+        },
+        {
+          "fma": "FMA9826",
+          "name": "mediastinum"
+        },
+        {
+          "fma": "FMA9828",
+          "name": "inferior mediastinum"
+        },
+        {
+          "fma": "FMA9839",
+          "name": "middle mediastinum"
+        },
+        {
+          "fma": "FMA20394",
+          "name": "human body"
+        },
+        {
+          "fma": "FMA24816",
+          "name": "anterior chest"
+        },
+        {
+          "fma": "FMA45623",
+          "name": "systemic arterial system"
+        },
+        {
+          "fma": "FMA49214",
+          "name": "wall of inflow part of left ventricle"
+        },
+        {
+          "fma": "FMA73704",
+          "name": "wall of left side of heart"
+        },
+        {
+          "fma": "FMA79269",
+          "name": "content of thorax"
+        },
+        {
+          "fma": "FMA79273",
+          "name": "content of mediastinum"
+        },
+        {
+          "fma": "FMA79275",
+          "name": "content of inferior mediastinum"
+        },
+        {
+          "fma": "FMA79278",
+          "name": "content of middle mediastinum"
+        },
+        {
+          "fma": "FMA83448",
+          "name": "myocardium of left ventricle proper"
+        },
+        {
+          "fma": "FMA84850",
+          "name": "free wall of left ventricle"
+        },
+        {
+          "fma": "FMA84857",
+          "name": "subendocardial layer of myocardium of left ventricle"
+        },
+        {
+          "fma": "FMA84932",
+          "name": "myocardium of free wall of left ventricle"
+        },
+        {
+          "fma": "FMA85008",
+          "name": "compartment of thorax"
+        },
+        {
+          "fma": "FMA86063",
+          "name": "myocardial zone 11"
+        },
+        {
+          "fma": "FMA87178",
+          "name": "myocardium of lateral wall of left ventricle"
+        },
+        {
+          "fma": "FMA231424",
+          "name": "body proper"
+        },
+        {
+          "fma": "FMA259209",
+          "name": "thoracic segment of trunk"
+        },
+        {
+          "fma": "FMA260456",
+          "name": "body cavity content"
+        }
+      ],
+      "acquisition": {
+        "url": "https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/partof_BP3D_4.0_obj_99.zip",
+        "range": [
+          30914418,
+          30931318
+        ],
+        "crc32Verified": true
+      }
+    },
+    {
+      "element": "FJ2430",
+      "member": "partof_BP3D_4.0_obj_99/FJ2430.obj",
+      "method": 8,
+      "crc32": 2004505992,
+      "compressedBytes": 16022,
+      "uncompressedBytes": 48378,
+      "localHeaderOffset": 30931319,
+      "localPath": "bodyparts3d-obj/FJ2430.obj",
+      "sha256": "92d65071f4ffc0bb22dcf5da52160cb22fd90056af85d9cbb0cb56794b8b5bac",
+      "groups": [
+        "heart"
+      ],
+      "officialNames": [
+        {
+          "fma": "FMA7088",
+          "name": "heart"
+        },
+        {
+          "fma": "FMA7098",
+          "name": "right ventricle"
+        },
+        {
+          "fma": "FMA7161",
+          "name": "cardiovascular system"
+        },
+        {
+          "fma": "FMA7165",
+          "name": "right side of heart"
+        },
+        {
+          "fma": "FMA7181",
+          "name": "trunk"
+        },
+        {
+          "fma": "FMA7259",
+          "name": "papillary muscle of right ventricle"
+        },
+        {
+          "fma": "FMA7261",
+          "name": "posterior papillary muscle of right ventricle"
+        },
+        {
+          "fma": "FMA7563",
+          "name": "body compartment"
+        },
+        {
+          "fma": "FMA9533",
+          "name": "wall of right ventricle"
+        },
+        {
+          "fma": "FMA9535",
+          "name": "myocardium of right ventricle"
+        },
+        {
+          "fma": "FMA9552",
+          "name": "inflow part of right ventricle"
+        },
+        {
+          "fma": "FMA9555",
+          "name": "inferior wall of right ventricle"
+        },
+        {
+          "fma": "FMA9576",
+          "name": "thorax"
+        },
+        {
+          "fma": "FMA9826",
+          "name": "mediastinum"
+        },
+        {
+          "fma": "FMA9828",
+          "name": "inferior mediastinum"
+        },
+        {
+          "fma": "FMA9839",
+          "name": "middle mediastinum"
+        },
+        {
+          "fma": "FMA20394",
+          "name": "human body"
+        },
+        {
+          "fma": "FMA24816",
+          "name": "anterior chest"
+        },
+        {
+          "fma": "FMA45626",
+          "name": "systemic venous system"
+        },
+        {
+          "fma": "FMA49207",
+          "name": "wall of inflow part of right ventricle"
+        },
+        {
+          "fma": "FMA73703",
+          "name": "wall of right side of heart"
+        },
+        {
+          "fma": "FMA79269",
+          "name": "content of thorax"
+        },
+        {
+          "fma": "FMA79273",
+          "name": "content of mediastinum"
+        },
+        {
+          "fma": "FMA79275",
+          "name": "content of inferior mediastinum"
+        },
+        {
+          "fma": "FMA79278",
+          "name": "content of middle mediastinum"
+        },
+        {
+          "fma": "FMA83447",
+          "name": "myocardium of right ventricle proper"
+        },
+        {
+          "fma": "FMA84842",
+          "name": "free wall of right ventricle"
+        },
+        {
+          "fma": "FMA84856",
+          "name": "subendocardial layer of myocardium of right ventricle"
+        },
+        {
+          "fma": "FMA84931",
+          "name": "myocardium of free wall of right ventricle"
+        },
+        {
+          "fma": "FMA85008",
+          "name": "compartment of thorax"
+        },
+        {
+          "fma": "FMA231424",
+          "name": "body proper"
+        },
+        {
+          "fma": "FMA259209",
+          "name": "thoracic segment of trunk"
+        },
+        {
+          "fma": "FMA260456",
+          "name": "body cavity content"
+        }
+      ],
+      "acquisition": {
+        "url": "https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/partof_BP3D_4.0_obj_99.zip",
+        "range": [
+          30931382,
+          30947403
+        ],
+        "crc32Verified": true
+      }
+    },
+    {
+      "element": "FJ2432",
+      "member": "partof_BP3D_4.0_obj_99/FJ2432.obj",
+      "method": 8,
+      "crc32": 1076840830,
+      "compressedBytes": 83344,
+      "uncompressedBytes": 274623,
+      "localHeaderOffset": 30954954,
+      "localPath": "bodyparts3d-obj/FJ2432.obj",
+      "sha256": "bdcf7f32b2a16bd8d7b2920ac0f03958174c90d31353e9b38c4462aacfc038f3",
+      "groups": [
+        "heart"
+      ],
+      "officialNames": [
+        {
+          "fma": "FMA7088",
+          "name": "heart"
+        },
+        {
+          "fma": "FMA7097",
+          "name": "left atrium"
+        },
+        {
+          "fma": "FMA7101",
+          "name": "left ventricle"
+        },
+        {
+          "fma": "FMA7161",
+          "name": "cardiovascular system"
+        },
+        {
+          "fma": "FMA7166",
+          "name": "left side of heart"
+        },
+        {
+          "fma": "FMA7181",
+          "name": "trunk"
+        },
+        {
+          "fma": "FMA7235",
+          "name": "mitral valve"
+        },
+        {
+          "fma": "FMA7243",
+          "name": "posterior leaflet of mitral valve"
+        },
+        {
+          "fma": "FMA7563",
+          "name": "body compartment"
+        },
+        {
+          "fma": "FMA9551",
+          "name": "outflow part of left atrium"
+        },
+        {
+          "fma": "FMA9556",
+          "name": "wall of left ventricle"
+        },
+        {
+          "fma": "FMA9558",
+          "name": "myocardium of left ventricle"
+        },
+        {
+          "fma": "FMA9561",
+          "name": "inferior wall of left ventricle"
+        },
+        {
+          "fma": "FMA9564",
+          "name": "inflow part of left ventricle"
+        },
+        {
+          "fma": "FMA9576",
+          "name": "thorax"
+        },
+        {
+          "fma": "FMA9826",
+          "name": "mediastinum"
+        },
+        {
+          "fma": "FMA9828",
+          "name": "inferior mediastinum"
+        },
+        {
+          "fma": "FMA9839",
+          "name": "middle mediastinum"
+        },
+        {
+          "fma": "FMA20394",
+          "name": "human body"
+        },
+        {
+          "fma": "FMA24816",
+          "name": "anterior chest"
+        },
+        {
+          "fma": "FMA45623",
+          "name": "systemic arterial system"
+        },
+        {
+          "fma": "FMA73704",
+          "name": "wall of left side of heart"
+        },
+        {
+          "fma": "FMA79269",
+          "name": "content of thorax"
+        },
+        {
+          "fma": "FMA79273",
+          "name": "content of mediastinum"
+        },
+        {
+          "fma": "FMA79275",
+          "name": "content of inferior mediastinum"
+        },
+        {
+          "fma": "FMA79278",
+          "name": "content of middle mediastinum"
+        },
+        {
+          "fma": "FMA83448",
+          "name": "myocardium of left ventricle proper"
+        },
+        {
+          "fma": "FMA84850",
+          "name": "free wall of left ventricle"
+        },
+        {
+          "fma": "FMA84932",
+          "name": "myocardium of free wall of left ventricle"
+        },
+        {
+          "fma": "FMA85008",
+          "name": "compartment of thorax"
+        },
+        {
+          "fma": "FMA86056",
+          "name": "myocardial zone 4"
+        },
+        {
+          "fma": "FMA87179",
+          "name": "myocardium of inferior wall of left ventricle"
+        },
+        {
+          "fma": "FMA231424",
+          "name": "body proper"
+        },
+        {
+          "fma": "FMA259209",
+          "name": "thoracic segment of trunk"
+        },
+        {
+          "fma": "FMA260456",
+          "name": "body cavity content"
+        }
+      ],
+      "acquisition": {
+        "url": "https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/partof_BP3D_4.0_obj_99.zip",
+        "range": [
+          30955017,
+          31038360
+        ],
+        "crc32Verified": true
+      }
+    },
+    {
+      "element": "FJ2437",
+      "member": "partof_BP3D_4.0_obj_99/FJ2437.obj",
+      "method": 8,
+      "crc32": 3606964483,
+      "compressedBytes": 18172,
+      "uncompressedBytes": 56354,
+      "localHeaderOffset": 31272620,
+      "localPath": "bodyparts3d-obj/FJ2437.obj",
+      "sha256": "510fbbf7a56981733876388838d5acfa392de92a37e84a68d489882e7a063dcb",
+      "groups": [
+        "heart"
+      ],
+      "officialNames": [
+        {
+          "fma": "FMA7088",
+          "name": "heart"
+        },
+        {
+          "fma": "FMA7098",
+          "name": "right ventricle"
+        },
+        {
+          "fma": "FMA7161",
+          "name": "cardiovascular system"
+        },
+        {
+          "fma": "FMA7165",
+          "name": "right side of heart"
+        },
+        {
+          "fma": "FMA7181",
+          "name": "trunk"
+        },
+        {
+          "fma": "FMA7259",
+          "name": "papillary muscle of right ventricle"
+        },
+        {
+          "fma": "FMA7262",
+          "name": "septal papillary muscle of right ventricle"
+        },
+        {
+          "fma": "FMA7563",
+          "name": "body compartment"
+        },
+        {
+          "fma": "FMA9533",
+          "name": "wall of right ventricle"
+        },
+        {
+          "fma": "FMA9535",
+          "name": "myocardium of right ventricle"
+        },
+        {
+          "fma": "FMA9552",
+          "name": "inflow part of right ventricle"
+        },
+        {
+          "fma": "FMA9576",
+          "name": "thorax"
+        },
+        {
+          "fma": "FMA9826",
+          "name": "mediastinum"
+        },
+        {
+          "fma": "FMA9828",
+          "name": "inferior mediastinum"
+        },
+        {
+          "fma": "FMA9839",
+          "name": "middle mediastinum"
+        },
+        {
+          "fma": "FMA20394",
+          "name": "human body"
+        },
+        {
+          "fma": "FMA24816",
+          "name": "anterior chest"
+        },
+        {
+          "fma": "FMA45626",
+          "name": "systemic venous system"
+        },
+        {
+          "fma": "FMA49207",
+          "name": "wall of inflow part of right ventricle"
+        },
+        {
+          "fma": "FMA73703",
+          "name": "wall of right side of heart"
+        },
+        {
+          "fma": "FMA79269",
+          "name": "content of thorax"
+        },
+        {
+          "fma": "FMA79273",
+          "name": "content of mediastinum"
+        },
+        {
+          "fma": "FMA79275",
+          "name": "content of inferior mediastinum"
+        },
+        {
+          "fma": "FMA79278",
+          "name": "content of middle mediastinum"
+        },
+        {
+          "fma": "FMA83447",
+          "name": "myocardium of right ventricle proper"
+        },
+        {
+          "fma": "FMA84842",
+          "name": "free wall of right ventricle"
+        },
+        {
+          "fma": "FMA84856",
+          "name": "subendocardial layer of myocardium of right ventricle"
+        },
+        {
+          "fma": "FMA84931",
+          "name": "myocardium of free wall of right ventricle"
+        },
+        {
+          "fma": "FMA85008",
+          "name": "compartment of thorax"
+        },
+        {
+          "fma": "FMA231424",
+          "name": "body proper"
+        },
+        {
+          "fma": "FMA259209",
+          "name": "thoracic segment of trunk"
+        },
+        {
+          "fma": "FMA260456",
+          "name": "body cavity content"
+        }
+      ],
+      "acquisition": {
+        "url": "https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/partof_BP3D_4.0_obj_99.zip",
+        "range": [
+          31272683,
+          31290854
+        ],
+        "crc32Verified": true
+      }
+    },
+    {
+      "element": "FJ2438",
+      "member": "partof_BP3D_4.0_obj_99/FJ2438.obj",
+      "method": 8,
+      "crc32": 2130998565,
+      "compressedBytes": 154068,
+      "uncompressedBytes": 510081,
+      "localHeaderOffset": 31290855,
+      "localPath": "bodyparts3d-obj/FJ2438.obj",
+      "sha256": "187235f3c3612ef27abde924d01c71579c2946435e64319164f43e5ad008284d",
+      "groups": [
+        "heart"
+      ],
+      "officialNames": [
+        {
+          "fma": "FMA7088",
+          "name": "heart"
+        },
+        {
+          "fma": "FMA7097",
+          "name": "left atrium"
+        },
+        {
+          "fma": "FMA7161",
+          "name": "cardiovascular system"
+        },
+        {
+          "fma": "FMA7166",
+          "name": "left side of heart"
+        },
+        {
+          "fma": "FMA7181",
+          "name": "trunk"
+        },
+        {
+          "fma": "FMA7563",
+          "name": "body compartment"
+        },
+        {
+          "fma": "FMA9531",
+          "name": "wall of left atrium"
+        },
+        {
+          "fma": "FMA9576",
+          "name": "thorax"
+        },
+        {
+          "fma": "FMA9826",
+          "name": "mediastinum"
+        },
+        {
+          "fma": "FMA9828",
+          "name": "inferior mediastinum"
+        },
+        {
+          "fma": "FMA9839",
+          "name": "middle mediastinum"
+        },
+        {
+          "fma": "FMA20394",
+          "name": "human body"
+        },
+        {
+          "fma": "FMA24816",
+          "name": "anterior chest"
+        },
+        {
+          "fma": "FMA45623",
+          "name": "systemic arterial system"
+        },
+        {
+          "fma": "FMA73704",
+          "name": "wall of left side of heart"
+        },
+        {
+          "fma": "FMA79269",
+          "name": "content of thorax"
+        },
+        {
+          "fma": "FMA79273",
+          "name": "content of mediastinum"
+        },
+        {
+          "fma": "FMA79275",
+          "name": "content of inferior mediastinum"
+        },
+        {
+          "fma": "FMA79278",
+          "name": "content of middle mediastinum"
+        },
+        {
+          "fma": "FMA85008",
+          "name": "compartment of thorax"
+        },
+        {
+          "fma": "FMA231424",
+          "name": "body proper"
+        },
+        {
+          "fma": "FMA259209",
+          "name": "thoracic segment of trunk"
+        },
+        {
+          "fma": "FMA260456",
+          "name": "body cavity content"
+        }
+      ],
+      "acquisition": {
+        "url": "https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/partof_BP3D_4.0_obj_99.zip",
+        "range": [
+          31290918,
+          31444985
+        ],
+        "crc32Verified": true
+      }
+    },
+    {
+      "element": "FJ2439",
+      "member": "partof_BP3D_4.0_obj_99/FJ2439.obj",
+      "method": 8,
+      "crc32": 4216726998,
+      "compressedBytes": 354853,
+      "uncompressedBytes": 1211686,
+      "localHeaderOffset": 31444986,
+      "localPath": "bodyparts3d-obj/FJ2439.obj",
+      "sha256": "e7c21cd1659eced056eb56e28f4fa9019ace451ea6e0333097846177f807bb5a",
+      "groups": [
+        "heart"
+      ],
+      "officialNames": [
+        {
+          "fma": "FMA7088",
+          "name": "heart"
+        },
+        {
+          "fma": "FMA7096",
+          "name": "right atrium"
+        },
+        {
+          "fma": "FMA7161",
+          "name": "cardiovascular system"
+        },
+        {
+          "fma": "FMA7165",
+          "name": "right side of heart"
+        },
+        {
+          "fma": "FMA7181",
+          "name": "trunk"
+        },
+        {
+          "fma": "FMA7563",
+          "name": "body compartment"
+        },
+        {
+          "fma": "FMA9457",
+          "name": "wall of right atrium"
+        },
+        {
+          "fma": "FMA9576",
+          "name": "thorax"
+        },
+        {
+          "fma": "FMA9826",
+          "name": "mediastinum"
+        },
+        {
+          "fma": "FMA9828",
+          "name": "inferior mediastinum"
+        },
+        {
+          "fma": "FMA9839",
+          "name": "middle mediastinum"
+        },
+        {
+          "fma": "FMA20394",
+          "name": "human body"
+        },
+        {
+          "fma": "FMA24816",
+          "name": "anterior chest"
+        },
+        {
+          "fma": "FMA45626",
+          "name": "systemic venous system"
+        },
+        {
+          "fma": "FMA73703",
+          "name": "wall of right side of heart"
+        },
+        {
+          "fma": "FMA79269",
+          "name": "content of thorax"
+        },
+        {
+          "fma": "FMA79273",
+          "name": "content of mediastinum"
+        },
+        {
+          "fma": "FMA79275",
+          "name": "content of inferior mediastinum"
+        },
+        {
+          "fma": "FMA79278",
+          "name": "content of middle mediastinum"
+        },
+        {
+          "fma": "FMA85008",
+          "name": "compartment of thorax"
+        },
+        {
+          "fma": "FMA231424",
+          "name": "body proper"
+        },
+        {
+          "fma": "FMA259209",
+          "name": "thoracic segment of trunk"
+        },
+        {
+          "fma": "FMA260456",
+          "name": "body cavity content"
+        }
+      ],
+      "acquisition": {
+        "url": "https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/partof_BP3D_4.0_obj_99.zip",
+        "range": [
+          31445049,
+          31799901
+        ],
+        "crc32Verified": true
+      }
+    },
+    {
+      "element": "FJ3153",
+      "member": "partof_BP3D_4.0_obj_99/FJ3153.obj",
+      "method": 8,
+      "crc32": 435796165,
+      "compressedBytes": 18532,
+      "uncompressedBytes": 56265,
+      "localHeaderOffset": 48346525,
+      "localPath": "bodyparts3d-obj/FJ3153.obj",
+      "sha256": "d17057ed1dad252a6fa6a3e8d92bc13310cebe0b584df147af0cc4a646f98f3e",
+      "groups": [
+        "axis-sternum"
+      ],
+      "officialNames": [
+        {
+          "fma": "FMA7181",
+          "name": "trunk"
+        },
+        {
+          "fma": "FMA7480",
+          "name": "rib cage"
+        },
+        {
+          "fma": "FMA7481",
+          "name": "skeletal system of thorax"
+        },
+        {
+          "fma": "FMA7482",
+          "name": "musculoskeletal system"
+        },
+        {
+          "fma": "FMA7483",
+          "name": "axial skeletal system"
+        },
+        {
+          "fma": "FMA7485",
+          "name": "sternum"
+        },
+        {
+          "fma": "FMA7488",
+          "name": "xiphoid process"
+        },
+        {
+          "fma": "FMA9576",
+          "name": "thorax"
+        },
+        {
+          "fma": "FMA10427",
+          "name": "body wall"
+        },
+        {
+          "fma": "FMA10428",
+          "name": "thoracic wall"
+        },
+        {
+          "fma": "FMA20394",
+          "name": "human body"
+        },
+        {
+          "fma": "FMA23876",
+          "name": "skeleton (in vivo)"
+        },
+        {
+          "fma": "FMA23881",
+          "name": "skeletal system"
+        },
+        {
+          "fma": "FMA24816",
+          "name": "anterior chest"
+        },
+        {
+          "fma": "FMA24866",
+          "name": "sternal part of chest"
+        },
+        {
+          "fma": "FMA50060",
+          "name": "chest wall"
+        },
+        {
+          "fma": "FMA87543",
+          "name": "anterior chest wall"
+        },
+        {
+          "fma": "FMA87598",
+          "name": "skeletal system of trunk"
+        },
+        {
+          "fma": "FMA231424",
+          "name": "body proper"
+        },
+        {
+          "fma": "FMA259209",
+          "name": "thoracic segment of trunk"
+        }
+      ],
+      "acquisition": {
+        "url": "https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/partof_BP3D_4.0_obj_99.zip",
+        "range": [
+          48346588,
+          48365119
+        ],
+        "crc32Verified": true
+      }
+    },
+    {
+      "element": "FJ3156",
+      "member": "partof_BP3D_4.0_obj_99/FJ3156.obj",
+      "method": 8,
+      "crc32": 3430627368,
+      "compressedBytes": 57886,
+      "uncompressedBytes": 181657,
+      "localHeaderOffset": 48479523,
+      "localPath": "bodyparts3d-obj/FJ3156.obj",
+      "sha256": "d78f0563a0c0b5be89284a6d73434998a05dc9dbddb471b49e398c9ef96f07ae",
+      "groups": [
+        "axis-lower"
+      ],
+      "officialNames": [
+        {
+          "fma": "FMA7181",
+          "name": "trunk"
+        },
+        {
+          "fma": "FMA7481",
+          "name": "skeletal system of thorax"
+        },
+        {
+          "fma": "FMA7482",
+          "name": "musculoskeletal system"
+        },
+        {
+          "fma": "FMA7483",
+          "name": "axial skeletal system"
+        },
+        {
+          "fma": "FMA9140",
+          "name": "thoracic vertebral column"
+        },
+        {
+          "fma": "FMA9576",
+          "name": "thorax"
+        },
+        {
+          "fma": "FMA10081",
+          "name": "twelfth thoracic vertebra"
+        },
+        {
+          "fma": "FMA10427",
+          "name": "body wall"
+        },
+        {
+          "fma": "FMA10428",
+          "name": "thoracic wall"
+        },
+        {
+          "fma": "FMA13478",
+          "name": "vertebral column"
+        },
+        {
+          "fma": "FMA20394",
+          "name": "human body"
+        },
+        {
+          "fma": "FMA23876",
+          "name": "skeleton (in vivo)"
+        },
+        {
+          "fma": "FMA23881",
+          "name": "skeletal system"
+        },
+        {
+          "fma": "FMA24217",
+          "name": "back of thorax"
+        },
+        {
+          "fma": "FMA50060",
+          "name": "chest wall"
+        },
+        {
+          "fma": "FMA71221",
+          "name": "axial skeleton"
+        },
+        {
+          "fma": "FMA72064",
+          "name": "set of thoracic vertebrae"
+        },
+        {
+          "fma": "FMA73103",
+          "name": "posterior thoracic wall"
+        },
+        {
+          "fma": "FMA87552",
+          "name": "posterior chest"
+        },
+        {
+          "fma": "FMA87598",
+          "name": "skeletal system of trunk"
+        },
+        {
+          "fma": "FMA231424",
+          "name": "body proper"
+        },
+        {
+          "fma": "FMA259209",
+          "name": "thoracic segment of trunk"
+        }
+      ],
+      "acquisition": {
+        "url": "https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/partof_BP3D_4.0_obj_99.zip",
+        "range": [
+          48479586,
+          48537471
+        ],
+        "crc32Verified": true
+      }
+    },
+    {
+      "element": "FJ3158",
+      "member": "partof_BP3D_4.0_obj_99/FJ3158.obj",
+      "method": 8,
+      "crc32": 484005772,
+      "compressedBytes": 36905,
+      "uncompressedBytes": 114179,
+      "localHeaderOffset": 48598992,
+      "localPath": "bodyparts3d-obj/FJ3158.obj",
+      "sha256": "57a9cd9f62fc902f2d10f32c83237bba5bee4a24ae323a2b2405d9df68fd585b",
+      "groups": [
+        "axis-upper"
+      ],
+      "officialNames": [
+        {
+          "fma": "FMA7181",
+          "name": "trunk"
+        },
+        {
+          "fma": "FMA7481",
+          "name": "skeletal system of thorax"
+        },
+        {
+          "fma": "FMA7482",
+          "name": "musculoskeletal system"
+        },
+        {
+          "fma": "FMA7483",
+          "name": "axial skeletal system"
+        },
+        {
+          "fma": "FMA9140",
+          "name": "thoracic vertebral column"
+        },
+        {
+          "fma": "FMA9165",
+          "name": "first thoracic vertebra"
+        },
+        {
+          "fma": "FMA9576",
+          "name": "thorax"
+        },
+        {
+          "fma": "FMA10427",
+          "name": "body wall"
+        },
+        {
+          "fma": "FMA10428",
+          "name": "thoracic wall"
+        },
+        {
+          "fma": "FMA13478",
+          "name": "vertebral column"
+        },
+        {
+          "fma": "FMA20394",
+          "name": "human body"
+        },
+        {
+          "fma": "FMA23876",
+          "name": "skeleton (in vivo)"
+        },
+        {
+          "fma": "FMA23881",
+          "name": "skeletal system"
+        },
+        {
+          "fma": "FMA24217",
+          "name": "back of thorax"
+        },
+        {
+          "fma": "FMA50060",
+          "name": "chest wall"
+        },
+        {
+          "fma": "FMA71221",
+          "name": "axial skeleton"
+        },
+        {
+          "fma": "FMA72064",
+          "name": "set of thoracic vertebrae"
+        },
+        {
+          "fma": "FMA73103",
+          "name": "posterior thoracic wall"
+        },
+        {
+          "fma": "FMA87552",
+          "name": "posterior chest"
+        },
+        {
+          "fma": "FMA87598",
+          "name": "skeletal system of trunk"
+        },
+        {
+          "fma": "FMA231424",
+          "name": "body proper"
+        },
+        {
+          "fma": "FMA259209",
+          "name": "thoracic segment of trunk"
+        }
+      ],
+      "acquisition": {
+        "url": "https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/partof_BP3D_4.0_obj_99.zip",
+        "range": [
+          48599055,
+          48635959
+        ],
+        "crc32Verified": true
+      }
+    },
+    {
+      "element": "FJ3171",
+      "member": "partof_BP3D_4.0_obj_99/FJ3171.obj",
+      "method": 8,
+      "crc32": 2956981631,
+      "compressedBytes": 47679,
+      "uncompressedBytes": 149094,
+      "localHeaderOffset": 49292728,
+      "localPath": "bodyparts3d-obj/FJ3171.obj",
+      "sha256": "7c9c326269edd09bdf02aca90333c61debe4f39c777fbef887751826a54adb9e",
+      "groups": [
+        "axis-vertebra"
+      ],
+      "officialNames": [
+        {
+          "fma": "FMA7181",
+          "name": "trunk"
+        },
+        {
+          "fma": "FMA7481",
+          "name": "skeletal system of thorax"
+        },
+        {
+          "fma": "FMA7482",
+          "name": "musculoskeletal system"
+        },
+        {
+          "fma": "FMA7483",
+          "name": "axial skeletal system"
+        },
+        {
+          "fma": "FMA9140",
+          "name": "thoracic vertebral column"
+        },
+        {
+          "fma": "FMA9576",
+          "name": "thorax"
+        },
+        {
+          "fma": "FMA9945",
+          "name": "sixth thoracic vertebra"
+        },
+        {
+          "fma": "FMA10427",
+          "name": "body wall"
+        },
+        {
+          "fma": "FMA10428",
+          "name": "thoracic wall"
+        },
+        {
+          "fma": "FMA13478",
+          "name": "vertebral column"
+        },
+        {
+          "fma": "FMA20394",
+          "name": "human body"
+        },
+        {
+          "fma": "FMA23876",
+          "name": "skeleton (in vivo)"
+        },
+        {
+          "fma": "FMA23881",
+          "name": "skeletal system"
+        },
+        {
+          "fma": "FMA24217",
+          "name": "back of thorax"
+        },
+        {
+          "fma": "FMA50060",
+          "name": "chest wall"
+        },
+        {
+          "fma": "FMA71221",
+          "name": "axial skeleton"
+        },
+        {
+          "fma": "FMA72064",
+          "name": "set of thoracic vertebrae"
+        },
+        {
+          "fma": "FMA73103",
+          "name": "posterior thoracic wall"
+        },
+        {
+          "fma": "FMA87552",
+          "name": "posterior chest"
+        },
+        {
+          "fma": "FMA87598",
+          "name": "skeletal system of trunk"
+        },
+        {
+          "fma": "FMA231424",
+          "name": "body proper"
+        },
+        {
+          "fma": "FMA259209",
+          "name": "thoracic segment of trunk"
+        }
+      ],
+      "acquisition": {
+        "url": "https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/partof_BP3D_4.0_obj_99.zip",
+        "range": [
+          49292791,
+          49340469
+        ],
+        "crc32Verified": true
+      }
+    },
+    {
+      "element": "FJ3234",
+      "member": "partof_BP3D_4.0_obj_99/FJ3234.obj",
+      "method": 8,
+      "crc32": 2221791660,
+      "compressedBytes": 185932,
+      "uncompressedBytes": 642411,
+      "localHeaderOffset": 53170171,
+      "localPath": "bodyparts3d-obj/FJ3234.obj",
+      "sha256": "638a766f20b64d02095efa845b5ea316624a376acb44c7e4a6d533d4da6ef4db",
+      "groups": [
+        "axis-left-rib"
+      ],
+      "officialNames": [
+        {
+          "fma": "FMA7181",
+          "name": "trunk"
+        },
+        {
+          "fma": "FMA7480",
+          "name": "rib cage"
+        },
+        {
+          "fma": "FMA7481",
+          "name": "skeletal system of thorax"
+        },
+        {
+          "fma": "FMA7482",
+          "name": "musculoskeletal system"
+        },
+        {
+          "fma": "FMA7483",
+          "name": "axial skeletal system"
+        },
+        {
+          "fma": "FMA8256",
+          "name": "left seventh rib"
+        },
+        {
+          "fma": "FMA9576",
+          "name": "thorax"
+        },
+        {
+          "fma": "FMA10427",
+          "name": "body wall"
+        },
+        {
+          "fma": "FMA10428",
+          "name": "thoracic wall"
+        },
+        {
+          "fma": "FMA20225",
+          "name": "left side of rib cage"
+        },
+        {
+          "fma": "FMA20394",
+          "name": "human body"
+        },
+        {
+          "fma": "FMA23876",
+          "name": "skeleton (in vivo)"
+        },
+        {
+          "fma": "FMA23881",
+          "name": "skeletal system"
+        },
+        {
+          "fma": "FMA24816",
+          "name": "anterior chest"
+        },
+        {
+          "fma": "FMA50060",
+          "name": "chest wall"
+        },
+        {
+          "fma": "FMA87542",
+          "name": "anterior thoracic wall"
+        },
+        {
+          "fma": "FMA87543",
+          "name": "anterior chest wall"
+        },
+        {
+          "fma": "FMA87598",
+          "name": "skeletal system of trunk"
+        },
+        {
+          "fma": "FMA231424",
+          "name": "body proper"
+        },
+        {
+          "fma": "FMA259209",
+          "name": "thoracic segment of trunk"
+        }
+      ],
+      "acquisition": {
+        "url": "https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/partof_BP3D_4.0_obj_99.zip",
+        "range": [
+          53170234,
+          53356165
+        ],
+        "crc32Verified": true
+      }
+    },
+    {
+      "element": "FJ3346",
+      "member": "partof_BP3D_4.0_obj_99/FJ3346.obj",
+      "method": 8,
+      "crc32": 3411677788,
+      "compressedBytes": 186730,
+      "uncompressedBytes": 647432,
+      "localHeaderOffset": 57601004,
+      "localPath": "bodyparts3d-obj/FJ3346.obj",
+      "sha256": "91aa56e034fbe6f413c0f15b76d725a1f8efd115aa2900beda6edf43a3ab0c43",
+      "groups": [
+        "axis-right-rib"
+      ],
+      "officialNames": [
+        {
+          "fma": "FMA7181",
+          "name": "trunk"
+        },
+        {
+          "fma": "FMA7480",
+          "name": "rib cage"
+        },
+        {
+          "fma": "FMA7481",
+          "name": "skeletal system of thorax"
+        },
+        {
+          "fma": "FMA7482",
+          "name": "musculoskeletal system"
+        },
+        {
+          "fma": "FMA7483",
+          "name": "axial skeletal system"
+        },
+        {
+          "fma": "FMA8229",
+          "name": "right seventh rib"
+        },
+        {
+          "fma": "FMA9576",
+          "name": "thorax"
+        },
+        {
+          "fma": "FMA10427",
+          "name": "body wall"
+        },
+        {
+          "fma": "FMA10428",
+          "name": "thoracic wall"
+        },
+        {
+          "fma": "FMA20224",
+          "name": "right side of rib cage"
+        },
+        {
+          "fma": "FMA20394",
+          "name": "human body"
+        },
+        {
+          "fma": "FMA23876",
+          "name": "skeleton (in vivo)"
+        },
+        {
+          "fma": "FMA23881",
+          "name": "skeletal system"
+        },
+        {
+          "fma": "FMA24816",
+          "name": "anterior chest"
+        },
+        {
+          "fma": "FMA50060",
+          "name": "chest wall"
+        },
+        {
+          "fma": "FMA87542",
+          "name": "anterior thoracic wall"
+        },
+        {
+          "fma": "FMA87543",
+          "name": "anterior chest wall"
+        },
+        {
+          "fma": "FMA87598",
+          "name": "skeletal system of trunk"
+        },
+        {
+          "fma": "FMA231424",
+          "name": "body proper"
+        },
+        {
+          "fma": "FMA259209",
+          "name": "thoracic segment of trunk"
+        }
+      ],
+      "acquisition": {
+        "url": "https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/partof_BP3D_4.0_obj_99.zip",
+        "range": [
+          57601067,
+          57787796
+        ],
+        "crc32Verified": true
+      }
+    }
+  ],
+  "boundedAcquisition": {
+    "archiveDownloaded": false,
+    "archiveDirectoryBytes": 99434,
+    "tailBytes": 65536,
+    "selectedCompressedBytes": 1214651,
+    "compressedBudgetBytes": 6291456,
+    "http206Required": true,
+    "uncompressedBytes": 4057805
+  },
+  "adaptations": "Original OBJ members retained unchanged. Selection excludes internal airway/vascular trees, valves and chamber contents; conversion is separate.",
+  "unavailableLungParenchyma": "The official PART-OF lung compounds map to airway/vascular elements, not outer pleural lobe surfaces. Empty lung groups are deliberate; no synthetic lung is claimed as a source mesh.",
+  "notClaimed": [
+    "raw scan acquisition",
+    "clinical accuracy",
+    "physical physiology simulation",
+    "CC0 status"
+  ]
+}

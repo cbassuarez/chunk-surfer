@@ -1,5 +1,4 @@
 import {normalizeSourceEarthfall,stepSourceEarthfall,sourceEarthfallFrame,sourceEarthfallFocus} from './source-earthfall.js';
-import {uiSize,uiCenter} from '../render/ui.js';
 
 const copy=value=>JSON.parse(JSON.stringify(value));
 const movement=new Set(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright']);
@@ -12,11 +11,11 @@ export function createSourceEarthfallScene({checkpoint,renderer,audio=null,
   onExit=()=>{},onError=()=>{},onTrace=()=>{}}={}){
   if(typeof renderer?.render!=='function')throw Error('The descending Source needs its physical renderer.');
   let state=normalizeSourceEarthfall(checkpoint),ready=false,closed=false,paused=false,
-    leaving=false,error=null,initializing=null,drag=null,saveClock=0,traceClock=0;
+    leaving=false,error=null,failedFinish=null,initializing=null,drag=null,saveClock=0,traceClock=0;
   const keys=new Set();
   const clear=()=>{keys.clear();drag=null;};
   const snapshot=()=>copy(state);
-  const live=()=>ready&&!closed&&!leaving&&renderer.ready?.()!==false;
+  const live=()=>ready&&!closed&&!leaving&&!error&&renderer.ready?.()!==false;
   const save=reason=>{const value=snapshot();onCheckpoint(value,{reason});return value;};
   function report(reason){error=String(reason?.message||reason);clear();audio?.stop?.();onError(reason);}
   function finish(kind){
@@ -24,8 +23,8 @@ export function createSourceEarthfallScene({checkpoint,renderer,audio=null,
     clear();leaving=true;audio?.stop?.();const checkpoint=save(kind);
     try{Promise.resolve(kind==='complete'?onComplete({checkpoint}):onReturn({checkpoint}))
       .then(ok=>{if(ok===false)throw Error('The original threshold is still there.');})
-      .catch(reason=>{if(!closed){leaving=false;report(reason);}});
-    }catch(reason){leaving=false;report(reason);return false;}
+      .catch(reason=>{if(!closed){leaving=false;failedFinish=kind;report(reason);}});
+    }catch(reason){leaving=false;failedFinish=kind;report(reason);return false;}
     return true;
   }
   function apply(input){
@@ -47,7 +46,10 @@ export function createSourceEarthfallScene({checkpoint,renderer,audio=null,
       initializing=Promise.all([Promise.resolve().then(()=>renderer.initialize?.()),
         Promise.resolve().then(()=>audio?.ready?.()).catch(()=>false)]).then(([ok])=>{
         if(closed)return false;if(ok===false)throw Error('The lower path has not resolved.');
-        ready=true;save('entry-or-resume');return true;
+        ready=true;save('entry-or-resume');
+        if(state.status==='returned'||state.status==='completed'&&!state.exitReceipt?.delivered)
+          finish(state.status==='completed'?'complete':'return');
+        return true;
       }).catch(reason=>{if(!closed)report(reason);return false;});return initializing;
     },
     enter(){void scene.initialize();},
@@ -75,9 +77,9 @@ export function createSourceEarthfallScene({checkpoint,renderer,audio=null,
       if(closed||leaving||e.ctrlKey||e.metaKey||e.altKey)return true;
       if(paused){clear();return true;}
       if(!live()){
-        clear();if(!e.repeat&&(key==='x'||key==='e')&&error)finish('return');return true;
+        clear();if(!e.repeat&&(key==='x'||key==='e')&&error)finish(key==='e'&&failedFinish?failedFinish:'return');return true;
       }
-      if(movement.has(key)){keys.add(key);return true;}
+      if(movement.has(key)){if(!e.repeat)keys.add(key);return true;}
       if(!e.repeat&&(key==='e'||key==='enter'||e.controllerAction==='interact'||e.controllerAction==='confirm'))apply({dt:0,interact:true});
       return true;
     },
@@ -92,10 +94,9 @@ export function createSourceEarthfallScene({checkpoint,renderer,audio=null,
     },
     render(){
       if(ready&&!closed){try{if(renderer.render(state,presentation())===false)throw Error('The descending path is unavailable.');}catch(reason){ready=false;report(reason);}}
-      const {rows}=uiSize();
-      if(!live()){renderer.clear?.();uiCenter(Math.floor(rows/2),error?'THE FIRST DOOR IS STILL THERE':'THE DOOR OPENS','ui-secondary');return;}
-      const focus=sourceEarthfallFocus(state);
-      if(focus)uiCenter(rows-3,`E · ${focus.label||focus.title||'OPEN'}`,'ui-primary');
+      // Preserve the last valid production frame during preparation/faults.
+      // Physical doors, their handles and the falling earth carry this beat;
+      // it does not reintroduce HUD instructions between the textless Sources.
     },
     exit(){if(closed)return false;closed=true;clear();audio?.stop?.();if(!leaving)save('interrupted');renderer.dispose?.();onExit({checkpoint:snapshot()});return true;},
   };

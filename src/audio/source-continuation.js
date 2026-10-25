@@ -129,7 +129,7 @@ export function createSourceContinuationAudio({ getAudio = () => null } = {}) {
       gain = .055; parts = [{ frequency: 2700, gain: .8, duration: .13 }, { hz: 118, endHz: 103, frequency: 800, gain: .65, duration: .95 }, { hz: 307, frequency: 1300, gain: .2, duration: .4 }];
     } else if (type === 'counterweight-lands') {
       gain = .065; parts = [{ frequency: 380, q: .5, duration: .2 }, { hz: 61, endHz: 48, frequency: 300, gain: .8, duration: .62 }, { hz: 181, frequency: 700, gain: .25, duration: .38 }];
-    } else if (type === 'counterweight-lowering-warning') {
+    } else if (type === 'counterweight-warning' || type === 'counterweight-lowering-warning') {
       gain = .047; parts = [{ frequency: 1850, q: 2.1, duration: .12 }, { hz: 231, endHz: 189, frequency: 1200, gain: .34, duration: .65 }, { frequency: 570, gain: .24, duration: .5, attack: .06 }];
     } else if (/^counterweight-(?:moves|return|rewind|hoist|traverse|lower|cycle|turn|strain|release)$/.test(type)) {
       gain = .032; parts = [{ frequency: 2350, q: 2, duration: .11 }, { hz: 393, endHz: 307, frequency: 1500, gain: .25, duration: .33 }];

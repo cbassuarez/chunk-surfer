@@ -7,7 +7,8 @@ import {assetUrl} from '../platform/paths.js';
 import {SOURCE_EARTHFALL as C,sourceEarthfallFracturePose,sourceEarthfallCellLayout,sourceEarthfallReleasePlan,sourceEarthfallControlledDrop} from '../data/source-earthfall.js';
 import {sourceEarthfallFrame} from '../game/source-earthfall.js';
 import {sourceContinuationMeshPayload} from './source-continuation-renderer.js';
-import {sourcePrintMaps,SOURCE_PRINT_SURFACE} from './physical-source-print.js';
+import {SOURCE_PRINT_SURFACE} from './physical-source-print.js';
+import {sourceBlueprintMaps,sourceBlueprintMaterial,sourceBlueprintLighting} from './source-blueprint-print.js';
 import {PROP_INSTANCE_FLOATS,PROP_INSTANCE_BINDINGS} from './prop-instance-layout.js';
 import {doorAssembly,doorLeafLocalMatrix} from '../data/source-door-fields.js';
 import {SOURCE_DEMOLITION_GEOMETRY as DEMO} from '../data/generated/source-demolition-geometry.js';
@@ -54,7 +55,7 @@ export function sourceEarthfallGeometry(){return LIBRARY;}
 
 export function installSourceEarthfallMeshes(gl,pack,{maps=null}={}){
   if(!gl||!pack?.catalog)return false;
-  const printed=maps||sourcePrintMaps(gl,'divide');
+  const printed=maps||sourceBlueprintMaps(gl);
   for(const piece of LIBRARY){
     if(pack.catalog.has(piece.name))continue;
     const data=sourceContinuationMeshPayload(piece),vao=gl.createVertexArray(),instanceBuffer=gl.createBuffer();gl.bindVertexArray(vao);
@@ -68,7 +69,7 @@ export function installSourceEarthfallMeshes(gl,pack,{maps=null}={}){
     // uses the existing subdued acquisition ink so practical lights cannot
     // reprint the whole footprint as the same bright stock as the torn earth.
     // It remains an opaque depth-writing mesh outside the narrow paper path.
-    pack.catalog.set(piece.name,{name:piece.name,nodeMatrix:identity(),instanceBuffer,extras:{sourceEarthfall:true,triangles:data.triangles,bounds:{min:data.bounds.min.map((v,k)=>v-data.bounds.center[k]),max:data.bounds.max.map((v,k)=>v-data.bounds.center[k])}},primitives:[{vao,count:data.indices.length,indexType:gl.UNSIGNED_INT,base,emissive:[0,0,0],texture:source?printed.texture:null,normalTexture:source?printed.normalTexture:null,ormTexture:source?printed.ormTexture:null,letteringFinish:source?printed.letteringFinish:null,materialFactors:'gltf',metallic:quietBacking?0:source?1:.7,roughness:quietBacking?1:source?1:.7,aoStrength:0,portrait:false,alphaCut:0,materialName:`earthfall ${piece.kind}`,materialRole:quietBacking?'quiet-metal':null,printedSurface:source?SOURCE_PRINT_SURFACE:null}]});
+    pack.catalog.set(piece.name,{name:piece.name,nodeMatrix:identity(),instanceBuffer,extras:{sourceEarthfall:true,triangles:data.triangles,bounds:{min:data.bounds.min.map((v,k)=>v-data.bounds.center[k]),max:data.bounds.max.map((v,k)=>v-data.bounds.center[k])}},primitives:[{vao,count:data.indices.length,indexType:gl.UNSIGNED_INT,base,emissive:[0,0,0],texture:source?printed.texture:null,normalTexture:source?printed.normalTexture:null,ormTexture:source?printed.ormTexture:null,letteringFinish:source?printed.letteringFinish:null,materialFactors:'gltf',metallic:quietBacking?0:source?1:.7,roughness:quietBacking?1:source?1:.7,aoStrength:0,portrait:false,alphaCut:0,materialName:`earthfall ${piece.kind}`,materialRole:quietBacking?'quiet-metal':null,printedSurface:source?SOURCE_PRINT_SURFACE:null,...(source?sourceBlueprintMaterial(printed,{base}):{})}]});
   }
   gl.bindVertexArray(null);return LIBRARY.map(p=>p.name);
 }
@@ -188,13 +189,15 @@ export function createSourceEarthfallRenderer({renderer=R3,props=P3,resolveAsset
       if(typeof props.setAuthoredPropRange!=='function')throw Error('The descending Source far-range lease is unavailable.');
       clearSource();releaseRange=props.setAuthoredPropRange(rangeOwner,SOURCE_EARTHFALL_RENDER_BUDGET.far);
       const size=512,rgba=new Uint8Array(size*size*4),material=new Uint8Array(size*size).fill(MATERIAL.sourceField);for(let i=3;i<rgba.length;i+=4)rgba[i]=ZONE.sourceSpace;
-      renderer.r3dSetPlan(rgba,size,size,material);renderer.r3dSetSourceScene({key:'source:earthfall',look:{roomMemoryActive:true,chroma:.68,paper:0},weather:{rain:0,moon:0,clouds:0},staticInstances:[],dynamicInstances:[],corpus:[]});
-      renderer.r3dSetLookProfile?.('explore',{transitionMs:0});renderer.r3dSetLightingContext?.({ambientColor:[.61,.67,.61],ambientIntensity:.095,captureExposure:3.2,whitePointScale:1,screen:'stochastic'});renderer.r3dSnapCameraOnNextFrame?.();renderer.r3dResetVfdMemory?.();initialized=true;return true;
+      renderer.r3dSetPlan(rgba,size,size,material);renderer.r3dSetSourceScene({key:'source:earthfall',look:{roomMemoryActive:true,blueprint:true,chroma:.68,paper:0},weather:{rain:0,moon:0,clouds:0},staticInstances:[],dynamicInstances:[],corpus:[]});
+      renderer.r3dSetLookProfile?.('explore',{transitionMs:0});renderer.r3dSetLightingContext?.(sourceBlueprintLighting({ambientColor:[.61,.67,.61],ambientIntensity:.095,captureExposure:3.2,whitePointScale:1,screen:'stochastic'}));renderer.r3dSnapCameraOnNextFrame?.();renderer.r3dResetVfdMemory?.();initialized=true;return true;
     })().catch(reason=>{error=String(reason?.message||reason);releaseRange?.();releaseRange=null;throw reason;});return loading;
   }
   function render(state,presentation={}){
     if(!initialized||released)return false;if(error)throw Error(error);
-    if(!resident()){if(!repair)repair=install().catch(reason=>{error=String(reason?.message||reason);}).finally(()=>{repair=null;});renderer.r3dClearScreen?.();return true;}
+    // The scene freezes its clocks through ready(); residency repair must not
+    // replace the last descending view with a loading-black frame.
+    if(!resident()){if(!repair)repair=install().catch(reason=>{error=String(reason?.message||reason);}).finally(()=>{repair=null;});return true;}
     const physical=sourceEarthfallRenderFrame(state,presentation);
     last=typeof transformFrame==='function'?transformFrame(state,presentation,physical):physical;
     renderer.r3dSetProps(last.props);renderer.r3dSetDynamicProps?.([]);renderer.r3dSetLocalLights(last.lights);

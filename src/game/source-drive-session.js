@@ -86,7 +86,7 @@ export function createSourceDriveSession(host = {}) {
   const assets = { ...SOURCE_DRIVE_ASSETS, ...host.assets };
   const keys = new Set();
   let weather = restoreDriveWeather(saved.weather), look = { ...saved.look }, settings = { ...saved.settings };
-  const opening=host.entry==='moving-cut'&&original.status==='not-started'
+  const opening=host.entry!=='review'&&original.status==='not-started'
     ?{renderPrimed:false,soundStartedAt:null,picture:false,interrupted:false}:null;
   if(opening){seedMovingDriveEntry(s,weather);look={yaw:0,pitch:SOURCE_DRIVE_OPENING.lookPitch};}
   let metrics = host.metrics || null, acoustics = host.acoustics || null, recording = host.recording || null;
@@ -94,6 +94,7 @@ export function createSourceDriveSession(host = {}) {
   let handControl = null, queuedControl = null, drag = null, frame = null, fingerprint = saved.fingerprint;
   let previousAxleDistance = -s.z, started = saved.started, clippedTimeSeconds = saved.clippedTimeSeconds;
   let transport = Promise.resolve(), busy = false, lastError = null, checkpointAt = s.programTime;
+  let picturePresented = false, automaticStart = null, retryWait = 0, startFailures = 0;
 
   const report = error => { lastError = String(error?.message || error); host.onError?.(error); publish(); return error; };
   const event = (type, data = {}) => { const value = note(s, type, data); host.onEvent?.(clone(value)); return value; };
@@ -104,7 +105,7 @@ export function createSourceDriveSession(host = {}) {
     host.onStatus?.({ initialized, paused: s.paused, opening:driveOpeningView(opening,s), parked: !!s.arrived, brakeHeld: !!s.brakeHold, positionRecovered: s.boundaryRecovery?.acknowledged===false, returning, returned, busy, error: lastError,
       canBegin: initialized && s.paused && !returned && !returning, canLeave: initialized && canDismountDrive(s) && !returned && !returning && !keys.has('forward') && !keys.has('reverse'),
       title: returned ? 'The grey doors' : s.arrived ? 'Parked at the goods apron' : s.paused ? 'The Cut' : '',
-      instruction: returned ? '' : s.arrived ? 'ENTER · LEAVE VAN   E · LISTEN   R · RECORD' : s.paused ? 'ENTER · DRIVE' : s.brakeHold ? 'BRAKE HELD · W / S TO MOVE   R · RECORD   E · LISTEN' : 'R · RECORD   E · LISTEN   X · STOP',
+      instruction: returned ? '' : s.arrived ? 'ENTER · LEAVE VAN   E · LISTEN   R · RECORD' : s.paused ? 'PICTURE HELD · ESC · MENU' : s.brakeHold ? 'BRAKE HELD · W / S TO MOVE   R · RECORD   E · LISTEN' : 'R · RECORD   E · LISTEN   X · STOP',
       recording: !!tape.recording, playing: !!tape.playing });
   }
   function serialize() {
@@ -186,6 +187,7 @@ export function createSourceDriveSession(host = {}) {
   }
   async function pause() {
     lifecycleSerial++;
+    picturePresented = false;
     if (disposed || returned) return false;
     if(opening&&!opening.picture)opening.interrupted=true;
     if (s.paused) { keys.clear(); drag = null; return true; }
@@ -193,6 +195,28 @@ export function createSourceDriveSession(host = {}) {
     await recording?.setPaused?.(true);
     if (initialized) { event('journey-pause'); checkpoint('pause'); }
     publish(); return true;
+  }
+  // The host calls this only while its window and gameplay lifecycle are live.
+  // A successful final draw is required on entry and after every hold. Loading
+  // and retry time never advances vehicle, weather, programme or physical tape.
+  function resumeWhenPresented(dt = 0) {
+    retryWait = Math.max(0, retryWait - clamp(Number(dt) || 0, 0, .1));
+    if (disposed || returned || returning || !s.paused || retryWait > 0) return Promise.resolve(false);
+    if (automaticStart) return automaticStart;
+    if (initialized && !picturePresented) return Promise.resolve(false);
+    automaticStart = (async () => {
+      if (!initialized) { await initialize(); return false; }
+      return start();
+    })().then(value => {
+      if (value) { startFailures = 0; retryWait = 0; }
+      return value;
+    }).catch(async error => {
+      await pause();
+      if (lastError !== String(error?.message || error)) report(error);
+      retryWait = Math.min(8, .5 * 2 ** Math.min(4, startFailures++));
+      return false;
+    }).finally(() => { automaticStart = null; });
+    return automaticStart;
   }
   async function stopTransport(reason = 'stop') {
     if (!recording) return null;
@@ -300,7 +324,8 @@ export function createSourceDriveSession(host = {}) {
     if (!frame) return false;
     frame.readout = readout();
     host.renderer.setRecorderReadout?.(frame.readout);
-    if(host.renderer.render(frame)===false)return false;
+    if(host.renderer.render(frame)===false){void pause();return false;}
+    picturePresented=true;
     if(opening&&!opening.renderPrimed){opening.renderPrimed=true;publish();}
     return true;
   }
@@ -313,12 +338,9 @@ export function createSourceDriveSession(host = {}) {
   function key(e) {
     const k = String(e?.key || '').toLowerCase();
     if (k === 'escape') { keys.clear(); host.onPauseRequested?.(); return true; }
-    if(opening&&!opening.picture){
-      if(k==='enter'&&!e?.repeat&&(opening.interrupted||lastError))Promise.resolve(initialized?start():initialize()).catch(report);
-      return true;
-    }
+    if(opening&&!opening.picture)return true;
     if(e?.repeat&&(k==='enter'||KEY_INPUTS[k]&&!keys.has(KEY_INPUTS[k])))return true;
-    if (k === 'enter') { Promise.resolve(s.arrived ? finish() : start()).catch(report); return true; }
+    if (k === 'enter') { if(s.arrived&&!s.paused)Promise.resolve(finish()).catch(report); return true; }
     if (KEY_INPUTS[k]) { input(KEY_INPUTS[k], true); return true; }
     if (s.paused || returned || returning || e?.repeat) return false;
     if (/^[123]$/.test(k)) return tune(Number(k) - 1);
@@ -388,7 +410,7 @@ export function createSourceDriveSession(host = {}) {
     finally { acoustics?.dispose?.(); host.renderer.dispose?.(); handControl = queuedControl = null; resetWheelHands(); }
   }
   const session = { id: 'source-drive', blocksWorld: true, blocksInput: true, suppressesHud: true, allowsLook: false,
-    initialize, start, pause, update, render, key, keyup, pointer, input, serialize, checkpoint, finish, dispose,
+    initialize, start, pause, resumeWhenPresented, update, render, key, keyup, pointer, input, serialize, checkpoint, finish, dispose,
     record: toggleRecord, play: playLast, stop,
     status: () => ({ initialized, paused: s.paused, opening:driveOpeningView(opening,s), returned, returning, busy, error: lastError, parked: s.arrived, state: clone(s), look: { ...look }, tape: tapeStatus() }),
     openingFrame:()=>driveOpeningView(opening,s),

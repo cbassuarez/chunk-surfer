@@ -65,6 +65,7 @@ function drawTabs(model, nav, layout, pulse, breadcrumb = '', guide = null) {
     // Dynamic counts belong to the readout beneath the fixed printed legend,
     // never to the plastic. A long SKILLS delta cannot stretch its switch.
     const count = clip(tab.countLabel, tab.readout.w);
+    if (active === 'journal') uiFill(tab.readout.x,tab.readout.y-.06,tab.readout.w,1.05,'#0a130c');
     if(active!=='map')uiText(tab.readout.x + Math.max(0, (tab.readout.w - count.length) / 2), tab.readout.y,
       count, tab.sectionId === active ? 'ui-primary' : 'ui-secondary', tab.sectionId === active ? .9 : .62);
   }
@@ -75,9 +76,10 @@ function drawTabs(model, nav, layout, pulse, breadcrumb = '', guide = null) {
     : `${inputPrompt('tabNext')} SECTION`;
   const crumb=breadcrumb||`FIELD CASE / ${tabs.find((tab)=>tab.id===active)?.label||'SECTION'}`;
   const crumbW=Math.max(8,layout.tabs.w-help.length-2);
-  if(active==='map'){
-    drawPrintedText(layout.tabs.x,layout.tabs.y+2.7,clip(crumb,crumbW),{w:crumbW,h:.8,ink:'#333830',finish:'etched',darkPanel:false});
-    drawPrintedText(layout.tabs.x+layout.tabs.w-help.length,layout.tabs.y+2.7,help,{w:help.length,h:.8,ink:'#333830',finish:'etched',darkPanel:false});
+  if(active==='map'||active==='journal'){
+    const row=layout.tabs.y+(active==='journal'?3.7:2.7);
+    drawPrintedText(layout.tabs.x,row,clip(crumb,crumbW),{w:crumbW,h:.8,ink:'#333830',finish:'etched',darkPanel:false});
+    drawPrintedText(layout.tabs.x+layout.tabs.w-help.length,row,help,{w:help.length,h:.8,ink:'#333830',finish:'etched',darkPanel:false});
   }else{
     uiText(layout.tabs.x,layout.tabs.y+3.7,clip(crumb,crumbW),'ui-label',.62);
     rightText(layout.tabs.x,layout.tabs.y+3.7,layout.tabs.w,help,'ui-label',.58);
@@ -798,7 +800,7 @@ export function drawBagView({ model, nav, mapNav = null, layout, hint = '', guid
 
   uiLine(layout.taskRail.x, layout.taskRail.y - .35, layout.taskRail.x + layout.taskRail.w, layout.taskRail.y - .35, undefined, .24);
   const taskText=clip(guide?.title||bagTaskText({ hint, model, entry: selected }), layout.taskRail.w);
-  if(nav.sectionId==='map'){
+  if(nav.sectionId==='map'||nav.sectionId==='journal'){
     // Live task state is electronic, never changing etched ink on the metal.
     uiFill(layout.taskRail.x,layout.taskRail.y-.45,layout.taskRail.w,1.1,'#0a130c');
     uiText(layout.taskRail.x+.7,layout.taskRail.y-.4,clip(taskText,layout.taskRail.w-1.4),'ui-secondary',.9);

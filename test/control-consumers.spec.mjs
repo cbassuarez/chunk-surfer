@@ -79,11 +79,11 @@ test('momentary navigation keys spring up while the selected screen stays select
   assert.equal(bag.debugState().nav.sectionId, 'skills', 'screen selection is electrical state, not a mechanical latch');
   bag.key({ controllerAction: 'tabNext', controller: true });
   at(350);
-  assert.equal(bag.debugState().nav.sectionId, 'kit');
-  assert.equal(sampleControl('bag:tab:kit', { latched: false }).travel, 1);
+  assert.equal(bag.debugState().nav.sectionId, 'journal');
+  assert.equal(sampleControl('bag:tab:journal', { latched: false }).travel, 1);
   bag.keyup({ controllerAction: 'tabNext', controller: true });
   at(500);
-  assert.equal(sampleControl('bag:tab:kit', { latched: false }).travel, 0);
+  assert.equal(sampleControl('bag:tab:journal', { latched: false }).travel, 0);
   bag.exit();
 });
 

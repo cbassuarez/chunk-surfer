@@ -44,7 +44,9 @@ export function createSourceFalseReturnScene({checkpoint,layout,renderer,audio=n
     allowsLook:false,handlesEscape:false,worldPresentation:'hidden',lookProfile:'explore',
     initialize(){
       if(initializing)return initializing;save('loading');
-      initializing=Promise.resolve().then(()=>renderer.initialize?.()).then(ok=>{if(closed)return false;if(ok===false)throw Error('Ellery has not resolved.');ready=true;error=null;save('entry-or-resume');return true;}).catch(err=>{if(!closed)report(err);return false;});return initializing;
+      initializing=Promise.resolve().then(()=>renderer.initialize?.()).then(ok=>{if(closed)return false;if(ok===false)throw Error('Ellery has not resolved.');ready=true;error=null;save('entry-or-resume');
+        if(state.status==='completed'&&!state.exitReceipt?.delivered)finish();
+        return true;}).catch(err=>{if(!closed)report(err);return false;});return initializing;
     },
     enter(){void scene.initialize();},
     update(dt){

@@ -5,7 +5,7 @@ import {assetUrl} from '../platform/paths.js';
 import {SOURCE_IV as C,SOURCE_IV_GEOMETRY,SOURCE_IV_MODELS,sourceIVModelMatrix} from '../data/source-iv.js';
 import {sourceIVFrame} from '../game/source-iv.js';
 import {sourceContinuationMeshPayload} from './source-continuation-renderer.js';
-import {sourcePrintMaps,SOURCE_PRINT_SURFACE} from './physical-source-print.js';
+import {sourceBlueprintMaps,sourceBlueprintMaterial,sourceBlueprintLighting} from './source-blueprint-print.js';
 import {PROP_INSTANCE_FLOATS,PROP_INSTANCE_BINDINGS} from './prop-instance-layout.js';
 import {doorAssembly,doorLeafLocalMatrix} from '../data/source-door-fields.js';
 
@@ -26,7 +26,7 @@ export const SOURCE_IV_RENDER_BUDGET=Object.freeze({far:200,customMeshes:LIBRARY
 
 export function installSourceIVMeshes(gl,pack,{maps=null}={}){
   if(!gl||!pack?.catalog)return false;
-  const printed=maps||sourcePrintMaps(gl,'divide');
+  const printed=maps||sourceBlueprintMaps(gl);
   for(const piece of LIBRARY){
     if(pack.catalog.has(piece.name))continue;
     const data=PAYLOADS.get(piece.name),vao=gl.createVertexArray(),instanceBuffer=gl.createBuffer();gl.bindVertexArray(vao);
@@ -39,10 +39,9 @@ export function installSourceIVMeshes(gl,pack,{maps=null}={}){
     gl.disableVertexAttribArray(8);gl.vertexAttrib1f(8,0);
     pack.catalog.set(piece.name,{name:piece.name,nodeMatrix:identity(),instanceBuffer,
       extras:{sourceIV:true,triangles:data.triangles,bounds:{min:data.bounds.min.map((v,k)=>v-data.bounds.center[k]),max:data.bounds.max.map((v,k)=>v-data.bounds.center[k])}},
-      primitives:[{vao,count:data.indices.length,indexType:gl.UNSIGNED_INT,base:[.42,.49,.43,1],emissive:[0,0,0],
-        texture:printed.texture,normalTexture:printed.normalTexture,ormTexture:printed.ormTexture,
-        letteringFinish:printed.letteringFinish,materialFactors:'gltf',metallic:1,roughness:1,aoStrength:0,
-        portrait:false,alphaCut:0,materialName:'Source IV printed structure',printedSurface:SOURCE_PRINT_SURFACE}]});
+      primitives:[{vao,count:data.indices.length,indexType:gl.UNSIGNED_INT,emissive:[0,0,0],aoStrength:0,
+        portrait:false,alphaCut:0,materialName:'Source IV printed structure',
+        ...sourceBlueprintMaterial(printed,{base:[.42,.49,.43,1]})}]});
   }
   gl.bindVertexArray(null);return LIBRARY.map(piece=>piece.name);
 }
@@ -105,15 +104,22 @@ export function createSourceIVRenderer({renderer=R3,props=P3,resolveAsset=assetU
       const size=512,rgba=new Uint8Array(size*size*4),material=new Uint8Array(size*size).fill(MATERIAL.sourceField);
       for(let i=3;i<rgba.length;i+=4)rgba[i]=ZONE.sourceSpace;
       renderer.r3dSetPlan(rgba,size,size,material);
-      renderer.r3dSetSourceScene({key:'source:IV',look:{roomMemoryActive:true,chroma:.65,paper:0},weather:{rain:0,moon:0,clouds:0},staticInstances:[],dynamicInstances:[],corpus:[]});
+      renderer.r3dSetSourceScene({key:'source:IV',look:{roomMemoryActive:true,blueprint:true,chroma:.65,paper:0},weather:{rain:0,moon:0,clouds:0},staticInstances:[],dynamicInstances:[],corpus:[]});
       renderer.r3dSetLookProfile?.('explore',{transitionMs:0});
-      renderer.r3dSetLightingContext?.({ambientColor:[.57,.65,.60],ambientIntensity:.11,captureExposure:3.3,whitePointScale:1,screen:'stochastic'});
+      // These large, high lamps already reveal the real model planes. A
+      // second 3.3x capture gain pushed the grazing paper stock into the pale
+      // recording ink, reversing its navy/letter hierarchy. The matched GPU
+      // sweep retains 1.6: navy stock and solid model planes both survive.
+      // Keep every lamp and ordinary model material intact.
+      renderer.r3dSetLightingContext?.(sourceBlueprintLighting({ambientColor:[.57,.65,.60],ambientIntensity:.11,captureExposure:1.6,whitePointScale:1,screen:'stochastic'}));
       renderer.r3dSnapCameraOnNextFrame?.();renderer.r3dResetVfdMemory?.();initialized=true;return true;
     })().catch(reason=>{error=String(reason?.message||reason);releaseRange?.();releaseRange=null;throw reason;});return loading;
   }
   function render(state,presentation={}){
     if(!initialized||released)return false;if(error)throw Error(error);
-    if(!resident()){if(!repair)repair=install().catch(reason=>{error=String(reason?.message||reason);}).finally(()=>{repair=null;});renderer.r3dClearScreen?.();return true;}
+    // Hold the last complete raster while the scene's ready() gate suspends
+    // its clock/input. Repair must not insert an unauthored black cut.
+    if(!resident()){if(!repair)repair=install().catch(reason=>{error=String(reason?.message||reason);}).finally(()=>{repair=null;});return true;}
     last=sourceIVRenderFrame(state,presentation);renderer.r3dSetProps(last.props);renderer.r3dSetDynamicProps?.([]);renderer.r3dSetLocalLights(last.lights);
     return renderer.r3dFrame({px:last.eye[0]/CELL-.5,py:last.eye[2]/CELL-.5,floorH:last.eye[1]-EYE,authoredCamera:last.authoredCamera,
       authoredPropRange:SOURCE_IV_RENDER_BUDGET.far,tileW:512,tileH:512,worldCount:0,worldTints:Array.from({length:5},()=>[1,1,1]),

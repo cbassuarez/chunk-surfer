@@ -7,6 +7,7 @@ import { makeBagScene } from '../src/game/bag.js';
 import { makePauseScene } from '../src/game/pause.js';
 import * as scenes from '../src/game/scenes.js';
 import { MAP_LAB_CASES, mapLabModel } from '../src/game/map-fixtures.js';
+import { sampleControl, controlMechanicsSnapshot } from '../src/game/control-mechanics.js';
 
 const map = mapLabModel(MAP_LAB_CASES[1]);
 const destination = map.spaces.find((space) => space.selectable !== false && space.roomId);
@@ -88,6 +89,73 @@ test('M leaves an inventory action or inspector route in control', () => {
   scenes.replace({id:'cleanup'});
 });
 
+test('controller map and paging verbs are owned by the journal without stealing list navigation', () => {
+  const bag=makeBagScene({journal:[lead],map,memory:{},focus:{sectionId:'journal'}});
+  scenes.replace(bag);
+  assert.deepEqual(bag.modalActions,['mapFile','mapFloorPrev','mapFloorNext']);
+  assert.equal(bag.modalActions.includes('mark'),false,'D-pad up retains list navigation');
+  bag.key({controllerAction:'mapFile'});
+  assert.equal(bag.debugState().nav.sectionId,'map');
+  scenes.replace({id:'cleanup'});
+});
+
+test('journal hover only points; presses commit and release their original physical control', (t) => {
+  let now=0;
+  t.mock.method(performance,'now',()=>now);
+  const other={...lead,id:'quest:other',title:'Another known lead'};
+  for(const release of ['pointerup','pointercancel','lostpointercapture']) {
+    now=0;
+    const bag=makeBagScene({journal:[lead,other],map,memory:{},focus:{sectionId:'journal'}});
+    bag.enter();bag.render();
+    const hit=bag.debugState().hitRegions.find(hit=>hit.id==='bag:journal:jog-next');
+    const point={pointerId:7,cellX:hit.x+hit.w/2,cellY:hit.y+hit.h/2,button:0};
+    bag.pointer({type:'pointermove',...point});
+    now=100;
+    assert.equal(bag.debugState().nav.selected.journal,lead.id,'hover cannot browse on the player’s behalf');
+    assert.deepEqual(sampleControl(hit.id),{travel:0,lampHeat:0});
+    bag.pointer({type:'pointerdown',...point});
+    assert.equal(bag.debugState().nav.selected.journal,other.id);
+    assert.equal(bag.debugState().nav.journalPinnedId,null,'selection does not track');
+    now=200; assert.equal(sampleControl(hit.id).travel,1);
+    bag.pointer({type:release,pointerId:7,cellX:-100,cellY:-100});
+    now=350; assert.equal(sampleControl(hit.id).travel,0,`${release} releases outside the cap`);
+    bag.render();
+    const track=bag.debugState().hitRegions.find(hit=>hit.id==='bag:journal:track');
+    bag.pointer({type:'pointerdown',pointerId:8,cellX:track.x+track.w/2,cellY:track.y+track.h/2,button:0});
+    assert.equal(bag.debugState().nav.journalPinnedId,other.id);
+    now=450; assert.equal(sampleControl(track.id).travel,1);
+    bag.pointer({type:'pointercancel'});
+    assert.equal(controlMechanicsSnapshot().ids.some(id=>id.startsWith('bag:')),false,'focus cancellation clears held controls');
+    bag.exit();
+  }
+});
+
+test('journal keyboard controls spring back and inactive page/map keys cannot depress', (t) => {
+  let now=0;
+  t.mock.method(performance,'now',()=>now);
+  const bag=makeBagScene({journal:[lead,{...lead,id:'quest:other'}],map,memory:{},focus:{sectionId:'journal'}});
+  bag.enter();bag.render();
+  const down=key('ArrowDown','ArrowDown');
+  bag.key(down);now=100;
+  assert.equal(sampleControl('bag:journal:jog-next').travel,1);
+  bag.keyup(down);now=250;
+  assert.equal(sampleControl('bag:journal:jog-next').travel,0);
+  const confirm=key('Enter','Enter');bag.key(confirm);now=350;
+  assert.equal(sampleControl('bag:journal:track').travel,1);
+  bag.keyup(confirm);now=500;
+  assert.equal(sampleControl('bag:journal:track').travel,0);
+  assert.equal(bag.debugState().nav.journalPinnedId,'quest:other');
+  bag.exit();
+  const empty=makeBagScene({journal:[],map,memory:{},focus:{sectionId:'journal'}});
+  empty.enter();empty.render();
+  empty.key(key('PageDown','PageDown'));empty.key(key(' ','Space'));empty.key(confirm);
+  now=700;
+  assert.equal(sampleControl('bag:journal:next-page').travel,0);
+  assert.equal(sampleControl('bag:journal:map').travel,0);
+  assert.equal(sampleControl('bag:journal:track').travel,0);
+  empty.exit();
+});
+
 test('pause exposes journal and map destinations and stays underneath a case opened from it', () => {
   let maps=0;
   const pause=makePauseScene({onJournal:()=>{},onMap:()=>maps++});
@@ -99,5 +167,61 @@ test('pause exposes journal and map destinations and stays underneath a case ope
   scenes.push(bag);
   bag.key(key('Escape','Escape'));
   assert.equal(scenes.top(),pause);
+  scenes.replace({id:'cleanup'});
+});
+
+test('known leads and call records do not inflate open commitments, and tracking is not acceptance',()=>{
+  const opportunity={...lead,nature:'lead',commitment:'none',trackable:true,hasOpenCommitment:false};
+  const record={...lead,id:'quest:call',nature:'record',state:'resolved',trackable:false,hasOpenCommitment:false};
+  const bag=makeBagScene({journal:[opportunity,record],map,memory:{},focus:{sectionId:'journal'}});
+  scenes.replace(bag);
+  assert.equal(bag.debugState().model.sections.find(s=>s.id==='journal').countLabel,'0 OPEN');
+  bag.key(key('Enter','Enter'));
+  assert.equal(bag.debugState().nav.journalPinnedId,opportunity.id);
+  assert.equal(bag.debugState().selected.commitment,'none');
+  bag.key(key('ArrowDown','ArrowDown'));bag.key(key('Enter','Enter'));
+  assert.equal(bag.debugState().nav.journalPinnedId,opportunity.id,'an untrackable record cannot replace a followed lead');
+  scenes.replace({id:'cleanup'});
+});
+
+test('only presenting a changed journal file acknowledges it; inventory, covered views and reload do not invent updates',()=>{
+  let entries=[{...lead,trackable:true,hasOpenCommitment:true}],memory={};
+  const options={getJournal:()=>entries,map,onRemember:value=>memory=JSON.parse(JSON.stringify(value))};
+  let bag=makeBagScene({...options,memory,focus:{sectionId:'kit'}});
+  scenes.replace(bag);bag.render();bag.key(key('Escape','Escape'));
+  const before=JSON.stringify(memory.journalReview);
+  entries=[{...entries[0],state:'resolved',trackable:false,hasOpenCommitment:false,
+    closure:{label:'HELP GIVEN',text:'The tray is back with Iona.'},next:null}];
+  bag=makeBagScene({...options,memory,focus:{sectionId:'kit'}});
+  scenes.replace(bag);bag.render();
+  assert.match(bag.debugState().model.sections.find(s=>s.id==='journal').countLabel,/1 NEW/);
+  assert.equal(JSON.stringify(memory.journalReview),before,'opening inventory does not acknowledge a journal change');
+  bag.key(key('5','Digit5'));
+  const cover={id:'pause',blocksWorld:true,allowsLook:false};scenes.push(cover);bag.render();
+  assert.equal(JSON.stringify(memory.journalReview),before,'a covered file has not been presented');
+  scenes.pop();bag.render();
+  const shown=bag.debugState().model.sections.find(s=>s.id==='journal');
+  assert.equal(shown.countLabel,'0 OPEN');assert.equal(shown.entries[0].updated,true);
+  assert.equal(shown.entries[0].unseen,false);assert.notEqual(JSON.stringify(memory.journalReview),before);
+  assert.equal(entries[0].state,'resolved');
+  bag.key(key('Escape','Escape'));
+  bag=makeBagScene({...options,memory,focus:{sectionId:'journal'}});scenes.replace(bag);bag.render();
+  assert.equal(bag.debugState().selected.updated,false,'reloading a presented change has no repeated announcement');
+  scenes.replace({id:'cleanup'});
+});
+
+test('a new accepted follow-up leaves its parent fulfilled and needs its own tracking choice',()=>{
+  const original={...lead,trackable:true,trackingKey:'quest:known:service',hasOpenCommitment:true,commitment:'accepted'};
+  const first=buildBagModel({journal:[original],map});
+  const memory={...initialBagState(first,{sectionId:'journal'}),journalPinnedId:lead.id,journalPinnedKey:original.trackingKey};
+  const followUp={...original,state:'resolved',commitment:'fulfilled',trackingKey:'quest:known:opener',
+    closure:{label:'HELP GIVEN',text:'Service is finished.'},followUp:{id:'opener',label:'The opener',commitment:'accepted'}};
+  const bag=makeBagScene({journal:[followUp],map,memory,focus:{sectionId:'journal'}});scenes.replace(bag);
+  assert.equal(bag.debugState().nav.journalPinnedId,null);
+  assert.equal(bag.debugState().selected.state,'resolved');
+  assert.equal(bag.debugState().model.sections.find(s=>s.id==='journal').countLabel,'1 OPEN');
+  bag.key(key('Enter','Enter'));
+  assert.equal(bag.debugState().nav.journalPinnedKey,followUp.trackingKey);
+  assert.equal(bag.debugState().selected.closure.label,'HELP GIVEN');
   scenes.replace({id:'cleanup'});
 });

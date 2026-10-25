@@ -28,7 +28,7 @@ export const CUT_COASTAL_TRANSITIONS=Object.freeze([
 ]);
 export const CUT_WAVE_LAYOUT=Object.freeze({d:760,lateral:-28,lengthScale:1.8,heightScale:1,authoredSpan:[-91.4,90.44],height:[-4,36.5],maximumCullRadius:195});
 const thoraxMeshes=['cut_thoracic_bone','cut_sternum','cut_intercostal_depth','cut_intercostal_sheet','cut_periosteum','cut_costal_cartilage','cut_intercostal_vessels'];
-export const CUT_THORAX_ORGANS=Object.freeze({id:'thorax-organ-chamber',d:829,meshes:Object.freeze(['cut_lungs','cut_heart','cut_great_vessels','cut_coronary_vessels','cut_diaphragm','cut_wet_blood'])});
+export const CUT_THORAX_ORGANS=Object.freeze({id:'thorax-organ-chamber',d:829,meshes:Object.freeze(['cut_lungs','cut_heart','cut_great_vessels','cut_coronary_vessels','cut_diaphragm','cut_wet_blood','cut_airway'])});
 const waveMeshes=['cut_wave_surface','cut_wave_foam','cut_wave_spindrift','cut_wave_strakes'];
 const littoralMeshes=['cut_littoral_rib','cut_littoral_water','cut_littoral_tissue'];
 // Samples of the actual authored water barrel, exported by the geometry bake.

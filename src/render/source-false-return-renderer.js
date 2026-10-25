@@ -18,6 +18,10 @@ const copy = value => {
   if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, copy(v)]));
   return value;
 };
+// This borrowed floorset can arrive with every switchable fitting still off.
+// Its ordinary warm ambient and baked enclosure stay intact; expose that real
+// light sufficiently for a false return to read as Ellery before it unravels.
+export const SOURCE_FALSE_RETURN_CAPTURE_EXPOSURE = 2.4;
 const matrix = (x, y, z, yaw = 0) => { const c = Math.cos(yaw), s = Math.sin(yaw); return new Float32Array([c,0,s,0,0,1,0,0,-s,0,c,0,x,y,z,1]); };
 const multiply = (a, b) => { const out = new Float32Array(16); for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) for (let k = 0; k < 4; k++) out[c*4+r] += a[k*4+r] * b[c*4+k]; return out; };
 const positionOf = instance => ({ x: finite(instance.matrix?.[12], instance.x), y: finite(instance.matrix?.[13], instance.y), z: finite(instance.matrix?.[14], instance.z) });
@@ -122,12 +126,17 @@ export function createSourceFalseReturnRenderer({ layout, renderer = R3, props =
   if ((!layout?.plan && typeof layout?.planFor !== 'function') || !Array.isArray(layout.doors) || !layout.doors.length) throw Error('The false return needs the actual Ellery floor set.');
   const local = copy(layout), required = new Set((local.props || []).map(p => p.mesh).filter(Boolean));
   for (const d of local.doors) for (const p of drawDoor(d, { elapsed: 0, doorOpen: {}, doorMotion: {} })) required.add(p.mesh);
-  let initialized = false, released = false, acquired = false, loading = null, error = null, last = null, planView = null, planKey = null, viewLayout = local, torchFrame = null;
+  let initialized = false, released = false, acquired = false, loading = null, error = null, last = null, planView = null, planKey = null, viewLayout = local, torchFrame = null, lightingFrame = null;
   const resident = () => { const catalog = new Set(props.propMeshCatalog?.() || []); return [...required].every(m => catalog.has(m)); };
   function clearShared() {
     renderer.r3dSetHorizon?.(null); renderer.r3dSetSourceShore?.(null); renderer.r3dSetSourceEmergency?.(0); renderer.r3dSetSourceWhiteout?.(0); renderer.r3dSetSourceFault?.(0);
     renderer.r3dSetSourcePortals?.([]); renderer.r3dSetSourceOpenings?.([]); renderer.r3dSetSourceTowerView?.(null); renderer.r3dSetSourceDoorLights?.([]); renderer.r3dSetSourceCrossing?.(null); renderer.r3dSetSourceReflection?.(null);
     renderer.r3dSetLocalLights?.([]); renderer.r3dSetEmergencyShadows?.([]); renderer.r3dSetSourceTextInstances?.([]); renderer.r3dSetIndoorRain?.(0); renderer.r3dSetDynamicProps?.([]); renderer.r3dSetProps?.([]); props.setPressureInstances?.([]);
+  }
+  function setLighting(context) {
+    lightingFrame = copy(context || { ambientColor: [.66,.51,.35], ambientIntensity: .027, whitePointScale: 1 });
+    lightingFrame.captureExposure = Math.max(SOURCE_FALSE_RETURN_CAPTURE_EXPOSURE, finite(lightingFrame.captureExposure, 1));
+    renderer.r3dSetLightingContext?.(lightingFrame);
   }
   function setPlan(state) {
     const provided = local.planFor?.(state) || {}, source = provided.plan || local.plan;
@@ -142,13 +151,13 @@ export function createSourceFalseReturnRenderer({ layout, renderer = R3, props =
       // selects nearer fittings as the body moves through a large room.
       viewLayout.lights = copy(next.lights || []);
       viewLayout.lightingContext = copy(next.lightingContext);
-      if (viewLayout.lightingContext) renderer.r3dSetLightingContext?.(viewLayout.lightingContext);
+      setLighting(viewLayout.lightingContext);
       return;
     }
     viewLayout = { ...next, props: copy(next.props || []), doors: copy(next.doors || local.doors), lights: copy(next.lights || []), lightingContext: copy(next.lightingContext) };
     planView = sourceFalseReturnPlan(viewLayout, state); planKey = key;
     const p = planView.plan; renderer.r3dSetPlan(p.rgba, p.w, p.h, p.material, { ambient: p.ambient, originX: p.originX, originY: p.originY, heightOffset: p.heightOffset });
-    renderer.r3dSetLightingContext?.(viewLayout.lightingContext || { ambientColor: [.66,.51,.35], ambientIntensity: .027, captureExposure: 1, whitePointScale: 1 });
+    setLighting(viewLayout.lightingContext);
   }
   function initialize() {
     if (loading) return loading;
@@ -168,7 +177,7 @@ export function createSourceFalseReturnRenderer({ layout, renderer = R3, props =
       const ready = new Set(props.propMeshCatalog?.() || []), missing = [...required].filter(mesh => !ready.has(mesh));
       if (missing.length) throw Error('False return original meshes missing: ' + missing.slice(0, 12).join(', '));
       clearShared(); acquired = true; setPlan({ ...local.spawn, sourceDoors: [], opened: [] });
-      renderer.r3dSetSourceScene?.({ key: 'source:false-return-ellery', corpus: [], staticInstances: [], dynamicInstances: [], look: { roomMemoryActive: false, chroma: 1, paper: 0, sunrise: 0 }, weather: { rain: 0, clouds: 0, moon: 0 } });
+      renderer.r3dSetSourceScene?.({ key: 'source:false-return-ellery', corpus: [], staticInstances: [], dynamicInstances: [], look: { roomMemoryActive: false, blueprint: false, chroma: 1, paper: 0, sunrise: 0 }, weather: { rain: 0, clouds: 0, moon: 0 } });
       renderer.r3dSetLookProfile?.('explore', { transitionMs: 0 });
       renderer.r3dSnapCameraOnNextFrame?.(); renderer.r3dResetVfdMemory?.(); initialized = true; return true;
     })().catch(reason => { error = String(reason?.message || reason); throw reason; }); return loading;
@@ -187,5 +196,5 @@ export function createSourceFalseReturnRenderer({ layout, renderer = R3, props =
   function dispose() { if (released) return false; released = true; initialized = false; if (acquired) clearShared(); onRelease(); return true; }
   return { initialize, render, ready: () => initialized && !released && !error && resident(), clear: () => renderer.r3dClearScreen?.(), dispose,
     diagnostics: () => ({ ready: initialized && !released && !error && resident(), released, acquired, error, meshCount: required.size,
-      frame: last ? { camera: copy(last.authoredCamera), torch: copy(torchFrame), sourceDoors: [...last.sourceDoors], changedCells: last.changedCells, hiddenProps: [...last.hiddenProps], counts: {...last.counts} } : null }) };
+      frame: last ? { camera: copy(last.authoredCamera), torch: copy(torchFrame), lighting: copy(lightingFrame), sourceDoors: [...last.sourceDoors], changedCells: last.changedCells, hiddenProps: [...last.hiddenProps], counts: {...last.counts} } : null }) };
 }

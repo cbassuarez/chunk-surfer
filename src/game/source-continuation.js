@@ -266,6 +266,13 @@ function tickWeight(state, dt, events) {
   advanceWeight(state, dt, events);
   if (weightTouchesPlayer(state)) beginRecovery(state, 'counterweight', events);
 }
+function wakeWeight(state, events, reason) {
+  const weight=state.counterweight;
+  if(state.phase!=='catch'||weight.active)return;
+  weight.active=true;weight.mode='warning';weight.elapsed=0;
+  events.push({type:'counterweight-warning',level:weight.level,cycle:weight.cycle,reason,
+    position:{x:weight.x,y:weight.y,z:weight.z}});
+}
 export function continuationFocus(state) {
   if (!state || state.status !== 'active' || state.fall || state.recovery || state.reveal) return null;
   const candidates = continuationDoors(state).filter(d => Math.abs(state.feet - d.y) < .55 && distance(state, d) <= 1.65).map(d => ({ ...d, type: d.role, title: d.role === 'return' ? 'RETURN TO THE FIRST DOOR' : d.role === 'final' ? 'OPEN THE GREY DOOR' : 'OPEN THE DOOR', text: d.role === 'return' ? 'Return to Source. This place will remain as you left it.' : 'The handle is within reach.', position: { x: d.x, y: d.y + 1.1, z: d.z } }));
@@ -290,7 +297,10 @@ function tick(state, input, dt, events) {
   if (state.reveal) {
     state.reveal.elapsed = Math.min(state.reveal.duration, state.reveal.elapsed + dt);
     if (state.phase === 'catch') tickWeight(state, dt, events);
-    if (state.reveal.elapsed + 1e-8 >= state.reveal.duration) { state.reveal = null; events.push({ type: 'reveal-complete' }); }
+    if (state.reveal.elapsed + 1e-8 >= state.reveal.duration) {
+      state.reveal = null; events.push({ type: 'reveal-complete' });
+      wakeWeight(state,events,'overhead-agency-restored');
+    }
     return;
   }
   if (state.recovery) {
@@ -322,6 +332,10 @@ function tick(state, input, dt, events) {
     if (state.closure.mode === 'warning' || state.closure.mode === 'closing') { state.closure.elapsed += dt; if (state.closure.elapsed >= C.wrongReturn.warningSeconds) { state.closure.mode = 'closing'; state.closure.frontZ = Math.min(2.7, -4.5 + (state.closure.elapsed - C.wrongReturn.warningSeconds) * C.wrongReturn.closureSpeed); if (state.feet > 2.7 && state.x > 1.1 && Math.abs(state.z - state.closure.frontZ) < .55) beginRecovery(state, 'closing-front', events); } }
     if (state.x < C.wrongReturn.transferX && state.feet > 2.7) { state.phase = 'catch'; state.level = 0; state.reveal = { elapsed: 0, duration: C.revealSeconds, from: localPose(state) }; state.lastSafe = { x: -16, z: -1, feet: 3, yaw: state.yaw, pitch: state.pitch, level: 0 }; state.caption = null; learn(state, 'overhead-shaft'); events.push({ type: 'phase', phase: 'catch' }); }
   } else {
+    // The first level remains inspectable from its safe entry bridge, but
+    // waiting there no longer switches the pursuit off. Legacy checkpoints
+    // without a pending reveal receive the same announced physical start.
+    wakeWeight(state,events,'restored-catch-agency');
     tickWeight(state, dt, events);
     if (!state.fall && !state.recovery && state.level === 5 && sourceContinuationDoorFraction(state, 'catch-final') >= C.doorPassFraction && state.x > -23.8 && Math.abs(state.z) < .64) {
       const id = `${state.runId}:source-continuation-exit`, firstCompletion = !state.completed;
@@ -339,12 +353,12 @@ export function stepSourceContinuation(value, input = {}) {
   if (state.status !== 'active') return { state, event: events.at(-1) || null, events };
   let remaining = clamp(input.dt ?? 0, 0, .25); state.accumulator += remaining;
   while (state.accumulator + 1e-10 >= C.fixedStep && state.status === 'active') {
-    const phaseBefore = state.phase, authoredBefore = !!(state.reveal || state.recovery);
+    const phaseBefore = state.phase, authoredBefore = !!(state.reveal || state.recovery || state.fall);
     state.accumulator -= C.fixedStep; tick(state, input, C.fixedStep, events);
     // One input sample cannot retain its old direction across a camera/control
     // change. The host clears held keys on this event; discard its queued time
     // here too, so no later call replays the old movement under the new axes.
-    if (state.phase !== phaseBefore || authoredBefore && !state.reveal && !state.recovery) { state.accumulator = 0; break; }
+    if (state.phase !== phaseBefore || authoredBefore && !state.reveal && !state.recovery && !state.fall) { state.accumulator = 0; break; }
   }
   state.accumulator = Math.max(0, state.accumulator);
   const event = events.find(e => e.type === 'return' || e.type === 'complete') || events.at(-1) || null;

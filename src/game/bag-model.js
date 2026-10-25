@@ -23,6 +23,7 @@ import {
 } from './combat-progression.js';
 import { sheetDialogueFor } from './bag-sheets.js';
 import { FIELD_KIT_OPTIONS } from './field-kit.js';
+import { journalTrackable } from './journal-review.js';
 
 export const EMPTY_JOB = Object.freeze({
   rooms: [],
@@ -718,7 +719,7 @@ export function buildBagModel({ equipment = [], job = EMPTY_JOB, journal = [], m
         : destination.roomId && candidate.roomId === destination.roomId)) : null;
     return { ...entry, kind: 'quest', mapSpaceId: space?.id || null, mapEnabled: !!space,
       actions: {
-        primary: { id: 'journal-track', label: 'TRACK', enabled: entry.state === 'active' },
+        primary: { id: 'journal-track', label: 'TRACK', enabled: journalTrackable(entry) },
         secondary: { id: 'journal-map', label: 'SHOW ON MAP', enabled: !!space,
           reason: mapUnavailableReason || 'NO KNOWN LOCATION ON THIS PLAN' },
       },
@@ -731,7 +732,7 @@ export function buildBagModel({ equipment = [], job = EMPTY_JOB, journal = [], m
       { id: 'map', label: 'MAP', countLabel: `${done}/${total}`, entries: mapEntries, map },
       { id: 'sheets', label: 'SHEETS', countLabel: String(files.length).padStart(2, '0'), entries: files },
       buildSkillsSection({ build, settledBuild, hasRig }),
-      { id: 'journal', label: 'JOURNAL', countLabel: `${quests.filter((entry) => entry.state === 'active').length} OPEN`, entries: quests },
+      { id: 'journal', label: 'JOURNAL', countLabel: `${quests.filter((entry) => entry.hasOpenCommitment ?? entry.state === 'active').length} OPEN${quests.some(entry=>entry.unseen) ? ` · ${quests.filter(entry=>entry.unseen).length} NEW` : ''}`, entries: quests },
     ],
     progress: { done, total },
     loadout: normalizedLoadout,

@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "file": "public/assets/chapel-tape-demand.glb",
+  "bytes": 732844,
+  "triangles": 8772,
+  "sha256": "3331af491fb3fb4c34ed94df2bcf86b6d571ceb406631e09948c87aac401a048",
+  "meshes": [
+    "tape_demand_paint_line",
+    "tape_demand_paint_line_pale",
+    "tape_demand_paint_block",
+    "tape_demand_paint_block_pale",
+    "tape_demand_field_case",
+    "tape_demand_strap",
+    "tape_demand_wall_catch"
+  ],
+  "copy": "GIVE ME THE TAPES",
+  "sourceSha256": {
+    "tools/chunk_surfer/build-chapel-tape-demand.mjs": "a4bf6f7277e50d6897eadec221d1037651d92b5e4218c0e0e7c3bfd33dcba5df"
+  },
+  "license": "Original project geometry; no external assets",
+  "textureBytes": 0,
+  "physicalTapeMutation": false
+}

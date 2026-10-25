@@ -41,8 +41,10 @@ async function state(){return page.evaluate(()=>{
     titleStatus:document.getElementById('title-a11y-status')?.textContent};
 });}
 async function ready(){await page.waitForFunction(()=>window.__probe?.testRun&&window.__scenes?.top()?.id==='title'&&/START A NEW NIGHT|CONTINUE|RESUME THE NIGHT/i.test(document.getElementById('title-a11y-status')?.textContent||''),{timeout:150000});}
-await page.goto((process.env.EXTERIOR_ARRIVAL_URL||'http://127.0.0.1:5348')+'/?nodisplaynotice=1&skipwarn=1&nomic=1&sam=0',{waitUntil:'domcontentloaded'});
-await ready();await modules();
+try{
+  await page.goto((process.env.EXTERIOR_ARRIVAL_URL||'http://127.0.0.1:5348')+'/?nodisplaynotice=1&skipwarn=1&nomic=1&sam=0',{waitUntil:'domcontentloaded'});
+  await ready();await modules();
+}catch(error){await browser.close();await fs.rm(profile,{recursive:true,force:true});throw error;}
 const write=value=>process.stdout.write(JSON.stringify(value)+'\n');
 write({ready:true,state:await state()});
 async function fixture(q){return page.evaluate(async q=>{
@@ -96,6 +98,8 @@ try{for await(const line of createInterface({input:process.stdin,terminal:false}
   switch(q.op){
     case 'fixture':result=await fixture(q);await wait(650);break;
     case 'state':result=await state();break;
+    case 'tapePreview':result=await page.evaluate(q=>__probe.chapelTapeDemandPreview({route:q.route||'surfaced',doorId:q.doorId||'chapel-c17'}),q);await wait(700);break;
+    case 'tapes':result=await page.evaluate(()=>({pos:__probe.pos(),camera:__arrivalQA.R.r3dViewCamera(),demand:__probe.chapelTapeDemand(),shader:window.__chunkSurferPixelMesh?.status?.()}));break;
     case 'actor':result=await page.evaluate(q=>{
       const p=window.__probe;
       if(q.id.startsWith('vigil-crowd-')||q.id.startsWith('district-'))return p.streetCrowdStand(q.id,{back:q.back??2.4});

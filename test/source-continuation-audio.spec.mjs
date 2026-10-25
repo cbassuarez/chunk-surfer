@@ -114,6 +114,19 @@ test('the complete repeated cable circuit has audible physical phases and an ann
   assert.equal(g.sources.filter(n => n.loop).length, 1, 'the circuit does not restart its continuous mechanism'); sound.dispose();
 });
 
+test('the first overhead warning sounds at the retained physical counterweight before the circuit moves', () => {
+  const g = graph(), sound = createSourceContinuationAudio({ getAudio: () => g });
+  const s = state({ counterweight: { active: true, mode: 'warning', x: -17.7, z: -4.5, y: 3 } });
+  frame(sound, s);
+  assert.equal(sound.event({ type: 'counterweight-warning', position: { x: -17.7, y: 3, z: -4.5 } }, s), true);
+  const cue = layer(sound, 'counterweight-warning')[0];
+  assert.deepEqual(cue.source, { x: -17.7, y: 3, z: -4.5 });
+  assert.ok(cue.gain > .04); assert.ok(cue.mix.pan > 0);
+  assert.equal(layer(sound, 'mechanism').length, 1); assert.ok(sound.snapshot().mechanicalGain >= .007);
+  assert.equal(layer(sound, 'ratchet').length, 0, 'warning cannot invent movement before the mechanism travels');
+  sound.dispose();
+});
+
 test('body footsteps come from supported body travel and cannot play during a drop or recovery', () => {
   const g = graph(), sound = createSourceContinuationAudio({ getAudio: () => g }); let s = state();
   frame(sound, s); s = { ...s, x: s.x + 1 }; frame(sound, s);

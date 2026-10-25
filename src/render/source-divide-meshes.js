@@ -2,8 +2,9 @@
 // flashlight shadows and acquisition are shared with the actual GLB models.
 // Geometry is recentered per piece so distance culling follows its real extent.
 import { sourceDivideGeometry } from '../data/source-braided-divide.js';
-import { sourcePrintMaps, sourcePrintUV, SOURCE_PRINT_SURFACE } from './physical-source-print.js';
+import { sourcePrintUV, SOURCE_PRINT_SURFACE } from './physical-source-print.js';
 import { PROP_INSTANCE_FLOATS, PROP_INSTANCE_BINDINGS } from './prop-instance-layout.js';
+import {sourceBlueprintMaps,sourceBlueprintMaterial} from './source-blueprint-print.js';
 
 export function divideMeshName(id) { return `source-divide-${id}`; }
 export function dividePieceBounds(piece) {
@@ -13,7 +14,7 @@ export function dividePieceBounds(piece) {
 }
 
 function sourceTexture(gl) {
-  return sourcePrintMaps(gl,'divide');
+  return sourceBlueprintMaps(gl);
 }
 
 export function installDivideMeshes(gl,pack) {
@@ -44,7 +45,7 @@ export function installDivideMeshes(gl,pack) {
       gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,size,gl.FLOAT,false,stride,offset);gl.vertexAttribDivisor(location,1);
     }
     gl.disableVertexAttribArray(8);gl.vertexAttrib1f(8,0);
-    pack.catalog.set(name,{name,nodeMatrix:identity,instanceBuffer,extras:{sourceDivide:true},primitives:[{vao,count:indices.length,indexType:gl.UNSIGNED_INT,base:[...(piece.color||[.68,.70,.64]).slice(0,3),1],emissive:[0,0,0],texture:maps.texture,normalTexture:maps.normalTexture,ormTexture:maps.ormTexture,letteringFinish:maps.letteringFinish,materialFactors:'gltf',metallic:1,roughness:1,aoStrength:0,portrait:false,alphaCut:0,materialName:'source masonry',materialRole:'source-divide',printedSurface:SOURCE_PRINT_SURFACE}]});
+    pack.catalog.set(name,{name,nodeMatrix:identity,instanceBuffer,extras:{sourceDivide:true},primitives:[{vao,count:indices.length,indexType:gl.UNSIGNED_INT,base:[...(piece.color||[.68,.70,.64]).slice(0,3),1],emissive:[0,0,0],texture:maps.texture,normalTexture:maps.normalTexture,ormTexture:maps.ormTexture,letteringFinish:maps.letteringFinish,materialFactors:'gltf',metallic:1,roughness:1,aoStrength:0,portrait:false,alphaCut:0,materialName:'source masonry',materialRole:'source-divide',printedSurface:SOURCE_PRINT_SURFACE,...sourceBlueprintMaterial(maps,{base:[...(piece.color||[.68,.70,.64]).slice(0,3),1]})}]});
   }
   gl.bindVertexArray(null);return names;
 }

@@ -7,6 +7,7 @@ import {createHash} from 'node:crypto';
 import * as P3 from '../src/render/props3d.js';
 import {r3dFrame,r3dEyePoint,r3dProjectWorld,r3dSetLookAngles} from '../src/render/r3d.js';
 import {PIXEL_MESH_FRAG} from '../src/render/pixel-mesh/shader.js';
+import {SOURCE_BLUEPRINT_RECORDING_GLSL,sourceBlueprintRecordedInk} from '../src/render/source-blueprint-contract.js';
 import {CELL} from '../src/data/floorplan/legend.js';
 import {createPropRangeController} from '../src/render/prop-range.js';
 const propSource=readFileSync(new URL('../src/render/props3d.js',import.meta.url),'utf8');
@@ -79,18 +80,50 @@ test('drive eye follows authored suspension exactly while walking keeps its floo
  assert.equal(height(false,true,1.65/CELL,2.2/CELL,1/60),2.2/CELL,'an explicit ordinary snap remains authoritative');
 });
 
-test('approved acquisition and final dither body are unchanged outside camera rays',()=>{
+test('approved acquisition and final dither body admit only the explicit Source ink opt-in',()=>{
  // Snapshot taken from the actual dirty production shader immediately before
  // promotion. Excluding only cameraRay and its new uniform, every acquisition,
  // ink, edge, material and dither byte must remain identical in this change.
  // Re-pinned 2026-10-24 for the Transit Mk3 cab: marks inside the van are keyed
  // to the van's metres and the cab takes the hatch screen (approved by Seb).
+ // Re-pinned 2026-10-25 for the separately gated Source blueprint ink pair.
+ // The prior byte guard below also proves that no other body changed.
  const body=PIXEL_MESH_FRAG
   .replace('// Zero retains the ordinary lens for transparent instrument hosts.\nuniform float uCameraTanHalfFov;\n','')
   .replace(/vec3 cameraRay\(vec2 frag\)\{[\s\S]*?\n\}/,'CAMERA_RAY');
- assert.equal(createHash('sha256').update(body).digest('hex'),'3c26a7e640a18e3a1af8bdc78e32f7abf25d9de5dd9a659dcd5be46a2b14fd6b');
+ assert.equal(createHash('sha256').update(body).digest('hex'),'55d0b1a642f6d069bee5552b3f2b87ad8d903d6d1dee8ff221c4331a2cb0fbe0');
+ const prior=body
+  .replace('// Source blueprint only: enabled, and 1/(1+actual prop far metres*.14).\n// This selects recording inks after the existing bit decision; no post grade.\nuniform vec2 uSourceBlueprint;\n','')
+  .replace(`${SOURCE_BLUEPRINT_RECORDING_GLSL}\n`,'')
+  .replace('vec3 captureDark = sourceBlueprintRecordedInk(vec3(0.0015, 0.0050, 0.0045),uSourceBlueprint,printed.x,packedDepth,captureBlackProtect,0.0);','vec3 captureDark = vec3(0.0015, 0.0050, 0.0045);')
+  .replace('  captureLight=sourceBlueprintRecordedInk(captureLight,uSourceBlueprint,printed.x,packedDepth,captureBlackProtect,1.0);\n','');
+ assert.equal(createHash('sha256').update(prior).digest('hex'),'3c26a7e640a18e3a1af8bdc78e32f7abf25d9de5dd9a659dcd5be46a2b14fd6b',
+  'removing only the opt-in uniform, helper and two ink endpoints restores the approved drive shader byte for byte');
  assert.match(PIXEL_MESH_FRAG,/uCameraTanHalfFov>0\.0\?uCameraTanHalfFov:0\.95/,
   'transparent instrument hosts without this uniform retain their ordinary lens');
+});
+
+test('Source ink is an exact no-op for default and explicitly disabled drive acquisition',()=>{
+ const colours=[[0,0,0],[.0015,.005,.0045],[.835,.945,.885],[1,.2,.07]];
+ for(const original of colours){
+  assert.deepEqual(sourceBlueprintRecordedInk(original),original,'omitted context defaults to disabled');
+  for(const far of[90,260])for(const pigmentKind of[0,1,1.49,1.5,2])
+   for(const packedDepth of[0,1/(1+far*.14),.5,1])for(const capturedLight of[0,.01,.5,1])for(const light of[false,true]){
+    const before=[...original];
+    assert.deepEqual(sourceBlueprintRecordedInk(original,{enabled:false,pigmentKind,packedDepth,
+     packedFar:1/(1+far*.14),capturedLight,light}),original,
+     `disabled ink retains ${light?'light':'dark'} for pigment ${pigmentKind}, depth ${packedDepth}, light ${capturedLight}`);
+    assert.deepEqual(original,before,'the original recording ink is never mutated');
+   }
+ }
+ const expression=rendererSource.match(/const blueprintRecording=([^;]+);/)?.[1];
+ assert.ok(expression,'the real host computes the Source-only recording gate');
+ const enabled=new Function('textSpaceActive','sourceLook','sourceBlueprintEnabled',`return ${expression};`);
+ for(const text of[false,true])for(const room of[false,true])for(const blueprint of[false,true,undefined])for(const study of[false,true])
+  assert.equal(Boolean(enabled(text,{roomMemoryActive:room,blueprint},()=>study)),text&&room&&blueprint===true&&study,
+   'every opt-in is required; an ordinary drive or stale Source look cannot retain the palette');
+ assert.match(rendererSource,/gl\.uniform2f\(pixelMeshU\('uSourceBlueprint'\),blueprintRecording\?1:0,1\/\(1\+\(P3\.propTargets\(\)\.far\|\|90\)\*\.14\)\);/,
+  'each shared pass explicitly resets disabled ink to zero and uploads its actual far depth');
 });
 
 test('both static and living material paths retain scoped biological finish flags',()=>{
@@ -98,7 +131,7 @@ test('both static and living material paths retain scoped biological finish flag
   assert.ok(propSource.includes(`studyLocalFinish:${definition}.extras?.studyLocalFinish===true,cutTissue:${definition}.extras?.cutTissue===true`));
  }
  assert.ok(propSource.includes("gl.uniform1f(U('uDriveTissue'),driveStudyFrame&&p.cutTissue?1:0)"));
- assert.ok(propSource.includes('p.letteringFinish?.localSpecular||(driveStudyFrame&&p.studyLocalFinish)'));
+ assert.ok(propSource.includes('p.letteringFinish?.localSpecular||((driveStudyFrame||physicalStudyMaterials)&&p.studyLocalFinish)'), 'both native drive and shared physical coastal presentations retain their authored local finish');
  assert.match(propSource,/uPayphoneCast<\.5&&uDriveTissue<\.5/,
   'authored tissue can retain its maroon while ordinary emergency-red handling remains');
 });

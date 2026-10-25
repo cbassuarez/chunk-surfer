@@ -14,6 +14,7 @@ export function buildPubBartenderDialogue(s, favors) {
     iona(s.sourceUnlocked ? 'There you are. I have both my things back and the glasses are washed. Thank you for all that.'
       : next?.carried ? 'That looks familiar. Bring it over; there is room on the bar.'
         : next?.accepted ? 'No hurry about that thing of mine. I just thought I ought to ask while there is still someone going in.'
+          : next?.declined ? 'You have already helped with the glasses. You do not owe me another errand. Ask again if you change your mind.'
           : 'You saved me two trips at exactly the right moment. Could I ask you about something else?'),
   ] : s.phase === 'carrying-empties' ? [iona('There you are. Bring those over. Mind the dominoes if Bert has tried to clear them onto the tray.')]
     : s.phase === 'served-waters' ? [iona('Thank you for taking those over. Bert and Farah have the empty glasses, at the next table. Then bring the tray back here.')]
@@ -96,7 +97,13 @@ export function buildPubBartenderDialogue(s, favors) {
       iona('There. I knew I had not imagined that handwriting.'),
       iona('Thank you. For doing all that. Nobody made it your job.'),
     ], [leave()]);
+    tree[`${id}-offer`].choices = tree[`${id}-offer`].choices.map(choice => ({ ...choice, pubKnowledge: id }));
   }
+  // No receipt on entering a node: abandoning a request before answering any
+  // of its choices does not claim it was heard. A noncommittal answer is still
+  // evidence of knowledge, while acceptance remains its existing own action.
+  if (!s.accepted && !s.complete) tree.start.choices = tree.start.choices.map(choice => ({ ...choice, pubKnowledge: 'service' }));
+  tree.offer.choices = tree.offer.choices.map(choice => ({ ...choice, pubKnowledge: 'service-details' }));
   return tree;
 }
 

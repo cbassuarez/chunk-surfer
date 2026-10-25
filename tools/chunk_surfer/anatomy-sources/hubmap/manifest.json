@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-10-25T19:54:26.800500+00:00",
+  "asset": "VH_M_Heart.glb",
+  "sourceUrl": "https://raw.githubusercontent.com/hubmapconsortium/ccf-releases/main/v1.2/models/VH_M_Heart.glb",
+  "sourcePage": "https://hubmapconsortium.github.io/ccf/pages/ccf-3d-reference-library.html",
+  "sourceSha256": "b1237e7e765178e9357fd2ea7ccf19d55d0bf9ca55e187886635febe28244c70",
+  "bytes": 4071500,
+  "etag": "\"7a3ac6a73d7f6b5c059955dfb6373f7c283e2caaabf98eb990c1d2ca29e0517e\"",
+  "licence": "CC-BY-4.0",
+  "licenceUrl": "https://creativecommons.org/licenses/by/4.0/",
+  "licenceEvidenceSha256": "5ae595c7698dda594ecb5fb46e3526dc7027f0e2da55a0fb17894ded011f0a86",
+  "creator": "Kristen Browne, NIH/NIAID 3D medical illustration; HuBMAP CCF/Human Reference Atlas",
+  "credit": "Browne K., Schlehlein H., Herr II B. W., Quardokus E., Bueckle A., Börner K. (2022). HuBMAP CCF 3D Reference Object Library, v1.2. CC BY 4.0. Original model created by Kristen Browne using NLM Visible Human Male data.",
+  "originalRetainedUnchanged": true,
+  "adaptation": "Original GLB acquired unchanged. Any geometry conversion/selection must record its own transforms, source nodes and simplification separately.",
+  "budget": {
+    "priorBodyPartsCompressedBytes": 1214651,
+    "combinedSelectedBytes": 5286151,
+    "limitBytes": 6291456,
+    "wholeLungBinaryAcquired": false
+  }
+}

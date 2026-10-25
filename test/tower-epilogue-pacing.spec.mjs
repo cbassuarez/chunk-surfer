@@ -42,6 +42,10 @@ function harness({ context = audioContext(), complete = true, replayId = 'guard-
     let towerEndingPlayback=null,paused=false;
     const actx=context,sfxGain=context?.createGain(),master=null,dialogGain=null,sfxDirectGain=null,musicGain=null,whisperBed=null;
     const noOp=()=>{},ensureCtx=noOp,STORY={},fireCue=noOp,CR={fx:{}},createReplayService=()=>null;
+    const storyMode=false,inRogue=false,syncChapelTapeDemandTimelineHold=noOp,getInDriveTeaserScene=null,sourceReturnFlashbackScene=null;
+    const pubRoomAudio=null,sourcePubAudio=null,sourceContinuationAudio=null,towerWarningAudio=null,sourceDriveSession=null;
+    const sourcePubScene=null,sourceContinuationScene=null,standingTearScene=null,coastalMemoryScene=null,saveAcademicGhostClub=noOp;
+    let academicGhostDispatch=null;
     const endingCutsceneWorldView=noOp,applyStoryChoice=noOp,advanceActiveEndingCutscene=noOp,cancelApparitionApplause=noOp;
     const uiSize=()=>({cols:100,rows:40}),uiText=(...args)=>draws.push(args);
     const syncPointerMode=noOp,saveSourceView=noOp,outskirtsStreetAudio=null,pauseOutskirtsLastLight=noOp,lowerTowerPersonalRecorder=noOp;

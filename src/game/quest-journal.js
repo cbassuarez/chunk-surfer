@@ -18,6 +18,23 @@ function entry(id, title, area, options = {}) {
     status: status('OPEN', 'amber'), summary: '', next: null, evidence: [], outcome: null,
     location: null, ...options };
 }
+const milestone = (id, label, done = false) => ({ id, label, state: done ? 'done' : 'current' });
+const record = (id, label, text) => ({ id, label, text });
+const closure = (label, text) => ({ label, text });
+function represent(value, fields = {}) {
+  const result = { nature: 'lead', commitment: 'none', stage: { id: 'open', label: 'Open' },
+    nextLabel: null, milestones: [], records: [], closure: null, followUp: null,
+    trackable: false, hasOpenCommitment: false, trackingKey: value.id, ...value, ...fields };
+  // A later request has its own purpose and tracking identity. It never
+  // overwrites the original agreement's commitment, state or closure.
+  if (result.followUp) {
+    result.next = result.followUp.next;
+    result.nextLabel = result.followUp.nextLabel;
+    result.stage = result.followUp.stage;
+    result.location = result.followUp.location || result.location;
+  }
+  return result;
+}
 
 export function buildQuestJournal({ save = {}, job = {}, bouncers = null, society = null,
   pub = null, marble = null, roofRen = null, guidance = null } = {}) {
@@ -31,6 +48,7 @@ export function buildQuestJournal({ save = {}, job = {}, bouncers = null, societ
     const requiredGuidance = !!guidanceLabel && guidance.required === true;
     const complete = rooms.length > 0 && done === rooms.length && !requiredGuidance;
     const marked = rooms.find(r => r.marked && !r.recorded);
+    const mapRoom = marked || rooms.find(r => !r.recorded && typeof r.roomId === 'string' && r.roomId.trim());
     const departed = flags['van.closed'] === true || flags['van.run-started'] === true;
     const guidanceRoom = typeof guidance?.roomId === 'string' && rooms.some(r => r.roomId === guidance.roomId)
       ? guidance.roomId : null;
@@ -42,44 +60,93 @@ export function buildQuestJournal({ save = {}, job = {}, bouncers = null, societ
       status: status(complete ? 'RECORDED' : rooms.length ? `${done} / ${rooms.length} RECORDED` : 'ISSUED', complete ? 'success' : 'amber'),
       summary: 'Capture the room tones named in the client’s work order.',
       next: guidanceLabel || (complete ? null : !flags['setup.levels'] && !departed ? 'Set your recorder levels in the Get In.'
-        : marked ? `Continue the work in ${marked.label || marked.roomId}.` : 'Review the remaining rooms in the work order.',
-      ),
+        : marked ? `Continue the work in ${marked.label || marked.roomId}.` : 'Review the remaining rooms in the work order.'),
       evidence: rooms.filter(r => r.recorded).map(r => `${r.label || r.roomId}: recorded.`),
       outcome: complete ? 'Every room on the work order has a recorded take.' : null,
-      location: guidanceLabel ? guidanceLocation : marked ? place(marked.label || marked.roomId, null, marked.roomId) : null,
+      location: guidanceLabel ? guidanceLocation : mapRoom ? place(mapRoom.label || mapRoom.roomId, null, mapRoom.roomId) : null,
     }));
   }
 
   const bar = pub?.phase && pub?.favors ? pub : pubQuestState(pub ?? flags);
-  if (bar.accepted || bar.declined) {
-    const favor = [bar.favors?.opener, bar.favors?.orderbook].find(f => f?.accepted && !f.returned);
-    const finished = bar.complete && !favor, declined = !bar.accepted && bar.declined;
+  if (bar.offered || bar.accepted || bar.declined) {
+    const knownFavors = [bar.favors?.opener, bar.favors?.orderbook].filter(f => f?.offered || f?.accepted || f?.declined || f?.returned);
+    const favor = knownFavors.find(f => !f.returned) || knownFavors.at(-1);
+    const declined = !bar.accepted && bar.declined;
     let next = null;
     // Live derived state can be ahead of the serialized flags.
-    if (!bar.complete && !declined) next = {
+    if (!bar.complete && !declined && bar.accepted) next = {
       accepted: 'Pick up Iona’s tray with two waters from the public counter.',
       'carrying-waters': 'Take the two waters to Mavis and Ed near the entrance.',
       'served-waters': 'Collect the empty glasses from Bert and Farah at the dominoes table.',
       'carrying-empties': 'Return the tray and empty glasses to Iona.',
     }[bar.phase] || 'Return to Iona at The Lyric.';
-    if (favor) next = favor.carried ? `Return Iona’s ${favor.id === 'opener' ? 'bottle opener' : 'order book'} to her at The Lyric.`
+    if (!bar.accepted && !declined) next = 'Decide whether to give Iona a hand. You have not promised to help.';
+    if (favor?.returned) next = null;
+    else if (favor?.accepted) next = favor.carried ? `Return Iona’s ${favor.id === 'opener' ? 'bottle opener' : 'order book'} to her at The Lyric.`
       : favor.id === 'opener' ? 'Find Iona’s bottle opener in the conservatory staff kitchen.'
         : 'Find The Lyric’s order book in the front-of-house box office.';
+    else if (favor) next = favor.declined ? null : 'Decide whether to take on Iona’s request. You have not promised another errand.';
     const evidence = [];
     if (bar.watersServed) evidence.push('The waters were served.');
     if (bar.emptiesCollected) evidence.push('The empty glasses were collected.');
     if (bar.complete) evidence.push('The tray was returned to Iona.');
     for (const f of [bar.favors?.opener, bar.favors?.orderbook]) if (f?.returned)
       evidence.push(`${f.id === 'opener' ? 'Bottle opener' : 'Order book'} returned.`);
-    entries.push(entry('lyric', 'A hand at The Lyric', 'The Lyric', {
-      state: declined ? 'declined' : finished ? 'resolved' : 'active',
-      status: status(declined ? 'DECLINED' : finished ? 'HELP GIVEN' : 'IN PROGRESS', declined ? 'secondary' : finished ? 'success' : 'amber'),
-      summary: declined ? 'You declined Iona’s offer to help at the bar.'
-        : favor ? 'Iona asked you to bring back something she lent to the school.'
-          : bar.complete ? 'You helped Iona serve the waters and clear the glasses.' : 'You agreed to help Iona at the bar.',
-      next, evidence, outcome: declined ? 'No promise made.' : finished ? 'The help you agreed to give is finished.' : null,
-      location: favor?.accepted && !favor.carried ? favor.id === 'orderbook'
+    const serviceMilestones = [];
+    if (bar.accepted) {
+      serviceMilestones.push(milestone('tray', 'Take the two waters from the public counter.', bar.trayTaken));
+      if (bar.trayTaken) serviceMilestones.push(milestone('waters', 'Serve Mavis and Ed by the entrance: bus badge and work jacket.', bar.watersServed));
+      if (bar.watersServed) serviceMilestones.push(milestone('empties', 'Collect Bert and Farah’s empty glasses from the domino table.', bar.emptiesCollected));
+      if (bar.emptiesCollected) serviceMilestones.push(milestone('return-tray', 'Return the tray and glasses to Iona.', bar.complete));
+    }
+    const serviceRecords = [record('service-request', 'Iona’s request', bar.detailsKnown
+      ? 'Iona cannot get away from the bar. She asked for waters taken out, empty glasses collected and the tray returned.'
+      : 'Iona asked for a hand with waters and empty glasses; you have not heard the full arrangement.')];
+    if (bar.historicalDeclined && bar.accepted) serviceRecords.push(record('service-declined', 'An earlier answer', 'You first declined, then agreed to help.'));
+    if (bar.accepted) serviceRecords.push(record('service-agreement', 'A turn round the tables', 'You agreed to take the waters, clear the empty glasses and return the tray.'));
+    if (bar.declined) serviceRecords.push(record('service-declined', 'No promise made', 'You declined to help with the service. Iona left the choice open.'));
+    if (bar.complete) serviceRecords.push(record('service-returned', 'Tray returned', 'You returned the tray and empty glasses. The service you agreed to give is finished.'));
+    for (const f of knownFavors) {
+      const name = f.id === 'opener' ? 'Bottle opener' : 'Order book';
+      const recognition = f.id === 'opener'
+        ? 'Flat steel, LYRIC stamped beside the hole. Lent to the staff kitchen for a leaving do.'
+        : 'Brown cover, red cloth spine. Lent to the box office; Iona’s father’s old supplier numbers are in the back.';
+      serviceRecords.push(record(`${f.id}-request`, name, recognition));
+      if (f.historicalDeclined && f.accepted) serviceRecords.push(record(`${f.id}-declined`, 'An earlier answer', `You declined the ${f.id === 'opener' ? 'bottle opener' : 'order book'} favor before agreeing to it.`));
+      if (f.returned) serviceRecords.push(record(`${f.id}-returned`, `${name} returned`, 'You gave it back to Iona at The Lyric.'));
+      else if (f.accepted) serviceRecords.push(record(`${f.id}-agreement`, 'Another promise', `You agreed to bring back the ${f.id === 'opener' ? 'bottle opener' : 'order book'}.`));
+      else if (f.declined) serviceRecords.push(record(`${f.id}-declined`, 'No further promise', `You declined to fetch the ${f.id === 'opener' ? 'bottle opener' : 'order book'}.`));
+    }
+    const favorName = favor?.id === 'opener' ? 'Iona’s bottle opener' : 'The Lyric’s order book';
+    const followUp = favor ? { id: favor.id, label: favorName,
+      commitment: favor.returned ? 'fulfilled' : favor.accepted ? 'accepted' : favor.declined ? 'declined' : 'none',
+      stage: { id: `${favor.id}:${favor.phase}`, label: favor.returned ? 'Returned' : favor.carried ? 'Bring it back to Iona' : favor.accepted ? 'Find the borrowed item' : favor.declined ? 'Declined' : 'Your choice' },
+      nextLabel: favor.returned || favor.declined ? null : favor.accepted ? 'NEXT' : 'CHOICE', next,
+      outcome: favor.returned ? 'You returned the borrowed item to Iona.'
+        : favor.declined ? 'You did not agree to another errand. You can ask Iona again.' : null,
+      milestones: favor.accepted ? [milestone(`${favor.id}:find`, favor.id === 'opener'
+        ? 'Find the flat steel opener marked LYRIC in the staff kitchen.' : 'Find the brown order book with red cloth spine in the box office.', favor.carried || favor.returned),
+        ...(favor.carried || favor.returned ? [milestone(`${favor.id}:return`, 'Return it to Iona at The Lyric.', favor.returned)] : [])] : [],
+      location: favor.accepted && !favor.carried ? favor.id === 'orderbook'
         ? place('Box office', 'space:box-office') : place('Staff kitchen') : place('The Lyric', 'outside:lyric'),
+    } : null;
+    entries.push(represent(entry('lyric', 'A hand at The Lyric', 'The Lyric', {
+      state: declined ? 'declined' : bar.complete ? 'resolved' : 'active',
+      status: status(declined ? 'DECLINED' : bar.complete ? 'HELP GIVEN' : bar.accepted ? 'IN PROGRESS' : 'REQUEST HEARD', declined ? 'secondary' : bar.complete ? 'success' : 'amber'),
+      summary: declined ? 'You declined Iona’s offer to help at the bar.'
+        : bar.complete ? 'You helped Iona serve the waters and clear the glasses.'
+          : bar.accepted ? 'You agreed to help Iona, who cannot get away from the bar.' : 'Iona asked for a hand. You have not agreed to the service.',
+      next, evidence, outcome: declined ? 'No promise made.' : bar.complete ? 'The help you agreed to give is finished.' : null,
+      location: place('The Lyric', 'outside:lyric'),
+    }), { nature: bar.accepted ? 'undertaking' : 'lead', commitment: declined ? 'declined' : bar.complete ? 'fulfilled' : bar.accepted ? 'accepted' : 'none',
+      stage: { id: `service:${bar.phase}`, label: bar.complete ? 'Service finished' : declined ? 'Declined' : bar.accepted ? 'A turn round the tables' : 'Your choice' },
+      nextLabel: bar.accepted && !bar.complete ? 'NEXT' : !bar.accepted && !declined ? 'CHOICE' : null,
+      milestones: serviceMilestones, records: serviceRecords,
+      closure: bar.complete ? closure('Service fulfilled', 'The waters were served, the empty glasses collected and the tray returned to Iona.')
+        : declined ? closure('Declined', 'You made no promise to help with the service.') : null,
+      followUp, trackingKey: `quest:lyric:${favor?.id || 'service'}`,
+      hasOpenCommitment: bar.accepted && !bar.complete || !!favor?.accepted && !favor.returned,
+      trackable: bar.accepted && !bar.complete || !bar.accepted && !declined || !!favor && !favor.declined && !favor.returned,
     }));
   }
 
@@ -176,7 +243,7 @@ export function buildQuestJournal({ save = {}, job = {}, bouncers = null, societ
     entries.push(entry('marble-eyes', 'The fountain eyes', 'Park and Academic gallery', {
       state: declined ? 'declined' : restored ? 'resolved' : 'active',
       status: status(declined ? 'LEFT IN THE WATER' : restored ? 'RETURNED' : 'CARRIED', restored ? 'success' : declined ? 'secondary' : 'amber'),
-      summary: declined ? 'You understood what was in the fountain and left it there.'
+      summary: declined ? 'You left the shapes in the fountain.'
         : restored ? 'You returned the eyes to the damaged gallery bust.' : 'You took the stone eyes from the fountain.',
       next: restored || declined ? null : 'Look for the gallery face with the corresponding empty sockets.',
       evidence: [restored && 'Both eyes are back in their sockets.', flags['key.servicesCore'] && 'You found the Plant Services key.'].filter(Boolean),
@@ -198,5 +265,125 @@ export function buildQuestJournal({ save = {}, job = {}, bouncers = null, societ
       outcome: 'The call has ended.', location: place('Source telephone box'),
     }));
   }
-  return entries;
+  return entries.map(value => {
+    if (value.id === 'quest:lyric') return value;
+    if (value.id === 'quest:work-order') {
+      const fulfilled = value.state === 'resolved';
+      const unfinished = rooms.find(r => !r.recorded);
+      return represent(value, { nature: 'undertaking', commitment: fulfilled ? 'fulfilled' : 'assigned',
+        stage: { id: guidance?.id || (fulfilled ? 'recordings:finished' : 'recordings:work'),
+          label: fulfilled ? 'Recordings finished' : guidance?.required === true ? 'Required route remains'
+            : rooms.length ? `${rooms.filter(r => r.recorded).length} / ${rooms.length} recorded` : 'Work issued' },
+        nextLabel: value.next ? guidance?.required === false ? 'OPTIONAL' : 'NEXT' : null,
+        milestones: rooms.filter(r => r.recorded || r === unfinished).map(r => milestone(r.roomId, r.label || r.roomId, r.recorded)),
+        records: rooms.filter(r => r.recorded).map(r => record(`take:${r.roomId}`, r.label || r.roomId, 'A room-tone take is on the recorder.')),
+        closure: fulfilled ? closure('Work recorded', value.outcome) : null,
+        hasOpenCommitment: !fulfilled, trackable: !fulfilled && !!value.next,
+      });
+    }
+    if (value.id === 'quest:ren') {
+      const returned = ren.stage === 'returned', declined = ren.stage === 'refused', withdrawn = ren.stage === 'withheld';
+      const investigated = ren.warningRespected === true;
+      const fulfilled = returned || investigated;
+      const promised = ['accepted', 'carrying'].includes(ren.stage) && !investigated;
+      const records = [];
+      if (ren.stage !== 'new') records.push(record('memory-request', 'Ren’s request', promised || fulfilled || withdrawn || declined
+        ? 'Ren wants the HOME cassette back. You were asked to read the release warning before deciding what to hand over.'
+        : 'Ren asked about a cassette among their things in the stripped office.'));
+      if (ren.indexRead) records.push(record('effects-index', 'The office index', 'You found the personal-effects index; the missing R page points through its carbon trace to a drawer.'));
+      if (ren.envelopeRead) records.push(record('release-warning', 'Ren’s own refusal', 'The release envelope contains Ren’s earlier refusal. Returning the cassette remains a deliberate decision.'));
+      if (ren.tapeListened) records.push(record('private-tape', 'The HOME cassette', 'You played the private cassette.'));
+      if (investigated) records.push(record('left-warning', 'Left in the drawer', 'After reading the warning, you left the cassette where it was.'));
+      if (returned) records.push(record('memory-returned', 'Cassette returned', ren.tapeHonesty === 'admitted'
+        ? 'You returned the cassette and admitted listening.' : ren.tapeHonesty === 'lied'
+          ? 'You returned the cassette and said you had kept it sealed.' : 'You returned the cassette without listening on your own.'));
+      if (withdrawn) records.push(record('memory-kept', 'Cassette kept', 'You chose to keep the cassette instead of handing it to Ren.'));
+      if (declined) records.push(record('memory-declined', 'Request declined', 'You chose not to overrule the person who wrote the warning.'));
+      const sealKnown = ren.sealOffered || ren.sealConsented || ren.locks.sealRefused || ren.ritualComplete;
+      const followUp = sealKnown ? { id: 'seal', label: 'Ren’s further request',
+        commitment: ren.ritualComplete ? 'fulfilled' : ren.locks.sealRefused ? 'declined' : ren.sealConsented ? 'consented' : 'none',
+        stage: { id: ren.ritualComplete ? 'seal:completed' : ren.locks.sealRefused ? 'seal:declined' : ren.sealConsented ? 'seal:agreed' : 'seal:offered',
+          label: ren.ritualComplete ? 'Agreement kept' : ren.locks.sealRefused ? 'Further request declined' : ren.sealConsented ? 'Your explicit agreement' : 'Your choice' },
+        nextLabel: ren.ritualComplete || ren.locks.sealRefused ? null : ren.sealConsented ? 'NEXT' : 'CHOICE',
+        next: ren.ritualComplete || ren.locks.sealRefused ? null : ren.sealConsented ? 'Return to Ren for the agreement you made.' : 'Decide whether to accept Ren’s further request.',
+        outcome: ren.ritualComplete ? 'You completed the further agreement.' : ren.locks.sealRefused ? 'Ren promised not to ask you again.' : null,
+        location: place('Roof / Ren', 'space:academic-roof'),
+      } : null;
+      const parentNext = investigated ? value.next : fulfilled || withdrawn || declined ? null : value.next;
+      return represent(value, { nature: ren.stage === 'offered' || ren.stage === 'new' ? 'lead' : 'undertaking',
+        commitment: declined ? 'declined' : withdrawn ? 'withdrawn' : fulfilled ? 'fulfilled' : promised ? 'accepted' : 'none',
+        state: declined ? 'declined' : fulfilled || withdrawn ? 'resolved' : 'active',
+        status: status(returned ? 'CASSETTE RETURNED' : investigated ? 'WARNING RESPECTED' : declined ? 'DECLINED' : withdrawn ? 'KEPT' : 'OPEN', fulfilled || declined || withdrawn ? 'secondary' : 'amber'),
+        summary: returned ? 'You returned Ren’s HOME cassette.' : investigated ? 'You investigated the cassette, read the warning and left it in the drawer.'
+          : withdrawn ? 'You chose to keep the HOME cassette.' : declined ? 'You declined to retrieve the cassette.'
+            : promised ? 'You agreed to investigate the cassette and read its warning before deciding what to hand over.' : 'Ren asked about a cassette in the stripped office.',
+        next: parentNext, nextLabel: parentNext ? investigated ? 'OPTIONAL' : ren.envelopeRead || ren.stage === 'offered' ? 'CHOICE' : 'NEXT' : null,
+        stage: { id: `memory:${ren.stage}`, label: returned ? 'Cassette returned' : investigated ? 'Warning respected' : withdrawn ? 'Cassette kept' : declined ? 'Declined' : ren.stage === 'accepted' ? 'Read before deciding' : 'HOME cassette' },
+        milestones: [ren.indexRead && milestone('index', 'Read the personal-effects index.', true),
+          ren.traceRead && milestone('trace', 'Follow the missing page’s carbon trace.', true),
+          ren.envelopeRead && milestone('warning', 'Read the release warning.', true),
+          promised && !ren.envelopeRead && milestone('investigate', 'Investigate the office and read before deciding.'),
+          ren.stage === 'carrying' && milestone('decide', 'Decide whether to return or keep the cassette.'),
+          returned && milestone('return', 'Return the cassette to Ren.', true)].filter(Boolean),
+        records, closure: returned ? closure('Cassette errand fulfilled', 'You returned the HOME cassette. Any further request is a separate decision.')
+          : investigated ? closure('Investigation fulfilled', 'You read the warning and chose to leave the cassette. You promised to look before deciding, not to overrule the warning.')
+            : withdrawn ? closure('You kept the cassette', 'You withdrew from handing it over.') : declined ? closure('Declined', 'You did not promise to retrieve it.') : null,
+        followUp, trackingKey: `quest:ren:${sealKnown ? 'seal' : 'memory'}`,
+        hasOpenCommitment: promised || !!followUp && followUp.commitment === 'consented',
+        trackable: promised || !!parentNext || !!followUp?.next,
+      });
+    }
+    if (value.id === 'quest:academic-admission') {
+      const admitted = door.admitted;
+      return represent(value, { nature: admitted ? 'record' : 'lead', commitment: 'none',
+        stage: { id: admitted ? 'admission:earned' : clues.length ? 'admission:learned' : 'admission:lead', label: admitted ? 'Admitted' : 'An answer and its pause' },
+        nextLabel: admitted ? null : 'OPTIONAL', trackable: !admitted,
+        milestones: admitted ? [milestone('welcome', 'Complete the attendants’ welcome.', true)] : [],
+        records: clues.map(c => record(c.id, c.title, 'This source explained the reception’s welcome.')),
+        closure: admitted ? closure('Welcome completed', 'You were admitted. You made no promise to remain upstairs.') : null,
+      });
+    }
+    if (value.id === 'quest:borrowed-voice') {
+      const lent = company.consent === 'lent', explained = company.consent === 'unasked';
+      return represent(value, { nature: explained ? 'lead' : 'record',
+        commitment: lent ? 'consented' : company.consent === 'declined' ? 'declined' : 'none',
+        stage: { id: `voice:${company.consent}`, label: lent ? 'Revocable permission' : explained ? 'Your choice' : 'Your own voice' },
+        nextLabel: explained || lent ? 'CHOICE' : null, trackable: explained,
+        records: [record('voice-boundary', 'One breath is permission, not a promise', lent || company.topics.emile?.includes('need')
+          ? 'Emile may use the breath you lend. You can withdraw through him or Lucien, leave the floor, or let it end. You do not owe the room a performance.'
+          : 'Emile wants a living breath. Permission to use it is not a promise to stay upstairs.'),
+          ...(value.outcome ? [record(`voice:${company.consent}`, 'Your decision', value.outcome)] : [])],
+        closure: value.outcome ? closure('Your voice is your own', value.outcome) : null,
+      });
+    }
+    if (value.id === 'quest:last-reception') {
+      const delivered = invitation.status === 'delivered', abandoned = invitation.status === 'declined' && invitation.declinedReason === 'abandoned';
+      const carrying = invitation.status === 'carrying';
+      return represent(value, { nature: 'undertaking', commitment: delivered ? 'fulfilled' : carrying ? 'accepted' : abandoned ? 'withdrawn' : 'declined',
+        stage: { id: `invitation:${invitation.status}`, label: delivered ? 'Invitation delivered' : carrying ? 'A quiet message' : abandoned ? 'Message left with them' : 'Declined' },
+        nextLabel: carrying ? 'NEXT' : null, trackable: carrying, hasOpenCommitment: carrying,
+        milestones: carrying || delivered ? [milestone('invitation', 'Quietly invite the person at the window to join the others.', delivered)] : [],
+        records: [record('why-quiet', 'A quiet invitation', 'The person who asked will not call across the room: everyone would listen for news and look at the living visitor. You were asked only to pass on an invitation; he need not accept it.'),
+          ...(delivered ? [record('message-delivered', 'Message delivered', 'You told him there is room by the others. He can look again later.')] : []),
+          ...(invitation.settled ? [record('joined-company', 'He joined the company', 'He turned from the window for a while.')] : []),
+          ...(invitation.acknowledged ? [record('thanks', 'You spoke again', 'You returned to the person who asked.')] : [])],
+        closure: delivered ? closure('Promise fulfilled', 'The message has been delivered. His decision and any return conversation are not further work you owe.')
+          : !carrying ? closure(abandoned ? 'Promise withdrawn' : 'Declined', value.outcome) : null,
+      });
+    }
+    if (value.id === 'quest:marble-eyes') {
+      const carried = eyes.phase === 'carried';
+      return represent(value, { nature: carried ? 'lead' : 'record', commitment: eyes.phase === 'declined' ? 'declined' : 'none',
+        stage: { id: `eyes:${eyes.phase}`, label: carried ? 'A possible fit' : eyes.phase === 'returned' ? 'Eyes returned' : 'Left in the water' },
+        nextLabel: carried ? 'CHOICE' : null, trackable: carried,
+        records: [record(`eyes:${eyes.phase}`, 'Your decision', value.summary)],
+        closure: carried ? null : closure('Decision recorded', value.outcome),
+      });
+    }
+    return represent(value, { nature: 'record', commitment: 'none', stage: { id: 'telephone:record', label: 'Call record' },
+      records: value.evidence.map((line, index) => record(`telephone:${index}`, 'Received', line)),
+      closure: closure('Call ended', 'This records what the telephone left behind. It is not a promise to make another call.'),
+      trackingKey: 'quest:source-telephone', trackable: false,
+    });
+  });
 }

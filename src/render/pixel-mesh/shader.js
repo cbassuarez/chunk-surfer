@@ -6,6 +6,7 @@ import { FIRE_ESCAPE_INK_GLSL } from '../fire-escape-ink.js';
 import { ROOF_SURFACE_INK_GLSL, ROOF_GLASS_INK_GLSL } from '../roof-surface-ink.js';
 import { PRINTED_SURFACE_GLSL } from '../printed-surface.js';
 import { PRESSURE_INK_GLSL } from '../pressure-composite.js';
+import { SOURCE_BLUEPRINT_RECORDING_GLSL } from '../source-blueprint-contract.js';
 
 export const PIXEL_MESH_FRAG = `#version 300 es
 precision highp float;
@@ -86,6 +87,9 @@ uniform float uRoofSkyRecovery;
 uniform float uRoofSkyPackedFar;
 uniform float uRecordingExposure;
 uniform float uRecordingSensitivity;
+// Source blueprint only: enabled, and 1/(1+actual prop far metres*.14).
+// This selects recording inks after the existing bit decision; no post grade.
+uniform vec2 uSourceBlueprint;
 uniform float uRecordingPatternScale;
 uniform float uRecordingBlackFloor;
 uniform float uRecordingDensityGamma;
@@ -458,6 +462,7 @@ ${FIRE_ESCAPE_INK_GLSL}
 ${ROOF_SURFACE_INK_GLSL}
 ${ROOF_GLASS_INK_GLSL}
 ${PRINTED_SURFACE_GLSL}
+${SOURCE_BLUEPRINT_RECORDING_GLSL}
 vec2 printedSurfaceTexel(ivec2 pixel){
   ivec2 limit=textureSize(uMarks,0)-1;
   float tag=texelFetch(uMarks,clamp(pixel,ivec2(0),limit),0).a;
@@ -1083,12 +1088,13 @@ void main(){
   float chromaRange = max(max(broadColor.r, broadColor.g), broadColor.b)
     - min(min(broadColor.r, broadColor.g), broadColor.b);
   float chromaPresence = smoothstep(0.025, 0.16, chromaRange) * captureBlackProtect;
-  vec3 captureDark = vec3(0.0015, 0.0050, 0.0045);
+  vec3 captureDark = sourceBlueprintRecordedInk(vec3(0.0015, 0.0050, 0.0045),uSourceBlueprint,printed.x,packedDepth,captureBlackProtect,0.0);
   vec3 neutralLightInk = vec3(0.835, 0.945, 0.885);
   float inkChroma = (0.160 + clamp(uPaletteChroma, 0.0, 0.60) * 0.36) * chromaPresence;
   vec3 captureLight = clamp(neutralLightInk + sourceChroma * inkChroma, 0.62, 1.0);
   captureLight *= luma(neutralLightInk) / max(0.001, luma(captureLight));
   captureLight = clamp(captureLight, 0.0, 1.0);
+  captureLight=sourceBlueprintRecordedInk(captureLight,uSourceBlueprint,printed.x,packedDepth,captureBlackProtect,1.0);
   // One authored source is allowed to keep its literal colour. Emergency red
   // is itself the event; translating it to the tube's default cyan/cream ink
   // erased the state change and made a correct raw frame look unlit in game.

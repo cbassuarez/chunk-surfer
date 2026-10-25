@@ -7,6 +7,7 @@ import {sourceContinuationGeometry,sourceContinuationEdges,sourceContinuationEdg
 import {doorAssembly} from '../src/data/source-door-fields.js';
 import {PROP_BOUNDS} from '../src/data/generated/prop-geometry.js';
 import {SOURCE_PRINT_SURFACE} from '../src/render/physical-source-print.js';
+import {SOURCE_BLUEPRINT_PRINT_SURFACE} from '../src/render/source-blueprint-contract.js';
 import {cameraBasis} from '../src/render/camera-basis.js';
 import * as R3 from '../src/render/r3d.js';
 
@@ -59,7 +60,18 @@ test('runtime-installed physical print meshes are bounded, idempotent and retain
   const g=fakeGl(),pack={catalog:new Map()},maps={texture:{},normalTexture:{},ormTexture:{},letteringFinish:{}};
   const names=installSourceContinuationMeshes(g.gl,pack,{maps}),buffers=g.buffers.length;assert.ok(names.length>60&&names.length<140);
   assert.deepEqual(installSourceContinuationMeshes(g.gl,pack,{maps}),names);assert.equal(g.buffers.length,buffers,'no per-frame or repeated-entry allocations for resident shapes');
-  for(const entry of pack.catalog.values()){assert.ok(entry.extras.bounds.min.every(Number.isFinite));assert.ok(entry.extras.triangles>0);const p=entry.primitives[0];assert.equal(p.materialRole,'source-continuation');assert.equal(p.emissive.reduce((n,v)=>n+v,0),0);if(p.printedSurface){assert.deepEqual(p.printedSurface,SOURCE_PRINT_SURFACE);assert.equal(p.texture,maps.texture);assert.equal(p.normalTexture,maps.normalTexture);assert.equal(p.ormTexture,maps.ormTexture);}}
+  for(const entry of pack.catalog.values()){assert.ok(entry.extras.bounds.min.every(Number.isFinite));assert.ok(entry.extras.triangles>0);const p=entry.primitives[0];assert.equal(p.materialRole,'source-continuation');assert.equal(p.emissive.reduce((n,v)=>n+v,0),0);if(p.printedSurface){assert.deepEqual(p.printedSurface,SOURCE_BLUEPRINT_PRINT_SURFACE);assert.equal(p.texture,maps.texture);assert.equal(p.normalTexture,maps.normalTexture);assert.equal(p.ormTexture,maps.ormTexture);}}
+});
+
+test('blueprint changes only Source stock while the paired study retains authored material factors',()=>{
+  const make=blueprint=>{const g=fakeGl(),pack={catalog:new Map()};installSourceContinuationMeshes(g.gl,pack,{maps:{blueprint,texture:{},normalTexture:{},ormTexture:{},letteringFinish:{}}});return pack;};
+  const current=make(true),control=make(false);let printed=0,physical=0;
+  for(const[name,entry]of current.catalog){const p=entry.primitives[0],old=control.catalog.get(name).primitives[0];
+    assert.deepEqual([...entry.primitives[0].vao.attributes[0].data],[...old.vao.attributes[0].data],'palette cannot change support geometry');
+    if(p.printedSurface){printed++;assert.deepEqual(p.base,[1,1,1,1]);assert.deepEqual(p.printedSurface,SOURCE_BLUEPRINT_PRINT_SURFACE);assert.deepEqual(old.printedSurface,SOURCE_PRINT_SURFACE);}
+    else{physical++;assert.deepEqual(p.base,old.base);assert.equal(p.materialName,old.materialName);assert.deepEqual(p.emissive,[0,0,0]);}
+  }
+  assert.ok(printed>10&&physical>10);
 });
 
 test('every drawn controller solid has the same finite world bounds while the closure moves',()=>{
@@ -262,9 +274,12 @@ test('adapter waits for the base pack, uses the shared 3D/dither path and releas
 });
 
 test('late catalog loss repairs residency without reacquiring the plan or resetting a falling body',async()=>{
-  const h=fixture();await h.owner.initialize();const plans=h.calls.filter(c=>c.name==='r3dSetPlan').length;for(const key of h.catalog.keys())if(key.startsWith('source-continuation-')||key.startsWith('door_'))h.catalog.delete(key);
+  const h=fixture();await h.owner.initialize();h.owner.render(catchState(2));
+  const plans=h.calls.filter(c=>c.name==='r3dSetPlan').length,draws=h.calls.filter(c=>c.name==='r3dFrame').length;for(const key of h.catalog.keys())if(key.startsWith('source-continuation-')||key.startsWith('door_'))h.catalog.delete(key);
   const state=catchState(2,{fall:{x:-26,z:2,feet:-4.5,vx:.8,vz:0,vy:-2,fromLevel:2,elapsed:.3,unsupported:true},feet:-4.5});assert.equal(h.owner.ready(),false);assert.equal(h.owner.render(state),true);assert.equal(h.owner.render(state),true);await new Promise(r=>setImmediate(r));assert.equal(h.owner.ready(),true);h.owner.render(state);
-  assert.equal(h.calls.filter(c=>c.name==='r3dSetPlan').length,plans);assert.equal(h.owner.diagnostics().frame.eye[1],state.feet+14);assert.equal(h.calls.filter(c=>c.name==='install').length,2);h.owner.dispose();
+  assert.equal(h.calls.filter(c=>c.name==='r3dSetPlan').length,plans);assert.equal(h.owner.diagnostics().frame.eye[1],state.feet+14);assert.equal(h.calls.filter(c=>c.name==='install').length,2);
+  assert.equal(h.calls.filter(c=>c.name==='r3dFrame').length,draws+1,'repair does not render incomplete or ordinary scenery');
+  assert.equal(h.calls.some(c=>c.name==='r3dClearScreen'),false,'the preceding Source image remains held during residency repair');h.owner.dispose();
 });
 
 test('failed residency or initial packs expose recoverable errors, and late initialization cannot reacquire a released scene',async()=>{

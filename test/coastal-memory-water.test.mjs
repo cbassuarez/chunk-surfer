@@ -12,6 +12,12 @@ test('actual underwater lamps are transformed into the same metre-scaled site',(
  assert.deepEqual(Array.from(uniforms.positions.slice(0,3)),[2,-3,3]);
  assert.ok(Math.abs(uniforms.directions[0]-1/Math.hypot(1,.1))<1e-6);
  assert.deepEqual(uniforms.params,[1,0,12,0]);
+ assert.deepEqual(uniforms.optics,[1,1],'ordinary coast retains its calibration');
+});
+test('cinematic water calibration is explicitly opted in and bounded',()=>{
+ assert.deepEqual(coastalWaterUniforms({...frame,waterOptics:{absorptionScale:.35,scatterScale:.12}}).optics,[.35,.12]);
+ assert.deepEqual(coastalWaterUniforms({...frame,waterOptics:{absorptionScale:-2,scatterScale:8}}).optics,[.05,1]);
+ assert.deepEqual(coastalWaterUniforms(frame).optics,[1,1],'one owner cannot leak its water settings to another');
 });
 test('near opaque rock and cabin surfaces occlude the water; submerged geometry keeps only underwater depth',()=>{
  const base={frame,eye:[32,8,48],ray:[0,-1,0]};
@@ -23,7 +29,7 @@ test('waves, light escape and cabin flooding live in physical depth before final
  assert.match(COASTAL_MEMORY_WATER_GLSL,/waterEnd-waterBegin/);
  assert.match(COASTAL_MEMORY_WATER_GLSL,/coastSurfaceEscape\(p\.xz/);
  assert.match(COASTAL_MEMORY_WATER_GLSL,/uCoastSea\.z\*\(1\.0-uReduceMotionOptical\)/);
- assert.match(COASTAL_MEMORY_WATER_GLSL,/return displayColour\(transmitted\+scatter\)/);
+ assert.match(COASTAL_MEMORY_WATER_GLSL,/return displayColour\(transmitted\+scatter\*uCoastOptics\.y\)/);
 });
 test('one physical camera shoulder preserves black, material hue and highlight ordering across the measured coast range',()=>{
  assert.deepEqual(coastalCameraResponse([0,0,0]),[0,0,0]);

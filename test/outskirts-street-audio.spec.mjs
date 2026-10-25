@@ -42,6 +42,15 @@ test('continuous sources are bounded, move with the listener, and detach when th
   assert.ok(audio.nodes.filter(node=>node.starts).every(node=>node.stops.length===1));
 });
 
+test('a translated street coordinate frame retains its actual sounding graph, gain, pan and scheduled source phase',()=>{
+ const audio=fakeAudio(),sound=createOutskirtsStreetAudio(audio),frame={beds:[{id:'r14-lodge',kind:'lodge',x:5,z:-2,gain:1}],events:[{id:'one-cloth',cue:'coat-rustle',x:4,z:-3}]};
+ sound.update(frame,{listener});const count=audio.nodes.length,params=audio.nodes.map(n=>[n.gain.value,n.pan.value]),starts=audio.nodes.filter(n=>n.starts).map(n=>n.starts.length);
+ assert.equal(sound.rebase({z:34.4}),true);sound.update({beds:frame.beds.map(s=>({...s,z:s.z+34.4})),events:frame.events},{listener:{...listener,z:34.4}});
+ assert.equal(audio.nodes.length,count,'no bed or finite voice is restarted');assert.deepEqual(audio.nodes.filter(n=>n.starts).map(n=>n.starts.length),starts);assert.ok(audio.nodes.filter(n=>n.stops).every(n=>!n.disconnected));
+ for(let i=0;i<params.length;i++)for(let k=0;k<2;k++)assert.ok(Math.abs([audio.nodes[i].gain.value,audio.nodes[i].pan.value][k]-params[i][k])<1e-12,'same relative placement retains its mix');
+ sound.destroy();
+});
+
 test('events are finite, delivered once, and pause cancels future sound without replaying it',()=>{
   const audio=fakeAudio(),sound=createOutskirtsStreetAudio(audio);
   const event={id:'hatch-first',cue:'hatch-impact',x:0,z:-2,strength:.7};

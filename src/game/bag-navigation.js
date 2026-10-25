@@ -8,6 +8,7 @@
 // Pure navigation for the field case. No canvas, scenes, saves, or audio.
 
 import { bagEntry, bagSection, normalizeBagSectionId } from './bag-model.js';
+import { journalPinnedEntry, journalTrackingKey, normalizeJournalReview } from './journal-review.js';
 
 function sectionIds(model) {
   return (model?.sections || []).map((section) => section.id);
@@ -43,6 +44,8 @@ export function initialBagState(model, focus = {}) {
     pendingAction: null,
     map: focus.map || null,
     journalPinnedId: null,
+    journalPinnedKey: null,
+    journalReview: null,
   };
 }
 
@@ -86,6 +89,7 @@ export function repairBagSelection(state, model) {
     if (!Number.isFinite(scroll[id])) scroll[id] = 0;
   }
 
+  const pinned = journalPinnedEntry(bagSection(model, 'journal')?.entries, state);
   return {
     sectionId,
     selected,
@@ -93,8 +97,9 @@ export function repairBagSelection(state, model) {
     mode: state?.mode || 'browse',
     pendingAction: state?.pendingAction || null,
     map: state?.map || null,
-    journalPinnedId: bagSection(model, 'journal')?.entries?.some((entry) => entry.id === state?.journalPinnedId && entry.state === 'active')
-      ? state.journalPinnedId : null,
+    journalPinnedId: pinned?.id || null,
+    journalPinnedKey: journalTrackingKey(pinned),
+    journalReview: normalizeJournalReview(state?.journalReview),
   };
 }
 

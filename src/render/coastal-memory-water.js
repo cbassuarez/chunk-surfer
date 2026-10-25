@@ -24,7 +24,7 @@ function inverseSite(matrix) {
 }
 export function coastalWaterUniforms(frame) {
   const inverse=frame?.active ? inverseSite(frame.siteMatrix||IDENTITY) : null;
-  if(!inverse) return {active:false,inverse:IDENTITY,params:[0,0,0,0],positions:new Float32Array(8),directions:new Float32Array(8)};
+  if(!inverse) return {active:false,inverse:IDENTITY,params:[0,0,0,0],optics:[1,1],positions:new Float32Array(8),directions:new Float32Array(8)};
   const positions=new Float32Array(8),directions=new Float32Array(8);
   for(let i=0;i<2;i++) {
     const light=frame.lights?.[i];
@@ -32,7 +32,8 @@ export function coastalWaterUniforms(frame) {
     const p=transform(inverse,light.position), d=transform(inverse,light.direction||[0,-.1,-1],true), length=Math.hypot(...d)||1;
     positions.set([...p,clamp(light.intensity,0,12)],i*4);directions.set([...d.map(v=>v/length),clamp(light.spread??.38,.12,.8)],i*4);
   }
-  return {active:true,inverse,params:[1,finite(frame.waterY),finite(frame.time),clamp(frame.flood,0,1)],positions,directions};
+  const optics=[clamp(frame.waterOptics?.absorptionScale??1,.05,1),clamp(frame.waterOptics?.scatterScale??1,.02,1)];
+  return {active:true,inverse,params:[1,finite(frame.waterY),finite(frame.time),clamp(frame.flood,0,1)],optics,positions,directions};
 }
 
 // CPU diagnostic of the same plane/depth ownership; it never advances a scene.
@@ -49,6 +50,7 @@ export function coastalRayWater({frame,eye,ray,surfaceDistance=400}={}) {
 export const COASTAL_MEMORY_WATER_GLSL = `
 uniform mat4 uCoastInverse;
 uniform vec4 uCoastSea; // active, local sea level, held scene time, cabin flooding
+uniform vec2 uCoastOptics; // absorption and volumetric backscatter; ordinary coast 1/1
 uniform vec4 uCoastLampPosition[2],uCoastLampDirection[2];
 vec3 coastCameraResponse(vec3 linear){
   linear=max(linear,vec3(0.0));
@@ -107,7 +109,7 @@ vec3 coastalWaterComposite(vec3 worldEye,vec3 worldRay,float opaqueRayDistance,f
   // actual cabin exit, while the external water begins beyond that boundary.
   float waterBegin=max(begin,mix(max(0.0,cabinExit),0.0,uCoastSea.w));
   float travel=max(0.0,min(90.0,waterEnd-waterBegin));
-  vec3 transmission=exp(-travel*vec3(.24,.075,.105));
+  vec3 transmission=exp(-travel*vec3(.24,.075,.105)*uCoastOptics.x);
   vec3 transmitted=colour*transmission+deep*(1.0-transmission)*.75;
   vec3 scatter=vec3(0.0);float volumeBegin=max(0.0,begin-5.0),volumeEnd=min(end,max(begin+14.0,waterEnd));
   volumeEnd=min(volumeEnd,volumeBegin+65.0);
@@ -139,6 +141,6 @@ vec3 coastalWaterComposite(vec3 worldEye,vec3 worldRay,float opaqueRayDistance,f
     float wet=1.0-smoothstep(internalLevel-.04,internalLevel+.04,hit.y);
     transmitted=mix(colour,transmitted,wet);scatter*=wet;
   }
-  return displayColour(transmitted+scatter);
+  return displayColour(transmitted+scatter*uCoastOptics.y);
 }
 `;

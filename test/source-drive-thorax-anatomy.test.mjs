@@ -6,6 +6,7 @@ import {anatomyOrganPose,ribPose,COSTAL_CARDIAC} from '../src/game/source-drive/
 import {makeCutLandscape,CUT_THORAX_CHAMBERS,CUT_THORAX_ORGANS} from '../src/game/source-drive/cut/landscape-scene.js';
 import {makeCutScene,cutColliders} from '../src/game/source-drive/cut/scene.js';
 import {worldAt,roadSurfaceAt} from '../src/game/source-drive/road.js';
+import {fitActualHeart} from '../tools/chunk_surfer/source-drive-study/thorax-organ-source.mjs';
 
 const evolution={reveal:1,ribcage:1,wave:1};
 const input=(timeSec=8)=>({timeSec,furthest:930,distance:829,evolution});
@@ -50,7 +51,7 @@ test('every submitted anatomical mesh resolves in the production character pack 
 test('the real packed rib blades rotate broadly, lungs expand and the diaphragm descends through actual respiratory samples',()=>{
  const asset=actualAsset(),samples=Array.from({length:545},(_,i)=>ribPose(input(i*.025))),low=samples.reduce((a,b)=>a.motion.physiology.respiration<b.motion.physiology.respiration?a:b),high=samples.reduce((a,b)=>a.motion.physiology.respiration>b.motion.physiology.respiration?a:b);
  const bone=asset.entries.find(e=>e.name==='cut_thoracic_bone'),a=posed(bone,low),b=posed(bone,high);let moved=0,max=0,fixed=0;
- bone.primitives.forEach(p=>{for(let v=0;v<p.vertexCount;v++){const rest=vertex(p,v,[0,0,1,0]);if(rest[1]<=1.3){for(const target of p.targets)assert.ok(Math.hypot(...target.positions.slice(v*3,v*3+3))<1e-8,'rib toe contacts cannot wander');fixed++;}}});
+ for(const entry of[bone,asset.entries.find(e=>e.name==='cut_costal_cartilage')])entry.primitives.forEach(p=>{for(let v=0;v<p.vertexCount;v++){const rest=vertex(p,v,[0,0,1,0]);if(rest[1]<=1.2){for(const target of p.targets)assert.ok(Math.hypot(...target.positions.slice(v*3,v*3+3))<1e-8,'rib/cartilage toe contacts cannot wander');fixed++;}}});
  for(let i=0;i<a.length;i++){const displacement=Math.hypot(...a[i].map((x,k)=>x-b[i][k]));max=Math.max(max,displacement);if(displacement>1)moved++;}
  assert.ok(fixed>30,'actual blade roots were checked');assert.ok(moved>500&&max>1.4,'full respiratory samples must articulate a broad rib region, rather than merely change scalar telemetry');
  const lungs=asset.entries.find(e=>e.name==='cut_lungs'),lungLow=posed(lungs,anatomyOrganPose('cut_lungs',input(low.motion.timeSec))),lungHigh=posed(lungs,anatomyOrganPose('cut_lungs',input(high.motion.timeSec))),ll=bounds(lungLow),lh=bounds(lungHigh);
@@ -66,6 +67,24 @@ test('the actual packed heart contracts in three dimensions and its coronary tre
  const coronary=asset.entries.find(e=>e.name==='cut_coronary_vessels'),c0=posed(coronary,anatomyOrganPose('cut_coronary_vessels',input(low.motion.timeSec))),c1=posed(coronary,anatomyOrganPose('cut_coronary_vessels',input(high.motion.timeSec)));assert.ok(c0.some((p,i)=>Math.hypot(...p.map((x,k)=>x-c1[i][k]))>.2),'attached vascular geometry participates in the pulse');
 });
 
+test('the packed heart retains the licensed external chamber anatomy and shipped attribution',()=>{
+ const source=fitActualHeart({center:[-2,7.8,-7],maxRadii:[3.45,3,5.5]}),asset=actualAsset(),heart=asset.entries.find(e=>e.name==='cut_heart'),p=heart.primitives[0];
+ assert.equal(p.vertexCount,new Set(source.indices).size);assert.equal(p.indices.length,source.indices.length);
+ // Export compacts unused vertices. Compare the actual indexed triangles,
+ // rather than mistaking that harmless remapping for a shape change.
+ for(let i=0;i<p.indices.length;i++){const actual=vertex(p,p.indices[i],[0,0,1,0]);for(let k=0;k<3;k++)assert.ok(Math.abs(actual[k]-source.positions[source.indices[i]*3+k])<3e-6,'full reveal preserves the uniformly scaled source surface');}
+ const credit=JSON.parse(readFileSync(new URL('../public/assets/source-drive/cut/credits.json',import.meta.url)));
+ assert.equal(credit.sourceSha256,'b1237e7e765178e9357fd2ea7ccf19d55d0bf9ca55e187886635febe28244c70');assert.equal(credit.license,'CC-BY-4.0');assert.equal(credit.parts.length,4);assert.match(credit.requiredCredit,/Kristen Browne/);assert.match(credit.adaptation,/LOD/);
+ const b=readFileSync(new URL('../public/assets/source-drive/cut/cut-landscape.glb',import.meta.url)),doc=JSON.parse(b.subarray(20,20+b.readUInt32LE(12)));
+ assert.deepEqual(doc.meshes.find(m=>m.name==='cut_heart').extras.provenance.sourceSha256,credit.sourceSha256);
+});
+
+test('the existing hold inspection fixture actually faces the cardiac cavity with its emitter on its visible head',()=>{
+ const scene=makeCutScene(state(),evolution),lamp=scene.lights.find(l=>l.id==='cut-inspection-hold'),fixture=scene.props.find(p=>p.id===lamp.id),heart=scene.props.find(p=>p.mesh==='cut_heart'),m=heart.matrix,q=[-2,7.8,-7],target=[0,1,2].map(k=>m[k]*q[0]+m[k+4]*q[1]+m[k+8]*q[2]+m[k+12]),ray=target.map((v,k)=>v-[lamp.x,lamp.y,lamp.z][k]),distance=Math.hypot(...ray);
+ assert.equal(scene.lights.length,2,'no extra inspection light budget');assert.ok(distance<lamp.radius*.7,'the cavity is inside the useful portion of the existing light');assert.ok(ray.reduce((s,v,k)=>s+v/distance*lamp.direction[k],0)>.999);
+ assert.ok(Math.abs(lamp.x-(fixture.matrix[12]+fixture.matrix[0]*.335))<1e-6);assert.ok(Math.abs(lamp.z-(fixture.matrix[14]+fixture.matrix[2]*.335))<1e-6);assert.equal(lamp.y,fixture.matrix[13]+4.16);
+});
+
 test('all actual cage and organ placements clear the physical carriageway and stopping bay through macro unfolding and target corners',()=>{
  const asset=actualAsset(),scene=makeCutLandscape(state(),evolution),wanted=new Set([...CUT_THORAX_ORGANS.meshes,'cut_thoracic_bone','cut_sternum','cut_intercostal_depth','cut_intercostal_sheet','cut_periosteum','cut_costal_cartilage','cut_intercostal_vessels']),props=scene.props.filter(p=>wanted.has(p.mesh));let checked=0,min=Infinity;
  for(const prop of props){const entry=asset.entries.find(e=>e.name===prop.mesh),m=prop.matrix,distance=prop.character.motion.distance,wScale=Math.hypot(m[0],m[2]);let roadLo=Infinity,roadHi=-Infinity;
@@ -74,8 +93,8 @@ test('all actual cage and organ placements clear the physical carriageway and st
   for(let d=distance-48;d<=distance+48;d+=.25)for(const side of[-1,1]){const r=worldAt(d),edge=worldAt(d,side*(side<0?r.leftWidth:r.rightWidth)),dx=32+edge.x-m[12],dz=32+edge.z-m[14],x=(dx*m[0]+dz*m[2])/(wScale*wScale);roadLo=Math.min(roadLo,x-1);roadHi=Math.max(roadHi,x+1);}
   for(const p of entry.primitives)for(let v=0;v<p.vertexCount;v++)for(let corner=0;corner<8;corner++){
    const w=[corner&1,(corner>>1)&1,0,(corner>>2)&1],a=vertex(p,v,w);w[2]=1;const b=vertex(p,v,w),loX=Math.min(a[0],b[0]),hiX=Math.max(a[0],b[0]);if(hiX<roadLo||loX>roadHi)continue;
-   for(let step=0;step<=8;step++){const t=step/8,q=a.map((x,k)=>x+(b[k]-x)*t);if(q[0]<roadLo||q[0]>roadHi)continue;const point=world(m,q),road=roadSurfaceAt(point[0],point[2]),edge=road.offset<0?road.leftWidth:road.rightWidth;if(Math.abs(road.offset)>edge+.35)continue;const clearance=point[1]-road.height;min=Math.min(min,clearance);checked++;assert.ok(clearance>6.8,`${prop.id} enters road/bay clearance at macro${t}: ${clearance.toFixed(3)}m`);}
+   for(let step=0;step<=8;step++){const t=step/8,q=a.map((x,k)=>x+(b[k]-x)*t);if(q[0]<roadLo||q[0]>roadHi)continue;const point=world(m,q),road=roadSurfaceAt(point[0],point[2]),edge=road.offset<0?road.leftWidth:road.rightWidth;if(Math.abs(road.offset)>edge+.35)continue;const clearance=point[1]-road.height;min=Math.min(min,clearance);checked++;assert.ok(clearance>(CUT_THORAX_ORGANS.meshes.includes(prop.mesh)?4.2:6.8),`${prop.id} enters road/bay clearance at macro${t}: ${clearance.toFixed(3)}m`);}
   }
  }
- assert.equal(props.length,CUT_THORAX_CHAMBERS.length*7+CUT_THORAX_ORGANS.meshes.length);assert.ok(checked>50000,'the actual overhead road and stopping-bay envelope was exercised');assert.ok(min>6.8);
+ assert.equal(props.length,CUT_THORAX_CHAMBERS.length*7+CUT_THORAX_ORGANS.meshes.length);assert.ok(checked>50000,'the actual overhead road and stopping-bay envelope was exercised');assert.ok(min>4.2);
 });

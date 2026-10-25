@@ -150,7 +150,7 @@ const section=(start,end)=>{
   const sequence=[];
   const residue={approach:{progress:.9},approachOrigin:{x:2,y:3}};
   const sandbox={
-    escape:residue,activeEndingCutscene:null,endingArrival:null,endingDossier:null,ENDING_VARIANT,
+    escape:residue,activeEndingCutscene:null,endingArrival:null,endingDossier:null,ENDING_VARIANT,finishChapelTapeDemand:()=>{},
     windowChoreography:{beginEnding:()=>{}},
     currentEndingDossier:()=>({coffee:false,hush:{}}),commitEndingFlags:()=>{},
     endingManifest:()=>({cutscene:{},environment:[]}),saveCommit:()=>{},

@@ -29,7 +29,9 @@ for (const [id, z] of [['entry', 0], ['exit', -104]]) {
 pieces.push(...walls);
 export const SOURCE_IV_GEOMETRY = Object.freeze(pieces);
 export const SOURCE_IV_MODELS = Object.freeze([
-  { id: 'eastern-piano', mesh: 'grand_piano', x: 16, y: -.06, z: -40, scale: 12, yaw: -.24 },
+  // The ordinary onward line passes beneath the already raised instrument.
+  // Its real legs still flank a generous walking band; going round is open.
+  { id: 'eastern-piano', mesh: 'grand_piano', x: 2, y: -.06, z: -40, scale: 12, yaw: -.24 },
   { id: 'western-piano', mesh: 'grand_piano', x: -20, y: -.04, z: -80, scale: 8, yaw: 1.7 },
   { id: 'western-case', mesh: 'instrument_case', x: -19, y: -.15, z: -25, scale: 15, yaw: .23 },
   { id: 'eastern-case', mesh: 'instrument_case', x: 26, y: -.12, z: -80, scale: 12, yaw: -.7 },

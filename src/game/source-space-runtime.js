@@ -905,14 +905,15 @@ import { CHAPEL_WORLD_SET, ELSEWHERE_CROSSING, ELSEWHERE_CROSSING_SECONDS, ELSEW
 import { DOOR_FIELD_ARCHETYPES, ROUTE_DOOR_ASSEMBLIES, doorAssembly, doorFieldPlanting, doorLeafLocalMatrix } from '../data/source-door-fields.js';
 import { DOOR_ARCHETYPE } from '../data/conservatory-doors.js';
 import {
-  OUTSKIRT_BEATS, OUTSKIRT_ELEVATION, OUTSKIRT_LAMP_OFF_BEHIND, OUTSKIRT_ROAD_END, OUTSKIRT_WALKABLE_MESHES,
+  OUTSKIRT_BEATS, OUTSKIRT_LAMP_OFF_BEHIND, OUTSKIRT_ROAD_END, OUTSKIRT_WALKABLE_MESHES,
   OUTSKIRT_STRETCH_COUNT, OUTSKIRT_STRETCH_METRES, OUTSKIRT_STRETCH_START,
   OUTSKIRT_LAST_LIGHT, OUTSKIRT_LAST_MARK, OUTSKIRT_PASSES,
   OUTSKIRT_BUS_ENCOUNTER, OUTSKIRT_FOLD_ENCOUNTER, OUTSKIRT_DOG_ENCOUNTER, OUTSKIRT_CORRIDOR,
-  outskirtBeatAlong, outskirtsArrivalLayout,
+  outskirtBeatAlong, outskirtsArrivalLayout, SOURCE_OUTSKIRTS_TOWN, outskirtsTownSet,
 } from '../data/source-outskirts-arrival.js';
 import { PROP_BOUNDS } from '../data/generated/prop-geometry.js';
 import { createOutskirtsExperience } from './outskirts-experience.js';
+import { PAYPHONE_LOOP_ROUTE } from './payphone-road-loop.js';
 import { outskirtsCollisionBoxes } from './outskirts-geometry.js';
 import { createStationRealm, normalizeStationRealmHomeState,
   stationRealmSeed, stationRealmFrame as realmFrame, moveStationRealm as moveRealm,
@@ -4835,6 +4836,8 @@ export function createSourceSpaceRuntime({
   // same stretch of it three times, a little more wrong each time
   // (src/data/source-outskirts-arrival.js).
   var outskirtCache, doorFieldCache, edgeDoorCache;
+  var payphoneRoadLoopTurns = state.outskirtsExperience.loopTurns || 0;
+  var payphoneRoadLoopHolding = state.outskirtsExperience.loopHolding === true;
   var edgeDoorEchoCache = new Map(), edgeDoorEchoZappedAt = new Map();
   var edgeDoorWasOpen = null, edgeDoorMovedAt = null, edgeDoorClosesBehind = false;
   var outskirtsSeen = new Set(state.outskirtsExperience.seen), outskirtsQueue = [], outskirtLampsOff = new Set(state.outskirtsExperience.lampsOff);
@@ -5095,11 +5098,64 @@ export function createSourceSpaceRuntime({
   }
   function outskirtPieces() {
     const o = landscapeOrigin();
-    if (outskirtCache && outskirtCache.ox === o.x && outskirtCache.oy === o.y) return outskirtCache.pieces;
+    const loop = payphoneRoadLoopFrame();
+    const loopKey = `${loop.holding}:${loop.turns}:${loop.window?.first ?? ''}:${loop.window?.last ?? ''}`;
+    if (outskirtCache && outskirtCache.ox === o.x && outskirtCache.oy === o.y && outskirtCache.loopKey === loopKey) return outskirtCache.pieces;
     const planeZ = (o.y + edgeDoorPlaneY()) * CELL - roadStartMetres(), axisX = (o.x + 0.5) * CELL;
-    const pieces = outskirtsArrivalLayout().map((piece, i) => ({
+    const original = outskirtsArrivalLayout();
+    let projected = original;
+    if (loop.holding || loop.turns > 0) {
+      // Keep the actual approach behind the first phone loop. Only physical
+      // rows from 13 onwards borrow the quiet logical-13 template while held.
+      // Stable physical-row IDs retain lamp/look-away state across rebasing.
+      projected = original.filter(piece => piece.stretch < PAYPHONE_LOOP_ROUTE.pass)
+        .map(piece => ({ ...piece, physicalRow: piece.stretch, along: piece.along - loop.shiftMetres }));
+      const byPass = new Map();
+      for (const piece of original) {
+        if (!byPass.has(piece.stretch)) byPass.set(piece.stretch, []);
+        byPass.get(piece.stretch).push(piece);
+      }
+      for (let physicalRow = loop.window.first; physicalRow <= loop.window.last; physicalRow++) {
+        const logicalPass = loop.holding || physicalRow <= PAYPHONE_LOOP_ROUTE.pass + loop.turns
+          ? PAYPHONE_LOOP_ROUTE.pass : physicalRow - loop.turns;
+        if (logicalPass >= OUTSKIRT_STRETCH_COUNT) continue;
+        for (const piece of byPass.get(logicalPass) || []) {
+          projected.push({ ...piece, id: `r${physicalRow}-${piece.key}`, physicalRow,
+            repeat: physicalRow, stretch: logicalPass,
+            along: piece.along + (physicalRow - logicalPass) * OUTSKIRT_STRETCH_METRES - loop.shiftMetres });
+        }
+      }
+      // The terminal recorder and threshold keep their original logical road
+      // distance after release. They cannot appear in an indefinitely held row.
+      if (!loop.holding) projected.push(...original.filter(piece => piece.stretch >= OUTSKIRT_STRETCH_COUNT));
+    }
+    const context = outskirtsTownSet(), period = SOURCE_OUTSKIRTS_TOWN.contextPeriodMetres;
+    const boundsMin = Math.min(...context.map(p=>p.bounds.along0)), boundsMax = Math.max(...context.map(p=>p.bounds.along1));
+    const firstGroup = Math.max(0, Math.floor((loop.unwrappedAlong - 230 - OUTSKIRT_STRETCH_START - boundsMax) / period));
+    const lastGroup = Math.max(0, Math.ceil((loop.unwrappedAlong + 230 - OUTSKIRT_STRETCH_START - boundsMin) / period));
+    const across = outskirtsEye().x - axisX;
+    for (let group = firstGroup; group <= lastGroup; group++) {
+      const row = group * SOURCE_OUTSKIRTS_TOWN.contextPeriodRows;
+      const logicalPass = row < PAYPHONE_LOOP_ROUTE.pass ? row
+        : loop.holding || row <= PAYPHONE_LOOP_ROUTE.pass + loop.turns ? PAYPHONE_LOOP_ROUTE.pass : row-loop.turns;
+      const offset = OUTSKIRT_STRETCH_START + row * OUTSKIRT_STRETCH_METRES - loop.shiftMetres;
+      for (const p of context) {
+        if ((p.initialOnly && group !== 0) || logicalPass > p.lastPass) continue;
+        const bounds = {...p.bounds,along0:p.bounds.along0+offset,along1:p.bounds.along1+offset};
+        const dx=Math.max(bounds.across0-across,0,across-bounds.across1);
+        const observerAlong=loop.unwrappedAlong-loop.shiftMetres;
+        const dz=Math.max(bounds.along0-observerAlong,0,observerAlong-bounds.along1);
+        if (Math.hypot(dx,dz)>230) continue;
+        projected.push({...p,id:`outskirts-town:${row}:${p.canonicalId}`,key:p.id,
+          along:p.along+offset,bounds,physicalRow:row,repeat:row,stretch:logicalPass,townContext:true,
+          structural:true,wear:OUTSKIRT_PASSES[Math.min(OUTSKIRT_STRETCH_COUNT-1,logicalPass)]?.wear||0});
+      }
+    }
+    const pieces = projected.map((piece, i) => ({
       ...piece, i, x: axisX + piece.across, z: planeZ - piece.along,
       localX: (axisX + piece.across) / CELL - o.x, localY: (planeZ - piece.along) / CELL - o.y,
+      ...(piece.bounds ? { worldBounds:{x0:axisX+piece.bounds.across0,x1:axisX+piece.bounds.across1,
+        z0:planeZ-piece.bounds.along1,z1:planeZ-piece.bounds.along0} } : {}),
     }));
     const vehicles = new Map();
     for (const p of pieces) {
@@ -5114,7 +5170,7 @@ export function createSourceSpaceRuntime({
     // other remnants are only road: five lit columns here made the threshold
     // look like a regularly furnished avenue rather than an end to the world.
     const seamZ = (o.y + SOURCE_HORIZON.from + .5) * CELL;
-    const lamp = pieces.find(p => p.id === 'r28-lamp-0');
+    const lamp = pieces.find(p => p.stretch === OUTSKIRT_STRETCH_COUNT - 1 && p.key === 'lamp-0');
     const road = pieces.find(p => p.id === 'r0-road');
     const thresholdLampAlong = SOURCE_PRE_TAPE.roadLength * CELL - 12;
     const remnants = [
@@ -5124,7 +5180,7 @@ export function createSourceSpaceRuntime({
       ...[-110, -80, -50, -24, 8, 40].map((metres, i) => ({ ...road, id: `source-street-remnant:road:${i}`, key: 'remnant-road',
         x: axisX, z: seamZ - metres, inspect: null, remnant: true })),
     ];
-    outskirtCache = { ox: o.x, oy: o.y, pieces, remnants, solids: null, vehicles };
+    outskirtCache = { ox: o.x, oy: o.y, loopKey, pieces, remnants, solids: null, vehicles };
     return pieces;
   }
 
@@ -5148,6 +5204,46 @@ export function createSourceSpaceRuntime({
   }
   // Metres along the road from its first metre: negative on the still stretch.
   const outskirtsAlong = (py = player.y) => (landscapeOrigin().y + edgeDoorPlaneY()) * CELL - roadStartMetres() - (py + 0.5) * CELL;
+  function outskirtsPerceptualAlong(py = player.y) {
+    const along = outskirtsAlong(py);
+    // A coordinate wrap cannot restore the body's steadiness or dry the road.
+    // This only holds the existing continuous treatment at the loop's far
+    // edge; laps add no new composure cost or further fatigue escalation.
+    return payphoneRoadLoopTurns > 0 ? Math.max(along, PAYPHONE_LOOP_ROUTE.end)
+      : payphoneRoadLoopHolding ? Math.min(along, PAYPHONE_LOOP_ROUTE.end) : along;
+  }
+
+  function payphoneRoadLoopFrame() {
+    const shiftMetres = payphoneRoadLoopTurns * OUTSKIRT_STRETCH_METRES;
+    const active = inOutskirtsView(), rawAlong = outskirtsAlong(), along = active ? rawAlong : null;
+    const unwrappedAlong = rawAlong + shiftMetres;
+    const physicalRow = Math.floor((unwrappedAlong - OUTSKIRT_STRETCH_START) / OUTSKIRT_STRETCH_METRES);
+    return { active, holding: payphoneRoadLoopHolding, turns: payphoneRoadLoopTurns, shiftMetres,
+      along, unwrappedAlong, physicalRow,
+      logicalPass: physicalRow < PAYPHONE_LOOP_ROUTE.pass ? physicalRow
+        : payphoneRoadLoopHolding || physicalRow <= PAYPHONE_LOOP_ROUTE.pass + payphoneRoadLoopTurns
+          ? PAYPHONE_LOOP_ROUTE.pass : physicalRow - payphoneRoadLoopTurns,
+      window: { first: Math.max(PAYPHONE_LOOP_ROUTE.pass, Math.floor((unwrappedAlong - 230 - OUTSKIRT_STRETCH_START) / OUTSKIRT_STRETCH_METRES)),
+        last: Math.max(PAYPHONE_LOOP_ROUTE.pass, Math.ceil((unwrappedAlong + 230 - OUTSKIRT_STRETCH_START) / OUTSKIRT_STRETCH_METRES)) } };
+  }
+  function setPayphoneRoadLoopHolding(holding) {
+    const next = holding === true;
+    if (next !== payphoneRoadLoopHolding) { payphoneRoadLoopHolding = next; outskirtCache = null; }
+    streetExperience.setRoadLoop({ turns: payphoneRoadLoopTurns, holding: payphoneRoadLoopHolding });
+    return payphoneRoadLoopFrame();
+  }
+  function rebasePayphoneRoadLoop(plan) {
+    const distance = Number(plan?.deltaWorldZ), periods = Number(plan?.periods);
+    if (!payphoneRoadLoopHolding || !inOutskirtsView() || phoneBoxInside || !Number.isInteger(periods) || periods < 1
+      || !Number.isFinite(distance) || Math.abs(distance - periods * OUTSKIRT_STRETCH_METRES) > 1e-7
+      || payphoneRoadLoopTurns + periods > 1_000_000) return null;
+    payphoneRoadLoopTurns += periods;
+    streetExperience.setRoadLoop({ turns: payphoneRoadLoopTurns, holding: true });
+    streetExperience.rebaseRoadLocomotion(-distance);
+    if (torchPhantom) torchPhantom = { ...torchPhantom, z: torchPhantom.z + distance };
+    outskirtCache = null;
+    return payphoneRoadLoopFrame();
+  }
 
   // WHAT YOU ARE NOT LOOKING AT DOES NOT HAVE TO STAY PUT — but only the things
   // the stretch says: a watcher turns to face where you were, the guard is gone
@@ -5192,14 +5288,21 @@ export function createSourceSpaceRuntime({
       // Her feet retain the authored heading. Head, neck and shoulders perform
       // the acknowledgement rather than rotating the entire standing mesh.
     }
-    return sourceMatrix({ x, y: outskirtsHeight() + (Number(piece.y) || 0), z, yaw });
+    return sourceMatrix({ x, y: outskirtsHeight() + (Number(piece.y) || 0), z, yaw,
+      scaleX:(piece.scaleX??1)*(piece.scale??1),scaleY:(piece.scaleY??1)*(piece.scale??1),scaleZ:(piece.scaleZ??1)*(piece.scale??1) });
+  }
+
+  function outskirtPieceInRange(piece,eye,range=190) {
+    const b=piece.worldBounds;
+    return b ? Math.hypot(Math.max(b.x0-eye.x,0,eye.x-b.x1),Math.max(b.z0-eye.z,0,eye.z-b.z1))<=range
+      : Math.hypot(piece.x-eye.x,piece.z-eye.z)<=range;
   }
 
   function preTapeInstances(px, py, options = {}) {
     if (!inStreetRemnantView() && !recordedOutskirtsPresentation()) return [];
     const eye = outskirtsEye(px, py);
     const out = streetRenderPieces()
-      .filter((piece) => streetPieceVisible(piece) && Math.hypot(piece.x - eye.x, piece.z - eye.z) <= 190 && !outskirtUnseen.get(piece.id)?.gone
+      .filter((piece) => streetPieceVisible(piece) && outskirtPieceInRange(piece,eye) && !outskirtUnseen.get(piece.id)?.gone
         && !(piece.encounter === 'wrong-fold' && streetExperience.characterFrame().fold.phase === 'spent'))
       .flatMap((piece) => {
         let matrix = outskirtMatrix(piece, { ...options, px, py });
@@ -5226,6 +5329,7 @@ export function createSourceSpaceRuntime({
         }
         const instance = {
           id: piece.id, mesh: piece.key === 'booth-ledger' && (streetWorld.ledgerSigned || piece.stretch >= 15) ? 'outskirts_ledger_signed' : piece.mesh, matrix,
+          ...(piece.fallbackMesh?{fallbackMesh:piece.fallbackMesh}:{}),
           ...(piece.glow ? { emissive: [...piece.glow] } : lamp ? { emissive: [1, 0.72, 0.42,
             piece.key === 'remnant-lamp' ? 1.35 : piece.faulty ? 0.2 * level : 0.06] } : {}),
           zone: ZONE.sourceSpace, structural: !piece.character && piece.encounter !== 'wrong-fold', sourceStructure: piece.remnant ? 'street-remnant' : 'outskirts',
@@ -5238,15 +5342,8 @@ export function createSourceSpaceRuntime({
           reducedMotion: !!options.reducedMotion,
         })) : [instance];
       });
-    // The building, off to the west, never nearer.
-    const along = outskirtsAlong(py);
-    if (along < OUTSKIRT_ROAD_END + 10 && !horizonUnravelling.active ) {
-      out.push({
-        id: 'source-outskirt-elevation', mesh: OUTSKIRT_ELEVATION.mesh,
-        matrix: sourceMatrix({ x: (landscapeOrigin().x + 0.5) * CELL + OUTSKIRT_ELEVATION.across, y: outskirtsHeight(), z: eye.z - OUTSKIRT_ELEVATION.ahead, yaw: OUTSKIRT_ELEVATION.yaw }),
-        zone: ZONE.sourceSpace, structural: true, sourceStructure: 'outskirts',
-      });
-    }
+    // The current Ellery frontage and roofline are fixed canonical context in
+    // the initial group above. No building follows the observer down the road.
     return [...out, ...streetDetailInstances(px, py, options, out), ...doubleInstances(px, py, options), ...(inOutskirtsView()
       ? [...edgeDoorInstances(px, py, options), ...phoneBoxInstances(px, py, options), ...flurryInstances(px, py, options), ...phantomInstances()] : [])];
   }
@@ -5332,7 +5429,7 @@ export function createSourceSpaceRuntime({
   function outskirtsLosing(py = player.y) {
     if (state.phase !== CHUNK_SURF_PHASE.HORIZON) return 0;
     const from = OUTSKIRT_STRETCH_START + OUTSKIRT_STRETCH_METRES * 2;
-    const roadLosingAt = y => clamp01((outskirtsAlong(y) - from) / (OUTSKIRT_ROAD_END - from));
+    const roadLosingAt = y => clamp01((outskirtsPerceptualAlong(y) - from) / (OUTSKIRT_ROAD_END - from));
     const onsetY = landscapeOrigin().y + SOURCE_HORIZON.from + 50 / CELL;
     // Once the late-road depletion has been lived, the old tape boundary
     // cannot restore the torch, breath, steps or recorder to a clean state.
@@ -5445,7 +5542,9 @@ export function createSourceSpaceRuntime({
   function outskirtsPerformAction({ action, pass = outskirtsPassAt() } = {}) {
     if (!inOutskirtsView() || pass !== outskirtsPassAt()) return { handled: false };
     const key = { knock: 'booth', phone: 'booth', sign: 'booth-ledger', post: 'postbox', ticket: 'bus-woman' }[action];
-    const piece = outskirtPieces().find(p => p.stretch === pass && (action === 'ticket' ? p.inspect === 'woman' : p.key === key));
+    const eyeAtAction = outskirtsEye();
+    const piece = outskirtPieces().filter(p => p.stretch === pass && (action === 'ticket' ? p.inspect === 'woman' : p.key === key))
+      .sort((a,b)=>Math.hypot(a.x-eyeAtAction.x,a.z-eyeAtAction.z)-Math.hypot(b.x-eyeAtAction.x,b.z-eyeAtAction.z))[0];
     if (!piece) return { handled: false };
     const at = streetAnchor(piece, ...(piece.interact || [0, 0]));
     const eye = outskirtsEye();
@@ -5559,7 +5658,7 @@ export function createSourceSpaceRuntime({
     if (!inOutskirtsView() && !presentation) return null;
     const along = presentation?.along ?? outskirtsAlong();
     const light = outskirtPieces().find((piece) => piece.faulty);
-    const wear = Math.max(0, Math.min(1, (along - OUTSKIRT_STRETCH_START) / (OUTSKIRT_ROAD_END - OUTSKIRT_STRETCH_START)));
+    const wear = Math.max(0, Math.min(1, ((presentation?.along ?? outskirtsPerceptualAlong()) - OUTSKIRT_STRETCH_START) / (OUTSKIRT_ROAD_END - OUTSKIRT_STRETCH_START)));
     return {
       active: true, groundY: outskirtsHeight() + 0.02,
       puddle: light ? [light.x + Math.cos(light.yaw) * 1.6, light.z - Math.sin(light.yaw) * 1.6, 3.4] : [0, 0, 0],
@@ -5578,6 +5677,7 @@ export function createSourceSpaceRuntime({
     const o = landscapeOrigin();
     const axisX = (o.x + 0.5) * CELL, planeZ = (o.y + edgeDoorPlaneY()) * CELL - roadStartMetres();
     const pass = presentation?.pass ?? outskirtsPassAt(py), localAlong = along - OUTSKIRT_STRETCH_START - pass * OUTSKIRT_STRETCH_METRES;
+    const loopEchoShift = pass === PAYPHONE_LOOP_ROUTE.pass ? payphoneRoadLoopTurns * OUTSKIRT_STRETCH_METRES : 0;
     const recorded = streetExperience.echo(pass, localAlong, OUTSKIRT_STRETCH_METRES, OUTSKIRT_STRETCH_START);
     if (!recorded && along < OUTSKIRT_LAST_MARK.along - OUTSKIRT_STRETCH_METRES) return [];
     const ahead = Math.min(OUTSKIRT_LAST_MARK.along, recorded?.along ?? along + OUTSKIRT_STRETCH_METRES);
@@ -5595,7 +5695,7 @@ export function createSourceSpaceRuntime({
       return {
         id: index === 1 ? 'outskirts-double' : `outskirts-double-${index === 0 ? 'before' : 'after'}`, mesh: 'outskirts_overprint_body',
         matrix: sourceMatrix({ x: converged ? axisX + OUTSKIRT_LAST_MARK.across : axisX + (pose?.across ?? recorded?.across ?? 0),
-          y: outskirtsHeight() + (converged ? 0 : body.floorOffset), z: planeZ - (converged ? OUTSKIRT_LAST_MARK.along : pose?.along ?? ahead), yaw: bodyYaw }),
+          y: outskirtsHeight() + (converged ? 0 : body.floorOffset), z: planeZ - (converged ? OUTSKIRT_LAST_MARK.along : pose?.along ?? ahead) + loopEchoShift, yaw: bodyYaw }),
         character: { version: 1, clip: converged ? 'idle' : body.clip, time: converged ? 0 : body.clip === 'walk' ? body.gaitTime : body.clipTime,
           loop: converged || body.clip !== 'turn', recordedClock: pose?.recordedClock ?? recorded?.recordedClock ?? 0,
           clips: [{ name: 'walk', time: body.gaitTime, weight: walkWeight, loop: true }, { name: resting, time: converged ? 0 : body.clipTime, weight: 1 - walkWeight, loop: resting === 'idle' }],
@@ -5625,8 +5725,20 @@ export function createSourceSpaceRuntime({
   // THE PHONE BOX (src/game/payphone.js), and anything main needs to place a
   // sound at: pieces by key in the first stretch, in world metres.
   function outskirtsPiece(key) {
-    const piece = outskirtPieces().find((entry) => entry.id === key);
-    return piece ? { id: piece.id, x: piece.x, z: piece.z, yaw: piece.yaw } : null;
+    const alias = /^r(\d+)-(.+)$/.exec(String(key));
+    const eye = outskirtsEye();
+    // Main addresses logical narrative passes. Physical rows keep different
+    // IDs after looping, and the current logical-13 copy is the nearest one.
+    const candidates = alias && (payphoneRoadLoopHolding || payphoneRoadLoopTurns)
+      ? outskirtPieces().filter(entry => entry.stretch === Number(alias[1]) && entry.key === alias[2])
+      : outskirtPieces().filter(entry => entry.id === key);
+    const heldRow = phoneBoxInside && /^r(\d+)-/.exec(phoneBoxHeld || '');
+    const frame = payphoneRoadLoopFrame(), row = heldRow ? Number(heldRow[1]) : frame.physicalRow;
+    const sameRow = alias && Number(alias[1]) === frame.logicalPass
+      ? candidates.find(entry => (entry.physicalRow ?? entry.repeat) === row) : null;
+    const piece = sameRow || candidates.sort((a, b) => Math.hypot(a.x-eye.x,a.z-eye.z)-Math.hypot(b.x-eye.x,b.z-eye.z))[0];
+    return piece ? { id: piece.id, x: piece.x, z: piece.z, yaw: piece.yaw,
+      along:piece.along,pass:piece.stretch,physicalRow:piece.physicalRow??piece.repeat } : null;
   }
   // THINGS ON THE ROAD TO LOOK AT. Anything the layout gives an `inspect` key,
   // near enough and not vanished. What he makes of it lives in the studio
@@ -5748,6 +5860,11 @@ export function createSourceSpaceRuntime({
   function outskirtsPassAt(py = player.y) {
     const along = outskirtsAlong(py) - OUTSKIRT_STRETCH_START;
     if (along < 0) return -1;
+    if (payphoneRoadLoopHolding || payphoneRoadLoopTurns > 0) {
+      const physicalRow = Math.floor((along + payphoneRoadLoopTurns * OUTSKIRT_STRETCH_METRES) / OUTSKIRT_STRETCH_METRES);
+      if (physicalRow < PAYPHONE_LOOP_ROUTE.pass) return physicalRow;
+      if (payphoneRoadLoopHolding || physicalRow <= PAYPHONE_LOOP_ROUTE.pass + payphoneRoadLoopTurns) return PAYPHONE_LOOP_ROUTE.pass;
+    }
     return Math.min(OUTSKIRT_STRETCH_COUNT - 1, Math.floor(along / OUTSKIRT_STRETCH_METRES));
   }
   function outskirtsPassStart(k) {
@@ -5849,7 +5966,7 @@ export function createSourceSpaceRuntime({
     if (state.phase !== CHUNK_SURF_PHASE.HORIZON) return { rain: 0 };
     const local = player.y - landscapeOrigin().y;
     if (local > SOURCE_PRE_TAPE.from || local <= SOURCE_HORIZON.from) return { rain: 0 };
-    const along = outskirtsAlong(), roadM = (SOURCE_PRE_TAPE.roadLength || 0) * CELL;
+    const along = outskirtsPerceptualAlong(), roadM = (SOURCE_PRE_TAPE.roadLength || 0) * CELL;
     return { rain: smoothstep(0, 20, along) * (1 - smoothstep(roadM - 30, roadM, along)) };
   }
 
@@ -5946,7 +6063,7 @@ export function createSourceSpaceRuntime({
 
   function outskirtsSightClear(eye, target) {
     const solids = outskirtSolids(), used = new Set();
-    const related = p => p.stretch === target.stretch && (
+    const related = p => (p.physicalRow ?? p.repeat ?? p.stretch) === (target.physicalRow ?? target.repeat ?? target.stretch) && (
       p.id === target.id || (/^booth/.test(p.key) && /^booth|ledger|page-ledger/.test(target.key))
       || (p.key === 'bus' && /^bus-woman/.test(target.key))
       || (p.key === 'van' && /^van|bag|page-dash/.test(target.key)));
@@ -8203,6 +8320,7 @@ export function createSourceSpaceRuntime({
     outskirtLampPools,
     outskirtsPiece,
     phoneBoxPose, setPhoneBoxDoor, setPhoneBoxInside, setPhoneBoxHandset, outskirtsPassAt, outskirtsPassStart,
+    setPayphoneRoadLoopHolding, rebasePayphoneRoadLoop, payphoneRoadLoopFrame,
     setOutskirtsFlurry, outskirtsFlurryLevel: () => outskirtsFlurry, outskirtsDogQuietZone,
     outskirtsLastLight, setLastLightOut, setLastLightHold, setLastLightPlayback, outskirtsTapeHead, outskirtsPassBreak, relightPassLamps,
     outskirtsReflection, outskirtsLosing, setTorchPhantom,

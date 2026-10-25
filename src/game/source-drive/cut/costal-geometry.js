@@ -3,8 +3,8 @@
 const clamp=x=>Math.max(0,Math.min(1,x));
 const smooth=x=>{x=clamp(x);return x*x*(3-2*x);};
 export const COSTAL_GLAND_ANCHORS=Object.freeze([
- {id:'left-low',side:-1,point:[-12.302371452431785,3.6595143951268634,-7.828319220984149],scale:[.96,1.04,.91],outward:.82},
- {id:'right-low',side:1,point:[12.302371452431785,3.6595143951268634,6.971680779015851],scale:[1.10,.93,1.04],outward:1.04},
+ {id:'left-low',side:-1,point:[-12.302371452431785,3.6595143951268634,-3.0723192209841486],scale:[.96,1.04,.91],outward:.82},
+ {id:'right-low',side:1,point:[12.302371452431785,3.6595143951268634,11.727680779015852],scale:[1.10,.93,1.04],outward:1.04},
 ]);
 export const COSTAL_NECK=Object.freeze({outlet:[.16462753863181837,-1.10,.08],extendedMetres:1.15,dripMetres:.12});
 export function costalStructureDelta(p,name){const[x,y,z]=p,root=smooth((y-1.3)/6),roof=smooth((y-8.2)/5.2),left=1-smooth((x+4)/8);if(root===0)return[0,0,0];

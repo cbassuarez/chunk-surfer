@@ -7,8 +7,9 @@ import {assetUrl} from '../platform/paths.js';
 import {SOURCE_CONTINUATION,continuationSurfaces,continuationSolids,continuationDoors,continuationProps,continuationSupportAt} from '../data/source-continuation.js';
 import {sourceContinuationFrame} from '../game/source-continuation.js';
 import {doorAssembly,doorLeafLocalMatrix} from '../data/source-door-fields.js';
-import {sourcePrintMaps,sourcePrintUV,uploadPhysicalPrint,SOURCE_PRINT_SURFACE} from './physical-source-print.js';
+import {sourcePrintUV,uploadPhysicalPrint,SOURCE_PRINT_SURFACE} from './physical-source-print.js';
 import {PROP_INSTANCE_FLOATS,PROP_INSTANCE_BINDINGS} from './prop-instance-layout.js';
+import {sourceBlueprintMaps,sourceBlueprintMaterial,sourceBlueprintLighting} from './source-blueprint-print.js';
 
 const PREFIX='source-continuation-';
 const identity=()=>new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);
@@ -131,7 +132,7 @@ export function sourceContinuationMeshPayload(piece){
 export function installSourceContinuationMeshes(gl,pack,{maps=null}={}){
   if(!gl||!pack?.catalog)return[];
   const pieces=meshLibrary,missing=pieces.filter(piece=>!pack.catalog.has(piece.name));if(!missing.length)return pieces.map(p=>p.name);
-  const printed=maps||sourcePrintMaps(gl,'divide');
+  const printed=maps||sourceBlueprintMaps(gl);
   for(const piece of missing){
     const data=sourceContinuationMeshPayload(piece),vao=gl.createVertexArray(),instanceBuffer=gl.createBuffer();gl.bindVertexArray(vao);
     const bind=(location,values,size)=>{gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ARRAY_BUFFER,values,gl.STATIC_DRAW);gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,size,gl.FLOAT,false,0,0);};
@@ -140,7 +141,7 @@ export function installSourceContinuationMeshes(gl,pack,{maps=null}={}){
     for(const[location,size,offset]of PROP_INSTANCE_BINDINGS){gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,size,gl.FLOAT,false,PROP_INSTANCE_FLOATS*4,offset);gl.vertexAttribDivisor(location,1);}gl.disableVertexAttribArray(8);gl.vertexAttrib1f(8,0);
     const source=isSource(piece.material),base=paint[piece.material]||paint.source,localBounds={min:data.bounds.min.map((v,k)=>v-data.bounds.center[k]),max:data.bounds.max.map((v,k)=>v-data.bounds.center[k])};
     const edge=/edge-steel/.test(piece.material);
-    pack.catalog.set(piece.name,{name:piece.name,nodeMatrix:identity(),instanceBuffer,extras:{sourceContinuation:true,bounds:localBounds,triangles:data.triangles},primitives:[{vao,count:data.indices.length,indexType:gl.UNSIGNED_INT,base:[...base,1],emissive:[0,0,0],texture:source?printed.texture:finishTexture(gl,piece.material),normalTexture:source?printed.normalTexture:null,ormTexture:source?printed.ormTexture:null,letteringFinish:source?printed.letteringFinish:null,materialFactors:'gltf',metallic:source?1:edge?.22:isMetal(piece.material)?.72:0,roughness:source?1:edge?.91:isMetal(piece.material)?.58:.91,aoStrength:0,portrait:false,alphaCut:0,materialName:`continuation ${piece.material}`,materialRole:'source-continuation',printedSurface:source?SOURCE_PRINT_SURFACE:null}]});
+    pack.catalog.set(piece.name,{name:piece.name,nodeMatrix:identity(),instanceBuffer,extras:{sourceContinuation:true,bounds:localBounds,triangles:data.triangles},primitives:[{vao,count:data.indices.length,indexType:gl.UNSIGNED_INT,base:[...base,1],emissive:[0,0,0],texture:source?printed.texture:finishTexture(gl,piece.material),normalTexture:source?printed.normalTexture:null,ormTexture:source?printed.ormTexture:null,letteringFinish:source?printed.letteringFinish:null,materialFactors:'gltf',metallic:source?1:edge?.22:isMetal(piece.material)?.72:0,roughness:source?1:edge?.91:isMetal(piece.material)?.58:.91,aoStrength:0,portrait:false,alphaCut:0,materialName:`continuation ${piece.material}`,materialRole:'source-continuation',printedSurface:source?SOURCE_PRINT_SURFACE:null,...(source?sourceBlueprintMaterial(printed,{base:[...base,1]}):{})}]});
   }
   gl.bindVertexArray(null);return pieces.map(p=>p.name);
 }
@@ -319,13 +320,15 @@ export function createSourceContinuationRenderer({renderer=R3,props=P3,resolveAs
     if(loading)return loading;loading=(async()=>{
       if(released)return false;
       if(!await install()||released)return false;clearSource();const size=256,rgba=new Uint8Array(size*size*4),material=new Uint8Array(size*size).fill(MATERIAL.sourceField);for(let i=0;i<rgba.length;i+=4)rgba.set([0,0,0,ZONE.sourceSpace],i);
-      renderer.r3dSetPlan(rgba,size,size,material);renderer.r3dSetSourceScene({key:'source:wrong-return-and-the-catch',look:{roomMemoryActive:true,chroma:.78,paper:0},weather:{rain:0,moon:0,clouds:0},staticInstances:[],dynamicInstances:[],corpus:[]});renderer.r3dSetLookProfile?.('explore',{transitionMs:0});renderer.r3dSetLightingContext?.({ambientColor:[.57,.65,.62],ambientIntensity:.073,captureExposure:4.4,whitePointScale:1,screen:'stochastic'});renderer.r3dSnapCameraOnNextFrame?.();renderer.r3dResetVfdMemory?.();initialized=true;return true;
+      renderer.r3dSetPlan(rgba,size,size,material);renderer.r3dSetSourceScene({key:'source:wrong-return-and-the-catch',look:{roomMemoryActive:true,blueprint:true,chroma:.78,paper:0},weather:{rain:0,moon:0,clouds:0},staticInstances:[],dynamicInstances:[],corpus:[]});renderer.r3dSetLookProfile?.('explore',{transitionMs:0});renderer.r3dSetLightingContext?.(sourceBlueprintLighting({ambientColor:[.57,.65,.62],ambientIntensity:.073,captureExposure:4.4,whitePointScale:1,screen:'stochastic'}));renderer.r3dSnapCameraOnNextFrame?.();renderer.r3dResetVfdMemory?.();initialized=true;return true;
     })().catch(reason=>{error=String(reason?.message||reason);throw reason;});return loading;
   }
   function render(state){
     if(!initialized||released)return false;if(error)throw Error(error);
     if(!resident()){
-      if(!repair)repair=install().catch(reason=>{error=String(reason?.message||reason);}).finally(()=>{repair=null;});renderer.r3dClearScreen?.();return true;
+      // ready() freezes the local body while this catalogue is repaired. Keep
+      // its last presented raster instead of flashing a loading-black frame.
+      if(!repair)repair=install().catch(reason=>{error=String(reason?.message||reason);}).finally(()=>{repair=null;});return true;
     }
     const viewport=getViewport?.();last=sourceContinuationRenderFrame(state,{anchor,viewportAspect:viewport?.width&&viewport?.height?viewport.width/viewport.height:16/9,studyRotation});renderer.r3dSetProps(last.props);renderer.r3dSetDynamicProps?.([]);renderer.r3dSetLocalLights(last.lights);
     if(last.falling||lastFalling||last.authoredCamera)renderer.r3dSnapCameraOnNextFrame?.();lastFalling=last.falling;

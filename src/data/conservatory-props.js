@@ -1376,7 +1376,7 @@ export const CONSERVATORY_PROPS = [
     inspect:inspect('CONCERT HALL — STALLS / GALLERIES. The gilt house lettering survives above the acoustic pair.','CONCERT HALL.'),
   }),
   P('hall-entrance-program-north','notice_board',98.5,25.5,Math.PI/2,{
-    mount:'portal',elevation:1.22,renderOffsetX:-1.40,renderOffsetZ:-2.30,renderGroups:['ground','hall'],inspectAt:{x:95.3,y:23.25},
+    mount:'portal',elevation:1.22,renderOffsetX:-1.40,renderOffsetZ:-2.30,renderGroups:['ground','hall'],inspectAt:{x:96.3,y:22.5},
     inspect:inspect('A glazed programme case: winter concerts, municipal orchestras, school prize nights. The last season is crossed through in red pencil.','The last season never opened.'),
   }),
   P('hall-entrance-program-south','notice_board',98.5,25.5,Math.PI/2,{

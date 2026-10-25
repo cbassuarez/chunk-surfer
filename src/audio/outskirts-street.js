@@ -219,8 +219,15 @@ export function createOutskirtsStreetAudio({getAudio=()=>null,loadSample=loadFol
     }catch(_){clear();return false;}
   }
   function pause(){if(disposed||paused)return;paused=true;clear();}
+  function rebase({x=0,z=0}={}){
+    if(disposed||!Number.isFinite(x)||!Number.isFinite(z))return false;
+    listener={...listener,x:(Number(listener.x)||0)+x,z:(Number(listener.z)||0)+z};
+    for(const record of voices)record.place={x:record.place.x+x,z:record.place.z+z};
+    // Gains, phases, scheduled cooling pips and delivery history are retained.
+    return true;
+  }
   function resume(){if(!disposed)paused=false;}
   function stop(){clear();seen.clear();noiseBuffer=null;}
   function destroy(){stop();disposed=true;sampleEpoch++;samples.clear();ctx=null;destination=null;}
-  return {update,pause,resume,stop,destroy,snapshot:()=>({beds:beds.size,voices:voices.size,paused,disposed,samplesReady:samples.size,sampleFailures})};
+  return {update,pause,resume,stop,destroy,rebase,snapshot:()=>({beds:beds.size,voices:voices.size,paused,disposed,samplesReady:samples.size,sampleFailures})};
 }

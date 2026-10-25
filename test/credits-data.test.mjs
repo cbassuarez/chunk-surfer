@@ -25,7 +25,7 @@ test('credits data is public and non-spoilery', () => {
   assert.match(flat, /cbassuarez\.com/);
   assert.match(flat, /© 2026/);
   assert.doesNotMatch(flat, /coming soon/i);
-  assert.doesNotMatch(flat, /ending/i);
+  assert.doesNotMatch(flat, /\bending\b/i);
   assert.doesNotMatch(flat, /seed/i);
   assert.doesNotMatch(flat, /unlock/i);
 });

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { sourceFalseReturnPlan, sourceFalseReturnRenderFrame, createSourceFalseReturnRenderer } from '../src/render/source-false-return-renderer.js';
+import { sourceFalseReturnPlan, sourceFalseReturnRenderFrame, createSourceFalseReturnRenderer, SOURCE_FALSE_RETURN_CAPTURE_EXPOSURE } from '../src/render/source-false-return-renderer.js';
 import { sourceFalseReturnDoorFraction } from '../src/game/source-false-return.js';
 import { doorAssembly } from '../src/data/source-door-fields.js';
 import { CELL, EYE, F, ZONE, MATERIAL } from '../src/data/floorplan/legend.js';
@@ -88,7 +88,7 @@ test('acquisition clears Source and Horizon residue and uses the ordinary shared
   h.owner.render(state());const f=h.calls.findLast(c=>c.name==='r3dFrame').args[0];assert.equal(f.textSpace,false);assert.equal(f.sourceVoidPhysical,false);assert.equal(f.plan,true);assert.deepEqual(f.authoredCamera.eye,[2,4.8+EYE,8]);
   assert.equal(h.calls.some(c=>/SetLookAngles|SetCinematicLook|r3dInit/.test(c.name)),false);assert.equal(h.calls.filter(c=>c.name==='base').length,1);
   const p=h.calls.find(c=>c.name==='r3dSetPlan');assert.equal(p.args[4].originX,h.l.plan.originX);assert.equal(p.args[4].heightOffset,0);assert.deepEqual(p.args[4].ambient,h.l.plan.ambient);
-  assert.deepEqual(h.calls.find(c=>c.name==='r3dSetLightingContext').args[0],h.l.lightingContext);
+  assert.deepEqual(h.calls.find(c=>c.name==='r3dSetLightingContext').args[0],{...h.l.lightingContext,captureExposure:SOURCE_FALSE_RETURN_CAPTURE_EXPOSURE});
   h.owner.dispose();h.owner.dispose();assert.equal(h.releases(),1);assert.equal(h.owner.ready(),false);assert.equal(h.owner.render(state()),false);
 });
 
@@ -249,5 +249,40 @@ test('the held torch remains live through the normal frame path and cannot mutat
   held={on:false,look:{power:.42}};h.owner.render(state({elapsed:1}));frame=h.calls.findLast(c=>c.name==='r3dFrame').args[0];
   assert.equal(frame.light,0);assert.equal(frame.torchLook.power,.42);assert.equal(reads,2);assert.equal(h.owner.diagnostics().frame.torch.on,false);
   held={on:true,look:{power:.21}};h.owner.render(state({elapsed:2}));assert.equal(h.calls.findLast(c=>c.name==='r3dFrame').args[0].light,1);
-  assert.deepEqual(h.calls.findLast(c=>c.name==='r3dSetLightingContext').args[0],h.l.lightingContext,'the held torch does not alter ordinary room ambient');h.owner.dispose();
+  assert.deepEqual(h.calls.findLast(c=>c.name==='r3dSetLightingContext').args[0],{...h.l.lightingContext,captureExposure:SOURCE_FALSE_RETURN_CAPTURE_EXPOSURE},'the held torch does not alter ordinary room ambient or the explicit borrowed-view exposure');h.owner.dispose();
+});
+
+test('an unpowered false return replaces prior Source IV lighting and exposes the real ambient without inventing a light rig',async()=>{
+  const ordinary={ambientColor:[.66,.51,.35],ambientIntensity:.027,whitePointScale:.26413043478260867,
+    roofSkyRecovery:0,bounce:{color:[.66,.51,.35],intensity:.081}};
+  const h=fixture({configure(l){l.lights=[];l.lightingContext=ordinary;}});
+  let held={ambientColor:[.62,.72,.80],ambientIntensity:.11,captureExposure:1,whitePointScale:1,screen:'stochastic'};
+  const original=h.owner;
+  // Apply each production setter request to the actual pure lighting-state
+  // API, starting with the preceding Source owner's cold capture context.
+  R3.r3dSetLightingContext(held);
+  await original.initialize();original.render(state());
+  for(const call of h.calls.filter(c=>c.name==='r3dSetLightingContext'))R3.r3dSetLightingContext(call.args[0]);
+  held=R3.r3dLightingDebug();
+  assert.ok(Math.abs(held.ambientIntensity-ordinary.ambientIntensity)<1e-8);
+  assert.ok(held.ambientColor.every((v,i)=>Math.abs(v-ordinary.ambientColor[i])<1e-7));
+  assert.equal(held.captureExposure,SOURCE_FALSE_RETURN_CAPTURE_EXPOSURE);
+  assert.equal(held.whitePointScale,ordinary.whitePointScale);assert.equal(held.roofSkyRecovery,0);
+  assert.deepEqual(h.calls.findLast(c=>c.name==='r3dSetLocalLights').args[0],[]);
+  const scene=h.calls.findLast(c=>c.name==='r3dSetSourceScene').args[0];
+  assert.equal(scene.look.blueprint,false);assert.equal(scene.look.roomMemoryActive,false);
+  assert.deepEqual(original.diagnostics().frame.lighting,{...ordinary,captureExposure:SOURCE_FALSE_RETURN_CAPTURE_EXPOSURE});
+  assert.deepEqual(ordinary,{ambientColor:[.66,.51,.35],ambientIntensity:.027,whitePointScale:.26413043478260867,
+    roofSkyRecovery:0,bounce:{color:[.66,.51,.35],intensity:.081}});
+  original.dispose();R3.r3dSetLightingContext({});
+});
+
+test('borrowed-view exposure stays explicit in a cached room and preserves a brighter authored room exposure',async()=>{
+  const h=fixture({configure(l){l.planFor=s=>({plan:{...l.plan,key:'same-slice'},props:l.props,doors:l.doors,lights:l.lights,
+    lightingContext:{...l.lightingContext,...(s.x>3?{captureExposure:4.5}: {})}});}});
+  await h.owner.initialize();h.owner.render(state());
+  assert.equal(h.owner.diagnostics().frame.lighting.captureExposure,SOURCE_FALSE_RETURN_CAPTURE_EXPOSURE);
+  h.owner.render(state({x:5}));assert.equal(h.owner.diagnostics().frame.lighting.captureExposure,4.5);
+  h.owner.render(state());assert.equal(h.owner.diagnostics().frame.lighting.captureExposure,SOURCE_FALSE_RETURN_CAPTURE_EXPOSURE);
+  assert.equal(h.calls.filter(c=>c.name==='r3dSetPlan').length,1);h.owner.dispose();
 });

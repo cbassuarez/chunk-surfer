@@ -29,8 +29,8 @@ function conversation(tree, flags, context) {
     ...node, lines: node.lines.map(line => ({ ...line, voice: false })),
   }]));
   const machine = createConversation({ sceneId: 'pub-help-test', nodes, onChoice(choice) {
-    if (!choice.pubQuestAction) return;
-    const result = reducePubQuest(savedFlags, choice.pubQuestAction, context);
+    if (!choice.pubQuestAction && !choice.pubKnowledge) return;
+    const result = reducePubQuest(savedFlags, choice, context);
     savedFlags = result.flags; effects.push(...result.effects);
   } });
   machine.start();
@@ -49,15 +49,58 @@ function choose(machine, id) {
   machine.selectChoice(index, { sound: false }); machine.key({ key: 'Enter' });
 }
 
-test('Iona asks for help; hearing or cancelling her request commits no work', () => {
+test('a response to Iona remembers the request without committing work; cancellation before a response remembers nothing', () => {
   const flags = { unrelated: 4 }, visit = conversation(pubQuestDialogue(flags), flags, atBar);
   assert.match(pubQuestDialogue(flags).start.lines.map(l => l.text).join(' '), /give me a hand/);
+  const cancelled = conversation(pubQuestDialogue(flags), flags, atBar);
+  cancelled.machine.stop(); assert.deepEqual(cancelled.flags(), flags);
   choose(visit.machine, 'pub-iona.help');
   assert.equal(toBranch(visit.machine).nodeId, 'offer');
   visit.machine.stop();
-  assert.deepEqual(visit.flags(), flags);
+  assert.deepEqual(visit.flags(), { ...flags, 'pub.help.offered': true });
+  assert.equal(pubQuestState(visit.flags()).detailsKnown, false);
   assert.deepEqual(visit.effects, []);
   assert.equal(pubQuestStatus(flags).active, false);
+});
+
+test('noncommittal answers retain only knowledge, with Iona and sequential availability required', () => {
+  const visit = conversation(pubQuestDialogue({}), {}, atBar);
+  choose(visit.machine, 'pub-iona.help'); choose(visit.machine, 'pub-iona.no-promise');
+  const known = pubQuestState(visit.flags());
+  assert.equal(known.offered, true); assert.equal(known.detailsKnown, true);
+  assert.equal(known.accepted, false); assert.equal(known.phase, 'new');
+  assert.deepEqual(visit.effects, []);
+  for (const pubKnowledge of ['service', 'service-details', 'opener', 'orderbook']) {
+    for (const context of [{}, { actorId: PUB_BARTENDER_ID }, atMavis])
+      assert.deepEqual(reducePubQuest({}, { pubKnowledge }, context), { flags: {}, effects: [] });
+  }
+  for (const id of ['opener', 'orderbook']) assert.deepEqual(reducePubQuest({}, { pubKnowledge: id }, atBar), { flags: {}, effects: [] });
+  const bar = completeBar({}), later = conversation(pubQuestDialogue(bar), bar, atBar);
+  choose(later.machine, 'pub-iona.opener-ask');
+  assert.equal(pubQuestState(later.flags()).favors.opener.offered, false, 'entering the offer grants no receipt');
+  choose(later.machine, 'pub-iona.opener-later');
+  const favor = pubQuestState(later.flags()).favors.opener;
+  assert.equal(favor.offered, true); assert.equal(favor.accepted, false); assert.equal(favor.declined, false);
+  assert.equal(pubQuestState(later.flags()).favors.orderbook.offered, false);
+  assert.deepEqual(reducePubQuest(bar, { pubKnowledge: 'orderbook' }, atBar), { flags: bar, effects: [] });
+});
+
+test('old accepted, declined and returned receipts imply knowledge without creating new progress', () => {
+  for (const flags of [accepted({}), apply({}, 'decline', atBar), completeBar({})]) {
+    const state = pubQuestState(flags); assert.equal(state.offered, true); assert.equal(state.detailsKnown, true);
+  }
+  for (const flags of [acceptFavor(completeBar({}), 'opener'), apply(completeBar({}), 'decline-opener', atBar), returnFavor(completeBar({}), 'opener')])
+    assert.equal(pubQuestState(flags).favors.opener.offered, true);
+});
+
+test('a committed acceptance or handover is not undone by cancelling its following acknowledgement', () => {
+  const visit = conversation(pubQuestDialogue({}), {}, atBar);
+  choose(visit.machine, 'pub-iona.help'); choose(visit.machine, 'pub-iona.accept');
+  visit.machine.stop(); assert.equal(pubQuestState(visit.flags()).accepted, true);
+  const returning = conversation(pubQuestDialogue(empties({})), empties({}), atBar);
+  choose(returning.machine, 'pub-iona.return-tray'); returning.machine.stop();
+  assert.equal(pubQuestState(returning.flags()).complete, true);
+  assert.deepEqual(returning.effects, [{ type: 'return-tray' }]);
 });
 
 test('the voluntary request may be declined and reconsidered without payment or penalties', () => {
@@ -70,6 +113,52 @@ test('the voluntary request may be declined and reconsidered without payment or 
   choose(again.machine, 'pub-iona.help'); choose(again.machine, 'pub-iona.accept');
   assert.equal(pubQuestState(again.flags()).phase, 'accepted');
   assert.deepEqual(again.effects, []);
+});
+
+test('real conversations preserve refusals through reconsideration, service completion and a later favor return', () => {
+  let flags = { unrelated: 'retained' };
+  const visit = (tree, context, ...ids) => {
+    const v = conversation(tree, flags, context);
+    for (const id of ids) choose(v.machine, id);
+    v.machine.stop(); flags = JSON.parse(JSON.stringify(v.flags()));
+    return v;
+  };
+  visit(pubQuestDialogue(flags), atBar, 'pub-iona.help', 'pub-iona.decline');
+  assert.equal(pubQuestState(flags).historicalDeclined, true);
+  assert.equal(flags['pub.help.declinedOnce'], true);
+  visit(pubQuestDialogue(flags), atBar, 'pub-iona.help', 'pub-iona.accept');
+  assert.equal(pubQuestState(flags).declined, false);
+  assert.equal(pubQuestState(flags).historicalDeclined, true);
+  visit(pubTrayDialogue(flags), atTray, 'pub-iona.take-tray');
+  visit(pubServiceDialogue('pub-patron-mavis', flags), atMavis, 'pub-service.serve-waters');
+  visit(pubServiceDialogue('pub-patron-bert', flags), atBert, 'pub-service.collect-empties');
+  visit(pubQuestDialogue(flags), atBar, 'pub-iona.return-tray');
+  assert.equal(pubQuestState(flags).complete, true);
+  assert.equal(pubQuestState(flags).historicalDeclined, true);
+  visit(pubQuestDialogue(flags), atBar, 'pub-iona.opener-ask', 'pub-iona.decline-opener');
+  assert.equal(pubQuestState(flags).favors.opener.historicalDeclined, true);
+  visit(pubQuestDialogue(flags), atBar, 'pub-iona.opener-ask', 'pub-iona.accept-opener');
+  assert.equal(pubQuestState(flags).favors.opener.declined, false);
+  assert.equal(pubQuestState(flags).favors.opener.historicalDeclined, true);
+  visit(pubFavorDialogue('opener', flags), atItem('opener'), 'pub-iona.take-opener');
+  visit(pubQuestDialogue(flags), atBar, 'pub-iona.return-opener');
+  const restored = pubQuestState(JSON.parse(JSON.stringify(flags)));
+  assert.equal(restored.historicalDeclined, true); assert.equal(restored.favors.opener.historicalDeclined, true);
+  assert.equal(restored.favors.opener.returned, true); assert.equal(flags.unrelated, 'retained');
+  for (const [action, context] of [['accept', atBar], ['return-tray', atBar], ['accept-opener', atBar], ['return-opener', atBar], ['decline-opener', atBar]])
+    assert.deepEqual(reducePubQuest(flags, action, context), { flags, effects: [] }, 'duplicate callbacks cannot rewrite the history');
+});
+
+test('old explicit refusals survive reconsideration; old accepted saves do not invent a refusal', () => {
+  const oldDeclined = { 'pub.help.declined': true };
+  assert.equal(pubQuestState(oldDeclined).historicalDeclined, true);
+  assert.equal(pubQuestState(apply(oldDeclined, 'accept', atBar)).historicalDeclined, true);
+  const bar = completeBar({});
+  const oldFavor = { ...bar, 'pub.help.opener.declined': true };
+  assert.equal(pubQuestState(acceptFavor(oldFavor, 'opener')).favors.opener.historicalDeclined, true);
+  assert.equal(pubQuestState(accepted({})).historicalDeclined, false);
+  assert.equal(pubQuestState(bar).historicalDeclined, false);
+  assert.equal(pubQuestState(returnFavor(bar, 'opener')).favors.opener.historicalDeclined, false);
 });
 
 test('acceptance and return require Iona in person; taking a tray requires its actual prop', () => {

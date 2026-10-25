@@ -1,0 +1,6 @@
+{
+  "source": "Original project-authored fish body, forked tail/fins and distant star geometry.",
+  "build": "node tools/chunk_surfer/source-drive-study/build-return-fauna.mjs",
+  "bytes": 16684,
+  "sha256": "8223cf2d8e766141a44d24d565830724d0fe3c8d6098b6bec983c2f18a61920c"
+}

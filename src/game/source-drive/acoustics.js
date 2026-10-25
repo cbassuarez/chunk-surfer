@@ -3,7 +3,7 @@
 // Synthetic beds remain replaceable timing references until recorded masters
 // are supplied; exact field capture belongs to source-drive-recording.js.
 import { CutFoley } from './cut/foley.js';
-import {RADIO_PHASES,programmeFrame,loadScratchVoices,renderScratchProgramme} from './radio-programmes.js';
+import {RADIO_PHASES,RADIO_CYCLE_SECONDS,RADIO_FINAL_MANIFEST,RADIO_FINAL_CACHE_BYTES,RADIO_FINAL_MASTER_BYTES,RADIO_PROGRAMME_NAMES,programmeFrame,loadScratchVoices,renderScratchProgramme,validateProgrammeCues,validateProgrammeManifest} from './radio-programmes.js';
 import {driveLoadAt} from './deterioration.js';
 
 const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, Number(v) || 0));
@@ -101,16 +101,21 @@ export function driveExteriorPans(sources=[]){
 export function driveOpeningAcousticFrame(state){
  const opening=state?.openingCinematic;if(opening?.schema!==1)return null;
  const a=opening.audio||{},submerged=clamp(a.submerged),timeSec=Math.max(0,Number(opening.timeSec)||0);
- return{timeSec,phase:opening.phase,submerged,enginePower:clamp(a.enginePower??1),radioPower:clamp(a.radioPower??1),waterImpact:clamp(a.waterImpact),bodyGrind:clamp(a.bodyGrind),metalStrain:clamp(a.metalStrain),windOpen:clamp(a.windOpen),roadContact:['free-drive','sound-lead','departure'].includes(opening.phase)?1:0,filterHz:18000*(1-submerged)+430*submerged,cues:Array.isArray(opening.cues)?opening.cues:[]};
+ return{timeSec,phase:opening.phase,submerged,enginePower:clamp(a.enginePower??1),radioPower:clamp(a.radioPower??1),waterImpact:clamp(a.waterImpact),bodyGrind:clamp(a.bodyGrind),metalStrain:clamp(a.metalStrain),windOpen:clamp(a.windOpen),roadContact:Number.isFinite(a.roadContact)&&a.roadContact>=0&&a.roadContact<=1?a.roadContact:['free-drive','sound-lead','departure'].includes(opening.phase)?1:0,filterHz:18000*(1-submerged)+430*submerged,cues:Array.isArray(opening.cues)?opening.cues:[]};
 }
 
 export class SourceDriveAcoustics {
-  constructor({ context, destination, gain = .5, fetcher = globalThis.fetch } = {}) {
+  constructor({ context, destination, gain = .5, fetcher = globalThis.fetch, programmeManifestUrl = RADIO_FINAL_MANIFEST } = {}) {
     if (!context?.createGain || !destination) throw Error('The drive requires the host AudioContext and output bus.');
     this.context = context;
     this.destination = destination;
     this.outputGain = gain;
     this.fetcher = fetcher;
+    this.programmeManifestUrl = programmeManifestUrl;
+    this.masterRows = new Map();
+    this.masterFailures = new Set();
+    this.masterQueue = new Map();
+    this.masterManifestStatus = 'unrequested';
     this.nodes = [];
     this.continuous = [];
     this.transients = new Set();
@@ -181,17 +186,26 @@ export class SourceDriveAcoustics {
     this.foley = new CutFoley({ ctx: c, cabin: this.cabin, noise: this.noise });
     for (const n of this.continuous) n.start();
     this.initializing=(async()=>{
-      const loaded=await loadScratchVoices(c,{fetcher:this.fetcher});
+      const [loaded]=await Promise.all([loadScratchVoices(c,{fetcher:this.fetcher}),this.loadOptionalManifest()]);
       if(this.closed)return this;
-      this.voices=loaded.voices;this.assetErrors=loaded.errors;
-      for(const station of ['service','company','music'])this.getProgramme(`${station}-ordinary`);
+      this.voices=loaded.voices;this.assetErrors.push(...loaded.errors);
+      for(const station of ['service','company','music'])this.getProgramme(`${station}-ordinary`,{requestMaster:false});
+      // Both moving entries begin on SERVICE. Prepare only this master under
+      // cover; other stations/phases load on demand on the same host context.
+      await this.requestProgramme('service-ordinary');
       return this;
     })();
     return this.initializing;
   }
 
-  getProgramme(name) {
-    if(this.programmes.has(name))return this.programmes.get(name);
+  getProgramme(name,{requestMaster=true}={}) {
+    if(requestMaster)this.requestProgramme(name);
+    if(this.programmes.has(name)){
+      const buffer=this.programmes.get(name);
+      // Map order is the final-master LRU; do not duplicate decoded buffers.
+      this.programmes.delete(name);this.programmes.set(name,buffer);
+      return buffer;
+    }
     const [station,phase]=name.split('-'),index=RADIO_PHASES.indexOf(phase);
     const buffer=renderScratchProgramme(this.context,station,index,this.voices);
     this.programmes.set(name,buffer);this.scratchKeys.add(name);
@@ -203,21 +217,96 @@ export class SourceDriveAcoustics {
   }
 
   loadProgramme(name, buffer, {loop=true,temporary=false,cues=null}={}) {
-    if (!/^(service|company|music)-(ordinary|discrepancy|recognition|contradiction|arrival)$/.test(name) || !Number.isFinite(buffer?.duration)) throw Error('Invalid drive programme identity or decoded buffer.');
+    if(!RADIO_PROGRAMME_NAMES.includes(name)||!Number.isFinite(buffer?.duration)||buffer.duration<=0||!Number.isFinite(buffer.length)||!Number.isFinite(buffer.sampleRate)||buffer.sampleRate<=0||typeof buffer.getChannelData!=='function')throw Error('Invalid drive programme identity or decoded buffer.');
+    const bytes=buffer.length*buffer.numberOfChannels*4;
+    if(!temporary&&(buffer.numberOfChannels!==1||Math.abs(buffer.duration-RADIO_CYCLE_SECONDS)>1/buffer.sampleRate||!Number.isFinite(bytes)||bytes>RADIO_FINAL_MASTER_BYTES))throw Error('Final radio masters must be 72-second mono buffers within the decoded-memory budget.');
+    const normalized=validateProgrammeCues(cues,buffer.duration,{requireSignalRole:!temporary});
+    this.programmes.delete(name);
     this.programmes.set(name, buffer);
-    this.programmeOptions.set(name,{loop:!!loop,temporary:!!temporary,cues});
+    this.programmeOptions.set(name,{loop:!!loop,temporary:!!temporary,cues:normalized});
     if(!temporary)this.scratchKeys.delete(name);
-    this.stopProgramme();
+    // The playing node keeps its old buffer/options until a shared speech
+    // gap. A completed fetch must never cut a scratch or final utterance.
+    this.trimMasterCache(name);
   }
 
   async loadManifest(manifest,{fetcher=this.fetcher}={}) {
-    if(!Array.isArray(manifest?.programmes))throw Error('Invalid programme replacement manifest.');
-    for(const row of manifest.programmes){const response=await fetcher(row.url);if(!response?.ok)throw Error(`Programme master unavailable: ${row.name}`);const buffer=await this.context.decodeAudioData(await response.arrayBuffer());if(this.closed)return false;this.loadProgramme(row.name,buffer,row);}
+    const checked=validateProgrammeManifest(manifest);
+    if(this.closed)return false;
+    this.masterRows=new Map(checked.programmes.map(row=>[row.name,row]));
+    this.masterFetcher=fetcher;this.masterFailures.clear();this.masterManifestStatus='ready';
+    // Metadata only: decoding fifteen 72-second masters would retain about
+    // 207MB at 48k mono. Only a requested station/phase may allocate PCM.
     return true;
   }
 
-  stopProgramme() {
+  async loadOptionalManifest(){
+    if(!this.programmeManifestUrl||typeof this.fetcher!=='function'){this.masterManifestStatus='missing';return false;}
+    try{
+      const response=await this.fetcher(this.programmeManifestUrl);
+      if(this.closed)return false;
+      // Dev servers may serve their HTML shell for a missing public asset.
+      if(response?.status===404||response?.status===410||response?.headers?.get?.('content-type')?.includes('text/html')){this.masterManifestStatus='missing';return false;}
+      if(!response?.ok)throw Error(`HTTP ${response?.status??'missing'}`);
+      return await this.loadManifest(await response.json());
+    }catch(error){
+      if(!this.closed){this.masterManifestStatus='unavailable';this.assetErrors.push(`Radio programme manifest: ${error.message||error}`);}
+      return false;
+    }
+  }
+
+  requestProgramme(name){
+    if(this.closed||!this.masterRows?.has(name)||this.masterFailures?.has(name)||this.programmeOptions.get(name)?.temporary===false)return Promise.resolve(false);
+    if(this.loadingMaster?.name===name)return this.loadingMaster.promise;
+    if(this.masterQueue.has(name))return this.masterQueue.get(name).promise;
+    // Rapid tuning keeps at most the in-flight request and the latest target.
+    // An abandoned queued station must not decode a whole programme later.
+    for(const entry of this.masterQueue.values())entry.resolve(false);
+    this.masterQueue.clear();
+    let resolve;const promise=new Promise(done=>{resolve=done;});
+    this.masterQueue.set(name,{name,promise,resolve});this.pumpMasterQueue();
+    return promise;
+  }
+
+  async pumpMasterQueue(){
+    if(this.loadingMaster||this.closed||!this.masterQueue.size)return;
+    const entry=this.masterQueue.values().next().value;this.masterQueue.delete(entry.name);this.loadingMaster=entry;
+    try{
+      const row=this.masterRows.get(entry.name),response=await (this.masterFetcher||this.fetcher)(row.url);
+      if(!response?.ok)throw Error(`HTTP ${response?.status??'missing'}`);
+      const encoded=await response.arrayBuffer();
+      if(this.closed){entry.resolve(false);return;}
+      const buffer=await this.context.decodeAudioData(encoded);
+      if(this.closed){entry.resolve(false);return;}
+      this.loadProgramme(entry.name,buffer,row);entry.resolve(true);
+    }catch(error){
+      if(!this.closed){this.masterFailures.add(entry.name);this.assetErrors.push(`Radio master ${entry.name}: ${error.message||error}`);}
+      entry.resolve(false);
+    }finally{this.loadingMaster=null;if(!this.closed)this.pumpMasterQueue();}
+  }
+
+  trimMasterCache(keep){
+    const finalKeys=()=>[...this.programmes.keys()].filter(key=>this.programmeOptions.get(key)?.temporary===false);
+    const resident=keys=>[...new Set([...keys.map(key=>this.programmes.get(key)),...(this.playingBuffer&&this.playingOptions?.temporary===false?[this.playingBuffer]:[])])];
+    for(const key of finalKeys()){
+      const buffers=resident(finalKeys()),bytes=buffers.reduce((sum,b)=>sum+b.length*b.numberOfChannels*4,0);
+      if(buffers.length<=2&&bytes<=RADIO_FINAL_CACHE_BYTES)break;
+      if(key===keep||this.programmes.get(key)===this.playingBuffer)continue;
+      this.programmes.delete(key);this.programmeOptions.delete(key);
+    }
+  }
+
+  frameForProgramme(state,evolution,phase,options){
+    const temporary=options?.temporary!==false;
+    const frame=programmeFrame(state,evolution,{phase,...(!temporary?{cues:options.cues||[],temporary:false}:{})});
+    if(temporary&&frame.cue&&!this.voices.has(frame.cue.id))frame.caption=null;
+    if(!temporary&&options.loop===false&&state.programTime>=RADIO_CYCLE_SECONDS)Object.assign(frame,{audible:false,cue:null,caption:null});
+    return frame;
+  }
+
+  stopProgramme({preservePlayback=false}={}) {
     const n = this.programme; this.programme = null; this.programmeKey = '';
+    if(!preservePlayback){this.playingBuffer=null;this.playingOptions=null;}
     if (n) { try { n.stop(); } catch {} n.disconnect(); }
     for(const tail of this.programmeTails){try{tail.stop();}catch{}tail.disconnect();}this.programmeTails.clear();
   }
@@ -228,15 +317,17 @@ export class SourceDriveAcoustics {
     this.cabin.gain.cancelScheduledValues(this.context.currentTime);
     this.cabin.gain.setValueAtTime(paused ? 0 : 1, this.context.currentTime);
     if (paused) {
-      this.stopProgramme();
+      this.stopProgramme({preservePlayback:true});
       this.lastWiper=null;
       for (const n of this.transients) { try { n.stop(); } catch {} }
     }
   }
 
   openingReadiness(state){
-    const frame=programmeFrame({...state,paused:false}),name=`${frame.station}-${RADIO_PHASES[frame.phase]}`,options=this.programmeOptions.get(name);
-    if(this.context.state!=='running')return{ready:false,reason:'Audio is held. Press Enter to resume the journey.'};
+    let frame=programmeFrame({...state,paused:false});
+    const name=`${frame.station}-${RADIO_PHASES[frame.phase]}`,options=this.programmeOptions.get(name);
+    if(options?.temporary===false)frame=programmeFrame({...state,paused:false},state.evolution,{cues:options.cues||[],temporary:false});
+    if(this.context.state!=='running')return{ready:false,reason:'Audio is held. The journey resumes automatically when output is ready.'};
     if(!this.cabin||!this.programmes.has(name))return{ready:false,reason:'The radio programme could not be prepared.'};
     if(options?.temporary&&frame.cue&&!this.voices.has(frame.cue.id))return{ready:false,reason:'The opening radio recording could not be loaded.'};
     return{ready:true,station:frame.station,cue:frame.cue?.id||null,programmeSecond:state.programTime};
@@ -284,31 +375,36 @@ export class SourceDriveAcoustics {
     this.lastGear = state.gear;
     target(this.radio.gain, state.radioOn ? clamp(state.volume??.65)*(opening?.radioPower??1) : 0, .012);
     this.fingerprint.gain.setValueAtTime(state.station === 'service' ? 1 : 0, now);
-    const wanted=programmeFrame(state,evolution);
-    // Same-position phase edits happen only between both versions' utterances.
-    // Tuning to another station seeks directly to its current clock position.
+    const wanted=programmeFrame(state,evolution),wantedName=`${wanted.station}-${RADIO_PHASES[wanted.phase]}`;
+    const wantedBuffer=this.getProgramme(wantedName),wantedOptions=this.programmeOptions.get(wantedName);
+    const wantedFrame=this.frameForProgramme(state,evolution,wanted.phase,wantedOptions);
+    // Same-position edits use the actual old and incoming masters' cue spans,
+    // including a late scratch→final replacement. A player's tuning/power
+    // operation remains immediate and seeks to the running absolute clock.
     if(this.activeStation!==state.station){this.activePhase=wanted.phase;this.tuneUntil=state.programTime+.16;this.activeStation=state.station;}
     if(this.activePhase==null)this.activePhase=wanted.phase;
-    if(this.activePhase!==wanted.phase&&!wanted.cue&&!programmeFrame(state,evolution,{phase:this.activePhase}).cue)this.activePhase=wanted.phase;
-    const radioFrame=this.currentProgrammeFrame=programmeFrame(state,evolution,{phase:this.activePhase});
-    if(radioFrame.cue&&!this.voices.has(radioFrame.cue.id))radioFrame.caption=null;
+    let name=`${wanted.station}-${RADIO_PHASES[this.activePhase]}`;
+    let buffer=this.getProgramme(name,{requestMaster:false}),options=this.programmeOptions.get(name);
+    const previous=this.programmeName===name&&this.playingBuffer?{buffer:this.playingBuffer,options:this.playingOptions}:null;
+    const oldFrame=this.frameForProgramme(state,evolution,this.activePhase,previous?.options||options);
+    if(this.activePhase!==wanted.phase&&!wantedFrame.cue&&!oldFrame.cue){
+      this.activePhase=wanted.phase;name=wantedName;buffer=wantedBuffer;options=wantedOptions;
+    }else if(previous&&previous.buffer!==buffer){
+      const replacementFrame=this.frameForProgramme(state,evolution,this.activePhase,options);
+      if(oldFrame.cue||replacementFrame.cue){buffer=previous.buffer;options=previous.options;}
+    }
+    const radioFrame=this.currentProgrammeFrame=this.frameForProgramme(state,evolution,this.activePhase,options);
     const {quality,dropout,bandwidthHz}=radioFrame.signal;
     target(this.radioFilter.frequency,bandwidthHz,.22);
     target(this.programmeGain.gain,quality*(1-dropout)*(state.programTime<(this.tuneUntil||0)?.12:1),.025);
     target(this.echoGain.gain,this.activePhase>=2?.035+(this.activePhase-2)*.035:0,.7);
     target(this.carrierGain.gain, .003+(1-quality)*.045+dropout*.026+(state.programTime<(this.tuneUntil||0)?.045:0), .045);
     target(this.carrierFilter.frequency, state.station === 'company' ? 1200 : 2800);
-    const name = `${state.station}-${RADIO_PHASES[this.activePhase]}`, buffer = this.getProgramme(name),options=this.programmeOptions.get(name);
-    if(!options.temporary){
-      const position=options.loop?state.programTime%buffer.duration:state.programTime;
-      const cue=options.cues?.find(cue=>position>=cue.start&&position<(cue.end??cue.start+cue.durationSeconds))||null;
-      Object.assign(radioFrame,{cycleSeconds:position,cue,caption:radioFrame.audible&&cue?{speaker:cue.speaker||radioFrame.label,text:cue.text,cueId:cue.id||name,temporary:false}:null,provenance:'Supplied programme master through the physical receiver; cue captions from its replacement manifest.'});
-    }
     const key = `${name}:${state.radioOn}`;
     const drift=this.programme?Math.abs((state.programTime-this.programmeClock)-(now-this.programmeAudioTime)):0;
-    if (key !== this.programmeKey||drift>.12) {
+    if (key !== this.programmeKey||this.playingBuffer!==buffer||drift>.12) {
       this.stopProgramme(); this.programmeKey = key;
-      this.programmeName=name;
+      this.programmeName=name;this.playingBuffer=buffer;this.playingOptions=options;
       const offset = options.loop?state.programTime%buffer.duration:state.programTime;
       if (buffer && state.radioOn && offset < buffer.duration) {
         const n = c.createBufferSource(); n.buffer = buffer;n.loop=options.loop; n.connect(this.programmeGain);
@@ -316,6 +412,7 @@ export class SourceDriveAcoustics {
         this.programme = n; n.start(0, offset);
         n.onended = () => { n.disconnect(); if (this.programme === n) this.programme = null; };
       }
+      this.trimMasterCache(name);
     }
     this.syncWeather(state,weatherFrame,evolution,target);
     this.hornFrame=driveWreckHornFrame(state,predicamentSources);
@@ -387,12 +484,15 @@ export class SourceDriveAcoustics {
   click(kind = 'tuning-control', strength = .75) { this.transient({ kind, strength }); }
   programmeFrame(){if(!this.currentProgrammeFrame)return null;return this.paused?{...this.currentProgrammeFrame,audible:false,caption:null}:this.currentProgrammeFrame;}
   level() { if (!this.analyser) return 0; this.analyser.getFloatTimeDomainData(this.samples); return Math.sqrt(this.samples.reduce((n, v) => n + v * v, 0) / this.samples.length); }
-  diagnostics() { return { ready: !!this.cabin, paused: this.paused, level: this.level(), opening:this.openingFrame?{...this.openingFrame,cues:this.openingCueLog,filterHz:this.openingFilter?.frequency.value}:null,engine:{hz:this.engineHz||0,gain:this.engineGain?.gain.value||0,filterHz:this.engineFilter?.frequency.value||0}, loadedProgrammes: [...this.programmes.keys()],programmeCacheBytes:[...this.programmes.values()].reduce((n,b)=>n+b.length*b.numberOfChannels*4,0),scratchCacheLimitBytes:18432000,temporaryVoiceClips:this.voices.size,assetErrors:[...this.assetErrors],finishedProgrammeMastersPresent:[...this.programmes.keys()].some(k=>!this.scratchKeys.has(k)),finishedVoiceTakesPresent:[...this.programmeOptions.values()].some(o=>!o.temporary&&o.cues?.some(c=>c.speaker)),programme:this.programmeFrame(),weather:this.weatherState||null,wreckHorns:this.hornFrame||[],exterior:this.exteriorFrame?{...this.exteriorFrame,pans:this.exteriorPans||null}:null,physicalSources:(this.loadedSources||[]).map(source=>({id:source.id,position:source.position,kind:source.motion?.kind||source.kind||'anatomy',distance:source.motion?.distance,load:source.motion?.load||null,physiology:source.motion?.physiology||null,physiologyFoley:source.motion?.physiologyFoley||null})),foley: this.foley?.diagnostics(), provenance: 'Temporary local stock-system anonymous programme speech; original synthesized station beds and cabin/weather/foley references. Finished user takes only when explicitly loaded.' }; }
+  diagnostics() { return { ready: !!this.cabin, paused: this.paused, level: this.level(), opening:this.openingFrame?{...this.openingFrame,cues:this.openingCueLog,filterHz:this.openingFilter?.frequency.value}:null,engine:{hz:this.engineHz||0,gain:this.engineGain?.gain.value||0,filterHz:this.engineFilter?.frequency.value||0}, loadedProgrammes: [...this.programmes.keys()],programmeCacheBytes:[...new Set([...this.programmes.values(),...(this.playingBuffer?[this.playingBuffer]:[])])].reduce((n,b)=>n+b.length*b.numberOfChannels*4,0),scratchCacheLimitBytes:18432000,finalCacheLimitBytes:RADIO_FINAL_CACHE_BYTES,finalCacheLimitMasters:2,masterManifest:{status:this.masterManifestStatus,available:this.masterRows.size,loading:this.loadingMaster?.name||null,queued:[...this.masterQueue.keys()],failed:[...this.masterFailures]},temporaryVoiceClips:this.voices.size,assetErrors:[...this.assetErrors],finishedProgrammeMastersPresent:[...this.programmes.keys()].some(k=>!this.scratchKeys.has(k)),finishedVoiceTakesPresent:[...this.programmeOptions.values()].some(o=>!o.temporary&&o.cues?.some(c=>c.speaker)),programme:this.programmeFrame(),weather:this.weatherState||null,wreckHorns:this.hornFrame||[],exterior:this.exteriorFrame?{...this.exteriorFrame,pans:this.exteriorPans||null}:null,physicalSources:(this.loadedSources||[]).map(source=>({id:source.id,position:source.position,kind:source.motion?.kind||source.kind||'anatomy',distance:source.motion?.distance,load:source.motion?.load||null,physiology:source.motion?.physiology||null,physiologyFoley:source.motion?.physiologyFoley||null})),foley: this.foley?.diagnostics(), provenance: 'Editorial scratch until a validated final master is loaded through the existing physical receiver/cabin/REC bus. A manifest or transcript alone is not a finished performance.' }; }
   dispose() {
     if (this.closed) return;
     this.setPaused(true); this.closed = true; this.foley?.dispose();
+    this.playingBuffer=null;this.playingOptions=null;
+    for(const entry of this.masterQueue.values())entry.resolve(false);
+    this.masterQueue.clear();this.masterRows.clear();this.masterFailures.clear();
     for (const n of this.continuous) { try { n.stop(); } catch {} }
     for (const n of this.nodes) n.disconnect();
-    this.nodes = []; this.continuous = []; this.programmes.clear();
+    this.nodes = []; this.continuous = []; this.programmes.clear();this.programmeOptions.clear();this.scratchKeys.clear();this.voices.clear();
   }
 }

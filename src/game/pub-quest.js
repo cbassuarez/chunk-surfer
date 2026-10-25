@@ -15,7 +15,8 @@ export const PUB_FAVORS = Object.freeze({
   orderbook: Object.freeze({ id: 'orderbook', propId: 'pub-favor-orderbook', label: 'The Lyric’s order book', location: 'the front-of-house box office' }),
 });
 export const PUB_QUEST_FLAGS = Object.freeze({
-  accepted: 'pub.help.accepted', declined: 'pub.help.declined',
+  offered: 'pub.help.offered', detailsKnown: 'pub.help.detailsKnown',
+  accepted: 'pub.help.accepted', declined: 'pub.help.declined', declinedOnce: 'pub.help.declinedOnce',
   trayTaken: 'pub.help.trayTaken', watersServed: 'pub.help.watersServed',
   emptiesCollected: 'pub.help.emptiesCollected', complete: 'pub.help.complete',
   sourceUnlocked: 'pub.help.sourceUnlocked',
@@ -28,7 +29,9 @@ function favorState(flags, id, available) {
   const accepted = available && (returned || flags[pubFavorFlag(id, 'accepted')] === true);
   const carried = accepted && !returned && flags[pubFavorFlag(id, 'carried')] === true;
   const declined = available && !accepted && flags[pubFavorFlag(id, 'declined')] === true;
-  return { id, available, accepted, declined, carried, returned,
+  const historicalDeclined = available && (declined || flags[pubFavorFlag(id, 'declinedOnce')] === true);
+  const offered = available && (accepted || historicalDeclined || flags[pubFavorFlag(id, 'offered')] === true);
+  return { id, available, offered, accepted, declined, historicalDeclined, carried, returned,
     phase: !available ? 'locked' : returned ? 'returned' : carried ? 'carried' : accepted ? 'accepted' : declined ? 'declined' : 'new' };
 }
 
@@ -40,13 +43,16 @@ export function pubQuestState(value = {}) {
   const watersServed = complete || trayTaken && flags[PUB_QUEST_FLAGS.watersServed] === true;
   const emptiesCollected = complete || watersServed && flags[PUB_QUEST_FLAGS.emptiesCollected] === true;
   const declined = !accepted && flags[PUB_QUEST_FLAGS.declined] === true;
+  const historicalDeclined = declined || flags[PUB_QUEST_FLAGS.declinedOnce] === true;
+  const offered = accepted || historicalDeclined || flags[PUB_QUEST_FLAGS.offered] === true;
+  const detailsKnown = accepted || historicalDeclined || flags[PUB_QUEST_FLAGS.detailsKnown] === true;
   const carryingTray = trayTaken && !complete;
   const opener = favorState(flags, 'opener', complete);
   const orderbook = favorState(flags, 'orderbook', opener.returned);
   return {
     phase: complete ? 'complete' : emptiesCollected ? 'carrying-empties' : watersServed ? 'served-waters'
       : trayTaken ? 'carrying-waters' : accepted ? 'accepted' : declined ? 'declined' : 'new',
-    accepted, declined, trayTaken, watersServed, emptiesCollected, complete, carryingTray,
+    offered, detailsKnown, accepted, declined, historicalDeclined, trayTaken, watersServed, emptiesCollected, complete, carryingTray,
     trayLoad: !carryingTray ? null : emptiesCollected ? 'empties' : watersServed ? 'empty' : 'waters',
     favors: { opener, orderbook },
     sourceUnlocked: complete && opener.returned && orderbook.returned && flags[PUB_QUEST_FLAGS.sourceUnlocked] === true,
@@ -60,16 +66,31 @@ export function reducePubQuest(value = {}, rawAction, context = {}) {
   const flags = { ...sourceFlags(value) }, s = pubQuestState(flags), effects = [];
   const action = typeof rawAction === 'string' ? rawAction : rawAction?.pubQuestAction || rawAction?.type;
   const withIona = context.inPerson === true && context.actorId === PUB_BARTENDER_ID;
+  // A choice is available only after its preceding request has been presented.
+  // These receipts remember knowledge, never a promise or a physical handover.
+  const knowledge = typeof rawAction === 'object' ? rawAction?.pubKnowledge : null;
+  if (withIona) {
+    if (['service', 'service-details'].includes(knowledge) && !s.complete) {
+      flags[PUB_QUEST_FLAGS.offered] = true;
+      if (knowledge === 'service-details') flags[PUB_QUEST_FLAGS.detailsKnown] = true;
+    } else if (Object.hasOwn(PUB_FAVORS, knowledge) && s.favors[knowledge].available) {
+      flags[pubFavorFlag(knowledge, 'offered')] = true;
+    }
+  }
   switch (action) {
     case 'accept':
       if (withIona && !s.accepted) {
+        if (s.declined) flags[PUB_QUEST_FLAGS.declinedOnce] = true;
         flags[PUB_QUEST_FLAGS.accepted] = true;
         flags[PUB_QUEST_FLAGS.declined] = false;
         for (const key of ['trayTaken', 'watersServed', 'emptiesCollected']) flags[PUB_QUEST_FLAGS[key]] = false;
       }
       break;
     case 'decline':
-      if (withIona && !s.accepted) flags[PUB_QUEST_FLAGS.declined] = true;
+      if (withIona && !s.accepted) {
+        flags[PUB_QUEST_FLAGS.declined] = true;
+        flags[PUB_QUEST_FLAGS.declinedOnce] = true;
+      }
       break;
     case 'take-tray':
       if (context.atTray === true && s.phase === 'accepted') {
@@ -104,11 +125,13 @@ export function reducePubQuest(value = {}, rawAction, context = {}) {
       const [, verb, id] = match, favor = s.favors[id], spec = PUB_FAVORS[id];
       if (!favor.available || favor.returned) break;
       if (verb === 'accept' && withIona && !favor.accepted) {
+        if (favor.declined) flags[pubFavorFlag(id, 'declinedOnce')] = true;
         flags[pubFavorFlag(id, 'accepted')] = true;
         flags[pubFavorFlag(id, 'declined')] = false;
         flags[pubFavorFlag(id, 'carried')] = false;
       } else if (verb === 'decline' && withIona && !favor.accepted) {
         flags[pubFavorFlag(id, 'declined')] = true;
+        flags[pubFavorFlag(id, 'declinedOnce')] = true;
       } else if (verb === 'take' && favor.phase === 'accepted' && context.atItem === true
         && context.itemId === id && context.propId === spec.propId) {
         flags[pubFavorFlag(id, 'carried')] = true;

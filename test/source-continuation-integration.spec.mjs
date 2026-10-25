@@ -10,6 +10,7 @@ import {freshMeta,freshRunRecord} from '../src/progression/schema.js';
 import * as scenes from '../src/game/scenes.js';
 import {createSourceContinuationScene} from '../src/game/source-continuation-scene.js';
 import {freshSourceContinuation,normalizeSourceContinuation,stepSourceContinuation} from '../src/game/source-continuation.js';
+import {resumeSourceContinuationHandoff} from '../src/game/source-continuation-handoff.js';
 import {SOURCE_CONTINUATION} from '../src/data/source-continuation.js';
 import {InputManager} from '../src/input/input-manager.js';
 
@@ -237,8 +238,8 @@ function host({source=initial(),checkpoint=null,initialize=null,driveReady=true,
     sourceDrive:{...base.sourceDrive,...(driveReturned?{status:'returned'}:{})}},look={yaw:.7,pitch:-.04},focused=true,disposed=0;
   const calls=[],renderers=[],audio={stop:()=>calls.push(['audio-stop']),pause:()=>calls.push(['audio-pause']),event(){},update(){}};
   const e={sourceContinuationScene:null,sourceContinuationRenderer:null,sourceContinuationAudio:null,sourceEarthfallAudio:null,sourceContinuationTrace:[],
-    sourceEarthfallNeeded:()=>false,sourceFalseReturnNeeded:()=>false,sourceContinuationStudyRotation:0,
-    sourcePubScene:null,sourceDriveSession:null,coastalMemoryScene:null,standingTearScene:null,chunkSurfRuntime:runtime,paused:false,actx:null,sfxGain:null,
+    sourceEarthfallNeeded:()=>false,sourceFalseReturnNeeded:()=>false,sourceContinuationStudyRotation:0,resumeSourceContinuationHandoff,
+    sourcePubScene:null,sourceDriveSession:null,coastalMemoryScene:null,standingTearScene:null,sourceReturnFlashbackScene:null,chunkSurfRuntime:runtime,paused:false,actx:null,sfxGain:null,
     px:at.x,py:at.y,renderMove:{},motionRig:{},trail:[1],r3dCache:{physicalKey:'source',physicalGroup:'source-space',fogSize:2},
     getSave:()=>data,saveCommit:patch=>{data={...data,...patch};calls.push(['save',copy(patch)]);},scenes,createSourceContinuationScene,
     R3:{r3dLookAngles:()=>({...look}),r3dFacing:()=>2,r3dSetLookAngles:value=>{look={yaw:value.yaw,pitch:value.pitch};},r3dSetFrontEndPlate(){},r3dSnapCameraOnNextFrame(){},r3dResetVfdMemory(){}},
@@ -258,7 +259,8 @@ function host({source=initial(),checkpoint=null,initialize=null,driveReady=true,
     syncStationEdgeSound(){},syncElsewhereBeds(){},endHorizonScore(){},stopAllVoices(){},stopWorldLayerVoice(){},silenceAmbientDrone(){},endBootWeather(){},
     pushEvent:value=>calls.push(['error',value]),updateAudio(){},ensureInteractionFocus(){},
     document:{hidden:false,visibilityState:'visible',hasFocus:()=>focused},IS_TAURI:false,
-    academicGhostDispatch:null,sourceShoreAudio:null,activeRecordingSlate:null,liveRecordingPointerControls:new Set(),
+    academicGhostDispatch:null,sourceShoreAudio:null,towerWarningAudio:null,chapelTapeTugHeld:false,
+    rememberChapelTapeDemandDeparture(){},activeRecordingSlate:null,liveRecordingPointerControls:new Set(),
     cancelApparitionApplause(){},setUiCueFocused(){},cancelControlScope(){},pointerMode:{release(){}},recoverInteractionAudio:async()=>{},
     enterHorizon:(reason,options)=>{assert.equal(runtime.state().phase,CHUNK_SURF_PHASE.HORIZON,'the runtime transition must precede the existing main handoff');calls.push(['horizon',reason,options]);},
     beginSourceDriveJourney:async()=>{calls.push(['drive']);if(!driveReady)return false;data={...data,sourceDrive:{...data.sourceDrive,status:'active'}};return{};},

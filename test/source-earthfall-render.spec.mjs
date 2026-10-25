@@ -166,7 +166,11 @@ function fixture({gate=null,missingBase=false}={}){
 test('adapter uses normal shared3D/dither, repairs residency and releases the range exactly once',async()=>{
   const h=fixture();assert.equal(await h.owner.initialize(),true);assert.equal(h.owner.ready(),true);assert.equal(h.ranges(),1);
   assert.equal(h.owner.render(fresh()),true);const draw=h.calls.findLast(c=>c.key==='r3dFrame').args[0];assert.equal(draw.textSpace,true);assert.equal(draw.sourceVoidPhysical,false);assert.equal(draw.authoredPropRange,240);assert.equal(draw.authoredCamera.eye[1],101.62);
-  h.catalog.delete(DEMO.staticMesh);assert.equal(h.owner.ready(),false);h.owner.render(fresh());await new Promise(r=>setImmediate(r));assert.equal(h.owner.ready(),true);assert.equal(h.ranges(),1);
+  const draws=h.calls.filter(c=>c.key==='r3dFrame').length;
+  h.catalog.delete(DEMO.staticMesh);assert.equal(h.owner.ready(),false);h.owner.render(fresh());
+  assert.equal(h.calls.filter(c=>c.key==='r3dFrame').length,draws,'no incomplete world is drawn while the local body is frozen');
+  assert.equal(h.calls.some(c=>c.key==='r3dClearScreen'),false,'residency repair retains the last production raster');
+  await new Promise(r=>setImmediate(r));assert.equal(h.owner.ready(),true);assert.equal(h.ranges(),1);
   assert.equal(h.owner.dispose(),true);assert.equal(h.owner.dispose(),false);assert.equal(h.rangeReleases(),1);assert.equal(h.releases(),1);assert.equal(h.owner.render(fresh()),false);
 });
 test('late initialization cannot acquire the world or range after disposal; missing original assets fail clearly',async()=>{
@@ -182,11 +186,15 @@ test('installer uploads the tested finite triangles through the normal physical 
   const names=installSourceEarthfallMeshes(gl,{catalog},{maps});assert.equal(names.length,124);
   assert.equal(catalog.size,124);assert.equal(buffers.filter(b=>b.data instanceof Float32Array).length,124*3);
   assert.equal([...catalog.values()].reduce((n,m)=>n+m.primitives[0].count/3,0),BUDGET.customTriangles);
-  const p=catalog.get('source-earthfall-earth-0').primitives[0];assert.equal(p.texture,maps.texture);assert.equal(p.printedSurface.process,'source-fragments');assert.ok(attributes.some(a=>a[0]===12&&a[1]===4&&a[4]===29*4&&a[5]===100));
+  const p=catalog.get('source-earthfall-earth-0').primitives[0];assert.equal(p.texture,maps.texture);assert.equal(p.printedSurface.process,'source-blueprint-fragments');assert.ok(attributes.some(a=>a[0]===12&&a[1]===4&&a[4]===29*4&&a[5]===100));
   const backing=catalog.get('source-earthfall-catch').primitives[0],path=catalog.get('source-earthfall-path').primitives[0];
   assert.equal(backing.texture,null,'bright repeated source stock must not fill every opened hole');assert.equal(backing.materialRole,'quiet-metal');assert.equal(backing.metallic,0);assert.equal(backing.roughness,1);
-  assert.ok(backing.base.slice(0,3).every((v,i)=>v<path.base[i]/10));assert.equal(path.texture,maps.texture);assert.equal(path.printedSurface.process,'source-fragments');
+  assert.ok(backing.base.slice(0,3).every((v,i)=>v<path.base[i]/10));assert.equal(path.texture,maps.texture);assert.equal(path.printedSurface.process,'source-blueprint-fragments');
   const pathGeometry=pieces.get('source-earthfall-path'),bounds=sourceContinuationMeshPayload(pathGeometry).bounds;
   assert.equal(bounds.max[0]-bounds.min[0],14);assert.equal(bounds.max[2]-bounds.min[2],45);
   const before=buffers.length;assert.deepEqual(installSourceEarthfallMeshes(gl,{catalog},{maps}),names);assert.equal(buffers.length,before,'residency checks must not duplicate immutable GPU meshes');
+  const control=new Map();installSourceEarthfallMeshes(gl,{catalog:control},{maps:{...maps,blueprint:false}});
+  assert.equal(control.get('source-earthfall-path').primitives[0].printedSurface.process,'source-fragments');
+  assert.deepEqual(control.get('source-earthfall-catch').primitives[0].base,backing.base,'dark folio bearing remains unchanged');
+  assert.deepEqual(p.base,[1,1,1,1]);assert.deepEqual(p.emissive,[0,0,0]);
 });

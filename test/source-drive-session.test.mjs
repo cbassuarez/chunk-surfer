@@ -31,7 +31,7 @@ function fixture(extra = {}) {
   };
   const acoustics = { cabin: { id: 'owned-cabin-bus' }, initialize() { calls.push('audio-initialize'); }, setPaused(v) { calls.push(['audio-pause', v]); }, sync() {}, joint(v) { joints.push(v); }, click() {}, level: () => .125, dispose() { calls.push('audio-dispose'); } };
   const renderer = { async initialize(value) { calls.push(['renderer-initialize', value]); }, render(frame) { calls.push(['render', frame]); }, dispose() { calls.push('renderer-dispose'); } };
-  const host = { metrics, returnPose, runId: 'test-run', acoustics, recording: tape, renderer, tapeTransport: () => ({ headSeconds: 119 }), onStatus: v => statuses.push(v), onReturned: async v => { commits.push(v); }, ...extra };
+  const host = { metrics, returnPose, runId: 'test-run', entry: 'review', acoustics, recording: tape, renderer, tapeTransport: () => ({ headSeconds: 119 }), onStatus: v => statuses.push(v), onReturned: async v => { commits.push(v); }, ...extra };
   return { host, tape, acoustics, renderer, calls, joints, commits, statuses, session: createSourceDriveSession(host) };
 }
 

@@ -15,7 +15,7 @@ export const CUT_MODULES=Object.freeze([
  {id:'cut-departure',d:900,lateral:4.8,height:.92,living:true,ribs:true},
  {id:'cut-last-stratum',d:924,lateral:5.25,height:.76,living:false,ribs:true},
 ]);
-export const CUT_INSPECTION_LAMPS=Object.freeze([{id:'cut-inspection-approach',d:748,lateral:-5.3,intensity:1.1,radius:39},{id:'cut-inspection-hold',d:854,lateral:-7.7,intensity:1.3,radius:43}]);
+export const CUT_INSPECTION_LAMPS=Object.freeze([{id:'cut-inspection-approach',d:748,lateral:-5.3,intensity:1.1,radius:39},{id:'cut-inspection-hold',d:812,lateral:-7.7,intensity:2.1,radius:43,target:{d:829,local:[-2,7.8,-7]}}]);
 // The old broad white cliff/curtain is deliberately retired. Four sparse low
 // engineering insets retain material history without competing with the vault.
 const legacyInsets=new Set(['cut-first','cut-exposure','cut-hero','cut-last-stratum']);
@@ -28,7 +28,13 @@ function instance(mesh,m,id,character){return{mesh,id,matrix:m,x:m[12],y:m[13],z
 // perimeter. Overhead bone/tissue and the offshore sea never close the road.
 export function cutColliders(){return[];}
 export function makeCutScene(s,evolution=null){if(s.cutEnabled===false)return{props:[],sources:[],lights:[],diagnostics:{enabled:false}};const props=[],sources=[],lights=[],d=-s.z;for(const m of CUT_MODULES){if(Math.abs(m.d-d)>185)continue;const a=worldAt(m.d,m.lateral),mt=matrix(a,m.height*.24),pose=m.living?cutPose({timeSec:s.programTime,furthest:s.furthest,distance:m.d,id:m.id}):null;if(legacyInsets.has(m.id))for(const mesh of staticNames)props.push(instance(mesh,mt,m.id+'-'+mesh));if(pose){if(m.id==='cut-hero')for(const mesh of CUT_LIVING_MESHES)props.push(instance(mesh,mt,m.id+'-'+mesh,cutLayerPose(mesh,{timeSec:s.programTime,furthest:s.furthest,distance:m.d,id:m.id})));const p=worldAt(m.d,m.lateral+1.8,2.0);sources.push({id:m.id,world:[32+p.x,p.y,32+p.z],motion:pose.motion});}}
- for(const l of CUT_INSPECTION_LAMPS){const a=worldAt(l.d,l.lateral),mt=matrix(a);props.push(instance('cut_inspection_lamp',mt,l.id));const p=worldAt(l.d,l.lateral+.34,4.16),c=Math.cos(a.heading),n=Math.sin(a.heading);lights.push({id:l.id,x:32+p.x,y:p.y,z:32+p.z,color:[.73,.81,.91],intensity:l.intensity,radius:l.radius,penetration:1,direction:[c*.94,.34,n*.94]});}
+ for(const l of CUT_INSPECTION_LAMPS){
+  const a=worldAt(l.d,l.lateral);let mt=matrix(a),target=null;
+  if(l.target){const site=matrix(worldAt(l.target.d)),q=l.target.local;target=[0,1,2].map(k=>site[k]*q[0]+site[k+4]*q[1]+site[k+8]*q[2]+site[k+12]);mt=matrix({...a,heading:Math.atan2(target[2]-(32+a.z),target[0]-(32+a.x))});}
+  props.push(instance('cut_inspection_lamp',mt,l.id));
+  const p=target?[mt[12]+mt[0]*.335,mt[13]+4.16,mt[14]+mt[2]*.335]:(()=>{const q=worldAt(l.d,l.lateral+.34,4.16);return[32+q.x,q.y,32+q.z];})(),direction=target?target.map((v,k)=>v-p[k]):[Math.cos(a.heading)*.94,.34,Math.sin(a.heading)*.94],length=Math.hypot(...direction);
+  lights.push({id:l.id,x:p[0],y:p[1],z:p[2],color:[.73,.81,.91],intensity:l.intensity,radius:l.radius,penetration:1,direction:direction.map(v=>v/length)});
+ }
  const landscape=makeCutLandscape(s,evolution);props.push(...landscape.props);sources.push(...(landscape.sources||[]));
  // The landscape's physical surfaces take precedence over retired wall-module
  // hints. A nearest point on the long wave can remain audible beside the ribs.

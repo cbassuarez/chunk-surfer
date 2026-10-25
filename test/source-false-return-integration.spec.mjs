@@ -29,7 +29,8 @@ function host(){
     createSourceContinuationAudio:()=>audio,scenes:{push:s=>s.enter(),remove:s=>s.exit()},ensureCtx(){},actx:{},sfxGain:{},getSave:()=>data,saveCommit:p=>{data={...data,...p};},
     PB:{stopPlayback(){}},pubRoomAudio:null,windowChoreography:null,towerBellDirector:null,bellPealPerformance:null,frontEndSession:null,frontEndPlateOverride:null,
     RT:{setBed(){}},STORY:{stopAll(){}},SPEECH:{clearSpeech(){}},R3:{r3dSetFrontEndPlate(){},r3dSetLookAngles(){},r3dSnapCameraOnNextFrame(){},r3dResetVfdMemory(){}},
-    sourceCameraPatch:()=>({}),sourceEarthfallProtected:()=>false,gameplayInputLifecycleActive:()=>true,pushEvent:e=>{throw Error(e);},
+    sourceCameraPatch:()=>({}),sourcePresentationTorch:()=>({on:false,look:{power:0}}),
+    sourceEarthfallProtected:()=>false,gameplayInputLifecycleActive:()=>true,pushEvent:e=>{throw Error(e);},
     beginSourceEarthfall:async next=>{continued++;const scene={id:'source-earthfall',view:()=>({ready:true}),entry:next};h.sourceContinuationScene=scene;return scene;},
   };
   for(const key of ['resetMotionInput','cancelOutskirtDoorAnswer','stopOutskirtsStreetAudio','pauseOutskirtsLastLight','stopSourceShoreAudio','stopSourceDockDoorAudio','stopSourceCorridorRain','syncStationEdgeSound','syncElsewhereBeds','endHorizonScore','stopAllVoices','stopWorldLayerVoice','silenceAmbientDrone','endBootWeather','syncSourceRender','updateAudio','ensureInteractionFocus'])h[key]=()=>{};

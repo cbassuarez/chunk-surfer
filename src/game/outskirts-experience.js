@@ -58,6 +58,7 @@ export function normalizeOutskirtsExperience(value = {}) {
   const v = value && typeof value === 'object' ? value : {};
   return {
     seen: ids(v.seen), lampsOff: ids(v.lampsOff), actions: ids(v.actions),
+    loopTurns: Math.floor(clamp(v.loopTurns, 0, 1_000_000)), loopHolding: v.loopHolding === true,
     observed: (Array.isArray(v.observed) ? v.observed : []).filter(p => typeof p?.id === 'string').slice(-128)
       .map(p => ({ id: p.id.slice(0, 120), seen: !!p.seen, gone: !!p.gone, epoch: clamp(p.epoch, 0, 32), face: p.face == null ? null : finite(p.face) })),
     busStage: clamp(v.busStage, 0, 4),
@@ -266,6 +267,15 @@ export function createOutskirtsExperience(initialState) {
   }
   return {
     remember, echo, bus, action, tickCharacters, characterFrame, applyCharacterFrame, womanState, womanWrongOrigin,
+    setRoadLoop: ({ turns = state.loopTurns, holding = state.loopHolding } = {}) => {
+      state.loopTurns = Math.floor(clamp(turns, 0, 1_000_000)); state.loopHolding = holding === true;
+      return { turns: state.loopTurns, holding: state.loopHolding };
+    },
+    rebaseRoadLocomotion: deltaAlong => {
+      // Recorded earlier traversals remain original evidence. Only the live
+      // derivative used to measure this frame's speed changes coordinate frame.
+      if (state.locomotion && Number.isFinite(deltaAlong)) state.locomotion.along += deltaAlong;
+    },
     busStage: () => state.busStage,
     hasAction: id => state.actions.includes(id),
     events: () => events.splice(0),

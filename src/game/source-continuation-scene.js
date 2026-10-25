@@ -38,6 +38,7 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
   function dispatchFinish(kind){
     audio?.stop?.();handoff=null;
     const value=save(kind);
+    trace({type:'handoff-dispatch',kind,elapsed:state.elapsed,phase:state.phase});
     try{
       const result=kind==='complete'?onComplete({checkpoint:value}):onReturn({checkpoint:value,returnPose:value.returnPose});
       Promise.resolve(result).then(ok=>{if(ok===false)throw Error('The threshold could not be restored. Try it again.');})
@@ -51,6 +52,7 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
     // Let the physical latch/contact finish in the same rendered world before
     // releasing the shared presentation. This clock freezes with normal pause.
     if(canRender)handoff={kind,elapsed:0,duration:.35};else return dispatchFinish(kind);
+    trace({type:'handoff-begin',kind,elapsed:state.elapsed,phase:state.phase,duration:.35});
     return true;
   }
   function apply(input){
@@ -58,7 +60,10 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
     const result=stepSourceContinuation(state,input);state=result.state;
     const events=result.events|| (result.event?[result.event]:[]);
     for(const event of events){
-      if(event.type==='phase')clear();
+      if(['phase','drop','land','capture','recovered','reveal-complete'].includes(event.type)){
+        const released=[...keys];clear();
+        trace({type:'control-boundary',reason:event.type,phase:state.phase,elapsed:state.elapsed,released});
+      }
       audio?.event?.(event,soundState());trace({type:'event',event:copy(event),choiceId:choice||null,phase:state.phase,elapsed:state.elapsed});
     }
     if(result.event?.type==='return'||events.some(e=>e.type==='return'))finish('return');
@@ -73,7 +78,13 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
       save('loading');
       initializing=Promise.resolve().then(()=>renderer.initialize?.()).then(ok=>{
         if(closed)return false;if(ok===false)throw Error('The next Source has not resolved.');
-        ready=true;save('entry-or-resume');return true;
+        ready=true;save('entry-or-resume');
+        // A reload can retain the terminal receipt before the host has changed
+        // ownership. Resume that bounded handoff instead of reopening a body
+        // whose controller correctly refuses further movement.
+        if(state.status==='returned'||state.status==='completed'&&!state.exitReceipt?.delivered)
+          finish(state.status==='completed'?'complete':'return');
+        return true;
       }).catch(err=>{if(!closed)report(err);return false;});return initializing;
     },
     enter(){void scene.initialize();},
@@ -129,7 +140,7 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
       if(!live()){
         clear();if(!e.repeat&&(key==='x'||key==='e')&&error)finish(key==='e'&&failedFinish?failedFinish:'return');return true;
       }
-      if(movement.includes(key)){if(!e.repeat&&!state.reveal)keys.add(key);return true;}
+      if(movement.includes(key)){if(!e.repeat&&!state.reveal&&!state.recovery&&!state.fall)keys.add(key);return true;}
       if(!e.repeat&&(key==='e'||key==='enter'||e.controllerAction==='interact'||e.controllerAction==='confirm'))apply({dt:0,interact:true,renderReady:true});
       return true;
     },

@@ -244,7 +244,8 @@ test('pause immediately cancels active gallery audio even though the paused loop
   const a=main.indexOf('function setGameplayPaused('),b=main.indexOf('function togglePause()',a);
   let cancelled=0,saved=0;
   const context={paused:false,storyMode:true,inRogue:true,sourceDriveSession:null,sourcePubScene:null,pubRoomAudio:null,sourcePubAudio:null,getInDriveTeaserScene:null,
-    sourceContinuationAudio:null,sourceContinuationScene:null,coastalMemoryScene:null,
+    sourceContinuationAudio:null,sourceContinuationScene:null,coastalMemoryScene:null,sourceReturnFlashbackScene:null,standingTearScene:null,towerWarningAudio:null,
+    syncChapelTapeDemandTimelineHold(){},
     academicGhostDispatch:{cancel(){cancelled++;}},saveAcademicGhostClub(){saved++;},
     cancelApparitionApplause(){},pauseTowerEndingRecording(){},saveSourceView(){},
     outskirtsStreetAudio:null,pauseOutskirtsLastLight(){},lowerTowerPersonalRecorder(){},stopTowerPersonalWorldSignal(){},
@@ -263,8 +264,8 @@ test('the regular autosave checkpoints loan time before either normal or anomaly
   let saved=null;const society=createAcademicSociety();society.tick(0,{onAcademicFloor:true,listener:{x:9,y:250}});
   const tree=society.beginDialogue('emile');society.endDialogue('emile',{completed:true,choices:[tree.nodes.need.choices.find(c=>c.societyAction==='lend')]});
   for(let n=0;n<12;n++)society.tick(.25,{onAcademicFloor:true,listener:{x:9,y:250}});
-  const context={saveAcc:0,saveAcademicGhostClub(){saved=society.save();},usingStairAnomaly:()=>true,
-    saveCommit(){},stepCount:0,storyMode:false,getSave:()=>({}),hushAudioRuntime:null,sourceDriveSession:null,sourcePubScene:null,sourceContinuationScene:null,coastalMemoryScene:null};
+  const context={saveAcc:0,saveAcademicGhostClub(){saved=society.save();},rememberChapelTapeDemandDeparture(){},usingStairAnomaly:()=>true,
+    saveCommit(){},stepCount:0,storyMode:false,getSave:()=>({}),hushAudioRuntime:null,sourceDriveSession:null,sourcePubScene:null,sourceContinuationScene:null,coastalMemoryScene:null,sourceReturnFlashbackScene:null,standingTearScene:null};
   vm.createContext(context);vm.runInContext(main.slice(a,b),context);
   context.saveTick(4);assert.equal(saved.loanRemaining,9);assert.equal(saved.loanPulses,1);
 });

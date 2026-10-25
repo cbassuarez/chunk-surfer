@@ -62,6 +62,16 @@ export const CREDITS = Object.freeze([
     ]),
   }),
   Object.freeze({
+    heading: 'Anatomical Reference Models',
+    lines: Object.freeze([
+      'Browne K., Schlehlein H., Herr II B. W., Quardokus E., Bueckle A., Börner K. (2022). HuBMAP CCF 3D Reference Object Library, v1.2. CC BY 4.0.',
+      'Original heart model created by Kristen Browne using NLM Visible Human Male data.',
+      'https://hubmapconsortium.github.io/ccf/pages/ccf-3d-reference-library.html',
+      'https://creativecommons.org/licenses/by/4.0/',
+      'Adapted: external chamber selection, simplified geometry and local boundary repair, axis conversion, uniform monumental scale, authored materials and animation.',
+    ]),
+  }),
+  Object.freeze({
     heading: 'Window Collage Footage',
     lines: Object.freeze([
       'Bolognese bellringers — Renato Morselli (CC BY 3.0)',

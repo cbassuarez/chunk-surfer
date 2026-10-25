@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { createSourceIVScene } from '../src/game/source-iv-scene.js';
-import { freshSourceIV, stepSourceIV } from '../src/game/source-iv.js';
+import { freshSourceIV, normalizeSourceIV, stepSourceIV, sourceIVFrame, sourceIVFocus } from '../src/game/source-iv.js';
 import { SOURCE_IV as C } from '../src/data/source-iv.js';
 
 const copy = value => JSON.parse(JSON.stringify(value));
@@ -16,7 +17,7 @@ function completed() {
   assert.equal(state.status, 'completed'); assert.equal(state.exitReceipt.delivered, false); return state;
 }
 function harness(options = {}) {
-  const checkpoints = [], sounds = [], errors = [], completes = [], exits = [], draws = [];
+  const checkpoints = [], sounds = [], errors = [], completes = [], exits = [], draws = [], traces = [];
   const presentation = { protected: false };
   let ready = true, initializations = 0, disposals = 0, clears = 0;
   const scene = createSourceIVScene({ checkpoint: options.checkpoint || fresh(), presentation: () => presentation,
@@ -25,10 +26,11 @@ function harness(options = {}) {
       dispose() { disposals++; }, clear() { clears++; } },
     onCheckpoint(value, metadata) { checkpoints.push({ value: copy(value), metadata: copy(metadata) }); },
     onSound(value) { sounds.push(copy(value)); }, onError(error) { errors.push(String(error?.message || error)); },
+    onTrace(value) { traces.push(copy(value)); },
     onComplete(value) { completes.push(copy(value)); return options.onComplete?.(value) ?? true; },
     onExit(value) { exits.push(copy(value)); },
   });
-  return { scene, presentation, checkpoints, sounds, errors, completes, exits, draws,
+  return { scene, presentation, checkpoints, sounds, errors, completes, exits, draws, traces,
     ready(value) { ready = value; }, stats: () => ({ initializations, disposals, clears }) };
 }
 
@@ -43,6 +45,37 @@ test('Source IV waits for its actual renderer and clears input offered during lo
   h.scene.key({ key: 'w' }); h.ready(false); h.scene.update(.25);
   const stopped = h.scene.serialize(); h.ready(true); h.scene.update(.1);
   assert.equal(h.scene.serialize().z, stopped.z); assert.deepEqual(h.sounds, []); h.scene.exit();
+});
+
+test('ready play and loading draw no gameplay captions, including beside the final door', async () => {
+  const source=readFileSync(new URL('../src/game/source-iv-scene.js',import.meta.url),'utf8');
+  // Substitute only the text drawing boundary. Run the actual scene factory
+  // with its actual physical controller, rather than a second test presenter.
+  const factory=new Function('normalizeSourceIV','stepSourceIV','sourceIVFrame','sourceIVFocus','uiSize','uiCenter',
+    source.replace(/^import[^\n]*\n/gm,'').replace('export function createSourceIVScene','return function createSourceIVScene'));
+  const words=[],draws=[];
+  const create=factory(normalizeSourceIV,stepSourceIV,sourceIVFrame,sourceIVFocus,
+    ()=>({cols:120,rows:60}),(...args)=>words.push(args));
+  const scene=create({checkpoint:farDoor(),renderer:{initialize:()=>true,ready:()=>true,
+    clear(){},render(state){draws.push(copy(state));return true;}}});
+  scene.render();assert.deepEqual(words,[],'loading stays visually within the transition');
+  await scene.initialize();assert.ok(scene.view().focus);
+  scene.render();scene.key({key:'e'});updateFor(scene,.9);scene.render();
+  assert.equal(draws.length,2);assert.deepEqual(words,[],'the visible door and its physical swing carry the interaction');
+  scene.exit();
+});
+
+test('IV traces bind route, gaze, door motion and the completed threshold without advancing protected play', async () => {
+  const h=harness({checkpoint:farDoor()});await h.scene.initialize();
+  assert.equal(h.traces[0].type,'ready');assert.equal(h.traces[0].sequence,'source-IV');
+  h.scene.key({key:'e'});updateFor(h.scene,1);
+  assert.ok(h.traces.some(t=>t.type==='event'&&t.event.type==='door'&&t.doorOpen));
+  assert.ok(h.traces.some(t=>t.type==='pose'&&t.doorProgress>0&&Number.isFinite(t.yaw)));
+  h.scene.pause();const paused=h.traces.length;h.scene.update(20);assert.equal(h.traces.length,paused);
+  h.scene.resume();h.scene.key({key:'w'});updateFor(h.scene,2);await flush();
+  assert.ok(h.traces.some(t=>t.type==='event'&&t.event.type==='complete'&&t.z<=C.exit.z));
+  assert.equal(h.traces.filter(t=>t.type==='handoff').length,1);
+  h.scene.exit();
 });
 
 test('Source IV emits footsteps only for real movement and the door sound only for a fresh interaction', async () => {

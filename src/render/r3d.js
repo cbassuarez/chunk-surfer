@@ -14,6 +14,7 @@
 // module only owns facing (N/E/S/W) and the camera.
 
 import { assetUrl } from '../platform/paths.js';
+import {SOURCE_BLUEPRINT_ACQUISITION_GLSL,sourceBlueprintEnabled} from './source-blueprint-contract.js';
 import { MAIN_STAIR_WALL_PACK } from '../data/main-stair-wall-dressing.js';
 import { EXTERIOR_FRONTAGE_PACK } from '../data/exterior-frontages.js';
 import { EXTERIOR_ROOFLINE_PACK } from '../data/exterior-roofline.js';
@@ -2959,9 +2960,10 @@ void main(){
 // conservatoire. This pass only adapts the prop targets to the recording pass's
 // colour/depth/mark contract. It does not infer materials from hue or alpha.
 const SOURCE_ROOM_ACQUISITION_FRAG = COMMON_GLSL + `
+${SOURCE_BLUEPRINT_ACQUISITION_GLSL}
 uniform sampler2D uProps,uPropDepth,uPropMarks,uHull,uHullDepth,uHullMarks;
 uniform vec2 uRes,uNearFar,uHullNearFar;
-uniform float uMarksReady,uHullReady;
+uniform float uMarksReady,uHullReady,uBlueprint;
 layout(location=0) out vec4 o;
 layout(location=1) out vec4 oMark;
 float sourceViewDepth(float depth,vec2 range){
@@ -2978,7 +2980,18 @@ void main(){
   if(useHull){material=hull;viewMetres=hullMetres;}
   // Glyph RGB is already premultiplied, while physical surfaces are opaque.
   // Compositing both over unlit absence preserves their actual light values.
-  o=vec4(clamp(material.rgb,0.0,1.0),1.0/(1.0+viewMetres*.14));
+  vec3 acquired=clamp(material.rgb,0.0,1.0);
+  if(uBlueprint>.5){
+    vec2 pixel=1.0/uRes;
+    vec4 neighbours=vec4(
+      sourceViewDepth(texture(uPropDepth,uv+vec2(pixel.x,0)).r,uNearFar),
+      sourceViewDepth(texture(uPropDepth,uv-vec2(pixel.x,0)).r,uNearFar),
+      sourceViewDepth(texture(uPropDepth,uv+vec2(0,pixel.y)).r,uNearFar),
+      sourceViewDepth(texture(uPropDepth,uv-vec2(0,pixel.y)).r,uNearFar));
+    float contour=useHull?0.0:sourceBlueprintDepthContour(viewMetres,neighbours);
+    acquired=sourceBlueprintResolve(material.rgb,material.a,viewMetres,contour,uv.y);
+  }
+  o=vec4(acquired,1.0/(1.0+viewMetres*.14));
   // The exact production sentinel has no derived grain. Never read marks left
   // by a preceding overworld frame when this surface has no authored marks.
   oMark=useHull?texelFetch(uHullMarks,ivec2(gl_FragCoord.xy),0):
@@ -3106,7 +3119,8 @@ float puddleMask(vec2 p){
   return max(patches,pool);
 }
 
-uniform mat4 uDriveCabinInverse,uDriveVolumeShadowMatrix;
+uniform mat4 uDriveCabinInverse,uDriveVolumeShadowMatrix,uDriveReturnBodyInverse;
+uniform vec4 uDriveReturnMin,uDriveReturnMax;
 uniform vec4 uDriveWeather,uDrivePane,uDrivePaneSlope,uDriveWeatherExtra,uDriveStorm,uDriveRainRoof,uDriveLoad,uDriveAirLayer,uDriveImpossibleWeather;
 uniform vec4 uDriveFogLamp0,uDriveFogLamp1;
 uniform sampler2D uDriveWetness,uDriveVolumeShadow;
@@ -3434,6 +3448,17 @@ void main(){
       // Transmitted opaque geometry retains its depth. Treating transparent
       // beads as opaque near silhouettes made the final edge stage draw rings.
     }
+  }
+  // The return leaves the remembered world while the SAME physical van
+  // remains for the camera's outward dolly. Recover its actual depth hit in
+  // rigid body space; screen position never decides what survives. Zero is
+  // the default for every ordinary drive and all other presentations.
+  if(uDriveReturnMin.w>.0){
+    vec3 fwd=vec3(sin(uYaw)*cos(uPitch),sin(uPitch),-cos(uYaw)*cos(uPitch));
+    vec3 hit=uEyeCells*.5+wd*(distanceM/max(.001,dot(wd,fwd)));
+    vec3 bodyHit=(uDriveReturnBodyInverse*vec4(hit,1.0)).xyz;
+    bool vehicle=coverage>.001&&all(greaterThanEqual(bodyHit,uDriveReturnMin.xyz-vec3(.035)))&&all(lessThanEqual(bodyHit,uDriveReturnMax.xyz+vec3(.035)));
+    colour*=1.0-uDriveReturnMin.w*(vehicle?0.0:1.0);
   }
   colour=mix(colour,vec3(0.0),texture(uOpeningMask,uv).r*uOpeningMaskReady);
   // Ordinary acquisition uses the same packed view depth as the building.
@@ -3880,6 +3905,9 @@ export function r3dHeldNoteStatus(){
 }
 let streetPilotReady=false;
 let openingStreetReady=false;
+let chapelTapeDemandReady=false,chapelTapeDemandError=null,chapelTapeDemandLoadGeneration=0;
+export function r3dChapelTapeDemandReady(){return chapelTapeDemandReady;}
+export function r3dChapelTapeDemandStatus(){return{ready:chapelTapeDemandReady,error:chapelTapeDemandError};}
 let academicGalleryReady=false,academicGalleryError=null;
 let progPressureFinish=null,pressureFinishTex=null,pressureFinishFbo=null,pressureIdentityTex=null;
 let pressureFinishReady=false;
@@ -5305,6 +5333,7 @@ function drawSourceVoidPhysical(now,{voidState,worldYaw,torchPower,torchColor=[.
   gl.uniform2f(sourceVoidPhysicalU('uNearFar'),targets.near,targets.far);
   gl.uniformMatrix4fv(sourceVoidPhysicalU('uCoastInverse'),false,coastal.inverse);
   gl.uniform4fv(sourceVoidPhysicalU('uCoastSea'),coastal.params);
+  gl.uniform2fv(sourceVoidPhysicalU('uCoastOptics'),coastal.optics);
   gl.uniform4fv(sourceVoidPhysicalU('uCoastLampPosition[0]'),coastal.positions);
   gl.uniform4fv(sourceVoidPhysicalU('uCoastLampDirection[0]'),coastal.directions);
   gl.uniform1f(sourceVoidPhysicalU('uPitch'),pitch);gl.uniform4f(sourceVoidPhysicalU('uDriveSky'),.016,.019,.024,drive?1:0);
@@ -5312,6 +5341,10 @@ function drawSourceVoidPhysical(now,{voidState,worldYaw,torchPower,torchColor=[.
   gl.uniform4f(sourceVoidPhysicalU('uDriveWeather'),weather?.rain||0,weather?.extinction||0,weather?.timeSec||0,weather?.active&&wt?1:0);
   gl.uniform4f(sourceVoidPhysicalU('uDriveImpossibleWeather'),weather?.fog||0,weather?.snow||0,weather?.whiteout||0,0);
   gl.uniformMatrix4fv(sourceVoidPhysicalU('uDriveCabinInverse'),false,weather?.worldToCabin||[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);
+  const returnBlack=weather?.returnBlack;
+  gl.uniformMatrix4fv(sourceVoidPhysicalU('uDriveReturnBodyInverse'),false,returnBlack?.worldToBody||[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);
+  gl.uniform4f(sourceVoidPhysicalU('uDriveReturnMin'),...(returnBlack?.min||[0,0,0]),Math.max(0,Math.min(1,Number(returnBlack?.amount)||0)));
+  gl.uniform4f(sourceVoidPhysicalU('uDriveReturnMax'),...(returnBlack?.max||[0,0,0]),0);
   gl.uniform4f(sourceVoidPhysicalU('uDrivePane'),wp.left??-.79,wp.right??.79,wp.bottomY??1.30,wp.topY??2.16);
   gl.uniform4f(sourceVoidPhysicalU('uDrivePaneSlope'),wp.bottomZ??-1.17,((wp.topZ??-.77)-(wp.bottomZ??-1.17))/((wp.topY??2.16)-(wp.bottomY??1.30)),weather?.seed||0,weather?.roadWetness||0);
   gl.uniform4f(sourceVoidPhysicalU('uDriveWeatherExtra'),drive?.heading||0,drive?.lampDip??.020,weather?.wind?.[0]||0,weather?.wind?.[1]||0);
@@ -5520,6 +5553,7 @@ function drawSourceRoomMemory(now,{torchPower=0,sourceTorchMode=0,torchColor,tor
   gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,targets.marks||targets.color);
   gl.uniform1i(sourceRoomU('uPropMarks'),2);
   gl.uniform1f(sourceRoomU('uMarksReady'),targets.marksReady&&targets.marks?1:0);
+  gl.uniform1f(sourceRoomU('uBlueprint'),sourceLook.blueprint===true&&sourceBlueprintEnabled()?1:0);
   gl.uniform2f(sourceRoomU('uRes'),uniforms.sceneW,uniforms.sceneH);
   gl.uniform2f(sourceRoomU('uNearFar'),targets.near,targets.far);
   gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D,hull?.color||targets.color);
@@ -5960,8 +5994,10 @@ function runPixelMeshPass(state, now, { physicalAcquisitionWeight = 0 } = {}) {
     reveal:pixelMeshSettings.reduceMotion?(sourceCrossing?.reveal>.5?1:0):sourceCrossing?.reveal,
   }):null;
   const acquisitionCamera=homeAcquisition?.cameraMetres;
-  gl.uniform3f(pixelMeshU('uCam'), acquisitionCamera?acquisitionCamera[0]/CELL:camX,
-    acquisitionCamera?acquisitionCamera[1]/CELL:camY,acquisitionCamera?acquisitionCamera[2]/CELL:camZ);
+  const recordingOffset=state?.recordingOriginOffset;
+  const recordingShift=axis=>Number.isFinite(recordingOffset?.[axis])?recordingOffset[axis]/CELL:0;
+  gl.uniform3f(pixelMeshU('uCam'), acquisitionCamera?acquisitionCamera[0]/CELL:camX+recordingShift('x'),
+    acquisitionCamera?acquisitionCamera[1]/CELL:camY+recordingShift('y'),acquisitionCamera?acquisitionCamera[2]/CELL:camZ+recordingShift('z'));
   // World bearing, not the logical one. This uniform drives the VFD temporal
   // reprojection: if the scene pass rotates on the spiral and this does not, the
   // whole climb smears.
@@ -6015,6 +6051,8 @@ function runPixelMeshPass(state, now, { physicalAcquisitionWeight = 0 } = {}) {
   pixelMeshStatus.physicalAcquisitionWeight=physicalAcquisitionWeight;
   gl.uniform1f(pixelMeshU('uRecordingExposure'), captureExposure);
   gl.uniform1f(pixelMeshU('uRecordingSensitivity'), textSpaceActive&&sourceLook.roomMemoryActive?captureExposure:1);
+  const blueprintRecording=textSpaceActive&&sourceLook.roomMemoryActive&&sourceLook.blueprint===true&&sourceBlueprintEnabled();
+  gl.uniform2f(pixelMeshU('uSourceBlueprint'),blueprintRecording?1:0,1/(1+(P3.propTargets().far||90)*.14));
   gl.uniform1f(pixelMeshU('uRecordingPatternScale'), state?.driveStudy?.active===true ? 480 : look.recording.patternScale);
   gl.uniform1f(pixelMeshU('uRecordingBlackFloor'), look.recording.blackFloor);
   gl.uniform1f(pixelMeshU('uRecordingDensityGamma'), look.recording.densityGamma);
@@ -6122,6 +6160,7 @@ export function r3dInit(mapEl) {
     console.error('pixel mesh shader unavailable; continuing without VFD mesh', err);
   }
   P3.props3dInit(gl);
+  const tapeDemandGeneration=++chapelTapeDemandLoadGeneration;chapelTapeDemandReady=false;chapelTapeDemandError=null;
 
   gl.getExtension('EXT_color_buffer_float'); // render targets for the RD field
   anisoExt = gl.getExtension('EXT_texture_filter_anisotropic');
@@ -6168,6 +6207,12 @@ export function r3dInit(mapEl) {
   basePropPackLoad
     .then((pack)=>{
       SHORE.sourceShoreSetHardwarePack(pack);
+      void P3.addPropPack(assetUrl('assets/chapel-tape-demand.glb')).then(()=>{
+        if(tapeDemandGeneration!==chapelTapeDemandLoadGeneration)return;
+        const catalog=new Set(P3.propMeshCatalog());
+        if(!['tape_demand_paint_line','tape_demand_paint_block','tape_demand_paint_line_pale','tape_demand_paint_block_pale','tape_demand_field_case','tape_demand_strap','tape_demand_wall_catch'].every(name=>catalog.has(name)))throw Error('Incomplete chapel tape demand pack');
+        chapelTapeDemandReady=true;chapelTapeDemandError=null;
+      }).catch(error=>{if(tapeDemandGeneration!==chapelTapeDemandLoadGeneration)return;chapelTapeDemandError=String(error?.message||error);console.warn('chapel departure material unavailable; retaining an unbound exit',error);});
       void P3.addPropPack(assetUrl('assets/institution-posters.glb')).catch(err=>console.warn('institution posters unavailable',err));
       void streetCrowdPacks.load(crowdLoadGeneration);
       for(const[kind,file,names]of[
@@ -6502,6 +6547,16 @@ let cameraSnapPending = false;
 // main.js has selected the destination's physical slice and eye-height policy.
 export function r3dSnapCameraOnNextFrame() { cameraSnapPending = true; }
 
+// A coordinate rebase moves the world and eye together. It is not a camera
+// move: retain the recorder history, movement estimate, aim and settling.
+export function r3dRebasePresentation({x=0,z=0}={}){
+  if(!Number.isFinite(x)||!Number.isFinite(z))return false;
+  camX+=x;camZ+=z;
+  if(vfdPreviousX!==null)vfdPreviousX+=x;
+  if(vfdPreviousZ!==null)vfdPreviousZ+=z;
+  return true;
+}
+
 // Corridors are two cells wide, so an arbitrary spawn facing can put a wall
 // both ahead of you and behind you — which reads exactly like broken arrow keys.
 export function r3dSetFacing(f) {
@@ -6641,7 +6696,7 @@ export function r3dSetSourceScene(scene = {}) {
   P3.setSourceScene(scene);
   sourceLook = scene.look && typeof scene.look === 'object'
     ? { sunrise: scene.look.sunrise, chroma: scene.look.chroma, paper: scene.look.paper,
-      roomMemoryActive: scene.look.roomMemoryActive===true }
+      roomMemoryActive: scene.look.roomMemoryActive===true, blueprint:scene.look.blueprint===true }
     : { sunrise: 0, chroma: 1, paper: 0 };
   sourceWeather = scene.weather && typeof scene.weather === 'object'
     ? { rain: scene.weather.rain, moon: scene.weather.moon, clouds: scene.weather.clouds }

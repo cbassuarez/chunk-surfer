@@ -7,6 +7,40 @@ export const RADIO_SAMPLE_RATE=16000;
 export const RADIO_PHASES=Object.freeze(['ordinary','discrepancy','recognition','contradiction','arrival']);
 export const RADIO_STATIONS=Object.freeze({service:{label:'Local service',preset:1},company:{label:'Late company',preset:2},music:{label:'Arts programme',preset:3}});
 export const RADIO_SCRATCH_MANIFEST='/assets/source-drive/radio/scratch-manifest.json';
+// Optional production delivery. The game remains playable with editorial
+// scratch when this file is absent; a template is not a finished performance.
+export const RADIO_FINAL_MANIFEST='/assets/source-drive/radio/programmes.json';
+export const RADIO_FINAL_CACHE_BYTES=64*1024*1024;
+export const RADIO_FINAL_MASTER_BYTES=32*1024*1024;
+export const RADIO_PROGRAMME_NAMES=Object.freeze(Object.keys(RADIO_STATIONS).flatMap(station=>RADIO_PHASES.map(phase=>`${station}-${phase}`)));
+
+export function validateProgrammeCues(cues,duration=RADIO_CYCLE_SECONDS,{requireSignalRole=false}={}){
+ if(cues==null)return[];
+ if(!Array.isArray(cues))throw Error('Programme cues must be an array.');
+ const ids=new Set();let previousEnd=0;
+ return cues.map(cue=>{
+  const start=cue?.start,end=cue?.end??(start+cue?.durationSeconds);
+  if(typeof cue?.id!=='string'||!cue.id.trim()||ids.has(cue.id))throw Error('Programme cue IDs must be nonempty and unique.');
+  if(!Number.isFinite(start)||!Number.isFinite(end)||start<0||end<=start||end>duration||start<previousEnd)throw Error(`Invalid or overlapping programme cue: ${cue.id}`);
+  if(typeof cue.speaker!=='string'||!cue.speaker.trim()||typeof cue.text!=='string'||!cue.text.trim())throw Error(`Programme cue needs its actual speaker label and transcript: ${cue.id}`);
+  if((requireSignalRole||cue.signalRole!=null)&&!['human','unattributed'].includes(cue.signalRole))throw Error(`Invalid programme signal ownership: ${cue.id}`);
+  ids.add(cue.id);previousEnd=end;
+  return Object.freeze({id:cue.id,start,end,speaker:cue.speaker,text:cue.text,...(cue.signalRole?{signalRole:cue.signalRole}:{})});
+ });
+}
+
+export function validateProgrammeManifest(manifest){
+ if(manifest?.schema!==1||manifest.cycleSeconds!==RADIO_CYCLE_SECONDS||!Array.isArray(manifest.programmes)||manifest.programmes.length!==RADIO_PROGRAMME_NAMES.length)throw Error('Programme manifest requires schema 1 and all fifteen 72-second station/phase masters.');
+ const names=new Set();
+ const programmes=manifest.programmes.map(row=>{
+  if(!RADIO_PROGRAMME_NAMES.includes(row?.name)||names.has(row.name))throw Error('Invalid or duplicate drive programme identity.');
+  if(typeof row.url!=='string'||!row.url.startsWith('/')||row.url.startsWith('//')||!row.url.trim())throw Error(`Programme URL must be a local asset: ${row.name}`);
+  if(row.loop!==true||row.temporary!==false||!Array.isArray(row.cues))throw Error(`Final programme requires loop:true, temporary:false and explicit cues: ${row.name}`);
+  names.add(row.name);
+  return Object.freeze({name:row.name,url:row.url,loop:true,temporary:false,cues:Object.freeze(validateProgrammeCues(row.cues,RADIO_CYCLE_SECONDS,{requireSignalRole:true}))});
+ });
+ return Object.freeze({schema:1,cycleSeconds:RADIO_CYCLE_SECONDS,programmes:Object.freeze(programmes)});
+}
 const rows=[
  ['service-water','SERVICE',4.576553,'A little surface water on the unlit section. Allow a few more minutes.'],
  ['service-bridge','SERVICE',3.351701,'The access road is open. Take care on the bridge.'],
@@ -29,7 +63,7 @@ export function programmeCues(station,phase=0){
  if(station==='music')return[cell('music-link',1.8)];
  return[];
 }
-export function programmeFrame(state={},evolution=state.evolution,{speechReady=true,phase:phaseOverride}={}){
+export function programmeFrame(state={},evolution=state.evolution,{speechReady=true,phase:phaseOverride,cues,temporary=true}={}){
  const station=RADIO_STATIONS[state.station]?state.station:'service',phase=Math.floor(clamp(phaseOverride??state.phase,0,4));
  const clockSeconds=Math.max(0,Number(state.programTime)||0),cycleSeconds=mod(clockSeconds,RADIO_CYCLE_SECONDS);
  const reveal=Number.isFinite(evolution?.reveal)?clamp(evolution.reveal):smooth(((state.furthest||0)-580)/320);
@@ -41,11 +75,11 @@ export function programmeFrame(state={},evolution=state.evolution,{speechReady=t
  const lossPhase=mod(clockSeconds+({service:0,company:7.4,music:12.1}[station]),23.7);
  const dropout=phase>=2?smooth((lossPhase-19.5)/.28)*(1-smooth((lossPhase-20.2)/.7))*(.42+.13*Math.min(2,phase-2)):0;
  const audible=state.radioOn!==false&&!state.paused&&clamp(state.volume??.65)>.005&&(1-dropout)*quality>.12;
- const cue=programmeCues(station,phase).find(c=>cycleSeconds>=c.start&&cycleSeconds<c.end)||null;
+ const cue=(cues??programmeCues(station,phase)).find(c=>cycleSeconds>=c.start&&cycleSeconds<c.end)||null;
  return{station,label:RADIO_STATIONS[station].label,phase,clockSeconds,cycleSeconds,cycleIndex:Math.floor(clockSeconds/RADIO_CYCLE_SECONDS),audible,
-  cue,caption:audible&&speechReady&&cue?{speaker:cue.speaker,text:cue.text,cueId:cue.id,temporary:true}:null,
+  cue,caption:audible&&speechReady&&cue?{speaker:cue.speaker,text:cue.text,cueId:cue.id,temporary,...(cue.signalRole?{signalRole:cue.signalRole}:{})}:null,
   signal:{quality,dropout,bandwidthHz:Math.max(1350,4600-reveal*2100-phase*130-whiteout*850)},
-  provenance:'Temporary local stock-system speech and original synthesized programme beds; finished user performances remain absent.'};
+  provenance:temporary?'Temporary local stock-system speech and original synthesized programme beds; finished user performances remain absent.':'Supplied programme master through the physical receiver; cue captions from its replacement manifest.'};
 }
 
 export async function loadScratchVoices(context,{fetcher=globalThis.fetch,clipIds=null}={}){

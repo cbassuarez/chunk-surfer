@@ -32,7 +32,7 @@ function harness(){
     flagSet:(key,value=true)=>{data.flags[key]=value;},flagGet:key=>data.flags[key],inspectPropTracked:id=>calls.inspections.push(id),PROPS:{savePropState:()=>({inspected:[...calls.inspections]})},
     ensureCtx(){},resetMotionInput:reason=>calls.order.push(reason),ensureInteractionFocus(){},mapHeading:()=>look.yaw,costumeInspectionWorldView:()=>({x:8,y:38,yaw:2.4,pitch:-.8}),
     document:{hidden:false,hasFocus:()=>true},tickRoomMicAcoustics(){},actx:null,sfxGain:null,sightCrossesClosedDoor:()=>false,pushEvent(){},createConservatoryAdversaryAudio:()=>({play(){},dispose(){}}),
-    saveAcc:0,sourceDriveSession:null,sourcePubScene:null,saveAcademicGhostClub(){},escape:null,chapelTowerState:()=>({phase:'idle'}),CHAPEL_TOWER_PHASE:{TOWER_ACTIVE:'active'},bellTowerRuntime:null,towerBellDirector:null,chunkSurfRuntime:null,sourceRepriseWorldLease:null,hushAudioRuntime:null,
+    saveAcc:0,sourceReturnFlashbackScene:null,sourceDriveSession:null,sourcePubScene:null,saveAcademicGhostClub(){},escape:null,chapelTowerState:()=>({phase:'idle'}),CHAPEL_TOWER_PHASE:{TOWER_ACTIVE:'active'},bellTowerRuntime:null,towerBellDirector:null,chunkSurfRuntime:null,sourceRepriseWorldLease:null,hushAudioRuntime:null,
     RADIO:{saveRadioState:()=>({})},saveSourceView:()=>calls.order.push('source-view'),
   };
   vm.createContext(context);

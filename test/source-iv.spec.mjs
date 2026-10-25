@@ -52,6 +52,26 @@ test('scaled piano anatomy blocks actual legs and bench legs while leaving its e
     assert.equal(sourceIVCollisionAt(model.x,model.z)?.id,model.id);
 });
 
+test('the ordinary onward route now passes under the existing piano without collision, detour or a compulsory camera',()=>{
+  const piano=SOURCE_IV_MODELS.find(p=>p.id==='eastern-piano');
+  assert.equal(piano.x,2);assert.equal(piano.z,-40);assert.equal(piano.scale,12);assert.equal(piano.yaw,-.24);
+  for(const x of [-1,0,1])for(let z=C.spawn.z;z>C.exit.z+.5;z-=.05)
+    assert.equal(sourceIVCollisionAt(x,z),null,`the two-metre-wide onward band stays open at ${x},${z}`);
+  assert.equal(sourceIVCollisionAt(0,-40,{feet:8,height:.2,radius:.1})?.id,'eastern-piano',
+    'actual instrument anatomy occupies the space above the ordinary body route');
+  const waypoints=[[0,-10],[16,-10],[16,-62],[0,-62]];
+  for(let k=1;k<waypoints.length;k++){
+    const [a,b]=[waypoints[k-1],waypoints[k]],distance=Math.hypot(b[0]-a[0],b[1]-a[1]);
+    for(let t=0;t<=distance;t+=.05){const f=t/distance;
+      assert.equal(sourceIVCollisionAt(a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f),null,
+        'a player may still choose the physically open walkaround');
+    }
+  }
+  const state=advance(initial(),15,{forward:1}).state;
+  near(state.x,0);near(state.z,C.spawn.z-15*C.walkSpeed);near(state.yaw,C.spawn.yaw);near(state.pitch,C.spawn.pitch);
+  assert.equal(state.status,'active');assert.equal(state.exitReceipt,null);
+});
+
 test('free walking, stopping, turning and looking back retain one actual body and supported plane',()=>{
   let state=initial();const before=copy(state);
   const waiting=advance(state,1,{look:{yaw:Math.PI,pitch:.4}}).state;
@@ -88,6 +108,19 @@ test('only an opened far grey door and an intentional body crossing complete Sou
   assert.equal(normalize(copy(delivered)).exitReceipt.delivered,true);
 });
 
+test('the final door requires a directed physical interaction rather than proximity behind the body',()=>{
+  const at={...initial(),x:C.exit.x,z:C.exit.z+1.3,yaw:Math.PI};
+  assert.equal(focus(at),null);
+  const missed=step(at,{interact:true});
+  assert.equal(missed.state.exitDoor.open,false);assert.deepEqual(missed.events,[]);
+  const looking=step(missed.state,{look:{yaw:0}}).state;
+  assert.ok(focus(looking));assert.equal(step(looking,{interact:true}).state.exitDoor.open,true);
+  assert.equal(focus({...looking,pitch:1.3}),null,'looking at the sky cannot operate the nearby door');
+  assert.equal(focus({...looking,z:C.exit.z+2.51}),null);
+  assert.ok(focus({...looking,x:1,z:C.exit.z+1.5,yaw:-.5}),
+    'a generous oblique approach remains valid without pixel hunting for the handle');
+});
+
 test('run ownership, finite restore, protected input and serialized partitions preserve the new space independently',()=>{
   assert.deepEqual(normalize(initial(),{runId:'other'}),fresh({runId:'other'}));
   assert.deepEqual(normalize({...initial(),sequenceId:'source-earthfall:source-II-v1'}),fresh({runId:'source-IV-test'}));
@@ -100,21 +133,21 @@ test('run ownership, finite restore, protected input and serialized partitions p
   const current=initial(),before=copy(current);step(current,{dt:.25,forward:1});assert.deepEqual(current,before);
 });
 
-function rendererHarness(){
-  const catalog=new Map([['grand_piano',{}],['instrument_case',{}]]),frameCalls=[],range=[];let releases=0,disposed=0;
+function rendererHarness({blueprint=true,repairGate=null}={}){
+  const catalog=new Map([['grand_piano',{}],['instrument_case',{}]]),frameCalls=[],calls=[],range=[];let releases=0,disposed=0;
   const gl={ARRAY_BUFFER:1,ELEMENT_ARRAY_BUFFER:2,STATIC_DRAW:3,FLOAT:4,UNSIGNED_INT:5,
     createVertexArray:()=>({}),createBuffer:()=>({}),bindVertexArray(){},bindBuffer(){},bufferData(){},enableVertexAttribArray(){},
     vertexAttribPointer(){},vertexAttribDivisor(){},disableVertexAttribArray(){},vertexAttrib1f(){}};
-  const maps={texture:{},normalTexture:{},ormTexture:{},letteringFinish:{}};
+  const maps={texture:{},normalTexture:{},ormTexture:{},letteringFinish:{},blueprint};
   const goods=doorAssembly('bay-goods-pair',{activeLeaves:'all'});
   const props={propMeshCatalog:()=>[...catalog.keys()],installAuthoredPropMeshes:install=>install(gl,{catalog}),setPressureInstances(){},
-    async addPropPack(url){if(url.includes('source-demolition'))for(const p of SOURCE_IV_MODELS.filter(p=>p.mesh.startsWith('source_demolition')))catalog.set(p.mesh,{});
+    async addPropPack(url){if(repairGate&&frameCalls.length)await repairGate;if(url.includes('source-demolition'))for(const p of SOURCE_IV_MODELS.filter(p=>p.mesh.startsWith('source_demolition')))catalog.set(p.mesh,{});
       else for(const mesh of [goods.frameMesh,goods.leafMesh,goods.freeStandingHeadMesh].filter(Boolean))catalog.set(mesh,{});},
     setAuthoredPropRange(owner,distance){range.push({owner,distance});return()=>{releases++;};}};
-  const renderer=new Proxy({r3dBasePropsReady:async()=>true,r3dFrame:value=>{frameCalls.push(value);return true;}},{get(target,key){return target[key]||(()=>{});}});
+  const renderer=new Proxy({r3dBasePropsReady:async()=>true,r3dFrame:value=>{frameCalls.push(value);return true;}},{get(target,key){return target[key]||((...args)=>calls.push({name:key,args}));}});
   const view=createSourceIVRenderer({renderer,props,resolveAsset:url=>url,onRelease:()=>{disposed++;},
     installMeshes:(gl,pack)=>installSourceIVMeshes(gl,pack,{maps})});
-  return{view,catalog,frameCalls,range,stats:()=>({releases,disposed})};
+  return{view,catalog,frameCalls,calls,range,stats:()=>({releases,disposed})};
 }
 
 test('the renderer uses the real shared prop/dither frame and owns one far-range lease with idempotent teardown',async()=>{
@@ -124,8 +157,59 @@ test('the renderer uses the real shared prop/dither frame and owns one far-range
   assert.equal(h.frameCalls[0].textSpace,true);assert.equal(h.frameCalls[0].sourceVoidPhysical,false);
   assert.equal(h.range.length,1);assert.equal(h.range[0].distance,SOURCE_IV_RENDER_BUDGET.far);
   for(const piece of SOURCE_IV_GEOMETRY){const mesh=h.catalog.get('source-IV-'+piece.id);
-    assert.equal(mesh.extras.sourceIV,true);assert.equal(mesh.primitives[0].printedSurface.process,'source-fragments');}
+    assert.equal(mesh.extras.sourceIV,true);assert.equal(mesh.primitives[0].printedSurface.process,'source-blueprint-fragments');
+    assert.equal(mesh.primitives[0].printedSurface.emission,'none');assert.deepEqual(mesh.primitives[0].emissive,[0,0,0]);}
   assert.equal(h.view.diagnostics().frame.phase,'Source IV');
   assert.equal(h.view.dispose(),true);assert.equal(h.view.dispose(),false);assert.equal(h.view.render(initial()),false);
   assert.deepEqual(h.stats(),{releases:1,disposed:1});
+});
+
+test('the blueprint comparison changes only the printed structure descriptors, retaining opaque geometry and original stock on opt-out',async()=>{
+  const current=rendererHarness(),old=rendererHarness({blueprint:false});
+  await current.view.initialize();await old.view.initialize();
+  for(const piece of SOURCE_IV_GEOMETRY){
+    const ink=current.catalog.get('source-IV-'+piece.id),paper=old.catalog.get('source-IV-'+piece.id);
+    assert.equal(ink.primitives[0].count,paper.primitives[0].count);
+    assert.deepEqual(ink.extras.bounds,paper.extras.bounds);
+    assert.deepEqual(paper.primitives[0].base,[.42,.49,.43,1]);
+    assert.equal(paper.primitives[0].printedSurface.process,'source-fragments');
+    assert.equal(ink.primitives[0].printedSurface.process,'source-blueprint-fragments');
+    for(const mesh of [ink,paper]){
+      assert.equal(mesh.primitives[0].alphaCut,0);assert.equal(mesh.primitives[0].base[3],1);
+      assert.equal(mesh.primitives[0].printedSurface.emission,'none');
+    }
+  }
+  assert.deepEqual([...current.catalog.keys()],[...old.catalog.keys()]);
+  current.view.dispose();old.view.dispose();
+});
+
+test('IV exposes its existing high lamps once while preserving the authored door and model lighting',async()=>{
+  const h=rendererHarness();await h.view.initialize();
+  const lighting=h.calls.find(c=>c.name==='r3dSetLightingContext')?.args[0];
+  assert.equal(lighting.captureExposure,1.6,'the matched GPU calibration retains navy stock and solid model planes');
+  assert.equal(lighting.ambientIntensity,.11);assert.equal(lighting.whitePointScale,1);assert.equal(lighting.screen,'stochastic');
+  const lights=sourceIVRenderFrame(initial()).lights;
+  assert.deepEqual(lights.map(l=>[l.id.replace('source-IV-',''),l.radius,l.intensity]),[
+    ['entry',17,2.2],['exit',19,2.5],['piano-east',55,14],['case-west',35,5.4],['piano-west',42,10],['upper-remains',55,7.2],
+  ],'real illumination that reveals the huge instrument planes is unchanged');
+  assert.deepEqual(lights[0].color,[.78,.67,.45]);assert.deepEqual(lights[1].color,[.58,.75,.70]);
+  h.view.dispose();
+});
+
+test('late IV residency repair holds the final raster and resumes the same supported body without reacquiring its scene',async()=>{
+  let restore;const h=rendererHarness({repairGate:new Promise(r=>restore=r)});await h.view.initialize();
+  const state=advance(initial(),6,{forward:1}).state;h.view.render(state);
+  const before=copy(state),plans=h.calls.filter(c=>c.name==='r3dSetPlan').length;
+  h.catalog.delete(SOURCE_IV_MODELS.find(p=>p.mesh.startsWith('source_demolition')).mesh);
+  assert.equal(h.view.ready(),false);assert.equal(h.view.render(state),true);assert.equal(h.view.render(state),true);
+  assert.equal(h.view.ready(),false);assert.equal(h.view.diagnostics().restoringScenery,true);
+  assert.equal(h.frameCalls.length,1,'incomplete residency never draws over the complete image');
+  assert.equal(h.calls.some(c=>c.name==='r3dClearScreen'),false,'repair inserts no black frame');
+  assert.deepEqual(state,before,'the renderer never advances the protected scene body');
+  restore();await new Promise(r=>setImmediate(r));assert.equal(h.view.ready(),true);
+  assert.equal(h.view.render(state),true);assert.equal(h.frameCalls.length,2);
+  assert.deepEqual(h.frameCalls[1].authoredCamera,h.frameCalls[0].authoredCamera,'repair resumes the same exact viewpoint');
+  assert.equal(h.calls.filter(c=>c.name==='r3dSetPlan').length,plans,'repair preserves scene ownership and recording memory');
+  assert.equal(h.calls.filter(c=>c.name==='r3dResetVfdMemory').length,1);
+  h.view.dispose();
 });

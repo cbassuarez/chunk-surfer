@@ -45,6 +45,46 @@ import { promptLine } from './bindings.js';
 // monitor reads as the same machine, not a narrower one-off.
 const BAND_W = 86;
 
+// The glass, not the outer faceplate, is the reading budget. Measure the
+// complete current utterance so typing never makes its container jump.
+export function planThoughtTextPanel({view={},width=BAND_W,rows=40,slate='',page=0}={}) {
+  const contentW=Math.max(8,width-8),choices=layoutTranscriptChoices(view,contentW);
+  const reserve=choices.height?choices.height+1:0,maxHeight=Math.max(8,rows-4);
+  let headerSlate=slate,headerSystem=view.speaker||'';
+  const headerRows=()=> (headerSlate?1:0)+(headerSystem?(headerSlate?2:1):0);
+  if(maxHeight-6.5-headerRows()-1-reserve<3)headerSystem='';
+  if(maxHeight-6.5-headerRows()-1-reserve<3)headerSlate='';
+  const headerOffset=headerRows()+(headerRows()?1:0);
+  const full=String(view.line?.text??'');
+  const history=Array.isArray(view.history)?view.history:[];
+  const latest=view.pending?.kind==='branch'
+    ? {...view,history:history.slice(-1),line:null,typed:0}
+    : {...view,history:[],typed:full.length,typing:false};
+  const needed=layoutTranscript(latest,{width:contentW,maxRows:10000,keep:3});
+  const panelH=Math.min(maxHeight,Math.max(12,Math.ceil(6.5+headerOffset+reserve+needed.height)));
+  const availableRows=Math.max(1,Math.floor(panelH-6.5-headerOffset-reserve));
+  const active=layoutTranscript(view.pending?.kind==='branch'?latest:{...view,history:[]},{width:contentW,maxRows:10000,keep:3});
+  const block=active.blocks.at(-1),fullBlock=needed.blocks.at(-1);
+  const bodyCapacity=Math.max(1,availableRows-(fullBlock?.labelRows||0)-1);
+  const pages=Math.max(1,Math.ceil((fullBlock?.rows.length||0)/bodyCapacity));
+  const currentPage=Math.max(0,Math.min(pages-1,Math.floor(Number(page)||0)));
+  let transcript;
+  if(pages>1&&block){
+    const body=block.rows.slice(currentPage*bodyCapacity,(currentPage+1)*bodyCapacity);
+    transcript={...active,blocks:[{...block,rows:body,height:block.labelRows+body.length+1}],height:Math.min(availableRows,block.labelRows+body.length+1)};
+  }else{
+    // Consecutive speech groups with history; remove history before allowing
+    // the current utterance to be cropped by that group.
+    let kept=history.slice(-3);
+    do{
+      transcript=layoutTranscript({...view,history:kept},{width:contentW,maxRows:availableRows,keep:3});
+      if(!transcript.blocks.some(b=>b.clipped)||!kept.length)break;
+      kept=kept.slice(1);
+    }while(true);
+  }
+  return {panelH,contentW,headerSlate,headerSystem,headerOffset,availableRows,transcript,pages,page:currentPage,bodyCapacity};
+}
+
 // A thought tree is a scene like any other. `onDone` fires once, when he stops
 // thinking and the building is his problem again.
 // `anchor: 'bottom'` drops the shell to the foot of the screen and leaves the
@@ -70,6 +110,13 @@ export function makeThoughtScene({
   let completed = false;
   let cancelled = false;
   let scene = null;
+  let textPage=0,textPageKey='';
+  function textPlan(v){
+    const key=`${v.nodeId||''}:${v.lineSerial||0}:${v.pending?.kind||''}`;
+    if(key!==textPageKey){textPageKey=key;textPage=0;}
+    const {cols,rows}=uiSize();
+    return planThoughtTextPanel({view:v,width:Math.min(BAND_W,cols-8),rows,slate,page:textPage});
+  }
   const convo = createConversation({
     nodes, startAt, sceneId: `thought:${id}`, replay, onChoice, onLine, cue, fx, audio, getAudio,
     volume: 0.24,
@@ -111,6 +158,12 @@ export function makeThoughtScene({
         onCancel?.();
         return true;
       }
+      const v=convo.view();
+      if(!showStoryArt||!v.art){
+        const p=textPlan(v),advance=['Enter',' ','z','Z'].includes(e.key);
+        if(p.pages>1&&(e.key==='PageDown'||e.key==='PageUp')){textPage=Math.max(0,Math.min(p.pages-1,p.page+(e.key==='PageDown'?1:-1)));return true;}
+        if(p.pages>1&&!v.typing&&!v.pending?.options?.length&&advance&&p.page<p.pages-1){textPage++;return true;}
+      }
       return convo.key(e);
     },
 
@@ -132,6 +185,7 @@ export function makeThoughtScene({
         // that body visible. Its authored art remains in the conversation
         // record; this option only suppresses the illustrated presentation.
         const art = showStoryArt ? resolveStoryArt(v.art || null) : null;
+        const textLayoutPlan=art?null:textPlan(v);
         const fixedArtPanelH = art
           ? storyArtSideBySidePanelRows({
               choicesRows: 0,
@@ -144,10 +198,7 @@ export function makeThoughtScene({
         // bottom of the screen.
         const panelH = art
           ? Math.min(rows - 4, fixedArtPanelH)
-          : Math.min(
-              rows - 4,
-              Math.max(12, Math.min(21, 12 + choices.height)),
-            );
+          : textLayoutPlan.panelH;
 
         const y0 = anchor === 'bottom'
           ? Math.max(2, rows - panelH - 1)
@@ -166,9 +217,10 @@ export function makeThoughtScene({
           {
             label: 'MONITOR',
             source: (v.pending?.kind !== 'say' && v.line?.sourceLabel) || transcriptSource(sourceWho),
-            footer: v.pending?.options?.length
+            footer: (v.pending?.options?.length
               ? promptLine([{ action: 'select', label: 'SELECT' }, { action: 'confirm', label: 'TRANSMIT' }])
-              : promptLine([{ action: 'continue', label: 'CONTINUE' }]),
+              : promptLine([{ action: 'continue', label: textLayoutPlan?.pages>1&&textLayoutPlan.page<textLayoutPlan.pages-1?'NEXT PAGE':'CONTINUE' }]))
+              +(textLayoutPlan?.pages>1?` · ${textLayoutPlan.page+1}/${textLayoutPlan.pages} PGUP/PGDN`:''),
             meter: true,
           },
         (panel) => {
@@ -180,8 +232,8 @@ export function makeThoughtScene({
           x: contentX,
           y: panel.y,
           width: contentW,
-          slate,
-          system: v.speaker,
+          slate: textLayoutPlan?textLayoutPlan.headerSlate:slate,
+          system: textLayoutPlan?textLayoutPlan.headerSystem:v.speaker,
         });
 
         let choiceLayout = layoutTranscriptChoices(v, contentW);
@@ -293,11 +345,11 @@ export function makeThoughtScene({
           keep: 3,
         });
 
-        drawTranscript(transcript, {
+        drawTranscript(textLayoutPlan?.transcript||transcript, {
           x: transcriptX,
           y: transcriptY,
           width: transcriptW,
-          maxRows: availableRows,
+          maxRows: textLayoutPlan?.availableRows||availableRows,
         });
 
         if (choiceLayout.height) {
@@ -305,7 +357,7 @@ export function makeThoughtScene({
             x: contentX,
             y:
               panel.y +
-              panel.h -
+              panel.h - (textLayoutPlan?.5:0) -
               choiceLayout.height,
             width: contentW,
             maxRows: choiceLayout.height,

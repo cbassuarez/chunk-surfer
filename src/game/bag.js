@@ -38,6 +38,7 @@ import {drawItemInspectionView,itemInspectionLayout} from '../render/item-inspec
 import {preloadItemPortraits} from '../render/item-portraits.js';
 import { drawJournalView, journalListCapacity } from '../render/journal-view.js';
 import { isMapShortcut } from './map-shortcut.js';
+import { createJournalReview, journalTrackingKey } from './journal-review.js';
 
 let rememberedNav = null;
 let rememberedSheetPages = {};
@@ -128,8 +129,9 @@ export function makeBagScene({
     const after = new Set(workingBuild.techniques);
     return before.size !== after.size || [...after].some((id) => !before.has(id));
   };
+  const journalReview = createJournalReview((memory || rememberedNav)?.journalReview);
   let model = buildBagModel({
-    equipment: equipmentSource(), job: jobSource(), journal: journalSource(), map: mapSource(), loadout: loadoutSource(),
+    equipment: equipmentSource(), job: jobSource(), journal: journalReview.decorate(journalSource()), map: mapSource(), loadout: loadoutSource(),
     mapUnavailableReason: mapUnavailableSource(),
     build: workingBuild, settledBuild, hasRig: rigSource(), sheetInsights:sheetInsightSource(),
   });
@@ -191,7 +193,7 @@ export function makeBagScene({
     // Room/floor selection persists; viewing transforms do not become an old
     // zoom trap on the next opening or pretend to be progression data.
     const { viewMode, rotation, zoom, panX, panY, focusedControlId, ...savedMap } = cloneMapNav(mapNav);
-    nav = reduceBagNav(nav, { type: 'SET_MAP_NAV', map: savedMap }, model);
+    nav = reduceBagNav({ ...nav, journalReview: journalReview.memory() }, { type: 'SET_MAP_NAV', map: savedMap }, model);
     rememberedNav = {
       ...nav,
       selected: { ...nav.selected },
@@ -309,7 +311,7 @@ export function makeBagScene({
 
   function refresh() {
     model = buildBagModel({
-      equipment: equipmentSource(), job: jobSource(), journal: journalSource(), map: mapSource(), loadout: loadoutSource(),
+      equipment: equipmentSource(), job: jobSource(), journal: journalReview.decorate(journalSource()), map: mapSource(), loadout: loadoutSource(),
       mapUnavailableReason: mapUnavailableSource(),
       build: workingBuild, settledBuild, hasRig: rigSource(), sheetInsights:sheetInsightSource(),
     });
@@ -776,7 +778,8 @@ export function makeBagScene({
     let ok = false;
 
     if (entry.kind === 'quest' && actionId === 'journal-track') {
-      nav = { ...nav, journalPinnedId: nav.journalPinnedId === entry.id ? null : entry.id };
+      const following = nav.journalPinnedId === entry.id && nav.journalPinnedKey === journalTrackingKey(entry);
+      nav = { ...nav, journalPinnedId: following ? null : entry.id, journalPinnedKey: following ? null : journalTrackingKey(entry) };
       remember(); ok = true;
     } else if (entry.kind === 'quest' && actionId === 'journal-map') {
       const space = model.map?.spaces?.find((candidate) => candidate.id === entry.mapSpaceId);
@@ -1107,7 +1110,6 @@ export function makeBagScene({
   function registerRootHits(layout){
     if(nav.sectionId==='journal'){
       for(const hit of journalPresentation?.hits || []) addHit({ ...hit, disabled: hit.enabled === false,
-        onHover: hit.kind === 'journal-entry' ? () => selectEntry('journal', hit.entryId) : undefined,
         onClick: () => {
           if (hit.kind === 'journal-entry') { selectEntry('journal', hit.entryId); return; }
           if (hit.actionId === 'journal-prev-page' || hit.actionId === 'journal-next-page') {
@@ -1189,8 +1191,9 @@ export function makeBagScene({
     // meaning and opens the menu; a controller's `back` still closes the bag
     // there, which is what backInput is for.
     get handlesEscape() { return currentRoute().type !== 'root'||nav.sectionId==='map'&&!!(mapNav.focusedControlId||mapNav.roomFile); },
-    get modalActions() { return currentRoute().type==='root'&&nav.sectionId==='map'
-      ? ['mapFloorPrev','mapFloorNext','mapLocate','mapFile','mapConsole'] : []; },
+    get modalActions() { return currentRoute().type!=='root' ? [] : nav.sectionId==='map'
+      ? ['mapFloorPrev','mapFloorNext','mapLocate','mapFile','mapConsole']
+      : nav.sectionId==='journal' ? ['mapFile','mapFloorPrev','mapFloorNext'] : []; },
 
     enter() {
       preloadItemPortraits();
@@ -1315,16 +1318,29 @@ export function makeBagScene({
       }
 
       if(consoleMapKey(e))return true;
-      if (nav.sectionId === 'journal' && (raw === 'PageUp' || raw === 'PageDown')) {
-        journalPage = Math.max(0, Math.min((journalPresentation?.detailPages || 1) - 1, journalPage + (raw === 'PageDown' ? 1 : -1)));
+      if (nav.sectionId === 'journal' && (raw === 'PageUp' || raw === 'PageDown' || e.controllerAction === 'mapFloorPrev' || e.controllerAction === 'mapFloorNext')) {
+        const next = raw === 'PageDown' || e.controllerAction === 'mapFloorNext';
+        const page = Math.max(0, Math.min((journalPresentation?.detailPages || 1) - 1, journalPage + (next ? 1 : -1)));
+        if (!e.repeat && page !== journalPage) pressBagControl(next ? 'bag:journal:next-page' : 'bag:journal:prev-page', e);
+        journalPage = page;
         return true;
       }
-      if (nav.sectionId === 'journal' && (confirmInput(e) || raw === ' ' || code === 'Space' || e.controllerAction === 'mark')) {
+      if (nav.sectionId === 'journal' && (confirmInput(e) || raw === ' ' || code === 'Space' || e.controllerAction === 'mapFile')) {
         if (!e.repeat) {
-          const showMap = raw === ' ' || code === 'Space' || e.controllerAction === 'mark';
-          pressBagControl(showMap ? 'bag:journal:map' : 'bag:journal:track', e);
-          execute(currentBagEntry(nav,model), showMap ? 'journal-map' : 'journal-track');
+          const showMap = raw === ' ' || code === 'Space' || e.controllerAction === 'mapFile';
+          const entry = currentBagEntry(nav,model), actionId = showMap ? 'journal-map' : 'journal-track';
+          const action = actionFor(entry,actionId);
+          if (action && action.enabled !== false) pressBagControl(showMap ? 'bag:journal:map' : 'bag:journal:track', e);
+          execute(entry,actionId);
         }
+        return true;
+      }
+      if (nav.sectionId === 'journal' && (raw === 'ArrowUp' || raw === 'ArrowDown' || k === 'w' || k === 's' || code === 'KeyW' || code === 'KeyS')) {
+        const previous = raw === 'ArrowUp' || k === 'w' || code === 'KeyW';
+        moveList(previous ? -1 : 1);
+        if (!e.repeat && currentBagEntry(nav,model)) pressBagControl(journalPresentation?.geometry?.mode !== 'wide'
+          ? previous ? 'bag:journal:jog-prev' : 'bag:journal:jog-next'
+          : `bag:journal:entry:${nav.selected.journal}`, e);
         return true;
       }
 
@@ -1411,6 +1427,7 @@ export function makeBagScene({
         if (hit?.kind==='bag-patch-input'||hit?.kind==='bag-patch-output') { beginPatch(hit.data.socket,e); return true; }
         if(hit?.kind==='bag-tab'&&!hit.disabled)pressBagControl(hit.id,e);
         if(hit?.kind==='map-control'&&!hit.disabled)pressBagControl(hit.id,e);
+        if((hit?.kind==='journal-entry'||hit?.kind==='journal-action')&&!hit.disabled)pressBagControl(hit.id,e);
         hits.handle(e,{filter:region=>guideAllowsHit(region)&&hitContainsPoint(region,e)});return true;
       }
       return true;
@@ -1519,7 +1536,7 @@ export function makeBagScene({
           ? (region)=>drawSubview(route,region)
           : journalHardware
           ? (region) => { journalPresentation = drawJournalView({ entries: bagSection(model,'journal')?.entries || [],
-            selectedId: nav.selected.journal, pinnedId: nav.journalPinnedId, region, scroll: nav.scroll.journal || 0, now: t, detailPage: journalPage }); return journalPresentation; }
+            selectedId: nav.selected.journal, pinnedId: nav.journalPinnedId, hoveredId: hits.hoveredId(), region, scroll: nav.scroll.journal || 0, now: t, detailPage: journalPage }); return journalPresentation; }
           : skills
           ? (region) => drawSkillsSection({ model, layout: region, selectedId: selectedSkill()?.id || null, now: t, patchDrag })
           : null,
@@ -1540,6 +1557,11 @@ export function makeBagScene({
       if(continuation)addHit({id:'bag:guide:continue',kind:'bag-guide-continue',...continuation,
         label:guided.continueLabel,onClick:continueGuide});
       debug?.({ model, nav, mapNav, layout, selected: currentBagEntry(nav, model), route, hitRegions:hits.view(), guidePresentation, t });
+      // Seeing a file acknowledges only its presentation receipt. It never
+      // changes knowledge, consent or progress. Keep UPDATED visible until the
+      // next opening, even after the count of unseen files drops.
+      if (journalHardware && (scenes.top() === scene || embeddedHost && scenes.top()?.id !== 'pause')
+        && journalReview.presented(nav.selected.journal)) refresh();
     },
   };
 

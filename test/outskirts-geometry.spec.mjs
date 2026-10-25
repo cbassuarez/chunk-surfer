@@ -22,7 +22,9 @@ function blocked(pieces, x, along) {
 // that the authored bus has a 'blocked' name. It permits entering the actual
 // doorway and walking inside the bus; closed outer panels still have to refuse.
 function route(pieces, k, closeGap = false) {
-  const grid = 0.25, xMin = -11, xMax = 11, zMin = 18, zMax = 30;
+  // Start before the whole court: the canonical van now stands on the road
+  // axis at18.4m, so the old18m fixture started inside its real cargo body.
+  const grid = 0.25, xMin = -11, xMax = 11, zMin = 0, zMax = 34;
   const nx = Math.round((xMax - xMin) / grid) + 1, nz = Math.round((zMax - zMin) / grid) + 1;
   const at = (i, j) => ({ x: xMin + i * grid, along: passStart(k) + zMin + j * grid });
   const start = Math.round((0 - xMin) / grid), queue = [[start, 0]], seen = new Set([start]), parent = new Map();
@@ -119,7 +121,9 @@ test('footprints and carried/decorative objects never turn into invisible floor 
     assert.deepEqual(outskirtsCollisionBoxes({ mesh }, { min: [-0.5, 0, -0.5], max: [0.5, 2, 0.5] }), []);
   }
   const start = passStart(17);
-  for (let j = 0; j < 68; j += 1) assert.ok(!blocked(onPass(17), 0, start + 0.5 * j), `the centreline is obstructed at ${j / 2}m`);
+  const pieces=onPass(17),without=pieces.filter(p=>!['wet_footprint','loose_note'].includes(p.mesh));
+  for (let j = 0; j < 68; j += 1) assert.equal(blocked(pieces,0,start+.5*j),blocked(without,0,start+.5*j),`paper/footprint changes collision at ${j/2}m`);
+  assert.ok(route(pieces,17),'ordinary walking cannot pass the real van and shelter');
 });
 
 
@@ -154,7 +158,7 @@ test('loose pages and van equipment sit on their actual support surfaces', () =>
 test('a turned van carries every owned attachment and its inspection orientation', () => {
   const before = outskirtsPassLayout(25, { break: null }), after = outskirtsPassLayout(25, { break: 'turned' });
   const van = before.find((p) => p.id === 'van'), transformed = after.find((p) => p.id === 'van');
-  assert.equal(transformed.yaw, Math.PI);
+  assert.equal(transformed.yaw, van.yaw+Math.PI);
   const owned = before.filter((p) => p.attachedTo === 'van');
   assert.ok(owned.some((p) => p.id === 'van-lamp') && owned.some((p) => p.id === 'page-dash') && owned.some((p) => p.id === 'van-headphones'));
   for (const p of owned) {

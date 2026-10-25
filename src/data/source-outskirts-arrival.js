@@ -23,6 +23,9 @@
 // sourceMatrix yaws, where local +z faces world (sin yaw, cos yaw): yaw 0 faces
 // back toward the door, the way he came — which is to say, toward him.
 
+import { outskirtsTownPlacement, outskirtsTownBoundaryCollision } from './source-outskirts-town.js';
+export { SOURCE_OUTSKIRTS_TOWN, outskirtsTownSet } from './source-outskirts-town.js';
+
 const freeze = Object.freeze;
 
 // One pass is exactly one road section long, so sections meet end to end.
@@ -120,20 +123,25 @@ export const OUTSKIRT_APRON = freeze([
 // `along` is within the pass. This is the whole of it, as it first is.
 export const OUTSKIRT_STRETCH = freeze([
   put('road', 'outskirts_road', 0, OUTSKIRT_STRETCH_METRES / 2, { yaw: Math.PI / 2 }),
-  put('gate', 'yard_gate_piers', 0, 0.6, { yaw: Math.PI / 2, inspect: 'gate' }),
-  put('fence', 'yard_fence_run', -11.2, 16, { inspect: 'fence' }),
-  ...[0, 1, 2, 3].map((k) => put(`lamp-${k}`, 'yard_lamp_column', 6.4, 3 + k * OUTSKIRT_LAMP_SPACING, { yaw: Math.PI, lamp: true, inspect: 'lamp' })),
+  freeze({id:'gate',...outskirtsTownPlacement('yard-gate-piers'),inspect:'gate',collision:outskirtsTownBoundaryCollision()}),
+  freeze({id:'fence',...outskirtsTownPlacement('yard-hedge-near'),inspect:'fence'}),
+  ...[0, 1, 2, 3].map((k) => {
+    const p=outskirtsTownPlacement('yard-lamp-column');
+    return freeze({id:`lamp-${k}`,...p,along:p.along+(k-1)*OUTSKIRT_LAMP_SPACING,lamp:true,inspect:'lamp'});
+  }),
   // The lodge, lit, window onto the road.
-  put('booth', 'outskirts_lodge', -8.4, 12, { yaw: -Math.PI / 2, inspect: 'lodge', interact: [-0.45, -1.8], closeReach: 1.6 }),
-  put('booth-interior', 'outskirts_lodge_interior', -8.4, 12, { yaw: -Math.PI / 2 }),
-  put('booth-practicals', 'outskirts_lodge_practicals', -8.4, 12, { yaw: -Math.PI / 2, glow: [1, 0.76, 0.48, 1.6] }),
-  put('booth-glazing', 'outskirts_lodge_glazing', -8.4, 12, { yaw: -Math.PI / 2 }),
+  freeze({id:'booth',...outskirtsTownPlacement('yard-booth'),inspect:'lodge',interact:[-.45,-1.8],closeReach:1.6}),
+  freeze({id:'booth-interior',...outskirtsTownPlacement('yard-booth-interior',{mesh:'outskirts_lodge_interior'})}),
+  freeze({id:'booth-practicals',...outskirtsTownPlacement('yard-booth-practicals',{mesh:'outskirts_lodge_practicals'}),glow:[1,.76,.48,1.6]}),
+  freeze({id:'booth-glazing',...outskirtsTownPlacement('yard-booth-glazing',{mesh:'outskirts_lodge_glazing'})}),
   // The shelter on the far kerb, open side to the road, and the late bus at it.
-  put('shelter', 'outskirts_shelter', 8.2, 24, { yaw: Math.PI, inspect: 'shelter', interact: [1.35, -1.2], closeReach: 1.6 }),
+  freeze({id:'shelter',...outskirtsTownPlacement('yard-bus-shelter'),inspect:'shelter',interact:[1.35,-1.2],closeReach:1.6}),
+  // The bus is the authored Source encounter, rather than a stationary copy
+  // of ordinary moving district traffic. Pass7 keeps its measured nose gap.
   put('bus', 'outskirts_bus', 4.3, 25.5, { yaw: 0, glow: [0.9, 0.93, 1, 0.22], inspect: 'bus', interact: [-1.6, -3.15], closeReach: 1.8 }),
   // Her face is local -Z, as in the ordinary yard. Keep both the face and the
   // conversation anchor on the road side of the shelter.
-  put('bus-woman', 'outskirts_bus_woman', 7.9, 23.4, { yaw: Math.PI / 2, inspect: 'woman', interact: [0, -0.5], closeReach: 1.6 }),
+  freeze({id:'bus-woman',...outskirtsTownPlacement('yard-bus-waiter',{mesh:'outskirts_bus_woman'}),inspect:'woman',interact:[0,-.5],closeReach:1.6}),
   // THE PHONE BOX, on the far kerb by the second lamp, door to the road. It
   // repeats with the rest of the scene, worn and broken with it: every pass has
   // the same box, and the same number on its card. src/game/payphone.js.
@@ -144,8 +152,8 @@ export const OUTSKIRT_STRETCH = freeze([
   put('bin', 'district_bin_cluster', 9.2, 19.4, { yaw: Math.PI / 2, inspect: 'bin', interact: [0, -0.65], closeReach: 1.6 }),
   put('bench', 'district_bench', 9.0, 28.4, { yaw: Math.PI / 2, inspect: 'bench', interact: [0, -0.75], closeReach: 1.6 }),
   // The van, back doors open toward him.
-  put('van', 'yard_van', -4.8, 31, { yaw: 0, inspect: 'van', interact: [0, 2.35], closeReach: 1.8 }),
-  put('van-lamp', 'yard_van_lamp', -4.8, 30.6, { yaw: 0, y: 2.3, glow: [1, 0.86, 0.6, 2.4] }),
+  freeze({id:'van',...outskirtsTownPlacement('yard-van'),inspect:'van',interact:[0,2.35],closeReach:1.8}),
+  freeze({id:'van-lamp',...outskirtsTownPlacement('yard-van-lamp'),glow:[1,.86,.6,2.4]}),
 ]);
 
 // Pieces that are people or vehicles: a pass that turns things to face him turns these.
@@ -260,9 +268,9 @@ export const OUTSKIRT_PASSES = freeze(Array.from({ length: OUTSKIRT_STRETCH_COUN
   return freeze({ k, wear: outskirtWear(k), breakChance: outskirtBreakChance(k), break: kind });
 }));
 
-// ── THE BUILDING, ALWAYS THE SAME DISTANCE AWAY ─────────────────────────────
-// Off to the west, never nearer: it is placed relative to where he is standing.
-export const OUTSKIRT_ELEVATION = freeze({ mesh: 'conservatory_west_elevation', across: -96, ahead: 62, yaw: 0 });
+// Legacy import contract only. Runtime uses the fixed canonical initialOnly
+// frontage in outskirtsTownSet(); this elevation must never follow the camera.
+export const OUTSKIRT_ELEVATION = freeze({ ...outskirtsTownPlacement('opening-street-frontage'), fixed:true, initialOnly:true });
 
 // ── WHAT HAPPENS, ONCE EACH ─────────────────────────────────────────────────
 // trigger: 'reach' fires on passing `along`; 'lookBack' on facing back toward
@@ -301,7 +309,9 @@ function passPieces(pass) {
   const off = (piece) => piece;
   let pieces = [];
   pieces.push(base.road, base.gate);
-  if (kept('boundary')) {
+  // The civic gate owns the visible court boundary. The old six-panel2m
+  // corridor walls hid the canonical shop windows and made a second enclosure.
+  if (kept('boundary') && k === OUTSKIRT_BUS_ENCOUNTER.pass) {
     for (const side of [-1, 1]) for (let j = 0; j < 6; j += 1) {
       pieces.push(put(`boundary-${side < 0 ? 'west' : 'east'}-${j}`, side < 0 ? 'outskirts_boundary_wall_6' : 'outskirts_boundary_rail_6',
         side * (side < 0 ? OUTSKIRT_CORRIDOR.boundaryMeshOffset : 11.56), -0.8 + 3 + j * 6, { structural: true }));
@@ -327,9 +337,9 @@ function passPieces(pass) {
     pieces.push(put('booth-kettle', 'outskirts_lodge_kettle', lodge.across, lodge.along, { yaw: lodge.yaw }));
     if ([1, 2, 3, 4, 10, 11, 12, 13, 15, 16, 17].includes(k)) pieces.push(put('booth-ledger', 'outskirts_lodge_ledger', lodge.across, lodge.along, { yaw: lodge.yaw, inspect: k === 2 ? undefined : 'ledger', interact: [-0.68, -1.8], closeReach: 1.6, focusPriority: 9 }));
     // The same man as Wrong Fold, still upright. His feet meet the lodge's
-    // .16m plinth and his head clears the service window. Local +Z faces into
+    // .20m plinth and his head clears the service window. Local +Z faces into
     // the lodge, keeping his back to the road; the inspection stays at the hatch.
-    if (k === 2) pieces.push(attach(lodge, 'booth-guard', 'outskirts_fold_guard', -.73, .16, .05, {
+    if (k === 2) pieces.push(attach(lodge, 'booth-guard', 'outskirts_fold_guard', -.73, .20, .05, {
       yaw: Math.PI, character: freeze({ clip: 'idle', time: 0, loop: true }),
       unwatched: 'vanish', inspect: 'guard', interact: [-.28, 1.85], closeReach: 1.8, focusPriority: 9,
       collision: [{ minX: -.19, maxX: .19, minZ: -.17, maxZ: .17 }],
@@ -348,10 +358,14 @@ function passPieces(pass) {
   }
   if (kept('shelter')) {
     pieces.push(base.shelter);
-    pieces.push(put('shelter-timetable', 'outskirts_shelter_timetable', base.shelter.across - 1.16, base.shelter.along - 1.20, { yaw: Math.PI / 2 }));
+    // The ordinary shell already includes its timetable. Its real timber
+    // bench is a separate mesh, exactly as in the arrival court.
+    pieces.push(attach(base.shelter,'shelter-bench','yard_look_bench',-1,0,0,{
+      collision:[{minX:-.36,maxX:.38,minZ:-1.62,maxZ:1.62}],
+    }));
   }
   // From the middle of the road his coat is over the back of the shelter seat.
-  if (k >= 12 && kept('shelter')) pieces.push(put('coat', 'draped_coat', 8.6, 24.2, { y: 0.45, yaw: Math.PI, inspect: 'coat' }));
+  if (k >= 12 && kept('shelter')) pieces.push(attach(base.shelter,'coat','draped_coat',-.9,.5475,.2,{inspect:'coat'}));
   if (kept('bin')) pieces.push(off(base.bin, 0.4));
   if (kept('bench')) pieces.push(off(base.bench, 0.4));
   // A car parked short of the gate from the fifth pass on, engine ticking, radio on.
@@ -369,7 +383,7 @@ function passPieces(pass) {
     pieces.push(attach(bus, 'bus-woman-aboard', 'outskirts_bus_woman', 0, .50, 1.3, { yaw: Math.PI / 2 }));
   }
   else if (kept('bus-woman')) pieces.push(freeze({ ...off(base['bus-woman'], 0.5), watcher: hash(k, 'watch', 9) < 0.25 + wear * 0.6 }));
-  if (kept('van')) pieces.push(base.van, attach(base.van, 'van-lamp', 'yard_van_lamp', 0, 2.3, 0.4, { glow: base['van-lamp'].glow }));
+  if (kept('van')) pieces.push(base.van,attach(base.van,'van-lamp','yard_van_lamp',0,2.3,2,{glow:base['van-lamp'].glow}));
   // THE VAN FILLS UP. Nobody says so: pass by pass his own kit turns up in the
   // back, then his bag with the letter in it, then her page on the dash and more of
   // it, and at the end his headphones laid on the blanket and the car phone's
@@ -404,7 +418,17 @@ function passPieces(pass) {
 
   switch (pass.break) {
     case 'mirrored':
-      pieces = pieces.map((piece) => (piece.id === 'road' || piece.structural || piece.payphone ? piece : freeze({ ...piece, across: -piece.across, yaw: -piece.yaw })));
+      {
+        const originals=new Map(pieces.map(p=>[p.id,p]));
+        const mirrored=pieces.map(piece=>piece.id==='road'||piece.structural||piece.payphone?piece:freeze({...piece,across:-piece.across,yaw:-piece.yaw}));
+        const parents=new Map(mirrored.map(p=>[p.id,p]));
+        pieces=mirrored.map(piece=>{
+          const original=originals.get(piece.id),parent=originals.get(piece.attachedTo),target=parents.get(piece.attachedTo);
+          if(!parent||!target)return piece;
+          const moved=rotateAttachment(original,parent,target.yaw-parent.yaw);
+          return freeze({...moved,across:moved.across+target.across-parent.across,along:moved.along+target.along-parent.along});
+        });
+      }
       break;
     case 'stutter':
       pieces = [...pieces, ...pieces.filter((piece) => piece.id !== 'road' && !piece.payphone && !piece.structural)
@@ -413,8 +437,8 @@ function passPieces(pass) {
     case 'turned': {
       const van = pieces.find((piece) => piece.id === 'van');
       pieces = pieces.map((piece) => {
-        if (van && piece.attachedTo === 'van') return rotateAttachment(piece, van, Math.PI - van.yaw);
-        return FACES.includes(piece.id) ? freeze({ ...piece, yaw: Math.PI, watcher: piece.id === 'bus-woman' || piece.watcher }) : piece;
+        if (van && piece.attachedTo === 'van') return rotateAttachment(piece, van, Math.PI);
+        return FACES.includes(piece.id) ? freeze({ ...piece, yaw: piece.yaw+Math.PI, watcher: piece.id === 'bus-woman' || piece.watcher }) : piece;
       });
       break;
     }
@@ -443,9 +467,9 @@ function passPieces(pass) {
       break;
     case 'swapped':
       pieces = pieces.map((piece) => {
-        if (piece.attachedTo === 'booth') return freeze({ ...piece, across: piece.across + 3.6, along: piece.along + 19 });
-        if (piece.id.startsWith('booth')) return freeze({ ...piece, across: -4.8, along: 31 });
-        if (piece.id === 'van' || piece.attachedTo === 'van') return freeze({ ...piece, across: piece.across - 3.6, along: piece.along - 19 });
+        const da=base.van.across-base.booth.across,dl=base.van.along-base.booth.along;
+        if (piece.attachedTo === 'booth'||piece.id.startsWith('booth')) return freeze({...piece,across:piece.across+da,along:piece.along+dl});
+        if (piece.id === 'van' || piece.attachedTo === 'van') return freeze({...piece,across:piece.across-da,along:piece.along-dl});
         return piece;
       });
       break;

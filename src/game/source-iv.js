@@ -34,7 +34,12 @@ export function sourceIVCanOccupy(x,z,value={}){
 }
 export function sourceIVFocus(value){
   const state=normalizeSourceIV(value);
-  if(state.status!=='active'||Math.hypot(state.x-C.exit.x,state.z-C.exit.z)>2.5)return null;
+  const dx=C.exit.x-state.x,dz=C.exit.z-state.z,distance=Math.hypot(dx,dz);
+  const height=1.2-C.eyeHeight,planar=Math.cos(state.pitch),aimLength=Math.hypot(distance,height);
+  const facing=(Math.sin(state.yaw)*planar*dx+Math.sin(state.pitch)*height-Math.cos(state.yaw)*planar*dz)/aimLength;
+  // A nearby door is still a physical object, rather than a radius-triggered
+  // switch behind the player's back. Keep the cone generous at this scale.
+  if(state.status!=='active'||distance>2.5||distance>.35&&facing<.35)return null;
   return{id:`source-IV:${state.runId}:exit`,kind:'exit',x:C.exit.x,z:C.exit.z,
     title:state.exitDoor.open?'CLOSE THE GREY DOOR':'OPEN THE GREY DOOR',open:state.exitDoor.open,
     passable:doorPassable(state),position:{x:C.exit.x,y:1.2,z:C.exit.z}};
